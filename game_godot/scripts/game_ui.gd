@@ -38,6 +38,7 @@ var _notice_text: Label
 var _notice_timer := 0.0
 var _card: PanelContainer
 var _sheet: PanelContainer
+var _timer_icon: Label
 var _timer_label: Label
 var _timer_bar: ProgressBar
 var _timer_fill: StyleBoxFlat
@@ -48,9 +49,11 @@ var _max := 1.0
 var _hud_nodes: Array[Control] = []
 const SHEET_IN := 0.30
 const SHEET_OUT := 0.22
+const SHEET_RADIUS := 20
 var _next_sheet_delay := 0.0
 var _picture: PanelContainer
 var _picture_height := 0.0
+var _picture_target_height := 0.0
 var _picture_tween: Tween
 var _picture_generation := 0
 var _picture_open := false
@@ -79,9 +82,7 @@ func _view_size() -> Vector2:
 
 func _process(delta: float) -> void:
 	_layout_hud()
-	if is_instance_valid(_picture) and is_instance_valid(_picture_owner):
-		_picture.size = Vector2(_view_size().x - 24.0, _picture_height)
-		_picture.position = Vector2(12.0, _picture_owner.position.y - _picture_height - 8.0)
+	_layout_picture()
 	if _notice_timer > 0.0:
 		_notice_timer -= delta
 		if _notice_timer <= 0.0:
@@ -383,28 +384,27 @@ func _is_tap(e: InputEvent) -> bool:
 	return e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT
 
 
-func _sheet_shell(max_ratio: float) -> Array:
+func _sheet_shell(max_ratio: float, top_padding := 12, bottom_padding := 10) -> Array:
 	var h := _view_size().y
 	var w := _view_size().x
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 20, true))
+	panel.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), SHEET_RADIUS, true))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 16)
 	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_bottom", 10 + int(_bottom))
+	margin.add_theme_constant_override("margin_top", top_padding)
+	margin.add_theme_constant_override("margin_bottom", bottom_padding + int(_bottom))
 	panel.add_child(margin)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 16)
+	margin.add_child(layout)
 	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var v_bar := scroll.get_v_scroll_bar()
-	if v_bar != null:
-		v_bar.custom_minimum_size = Vector2.ZERO
-		v_bar.scale = Vector2.ZERO
-		v_bar.visible = false
 	scroll.custom_minimum_size = Vector2(w - 32, 0)
-	margin.add_child(scroll)
+	layout.add_child(scroll)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -412,6 +412,8 @@ func _sheet_shell(max_ratio: float) -> Array:
 	panel.set_meta("max_h", h * max_ratio)
 	panel.set_meta("scroll", scroll)
 	panel.set_meta("box", box)
+	panel.set_meta("layout", layout)
+	panel.set_meta("padding", top_padding + bottom_padding + int(_bottom))
 	return [panel, box]
 
 
@@ -430,9 +432,14 @@ func _place_sheet(panel: PanelContainer) -> void:
 	await get_tree().process_frame
 	if not is_instance_valid(panel) or bool(panel.get_meta("closing", false)):
 		return
-	var height := minf(box.get_combined_minimum_size().y + 22.0 + _bottom, max_h)
-	scroll.custom_minimum_size.y = maxf(0.0, height - 22.0 - _bottom)
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	var fixed_height := float(panel.get_meta("padding"))
+	if panel.has_meta("footer"):
+		var footer: Control = panel.get_meta("footer")
+		var layout: VBoxContainer = panel.get_meta("layout")
+		fixed_height += footer.get_combined_minimum_size().y + layout.get_theme_constant("separation")
+	var height := floorf(minf(box.get_combined_minimum_size().y + fixed_height, max_h))
+	scroll.custom_minimum_size.y = maxf(0.0, height - fixed_height)
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	panel.size = Vector2(size.x, height)
 	panel.modulate.a = 1.0
 	var tween := create_tween()
@@ -442,7 +449,7 @@ func _place_sheet(panel: PanelContainer) -> void:
 	tween.tween_property(panel, "position:y", size.y - height, SHEET_IN).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
-func _ticket_chip(text: String, scene_id := "") -> PanelContainer:
+func _ticket_chip(text: String, scene_id := "", width_budget := -1.0) -> PanelContainer:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", Ui.box(Ui.c("field"), 8))
 	var m := MarginContainer.new()
@@ -455,8 +462,16 @@ func _ticket_chip(text: String, scene_id := "") -> PanelContainer:
 	row.add_theme_constant_override("separation", 6)
 	m.add_child(row)
 	var has_picture := scene_id != "" and picture_name(scene_id) != ""
-	row.add_child(Ui.scaled_label(text, 12, 600, Ui.c("accent") if has_picture else Ui.c("secondary"), true))
-	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var label := Ui.scaled_label(text, 12, 600, Ui.c("accent") if has_picture else Ui.c("secondary"))
+	row.add_child(label)
+	# Hug the complete title, but wrap when large text leaves less room beside the timer.
+	var text_width := Ui.font(600).get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, roundi(12 * Ui.text_scale())).x
+	var preferred_width := ceilf(text_width) + 18.0 + (22.0 if has_picture else 0.0)
+	var available_width := width_budget if width_budget > 0.0 else _view_size().x - 32.0
+	p.custom_minimum_size.x = minf(preferred_width, available_width)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	p.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	if has_picture:
 		var icon := Ui.icon(0xf80d, 16, Ui.c("accent")) # image
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -486,12 +501,28 @@ func _toggle_picture(scene_id: String, chip: Control, icon: Label) -> void:
 	_picture_generation += 1
 	var generation := _picture_generation
 	_picture_open = true
+	var previous_owner := _picture_owner
+	if is_instance_valid(_picture) and previous_owner != owner:
+		if _picture_tween != null and _picture_tween.is_valid():
+			_picture_tween.kill()
+		if is_instance_valid(previous_owner):
+			var previous_cap := previous_owner.get_theme_stylebox("panel") as StyleBoxFlat
+			previous_cap.corner_radius_top_left = SHEET_RADIUS
+			previous_cap.corner_radius_top_right = SHEET_RADIUS
+		_picture.free()
+		_picture = null
+		_picture_height = 0.0
 	_picture_owner = owner
 	_picture_icon = icon
 	icon.text = char(0xf647) # close
+	if is_instance_valid(_picture) and previous_owner == owner:
+		_animate_picture(_picture_target_height, SHEET_IN)
+		return
 	var res := "res://questions/%s.webp" % picture_name(scene_id)
 	PackFiles.fetch(res, func(ok: bool):
 		if not is_instance_valid(self) or generation != _picture_generation or not is_instance_valid(chip):
+			return
+		if not is_instance_valid(owner) or bool(owner.get_meta("closing", false)) or _picture_owner != owner:
 			return
 		var bytes := PackFiles.bytes(res) if ok else PackedByteArray()
 		var img := Image.new()
@@ -502,10 +533,12 @@ func _toggle_picture(scene_id: String, chip: Control, icon: Label) -> void:
 
 
 func _present_picture(tex: Texture2D) -> void:
+	if _picture_tween != null and _picture_tween.is_valid():
+		_picture_tween.kill()
 	if is_instance_valid(_picture):
 		_picture.free()
 	_picture = PanelContainer.new()
-	_picture.add_theme_stylebox_override("panel", Ui.box(Color.WHITE, 12))
+	_picture.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_picture.clip_contents = true
 	_picture.mouse_filter = Control.MOUSE_FILTER_STOP
 	# A regular Control keeps the image's minimum height from forcing its reveal open.
@@ -513,22 +546,53 @@ func _present_picture(tex: Texture2D) -> void:
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_picture.add_child(content)
 	var view := _view_size()
-	var hud_bottom := maxf(_run_pill.position.y + _run_pill.size.y, _speed_pill.position.y + _speed_pill.size.y)
-	var available := maxf(12.0, _picture_owner.position.y - hud_bottom - 20.0)
-	var height := minf((view.x - 24.0) * tex.get_height() / tex.get_width(), minf(view.y * 0.28, available))
+	# Preserve the entire traffic scene, including with large text on a small phone.
+	var available := maxf(float(SHEET_RADIUS), _picture_owner.position.y - _top - 12.0)
+	var height := minf(view.x * tex.get_height() / tex.get_width(), available)
+	_picture_target_height = height
 	var pic := TextureRect.new()
 	pic.texture = tex
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pic.size = Vector2(view.x - 24.0, height)
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	pic.size = Vector2(view.x, height)
+	var mask := ShaderMaterial.new()
+	mask.shader = preload("res://shaders/question_picture.gdshader")
+	mask.set_shader_parameter("image_size", pic.size)
+	mask.set_shader_parameter("corner_radius", float(SHEET_RADIUS))
+	pic.material = mask
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(pic)
 	_root.add_child(_picture)
-	_picture_height = 0.0
+	# Directly below its owner, above the HUD if space is tight.
+	_root.move_child(_picture, _picture_owner.get_index())
+	_set_picture_height(0.0)
+	_animate_picture(height, SHEET_IN)
+
+
+func _animate_picture(height: float, duration: float) -> void:
 	if _picture_tween != null and _picture_tween.is_valid():
 		_picture_tween.kill()
 	_picture_tween = create_tween()
-	_picture_tween.tween_property(self, "_picture_height", height, SHEET_IN).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_picture_tween.tween_method(_set_picture_height, _picture_height, height, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT if height > 0.0 else Tween.EASE_IN)
+
+
+func _set_picture_height(height: float) -> void:
+	_picture_height = height
+	if is_instance_valid(_picture_owner):
+		var cap := _picture_owner.get_theme_stylebox("panel") as StyleBoxFlat
+		var progress := clampf(height / maxf(1.0, _picture_target_height), 0.0, 1.0)
+		cap.corner_radius_top_left = roundi(SHEET_RADIUS * (1.0 - progress))
+		cap.corner_radius_top_right = cap.corner_radius_top_left
+	_layout_picture()
+
+
+func _layout_picture() -> void:
+	if not is_instance_valid(_picture) or not is_instance_valid(_picture_owner):
+		return
+	var cap := _picture_owner.get_theme_stylebox("panel") as StyleBoxFlat
+	# The overlap fills the two corner cutouts throughout the morph; no world shows at the seam.
+	_picture.size = Vector2(_view_size().x, _picture_height + cap.corner_radius_top_left)
+	_picture.position = Vector2(0.0, _picture_owner.position.y - _picture_height)
 
 
 func _close_picture() -> void:
@@ -542,14 +606,15 @@ func _close_picture() -> void:
 	if not is_instance_valid(_picture):
 		return
 	var previous := _picture
-	_picture_tween = create_tween()
-	_picture_tween.tween_property(self, "_picture_height", 0.0, SHEET_OUT).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	var previous_owner := _picture_owner
+	_animate_picture(0.0, SHEET_OUT)
 	_picture_tween.tween_callback(func():
 		if is_instance_valid(previous):
 			previous.queue_free()
 		if _picture == previous:
 			_picture = null
-			_picture_owner = null)
+			if _picture_owner == previous_owner:
+				_picture_owner = null)
 
 
 ## The question (scene.json text for the current language).
@@ -573,12 +638,20 @@ func show_question(text: Dictionary, seconds: float) -> void:
 	box.add_theme_constant_override("separation", 5 if very_dense else (6 if dense else 8))
 
 	var head := HBoxContainer.new()
-	head.add_child(_ticket_chip(text.ticket, str(text.get("id", ""))))
+	head.add_theme_constant_override("separation", 8)
+	var timer := HBoxContainer.new()
+	timer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	timer.add_theme_constant_override("separation", 4)
+	_timer_icon = Ui.icon(0xf44a, 16, Ui.c("secondary")) # timer_outlined
+	timer.add_child(_timer_icon)
+	_timer_label = Ui.scaled_label("%.1f %s" % [seconds, Ui.t("gameSeconds")], 13, 700, Ui.c("text"))
+	timer.add_child(_timer_label)
+	var timer_width := ceilf(Ui.font(700).get_string_size(_timer_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, roundi(13 * Ui.text_scale())).x) + 20.0
+	head.add_child(_ticket_chip(text.ticket, str(text.get("id", "")), _view_size().x - 48.0 - timer_width))
 	var sp := Control.new()
-	sp.custom_minimum_size.x = 8
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(sp)
-	_timer_label = Ui.scaled_label("", 13, 700, Ui.c("text"))
-	head.add_child(_timer_label)
+	head.add_child(timer)
 	box.add_child(head)
 	_timer_bar = ProgressBar.new()
 	_timer_bar.show_percentage = false
@@ -692,6 +765,7 @@ func _update_timer() -> void:
 	var r := maxf(0.0, _remaining)
 	_timer_label.text = "%.1f %s" % [r, Ui.t("gameSeconds")]
 	_timer_label.add_theme_color_override("font_color", Ui.c("red") if r <= 3 else Ui.c("text"))
+	_timer_icon.add_theme_color_override("font_color", Ui.c("red") if r <= 3 else Ui.c("secondary"))
 	_timer_bar.value = r / _max
 	_timer_fill.bg_color = Ui.c("red") if r <= 3 else (Ui.c("gold") if r <= 6 else Ui.c("accent"))
 
@@ -726,12 +800,13 @@ func show_explanation(text: Dictionary, correct: int, timed_out: bool) -> void:
 	hide_cards()
 	var exp_len: int = str(text.get("explanation", "")).length()
 	var dense: bool = exp_len > 180
-	var shell := _sheet_shell(0.65 if dense else 0.55)
+	var shell := _sheet_shell(0.65 if dense else 0.55, 16, 16)
 	_sheet = shell[0]
 	var box: VBoxContainer = shell[1]
-	box.add_theme_constant_override("separation", 6 if dense else 8)
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 8)
+	box.add_theme_constant_override("separation", 16)
+	var head := HFlowContainer.new()
+	head.add_theme_constant_override("h_separation", 8)
+	head.add_theme_constant_override("v_separation", 8)
 	head.add_child(_ticket_chip(text.ticket, str(text.get("id", ""))))
 	var chip := PanelContainer.new()
 	chip.add_theme_stylebox_override("panel", Ui.box(Ui.c("red_light"), 6))
@@ -746,25 +821,22 @@ func show_explanation(text: Dictionary, correct: int, timed_out: bool) -> void:
 	box.add_child(head)
 	if correct >= 0 and correct < text.options.size():
 		var ok := PanelContainer.new()
-		ok.add_theme_stylebox_override("panel", Ui.box(Ui.c("green_light"), 8))
+		ok.add_theme_stylebox_override("panel", Ui.box(Ui.c("green"), 8))
 		var om := MarginContainer.new()
-		om.add_theme_constant_override("margin_left", 12)
-		om.add_theme_constant_override("margin_right", 12)
-		om.add_theme_constant_override("margin_top", 6 if dense else 10)
-		om.add_theme_constant_override("margin_bottom", 6 if dense else 10)
+		om.add_theme_constant_override("margin_left", 16)
+		om.add_theme_constant_override("margin_right", 16)
+		om.add_theme_constant_override("margin_top", 12)
+		om.add_theme_constant_override("margin_bottom", 12)
 		ok.add_child(om)
-		om.add_child(Ui.scaled_label("✓ %s: %s" % [Ui.t("gameCorrectAnswer"), text.options[correct]], 13 if dense else 14, 600, Ui.c("text"), true))
+		om.add_child(Ui.scaled_label("✓ %s: %s" % [Ui.t("gameCorrectAnswer"), text.options[correct]], 14, 600, Ui.c("white"), true))
 		box.add_child(ok)
-	box.add_child(Ui.scaled_label(text.explanation, 12 if dense else 13, 500, Ui.c("text"), true))
-	var btn := PanelContainer.new()
-	btn.custom_minimum_size = Vector2(0, 44 if dense else 50)
-	btn.add_theme_stylebox_override("panel", Ui.box(Ui.c("accent"), 12))
-	var bl := Ui.scaled_label(Ui.t("gameContinue"), 15, 700, Color.WHITE)
-	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	btn.add_child(bl)
-	_tap(btn, func(): continue_pressed.emit())
-	box.add_child(btn)
+	var explanation := Ui.scaled_label(text.explanation, 14, 500, Ui.c("text"), true)
+	explanation.add_theme_constant_override("line_spacing", 4)
+	box.add_child(explanation)
+	var btn := _wide_button(Ui.t("gameContinue"), Ui.c("accent"), Ui.c("white"), func(): continue_pressed.emit())
+	btn.custom_minimum_size.y = 56
+	(_sheet.get_meta("layout") as VBoxContainer).add_child(btn)
+	_sheet.set_meta("footer", btn)
 	_root.add_child(_sheet)
 	_place_sheet(_sheet)
 
