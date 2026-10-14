@@ -66,3 +66,9 @@ game_godot/network/history/
 # Temporary links for standalone Godot exports; canonical photos are in assets/.
 /game_godot/questions/*.webp
 /game_godot/questions/*.webp.import
+# MP3 derivatives of canonical studio Opus audio, shared by Flutter/Godot.
+/assets/audio/game_questions/*.mp3
+/assets/audio/game_questions/.manifest.json
+# Temporary links for standalone game exports.
+/game_godot/question_audio/*.mp3
+/game_godot/question_audio/*.mp3.import

@@ -15,10 +15,11 @@ IPHONE=${IPHONE:-00008030-0005785A01D3C02E}
 OUT=output/godot
 mkdir -p "$OUT"
 # Native standalone games have no Flutter assets. Links are only export inputs.
-trap 'python3 tools/godot_export/export_question_images.py >/dev/null' EXIT
+trap 'python3 tools/godot_export/export_question_images.py >/dev/null; python3 tools/godot_export/export_question_audio.py --clean-links' EXIT
 
 android() {
   python3 tools/godot_export/export_question_images.py --standalone
+  python3 tools/godot_export/export_question_audio.py --standalone
   godot --headless --path game_godot --import >/dev/null 2>&1 || true
   godot --headless --path game_godot --export-release "Android" "../$OUT/pdd-game-spike.apk" 2>&1 | grep -E "ERROR" | grep -v "icon\|filter" || true
   "$ADB" connect "$PIXEL" >/dev/null 2>&1 || true
@@ -29,6 +30,7 @@ android() {
 
 ios() {
   python3 tools/godot_export/export_question_images.py --standalone
+  python3 tools/godot_export/export_question_audio.py --standalone
   godot --headless --path game_godot --import >/dev/null 2>&1 || true
   rm -rf "$OUT/ios"; mkdir -p "$OUT/ios"
   godot --headless --path game_godot --export-release "iOS" "../$OUT/ios/PDDGameSpike.xcodeproj" >/dev/null 2>&1 || true
@@ -46,6 +48,7 @@ ios() {
 # (game_godot/scripts/pack_files.gd). Nothreads: no SharedArrayBuffer needed.
 web() {
   python3 tools/godot_export/export_question_images.py
+  python3 tools/godot_export/export_question_audio.py
   local out="build/web/godot"
   command -v godot >/dev/null || { echo "Web: нет godot в PATH"; exit 1; }
   [ -d "game_godot/situations" ] || { echo "Web: нет game_godot/situations (они лежат в git: git pull / проверьте клон)"; exit 1; }

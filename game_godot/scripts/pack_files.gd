@@ -5,7 +5,8 @@
 ## laid out or a picture is opened, and kept in memory until the junction is built.
 ## Embedded native games read Flutter pictures too, so the game pack has no
 ## duplicate photographs. Desktop reads the canonical source; standalone exports
-## without Flutter include their own pictures.
+## without Flutter include their own pictures. Studio question audio follows the
+## same contract: MP3 derivatives are shared Flutter assets, never embedded twice.
 class_name PackFiles
 extends RefCounted
 
@@ -14,6 +15,7 @@ static var _roots := {}          # res path -> Node3D, a glTF parsed once (web)
 static var _absent := {}         # res path -> true: the site has no such file
 static var _waiting := {}        # res path -> Array[Callable]: fetches in flight
 static var _picture_base := ""   # URL of the shared Flutter picture folder
+static var _question_audio_base := "" # URL of the shared studio recordings
 static var _base := ""           # URL of the game folder (web)
 
 
@@ -25,6 +27,8 @@ static func bytes(res_path: String) -> PackedByteArray:
 	if not web():
 		if _is_picture(res_path):
 			return _picture_bytes(res_path)
+		if _is_question_audio(res_path):
+			return _question_audio_bytes(res_path)
 		return FileAccess.get_file_as_bytes(res_path)
 	return _bytes.get(res_path, PackedByteArray())
 
@@ -39,12 +43,32 @@ static func exists(res_path: String) -> bool:
 	if not web():
 		if _is_picture(res_path):
 			return not _picture_bytes(res_path).is_empty()
+		if _is_question_audio(res_path):
+			return not _question_audio_bytes(res_path).is_empty()
 		return FileAccess.file_exists(res_path)
 	return _bytes.has(res_path)
 
 
 static func _is_picture(path: String) -> bool:
 	return path.begins_with("res://questions/") and path.ends_with(".webp")
+
+
+static func _is_question_audio(path: String) -> bool:
+	return path.begins_with("res://question_audio/q_") and path.ends_with(".mp3")
+
+
+static func _question_audio_bytes(res_path: String) -> PackedByteArray:
+	var file := res_path.get_file()
+	if Host.embedded():
+		return Engine.get_singleton("PddHost").questionAudioBytes(file.get_basename().trim_prefix("q_"))
+	for arg in Host.user_args():
+		if str(arg).begins_with("--question-audio-dir="):
+			var path := str(arg).trim_prefix("--question-audio-dir=").path_join(file)
+			return FileAccess.get_file_as_bytes(path) if FileAccess.file_exists(path) else PackedByteArray()
+	var source := ProjectSettings.globalize_path("res://").path_join("../assets/audio/game_questions/" + file)
+	if FileAccess.file_exists(source):
+		return FileAccess.get_file_as_bytes(source)
+	return FileAccess.get_file_as_bytes(res_path) if FileAccess.file_exists(res_path) else PackedByteArray()
 
 
 static func _picture_bytes(res_path: String) -> PackedByteArray:
@@ -120,6 +144,10 @@ static func fetch(res_path: String, on_done: Callable) -> void:
 		if _picture_base.is_empty():
 			_picture_base = str(JavaScriptBridge.eval("new URL('../assets/assets/countries/ru/images/questions_ab/', window.location.href).href", true))
 		url = _picture_base + res_path.get_file()
+	elif _is_question_audio(res_path):
+		if _question_audio_base.is_empty():
+			_question_audio_base = str(JavaScriptBridge.eval("new URL('../assets/assets/audio/game_questions/', window.location.href).href", true))
+		url = _question_audio_base + res_path.get_file()
 	if req.request(url) != OK:
 		_on_fetched(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray(), req, res_path)
 

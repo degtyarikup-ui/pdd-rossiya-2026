@@ -831,6 +831,27 @@ class AppLocalizationsRu extends AppLocalizations {
       'Награды за правильные ответы только в «Живом городе».';
 
   @override
+  String get gameSoundOn => 'Выключить звуки игры';
+
+  @override
+  String get gameSoundOff => 'Включить звуки игры';
+
+  @override
+  String get gameVoiceOn => 'Выключить озвучку вопросов';
+
+  @override
+  String get gameVoiceOff => 'Включить озвучку вопросов';
+
+  @override
+  String get gameVoiceUnavailable =>
+      'Записанная озвучка пока доступна только на русском';
+
+  @override
+  String gameAchievementCount(int correct, int total) {
+    return '$correct / $total';
+  }
+
+  @override
   String gameAchievementModel(String name) {
     return 'Новая машина: $name';
   }

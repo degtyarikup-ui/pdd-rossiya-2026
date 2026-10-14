@@ -20,6 +20,18 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
         }
     }
 
+    /** The existing studio voice, converted once into the shared Flutter MP3 assets. */
+    @UsedByGodot
+    fun questionAudioBytes(hash: String): ByteArray {
+        if (!hash.matches(Regex("[a-f0-9]{32}"))) return byteArrayOf()
+        return try {
+            host.assets.open("flutter_assets/assets/audio/game_questions/q_$hash.mp3")
+                .use { it.readBytes() }
+        } catch (_: java.io.IOException) {
+            byteArrayOf()
+        }
+    }
+
     /** Any event of the game; «run_finished» carries the final summary. */
     @UsedByGodot
     fun send(json: String) {

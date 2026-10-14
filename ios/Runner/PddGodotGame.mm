@@ -241,6 +241,9 @@ static void HideGame(void) {
   NSString *pictures = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
       @"Frameworks/App.framework/flutter_assets/assets/countries/ru/images/questions_ab"];
   [gameArgs addObject:[@"--question-images-dir=" stringByAppendingString:pictures]];
+  NSString *questionAudio = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
+      @"Frameworks/App.framework/flutter_assets/assets/audio/game_questions"];
+  [gameArgs addObject:[@"--question-audio-dir=" stringByAppendingString:questionAudio]];
   NSData *request = [NSJSONSerialization dataWithJSONObject:@{ @"args" : gameArgs } options:0 error:nil];
   return request != nil &&
          [request writeToFile:[folder stringByAppendingPathComponent:@"request.json"]

@@ -6,17 +6,24 @@ signal resume_requested
 signal exit_requested
 signal vehicle_changed(selection: Dictionary)
 signal sound_changed(enabled: bool)
+signal voice_changed(enabled: bool)
 
 var data: Dictionary
 var car_index := 0
 var paint_index := 0
 var sound_enabled := true
+var voice_enabled := false
+var voice_available := true
 var _root: Control
 var _panel: PanelContainer
+var _shell: VBoxContainer
+var _head: HBoxContainer
 var _scroll: ScrollContainer
 var _box: VBoxContainer
+var _actions: GridContainer
+var _continue_button: Button
+var _exit_button: Button
 var _model_label: Label
-var _paint_label: Label
 var _palette: HFlowContainer
 var _achievement: PanelContainer
 var _achievement_next: Label
@@ -25,27 +32,17 @@ var _achievement_toggle: Button
 var _achievement_chevron: Label
 var _achievement_hint: Label
 var _reward_list: VBoxContainer
-var _switch: Button
+var _sound_button: Button
+var _voice_button: Button
 var _preview: SubViewport
 var _preview_car: Node3D
 var _studio: Node3D
 
-class SoundSwitch extends Button:
-	func _ready() -> void:
-		toggle_mode = true
-		for state in ["normal", "hover", "pressed", "focus"]:
-			add_theme_stylebox_override(state, StyleBoxEmpty.new())
-		toggled.connect(func(_on): queue_redraw())
-
-	func _draw() -> void:
-		var at := (size - Vector2(52, 30)) * 0.5
-		draw_style_box(Ui.box(Ui.c("accent" if button_pressed else "divider"), 15), Rect2(at, Vector2(52, 30)))
-		draw_circle(at + Vector2(37 if button_pressed else 15, 15), 11, Color.WHITE)
-
-
 func _init(options: Dictionary, selection := {}) -> void:
 	data = options
 	sound_enabled = bool(options.get("sound", true))
+	voice_available = bool(options.get("voice_available", true))
+	voice_enabled = bool(options.get("voice", false)) and voice_available
 	for i in data.cars.size():
 		if data.cars[i].id == selection.get("id", ""):
 			car_index = i
@@ -78,19 +75,24 @@ func _ready() -> void:
 	for side in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + side, 20)
 	_panel.add_child(margin)
-	_scroll = ScrollContainer.new()
-	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	margin.add_child(_scroll)
-	_box = VBoxContainer.new()
-	_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_box.add_theme_constant_override("separation", 12)
-	_scroll.add_child(_box)
-	var head := HBoxContainer.new()
+	_shell = VBoxContainer.new()
+	_shell.add_theme_constant_override("separation", 16)
+	margin.add_child(_shell)
+	_head = HBoxContainer.new()
 	var title := Ui.scaled_label(Ui.t("gamePause"), 22, 800, Ui.c("text"))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(title)
-	head.add_child(_icon_button(0xf647, func(): resume_requested.emit()))
-	_box.add_child(head)
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_head.add_child(title)
+	_head.add_child(_icon_button(0xf647, func(): resume_requested.emit()))
+	_shell.add_child(_head)
+	_scroll = ScrollContainer.new()
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_shell.add_child(_scroll)
+	_box = VBoxContainer.new()
+	_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_box.add_theme_constant_override("separation", 16)
+	_scroll.add_child(_box)
 	_build_preview()
 	var model := HBoxContainer.new()
 	model.add_theme_constant_override("separation", 8)
@@ -103,54 +105,109 @@ func _ready() -> void:
 	model.get_child(0).visible = data.cars.size() > 1
 	model.get_child(2).visible = data.cars.size() > 1
 	_box.add_child(model)
-	var colour_row := HBoxContainer.new()
-	colour_row.add_child(Ui.scaled_label(Ui.t("gameLobbyColour"), 14, 600, Ui.c("text")))
-	_paint_label = Ui.scaled_label("", 14, 500, Ui.c("secondary"), true)
-	_paint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	colour_row.add_child(_paint_label)
-	_box.add_child(colour_row)
+	var palette_center := CenterContainer.new()
+	_box.add_child(palette_center)
 	_palette = HFlowContainer.new()
-	_palette.add_theme_constant_override("h_separation", 8)
-	_palette.add_theme_constant_override("v_separation", 8)
-	_box.add_child(_palette)
+	# Four large touch targets per centered row, even when every paint is owned.
+	_palette.custom_minimum_size.x = 228
+	_palette.alignment = FlowContainer.ALIGNMENT_CENTER
+	_palette.add_theme_constant_override("h_separation", 12)
+	_palette.add_theme_constant_override("v_separation", 12)
+	palette_center.add_child(_palette)
+	_build_audio_controls()
 	_build_achievements()
-	var sound_row := HBoxContainer.new()
-	var sound_text := Ui.scaled_label(Ui.t("soundEffects"), 15, 600, Ui.c("text"), true)
-	sound_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	sound_row.add_child(sound_text)
-	_switch = SoundSwitch.new()
-	_switch.toggle_mode = true
-	_switch.button_pressed = sound_enabled
-	_switch.custom_minimum_size = Vector2(56, 44)
-	_switch.toggled.connect(func(on): sound_enabled = on; sound_changed.emit(on))
-	sound_row.add_child(_switch)
-	_box.add_child(sound_row)
-	_box.add_child(_button(Ui.t("gameLobbyContinue"), true, func(): resume_requested.emit()))
-	_box.add_child(_button(Ui.t("gameExitToMenu"), false, func(): exit_requested.emit()))
+	# Catalog expansion never moves the ride actions out of reach.
+	_actions = GridContainer.new()
+	_actions.columns = 1
+	_actions.add_theme_constant_override("h_separation", 8)
+	_actions.add_theme_constant_override("v_separation", 8)
+	_shell.add_child(_actions)
+	_continue_button = _button(Ui.t("gameLobbyContinue"), true, func(): resume_requested.emit())
+	_exit_button = _button(Ui.t("gameExitToMenu"), false, func(): exit_requested.emit())
+	_actions.add_child(_continue_button)
+	_actions.add_child(_exit_button)
 	_refresh()
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 	_panel.modulate.a = 0.0
 	create_tween().tween_property(_panel, "modulate:a", 1.0, 0.18)
+	_box.minimum_size_changed.connect(_layout.call_deferred)
+	_actions.minimum_size_changed.connect(_layout.call_deferred)
+
+
+func _build_audio_controls() -> void:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
+	_box.add_child(row)
+	_sound_button = _audio_button()
+	_sound_button.button_pressed = sound_enabled
+	_sound_button.toggled.connect(func(on):
+		sound_enabled = on
+		_refresh_audio_controls()
+		sound_changed.emit(on)
+	)
+	row.add_child(_sound_button)
+	_voice_button = _audio_button()
+	_voice_button.button_pressed = voice_enabled
+	_voice_button.disabled = not voice_available
+	_voice_button.toggled.connect(func(on):
+		voice_enabled = on
+		_refresh_audio_controls()
+		voice_changed.emit(on)
+	)
+	row.add_child(_voice_button)
+	_refresh_audio_controls()
+
+
+func _audio_button() -> Button:
+	var button := _icon_button(0xf0299, func(): pass)
+	button.custom_minimum_size = Vector2(52, 48)
+	button.toggle_mode = true
+	button.add_theme_stylebox_override("pressed", Ui.box(Ui.c("accent"), 14))
+	return button
+
+
+func _refresh_audio_controls() -> void:
+	for button: Button in [_sound_button, _voice_button]:
+		var is_voice := button == _voice_button
+		var enabled := voice_enabled if is_voice else sound_enabled
+		var code := (0xf00e5 if enabled else 0xf0295) if is_voice else (0xf029a if enabled else 0xf0299)
+		var state := ("gameVoiceOn" if enabled else "gameVoiceOff") if is_voice else ("gameSoundOn" if enabled else "gameSoundOff")
+		if is_voice and not voice_available:
+			state = "gameVoiceUnavailable"
+		button.tooltip_text = Ui.t(state)
+		button.accessibility_name = Ui.t(state)
+		var icon: Label = button.get_child(0)
+		icon.text = char(code)
+		icon.add_theme_color_override("font_color", Ui.c("white") if enabled else Ui.c("secondary"))
 
 
 func _build_achievements() -> void:
 	var achievement: Dictionary = data.get("achievement", {})
 	if achievement.is_empty():
 		return
+	var ink := Color(Ui.LIGHT.text)
 	_achievement = PanelContainer.new()
-	_achievement.add_theme_stylebox_override("panel", Ui.box(Ui.c("field"), 14))
+	_achievement.add_theme_stylebox_override("panel", Ui.box(Ui.c("gold"), 18))
+	_achievement.mouse_filter = Control.MOUSE_FILTER_STOP
+	_achievement.gui_input.connect(func(event):
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not _achievement_toggle.disabled:
+			_achievement_toggle.button_pressed = not _achievement_toggle.button_pressed
+			_achievement.accept_event()
+	)
 	_box.add_child(_achievement)
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 12)
+		margin.add_theme_constant_override("margin_" + side, 14)
 	_achievement.add_child(margin)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 8)
 	margin.add_child(content)
 	_achievement_toggle = Button.new()
-	_achievement_toggle.custom_minimum_size.y = 32
+	_achievement_toggle.custom_minimum_size.y = 24
 	_achievement_toggle.toggle_mode = true
+	_achievement_toggle.accessibility_name = str(achievement.get("title", ""))
 	for state in ["normal", "hover", "pressed", "focus"]:
 		_achievement_toggle.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	content.add_child(_achievement_toggle)
@@ -159,43 +216,58 @@ func _build_achievements() -> void:
 	head.add_theme_constant_override("separation", 8)
 	_achievement_toggle.add_child(head)
 	head.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var star := Ui.icon(0xf01d4, 20, Ui.c("gold"))
-	star.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	head.add_child(star)
-	var title := Ui.scaled_label(str(achievement.get("title", "")), 14, 700, Ui.c("text"), true)
+	var title := Ui.scaled_label(str(achievement.get("title", "")), 13, 700, ink, true)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	head.add_child(title)
-	_achievement_chevron = Ui.icon(0xf720, 22, Ui.c("secondary"))
+	_achievement_chevron = Ui.icon(0xf720, 22, ink)
 	_achievement_chevron.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_achievement_chevron.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	head.add_child(_achievement_chevron)
-	head.minimum_size_changed.connect(func(): _achievement_toggle.custom_minimum_size.y = maxf(32.0, head.get_combined_minimum_size().y))
-	_achievement_next = Ui.scaled_label(str(achievement.get("next", "")), 13, 600, Ui.c("text"), true)
-	content.add_child(_achievement_next)
-	var progress := Ui.scaled_label(str(achievement.get("progress", "")), 12, 500, Ui.c("secondary"), true)
-	content.add_child(progress)
+	head.minimum_size_changed.connect(func(): _achievement_toggle.custom_minimum_size.y = maxf(24.0, head.get_combined_minimum_size().y))
+	var reward := HBoxContainer.new()
+	reward.add_theme_constant_override("separation", 12)
+	content.add_child(reward)
+	var trophy := Ui.icon(0xf707, 44, ink)
+	trophy.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	reward.add_child(trophy)
+	var next := VBoxContainer.new()
+	next.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	next.add_theme_constant_override("separation", 4)
+	reward.add_child(next)
+	_achievement_next = Ui.scaled_label(str(achievement.get("next", "")), 15, 800, ink, true)
+	next.add_child(_achievement_next)
+	var count := str(achievement.get("count", ""))
+	if not count.is_empty():
+		next.add_child(Ui.scaled_label(count, 12, 700, ink, true))
 	_achievement_progress = ProgressBar.new()
-	_achievement_progress.custom_minimum_size.y = 5
+	_achievement_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_achievement_progress.custom_minimum_size.y = 6
 	_achievement_progress.max_value = 1.0
 	_achievement_progress.value = clampf(float(achievement.get("fraction", 0.0)), 0.0, 1.0)
 	_achievement_progress.show_percentage = false
-	_achievement_progress.add_theme_stylebox_override("background", Ui.box(Ui.c("divider"), 3))
-	_achievement_progress.add_theme_stylebox_override("fill", Ui.box(Ui.c("green" if achievement.get("complete", false) else "accent"), 3))
+	_achievement_progress.add_theme_stylebox_override("background", Ui.box(Color(ink, 0.13), 3))
+	_achievement_progress.add_theme_stylebox_override("fill", Ui.box(ink, 3))
 	content.add_child(_achievement_progress)
 	_achievement_hint = Ui.scaled_label(str(achievement.get("hint", "")), 11, 500, Ui.c("secondary"), true)
 	_achievement_hint.visible = false
-	content.add_child(_achievement_hint)
+	_box.add_child(_achievement_hint)
 	_reward_list = VBoxContainer.new()
-	_reward_list.add_theme_constant_override("separation", 10)
+	_reward_list.add_theme_constant_override("separation", 8)
 	_reward_list.visible = false
-	content.add_child(_reward_list)
-	for reward in data.get("reward_list", []):
+	_box.add_child(_reward_list)
+	for milestone in data.get("reward_list", []):
+		var item := PanelContainer.new()
+		item.add_theme_stylebox_override("panel", Ui.box(Ui.c("field"), 14))
+		_reward_list.add_child(item)
+		var item_margin := MarginContainer.new()
+		for side in ["left", "right", "top", "bottom"]:
+			item_margin.add_theme_constant_override("margin_" + side, 12)
+		item.add_child(item_margin)
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
-		_reward_list.add_child(row)
-		var unlocked := bool(reward.get("unlocked", false))
+		item_margin.add_child(row)
+		var unlocked := bool(milestone.get("unlocked", false))
 		var icon := Ui.icon(0xf636 if unlocked else 0xf889, 20, Ui.c("green" if unlocked else "secondary"))
 		icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		row.add_child(icon)
@@ -203,8 +275,8 @@ func _build_achievements() -> void:
 		details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		details.add_theme_constant_override("separation", 2)
 		row.add_child(details)
-		details.add_child(Ui.scaled_label(str(reward.get("title", "")), 13, 600, Ui.c("text"), true))
-		details.add_child(Ui.scaled_label(str(reward.get("progress", "")), 11, 500, Ui.c("secondary"), true))
+		details.add_child(Ui.scaled_label(str(milestone.get("title", "")), 13, 600, Ui.c("text"), true))
+		details.add_child(Ui.scaled_label(str(milestone.get("progress", "")), 11, 500, Ui.c("secondary"), true))
 	_achievement_toggle.disabled = _reward_list.get_child_count() == 0
 	_achievement_chevron.visible = not _achievement_toggle.disabled
 	_achievement_toggle.toggled.connect(func(expanded):
@@ -212,7 +284,19 @@ func _build_achievements() -> void:
 		_achievement_hint.visible = expanded and not _achievement_hint.text.is_empty()
 		_achievement_chevron.text = char(0xf71f if expanded else 0xf720)
 		_layout.call_deferred()
+		if expanded:
+			_scroll_to_achievement.call_deferred()
+		else:
+			_scroll.scroll_vertical = 0
 	)
+
+
+func _scroll_to_achievement() -> void:
+	# Bring the newly requested catalog into view, while the footer stays fixed.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if _achievement_toggle.button_pressed:
+		_scroll.scroll_vertical = int(_achievement.position.y)
 
 
 func _layout() -> void:
@@ -224,10 +308,12 @@ func _layout() -> void:
 	var top: float = ins.top / unit + 16.0
 	var bottom: float = ins.bottom / unit + 16.0
 	var width := minf(420.0, view.x - 32.0)
+	_actions.columns = 2 if view.x > view.y else 1
 	# The content scrolls on landscape screens and with large accessibility text.
 	var available := maxf(100.0, view.y - top - bottom)
-	var height := minf(available, _box.get_combined_minimum_size().y + 40.0)
-	_scroll.custom_minimum_size = Vector2(width - 40.0, maxf(0.0, height - 40.0))
+	var fixed := _head.get_combined_minimum_size().y + _actions.get_combined_minimum_size().y + 72.0
+	var height := minf(available, _box.get_combined_minimum_size().y + fixed)
+	_scroll.custom_minimum_size = Vector2(width - 40.0, maxf(0.0, height - fixed))
 	_panel.size = Vector2(width, height)
 	_panel.position = Vector2((view.x - width) * 0.5, top + (available - height) * 0.5)
 	_layout_content.call_deferred()
@@ -239,8 +325,9 @@ func _layout_content() -> void:
 	var ins := Ui.insets(get_viewport())
 	var top: float = ins.top / Ui.dp(get_viewport()) + 16.0
 	var available: float = view.y - top - ins.bottom / Ui.dp(get_viewport()) - 16.0
-	var height := minf(maxf(100.0, available), _box.get_combined_minimum_size().y + 40.0)
-	_scroll.custom_minimum_size.y = maxf(0.0, height - 40.0)
+	var fixed := _head.get_combined_minimum_size().y + _actions.get_combined_minimum_size().y + 72.0
+	var height := minf(maxf(100.0, available), _box.get_combined_minimum_size().y + fixed)
+	_scroll.custom_minimum_size.y = maxf(0.0, height - fixed)
 	_panel.size.y = height
 	_panel.position.y = top + (available - height) * 0.5
 
@@ -251,6 +338,7 @@ func _icon_button(code: int, action: Callable) -> Button:
 	button.add_theme_stylebox_override("normal", Ui.box(Ui.c("field"), 14))
 	button.add_theme_stylebox_override("hover", Ui.box(Ui.c("gray"), 14))
 	button.add_theme_stylebox_override("pressed", Ui.box(Ui.c("gray"), 14))
+	button.add_theme_stylebox_override("disabled", Ui.box(Ui.c("field"), 14))
 	var icon := Ui.icon(code, 24, Ui.c("text"))
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -263,6 +351,7 @@ func _icon_button(code: int, action: Callable) -> Button:
 
 func _button(text: String, primary: bool, action: Callable) -> Button:
 	var button := Button.new()
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.custom_minimum_size.y = maxf(50.0, 28.0 * Ui.text_scale() + 20.0)
 	button.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent" if primary else "field"), 14))
 	button.add_theme_stylebox_override("hover", Ui.box(Ui.c("accent" if primary else "gray"), 14))
@@ -273,6 +362,12 @@ func _button(text: String, primary: bool, action: Callable) -> Button:
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(label)
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.offset_left = 12
+	label.offset_right = -12
+	# Measure wrapped button text after its actual width is known.
+	label.minimum_size_changed.connect(func():
+		button.custom_minimum_size.y = maxf(50.0, label.get_combined_minimum_size().y + 20.0)
+	)
 	button.pressed.connect(action)
 	return button
 
@@ -314,16 +409,16 @@ func _build_preview() -> void:
 func _refresh() -> void:
 	var selected := current()
 	_model_label.text = data.cars[car_index].name
-	_paint_label.text = data.cars[car_index].paints[paint_index].name
 	for child in _palette.get_children():
 		_palette.remove_child(child)
 		child.queue_free()
 	for i in data.cars[car_index].paints.size():
 		var paint: Dictionary = data.cars[car_index].paints[i]
 		var cell := Button.new()
-		cell.custom_minimum_size = Vector2(44, 44)
+		cell.custom_minimum_size = Vector2(48, 48)
 		cell.tooltip_text = paint.name
-		var style := Ui.box(Color(paint.hex), 22)
+		cell.accessibility_name = paint.name
+		var style := Ui.box(Color(paint.hex), 24)
 		style.set_border_width_all(3 if i == paint_index else 1)
 		style.border_color = Ui.c("accent" if i == paint_index else "divider")
 		for state in ["normal", "hover", "pressed", "focus"]:

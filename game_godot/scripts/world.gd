@@ -67,6 +67,8 @@ var ground: MeshInstance3D        # lawn under everything, follows the player
 var run := Run.new()
 var ui: GameUi
 var sound: GameSound
+var voice: QuestionVoice
+var voice_timer_extended := false
 var dbg_t := 0.0
 var dbg_every := 0.0
 var last_tick_second := 0
@@ -203,6 +205,11 @@ func _ready() -> void:
 	add_child(sound)
 	# Test runs (autopilot, screenshots, debug) are silent; --sound turns it on.
 	sound.enabled = not _is_test_run() or _has_arg("--sound")
+	voice = QuestionVoice.new()
+	add_child(voice)
+	voice.available = Ui.lang == "ru"
+	voice.enabled = not _is_test_run() or _has_arg("--voice")
+	voice.playback_started.connect(_on_voice_started)
 	ui.answer_chosen.connect(_on_answer_chosen)
 	ui.continue_pressed.connect(_on_continue)
 	ui.pause_pressed.connect(_on_pause)
@@ -1253,7 +1260,7 @@ func _update_junction(dt: float) -> void:
 		text = sit.data.text.get(Ui.lang, sit.data.text.ru)
 		text = text.duplicate()
 		text["id"] = sit.id
-		ui.show_question(text, Ui.answer_seconds(int(sit.data.sourceTextLength)))
+		_show_voiced_question(text, sit.id, Ui.answer_seconds(int(sit.data.sourceTextLength)))
 		event.emit({ "event": "approach_situation", "situation": sit.id })
 		print("[game] question ", sit.id)
 		if qshot != "":
@@ -1263,6 +1270,22 @@ func _update_junction(dt: float) -> void:
 	if phase == "resolving":
 		var local: Vector3 = sit.global_transform.affine_inverse() * drive.pos
 		current.junction.update_resolution(dt, drive, local)
+
+
+## Both road and junction cards use the same recordings and timer policy.
+func _show_voiced_question(card: Dictionary, id: String, seconds: float) -> void:
+	voice_timer_extended = false
+	if voice.enabled:
+		seconds = maxf(seconds, voice.duration(id) + 2.0)
+	ui.show_question(card, seconds)
+	voice.begin(id)
+
+
+func _on_voice_started(seconds: float) -> void:
+	if voice_timer_extended or phase != "question" or question_over:
+		return
+	voice_timer_extended = true
+	ui.ensure_question_seconds(seconds + 2.0)
 
 
 ## A road question on the straight street (road_scenes.json): the car stops at the stop line, the
@@ -1295,7 +1318,7 @@ func _update_road(dt: float) -> void:
 		controls.set_active(false)
 		road.begin_question()
 		var card: Dictionary = road.question_text()
-		ui.show_question(card, Ui.answer_seconds(road.text_length()))
+		_show_voiced_question(card, road.id, Ui.answer_seconds(road.text_length()))
 		print("[road] question ", road.id, " kind ", road.kind, " stop at z ", snappedf(road.stop_z, 0.1))
 		event.emit({ "event": "approach_situation", "situation": road.id })
 		if qshot != "":
@@ -1370,6 +1393,7 @@ func _on_road_answer(index: int) -> void:
 	if question_over or road == null:
 		return
 	question_over = true
+	voice.stop()
 	var right := int(road.entry.correctAnswerIndex)
 	var is_correct := index == right
 	run.answer(road.id, is_correct)
@@ -1446,6 +1470,7 @@ func _on_answer_chosen(index: int) -> void:
 	if phase != "question" or question_over or not current:
 		return
 	question_over = true
+	voice.stop()
 	var sit: Situation = current.sit
 	var right := int(sit.data.correctAnswerIndex)
 	var is_correct := index == right
@@ -2102,7 +2127,7 @@ func _notification(what: int) -> void:
 			_on_exit()
 		else:
 			_on_pause()
-	elif what == NOTIFICATION_APPLICATION_PAUSED and phase in ["driving", "resolving"]:
+	elif what == NOTIFICATION_APPLICATION_PAUSED and phase in ["driving", "question", "resolving"]:
 		_on_pause()
 
 
@@ -2111,12 +2136,15 @@ func _on_pause() -> void:
 	if paused or phase == "over":
 		return
 	paused = true
+	voice.suspend()
 	saved_ride = {"controls": controls.active}
 	controls.set_active(false)
 	_freeze_world_actors()
 	ui.process_mode = Node.PROCESS_MODE_DISABLED
 	var options := _live_garage_options()
 	options.sound = sound.enabled
+	options.voice = voice.enabled
+	options.voice_available = voice.available and Ui.lang == "ru"
 	pause_menu = RidePause.new(options, chosen)
 	add_child(pause_menu)
 	# Android Back/app suspension can pause during the first scene's preparation.
@@ -2126,6 +2154,7 @@ func _on_pause() -> void:
 	pause_menu.exit_requested.connect(_on_exit)
 	pause_menu.vehicle_changed.connect(_on_vehicle_changed)
 	pause_menu.sound_changed.connect(func(on): sound.enabled = on)
+	pause_menu.voice_changed.connect(func(on): voice.set_enabled(on))
 
 
 ## The host has already booked previous visits of a resumed ride. Add only
@@ -2184,6 +2213,7 @@ func _live_garage_options() -> Dictionary:
 		var target := int(rewards[-1].get("threshold", total)) if next.is_empty() else int(next.threshold)
 		achievement.title = Ui.t("gameAchievementsTitle")
 		achievement.progress = Ui.t("gameAchievementProgress", {"correct": total, "total": target})
+		achievement.count = Ui.t("gameAchievementCount", {"correct": total, "total": target})
 		achievement.next = Ui.t("gameAchievementsComplete") if next.is_empty() else str(next.get("title", ""))
 		achievement.complete = next.is_empty()
 		achievement.fraction = 1.0 if next.is_empty() else clampf(float(total - previous) / maxi(1, target - previous), 0.0, 1.0)
@@ -2206,10 +2236,12 @@ func _on_resume() -> void:
 	ui.process_mode = Node.PROCESS_MODE_INHERIT
 	saved_ride.clear()
 	paused = false
+	voice.resume()
 	controls.set_active(resume_controls)
 
 
 func _on_exit() -> void:
+	voice.shutdown()
 	_report_run_end()
 	Host.exit(_exit_summary(), get_tree())
 
@@ -2243,6 +2275,8 @@ func _start_ride() -> void:
 	tips_enabled = bool(options.get("tips", false))
 	resume_state = options.get("resume", {})
 	sound.enabled = bool(options.get("sound", true)) and not _is_test_run()
+	voice.available = bool(options.get("voice_available", true)) and Ui.lang == "ru"
+	voice.set_enabled(bool(options.get("voice", not _is_test_run())))
 	GameSound.haptics = bool(options.get("haptics", true))
 	var selection := RidePause.new(options, options.get("selected", {}))
 	var car := selection.current()
@@ -2277,6 +2311,8 @@ func _exit_summary() -> Dictionary:
 	out["resumed"] = resumed
 	out["finished"] = run.finished()
 	out["sound"] = sound.enabled
+	out["voice"] = voice.enabled
+	out["voice_available"] = voice.available and Ui.lang == "ru"
 	return out
 
 
@@ -2826,6 +2862,7 @@ func _sign_reveal_point(sg: Dictionary) -> Vector3:
 
 
 func _exit_tree() -> void:
+	if is_instance_valid(voice): voice.shutdown()
 	Situation.finish_background_work()
 
 
@@ -2958,6 +2995,9 @@ func _freeze_world_actors() -> void:
 		frozen_bodies.append({"node":weakref(node),"freeze":node.freeze,"linear":node.linear_velocity,"angular":node.angular_velocity,"transform":node.global_transform})
 		node.freeze=true
 	for node in find_children("*","AudioStreamPlayer",true,false):
+		# QuestionVoice preserves its own paused position and handles settings changed
+		# inside the garage. Restoring an old generic flag would undo that choice.
+		if is_instance_valid(voice) and node == voice._player: continue
 		frozen_audio.append({"node":weakref(node),"paused":node.stream_paused})
 		node.stream_paused=true
 

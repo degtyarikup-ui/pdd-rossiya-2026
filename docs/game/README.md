@@ -19,6 +19,7 @@
 | Шаблоны экспорта 4.7.2 (Godot → Editor → Manage Export Templates) | сборка Android / iOS / Web |
 | Flutter (`~/flutter/bin`) + JDK 17 + Android SDK | сборка приложения |
 | Python 3 | редактор и сборка сети |
+| FFmpeg (`ffmpeg` и `ffprobe`) | подготовка существующей студийной озвучки для Godot |
 
 ```bash
 ./scripts/setup_game.sh      # проверит Godot, поставит Python-пакеты сети, импортирует проект
@@ -162,6 +163,27 @@ Flutter `scripts/godot_dev.sh android|ios` временно создаёт сс�
 после экспорта. Прямой экспорт самостоятельной игры из редактора Godot требует
 сначала запустить генератор с `--standalone`; после экспорта — без этого флага.
 Ссылки и их `.import` игнорируются Git.
+
+Озвучка вопросов — существующие российские записи `assets/audio/feed/q_<id>.opus`,
+без системного синтеза речи. Godot не декодирует Opus, поэтому
+`python3 tools/godot_export/export_question_audio.py` один раз преобразует только
+используемые вопросы в MP3 в общем каталоге `assets/audio/game_questions/`.
+Преобразование повторяется лишь при изменении записи или повреждении результата;
+MP3 и локальный манифест не коммитятся. В Git лежит небольшой индекс
+`game_godot/questions/audio.json`: исходный ID вопроса, файл и длительность для
+каждой сцены. Генератор проверяет дословное совпадение вопроса и порядка ответов
+с исходным билетом. На Android записи читает `PddHost.questionAudioBytes`, на iOS
+передаётся `--question-audio-dir`, веб читает соседние Flutter-ресурсы; в пакет
+встроенной игры записи повторно не входят. Standalone-экспорт временно включает
+ссылки на те же MP3 и убирает их после сборки.
+
+`setup_game.sh`, `build.sh`, `build_dev.sh` и скрипты экспорта Godot запускают
+генератор автоматически. Перед прямым `flutter build` или запуском Godot из
+свежей копии сначала запустите его вручную. Проверки без пересборки записей:
+`python3 tools/godot_export/export_question_audio.py --check` и
+`python3 -m unittest tools/godot_export/test_question_audio.py`.
+Записи есть только на русском; озвучка включается отдельно от звуков игры,
+приостанавливается вместе с вопросом и прекращается после ответа.
 
 Строки интерфейса игры берутся из `lib/l10n/*.arb`: `python3 tools/godot_export/export_ui.py`
 пересобирает `game_godot/data/ui.json` (ru/en/kk одновременно).

@@ -241,6 +241,22 @@
   "gameGaragePremiumCar": "Премиум барлық көліктер мен барлық түстердің құлпын ашады",
   "gameAchievementsTitle": "Жетістіктер",
   "gameAchievementsHint": "Марапаттар тек «Тірі қаладағы» дұрыс жауаптар үшін беріледі.",
+  "gameSoundOn": "Ойын дыбыстарын өшіру",
+  "gameSoundOff": "Ойын дыбыстарын қосу",
+  "gameVoiceOn": "Сұрақтарды дыбыстауды өшіру",
+  "gameVoiceOff": "Сұрақтарды дыбыстауды қосу",
+  "gameVoiceUnavailable": "Жазылған дыбыстау әзірше тек орыс тілінде қолжетімді",
+  "gameAchievementCount": "{correct} / {total}",
+  "@gameAchievementCount": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "gameAchievementModel": "Жаңа көлік: {name}",
   "@gameAchievementModel": {
     "placeholders": {

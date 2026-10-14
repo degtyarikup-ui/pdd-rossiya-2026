@@ -404,6 +404,22 @@
   "gameGaragePremiumCar": "С премиумом открыты все машины и все цвета",
   "gameAchievementsTitle": "Достижения",
   "gameAchievementsHint": "Награды за правильные ответы только в «Живом городе».",
+  "gameSoundOn": "Выключить звуки игры",
+  "gameSoundOff": "Включить звуки игры",
+  "gameVoiceOn": "Выключить озвучку вопросов",
+  "gameVoiceOff": "Включить озвучку вопросов",
+  "gameVoiceUnavailable": "Записанная озвучка пока доступна только на русском",
+  "gameAchievementCount": "{correct} / {total}",
+  "@gameAchievementCount": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "gameAchievementModel": "Новая машина: {name}",
   "@gameAchievementModel": {
     "placeholders": {

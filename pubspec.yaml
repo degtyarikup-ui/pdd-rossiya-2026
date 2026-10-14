@@ -96,6 +96,7 @@ flutter:
     - assets/icons/game/
     - assets/audio/
     - assets/audio/feed/
+    - assets/audio/game_questions/
     - assets/game/
     # Контент России.
     - assets/countries/ru/questions/

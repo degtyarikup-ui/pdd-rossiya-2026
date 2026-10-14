@@ -14,6 +14,7 @@
 | CMake | **3.22.1** внутри Android SDK; устанавливает `setup_android.sh` |
 | Git, Bash, Python **3.9+**, curl, unzip | Синхронизация, скрипты сборки и резервная загрузка |
 | Godot | **4.7.2 Standard** + шаблоны экспорта той же версии, если нужна 3D-игра |
+| FFmpeg (`ffmpeg` и `ffprobe`) | преобразование существующих записей вопросов в общий MP3-каталог игры |
 
 Flutter и Android SDK должны быть установлены на этом компьютере. Не копируйте
 `android/local.properties` с чужой машины: `flutter.sdk` и `sdk.dir` в нём —

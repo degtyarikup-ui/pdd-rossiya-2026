@@ -32,6 +32,7 @@ if grep -q '^app\.ios\.' "$TMP/members.txt"; then
 fi
 python3 tools/godot_export/export_ui.py >/dev/null
 python3 tools/godot_export/export_question_images.py
+python3 tools/godot_export/export_question_audio.py
 godot --headless --path game_godot --import >/dev/null 2>&1 || true
 godot --headless --path game_godot --export-pack "iOS" "$PWD/$OUT/game.pck" >/dev/null 2>&1
 # Import rewrites uids in the committed scenery .import files: keep them as committed.

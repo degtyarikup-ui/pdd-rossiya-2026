@@ -18,6 +18,9 @@ esac
 cd "$(dirname "$0")/.."
 source scripts/android_env.sh
 
+# Shared studio recordings must exist before Flutter packs its assets.
+python3 tools/godot_export/export_question_audio.py
+
 # Опциональное уведомление о новой установке (Telegram). Параметры берутся из
 # переменных окружения и в git не попадают. Если не заданы — фича «спит» (no-op):
 #   export INSTALL_NOTIFY_URL=https://pdd-install-notifier.<субдомен>.workers.dev

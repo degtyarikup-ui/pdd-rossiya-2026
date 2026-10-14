@@ -53,8 +53,13 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
-  Future<void> open(WidgetTester tester, {bool premium = false}) async {
+  Future<void> open(
+    WidgetTester tester, {
+    bool premium = false,
+    Locale locale = const Locale('ru'),
+  }) async {
     garage.resetForTest();
+    updateAppLocale(locale);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -62,7 +67,7 @@ void main() {
           isPremiumProvider.overrideWithValue(premium),
         ],
         child: MaterialApp(
-          locale: const Locale('ru'),
+          locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
@@ -283,4 +288,77 @@ void main() {
       expect(prefs.getString('game_vehicle_paint'), 'blue');
     },
   );
+
+  testWidgets('city voice inherits app choice without requiring premium', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_settings', jsonEncode({'voiceEnabled': true}));
+    await open(tester);
+    await launch(tester);
+    final ride = options();
+    expect(ride['voice'], isTrue);
+    expect(ride['voice_available'], isTrue);
+    expect(ride['sound'], isFalse);
+    expect((ride['achievement'] as Map)['count'], '0 / 5');
+  });
+
+  testWidgets('voice and effects choices persist independently between rides', (
+    tester,
+  ) async {
+    await open(tester);
+    nativeResponse = jsonEncode({
+      'run_started': false,
+      'sound': false,
+      'voice': true,
+      'voice_available': true,
+    });
+    await launch(tester);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('godot_city_voice'), isTrue);
+    expect(prefs.getBool('godot_city_sound'), isFalse);
+    expect((await progress.loadAppSettings()).voiceEnabled, isFalse);
+    nativeResponse = null;
+    await launch(tester);
+    expect(options()['voice'], isTrue);
+    expect(options()['sound'], isFalse);
+
+    nativeResponse = jsonEncode({
+      'run_started': false,
+      'sound': true,
+      'voice': false,
+      'voice_available': true,
+    });
+    await launch(tester);
+    expect(prefs.getBool('godot_city_voice'), isFalse);
+    expect(prefs.getBool('godot_city_sound'), isTrue);
+    nativeResponse = null;
+    await launch(tester);
+    expect(options()['voice'], isFalse);
+    expect(options()['sound'], isTrue);
+  });
+
+  testWidgets('unavailable languages preserve saved Russian voice preference', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('godot_city_voice', true);
+    for (final language in ['en', 'kk']) {
+      await open(tester, locale: Locale(language));
+      nativeResponse = jsonEncode({
+        'run_started': false,
+        'voice': false,
+        'voice_available': false,
+      });
+      await launch(tester);
+      expect(options()['voice'], isFalse);
+      expect(options()['voice_available'], isFalse);
+      expect(prefs.getBool('godot_city_voice'), isTrue);
+    }
+    await open(tester);
+    nativeResponse = null;
+    await launch(tester);
+    expect(options()['voice'], isTrue);
+    expect(options()['voice_available'], isTrue);
+  });
 }

@@ -816,6 +816,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Earn rewards with correct answers in Living City only.';
 
   @override
+  String get gameSoundOn => 'Turn off game sounds';
+
+  @override
+  String get gameSoundOff => 'Turn on game sounds';
+
+  @override
+  String get gameVoiceOn => 'Turn off question narration';
+
+  @override
+  String get gameVoiceOff => 'Turn on question narration';
+
+  @override
+  String get gameVoiceUnavailable =>
+      'Recorded narration is currently available only in Russian';
+
+  @override
+  String gameAchievementCount(int correct, int total) {
+    return '$correct / $total';
+  }
+
+  @override
   String gameAchievementModel(String name) {
     return 'New car: $name';
   }

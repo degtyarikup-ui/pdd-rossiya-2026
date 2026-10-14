@@ -23,6 +23,9 @@ fi
 tools/network/.venv/bin/python -m pip install -q -r tools/network/requirements.txt
 echo "Python-окружение сети: tools/network/.venv"
 
+# Reuse the app's studio voice. FFmpeg is needed only for missing/stale MP3s.
+python3 tools/godot_export/export_question_audio.py
+
 # Import: textures and models into game_godot/.godot (not in git). The first time takes a minute or two.
 godot --headless --path game_godot --import >/dev/null 2>&1 || true
 git checkout -- game_godot/scenery 2>/dev/null || true   # an import rewrites uids in the committed .import files

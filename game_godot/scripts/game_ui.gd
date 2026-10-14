@@ -749,6 +749,16 @@ func remaining_seconds() -> float:
 	return _remaining
 
 
+## A recorded question must finish before the answer timer expires. The world
+## calls this at most once for each card, so toggling voice cannot farm time.
+func ensure_question_seconds(seconds: float) -> void:
+	if not counting():
+		return
+	_remaining = maxf(_remaining, seconds)
+	_max = maxf(_max, _remaining)
+	_update_timer()
+
+
 ## True only while a question card is open and its timer is running.
 func counting() -> bool:
 	return _card != null and not _answered

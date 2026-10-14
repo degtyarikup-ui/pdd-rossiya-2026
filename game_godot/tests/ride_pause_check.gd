@@ -6,6 +6,7 @@ var failures := 0
 var out := ""
 var pause_out := ""
 var rewards_out := ""
+var capture_size := Vector2i(360, 780)
 
 
 func check(ok: bool, message: String) -> void:
@@ -46,7 +47,8 @@ func _options() -> Dictionary:
 		{"id":"cyber", "name":"Кибертрак", "paints":paints.duplicate(true)}],
 		"texts":{"runs":"Заезды 3 из 3", "record":"Рекорд", "colour":"Цвет", "start":"Начать заезд", "no_runs":"Нет заездов"},
 		"record":4387, "can_start":true,
-		"achievement":{"title":"Достижения", "progress":"Верных ответов в Живом городе: 7 / 10", "next":"Новый цвет: синий", "complete":false, "fraction":0.4,
+		"voice":true, "voice_available":true,
+		"achievement":{"title":"Достижения", "progress":"Верных ответов в Живом городе: 7 / 10", "count":"7 / 10", "next":"Новый цвет: синий", "complete":false, "fraction":0.4,
 			"hint":"Новые машины и цвета открываются за правильные ответы в Живом городе. Каждый цвет доступен для всех машин."},
 		"reward_list":[]}
 	var thresholds := [5, 10, 20, 35, 55, 80, 110, 150, 200, 260, 330, 420]
@@ -94,6 +96,12 @@ func _check_menu_bounds(menu: RidePause, viewport: Viewport, label: String) -> v
 			var rect := control.get_global_rect()
 			check(rect.position.x >= panel.position.x + 19.0 and rect.end.x <= panel.end.x - 19.0,
 				label + ": wrapped content fits dialog: " + control.get_class())
+	for button in [menu._continue_button, menu._exit_button]:
+		var rect: Rect2 = button.get_global_rect()
+		check(rect.position.y >= panel.position.y and rect.end.y <= panel.end.y - 19.0,
+			label + ": ride actions remain visible outside the catalog scroll")
+	check(menu._scroll.get_global_rect().end.y <= menu._actions.get_global_rect().position.y,
+		label + ": catalog never overlaps ride actions")
 
 
 func _check_pause_collection(options: Dictionary) -> void:
@@ -104,6 +112,33 @@ func _check_pause_collection(options: Dictionary) -> void:
 	viewport.add_child(menu)
 	await _settle_layout()
 	check(menu._palette.get_child_count() == 8, "Pause shows exactly eight shared paints")
+	var first_row := Rect2()
+	var second_row := Rect2()
+	for i in 8:
+		var rect: Rect2 = menu._palette.get_child(i).get_global_rect()
+		if i < 4:
+			first_row = rect if i == 0 else first_row.merge(rect)
+		else:
+			second_row = rect if i == 4 else second_row.merge(rect)
+	check(is_equal_approx(first_row.get_center().x, second_row.get_center().x) and
+		is_equal_approx(first_row.get_center().x, menu._box.get_global_rect().get_center().x),
+		"Eight paint circles form two balanced centered rows")
+	check(menu._palette.get_child(0).position.y == menu._palette.get_child(3).position.y and
+		menu._palette.get_child(4).position.y > menu._palette.get_child(3).position.y,
+		"Paint palette uses four colors per row")
+	check(menu._sound_button.button_pressed and menu._voice_button.button_pressed,
+		"Independent audio icons reflect the host sound and recorded voice preferences")
+	var audio_events := {"sound":0, "voice":0}
+	menu.sound_changed.connect(func(_on): audio_events.sound += 1)
+	menu.voice_changed.connect(func(_on): audio_events.voice += 1)
+	menu._sound_button.button_pressed = false
+	check(not menu.sound_enabled and menu.voice_enabled and audio_events.sound == 1 and audio_events.voice == 0,
+		"Muting effects leaves recorded question voice enabled")
+	check(menu._sound_button.get_child(0).text == char(0xf0299), "Muted effects show the crossed speaker icon")
+	menu._voice_button.button_pressed = false
+	check(not menu.voice_enabled and audio_events.voice == 1,
+		"Recorded question voice toggle emits its independent preference")
+	check(menu._voice_button.get_child(0).text == char(0xf0295), "Muted question voice shows the crossed voice icon")
 	for i in 8:
 		menu._select_paint(i)
 		await process_frame
@@ -116,30 +151,47 @@ func _check_pause_collection(options: Dictionary) -> void:
 			check(menu._palette.get_child_count() == 8, "Switching models keeps all eight shared paints")
 	await _settle_layout()
 	check(menu._achievement != null, "Pause renders achievement summary")
-	check(menu._achievement.get_index() > menu._palette.get_index() and menu._achievement.get_index() < menu._switch.get_parent().get_index(),
-		"Achievements appear between palette and sound")
+	check(menu._achievement.get_index() > menu._palette.get_parent().get_index(),
+		"Bright compact achievement card follows the customization controls")
 	check(menu._achievement_next.text == options.achievement.next, "Next reward comes from localized host text")
 	check(is_equal_approx(menu._achievement_progress.value, 0.4), "Achievement bar shows interval progress")
 	check(menu._reward_list.get_child_count() == 12 and not menu._reward_list.visible, "All twelve milestones start folded")
 	_check_menu_bounds(menu, viewport, "360 dp phone")
+	var actions_before: Rect2 = menu._actions.get_global_rect()
 	menu._achievement_toggle.button_pressed = true
 	await _settle_layout()
 	check(menu._reward_list.visible and menu._achievement_hint.visible, "Achievement button expands milestones and explanation")
+	check(menu._scroll.scroll_vertical >= int(menu._achievement.position.y) - 1,
+		"Opening achievements brings the requested catalog into view")
 	check(menu._scroll.get_v_scroll_bar().max_value > menu._scroll.size.y, "Expanded milestones scroll on narrow phone")
 	_check_menu_bounds(menu, viewport, "Expanded 360 dp phone")
+	check(menu._continue_button.get_parent() == menu._actions and menu._exit_button.get_parent() == menu._actions,
+		"Primary and exit actions are outside the expanding achievements scroll")
+	check(menu._actions.get_global_rect().end.y <= viewport.size.y - 16.0 and actions_before.size == menu._actions.size,
+		"Opening the catalog preserves the ride action area")
 	viewport.size = Vector2i(740, 360)
 	await _settle_layout()
 	_check_menu_bounds(menu, viewport, "Expanded landscape")
 	check(menu._scroll.get_v_scroll_bar().max_value > menu._scroll.size.y, "Landscape achievements remain scrollable")
 	menu._scroll.scroll_vertical = 100000
 	await _settle_layout()
-	var exit_button: Control = menu._box.get_child(menu._box.get_child_count() - 1)
 	var scroll := menu._scroll.get_global_rect()
-	check(exit_button.get_global_rect().position.y >= scroll.position.y and exit_button.get_global_rect().end.y <= scroll.end.y + 1.0,
-		"Scrolling achievements reaches the exit button in landscape")
+	check(menu._exit_button.get_global_rect().position.y >= scroll.end.y and menu._exit_button.get_global_rect().end.y <= viewport.size.y - 16.0,
+		"Exit button remains reachable without scrolling in landscape")
 	menu._achievement_toggle.button_pressed = false
 	await _settle_layout()
 	check(not menu._reward_list.visible and not menu._achievement_hint.visible, "Achievements collapse without leaving explanatory text")
+	check(menu._scroll.scroll_vertical == 0, "Closing the catalog returns to the car customization")
+	menu.queue_free()
+	await process_frame
+	var unavailable_options := options.duplicate(true)
+	unavailable_options.voice_available = false
+	menu = RidePause.new(unavailable_options, {})
+	viewport.add_child(menu)
+	await _settle_layout()
+	check(menu._voice_button.disabled and not menu._voice_button.button_pressed and not menu.voice_enabled,
+		"Unavailable recorded voice is visibly disabled and cannot remain switched on")
+	check(menu._voice_button.tooltip_text == Ui.t("gameVoiceUnavailable"), "Unavailable voice explains its state in the chosen language")
 	menu.queue_free()
 	await process_frame
 	var complete_options := options.duplicate(true)
@@ -208,8 +260,12 @@ func _run() -> void:
 			pause_out = arg.trim_prefix("--pause-out=")
 		if arg.begins_with("--rewards-out="):
 			rewards_out = arg.trim_prefix("--rewards-out=")
+		if arg.begins_with("--capture-size="):
+			var parts: PackedStringArray = str(arg).trim_prefix("--capture-size=").split("x")
+			if parts.size() == 2:
+				capture_size = Vector2i(int(parts[0]), int(parts[1]))
 	if pause_out != "" or rewards_out != "":
-		root.content_scale_size = Vector2i(360, 780)
+		root.content_scale_size = capture_size
 	var options := _options()
 	await _check_pause_collection(options)
 	# Feed the normal embedded-host argument contract; all test output remains in scratch/.
@@ -228,10 +284,16 @@ func _run() -> void:
 	check(_painted(world, Color("#317ED4")), "Pause palette changes the actual current car material")
 	world.pause_menu._change_car(1)
 	check(world.chosen.id == "cyber" and world.chosen.paint == "blue", "Pause applies another owned model and preserves available paint")
-	world.pause_menu._switch.button_pressed = true
-	check(world.sound.enabled, "Pause sound switch enables the game")
-	world.pause_menu._switch.button_pressed = false
+	world.pause_menu._sound_button.button_pressed = true
+	check(world.sound.enabled, "Pause speaker icon enables the game")
+	world.pause_menu._sound_button.button_pressed = false
 	check(not world.sound.enabled and world._exit_summary().sound == false, "Pause mute is returned for persistent app settings")
+	world.pause_menu._voice_button.button_pressed = false
+	check(not world.voice.enabled and not world._exit_summary().voice and not world.sound.enabled,
+		"Recorded voice icon changes its independent engine and persistent setting while paused")
+	world.pause_menu._voice_button.button_pressed = true
+	check(world.voice.enabled and world._exit_summary().voice and not world.sound.enabled,
+		"Recorded question voice can be enabled while effects stay muted")
 	world.pause_menu.resume_requested.emit()
 	check(world.chosen.paint == "blue" and _painted(world, Color("#317ED4")), "Selected paint remains on the actual ride car")
 	world.drive.speed = 8.5

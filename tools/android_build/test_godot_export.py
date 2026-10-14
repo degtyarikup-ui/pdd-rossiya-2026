@@ -27,6 +27,7 @@ class GodotExportTests(unittest.TestCase):
                 ui.parent.mkdir(parents=True)
                 ui.write_text('pass\n')
                 (ui.parent / 'export_question_images.py').write_text('pass\n')
+                (ui.parent / 'export_question_audio.py').write_text('pass\n')
                 home = root / 'home'
                 templates = home / '.local/share/godot/export_templates/4.7.2.stable'
                 templates.mkdir(parents=True)

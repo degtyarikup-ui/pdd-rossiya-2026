@@ -817,6 +817,27 @@ class AppLocalizationsKk extends AppLocalizations {
       'Марапаттар тек «Тірі қаладағы» дұрыс жауаптар үшін беріледі.';
 
   @override
+  String get gameSoundOn => 'Ойын дыбыстарын өшіру';
+
+  @override
+  String get gameSoundOff => 'Ойын дыбыстарын қосу';
+
+  @override
+  String get gameVoiceOn => 'Сұрақтарды дыбыстауды өшіру';
+
+  @override
+  String get gameVoiceOff => 'Сұрақтарды дыбыстауды қосу';
+
+  @override
+  String get gameVoiceUnavailable =>
+      'Жазылған дыбыстау әзірше тек орыс тілінде қолжетімді';
+
+  @override
+  String gameAchievementCount(int correct, int total) {
+    return '$correct / $total';
+  }
+
+  @override
   String gameAchievementModel(String name) {
     return 'Жаңа көлік: $name';
   }

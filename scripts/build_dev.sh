@@ -3,4 +3,5 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/android_env.sh
+python3 tools/godot_export/export_question_audio.py
 exec python3 tools/android_build/build_dev.py "$@"

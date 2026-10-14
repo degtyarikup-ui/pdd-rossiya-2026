@@ -241,6 +241,22 @@
   "gameGaragePremiumCar": "All cars and all colors are available with premium",
   "gameAchievementsTitle": "Achievements",
   "gameAchievementsHint": "Earn rewards with correct answers in Living City only.",
+  "gameSoundOn": "Turn off game sounds",
+  "gameSoundOff": "Turn on game sounds",
+  "gameVoiceOn": "Turn off question narration",
+  "gameVoiceOff": "Turn on question narration",
+  "gameVoiceUnavailable": "Recorded narration is currently available only in Russian",
+  "gameAchievementCount": "{correct} / {total}",
+  "@gameAchievementCount": {
+    "placeholders": {
+      "correct": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "gameAchievementModel": "New car: {name}",
   "@gameAchievementModel": {
     "placeholders": {

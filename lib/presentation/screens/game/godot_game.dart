@@ -55,6 +55,7 @@ class GodotGame {
   static const _pendingRunKey = 'game_run_pending';
   // Per-game sound preference, preserved after leaving a ride.
   static const _citySoundKey = 'godot_city_sound';
+  static const _cityVoiceKey = 'godot_city_voice';
   static const _runQuestions = GameState.runQuestions;
   static Future<bool>? _available;
   static Future<bool>? _webAvailable;
@@ -292,6 +293,9 @@ class GodotGame {
     required String lang,
   }) async {
     final premium = ref.read(isPremiumProvider);
+    final settings = await ref
+        .read(progressDataSourceProvider)
+        .loadAppSettings();
     final garage = GameGarageService.instance;
     await garage.load();
     await GameRunsService.instance.load();
@@ -336,6 +340,8 @@ class GodotGame {
     final nextReward = garage.nextReward;
     final target =
         nextReward?.threshold ?? GameGarageService.rewards.last.threshold;
+    final voiceAvailable = lang == 'ru';
+    final voice = prefs?.getBool(_cityVoiceKey) ?? settings.voiceEnabled;
     return {
       'cars': cars,
       'selected': {'id': selectedId, 'paint': selectedPaint},
@@ -344,6 +350,7 @@ class GodotGame {
       'achievement': {
         'title': appL10n.gameAchievementsTitle,
         'hint': appL10n.gameAchievementsHint,
+        'count': appL10n.gameAchievementCount(garage.correctTotal, target),
         'progress': appL10n.gameAchievementProgress(
           garage.correctTotal,
           target,
@@ -387,6 +394,8 @@ class GodotGame {
           prefs?.getBool(_citySoundKey) ??
           SoundEffectsService.instance.isEnabled,
       'haptics': HapticFeedbackHelper.enabled,
+      'voice': voiceAvailable && voice,
+      'voice_available': voiceAvailable,
       'can_start': unlimited || runs > 0 || pending != null,
       if (pending != null) 'resume': pending.toJson(),
       'texts': {
@@ -443,6 +452,10 @@ class GodotGame {
     final sound = summary['sound'];
     if (sound is bool) {
       await (await _prefs())?.setBool(_citySoundKey, sound);
+    }
+    final voice = summary['voice'];
+    if (voice is bool && summary['voice_available'] == true) {
+      await (await _prefs())?.setBool(_cityVoiceKey, voice);
     }
     final car = summary['car'];
     if (car is Map && car['id'] is String && car['paint'] is String) {

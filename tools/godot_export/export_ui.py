@@ -11,6 +11,8 @@ KEYS = [
     'gameGarage', 'gameLobbyRecord', 'gameLobbyColour', 'gameLobbyNewRun', 'gameRunsTitle',
     'gameAchievementsTitle', 'gameAchievementsHint', 'gameAchievementProgress',
     'gameAchievementsComplete', 'gamePaintAllCars',
+    'gameAchievementCount', 'gameSoundOn', 'gameSoundOff',
+    'gameVoiceOn', 'gameVoiceOff', 'gameVoiceUnavailable',
     'gameSpeedUnit', 'gameMeters', 'gameKilometers', 'gameViolations', 'gamePause', 'gameRunProgress',
     'gameSpeedLimitLabel', 'gameOncoming', 'gameOneWayAgainst', 'gameRoadworksHit', 'gameCollision',
     'gameOffroad', 'gamePriorityViolation', 'gameSpeeding', 'gameOvertakingProhibited', 'gamePedestrianYield',

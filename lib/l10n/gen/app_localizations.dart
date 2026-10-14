@@ -1492,6 +1492,42 @@ abstract class AppLocalizations {
   /// **'Награды за правильные ответы только в «Живом городе».'**
   String get gameAchievementsHint;
 
+  /// No description provided for @gameSoundOn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выключить звуки игры'**
+  String get gameSoundOn;
+
+  /// No description provided for @gameSoundOff.
+  ///
+  /// In ru, this message translates to:
+  /// **'Включить звуки игры'**
+  String get gameSoundOff;
+
+  /// No description provided for @gameVoiceOn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выключить озвучку вопросов'**
+  String get gameVoiceOn;
+
+  /// No description provided for @gameVoiceOff.
+  ///
+  /// In ru, this message translates to:
+  /// **'Включить озвучку вопросов'**
+  String get gameVoiceOff;
+
+  /// No description provided for @gameVoiceUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Записанная озвучка пока доступна только на русском'**
+  String get gameVoiceUnavailable;
+
+  /// No description provided for @gameAchievementCount.
+  ///
+  /// In ru, this message translates to:
+  /// **'{correct} / {total}'**
+  String gameAchievementCount(int correct, int total);
+
   /// No description provided for @gameAchievementModel.
   ///
   /// In ru, this message translates to:

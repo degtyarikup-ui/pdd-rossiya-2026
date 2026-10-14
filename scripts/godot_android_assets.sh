@@ -35,6 +35,7 @@ unzip -oq "$TEMPLATES/android_source.zip" "libs/release/godot-lib.template_relea
 cp "$TMP/libs/release/godot-lib.template_release.aar" "$OUT/godot-lib.aar"
 python3 tools/godot_export/export_ui.py >/dev/null
 python3 tools/godot_export/export_question_images.py
+python3 tools/godot_export/export_question_audio.py
 if ! godot --headless --path game_godot --import >"$LOG" 2>&1 || grep -Eq '^(SCRIPT ERROR:|ERROR:)' "$LOG"; then
   tail -60 "$LOG"; echo "Ошибка импорта Godot; полный журнал: $LOG"; exit 1
 fi
