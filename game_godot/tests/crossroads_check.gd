@@ -139,6 +139,17 @@ func _initialize() -> void:
 	actor.start_driving()
 	_check("Actor switches to driving state", actor.state == "driving")
 	_check("Trajectory guide ribbon hidden when driving starts", not actor.trajectory_guide.visible)
+	actor._process_drive(0.1)
+	_check("Driving car faces forward towards junction center (rotation.y PI)", is_equal_approx(actor.rotation.y, PI))
+
+	var sign_test = junction._create_sign_mesh("2.1", "south", "")
+	_check("Road sign on south side faces oncoming driver (rotation.y PI)", is_equal_approx(sign_test.rotation.y, PI))
+	sign_test.free()
+
+	var tl_test = junction._create_traffic_light_node({"side": "south", "state": "red"}, {"code": "2.1"})
+	_check("Traffic light on south side faces oncoming driver (rotation.y PI)", is_equal_approx(tl_test.rotation.y, PI))
+	_check("Sign mounts directly onto traffic light pole", tl_test.get_child_count() > 1)
+	tl_test.free()
 
 	# Test all maneuvers trajectories
 	var all_maneuvers_ok := true

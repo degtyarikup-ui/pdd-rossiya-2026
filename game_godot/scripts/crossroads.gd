@@ -55,7 +55,9 @@ var cam_pitch := -0.8143
 var cam_zoom := 1.0
 const ZOOM_MIN := 0.65
 const ZOOM_MAX := 2.2
+const HALF_ROAD := 6.0
 const BASE_CAM_DIST := 58.0
+var base_cam_dist := BASE_CAM_DIST
 var cam_shake := 0.0
 
 # Input tracking
@@ -323,17 +325,27 @@ func _load_current_scenario() -> void:
 	var closed := str(sc.get("closedSide", ""))
 	junction.set_closed_side(closed)
 
-	# Signs
+	# Signs and Traffic lights (mounting sign on light post when present on same side)
+	var signs_by_side := {}
 	for s_data in sc.get("signs", []):
+		signs_by_side[str(s_data.get("side", ""))] = s_data
+
+	for tl_data in sc.get("trafficLights", []):
+		var s_name := str(tl_data.get("side", ""))
+		var sign_for_tl = signs_by_side.get(s_name, null)
+		if sign_for_tl != null:
+			junction.add_traffic_light(tl_data, sign_for_tl)
+			signs_by_side.erase(s_name)
+		else:
+			junction.add_traffic_light(tl_data)
+
+	for s_name in signs_by_side:
+		var s_data: Dictionary = signs_by_side[s_name]
 		junction.add_sign(
 			str(s_data.get("code", "2.1")),
 			str(s_data.get("side", "south")),
 			str(s_data.get("table8_13", ""))
 		)
-
-	# Traffic lights
-	for tl_data in sc.get("trafficLights", []):
-		junction.add_traffic_light(tl_data)
 
 	# Localized scenario texts
 	var lang := Ui.lang
@@ -379,6 +391,7 @@ func _load_current_scenario() -> void:
 
 	ui.update_hud(score, int(seconds_left), lives, combo)
 	ui.update_caption(sc_title, sc_sub, cur_step, active_actors.size(), is_hard)
+	fit_camera_to_scenario()
 
 
 # --- User Input & Vehicle Selection ---
@@ -454,25 +467,28 @@ func _handle_screen_tap(screen_pos: Vector2) -> void:
 
 
 func _pick_actor(screen_pos: Vector2) -> CrossroadsActor:
-	var best_dist := 110.0 * Ui.dp(get_viewport())
+	var best_dist := 120.0 * Ui.dp(get_viewport())
 	var best_actor: CrossroadsActor = null
 
 	for actor in active_actors:
 		if actor.state != "waiting":
 			continue
 
-		# Project 3D actor and badge to screen
-		var p := camera.unproject_position(actor.global_position)
-		var d := p.distance_to(screen_pos)
-		if d < best_dist:
-			best_dist = d
-			best_actor = actor
-
+		var probe_pts: Array[Vector3] = [
+			actor.global_position,
+			actor.global_position + Vector3(0, 1.2, 0),
+			actor.global_position + actor.transform.basis.z * 1.8,
+			actor.global_position - actor.transform.basis.z * 1.8,
+		]
 		if actor.badge_node != null:
-			var bp := camera.unproject_position(actor.badge_node.global_position)
-			var bd := bp.distance_to(screen_pos)
-			if bd < best_dist:
-				best_dist = bd
+			probe_pts.append(actor.badge_node.global_position)
+			probe_pts.append(actor.badge_node.global_position + Vector3(0, 1.6, 0))
+
+		for pt in probe_pts:
+			var p := camera.unproject_position(pt)
+			var d := p.distance_to(screen_pos)
+			if d < best_dist:
+				best_dist = d
 				best_actor = actor
 
 	return best_actor
@@ -646,7 +662,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		chosen.position = pos_c
 		if pos_c.distance_to(next_c) > 0.01:
 			var dir_c := (next_c - pos_c).normalized()
-			chosen.rotation.y = atan2(dir_c.x, dir_c.z) + PI
+			chosen.rotation.y = atan2(dir_c.x, dir_c.z)
 
 		var off_p := cur_tp * len_p
 		var pos_p := priority.path_curve.sample_baked(off_p)
@@ -654,7 +670,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		priority.position = pos_p
 		if pos_p.distance_to(next_p) > 0.01:
 			var dir_p := (next_p - pos_p).normalized()
-			priority.rotation.y = atan2(dir_p.x, dir_p.z) + PI
+			priority.rotation.y = atan2(dir_p.x, dir_p.z)
 
 		if chosen.model_node is NpcVehicle:
 			chosen.model_node._distance += dt * 12.0
@@ -698,6 +714,8 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	priority.state = "crashed"
 	chosen.set_badge_error()
 	priority.set_badge_priority()
+
+	await get_tree().create_timer(0.5).timeout
 
 	# Show modal
 	var prio_name: String = priority.data.get("name", "Автомобиль")
@@ -884,15 +902,77 @@ func _reset_camera() -> void:
 	cam_yaw = 0.93607
 	cam_pitch = -0.8143
 	cam_zoom = 1.0
+	fit_camera_to_scenario()
+
+
+func fit_camera_to_scenario() -> void:
+	if camera == null or cam_pivot == null:
+		return
+	var vp := get_viewport()
+	if vp == null:
+		_update_camera()
+		return
+	var v_rect := vp.get_visible_rect()
+	var w := v_rect.size.x
+	var h := v_rect.size.y
+	if w <= 10.0 or h <= 10.0:
+		_update_camera()
+		return
+
+	var u := Ui.dp(vp)
+	var top_margin := 110.0 * u
+	var bottom_margin := h - 110.0 * u
+	var left_margin := 24.0 * u
+	var right_margin := w - 24.0 * u
+
+	var probe_pts: Array[Vector3] = [
+		Vector3(-HALF_ROAD, 0, -HALF_ROAD),
+		Vector3(HALF_ROAD, 0, HALF_ROAD),
+		Vector3(-HALF_ROAD, 0, HALF_ROAD),
+		Vector3(HALF_ROAD, 0, -HALF_ROAD)
+	]
+
+	for a in active_actors:
+		var p: Vector3 = a.global_position
+		probe_pts.append(p)
+		probe_pts.append(p + Vector3(0, 4.2, 0))
+		probe_pts.append(p + Vector3(2.5, 0, 2.5))
+		probe_pts.append(p + Vector3(-2.5, 0, -2.5))
+
+	var fits := func(dist: float) -> bool:
+		cam_pivot.rotation = Vector3(cam_pitch, cam_yaw, 0)
+		camera.position = Vector3(0, 0, dist)
+		for pt in probe_pts:
+			var scr := camera.unproject_position(pt)
+			if scr.x < left_margin or scr.x > right_margin or scr.y < top_margin or scr.y > bottom_margin:
+				return false
+		return true
+
+	var lo := 38.0
+	var hi := 105.0
+	if fits.call(lo):
+		hi = lo
+	else:
+		for i in 14:
+			var mid := (lo + hi) * 0.5
+			if fits.call(mid):
+				hi = mid
+			else:
+				lo = mid
+
+	base_cam_dist = hi
 	_update_camera()
 
 
 func _update_camera() -> void:
+	cam_pivot.position = Vector3(0, 1.2, 0)
 	cam_pivot.rotation = Vector3(cam_pitch, cam_yaw, 0)
-	var d := BASE_CAM_DIST * cam_zoom
+	var d := base_cam_dist * cam_zoom
 	camera.position = Vector3(0, 0, d)
 	if cam_shake > 0:
 		camera.position += Vector3(randf_range(-cam_shake, cam_shake), randf_range(-cam_shake, cam_shake), 0)
+	for actor in active_actors:
+		actor.update_badge_orientation(camera)
 
 
 func _has_arg(name: String) -> bool:

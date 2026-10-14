@@ -355,8 +355,7 @@ func _build_scenery_decor() -> void:
 	var canopy_colors: Array = sc.season.canopy
 	var birch_color: Color = sc.color("birch")
 
-	# 1. City buildings in the four quadrants behind sidewalks
-	_put_prop("buildings/block_2", Vector3(26.0, 0.16, 26.0), 0.0, Vector3.ONE * 1.05, Color.WHITE, true)
+	# 1. City buildings in three quadrants behind sidewalks (SE kept clear for camera)
 	_put_prop("buildings/block_0", Vector3(26.0, 0.16, -26.0), -PI * 0.5, Vector3.ONE * 1.05, Color.WHITE, true)
 	_put_prop("buildings/home_1", Vector3(-26.0, 0.16, -26.0), PI, Vector3.ONE * 1.05, Color.WHITE, true)
 	_put_prop("buildings/block_3", Vector3(-26.0, 0.16, 26.0), PI * 0.5, Vector3.ONE * 1.05, Color.WHITE, true)
@@ -475,16 +474,16 @@ func _create_sign_mesh(code: String, side_name: String, table8_13: String) -> No
 	match side_name:
 		"south":
 			root.position = Vector3(curb_x, 0.16, curb_z)
-			root.rotation.y = 0.0
+			root.rotation.y = PI
 		"north":
 			root.position = Vector3(-curb_x, 0.16, -curb_z)
-			root.rotation.y = PI
+			root.rotation.y = 0.0
 		"east":
 			root.position = Vector3(curb_z, 0.16, -curb_x)
-			root.rotation.y = PI * 0.5
+			root.rotation.y = -PI * 0.5
 		"west":
 			root.position = Vector3(-curb_z, 0.16, curb_x)
-			root.rotation.y = -PI * 0.5
+			root.rotation.y = PI * 0.5
 
 	return root
 
@@ -497,10 +496,27 @@ func add_traffic_light(tl_data: Dictionary, sign_data: Dictionary = {}) -> void:
 		lights_root.add_child(tl_node)
 
 
-func _create_traffic_light_node(tl_data: Dictionary, _sign_data: Dictionary) -> Node3D:
+func _create_traffic_light_node(tl_data: Dictionary, sign_data: Dictionary) -> Node3D:
 	var root := TrafficSignal.make_mini(tl_data)
 	var side_name: String = tl_data.get("side", "south")
 	root.name = "TrafficLight_" + side_name
+
+	if not sign_data.is_empty():
+		var codes: Array = []
+		var code_val: String = str(sign_data.get("code", ""))
+		if not code_val.is_empty():
+			codes.append(code_val)
+		var main_roads: Array = []
+		var table8_13: String = str(sign_data.get("table8_13", ""))
+		if not table8_13.is_empty():
+			codes.append("8.13")
+			match table8_13:
+				"bottom_left": main_roads = ["south", "west"]
+				"bottom_right": main_roads = ["south", "east"]
+				"top_right": main_roads = ["north", "east"]
+				"left_top": main_roads = ["west", "north"]
+		if not codes.is_empty():
+			root = RoadBuild.light_with_signs(root, codes, main_roads)
 
 	var curb_x := HALF_ROAD + 1.2
 	var curb_z := STOP_DIST + 0.6
@@ -508,16 +524,16 @@ func _create_traffic_light_node(tl_data: Dictionary, _sign_data: Dictionary) -> 
 	match side_name:
 		"south":
 			root.position = Vector3(curb_x, 0.16, curb_z)
-			root.rotation.y = 0.0
+			root.rotation.y = PI
 		"north":
 			root.position = Vector3(-curb_x, 0.16, -curb_z)
-			root.rotation.y = PI
+			root.rotation.y = 0.0
 		"east":
 			root.position = Vector3(curb_z, 0.16, -curb_x)
-			root.rotation.y = PI * 0.5
+			root.rotation.y = -PI * 0.5
 		"west":
 			root.position = Vector3(-curb_z, 0.16, curb_x)
-			root.rotation.y = -PI * 0.5
+			root.rotation.y = PI * 0.5
 
 	return root
 

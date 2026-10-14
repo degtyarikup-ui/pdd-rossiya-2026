@@ -82,15 +82,16 @@ var _collision_next_btn: Button
 var _collision_game_over_btn: Button
 
 # Result dialog
-var _result: Control
+var _result: ColorRect
 var _result_card: PanelContainer
+var _cover: TextureRect
 var _result_title: Label
 var _final_score: Label
 var _record_badge: PanelContainer
 var _best_label: Label
-var _stat_solved: Label
-var _stat_accuracy: Label
-var _stat_combo: Label
+var _stat_solved_val: Label
+var _stat_acc_val: Label
+var _stat_combo_val: Label
 
 var is_training := false
 var cur_category := "all"
@@ -136,13 +137,16 @@ func _layout() -> void:
 	)
 
 	_collision_backdrop.size = size
-	var modal_w := minf(420.0, size.x - 32.0)
+	var modal_w := minf(500.0, size.x)
 	_collision_card.custom_minimum_size.x = modal_w
-	_collision_card.position = Vector2((size.x - modal_w) * 0.5, (size.y - _collision_card.size.y) * 0.42)
+	_collision_card.position = Vector2((size.x - modal_w) * 0.5, size.y - _collision_card.size.y - bottom)
 
-	var card_w := minf(420.0, size.x - 32.0)
+	_result.size = size
+	var card_w := minf(400.0, size.x - 32.0)
 	_result_card.custom_minimum_size.x = card_w
-	_result_card.position = Vector2((size.x - card_w) * 0.5, maxf(top + 16.0, (size.y - _result_card.size.y) * 0.35))
+	if _cover != null:
+		_cover.custom_minimum_size.y = (card_w - 40.0) * 9.0 / 16.0
+	_result_card.position = Vector2((size.x - card_w) * 0.5, maxf(top + 16.0, (size.y - _result_card.size.y) * 0.4))
 
 
 # --- Top Bar ---
@@ -415,11 +419,13 @@ func _build_collision_modal() -> void:
 	add_child(_collision_backdrop)
 
 	_collision_card = PanelContainer.new()
-	var box := Ui.box(Ui.c("card"), 16)
+	var box := Ui.box(Ui.c("card"), 24)
+	box.corner_radius_bottom_left = 0
+	box.corner_radius_bottom_right = 0
 	box.content_margin_left = 20
 	box.content_margin_right = 20
-	box.content_margin_top = 18
-	box.content_margin_bottom = 18
+	box.content_margin_top = 22
+	box.content_margin_bottom = 20
 	_collision_card.add_theme_stylebox_override("panel", box)
 	_collision_card.visible = false
 	add_child(_collision_card)
@@ -459,7 +465,7 @@ func _build_collision_modal() -> void:
 	_collision_retry_btn = Button.new()
 	_collision_retry_btn.text = Ui.t("gameCrossroadsRepeatCrossroad")
 	_collision_retry_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	_collision_retry_btn.custom_minimum_size = Vector2(0, 44)
+	_collision_retry_btn.custom_minimum_size = Vector2(0, 50)
 	_collision_retry_btn.add_theme_font_override("font", Ui.font(600))
 	_collision_retry_btn.add_theme_font_size_override("font_size", 14)
 	_collision_retry_btn.add_theme_color_override("font_color", Ui.c("text"))
@@ -473,7 +479,7 @@ func _build_collision_modal() -> void:
 	_collision_next_btn = Button.new()
 	_collision_next_btn.text = Ui.t("gameCrossroadsNextCrossroad")
 	_collision_next_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	_collision_next_btn.custom_minimum_size = Vector2(0, 44)
+	_collision_next_btn.custom_minimum_size = Vector2(0, 50)
 	_collision_next_btn.add_theme_font_override("font", Ui.font(700))
 	_collision_next_btn.add_theme_font_size_override("font_size", 14)
 	_collision_next_btn.add_theme_color_override("font_color", Color.WHITE)
@@ -487,7 +493,7 @@ func _build_collision_modal() -> void:
 	_collision_game_over_btn = Button.new()
 	_collision_game_over_btn.text = Ui.t("gameOver")
 	_collision_game_over_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	_collision_game_over_btn.custom_minimum_size = Vector2(0, 44)
+	_collision_game_over_btn.custom_minimum_size = Vector2(0, 50)
 	_collision_game_over_btn.add_theme_font_override("font", Ui.font(700))
 	_collision_game_over_btn.add_theme_font_size_override("font_size", 15)
 	_collision_game_over_btn.add_theme_color_override("font_color", Color.WHITE)
@@ -530,9 +536,9 @@ func _build_result_dialog() -> void:
 	add_child(_result)
 
 	_result_card = PanelContainer.new()
-	var box := Ui.box(Ui.c("card"), 18)
-	box.content_margin_left = 22
-	box.content_margin_right = 22
+	var box := Ui.box(Ui.c("card"), 24)
+	box.content_margin_left = 20
+	box.content_margin_right = 20
 	box.content_margin_top = 20
 	box.content_margin_bottom = 20
 	_result_card.add_theme_stylebox_override("panel", box)
@@ -540,8 +546,15 @@ func _build_result_dialog() -> void:
 	add_child(_result_card)
 
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 12)
+	vb.add_theme_constant_override("separation", 10)
 	_result_card.add_child(vb)
+
+	_cover = TextureRect.new()
+	_cover.texture = load("res://art/crossroads_cover.webp")
+	_cover.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_cover.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_cover.size_flags_horizontal = SIZE_EXPAND_FILL
+	vb.add_child(_cover)
 
 	_result_title = Ui.label(Ui.t("gameOverTitle"), 22, 800, Ui.c("text"))
 	_result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -566,6 +579,7 @@ func _build_result_dialog() -> void:
 	r_box.content_margin_top = 4
 	r_box.content_margin_bottom = 4
 	_record_badge.add_theme_stylebox_override("panel", r_box)
+	_record_badge.size_flags_horizontal = SIZE_SHRINK_CENTER
 	var r_lbl := Ui.label(Ui.t("gameNewRecord"), 13, 700, Color.WHITE)
 	_record_badge.add_child(r_lbl)
 	vb.add_child(_record_badge)
@@ -577,19 +591,22 @@ func _build_result_dialog() -> void:
 	var sep := HSeparator.new()
 	vb.add_child(sep)
 
-	# Stats grid
-	var stats_box := VBoxContainer.new()
-	stats_box.add_theme_constant_override("separation", 6)
-	vb.add_child(stats_box)
+	# 3-column stats row matching Flutter GameResultOverlay
+	var stats_row := HBoxContainer.new()
+	stats_row.add_theme_constant_override("separation", 0)
+	vb.add_child(stats_row)
 
-	_stat_solved = Ui.label("", 14, 500, Ui.c("text"))
-	stats_box.add_child(_stat_solved)
+	var stat1 := _build_stat_col(Ui.t("gameSolvedLabel"))
+	_stat_solved_val = stat1[0]
+	stats_row.add_child(stat1[1])
 
-	_stat_accuracy = Ui.label("", 14, 500, Ui.c("text"))
-	stats_box.add_child(_stat_accuracy)
+	var stat2 := _build_stat_col(Ui.t("gameAccuracyLabel"))
+	_stat_acc_val = stat2[0]
+	stats_row.add_child(stat2[1])
 
-	_stat_combo = Ui.label("", 14, 500, Ui.c("text"))
-	stats_box.add_child(_stat_combo)
+	var stat3 := _build_stat_col(Ui.t("gameComboLabel"))
+	_stat_combo_val = stat3[0]
+	stats_row.add_child(stat3[1])
 
 	# Action buttons
 	var btn_row := HBoxContainer.new()
@@ -599,7 +616,7 @@ func _build_result_dialog() -> void:
 	var restart_btn := Button.new()
 	restart_btn.text = Ui.t("gameRestart")
 	restart_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	restart_btn.custom_minimum_size = Vector2(0, 44)
+	restart_btn.custom_minimum_size = Vector2(0, 48)
 	restart_btn.add_theme_font_override("font", Ui.font(700))
 	restart_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent"), 10))
 	restart_btn.pressed.connect(func():
@@ -611,7 +628,7 @@ func _build_result_dialog() -> void:
 	var exit_btn := Button.new()
 	exit_btn.text = Ui.t("gameExit")
 	exit_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	exit_btn.custom_minimum_size = Vector2(0, 44)
+	exit_btn.custom_minimum_size = Vector2(0, 48)
 	exit_btn.add_theme_font_override("font", Ui.font(600))
 	exit_btn.add_theme_color_override("font_color", Ui.c("text"))
 	exit_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("field"), 10))
@@ -621,17 +638,30 @@ func _build_result_dialog() -> void:
 	btn_row.add_child(exit_btn)
 
 
+func _build_stat_col(label_text: String) -> Array:
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 2)
+	var val := Ui.label("0", 18, 800, Ui.c("text"))
+	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var caption := Ui.scaled_label(label_text, 12, 600, Ui.c("secondary"), true)
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(val)
+	col.add_child(caption)
+	return [val, col]
+
+
 func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, prev_best: int) -> void:
 	_result.visible = true
 	_result_card.visible = true
 	_final_score.text = str(score)
 	_record_badge.visible = is_record
 	_best_label.text = "%s: %d" % [Ui.t("gameBestScoreLabel"), prev_best if not is_record else score]
-	_stat_solved.text = "%s: %d" % [Ui.t("gameSolvedLabel"), solved]
+	_stat_solved_val.text = str(solved)
 	var total := solved + wrong
 	var acc := roundi((float(solved) / total) * 100.0) if total > 0 else 0
-	_stat_accuracy.text = "%s: %d%%" % [Ui.t("gameAccuracyLabel"), acc]
-	_stat_combo.text = "%s: %d" % [Ui.t("gameComboLabel"), max_combo]
+	_stat_acc_val.text = "%d%%" % acc
+	_stat_combo_val.text = "x%d" % max_combo
 	_layout()
 
 
