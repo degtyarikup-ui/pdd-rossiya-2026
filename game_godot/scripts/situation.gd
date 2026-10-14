@@ -41,6 +41,21 @@ static func _uses_shared_model(kind: String) -> bool:
 	return kind == "pedestrian" or kind == "special" or kind in NpcVehicle.KINDS
 
 
+## Read saved swatches even for scenes exported before paint was supported.
+## Match by id: editor order can differ from the archived actor order.
+static func _actor_config(actor: Dictionary, source: Dictionary = {}) -> Dictionary:
+	var config: Dictionary = actor.get("config", {}).duplicate(true)
+	var paint = actor.get("paint")
+	for authored in source.get("actors", []):
+		if str(authored.id) == str(actor.id):
+			paint = authored.get("paint")
+			break
+	if paint is String and Color.html_is_valid(paint):
+		config["color"] = paint
+		config["cabColor"] = paint
+	return config
+
+
 ## Web: the junction's files come over the network (PackFiles). Native: always.
 static func prepared(situation_id: String) -> bool:
 	return _ready_ids.has(situation_id)
@@ -230,7 +245,8 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			person.configure(posmod((situation_id + str(a.id)).hash(), Models.WALKERS), Color(str(a.config.get("color", "#5A7891"))))
 			actor = person
 		elif a.type in NpcVehicle.KINDS:
-			actor = NpcVehicle.make(str(a.type), Color(str(a.config.get("color", "#8D9AA8"))), a.config)
+			var config := _actor_config(a, s.network.data if s.network else {})
+			actor = NpcVehicle.make(str(a.type), Color(str(config.get("color", "#8D9AA8"))), config)
 		else:
 			actor = PackFiles.instance(dir + "actor_%d.glb" % i)
 			_vertex_colours_as_albedo(actor)

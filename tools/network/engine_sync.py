@@ -165,6 +165,9 @@ def sync(sid: str) -> dict:
         base_scale = a.get("scale", [1.0, 1.0, 1.0])
         base_half_length = float(a.get("halfLength", 0.0))
         a.update({"id": na["id"], "type": na["type"], "name": na.get("name", a.get("name", ""))})
+        # Keep the optional editor paint separate from the template's original
+        # colours so clearing the swatch restores the model's default colour.
+        a["paint"] = na.get("paint")
         pos = [na["pos"][0], 0.0, na["pos"][1]]
         a["pos"] = pos
         a["yaw"] = na["yaw"]
