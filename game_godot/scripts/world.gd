@@ -2578,7 +2578,7 @@ func _process(delta: float) -> void:
 					remaining = maxf(remaining, float(progress.offset))
 				limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * remaining)))
 				if sit.network.free_player() and remaining < 45.0:
-					limit = minf(limit, 6.5 if remaining > 12.0 else 2.0)
+					limit = minf(limit, 6.5 if remaining > 6.0 else 2.0)
 					if float(progress.remaining) < 6.0:
 						var rho := drive.pos.distance_to(sit.global_transform * sit.network.stop_point())
 						limit = minf(limit, maxf(0.12, rho * 0.7))

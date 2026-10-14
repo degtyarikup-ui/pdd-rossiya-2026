@@ -142,14 +142,18 @@ func run() -> void:
 		world.controls.steer = 0.0
 		var supported := true
 		var max_step := 0.0
+		var arrival_seconds := 0.0
 		for i in 3000:
 			if world.phase == "question": break
 			var before: Vector3 = world.drive.pos
 			world._process(1.0 / 60.0)
+			arrival_seconds += 1.0 / 60.0
 			supported = supported and world.drive.on_road()
 			max_step = maxf(max_step, before.distance_to(world.drive.pos))
 		var name := "free yaw %d" % roundi(rad_to_deg(float(angle.pose.yaw)))
 		check(world.phase == "question", name + ": actual ride reaches the question")
+		print(name, " arrival_seconds=", arrival_seconds)
+		check(arrival_seconds < 22.0, name + ": 45 m approach completes without crawling")
 		check(supported and max_step < 0.46, name + ": full body stays on road without teleport")
 		check(not world.drive_faults.has("offroad"), name + ": assisted arrival earns no road fault")
 		check(world.drive.pos.is_equal_approx(sit.global_transform * network.stop_point()) and absf(wrapf(world.drive.yaw - network.stop_yaw(), -PI, PI)) < 0.001, name + ": explicit final pose and angle")
