@@ -34,6 +34,14 @@ func _initialize() -> void:
 	for i in 100: b.sample(0.03, true, 60)
 	b.sample(0.1, false, 60)
 	expect(window(b, 1.0/60.0).is_empty(), "pause separates slow history from next active interval")
+	var world = load("res://main.tscn").instantiate()
+	world.adaptive_quality = true
+	world.frame_budget.reset(1.0, true, false)
+	for i in 100: world.frame_budget.sample(0.03, true, 60)
+	world.paused = true
+	world._process(1.0/60.0)
+	expect(world.frame_budget.frames == 0 and world.frame_budget.elapsed == 0.0, "actual paused World clears the active frame history")
+	world.free()
 	expect(Quality.initial("Apple A13 GPU", true) == "mid", "older Apple phone avoids forced high")
 	expect(Quality.initial("Apple M4", false) == "high", "desktop Apple retains high")
 	expect(Quality.initial("Adreno 610", true) == "low", "weak Android retains 30 FPS tier")

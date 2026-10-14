@@ -2743,9 +2743,9 @@ func _on_tip_next() -> void:
 
 func _process(delta: float) -> void:
 	_tips_frame()
+	_update_frame_budget(delta)
 	if paused:
 		return
-	_update_frame_budget(delta)
 	var perf_tick := Time.get_ticks_usec() if hud.visible else 0
 	delta = minf(delta, 0.05)
 	# Keyboard/autopilot input can arrive through the loading overlay. Keep the car,
@@ -3101,7 +3101,7 @@ func _apply_tier(next: String, automatic := false) -> void:
 
 func _update_frame_budget(delta: float) -> void:
 	if not adaptive_quality: return
-	var eligible := loader == null and not staging and phase != "over"
+	var eligible := not paused and loader == null and not staging and phase != "over"
 	var update: Dictionary = frame_budget.sample(delta, eligible, Engine.max_fps)
 	if update.is_empty(): return
 	var vp := get_viewport()
