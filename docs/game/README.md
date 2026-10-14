@@ -51,6 +51,7 @@ godot --headless --path game_godot --script res://tests/road_check.gd       # д
 godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя
 godot --headless --path game_godot --script res://tests/street_check.gd     # улица: сужение перед перекрёстком, застройка вне проезжей части
 godot --headless --path game_godot --script res://tests/building_models_check.gd # дома: бюджет геометрии, габариты, пакетный рендер и сезонные материалы
+godot --headless --path game_godot --script res://tests/people_models_check.gd # пешеходы и регулировщик: модели, жесты, шаг и бюджет геометрии
 godot --headless --path game_godot --script res://tests/collision_check.gd  # столкновения
 godot --headless --path game_godot --script res://tests/sign_mount_check.gd # общая стойка и консоль знаков
 godot --headless --path game_godot --script res://tests/lane_sign_check.gd # конструктор направлений по полосам
@@ -70,7 +71,7 @@ godot --headless --path game_godot --script res://tests/game_ui_check.gd # ан�
 godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # штатные линзы, мигание и синхронное процедурное свечение
 godot --headless --path game_godot --script res://tests/signal_glow_check.gd # свечение и цвета секций светофора без текстур
 godot --headless --path game_godot --script res://tests/ride_pause_check.gd # быстрый старт, цвет, звук, сохранение состояния при паузе
-godot --path game_godot --script res://tests/signal_glow_check.gd # нужен рендер: видимое свечение, включая пакетный трафик
+godot --path game_godot --resolution 1280x900 --script res://tests/signal_glow_check.gd # нужен широкий кадр: видимое свечение, включая пакетный трафик
 godot --path game_godot --script res://tests/building_fade_check.gd # нужен рендер: пачки прозрачных зданий и переиспользование
 godot --headless --path game_godot --script res://tests/median_join_check.gd # границы разделительных островов
 godot --headless --path game_godot --script res://tests/ambient_lane_check.gd # фоновые машины и разделитель на стыке
@@ -140,6 +141,7 @@ tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, ч
 ## Документы
 
 - `building-models.md` — модели домов, пересборка и ограничения для слабых телефонов
+- `people-models.md` — модели пешеходов и регулировщика, походка и ограничения геометрии
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
 - `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
 - `local-changes-sync-2026-10-14.md` — опубликованные локации и архивы всех локальных stash

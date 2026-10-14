@@ -62,7 +62,8 @@ static func prepare(situation_id: String, on_done: Callable) -> void:
 		for i in data.lights.size():
 			more.append(dir + "light_%d.glb" % i)
 		for i in data.actors.size():
-			more.append(dir + "actor_%d.glb" % i)
+			if data.actors[i].type != "pedestrian":
+				more.append(dir + "actor_%d.glb" % i)
 		# Optional: the route guide (only for a scene without trajectories) and the ticket picture.
 		var optional: Array = []
 		if not (data.get("trajectories", []) is Array) or data.trajectories.is_empty():
@@ -191,6 +192,10 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		if a.type == "special":
 			# An emergency car of the tickets is a traffic police car (ДПС) with its lights (fleet.gd).
 			actor = Fleet.dps_car()
+		elif a.type == "pedestrian":
+			var person := Pedestrian.new()
+			person.configure(posmod((situation_id + str(a.id)).hash(), Models.WALKERS), Color(str(a.config.get("color", "#5A7891"))))
+			actor = person
 		else:
 			actor = PackFiles.instance(dir + "actor_%d.glb" % i)
 			_vertex_colours_as_albedo(actor)
@@ -838,7 +843,8 @@ static func _native_prepare(situation_id: String, on_done: Callable) -> void:
 		return
 	var paths: Array[String] = [dir + "scene.glb"]
 	for i in d.lights.size(): paths.append(dir + "light_%d.glb" % i)
-	for i in d.actors.size(): paths.append(dir + "actor_%d.glb" % i)
+	for i in d.actors.size():
+		if d.actors[i].type != "pedestrian": paths.append(dir + "actor_%d.glb" % i)
 	for path in paths: ResourceLoader.load_threaded_request(path)
 	var frames := Engine.get_main_loop() as SceneTree
 	var resources: Array = []

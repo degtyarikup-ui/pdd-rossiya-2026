@@ -1,4 +1,5 @@
-## Models exported from the WebView game (tools/godot_export/export_models.cjs).
+## Vehicles retained from the archived WebView export; people rebuilt by
+## tools/godot_export/build_people.py.
 ## - vehicles/<id>.glb  — detailed player car: one mesh per material, moving
 ##   parts as named nodes (axle_front_*, wheel_*, brake_*, blink_L/R).
 ## - traffic/<id>.glb, walkers/walker_<n>.glb — one mesh, one material
@@ -11,6 +12,7 @@ const WALKERS := 12
 
 static var _baked: ShaderMaterial
 static var _traffic_baked: ShaderMaterial
+static var _walker_baked: ShaderMaterial
 static var _meshes := {}
 static var _lens_centres := {}
 
@@ -28,6 +30,14 @@ static func baked_material() -> ShaderMaterial:
 		_baked = ShaderMaterial.new()
 		_baked.shader = load("res://shaders/baked.gdshader")
 	return _baked
+
+
+## The same single-surface crowd shader, with cheap lower-leg articulation.
+static func walker_material() -> ShaderMaterial:
+	if _walker_baked == null:
+		_walker_baked = baked_material().duplicate()
+		_walker_baked.set_shader_parameter("articulated_walk", true)
+	return _walker_baked
 
 
 ## The single mesh of a baked glb.
@@ -63,6 +73,8 @@ static func crowd(parent: Node, path: String, count: int) -> MultiMesh:
 			_traffic_baked = baked_material().duplicate()
 			_traffic_baked.set_shader_parameter("traffic_lamps", true)
 		node.material_override = _traffic_baked
+	elif path.contains("/walkers/"):
+		node.material_override = walker_material()
 	else:
 		node.material_override = baked_material()
 	parent.add_child(node)

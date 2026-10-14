@@ -104,7 +104,7 @@ class Mesh:
         views.append({'buffer':0,'byteOffset':offset,'byteLength':len(binary)-offset,'target':34963})
         accessors.append({'bufferView':len(views)-1,'componentType':5123,'count':len(self.indices),'type':'SCALAR'})
         binary.extend(b'\0'*(-len(binary)%4))
-        document = {'asset':{'version':'2.0','generator':'PDD lightweight buildings'},
+        document = {'asset':{'version':'2.0','generator':getattr(self,'generator','PDD lightweight buildings')},
                     'scene':0,'scenes':[{'nodes':[0]}],'nodes':[{'name':path.stem,'mesh':0}],
                     'meshes':[{'primitives':[{'attributes':attributes,'indices':len(accessors)-1,'material':0,'mode':4}]}],
                     'materials':[{'name':'scenery','pbrMetallicRoughness':{'metallicFactor':0,'roughnessFactor':1}}],

@@ -188,8 +188,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 348
-  }
+   "tris": 500
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_1": {
   "before": {
@@ -198,8 +199,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 348
-  }
+   "tris": 530
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_2": {
   "before": {
@@ -208,8 +210,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 348
-  }
+   "tris": 556
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_3": {
   "before": {
@@ -218,8 +221,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 360
-  }
+   "tris": 540
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_4": {
   "before": {
@@ -228,8 +232,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 336
-  }
+   "tris": 506
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_5": {
   "before": {
@@ -238,8 +243,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 360
-  }
+   "tris": 530
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_6": {
   "before": {
@@ -248,8 +254,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 348
-  }
+   "tris": 556
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_7": {
   "before": {
@@ -258,8 +265,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 348
-  }
+   "tris": 540
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_8": {
   "before": {
@@ -268,8 +276,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 348
-  }
+   "tris": 506
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_9": {
   "before": {
@@ -278,8 +287,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 360
-  }
+   "tris": 530
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_10": {
   "before": {
@@ -288,8 +298,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 336
-  }
+   "tris": 556
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "walkers/walker_11": {
   "before": {
@@ -298,8 +309,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 360
-  }
+   "tris": 540
+  },
+  "source": "tools/godot_export/build_people.py"
  },
  "street/lamp": {
   "before": {
@@ -310,5 +322,26 @@
    "meshes": 2,
    "tris": 112
   }
+ },
+ "people/officer_body": {
+  "after": {
+   "meshes": 1,
+   "tris": 503
+  },
+  "source": "tools/godot_export/build_people.py"
+ },
+ "people/officer_left_arm": {
+  "after": {
+   "meshes": 1,
+   "tris": 64
+  },
+  "source": "tools/godot_export/build_people.py"
+ },
+ "people/officer_right_arm": {
+  "after": {
+   "meshes": 1,
+   "tris": 132
+  },
+  "source": "tools/godot_export/build_people.py"
  }
 }
