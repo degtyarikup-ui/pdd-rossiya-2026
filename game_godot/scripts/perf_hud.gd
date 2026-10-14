@@ -6,6 +6,16 @@ signal tier_changed(tier: String)
 
 var tier := "high"
 var speed_kmh := 0.0
+var snapshot := Callable()
+const LOG_PATH := "user://ride-performance.jsonl"
+const PREVIOUS_LOG_PATH := "user://ride-performance-previous.jsonl"
+const LOG_LIMIT := 262144
+var _log_clock := 0.0
+var _pss := -1
+var _log_frames := 0
+var _log_sum := 0.0
+var _log_worst := 0.0
+var _log_slow := 0
 
 var _label: Label
 var _frames := 0
@@ -20,6 +30,9 @@ var _tiers := ["low", "mid", "high"]
 
 func _ready() -> void:
 	layer = 20
+	# Keep the preceding ride's evidence after a process crash or next launch.
+	if visible and FileAccess.file_exists(LOG_PATH):
+		DirAccess.rename_absolute(LOG_PATH, PREVIOUS_LOG_PATH)
 	var bg := PanelContainer.new()
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0, 0, 0, 0.62)
@@ -43,6 +56,7 @@ func mark_input() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if not visible: return
 	if event is InputEventScreenTouch and event.pressed:
 		var box: Control = _label.get_parent()
 		if box.get_global_rect().has_point(event.position):
@@ -52,6 +66,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	if not visible: return
 	if _input_at:
 		_input_ms = (Time.get_ticks_usec() - _input_at) / 1000.0
 		_input_at = 0
@@ -70,12 +85,50 @@ func _process(delta: float) -> void:
 	var vmem := RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576.0
 	var nodes := Performance.get_monitor(Performance.OBJECT_NODE_COUNT)
 	var mem := Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0
-	_label.text = "GODOT %d fps  %.1f ms (worst %d, slow %d)\ncalls %d  tris %dk  objects %d\nnodes %d  mem %.0f MB  vram %.0f MB\ninput %d ms  tier %s (tap)\n%s" % [
+	var state: Dictionary = snapshot.call() if snapshot.is_valid() else {}
+	_log_clock += _clock
+	_log_frames += _frames
+	_log_sum += _sum
+	_log_worst = maxf(_log_worst, _worst)
+	_log_slow += _slow
+	# PSS queries include the native process and are more expensive than Godot counters.
+	var write_log := _log_clock >= 5.0
+	if write_log and Engine.has_singleton("PddHost"):
+		var host = Engine.get_singleton("PddHost")
+		if host.has_method("processMemoryMb"): _pss = int(host.processMemoryMb())
+	_label.text = "GODOT %d FPS  %.1f ms (max %d, >33 ms %d)\nGPU %d  %dk tri  %d obj\n%.0f MB / VRAM %.0f MB / PSS %s\n%s\n%s\n%d ms / %s: %s\n%s" % [
 		Engine.get_frames_per_second(), _sum / _frames, _worst, _slow, calls, tris / 1000, objects,
-		nodes, mem, vmem, _input_ms, tier, RenderingServer.get_video_adapter_name()]
-	print("[godot-perf] fps=%d avg=%.1f worst=%d calls=%d nodes=%d tier=%s" % [Engine.get_frames_per_second(), _sum / _frames, _worst, calls, nodes, tier])
+		mem, vmem, str(_pss) + " MB" if _pss >= 0 else "—",
+		Ui.t("gameDebugPerfObjects", {"nodes": int(nodes), "resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT))}),
+		Ui.t("gameDebugPerfRetained", {"question": state.get("question", 0), "scenes": state.get("retired", 0), "streets": state.get("streets", 0)}),
+		_input_ms, Ui.t("gameDebugTier"), tier, state.get("scene", "")]
+	if write_log:
+		state.merge({"time": Time.get_datetime_string_from_system(true), "fps": Engine.get_frames_per_second(),
+			"avg_ms": snappedf(_log_sum / _log_frames, 0.1), "worst_ms": snappedf(_log_worst, 0.1), "slow": _log_slow,
+			"calls": calls, "nodes": int(nodes), "resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),
+			"mem_mb": snappedf(mem, 0.1), "vram_mb": snappedf(vmem, 0.1), "pss_mb": _pss, "tier": tier}, true)
+		print("[godot-perf] ", JSON.stringify(state))
+		_write_log(state)
+		_log_clock = 0.0
+		_log_frames = 0
+		_log_sum = 0.0
+		_log_worst = 0.0
+		_log_slow = 0
 	_frames = 0
 	_sum = 0.0
 	_worst = 0.0
 	_slow = 0
 	_clock = 0.0
+
+
+func _write_log(state: Dictionary) -> void:
+	var log := FileAccess.open(LOG_PATH, FileAccess.READ_WRITE if FileAccess.file_exists(LOG_PATH) else FileAccess.WRITE)
+	if log == null: return
+	if log.get_length() > LOG_LIMIT:
+		log.close()
+		DirAccess.rename_absolute(LOG_PATH, PREVIOUS_LOG_PATH)
+		log = FileAccess.open(LOG_PATH, FileAccess.WRITE)
+		if log == null: return
+	log.seek_end()
+	log.store_line(JSON.stringify(state))
+	log.close()

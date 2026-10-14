@@ -29,6 +29,7 @@ var street: Street
 var paused := false
 var ghost: Node3D                 # the street before the last turn, frozen until it is far behind
 var ghost_until := 0.0
+const RETAIN_DISTANCE := 260.0
 var older_ghosts: Array[Node3D] = []
 var blanks: Array = []            # [z0, z1]: an exam junction has its own streets there
 
@@ -226,9 +227,10 @@ func _ready() -> void:
 	# Android «back» opens the pause instead of closing the app's game screen at once.
 	get_tree().quit_on_go_back = false
 	hud = PerfHud.new()
-	add_child(hud)
 	# Shown in debug builds and with --perf only: the players do not see the counters.
 	hud.visible = OS.is_debug_build() or _has_arg("--perf")
+	hud.snapshot = _performance_snapshot
+	add_child(hud)
 	hud.tier_changed.connect(_apply_tier)
 	controls.pressed.connect(hud.mark_input)
 	_apply_tier(Quality.classify(RenderingServer.get_video_adapter_name()))
@@ -1684,6 +1686,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	add_child(ghost)
 	ghost.transform=xf
 	ghost.set_meta("retire_anchor", drive.pos)
+	ghost.set_meta("retire_distance", drive.distance_traveled)
 	for node: MeshInstance3D in road_nodes:
 		if node.mesh:
 			var trimmed := SceneStitch.clip_mesh(node.mesh,xf*node.transform)
@@ -1710,6 +1713,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	pending_connection={"port":port.duplicate(),"local_port":port,"sit":sit}
 	pending_connection.port.p=Vector3.ZERO
 	pending_connection.port.out=Vector3.BACK
+	current["retire_distance"] = drive.distance_traveled
 	retired.append(current)
 	current={}
 	phase="driving"
@@ -1765,10 +1769,34 @@ func _trim_ghost_props_at_join(old: Node3D) -> void:
 func _retire_far() -> void:
 	for j in retired.duplicate():
 		var c: Vector3 = j.sit.global_position
-		if c.distance_to(drive.pos) > 260:
+		if c.distance_to(drive.pos) > RETAIN_DISTANCE or drive.distance_traveled - float(j.get("retire_distance", drive.distance_traveled)) > RETAIN_DISTANCE:
 			retired.erase(j)
+			if pending_connection.get("sit") == j.sit: pending_connection.sit = null
 			j.sit.queue_free()
 			_rebuild_ring()
+
+
+## World positions can return to the same neighbourhood after a loop. Lifetime is
+## also bounded by travelled road distance, which survives coordinate rebases.
+func _retire_streets() -> void:
+	for i in range(older_ghosts.size() - 1, -1, -1):
+		var old := older_ghosts[i]
+		if drive.pos.distance_to(old.get_meta("retire_anchor")) > RETAIN_DISTANCE or _street_expired(old):
+			old.queue_free()
+			older_ghosts.remove_at(i)
+			tram_scenery_revision += 1
+	if ghost and (drive.pos.z > ghost_until or _street_expired(ghost)):
+		ghost.queue_free()
+		ghost = null
+		tram_scenery_revision += 1
+
+func _street_expired(old: Node3D) -> bool:
+	return drive.distance_traveled - float(old.get_meta("retire_distance", drive.distance_traveled)) > RETAIN_DISTANCE
+
+func _performance_snapshot() -> Dictionary:
+	return {"question": run.answered, "scene": str(current.sit.id) if current else "",
+		"retired": retired.size(), "streets": older_ghosts.size() + (1 if ghost else 0),
+		"staging": staging, "distance": int(drive.distance_traveled)}
 
 
 # --- traffic and walkers on the ring ---------------------------------------
@@ -2654,15 +2682,7 @@ func _process(delta: float) -> void:
 	_update_traffic(delta)
 	_update_walkers(delta)
 	_recycle_chunks()
-	for i in range(older_ghosts.size() - 1, -1, -1):
-		if drive.pos.distance_to(older_ghosts[i].get_meta("retire_anchor")) > 260.0:
-			older_ghosts[i].queue_free()
-			older_ghosts.remove_at(i)
-			tram_scenery_revision += 1
-	if ghost and drive.pos.z > ghost_until:
-		ghost.queue_free()
-		ghost = null
-		tram_scenery_revision += 1
+	_retire_streets()
 	# The camera heading follows the car's slowly (game.js updateCamera:
 	# exp(-3 dt)) and only for real turns: small corrections and U-turn
 	# wobbles must not swing the view.

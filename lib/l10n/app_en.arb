@@ -332,6 +332,31 @@
   "gameDebugTierLow": "Low",
   "gameDebugTierMid": "Medium",
   "gameDebugTierHigh": "High",
+  "gameDebugPerfObjects": "Nodes: {nodes}; resources: {resources}",
+  "@gameDebugPerfObjects": {
+    "placeholders": {
+      "nodes": {
+        "type": "int"
+      },
+      "resources": {
+        "type": "int"
+      }
+    }
+  },
+  "gameDebugPerfRetained": "Question: {question}; retained scenes: {scenes}, streets: {streets}",
+  "@gameDebugPerfRetained": {
+    "placeholders": {
+      "question": {
+        "type": "int"
+      },
+      "scenes": {
+        "type": "int"
+      },
+      "streets": {
+        "type": "int"
+      }
+    }
+  },
   "gameDebugPerf": "Performance counter",
   "gameDebugPerfHint": "Frames per second, input delay, graphics load",
   "gameDebugUnlimitedFuelHint": "Races are not spent",

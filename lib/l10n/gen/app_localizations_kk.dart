@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -952,6 +953,16 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameDebugTierHigh => 'Жоғары';
+
+  @override
+  String gameDebugPerfObjects(int nodes, int resources) {
+    return 'Түйіндер: $nodes; ресурстар: $resources';
+  }
+
+  @override
+  String gameDebugPerfRetained(int question, int scenes, int streets) {
+    return 'Сұрақ: $question; сақталған сахналар: $scenes, көшелер: $streets';
+  }
 
   @override
   String get gameDebugPerf => 'Өнімділік есептегіші';

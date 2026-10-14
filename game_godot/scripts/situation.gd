@@ -322,6 +322,13 @@ func refresh_uv(scenery: Scenery, texture_frame := Transform3D()) -> void:
 ## Cuts stay in scene coordinates and also apply to subsequently warmed mesh variants.
 func trim_before_join(scenery: Scenery, texture_frame: Transform3D) -> void:
 	var cut := global_transform
+	# Completed scenes never need every prewarmed exit again. Retain the selected
+	# base and clipped mesh only; later joins clip that one variant in place.
+	var active := hash(network.stitch_bindings) if network else 0
+	for signature in _surface_cache.keys():
+		if signature != active: _surface_cache.erase(signature)
+	for signature in _clipped_surface_cache.keys():
+		if signature != active: _clipped_surface_cache.erase(signature)
 	# Existing variants already contain earlier cuts; only process the new plane.
 	# A variant warmed later still receives the complete sequence in refresh_uv.
 	for signature in _clipped_surface_cache:

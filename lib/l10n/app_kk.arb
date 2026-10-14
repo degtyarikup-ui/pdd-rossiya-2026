@@ -332,6 +332,31 @@
   "gameDebugTierLow": "Төмен",
   "gameDebugTierMid": "Орташа",
   "gameDebugTierHigh": "Жоғары",
+  "gameDebugPerfObjects": "Түйіндер: {nodes}; ресурстар: {resources}",
+  "@gameDebugPerfObjects": {
+    "placeholders": {
+      "nodes": {
+        "type": "int"
+      },
+      "resources": {
+        "type": "int"
+      }
+    }
+  },
+  "gameDebugPerfRetained": "Сұрақ: {question}; сақталған сахналар: {scenes}, көшелер: {streets}",
+  "@gameDebugPerfRetained": {
+    "placeholders": {
+      "question": {
+        "type": "int"
+      },
+      "scenes": {
+        "type": "int"
+      },
+      "streets": {
+        "type": "int"
+      }
+    }
+  },
   "gameDebugPerf": "Өнімділік есептегіші",
   "gameDebugPerfHint": "Секундына кадр, басу кідірісі, графика жүктемесі",
   "gameDebugUnlimitedFuelHint": "Жазбалар жұмсалмайды",

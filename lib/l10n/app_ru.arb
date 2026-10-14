@@ -495,6 +495,31 @@
   "gameDebugTierLow": "Низкий",
   "gameDebugTierMid": "Средний",
   "gameDebugTierHigh": "Высокий",
+  "gameDebugPerfObjects": "Узлы: {nodes}; ресурсы: {resources}",
+  "@gameDebugPerfObjects": {
+    "placeholders": {
+      "nodes": {
+        "type": "int"
+      },
+      "resources": {
+        "type": "int"
+      }
+    }
+  },
+  "gameDebugPerfRetained": "Вопрос: {question}; старые сцены: {scenes}, улицы: {streets}",
+  "@gameDebugPerfRetained": {
+    "placeholders": {
+      "question": {
+        "type": "int"
+      },
+      "scenes": {
+        "type": "int"
+      },
+      "streets": {
+        "type": "int"
+      }
+    }
+  },
   "gameDebugPerf": "Счётчик производительности",
   "gameDebugPerfHint": "Кадры в секунду, задержка нажатия, нагрузка на видеокарту",
   "gameDebugUnlimitedFuelHint": "Заезды не расходуются",

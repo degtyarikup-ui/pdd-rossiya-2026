@@ -8,6 +8,10 @@ import org.godotengine.godot.plugin.UsedByGodot
 class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPlugin(godot) {
     override fun getPluginName() = "PddHost"
 
+    /** Whole game-process memory, including engine/native allocations and mapped assets. */
+    @UsedByGodot
+    fun processMemoryMb(): Int = (android.os.Debug.getPss() / 1024).toInt()
+
     /** The canonical Flutter picture, with no second copy in the Godot assets. */
     @UsedByGodot
     fun pictureBytes(hash: String): ByteArray {

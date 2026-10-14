@@ -80,6 +80,7 @@ godot --headless --path game_godot --script res://tests/tram_world_check.gd # п
 godot --headless --path game_godot --script res://tests/tram_crossing_check.gd # непрерывный переход через пути, ожидание, габариты и оставшиеся старые рельсы; native — неподвижная поза в реальном рендере
 godot --path game_godot --script res://tests/tram_render_check.gd # нужен рендер: реальные локации, въезды, окончания и единый меш покрытия
 godot --headless --path game_godot --script res://tests/reviewed_departure_check.gd # продолжение всех отмеченных сцен
+godot --headless --path game_godot --script res://tests/ride_endurance_check.gd # 40 переходов по кольцу, стабильная память, завершение только на 20-м ответе
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
 godot --headless --path game_godot --script res://tests/pause_actor_check.gd # заморозка независимых и физических участников в паузе
@@ -230,6 +231,7 @@ MP3 и локальный манифест не коммитятся. В Git л�
 - `environment-models.md` — лёгкие деревья и уличные объекты с исходными точками установки
 - `signs-and-signals.md` — знаки/светофоры, нормативные формы, серый оборот и сохранённые крепления
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
+- `ride-performance-2026-10-14.md` — очистка старых локаций по пути, длительный тест и диагностика dev-сборки
 - `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
 - `local-changes-sync-2026-10-14.md` — опубликованные локации и архивы всех локальных stash
 - `godot-roadmap.md` — что сделано и что открыто

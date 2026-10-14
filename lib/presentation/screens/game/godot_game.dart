@@ -118,6 +118,7 @@ class GodotGame {
         if (dark) '--dark',
         ...safe,
         '--ride-options=${jsonEncode(options)}',
+        if (const bool.fromEnvironment('GAME_DEBUG')) '--perf',
       ]);
     } on PlatformException {
       json = null;

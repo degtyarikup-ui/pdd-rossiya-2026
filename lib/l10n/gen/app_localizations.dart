@@ -1708,6 +1708,18 @@ abstract class AppLocalizations {
   /// **'Высокий'**
   String get gameDebugTierHigh;
 
+  /// No description provided for @gameDebugPerfObjects.
+  ///
+  /// In ru, this message translates to:
+  /// **'Узлы: {nodes}; ресурсы: {resources}'**
+  String gameDebugPerfObjects(int nodes, int resources);
+
+  /// No description provided for @gameDebugPerfRetained.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопрос: {question}; старые сцены: {scenes}, улицы: {streets}'**
+  String gameDebugPerfRetained(int question, int scenes, int streets);
+
   /// No description provided for @gameDebugPerf.
   ///
   /// In ru, this message translates to:
