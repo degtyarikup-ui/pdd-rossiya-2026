@@ -65,6 +65,8 @@ godot --headless --path game_godot --script res://tests/free_player_check.gd # 7
 godot --headless --path game_godot --script res://tests/dirt_surface_check.gd # грунт, текстура и удаление старых накладок
 godot --headless --path game_godot --script res://tests/human_collision_check.gd # наезд: регулировщик и пешеходы
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
+godot --headless --path game_godot --script res://tests/ambient_transition_check.gd -- --season=autumn # пешеходы, листья и трафик при переходах
+godot --path game_godot --script res://tests/ambient_transition_check.gd -- --season=autumn # реальные позы MultiMesh и положение в кадре
 godot --headless --path game_godot --script res://tests/lighting_check.gd # свет/тени в том же кадре при поворотах мира, все уровни качества
 godot --path game_godot --script res://tests/lighting_render_check.gd # нужен рендер: яркость граней, машина и тени до/после перехода
 godot --headless --path game_godot --script res://tests/retained_surface_check.gd # старые улицы и сцены не перекрывают дорогу после цепочки поворотов
@@ -107,6 +109,11 @@ godot --path game_godot --script res://tests/stitch_shader_render_check.gd # н�
 Известная проблема проверки (14 октября 2026): `signals_models_check.gd` загружает
 старую фикстуру `situations/ticket_37_13/light_0.glb`, которой нет в Git.
 В чистой копии проверка зависает после ошибки загрузки; её нельзя считать пройденной.
+
+`people_models_check.gd` на 14 октября 2026 имеет три ошибки проверки общего материала
+регулировщика (`officer: shared cached material`), воспроизводимые до исправления переходов.
+`pause_actor_check.gd` проходит свои семь проверок, но в headless выдаёт ошибку dummy-рендера
+`Parameter "material" is null`; она также воспроизводится на исходном коде.
 
 `camera_check.gd` также имеет сбой фикстуры: после первого вопроса очистка оставляет
 `question_signal_id`, и второй сценарий `ticket_12_5` не движется. На 14 октября 2026

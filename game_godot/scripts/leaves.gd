@@ -61,6 +61,9 @@ func _spawn(leaf: Dictionary, centre: Vector3, anywhere_high: bool) -> void:
 
 
 func step(delta: float, centre: Vector3) -> void:
+	# This node follows the world's coordinate changes. Simulate in its original
+	# frame so wind, tumble, resting leaves and recycling remain continuous.
+	centre = to_local(centre)
 	for i in leaves.size():
 		var leaf := leaves[i]
 		if not leaf.born:

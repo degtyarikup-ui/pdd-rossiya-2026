@@ -1655,6 +1655,8 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 		body.global_transform = xf * body.global_transform
 		body.linear_velocity = rotation * body.linear_velocity
 		body.angular_velocity = rotation * body.angular_velocity
+	for pedestrian: Pedestrian in get_tree().get_nodes_in_group("animated_pedestrians"):
+		pedestrian.rebase_frame(xf)
 	drive.pos=xf*drive.pos
 	drive.yaw-=heading
 	# The rebase and the visual car move in the SAME frame (no one-frame disappearance).
@@ -1662,6 +1664,10 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	player.rotation.y = drive.yaw
 	cam_heading-=heading
 	cam_look=xf*cam_look
+	camera.global_transform = xf * camera.global_transform
+	_rebase_walkers(xf)
+	if leaves:
+		leaves.transform = xf * leaves.transform
 	skip_jerk=true
 	# Keep the old street behind a turn until it is out of view. Its UVs retain their original world frame.
 	# A second nearby turn must not delete actors still visible on the previous street.
@@ -1849,19 +1855,34 @@ func _spawn_walkers() -> void:
 		multi.set_instance_custom_data(slot, Color(jacket.r, jacket.g, jacket.b, rng.randf()))
 
 
-## After a rebase the ring traffic and walkers start again around the player.
+## Walkers keep their slots, pose, gait and motion across coordinate changes.
+func _rebase_walkers(xf: Transform3D) -> void:
+	var heading := SceneStitch.yaw(xf.basis.z)
+	for w in walkers:
+		var at := xf * Vector3(float(w.get("x", w.dir * (_half_at(w.z) + 1.0))), 0, w.z)
+		w.x = at.x; w.z = at.z; w.zw = at.z
+		w.heading = float(w.get("heading", 0.0 if w.v > 0.0 else PI)) + heading
+		var crowd: MultiMesh = w.mm
+		crowd.set_instance_transform(w.slot, xf * crowd.get_instance_transform(w.slot))
+
+
+## Traffic is copied onto the retained street; hide its reusable source immediately.
 func _reset_ambient() -> void:
 	for i in traffic.size():
-		traffic[i].erase("sheltered")
+		var hidden := Transform3D(Basis(), Vector3(0, -100, 0))
+		if traffic[i].has("node"):
+			traffic[i].node.transform = hidden
+		else:
+			traffic[i].mm.set_instance_transform(traffic[i].slot, hidden)
+		if traffic[i].has("glow_slot"):
+			for slot in traffic[i].glow_centres.size():
+				traffic_glows.set_instance_transform(traffic[i].glow_slot + slot, hidden)
+		traffic[i].sheltered = true  # admit the replacement only while it is outside the camera
 		traffic[i].erase("lane_target")
 		traffic[i].erase("quiet_stop_z")
 		traffic[i].z = drive.pos.z - 170.0 if traffic[i].dir > 0 else drive.pos.z + 280.0
 		traffic[i].x = -traffic[i].dir * _ambient_lane_offset()
 		traffic[i].yaw = 0.0 if traffic[i].dir > 0 else PI
-	for i in walkers.size():
-		walkers[i].erase("knocked_down")
-		walkers[i].erase("sheltered")
-		walkers[i].z = drive.pos.z + 250.0 + i * L * chunk_count / maxf(1.0, walkers.size())
 
 
 ## Distance along an ambient lane to the next junction boundary (before the exclusion margin).
@@ -1882,7 +1903,7 @@ func _keep_ambient(parent: Node3D) -> void:
 	trail.ground_check = _ambient_trail_clear
 	trail.ground_height = _pavement_height
 	for car in traffic:
-		if car.get("sheltered", false) or _in_blank(car.z) or (parent.global_transform * Vector3(car.x, 0, car.z)).distance_to(drive.pos) > 240.0:
+		if car.get("sheltered", false):
 			continue
 		var heading: float = car.get("yaw",0.0 if car.dir>0.0 else PI)
 		var direction := Vector3(sin(heading),0,cos(heading))
@@ -1890,10 +1911,6 @@ func _keep_ambient(parent: Node3D) -> void:
 			trail.keep(car.node.duplicate(), car.dir * car.spd, false, float(car.get("hw",0.95)),float(car.len)*0.5,direction)
 		else:
 			trail.keep_copy(car.mm, car.slot, car.dir * car.spd, false, float(car.get("hw",0.95)),float(car.len)*0.5,direction)
-	for w in walkers:
-		if w.get("alive", false) and not w.get("knocked_down", false):
-			var heading: float = w.get("heading",0.0 if w.v>0.0 else PI)
-			trail.keep_copy(w.mm, w.slot, w.v, true,0.28,0.28,Vector3(sin(heading),0,cos(heading)))
 
 
 func _ambient_trail_clear(p: Vector3, toward: Vector3, actor: Dictionary) -> bool:
@@ -2252,6 +2269,15 @@ func _walking_departure(start: Vector3, toward: Vector3, local_frame: Transform3
 	return points
 
 
+func _walker_visible(at: Vector3) -> bool:
+	if camera == null or not camera.is_inside_tree(): return true
+	for x in [-0.4, 0.4]:
+		for y in [0.0, 2.0]:
+			for z in [-0.4, 0.4]:
+				if camera.is_position_in_frustum(at + Vector3(x, y, z)): return true
+	return false
+
+
 func _update_walkers(delta: float) -> void:
 	var span := L * chunk_count
 	var base := drive.pos.z - L * float(cfg.chunks_behind)
@@ -2263,17 +2289,22 @@ func _update_walkers(delta: float) -> void:
 				trams.append({"motion": motion, "frame": j.sit.global_transform})
 	for w in walkers:
 		var z: float = w.z
-		if z < base or z > base+span:
-			# Recycling happens behind fog, before a model becomes visible again.
-			if absf(z-drive.pos.z)>230.0:
-				w.z = base+fposmod(z-base,span)
-				w.erase("x"); w.erase("heading")
+		var old_at := Vector3(float(w.get("x", w.dir*(_half_at(z)+1.0))),0,z)
+		if (z < base or z > base+span or old_at.distance_to(drive.pos) > 230.0) and not _walker_visible(old_at):
+			var entry_z := base+fposmod(z-base,span)
+			var entry := Vector3(w.dir*(_half_at(entry_z)+1.0+(0.0 if w.v>0 else 1.1)),0,entry_z)
+			# Both ends of recycling must be outside the view, including after turns.
+			if not _walker_visible(entry) and _walk_clear(entry):
+				w.z = entry_z
+				w.x = entry.x
+				w.erase("heading"); w.erase("knocked_down")
 		var initial_x: float = w.dir*(_half_at(w.z)+1.0+(0.0 if w.v>0 else 1.1))
 		if not w.has("x"): w.x = initial_x
 		var at := Vector3(w.x,0,w.z)
 		var before := at
+		var supported := _walk_clear(at)
 		var direction := Vector3(sin(float(w.get("heading",0.0 if w.v>0 else PI))),0,cos(float(w.get("heading",0.0 if w.v>0 else PI))))
-		if not w.get("knocked_down",false) and _walk_clear(at):
+		if not w.get("knocked_down",false) and supported:
 			# Look ahead on the drawn sidewalk, including bends and disabled sidewalk ends.
 			var next_direction := _walk_direction(at,direction,1.0)
 			if next_direction == Vector3.ZERO:
@@ -2292,7 +2323,9 @@ func _update_walkers(delta: float) -> void:
 					at = next
 					w.heading = atan2(next_direction.x,next_direction.z)
 		w.x = at.x; w.z = at.z; w.zw = at.z
-		w.alive = not w.get("knocked_down",false) and _walk_clear(at)
+		# Cropping a street at a close turn can remove the pavement beneath a
+		# visible person. Keep that person still until they leave the view.
+		w.alive = not w.get("knocked_down",false) and (supported or (w.get("alive",false) and _walker_visible(at)))
 		var distance := before.distance_to(at)
 		w["walk_phase"] = fposmod(float(w.get("walk_phase",0.0)) + distance * 3.5, TAU)
 		var amount := clampf(distance / maxf(delta,0.001) / 1.2,0,1)
@@ -2300,7 +2333,8 @@ func _update_walkers(delta: float) -> void:
 		var crowd: MultiMesh = w.mm
 		if crowd.use_custom_data:
 			crowd.set_instance_custom_data(w.slot, Models.walker_gait(crowd.get_instance_custom_data(w.slot), w.walk_phase, w.walk_amount))
-		var shown := at+Vector3.UP*_pavement_height(at) if w.alive else Vector3(0,-100,0)
+		var height := _pavement_height(at) if supported else crowd.get_instance_transform(w.slot).origin.y
+		var shown := at+Vector3.UP*height if w.alive else Vector3(0,-100,0)
 		(w.mm as MultiMesh).set_instance_transform(w.slot,Transform3D(Basis(Vector3.UP,float(w.get("heading",0.0 if w.v>0 else PI))),shown))
 
 

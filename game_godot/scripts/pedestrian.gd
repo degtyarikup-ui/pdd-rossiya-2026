@@ -30,6 +30,11 @@ func _ready() -> void:
 	_phase = _material.get_shader_parameter("walk_phase")
 	_amount = _material.get_shader_parameter("walk_amount")
 	_previous = global_position
+	add_to_group("animated_pedestrians")
+
+func rebase_frame(xf: Transform3D) -> void:
+	# Transform the motion history too, including coordinate changes under 2 m.
+	_previous = xf * _previous
 
 func _process(delta: float) -> void:
 	var distance := global_position.distance_to(_previous)
