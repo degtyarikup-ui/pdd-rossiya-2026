@@ -432,7 +432,7 @@ const Tools = (() => {
       const s = S();
       const snapped = Layout.snapPoint(s.layout ? s : { ...s, layout: { nodes: [], streets: [] } }, [e.world.x, e.world.z]);
       const at = snapped.p;
-      Scene3D.setDraft({ kind: "road", points: draft ? draft.points : [], cursor: draft ? at : null, width: Layout.KINDS[opts.roadKind].width,
+      Scene3D.setDraft({ kind: "road", points: draft ? draft.points : [], cursor: draft ? at : null, width: Layout.widthOf({kind:opts.roadKind}),
         snap: snapped.node || snapped.port || snapped.street ? at : null, snapKind: snapped.port ? "port" : "node" });
       if (!draft) setHover(null);
     },

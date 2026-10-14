@@ -12,6 +12,7 @@ const Layout = (() => {
     yard: { width: 5.0, lanes: [1.25], title: "Проезд" },
     street: { width: 8.4, lanes: [1.8], title: "Улица" },
     avenue: { width: 14.0, lanes: [1.75, 5.25], title: "Проспект" },
+    highway: { width: 21.0, lanes: [1.75, 5.25, 8.75], title: "Трасса 3+3" },
   };
   const KERB_R = 5.0;
   const CAR_BACK = 2.4;        // the player's car centre behind its stop line (half a car and a gap)          // the kerb radius the builder rounds every inner corner with (build.py CURB_RADIUS)
@@ -37,8 +38,59 @@ const Layout = (() => {
 
   const kindOf = (st) => KINDS[st.kind] || KINDS.street;
   // A street with a dividing strip (median, m) is that much wider: the strip in the middle, the lanes beside it.
-  const medianOf = (st) => (st.kind === "yard" ? 0 : Number(st.median) || 0);
+  const medianOf = (st) => (st.kind === "yard" ? 0 : Number(st.median) || (st.kind === "highway" ? 3 : 0));
   const widthOf = (st) => kindOf(st).width + medianOf(st);
+
+  // A highway joins the city's four-lane ports before the 24 m runtime clipping plane.
+  // At an internal two-street joint the narrower neighbour defines the target section.
+  function highwayEnds(L, st, crop) {
+    return [st.a, st.b].map(nid => {
+      const kind = nodeKind(L, nodeOf(L, nid), crop);
+      if (kind === "border") return { nid, width: 14, median: 0, border: true };
+      if (kind === "joint") {
+        const next = streetsAt(L, nid).find(s => s !== st);
+        if (next?.kind === "avenue") return { nid, width: widthOf(next), median: medianOf(next), border: false };
+      }
+      return null;
+    });
+  }
+  function streetProfile(L, st, d, crop) {
+    const width = widthOf(st), median = medianOf(st);
+    if (st.kind !== "highway") return { width, median, blend: 1 };
+    const total = polyLen(centreline(L, st)), ends = highwayEnds(L, st, crop);
+    const count = ends.filter(Boolean).length;
+    const length = Math.min(70, Math.max(12, total / (count === 2 ? 2 : 1) - 12));
+    let profile = { width, median, blend: 1 };
+    ends.forEach((end, i) => {
+      if (!end) return;
+      const distance = i === 0 ? d : total - d;
+      const plain = end.border ? Math.min(34, length - 8) : 0;
+      const t = Math.max(0, Math.min(1, (distance - plain) / (length - plain)));
+      const blend = t * t * (3 - 2 * t);
+      if (blend < profile.blend) profile = { width: end.width + (width - end.width) * blend,
+        median: end.median + (median - end.median) * blend, blend };
+    });
+    return profile;
+  }
+  function profileOutline(L, st, points, crop, median = false) {
+    const line = centreline(L, st), normal = offsetRight(points, 1);
+    const widths = points.map(p => { const profile = streetProfile(L, st, projectOn(line, p), crop); return median ? profile.median : profile.width; });
+    const picked = points.map((p,i) => ({p,n:sub(normal[i],p),w:widths[i]})).filter(v => !median || v.w > 0.05);
+    if (picked.length < 2) return [];
+    return [...picked.map(v => add(v.p, mul(v.n,-v.w/2))), ...picked.slice().reverse().map(v => add(v.p,mul(v.n,v.w/2)))].map(P);
+  }
+  function highwayLane(L, st, nid, offset, crop) {
+    const line = centreline(L, st), points = densePath(line, 1.5);
+    const normal = offsetRight(points, 1), index = Math.max(0, Math.min(2, Math.round((Math.abs(offset)-medianOf(st)/2-1.75)/3.5)));
+    const direction = st.a === nid ? 1 : -1;
+    const sign = Math.sign(offset) || 1;
+    const out = points.map((p,i) => {
+      const profile = streetProfile(L,st,projectOn(line,p),crop);
+      const lateral = profile.median/2 + 1.75 + (index === 2 ? 3.5 + 3.5*profile.blend : index*3.5);
+      return P(add(p,mul(sub(normal[i],p),lateral*direction*sign)));
+    });
+    return st.a === nid ? out : out.reverse();
+  }
 
   // ---- the plan as a graph ------------------------------------------------------------
   function nodeOf(L, id) { return L.nodes.find((n) => n.id === id); }
@@ -218,10 +270,11 @@ const Layout = (() => {
       // With a dividing strip the street meets the game's own street (no strip) at the sides of the
       // scene: its last metres there narrow back to the plain width (the builder rounds the step).
       const borderA = nodeKind(L, nodeOf(L, st.a), crop) === "border", borderB = nodeKind(L, nodeOf(L, st.b), crop) === "border";
-      const plainEnds = medianOf(st) > 0 && (borderA || borderB);
+      const highway = st.kind === "highway";
+      const plainEnds = !highway && medianOf(st) > 0 && (borderA || borderB);
       const lenAll = polyLen(pts);
       const wide = plainEnds ? cut(pts, borderA ? 22 : 0, lenAll - (borderB ? 22 : 0)) : pts;
-      const roadItem = { id: `road_${st.id}`, auto: true, outer: outline(wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
+      const roadItem = { id: `road_${st.id}`, auto: true, outer: highway ? profileOutline(L,st,densePath(pts,1.5),crop) : outline(wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
       roads.push(roadItem);
       if (plainEnds) roads.push({ id: `road_${st.id}_plain`, auto: true, outer: outline(pts, kindOf(st).width), holes: [] });
       if (st.walk === false || st.surface === "sand") {
@@ -250,13 +303,34 @@ const Layout = (() => {
         const a0 = d0 > 0 ? d0 + 1.0 : (borderA ? 30 : 0), a1 = d1 < total ? d1 - 1.0 : total - (borderB ? 30 : 0);
         const strip = cut(line, Math.max(0, a0), Math.min(total, a1));
         if (strip.length >= 2) {
-          roadItem.holes.push(outline(strip, m));
+          const island = highway ? profileOutline(L,st,densePath(strip,1.5),crop,true) : outline(strip,m);
+          if (island.length >= 3) roadItem.holes.push(island);
           roadItem.green = true;
         }
-        if (st.kind === "avenue") for (const side of [1, -1]) mark({ type: "dashed", points: offsetRight(body, side * (m / 2 + 3.5)).map(P) });
+        if (highway && !st.manualMarks) {
+          const samples = densePath(body,1.5), normal = offsetRight(samples,1);
+          for (const side of [1,-1]) for (const boundary of [3.5,7]) {
+            const points = samples.map((p,i) => {
+              const profile = streetProfile(L,st,projectOn(line,p),crop);
+              const lateral = profile.median/2 + (boundary === 7 ? 7 + (profile.width/2-profile.median/2-7)* (1-profile.blend) : 3.5);
+              return {p:P(add(p,mul(sub(normal[i],p),side*lateral))),blend:profile.blend};
+            }).filter(v => boundary === 3.5 || v.blend > .06).map(v => v.p);
+            if (points.length >= 2) mark({type:"dashed",points});
+          }
+        } else if (st.kind === "avenue") for (const side of [1, -1]) mark({ type: "dashed", points: offsetRight(body, side * (m / 2 + 3.5)).map(P) });
         // Where the strip has ended (towards the side of the scene) the plain street's centre line goes on.
-        if (borderA) mark({ type: "dashed", points: cut(line, 0, 26).map(P) });
-        if (borderB) mark({ type: "dashed", points: cut(line, total - 26, total).map(P) });
+        if (highway) {
+          highwayEnds(L,st,crop).forEach((end,i) => {
+            if (!end || end.median || st.manualMarks) return;
+            const from = lineFrom(L,st,end.nid);
+            let plain = 0;
+            while (plain < total && streetProfile(L,st,i === 0 ? plain : total-plain,crop).median <= .05) plain += .5;
+            if (plain) for (const offset of [-.15,.15]) mark({type:"solid",points:offsetRight(cut(from,0,plain),offset).map(P)});
+          });
+        } else {
+          if (borderA) mark({ type: "dashed", points: cut(line, 0, 26).map(P) });
+          if (borderB) mark({ type: "dashed", points: cut(line, total - 26, total).map(P) });
+        }
       }
       if (body.length >= 2 && !medianOf(st)) {
         if (ext0) body[0] = add(body[0], mul(unit(sub(body[0], body[1])), ext0));
@@ -302,7 +376,7 @@ const Layout = (() => {
       if (kind === "ring") {
         roads.push({ id: `road_${n.id}`, auto: true, outer: circle(xy(n), n.ring.r, 64), holes: [circle(xy(n), n.ring.island, 48).reverse()] });
       } else if (kind !== "border") {
-        roads.push({ id: `road_${n.id}`, auto: true, outer: circle(xy(n), Math.max(...at.map(widthOf)) / 2, 40), holes: [] });
+        roads.push({ id: `road_${n.id}`, auto: true, outer: circle(xy(n), Math.max(...at.map(st => streetProfile(L,st,st.a === n.id ? 0 : polyLen(centreline(L,st)),crop).width)) / 2, 40), holes: [] });
       }
     }
     return { roads, markings, lawns };
@@ -311,6 +385,7 @@ const Layout = (() => {
   // ---- routes -------------------------------------------------------------------------
   // The lane (a polyline in the direction of travel) of a street driven away from node `nid`.
   function laneAway(L, st, nid, offset, crop) {
+    if (st.kind === "highway") return highwayLane(L,st,nid,offset,crop);
     const pts = lineFrom(L, st, nid);
     const far = nodeOf(L, otherEnd(st, nid));
     if (nodeKind(L, far, crop) === "border") pts.push(add(pts.at(-1), mul(unit(sub(pts.at(-1), pts.at(-2))), 1)));
@@ -359,12 +434,18 @@ const Layout = (() => {
     const resolvedInIdx = (inLaneIdx !== null && inLaneIdx !== undefined)
       ? inLaneIdx
       : Math.max(0, inLanes.findIndex((l) => Math.abs(l - loIn) < 0.05));
+    if (inSt.kind === "highway") loIn = inLanes[resolvedInIdx] ?? inLanes[0];
     const loOut = exitKey === "right" ? outLanes.at(-1)
       : (exitKey === "straight" && outLanes.length > 1 && resolvedInIdx > 0)
         ? outLanes[Math.min(outLanes.length - 1, resolvedInIdx)]
         : outLanes[0];
     const ring = n.ring;
     const pts = [start];
+    if (inSt.kind === "highway") {
+      const incoming = highwayLane(L,inSt,otherEnd(inSt,nid),loIn,crop);
+      const begin = projectOn(incoming,start), finish = polyLen(incoming) - (ring ? ring.r + 3 : Math.max(...streetsAt(L,nid).filter(s => s !== inSt).map(widthOf))/2 + .5);
+      pts.push(...cut(incoming,begin+.5,finish));
+    }
     if (ring) {
       // Round the island keeping it on the left: the angle around the centre goes down.
       const rl = (ring.r + ring.island) / 2;
@@ -397,7 +478,7 @@ const Layout = (() => {
         pts.push(add(c, add(mul(right(tin), R * Math.cos(a)), mul(tin, R * Math.sin(a)))));
       }
       const back = laneAway(L, inSt, nid, loOut, crop);
-      for (const p of cut(back, gapIn + 3, gapIn + 3 + tail)) pts.push(p);
+      for (const p of cut(back, gapIn + 3, inSt.kind === "highway" ? polyLen(back)-3 : gapIn + 3 + tail)) pts.push(p);
       return { points: pts };
     }
     const outLine = laneAway(L, outSt, nid, loOut, crop);
@@ -406,7 +487,7 @@ const Layout = (() => {
     pts.push(entry);
     if (exitKey !== "straight") pts.push(...bezier(entry, tin, ex.p, ex.t, 8));
     pts.push(ex.p);
-    for (const p of cut(outLine, gapOut + 0.5, gapOut + tail)) pts.push(p);
+    for (const p of cut(outLine, gapOut + 0.5, outSt.kind === "highway" ? polyLen(outLine)-3 : gapOut + tail)) pts.push(p);
     return { points: pts };
   }
 
@@ -699,7 +780,7 @@ const Layout = (() => {
     const defaultLane = q === "right" ? lanes.length - 1 : 0;
     const laneIdx = (pl.lane !== undefined && pl.lane !== null) ? Number(pl.lane) : defaultLane;
     const safeLaneIdx = Math.max(0, Math.min(lanes.length - 1, laneIdx));
-    const lo = lanes[safeLaneIdx] ?? lanes[0];
+    let lo = lanes[safeLaneIdx] ?? lanes[0];
     const kind = nodeKind(L, n, crop);
     const inLine = lineFrom(L, st, nid);
     const total = polyLen(inLine);
@@ -710,6 +791,10 @@ const Layout = (() => {
     // The car stands with its front at the stop line, not on it (the game puts its centre at the stop).
     const carD = Math.max(sd + CAR_BACK, Math.min(total - 1, Number(pl.questionAt) || sd + CAR_BACK));
     const s = along(inLine, carD);
+    if (st.kind === "highway") {
+      const profile = streetProfile(L,st,st.a === nid ? carD : total-carD,crop);
+      lo = profile.median/2 + 1.75 + (safeLaneIdx === 2 ? 3.5+3.5*profile.blend : safeLaneIdx*3.5);
+    }
     const tin = mul(s.t, -1);
     const stop = add(s.p, mul(right(tin), lo));
     return { st, nid, kind, lo, stop, tin, sd: carD, stopLineDistance: sd, total, lanes, laneIndex: safeLaneIdx };
@@ -739,7 +824,7 @@ const Layout = (() => {
     const plan = streetPlayerPlan(scene);
     if (!plan) return { routes: [], stop: null, exitWidths: {}, approachWidth: 8.4 };
     const { st, nid, kind, lo, stop, tin, sd } = plan;
-    const lane = offsetRight(lineFrom(L, st, otherEnd(st, nid)), lo);   // driving toward nid
+    const lane = st.kind === "highway" ? highwayLane(L,st,otherEnd(st,nid),laneOffsets(st)[plan.laneIndex],crop) : offsetRight(lineFrom(L, st, otherEnd(st, nid)), lo);
     const laneTotal = polyLen(lane);
     const approach = cut(lane, Math.max(0, laneTotal - sd - 80), laneTotal - sd);
     const startNode = nodeOf(L, otherEnd(st, nid));
@@ -765,12 +850,14 @@ const Layout = (() => {
       // No junction ahead: the road goes on (a bend or a straight). One way, called by its turn.
       const ahead = [stop];
       const inLine = lineFrom(L, st, nid);
-      for (const p of offsetRight(cut(inLine, 0, plan.sd).reverse(), lo).slice(1)) ahead.push(p);
+      const toEnd = st.kind === "highway" ? cut(lane,projectOn(lane,stop)+.5,polyLen(lane)) : offsetRight(cut(inLine,0,plan.sd).reverse(),lo).slice(1);
+      for (const p of toEnd) ahead.push(p);
       let cur = st, at = nid, guard = 0;
       while (guard++ < 20 && nodeKind(L, nodeOf(L, at), crop) === "joint") {
         const nxt = streetsAt(L, at).find((s) => s !== cur);
         if (!nxt) break;
-        for (const p of laneAway(L, nxt, at, lo, crop).slice(1)) ahead.push(p);
+        const lanes = laneOffsets(nxt), nextLo = lanes[Math.min(plan.laneIndex,lanes.length-1)];
+        for (const p of laneAway(L, nxt, at, nextLo, crop).slice(1)) ahead.push(p);
         cur = nxt;
         at = otherEnd(nxt, at);
       }
@@ -854,7 +941,7 @@ const Layout = (() => {
     for (const st of L.streets) {
       for (const nid of [st.a, st.b]) {
         for (const lo of laneOffsets(st)) {
-          const lane = offsetRight(lineFrom(L, st, otherEnd(st, nid)), lo);   // toward nid
+          const lane = st.kind === "highway" ? highwayLane(L,st,otherEnd(st,nid),lo,scene.crop||90) : offsetRight(lineFrom(L, st, otherEnd(st, nid)), lo);
           for (let i = 0; i + 1 < lane.length; i++) {
             const a = lane[i], b = lane[i + 1], ab = sub(b, a), l2 = dot(ab, ab) || 1;
             const t = Math.max(0, Math.min(1, dot(sub(p, a), ab) / l2));
@@ -1106,6 +1193,7 @@ const Layout = (() => {
     else if (kind === "yard-right") L = { nodes: [c, s, n, w], streets: [S("s1", "s", "c", { ends: stopEnd }), S("s2", "c", "n"), S("s4", "c", "w", { kind: "yard" })] };
     else if (kind === "median") L = { nodes: [c, s, n, e, w], streets: [S("s1", "s", "c", { ends: stopEnd, median: 3 }), S("s2", "c", "n", { median: 3 }), S("s3", "c", "e"), S("s4", "c", "w")] };
     else if (kind === "avenue") L = { nodes: [c, s, n, e, w], streets: [S("s1", "s", "c", { ends: stopEnd }), S("s2", "c", "n"), S("s3", "c", "e", { kind: "avenue" }), S("s4", "c", "w", { kind: "avenue" })] };
+    else if (kind === "highway") L = {nodes:[s,n], streets:[S("s1","s","n",{kind:"highway"})]};
     else return null;
     L.player = { street: "s1", toward: L.streets[0].b };
     return JSON.parse(JSON.stringify(L));
@@ -1118,6 +1206,7 @@ const Layout = (() => {
     { id: "tee-right", title: "Примыкание справа" },
     { id: "ring", title: "Кольцо" },
     { id: "avenue", title: "С проспектом" },
+    { id: "highway", title: "Трасса 3+3" },
     { id: "median", title: "С разделительной полосой" },
     { id: "yard-left", title: "Выезд со двора слева" },
     { id: "yard-right", title: "Выезд со двора справа" },
@@ -1160,7 +1249,7 @@ const Layout = (() => {
   }
 
   return {
-    medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf,
+    medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile,
     applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
     isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, editPlayerRoute, setPlayerRouteManual,

@@ -271,6 +271,7 @@ body.testing .toolbar, body.testing .popover, body.testing .hint { display: none
 .road-pic { display: block; height: 24px; width: 40px; border-radius: 3px; background: linear-gradient(90deg, transparent 0, transparent calc(50% - 1px), #fff calc(50% - 1px), #fff calc(50% + 1px), transparent calc(50% + 1px)) center/2px 6px repeat-y, #3a3f47; }
 .road-pic.k-yard { width: 22px; background: #3a3f47; }
 .road-pic.k-avenue { width: 56px; }
+.road-pic.k-highway { width: 68px; background: repeating-linear-gradient(90deg, #3a3f47 0 9px, #fff 9px 10px, #3a3f47 10px 18px, #fff 18px 19px, #3a3f47 19px 28px, #7fad70 28px 36px, #3a3f47 36px 45px, #fff 45px 46px, #3a3f47 46px 54px, #fff 54px 55px, #3a3f47 55px 68px); }
 .mark-pic { display: block; width: 40px; height: 24px; border-radius: 3px; background: #3a3f47; position: relative; }
 .mark-pic::after { content: ""; position: absolute; left: 4px; right: 4px; top: 11px; height: 2px; background: #fff; }
 .mark-pic.m-dashed::after { background: repeating-linear-gradient(90deg, #fff 0 7px, transparent 7px 12px); }

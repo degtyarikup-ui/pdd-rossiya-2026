@@ -55,12 +55,15 @@ static func describe(data: Dictionary, built: Dictionary) -> Dictionary:
 			var sample := along(from_edge, END_INSET)
 			var kind := str(st.get("kind", "street"))
 			var median := float(st.get("median", 0.0)) if kind != "yard" else 0.0
-			var width: float = {"yard":5.0,"street":8.4,"avenue":14.0}.get(kind,8.4) + median
+			# Highway source sections have 3+3 lanes; the editor finishes a 2+2 taper
+			# before END_INSET so the city connects them to ordinary four-lane scenes.
+			if kind == "highway": median = 0.0
+			var width: float = {"yard":5.0,"street":8.4,"avenue":14.0,"highway":14.0}.get(kind,8.4) + median
 			var port := _port(sample.p, -sample.t, width, built)
 			port.merge({"id": str(st.id)+":"+str(end), "street": st.id, "node": st.a if end == 0 else st.b,
-				"boundary":boundary, "lanes":4 if kind == "avenue" else 2, "declared_median":median,
+				"boundary":boundary, "lanes":4 if kind in ["avenue","highway"] else 2, "declared_median":median,
 				"walk":st.get("walk",true) and st.get("surface", "asphalt") != "sand", "edge":st.get("edge",true),
-				"surface":st.get("surface", "asphalt"),"centre":"none" if st.get("manualMarks",false) else st.get("centre","none" if kind=="yard" else "double" if kind=="avenue" else "dashed")}, true)
+				"surface":st.get("surface", "asphalt"),"centre":"none" if st.get("manualMarks",false) else st.get("centre","none" if kind=="yard" else "double" if kind in ["avenue","highway"] else "dashed")}, true)
 			ports.append(port)
 	# For traced scenes, derive connections from real carriageway sections at the crop.
 	# Old exported route tails can be shortened or skewed; extrapolating them may land on the lawn.

@@ -521,9 +521,10 @@
     p.innerHTML = `${head(`<span class="ibadge">${ic("road")}</span>`, Layout.KINDS[st.kind || "street"].title, isPlayer ? "по ней едет игрок" : "")}
       ${card("Покрытие", chips("surface", [{ value: "asphalt", title: "Асфальт" }, { value: "sand", title: "Грунт" }], st.surface || "asphalt"))}
       ${card("Ширина", chips("kind", Object.entries(Layout.KINDS).map(([k, v]) => ({ value: k, html: `<span class="road-pic k-${k}"></span>`, title: v.title })), st.kind || "street", { cls: "tiles" }))}
-      ${st.kind !== "yard" ? card("Разделительная полоса", chips("median", [{ value: 0, title: "Нет" }, { value: 2, title: "2 м" }, { value: 3, title: "3 м" }, { value: 5, title: "5 м" }], Number(st.median) || 0)
+      ${st.kind !== "yard" ? card("Разделительная полоса", chips("median", [...(st.kind === "highway" ? [] : [{ value: 0, title: "Нет" }]), { value: 2, title: "2 м" }, { value: 3, title: "3 м" }, { value: 5, title: "5 м" }], Layout.medianOf(st))
         + `<p class="muted">Газон с бордюром посередине. На него можно ставить знаки и светофоры: кликните прямо на полосу.</p>`) : ""}
-      ${st.kind !== "yard" && !Number(st.median) ? card("Линия по центру", chips("centre", [{ value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" },
+      ${st.kind === "highway" ? card("Стык с обычной дорогой", `<p>По 3 полосы в каждом направлении. У края сцены — плавный переход в 2+2: крайняя полоса сливается со второй, разделитель заканчивается. Внутри сцены такой переход создаётся при соединении с «Проспектом».</p>`) : ""}
+      ${st.kind !== "yard" && !Layout.medianOf(st) ? card("Линия по центру", chips("centre", [{ value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" },
         { value: "double", html: `<span class="mark-pic m-double"></span>`, tip: "Двойная сплошная" }, { value: "none", title: "Нет" }], centre, { cls: "tiles" })) : ""}
       ${st.kind !== "yard" ? card("Разметка вручную", st.manualMarks
         ? `<p class="muted">Линии этой улицы — ваши: выберите линию, чтобы менять вид, резать и двигать точки.</p>${button("marks-auto", "Снова строить сами", "restart", "ghost wide")}`
