@@ -195,6 +195,70 @@ class GodotGame {
     if (changed) unawaited(ProgressSyncService.instance.syncWithServer());
   }
 
+  /// Plays the 3D Crossroads Priority mini-game on Godot.
+  static Future<void> playCrossroads(BuildContext context, WidgetRef ref) async {
+    if (_running) return;
+    HapticFeedbackHelper.tap();
+    final lang = Localizations.localeOf(context).languageCode;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final prefs = await _prefs();
+    final vehicle = prefs?.getString(_vehicleKey) ?? 'sedan';
+    final paint = prefs?.getString(_paintKey) ?? 'red';
+    final paintHex = gamePaintColors[paint] != null
+        ? _hex(gamePaintColors[paint]!)
+        : '#0574F8';
+    if (!context.mounted) return;
+    final safe = _safeArea(context);
+    _running = true;
+    String? json;
+    try {
+      json = await _start(context, [
+        '--crossroads',
+        '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
+        '--best-score=${ref.read(crossroadsPriorityProgressProvider).bestScore}',
+        '--session-id=${GameLeaderboardService.newRunId()}',
+        '--economy=${jsonEncode({'seconds': GameEconomy.miniGameSeconds, 'lives': GameEconomy.miniGameLives, 'maxScore': GameEconomy.maxRunScore, 'base': GameEconomy.crossroads(1), 'step': GameEconomy.crossroads(2) - GameEconomy.crossroads(1), 'bonusCap': 5})}',
+        if (!HapticFeedbackHelper.enabled) '--no-haptics',
+        '--lang=$lang',
+        if (dark) '--dark',
+        ...safe,
+        '--vehicle=$vehicle',
+        '--paint=$paintHex',
+        if (!SoundEffectsService.instance.isEnabled) '--mute',
+      ]);
+    } on PlatformException {
+      json = null;
+    } finally {
+      _running = false;
+    }
+    if (json == null) return;
+    final decoded = jsonDecode(json);
+    if (decoded is! Map || !context.mounted) return;
+    final map = decoded.cast<String, dynamic>();
+    final runs = map['runs'] is List ? map['runs'] as List : [map];
+    final seen = <String>{};
+    var changed = false;
+    for (final run in runs.whereType<Map>()) {
+      final id = run['id'] as String? ?? GameLeaderboardService.newRunId();
+      if (!seen.add(id)) continue;
+      final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
+      final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
+      if (solved + wrong == 0) continue;
+      final score = GameEconomy.rankedScore(
+        (run['score'] as num?)?.toInt() ?? 0,
+        correct: solved,
+        wrong: wrong,
+      );
+      final combo = ((run['combo'] as num?)?.toInt() ?? 0).clamp(0, solved);
+      unawaited(GameLeaderboardService.instance.submitRun(score, runId: id));
+      await ref
+          .read(crossroadsPriorityProgressProvider.notifier)
+          .recordGameResult(score: score, combo: combo, solved: solved);
+      changed = true;
+    }
+    if (changed) unawaited(ProgressSyncService.instance.syncWithServer());
+  }
+
   /// Opens the game and waits for its summary (JSON), null if it did not end
   /// with one. Android and iOS: the native screen; web: the game's route.
   /// The layout the app measures, in dp: the status and navigation bars (the engine does not report the

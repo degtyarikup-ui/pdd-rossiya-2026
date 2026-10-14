@@ -11,12 +11,12 @@ import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/sources/sign_scenarios_library.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/data/models/traffic_controller_progress.dart';
+import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/domain/services/sign_swiper_engine.dart';
 import 'package:pdd_app/l10n/l10n.dart';
-import 'package:pdd_app/presentation/screens/games/crossroads/crossroads_screen.dart';
 import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/swipe_card_view.dart';
@@ -227,6 +227,102 @@ void main() {
       expect(progress.getTrafficControllerProgress().bestScore, 100);
       expect(progress.getTrafficControllerProgress().maxCombo, 3);
       expect(progress.getTrafficControllerProgress().totalSolved, 8);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
+
+  testWidgets(
+    'Godot crossroads passes settings and saves every restarted round once',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      HapticFeedbackHelper.setEnabled(false);
+      addTearDown(() => HapticFeedbackHelper.setEnabled(true));
+      await progress.saveCrossroadsPriorityProgress(
+        const CrossroadsPriorityProgress(bestScore: 80, totalSolved: 2),
+      );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('game_vehicle', 'suv');
+      await prefs.setString('game_vehicle_paint', 'blue');
+      List<String>? launch;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(const MethodChannel('pdd/godot_game'), (
+            call,
+          ) async {
+            if (call.method != 'start') return true;
+            launch = List<String>.from((call.arguments as Map)['args'] as List);
+            return jsonEncode({
+              'game': 'crossroads',
+              'runs': [
+                {
+                  'id': 'first',
+                  'score': 120,
+                  'solved': 3,
+                  'wrong': 1,
+                  'combo': 2,
+                  'finished': true,
+                },
+                {
+                  'id': 'first',
+                  'score': 120,
+                  'solved': 3,
+                  'wrong': 1,
+                  'combo': 2,
+                  'finished': true,
+                },
+                {
+                  'id': 'second',
+                  'score': 40,
+                  'solved': 1,
+                  'wrong': 0,
+                  'combo': 1,
+                  'finished': false,
+                },
+                {
+                  'id': 'empty',
+                  'score': 0,
+                  'solved': 0,
+                  'wrong': 0,
+                  'combo': 0,
+                },
+              ],
+            });
+          });
+      await open(
+        tester,
+        Consumer(
+          builder: (context, ref, _) => TextButton(
+            onPressed: () => GodotGame.playCrossroads(context, ref),
+            child: const Text('Launch'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Launch'));
+      await tester.pumpAndSettle();
+      expect(
+        launch,
+        containsAll([
+          '--crossroads',
+          '--best-score=80',
+          '--mute',
+          '--no-haptics',
+          '--vehicle=suv',
+        ]),
+      );
+      final economy =
+          jsonDecode(
+                launch!
+                    .singleWhere((s) => s.startsWith('--economy='))
+                    .substring('--economy='.length),
+              )
+              as Map;
+      expect(economy['base'], GameEconomy.crossroads(1));
+      expect(economy['maxScore'], GameEconomy.maxRunScore);
+      expect(progress.getCrossroadsPriorityProgress().bestScore, 120);
+      expect(progress.getCrossroadsPriorityProgress().maxCombo, 2);
+      expect(progress.getCrossroadsPriorityProgress().totalSolved, 6);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       debugDefaultTargetPlatformOverride = null;
@@ -535,17 +631,9 @@ void main() {
       tester.getCenter(find.text(appL10n.gameCrossroadsPriorityTitle)),
     );
     await tester.pump();
-    if (const bool.fromEnvironment('GAME_DEBUG')) {
-      // The stub scene intentionally remains loading; do not settle its
-      // animated progress indicator while testing navigation.
-      await tester.pump(const Duration(milliseconds: 350));
-      expect(find.byType(CrossroadsScreen), findsOneWidget);
-      Navigator.of(tester.element(find.byType(CrossroadsScreen))).pop();
-      await tester.pumpAndSettle();
-    } else {
-      await tester.pumpAndSettle();
-      expect(find.byType(CrossroadsScreen), findsNothing);
-    }
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text(appL10n.gameUnavailable), findsOneWidget);
+    await tester.pumpAndSettle();
     expect(find.byType(GamesHubScreen), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text(appL10n.gameRoundaboutTitle),
@@ -554,7 +642,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.text(appL10n.gameSoonBadge),
-      findsNWidgets(const bool.fromEnvironment('GAME_DEBUG') ? 1 : 2),
+      findsOneWidget,
     );
     await tester.tap(find.text(appL10n.gameRoundaboutTitle));
     await tester.pumpAndSettle();

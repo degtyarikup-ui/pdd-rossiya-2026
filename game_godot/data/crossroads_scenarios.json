@@ -1,0 +1,3252 @@
+[
+  {
+    "id": "cross_main_turns_left",
+    "category": "prioritySigns",
+    "title": "Главная дорога поворачивает налево (знак 8.13)",
+    "subtitle": "Сначала проезжают машины на главной, между собой — по помехе справа. Затем второстепенные.",
+    "pddArticle": "Пункт 13.10 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [
+      {
+        "code": "2.1",
+        "side": "south",
+        "table8_13": "bottom_left"
+      },
+      {
+        "code": "2.1",
+        "side": "west",
+        "table8_13": "bottom_right"
+      },
+      {
+        "code": "2.4",
+        "side": "north",
+        "table8_13": "top_right"
+      },
+      {
+        "code": "2.4",
+        "side": "east",
+        "table8_13": "left_top"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Синий хэтчбек",
+        "model": "hatch",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "left",
+        "order": 1,
+        "explanation": "Синий на главной дороге. Для белого седана он помеха справа, поэтому проезжает первым.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_west",
+        "type": "car",
+        "name": "Белый седан",
+        "model": "sedan",
+        "color": "#F2F3F5",
+        "side": "west",
+        "maneuver": "straight",
+        "order": 2,
+        "explanation": "Белый тоже на главной, но справа от него синий хэтчбек. Уступает ему и проезжает вторым.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_north",
+        "type": "car",
+        "name": "Оранжевый седан",
+        "model": "sedan",
+        "color": "#F08A24",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Оранжевый на второстепенной: пропускает главную. Справа от него никого — едет третьим.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_east",
+        "type": "suv",
+        "name": "Зеленый кроссовер",
+        "model": "suv",
+        "color": "#4D7768",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 4,
+        "explanation": "Зеленый на второстепенной, и справа от него оранжевый седан. Проезжает последним.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Главная дорога поворачивает налево (знак 8.13)",
+        "subtitle": "Сначала проезжают машины на главной, между собой — по помехе справа. Затем второстепенные.",
+        "pddArticle": "Пункт 13.10 ПДД РФ",
+        "actors": {
+          "car_south": {
+            "name": "Синий хэтчбек",
+            "explanation": "Синий на главной дороге. Для белого седана он помеха справа, поэтому проезжает первым."
+          },
+          "car_west": {
+            "name": "Белый седан",
+            "explanation": "Белый тоже на главной, но справа от него синий хэтчбек. Уступает ему и проезжает вторым."
+          },
+          "car_north": {
+            "name": "Оранжевый седан",
+            "explanation": "Оранжевый на второстепенной: пропускает главную. Справа от него никого — едет третьим."
+          },
+          "car_east": {
+            "name": "Зеленый кроссовер",
+            "explanation": "Зеленый на второстепенной, и справа от него оранжевый седан. Проезжает последним."
+          }
+        }
+      },
+      "en": {
+        "title": "The main road turns left (sign 8.13)",
+        "subtitle": "Vehicles on the main road go first, giving way to the one on their right. Then the secondary road.",
+        "pddArticle": "Clause 13.10 of the Russian Traffic Regulations",
+        "actors": {
+          "car_south": {
+            "name": "Blue hatchback",
+            "explanation": "The blue car is on the main road and is on the right of the white sedan, so it goes first."
+          },
+          "car_west": {
+            "name": "White sedan",
+            "explanation": "The white sedan is also on the main road, but the blue hatchback is on its right. It gives way and goes second."
+          },
+          "car_north": {
+            "name": "Orange sedan",
+            "explanation": "The orange car is on the secondary road and lets the main road pass. Nobody is on its right, so it goes third."
+          },
+          "car_east": {
+            "name": "Green crossover",
+            "explanation": "The green car is on the secondary road with the orange sedan on its right. It goes last."
+          }
+        }
+      },
+      "kk": {
+        "title": "Негізгі жол солға бұрылады (8.13 белгісі)",
+        "subtitle": "Алдымен негізгі жолдағылар өтеді, өзара — оң жақтағы көлікке жол береді. Содан кейін қосалқы жолдағылар.",
+        "pddArticle": "ЖЖЕ 13.10-тармағы",
+        "actors": {
+          "car_south": {
+            "name": "Көк хэтчбек",
+            "explanation": "Көк көлік негізгі жолда және ақ седанның оң жағында, сондықтан бірінші өтеді."
+          },
+          "car_west": {
+            "name": "Ақ седан",
+            "explanation": "Ақ седан да негізгі жолда, бірақ оң жағында көк хэтчбек. Жол беріп, екінші өтеді."
+          },
+          "car_north": {
+            "name": "Қызғылт сары седан",
+            "explanation": "Қызғылт сары көлік қосалқы жолда, негізгі жолды өткізеді. Оң жағында ешкім жоқ — үшінші өтеді."
+          },
+          "car_east": {
+            "name": "Жасыл кроссовер",
+            "explanation": "Жасыл көлік қосалқы жолда, оң жағында қызғылт сары седан. Соңғы өтеді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_main_straight",
+    "category": "prioritySigns",
+    "title": "Главная дорога: прямое направление",
+    "subtitle": "Транспорт на главной дороге имеет безусловный приоритет.",
+    "pddArticle": "Пункт 13.9 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [
+      {
+        "code": "2.1",
+        "side": "south"
+      },
+      {
+        "code": "2.1",
+        "side": "north"
+      },
+      {
+        "code": "2.4",
+        "side": "east"
+      },
+      {
+        "code": "2.4",
+        "side": "west"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Синий седан",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Синий автомобиль движется по главной дороге прямо.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_north",
+        "type": "suv",
+        "name": "Зеленый внедорожник",
+        "model": "suv",
+        "color": "#4D7768",
+        "side": "north",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Зеленый внедорожник на главной дороге, но при повороте налево уступает встречному синему (п. 13.12).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_east",
+        "type": "car",
+        "name": "Красный хэтчбек",
+        "model": "hatch",
+        "color": "#ED4621",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Красный автомобиль находится на второстепенной дороге со знаком 2.4 «Уступите дорогу».",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Главная дорога: прямое направление",
+        "subtitle": "Транспорт на главной дороге имеет безусловный приоритет.",
+        "pddArticle": "Пункт 13.9 ПДД РФ",
+        "actors": {
+          "car_south": {
+            "name": "Синий седан",
+            "explanation": "Синий автомобиль движется по главной дороге прямо."
+          },
+          "car_north": {
+            "name": "Зеленый внедорожник",
+            "explanation": "Зеленый внедорожник на главной дороге, но при повороте налево уступает встречному синему (п. 13.12)."
+          },
+          "car_east": {
+            "name": "Красный хэтчбек",
+            "explanation": "Красный автомобиль находится на второстепенной дороге со знаком 2.4 «Уступите дорогу»."
+          }
+        }
+      },
+      "en": {
+        "title": "Main road: direct direction",
+        "subtitle": "Transport on the main road has absolute priority.",
+        "pddArticle": "Clause 13.9 of the Russian Traffic Regulations",
+        "actors": {
+          "car_south": {
+            "name": "Blue sedan",
+            "explanation": "The blue car is moving straight along the main road."
+          },
+          "car_north": {
+            "name": "Green SUV",
+            "explanation": "A green SUV is on the main road, but when turning left it gives way to the oncoming blue one (section 13.12)."
+          },
+          "car_east": {
+            "name": "Red hatchback",
+            "explanation": "The red car is on a secondary road with a sign 2.4 “Give way”."
+          }
+        }
+      },
+      "kk": {
+        "title": "Негізгі жол: тікелей бағыт",
+        "subtitle": "Негізгі жолдағы көлік абсолютті басымдыққа ие.",
+        "pddArticle": "ЖЖЕ 13.9-тармағы",
+        "actors": {
+          "car_south": {
+            "name": "Көк седан",
+            "explanation": "Көк көлік үлкен жолдың бойымен тура келе жатыр."
+          },
+          "car_north": {
+            "name": "Жасыл жол талғамайтын көлік",
+            "explanation": "Жасыл жол талғамайтын көлік негізгі жолда келе жатыр, бірақ солға бұрылғанда қарсы келе жатқан көк седанға жол береді (13.12-тармақ)."
+          },
+          "car_east": {
+            "name": "Қызыл хэтчбек",
+            "explanation": "Қызыл көлік 2.4 «Жол беріңіз» белгісі бар қосалқы жолда."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_equal_3_cars",
+    "category": "prioritySigns",
+    "title": "Равнозначный перекресток: 3 автомобиля",
+    "subtitle": "Знаков нет: каждый уступает тому, кто приближается справа.",
+    "pddArticle": "Пункт 13.11 ПДД РФ",
+    "isEqual": true,
+    "isHard": false,
+    "signs": [],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "car_west",
+        "type": "suv",
+        "name": "Зеленый кроссовер",
+        "model": "suv",
+        "color": "#4D7768",
+        "side": "west",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Справа от зеленого кроссовера никого нет — он проезжает первым.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_north",
+        "type": "car",
+        "name": "Синий хэтчбек",
+        "model": "hatch",
+        "color": "#317ED4",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 2,
+        "explanation": "Справа от синего был зеленый кроссовер. Когда тот проехал, синий свободен.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_east",
+        "type": "car",
+        "name": "Желтый седан",
+        "model": "sedan",
+        "color": "#F08A24",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Справа от желтого — синий хэтчбек. Желтый уступает и проезжает последним.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Равнозначный перекресток: 3 автомобиля",
+        "subtitle": "Знаков нет: каждый уступает тому, кто приближается справа.",
+        "pddArticle": "Пункт 13.11 ПДД РФ",
+        "actors": {
+          "car_west": {
+            "name": "Зеленый кроссовер",
+            "explanation": "Справа от зеленого кроссовера никого нет — он проезжает первым."
+          },
+          "car_north": {
+            "name": "Синий хэтчбек",
+            "explanation": "Справа от синего был зеленый кроссовер. Когда тот проехал, синий свободен."
+          },
+          "car_east": {
+            "name": "Желтый седан",
+            "explanation": "Справа от желтого — синий хэтчбек. Желтый уступает и проезжает последним."
+          }
+        }
+      },
+      "en": {
+        "title": "Equal intersection: 3 cars",
+        "subtitle": "No signs: everyone gives way to the vehicle approaching from the right.",
+        "pddArticle": "Clause 13.11 of the Russian Traffic Regulations",
+        "actors": {
+          "car_west": {
+            "name": "Green crossover",
+            "explanation": "Nobody is on the right of the green crossover, so it goes first."
+          },
+          "car_north": {
+            "name": "Blue hatchback",
+            "explanation": "The green crossover was on the right of the blue car. Once it has passed, the blue car is free to go."
+          },
+          "car_east": {
+            "name": "Yellow sedan",
+            "explanation": "The blue hatchback is on the right of the yellow car. It gives way and goes last."
+          }
+        }
+      },
+      "kk": {
+        "title": "Тең маңызды қиылыс: 3 көлік",
+        "subtitle": "Белгі жоқ: әркім оң жақтан жақындаған көлікке жол береді.",
+        "pddArticle": "ЖЖЕ 13.11-тармағы",
+        "actors": {
+          "car_west": {
+            "name": "Жасыл кроссовер",
+            "explanation": "Жасыл кроссовердің оң жағында ешкім жоқ — ол бірінші өтеді."
+          },
+          "car_north": {
+            "name": "Көк хэтчбек",
+            "explanation": "Көк көліктің оң жағында жасыл кроссовер болды. Ол өткен соң көк көлік жолы бос."
+          },
+          "car_east": {
+            "name": "Сары седан",
+            "explanation": "Сарының оң жағында көк хэтчбек. Жол беріп, соңғы өтеді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_equal_tram",
+    "category": "prioritySigns",
+    "title": "Равнозначный перекресток с трамваем",
+    "subtitle": "На равнозначном перекрестке трамвай проезжает раньше автомобилей.",
+    "pddArticle": "Пункт 13.11 ПДД РФ",
+    "isEqual": true,
+    "isHard": false,
+    "signs": [],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "tram_north",
+        "type": "tram",
+        "name": "Красный трамвай",
+        "model": "tram",
+        "color": "#ED4621",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "На перекрестке равнозначных дорог трамвай имеет преимущество перед безрельсовыми ТС независимо от направления.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Серый хэтчбек",
+        "model": "hatch",
+        "color": "#B9C0C7",
+        "side": "south",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Серый поворачивает налево и пропускает трамвай. Справа от него никого — он второй.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_west",
+        "type": "car",
+        "name": "Синий седан",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "west",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Справа от синего седана — серый хэтчбек. Синий уступает ему и проезжает последним.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Равнозначный перекресток с трамваем",
+        "subtitle": "На равнозначном перекрестке трамвай проезжает раньше автомобилей.",
+        "pddArticle": "Пункт 13.11 ПДД РФ",
+        "actors": {
+          "tram_north": {
+            "name": "Красный трамвай",
+            "explanation": "На перекрестке равнозначных дорог трамвай имеет преимущество перед безрельсовыми ТС независимо от направления."
+          },
+          "car_south": {
+            "name": "Серый хэтчбек",
+            "explanation": "Серый поворачивает налево и пропускает трамвай. Справа от него никого — он второй."
+          },
+          "car_west": {
+            "name": "Синий седан",
+            "explanation": "Справа от синего седана — серый хэтчбек. Синий уступает ему и проезжает последним."
+          }
+        }
+      },
+      "en": {
+        "title": "Equal intersection with a tram",
+        "subtitle": "At an equal intersection the tram goes before cars.",
+        "pddArticle": "Clause 13.11 of the Russian Traffic Regulations",
+        "actors": {
+          "tram_north": {
+            "name": "Red tram",
+            "explanation": "At an intersection of equal roads a tram has priority over trackless vehicles whatever its direction."
+          },
+          "car_south": {
+            "name": "Grey hatchback",
+            "explanation": "The grey hatchback turns left and lets the tram pass. Nobody is on its right, so it goes second."
+          },
+          "car_west": {
+            "name": "Blue sedan",
+            "explanation": "The grey hatchback is on the right of the blue sedan. It gives way and goes last."
+          }
+        }
+      },
+      "kk": {
+        "title": "Трамвайы бар тең маңызды қиылыс",
+        "subtitle": "Тең маңызды қиылыста трамвай автомобильдерден бұрын өтеді.",
+        "pddArticle": "ЖЖЕ 13.11-тармағы",
+        "actors": {
+          "tram_north": {
+            "name": "Қызыл трамвай",
+            "explanation": "Тең маңызды жолдар қиылысында трамвай бағытына қарамастан рельссіз көліктерден басым."
+          },
+          "car_south": {
+            "name": "Сұр хэтчбек",
+            "explanation": "Сұр хэтчбек солға бұрылып, трамвайды өткізеді. Оң жағында ешкім жоқ — ол екінші."
+          },
+          "car_west": {
+            "name": "Көк седан",
+            "explanation": "Көк седанның оң жағында сұр хэтчбек. Жол беріп, соңғы өтеді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_emergency_priority",
+    "category": "prioritySigns",
+    "title": "Спецтранспорт: скорая помощь с сиреной",
+    "subtitle": "Маячок и специальный звуковой сигнал дают безоговорочный приоритет.",
+    "pddArticle": "Пункт 3.2 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [
+      {
+        "code": "2.1",
+        "side": "south"
+      },
+      {
+        "code": "2.1",
+        "side": "north"
+      },
+      {
+        "code": "2.4",
+        "side": "east"
+      },
+      {
+        "code": "2.4",
+        "side": "west"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "ambulance_east",
+        "type": "emergency",
+        "name": "Скорая помощь (сирена)",
+        "model": "suv",
+        "color": "#F2F3F5",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Автомобиль с включенными проблесковым маячком и специальным звуковым сигналом пользуется преимуществом независимо от знаков!",
+        "hasSiren": true
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Синий седан (Главная)",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 2,
+        "explanation": "После скорой синий автомобиль на главной дороге проезжает вторым.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_west",
+        "type": "car",
+        "name": "Красный хэтчбек (Второстепенная)",
+        "model": "hatch",
+        "color": "#ED4621",
+        "side": "west",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Красный хэтчбек на второстепенной со знаком 2.4 уступает всем.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Спецтранспорт: скорая помощь с сиреной",
+        "subtitle": "Маячок и специальный звуковой сигнал дают безоговорочный приоритет.",
+        "pddArticle": "Пункт 3.2 ПДД РФ",
+        "actors": {
+          "ambulance_east": {
+            "name": "Скорая помощь (сирена)",
+            "explanation": "Автомобиль с включенными проблесковым маячком и специальным звуковым сигналом пользуется преимуществом независимо от знаков!"
+          },
+          "car_south": {
+            "name": "Синий седан (Главная)",
+            "explanation": "После скорой синий автомобиль на главной дороге проезжает вторым."
+          },
+          "car_west": {
+            "name": "Красный хэтчбек (Второстепенная)",
+            "explanation": "Красный хэтчбек на второстепенной со знаком 2.4 уступает всем."
+          }
+        }
+      },
+      "en": {
+        "title": "Special transport: ambulance with siren",
+        "subtitle": "A beacon and a special sound signal give unconditional priority.",
+        "pddArticle": "Clause 3.2 of the Russian Traffic Regulations",
+        "actors": {
+          "ambulance_east": {
+            "name": "Ambulance (siren)",
+            "explanation": "A car with a flashing light and a special sound signal on has priority regardless of the signs!"
+          },
+          "car_south": {
+            "name": "Blue sedan (Main road)",
+            "explanation": "After the ambulance, the blue car on the main road passes second."
+          },
+          "car_west": {
+            "name": "Red hatchback (Secondary road)",
+            "explanation": "The red hatchback on the secondary road with the 2.4 sign gives way to everyone."
+          }
+        }
+      },
+      "kk": {
+        "title": "Арнайы көлік: сиренасы бар жедел жәрдем",
+        "subtitle": "Маяк және арнайы дыбыстық сигнал сөзсіз басымдық береді.",
+        "pddArticle": "ЖЖЕ 3.2-тармағы",
+        "actors": {
+          "ambulance_east": {
+            "name": "Жедел жәрдем (сирена)",
+            "explanation": "Жыпылықтайтын шамы және арнайы дыбыстық сигналы қосылған көлік белгілеріне қарамастан басымдыққа ие!"
+          },
+          "car_south": {
+            "name": "Көк седан (негізгі жол)",
+            "explanation": "Жедел жәрдемнен кейін үлкен жолдағы көк көлік екінші болып өтеді."
+          },
+          "car_west": {
+            "name": "Қызыл хэтчбек (қосалқы жол)",
+            "explanation": "2.4 белгісі бар қосалқы жолдағы қызыл хэтчбек бәріне жол береді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_tram_on_secondary",
+    "category": "prioritySigns",
+    "title": "Трамвай на второстепенной дороге",
+    "subtitle": "Трамвай на второстепенной уступает автомобилям на главной.",
+    "pddArticle": "Пункты 13.9 и 13.12 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [
+      {
+        "code": "2.1",
+        "side": "south"
+      },
+      {
+        "code": "2.1",
+        "side": "north"
+      },
+      {
+        "code": "2.4",
+        "side": "east"
+      },
+      {
+        "code": "2.4",
+        "side": "west"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Синий седан (главная)",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Синий автомобиль на главной дороге — он проезжает раньше трамвая на второстепенной.",
+        "hasSiren": false
+      },
+      {
+        "id": "tram_east",
+        "type": "tram",
+        "name": "Красный трамвай (второстепенная)",
+        "model": "tram",
+        "color": "#ED4621",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 2,
+        "explanation": "Трамвай на второстепенной пропускает главную. Встречный желтый поворачивает налево и уступает трамваю.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_west",
+        "type": "car",
+        "name": "Желтый седан (второстепенная)",
+        "model": "sedan",
+        "color": "#F08A24",
+        "side": "west",
+        "maneuver": "left",
+        "order": 3,
+        "explanation": "Желтый на второстепенной, а поворачивая налево, уступает и встречному трамваю.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Трамвай на второстепенной дороге",
+        "subtitle": "Трамвай на второстепенной уступает автомобилям на главной.",
+        "pddArticle": "Пункты 13.9 и 13.12 ПДД РФ",
+        "actors": {
+          "car_south": {
+            "name": "Синий седан (главная)",
+            "explanation": "Синий автомобиль на главной дороге — он проезжает раньше трамвая на второстепенной."
+          },
+          "tram_east": {
+            "name": "Красный трамвай (второстепенная)",
+            "explanation": "Трамвай на второстепенной пропускает главную. Встречный желтый поворачивает налево и уступает трамваю."
+          },
+          "car_west": {
+            "name": "Желтый седан (второстепенная)",
+            "explanation": "Желтый на второстепенной, а поворачивая налево, уступает и встречному трамваю."
+          }
+        }
+      },
+      "en": {
+        "title": "Tram on the secondary road",
+        "subtitle": "A tram on the secondary road gives way to cars on the main road.",
+        "pddArticle": "Clauses 13.9 and 13.12 of the Russian Traffic Regulations",
+        "actors": {
+          "car_south": {
+            "name": "Blue sedan (main road)",
+            "explanation": "The blue car is on the main road and goes before the tram on the secondary road."
+          },
+          "tram_east": {
+            "name": "Red tram (secondary road)",
+            "explanation": "The tram on the secondary road lets the main road pass. The oncoming yellow car turns left and gives way to it."
+          },
+          "car_west": {
+            "name": "Yellow sedan (secondary road)",
+            "explanation": "The yellow car is on the secondary road and, turning left, also gives way to the oncoming tram."
+          }
+        }
+      },
+      "kk": {
+        "title": "Қосалқы жолдағы трамвай",
+        "subtitle": "Қосалқы жолдағы трамвай негізгі жолдағы көліктерге жол береді.",
+        "pddArticle": "ЖЖЕ 13.9 және 13.12-тармақтары",
+        "actors": {
+          "car_south": {
+            "name": "Көк седан (негізгі жол)",
+            "explanation": "Көк көлік негізгі жолда, қосалқы жолдағы трамвайдан бұрын өтеді."
+          },
+          "tram_east": {
+            "name": "Қызыл трамвай (қосалқы жол)",
+            "explanation": "Трамвай негізгі жолды өткізеді. Қарсы келе жатқан сары көлік солға бұрылып, трамвайға жол береді."
+          },
+          "car_west": {
+            "name": "Сары седан (қосалқы жол)",
+            "explanation": "Сары көлік қосалқы жолда, солға бұрылғанда қарсы келе жатқан трамвайға да жол береді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_stop_sign",
+    "category": "prioritySigns",
+    "title": "Знак 2.5 «Движение без остановки запрещено»",
+    "subtitle": "Перед знаком STOP нужно остановиться и уступить транспорту на пересекаемой дороге.",
+    "pddArticle": "Знак 2.5, пункты 13.9 и 13.12 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [
+      {
+        "code": "2.1",
+        "side": "east"
+      },
+      {
+        "code": "2.1",
+        "side": "west"
+      },
+      {
+        "code": "2.5",
+        "side": "south"
+      },
+      {
+        "code": "2.4",
+        "side": "north"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "car_east",
+        "type": "suv",
+        "name": "Зеленый внедорожник",
+        "model": "suv",
+        "color": "#4D7768",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Зеленый внедорожник едет по главной дороге прямо.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_north",
+        "type": "car",
+        "name": "Белый седан",
+        "model": "sedan",
+        "color": "#F2F3F5",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 2,
+        "explanation": "Белый седан на второстепенной пропускает главную и едет прямо.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Красный хэтчбек (знак STOP)",
+        "model": "hatch",
+        "color": "#ED4621",
+        "side": "south",
+        "maneuver": "left",
+        "order": 3,
+        "explanation": "Красный остановился у знака STOP, пропускает главную, а при повороте налево — встречный белый седан.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Знак 2.5 «Движение без остановки запрещено»",
+        "subtitle": "Перед знаком STOP нужно остановиться и уступить транспорту на пересекаемой дороге.",
+        "pddArticle": "Знак 2.5, пункты 13.9 и 13.12 ПДД РФ",
+        "actors": {
+          "car_east": {
+            "name": "Зеленый внедорожник",
+            "explanation": "Зеленый внедорожник едет по главной дороге прямо."
+          },
+          "car_north": {
+            "name": "Белый седан",
+            "explanation": "Белый седан на второстепенной пропускает главную и едет прямо."
+          },
+          "car_south": {
+            "name": "Красный хэтчбек (знак STOP)",
+            "explanation": "Красный остановился у знака STOP, пропускает главную, а при повороте налево — встречный белый седан."
+          }
+        }
+      },
+      "en": {
+        "title": "Sign 2.5 \"Driving without stopping is prohibited\"",
+        "subtitle": "At the STOP sign you stop and give way to traffic on the road you are crossing.",
+        "pddArticle": "Sign 2.5, clauses 13.9 and 13.12 of the Russian Traffic Regulations",
+        "actors": {
+          "car_east": {
+            "name": "Green SUV",
+            "explanation": "The green SUV drives straight along the main road."
+          },
+          "car_north": {
+            "name": "White sedan",
+            "explanation": "The white sedan on the secondary road lets the main road pass and drives straight."
+          },
+          "car_south": {
+            "name": "Red hatchback (STOP sign)",
+            "explanation": "The red car stops at the STOP sign, lets the main road pass and, turning left, the oncoming white sedan too."
+          }
+        }
+      },
+      "kk": {
+        "title": "2.5 белгісі «Тоқтамай көлік жүргізуге тыйым салынады»",
+        "subtitle": "STOP белгісінде тоқтап, қиылысатын жолдағы көліктерге жол беру керек.",
+        "pddArticle": "2.5 белгісі, ЖЖЕ 13.9 және 13.12-тармақтары",
+        "actors": {
+          "car_east": {
+            "name": "Жасыл жол талғамайтын көлік",
+            "explanation": "Жасыл көлік негізгі жолмен тура жүреді."
+          },
+          "car_north": {
+            "name": "Ақ седан",
+            "explanation": "Ақ седан қосалқы жолда, негізгі жолды өткізіп, тура жүреді."
+          },
+          "car_south": {
+            "name": "Қызыл хэтчбек (STOP белгісі)",
+            "explanation": "Қызыл көлік STOP белгісінде тоқтайды, негізгі жолды, ал солға бұрылғанда қарсы келе жатқан ақ седанды да өткізеді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_uturn_equal",
+    "category": "prioritySigns",
+    "title": "Разворот на перекрестке",
+    "subtitle": "При развороте водитель уступает встречным машинам, которые едут прямо или направо.",
+    "pddArticle": "Пункт 13.12 ПДД РФ",
+    "isEqual": true,
+    "isHard": false,
+    "signs": [],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Синий седан",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Синий автомобиль движется прямо. Северный седан при развороте обязан уступить ему.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_north",
+        "type": "car",
+        "name": "Красный хэтчбек (Разворот)",
+        "model": "hatch",
+        "color": "#ED4621",
+        "side": "north",
+        "maneuver": "uTurn",
+        "order": 2,
+        "explanation": "Разворачивающийся автомобиль уступает встречному транспорту.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Разворот на перекрестке",
+        "subtitle": "При развороте водитель уступает встречным машинам, которые едут прямо или направо.",
+        "pddArticle": "Пункт 13.12 ПДД РФ",
+        "actors": {
+          "car_south": {
+            "name": "Синий седан",
+            "explanation": "Синий автомобиль движется прямо. Северный седан при развороте обязан уступить ему."
+          },
+          "car_north": {
+            "name": "Красный хэтчбек (Разворот)",
+            "explanation": "Разворачивающийся автомобиль уступает встречному транспорту."
+          }
+        }
+      },
+      "en": {
+        "title": "U-turn at an intersection",
+        "subtitle": "When making a U-turn the driver gives way to oncoming vehicles going straight or turning right.",
+        "pddArticle": "Clause 13.12 of the Russian Traffic Regulations",
+        "actors": {
+          "car_south": {
+            "name": "Blue sedan",
+            "explanation": "The blue car is moving straight. The northern sedan must yield to him when turning."
+          },
+          "car_north": {
+            "name": "Red hatchback (U-turn)",
+            "explanation": "A turning car yields to oncoming traffic."
+          }
+        }
+      },
+      "kk": {
+        "title": "Қиылыста кері бұрылу",
+        "subtitle": "Кері бұрылғанда жүргізуші тура немесе оңға жүріп келе жатқан қарсы көліктерге жол береді.",
+        "pddArticle": "ЖЖЕ 13.12-тармағы",
+        "actors": {
+          "car_south": {
+            "name": "Көк седан",
+            "explanation": "Көк көлік түзу келе жатыр. Кері бұрылу кезінде солтүстіктегі седан оған жол беруге міндетті."
+          },
+          "car_north": {
+            "name": "Қызыл хэтчбек (кері бұрылу)",
+            "explanation": "Кері бұрылып келе жатқан көлік қарсы келе жатқан көлікке жол беруі керек."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_main_turns_right",
+    "category": "prioritySigns",
+    "title": "Главная дорога поворачивает направо (знак 8.13)",
+    "subtitle": "Сначала проезжают машины на главной, между собой — по помехе справа. Затем второстепенные.",
+    "pddArticle": "Пункт 13.10 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [
+      {
+        "code": "2.1",
+        "side": "south",
+        "table8_13": "bottom_right"
+      },
+      {
+        "code": "2.1",
+        "side": "east",
+        "table8_13": "bottom_left"
+      },
+      {
+        "code": "2.4",
+        "side": "north",
+        "table8_13": "left_top"
+      },
+      {
+        "code": "2.4",
+        "side": "west",
+        "table8_13": "top_right"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "car_east",
+        "type": "car",
+        "name": "Синий седан",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "east",
+        "maneuver": "left",
+        "order": 1,
+        "explanation": "Синий на главной поворачивает налево, вдоль главной. Для автобуса он помеха справа — едет первым.",
+        "hasSiren": false
+      },
+      {
+        "id": "bus_south",
+        "type": "bus",
+        "name": "Рейсовый автобус",
+        "model": "bus",
+        "color": "#F08A24",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 2,
+        "explanation": "Автобус тоже на главной, но справа от него синий седан. Уступает и проезжает вторым.",
+        "hasSiren": false
+      },
+      {
+        "id": "truck_west",
+        "type": "truck",
+        "name": "Белый грузовик",
+        "model": "truck",
+        "color": "#F2F3F5",
+        "side": "west",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Грузовик на второстепенной пропускает главную. Справа от него уже никого — он третий.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_north",
+        "type": "car",
+        "name": "Красный хэтчбек",
+        "model": "hatch",
+        "color": "#ED4621",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 4,
+        "explanation": "Красный на второстепенной, и справа от него белый грузовик. Проезжает последним.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Главная дорога поворачивает направо (знак 8.13)",
+        "subtitle": "Сначала проезжают машины на главной, между собой — по помехе справа. Затем второстепенные.",
+        "pddArticle": "Пункт 13.10 ПДД РФ",
+        "actors": {
+          "car_east": {
+            "name": "Синий седан",
+            "explanation": "Синий на главной поворачивает налево, вдоль главной. Для автобуса он помеха справа — едет первым."
+          },
+          "bus_south": {
+            "name": "Рейсовый автобус",
+            "explanation": "Автобус тоже на главной, но справа от него синий седан. Уступает и проезжает вторым."
+          },
+          "truck_west": {
+            "name": "Белый грузовик",
+            "explanation": "Грузовик на второстепенной пропускает главную. Справа от него уже никого — он третий."
+          },
+          "car_north": {
+            "name": "Красный хэтчбек",
+            "explanation": "Красный на второстепенной, и справа от него белый грузовик. Проезжает последним."
+          }
+        }
+      },
+      "en": {
+        "title": "The main road turns right (sign 8.13)",
+        "subtitle": "Vehicles on the main road go first, giving way to the one on their right. Then the secondary road.",
+        "pddArticle": "Clause 13.10 of the Russian Traffic Regulations",
+        "actors": {
+          "car_east": {
+            "name": "Blue sedan",
+            "explanation": "The blue car on the main road turns left along it. It is on the right of the bus, so it goes first."
+          },
+          "bus_south": {
+            "name": "Route bus",
+            "explanation": "The bus is also on the main road, but the blue sedan is on its right. It gives way and goes second."
+          },
+          "truck_west": {
+            "name": "White truck",
+            "explanation": "The truck on the secondary road lets the main road pass. Nobody is on its right any more, so it goes third."
+          },
+          "car_north": {
+            "name": "Red hatchback",
+            "explanation": "The red car is on the secondary road with the white truck on its right. It goes last."
+          }
+        }
+      },
+      "kk": {
+        "title": "Негізгі жол оңға бұрылады (8.13 белгісі)",
+        "subtitle": "Алдымен негізгі жолдағылар өтеді, өзара — оң жақтағы көлікке жол береді. Содан кейін қосалқы жолдағылар.",
+        "pddArticle": "ЖЖЕ 13.10-тармағы",
+        "actors": {
+          "car_east": {
+            "name": "Көк седан",
+            "explanation": "Көк көлік негізгі жолмен солға бұрылады. Ол автобустың оң жағында — бірінші өтеді."
+          },
+          "bus_south": {
+            "name": "Маршруттық автобус",
+            "explanation": "Автобус та негізгі жолда, бірақ оң жағында көк седан. Жол беріп, екінші өтеді."
+          },
+          "truck_west": {
+            "name": "Ақ жүк көлігі",
+            "explanation": "Жүк көлігі қосалқы жолда, негізгі жолды өткізеді. Оң жағында енді ешкім жоқ — үшінші."
+          },
+          "car_north": {
+            "name": "Қызыл хэтчбек",
+            "explanation": "Қызыл қосалқы жолда, оң жағында ақ жүк көлігі. Соңғы өтеді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_police_vs_tram",
+    "category": "prioritySigns",
+    "title": "Патруль ДПС со спецсигналами и трамвай",
+    "subtitle": "Автомобиль оперативной службы с маячком и сиреной имеет преимущество даже перед трамваем.",
+    "pddArticle": "Пункты 3.2 и 13.11 ПДД РФ",
+    "isEqual": true,
+    "isHard": false,
+    "signs": [],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "police_south",
+        "type": "police",
+        "name": "Патруль ДПС (сирена)",
+        "model": "sedan",
+        "color": "#F2F3F5",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Автомобиль со включенными проблесковыми маячками и сиреной пользуется преимуществом перед всеми участниками, включая трамвай (п. 3.2).",
+        "hasSiren": true
+      },
+      {
+        "id": "tram_east",
+        "type": "tram",
+        "name": "Красный трамвай",
+        "model": "tram",
+        "color": "#ED4621",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 2,
+        "explanation": "На равнозначном перекрестке трамвай имеет преимущество перед обычными автомобилями и едет вторым.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_north",
+        "type": "car",
+        "name": "Синий хэтчбек",
+        "model": "hatch",
+        "color": "#317ED4",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Синий автомобиль уступает спецтранспорту ДПС и трамваю.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Патруль ДПС со спецсигналами и трамвай",
+        "subtitle": "Автомобиль оперативной службы с маячком и сиреной имеет преимущество даже перед трамваем.",
+        "pddArticle": "Пункты 3.2 и 13.11 ПДД РФ",
+        "actors": {
+          "police_south": {
+            "name": "Патруль ДПС (сирена)",
+            "explanation": "Автомобиль со включенными проблесковыми маячками и сиреной пользуется преимуществом перед всеми участниками, включая трамвай (п. 3.2)."
+          },
+          "tram_east": {
+            "name": "Красный трамвай",
+            "explanation": "На равнозначном перекрестке трамвай имеет преимущество перед обычными автомобилями и едет вторым."
+          },
+          "car_north": {
+            "name": "Синий хэтчбек",
+            "explanation": "Синий автомобиль уступает спецтранспорту ДПС и трамваю."
+          }
+        }
+      },
+      "en": {
+        "title": "Traffic police patrol with special signals and tram",
+        "subtitle": "An emergency service vehicle with a beacon and siren has an advantage even over a tram.",
+        "pddArticle": "Clauses 3.2 and 13.11 of the Russian Traffic Regulations",
+        "actors": {
+          "police_south": {
+            "name": "Traffic police patrol (siren)",
+            "explanation": "A car with flashing lights and a siren on has priority over all participants, including a tram (clause 3.2)."
+          },
+          "tram_east": {
+            "name": "Red tram",
+            "explanation": "At an equivalent intersection, the tram has priority over ordinary cars and goes second."
+          },
+          "car_north": {
+            "name": "Blue hatchback",
+            "explanation": "The blue car gives way to traffic police special vehicles and trams."
+          }
+        }
+      },
+      "kk": {
+        "title": "Арнайы сигналы бар жол полициясы патрулі және трамвай",
+        "subtitle": "Маяк пен сиренасы бар жедел қызмет көлігінің трамвайдан да артықшылығы бар.",
+        "pddArticle": "ЖЖЕ 3.2 және 13.11-тармақтары",
+        "actors": {
+          "police_south": {
+            "name": "Жол полициясы патрулі (сирена)",
+            "explanation": "Жыпылықтайтын шамдары мен сиренасы бар автомобиль барлық қатысушылардан, соның ішінде трамвайдан да басымдылыққа ие (3.2-тармақ)."
+          },
+          "tram_east": {
+            "name": "Қызыл трамвай",
+            "explanation": "Тең маңызды қиылыста трамвай қарапайым көліктерге қарағанда басымдыққа ие және екінші болып өтеді."
+          },
+          "car_north": {
+            "name": "Көк хэтчбек",
+            "explanation": "Көк көлік жол полициясының арнайы көліктері мен трамвайларынан да төмен."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_junction_2_3_1",
+    "category": "prioritySigns",
+    "title": "Пересечение со второстепенной дорогой (знак 2.3.1)",
+    "subtitle": "Знак 2.3.1 предоставляет приоритет перед ТС на пересекаемой второстепенной дороге.",
+    "pddArticle": "Знак 2.3.1 и п. 13.12 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [
+      {
+        "code": "2.3.1",
+        "side": "south"
+      },
+      {
+        "code": "2.3.1",
+        "side": "north"
+      },
+      {
+        "code": "2.4",
+        "side": "east"
+      },
+      {
+        "code": "2.4",
+        "side": "west"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "moto_south",
+        "type": "motorcycle",
+        "name": "Спортивный мотоцикл",
+        "model": "motorcycle",
+        "color": "#ED4621",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Мотоцикл движется по главной дороге прямо и имеет приоритет перед всеми участниками.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_north",
+        "type": "car",
+        "name": "Синий седан",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "north",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Седан на главной дороге поворачивает налево и уступает встречному мотоциклу (п. 13.12).",
+        "hasSiren": false
+      },
+      {
+        "id": "truck_west",
+        "type": "truck",
+        "name": "Серый грузовик",
+        "model": "truck",
+        "color": "#8C929A",
+        "side": "west",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Грузовик находится на второстепенной дороге со знаком 2.4 и пропускает транспорт главной дороги.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Пересечение со второстепенной дорогой (знак 2.3.1)",
+        "subtitle": "Знак 2.3.1 предоставляет приоритет перед ТС на пересекаемой второстепенной дороге.",
+        "pddArticle": "Знак 2.3.1 и п. 13.12 ПДД РФ",
+        "actors": {
+          "moto_south": {
+            "name": "Спортивный мотоцикл",
+            "explanation": "Мотоцикл движется по главной дороге прямо и имеет приоритет перед всеми участниками."
+          },
+          "car_north": {
+            "name": "Синий седан",
+            "explanation": "Седан на главной дороге поворачивает налево и уступает встречному мотоциклу (п. 13.12)."
+          },
+          "truck_west": {
+            "name": "Серый грузовик",
+            "explanation": "Грузовик находится на второстепенной дороге со знаком 2.4 и пропускает транспорт главной дороги."
+          }
+        }
+      },
+      "en": {
+        "title": "Intersection with a minor road (sign 2.3.1)",
+        "subtitle": "Sign 2.3.1 gives priority to vehicles on the secondary road being crossed.",
+        "pddArticle": "Sign 2.3.1 and clause 13.12 of the Russian Traffic Regulations",
+        "actors": {
+          "moto_south": {
+            "name": "Sports motorcycle",
+            "explanation": "The motorcycle moves straight along the main road and has priority over all participants."
+          },
+          "car_north": {
+            "name": "Blue sedan",
+            "explanation": "The sedan on the main road turns left and gives way to the oncoming motorcycle (section 13.12)."
+          },
+          "truck_west": {
+            "name": "Gray truck",
+            "explanation": "The truck is on a secondary road with sign 2.4 and allows traffic on the main road to pass."
+          }
+        }
+      },
+      "kk": {
+        "title": "Қосалқы жолдың қиылысы (2.3.1 белгісі)",
+        "subtitle": "2.3.1 белгісі кесіп өтетін қосалқы жолдағы көліктерге басымдық береді.",
+        "pddArticle": "2.3.1 белгісі және ЖЖЕ 13.12-тармағы",
+        "actors": {
+          "moto_south": {
+            "name": "Спорттық мотоцикл",
+            "explanation": "Мотоцикл негізгі жол бойымен тікелей қозғалады және барлық қатысушылардан басымдыққа ие."
+          },
+          "car_north": {
+            "name": "Көк седан",
+            "explanation": "Негізгі жолдағы седан солға бұрылып, қарсы келе жатқан мотоциклге жол береді (13.12-тармақ)."
+          },
+          "truck_west": {
+            "name": "Сұр жүк көлігі",
+            "explanation": "Жүк көлігі 2.4 «Жол беріңіз» белгісі бар қосалқы жолда, негізгі жолдағы көлікке жол береді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_junction_right_2_3_2",
+    "category": "prioritySigns",
+    "title": "Примыкание второстепенной дороги справа (знак 2.3.2)",
+    "subtitle": "Главная дорога идет прямо, справа примыкает второстепенная.",
+    "pddArticle": "Знак 2.3.2 и пункт 13.9 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "closedSide": "west",
+    "signs": [
+      {
+        "code": "2.3.2",
+        "side": "south"
+      },
+      {
+        "code": "2.4",
+        "side": "east"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "suv_south",
+        "type": "suv",
+        "name": "Зеленый кроссовер (главная)",
+        "model": "suv",
+        "color": "#4D7768",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Кроссовер едет по главной дороге прямо (знак 2.3.2).",
+        "hasSiren": false
+      },
+      {
+        "id": "truck_east",
+        "type": "truck",
+        "name": "Бортовой грузовик (примыкание)",
+        "model": "truck",
+        "color": "#D7AA60",
+        "side": "east",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Грузовик выезжает с примыкающей дороги (знак 2.4) и пропускает кроссовер на главной.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Примыкание второстепенной дороги справа (знак 2.3.2)",
+        "subtitle": "Главная дорога идет прямо, справа примыкает второстепенная.",
+        "pddArticle": "Знак 2.3.2 и пункт 13.9 ПДД РФ",
+        "actors": {
+          "suv_south": {
+            "name": "Зеленый кроссовер (главная)",
+            "explanation": "Кроссовер едет по главной дороге прямо (знак 2.3.2)."
+          },
+          "truck_east": {
+            "name": "Бортовой грузовик (примыкание)",
+            "explanation": "Грузовик выезжает с примыкающей дороги (знак 2.4) и пропускает кроссовер на главной."
+          }
+        }
+      },
+      "en": {
+        "title": "Secondary road joining from the right (sign 2.3.2)",
+        "subtitle": "The main road goes straight on; a secondary road joins from the right.",
+        "pddArticle": "Sign 2.3.2 and clause 13.9 of the Russian Traffic Regulations",
+        "actors": {
+          "suv_south": {
+            "name": "Green crossover (main road)",
+            "explanation": "The crossover drives straight along the main road (sign 2.3.2)."
+          },
+          "truck_east": {
+            "name": "Flatbed truck (joining road)",
+            "explanation": "The truck leaves the joining road (sign 2.4) and lets the crossover on the main road pass."
+          }
+        }
+      },
+      "kk": {
+        "title": "Оң жақтан қосалқы жолдың қосылуы (2.3.2 белгісі)",
+        "subtitle": "Негізгі жол тура жалғасады, оң жақтан қосалқы жол қосылады.",
+        "pddArticle": "2.3.2 белгісі және ЖЖЕ 13.9-тармағы",
+        "actors": {
+          "suv_south": {
+            "name": "Жасыл кроссовер (негізгі жол)",
+            "explanation": "Кроссовер негізгі жолмен тура жүреді (2.3.2 белгісі)."
+          },
+          "truck_east": {
+            "name": "Жүк көлігі (қосылатын жол)",
+            "explanation": "Жүк көлігі қосылатын жолдан шығады (2.4 «Жол беріңіз» белгісі) және негізгі жолдағы кроссоверге жол береді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_end_of_main_2_2",
+    "category": "prioritySigns",
+    "title": "Конец главной дороги (знаки 2.2 и 2.4)",
+    "subtitle": "После знака 2.2 главная кончилась: на перекрестке со знаком 2.4 нужно уступить.",
+    "pddArticle": "Знаки 2.2, 2.4 и пункт 13.9 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [
+      {
+        "code": "2.4",
+        "side": "south"
+      },
+      {
+        "code": "2.2",
+        "side": "south"
+      },
+      {
+        "code": "2.4",
+        "side": "north"
+      },
+      {
+        "code": "2.1",
+        "side": "east"
+      },
+      {
+        "code": "2.1",
+        "side": "west"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "car_east",
+        "type": "suv",
+        "name": "Черный внедорожник (главная)",
+        "model": "suv",
+        "color": "#2B2F36",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Внедорожник едет по главной дороге прямо (знак 2.1).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_west",
+        "type": "car",
+        "name": "Синее купе (главная)",
+        "model": "coupe",
+        "color": "#317ED4",
+        "side": "west",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Купе на главной при повороте налево уступает встречному внедорожнику (п. 13.12).",
+        "hasSiren": false
+      },
+      {
+        "id": "bus_south",
+        "type": "bus",
+        "name": "Городской автобус",
+        "model": "bus",
+        "color": "#F08A24",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Для автобуса главная кончилась (знак 2.2), перед перекрестком знак 2.4 — он уступает обоим.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Конец главной дороги (знаки 2.2 и 2.4)",
+        "subtitle": "После знака 2.2 главная кончилась: на перекрестке со знаком 2.4 нужно уступить.",
+        "pddArticle": "Знаки 2.2, 2.4 и пункт 13.9 ПДД РФ",
+        "actors": {
+          "car_east": {
+            "name": "Черный внедорожник (главная)",
+            "explanation": "Внедорожник едет по главной дороге прямо (знак 2.1)."
+          },
+          "car_west": {
+            "name": "Синее купе (главная)",
+            "explanation": "Купе на главной при повороте налево уступает встречному внедорожнику (п. 13.12)."
+          },
+          "bus_south": {
+            "name": "Городской автобус",
+            "explanation": "Для автобуса главная кончилась (знак 2.2), перед перекрестком знак 2.4 — он уступает обоим."
+          }
+        }
+      },
+      "en": {
+        "title": "End of the main road (signs 2.2 and 2.4)",
+        "subtitle": "After sign 2.2 the main road has ended: at the intersection with sign 2.4 you give way.",
+        "pddArticle": "Signs 2.2, 2.4 and clause 13.9 of the Russian Traffic Regulations",
+        "actors": {
+          "car_east": {
+            "name": "Black SUV (main road)",
+            "explanation": "The SUV drives straight along the main road (sign 2.1)."
+          },
+          "car_west": {
+            "name": "Blue coupe (main road)",
+            "explanation": "Turning left on the main road, the coupe gives way to the oncoming SUV (clause 13.12)."
+          },
+          "bus_south": {
+            "name": "City bus",
+            "explanation": "For the bus the main road has ended (sign 2.2) and there is sign 2.4 before the intersection: it gives way to both."
+          }
+        }
+      },
+      "kk": {
+        "title": "Негізгі жолдың соңы (2.2 және 2.4 белгілері)",
+        "subtitle": "2.2 белгісінен кейін негізгі жол аяқталды: 2.4 белгісі бар қиылыста жол беру керек.",
+        "pddArticle": "2.2, 2.4 белгілері және ЖЖЕ 13.9-тармағы",
+        "actors": {
+          "car_east": {
+            "name": "Қара жол талғамайтын көлік (негізгі жол)",
+            "explanation": "Көлік негізгі жолмен тура жүреді (2.1 белгісі)."
+          },
+          "car_west": {
+            "name": "Көк купе (негізгі жол)",
+            "explanation": "Купе негізгі жолда солға бұрылғанда қарсы келе жатқан көлікке жол береді (13.12-тармақ)."
+          },
+          "bus_south": {
+            "name": "Қалалық автобус",
+            "explanation": "Автобус үшін негізгі жол аяқталды (2.2 белгісі), қиылыс алдында 2.4 белгісі — екеуіне де жол береді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_mandatory_4_1_1",
+    "category": "prioritySigns",
+    "title": "Предписывающий знак 4.1.1 «Движение прямо»",
+    "subtitle": "С южной стороны можно ехать только прямо. Порядок — по знакам приоритета.",
+    "pddArticle": "Знак 4.1.1, пункты 13.9 и 13.12 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [
+      {
+        "code": "2.1",
+        "side": "south"
+      },
+      {
+        "code": "4.1.1",
+        "side": "south"
+      },
+      {
+        "code": "2.1",
+        "side": "north"
+      },
+      {
+        "code": "2.4",
+        "side": "east"
+      },
+      {
+        "code": "2.4",
+        "side": "west"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "bus_south",
+        "type": "bus",
+        "name": "Автобус (главная, прямо)",
+        "model": "bus",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Автобус на главной едет прямо, как велит знак 4.1.1.",
+        "hasSiren": false
+      },
+      {
+        "id": "truck_north",
+        "type": "truck",
+        "name": "Белый грузовик (главная)",
+        "model": "truck",
+        "color": "#F2F3F5",
+        "side": "north",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Грузовик на главной поворачивает налево и уступает встречному автобусу (п. 13.12).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_east",
+        "type": "car",
+        "name": "Красный хэтчбек (второстепенная)",
+        "model": "hatch",
+        "color": "#ED4621",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Красный хэтчбек со знаком 2.4 пропускает обоих на главной.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Предписывающий знак 4.1.1 «Движение прямо»",
+        "subtitle": "С южной стороны можно ехать только прямо. Порядок — по знакам приоритета.",
+        "pddArticle": "Знак 4.1.1, пункты 13.9 и 13.12 ПДД РФ",
+        "actors": {
+          "bus_south": {
+            "name": "Автобус (главная, прямо)",
+            "explanation": "Автобус на главной едет прямо, как велит знак 4.1.1."
+          },
+          "truck_north": {
+            "name": "Белый грузовик (главная)",
+            "explanation": "Грузовик на главной поворачивает налево и уступает встречному автобусу (п. 13.12)."
+          },
+          "car_east": {
+            "name": "Красный хэтчбек (второстепенная)",
+            "explanation": "Красный хэтчбек со знаком 2.4 пропускает обоих на главной."
+          }
+        }
+      },
+      "en": {
+        "title": "Mandatory sign 4.1.1 \"Straight ahead\"",
+        "subtitle": "From the south you may only go straight on. The order follows the priority signs.",
+        "pddArticle": "Sign 4.1.1, clauses 13.9 and 13.12 of the Russian Traffic Regulations",
+        "actors": {
+          "bus_south": {
+            "name": "Bus (main road, straight)",
+            "explanation": "The bus on the main road goes straight, as sign 4.1.1 requires."
+          },
+          "truck_north": {
+            "name": "White truck (main road)",
+            "explanation": "The truck on the main road turns left and gives way to the oncoming bus (clause 13.12)."
+          },
+          "car_east": {
+            "name": "Red hatchback (secondary road)",
+            "explanation": "The red hatchback with sign 2.4 lets both vehicles on the main road pass."
+          }
+        }
+      },
+      "kk": {
+        "title": "4.1.1 белгісі «Тіке жүріңіз»",
+        "subtitle": "Оңтүстіктен тек тура жүруге болады. Кезек — басымдық белгілері бойынша.",
+        "pddArticle": "4.1.1 белгісі, ЖЖЕ 13.9 және 13.12-тармақтары",
+        "actors": {
+          "bus_south": {
+            "name": "Автобус (негізгі жол, тура)",
+            "explanation": "Автобус негізгі жолда 4.1.1 белгісі бойынша тура жүреді."
+          },
+          "truck_north": {
+            "name": "Ақ жүк көлігі (негізгі жол)",
+            "explanation": "Жүк көлігі негізгі жолда солға бұрылып, қарсы келе жатқан автобусқа жол береді (13.12-тармақ)."
+          },
+          "car_east": {
+            "name": "Қызыл хэтчбек (қосалқы жол)",
+            "explanation": "2.4 «Жол беріңіз» белгісі бар қызыл хэтчбек негізгі жолдағы екеуін де өткізеді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_junction_left_2_3_3",
+    "category": "prioritySigns",
+    "title": "Примыкание второстепенной дороги слева (знак 2.3.3)",
+    "subtitle": "Главная дорога идет прямо, слева примыкает второстепенная.",
+    "pddArticle": "Знак 2.3.3 и пункт 13.9 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "closedSide": "east",
+    "signs": [
+      {
+        "code": "2.3.3",
+        "side": "south"
+      },
+      {
+        "code": "2.4",
+        "side": "west"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Желтый седан (главная)",
+        "model": "sedan",
+        "color": "#E8C547",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Седан едет по главной дороге прямо (знак 2.3.3).",
+        "hasSiren": false
+      },
+      {
+        "id": "truck_west",
+        "type": "truck",
+        "name": "Грузовой фургон (примыкание)",
+        "model": "truck",
+        "color": "#2B2F36",
+        "side": "west",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Фургон выезжает с примыкающей дороги (знак 2.4) и пропускает седан на главной.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Примыкание второстепенной дороги слева (знак 2.3.3)",
+        "subtitle": "Главная дорога идет прямо, слева примыкает второстепенная.",
+        "pddArticle": "Знак 2.3.3 и пункт 13.9 ПДД РФ",
+        "actors": {
+          "car_south": {
+            "name": "Желтый седан (главная)",
+            "explanation": "Седан едет по главной дороге прямо (знак 2.3.3)."
+          },
+          "truck_west": {
+            "name": "Грузовой фургон (примыкание)",
+            "explanation": "Фургон выезжает с примыкающей дороги (знак 2.4) и пропускает седан на главной."
+          }
+        }
+      },
+      "en": {
+        "title": "Secondary road joining from the left (sign 2.3.3)",
+        "subtitle": "The main road goes straight on; a secondary road joins from the left.",
+        "pddArticle": "Sign 2.3.3 and clause 13.9 of the Russian Traffic Regulations",
+        "actors": {
+          "car_south": {
+            "name": "Yellow sedan (main road)",
+            "explanation": "The sedan drives straight along the main road (sign 2.3.3)."
+          },
+          "truck_west": {
+            "name": "Van (joining road)",
+            "explanation": "The van leaves the joining road (sign 2.4) and lets the sedan on the main road pass."
+          }
+        }
+      },
+      "kk": {
+        "title": "Сол жақтан қосалқы жолдың қосылуы (2.3.3 белгісі)",
+        "subtitle": "Негізгі жол тура жалғасады, сол жақтан қосалқы жол қосылады.",
+        "pddArticle": "2.3.3 белгісі және ЖЖЕ 13.9-тармағы",
+        "actors": {
+          "car_south": {
+            "name": "Сары седан (негізгі жол)",
+            "explanation": "Седан негізгі жолмен тура жүреді (2.3.3 белгісі)."
+          },
+          "truck_west": {
+            "name": "Жүк фургоны (қосылатын жол)",
+            "explanation": "Фургон қосылатын жолдан шығады (2.4 «Жол беріңіз» белгісі) және негізгі жолдағы седанды өткізеді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_truck_left_turn",
+    "category": "prioritySigns",
+    "title": "Поворот налево: разъезд со встречным транспортом",
+    "subtitle": "При повороте налево водитель обязан уступить встречному ТС, движущемуся прямо.",
+    "pddArticle": "Пункт 13.12 ПДД РФ",
+    "isEqual": true,
+    "isHard": false,
+    "signs": [],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "moto_north",
+        "type": "motorcycle",
+        "name": "Красный мотоцикл",
+        "model": "motorcycle",
+        "color": "#ED4621",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Мотоцикл движется со встречного направления прямо и не имеет помехи справа.",
+        "hasSiren": false
+      },
+      {
+        "id": "truck_south",
+        "type": "truck",
+        "name": "Оранжевый самосвал",
+        "model": "truck",
+        "color": "#F08A24",
+        "side": "south",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Самосвал поворачивает налево и обязан уступить дорогу встречному мотоциклу (п. 13.12).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Поворот налево: разъезд со встречным транспортом",
+        "subtitle": "При повороте налево водитель обязан уступить встречному ТС, движущемуся прямо.",
+        "pddArticle": "Пункт 13.12 ПДД РФ",
+        "actors": {
+          "moto_north": {
+            "name": "Красный мотоцикл",
+            "explanation": "Мотоцикл движется со встречного направления прямо и не имеет помехи справа."
+          },
+          "truck_south": {
+            "name": "Оранжевый самосвал",
+            "explanation": "Самосвал поворачивает налево и обязан уступить дорогу встречному мотоциклу (п. 13.12)."
+          }
+        }
+      },
+      "en": {
+        "title": "Turn left: passing oncoming traffic",
+        "subtitle": "When turning left, the driver must yield to an oncoming vehicle moving straight ahead.",
+        "pddArticle": "Clause 13.12 of the Russian Traffic Regulations",
+        "actors": {
+          "moto_north": {
+            "name": "Red motorcycle",
+            "explanation": "The motorcycle is moving straight from the opposite direction and there is no obstacle on the right."
+          },
+          "truck_south": {
+            "name": "Orange dump truck",
+            "explanation": "The dump truck turns left and is obliged to give way to an oncoming motorcycle (clause 13.12)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Солға бұрылу: қарсы көлікпен айырылысу",
+        "subtitle": "Солға бұрылу кезінде жүргізуші тікелей алға қарай келе жатқан көлікке жол беруі керек.",
+        "pddArticle": "ЖЖЕ 13.12-тармағы",
+        "actors": {
+          "moto_north": {
+            "name": "Қызыл мотоцикл",
+            "explanation": "Мотоцикл қарама-қарсы жақтан түзу келе жатыр, оң жақта ешқандай кедергі жоқ."
+          },
+          "truck_south": {
+            "name": "Қызғылт сары самосвал",
+            "explanation": "Самосвал солға бұрылып, қарсы келе жатқан мотоциклге жол беруге міндетті (13.12-тармақ)."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_two_trams_and_cars",
+    "category": "prioritySigns",
+    "title": "Два трамвая и автомобили на равнозначном перекрестке",
+    "subtitle": "Трамваи проезжают раньше автомобилей, между собой — по помехе справа.",
+    "pddArticle": "Пункт 13.11 ПДД РФ",
+    "isEqual": true,
+    "isHard": false,
+    "signs": [],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "tram_north",
+        "type": "tram",
+        "name": "Трамвай №1 (север)",
+        "model": "tram",
+        "color": "#ED4621",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Трамваи проезжают раньше автомобилей. Справа от трамвая №1 никого — он первый.",
+        "hasSiren": false
+      },
+      {
+        "id": "tram_east",
+        "type": "tram",
+        "name": "Трамвай №2 (восток)",
+        "model": "tram",
+        "color": "#ED4621",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 2,
+        "explanation": "Справа от трамвая №2 — трамвай №1. Он уступает ему и проезжает вторым.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Белый седан",
+        "model": "sedan",
+        "color": "#F2F3F5",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "После трамваев у белого седана справа никого — он третий.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_west",
+        "type": "suv",
+        "name": "Зеленый кроссовер",
+        "model": "suv",
+        "color": "#4D7768",
+        "side": "west",
+        "maneuver": "straight",
+        "order": 4,
+        "explanation": "Справа от зеленого кроссовера — белый седан. Проезжает последним.",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Два трамвая и автомобили на равнозначном перекрестке",
+        "subtitle": "Трамваи проезжают раньше автомобилей, между собой — по помехе справа.",
+        "pddArticle": "Пункт 13.11 ПДД РФ",
+        "actors": {
+          "tram_north": {
+            "name": "Трамвай №1 (север)",
+            "explanation": "Трамваи проезжают раньше автомобилей. Справа от трамвая №1 никого — он первый."
+          },
+          "tram_east": {
+            "name": "Трамвай №2 (восток)",
+            "explanation": "Справа от трамвая №2 — трамвай №1. Он уступает ему и проезжает вторым."
+          },
+          "car_south": {
+            "name": "Белый седан",
+            "explanation": "После трамваев у белого седана справа никого — он третий."
+          },
+          "car_west": {
+            "name": "Зеленый кроссовер",
+            "explanation": "Справа от зеленого кроссовера — белый седан. Проезжает последним."
+          }
+        }
+      },
+      "en": {
+        "title": "Two trams and cars at an equal intersection",
+        "subtitle": "Trams go before cars; between themselves they give way to the one on the right.",
+        "pddArticle": "Clause 13.11 of the Russian Traffic Regulations",
+        "actors": {
+          "tram_north": {
+            "name": "Tram No. 1 (north)",
+            "explanation": "Trams go before cars. Nobody is on the right of tram No. 1, so it goes first."
+          },
+          "tram_east": {
+            "name": "Tram No. 2 (east)",
+            "explanation": "Tram No. 1 is on the right of tram No. 2. It gives way and goes second."
+          },
+          "car_south": {
+            "name": "White sedan",
+            "explanation": "After the trams nobody is on the right of the white sedan, so it goes third."
+          },
+          "car_west": {
+            "name": "Green crossover",
+            "explanation": "The white sedan is on the right of the green crossover. It goes last."
+          }
+        }
+      },
+      "kk": {
+        "title": "Тең маңызды қиылыстағы екі трамвай мен автомобильдер",
+        "subtitle": "Трамвайлар автомобильдерден бұрын өтеді, өзара — оң жақтағыға жол береді.",
+        "pddArticle": "ЖЖЕ 13.11-тармағы",
+        "actors": {
+          "tram_north": {
+            "name": "№1 трамвай (солтүстік)",
+            "explanation": "Трамвайлар автомобильдерден бұрын өтеді. №1 трамвайдың оң жағында ешкім жоқ — ол бірінші."
+          },
+          "tram_east": {
+            "name": "№2 трамвай (шығыс)",
+            "explanation": "№2 трамвайдың оң жағында №1 трамвай. Жол беріп, екінші өтеді."
+          },
+          "car_south": {
+            "name": "Ақ седан",
+            "explanation": "Трамвайлардан кейін ақ седанның оң жағында ешкім жоқ — ол үшінші."
+          },
+          "car_west": {
+            "name": "Жасыл кроссовер",
+            "explanation": "Жасыл кроссовердің оң жағында ақ седан. Соңғы өтеді."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_tl_arrow_vs_main_13_5",
+    "category": "trafficLights",
+    "title": "Зелёная стрелка с красным сигналом (п. 13.5)",
+    "subtitle": "Движущийся по стрелке при красном сигнале обязан уступить тем, кто едет с других направлений.",
+    "pddArticle": "Пункт 13.5 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [],
+    "trafficLights": [
+      {
+        "side": "north",
+        "state": "green"
+      },
+      {
+        "side": "south",
+        "state": "green"
+      },
+      {
+        "side": "west",
+        "state": "red",
+        "arrow": "right",
+        "arrowActive": true
+      },
+      {
+        "side": "east",
+        "state": "red"
+      }
+    ],
+    "actors": [
+      {
+        "id": "car_north",
+        "type": "car",
+        "name": "Синий седан",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Синий седан едет на основной зелёный сигнал светофора и имеет полное преимущество.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_west",
+        "type": "car",
+        "name": "Белый хэтчбек",
+        "model": "hatch",
+        "color": "#F2F3F5",
+        "side": "west",
+        "maneuver": "right",
+        "order": 2,
+        "explanation": "Белый хэтчбек поворачивает по стрелке при красном сигнале и обязан уступить синему седану (п. 13.5).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Зелёная стрелка с красным сигналом (п. 13.5)",
+        "subtitle": "Движущийся по стрелке при красном сигнале обязан уступить тем, кто едет с других направлений.",
+        "pddArticle": "Пункт 13.5 ПДД РФ",
+        "actors": {
+          "car_north": {
+            "name": "Синий седан",
+            "explanation": "Синий седан едет на основной зелёный сигнал светофора и имеет полное преимущество."
+          },
+          "car_west": {
+            "name": "Белый хэтчбек",
+            "explanation": "Белый хэтчбек поворачивает по стрелке при красном сигнале и обязан уступить синему седану (п. 13.5)."
+          }
+        }
+      },
+      "en": {
+        "title": "Green arrow with red signal (clause 13.5)",
+        "subtitle": "A driver moving on a green arrow simultaneously with a red light must give way to traffic from other directions.",
+        "pddArticle": "Clause 13.5 of the Russian Traffic Regulations",
+        "actors": {
+          "car_north": {
+            "name": "Blue sedan",
+            "explanation": "The blue sedan moves straight on the main green signal and has full priority."
+          },
+          "car_west": {
+            "name": "White hatchback",
+            "explanation": "The white hatchback turns right on a green arrow while the main red light is on and must give way (clause 13.5)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Қызыл сигналдағы жасыл бағыттауыш (13.5-тармақ)",
+        "subtitle": "Қызыл сигналда бағыттауыш бойынша қозғалған көлік басқа бағыттардан келе жатқан көліктерге жол беруге міндетті.",
+        "pddArticle": "ЖЖЕ 13.5-тармағы",
+        "actors": {
+          "car_north": {
+            "name": "Көк седан",
+            "explanation": "Көк седан негізгі жасыл сигналға тура жүреді және толық басымдыққа ие."
+          },
+          "car_west": {
+            "name": "Ақ хэтчбек",
+            "explanation": "Ақ хэтчбек қызыл сигнал кезінде бағыттауыш бойынша бұрылады, көк седанға жол беруге міндетті (13.5-тармақ)."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_tl_tram_on_arrow_13_6",
+    "category": "trafficLights",
+    "title": "Трамвай на стрелку с красным сигналом (п. 13.6)",
+    "subtitle": "Трамвай на стрелку при красном сигнале уступает безрельсовому транспорту на основной зелёный.",
+    "pddArticle": "Пункт 13.6 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [],
+    "trafficLights": [
+      {
+        "side": "south",
+        "state": "green"
+      },
+      {
+        "side": "north",
+        "state": "green"
+      },
+      {
+        "side": "east",
+        "state": "red",
+        "arrow": "right",
+        "arrowActive": true
+      },
+      {
+        "side": "west",
+        "state": "red"
+      }
+    ],
+    "actors": [
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Синий хэтчбек",
+        "model": "hatch",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Синий хэтчбек едет на основной зелёный сигнал светофора прямо и проезжает первым.",
+        "hasSiren": false
+      },
+      {
+        "id": "tram_east",
+        "type": "tram",
+        "name": "Трамвай",
+        "model": "tram",
+        "color": "#ED4621",
+        "side": "east",
+        "maneuver": "right",
+        "order": 2,
+        "explanation": "Трамвай движется по стрелке при красном сигнале и обязан уступить автомобилю на основной зелёный (п. 13.6).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Трамвай на стрелку с красным сигналом (п. 13.6)",
+        "subtitle": "Трамвай на стрелку при красном сигнале уступает безрельсовому транспорту на основной зелёный.",
+        "pddArticle": "Пункт 13.6 ПДД РФ",
+        "actors": {
+          "car_south": {
+            "name": "Синий хэтчбек",
+            "explanation": "Синий хэтчбек едет на основной зелёный сигнал светофора прямо и проезжает первым."
+          },
+          "tram_east": {
+            "name": "Трамвай",
+            "explanation": "Трамвай движется по стрелке при красном сигнале и обязан уступить автомобилю на основной зелёный (п. 13.6)."
+          }
+        }
+      },
+      "en": {
+        "title": "Tram on green arrow with red signal (clause 13.6)",
+        "subtitle": "When moving on an arrow with red light, even a tram must give way to vehicles moving on the main green signal.",
+        "pddArticle": "Clause 13.6 of the Russian Traffic Regulations",
+        "actors": {
+          "car_south": {
+            "name": "Blue hatchback",
+            "explanation": "The blue hatchback moves straight on the main green signal and passes first."
+          },
+          "tram_east": {
+            "name": "Tram",
+            "explanation": "The tram moves on an arrow with a red signal and must give way to the car on the main green (clause 13.6)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Қызыл сигналда бағыттауыш бойынша келе жатқан трамвай (13.6-тармақ)",
+        "subtitle": "Қызыл сигналда бағыттауыш бойынша келе жатқан трамвай негізгі жасыл сигналда жүрген рельссіз көлікке жол береді.",
+        "pddArticle": "ЖЖЕ 13.6-тармағы",
+        "actors": {
+          "car_south": {
+            "name": "Көк хэтчбек",
+            "explanation": "Көк хэтчбек негізгі жасыл сигналға тура жүріп, бірінші өтеді."
+          },
+          "tram_east": {
+            "name": "Трамвай",
+            "explanation": "Трамвай қызыл сигналда бағыттауыш бойынша қозғалады және негізгі жасыл сигналда жүрген көлікке жол береді (13.6-тармақ)."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_tl_left_turn_13_4",
+    "category": "trafficLights",
+    "title": "Поворот налево на зелёный сигнал (п. 13.4)",
+    "subtitle": "При повороте налево на зелёный водитель обязан уступить встречным, едущим прямо или направо.",
+    "pddArticle": "Пункт 13.4 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [],
+    "trafficLights": [
+      {
+        "side": "north",
+        "state": "green"
+      },
+      {
+        "side": "south",
+        "state": "green"
+      },
+      {
+        "side": "east",
+        "state": "red"
+      },
+      {
+        "side": "west",
+        "state": "red"
+      }
+    ],
+    "actors": [
+      {
+        "id": "car_north",
+        "type": "car",
+        "name": "Белый седан",
+        "model": "sedan",
+        "color": "#F2F3F5",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Белый седан движется на зелёный сигнал прямо со встречного направления и имеет преимущество.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Оранжевый седан",
+        "model": "sedan",
+        "color": "#F08A24",
+        "side": "south",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Оранжевый поворачивает налево по зелёному сигналу и уступает встречному прямо (п. 13.4).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Поворот налево на зелёный сигнал (п. 13.4)",
+        "subtitle": "При повороте налево на зелёный водитель обязан уступить встречным, едущим прямо или направо.",
+        "pddArticle": "Пункт 13.4 ПДД РФ",
+        "actors": {
+          "car_north": {
+            "name": "Белый седан",
+            "explanation": "Белый седан движется на зелёный сигнал прямо со встречного направления и имеет преимущество."
+          },
+          "car_south": {
+            "name": "Оранжевый седан",
+            "explanation": "Оранжевый поворачивает налево по зелёному сигналу и уступает встречному прямо (п. 13.4)."
+          }
+        }
+      },
+      "en": {
+        "title": "Left turn on green signal (clause 13.4)",
+        "subtitle": "When turning left on green, the driver must give way to oncoming vehicles moving straight or right.",
+        "pddArticle": "Clause 13.4 of the Russian Traffic Regulations",
+        "actors": {
+          "car_north": {
+            "name": "White sedan",
+            "explanation": "The white sedan moves straight on green from the oncoming direction and has priority."
+          },
+          "car_south": {
+            "name": "Orange sedan",
+            "explanation": "The orange sedan turns left on green and gives way to oncoming traffic going straight (clause 13.4)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Жасыл сигналда солға бұрылу (13.4-тармақ)",
+        "subtitle": "Жасыл сигналда солға бұрылғанда жүргізуші тура немесе оңға жүретін қарсы көліктерге жол беруге міндетті.",
+        "pddArticle": "ЖЖЕ 13.4-тармағы",
+        "actors": {
+          "car_north": {
+            "name": "Ақ седан",
+            "explanation": "Ақ седан қарсы бағыттан жасыл сигналға тура қозғалып, басымдыққа ие."
+          },
+          "car_south": {
+            "name": "Қызғылт сары седан",
+            "explanation": "Қызғылт сары көлік жасыл сигналда солға бұрылып, қарсы тура жүрген көлікке жол береді (13.4-тармақ)."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_tl_vs_priority_signs_13_3",
+    "category": "trafficLights",
+    "title": "Светофор и знаки приоритета (п. 13.3, 6.15)",
+    "subtitle": "Работающий светофор отменяет действие знаков приоритета. Водители руководствуются только светофором.",
+    "pddArticle": "Пункты 13.3 и 6.15 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [
+      {
+        "code": "2.4",
+        "side": "south"
+      },
+      {
+        "code": "2.4",
+        "side": "north"
+      },
+      {
+        "code": "2.1",
+        "side": "west"
+      },
+      {
+        "code": "2.1",
+        "side": "east"
+      }
+    ],
+    "trafficLights": [
+      {
+        "side": "south",
+        "state": "green"
+      },
+      {
+        "side": "north",
+        "state": "green"
+      },
+      {
+        "side": "west",
+        "state": "red"
+      },
+      {
+        "side": "east",
+        "state": "red"
+      }
+    ],
+    "actors": [
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Синий хэтчбек",
+        "model": "hatch",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Горит зелёный сигнал светофора — знак \"Уступите дорогу\" не действует (п. 6.15). Синий едет прямо первым.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_north",
+        "type": "suv",
+        "name": "Зеленый кроссовер",
+        "model": "suv",
+        "color": "#4D7768",
+        "side": "north",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Зелёный кроссовер поворачивает налево на свой зелёный и уступает встречному синему (п. 13.4).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Светофор и знаки приоритета (п. 13.3, 6.15)",
+        "subtitle": "Работающий светофор отменяет действие знаков приоритета. Водители руководствуются только светофором.",
+        "pddArticle": "Пункты 13.3 и 6.15 ПДД РФ",
+        "actors": {
+          "car_south": {
+            "name": "Синий хэтчбек",
+            "explanation": "Горит зелёный сигнал светофора — знак \"Уступите дорогу\" не действует (п. 6.15). Синий едет прямо первым."
+          },
+          "car_north": {
+            "name": "Зеленый кроссовер",
+            "explanation": "Зелёный кроссовер поворачивает налево на свой зелёный и уступает встречному синему (п. 13.4)."
+          }
+        }
+      },
+      "en": {
+        "title": "Traffic lights and priority signs (clauses 13.3, 6.15)",
+        "subtitle": "Working traffic lights override priority signs. Drivers are guided solely by traffic lights.",
+        "pddArticle": "Clauses 13.3 and 6.15 of the Russian Traffic Regulations",
+        "actors": {
+          "car_south": {
+            "name": "Blue hatchback",
+            "explanation": "The green light is on — the \"Give way\" sign is invalid (clause 6.15). The blue car goes straight first."
+          },
+          "car_north": {
+            "name": "Green crossover",
+            "explanation": "The green crossover turns left on green and gives way to the oncoming blue car (clause 13.4)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Бағдаршам және басымдық белгілері (13.3, 6.15-тармақтар)",
+        "subtitle": "Жұмыс істеп тұрған бағдаршам басымдық белгілерін күшін жояды. Жүргізушілер тек бағдаршамға бағынады.",
+        "pddArticle": "ЖЖЕ 13.3 және 6.15-тармақтары",
+        "actors": {
+          "car_south": {
+            "name": "Көк хэтчбек",
+            "explanation": "Бағдаршамның жасыл түсі жанып тұр — \"Жол беріңіз\" белгісі әрекет етпейді (6.15-тармақ). Көк көлік тіке бірінші өтеді."
+          },
+          "car_north": {
+            "name": "Жасыл кроссовер",
+            "explanation": "Жасыл кроссовер өзінің жасыл сигналына солға бұрылып, қарсы көк көлікке жол береді (13.4-тармақ)."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cross_tl_emergency_on_red_3_2",
+    "category": "trafficLights",
+    "title": "Спецтранспорт на регулируемом перекрёстке (п. 3.2)",
+    "subtitle": "Автомобили со включённым синим маячком и сиреной пользуются приоритетом независимо от сигналов светофора.",
+    "pddArticle": "Пункт 3.2 ПДД РФ",
+    "isEqual": false,
+    "isHard": false,
+    "signs": [],
+    "trafficLights": [
+      {
+        "side": "south",
+        "state": "green"
+      },
+      {
+        "side": "north",
+        "state": "green"
+      },
+      {
+        "side": "east",
+        "state": "red"
+      },
+      {
+        "side": "west",
+        "state": "red"
+      }
+    ],
+    "actors": [
+      {
+        "id": "ambulance_east",
+        "type": "emergency",
+        "name": "Скорая помощь",
+        "model": "ambulance",
+        "color": "#FFFFFF",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Скорая помощь с включёнными маячками и сиреной пользуется приоритетом независимо от сигнала светофора (п. 3.2).",
+        "hasSiren": true
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Синий хэтчбек",
+        "model": "hatch",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 2,
+        "explanation": "Синий хэтчбек уступает скорой помощи (п. 3.2), после чего проезжает прямо на свой зелёный сигнал.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_north",
+        "type": "car",
+        "name": "Белый седан",
+        "model": "sedan",
+        "color": "#F2F3F5",
+        "side": "north",
+        "maneuver": "left",
+        "order": 3,
+        "explanation": "Белый седан уступает скорой помощи и встречному синему автомобилю при повороте налево (п. 13.4).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Спецтранспорт на регулируемом перекрёстке (п. 3.2)",
+        "subtitle": "Автомобили со включённым синим маячком и сиреной пользуются приоритетом независимо от сигналов светофора.",
+        "pddArticle": "Пункт 3.2 ПДД РФ",
+        "actors": {
+          "ambulance_east": {
+            "name": "Скорая помощь",
+            "explanation": "Скорая помощь с включёнными маячками и сиреной пользуется приоритетом независимо от сигнала светофора (п. 3.2)."
+          },
+          "car_south": {
+            "name": "Синий хэтчбек",
+            "explanation": "Синий хэтчбек уступает скорой помощи (п. 3.2), после чего проезжает прямо на свой зелёный сигнал."
+          },
+          "car_north": {
+            "name": "Белый седан",
+            "explanation": "Белый седан уступает скорой помощи и встречному синему автомобилю при повороте налево (п. 13.4)."
+          }
+        }
+      },
+      "en": {
+        "title": "Emergency vehicle at controlled intersection (clause 3.2)",
+        "subtitle": "Vehicles with flashing blue lights and siren have priority regardless of traffic light signals.",
+        "pddArticle": "Clause 3.2 of the Russian Traffic Regulations",
+        "actors": {
+          "ambulance_east": {
+            "name": "Ambulance",
+            "explanation": "The ambulance with beacon and siren has priority regardless of the red traffic light (clause 3.2)."
+          },
+          "car_south": {
+            "name": "Blue hatchback",
+            "explanation": "The blue hatchback gives way to the ambulance (clause 3.2), then proceeds straight on green."
+          },
+          "car_north": {
+            "name": "White sedan",
+            "explanation": "The white sedan gives way to the ambulance and to oncoming traffic when turning left (clause 13.4)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Реттелетін қиылыстағы арнайы көлік (3.2-тармақ)",
+        "subtitle": "Көк маягі мен сиренасы қосулы көлік бағдаршам сигналдарына қарамастан басымдыққа ие.",
+        "pddArticle": "ЖЖЕ 3.2-тармағы",
+        "actors": {
+          "ambulance_east": {
+            "name": "Жедел жәрдем",
+            "explanation": "Маягі мен сиренасы қосулы жедел жәрдем бағдаршам сигналына қарамастан басымдыққа ие (3.2-тармақ)."
+          },
+          "car_south": {
+            "name": "Көк хэтчбек",
+            "explanation": "Көк хэтчбек жедел жәрдемге жол береді (3.2-тармақ), содан соң өз жасыл сигналына тура өтеді."
+          },
+          "car_north": {
+            "name": "Ақ седан",
+            "explanation": "Ақ седан жедел жәрдемге және солға бұрылу кезінде қарсы көк көлікке жол береді (13.4-тармақ)."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "hard_traffic_light_arrow_pedestrian",
+    "category": "hardSituations",
+    "title": "Стрелка светофора и пешеходный переход",
+    "subtitle": "Поворот на стрелку с основным красным и обязанность уступить пешеходу.",
+    "pddArticle": "Пункты 13.1 и 13.5 ПДД РФ",
+    "isEqual": false,
+    "isHard": true,
+    "signs": [],
+    "trafficLights": [
+      {
+        "side": "west",
+        "state": "green"
+      },
+      {
+        "side": "south",
+        "state": "red",
+        "arrow": "right",
+        "arrowActive": true
+      }
+    ],
+    "actors": [
+      {
+        "id": "car_west",
+        "type": "car",
+        "name": "Синий седан",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "west",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Синий седан движется на основной зеленый сигнал светофора и имеет приоритет перед ТС на стрелку (п. 13.5).",
+        "hasSiren": false
+      },
+      {
+        "id": "pedestrian_east",
+        "type": "pedestrian",
+        "name": "Пешеход",
+        "model": "hatch",
+        "color": "#2E5B88",
+        "side": "east",
+        "maneuver": "cross",
+        "order": 2,
+        "explanation": "Пешеход переходит проезжую часть на разрешающий сигнал. Поворачивающий водитель обязан уступить ему дорогу (п. 13.1).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Белый хэтчбек",
+        "model": "hatch",
+        "color": "#F2F3F5",
+        "side": "south",
+        "maneuver": "right",
+        "order": 3,
+        "explanation": "Белый хэтчбек поворачивает по стрелке при красном основном сигнале. Он обязан уступить синему седану (п. 13.5) и пешеходу (п. 13.1).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Стрелка светофора и пешеходный переход",
+        "subtitle": "Поворот на стрелку с основным красным и обязанность уступить пешеходу.",
+        "pddArticle": "Пункты 13.1 и 13.5 ПДД РФ",
+        "actors": {
+          "car_west": {
+            "name": "Синий седан",
+            "explanation": "Синий седан движется на основной зеленый сигнал светофора и имеет приоритет перед ТС на стрелку (п. 13.5)."
+          },
+          "pedestrian_east": {
+            "name": "Пешеход",
+            "explanation": "Пешеход переходит проезжую часть на разрешающий сигнал. Поворачивающий водитель обязан уступить ему дорогу (п. 13.1)."
+          },
+          "car_south": {
+            "name": "Белый хэтчбек",
+            "explanation": "Белый хэтчбек поворачивает по стрелке при красном основном сигнале. Он обязан уступить синему седану (п. 13.5) и пешеходу (п. 13.1)."
+          }
+        }
+      },
+      "en": {
+        "title": "Traffic light arrow and pedestrian crossing",
+        "subtitle": "Turning on arrow with main red and duty to yield to pedestrian.",
+        "pddArticle": "Clauses 13.1 and 13.5 of the Russian Traffic Regulations",
+        "actors": {
+          "car_west": {
+            "name": "Blue sedan",
+            "explanation": "The blue sedan travels on green and has priority over vehicles turning on arrow (clause 13.5)."
+          },
+          "pedestrian_east": {
+            "name": "Pedestrian",
+            "explanation": "The pedestrian crosses on green signal. The turning driver must yield to them (clause 13.1)."
+          },
+          "car_south": {
+            "name": "White hatchback",
+            "explanation": "The white hatchback turns on arrow with red. It must yield to the blue sedan (clause 13.5) and pedestrian (clause 13.1)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Бағдаршам бағыттауышы және жаяу жүргіншілер өткелі",
+        "subtitle": "Негізгі қызылмен бағыттауышқа бұрылу және жаяу жүргіншіге жол беру міндеті.",
+        "pddArticle": "ЖЖЕ 13.1 және 13.5-тармақтары",
+        "actors": {
+          "car_west": {
+            "name": "Көк седан",
+            "explanation": "Көк седан негізгі жасыл сигналмен жүріп, бағыттауышпен бұрылатын көліктен басымдыққа ие (13.5-тармақ)."
+          },
+          "pedestrian_east": {
+            "name": "Жаяу жүргінші",
+            "explanation": "Жаяу жүргінші рұқсат етуші сигналда өтуде. Бұрылатын жүргізуші оған жол беруге міндетті (13.1-тармақ)."
+          },
+          "car_south": {
+            "name": "Ақ хэтчбек",
+            "explanation": "Ақ хэтчбек негізгі қызыл сигналдағы бағыттауышпен бұрылады. Ол көк седанға (13.5-тармақ) және жаяу жүргіншіге (13.1-тармақ) жол беруге міндетті."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "hard_equal_4way_3cars_pedestrian",
+    "category": "hardSituations",
+    "title": "Равнозначный перекресток с пешеходом",
+    "subtitle": "Помеха справа между автомобилями и приоритет пешехода на переходе.",
+    "pddArticle": "Пункты 13.1, 13.11 и 14.1 ПДД РФ",
+    "isEqual": true,
+    "isHard": true,
+    "signs": [],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "pedestrian_east",
+        "type": "pedestrian",
+        "name": "Пешеход",
+        "model": "hatch",
+        "color": "#2E5B88",
+        "side": "east",
+        "maneuver": "cross",
+        "order": 1,
+        "explanation": "Пешеход переходит проезжую часть по нерегулируемому переходу. Водитель при повороте направо обязан уступить ему дорогу (п. 13.1).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Синий седан",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "right",
+        "order": 2,
+        "explanation": "После пропуска пешехода синий седан завершает поворот направо. Для него справа нет помех (п. 13.11).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_west",
+        "type": "car",
+        "name": "Белый седан",
+        "model": "sedan",
+        "color": "#F2F3F5",
+        "side": "west",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Для белого седана синий был помехой справа. После его проезда белый седан может двигаться прямо (п. 13.11).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_east",
+        "type": "car",
+        "name": "Красный хэтчбек",
+        "model": "hatch",
+        "color": "#D33D38",
+        "side": "east",
+        "maneuver": "left",
+        "order": 4,
+        "explanation": "Красный хэтчбек поворачивает налево и уступает дорогу встречному белому седану (п. 13.12).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Равнозначный перекресток с пешеходом",
+        "subtitle": "Помеха справа между автомобилями и приоритет пешехода на переходе.",
+        "pddArticle": "Пункты 13.1, 13.11 и 14.1 ПДД РФ",
+        "actors": {
+          "pedestrian_east": {
+            "name": "Пешеход",
+            "explanation": "Пешеход переходит проезжую часть по нерегулируемому переходу. Водитель при повороте направо обязан уступить ему дорогу (п. 13.1)."
+          },
+          "car_south": {
+            "name": "Синий седан",
+            "explanation": "После пропуска пешехода синий седан завершает поворот направо. Для него справа нет помех (п. 13.11)."
+          },
+          "car_west": {
+            "name": "Белый седан",
+            "explanation": "Для белого седана синий был помехой справа. После его проезда белый седан может двигаться прямо (п. 13.11)."
+          },
+          "car_east": {
+            "name": "Красный хэтчбек",
+            "explanation": "Красный хэтчбек поворачивает налево и уступает дорогу встречному белому седану (п. 13.12)."
+          }
+        }
+      },
+      "en": {
+        "title": "Equal crossroads with pedestrian",
+        "subtitle": "Priority to the right between cars and pedestrian priority on crosswalk.",
+        "pddArticle": "Clauses 13.1, 13.11 and 14.1 of the Russian Traffic Regulations",
+        "actors": {
+          "pedestrian_east": {
+            "name": "Pedestrian",
+            "explanation": "The pedestrian crosses on zebra crossing. The driver turning right must yield to them (clause 13.1)."
+          },
+          "car_south": {
+            "name": "Blue sedan",
+            "explanation": "After yielding to pedestrian, the blue sedan completes its turn. No priority to the right obstacle (clause 13.11)."
+          },
+          "car_west": {
+            "name": "White sedan",
+            "explanation": "The blue car was on the right. After it clears, the white sedan moves straight (clause 13.11)."
+          },
+          "car_east": {
+            "name": "Red hatchback",
+            "explanation": "The red hatchback turns left and gives way to oncoming white sedan (clause 13.12)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Жаяу жүргіншісі бар тең дәрежелі қиылыс",
+        "subtitle": "Көліктер арасында оң жақ кедергісі және өткелдегі жаяу жүргіншінің басымдығы.",
+        "pddArticle": "ЖЖЕ 13.1, 13.11 және 14.1-тармақтары",
+        "actors": {
+          "pedestrian_east": {
+            "name": "Жаяу жүргінші",
+            "explanation": "Жаяу жүргінші реттелмейтін өткелден өтуде. Жүргізуші оңға бұрылғанда оған жол беруге міндетті (13.1-тармақ)."
+          },
+          "car_south": {
+            "name": "Көк седан",
+            "explanation": "Жаяу жүргіншіні өткізген соң көк седан оңға бұрылысты аяқтайды. Оның оң жағында кедергі жоқ (13.11-тармақ)."
+          },
+          "car_west": {
+            "name": "Ақ седан",
+            "explanation": "Ақ седан үшін көк көлік оң жақ кедергі болды. Ол өткеннен кейін ақ седан тура жүре алады (13.11-тармақ)."
+          },
+          "car_east": {
+            "name": "Қызыл хэтчбек",
+            "explanation": "Қызыл хэтчбек солға бұрылып, қарсы ақ седанға жол береді (13.12-тармақ)."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "hard_priority_t_tram_pedestrian",
+    "category": "hardSituations",
+    "title": "Т-образный перекресток: трамвай и пешеход",
+    "subtitle": "Приоритет трамвая на главной дороге и пропуск пешехода при выезде со второстепенной.",
+    "pddArticle": "Пункты 13.1, 13.9 и 14.1 ПДД РФ",
+    "isEqual": false,
+    "isHard": true,
+    "closedSide": "north",
+    "signs": [
+      {
+        "code": "2.1",
+        "side": "west"
+      },
+      {
+        "code": "2.1",
+        "side": "east"
+      },
+      {
+        "code": "2.4",
+        "side": "south"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "pedestrian_east",
+        "type": "pedestrian",
+        "name": "Пешеход",
+        "model": "hatch",
+        "color": "#2E5B88",
+        "side": "east",
+        "maneuver": "cross",
+        "order": 1,
+        "explanation": "Пешеход переходит проезжую часть по нерегулируемому переходу (п. 14.1). Все водители обязаны уступить ему дорогу.",
+        "hasSiren": false
+      },
+      {
+        "id": "tram_west",
+        "type": "tram",
+        "name": "Трамвай",
+        "model": "hatch",
+        "color": "#D33D38",
+        "side": "west",
+        "maneuver": "straight",
+        "order": 2,
+        "explanation": "Трамвай на главной дороге имеет безусловное преимущество перед безрельсовыми ТС (п. 13.9, 13.11).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_east",
+        "type": "car",
+        "name": "Белый седан",
+        "model": "sedan",
+        "color": "#F2F3F5",
+        "side": "east",
+        "maneuver": "left",
+        "order": 3,
+        "explanation": "Белый седан на главной дороге поворачивает налево после проезда встречного трамвая (п. 13.9, 13.12).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Синий хэтчбек",
+        "model": "hatch",
+        "color": "#317ED4",
+        "side": "south",
+        "maneuver": "left",
+        "order": 4,
+        "explanation": "Синий хэтчбек со второстепенной дороги со знаком 2.4 поворачивает налево и уступает дорогу транспорту на главной (п. 13.9).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Т-образный перекресток: трамвай и пешеход",
+        "subtitle": "Приоритет трамвая на главной дороге и пропуск пешехода при выезде со второстепенной.",
+        "pddArticle": "Пункты 13.1, 13.9 и 14.1 ПДД РФ",
+        "actors": {
+          "pedestrian_east": {
+            "name": "Пешеход",
+            "explanation": "Пешеход переходит проезжую часть по нерегулируемому переходу (п. 14.1). Все водители обязаны уступить ему дорогу."
+          },
+          "tram_west": {
+            "name": "Трамвай",
+            "explanation": "Трамвай на главной дороге имеет безусловное преимущество перед безрельсовыми ТС (п. 13.9, 13.11)."
+          },
+          "car_east": {
+            "name": "Белый седан",
+            "explanation": "Белый седан на главной дороге поворачивает налево после проезда встречного трамвая (п. 13.9, 13.12)."
+          },
+          "car_south": {
+            "name": "Синий хэтчбек",
+            "explanation": "Синий хэтчбек со второстепенной дороги со знаком 2.4 поворачивает налево и уступает дорогу транспорту на главной (п. 13.9)."
+          }
+        }
+      },
+      "en": {
+        "title": "T-junction: tram and pedestrian",
+        "subtitle": "Tram priority on main road and yielding to pedestrian from secondary road.",
+        "pddArticle": "Clauses 13.1, 13.9 and 14.1 of the Russian Traffic Regulations",
+        "actors": {
+          "pedestrian_east": {
+            "name": "Pedestrian",
+            "explanation": "The pedestrian crosses on an unregulated crosswalk (clause 14.1). All drivers must yield."
+          },
+          "tram_west": {
+            "name": "Tram",
+            "explanation": "The tram on main road has priority over non-rail vehicles (clauses 13.9, 13.11)."
+          },
+          "car_east": {
+            "name": "White sedan",
+            "explanation": "The white sedan on main road turns left after oncoming tram passes (clauses 13.9, 13.12)."
+          },
+          "car_south": {
+            "name": "Blue hatchback",
+            "explanation": "The blue hatchback on secondary road turns left and yields to main road traffic (clause 13.9)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Т-тәрізді қиылыс: трамвай және жаяу жүргінші",
+        "subtitle": "Негізгі жолдағы трамвай басымдығы және қосалқы жолдан шығуда жаяу жүргіншіні өткізу.",
+        "pddArticle": "ЖЖЕ 13.1, 13.9 және 14.1-тармақтары",
+        "actors": {
+          "pedestrian_east": {
+            "name": "Жаяу жүргінші",
+            "explanation": "Жаяу жүргінші реттелмейтін өткелден өтіп жатыр (14.1-т.). Барлық жүргізушілер оған жол беруге міндетті."
+          },
+          "tram_west": {
+            "name": "Трамвай",
+            "explanation": "Негізгі жолдағы трамвай рельссіз көліктерден басымдыққа ие (13.9, 13.11-т.)."
+          },
+          "car_east": {
+            "name": "Ақ седан",
+            "explanation": "Негізгі жолдағы ақ седан қарсы келе жатқан трамвай өткеннен кейін солға бұрылады (13.9, 13.12-т.)."
+          },
+          "car_south": {
+            "name": "Көк хэтчбек",
+            "explanation": "2.4 белгісі бар екінші дәрежелі жолдағы көк хэтчбек солға бұрылып, басты жолдағы көліктерге жол береді (13.9-т.)."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "hard_emergency_priority_pedestrian",
+    "category": "hardSituations",
+    "title": "Скорая помощь со спецсигналами и пешеход",
+    "subtitle": "Безусловный приоритет машины экстренных служб с сиреной и маячками.",
+    "pddArticle": "Пункты 3.2 и 13.1 ПДД РФ",
+    "isEqual": false,
+    "isHard": true,
+    "signs": [
+      {
+        "code": "2.1",
+        "side": "north"
+      },
+      {
+        "code": "2.1",
+        "side": "south"
+      },
+      {
+        "code": "2.4",
+        "side": "east"
+      },
+      {
+        "code": "2.4",
+        "side": "west"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "ambulance_north",
+        "type": "emergency",
+        "name": "Скорая помощь",
+        "model": "ambulance",
+        "color": "#FFFFFF",
+        "side": "north",
+        "maneuver": "straight",
+        "order": 1,
+        "explanation": "Автомобиль скорой помощи с включенными маячками и сиреной пользуется приоритетом перед всеми участниками (п. 3.2).",
+        "hasSiren": true
+      },
+      {
+        "id": "pedestrian_west",
+        "type": "pedestrian",
+        "name": "Пешеход",
+        "model": "hatch",
+        "color": "#2E5B88",
+        "side": "west",
+        "maneuver": "cross",
+        "order": 2,
+        "explanation": "Пешеход переходит западную улицу. Поворачивающий автомобиль обязан уступить ему дорогу (п. 13.1).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Желтый седан",
+        "model": "sedan",
+        "color": "#F6B400",
+        "side": "south",
+        "maneuver": "left",
+        "order": 3,
+        "explanation": "Желтый седан на главной дороге уступает скорой помощи (п. 3.2), пропускает пешехода при повороте (п. 13.1) и завершает маневр.",
+        "hasSiren": false
+      },
+      {
+        "id": "car_east",
+        "type": "car",
+        "name": "Красный хэтчбек",
+        "model": "hatch",
+        "color": "#D33D38",
+        "side": "east",
+        "maneuver": "straight",
+        "order": 4,
+        "explanation": "Красный хэтчбек находится на второстепенной дороге со знаком 2.4 и уступает дорогу транспорту на главной (п. 13.9).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Скорая помощь со спецсигналами и пешеход",
+        "subtitle": "Безусловный приоритет машины экстренных служб с сиреной и маячками.",
+        "pddArticle": "Пункты 3.2 и 13.1 ПДД РФ",
+        "actors": {
+          "ambulance_north": {
+            "name": "Скорая помощь",
+            "explanation": "Автомобиль скорой помощи с включенными маячками и сиреной пользуется приоритетом перед всеми участниками (п. 3.2)."
+          },
+          "pedestrian_west": {
+            "name": "Пешеход",
+            "explanation": "Пешеход переходит западную улицу. Поворачивающий автомобиль обязан уступить ему дорогу (п. 13.1)."
+          },
+          "car_south": {
+            "name": "Желтый седан",
+            "explanation": "Желтый седан на главной дороге уступает скорой помощи (п. 3.2), пропускает пешехода при повороте (п. 13.1) и завершает маневр."
+          },
+          "car_east": {
+            "name": "Красный хэтчбек",
+            "explanation": "Красный хэтчбек находится на второстепенной дороге со знаком 2.4 и уступает дорогу транспорту на главной (п. 13.9)."
+          }
+        }
+      },
+      "en": {
+        "title": "Ambulance with siren and pedestrian",
+        "subtitle": "Absolute priority of emergency vehicle with siren and beacon.",
+        "pddArticle": "Clauses 3.2 and 13.1 of the Russian Traffic Regulations",
+        "actors": {
+          "ambulance_north": {
+            "name": "Ambulance",
+            "explanation": "The ambulance with beacon and siren has priority over all participants (clause 3.2)."
+          },
+          "pedestrian_west": {
+            "name": "Pedestrian",
+            "explanation": "The pedestrian crosses the western street. The turning car must yield to them (clause 13.1)."
+          },
+          "car_south": {
+            "name": "Yellow sedan",
+            "explanation": "The yellow sedan yields to the ambulance (clause 3.2) and pedestrian (clause 13.1), then completes turn."
+          },
+          "car_east": {
+            "name": "Red hatchback",
+            "explanation": "The red hatchback on secondary road yields to main road traffic (clause 13.9)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Арнайы сигналдары бар жедел жәрдем және жаяу жүргінші",
+        "subtitle": "Сиренасы мен маяктары бар шұғыл қызмет көлігінің сөзсіз басымдығы.",
+        "pddArticle": "ЖЖЕ 3.2 және 13.1-тармақтары",
+        "actors": {
+          "ambulance_north": {
+            "name": "Жедел жәрдем",
+            "explanation": "Маяктары мен сиренасы қосулы жедел жәрдем барлық қатысушылардан басымдыққа ие (3.2-тармақ)."
+          },
+          "pedestrian_west": {
+            "name": "Жаяу жүргінші",
+            "explanation": "Жаяу жүргінші батыс көшесінен өтіп барады. Оған бұрылатын көлік жол беруге міндетті (13.1-тармақ)."
+          },
+          "car_south": {
+            "name": "Сары седан",
+            "explanation": "Сары седан жедел жәрдемге (3.2-тармақ) және жаяу жүргіншіге (13.1-тармақ) жол беріп, маневрді аяқтайды."
+          },
+          "car_east": {
+            "name": "Қызыл хэтчбек",
+            "explanation": "2.4 белгісі бар қосалқы жолдағы қызыл хэтчбек негізгі жолдағы көліктерге жол береді (13.9-тармақ)."
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "hard_priority_main_turns_right_pedestrian",
+    "category": "hardSituations",
+    "title": "Главная дорога поворачивает направо и пешеход",
+    "subtitle": "Разъезд на главной дороге со знаком 8.13 и пропуск пешехода.",
+    "pddArticle": "Пункты 13.1, 13.10 и 13.11 ПДД РФ",
+    "isEqual": false,
+    "isHard": true,
+    "signs": [
+      {
+        "code": "2.1",
+        "side": "south",
+        "table8_13": "bottom_right"
+      },
+      {
+        "code": "2.1",
+        "side": "east",
+        "table8_13": "left_top"
+      },
+      {
+        "code": "2.4",
+        "side": "north",
+        "table8_13": "top_right"
+      },
+      {
+        "code": "2.4",
+        "side": "west",
+        "table8_13": "bottom_left"
+      }
+    ],
+    "trafficLights": [],
+    "actors": [
+      {
+        "id": "pedestrian_south",
+        "type": "pedestrian",
+        "name": "Пешеход",
+        "model": "hatch",
+        "color": "#2E5B88",
+        "side": "south",
+        "maneuver": "cross",
+        "order": 1,
+        "explanation": "Пешеход переходит дорогу по переходу. Водители обязаны уступить ему дорогу (п. 13.1, 14.1).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_east",
+        "type": "car",
+        "name": "Синий седан",
+        "model": "sedan",
+        "color": "#317ED4",
+        "side": "east",
+        "maneuver": "left",
+        "order": 2,
+        "explanation": "Синий седан на главной дороге поворачивает по ней. Для него справа никого нет (п. 13.10, 13.11).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_south",
+        "type": "car",
+        "name": "Белый седан",
+        "model": "sedan",
+        "color": "#F2F3F5",
+        "side": "south",
+        "maneuver": "straight",
+        "order": 3,
+        "explanation": "Белый седан на главной дороге уступает синему седану как помехе справа (п. 13.10, 13.11).",
+        "hasSiren": false
+      },
+      {
+        "id": "car_west",
+        "type": "car",
+        "name": "Красный хэтчбек",
+        "model": "hatch",
+        "color": "#D33D38",
+        "side": "west",
+        "maneuver": "left",
+        "order": 4,
+        "explanation": "Красный хэтчбек со второстепенной дороги уступает всем ТС на главной (п. 13.9).",
+        "hasSiren": false
+      }
+    ],
+    "translations": {
+      "ru": {
+        "title": "Главная дорога поворачивает направо и пешеход",
+        "subtitle": "Разъезд на главной дороге со знаком 8.13 и пропуск пешехода.",
+        "pddArticle": "Пункты 13.1, 13.10 и 13.11 ПДД РФ",
+        "actors": {
+          "pedestrian_south": {
+            "name": "Пешеход",
+            "explanation": "Пешеход переходит дорогу по переходу. Водители обязаны уступить ему дорогу (п. 13.1, 14.1)."
+          },
+          "car_east": {
+            "name": "Синий седан",
+            "explanation": "Синий седан на главной дороге поворачивает по ней. Для него справа никого нет (п. 13.10, 13.11)."
+          },
+          "car_south": {
+            "name": "Белый седан",
+            "explanation": "Белый седан на главной дороге уступает синему седану как помехе справа (п. 13.10, 13.11)."
+          },
+          "car_west": {
+            "name": "Красный хэтчбек",
+            "explanation": "Красный хэтчбек со второстепенной дороги уступает всем ТС на главной (п. 13.9)."
+          }
+        }
+      },
+      "en": {
+        "title": "Main road turns right and pedestrian",
+        "subtitle": "Maneuvering on main road with sign 8.13 and yielding to pedestrian.",
+        "pddArticle": "Clauses 13.1, 13.10 and 13.11 of the Russian Traffic Regulations",
+        "actors": {
+          "pedestrian_south": {
+            "name": "Pedestrian",
+            "explanation": "The pedestrian crosses the street. Drivers must yield to them (clauses 13.1, 14.1)."
+          },
+          "car_east": {
+            "name": "Blue sedan",
+            "explanation": "The blue sedan on main road turns with it. No vehicle on its right (clause 13.10)."
+          },
+          "car_south": {
+            "name": "White sedan",
+            "explanation": "The white sedan gives way to the blue sedan as priority to the right (clause 13.10)."
+          },
+          "car_west": {
+            "name": "Red hatchback",
+            "explanation": "The red hatchback on secondary road yields to main road vehicles (clause 13.9)."
+          }
+        }
+      },
+      "kk": {
+        "title": "Негізгі жол оңға бұрылады және жаяу жүргінші",
+        "subtitle": "8.13 белгісі бар негізгі жолда өту және жаяу жүргіншіні өткізу.",
+        "pddArticle": "ЖЖЕ 13.1, 13.10 және 13.11-тармақтары",
+        "actors": {
+          "pedestrian_south": {
+            "name": "Жаяу жүргінші",
+            "explanation": "Жаяу жүргінші өткелден өтіп жатыр. Жүргізушілер оған жол беруге міндетті (13.1, 14.1-т.)."
+          },
+          "car_east": {
+            "name": "Көк седан",
+            "explanation": "Негізгі жолдағы көк седан онымен бұрылады. Оның оң жағында ешкім жоқ (13.10-тармақ)."
+          },
+          "car_south": {
+            "name": "Ақ седан",
+            "explanation": "Негізгі жолдағы ақ седан көк седанға оң жақ кедергі ретінде жол береді (13.10-тармақ)."
+          },
+          "car_west": {
+            "name": "Қызыл хэтчбек",
+            "explanation": "Қосалқы жолдағы қызыл хэтчбек негізгі жолдағы барлық көліктерге жол береді (13.9-тармақ)."
+          }
+        }
+      }
+    }
+  }
+]

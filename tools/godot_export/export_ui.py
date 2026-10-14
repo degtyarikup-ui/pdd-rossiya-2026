@@ -22,6 +22,15 @@ KEYS = [
     'gameActionStraight', 'gameActionRight', 'gameActionLeft', 'gameActionUTurn', 'gameActionStand',
     'gameRestart', 'gameBestScoreLabel', 'gameNewRecord', 'gameSolvedLabel', 'gameAccuracyLabel', 'gameComboLabel',
     'gameBestScore', 'gameCurrentCombo', 'gameSecondsLeft', 'gameOverTitle',
+    'gameCrossroadsPriorityTitle', 'gameCrossroadsPromptWhoGoesFirst', 'gameCrossroadsPromptWhoGoesNext',
+    'gameCrossroadsStepOf', 'gameCrossroadsCollision', 'gameCrossroadsShouldGo',
+    'gameCrossroadsHowTo', 'gameCrossroadsTapHint', 'gameCrossroadsResetCamera',
+    'gameCrossroadsNextCrossroad', 'gameCrossroadsRepeatCrossroad',
+    'gameCrossroadsModeArcade', 'gameCrossroadsModeTraining',
+    'gameCrossroadsCatAll', 'gameCrossroadsCatSigns', 'gameCrossroadsCatTrafficLights', 'gameCrossroadsCatHard',
+    'crossroadsHardSituationBadge', 'crossroadsTimeBonus10s', 'crossroadsPedestrian',
+    'crossroadsReasonPedestrianViolation', 'crossroadsArticlePedestrian',
+    'gameCrossroadsSolvedCount', 'gameCrossroadsExplanationTitle', 'gameCrossroadsCompleteTitle',
 ]
 out = {}
 for lang in ('ru', 'en', 'kk'):

@@ -39,10 +39,17 @@ class _GodotWebScreenState extends State<GodotWebScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMiniGame =
+        widget.args.contains('--regulator') ||
+        widget.args.contains('--crossroads');
     return PopScope<String>(
-      canPop: _closing || !widget.args.contains('--regulator'),
+      canPop: _closing || !isMiniGame,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _exit(_summary ?? '{"game":"regulator","runs":[]}');
+        if (!didPop) {
+          final gameId =
+              widget.args.contains('--crossroads') ? 'crossroads' : 'regulator';
+          _exit(_summary ?? '{"game":"$gameId","runs":[]}');
+        }
       },
       child: Scaffold(
         backgroundColor: Colors.black,

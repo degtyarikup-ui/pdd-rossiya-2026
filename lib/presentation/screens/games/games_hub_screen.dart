@@ -14,7 +14,6 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
-import 'package:pdd_app/presentation/screens/games/crossroads/crossroads_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 
@@ -117,6 +116,24 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     await _refreshRating();
   }
 
+  /// The Godot Crossroads Priority game on its own screen (Android, iOS, the site).
+  /// A platform without the game in its build says so: the old WebView game is gone.
+  Future<void> _openCrossroads() async {
+    final avail = await GodotGame.available();
+    if (!avail) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(appL10n.gameUnavailable)));
+      }
+      return;
+    }
+    if (!mounted) return;
+    HapticFeedbackHelper.tap();
+    await GodotGame.playCrossroads(context, ref);
+    await _refreshRating();
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(progressImportsProvider, (_, next) {
@@ -131,6 +148,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     final colors = AppColors.of(context);
     final traffic = ref.watch(trafficControllerProgressProvider);
     final signs = ref.watch(signSwiperProgressProvider);
+    final crossroads = ref.watch(crossroadsPriorityProgressProvider);
     final topInset = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
@@ -226,12 +244,8 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
           _GameCard(
             art: const CrossroadsArt(forCard: true),
             title: appL10n.gameCrossroadsPriorityTitle,
-            bestScore: const bool.fromEnvironment('GAME_DEBUG')
-                ? ref.watch(crossroadsPriorityProgressProvider).bestScore
-                : null,
-            onTap: const bool.fromEnvironment('GAME_DEBUG')
-                ? () => _open(context, const CrossroadsScreen())
-                : null,
+            bestScore: crossroads.bestScore,
+            onTap: _openCrossroads,
           ),
           const SizedBox(height: AppDimensions.spacingL),
           _GameCard(

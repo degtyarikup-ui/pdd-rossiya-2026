@@ -1,9 +1,9 @@
 # 3D-игра «Живой город» — как запустить и где что лежит
 
 Игра — **Godot 4.7.2** (Compatibility), папка `game_godot/`. Старая WebView-игра (Three.js)
-удалена; последний коммит с ней — тег `game-webview-final`. Мини-игра «Регулировщик»
-также перенесена на Godot (`game_godot/regulator.tscn`, флаг `--regulator`). Мини-игра
-«Перекрёсток» остаётся на `assets/game/`.
+удалена; последний коммит с ней — тег `game-webview-final`. Мини-игры «Регулировщик»
+(`game_godot/regulator.tscn`, флаг `--regulator`) и «Разрули перекрёсток»
+(`game_godot/crossroads.tscn`, флаг `--crossroads`) также работают на Godot.
 
 В git лежит всё для запуска: код, модели, сцены перекрёстков (`game_godot/situations/`,
 207 МБ), данные сети и их сборка (`game_godot/network/`, `network/build/`), строки интерфейса
@@ -46,6 +46,7 @@ godot --path game_godot -- --situation=ticket_10_13 --auto --near   # один �
 
 ```bash
 godot --headless --path game_godot --script res://tests/regulator_check.gd # регулировщик: правила, экономика, UI, рестарты
+godot --headless --path game_godot --script res://tests/crossroads_check.gd # разъезд на перекрёстках: 27 сценариев, ПДД, траектории, UI
 godot --headless --path game_godot --script res://tests/rules_check.gd      # нарушения: 47 проверок
 godot --headless --path game_godot --script res://tests/road_check.gd       # дорожные вопросы: 70 проверок
 godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя
