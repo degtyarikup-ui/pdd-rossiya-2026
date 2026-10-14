@@ -166,7 +166,8 @@ func run() -> void:
 	if DisplayServer.get_name() != "headless":
 		DirAccess.make_dir_recursive_absolute(frame_directory)
 		root.size = Vector2i(1280, 900)
-	await scenario("ticket_39_15", "npc_car", "npc_truck")
+	# The truck waits for the priority car; the motorcycle's crossing route yields to the player.
+	await scenario("ticket_39_15", "npc_car", "npc_moto")
 	# An older exact fixture carries a moving route plus archived stationary/inf defaults.
 	await scenario("ticket_12_5", "", "yard_car")
 	await scenario("ticket_8_14", "npc_car", "npc_moto", "npc_car")

@@ -97,67 +97,78 @@ func color(key: String, i := 0) -> Color:
 ## Copies of one prop drawn by one MultiMesh, split into per-chunk ranges:
 ## ring slot s owns instances [s * per_chunk, (s + 1) * per_chunk).
 class Pool:
+	# Logical slots remain chunk * per_chunk + offset, including unused slots.
+	# Only the node's packed active prefix is submitted to the renderer.
 	var multi: MultiMesh
+	var render_multi: MultiMesh
 	var per_chunk: int
-	var used := {}                 # ring slot -> instances placed
+	var used := {}
 	var node: MultiMeshInstance3D
 	var transforms: Array[Transform3D] = []
 	var tints: Array[Color] = []
+	var render_slots: Array[int] = []
+	var render_index := {}
+	var render_transforms: Array[Transform3D] = []
+	var render_tints: Array[Color] = []
 
 	func _init(parent: Node, mesh: Mesh, mat: Material, chunks: int, cap: int, shadows: bool) -> void:
 		per_chunk = cap
-		multi = MultiMesh.new()
-		multi.transform_format = MultiMesh.TRANSFORM_3D
-		multi.use_colors = true          # Compatibility needs them (white)
-		multi.use_custom_data = true
-		multi.mesh = mesh
-		multi.instance_count = chunks * cap
+		multi = _mesh(mesh, chunks * cap)
+		render_multi = _mesh(mesh, chunks * cap)
+		render_multi.visible_instance_count = 0
 		for i in multi.instance_count:
-			multi.set_instance_color(i, Color.WHITE)
-			multi.set_instance_transform(i, HIDDEN)
 			transforms.append(HIDDEN)
 			tints.append(Color.WHITE)
+			render_transforms.append(HIDDEN)
+			render_tints.append(Color.WHITE)
 		node = MultiMeshInstance3D.new()
-		node.multimesh = multi
-		node.set_meta("instance_transforms",transforms)
-		node.set_meta("instance_tints",tints)
+		node.multimesh = render_multi
+		node.set_meta("source_pool", weakref(self))
+		node.set_meta("render_slots", render_slots)
+		node.set_meta("instance_transforms", render_transforms)
+		node.set_meta("instance_tints", render_tints)
 		node.material_override = mat
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		Scenery.sync_pool_bounds(node)
 		parent.add_child(node)
 
-	# Unused instances: shrunk to nothing below the ground.
+	static func _mesh(mesh: Mesh, capacity: int) -> MultiMesh:
+		var result := MultiMesh.new()
+		result.transform_format = MultiMesh.TRANSFORM_3D
+		result.use_colors = true
+		result.use_custom_data = true
+		result.mesh = mesh
+		result.instance_count = capacity
+		for i in capacity:
+			result.set_instance_color(i, Color.WHITE)
+			result.set_instance_transform(i, HIDDEN)
+		return result
+
 	static var HIDDEN := Transform3D(Basis.from_scale(Vector3(0.001, 0.001, 0.001)), Vector3(0, -50, 0))
 
-	## A frozen copy of everything placed now, under `parent` (the old street kept after a turn).
+	## Frozen copies use the logical original pose, including faded buildings.
 	func snapshot(parent: Node3D) -> void:
-		# Not duplicate(): MultiMesh.duplicate and the buffer property fail ("Cannot set a buffer ...
-		# different size"; the buffer is not readable as a whole). Copied instance by instance.
 		var copy := MultiMeshInstance3D.new()
 		copy.material_override = node.material_override
 		copy.cast_shadow = node.cast_shadow
 		var visible: Array[int] = []
-		for i in multi.instance_count:
-			if (node.get_meta("occlusion_originals",{}).get(i,transforms[i]) as Transform3D).origin.y > -10.0: visible.append(i)
-		var frozen := MultiMesh.new()
-		frozen.transform_format = multi.transform_format
-		frozen.use_colors = multi.use_colors
-		frozen.use_custom_data = multi.use_custom_data
-		frozen.mesh = multi.mesh
-		frozen.instance_count = visible.size()
+		for i in transforms.size():
+			if transforms[i].origin.y > -10.0: visible.append(i)
+		var frozen := _mesh(multi.mesh, visible.size())
 		var frozen_transforms: Array[Transform3D] = []
 		var frozen_tints: Array[Color] = []
 		for slot in visible.size():
 			var i: int = visible[slot]
-			var xf: Transform3D = node.get_meta("occlusion_originals",{}).get(i,transforms[i])
+			var xf: Transform3D = transforms[i]
 			frozen.set_instance_transform(slot, xf)
 			frozen_transforms.append(xf)
-			frozen.set_instance_color(slot, Color.WHITE)
 			frozen.set_instance_custom_data(slot, tints[i])
 			frozen_tints.append(tints[i])
-		copy.set_meta("instance_transforms",frozen_transforms)
-		copy.set_meta("instance_tints",frozen_tints)
-		copy.set_meta("building_pool",node.get_meta("building_pool",false))
+		copy.set_meta("instance_transforms", frozen_transforms)
+		copy.set_meta("instance_tints", frozen_tints)
+		copy.set_meta("building_pool", node.get_meta("building_pool", false))
 		copy.multimesh = frozen
+		Scenery.sync_pool_bounds(copy)
 		parent.add_child(copy)
 
 	func begin(slot: int) -> void:
@@ -169,19 +180,71 @@ class Pool:
 			push_warning("pool full")
 			return false
 		var i := slot * per_chunk + n
-		Scenery.clear_fade_slot(node,i)
-		transforms[i]=xform
+		var rendered: int = render_index.get(i, -1)
+		if rendered >= 0: Scenery.clear_fade_slot(node, rendered)
+		transforms[i] = xform
+		tints[i] = tint
 		multi.set_instance_transform(i, xform)
-		tints[i]=tint
 		multi.set_instance_custom_data(i, tint)
+		if rendered < 0:
+			rendered = render_slots.size()
+			render_slots.append(i)
+			render_index[i] = rendered
+			if rendered == 0:
+				render_multi.custom_aabb = xform * multi.mesh.get_aabb()
+			else:
+				render_multi.custom_aabb = render_multi.custom_aabb.merge(xform * multi.mesh.get_aabb())
+		else:
+			# Exact shrinking happens at finish(), after the chunk's atomic build.
+			render_multi.custom_aabb = render_multi.custom_aabb.merge(xform * multi.mesh.get_aabb())
+		render_transforms[rendered] = xform
+		render_tints[rendered] = tint
+		render_multi.set_instance_transform(rendered, xform)
+		render_multi.set_instance_custom_data(rendered, tint)
+		render_multi.visible_instance_count = render_slots.size()
 		used[slot] = n + 1
 		return true
 
 	func finish(slot: int) -> void:
 		for n in range(used.get(slot, 0), per_chunk):
-			Scenery.clear_fade_slot(node,slot * per_chunk + n)
-			transforms[slot * per_chunk + n]=HIDDEN
-			multi.set_instance_transform(slot * per_chunk + n, HIDDEN)
+			var i := slot * per_chunk + n
+			var rendered: int = render_index.get(i, -1)
+			if rendered >= 0: Scenery.clear_fade_slot(node, rendered)
+			transforms[i] = HIDDEN
+			multi.set_instance_transform(i, HIDDEN)
+		_sync_draw()
+
+	func _sync_draw() -> void:
+		var originals: Dictionary = node.get_meta("occlusion_originals", {})
+		var fades: Dictionary = node.get_meta("occlusion_fades", {})
+		var logical_originals := {}
+		var logical_fades := {}
+		for index in originals:
+			logical_originals[render_slots[index]] = originals[index]
+		for index in fades:
+			logical_fades[render_slots[index]] = fades[index]
+		originals.clear(); fades.clear()
+		var previous_count := render_slots.size()
+		render_slots.clear(); render_index.clear()
+		for logical in transforms.size():
+			if transforms[logical].origin.y < -10.0: continue
+			var rendered := render_slots.size()
+			render_slots.append(logical)
+			render_index[logical] = rendered
+			render_transforms[rendered] = transforms[logical]
+			render_tints[rendered] = tints[logical]
+			if logical_originals.has(logical): originals[rendered] = logical_originals[logical]
+			if logical_fades.has(logical): fades[rendered] = logical_fades[logical]
+			render_multi.set_instance_transform(rendered, HIDDEN if originals.has(rendered) else transforms[logical])
+			render_multi.set_instance_color(rendered, Color.WHITE)
+			render_multi.set_instance_custom_data(rendered, tints[logical])
+		for rendered in range(render_slots.size(), previous_count):
+			render_transforms[rendered] = HIDDEN
+			render_tints[rendered] = Color.WHITE
+			render_multi.set_instance_transform(rendered, HIDDEN)
+		render_multi.visible_instance_count = render_slots.size()
+		Scenery.sync_pool_bounds(node)
+		if node.has_meta("occlusion_fade_node"): Scenery.sync_fade_batch(node)
 
 
 ## Keep ordinary buildings in their original opaque instanced draw. Only a building that
@@ -206,7 +269,10 @@ func update_occluders(camera: Camera3D, targets: Array[Vector3], delta: float) -
 		var multi := node.multimesh
 		var bounds := multi.mesh.get_aabb().grow(0.12)
 		var poses: Array = node.get_meta("instance_transforms",[])
-		for i in multi.instance_count:
+		var count := multi.instance_count if multi.visible_instance_count < 0 else multi.visible_instance_count
+		var bounds_dirty := false
+		var fades_dirty := false
+		for i in count:
 			var xf: Transform3D = state.originals.get(i,poses[i] if poses.size()>i else multi.get_instance_transform(i))
 			if xf.origin.y < -10.0: continue
 			var world: Transform3D = node.global_transform * xf
@@ -221,7 +287,10 @@ func update_occluders(camera: Camera3D, targets: Array[Vector3], delta: float) -
 						blocked=true;break
 			var opacity := move_toward(float(state.fades.get(i,1.0)),0.25 if blocked else 1.0,delta*4.0)
 			if opacity >= 0.999:
-				if state.originals.has(i): multi.set_instance_transform(i,xf)
+				if state.originals.has(i):
+					set_opaque_pose(node, i, xf)
+					bounds_dirty = true
+					fades_dirty = true
 				state.originals.erase(i)
 				state.fades.erase(i)
 				continue
@@ -240,10 +309,43 @@ func update_occluders(camera: Camera3D, targets: Array[Vector3], delta: float) -
 				node.add_child(faded)
 				state.fade_node=faded
 				node.set_meta("occlusion_fade_node",weakref(faded))
+			if not state.originals.has(i):
+				set_opaque_pose(node, i, Pool.HIDDEN)
+				bounds_dirty = true
+				fades_dirty = true
+			if state.fades.get(i, 1.0) != opacity: fades_dirty = true
 			state.originals[i]=xf
 			state.fades[i]=opacity
-			multi.set_instance_transform(i,Pool.HIDDEN)
-		if state.fade_node != null: sync_fade_batch(node)
+		if bounds_dirty: sync_pool_bounds(node)
+		if state.fade_node != null and fades_dirty: sync_fade_batch(node)
+
+
+## Keep the public logical buffer in sync when a packed building changes batch.
+static func set_opaque_pose(node: MultiMeshInstance3D, index: int, pose: Transform3D) -> void:
+	node.multimesh.set_instance_transform(index, pose)
+	if node.has_meta("source_pool"):
+		var pool: Pool = node.get_meta("source_pool").get_ref()
+		if pool != null: pool.multi.set_instance_transform(pool.render_slots[index], pose)
+
+
+## Capacity tails must not pull a far-away batch's bounds toward (0,-50,0).
+static func sync_pool_bounds(node: MultiMeshInstance3D) -> void:
+	var multi := node.multimesh
+	if multi == null or multi.mesh == null: return
+	var count := multi.instance_count if multi.visible_instance_count < 0 else multi.visible_instance_count
+	var poses: Array = node.get_meta("instance_transforms", [])
+	var originals: Dictionary = node.get_meta("occlusion_originals", {})
+	var bounds := AABB()
+	var first := true
+	for i in count:
+		if originals.has(i): continue # drawn by the independent transparent child
+		var pose: Transform3D = poses[i] if i < poses.size() else multi.get_instance_transform(i)
+		if pose.origin.y < -10.0: continue
+		var box: AABB = pose * multi.mesh.get_aabb()
+		bounds = box if first else bounds.merge(box)
+		first = false
+	# An empty AABB asks Godot to recalculate it from the full reserved buffer.
+	multi.custom_aabb = AABB(Vector3(0,-50,0),Vector3(0.001,0.001,0.001)) if first else bounds
 
 
 static func clear_fade_slot(node: MultiMeshInstance3D, index: int) -> void:
@@ -262,12 +364,16 @@ static func sync_fade_batch(node: MultiMeshInstance3D) -> void:
 	if ids.size()>multi.instance_count:
 		multi.instance_count=maxi(8,int(pow(2.0,ceil(log(float(ids.size()))/log(2.0)))))
 	multi.visible_instance_count=ids.size()
+	var poses: Array[Transform3D] = []
 	for slot in ids.size():
 		var index: int=ids[slot]
 		var tints: Array=node.get_meta("instance_tints",[])
 		var custom: Color=tints[index] if tints.size()>index else node.multimesh.get_instance_custom_data(index)
 		custom.a=floor(custom.a)+float(fades[index])*0.5
 		multi.set_instance_transform(slot,originals[index])
+		poses.append(originals[index])
 		multi.set_instance_color(slot,Color.WHITE)
 		multi.set_instance_custom_data(slot,custom)
+	faded.set_meta("instance_transforms", poses)
+	sync_pool_bounds(faded)
 	faded.visible=not ids.is_empty()

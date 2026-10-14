@@ -938,7 +938,8 @@ func _index_tram_pool(node: MultiMeshInstance3D) -> void:
 	if bounds.size.y < 0.1: return # ground contacts and glow planes are not obstacles
 	var poses: Array = node.get_meta("instance_transforms", [])
 	var originals: Dictionary = node.get_meta("occlusion_originals", {})
-	for i in node.multimesh.instance_count:
+	var count := node.multimesh.instance_count if node.multimesh.visible_instance_count < 0 else node.multimesh.visible_instance_count
+	for i in count:
 		var pose: Transform3D = originals.get(i, poses[i] if i < poses.size() else node.multimesh.get_instance_transform(i))
 		if pose.origin.y < -10.0: continue
 		var xf := node.global_transform * pose

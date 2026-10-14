@@ -65,6 +65,7 @@ godot --headless --path game_godot --script res://tests/free_player_check.gd # 7
 godot --headless --path game_godot --script res://tests/dirt_surface_check.gd # грунт, текстура и удаление старых накладок
 godot --headless --path game_godot --script res://tests/human_collision_check.gd # наезд: регулировщик и пешеходы
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
+godot --path game_godot --script res://tests/pool_packing_check.gd # пустые экземпляры не рисуются; цвета, прозрачность, индексы чанков и границы пакетов
 godot --headless --path game_godot --script res://tests/ambient_transition_check.gd -- --season=autumn # пешеходы, листья и трафик при переходах
 godot --path game_godot --script res://tests/ambient_transition_check.gd -- --season=autumn # реальные позы MultiMesh и положение в кадре
 godot --headless --path game_godot --script res://tests/lighting_check.gd # свет/тени в том же кадре при поворотах мира, все уровни качества
@@ -83,6 +84,7 @@ godot --headless --path game_godot --script res://tests/tram_crossing_check.gd #
 godot --path game_godot --script res://tests/tram_render_check.gd # нужен рендер: реальные локации, въезды, окончания и единый меш покрытия
 godot --headless --path game_godot --script res://tests/reviewed_departure_check.gd # продолжение всех отмеченных сцен
 godot --headless --path game_godot --script res://tests/ride_endurance_check.gd # 40 переходов по кольцу, стабильная память, завершение только на 20-м ответе
+godot --path game_godot --script res://tests/ride_runtime_stress_check.gd -- --stress-scenes=40 --stress-dwell=6 # длительный рендер/обновления; синтетическое перемещение через обычные переходы
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
 godot --headless --path game_godot --script res://tests/embedded_io_check.gd # iOS: повторные запуски основной игры и переходы после мини-игр
