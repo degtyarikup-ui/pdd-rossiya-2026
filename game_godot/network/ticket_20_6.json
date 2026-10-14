@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -5.25,
@@ -417,8 +418,8 @@
   {
    "id": "manoeuvre_right",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "right",
    "points": [
     [
@@ -426,48 +427,8 @@
      -15.9
     ],
     [
-     -5.25,
-     -7.5
-    ],
-    [
-     -5.221,
-     -6.375
-    ],
-    [
-     -5.171,
-     -5.317
-    ],
-    [
-     -5.154,
-     -4.35
-    ],
-    [
-     -5.226,
-     -3.501
-    ],
-    [
-     -5.442,
-     -2.796
-    ],
-    [
-     -5.856,
-     -2.26
-    ],
-    [
-     -6.524,
-     -1.919
-    ],
-    [
-     -7.5,
-     -1.8
-    ],
-    [
-     -8,
-     -1.8
-    ],
-    [
-     -27.5,
-     -1.8
+     -5,
+     -7
     ]
    ],
    "exitYaw": -1.571
@@ -544,8 +505,8 @@
   {
    "id": "light_0",
    "pos": [
-    -7.231,
-    -8.751
+    -7.364,
+    -13.514
    ],
    "yaw": -3.142,
    "scale": 1.16,
@@ -3937,7 +3898,7 @@
    ]
   }
  ],
- "reviewed": false,
+ "reviewed": true,
  "layout": {
   "nodes": [
    {
@@ -4005,7 +3966,49 @@
    "toward": "c",
    "questionAt": 15.9,
    "lane": 1
+  },
+  "paths": {
+   "right": [
+    [
+     -5.25,
+     -15.9
+    ],
+    [
+     -5,
+     -7
+    ]
+   ]
   }
  },
- "signs": []
+ "signs": [
+  {
+   "id": "sign_1",
+   "code": "5.15.1",
+   "pos": [
+    -10.601,
+    -13.499
+   ],
+   "yaw": 3.142,
+   "mount": "cantilever",
+   "reach": 7.25,
+   "armSide": "left",
+   "clearance": 5.5,
+   "laneDirections": [
+    [
+     "left",
+     "straight"
+    ],
+    [
+     "right"
+    ]
+   ]
+  }
+ ],
+ "questionView": {
+  "centre": [
+   -3.865,
+   -1.88
+  ],
+  "height": 30.218
+ }
 }

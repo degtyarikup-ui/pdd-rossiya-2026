@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.75,
@@ -561,8 +562,8 @@
    ],
    "label": "А",
    "labelPosition": [
-    4.08,
-    -6.8
+    2.178,
+    -6.719
    ]
   },
   {
@@ -570,31 +571,32 @@
    "kind": "choice",
    "points": [
     [
-     -5.4,
-     -14
+     -1.772,
+     -14.582
     ],
     [
-     -5.4,
-     -5
+     -1.772,
+     -5.582
     ],
     [
-     -4,
-     -1
+     -0.372,
+     -0.582
     ],
     [
-     2,
-     5.4
+     5.628,
+     4.818
     ],
     [
-     14,
-     5.4
+     17.628,
+     4.818
     ]
    ],
    "label": "Б",
    "labelPosition": [
-    7,
-    -7
-   ]
+    -1.846,
+    -4.95
+   ],
+   "manual": true
   },
   {
    "id": "actor_tram",
@@ -3932,7 +3934,7 @@
    ]
   }
  ],
- "reviewed": false,
+ "reviewed": true,
  "layout": {
   "nodes": [
    {

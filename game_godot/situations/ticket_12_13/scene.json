@@ -3184,44 +3184,8 @@
      -13.1
     ],
     [
-     -1.8,
-     -4.7
-    ],
-    [
-     -1.841,
-     -3.987
-    ],
-    [
-     -1.965,
-     -3.382
-    ],
-    [
-     -2.177,
-     -2.881
-    ],
-    [
-     -2.481,
-     -2.481
-    ],
-    [
-     -2.881,
-     -2.177
-    ],
-    [
-     -3.382,
-     -1.965
-    ],
-    [
-     -3.987,
-     -1.841
-    ],
-    [
-     -4.7,
-     -1.8
-    ],
-    [
-     -5.2,
-     -1.8
+     -2.5,
+     -3.5
     ],
     [
      -8.5,
@@ -3388,7 +3352,8 @@
       -48.859,
       1.78
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.25,
    "halfWidth": 0.381,
@@ -3447,7 +3412,8 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   },
   {
    "id": "pedestrian_1",
@@ -3487,7 +3453,8 @@
       6,
       -30.5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.25,
    "halfWidth": 0.381,
@@ -3546,15 +3513,17 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
  "questionView": {
   "centre": [
    -6.005,
    0.132
   ],
-  "height": 27.386
+  "height": 30.924
  },
  "officers": [
   {

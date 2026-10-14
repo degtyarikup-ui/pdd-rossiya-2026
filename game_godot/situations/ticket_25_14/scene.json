@@ -1998,9 +1998,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    8.6,
+    9.8,
     0.0,
-    -84.5
+    -56.072
    ],
    "yaw": 0.188,
    "scale": [
@@ -2013,9 +2013,9 @@
   {
    "prop": "parked",
    "pos": [
-    12.8,
+    14,
     0.0,
-    -88.5
+    -60.072
    ],
    "yaw": 1.421,
    "scale": [
@@ -2133,9 +2133,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    8.6,
+    9.8,
     0.0,
-    -64.5
+    -36.072
    ],
    "yaw": -0.139,
    "scale": [
@@ -2148,9 +2148,9 @@
   {
    "prop": "buildings/home_4",
    "pos": [
-    12.422,
+    13.622,
     0.0,
-    -78
+    -49.572
    ],
    "yaw": 0,
    "scale": [
@@ -2163,9 +2163,9 @@
   {
    "prop": "street/fence_14",
    "pos": [
-    8,
+    9.2,
     0.0,
-    -77
+    -48.572
    ],
    "yaw": 0,
    "scale": [
@@ -2178,9 +2178,9 @@
   {
    "prop": "street/bush",
    "pos": [
-    12.8,
+    14,
     0.0,
-    -68.5
+    -40.072
    ],
    "yaw": 0,
    "scale": [
@@ -2268,9 +2268,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -8.6,
+    -9.771,
     0.0,
-    -64.5
+    -45.822
    ],
    "yaw": -0.462,
    "scale": [
@@ -2448,9 +2448,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    8.6,
+    9.8,
     0.0,
-    -44.5
+    -16.072
    ],
    "yaw": -0.469,
    "scale": [
@@ -2463,9 +2463,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    12.63,
+    13.83,
     0.0,
-    -58
+    -29.572
    ],
    "yaw": 0,
    "scale": [
@@ -2478,9 +2478,9 @@
   {
    "prop": "street/lamp",
    "pos": [
-    7,
+    8.2,
     0.0,
-    -67
+    -38.572
    ],
    "yaw": 0,
    "scale": [
@@ -2493,9 +2493,9 @@
   {
    "prop": "street/fence_14",
    "pos": [
-    8,
+    9.2,
     0.0,
-    -57
+    -28.572
    ],
    "yaw": 0,
    "scale": [
@@ -2508,9 +2508,9 @@
   {
    "prop": "parked",
    "pos": [
-    12.8,
+    14,
     0.0,
-    -48.5
+    -20.072
    ],
    "yaw": 1.421,
    "scale": [
@@ -2628,9 +2628,9 @@
   {
    "prop": "trees/birch_0",
    "pos": [
-    -8.6,
+    -9.771,
     0.0,
-    -44.5
+    -25.822
    ],
    "yaw": 3.123,
    "scale": [
@@ -2643,9 +2643,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    -12.256,
+    -13.427,
     0.0,
-    -58
+    -39.322
    ],
    "yaw": 0,
    "scale": [
@@ -2658,9 +2658,9 @@
   {
    "prop": "street/fence_14",
    "pos": [
-    -8,
+    -9.171,
     0.0,
-    -57
+    -38.322
    ],
    "yaw": 0,
    "scale": [
@@ -2673,9 +2673,9 @@
   {
    "prop": "parked",
    "pos": [
-    -12.8,
+    -13.971,
     0.0,
-    -48.5
+    -29.822
    ],
    "yaw": -1.721,
    "scale": [
@@ -2793,9 +2793,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    8.6,
+    9.8,
     0.0,
-    -41
+    -12.572
    ],
    "yaw": -1.44,
    "scale": [
@@ -2823,9 +2823,9 @@
   {
    "prop": "street/bush",
    "pos": [
-    11.655,
+    12.855,
     0.0,
-    -39
+    -10.572
    ],
    "yaw": 0,
    "scale": [
@@ -2943,9 +2943,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -8.6,
+    -9.771,
     0.0,
-    -41
+    -22.322
    ],
    "yaw": 2.116,
    "scale": [
@@ -2958,9 +2958,9 @@
   {
    "prop": "street/lamp",
    "pos": [
-    -7,
+    -8.171,
     0.0,
-    -47
+    -28.322
    ],
    "yaw": -3.142,
    "scale": [
@@ -2973,9 +2973,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -15.507,
+    -16.678,
     0.0,
-    -30.857
+    -12.179
    ],
    "yaw": 2.703,
    "scale": [
@@ -2988,9 +2988,9 @@
   {
    "prop": "street/bush",
    "pos": [
-    -11.176,
+    -12.347,
     0.0,
-    -39
+    -20.322
    ],
    "yaw": 0,
    "scale": [
@@ -3334,7 +3334,8 @@
       -4.874,
       54.971
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.01,
    "halfWidth": 0.3,
@@ -3378,7 +3379,8 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   },
   {
    "id": "pedestrian",
@@ -3414,7 +3416,8 @@
       -54.5,
       6
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.229,
    "halfWidth": 0.381,
@@ -3468,9 +3471,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
  "questionView": {
   "centre": [
    -3.424,
@@ -3478,6 +3483,5 @@
   ],
   "height": 38.283
  },
- "officers": [],
- "playerPlacement": "street"
+ "officers": []
 }

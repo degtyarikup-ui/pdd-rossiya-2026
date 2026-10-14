@@ -3169,48 +3169,12 @@
      -13.1
     ],
     [
-     -1.8,
-     -4.7
+     -1.5,
+     0.5
     ],
     [
-     -1.709,
-     -3.101
-    ],
-    [
-     -1.431,
-     -1.745
-    ],
-    [
-     -0.955,
-     -0.624
-    ],
-    [
-     -0.274,
-     0.274
-    ],
-    [
-     0.624,
-     0.955
-    ],
-    [
-     1.745,
-     1.431
-    ],
-    [
-     3.101,
-     1.709
-    ],
-    [
-     4.7,
-     1.8
-    ],
-    [
-     5.2,
-     1.8
-    ],
-    [
-     24.7,
-     1.8
+     7.5,
+     2
     ]
    ],
    "exitYaw": 1.571
@@ -3414,7 +3378,8 @@
       -44.7,
       -1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.075,
    "halfWidth": 0.348,
@@ -3458,7 +3423,8 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": false,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   },
   {
    "id": "npc_bus",
@@ -3498,7 +3464,8 @@
       1.8,
       -44.7
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.992,
    "halfWidth": 1.046,
@@ -3557,7 +3524,8 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": false,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   },
   {
    "id": "npc_car",
@@ -3593,7 +3561,8 @@
       1.8,
       -44.7
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.34,
    "halfWidth": 1.023,
@@ -3653,8 +3622,17 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": false,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "questionView": {
+  "centre": [
+   -0.025,
+   9.664
+  ],
+  "height": 42.809
+ },
  "officers": []
 }

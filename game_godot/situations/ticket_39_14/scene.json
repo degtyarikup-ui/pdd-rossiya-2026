@@ -2084,6 +2084,246 @@
     0.98
    ],
    "tint": "#9a8a3e"
+  },
+  {
+   "prop": "buildings/tower_3",
+   "pos": [
+    29.5,
+    0.0,
+    16.5
+   ],
+   "yaw": -1.597,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/tower_2",
+   "pos": [
+    12.5,
+    0.0,
+    15.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/tower_2",
+   "pos": [
+    -8,
+    0.0,
+    14.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/tower_2",
+   "pos": [
+    -27.5,
+    0.0,
+    15
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    2.5,
+    0.0,
+    30.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -23.5,
+    0.0,
+    31.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    23.5,
+    0.0,
+    31.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    -10,
+    0.0,
+    41.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_7",
+   "pos": [
+    12.5,
+    0.0,
+    44
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_7",
+   "pos": [
+    -12.724,
+    0.0,
+    -12.961
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    9.5,
+    0.0,
+    -13
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/kiosk_2",
+   "pos": [
+    6.09,
+    0.0,
+    -20.603
+   ],
+   "yaw": -1.543,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    8.5,
+    0.0,
+    -31
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_4",
+   "pos": [
+    -10,
+    0.0,
+    -28
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    26.648,
+    0.0,
+    -13.798
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    -30,
+    0.0,
+    -13.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
   }
  ],
  "labels": [],
@@ -2140,18 +2380,18 @@
  "type": "crossroad",
  "centerZ": 0,
  "startZ": -26,
- "stopZ": -10.7,
- "playerStartX": null,
+ "stopZ": -11.5,
+ "playerStartX": -1.25,
  "playerStartRotY": 0.0,
  "leftLane": 1.8,
  "rightLane": 1.8,
  "kerbZ": 4.2,
  "kerbX": 4.2,
- "approachW": 8.4,
+ "approachW": 5,
  "exitWidths": {
-  "straight": 8.4,
   "left": 8.4,
-  "right": 8.4
+  "right": 8.4,
+  "uturn": 5
  },
  "segmentLength": 0,
  "spec": {
@@ -2163,35 +2403,18 @@
   "pathRules": null
  },
  "exits": {
-  "straight": {
-   "points": [
-    [
-     -1.8,
-     -10.7
-    ],
-    [
-     -1.8,
-     16.0
-    ]
-   ],
-   "exitYaw": 0
-  },
   "left": {
    "points": [
     [
-     -1.8,
-     -10.7
+     -1.25,
+     -13.1
     ],
     [
-     -1.8,
-     -1.5
+     -1,
+     0
     ],
     [
-     1.5,
-     1.8
-    ],
-    [
-     22.0,
+     3.5,
      1.8
     ]
    ],
@@ -2200,19 +2423,51 @@
   "right": {
    "points": [
     [
-     -1.8,
-     -10.7
+     -1.25,
+     -11.5
     ],
     [
-     -1.8,
-     -4.8
+     -1.25,
+     -4.7
     ],
     [
-     -4.8,
+     -1.256,
+     -4.089
+    ],
+    [
+     -1.285,
+     -3.532
+    ],
+    [
+     -1.357,
+     -3.038
+    ],
+    [
+     -1.49,
+     -2.615
+    ],
+    [
+     -1.702,
+     -2.271
+    ],
+    [
+     -2.012,
+     -2.015
+    ],
+    [
+     -2.439,
+     -1.855
+    ],
+    [
+     -3,
      -1.8
     ],
     [
-     -22.0,
+     -3.5,
+     -1.8
+    ],
+    [
+     -23,
      -1.8
     ]
    ],
@@ -2221,60 +2476,56 @@
   "uturn": {
    "points": [
     [
-     -1.8,
-     -10.7
+     -1.25,
+     -11.5
     ],
     [
-     -1.8,
-     -7.0
+     -1.25,
+     -4.7
     ],
     [
      -2.6,
      -1.7
     ],
     [
-     -2.511,
-     1.473
+     -2.402,
+     -0.705
     ],
     [
-     -2.252,
-     2.1
+     -1.838,
+     0.138
     ],
     [
-     -1.3,
-     3.052
+     -0.995,
+     0.702
     ],
     [
      0.0,
-     3.4
+     0.9
     ],
     [
-     0.673,
-     3.311
+     0.995,
+     0.702
     ],
     [
-     1.3,
-     3.052
+     1.838,
+     0.138
     ],
     [
-     2.252,
-     2.1
-    ],
-    [
-     2.6,
-     0.8
+     2.402,
+     -0.705
     ],
     [
      2.6,
      -1.7
     ],
     [
-     1.8,
-     -7.0
+     1.25,
+     -7.7
     ],
     [
-     1.8,
-     -22.0
+     1.25,
+     -27.7
     ]
    ],
    "exitYaw": 3.142
@@ -2354,21 +2605,22 @@
     "targetAction": "straight",
     "color": "#29323B",
     "position": [
-     -10,
+     -6,
      0.0,
-     2.05
+     1.5
     ],
     "rotationY": 1.571,
     "route": [
      [
-      -10.0,
-      2.05
+      -6,
+      1.5
      ],
      [
-      55.0,
-      2.05
+      44.7,
+      1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.19,
    "halfWidth": 1.023,
@@ -2382,9 +2634,9 @@
     "height": 2.4
    },
    "pos": [
-    -10,
+    -6,
     0.0,
-    2.05
+    1.5
    ],
    "yaw": 1.571,
    "scale": [
@@ -2394,17 +2646,17 @@
    ],
    "path": [
     [
-     -10.0,
+     -6,
      0.0,
-     2.05
+     1.5
     ],
     [
-     55.0,
+     44.7,
      0.0,
-     2.05
+     1.8
     ]
    ],
-   "length": 65.0,
+   "length": 50.701,
    "clearDistance": 17.69,
    "maxSpeed": 12,
    "signalPlan": null,
@@ -2412,7 +2664,17 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   }
- ]
+ ],
+ "playerPlacement": "street",
+ "questionView": {
+  "centre": [
+   -0.436,
+   3.851
+  ],
+  "height": 35.438
+ },
+ "officers": []
 }

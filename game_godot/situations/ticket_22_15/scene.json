@@ -3115,6 +3115,7 @@
    "staysPut": false
   }
  ],
+ "playerPlacement": "street",
  "questionView": {
   "centre": [
    0.995,
@@ -3122,6 +3123,5 @@
   ],
   "height": 35.004
  },
- "officers": [],
- "playerPlacement": "street"
+ "officers": []
 }

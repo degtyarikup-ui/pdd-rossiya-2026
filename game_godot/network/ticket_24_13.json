@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.75,
@@ -499,78 +500,12 @@
    "exitYaw": 3.142
   },
   {
-   "id": "actor_tram_1",
-   "kind": "actor",
-   "points": [
-    [
-     1.75,
-     -9.5
-    ],
-    [
-     1.75,
-     80.201
-    ],
-    [
-     2.046,
-     85.171
-    ],
-    [
-     2.566,
-     88.115
-    ],
-    [
-     3.354,
-     90.998
-    ],
-    [
-     4.404,
-     93.796
-    ],
-    [
-     6.169,
-     97.369
-    ],
-    [
-     9.411,
-     102.39
-    ],
-    [
-     16.761,
-     111.824
-    ],
-    [
-     19.655,
-     115.879
-    ],
-    [
-     22.158,
-     120.185
-    ],
-    [
-     24.073,
-     124.781
-    ],
-    [
-     25.093,
-     128.632
-    ],
-    [
-     25.701,
-     133.574
-    ],
-    [
-     25.75,
-     155.5
-    ]
-   ]
-  },
-  {
    "id": "actor_npc_car",
    "kind": "actor",
    "points": [
     [
      5.25,
-     12.0
+     12
     ],
     [
      5.25,
@@ -579,6 +514,21 @@
     [
      5.25,
      -47.5
+    ]
+   ],
+   "manual": true
+  },
+  {
+   "id": "actor_tram_1",
+   "kind": "actor",
+   "points": [
+    [
+     2,
+     -12
+    ],
+    [
+     2,
+     77.5
     ]
    ],
    "manual": true
@@ -593,8 +543,8 @@
   {
    "id": "light_0",
    "pos": [
-    -7.324,
-    -8.727
+    -7.027,
+    -11.88
    ],
    "yaw": -3.142,
    "scale": 1.16,
@@ -610,8 +560,8 @@
    "name": "Трамвай",
    "route": "actor_tram_1",
    "pos": [
-    1.75,
-    -9.5
+    2,
+    -12
    ],
    "yaw": 0,
    "scale": [
@@ -646,7 +596,8 @@
     }
    },
    "wheelsRadius": 0.36,
-   "asset": "ticket_24_13/actor_0.glb"
+   "asset": "ticket_24_13/actor_0.glb",
+   "way": "straight"
   },
   {
    "id": "npc_car",
@@ -3785,7 +3736,7 @@
   "right": 14,
   "uturn": 14
  },
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "compliance": {
   "status": "unverified",
@@ -4156,16 +4107,26 @@
  "signs": [
   {
    "id": "sign_1",
-   "code": "5.15.6",
+   "code": "5.15.1",
    "pos": [
-    -7.876,
-    -11.986
+    -10.721,
+    -11.874
    ],
    "yaw": 3.142,
    "mount": "cantilever",
-   "reach": 4.75,
+   "reach": 7.25,
    "armSide": "left",
-   "clearance": 5.5
+   "clearance": 5.5,
+   "laneDirections": [
+    [
+     "left",
+     "straight"
+    ],
+    [
+     "straight",
+     "right"
+    ]
+   ]
   }
  ],
  "questionView": {

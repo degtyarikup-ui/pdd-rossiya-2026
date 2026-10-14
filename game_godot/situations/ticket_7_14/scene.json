@@ -3,9 +3,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    -33.69,
+    -32.009,
     0.0,
-    31.354
+    26.356
    ],
    "yaw": 0.261,
    "scale": [
@@ -18,9 +18,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    -44.171,
+    -51.798,
     0.0,
-    30.86
+    25.288
    ],
    "yaw": 0.053,
    "scale": [
@@ -78,9 +78,9 @@
   {
    "prop": "trees/pine_0",
    "pos": [
-    8.6,
+    11.642,
     0.0,
-    47.5
+    46.123
    ],
    "yaw": -1.68,
    "scale": [
@@ -93,9 +93,9 @@
   {
    "prop": "buildings/home_2",
    "pos": [
-    12.68,
+    15.722,
     0.0,
-    34
+    32.623
    ],
    "yaw": 0,
    "scale": [
@@ -108,9 +108,9 @@
   {
    "prop": "street/lamp",
    "pos": [
-    7,
+    10.042,
     0.0,
-    25
+    23.623
    ],
    "yaw": 0,
    "scale": [
@@ -123,9 +123,9 @@
   {
    "prop": "street/fence_14",
    "pos": [
-    8,
+    11.042,
     0.0,
-    35
+    33.623
    ],
    "yaw": 0,
    "scale": [
@@ -138,9 +138,9 @@
   {
    "prop": "parked",
    "pos": [
-    12.8,
+    15.842,
     0.0,
-    43.5
+    42.123
    ],
    "yaw": 1.421,
    "scale": [
@@ -153,9 +153,9 @@
   {
    "prop": "buildings/home_2",
    "pos": [
-    33.453,
+    23.601,
     0.0,
-    34.821
+    21.18
    ],
    "yaw": -0.28,
    "scale": [
@@ -168,9 +168,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    44.549,
+    43.564,
     0.0,
-    30.46
+    27.965
    ],
    "yaw": -0.189,
    "scale": [
@@ -228,9 +228,9 @@
   {
    "prop": "trees/pine_0",
    "pos": [
-    -8.6,
+    -11.629,
     0.0,
-    47.5
+    37.757
    ],
    "yaw": -2.941,
    "scale": [
@@ -243,9 +243,9 @@
   {
    "prop": "buildings/home_2",
    "pos": [
-    -12.524,
+    -15.553,
     0.0,
-    34
+    24.257
    ],
    "yaw": 0,
    "scale": [
@@ -258,9 +258,9 @@
   {
    "prop": "street/fence_12",
    "pos": [
-    -8,
+    -11.029,
     0.0,
-    35
+    25.257
    ],
    "yaw": 0,
    "scale": [
@@ -273,9 +273,9 @@
   {
    "prop": "parked",
    "pos": [
-    -12.8,
+    -15.829,
     0.0,
-    43.5
+    33.757
    ],
    "yaw": -1.721,
    "scale": [
@@ -288,9 +288,9 @@
   {
    "prop": "buildings/home_2",
    "pos": [
-    -33.803,
+    -27.294,
     0.0,
-    57.957
+    46.068
    ],
    "yaw": 0.27,
    "scale": [
@@ -303,9 +303,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    -43.105,
+    -25.481,
     0.0,
-    56.409
+    12.862
    ],
    "yaw": 0.199,
    "scale": [
@@ -363,9 +363,9 @@
   {
    "prop": "trees/pine_0",
    "pos": [
-    8.6,
+    11.642,
     0.0,
-    67.5
+    66.123
    ],
    "yaw": -0.973,
    "scale": [
@@ -378,9 +378,9 @@
   {
    "prop": "buildings/home_2",
    "pos": [
-    12.708,
+    15.75,
     0.0,
-    54
+    52.623
    ],
    "yaw": 0,
    "scale": [
@@ -393,9 +393,9 @@
   {
    "prop": "street/fence_14",
    "pos": [
-    8,
+    11.042,
     0.0,
-    55
+    53.623
    ],
    "yaw": 0,
    "scale": [
@@ -408,9 +408,9 @@
   {
    "prop": "street/bush",
    "pos": [
-    12.8,
+    15.842,
     0.0,
-    63.5
+    62.123
    ],
    "yaw": 0,
    "scale": [
@@ -438,9 +438,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    43.993,
+    45.482,
     0.0,
-    50.19
+    55.477
    ],
    "yaw": -0.144,
    "scale": [
@@ -498,9 +498,9 @@
   {
    "prop": "trees/birch_0",
    "pos": [
-    -8.6,
+    -11.629,
     0.0,
-    67.5
+    57.757
    ],
    "yaw": 1.082,
    "scale": [
@@ -513,9 +513,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    -12.081,
+    -15.11,
     0.0,
-    54
+    44.257
    ],
    "yaw": 0,
    "scale": [
@@ -528,9 +528,9 @@
   {
    "prop": "street/lamp",
    "pos": [
-    -7,
+    -10.029,
     0.0,
-    45
+    35.257
    ],
    "yaw": -3.142,
    "scale": [
@@ -543,9 +543,9 @@
   {
    "prop": "street/fence_12",
    "pos": [
-    -8,
+    -11.029,
     0.0,
-    55
+    45.257
    ],
    "yaw": 0,
    "scale": [
@@ -558,9 +558,9 @@
   {
    "prop": "street/bush",
    "pos": [
-    -12.8,
+    -15.829,
     0.0,
-    63.5
+    53.757
    ],
    "yaw": 0,
    "scale": [
@@ -678,9 +678,9 @@
   {
    "prop": "trees/birch_0",
    "pos": [
-    8.6,
+    11.642,
     0.0,
-    87.5
+    86.123
    ],
    "yaw": 1.173,
    "scale": [
@@ -693,9 +693,9 @@
   {
    "prop": "buildings/home_4",
    "pos": [
-    12.316,
+    15.358,
     0.0,
-    74
+    72.623
    ],
    "yaw": 0,
    "scale": [
@@ -708,9 +708,9 @@
   {
    "prop": "street/lamp",
    "pos": [
-    7,
+    10.042,
     0.0,
-    65
+    63.623
    ],
    "yaw": 0,
    "scale": [
@@ -723,9 +723,9 @@
   {
    "prop": "street/fence_14",
    "pos": [
-    8,
+    11.042,
     0.0,
-    75
+    73.623
    ],
    "yaw": 0,
    "scale": [
@@ -738,9 +738,9 @@
   {
    "prop": "parked",
    "pos": [
-    12.8,
+    15.842,
     0.0,
-    83.5
+    82.123
    ],
    "yaw": 1.421,
    "scale": [
@@ -858,9 +858,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -8.6,
+    -11.629,
     0.0,
-    87.5
+    77.757
    ],
    "yaw": 2.119,
    "scale": [
@@ -873,9 +873,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    -12.079,
+    -15.108,
     0.0,
-    74
+    64.257
    ],
    "yaw": 0,
    "scale": [
@@ -888,9 +888,9 @@
   {
    "prop": "street/fence_14",
    "pos": [
-    -8,
+    -11.029,
     0.0,
-    75
+    65.257
    ],
    "yaw": 0,
    "scale": [
@@ -903,9 +903,9 @@
   {
    "prop": "parked",
    "pos": [
-    -12.8,
+    -15.829,
     0.0,
-    83.5
+    73.757
    ],
    "yaw": -1.721,
    "scale": [
@@ -918,9 +918,9 @@
   {
    "prop": "street/lamp",
    "pos": [
-    -7,
+    -10.029,
     0.0,
-    85
+    75.257
    ],
    "yaw": -3.142,
    "scale": [
@@ -1998,9 +1998,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    8.6,
+    11.574,
     0.0,
-    -84.5
+    -76.008
    ],
    "yaw": -2.116,
    "scale": [
@@ -2013,9 +2013,9 @@
   {
    "prop": "parked",
    "pos": [
-    12.8,
+    15.774,
     0.0,
-    -88.5
+    -80.008
    ],
    "yaw": 1.421,
    "scale": [
@@ -2028,9 +2028,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -8.6,
+    -11.501,
     0.0,
-    -84.5
+    -83.582
    ],
    "yaw": 2.024,
    "scale": [
@@ -2043,9 +2043,9 @@
   {
    "prop": "parked",
    "pos": [
-    -12.8,
+    -15.701,
     0.0,
-    -88.5
+    -87.582
    ],
    "yaw": -1.721,
    "scale": [
@@ -2058,9 +2058,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    -33.877,
+    -15.525,
     0.0,
-    -75.046
+    -18.775
    ],
    "yaw": 0.045,
    "scale": [
@@ -2133,9 +2133,9 @@
   {
    "prop": "trees/pine_0",
    "pos": [
-    8.6,
+    11.574,
     0.0,
-    -64.5
+    -56.008
    ],
    "yaw": -2.627,
    "scale": [
@@ -2148,9 +2148,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    12.034,
+    15.008,
     0.0,
-    -78
+    -69.508
    ],
    "yaw": 0,
    "scale": [
@@ -2163,9 +2163,9 @@
   {
    "prop": "street/fence_12",
    "pos": [
-    8,
+    10.974,
     0.0,
-    -77
+    -68.508
    ],
    "yaw": 0,
    "scale": [
@@ -2178,9 +2178,9 @@
   {
    "prop": "street/bush",
    "pos": [
-    12.8,
+    15.774,
     0.0,
-    -68.5
+    -60.008
    ],
    "yaw": 0,
    "scale": [
@@ -2193,9 +2193,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    33.712,
+    29.12,
     0.0,
-    -77.47
+    -71.126
    ],
    "yaw": 0.162,
    "scale": [
@@ -2208,9 +2208,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    44.794,
+    50.93,
     0.0,
-    -80.127
+    -67.328
    ],
    "yaw": -0.173,
    "scale": [
@@ -2268,9 +2268,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -8.6,
+    -11.501,
     0.0,
-    -64.5
+    -63.582
    ],
    "yaw": 1.887,
    "scale": [
@@ -2283,9 +2283,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    -12.656,
+    -15.557,
     0.0,
-    -78
+    -77.082
    ],
    "yaw": 0,
    "scale": [
@@ -2298,9 +2298,9 @@
   {
    "prop": "street/lamp",
    "pos": [
-    -7,
+    -9.901,
     0.0,
-    -87
+    -86.082
    ],
    "yaw": -3.142,
    "scale": [
@@ -2313,9 +2313,9 @@
   {
    "prop": "street/fence_12",
    "pos": [
-    -8,
+    -10.901,
     0.0,
-    -77
+    -76.082
    ],
    "yaw": 0,
    "scale": [
@@ -2328,9 +2328,9 @@
   {
    "prop": "street/bush",
    "pos": [
-    -12.8,
+    -15.701,
     0.0,
-    -68.5
+    -67.582
    ],
    "yaw": 0,
    "scale": [
@@ -2448,9 +2448,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    8.6,
+    11.574,
     0.0,
-    -44.5
+    -36.008
    ],
    "yaw": -1.31,
    "scale": [
@@ -2463,9 +2463,9 @@
   {
    "prop": "buildings/home_2",
    "pos": [
-    12.438,
+    15.412,
     0.0,
-    -58
+    -49.508
    ],
    "yaw": 0,
    "scale": [
@@ -2478,9 +2478,9 @@
   {
    "prop": "street/lamp",
    "pos": [
-    7,
+    9.974,
     0.0,
-    -67
+    -58.508
    ],
    "yaw": 0,
    "scale": [
@@ -2493,9 +2493,9 @@
   {
    "prop": "street/fence_12",
    "pos": [
-    8,
+    10.974,
     0.0,
-    -57
+    -48.508
    ],
    "yaw": 0,
    "scale": [
@@ -2508,9 +2508,9 @@
   {
    "prop": "parked",
    "pos": [
-    12.8,
+    15.774,
     0.0,
-    -48.5
+    -40.008
    ],
    "yaw": 1.421,
    "scale": [
@@ -2628,9 +2628,9 @@
   {
    "prop": "trees/pine_0",
    "pos": [
-    -8.6,
+    -11.501,
     0.0,
-    -44.5
+    -43.582
    ],
    "yaw": -2.76,
    "scale": [
@@ -2643,9 +2643,9 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    -12.238,
+    -15.139,
     0.0,
-    -58
+    -57.082
    ],
    "yaw": 0,
    "scale": [
@@ -2658,9 +2658,9 @@
   {
    "prop": "street/fence_14",
    "pos": [
-    -8,
+    -10.901,
     0.0,
-    -57
+    -56.082
    ],
    "yaw": 0,
    "scale": [
@@ -2673,9 +2673,9 @@
   {
    "prop": "parked",
    "pos": [
-    -12.8,
+    -15.701,
     0.0,
-    -48.5
+    -47.582
    ],
    "yaw": -1.721,
    "scale": [
@@ -2793,9 +2793,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    8.6,
+    11.574,
     0.0,
-    -41
+    -32.508
    ],
    "yaw": 0.793,
    "scale": [
@@ -2823,9 +2823,9 @@
   {
    "prop": "street/bush",
    "pos": [
-    10.984,
+    13.958,
     0.0,
-    -39
+    -30.508
    ],
    "yaw": 0,
    "scale": [
@@ -2943,9 +2943,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -8.6,
+    -11.501,
     0.0,
-    -41
+    -40.082
    ],
    "yaw": -1.285,
    "scale": [
@@ -2958,9 +2958,9 @@
   {
    "prop": "street/lamp",
    "pos": [
-    -7,
+    -9.901,
     0.0,
-    -47
+    -46.082
    ],
    "yaw": -3.142,
    "scale": [
@@ -2973,9 +2973,9 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -16.153,
+    -19.054,
     0.0,
-    -30.859
+    -29.941
    ],
    "yaw": 2.319,
    "scale": [
@@ -2988,9 +2988,9 @@
   {
    "prop": "street/bush",
    "pos": [
-    -12.096,
+    -14.997,
     0.0,
-    -39
+    -38.082
    ],
    "yaw": 0,
    "scale": [
@@ -3055,22 +3055,23 @@
  "regulator": false,
  "centerZ": 0,
  "startZ": -26,
- "stopZ": -10.7,
- "playerStartX": null,
+ "stopZ": -11.1,
+ "playerStartX": -1.75,
  "playerStartRotY": 0.0,
  "leftLane": 1.8,
  "rightLane": 1.8,
  "kerbZ": 4.2,
  "kerbX": 4.2,
- "approachW": 8.4,
+ "approachW": 14,
  "exitWidths": {
-  "straight": 8.4,
+  "straight": 14,
   "left": 8.4,
-  "right": 8.4
+  "right": 8.4,
+  "uturn": 14
  },
  "segmentLength": 0,
  "spec": {
-  "maneuver": null,
+  "maneuver": "straight",
   "yieldTo": [],
   "paths": null,
   "pathRules": null
@@ -3079,12 +3080,12 @@
   "straight": {
    "points": [
     [
-     -1.8,
-     -10.7
+     -1.75,
+     -11.1
     ],
     [
-     -1.8,
-     16.0
+     -1.5,
+     -3
     ]
    ],
    "exitYaw": 0
@@ -3092,19 +3093,51 @@
   "left": {
    "points": [
     [
-     -1.8,
-     -10.7
+     -1.75,
+     -11.1
     ],
     [
-     -1.8,
-     -1.5
+     -1.75,
+     -7.5
     ],
     [
-     1.5,
+     -1.622,
+     -5.217
+    ],
+    [
+     -1.227,
+     -3.28
+    ],
+    [
+     -0.553,
+     -1.675
+    ],
+    [
+     0.416,
+     -0.391
+    ],
+    [
+     1.691,
+     0.587
+    ],
+    [
+     3.288,
+     1.269
+    ],
+    [
+     5.22,
+     1.669
+    ],
+    [
+     7.5,
      1.8
     ],
     [
-     22.0,
+     8,
+     1.8
+    ],
+    [
+     27.5,
      1.8
     ]
    ],
@@ -3113,19 +3146,51 @@
   "right": {
    "points": [
     [
-     -1.8,
-     -10.7
+     -1.75,
+     -11.1
     ],
     [
-     -1.8,
-     -4.8
+     -1.75,
+     -7.5
     ],
     [
-     -4.8,
+     -1.831,
+     -6.093
+    ],
+    [
+     -2.079,
+     -4.902
+    ],
+    [
+     -2.502,
+     -3.917
+    ],
+    [
+     -3.107,
+     -3.132
+    ],
+    [
+     -3.902,
+     -2.536
+    ],
+    [
+     -4.894,
+     -2.121
+    ],
+    [
+     -6.091,
+     -1.879
+    ],
+    [
+     -7.5,
      -1.8
     ],
     [
-     -22.0,
+     -8,
+     -1.8
+    ],
+    [
+     -27.5,
      -1.8
     ]
    ],
@@ -3134,60 +3199,56 @@
   "uturn": {
    "points": [
     [
-     -1.8,
-     -10.7
+     -1.75,
+     -11.1
     ],
     [
-     -1.8,
-     -7.0
+     -1.75,
+     -7.5
     ],
     [
      -2.6,
      -1.7
     ],
     [
-     -2.511,
-     1.473
+     -2.402,
+     -0.705
     ],
     [
-     -2.252,
-     2.1
+     -1.838,
+     0.138
     ],
     [
-     -1.3,
-     3.052
+     -0.995,
+     0.702
     ],
     [
-     0.0,
-     3.4
+     0,
+     0.9
     ],
     [
-     0.673,
-     3.311
+     0.995,
+     0.702
     ],
     [
-     1.3,
-     3.052
+     1.838,
+     0.138
     ],
     [
-     2.252,
-     2.1
-    ],
-    [
-     2.6,
-     0.8
+     2.402,
+     -0.705
     ],
     [
      2.6,
      -1.7
     ],
     [
-     1.8,
-     -7.0
+     1.75,
+     -10.5
     ],
     [
-     1.8,
-     -22.0
+     1.75,
+     -30.5
     ]
    ],
    "exitYaw": 3.142
@@ -3254,5 +3315,659 @@
  ],
  "trajectories": [],
  "lights": [],
- "actors": []
+ "actors": [
+  {
+   "id": "van_1",
+   "type": "van",
+   "name": "Фургон",
+   "config": {
+    "id": "van_1",
+    "type": "van",
+    "name": "Фургон",
+    "side": "ring",
+    "ringRadius": 10.3,
+    "ringAngle": -1.7,
+    "color": "#9DA4AB",
+    "concurrentWith": [
+     "ring_moto"
+    ],
+    "position": [
+     -5.25,
+     0.0,
+     8.968
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -5.25,
+      8.968
+     ],
+     [
+      -5.25,
+      8.968
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.454,
+   "halfWidth": 1.09,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#9DA4AB",
+    "height": 3
+   },
+   "pos": [
+    -5.25,
+    0.0,
+    8.968
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -5.25,
+     0.0,
+     8.968
+    ],
+    [
+     -5.25,
+     0.0,
+     8.968
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 47.265,
+   "maxSpeed": 12,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "hazards": false
+  },
+  {
+   "id": "van_2",
+   "type": "van",
+   "name": "Фургон",
+   "config": {
+    "id": "van_2",
+    "type": "van",
+    "name": "Фургон",
+    "side": "ring",
+    "ringRadius": 10.3,
+    "ringAngle": -1.7,
+    "color": "#9DA4AB",
+    "concurrentWith": [
+     "ring_moto"
+    ],
+    "position": [
+     -1.75,
+     0.0,
+     27.361
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -1.75,
+      27.361
+     ],
+     [
+      -1.75,
+      27.361
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.454,
+   "halfWidth": 1.09,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#9DA4AB",
+    "height": 3
+   },
+   "pos": [
+    -1.75,
+    0.0,
+    27.361
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -1.75,
+     0.0,
+     27.361
+    ],
+    [
+     -1.75,
+     0.0,
+     27.361
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 47.265,
+   "maxSpeed": 12,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "hazards": false
+  },
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "config": {
+    "id": "car_1",
+    "type": "car",
+    "name": "Легковая",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -1.75,
+     0.0,
+     20.108
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -1.75,
+      20.108
+     ],
+     [
+      -1.75,
+      20.108
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -1.75,
+    0.0,
+    20.108
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -1.75,
+     0.0,
+     20.108
+    ],
+    [
+     -1.75,
+     0.0,
+     20.108
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 24.151,
+   "maxSpeed": 12,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "hazards": false
+  },
+  {
+   "id": "car_2",
+   "type": "car",
+   "name": "Легковая",
+   "config": {
+    "id": "car_2",
+    "type": "car",
+    "name": "Легковая",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -1.75,
+     0.0,
+     7.23
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -1.75,
+      7.23
+     ],
+     [
+      -1.75,
+      7.23
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -1.75,
+    0.0,
+    7.23
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -1.75,
+     0.0,
+     7.23
+    ],
+    [
+     -1.75,
+     0.0,
+     7.23
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 24.151,
+   "maxSpeed": 12,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "hazards": false
+  },
+  {
+   "id": "car_3",
+   "type": "car",
+   "name": "Легковая",
+   "config": {
+    "id": "car_3",
+    "type": "car",
+    "name": "Легковая",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -1.75,
+     0.0,
+     14.121
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -1.75,
+      14.121
+     ],
+     [
+      -1.75,
+      14.121
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -1.75,
+    0.0,
+    14.121
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -1.75,
+     0.0,
+     14.121
+    ],
+    [
+     -1.75,
+     0.0,
+     14.121
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 24.151,
+   "maxSpeed": 12,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "hazards": false
+  },
+  {
+   "id": "truck_1",
+   "type": "truck",
+   "name": "Грузовик",
+   "config": {
+    "id": "truck_1",
+    "type": "truck",
+    "name": "Грузовик",
+    "side": "cross_right",
+    "targetAction": "straight",
+    "color": "#FFA53C",
+    "position": [
+     -5.25,
+     0.0,
+     17.327
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -5.25,
+      17.327
+     ],
+     [
+      -5.25,
+      17.327
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.915,
+   "halfWidth": 1.046,
+   "badge": {
+    "text": {
+     "ru": "Грузовик",
+     "en": "Truck",
+     "kk": "Жүк көлігі"
+    },
+    "color": "#FFA53C",
+    "height": 3.4
+   },
+   "pos": [
+    -5.25,
+    0.0,
+    17.327
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -5.25,
+     0.0,
+     17.327
+    ],
+    [
+     -5.25,
+     0.0,
+     17.327
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 18.415,
+   "maxSpeed": 12,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "hazards": false
+  },
+  {
+   "id": "car_4",
+   "type": "car",
+   "name": "Легковая",
+   "config": {
+    "id": "car_4",
+    "type": "car",
+    "name": "Легковая",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -5.25,
+     0.0,
+     32.09
+    ],
+    "rotationY": -1.124,
+    "route": [
+     [
+      -5.25,
+      32.09
+     ],
+     [
+      -5.25,
+      32.09
+     ]
+    ],
+    "hazard": true
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -5.25,
+    0.0,
+    32.09
+   ],
+   "yaw": -1.124,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -5.25,
+     0.0,
+     32.09
+    ],
+    [
+     -5.25,
+     0.0,
+     32.09
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 24.151,
+   "maxSpeed": 12,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "hazards": true
+  },
+  {
+   "id": "special_1",
+   "type": "special",
+   "name": "Спецмашина",
+   "config": {
+    "id": "special_1",
+    "type": "special",
+    "name": "Спецмашина",
+    "side": "cross_left",
+    "targetAction": "straight",
+    "color": "#0574F8",
+    "beacon": "blue",
+    "siren": true,
+    "position": [
+     -3,
+     0.0,
+     34.5
+    ],
+    "rotationY": -1.047,
+    "route": [
+     [
+      -3,
+      34.5
+     ],
+     [
+      -3.5,
+      35.5
+     ],
+     [
+      -1.75,
+      90
+     ],
+     [
+      -1.75,
+      91
+     ]
+    ],
+    "hazard": true
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Маячок + сирена",
+     "en": "Beacon + siren",
+     "kk": "Маяк + сирена"
+    },
+    "color": "#0574F8",
+    "height": 2.4
+   },
+   "pos": [
+    -3,
+    0.0,
+    34.5
+   ],
+   "yaw": -1.047,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -3,
+     0.0,
+     34.5
+    ],
+    [
+     -3.5,
+     0.0,
+     35.5
+    ],
+    [
+     -1.75,
+     0.0,
+     90
+    ],
+    [
+     -1.75,
+     0.0,
+     91
+    ]
+   ],
+   "length": 56.646,
+   "clearDistance": 17.69,
+   "maxSpeed": 12,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "hazards": true
+  }
+ ],
+ "playerPlacement": "street",
+ "questionView": {
+  "centre": [
+   -1.222,
+   5.16
+  ],
+  "height": 38.693
+ },
+ "officers": []
 }

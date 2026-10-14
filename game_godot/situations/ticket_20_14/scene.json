@@ -2356,12 +2356,8 @@
      -13.1
     ],
     [
-     -1.8,
-     -4.7
-    ],
-    [
-     -4,
-     -2
+     -2.5,
+     -3.5
     ],
     [
      -9,
@@ -2516,7 +2512,8 @@
       -56.35,
       -2.063
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.84,
    "halfWidth": 0.983,
@@ -2560,15 +2557,17 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
  "questionView": {
   "centre": [
-   1.76,
-   2.603
+   0.057,
+   5.913
   ],
-  "height": 33.832
+  "height": 43.993
  },
  "officers": []
 }

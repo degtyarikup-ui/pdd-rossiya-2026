@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -329,8 +330,8 @@
   {
    "id": "manoeuvre_straight",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "straight",
    "points": [
     [
@@ -339,19 +340,7 @@
     ],
     [
      -1.8,
-     -4.7
-    ],
-    [
-     -1.8,
-     4.7
-    ],
-    [
-     -1.8,
      5.2
-    ],
-    [
-     -1.8,
-     24.7
     ]
    ],
    "exitYaw": 0
@@ -3956,6 +3945,18 @@
   "player": {
    "street": "s_s",
    "toward": "c"
+  },
+  "paths": {
+   "straight": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     5.2
+    ]
+   ]
   }
  }
 }

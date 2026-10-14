@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -614,7 +615,8 @@
    },
    "wheelsRadius": 0.36,
    "asset": "ticket_1_14/actor_0.glb",
-   "way": "straight"
+   "way": "straight",
+   "paint": "#E8C547"
   },
   {
    "id": "tram_a",
@@ -660,7 +662,8 @@
    },
    "wheelsRadius": 0.36,
    "asset": "ticket_1_14/actor_1.glb",
-   "way": "left"
+   "way": "left",
+   "paint": "#F08A24"
   }
  ],
  "decor": [

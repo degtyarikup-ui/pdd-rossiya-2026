@@ -438,11 +438,11 @@
   {
    "prop": "buildings/home_1",
    "pos": [
-    15.497,
+    13.717,
     0.0,
-    -15.071
+    -14.666
    ],
-   "yaw": -0.295,
+   "yaw": 0,
    "scale": [
     1.096,
     1,
@@ -2855,8 +2855,8 @@
    "label": "А",
    "points": [
     [
-     -1.8,
-     -17.0
+     -2,
+     -13.5
     ],
     [
      -3,
@@ -2876,8 +2876,8 @@
    "label": "Б",
    "points": [
     [
-     -1.8,
-     -17.0
+     -2,
+     -13
     ],
     [
      -2,
@@ -2896,6 +2896,7 @@
  ],
  "lights": [],
  "actors": [],
+ "playerPlacement": "street",
  "questionView": {
   "centre": [
    0.52,
@@ -2903,6 +2904,5 @@
   ],
   "height": 35.231
  },
- "officers": [],
- "playerPlacement": "street"
+ "officers": []
 }

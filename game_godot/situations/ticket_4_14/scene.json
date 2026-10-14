@@ -3116,7 +3116,7 @@
  "regulator": false,
  "centerZ": 0,
  "startZ": -26,
- "stopZ": -10.7,
+ "stopZ": -18.6,
  "playerStartX": null,
  "playerStartRotY": 0.0,
  "leftLane": 1.8,
@@ -3127,7 +3127,8 @@
  "exitWidths": {
   "straight": 8.4,
   "left": 8.4,
-  "right": 8.4
+  "right": 8.4,
+  "uturn": 8.4
  },
  "segmentLength": 0,
  "spec": {
@@ -3141,11 +3142,23 @@
    "points": [
     [
      -1.8,
-     -10.7
+     -18.6
     ],
     [
      -1.8,
-     16.0
+     -4.7
+    ],
+    [
+     -1.8,
+     4.7
+    ],
+    [
+     -1.8,
+     5.2
+    ],
+    [
+     -1.8,
+     24.7
     ]
    ],
    "exitYaw": 0
@@ -3154,18 +3167,50 @@
    "points": [
     [
      -1.8,
-     -10.7
+     -18.6
     ],
     [
      -1.8,
-     -1.5
+     -4.7
     ],
     [
-     1.5,
+     -1.709,
+     -3.101
+    ],
+    [
+     -1.431,
+     -1.745
+    ],
+    [
+     -0.955,
+     -0.624
+    ],
+    [
+     -0.274,
+     0.274
+    ],
+    [
+     0.624,
+     0.955
+    ],
+    [
+     1.745,
+     1.431
+    ],
+    [
+     3.101,
+     1.709
+    ],
+    [
+     4.7,
      1.8
     ],
     [
-     22.0,
+     5.2,
+     1.8
+    ],
+    [
+     24.7,
      1.8
     ]
    ],
@@ -3175,19 +3220,15 @@
    "points": [
     [
      -1.8,
-     -10.7
+     -18.6
     ],
     [
-     -1.8,
-     -4.8
+     -2.5,
+     -4
     ],
     [
-     -4.8,
-     -1.8
-    ],
-    [
-     -22.0,
-     -1.8
+     -9,
+     -2
     ]
    ],
    "exitYaw": -1.571
@@ -3196,47 +3237,43 @@
    "points": [
     [
      -1.8,
-     -10.7
+     -18.6
     ],
     [
      -1.8,
-     -7.0
+     -4.7
     ],
     [
      -2.6,
      -1.7
     ],
     [
-     -2.511,
-     1.473
+     -2.402,
+     -0.705
     ],
     [
-     -2.252,
-     2.1
+     -1.838,
+     0.138
     ],
     [
-     -1.3,
-     3.052
+     -0.995,
+     0.702
     ],
     [
-     0.0,
-     3.4
+     0,
+     0.9
     ],
     [
-     0.673,
-     3.311
+     0.995,
+     0.702
     ],
     [
-     1.3,
-     3.052
+     1.838,
+     0.138
     ],
     [
-     2.252,
-     2.1
-    ],
-    [
-     2.6,
-     0.8
+     2.402,
+     -0.705
     ],
     [
      2.6,
@@ -3244,11 +3281,11 @@
     ],
     [
      1.8,
-     -7.0
+     -7.7
     ],
     [
      1.8,
-     -22.0
+     -27.7
     ]
    ],
    "exitYaw": 3.142
@@ -3315,5 +3352,282 @@
  ],
  "trajectories": [],
  "lights": [],
- "actors": []
+ "actors": [
+  {
+   "id": "pedestrian_1",
+   "type": "pedestrian",
+   "name": "Пешеход",
+   "config": {
+    "id": "pedestrian_1",
+    "type": "pedestrian",
+    "name": "Пешеход",
+    "side": "crosswalk_right",
+    "targetAction": "straight",
+    "color": "#0574F8",
+    "position": [
+     3.436,
+     0.0,
+     -11.352
+    ],
+    "rotationY": 1.723,
+    "route": [
+     [
+      3.436,
+      -11.352
+     ],
+     [
+      -5.7,
+      -11.7
+     ],
+     [
+      -6,
+      -18.5
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 0.229,
+   "halfWidth": 0.411,
+   "badge": {
+    "text": {
+     "ru": "Пешеход",
+     "en": "Pedestrian",
+     "kk": "Жаяу жүргінші"
+    },
+    "color": "#0574F8",
+    "height": 2.8
+   },
+   "pos": [
+    3.436,
+    0.0,
+    -11.352
+   ],
+   "yaw": 1.723,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     3.436,
+     0.0,
+     -11.352
+    ],
+    [
+     -5.7,
+     0.0,
+     -11.7
+    ],
+    [
+     -6,
+     0.0,
+     -18.5
+    ]
+   ],
+   "length": 15.949,
+   "clearDistance": 12.5,
+   "maxSpeed": 3.6,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": false,
+   "hazards": false
+  },
+  {
+   "id": "pedestrian_2",
+   "type": "pedestrian",
+   "name": "Пешеход",
+   "config": {
+    "id": "pedestrian_2",
+    "type": "pedestrian",
+    "name": "Пешеход",
+    "side": "crosswalk_right",
+    "targetAction": "straight",
+    "color": "#0574F8",
+    "position": [
+     -9.701,
+     0.0,
+     -3.289
+    ],
+    "rotationY": 2.698,
+    "route": [
+     [
+      -9.701,
+      -3.289
+     ],
+     [
+      -10.5,
+      5
+     ],
+     [
+      -16.5,
+      5.5
+     ],
+     [
+      -25,
+      5.5
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 0.229,
+   "halfWidth": 0.411,
+   "badge": {
+    "text": {
+     "ru": "Пешеход",
+     "en": "Pedestrian",
+     "kk": "Жаяу жүргінші"
+    },
+    "color": "#0574F8",
+    "height": 2.8
+   },
+   "pos": [
+    -9.701,
+    0.0,
+    -3.289
+   ],
+   "yaw": 2.698,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -9.701,
+     0.0,
+     -3.289
+    ],
+    [
+     -10.5,
+     0.0,
+     5
+    ],
+    [
+     -16.5,
+     0.0,
+     5.5
+    ],
+    [
+     -25,
+     0.0,
+     5.5
+    ]
+   ],
+   "length": 22.848,
+   "clearDistance": 12.5,
+   "maxSpeed": 3.6,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": false,
+   "hazards": false
+  },
+  {
+   "id": "pedestrian_3",
+   "type": "pedestrian",
+   "name": "Пешеход",
+   "config": {
+    "id": "pedestrian_3",
+    "type": "pedestrian",
+    "name": "Пешеход",
+    "side": "crosswalk_right",
+    "targetAction": "straight",
+    "color": "#0574F8",
+    "position": [
+     -11.778,
+     0.0,
+     4.551
+    ],
+    "rotationY": 0.705,
+    "route": [
+     [
+      -11.778,
+      4.551
+     ],
+     [
+      -12,
+      -5.5
+     ],
+     [
+      -16.5,
+      -6
+     ],
+     [
+      -28,
+      -6
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 0.229,
+   "halfWidth": 0.411,
+   "badge": {
+    "text": {
+     "ru": "Пешеход",
+     "en": "Pedestrian",
+     "kk": "Жаяу жүргінші"
+    },
+    "color": "#0574F8",
+    "height": 2.8
+   },
+   "pos": [
+    -11.778,
+    0.0,
+    4.551
+   ],
+   "yaw": 0.705,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -11.778,
+     0.0,
+     4.551
+    ],
+    [
+     -12,
+     0.0,
+     -5.5
+    ],
+    [
+     -16.5,
+     0.0,
+     -6
+    ],
+    [
+     -28,
+     0.0,
+     -6
+    ]
+   ],
+   "length": 26.081,
+   "clearDistance": 12.5,
+   "maxSpeed": 3.6,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": false,
+   "hazards": false
+  }
+ ],
+ "playerPlacement": "street",
+ "questionView": {
+  "centre": [
+   0.454,
+   6.62
+  ],
+  "height": 42.245
+ },
+ "officers": []
 }

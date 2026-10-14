@@ -3118,19 +3118,7 @@
     ],
     [
      -1.8,
-     -4.7
-    ],
-    [
-     -1.8,
-     4.7
-    ],
-    [
-     -1.8,
      5.2
-    ],
-    [
-     -1.8,
-     24.7
     ]
    ],
    "exitYaw": 0
@@ -3389,7 +3377,8 @@
       44.7,
       1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -3433,7 +3422,8 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   },
   {
    "id": "bus_1",
@@ -3461,7 +3451,8 @@
       1.8,
       -44.7
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.992,
    "halfWidth": 1.046,
@@ -3511,7 +3502,8 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   },
   {
    "id": "motorcycle_1",
@@ -3544,7 +3536,8 @@
       -44.7,
       -1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.075,
    "halfWidth": 0.949,
@@ -3588,9 +3581,10 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": false,
-   "staysPut": false
+   "staysPut": false,
+   "hazards": false
   }
  ],
- "officers": [],
- "playerPlacement": "street"
+ "playerPlacement": "street",
+ "officers": []
 }
