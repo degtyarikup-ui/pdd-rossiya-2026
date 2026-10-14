@@ -327,6 +327,8 @@
         <input class="name-input" type="text" data-text="name" value="${esc(a.name || "")}" placeholder="Подпись над ним в игре">`)}
       ${a.type === "tram" && (s.tracks || []).length ? tramCard(s, a) : ""}
       ${a.type !== "pedestrian" && a.type !== "special" ? card("Цвет", `<div class="swatches">${PAINTS.map((c) => `<button class="sw ${(a.paint || null) === c ? "on" : ""}" data-chip="paint" data-value="${c || ""}" style="--c:${c || "transparent"}" data-tip="${c ? "" : "Как у модели"}">${c ? "" : ic("x")}</button>`).join("")}</div>`) : ""}
+      ${ActorSignals.supports(a.type) ? card("Сигналы", toggle("hazards", "Аварийная сигнализация", ActorSignals.hazards(a), "alert")
+        + `<p class="muted">Обе стороны мигают вместе. Для неподвижного автомобиля выберите «Стоит» в разделе «Куда едет».</p>`) : ""}
       ${a.track ? "" : card("Куда едет", lane
         ? `${chips("way", [{ value: "stay", icon: "parked", tip: "Стоит" }, ...["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !ways.includes(k) }))], moving ? (a.way || "straight") : "stay", { cls: "arrows" })}${button("reverse", "Ехать в другую сторону", "rotr", "ghost wide")}
            ${moving && route ? button("to-route", route.manual ? "Траектория пути (ручная)" : "Траектория пути (по дорогам)", "route", "ghost wide") : ""}`
@@ -341,6 +343,7 @@
     bind({
       ...common,
       "chip:paint": (v) => App.edit(() => { if (v) a.paint = v; else delete a.paint; }),
+      "toggle:hazards": on => App.edit(() => ActorSignals.setHazards(a,on)),
       reverse: () => App.edit(() => { a.yaw = App.r3(((a.yaw || 0) + 2 * Math.PI) % (2 * Math.PI) - Math.PI); }),
       "to-route": () => { if (route) App.select({ t: "route", id: route.id }); },
       "chip:track": (v) => App.edit((sc) => {
@@ -357,16 +360,16 @@
       }),
       "text:name": (v) => App.edit(() => { a.name = v.trim(); }),
       "chip:way": (v) => App.edit((sc) => {
-        if (v === "stay") { a.behaviour = { ...(a.behaviour || {}), staysPut: true }; delete a.way; sc.routes = sc.routes.filter((r) => r.id !== a.route); a.route = null; }
+        if (v === "stay") { ActorSignals.setMoving(a,false); delete a.way; sc.routes = sc.routes.filter((r) => r.id !== a.route); a.route = null; }
         else {
-          a.behaviour = { ...(a.behaviour || {}), staysPut: false };
+          ActorSignals.setMoving(a,true);
           a.way = v;
           const r = sc.routes.find((x) => x.id === (a.route || `actor_${a.id}`));
           if (r) { delete r.manual; r.auto = true; }
         }
       }),
       "chip:move": (v) => App.edit((sc) => {
-        a.behaviour = { ...(a.behaviour || {}), staysPut: v === "stay" };
+        ActorSignals.setMoving(a,v !== "stay");
         if (v === "stay") { sc.routes = sc.routes.filter((r) => r.id !== a.route); a.route = null; }
       }),
       "draw-path": () => Tools.drawPathFor(a.id),

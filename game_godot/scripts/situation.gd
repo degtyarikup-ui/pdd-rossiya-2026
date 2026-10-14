@@ -213,6 +213,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		if a.type in Fleet.SIGNAL_KINDS and (Fleet.actor_signal_side(a) != "" or (plan is Array and not plan.is_empty())):
 			var k := maxf(0.01, float(a.scale[0]))
 			Fleet.add_blinkers(actor, "", float(a.get("halfLength", 2.1)) / k, float(a.get("halfWidth", 0.9)) / k)
+		Fleet.set_hazards(actor, Fleet.actor_has_hazards(a))
 		s.add_child(actor)
 		s.actors.append(actor)
 		if a.badge != null:

@@ -336,6 +336,7 @@ const Scene3D = (() => {
     const answers = model.routes.some((x) => x.kind === "choice");
     for (const r of model.routes) {
       if (r.points.length < 2) continue;
+      if (r.kind === "actor" && model.actors.some(a => (a.route || `actor_${a.id}`) === r.id && a.behaviour?.staysPut)) continue;
       // With answer lines on the road the manoeuvres are only drawn when picked: they are how the car
       // drives, not what the question shows.
       // The exits are where the game continues the street after each way out (and its autopilot's path):
@@ -405,6 +406,42 @@ const Scene3D = (() => {
     return car;
   }
 
+  // Archived editor models have no animated indicator surfaces. A soft amber
+  // preview marks the four lamps; Godot uses the vehicle's own authored lenses.
+  let hazardMaterial = null;
+  function hazardPreview(actor) {
+    if (!ActorSignals.supports(actor.type)) return null;
+    if (!hazardMaterial) {
+      const canvas = document.createElement("canvas"); canvas.width = canvas.height = 64;
+      const ctx = canvas.getContext("2d"), gradient = ctx.createRadialGradient(32,32,0,32,32,32);
+      gradient.addColorStop(0,"#fff9d8"); gradient.addColorStop(.2,"#ffc14d"); gradient.addColorStop(1,"rgba(255,145,0,0)");
+      ctx.fillStyle = gradient; ctx.fillRect(0,0,64,64);
+      hazardMaterial = new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending});
+    }
+    const lights = new THREE.Group(), scale = actor.scale?.[0] || 1;
+    lights.name = "editor_hazard_preview";
+    const hw = (actor.halfWidth || .95)/scale, hl = (actor.halfLength || 2.1)/scale;
+    for (const x of [-hw*.95,hw*.95]) for (const z of [-hl*.9,hl*.9]) {
+      const lamp = new THREE.Sprite(hazardMaterial);
+      lamp.position.set(x,.8,z); lamp.scale.setScalar(.65/scale); lights.add(lamp);
+    }
+    lights.visible = false;
+    return lights;
+  }
+
+  function updateHazards(now) {
+    for (const actor of model?.actors || []) {
+      const g = anchors.get(`actor:${actor.id}`)?.group, lights = g?.getObjectByName("editor_hazard_preview");
+      if (!lights) continue;
+      const enabled = ActorSignals.hazards(actor);
+      if (enabled !== g.userData.hazardsEnabled) {
+        g.userData.hazardsEnabled = enabled; g.userData.hazardsSince = now;
+      }
+      const visible = enabled && ActorSignals.pulse((now-g.userData.hazardsSince)/1000);
+      if (lights.visible !== visible) { lights.visible = visible; needsRender = true; }
+    }
+  }
+
   // Each object of the scene is a group under "anchors", kept between redraws while its model is the
   // same (only moved): dragging 200 trees about does not reload them.
   function anchorSig(t, o) {
@@ -437,6 +474,8 @@ const Scene3D = (() => {
     } else if (t === "actor") {
       const ped = o.type === "pedestrian" || o.type === "cyclist";
       attach(`/asset/scene/${o.asset}`, fallbackBox(TYPE_COLOUR[o.type] || 0x888888, ped ? [0.6, 1.7, 0.6] : [1.9, 1.4, 4.2]));
+      const lights = hazardPreview(o);
+      if (lights) g.add(lights);
     } else if (t === "light") {
       const isTram = !!o.tram;
       const mounted = (o.mountedSigns || []).filter(Boolean);
@@ -1082,7 +1121,9 @@ const Scene3D = (() => {
 
   function loop() {
     requestAnimationFrame(loop);
-    emit("frame", performance.now());
+    const now = performance.now();
+    emit("frame", now);
+    updateHazards(now);
     if (!needsRender) return;
     needsRender = false;
     for (const h of handles) {

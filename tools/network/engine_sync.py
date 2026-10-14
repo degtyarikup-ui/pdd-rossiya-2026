@@ -183,8 +183,11 @@ def sync(sid: str) -> dict:
             if k in (na.get("behaviour") or {}):
                 a[k] = na["behaviour"][k]
         cfg = a.get("config") or {}
+        behaviour = na.get("behaviour") or {}
+        # Explicit editor settings override the archived actor template, even off.
+        a["hazards"] = behaviour.get("hazards", (behaviour.get("config") or {}).get("hazard", False)) is True
         cfg.update({"id": na["id"], "type": na["type"], "name": a["name"], "position": pos,
-                    "rotationY": na["yaw"], "route": route_2d})
+                    "rotationY": na["yaw"], "route": route_2d, "hazard": a["hazards"]})
         a["config"] = cfg
         actors.append((asset, a))
     out["actors"] = [a for _, a in actors]

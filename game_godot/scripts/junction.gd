@@ -383,10 +383,10 @@ func begin_question_signals() -> void:
 
 
 func _update_signals() -> void:
-	if not question_signals_started: return
-	for i in motions.size():
+	for i in mini(motions.size(), data.actors.size()):
+		Fleet.set_hazards(motions[i].node, Fleet.actor_has_hazards(data.actors[i]))
 		var signals := motions[i].node.get_node_or_null("vehicle_signals") as Fleet.Signals
-		if signals:
+		if signals and question_signals_started:
 			signals.set_side(Fleet.actor_signal_side(data.actors[i], motions[i].distance))
 
 

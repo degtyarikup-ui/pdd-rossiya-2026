@@ -147,10 +147,26 @@ static func actor_signal_side(actor: Dictionary, distance := 0.0) -> String:
 	return turn_side(actor.get("path", []))
 
 
+static func actor_has_hazards(actor: Dictionary) -> bool:
+	if not str(actor.get("type", "")) in SIGNAL_KINDS: return false
+	if actor.has("hazards"): return bool(actor.hazards)
+	return bool(actor.get("config", {}).get("hazard", false))
+
+
 ## Turn indicators pulse the authored lens surfaces; dimensions stay for the collision API.
 static func add_blinkers(vehicle: Node3D, side: String, hl: float, hw: float, height := 0.75) -> void:
 	var signals := _signals(vehicle)
 	signals.set_side(side)
+
+
+## An authored hazard switch lasts for the whole scene, independently of contact flashes.
+static func set_hazards(vehicle: Node3D, enabled: bool) -> void:
+	if not is_instance_valid(vehicle): return
+	var signals := vehicle.get_node_or_null("vehicle_signals") as Signals
+	if signals == null:
+		if not enabled: return
+		signals = _signals(vehicle)
+	signals.set_hazards(enabled)
 
 
 ## A short hazard indication after contact, using the original model's lights.
@@ -249,24 +265,32 @@ class Signals extends Node:
 	var materials: Array[ShaderMaterial] = []
 	var glows := {"L": [], "R": [], "C": []}
 	var side := ""
+	var hazards := false
 	var hazard_left := 0.0
 	var clock := 0.0
 
 	func set_side(next: String) -> void:
 		if side == next: return
 		side = next
-		clock = 0.0
+		if not hazards and hazard_left <= 0.0: clock = 0.0
 		_process(0.0) # The first lit pulse appears immediately, before the question lead-in.
+
+	func set_hazards(enabled: bool) -> void:
+		if hazards == enabled: return
+		hazards = enabled
+		if enabled and hazard_left <= 0.0: clock = 0.0
+		_process(0.0)
 
 	func _process(delta: float) -> void:
 		clock += delta
 		hazard_left = maxf(0.0, hazard_left - delta)
 		var pulse := int(clock * 3.0) % 2 == 0
+		var both := hazards or hazard_left > 0.0
 		for material in materials:
-			material.set_shader_parameter("left_on", pulse and (hazard_left > 0.0 or side == "L"))
-			material.set_shader_parameter("right_on", pulse and (hazard_left > 0.0 or side == "R"))
+			material.set_shader_parameter("left_on", pulse and (both or side == "L"))
+			material.set_shader_parameter("right_on", pulse and (both or side == "R"))
 		for key in glows:
-			var on: bool = pulse and (hazard_left > 0.0 or key == side or (key == "C" and side != ""))
+			var on: bool = pulse and (both or key == side or (key == "C" and side != ""))
 			for glow: Node3D in glows[key]: glow.visible = on
 
 
