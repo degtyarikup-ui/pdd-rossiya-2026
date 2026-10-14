@@ -78,6 +78,8 @@ func _process(delta: float) -> void:
 	var blend := 1.0 - exp(-delta * 0.6)
 	rain = lerpf(rain, 1.0 if weather == "rain" else 0.0, blend)
 	fog = lerpf(fog, 1.0 if weather == "fog" else 0.0, blend)
+	# Depth fog is only needed for the explicit fog weather preview.
+	environment.fog_enabled = fog > 0.01
 	var overcast := maxf(rain, fog * 0.85)
 	environment.background_color = dry_sky.lerp(Color("#A8BAC8"), overcast)
 	environment.fog_light_color = environment.background_color

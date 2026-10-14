@@ -141,7 +141,7 @@ func _setup_environment() -> void:
 	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
 
-	# World Environment (Natural Ambient Light & Atmospheric Distance Fog)
+	# World environment with natural ambient light.
 	env = WorldEnvironment.new()
 	var e := Environment.new()
 	e.background_mode = Environment.BG_COLOR
@@ -153,8 +153,8 @@ func _setup_environment() -> void:
 	e.ambient_light_color = Color(palette.sky).lerp(Color.WHITE, 0.25)
 	e.ambient_light_energy = float(palette.ambient) * 0.52
 
-	# Atmospheric depth fog: softly dissolves the northern avenue into the horizon
-	e.fog_enabled = true
+	# Keep the distant buildings visible in normal weather.
+	e.fog_enabled = false
 	e.fog_mode = Environment.FOG_MODE_DEPTH
 	e.fog_light_color = Color(palette.sky)
 	e.fog_depth_begin = 90.0
