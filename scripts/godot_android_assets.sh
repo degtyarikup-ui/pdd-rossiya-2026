@@ -44,9 +44,13 @@ p = Path('game_godot/export_presets.cfg')
 s = p.read_text()
 start = s.index('[preset.0.options]')
 end = s.index('[preset.1]', start)
+import os
 import re
 options = re.sub(r'^package/signed=.*\n', '', s[start:end], flags=re.M)
 options = options.replace('[preset.0.options]', '[preset.0.options]\npackage/signed=false')
+debug_ks = Path.home() / '.android/debug.keystore'
+if debug_ks.is_file():
+    options = re.sub(r'keystore/release="[^"]*"', f'keystore/release="{debug_ks}"', options)
 p.write_text(s[:start] + options + s[end:])
 PY
 if ! godot --headless --path game_godot --export-release "Android" "$TMP/game.apk" >>"$LOG" 2>&1 || grep -Eq '^(SCRIPT ERROR:|ERROR:)' "$LOG"; then

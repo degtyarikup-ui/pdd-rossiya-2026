@@ -122,15 +122,23 @@ func _setup_environment() -> void:
 	var palette: Dictionary = Scenery.new(season_name).season
 	sun.rotation_degrees = Vector3(-68, 30, 0)
 	sun.light_color = Color(palette.sun)
-	sun.light_energy = float(palette.sunIntensity) * 0.8
+	# Soft, natural sunlight without overexposure:
+	sun.light_energy = float(palette.sunIntensity) * 0.65
 	sun.shadow_enabled = true
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	sun.directional_shadow_max_distance = 70.0
-	sun.shadow_blur = 2.0
-	sun.directional_shadow_fade_start = 0.9
+	# 4-split PSSM eliminates staircase pixelation in perspective view:
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	sun.directional_shadow_max_distance = 60.0
+	sun.directional_shadow_split_1 = 0.22
+	sun.directional_shadow_split_2 = 0.45
+	sun.directional_shadow_split_3 = 0.72
+	sun.directional_shadow_blend_splits = true
+	sun.shadow_blur = 1.6
+	sun.shadow_bias = 0.02
+	sun.shadow_normal_bias = 0.4
+	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
 
-	# World Environment (Realistic Sky with Clouds, Ambient Light & Atmospheric Fog)
+	# World Environment (Natural Ambient Light & Atmospheric Distance Fog)
 	env = WorldEnvironment.new()
 	var e := Environment.new()
 	e.background_mode = Environment.BG_COLOR
@@ -138,18 +146,21 @@ func _setup_environment() -> void:
 
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	e.ambient_light_sky_contribution = 0.0
-	e.ambient_light_color = Color.WHITE
-	e.ambient_light_energy = float(palette.ambient) * 0.8
+	# Ambient light softly tinted by the sky, eliminating harsh pure-white glare:
+	e.ambient_light_color = Color(palette.sky).lerp(Color.WHITE, 0.25)
+	e.ambient_light_energy = float(palette.ambient) * 0.52
 
-	# Atmospheric depth fog
+	# Atmospheric depth fog: softly dissolves the northern avenue into the horizon
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
 	e.fog_light_color = Color(palette.sky)
-	e.fog_depth_begin = 90.0
-	e.fog_depth_end = 220.0
+	e.fog_depth_begin = 50.0
+	e.fog_depth_end = 175.0
 	e.fog_sky_affect = 0.0
 
-	e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	# Filmic tonemapping compresses extreme highlights, preserving details on facades
+	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	e.tonemap_white = 1.2
 	env.environment = e
 	add_child(env)
 

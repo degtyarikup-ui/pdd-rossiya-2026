@@ -7,7 +7,7 @@ extends Node3D
 const ROAD_WIDTH := 14.4        # 4 lanes of 3.6 m on every arm
 const HALF_ROAD := ROAD_WIDTH * 0.5
 const ROAD_EXTENT := 46.0       # Extent for South, East, West branches
-const NORTH_EXTENT := 200.0     # Avenue continues straight ahead into the horizon!
+const NORTH_EXTENT := 230.0     # Avenue continues straight ahead into the horizon!
 const STOP_Z := 13.0
 const ZEBRA_START := 9.0
 const ZEBRA_END := 11.8

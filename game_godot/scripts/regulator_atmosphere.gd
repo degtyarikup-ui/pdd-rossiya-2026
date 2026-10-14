@@ -82,8 +82,8 @@ func _process(delta: float) -> void:
 	environment.background_color = dry_sky.lerp(Color("#A8BAC8"), overcast)
 	environment.fog_light_color = environment.background_color
 	sun.light_energy = clear_sun * (1.0 - overcast * 0.55)
-	environment.fog_depth_begin = lerpf(90, 8, fog)
-	environment.fog_depth_end = lerpf(220, 60, fog)
+	environment.fog_depth_begin = lerpf(50.0, 8.0, fog)
+	environment.fog_depth_end = lerpf(175.0, 50.0, fog)
 	var road_colour := dry_road.lerp(Color("#141A22"), rain * 0.9 + fog * 0.25)
 	junction.asphalt_mat.set_shader_parameter("surface_colour", Vector3(road_colour.r, road_colour.g, road_colour.b))
 	junction.asphalt_mat.set_shader_parameter("wetness", rain)
