@@ -1518,6 +1518,10 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	perf_step=_rebase_timing("bind_exit",perf_step)
 	var rotation := Basis(Vector3.UP,-heading)
 	var xf := Transform3D(rotation,-(rotation*joint))
+	# This is a coordinate change, not a change in time of day. Rotate the
+	# existing sun with the geometry in this frame so lighting and shadows
+	# stay fixed relative to every visible surface, including the car.
+	sun.basis = (rotation * sun.basis).orthonormalized()
 	texture_frame=texture_frame*xf.affine_inverse()
 	for j in _junctions():
 		j.sit.transform=xf*j.sit.transform

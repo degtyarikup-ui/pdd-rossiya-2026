@@ -80,6 +80,21 @@
 разворачиваются у окончания. Копии фоновых машин и пешеходов после поворота сохраняют
 направление и проверяют поверхность короткими шагами, вместо движения через ландшафт.
 
+## Освещение при переходе
+
+Перенос мира после выезда — смена координат, поэтому единственное солнце поворачивается
+тем же `Basis`, что и видимые сцены, машина и камера, в том же кадре (`_on_finished`).
+Это сохраняет освещённость поверхностей и направление теней относительно объектов.
+Интерполяция здесь не нужна: она временно рассогласовала бы свет с уже повёрнутой геометрией.
+Базис солнца нормализуется, чтобы цепочки поворотов не накапливали численную погрешность.
+Цвета, интенсивность, сезон и настройки качества сохраняются; новых источников света,
+проходов рендера и покадровых расчётов не добавляется.
+
+`lighting_check.gd` проверяет реальные переходы и цепочки поворотов без рендера.
+`lighting_render_check.gd` сравнивает кадры до и после перехода с реальным рендерером.
+Флаг тестов `--simulate-broken-light` воспроизводит прежнее неподвижное солнце:
+проверки должны завершаться с ошибкой. Снимки рендера сохраняются в `output/lighting/`.
+
 ## Дополнительные прямые
 
 Между обычными билетами нет прежней обязательной длинной пустой прямой. Прямая появляется
@@ -97,6 +112,10 @@
 godot --headless --path game_godot --script res://tests/stitch_check.gd
 godot --headless --path game_godot --script res://tests/stitch_mesh_check.gd
 godot --headless --path game_godot --script res://tests/stitch_runtime_check.gd
+godot --headless --path game_godot --script res://tests/lighting_check.gd -- --season=winter
+godot --headless --path game_godot --script res://tests/lighting_check.gd -- --season=summer
+godot --headless --path game_godot --script res://tests/lighting_check.gd -- --season=autumn
+godot --path game_godot --script res://tests/lighting_render_check.gd
 godot --headless --path game_godot --script res://tests/retained_surface_check.gd
 godot --headless --path game_godot --script res://tests/terrain_motion_check.gd
 tools/network/.venv/bin/python tools/network/tests/highway_check.py

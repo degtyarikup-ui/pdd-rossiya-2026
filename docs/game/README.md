@@ -65,6 +65,8 @@ godot --headless --path game_godot --script res://tests/free_player_check.gd # 7
 godot --headless --path game_godot --script res://tests/dirt_surface_check.gd # грунт, текстура и удаление старых накладок
 godot --headless --path game_godot --script res://tests/human_collision_check.gd # наезд: регулировщик и пешеходы
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
+godot --headless --path game_godot --script res://tests/lighting_check.gd # свет/тени в том же кадре при поворотах мира, все уровни качества
+godot --path game_godot --script res://tests/lighting_render_check.gd # нужен рендер: яркость граней, машина и тени до/после перехода
 godot --headless --path game_godot --script res://tests/retained_surface_check.gd # старые улицы и сцены не перекрывают дорогу после цепочки поворотов
 godot --headless --path game_godot --script res://tests/traffic_check.gd    # трафик
 godot --headless --path game_godot --script res://tests/ambient_focus_check.gd # чистый кадр вопроса, плавный отвод трафика, объезд парковки и встречный поток
@@ -100,6 +102,11 @@ godot --path game_godot --script res://tests/stitch_shader_render_check.gd # н�
 Известная проблема проверки (14 октября 2026): `signals_models_check.gd` загружает
 старую фикстуру `situations/ticket_37_13/light_0.glb`, которой нет в Git.
 В чистой копии проверка зависает после ошибки загрузки; её нельзя считать пройденной.
+
+`camera_check.gd` также имеет сбой фикстуры: после первого вопроса очистка оставляет
+`question_signal_id`, и второй сценарий `ticket_12_5` не движется. На 14 октября 2026
+ошибка воспроизведена с исходным `world.gd` до исправления освещения; тест не вызывает
+переход локаций (`_on_finished`). Её нельзя считать успешной проверкой камеры.
 
 Фоновый поток задаётся в `data/world.json`: две машины на кольцо,
 `parked_chance: 0.02` для подходящих мест парковки. Перед вопросом резервируется
