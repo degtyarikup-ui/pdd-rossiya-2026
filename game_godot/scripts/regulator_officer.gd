@@ -100,11 +100,21 @@ func _build_model() -> void:
 	body_root.add_child(right_arm_pivot)
 
 
+static var _officer_material: ShaderMaterial
+
+static func officer_material() -> ShaderMaterial:
+	if _officer_material == null:
+		_officer_material = ShaderMaterial.new()
+		_officer_material.shader = load("res://shaders/officer.gdshader")
+	return _officer_material
+
+
 ## Clothing, face and baton bands are baked vertex colours, one surface per part.
 ## Only the two shoulder pivots move; there is no skeleton or per-detail node.
 func _part(part: String) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
 	node.name = part
 	node.mesh = Models.mesh_of("res://models/people/officer_%s.glb" % part)
-	node.material_override = Models.baked_material()
+	node.material_override = officer_material()
 	return node
+

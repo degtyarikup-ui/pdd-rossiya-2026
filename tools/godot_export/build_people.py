@@ -24,6 +24,13 @@ SILVER = (.82,.86,.87,0)
 VEST = (.65,.74,.22,0)
 BLACK = (.10,.12,.14,0)
 WHITE = (.86,.88,.87,0)
+OFFICER_NAVY = (.07,.11,.19,0)
+OFFICER_SILVER = (.96,.98,1.0,0)
+OFFICER_VEST = (.86,1.0,.04,0)
+OFFICER_BLACK = (.03,.04,.05,0)
+OFFICER_WHITE = (1.0,1.0,1.0,0)
+OFFICER_RED = (.85,.12,.12,0)
+
 
 
 class PersonMesh(Mesh):
@@ -120,16 +127,16 @@ def head(mesh, y, skin, hair, style=0, officer=False):
             mesh.profile([(y+.09,.118,.101,0,0),(y+.18,.084,.083,0,-.005)],(.24,.31,.34,0),8)
             mesh.box((0,y+.092,.115),(.18,.024,.10),(.19,.24,.26,0),bottom=True)
     else:
-        mesh.profile([(y+.105,.134,.111,0,0),(y+.165,.134,.111,0,0)],NAVY,10)
-        mesh.profile([(y+.163,.149,.125,0,-.01),(y+.22,.132,.112,0,-.008)],NAVY,10)
-        mesh.box((0,y+.109,.134),(.23,.022,.125),BLACK,bottom=True)
-        mesh.panel(0,y+.144,.115,.038,.043,(.69,.54,.27,0))
+        mesh.profile([(y+.105,.134,.111,0,0),(y+.165,.134,.111,0,0)],OFFICER_NAVY,10)
+        mesh.profile([(y+.163,.149,.125,0,-.01),(y+.22,.132,.112,0,-.008)],OFFICER_NAVY,10)
+        mesh.box((0,y+.109,.134),(.23,.022,.125),OFFICER_BLACK,bottom=True)
+        mesh.panel(0,y+.144,.115,.038,.043,(.85,.68,.30,0))
 
 
 def shoes(mesh, x, swing=0, hip=.91, knee=.45, officer=False):
     mesh.swing = (swing,hip)
     mesh.knee = (1 if swing else 0,knee if swing else 0)
-    col = BLACK if officer else (.22,.24,.25,0)
+    col = OFFICER_BLACK if officer else (.22,.24,.25,0)
     mesh.profile([(0,.071,.137,x,.034),(.06,.076,.140,x,.034),
                   (.115,.065,.110,x,.020)],col,6)
     mesh.knee = (0,0)
@@ -145,6 +152,9 @@ def legs(mesh, color, hip=.91, officer=False):
         mesh.knee = (1 if swing else 0,.45 if swing else 0)
         mesh.profile([(.085,.048,.051,x,0),(.29,.062,.064,x,-.005),
                       (.45,.070,.075,x,0)],color,6,caps=False)
+        if officer:
+            # Red DPS police side stripes down the outer sides of trousers
+            mesh.panel(x+side*.076,.50,0,.018,.82,OFFICER_RED)
         shoes(mesh,x,swing,hip,.45,officer)
     mesh.swing = mesh.knee = (0,0)
 
@@ -186,41 +196,42 @@ def pedestrian(mesh, variant):
 
 
 def officer_body(mesh):
-    legs(mesh,NAVY,1.01,True)
+    legs(mesh,OFFICER_NAVY,1.01,True)
     mesh.profile([(.97,.198,.125,0,0),(1.18,.224,.144,0,0),
-                  (1.465,.27,.143,0,0),(1.55,.145,.088,0,0)],NAVY,8)
+                  (1.465,.27,.143,0,0),(1.55,.145,.088,0,0)],OFFICER_NAVY,8)
     mesh.profile([(1.015,.211,.135,0,0),(1.20,.236,.153,0,0),
-                  (1.47,.274,.149,0,0)],VEST,8,caps=False)
-    mesh.profile([(1.19,.237,.154,0,0),(1.25,.247,.155,0,0)],SILVER,8,caps=False)
+                  (1.47,.274,.149,0,0)],OFFICER_VEST,8,caps=False)
+    mesh.profile([(1.19,.237,.154,0,0),(1.25,.247,.155,0,0)],OFFICER_SILVER,8,caps=False)
     for back in [False,True]:
         z = -.145 if back else .145
-        for x in [-.125,.125]: mesh.panel(x,1.365,z,.037,.225,SILVER,back)
-        mesh.panel(0,1.35,-.158 if back else .158,.018,.265,NAVY,back)
+        for x in [-.125,.125]: mesh.panel(x,1.365,z,.037,.225,OFFICER_SILVER,back)
+        mesh.panel(0,1.35,-.158 if back else .158,.018,.265,OFFICER_NAVY,back)
     mesh.profile([(1.525,.068,.065,0,0),(1.635,.062,.059,0,0)],SKINS[1],6,caps=False)
     for x in [-.056,.056]:
-        mesh.face([(x-.037,1.545,.109),(x+.037,1.545,.109),(x,1.48,.126)],WHITE)
-    mesh.panel(0,1.50,.126,.032,.092,NAVY)
-    for x in [-.248,.248]: mesh.box((x,1.497,0),(.064,.025,.17),SILVER,bottom=True)
+        mesh.face([(x-.037,1.545,.109),(x+.037,1.545,.109),(x,1.48,.126)],OFFICER_WHITE)
+    mesh.panel(0,1.50,.126,.032,.092,OFFICER_NAVY)
+    for x in [-.248,.248]: mesh.box((x,1.497,0),(.064,.025,.17),OFFICER_SILVER,bottom=True)
     head(mesh,1.735,SKINS[1],HAIR[0],officer=True)
 
 
 def officer_arm(mesh, right=False):
     # All positions relative to the existing shoulder pivot: gestures keep their anatomy.
     mesh.profile([(-.485,.049,.052,0,0),(-.265,.066,.066,0,-.008),
-                  (.028,.080,.080,0,0)],NAVY,6)
-    mesh.profile([(-.49,.054,.057,0,0),(-.442,.057,.060,0,0)],SILVER,6,caps=False)
-    mesh.profile([(-.603,.032,.042,0,.012),(-.49,.039,.045,0,.006)],WHITE,6)
+                  (.028,.080,.080,0,0)],OFFICER_NAVY,6)
+    mesh.profile([(-.49,.054,.057,0,0),(-.442,.057,.060,0,0)],OFFICER_SILVER,6,caps=False)
+    mesh.profile([(-.603,.032,.042,0,.012),(-.49,.039,.045,0,.006)],OFFICER_WHITE,6)
     if right:
         rings = [(-1.025,.022,.022,0,.013),(-.94,.022,.022,0,.013),
                  (-.86,.022,.022,0,.013),(-.78,.022,.022,0,.013),
                  (-.70,.022,.022,0,.013),(-.58,.022,.022,0,.013)]
         for i in range(len(rings)-1):
-            mesh.profile(rings[i:i+2],WHITE if i%2 == 0 else BLACK,6,caps=False)
+            mesh.profile(rings[i:i+2],OFFICER_WHITE if i%2 == 0 else OFFICER_BLACK,6,caps=False)
         # Only end caps: avoid five overlapping cylinders for baton bands.
-        for y,col in [(rings[0][0],WHITE),(rings[-1][0],BLACK)]:
+        for y,col in [(rings[0][0],OFFICER_WHITE),(rings[-1][0],OFFICER_BLACK)]:
             pts = [(.022*math.cos(i*math.tau/6),y,.013+.022*math.sin(i*math.tau/6)) for i in range(6)]
             if y==rings[-1][0]: pts.reverse()
             for i in range(1,5): mesh.face([pts[0],pts[i],pts[i+1]],col)
+
 
 
 def main():

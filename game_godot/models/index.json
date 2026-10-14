@@ -326,7 +326,7 @@
  "people/officer_body": {
   "after": {
    "meshes": 1,
-   "tris": 503
+   "tris": 507
   },
   "source": "tools/godot_export/build_people.py"
  },

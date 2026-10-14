@@ -157,10 +157,12 @@ func _setup_environment() -> void:
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
 	e.fog_light_color = Color(palette.sky)
-	e.fog_depth_begin = 95.0
-	e.fog_depth_end = 250.0
-	e.fog_depth_curve = 0.8
+	e.fog_depth_begin = 90.0
+	e.fog_depth_end = 260.0
+	e.fog_depth_curve = 0.75
 	e.fog_sky_affect = 0.0
+
+
 
 
 	# Filmic tonemapping compresses extreme highlights, preserving details on facades
@@ -198,7 +200,10 @@ func _setup_scene_objects() -> void:
 		var authored: Array = junction.authored_network.data.get("officers", [])
 		if not authored.is_empty():
 			officer.position = Vector3(-float(authored[0].pos[0]), 0, -float(authored[0].pos[1]))
+	officer.scale = Vector3.ONE * 1.15
 	add_child(officer)
+
+
 
 	var vehicle_id := "sedan"
 	var vehicle_paint := Color("#0574F8")
