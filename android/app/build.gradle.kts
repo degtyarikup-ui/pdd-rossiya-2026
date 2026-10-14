@@ -88,6 +88,12 @@ android {
     buildTypes {
         release {
             isDebuggable = false
+            // R8 takes minutes with the embedded engine. Skip the Android shrinkers
+            // in the local test app; Dart AOT and the Godot engine remain release.
+            if (project.hasProperty("dev")) {
+                isMinifyEnabled = false
+                isShrinkResources = false
+            }
             // The Godot engine's classes are called by name from native code: see proguard-godot.pro.
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-godot.pro")
             // Never silently sign a store release with the debug key.
