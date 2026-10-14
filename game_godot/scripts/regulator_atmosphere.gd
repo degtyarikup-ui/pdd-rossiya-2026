@@ -19,8 +19,8 @@ var dry_road: Color
 var dry_walk: Color
 var clear_sun := 0.45
 var dry_sky: Color
-var clear_fog_begin := 45.0
-var clear_fog_end := 80.0
+var clear_fog_begin := 54.0
+var clear_fog_end := 88.0
 
 
 func _init(cam: Camera3D, env: Environment, light: DirectionalLight3D,
@@ -83,8 +83,8 @@ func _process(delta: float) -> void:
 	var blend := 1.0 - exp(-delta * 0.6)
 	rain = lerpf(rain, 1.0 if weather == "rain" else 0.0, blend)
 	fog = lerpf(fog, 1.0 if weather == "fog" else 0.0, blend)
-	# Depth fog is only needed for the explicit fog weather preview.
-	environment.fog_enabled = fog > 0.01
+	# Sunset depth fog dissolves the avenue into the horizon; weather fog brings it even closer.
+	environment.fog_enabled = true
 	var overcast := maxf(rain, fog * 0.85)
 	environment.background_color = dry_sky.lerp(Color("#A8BAC8"), overcast)
 	environment.fog_light_color = environment.background_color
