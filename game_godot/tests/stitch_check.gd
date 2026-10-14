@@ -38,8 +38,7 @@ func _initialize() -> void:
 			expect(SceneStitch.warp(moved,binding,true).distance_to(edge)<0.001,str(id)+" collision inverse")
 	var pairs := 0
 	for id in profiles:
-		for key in profiles[id].exits:
-			var out: Dictionary = profiles[id].exits[key]
+		for out: Dictionary in SceneStitch.departure_ports(profiles[id]).values():
 			for other in profiles:
 				var entry: Dictionary = profiles[other].entry
 				if entry.is_empty() or out.lanes!=entry.lanes: continue

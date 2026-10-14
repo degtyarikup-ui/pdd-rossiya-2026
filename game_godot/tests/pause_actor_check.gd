@@ -14,6 +14,9 @@ func run() -> void:
 		if not world.staging: break
 		await process_frame
 	if world.staging: push_error("staging timeout");quit(1);return
+	# A native test window can lose focus during startup. Add the fixture actors
+	# to an active ride so this check measures their own subsequent pause cycle.
+	if world.paused: world._on_resume()
 	var actor:=Node3D.new()
 	world.add_child(actor)
 	Fleet.hazards(actor,2.2,0.95,3.0)

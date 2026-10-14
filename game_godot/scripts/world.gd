@@ -1307,7 +1307,7 @@ func _build_staged(id: String) -> void:
 			var bases: Array=[Situation.bindings_with([],entry,float(entry.width))]
 			if current and current.sit.network:
 				var previous: Situation=current.sit
-				for out in previous.network.connections.exits.values():
+				for out in SceneStitch.departure_ports(previous.network.connections).values():
 					if SceneStitch.needs_highway_transition(out,entry): continue
 					var profile:=SceneStitch.joint_profile(out,entry)
 					var candidate:=Situation.bindings_with([],entry,float(profile.width),profile)
@@ -1316,7 +1316,7 @@ func _build_staged(id: String) -> void:
 					await previous.warm_bindings(Situation.bindings_with(previous.network.stitch_bindings,out,float(profile.width),profile),scenery,get_tree())
 			for base in bases:
 				await staged_sit.warm_bindings(base,scenery,get_tree())
-				for out in staged_sit.network.connections.exits.values():
+				for out in SceneStitch.departure_ports(staged_sit.network.connections).values():
 					await staged_sit.warm_bindings(Situation.bindings_with(base,out,float(out.width)),scenery,get_tree())
 	Situation.forget(id)
 	staging = false
@@ -1750,7 +1750,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	var crop: float = sit.data.crop
 	var centre := sit.position
 	drive.turning_at_junction = false
-	var port: Dictionary = sit.network.connections.exits.get(exit_direction,{}) if sit.network else {}
+	var port: Dictionary = SceneStitch.departure_ports(sit.network.connections).get(exit_direction,{}) if sit.network else {}
 	if port.is_empty():
 		port={"p":Vector3(sin(exit_yaw)*crop,0,cos(exit_yaw)*crop),"out":Vector3(sin(exit_yaw),0,cos(exit_yaw)),"width":8.4,"lanes":2,"median":0.0,"declared_median":0.0,"walk":true,"edge":true,"centre":"dashed","surface":"asphalt"}
 	var joint: Vector3 = sit.global_transform*port.p
@@ -2537,13 +2537,16 @@ func _notification(what: int) -> void:
 		elif phase == "over":
 			_on_exit()
 		else:
-			_on_pause()
-	elif what == NOTIFICATION_APPLICATION_PAUSED and phase in ["driving", "question", "resolving"]:
-		_on_pause()
+			_on_pause(true)
+	elif what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED] and phase in ["driving", "question", "resolving"]:
+		# iOS stops rendering at focus loss, before entering the background. The
+		# app switcher/notification centre can also return without PAUSED at all.
+		# Foreground notifications deliberately keep the ride paused until Continue.
+		_on_pause(true)
 
 
 ## Pause preserves the world, current card/photo, timer, camera and run counters.
-func _on_pause() -> void:
+func _on_pause(from_notification := false) -> void:
 	if paused or phase == "over":
 		return
 	paused = true
@@ -2552,6 +2555,18 @@ func _on_pause() -> void:
 	controls.set_active(false)
 	_freeze_world_actors()
 	ui.process_mode = Node.PROCESS_MODE_DISABLED
+	# SceneTree propagates lifecycle/back notifications with each parent's child
+	# list locked. Freeze immediately, then mount the overlay after that traversal:
+	# adding it here used to fail and leave both controls and Continue unreachable.
+	if from_notification:
+		_show_pause_menu.call_deferred()
+	else:
+		_show_pause_menu()
+
+
+func _show_pause_menu() -> void:
+	if not paused or is_queued_for_deletion() or not is_inside_tree() or is_instance_valid(pause_menu):
+		return
 	var options := _live_garage_options()
 	options.sound = sound.enabled
 	options.voice = voice.enabled

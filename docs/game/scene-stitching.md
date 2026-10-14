@@ -10,6 +10,11 @@
 - Для конструктора используются узлы, ширина улиц и касательная кривой Безье. Для старых
   обведённых сцен — сечения фактической проезжей части у границ; маршруты определяют,
   какой из этих концов является въездом или выбранным выездом.
+- Завершение вопроса проверяется по всем физическим концам дорог, включая обратный
+  выезд и короткие боковые улицы внутри сохранённого квадрата. Учебные стрелки остаются
+  отдельными привязками: короткая или отсутствующая стрелка не превращает дорогу в тупик.
+  Для короткой улицы стык находится у настоящего конца, а ворота завершения оставляют
+  место под весь кузов. Две близкие параллельные дороги измеряются раздельно.
 - Рабочее сечение берётся на 24 м внутрь от внешнего конца дороги: оно позволяет совместить
   косые дороги по перпендикулярному им срезу. Во время игры внешний хвост и пересекающаяся
   с соседней сценой земля обрезаются; редактор продолжает показывать исходную сцену целиком.
@@ -174,6 +179,7 @@
 godot --headless --path game_godot --script res://tests/stitch_check.gd
 godot --headless --path game_godot --script res://tests/stitch_mesh_check.gd
 godot --headless --path game_godot --script res://tests/stitch_runtime_check.gd
+godot --headless --path game_godot --script res://tests/exit_continuity_check.gd
 godot --headless --path game_godot --script res://tests/lighting_check.gd -- --season=winter
 godot --headless --path game_godot --script res://tests/lighting_check.gd -- --season=summer
 godot --headless --path game_godot --script res://tests/lighting_check.gd -- --season=autumn

@@ -104,6 +104,8 @@ godot --headless --path game_godot --script res://tests/question_signals_check.g
 godot --headless --path game_godot --script res://tests/actor_hazards_check.gd # постоянная аварийка участников, стоянка, обе стороны, пауза и старые настройки
 godot --headless --path game_godot --script res://tests/signal_glow_check.gd # свечение и цвета секций светофора без текстур
 godot --headless --path game_godot --script res://tests/ride_pause_check.gd # быстрый старт, цвет, звук, сохранение состояния при паузе
+godot --headless --path game_godot --script res://tests/lifecycle_pause_check.gd # системное сворачивание/фокус, достижимая пауза и восстановление управления
+godot --headless --path game_godot --script res://tests/exit_continuity_check.gd # все физические выезды, короткие улицы, полный кузов и стыковка следующего вопроса
 godot --path game_godot --resolution 1280x900 --script res://tests/signal_glow_check.gd # нужен широкий кадр: видимое свечение, включая пакетный трафик
 godot --path game_godot --script res://tests/building_fade_check.gd # нужен рендер: пачки прозрачных зданий и переиспользование
 godot --headless --path game_godot --script res://tests/median_join_check.gd # границы разделительных островов
@@ -268,6 +270,8 @@ MP3 и локальный манифест не коммитятся. В Git л�
 - `ride-performance-2026-10-14.md` — очистка старых локаций по пути, длительный тест и диагностика dev-сборки
 - `participant-lifetime-2026-10-15.md` — нативный вылет после удаления сбитого участника и регрессионная проверка
 - `ride-completion-2026-10-15.md` — два штатных заезда, неверная нумерация HUD и оставшийся доступ к удалённому участнику
+- `background-pause-2026-10-15.md` — исчезнувшее управление после сворачивания, безопасный показ паузы и продолжение
+- `road-exit-continuity-2026-10-15.md` — тупик `ticket_20_6`, все физические выезды и стыки коротких дорог
 - `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
 - `local-changes-sync-2026-10-14.md` — опубликованные локации и архивы всех локальных stash
 - `godot-roadmap.md` — что сделано и что открыто

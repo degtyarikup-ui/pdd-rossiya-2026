@@ -83,6 +83,7 @@ var samples: Array[Dictionary] = []
 var output_directory := ""
 var records: FileAccess
 var started := 0
+var fixture_world: MeasuredWorld
 
 func _initialize() -> void: run.call_deferred()
 
@@ -102,6 +103,9 @@ func number_arg(name: String, fallback: float) -> float:
 func wait_for(condition: Callable, seconds: float, label: String) -> bool:
 	var deadline := Time.get_ticks_msec() + int(seconds * 1000.0)
 	while not condition.call() and Time.get_ticks_msec() < deadline:
+		# Native automation can lose focus to Codex at startup. Lifecycle pause
+		# has its own test; resume while this fixture explicitly exercises travel.
+		if is_instance_valid(fixture_world) and fixture_world.paused: fixture_world._on_resume()
 		await process_frame
 	var ok: bool = condition.call()
 	expect(ok, label)
@@ -110,6 +114,7 @@ func wait_for(condition: Callable, seconds: float, label: String) -> bool:
 func active_dwell(world: MeasuredWorld, seconds: float) -> void:
 	var until := world.frame_seconds + seconds
 	while world.frame_seconds < until:
+		if world.paused: world._on_resume()
 		await process_frame
 
 func move_to(world: MeasuredWorld, target: Vector3) -> void:
@@ -304,6 +309,7 @@ func run() -> void:
 	for i in scene_count: ids.append(Benchmark.ROUTE[i % Benchmark.ROUTE.size()])
 	var world = load("res://main.tscn").instantiate()
 	world.set_script(MeasuredWorld)
+	fixture_world = world
 	world.only_id = ids[0]
 	world.bag = [ids[0]]
 	var control := SequenceControl.new()

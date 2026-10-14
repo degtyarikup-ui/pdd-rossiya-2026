@@ -36,6 +36,10 @@ static func describe(data: Dictionary, built: Dictionary) -> Dictionary:
 	var nodes := {}
 	for n in layout.get("nodes", []):
 		nodes[n.id] = Vector3(n.x, 0.0, n.z)
+	var degree := {}
+	for street in layout.get("streets", []):
+		degree[street.a] = int(degree.get(street.a, 0)) + 1
+		degree[street.b] = int(degree.get(street.b, 0)) + 1
 	for st in layout.get("streets", []):
 		var a: Vector3 = nodes[st.a]
 		var b: Vector3 = nodes[st.b]
@@ -46,14 +50,22 @@ static func describe(data: Dictionary, built: Dictionary) -> Dictionary:
 			for i in 25:
 				var t := i / 24.0
 				line.append(a * pow(1.0-t, 2) + c * 2.0*t*(1.0-t) + b * t*t)
+		var length := 0.0
+		for i in line.size() - 1:
+			length += (line[i] as Vector3).distance_to(line[i + 1])
 		for end in [0, 1]:
 			var boundary: Vector3 = a if end == 0 else b
-			if maxf(absf(boundary.x), absf(boundary.z)) < crop - 0.1:
+			var node_id = st.a if end == 0 else st.b
+			var at_crop := maxf(absf(boundary.x), absf(boundary.z)) >= crop - 0.1
+			if not at_crop and int(degree.get(node_id, 0)) != 1:
 				continue
 			var from_edge := line.duplicate()
 			if end == 1:
 				from_edge.reverse()
-			var sample := along(from_edge, END_INSET)
+			# Short streets can end inside the saved crop. Joining at their real
+			# endpoint preserves the junction instead of cutting 24 m past its centre.
+			var inset := minf(END_INSET, maxf(0.0, length - 12.0)) if at_crop else 0.0
+			var sample := along(from_edge, inset)
 			var kind := str(st.get("kind", "street"))
 			var median := float(st.get("median", 0.0)) if kind != "yard" else 0.0
 			if kind == "highway" and median <= 0.0: median = 3.0
@@ -69,6 +81,10 @@ static func describe(data: Dictionary, built: Dictionary) -> Dictionary:
 				"boundary":boundary, "lanes":lanes, "declared_median":median, "highway":kind=="highway",
 				"walk":st.get("walk",true) and st.get("surface", "asphalt") != "sand", "edge":st.get("edge",true),
 				"surface":st.get("surface", "asphalt"),"centre":"none" if st.get("manualMarks",false) else st.get("centre","none" if kind=="yard" else "double" if kind in ["avenue","highway"] else "dashed")}, true)
+			if not at_crop:
+				# Finish after turning into a short branch, while the whole car is
+				# still on its road. A minimum lead keeps the nose away from the edge.
+				port["finish_distance"] = minf(maxf(20.0, port.p.dot(port.out) - 24.0), maxf(2.5, length - 12.0))
 			ports.append(port)
 	# For traced scenes, derive connections from real carriageway sections at the crop.
 	# Old exported route tails can be shortened or skewed; extrapolating them may land on the lawn.
@@ -103,12 +119,36 @@ static func describe(data: Dictionary, built: Dictionary) -> Dictionary:
 		if not port.is_empty(): exits[key]=port
 	return {"ports":ports,"entry":entry,"exits":exits}
 
+
+## Teaching arrows may be short, edited, or omit a legal branch entirely.
+## Their aliases stay intact; every physical road end still leaves the city scene.
+static func departure_ports(profile: Dictionary) -> Dictionary:
+	if profile.has("departures"):
+		return profile.departures
+	var result := {}
+	var seen := {}
+	for key in profile.get("exits", {}):
+		var port: Dictionary = profile.exits[key]
+		var id := str(port.get("id", key))
+		if seen.has(id): continue
+		result[key] = port
+		seen[id] = true
+	for port in profile.get("ports", []):
+		var id := str(port.id)
+		if seen.has(id): continue
+		result["port:" + id] = port
+		seen[id] = true
+	profile["departures"] = result
+	return result
+
+
 static func _best_port(ports: Array, p: Vector3, t: Vector3, exclude: String) -> Dictionary:
 	var best: Dictionary = {}
 	var score := INF
 	for port in ports:
 		if port.id == exclude: continue
-		var cost: float = (1.0-t.dot(port.out))*100.0 + p.distance_to(port.p)*0.01
+		var lateral := absf((p-port.p).dot(right(port.out)))
+		var cost: float = (1.0-t.dot(port.out))*100.0 + lateral + p.distance_to(port.p)*0.01
 		if cost<score:
 			score=cost;best=port
 	return best
@@ -131,13 +171,18 @@ static func _port(p: Vector3, out: Vector3, width: float, built: Dictionary) -> 
 	for road in built.get("carriageway", []):
 		var xs := _crossings(road.outer,p,out)
 		for i in range(0,xs.size()-1,2):
-			if xs[i]<=0.5 and xs[i+1]>=-0.5:
-				lo=xs[i];hi=xs[i+1]
+			# A parallel street can share the polygon's outer ring. Measure only
+			# this saved street's corridor, never the grass gap and its neighbour.
+			var start := maxf(float(xs[i]), -width/2.0)
+			var end := minf(float(xs[i+1]), width/2.0)
+			if end <= start: continue
+			if start<=0.5 and end>=-0.5:
+				lo=start;hi=end
 				spanning=true
-			elif xs[i+1]<0.5:
-				left.append([xs[i],xs[i+1]])
-			elif xs[i]>-0.5:
-				opposite.append([xs[i],xs[i+1]])
+			elif end<0.5:
+				left.append([start,end])
+			elif start>-0.5:
+				opposite.append([start,end])
 		for hole in road.get("holes",[]):
 			var hs := _crossings(hole,p,out)
 			if hs.size()>=2 and hs[0]<0.5 and hs[-1]>-0.5: median=hs[-1]-hs[0]
