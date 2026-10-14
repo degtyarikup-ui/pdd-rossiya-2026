@@ -167,6 +167,8 @@ func _setup_environment() -> void:
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
 	e.fog_light_color = Color("#82A8CC")
+	e.fog_sun_scatter = 0.15
+	e.fog_aerial_perspective = 0.25
 	e.fog_depth_begin = 85.0
 	e.fog_depth_end = 180.0
 	e.fog_depth_curve = 0.85
