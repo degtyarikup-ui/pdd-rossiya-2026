@@ -144,7 +144,7 @@ def check_scene(scene: dict) -> list:
         finding(out, "error", "correct-index", f"номер правильного ответа {correct!r} вне диапазона из {len(options)} вариантов",
                 {"type": "question"})
     manoeuvre = q.get("maneuver")
-    if manoeuvre in MANOEUVRES and manoeuvre != "straight":
+    if manoeuvre in MANOEUVRES:
         if f"manoeuvre_{manoeuvre}" not in routes:
             finding(out, "error", "no-manoeuvre", f"у манёвра по условию «{manoeuvre}» нет маршрута",
                     {"type": "question"})

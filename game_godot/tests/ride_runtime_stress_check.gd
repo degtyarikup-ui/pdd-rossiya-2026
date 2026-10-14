@@ -2,6 +2,8 @@
 ## Travel positions are advanced explicitly along authored routes; this is not a driving/physics pass.
 ## Native: godot --path game_godot --resolution 390x844 --script res://tests/ride_runtime_stress_check.gd -- --quality=mid --mute --season=autumn
 ## Defaults: 40 scenes, 6 s active dwell each. Short development: --stress-scenes=4 --stress-dwell=0.1
+## Add --stress-mixed-answers to cycle correct answers, incorrect answers and real card timeouts.
+## Add --stress-screenshots on native to save the last open question and its feedback.
 extends SceneTree
 
 const Benchmark = preload("res://scripts/ride_benchmark.gd")
@@ -74,6 +76,9 @@ var failures := 0
 var checks := 0
 var scene_count := 40
 var dwell_seconds := 6.0
+var mixed_answers := false
+var capture_screenshots := false
+var answers_exercised := {"correct": 0, "incorrect": 0, "timeout": 0}
 var samples: Array[Dictionary] = []
 var output_directory := ""
 var records: FileAccess
@@ -161,6 +166,15 @@ func pause_check(world: MeasuredWorld) -> void:
 	world._on_resume()
 	expect(not world.paused and world.pause_menu == null, "resume restores active world")
 
+func capture_last_question(index: int, state: String) -> void:
+	if not capture_screenshots or DisplayServer.get_name() == "headless" or (index + 1) % Run.QUESTIONS != 0: return
+	await RenderingServer.frame_post_draw
+	var picture := root.get_texture().get_image()
+	var path := output_directory.path_join("q%02d-%s.png" % [index + 1, state])
+	expect(picture != null and not picture.is_empty(), "native question screenshot " + state)
+	if picture != null and not picture.is_empty():
+		expect(picture.save_png(path) == OK, "saved native question screenshot " + state)
+
 func record(world: MeasuredWorld, index: int, id: String) -> void:
 	var sample := world._performance_snapshot()
 	sample.merge({"synthetic_endurance": true, "index": index + 1, "scene": id,
@@ -189,10 +203,12 @@ func record(world: MeasuredWorld, index: int, id: String) -> void:
 		expect(sample.static_mb <= first.static_mb + 16.0, "matched warm static memory bound q=" + str(index + 1))
 
 func exercise(world: MeasuredWorld, control: SequenceControl, ids: Array[String]) -> void:
+	var expected_correct := 0
 	for index in ids.size():
 		if index > 0 and index % Run.QUESTIONS == 0:
 			# Deliberately extend a completed transient Run inside the same engine for the next stress cycle.
 			world.run = Run.new()
+			expected_correct = 0
 			world.ui.hide_cards()
 			world.phase = "driving"
 			world.controls.set_active(true)
@@ -206,8 +222,46 @@ func exercise(world: MeasuredWorld, control: SequenceControl, ids: Array[String]
 		world.reset_measurement()
 		world.measuring = true
 		await active_dwell(world, minf(2.0, dwell_seconds * 0.5))
-		world._on_answer_chosen(int(sit.data.correctAnswerIndex))
+		# The HUD identifies the open question, so question 1 must already say 1/20
+		# before its answer is counted. Let the normal World frame update the label.
+		await process_frame
+		await process_frame
+		var ordinal := (index % Run.QUESTIONS) + 1
+		expect(int(world.ui._run_big.text) == ordinal, "open question HUD ordinal q=" + str(index + 1))
+		await capture_last_question(index, "open")
+		var answer_kind := index % 3 if mixed_answers else 0
+		var right := int(sit.data.correctAnswerIndex)
+		if answer_kind == 0:
+			expected_correct += 1
+			answers_exercised.correct += 1
+			world.ui.answer_chosen.emit(right)
+			# A second tap during feedback must never consume another question.
+			world.ui.answer_chosen.emit(right)
+		elif answer_kind == 1:
+			answers_exercised.incorrect += 1
+			var wrong := (right + 1) % (world.text.options as Array).size()
+			world.ui.answer_chosen.emit(wrong)
+			world.ui.answer_chosen.emit(wrong)
+		else:
+			answers_exercised.timeout += 1
+			# Expire the real card: the normal World frame calls the timeout handler.
+			world.ui._remaining = 0.0
+		if not await wait_for(func(): return world.question_over, 3.0, "answer accepted once q=" + str(index + 1)): return
+		await process_frame
+		await process_frame
+		expect(int(world.ui._run_big.text) == ordinal, "answer feedback HUD ordinal q=" + str(index + 1))
+		if answer_kind != 0:
+			if not await wait_for(func(): return is_instance_valid(world.ui._sheet), 3.0, "normal explanation q=" + str(index + 1)): return
+			expect(int(world.ui._run_big.text) == ordinal, "explanation HUD ordinal q=" + str(index + 1))
+			if capture_screenshots and ordinal == Run.QUESTIONS:
+				await create_timer(GameUi.SHEET_OUT + GameUi.SHEET_IN + 0.1).timeout
+			await capture_last_question(index, "explanation")
+			world.ui.continue_pressed.emit()
 		if not await wait_for(func(): return world.phase == "resolving", 5.0, "normal answer feedback q=" + str(index + 1)): return
+		await process_frame
+		await process_frame
+		expect(int(world.ui._run_big.text) == ordinal, "resolving HUD ordinal q=" + str(index + 1))
+		await capture_last_question(index, "resolving")
 		await active_dwell(world, maxf(0.0, dwell_seconds - world.frame_seconds))
 		if (index + 1) % 5 == 0: await pause_check(world)
 		if not await wait_for(func(): return not world.staging, 30.0, "background prefetch settled q=" + str(index + 1)): return
@@ -217,7 +271,7 @@ func exercise(world: MeasuredWorld, control: SequenceControl, ids: Array[String]
 		depart(world, sit)
 		if not await wait_for(func(): return world.current.is_empty(), 3.0, "normal finish and rebase q=" + str(index + 1)): return
 		expect(junction.complete, "production Junction completion q=" + str(index + 1))
-		expect(world.run.answered == (index % Run.QUESTIONS) + 1 and world.run.correct == world.run.answered, "real answer counters q=" + str(index + 1))
+		expect(world.run.answered == ordinal and world.run.correct == expected_correct, "real answer counters q=" + str(index + 1))
 		expect(world.phase == ("over" if (index + 1) % Run.QUESTIONS == 0 else "driving"), "completion only on twentieth answer q=" + str(index + 1))
 		expect(not world.run_started, "no user run booked q=" + str(index + 1))
 		expect(world.walker_pavement_queries.size() <= world.WALK_QUERY_CACHE_LIMIT, "walker query cache bound q=" + str(index + 1))
@@ -235,6 +289,8 @@ func run() -> void:
 		return
 	scene_count = clampi(int(number_arg("--stress-scenes", 40)), 1, 80)
 	dwell_seconds = clampf(number_arg("--stress-dwell", 6.0), 0.1, 12.0)
+	mixed_answers = "--stress-mixed-answers" in OS.get_cmdline_user_args()
+	capture_screenshots = "--stress-screenshots" in OS.get_cmdline_user_args()
 	output_directory = ProjectSettings.globalize_path("res://../output/laptop-game-stress")
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--stress-output="): output_directory = arg.trim_prefix("--stress-output=")
@@ -270,6 +326,7 @@ func run() -> void:
 	expect(int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)) == baseline_orphans, "no orphan nodes after endurance")
 	expect(samples.size() == scene_count, "all requested synthetic transitions recorded")
 	var summary := {"synthetic_endurance": true, "real_driving_pass": false, "run_started": false,
+		"mixed_answers": mixed_answers, "answers_exercised": answers_exercised,
 		"renderer": DisplayServer.get_name(), "adapter": RenderingServer.get_video_adapter_name(),
 		"route_id": Benchmark.ROUTE_ID, "requested_scenes": scene_count, "recorded_scenes": samples.size(),
 		"dwell_seconds": dwell_seconds, "elapsed_s": (Time.get_ticks_msec() - started) / 1000.0,

@@ -19,7 +19,7 @@ func run() -> void:
 		DirAccess.remove_absolute(folder.path_join(name))
 	var hud = Hud.new()
 	hud.visible = true
-	hud.snapshot = func(): return {"question": 4, "cpu_ms": {"walkers": 2.0}}
+	hud.snapshot = func(): return {"question": 4, "displayed_question": 5, "question_over": false, "cpu_ms": {"walkers": 2.0}}
 	hud.reset_snapshot = func(): resets += 1
 	root.add_child(hud)
 	hud.set_process(false)
@@ -37,6 +37,8 @@ func run() -> void:
 	var log = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl")).strip_edges())
 	expect(log.thermal_state == 2 and log.low_power == true and is_equal_approx(log.footprint_mb,321.5), "native fields preserved in diagnostic log")
 	expect(log.cpu_ms.walkers == 2.0 and log.has("triangles") and log.has("render_objects"), "CPU and GPU work recorded together")
+	expect(log.question == 4 and log.displayed_question == 5 and log.question_over == false, "diagnostics distinguish counted answers from current question")
+	expect(hud._label.text.contains(Ui.t("gameDebugPerfRetained", {"question": 5, "scenes": 0, "streets": 0})), "debug HUD shows current question instead of completed count")
 	write.call({"footprint_mb": 321.5, "thermal_state": 2, "low_power": true, "sample_time": Time.get_unix_time_from_system()-20})
 	expect(hud._read_ios_footprint() < 0 and hud._thermal_state == -1 and hud._low_power == null, "stale native state cannot look current")
 	write.call({"footprint_mb": 321.5, "thermal_state": 1.5, "low_power": "yes", "sample_time": Time.get_unix_time_from_system()})

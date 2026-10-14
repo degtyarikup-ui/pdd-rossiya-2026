@@ -359,7 +359,12 @@ func resolve(player: Drive) -> void:
 ## The question's saved priorities, waits and concurrency apply to every answer.
 func _plan_traffic() -> void:
 	var maneuver: String = str(spec.maneuver) if spec.maneuver != null else "straight"
-	var exit: Dictionary = data.exits.get(maneuver, data.exits.get("straight"))
+	var exit: Variant = data.get("exits", {}).get(maneuver)
+	# The editor may open an incomplete scene directly, even though ordinary
+	# rides exclude it. Keep its actors waiting rather than guessing the
+	# player's missing route and assigning traffic priority from another exit.
+	if not exit is Dictionary or not exit.get("points") is Array or exit.points.size() < 2:
+		return
 	var intended := { "config": {}, "path": Path.new(exit.points), "clear": 1e9, "hw": 0.9, "hl": 2.0 }
 	intended.clear = intended.path.length
 	var ordered := _ordered()
@@ -566,16 +571,20 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 		return null
 	var boxes := []
 	for m in motions:
-		if not m.done:
-			boxes.append({ "who": m, "type": m.type, "box": m.footprint(), "speed": m.speed if m.active and not m.crashed else 0.0 })
+		if m.done or not is_instance_valid(m.node):
+			continue
+		boxes.append({ "who": m, "type": m.type, "box": m.footprint(), "speed": m.speed if m.active and not m.crashed else 0.0 })
 	boxes.append({ "who": null, "type": "player", "box": player, "speed": maxf(0.0, player_speed) })
 	var hit: Motion = null
 	for a in motions:
+		# A moving pedestrian can latch a collision before World hands its model
+		# to the temporary physics body. Once done, even contact cleanup must not
+		# read that model: the body's timer may already have freed it.
+		if a.done or not is_instance_valid(a.node):
+			continue
 		a.contact_cooldown = maxf(0.0, a.contact_cooldown - dt)
 		if a.player_contact_latched and not DRIVE.overlap(a.footprint(), player, 0.3):
 			a.player_contact_latched = false
-		if a.done:
-			continue
 		if a.crashed:
 			if a.impact_wait <= 0.0:
 				a.impact_wait = 3.0

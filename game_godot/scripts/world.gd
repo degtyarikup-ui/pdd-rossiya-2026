@@ -316,10 +316,20 @@ func _ready() -> void:
 			_shot(arg.trim_prefix("--shot="))
 
 
-## Keep an invalid free route out of normal rides without modifying the editor review flag.
+## Keep incomplete player routes out of normal rides, preserving the editor review flag.
 static func _scene_playable(authored: Dictionary) -> bool:
 	var route_errors: Variant = authored.get("playerRouteErrors", [])
-	return authored.get("reviewed", false) == true and route_errors is Array and route_errors.is_empty()
+	if authored.get("reviewed", false) != true or not route_errors is Array or not route_errors.is_empty():
+		return false
+	var saved_maneuver = authored.get("question", {}).get("maneuver")
+	var maneuver := str(saved_maneuver) if saved_maneuver != null else "straight"
+	for route in authored.get("routes", []):
+		if route.get("kind") != "manoeuvre" or route.get("exit") != maneuver:
+			continue
+		var points: Variant = route.get("points", [])
+		if points is Array and points.size() >= 2 and points.any(func(point): return point != points[0]):
+			return true
+	return false
 
 
 ## Reveal the city only after its first junction and street profile are installed.
@@ -1906,6 +1916,7 @@ func _performance_snapshot() -> Dictionary:
 	if perf_frames > 0:
 		for key in perf_us: cpu_ms[key] = snappedf(float(perf_us[key]) / perf_frames / 1000.0, 0.01)
 	return {"question": run.answered, "scene": str(current.sit.id) if current else "",
+		"displayed_question": _question_number(), "question_over": question_over,
 		"retired": retired.size(), "streets": older_ghosts.size() + (1 if ghost else 0),
 		"staging": staging, "phase": phase, "distance": int(drive.distance_traveled), "cpu_ms": cpu_ms,
 		"render_scale": get_viewport().scaling_3d_scale, "max_fps": Engine.max_fps,
@@ -2744,6 +2755,13 @@ func _on_tip_next() -> void:
 		ui.show_gas_hint(Ui.t("gameGasHint"))
 
 
+## The HUD names the current question, while Run counts completed answers.
+## Feedback/explanations still belong to the question just answered.
+func _question_number() -> int:
+	var upcoming := phase == "driving" or (phase == "question" and not question_over)
+	return clampi(run.answered + (1 if upcoming else 0), 1, Run.QUESTIONS)
+
+
 func _process(delta: float) -> void:
 	_tips_frame()
 	_update_frame_budget(delta)
@@ -2758,7 +2776,7 @@ func _process(delta: float) -> void:
 		_on_answer_chosen(-1)
 	run.distance_m = int(drive.distance_traveled)
 	_update_rules(delta)
-	ui.set_hud(int(roundf(absf(drive.speed) * 3.6)), limit_kmh, run.violations, run.distance_m, run.score, run.answered, Run.QUESTIONS)
+	ui.set_hud(int(roundf(absf(drive.speed) * 3.6)), limit_kmh, run.violations, run.distance_m, run.score, _question_number(), Run.QUESTIONS)
 	if follow and phase == "resolving" and current:
 		# The test driver yields: it lifts off when a participant is just ahead.
 		controls.gas = not _participant_ahead(16.0)

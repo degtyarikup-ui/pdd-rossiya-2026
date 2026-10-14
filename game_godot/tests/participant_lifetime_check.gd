@@ -2,8 +2,6 @@
 ## Its real 20-second cleanup must not leave a dangling visual in later traffic updates.
 extends SceneTree
 
-const WORLD = preload("res://scripts/world.gd")
-
 class CollisionWorld extends "res://scripts/world.gd":
 	var reported: Array = []
 	func _ready() -> void: pass
@@ -37,7 +35,8 @@ func run() -> void:
 	root.add_child(world)
 	var sit := Situation.new()
 	sit.id = "participant_lifetime_fixture"
-	sit.data = {"spec": {"yieldTo": [], "maneuver": "straight"},
+	sit.data = {"spec": {"yieldTo": ["pedestrian"], "maneuver": "straight"},
+		"exits": {"straight": {"points": [[0.0, 0.0], [0.0, 30.0]]}},
 		"actors": [actor("pedestrian", "pedestrian", 0.0), actor("car", "car", 8.0)]}
 	var authored := sit.data.duplicate(true)
 	world.add_child(sit)
@@ -64,14 +63,18 @@ func run() -> void:
 	junction.begin_question_signals()
 	check(signals.side == "R", "surviving car starts with its saved right indicator")
 	var struck: Junction.Motion = junction.motions[0]
-	world.on_collision(WORLD.WorldMotion.new(struck, sit.global_transform))
+	# Exercise the participant-into-player path, which latches contact before
+	# World handles the impact. Calling on_collision directly misses that state.
+	world.retired = [{"sit": sit, "junction": junction}]
+	junction.release()
+	world._update_junction(0.016)
+	check(struck.player_contact_latched, "moving pedestrian collision latches real player contact")
 	check(struck.done and struck.cleared and struck.crashed, "real collision removes pedestrian from route and collision lists")
 	check(world.reported.size() == 1 and world.reported[0][0] == "collision", "real collision is reported once")
 	var body := struck.node.get_parent() as RigidBody3D
 	check(body != null and body.is_in_group("fallen_people"), "struck visual is owned by the real temporary physics body")
 	# Keep the old question behind the player while a later question is approached.
 	# _update_junction must continue updating its surviving participants.
-	world.retired = [{"sit": sit, "junction": junction}]
 	world._update_junction(0.0)
 	check(is_instance_valid(struck.node), "pedestrian visual exists before the cleanup timer")
 	# Exercise the production timer, rather than directly deleting the visual. Only
@@ -98,6 +101,7 @@ func run() -> void:
 	check(signals.side == "R", "expired pedestrian cannot abort the later car's signal update")
 	for i in 4:
 		world._update_junction(0.016)
+	check(struck.player_contact_latched, "completed participant is skipped before contact footprint access")
 	check(struck.done and struck.cleared, "later active updates preserve retired pedestrian state")
 	check(world.reported.size() == 1, "expired pedestrian cannot generate repeated collision reports")
 	check(get_nodes_in_group("fallen_people").is_empty(), "temporary physics body is fully removed")

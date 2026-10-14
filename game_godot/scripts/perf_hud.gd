@@ -127,7 +127,7 @@ func _process(delta: float) -> void:
 		Engine.get_frames_per_second(), _sum / _frames, _worst, _slow, calls, tris / 1000, objects,
 		str(roundi(mem)) + " MB" if mem > 0 else "—", vmem, process_metric, str(roundi(process_mb)) + " MB" if process_mb >= 0 else "—",
 		Ui.t("gameDebugPerfObjects", {"nodes": int(nodes), "resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT))}),
-		Ui.t("gameDebugPerfRetained", {"question": state.get("question", 0), "scenes": state.get("retired", 0), "streets": state.get("streets", 0)}),
+		Ui.t("gameDebugPerfRetained", {"question": state.get("displayed_question", state.get("question", 0)), "scenes": state.get("retired", 0), "streets": state.get("streets", 0)}),
 		_input_ms, Ui.t("gameDebugTier"), tier, state.get("scene", "")]
 	if write_log:
 		state.merge({"time": Time.get_datetime_string_from_system(true), "fps": Engine.get_frames_per_second(),

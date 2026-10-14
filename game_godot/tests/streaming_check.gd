@@ -47,12 +47,22 @@ func _run() -> void:
 	world.only_id = "ticket_28_13"
 	world.bag = [world.only_id]
 	root.add_child(world)
-	expect(world._scene_playable({"reviewed":true}), "approved ordinary scene remains eligible")
-	expect(world._scene_playable({"reviewed":true,"playerRouteErrors":[]}), "valid free route remains eligible")
-	var invalid := {"reviewed":true,"playerRouteErrors":["no connected approach"]}
+	var valid := {"reviewed":true,"question":{"maneuver":"straight"},
+		"routes":[{"kind":"manoeuvre","exit":"straight","points":[[0,0],[0,30]]}]}
+	expect(world._scene_playable(valid), "approved ordinary scene remains eligible")
+	valid.playerRouteErrors = []
+	expect(world._scene_playable(valid), "valid free route remains eligible")
+	var invalid := valid.duplicate(true)
+	invalid.playerRouteErrors = ["no connected approach"]
 	expect(not world._scene_playable(invalid), "approved scene with invalid free route is omitted at runtime")
 	expect(invalid.reviewed==true, "runtime filtering preserves author's review flag")
 	expect(not world._scene_playable({"reviewed":false}), "unapproved scene cannot enter normal ride")
+	var missing := valid.duplicate(true)
+	missing.routes.clear()
+	expect(not world._scene_playable(missing) and missing.reviewed, "missing intended route is omitted without changing approval")
+	var zero_length := valid.duplicate(true)
+	zero_length.routes[0].points = [[0,0],[0,0]]
+	expect(not world._scene_playable(zero_length), "zero-length intended route cannot enter a ride")
 	for id in world.playable_ids:
 		var authored: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://network/%s.json" % id))
 		expect(authored.get("reviewed", false) == true, "approved " + id)

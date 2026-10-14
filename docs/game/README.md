@@ -86,6 +86,7 @@ godot --path game_godot --script res://tests/tram_render_check.gd # нужен �
 godot --headless --path game_godot --script res://tests/reviewed_departure_check.gd # продолжение всех отмеченных сцен
 godot --headless --path game_godot --script res://tests/ride_endurance_check.gd # 40 переходов по кольцу, стабильная память, завершение только на 20-м ответе
 godot --path game_godot --script res://tests/ride_runtime_stress_check.gd -- --stress-scenes=40 --stress-dwell=6 # длительный рендер/обновления; синтетическое перемещение через обычные переходы
+godot --path game_godot --script res://tests/ride_runtime_stress_check.gd -- --stress-scenes=40 --stress-dwell=6 --stress-mixed-answers # верные/неверные ответы, таймауты, повторный тап, номера 1–20 и завершение
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
 godot --headless --path game_godot --script res://tests/embedded_io_check.gd # iOS: повторные запуски основной игры и переходы после мини-игр
@@ -165,6 +166,11 @@ godot --path game_godot --script res://tests/stitch_shader_render_check.gd # н�
 отсутствующие маршруты: `ticket_14_14/tram_a` и три участника `ticket_27_15`
 (`car_1`, `motorcycle_1`, `bus_1`). Игра не подменяет их маршрутами из старых
 шаблонов: направления шаблонов могут расходиться с заданием автора.
+
+У `ticket_27_14` выбран проезд прямо, но сохранены только маршруты поворотов.
+Пока автор не добавит соответствующий путь в редакторе, обычный заезд временно
+пропускает сцену; отметка «В игре» сохраняется. Проверка сети теперь сообщает
+об отсутствии пути прямо так же, как об отсутствии поворота.
 
 ## Сборка и установка
 
@@ -261,6 +267,7 @@ MP3 и локальный манифест не коммитятся. В Git л�
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
 - `ride-performance-2026-10-14.md` — очистка старых локаций по пути, длительный тест и диагностика dev-сборки
 - `participant-lifetime-2026-10-15.md` — нативный вылет после удаления сбитого участника и регрессионная проверка
+- `ride-completion-2026-10-15.md` — два штатных заезда, неверная нумерация HUD и оставшийся доступ к удалённому участнику
 - `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
 - `local-changes-sync-2026-10-14.md` — опубликованные локации и архивы всех локальных stash
 - `godot-roadmap.md` — что сделано и что открыто

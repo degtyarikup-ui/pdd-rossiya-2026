@@ -169,8 +169,8 @@ func _build_hud() -> void:
 	var s := _pill("hud_star", Ui.c("gold"))
 	_score = s[1]
 	row.add_child(s[0])
-	# Run progress (left) and speed (right).
-	_run_big = Ui.scaled_label("0", 20, 800, white)
+	# Current question (left) and speed (right).
+	_run_big = Ui.scaled_label("1", 20, 800, white)
 	_run_small = Ui.scaled_label(" / 20", 12, 800, white)
 	var run := HBoxContainer.new()
 	run.add_theme_constant_override("separation", 0)
@@ -261,7 +261,7 @@ func performance_hud_position() -> Vector2:
 	return Vector2(6.0 * _u, (_speed_pill.position.y + _speed_pill.size.y + 12.0) * _u)
 
 
-func set_hud(speed_kmh: int, limit_kmh, violations: int, distance_m: int, score: int, answered: int, total: int) -> void:
+func set_hud(speed_kmh: int, limit_kmh, violations: int, distance_m: int, score: int, question_number: int, total: int) -> void:
 	_speed_big.text = str(speed_kmh)
 	_limit.visible = limit_kmh != null
 	if limit_kmh != null:
@@ -269,7 +269,7 @@ func set_hud(speed_kmh: int, limit_kmh, violations: int, distance_m: int, score:
 	_violations.text = str(violations)
 	_distance.text = ("%.1f %s" % [distance_m / 1000.0, Ui.t("gameKilometers")]) if distance_m >= 1000 else ("%d %s" % [distance_m, Ui.t("gameMeters")])
 	_score.text = str(score)
-	_run_big.text = str(answered)
+	_run_big.text = str(question_number)
 	_run_small.text = " / %d" % total
 
 
