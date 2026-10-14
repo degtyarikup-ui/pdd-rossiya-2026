@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "count": 48,
+ "count": 45,
  "scenes": [
   {
    "id": "road_1_16",
@@ -374,61 +374,6 @@
    }
   },
   {
-   "id": "road_16_11",
-   "ticket": "Билет 16 · Вопрос 11",
-   "sourceQuestionId": "fdc633762f291c5a0796920bc0780667",
-   "category": "ab",
-   "kind": "road_overtake",
-   "title": "Разрешается ли Вам выполнить обгон в данной ситуации?",
-   "options": [
-    "Разрешается",
-    "Разрешается, только если скорость трактора менее 30 км/ч",
-    "Запрещается"
-   ],
-   "correctAnswerIndex": 0,
-   "explanation": "Перед Вами неравнозначный перекресток. Вы находитесь на главной дороге. Правила обгона разрешают в данной ситуации производить обгон любого транспортного средства.(Пункт 11.4 ПДД)",
-   "pddRule": "п. 11.4",
-   "legend": [
-    {
-     "label": "Вы",
-     "color": "#ED4621"
-    },
-    {
-     "label": "Трактор",
-     "color": "#2F6FD6"
-    }
-   ],
-   "sourceImage": "b1baa666b73727b83c8918386c1020a5",
-   "note": "Tractor ahead, main road (2.1): overtaking allowed at the junction.",
-   "scene": {
-    "kind": "overtake",
-    "overtake": true,
-    "junction": {
-     "z": 24,
-     "priority": "main"
-    },
-    "signs": [
-     {
-      "code": "2.1",
-      "z": 8,
-      "side": "right"
-     }
-    ],
-    "vehicles": [
-     {
-      "type": "tractor",
-      "name": "Трактор",
-      "lane": "ahead",
-      "z": 14,
-      "speed": 3,
-      "color": "#2F6FD6",
-      "badge": "Трактор",
-      "paint": "#2F6FD6"
-     }
-    ]
-   }
-  },
-  {
    "id": "road_17_5",
    "ticket": "Билет 17 · Вопрос 5",
    "sourceQuestionId": "5eba5d47b4007432fc2a8258287bae21",
@@ -693,52 +638,6 @@
     ],
     "outsideSettlement": true,
     "unmarkedRoad": true
-   }
-  },
-  {
-   "id": "road_29_11",
-   "ticket": "Билет 29 · Вопрос 11",
-   "sourceQuestionId": "8b0addcc697856fee116ab77f4d1efae",
-   "category": "ab",
-   "kind": "road_overtake",
-   "title": "Разрешается ли Вам выполнить обгон?",
-   "options": [
-    "Разрешается",
-    "Разрешается, если при этом не будут созданы помехи другим участникам движения",
-    "Запрещается"
-   ],
-   "correctAnswerIndex": 2,
-   "explanation": "Перекрёсток равнозначный. На равнозначных перекрёстках обгон запрещён.(Пункт 11.4 ПДД)",
-   "pddRule": "п. 11.4",
-   "legend": [
-    {
-     "label": "Вы",
-     "color": "#ED4621"
-    },
-    {
-     "label": "Грузовик",
-     "color": "#E8E8E8"
-    }
-   ],
-   "sourceImage": "328c10153f93fc5212d3d691bc74479a",
-   "note": "Equal unregulated junction ahead, no priority signs: overtaking prohibited (11.4).",
-   "scene": {
-    "kind": "overtake",
-    "overtake": false,
-    "junction": {
-     "z": 24,
-     "priority": "equal"
-    },
-    "vehicles": [
-     {
-      "type": "truck",
-      "name": "Грузовик",
-      "lane": "ahead",
-      "z": 14,
-      "speed": 5,
-      "color": "#E8E8E8"
-     }
-    ]
    }
   },
   {
@@ -2154,71 +2053,6 @@
      }
     ],
     "busBaySide": 1
-   }
-  },
-  {
-   "id": "road_26_9",
-   "ticket": "Билет 26 · Вопрос 9",
-   "sourceQuestionId": "e0edbc064114032f98e685fd192aaf24",
-   "category": "ab",
-   "kind": "road_observe",
-   "title": "Разрешен ли Вам разворот в этом месте?",
-   "options": [
-    "Разрешен",
-    "Разрешен, если при этом не будут созданы помехи движению маршрутных транспортных средств",
-    "Запрещен"
-   ],
-   "correctAnswerIndex": 2,
-   "explanation": "Разворот в местах остановок маршрутных транспортных средств запрещен.(Пункт 8.11 ПДД)",
-   "pddRule": "п. 8.11",
-   "legend": [
-    {
-     "label": "Вы",
-     "color": "#ED4621"
-    }
-   ],
-   "sourceImage": "998b91ea9075063c5f458d6cf9cccde5",
-   "note": "Marked bus stop on the right; no U-turn through the stop area.",
-   "scene": {
-    "kind": "observe",
-    "signs": [
-     {
-      "code": "5.16",
-      "z": 17,
-      "offsetX": -2.4
-     }
-    ],
-    "forbidUturn": [
-     6,
-     29
-    ],
-    "busStopMarking": true,
-    "trajectories": [
-     {
-      "points": [
-       [
-        -1.8,
-        6
-       ],
-       [
-        -2.6,
-        13
-       ],
-       [
-        0,
-        16
-       ],
-       [
-        2.6,
-        13
-       ],
-       [
-        1.8,
-        5
-       ]
-      ]
-     }
-    ]
    }
   },
   {
