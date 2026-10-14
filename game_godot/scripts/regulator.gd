@@ -122,7 +122,7 @@ func _setup_environment() -> void:
 	# Directional Sun Light — bright sunny daytime
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-52, 135, 0)
+	sun.rotation_degrees = Vector3(-65, 0, 0)
 	sun.light_color = Color("#FFF8EC")
 	sun.light_energy = 0.85
 	sun.shadow_enabled = true
