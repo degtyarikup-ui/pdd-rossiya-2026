@@ -22,6 +22,9 @@ func _initialize() -> void:
 	assert(image.get_pixel(512, 60).r > 0.9, "The right lane has an upward arrowhead")
 	assert(image.get_pixel(596, 188).r > 0.9, "The right lane also has a right arrowhead")
 	assert(image.get_pixel(88, 80).b > 0.7 and image.get_pixel(88, 80).r < 0.2, "Blue remains blue between the symbols")
+	var single_turns := Generator.texture([["left"], ["right"]]).get_image()
+	assert(single_turns.get_pixel(44, 80).r > 0.9, "Single left turn reaches the top")
+	assert(single_turns.get_pixel(404, 80).r > 0.9, "Single right turn reaches the top")
 	var cases := 0
 	for count in range(1, 7):
 		for mask in range(1, 8):

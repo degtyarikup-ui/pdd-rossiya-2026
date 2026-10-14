@@ -14,6 +14,11 @@ assert.equal(LaneSign.svg(saved.laneDirections), LaneSign.svg(JSON.parse(before)
 assert.equal(JSON.stringify(saved), before, 'Rendering must not mutate authored data');
 assert.deepEqual(LaneSign.dimensions(expected), {width:3, height:1.875});
 const cases = [];
+const top = lanes => Math.min(...LaneSign.geometry(lanes).heads.flat().map(p => p[1]));
+for (const direction of ['left', 'right']) {
+  assert.equal(top([[direction]]), top([['straight']]), 'Single turns reach the straight arrow height');
+}
+assert.equal(top([['left', 'right']]), 40, 'Two turn branches keep their existing height');
 for (let count = 1; count <= 6; count++) {
   for (let mask = 1; mask < 8; mask++) {
     const dirs = LaneSign.DIRECTIONS.filter((_, i) => mask & (1 << i));

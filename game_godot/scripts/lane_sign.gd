@@ -55,8 +55,9 @@ static func svg(lanes: Variant) -> String:
 			if not directions.has(pair[0]):
 				continue
 			var side: int = pair[1]
-			paths += '<path d="M%d 87V57Q%d 47 %d 47H%d"/>' % [cx, cx, cx + side * 10, cx + side * 12]
-			heads += '<polygon points="%d,47 %d,40 %d,54"/>' % [cx + side * 22, cx + side * 10, cx + side * 10]
+			var y := 20 if directions.size() == 1 else 47
+			paths += '<path d="M%d 87V%dQ%d %d %d %dH%d"/>' % [cx, y + 10, cx, y, cx + side * 10, y, cx + side * 12]
+			heads += '<polygon points="%d,%d %d,%d %d,%d"/>' % [cx + side * 22, y, cx + side * 10, y - 7, cx + side * 10, y + 7]
 		if i > 0:
 			for y in range(43, 85, 9):
 				rects += '<rect x="%d" y="%d" width="2" height="6"/>' % [MARGIN + LANE_WIDTH * i - 1, y]

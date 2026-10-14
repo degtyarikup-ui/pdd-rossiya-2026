@@ -32,8 +32,9 @@ const LaneSign = (() => {
       }
       for (const [direction, side] of [['left', -1], ['right', 1]]) {
         if (!directions.includes(direction)) continue;
-        paths.push(`M${cx} 87V57Q${cx} 47 ${cx + side * 10} 47H${cx + side * 12}`);
-        heads.push([[cx + side * 22, 47], [cx + side * 10, 40], [cx + side * 10, 54]]);
+        const y = directions.length === 1 ? 20 : 47;
+        paths.push(`M${cx} 87V${y + 10}Q${cx} ${y} ${cx + side * 10} ${y}H${cx + side * 12}`);
+        heads.push([[cx + side * 22, y], [cx + side * 10, y - 7], [cx + side * 10, y + 7]]);
       }
       if (i > 0) for (let y = 43; y <= 84; y += 9) separators.push([MARGIN + LANE_WIDTH * i - 1, y, 2, 6]);
     }
