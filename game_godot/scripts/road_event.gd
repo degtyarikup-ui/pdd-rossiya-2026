@@ -53,6 +53,8 @@ var player_hit: RoadBody = null
 var continuation := Callable()
 var police_wait := 0.0
 var police_yielded := false
+var question_signals: Array[Dictionary] = []
+var question_signals_started := false
 
 
 ## `z` is the stop line in world metres, `half` the carriageway half width (the street's).
@@ -229,6 +231,10 @@ func _vehicle(v: Dictionary) -> void:
 	if appears:
 		_hide_until_question(b)
 	_add_body(b)
+	var signal_side := Fleet.maneuver_side(_s(v, "blinker", manoeuvre))
+	if signal_side != "":
+		var end_index := 2 if manoeuvre == "overtake" else b.cum.size() - 2
+		_prepare_body_signal(b, signal_side, b.cum[maxi(0, end_index)])
 
 
 ## The bus of a bus stop (18_16, 19_16): with priority it pulls out from the kerb into the car's lane
@@ -254,6 +260,29 @@ func _bus() -> void:
 		b.stop_for = INF
 	bus = b
 	_add_body(b)
+	_prepare_body_signal(b, "L", b.cum[3])
+
+
+func _prepare_body_signal(body: RoadBody, side: String, until: float) -> void:
+	Fleet.add_blinkers(body.node, "", body.hl, body.hw)
+	question_signals.append({"body": body, "side": side, "until": until})
+
+
+func has_question_signals() -> bool:
+	return not question_signals.is_empty()
+
+
+func begin_question_signals() -> void:
+	question_signals_started = true
+	_update_question_signals()
+
+
+func _update_question_signals() -> void:
+	if not question_signals_started: return
+	for signal_data in question_signals:
+		var body: RoadBody = signal_data.body
+		var signals := body.node.get_node("vehicle_signals") as Fleet.Signals
+		signals.set_side(str(signal_data.side) if body.dist < float(signal_data.until) else "")
 
 
 ## The police car of an emergency vehicle (36_6): it comes from behind, lights on, and waits until the
@@ -371,6 +400,7 @@ func blocks_ahead(pos: Vector3, metres: float) -> bool:
 ## One frame after the approach: the participants move (after the answer), the rules report their
 ## violations (a list of rule names, each reported once per episode). `pos` and `yaw` are the car's.
 func step(dt: float, pos: Vector3, yaw: float, speed: float, hw: float, hl: float, other_obstacles: Array = []) -> Array:
+	_update_question_signals()
 	var out: Array = []
 	clock += dt
 	_animate(dt)

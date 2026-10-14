@@ -208,11 +208,11 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		actor.position = _v(a.pos)
 		actor.rotation.y = a.yaw
 		actor.scale = _v(a.scale)
-		# A participant that turns shows it: indicators on the side of the turn.
-		var side := Fleet.turn_side(a.get("path", []))
-		if side != "" and a.type in ["car", "truck", "bus", "van", "special", "tanker", "motorcycle"]:
+		# Prepare lenses while loading; they start together one second before the question.
+		var plan = a.get("signalPlan")
+		if a.type in Fleet.SIGNAL_KINDS and (Fleet.actor_signal_side(a) != "" or (plan is Array and not plan.is_empty())):
 			var k := maxf(0.01, float(a.scale[0]))
-			Fleet.add_blinkers(actor, side, float(a.get("halfLength", 2.1)) / k, float(a.get("halfWidth", 0.9)) / k)
+			Fleet.add_blinkers(actor, "", float(a.get("halfLength", 2.1)) / k, float(a.get("halfWidth", 0.9)) / k)
 		s.add_child(actor)
 		s.actors.append(actor)
 		if a.badge != null:

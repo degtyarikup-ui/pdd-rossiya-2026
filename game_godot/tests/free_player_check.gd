@@ -112,6 +112,8 @@ func run() -> void:
 	world.tip_step = -1
 	var angles: Array = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/free_player_angles.json"))
 	for angle in angles:
+		world._clear_question_signals()
+		world.controls.set_active(true)
 		network.data.layout.player.pose = angle.pose
 		network._routes["approach"] = RoadNetwork._pts(angle.approach)
 		var start: Dictionary = world._approach_start(sit, 45.0)
@@ -140,6 +142,8 @@ func run() -> void:
 
 	# Manual steering into a kerb still counts: the narrow assisted-arrival classification
 	# must not suppress the driver's real input or make the body leave the carriageway.
+	world._clear_question_signals()
+	world.controls.set_active(true)
 	world.phase = "driving"
 	world.drive_faults.clear()
 	world.drive.pos = sit.global_transform * Vector3(-3.1, 0, -50)

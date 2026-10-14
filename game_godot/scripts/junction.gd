@@ -122,6 +122,7 @@ var motions: Array[Motion] = []
 var released := false
 var resolution = null            # Dictionary while the player passes through
 var complete := false            # the player has left by an exit
+var question_signals_started := false
 var spec: Dictionary
 ## World-supplied road continuation in local coordinates, beyond the authored arrow.
 var continuation := Callable()
@@ -371,8 +372,27 @@ func _hold_pending(a: Motion) -> bool:
 	return false
 
 
+## Participants announce their saved intentions together at question capture.
+func has_question_signals() -> bool:
+	return data.actors.any(func(a): return Fleet.actor_signal_side(a) != "")
+
+
+func begin_question_signals() -> void:
+	question_signals_started = true
+	_update_signals()
+
+
+func _update_signals() -> void:
+	if not question_signals_started: return
+	for i in motions.size():
+		var signals := motions[i].node.get_node_or_null("vehicle_signals") as Fleet.Signals
+		if signals:
+			signals.set_side(Fleet.actor_signal_side(data.actors[i], motions[i].distance))
+
+
 ## updateActors (the participants of this junction). `player` in local coords.
 func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion:
+	_update_signals()
 	var boxes := []
 	for m in motions:
 		if not m.done:

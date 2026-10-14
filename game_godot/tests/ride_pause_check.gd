@@ -111,6 +111,9 @@ func _run() -> void:
 	world.drive.pos = sit.global_transform * stop
 	world.drive.yaw = SceneStitch.yaw(sit.basis * Vector3(sin(float(sit.data.playerStartRotY)), 0, cos(float(sit.data.playerStartRotY))))
 	world._update_junction(1.0 / 60.0)
+	for i in 60:
+		if world.phase == "question": break
+		world._update_junction(1.0 / 60.0)
 	check(world.phase == "question", "Actual question opens at its authored stop position")
 	await create_timer(0.7).timeout
 	var chip: Control = world.ui._card.get_meta("box").get_child(0).get_child(0)

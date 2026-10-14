@@ -11,6 +11,7 @@ const PAINTS := ["#F2F3F5", "#F2F3F5", "#E8E8E8", "#B9C0C7", "#B9C0C7", "#6E7680
 ## The ring traffic: car models with their weights, and the big vehicles (one of each in the flow).
 const CARS := ["sedan", "sedan", "hatch", "hatch", "wagon", "suv", "suv", "coupe", "pickup"]
 const BIG := ["bus", "truck", "van", "dps", "taxi"]
+const SIGNAL_KINDS := ["car", "truck", "bus", "van", "special", "tanker", "motorcycle", "tram", "tractor"]
 
 
 static func paint(rng: RandomNumberGenerator) -> Color:
@@ -124,10 +125,32 @@ static func turn_side(path: Array) -> String:
 	return "L" if ang > 0.0 else "R"
 
 
+static func maneuver_side(maneuver: String) -> String:
+	if maneuver in ["left", "turn_left", "turn_left_at_junction", "uturn"]: return "L"
+	if maneuver in ["right", "turn_right"]: return "R"
+	return ""
+
+
+## Saved signals/intent are authoritative: an edited curve can have a misleading tangent.
+static func actor_signal_side(actor: Dictionary, distance := 0.0) -> String:
+	if not str(actor.get("type", "")) in SIGNAL_KINDS: return ""
+	var plan = actor.get("signalPlan")
+	if plan is Array and not plan.is_empty():
+		for span in plan:
+			if distance >= float(span.from) and distance < float(span.to):
+				return maneuver_side(str(span.side))
+		return ""
+	if distance >= float(actor.get("clearDistance", INF)): return ""
+	var config: Dictionary = actor.get("config", {})
+	if config.get("targetAction") != null:
+		return maneuver_side(str(config.targetAction))
+	return turn_side(actor.get("path", []))
+
+
 ## Turn indicators pulse the authored lens surfaces; dimensions stay for the collision API.
 static func add_blinkers(vehicle: Node3D, side: String, hl: float, hw: float, height := 0.75) -> void:
 	var signals := _signals(vehicle)
-	signals.side = side
+	signals.set_side(side)
 
 
 ## A short hazard indication after contact, using the original model's lights.
@@ -228,6 +251,12 @@ class Signals extends Node:
 	var side := ""
 	var hazard_left := 0.0
 	var clock := 0.0
+
+	func set_side(next: String) -> void:
+		if side == next: return
+		side = next
+		clock = 0.0
+		_process(0.0) # The first lit pulse appears immediately, before the question lead-in.
 
 	func _process(delta: float) -> void:
 		clock += delta

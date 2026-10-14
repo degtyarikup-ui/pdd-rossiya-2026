@@ -70,6 +70,7 @@ godot --headless --path game_godot --script res://tests/exit_loading_check.gd # 
 godot --headless --path game_godot --script res://tests/pause_actor_check.gd # заморозка независимых и физических участников в паузе
 godot --headless --path game_godot --script res://tests/game_ui_check.gd # анимации, фото, компактный HUD и окно паузы
 godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # штатные линзы, мигание и синхронное процедурное свечение
+godot --headless --path game_godot --script res://tests/question_signals_check.gd # намерения игрока/участников, поворотники за секунду до вопроса и пауза
 godot --headless --path game_godot --script res://tests/signal_glow_check.gd # свечение и цвета секций светофора без текстур
 godot --headless --path game_godot --script res://tests/ride_pause_check.gd # быстрый старт, цвет, звук, сохранение состояния при паузе
 godot --path game_godot --resolution 1280x900 --script res://tests/signal_glow_check.gd # нужен широкий кадр: видимое свечение, включая пакетный трафик
@@ -93,6 +94,15 @@ godot --path game_godot --script res://tests/stitch_shader_render_check.gd # н�
 Участники самой задачи сохраняются. Припаркованные машины учитываются по
 реальным габаритам на всём кольце: NPC заранее объезжает их, пропускает встречный
 поток или останавливается, если законного и безопасного места для объезда нет.
+
+Если у игрока или участника задания задан поворот/разворот, нужные поворотники
+включаются на остановке за одну активную секунду до карточки. Отсчёт ответа
+начинается после этой секунды; пауза замораживает подготовку и мигание.
+Направление игрока берётся из `spec.maneuver`, участников — из `signalPlan`
+или `config.targetAction`; геометрия маршрута используется только при отсутствии
+заданного намерения. Разворот включает левый сигнал. Трамваи также показывают
+поворот; в дорожных заданиях учтены заданные сигналы машин и выезд автобуса
+с остановки. После манёвра участник выключает сигнал.
 
 ## Сборка и установка
 

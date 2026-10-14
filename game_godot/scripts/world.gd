@@ -53,6 +53,9 @@ var blinkers := {}                        # "L"/"R" -> authored lens materials
 const BLINK_COLOUR := Color("#FFB300")
 var steer_hold := 0.0
 var blink := { "side": "", "left": 0.0, "clock": 0.0 }
+var question_signal_id := ""
+var question_signal_elapsed := 0.0
+var question_signal_side := ""
 var tier := "high"
 var street_half := Street.ROAD_HALF   # carriageway half-width of the ring street (a multi-lane exit widens it)
 var leaves: Leaves                # autumn only
@@ -1185,6 +1188,10 @@ func _update_junction(dt: float) -> void:
 		# An already visible background vehicle leaves normally before the card appears.
 		# The reserved approach prevents new arrivals; neither the scene actors nor timer start change.
 		if not _ambient_stage_clear(): return
+		var intended_side := Fleet.maneuver_side(str(sit.data.spec.get("maneuver", "")))
+		if question_signal_id != sit.id:
+			current.junction.begin_question_signals()
+		if not _prepare_question_signals(sit.id, intended_side, current.junction.has_question_signals(), dt): return
 		phase = "question"
 		if sit.data.speedLimit != null:
 			limit_kmh = int(sit.data.speedLimit)
@@ -1226,6 +1233,9 @@ func _update_road(dt: float) -> void:
 		drive.pos.z = road.stop_z
 		drive.speed = 0
 		if not _ambient_stage_clear(): return
+		if question_signal_id != road.id:
+			road.begin_question_signals()
+		if not _prepare_question_signals(road.id, "", road.has_question_signals(), dt): return
 		road_phase = "question"
 		phase = "question"
 		question_over = false
@@ -1327,6 +1337,7 @@ func _on_road_answer(index: int) -> void:
 
 
 func _road_resume() -> void:
+	_clear_question_signals()
 	road_phase = "passed"
 	phase = "driving"
 	controls.set_active(true)
@@ -1337,6 +1348,7 @@ func _road_resume() -> void:
 func answer(correct: bool) -> void:
 	if phase != "question" or not current:
 		return
+	_clear_question_signals()
 	if not correct:
 		current.junction.release()
 	current.junction.resolve(drive)
@@ -2201,9 +2213,10 @@ func _process(delta: float) -> void:
 		controls.gas = true
 	if topdown_cam_locked:
 		return
-	drive.accelerating = controls.gas and phase != "question"
+	var waiting_signals := phase == "driving" and question_signal_id != ""
+	drive.accelerating = controls.gas and phase != "question" and not waiting_signals
 	drive.braking = controls.brake
-	drive.steering = controls.steer if phase != "question" else 0.0
+	drive.steering = controls.steer if phase != "question" and not waiting_signals else 0.0
 	var limit := drive.max_speed
 	if current and phase == "driving":
 		var sit: Situation = current.sit
@@ -2232,7 +2245,7 @@ func _process(delta: float) -> void:
 		limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * road_distance)))
 	drive.assist_enabled = phase == "driving"
 	var was_recovering := drive.recovery > 0.0
-	if phase != "question" and phase != "over":
+	if phase != "question" and phase != "over" and not waiting_signals:
 		drive.integrate(delta, limit)
 	if was_recovering and drive.recovery <= 0.0:
 		drive_faults.clear()   # the impact is over: the next one is a new violation
@@ -2450,6 +2463,27 @@ func _question_framing() -> Dictionary:
 	return { "look": look, "size": size }
 
 
+## Capture stays stationary and the answer timer starts only after a full second of signals.
+func _prepare_question_signals(id: String, side: String, participants: bool, delta: float) -> bool:
+	if question_signal_id != id:
+		question_signal_id = id
+		question_signal_elapsed = 0.0
+		question_signal_side = side
+		controls.set_active(false)
+		blink.side = side
+		blink.clock = 0.0
+		_update_lamps(0.0)
+	else:
+		question_signal_elapsed += delta
+	return (side == "" and not participants) or question_signal_elapsed >= 1.0 - 0.000001
+
+
+func _clear_question_signals() -> void:
+	question_signal_id = ""
+	question_signal_side = ""
+	blink.left = 2.2
+
+
 ## Stop lamps and indicators, as updateBlinkers() in game.js: holding an
 ## arrow for 0.3 s turns the indicator on; it keeps blinking 2.2 s after.
 func _update_lamps(delta: float) -> void:
@@ -2460,7 +2494,9 @@ func _update_lamps(delta: float) -> void:
 	brake_mat.emission_energy_multiplier = 6.0
 	for glow in brake_glows: glow.visible = lit
 	steer_hold = steer_hold + delta if controls.steer != 0 else 0.0
-	if controls.steer != 0 and steer_hold >= 0.3:
+	if question_signal_id != "":
+		blink.side = question_signal_side
+	elif controls.steer != 0 and steer_hold >= 0.3:
 		blink.side = "L" if controls.steer > 0 else "R"
 		blink.left = 2.2
 	elif blink.side != "":
