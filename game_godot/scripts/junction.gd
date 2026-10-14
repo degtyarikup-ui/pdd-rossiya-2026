@@ -179,7 +179,13 @@ func _init(sit: Situation) -> void:
 		m.stop_at = a.stopAtDistance
 		m.stop_for = INF if str(a.stopFor) == "inf" else a.stopFor
 		m.hold_for = a.holdFor
-		m.stays_put = bool(a.get("staysPut", false)) or bool(a.get("config", {}).get("stationary", false)) or (a.get("stopAtDistance", -1) == 0 and str(a.get("stopFor")) == "inf")
+		# The editor's explicit moving/standing flag wins over archived model defaults.
+		# Some formerly parked templates still carry stationary + a permanent stop at zero.
+		var legacy_parked: bool = bool(a.get("config", {}).get("stationary", false)) or (a.get("stopAtDistance", -1) == 0 and str(a.get("stopFor")) == "inf")
+		m.stays_put = bool(a.staysPut) if a.has("staysPut") else legacy_parked
+		if not m.stays_put and a.has("staysPut") and m.stop_at == 0 and m.stop_for == INF and not m.hold_for:
+			m.stop_at = null
+			m.stop_for = null
 		m.config_waits_for_player = bool(a.get("waitsForPlayer", true))
 		m.waits_for_player = true
 		for n in m.node.find_children("wheel_*", "", true, false):
@@ -316,19 +322,15 @@ static func _as_dict(m: Motion) -> Dictionary:
 	return { "config": m.config, "path": m.path, "clear": m.clear_distance, "hw": m.hw, "hl": m.hl }
 
 
-## releaseTraffic: a wrong answer or a timeout — traffic goes by its right of
-## way (yieldTo first), the player waits.
+## A wrong answer/timeout starts the same authored traffic order while the explanation
+## is open. An answer never grants another car priority over the player.
 func release() -> void:
 	if released:
 		return
 	released = true
-	if situation.lights.size() and _light_state() != "flashing_yellow":
+	if situation.lights.size() and _light_state() != "flashing_yellow" and not data.get("redWait"):
 		set_lights("green")
-	var ordered := _ordered()
-	for i in ordered.size():
-		var a: Motion = ordered[i]
-		a.waits_for_player = false
-		a.dependencies = ordered.slice(0, i).filter(func(b): return paths_conflict(_as_dict(a), _as_dict(b)))
+	_plan_traffic()
 
 
 func _light_state() -> String:
@@ -349,17 +351,22 @@ func resolve(player: Drive) -> void:
 	var yields: Array = spec.yieldTo
 	var yielding := motions.filter(func(m): return m.id in yields)
 	resolution = { "yielding": yielding, "faults": {}, "elapsed": 0.0, "recovery": 0.0 }
+	if situation.lights.size() and _light_state() != "flashing_yellow" and not data.get("redWait"):
+		set_lights("green")
+	_plan_traffic()
+
+
+## The question's saved priorities, waits and concurrency apply to every answer.
+func _plan_traffic() -> void:
 	var maneuver: String = str(spec.maneuver) if spec.maneuver != null else "straight"
 	var exit: Dictionary = data.exits.get(maneuver, data.exits.get("straight"))
 	var intended := { "config": {}, "path": Path.new(exit.points), "clear": 1e9, "hw": 0.9, "hl": 2.0 }
 	intended.clear = intended.path.length
-	if situation.lights.size() and _light_state() != "flashing_yellow" and not data.get("redWait"):
-		set_lights("green")
-	var ordered := yielding + motions.filter(func(m): return not (m in yielding))
+	var ordered := _ordered()
 	for i in ordered.size():
 		var a: Motion = ordered[i]
 		a.dependencies = ordered.slice(0, i).filter(func(b): return paths_conflict(_as_dict(a), _as_dict(b)))
-		a.waits_for_player = not released and not (a in yielding) and a.config_waits_for_player and paths_conflict(_as_dict(a), intended)
+		a.waits_for_player = not complete and not (a.id in spec.yieldTo) and a.config_waits_for_player and paths_conflict(_as_dict(a), intended)
 
 
 ## followingSpeed: keep a safe gap to whoever drives ahead in the same direction.
@@ -576,7 +583,7 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 		if a.stays_put:
 			a.cleared = true
 			continue
-		if resolution == null and not released:
+		if resolution == null and not released and not complete:
 			continue
 		if not a.active and not a.waits_for_player and a.dependencies.all(func(b): return b.cleared):
 			a.active = true

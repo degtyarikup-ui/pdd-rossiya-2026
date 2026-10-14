@@ -1709,13 +1709,15 @@ func _on_answer_chosen(index: int) -> void:
 		GameSound.buzz(150)
 	if index >= 0:
 		ui.mark_answer(index, right)
+	# Priority traffic starts on the answer tap, during the card's feedback animation.
+	# Other participants retain their authored wait for the player's completed pass.
+	current.junction.release()
 	if is_correct:
 		# The card stays a moment so the green answer is seen, then the car goes.
 		await _wait_active(0.9)
 		ui.hide_cards()
 		answer(true)
 	else:
-		current.junction.release()
 		await _wait_active(0.9 if index >= 0 else 0.0)
 		ui.show_explanation(text, right, index < 0)
 
