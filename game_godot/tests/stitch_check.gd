@@ -17,6 +17,8 @@ func _initialize() -> void:
 	var profiles := {}
 	for id in ids:
 		var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://network/%s.json"%id))
+		# Standalone mini-games do not enter the city question stream.
+		if not str(data.get("miniGame","")).is_empty(): continue
 		var built: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://network/build/%s.json"%id))
 		var profile := SceneStitch.describe(data,built)
 		profiles[id]=profile

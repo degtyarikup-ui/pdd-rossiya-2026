@@ -41,12 +41,20 @@ const Layout = (() => {
   const medianOf = (st) => (st.kind === "yard" ? 0 : Number(st.median) || (st.kind === "highway" ? 3 : 0));
   const widthOf = (st) => kindOf(st).width + medianOf(st);
 
-  // A highway joins the city's four-lane ports before the 24 m runtime clipping plane.
+  // Highway ends continue 3+3 unless the author explicitly requests an avenue port.
+  const highwayPort = (st, end) => st.ends?.[end]?.port === "avenue" ? "avenue" : "highway";
+  function setHighwayPort(st, end, mode) {
+    st.ends = st.ends || {};
+    st.ends[end] = { ...(st.ends[end] || {}) };
+    if (mode === "avenue") st.ends[end].port = "avenue";
+    else delete st.ends[end].port;
+  }
   // At an internal two-street joint the narrower neighbour defines the target section.
   function highwayEnds(L, st, crop) {
-    return [st.a, st.b].map(nid => {
+    return [st.a, st.b].map((nid,i) => {
       const kind = nodeKind(L, nodeOf(L, nid), crop);
-      if (kind === "border") return { nid, width: 14, median: 0, border: true };
+      if (kind === "border") return highwayPort(st,i === 0 ? "a" : "b") === "avenue"
+        ? { nid, width: 14, median: 0, border: true } : null;
       if (kind === "joint") {
         const next = streetsAt(L, nid).find(s => s !== st);
         if (next?.kind === "avenue") return { nid, width: widthOf(next), median: medianOf(next), border: false };
@@ -59,12 +67,12 @@ const Layout = (() => {
     if (st.kind !== "highway") return { width, median, blend: 1 };
     const total = polyLen(centreline(L, st)), ends = highwayEnds(L, st, crop);
     const count = ends.filter(Boolean).length;
-    const length = Math.min(70, Math.max(12, total / (count === 2 ? 2 : 1) - 12));
+    const length = Math.min(70, Math.max(42, total / (count === 2 ? 2 : 1) - 12));
     let profile = { width, median, blend: 1 };
     ends.forEach((end, i) => {
       if (!end) return;
       const distance = i === 0 ? d : total - d;
-      const plain = end.border ? Math.min(34, length - 8) : 0;
+      const plain = end.border ? 34 : 0;
       const t = Math.max(0, Math.min(1, (distance - plain) / (length - plain)));
       const blend = t * t * (3 - 2 * t);
       if (blend < profile.blend) profile = { width: end.width + (width - end.width) * blend,
@@ -300,8 +308,12 @@ const Layout = (() => {
       // lines (cars turn round its nose); signs and lights can stand on it.
       if (medianOf(st) > 0 && body.length >= 2) {
         const m = medianOf(st);
-        const a0 = d0 > 0 ? d0 + 1.0 : (borderA ? 30 : 0), a1 = d1 < total ? d1 - 1.0 : total - (borderB ? 30 : 0);
+        const a0 = d0 > 0 ? d0 + 1.0 : (borderA && !highway ? 30 : 0), a1 = d1 < total ? d1 - 1.0 : total - (borderB && !highway ? 30 : 0);
         const strip = cut(line, Math.max(0, a0), Math.min(total, a1));
+        // A continuous divider is cut by the same crop plane as its road, so
+        // the builder must not round a median nose exactly on the scene border.
+        if (highway && borderA && d0 < 0) strip.unshift(pts[0]);
+        if (highway && borderB && d1 > total) strip.push(pts.at(-1));
         if (strip.length >= 2) {
           const island = highway ? profileOutline(L,st,densePath(strip,1.5),crop,true) : outline(strip,m);
           if (island.length >= 3) roadItem.holes.push(island);
@@ -1249,7 +1261,7 @@ const Layout = (() => {
   }
 
   return {
-    medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile,
+    medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile, highwayPort, setHighwayPort,
     applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
     isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, editPlayerRoute, setPlayerRouteManual,

@@ -237,6 +237,17 @@ def triangulate(geom):
     """Constrained triangulation of polygons with holes -> (flat xz list, index list)."""
     verts, segs, holes = [], [], []
     parts = list(geom.geoms) if hasattr(geom, "geoms") else [geom]
+    # Valid polygon components may touch at one vertex (e.g. a divider cap
+    # clipped at the scene border). Triangle cannot accept duplicate PSLG
+    # vertices from separate components and may crash the editor process.
+    if len(parts) > 1:
+        indices = []
+        for part in parts:
+            pv, pt = triangulate(part)
+            base = len(verts) // 2
+            verts.extend(pv)
+            indices.extend(i + base for i in pt)
+        return verts, indices
     for p in parts:
         if p.is_empty or p.geom_type != "Polygon" or p.area < 1e-4:
             continue

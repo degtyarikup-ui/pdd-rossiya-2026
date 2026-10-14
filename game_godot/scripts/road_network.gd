@@ -271,6 +271,7 @@ func _add_kerbs(st: SurfaceTool, scenery: Scenery, uv_z: float) -> void:
 
 func _add_end_medians(st: SurfaceTool,scenery: Scenery,uv_xf: Transform3D) -> void:
 	for binding in stitch_bindings:
+		if _continuous_highway(binding): continue
 		var median: float = binding.get("median",0.0)
 		if median<=0.001: continue
 		var port: Dictionary = binding.port
@@ -303,6 +304,7 @@ func _join_collar(poly: Array) -> bool:
 	for p: Vector3 in poly: centre += p
 	centre /= poly.size()
 	for binding in stitch_bindings:
+		if _continuous_highway(binding): continue
 		var transverse: Array[float]=[]
 		for p: Vector3 in poly: transverse.append((p-binding.port.p).dot(SceneStitch.right(binding.port.out)))
 		# Wide transverse paint is a crossing/stop line, never a median-border endcap.
@@ -311,7 +313,9 @@ func _join_collar(poly: Array) -> bool:
 		var x: float = absf((centre-binding.port.p).dot(SceneStitch.right(binding.port.out)))
 		var median: float = binding.get("median", 0.0)
 		if median>0.01 and distance>=-0.001 and distance<SceneStitch.END_BLEND and x<median*0.5+1.0: return true
-		var lane_dash: bool = int(binding.port.get("lanes", 2)) == 4 and absf(x-median*0.5-3.5) < 0.4
+		var lanes := int(binding.port.get("lanes",2))
+		var lane_dash := lanes>=4 and absf(x-median*0.5-3.5)<0.6
+		if lanes==6: lane_dash=lane_dash or absf(x-median*0.5-7.0)<0.6
 		var centre_dash: bool = median < 0.01 and binding.port.get("centre", "") == "dashed" and x < 0.4
 		if distance >= -0.001 and distance < 2.001 and not lane_dash and not centre_dash: return true
 	return false
@@ -321,6 +325,7 @@ func _add_join_marks(st: SurfaceTool) -> void:
 	st.set_uv2(Vector2.ZERO)
 	st.set_uv(Vector2.ZERO)
 	for binding in stitch_bindings:
+		if _continuous_highway(binding): continue
 		var port: Dictionary = binding.port
 		if port.get("surface", "asphalt") == "sand": continue
 		var lateral := SceneStitch.right(port.out)
@@ -328,7 +333,8 @@ func _add_join_marks(st: SurfaceTool) -> void:
 		var median: float = binding.get("median", 0.0)
 		var strokes: Array[float] = []
 		if port.get("edge", true): strokes.append_array([-half+0.25,half-0.25])
-		if median > 0.01: strokes.append_array([-median*0.5-0.2,median*0.5+0.2])
+		if median > 0.01:
+			if not _continuous_highway(binding): strokes.append_array([-median*0.5-0.2,median*0.5+0.2])
 		elif port.get("centre", "") == "solid": strokes.append(0.0)
 		elif port.get("centre", "") == "double": strokes.append_array([-0.15,0.15])
 		for x in strokes:
@@ -345,8 +351,15 @@ func _join_median(poly: Array) -> bool:
 	for p: Vector3 in poly: centre+=p
 	centre/=poly.size()
 	for binding in stitch_bindings:
+		if _continuous_highway(binding): continue
 		var median: float=binding.get("median",0.0)
 		var distance: float=-(centre-binding.port.p).dot(binding.port.out)
 		var x: float=absf((centre-binding.port.p).dot(SceneStitch.right(binding.port.out)))
 		if median>0.01 and distance>=-0.001 and distance<SceneStitch.END_BLEND and x<median*0.5+1.0: return true
 	return false
+
+## New highway dividers already reach the clipped contact. Their existing top,
+## walls and border strokes follow the same warp as the road; a rectangular
+## replacement would introduce a step when two authors choose different widths.
+func _continuous_highway(binding: Dictionary) -> bool:
+	return binding.port.get("highway",false) and int(binding.port.get("lanes",2))==6 and float(binding.port.get("median",0.0))>0.01

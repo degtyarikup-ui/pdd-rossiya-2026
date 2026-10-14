@@ -5,6 +5,7 @@ extends RefCounted
 const END_INSET := 24.0
 const END_BLEND := 10.0
 const WALK_WIDTH := 3.2
+const HIGHWAY_TRANSITION := 90.0
 
 static func v(p) -> Vector3:
 	return Vector3(float(p[0]), 0.0, float(p[1]))
@@ -55,13 +56,17 @@ static func describe(data: Dictionary, built: Dictionary) -> Dictionary:
 			var sample := along(from_edge, END_INSET)
 			var kind := str(st.get("kind", "street"))
 			var median := float(st.get("median", 0.0)) if kind != "yard" else 0.0
-			# Highway source sections have 3+3 lanes; the editor finishes a 2+2 taper
-			# before END_INSET so the city connects them to ordinary four-lane scenes.
-			if kind == "highway": median = 0.0
-			var width: float = {"yard":5.0,"street":8.4,"avenue":14.0,"highway":14.0}.get(kind,8.4) + median
+			if kind == "highway" and median <= 0.0: median = 3.0
+			var width: float = {"yard":5.0,"street":8.4,"avenue":14.0,"highway":21.0}.get(kind,8.4) + median
 			var port := _port(sample.p, -sample.t, width, built)
+			# The built section is authoritative, including older saved highway scenes
+			# that still end at 2+2 until the author resaves them in the editor.
+			var lanes := 4 if kind == "avenue" else 2
+			if kind == "highway":
+				lanes = 6 if float(port.width)-float(port.median)>18.0 else 4
+				median = float(port.median)
 			port.merge({"id": str(st.id)+":"+str(end), "street": st.id, "node": st.a if end == 0 else st.b,
-				"boundary":boundary, "lanes":4 if kind in ["avenue","highway"] else 2, "declared_median":median,
+				"boundary":boundary, "lanes":lanes, "declared_median":median, "highway":kind=="highway",
 				"walk":st.get("walk",true) and st.get("surface", "asphalt") != "sand", "edge":st.get("edge",true),
 				"surface":st.get("surface", "asphalt"),"centre":"none" if st.get("manualMarks",false) else st.get("centre","none" if kind=="yard" else "double" if kind in ["avenue","highway"] else "dashed")}, true)
 			ports.append(port)
@@ -121,18 +126,35 @@ static func _crossings(ring: Array, p: Vector3, out: Vector3) -> Array:
 
 static func _port(p: Vector3, out: Vector3, width: float, built: Dictionary) -> Dictionary:
 	var lo := -width/2.0;var hi := width/2.0;var median := 0.0
+	var left: Array = [];var opposite: Array = []
+	var spanning := false
 	for road in built.get("carriageway", []):
 		var xs := _crossings(road.outer,p,out)
 		for i in range(0,xs.size()-1,2):
 			if xs[i]<=0.5 and xs[i+1]>=-0.5:
 				lo=xs[i];hi=xs[i+1]
+				spanning=true
+			elif xs[i+1]<0.5:
+				left.append([xs[i],xs[i+1]])
+			elif xs[i]>-0.5:
+				opposite.append([xs[i],xs[i+1]])
 		for hole in road.get("holes",[]):
 			var hs := _crossings(hole,p,out)
 			if hs.size()>=2 and hs[0]<0.5 and hs[-1]>-0.5: median=hs[-1]-hs[0]
+	# A divider continued to the edge splits the built carriageway into two
+	# polygons instead of making a hole. Measure the two nearest road sections.
+	if not spanning and not left.is_empty() and not opposite.is_empty():
+		left.sort_custom(func(a,b): return a[1]>b[1])
+		opposite.sort_custom(func(a,b): return a[0]<b[0])
+		lo=float(left[0][0]);hi=float(opposite[0][1])
+		median=maxf(0.0,float(opposite[0][0])-float(left[0][1]))
 	return {"p":p+right(out)*(lo+hi)/2.0,"out":out,"width":hi-lo,"median":median}
 
 static func match_score(a: Dictionary, b: Dictionary) -> float:
-	return (1000.0 if a.lanes!=b.lanes else 0.0) + (200.0 if a.surface!=b.surface else 0.0) + (50.0 if absf(a.declared_median-b.declared_median)>0.1 else 0.0) + absf(a.width-b.width) + (5.0 if a.walk!=b.walk else 0.0)
+	return 500.0*absf(float(a.lanes)-float(b.lanes)) + (200.0 if a.surface!=b.surface else 0.0) + (50.0 if absf(a.declared_median-b.declared_median)>0.1 else 0.0) + absf(a.width-b.width) + (5.0 if a.walk!=b.walk else 0.0)
+
+static func needs_highway_transition(a: Dictionary,b: Dictionary) -> bool:
+	return int(a.get("lanes",2))!=int(b.get("lanes",2)) and (int(a.get("lanes",2))==6 or int(b.get("lanes",2))==6)
 
 ## Place the next entrance exactly against the previous exit, with tangents opposed.
 static func placement(entry: Dictionary, exit: Dictionary, previous := Transform3D()) -> Transform3D:
@@ -215,8 +237,10 @@ static func surface_blend(p: Vector3,bindings: Array) -> float:
 static func median_at(p: Vector3,bindings: Array) -> bool:
 	for binding in bindings:
 		var median: float = binding.get("median",0.0)
-		if median<=0.001: continue
 		var d: float = -(p-binding.port.p).dot(binding.port.out)
+		if int(binding.port.get("lanes",2))==6 and binding.port.get("highway",false):
+			median=lerpf(float(binding.port.get("median",0.0)),median,smoothstep(END_BLEND,0.0,d))
+		if median<=0.001: continue
 		if d>=-0.001 and d<=END_BLEND and absf((p-binding.port.p).dot(right(binding.port.out)))<median/2.0-0.001: return true
 	return false
 

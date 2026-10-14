@@ -548,10 +548,19 @@
   function streetInspector(p, ref, st) {
     const s = state.S, L = s.layout, crop = s.crop || 90;
     const centre = st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed");
-    const ends = [st.a, st.b].map((nid) => {
+    const allEnds = [st.a, st.b].map((nid) => {
       const n = Layout.nodeOf(L, nid), kind = Layout.nodeKind(L, n, crop);
       return { nid, end: nid === st.a ? "a" : "b", kind, set: (st.ends || {})[nid === st.a ? "a" : "b"] || {} };
-    }).filter((e) => e.kind === "junction" || e.kind === "ring" || e.kind === "dead");
+    });
+    const ends = allEnds.filter((e) => e.kind === "junction" || e.kind === "ring" || e.kind === "dead");
+    const highwayEnds = allEnds.filter(e => e.kind === "border");
+    const endName = e => {
+      const n = Layout.nodeOf(L,e.nid);
+      const side = Math.abs(n.x) > Math.abs(n.z) ? (n.x > 0 ? "слева" : "справа") : (n.z > 0 ? "сверху" : "снизу");
+      return `${side} · ${e.end === "a" ? "начало" : "конец"}`;
+    };
+    const roadLength = Layout.polyLen(Layout.centreline(L,st));
+    const shortHighway = st.kind === "highway" && Math.max(...Array.from({length:21},(_,i) => Layout.streetProfile(L,st,roadLength*i/20,crop).blend)) < .99;
     const pl = Layout.playerPlan(s);
     const isPlayer = pl && pl.st.id === st.id;
     const offsetText = v => v === 0 ? "Без сдвига" : `${Math.abs(v).toFixed(1)} м ${v < 0 ? "ближе" : "дальше"}`;
@@ -560,7 +569,11 @@
       ${card("Ширина", chips("kind", Object.entries(Layout.KINDS).map(([k, v]) => ({ value: k, html: `<span class="road-pic k-${k}"></span>`, title: v.title })), st.kind || "street", { cls: "tiles" }))}
       ${st.kind !== "yard" ? card("Разделительная полоса", chips("median", [...(st.kind === "highway" ? [] : [{ value: 0, title: "Нет" }]), { value: 2, title: "2 м" }, { value: 3, title: "3 м" }, { value: 5, title: "5 м" }], Layout.medianOf(st))
         + `<p class="muted">Газон с бордюром посередине. На него можно ставить знаки и светофоры: кликните прямо на полосу.</p>`) : ""}
-      ${st.kind === "highway" ? card("Стык с обычной дорогой", `<p>По 3 полосы в каждом направлении. У края сцены — плавный переход в 2+2: крайняя полоса сливается со второй, разделитель заканчивается. Внутри сцены такой переход создаётся при соединении с «Проспектом».</p>`) : ""}
+      ${st.kind === "highway" ? card("Стыки трассы", `<p class="muted">Сквозная трасса соединяет вопросы без сужений. Игра добавляет переход 90 м только при смене на обычную дорогу. Для перехода внутри этой сцены выберите «Дорога 2+2» у нужного конца.</p>
+        ${highwayEnds.map(e => `<label>Край ${endName(e)}</label>${chips(`port-${e.end}`, [{value:"highway",title:"Трасса 3+3"},{value:"avenue",title:"Дорога 2+2"}], Layout.highwayPort(st,e.end))}`).join("")}
+        ${highwayEnds.length === 2 ? `<p class="muted">Готовые варианты ${isPlayer ? "по ходу игрока" : "от начала к концу"}:</p><div class="insp-actions">${[["through","Сквозная"],["entry","Въезд на трассу"],["exit","Выезд с трассы"],["both","Оба перехода"]].map(([v,t]) => `<button class="btn ghost" data-act="highway-preset" data-preset="${v}">${t}</button>`).join("")}</div>` : ""}
+        ${shortHighway ? `<p class="warn">Переходы занимают весь этот короткий участок. Удлините дорогу или выберите сквозные стыки: игра построит переход за пределами вопроса.</p>` : ""}
+        <p class="muted">Шесть полос и разделитель сохраняются на стыке 3+3. Внутри сцены соединение с «Проспектом» плавно переходит к его ширине.</p>`) : ""}
       ${st.kind !== "yard" && !Layout.medianOf(st) ? card("Линия по центру", chips("centre", [{ value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" },
         { value: "double", html: `<span class="mark-pic m-double"></span>`, tip: "Двойная сплошная" }, { value: "none", title: "Нет" }], centre, { cls: "tiles" })) : ""}
       ${st.kind !== "yard" ? card("Разметка вручную", st.manualMarks
@@ -589,6 +602,13 @@
       "chip:kind": (v) => App.edit(() => { st.kind = v; }),
       "chip:centre": (v) => App.edit(() => { st.centre = v; }),
       "chip:median": (v) => App.edit(() => { if (Number(v)) st.median = Number(v); else delete st.median; }),
+      ...Object.fromEntries(highwayEnds.map(e => [`chip:port-${e.end}`, v => App.edit(() => Layout.setHighwayPort(st,e.end,v))])),
+      "highway-preset": d => App.edit(() => {
+        const exit = isPlayer ? (pl.nid === st.a ? "a" : "b") : "b";
+        const entry = exit === "a" ? "b" : "a";
+        for (const e of highwayEnds) Layout.setHighwayPort(st,e.end,
+          d.preset === "both" || (d.preset === "entry" && e.end === entry) || (d.preset === "exit" && e.end === exit) ? "avenue" : "highway");
+      }),
       "toggle:walk": (on) => App.edit(() => { if (on) delete st.walk; else st.walk = false; }),
       straighten: () => App.edit(() => { st.bend = null; }),
       "marks-own": () => App.edit((sc) => {

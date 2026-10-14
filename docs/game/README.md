@@ -76,6 +76,9 @@ godot --headless --path game_godot --script res://tests/ride_pause_check.gd # б
 godot --path game_godot --resolution 1280x900 --script res://tests/signal_glow_check.gd # нужен широкий кадр: видимое свечение, включая пакетный трафик
 godot --path game_godot --script res://tests/building_fade_check.gd # нужен рендер: пачки прозрачных зданий и переиспользование
 godot --headless --path game_godot --script res://tests/median_join_check.gd # границы разделительных островов
+tools/network/.venv/bin/python tools/network/tests/highway_check.py # фикстуры сквозных трасс и переходов, сохранение, сборка, весь кузов
+godot --headless --path game_godot --script res://tests/highway_check.gd # реальные стыки 3+3 и 2+2 по фикстурам предыдущей команды
+godot --headless --path game_godot --script res://tests/highway_run_check.gd # цепочка вопросов, переход 90 м, кривой въезд, разделители и кузов
 godot --headless --path game_godot --script res://tests/ambient_lane_check.gd # фоновые машины и разделитель на стыке
 godot --path game_godot --script res://tests/sound_check.gd # аудио: запуск, выключение, включение и освобождение
 godot --path game_godot --script res://tests/occlusion_render_check.gd # нужен рендер: прозрачность зданий

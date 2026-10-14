@@ -104,6 +104,7 @@ var auto_answer := false          # debug: answer correctly by itself
 var spawn_after := 0.0            # world z after which the next junction may come
 var texture_frame := Transform3D()
 var pending_connection := {}
+var street_connector := {}       # runtime-only lane transition between unlike highway ports
 var connection_cache := {}
 var insert_road := false
 
@@ -522,6 +523,7 @@ func _blank(index: int) -> bool:
 ## junction's approach (two lanes) over the last Street.TAPER metres: a multi-lane street meets
 ## it in a taper, not in one step.
 func _half_at(z: float) -> float:
+	if not street_connector.is_empty(): return float(street.profile_at(z).width)*0.5
 	# Connected scenes carry their real profile; the old forced two-lane taper is only a legacy fallback.
 	for j in _junctions():
 		if j.sit.network and not j.sit.network.connections.entry.is_empty(): return street_half
@@ -536,7 +538,7 @@ func _half_at(z: float) -> float:
 func _place_chunk(slot: int, index: int) -> void:
 	chunk_index[slot] = index
 	var ranges := _street_ranges(index)
-	var signature := hash([index, ranges, street.profile, street_half, texture_frame])
+	var signature := hash([index, ranges, street.profile, street_connector, street_half, texture_frame])
 	if chunk_signatures.get(slot) == signature:
 		return
 	chunk_signatures[slot] = signature
@@ -550,6 +552,7 @@ func _rebuild_ring() -> void:
 		var span: Array = j.sit.street_interval()
 		if not span.is_empty(): blanks.append(span)
 	street.texture_frame = texture_frame
+	street.connector = street_connector
 	if not pending_connection.is_empty(): street.profile=pending_connection.port
 	elif current and current.sit.network: street.profile=current.sit.network.connections.entry
 	var first := int(floor(drive.pos.z / L)) - int(cfg.chunks_behind)
@@ -643,6 +646,10 @@ func road_supports(p: Vector3) -> bool:
 	for b in blanks:
 		if p.z > b[0] and p.z < b[1]:
 			return false
+	if not street_connector.is_empty():
+		for node in road_nodes:
+			if node.mesh and (_street_ground(node).at(node.global_transform.affine_inverse()*p) & GroundMap.ROAD) != 0: return true
+		return false
 	return absf(p.x) <= _half_at(p.z) and absf(p.x) >= float(street.profile.get("median", 0.0))*0.5
 
 
@@ -881,6 +888,10 @@ func _knock_down(visual: Node3D) -> RigidBody3D:
 func _guide_target(p: Vector3) -> Vector3:
 	if not current or phase != "driving":
 		return Vector3.INF
+	if not street_connector.is_empty() and p.z<float(street_connector.end):
+		var ahead_z := p.z+6.0
+		var blend := smoothstep(float(street_connector.start),float(street_connector.end),ahead_z)
+		return Vector3(lerpf(float(street_connector.from_x),float(street_connector.to_x),blend),0,ahead_z)
 	var sit: Situation = current.sit
 	if not sit.network or not sit.network.has_route("approach"):
 		return Vector3.INF
@@ -981,7 +992,10 @@ func _scene_connections(id: String) -> Dictionary:
 	var path := "res://network/%s.json" % id
 	var built := "res://network/build/%s.json" % id
 	if not FileAccess.file_exists(path) or not FileAccess.file_exists(built): return {}
-	var profile := SceneStitch.describe(JSON.parse_string(FileAccess.get_file_as_string(path)),JSON.parse_string(FileAccess.get_file_as_string(built)))
+	var data: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
+	var profile := SceneStitch.describe(data,JSON.parse_string(FileAccess.get_file_as_string(built)))
+	var turn: String=str(data.get("question",{}).get("maneuver",data.get("spec",{}).get("maneuver","straight")))
+	profile["preferred_exit"]=profile.exits.get(turn,{})
 	connection_cache[id]=profile
 	return profile
 
@@ -998,23 +1012,19 @@ func _next_id() -> String:
 		next_port = current.sit.network.connections.exits.get(maneuver, {})
 	if next_port.is_empty(): return bag.pop_front()
 	var best := 0;var score := INF
+	var through_highway := false
+	for id in bag:
+		var candidate: Dictionary=_scene_connections(str(id))
+		if int(candidate.get("entry",{}).get("lanes",2))==6 and int(candidate.get("preferred_exit",{}).get("lanes",6))==6: through_highway=true
 	for i in bag.size():
-		var entry: Dictionary = _scene_connections(str(bag[i])).get("entry",{})
+		var candidate: Dictionary=_scene_connections(str(bag[i]))
+		var entry: Dictionary = candidate.get("entry",{})
 		if entry.is_empty(): continue
+		if through_highway and int(entry.get("lanes",2))==6 and int(candidate.get("preferred_exit",{}).get("lanes",6))!=6: continue
 		var cost := SceneStitch.match_score(next_port,entry)
 		if cost<score: score=cost;best=i
-	# Prefer another scene with the same number of lanes over an unnecessary lane-drop road.
-	if score>=1000.0:
-		var ids: Array = playable_ids.duplicate()
-		ids.shuffle()
-		for id in ids:
-			var entry: Dictionary = _scene_connections(id).get("entry",{})
-			if entry.is_empty(): continue
-			var cost := SceneStitch.match_score(next_port,entry)
-			if cost<score:
-				score=cost
-				if not bag.has(id): bag.append(id)
-				best=bag.find(id)
+	# Pick only from remaining questions. Re-adding a compatible scene from the
+	# full list can loop forever on a highway or starve its first entrance.
 	var id: String = bag[best]
 	bag.remove_at(best)
 	return id
@@ -1040,6 +1050,7 @@ func _build_staged(id: String) -> void:
 			if current and current.sit.network:
 				var previous: Situation=current.sit
 				for out in previous.network.connections.exits.values():
+					if SceneStitch.needs_highway_transition(out,entry): continue
 					var profile:=SceneStitch.joint_profile(out,entry)
 					var candidate:=Situation.bindings_with([],entry,float(profile.width),profile)
 					if not bases.has(candidate): bases.append(candidate)
@@ -1069,16 +1080,33 @@ func _maybe_spawn() -> void:
 	if not entry.is_empty():
 		var anchor := {"p":Vector3(0,0,zc-crop+SceneStitch.END_INSET),"out":Vector3.BACK}
 		if not pending_connection.is_empty(): anchor=pending_connection.port
-		sit.transform=SceneStitch.placement(entry,anchor)
 		var width := float(entry.width)
+		# A first highway also gets an entrance from the initial ordinary street.
+		if pending_connection.is_empty() and int(entry.lanes)==6:
+			anchor.merge({"width":street_half*2.0,"lanes":4 if street_half>6.5 else 2,
+				"median":street.profile.get("median",0.0),"declared_median":street.profile.get("median",0.0),
+				"walk":street.profile.get("walk",true),"edge":true,"centre":"dashed","surface":"asphalt"},true)
+		var transition := SceneStitch.needs_highway_transition(anchor,entry)
+		var placement_anchor: Dictionary = anchor.duplicate()
+		if transition:
+			placement_anchor.p=anchor.p+anchor.out*SceneStitch.HIGHWAY_TRANSITION
+		sit.transform=SceneStitch.placement(entry,placement_anchor)
 		if not pending_connection.is_empty():
-			var profile := SceneStitch.joint_profile(entry,anchor)
-			width=profile.width
 			var previous: Situation = pending_connection.sit
-			if previous != null: previous.bind_end(pending_connection.local_port,width,scenery,texture_frame,profile)
-			sit.bind_end(entry,width,scenery,texture_frame,profile)
+			if transition:
+				if previous != null: previous.bind_end(pending_connection.local_port,float(anchor.width),scenery,texture_frame)
+				sit.bind_end(entry,width,scenery,texture_frame)
+			else:
+				var profile := SceneStitch.joint_profile(entry,anchor)
+				width=profile.width
+				if previous != null: previous.bind_end(pending_connection.local_port,width,scenery,texture_frame,profile)
+				sit.bind_end(entry,width,scenery,texture_frame,profile)
 		else:
 			sit.bind_end(entry,width,scenery,texture_frame)
+		if transition:
+			var target: Vector3 = sit.transform*_route_contact(sit.network.route("approach"),entry)
+			street_connector={"start":float(anchor.p.z),"end":float(placement_anchor.p.z),"from":anchor.duplicate(),"to":entry.duplicate(),
+				"from_x":drive.pos.x,"to_x":target.x}
 		street_half=width/2.0
 		zc=sit.position.z
 	else:
@@ -1125,6 +1153,15 @@ func _maybe_spawn() -> void:
 		drive.yaw = SceneStitch.yaw(sit.basis * approach_pose.forward)
 	_rebuild_ring()
 	_rebase_timing("activate_ring_and_lanes",activation)
+
+## Approach tails outside END_INSET are clipped from the game. A connector aims
+## at the route's real contact with the entry plane, including curved entrances.
+func _route_contact(points: PackedVector2Array,port: Dictionary) -> Vector3:
+	for i in points.size()-1:
+		var a:=Vector3(points[i].x,0,points[i].y);var b:=Vector3(points[i+1].x,0,points[i+1].y)
+		var da: float=(a-port.p).dot(port.out);var db: float=(b-port.p).dot(port.out)
+		if (da>=0.0)!=(db>=0.0) and absf(da-db)>0.00001: return a.lerp(b,da/(da-db))
+	return port.p if points.is_empty() else Vector3(points[0].x,0,points[0].y)
 
 
 ## A stable pose a given distance before the question, sampled on its saved approach route.
@@ -1497,6 +1534,8 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	_build_ground()
 	perf_step=_rebase_timing("ground",perf_step)
 	street_half=float(port.width)/2.0
+	street_connector={}
+	street.connector={}
 	pending_connection={"port":port.duplicate(),"local_port":port,"sit":sit}
 	pending_connection.port.p=Vector3.ZERO
 	pending_connection.port.out=Vector3.BACK
@@ -1505,7 +1544,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	phase="driving"
 	spawn_after=drive.pos.z
 	# Additional straights contain a road episode; empty filler straights are not added between tickets.
-	insert_road=road_force!=""
+	insert_road=road_force!="" and int(port.lanes)!=6
 	if insert_road: road_after=drive.pos.z
 	_rebuild_ring()
 	perf_step=_rebase_timing("rebuild_ring",perf_step)
@@ -1837,7 +1876,7 @@ func _ambient_quiet_gap(car: Dictionary) -> float:
 ## Smoothly move toward the centre before a parked body, then return after the entire tail clears.
 ## If no supported/legal gap exists or an oncoming car occupies it, wait with bumper clearance.
 func _ambient_park_plan(car: Dictionary) -> Dictionary:
-	var nominal: float = -car.dir * _ambient_lane_offset()
+	var nominal: float = -car.dir * _ambient_lane_offset(float(car.z))
 	var target := nominal
 	var wait_gap := INF
 	for bodies in street.parked_bodies.values():
@@ -1848,8 +1887,9 @@ func _ambient_park_plan(car: Dictionary) -> Dictionary:
 			if ahead > 65.0 or ahead < -tail: continue
 			var inner: float = absf(body.p.x) - body.hw - float(car.get("hw", 0.95)) - 0.4
 			if inner >= absf(nominal): continue
-			var median: float = float(street.profile.get("median", 0.0)) * 0.5
-			var minimum := median + float(car.get("hw", 0.95)) + 0.15 if median > 0.0 or street.profile.get("centre", "dashed") != "dashed" else -0.2
+			var at: Dictionary=street.profile_at(float(body.p.z))
+			var median: float = float(at.get("median", 0.0)) * 0.5
+			var minimum := median + float(car.get("hw", 0.95)) + 0.15 if median > 0.0 or at.get("centre", "dashed") != "dashed" else -0.2
 			var passing_x: float = signf(nominal) * inner
 			var supported := inner >= minimum and _departure_clear(Vector3(passing_x, 0, body.p.z), Vector3(0, 0, car.dir), float(car.get("hw", 0.95)), float(car.len) * 0.5)
 			var opposite_clear := true
@@ -1871,7 +1911,6 @@ func _ambient_park_plan(car: Dictionary) -> Dictionary:
 func _update_traffic(delta: float) -> void:
 	var span := L * chunk_count
 	var behind := drive.pos.z - L * float(cfg.chunks_behind)
-	var lane := _ambient_lane_offset()
 	var solids: Array = []
 	for obstacle in obstacles(): solids.append({"source": obstacle, "body": obstacle.footprint()})
 	solids.append({"source": null, "body": drive.footprint()})
@@ -1884,7 +1923,7 @@ func _update_traffic(delta: float) -> void:
 		if (car.z < behind or car.z > behind + span) and not _ambient_visible(car):
 			var entry := car.duplicate()
 			entry.z = behind + 16.0 + float(car.len) * 0.5 if car.dir > 0 else behind + span - 16.0 - float(car.len) * 0.5
-			entry.x = -car.dir * lane
+			entry.x = -car.dir * _ambient_lane_offset(float(entry.z))
 			entry.yaw = 0.0 if car.dir > 0.0 else PI
 			if not _ambient_visible(entry) and not _ambient_in_quiet_zone(entry):
 				car.z = entry.z; car.x = entry.x; car.yaw = entry.yaw
@@ -2812,10 +2851,12 @@ func _safe_ambient_lane(car: Dictionary, ahead := 0.0) -> Vector3:
 	return Vector3.INF
 
 
-func _ambient_lane_offset() -> float:
-	var median_half: float=maxf(float(street.profile.get("median",0.0)),float(street.profile.get("declared_median",0.0)))*0.5
-	var lane_count: int=maxi(1,int(street.profile.get("lanes",2))/2)
-	return median_half+(street_half-median_half)/lane_count*0.5
+func _ambient_lane_offset(z := INF) -> float:
+	var at: Dictionary=street.profile_at(drive.pos.z if z==INF else z)
+	var median_half: float=float(at.get("median",0.0))*0.5
+	var lane_count: int=maxi(1,int(at.get("lanes",2))/2)
+	var lane_width: float=at.get("lane_width",(float(at.get("width",street_half*2.0))*0.5-median_half)/lane_count)
+	return median_half+lane_width*0.5
 
 
 func _rebase_timing(label: String, start: int) -> int:

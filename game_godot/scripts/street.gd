@@ -37,6 +37,7 @@ var parked := {}                  # car id -> Scenery.Pool (baked material)
 var texture_frame := Transform3D()
 var visible_ranges: Array = []
 var profile := {}
+var connector := {}               # start/end and source/target ports; never saved into a question
 
 var parked_spots := {}            # ring slot -> [Vector3] parked cars there (they are solid: world.gd obstacles)
 var parked_bodies := {}           # exact model footprints, visible to NPCs regardless of player distance
@@ -141,7 +142,6 @@ func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), r
 func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 	var sandy: bool = profile.get("surface","asphalt")=="sand"
 	var asphalt := Color("#c2a570") if sandy else Color("#2C2F36")
-	var median: float = profile.get("median",0.0)
 	var pave := sc.color("sidewalk")
 	var mark := Color("#F2F4F8")
 	var z := 0.0
@@ -155,19 +155,25 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 			continue
 		var ha := _half(half_at, z0 + z)
 		var hb := _half(half_at, z0 + ze)
+		var pa := profile_at(z0+z);var pb := profile_at(z0+ze)
+		var ma := float(pa.get("median",0.0))*0.5;var mb := float(pb.get("median",0.0))*0.5
 		_quad(st, -ha, ha, -hb, hb, z, ze, ROAD_LEVEL, asphalt, "" if sandy else "asphalt", z0)
 		for side: float in [-1.0, 1.0]:
 			# Pavement: SIDEWALK metres out from the kerb, and the kerb itself.
 			var ea := side * ha
 			var eb := side * hb
-			if profile.get("walk",true) and not sandy:
-				_quad(st,ea,ea+side*SIDEWALK,eb,eb+side*SIDEWALK,z,ze,KERB,pave,"pavement",z0)
+			var wa := float(pa.get("walk_width",SIDEWALK if pa.get("walk",true) else 0.0))
+			var wb := float(pb.get("walk_width",SIDEWALK if pb.get("walk",true) else 0.0))
+			if maxf(wa,wb)>0.001 and not sandy:
+				_quad(st,ea,ea+side*wa,eb,eb+side*wb,z,ze,KERB,pave,"pavement",z0)
 				_kerb(st,ea,eb,z,ze,pave,side)
 			if profile.get("edge",true) and not sandy:
 				_quad(st,side*(ha-0.325),side*(ha-0.175),side*(hb-0.325),side*(hb-0.175),z,ze,MARK_LEVEL,mark,"",z0)
-		if median>0.001:
-			_quad(st,-median/2.0,median/2.0,-median/2.0,median/2.0,z,ze,KERB+0.005,sc.color("ground"),"grass",z0)
-			for side in [-1.0,1.0]: _kerb(st,side*median/2.0,side*median/2.0,z,ze,pave,-side)
+		if maxf(ma,mb)>0.001:
+			_quad(st,-ma,ma,-mb,mb,z,ze,KERB+0.005,sc.color("ground"),"grass",z0)
+			for side in [-1.0,1.0]:
+				_kerb(st,side*ma,side*mb,z,ze,pave,-side)
+				_quad(st,side*(ma+0.125),side*(ma+0.275),side*(mb+0.125),side*(mb+0.275),z,ze,MARK_LEVEL,mark,"",z0)
 		z = ze
 	# Centre dashes 1.5: 2 m dash, 3 m gap, phase from world z.
 	z = ceilf(z0 / 5.0) * 5.0 - z0
@@ -175,17 +181,61 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 		for span in visible_ranges:
 			var a := maxf(z,float(span[0]));var b := minf(minf(z+2.0,L),float(span[1]))
 			if b<=a or sandy: continue
-			if median<=0.001 and profile.get("centre","dashed")=="dashed": _flat(st,-0.09,0.09,a,b,MARK_LEVEL,mark,"",z0)
-			if _half(half_at,z0+a)>6.5:
-				for side in [-1.0,1.0]: _flat(st,side*(median/2.0+3.5)-0.065,side*(median/2.0+3.5)+0.065,a,b,MARK_LEVEL,mark,"",z0)
+			var pa := profile_at(z0+a);var pb := profile_at(z0+b)
+			var median: float=maxf(float(pa.get("median",0.0)),float(pb.get("median",0.0)))
+			if median<=0.001 and pa.get("centre","dashed")=="dashed": _flat(st,-0.09,0.09,a,b,MARK_LEVEL,mark,"",z0)
+			var lanes_a := lane_boundaries(z0+a,_half(half_at,z0+a));var lanes_b := lane_boundaries(z0+b,_half(half_at,z0+b))
+			for lane in mini(lanes_a.size(),lanes_b.size()):
+				for side in [-1.0,1.0]: _quad(st,side*lanes_a[lane]-0.065,side*lanes_a[lane]+0.065,side*lanes_b[lane]-0.065,side*lanes_b[lane]+0.065,a,b,MARK_LEVEL,mark,"",z0)
 		z += 5.0
-	if not sandy and median<=0.001 and profile.get("centre","") in ["solid","double"]:
-		for span in visible_ranges:
-			if profile.centre=="solid": _flat(st,-0.065,0.065,span[0],span[1],MARK_LEVEL,mark,"",z0)
-			else:
-				for x in [-0.15,0.15]: _flat(st,x-0.065,x+0.065,span[0],span[1],MARK_LEVEL,mark,"",z0)
+	if not sandy:
+		z=0.0
+		while z<L:
+			var end := minf(z+STRIP,L)
+			var at := profile_at(z0+(z+end)*0.5)
+			if float(at.get("median",0.0))<=0.001 and at.get("centre","") in ["solid","double"]:
+				for span in visible_ranges:
+					var a:=maxf(z,float(span[0]));var b:=minf(end,float(span[1]))
+					if b<=a: continue
+					if at.centre=="solid": _flat(st,-0.065,0.065,a,b,MARK_LEVEL,mark,"",z0)
+					else:
+						for x in [-0.15,0.15]: _flat(st,x-0.065,x+0.065,a,b,MARK_LEVEL,mark,"",z0)
+			z=end
 	# No ground here: the world's one lawn (world.gd _build_ground) lies under everything.
 	# Stacked grass planes a few centimetres apart flicker on a phone's depth buffer.
+
+## A highway lane drop lives between scenes, leaving question geometry intact.
+## Inner lanes keep their width; only boundaries of disappearing outer lanes meet the edge.
+func profile_at(z: float) -> Dictionary:
+	if connector.is_empty(): return profile
+	var a: Dictionary=connector.from;var b: Dictionary=connector.to
+	var t := smoothstep(float(connector.start),float(connector.end),z)
+	var result: Dictionary=a.duplicate() if t<0.5 else b.duplicate()
+	result.width=lerpf(float(a.width),float(b.width),t)
+	result.median=lerpf(float(a.get("median",0.0)),float(b.get("median",0.0)),t)
+	var aw: float=(float(a.width)-float(a.get("median",0.0)))/maxi(2,int(a.get("lanes",2)))
+	var bw: float=(float(b.width)-float(b.get("median",0.0)))/maxi(2,int(b.get("lanes",2)))
+	result.lane_width=lerpf(aw,bw,t)
+	result.walk_width=lerpf(SIDEWALK if a.get("walk",true) else 0.0,SIDEWALK if b.get("walk",true) else 0.0,t)
+	return result
+
+func lane_boundaries(z: float,half: float) -> Array[float]:
+	var result: Array[float]=[]
+	if connector.is_empty():
+		var median := float(profile.get("median",0.0))*0.5
+		var lanes := maxi(int(profile.get("lanes",4 if half>6.5 else 2))/2,1)
+		for lane in range(1,lanes): result.append(median+(half-median)*lane/lanes)
+		return result
+	var a: Dictionary=connector.from;var b: Dictionary=connector.to
+	var t := smoothstep(float(connector.start),float(connector.end),z)
+	var na := maxi(int(a.lanes)/2,1);var nb := maxi(int(b.lanes)/2,1)
+	for lane in range(1,maxi(na,nb)):
+		var am := float(a.get("median",0.0))*0.5;var bm := float(b.get("median",0.0))*0.5
+		var ax := am+(float(a.width)*0.5-am)*mini(lane,na)/na
+		var bx := bm+(float(b.width)*0.5-bm)*mini(lane,nb)/nb
+		var x := lerpf(ax,bx,t)
+		if half-x>0.25: result.append(x)
+	return result
 
 
 func _half(half_at: Callable, z: float) -> float:

@@ -230,12 +230,25 @@ const App = (() => {
     state.sel = [];
     state.savedJson = snapshotText();
     state.dirty = false;
+    // Older highway saves contain automatic tapers at both borders. Refresh only the
+    // generated geometry in memory; manual edits and the on-disk source wait for Save.
+    if (state.S.layout?.streets?.some(st => st.kind === "highway")) {
+      Layout.apply(state.S);
+      if (snapshotText() !== state.savedJson) {
+        state.undo.push(state.savedJson);
+        state.dirty = true;
+      }
+    }
     Tools.set("select");
-    Scene3D.load(state.S, r.build);
+    Scene3D.load(state.S, state.dirty ? null : r.build);
     showHome(false);
     history.replaceState(null, "", `?scene=${sid}`);
     renderTop();
     App.renderPanels?.();
+    if (state.dirty) {
+      schedulePreview();
+      toast("Трасса пересобрана по настройкам стыков. Сохраните, чтобы обновить игру.", "good");
+    }
     if (typeof Framing !== "undefined") Framing.refresh();
   }
   const sceneTitle = (sid) => {
