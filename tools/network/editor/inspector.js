@@ -493,6 +493,7 @@
     }).filter((e) => e.kind === "junction" || e.kind === "ring" || e.kind === "dead");
     const pl = Layout.playerPlan(s);
     const isPlayer = pl && pl.st.id === st.id;
+    const offsetText = v => v === 0 ? "Без сдвига" : `${Math.abs(v).toFixed(1)} м ${v < 0 ? "ближе" : "дальше"}`;
     p.innerHTML = `${head(`<span class="ibadge">${ic("road")}</span>`, Layout.KINDS[st.kind || "street"].title, isPlayer ? "по ней едет игрок" : "")}
       ${card("Покрытие", chips("surface", [{ value: "asphalt", title: "Асфальт" }, { value: "sand", title: "Грунт" }], st.surface || "asphalt"))}
       ${card("Ширина", chips("kind", Object.entries(Layout.KINDS).map(([k, v]) => ({ value: k, html: `<span class="road-pic k-${k}"></span>`, title: v.title })), st.kind || "street", { cls: "tiles" }))}
@@ -506,7 +507,12 @@
       ${card("", toggle("walk", "Тротуары", st.walk !== false && st.surface !== "sand", "person") + toggle("edge", "Боковая сплошная", st.edge !== false && st.surface !== "sand", "marking") + (st.bend ? button("straighten", "Выпрямить", "road", "ghost wide") : `<p class="muted">Тяните ромб на середине, чтобы изогнуть.</p>`))}
       ${ends.length ? card("У перекрёстка", ends.map((e, i) => `<div class="end-row"><span>${ends.length > 1 ? `Конец ${i + 1}` : "Въезд"}</span>
           <button class="pick ${e.set.stop ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="stop">${ic("stopline")}Стоп-линия</button>
-          <button class="pick ${e.set.zebra ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="zebra">${ic("zebra")}Зебра</button></div>`).join("")) : ""}
+          <button class="pick ${e.set.zebra ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="zebra">${ic("zebra")}Зебра</button></div>
+          ${e.kind === "junction" ? (() => {
+            const value = Layout.endOffset(L, st, e.nid, crop), limits = Layout.endOffsetLimits(L, st, e.nid, crop);
+            return slider(`approach-${e.end}`, Number(st.median) ? "Островок и стоп-линия" : "Положение стоп-линии", value, limits.min, limits.max, 0.1, offsetText(value))
+              + `<label>Сдвиг, м<input type="number" min="${limits.min}" max="${limits.max}" step="0.1" data-text="approach-${e.end}" value="${value}" style="width:100%"></label><p class="muted">Отрицательное значение — ближе к перекрёстку, положительное — дальше. Конец островка, стоп-линия и зебра двигаются вместе.</p><button class="btn ghost wide" data-act="approach-reset" data-nid="${e.nid}">${ic("restart")}Вернуть исходное положение</button>`;
+          })() : ""}`).join("")) : ""}
       ${card("Игрок едет по ней", `<div class="insp-actions">${[st.a, st.b].map((nid) => {
         const on = isPlayer && pl.nid === nid;
         const k = Layout.nodeKind(L, Layout.nodeOf(L, nid), crop);
@@ -534,6 +540,17 @@
         st.ends[d.end] = { ...(st.ends[d.end] || {}) };
         st.ends[d.end][d.what] = !st.ends[d.end][d.what];
       }),
+      "approach-reset": d => App.edit(sc => Layout.setEndOffset(sc, st.id, d.nid, 0)),
+      ...Object.fromEntries(ends.filter(e => e.kind === "junction").flatMap(e => [
+        [`slider:approach-${e.end}`, live((sc, v) => Layout.setEndOffset(sc, st.id, e.nid, v), v => {
+          const value = Layout.endOffset(state.S.layout, Layout.streetOf(state.S.layout, st.id), e.nid, crop);
+          const label = pane().querySelector(`[data-shown="approach-${e.end}"]`);
+          if (label) label.textContent = offsetText(value);
+          const field = pane().querySelector(`[data-text="approach-${e.end}"]`);
+          if (field) field.value = value;
+        })],
+        [`text:approach-${e.end}`, v => App.edit(sc => Layout.setEndOffset(sc, st.id, e.nid, Number(v)))],
+      ])),
       player: (d) => App.edit((sc) => { sc.layout.player = { street: st.id, toward: d.toward }; }),
     });
   }

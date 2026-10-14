@@ -151,12 +151,46 @@ const Layout = (() => {
   // Where the stop line of a street end lies (from the node), with or without a zebra before it.
   function stopDistance(L, st, nid, crop) {
     // The player's stop moved by hand (dragging the car in the editor): metres from the junction.
-    if (L.player && L.player.street === st.id && L.player.toward === nid && L.player.stopAt) return L.player.stopAt;
+    if (L.player && L.player.street === st.id && L.player.toward === nid && L.player.stopAt) return L.player.stopAt + endOffset(L, st, nid, crop);
     const end = (st.ends || {})[endOf(st, nid)] || {};
     const n = nodeOf(L, nid);
     const gap = gapAt(L, st, nid, crop);
     if (nodeKind(L, n, crop) === "ring") return gap + (end.zebra ? ZEBRA_LEN + 1.0 : 0.0) + 0.5;
-    return Math.max(gap, 4) + (end.zebra ? ZEBRA_LEN + 1.5 : 0) + 1.5;
+    return Math.max(gap, 4) + (end.zebra ? ZEBRA_LEN + 1.5 : 0) + 1.5 + endOffset(L, st, nid, crop);
+  }
+
+  // Move an approach's island nose and paint together, leaving the junction and border fixed.
+  // Five metres removes the kerb-rounding setback while keeping the zebra outside cross traffic.
+  function endOffsetLimits(L, st, nid, crop) {
+    const total = polyLen(centreline(L, st));
+    const far = otherEnd(st, nid), farKind = nodeKind(L, nodeOf(L, far), crop);
+    const otherGap = medianOf(st) && farKind === "border" ? 30 : Math.max(0, gapAt(L, st, far, crop));
+    const end = (st.ends || {})[endOf(st, nid)] || {};
+    const player = L.player?.street === st.id && L.player.toward === nid ? L.player : null;
+    const base = player?.stopAt || Math.max(gapAt(L, st, nid, crop), 4) + (end.zebra ? ZEBRA_LEN + 1.5 : 0) + 1.5;
+    // Two junction ends share the strip; each may shorten its own half, leaving a visible island.
+    const available = medianOf(st) && farKind === "junction" ? total / 2 : total - otherGap;
+    return { min: -5, max: Math.max(0, Math.min(60, available - base - 5)) };
+  }
+  function endOffset(L, st, nid, crop) {
+    if (nodeKind(L, nodeOf(L, nid), crop) !== "junction") return 0;
+    const limits = endOffsetLimits(L, st, nid, crop);
+    const value = Number((st.ends || {})[endOf(st, nid)]?.approachOffset) || 0;
+    return Math.max(limits.min, Math.min(limits.max, value));
+  }
+  function setEndOffset(scene, streetId, nid, value) {
+    const st = streetOf(scene.layout, streetId), crop = scene.crop || 90;
+    if (!st || ![st.a, st.b].includes(nid) || !Number.isFinite(value)) return false;
+    const before = endOffset(scene.layout, st, nid, crop);
+    const key = endOf(st, nid);
+    st.ends = st.ends || {};
+    st.ends[key] = { ...(st.ends[key] || {}), approachOffset: value };
+    const after = endOffset(scene.layout, st, nid, crop);
+    if (after) st.ends[key].approachOffset = r3(after); else delete st.ends[key].approachOffset;
+    const pl = scene.layout.player;
+    // Preserve the author's chosen distance before the line; a free question pose stays fixed.
+    if (pl?.street === st.id && pl.toward === nid && pl.mode !== "free" && pl.questionAt != null) pl.questionAt = r3(pl.questionAt + after - before);
+    return true;
   }
 
   // ---- generation ---------------------------------------------------------------------
@@ -252,7 +286,7 @@ const Layout = (() => {
           mark({ type: "stop", width: 0.4, points: [P(s), P(add(s, mul(right(tin), w / 2)))] });
         }
         if (end.zebra) {
-          const at = kind === "ring" ? gapAt(L, st, nid, crop) + ZEBRA_LEN / 2 : Math.max(gapAt(L, st, nid, crop), 4) + 0.5 + ZEBRA_LEN / 2;
+          const at = kind === "ring" ? gapAt(L, st, nid, crop) + ZEBRA_LEN / 2 : Math.max(gapAt(L, st, nid, crop), 4) + 0.5 + ZEBRA_LEN / 2 + endOffset(L, st, nid, crop);
           const c = along(from, at).p;
           mark({ type: "zebra", length: ZEBRA_LEN, points: [P(add(c, mul(right(tin), -w / 2))), P(add(c, mul(right(tin), w / 2)))] });
         }
@@ -1108,7 +1142,7 @@ const Layout = (() => {
 
   return {
     medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf,
-    applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
+    applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
     isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, editPlayerRoute, setPlayerRouteManual,
   };
