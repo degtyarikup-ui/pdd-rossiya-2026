@@ -7,6 +7,8 @@ signal tier_changed(tier: String)
 var tier := "high"
 var speed_kmh := 0.0
 var snapshot := Callable()
+var position_source := Callable()
+var _bg: PanelContainer
 const LOG_PATH := "user://ride-performance.jsonl"
 const PREVIOUS_LOG_PATH := "user://ride-performance-previous.jsonl"
 const LOG_LIMIT := 262144
@@ -34,7 +36,7 @@ func _ready() -> void:
 	layer = 20
 	if visible and Engine.has_singleton("PddHost"):
 		var host = Engine.get_singleton("PddHost")
-		if host.has_method("performanceLogDirectory"):
+		if host.has_java_method("performanceLogDirectory"):
 			var directory := str(host.performanceLogDirectory())
 			_log_path = directory.path_join("ride-performance.jsonl")
 			_previous_log_path = directory.path_join("ride-performance-previous.jsonl")
@@ -42,6 +44,7 @@ func _ready() -> void:
 	if visible and FileAccess.file_exists(_log_path):
 		DirAccess.rename_absolute(_log_path, _previous_log_path)
 	var bg := PanelContainer.new()
+	_bg = bg
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0, 0, 0, 0.62)
 	style.set_corner_radius_all(6)
@@ -50,7 +53,7 @@ func _ready() -> void:
 	style.content_margin_top = 4
 	style.content_margin_bottom = 4
 	bg.add_theme_stylebox_override("panel", style)
-	bg.position = Vector2(6, 54)
+	bg.position = position_source.call() if position_source.is_valid() else Vector2(6, 54)
 	_label = Label.new()
 	_label.add_theme_font_size_override("font_size", 11)
 	_label.add_theme_color_override("font_color", Color.WHITE)
@@ -87,6 +90,7 @@ func _process(delta: float) -> void:
 	_clock += delta
 	if _clock < 1.0:
 		return
+	if position_source.is_valid(): _bg.position = position_source.call()
 	var calls := RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
 	var tris := RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)
 	var objects := RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME)
@@ -103,10 +107,10 @@ func _process(delta: float) -> void:
 	var write_log := _log_clock >= 5.0
 	if write_log and Engine.has_singleton("PddHost"):
 		var host = Engine.get_singleton("PddHost")
-		if host.has_method("processMemoryMb"): _pss = int(host.processMemoryMb())
-	_label.text = "GODOT %d FPS  %.1f ms (max %d, >33 ms %d)\nGPU %d  %dk tri  %d obj\n%.0f MB / VRAM %.0f MB / PSS %s\n%s\n%s\n%d ms / %s: %s\n%s" % [
+		if host.has_java_method("processMemoryMb"): _pss = int(host.processMemoryMb())
+	_label.text = "GODOT %d FPS  %.1f ms (max %d, >33 ms %d)\nGPU %d  %dk tri  %d obj\n%s / VRAM %.0f MB / PSS %s\n%s\n%s\n%d ms / %s: %s\n%s" % [
 		Engine.get_frames_per_second(), _sum / _frames, _worst, _slow, calls, tris / 1000, objects,
-		mem, vmem, str(_pss) + " MB" if _pss >= 0 else "—",
+		str(roundi(mem)) + " MB" if mem > 0 else "—", vmem, str(_pss) + " MB" if _pss >= 0 else "—",
 		Ui.t("gameDebugPerfObjects", {"nodes": int(nodes), "resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT))}),
 		Ui.t("gameDebugPerfRetained", {"question": state.get("question", 0), "scenes": state.get("retired", 0), "streets": state.get("streets", 0)}),
 		_input_ms, Ui.t("gameDebugTier"), tier, state.get("scene", "")]
@@ -114,7 +118,7 @@ func _process(delta: float) -> void:
 		state.merge({"time": Time.get_datetime_string_from_system(true), "fps": Engine.get_frames_per_second(),
 			"avg_ms": snappedf(_log_sum / _log_frames, 0.1), "worst_ms": snappedf(_log_worst, 0.1), "slow": _log_slow,
 			"calls": calls, "nodes": int(nodes), "resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),
-			"mem_mb": snappedf(mem, 0.1), "vram_mb": snappedf(vmem, 0.1), "pss_mb": _pss, "tier": tier}, true)
+			"mem_mb": snappedf(mem, 0.1) if mem > 0 else null, "vram_mb": snappedf(vmem, 0.1), "pss_mb": _pss, "tier": tier}, true)
 		print("[godot-perf] ", JSON.stringify(state))
 		_write_log(state)
 		_log_clock = 0.0

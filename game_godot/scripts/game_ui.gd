@@ -255,6 +255,12 @@ func _layout_hud() -> void:
 	_notice.size = Vector2(width - 48.0, 0.0)
 
 
+## Place optional diagnostics below both HUD rows, in viewport coordinates.
+## The UI's phone dp scale and safe insets differ from a bare CanvasLayer.
+func performance_hud_position() -> Vector2:
+	return Vector2(6.0 * _u, (_speed_pill.position.y + _speed_pill.size.y + 12.0) * _u)
+
+
 func set_hud(speed_kmh: int, limit_kmh, violations: int, distance_m: int, score: int, answered: int, total: int) -> void:
 	_speed_big.text = str(speed_kmh)
 	_limit.visible = limit_kmh != null

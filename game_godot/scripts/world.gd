@@ -72,6 +72,8 @@ var voice: QuestionVoice
 var voice_timer_extended := false
 var dbg_t := 0.0
 var dbg_every := 0.0
+var perf_frames := 0
+var perf_us := {}
 var last_tick_second := 0
 var blinker_on := false
 var warm_signals := true
@@ -230,6 +232,7 @@ func _ready() -> void:
 	# Shown in debug builds and with --perf only: the players do not see the counters.
 	hud.visible = OS.is_debug_build() or _has_arg("--perf")
 	hud.snapshot = _performance_snapshot
+	hud.position_source = ui.performance_hud_position
 	add_child(hud)
 	hud.tier_changed.connect(_apply_tier)
 	controls.pressed.connect(hud.mark_input)
@@ -1794,9 +1797,20 @@ func _street_expired(old: Node3D) -> bool:
 	return drive.distance_traveled - float(old.get_meta("retire_distance", drive.distance_traveled)) > RETAIN_DISTANCE
 
 func _performance_snapshot() -> Dictionary:
+	var cpu_ms := {}
+	if perf_frames > 0:
+		for key in perf_us: cpu_ms[key] = snappedf(float(perf_us[key]) / perf_frames / 1000.0, 0.01)
+	perf_us.clear()
+	perf_frames = 0
 	return {"question": run.answered, "scene": str(current.sit.id) if current else "",
 		"retired": retired.size(), "streets": older_ghosts.size() + (1 if ghost else 0),
-		"staging": staging, "distance": int(drive.distance_traveled)}
+		"staging": staging, "phase": phase, "distance": int(drive.distance_traveled), "cpu_ms": cpu_ms}
+
+
+func _perf_time(label: String, previous: int) -> int:
+	var now := Time.get_ticks_usec()
+	perf_us[label] = int(perf_us.get(label, 0)) + now - previous
+	return now
 
 
 # --- traffic and walkers on the ring ---------------------------------------
@@ -2597,6 +2611,7 @@ func _process(delta: float) -> void:
 	_tips_frame()
 	if paused:
 		return
+	var perf_tick := Time.get_ticks_usec() if hud.visible else 0
 	delta = minf(delta, 0.05)
 	# Keyboard/autopilot input can arrive through the loading overlay. Keep the car,
 	# traffic and timers still while the first scene is being prepared and rendered.
@@ -2668,9 +2683,12 @@ func _process(delta: float) -> void:
 	for a in front_axles:
 		a.rotation.y = float(controls.steer) * 0.4
 	_update_lamps(delta)
+	if perf_tick: perf_tick = _perf_time("drive", perf_tick)
 	_maybe_spawn()
+	if perf_tick: perf_tick = _perf_time("spawn", perf_tick)
 	_update_junction(delta)
 	_update_road(delta)
+	if perf_tick: perf_tick = _perf_time("actors", perf_tick)
 	_retire_far()
 	# Snapped to the texture period so the grass pattern does not slide.
 	var ground_z := snappedf(drive.pos.z,144.0)
@@ -2679,10 +2697,14 @@ func _process(delta: float) -> void:
 		_build_ground()
 	ground.position.x = 0.0
 	ground.position.z = ground_z  # whole grass periods (4.8 m fine, 28.8 m coarse): the pattern never jumps
+	if perf_tick: perf_tick = _perf_time("terrain", perf_tick)
 	_update_traffic(delta)
+	if perf_tick: perf_tick = _perf_time("traffic", perf_tick)
 	_update_walkers(delta)
+	if perf_tick: perf_tick = _perf_time("walkers", perf_tick)
 	_recycle_chunks()
 	_retire_streets()
+	if perf_tick: perf_tick = _perf_time("ring", perf_tick)
 	# The camera heading follows the car's slowly (game.js updateCamera:
 	# exp(-3 dt)) and only for real turns: small corrections and U-turn
 	# wobbles must not swing the view.
@@ -2743,7 +2765,9 @@ func _process(delta: float) -> void:
 		camera.size = 220.0
 		camera.position = current.sit.global_position + Vector3(0, 300, -1.0)
 		camera.look_at(current.sit.global_position)
+	if perf_tick: perf_tick = _perf_time("camera", perf_tick)
 	_update_occlusion(delta)
+	if perf_tick: perf_tick = _perf_time("occlusion", perf_tick)
 	if leaves:
 		leaves.step(delta, look)
 	hud.speed_kmh = drive.speed * 3.6
@@ -2762,6 +2786,9 @@ func _process(delta: float) -> void:
 	else:
 		last_tick_second = 0
 
+	if perf_tick:
+		_perf_time("effects", perf_tick)
+		perf_frames += 1
 
 ## Card height on an 844 px phone screen, matching Framing.cardHeight in the web editor
 ## (tools/network/editor/framing.js).
@@ -2930,6 +2957,10 @@ func _apply_tier(next: String) -> void:
 	vp.msaa_3d = prof.msaa
 	sun.shadow_enabled = prof.shadows
 	Engine.max_fps = prof.max_fps
+	# Sustained phone sessions should not render 90–120 full 3D frames per second.
+	# Low remains 30 FPS; other mobile tiers keep a 60 FPS frame budget.
+	if (OS.has_feature("android") or OS.has_feature("ios")) and Engine.max_fps == 0:
+		Engine.max_fps = 60
 	if leaves:
 		# Fewer leaves on a weak GPU, as in the game (18 instead of 36).
 		leaves.multimesh.visible_instance_count = 18 if tier == "low" else -1
