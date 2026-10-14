@@ -30,6 +30,10 @@ func run() -> void:
 		await process_frame
 	world.spawn_after = world.drive.pos.z
 	world._maybe_spawn()
+	for i in 10:
+		if world.loader == null: break
+		await process_frame
+	check(world.loader == null, "City loading completes before testing active signal time")
 	if world.current.is_empty():
 		check(false, "Example ticket is ready")
 		quit(1)

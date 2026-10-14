@@ -22,6 +22,14 @@ func _initialize() -> void:
 		push_error("initial scene staging timeout")
 		quit(1)
 		return
+	world._maybe_spawn()
+	for frame in 10:
+		if world.loader == null: break
+		await process_frame
+	if world.loader != null:
+		push_error("initial city was not revealed before the collision fixture")
+		quit(1)
+		return
 	var status := _run(world)
 	world.queue_free()
 	await process_frame

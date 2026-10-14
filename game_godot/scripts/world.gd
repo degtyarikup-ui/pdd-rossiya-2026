@@ -129,6 +129,7 @@ var road_after := 300.0           # world z after which the next road question m
 var road_base_limit := 60         # the built-up limit to return to after a zone
 var pause_menu: RidePause
 var loader: Loader                # the preloader over the first frames (loader.gd); null once dismissed
+var startup_loading_failed := false
 var run_started := false          # a run began (the app charges one run then)
 var run_end_sent := false         # the run_end event went out (once per visit)
 var chosen := {}                  # { id, paint } of the car the player drove, for the app
@@ -216,10 +217,10 @@ func _ready() -> void:
 	hud.tier_changed.connect(_apply_tier)
 	controls.pressed.connect(hud.mark_input)
 	_apply_tier(Quality.classify(RenderingServer.get_video_adapter_name()))
-	spawn_after = drive.pos.z + 40
+	# Install the first junction under the loader, before exposing the ring's final profile.
+	spawn_after = drive.pos.z
 	if _has_arg("--ride-options"):
 		_start_ride()
-	_dismiss_loader()
 	# Desktop checks: `godot --path game_godot -- --shot=out.png [--season=winter]
 	# [--situation=<id>] [--auto] [--overview] [--start=<z>] [--wait=<s>]`.
 	for arg in Host.user_args():
@@ -270,6 +271,7 @@ func _ready() -> void:
 		spawn_after = -1.0e9   # the junction is laid out at once
 	_prestage.call_deferred()
 	_warm_connections()
+	_dismiss_loader()
 	for arg in Host.user_args():
 		if arg.begins_with("--shot="):
 			_shot(arg.trim_prefix("--shot="))
@@ -281,7 +283,7 @@ static func _scene_playable(authored: Dictionary) -> bool:
 	return authored.get("reviewed", false) == true and route_errors is Array and route_errors.is_empty()
 
 
-## The loader stays over the first frames, once the street is up, and then goes.
+## Reveal the city only after its first junction and street profile are installed.
 func _dismiss_loader() -> void:
 	# Render the existing emissive lens variants under the opaque loading screen once,
 	# so their first real collision/turn does not compile shaders during the ride.
@@ -295,6 +297,14 @@ func _dismiss_loader() -> void:
 		traffic_glows.set_instance_custom_data(0, BLINK_COLOUR)
 	await get_tree().process_frame
 	if is_queued_for_deletion() or not is_inside_tree(): return
+	await get_tree().process_frame
+	if is_queued_for_deletion() or not is_inside_tree(): return
+	# Staging includes asynchronous files and mesh work. Two frames alone can reveal the
+	# temporary street, which changes width, surface and plots when the first scene arrives.
+	while road_force == "" and not previews and not startup_loading_failed and current.is_empty() and (staging or staged_sit != null or next_id != ""):
+		await get_tree().process_frame
+		if is_queued_for_deletion() or not is_inside_tree(): return
+	# Render the installed scene while the loading screen is still opaque.
 	await get_tree().process_frame
 	if is_queued_for_deletion() or not is_inside_tree(): return
 	warm_signals=false
@@ -1062,6 +1072,7 @@ func _build_staged(id: String) -> void:
 					await staged_sit.warm_bindings(Situation.bindings_with(base,out,float(out.width)),scenery,get_tree())
 	Situation.forget(id)
 	staging = false
+	if loader != null and staged_sit == null: startup_loading_failed = true
 	if dbg_every > 0.0: print("[stream] staged ", id, " in ", Time.get_ticks_msec()-started, " ms across frames")
 
 func _maybe_spawn() -> void:
@@ -1190,6 +1201,7 @@ func _on_prepared(ok: bool, id: String) -> void:
 		_build_staged(id)
 	else:
 		staging = false
+		if loader != null: startup_loading_failed = true
 		spawn_after = drive.pos.z + 20.0
 
 
@@ -2103,6 +2115,9 @@ func _on_pause() -> void:
 	options.sound = sound.enabled
 	pause_menu = RidePause.new(options, chosen)
 	add_child(pause_menu)
+	# Android Back/app suspension can pause during the first scene's preparation.
+	# Keep Continue and Exit reachable above the loading overlay.
+	if loader != null: pause_menu.layer = loader.layer + 1
 	pause_menu.resume_requested.connect(_on_resume)
 	pause_menu.exit_requested.connect(_on_exit)
 	pause_menu.vehicle_changed.connect(_on_vehicle_changed)
@@ -2232,6 +2247,9 @@ func _process(delta: float) -> void:
 	if paused:
 		return
 	delta = minf(delta, 0.05)
+	# Keyboard/autopilot input can arrive through the loading overlay. Keep the car,
+	# traffic and timers still while the first scene is being prepared and rendered.
+	if loader != null: delta = 0.0
 	if phase == "question" and ui.tick(delta) and not question_over:
 		_on_answer_chosen(-1)
 	run.distance_m = int(drive.distance_traveled)

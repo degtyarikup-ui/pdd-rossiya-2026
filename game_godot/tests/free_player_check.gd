@@ -41,6 +41,20 @@ func run() -> void:
 		if not world.staging: break
 		await process_frame
 	check(not world.staging, "world preparation finishes")
+	# Drive the real startup activation even though this fixture disables World processing.
+	# Manual frames below must begin after the loading overlay has released the ride.
+	world._maybe_spawn()
+	for i in 900:
+		if world.loader == null: break
+		await process_frame
+	check(world.loader == null, "startup loader releases the prepared ride")
+	if not world.current.is_empty():
+		var initial: Situation = world.current.sit
+		world.current = {}
+		initial.free()
+	world.blanks.clear()
+	world.street_connector.clear()
+	world.street_half = Street.ROAD_HALF
 	var sit := Situation.load_scene("ticket_27_14", world.scenery)
 	sit.network = network
 	sit.get_node("surfaces").mesh = network.surface_mesh(world.scenery)
