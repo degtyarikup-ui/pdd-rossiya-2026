@@ -573,9 +573,15 @@ func _trajectory_guide() -> Node3D:
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
 		var curve := _smooth(pts)
-		_strip(st, _shorten(curve, 1.6), GUIDE_WIDTH)
+		var arrow: bool = tr.get("arrowhead",true) != false
+		_strip(st, _shorten(curve, 1.6) if arrow else curve, GUIDE_WIDTH)
 		_round_start(st, curve, GUIDE_WIDTH)
-		_arrowhead(st, _before_tip(curve, 1.6), curve[curve.size() - 1])
+		if arrow:
+			_arrowhead(st, _before_tip(curve, 1.6), curve[curve.size() - 1])
+		else:
+			var reverse := curve.duplicate()
+			reverse.reverse()
+			_round_start(st, reverse, GUIDE_WIDTH)
 		var mi := MeshInstance3D.new()
 		mi.mesh = st.commit()
 		mi.material_override = _guide_material(letter_colour(str(tr.get("label", ""))))

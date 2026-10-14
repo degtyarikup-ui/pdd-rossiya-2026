@@ -131,7 +131,7 @@ def sync(sid: str) -> dict:
     for r in net.get("routes", []):
         if r["kind"] != "choice":
             continue
-        traj.append({"label": r["label"], "points": r["points"]})
+        traj.append({"label": r["label"], "points": r["points"], "arrowhead": r.get("arrowhead", True) is not False})
         lp = r.get("labelPosition")
         if lp:
             labels.append({"letter": r["label"], "pos": [lp[0], 0.8, lp[1]]})

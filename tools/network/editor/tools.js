@@ -22,7 +22,7 @@ const Tools = (() => {
     { id: "prop", key: "O", title: "Объект", icon: "tree", hint: "Клик — поставить, тянуть — повернуть. Выберите объект слева" },
     { id: "brush", key: "B", title: "Кисть деревьев", icon: "brush", hint: "Ведите с зажатой кнопкой — посадите деревья. ⌥ — стирать" },
   ];
-  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", actorType: "car", prop: "trees/round_0", brushProps: ["trees/round_0", "trees/pine_0", "trees/birch_0"], brushSize: 8, tram: false };
+  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", actorType: "car", prop: "trees/round_0", brushProps: ["trees/round_0", "trees/pine_0", "trees/birch_0"], brushSize: 8, tram: false, answerArrowhead: true };
   let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null;
 
   const S = () => App.state.S;
@@ -63,6 +63,8 @@ const Tools = (() => {
       html = Layout.TEMPLATES.map((t) => `<button class="ptile" data-tpl="${t.id}">${Layout.svg(Layout.template(t.id), 90, 64)}<span>${esc(t.title)}</span></button>`).join("");
     } else if (tool === "marking") {
       html = Object.entries(Catalog.MARKS).map(([k, v]) => `<button class="pchip ${opts.mark === k ? "on" : ""}" data-mark="${k}"><span class="mark-pic m-${k}"></span><span>${v.title}</span></button>`).join("");
+    } else if (tool === "answer" && !opts.pathFor) {
+      html = [["arrow","Со стрелкой"],["line","Линия без стрелки"]].map(([v,t]) => `<button class="pchip ${(opts.answerArrowhead ? "arrow" : "line") === v ? "on" : ""}" data-answer-style="${v}"><span>${t}</span></button>`).join("");
     } else if (tool === "actor") {
       const types = Catalog.ACTOR_ORDER.filter((t) => App.state.catalog?.actorTypes[t]);
       html = types.map((t) => `<button class="ptile small ${opts.actorType === t ? "on" : ""}" data-actor="${t}">${Thumbs.img("actor", t)}<span>${Catalog.ACTORS[t].name}</span></button>`).join("");
@@ -108,6 +110,7 @@ const Tools = (() => {
       if (b.dataset.road) { opts.roadKind = b.dataset.road; renderPopover(); }
       if (b.dataset.mark) { opts.mark = b.dataset.mark; finishDraft(true); renderPopover(); renderHint(); }
       if (b.dataset.actor) { opts.actorType = b.dataset.actor; renderPopover(); }
+      if (b.dataset.answerStyle) { opts.answerArrowhead = b.dataset.answerStyle === "arrow"; renderPopover(); }
       if (b.dataset.tpl) applyTemplate(b.dataset.tpl);
       if (b.dataset.brush) {
         const p = b.dataset.brush, list = opts.brushProps;
@@ -832,7 +835,7 @@ const Tools = (() => {
         const label = Catalog.LETTERS.find((l) => !used.includes(l));
         if (!label) { App.toast("Все буквы заняты", "warn"); return null; }
         const mid = pts[Math.floor(pts.length / 2)];
-        s.routes.push({ id: `choice_${label}`, kind: "choice", label, points: pts, labelPosition: [mid[0], mid[1]] });
+        s.routes.push({ id: `choice_${label}`, kind: "choice", label, points: pts, labelPosition: [mid[0], mid[1]], ...(opts.answerArrowhead ? {} : {arrowhead:false}) });
         return { t: "route", id: `choice_${label}` };
       });
       if (ref) App.select(ref);
@@ -884,6 +887,7 @@ const Tools = (() => {
   function drawPathFor(id) {
     set("answer");
     opts.pathFor = id;
+    renderPopover();
     renderHint("Кликайте точки пути участника от него. ↵ — готово");
   }
 

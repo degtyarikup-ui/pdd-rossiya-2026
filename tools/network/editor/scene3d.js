@@ -351,7 +351,7 @@ const Scene3D = (() => {
       const opacity = dim ? 0.28 : 1;
       const shown = smooth(r.points);
       g.add(polyline(shown, ROUTE_Y, st.colour, focused ? st.px + 1.5 : st.px, opacity, st.dashed));
-      const head = arrowhead(shown, focused ? 1.1 : 0.8, ROUTE_Y, st.colour, opacity);
+      const head = r.kind === "choice" && r.arrowhead === false ? null : arrowhead(shown, focused ? 1.1 : 0.8, ROUTE_Y, st.colour, opacity);
       if (head) g.add(head);
       // The approach ends underneath the player's car, hiding its final arrow. Show direction
       // along the green line as well, so a saved route around the ring is unambiguous.

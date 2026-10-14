@@ -696,11 +696,13 @@
       const ways = s.routes.filter((x) => x.kind === "manoeuvre");
       p.innerHTML = `${head(`<span class="letter-badge" style="--c:${Catalog.LETTER_COLOUR[r.label]}">${esc(r.label)}</span>`, `Вариант ответа ${r.label}`, "линия на дороге при вопросе")}
         ${card("Буква", chips("label", Catalog.LETTERS.map((l) => ({ value: l, html: `<span class="letter-badge sm" style="--c:${Catalog.LETTER_COLOUR[l]}">${l}</span>`, disabled: used.includes(l) })), r.label))}
+        ${card("Вид линии", chips("arrowhead", [{value:"arrow",title:"Со стрелкой"},{value:"line",title:"Линия без стрелки"}], r.arrowhead === false ? "line" : "arrow"))}
         ${ways.length ? card("Взять путь", chips("copy", ways.map((w) => ({ value: w.exit, icon: Catalog.EXITS[w.exit].icon, tip: Catalog.EXITS[w.exit].title })), "", { cls: "arrows" })) : ""}
         ${card("", `<p class="muted">Тяните точки на виде. Двойной клик по линии — новая точка.</p>${button("mid", "Букву — на середину", "flag", "ghost wide")}<div class="insp-actions">${button("del", "Удалить", "trash", "danger ghost")}</div>`)}`;
       bind({
         ...common,
         "chip:label": (v) => App.edit(() => { r.label = v; r.id = `choice_${v}`; }) || App.select({ t: "route", id: `choice_${v}` }),
+        "chip:arrowhead": v => App.edit(() => { if (v === "line") r.arrowhead = false; else delete r.arrowhead; }),
         "chip:copy": (v) => App.edit((sc) => { const w = sc.routes.find((x) => x.kind === "manoeuvre" && x.exit === v); r.points = JSON.parse(JSON.stringify(w.points)); const m = r.points[Math.floor(r.points.length * 0.6)]; r.labelPosition = [m[0], m[1]]; }),
         mid: () => App.edit(() => { const m = r.points[Math.floor(r.points.length / 2)]; r.labelPosition = [m[0], m[1]]; }),
       });
