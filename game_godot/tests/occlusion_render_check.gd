@@ -8,7 +8,9 @@ func run() -> void:
 	for i in 3: await process_frame
 	world.set_process(false)
 	while world.staging: await process_frame
-	world._set_street_objects(false)
+	# The street now owns separate instanced prop and parked-car pools.
+	for pool in world.street.pools.values(): pool.node.visible=false
+	for pool in world.street.parked.values(): pool.node.visible=false
 	world.ui.visible=false
 	world.controls.visible=false
 	world.hud.visible=false

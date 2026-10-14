@@ -50,6 +50,7 @@ godot --headless --path game_godot --script res://tests/rules_check.gd      # н
 godot --headless --path game_godot --script res://tests/road_check.gd       # дорожные вопросы: 70 проверок
 godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя
 godot --headless --path game_godot --script res://tests/street_check.gd     # улица: сужение перед перекрёстком, застройка вне проезжей части
+godot --headless --path game_godot --script res://tests/building_models_check.gd # дома: бюджет геометрии, габариты, пакетный рендер и сезонные материалы
 godot --headless --path game_godot --script res://tests/collision_check.gd  # столкновения
 godot --headless --path game_godot --script res://tests/sign_mount_check.gd # общая стойка и консоль знаков
 godot --headless --path game_godot --script res://tests/lane_sign_check.gd # конструктор направлений по полосам
@@ -138,6 +139,7 @@ tools/network/engine_sync.py ► game_godot/situations/<id>/scene.json (то, ч
 
 ## Документы
 
+- `building-models.md` — модели домов, пересборка и ограничения для слабых телефонов
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
 - `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
 - `local-changes-sync-2026-10-14.md` — опубликованные локации и архивы всех локальных stash

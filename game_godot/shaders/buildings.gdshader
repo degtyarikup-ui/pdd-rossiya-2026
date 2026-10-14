@@ -16,6 +16,7 @@ uniform sampler2DArray detail : repeat_enable, filter_linear_mipmap;
 uniform float macro[24];
 uniform float macro_scale[24];
 uniform float gain[24];               // contrast of the detail per kind: the maps are very quiet (about +-3 %)
+uniform float detail_texels[24];      // feature density: grain 256, broad window frames 16
 uniform vec2 detail_fade = vec2(180.0, 450.0);  // metres: the grain fades to a flat tone with distance, where it would only shimmer
 uniform vec3 plain_tint = vec3(1.0);   // tint of a non-instanced mesh (roads)
 uniform vec3 snow_color = vec3(0.78, 0.82, 0.85);  // sRGB, like COLOR
@@ -60,10 +61,10 @@ void fragment() {
 		float fine = 0.5 + (mix(d.r, d.b, side) - 0.5) * g;
 		float large = 0.5 + (mix(texture(detail, vec3(detail_uv * macro_scale[layer] + vec2(0.31, 0.17), float(layer))).g, 0.5, side) - 0.5) * g;
 		// Far away a texel is smaller than a pixel: the detail flickers as the camera moves. It is faded.
-		// Anti-shimmer for every surface: how many texels of the 256 px map fall into one screen
+		// Anti-shimmer: how many effective detail texels fall into one screen
 		// pixel. Where a texel is smaller than a pixel the detail cannot be shown, only flicker
 		// (tile joints, grass blades): it fades to the flat tone. Works at any distance and angle.
-		float texels = max(length(dFdx(detail_uv)), length(dFdy(detail_uv))) * 256.0;
+		float texels = max(length(dFdx(detail_uv)), length(dFdy(detail_uv))) * detail_texels[layer];
 		// The coarse variation (macro, metres-wide patches) is sampled at macro_scale and stays
 		// visible: it is larger than a pixel, so it gives the surface life without shimmer.
 		float far = max(smoothstep(3.0, 10.0, texels), smoothstep(detail_fade.x, detail_fade.y, -VERTEX.z));

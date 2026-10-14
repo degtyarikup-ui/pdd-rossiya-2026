@@ -1,4 +1,5 @@
-## Scenery exported from the WebView game (tools/godot_export): props in
+## Scenery: buildings rebuilt by tools/godot_export/build_buildings.py;
+## other props retained from the archived WebView game. Props in
 ## scenery/<group>/<name>.glb, detail maps in textures/detail/<kind>.png,
 ## sizes / texture params / season palettes in scenery/index.json.
 class_name Scenery
@@ -30,10 +31,14 @@ func _init(season_name: String) -> void:
 	var macro_scale := PackedFloat32Array()
 	var gains := PackedFloat32Array()
 	var periods := PackedFloat32Array()
+	var detail_texels := PackedFloat32Array()
 	for t in index.textures:
 		layers.append(t.kind)
 		kinds[t.kind] = t
 		periods.append(float(t.period))
+		# Window frames are broad architectural features, not 256-pixel grain.
+		# Keep them legible until the entire window is only a few screen pixels.
+		detail_texels.append(16.0 if t.kind in ["window", "door"] else 256.0)
 		gains.append(t.get("gain", GAIN.get(t.kind, 1.0)))
 		var img: Image = (load("res://textures/detail/%s.png" % t.kind) as Texture2D).get_image()
 		if img.is_compressed():
@@ -48,6 +53,7 @@ func _init(season_name: String) -> void:
 		macro_scale.append(1.0)
 		gains.append(1.0)
 		periods.append(1.0)
+		detail_texels.append(256.0)
 	var array := Texture2DArray.new()
 	array.create_from_images(images)
 	material = ShaderMaterial.new()
@@ -57,6 +63,7 @@ func _init(season_name: String) -> void:
 	material.set_shader_parameter("macro_scale", macro_scale)
 	material.set_shader_parameter("gain", gains)
 	material.set_shader_parameter("texture_periods", periods)
+	material.set_shader_parameter("detail_texels", detail_texels)
 	occluder_material = material
 	building_material = material.duplicate()
 	building_material.shader = load("res://shaders/buildings.gdshader")
