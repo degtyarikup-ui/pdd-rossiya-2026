@@ -12,6 +12,15 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     @UsedByGodot
     fun processMemoryMb(): Int = (android.os.Debug.getPss() / 1024).toInt()
 
+    /** Android thermal status (0–6), sampled with the memory counter, never every frame. */
+    @UsedByGodot
+    fun thermalState(): Int = if (android.os.Build.VERSION.SDK_INT >= 29) {
+        host.getSystemService(android.os.PowerManager::class.java)?.currentThermalStatus ?: -1
+    } else -1
+
+    @UsedByGodot
+    fun lowPowerMode(): Boolean = host.getSystemService(android.os.PowerManager::class.java)?.isPowerSaveMode ?: false
+
     /** App-owned external storage lets adb pull retrieve counters without a debug Flutter build. */
     @UsedByGodot
     fun performanceLogDirectory(): String = (host.getExternalFilesDir(null) ?: host.filesDir).absolutePath

@@ -54,7 +54,7 @@
         <activity
             android:name=".game.GodotGameActivity"
             android:process=":game"
-            android:exported="false"
+            android:exported="${godotGameExported}"
             android:theme="@style/GodotGameTheme"
             android:screenOrientation="portrait"
             android:launchMode="singleTask"

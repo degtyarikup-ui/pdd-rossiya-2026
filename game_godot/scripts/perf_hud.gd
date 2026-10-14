@@ -7,6 +7,7 @@ signal tier_changed(tier: String)
 var tier := "high"
 var speed_kmh := 0.0
 var snapshot := Callable()
+var reset_snapshot := Callable()
 var position_source := Callable()
 var _bg: PanelContainer
 const LOG_PATH := "user://ride-performance.jsonl"
@@ -18,6 +19,8 @@ var _previous_log_path := PREVIOUS_LOG_PATH
 var _log_clock := 0.0
 var _pss := -1
 var _footprint := -1.0
+var _thermal_state := -1
+var _low_power: Variant = null
 var _log_frames := 0
 var _log_sum := 0.0
 var _log_worst := 0.0
@@ -114,6 +117,8 @@ func _process(delta: float) -> void:
 	if write_log and Engine.has_singleton("PddHost"):
 		var host = Engine.get_singleton("PddHost")
 		if host.has_java_method("processMemoryMb"): _pss = int(host.processMemoryMb())
+		if host.has_java_method("thermalState"): _thermal_state = int(host.thermalState())
+		if host.has_java_method("lowPowerMode"): _low_power = bool(host.lowPowerMode())
 	elif write_log and Host.io != "":
 		_footprint = _read_ios_footprint()
 	var process_metric := Ui.t("gameDebugPerfMemoryFootprint") if Host.io != "" else "PSS"
@@ -128,10 +133,13 @@ func _process(delta: float) -> void:
 		state.merge({"time": Time.get_datetime_string_from_system(true), "fps": Engine.get_frames_per_second(),
 			"avg_ms": snappedf(_log_sum / _log_frames, 0.1), "worst_ms": snappedf(_log_worst, 0.1), "slow": _log_slow,
 			"calls": calls, "nodes": int(nodes), "resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),
+			"triangles": tris, "render_objects": objects,
 			"mem_mb": snappedf(mem, 0.1) if mem > 0 else null, "vram_mb": snappedf(vmem, 0.1), "pss_mb": _pss,
-			"footprint_mb": snappedf(_footprint, 0.1) if _footprint >= 0 else null, "tier": tier}, true)
+			"footprint_mb": snappedf(_footprint, 0.1) if _footprint >= 0 else null, "tier": tier,
+			"thermal_state": _thermal_state if _thermal_state >= 0 else null, "low_power": _low_power}, true)
 		print("[godot-perf] ", JSON.stringify(state))
 		_write_log(state)
+		if reset_snapshot.is_valid(): reset_snapshot.call()
 		_log_clock = 0.0
 		_log_frames = 0
 		_log_sum = 0.0
@@ -147,6 +155,8 @@ func _process(delta: float) -> void:
 ## iOS writes an atomic native memory snapshot next to the requests and performance logs.
 ## Reject unavailable/old samples rather than displaying a previous run's memory as current.
 func _read_ios_footprint() -> float:
+	_thermal_state = -1
+	_low_power = null
 	var path := Host.io.path_join(MEMORY_SAMPLE_FILE)
 	if not FileAccess.file_exists(path): return -1.0
 	var sample = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -155,6 +165,11 @@ func _read_ios_footprint() -> float:
 	if not (value is float or value is int): return -1.0
 	if Time.get_unix_time_from_system() - float(sample.get("sample_time", 0.0)) > 15.0:
 		return -1.0
+	var thermal = sample.get("thermal_state")
+	# Godot's JSON reader may represent NSNumber integers as floats.
+	if (thermal is int or thermal is float) and thermal >= 0 and thermal <= 3 and thermal == floor(thermal):
+		_thermal_state = int(thermal)
+	if sample.get("low_power") is bool: _low_power = sample.low_power
 	return float(value) if float(value) >= 0.0 else -1.0
 
 

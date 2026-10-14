@@ -57,6 +57,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         applicationIdSuffix = devSuffix
+        // Allow adb benchmark launches only in the separate -Pdev test app.
+        // Store builds keep the game activity private to the Flutter bridge.
+        manifestPlaceholders["godotGameExported"] = project.hasProperty("dev").toString()
     }
 
     // Один flavor `ru`: команды сборки и CI собирают с --flavor ru.

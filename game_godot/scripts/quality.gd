@@ -35,3 +35,10 @@ static func classify(gpu: String) -> String:
 	if s.contains("powervr") or s.contains("vivante"):
 		return "low"
 	return "mid"
+
+
+## A name alone does not prove that a phone can sustain desktop quality.
+## In particular Godot's Apple adapter name does not distinguish older iPhones.
+static func initial(gpu: String, mobile: bool) -> String:
+	var tier := classify(gpu)
+	return "mid" if mobile and gpu.to_lower().contains("apple") else tier

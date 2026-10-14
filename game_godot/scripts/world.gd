@@ -17,6 +17,9 @@ signal event(data: Dictionary)   # what game.js sends to Flutter (sendToFlutter)
 
 const Controls := preload("res://scripts/controls.gd")
 const PerfHud := preload("res://scripts/perf_hud.gd")
+const FrameBudget := preload("res://scripts/frame_budget.gd")
+var frame_budget = FrameBudget.new()
+var adaptive_quality := false
 
 var cfg: Dictionary
 var L: float                      # chunk length
@@ -46,6 +49,16 @@ var traffic_mm: Array[MultiMesh] = []
 var traffic_glows: MultiMesh
 var walkers: Array[Dictionary] = []
 var walker_mm: Array[MultiMesh] = []
+const WALK_PLAN_INTERVAL := 0.1
+var walker_surfaces_active := false
+var walker_scene_surfaces: Array[Dictionary] = []
+var walker_street_surfaces: Array[Dictionary] = []
+var walker_surface_revision := 0
+var walker_surface_signature: Array = []
+var walker_pavement_queries := {}
+var walker_pavement_query_keys: Array[Vector3] = []
+var walker_pavement_query_cursor := 0
+const WALK_QUERY_CACHE_LIMIT := 512
 var wheels: Array[Node3D] = []
 var front_axles: Array[Node3D] = []
 var brake_mat: StandardMaterial3D        # shared by the car's stop lamps
@@ -224,7 +237,7 @@ func _ready() -> void:
 	ui.exit_pressed.connect(_on_exit)
 	ui.tip_next.connect(_on_tip_next)
 	# Analytics: every event of the game goes to the app (Host.send; a no-op on the desktop).
-	event.connect(Host.send)
+	if not _has_arg("--benchmark"): event.connect(Host.send)
 	Host.begin_events()
 	# Android «back» opens the pause instead of closing the app's game screen at once.
 	get_tree().quit_on_go_back = false
@@ -232,11 +245,14 @@ func _ready() -> void:
 	# Shown in debug builds and with --perf only: the players do not see the counters.
 	hud.visible = OS.is_debug_build() or _has_arg("--perf")
 	hud.snapshot = _performance_snapshot
+	hud.reset_snapshot = _reset_performance_snapshot
 	hud.position_source = ui.performance_hud_position
 	add_child(hud)
 	hud.tier_changed.connect(_apply_tier)
 	controls.pressed.connect(hud.mark_input)
-	_apply_tier(Quality.classify(RenderingServer.get_video_adapter_name()))
+	var mobile := OS.has_feature("android") or OS.has_feature("ios")
+	var quality_override := _arg_text("--quality")
+	_apply_tier(quality_override if quality_override in Quality.PROFILES else Quality.initial(RenderingServer.get_video_adapter_name(), mobile), quality_override == "")
 	# Install the first junction under the loader, before exposing the ring's final profile.
 	spawn_after = drive.pos.z
 	if _has_arg("--ride-options"):
@@ -289,6 +305,10 @@ func _ready() -> void:
 		spawn_after = 1.0e9
 	if topdown_now:
 		spawn_after = -1.0e9   # the junction is laid out at once
+	if _has_arg("--benchmark"):
+		var benchmark = load("res://scripts/ride_benchmark.gd").new()
+		benchmark.configure(self)
+		add_child(benchmark)
 	_prestage.call_deferred()
 	_warm_connections()
 	_dismiss_loader()
@@ -344,7 +364,7 @@ func _has_arg(name: String) -> bool:
 
 
 func _is_test_run() -> bool:
-	for name in ["--auto", "--follow", "--near", "--shot", "--qshot", "--debug", "--situation", "--mute", "--road"]:
+	for name in ["--auto", "--follow", "--near", "--shot", "--qshot", "--debug", "--situation", "--mute", "--road", "--benchmark"]:
 		if _has_arg(name):
 			return true
 	return false
@@ -694,6 +714,7 @@ func _street_ground(node: MeshInstance3D) -> GroundMap:
 
 ## Only visible sidewalks support ordinary pedestrians; grass is not a sidewalk.
 func pavement_supports(p: Vector3) -> bool:
+	if walker_surfaces_active: return _walker_pavement_supports(p)
 	var claimed := false
 	for j in _junctions():
 		var local: Vector3 = j.sit.global_transform.affine_inverse()*p
@@ -710,6 +731,13 @@ func pavement_supports(p: Vector3) -> bool:
 
 
 func _pavement_height(p: Vector3) -> float:
+	if walker_surfaces_active:
+		for surface in walker_scene_surfaces:
+			var local: Vector3 = surface.inverse * p
+			if not surface.sit.covers(local) or surface.map == null: continue
+			var height: float = surface.map.walk_height(local)
+			if is_finite(height): return (surface.frame * Vector3(local.x, height, local.z)).y
+		return Street.KERB
 	for j in _junctions():
 		var local: Vector3 = j.sit.to_local(p)
 		if not j.sit.covers(local): continue
@@ -718,6 +746,81 @@ func _pavement_height(p: Vector3) -> float:
 			var height := map.walk_height(local)
 			if is_finite(height): return j.sit.to_global(Vector3(local.x,height,local.z)).y
 	return Street.KERB
+
+
+## One exact geometry snapshot per pedestrian update. A failed sidewalk probe
+## used to look up every retained scene and road mesh again for each angle.
+func _walker_surface(node: MeshInstance3D, frame: Transform3D, map: GroundMap = null) -> Dictionary:
+	var bounds := node.mesh.get_aabb()
+	# GroundMap accepts a small barycentric tolerance at a triangle's edge.
+	var margin := 0.001 + maxf(bounds.size.x, bounds.size.z) * 0.00002
+	return {"node": node, "inverse": frame.affine_inverse(), "frame": frame,
+		"bounds": Rect2(Vector2(bounds.position.x, bounds.position.z), Vector2(bounds.size.x, bounds.size.z)).grow(margin),
+		"map": map}
+
+
+func _prepare_walker_surfaces() -> void:
+	walker_scene_surfaces.clear()
+	walker_street_surfaces.clear()
+	var signature: Array = []
+	for j in _junctions():
+		var sit: Situation = j.sit
+		var node := sit.get_node_or_null("surfaces") as MeshInstance3D
+		if node == null or node.mesh == null:
+			# Legacy scenes still claim their crop even without a sidewalk map.
+			walker_scene_surfaces.append({"sit": sit, "frame": sit.global_transform, "inverse": sit.global_transform.affine_inverse(), "map": null})
+			signature.append([sit.get_instance_id(), sit.global_transform])
+			continue
+		var surface := _walker_surface(node, sit.global_transform, sit.ground_map())
+		surface.sit = sit
+		walker_scene_surfaces.append(surface)
+		signature.append([sit.get_instance_id(), node.mesh.get_instance_id(), sit.global_transform])
+	for node in road_nodes:
+		if node.mesh:
+			walker_street_surfaces.append(_walker_surface(node, node.global_transform))
+			signature.append([node.mesh.get_instance_id(), node.global_transform])
+	for old in older_ghosts + ([ghost] if ghost else []):
+		for node in old.get_children():
+			if node is MeshInstance3D and node.mesh and node.get_meta("street_surface", false):
+				walker_street_surfaces.append(_walker_surface(node, node.global_transform))
+				signature.append([node.mesh.get_instance_id(), node.global_transform])
+	if signature != walker_surface_signature:
+		walker_surface_signature = signature
+		walker_surface_revision += 1
+		walker_pavement_queries.clear()
+		walker_pavement_query_keys.clear()
+		walker_pavement_query_cursor = 0
+	walker_surfaces_active = true
+
+
+func _walker_pavement_supports(p: Vector3) -> bool:
+	# Exact positions on the same immutable geometry have the same answer.
+	# Standing, blocked and unsupported walkers otherwise repeat these probes.
+	if walker_pavement_queries.has(p): return walker_pavement_queries[p]
+	var supported := _walker_surface_supports(p)
+	if walker_pavement_query_keys.size() < WALK_QUERY_CACHE_LIMIT:
+		walker_pavement_query_keys.append(p)
+	else:
+		walker_pavement_queries.erase(walker_pavement_query_keys[walker_pavement_query_cursor])
+		walker_pavement_query_keys[walker_pavement_query_cursor] = p
+		walker_pavement_query_cursor = (walker_pavement_query_cursor + 1) % WALK_QUERY_CACHE_LIMIT
+	walker_pavement_queries[p] = supported
+	return supported
+
+
+func _walker_surface_supports(p: Vector3) -> bool:
+	var claimed := false
+	for surface in walker_scene_surfaces:
+		var local: Vector3 = surface.inverse * p
+		if surface.map != null and surface.bounds.has_point(Vector2(local.x, local.z)) and (surface.map.at(local) & GroundMap.WALK) != 0: return true
+		claimed = claimed or surface.sit.covers(local)
+	if claimed: return false
+	for surface in walker_street_surfaces:
+		var local: Vector3 = surface.inverse * p
+		if not surface.bounds.has_point(Vector2(local.x, local.z)): continue
+		if surface.map == null: surface.map = _street_ground(surface.node)
+		if (surface.map.at(local) & GroundMap.WALK) != 0: return true
+	return false
 
 
 ## Junction participants, as seen in world coordinates.
@@ -1732,7 +1835,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 		phase = "over"
 		controls.set_active(false)
 		event.emit({ "event": "run_finished", "summary": run.summary() })
-		if Host.embedded():
+		if Host.embedded() and not _has_arg("--benchmark"):
 			_on_exit()   # the app shows the score, the restart and the mistakes (one result screen)
 		else:
 			ui.show_result(run.summary())
@@ -1800,11 +1903,16 @@ func _performance_snapshot() -> Dictionary:
 	var cpu_ms := {}
 	if perf_frames > 0:
 		for key in perf_us: cpu_ms[key] = snappedf(float(perf_us[key]) / perf_frames / 1000.0, 0.01)
-	perf_us.clear()
-	perf_frames = 0
 	return {"question": run.answered, "scene": str(current.sit.id) if current else "",
 		"retired": retired.size(), "streets": older_ghosts.size() + (1 if ghost else 0),
-		"staging": staging, "phase": phase, "distance": int(drive.distance_traveled), "cpu_ms": cpu_ms}
+		"staging": staging, "phase": phase, "distance": int(drive.distance_traveled), "cpu_ms": cpu_ms,
+		"render_scale": get_viewport().scaling_3d_scale, "max_fps": Engine.max_fps,
+		"shadows": sun.shadow_enabled, "msaa": get_viewport().msaa_3d, "quality_changes": frame_budget.changes}
+
+
+func _reset_performance_snapshot() -> void:
+	perf_us.clear()
+	perf_frames = 0
 
 
 func _perf_time(label: String, previous: int) -> int:
@@ -1901,6 +2009,9 @@ func _spawn_walkers() -> void:
 func _rebase_walkers(xf: Transform3D) -> void:
 	var heading := SceneStitch.yaw(xf.basis.z)
 	for w in walkers:
+		w.erase("walk_plan")
+		w.erase("walk_plan_wait")
+		w.erase("walk_plan_revision")
 		var at := xf * Vector3(float(w.get("x", w.dir * (_half_at(w.z) + 1.0))), 0, w.z)
 		w.x = at.x; w.z = at.z; w.zw = at.z
 		w.heading = float(w.get("heading", 0.0 if w.v > 0.0 else PI)) + heading
@@ -2103,7 +2214,10 @@ func _ambient_in_quiet_zone(car: Dictionary) -> bool:
 ## Account for the complete body and its bloom, rather than hiding a half-visible bus at the edge.
 func _ambient_visible(car: Dictionary) -> bool:
 	if camera == null or not camera.is_inside_tree(): return true
-	var pose := Transform3D(Basis(Vector3.UP, float(car.get("yaw", 0.0 if car.dir > 0 else PI))), Vector3(car.x, 0, car.z))
+	# Participant footprints carry yaw, not the ring traffic's direction field.
+	# Dictionary.get evaluates its default even when yaw exists; a missing dir used
+	# to raise an error for every participant visibility check on every frame.
+	var pose := Transform3D(Basis(Vector3.UP, float(car.get("yaw", 0.0 if float(car.get("dir", 1.0)) > 0 else PI))), Vector3(car.x, 0, car.z))
 	for x in [-2.0, 0.0, 2.0]:
 		for y in [0.0, 5.0]:
 			for z in [-float(car.len) * 0.5 - 2.0, 0.0, float(car.len) * 0.5 + 2.0]:
@@ -2321,6 +2435,7 @@ func _walker_visible(at: Vector3) -> bool:
 
 
 func _update_walkers(delta: float) -> void:
+	_prepare_walker_surfaces()
 	var span := L * chunk_count
 	var base := drive.pos.z - L * float(cfg.chunks_behind)
 	var trams: Array = []
@@ -2340,6 +2455,7 @@ func _update_walkers(delta: float) -> void:
 				w.z = entry_z
 				w.x = entry.x
 				w.erase("heading"); w.erase("knocked_down")
+				w.erase("walk_plan"); w.erase("walk_plan_wait"); w.erase("walk_plan_revision")
 		var initial_x: float = w.dir*(_half_at(w.z)+1.0+(0.0 if w.v>0 else 1.1))
 		if not w.has("x"): w.x = initial_x
 		var at := Vector3(w.x,0,w.z)
@@ -2347,16 +2463,27 @@ func _update_walkers(delta: float) -> void:
 		var supported := _walk_clear(at)
 		var direction := Vector3(sin(float(w.get("heading",0.0 if w.v>0 else PI))),0,cos(float(w.get("heading",0.0 if w.v>0 else PI))))
 		if not w.get("knocked_down",false) and supported:
-			# Look ahead on the drawn sidewalk, including bends and disabled sidewalk ends.
-			var next_direction := _walk_direction(at,direction,1.0)
-			if next_direction == Vector3.ZERO:
-				next_direction = _walk_direction(at,-direction,1.0)
+			# The one-metre route search is a decision, not a render operation.
+			# Verify the exact next footprint and tram/people collisions every frame.
+			w.walk_plan_wait = maxf(0.0, float(w.get("walk_plan_wait", 0.0)) - delta)
+			if not w.has("walk_plan") or w.walk_plan_wait <= 0.000001 or w.get("walk_plan_revision", -1) != walker_surface_revision:
+				w.walk_plan = _plan_walker_direction(at, direction)
+				w.walk_plan_wait = WALK_PLAN_INTERVAL
+				w.walk_plan_revision = walker_surface_revision
+			var next_direction: Vector3 = w.walk_plan
 			if next_direction != Vector3.ZERO:
 				var next := at+next_direction*absf(w.v)*delta
 				var free := _walk_clear(next)
+				if not free:
+					# A nearby edge may be reached between planning ticks.
+					next_direction = _plan_walker_direction(at, direction)
+					w.walk_plan = next_direction
+					w.walk_plan_wait = WALK_PLAN_INTERVAL
+					next = at + next_direction * absf(w.v) * delta
+					free = next_direction != Vector3.ZERO and _walk_clear(next)
 				for other in walkers:
 					if other == w or not other.get("alive",false): continue
-					if next.distance_to(Vector3(other.x,0,other.zw))<0.7: free=false; break
+					if next.distance_squared_to(Vector3(other.x,0,other.zw))<0.49: free=false; break
 				if free:
 					var walker_body := {"p": next, "yaw": SceneStitch.yaw(next_direction), "hw": 0.3, "hl": 0.3}
 					for tram in trams:
@@ -2378,6 +2505,14 @@ func _update_walkers(delta: float) -> void:
 		var height := _pavement_height(at) if supported else crowd.get_instance_transform(w.slot).origin.y
 		var shown := at+Vector3.UP*height if w.alive else Vector3(0,-100,0)
 		(w.mm as MultiMesh).set_instance_transform(w.slot,Transform3D(Basis(Vector3.UP,float(w.get("heading",0.0 if w.v>0 else PI))),shown))
+	walker_surfaces_active = false
+	walker_scene_surfaces.clear()
+	walker_street_surfaces.clear()
+
+
+func _plan_walker_direction(at: Vector3, toward: Vector3) -> Vector3:
+	var direction := _walk_direction(at, toward, 1.0)
+	return _walk_direction(at, -toward, 1.0) if direction == Vector3.ZERO else direction
 
 
 # --- frame -----------------------------------------------------------------
@@ -2611,6 +2746,7 @@ func _process(delta: float) -> void:
 	_tips_frame()
 	if paused:
 		return
+	_update_frame_budget(delta)
 	var perf_tick := Time.get_ticks_usec() if hud.visible else 0
 	delta = minf(delta, 0.05)
 	# Keyboard/autopilot input can arrive through the loading overlay. Keep the car,
@@ -2949,7 +3085,7 @@ func _update_lamps(delta: float) -> void:
 			(mat.get_meta("halo") as Node3D).visible = active
 
 
-func _apply_tier(next: String) -> void:
+func _apply_tier(next: String, automatic := false) -> void:
 	tier = next
 	var prof: Dictionary = Quality.PROFILES[tier]
 	var vp := get_viewport()
@@ -2961,10 +3097,24 @@ func _apply_tier(next: String) -> void:
 	# Low remains 30 FPS; other mobile tiers keep a 60 FPS frame budget.
 	if (OS.has_feature("android") or OS.has_feature("ios")) and Engine.max_fps == 0:
 		Engine.max_fps = 60
+	adaptive_quality = automatic and (OS.has_feature("android") or OS.has_feature("ios"))
+	frame_budget.reset(prof.scale, prof.shadows, prof.msaa != Viewport.MSAA_DISABLED)
 	if leaves:
 		# Fewer leaves on a weak GPU, as in the game (18 instead of 36).
 		leaves.multimesh.visible_instance_count = 18 if tier == "low" else -1
 	hud.tier = tier
+
+
+func _update_frame_budget(delta: float) -> void:
+	if not adaptive_quality: return
+	var eligible := loader == null and not staging and phase != "over"
+	var update: Dictionary = frame_budget.sample(delta, eligible, Engine.max_fps)
+	if update.is_empty(): return
+	var vp := get_viewport()
+	vp.scaling_3d_scale = update.scale
+	vp.msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
+	sun.shadow_enabled = update.shadows
+	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
 
 
 ## Visible portions of a ring chunk. Scene joins need not lie on a 60 m chunk boundary.

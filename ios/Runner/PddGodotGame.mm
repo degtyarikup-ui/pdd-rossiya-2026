@@ -90,8 +90,13 @@ static void SamplePerformanceMemory(void) {
   if (status == KERN_SUCCESS && count >= TASK_VM_INFO_REV1_COUNT) {
     footprint = @((double)memory.phys_footprint / 1048576.0);
   }
+  NSProcessInfo *process = NSProcessInfo.processInfo;
   NSData *sample = [NSJSONSerialization dataWithJSONObject:@{
     @"footprint_mb" : footprint,
+    // Apple's current thermal pressure (nominal/fair/serious/critical = 0/1/2/3),
+    // sampled beside memory so a falling FPS is not mistaken for an unmeasured leak.
+    @"thermal_state" : @((NSInteger)process.thermalState),
+    @"low_power" : @(process.lowPowerModeEnabled),
     @"sample_time" : @(NSDate.date.timeIntervalSince1970),
   } options:0 error:nil];
   [sample writeToFile:[ExchangeFolder() stringByAppendingPathComponent:kPerformanceMemoryFileName]
