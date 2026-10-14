@@ -81,7 +81,25 @@
   const common = { dup: () => App.duplicate(), del: () => App.remove() };
 
   // ---- the scene ----------------------------------------------------------------------------
+  function regulatorInspector(p) {
+    const s = state.S;
+    p.innerHTML = `${head(`<span class="ibadge">${ic("person")}</span>`, "Регулировщик", "сцена мини-игры")}
+      ${card("Проверить", button("regulator-run", "Тест в игре", "play", "primary wide"))}
+      ${card("Сцена", `<p>Выбирайте дороги, линии разметки, дома и деревья прямо на виде. Объекты можно двигать, поворачивать, добавлять и удалять.</p>${button("regulator-officer", "Положение регулировщика", "person", "ghost wide")}${button("regulator-player", "Автомобиль игрока", "car", "ghost wide")}`)}
+      ${card("Пути игрока", `<div class="insp-actions">${s.routes.filter(r => r.kind === "manoeuvre").map(r => `<button class="btn ghost" data-act="regulator-route" data-id="${r.id}">${ic(Catalog.EXITS[r.exit].icon)}</button>`).join("")}</div><p class="muted">После изменения дорог проверьте, что все четыре пути проходят по проезжей части. Жесты и ответы выбирает сама мини-игра.</p>`)}
+      ${card("Сохранение", `<p>«Сохранить» обновляет сцену и её поверхности для игры. «Тест в игре» сохраняет изменения и запускает мини-игру в Godot.</p>`)}
+      ${card("Проверка", state.findings.length ? state.findings.map(f => `<p class="${f.level}">${esc(f.message)}</p>`).join("") : `<p class="ok-line">${ic("check-circle")}Ошибок нет</p>`)}`;
+    compactHelp(p);
+    bind({
+      "regulator-run": () => App.runInGame(false),
+      "regulator-officer": () => s.officers[0] && App.select({t:"officer", id:s.officers[0].id}),
+      "regulator-player": () => App.select({t:"stop"}),
+      "regulator-route": d => App.select({t:"route",id:d.id}),
+    });
+  }
+
   function sceneInspector(p) {
+    if (state.id === "mini_regulator") return regulatorInspector(p);
     const s = state.S, q = s.question || {}, src = state.source, ru = (q.text && q.text.ru) || {};
     const routes = s.routes.filter((r) => r.kind === "manoeuvre").map((r) => r.exit);
     const errors = state.findings.filter((f) => f.level === "error"), warns = state.findings.filter((f) => f.level === "warn");
@@ -417,6 +435,12 @@
     { value: "up", title: "Рука вверх" }, { value: "down", title: "Руки опущены" },
   ];
   function officerInspector(p, ref, o) {
+    if (state.id === "mini_regulator") {
+      p.innerHTML = `${head(`<span class="ibadge">${ic("person")}</span>`, "Регулировщик", "положение в мини-игре")}
+        ${card("Положение", `<label>X, м<input type="number" step="0.1" data-text="officerX" value="${o.pos[0]}"></label><label>Z, м<input type="number" step="0.1" data-text="officerZ" value="${o.pos[1]}"></label><p>Тяните регулировщика по сцене или задайте координаты. Жест и направление груди в каждом вопросе выбирает мини-игра.</p>`)}`;
+      bind(Object.fromEntries(["officerX","officerZ"].map((key,i) => [`text:${key}`, v => App.edit(() => { if (Number.isFinite(Number(v))) o.pos[i] = Number(v); })])));
+      return;
+    }
     p.innerHTML = `${head(`<span class="ibadge">${ic("person")}</span>`, "Регулировщик", GESTURES.find((g) => g.value === o.gesture)?.title || "")}
       ${card("Сигнал", `<div class="gestures">${GESTURES.map((g) => `<button class="gesture ${o.gesture === g.value ? "on" : ""}" data-chip="gesture" data-value="${g.value}">${gesturePic(g.value)}<span>${g.title}</span></button>`).join("")}</div>`)}
       ${card("Куда смотрит грудью", `<div class="turn-row">${dial(o.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;

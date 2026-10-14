@@ -67,6 +67,7 @@ kbd { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 6px
 .brand:hover .logo { background: var(--accent-press); }
 .scene-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .scene-name b { font-size: 15px; font-weight: 600; white-space: nowrap; }
+.editor-sections { margin-left: 16px; flex-shrink: 0; }
 .spacer { flex: 1; }
 .top-actions { display: flex; align-items: center; gap: 6px; }
 .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }

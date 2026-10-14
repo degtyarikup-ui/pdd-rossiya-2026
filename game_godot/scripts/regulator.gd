@@ -194,6 +194,10 @@ func _setup_scene_objects() -> void:
 	officer = RegulatorOfficerScript.new()
 	officer.name = "RegulatorOfficer"
 	officer.position = Vector3(0, 0, 0)
+	if junction.authored_network != null:
+		var authored: Array = junction.authored_network.data.get("officers", [])
+		if not authored.is_empty():
+			officer.position = Vector3(-float(authored[0].pos[0]), 0, -float(authored[0].pos[1]))
 	add_child(officer)
 
 	var vehicle_id := "sedan"
@@ -204,8 +208,9 @@ func _setup_scene_objects() -> void:
 		elif arg.begins_with("--paint="):
 			vehicle_paint = Color(arg.trim_prefix("--paint="))
 
-	car = RegulatorCarScript.new(vehicle_id, vehicle_paint)
+	car = RegulatorCarScript.new(vehicle_id, vehicle_paint, junction.authored_network.data if junction.authored_network != null else {})
 	car.name = "PlayerCar"
+	officer.rotation.y = car.authored_yaw - PI
 	car.maneuver_finished.connect(_on_car_maneuver_finished)
 	add_child(car)
 	if season_name == "autumn":

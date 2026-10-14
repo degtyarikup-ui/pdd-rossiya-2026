@@ -211,9 +211,15 @@ const App = (() => {
     state.S.markings = state.S.markings || [];
     state.S.lawns = state.S.lawns || [];
     state.id = sid;
+    if (sid !== "mini_regulator") state.lastTicket = sid;
+    state.section = sid === "mini_regulator" ? "regulator" : "city";
+    document.querySelectorAll("[data-editor-section]").forEach(b => {
+      const on = b.dataset.editorSection === state.section;
+      b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on));
+    });
     // A traced scene has no road plan: one detected from its roads finds the lanes and ways of its cars.
     state.plan = null;
-    if (!state.S.layout) api(`/api/layout/detect/${sid}`).then((d) => { if (state.id === sid) { state.plan = d.layout; App.renderInspector?.(); } }).catch(() => {});
+    if (!state.S.layout && sid !== "mini_regulator") api(`/api/layout/detect/${sid}`).then((d) => { if (state.id === sid) { state.plan = d.layout; App.renderInspector?.(); } }).catch(() => {});
     state.findings = r.findings;
     state.edges = r.edges;
     state.build = r.build;
@@ -233,6 +239,7 @@ const App = (() => {
     if (typeof Framing !== "undefined") Framing.refresh();
   }
   const sceneTitle = (sid) => {
+    if (sid === "mini_regulator") return "Мини-игра «Регулировщик»";
     const m = String(sid || "").match(/^ticket_(\d+)_(\d+)$/);
     return m ? `Билет ${m[1]} · вопрос ${m[2]}` : sid;
   };
@@ -340,6 +347,7 @@ const App = (() => {
       s.stop.x = r3(s.stop.x + dx); s.stop.z = r3(s.stop.z + dz);
       const ap = s.routes.find((r) => r.id === "approach");
       if (ap && ap.points) ap.points.forEach(shift);
+      if (s.id === "mini_regulator") for (const r of s.routes.filter(r => r.kind === "manoeuvre")) r.points[0] = [s.stop.x, s.stop.z];
     } else if (ref.t === "node") {
       Layout.moveNode(s, ref.id, [o.x + dx, o.z + dz]);
     } else if (ref.t === "route") {
@@ -520,6 +528,7 @@ const App = (() => {
     chip.hidden = !s;
     chip.className = "chip " + (err ? "bad" : state.playable ? "good" : "");
     chip.innerHTML = !s ? "" : err ? `${ic("error")}${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}` : state.playable ? `${ic("check-circle")}в игре` : "не в игре";
+    if (state.id === "mini_regulator" && !err) chip.textContent = "мини-игра";
     chip.dataset.tip = err ? "Открыть проверку" : "";
     $("#save").disabled = !state.dirty;
     $("#save").classList.toggle("pulse", state.dirty);
@@ -639,6 +648,10 @@ const App = (() => {
     $("#help").onclick = () => { renderKeys(); $("#keys").hidden = false; };
     $("#keys").addEventListener("click", (e) => { if (e.target.id === "keys" || e.target.closest("[data-close]")) $("#keys").hidden = true; });
     $("#home").onclick = () => showHome(true);
+    document.querySelectorAll("[data-editor-section]").forEach(b => b.onclick = async () => {
+      const sid = b.dataset.editorSection === "regulator" ? "mini_regulator" : state.lastTicket || state.scenes.find(s => s.id !== "mini_regulator")?.id;
+      if (sid && sid !== state.id) await openScene(sid);
+    });
     $("#status").onclick = () => App.showChecks?.();
     $("#v-plan").onclick = () => setView("plan");
     $("#v-3d").onclick = () => setView("3d");

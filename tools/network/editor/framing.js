@@ -105,7 +105,8 @@ const Framing = (() => {
     collapsed = !on;
     const el = $("#refpic");
     const src = photo();
-    el.hidden = !state.S;
+    el.hidden = !state.S || state.id === "mini_regulator";
+    if (state.id === "mini_regulator") return;
     el.classList.toggle("collapsed", collapsed);
     const source = state.source, q = state.S?.question || {}, ru = q.text?.ru || {};
     const answers = source ? source.answers.map(a => a.text) : ru.options || [];

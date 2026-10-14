@@ -257,6 +257,7 @@ const Scene3D = (() => {
     const g = setGroup("static");
     if (!model) return;
     const token = loadToken;
+    if (model.id === "mini_regulator") return;
     loadGltf(`/asset/scene/${model.id}/scene.glb`).then((root) => {
       if (!root || token !== loadToken || groups.static !== g) return;
       if (build) filterBaked(root, build);
@@ -681,7 +682,7 @@ const Scene3D = (() => {
       g.rotation.y = model.stop.yaw || 0;
       return;
     }
-    g.position.set(o.pos[0], 0, o.pos[1]);
+    g.position.set(o.pos[0], o.y || 0, o.pos[1]);
     g.rotation.y = o.yaw || 0;
     if (t === "light") g.scale.setScalar(o.scale || 1);
     else if (o.scale) g.scale.set(o.scale[0], o.scale[1], o.scale[2]);
@@ -1101,7 +1102,7 @@ const Scene3D = (() => {
     rebuildStatic();
     rebuildRoads();
     refresh(S);
-    fit();
+    fit(S.id === "mini_regulator" ? [-55, -50, 55, 60] : undefined);
   }
   function refresh(S) {
     if (S) model = S;

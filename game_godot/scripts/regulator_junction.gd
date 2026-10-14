@@ -23,6 +23,7 @@ var walkers_data: Array[Dictionary] = []
 
 var sc: Scenery
 var pools := {}
+var authored_network: RoadNetwork
 
 
 func _init(season_name := "summer") -> void:
@@ -33,11 +34,40 @@ func _init(season_name := "summer") -> void:
 		sc.material.set_shader_parameter("snow_color", Vector3(snow_color.r, snow_color.g, snow_color.b))
 	_create_materials()
 	_build_ground()
-	_build_surfaces()
-	_build_markings()
-	_build_lamps()
-	_build_city_scenery()
+	authored_network = RoadNetwork.load_scene("mini_regulator")
+	if authored_network != null and not authored_network.build.is_empty():
+		_build_authored_scene()
+	else:
+		_build_surfaces()
+		_build_markings()
+		_build_lamps()
+		_build_city_scenery()
 	_setup_walkers()
+
+
+## The stand uses the city's x/z convention; this mini-game faces the opposite way.
+## Rotate the saved ground once and apply the same transform to every authored prop.
+func _build_authored_scene() -> void:
+	var turn := Transform3D(Basis(Vector3.UP, PI), Vector3.ZERO)
+	var surfaces := MeshInstance3D.new()
+	surfaces.name = "EditedSurfaces"
+	surfaces.mesh = authored_network.surface_mesh(sc, 0.0, turn)
+	surfaces.rotation.y = PI
+	surfaces.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(surfaces)
+	for item in authored_network.data.get("decor", []):
+		var pool = _get_pool(str(item.prop), 256, true)
+		if pool == null: continue
+		var size: Array = item.get("scale", [1,1,1])
+		var pos := Vector3(-float(item.pos[0]), float(item.get("y", 0)), -float(item.pos[1]))
+		var basis := Basis(Vector3.UP, float(item.get("yaw", 0)) + PI).scaled(Vector3(size[0],size[1],size[2]))
+		var tint := Color(item.get("tint", "#ffffff"))
+		var seasonal: Dictionary = item.get("seasonColour", {})
+		if not seasonal.is_empty() and str(item.get("tint", "")).to_lower() == seasonal.authoredTint:
+			tint = sc.color(str(seasonal.key), int(seasonal.index))
+		tint.a = 1.0 if sc.season.precipitation == "snow" else 0.0
+		pool.put(0, Transform3D(basis, pos), tint)
+	_finish_pools()
 
 
 func _create_materials() -> void:

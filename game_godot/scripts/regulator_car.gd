@@ -25,11 +25,24 @@ var blinker_state := false
 
 var vehicle_id := "sedan"
 var vehicle_paint := Color("#0574F8")
+var authored_start := START_POS
+var authored_yaw := START_YAW
+var authored_paths := {}
 
 
-func _init(id: String = "sedan", paint: Color = Color("#0574F8")) -> void:
+func _init(id: String = "sedan", paint: Color = Color("#0574F8"), scene: Dictionary = {}) -> void:
 	vehicle_id = id
 	vehicle_paint = paint
+	if scene.has("stop"):
+		authored_start = Vector3(-float(scene.stop.x), 0, -float(scene.stop.z))
+		authored_yaw = float(scene.stop.get("yaw", 0)) + PI
+		for route in scene.get("routes", []):
+			if route.get("kind") != "manoeuvre": continue
+			var move = {"straight":RegulatorRules.Move.STRAIGHT,"left":RegulatorRules.Move.LEFT,"right":RegulatorRules.Move.RIGHT,"uturn":RegulatorRules.Move.UTURN}.get(route.get("exit"))
+			if move == null: continue
+			var points: Array[Vector3] = []
+			for p in route.points: points.append(Vector3(-float(p[0]), 0, -float(p[1])))
+			if points.size() >= 2: authored_paths[move] = points
 	_load_model()
 	reset_to_start()
 
@@ -64,8 +77,8 @@ func reset_to_start() -> void:
 	active_move = RegulatorRules.Move.NONE
 	active_blinker = ""
 	_set_blinkers_visible(false, false)
-	position = START_POS
-	rotation.y = START_YAW
+	position = authored_start
+	rotation.y = authored_yaw
 
 
 func start_maneuver(move: RegulatorRules.Move) -> void:
@@ -129,6 +142,12 @@ func _process(delta: float) -> void:
 
 
 func _evaluate_trajectory(move: RegulatorRules.Move, t: float) -> Array:
+	if authored_paths.has(move):
+		var points: Array = authored_paths[move]
+		var at := clampf(t, 0, 1) * (points.size() - 1)
+		var index := mini(int(at), points.size() - 2)
+		var tangent: Vector3 = points[index + 1] - points[index]
+		return [points[index].lerp(points[index + 1], at - index), atan2(tangent.x, tangent.z)]
 	var pos := START_POS
 	var yaw := START_YAW
 

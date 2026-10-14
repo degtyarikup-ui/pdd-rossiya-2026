@@ -137,7 +137,8 @@ def check_scene(scene: dict) -> list:
     q = scene.get("question") or {}
     options = (q.get("text") or {}).get("ru", {}).get("options", [])
     correct = q.get("correct")
-    if correct is None or not (0 <= correct < len(options)):
+    mini_regulator = scene.get("id") == "mini_regulator" and scene.get("miniGame") == "regulator"
+    if not mini_regulator and (correct is None or not (0 <= correct < len(options))):
         finding(out, "error", "correct-index", f"номер правильного ответа {correct!r} вне диапазона из {len(options)} вариантов",
                 {"type": "question"})
     manoeuvre = q.get("maneuver")
@@ -146,6 +147,15 @@ def check_scene(scene: dict) -> list:
             finding(out, "error", "no-manoeuvre", f"у манёвра по условию «{manoeuvre}» нет маршрута",
                     {"type": "question"})
     labels = [r.get("label") for r in scene.get("routes", []) if r["kind"] == "choice"]
+    if mini_regulator:
+        if len(scene.get("officers", [])) != 1:
+            finding(out, "error", "regulator-count", "В мини-игре должен быть один регулировщик")
+        for move in MANOEUVRES:
+            route = routes.get(f"manoeuvre_{move}")
+            if not route or len(route.get("points", [])) < 2:
+                finding(out, "error", "regulator-route", f"Нет пути игрока: {move}")
+            elif Point(route["points"][0]).distance(stop_pt) > .05:
+                finding(out, "error", "regulator-route-start", f"Путь {move} должен начинаться у игрока")
     if len(labels) != len(set(labels)):
         finding(out, "error", "label-dup", "два варианта ответа с одной буквой", {"type": "question"})
 
@@ -168,7 +178,7 @@ def check_scene(scene: dict) -> list:
     check_layers(scene, area, out)
 
     status = (scene.get("compliance") or {}).get("status")
-    if status not in ("unverified", "ok", "fixed"):
+    if status not in ("unverified", "ok", "fixed") and not mini_regulator:
         finding(out, "warn", "compliance", f"статус сверки с билетом: {status!r}", {"type": "question"})
     return out
 

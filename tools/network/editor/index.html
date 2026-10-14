@@ -85,6 +85,10 @@
   <header class="top">
     <button class="brand" id="home" data-tip="Все сцены"><span class="logo"><svg class="i"><use href="#i-map"/></svg></span></button>
     <div class="scene-name"><b id="title">Редактор сцен</b><span id="status" class="chip"></span></div>
+    <nav class="seg editor-sections" role="tablist" aria-label="Редактируемая игра">
+      <button role="tab" data-editor-section="city" aria-selected="true" class="on">Билеты</button>
+      <button role="tab" data-editor-section="regulator" aria-selected="false">Регулировщик</button>
+    </nav>
     <div class="spacer"></div>
     <div class="top-actions">
       <button id="undo" class="icon-btn" data-tip="Отменить  ⌘Z" disabled><svg class="i"><use href="#i-undo"/></svg></button>

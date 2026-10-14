@@ -101,6 +101,8 @@ def length_of(points: list) -> float:
 
 
 def sync(sid: str) -> dict:
+    if sid == "mini_regulator":
+        return {"miniGame": "regulator", "source": "network/mini_regulator.json"}
     net = check.load(sid)
     base = engine_base(sid)
     out = copy.deepcopy(base)
@@ -267,7 +269,9 @@ def backfill(sid: str) -> bool:
 
 
 def playable(sid: str) -> bool:
-    """The game plays a scene that has been reviewed."""
+    """The game plays a city scene that has been reviewed."""
+    if sid == "mini_regulator":
+        return False  # Dedicated mini-game; never a junction in the city ride.
     net = check.load(sid)
     return bool(net.get("reviewed", True))
 
@@ -287,6 +291,8 @@ def main(argv: list) -> int:
         mode = "backfill"
     ids = [a for a in argv if not a.startswith("--")] or sorted(p.stem for p in NET.glob("*.json"))
     for sid in ids:
+        if sid == "mini_regulator" and mode != "sync":
+            continue  # Mini-game source has no legacy engine.json to initialise/backfill.
         if mode == "init":
             init_scene(sid)
             engine_base.cache_clear()

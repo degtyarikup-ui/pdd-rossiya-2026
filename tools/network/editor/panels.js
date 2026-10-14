@@ -42,6 +42,8 @@
   function filtered() {
     const q = query.trim().toLowerCase();
     return state.scenes.filter((s) => {
+      if ((s.id === "mini_regulator") !== (state.section === "regulator")) return false;
+      if (state.section === "regulator") return true;
       if (q && !(s.id.includes(q.replace(/\s+/g, "_")) || App.sceneTitle(s.id).toLowerCase().includes(q) || (s.questionText || "").toLowerCase().includes(q))) return false;
       if (filter === "game") return s.playable;
       if (filter === "err") return s.errors > 0;
@@ -52,8 +54,8 @@
   const thumbUrl = (s) => s.preview ? `/preview/${s.id}.png?v=${App.thumbRev[s.id] || 0}` : "";
   function scenesPane() {
     const list = filtered();
-    return `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="scene-q" placeholder="Билет, например 10 13" value="${esc(query)}"></label>
-      <div class="chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t}</button>`).join("")}</div></div>
+    return `${state.section === "regulator" ? `<div class="pane-head"><p>Сцена мини-игры. Объекты и разметка редактируются на виде.</p></div>` : `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="scene-q" placeholder="Билет, например 10 13" value="${esc(query)}"></label>
+      <div class="chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t}</button>`).join("")}</div></div>`}
       <div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${s.id}">
         <span class="scene-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : ""}</span>
         <span class="scene-text"><b>${esc(App.sceneTitle(s.id))}</b>
@@ -227,7 +229,7 @@
         ${cat.lightTramAsset ? tile({ kind: "light", id: "light_tram", tram: true }, "С трамвайной секцией", Thumbs.img("light", "light_tram"), Tools.current() === "light" && Tools.opts.tram) : ""}
       </div>`);
     }
-    const props = [...cat.props.map((p) => p.id), "parked"];
+    const props = [...cat.props.map((p) => p.id), ...(state.id === "mini_regulator" ? [] : ["parked"])];
     for (const g of Catalog.PROP_GROUPS) {
       const items = props.filter((p) => g.match(p) && hit(Catalog.propName(p)));
       if (!items.length) continue;

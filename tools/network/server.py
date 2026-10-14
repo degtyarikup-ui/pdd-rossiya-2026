@@ -272,7 +272,7 @@ def run_game(sid: str, auto: bool) -> dict:
     old = GODOT_RUN["proc"]
     if old and old.poll() is None:
         old.terminate()
-    args = [godot, "--path", str(GAME), "--", f"--situation={sid}", "--near"]
+    args = [godot, "--path", str(GAME), "--", "--regulator"] if sid == "mini_regulator" else [godot, "--path", str(GAME), "--", f"--situation={sid}", "--near"]
     if auto:
         args.append("--auto")
     GODOT_RUN["proc"] = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -389,6 +389,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, run_game(m[1], bool(self.body().get("auto"))))
         m = re.match(r"^/api/game/include/([a-z0-9_]+)$", path)
         if m and self.scene_exists(m[1]):
+            if m[1] == "mini_regulator":
+                return self.send(400, {"error": "Мини-игра открывается отдельно от заезда по городу"})
             return self.include(m[1], bool(self.body().get("playable")))
         m = re.match(r"^/api/thumb/([a-z0-9_]+)$", path)
         if m and self.scene_exists(m[1]):
@@ -410,8 +412,10 @@ class Handler(BaseHTTPRequestHandler):
         findings = check.check_scene(scene)
         if m[1] == "preview":
             return self.send(200, {"findings": findings, "build": build.build(scene), "edges": edges(scene)})
-        if not (SIT / m[2] / "engine.json").exists():
+        if m[2] != "mini_regulator" and not (SIT / m[2] / "engine.json").exists():
             return self.send(400, {"error": "У сцены нет основы игры (situations/<id>/engine.json)"})
+        if m[2] == "mini_regulator" and any(f["level"] == "error" for f in findings):
+            return self.send(400, {"error": "Исправьте ошибки мини-игры перед сохранением", "findings": findings})
         target = NET / f"{m[2]}.json"
         old = check.load(m[2]) if target.exists() else {}
         removed = removed_items(old, scene)
@@ -493,7 +497,8 @@ class Handler(BaseHTTPRequestHandler):
             out.append({"id": p.stem, "status": (s.get("compliance") or {}).get("status"),
                         "errors": sum(f["level"] == "error" for f in found),
                         "warns": sum(f["level"] == "warn" for f in found),
-                        "playable": bool(s.get("reviewed", True)),
+                        "playable": p.stem != "mini_regulator" and bool(s.get("reviewed", True)),
+                        "miniGame": s.get("miniGame"),
                         "regulator": bool(s.get("regulator", False)),
                         "layout": bool(s.get("layout")),
                         "preview": (PREVIEW / f"{p.stem}.png").exists(),

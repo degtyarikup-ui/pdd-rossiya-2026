@@ -26,17 +26,19 @@ const Tools = (() => {
   let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null;
 
   const S = () => App.state.S;
+  const allowed = id => S()?.id !== "mini_regulator" || !["actor","light","sign","track","answer","officer"].includes(id);
   const snapGrid = (v, e) => (e && e.alt ? v : Math.round(v * 2) / 2);   // half a metre: neat, and ⌥ for free
 
   // ---- the toolbar -----------------------------------------------------------------------
   function renderBar() {
-    $("#toolbar").innerHTML = LIST.map((t) => t.sep ? `<span class="tsep"></span>` :
+    $("#toolbar").innerHTML = LIST.filter(t => allowed(t.id)).map((t) => t.sep ? `<span class="tsep"></span>` :
       `<button data-tool="${t.id}" class="${t.id === tool ? "on" : ""}" data-tip="${esc(t.title)}  ${t.key}">${ic(t.icon)}</button>`).join("");
     renderPopover();
     renderHint();
   }
 
   function set(id) {
+    if (!allowed(id)) return App.toast("В мини-игре редактируются дороги, разметка и окружение");
     if (!LIST.find((t) => t.id === id)) return;
     finishDraft(true);
     tool = id;

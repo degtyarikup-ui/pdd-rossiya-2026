@@ -88,6 +88,8 @@ func _process(delta: float) -> void:
 	var road_colour := dry_road.lerp(Color("#141A22"), rain * 0.9 + fog * 0.25)
 	junction.asphalt_mat.set_shader_parameter("surface_colour", Vector3(road_colour.r, road_colour.g, road_colour.b))
 	junction.asphalt_mat.set_shader_parameter("wetness", rain)
+	if junction.authored_network != null:
+		junction.sc.material.set_shader_parameter("wetness", rain)
 	var walk_colour := dry_walk.lerp(dry_walk * 0.72, rain * 0.35 + fog * 0.15)
 	junction.sidewalk_mat.set_shader_parameter("surface_colour", Vector3(walk_colour.r, walk_colour.g, walk_colour.b))
 	headlight.light_energy = overcast * 2.0
