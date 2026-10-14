@@ -92,6 +92,7 @@ godot --headless --path game_godot --script res://tests/ride_benchmark_check.gd 
 godot --headless --path game_godot --script res://tests/pause_actor_check.gd # заморозка независимых и физических участников в паузе
 godot --headless --path game_godot --script res://tests/shared_pictures_check.gd # общий источник фото Flutter/Godot без копий
 godot --headless --path game_godot --script res://tests/game_ui_check.gd # анимации, фото, компактный HUD и окно паузы
+godot --headless --path game_godot --script res://tests/controls_layout_check.gd # крупные педали/повороты: экраны 280–640 dp, плотности, системные отступы и мультитач
 godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # штатные линзы, мигание и синхронное процедурное свечение
 godot --headless --path game_godot --script res://tests/question_signals_check.gd # намерения игрока/участников, вопрос без задержки, поворотники и пауза
 godot --headless --path game_godot --script res://tests/actor_hazards_check.gd # постоянная аварийка участников, стоянка, обе стороны, пауза и старые настройки

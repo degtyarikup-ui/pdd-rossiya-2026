@@ -224,6 +224,7 @@ func _run() -> void:
 	var controls = load("res://scripts/controls.gd").new()
 	root.add_child(controls)
 	check(controls._buttons.brake.size.x == controls._buttons.brake.size.y, "Brake button is square")
+	check(controls._buttons.brake.size.is_equal_approx(controls._buttons.gas.size), "Brake and gas have the same size")
 	check(controls._buttons.gas.get_global_rect().position.x > controls._buttons.right.get_global_rect().end.x,
 		"Compact phone pedals do not overlap steering")
 	var gas_touch := InputEventScreenTouch.new()

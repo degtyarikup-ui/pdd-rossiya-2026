@@ -30,6 +30,12 @@ const ACCENT := Color("#0574F8")
 const CARD := Color("#FFFFFF")
 const DARK := Color("#1C1D22")
 const RED := Color("#F04438")
+const STEER_SIZE := 80.0
+const PEDAL_SIZE := 104.0
+const EDGE_MARGIN := 20.0
+const STEER_GAP := 12.0
+const PEDAL_GAP := 14.0
+const GROUP_GAP := 16.0
 
 
 func _ready() -> void:
@@ -39,10 +45,10 @@ func _ready() -> void:
 	root.size = get_viewport().get_visible_rect().size
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	_add(root, "left", "res://icons/steer_left.svg", "", Vector2(64, 64), CARD, ACCENT, 14, 30)
-	_add(root, "right", "res://icons/steer_right.svg", "", Vector2(64, 64), CARD, ACCENT, 14, 30)
-	_add(root, "brake", "res://icons/pedal_brake.svg", "", Vector2(64, 64), DARK, Color.WHITE, 14, 32)
-	_add(root, "gas", "res://icons/pedal_gas.svg", "", Vector2(88, 88), CARD, Color("#121212"), 44, 44)
+	_add(root, "left", "res://icons/steer_left.svg", "", Vector2.ONE * STEER_SIZE, CARD, ACCENT, 18, 40)
+	_add(root, "right", "res://icons/steer_right.svg", "", Vector2.ONE * STEER_SIZE, CARD, ACCENT, 18, 40)
+	_add(root, "brake", "res://icons/pedal_brake.svg", "", Vector2.ONE * PEDAL_SIZE, DARK, Color.WHITE, 18, 52)
+	_add(root, "gas", "res://icons/pedal_gas.svg", "", Vector2.ONE * PEDAL_SIZE, CARD, Color("#121212"), 52, 52)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
@@ -79,6 +85,9 @@ func _add(root: Control, name: String, icon_path: String, caption: String, size:
 	panel.set_meta("fg", fg)
 	panel.set_meta("icon", icon)
 	panel.set_meta("label", label)
+	panel.set_meta("base_size", size)
+	panel.set_meta("icon_px", icon_px)
+	panel.set_meta("radius", radius)
 	root.add_child(panel)
 	_buttons[name] = panel
 
@@ -89,12 +98,25 @@ func _layout() -> void:
 	var view := get_viewport().get_visible_rect().size / unit
 	_root.size = view
 	var ins := Ui.insets(get_viewport())
-	var safe := 20.0
-	var bottom: float = view.y - safe - ins.bottom / unit
-	_buttons.left.position = Vector2(safe, bottom - _buttons.left.size.y)
-	_buttons.right.position = Vector2(safe + _buttons.left.size.x + 8.0, bottom - _buttons.right.size.y)
-	_buttons.gas.position = Vector2(view.x - safe - _buttons.gas.size.x, bottom - _buttons.gas.size.y)
-	_buttons.brake.position = Vector2(view.x - safe - _buttons.brake.size.x, _buttons.gas.position.y - 10.0 - _buttons.brake.size.y)
+	var left: float = EDGE_MARGIN + ins.left / unit
+	var right: float = view.x - EDGE_MARGIN - ins.right / unit
+	var top: float = EDGE_MARGIN + ins.top / unit
+	var bottom: float = view.y - EDGE_MARGIN - ins.bottom / unit
+	# Keep generous targets in dp, shrinking only when the usable screen cannot fit them.
+	# Gaps stay fixed so the extra touch padding cannot select a neighbouring button.
+	var fit := minf(1.0, minf(
+		(right - left - STEER_GAP - GROUP_GAP) / (2.0 * STEER_SIZE + PEDAL_SIZE),
+		(bottom - top - PEDAL_GAP) / (2.0 * PEDAL_SIZE)))
+	for panel: Panel in _buttons.values():
+		panel.size = panel.get_meta("base_size") * fit
+		var icon: TextureRect = panel.get_meta("icon")
+		icon.size = Vector2.ONE * float(panel.get_meta("icon_px")) * fit
+		icon.position = (panel.size - icon.size) / 2.0
+		panel.get_theme_stylebox("panel").set_corner_radius_all(roundi(float(panel.get_meta("radius")) * fit))
+	_buttons.left.position = Vector2(left, bottom - _buttons.left.size.y)
+	_buttons.right.position = Vector2(left + _buttons.left.size.x + STEER_GAP, bottom - _buttons.right.size.y)
+	_buttons.gas.position = Vector2(right - _buttons.gas.size.x, bottom - _buttons.gas.size.y)
+	_buttons.brake.position = Vector2(right - _buttons.brake.size.x, _buttons.gas.position.y - PEDAL_GAP - _buttons.brake.size.y)
 
 
 ## Hidden and released while a question is on screen.
