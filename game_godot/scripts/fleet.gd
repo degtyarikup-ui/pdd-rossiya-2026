@@ -18,8 +18,8 @@ static func paint(rng: RandomNumberGenerator) -> Color:
 	return Color(PAINTS[rng.randi() % PAINTS.size()])
 
 
-## A traffic police car: a white saloon, a blue stripe along both sides, «ДПС» on the doors and the
-## roof (the game's camera looks from above), a light bar whose blue and red lamps flash in turn.
+## A traffic police car: a white saloon, a blue stripe along both sides, «ДПС» on the doors,
+## a light bar whose blue and red lamps flash in turn.
 static func dps_car() -> Node3D:
 	var root := Node3D.new()
 	root.name = "dps"
@@ -29,9 +29,6 @@ static func dps_car() -> Node3D:
 		var door := _text(root, "ДПС", 0.42, DPS_BLUE)
 		door.position = Vector3(x * 1.02, 0.95, 0.15)
 		door.rotation.y = PI / 2 if x < 0 else -PI / 2
-	var roof := _text(root, "ДПС", 0.9, DPS_BLUE)
-	roof.position = Vector3(0, 1.37, -0.75)
-	roof.rotation = Vector3(-PI / 2, PI, 0)
 	_box(root, Vector3(1.0, 0.1, 0.26), Vector3(0, 1.4, 0.15), Color("#1E293B"))
 	var blue := _lamp(root, Vector3(-0.25, 1.5, 0.15), Color("#2F6BFF"))
 	var red := _lamp(root, Vector3(0.25, 1.5, 0.15), Color("#FF2D2D"))
