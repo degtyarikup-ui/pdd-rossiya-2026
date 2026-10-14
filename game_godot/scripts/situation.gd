@@ -799,17 +799,17 @@ static func _guide_material(colour: Color) -> StandardMaterial3D:
 
 
 func set_evidence_visible(on: bool) -> void:
-	if _guide:
+	if is_instance_valid(_guide):
 		_guide.visible = on
 	for n in _evidence:
-		n.visible = on
+		if is_instance_valid(n): n.visible = on
 	for n in _badges:
-		n.visible = on
+		if is_instance_valid(n): n.visible = on
 
 
 func set_badges_visible(on: bool) -> void:
 	for n in _badges:
-		n.visible = on
+		if is_instance_valid(n): n.visible = on
 
 
 static var _plates := {}

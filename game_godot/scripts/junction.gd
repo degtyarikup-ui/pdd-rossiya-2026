@@ -544,10 +544,15 @@ func begin_question_signals() -> void:
 
 func _update_signals() -> void:
 	for i in mini(motions.size(), data.actors.size()):
-		Fleet.set_hazards(motions[i].node, Fleet.actor_has_hazards(data.actors[i]))
-		var signals := motions[i].node.get_node_or_null("vehicle_signals") as Fleet.Signals
+		var motion := motions[i]
+		# A struck pedestrian leaves traffic immediately; its ragdoll/model is freed
+		# later while this junction may still be retained behind the player.
+		if motion.done or not is_instance_valid(motion.node):
+			continue
+		Fleet.set_hazards(motion.node, Fleet.actor_has_hazards(data.actors[i]))
+		var signals := motion.node.get_node_or_null("vehicle_signals") as Fleet.Signals
 		if signals and question_signals_started:
-			signals.set_side(Fleet.actor_signal_side(data.actors[i], motions[i].distance))
+			signals.set_side(Fleet.actor_signal_side(data.actors[i], motion.distance))
 
 
 ## updateActors (the participants of this junction). `player` in local coords.

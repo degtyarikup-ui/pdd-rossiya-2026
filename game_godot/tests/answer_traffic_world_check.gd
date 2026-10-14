@@ -110,6 +110,22 @@ func departures(world: Node, sit: Situation, junction: Junction) -> void:
 		var departed: bool = actor.distance > actor.exported_length + 1.0 or (actor.done and world._motion_out_of_view(sit, actor))
 		check(departed, "%s/%s: drives beyond its teaching arrow or leaves actual view (%.1f m beyond, retired %s)" % [sit.id, actor.id, actor.distance - actor.exported_length, actor.done])
 
+func departure_after_pass(world: Node, sit: Situation, waiting: Junction.Motion) -> void:
+	if waiting == null: return
+	check(not waiting.waits_for_player, sit.id + ": completed player pass releases the participant's player wait")
+	# The motorcycle in ticket_39_15 also yields to the truck. Its start is tied
+	# to that saved dependency clearing, rather than an arbitrary time since rebase.
+	var kept_order := true
+	var frames := 0
+	while not waiting.dependencies.all(func(a): return a.cleared) and frames < 300:
+		kept_order = kept_order and not waiting.active and waiting.distance == 0.0
+		step(world, 1)
+		frames += 1
+	check(kept_order, sit.id + ": deferred participant preserves its authored dependency order")
+	check(waiting.dependencies.all(func(a): return a.cleared), sit.id + ": preceding participants clear within ten seconds")
+	step(world, 15)
+	check(waiting.active and waiting.distance > 0.5, sit.id + ": deferred participant starts within half a second after dependencies clear")
+
 func scenario(id: String, priority_id: String, waiting_id: String, held_id := "") -> void:
 	var world: Node = await fixture(id)
 	if world.current.is_empty():
@@ -143,11 +159,9 @@ func scenario(id: String, priority_id: String, waiting_id: String, held_id := ""
 	var prior_distance: float = priority.distance if priority != null else 0.0
 	complete_pass(world, sit)
 	check(junction.complete and junction.resolution == null, id + ": junction leaves resolution after the completed player pass")
-	step(world, 60)
+	departure_after_pass(world, sit, waiting)
 	if priority != null and held_id == "":
 		check(priority.distance > prior_distance + 1.0 or priority.done, id + ": already moving participant continues across World rebase")
-	if waiting != null:
-		check(waiting.active and waiting.distance > 0.5, id + ": deferred participant starts after the player's completed pass")
 	if id == "ticket_39_15": await screenshot(world, "02-waiters-after-rebase")
 	if id == "ticket_12_5": await screenshot(world, "03-legacy-moving-car-after-rebase")
 	if held_id != "":

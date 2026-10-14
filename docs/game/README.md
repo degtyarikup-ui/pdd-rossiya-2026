@@ -75,6 +75,7 @@ godot --headless --path game_godot --script res://tests/traffic_check.gd    # т
 godot --headless --path game_godot --script res://tests/ambient_focus_check.gd # чистый кадр вопроса, плавный отвод трафика, объезд парковки и встречный поток
 godot --headless --path game_godot --script res://tests/terrain_motion_check.gd # проезд стыков, изменённые тротуары, движение копий и участников по видимой поверхности
 godot --headless --path game_godot --script res://tests/participant_motion_check.gd # коллизии и отъезд после стрелки
+godot --headless --path game_godot --script res://tests/participant_lifetime_check.gd # наезд: реальное удаление модели через 20 секунд, старые участники и подписи
 godot --headless --path game_godot --script res://tests/answer_traffic_check.gd # порядок старта после ответа, ожидание игрока, holdFor и движение после завершения вопроса
 godot --headless --path game_godot --script res://tests/answer_traffic_world_check.gd # реальные сцены: проезд игрока, перебазирование мира и отъезд участников
 godot --headless --path game_godot --script res://tests/tram_tracks_check.gd # автоматические пути, полный кузов, декорации, проёмы и сохранность исходных сцен
@@ -259,6 +260,7 @@ MP3 и локальный манифест не коммитятся. В Git л�
 - `signs-and-signals.md` — знаки/светофоры, нормативные формы, серый оборот и сохранённые крепления
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
 - `ride-performance-2026-10-14.md` — очистка старых локаций по пути, длительный тест и диагностика dev-сборки
+- `participant-lifetime-2026-10-15.md` — нативный вылет после удаления сбитого участника и регрессионная проверка
 - `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
 - `local-changes-sync-2026-10-14.md` — опубликованные локации и архивы всех локальных stash
 - `godot-roadmap.md` — что сделано и что открыто
