@@ -475,8 +475,10 @@ static func _without_baked_ground_staged(mesh: Mesh, net: RoadNetwork = null, fr
 ## Old rails are coloured ground geometry inside the combined GLB. Match all
 ## three vertices and the low height; similarly coloured furniture survives.
 static func _legacy_rail_triangle(a: Vector3, b: Vector3, c: Vector3, colours: PackedColorArray, ia: int, ib: int, ic: int) -> bool:
-	if colours.is_empty() or minf(a.y, minf(b.y, c.y)) < -0.005 or maxf(a.y, maxf(b.y, c.y)) > 0.16: return false
-	for colour in [Color("#8e999c"), Color("#929a9c")]:
+	# Some original rails rise with the sidewalk: the audited GLBs reach
+	# 0.214 m. A road-height-only filter leaves their upper strips behind.
+	if colours.is_empty() or minf(a.y, minf(b.y, c.y)) < -0.02 or maxf(a.y, maxf(b.y, c.y)) > 0.24: return false
+	for colour in [Color("#8e999c"), Color("#929a9c"), Color("#9ea6ae")]:
 		for target in [colour, colour.srgb_to_linear()]:
 			var matches := true
 			for index in [ia, ib, ic]:

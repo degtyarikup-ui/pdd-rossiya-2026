@@ -1,7 +1,8 @@
 // Material of every baked model (tools/godot_export: traffic, walkers).
 // Vertex colour RGB = the part's colour; A = 1 where the part takes the
 // instance's paint (car body, jacket). MultiMesh custom data per instance:
-// rgb = paint (sRGB), a = walk phase 0..1 (walkers) / 1 for an active traffic hazard pulse.
+// rgb = paint (sRGB), a = 2 * gait level + phase 0..1 for crowd walkers;
+// traffic uses 1 for an active hazard pulse. Waiting crowds do not use TIME.
 // UV2 = (swing amplitude, pivot height): legs and arms swing around the hip /
 // shoulder — a walk cycle with no bones and no extra draw calls.
 // New walkers: UV = (knee bend weight, knee height). Ticket pedestrians drive
@@ -12,6 +13,7 @@ render_mode diffuse_lambert, specular_disabled;
 uniform float walk_speed = 5.0;
 uniform bool articulated_walk = false;
 uniform bool manual_walk = false;
+uniform bool instance_walk = false;
 uniform float walk_phase = 0.0;
 uniform float walk_amount = 1.0;
 uniform vec3 walker_paint = vec3(1.0);
@@ -27,6 +29,10 @@ void vertex() {
 	if (abs(amp) > 0.001) {
 		float phase = manual_walk ? walk_phase : TIME * walk_speed + INSTANCE_CUSTOM.a * 6.2831853;
 		float amount = manual_walk ? walk_amount : 1.0;
+		if (instance_walk) {
+			phase = fract(INSTANCE_CUSTOM.a) * 6.2831853;
+			amount = floor(INSTANCE_CUSTOM.a * 0.5) / 15.0;
+		}
 		// UV.x marks only shin/foot vertices; UV.y is their local knee height.
 		// Traffic and stationary officers retain the original rigid vertex path.
 		if (articulated_walk && UV.x > 0.001) {

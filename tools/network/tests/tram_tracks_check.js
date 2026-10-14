@@ -52,11 +52,12 @@ Layout.applyActors(branchScene); Tracks.apply(branchScene);
 assert.deepEqual(branchScene, manual, 'explicit rail actor route edits survive all rebuilds');
 fixtures.push({name: 'manual bound tram route', scene: copy(branchScene)});
 
-for (const rgb of [[142, 153, 156], [146, 154, 156]]) {
+for (const rgb of [[142, 153, 156], [146, 154, 156], [158, 166, 174]]) {
   const colour = rgb.map(v => v / 255);
   const linear = colour.map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
   for (const c of [colour, linear]) {
     assert.ok(Tracks.isBakedRailTriangle([.05, .05, .05], [c, c, c]), 'old ground rails are removed in either colour space');
+    assert.ok(Tracks.isBakedRailTriangle([.165, .167, .213], [c, c, c]), 'raised sidewalk rails leave no old sloping strips');
     assert.ok(!Tracks.isBakedRailTriangle([.05, .05, 1], [c, c, c]), 'same grey on a post/building remains');
     assert.ok(!Tracks.isBakedRailTriangle([.05, .05, .05], [c, c, [.2, .3, .4]]), 'mixed-colour scenery remains');
   }

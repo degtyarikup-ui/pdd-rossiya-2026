@@ -9,7 +9,7 @@ const RAIL_Y := 0.045
 
 static func surfaces(plan: Dictionary) -> Array:
 	var result: Array = []
-	var rails := {"id": "tram_rails", "layer": "", "colour": "#929a9c", "y": RAIL_Y, "verts": [], "idx": []}
+	var rails := {"id": "tram_rails", "layer": "", "colour": "#929a9c", "y": RAIL_Y, "verts": [], "idx": [], "fade_ends": []}
 	var buffers := {"id": "tram_buffers", "layer": "", "colour": "#929a9c", "y": 0.0, "verts": [], "verts3d": [], "idx": []}
 	var screens := {"id": "tram_service_screen", "layer": "", "colour": "#747970", "y": 0.0, "verts": [], "verts3d": [], "idx": []}
 	var used := {}
@@ -26,7 +26,16 @@ static func surfaces(plan: Dictionary) -> Array:
 		# Independent simplification between fixed service boundaries gives
 		# two actors sharing a siding the identical rail segments, even when
 		# their teaching curves before that siding were different.
-		var line := simplify(actor.get("rails", PackedVector3Array()), anchors)
+		var source: PackedVector3Array = actor.get("rails", PackedVector3Array())
+		var fades: Array = []
+		for terminal in actor.get("terminals", []):
+			if not terminal.get("off_road",false):
+				fades.append(terminal.p)
+				rails.fade_ends.append({"p":terminal.p,"direction":Vector3(sin(float(terminal.yaw)),0,cos(float(terminal.yaw)))})
+		# Where no physical siding fits, embedded rails gently disappear into
+		# the asphalt over six metres. A visible road never receives a buffer.
+		if not fades.is_empty(): source = _fade_samples(source, fades, anchors)
+		var line := simplify(source, anchors)
 		for side in [-1.0, 1.0]:
 			strip(rails, line, RAIL_WIDTH, side * GAUGE * 0.5, used)
 		for service in actor.get("service", []):
@@ -62,6 +71,25 @@ static func surfaces(plan: Dictionary) -> Array:
 	if not buffers.idx.is_empty(): result.append(buffers)
 	if not screens.idx.is_empty(): result.append(screens)
 	return result
+
+
+static func _fade_samples(points: PackedVector3Array, ends: Array, anchors: Array) -> PackedVector3Array:
+	if points.size()<2: return points
+	var out := PackedVector3Array([points[0]])
+	var targets: Array = []
+	var length := TramTracks.length_of(points)
+	if ends.any(func(end): return end.distance_to(points[0])<0.05): targets.append(minf(6.0,length*0.5))
+	if ends.any(func(end): return end.distance_to(points[-1])<0.05): targets.append(maxf(length-6.0,length*0.5))
+	var distance := 0.0
+	for i in range(1,points.size()):
+		var segment := points[i-1].distance_to(points[i])
+		for target: float in targets:
+			if target>distance+0.00001 and target<distance+segment-0.00001:
+				var p := points[i-1].lerp(points[i],(target-distance)/segment)
+				out.append(p); anchors.append(p)
+		out.append(points[i])
+		distance += segment
+	return out
 
 ## Remove nearly collinear samples while keeping the rail within 2 cm of the
 ## actor's high-resolution curve. Straight routes need only two endpoints.

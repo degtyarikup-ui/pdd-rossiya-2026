@@ -10,6 +10,7 @@ const GRID_SIZE := 10.0
 const END_MARGIN := 1.2
 const MIN_RADIUS := 8.0
 const FENCE_QUESTION_RADIUS := 32.0
+const TERMINAL_DISTANCE := 75.0
 static var _prop_bounds := {}
 static var _tram_bounds := AABB()
 static var _tram_ready := false
@@ -60,6 +61,7 @@ static func plan(data: Dictionary, network: RoadNetwork, scenery: Scenery = null
 		return result
 	result.static_obstacles = static_obstacles(data, network, scenery)
 	var grid := _obstacle_grid(result.static_obstacles)
+	grid["_walks"] = _walk_grid(network)
 	var protected := _protected_routes(data, network)
 	var crop := float(data.get("crop", 90.0))
 	for actor in actors:
@@ -233,7 +235,13 @@ static func _plan_actor(actor: Dictionary, network: RoadNetwork, crop: float, ob
 			for i in range(1, exit.size()): path.append(exit[i])
 			service.append(exit)
 			break
-	if exit.is_empty(): diagnostics.append("no safe side branch; supported terminal stop")
+	if exit.is_empty():
+		# A narrow existing street may have no room for a siding. Continue on
+		# its own safe rail lane towards the scene edge rather than stopping
+		# immediately after the arrow or halfway across the sidewalk.
+		var tail := _straight_tail(path[-1], _tangent(path,path.size()-1,0.0), hw, hl, crop, network, grid)
+		for i in range(1,tail.size()): path.append(tail[i])
+		diagnostics.append("no safe side branch; supported distant terminal stop")
 	var rails := PackedVector3Array()
 	for point in entry: rails.append(point)
 	for i in path.size():
@@ -261,7 +269,8 @@ static func _entry(path: PackedVector3Array, yaw: float, hw: float, hl: float, c
 	if not branch.is_empty():
 		for i in range(branch.size() - 1, -1, -1): out.append(branch[i])
 		return out
-	var end := path[0] + direction * (hl + END_MARGIN)
+	var tail := _straight_tail(path[0], direction, hw, 0.2, crop, network, grid)
+	var end := tail[-1] if tail.size()>1 else path[0] + direction * (hl + END_MARGIN)
 	if _rail_end_clear(path[0], end, hw, crop, network, grid): out.append(end)
 	out.append(path[0])
 	return out
@@ -269,26 +278,78 @@ static func _entry(path: PackedVector3Array, yaw: float, hw: float, hl: float, c
 
 static func _service(start: Vector3, direction: Vector3, hw: float, hl: float, crop: float, network: RoadNetwork, grid: Dictionary, protected: Array, original: PackedVector3Array) -> PackedVector3Array:
 	var side := Vector3(direction.z, 0, -direction.x)
-	var best := PackedVector3Array()
-	var score := INF
+	var candidates: Array = []
 	for style in ["parallel", "side", "side_soft"]:
-		if style == "side_soft" and not best.is_empty(): continue
-		var forwards: Array = [20.0, 28.0, 36.0] if style == "parallel" else [12.0, 18.0, 24.0]
-		var laterals: Array = [10.0, -10.0, 18.0, -18.0, 30.0, -30.0] if style == "parallel" else [24.0, -24.0, 32.0, -32.0]
+		var forwards: Array = [20.0, 28.0, 36.0, 44.0, 60.0] if style == "parallel" else [12.0, 18.0, 24.0, 38.0]
+		var laterals: Array = [10.0, -10.0, 18.0, -18.0, 30.0, -30.0, 44.0, -44.0] if style == "parallel" else [24.0, -24.0, 32.0, -32.0, 48.0, -48.0]
 		for forward in forwards:
 			for lateral in laterals:
 				var end: Vector3 = start + direction * float(forward) + side * float(lateral)
 				var control1: Vector3 = start + direction * float(forward) * (0.6 if style == "parallel" else (0.75 if style == "side_soft" else 0.95))
 				var control2: Vector3 = end - direction * float(forward) * 0.5 if style == "parallel" else end - side * float(lateral) * (0.55 if style == "side_soft" else 0.65)
-				var candidate := _bezier(start, control1, control2, end)
-				if not _curve_clear(candidate, hw, hl, crop, network, grid, protected, original): continue
-				var candidate_score := length_of(candidate) + absf(float(lateral)) * 0.1
+				var end_direction := (end-control2).normalized()
+				if not _inside(end,atan2(end_direction.x,end_direction.z),hw+CLEARANCE,hl+END_MARGIN,crop,network): continue
+				var candidate_score := start.distance_to(end)*1.15 + absf(float(lateral)) * 0.1
+				candidate_score += maxf(0.0, TERMINAL_DISTANCE-end.length()) * 4.0
 				# Prefer a location screened by the existing buildings/trees. No prop is moved.
 				if _screened(end, grid.get("_all", [])): candidate_score -= 20.0
-				if candidate_score < score:
-					score = candidate_score
-					best = candidate
-	return best
+				candidates.append({"end":end,"direction":end_direction,"c1":control1,"c2":control2,"score":candidate_score})
+	# Rank cheap endpoint estimates first. Fully sweep only until the best
+	# available corridor passes, rather than evaluating every valid alternative.
+	candidates.sort_custom(func(a,b): return float(a.score)<float(b.score))
+	for item in candidates:
+		if not _terminal_clear(item.end,item.direction,hw,hl,network,grid): continue
+		var candidate := _bezier(start,item.c1,item.c2,item.end)
+		if _curve_clear(candidate,hw,hl,crop,network,grid,protected,original): return candidate
+	return PackedVector3Array()
+
+
+static func _straight_tail(start: Vector3, direction: Vector3, hw: float, hl: float, crop: float, network: RoadNetwork, grid: Dictionary) -> PackedVector3Array:
+	var points := PackedVector3Array([start])
+	for step in range(1,ceili(crop*2.0)+1):
+		var next := start + direction * float(step)
+		if not _segment_clear(points[-1],next,hw,hl,crop,network,grid): break
+		points.append(next)
+	return points
+
+
+## Terminal fittings and a parked body belong beyond the whole sidewalk,
+## not merely beyond the road centreline. Cache the original walk triangles.
+static func _walk_grid(network: RoadNetwork) -> Dictionary:
+	var grid := {}
+	if not network: return grid
+	for surface in network.build.get("surfaces",[]):
+		if str(surface.get("layer","")) != "pavement": continue
+		for i in range(0,surface.idx.size(),3):
+			var points := PackedVector2Array()
+			for corner in 3:
+				var index: int = surface.idx[i+corner]
+				points.append(Vector2(surface.verts[index*2],surface.verts[index*2+1]))
+			var bounds := Rect2(points[0],Vector2.ZERO).expand(points[1]).expand(points[2])
+			for x in range(floori(bounds.position.x/GRID_SIZE),floori(bounds.end.x/GRID_SIZE)+1):
+				for z in range(floori(bounds.position.y/GRID_SIZE),floori(bounds.end.y/GRID_SIZE)+1):
+					var key := Vector2i(x,z)
+					if not grid.has(key): grid[key]=[]
+					grid[key].append(points)
+	return grid
+
+
+static func _terminal_clear(p: Vector3, direction: Vector3, hw: float, hl: float, network: RoadNetwork, grid: Dictionary) -> bool:
+	if not network: return true
+	var right := SceneStitch.right(direction)
+	var polygon := PackedVector2Array()
+	for corner in [Vector2(-1,-1),Vector2(1,-1),Vector2(1,1),Vector2(-1,1)]:
+		var point: Vector3 = p + right*corner.x*(hw+0.6) + direction*corner.y*(hl+END_MARGIN+1.5)
+		if network.is_drivable(point): return false
+		polygon.append(Vector2(point.x,point.z))
+	if network.is_drivable(p): return false
+	var radius := hw+hl+END_MARGIN+2.0
+	var walks: Dictionary = grid.get("_walks",{})
+	for x in range(floori((p.x-radius)/GRID_SIZE),floori((p.x+radius)/GRID_SIZE)+1):
+		for z in range(floori((p.z-radius)/GRID_SIZE),floori((p.z+radius)/GRID_SIZE)+1):
+			for triangle: PackedVector2Array in walks.get(Vector2i(x,z),[]):
+				if not Geometry2D.intersect_polygons(polygon,triangle).is_empty(): return false
+	return true
 
 
 static func _bezier(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3) -> PackedVector3Array:

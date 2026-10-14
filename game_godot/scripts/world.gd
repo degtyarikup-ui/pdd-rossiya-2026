@@ -704,6 +704,17 @@ func pavement_supports(p: Vector3) -> bool:
 	return false
 
 
+func _pavement_height(p: Vector3) -> float:
+	for j in _junctions():
+		var local: Vector3 = j.sit.to_local(p)
+		if not j.sit.covers(local): continue
+		var map: GroundMap = j.sit.ground_map()
+		if map:
+			var height := map.walk_height(local)
+			if is_finite(height): return j.sit.to_global(Vector3(local.x,height,local.z)).y
+	return Street.KERB
+
+
 ## Junction participants, as seen in world coordinates.
 class WorldMotion:
 	var m: Junction.Motion
@@ -1869,6 +1880,7 @@ func _keep_ambient(parent: Node3D) -> void:
 	parent.add_child(trail)
 	trail.add_to_group("ambient_trails")
 	trail.ground_check = _ambient_trail_clear
+	trail.ground_height = _pavement_height
 	for car in traffic:
 		if car.get("sheltered", false) or _in_blank(car.z) or (parent.global_transform * Vector3(car.x, 0, car.z)).distance_to(drive.pos) > 240.0:
 			continue
@@ -1893,6 +1905,7 @@ func _ambient_trail_clear(p: Vector3, toward: Vector3, actor: Dictionary) -> boo
 		if not j.get("junction") is Junction: continue
 		for motion in j.junction.motions:
 			if motion.type != "tram" or motion.done: continue
+			if actor.pedestrian and not Junction.pedestrian_tram_clear(actor.node.global_position, p, motion, j.sit.global_transform, actor.hw, actor.hl): return false
 			var tram := _transform_tram_body(motion.footprint(), j.sit.global_transform)
 			if p.distance_squared_to(tram.p) > pow(float(tram.hl) + float(tram.hw) + float(actor.hl) + float(actor.hw) + 0.2, 2): continue
 			if Drive.overlap(body, tram, 0.06): return false
@@ -2247,7 +2260,7 @@ func _update_walkers(delta: float) -> void:
 		if not j.get("junction") is Junction: continue
 		for motion in j.junction.motions:
 			if motion.type == "tram" and not motion.done:
-				trams.append(_transform_tram_body(motion.footprint(), j.sit.global_transform))
+				trams.append({"motion": motion, "frame": j.sit.global_transform})
 	for w in walkers:
 		var z: float = w.z
 		if z < base or z > base+span:
@@ -2258,6 +2271,7 @@ func _update_walkers(delta: float) -> void:
 		var initial_x: float = w.dir*(_half_at(w.z)+1.0+(0.0 if w.v>0 else 1.1))
 		if not w.has("x"): w.x = initial_x
 		var at := Vector3(w.x,0,w.z)
+		var before := at
 		var direction := Vector3(sin(float(w.get("heading",0.0 if w.v>0 else PI))),0,cos(float(w.get("heading",0.0 if w.v>0 else PI))))
 		if not w.get("knocked_down",false) and _walk_clear(at):
 			# Look ahead on the drawn sidewalk, including bends and disabled sidewalk ends.
@@ -2273,14 +2287,20 @@ func _update_walkers(delta: float) -> void:
 				if free:
 					var walker_body := {"p": next, "yaw": SceneStitch.yaw(next_direction), "hw": 0.3, "hl": 0.3}
 					for tram in trams:
-						if next.distance_squared_to(tram.p) > pow(float(tram.hl) + float(tram.hw) + 1.0, 2): continue
-						if Drive.overlap(walker_body, tram, 0.06): free = false; break
+						if not Junction.pedestrian_tram_clear(at, walker_body.p, tram.motion, tram.frame): free = false; break
 				if free:
 					at = next
 					w.heading = atan2(next_direction.x,next_direction.z)
 		w.x = at.x; w.z = at.z; w.zw = at.z
 		w.alive = not w.get("knocked_down",false) and _walk_clear(at)
-		var shown := at+Vector3.UP*Street.KERB if w.alive else Vector3(0,-100,0)
+		var distance := before.distance_to(at)
+		w["walk_phase"] = fposmod(float(w.get("walk_phase",0.0)) + distance * 3.5, TAU)
+		var amount := clampf(distance / maxf(delta,0.001) / 1.2,0,1)
+		w["walk_amount"] = lerpf(float(w.get("walk_amount",0.0)),amount,1.0-exp(-14.0*delta))
+		var crowd: MultiMesh = w.mm
+		if crowd.use_custom_data:
+			crowd.set_instance_custom_data(w.slot, Models.walker_gait(crowd.get_instance_custom_data(w.slot), w.walk_phase, w.walk_amount))
+		var shown := at+Vector3.UP*_pavement_height(at) if w.alive else Vector3(0,-100,0)
 		(w.mm as MultiMesh).set_instance_transform(w.slot,Transform3D(Basis(Vector3.UP,float(w.get("heading",0.0 if w.v>0 else PI))),shown))
 
 

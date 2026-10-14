@@ -115,15 +115,15 @@ const Tracks = (() => {
     return best;
   }
 
-  // The old baked ground contains rails in two specific vertex colours. Limit
+  // The old baked ground contains rails in specific vertex colours. Limit
   // removal to all three matching ground vertices so grey props stay intact.
-  const railColours = [[142, 153, 156], [146, 154, 156]].map(c => c.map(v => v / 255));
+  const railColours = [[142, 153, 156], [146, 154, 156], [158, 166, 174]].map(c => c.map(v => v / 255));
   const linear = v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
   const bakedRailColours = [...railColours, ...railColours.map(c => c.map(linear))];
   function isBakedRailTriangle(heights, colours) {
     return heights.length === 3 && colours.length === 3
-      && heights.every(y => y >= -0.005 && y <= 0.16)
-      && colours.every(c => bakedRailColours.some(target => target.every((v, k) => Math.abs(c[k] - v) <= 1.5 / 255)));
+      && heights.every(y => y >= -0.02 && y <= 0.24)
+      && bakedRailColours.some(target => colours.every(c => target.every((v, k) => Math.abs(c[k] - v) <= 1.5 / 255)));
   }
 
   return { pathFor, apply, snap, nearest, branchesAhead, project, of, isBakedRailTriangle };

@@ -105,6 +105,8 @@ class Motion:
 	var impact_wait := 0.0
 	var tail_retry := 0.0
 	var rail_blocked := false
+	var walk_probe_key := Vector2(-1,-1)
+	var walk_probes: Array = []
 	var contact_cooldown := 0.0
 	var player_contact_latched := false
 	var gait := 0.0
@@ -363,6 +365,9 @@ func resolve(player: Drive) -> void:
 ## followingSpeed: keep a safe gap to whoever drives ahead in the same direction.
 func _following_speed(a: Motion, boxes: Array, dt: float) -> float:
 	if a.type == "pedestrian":
+		for entry in boxes:
+			if entry.type == "tram" and not pedestrian_tram_clear(a.pos, a.path.point_at(minf(a.path.length, a.distance + 0.5)), entry.who, Transform3D(), a.hw, a.hl):
+				return 0.0
 		return a.max_speed
 	var box := a.footprint()
 	var forward := Vector3(sin(box.yaw), 0, cos(box.yaw))
@@ -391,6 +396,35 @@ func _following_speed(a: Motion, boxes: Array, dt: float) -> float:
 		var safe := sqrt(pow(braking * headway, 2) + spd * spd + 2 * braking * room) - braking * headway
 		limit = minf(limit, minf(safe, room / maxf(dt, 0.001)))
 	return maxf(0.0, limit)
+
+
+## Let anyone already crossing finish; newcomers wait outside the approaching
+## tram's rail corridor. The tram's own sweep still yields to people inside it.
+static func pedestrian_tram_clear(from: Vector3, to: Vector3, tram: Motion, frame: Transform3D, hw := 0.3, hl := 0.3) -> bool:
+	var inverse := frame.affine_inverse()
+	from = inverse * from
+	to = inverse * to
+	var radius := tram.speed * 3.0 + tram.hl + tram.hw + hw + hl + 4.0
+	if to.distance_squared_to(tram.pos) > radius*radius: return true
+	var body := {"p": to, "yaw": 0.0, "hw": hw, "hl": hl}
+	if DRIVE.overlap(body, tram.footprint(), 0.12): return false
+	if not tram.active or tram.speed < 0.35 or tram.done: return true
+	var entered := {"p": from, "yaw": 0.0, "hw": hw, "hl": hl}
+	var blocked := false
+	var key := Vector2(tram.distance, tram.speed)
+	if tram.walk_probe_key != key:
+		tram.walk_probe_key = key
+		tram.walk_probes.clear()
+		var horizon := minf(tram.path.length, tram.distance + tram.speed * 3.0 + 3.0)
+		var distance := tram.distance
+		while distance <= horizon:
+			var tangent := tram.path.tangent_at(distance)
+			tram.walk_probes.append({"p": tram.path.point_at(distance), "yaw": atan2(tangent.x, tangent.z), "hw": tram.hw, "hl": tram.hl})
+			distance += 1.0
+	for probe in tram.walk_probes:
+		if DRIVE.overlap(entered, probe, 0.65): return true
+		if DRIVE.overlap(body, probe, 0.65): blocked = true
+	return not blocked
 
 
 ## Rail vehicles cannot steer around a person or a crossing car. Look along their actual

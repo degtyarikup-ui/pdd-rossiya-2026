@@ -31,7 +31,7 @@ func _init(mesh: Mesh, scenery: Scenery) -> void:
 			if absf(denominator) < 0.000001: continue
 			var y := (verts[ids[0]].y + verts[ids[1]].y + verts[ids[2]].y) / 3.0
 			var kind := ROAD if layer in road_layers else WALK if layer == walk_layer else 0
-			var triangle := [a, b, c, denominator, y, kind]
+			var triangle := [a, b, c, denominator, y, kind, verts[ids[0]].y, verts[ids[1]].y, verts[ids[2]].y]
 			var bounds := Rect2(a, Vector2.ZERO).expand(b).expand(c)
 			for x in range(floori(bounds.position.x/CELL), floori(bounds.end.x/CELL)+1):
 				for z in range(floori(bounds.position.y/CELL), floori(bounds.end.y/CELL)+1):
@@ -52,3 +52,15 @@ func at(p: Vector3) -> int:
 			height = t[4]; kind = t[5]
 		elif absf(float(t[4])-height)<0.0001: kind |= int(t[5])
 	return kind
+
+
+func walk_height(p: Vector3) -> float:
+	var q := Vector2(p.x,p.z)
+	var height := -INF
+	for t in buckets.get(Vector2i(floori(q.x/CELL),floori(q.y/CELL)),[]):
+		if int(t[5]) != WALK: continue
+		var u: float = (t[1]-t[2]).cross(q-t[2])/float(t[3])
+		var v: float = (q-t[2]).cross(t[0]-t[2])/float(t[3])
+		if u < -0.00001 or v < -0.00001 or u+v > 1.00001: continue
+		height = maxf(height, u*float(t[6])+v*float(t[7])+(1.0-u-v)*float(t[8]))
+	return height

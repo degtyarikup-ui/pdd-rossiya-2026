@@ -22,6 +22,8 @@ var _roads: Array = []            # [{outer: PackedVector2Array, holes: Array, b
 var _routes := {}                 # id -> PackedVector2Array (local x, z)
 var _cover := {}                  # Vector2i (COVER_CELL bucket) -> [[a, b, c]] drawn triangles, x/z
 const COVER_CELL := 5.0
+const TRAM_WALK_Y := 0.022
+const TRAM_WALK_RAMP := 0.9
 
 
 static func load_scene(scene_id: String) -> RoadNetwork:
@@ -239,7 +241,7 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 			triangle.append(s.verts3d[i] if s.has("verts3d") else Vector3(v[i * 2],y,v[i * 2 + 1]))
 		# Only raised sidewalks open for the driveway. Original carriageway,
 		# islands and question markings keep their authored geometry.
-		var pieces: Array = _subtract_service(triangle) if str(s.id) == "pavement" else [triangle]
+		var pieces: Array = _pavement_service_pieces(triangle) if str(s.id) == "pavement" else [triangle]
 		for piece in pieces:
 			for poly in SceneStitch.render_pieces(piece,stitch_bindings):
 				if s.layer == "" and _join_collar(poly): continue
@@ -250,6 +252,11 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 						st.set_uv(Vector2(w.x / period, w.z / period))
 						var blend := SceneStitch.surface_blend(p,stitch_bindings) if s.layer in ["asphalt","sand"] else 0.0
 						var tint := colour.lerp(Color("#776a53"),blend)
+						for end in s.get("fade_ends",[]):
+							var delta: Vector3 = p-end.p
+							var distance := absf(delta.dot(end.direction))
+							if distance<6.0 and absf(delta.dot(SceneStitch.right(end.direction)))<1.2:
+								tint = Color("#2c2f36").lerp(tint,smoothstep(0.0,6.0,distance))
 						st.set_color(Color(tint.r,tint.g,tint.b,0.0))
 						st.set_uv2(Vector2(layer,-blend))
 						st.add_vertex(p)
@@ -300,7 +307,9 @@ func _prepare_service_cuts() -> void:
 	for surface in tram_surfaces:
 		for polygon: PackedVector2Array in surface.get("cut_polygons", []):
 			if polygon.size() < 3: continue
-			var cut := {"points": polygon, "box": _box(polygon).grow(0.001)}
+			var ramps := Geometry2D.offset_polygon(polygon, TRAM_WALK_RAMP, Geometry2D.JOIN_MITER)
+			var ramp: PackedVector2Array = ramps[0] if not ramps.is_empty() else polygon
+			var cut := {"points": polygon, "ramp": ramp, "box": _box(ramp).grow(0.001)}
 			var index := _service_cuts.size()
 			_service_cuts.append(cut)
 			for x in range(floori(cut.box.position.x / COVER_CELL), floori(cut.box.end.x / COVER_CELL) + 1):
@@ -333,6 +342,46 @@ func _subtract_service(poly: Array) -> Array:
 		pieces = next
 		if pieces.is_empty(): break
 	return pieces
+
+
+## Keep the sidewalk continuous across the embedded rails. Partition only
+## its driveway and short ramp, lowering those vertices instead of deleting
+## the walkable surface. GroundMap reads the same pavement layer as before.
+func _pavement_service_pieces(poly: Array) -> Array:
+	var cuts := _near_service_cuts(poly)
+	if cuts.is_empty(): return [poly]
+	var pieces: Array = [poly]
+	for cut in cuts:
+		for boundary: PackedVector2Array in [cut.ramp, cut.points]:
+			var next: Array = []
+			for piece in pieces:
+				next.append_array(_subtract_convex(piece, boundary))
+				var inside := _intersect_convex(piece, boundary)
+				if inside.size() >= 3: next.append(inside)
+			pieces = next
+	var out: Array = []
+	for piece in pieces:
+		var lowered: Array = []
+		for vertex: Vector3 in piece:
+			var distance := INF
+			var at := Vector2(vertex.x, vertex.z)
+			for cut in cuts:
+				if Geometry2D.is_point_in_polygon(at, cut.points): distance = 0.0; break
+				for i in cut.points.size():
+					distance = minf(distance, at.distance_to(Geometry2D.get_closest_point_to_segment(at, cut.points[i], cut.points[(i+1)%cut.points.size()])))
+			vertex.y = lerpf(TRAM_WALK_Y, vertex.y, smoothstep(0.0, TRAM_WALK_RAMP, distance))
+			lowered.append(vertex)
+		out.append(lowered)
+	return out
+
+
+static func _intersect_convex(poly: Array, cutter: PackedVector2Array) -> Array:
+	var inside: Array = poly
+	var orientation := -1.0 if Geometry2D.is_polygon_clockwise(cutter) else 1.0
+	for i in cutter.size():
+		inside = _half_plane(inside, cutter[i], cutter[(i+1)%cutter.size()], orientation)
+		if inside.size() < 3: return []
+	return inside
 
 
 ## Convex half-plane difference also handles a bed completely inside a large

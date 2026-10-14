@@ -53,6 +53,21 @@ func geometry_checks(scenery: Scenery) -> void:
 	check(not surface(TramGeometry.surfaces(plan), "tram_buffers").is_empty(), "an unscreened service end has a logical buffer")
 	plan.actors.new.terminals[0].off_road = false
 	check(surface(TramGeometry.surfaces(plan), "tram_buffers").is_empty(), "on-road fallback never adds a barrier")
+	var road_end := RoadNetwork.new()
+	road_end.data={"roads":[],"routes":[]}
+	road_end.build={"surfaces":[],"kerbs":{"y0":0.0,"y1":0.18,"segs":[]}}
+	road_end.tram_surfaces=TramGeometry.surfaces(plan)
+	var end_arrays := road_end.surface_mesh(scenery).surface_get_arrays(0)
+	var end_count := 0
+	var fades_to_road := true
+	var asphalt := Color("#2c2f36")
+	for i in end_arrays[Mesh.ARRAY_VERTEX].size():
+		var p: Vector3 = end_arrays[Mesh.ARRAY_VERTEX][i]
+		if absf(p.y-TramGeometry.RAIL_Y)>0.0001 or absf(p.z-3.0)>0.0001: continue
+		end_count+=1
+		var c: Color = end_arrays[Mesh.ARRAY_COLOR][i]
+		fades_to_road = fades_to_road and maxf(absf(c.r-asphalt.r),maxf(absf(c.g-asphalt.g),absf(c.b-asphalt.b)))<0.001
+	check(end_count>0 and fades_to_road,"both on-road rail tips fully blend into the asphalt instead of ending abruptly")
 	plan.actors.new.terminals[0].off_road = true
 	plan.actors.new.terminals[0].screened = true
 	check(surface(TramGeometry.surfaces(plan), "tram_service_screen").is_empty(), "existing decor screens the terminal without a new fence")
@@ -126,6 +141,18 @@ func render_checks(scenery: Scenery) -> void:
 		var before := JSON.stringify(sit.network.data)
 		var node := sit.get_node("surfaces") as MeshInstance3D
 		check(node.mesh.get_surface_count() == 1, id + " real scene retains a single terrain surface")
+		var ground := GroundMap.new(node.mesh,scenery)
+		for actor in sit.tram_plan.actors.values():
+			if actor.exit_service.is_empty(): continue
+			var path: PackedVector3Array = actor.path
+			var toward := TramTracks._tangent(path,path.size()-1,0.0)
+			var side := SceneStitch.right(toward)
+			var clear := true
+			for along in [-float(actor.half_length),0.0,float(actor.half_length)]:
+				for across in [-float(actor.half_width),0.0,float(actor.half_width)]:
+					clear = clear and (ground.at(path[-1]+toward*along+side*across)&GroundMap.WALK)==0
+			check(clear,id+" stopped body is completely beyond the actual rendered sidewalk")
+			check(path[-1].length()>=60.0 or actor.terminals[-1].screened,id+" service stop is deep in the location or hidden by existing scenery")
 		var focus := sit.network.stop_point().lerp(Vector3.ZERO, .5)
 		await capture(camera, focus, 110.0, id + "-question")
 		var budget := RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)

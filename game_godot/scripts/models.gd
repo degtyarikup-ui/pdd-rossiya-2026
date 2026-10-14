@@ -14,6 +14,7 @@ const WALKERS := 12
 static var _baked: ShaderMaterial
 static var _traffic_baked: ShaderMaterial
 static var _walker_baked: ShaderMaterial
+static var _crowd_walker: ShaderMaterial
 static var _meshes := {}
 static var _lens_centres := {}
 static var _traffic_meshes := {}
@@ -68,6 +69,18 @@ static func walker_material() -> ShaderMaterial:
 	return _walker_baked
 
 
+static func crowd_walker_material() -> ShaderMaterial:
+	if _crowd_walker == null:
+		_crowd_walker = walker_material().duplicate()
+		_crowd_walker.set_shader_parameter("instance_walk", true)
+	return _crowd_walker
+
+
+## Phase and fifteen levels of gait amplitude fit the existing custom float.
+static func walker_gait(paint: Color, phase: float, amount: float) -> Color:
+	return Color(paint.r, paint.g, paint.b, roundf(clampf(amount,0,1)*15.0)*2.0 + fposmod(phase,TAU)/TAU)
+
+
 ## The single mesh of a baked glb.
 static func mesh_of(path: String) -> Mesh:
 	if path.begins_with("res://models/traffic/"):
@@ -101,7 +114,7 @@ static func crowd(parent: Node, path: String, count: int) -> MultiMesh:
 	if path.contains("/traffic/"):
 		node.material_override = traffic_material()
 	elif path.contains("/walkers/"):
-		node.material_override = walker_material()
+		node.material_override = crowd_walker_material()
 	else:
 		node.material_override = baked_material()
 	parent.add_child(node)
