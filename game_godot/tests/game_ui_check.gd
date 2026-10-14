@@ -38,12 +38,17 @@ func check_picture(ui: GameUi, owner: PanelContainer) -> void:
 		return
 	check(is_equal_approx(ui._picture.position.x, 0.0), "Photo begins at the screen edge")
 	check(is_equal_approx(ui._picture.size.x, ui._view_size().x), "Photo fills the screen width")
-	check(is_equal_approx(ui._picture.position.y + ui._picture.size.y, owner.position.y), "Photo joins the sheet without a gap")
+	check(is_equal_approx(ui._picture.position.y + ui._picture.size.y, owner.position.y + ui._picture_overlap()), "Photo clip overlaps the sheet by one physical pixel")
 	check(sheet_radius(owner) == 0, "Open photo removes both sheet corner gaps")
 	var pictures := ui._picture.find_children("*", "TextureRect", true, false)
 	check(pictures.size() == 1 and pictures[0].material is ShaderMaterial, "Photo has an actual rounded mask")
 	if pictures.size() == 1:
 		var image: TextureRect = pictures[0]
+		var screen := ui.get_viewport().get_screen_transform()
+		var image_bottom := screen * image.get_global_transform_with_canvas() * Vector2(0.0, image.size.y)
+		var sheet_top := screen * owner.get_global_transform_with_canvas() * Vector2.ZERO
+		check(image_bottom.y >= sheet_top.y + 0.99, "Photo pixels cover the raster seam under the sheet")
+		check(image.material.get_shader_parameter("image_size") == image.size, "Rounded mask follows the extended photo size")
 		var full_height := ui._view_size().x * image.texture.get_height() / image.texture.get_width()
 		check(image.size.y >= full_height - 1.0, "Large text preserves all traffic details in the full-width photo")
 	check(ui._picture.get_theme_stylebox("panel") is StyleBoxEmpty, "Photo has no light backing or border")
@@ -150,6 +155,23 @@ func _run() -> void:
 	ui._toggle_picture(scene_id, explanation_chip, explanation_labels[1])
 	await wait_motion()
 	check_picture(ui, explanation)
+	# Fractional phone scaling and sheet position must retain a full screen-pixel overlap.
+	var fractional := GameUi.new()
+	root.add_child(fractional)
+	fractional._u = 1.375
+	fractional._root.scale = Vector2.ONE * fractional._u
+	fractional.show_question(question, 15.0)
+	await wait_motion()
+	var fractional_panel := fractional._card
+	fractional_panel.position.y += 0.25 / fractional._u
+	var fractional_chip := ticket_chip(fractional_panel)
+	var fractional_labels := fractional_chip.find_children("*", "Label", true, false)
+	fractional._toggle_picture(scene_id, fractional_chip, fractional_labels[1])
+	await wait_motion()
+	check_picture(fractional, fractional_panel)
+	fractional.queue_free()
+	await process_frame
+
 	var long_question := question.duplicate(true)
 	long_question.explanation = str(question.explanation).repeat(15)
 	ui.show_explanation(long_question, 0, true)

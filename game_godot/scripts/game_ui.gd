@@ -554,7 +554,7 @@ func _present_picture(tex: Texture2D) -> void:
 	pic.texture = tex
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	pic.size = Vector2(view.x, height)
+	pic.size = Vector2(view.x, height + _picture_overlap())
 	var mask := ShaderMaterial.new()
 	mask.shader = preload("res://shaders/question_picture.gdshader")
 	mask.set_shader_parameter("image_size", pic.size)
@@ -586,12 +586,18 @@ func _set_picture_height(height: float) -> void:
 	_layout_picture()
 
 
+## Cover one physical pixel under the opaque sheet so fractional raster edges cannot separate.
+func _picture_overlap() -> float:
+	var scale_y := _root.get_global_transform_with_canvas().get_scale().y * get_viewport().get_screen_transform().get_scale().y
+	return 1.0 / maxf(scale_y, 0.001)
+
+
 func _layout_picture() -> void:
 	if not is_instance_valid(_picture) or not is_instance_valid(_picture_owner):
 		return
 	var cap := _picture_owner.get_theme_stylebox("panel") as StyleBoxFlat
 	# The overlap fills the two corner cutouts throughout the morph; no world shows at the seam.
-	_picture.size = Vector2(_view_size().x, _picture_height + cap.corner_radius_top_left)
+	_picture.size = Vector2(_view_size().x, _picture_height + cap.corner_radius_top_left + _picture_overlap())
 	_picture.position = Vector2(0.0, _picture_owner.position.y - _picture_height)
 
 
