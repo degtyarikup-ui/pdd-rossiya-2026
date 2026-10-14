@@ -13,6 +13,7 @@ func _init() -> void:
 	_check_mnemonic_verses()
 	_check_officer_poses()
 	_check_car_trajectories()
+	_check_edited_car_trajectories()
 	_check_junction_layout()
 	_check_ui_layout()
 	_check_arcade()
@@ -157,6 +158,55 @@ func _check_car_trajectories() -> void:
 		_check("Car clears officer and extended arms: " + RegulatorRules.move_name(move), clear)
 	_check("Right exits in eastbound lane", is_equal_approx(r_end[0].z, 5.4))
 	_check("Left exits in westbound lane", is_equal_approx(l_end[0].z, -1.8))
+	car.free()
+
+
+func _check_edited_car_trajectories() -> void:
+	# Exact editor state which exposed the jump: the stop and first route point
+	# moved to the inner lane, while point 1 and the saved maneuver stayed put.
+	var scene: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://network/mini_regulator.json"))
+	scene.stop = {"x": -2.133, "z": -15.778, "yaw": 0.0}
+	for route in scene.routes:
+		if route.get("kind") == "manoeuvre":
+			route.points[0] = [-2.133, -15.778]
+	var source := scene.duplicate(true)
+	var car := RegulatorCar.new("sedan", Color.WHITE, scene)
+	for move in [RegulatorRules.Move.STRAIGHT, RegulatorRules.Move.RIGHT, RegulatorRules.Move.LEFT, RegulatorRules.Move.UTURN]:
+		car.reset_to_start()
+		var start := car.position
+		var initial: Array = car._evaluate_trajectory(move, 0.0)
+		var name := RegulatorRules.move_name(move)
+		_check("Edited start position retained: " + name, initial[0].is_equal_approx(start))
+		_check("Edited start heading retained: " + name, is_equal_approx(float(initial[1]), car.authored_yaw))
+		car.start_maneuver(move)
+		car._process(1.0 / 60.0)
+		_check("First rendered step has no lane jump or reversing: " + name, start.distance_to(car.position) < 0.04 and car.position.z <= start.z and absf(car.position.x - start.x) < 0.01)
+		var continuous := true
+		var forward_approach := true
+		var clear := true
+		var previous := start
+		for i in range(1, 1001):
+			var pose: Array = car._evaluate_trajectory(move, float(i) / 1000.0)
+			var pos: Vector3 = pose[0]
+			continuous = continuous and previous.distance_to(pos) < 0.15
+			if previous.z > RegulatorJunction.HALF_ROAD and pos.z > RegulatorJunction.HALF_ROAD and pos.x > 0.0:
+				forward_approach = forward_approach and pos.z <= previous.z + 0.0001
+			var officer_extent := 0.7 if move == RegulatorRules.Move.STRAIGHT else 1.4
+			clear = clear and not Drive.overlap({"p": pos, "yaw": pose[1], "hw": 1.2, "hl": 3.0}, {"p": Vector3.ZERO, "yaw": 0.0, "hw": officer_extent, "hl": officer_extent}, 0.2)
+			if move == RegulatorRules.Move.STRAIGHT:
+				forward_approach = forward_approach and is_equal_approx(pos.x, start.x)
+			previous = pos
+		_check("Edited trajectory remains continuous: " + name, continuous)
+		_check("Edited approach keeps going forward in its lane: " + name, forward_approach)
+		_check("Edited trajectory clears the officer: " + name, clear)
+		if move != RegulatorRules.Move.STRAIGHT:
+			# Compare the runtime endpoint to the exact stored maneuver endpoint.
+			var exits := {RegulatorRules.Move.RIGHT: "right", RegulatorRules.Move.LEFT: "left", RegulatorRules.Move.UTURN: "uturn"}
+			for saved in scene.routes:
+				if saved.get("exit") == exits[move]:
+					var last: Array = saved.points.back()
+					_check("Edited turn keeps saved exit: " + name, car._evaluate_trajectory(move, 1.0)[0].is_equal_approx(Vector3(-float(last[0]), 0, -float(last[1]))))
+	_check("Runtime correction never rewrites the saved scene", scene == source)
 	car.free()
 
 

@@ -119,12 +119,14 @@ func _setup_args() -> void:
 
 
 func _setup_environment() -> void:
-	# Directional Sun Light — bright sunny daytime
+	# Use the main game's seasonal daylight palette and exposure.
+	var seasons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://scenery/index.json")).seasons
+	var season: Dictionary = seasons[season_name]
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-65, 0, 0)
-	sun.light_color = Color("#FFF8EC")
-	sun.light_energy = 0.85
+	sun.rotation_degrees = Vector3(-68, 30, 0)
+	sun.light_color = Color(season.sun)
+	sun.light_energy = float(season.sunIntensity) * 0.8
 	sun.shadow_enabled = true
 	# 4-split PSSM eliminates staircase pixelation in perspective view:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
@@ -139,49 +141,28 @@ func _setup_environment() -> void:
 	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
 
-	# World Environment with Clear Sunny Sky & Soft Distant Horizon Haze
 	env = WorldEnvironment.new()
 	var e := Environment.new()
-	var sky := Sky.new()
-	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color("#2A66A2")       # Clear sunny blue sky at zenith
-	sky_mat.sky_horizon_color = Color("#82A8CC")   # Soft daylight blue horizon
-	sky_mat.sky_curve = 0.20                       # Smooth atmospheric sky gradient
-	sky_mat.ground_horizon_color = Color("#82A8CC")# Seamless daylight horizon
-	sky_mat.ground_bottom_color = Color("#405438") # Earthy green-gray ground tone
-	sky_mat.ground_curve = 0.15
-	sky_mat.sun_angle_max = 24.0
-	sky_mat.sun_curve = 0.1
-	sky.sky_material = sky_mat
-	e.sky = sky
-	e.background_mode = Environment.BG_SKY
-
+	e.background_mode = Environment.BG_COLOR
+	e.background_color = Color(season.sky)
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	e.ambient_light_sky_contribution = 0.0
-	# Ambient light softly tinted by clear sky bounce:
-	e.ambient_light_color = Color("#8BB2D8").lerp(Color.WHITE, 0.45)
-	e.ambient_light_energy = 0.65
+	e.ambient_light_color = Color.WHITE
+	e.ambient_light_energy = float(season.ambient) * 0.8
+	e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 
-	# Distant atmospheric haze: avenue stays completely clear and sharp,
-	# melting into sunny horizon only in the far distance
+	# A broad, gently eased transition keeps the avenue legible into the distance.
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
-	e.fog_light_color = Color("#82A8CC")
-	e.fog_sun_scatter = 0.15
-	e.fog_aerial_perspective = 0.25
-	e.fog_depth_begin = 85.0
-	e.fog_depth_end = 180.0
-	e.fog_depth_curve = 0.85
+	# Set after fog_mode: switching to depth fog resets density to 1 in Godot.
+	e.fog_density = 0.82
+	e.fog_light_color = Color(season.sky)
+	e.fog_sun_scatter = 0.0
+	e.fog_aerial_perspective = 0.0
+	e.fog_depth_begin = 75.0
+	e.fog_depth_end = 260.0
+	e.fog_depth_curve = 1.35
 	e.fog_sky_affect = 0.0
-
-
-
-
-
-
-	# Filmic tonemapping compresses extreme highlights, preserving details on facades
-	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	e.tonemap_white = 1.2
 	env.environment = e
 	add_child(env)
 

@@ -28,6 +28,8 @@ var vehicle_paint := Color("#0574F8")
 var authored_start := START_POS
 var authored_yaw := START_YAW
 var authored_paths := {}
+var authored_lengths := {}
+var authored_center := Vector3.ZERO
 
 
 func _init(id: String = "sedan", paint: Color = Color("#0574F8"), scene: Dictionary = {}) -> void:
@@ -36,15 +38,73 @@ func _init(id: String = "sedan", paint: Color = Color("#0574F8"), scene: Diction
 	if scene.has("stop"):
 		authored_start = Vector3(-float(scene.stop.x), 0, -float(scene.stop.z))
 		authored_yaw = float(scene.stop.get("yaw", 0)) + PI
+		var officers: Array = scene.get("officers", [])
+		if not officers.is_empty():
+			authored_center = Vector3(-float(officers[0].pos[0]), 0, -float(officers[0].pos[1]))
 		for route in scene.get("routes", []):
 			if route.get("kind") != "manoeuvre": continue
 			var move = {"straight":RegulatorRules.Move.STRAIGHT,"left":RegulatorRules.Move.LEFT,"right":RegulatorRules.Move.RIGHT,"uturn":RegulatorRules.Move.UTURN}.get(route.get("exit"))
 			if move == null: continue
 			var points: Array[Vector3] = []
 			for p in route.points: points.append(Vector3(-float(p[0]), 0, -float(p[1])))
-			if points.size() >= 2: authored_paths[move] = points
+			if points.size() >= 2:
+				var forward := Vector3(sin(authored_yaw), 0, cos(authored_yaw))
+				var repair := points[0].distance_to(authored_start) >= 0.01 or (points[1] - points[0]).dot(forward) <= 0.0
+				points = _align_authored_approach(points, move)
+				authored_paths[move] = points
+				if repair:
+					# Corrected segments need distance-based progress, not their old point count.
+					var lengths: Array[float] = [0.0]
+					for i in range(1, points.size()):
+						lengths.append(lengths.back() + points[i - 1].distance_to(points[i]))
+					authored_lengths[move] = lengths
 	_load_model()
 	reset_to_start()
+
+
+## Moving the stop in the editor can replace only the first route point, leaving
+## its old approach behind/in another lane. Keep the saved stop authoritative:
+## trim that stale approach and carry its lateral correction into the junction.
+## Straight driving stays in the starting lane; turns rejoin their saved exits.
+func _align_authored_approach(points: Array[Vector3], move: RegulatorRules.Move) -> Array[Vector3]:
+	var forward := Vector3(sin(authored_yaw), 0, cos(authored_yaw))
+	var first_step := points[1] - points[0]
+	if points[0].distance_to(authored_start) < 0.01 and first_step.dot(forward) > 0.0:
+		points[0] = authored_start
+		return points
+	var first := 0
+	if points[0].distance_to(authored_start) < 0.01:
+		first = 1
+	var tail: Array[Vector3] = []
+	if (points[first] - authored_start).dot(forward) >= 0.0:
+		tail.assign(points.slice(first))
+	else:
+		for i in range(first + 1, points.size()):
+			var before := (points[i - 1] - authored_start).dot(forward)
+			var after := (points[i] - authored_start).dot(forward)
+			if after < 0.0: continue
+			tail.append(points[i - 1].lerp(points[i], -before / (after - before)))
+			tail.append_array(points.slice(i))
+			break
+	if tail.size() < 2:
+		return [authored_start, authored_start + forward]
+	var offset := authored_start - tail[0]
+	if move == RegulatorRules.Move.STRAIGHT:
+		offset -= forward * offset.dot(forward)
+	var initial_tangent := tail[1] - tail[0]
+	var initial_angle := atan2(initial_tangent.x, initial_tangent.z)
+	var fade := 0.0
+	var corrected: Array[Vector3] = [authored_start]
+	for i in tail.size():
+		if move != RegulatorRules.Move.STRAIGHT:
+			var tangent := tail[mini(i + 1, tail.size() - 1)] - tail[maxi(i - 1, 0)]
+			var turn := absf(wrapf(atan2(tangent.x, tangent.z) - initial_angle, -PI, PI)) / (PI * 0.5)
+			var junction_depth := (RegulatorJunction.HALF_ROAD - absf((tail[i] - authored_center).dot(forward))) / (RegulatorJunction.HALF_ROAD * 0.5)
+			fade = maxf(fade, _ease_in_out(clampf(maxf(turn, junction_depth), 0.0, 1.0)))
+		var point := tail[i] + offset * (1.0 - fade)
+		if corrected.back().distance_to(point) > 0.001:
+			corrected.append(point)
+	return corrected
 
 
 func _load_model() -> void:
@@ -146,8 +206,18 @@ func _evaluate_trajectory(move: RegulatorRules.Move, t: float) -> Array:
 		var points: Array = authored_paths[move]
 		var at := clampf(t, 0, 1) * (points.size() - 1)
 		var index := mini(int(at), points.size() - 2)
+		var fraction := at - index
+		if authored_lengths.has(move):
+			var lengths: Array = authored_lengths[move]
+			var distance := clampf(t, 0, 1) * float(lengths.back())
+			index = 0
+			while index < points.size() - 2 and lengths[index + 1] < distance:
+				index += 1
+			fraction = (distance - float(lengths[index])) / maxf(points[index].distance_to(points[index + 1]), 0.001)
 		var tangent: Vector3 = points[index + 1] - points[index]
-		return [points[index].lerp(points[index + 1], at - index), atan2(tangent.x, tangent.z)]
+		var pos: Vector3 = points[index].lerp(points[index + 1], fraction)
+		var yaw := lerp_angle(authored_yaw, atan2(tangent.x, tangent.z), smoothstep(0.0, 1.2, pos.distance_to(authored_start)))
+		return [pos, yaw]
 	var pos := START_POS
 	var yaw := START_YAW
 

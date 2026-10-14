@@ -1,4 +1,4 @@
-## The old mini-game's bright entry, long clear spells and brief rain, with
+## Seasonal daylight, long clear spells and brief rain, with
 ## optional fog for previews. One rain draw call covers every zoom level.
 class_name RegulatorAtmosphere
 extends Node3D
@@ -19,8 +19,9 @@ var dry_road: Color
 var dry_walk: Color
 var clear_sun := 0.45
 var dry_sky: Color
-var clear_fog_begin := 85.0
-var clear_fog_end := 180.0
+var clear_fog_begin := 75.0
+var clear_fog_end := 260.0
+var clear_fog_density := 0.82
 
 
 func _init(cam: Camera3D, env: Environment, light: DirectionalLight3D,
@@ -34,6 +35,7 @@ func _init(cam: Camera3D, env: Environment, light: DirectionalLight3D,
 	dry_sky = env.fog_light_color if env.background_mode == Environment.BG_SKY else env.background_color
 	clear_fog_begin = env.fog_depth_begin
 	clear_fog_end = env.fog_depth_end
+	clear_fog_density = env.fog_density
 
 	dry_walk = road.sc.color("sidewalk")
 	clear_sun = sun.light_energy
@@ -91,10 +93,7 @@ func _process(delta: float) -> void:
 	sun.light_energy = clear_sun * (1.0 - overcast * 0.55)
 	environment.fog_depth_begin = lerpf(clear_fog_begin, 15.0, fog)
 	environment.fog_depth_end = lerpf(clear_fog_end, 50.0, fog)
-
-
-
-
+	environment.fog_density = lerpf(clear_fog_density, 1.0, fog)
 	var road_colour := dry_road.lerp(Color("#141A22"), rain * 0.9 + fog * 0.25)
 	junction.asphalt_mat.set_shader_parameter("surface_colour", Vector3(road_colour.r, road_colour.g, road_colour.b))
 	junction.asphalt_mat.set_shader_parameter("wetness", rain)
