@@ -120,13 +120,12 @@ func _setup_args() -> void:
 
 func _setup_environment() -> void:
 	# Directional Sun Light
+	# Directional Sun Light positioned in the North, casting a warm golden sunset glow along the avenue
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	var palette: Dictionary = Scenery.new(season_name).season
-	sun.rotation_degrees = Vector3(-68, 30, 0)
-	sun.light_color = Color(palette.sun)
-	# Soft, natural sunlight without overexposure:
-	sun.light_energy = float(palette.sunIntensity) * 0.65
+	sun.rotation_degrees = Vector3(-10, 180, 0)
+	sun.light_color = Color("#FFD5AC")
+	sun.light_energy = 0.70
 	sun.shadow_enabled = true
 	# 4-split PSSM eliminates staircase pixelation in perspective view:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
@@ -141,26 +140,39 @@ func _setup_environment() -> void:
 	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
 
-	# World environment with natural ambient light.
+	# World Environment with Procedural Sunset Sky & Golden Horizon Fog
 	env = WorldEnvironment.new()
 	var e := Environment.new()
-	e.background_mode = Environment.BG_COLOR
-	e.background_color = Color(palette.sky)
+	var sky := Sky.new()
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color("#182A44")       # Deep twilight blue at the zenith
+	sky_mat.sky_horizon_color = Color("#E58248")   # Warm radiant golden-peach sunset horizon
+	sky_mat.sky_curve = 0.22                       # Concentrates sunset glow in a warm band at horizon
+	sky_mat.ground_horizon_color = Color("#E58248")# Seamless horizon transition
+	sky_mat.ground_bottom_color = Color("#1D1815") # Dark warm earth tone
+	sky_mat.ground_curve = 0.15
+	sky_mat.sun_angle_max = 28.0
+	sky_mat.sun_curve = 0.15
+	sky.sky_material = sky_mat
+	e.sky = sky
+	e.background_mode = Environment.BG_SKY
 
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	e.ambient_light_sky_contribution = 0.0
-	# Ambient light softly tinted by the sky, eliminating harsh pure-white glare:
-	e.ambient_light_color = Color(palette.sky).lerp(Color.WHITE, 0.25)
-	e.ambient_light_energy = float(palette.ambient) * 0.52
+	# Ambient light balanced between sunset warmth and cool sky bounce:
+	e.ambient_light_color = Color("#E8A87C").lerp(Color("#4C6D96"), 0.5)
+	e.ambient_light_energy = 0.55
 
-	# Keep the distant buildings visible in normal weather.
-	e.fog_enabled = false
+	# Sunset depth haze: road smoothly dissolves into the glowing sunset horizon!
+	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
-	e.fog_light_color = Color(palette.sky)
-	e.fog_depth_begin = 90.0
-	e.fog_depth_end = 260.0
-	e.fog_depth_curve = 0.75
+	e.fog_light_color = Color("#E58248")
+	e.fog_depth_begin = 44.0
+	e.fog_depth_end = 84.0
+	e.fog_depth_curve = 0.85
 	e.fog_sky_affect = 0.0
+
+
 
 
 

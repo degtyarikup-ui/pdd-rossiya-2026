@@ -19,6 +19,8 @@ var dry_road: Color
 var dry_walk: Color
 var clear_sun := 0.45
 var dry_sky: Color
+var clear_fog_begin := 45.0
+var clear_fog_end := 80.0
 
 
 func _init(cam: Camera3D, env: Environment, light: DirectionalLight3D,
@@ -29,7 +31,10 @@ func _init(cam: Camera3D, env: Environment, light: DirectionalLight3D,
 	junction = road
 	car = vehicle
 	dry_road = Color("#2C2F36")
-	dry_sky = env.background_color
+	dry_sky = env.fog_light_color if env.background_mode == Environment.BG_SKY else env.background_color
+	clear_fog_begin = env.fog_depth_begin
+	clear_fog_end = env.fog_depth_end
+
 	dry_walk = road.sc.color("sidewalk")
 	clear_sun = sun.light_energy
 
@@ -84,8 +89,9 @@ func _process(delta: float) -> void:
 	environment.background_color = dry_sky.lerp(Color("#A8BAC8"), overcast)
 	environment.fog_light_color = environment.background_color
 	sun.light_energy = clear_sun * (1.0 - overcast * 0.55)
-	environment.fog_depth_begin = lerpf(90.0, 15.0, fog)
-	environment.fog_depth_end = lerpf(260.0, 75.0, fog)
+	environment.fog_depth_begin = lerpf(clear_fog_begin, 15.0, fog)
+	environment.fog_depth_end = lerpf(clear_fog_end, 50.0, fog)
+
 
 
 
