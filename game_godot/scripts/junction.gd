@@ -152,7 +152,7 @@ func _init(sit: Situation) -> void:
 		m.stop_at = a.stopAtDistance
 		m.stop_for = INF if str(a.stopFor) == "inf" else a.stopFor
 		m.hold_for = a.holdFor
-		m.stays_put = a.staysPut
+		m.stays_put = bool(a.get("staysPut", false)) or bool(a.get("config", {}).get("stationary", false)) or (a.get("stopAtDistance", -1) == 0 and str(a.get("stopFor")) == "inf")
 		m.config_waits_for_player = bool(a.get("waitsForPlayer", true))
 		m.waits_for_player = true
 		for n in m.node.find_children("wheel_*", "", true, false):
