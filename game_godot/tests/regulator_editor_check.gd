@@ -16,9 +16,16 @@ func _initialize() -> void:
 	for path in net.data.routes:
 		if path.kind != "manoeuvre": continue
 		var move = {"straight":RegulatorRules.Move.STRAIGHT,"left":RegulatorRules.Move.LEFT,"right":RegulatorRules.Move.RIGHT,"uturn":RegulatorRules.Move.UTURN}[path.exit]
-		for endpoint in [0, 1]:
-			var p = path.points[0 if endpoint == 0 else path.points.size() - 1]
-			assert(authored._evaluate_trajectory(move,float(endpoint))[0].is_equal_approx(Vector3(-float(p[0]),0,-float(p[1]))), "Saved route endpoints reach the game, including custom paths")
+		assert(authored._evaluate_trajectory(move,0.0)[0].is_equal_approx(authored.position), "Every saved route starts at the edited player pose")
+		var p = path.points.back()
+		var end := Vector3(-float(p[0]),0,-float(p[1]))
+		var forward := Vector3(sin(authored.authored_yaw),0,cos(authored.authored_yaw))
+		var first_step := Vector3(-float(path.points[1][0]),0,-float(path.points[1][1])) - authored.position
+		if move == RegulatorRules.Move.STRAIGHT and first_step.dot(forward) <= 0.0:
+			# A moved stop can leave the old approach behind the car. The runtime
+			# keeps straight driving in the new lane, retaining the saved exit depth.
+			end = authored.position + forward * (end - authored.position).dot(forward)
+		assert(authored._evaluate_trajectory(move,1.0)[0].is_equal_approx(end), "Saved exits reach the game; a repaired straight approach keeps its lane")
 	var changed := net.data.duplicate(true)
 	changed.stop.x = -6.0
 	changed.stop.z = -21.0
