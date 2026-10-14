@@ -1,5 +1,5 @@
 ## Scenery: buildings rebuilt by tools/godot_export/build_buildings.py;
-## other props retained from the archived WebView game. Props in
+## trees/street props by build_environment.py, retaining original local envelopes. Props in
 ## scenery/<group>/<name>.glb, detail maps in textures/detail/<kind>.png,
 ## sizes / texture params / season palettes in scenery/index.json.
 class_name Scenery
