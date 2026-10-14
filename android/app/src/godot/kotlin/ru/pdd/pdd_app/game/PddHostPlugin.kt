@@ -12,6 +12,10 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     @UsedByGodot
     fun processMemoryMb(): Int = (android.os.Debug.getPss() / 1024).toInt()
 
+    /** App-owned external storage lets adb pull retrieve counters without a debug Flutter build. */
+    @UsedByGodot
+    fun performanceLogDirectory(): String = (host.getExternalFilesDir(null) ?: host.filesDir).absolutePath
+
     /** The canonical Flutter picture, with no second copy in the Godot assets. */
     @UsedByGodot
     fun pictureBytes(hash: String): ByteArray {

@@ -10,6 +10,8 @@ var snapshot := Callable()
 const LOG_PATH := "user://ride-performance.jsonl"
 const PREVIOUS_LOG_PATH := "user://ride-performance-previous.jsonl"
 const LOG_LIMIT := 262144
+var _log_path := LOG_PATH
+var _previous_log_path := PREVIOUS_LOG_PATH
 var _log_clock := 0.0
 var _pss := -1
 var _log_frames := 0
@@ -30,9 +32,15 @@ var _tiers := ["low", "mid", "high"]
 
 func _ready() -> void:
 	layer = 20
+	if visible and Engine.has_singleton("PddHost"):
+		var host = Engine.get_singleton("PddHost")
+		if host.has_method("performanceLogDirectory"):
+			var directory := str(host.performanceLogDirectory())
+			_log_path = directory.path_join("ride-performance.jsonl")
+			_previous_log_path = directory.path_join("ride-performance-previous.jsonl")
 	# Keep the preceding ride's evidence after a process crash or next launch.
-	if visible and FileAccess.file_exists(LOG_PATH):
-		DirAccess.rename_absolute(LOG_PATH, PREVIOUS_LOG_PATH)
+	if visible and FileAccess.file_exists(_log_path):
+		DirAccess.rename_absolute(_log_path, _previous_log_path)
 	var bg := PanelContainer.new()
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0, 0, 0, 0.62)
@@ -122,12 +130,12 @@ func _process(delta: float) -> void:
 
 
 func _write_log(state: Dictionary) -> void:
-	var log := FileAccess.open(LOG_PATH, FileAccess.READ_WRITE if FileAccess.file_exists(LOG_PATH) else FileAccess.WRITE)
+	var log := FileAccess.open(_log_path, FileAccess.READ_WRITE if FileAccess.file_exists(_log_path) else FileAccess.WRITE)
 	if log == null: return
 	if log.get_length() > LOG_LIMIT:
 		log.close()
-		DirAccess.rename_absolute(LOG_PATH, PREVIOUS_LOG_PATH)
-		log = FileAccess.open(LOG_PATH, FileAccess.WRITE)
+		DirAccess.rename_absolute(_log_path, _previous_log_path)
+		log = FileAccess.open(_log_path, FileAccess.WRITE)
 		if log == null: return
 	log.seek_end()
 	log.store_line(JSON.stringify(state))

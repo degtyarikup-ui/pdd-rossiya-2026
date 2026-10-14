@@ -84,8 +84,7 @@ android {
 
     buildTypes {
         release {
-            // Dev-only diagnostics: adb run-as can retrieve the game log after a crash.
-            isDebuggable = project.hasProperty("dev")
+            isDebuggable = false
             // The Godot engine's classes are called by name from native code: see proguard-godot.pro.
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-godot.pro")
             // Never silently sign a store release with the debug key.

@@ -41,12 +41,15 @@ FPS слабого телефона. `ride_endurance_check.gd` проходит 
 `adb logcat` с префиксом `[godot-perf]`. В обычной release-сборке скрытый счётчик
 не опрашивает метрики, не пишет журнал и не перехватывает касания.
 
-Dev APK (`-Pdev`) разрешает Android-отладку, обычный release — нет.
+На Android журнал лежит в собственной внешней папке приложения. Это позволяет
+забирать его через ADB без `android:debuggable`, который меняет режим компиляции
+Flutter даже при `flutter build --release`. Движок игры и Flutter остаются release.
+Если внешняя папка недоступна, мост использует внутреннюю папку приложения.
 Журнал можно забрать после сбоя (папка `output/`):
 
 ```bash
-adb exec-out run-as ru.pdd.pdd_app.dev cat files/ride-performance.jsonl > output/ride-performance.jsonl
-adb exec-out run-as ru.pdd.pdd_app.dev cat files/ride-performance-previous.jsonl > output/ride-performance-previous.jsonl
+adb pull /sdcard/Android/data/ru.pdd.pdd_app.dev/files/ride-performance.jsonl output/
+adb pull /sdcard/Android/data/ru.pdd.pdd_app.dev/files/ride-performance-previous.jsonl output/
 adb logcat -d -v threadtime > output/game-logcat.txt
 adb shell dumpsys meminfo ru.pdd.pdd_app.dev:game > output/game-meminfo.txt
 ```
