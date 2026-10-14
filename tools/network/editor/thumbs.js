@@ -12,7 +12,7 @@ const Thumbs = (() => {
   const loader = new THREE.GLTFLoader();
 
   function urlOf(kind, id) {
-    if (kind === "prop") return id === "parked" ? "/asset/models/traffic/sedan.glb" : `/asset/scenery/${id}.glb`;
+    if (kind === "prop") return id === "parked" ? "/asset/models/vehicles/sedan.glb" : `/asset/scenery/${id}.glb`;
     if (kind === "actor") {
       const tpl = App.state.catalog?.actorTypes[id];
       return tpl ? `/asset/scene/${tpl.asset}` : null;

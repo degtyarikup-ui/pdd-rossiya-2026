@@ -428,7 +428,7 @@ const Scene3D = (() => {
       });
     };
     if (t === "decor") {
-      const url = o.prop === "parked" ? "/asset/models/traffic/sedan.glb" : `/asset/scenery/${o.prop}.glb`;
+      const url = o.prop === "parked" ? "/asset/models/vehicles/sedan.glb" : `/asset/scenery/${o.prop}.glb`;
       attach(url, fallbackBox(0xb9b4ab, [2, 2, 2]), o.tint);
     } else if (t === "actor") {
       const ped = o.type === "pedestrian" || o.type === "cyclist";

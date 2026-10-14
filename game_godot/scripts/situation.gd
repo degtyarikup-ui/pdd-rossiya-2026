@@ -31,6 +31,10 @@ static var _native_resources := {}
 static var _ready_ids := {}          # web: junctions whose files are in memory
 
 
+static func _uses_shared_model(kind: String) -> bool:
+	return kind == "pedestrian" or kind == "special" or kind in NpcVehicle.KINDS
+
+
 ## Web: the junction's files come over the network (PackFiles). Native: always.
 static func prepared(situation_id: String) -> bool:
 	return _ready_ids.has(situation_id)
@@ -62,7 +66,7 @@ static func prepare(situation_id: String, on_done: Callable) -> void:
 		for i in data.lights.size():
 			more.append(dir + "light_%d.glb" % i)
 		for i in data.actors.size():
-			if data.actors[i].type != "pedestrian":
+			if not _uses_shared_model(str(data.actors[i].type)):
 				more.append(dir + "actor_%d.glb" % i)
 		# Optional: the route guide (only for a scene without trajectories) and the ticket picture.
 		var optional: Array = []
@@ -196,6 +200,8 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			var person := Pedestrian.new()
 			person.configure(posmod((situation_id + str(a.id)).hash(), Models.WALKERS), Color(str(a.config.get("color", "#5A7891"))))
 			actor = person
+		elif a.type in NpcVehicle.KINDS:
+			actor = NpcVehicle.make(str(a.type), Color(str(a.config.get("color", "#8D9AA8"))), a.config)
 		else:
 			actor = PackFiles.instance(dir + "actor_%d.glb" % i)
 			_vertex_colours_as_albedo(actor)
@@ -445,7 +451,7 @@ func _place_props(scenery: Scenery, frames: SceneTree = null) -> void:
 		node.multimesh = multi
 		node.set_meta("instance_transforms",poses)
 		node.set_meta("instance_tints",tints)
-		node.material_override = Models.baked_material() if parked else scenery.occluder_material if prop.begins_with("buildings/") else scenery.material
+		node.material_override = Models.traffic_material() if parked else scenery.occluder_material if prop.begins_with("buildings/") else scenery.material
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if prop.begins_with("trees/") else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(node)
 		_pools[prop] = multi
@@ -844,7 +850,7 @@ static func _native_prepare(situation_id: String, on_done: Callable) -> void:
 	var paths: Array[String] = [dir + "scene.glb"]
 	for i in d.lights.size(): paths.append(dir + "light_%d.glb" % i)
 	for i in d.actors.size():
-		if d.actors[i].type != "pedestrian": paths.append(dir + "actor_%d.glb" % i)
+		if not _uses_shared_model(str(d.actors[i].type)): paths.append(dir + "actor_%d.glb" % i)
 	for path in paths: ResourceLoader.load_threaded_request(path)
 	var frames := Engine.get_main_loop() as SceneTree
 	var resources: Array = []

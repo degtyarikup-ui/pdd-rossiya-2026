@@ -469,11 +469,8 @@ static func railway(parent: Node3D, cz: float, tracks: int, barrier: bool, bound
 ## A train with its nose towards +Z at the origin (the route point is its centre): the locomotive
 ## in front, three wagons behind.
 static func train(colour: Color, tail: Color) -> Node3D:
-	var root := Node3D.new()
-	_part(root, Vector3(2.9, 3.6, 16.0), Vector3(0.0, 1.8, 22.0), colour)
-	for z in [6.0, -8.0, -22.0]:
-		_part(root, Vector3(2.8, 3.4, 14.0), Vector3(0.0, 1.7, z), tail)
-	return root
+	return NpcVehicle.make("train", tail, {"cabColor": colour.to_html()})
+
 
 
 # --- roadworks barrier ------------------------------------------------------------

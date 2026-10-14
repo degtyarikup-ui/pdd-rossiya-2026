@@ -22,6 +22,10 @@ func _painted(world: Node, color: Color) -> bool:
 			var material: Material = mesh.get_surface_override_material(i)
 			if material is BaseMaterial3D and material.resource_name == "paint" and material.albedo_color.is_equal_approx(color):
 				return true
+			if material is ShaderMaterial:
+				var paint = material.get_shader_parameter("paint_colour")
+				if paint is Vector3 and paint.is_equal_approx(Vector3(color.r, color.g, color.b)):
+					return true
 	return false
 
 

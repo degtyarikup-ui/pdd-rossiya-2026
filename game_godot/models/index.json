@@ -5,15 +5,16 @@
    "tris": 1574
   },
   "after": {
-   "meshes": 27,
-   "tris": 1574
+   "meshes": 11,
+   "tris": 1226
   },
   "meta": {
    "halfWidth": 0.86,
    "halfLength": 1.75,
    "height": 1.4,
    "defaultPaint": "#ed4621"
-  }
+  },
+  "source": "tools/godot_export/build_vehicles.py"
  },
  "vehicles/sedan": {
   "before": {
@@ -21,15 +22,16 @@
    "tris": 1564
   },
   "after": {
-   "meshes": 27,
-   "tris": 1564
+   "meshes": 11,
+   "tris": 1226
   },
   "meta": {
    "halfWidth": 0.9,
    "halfLength": 2.1,
    "height": 1.35,
    "defaultPaint": "#317ed4"
-  }
+  },
+  "source": "tools/godot_export/build_vehicles.py"
  },
  "vehicles/coupe": {
   "before": {
@@ -37,15 +39,16 @@
    "tris": 1576
   },
   "after": {
-   "meshes": 27,
-   "tris": 1552
+   "meshes": 11,
+   "tris": 1206
   },
   "meta": {
    "halfWidth": 0.9,
    "halfLength": 2.15,
    "height": 1.25,
    "defaultPaint": "#2b2f36"
-  }
+  },
+  "source": "tools/godot_export/build_vehicles.py"
  },
  "vehicles/wagon": {
   "before": {
@@ -53,15 +56,16 @@
    "tris": 1586
   },
   "after": {
-   "meshes": 27,
-   "tris": 1586
+   "meshes": 11,
+   "tris": 1250
   },
   "meta": {
    "halfWidth": 0.9,
    "halfLength": 2.25,
    "height": 1.45,
    "defaultPaint": "#6e8e6a"
-  }
+  },
+  "source": "tools/godot_export/build_vehicles.py"
  },
  "vehicles/suv": {
   "before": {
@@ -69,15 +73,16 @@
    "tris": 1742
   },
   "after": {
-   "meshes": 28,
-   "tris": 1742
+   "meshes": 11,
+   "tris": 1250
   },
   "meta": {
    "halfWidth": 0.95,
    "halfLength": 2.125,
    "height": 1.85,
    "defaultPaint": "#4d7768"
-  }
+  },
+  "source": "tools/godot_export/build_vehicles.py"
  },
  "vehicles/pickup": {
   "before": {
@@ -85,15 +90,16 @@
    "tris": 1648
   },
   "after": {
-   "meshes": 27,
-   "tris": 1624
+   "meshes": 11,
+   "tris": 1236
   },
   "meta": {
    "halfWidth": 0.95,
    "halfLength": 2.3,
    "height": 1.65,
    "defaultPaint": "#d7aa60"
-  }
+  },
+  "source": "tools/godot_export/build_vehicles.py"
  },
  "vehicles/cyber": {
   "before": {
@@ -118,8 +124,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 1526
-  }
+   "tris": 1226
+  },
+  "shared_model": "vehicles/hatch"
  },
  "traffic/sedan": {
   "before": {
@@ -128,8 +135,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 1516
-  }
+   "tris": 1226
+  },
+  "shared_model": "vehicles/sedan"
  },
  "traffic/coupe": {
   "before": {
@@ -138,8 +146,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 1504
-  }
+   "tris": 1206
+  },
+  "shared_model": "vehicles/coupe"
  },
  "traffic/wagon": {
   "before": {
@@ -148,8 +157,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 1538
-  }
+   "tris": 1250
+  },
+  "shared_model": "vehicles/wagon"
  },
  "traffic/suv": {
   "before": {
@@ -158,8 +168,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 1694
-  }
+   "tris": 1250
+  },
+  "shared_model": "vehicles/suv"
  },
  "traffic/pickup": {
   "before": {
@@ -168,8 +179,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 1576
-  }
+   "tris": 1236
+  },
+  "shared_model": "vehicles/pickup"
  },
  "traffic/cyber": {
   "before": {
@@ -178,8 +190,9 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 1252
-  }
+   "tris": 1300
+  },
+  "shared_model": "vehicles/cyber"
  },
  "walkers/walker_0": {
   "before": {
@@ -343,5 +356,82 @@
    "tris": 132
   },
   "source": "tools/godot_export/build_people.py"
+ },
+ "road/bus": {
+  "after": {
+   "meshes": 1,
+   "tris": 786
+  },
+  "source": "tools/godot_export/build_vehicles.py"
+ },
+ "road/truck": {
+  "after": {
+   "meshes": 1,
+   "tris": 1130
+  },
+  "source": "tools/godot_export/build_vehicles.py"
+ },
+ "road/van": {
+  "after": {
+   "meshes": 1,
+   "tris": 724
+  },
+  "source": "tools/godot_export/build_vehicles.py"
+ },
+ "road/tanker": {
+  "after": {
+   "meshes": 1,
+   "tris": 1118
+  },
+  "source": "tools/godot_export/build_vehicles.py"
+ },
+ "road/tram": {
+  "after": {
+   "meshes": 1,
+   "tris": 796
+  },
+  "source": "tools/godot_export/build_vehicles.py"
+ },
+ "road/motorcycle": {
+  "after": {
+   "meshes": 1,
+   "tris": 722
+  },
+  "source": "tools/godot_export/build_vehicles.py"
+ },
+ "road/cyclist": {
+  "after": {
+   "meshes": 1,
+   "tris": 897
+  },
+  "source": "tools/godot_export/build_vehicles.py"
+ },
+ "road/sidecar": {
+  "after": {
+   "meshes": 1,
+   "tris": 208
+  },
+  "source": "tools/godot_export/build_vehicles.py"
+ },
+ "road/tractor": {
+  "after": {
+   "meshes": 1,
+   "tris": 812
+  },
+  "source": "tools/godot_export/build_vehicles.py"
+ },
+ "road/cart": {
+  "after": {
+   "meshes": 1,
+   "tris": 957
+  },
+  "source": "tools/godot_export/build_vehicles.py"
+ },
+ "road/train": {
+  "after": {
+   "meshes": 1,
+   "tris": 2230
+  },
+  "source": "tools/godot_export/build_vehicles.py"
  }
 }

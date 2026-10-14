@@ -22,7 +22,7 @@ static func paint(rng: RandomNumberGenerator) -> Color:
 static func dps_car() -> Node3D:
 	var root := Node3D.new()
 	root.name = "dps"
-	root.add_child(Models.player_car("sedan", DPS_WHITE))
+	root.add_child(NpcVehicle.make("car", DPS_WHITE))
 	for x in [-0.915, 0.915]:
 		_box(root, Vector3(0.03, 0.2, 3.1), Vector3(x, 0.66, 0.0), DPS_BLUE)
 		var door := _text(root, "ДПС", 0.42, DPS_BLUE)
@@ -44,7 +44,7 @@ static func dps_car() -> Node3D:
 ## A taxi: a yellow car with a chequered sign on the roof.
 static func taxi() -> Node3D:
 	var root := Node3D.new()
-	root.add_child(Models.player_car("sedan", Color("#F2C230")))
+	root.add_child(NpcVehicle.make("car", Color("#F2C230")))
 	_box(root, Vector3(0.6, 0.18, 0.22), Vector3(0, 1.45, -0.1), Color("#2B2F36"))
 	var sign := _text(root, "TAXI", 0.16, Color("#F2C230"))
 	sign.position = Vector3(0, 1.45, 0.005)
@@ -163,7 +163,23 @@ static func _signals(vehicle: Node3D) -> Signals:
 		return existing
 	var signals := Signals.new()
 	signals.name = "vehicle_signals"
-	for lens in Glow.lens_centres(vehicle):
+	var centres: Array = vehicle.get_meta("npc_lens_centres", [])
+	if centres.is_empty():
+		for mesh: MeshInstance3D in vehicle.find_children("*", "MeshInstance3D", true, false):
+			if mesh.mesh == null or mesh.has_meta("signal_glow"): continue
+			var local := Transform3D.IDENTITY
+			var cursor: Node = mesh
+			while cursor != vehicle and cursor != null:
+				if cursor is Node3D: local = cursor.transform * local
+				cursor = cursor.get_parent()
+			for lens in VehicleBatch.lenses(mesh.mesh):
+				lens.p = local * lens.p
+				centres.append(lens)
+		if centres.is_empty(): centres = Glow.lens_centres(vehicle)
+	# The police/taxi wrapper owns stripes and lamps; its body is a child NPC.
+	for child in vehicle.get_children():
+		if child is NpcVehicle: centres.append_array(child.get_meta("npc_lens_centres", []))
+	for lens in centres:
 		var glow := Glow.halo(Color("#FFB300"), 1.4)
 		glow.position = lens.p
 		glow.visible = false
@@ -171,6 +187,17 @@ static func _signals(vehicle: Node3D) -> Signals:
 		signals.glows[lens.side].append(glow)
 	for mesh: MeshInstance3D in vehicle.find_children("*", "MeshInstance3D", true, false):
 		if mesh.mesh == null:
+			continue
+		if mesh.get_meta("npc_vehicle", false):
+			if not signals.materials.has(mesh.material_override): signals.materials.append(mesh.material_override)
+			continue
+		# A raw generated GLB (editor/render fixtures) also carries tagged lamps.
+		var raw := mesh.mesh.surface_get_material(0) as BaseMaterial3D
+		if raw != null and raw.resource_name == "baked" and not VehicleBatch.lenses(mesh.mesh).is_empty():
+			var material := Models.vehicle_material(Color.WHITE)
+			mesh.material_override = material
+			mesh.set_meta("npc_vehicle", true)
+			signals.materials.append(material)
 			continue
 		var transform := Transform3D.IDENTITY
 		var cursor: Node = mesh
@@ -185,7 +212,7 @@ static func _signals(vehicle: Node3D) -> Signals:
 			var material := ShaderMaterial.new()
 			material.shader = preload("res://shaders/vehicle_lens.gdshader")
 			material.set_shader_parameter("lens_colour", original.albedo_color)
-			material.set_shader_parameter("vertex_colour", original.vertex_color_use_as_albedo)
+			material.set_shader_parameter("vertex_colour", original.vertex_color_use_as_albedo or mesh.mesh.surface_get_arrays(i)[Mesh.ARRAY_COLOR] != null)
 			material.set_shader_parameter("vehicle_x_axis", Vector3(transform.basis.x.x, transform.basis.y.x, transform.basis.z.x))
 			material.set_shader_parameter("vehicle_x_origin", transform.origin.x)
 			mesh.set_surface_override_material(i, material)

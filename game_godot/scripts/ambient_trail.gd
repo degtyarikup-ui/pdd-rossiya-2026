@@ -22,7 +22,7 @@ func keep_copy(source: MultiMesh, slot: int, speed: float, pedestrian := false, 
 	copy.set_instance_custom_data(0, source.get_instance_custom_data(slot))
 	copy.set_instance_transform(0, Transform3D())
 	node.multimesh = copy
-	node.material_override = Models.walker_material() if pedestrian else Models.baked_material()
+	node.material_override = Models.walker_material() if pedestrian else Models.traffic_material()
 	node.transform = source.get_instance_transform(slot)
 	keep(node, speed, pedestrian, hw, hl, direction)
 

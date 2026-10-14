@@ -568,7 +568,7 @@ const Tools = (() => {
       if (spot) { x = spot.pos[0]; z = spot.pos[1]; y = spot.yaw; }
       else if (yaw === null) y = Math.PI;
     } else {
-      url = opts.prop === "parked" ? "/asset/models/traffic/sedan.glb" : `/asset/scenery/${opts.prop}.glb`;
+      url = opts.prop === "parked" ? "/asset/models/vehicles/sedan.glb" : `/asset/scenery/${opts.prop}.glb`;
       const size = App.catalogSize(opts.prop) || [2, 2, 2];
       half = [size[2] / 2, size[0] / 2];
       x = snapGrid(x); z = snapGrid(z);

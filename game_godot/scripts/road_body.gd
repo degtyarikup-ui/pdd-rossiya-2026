@@ -77,70 +77,31 @@ static func make(body_id: String, body_kind: String, body_node: Node3D, route: P
 	return b
 
 
-## The model of a kind, painted `colour`: the car models for cars, boxes for the big vehicles.
+## Shared car geometry and cached single-surface models for the other NPC vehicles.
 ## Police cars keep their lamps in the node's meta "lights" (blue, red).
 static func model(kind_name: String, colour: Color) -> Node3D:
-	var root := Node3D.new()
+	var root: Node3D
 	match kind_name:
 		"car":
-			root.add_child(Models.player_car(CAR_MODELS[absi(colour.to_rgba32()) % CAR_MODELS.size()], colour))
+			root = NpcVehicle.make("car", colour, {"car_model": CAR_MODELS[absi(colour.to_rgba32()) % CAR_MODELS.size()]})
 		"police":
 			# The traffic police car (ДПС), the same one as at the junctions (fleet.gd).
 			var dps := Fleet.dps_car()
+			root = Node3D.new()
 			root.add_child(dps)
 			root.set_meta("lights", dps.get_meta("lights"))
-		"truck", "van", "bus":
-			# The junctions' own models (models/road/<kind>.glb, taken from the junction actors): the
-			# same vehicles as in the junction scenes, in their own paint.
-			root.add_child(_vehicle_model(kind_name))
-		"tractor":
-			_part(root, Vector3(1.5, 1.0, 2.6), Vector3(0.0, 0.8, -0.2), colour)
-			_part(root, Vector3(1.3, 1.1, 1.2), Vector3(0.0, 1.7, -0.9), colour)
-			for x in [-0.85, 0.85]:
-				_wheel(root, Vector3(x, 0.85, -1.2), 0.85, 0.45)
-				_wheel(root, Vector3(x * 0.8, 0.5, 1.0), 0.5, 0.3)
-		"motorcycle":
-			# The junction's own motorcycle model (models/road/motorcycle.glb, from ticket_19_14),
-			# its colours as they are: the same bike as at the junctions.
-			var bike := (load("res://models/road/motorcycle.glb") as PackedScene).instantiate()
-			Situation._vertex_colours_as_albedo(bike)
-			root.add_child(bike)
-		"cart":
-			_part(root, Vector3(1.6, 0.2, 2.4), Vector3(0.0, 0.85, 0.0), colour)
-			_part(root, Vector3(0.12, 0.12, 1.6), Vector3(0.0, 0.65, 1.4), Color("#5A4632"))
-			for x in [-0.85, 0.85]:
-				_wheel(root, Vector3(x, 0.7, 0.0), 0.7, 0.12)
+		"truck", "van", "bus", "tanker", "tram", "tractor", "motorcycle", "cyclist", "cart":
+			root = NpcVehicle.make(kind_name, colour)
 		"train":
 			root = RoadBuild.train(colour, Color("#3E759A"))
 		_:
+			root = Node3D.new()
 			_part(root, Vector3(1.8, 1.4, 4.0), Vector3(0.0, 0.7, 0.0), colour)
 	return root
 
 
-static func _vehicle_model(kind_name: String) -> Node3D:
-	var vehicle := (load("res://models/road/%s.glb" % kind_name) as PackedScene).instantiate()
-	Situation._vertex_colours_as_albedo(vehicle)
-	return vehicle
-
-
 static func _part(root: Node3D, size: Vector3, at: Vector3, colour: Color) -> void:
 	RoadBuild._part(root, size, at, colour)
-
-
-static func _wheel(root: Node3D, at: Vector3, radius: float, width: float) -> void:
-	var mi := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = radius
-	cyl.bottom_radius = radius
-	cyl.height = width
-	mi.mesh = cyl
-	mi.rotation.z = PI * 0.5
-	mi.position = at
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color("#1E1F22")
-	mat.roughness = 0.9
-	mi.material_override = mat
-	root.add_child(mi)
 
 
 ## A lamp on the light bar: its material is lit in turn by the police car (RoadEvent._animate).

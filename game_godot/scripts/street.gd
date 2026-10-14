@@ -66,7 +66,7 @@ func _init(parent: Node3D, scenery: Scenery, chunk_length: float, chunks: int) -
 	for prop in pools:
 		if prop.begins_with("buildings/"): sc.register_building_pool(pools[prop].node)
 	for id in Models.CARS:
-		parked[id] = Scenery.Pool.new(parent, Models.mesh_of("res://models/traffic/%s.glb" % id), Models.baked_material(), chunks, rows, true)
+		parked[id] = Scenery.Pool.new(parent, Models.mesh_of("res://models/traffic/%s.glb" % id), Models.traffic_material(), chunks, rows, true)
 
 
 ## Freezes the props of the whole ring under `parent` (see world.gd ghost).
