@@ -466,6 +466,7 @@ const App = (() => {
       const least = ref.t === "route" || (ref.t === "marking") ? 2 : 3;
       if (!pts || pts.length <= least) return toast("Меньше точек нельзя", "warn");
       const o = objectOf(ref);
+      if (ref.t === "route" && o?.kind === "approach" && state.S.layout && (!o.manual || ref.v === 0 || ref.v === pts.length - 1)) return toast("Начало подъезда закреплено у въезда, конец — у игрока", "warn");
       edit(() => {
         if (ref.t === "route" && o) {
           Layout.editPlayerRoute(state.S, o);

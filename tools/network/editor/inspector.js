@@ -594,6 +594,17 @@
   // ---- routes ------------------------------------------------------------------------------
   function routeInspector(p, ref, r) {
     const s = state.S;
+    if (r.kind === "approach") {
+      p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, "Подъезд игрока", r.manual ? "ручной путь" : "строится сам")}
+        ${card("До начала вопроса", `<p>Зелёная линия показывает, как игрок подъезжает к месту вопроса. После ответа он едет по линии выбранного манёвра.</p>
+          ${r.manual ? `<p class="muted">Тяните промежуточные точки. Двойной клик по линии добавляет точку. Начало закреплено у въезда, конец — у машины игрока.</p>${button("auto-path", "Снова строить по дорогам", "restart", "ghost wide")}`
+            : `<p class="muted">Путь пересчитывается при перемещении игрока.</p>${button("own-path", "Править путь вручную", "points", "ghost wide")}${button("auto-path", "Пересчитать подъезд", "restart", "ghost wide")}`}`)}`;
+      bind({
+        "own-path": () => App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), true)),
+        "auto-path": () => App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), false)),
+      });
+      return;
+    }
     if (r.kind === "choice") {
       const used = s.routes.filter((x) => x.kind === "choice" && x !== r).map((x) => x.label);
       const ways = s.routes.filter((x) => x.kind === "manoeuvre");

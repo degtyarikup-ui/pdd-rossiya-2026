@@ -274,6 +274,7 @@ const Tools = (() => {
         const ref = drag.ref;
         return App.dragMove(() => {
           const o = App.objectOf(ref);
+          if (ref.t === "route" && o?.kind === "approach" && S().layout && (!o.manual || ref.v === 0 || ref.v === o.points.length - 1)) return;
           if (ref.t === "route" && o) {
             Layout.editPlayerRoute(S(), o);
           }
@@ -354,7 +355,7 @@ const Tools = (() => {
       const pts = App.pointsOfRef(ref);
       if (!pts) return;
       const o = App.objectOf(ref);
-      if (ref.t === "route" && o && o.kind === "approach") return;
+      if (ref.t === "route" && o?.kind === "approach" && !o.manual) return;
       const closed = ref.t === "road" || ref.t === "lawn";
       let best = -1, bd = 3;
       for (let i = 0; i < pts.length - (closed ? 0 : 1); i++) {

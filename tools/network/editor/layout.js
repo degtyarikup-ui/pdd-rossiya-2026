@@ -439,16 +439,19 @@ const Layout = (() => {
     route.manual = true;
     delete route.auto;
     if (isFreePlayer(scene) && route.kind === "manoeuvre") route.playerFreeEdited = true;
+    if (scene.layout && route.kind === "approach") route.playerApproachEdited = true;
   }
   function setPlayerRouteManual(scene, route, manual) {
     if (!route) return;
     if (manual) return editPlayerRoute(scene, route);
+    if (scene.layout && route.kind === "approach") delete scene.layout[isFreePlayer(scene) ? "freeApproachPath" : "approachPath"];
     if (scene.layout && route.kind === "manoeuvre") {
       if (isFreePlayer(scene)) (scene.layout.freePaths = scene.layout.freePaths || {})[route.exit] = null;
       else if (scene.layout.paths) delete scene.layout.paths[route.exit];
     }
     delete route.manual;
     delete route.playerFreeEdited;
+    delete route.playerApproachEdited;
     route.auto = true;
   }
   function pointInPolygon(p, poly) {
@@ -521,6 +524,18 @@ const Layout = (() => {
     const rings = scene.layout.nodes.filter(n => n.ring);
     const ringFor = (p) => rings.find(n => { const d = dist(p, xy(n)); return d > n.ring.island && d < n.ring.r + 0.1; });
     const sameRing = ringFor(stop);
+    const legalLine = (a, b) => {
+      if (!clearLine(a, b)) return false;
+      const delta = sub(b, a), steps = Math.max(1, Math.ceil(dist(a, b)));
+      for (let i = 0; i <= steps; i++) {
+        const p = add(a, mul(delta, i / steps)), ring = ringFor(p);
+        if (ring) {
+          const v = sub(p, xy(ring));
+          if (v[0] * delta[1] - v[1] * delta[0] > 0.01) return false;
+        }
+      }
+      return true;
+    };
     function ringPath(from, to) {
       const ring = sameRing;
       if (!ring) return null;
@@ -550,16 +565,16 @@ const Layout = (() => {
     };
     function navigate(from, to) {
       if (dist(from, to) < 0.02) return [from, to];
-      if (!ringFor(from) && !ringFor(to) && clearLine(from, to)) return densePath([from, to]);
-      const around = (p) => {
+      if (!ringFor(from) && !ringFor(to) && legalLine(from, to)) return densePath([from, to]);
+      const around = (p, leaving) => {
         const cx = Math.round(p[0] / STEP), cz = Math.round(p[1] / STEP), found = [];
         for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) if (pass(cx + dx, cz + dz)) {
           const q = [(cx + dx) * STEP, (cz + dz) * STEP];
-          if (clearLine(p, q)) found.push({ x: cx + dx, z: cz + dz, d: dist(p, q) });
+          if (leaving ? legalLine(p, q) : legalLine(q, p)) found.push({ x: cx + dx, z: cz + dz, d: dist(p, q) });
         }
         return found.sort((a, b) => a.d - b.d)[0];
       };
-      const start = around(from), goal = around(to);
+      const start = around(from, true), goal = around(to, false);
       if (!start || !goal) return null;
       const key = (x, z) => `${x},${z}`, goalKey = key(goal.x, goal.z), startKey = key(start.x, start.z);
       const open = [], records = new Map(), closed = new Set();
@@ -594,7 +609,7 @@ const Layout = (() => {
       const simple = [points[0]];
       for (let i = 0; i < points.length - 1;) {
         let j = Math.min(points.length - 1, i + 16);
-        while (j > i + 1 && (!clearLine(points[i], points[j]) || (ringFor(points[i]) && j > i + 3))) j--;
+        while (j > i + 1 && (!legalLine(points[i], points[j]) || (ringFor(points[i]) && j > i + 3))) j--;
         simple.push(points[j]); i = j;
       }
       return densePath(simple);
@@ -603,23 +618,20 @@ const Layout = (() => {
     const ap = original.routes.find(r => r.kind === "approach");
     let back = add(stop, mul(toward, -3));
     if (!clearLine(back, stop)) back = add(stop, mul(toward, -0.4));
-    let approach = null;
-    if (sameRing) {
-      // Original entry stop to the circulating lane, then round the island to the free pose.
-      const ordinary = original.routes.find(r => r.kind === "manoeuvre");
-      const firstRing = ordinary?.points.findIndex(p => ringFor(p) === sameRing);
-      if (firstRing >= 0) {
-        const arc = ringPath(ordinary.points[firstRing], back);
-        if (arc) approach = [...ap.points, ...ordinary.points.slice(1, firstRing), ...arc, stop];
-      }
-    }
-    if (!approach) {
-      const enter = along(ap.points, Math.min(3.0, polyLen(ap.points) * 0.5)).p;
-      const route = navigate(enter, back);
-      approach = route ? [ap.points[0], ...route, stop] : null;
+    // Start routing on the incoming lane, before entering the ring. The first vertex of an
+    // ordinary manoeuvre can already be beyond the free pose, forcing an unnecessary full lap.
+    const enter = along(ap.points, Math.min(3.0, polyLen(ap.points) * 0.5)).p;
+    const route = navigate(enter, back);
+    let approach = route ? [ap.points[0], ...route, stop] : null;
+    const ownApproach = scene.layout.freeApproachPath;
+    if (Array.isArray(ownApproach) && ownApproach.length >= 2) {
+      approach = ownApproach.map(P);
+      approach[0] = ap.points[0];
+      approach[approach.length - 1] = stop;
     }
     if (!approach) errors.push("Не удалось построить подъезд к месту игрока. Переместите машину или измените угол.");
-    const routes = approach ? [{ ...ap, points: densePath(approach), playerFree: true }] : [];
+    const routes = approach ? [{ ...ap, auto: !ownApproach, manual: !!ownApproach,
+      points: ownApproach ? approach.map(P) : densePath(approach), playerFree: true }] : [];
     const entryPlan = streetPlayerPlan(scene);
     const exits = ["junction", "ring"].includes(entryPlan.kind) ? exitsOf(scene.layout, entryPlan.st, entryPlan.nid) : {};
     const freePaths = scene.layout.freePaths || {};
@@ -733,7 +745,11 @@ const Layout = (() => {
     const startNode = nodeOf(L, otherEnd(st, nid));
     if (nodeKind(L, startNode, crop) === "border" && approach.length) approach[0] = add(approach[0], mul(tin, -1));
     approach[approach.length - 1] = stop;
-    const routes = [{ id: "approach", kind: "approach", auto: true, points: approach.map(P) }];
+    const ownApproach = !isFreePlayer(scene) && L.approachPath;
+    const points = ownApproach ? ownApproach.map(P) : approach.map(P);
+    points[0] = P(approach[0]);
+    points[points.length - 1] = P(stop);
+    const routes = [{ id: "approach", kind: "approach", auto: !ownApproach, manual: !!ownApproach, points }];
     const exitWidths = {};
     if (kind === "junction" || kind === "ring") {
       const exits = exitsOf(L, st, nid);
@@ -785,6 +801,9 @@ const Layout = (() => {
     }
     // A manoeuvre edited by hand keeps its points (layout.paths): its drawn route is the source.
     for (const x of scene.routes || []) {
+      if (x.kind === "approach" && x.manual && x.playerApproachEdited) {
+        scene.layout[x.playerFree ? "freeApproachPath" : "approachPath"] = x.points.map(P);
+      }
       if (x.kind !== "manoeuvre" || !x.manual) continue;
       if (!x.playerFree) (scene.layout.paths = scene.layout.paths || {})[x.exit] = x.points.map(P);
       else if (isFreePlayer(scene) && x.playerFreeEdited) (scene.layout.freePaths = scene.layout.freePaths || {})[x.exit] = x.points.map(P);

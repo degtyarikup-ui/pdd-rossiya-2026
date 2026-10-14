@@ -347,6 +347,18 @@ const Scene3D = (() => {
       g.add(polyline(shown, ROUTE_Y, st.colour, focused ? st.px + 1.5 : st.px, opacity, st.dashed));
       const head = arrowhead(shown, focused ? 1.1 : 0.8, ROUTE_Y, st.colour, opacity);
       if (head) g.add(head);
+      // The approach ends underneath the player's car, hiding its final arrow. Show direction
+      // along the green line as well, so a saved route around the ring is unambiguous.
+      if (r.kind === "approach") {
+        let travelled = 0;
+        for (let i = 1; i < shown.length - 1; i++) {
+          travelled += Math.hypot(shown[i][0] - shown[i - 1][0], shown[i][1] - shown[i - 1][1]);
+          if (travelled < 12) continue;
+          const direction = arrowhead(shown.slice(Math.max(0, i - 2), i + 1), 0.7, ROUTE_Y, st.colour, opacity);
+          if (direction) g.add(direction);
+          travelled = 0;
+        }
+      }
       if (r.kind === "choice" && (r.labelPosition || r.points.length)) {
         const at = r.labelPosition || r.points[Math.floor(r.points.length / 2)];
         if (at) labels.push({ text: r.label, cls: "letter", colour: st.colour, world: [at[0], 0.8, at[1]], ref: { t: "route", id: r.id } });
