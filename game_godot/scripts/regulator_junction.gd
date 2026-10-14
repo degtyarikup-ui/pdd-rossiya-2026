@@ -252,7 +252,7 @@ func _build_lamps() -> void:
 	for sign_x in [-1.0, 1.0]:
 		for sign_z in [-1.0, 1.0]:
 			var lamp: Node3D = lamp_scene.instantiate()
-			lamp.position = Vector3(sign_x * (HALF_ROAD + 2.0), 0.15, sign_z * (HALF_ROAD + 2.0))
+			lamp.position = Vector3(sign_x * (HALF_ROAD + 3.6), 0.15, sign_z * (HALF_ROAD + 3.6))
 			lamp.rotation.y = atan2(-sign_x, -sign_z)
 			add_child(lamp)
 
@@ -260,9 +260,10 @@ func _build_lamps() -> void:
 	for z in [-28.0, -52.0, -76.0, -100.0, -124.0, -148.0]:
 		for sign_x in [-1.0, 1.0]:
 			var lamp: Node3D = lamp_scene.instantiate()
-			lamp.position = Vector3(sign_x * (HALF_ROAD + 2.0), 0.15, z)
+			lamp.position = Vector3(sign_x * (HALF_ROAD + 3.6), 0.15, z)
 			lamp.rotation.y = PI * 0.5 if sign_x < 0 else -PI * 0.5
 			add_child(lamp)
+
 
 
 func _setup_walkers() -> void:
@@ -399,15 +400,12 @@ func _build_city_scenery() -> void:
 		_put_prop("trees/round_0", Vector3(-x, 0.0, -8.6), 0.2 * x, Vector3.ONE, Color(canopy_colors[int(x) % canopy_colors.size()]), true)
 		_put_prop("trees/pine_0", Vector3(-x, 0.0, 8.6), -0.1 * x, Vector3.ONE, Color(pine_colors[int(x) % pine_colors.size()]), true)
 
-	# 2. Corner Kiosks and Fences
-	_put_prop("street/kiosk_0", Vector3(-9.2, 0.18, -9.2), -PI * 0.25)
-	_put_prop("street/kiosk_1", Vector3(9.2, 0.18, -9.2), PI * 0.25)
-	_put_prop("street/kiosk_2", Vector3(-9.2, 0.18, 9.2), -PI * 0.75)
-
+	# 2. Corner Fences
 	_put_prop("street/fence_14", Vector3(-8.2, 0.0, -22.0), 0.0)
 	_put_prop("street/fence_14", Vector3(8.2, 0.0, -22.0), 0.0)
 	_put_prop("street/fence_14", Vector3(-8.2, 0.0, 22.0), 0.0)
 	_put_prop("street/fence_14", Vector3(8.2, 0.0, 22.0), 0.0)
+
 
 	# 3. Buildings framing North Avenue on the LEFT (X <= -18.0)
 	_put_prop("buildings/block_0", Vector3(-18.0, 0.0, -18.0), PI * 0.5, Vector3.ONE, Color("#F5F6FA"))

@@ -48,8 +48,11 @@ var round_timer := 0.0
 var next_delay := 0.0
 
 # Camera framing
-var cam_base_pos := Vector3(5.4, 5.5, 32.0)
-var cam_base_look := Vector3(0.0, 1.55, 0.0)
+var cam_base_pos := Vector3(5.6, 4.0, 26.8)
+var cam_base_look := Vector3(1.4, 1.25, 0.0)
+
+
+
 const ZOOM_MIN := 0.4
 const ZOOM_MAX := 2.6
 var cur_zoom := 1.0
@@ -127,14 +130,14 @@ func _setup_environment() -> void:
 	sun.shadow_enabled = true
 	# 4-split PSSM eliminates staircase pixelation in perspective view:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.directional_shadow_max_distance = 60.0
-	sun.directional_shadow_split_1 = 0.22
+	sun.directional_shadow_max_distance = 48.0
+	sun.directional_shadow_split_1 = 0.2
 	sun.directional_shadow_split_2 = 0.45
 	sun.directional_shadow_split_3 = 0.72
 	sun.directional_shadow_blend_splits = true
-	sun.shadow_blur = 1.6
-	sun.shadow_bias = 0.02
-	sun.shadow_normal_bias = 0.4
+	sun.shadow_blur = 1.8
+	sun.shadow_bias = 0.06
+	sun.shadow_normal_bias = 1.2
 	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
 
@@ -154,9 +157,11 @@ func _setup_environment() -> void:
 	e.fog_enabled = true
 	e.fog_mode = Environment.FOG_MODE_DEPTH
 	e.fog_light_color = Color(palette.sky)
-	e.fog_depth_begin = 50.0
-	e.fog_depth_end = 175.0
+	e.fog_depth_begin = 95.0
+	e.fog_depth_end = 250.0
+	e.fog_depth_curve = 0.8
 	e.fog_sky_affect = 0.0
+
 
 	# Filmic tonemapping compresses extreme highlights, preserving details on facades
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
@@ -408,21 +413,24 @@ func _update_camera(delta: float) -> void:
 	var want_look: Vector3
 	if zoom < 1.0:
 		var close := smoothstep(0.4, 1.0, zoom)
-		want_pos = Vector3(4.4 + close, 3.8 + 1.7 * close, 26.0 + 6.0 * close)
-		want_look = Vector3(1.8, 1.25 - 0.2 * close, 0)
+		want_pos = Vector3(4.8 + 0.8 * close, 3.2 + 0.8 * close, 22.8 + 4.0 * close)
+		want_look = Vector3(0.8 + 0.6 * close, 1.25, 0)
 	else:
 		var far := (zoom - 1.0) / 1.6
-		want_pos = Vector3(5.4 * (1.0 - far), 5.5 + 32.5 * far, 32 + 18 * far)
-		want_look = Vector3(1.8 * (1.0 - far), 1.05 * (1.0 - far), 0)
+		want_pos = Vector3(5.6 * (1.0 - far), 4.0 + 27.0 * far, 26.8 + 21.0 * far)
+		want_look = Vector3(1.4 * (1.0 - far), 1.25 * (1.0 - far), 0)
+
+
 	camera.look_at_from_position(camera.position.lerp(want_pos, 1.0 - exp(-7.0 * delta)), want_look)
 	if ui and ui.is_inside_tree():
 		# Off-centre frustum: place the optical centre above the answer panel.
 		var height := get_viewport().get_visible_rect().size.y
 		var panel := ui._panel.size.y * ui.scale.y
 		var inset := clampf(panel / maxf(height, 1.0), 0, 0.8)
-		var full_height := 2.0 * camera.near * tan(deg_to_rad(42.0) * 0.5) / (1.0 - inset)
+		var full_height := 2.0 * camera.near * tan(deg_to_rad(45.0) * 0.5) / (1.0 - inset)
 		camera.keep_aspect = Camera3D.KEEP_HEIGHT
 		camera.set_frustum(full_height, Vector2(0, -full_height * inset * 0.5), camera.near, 300.0)
+
 
 
 func _end_game() -> void:
