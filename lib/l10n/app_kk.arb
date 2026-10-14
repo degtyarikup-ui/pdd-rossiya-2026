@@ -332,6 +332,7 @@
   "gameDebugTierLow": "Төмен",
   "gameDebugTierMid": "Орташа",
   "gameDebugTierHigh": "Жоғары",
+  "gameDebugPerfMemoryFootprint": "RAM",
   "gameDebugPerfObjects": "Түйіндер: {nodes}; ресурстар: {resources}",
   "@gameDebugPerfObjects": {
     "placeholders": {

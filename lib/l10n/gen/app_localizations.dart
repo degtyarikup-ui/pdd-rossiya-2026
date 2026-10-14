@@ -1708,6 +1708,12 @@ abstract class AppLocalizations {
   /// **'Высокий'**
   String get gameDebugTierHigh;
 
+  /// No description provided for @gameDebugPerfMemoryFootprint.
+  ///
+  /// In ru, this message translates to:
+  /// **'RAM'**
+  String get gameDebugPerfMemoryFootprint;
+
   /// No description provided for @gameDebugPerfObjects.
   ///
   /// In ru, this message translates to:

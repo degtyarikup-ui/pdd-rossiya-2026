@@ -12,10 +12,12 @@ var _bg: PanelContainer
 const LOG_PATH := "user://ride-performance.jsonl"
 const PREVIOUS_LOG_PATH := "user://ride-performance-previous.jsonl"
 const LOG_LIMIT := 262144
+const MEMORY_SAMPLE_FILE := "performance-memory.json"
 var _log_path := LOG_PATH
 var _previous_log_path := PREVIOUS_LOG_PATH
 var _log_clock := 0.0
 var _pss := -1
+var _footprint := -1.0
 var _log_frames := 0
 var _log_sum := 0.0
 var _log_worst := 0.0
@@ -34,7 +36,11 @@ var _tiers := ["low", "mid", "high"]
 
 func _ready() -> void:
 	layer = 20
-	if visible and Engine.has_singleton("PddHost"):
+	if visible and Host.io != "":
+		_log_path = Host.io.path_join("ride-performance.jsonl")
+		_previous_log_path = Host.io.path_join("ride-performance-previous.jsonl")
+		_footprint = _read_ios_footprint()
+	elif visible and Engine.has_singleton("PddHost"):
 		var host = Engine.get_singleton("PddHost")
 		if host.has_java_method("performanceLogDirectory"):
 			var directory := str(host.performanceLogDirectory())
@@ -103,14 +109,18 @@ func _process(delta: float) -> void:
 	_log_sum += _sum
 	_log_worst = maxf(_log_worst, _worst)
 	_log_slow += _slow
-	# PSS queries include the native process and are more expensive than Godot counters.
+	# Whole-process metrics are sampled every five seconds, outside the HUD's one-second refresh.
 	var write_log := _log_clock >= 5.0
 	if write_log and Engine.has_singleton("PddHost"):
 		var host = Engine.get_singleton("PddHost")
 		if host.has_java_method("processMemoryMb"): _pss = int(host.processMemoryMb())
-	_label.text = "GODOT %d FPS  %.1f ms (max %d, >33 ms %d)\nGPU %d  %dk tri  %d obj\n%s / VRAM %.0f MB / PSS %s\n%s\n%s\n%d ms / %s: %s\n%s" % [
+	elif write_log and Host.io != "":
+		_footprint = _read_ios_footprint()
+	var process_metric := Ui.t("gameDebugPerfMemoryFootprint") if Host.io != "" else "PSS"
+	var process_mb := _footprint if Host.io != "" else float(_pss)
+	_label.text = "GODOT %d FPS  %.1f ms (max %d, >33 ms %d)\nGPU %d  %dk tri  %d obj\n%s / VRAM %.0f MB / %s %s\n%s\n%s\n%d ms / %s: %s\n%s" % [
 		Engine.get_frames_per_second(), _sum / _frames, _worst, _slow, calls, tris / 1000, objects,
-		str(roundi(mem)) + " MB" if mem > 0 else "—", vmem, str(_pss) + " MB" if _pss >= 0 else "—",
+		str(roundi(mem)) + " MB" if mem > 0 else "—", vmem, process_metric, str(roundi(process_mb)) + " MB" if process_mb >= 0 else "—",
 		Ui.t("gameDebugPerfObjects", {"nodes": int(nodes), "resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT))}),
 		Ui.t("gameDebugPerfRetained", {"question": state.get("question", 0), "scenes": state.get("retired", 0), "streets": state.get("streets", 0)}),
 		_input_ms, Ui.t("gameDebugTier"), tier, state.get("scene", "")]
@@ -118,7 +128,8 @@ func _process(delta: float) -> void:
 		state.merge({"time": Time.get_datetime_string_from_system(true), "fps": Engine.get_frames_per_second(),
 			"avg_ms": snappedf(_log_sum / _log_frames, 0.1), "worst_ms": snappedf(_log_worst, 0.1), "slow": _log_slow,
 			"calls": calls, "nodes": int(nodes), "resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),
-			"mem_mb": snappedf(mem, 0.1) if mem > 0 else null, "vram_mb": snappedf(vmem, 0.1), "pss_mb": _pss, "tier": tier}, true)
+			"mem_mb": snappedf(mem, 0.1) if mem > 0 else null, "vram_mb": snappedf(vmem, 0.1), "pss_mb": _pss,
+			"footprint_mb": snappedf(_footprint, 0.1) if _footprint >= 0 else null, "tier": tier}, true)
 		print("[godot-perf] ", JSON.stringify(state))
 		_write_log(state)
 		_log_clock = 0.0
@@ -131,6 +142,20 @@ func _process(delta: float) -> void:
 	_worst = 0.0
 	_slow = 0
 	_clock = 0.0
+
+
+## iOS writes an atomic native memory snapshot next to the requests and performance logs.
+## Reject unavailable/old samples rather than displaying a previous run's memory as current.
+func _read_ios_footprint() -> float:
+	var path := Host.io.path_join(MEMORY_SAMPLE_FILE)
+	if not FileAccess.file_exists(path): return -1.0
+	var sample = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not sample is Dictionary: return -1.0
+	var value = sample.get("footprint_mb")
+	if not (value is float or value is int): return -1.0
+	if Time.get_unix_time_from_system() - float(sample.get("sample_time", 0.0)) > 15.0:
+		return -1.0
+	return float(value) if float(value) >= 0.0 else -1.0
 
 
 func _write_log(state: Dictionary) -> void:

@@ -495,6 +495,7 @@
   "gameDebugTierLow": "Низкий",
   "gameDebugTierMid": "Средний",
   "gameDebugTierHigh": "Высокий",
+  "gameDebugPerfMemoryFootprint": "RAM",
   "gameDebugPerfObjects": "Узлы: {nodes}; ресурсы: {resources}",
   "@gameDebugPerfObjects": {
     "placeholders": {

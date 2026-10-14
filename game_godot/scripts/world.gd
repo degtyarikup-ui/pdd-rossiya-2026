@@ -3149,7 +3149,10 @@ func _wait_active(seconds: float) -> void:
 
 func _warm_connections() -> void:
 	for id in playable_ids:
+		if is_queued_for_deletion() or not is_inside_tree(): return
 		await get_tree().process_frame
+		# iOS can replace this scene while its connection cache is warming up.
+		if is_queued_for_deletion() or not is_inside_tree(): return
 		_scene_connections(id)
 
 

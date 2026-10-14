@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -953,6 +952,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameDebugTierHigh => 'Жоғары';
+
+  @override
+  String get gameDebugPerfMemoryFootprint => 'RAM';
 
   @override
   String gameDebugPerfObjects(int nodes, int resources) {

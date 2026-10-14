@@ -87,12 +87,16 @@ func _ready() -> void:
 
 
 func _dismiss_loader(loader: Loader) -> void:
+	if is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
+	if is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
+	if is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
 	_start_game()
 	loader.dismiss()
 	if shot_path != "":
 		await get_tree().create_timer(Loader.FADE + 0.3).timeout
+		if is_queued_for_deletion() or not is_inside_tree(): return
 		_take_screenshot(shot_path)
 
 

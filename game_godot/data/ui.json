@@ -1,5 +1,6 @@
 {
  "ru": {
+  "gameDebugPerfMemoryFootprint": "RAM",
   "gameDebugTier": "Уровень графики",
   "gameDebugPerfObjects": "Узлы: {nodes}; ресурсы: {resources}",
   "gameDebugPerfRetained": "Вопрос: {question}; старые сцены: {scenes}, улицы: {streets}",
@@ -121,6 +122,7 @@
   "gameCrossroadsCompleteTitle": "Перекресток разрулен!"
  },
  "en": {
+  "gameDebugPerfMemoryFootprint": "RAM",
   "gameDebugTier": "Graphics level",
   "gameDebugPerfObjects": "Nodes: {nodes}; resources: {resources}",
   "gameDebugPerfRetained": "Question: {question}; retained scenes: {scenes}, streets: {streets}",
@@ -242,6 +244,7 @@
   "gameCrossroadsCompleteTitle": "The intersection has been cleared!"
  },
  "kk": {
+  "gameDebugPerfMemoryFootprint": "RAM",
   "gameDebugTier": "Графика деңгейі",
   "gameDebugPerfObjects": "Түйіндер: {nodes}; ресурстар: {resources}",
   "gameDebugPerfRetained": "Сұрақ: {question}; сақталған сахналар: {scenes}, көшелер: {streets}",

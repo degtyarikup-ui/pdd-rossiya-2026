@@ -1,6 +1,7 @@
 #import "PddGodotGame.h"
 
 #import <UIKit/UIKit.h>
+#import <mach/mach.h>
 
 // The game «Живой город» on Godot 4.7.2 (game_godot/). The engine comes from
 // ios/Godot (scripts/godot_ios_assets.sh). PDD_GODOT_ENGINE is defined only for device
@@ -20,6 +21,7 @@ static PddGodotGame *gInstance = nil;
 #if defined(PDD_GODOT_ENGINE)
 
 static NSString *const kExchangeFolderName = @"pdd_game";
+static NSString *const kPerformanceMemoryFileName = @"performance-memory.json";
 
 // libgodot ships without headers. The declarations here follow Godot 4.7.2:
 // platform/ios/main_ios.mm, drivers/apple_embedded/*.h, app_delegate_service.mm.
@@ -56,12 +58,59 @@ static GDTAppDelegateService *gEngineService = nil;
 static UIWindow *gGameWindow = nil;
 static UIWindow *gAppWindow = nil;
 static NSTimer *gPollTimer = nil;
+static NSTimer *gMemoryTimer = nil;
 static FlutterResult gPending = nil;
 
 /// Where the app and the game exchange requests and results: Library/Caches/pdd_game.
 static NSString *ExchangeFolder(void) {
   NSString *caches = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject;
   return [caches stringByAppendingPathComponent:kExchangeFolderName];
+}
+
+static BOOL IsGameVisible(void) {
+  return gGameWindow != nil && !gGameWindow.hidden;
+}
+
+static void StopPerformanceMemorySampling(void) {
+  [gMemoryTimer invalidate];
+  gMemoryTimer = nil;
+}
+
+/// iOS's physical footprint covers this whole process (Flutter and Godot together).
+/// It is a different metric from Android PSS; release Godot has no static-memory counter.
+static void SamplePerformanceMemory(void) {
+  if (!IsGameVisible() ||
+      gGameWindow.windowScene.activationState != UISceneActivationStateForegroundActive) {
+    return;
+  }
+  task_vm_info_data_t memory = {};
+  mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+  kern_return_t status = task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&memory, &count);
+  id footprint = NSNull.null;
+  if (status == KERN_SUCCESS && count >= TASK_VM_INFO_REV1_COUNT) {
+    footprint = @((double)memory.phys_footprint / 1048576.0);
+  }
+  NSData *sample = [NSJSONSerialization dataWithJSONObject:@{
+    @"footprint_mb" : footprint,
+    @"sample_time" : @(NSDate.date.timeIntervalSince1970),
+  } options:0 error:nil];
+  [sample writeToFile:[ExchangeFolder() stringByAppendingPathComponent:kPerformanceMemoryFileName]
+             options:NSDataWritingAtomic
+               error:nil];
+}
+
+static void StartPerformanceMemorySampling(NSArray *arguments) {
+  StopPerformanceMemorySampling();
+  if (![arguments containsObject:@"--perf"]) {
+    return;
+  }
+  SamplePerformanceMemory();
+  gMemoryTimer = [NSTimer scheduledTimerWithTimeInterval:5.0
+                                                repeats:YES
+                                                  block:^(NSTimer *timer) {
+                                                    SamplePerformanceMemory();
+                                                  }];
+  gMemoryTimer.tolerance = 0.5;
 }
 
 /// The pack is the bundle's <executable>.pck: the engine looks for it by that name.
@@ -151,11 +200,16 @@ static BOOL ShowGame(void) {
   gGameWindow.windowLevel = UIWindowLevelNormal + 1;
   gGameWindow.rootViewController = GameController();
   [gGameWindow makeKeyAndVisible];
+  if (scene.activationState == UISceneActivationStateForegroundActive) {
+    [EngineService() sceneDidBecomeActive:scene];
+  }
   [gController.godotView startRendering];
   return YES;
 }
 
 static void HideGame(void) {
+  StopPerformanceMemorySampling();
+  [EngineService() sceneWillResignActive:gGameWindow.windowScene];
   [gController.godotView stopRendering];
   gGameWindow.hidden = YES;
   gGameWindow.rootViewController = nil;
@@ -217,6 +271,7 @@ static void HideGame(void) {
     result(nil);
     return;
   }
+  StartPerformanceMemorySampling(gameArgs);
   gPending = result;
   gPollTimer = [NSTimer scheduledTimerWithTimeInterval:0.2
                                                repeats:YES
@@ -231,12 +286,14 @@ static void HideGame(void) {
 #if defined(PDD_GODOT_ENGINE)
 
 - (BOOL)prepareExchange:(NSString *)folder arguments:(NSArray *)args {
+  StopPerformanceMemorySampling();
   NSFileManager *files = NSFileManager.defaultManager;
   if (![files createDirectoryAtPath:folder withIntermediateDirectories:YES attributes:nil error:nil]) {
     return NO;
   }
   // No run is going on in the engine now, so a leftover summary belongs to the last run.
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"summary.json"] error:nil];
+  [files removeItemAtPath:[folder stringByAppendingPathComponent:kPerformanceMemoryFileName] error:nil];
   NSMutableArray *gameArgs = [NSMutableArray arrayWithArray:args ? args : @[]];
   NSString *pictures = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
       @"Frameworks/App.framework/flutter_assets/assets/countries/ru/images/questions_ab"];
@@ -287,25 +344,27 @@ static void HideGame(void) {
 
 // The engine's lifecycle hooks, passed on as the template's app delegate does.
 - (void)sceneWillResignActive:(UIScene *)scene {
-  if (gEngineStarted) {
+  if (gEngineStarted && IsGameVisible()) {
     [EngineService() sceneWillResignActive:scene];
   }
 }
 
 - (void)sceneDidBecomeActive:(UIScene *)scene {
-  if (gEngineStarted) {
+  // Godot's focus-in starts its renderer and audio, including after backgrounding.
+  // A hidden game must stay stopped while the player uses the Flutter screens.
+  if (gEngineStarted && IsGameVisible()) {
     [EngineService() sceneDidBecomeActive:scene];
   }
 }
 
 - (void)sceneDidEnterBackground:(UIScene *)scene {
-  if (gEngineStarted) {
+  if (gEngineStarted && IsGameVisible()) {
     [EngineService() sceneDidEnterBackground:scene];
   }
 }
 
 - (void)sceneWillEnterForeground:(UIScene *)scene {
-  if (gEngineStarted) {
+  if (gEngineStarted && IsGameVisible()) {
     [EngineService() sceneWillEnterForeground:scene];
   }
 }

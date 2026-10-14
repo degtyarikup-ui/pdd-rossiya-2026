@@ -332,6 +332,7 @@
   "gameDebugTierLow": "Low",
   "gameDebugTierMid": "Medium",
   "gameDebugTierHigh": "High",
+  "gameDebugPerfMemoryFootprint": "RAM",
   "gameDebugPerfObjects": "Nodes: {nodes}; resources: {resources}",
   "@gameDebugPerfObjects": {
     "placeholders": {

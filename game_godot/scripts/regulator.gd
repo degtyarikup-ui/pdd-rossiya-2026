@@ -76,13 +76,17 @@ func _ready() -> void:
 ## The loader stays over the first frames: the scene is built, shaded and drawn before it goes. The
 ## screenshot (--shot) is taken after it, so it shows the game and not the loader.
 func _dismiss_loader(loader: Loader) -> void:
+	if is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
+	if is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
+	if is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
 	ready_for_play = true
 	_start_game()
 	loader.dismiss()
 	if shot_path != "":
 		await get_tree().create_timer(Loader.FADE + 0.2).timeout
+		if is_queued_for_deletion() or not is_inside_tree(): return
 		_take_screenshot(shot_path)
 
 
