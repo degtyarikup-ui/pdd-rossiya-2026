@@ -98,7 +98,7 @@ if [[ -z $dev && -f $STATE ]]; then
   dev=$(try_connect "$ip:5555")
   [[ -z $dev ]] && dev=$(try_connect "$(cat "$STATE")")
   if [[ -z $dev ]]; then
-    echo "Ищу порт отладки на $ip…"
+    echo "Ищу порт отладки на ${ip}…"
     for port in $(scan_ports "$ip"); do
       dev=$(try_connect "$ip:$port"); [[ -n $dev ]] && break
     done
