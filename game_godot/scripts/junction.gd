@@ -124,6 +124,9 @@ var resolution = null            # Dictionary while the player passes through
 var complete := false            # the player has left by an exit
 var question_signals_started := false
 var spec: Dictionary
+var _signal_state := ""
+var _signal_clock := 0.0
+var _flash_on := true
 ## World-supplied road continuation in local coordinates, beyond the authored arrow.
 var continuation := Callable()
 var cycle_continuation := Callable()
@@ -179,15 +182,23 @@ const LAMP_ENLARGE := 1.8
 const HALO_SIZE := 3.0
 
 
-func set_lights(state: String) -> void:
+func set_lights(state: String,flash_on := true) -> void:
+	if state!=_signal_state: _signal_clock=0.0
+	_signal_state=state
+	_flash_on=flash_on
 	var tram_signal: String = str(data.get("trafficLights", {}).get("tram", "straight"))
 	for light in situation.lights:
+		var shared:=TrafficSignal.in_assembly(light)
+		if shared!=null:
+			TrafficSignal.set_state(shared,state,tram_signal,flash_on)
+			continue
 		for lamp_name in LAMPS:
 			var lamp := light.find_child(lamp_name, true, false) as Node3D
 			if lamp == null:
 				continue
 			var colour: Color = LAMPS[lamp_name][0]
 			var on: bool = lamp_name == "lamp_" + state or (state == "flashing_yellow" and lamp_name == "lamp_yellow")
+			if state=="flashing_yellow" and lamp_name=="lamp_yellow":on=flash_on
 			var discs: Array = lamp.find_children("*", "MeshInstance3D", true, false)
 			if lamp is MeshInstance3D:
 				discs.append(lamp)
@@ -392,6 +403,10 @@ func _update_signals() -> void:
 
 ## updateActors (the participants of this junction). `player` in local coords.
 func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion:
+	if _signal_state=="flashing_yellow" and dt>0:
+		_signal_clock+=dt
+		var on:=int(_signal_clock*2.0)%2==0
+		if on!=_flash_on:set_lights(_signal_state,on)
 	_update_signals()
 	var boxes := []
 	for m in motions:

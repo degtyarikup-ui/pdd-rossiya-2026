@@ -442,6 +442,19 @@ const Scene3D = (() => {
     }
   }
 
+  function updateSignalCycles(now) {
+    const lit = Math.floor(now / 500) % 2 === 0;
+    for (const light of model?.lights || []) {
+      if (light.state !== "flashing_yellow") continue;
+      const group = anchors.get(`light:${light.id}`)?.group;
+      const section = group?.getObjectByName("lamp_yellow");
+      if (!section || group.userData.yellowPhase === lit) continue;
+      group.userData.yellowPhase = lit;
+      section.traverse(m => { if (m.isMesh && m.material?.color) m.material.color.setHex(lit ? 0xffd52a : 0x352d14); });
+      needsRender = true;
+    }
+  }
+
   // Each object of the scene is a group under "anchors", kept between redraws while its model is the
   // same (only moved): dragging 200 trees about does not reload them.
   function anchorSig(t, o) {
@@ -486,6 +499,7 @@ const Scene3D = (() => {
         root.position.y += lift;
         lightRoot = root;
         root.traverse((m) => {
+          const lampName = m.name?.startsWith("aperture_") ? m.parent?.name : m.name;
           if (m.name === "cffffff" || m.material?.name === "cffffff") {
             if (!o.arrow) {
               m.visible = false;
@@ -498,38 +512,40 @@ const Scene3D = (() => {
               m.scale.x = 1;
             }
           }
-          if (m.name?.startsWith("lamp_red")) {
+          if (lampName?.startsWith("lamp_red")) {
             const on = (o.state === "red");
             if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0xFF3838 : 0x351719); }
           }
-          if (m.name?.startsWith("lamp_yellow")) {
+          if (lampName?.startsWith("lamp_yellow")) {
             const on = (o.state === "yellow" || o.state === "flashing_yellow");
             if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0xFFD52A : 0x352D14); }
           }
-          if (m.name?.startsWith("lamp_green")) {
+          if (lampName?.startsWith("lamp_green")) {
             const on = (o.state === "green");
             if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0x36FF88 : 0x123126); }
           }
-          if (isTram && m.name?.startsWith("lamp_tram_")) {
+          if (lampName === "lamp_arrow" && m.material) {
+            m.material = m.material.clone(); m.material.color.setHex(o.arrowActive === false ? 0x123126 : 0x36ff88);
+          }
+          if (isTram && lampName?.startsWith("lamp_tram_")) {
             const tSig = o.tram || "straight";
             let on = false;
-            if (tSig === "straight") on = m.name.includes("bottom") || m.name.includes("mid");
-            else if (tSig === "left") on = m.name.includes("bottom") || m.name.includes("left");
-            else if (tSig === "right") on = m.name.includes("bottom") || m.name.includes("right");
-            else if (tSig === "stop") on = !m.name.includes("bottom");
+            if (tSig === "straight") on = lampName.includes("bottom") || lampName.includes("mid");
+            else if (tSig === "left") on = lampName.includes("bottom") || lampName.includes("left");
+            else if (tSig === "right") on = lampName.includes("bottom") || lampName.includes("right");
+            else if (tSig === "stop") on = !lampName.includes("bottom");
             else if (tSig === "all") on = true;
             else if (tSig === "off") on = false;
-            else on = m.name.includes("bottom") || m.name.includes("mid");
+            else on = lampName.includes("bottom") || lampName.includes("mid");
             if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0xF0F6FF : 0x20252C); }
           }
         });
       };
       const asset = o.asset || (isTram ? (App.state.catalog?.lightTramAsset || App.state.catalog?.lightAssets?.tram) : null)
         || (App.state.catalog?.lightAssets?.[o.arrow || ""] || App.state.catalog?.lightAsset);
-      if (asset) attach(`/asset/scene/${asset}`, pole, null, configureLight); else g.add(pole);
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(isTram ? 0.22 : 0.28, 12, 8), basic(lampColour(o.state)));
-      lamp.position.set(0, (isTram ? 5.6 : 4.4) + lift, 0);
-      g.add(lamp);
+      const shared = App.state.catalog?.lightModelAssets?.[isTram ? "tram" : (o.arrow || "")];
+      if (shared || asset) attach(shared || `/asset/scene/${asset}`, pole, null, configureLight);
+      else g.add(pole);
       if (mounted.length) {
         const extension = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, lift, 12), mat(0x3a3f47));
         extension.position.y = lift / 2;
@@ -539,7 +555,6 @@ const Scene3D = (() => {
           lift = heights.reduce((a, h) => a + h, 0) + 0.15 * (mounted.length - 1);
           if (lightRoot) lightRoot.position.y = lift;
           pole.position.y = (isTram ? 5.4 : 3.4) / 2 + lift;
-          lamp.position.y = (isTram ? 5.6 : 4.4) + lift;
           extension.geometry.dispose();
           extension.geometry = new THREE.CylinderGeometry(0.07, 0.07, lift, 12);
           extension.position.y = lift / 2;
@@ -578,6 +593,14 @@ const Scene3D = (() => {
     if (!signTex.has(code)) {
       signWaiters.set(code, []);
       const texture = new THREE.TextureLoader().load(`/asset/sign/${code}.svg`, () => {
+        // Rasterize SVG paths at the game's bounded resolution, not the catalogue's tiny canvas.
+        const source = texture.image;
+        texture.userData = { sourceSize: [source.width, source.height] };
+        const scale = App.state.catalog?.signLayouts?.[code]?.scale || 1;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(source.width * scale); canvas.height = Math.round(source.height * scale);
+        canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+        texture.image = canvas; texture.needsUpdate = true;
         for (const callback of signWaiters.get(code) || []) callback();
         signWaiters.delete(code); needsRender = true;
       });
@@ -587,6 +610,16 @@ const Scene3D = (() => {
     if (ready && !texture.image?.width) signWaiters.get(code)?.push(ready);
     return texture;
   }
+  function signOutlineShape(code) {
+    if (['2.1', '2.2'].includes(code)) return 2;
+    if (code === '2.4') return 5;
+    if (code === '2.5') return 6;
+    if (code.startsWith('3.') || code.startsWith('4.')) return 1;
+    if (code.startsWith('1.3.')) return 0;
+    if (code.startsWith('1.4.') || code === '1.34.3') return 3;
+    if (code.startsWith('1.') || code.startsWith('2.3.')) return 4;
+    return 3;
+  }
   function laneTexture(lanes) {
     const key = JSON.stringify(LaneSign.normalize(lanes));
     if (!laneTex.has(key)) {
@@ -595,30 +628,62 @@ const Scene3D = (() => {
         // The canvas remains on any live face; Three can upload it again if that face is visible.
         laneTex.get(oldest).dispose(); laneTex.delete(oldest);
       }
-      laneTex.set(key, new THREE.CanvasTexture(LaneSign.canvas(lanes)));
+      const texture = new THREE.CanvasTexture(LaneSign.canvas(lanes));
+      texture.userData = { cornerRadius: .1 };
+      laneTex.set(key, texture);
     }
     return laneTex.get(key);
   }
   function mainRoadTexture(main, roads) {
     const c = document.createElement("canvas");
-    c.width = 256; c.height = 192;
+    c.width = 256; c.height = 256;
     const x = c.getContext("2d");
-    x.fillStyle = "#fff"; x.fillRect(0, 0, 256, 192);
-    x.strokeStyle = "#151515"; x.lineWidth = 10; x.strokeRect(5, 5, 246, 182);
-    const ends = { north: [128, 22], south: [128, 170], east: [228, 96], west: [28, 96], ne: [190, 34], se: [190, 158], sw: [66, 158], nw: [66, 34] };
+    x.fillStyle = "#fff"; x.fillRect(0, 0, 256, 256);
+    x.strokeStyle = "#151515"; x.lineWidth = 10; x.strokeRect(5, 5, 246, 246);
+    const ends = { north: [128, 28], south: [128, 228], east: [228, 128], west: [28, 128], ne: [199, 57], se: [199, 199], sw: [57, 199], nw: [57, 57] };
     const all = roads && roads.length ? roads : ["north", "south", "east", "west"];
     x.lineCap = "square";
     for (const [d, e] of Object.entries(ends)) {
       if (!all.includes(d) && !main.includes(d)) continue;
       x.lineWidth = main.includes(d) ? 18 : 6;
-      x.beginPath(); x.moveTo(128, 96); x.lineTo(...e); x.stroke();
+      x.beginPath(); x.moveTo(128, 128); x.lineTo(...e); x.stroke();
     }
     return new THREE.CanvasTexture(c);
   }
   function signModel(o, withPole = true, onHeight = null) {
     const g = new THREE.Group(), board = new THREE.Group(), support = new THREE.Group(), parts = [];
     g.add(board); g.add(support);
-    const faceMat = tex => new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.5, side: THREE.FrontSide });
+    const faceMat = tex => {
+      const material = new THREE.ShaderMaterial({
+        uniforms: { picture: { value: tex }, region: { value: new THREE.Vector4(0, 0, 1, 1) },
+          outline: { value: new THREE.Vector4(0, 0, 1, 1) }, shape: { value: 3 },
+          aspect: { value: tex.image?.width / tex.image?.height || 1 }, radius: { value: tex.userData?.cornerRadius || 0 } },
+        vertexShader: "varying vec2 faceUV; void main(){faceUV=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
+        fragmentShader: `uniform sampler2D picture; uniform vec4 region, outline;
+          uniform int shape; uniform float aspect, radius; varying vec2 faceUV;
+          float segmentDistance(vec2 p,vec2 a,vec2 b){vec2 v=p-a,e=b-a;return length(v-e*clamp(dot(v,e)/dot(e,e),0.,1.));}
+          float triangleDistance(vec2 p){vec2 a=vec2(-.96,.96),b=vec2(.96,.96),c=vec2(0.,-.96);
+            float e=min(segmentDistance(p,a,b),min(segmentDistance(p,b,c),segmentDistance(p,c,a)));
+            bool inside=p.y<.96&&p.y>2.*p.x-.96&&p.y>-2.*p.x-.96;return (inside?-e:e)-.04;}
+          void main(){vec4 image=texture2D(picture,region.xy+faceUV*region.zw);
+            vec2 p=(faceUV-outline.xy)/outline.zw*2.-1.;p.y=-p.y;float d=0.;
+            if(shape==1)d=length(p)-1.;
+            else if(shape==2){vec2 q=abs(vec2(p.x+p.y,p.y-p.x))*.70710678-vec2((1.+radius*.41421356)*.70710678-radius);
+              d=length(max(q,vec2(0.)))+min(max(q.x,q.y),0.)-radius;}
+            else if(shape==3){vec2 q=abs(p*vec2(aspect,1.))-vec2(aspect,1.)+vec2(radius);
+              d=length(max(q,vec2(0.)))+min(max(q.x,q.y),0.)-radius;}
+            else if(shape==4||shape==5)d=triangleDistance(p*vec2(1.,shape==5?-1.:1.));
+            else if(shape==6)d=max(max(abs(p.x),abs(p.y)),(abs(p.x)+abs(p.y))*.70710678)-1.;
+            float e=max(fwidth(d),.0001);
+            float coverage=shape==0?smoothstep(.5-fwidth(image.a),.5+fwidth(image.a)+.0001,image.a):1.-smoothstep(-e*.5,e*.5,d);
+            if(coverage<=.001)discard;
+            vec3 front=mix(vec3(1.),image.rgb,smoothstep(0.,.1,image.a));
+            gl_FragColor=vec4(gl_FrontFacing?front:vec3(.43,.46,.49),coverage);}`,
+        side: THREE.DoubleSide, transparent: true, depthWrite: true,
+      });
+      material.map = tex; // Retain the existing image-ready/layout path.
+      return material;
+    };
     const add = (tex, w, h, gap = 0.05) => {
       const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), faceMat(tex));
       mesh.rotation.y = Math.PI; board.add(mesh);
@@ -652,8 +717,22 @@ const Scene3D = (() => {
       const fit = () => {
         if (!part || !part.mesh.material.map.image?.width) return;
         const im = part.mesh.material.map.image;
-        part.h = width * im.height / im.width;
-        part.mesh.geometry.dispose(); part.mesh.geometry = new THREE.PlaneGeometry(width, part.h);
+        const source = part.mesh.material.map.userData?.sourceSize || [im.width, im.height];
+        part.h = width * source[1] / source[0];
+        const crop = App.state.catalog?.signRegions?.[code];
+        let w = width, h = part.h;
+        if (crop) {
+          const scale = Math.min(width / crop[2], part.h / crop[3]);
+          w = crop[2] * scale; h = crop[3] * scale;
+          part.mesh.material.uniforms.region.value.set(crop[0] / source[0], 1 - (crop[1] + crop[3]) / source[1], crop[2] / source[0], crop[3] / source[1]);
+        }
+        const layout = App.state.catalog?.signLayouts?.[code];
+        const r = layout?.outline || [0, 0, 1, 1];
+        const uniforms = part.mesh.material.uniforms;
+        uniforms.outline.value.set(r[0], 1-r[1]-r[3], r[2], r[3]);
+        uniforms.shape.value = signOutlineShape(code); uniforms.radius.value = .1;
+        uniforms.aspect.value = (crop?.[2] || source[0]) * r[2] / ((crop?.[3] || source[1]) * r[3]);
+        part.mesh.geometry.dispose(); part.mesh.geometry = new THREE.PlaneGeometry(w, h);
         if (top) topFaceHeight = part.h;
         arrange();
       };
@@ -661,6 +740,7 @@ const Scene3D = (() => {
       const im = texture.image;
       part = add(texture, width, im?.width ? width * im.height / im.width : width, gap);
       if (top) topFaceHeight = part.h;
+      fit();
     };
     const faces = SignMount.faces(o);
     for (let i = faces.length - 1; i >= 0; i--) {
@@ -673,9 +753,9 @@ const Scene3D = (() => {
         add(new THREE.CanvasTexture(c), width * 0.8, 0.28 * SIGN_W / 0.8);
       }
       if (face.plateSign) imagePart(face.plateSign, face.plateSign.startsWith('1.4.') ? SIGN_W * 0.25 : width * 0.8, 0.05);
-      if (face.code === '8.13') { add(mainRoadTexture(face.mainRoad || [], face.roads), SIGN_W, SIGN_W * 0.75, gap); if (!i) topFaceHeight = SIGN_W * 0.75; }
+      if (face.code === '8.13') { add(mainRoadTexture(face.mainRoad || [], face.roads), SIGN_W * 0.75, SIGN_W * 0.75, gap); if (!i) topFaceHeight = SIGN_W * 0.75; }
       else {
-        if (face.mainRoad?.length) add(mainRoadTexture(face.mainRoad, face.roads), SIGN_W * 0.8, SIGN_W * 0.6);
+        if (face.mainRoad?.length) add(mainRoadTexture(face.mainRoad, face.roads), SIGN_W * 0.6, SIGN_W * 0.6);
         if (face.laneDirections?.length) {
           const size = LaneSign.dimensions(face.laneDirections); add(laneTexture(face.laneDirections), size.width, size.height, gap);
           if (!i) topFaceHeight = size.height;
@@ -1124,6 +1204,7 @@ const Scene3D = (() => {
     const now = performance.now();
     emit("frame", now);
     updateHazards(now);
+    updateSignalCycles(now);
     if (!needsRender) return;
     needsRender = false;
     for (const h of handles) {

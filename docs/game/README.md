@@ -58,6 +58,8 @@ godot --headless --path game_godot --script res://tests/vehicle_models_check.gd 
 godot --headless --path game_godot --script res://tests/environment_models_check.gd # деревья/улица: бюджет и исходное размещение всех сцен
 godot --headless --path game_godot --script res://tests/collision_check.gd  # столкновения
 godot --headless --path game_godot --script res://tests/sign_mount_check.gd # общая стойка и консоль знаков
+godot --headless --path game_godot --script res://tests/signals_models_check.gd # знаки/светофоры: формы, состояния, крепления, кеши и бюджет
+godot --path game_godot --script res://tests/signals_render_check.gd # реальный фронт/тыл и отдельные трамвайные апертуры
 godot --headless --path game_godot --script res://tests/lane_sign_check.gd # конструктор направлений по полосам
 godot --headless --path game_godot --script res://tests/free_player_check.gd # 76 проверок свободной позы, 12 углов и подъезда по кольцу
 godot --headless --path game_godot --script res://tests/dirt_surface_check.gd # грунт, текстура и удаление старых накладок
@@ -202,6 +204,7 @@ MP3 и локальный манифест не коммитятся. В Git л�
 - `people-models.md` — модели пешеходов и регулировщика, походка и ограничения геометрии
 - `vehicle-models.md` — общий источник машин NPC/гаража и лёгкий отдельный транспорт
 - `environment-models.md` — лёгкие деревья и уличные объекты с исходными точками установки
+- `signs-and-signals.md` — знаки/светофоры, нормативные формы, серый оборот и сохранённые крепления
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
 - `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
 - `local-changes-sync-2026-10-14.md` — опубликованные локации и архивы всех локальных stash

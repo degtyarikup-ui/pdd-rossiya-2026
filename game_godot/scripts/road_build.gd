@@ -74,18 +74,19 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 		for part in parts:
 			var w: float = part[2]
 			var h: float = part[3]
-			var at := Vector3(0, y + h * 0.5, 0)
+			var slot_height: float = part[4] if part.size()>4 else h
+			var at := Vector3(0, y + slot_height * 0.5, 0)
 			var face: Node3D
 			if part[0] == "text":
 				face = _text_plate(part[1], at, w, h)
 			else:
 				face = _face(part[1], at, w, h)
 			board.add_child(face)
-			y += h + 0.05
+			y += slot_height + 0.05
 		var last: Array = parts.back()
 		board.get_child(board.get_child_count() - 1).name = "face_top" if i == 0 else "face_bottom"
 		if i == 0:
-			top_face_height = last[3]
+			top_face_height = last[4] if last.size()>4 else last[3]
 		else:
 			y += 0.11  # 16 cm between independent signs, 5 cm between their plates.
 	var height := y - 0.05
@@ -102,6 +103,8 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 		cyl.top_radius = POLE_RADIUS
 		cyl.bottom_radius = POLE_RADIUS
 		cyl.height = top
+		cyl.radial_segments = 8
+		cyl.rings = 1
 		pole.mesh = cyl
 		pole.material_override = _paint(Color("#7A7F87"))
 		pole.position = Vector3(0, top * 0.5, POLE_BACK)
@@ -117,11 +120,12 @@ static func _sign_parts(face: Dictionary) -> Array:
 	var width := face_width(code)
 	if not lanes.is_empty():
 		tex = LaneSign.texture(lanes)
+		tex.set_meta("corner_radius",.10)
 		width = LaneSign.width(lanes)
 	elif code == "8.13":
 		tex = main_road_plate(face.get("mainRoad", []), face.get("roads", []))
 	else:
-		tex = load("res://signs/%s.svg" % code) as Texture2D
+		tex = SignFace.texture(code)
 	if tex == null:
 		push_warning("no picture for road sign %s" % code)
 		return []
@@ -131,16 +135,22 @@ static func _sign_parts(face: Dictionary) -> Array:
 		parts.append(["text", plate, width * 0.8, 0.28 * SIGN_SCALE])
 	var plate_code := str(face.get("plateSign", ""))
 	if not plate_code.is_empty():
-		var ptex := load("res://signs/%s.svg" % plate_code) as Texture2D
+		var ptex := SignFace.texture(plate_code)
 		if ptex != null:
 			var pw := face_width(plate_code) if plate_code.begins_with("1.4.") else width * 0.8
-			parts.append(["pic", ptex, pw, pw * float(ptex.get_height()) / float(ptex.get_width())])
+			var slot:=SignFace.legacy_size(plate_code,pw)
+			var fitted:=SignFace.fit(ptex,slot)
+			parts.append(["pic",ptex,fitted.x,fitted.y,SignFace.legacy_height(plate_code,pw)])
 	var main: Array = face.get("mainRoad", [])
 	if not main.is_empty() and code != "8.13":
 		var mt := main_road_plate(main, face.get("roads", []))
-		parts.append(["pic", mt, SIGN_WIDTH * 0.8, SIGN_WIDTH * 0.8 * 0.75])
-	var height := LaneSign.height(lanes) if not lanes.is_empty() else width * float(tex.get_height()) / float(tex.get_width())
-	parts.append(["pic", tex, width, height])
+		# 8.13 is square. Keep the old height/centre, reduce its width to that height.
+		var main_height:=SIGN_WIDTH*.8*.75
+		parts.append(["pic",mt,main_height,main_height])
+	var slot_height:=LaneSign.height(lanes) if not lanes.is_empty() else width*.75 if code=="8.13" else SignFace.legacy_height(code,width)
+	var slot:=Vector2(width,slot_height)
+	var fitted:=SignFace.fit(tex,slot)
+	parts.append(["pic",tex,fitted.x,fitted.y,slot_height])
 	return parts
 
 
@@ -158,6 +168,8 @@ static func _cantilever(root: Node3D, board: Node3D, height: float, mounting: Di
 	cylinder.top_radius = 0.16
 	cylinder.bottom_radius = 0.16
 	cylinder.height = top
+	cylinder.radial_segments = 8
+	cylinder.rings = 1
 	post.mesh = cylinder
 	post.material_override = steel
 	post.position = Vector3(0, top * 0.5, 0.09)
@@ -178,6 +190,8 @@ static func _cantilever(root: Node3D, board: Node3D, height: float, mounting: Di
 	rod.top_radius = 0.07
 	rod.bottom_radius = 0.07
 	rod.height = start.distance_to(end)
+	rod.radial_segments = 6
+	rod.rings = 1
 	brace.mesh = rod
 	brace.material_override = steel
 	brace.position = (start + end) * 0.5
@@ -192,12 +206,12 @@ static func light_with_signs(light: Node3D, codes: Array, main_road: Array = [])
 	for code in codes.slice(0, 2):
 		if str(code).is_empty():
 			continue
-		var tex: Texture2D = main_road_plate(main_road) if code == "8.13" else load("res://signs/%s.svg" % code) as Texture2D
+		var tex: Texture2D = main_road_plate(main_road) if code == "8.13" else SignFace.texture(str(code))
 		if tex == null:
 			continue
 		var sign := sign_node(str(code), "", "", main_road if code == "8.13" else [], [], false)
 		signs.append(sign)
-		heights.append(face_width(str(code)) * 0.8 * float(tex.get_height()) / float(tex.get_width()))
+		heights.append(float(sign.get_node("sign_board").get_meta("height"))*.8)
 	if signs.is_empty():
 		return light
 	var root := Node3D.new()
@@ -219,6 +233,8 @@ static func light_with_signs(light: Node3D, codes: Array, main_road: Array = [])
 	cylinder.top_radius = 0.07
 	cylinder.bottom_radius = 0.07
 	cylinder.height = lift
+	cylinder.radial_segments = 8
+	cylinder.rings = 1
 	extension.mesh = cylinder
 	extension.position.y = lift * 0.5
 	var steel := StandardMaterial3D.new()
@@ -230,9 +246,13 @@ static func light_with_signs(light: Node3D, codes: Array, main_road: Array = [])
 
 ## The plate 8.13 «Направление главной дороги»: the main road thick, the other roads thin, as the
 ## driver sees the junction ahead (north is ahead, east to the right).
+static var _main_road_textures := {}
+
 static func main_road_plate(main_road: Array, roads: Array = []) -> ImageTexture:
+	var key:=JSON.stringify([main_road,roads])
+	if _main_road_textures.has(key): return _main_road_textures[key]
 	var w := 256
-	var h := 192
+	var h := 256
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	img.fill(Color.WHITE)
 	var black := Color("#151515")
@@ -252,7 +272,7 @@ static func main_road_plate(main_road: Array, roads: Array = []) -> ImageTexture
 			continue
 		var half := 9.0 if dir in main_road else 3.0
 		var d: Vector2 = ends[dir]
-		var reach := 70.0 if absf(d.y) > 0.5 else 100.0
+		var reach := 100.0
 		# A band from the centre outwards: every pixel within `half` of the segment.
 		for step in int(reach):
 			var at := c + d * step
@@ -262,47 +282,22 @@ static func main_road_plate(main_road: Array, roads: Array = []) -> ImageTexture
 					if q.x > 6 and q.y > 6 and q.x < w - 7 and q.y < h - 7:
 						img.set_pixelv(q, black)
 	img.generate_mipmaps()
-	return ImageTexture.create_from_image(img)
+	var texture:=ImageTexture.create_from_image(img)
+	if _main_road_textures.size()>=16: _main_road_textures.erase(_main_road_textures.keys()[0])
+	_main_road_textures[key]=texture
+	return texture
 
 
 ## A picture facing the driver who comes from -Z (the face looks back along the road).
 static func _face(tex: Texture2D, at: Vector3, w: float, h: float) -> MeshInstance3D:
-	var face := MeshInstance3D.new()
-	var quad := QuadMesh.new()
-	quad.size = Vector2(w, h)
-	face.mesh = quad
-	face.position = at
-	face.rotation.y = PI
-	var mat := StandardMaterial3D.new()
-	mat.albedo_texture = tex
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.cull_mode = BaseMaterial3D.CULL_BACK
-	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	# The picture's transparent corners are cut out (alpha), not drawn black.
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	mat.alpha_scissor_threshold = 0.5
-	face.material_override = mat
-	var back := MeshInstance3D.new()
-	back.mesh = quad
-	back.position.z = -0.01
-	back.rotation.y = PI
-	var backing := ShaderMaterial.new()
-	backing.shader = load("res://shaders/sign_back.gdshader")
-	backing.set_shader_parameter("mask", tex)
-	back.material_override = backing
-	face.add_child(back)
-	return face
+	return SignFace.picture(tex,at,Vector2(w,h))
 
 
 ## A white plate with black text (the distance plates "200 м" under the signs).
 static func _text_plate(text: String, at: Vector3, w: float, h: float) -> Node3D:
 	var root := Node3D.new()
 	root.position = at
-	var mi := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3(w, h, 0.03)
-	mi.mesh = box
-	mi.material_override = _paint(Color("#FFFFFF"))
+	var mi:=_face(SignFace.white(),Vector3.ZERO,w,h)
 	root.add_child(mi)
 	var label := Label3D.new()
 	label.text = text
@@ -312,6 +307,7 @@ static func _text_plate(text: String, at: Vector3, w: float, h: float) -> Node3D
 	label.outline_size = 0
 	label.position = Vector3(0, 0, -0.02)
 	label.rotation.y = PI
+	label.double_sided = false
 	root.add_child(label)
 	return root
 
@@ -481,10 +477,11 @@ static func roadworks_barrier(width: float) -> Node3D:
 	for x in [-width * 0.5 + 0.1, width * 0.5 - 0.1]:
 		_part(root, Vector3(0.08, 1.0, 0.08), Vector3(x, 0.5, 0.0), Color("#7A7F87"))
 	_part(root, Vector3(width, 0.9, 0.08), Vector3(0.0, 1.1, 0.0), WHITE)
-	var tex := load("res://signs/4.2.2.svg") as Texture2D
+	var tex := SignFace.texture("4.2.2")
 	if tex != null:
 		var s := minf(width, 1.0)
-		root.add_child(_face(tex, Vector3(0.0, 1.1, -0.06), s, s))
+		var fitted:=SignFace.fit(tex,Vector2(s,s))
+		root.add_child(_face(tex, Vector3(0.0, 1.1, -0.06), fitted.x, fitted.y))
 	return root
 
 

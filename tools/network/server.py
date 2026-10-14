@@ -530,7 +530,11 @@ class Handler(BaseHTTPRequestHandler):
                 "actorTypes": {t: v[0] for t, v in models.items()},
                 "lightAsset": light_models.get("", "ticket_11_15/light_0.glb"),
                 "lightTramAsset": light_models.get("tram", "ticket_6_13/light_0.glb"),
-                "lightAssets": light_models}
+                "lightAssets": light_models,
+                "lightModelAssets": {key: f"/asset/models/street/traffic_light_{key or 'standard'}.glb"
+                                     for key in ("", "left", "right", "straight", "tram")},
+                "signRegions": json.loads((GAME / "signs" / "face_regions.json").read_text(encoding="utf-8")),
+                "signLayouts": json.loads((GAME / "signs" / "face_layout.json").read_text(encoding="utf-8"))}
 
 
 class Server(ThreadingHTTPServer):

@@ -6,23 +6,24 @@ static var _materials := {}
 static var _batch_material: ShaderMaterial
 
 
-static func material(colour: Color) -> ShaderMaterial:
-	var key := colour.to_html()
+static func material(colour: Color, front_only := false) -> ShaderMaterial:
+	var key := colour.to_html()+str(front_only)
 	if not _materials.has(key):
 		var m := ShaderMaterial.new()
 		m.shader = preload("res://shaders/signal_glow.gdshader")
 		m.set_shader_parameter("glow_colour", colour)
+		m.set_shader_parameter("front_only",front_only)
 		_materials[key] = m
 	return _materials[key]
 
 
 ## A soft disc of `colour`, `size` metres across, always facing the camera.
-static func halo(colour: Color, size: float) -> MeshInstance3D:
+static func halo(colour: Color, size: float, front_only := false) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var quad := QuadMesh.new()
 	quad.size = Vector2(size, size)
 	mi.mesh = quad
-	mi.material_override = material(colour)
+	mi.material_override = material(colour,front_only)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mi.set_meta("signal_glow", true)
 	return mi

@@ -420,7 +420,7 @@ def train():
     return m
 
 
-def write_model(path,parts,index):
+def write_model(path,parts,index,generator='PDD shared vehicles',source='tools/godot_export/build_vehicles.py'):
     # Reuse the tested single-mesh packer; combine buffers and keep named pivots.
     binary=bytearray();views=[];accessors=[];meshes=[];nodes=[];materials=[];material_ids={};children=[];groups={}
     (ROOT/'scratch').mkdir(exist_ok=True)
@@ -451,14 +451,14 @@ def write_model(path,parts,index):
                 nodes[groups[group]]['children'].append(node_id)
             else:children.append(node_id)
     root=len(nodes);nodes.append({'name':path.stem,'children':children})
-    doc={'asset':{'version':'2.0','generator':'PDD shared vehicles'},'scene':0,'scenes':[{'nodes':[root]}],
+    doc={'asset':{'version':'2.0','generator':generator},'scene':0,'scenes':[{'nodes':[root]}],
          'nodes':nodes,'meshes':meshes,'materials':materials,'bufferViews':views,'accessors':accessors,'buffers':[{'byteLength':len(binary)}]}
     data=json.dumps(doc,separators=(',',':')).encode();data+=b' '*(-len(data)%4)
     path.parent.mkdir(parents=True,exist_ok=True)
     path.write_bytes(struct.pack('<III',0x46546c67,2,28+len(data)+len(binary))+struct.pack('<II',len(data),0x4e4f534a)+data+struct.pack('<II',len(binary),0x004e4942)+binary)
     tris=sum(len(p[1].indices)//3 for p in parts);verts=sum(len(p[1].positions) for p in parts)
     entry=index.setdefault(str(path.relative_to(path.parents[1])).removesuffix('.glb'),{})
-    entry['after']={'meshes':len(parts),'tris':tris};entry['source']='tools/godot_export/build_vehicles.py'
+    entry['after']={'meshes':len(parts),'tris':tris};entry['source']=source
     print(path.name,verts,'vertices',tris,'triangles',len(parts),'meshes')
 
 

@@ -64,7 +64,7 @@ static func prepare(situation_id: String, on_done: Callable) -> void:
 		# Required: the lights and participants the scene names (they must be here).
 		var more: Array = []
 		for i in data.lights.size():
-			more.append(dir + "light_%d.glb" % i)
+			if not TrafficSignal.supports(data.lights[i]): more.append(dir + "light_%d.glb" % i)
 		for i in data.actors.size():
 			if not _uses_shared_model(str(data.actors[i].type)):
 				more.append(dir + "actor_%d.glb" % i)
@@ -180,7 +180,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		if frames: await frames.process_frame
 		if not is_instance_valid(s): return null
 		var l: Dictionary = s.data.lights[i]
-		var light: Node3D = PackFiles.instance(dir + "light_%d.glb" % i)
+		var light: Node3D = TrafficSignal.make(l) if TrafficSignal.supports(l) else PackFiles.instance(dir + "light_%d.glb" % i)
 		light = RoadBuild.light_with_signs(light, l.get("mountedSigns", []), l.get("mountedMainRoad", []))
 		light.position = _v(l.pos)
 		light.rotation.y = l.yaw
@@ -851,7 +851,8 @@ static func _native_prepare(situation_id: String, on_done: Callable) -> void:
 		if on_done.is_valid(): on_done.call(false)
 		return
 	var paths: Array[String] = [dir + "scene.glb"]
-	for i in d.lights.size(): paths.append(dir + "light_%d.glb" % i)
+	for i in d.lights.size():
+		if not TrafficSignal.supports(d.lights[i]): paths.append(dir + "light_%d.glb" % i)
 	for i in d.actors.size():
 		if not _uses_shared_model(str(d.actors[i].type)): paths.append(dir + "actor_%d.glb" % i)
 	for path in paths: ResourceLoader.load_threaded_request(path)

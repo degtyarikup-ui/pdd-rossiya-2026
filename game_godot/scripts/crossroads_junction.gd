@@ -27,6 +27,16 @@ var markings_root: Node3D
 var closed_side := ""
 var walker_crowds: Array[MultiMesh] = []
 var walkers_data: Array[Dictionary] = []
+var _light_clock:=0.0
+var _light_flash:=true
+
+func _update_light_cycle(delta: float) -> void:
+	_light_clock+=delta
+	var lit:=int(_light_clock*2.0)%2==0
+	if lit==_light_flash:return
+	_light_flash=lit
+	for light: Node3D in lights_root.get_children():
+		if light.get_meta("mini_flashing",false):TrafficSignal.set_state(light,"flashing_yellow","straight",lit)
 
 
 func _init(season_name := "summer") -> void:
@@ -343,6 +353,7 @@ func _setup_walkers() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_light_cycle(delta)
 	_update_walkers(delta)
 
 
@@ -428,105 +439,9 @@ func add_traffic_light(tl_data: Dictionary, sign_data: Dictionary = {}) -> void:
 
 
 func _create_traffic_light_node(tl_data: Dictionary, sign_data: Dictionary) -> Node3D:
-	var root := Node3D.new()
+	var root := TrafficSignal.make_mini(tl_data)
 	var side_name: String = tl_data.get("side", "south")
 	root.name = "TrafficLight_" + side_name
-
-	# 1. Pole
-	var pole := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = 0.08
-	cyl.bottom_radius = 0.08
-	cyl.height = 4.6
-	pole.mesh = cyl
-	pole.position.y = 2.3
-	var steel := StandardMaterial3D.new()
-	steel.albedo_color = Color("#334155")
-	pole.material_override = steel
-	root.add_child(pole)
-
-	# 2. Main light housing box
-	var box_m := MeshInstance3D.new()
-	var box_mesh := BoxMesh.new()
-	box_mesh.size = Vector3(0.68, 1.68, 0.38)
-	box_m.mesh = box_mesh
-	box_m.position = Vector3(0, 3.5, 0.22)
-	var dark_mat := StandardMaterial3D.new()
-	dark_mat.albedo_color = Color("#1E293B")
-	box_m.material_override = dark_mat
-	root.add_child(box_m)
-
-	# 3. Three light sections (red at top, yellow in middle, green at bottom)
-	var state: String = tl_data.get("state", "red")
-	var is_red := state == "red"
-	var is_yellow := state == "yellow" or state == "flashing_yellow"
-	var is_green := state == "green"
-
-	var lamp_data := [
-		{"y": 4.02, "col": Color("#FF3838"), "on": is_red, "dim": Color("#351719")},
-		{"y": 3.50, "col": Color("#FFD52A"), "on": is_yellow, "dim": Color("#352D14")},
-		{"y": 2.98, "col": Color("#36FF88"), "on": is_green, "dim": Color("#123126")},
-	]
-
-	for item in lamp_data:
-		var lamp := MeshInstance3D.new()
-		var l_cyl := CylinderMesh.new()
-		l_cyl.top_radius = 0.20
-		l_cyl.bottom_radius = 0.20
-		l_cyl.height = 0.08
-		lamp.mesh = l_cyl
-		lamp.position = Vector3(0, item.y, 0.42)
-		lamp.rotation.x = PI * 0.5
-		var m := StandardMaterial3D.new()
-		var on: bool = item.on
-		m.albedo_color = item.col if on else item.dim
-		if on:
-			m.emission_enabled = true
-			m.emission = item.col
-			m.emission_energy_multiplier = 2.5
-		lamp.material_override = m
-		root.add_child(lamp)
-
-		if on:
-			var halo := Glow.halo(item.col, 1.8)
-			halo.position = Vector3(0, item.y, 0.48)
-			root.add_child(halo)
-
-	# 4. Optional arrow section (side section)
-	var arrow: String = tl_data.get("arrow", "")
-	var arrow_active: bool = tl_data.get("arrowActive", false)
-	if arrow != "":
-		var arrow_box := MeshInstance3D.new()
-		var ab_mesh := BoxMesh.new()
-		ab_mesh.size = Vector3(0.56, 0.56, 0.34)
-		arrow_box.mesh = ab_mesh
-		var arrow_x := 0.62 if arrow == "right" else -0.62
-		arrow_box.position = Vector3(arrow_x, 2.98, 0.22)
-		arrow_box.material_override = dark_mat
-		root.add_child(arrow_box)
-
-		var arrow_lamp := MeshInstance3D.new()
-		var al_cyl := CylinderMesh.new()
-		al_cyl.top_radius = 0.18
-		al_cyl.bottom_radius = 0.18
-		al_cyl.height = 0.08
-		arrow_lamp.mesh = al_cyl
-		arrow_lamp.position = Vector3(arrow_x, 2.98, 0.40)
-		arrow_lamp.rotation.x = PI * 0.5
-		var am := StandardMaterial3D.new()
-		var a_col := Color("#36FF88")
-		am.albedo_color = a_col if arrow_active else Color("#123126")
-		if arrow_active:
-			am.emission_enabled = true
-			am.emission = a_col
-			am.emission_energy_multiplier = 2.5
-		arrow_lamp.material_override = am
-		root.add_child(arrow_lamp)
-
-		if arrow_active:
-			var a_halo := Glow.halo(a_col, 1.4)
-			a_halo.position = Vector3(arrow_x, 2.98, 0.46)
-			root.add_child(a_halo)
 
 	# 5. Position the traffic light on the right curb before stop line
 	var curb_x := HALF_ROAD + 1.2

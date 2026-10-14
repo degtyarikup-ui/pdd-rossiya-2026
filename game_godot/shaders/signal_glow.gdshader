@@ -3,10 +3,13 @@ shader_type spatial;
 render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabled, fog_disabled;
 uniform vec4 glow_colour : source_color = vec4(1.0, 0.68, 0.05, 1.0);
 uniform bool batched = false;
+uniform bool front_only = false;
 varying vec4 tint;
+varying float facing;
 
 void vertex() {
 	tint = batched ? INSTANCE_CUSTOM : glow_colour;
+	facing = dot(normalize(CAMERA_POSITION_WORLD-MODEL_MATRIX[3].xyz),normalize(MODEL_MATRIX[2].xyz));
 	// Billboard at the lens centre, retaining inherited scale but never its rotation.
 	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(
 		vec4(INV_VIEW_MATRIX[0].xyz * length(MODEL_MATRIX[0].xyz), 0.0),
@@ -16,6 +19,7 @@ void vertex() {
 }
 
 void fragment() {
+	if (front_only && facing <= 0.02) discard;
 	float radius = length(UV * 2.0 - 1.0);
 	float falloff = max(0.0, 1.0 - radius);
 	float core = pow(falloff, 6.0);
