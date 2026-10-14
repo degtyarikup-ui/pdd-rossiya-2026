@@ -1521,7 +1521,10 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	texture_frame=texture_frame*xf.affine_inverse()
 	for j in _junctions():
 		j.sit.transform=xf*j.sit.transform
-		j.sit.refresh_uv(scenery,texture_frame)
+		if j in retired:
+			j.sit.trim_before_join(scenery, texture_frame)
+		else:
+			j.sit.refresh_uv(scenery,texture_frame)
 	perf_step=_rebase_timing("transform_and_refresh_uv",perf_step)
 	for body: RigidBody3D in get_tree().get_nodes_in_group("fallen_people"):
 		body.global_transform = xf * body.global_transform
@@ -1540,9 +1543,11 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	for old in older_ghosts:
 		old.transform = xf * old.transform
 		old.set_meta("retire_anchor", xf * old.get_meta("retire_anchor"))
+		_trim_ghost_at_join(old)
 	if ghost:
 		ghost.transform = xf * ghost.transform
 		ghost.set_meta("retire_anchor", xf * ghost.get_meta("retire_anchor"))
+		_trim_ghost_at_join(ghost)
 		older_ghosts.append(ghost)
 	ghost=Node3D.new()
 	add_child(ghost)
@@ -1559,13 +1564,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	perf_step=_rebase_timing("clip_road_meshes",perf_step)
 	street.snapshot(ghost)
 	perf_step=_rebase_timing("snapshot_scenery",perf_step)
-	for node: MultiMeshInstance3D in ghost.find_children("*","MultiMeshInstance3D",true,false):
-		var poses: Array = node.get_meta("instance_transforms",[])
-		for i in node.multimesh.instance_count:
-			var at: Transform3D = poses[i] if poses.size()>i else node.multimesh.get_instance_transform(i)
-			if (xf*at.origin).z>0.0:
-				node.multimesh.set_instance_transform(i,Scenery.Pool.HIDDEN)
-				if poses.size()>i: poses[i]=Scenery.Pool.HIDDEN
+	_trim_ghost_props_at_join(ghost)
 	ghost_until=260.0
 	perf_step=_rebase_timing("trim_scenery",perf_step)
 	_keep_ambient(ghost)
@@ -1603,6 +1602,33 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	if follow:
 		print("[jerk] %s %s: max yaw %.2f rad/s, camera %.2f m/s, camera heading %.2f rad/s" % [sit.id, exit_direction, jerk.yaw, jerk.cam, jerk.heading])
 		jerk = { "yaw": 0.0, "cam": 0.0, "heading": 0.0, "turns": 0 }
+
+
+## A street snapshot can survive several nearby turns. Crop it again at each
+## join so it cannot rotate back over the next question's road or pavement.
+func _trim_ghost_at_join(old: Node3D) -> void:
+	for node in old.get_children():
+		if node is MeshInstance3D and node.get_meta("street_surface", false):
+			node.mesh = SceneStitch.clip_mesh(node.mesh, node.global_transform)
+			if node.mesh == null:
+				old.remove_child(node)
+				node.queue_free()
+	_trim_ghost_props_at_join(old)
+
+
+func _trim_ghost_props_at_join(old: Node3D) -> void:
+	# Snapshot pools are direct children. Moving actors and their light batches
+	# belong to AmbientTrail and must keep their own motion and visibility.
+	for child in old.get_children():
+		if not (child is MultiMeshInstance3D) or not child.has_meta("instance_transforms"): continue
+		var node := child as MultiMeshInstance3D
+		var poses: Array = node.get_meta("instance_transforms", [])
+		for i in node.multimesh.instance_count:
+			var at: Transform3D = poses[i] if poses.size() > i else node.multimesh.get_instance_transform(i)
+			if at.origin.y > -10.0 and (node.global_transform * at.origin).z > 0.0:
+				Scenery.clear_fade_slot(node, i)
+				node.multimesh.set_instance_transform(i, Scenery.Pool.HIDDEN)
+				if poses.size() > i: poses[i] = Scenery.Pool.HIDDEN
 
 
 func _retire_far() -> void:

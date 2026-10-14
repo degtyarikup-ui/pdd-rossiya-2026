@@ -9,15 +9,20 @@ extends Node3D
 var id: String
 var data: Dictionary
 var lights: Array[Node3D] = []
+var _signs: Array[Node3D] = []
 var officers: Array[Node3D] = []
 var actors: Array[Node3D] = []       # same order as data.actors
 var _surface_cache := {}
 var _surface_signature := 0
+var _surface_cuts: Array[Transform3D] = []
+var _cut_bindings: Array = []
+var _clipped_surface_cache := {}
 var _surface_material: ShaderMaterial
 var _ground_maps := {}
 var _ground_scenery: Scenery
 var _pool_nodes := {}
 var _pools := {}                     # prop -> MultiMesh
+var _baked_scene: Node3D
 var network: RoadNetwork             # the road network (network/<id>.json); the source of truth
 var _mask: Image                     # legacy drivable area (road.png) for scenes without a network
 var _crop := 90.0
@@ -119,6 +124,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 	if not s.data.has("exitWidths") or not (s.data.exitWidths is Dictionary):
 		s.data["exitWidths"] = {}
 	var scene: Node3D = PackFiles.instance(dir + "scene.glb")
+	s._baked_scene = scene
 	# Attach immediately: cancelling during a mesh job must also free this GLB node tree.
 	s.add_child(scene)
 	s.network = RoadNetwork.load_scene(situation_id)
@@ -243,6 +249,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			sign.position = Vector3(sg.pos[0], 0.0, sg.pos[1])
 			sign.rotation.y = float(sg.get("yaw", PI)) - PI
 			s.add_child(sign)
+			s._signs.append(sign)
 	s.set_evidence_visible(false)
 	if s.network:
 		s._surface_signature=hash(s.network.stitch_bindings)
@@ -264,12 +271,21 @@ func place_at(z: float, scenery: Scenery) -> void:
 func refresh_uv(scenery: Scenery, texture_frame := Transform3D()) -> void:
 	var node := get_node_or_null("surfaces") as MeshInstance3D
 	if node and network:
-		var signature:=hash(network.stitch_bindings)
+		var base_signature := hash(network.stitch_bindings)
+		var signature := hash([base_signature, _surface_cuts])
 		if signature!=_surface_signature:
-			node.mesh=_surface_cache.get(signature)
-			if node.mesh==null:
-				node.mesh=network.surface_mesh(scenery)
-				_surface_cache[signature]=node.mesh
+			var mesh: Mesh = _surface_cache.get(base_signature)
+			if mesh == null:
+				mesh = network.surface_mesh(scenery)
+				_surface_cache[base_signature] = mesh
+			if not _surface_cuts.is_empty():
+				if not _clipped_surface_cache.has(base_signature):
+					for cut in _surface_cuts:
+						if mesh == null: break
+						mesh = SceneStitch.clip_mesh(mesh, cut)
+					_clipped_surface_cache[base_signature] = mesh
+				mesh = _clipped_surface_cache[base_signature]
+			node.mesh = mesh
 			_surface_signature=signature
 		if _surface_material==null:
 			_surface_material=scenery.material.duplicate()
@@ -278,15 +294,39 @@ func refresh_uv(scenery: Scenery, texture_frame := Transform3D()) -> void:
 		_surface_material.set_shader_parameter("surface_frame",texture_frame)
 
 
+## Every later turn gives the next scene the forward side of its join. Retain only
+## the old side, even if a loop keeps this scene close enough to survive retirement.
+## Cuts stay in scene coordinates and also apply to subsequently warmed mesh variants.
+func trim_before_join(scenery: Scenery, texture_frame: Transform3D) -> void:
+	var cut := global_transform
+	# Existing variants already contain earlier cuts; only process the new plane.
+	# A variant warmed later still receives the complete sequence in refresh_uv.
+	for signature in _clipped_surface_cache:
+		var mesh: Mesh = _clipped_surface_cache[signature]
+		if mesh: _clipped_surface_cache[signature] = SceneStitch.clip_mesh(mesh, cut)
+	_surface_cuts.append(cut)
+	_cut_bindings.append({"port": {"p": cut.affine_inverse().origin,
+		"out": cut.basis.transposed() * Vector3.BACK}})
+	_ground_maps.clear()
+	_trim_end_props()
+	refresh_uv(scenery, texture_frame)
+	# Legacy GLB overlays can retain small tails outside the network footprint.
+	# Clip those too; participant and signal models remain independent nodes.
+	if _baked_scene:
+		for node: MeshInstance3D in _baked_scene.find_children("*", "MeshInstance3D", true, false):
+			if node.mesh and (node.name == "static" or str(node.name).begins_with("tex_")):
+				node.mesh = SceneStitch.clip_mesh(node.mesh, node.global_transform)
+
 
 ## The point (situation coordinates) is inside this junction's own streets.
 func covers(local: Vector3) -> bool:
-	return absf(local.x) <= _crop and absf(local.z) <= _crop and (network == null or SceneStitch.contains(local,network.stitch_bindings))
+	return absf(local.x) <= _crop and absf(local.z) <= _crop and SceneStitch.contains(local, _cut_bindings) and (network == null or SceneStitch.contains(local,network.stitch_bindings))
 
 
 ## game.js roadSupports at this point: from the road network (or, for a scene
 ## without one, the exported mask).
 func road_at(local: Vector3) -> bool:
+	if not SceneStitch.contains(local, _cut_bindings): return false
 	if network:
 		var map := ground_map()
 		return (map.at(local) & GroundMap.ROAD) != 0 if map else network.is_drivable(local)
@@ -803,6 +843,7 @@ func warm_bindings(bindings: Array, scenery: Scenery, frames: SceneTree) -> void
 func street_interval() -> Array:
 	var poly: Array = [Vector3(-_crop,0,-_crop),Vector3(_crop,0,-_crop),Vector3(_crop,0,_crop),Vector3(-_crop,0,_crop)]
 	if network: poly=SceneStitch.clip_polygon(poly,network.stitch_bindings)
+	poly = SceneStitch.clip_polygon(poly, _cut_bindings)
 	var zs: Array = []
 	for i in poly.size():
 		var a: Vector3 = transform*poly[i]
@@ -815,6 +856,8 @@ func street_interval() -> Array:
 
 ## Scenery beyond an end's runtime cut belongs to the adjoining scene. Original transforms remain in data.
 func _trim_end_props() -> void:
+	for node in lights + _signs:
+		node.visible = SceneStitch.contains(node.position, _cut_bindings) and (network == null or SceneStitch.contains(node.position, network.stitch_bindings))
 	var counts := {}
 	for p in data.props:
 		var prop: String = p.prop
@@ -823,7 +866,7 @@ func _trim_end_props() -> void:
 		if not _pools.has(prop): continue
 		var at := _v(p.pos)
 		var xf := Transform3D(Basis(Vector3.UP,p.yaw).scaled(_v(p.scale)),at)
-		if not SceneStitch.contains(at,network.stitch_bindings):
+		if not SceneStitch.contains(at, _cut_bindings) or (network and not SceneStitch.contains(at,network.stitch_bindings)):
 			xf=Transform3D(Basis.from_scale(Vector3.ONE*0.001),Vector3(0,-50,0))
 		(_pool_nodes[prop].get_meta("instance_transforms") as Array)[index]=xf
 		Scenery.clear_fade_slot(_pool_nodes[prop],index)

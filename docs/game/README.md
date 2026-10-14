@@ -65,6 +65,7 @@ godot --headless --path game_godot --script res://tests/free_player_check.gd # 7
 godot --headless --path game_godot --script res://tests/dirt_surface_check.gd # грунт, текстура и удаление старых накладок
 godot --headless --path game_godot --script res://tests/human_collision_check.gd # наезд: регулировщик и пешеходы
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
+godot --headless --path game_godot --script res://tests/retained_surface_check.gd # старые улицы и сцены не перекрывают дорогу после цепочки поворотов
 godot --headless --path game_godot --script res://tests/traffic_check.gd    # трафик
 godot --headless --path game_godot --script res://tests/ambient_focus_check.gd # чистый кадр вопроса, плавный отвод трафика, объезд парковки и встречный поток
 godot --headless --path game_godot --script res://tests/terrain_motion_check.gd # проезд стыков, изменённые тротуары, движение копий и участников по видимой поверхности
@@ -95,6 +96,10 @@ godot --path game_godot --script res://tests/stitch_shader_render_check.gd # н�
 Скрипт с ошибкой в headless-режиме **зависает**, а не падает: ставьте таймаут
 (`perl -e 'alarm 300; exec @ARGV' godot ...`). После изменения скриптов с `class_name`
 выполните `godot --headless --path game_godot --import`.
+
+Известная проблема проверки (14 октября 2026): `signals_models_check.gd` загружает
+старую фикстуру `situations/ticket_37_13/light_0.glb`, которой нет в Git.
+В чистой копии проверка зависает после ошибки загрузки; её нельзя считать пройденной.
 
 Фоновый поток задаётся в `data/world.json`: две машины на кольцо,
 `parked_chance: 0.02` для подходящих мест парковки. Перед вопросом резервируется
