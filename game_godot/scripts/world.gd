@@ -107,6 +107,10 @@ var spawn_after := 0.0            # world z after which the next junction may co
 var texture_frame := Transform3D()
 var pending_connection := {}
 var street_connector := {}       # runtime-only lane transition between unlike highway ports
+var tram_scenery_revision := 0
+var tram_scenery_built_revision := -1
+var tram_scenery_buckets := {}    # world OBBs rebuilt only when static chunks/scenes change
+const TRAM_OBSTACLE_CELL := 16.0
 var connection_cache := {}
 var insert_road := false
 
@@ -568,6 +572,7 @@ func _place_chunk(slot: int, index: int) -> void:
 
 
 func _rebuild_ring() -> void:
+	tram_scenery_revision += 1
 	blanks.clear()
 	for j in _junctions():
 		var span: Array = j.sit.street_interval()
@@ -587,6 +592,7 @@ func _recycle_chunks() -> void:
 		var want := first + posmod(chunk_index[slot] - first, chunk_count)
 		if want != chunk_index[slot]:
 			_place_chunk(slot, want)
+			tram_scenery_revision += 1
 
 
 # --- the player's car ------------------------------------------------------
@@ -800,6 +806,108 @@ func obstacles() -> Array:
 			out.append(WalkerObstacle.new(w))
 	if road != null:
 		out.append_array(road.obstacles())
+	return out
+
+
+## Static rendered footprints are indexed on chunk/scene changes. A tram
+## queries nearby bodies once per update, rather than scanning all scenery
+## for each point along its swept braking path.
+func _index_tram_pool(node: MultiMeshInstance3D) -> void:
+	if not node.visible or node.multimesh == null: return
+	var mesh: Mesh = node.multimesh.mesh
+	if mesh == null: return
+	var bounds := mesh.get_aabb()
+	if bounds.size.y < 0.1: return # ground contacts and glow planes are not obstacles
+	var poses: Array = node.get_meta("instance_transforms", [])
+	var originals: Dictionary = node.get_meta("occlusion_originals", {})
+	for i in node.multimesh.instance_count:
+		var pose: Transform3D = originals.get(i, poses[i] if i < poses.size() else node.multimesh.get_instance_transform(i))
+		if pose.origin.y < -10.0: continue
+		var xf := node.global_transform * pose
+		var forward := xf.basis.z.normalized()
+		var right := SceneStitch.right(forward)
+		var centre := xf * bounds.get_center()
+		centre.y = 0.0 # obstacle broadphase is on the ground, including tall towers
+		var body := {"p": centre, "yaw": SceneStitch.yaw(forward),
+			"hw": bounds.size.x * absf(xf.basis.x.dot(right)) * 0.5,
+			"hl": (bounds.size.z * xf.basis.z.length() + bounds.size.x * absf(xf.basis.x.dot(forward))) * 0.5}
+		_index_tram_body(body)
+
+
+func _index_tram_body(body: Dictionary) -> void:
+	var radius: float = float(body.hw) + float(body.hl)
+	var p: Vector3 = body.p
+	for x in range(floori((p.x - radius) / TRAM_OBSTACLE_CELL), floori((p.x + radius) / TRAM_OBSTACLE_CELL) + 1):
+		for z in range(floori((p.z - radius) / TRAM_OBSTACLE_CELL), floori((p.z + radius) / TRAM_OBSTACLE_CELL) + 1):
+			var cell := Vector2i(x, z)
+			if not tram_scenery_buckets.has(cell): tram_scenery_buckets[cell] = []
+			tram_scenery_buckets[cell].append(body)
+
+
+func _ensure_tram_scenery() -> void:
+	if tram_scenery_built_revision == tram_scenery_revision: return
+	tram_scenery_buckets.clear()
+	for pool in street.pools.values(): _index_tram_pool(pool.node)
+	for j in _junctions():
+		for node in j.sit._pool_nodes.values(): _index_tram_pool(node)
+		# Poles/sign supports are supplied by the immutable planner; their
+		# painted canopy is not a solid wall across the tram's carriageway.
+		for body in j.sit.tram_plan.get("static_obstacles", []):
+			if body.has("source_index"): continue # actual rendered props/pieces were indexed above
+			var local: Dictionary = body.get("box", body)
+			var world_body := _transform_tram_body(local, j.sit.global_transform)
+			_index_tram_body(world_body)
+	for old in older_ghosts + ([ghost] if ghost else []):
+		for node in old.get_children():
+			if node is MultiMeshInstance3D: _index_tram_pool(node)
+	tram_scenery_built_revision = tram_scenery_revision
+
+
+static func _transform_tram_body(body: Dictionary, xf: Transform3D) -> Dictionary:
+	var direction := xf.basis * Vector3(sin(float(body.yaw)), 0, cos(float(body.yaw)))
+	return {"p": xf * body.p, "yaw": SceneStitch.yaw(direction), "hw": body.hw, "hl": body.hl}
+
+
+func _tram_obstacles(sit: Situation, motion: Junction.Motion, radius: float) -> Array:
+	var at := sit.global_transform * motion.node.position
+	var inverse := sit.global_transform.affine_inverse()
+	var out: Array = []
+	var append_near := func(body: Dictionary, source = null):
+		var margin: float = radius + float(body.hw) + float(body.hl)
+		if at.distance_squared_to(body.p) <= margin * margin:
+			out.append({"box": _transform_tram_body(body, inverse), "source": source})
+	_ensure_tram_scenery()
+	var seen := {}
+	for x in range(floori((at.x - radius) / TRAM_OBSTACLE_CELL), floori((at.x + radius) / TRAM_OBSTACLE_CELL) + 1):
+		for z in range(floori((at.z - radius) / TRAM_OBSTACLE_CELL), floori((at.z + radius) / TRAM_OBSTACLE_CELL) + 1):
+			for body in tram_scenery_buckets.get(Vector2i(x, z), []):
+				var key := hash([body.p, body.yaw, body.hw, body.hl])
+				if seen.has(key): continue
+				seen[key] = true
+				append_near.call(body)
+	for j in _junctions():
+		if not j.get("junction") is Junction: continue
+		for other in j.junction.motions:
+			if other == motion or other.done or j.sit == sit: continue # own actors already swept in Junction
+			append_near.call(_transform_tram_body(other.footprint(), j.sit.global_transform))
+		for officer in j.sit.officers:
+			if is_instance_valid(officer) and officer.is_visible_in_tree() and not officer.get_meta("knocked_down", false):
+				append_near.call(HumanObstacle.new(officer).footprint())
+	for car in traffic:
+		if not car.get("sheltered", false): append_near.call(AmbientObstacle.new(car).footprint())
+	for bodies in street.parked_bodies.values():
+		for body in bodies: append_near.call(body)
+	# Filter by the tram, not by the player's eight-metre collision window.
+	for w in walkers:
+		if w.get("alive", false) and not w.get("knocked_down", false): append_near.call(WalkerObstacle.new(w).footprint())
+	for trail in get_tree().get_nodes_in_group("ambient_trails"):
+		for actor in trail.actors:
+			if actor.node.is_visible_in_tree():
+				append_near.call({"p": actor.node.global_position, "yaw": actor.node.global_rotation.y, "hw": actor.hw, "hl": actor.hl})
+	for fallen in get_tree().get_nodes_in_group("fallen_people"):
+		append_near.call({"p": fallen.global_position, "yaw": fallen.global_rotation.y, "hw": 0.4, "hl": 0.9})
+	if road != null:
+		for body in road.obstacles(): append_near.call(body.footprint())
 	return out
 
 
@@ -1138,6 +1246,8 @@ func _maybe_spawn() -> void:
 	_rebase_timing("activate_bind_surfaces",activation)
 	activation=Time.get_ticks_usec()
 	var junction := Junction.new(sit)
+	junction.tram_obstacles = func(m, radius): return _tram_obstacles(sit, m, radius)
+	junction.tram_support = func(m, p, yaw): return sit.tram_body_supported(p, yaw, m.hw, m.hl)
 	junction.motion_ground = func(p, kind): return _motion_ground(sit.global_transform*p,kind)
 	junction.motion_out_of_view = func(m): return _motion_out_of_view(sit,m)
 	junction.continuation = func(p, toward, hw, hl): return _departure_path(sit.global_transform * p, sit.basis * toward, hw, hl, sit.global_transform)
@@ -1757,7 +1867,8 @@ func _ambient_boundary(z: float, direction: float) -> float:
 func _keep_ambient(parent: Node3D) -> void:
 	var trail := AmbientTrail.new()
 	parent.add_child(trail)
-	trail.ground_check = func(p, toward, actor): return _walk_clear(p) if actor.pedestrian else _departure_clear(p,toward,actor.hw,actor.hl)
+	trail.add_to_group("ambient_trails")
+	trail.ground_check = _ambient_trail_clear
 	for car in traffic:
 		if car.get("sheltered", false) or _in_blank(car.z) or (parent.global_transform * Vector3(car.x, 0, car.z)).distance_to(drive.pos) > 240.0:
 			continue
@@ -1771,6 +1882,21 @@ func _keep_ambient(parent: Node3D) -> void:
 		if w.get("alive", false) and not w.get("knocked_down", false):
 			var heading: float = w.get("heading",0.0 if w.v>0.0 else PI)
 			trail.keep_copy(w.mm, w.slot, w.v, true,0.28,0.28,Vector3(sin(heading),0,cos(heading)))
+
+
+func _ambient_trail_clear(p: Vector3, toward: Vector3, actor: Dictionary) -> bool:
+	if actor.pedestrian:
+		if not _walk_clear(p): return false
+	elif not _departure_clear(p, toward, actor.hw, actor.hl): return false
+	var body := {"p": p, "yaw": SceneStitch.yaw(toward), "hw": actor.hw, "hl": actor.hl}
+	for j in _junctions():
+		if not j.get("junction") is Junction: continue
+		for motion in j.junction.motions:
+			if motion.type != "tram" or motion.done: continue
+			var tram := _transform_tram_body(motion.footprint(), j.sit.global_transform)
+			if p.distance_squared_to(tram.p) > pow(float(tram.hl) + float(tram.hw) + float(actor.hl) + float(actor.hw) + 0.2, 2): continue
+			if Drive.overlap(body, tram, 0.06): return false
+	return true
 
 
 func _in_blank(z: float) -> bool:
@@ -2116,6 +2242,12 @@ func _walking_departure(start: Vector3, toward: Vector3, local_frame: Transform3
 func _update_walkers(delta: float) -> void:
 	var span := L * chunk_count
 	var base := drive.pos.z - L * float(cfg.chunks_behind)
+	var trams: Array = []
+	for j in _junctions():
+		if not j.get("junction") is Junction: continue
+		for motion in j.junction.motions:
+			if motion.type == "tram" and not motion.done:
+				trams.append(_transform_tram_body(motion.footprint(), j.sit.global_transform))
 	for w in walkers:
 		var z: float = w.z
 		if z < base or z > base+span:
@@ -2138,6 +2270,11 @@ func _update_walkers(delta: float) -> void:
 				for other in walkers:
 					if other == w or not other.get("alive",false): continue
 					if next.distance_to(Vector3(other.x,0,other.zw))<0.7: free=false; break
+				if free:
+					var walker_body := {"p": next, "yaw": SceneStitch.yaw(next_direction), "hw": 0.3, "hl": 0.3}
+					for tram in trams:
+						if next.distance_squared_to(tram.p) > pow(float(tram.hl) + float(tram.hw) + 1.0, 2): continue
+						if Drive.overlap(walker_body, tram, 0.06): free = false; break
 				if free:
 					at = next
 					w.heading = atan2(next_direction.x,next_direction.z)
@@ -2467,9 +2604,11 @@ func _process(delta: float) -> void:
 		if drive.pos.distance_to(older_ghosts[i].get_meta("retire_anchor")) > 260.0:
 			older_ghosts[i].queue_free()
 			older_ghosts.remove_at(i)
+			tram_scenery_revision += 1
 	if ghost and drive.pos.z > ghost_until:
 		ghost.queue_free()
 		ghost = null
+		tram_scenery_revision += 1
 	# The camera heading follows the car's slowly (game.js updateCamera:
 	# exp(-3 dt)) and only for real turns: small corrections and U-turn
 	# wobbles must not swing the view.

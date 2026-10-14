@@ -72,6 +72,10 @@ godot --headless --path game_godot --script res://tests/traffic_check.gd    # т
 godot --headless --path game_godot --script res://tests/ambient_focus_check.gd # чистый кадр вопроса, плавный отвод трафика, объезд парковки и встречный поток
 godot --headless --path game_godot --script res://tests/terrain_motion_check.gd # проезд стыков, изменённые тротуары, движение копий и участников по видимой поверхности
 godot --headless --path game_godot --script res://tests/participant_motion_check.gd # коллизии и отъезд после стрелки
+godot --headless --path game_godot --script res://tests/tram_tracks_check.gd # автоматические пути, полный кузов, декорации, проёмы и сохранность исходных сцен
+godot --headless --path game_godot --script res://tests/tram_motion_check.gd # трамвай тормозит перед людьми/машинами и остаётся на рельсах
+godot --headless --path game_godot --script res://tests/tram_world_check.gd # препятствия мира, сохранённая улица, повернутые ограды и кеш проверок
+godot --path game_godot --script res://tests/tram_render_check.gd # нужен рендер: реальные локации, въезды, окончания и единый меш покрытия
 godot --headless --path game_godot --script res://tests/reviewed_departure_check.gd # продолжение всех отмеченных сцен
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов

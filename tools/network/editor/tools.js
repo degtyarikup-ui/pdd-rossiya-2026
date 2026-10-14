@@ -646,6 +646,7 @@ const Tools = (() => {
           ...(lane ? { way: "straight" } : {}) });
         if (onRails && onRails.d < 6) {
           const a = sc.actors.at(-1);
+          ActorSignals.setMoving(a, true);
           a.track = onRails.track.id;
           // The way along the rails nearest to the heading it was put down with.
           const pts = onRails.track.points;

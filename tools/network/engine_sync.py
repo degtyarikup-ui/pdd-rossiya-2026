@@ -162,11 +162,20 @@ def sync(sid: str) -> dict:
         if asset is None:
             raise ValueError(f"{sid}: no model for participant {na['id']} ({na['type']})")
         a = base_actor(asset)
+        base_scale = a.get("scale", [1.0, 1.0, 1.0])
+        base_half_length = float(a.get("halfLength", 0.0))
         a.update({"id": na["id"], "type": na["type"], "name": na.get("name", a.get("name", ""))})
         pos = [na["pos"][0], 0.0, na["pos"][1]]
         a["pos"] = pos
         a["yaw"] = na["yaw"]
         a["scale"] = na["scale"]
+        # Template dimensions already include its archived scale. A new actor
+        # can use the same mesh at a different size; keep its inherited body
+        # envelope proportional without multiplying the archived scale twice.
+        for dimension, axis in (("halfWidth", 0), ("halfLength", 2)):
+            if dimension in a:
+                ratio = abs(float(na["scale"][axis])) / max(abs(float(base_scale[axis])), 1e-6)
+                a[dimension] = float(a[dimension]) * ratio
         rt = routes.get(na.get("route"))
         if rt:
             a["path"] = [[x, 0.0, z] for x, z in rt["points"]]
@@ -176,9 +185,16 @@ def sync(sid: str) -> dict:
             a["path"] = [pos, pos]
             a["length"] = 0.0
             route_2d = [na["pos"], na["pos"]]
-        for k in ("maxSpeed", "clearDistance", "halfLength", "halfWidth"):
+        for k in ("maxSpeed", "halfLength", "halfWidth"):
             if na.get(k) is not None:
                 a[k] = na[k]
+        if na.get("clearDistance") is not None:
+            a["clearDistance"] = na["clearDistance"]
+        elif a.get("clearDistance") is not None:
+            # The inherited release distance includes the old tram's rear.
+            # Enlarging that rear must not release traffic while it remains in
+            # the crossing; an explicitly authored distance keeps precedence.
+            a["clearDistance"] = float(a["clearDistance"]) + max(0.0, float(a.get("halfLength", 0.0)) - base_half_length)
         for k in ("stopAtDistance", "stopFor", "holdFor", "staysPut", "signalPlan", "waitsForPlayer"):
             if k in (na.get("behaviour") or {}):
                 a[k] = na["behaviour"][k]

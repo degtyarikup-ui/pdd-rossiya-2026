@@ -227,7 +227,7 @@ const Scene3D = (() => {
       if (o.name === "tex_0" || (model && (model.bakedSigns || []).includes(o.name))) { o.visible = false; return; }
       const textureGround = o.name.startsWith("tex_");
       if (o.name !== "static" && !textureGround) return;
-      const geo = o.geometry = o.geometry.clone(), pos = geo.attributes.position;
+      const geo = o.geometry = o.geometry.clone(), pos = geo.attributes.position, colours = geo.attributes.color;
       o.userData.own = true;
       const index = geo.index?.array || Array.from({length:pos.count}, (_, i) => i);
       const keep = [];
@@ -236,6 +236,8 @@ const Scene3D = (() => {
         const ya = pos.getY(a), yb = pos.getY(b), yc = pos.getY(c);
         const flat = Math.abs(ya - yb) < 0.001 && Math.abs(ya - yc) < 0.001;
         const lo = Math.min(ya, yb, yc), hi = Math.max(ya, yb, yc);
+        // Old rails are replaced by the actual tram route in the build.
+        if (colours && Tracks.isBakedRailTriangle([ya, yb, yc], [a, b, c].map(i => [colours.getX(i), colours.getY(i), colours.getZ(i)]))) continue;
         let drop = false;
         if (textureGround) {
           const cx = (pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3, cz = (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3;

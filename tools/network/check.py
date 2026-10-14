@@ -57,6 +57,8 @@ def check_layers(scene: dict, area, out: list) -> None:
             if not Polygon(h).is_valid or not p.buffer(0.05).covers(make_valid(Polygon(h))):
                 finding(out, "error", "lawn-hole", f"{l.get('id')}: дыра газона лежит вне газона", ref)
     for m in scene.get("markings", []):
+        if m.get("colour") == "rail":
+            continue  # Retired traced rails stay in source but are no longer drawn.
         ref = {"type": "marking", "id": m.get("id")}
         kind = m.get("type")
         if kind not in MARKING_TYPES:
@@ -165,7 +167,9 @@ def check_scene(scene: dict) -> list:
         if not r.get("labelPosition"):
             finding(out, "warn", "label-missing", f"{r['id']}: на дороге нет буквы {r.get('label')}", {"type": "route", "id": r["id"]})
     for a in scene.get("actors", []):
-        if not a.get("route") and not (a.get("behaviour") or {}).get("staysPut"):
+        tram_points = routes.get(a.get("route"), {}).get("points", [])
+        missing_tram_path = a.get("type") == "tram" and (len(tram_points) < 2 or LineString(tram_points).length < 0.01)
+        if (not a.get("route") or missing_tram_path) and not (a.get("behaviour") or {}).get("staysPut"):
             finding(out, "warn", "actor-no-route", f"{a['id']}: никуда не едет (нет пути) и не припаркован",
                     {"type": "actor", "id": a["id"]})
         elif a.get("type") in DRIVEN_TYPES and not area.buffer(0.5).covers(Point(a["pos"])):

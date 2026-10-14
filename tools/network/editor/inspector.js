@@ -329,7 +329,8 @@
       ${a.type !== "pedestrian" && a.type !== "special" ? card("Цвет", `<div class="swatches">${PAINTS.map((c) => `<button class="sw ${(a.paint || null) === c ? "on" : ""}" data-chip="paint" data-value="${c || ""}" style="--c:${c || "transparent"}" data-tip="${c ? "" : "Как у модели"}">${c ? "" : ic("x")}</button>`).join("")}</div>`) : ""}
       ${ActorSignals.supports(a.type) ? card("Сигналы", toggle("hazards", "Аварийная сигнализация", ActorSignals.hazards(a), "alert")
         + `<p class="muted">Обе стороны мигают вместе. Для неподвижного автомобиля выберите «Стоит» в разделе «Куда едет».</p>`) : ""}
-      ${a.track ? "" : card("Куда едет", lane
+      ${a.track ? card("Куда едет", `${chips("move", [{ value: "stay", title: "Стоит", icon: "parked" }, { value: "go", title: "Едет по пути", icon: "route" }], moving ? "go" : "stay")}
+        ${route ? button("to-route", "Выбрать траекторию пути", "route", "ghost wide") : ""}`) : card("Куда едет", lane
         ? `${chips("way", [{ value: "stay", icon: "parked", tip: "Стоит" }, ...["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !ways.includes(k) }))], moving ? (a.way || "straight") : "stay", { cls: "arrows" })}${button("reverse", "Ехать в другую сторону", "rotr", "ghost wide")}
            ${moving && route ? button("to-route", route.manual ? "Траектория пути (ручная)" : "Траектория пути (по дорогам)", "route", "ghost wide") : ""}`
         : `${chips("move", [{ value: "stay", title: "Стоит", icon: "parked" }, { value: "go", title: "Едет по пути", icon: "route" }], moving ? "go" : "stay")}
@@ -347,11 +348,11 @@
       reverse: () => App.edit(() => { a.yaw = App.r3(((a.yaw || 0) + 2 * Math.PI) % (2 * Math.PI) - Math.PI); }),
       "to-route": () => { if (route) App.select({ t: "route", id: route.id }); },
       "chip:track": (v) => App.edit((sc) => {
-        if (v) { a.track = v; delete a.way; delete a.branch; }
+        if (v) { a.track = v; delete a.way; delete a.branch; sc.routes = sc.routes.filter((x) => x.id !== a.route); a.route = null; }
         else { delete a.track; delete a.branch; delete a.trackDir; sc.routes = sc.routes.filter((x) => x.id !== `actor_${a.id}`); a.route = null; }
       }),
-      "chip:tdir": (v) => App.edit(() => { a.trackDir = Number(v); delete a.branch; }),
-      "chip:branch": (v) => App.edit(() => { if (v) a.branch = v; else delete a.branch; }),
+      "chip:tdir": (v) => App.edit(() => { a.trackDir = Number(v); delete a.branch; if (route) delete route.manual; }),
+      "chip:branch": (v) => App.edit(() => { if (v) a.branch = v; else delete a.branch; if (route) delete route.manual; }),
       "chip:type": (v) => App.edit(() => {
         const tpl = state.catalog.actorTypes[v];
         a.type = v; a.asset = tpl.asset;
@@ -370,7 +371,7 @@
       }),
       "chip:move": (v) => App.edit((sc) => {
         ActorSignals.setMoving(a,v !== "stay");
-        if (v === "stay") { sc.routes = sc.routes.filter((r) => r.id !== a.route); a.route = null; }
+        if (v === "stay" && !a.track) { sc.routes = sc.routes.filter((r) => r.id !== a.route); a.route = null; }
       }),
       "draw-path": () => Tools.drawPathFor(a.id),
       "zebra-path": () => App.edit((sc) => {

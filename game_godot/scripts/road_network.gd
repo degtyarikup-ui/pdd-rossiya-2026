@@ -14,6 +14,10 @@ var stitch_bindings: Array = []
 var id := ""
 var data: Dictionary
 var build: Dictionary             # build/<id>.json: surfaces and kerbs (derived)
+var tram_surfaces: Array = []     # runtime-only rails/service beds; saved terrain stays untouched
+var _service_cuts: Array = []     # immutable convex bed pieces, cached only during mesh preparation
+var _service_cut_index := {}
+var _service_cut_signature := 0
 var _roads: Array = []            # [{outer: PackedVector2Array, holes: Array, box: Rect2}]
 var _routes := {}                 # id -> PackedVector2Array (local x, z)
 var _cover := {}                  # Vector2i (COVER_CELL bucket) -> [[a, b, c]] drawn triangles, x/z
@@ -175,16 +179,23 @@ func surface_mesh(scenery: Scenery, uv_z := 0.0, uv_xf := Transform3D()) -> Arra
 
 
 func surface_mesh_staged(scenery: Scenery, frames: SceneTree = null, uv_z := 0.0, uv_xf := Transform3D()) -> ArrayMesh:
+	_prepare_service_cuts()
 	if uv_xf == Transform3D():
 		uv_xf = Transform3D(Basis(), Vector3(0, 0, uv_z))
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	st.set_smooth_group(-1)  # Keep pavement/asphalt normals separate from kerb walls.
 	for s in build.surfaces:
+		# Old builds contain rail paint unrelated to the participants. The
+		# Situation planner replaces it with the routes actually used here.
+		if str(s.id) == "marking_rail": continue
 		if frames:
 			await _add_triangles(st, s, scenery, uv_xf, frames)
 		else:
 			_add_triangles.call(st, s, scenery, uv_xf)
+	for s in tram_surfaces:
+		if frames: await _add_triangles(st, s, scenery, uv_xf, frames)
+		else: _add_triangles.call(st, s, scenery, uv_xf)
 	_add_kerbs(st, scenery, uv_z)
 	_add_end_medians(st,scenery,uv_xf)
 	_add_join_marks(st)
@@ -224,20 +235,24 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 			slice = Time.get_ticks_usec()
 		var triangle: Array = []
 		for c in 3:
-			var i: int = idx[k + c] * 2
-			triangle.append(Vector3(v[i],y,v[i+1]))
-		for poly in SceneStitch.render_pieces(triangle,stitch_bindings):
-			if s.layer == "" and _join_collar(poly): continue
-			if s.layer=="grass" and s.y>0.16 and _join_median(poly): continue
-			for fan in range(1, poly.size()-1):
-				for p: Vector3 in [poly[0],poly[fan],poly[fan+1]]:
-					var w := uv_xf * p
-					st.set_uv(Vector2(w.x / period, w.z / period))
-					var blend := SceneStitch.surface_blend(p,stitch_bindings) if s.layer in ["asphalt","sand"] else 0.0
-					var tint := colour.lerp(Color("#776a53"),blend)
-					st.set_color(Color(tint.r,tint.g,tint.b,0.0))
-					st.set_uv2(Vector2(layer,-blend))
-					st.add_vertex(p)
+			var i: int = idx[k + c]
+			triangle.append(s.verts3d[i] if s.has("verts3d") else Vector3(v[i * 2],y,v[i * 2 + 1]))
+		# Only raised sidewalks open for the driveway. Original carriageway,
+		# islands and question markings keep their authored geometry.
+		var pieces: Array = _subtract_service(triangle) if str(s.id) == "pavement" else [triangle]
+		for piece in pieces:
+			for poly in SceneStitch.render_pieces(piece,stitch_bindings):
+				if s.layer == "" and _join_collar(poly): continue
+				if s.layer=="grass" and s.y>0.16 and _join_median(poly): continue
+				for fan in range(1, poly.size()-1):
+					for p: Vector3 in [poly[0],poly[fan],poly[fan+1]]:
+						var w := uv_xf * p
+						st.set_uv(Vector2(w.x / period, w.z / period))
+						var blend := SceneStitch.surface_blend(p,stitch_bindings) if s.layer in ["asphalt","sand"] else 0.0
+						var tint := colour.lerp(Color("#776a53"),blend)
+						st.set_color(Color(tint.r,tint.g,tint.b,0.0))
+						st.set_uv2(Vector2(layer,-blend))
+						st.add_vertex(p)
 		k += 3
 
 
@@ -254,19 +269,130 @@ func _add_kerbs(st: SurfaceTool, scenery: Scenery, uv_z: float) -> void:
 	while j < segs.size():
 		var a := Vector3(segs[j], kerbs.y0, segs[j + 1])
 		var b := Vector3(segs[j + 2], kerbs.y0, segs[j + 3])
-		var t := Vector3(a.x, kerbs.y1, a.z)
-		var u := Vector3(b.x, kerbs.y1, b.z)
-		if _join_median([a,b,u,t]):
+		var top_a := Vector3(a.x, kerbs.y1, a.z)
+		var top_b := Vector3(b.x, kerbs.y1, b.z)
+		if _join_median([a,b,top_b,top_a]):
 			j+=4
 			continue
-		for triangle in [[a,b,u],[a,u,t]]:
-			for poly in SceneStitch.render_pieces(triangle,stitch_bindings):
-				for fan in range(1,poly.size()-1):
-					for p: Vector3 in [poly[0],poly[fan],poly[fan+1]]:
-						st.set_uv(Vector2.ZERO)
-						st.set_uv2(Vector2(0,1))
-						st.add_vertex(p)
+		for segment in _service_kerb_segments(a, b):
+			var from: Vector3 = segment[0]
+			var to: Vector3 = segment[1]
+			var t := Vector3(from.x, kerbs.y1, from.z)
+			var u := Vector3(to.x, kerbs.y1, to.z)
+			for triangle in [[from,to,u],[from,u,t]]:
+				for poly in SceneStitch.render_pieces(triangle,stitch_bindings):
+					for fan in range(1,poly.size()-1):
+						for p: Vector3 in [poly[0],poly[fan],poly[fan+1]]:
+							st.set_uv(Vector2.ZERO)
+							st.set_uv2(Vector2(0,1))
+							st.add_vertex(p)
 		j += 4
+
+
+## A small index of the actual service beds, built off-thread with terrain.
+## Cached mesh variants reuse bed polygons; driving never consults this index.
+func _prepare_service_cuts() -> void:
+	var signature := hash(tram_surfaces)
+	if signature == _service_cut_signature: return
+	_service_cut_signature = signature
+	_service_cuts.clear()
+	_service_cut_index.clear()
+	for surface in tram_surfaces:
+		for polygon: PackedVector2Array in surface.get("cut_polygons", []):
+			if polygon.size() < 3: continue
+			var cut := {"points": polygon, "box": _box(polygon).grow(0.001)}
+			var index := _service_cuts.size()
+			_service_cuts.append(cut)
+			for x in range(floori(cut.box.position.x / COVER_CELL), floori(cut.box.end.x / COVER_CELL) + 1):
+				for z in range(floori(cut.box.position.y / COVER_CELL), floori(cut.box.end.y / COVER_CELL) + 1):
+					var cell := Vector2i(x, z)
+					if not _service_cut_index.has(cell): _service_cut_index[cell] = []
+					_service_cut_index[cell].append(index)
+
+
+func _near_service_cuts(poly: Array) -> Array:
+	if _service_cuts.is_empty(): return []
+	var bounds := Rect2(Vector2(poly[0].x, poly[0].z), Vector2.ZERO)
+	for point: Vector3 in poly: bounds = bounds.expand(Vector2(point.x, point.z))
+	bounds = bounds.grow(0.001)
+	var found := {}
+	for x in range(floori(bounds.position.x / COVER_CELL), floori(bounds.end.x / COVER_CELL) + 1):
+		for z in range(floori(bounds.position.y / COVER_CELL), floori(bounds.end.y / COVER_CELL) + 1):
+			for index in _service_cut_index.get(Vector2i(x, z), []):
+				if _service_cuts[index].box.intersects(bounds): found[index] = true
+	var out: Array = []
+	for index in found: out.append(_service_cuts[index])
+	return out
+
+
+func _subtract_service(poly: Array) -> Array:
+	var pieces: Array = [poly]
+	for cut in _near_service_cuts(poly):
+		var next: Array = []
+		for piece in pieces: next.append_array(_subtract_convex(piece, cut.points))
+		pieces = next
+		if pieces.is_empty(): break
+	return pieces
+
+
+## Convex half-plane difference also handles a bed completely inside a large
+## pavement triangle. It yields hole-free pieces, unlike treating Geometry2D's
+## hole contours as separately filled polygons.
+static func _subtract_convex(poly: Array, cutter: PackedVector2Array) -> Array:
+	var remaining: Array = poly
+	var outside: Array = []
+	var orientation := -1.0 if Geometry2D.is_polygon_clockwise(cutter) else 1.0
+	for i in cutter.size():
+		var a := cutter[i]
+		var b := cutter[(i + 1) % cutter.size()]
+		var piece := _half_plane(remaining, a, b, -orientation)
+		if piece.size() >= 3: outside.append(piece)
+		remaining = _half_plane(remaining, a, b, orientation)
+		if remaining.size() < 3: break
+	return outside
+
+
+static func _half_plane(poly: Array, a: Vector2, b: Vector2, side: float) -> Array:
+	if poly.is_empty(): return []
+	var out: Array = []
+	var previous: Vector3 = poly[-1]
+	var before := (b - a).cross(Vector2(previous.x, previous.z) - a) * side
+	for current: Vector3 in poly:
+		var after := (b - a).cross(Vector2(current.x, current.z) - a) * side
+		if (before >= -0.000001) != (after >= -0.000001):
+			out.append(previous.lerp(current, clampf(before / (before - after), 0.0, 1.0)))
+		if after >= -0.000001: out.append(current)
+		previous = current
+		before = after
+	return out
+
+
+## Cut a vertical kerb along exactly the same bed footprint as its sidewalk.
+func _service_kerb_segments(a: Vector3, b: Vector3) -> Array:
+	var segments: Array = [[a,b]]
+	for cut in _near_service_cuts([a,b]):
+		var next: Array = []
+		var cutter: PackedVector2Array = cut.points
+		var orientation := -1.0 if Geometry2D.is_polygon_clockwise(cutter) else 1.0
+		for segment in segments:
+			var from: Vector3 = segment[0]
+			var to: Vector3 = segment[1]
+			var lo := 0.0
+			var hi := 1.0
+			for i in cutter.size():
+				var edge := cutter[(i + 1) % cutter.size()] - cutter[i]
+				var first := edge.cross(Vector2(from.x, from.z) - cutter[i]) * orientation
+				var last := edge.cross(Vector2(to.x, to.z) - cutter[i]) * orientation
+				if first < 0.0 and last < 0.0: lo = 1.0; hi = 0.0; break
+				if first < 0.0: lo = maxf(lo, first / (first - last))
+				elif last < 0.0: hi = minf(hi, first / (first - last))
+			if lo >= hi:
+				next.append(segment)
+			else:
+				if lo > 0.00001: next.append([from, from.lerp(to, lo)])
+				if hi < 0.99999: next.append([from.lerp(to, hi), to])
+		segments = next
+	return segments
 
 
 func _add_end_medians(st: SurfaceTool,scenery: Scenery,uv_xf: Transform3D) -> void:

@@ -33,6 +33,8 @@ class Path:
 			cum.append(length)
 
 	func append_route(tail: PackedVector3Array) -> void:
+		if points.is_empty():
+			cum.clear()  # The empty constructor's zero belongs to the first real point.
 		for p in tail:
 			if not points.is_empty() and points[-1].distance_to(p) < 0.01:
 				continue
@@ -102,6 +104,7 @@ class Motion:
 	var extended := false
 	var impact_wait := 0.0
 	var tail_retry := 0.0
+	var rail_blocked := false
 	var contact_cooldown := 0.0
 	var player_contact_latched := false
 	var gait := 0.0
@@ -133,6 +136,11 @@ var cycle_continuation := Callable()
 var walking_continuation := Callable()
 var motion_ground := Callable()
 var motion_out_of_view := Callable()
+## Nearby world footprints in this situation's coordinates. Called once per moving tram,
+## never once per swept step, and includes scenery and actors beyond this junction.
+var tram_obstacles := Callable()
+## Full-body rail support after the world's trim/join cuts, in local coordinates.
+var tram_support := Callable()
 
 
 func _init(sit: Situation) -> void:
@@ -148,10 +156,24 @@ func _init(sit: Situation) -> void:
 		m.config = a.config
 		m.hw = a.halfWidth
 		m.hl = a.halfLength
+		m.clear_distance = a.clearDistance
 		m.path = Path.new(a.path)
 		m.exported_length = m.path.length
+		if m.type == "tram":
+			var rail_route: Dictionary = sit.tram_plan.get("actors", {}).get(m.id, {})
+			var dimensions: Dictionary = rail_route if rail_route.has("half_width") and rail_route.has("half_length") else TramTracks.dimensions(a)
+			# Legacy exported envelopes predate the shared tram model. Its rendered scale
+			# can be wider/longer, so collisions and rear clearance use the real body too.
+			m.hw = maxf(m.hw, float(dimensions.get("half_width", m.hw)))
+			m.hl = maxf(m.hl, float(dimensions.get("half_length", m.hl)))
+			m.clear_distance = maxf(m.clear_distance, float(dimensions.get("clear_distance", m.clear_distance + maxf(0.0, m.hl - float(a.halfLength)))))
+			if rail_route.has("path"):
+				# The planner already sampled the exact teaching route. Smoothing it again would
+				# pull the long body off the rails at a bend and alter the authored maneuver.
+				m.path = Path.new([])
+				m.path.append_route(rail_route.path)
+				m.extended = m.path.length > m.exported_length + 0.01
 		m.max_speed = a.maxSpeed
-		m.clear_distance = a.clearDistance
 		m.stop_at = a.stopAtDistance
 		m.stop_for = INF if str(a.stopFor) == "inf" else a.stopFor
 		m.hold_for = a.holdFor
@@ -371,6 +393,92 @@ func _following_speed(a: Motion, boxes: Array, dt: float) -> float:
 	return maxf(0.0, limit)
 
 
+## Rail vehicles cannot steer around a person or a crossing car. Look along their actual
+## curved rail route, including the whole long body, and leave room before the obstruction.
+## Nearby footprints are shared with the hard sweep below; no physics query or scene scan
+## happens here. A one-metre look-ahead sample is backed by the 15 cm contact sweep.
+func _tram_speed(a: Motion, boxes: Array, external: Array, dt: float) -> float:
+	a.rail_blocked = false
+	var remaining := maxf(0.0, a.path.length - a.distance)
+	if remaining <= 0.001:
+		return 0.0
+	var braking := 8.0
+	var limit := minf(a.max_speed, sqrt(2.0 * braking * remaining))
+	limit = minf(limit, remaining / maxf(dt, 0.001))
+	var horizon := minf(remaining, _tram_lookahead(a))
+	var nearby := []
+	for entry in boxes:
+		if entry.who == a:
+			continue
+		var body: Dictionary = entry.box
+		if body.p.distance_to(a.pos) <= horizon + a.hl + float(body.hl) + float(body.hw) + 2.0:
+			nearby.append(_tram_box_bounds(body))
+	for entry in external:
+		nearby.append(_tram_box_bounds(entry.box))
+	if nearby.is_empty() and not tram_support.is_valid():
+		return maxf(0.0, limit)
+	var ahead := 0.0
+	while ahead <= horizon:
+		var tangent := a.path.tangent_at(a.distance + ahead)
+		var probe := {"p": a.path.point_at(a.distance + ahead), "yaw": atan2(tangent.x, tangent.z), "hw": a.hw, "hl": a.hl}
+		# Cheap axis-aligned rejection uses each obstacle's cached projected extents.
+		# 0.4 conservatively encloses the 0.2 SAT tolerance at every orientation.
+		var extent_x := absf(tangent.z) * a.hw + absf(tangent.x) * a.hl + 0.4
+		var extent_z := absf(tangent.x) * a.hw + absf(tangent.z) * a.hl + 0.4
+		if tram_support.is_valid() and not tram_support.call(a, probe.p, probe.yaw):
+			var room := maxf(0.0, ahead - 3.0)
+			a.rail_blocked = room <= 0.01
+			return _tram_room_speed(limit, room, braking, dt)
+		for candidate in nearby:
+			var body: Dictionary = candidate.box
+			if absf(probe.p.x - body.p.x) >= extent_x + float(candidate.x) or absf(probe.p.z - body.p.z) >= extent_z + float(candidate.z):
+				continue
+			if DRIVE.overlap(probe, body, 0.2):
+				# Reserve both a comfortable gap and the look-ahead sampling interval.
+				var room := maxf(0.0, ahead - 3.0)
+				return _tram_room_speed(limit, room, braking, dt)
+		ahead += 1.0
+	return maxf(0.0, limit)
+
+
+func _tram_box_bounds(body: Dictionary) -> Dictionary:
+	var c := absf(cos(float(body.yaw)))
+	var s := absf(sin(float(body.yaw)))
+	return {"box": body, "x": c * float(body.hw) + s * float(body.hl), "z": s * float(body.hw) + c * float(body.hl)}
+
+
+func _tram_room_speed(limit: float, room: float, braking: float, dt: float) -> float:
+	return maxf(0.0, minf(limit, minf(sqrt(2.0 * braking * room), room / maxf(dt, 0.001))))
+
+
+func _tram_lookahead(a: Motion) -> float:
+	return maxf(12.0, a.max_speed * a.max_speed / 16.0 + a.max_speed * 1.2 + 6.0)
+
+
+## Centre steps alone do not bound a long body's corners at a sharp authored bend.
+## Test intermediate headings only when that rotation exceeds the normal 15 cm sweep.
+## The final pose remains the exact rail pose; a blocked swing simply keeps the old pose.
+func _tram_swept_contact(a: Motion, before: Vector3, before_yaw: float, after: Vector3, after_yaw: float, player: Dictionary, boxes: Array, external: Array) -> Dictionary:
+	var corner_turn := absf(wrapf(after_yaw - before_yaw, -PI, PI)) * (a.hl + a.hw)
+	if corner_turn <= 0.15:
+		return {}
+	var steps := ceili((corner_turn + before.distance_to(after)) / 0.15)
+	for step in range(1, steps):
+		var weight := float(step) / steps
+		var body := {"p": before.lerp(after, weight), "yaw": lerp_angle(before_yaw, after_yaw, weight), "hw": a.hw, "hl": a.hl}
+		if tram_support.is_valid() and not tram_support.call(a, body.p, body.yaw):
+			return {"rail": true}
+		if DRIVE.overlap(body, player, 0.04):
+			return {"blocked": true, "player": true}
+		for entry in boxes:
+			if entry.who != null and entry.who != a and not entry.who.done and DRIVE.overlap(body, entry.who.footprint(), 0.04):
+				return {"blocked": true, "source": entry.who}
+		for entry in external:
+			if DRIVE.overlap(body, entry.box, 0.04):
+				return {"blocked": true, "source": entry.get("source")}
+	return {}
+
+
 func _hold_pending(a: Motion) -> bool:
 	for id in a.hold_for:
 		if id == "player":
@@ -408,6 +516,8 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 		var on:=int(_signal_clock*2.0)%2==0
 		if on!=_flash_on:set_lights(_signal_state,on)
 	_update_signals()
+	if dt <= 0.0:
+		return null
 	var boxes := []
 	for m in motions:
 		if not m.done:
@@ -438,6 +548,11 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			a.active = true
 		if not a.active:
 			continue
+		if a.type == "tram" and a.path.points.size() < 2:
+			# A new stationary tram or an unfinished editor route is still a solid model.
+			# Never invent rails or a road continuation merely to make it leave.
+			a.speed = 0.0
+			continue
 		if a.hold_for and a.stop_at != null and a.distance >= a.stop_at and _hold_pending(a):
 			a.speed = 0
 			continue
@@ -445,7 +560,13 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			a.stop_for -= dt
 			a.speed = 0
 			continue
-		a.speed = minf(_following_speed(a, boxes, dt), a.speed + dt * (8.0 if a.type == "pedestrian" else 12.0))
+		var external := []
+		var speed_limit := _following_speed(a, boxes, dt)
+		if a.type == "tram":
+			if tram_obstacles.is_valid() and a.distance < a.path.length - 0.001:
+				external = tram_obstacles.call(a, _tram_lookahead(a) + a.hl + 2.0)
+			speed_limit = minf(speed_limit, _tram_speed(a, boxes, external, dt))
+		a.speed = minf(speed_limit, a.speed + dt * (8.0 if a.type == "pedestrian" else 12.0))
 		a.tail_retry = maxf(0.0, a.tail_retry - dt)
 		_ensure_tail(a)
 		var advance := minf(a.speed * dt, maxf(0.0, a.path.length - a.distance))
@@ -457,22 +578,40 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			a.distance += advance / steps
 			var t := a.path.tangent_at(a.distance)
 			var p := a.path.point_at(a.distance)
+			var heading := atan2(t.x, t.z)
 			# Saved crossing/rail paths retain their role; cars cannot continue over edited lawn.
 			if motion_ground.is_valid() and not motion_ground.call(p, a.type):
 				a.distance = before_d
 				a.speed = 0.0
 				break
+			if a.type == "tram" and tram_support.is_valid() and not tram_support.call(a, p, heading):
+				a.distance = before_d
+				a.speed = 0.0
+				a.rail_blocked = true
+				break
+			var swept := _tram_swept_contact(a, before, before_yaw, p, heading, player, boxes, external) if a.type == "tram" else {}
+			if swept.get("rail", false):
+				a.distance = before_d
+				a.speed = 0.0
+				a.rail_blocked = true
+				break
 			a.node.position = p
-			a.node.rotation.y = atan2(t.x, t.z)
+			a.node.rotation.y = heading
 			var me := a.footprint()
-			var player_contact := DRIVE.overlap(me, player, 0.04)
-			var traffic_contact := false
-			var struck = null
+			var player_contact: bool = swept.get("player", false) or DRIVE.overlap(me, player, 0.04)
+			var traffic_contact: bool = swept.get("blocked", false)
+			var struck = swept.get("source")
 			for entry in boxes:
 				if entry.who != null and entry.who != a and not entry.who.done and DRIVE.overlap(me, entry.who.footprint(), 0.04):
 					traffic_contact = true
 					struck = entry.who
 					break
+			if not traffic_contact and a.type == "tram":
+				for entry in external:
+					if DRIVE.overlap(me, entry.box, 0.04):
+						traffic_contact = true
+						struck = entry.get("source")
+						break
 			if player_contact or traffic_contact:
 				a.node.position = before
 				a.node.rotation.y = before_yaw
@@ -494,6 +633,10 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 		a.cleared = a.crashed or a.distance >= a.clear_distance
 		# Retire only after the participant has driven away from the actual visible question.
 		var departure_end := a.distance >= maxf(a.exported_length*0.75,a.exported_length-maxf(4.0,a.hl+2.0))
+		if a.type == "tram":
+			# A blocked/cropped route can be shorter than its original teaching arrow.
+			# It may retire at that safe endpoint only after the complete model leaves view.
+			departure_end = departure_end or a.distance >= a.path.length - 0.01 or a.rail_blocked
 		var invisible: bool = motion_out_of_view.call(a) if motion_out_of_view.is_valid() else a.distance > a.exported_length and a.node.position.distance_to(player.p) > 240.0
 		if departure_end and invisible:
 			a.done = true
@@ -506,6 +649,8 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 ## The exported polyline is the teaching arrow, not a parking destination. Preserve it exactly;
 ## append a runtime-only departure on the saved road's exit, or the world's connected road.
 func _ensure_tail(a: Motion) -> void:
+	if a.type == "tram":
+		return  # Its complete route is planned together with the rails; never take a car exit.
 	if a.path.length < 0.1 or a.distance < a.path.length - 20.0 or a.tail_retry > 0.0:
 		return
 	a.extended = true

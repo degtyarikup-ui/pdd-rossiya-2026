@@ -39,12 +39,13 @@ traced: they are the carriageway's outline offset EDGE_OFFSET inward, so they fo
 the kerb; the traced paint is cut back from the kerb (EDGE_BAND) to make room for them.
 """
 import json
+import math
 import sys
 from pathlib import Path
 
 import numpy as np
 import triangle
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import substring, unary_union
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -118,14 +119,97 @@ RAIL_WIDTH = 0.09      # m, a rail seen from above
 TRACK_BED = 3.2        # m, the paved strip a track takes where it leaves the road (a depot entry)
 
 
+def sample_tram_route(points: list) -> list:
+    """Exactly Situation._smooth / Junction.Path, sampled at 0.4 m.
+
+    Rails must follow the moving vehicle's curve, rather than the straight
+    segments between editor handles. Only derived output is sampled.
+    """
+    if len(points) < 3:
+        return [list(p) for p in points]
+    out = []
+    for i in range(len(points) - 1):
+        p0, p1 = points[max(0, i - 1)], points[i]
+        p2, p3 = points[i + 1], points[min(len(points) - 1, i + 2)]
+        steps = max(1, math.ceil(math.dist(p1, p2) / 0.4))
+        for s in range(steps):
+            t = s / steps
+            out.append([0.5 * (2 * p1[k] + (p2[k] - p0[k]) * t
+                        + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t * t
+                        + (3 * p1[k] - p0[k] - 3 * p2[k] + p3[k]) * t * t * t)
+                        for k in (0, 1)])
+    out.append(list(points[-1]))
+    return out
+
+
+def tram_track_lines(scene: dict) -> list:
+    """Only rails used by this question's trams, with support behind their body.
+
+    Retired rails remain in the author's source for undo/inspection but are not
+    rendered. Authored routes, poses and road contours are never rewritten.
+    """
+    routes = {r["id"]: r for r in scene.get("routes", [])}
+    tracks = {t["id"]: t for t in scene.get("tracks", [])}
+    out = []
+    for actor in scene.get("actors", []):
+        if actor.get("type") != "tram":
+            continue
+        pts = routes.get(actor.get("route"), {}).get("points", [])
+        sampled = sample_tram_route(pts)
+        line = LineString(sampled) if len(sampled) >= 2 else None
+        half_length = max(1.0, float(actor.get("halfLength", 5.0)))
+        behind = half_length + 2.0
+        track_pts = tracks.get(actor.get("track"), {}).get("points", [])
+        if line is not None and line.length > 0.01:
+            out.append(line)
+            # The selected route contains the used branch; don't render any
+            # other branches or the unused continuation of its former main line.
+            if len(track_pts) >= 2:
+                main = LineString(track_pts)
+                pos = Point(actor["pos"])
+                if main.distance(pos) < 3.5:
+                    at = main.project(pos)
+                    start = at + behind if actor.get("trackDir") == -1 else at - behind
+                    prefix = substring(main, max(0.0, min(main.length, start)), at)
+                    if isinstance(prefix, LineString) and prefix.length > 0.01:
+                        out.append(prefix)
+                        continue
+            # Ordinary editor trams need no hand-drawn rails. Extend back only
+            # enough to support the complete vehicle at its question position.
+            start = sampled[0]
+            forward = next((p for p in sampled[1:] if math.dist(start, p) > 0.01), None)
+            if forward:
+                distance = math.dist(start, forward)
+                rear = [start[k] - (forward[k] - start[k]) / distance * behind for k in (0, 1)]
+                out.append(LineString([rear, start]))
+        else:
+            # A stationary tram without a route still stands on rails. A missing
+            # moving route is diagnosed by check.py, not invented by this builder.
+            pos = actor["pos"]
+            yaw = float(actor.get("yaw", 0.0))
+            direction = [math.sin(yaw), math.cos(yaw)]
+            out.append(LineString([[pos[k] - direction[k] * behind for k in (0, 1)],
+                                   [pos[k] + direction[k] * behind for k in (0, 1)]]))
+    return out
+
+
 def track_lines(scene: dict) -> list:
-    return [LineString([tuple(p) for p in t["points"]]) for t in scene.get("tracks", []) if len(t.get("points", [])) >= 2]
+    """Paved beds only for explicitly bound tracks used by a tram.
+
+    Automatic route rails must not reshape the author's existing roads/kerbs.
+    Runtime service entrances are planned separately around the saved scenery.
+    """
+    valid_tracks = {t["id"] for t in scene.get("tracks", []) if len(t.get("points", [])) >= 2}
+    bound = [a for a in scene.get("actors", []) if a.get("type") == "tram" and a.get("track") in valid_tracks]
+    if not bound:
+        return []
+    return tram_track_lines({**scene, "actors": bound})
 
 
 def rails(scene: dict):
-    """Both rails of every tram track (editor «Рельсы»): two thin lines a gauge apart."""
+    """Two rails along each actual tram route, never along retired rail paint."""
     parts = []
-    for line in track_lines(scene):
+    for line in tram_track_lines(scene):
         for side in (-1, 1):
             off = line.offset_curve(side * TRACK_GAUGE / 2)
             if not off.is_empty:
@@ -402,6 +486,8 @@ def build(scene: dict) -> dict:
     marks = {}
     for m in scene.get("markings", []):
         colour = m.get("colour", "white")
+        if colour == "rail":
+            continue  # Old traced rail paint is replaced by the actual tram routes.
         if colour not in MARK_COLOURS:
             raise ValueError(f"{scene.get('id')}: marking {m.get('id')} has unknown colour {colour!r}")
         if m.get("type", "solid") == "paint":
@@ -442,7 +528,7 @@ def build(scene: dict) -> dict:
         # scene's old roads (where the plan has none now) are covered, and the game drops them (covers()).
         v, t = triangulate(box.difference(roads_all.union(pavement)))
         surfaces.append({"id": "ground", "y": LAWN_Y, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t})
-    if scene.get("tracks"):
+    if any(a.get("type") == "tram" for a in scene.get("actors", [])):
         marks.setdefault("rail", []).append(rails(scene))
     for colour in MARK_COLOURS:
         if colour not in marks:

@@ -12,6 +12,7 @@ var lights: Array[Node3D] = []
 var _signs: Array[Node3D] = []
 var officers: Array[Node3D] = []
 var actors: Array[Node3D] = []       # same order as data.actors
+var tram_plan := {}                 # derived paths/rails; authored scene data is never rewritten
 var _surface_cache := {}
 var _surface_signature := 0
 var _surface_cuts: Array[Transform3D] = []
@@ -128,6 +129,28 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 	# Attach immediately: cancelling during a mesh job must also free this GLB node tree.
 	s.add_child(scene)
 	s.network = RoadNetwork.load_scene(situation_id)
+	# Derive rails from the saved tram motion, never by rewriting the author's
+	# roads, props or routes. Native builds do the corridor search off-thread.
+	var tram_data: Dictionary = s.data
+	var tram_network: RoadNetwork = s.network
+	# Imported model pivots are not always centred. Capture their real bounds
+	# on the main thread before the immutable corridor search starts.
+	TramTracks.prepare_tram(tram_data)
+	var prop_slice := Time.get_ticks_usec()
+	for prop in tram_data.get("props", []):
+		TramTracks.prepare_props({"props": [prop], "actors": tram_data.get("actors", [])})
+		if frames and Time.get_ticks_usec() - prop_slice > 2000:
+			await frames.process_frame
+			if not is_instance_valid(s): return null
+			prop_slice = Time.get_ticks_usec()
+	if frames and not PackFiles.web():
+		var staged_tram_plan := await _data_in_background(func(): return TramTracks.plan(tram_data, tram_network, scenery), frames)
+		if not is_instance_valid(s): return null
+		s.tram_plan = staged_tram_plan
+	else:
+		s.tram_plan = TramTracks.plan(tram_data, tram_network, scenery)
+	if s.network:
+		s.network.tram_surfaces = TramGeometry.surfaces(s.tram_plan)
 	for node in scene.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.name == "static":
@@ -323,6 +346,20 @@ func covers(local: Vector3) -> bool:
 	return absf(local.x) <= _crop and absf(local.z) <= _crop and SceneStitch.contains(local, _cut_bindings) and (network == null or SceneStitch.contains(local,network.stitch_bindings))
 
 
+## A retained tram must not cross a seam after its rail mesh has been cut.
+## The complete body, not only its centre, stays on the scene-owned side.
+func tram_body_supported(p: Vector3, yaw: float, hw: float, hl: float) -> bool:
+	var forward := Vector3(sin(yaw), 0, cos(yaw))
+	var right := SceneStitch.right(forward)
+	for along in [-hl, hl]:
+		for across in [-hw, hw]:
+			var corner: Vector3 = p + forward * along + right * across
+			if absf(corner.x) > _crop or absf(corner.z) > _crop: return false
+			if not SceneStitch.contains(corner, _cut_bindings): return false
+			if network and not SceneStitch.contains(corner, network.stitch_bindings): return false
+	return true
+
+
 ## game.js roadSupports at this point: from the road network (or, for a scene
 ## without one, the exported mask).
 func road_at(local: Vector3) -> bool:
@@ -384,6 +421,7 @@ static func _without_baked_ground_staged(mesh: Mesh, net: RoadNetwork = null, fr
 	for s in mesh.get_surface_count():
 		var arrays := mesh.surface_get_arrays(s)
 		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var colours: PackedColorArray = arrays[Mesh.ARRAY_COLOR] if arrays[Mesh.ARRAY_COLOR] != null else PackedColorArray()
 		var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
 		if idx.is_empty():
 			idx = PackedInt32Array(range(verts.size()))
@@ -396,6 +434,7 @@ static func _without_baked_ground_staged(mesh: Mesh, net: RoadNetwork = null, fr
 			var a := verts[idx[k]]
 			var b := verts[idx[k + 1]]
 			var c := verts[idx[k + 2]]
+			if _legacy_rail_triangle(a, b, c, colours, idx[k], idx[k + 1], idx[k + 2]): continue
 			var flat := absf(a.y - b.y) < 0.001 and absf(a.y - c.y) < 0.001
 			if flat and a.y < -0.001 and a.y > -0.5:
 				continue
@@ -433,6 +472,22 @@ static func _without_baked_ground_staged(mesh: Mesh, net: RoadNetwork = null, fr
 	return out
 
 
+## Old rails are coloured ground geometry inside the combined GLB. Match all
+## three vertices and the low height; similarly coloured furniture survives.
+static func _legacy_rail_triangle(a: Vector3, b: Vector3, c: Vector3, colours: PackedColorArray, ia: int, ib: int, ic: int) -> bool:
+	if colours.is_empty() or minf(a.y, minf(b.y, c.y)) < -0.005 or maxf(a.y, maxf(b.y, c.y)) > 0.16: return false
+	for colour in [Color("#8e999c"), Color("#929a9c")]:
+		for target in [colour, colour.srgb_to_linear()]:
+			var matches := true
+			for index in [ia, ib, ic]:
+				var value: Color = colours[index]
+				if maxf(absf(value.r - target.r), maxf(absf(value.g - target.g), absf(value.b - target.b))) > 1.5 / 255.0:
+					matches = false
+					break
+			if matches: return true
+	return false
+
+
 static func _without_covered_texture(mesh: Mesh, net: RoadNetwork) -> Mesh:
 	var out := ArrayMesh.new()
 	for surface in mesh.get_surface_count():
@@ -460,7 +515,7 @@ static func _v(a: Array) -> Vector3:
 
 func _place_props(scenery: Scenery, frames: SceneTree = null) -> void:
 	var groups := {}
-	for p in data.props:
+	for p in _tram_render_props():
 		if not groups.has(p.prop):
 			groups[p.prop] = []
 		groups[p.prop].append(p)
@@ -480,7 +535,7 @@ func _place_props(scenery: Scenery, frames: SceneTree = null) -> void:
 		for i in list.size():
 			var p: Dictionary = list[i]
 			var basis := Basis(Vector3.UP, p.yaw).scaled(_v(p.scale))
-			var xf := Transform3D(basis, _v(p.pos))
+			var xf: Transform3D = p.get("runtime_transform", Transform3D(basis, _v(p.pos)))
 			multi.set_instance_transform(i, xf)
 			poses.append(xf)
 			multi.set_instance_color(i, Color.WHITE)
@@ -491,6 +546,7 @@ func _place_props(scenery: Scenery, frames: SceneTree = null) -> void:
 		var node := MultiMeshInstance3D.new()
 		node.multimesh = multi
 		node.set_meta("instance_transforms",poses)
+		node.set_meta("authored_transforms",poses.duplicate())
 		node.set_meta("instance_tints",tints)
 		node.material_override = Models.traffic_material() if parked else scenery.occluder_material if prop.begins_with("buildings/") else scenery.material
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if prop.begins_with("trees/") else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -513,6 +569,45 @@ func _place_props(scenery: Scenery, frames: SceneTree = null) -> void:
 		mi.material_override = Models.contact_material()
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
+
+
+## A service driveway may open an existing fence outside the question area.
+## Split the rendered instance in its own model coordinates; the stored
+## location, road plan and all other props remain exactly as authored.
+func _tram_render_props() -> Array:
+	var out: Array = []
+	var openings: Dictionary = tram_plan.get("fence_openings", {})
+	for i in data.props.size():
+		var prop: Dictionary = data.props[i]
+		if not openings.has(i): out.append(prop); continue
+		var opening: Dictionary = openings[i]
+		var axis := 0 if opening.axis == "x" else 2
+		var bounds: AABB = opening.bounds
+		var intervals: Array = [[bounds.position[axis], bounds.end[axis]]]
+		for cut: Vector2 in opening.cuts:
+			var next: Array = []
+			for interval in intervals:
+				if cut.y <= interval[0] or cut.x >= interval[1]: next.append(interval); continue
+				if cut.x > interval[0]: next.append([interval[0], cut.x])
+				if cut.y < interval[1]: next.append([cut.y, interval[1]])
+			intervals = next
+		for interval in intervals:
+			var length_: float = interval[1] - interval[0]
+			if length_ < 0.2: continue
+			var piece: Dictionary = prop.duplicate(true)
+			var ratio: float = length_ / maxf(0.001, bounds.size[axis])
+			var delta := Vector3.ZERO
+			delta[axis] = (float(interval[0]) + float(interval[1])) * 0.5 - bounds.get_center()[axis] * ratio
+			var local_scale := Vector3.ONE
+			local_scale[axis] = ratio
+			var original := Transform3D(Basis(Vector3.UP, float(prop.yaw)).scaled(_v(prop.scale)), _v(prop.pos))
+			var transform := original * Transform3D(Basis.from_scale(local_scale), delta)
+			var at := transform.origin
+			piece.pos = [at.x, at.y, at.z]
+			piece.scale[axis] = float(prop.scale[axis]) * ratio
+			piece["runtime_transform"] = transform
+			out.append(piece)
+	return out
 
 
 # --- question evidence -------------------------------------------------------------
@@ -541,6 +636,7 @@ func _build_evidence(dir: String) -> void:
 			(mi as MeshInstance3D).position.y = 0.12
 		add_child(_guide)
 	for l in data.labels:
+		if not l.get("letter") is String or str(l.letter).is_empty(): continue
 		var token := _letter_node(l.letter, letter_colour(str(l.letter)))
 		token.position = _v(l.pos)
 		add_child(token)
@@ -837,6 +933,7 @@ func warm_bindings(bindings: Array, scenery: Scenery, frames: SceneTree) -> void
 	var work:=RoadNetwork.new()
 	work.build=network.build
 	work.data=network.data
+	work.tram_surfaces=network.tram_surfaces
 	work.stitch_bindings=bindings.duplicate(true)
 	var mesh: Mesh
 	if PackFiles.web(): mesh=await work.surface_mesh_staged(scenery,frames)
@@ -864,19 +961,16 @@ func street_interval() -> Array:
 func _trim_end_props() -> void:
 	for node in lights + _signs:
 		node.visible = SceneStitch.contains(node.position, _cut_bindings) and (network == null or SceneStitch.contains(node.position, network.stitch_bindings))
-	var counts := {}
-	for p in data.props:
-		var prop: String = p.prop
-		var index: int = counts.get(prop,0)
-		counts[prop]=index+1
-		if not _pools.has(prop): continue
-		var at := _v(p.pos)
-		var xf := Transform3D(Basis(Vector3.UP,p.yaw).scaled(_v(p.scale)),at)
-		if not SceneStitch.contains(at, _cut_bindings) or (network and not SceneStitch.contains(at,network.stitch_bindings)):
-			xf=Transform3D(Basis.from_scale(Vector3.ONE*0.001),Vector3(0,-50,0))
-		(_pool_nodes[prop].get_meta("instance_transforms") as Array)[index]=xf
-		Scenery.clear_fade_slot(_pool_nodes[prop],index)
-		(_pools[prop] as MultiMesh).set_instance_transform(index,xf)
+	for prop in _pool_nodes:
+		var node: MultiMeshInstance3D = _pool_nodes[prop]
+		var original: Array = node.get_meta("authored_transforms", [])
+		for index in original.size():
+			var xf: Transform3D = original[index]
+			if not SceneStitch.contains(xf.origin, _cut_bindings) or (network and not SceneStitch.contains(xf.origin, network.stitch_bindings)):
+				xf = Scenery.Pool.HIDDEN
+			(node.get_meta("instance_transforms") as Array)[index] = xf
+			Scenery.clear_fade_slot(node, index)
+			node.multimesh.set_instance_transform(index, xf)
 
 
 ## Only immutable mesh processing runs off-thread; Node trees are always assembled on the main thread.
@@ -888,6 +982,17 @@ static func _mesh_in_background(work: Callable, frames: SceneTree) -> Mesh:
 		await frames.process_frame
 	# World exit already joined/removed the task; never poll or join an invalid task ID.
 	if not _tasks.has(task): return null
+	WorkerThreadPool.wait_for_task_completion(task)
+	_tasks.erase(task)
+	return result[0]
+
+
+static func _data_in_background(work: Callable, frames: SceneTree) -> Dictionary:
+	var result := [{}]
+	var task := WorkerThreadPool.add_task(func(): result[0] = work.call())
+	_tasks.append(task)
+	while _tasks.has(task) and not WorkerThreadPool.is_task_completed(task): await frames.process_frame
+	if not _tasks.has(task): return {}
 	WorkerThreadPool.wait_for_task_completion(task)
 	_tasks.erase(task)
 	return result[0]

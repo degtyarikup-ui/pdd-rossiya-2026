@@ -78,6 +78,10 @@ const Tracks = (() => {
   function apply(s) {
     for (const a of s.actors || []) {
       if (a.type !== "tram" || !a.track) continue;
+      // Editing route points is an explicit choice, just as for the road planner.
+      // A later unrelated edit must not replace that path with the old rail line.
+      const existing = (s.routes || []).find((r) => r.id === a.route);
+      if (existing?.manual) continue;
       const path = pathFor(s, a);
       if (!path || path.length < 2) continue;
       a.pos = [r3(path[0][0]), r3(path[0][1])];
@@ -86,7 +90,6 @@ const Tracks = (() => {
       s.routes = (s.routes || []).filter((r) => r.id !== rid);
       s.routes.push({ id: rid, kind: "actor", auto: true, points: path.map((p) => [r3(p[0]), r3(p[1])]) });
       a.route = rid;
-      a.behaviour = { ...(a.behaviour || {}), staysPut: false };
     }
     return s;
   }
@@ -112,5 +115,17 @@ const Tracks = (() => {
     return best;
   }
 
-  return { pathFor, apply, snap, nearest, branchesAhead, project, of };
+  // The old baked ground contains rails in two specific vertex colours. Limit
+  // removal to all three matching ground vertices so grey props stay intact.
+  const railColours = [[142, 153, 156], [146, 154, 156]].map(c => c.map(v => v / 255));
+  const linear = v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  const bakedRailColours = [...railColours, ...railColours.map(c => c.map(linear))];
+  function isBakedRailTriangle(heights, colours) {
+    return heights.length === 3 && colours.length === 3
+      && heights.every(y => y >= -0.005 && y <= 0.16)
+      && colours.every(c => bakedRailColours.some(target => target.every((v, k) => Math.abs(c[k] - v) <= 1.5 / 255)));
+  }
+
+  return { pathFor, apply, snap, nearest, branchesAhead, project, of, isBakedRailTriangle };
 })();
+if (typeof module !== "undefined") module.exports = Tracks;
