@@ -17,13 +17,13 @@ from mathutils import Matrix, Quaternion, Vector
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "assets/mascot/3d"
 REVIEW = ROOT / "output/mascot"
-FPS = 30
+FPS = 60
 DURATION = 7.2
 BEAT = .4
 FLIGHT = 1.0
 TRANSFER = 3 * BEAT
 HAND_PERIOD = 2 * BEAT
-BALL_RADIUS = .15
+BALL_RADIUS = .20
 accent_source = (ROOT / "lib/core/constants/app_colors.dart").read_text()
 accent_match = re.search(
     r"static const light\s*=\s*AppThemeColors\(\s*accent:\s*Color\(0xFF([0-9A-Fa-f]{6})\)",
@@ -52,28 +52,66 @@ def smooth(value):
     return value * value * (3 - 2 * value)
 
 
+# Position, velocity, finger pitch, pitch velocity, palm yaw, yaw velocity.
+# A shared derivative at every knot gives C2 motion, including the wrap.
+# The follow-through continues the throw before the empty hand comes back;
+# catch/dip/scoop travel along a different arc rather than reversing a line.
+HAND_KEYS = [
+    (0.000, (.900, -.380, 1.245), (-.85, -.10, 2.10), .12, 4.0, -.03, -.25),
+    (0.065, (.855, -.395, 1.345), (-.18, .02, .50), .46, 1.0, -.06, 0),
+    (0.170, (.895, -.365, 1.360), (.50, .20, -.15), .34, -2.0, -.02, .30),
+    (0.400, (1.065, -.280, 1.235), (.30, 0, -.80), -.02, -.7, .06, 0),
+    (0.600, (1.080, -.300, 1.140), (-.10, -.12, -1.50), -.08, -1.5, .03, -.25),
+    (0.665, (1.055, -.330, 1.065), (-.45, -.18, 0), -.20, 0, 0, -.30),
+    (0.745, (.965, -.365, 1.155), (-1.0, -.18, 1.60), -.06, 3.0, -.02, -.20),
+    (0.800, (.900, -.380, 1.245), (-.85, -.10, 2.10), .12, 4.0, -.03, -.25),
+]
+
+
+def quintic(start, end, velocity_start, velocity_end, span, p):
+    """Hermite interpolation with common endpoint velocities and zero acceleration."""
+    delta = end - start
+    a = velocity_start * span
+    b = velocity_end * span
+    return (start + a * p + (10 * delta - 6 * a - 4 * b) * p**3
+            + (-15 * delta + 8 * a + 7 * b) * p**4
+            + (6 * delta - 3 * a - 3 * b) * p**5)
+
+
 def hand_state(side, time):
-    """Outside catch, a soft wrist dip, then an inside/upward scoop release."""
+    """Continuous wrist oval, active palm rotation and an exact contact point."""
     sign = -1 if side == "L" else 1
     offset = 0 if side == "L" else BEAT
     phase = (time - offset) % HAND_PERIOD
-    catch = Vector((sign * 1.085, -.285, 1.105))
-    release = Vector((sign * .82, -.355, 1.235))
-    if phase < .6:
-        p = phase / .6
-        amount = smooth(p)
-        wrist = release.lerp(catch, amount)
-        wrist.z -= .035 * math.sin(math.pi * p)
-    else:
-        p = (phase - .6) / .2
-        # Cubic scoop preserves the catch, with most lift near release.
-        wrist = catch.lerp(release, p * p)
-        wrist.z -= .065 * math.sin(math.pi * p)
-    fingers = Vector((-sign * .96, -.28, 0)).normalized()
-    palm = Vector((0, 0, 1))
+    for first, second in zip(HAND_KEYS, HAND_KEYS[1:]):
+        if phase <= second[0]:
+            break
+    span = second[0] - first[0]
+    p = (phase - first[0]) / span
+    wrist = quintic(Vector(first[1]), Vector(second[1]), Vector(first[2]), Vector(second[2]), span, p)
+    wrist.x *= sign
+    pitch = quintic(first[3], second[3], first[4], second[4], span, p)
+    yaw = quintic(first[5], second[5], first[6], second[6], span, p)
+    base_fingers = Vector((-sign * .96, -.28, 0))
+    base_fingers = Quaternion((0, 0, 1), sign * yaw) @ base_fingers
+    up = Vector((0, 0, 1))
+    fingers = base_fingers * math.cos(pitch) + up * math.sin(pitch)
+    palm = up * math.cos(pitch) - base_fingers * math.sin(pitch)
     orientation = Matrix(((-palm).cross(fingers), -palm, fingers)).transposed()
     ball = wrist + orientation @ Vector((.015, -.07, .17)) + palm * (BALL_RADIUS + .005)
     return wrist, orientation, ball
+
+
+def contact_velocity(side, time):
+    epsilon = .0001
+    return (hand_state(side, time + epsilon)[2] - hand_state(side, time - epsilon)[2]) / (2 * epsilon)
+
+
+def hermite(start, end, tangent_start, tangent_end, p):
+    return ((2 * p**3 - 3 * p**2 + 1) * start
+            + (p**3 - 2 * p**2 + p) * tangent_start
+            + (-2 * p**3 + 3 * p**2) * end
+            + (p**3 - p**2) * tangent_end)
 
 
 def ball_state(index, time):
@@ -93,17 +131,20 @@ def ball_state(index, time):
     start = hand_state(source, release_time)[2]
     end = hand_state(destination, release_time + FLIGHT)[2]
     p = max(0, min(1, age / FLIGHT))
-    position = start.lerp(end, p)
+    velocity_start = contact_velocity(source, release_time)
+    velocity_end = contact_velocity(destination, release_time + FLIGHT)
+    position = hermite(start, end, velocity_start * FLIGHT, velocity_end * FLIGHT, p)
     # A gentle sideways bow gives the opposing throws separate lanes near the
     # apex. Endpoints and their tangents remain unchanged at both palms.
-    lane = math.sin(math.pi * p) ** 2
+    lane = 16 * p * p * (1 - p) * (1 - p)
     source_sign = -1 if source == "L" else 1
-    position.x -= source_sign * .21 * lane
+    position.x -= source_sign * .35 * lane
     position.y += source_sign * .025 * lane
     # The crossing is above the tip, keeping the entire face unobstructed.
-    flourish = .20 if throw_number % 18 == 13 else 0
-    position.z += 4 * (1.72 + flourish) * p * (1 - p)
-    position.y -= .065 * math.sin(math.pi * p)
+    flourish = .16 if throw_number % 18 == 13 else 0
+    middle = hermite(start, end, velocity_start * FLIGHT, velocity_end * FLIGHT, .5)
+    position.z += (3.12 + flourish - middle.z) * lane
+    position.y -= .07 * lane
     return position, "flight", source
 
 
@@ -131,7 +172,8 @@ def arm_pose(side, wrist, glove_orientation, body_delta):
     direction.normalize()
     along = (length_a * length_a - length_b * length_b + distance * distance) / (2 * distance)
     height = math.sqrt(max(0, length_a * length_a - along * along))
-    pole = Vector((-1 if side == "L" else 1, .65, .7))
+    phase = (2 * math.pi * (wrist.z - 1.1))
+    pole = Vector(((-1 if side == "L" else 1) * .8, .35, -.42 + .04 * math.sin(phase)))
     bend = (pole - direction * pole.dot(direction)).normalized()
     elbow = shoulder + direction * along + bend * height
     align_segment(upper_name, shoulder, elbow)
@@ -165,7 +207,7 @@ ball_material.diffuse_color = (*ball_rgb, 1)
 ball_material["brand_srgb"] = "#" + BALL_COLOR
 for index in range(3):
     if index == 0:
-        bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=8, radius=BALL_RADIUS)
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=20, ring_count=8, radius=BALL_RADIUS)
         ball = bpy.context.object
         for face in ball.data.polygons:
             face.use_smooth = True
@@ -259,7 +301,7 @@ for owner in animated:
     strip.extrapolation = "NOTHING"
 
 scene["asset_stage"] = "Juggling animation preview, isolated from application."
-scene["animation_notes"] = "7.2 s loop; .4 s beat; 1.0 s flight; .2 s hand dwell; 30 fps authored."
+scene["animation_notes"] = "7.2 s loop; C2 wrist ovals and moving palms; C1 hand/ball contact; 60 fps authored."
 scene.frame_set(0)
 # Authoring camera shows both the face and the complete flight envelope.
 camera = scene.camera
@@ -286,6 +328,8 @@ info = {
     "base_rhythm_seconds": 2.4, "throw_interval_seconds": BEAT,
     "ball_flight_seconds": FLIGHT, "hand_dwell_seconds": TRANSFER - FLIGHT,
     "ball_radius": BALL_RADIUS, "ball_color_srgb": "#" + BALL_COLOR,
+    "wrist_motion": "C2 quintic catch, dip, scoop, release and follow-through",
+    "flight_motion": "Hermite with C1 hand-contact velocities",
     "glb_bytes": (OUT / "cone-juggling.glb").stat().st_size,
     "mesh_objects": len(meshes) + len(balls),
     "rendered_triangles": sum(sum(len(face.vertices) - 2 for face in obj.data.polygons) for obj in [*meshes, *balls]),
