@@ -1497,7 +1497,18 @@ func _on_prepared(ok: bool, id: String) -> void:
 	else:
 		staging = false
 		if loader != null: startup_loading_failed = true
-		spawn_after = drive.pos.z + 20.0
+		# A joined scene retries at the same seam. Moving the threshold ahead
+		# would strand a car waiting for that scene to finish preparing.
+		if pending_connection.is_empty(): spawn_after = drive.pos.z + 20.0
+
+
+## The next entrance has a fixed contact with the road just left. Until it
+## is installed, the player must not drive past it and leave its question behind.
+func _streaming_stop_z() -> float:
+	if current or road != null or insert_road or road_force != "" or pending_connection.is_empty():
+		return INF
+	# Reserve the whole body at every steering angle, plus a metre before the seam.
+	return float(pending_connection.port.p.z) - Vector2(drive.half_width, drive.half_length).length() - 1.0
 
 
 func _update_junction(dt: float) -> void:
@@ -3012,6 +3023,11 @@ func _process(delta: float) -> void:
 	drive.braking = controls.brake
 	drive.steering = controls.steer if phase != "question" else 0.0
 	var limit := drive.max_speed
+	var streaming_stop := _streaming_stop_z()
+	if is_finite(streaming_stop) and cos(drive.yaw) > 0.0:
+		# Match Drive's coasting deceleration; its final swept step also respects
+		# the boundary if the scene changes late or the car arrives at full speed.
+		limit = minf(limit, sqrt(maxf(0.0, 12.0 * (streaming_stop - drive.pos.z))))
 	if current and phase == "driving":
 		var sit: Situation = current.sit
 		if sit.network and sit.network.has_route("approach"):
@@ -3040,7 +3056,7 @@ func _process(delta: float) -> void:
 	drive.assist_enabled = phase == "driving"
 	var was_recovering := drive.recovery > 0.0
 	if phase != "question" and phase != "over":
-		drive.integrate(delta, limit)
+		drive.integrate(delta, limit, streaming_stop)
 	if was_recovering and drive.recovery <= 0.0:
 		drive_faults.clear()   # the impact is over: the next one is a new violation
 	if drive.curb_clear_time > 0.6:

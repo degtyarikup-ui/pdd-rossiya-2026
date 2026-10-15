@@ -805,7 +805,13 @@ func update_resolution(dt: float, player: Drive, local_pos: Vector3) -> void:
 			var error := wrapf(player.yaw-SceneStitch.yaw(world_tangent),-PI,PI)
 			var footprint := player.half_width*absf(cos(error))+player.half_length*absf(sin(error))
 			var finish_distance: float = float(port.get("finish_distance", maxf(20.0,port.p.dot(toward)-24.0)))
-			if remaining>finish_distance or lateral+footprint>float(port.width)/2.0+0.12 or absf(error)>0.7: continue
+			# The early gate keeps its strict heading. Near the physical join a car can
+			# still leave while tilted, including sliding along a kerb or reversing out.
+			# Use its outward motion there: body heading alone could retain this scene
+			# forever while the supported car drives along the procedural continuation.
+			var near_join := remaining <= maxf(player.half_length+1.0, minf(finish_distance,8.0))
+			var moving_out := player.speed*cos(error)>0.1
+			if remaining>finish_distance or lateral+footprint>float(port.width)/2.0+0.12 or (absf(error)>0.7 and not (near_join and moving_out)): continue
 			var done_res=resolution
 			resolution=null
 			complete=true

@@ -121,7 +121,7 @@ func _lane_fits(x: float) -> bool:
 
 
 ## One frame of driving (integrateDriving, free steering).
-func integrate(dt: float, limit: float) -> void:
+func integrate(dt: float, limit: float, stop_z := INF) -> void:
 	if recovery > 0:
 		recovery = maxf(0.0, recovery - dt)
 		speed = 0
@@ -186,6 +186,14 @@ func integrate(dt: float, limit: float) -> void:
 		var dz := cos(yaw) * step
 		pos.x += dx
 		pos.z += dz
+		# A streamed scene owns the road beyond this plane. Keep the last step
+		# on the installed side, including reverse gear and a held steering arrow.
+		var waiting_at_join := dz > 0.0 and pos.z > stop_z
+		if waiting_at_join:
+			var fraction := clampf((stop_z - before.z) / dz, 0.0, 1.0)
+			dx *= fraction
+			dz *= fraction
+			pos = before + Vector3(dx, 0.0, dz)
 		if not on_road():
 			curb = true
 			# Resolve the blocked component, keep sliding along the kerb.
@@ -196,7 +204,7 @@ func integrate(dt: float, limit: float) -> void:
 			for c in candidates:
 				pos = before + Vector3(c[0], 0, c[1])
 				yaw = c[2]
-				if on_road():
+				if pos.z <= maxf(stop_z, before.z) and on_road():
 					supported = true
 					break
 			if not supported:
@@ -230,6 +238,9 @@ func integrate(dt: float, limit: float) -> void:
 					break
 		if speed > 0:
 			distance_traveled += pos.distance_to(before)
+		if waiting_at_join:
+			speed = 0.0
+			break
 	if curb and not (_following_route and guided_started_on_road and on_road()):
 		# An assist prediction that was canceled while the whole body stayed on the road is
 		# not the driver's violation. Manual kerb attempts and unsupported bodies still count.

@@ -101,6 +101,8 @@ godot --headless --path game_godot --script res://tests/ride_endurance_check.gd 
 godot --headless --path game_godot --script res://tests/ride_completion_check.gd # счётчик ответов, завершение на 20-м ответе, ошибка/таймаут и кнопка завершения
 godot --path game_godot --script res://tests/ride_runtime_stress_check.gd -- --stress-scenes=40 --stress-dwell=6 # длительный рендер/обновления; синтетическое перемещение через обычные переходы
 godot --path game_godot --script res://tests/ride_runtime_stress_check.gd -- --stress-scenes=40 --stress-dwell=6 --stress-mixed-answers # верные/неверные ответы, таймауты, повторный тап, номера 1–20 и завершение
+godot --headless --path game_godot --script res://tests/question_streaming_check.gd # задержка/ошибка загрузки: ожидание у стыка и следующий вопрос
+godot --headless --path game_godot --script res://tests/departure_progress_check.gd # наклонный выезд, разворот, задний ход и следующий вопрос
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
 godot --headless --path game_godot --script res://tests/embedded_io_check.gd # iOS: повторные запуски основной игры и переходы после мини-игр
@@ -304,6 +306,7 @@ MP3 и локальный манифест не коммитятся. В Git л�
 - `participant-lifetime-2026-10-15.md` — нативный вылет после удаления сбитого участника и регрессионная проверка
 - `ride-completion-2026-10-15.md` — два штатных заезда, неверная нумерация HUD и оставшийся доступ к удалённому участнику
 - `background-pause-2026-10-15.md` — исчезнувшее управление после сворачивания, безопасный показ паузы и продолжение
+- `infinite-road-2026-10-15.md` — бесконечная прямая при поздней подготовке вопроса и наклонном выезде после ответа
 - `road-exit-continuity-2026-10-15.md` — тупик `ticket_20_6`, все физические выезды и стыки коротких дорог
 - `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
 - `local-changes-sync-2026-10-14.md` — опубликованные локации и архивы всех локальных stash
