@@ -6,6 +6,7 @@ const END_INSET := 24.0
 const END_BLEND := 10.0
 const WALK_WIDTH := 3.2
 const LANE_TRANSITION := 90.0
+const _CLIPPED_MESH_META := "_scene_stitch_flat_normals_v1"
 
 static func v(p) -> Vector3:
 	return Vector3(float(p[0]), 0.0, float(p[1]))
@@ -302,7 +303,31 @@ static func median_at(p: Vector3,bindings: Array) -> bool:
 	return false
 
 ## Trim a frozen street to the old side of a join, interpolating all texture/color attributes.
-static func clip_mesh(mesh: Mesh, placement: Transform3D) -> ArrayMesh:
+static func clip_mesh(mesh: Mesh, placement: Transform3D) -> Mesh:
+	if mesh.get_surface_count() == 0: return null
+	# The cut is an affine plane, so the transformed AABB's eight corners bound
+	# every vertex. Most retained street pieces are wholly behind/ahead of it.
+	# Only reuse our own immutable results: imported meshes still need the old
+	# normal flattening on their first cut, even when no triangles are removed.
+	# The old polygon clipper keeps z <= 1e-5 but crosses edges at z == 0.
+	# Leave that entire boundary band, plus real_t rounding, on its existing path.
+	var bounds := mesh.get_aabb()
+	var magnitude := bounds.position.abs() + bounds.size.abs()
+	var roundoff := (absf(placement.origin.z) + absf(placement.basis.x.z) * magnitude.x
+		+ absf(placement.basis.y.z) * magnitude.y + absf(placement.basis.z.z) * magnitude.z) * 0.000001 + 0.000001
+	var minimum := INF
+	var maximum := -INF
+	var finite_bounds := is_finite(roundoff)
+	for i in 8:
+		var z := (placement * bounds.get_endpoint(i)).z
+		if not is_finite(z):
+			finite_bounds = false
+			break
+		minimum = minf(minimum, z)
+		maximum = maxf(maximum, z)
+	if finite_bounds:
+		if maximum < -roundoff and mesh.get_meta(_CLIPPED_MESH_META, false): return mesh
+		if minimum > 0.00001 + roundoff: return null
 	var result := ArrayMesh.new()
 	for surface in mesh.get_surface_count():
 		var arrays := mesh.surface_get_arrays(surface)
@@ -334,6 +359,7 @@ static func clip_mesh(mesh: Mesh, placement: Transform3D) -> ArrayMesh:
 		if count:
 			tool.generate_normals();tool.commit(result)
 			result.surface_set_material(result.get_surface_count()-1,mesh.surface_get_material(surface))
+	result.set_meta(_CLIPPED_MESH_META, true)
 	return result if result.get_surface_count()>0 else null
 
 ## Split coarse triangles at the end collar before deforming them. Otherwise an end's width

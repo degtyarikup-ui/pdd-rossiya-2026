@@ -1,6 +1,8 @@
-## Performance counter, same numbers as assets/game/perf-hud.js so the two
-## engines can be compared on one phone. Tap it to cycle the quality tier.
+## Diagnostic frame distributions and native process metrics.
+## Tap the counter to select a fixed quality tier for comparisons.
 extends CanvasLayer
+
+const FrameMetrics := preload("res://scripts/frame_metrics.gd")
 
 signal tier_changed(tier: String)
 
@@ -25,6 +27,9 @@ var _log_frames := 0
 var _log_sum := 0.0
 var _log_worst := 0.0
 var _log_slow := 0
+var _frame_metrics: FrameMetrics
+var _log_started_at_us := 0
+var _last_frame_at_us := -1
 
 var _label: Label
 var _frames := 0
@@ -64,7 +69,10 @@ func _ready() -> void:
 ## then reuse the same HUD and preserve the preceding ride's crash evidence.
 func set_enabled(enabled: bool) -> void:
 	if enabled == visible: return
-	if enabled: _start_log_session()
+	if enabled and not _log_started:
+		_start_log_session()
+	else:
+		_reset_log_window(true)
 	visible = enabled
 	_frames = 0
 	_sum = 0.0
@@ -72,16 +80,13 @@ func set_enabled(enabled: bool) -> void:
 	_slow = 0
 	_clock = 0.0
 	_input_at = 0
-	_log_clock = 0.0
-	_log_frames = 0
-	_log_sum = 0.0
-	_log_worst = 0.0
-	_log_slow = 0
 
 
 func _start_log_session() -> void:
 	if _log_started: return
 	_log_started = true
+	_frame_metrics = FrameMetrics.new()
+	_reset_log_window(true)
 	if Host.io != "":
 		_log_path = Host.io.path_join("ride-performance.jsonl")
 		_previous_log_path = Host.io.path_join("ride-performance-previous.jsonl")
@@ -113,9 +118,15 @@ func _input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	if not visible: return
+	if _frame_metrics == null: _start_log_session()
 	if _input_at:
 		_input_ms = (Time.get_ticks_usec() - _input_at) / 1000.0
 		_input_at = 0
+	# Delta can be scaled or capped by the engine. Real callback intervals retain
+	# long stalls, including loading/pause; legacy delta-based keys stay intact.
+	var frame_at := _now_usec()
+	_frame_metrics.sample(maxi(0, frame_at - _last_frame_at_us) / 1000000.0)
+	_last_frame_at_us = frame_at
 	var ms := delta * 1000.0
 	_frames += 1
 	_sum += ms
@@ -156,6 +167,8 @@ func _process(delta: float) -> void:
 		Ui.t("gameDebugPerfRetained", {"question": state.get("displayed_question", state.get("question", 0)), "scenes": state.get("retired", 0), "streets": state.get("streets", 0)}),
 		_input_ms, Ui.t("gameDebugTier"), tier, state.get("scene", "")]
 	if write_log:
+		state.merge(_frame_metrics.summary((frame_at - _log_started_at_us) / 1000000.0), true)
+		state.merge(_render_snapshot(), true)
 		state.merge({"time": Time.get_datetime_string_from_system(true), "fps": Engine.get_frames_per_second(),
 			"avg_ms": snappedf(_log_sum / _log_frames, 0.1), "worst_ms": snappedf(_log_worst, 0.1), "slow": _log_slow,
 			"calls": calls, "nodes": int(nodes), "resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),
@@ -165,17 +178,54 @@ func _process(delta: float) -> void:
 			"thermal_state": _thermal_state if _thermal_state >= 0 else null, "low_power": _low_power}, true)
 		print("[godot-perf] ", JSON.stringify(state))
 		_write_log(state)
-		if reset_snapshot.is_valid(): reset_snapshot.call()
-		_log_clock = 0.0
-		_log_frames = 0
-		_log_sum = 0.0
-		_log_worst = 0.0
-		_log_slow = 0
+		_reset_log_window()
 	_frames = 0
 	_sum = 0.0
 	_worst = 0.0
 	_slow = 0
 	_clock = 0.0
+
+
+## Kept virtual for deterministic tests; called only while diagnostics are active
+## or their explicit enable/disable boundary is being changed.
+func _now_usec() -> int:
+	return Time.get_ticks_usec()
+
+
+func _reset_log_window(reset_frame_clock := false) -> void:
+	_log_clock = 0.0
+	_log_frames = 0
+	_log_sum = 0.0
+	_log_worst = 0.0
+	_log_slow = 0
+	# Retain callback continuity across emission: logging cost belongs to the
+	# following frame. Explicit toggles exclude the intervening hidden interval.
+	if reset_frame_clock or _last_frame_at_us < 0: _last_frame_at_us = _now_usec()
+	_log_started_at_us = _last_frame_at_us
+	if _frame_metrics != null: _frame_metrics.reset()
+	# CPU/transition aggregates must describe this same fresh frame window,
+	# including after diagnostics were disabled or initially enabled late.
+	if reset_snapshot.is_valid(): reset_snapshot.call()
+
+
+## Render counters and dimensions describe the last rendered frame, not the
+## preceding five-second distribution. Apply the stretch transform to recover
+## physical viewport pixels from canvas_items design coordinates.
+func _render_snapshot() -> Dictionary:
+	var viewport := get_viewport()
+	var pixels := Vector2i((viewport.get_visible_rect().size * viewport.get_stretch_transform().get_scale()).round())
+	var rendered: Variant = null
+	# The internal 3D buffer size is not exposed by Compatibility. This estimate
+	# mirrors Godot 4.7's bilinear floor/clamp rule; no GPU timing is inferred.
+	if DisplayServer.get_name() != "headless" and pixels.x > 0 and pixels.y > 0 and not viewport.disable_3d:
+		rendered = [clampi(int(pixels.x * viewport.scaling_3d_scale), 1, 16384),
+			clampi(int(pixels.y * viewport.scaling_3d_scale), 1, 16384)]
+	return {"render_snapshot_scope": "last_rendered_frame", "viewport_px": [pixels.x, pixels.y],
+		"window_px": [get_window().size.x, get_window().size.y],
+		"render_3d_estimated_px": rendered, "viewport_size_source": "visible_rect_times_stretch",
+		"render_3d_size_source": "viewport_pixels_times_scale_floor",
+		"renderer": RenderingServer.get_current_rendering_method(),
+		"render_driver": RenderingServer.get_current_rendering_driver_name()}
 
 
 ## iOS writes an atomic native memory snapshot next to the requests and performance logs.

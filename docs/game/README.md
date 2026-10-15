@@ -81,6 +81,7 @@ godot --headless --path game_godot --script res://tests/ambient_transition_check
 godot --path game_godot --script res://tests/ambient_transition_check.gd -- --season=autumn # реальные позы MultiMesh и положение в кадре
 godot --headless --path game_godot --script res://tests/lighting_check.gd # свет/тени в том же кадре при поворотах мира, все уровни качества
 godot --path game_godot --script res://tests/lighting_render_check.gd # нужен рендер: яркость граней, машина и тени до/после перехода
+godot --headless --path game_godot --script res://tests/mesh_clip_check.gd # обрезка геометрии: исходный алгоритм, атрибуты, границы и быстрые повторные проходы
 godot --headless --path game_godot --script res://tests/retained_surface_check.gd # старые улицы и сцены не перекрывают дорогу после цепочки поворотов
 godot --headless --path game_godot --script res://tests/retirement_support_check.gd # очистка старых дорог не удаляет опору машины после долгого манёвра
 godot --headless --path game_godot --script res://tests/traffic_check.gd    # трафик
@@ -106,6 +107,7 @@ godot --headless --path game_godot --script res://tests/departure_progress_check
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
 godot --headless --path game_godot --script res://tests/embedded_io_check.gd # iOS: повторные запуски основной игры и переходы после мини-игр
+godot --headless --path game_godot --script res://tests/ambient_budget_check.gd # low: только декоративные люди, безопасная смена качества и неизменные участники задач
 godot --headless --path game_godot --script res://tests/walking_budget_check.gd # точность тротуаров, ограниченный кеш и бюджет поиска пути пешеходов
 godot --headless --path game_godot --script res://tests/actor_visibility_check.gd # участники без dir не вызывают покадровые ошибки проверки видимости
 godot --headless --path game_godot --script res://tests/frame_budget_check.gd # подстройка нагрузки телефона без реакции на загрузку и паузу

@@ -1,4 +1,4 @@
-## Quality tiers, chosen from the GPU name (same table as assets/game/quality-tier.js).
+## Graphics tiers chosen from the GPU name, with decorative population budgets.
 class_name Quality
 extends RefCounted
 
@@ -42,3 +42,8 @@ static func classify(gpu: String) -> String:
 static func initial(gpu: String, mobile: bool) -> String:
 	var tier := classify(gpu)
 	return "mid" if mobile and gpu.to_lower().contains("apple") else tier
+
+
+## Decorative street people only; task participants keep their authored population.
+static func ambient_walkers(profile: String, configured: int, max_fps := 0) -> int:
+	return mini(configured, 6) if profile == "low" or max_fps == 30 else configured

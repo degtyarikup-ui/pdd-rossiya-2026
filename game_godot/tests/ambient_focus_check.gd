@@ -18,7 +18,7 @@ func run() -> void:
 	world.current = {}
 	world.blanks.clear()
 	world.street_half = 4.2
-	world.street.profile = {"centre":"dashed", "median":0.0, "lanes":2}
+	world.street.profile = {"width":8.4, "centre":"dashed", "median":0.0, "lanes":2}
 	world.camera.position = Vector3(0, 45, -10)
 	world.camera.look_at(Vector3.ZERO)
 	world.camera.size = 55
@@ -55,6 +55,8 @@ func run() -> void:
 			check(absf(car.x+direction*2.1)<0.15,"NPC returns to its lane after clearing the whole tail")
 	# A narrow passing envelope must wait for the oncoming car, then complete the manoeuvre.
 	world.street_half = 3.2
+	world.street.profile.width = 6.4
+	check(is_equal_approx(world._ambient_lane_offset(0.0),1.6),"Narrow fixture uses lane centres consistent with its road width")
 	var parked := {"p":Vector3(-2.75,0,0),"yaw":0.0,"hw":0.9,"hl":2.25}
 	world.street.parked_bodies = {0:[parked]}
 	var bus: Dictionary = saved[0].duplicate()
@@ -78,7 +80,7 @@ func run() -> void:
 	var solo: Array[Dictionary]=[bus];world.traffic=solo
 	for frame in 600:world._update_traffic(1.0/60.0)
 	check(bus.z < -10.0 and bus.spd < 0.1,"An impossible legal passing gap causes a safe wait")
-	world.street_half=4.2;world.street.profile.centre="dashed"
+	world.street_half=4.2;world.street.profile.width=8.4;world.street.profile.centre="dashed"
 	# A staged view admits no new traffic, in any question phase. A visible car remains visible.
 	world.street.parked_bodies.clear()
 	world.drive.pos = Vector3(-1.8,0,0)

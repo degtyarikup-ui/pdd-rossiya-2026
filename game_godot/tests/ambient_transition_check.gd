@@ -203,6 +203,9 @@ func run() -> void:
 	world.only_id = "ticket_17_6"; world.bag = [world.only_id]
 	root.add_child(world)
 	for i in 1500:
+		# Native automation can lose focus while Codex runs other checks. This
+		# fixture tests rendered rebases; lifecycle pause has its own coverage.
+		if world.paused: world._on_resume()
 		if world.loader == null and not world.current.is_empty(): break
 		await process_frame
 	expect(not world.current.is_empty(),"runtime prepares actual local scene")

@@ -50,6 +50,8 @@ var traffic_mm: Array[MultiMesh] = []
 var traffic_glows: MultiMesh
 var walkers: Array[Dictionary] = []
 var walker_mm: Array[MultiMesh] = []
+var walker_target := -1             # -1: no population budget (isolated test fixtures)
+const WALKER_RETIRE_DISTANCE := 60.0
 const WALK_PLAN_INTERVAL := 0.1
 var walker_surfaces_active := false
 var walker_scene_surfaces: Array[Dictionary] = []
@@ -87,6 +89,8 @@ var dbg_t := 0.0
 var dbg_every := 0.0
 var perf_frames := 0
 var perf_us := {}
+var perf_transitions := {}         # bounded stage aggregates for the current diagnostic window
+const PERF_TRANSITION_STAGES := ["activate_bind_surfaces", "activate_ring_and_lanes", "bind_exit", "transform_and_refresh_uv", "clip_road_meshes", "snapshot_scenery", "trim_scenery", "keep_ambient", "reset_ambient", "ground", "rebuild_ring", "TOTAL"]
 var last_tick_second := 0
 var blinker_on := false
 var warm_signals := true
@@ -187,6 +191,10 @@ func _ready() -> void:
 	ride_options.texts = {"runs": Ui.t("gameGarage"), "record": Ui.t("gameLobbyRecord"), "colour": Ui.t("gameLobbyColour"), "start": Ui.t("gameLobbyNewRun")}
 	loader = Loader.attach(self)
 	cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/world.json"))
+	# Choose the population before the first decorative walker can be rendered.
+	var mobile := OS.has_feature("android") or OS.has_feature("ios")
+	var quality_override := _arg_text("--quality")
+	tier = quality_override if quality_override in Quality.PROFILES else Quality.initial(RenderingServer.get_video_adapter_name(), mobile)
 	L = cfg.chunk_length
 	chunk_count = int(cfg.chunks_ahead) + int(cfg.chunks_behind) + 1
 	var roads: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://roads/road_scenes.json"))
@@ -258,9 +266,7 @@ func _ready() -> void:
 	add_child(hud)
 	hud.tier_changed.connect(_apply_tier)
 	controls.pressed.connect(hud.mark_input)
-	var mobile := OS.has_feature("android") or OS.has_feature("ios")
-	var quality_override := _arg_text("--quality")
-	_apply_tier(quality_override if quality_override in Quality.PROFILES else Quality.initial(RenderingServer.get_video_adapter_name(), mobile), quality_override == "")
+	_apply_tier(tier, quality_override == "")
 	# Install the first junction under the loader, before exposing the ring's final profile.
 	spawn_after = drive.pos.z
 	if _has_arg("--ride-options"):
@@ -2078,13 +2084,16 @@ func _performance_snapshot() -> Dictionary:
 	return {"question": run.answered, "scene": str(current.sit.id) if current else "",
 		"displayed_question": _question_number(), "question_over": question_over,
 		"retired": retired.size(), "streets": older_ghosts.size() + (1 if ghost else 0),
-		"staging": staging, "phase": phase, "distance": int(drive.distance_traveled), "cpu_ms": cpu_ms,
+		"staging": staging, "paused": paused, "phase": phase, "distance": int(drive.distance_traveled), "cpu_ms": cpu_ms,
+		"transition_ms": perf_transitions.duplicate(true),
 		"position": [drive.pos.x, drive.pos.y, drive.pos.z], "yaw": drive.yaw, "on_road": drive.on_road(),
 		"render_scale": get_viewport().scaling_3d_scale, "max_fps": Engine.max_fps,
-		"shadows": sun.shadow_enabled, "msaa": get_viewport().msaa_3d, "quality_changes": frame_budget.changes}
+		"shadows": sun.shadow_enabled, "msaa": get_viewport().msaa_3d, "quality_changes": frame_budget.changes,
+		"ambient_walkers": _active_walker_count(), "ambient_walkers_target": walker_target}
 
 
 func _reset_performance_snapshot() -> void:
+	perf_transitions.clear()
 	perf_us.clear()
 	perf_frames = 0
 
@@ -2157,6 +2166,7 @@ func _spawn_traffic() -> void:
 
 
 func _spawn_walkers() -> void:
+	walker_target = Quality.ambient_walkers(tier, int(cfg.pedestrians))
 	var per_look := ceili(float(cfg.pedestrians) / Models.WALKERS)
 	for v in Models.WALKERS:
 		walker_mm.append(Models.crowd(self, "res://models/walkers/walker_%d.glb" % v, per_look))
@@ -2170,13 +2180,50 @@ func _spawn_walkers() -> void:
 		var multi: MultiMesh = walker_mm[i % walker_mm.size()]
 		var slot := i / walker_mm.size()
 		var v := rng.randf_range(1.0, 1.6) * (1 if rng.randf() > 0.5 else -1)
+		var active := i < walker_target
+		var population := walker_target if active else int(cfg.pedestrians)
 		# Two walking lanes on the pavement (5.2 and 6.3 m), as in the game.
 		walkers.append({
 			"dir": dir, "lane": (i / 2) % 2,
-			"z": -L * float(cfg.chunks_behind) + (i + rng.randf_range(0.15, 0.85)) * L * chunk_count / float(cfg.pedestrians), "v": v, "mm": multi, "slot": slot,
+			"z": -L * float(cfg.chunks_behind) + (i + rng.randf_range(0.15, 0.85)) * L * chunk_count / float(maxi(1, population)), "v": v, "mm": multi, "slot": slot,
+			"budget_active": active, "alive": false, "walk_phase": 0.0, "walk_amount": 0.0,
 		})
 		var jacket: Color = _pick(cfg.colors.people, rng)
 		multi.set_instance_custom_data(slot, Color(jacket.r, jacket.g, jacket.b, rng.randf()))
+
+
+func _active_walker_count() -> int:
+	var count := 0
+	for w in walkers:
+		if w.get("budget_active", true): count += 1
+	return count
+
+
+## Keep visible/near people moving normally until they can safely leave the budget.
+## Reserved slots never freeze a visible person or resurrect a knocked-down one.
+func _sync_walker_budget(trams: Array) -> void:
+	if walker_target < 0: return
+	var count := _active_walker_count()
+	for w in walkers:
+		if count == walker_target: break
+		var at := Vector3(float(w.get("x", w.dir * (_half_at(w.z) + 1.0))), 0, w.z)
+		if w.get("knocked_down", false) or at.distance_squared_to(drive.pos) <= WALKER_RETIRE_DISTANCE * WALKER_RETIRE_DISTANCE or _walker_visible(at): continue
+		if count > walker_target and w.get("budget_active", true):
+			w.budget_active = false
+			w.alive = false
+			(w.mm as MultiMesh).set_instance_transform(w.slot, Transform3D(Basis(), Vector3(0, -100, 0)))
+			count -= 1
+		elif count < walker_target and not w.get("budget_active", true):
+			var clear := _walk_clear(at)
+			for other in walkers:
+				if other != w and other.get("alive", false) and at.distance_squared_to(Vector3(other.x, 0, other.zw)) < 0.49: clear = false; break
+			if clear:
+				for tram in trams:
+					if not Junction.pedestrian_tram_clear(at, at, tram.motion, tram.frame): clear = false; break
+			if not clear: continue
+			w.budget_active = true
+			w.erase("walk_plan"); w.erase("walk_plan_wait"); w.erase("walk_plan_revision")
+			count += 1
 
 
 ## Walkers keep their slots, pose, gait and motion across coordinate changes.
@@ -2618,7 +2665,9 @@ func _update_walkers(delta: float) -> void:
 		for motion in j.junction.motions:
 			if motion.type == "tram" and not motion.done:
 				trams.append({"motion": motion, "frame": j.sit.global_transform})
+	_sync_walker_budget(trams)
 	for w in walkers:
+		if not w.get("budget_active", true): continue
 		var z: float = w.z
 		var old_at := Vector3(float(w.get("x", w.dir*(_half_at(z)+1.0))),0,z)
 		if (z < base or z > base+span or old_at.distance_to(drive.pos) > 230.0) and not _walker_visible(old_at):
@@ -3375,6 +3424,7 @@ func _apply_tier(next: String, automatic := false) -> void:
 		Engine.max_fps = 60
 	adaptive_quality = automatic and (OS.has_feature("android") or OS.has_feature("ios"))
 	frame_budget.reset(prof.scale, prof.shadows, prof.msaa != Viewport.MSAA_DISABLED)
+	walker_target = Quality.ambient_walkers(tier, int(cfg.get("pedestrians", 12)), Engine.max_fps)
 	if leaves:
 		# Fewer leaves on a weak GPU, as in the game (18 instead of 36).
 		leaves.multimesh.visible_instance_count = 18 if tier == "low" else -1
@@ -3391,6 +3441,7 @@ func _update_frame_budget(delta: float) -> void:
 	vp.msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
 	sun.shadow_enabled = update.shadows
 	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
+	walker_target = Quality.ambient_walkers(tier, int(cfg.get("pedestrians", 12)), Engine.max_fps)
 
 
 ## Visible portions of a ring chunk. Scene joins need not lie on a 60 m chunk boundary.
@@ -3685,6 +3736,13 @@ func _ambient_lane_offset(z := INF) -> float:
 
 func _rebase_timing(label: String, start: int) -> int:
 	var now:=Time.get_ticks_usec()
+	if hud != null and hud.visible and label in PERF_TRANSITION_STAGES:
+		var ms := float(now - start) / 1000.0
+		if not perf_transitions.has(label): perf_transitions[label] = {"count": 0, "total_ms": 0.0, "max_ms": 0.0}
+		var stats: Dictionary = perf_transitions[label]
+		stats.count += 1
+		stats.total_ms += ms
+		stats.max_ms = maxf(stats.max_ms, ms)
 	if _has_arg("--perf"): print("[rebase timing] ",label," ",(now-start)/1000.0,"ms")
 	return now
 
