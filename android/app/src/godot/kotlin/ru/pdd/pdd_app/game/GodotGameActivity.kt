@@ -10,6 +10,7 @@ import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.FragmentActivity
+import androidx.core.view.WindowInsetsControllerCompat
 import org.godotengine.godot.Godot
 import org.godotengine.godot.GodotFragment
 import org.godotengine.godot.GodotHost
@@ -45,6 +46,9 @@ class GodotGameActivity : FragmentActivity(), GodotHost {
     private val arguments by lazy { intent?.getStringArrayExtra(EXTRA_ARGS)?.toList() ?: emptyList() }
     private var engineMounted = false
     private var closing = false
+    private var loadingBarsApplied = false
+    private var previousLightStatusBars = false
+    private var previousLightNavigationBars = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // GodotActivity initializes the engine synchronously in super.onCreate. Embed its
@@ -59,6 +63,7 @@ class GodotGameActivity : FragmentActivity(), GodotHost {
         loader = MascotLoadingOverlay(this, "--dark" in arguments, "--reduce-motion" in arguments)
         content.addView(loader, FrameLayout.LayoutParams(-1, -1))
         setContentView(content)
+        styleLoadingBars()
         if ("--loader-profile" in arguments && android.os.Build.VERSION.SDK_INT >= 24) {
             loaderProfiler = LoaderFrameProfiler(window).also { it.start(loadingPhase) }
         }
@@ -90,6 +95,8 @@ class GodotGameActivity : FragmentActivity(), GodotHost {
         fragment = game
         supportFragmentManager.beginTransaction().replace(surface.id, game)
             .setPrimaryNavigationFragment(game).commitNowAllowingStateLoss()
+        // Godot applies its own edge-to-edge appearance during setup.
+        styleLoadingBars()
     }
 
     override fun getCommandLine(): MutableList<String> {
@@ -134,9 +141,11 @@ class GodotGameActivity : FragmentActivity(), GodotHost {
         if (visible) {
             loadingPhase = phase
             loader.show(argument(if (phase == "returning") "--returning-label" else "--loading-label"))
+            styleLoadingBars()
             loaderProfiler?.start(loadingPhase)
         } else {
             loader.hide()
+            restoreGameBars()
             loaderProfiler?.stop()
             Log.i("PddLoader", "playable frame ready; loader released")
         }
@@ -157,6 +166,7 @@ class GodotGameActivity : FragmentActivity(), GodotHost {
     fun prepareExit() {
         loadingPhase = "returning"
         if (::loader.isInitialized) loader.show(argument("--returning-label"))
+        styleLoadingBars()
         loaderProfiler?.start(loadingPhase)
     }
 
@@ -178,6 +188,7 @@ class GodotGameActivity : FragmentActivity(), GodotHost {
     override fun onResume() {
         super.onResume()
         if (::loader.isInitialized) loader.setForeground(true)
+        if (::loader.isInitialized && loader.visibility == View.VISIBLE) styleLoadingBars()
         if (::loader.isInitialized && loader.visibility == View.VISIBLE) loaderProfiler?.start(loadingPhase)
     }
 
@@ -208,6 +219,26 @@ class GodotGameActivity : FragmentActivity(), GodotHost {
         }
         // Godot dispatches NOTIFICATION_WM_GO_BACK_REQUEST after its main loop begins.
         if (fragment?.godot?.isInitialized() == true) fragment?.onBackPressed() else finish()
+    }
+
+    private fun styleLoadingBars() {
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        if (!loadingBarsApplied) {
+            previousLightStatusBars = controller.isAppearanceLightStatusBars
+            previousLightNavigationBars = controller.isAppearanceLightNavigationBars
+            loadingBarsApplied = true
+        }
+        val light = "--dark" !in arguments
+        controller.isAppearanceLightStatusBars = light
+        controller.isAppearanceLightNavigationBars = light
+    }
+
+    private fun restoreGameBars() {
+        if (!loadingBarsApplied) return
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.isAppearanceLightStatusBars = previousLightStatusBars
+        controller.isAppearanceLightNavigationBars = previousLightNavigationBars
+        loadingBarsApplied = false
     }
 
     override fun onDestroy() {
