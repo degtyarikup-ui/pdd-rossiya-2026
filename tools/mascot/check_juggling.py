@@ -191,7 +191,7 @@ def inspect_juggling(path: Path) -> dict:
         points = [point for primitive in document["meshes"][node["mesh"]]["primitives"]
                   for point in accessors.read(primitive["attributes"]["POSITION"])]
         radius = max(math.sqrt(sum(x * x for x in point)) for point in points)
-        require(.1 < radius < .12, f"Unexpected actual ball radius for {name}: {radius}")
+        require(.145 < radius < .155, f"Unexpected actual ball radius for {name}: {radius}")
         balls.append({"node": index, "name": name, "translation": translation,
                       "scale": tracks.get((index, "scale")), "radius": radius,
                       "bounds": bounds, "motion_ranges": ranges})
