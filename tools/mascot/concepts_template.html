@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Конус · три статичных варианта</title>
+<style>
+  :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #19273c; background: #f5f6f8; color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 36px 24px; --surface: #fff; --border: #e5e9ef; --text: #19273c; --muted: #728096; --chip: #edf1f6; }
+  body[data-theme="dark"] { background: #161a21; --surface: #202631; --border: #313b49; --text: #eef3fa; --muted: #a1b0c5; --chip: #303c4e; }
+  body[data-theme="brand"] { background: #0574f8; --surface: #086bea; --border: #4a97fb; --text: #fff; --muted: #d3e6ff; --chip: #2d89fa; }
+  main { max-width: 1160px; margin: auto; color: var(--text); }
+  header { display: flex; gap: 16px; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 28px; }
+  h1 { margin: 0 0 6px; font-size: 25px; font-weight: 650; letter-spacing: -.6px; }
+  .intro { color: var(--muted); font-size: 14px; margin: 0; }
+  .themes { display: flex; gap: 6px; flex-wrap: wrap; }
+  button { border: 0; border-radius: 12px; color: var(--text); background: var(--chip); font: inherit; font-size: 13px; padding: 11px 14px; cursor: pointer; min-height: 44px; }
+  button[aria-pressed="true"] { background: var(--text); color: var(--surface); }
+  button:focus-visible { outline: 3px solid #80baff; outline-offset: 3px; }
+  .gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .concept { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 22px 18px 18px; min-width: 0; }
+  .concept-title { display: flex; align-items: center; gap: 10px; }
+  .letter { background: var(--chip); width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; font-size: 14px; font-weight: 600; }
+  h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.2px; }
+  .art { display: grid; place-items: center; padding-top: 12px; }
+  .art svg { display: block; width: 100%; height: auto; }
+  .mini { margin: 4px auto 0; display: flex; flex-direction: column; align-items: center; gap: 1px; color: var(--muted); font-size: 12px; }
+  .mini svg { display: block; width: 96px; height: 96px; }
+  .concept p { color: var(--muted); font-size: 13px; line-height: 1.5; text-align: center; max-width: 240px; margin: 20px auto 0; min-height: 39px; }
+  footer { color: var(--muted); margin-top: 24px; font-size: 13px; line-height: 1.6; }
+  @media (max-width: 720px) { body { padding: 24px 16px; } .gallery { grid-template-columns: 1fr; } .concept { max-width: 430px; width: 100%; margin: auto; } .art svg { max-width: 320px; } header { margin-bottom: 20px; } }
+</style>
+<main>
+  <header>
+    <div><h1>Сначала — характер и форма</h1><p class="intro">Три статичных варианта маскота · крупно и в размере загрузчика</p></div>
+    <div class="themes" aria-label="Фон">
+      <button type="button" data-theme="light" aria-pressed="true">Светлый</button>
+      <button type="button" data-theme="dark" aria-pressed="false">Тёмный</button>
+      <button type="button" data-theme="brand" aria-pressed="false">Синий</button>
+    </div>
+  </header>
+  <div class="gallery"><!-- CONCEPTS --></div>
+  <footer>Всё — чистый вектор. Без анимации, текстур и фильтров.<br>Выбираем иллюстрацию; движения разработаем после выбора.</footer>
+</main>
+<script>
+  document.querySelectorAll('button[data-theme]').forEach(button => button.addEventListener('click', () => {
+    document.body.dataset.theme = button.dataset.theme;
+    document.querySelectorAll('button[data-theme]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+  }));
+</script>
+</html>

@@ -7,569 +7,838 @@ import 'package:flutter/painting.dart';
 
 /// Cached native vector shapes: no SVG parsing, assets or bitmap frames.
 abstract final class ConeMascotArt {
-  static final ui.Shader _cone = ui.Gradient.linear(
-    const Offset(124, 260),
-    const Offset(352, 221),
+  static final ui.Shader _coneMaterial = ui.Gradient.linear(
+    const Offset(127, 235),
+    const Offset(354, 235),
     [
-      const Color(0xFFE9540B),
-      const Color(0xFFFF8A13),
-      const Color(0xFFFFB83F),
-      const Color(0xFFFF951D),
-      const Color(0xFFF36A0C),
+      const Color(0xFFBD3D08),
+      const Color(0xFFEB590C),
+      const Color(0xFFFF9425),
+      const Color(0xFFFFB94F),
+      const Color(0xFFFF8D1C),
+      const Color(0xFFE85C0B),
+      const Color(0xFFAD3407),
     ],
-    [0, 0.21, 0.52, 0.79, 1],
+    [0, 0.12, 0.32, 0.47, 0.64, 0.83, 1],
   );
 
-  static final ui.Shader _base = ui.Gradient.linear(
-    const Offset(158, 359),
-    const Offset(260, 443),
-    [const Color(0xFFFFB62F), const Color(0xFFFF9016), const Color(0xFFEE620E)],
-    [0, 0.48, 1],
+  static final ui.Shader _coneLight = ui.Gradient.radial(
+    const Offset(205, 135),
+    215,
+    [const Color(0x52FFF6DA), const Color(0x17FFE5B0), const Color(0x00FFE5B0)],
+    [0, 0.45, 1],
+    TileMode.clamp,
+    null,
+    const Offset(205, 115),
   );
 
-  static final ui.Shader _foot = ui.Gradient.linear(
-    const Offset(77, 398),
-    const Offset(405, 409),
-    [const Color(0xFFEE600D), const Color(0xFFFF971F), const Color(0xFFDC4C08)],
-    [0, 0.48, 1],
-  );
-
-  static final ui.Shader _white = ui.Gradient.linear(
-    const Offset(151, 169),
-    const Offset(310, 140),
+  static final ui.Shader _stripeMaterial = ui.Gradient.linear(
+    const Offset(127, 235),
+    const Offset(354, 235),
     [
-      const Color(0xFFD1DCF1),
-      const Color(0xFFFAFCFF),
+      const Color(0xFF8C98AD),
+      const Color(0xFFDAE2EF),
       const Color(0xFFFFFFFF),
-      const Color(0xFFE4EAF5),
+      const Color(0xFFFFFFFF),
+      const Color(0xFFD8E0ED),
+      const Color(0xFF929DB4),
     ],
-    [0, 0.36, 0.72, 1],
+    [0, 0.18, 0.38, 0.58, 0.8, 1],
   );
 
-  static final ui.Shader _glove = ui.Gradient.linear(
-    const Offset(103, 273),
-    const Offset(173, 365),
-    [const Color(0xFFFFFFFF), const Color(0xFFF9FBFF), const Color(0xFFD7E0F0)],
-    [0, 0.55, 1],
+  static final ui.Shader _upperStripeMaterial = ui.Gradient.linear(
+    const Offset(186, 147),
+    const Offset(294, 147),
+    [
+      const Color(0xFF98A3B8),
+      const Color(0xFFE3EAF4),
+      const Color(0xFFFFFFFF),
+      const Color(0xFFFFFFFF),
+      const Color(0xFFCFD9EA),
+      const Color(0xFF8A97AF),
+    ],
+    [0, 0.18, 0.4, 0.59, 0.8, 1],
   );
 
-  static final ui.Shader _iris = ui.Gradient.linear(
-    const Offset(0, -17),
-    const Offset(0, 19),
-    [const Color(0xFF164695), const Color(0xFF0574F8), const Color(0xFF5CD4FF)],
-    [0, 0.58, 1],
+  static final ui.Shader _baseTop = ui.Gradient.radial(
+    const Offset(193, 326),
+    223,
+    [
+      const Color(0xFFFFD477),
+      const Color(0xFFFFA529),
+      const Color(0xFFF6760B),
+      const Color(0xFFD04B06),
+    ],
+    [0, 0.37, 0.72, 1],
+    TileMode.clamp,
+    null,
+    const Offset(178, 319),
   );
 
-  static final ui.Shader _mouth = ui.Gradient.linear(
-    const Offset(238, 251),
-    const Offset(248, 299),
-    [const Color(0xFF321B22), const Color(0xFF7C2524)],
+  static final ui.Shader _baseSide = ui.Gradient.linear(
+    const Offset(91, 375),
+    const Offset(393, 402),
+    [
+      const Color(0xFFCE4A08),
+      const Color(0xFFF77A12),
+      const Color(0xFFEA640B),
+      const Color(0xFFA93406),
+    ],
+    [0, 0.28, 0.6, 1],
+  );
+
+  static final ui.Shader _baseBevel = ui.Gradient.linear(
+    const Offset(240, 376),
+    const Offset(240, 410),
+    [const Color(0xFFFFD173), const Color(0xFFFFA02E), const Color(0xFFDB5108)],
+    [0, 0.32, 1],
+  );
+
+  static final ui.Shader _capMaterial = ui.Gradient.linear(
+    const Offset(225, 57),
+    const Offset(254, 79),
+    [const Color(0xFFFFE4A4), const Color(0xFFFFB443), const Color(0xFFE77915)],
+    [0, 0.48, 1],
+  );
+
+  static final ui.Shader _specular = ui.Gradient.linear(
+    const Offset(199, 116),
+    const Offset(171, 271),
+    [const Color(0x99FFFFFF), const Color(0x2EFFFFFF), const Color(0x00FFFFFF)],
+    [0, 0.6, 1],
+  );
+
+  static final ui.Shader _eyeWhite = ui.Gradient.radial(
+    const Offset(-8, -12),
+    43,
+    [
+      const Color(0xFFFFFFFF),
+      const Color(0xFFFFFFFF),
+      const Color(0xFFE4EBF8),
+      const Color(0xFFA1B0CD),
+    ],
+    [0, 0.48, 0.76, 1],
+    TileMode.clamp,
+    null,
+    const Offset(-8, -13),
+  );
+
+  static final ui.Shader _irisMaterial = ui.Gradient.radial(
+    const Offset(-3, 0),
+    20,
+    [
+      const Color(0xFF89E9FF),
+      const Color(0xFF28B6FD),
+      const Color(0xFF116CCA),
+      const Color(0xFF163A73),
+    ],
+    [0, 0.45, 0.8, 1],
+    TileMode.clamp,
+    null,
+    const Offset(-5, 7),
+  );
+
+  static final ui.Shader _pupilMaterial = ui.Gradient.radial(
+    const Offset(0, 0),
+    13,
+    [const Color(0xFF18374D), const Color(0xFF061420)],
+    [0, 1],
+    TileMode.clamp,
+    null,
+    const Offset(-3, -5),
+  );
+
+  static final ui.Shader _gloveMaterial = ui.Gradient.radial(
+    const Offset(-9, -13),
+    44,
+    [
+      const Color(0xFFFFFFFF),
+      const Color(0xFFFBFDFF),
+      const Color(0xFFDFE7F6),
+      const Color(0xFFA0B1CF),
+    ],
+    [0, 0.46, 0.78, 1],
+    TileMode.clamp,
+    null,
+    const Offset(-11, -16),
+  );
+
+  static final ui.Shader _armMaterial = ui.Gradient.linear(
+    const Offset(116, 265),
+    const Offset(152, 306),
+    [const Color(0xFFFCA52B), const Color(0xFFF27811), const Color(0xFFB73D0A)],
+    [0, 0.5, 1],
+  );
+
+  static final ui.Shader _mouthMaterial = ui.Gradient.linear(
+    const Offset(238, 255),
+    const Offset(245, 287),
+    [const Color(0xFF38191B), const Color(0xFF8A2B26)],
     [0, 1],
   );
 
-  static final ui.Shader _tongue = ui.Gradient.linear(
-    const Offset(241, 284),
-    const Offset(251, 307),
-    [const Color(0xFFFF8791), const Color(0xFFF0485D)],
+  static final ui.Shader _tongueMaterial = ui.Gradient.radial(
+    const Offset(243, 280),
+    23,
+    [const Color(0xFFFF96A1), const Color(0xFFF66577), const Color(0xFFD83D55)],
+    [0, 0.55, 1],
+    TileMode.clamp,
+    null,
+    const Offset(237, 276),
+  );
+
+  static final ui.Shader _cheekMaterial = ui.Gradient.radial(
+    const Offset(0, 0),
+    16,
+    [const Color(0x7AF04731), const Color(0x00F04731)],
     [0, 1],
   );
 
   static final Path _path0 = Path()
-    ..moveTo(113, 361)
-    ..lineTo(188, 91)
-    ..cubicTo(195, 64, 204, 47, 226, 46)
-    ..cubicTo(244, 45, 253, 59, 262, 82)
-    ..lineTo(365, 351)
-    ..cubicTo(323, 385, 165, 397, 113, 361)
+    ..moveTo(221, 67)
+    ..cubicTo(224, 55, 254, 55, 259, 67)
+    ..lineTo(353, 329)
+    ..cubicTo(359, 350, 302, 367, 240, 367)
+    ..cubicTo(178, 367, 121, 350, 127, 329)
     ..close();
 
   static final Path _path1 = Path()
-    ..moveTo(205, 256)
-    ..cubicTo(232, 269, 268, 263, 294, 246)
-    ..cubicTo(289, 278, 274, 303, 249, 306)
-    ..cubicTo(228, 308, 212, 290, 205, 256)
+    ..moveTo(210, 258)
+    ..cubicTo(229, 266, 257, 265, 278, 253)
+    ..cubicTo(274, 273, 259, 287, 243, 287)
+    ..cubicTo(227, 287, 216, 276, 210, 258)
     ..close();
 
   static final Path _path2 = Path()
-    ..moveTo(337, 284)
-    ..cubicTo(371, 275, 391, 293, 392, 313)
-    ..cubicTo(392, 329, 378, 340, 363, 337)
-    ..lineTo(353, 318)
-    ..cubicTo(373, 320, 377, 308, 365, 304)
-    ..lineTo(343, 308)
-    ..close();
+    ..addOval(const Rect.fromLTRB(110, 392, 370, 418));
 
-  static final Paint _paint0 = Paint()..color = const Color(0xFFE8630C);
+  static final Paint _paint0 = Paint()..color = const Color(0x0B112A51);
 
   static final Path _path3 = Path()
-    ..moveTo(344, 286)
-    ..cubicTo(366, 282, 382, 294, 383, 308);
+    ..addOval(const Rect.fromLTRB(133, 396, 347, 414));
 
-  static final Paint _paint1 = Paint()
-    ..color = const Color(0xFFFFBA45)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 8
-    ..strokeCap = StrokeCap.round;
+  static final Paint _paint1 = Paint()..color = const Color(0x11112A51);
 
   static final Path _path4 = Path()
-    ..moveTo(371, 314)
-    ..cubicTo(386, 313, 390, 321, 385, 332)
-    ..cubicTo(381, 344, 366, 351, 354, 345)
-    ..lineTo(348, 328)
-    ..close();
+    ..addOval(const Rect.fromLTRB(167, 399, 313, 409));
 
-  static final Paint _paint2 = Paint()..shader = _white;
+  static final Paint _paint2 = Paint()..color = const Color(0x0F112A51);
 
   static final Path _path5 = Path()
-    ..moveTo(90, 370)
-    ..quadraticBezierTo(94, 359, 112, 356)
-    ..lineTo(349, 342)
-    ..quadraticBezierTo(363, 341, 374, 349)
-    ..lineTo(413, 378)
-    ..quadraticBezierTo(422, 385, 419, 398)
-    ..lineTo(415, 411)
-    ..quadraticBezierTo(413, 418, 401, 421)
-    ..lineTo(144, 446)
-    ..quadraticBezierTo(132, 447, 121, 440)
-    ..lineTo(64, 407)
-    ..quadraticBezierTo(57, 403, 60, 391)
-    ..lineTo(64, 381)
-    ..quadraticBezierTo(67, 373, 90, 370)
+    ..moveTo(152, 263)
+    ..cubicTo(126, 255, 106, 267, 106, 285)
+    ..cubicTo(106, 297, 120, 306, 137, 299)
+    ..lineTo(145, 285)
+    ..cubicTo(126, 292, 119, 285, 125, 279)
+    ..cubicTo(131, 273, 140, 276, 148, 279)
     ..close();
 
-  static final Paint _paint3 = Paint()..shader = _foot;
+  static final Paint _paint3 = Paint()..shader = _armMaterial;
 
   static final Path _path6 = Path()
-    ..moveTo(81, 370)
-    ..lineTo(348, 346)
-    ..quadraticBezierTo(359, 344, 370, 351)
-    ..lineTo(410, 378)
-    ..quadraticBezierTo(418, 385, 404, 389)
-    ..lineTo(146, 415)
-    ..quadraticBezierTo(134, 416, 123, 410)
-    ..lineTo(70, 383)
-    ..quadraticBezierTo(59, 377, 81, 370)
-    ..close();
+    ..moveTo(144, 267)
+    ..cubicTo(126, 264, 114, 273, 115, 283);
 
-  static final Paint _paint4 = Paint()..shader = _base;
-
-  static final Path _path7 = Path()
-    ..moveTo(79, 378)
-    ..lineTo(129, 404)
-    ..quadraticBezierTo(137, 408, 150, 407)
-    ..lineTo(395, 384);
-
-  static final Paint _paint5 = Paint()
-    ..color = const Color(0xB8FFD36D)
+  static final Paint _paint4 = Paint()
+    ..color = const Color(0xFFFFBC50)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 4
     ..strokeCap = StrokeCap.round;
 
+  static final Path _path7 = Path()
+    ..moveTo(328, 263)
+    ..cubicTo(354, 255, 374, 267, 374, 285)
+    ..cubicTo(374, 297, 360, 306, 343, 299)
+    ..lineTo(335, 285)
+    ..cubicTo(354, 292, 361, 285, 355, 279)
+    ..cubicTo(349, 273, 340, 276, 332, 279)
+    ..close();
+
+  static final Paint _paint5 = Paint()..color = const Color(0xFFCE500A);
+
   static final Path _path8 = Path()
-    ..moveTo(126, 419)
-    ..lineTo(124, 433)
-    ..quadraticBezierTo(130, 439, 142, 439)
-    ..lineTo(399, 414);
+    ..moveTo(336, 267)
+    ..cubicTo(354, 264, 366, 273, 365, 283);
 
   static final Paint _paint6 = Paint()
-    ..color = const Color(0x80FFAB39)
+    ..color = const Color(0xFFFA9629)
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 3
+    ..strokeWidth = 4
     ..strokeCap = StrokeCap.round;
 
   static final Path _path9 = Path()
-    ..moveTo(113, 361)
-    ..lineTo(188, 91)
-    ..cubicTo(195, 64, 204, 47, 226, 46)
-    ..cubicTo(244, 45, 253, 59, 262, 82)
-    ..lineTo(365, 351)
-    ..cubicTo(323, 385, 165, 397, 113, 361)
+    ..moveTo(78, 365)
+    ..lineTo(402, 365)
+    ..lineTo(405, 380)
+    ..cubicTo(407, 387, 398, 394, 386, 397)
+    ..cubicTo(305, 421, 175, 421, 94, 397)
+    ..cubicTo(82, 394, 73, 387, 75, 380)
     ..close();
 
-  static final Paint _paint7 = Paint()..shader = _cone;
+  static final Paint _paint7 = Paint()..shader = _baseSide;
 
   static final Path _path10 = Path()
-    ..moveTo(179, 123)
-    ..cubicTo(211, 111, 249, 108, 279, 115)
-    ..lineTo(300, 170)
-    ..cubicTo(251, 162, 201, 176, 161, 189)
+    ..moveTo(131, 311)
+    ..cubicTo(126, 311, 119, 315, 114, 323)
+    ..lineTo(78, 365)
+    ..cubicTo(70, 375, 80, 382, 92, 385)
+    ..cubicTo(174, 407, 306, 407, 388, 385)
+    ..cubicTo(401, 382, 410, 375, 402, 365)
+    ..lineTo(366, 323)
+    ..cubicTo(360, 315, 354, 311, 349, 311)
     ..close();
 
-  static final Paint _paint8 = Paint()..shader = _white;
+  static final Paint _paint8 = Paint()..shader = _baseTop;
 
   static final Path _path11 = Path()
-    ..moveTo(130, 303)
-    ..cubicTo(191, 332, 297, 324, 345, 302)
-    ..lineTo(361, 345)
-    ..cubicTo(302, 375, 171, 382, 117, 348)
+    ..moveTo(83, 375)
+    ..cubicTo(163, 401, 317, 401, 397, 375)
+    ..lineTo(394, 384)
+    ..cubicTo(315, 410, 165, 410, 86, 384)
     ..close();
 
-  static final Paint _paint9 = Paint()..shader = _white;
+  static final Paint _paint9 = Paint()..shader = _baseBevel;
 
   static final Path _path12 = Path()
-    ..moveTo(188, 90)
-    ..cubicTo(196, 66, 207, 53, 222, 52)
-    ..cubicTo(202, 94, 174, 210, 149, 301);
+    ..moveTo(90, 373)
+    ..cubicTo(165, 398, 315, 398, 390, 373);
 
   static final Paint _paint10 = Paint()
-    ..color = const Color(0x61FFFFFF)
+    ..color = const Color(0xC2FFE6A0)
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 5
+    ..strokeWidth = 3.4
     ..strokeCap = StrokeCap.round;
 
   static final Path _path13 = Path()
-    ..moveTo(260, 87)
-    ..lineTo(360, 350);
+    ..moveTo(104, 396)
+    ..cubicTo(176, 415, 300, 416, 375, 397);
 
   static final Paint _paint11 = Paint()
-    ..color = const Color(0x38D94B0A)
+    ..color = const Color(0x8CB94306)
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 9;
+    ..strokeWidth = 2.5
+    ..strokeCap = StrokeCap.round;
 
   static final Path _path14 = Path()
-    ..moveTo(164, 354)
-    ..cubicTo(213, 375, 311, 365, 349, 347);
+    ..addOval(const Rect.fromLTRB(122, 310, 358, 372));
 
-  static final Paint _paint12 = Paint()
-    ..color = const Color(0x70FFFFFF)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 3
-    ..strokeCap = StrokeCap.round;
+  static final Paint _paint12 = Paint()..color = const Color(0x40AD4008);
 
   static final Path _path15 = Path()
-    ..moveTo(200, 74)
-    ..cubicTo(205, 61, 212, 55, 224, 54);
+    ..moveTo(221, 67)
+    ..cubicTo(224, 55, 254, 55, 259, 67)
+    ..lineTo(353, 329)
+    ..cubicTo(359, 350, 302, 367, 240, 367)
+    ..cubicTo(178, 367, 121, 350, 127, 329)
+    ..close();
 
-  static final Paint _paint13 = Paint()
-    ..color = const Color(0xFFFFF0BE)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 4
-    ..strokeCap = StrokeCap.round;
+  static final Paint _paint13 = Paint()..shader = _coneMaterial;
 
   static final Path _path16 = Path()
-    ..moveTo(121, 358)
-    ..cubicTo(172, 387, 306, 381, 358, 353);
+    ..moveTo(221, 67)
+    ..cubicTo(224, 55, 254, 55, 259, 67)
+    ..lineTo(353, 329)
+    ..cubicTo(359, 350, 302, 367, 240, 367)
+    ..cubicTo(178, 367, 121, 350, 127, 329)
+    ..close();
 
-  static final Paint _paint14 = Paint()
-    ..color = const Color(0x85E9680E)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 3
-    ..strokeCap = StrokeCap.round;
+  static final Paint _paint14 = Paint()..shader = _coneLight;
 
   static final Path _path17 = Path()
-    ..moveTo(177, 208)
-    ..cubicTo(182, 193, 194, 183, 209, 183);
+    ..moveTo(251, 71)
+    ..cubicTo(264, 125, 294, 237, 325, 334)
+    ..cubicTo(336, 336, 347, 332, 353, 329)
+    ..lineTo(259, 67)
+    ..close();
 
-  static final Paint _paint15 = Paint()
-    ..color = const Color(0x40B85217)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 13
-    ..strokeCap = StrokeCap.round;
+  static final Paint _paint15 = Paint()..color = const Color(0x26923306);
 
   static final Path _path18 = Path()
-    ..moveTo(177, 203)
-    ..cubicTo(184, 188, 195, 181, 209, 182);
+    ..moveTo(255, 70)
+    ..cubicTo(273, 138, 308, 248, 340, 333)
+    ..lineTo(353, 329)
+    ..lineTo(259, 67)
+    ..close();
 
-  static final Paint _paint16 = Paint()
-    ..color = const Color(0xFF4B2B24)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 11
-    ..strokeCap = StrokeCap.round;
+  static final Paint _paint16 = Paint()..color = const Color(0x147E2A05);
 
   static final Path _path19 = Path()
-    ..moveTo(183, 197)
-    ..cubicTo(190, 188, 199, 185, 207, 185);
+    ..moveTo(203, 119)
+    ..cubicTo(223, 130, 257, 130, 277, 119)
+    ..lineTo(294, 166)
+    ..cubicTo(264, 184, 215, 184, 186, 166)
+    ..close();
 
-  static final Paint _paint17 = Paint()
-    ..color = const Color(0xFF73503A)
+  static final Paint _paint17 = Paint()..shader = _upperStripeMaterial;
+
+  static final Path _path20 = Path()
+    ..moveTo(143, 285)
+    ..cubicTo(182, 308, 297, 308, 337, 285)
+    ..lineTo(350, 321)
+    ..cubicTo(312, 348, 168, 348, 130, 321)
+    ..close();
+
+  static final Paint _paint18 = Paint()..shader = _stripeMaterial;
+
+  static final Path _path21 = Path()
+    ..moveTo(144, 286)
+    ..cubicTo(183, 309, 297, 309, 336, 286);
+
+  static final Paint _paint19 = Paint()
+    ..color = const Color(0xB8FFFFFF)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2;
+
+  static final Path _path22 = Path()
+    ..moveTo(131, 322)
+    ..cubicTo(175, 349, 307, 349, 349, 322);
+
+  static final Paint _paint20 = Paint()
+    ..color = const Color(0x3D6D778E)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.5;
+
+  static final Path _path23 = Path()
+    ..moveTo(202, 120)
+    ..cubicTo(225, 133, 256, 133, 278, 120);
+
+  static final Paint _paint21 = Paint()
+    ..color = const Color(0xA6FFFFFF)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2;
+
+  static final Path _path24 = Path()
+    ..moveTo(186, 167)
+    ..cubicTo(217, 185, 264, 185, 294, 167);
+
+  static final Paint _paint22 = Paint()
+    ..color = const Color(0x57AEBACE)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2;
+
+  static final Path _path25 = Path()
+    ..moveTo(222, 79)
+    ..cubicTo(216, 119, 197, 171, 174, 244)
+    ..cubicTo(171, 254, 165, 256, 166, 244)
+    ..cubicTo(178, 185, 201, 111, 217, 80)
+    ..close();
+
+  static final Paint _paint23 = Paint()..shader = _specular;
+
+  static final Path _path26 = Path()
+    ..moveTo(259, 69)
+    ..lineTo(350, 329);
+
+  static final Paint _paint24 = Paint()
+    ..color = const Color(0x267F2C06)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 5;
+
+  static final Path _path27 = Path()
+    ..moveTo(144, 342)
+    ..cubicTo(188, 366, 296, 365, 337, 343);
+
+  static final Paint _paint25 = Paint()
+    ..color = const Color(0xB2FFCA73)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 3
     ..strokeCap = StrokeCap.round;
 
-  static final Path _path20 = Path()
-    ..moveTo(269, 179)
-    ..cubicTo(277, 170, 289, 170, 297, 177);
+  static final Path _path28 = Path()
+    ..addOval(const Rect.fromLTRB(221, 59, 259, 75));
 
-  static final Paint _paint18 = Paint()
-    ..color = const Color(0xFF4B2B24)
+  static final Paint _paint26 = Paint()..shader = _capMaterial;
+
+  static final Path _path29 = Path()
+    ..moveTo(224, 65)
+    ..cubicTo(231, 60, 244, 59, 252, 63);
+
+  static final Paint _paint27 = Paint()
+    ..color = const Color(0xFFFFF0BF)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.5
+    ..strokeCap = StrokeCap.round;
+
+  static final Path _path30 = Path()
+    ..moveTo(128, 333)
+    ..cubicTo(134, 354, 189, 368, 240, 368)
+    ..cubicTo(291, 368, 346, 354, 352, 333);
+
+  static final Paint _paint28 = Paint()
+    ..color = const Color(0x2E8F3207)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.5
+    ..strokeCap = StrokeCap.round;
+
+  static final Path _path31 = Path()
+    ..addOval(const Rect.fromLTRB(-16, -16, 16, 16));
+
+  static final Paint _paint29 = Paint()..shader = _cheekMaterial;
+
+  static final Path _path32 = Path()
+    ..addOval(const Rect.fromLTRB(-14, -14, 14, 14));
+
+  static final Paint _paint30 = Paint()..shader = _cheekMaterial;
+
+  static final Path _path33 = Path()
+    ..moveTo(186, 196)
+    ..cubicTo(194, 184, 207, 181, 219, 187);
+
+  static final Paint _paint31 = Paint()
+    ..color = const Color(0x5CB34B12)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 10
     ..strokeCap = StrokeCap.round;
 
-  static final Path _path21 = Path()
-    ..moveTo(274, 175)
-    ..cubicTo(280, 172, 286, 172, 291, 174);
+  static final Path _path34 = Path()
+    ..moveTo(188, 192)
+    ..cubicTo(196, 181, 207, 180, 219, 185);
 
-  static final Paint _paint19 = Paint()
-    ..color = const Color(0xFF73503A)
+  static final Paint _paint32 = Paint()
+    ..color = const Color(0xFF69351F)
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 2.5
+    ..strokeWidth = 8
     ..strokeCap = StrokeCap.round;
 
-  static final Path _path22 = Path()
-    ..moveTo(171, 259)
-    ..cubicTo(176, 253, 185, 253, 191, 257);
+  static final Path _path35 = Path()
+    ..moveTo(192, 188)
+    ..cubicTo(200, 182, 208, 183, 214, 184);
 
-  static final Paint _paint20 = Paint()
-    ..color = const Color(0x99F16B24)
+  static final Paint _paint33 = Paint()
+    ..color = const Color(0xFFA76436)
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 6
+    ..strokeWidth = 2.3
     ..strokeCap = StrokeCap.round;
 
-  static final Path _path23 = Path()
-    ..moveTo(299, 243)
-    ..cubicTo(304, 240, 310, 242, 312, 247);
+  static final Path _path36 = Path()
+    ..moveTo(263, 184)
+    ..cubicTo(274, 177, 285, 181, 291, 190);
 
-  static final Paint _paint21 = Paint()
-    ..color = const Color(0xFFE56815)
+  static final Paint _paint34 = Paint()
+    ..color = const Color(0xFF63311F)
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 4
+    ..strokeWidth = 7.5
     ..strokeCap = StrokeCap.round;
 
-  static final Path _path24 = Path()
-    ..moveTo(205, 256)
-    ..cubicTo(232, 269, 268, 263, 294, 246)
-    ..cubicTo(289, 278, 274, 303, 249, 306)
-    ..cubicTo(228, 308, 212, 290, 205, 256)
-    ..close();
+  static final Path _path37 = Path()
+    ..moveTo(266, 182)
+    ..cubicTo(274, 179, 281, 182, 285, 185);
 
-  static final Paint _paint22 = Paint()..shader = _mouth;
-
-  static final Paint _paint23 = Paint()
-    ..color = const Color(0xFFA84519)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 2.5
-    ..strokeJoin = StrokeJoin.round;
-
-  static final Path _path25 = Path()
-    ..moveTo(206, 256)
-    ..cubicTo(233, 267, 267, 262, 294, 246)
-    ..lineTo(289, 260)
-    ..cubicTo(265, 277, 232, 280, 211, 268)
-    ..close();
-
-  static final Paint _paint24 = Paint()..color = const Color(0xFFFFFFFF);
-
-  static final Path _path26 = Path()
-    ..moveTo(225, 300)
-    ..cubicTo(225, 283, 240, 281, 249, 287)
-    ..cubicTo(260, 279, 276, 283, 278, 294)
-    ..lineTo(263, 311)
-    ..lineTo(237, 314)
-    ..close();
-
-  static final Paint _paint25 = Paint()..shader = _tongue;
-
-  static final Path _path27 = Path()
-    ..moveTo(249, 288)
-    ..lineTo(250, 294);
-
-  static final Paint _paint26 = Paint()
-    ..color = const Color(0xFFD63C52)
+  static final Paint _paint35 = Paint()
+    ..color = const Color(0xFF9A5931)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 2
     ..strokeCap = StrokeCap.round;
 
-  static final Path _path28 = Path()
-    ..moveTo(220, 311)
-    ..cubicTo(233, 319, 250, 321, 264, 314);
+  static final Path _path38 = Path()
+    ..moveTo(236, 246)
+    ..cubicTo(240, 249, 246, 249, 250, 245);
 
-  static final Paint _paint27 = Paint()
-    ..color = const Color(0xA6FFD36B)
+  static final Paint _paint36 = Paint()
+    ..color = const Color(0x80C45A15)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.8
+    ..strokeCap = StrokeCap.round;
+
+  static final Path _path39 = Path()
+    ..moveTo(210, 258)
+    ..cubicTo(229, 266, 257, 265, 278, 253)
+    ..cubicTo(274, 273, 259, 287, 243, 287)
+    ..cubicTo(227, 287, 216, 276, 210, 258)
+    ..close();
+
+  static final Paint _paint37 = Paint()..shader = _mouthMaterial;
+
+  static final Paint _paint38 = Paint()
+    ..color = const Color(0xFFAA4717)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5;
+
+  static final Path _path40 = Path()
+    ..moveTo(208, 254)
+    ..cubicTo(228, 265, 259, 263, 281, 250)
+    ..lineTo(276, 260)
+    ..cubicTo(255, 273, 229, 272, 212, 264)
+    ..close();
+
+  static final Paint _paint39 = Paint()..color = const Color(0xFFFFFFFF);
+
+  static final Path _path41 = Path()
+    ..moveTo(226, 285)
+    ..cubicTo(227, 274, 237, 272, 244, 277)
+    ..cubicTo(251, 271, 265, 273, 267, 282)
+    ..lineTo(250, 294)
+    ..close();
+
+  static final Paint _paint40 = Paint()..shader = _tongueMaterial;
+
+  static final Path _path42 = Path()
+    ..moveTo(244, 277)
+    ..lineTo(245, 281);
+
+  static final Paint _paint41 = Paint()
+    ..color = const Color(0xFFD74E64)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5
+    ..strokeCap = StrokeCap.round;
+
+  static final Path _path43 = Path()
+    ..moveTo(211, 257)
+    ..cubicTo(230, 265, 256, 264, 278, 253);
+
+  static final Paint _paint42 = Paint()
+    ..color = const Color(0xFF853A1E)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.6
+    ..strokeCap = StrokeCap.round;
+
+  static final Path _path44 = Path()
+    ..moveTo(226, 290)
+    ..cubicTo(236, 296, 251, 297, 260, 291);
+
+  static final Paint _paint43 = Paint()
+    ..color = const Color(0xA6FFC769)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.8
+    ..strokeCap = StrokeCap.round;
+
+  static final Path _path45 = Path()
+    ..moveTo(204, 256)
+    ..cubicTo(205, 252, 209, 250, 213, 252)
+    ..moveTo(276, 250)
+    ..cubicTo(280, 247, 285, 249, 286, 253);
+
+  static final Paint _paint44 = Paint()
+    ..color = const Color(0xA6B95A19)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2
+    ..strokeCap = StrokeCap.round;
+
+  static final Path _path46 = Path()
+    ..addOval(const Rect.fromLTRB(-27, -31, 27, 35));
+
+  static final Paint _paint45 = Paint()..color = const Color(0x5C983A11);
+
+  static final Path _path47 = Path()
+    ..addOval(const Rect.fromLTRB(-25, -31, 25, 31));
+
+  static final Paint _paint46 = Paint()..shader = _eyeWhite;
+
+  static final Paint _paint47 = Paint()
+    ..color = const Color(0xFF80421F)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.2;
+
+  static final Path _path48 = Path()
+    ..moveTo(-21, -17)
+    ..cubicTo(-13, -31, 6, -35, 20, -20);
+
+  static final Paint _paint48 = Paint()
+    ..color = const Color(0xFFAA591B)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.6
+    ..strokeCap = StrokeCap.round;
+
+  static final Path _path49 = Path()
+    ..addOval(const Rect.fromLTRB(-23, -28, 23, 32));
+
+  static final Paint _paint49 = Paint()..color = const Color(0x52953810);
+
+  static final Path _path50 = Path()
+    ..addOval(const Rect.fromLTRB(-21.5, -28.5, 21.5, 28.5));
+
+  static final Paint _paint50 = Paint()..shader = _eyeWhite;
+
+  static final Paint _paint51 = Paint()
+    ..color = const Color(0xFF78401E)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2;
+
+  static final Path _path51 = Path()
+    ..moveTo(-18, -16)
+    ..cubicTo(-10, -29, 5, -32, 17, -20);
+
+  static final Paint _paint52 = Paint()
+    ..color = const Color(0xFF9D4F18)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.4
+    ..strokeCap = StrokeCap.round;
+
+  static final Path _path52 = Path()
+    ..addOval(const Rect.fromLTRB(-13, -18, 19, 22));
+
+  static final Paint _paint53 = Paint()..shader = _irisMaterial;
+
+  static final Path _path53 = Path()
+    ..addOval(const Rect.fromLTRB(-6.5, -13.5, 12.5, 13.5));
+
+  static final Paint _paint54 = Paint()..shader = _pupilMaterial;
+
+  static final Path _path54 = Path()
+    ..addOval(const Rect.fromLTRB(-7, -14, 3, -2));
+
+  static final Paint _paint55 = Paint()..color = const Color(0xFFFFFFFF);
+
+  static final Path _path55 = Path()
+    ..addOval(const Rect.fromLTRB(7.6, 7.6, 12.4, 12.4));
+
+  static final Paint _paint56 = Paint()..color = const Color(0xFFD6F7FF);
+
+  static final Path _path56 = Path()
+    ..addOval(const Rect.fromLTRB(-12.5, -16.5, 16.5, 20.5));
+
+  static final Paint _paint57 = Paint()..shader = _irisMaterial;
+
+  static final Path _path57 = Path()
+    ..addOval(const Rect.fromLTRB(-6.5, -12.5, 10.5, 12.5));
+
+  static final Paint _paint58 = Paint()..shader = _pupilMaterial;
+
+  static final Path _path58 = Path()
+    ..addOval(const Rect.fromLTRB(-6.5, -13.5, 2.5, -2.5));
+
+  static final Paint _paint59 = Paint()..color = const Color(0xFFFFFFFF);
+
+  static final Path _path59 = Path()
+    ..addOval(const Rect.fromLTRB(6, 7, 10, 11));
+
+  static final Paint _paint60 = Paint()..color = const Color(0xFFD6F7FF);
+
+  static final Path _path60 = Path()
+    ..moveTo(190, 225)
+    ..cubicTo(202, 235, 220, 235, 231, 223);
+
+  static final Path _path61 = Path()
+    ..moveTo(256, 222)
+    ..cubicTo(267, 232, 281, 232, 291, 220);
+
+  static final Path _path62 = Path()
+    ..moveTo(12, -8)
+    ..cubicTo(19, -10, 26, -5, 27, 3)
+    ..lineTo(27, 12)
+    ..cubicTo(20, 19, 13, 20, 7, 14)
+    ..close();
+
+  static final Paint _paint61 = Paint()..color = const Color(0xFFBDCADF);
+
+  static final Path _path63 = Path()
+    ..moveTo(7, -7)
+    ..cubicTo(0, -9, -7, -16, -13, -17)
+    ..cubicTo(-20, -19, -22, -14, -17, -9)
+    ..lineTo(-8, -1)
+    ..cubicTo(-18, -5, -29, -6, -31, -1)
+    ..cubicTo(-33, 4, -24, 7, -17, 10)
+    ..cubicTo(-29, 8, -33, 13, -28, 18)
+    ..cubicTo(-22, 25, -4, 30, 9, 23)
+    ..cubicTo(19, 18, 22, 4, 15, -2)
+    ..close();
+
+  static final Paint _paint62 = Paint()..shader = _gloveMaterial;
+
+  static final Paint _paint63 = Paint()
+    ..color = const Color(0xFFA6B6D0)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1;
+
+  static final Path _path64 = Path()
+    ..moveTo(-8, 9)
+    ..cubicTo(-2, 11, 4, 13, 9, 12)
+    ..moveTo(-9, 18)
+    ..cubicTo(-2, 21, 2, 21, 6, 20);
+
+  static final Paint _paint64 = Paint()
+    ..color = const Color(0xFFB7C5DD)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.8
+    ..strokeCap = StrokeCap.round;
+
+  static final Path _path65 = Path()
+    ..moveTo(-13, -11)
+    ..cubicTo(-8, -10, -4, -6, -1, -3);
+
+  static final Paint _paint65 = Paint()
+    ..color = const Color(0xFFFFFFFF)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 3
     ..strokeCap = StrokeCap.round;
 
-  static final Path _path29 = Path()
-    ..moveTo(206, 256)
-    ..cubicTo(232, 269, 268, 263, 294, 246);
-
-  static final Paint _paint28 = Paint()
-    ..color = const Color(0xFF7A321C)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 3.5
-    ..strokeCap = StrokeCap.round;
-
-  static final Path _path30 = Path()
-    ..addOval(const Rect.fromLTRB(-26, -32, 26, 32));
-
-  static final Paint _paint29 = Paint()..color = const Color(0x409E471C);
-
-  static final Path _path31 = Path()
-    ..addOval(const Rect.fromLTRB(-24, -32, 24, 28));
-
-  static final Paint _paint30 = Paint()..color = const Color(0xFFFFFFFF);
-
-  static final Paint _paint31 = Paint()
-    ..color = const Color(0xFF563026)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 3;
-
-  static final Path _path32 = Path()
-    ..addOval(const Rect.fromLTRB(-16, -20, 16, 20));
-
-  static final Paint _paint32 = Paint()..shader = _iris;
-
-  static final Path _path33 = Path()
-    ..addOval(const Rect.fromLTRB(-10, -16, 10, 12));
-
-  static final Paint _paint33 = Paint()..color = const Color(0xFF142C48);
-
-  static final Path _path34 = Path()
-    ..addOval(const Rect.fromLTRB(-10, -15, 0, -3));
-
-  static final Paint _paint34 = Paint()..color = const Color(0xFFFFFFFF);
-
-  static final Path _path35 = Path()
-    ..addOval(const Rect.fromLTRB(4.3, 5.3, 9.7, 10.7));
-
-  static final Paint _paint35 = Paint()..color = const Color(0xFFBCEEFF);
-
-  static final Path _path36 = Path()
-    ..addOval(const Rect.fromLTRB(-20, -26, 20, 26));
-
-  static final Paint _paint36 = Paint()..color = const Color(0x389E471C);
-
-  static final Path _path37 = Path()
-    ..addOval(const Rect.fromLTRB(-19, -27, 19, 23));
-
-  static final Paint _paint37 = Paint()..color = const Color(0xFFFFFFFF);
-
-  static final Paint _paint38 = Paint()
-    ..color = const Color(0xFF563026)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 2.8;
-
-  static final Path _path38 = Path()
-    ..addOval(const Rect.fromLTRB(-13, -17, 13, 17));
-
-  static final Paint _paint39 = Paint()..shader = _iris;
-
-  static final Path _path39 = Path()
-    ..addOval(const Rect.fromLTRB(-8.5, -14, 8.5, 10));
-
-  static final Paint _paint40 = Paint()..color = const Color(0xFF142C48);
-
-  static final Path _path40 = Path()
-    ..addOval(const Rect.fromLTRB(-8.5, -13, 0.5, -3));
-
-  static final Paint _paint41 = Paint()..color = const Color(0xFFFFFFFF);
-
-  static final Path _path41 = Path()..addOval(const Rect.fromLTRB(3, 5, 7, 9));
-
-  static final Paint _paint42 = Paint()..color = const Color(0xFFBCEEFF);
-
-  static final Path _path42 = Path()
-    ..moveTo(180, 232)
-    ..quadraticBezierTo(200, 246, 221, 230);
-
-  static final Path _path43 = Path()
-    ..moveTo(268, 218)
-    ..quadraticBezierTo(282, 228, 298, 214);
-
-  static final Path _path44 = Path()
-    ..moveTo(129, 300)
-    ..cubicTo(100, 294, 85, 310, 88, 334)
-    ..cubicTo(89, 348, 102, 357, 117, 354)
-    ..lineTo(137, 330)
+  static final Path _path66 = Path()
+    ..moveTo(-12, -8)
+    ..cubicTo(-19, -10, -26, -5, -27, 3)
+    ..lineTo(-27, 12)
+    ..cubicTo(-20, 19, -13, 20, -7, 14)
     ..close();
 
-  static final Paint _paint43 = Paint()..color = const Color(0xFFEB6A13);
+  static final Paint _paint66 = Paint()..color = const Color(0xFFB1C0D9);
 
-  static final Path _path45 = Path()
-    ..moveTo(98, 322)
-    ..quadraticBezierTo(99, 305, 114, 302)
-    ..lineTo(128, 305)
-    ..lineTo(134, 350)
-    ..lineTo(112, 357)
-    ..quadraticBezierTo(101, 350, 98, 337)
+  static final Path _path67 = Path()
+    ..moveTo(-7, -7)
+    ..cubicTo(0, -9, 7, -16, 13, -17)
+    ..cubicTo(20, -19, 22, -14, 17, -9)
+    ..lineTo(8, -1)
+    ..cubicTo(18, -5, 29, -6, 31, -1)
+    ..cubicTo(33, 4, 24, 7, 17, 10)
+    ..cubicTo(29, 8, 33, 13, 28, 18)
+    ..cubicTo(22, 25, 4, 30, -9, 23)
+    ..cubicTo(-19, 18, -22, 4, -15, -2)
     ..close();
 
-  static final Paint _paint44 = Paint()..shader = _white;
+  static final Paint _paint67 = Paint()..shader = _gloveMaterial;
 
-  static final Path _path46 = Path()
-    ..moveTo(116, 309)
-    ..cubicTo(122, 295, 119, 286, 115, 275)
-    ..cubicTo(111, 263, 112, 251, 121, 248)
-    ..cubicTo(132, 244, 142, 257, 145, 271)
-    ..lineTo(149, 289)
-    ..cubicTo(162, 286, 180, 288, 185, 297)
-    ..cubicTo(190, 304, 186, 311, 181, 314)
-    ..cubicTo(192, 317, 194, 326, 188, 333)
-    ..cubicTo(195, 340, 190, 352, 183, 356)
-    ..cubicTo(185, 365, 176, 374, 162, 377)
-    ..lineTo(143, 380)
-    ..cubicTo(123, 381, 109, 370, 107, 355)
-    ..cubicTo(105, 342, 109, 324, 116, 309)
-    ..close();
+  static final Paint _paint68 = Paint()
+    ..color = const Color(0xFFA6B6D0)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1;
 
-  static final Paint _paint45 = Paint()..shader = _glove;
+  static final Path _path68 = Path()
+    ..moveTo(8, 9)
+    ..cubicTo(2, 11, -4, 13, -9, 12)
+    ..moveTo(9, 18)
+    ..cubicTo(2, 21, -2, 21, -6, 20);
 
-  static final Paint _paint46 = Paint()
-    ..color = const Color(0xFFCDD7E8)
+  static final Paint _paint69 = Paint()
+    ..color = const Color(0xFFADBED9)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1.8
-    ..strokeJoin = StrokeJoin.round;
-
-  static final Path _path47 = Path()
-    ..moveTo(150, 311)
-    ..cubicTo(159, 307, 174, 307, 180, 312)
-    ..moveTo(152, 331)
-    ..cubicTo(164, 327, 177, 328, 185, 331)
-    ..moveTo(150, 351)
-    ..cubicTo(163, 347, 176, 348, 183, 352);
-
-  static final Paint _paint47 = Paint()
-    ..color = const Color(0xC7BDCBE2)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 2.5
     ..strokeCap = StrokeCap.round;
 
-  static final Path _path48 = Path()
-    ..moveTo(122, 258)
-    ..cubicTo(128, 260, 132, 270, 133, 279);
+  static final Path _path69 = Path()
+    ..moveTo(13, -11)
+    ..cubicTo(8, -10, 4, -6, 1, -3);
 
-  static final Paint _paint48 = Paint()
+  static final Paint _paint70 = Paint()
     ..color = const Color(0xFFFFFFFF)
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 5
+    ..strokeWidth = 3
     ..strokeCap = StrokeCap.round;
 
-  static final Path _path49 = Path()
-    ..moveTo(116, 329)
-    ..cubicTo(112, 348, 118, 363, 133, 367);
-
-  static final Paint _paint49 = Paint()
-    ..color = const Color(0xFFFFFFFF)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 4
-    ..strokeCap = StrokeCap.round;
-
-  static void drawRearArm(Canvas canvas) {
+  static void drawGroundShadow(Canvas canvas) {
     canvas.drawPath(_path2, _paint0);
     canvas.drawPath(_path3, _paint1);
     canvas.drawPath(_path4, _paint2);
   }
 
-  static void drawBody(Canvas canvas) {
+  static void drawRearArmLeft(Canvas canvas) {
     canvas.drawPath(_path5, _paint3);
     canvas.drawPath(_path6, _paint4);
+  }
+
+  static void drawRearArmRight(Canvas canvas) {
     canvas.drawPath(_path7, _paint5);
     canvas.drawPath(_path8, _paint6);
+  }
+
+  static void drawBody(Canvas canvas) {
     canvas.drawPath(_path9, _paint7);
-    canvas.save();
-    canvas.clipPath(_path0);
     canvas.drawPath(_path10, _paint8);
     canvas.drawPath(_path11, _paint9);
     canvas.drawPath(_path12, _paint10);
     canvas.drawPath(_path13, _paint11);
     canvas.drawPath(_path14, _paint12);
-    canvas.restore();
     canvas.drawPath(_path15, _paint13);
+    canvas.save();
+    canvas.clipPath(_path0);
     canvas.drawPath(_path16, _paint14);
-  }
-
-  static void drawFace(Canvas canvas) {
     canvas.drawPath(_path17, _paint15);
     canvas.drawPath(_path18, _paint16);
     canvas.drawPath(_path19, _paint17);
@@ -578,78 +847,124 @@ abstract final class ConeMascotArt {
     canvas.drawPath(_path22, _paint20);
     canvas.drawPath(_path23, _paint21);
     canvas.drawPath(_path24, _paint22);
-    canvas.drawPath(_path24, _paint23);
+    canvas.drawPath(_path25, _paint23);
+    canvas.drawPath(_path26, _paint24);
+    canvas.drawPath(_path27, _paint25);
+    canvas.restore();
+    canvas.drawPath(_path28, _paint26);
+    canvas.drawPath(_path29, _paint27);
+    canvas.drawPath(_path30, _paint28);
+  }
+
+  static void drawFace(Canvas canvas) {
+    canvas.save();
+    canvas.translate(180, 253);
+    canvas.drawPath(_path31, _paint29);
+    canvas.restore();
+    canvas.save();
+    canvas.translate(301, 249);
+    canvas.drawPath(_path32, _paint30);
+    canvas.restore();
+    canvas.drawPath(_path33, _paint31);
+    canvas.drawPath(_path34, _paint32);
+    canvas.drawPath(_path35, _paint33);
+    canvas.drawPath(_path36, _paint34);
+    canvas.drawPath(_path37, _paint35);
+    canvas.drawPath(_path38, _paint36);
+    canvas.drawPath(_path39, _paint37);
+    canvas.drawPath(_path39, _paint38);
     canvas.save();
     canvas.clipPath(_path1);
-    canvas.drawPath(_path25, _paint24);
-    canvas.drawPath(_path26, _paint25);
-    canvas.drawPath(_path27, _paint26);
+    canvas.drawPath(_path40, _paint39);
+    canvas.drawPath(_path41, _paint40);
+    canvas.drawPath(_path42, _paint41);
     canvas.restore();
-    canvas.drawPath(_path28, _paint27);
-    canvas.drawPath(_path29, _paint28);
+    canvas.drawPath(_path43, _paint42);
+    canvas.drawPath(_path44, _paint43);
+    canvas.drawPath(_path45, _paint44);
   }
 
   static void drawEyeLeft(Canvas canvas) {
     canvas.save();
-    canvas.translate(201, 232);
-    canvas.drawPath(_path30, _paint29);
-    canvas.drawPath(_path31, _paint30);
-    canvas.drawPath(_path31, _paint31);
-    canvas.save();
-    canvas.translate(5, -1);
-    canvas.drawPath(_path32, _paint32);
-    canvas.drawPath(_path33, _paint33);
-    canvas.drawPath(_path34, _paint34);
-    canvas.drawPath(_path35, _paint35);
-    canvas.restore();
+    canvas.translate(211, 224);
+    canvas.drawPath(_path46, _paint45);
+    canvas.drawPath(_path47, _paint46);
+    canvas.drawPath(_path47, _paint47);
+    canvas.drawPath(_path48, _paint48);
     canvas.restore();
   }
 
   static void drawEyeRight(Canvas canvas) {
     canvas.save();
-    canvas.translate(283, 218);
-    canvas.drawPath(_path36, _paint36);
-    canvas.drawPath(_path37, _paint37);
-    canvas.drawPath(_path37, _paint38);
-    canvas.save();
-    canvas.translate(3, -1);
-    canvas.drawPath(_path38, _paint39);
-    canvas.drawPath(_path39, _paint40);
-    canvas.drawPath(_path40, _paint41);
-    canvas.drawPath(_path41, _paint42);
+    canvas.translate(273, 222);
+    canvas.drawPath(_path49, _paint49);
+    canvas.drawPath(_path50, _paint50);
+    canvas.drawPath(_path50, _paint51);
+    canvas.drawPath(_path51, _paint52);
     canvas.restore();
+  }
+
+  static void drawPupilLeft(Canvas canvas) {
+    canvas.save();
+    canvas.translate(211, 224);
+    canvas.drawPath(_path52, _paint53);
+    canvas.drawPath(_path53, _paint54);
+    canvas.drawPath(_path54, _paint55);
+    canvas.drawPath(_path55, _paint56);
+    canvas.restore();
+  }
+
+  static void drawPupilRight(Canvas canvas) {
+    canvas.save();
+    canvas.translate(273, 222);
+    canvas.drawPath(_path56, _paint57);
+    canvas.drawPath(_path57, _paint58);
+    canvas.drawPath(_path58, _paint59);
+    canvas.drawPath(_path59, _paint60);
     canvas.restore();
   }
 
   static void drawLidLeft(Canvas canvas, double opacity) {
     canvas.drawPath(
-      _path42,
+      _path60,
       Paint()
-        ..color = const Color(0xFF563026).withValues(alpha: opacity)
+        ..color = const Color(0xFF80421F).withValues(alpha: opacity)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 5
+        ..strokeWidth = 4.5
         ..strokeCap = StrokeCap.round,
     );
   }
 
   static void drawLidRight(Canvas canvas, double opacity) {
     canvas.drawPath(
-      _path43,
+      _path61,
       Paint()
-        ..color = const Color(0xFF563026).withValues(alpha: opacity)
+        ..color = const Color(0xFF78401E).withValues(alpha: opacity)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 5
+        ..strokeWidth = 4
         ..strokeCap = StrokeCap.round,
     );
   }
 
-  static void drawThumb(Canvas canvas) {
-    canvas.drawPath(_path44, _paint43);
-    canvas.drawPath(_path45, _paint44);
-    canvas.drawPath(_path46, _paint45);
-    canvas.drawPath(_path46, _paint46);
-    canvas.drawPath(_path47, _paint47);
-    canvas.drawPath(_path48, _paint48);
-    canvas.drawPath(_path49, _paint49);
+  static void drawGloveLeft(Canvas canvas) {
+    canvas.save();
+    canvas.translate(126, 294);
+    canvas.drawPath(_path62, _paint61);
+    canvas.drawPath(_path63, _paint62);
+    canvas.drawPath(_path63, _paint63);
+    canvas.drawPath(_path64, _paint64);
+    canvas.drawPath(_path65, _paint65);
+    canvas.restore();
+  }
+
+  static void drawGloveRight(Canvas canvas) {
+    canvas.save();
+    canvas.translate(354, 294);
+    canvas.drawPath(_path66, _paint66);
+    canvas.drawPath(_path67, _paint67);
+    canvas.drawPath(_path67, _paint68);
+    canvas.drawPath(_path68, _paint69);
+    canvas.drawPath(_path69, _paint70);
+    canvas.restore();
   }
 }

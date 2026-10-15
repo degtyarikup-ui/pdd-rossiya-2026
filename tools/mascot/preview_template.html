@@ -11,10 +11,14 @@
   header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; }
   h1 { font-size: 24px; font-weight: 650; letter-spacing: -.6px; margin: 0; }
   .label { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #778298; }
-  .stage { display: grid; place-items: center; margin: 26px 0 20px; min-height: 400px; border-radius: 28px; transition: background .2s; background: #eef3fb; }
+  .stage { display: grid; justify-items: center; align-content: center; margin: 26px 0 20px; min-height: 440px; padding: 16px 0 28px; border-radius: 28px; transition: background .2s; background: #eef3fb; --activity: #0574f8; --activity-light: #9dd9ff; --activity-dark: #0456b5; }
   .stage[data-theme="dark"] { background: #181b22; }
-  .stage[data-theme="brand"] { background: #0574f8; }
-  .stage svg { width: min(360px, 100%); height: auto; overflow: visible; }
+  .stage[data-theme="brand"] { background: #0574f8; --activity: #cee8ff; --activity-light: #fff; --activity-dark: #8bc8ff; }
+  .stage[data-theme="dark"] { --activity: #55aaff; --activity-light: #d4efff; --activity-dark: #2983dd; }
+  .stage svg { width: min(380px, 100%); height: auto; overflow: visible; }
+  .status { color: #405476; font-size: 15px; font-weight: 500; margin-top: 2px; }
+  .stage[data-theme="dark"] .status { color: #b9c8df; }
+  .stage[data-theme="brand"] .status { color: #fff; }
   .controls, .themes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .controls { justify-content: space-between; }
   button { font: inherit; font-size: 14px; border: 0; background: #e9edf3; color: #33435b; padding: 11px 16px; border-radius: 12px; cursor: pointer; min-height: 44px; }
@@ -27,9 +31,10 @@
   @media (max-width: 450px) { body { padding: 22px 16px; } .stage { min-height: 330px; } .small { gap: 18px; } }
 </style>
 <main>
-  <header><h1>Маленький помощник</h1><span class="label">ПДД Россия · вектор</span></header>
-  <div class="stage" data-theme="light" role="img" aria-label="Конус мягко покачивается, показывает большой палец, моргает и подмигивает.">
+  <header><h1>Конус в деле</h1><span class="label">ПДД Россия · объёмный вектор</span></header>
+  <div class="stage" data-theme="light" role="img" aria-label="Идёт загрузка: синяя дуга непрерывно бежит вокруг объёмного конуса, который пружинит, следит за ней глазами и двигает ладонями.">
     <!-- MASCOT -->
+    <div class="status">Загружаем приложение</div>
   </div>
   <div class="controls">
     <div class="themes" aria-label="Фон">
@@ -40,11 +45,11 @@
     <button id="pause" type="button" aria-pressed="false">Пауза</button>
   </div>
   <div class="small" aria-label="Проверка читаемости в размере загрузчика">
-    <div class="sample" data-size="72"><span>72 px</span></div>
-    <div class="sample" data-size="112"><span>112 px</span></div>
+    <div class="sample" data-size="96"><span>96 px</span></div>
     <div class="sample" data-size="144"><span>144 px</span></div>
+    <div class="sample" data-size="192"><span>192 px</span></div>
   </div>
-  <p>Плавный цикл 6 секунд · дыхание и покачивание · жест поддержки · моргание и подмигивание<br>Прозрачный фон · без растровых текстур, фильтров и внешних ресурсов</p>
+  <p>Орбита 1,6 с · два пружинистых движения за 3,2 с · взгляд следит за огоньками<br>Чистый вектор · прозрачный фон · без растровых текстур, фильтров и 3D-движка</p>
 </main>
 <script>
   const stage = document.querySelector('.stage');
@@ -76,8 +81,12 @@
     copy.querySelector('style').remove();
     copy.style.width = sample.dataset.size + 'px';
     copy.style.height = sample.dataset.size + 'px';
+    copy.style.setProperty('--preview-scale', sample.dataset.size / 480);
     sample.prepend(copy);
   });
+  new ResizeObserver(entries => {
+    for (const entry of entries) entry.target.style.setProperty('--preview-scale', entry.contentRect.width / 480);
+  }).observe(stage.querySelector('svg'));
   document.addEventListener('visibilitychange', () => {
     document.querySelectorAll('svg').forEach(svg => svg.classList.toggle('paused', document.hidden || pause.getAttribute('aria-pressed') === 'true'));
   });

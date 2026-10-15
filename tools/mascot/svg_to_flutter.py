@@ -74,16 +74,51 @@ def main() -> None:
     paint_count = 0
     clips = {}
 
-    for gradient in definitions.findall(NS + "linearGradient"):
+    for gradient in definitions:
+        gradient_kind = gradient.tag.removeprefix(NS)
+        if gradient_kind not in ("linearGradient", "radialGradient"):
+            continue
+        if gradient.attrib.get("gradientUnits") != "userSpaceOnUse":
+            raise ValueError("Mascot gradients must use userSpaceOnUse")
+        if "gradientTransform" in gradient.attrib:
+            raise ValueError("Gradient transforms are not in the mascot SVG subset")
         gradient_id = gradient.attrib["id"]
         stops = gradient.findall(NS + "stop")
-        colors = ", ".join(color(stop.attrib["stop-color"]) for stop in stops)
-        offsets = ", ".join(number(stop.attrib.get("offset", "0")) for stop in stops)
+        colors = ", ".join(
+            color(stop.attrib["stop-color"], float(stop.attrib.get("stop-opacity", "1")))
+            for stop in stops
+        )
+        offsets = []
+        for stop in stops:
+            offset = stop.attrib.get("offset", "0")
+            offsets.append(number(float(offset[:-1]) / 100 if offset.endswith("%") else offset))
+        parameters = [f"    [{colors}],", f"    [{', '.join(offsets)}],"]
+        if gradient_kind == "linearGradient":
+            constructor = "linear"
+            geometry = [
+                f"    const Offset({number(gradient.attrib['x1'])}, {number(gradient.attrib['y1'])}),",
+                f"    const Offset({number(gradient.attrib['x2'])}, {number(gradient.attrib['y2'])}),",
+            ]
+        else:
+            constructor = "radial"
+            cx = gradient.attrib["cx"]
+            cy = gradient.attrib["cy"]
+            geometry = [
+                f"    const Offset({number(cx)}, {number(cy)}),",
+                f"    {number(gradient.attrib['r'])},",
+            ]
+            if "fx" in gradient.attrib or "fy" in gradient.attrib:
+                fx = gradient.attrib.get("fx", cx)
+                fy = gradient.attrib.get("fy", cy)
+                # Flutter takes focal positionally after tileMode and matrix.
+                parameters.extend([
+                    "    TileMode.clamp,",
+                    "    null,",
+                    f"    const Offset({number(fx)}, {number(fy)}),",
+                ])
         fields.append(
-            f"  static final ui.Shader _{gradient_id} = ui.Gradient.linear(\n"
-            f"    const Offset({number(gradient.attrib['x1'])}, {number(gradient.attrib['y1'])}),\n"
-            f"    const Offset({number(gradient.attrib['x2'])}, {number(gradient.attrib['y2'])}),\n"
-            f"    [{colors}],\n    [{offsets}],\n  );"
+            f"  static final ui.Shader _{gradient_id} = ui.Gradient.{constructor}(\n"
+            + "\n".join(geometry + parameters) + "\n  );"
         )
 
     def add_path(element: ET.Element) -> str:
