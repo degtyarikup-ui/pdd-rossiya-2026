@@ -3385,7 +3385,8 @@
       5.25,
       -47.5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.19,
    "halfWidth": 1.023,
@@ -3435,7 +3436,10 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": "straight",
+   "hazards": false
   }
  ],
  "playerPlacement": "street",
@@ -3454,7 +3458,11 @@
     0.5
    ],
    "yaw": -1.571,
-   "gesture": "down"
+   "gesture": "down",
+   "afterAnswer": {
+    "gesture": "forward",
+    "yaw": 1.571
+   }
   }
  ]
 }

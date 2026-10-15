@@ -304,8 +304,12 @@ class Signals extends Node:
 ## A traffic controller standing at a junction in one of his signals (the mini-game's model).
 static func officer(gesture: String) -> Node3D:
 	var o := RegulatorOfficer.new()
-	var g := {"down": RegulatorRules.Gesture.HANDS_DOWN, "sides": RegulatorRules.Gesture.HANDS_SIDES,
-		"forward": RegulatorRules.Gesture.RIGHT_ARM_FORWARD, "up": RegulatorRules.Gesture.ARM_UP}
-	o.cur_gesture = g.get(gesture, RegulatorRules.Gesture.HANDS_SIDES)
+	o.cur_gesture = officer_gesture(gesture)
 	o.cur_approach = RegulatorRules.Approach.FRONT
 	return o
+
+
+static func officer_gesture(gesture: String) -> RegulatorRules.Gesture:
+	var gestures := {"down": RegulatorRules.Gesture.HANDS_DOWN, "sides": RegulatorRules.Gesture.HANDS_SIDES,
+		"forward": RegulatorRules.Gesture.RIGHT_ARM_FORWARD, "up": RegulatorRules.Gesture.ARM_UP}
+	return gestures.get(gesture, RegulatorRules.Gesture.HANDS_SIDES)

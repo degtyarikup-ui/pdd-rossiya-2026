@@ -328,9 +328,29 @@ func release() -> void:
 	if released:
 		return
 	released = true
+	_release_officers()
 	if situation.lights.size() and _light_state() != "flashing_yellow" and not data.get("redWait"):
 		set_lights("green")
 	_plan_traffic()
+
+
+## Keep the question's initial signal until the answer, then animate its authored permission.
+func _release_officers() -> void:
+	var source: Dictionary = situation.network.data if situation.network else data
+	var officers: Array = source.get("officers", [])
+	for i in mini(officers.size(), situation.officers.size()):
+		var node := situation.officers[i]
+		if not is_instance_valid(node) or node.get_meta("knocked_down", false):
+			continue
+		var officer := node as RegulatorOfficer
+		var after: Variant = officers[i].get("afterAnswer")
+		if officer == null or not after is Dictionary:
+			continue
+		if after.has("gesture"):
+			officer.set_pose(Fleet.officer_gesture(str(after.gesture)))
+		if after.has("yaw"):
+			# The node keeps its authored transform; animate the body relative to it.
+			officer.target_body_yaw = angle_difference(officer.rotation.y, float(after.yaw))
 
 
 func _light_state() -> String:
@@ -348,6 +368,7 @@ func _ordered() -> Array:
 ## resolveSituationAnimation: the player's own pass. `player_path` is the
 ## planned route (exits[maneuver]) for the conflict test.
 func resolve(player: Drive) -> void:
+	_release_officers()
 	var yields: Array = spec.yieldTo
 	var yielding := motions.filter(func(m): return m.id in yields)
 	resolution = { "yielding": yielding, "faults": {}, "elapsed": 0.0, "recovery": 0.0 }

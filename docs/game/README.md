@@ -90,6 +90,7 @@ godot --headless --path game_godot --script res://tests/participant_motion_check
 godot --headless --path game_godot --script res://tests/participant_lifetime_check.gd # наезд: реальное удаление модели через 20 секунд, старые участники и подписи
 godot --headless --path game_godot --script res://tests/answer_traffic_check.gd # порядок старта после ответа, ожидание игрока, holdFor и движение после завершения вопроса
 godot --headless --path game_godot --script res://tests/answer_traffic_world_check.gd # реальные сцены: проезд игрока, перебазирование мира и отъезд участников
+godot --headless --path game_godot --script res://tests/officer_answer_check.gd # 31·13: смена жеста и ориентации регулировщика сразу после ответа
 godot --headless --path game_godot --script res://tests/tram_tracks_check.gd # автоматические пути, полный кузов, декорации, проёмы и сохранность исходных сцен
 godot --headless --path game_godot --script res://tests/tram_motion_check.gd # трамвай тормозит перед людьми/машинами и остаётся на рельсах
 godot --headless --path game_godot --script res://tests/tram_world_check.gd # препятствия мира, сохранённая улица, повернутые ограды и кеш проверок

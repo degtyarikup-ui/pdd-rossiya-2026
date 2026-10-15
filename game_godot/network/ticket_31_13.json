@@ -4141,7 +4141,11 @@
     0.5
    ],
    "yaw": -1.571,
-   "gesture": "down"
+   "gesture": "down",
+   "afterAnswer": {
+    "gesture": "forward",
+    "yaw": 1.571
+   }
   }
  ],
  "questionView": {
