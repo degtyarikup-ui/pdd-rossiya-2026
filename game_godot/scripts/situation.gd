@@ -71,7 +71,7 @@ static func prepare(situation_id: String, on_done: Callable) -> void:
 		_native_prepare(situation_id, on_done)
 		return
 	var dir := "res://situations/%s/" % situation_id
-	var first: Array = [dir + "scene.json", dir + "scene.glb"]
+	var first: Array = [dir + "scene.json"]
 	if not FileAccess.file_exists("res://network/%s.json" % situation_id):
 		first.append(dir + "road.png")   # the mask: only for a scene without a network
 	PackFiles.fetch_all(first, func(ok: bool):
@@ -84,6 +84,7 @@ static func prepare(situation_id: String, on_done: Callable) -> void:
 			return
 		# Required: the lights and participants the scene names (they must be here).
 		var more: Array = []
+		if not data.get("procedural", false): more.append(dir + "scene.glb")
 		for i in data.lights.size():
 			if not TrafficSignal.supports(data.lights[i]): more.append(dir + "light_%d.glb" % i)
 		for i in data.actors.size():
@@ -122,6 +123,11 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 	return load_scene_staged.call(situation_id, scenery)
 
 
+## New editor questions start from their network alone, without inherited scenery.
+static func _baked_geometry(scene_data: Dictionary, directory: String) -> Node3D:
+	return Node3D.new() if scene_data.get("procedural", false) else PackFiles.instance(directory + "scene.glb")
+
+
 static func load_scene_staged(situation_id: String, scenery: Scenery, frames: SceneTree = null, staging_parent: Node = null) -> Situation:
 	if frames != null and Host.is_exiting(frames): return null
 	var s := Situation.new()
@@ -140,7 +146,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			s.data[key] = 8.4 if key == "approachW" else (4.2 if key.begins_with("kerb") else 1.8)
 	if not s.data.has("exitWidths") or not (s.data.exitWidths is Dictionary):
 		s.data["exitWidths"] = {}
-	var scene: Node3D = PackFiles.instance(dir + "scene.glb")
+	var scene: Node3D = _baked_geometry(s.data, dir)
 	s._baked_scene = scene
 	# Attach immediately: cancelling during a mesh job must also free this GLB node tree.
 	s.add_child(scene)
@@ -1051,7 +1057,8 @@ static func _native_prepare(situation_id: String, on_done: Callable) -> void:
 	if not d is Dictionary:
 		if on_done.is_valid(): on_done.call(false)
 		return
-	var paths: Array[String] = [dir + "scene.glb"]
+	var paths: Array[String] = []
+	if not d.get("procedural", false): paths.append(dir + "scene.glb")
 	for i in d.lights.size():
 		if not TrafficSignal.supports(d.lights[i]): paths.append(dir + "light_%d.glb" % i)
 	for i in d.actors.size():

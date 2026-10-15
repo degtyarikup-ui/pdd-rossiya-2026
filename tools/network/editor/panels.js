@@ -15,6 +15,7 @@
     if (!only) Tools.renderBar();
   };
   App.setLeftTab = (name) => {
+    if (name !== "scenes" && typeof QuestionReview !== "undefined") QuestionReview.close();
     state.ltab = name;
     if (name !== "textures") state.texSel = null;
     document.querySelectorAll("[data-ltab]").forEach((b) => b.classList.toggle("on", b.dataset.ltab === name));
@@ -38,8 +39,7 @@
   }
 
   // ---- scenes --------------------------------------------------------------------------------
-  const REVIEW_GROUP = "unmarked-2026-10-15";
-  const FILTERS = [["all", "Все"], ["game", "В игре"], ["review", "На просмотр"], ["err", "С ошибками"]];
+  const FILTERS = [["all", "Все"], ["game", "В игре"], ["err", "С ошибками"], ["questions", "Вопросы"]];
   const FILTER_STORAGE = "network-editor-scene-filter";
   const linkedFilter = new URLSearchParams(location.search).get("filter");
   try {
@@ -54,56 +54,69 @@
       if (state.section === "regulator") return true;
       if (q && !(s.id.includes(q.replace(/\s+/g, "_")) || App.sceneTitle(s.id).toLowerCase().includes(q) || (s.questionText || "").toLowerCase().includes(q))) return false;
       if (filter === "game") return s.playable;
-      if (filter === "review") return s.reviewGroup === REVIEW_GROUP;
       if (filter === "err") return s.errors > 0;
       if (filter === "plan") return s.layout;
       return true;
     });
   }
   const thumbUrl = (s) => s.preview ? `/preview/${s.id}.png?v=${App.thumbRev[s.id] || 0}` : "";
-  const reviewNote = () => filter === "review" ? `<p class="muted">Сцены без прежней отметки «В игре». Просмотрите их и включите нужные. Список сохраняется после включения.</p>` : "";
   function scenesPane() {
-    const list = filtered();
-    return `${state.section === "regulator" ? `<div class="pane-head"><p>Сцена мини-игры. Объекты и разметка редактируются на виде.</p></div>` : `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="scene-q" placeholder="Билет, например 10 13" value="${esc(query)}"></label>
-      <div class="chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t} <em>${count(k)}</em></button>`).join("")}</div>${reviewNote()}</div>`}
-      <div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${s.id}">
+    const questions = filter === "questions" && state.section !== "regulator";
+    const list = questions ? [] : filtered();
+    return `${state.section === "regulator" ? `<div class="pane-head"><p>Сцена мини-игры. Объекты и разметка редактируются на виде.</p></div>` : `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="scene-q" placeholder="Билет или слова из вопроса" value="${esc(query)}"></label>
+      <div class="chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t} <em>${count(k)}</em></button>`).join("")}</div></div>`}
+      ${questions ? QuestionReview.sidebarHtml(query) : `<div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${s.id}">
         <span class="scene-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : ""}</span>
         <span class="scene-text"><b>${esc(App.sceneTitle(s.id))}</b>
-        <span class="badges">${badges(s)}</span></span></button>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`;
+        <span class="badges">${badges(s)}</span></span></button>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`}`;
   }
   function badges(s) {
     const out = [];
     if (s.errors) out.push(`<i class="badge bad">${ic("error")}${s.errors}</i>`);
     if (s.playable) out.push(`<i class="badge good">${ic("gamepad")}в игре</i>`);
-    if (s.reviewGroup === REVIEW_GROUP) out.push(`<i class="badge">на просмотр</i>`);
     if (s.regulator) out.push(`<i class="badge">регулировщик</i>`);
     return out.join("");
   }
 
   // The home screen: the same scenes, big.
   App.renderHome = () => {
-    const list = filtered();
+    const questions = filter === "questions";
+    const list = questions ? [] : filtered();
     $("#home-screen").innerHTML = `<div class="home-head">
-        <div><h1>Сцены игры</h1><p>${count("all")} перекрёстков из билетов · в игре ${count("game")}</p></div>
+        <div><h1>${questions ? "Вопросы для игры" : "Сцены игры"}</h1><p>${questions ? "Выберите, какие вопросы реализуем в следующих сценах" : `${count("all")} перекрёстков из билетов · в игре ${count("game")}`}</p></div>
         <label class="search big">${ic("search")}<input type="search" id="home-q" placeholder="Номер билета или слова из вопроса" value="${esc(query)}"></label>
         ${state.S ? `<button class="btn ghost" id="home-back">${ic("x")}Вернуться к сцене</button>` : ""}
       </div>
       <div class="chips home-chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t} <em>${count(k)}</em></button>`).join("")}</div>
-      ${reviewNote()}
-      <div class="home-grid">${list.map((s) => `<button class="card-scene" data-scene="${s.id}">
+      ${questions ? QuestionReview.homeHtml(query) : `<div class="home-grid">${list.map((s) => `<button class="card-scene" data-scene="${s.id}">
         <span class="card-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : `<span class="no-pic">${ic("image")}</span>`}</span>
         <span class="card-body"><b>${esc(App.sceneTitle(s.id))}</b><span class="badges">${badges(s)}</span></span>
-      </button>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`;
+      </button>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`}`;
     const q = $("#home-q");
     if (renderHome.focus) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
     renderHome.focus = false;
   };
   const renderHome = App.renderHome;
-  const count = (k) => state.scenes.filter((s) => s.id !== "mini_regulator" && (k === "all" || (k === "game" && s.playable) || (k === "review" && s.reviewGroup === REVIEW_GROUP) || (k === "err" && s.errors) || (k === "plan" && s.layout))).length;
+  const count = (k) => k === "questions" ? (state.questions || []).length : state.scenes.filter((s) => s.id !== "mini_regulator" && (k === "all" || (k === "game" && s.playable) || (k === "err" && s.errors))).length;
+  App.sceneFilter = () => filter;
+  App.setSceneFilter = (next) => {
+    if (!FILTERS.some(([key]) => key === next)) return;
+    filter = next;
+    try { localStorage.setItem(FILTER_STORAGE, filter); } catch (_) { /* Optional preference. */ }
+    renderLeft();
+    if (!$("#home-screen").hidden) App.renderHome();
+  };
+  App.showQuestions = (id) => {
+    state.section = "city";
+    App.setLeftTab("scenes");
+    App.setSceneFilter("questions");
+    return QuestionReview.open(id);
+  };
 
   document.addEventListener("input", (e) => {
     if (e.target.id === "scene-q" || e.target.id === "home-q") {
       query = e.target.value;
+      if (typeof QuestionReview !== "undefined") QuestionReview.setQuery(query);
       if (e.target.id === "home-q") { renderHome.focus = true; App.renderHome(); } else { renderLeft.focus = true; renderLeft(); }
     }
     if (e.target.id === "lib-q") { libQuery = e.target.value; renderLeft.focus = true; renderLeft(); }
@@ -111,9 +124,10 @@
   document.addEventListener("click", (e) => {
     const f = e.target.closest("[data-filter]");
     if (f) {
-      filter = f.dataset.filter;
-      try { localStorage.setItem(FILTER_STORAGE, filter); } catch (_) { /* Optional browser preference. */ }
-      renderLeft(); if (!$("#home-screen").hidden) App.renderHome(); return;
+      App.setSceneFilter(f.dataset.filter);
+      if (filter === "questions") QuestionReview.open().catch(err => App.toast(err.message, "bad"));
+      else if (typeof QuestionReview !== "undefined") QuestionReview.close();
+      return;
     }
     const sc = e.target.closest("[data-scene]");
     if (sc) { App.openScene(sc.dataset.scene).catch((err) => App.toast(err.message, "bad")); return; }

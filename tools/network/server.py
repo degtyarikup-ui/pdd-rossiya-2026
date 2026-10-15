@@ -9,6 +9,8 @@ the invariants (check.py), rebuilds the surfaces (build.py) and writes the game'
 result while it is being edited. A save keeps the file's own number format (90.0 stays 90.0), so
 git shows only what was changed.
 """
+from __future__ import annotations
+
 import json
 import re
 import shutil
@@ -25,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import build  # noqa: E402
 import check  # noqa: E402
 import engine_sync  # noqa: E402
+import question_pool  # noqa: E402
 
 HERE = Path(__file__).parent
 EDITOR = HERE / "editor"
@@ -38,6 +41,7 @@ DETAIL = GAME / "textures" / "detail"
 FONTS = check.ROOT / "assets" / "fonts"
 QUESTIONS = check.ROOT / "assets" / "countries" / "ru" / "questions"
 IMAGES = check.ROOT / "assets" / "countries" / "ru" / "images"
+QUESTION_POOL = question_pool.QuestionPool(QUESTIONS, NET, IMAGES)
 ID = re.compile(r"^[a-z0-9_]+$")
 # The triangulation library keeps global state and crashes when two threads use it at once, and the
 # geometry code (shapely, triangle) is not made for parallel use from here: every request that loads or
@@ -61,21 +65,8 @@ GODOT_RUN = {"proc": None}   # the game window the editor opened last (one at a 
 
 
 def ticket_question(sid: str):
-    """The original ticket question of ticket_N_M: its picture, text, answers and comment (verbatim)."""
-    m = re.match(r"^ticket_(\d+)_(\d+)$", sid)
-    if not m:
-        return None
-    for cat in ("ab", "cd"):
-        path = QUESTIONS / f"questions_{cat}.json"
-        if not path.exists():
-            continue
-        tickets = json.loads(path.read_text(encoding="utf-8"))["tickets"]
-        n, k = int(m[1]), int(m[2])
-        if 1 <= n <= len(tickets) and 1 <= k <= len(tickets[n - 1]["questions"]):
-            q = tickets[n - 1]["questions"][k - 1]
-            return {"ticket": n, "number": k, "category": cat, "question": q["question"],
-                    "answers": q["answers"], "comment": q.get("comment", ""), "image": q.get("image")}
-    return None
+    """The canonical exam source, preserving genuine C/D wording and illustrations."""
+    return QUESTION_POOL.source(sid)
 
 
 def removed_items(old: dict, new: dict) -> list:
@@ -124,9 +115,9 @@ def keep_history(sid: str, keep: int = 30) -> None:
         old.unlink()
 
 
-def source_image(image: str):
-    for cat in ("questions_ab", "questions_cd"):
-        f = IMAGES / cat / f"{image}.webp"
+def source_image(image: str, category: str | None = None):
+    for cat in ([category] if category else ("ab", "cd")):
+        f = IMAGES / f"questions_{cat}" / f"{image}.webp"
         if f.exists():
             return f
     return None
@@ -358,6 +349,10 @@ class Handler(BaseHTTPRequestHandler):
         if m:
             f = source_image(m[1])
             return self.file(f) if f else self.send(404, {"error": "not found"})
+        m = re.match(r"^/asset/source/(ab|cd)/([a-f0-9]{32})\.webp$", path)
+        if m:
+            f = source_image(m[2], m[1])
+            return self.file(f) if f else self.send(404, {"error": "not found"})
         if path.startswith("/asset/"):
             rel = path[len("/asset/"):]
             for rule, to in ASSET_RULES:
@@ -367,6 +362,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, {"error": "not found"})
         if path == "/api/scenes":
             return self.send(200, self.scene_list())
+        if path == "/api/questions":
+            return self.send(200, QUESTION_POOL.list())
+        m = re.match(r"^/api/questions/([a-z0-9_]+)/template$", path)
+        if m:
+            return self.question_scene(m[1])
         if path == "/api/catalog":
             return self.send(200, self.catalog())
         if path == "/api/textures":
@@ -377,6 +377,8 @@ class Handler(BaseHTTPRequestHandler):
             built = build.build(s)
             return self.send(200, {"scene": s, "findings": check.check_scene(s), "build": built, "edges": edges(s),
                                    "source": ticket_question(m[1]), "playable": engine_sync.playable(m[1])})
+        if m:
+            return self.question_scene(m[1])
         m = re.match(r"^/api/layout/detect/([a-z0-9_]+)$", path)
         if m and self.scene_exists(m[1]):
             return self.send(200, {"layout": detect_layout(check.load(m[1]))})
@@ -384,6 +386,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def route_post(self):
         path = self.path.split("?")[0]
+        m = re.match(r"^/api/questions/([a-z0-9_]+)/decision$", path)
+        if m:
+            body = self.body()
+            if "decision" not in body or body["decision"] not in (None, "yes", "no"):
+                return self.send(400, {"error": "Выберите yes, no или null"})
+            try:
+                return self.send(200, QUESTION_POOL.decide(m[1], body["decision"]))
+            except KeyError:
+                return self.send(404, {"error": "Вопрос не найден в списке для просмотра"})
         m = re.match(r"^/api/game/run/([a-z0-9_]+)$", path)
         if m and self.scene_exists(m[1]):
             return self.send(200, run_game(m[1], bool(self.body().get("auto"))))
@@ -412,12 +423,26 @@ class Handler(BaseHTTPRequestHandler):
         findings = check.check_scene(scene)
         if m[1] == "preview":
             return self.send(200, {"findings": findings, "build": build.build(scene), "edges": edges(scene)})
-        if m[2] != "mini_regulator" and not (SIT / m[2] / "engine.json").exists():
+        candidate = QUESTION_POOL.get(m[2])
+        base_path = SIT / m[2] / "engine.json"
+        if m[2] != "mini_regulator" and not base_path.exists() and candidate is None:
             return self.send(400, {"error": "У сцены нет основы игры (situations/<id>/engine.json)"})
         if m[2] == "mini_regulator" and any(f["level"] == "error" for f in findings):
             return self.send(400, {"error": "Исправьте ошибки мини-игры перед сохранением", "findings": findings})
         target = NET / f"{m[2]}.json"
         old = check.load(m[2]) if target.exists() else {}
+        if candidate:
+            # A saved question remains a draft until the author's explicit “В игре”.
+            scene["questionPool"] = {k: candidate[k] for k in ("sourceQuestionId", "category", "ticket", "number")}
+            scene["reviewed"] = False
+            scene["procedural"] = True
+            if not base_path.exists():
+                base_path.parent.mkdir(parents=True, exist_ok=True)
+                engine_sync.write_json(base_path, question_pool.engine_template(scene))
+                engine_sync.engine_base.cache_clear()
+        else:
+            # A formerly promoted scene must never re-enter the review queue.
+            scene.pop("questionPool", None)
         removed = removed_items(old, scene)
         keep_history(m[2])
         target.write_text(json.dumps(normalised(scene, old), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
@@ -428,14 +453,27 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(422, {"error": str(e), "findings": findings})
         self.send(200, {"findings": findings, "synced": synced, "removed": removed})
 
+    def question_scene(self, sid: str):
+        candidate = QUESTION_POOL.get(sid)
+        if candidate is None:
+            return self.send(404, {"error": "Вопрос не найден в списке для просмотра"})
+        exists = self.scene_exists(sid)
+        scene = check.load(sid) if exists else QUESTION_POOL.template(sid)
+        return self.send(200, {"scene": scene, "findings": check.check_scene(scene), "build": build.build(scene),
+                               "edges": edges(scene), "source": ticket_question(sid), "playable": False,
+                               "virtual": not exists})
+
     def include(self, sid: str, playable: bool):
         """In the game or not: the scene's "reviewed" flag and the game's list of junctions."""
         target = NET / f"{sid}.json"
         s = check.load(sid)
         if playable and any(f["level"] == "error" for f in check.check_scene(s)):
             return self.send(400, {"error": "Сначала исправьте ошибки сцены"})
-        if s.get("reviewed") is not playable:
+        promoted = playable and bool(s.get("questionPool"))
+        if s.get("reviewed") is not playable or promoted:
             s["reviewed"] = playable
+            if promoted:
+                s.pop("questionPool", None)
             keep_history(sid)
             target.write_text(json.dumps(s, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         ids = engine_sync.write_index()
@@ -491,6 +529,8 @@ class Handler(BaseHTTPRequestHandler):
         out = []
         for p in sorted(NET.glob("*.json")):
             s = json.loads(p.read_text(encoding="utf-8"))
+            if s.get("questionPool"):
+                continue
             found = check.check_scene(s)
             q = s.get("question") or {}
             ru = (q.get("text") or {}).get("ru") or {}

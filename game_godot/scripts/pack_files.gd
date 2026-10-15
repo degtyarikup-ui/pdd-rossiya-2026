@@ -76,15 +76,22 @@ static func _picture_bytes(res_path: String) -> PackedByteArray:
 	if Host.embedded():
 		# AssetManager reads the same bytes that Flutter uses, straight from the APK.
 		return Engine.get_singleton("PddHost").pictureBytes(file.get_basename())
+	var explicit_folders := false
 	for arg in Host.user_args():
 		if str(arg).begins_with("--question-images-dir="):
+			explicit_folders = true
 			var path := str(arg).trim_prefix("--question-images-dir=").path_join(file)
-			return FileAccess.get_file_as_bytes(path) if FileAccess.file_exists(path) else PackedByteArray()
-	# A checkout on a computer has the source next to the Godot project.
-	var source := ProjectSettings.globalize_path("res://").path_join(
-		"../assets/countries/ru/images/questions_ab/" + file)
-	if FileAccess.file_exists(source):
-		return FileAccess.get_file_as_bytes(source)
+			if FileAccess.file_exists(path):
+				return FileAccess.get_file_as_bytes(path)
+	# Explicit host folders are authoritative, including when a photograph is absent.
+	if explicit_folders:
+		return PackedByteArray()
+	# A checkout on a computer has the AB and CD sources next to the Godot project.
+	for category in ["ab", "cd"]:
+		var source := ProjectSettings.globalize_path("res://").path_join(
+			"../assets/countries/ru/images/questions_%s/%s" % [category, file])
+		if FileAccess.file_exists(source):
+			return FileAccess.get_file_as_bytes(source)
 	# Standalone APK/iOS exports have no Flutter host and bundle their own pictures.
 	return FileAccess.get_file_as_bytes(res_path) if FileAccess.file_exists(res_path) else PackedByteArray()
 
@@ -136,9 +143,6 @@ static func fetch(res_path: String, on_done: Callable) -> void:
 	_waiting[res_path] = [on_done]
 	if _base.is_empty():
 		_base = str(JavaScriptBridge.eval("new URL('.', window.location.href).href", true))
-	var req := HTTPRequest.new()
-	(Engine.get_main_loop() as SceneTree).root.add_child(req)
-	req.request_completed.connect(_on_fetched.bind(req, res_path))
 	var url := _base + res_path.trim_prefix("res://")
 	if _is_picture(res_path):
 		if _picture_base.is_empty():
@@ -148,8 +152,15 @@ static func fetch(res_path: String, on_done: Callable) -> void:
 		if _question_audio_base.is_empty():
 			_question_audio_base = str(JavaScriptBridge.eval("new URL('../assets/assets/audio/game_questions/', window.location.href).href", true))
 		url = _question_audio_base + res_path.get_file()
+	_request_url(res_path, url, _is_picture(res_path))
+
+
+static func _request_url(res_path: String, url: String, try_cd: bool = false) -> void:
+	var req := HTTPRequest.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(req)
+	req.request_completed.connect(_on_fetched.bind(req, res_path, try_cd))
 	if req.request(url) != OK:
-		_on_fetched(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray(), req, res_path)
+		_on_fetched(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray(), req, res_path, try_cd)
 
 
 ## on_done(ok) once every file is fetched (or one of them failed).
@@ -181,8 +192,14 @@ static func forget(prefix: String) -> void:
 			_absent.erase(key)
 
 
-static func _on_fetched(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray, req: HTTPRequest, res_path: String) -> void:
+static func _on_fetched(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray, req: HTTPRequest, res_path: String, try_cd: bool = false) -> void:
 	req.queue_free()
+	if result == HTTPRequest.RESULT_SUCCESS and code == 404 and try_cd:
+		# CD has its own canonical photographs. Keep one request/cache identity and
+		# complete all waiting callbacks only after the second source has answered.
+		var cd_base := _picture_base.replace("/questions_ab/", "/questions_cd/")
+		_request_url(res_path, cd_base + res_path.get_file())
+		return
 	var ok := result == HTTPRequest.RESULT_SUCCESS and code == 200
 	if ok:
 		_bytes[res_path] = body

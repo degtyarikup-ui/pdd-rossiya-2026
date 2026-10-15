@@ -528,7 +528,17 @@ static var _pictures := {}
 static func picture_name(scene_id: String) -> String:
 	if _pictures.is_empty() and FileAccess.file_exists("res://questions/index.json"):
 		_pictures = JSON.parse_string(FileAccess.get_file_as_string("res://questions/index.json"))
-	return str(_pictures.get(scene_id, ""))
+	if _pictures.has(scene_id):
+		return str(_pictures[scene_id])
+	# New questions created in the editor already carry their source photograph.
+	# On the web the scene metadata is fetched before this question card is built.
+	var path := "res://situations/%s/scene.json" % scene_id
+	if PackFiles.exists(path):
+		var scene = JSON.parse_string(PackFiles.text(path))
+		if scene is Dictionary:
+			var picture = scene.get("sourceImage")
+			return picture if picture is String else ""
+	return ""
 
 
 ## The database photograph unfolds above the current card; the chip toggles it.

@@ -29,12 +29,15 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     @UsedByGodot
     fun pictureBytes(hash: String): ByteArray {
         if (!hash.matches(Regex("[a-f0-9]{32}"))) return byteArrayOf()
-        return try {
-            host.assets.open("flutter_assets/assets/countries/ru/images/questions_ab/$hash.webp")
-                .use { it.readBytes() }
-        } catch (_: java.io.IOException) {
-            byteArrayOf()
+        for (category in listOf("ab", "cd")) {
+            try {
+                return host.assets.open("flutter_assets/assets/countries/ru/images/questions_$category/$hash.webp")
+                    .use { it.readBytes() }
+            } catch (_: java.io.IOException) {
+                // Some CD photographs are shared with AB; the hash identifies the source bytes.
+            }
         }
+        return byteArrayOf()
     }
 
     /** The existing studio voice, converted once into the shared Flutter MP3 assets. */

@@ -263,7 +263,7 @@ const Scene3D = (() => {
     // scene: it includes terrain and furniture outside the editable layers.
     if (!build) return;
     const token = loadToken;
-    if (model.id === "mini_regulator") return;
+    if (model.id === "mini_regulator" || model.procedural) return;
     loadGltf(`/asset/scene/${model.id}/scene.glb`).then((root) => {
       if (!root || token !== loadToken || groups.static !== g) return;
       if (build) filterBaked(root, build);

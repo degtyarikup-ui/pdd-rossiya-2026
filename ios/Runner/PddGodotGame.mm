@@ -314,9 +314,12 @@ static void HideGame(dispatch_block_t completion) {
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"summary.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:kPerformanceMemoryFileName] error:nil];
   NSMutableArray *gameArgs = [NSMutableArray arrayWithArray:args ? args : @[]];
-  NSString *pictures = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
-      @"Frameworks/App.framework/flutter_assets/assets/countries/ru/images/questions_ab"];
-  [gameArgs addObject:[@"--question-images-dir=" stringByAppendingString:pictures]];
+  for (NSString *category in @[@"ab", @"cd"]) {
+    NSString *pictures = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
+        [@"Frameworks/App.framework/flutter_assets/assets/countries/ru/images/questions_"
+            stringByAppendingString:category]];
+    [gameArgs addObject:[@"--question-images-dir=" stringByAppendingString:pictures]];
+  }
   NSString *questionAudio = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
       @"Frameworks/App.framework/flutter_assets/assets/audio/game_questions"];
   [gameArgs addObject:[@"--question-audio-dir=" stringByAppendingString:questionAudio]];

@@ -87,7 +87,7 @@ const Framing = (() => {
   }, true);
 
   // ---- the ticket's photo ---------------------------------------------------------------------
-  const photo = () => state.source && state.source.image ? `/asset/source/${state.source.image}.webp` : null;
+  const photo = () => state.source?.imageUrl || (state.source?.image ? `/asset/source/${state.source.image}.webp` : null);
   function openPhoto() {
     const src = photo();
     if (!src) return;

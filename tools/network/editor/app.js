@@ -9,7 +9,7 @@ const App = (() => {
 
   const state = {
     S: null, id: null, build: null, findings: [], edges: null, source: null, playable: false,
-    scenes: [], catalog: null, sel: [], hidden: new Set(), locked: new Set(),
+    scenes: [], questions: [], questionsLoaded: false, catalog: null, sel: [], hidden: new Set(), locked: new Set(),
     undo: [], redo: [], savedJson: "", dirty: false, clipboard: null, testing: false,
   };
 
@@ -207,18 +207,22 @@ const App = (() => {
     state.scenes = await api("/api/scenes");
   }
   async function openScene(sid) {
+    if (state.S && sid === state.id) {
+      if (typeof QuestionReview !== "undefined") QuestionReview.close();
+      setSceneSection(sid);
+      showHome(false);
+      App.renderPanels?.();
+      return;
+    }
     if (state.dirty && sid !== state.id && !(await confirmBox("Уйти без сохранения?", "В этой сцене есть несохранённые правки.", "Уйти"))) return;
     const r = await api(`/api/scene/${sid}`);
+    if (typeof QuestionReview !== "undefined") QuestionReview.close();
     state.S = r.scene;
     state.S.markings = state.S.markings || [];
     state.S.lawns = state.S.lawns || [];
     state.id = sid;
     if (sid !== "mini_regulator") state.lastTicket = sid;
-    state.section = sid === "mini_regulator" ? "regulator" : "city";
-    document.querySelectorAll("[data-editor-section]").forEach(b => {
-      const on = b.dataset.editorSection === state.section;
-      b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on));
-    });
+    setSceneSection(sid);
     // A traced scene has no road plan: one detected from its roads finds the lanes and ways of its cars.
     state.plan = null;
     if (!state.S.layout && sid !== "mini_regulator") api(`/api/layout/detect/${sid}`).then((d) => { if (state.id === sid) { state.plan = d.layout; App.renderInspector?.(); } }).catch(() => {});
@@ -230,6 +234,7 @@ const App = (() => {
     state.undo = [];
     state.redo = [];
     state.sel = [];
+    state.virtual = r.virtual === true;
     state.savedJson = snapshotText();
     state.dirty = false;
     // Refresh generated views in memory; author paths and on-disk sources wait for Save.
@@ -237,17 +242,18 @@ const App = (() => {
       Layout.apply(state.S);
     }
     if (state.S.layout) Layout.refreshPlayerRoutes(state.S);
+    if (state.virtual) state.savedJson = snapshotText();
     if (snapshotText() !== state.savedJson) {
       state.undo.push(state.savedJson);
       state.dirty = true;
     }
     Tools.set("select");
-    Scene3D.load(state.S, state.dirty ? null : r.build);
+    Scene3D.load(state.S, state.dirty && !state.virtual ? null : r.build);
     showHome(false);
     history.replaceState(null, "", `?scene=${sid}`);
     renderTop();
     App.renderPanels?.();
-    if (state.dirty) {
+    if (state.dirty && !state.virtual) {
       schedulePreview();
       toast("Автоматические пути обновлены. Сохраните, чтобы применить их в игре.", "good");
     }
@@ -255,23 +261,31 @@ const App = (() => {
   }
   const sceneTitle = (sid) => {
     if (sid === "mini_regulator") return "Мини-игра «Регулировщик»";
-    const m = String(sid || "").match(/^ticket_(\d+)_(\d+)$/);
-    return m ? `Билет ${m[1]} · вопрос ${m[2]}` : sid;
+    const m = String(sid || "").match(/^ticket_(cd_)?(\d+)_(\d+)$/);
+    return m ? `Билет ${m[2]} · вопрос ${m[3]}${m[1] ? " · C/D" : ""}` : sid;
   };
+  function setSceneSection(sid) {
+    state.section = sid === "mini_regulator" ? "regulator" : "city";
+    document.querySelectorAll("[data-editor-section]").forEach(b => {
+      const on = b.dataset.editorSection === state.section;
+      b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on));
+    });
+  }
 
   async function save() {
     // Textures are not part of a scene: they reach the game by their own "Применить в игре".
-    if (!state.S || !state.dirty) { toast("Всё сохранено"); renderTop(); return; }
+    if (!state.S || (!state.dirty && !state.virtual)) { toast("Всё сохранено"); renderTop(); return; }
     try {
       const r = await api(`/api/scene/${state.id}`, state.S);
       state.savedJson = snapshotText();
       state.dirty = false;
+      state.virtual = false;
       state.findings = r.findings;
       const errors = r.findings.filter((f) => f.level === "error").length;
       const gone = r.removed && r.removed.length ? ` Удалено: ${r.removed.length}.` : "";
       toast(errors ? `Сохранено, но есть ошибки: ${errors}.${gone}` : `Сохранено.${gone}`, errors ? "warn" : "good");
       saveThumb();
-      loadList().then(() => App.renderPanels?.());
+      loadList().then(async () => { if (typeof QuestionReview !== "undefined") await QuestionReview.load({refresh:true}); App.renderPanels?.(); });
     } catch (e) {
       toast(`Не сохранено: ${e.message}`, "bad");
     }
@@ -288,15 +302,16 @@ const App = (() => {
   const thumbRev = {};
 
   async function setPlayable(on) {
-    if (state.dirty) await save();
+    if (state.dirty || state.virtual) { await save(); if (state.dirty || state.virtual) return; }
     try {
       const r = await api(`/api/game/include/${state.id}`, { playable: on });
       state.playable = r.playable;
       // The file changed on the server (its "reviewed" flag): the open copy follows.
       state.S.reviewed = on;
+      if (on) delete state.S.questionPool;
       state.savedJson = snapshotText();
       toast(on ? `Сцена в игре. Всего в игре: ${r.count}` : "Сцена убрана из игры", "good");
-      loadList().then(() => App.renderPanels?.());
+      loadList().then(async () => { if (typeof QuestionReview !== "undefined") await QuestionReview.load({refresh:true}); App.renderPanels?.(); });
     } catch (e) {
       toast(e.message, "bad");
     }
@@ -305,7 +320,7 @@ const App = (() => {
 
   async function runInGame(auto = false) {
     if (!state.S) return;
-    if (state.dirty) await save();
+    if (state.dirty || state.virtual) { await save(); if (state.dirty || state.virtual) return; }
     try {
       toast("Готовлю перекрёсток для игры…");
       const r = await api(`/api/game/run/${state.id}`, { auto });
@@ -568,8 +583,8 @@ const App = (() => {
     chip.innerHTML = !s ? "" : err ? `${ic("error")}${err} ${plural(err, ["ошибка", "ошибки", "ошибок"])}` : state.playable ? `${ic("check-circle")}в игре` : "не в игре";
     if (state.id === "mini_regulator" && !err) chip.textContent = "мини-игра";
     chip.dataset.tip = err ? "Открыть проверку" : "";
-    $("#save").disabled = !state.dirty;
-    $("#save").classList.toggle("pulse", state.dirty);
+    $("#save").disabled = !state.dirty && !state.virtual;
+    $("#save").classList.toggle("pulse", state.dirty || state.virtual);
     $("#undo").disabled = !state.undo.length;
     $("#redo").disabled = !state.redo.length;
     $("#play").disabled = !s;
@@ -584,6 +599,7 @@ const App = (() => {
   }
 
   function showHome(on) {
+    if (on && typeof QuestionReview !== "undefined") QuestionReview.close();
     $("#home-screen").hidden = !on;
     $("#app").classList.toggle("at-home", on);
     if (on) App.renderHome?.();
@@ -607,7 +623,8 @@ const App = (() => {
     return shift === e.shiftKey;
   }
   function onKey(e) {
-    const typing = e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable);
+    if (typeof QuestionReview !== "undefined" && QuestionReview.active()) return;
+    const typing = e.target && (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) || e.target.isContentEditable);
     if (!$("#keys").hidden && e.key === "Escape") { $("#keys").hidden = true; return; }
     for (const k of KEYS) {
       if (!matches(e, k.combo)) continue;
@@ -709,11 +726,15 @@ const App = (() => {
       return;
     }
     Scene3D.setTextures(Textures.forScene());
+    if (typeof QuestionReview !== "undefined") await QuestionReview.load().catch(() => {});
     App.renderPanels?.();
     renderTop();
-    const first = new URLSearchParams(location.search).get("scene");
+    const params = new URLSearchParams(location.search);
+    const first = params.get("scene");
     if (first) openScene(first).catch((e) => { toast(e.message, "bad"); showHome(true); });
-    else showHome(true);
+    else if (params.get("filter") === "questions" && typeof QuestionReview !== "undefined") {
+      await App.showQuestions?.(params.get("question") || undefined);
+    } else showHome(true);
   }
 
   return {
