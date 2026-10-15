@@ -20,6 +20,7 @@ func run() -> void:
 	differential()
 	repeated_cuts()
 	generated_flat_streets()
+	generated_flat_networks()
 	fixture("ticket_20_15")
 	fixture("ticket_12_14")
 	print("mesh clipping: ", checks, " checks, ", failures, " failures")
@@ -138,6 +139,39 @@ func generated_flat_streets() -> void:
 		expect(mesh_state(mesh) == before, "flat marker never mutates generated geometry " + str(index))
 		compare(SceneStitch.clip_mesh(mesh, Transform3D()), oracle(mesh, Transform3D()), "generated crossing cut " + str(index))
 	holder.free()
+
+func generated_flat_networks() -> void:
+	var scenery := Scenery.new("summer")
+	for id in ["ticket_29_6","ticket_20_15","ticket_12_14","ticket_21_15","ticket_15_15"]:
+		var net := RoadNetwork.load_scene(id)
+		var ports := SceneStitch.departure_ports(net.connections)
+		var bindings: Array = []
+		for port: Dictionary in ports.values():
+			bindings = Situation.bindings_with(bindings,port,float(port.width))
+		var cases: Array = [[],bindings]
+		if not ports.is_empty():
+			var port: Dictionary = ports.values()[0]
+			cases.append(Situation.bindings_with(bindings,port,float(port.width)+4.0,{"median":1.2}))
+		for case_index in cases.size():
+			net.stitch_bindings = cases[case_index]
+			var mesh := net.surface_mesh(scenery)
+			var before := mesh_state(mesh)
+			var bounds := mesh.get_aabb()
+			var distance := (bounds.position.abs()+bounds.size.abs()).length()*2.0+10.0
+			var retained := Transform3D(Basis(Vector3.UP,0.43),Vector3(0,0,-distance))
+			var reference := oracle(mesh,retained)
+			var label: String = "generated network " + id + "/" + str(case_index)
+			expect(SceneStitch.clip_mesh(mesh,retained) == mesh, label + " first wholly retained cut reuses mesh")
+			compare(mesh,reference,label + " retained oracle")
+			for surface in mesh.get_surface_count():
+				var arrays := mesh.surface_get_arrays(surface)
+				var count := mesh.surface_get_array_len(surface)
+				for slot in [Mesh.ARRAY_VERTEX,Mesh.ARRAY_NORMAL,Mesh.ARRAY_TEX_UV,Mesh.ARRAY_TEX_UV2,Mesh.ARRAY_COLOR]:
+					expect(arrays[slot] != null and arrays[slot].size() == count, label + " complete oracle attribute " + str(slot))
+				expect(arrays == reference.surface_get_arrays(surface), label + " exact raw attributes including absent slots")
+			for frame in [Transform3D(),Transform3D(Basis(Vector3.UP,PI/2),Vector3(0,0,-3))]:
+				compare(SceneStitch.clip_mesh(mesh,frame),oracle(mesh,frame),label + " crossing oracle")
+			expect(mesh_state(mesh) == before, label + " input stays immutable")
 
 func expanded(mesh: Mesh, surface: int, slot: int) -> Array:
 	var arrays := mesh.surface_get_arrays(surface)

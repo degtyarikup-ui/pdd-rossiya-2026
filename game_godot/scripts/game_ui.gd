@@ -41,6 +41,9 @@ var _speed_pill: PanelContainer
 var _notice: PanelContainer
 var _notice_text: Label
 var _notice_timer := 0.0
+# Synchronous construction only; text layout/drawing can continue after this call.
+var question_build_ms := -1.0
+var question_warmup_build_ms := -1.0
 var _card: PanelContainer
 var _sheet: PanelContainer
 var _timer_icon: Label
@@ -490,7 +493,7 @@ func _place_sheet(panel: PanelContainer) -> void:
 	tween.tween_property(panel, "position:y", size.y - height, SHEET_IN).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
-func _ticket_chip(text: String, scene_id := "", width_budget := -1.0) -> PanelContainer:
+func _ticket_chip(text: String, scene_id := "", width_budget := -1.0, interactive := true) -> PanelContainer:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", Ui.box(Ui.c("field"), 8))
 	var m := MarginContainer.new()
@@ -517,7 +520,7 @@ func _ticket_chip(text: String, scene_id := "", width_budget := -1.0) -> PanelCo
 		var icon := Ui.icon(0xf80d, 16, Ui.c("accent")) # image
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(icon)
-		_tap(p, func(): _toggle_picture(scene_id, p, icon))
+		if interactive: _tap(p, func(): _toggle_picture(scene_id, p, icon))
 	return p
 
 
@@ -680,7 +683,42 @@ func show_question(text: Dictionary, seconds: float) -> void:
 	_answered = false
 	_remaining = seconds
 	_max = seconds
+	var started := Time.get_ticks_usec()
+	var card := _build_question(text, seconds)
+	question_build_ms = (Time.get_ticks_usec() - started) / 1000.0
+	_card = card.panel
+	_timer_icon = card.timer_icon
+	_timer_label = card.timer_label
+	_timer_bar = card.timer_bar
+	_timer_fill = card.timer_fill
+	_options.assign(card.options)
+	_root.add_child(_card)
+	_place_sheet(_card)
+	_update_timer()
 
+
+## Draw only beneath an opaque loader. The caller frees this inert card after
+## frame_post_draw; no live timer, answer, photo, signal or sheet animation starts.
+func warm_question(text: Dictionary, seconds: float) -> PanelContainer:
+	if _card != null or _sheet != null: return null
+	var started := Time.get_ticks_usec()
+	var card := _build_question(text, seconds, false)
+	question_warmup_build_ms = (Time.get_ticks_usec() - started) / 1000.0
+	var panel: PanelContainer = card.panel
+	var view := _view_size()
+	var height := minf(float(panel.get_meta("max_h")), view.y - (_top + 100.0))
+	panel.position = Vector2(0.0, view.y - height)
+	panel.size = Vector2(view.x, height)
+	for control: Control in panel.find_children("*", "Control", true, false):
+		control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(panel)
+	return panel
+
+
+## Shared geometry and fonts for both the live question and loader warmup.
+## Building detached controls leaves the active question and its timer untouched.
+func _build_question(text: Dictionary, seconds: float, interactive := true) -> Dictionary:
 	var total_chars: int = text.title.length()
 	for opt in text.options:
 		total_chars += str(opt).length()
@@ -690,7 +728,7 @@ func show_question(text: Dictionary, seconds: float) -> void:
 
 	var max_ratio: float = 0.65 if very_dense else (0.62 if dense else 0.58)
 	var shell := _sheet_shell(max_ratio)
-	_card = shell[0]
+	var panel: PanelContainer = shell[0]
 	var box: VBoxContainer = shell[1]
 	box.add_theme_constant_override("separation", 5 if very_dense else (6 if dense else 8))
 
@@ -699,41 +737,40 @@ func show_question(text: Dictionary, seconds: float) -> void:
 	var timer := HBoxContainer.new()
 	timer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	timer.add_theme_constant_override("separation", 4)
-	_timer_icon = Ui.icon(0xf44a, 16, Ui.c("secondary")) # timer_outlined
-	timer.add_child(_timer_icon)
-	_timer_label = Ui.scaled_label("%.1f %s" % [seconds, Ui.t("gameSeconds")], 13, 700, Ui.c("text"))
-	timer.add_child(_timer_label)
-	var timer_width := ceilf(Ui.font(700).get_string_size(_timer_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, roundi(13 * Ui.text_scale())).x) + 20.0
-	head.add_child(_ticket_chip(text.ticket, str(text.get("id", "")), _view_size().x - 48.0 - timer_width))
+	var timer_icon := Ui.icon(0xf44a, 16, Ui.c("secondary")) # timer_outlined
+	timer.add_child(timer_icon)
+	var timer_label := Ui.scaled_label("%.1f %s" % [seconds, Ui.t("gameSeconds")], 13, 700, Ui.c("text"))
+	timer.add_child(timer_label)
+	var timer_width := ceilf(Ui.font(700).get_string_size(timer_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, roundi(13 * Ui.text_scale())).x) + 20.0
+	head.add_child(_ticket_chip(text.ticket, str(text.get("id", "")), _view_size().x - 48.0 - timer_width, interactive))
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(sp)
 	head.add_child(timer)
 	box.add_child(head)
-	_timer_bar = ProgressBar.new()
-	_timer_bar.show_percentage = false
-	_timer_bar.custom_minimum_size = Vector2(0, 4)
-	_timer_bar.max_value = 1.0
-	_timer_bar.value = 1.0
-	_timer_bar.add_theme_stylebox_override("background", Ui.box(Ui.c("gray"), 2))
-	_timer_fill = Ui.box(Ui.c("accent"), 2)
-	_timer_bar.add_theme_stylebox_override("fill", _timer_fill)
-	box.add_child(_timer_bar)
+	var timer_bar := ProgressBar.new()
+	timer_bar.show_percentage = false
+	timer_bar.custom_minimum_size = Vector2(0, 4)
+	timer_bar.max_value = 1.0
+	timer_bar.value = 1.0
+	timer_bar.add_theme_stylebox_override("background", Ui.box(Ui.c("gray"), 2))
+	var timer_fill := Ui.box(Ui.c("accent"), 2)
+	timer_bar.add_theme_stylebox_override("fill", timer_fill)
+	box.add_child(timer_bar)
 
 	var title_size: int = 13 if very_dense else (14 if dense else 15)
 	box.add_child(Ui.scaled_label(text.title, title_size, 600, Ui.c("text"), true))
 
-	_options.clear()
+	var options: Array[PanelContainer] = []
 	for i in text.options.size():
-		var opt := _option(i, text.options[i], dense, very_dense)
+		var opt := _option(i, text.options[i], dense, very_dense, interactive)
 		box.add_child(opt)
-		_options.append(opt)
-	_root.add_child(_card)
-	_place_sheet(_card)
-	_update_timer()
+		options.append(opt)
+	return {"panel": panel, "timer_icon": timer_icon, "timer_label": timer_label,
+		"timer_bar": timer_bar, "timer_fill": timer_fill, "options": options}
 
 
-func _option(i: int, text: String, dense: bool = false, very_dense: bool = false) -> PanelContainer:
+func _option(i: int, text: String, dense: bool = false, very_dense: bool = false, interactive := true) -> PanelContainer:
 	var p := PanelContainer.new()
 	var min_h: int = 36 if very_dense else (40 if dense else 46)
 	p.custom_minimum_size = Vector2(0, min_h)
@@ -761,7 +798,7 @@ func _option(i: int, text: String, dense: bool = false, very_dense: bool = false
 	h.add_child(badge)
 	var font_size: int = 12 if very_dense else (13 if dense else 14)
 	h.add_child(Ui.scaled_label(text, font_size, 500, Ui.c("text"), true))
-	_tap(p, func(): _choose(i))
+	if interactive: _tap(p, func(): _choose(i))
 	return p
 
 

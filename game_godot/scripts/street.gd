@@ -112,47 +112,54 @@ func style_at(z: float) -> int:
 ## empty: no road, no props.
 ## `half_at(world z)` is the carriageway half-width there: a multi-lane exit widens the street,
 ## a lane drop before a junction narrows it (world.gd _half_at). Plots stand outside it.
-func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), ranges: Array = []) -> ArrayMesh:
+func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), ranges: Array = [], rebuild_layout := true) -> ArrayMesh:
 	_begin_profile_build()
 	_build_half_at = half_at
 	visible_ranges = [[0.0,L]] if ranges.is_empty() else ranges
-	for p in pools.values():
-		p.begin(slot)
-	for p in parked.values():
-		p.begin(slot)
-	parked_spots[slot] = []
-	parked_bodies[slot] = []
-	if blank:
+	if rebuild_layout:
 		for p in pools.values():
-			p.finish(slot)
+			p.begin(slot)
 		for p in parked.values():
-			p.finish(slot)
+			p.begin(slot)
+		parked_spots[slot] = []
+		parked_bodies[slot] = []
+	else:
+		_reset_layout_fades(slot)
+	if blank:
+		if rebuild_layout:
+			for p in pools.values():
+				p.finish(slot)
+			for p in parked.values():
+				p.finish(slot)
 		_build_half_at = Callable()
 		_end_profile_build()
 		return null
 	var z0 := index * L
 	_build_z0 = z0
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(index * 7919)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	st.set_smooth_group(-1)  # Flat road tops must not blend with vertical kerbs.
 	_road(st, z0, half_at)
-	var z := z0 + ROW / 2
-	while z < z0 + L:
-		if not _visible(z-z0):
-			z+=ROW
-			continue
-		var style := style_at(z)
-		var row := int(floor(z / ROW))
-		edge = _half(half_at, z) - ROAD_HALF
-		for side: float in [-1.0, 1.0]:
-			_plot(slot, rng, side, z, style, row)
-		z += ROW
-	for p in pools.values():
-		p.finish(slot)
-	for p in parked.values():
-		p.finish(slot)
+	# Texture-frame changes affect the road's UVs, never the seeded plots or parking.
+	# The caller may keep that exact layout, including its logical parking arrays.
+	if rebuild_layout:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash(index * 7919)
+		var z := z0 + ROW / 2
+		while z < z0 + L:
+			if not _visible(z-z0):
+				z+=ROW
+				continue
+			var style := style_at(z)
+			var row := int(floor(z / ROW))
+			edge = _half(half_at, z) - ROAD_HALF
+			for side: float in [-1.0, 1.0]:
+				_plot(slot, rng, side, z, style, row)
+			z += ROW
+		for p in pools.values():
+			p.finish(slot)
+		for p in parked.values():
+			p.finish(slot)
 	st.generate_normals()
 	var mesh := st.commit()
 	mesh.surface_set_material(0, sc.material)
@@ -161,6 +168,28 @@ func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), r
 	# SurfaceTool already generated the same unindexed flat normals the clipper
 	# uses. Fully retained chunks can be shared without rebuilding all vertices.
 	return SceneStitch.mark_generated_flat_mesh(mesh)
+
+
+## A full replacement used to reset this slot's building fades. Preserve that
+## visual contract, replaying only a pool that actually owns a faded instance.
+func _reset_layout_fades(slot: int) -> void:
+	for p in pools.values():
+		if not p.node.has_meta("occlusion_originals"): continue
+		var originals: Dictionary = p.node.get_meta("occlusion_originals")
+		var fades: Dictionary = p.node.get_meta("occlusion_fades")
+		var reset := false
+		for rendered in originals.keys() + fades.keys():
+			var logical: int = p.render_slots[rendered]
+			if logical >= slot * p.per_chunk and logical < (slot + 1) * p.per_chunk:
+				reset = true
+				break
+		if not reset: continue
+		var count: int = p.used.get(slot, 0)
+		p.begin(slot)
+		for n in count:
+			var logical: int = slot * p.per_chunk + n
+			p.put(slot, p.transforms[logical], p.tints[logical])
+		p.finish(slot)
 
 
 # --- road surface (one mesh per chunk, local z from 0) ----------------------

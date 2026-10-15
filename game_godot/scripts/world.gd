@@ -371,7 +371,24 @@ func _dismiss_loader() -> void:
 	while road_force == "" and not previews and not startup_loading_failed and current.is_empty() and (staging or staged_sit != null or next_id != ""):
 		await get_tree().process_frame
 		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
-	# Render the installed scene while the loading screen is still opaque.
+	# Use the first real question's labels at their normal viewport/text scale.
+	# A detached factory card warms fonts/glyphs without starting the question.
+	var warm_card: PanelContainer
+	if loader != null and not current.is_empty():
+		var first: Situation = current.sit
+		var first_text: Dictionary = first.data.text.get(Ui.lang, first.data.text.ru).duplicate()
+		first_text["id"] = first.id
+		var seconds := Ui.answer_seconds(int(first.data.sourceTextLength))
+		if voice != null and voice.enabled: seconds = maxf(seconds, voice.duration(first.id) + 2.0)
+		warm_card = ui.warm_question(first_text, seconds)
+	elif loader != null and road != null:
+		var seconds := Ui.answer_seconds(road.text_length())
+		if voice != null and voice.enabled: seconds = maxf(seconds, voice.duration(road.id) + 2.0)
+		warm_card = ui.warm_question(road.question_text(), seconds)
+	# Resolve nested text wrapping before the native draw, with the loader opaque.
+	if is_instance_valid(warm_card):
+		await get_tree().process_frame
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
 	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	if DisplayServer.get_name() != "headless":
@@ -379,6 +396,7 @@ func _dismiss_loader() -> void:
 		# tick alone does not prove that the installed city reached the renderer.
 		await RenderingServer.frame_post_draw
 		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
+	if is_instance_valid(warm_card): warm_card.free()
 	warm_signals=false
 	if traffic_glows != null:
 		traffic_glows.set_instance_custom_data(0, Color(1, 0.68, 0.05, 0))
@@ -620,11 +638,27 @@ func _half_at(z: float) -> float:
 func _place_chunk(slot: int, index: int) -> void:
 	chunk_index[slot] = index
 	var ranges := _street_ranges(index)
-	var signature := hash([index, ranges, street.profile, street_connector, street_half, texture_frame])
-	if chunk_signatures.get(slot) == signature:
+	# half_at also depends on distant blanks and whether a connected scene exists.
+	# A rebase's texture frame alone does not change a single prop or parked body.
+	var connected := false
+	for j in _junctions():
+		if j.sit.network and not j.sit.network.connections.entry.is_empty():
+			connected = true
+			break
+	var layout_profile := street.profile.duplicate()
+	# The port's placement is not read by Street; only its cross-section is.
+	layout_profile.erase("p")
+	layout_profile.erase("out")
+	var half_policy: Array = [] if connected or not street_connector.is_empty() else blanks
+	var layout := hash([index, ranges, layout_profile, street_connector, street_half,
+		half_policy, street.L, street.parked_chance, street.winter, scenery.season])
+	var signature := hash([layout, texture_frame, street.profile])
+	var previous: Dictionary = chunk_signatures.get(slot, {})
+	if previous.get("road") == signature:
 		return
-	chunk_signatures[slot] = signature
-	road_nodes[slot].mesh = street.build_chunk(slot, index, ranges.is_empty(), _half_at, ranges)
+	var rebuild_layout: bool = previous.get("layout") != layout
+	chunk_signatures[slot] = {"road": signature, "layout": layout}
+	road_nodes[slot].mesh = street.build_chunk(slot, index, ranges.is_empty(), _half_at, ranges, rebuild_layout)
 	road_nodes[slot].position = Vector3(0, 0, index * L)
 
 
@@ -2093,6 +2127,9 @@ func _performance_snapshot() -> Dictionary:
 		"retired": retired.size(), "streets": older_ghosts.size() + (1 if ghost else 0),
 		"staging": staging, "paused": paused, "phase": phase, "distance": int(drive.distance_traveled), "cpu_ms": cpu_ms,
 		"transition_ms": perf_transitions.duplicate(true),
+		# Last synchronous card factory calls, not window aggregates or draw time.
+		"last_question_build_ms": ui.question_build_ms if ui != null and ui.question_build_ms >= 0.0 else null,
+		"startup_question_warmup_build_ms": ui.question_warmup_build_ms if ui != null and ui.question_warmup_build_ms >= 0.0 else null,
 		"position": [drive.pos.x, drive.pos.y, drive.pos.z], "yaw": drive.yaw, "on_road": drive.on_road(),
 		"render_scale": get_viewport().scaling_3d_scale, "max_fps": Engine.max_fps,
 		"shadows": sun.shadow_enabled, "msaa": get_viewport().msaa_3d, "quality_changes": frame_budget.changes,

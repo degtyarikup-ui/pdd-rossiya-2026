@@ -344,6 +344,9 @@ func refresh_uv(scenery: Scenery, texture_frame := Transform3D()) -> void:
 						mesh = SceneStitch.clip_mesh(mesh, cut)
 					_clipped_surface_cache[base_signature] = mesh
 				mesh = _clipped_surface_cache[base_signature]
+			# Ground maps use immutable mesh-local triangles. A rigid placement or a
+			# wholly retained cut can reuse the exact same map; changed geometry cannot.
+			if node.mesh != mesh: _ground_maps.clear()
 			node.mesh = mesh
 			_surface_signature=signature
 		if _surface_material==null:
@@ -373,7 +376,6 @@ func trim_before_join(scenery: Scenery, texture_frame: Transform3D) -> void:
 	_surface_cuts.append(cut)
 	_cut_bindings.append({"port": {"p": cut.affine_inverse().origin,
 		"out": cut.basis.transposed() * Vector3.BACK}})
-	_ground_maps.clear()
 	_trim_end_props()
 	refresh_uv(scenery, texture_frame)
 	# Legacy GLB overlays can retain small tails outside the network footprint.
@@ -420,9 +422,14 @@ func road_at(local: Vector3) -> bool:
 
 func ground_map() -> GroundMap:
 	var surface := get_node_or_null("surfaces") as MeshInstance3D
-	if surface == null or surface.mesh == null or _ground_scenery == null: return null
+	if surface == null or surface.mesh == null or _ground_scenery == null:
+		_ground_maps.clear()
+		return null
 	var key := surface.mesh.get_instance_id()
-	if not _ground_maps.has(key): _ground_maps[key] = GroundMap.new(surface.mesh, _ground_scenery)
+	if not _ground_maps.has(key):
+		# Keep only the current mesh, including callers that replace a surface directly.
+		_ground_maps.clear()
+		_ground_maps[key] = GroundMap.new(surface.mesh, _ground_scenery)
 	return _ground_maps[key]
 
 

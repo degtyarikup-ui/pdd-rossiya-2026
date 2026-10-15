@@ -156,7 +156,7 @@ func run() -> void:
 		DirAccess.remove_absolute(folder.path_join(name))
 	var hud = ClockHud.new()
 	hud.visible = true
-	hud.snapshot = func(): return {"question": 4, "displayed_question": 5, "question_over": false, "cpu_ms": {"walkers": 2.0}}
+	hud.snapshot = func(): return {"question": 4, "displayed_question": 5, "question_over": false, "cpu_ms": {"walkers": 2.0}, "last_question_build_ms": null, "startup_question_warmup_build_ms": null}
 	hud.reset_snapshot = func(): resets += 1
 	root.add_child(hud)
 	hud.set_process(false)
@@ -196,6 +196,8 @@ func run() -> void:
 	var log = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl")).strip_edges())
 	expect(log.diagnostic_emit_ms_previous == null and is_finite(hud._diagnostic_emit_ms_previous) and hud._diagnostic_emit_ms_previous >= 0.0,
 		"first emission has no previous duration and records its finite synchronous cost")
+	expect(log.last_question_build_ms == null and log.startup_question_warmup_build_ms == null,
+		"unmeasured question factory snapshots stay null in JSON")
 	expect(log.thermal_state == 2 and log.low_power == true and is_equal_approx(log.footprint_mb,321.5), "native fields preserved in diagnostic log")
 	expect(log.frame_count == 5 and log.window_seconds == 5.0 and log.worst_ms == 1000.0 and log.slow == 5,
 		"whole five-second statistics include frames slower than 250 ms and preserve legacy keys")
@@ -259,12 +261,15 @@ func run() -> void:
 	# Pausing still produces display frames. Retain them in the explicitly all-
 	# phases diagnostic window, separate from the active-only quality budget.
 	source.cpu = 7.0; source.transitions["TOTAL"] = {"count": 1}
-	lazy_hud.snapshot = func(): return {"phase": "paused", "cpu_ms": {"walkers": source.cpu}, "transition_ms": source.transitions.duplicate(true)}
+	lazy_hud.snapshot = func(): return {"phase": "paused", "cpu_ms": {"walkers": source.cpu}, "transition_ms": source.transitions.duplicate(true),
+		"last_question_build_ms": 1.25, "startup_question_warmup_build_ms": 2.5}
 	for i in 5: lazy_hud.advance(1.0)
 	var lines := FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl")).strip_edges().split("\n")
 	var paused_log = JSON.parse_string(lines[-1])
 	expect(paused_log.diagnostic_emit_ms_previous == null, "first emission after re-enable excludes the previous session cost")
 	var previous_emit_ms: float = lazy_hud._diagnostic_emit_ms_previous
+	expect(paused_log.last_question_build_ms == 1.25 and paused_log.startup_question_warmup_build_ms == 2.5,
+		"measured last question factory durations pass through the log without aggregation")
 	expect(paused_log.cpu_ms.walkers == 7.0 and paused_log.transition_ms.size() == 1 and paused_log.transition_ms.TOTAL.count == 1,
 		"fresh logged CPU and transition window contains no pre-disable or hidden samples")
 	expect(paused_log.phase == "paused" and paused_log.frame_count == 5 and paused_log.frame_scope == "all_visible_diagnostic_phases",

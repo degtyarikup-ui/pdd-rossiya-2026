@@ -204,7 +204,7 @@ func surface_mesh_staged(scenery: Scenery, frames: SceneTree = null, uv_z := 0.0
 	st.generate_normals()
 	var mesh := st.commit()
 	mesh.surface_set_material(0, scenery.material)
-	return mesh
+	return SceneStitch.mark_generated_flat_mesh(mesh)
 
 
 func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transform3D, frames: SceneTree = null) -> void:

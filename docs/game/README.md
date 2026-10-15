@@ -79,6 +79,9 @@ godot --headless --path game_godot --script res://tests/ghost_check.gd      # п
 godot --path game_godot --script res://tests/pool_packing_check.gd # пустые экземпляры не рисуются; цвета, прозрачность, индексы чанков и границы пакетов
 godot --path game_godot --script res://tests/pool_batch_check.gd # одна упаковка нескольких чанков, вложенность, сохранение прозрачности
 godot --path game_godot --script res://tests/street_batch_check.gd # точное совпадение дороги, декораций и парковочных коллизий с последовательной сборкой
+godot --path game_godot --script res://tests/street_layout_reuse_check.gd # повторное использование декораций при изменении UV, парковка и прозрачность
+godot --path game_godot --script res://tests/ground_map_cache_check.gd # карта поверхности сохраняется только при неизменном меше
+godot --path game_godot --script res://tests/question_warmup_check.gd # прогрев шрифтов без запуска вопроса; ru/en/kk, размеры и пиксели UI
 godot --path game_godot --script res://tests/street_profile_cache_check.gd # кеш профиля ограничен чанком; атрибуты дороги, ширина, декорации и парковка совпадают с исходным расчётом
 godot --headless --path game_godot --script res://tests/ambient_trail_motion_check.gd # временно остановленная фоновая машина продолжает движение после перехода, препятствия сохраняются
 godot --headless --path game_godot --script res://tests/ambient_transition_check.gd -- --season=autumn # пешеходы, листья и трафик при переходах

@@ -17,6 +17,14 @@ class MeasuredWorld extends "res://scripts/world.gd":
 	var walker_us := 0
 	var walker_calls := 0
 
+	# Native automation changes window focus while this fixture drives the route.
+	# Keep that unrelated OS pause out; pause_check explicitly exercises production
+	# freeze/resume, and lifecycle_pause_check owns real notification behavior.
+	var scripted_pause := false
+
+	func _on_pause(from_notification := false) -> void:
+		if scripted_pause: super._on_pause(from_notification)
+
 	func _process(delta: float) -> void:
 		var tick := Time.get_ticks_usec()
 		super._process(delta)
@@ -161,6 +169,7 @@ func pause_check(world: MeasuredWorld) -> void:
 	var walker_state: Array = []
 	for walker in world.walkers:
 		walker_state.append([walker.get("x"), walker.z, walker.walk_phase])
+	world.scripted_pause = true
 	world._on_pause()
 	await create_timer(0.25).timeout
 	expect(world.paused and world.drive.pos == pos and world.drive.distance_traveled == distance, "pause freezes travel")
@@ -169,6 +178,7 @@ func pause_check(world: MeasuredWorld) -> void:
 		if [world.walkers[i].get("x"), world.walkers[i].z, world.walkers[i].walk_phase] != walker_state[i]: frozen = false
 	expect(frozen, "pause freezes background walkers")
 	world._on_resume()
+	world.scripted_pause = false
 	expect(not world.paused and world.pause_menu == null, "resume restores active world")
 
 func capture_last_question(index: int, state: String) -> void:
@@ -326,6 +336,8 @@ func run() -> void:
 	started = Time.get_ticks_msec()
 	root.add_child(world)
 	if world.event.is_connected(Host.send): world.event.disconnect(Host.send)
+	world._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	expect(not world.paused and world.pause_menu == null, "OS focus cannot interrupt the automated route")
 	world.auto_answer = false
 	world.follow = false
 	world.tips_enabled = false
