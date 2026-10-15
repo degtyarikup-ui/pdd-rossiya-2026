@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve only the editable mascot's GLB viewer and its local dependencies."""
+"""Serve the isolated mascot previews and their local assets."""
 
 from __future__ import annotations
 
@@ -13,8 +13,10 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "output/mascot/model-viewer.html"
 JUGGLING_OUTPUT = ROOT / "output/mascot/juggling.html"
+WEBP_OUTPUT = ROOT / "output/mascot/webp.html"
 MODEL = ROOT / "assets/mascot/3d/cone-mascot.glb"
 JUGGLING_MODEL = ROOT / "assets/mascot/3d/cone-juggling.glb"
+RASTER = ROOT / "assets/mascot/raster"
 ROUTES = {
     "/": OUTPUT,
     "/model-viewer.html": OUTPUT,
@@ -25,11 +27,21 @@ ROUTES = {
     "/output/mascot/juggling.html": JUGGLING_OUTPUT,
     "/juggling.glb": JUGGLING_MODEL,
     "/assets/mascot/3d/cone-juggling.glb": JUGGLING_MODEL,
+    "/webp.html": WEBP_OUTPUT,
+    "/nativewebp.html": WEBP_OUTPUT,
+    "/output/mascot/webp.html": WEBP_OUTPUT,
+    "/webp/manifest.json": RASTER / "manifest.json",
     "/vendor/three.min.js": ROOT / "tools/network/editor/vendor/three.min.js",
     "/vendor/GLTFLoader.js": ROOT / "tools/network/editor/vendor/GLTFLoader.js",
     "/vendor/OrbitControls.js": ROOT / "tools/mascot/vendor/OrbitControls.js",
     "/vendor/RoomEnvironment.js": ROOT / "tools/mascot/vendor/RoomEnvironment.js",
 }
+for dimension in (384, 256):
+    for fps in (30, 24):
+        filename = f"cone-juggling-{dimension}-{fps}.webp"
+        ROUTES[f"/webp/{filename}"] = RASTER / filename
+    filename = f"cone-juggling-poster-{dimension}.webp"
+    ROUTES[f"/webp/{filename}"] = RASTER / filename
 
 
 class ViewerHandler(SimpleHTTPRequestHandler):
@@ -58,13 +70,16 @@ def main() -> None:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(ROOT / "tools/mascot/model_viewer.html", OUTPUT)
     shutil.copyfile(ROOT / "tools/mascot/juggling_viewer.html", JUGGLING_OUTPUT)
+    shutil.copyfile(ROOT / "tools/mascot/webp_viewer.html", WEBP_OUTPUT)
     print(OUTPUT, flush=True)
     print(JUGGLING_OUTPUT, flush=True)
+    print(WEBP_OUTPUT, flush=True)
     if args.build_only:
         return
     url = f"http://127.0.0.1:{args.port}/model-viewer.html"
     print(url, flush=True)
     print(f"http://127.0.0.1:{args.port}/juggling.html", flush=True)
+    print(f"http://127.0.0.1:{args.port}/webp.html", flush=True)
     if not MODEL.is_file():
         print("GLB is not built yet; the viewer will show a retry button.", flush=True)
     with ThreadingHTTPServer(("127.0.0.1", args.port), ViewerHandler) as server:
