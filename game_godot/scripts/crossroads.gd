@@ -1000,8 +1000,10 @@ func _update_gameplay_processing() -> void:
 	var mode := Node.PROCESS_MODE_DISABLED if _suspended or _exiting or is_game_over else Node.PROCESS_MODE_INHERIT
 	for node in [junction, actors_root, fx_root, sound]:
 		if node != null: node.process_mode = mode
-	if sound != null and is_instance_valid(sound._player):
-		sound._player.stream_paused = _suspended or _exiting or is_game_over
+	if sound != null:
+		for player in sound.get_children():
+			if player is AudioStreamPlayer:
+				player.stream_paused = _suspended or _exiting or is_game_over
 
 
 func _clear_input() -> void:

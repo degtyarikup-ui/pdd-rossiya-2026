@@ -16,6 +16,7 @@ static var _absent := {}         # res path -> true: the site has no such file
 static var _waiting := {}        # res path -> Array[Callable]: fetches in flight
 static var _picture_base := ""   # URL of the shared Flutter picture folder
 static var _question_audio_base := "" # URL of the shared studio recordings
+static var _answer_audio_base := "" # canonical Flutter answer effects
 static var _base := ""           # URL of the game folder (web)
 
 
@@ -27,6 +28,8 @@ static func bytes(res_path: String) -> PackedByteArray:
 	if not web():
 		if _is_picture(res_path):
 			return _picture_bytes(res_path)
+		if _is_answer_audio(res_path):
+			return _answer_audio_bytes(res_path)
 		if _is_question_audio(res_path):
 			return _question_audio_bytes(res_path)
 		return FileAccess.get_file_as_bytes(res_path)
@@ -43,6 +46,8 @@ static func exists(res_path: String) -> bool:
 	if not web():
 		if _is_picture(res_path):
 			return not _picture_bytes(res_path).is_empty()
+		if _is_answer_audio(res_path):
+			return not _answer_audio_bytes(res_path).is_empty()
 		if _is_question_audio(res_path):
 			return not _question_audio_bytes(res_path).is_empty()
 		return FileAccess.file_exists(res_path)
@@ -51,6 +56,24 @@ static func exists(res_path: String) -> bool:
 
 static func _is_picture(path: String) -> bool:
 	return path.begins_with("res://questions/") and path.ends_with(".webp")
+
+
+static func _is_answer_audio(path: String) -> bool:
+	return path in ["res://answer_audio/correct.wav", "res://answer_audio/incorrect.wav"]
+
+
+static func _answer_audio_bytes(res_path: String) -> PackedByteArray:
+	var file := res_path.get_file()
+	if Host.embedded():
+		return Engine.get_singleton("PddHost").answerAudioBytes(file.get_basename())
+	for arg in Host.user_args():
+		if str(arg).begins_with("--answer-audio-dir="):
+			var path := str(arg).trim_prefix("--answer-audio-dir=").path_join(file)
+			return FileAccess.get_file_as_bytes(path) if FileAccess.file_exists(path) else PackedByteArray()
+	var source := ProjectSettings.globalize_path("res://").path_join("../assets/audio/" + file)
+	if FileAccess.file_exists(source):
+		return FileAccess.get_file_as_bytes(source)
+	return FileAccess.get_file_as_bytes(res_path) if FileAccess.file_exists(res_path) else PackedByteArray()
 
 
 static func _is_question_audio(path: String) -> bool:
@@ -148,6 +171,10 @@ static func fetch(res_path: String, on_done: Callable) -> void:
 		if _picture_base.is_empty():
 			_picture_base = str(JavaScriptBridge.eval("new URL('../assets/assets/countries/ru/images/questions_ab/', window.location.href).href", true))
 		url = _picture_base + res_path.get_file()
+	elif _is_answer_audio(res_path):
+		if _answer_audio_base.is_empty():
+			_answer_audio_base = str(JavaScriptBridge.eval("new URL('../assets/assets/audio/', window.location.href).href", true))
+		url = _answer_audio_base + res_path.get_file()
 	elif _is_question_audio(res_path):
 		if _question_audio_base.is_empty():
 			_question_audio_base = str(JavaScriptBridge.eval("new URL('../assets/assets/audio/game_questions/', window.location.href).href", true))

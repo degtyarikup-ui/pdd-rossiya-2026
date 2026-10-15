@@ -72,3 +72,6 @@ game_godot/network/history/
 # Temporary links for standalone game exports.
 /game_godot/question_audio/*.mp3
 /game_godot/question_audio/*.mp3.import
+
+# Temporary links to canonical answer sounds for standalone Godot exports.
+/game_godot/answer_audio/

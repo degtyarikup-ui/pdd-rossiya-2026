@@ -44,3 +44,14 @@ for src in sources:
 (OUT / "index.json").write_text(json.dumps(index, indent=1) + "\n", encoding="utf-8")
 print(f"{len(index)} scenes, {len(set(index.values()))} shared pictures" +
       (" (temporary standalone links)" if args.standalone else " (no copies)"))
+
+# Standalone exports use links to the same answer WAVs, never maintained copies.
+answer_out = ROOT / "game_godot" / "answer_audio"
+answer_out.mkdir(exist_ok=True)
+for kind in ("correct", "incorrect"):
+    dst = answer_out / f"{kind}.wav"
+    dst.unlink(missing_ok=True)
+    dst.with_suffix(".wav.import").unlink(missing_ok=True)
+    if args.standalone:
+        dst.symlink_to(os.path.relpath(ROOT / "assets/audio" / dst.name, answer_out))
+        dst.with_suffix(".wav.import").write_text('[remap]\n\nimporter="keep"\n')

@@ -13,6 +13,13 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
+	for kind in ["correct", "incorrect"]:
+		var path := "res://answer_audio/%s.wav" % kind
+		var shared := PackFiles.bytes(path)
+		var source := FileAccess.get_file_as_bytes(ProjectSettings.globalize_path("res://").path_join("../assets/audio/%s.wav" % kind))
+		check(not shared.is_empty() and shared == source, "%s uses the exact Flutter WAV bytes" % kind)
+		var stream := AudioStreamWAV.load_from_buffer(shared)
+		check(stream != null and stream.get_length() > 0.0, "%s WAV decodes for Godot" % kind)
 	var sound := GameSound.new()
 	sound.enabled = false
 	root.add_child(sound)
@@ -46,11 +53,16 @@ func run() -> void:
 		sound._process(1.0 / 60.0)
 		check(sound._player.playing and sound._playback != null, "enabling starts native audio generation")
 		sound.play("correct")
-		check(sound._events.size() == 1, "enabled feedback is queued")
+		check(sound._events.is_empty(), "answer feedback does not synthesize a second tone")
+		check(sound._answers.correct.playing, "correct answer plays the shared recording")
+		check(is_equal_approx(sound._answers.correct.volume_db, linear_to_db(0.55)), "correct answer matches Flutter volume")
+		sound.play("incorrect")
+		check(sound._answers.incorrect.playing, "incorrect answer plays the shared recording")
+		check(is_equal_approx(sound._answers.incorrect.volume_db, linear_to_db(0.45)), "incorrect answer matches Flutter volume")
 		sound.play_unlock()
 		sound.enabled = false
 		sound._process(1.0 / 60.0)
-		check(not sound._player.playing and sound._playback == null and sound._events.is_empty(), "muting stops generation and clears stale feedback")
+		check(not sound._answers.correct.playing and not sound._answers.incorrect.playing and not sound._player.playing and sound._playback == null and sound._events.is_empty(), "muting stops generation and clears stale feedback")
 		var phase: float = sound._engine_phase
 		for i in 120:
 			sound._process(1.0 / 60.0)

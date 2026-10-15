@@ -1,12 +1,12 @@
-## Sounds of the game, made in code (no files), like assets/game/ambient-audio.js:
+## Driving sounds are procedural; answer effects reuse the canonical Flutter WAVs.
 ## engine that rises with speed, tyre hiss, indicator click, crash, scrape, the
-## last-seconds tick, answer tones and a soft unlock chime. Vibration goes with the sharp events.
+## last-seconds tick, recorded answer effects and a soft unlock chime. Vibration goes with the sharp events.
 class_name GameSound
 extends Node
 
 const RATE := 22050.0
 const DURATION := {
-	"click": 0.03, "tick": 0.06, "correct": 0.35, "incorrect": 0.4, "crash": 0.32, "scrape": 0.25,
+	"click": 0.03, "tick": 0.06, "crash": 0.32, "scrape": 0.25,
 	"unlock": 0.95,
 }
 const UNLOCK_NOTES := [Vector2(0.0, 523.251), Vector2(0.085, 659.255), Vector2(0.17, 783.991), Vector2(0.27, 1046.502)]
@@ -19,6 +19,7 @@ var _engine_phase := 0.0
 var _tyre_lp := 0.0
 var _impact_lp := 0.0
 var _events: Array = []
+var _answers: Dictionary = {}
 
 
 func _ready() -> void:
@@ -26,6 +27,14 @@ func _ready() -> void:
 	# playback at shutdown. Do not allocate or synthesize an audio stream in that environment.
 	if DisplayServer.get_name() == "headless":
 		return
+	for kind in ["correct", "incorrect"]:
+		var answer := AudioStreamPlayer.new()
+		answer.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
+		answer.volume_db = linear_to_db(0.55 if kind == "correct" else 0.45)
+		add_child(answer)
+		_answers[kind] = answer
+		var path := "res://answer_audio/%s.wav" % kind
+		PackFiles.fetch(path, GameSound._answer_loaded.bind(weakref(self), kind, path))
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = RATE
 	gen.buffer_length = 0.12
@@ -49,11 +58,27 @@ func _exit_tree() -> void:
 		_player.stop()
 	_playback = null
 	_events.clear()
+	for answer in _answers.values():
+		answer.stop()
+
+
+static func _answer_loaded(ok: bool, holder: WeakRef, kind: String, path: String) -> void:
+	var sound: GameSound = holder.get_ref()
+	if sound == null or not sound.is_inside_tree() or not ok:
+		return
+	var data := PackFiles.bytes(path)
+	if not data.is_empty():
+		sound._answers[kind].stream = AudioStreamWAV.load_from_buffer(data)
 
 
 ## One-shot sound by name (see DURATION). Silent when sound is off.
 func play(kind: String) -> void:
 	if enabled:
+		if kind in ["correct", "incorrect"]:
+			var answer: AudioStreamPlayer = _answers.get(kind)
+			if answer != null and answer.stream != null:
+				answer.play()
+			return
 		if kind == "crash" and _events.any(func(e): return e.kind == "crash"):
 			return
 		_events.append({ "kind": kind, "t": 0.0, "dur": DURATION.get(kind, 0.1) })
@@ -77,6 +102,8 @@ func _process(_delta: float) -> void:
 	if _player == null:
 		return
 	if not enabled:
+		for answer in _answers.values():
+			answer.stop()
 		if _player.playing:
 			_player.stop()
 		_playback = null
@@ -124,12 +151,8 @@ func _one_shot(e: Dictionary) -> float:
 			return sin(TAU * 1400.0 * t) * 0.25 * env
 		"tick":
 			return sin(TAU * 1000.0 * t) * 0.2 * env
-		"correct":
-			return sin(TAU * (880.0 * t + 220.0 * t * u)) * 0.2 * env
 		"unlock":
 			return _unlock_chime(t)
-		"incorrect":
-			return (1.0 if sin(TAU * 220.0 * t) >= 0.0 else -1.0) * 0.12 * env
 		"crash":
 			_impact_lp += ((randf() * 2.0 - 1.0) - _impact_lp) * 0.045
 			var attack := minf(1.0, t / 0.012)

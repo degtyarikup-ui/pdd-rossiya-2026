@@ -67,6 +67,17 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
         return byteArrayOf()
     }
 
+    /** The same answer effects used by the Flutter feed and exams. */
+    @UsedByGodot
+    fun answerAudioBytes(kind: String): ByteArray {
+        if (kind != "correct" && kind != "incorrect") return byteArrayOf()
+        return try {
+            host.assets.open("flutter_assets/assets/audio/$kind.wav").use { it.readBytes() }
+        } catch (_: java.io.IOException) {
+            byteArrayOf()
+        }
+    }
+
     /** The existing studio voice, converted once into the shared Flutter MP3 assets. */
     @UsedByGodot
     fun questionAudioBytes(hash: String): ByteArray {

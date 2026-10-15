@@ -271,6 +271,15 @@ Flutter `scripts/godot_dev.sh android|ios` временно создаёт сс�
 сначала запустить генератор с `--standalone`; после экспорта — без этого флага.
 Ссылки и их `.import` игнорируются Git.
 
+Звуки верного и неверного ответа во всех трёх играх — те же
+`assets/audio/correct.wav` и `incorrect.wav`, что в ленте и экзаменах Flutter,
+с громкостью 0,55 / 0,45. `GameSound` воспроизводит WAV без синтеза альтернативных
+тонов. `PackFiles` читает общий ресурс: Android — через `PddHost.answerAudioBytes`,
+iOS — через `--answer-audio-dir`, веб — из соседних Flutter-ресурсов,
+компьютер — непосредственно из `assets/audio/`. Встроенная игра не хранит копий;
+для standalone генератор `export_question_images.py --standalone` временно
+подключает ссылки на исходные WAV. Проверка: `tests/sound_check.gd` (headless и native).
+
 Озвучка вопросов — существующие российские записи `assets/audio/feed/q_<id>.opus`,
 без системного синтеза речи. Godot не декодирует Opus, поэтому
 `python3 tools/godot_export/export_question_audio.py` один раз преобразует только
