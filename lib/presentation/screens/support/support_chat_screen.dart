@@ -13,6 +13,7 @@ import 'package:pdd_app/data/services/support_chat_service.dart';
 import 'package:pdd_app/data/services/support_inbox.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 /// Экран интерактивного чата техподдержки приложения.
 class SupportChatScreen extends StatefulWidget {
@@ -445,12 +446,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           children: [
             Expanded(
               child: _isLoading
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        color: colors.accent,
-                        strokeWidth: 2.5,
-                      ),
-                    )
+                  ? const Center(child: AppLoadingIndicator())
                   : _messages.isEmpty
                       ? _buildEmptyState(colors)
                       : RefreshIndicator(

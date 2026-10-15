@@ -14,6 +14,7 @@ import 'package:pdd_app/presentation/screens/feed/widgets/feed_card.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/feed_streak_dialog.dart';
 import 'package:pdd_app/presentation/screens/feed/widgets/tip_feed_card.dart';
 import 'package:pdd_app/presentation/widgets/ai_explanation_sheet.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -367,7 +368,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       return feedAsync.when(
         loading: () => Scaffold(
           backgroundColor: colors.homeScreenBackground,
-          body: Center(child: CircularProgressIndicator(color: colors.accent)),
+          body: const Center(child: AppLoadingIndicator()),
         ),
         error: (err, stack) => Scaffold(
           backgroundColor: colors.homeScreenBackground,

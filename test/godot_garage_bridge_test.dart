@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
+import 'package:pdd_app/data/services/game_question_history_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
@@ -21,7 +23,10 @@ void main() {
   final garage = GameGarageService.instance;
   late ProgressDataSource progress;
   late List<List<String>> launches;
+  late BuildContext gameContext;
+  late WidgetRef gameRef;
   String? nativeResponse;
+  Completer<String?>? nativePending;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -31,6 +36,7 @@ void main() {
     await progress.init();
     launches = [];
     nativeResponse = null;
+    nativePending = null;
     HapticFeedbackHelper.setEnabled(false);
     SoundEffectsService.instance.setEnabled(false);
     updateAppLocale(const Locale('ru'));
@@ -40,7 +46,7 @@ void main() {
           launches.add(
             List<String>.from((call.arguments as Map)['args'] as List),
           );
-          return nativeResponse;
+          return nativePending?.future ?? nativeResponse;
         });
   });
 
@@ -72,22 +78,26 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Consumer(
-              builder: (context, ref, _) => Column(
-                children: [
-                  TextButton(
-                    onPressed: () => GodotGame.play(context, ref),
-                    child: const Text('City'),
-                  ),
-                  TextButton(
-                    onPressed: () => GodotGame.playRegulator(context, ref),
-                    child: const Text('Regulator'),
-                  ),
-                  TextButton(
-                    onPressed: () => GodotGame.playCrossroads(context, ref),
-                    child: const Text('Crossroads'),
-                  ),
-                ],
-              ),
+              builder: (context, ref, _) {
+                gameContext = context;
+                gameRef = ref;
+                return Column(
+                  children: [
+                    TextButton(
+                      onPressed: () => GodotGame.play(context, ref),
+                      child: const Text('City'),
+                    ),
+                    TextButton(
+                      onPressed: () => GodotGame.playRegulator(context, ref),
+                      child: const Text('Regulator'),
+                    ),
+                    TextButton(
+                      onPressed: () => GodotGame.playCrossroads(context, ref),
+                      child: const Text('Crossroads'),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -126,6 +136,138 @@ void main() {
     'correct': correct,
     'score': correct * 10,
     'car': {'id': 'hatch', 'paint': 'red'},
+  });
+
+  Future<void> pumpUntilLaunched(WidgetTester tester, int count) async {
+    for (var attempt = 0; attempt < 20 && launches.length < count; attempt++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(launches, hasLength(count));
+  }
+
+  for (final firstGame in ['City', 'Regulator', 'Crossroads']) {
+    testWidgets('$firstGame reserves preparation and native startup once', (
+      tester,
+    ) async {
+      await open(tester, premium: true);
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      nativePending = Completer<String?>();
+      final first = switch (firstGame) {
+        'City' => GodotGame.play(gameContext, gameRef),
+        'Regulator' => GodotGame.playRegulator(gameContext, gameRef),
+        _ => GodotGame.playCrossroads(gameContext, gameRef),
+      };
+      // These calls arrive before even the preparation overlay's first frame.
+      await GodotGame.play(gameContext, gameRef);
+      await GodotGame.playRegulator(gameContext, gameRef);
+      await GodotGame.playCrossroads(gameContext, gameRef);
+      await pumpUntilLaunched(tester, 1);
+      // A second game is still rejected while the first native result is pending.
+      await GodotGame.playCrossroads(gameContext, gameRef);
+      expect(launches, hasLength(1));
+      nativePending!.complete(null);
+      await tester.pumpAndSettle();
+      await first;
+
+      nativePending = null;
+      await tester.tap(find.text('Regulator'));
+      await tester.pumpAndSettle();
+      expect(launches, hasLength(2));
+      debugDefaultTargetPlatformOverride = null;
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets(
+    'Back before preparation does not read a disposed ref or start a game',
+    (tester) async {
+      await open(tester, premium: true);
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final navigator = Navigator.of(gameContext);
+      navigator.push<void>(
+        PageRouteBuilder<void>(
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          pageBuilder: (_, _, _) => Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) {
+                gameContext = context;
+                gameRef = ref;
+                return const Text('Temporary games page');
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final first = GodotGame.play(gameContext, gameRef);
+      navigator.pop();
+      await tester.pump();
+      await tester.pump();
+      await first;
+      expect(launches, isEmpty);
+      expect(find.text('Temporary games page'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('Regulator'));
+      await tester.pumpAndSettle();
+      expect(launches, hasLength(1));
+      debugDefaultTargetPlatformOverride = null;
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'result restart reserves a new run while the old dialog completes',
+    (tester) async {
+      await open(tester, premium: true);
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      nativeResponse = jsonEncode({
+        'run_started': true,
+        'finished': true,
+        'answered': 20,
+        'correct': 0,
+        'score': 0,
+      });
+      await tester.tap(find.text('City'));
+      await tester.pumpAndSettle();
+      expect(find.text(appL10n.gameRestart), findsOneWidget);
+      nativePending = Completer<String?>();
+      await tester.tap(find.text(appL10n.gameRestart));
+      await pumpUntilLaunched(tester, 2);
+      await GodotGame.playRegulator(gameContext, gameRef);
+      expect(launches, hasLength(2));
+      nativePending!.complete(null);
+      await tester.pumpAndSettle();
+      debugDefaultTargetPlatformOverride = null;
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('city history persists after its launching route is disposed', (
+    tester,
+  ) async {
+    await open(tester, premium: true);
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    nativePending = Completer<String?>();
+    final first = GodotGame.play(gameContext, gameRef);
+    await pumpUntilLaunched(tester, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+    final history = {
+      'version': 1,
+      'sequence': 3,
+      'last_shown': {'ticket_10_13': 3},
+      'show_counts': {'ticket_10_13': 2},
+    };
+    nativePending!.complete(jsonEncode({'question_history': history}));
+    await tester.pump();
+    await first;
+    final prefs = await SharedPreferences.getInstance();
+    expect(
+      jsonDecode(prefs.getString(GameQuestionHistoryService.storageKey)!),
+      history,
+    );
+    debugDefaultTargetPlatformOverride = null;
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(

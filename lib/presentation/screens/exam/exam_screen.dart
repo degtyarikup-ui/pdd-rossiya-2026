@@ -23,6 +23,7 @@ import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_review_screen.dart';
 import 'package:pdd_app/presentation/widgets/share_result_card.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
 import 'package:pdd_app/presentation/widgets/question_number_chip.dart';
 
@@ -646,7 +647,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     }
 
     if (_examQuestions.isEmpty) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: AppLoadingIndicator()));
     }
 
     final appSettings = ref.watch(appSettingsProvider);

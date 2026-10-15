@@ -9,6 +9,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/presentation/screens/signs/signs_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/presentation/widgets/app_pill_search_field.dart';
 import 'package:pdd_app/core/utils/safe_user_message.dart';
 
@@ -203,7 +204,7 @@ class _PddScreenState extends ConsumerState<PddScreen> {
           );
         }
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: AppLoadingIndicator());
         }
 
         final normalizedQuery =

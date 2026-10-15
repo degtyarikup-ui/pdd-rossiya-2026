@@ -321,6 +321,9 @@ MP3 и локальный манифест не коммитятся. В Git л�
 разбор ошибок; канал `pdd/godot_game`. Android — `android/app/src/godot/` (экран игры в процессе
 `:game`), iOS — `ios/Runner/PddGodotGame.mm`, web — iframe `/app/godot/`.
 Экономика заездов и очков — `docs/game/game-economy-2026-10-10.md`.
+Загрузчик и handover движка — [маскот WebP](../application/mascot-webp.md):
+Host.loading сигнализирует готовый кадр, Android рисует нативный маскот,
+iOS и веб используют загрузчик приложения до готовности игрового окна.
 
 ## Документы
 

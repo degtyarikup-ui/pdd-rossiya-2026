@@ -9,6 +9,7 @@ import 'package:pdd_app/core/utils/safe_user_message.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 class TopicsScreen extends ConsumerStatefulWidget {
   const TopicsScreen({super.key});
@@ -116,7 +117,7 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
                     },
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: AppLoadingIndicator()),
                 error: (e, _) => Center(child: Text(dataLoadErrorMessage(e))),
               ),
             ),
