@@ -55,6 +55,13 @@
     return () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
+  // Per-column random streaks (grain lines). The last column takes the first one's value, so the
+  // tile repeats without a line at its edge (a plain random array jumps there every period).
+  function wrappedStreaks(w, amp, rand) {
+    const s = Array.from({ length: w }, () => (rand() - 0.5) * amp);
+    s[w - 1] = s[0];
+    return s;
+  }
   // Smooth value noise that repeats exactly over `size` pixels.
   function tileNoise(size, cells, rand) {
     const g = Float32Array.from({ length: cells * cells }, rand);
@@ -121,7 +128,7 @@
       const stoneTone = [(rand() - 0.5) * 0.05, (rand() - 0.5) * 0.05];
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
         const s = Math.floor(x / (w / 2)), u = x % (w / 2), height = 1 - y / (h - 1);
-        let val = 0.53 + stoneTone[s] + (rand() - 0.5) * 0.05 + (n(x, y * 0.25) - 0.5) * 0.04;
+        let val = 0.53 + stoneTone[s] + (rand() - 0.5) * 0.05 + (n(x, y) - 0.5) * 0.04;
         if (height > 0.86) val += 0.13;                       // chamfer catching the light
         else if (height > 0.8) val -= 0.04;                   // its lower edge
         if (height < 0.16) val -= 0.09 * (1 - height / 0.16); // soiled foot
@@ -150,9 +157,9 @@
     sleeper(w, h) {
       const rand = rng(53), r = new Float32Array(w * h), n = tileNoise(w, 8, rand);
       // Grain runs along the sleeper (texture V, world Z of a crossing).
-      const streak = Array.from({ length: w }, () => (rand() - 0.5) * 0.08);
+      const streak = wrappedStreaks(w, 0.08, rand);
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
-        r[y * w + x] = 0.5 + streak[x] + (n(x * 4, y * 0.5) - 0.5) * 0.08 + (rand() - 0.5) * 0.04;
+        r[y * w + x] = 0.5 + streak[x] + (n(x * 4, y) - 0.5) * 0.08 + (rand() - 0.5) * 0.04;
       centre(r);
       return { r, g: new Float32Array(w * h).fill(0.5), b: r };
     },
@@ -162,7 +169,7 @@
       const rand = rng(67), r = new Float32Array(w * h), n = tileNoise(w, 8, rand);
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
         const v = y / (h - 1), dv = Math.min(Math.abs(v - 0.3), Math.abs(v - 0.7));
-        let val = 0.52 + (n(x, y / 4) - 0.5) * 0.06 + (rand() - 0.5) * 0.06;
+        let val = 0.52 + (n(x, y) - 0.5) * 0.06 + (rand() - 0.5) * 0.06;
         if (x < 1 || x > w - 2) val = 0.32;                      // panel joints
         if (dv < 0.018) val = 0.24; else if (dv < 0.026) val = 0.4; // flangeways
         if (v < 0.02 || v > 0.98) val = 0.3;                     // rubber edge strips
@@ -185,10 +192,12 @@
       const drips = Array.from({ length: 7 }, () => [rand() * w, 0.2 + rand() * 0.5, 2 + rand() * 4]);
       return wall(w, h, rand, b => {
         for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-          const height = 1 - y / (h - 1); // canvas top = top of the storey
+          // Distance to the nearest tile edge (0 at the edge, 0.5 in the middle): the cornice band and
+          // the drips wrap around the edge, so the tile repeats without a line at its top or bottom.
+          const edge = Math.min(y, h - 1 - y) / h;
           let v = 0.5 + (n1(x, y) - 0.5) * 0.06 + (n2(x, y) - 0.5) * 0.05 + (n3(x, y) - 0.5) * 0.05 + (rand() - 0.5) * 0.04;
-          for (const [dx, len, wid] of drips) { const d = Math.abs(((x - dx + w * 1.5) % w) - w / 2); if (height > 1 - len && d < wid) v -= 0.025 * (1 - d / wid) * (height - (1 - len)) / len; }
-          if (height > 0.955) v -= 0.07; else if (height > 0.93) v += 0.05; // storey cornice: shadow, lit edge
+          for (const [dx, len, wid] of drips) { const d = Math.abs(((x - dx + w * 1.5) % w) - w / 2); if (edge < len && d < wid) v -= 0.025 * (1 - d / wid) * (len - edge) / len; }
+          if (edge < 0.045) v -= 0.07; else if (edge < 0.07) v += 0.05; // cornice: shadow, lit edge
           b[y * w + x] = v;
         }
       });
@@ -279,10 +288,10 @@
       return { r, g: new Float32Array(w * h).fill(0.5), b: r };
     },
     wood(w, h) {
-      const rand = rng(103), n = tileNoise(w, 8, rand), streak = Array.from({ length: w }, () => (rand() - 0.5) * 0.08);
+      const rand = rng(103), n = tileNoise(w, 8, rand), streak = wrappedStreaks(w, 0.08, rand);
       const b = new Float32Array(w * h);
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
-        b[y * w + x] = 0.5 + streak[x] + (n(x * 3, y * 0.4) - 0.5) * 0.1 + (rand() - 0.5) * 0.03;
+        b[y * w + x] = 0.5 + streak[x] + (n(x * 3, y) - 0.5) * 0.1 + (rand() - 0.5) * 0.03;
       centre(b);
       return { r: b, g: macroChannel(w, h, rand), b };
     },
@@ -309,7 +318,7 @@
       return { r, g: macroChannel(w, h, rand), b: r };
     },
     bark(w, h) {
-      const rand = rng(127), b = new Float32Array(w * h), streak = Array.from({ length: w }, () => (rand() - 0.5) * 0.18), n = tileNoise(w, 8, rand);
+      const rand = rng(127), b = new Float32Array(w * h), streak = wrappedStreaks(w, 0.18, rand), n = tileNoise(w, 8, rand);
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) b[y * w + x] = 0.5 + streak[x] * (0.6 + n(x, y)) + (rand() - 0.5) * 0.06;
       centre(b);
       return { r: b, g: new Float32Array(w * h).fill(0.5), b };

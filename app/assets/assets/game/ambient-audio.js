@@ -160,6 +160,26 @@
       o.connect(og).connect(master); o.start(t); o.stop(t + 0.4);
     }
 
+    // Визг тормозов при экстренной остановке перед пешеходом/препятствием
+    function screech() {
+      if (!live()) return;
+      const t = ctx.currentTime;
+      const s = ctx.createBufferSource(), band = ctx.createBiquadFilter(), g = ctx.createGain();
+      s.buffer = noise(); band.type = 'bandpass';
+      band.frequency.setValueAtTime(2600, t);
+      band.frequency.linearRampToValueAtTime(1700, t + 0.45);
+      band.Q.value = 7;
+      env(g, t, 0.28, 0.02, 0.45);
+      s.connect(band).connect(g).connect(master); s.start(t); s.stop(t + 0.5);
+
+      const o = ctx.createOscillator(), og = ctx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(2200, t);
+      o.frequency.exponentialRampToValueAtTime(1300, t + 0.42);
+      env(og, t, 0.12, 0.02, 0.42);
+      o.connect(og).connect(master); o.start(t); o.stop(t + 0.45);
+    }
+
     function tap() {
       if (!live()) return;
       const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
@@ -199,7 +219,7 @@
       else if (enabled && unlocked) ctx.resume().then(startBed).catch(() => {});
     });
 
-    return { unlock, setEnabled, engine, bell, siren, crash, tap, chime };
+    return { unlock, setEnabled, engine, bell, siren, crash, screech, tap, chime };
   }
 
   window.PDD_AMBIENT = { create };
