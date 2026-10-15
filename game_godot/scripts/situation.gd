@@ -900,7 +900,7 @@ const BADGE_PIXEL := 0.0125   # metres per pixel
 const BADGE_FONT := 40        # font size in pixels (about 0.5 m high text)
 const BADGE_PAD := 14         # plate padding around the text, pixels
 const BADGE_LETTER_FONT := 64
-const BADGE_LETTER_PIXEL := 0.036
+const BADGE_LETTER_PIXEL := 0.016
 
 static func _badge_node(text: String, color: Color) -> Node3D:
 	var root := Node3D.new()
