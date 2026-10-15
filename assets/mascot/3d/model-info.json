@@ -1,0 +1,15 @@
+{
+  "mesh_objects": 25,
+  "joints": 11,
+  "triangles": 14046,
+  "materials": 8,
+  "textures": 0,
+  "glb_bytes": 458356,
+  "morph_controls": [
+    "BlinkLeft",
+    "BlinkRight",
+    "Smile"
+  ],
+  "animations": [],
+  "source": "Blender 4.5 LTS; real geometry + Armature"
+}
