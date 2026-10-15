@@ -337,8 +337,9 @@
         <input class="name-input" type="text" data-text="name" value="${esc(a.name || "")}" placeholder="Подпись над ним в игре">`)}
       ${a.type === "tram" && (s.tracks || []).length ? tramCard(s, a) : ""}
       ${a.type !== "pedestrian" && a.type !== "special" ? card("Цвет", `<div class="swatches">${PAINTS.map((c) => `<button class="sw ${(a.paint || null) === c ? "on" : ""}" data-chip="paint" data-value="${c || ""}" style="--c:${c || "transparent"}" data-tip="${c ? "" : "Как у модели"}">${c ? "" : ic("x")}</button>`).join("")}</div>`) : ""}
-      ${ActorSignals.supports(a.type) ? card("Сигналы", toggle("hazards", "Аварийная сигнализация", ActorSignals.hazards(a), "alert")
-        + `<p class="muted">Обе стороны мигают вместе. Для неподвижного автомобиля выберите «Стоит» в разделе «Куда едет».</p>`) : ""}
+      ${ActorSignals.supports(a.type) ? card("Сигналы", `<label class="route-field">Поворотник<select data-text="turnSignal">${[["auto","Автоматически"],["left","Левый"],["right","Правый"],["off","Выключен"]].map(([value,title]) => `<option value="${value}" ${ActorSignals.mode(a) === value ? "selected" : ""}>${title}</option>`).join("")}</select></label>`
+        + toggle("hazards", "Аварийная сигнализация", ActorSignals.hazards(a), "alert")
+        + `<p class="muted">Автоматически — по выбранному манёвру или пути. Ручной поворотник не меняет маршрут. Аварийка включает обе стороны. Для неподвижной машины выберите «Стоит» в разделе «Куда едет».</p>`) : ""}
       ${a.track ? card("Куда едет", `${chips("move", [{ value: "stay", title: "Стоит", icon: "parked" }, { value: "go", title: "Едет по пути", icon: "route" }], moving ? "go" : "stay")}
         ${route ? button("to-route", "Выбрать траекторию пути", "route", "ghost wide") : ""}`) : card("Куда едет", lane
         ? `${chips("way", [{ value: "stay", icon: "parked", tip: "Стоит" }, ...["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !ways.includes(k) }))], moving ? (a.way || "straight") : "stay", { cls: "arrows" })}${button("reverse", "Ехать в другую сторону", "rotr", "ghost wide")}
@@ -355,6 +356,7 @@
       ...common,
       "chip:paint": (v) => App.edit(() => { if (v) a.paint = v; else delete a.paint; }),
       "toggle:hazards": on => App.edit(() => ActorSignals.setHazards(a,on)),
+      "text:turnSignal": v => { if (["auto","left","right","off"].includes(v)) App.edit(() => ActorSignals.setTurn(a,v), { rebuild: false }); },
       reverse: () => App.edit(() => { a.yaw = App.r3(((a.yaw || 0) + 2 * Math.PI) % (2 * Math.PI) - Math.PI); }),
       "to-route": () => { if (route) App.select({ t: "route", id: route.id }); },
       "chip:track": (v) => App.edit((sc) => {

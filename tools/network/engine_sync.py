@@ -170,6 +170,8 @@ def sync(sid: str) -> dict:
         a["paint"] = na.get("paint")
         # The editor's chosen direction overrides archived signal sides at runtime.
         a["way"] = na.get("way")
+        signal = (na.get("behaviour") or {}).get("turnSignal")
+        a["turnSignal"] = signal if signal in ("left", "right", "off") else "auto"
         pos = [na["pos"][0], 0.0, na["pos"][1]]
         a["pos"] = pos
         a["yaw"] = na["yaw"]

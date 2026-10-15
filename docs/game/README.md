@@ -120,6 +120,8 @@ godot --headless --path game_godot --script res://tests/controls_layout_check.gd
 godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # штатные линзы, мигание и синхронное процедурное свечение
 godot --path game_godot --script res://tests/beacon_render_check.gd # дневная яркость маячков ДПС/спецмашин относительно аварийки, low/high
 godot --headless --path game_godot --script res://tests/question_signals_check.gd # намерения игрока/участников, вопрос без задержки, поворотники и пауза
+tools/network/.venv/bin/python tools/network/tests/actor_turn_signals_check.py # реальный инспектор, ручные поворотники, неизменный путь и экспорт; фикстуры в scratch
+godot --headless --path game_godot --script res://tests/actor_turn_signals_check.gd # ручной/автоматический сигнал, линзы всех типов транспорта, аварийка и ответ
 tools/network/.venv/bin/python tools/network/tests/show_player_guide_check.py # экспорт переключателя синей стрелки на копиях, фикстуры в scratch
 godot --headless --path game_godot --script res://tests/show_player_guide_check.gd # синяя стрелка/А-Б, старый guide.glb, камера и неизменный реальный проезд
 godot --headless --path game_godot --script res://tests/tram_question_signals_check.gd # правые сигналы трамваев 15/13, 28/13, 36/14: линзы, ореолы, ответ, пауза и выключение

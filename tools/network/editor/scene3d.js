@@ -414,38 +414,44 @@ const Scene3D = (() => {
   }
 
   // Archived editor models have no animated indicator surfaces. A soft amber
-  // preview marks the four lamps; Godot uses the vehicle's own authored lenses.
-  let hazardMaterial = null;
-  function hazardPreview(actor) {
+  // preview marks the selected side(s); Godot uses the vehicle's own lenses.
+  let signalMaterial = null;
+  function signalPreview(actor) {
     if (!ActorSignals.supports(actor.type)) return null;
-    if (!hazardMaterial) {
+    if (!signalMaterial) {
       const canvas = document.createElement("canvas"); canvas.width = canvas.height = 64;
       const ctx = canvas.getContext("2d"), gradient = ctx.createRadialGradient(32,32,0,32,32,32);
       gradient.addColorStop(0,"#fff9d8"); gradient.addColorStop(.2,"#ffc14d"); gradient.addColorStop(1,"rgba(255,145,0,0)");
       ctx.fillStyle = gradient; ctx.fillRect(0,0,64,64);
-      hazardMaterial = new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending});
+      signalMaterial = new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending});
     }
     const lights = new THREE.Group(), scale = actor.scale?.[0] || 1;
-    lights.name = "editor_hazard_preview";
+    lights.name = "editor_signal_preview";
     const hw = (actor.halfWidth || .95)/scale, hl = (actor.halfLength || 2.1)/scale;
     for (const x of [-hw*.95,hw*.95]) for (const z of [-hl*.9,hl*.9]) {
-      const lamp = new THREE.Sprite(hazardMaterial);
+      const lamp = new THREE.Sprite(signalMaterial);
+      lamp.userData.side = x > 0 ? "L" : "R";
       lamp.position.set(x,.8,z); lamp.scale.setScalar(.65/scale); lights.add(lamp);
     }
     lights.visible = false;
     return lights;
   }
 
-  function updateHazards(now) {
+  function updateActorSignals(now) {
     for (const actor of model?.actors || []) {
-      const g = anchors.get(`actor:${actor.id}`)?.group, lights = g?.getObjectByName("editor_hazard_preview");
+      const g = anchors.get(`actor:${actor.id}`)?.group, lights = g?.getObjectByName("editor_signal_preview");
       if (!lights) continue;
-      const enabled = ActorSignals.hazards(actor);
-      if (enabled !== g.userData.hazardsEnabled) {
-        g.userData.hazardsEnabled = enabled; g.userData.hazardsSince = now;
+      const signal = `${ActorSignals.hazards(actor)}:${ActorSignals.side(actor,model)}`;
+      if (signal !== g.userData.signalState) {
+        g.userData.signalState = signal; g.userData.signalsSince = now;
       }
-      const visible = enabled && ActorSignals.pulse((now-g.userData.hazardsSince)/1000);
+      const sides = ActorSignals.litSides(actor,model,(now-g.userData.signalsSince)/1000);
+      const visible = sides.left || sides.right;
       if (lights.visible !== visible) { lights.visible = visible; needsRender = true; }
+      for (const lamp of lights.children) {
+        const on = lamp.userData.side === "L" ? sides.left : sides.right;
+        if (lamp.visible !== on) { lamp.visible = on; needsRender = true; }
+      }
     }
   }
 
@@ -494,7 +500,7 @@ const Scene3D = (() => {
     } else if (t === "actor") {
       const ped = o.type === "pedestrian" || o.type === "cyclist";
       attach(`/asset/scene/${o.asset}`, fallbackBox(TYPE_COLOUR[o.type] || 0x888888, ped ? [0.6, 1.7, 0.6] : [1.9, 1.4, 4.2]));
-      const lights = hazardPreview(o);
+      const lights = signalPreview(o);
       if (lights) g.add(lights);
     } else if (t === "light") {
       const isTram = !!o.tram;
@@ -1212,7 +1218,7 @@ const Scene3D = (() => {
     requestAnimationFrame(loop);
     const now = performance.now();
     emit("frame", now);
-    updateHazards(now);
+    updateActorSignals(now);
     updateSignalCycles(now);
     if (!needsRender) return;
     needsRender = false;

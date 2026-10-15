@@ -135,10 +135,23 @@ static func maneuver_side(maneuver: String) -> String:
 static func actor_signal_side(actor: Dictionary, distance := 0.0, source: Dictionary = {}) -> String:
 	if not str(actor.get("type", "")) in SIGNAL_KINDS: return ""
 	var way = actor.get("way")
+	var manual = actor.get("turnSignal", "auto")
 	for authored in source.get("actors", []):
 		if str(authored.id) == str(actor.id):
 			way = authored.get("way")
+			var behaviour = authored.get("behaviour")
+			manual = behaviour.get("turnSignal", "auto") if behaviour is Dictionary else "auto"
 			break
+	# A manual lamp is independent of route recognition and archived signal plans.
+	# Stationary participants keep it; moving ones cancel after clearing the manoeuvre.
+	if manual in ["left", "right", "off"]:
+		if actor.get("staysPut", false): return maneuver_side(str(manual))
+		var end := INF
+		if actor.get("clearDistance") != null and float(actor.clearDistance) > 0.0:
+			end = float(actor.clearDistance)
+		if float(actor.get("length", 0.0)) > 0.0:
+			end = minf(end, float(actor.length))
+		return maneuver_side(str(manual)) if distance < end else ""
 	var explicit_way: bool = way in ["left", "right", "straight", "uturn"]
 	var plan = actor.get("signalPlan")
 	if plan is Array and not plan.is_empty():
