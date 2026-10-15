@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Конус · ПДД Россия</title>
+<style>
+  :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #172233; background: #f8f8fa; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 36px 24px; }
+  main { max-width: 880px; margin: auto; }
+  header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; }
+  h1 { font-size: 24px; font-weight: 650; letter-spacing: -.6px; margin: 0; }
+  .label { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #778298; }
+  .stage { display: grid; place-items: center; margin: 26px 0 20px; min-height: 400px; border-radius: 28px; transition: background .2s; background: #eef3fb; }
+  .stage[data-theme="dark"] { background: #181b22; }
+  .stage[data-theme="brand"] { background: #0574f8; }
+  .stage svg { width: min(360px, 100%); height: auto; overflow: visible; }
+  .controls, .themes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .controls { justify-content: space-between; }
+  button { font: inherit; font-size: 14px; border: 0; background: #e9edf3; color: #33435b; padding: 11px 16px; border-radius: 12px; cursor: pointer; min-height: 44px; }
+  button[aria-pressed="true"] { color: #fff; background: #0574f8; }
+  button:focus-visible { outline: 3px solid #87b8fa; outline-offset: 3px; }
+  .small { display: flex; gap: 32px; align-items: end; margin-top: 32px; flex-wrap: wrap; }
+  .sample { text-align: center; color: #778298; font-size: 12px; }
+  .sample svg { display: block; margin: auto; }
+  p { color: #778298; font-size: 13px; line-height: 1.6; margin: 26px 0 0; }
+  @media (max-width: 450px) { body { padding: 22px 16px; } .stage { min-height: 330px; } .small { gap: 18px; } }
+</style>
+<main>
+  <header><h1>Маленький помощник</h1><span class="label">ПДД Россия · вектор</span></header>
+  <div class="stage" data-theme="light" role="img" aria-label="Конус мягко покачивается, показывает большой палец, моргает и подмигивает.">
+    <!-- MASCOT -->
+  </div>
+  <div class="controls">
+    <div class="themes" aria-label="Фон">
+      <button type="button" data-theme="light" aria-pressed="true">Светлый</button>
+      <button type="button" data-theme="dark" aria-pressed="false">Тёмный</button>
+      <button type="button" data-theme="brand" aria-pressed="false">Фирменный</button>
+    </div>
+    <button id="pause" type="button" aria-pressed="false">Пауза</button>
+  </div>
+  <div class="small" aria-label="Проверка читаемости в размере загрузчика">
+    <div class="sample" data-size="72"><span>72 px</span></div>
+    <div class="sample" data-size="112"><span>112 px</span></div>
+    <div class="sample" data-size="144"><span>144 px</span></div>
+  </div>
+  <p>Плавный цикл 6 секунд · дыхание и покачивание · жест поддержки · моргание и подмигивание<br>Прозрачный фон · без растровых текстур, фильтров и внешних ресурсов</p>
+</main>
+<script>
+  const stage = document.querySelector('.stage');
+  document.querySelectorAll('button[data-theme]').forEach(button => {
+    button.addEventListener('click', () => {
+      stage.dataset.theme = button.dataset.theme;
+      document.querySelectorAll('button[data-theme]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    });
+  });
+  const pause = document.getElementById('pause');
+  pause.addEventListener('click', () => {
+    const paused = pause.getAttribute('aria-pressed') !== 'true';
+    document.querySelectorAll('svg').forEach(svg => svg.classList.toggle('paused', paused));
+    pause.setAttribute('aria-pressed', String(paused));
+    pause.textContent = paused ? 'Продолжить' : 'Пауза';
+  });
+  document.querySelectorAll('.sample').forEach((sample, index) => {
+    const copy = stage.querySelector('svg').cloneNode(true);
+    copy.classList.add('still');
+    copy.setAttribute('aria-hidden', 'true');
+    // Re-scope IDs and references so no resource/group IDs are duplicated.
+    const suffix = '-sample-' + index;
+    copy.querySelectorAll('[id]').forEach(node => node.id += suffix);
+    copy.querySelectorAll('*').forEach(node => {
+      for (const attribute of [...node.attributes]) {
+        if (attribute.value.includes('url(#')) node.setAttribute(attribute.name, attribute.value.replace(/url\(#([^)]*)\)/g, 'url(#$1' + suffix + ')'));
+      }
+    });
+    copy.querySelector('style').remove();
+    copy.style.width = sample.dataset.size + 'px';
+    copy.style.height = sample.dataset.size + 'px';
+    sample.prepend(copy);
+  });
+  document.addEventListener('visibilitychange', () => {
+    document.querySelectorAll('svg').forEach(svg => svg.classList.toggle('paused', document.hidden || pause.getAttribute('aria-pressed') === 'true'));
+  });
+</script>
+</html>
