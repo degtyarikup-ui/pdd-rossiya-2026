@@ -49,6 +49,8 @@ void main() {
     HapticFeedbackHelper.setEnabled(true);
     SoundEffectsService.instance.setEnabled(true);
     debugDefaultTargetPlatformOverride = null;
+    TestWidgetsFlutterBinding.instance.platformDispatcher
+        .clearPlatformBrightnessTestValue();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
   });
@@ -57,6 +59,7 @@ void main() {
     WidgetTester tester, {
     bool premium = false,
     Locale locale = const Locale('ru'),
+    ThemeMode themeMode = ThemeMode.system,
   }) async {
     garage.resetForTest();
     updateAppLocale(locale);
@@ -68,6 +71,9 @@ void main() {
         ],
         child: MaterialApp(
           locale: locale,
+          theme: ThemeData.light(),
+          darkTheme: ThemeData.dark(),
+          themeMode: themeMode,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
@@ -127,6 +133,42 @@ void main() {
     'score': correct * 10,
     'car': {'id': 'hatch', 'paint': 'red'},
   });
+
+  for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+    testWidgets(
+      'all games follow the selected app theme on $platform on every launch',
+      (tester) async {
+        for (final brightness in [
+          Brightness.light,
+          Brightness.dark,
+          Brightness.light,
+        ]) {
+          tester.binding.platformDispatcher.platformBrightnessTestValue =
+              brightness == Brightness.light
+              ? Brightness.dark
+              : Brightness.light;
+          await open(
+            tester,
+            themeMode: brightness == Brightness.dark
+                ? ThemeMode.dark
+                : ThemeMode.light,
+          );
+          for (final game in ['City', 'Regulator', 'Crossroads']) {
+            debugDefaultTargetPlatformOverride = platform;
+            await tester.tap(find.text(game));
+            await tester.pumpAndSettle();
+            debugDefaultTargetPlatformOverride = null;
+            expect(
+              launches.last.where((arg) => arg == '--dark' || arg == '--light'),
+              [brightness == Brightness.dark ? '--dark' : '--light'],
+              reason: '$game must receive the app theme when the OS disagrees',
+            );
+            expect(tester.takeException(), isNull);
+          }
+        }
+      },
+    );
+  }
 
   testWidgets(
     'shown city history survives exit before any answer on Android and iOS',

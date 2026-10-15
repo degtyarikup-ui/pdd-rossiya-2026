@@ -23,6 +23,23 @@ const DARK := {
 }
 
 
+## The app always sends its resolved theme, including light on a dark device.
+## Without an override, standalone launches follow the operating system.
+## Recompute for every run: iOS keeps this static state between game screens.
+static func configure_theme(args: Array) -> void:
+	dark = resolve_dark(args, DisplayServer.is_dark_mode())
+
+
+static func resolve_dark(args: Array, system_dark: bool) -> bool:
+	var selected := system_dark
+	for arg in args:
+		if arg == "--dark":
+			selected = true
+		elif arg == "--light":
+			selected = false
+	return selected
+
+
 static func c(name: String) -> Color:
 	return Color((DARK if dark else LIGHT)[name])
 

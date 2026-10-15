@@ -26,10 +26,6 @@ const KEY_CONTROLS := {
 	KEY_D: "right", KEY_RIGHT: "right",
 }
 
-const ACCENT := Color("#0574F8")
-const CARD := Color("#FFFFFF")
-const DARK := Color("#1C1D22")
-const RED := Color("#F04438")
 const STEER_SIZE := 80.0
 const PEDAL_SIZE := 104.0
 const EDGE_MARGIN := 20.0
@@ -45,10 +41,10 @@ func _ready() -> void:
 	root.size = get_viewport().get_visible_rect().size
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	_add(root, "left", "res://icons/steer_left.svg", "", Vector2.ONE * STEER_SIZE, CARD, ACCENT, 18, 40)
-	_add(root, "right", "res://icons/steer_right.svg", "", Vector2.ONE * STEER_SIZE, CARD, ACCENT, 18, 40)
-	_add(root, "brake", "res://icons/pedal_brake.svg", "", Vector2.ONE * PEDAL_SIZE, DARK, Color.WHITE, 18, 52)
-	_add(root, "gas", "res://icons/pedal_gas.svg", "", Vector2.ONE * PEDAL_SIZE, CARD, Color("#121212"), 52, 52)
+	_add(root, "left", "res://icons/steer_left.svg", "", Vector2.ONE * STEER_SIZE, Ui.c("card"), Ui.c("accent"), 18, 40)
+	_add(root, "right", "res://icons/steer_right.svg", "", Vector2.ONE * STEER_SIZE, Ui.c("card"), Ui.c("accent"), 18, 40)
+	_add(root, "brake", "res://icons/pedal_brake.svg", "", Vector2.ONE * PEDAL_SIZE, Ui.c("card"), Ui.c("text"), 18, 52)
+	_add(root, "gas", "res://icons/pedal_gas.svg", "", Vector2.ONE * PEDAL_SIZE, Ui.c("card"), Ui.c("text"), 52, 52)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
@@ -173,8 +169,8 @@ func _release_keys() -> void:
 func _press(name: String, down: bool) -> void:
 	var panel: Panel = _buttons[name]
 	var style: StyleBoxFlat = panel.get_theme_stylebox("panel")
-	style.bg_color = (RED if name == "brake" else ACCENT) if down else panel.get_meta("bg")
-	var fg: Color = Color.WHITE if down else panel.get_meta("fg")
+	style.bg_color = Ui.c("red" if name == "brake" else "accent") if down else panel.get_meta("bg")
+	var fg: Color = Ui.c("white") if down else panel.get_meta("fg")
 	(panel.get_meta("icon") as TextureRect).modulate = fg
 	var caption = panel.get_meta("label") if panel.has_meta("label") else null   # no label for a button without a caption (gas)
 	if caption:

@@ -424,12 +424,10 @@ func _is_test_run() -> bool:
 func _setup_language() -> void:
 	var l := OS.get_locale_language()
 	Ui.lang = l if l in ["ru", "kk"] else ("ru" if OS.has_feature("editor") else "en")
-	Ui.dark = DisplayServer.is_dark_mode()
+	Ui.configure_theme(Host.user_args())
 	for arg in Host.user_args():
 		if arg.begins_with("--lang="):
 			Ui.lang = arg.trim_prefix("--lang=")
-		if arg == "--dark":
-			Ui.dark = true
 
 
 func _season() -> String:

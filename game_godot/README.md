@@ -27,7 +27,7 @@ device install app`. Пакет `ru.pdd.godotspike` — отдельное пр�
   картинки билетов (`questions/*.webp`) лежат рядом и грузятся по требованию
   (`scripts/pack_files.gd`): перекрёсток — когда его надо поставить, картинка — при нажатии.
 - Вызов из приложения: `GodotGame` (`lib/presentation/screens/game/godot_game.dart`) открывает
-  `godot/index.html?lang=ru&dark=1` в iframe на весь экран (`GodotWebScreen`).
+  `godot/index.html?lang=ru&dark=1` или `?lang=ru&light=1` в iframe на весь экран (`GodotWebScreen`).
   `available()` на вебе — есть ли `godot/index.pck` на сайте.
 - Мост: игра шлёт родителю `postMessage({bridge: 'pdd-godot', kind: 'exit', json: <итог заезда>})`
   (`scripts/host.gd`, `Host.exit`); аргументы приходят из query-строки (`--k=v` ↔ `k=v`, `--k` ↔ `k=1`).
@@ -91,6 +91,13 @@ device install app`. Пакет `ru.pdd.godotspike` — отдельное пр�
 - `--debug` — печатать состояние машины раз в секунду.
 - `--mute` — выключить звук.
 - `--ride-options=<JSON>` — коллекция доступных машин/цветов, выбранная машина, настройки и сохранённый заезд от Flutter. Запуск сразу; меню выбора открывается кнопкой паузы.
-- `--season=winter|summer|autumn`, `--lang=ru|en|kk`, `--dark`, `--overview`.
+- `--season=winter|summer|autumn`, `--lang=ru|en|kk`, `--dark|--light`, `--overview`.
+
+Тема интерфейса всех трёх игр задаётся приложением явно (`--light` / `--dark`),
+включая случай, когда тема приложения отличается от системной. При каждом
+входе выбор читается заново; панели, вопросы, пауза, результаты и управление
+используют общую палитру `Ui`. Самостоятельный запуск без этих флагов следует
+системной теме. Сезон и освещение 3D-сцены от темы интерфейса не зависят.
+Проверка: `godot --headless --path game_godot --script res://tests/ui_theme_check.gd`.
 
 Перекрёстки (`situations/`) лежат в git: это источник данных игры (старая WebView-игра, из которой их выгружали, удалена).

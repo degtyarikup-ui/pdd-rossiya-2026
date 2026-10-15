@@ -97,7 +97,6 @@ class GodotGame {
     if (_running) return;
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final options = await _rideOptions(ref, lang: lang);
     if (!context.mounted) return;
     if (options['can_start'] != true) {
@@ -120,7 +119,7 @@ class GodotGame {
       json = await _start(context, [
         '--lang=$lang',
         '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
-        if (dark) '--dark',
+        Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',
         ...safe,
         '--ride-options=${jsonEncode(options)}',
         if (const bool.fromEnvironment('GAME_DEBUG') &&
@@ -148,7 +147,6 @@ class GodotGame {
     if (_running) return;
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final prefs = await _prefs();
     final vehicle = prefs?.getString(_vehicleKey) ?? 'sedan';
     final paint = GameGarageService.normalizePaint(
@@ -168,7 +166,7 @@ class GodotGame {
         '--economy=${jsonEncode({'seconds': GameEconomy.miniGameSeconds, 'lives': GameEconomy.miniGameLives, 'maxScore': GameEconomy.maxRunScore, 'base': GameEconomy.regulator(1), 'step': GameEconomy.regulator(2) - GameEconomy.regulator(1), 'bonusCap': 4})}',
         if (!HapticFeedbackHelper.enabled) '--no-haptics',
         '--lang=$lang',
-        if (dark) '--dark',
+        Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',
         ...safe,
         '--vehicle=$vehicle',
         '--paint=$paintHex',
@@ -217,7 +215,6 @@ class GodotGame {
     if (_running) return;
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final prefs = await _prefs();
     final vehicle = prefs?.getString(_vehicleKey) ?? 'sedan';
     final paint = GameGarageService.normalizePaint(
@@ -237,7 +234,7 @@ class GodotGame {
         '--economy=${jsonEncode({'seconds': GameEconomy.miniGameSeconds, 'lives': GameEconomy.miniGameLives, 'maxScore': GameEconomy.maxRunScore, 'base': GameEconomy.crossroads(1), 'step': GameEconomy.crossroads(2) - GameEconomy.crossroads(1), 'bonusCap': 5})}',
         if (!HapticFeedbackHelper.enabled) '--no-haptics',
         '--lang=$lang',
-        if (dark) '--dark',
+        Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',
         ...safe,
         '--vehicle=$vehicle',
         '--paint=$paintHex',

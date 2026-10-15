@@ -116,15 +116,13 @@ func _dismiss_loader(loader: Loader) -> void:
 func _setup_args() -> void:
 	GameSound.haptics = true
 	Ui.lang = "ru"
-	Ui.dark = DisplayServer.is_dark_mode()
+	Ui.configure_theme(Host.user_args())
 	var month := int(Time.get_date_dict_from_system().month)
 	season_name = "winter" if month == 12 or month <= 2 else ("autumn" if month >= 9 else "summer")
 
 	for arg in Host.user_args():
 		if arg.begins_with("--lang="):
 			Ui.lang = arg.trim_prefix("--lang=")
-		elif arg == "--dark":
-			Ui.dark = true
 		elif arg == "--no-haptics":
 			GameSound.haptics = false
 		elif arg.begins_with("--best-score="):

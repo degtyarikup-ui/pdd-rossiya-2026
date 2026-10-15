@@ -129,7 +129,7 @@ func rewards_busy() -> bool:
 
 # --- HUD ----------------------------------------------------------------------
 
-func _pill(icon: String, color: Color) -> Array:
+func _pill(icon: String, color: Color, foreground := Color.WHITE) -> Array:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", Ui.box(color, 90))
 	var m := MarginContainer.new()
@@ -147,8 +147,9 @@ func _pill(icon: String, color: Color) -> Array:
 	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tex.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tex.modulate = foreground
 	h.add_child(tex)
-	var l := Ui.scaled_label("0", 12, 700, Color.WHITE)
+	var l := Ui.scaled_label("0", 12, 700, foreground)
 	h.add_child(l)
 	return [p, l]
 
@@ -201,7 +202,7 @@ func _build_hud() -> void:
 	var v := _pill("hud_warning", Ui.c("red"))
 	_violations = v[1]
 	row.add_child(v[0])
-	var d := _pill("hud_location", Color("#121212"))
+	var d := _pill("hud_location", Ui.c("card"), Ui.c("text"))
 	_distance = d[1]
 	row.add_child(d[0])
 	var s := _pill("hud_star", Ui.c("gold"))
