@@ -12,13 +12,19 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "output/mascot/model-viewer.html"
+JUGGLING_OUTPUT = ROOT / "output/mascot/juggling.html"
 MODEL = ROOT / "assets/mascot/3d/cone-mascot.glb"
+JUGGLING_MODEL = ROOT / "assets/mascot/3d/cone-juggling.glb"
 ROUTES = {
     "/": OUTPUT,
     "/model-viewer.html": OUTPUT,
     "/output/mascot/model-viewer.html": OUTPUT,
     "/model.glb": MODEL,
     "/assets/mascot/3d/cone-mascot.glb": MODEL,
+    "/juggling.html": JUGGLING_OUTPUT,
+    "/output/mascot/juggling.html": JUGGLING_OUTPUT,
+    "/juggling.glb": JUGGLING_MODEL,
+    "/assets/mascot/3d/cone-juggling.glb": JUGGLING_MODEL,
     "/vendor/three.min.js": ROOT / "tools/network/editor/vendor/three.min.js",
     "/vendor/GLTFLoader.js": ROOT / "tools/network/editor/vendor/GLTFLoader.js",
     "/vendor/OrbitControls.js": ROOT / "tools/mascot/vendor/OrbitControls.js",
@@ -51,11 +57,14 @@ def main() -> None:
     args = parser.parse_args()
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(ROOT / "tools/mascot/model_viewer.html", OUTPUT)
+    shutil.copyfile(ROOT / "tools/mascot/juggling_viewer.html", JUGGLING_OUTPUT)
     print(OUTPUT, flush=True)
+    print(JUGGLING_OUTPUT, flush=True)
     if args.build_only:
         return
     url = f"http://127.0.0.1:{args.port}/model-viewer.html"
     print(url, flush=True)
+    print(f"http://127.0.0.1:{args.port}/juggling.html", flush=True)
     if not MODEL.is_file():
         print("GLB is not built yet; the viewer will show a retry button.", flush=True)
     with ThreadingHTTPServer(("127.0.0.1", args.port), ViewerHandler) as server:
