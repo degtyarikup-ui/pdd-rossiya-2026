@@ -521,15 +521,34 @@ func _pick_actor(screen_pos: Vector2) -> CrossroadsActor:
 # --- Rules Solver & Priority Checking ---
 
 func _handle_actor_selection(chosen: CrossroadsActor) -> void:
-	# Find minimum priority order among waiting actors
-	var priority_actor: CrossroadsActor = null
+	# Find candidate priority actors among waiting or currently driving actors with lower order
+	var candidate_priorities: Array[CrossroadsActor] = []
 	for a in active_actors:
-		if a.state == "waiting":
-			if priority_actor == null or a.data.get("order", 99) < priority_actor.data.get("order", 99):
-				priority_actor = a
+		if a.state == "waiting" or a.state == "driving":
+			if a.data.get("order", 99) < chosen.data.get("order", 99):
+				candidate_priorities.append(a)
 
-	if priority_actor == null:
+	# If none has strictly lower order (e.g. equal order), find any waiting/driving actor with min order
+	if candidate_priorities.is_empty():
+		var min_order := 999
+		for a in active_actors:
+			if a.state == "waiting" or a.state == "driving":
+				min_order = mini(min_order, a.data.get("order", 99))
+		for a in active_actors:
+			if (a.state == "waiting" or a.state == "driving") and a.data.get("order", 99) == min_order:
+				candidate_priorities.append(a)
+
+	if candidate_priorities.is_empty():
 		return
+
+	# Prefer candidate whose trajectory physically conflicts/crosses with chosen
+	var priority_actor := candidate_priorities[0]
+	var best_conflict_dist := 999.0
+	for cand in candidate_priorities:
+		var d := _trajectory_min_distance(chosen, cand)
+		if d < best_conflict_dist:
+			best_conflict_dist = d
+			priority_actor = cand
 
 	# 1. Check illegal red light passage (п. 6.2 ПДД РФ)
 	var sc_idx := scenario_order[cur_scenario_idx % scenario_order.size()]
@@ -625,6 +644,22 @@ func _on_crossroad_completed() -> void:
 	_load_current_scenario()
 
 
+func _trajectory_min_distance(a: CrossroadsActor, b: CrossroadsActor) -> float:
+	if a.path_curve == null or b.path_curve == null:
+		return 999.0
+	var len_a := maxf(1.0, a.path_length)
+	var len_b := maxf(1.0, b.path_length)
+	var min_d := 999.0
+	for ia in range(1, 26):
+		var pa := a.path_curve.sample_baked(float(ia) / 25.0 * len_a * 0.65)
+		for ib in range(1, 26):
+			var pb := b.path_curve.sample_baked(float(ib) / 25.0 * len_b * 0.65)
+			var d := pa.distance_to(pb)
+			if d < min_d:
+				min_d = d
+	return min_d
+
+
 # --- Collision (ДТП) Animation & Handling ---
 
 func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reason: String, article: String) -> void:
@@ -636,18 +671,29 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 
 	ui.update_hud(score, int(seconds_left), lives, combo)
 
-	# Find point of closest approach between trajectories
+	# Hide trajectory ribbons and arrows immediately
+	if chosen.trajectory_guide != null:
+		chosen.trajectory_guide.visible = false
+	if priority.trajectory_guide != null:
+		priority.trajectory_guide.visible = false
+	if chosen.arrow_sprite != null:
+		chosen.arrow_sprite.visible = false
+	if priority.arrow_sprite != null:
+		priority.arrow_sprite.visible = false
+
+	# High-precision search for trajectory conflict point strictly within intersection zone
 	var len_c := maxf(1.0, chosen.path_length)
 	var len_p := maxf(1.0, priority.path_length)
-	var best_tc := 0.38
-	var best_tp := 0.38
+	var best_tc := 0.35
+	var best_tp := 0.35
 	var min_dist := 999.0
 
-	for ic in range(1, 21):
-		var tc := float(ic) / 20.0
+	var steps := 80
+	for ic in range(1, steps + 1):
+		var tc := float(ic) / float(steps) * 0.65
 		var pos_c := chosen.path_curve.sample_baked(tc * len_c)
-		for ip in range(1, 21):
-			var tp := float(ip) / 20.0
+		for ip in range(1, steps + 1):
+			var tp := float(ip) / float(steps) * 0.65
 			var pos_p := priority.path_curve.sample_baked(tp * len_p)
 			var d := pos_c.distance_to(pos_p)
 			if d < min_dist:
@@ -655,62 +701,97 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 				best_tc = tc
 				best_tp = tp
 
-	var stop_tc := clampf(best_tc - 0.04, 0.12, 0.58)
-	var stop_tp := clampf(best_tp - 0.04, 0.12, 0.58)
+	var start_tc := chosen.drive_progress
+	var start_tp := priority.drive_progress
 
-	if min_dist > 5.0:
-		stop_tc = 0.35
-		stop_tp = 0.35
+	best_tc = maxf(best_tc, start_tc + 0.05)
+	best_tp = maxf(best_tp, start_tp + 0.05)
 
-	# Hide trajectory ribbons when driving into collision
-	if chosen.trajectory_guide != null:
-		chosen.trajectory_guide.visible = false
-	if priority.trajectory_guide != null:
-		priority.trajectory_guide.visible = false
+	var target_tc := minf(0.85, best_tc + 0.06)
+	var target_tp := minf(0.85, best_tp + 0.06)
 
-	# Smoothly drive both actors along their curves towards impact
-	var duration := 0.65
+	var pos_c_imp := chosen.path_curve.sample_baked(best_tc * len_c)
+	var pos_p_imp := priority.path_curve.sample_baked(best_tp * len_p)
+	var mid_impact := (pos_c_imp + pos_p_imp) * 0.5
+	var needs_swerve := min_dist > 3.0
+
+	# Smoothly drive both actors along their curves towards collision
+	var drive_duration := 0.50
 	var elapsed := 0.0
-	while elapsed < duration:
+	var max_drive_time := 0.85
+	var has_collided := false
+	var prev_c_pos := chosen.position
+	var prev_p_pos := priority.position
+
+	while elapsed < max_drive_time:
 		await get_tree().process_frame
 		var dt := get_process_delta_time()
-		if dt <= 0.0:
+		if dt <= 0.0 or dt > 0.1:
 			dt = 1.0 / 60.0
 		elapsed += dt
-		var progress := minf(1.0, elapsed / duration)
-		var ease_prog := smoothstep(0.0, 1.0, progress)
 
-		var cur_tc := ease_prog * stop_tc
-		var cur_tp := ease_prog * stop_tp
+		var prog := minf(1.0, elapsed / drive_duration)
+		# Synchronized arrival: both reach conflict point at prog = 0.75
+		var cur_tc: float
+		var cur_tp: float
+		if prog <= 0.75:
+			var sub_p := prog / 0.75
+			cur_tc = lerpf(start_tc, best_tc, sub_p)
+			cur_tp = lerpf(start_tp, best_tp, sub_p)
+		else:
+			var sub_p := (prog - 0.75) / 0.25
+			cur_tc = lerpf(best_tc, target_tc, sub_p)
+			cur_tp = lerpf(best_tp, target_tp, sub_p)
 
-		var off_c := cur_tc * len_c
+		var off_c := clampf(cur_tc, 0.0, 1.0) * len_c
 		var pos_c := chosen.path_curve.sample_baked(off_c)
 		var next_c := chosen.path_curve.sample_baked(minf(len_c, off_c + 0.3))
+
+		var off_p := clampf(cur_tp, 0.0, 1.0) * len_p
+		var pos_p := priority.path_curve.sample_baked(off_p)
+		var next_p := priority.path_curve.sample_baked(minf(len_p, off_p + 0.3))
+
+		if needs_swerve and prog > 0.3:
+			var swerve_p := smoothstep(0.3, 0.75, prog) * 0.85
+			pos_c = pos_c.lerp(mid_impact, swerve_p)
+			pos_p = pos_p.lerp(mid_impact, swerve_p)
+
 		chosen.position = pos_c
 		if pos_c.distance_to(next_c) > 0.01:
 			var dir_c := (next_c - pos_c).normalized()
 			chosen.rotation.y = atan2(dir_c.x, dir_c.z)
 
-		var off_p := cur_tp * len_p
-		var pos_p := priority.path_curve.sample_baked(off_p)
-		var next_p := priority.path_curve.sample_baked(minf(len_p, off_p + 0.3))
 		priority.position = pos_p
 		if pos_p.distance_to(next_p) > 0.01:
 			var dir_p := (next_p - pos_p).normalized()
 			priority.rotation.y = atan2(dir_p.x, dir_p.z)
 
+		# Wheel rotation animation
+		var moved_c := pos_c.distance_to(prev_c_pos)
+		var moved_p := pos_p.distance_to(prev_p_pos)
+		prev_c_pos = pos_c
+		prev_p_pos = pos_p
 		if chosen.model_node is NpcVehicle:
-			chosen.model_node._distance += dt * 12.0
+			chosen.model_node._distance += moved_c
 			var mat: ShaderMaterial = chosen.model_node._material
 			if mat != null:
 				mat.set_shader_parameter("wheel_distance", chosen.model_node._distance)
 		if priority.model_node is NpcVehicle:
-			priority.model_node._distance += dt * 12.0
+			priority.model_node._distance += moved_p
 			var mat_p: ShaderMaterial = priority.model_node._material
 			if mat_p != null:
 				mat_p.set_shader_parameter("wheel_distance", priority.model_node._distance)
 
-	# Impact handling & FX
+		# Instant physical collision contact check using oriented bounding boxes
+		if Drive.overlap(chosen.footprint(), priority.footprint(), 0.04):
+			has_collided = true
+			break
+		# Proximity fallback check based on vehicle extents
+		if pos_c.distance_to(pos_p) < (chosen.hl + priority.hl) * 0.72:
+			has_collided = true
+			break
+
+	# Impact handling & FX — fires instantaneously upon physical contact!
 	var impact := (chosen.position + priority.position) * 0.5
 	impact.y = 0.0
 
@@ -719,21 +800,21 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	cam_shake = 0.55
 
 	# Recoil bounce backwards along reverse direction
-	var end_off_c := stop_tc * len_c
-	var tan_c := (chosen.path_curve.sample_baked(minf(len_c, end_off_c + 0.2)) - chosen.position).normalized()
+	var tan_c := Vector3(sin(chosen.rotation.y), 0, cos(chosen.rotation.y))
 	if not chosen.is_pedestrian:
-		chosen.position -= tan_c * (0.08 if chosen.is_tram else 0.20)
+		chosen.position -= tan_c * (0.08 if chosen.is_tram else 0.18)
 		chosen.rotation.z += 0.035
 		chosen.rotation.x -= 0.025
 
-	var end_off_p := stop_tp * len_p
-	var tan_p := (priority.path_curve.sample_baked(minf(len_p, end_off_p + 0.2)) - priority.position).normalized()
+	var tan_p := Vector3(sin(priority.rotation.y), 0, cos(priority.rotation.y))
 	if not priority.is_pedestrian:
-		priority.position -= tan_p * (0.08 if priority.is_tram else 0.16)
+		priority.position -= tan_p * (0.08 if priority.is_tram else 0.14)
 		priority.rotation.z -= 0.030
 
-	_create_skid_marks(chosen.position, tan_c)
-	_create_skid_marks(priority.position, tan_p)
+	if not chosen.is_pedestrian:
+		_create_skid_marks(chosen.position, tan_c)
+	if not priority.is_pedestrian:
+		_create_skid_marks(priority.position, tan_p)
 	_create_crash_sparks(impact)
 	_create_crash_smoke(impact)
 

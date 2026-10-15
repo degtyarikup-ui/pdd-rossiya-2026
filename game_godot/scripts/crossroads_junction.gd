@@ -6,7 +6,7 @@ extends Node3D
 
 const ROAD_WIDTH := 14.4        # 4 lanes of 3.6 m (2 in each direction)
 const HALF_ROAD := ROAD_WIDTH * 0.5
-const ROAD_EXTENT := 52.0
+const ROAD_EXTENT := 160.0
 const STOP_DIST := 12.5
 const ZEBRA_START := 8.5
 const ZEBRA_END := 11.5
@@ -109,7 +109,7 @@ func build_tram_rails(axis: String) -> void:
 	rail_mat.roughness = 0.35
 
 	var gauge := 1.524  # Russian standard tram gauge
-	var rail_len := 120.0
+	var rail_len := ROAD_EXTENT * 2.0
 	for offset in [-gauge * 0.5, gauge * 0.5]:
 		var rail_size := Vector3(0.08, 0.03, rail_len) if axis == "ns" else Vector3(rail_len, 0.03, 0.08)
 		var rail := _box(rail_size, rail_mat)
@@ -132,7 +132,7 @@ func _create_materials() -> void:
 
 
 func _build_ground() -> void:
-	var ground := _quad(Vector2(260, 260), grass_mat)
+	var ground := _quad(Vector2(400, 400), grass_mat)
 	ground.position.y = -0.06
 	add_child(ground)
 
@@ -295,15 +295,6 @@ func _build_quadrant_sidewalks() -> void:
 		curb_lawn_z.position = Vector3(sx * (sw_outer + lawn_size * 0.5), 0.10, sz * (sw_outer - 0.09))
 		ground_root.add_child(curb_lawn_z)
 
-		# 7. Asphalt building courtyard/foundation pads beneath buildings
-		var pad := _quad(Vector2(32.0, 32.0), asphalt_mat)
-		pad.position = Vector3(
-			sx * (sw_outer + 16.0),
-			0.152,
-			sz * (sw_outer + 16.0)
-		)
-		ground_root.add_child(pad)
-
 
 func _build_markings() -> void:
 	var arms := ["south", "north", "east", "west"]
@@ -378,7 +369,7 @@ func _build_street_lamps() -> void:
 		Vector3(lamp_dist, 0.16, -lamp_dist),
 		Vector3(-lamp_dist, 0.16, -lamp_dist),
 	]
-	for d in [26.0, 44.0]:
+	for d in [26.0, 44.0, 64.0, 84.0, 104.0, 124.0, 144.0]:
 		lamp_offsets.append(Vector3(lamp_dist, 0.16, -d))
 		lamp_offsets.append(Vector3(-lamp_dist, 0.16, -d))
 		lamp_offsets.append(Vector3(lamp_dist, 0.16, d))
@@ -397,7 +388,7 @@ func _build_street_lamps() -> void:
 
 var pools := {}
 
-func _get_pool(prop: String, cap := 64, shadows := false) -> Scenery.Pool:
+func _get_pool(prop: String, cap := 128, shadows := false) -> Scenery.Pool:
 	if not pools.has(prop):
 		var mesh := Models.mesh_of("res://scenery/%s.glb" % prop)
 		if mesh == null:
@@ -408,7 +399,7 @@ func _get_pool(prop: String, cap := 64, shadows := false) -> Scenery.Pool:
 
 
 func _put_prop(prop: String, pos: Vector3, yaw := 0.0, scale := Vector3.ONE, tint := Color.WHITE, shadows := false) -> void:
-	var p := _get_pool(prop, 64, shadows)
+	var p := _get_pool(prop, 128, shadows)
 	if p == null:
 		return
 	p.put(0, Transform3D(Basis(Vector3.UP, yaw).scaled(scale), pos), tint)
@@ -469,16 +460,24 @@ func _build_scenery_decor() -> void:
 	_put_prop("street/kiosk_2", Vector3(-17.5, 0.16, HALF_ROAD + 4.0), PI, Vector3.ONE * 0.95, Color.WHITE, true)
 	_put_prop("street/kiosk_1", Vector3(17.5, 0.16, -(HALF_ROAD + 4.0)), 0.0, Vector3.ONE * 0.95, Color.WHITE, true)
 
-	# --- 3. Pedestrian Guardrail Fences along curbs near crosswalks ---
-	# Starts at 13.5m (after zebra ending at 11.5m), keeping crosswalks completely unobstructed!
+	# --- 3. Pedestrian Guardrail Fences along curbs on sidewalks ---
+	# Behind curb on sidewalk (road edge is 7.2m, curb is 7.2..7.5m, sidewalk is 7.2..11.4m).
+	# Positioned at curb offset 8.0m, strictly behind the curb on the sidewalk.
+	# Oriented parallel to the roadway:
+	# - NS road: runs along Z axis (yaw = 0.0)
+	# - EW road: runs along X axis (yaw = PI * 0.5)
+	# Starts safely at 14.0m so the zebra pedestrian crossing (8.5..11.5m) is 100% unobstructed!
+	var fence_curb_off := HALF_ROAD + 0.8
 	for c in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
-		_put_prop("street/fence_14", Vector3(c.x * (HALF_ROAD + 0.25), 0.16, c.y * 14.5), PI * 0.5 if c.y > 0 else -PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
-		_put_prop("street/fence_12", Vector3(c.x * (HALF_ROAD + 0.25), 0.16, c.y * 18.5), PI * 0.5 if c.y > 0 else -PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
-		_put_prop("street/fence_14", Vector3(c.x * 14.5, 0.16, c.y * (HALF_ROAD + 0.25)), 0.0 if c.x > 0 else PI, Vector3.ONE * 0.9, Color.WHITE, false)
-		_put_prop("street/fence_12", Vector3(c.x * 18.5, 0.16, c.y * (HALF_ROAD + 0.25)), 0.0 if c.x > 0 else PI, Vector3.ONE * 0.9, Color.WHITE, false)
+		# Fences along NS road (length along Z, yaw = 0.0)
+		_put_prop("street/fence_14", Vector3(c.x * fence_curb_off, 0.16, c.y * 21.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_12", Vector3(c.x * fence_curb_off, 0.16, c.y * 34.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
+		# Fences along EW road (length along X, yaw = PI * 0.5)
+		_put_prop("street/fence_14", Vector3(c.x * 21.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_12", Vector3(c.x * 34.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
 
 	# --- 4. Trees & Greenery ---
-	for dist in [17.0, 29.0, 41.0]:
+	for dist in [17.0, 29.0, 41.0, 56.0, 72.0, 88.0, 106.0, 126.0, 146.0]:
 		for sx in [-1, 1]:
 			_put_prop("trees/birch_0", Vector3(sx * (HALF_ROAD + 3.4), 0.16, -dist), 0.0, Vector3.ONE * 0.95, birch_color, true)
 			_put_prop("trees/round_0", Vector3(sx * (HALF_ROAD + 3.4), 0.16, dist), 0.0, Vector3.ONE * 0.95, leaf_color, true)
@@ -493,7 +492,7 @@ func _build_scenery_decor() -> void:
 	_put_prop("trees/round_0", Vector3(24.0, 0.15, 17.0), -0.7, Vector3.ONE * 1.10, leaf_color, true)
 
 	for sx in [-1, 1]:
-		for b_dist in [13.0, 20.0, 27.0, 35.0]:
+		for b_dist in [13.0, 20.0, 27.0, 35.0, 48.0, 64.0, 80.0, 96.0, 114.0, 134.0]:
 			_put_prop("street/bush", Vector3(sx * 11.5, 0.15, b_dist), 0.0, Vector3.ONE * 0.85, leaf_color, false)
 			_put_prop("street/bush", Vector3(sx * 11.5, 0.15, -b_dist), 0.0, Vector3.ONE * 0.85, leaf_color, false)
 			_put_prop("street/bush", Vector3(b_dist, 0.15, sx * 11.5), PI * 0.5, Vector3.ONE * 0.85, leaf_color, false)
@@ -520,7 +519,7 @@ func _setup_walkers() -> void:
 		walkers_data.append({
 			"axis_x": axis_x,
 			"side": side,
-			"fixed": direction * (HALF_ROAD + 0.9 + (look % 3) * 0.65),
+			"fixed": direction * (HALF_ROAD + 1.8 + (look % 3) * 0.7),
 			"low": low,
 			"high": high,
 			"at": rng.randf_range(low, high),
@@ -641,16 +640,16 @@ func _create_traffic_light_node(tl_data: Dictionary, sign_data: Dictionary) -> N
 	match side_name:
 		"south":
 			root.position = Vector3(curb_x, 0.16, curb_z)
-			root.rotation.y = PI
+			root.rotation.y = 0.0
 		"north":
 			root.position = Vector3(-curb_x, 0.16, -curb_z)
-			root.rotation.y = 0.0
+			root.rotation.y = PI
 		"east":
 			root.position = Vector3(curb_z, 0.16, -curb_x)
-			root.rotation.y = -PI * 0.5
+			root.rotation.y = PI * 0.5
 		"west":
 			root.position = Vector3(-curb_z, 0.16, curb_x)
-			root.rotation.y = PI * 0.5
+			root.rotation.y = -PI * 0.5
 
 	return root
 

@@ -143,11 +143,12 @@ func _layout() -> void:
 	_collision_card.position = Vector2((size.x - modal_w) * 0.5, size.y - _collision_card.size.y - bottom)
 
 	_result.size = size
-	var card_w := minf(400.0, size.x - 32.0)
+	var card_w := minf(320.0, size.x - 32.0)
 	_result_card.custom_minimum_size.x = card_w
-	if _cover != null:
+	if _cover != null and _cover.is_inside_tree():
 		_cover.custom_minimum_size.y = (card_w - 40.0) * 9.0 / 16.0
-	_result_card.position = Vector2((size.x - card_w) * 0.5, maxf(top + 16.0, (size.y - _result_card.size.y) * 0.4))
+	_result_card.reset_size()
+	_result_card.position = Vector2((size.x - card_w) * 0.5, maxf(top + 16.0, (size.y - _result_card.size.y) * 0.5))
 
 
 # --- Top Bar ---
@@ -574,55 +575,53 @@ func _build_result_dialog() -> void:
 	add_child(_result)
 
 	_result_card = PanelContainer.new()
-	var box := Ui.box(Ui.c("card"), 24)
-	box.content_margin_left = 20
-	box.content_margin_right = 20
-	box.content_margin_top = 20
-	box.content_margin_bottom = 20
+	var box := Ui.box(Ui.c("card"), 18)
+	box.content_margin_left = 18
+	box.content_margin_right = 18
+	box.content_margin_top = 16
+	box.content_margin_bottom = 16
 	_result_card.add_theme_stylebox_override("panel", box)
 	_result_card.visible = false
 	add_child(_result_card)
 
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 10)
+	vb.add_theme_constant_override("separation", 8)
 	_result_card.add_child(vb)
 
+	# Keep _cover allocated so any external reference remains valid, but do not display giant banner
 	_cover = TextureRect.new()
 	_cover.texture = load("res://art/crossroads_cover.webp")
-	_cover.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_cover.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	_cover.size_flags_horizontal = SIZE_EXPAND_FILL
-	vb.add_child(_cover)
+	_cover.visible = false
 
-	_result_title = Ui.label(Ui.t("gameOverTitle"), 22, 800, Ui.c("text"))
+	_result_title = Ui.label(Ui.t("gameOverTitle"), 18, 800, Ui.c("text"))
 	_result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(_result_title)
 
 	# Score display
 	var score_row := HBoxContainer.new()
 	score_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	score_row.add_theme_constant_override("separation", 8)
+	score_row.add_theme_constant_override("separation", 6)
 	vb.add_child(score_row)
 
-	var star := Ui.icon(ICON_STAR, 32, Ui.c("gold"))
+	var star := Ui.icon(ICON_STAR, 24, Ui.c("gold"))
 	score_row.add_child(star)
 
-	_final_score = Ui.label("0", 36, 800, Ui.c("gold"))
+	_final_score = Ui.label("0", 28, 800, Ui.c("gold"))
 	score_row.add_child(_final_score)
 
 	_record_badge = PanelContainer.new()
-	var r_box := Ui.box(Ui.c("gold"), 8)
-	r_box.content_margin_left = 10
-	r_box.content_margin_right = 10
-	r_box.content_margin_top = 4
-	r_box.content_margin_bottom = 4
+	var r_box := Ui.box(Ui.c("gold"), 6)
+	r_box.content_margin_left = 8
+	r_box.content_margin_right = 8
+	r_box.content_margin_top = 3
+	r_box.content_margin_bottom = 3
 	_record_badge.add_theme_stylebox_override("panel", r_box)
 	_record_badge.size_flags_horizontal = SIZE_SHRINK_CENTER
-	var r_lbl := Ui.label(Ui.t("gameNewRecord"), 13, 700, Color.WHITE)
+	var r_lbl := Ui.label(Ui.t("gameNewRecord"), 11, 700, Color.WHITE)
 	_record_badge.add_child(r_lbl)
 	vb.add_child(_record_badge)
 
-	_best_label = Ui.label("", 13, 500, Ui.c("secondary"))
+	_best_label = Ui.label("", 12, 500, Ui.c("secondary"))
 	_best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(_best_label)
 
@@ -648,15 +647,15 @@ func _build_result_dialog() -> void:
 
 	# Action buttons
 	var btn_row := HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 10)
+	btn_row.add_theme_constant_override("separation", 8)
 	vb.add_child(btn_row)
 
 	var restart_btn := Button.new()
 	restart_btn.text = Ui.t("gameRestart")
 	restart_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	restart_btn.custom_minimum_size = Vector2(0, 48)
+	restart_btn.custom_minimum_size = Vector2(0, 40)
 	restart_btn.add_theme_font_override("font", Ui.font(700))
-	restart_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent"), 10))
+	restart_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent"), 8))
 	restart_btn.pressed.connect(func():
 		hide_results()
 		restart_pressed.emit()
@@ -666,10 +665,10 @@ func _build_result_dialog() -> void:
 	var exit_btn := Button.new()
 	exit_btn.text = Ui.t("gameExit")
 	exit_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	exit_btn.custom_minimum_size = Vector2(0, 48)
+	exit_btn.custom_minimum_size = Vector2(0, 40)
 	exit_btn.add_theme_font_override("font", Ui.font(600))
 	exit_btn.add_theme_color_override("font_color", Ui.c("text"))
-	exit_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("field"), 10))
+	exit_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("field"), 8))
 	exit_btn.pressed.connect(func():
 		exit_pressed.emit()
 	)
@@ -680,9 +679,9 @@ func _build_stat_col(label_text: String) -> Array:
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = SIZE_EXPAND_FILL
 	col.add_theme_constant_override("separation", 2)
-	var val := Ui.label("0", 18, 800, Ui.c("text"))
+	var val := Ui.label("0", 16, 800, Ui.c("text"))
 	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var caption := Ui.scaled_label(label_text, 12, 600, Ui.c("secondary"), true)
+	var caption := Ui.scaled_label(label_text, 11, 600, Ui.c("secondary"), true)
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(val)
 	col.add_child(caption)
@@ -700,6 +699,7 @@ func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record
 	var acc := roundi((float(solved) / total) * 100.0) if total > 0 else 0
 	_stat_acc_val.text = "%d%%" % acc
 	_stat_combo_val.text = "x%d" % max_combo
+	_result_card.reset_size()
 	_layout()
 
 

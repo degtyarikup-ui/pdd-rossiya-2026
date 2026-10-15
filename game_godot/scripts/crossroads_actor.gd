@@ -34,6 +34,9 @@ var has_siren := false
 var blink_timer := 0.0
 var badge_pop := 1.0
 
+var hw := 0.95
+var hl := 2.15
+
 static var _maneuver_cache: Dictionary = {}
 static var _maneuver_shader: Shader = null
 
@@ -44,6 +47,32 @@ func _init(actor_data: Dictionary) -> void:
 	is_pedestrian = data.get("type", "") == "pedestrian" or data.get("maneuver", "") == "cross"
 	is_tram = data.get("type", "") == "tram"
 	has_siren = data.get("hasSiren", false)
+
+	var type_str: String = data.get("type", "car")
+	if is_pedestrian:
+		hw = 0.4
+		hl = 0.4
+	elif type_str == "tram":
+		hw = 1.3
+		hl = 7.5
+	elif type_str == "bus":
+		hw = 1.25
+		hl = 5.2
+	elif type_str == "truck":
+		hw = 1.15
+		hl = 4.5
+	elif type_str == "police" or has_siren or type_str == "emergency":
+		hw = 0.95
+		hl = 2.2
+	elif type_str == "motorcycle":
+		hw = 0.45
+		hl = 1.1
+	elif type_str == "suv":
+		hw = 1.0
+		hl = 2.3
+	else:
+		hw = 0.95
+		hl = 2.15
 
 	_build_model()
 	_place_at_start()
@@ -841,6 +870,10 @@ static func _draw_exclamation(img: Image, col: Color) -> void:
 		for x in range(int(dx - dr), int(dx + dr + 1)):
 			if sqrt(pow(x - dx, 2) + pow(y - dy, 2)) <= dr:
 				img.set_pixel(x, y, col)
+
+
+func footprint() -> Dictionary:
+	return { "p": position, "yaw": rotation.y, "hw": hw, "hl": hl }
 
 
 static func _draw_step_number(img: Image, num: int, col: Color) -> void:

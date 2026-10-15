@@ -116,6 +116,9 @@ func _initialize() -> void:
 	_check("Traffic light with arrow adds to junction", junction.lights_root.get_child_count() == 1)
 	junction.build_tram_rails("ns")
 	_check("Tram rails built on NS axis", junction.rails_root.get_child_count() == 2)
+	var rail_mesh = junction.rails_root.get_child(0).mesh as BoxMesh
+	_check("Tram rails extend full road extent (rail_len >= 300m)", rail_mesh != null and rail_mesh.size.z >= 300.0)
+	_check("Walkers positioned safely on sidewalk (offset >= HALF_ROAD + 1.5m)", junction.walkers_data.size() > 0 and absf(junction.walkers_data[0].fixed) >= CrossroadsJunctionScript.HALF_ROAD + 1.5)
 	junction.clear_props()
 	_check("Junction clear_props clears tram rails", junction.rails_root.get_child_count() == 0)
 
@@ -147,9 +150,13 @@ func _initialize() -> void:
 	sign_test.free()
 
 	var tl_test = junction._create_traffic_light_node({"side": "south", "state": "red"}, {"code": "2.1"})
-	_check("Traffic light on south side faces oncoming driver (rotation.y PI)", is_equal_approx(tl_test.rotation.y, PI))
+	_check("Traffic light on south side faces oncoming driver (rotation.y 0.0)", is_equal_approx(tl_test.rotation.y, 0.0))
 	_check("Sign mounts directly onto traffic light pole", tl_test.get_child_count() > 1)
 	tl_test.free()
+
+	_check("Road extent extended beyond 120m into distance", CrossroadsJunctionScript.ROAD_EXTENT >= 120.0)
+	var fp: Dictionary = actor.footprint()
+	_check("Actor has valid bounding box footprint with hw and hl", fp.has("hw") and fp.has("hl") and fp.hw > 0.8 and fp.hl > 1.8)
 
 	# Test all maneuvers trajectories
 	var all_maneuvers_ok := true
@@ -195,6 +202,7 @@ func _initialize() -> void:
 	ui.show_results(450, 8, 1, 4, true, 300)
 	_check("Results dialog displays score 450", ui._final_score.text == "450")
 	_check("New record badge shown", ui._record_badge.visible)
+	_check("Results dialog is compact (width <= 340)", ui._result_card.custom_minimum_size.x <= 340.0)
 	ui.free()
 
 	# 9. Web query arguments parsing
