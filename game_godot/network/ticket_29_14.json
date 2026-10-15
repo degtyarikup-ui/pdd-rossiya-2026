@@ -3615,7 +3615,9 @@
   "requiredStop": null,
   "speedLimit": null,
   "maneuver": "left",
-  "yieldTo": [],
+  "yieldTo": [
+   "tram_1"
+  ],
   "legend": [
    {
     "label": "Вы налево",

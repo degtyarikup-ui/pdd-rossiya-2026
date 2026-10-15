@@ -539,7 +539,8 @@ func _hold_pending(a: Motion) -> bool:
 
 ## Participants announce their saved intentions together at question capture.
 func has_question_signals() -> bool:
-	return data.actors.any(func(a): return Fleet.actor_signal_side(a) != "")
+	var source: Dictionary = situation.network.data if situation.network else {}
+	return data.actors.any(func(a): return Fleet.actor_signal_side(a, 0.0, source) != "")
 
 
 func begin_question_signals() -> void:
@@ -557,7 +558,7 @@ func _update_signals() -> void:
 		Fleet.set_hazards(motion.node, Fleet.actor_has_hazards(data.actors[i]))
 		var signals := motion.node.get_node_or_null("vehicle_signals") as Fleet.Signals
 		if signals and question_signals_started:
-			signals.set_side(Fleet.actor_signal_side(data.actors[i], motion.distance))
+			signals.set_side(Fleet.actor_signal_side(data.actors[i], motion.distance, situation.network.data if situation.network else {}))
 
 
 ## updateActors (the participants of this junction). `player` in local coords.

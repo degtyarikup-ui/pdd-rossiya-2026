@@ -31,13 +31,13 @@ static func halo(colour: Color, size: float, front_only := false) -> MeshInstanc
 
 ## Roof beacons need a bright core in daylight, especially saturated blue in
 ## Compatibility's LDR buffer. Ordinary indicators keep their existing profile.
-static func beacon(colour: Color, size := 3.2) -> MeshInstance3D:
+static func beacon(colour: Color, size := 3.8) -> MeshInstance3D:
 	var key := "beacon/" + colour.to_html()
 	if not _materials.has(key):
 		var m := material(colour).duplicate() as ShaderMaterial
-		m.set_shader_parameter("intensity", 3.0)
-		m.set_shader_parameter("white_core", 0.6)
-		m.set_shader_parameter("core_sharpness", 3.0)
+		m.set_shader_parameter("intensity", 3.5)
+		m.set_shader_parameter("white_core", 0.4)
+		m.set_shader_parameter("core_sharpness", 12.0)
 		_materials[key] = m
 	var glow := halo(colour, size)
 	glow.material_override = _materials[key]

@@ -1,5 +1,5 @@
 ## Forty real junction transitions through a looping route: memory must plateau.
-## Also exercises the 15th answer and normal completion at the 20th answer.
+## Ride completion on the answer itself is covered by ride_completion_check.gd.
 extends SceneTree
 var failures := 0
 var checks := 0
@@ -79,7 +79,7 @@ func real_chain(ids: Array) -> void:
 		var sit: Situation = world.current.sit
 		approach(world, sit)
 		finish(world, sit)
-		expect(world.phase == ("over" if (index+1)%20 == 0 else "driving"), "completion only at question 20: " + str(index+1))
+		expect(world.phase == "driving", "location exit only rebases the world: " + str(index+1))
 		await process_frame
 		world._update_occlusion(0.0) # Remove weak registrations of freed building pools.
 		expect(world.retired.size() <= 3 and world.older_ghosts.size() <= 2, "bounded retained geometry: " + str(index+1))

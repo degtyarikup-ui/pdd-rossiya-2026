@@ -169,8 +169,8 @@ func _build_hud() -> void:
 	var s := _pill("hud_star", Ui.c("gold"))
 	_score = s[1]
 	row.add_child(s[0])
-	# Current question (left) and speed (right).
-	_run_big = Ui.scaled_label("1", 20, 800, white)
+	# Answered questions (left) and speed (right).
+	_run_big = Ui.scaled_label("0", 20, 800, white)
 	_run_small = Ui.scaled_label(" / 20", 12, 800, white)
 	var run := HBoxContainer.new()
 	run.add_theme_constant_override("separation", 0)
@@ -820,7 +820,7 @@ func _slide_out(panel: PanelContainer) -> void:
 
 # --- explanation sheet ----------------------------------------------------------
 
-func show_explanation(text: Dictionary, correct: int, timed_out: bool) -> void:
+func show_explanation(text: Dictionary, correct: int, timed_out: bool, finish_ride := false) -> void:
 	hide_cards()
 	var exp_len: int = str(text.get("explanation", "")).length()
 	var dense: bool = exp_len > 180
@@ -857,7 +857,7 @@ func show_explanation(text: Dictionary, correct: int, timed_out: bool) -> void:
 	var explanation := Ui.scaled_label(text.explanation, 14, 500, Ui.c("text"), true)
 	explanation.add_theme_constant_override("line_spacing", 4)
 	box.add_child(explanation)
-	var btn := _wide_button(Ui.t("gameContinue"), Ui.c("accent"), Ui.c("white"), func(): continue_pressed.emit())
+	var btn := _wide_button(Ui.t("gameFinishRide" if finish_ride else "gameContinue"), Ui.c("accent"), Ui.c("white"), func(): continue_pressed.emit())
 	btn.custom_minimum_size.y = 56
 	(_sheet.get_meta("layout") as VBoxContainer).add_child(btn)
 	_sheet.set_meta("footer", btn)

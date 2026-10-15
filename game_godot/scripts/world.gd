@@ -1682,6 +1682,9 @@ func _on_road_answer(index: int) -> void:
 	if index >= 0:
 		ui.mark_answer(index, right)
 	if is_correct:
+		if run.finished():
+			_finish_run()
+			return
 		await _wait_active(0.9)
 		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 		ui.hide_cards()
@@ -1689,7 +1692,7 @@ func _on_road_answer(index: int) -> void:
 	else:
 		await _wait_active(0.9 if index >= 0 else 0.0)
 		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
-		ui.show_explanation(road.question_text(), right, index < 0)
+		ui.show_explanation(road.question_text(), right, index < 0, run.finished())
 
 
 func _road_resume() -> void:
@@ -1764,6 +1767,9 @@ func _on_answer_chosen(index: int) -> void:
 	# Other participants retain their authored wait for the player's completed pass.
 	current.junction.release()
 	if is_correct:
+		if run.finished():
+			_finish_run()
+			return
 		# The card stays a moment so the green answer is seen, then the car goes.
 		await _wait_active(0.9)
 		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
@@ -1772,15 +1778,38 @@ func _on_answer_chosen(index: int) -> void:
 	else:
 		await _wait_active(0.9 if index >= 0 else 0.0)
 		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
-		ui.show_explanation(text, right, index < 0)
+		ui.show_explanation(text, right, index < 0, run.finished())
 
 
 func _on_continue() -> void:
+	if phase != "question" or not question_over:
+		return
+	if run.finished():
+		_finish_run()
+		return
 	ui.hide_cards()
 	if road != null and road_phase == "question":
 		_road_resume()
 		return
 	answer(false)
+
+
+## Answers complete a ride; the last location does not need to be driven through.
+## A last mistake keeps its explanation open until the player presses Finish.
+func _finish_run() -> void:
+	if phase == "over" or _exiting:
+		return
+	phase = "over"
+	voice.stop()
+	_clear_question_signals()
+	controls.set_active(false)
+	drive.speed = 0.0
+	drive.turning_at_junction = false
+	event.emit({ "event": "run_finished", "summary": run.summary() })
+	if Host.embedded() and not _has_arg("--benchmark"):
+		_on_exit()
+	else:
+		ui.show_result(run.summary())
 
 
 ## finishManeuver: the player has left by an exit. A turn rebases the world
@@ -1885,14 +1914,6 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	perf_step=_rebase_timing("rebuild_ring",perf_step)
 	_rebase_timing("TOTAL",perf_start)
 	event.emit({ "event": "situation_cleared", "situationId": sit.id, "exit": exit_direction })
-	if run.finished():
-		phase = "over"
-		controls.set_active(false)
-		event.emit({ "event": "run_finished", "summary": run.summary() })
-		if Host.embedded() and not _has_arg("--benchmark"):
-			_on_exit()   # the app shows the score, the restart and the mistakes (one result screen)
-		else:
-			ui.show_result(run.summary())
 	print("[game] cleared ", sit.id, " by ", exit_direction)
 	if follow:
 		print("[jerk] %s %s: max yaw %.2f rad/s, camera %.2f m/s, camera heading %.2f rad/s" % [sit.id, exit_direction, jerk.yaw, jerk.cam, jerk.heading])
@@ -2858,11 +2879,10 @@ func _on_tip_next() -> void:
 		ui.show_gas_hint(Ui.t("gameGasHint"))
 
 
-## The HUD names the current question, while Run counts completed answers.
-## Feedback/explanations still belong to the question just answered.
+## Progress counts accepted answers, including mistakes and timeouts.
+## Driving between locations or opening a card must not advance it.
 func _question_number() -> int:
-	var upcoming := phase == "driving" or (phase == "question" and not question_over)
-	return clampi(run.answered + (1 if upcoming else 0), 1, Run.QUESTIONS)
+	return clampi(run.answered, 0, Run.QUESTIONS)
 
 
 func _process(delta: float) -> void:

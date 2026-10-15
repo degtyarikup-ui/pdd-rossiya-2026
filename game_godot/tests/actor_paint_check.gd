@@ -9,6 +9,85 @@ func check(ok: bool, label: String) -> void:
 		print("FAIL ", label)
 func _initialize() -> void:
 	call_deferred("run")
+
+## Native pixels also cover the loaded scene, mesh paint masks and material binding.
+## Parameter checks alone passed while a shader could still draw the model white.
+func rendered_paints() -> void:
+	root.size = Vector2i(960, 640)
+	root.content_scale_size = root.size
+	var samples := [
+		["ticket_8_13", "car_1", "#C0392B"],
+		["ticket_10_13", "truck_1", "#317ED4"],
+		["ticket_20_15", "npc_bus", "#E8C547"],
+		["ticket_29_14", "tram_1", "#F08A24"],
+		["ticket_8_13", "motorcycle_1", "#4D7768"],
+	]
+	var views: Array[Dictionary] = []
+	for i in samples.size():
+		var sample: Array = samples[i]
+		var loaded := Situation.load_scene(sample[0], Scenery.new("summer"))
+		var index := -1
+		for k in loaded.data.actors.size():
+			if loaded.data.actors[k].id == sample[1]: index = k; break
+		check(index >= 0, sample[0] + " contains " + sample[1])
+		if index < 0:
+			loaded.free()
+			continue
+		var model := loaded.actors[index]
+		loaded.remove_child(model)
+		loaded.free()
+		model.position = Vector3.ZERO
+		model.rotation = Vector3.ZERO
+		model.scale = Vector3.ONE
+		model.process_mode = Node.PROCESS_MODE_DISABLED
+		var panel := SubViewportContainer.new()
+		panel.position = Vector2((i % 3) * 320, floori(i / 3.0) * 320)
+		root.add_child(panel)
+		var view := SubViewport.new()
+		view.size = Vector2i(320, 320)
+		view.own_world_3d = true
+		panel.add_child(view)
+		view.add_child(model)
+		var environment := WorldEnvironment.new()
+		environment.environment = Environment.new()
+		environment.environment.background_mode = Environment.BG_COLOR
+		environment.environment.background_color = Color("#101820")
+		environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		environment.environment.ambient_light_color = Color.WHITE
+		environment.environment.ambient_light_energy = 0.8
+		view.add_child(environment)
+		var sun := DirectionalLight3D.new()
+		sun.rotation_degrees = Vector3(-55, -30, 0)
+		sun.light_energy = 0.5
+		view.add_child(sun)
+		var box := (model.get_node("body") as MeshInstance3D).get_aabb()
+		var camera := Camera3D.new()
+		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+		camera.size = maxf(3.0, box.size.length() * 0.9)
+		view.add_child(camera)
+		camera.position = box.get_center() + Vector3(9, 9, -12)
+		camera.look_at(box.get_center())
+		views.append({"view": view, "sample": sample})
+	for i in 8: await process_frame
+	await RenderingServer.frame_post_draw
+	for entry in views:
+		var pixels: Image = entry.view.get_texture().get_image()
+		var expected := Color(entry.sample[2])
+		var expected_hue := Vector3(expected.r, expected.g, expected.b).normalized()
+		var painted := 0
+		for y in pixels.get_height():
+			for x in pixels.get_width():
+				var actual := pixels.get_pixel(x, y)
+				if actual.v - minf(actual.r, minf(actual.g, actual.b)) < 0.08: continue
+				var hue := Vector3(actual.r, actual.g, actual.b).normalized()
+				if hue.distance_to(expected_hue) < 0.16: painted += 1
+		check(painted >= 250, entry.sample[0] + "/" + entry.sample[1] + " visibly retains editor paint (" + str(painted) + " pixels)")
+	var output := ProjectSettings.globalize_path("res://../output/color-diagnostics")
+	DirAccess.make_dir_recursive_absolute(output)
+	root.get_texture().get_image().save_png(output + "/saved-editor-paints.png")
+	for entry in views: entry.view.get_parent().queue_free()
+	await process_frame
+
 func run() -> void:
 	var original := {"id":"car_1", "config":{"color":"#778FAD", "cabColor":"#F2F2EC", "sidecar":true}}
 	var before := original.duplicate(true)
@@ -52,5 +131,6 @@ func run() -> void:
 			var colour := Color(expected.color)
 			check(material.get_shader_parameter("paint_colour").is_equal_approx(Vector3(colour.r, colour.g, colour.b)), "loaded scene " + str(actor.id))
 	situation.free()
+	if DisplayServer.get_name() != "headless": await rendered_paints()
 	print("Actor paints: ", checks, " checks; ", paints, " saved swatches; ", bad, " failures")
 	quit(1 if bad else 0)

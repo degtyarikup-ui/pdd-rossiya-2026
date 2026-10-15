@@ -140,7 +140,7 @@ func scenario(id: String, priority_id: String, waiting_id: String, held_id := ""
 	check(junction.motion_ground.is_valid() and junction.continuation.is_valid() and junction.motion_out_of_view.is_valid(), id + ": real ground, continuation and camera callbacks are connected")
 	var priority := motion(junction, priority_id) if priority_id != "" else null
 	var waiting := motion(junction, waiting_id)
-	check(waiting != null, id + ": deferred participant exists")
+	if waiting_id != "": check(waiting != null, id + ": deferred participant exists")
 	world._on_answer_chosen(int(sit.data.correctAnswerIndex))
 	check(junction.released and world.phase == "question", id + ": selecting the answer releases priority traffic before the 0.9 s card delay")
 	step(world, 6)
@@ -160,6 +160,7 @@ func scenario(id: String, priority_id: String, waiting_id: String, held_id := ""
 	complete_pass(world, sit)
 	check(junction.complete and junction.resolution == null, id + ": junction leaves resolution after the completed player pass")
 	departure_after_pass(world, sit, waiting)
+	if waiting == null: step(world, 15)
 	if priority != null and held_id == "":
 		check(priority.distance > prior_distance + 1.0 or priority.done, id + ": already moving participant continues across World rebase")
 	if id == "ticket_39_15": await screenshot(world, "02-waiters-after-rebase")
@@ -185,5 +186,7 @@ func run() -> void:
 	# An older exact fixture carries a moving route plus archived stationary/inf defaults.
 	await scenario("ticket_12_5", "", "yard_car")
 	await scenario("ticket_8_14", "npc_car", "npc_moto", "npc_car")
+	# The tram has priority over the player's left turn and starts on the answer tap.
+	await scenario("ticket_29_14", "tram_1", "")
 	print("Answer traffic world: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)

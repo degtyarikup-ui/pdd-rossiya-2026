@@ -729,6 +729,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameContinue => 'Жүруді жалғастыру';
 
   @override
+  String get gameFinishRide => 'Жүрісті аяқтау';
+
+  @override
   String get gameResolving => 'Газ — жүру · көрсеткілер — бұру';
 
   @override

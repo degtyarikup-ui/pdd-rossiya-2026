@@ -3043,7 +3043,9 @@
  "segmentLength": 0,
  "spec": {
   "maneuver": "left",
-  "yieldTo": [],
+  "yieldTo": [
+   "tram_1"
+  ],
   "paths": null,
   "pathRules": null
  },
@@ -3335,6 +3337,8 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": "#F08A24",
+   "way": "straight",
    "hazards": false
   }
  ],

@@ -1336,6 +1336,12 @@ abstract class AppLocalizations {
   /// **'Продолжить движение'**
   String get gameContinue;
 
+  /// No description provided for @gameFinishRide.
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершить заезд'**
+  String get gameFinishRide;
+
   /// No description provided for @gameResolving.
   ///
   /// In ru, this message translates to:

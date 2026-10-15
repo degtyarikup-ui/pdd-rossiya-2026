@@ -741,6 +741,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameContinue => 'Продолжить движение';
 
   @override
+  String get gameFinishRide => 'Завершить заезд';
+
+  @override
   String get gameResolving => 'Газ — ехать · стрелки — рулить';
 
   @override

@@ -3263,7 +3263,8 @@
       -1.75,
       47.5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.19,
    "halfWidth": 1.023,
@@ -3323,9 +3324,13 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": "left",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
  "questionView": {
   "centre": [
    4.446,

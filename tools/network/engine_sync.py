@@ -168,6 +168,8 @@ def sync(sid: str) -> dict:
         # Keep the optional editor paint separate from the template's original
         # colours so clearing the swatch restores the model's default colour.
         a["paint"] = na.get("paint")
+        # The editor's chosen direction overrides archived signal sides at runtime.
+        a["way"] = na.get("way")
         pos = [na["pos"][0], 0.0, na["pos"][1]]
         a["pos"] = pos
         a["yaw"] = na["yaw"]

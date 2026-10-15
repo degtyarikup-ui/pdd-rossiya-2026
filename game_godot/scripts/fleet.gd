@@ -130,16 +130,24 @@ static func maneuver_side(maneuver: String) -> String:
 	return ""
 
 
-## Saved signals/intent are authoritative: an edited curve can have a misleading tangent.
-static func actor_signal_side(actor: Dictionary, distance := 0.0) -> String:
+## The editor's current intention wins over archived signal sides and route tangents.
+## Old exports read it from the network by id; the saved plan still controls cancellation.
+static func actor_signal_side(actor: Dictionary, distance := 0.0, source: Dictionary = {}) -> String:
 	if not str(actor.get("type", "")) in SIGNAL_KINDS: return ""
+	var way = actor.get("way")
+	for authored in source.get("actors", []):
+		if str(authored.id) == str(actor.id):
+			way = authored.get("way")
+			break
+	var explicit_way: bool = way in ["left", "right", "straight", "uturn"]
 	var plan = actor.get("signalPlan")
 	if plan is Array and not plan.is_empty():
 		for span in plan:
 			if distance >= float(span.from) and distance < float(span.to):
-				return maneuver_side(str(span.side))
+				return maneuver_side(str(way) if explicit_way else str(span.side))
 		return ""
 	if distance >= float(actor.get("clearDistance", INF)): return ""
+	if explicit_way: return maneuver_side(str(way))
 	var config: Dictionary = actor.get("config", {})
 	if config.get("targetAction") != null:
 		return maneuver_side(str(config.targetAction))

@@ -600,7 +600,9 @@ func _set_booms() -> void:
 static func light_lamp(mat: StandardMaterial3D, on: bool) -> void:
 	if mat.has_meta("beacon_colour"):
 		var colour: Color = mat.get_meta("beacon_colour")
-		mat.albedo_color = colour.lerp(Color.WHITE, 0.9) if on else colour.darkened(0.9)
+		# Keep the lens itself coloured. A broad white lens plus the additive
+		# halo clips to white in Compatibility, hiding blue/red at ride scale.
+		mat.albedo_color = colour if on else colour.darkened(0.9)
 	mat.emission_enabled = on
 	mat.emission_energy_multiplier = 6.0
 	if mat.has_meta("halo"):

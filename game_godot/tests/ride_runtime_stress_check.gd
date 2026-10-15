@@ -227,12 +227,11 @@ func exercise(world: MeasuredWorld, control: SequenceControl, ids: Array[String]
 		world.reset_measurement()
 		world.measuring = true
 		await active_dwell(world, minf(2.0, dwell_seconds * 0.5))
-		# The HUD identifies the open question, so question 1 must already say 1/20
-		# before its answer is counted. Let the normal World frame update the label.
+		# Opening a new question does not count an answer.
 		await process_frame
 		await process_frame
 		var ordinal := (index % Run.QUESTIONS) + 1
-		expect(int(world.ui._run_big.text) == ordinal, "open question HUD ordinal q=" + str(index + 1))
+		expect(int(world.ui._run_big.text) == ordinal - 1, "open question HUD answer count q=" + str(index + 1))
 		await capture_last_question(index, "open")
 		var answer_kind := index % 3 if mixed_answers else 0
 		var right := int(sit.data.correctAnswerIndex)
@@ -252,6 +251,7 @@ func exercise(world: MeasuredWorld, control: SequenceControl, ids: Array[String]
 			# Expire the real card: the normal World frame calls the timeout handler.
 			world.ui._remaining = 0.0
 		if not await wait_for(func(): return world.question_over, 3.0, "answer accepted once q=" + str(index + 1)): return
+		var terminal := ordinal == Run.QUESTIONS
 		await process_frame
 		await process_frame
 		expect(int(world.ui._run_big.text) == ordinal, "answer feedback HUD ordinal q=" + str(index + 1))
@@ -262,22 +262,29 @@ func exercise(world: MeasuredWorld, control: SequenceControl, ids: Array[String]
 				await create_timer(GameUi.SHEET_OUT + GameUi.SHEET_IN + 0.1).timeout
 			await capture_last_question(index, "explanation")
 			world.ui.continue_pressed.emit()
-		if not await wait_for(func(): return world.phase == "resolving", 5.0, "normal answer feedback q=" + str(index + 1)): return
+		if not await wait_for(func(): return world.phase == ("over" if terminal else "resolving"), 5.0, "normal answer feedback q=" + str(index + 1)): return
 		await process_frame
 		await process_frame
 		expect(int(world.ui._run_big.text) == ordinal, "resolving HUD ordinal q=" + str(index + 1))
 		await capture_last_question(index, "resolving")
 		await active_dwell(world, maxf(0.0, dwell_seconds - world.frame_seconds))
-		if (index + 1) % 5 == 0: await pause_check(world)
+		if (index + 1) % 5 == 0 and not terminal: await pause_check(world)
 		if not await wait_for(func(): return not world.staging, 30.0, "background prefetch settled q=" + str(index + 1)): return
 		record(world, index, sit.id)
 		world.measuring = false
 		var junction: Junction = world.current.junction
+		if terminal:
+			expect(not junction.complete and junction.resolution == null and not world.controls.active, "twentieth answer finishes before departure q=" + str(index + 1))
+			# Only this endurance fixture drives out after checking the completed ride,
+			# so the same engine can exercise another 20 locations and memory plateau.
+			world.ui.hide_cards()
+			world.phase = "resolving"
+			junction.resolve(world.drive)
 		depart(world, sit)
 		if not await wait_for(func(): return world.current.is_empty(), 3.0, "normal finish and rebase q=" + str(index + 1)): return
 		expect(junction.complete, "production Junction completion q=" + str(index + 1))
 		expect(world.run.answered == ordinal and world.run.correct == expected_correct, "real answer counters q=" + str(index + 1))
-		expect(world.phase == ("over" if (index + 1) % Run.QUESTIONS == 0 else "driving"), "completion only on twentieth answer q=" + str(index + 1))
+		expect(world.phase == "driving", "location exit does not finish a ride q=" + str(index + 1))
 		expect(not world.run_started, "no user run booked q=" + str(index + 1))
 		expect(world.walker_pavement_queries.size() <= world.WALK_QUERY_CACHE_LIMIT, "walker query cache bound q=" + str(index + 1))
 		await process_frame

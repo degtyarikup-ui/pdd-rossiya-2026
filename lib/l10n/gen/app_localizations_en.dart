@@ -728,6 +728,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameContinue => 'Continue driving';
 
   @override
+  String get gameFinishRide => 'Finish ride';
+
+  @override
   String get gameResolving => 'Gas - drive · arrows - steer';
 
   @override

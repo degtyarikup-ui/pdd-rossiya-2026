@@ -13,7 +13,33 @@ func check(ok: bool, message: String) -> void:
 func _initialize() -> void:
 	run.call_deferred()
 
+func check_edited_intention() -> void:
+	var archived := {"id": "car", "type": "car", "signalPlan": [{"from": 0, "to": 12, "side": "right"}], "config": {"targetAction": "turn_right"}}
+	var before := archived.duplicate(true)
+	for way in ["left", "right", "uturn", "straight"]:
+		var source := {"actors": [{"id": "other", "way": "right"}, {"id": "car", "way": way}]}
+		check(Fleet.actor_signal_side(archived, 0.0, source) == Fleet.maneuver_side(way), "Edited " + way + " overrides archived signals by actor id")
+		check(Fleet.actor_signal_side(archived, 12.0, source) == "", "Edited " + way + " still cancels at the authored end")
+		var exported := archived.duplicate(true)
+		exported.way = way
+		check(Fleet.actor_signal_side(exported) == Fleet.maneuver_side(way), "Exported direction works without the network: " + way)
+	check(archived == before, "Signal lookup preserves the authored actor")
+	check(Fleet.actor_signal_side(archived, 0.0, {"actors": [{"id": "car"}]}) == "R", "Scenes without an editor direction preserve their explicit signal plan")
+	var sit := Situation.load_scene("ticket_19_13", Scenery.new("summer"))
+	root.add_child(sit)
+	var junction := Junction.new(sit)
+	junction.begin_question_signals()
+	var signals: Fleet.Signals = sit.actors[0].get_node("vehicle_signals")
+	signals.set_process(false)
+	check(signals.side == "L", "Ticket 19 question 13 shows the saved left turn when the question opens")
+	check(signals.materials[0].get_shader_parameter("left_on") and not signals.materials[0].get_shader_parameter("right_on"), "Ticket 19 question 13 lights the actual left lenses only")
+	junction.motions[0].distance = float(sit.data.actors[0].signalPlan[0].to)
+	junction._update_signals()
+	check(signals.side == "", "Ticket 19 question 13 cancels its indicator after the manoeuvre")
+	sit.free()
+
 func run() -> void:
+	check_edited_intention()
 	for maneuver in ["left", "uturn", "turn_left"]:
 		check(Fleet.maneuver_side(maneuver) == "L", "Left turn and U-turn signal left")
 	check(Fleet.maneuver_side("right") == "R", "Right turn signals right")

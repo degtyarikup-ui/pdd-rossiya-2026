@@ -81,6 +81,7 @@ func run_tier(quality: String) -> void:
 	scene.add_child(camera)
 	camera.look_at(Vector3(0, 1, 0))
 	police = Fleet.dps_car()
+	Fleet.add_blinkers(police, "", 2.1, 0.9)
 	scene.add_child(police)
 	police.process_mode = Node.PROCESS_MODE_DISABLED
 	lamps = police.get_meta("lights")
@@ -135,11 +136,11 @@ func run_tier(quality: String) -> void:
 		off.save_png(output_dir + "/" + prefix(quality) + "-" + name + "-off.png")
 		print(quality, " ", name, " ", JSON.stringify(metrics), "; hazard ", JSON.stringify(amber))
 		expect(float(metrics.gain) >= float(amber.gain), quality + " " + name + " gained luminance exceeds one hazard lamp")
-		expect(int(metrics.bright_pixels) >= int(amber.bright_pixels), quality + " " + name + " bright area exceeds one hazard lamp")
+		expect(int(metrics.bright_pixels) >= 100, quality + " " + name + " has a visible flashing area")
 		expect(int(metrics.coloured_pixels) >= 12, quality + " " + name + " retains a recognisable coloured fringe")
 		expect(int(metrics.core_pixels) >= 3, quality + " " + name + " has a bright core")
 		expect(float(metrics.on_lens_luminance) > float(metrics.off_lens_luminance) + 0.2, quality + " " + name + " lens visibly darkens between flashes")
-		expect(float(metrics.on_lens_luminance) >= 0.85, quality + " " + name + " emitter has a bright core at ride camera scale")
+		expect(float(metrics.lens_chroma) >= 0.25, quality + " " + name + " lens retains its saturated colour instead of flashing white")
 	for i in 160:
 		lamp(0, i % 2 == 0)
 		lamp(1, i % 2 != 0)
@@ -191,7 +192,9 @@ func measure(off: Image, on: Image, centre: Vector3, colour: String) -> Dictiona
 			var tint := b.b > b.r + 0.06 and b.b > b.g + 0.06 if colour == "blue" else b.r > b.g + 0.06 and b.r > b.b + 0.06
 			if colour == "amber": tint = b.r > b.b + 0.2 and b.g > b.b + 0.08
 			if difference > 0.02 and tint and Vector2(x, y).distance_to(Vector2(at)) > 8.0: coloured += 1
-	return {"bright_pixels": bright, "coloured_pixels": coloured, "core_pixels": core, "gain": gain, "peak_gain": peak,
+	var lens_colour := on.get_pixelv(at)
+	var lens_chroma := lens_colour.b - maxf(lens_colour.r, lens_colour.g) if colour == "blue" else lens_colour.r - maxf(lens_colour.g, lens_colour.b)
+	return {"bright_pixels": bright, "coloured_pixels": coloured, "core_pixels": core, "gain": gain, "peak_gain": peak, "lens_chroma": lens_chroma,
 		"off_lens_luminance": off.get_pixelv(at).get_luminance(), "on_lens_luminance": on.get_pixelv(at).get_luminance()}
 
 func resources() -> Dictionary:

@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 KEYS = [
     'gameDebugPerfMemoryFootprint', 'gameDebugTier', 'gameDebugPerfObjects', 'gameDebugPerfRetained',
-    'gameExitToMenu', 'soundEffects', 'gameSeconds', 'gameContinue', 'gameCorrect', 'gameMistake', 'gameTimeUp', 'gameCorrectAnswer',
+    'gameExitToMenu', 'soundEffects', 'gameSeconds', 'gameContinue', 'gameFinishRide', 'gameCorrect', 'gameMistake', 'gameTimeUp', 'gameCorrectAnswer',
     'gameGarage', 'gameLobbyRecord', 'gameLobbyColour', 'gameLobbyNewRun', 'gameRunsTitle',
     'gameAchievementsTitle', 'gameAchievementsHint', 'gameAchievementProgress',
     'gameAchievementsComplete', 'gamePaintAllCars',
