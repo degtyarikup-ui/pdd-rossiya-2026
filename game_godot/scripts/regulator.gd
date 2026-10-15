@@ -138,51 +138,12 @@ func _setup_args() -> void:
 
 
 func _setup_environment() -> void:
-	# Use the main game's seasonal daylight palette and exposure.
-	var seasons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://scenery/index.json")).seasons
-	var season: Dictionary = seasons[season_name]
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-68, 30, 0)
-	sun.light_color = Color(season.sun)
-	sun.light_energy = float(season.sunIntensity) * 0.8
-	sun.shadow_enabled = true
-	# Perspective shadows retain near detail; the quality profile limits their cost.
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.directional_shadow_max_distance = 56.0
-	sun.directional_shadow_split_1 = 0.18
-	sun.directional_shadow_split_2 = 0.42
-	sun.directional_shadow_split_3 = 0.70
-	sun.directional_shadow_blend_splits = true
-	sun.shadow_blur = 1.6
-	sun.shadow_bias = 0.05
-	sun.shadow_normal_bias = 1.0
-	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
-
 	env = WorldEnvironment.new()
-	var e := Environment.new()
-	e.background_mode = Environment.BG_COLOR
-	e.background_color = Color(season.sky)
-	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_sky_contribution = 0.0
-	e.ambient_light_color = Color.WHITE
-	e.ambient_light_energy = float(season.ambient) * 0.8
-	e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-
-	# A broad, gently eased transition keeps the avenue legible into the distance.
-	e.fog_enabled = true
-	e.fog_mode = Environment.FOG_MODE_DEPTH
-	# Set after fog_mode: switching to depth fog resets density to 1 in Godot.
-	e.fog_density = 0.82
-	e.fog_light_color = Color(season.sky)
-	e.fog_sun_scatter = 0.0
-	e.fog_aerial_perspective = 0.0
-	e.fog_depth_begin = 75.0
-	e.fog_depth_end = 260.0
-	e.fog_depth_curve = 1.35
-	e.fog_sky_affect = 0.0
-	env.environment = e
+	env.environment = Environment.new()
+	MiniGameLighting.apply(sun, env.environment, season_name)
 	add_child(env)
 
 	# Main Camera

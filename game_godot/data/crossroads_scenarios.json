@@ -3113,17 +3113,17 @@
       {
         "code": "2.1",
         "side": "east",
-        "table8_13": "left_top"
+        "table8_13": "bottom_left"
       },
       {
         "code": "2.4",
         "side": "north",
-        "table8_13": "top_right"
+        "table8_13": "left_top"
       },
       {
         "code": "2.4",
         "side": "west",
-        "table8_13": "bottom_left"
+        "table8_13": "top_right"
       }
     ],
     "trafficLights": [],

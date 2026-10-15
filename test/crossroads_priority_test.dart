@@ -105,7 +105,7 @@ void main() {
     });
 
     test(
-      'CrossroadsScenario serialization to JSON is valid for Three.js engine',
+      'CrossroadsScenario serialization to JSON is valid for the game engine',
       () {
         for (final s in CrossroadsScenariosLibrary.allScenarios) {
           final json = s.toJson();
@@ -152,6 +152,35 @@ void main() {
       // Все 4 таблички 8.13 уникальны и не дублируются
       final tableSet = scenario.signs.map((s) => s.table8_13).toSet();
       expect(tableSet.length, equals(4));
+    });
+
+    test('Every 8.13 shows the same main road from each driver approach', () {
+      const sides = [
+        CrossroadsSide.south,
+        CrossroadsSide.east,
+        CrossroadsSide.north,
+        CrossroadsSide.west,
+      ];
+      const localArms = {
+        'bottom_left': [0, 3],
+        'bottom_right': [0, 1],
+        'top_right': [2, 1],
+        'left_top': [3, 2],
+      };
+      for (final scenario in CrossroadsScenariosLibrary.allScenarios) {
+        final mainArms = scenario.signs
+            .where((sign) => sign.code == '2.1')
+            .map((sign) => sign.side)
+            .toSet();
+        for (final sign in scenario.signs) {
+          final table = sign.table8_13;
+          if (table == null) continue;
+          final worldArms = localArms[table]!
+              .map((arm) => sides[(sides.indexOf(sign.side) + arm) % 4])
+              .toSet();
+          expect(worldArms, mainArms, reason: '${scenario.id}/${sign.side}');
+        }
+      }
     });
 
     test(

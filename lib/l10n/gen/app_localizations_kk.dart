@@ -1983,6 +1983,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get crossroadsHardSituationBadge => '⚡ Күрделі жағдай • 3× ұпай';
 
   @override
+  String get crossroadsHardBonusBadge => '⚡ Күрделі жағдай · +10 сек';
+
+  @override
   String get crossroadsTimeBonus10s => '+10 сек';
 
   @override

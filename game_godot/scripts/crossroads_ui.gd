@@ -1,13 +1,11 @@
-## Native Godot UI of the Crossroads (Разрули перекресток) game.
-## Draws the top bar (close, HUD with score, combo, timer, lives, category chips),
-## caption card, reset camera button, collision modal, and final results card.
+## Crossroads uses the same Onest typography, Material icons, colours and dp as the app.
+## There is one timed game. Pausing keeps the junction visible; explanations and results
+## use scrollable cards, so every action remains reachable with large text or a short screen.
 class_name CrossroadsUi
 extends Control
 
 signal close_pressed()
-signal mode_toggled()
-signal category_selected(cat: String)
-signal prev_scenario_pressed()
+signal resume_pressed()
 signal next_scenario_pressed()
 signal reset_camera_pressed()
 signal retry_pressed()
@@ -15,77 +13,66 @@ signal restart_pressed()
 signal exit_pressed()
 
 const SCREEN_PAD := 16.0
-const CHROME := 40.0
+const CHROME := 44.0
 const LIVES := 5
+const MAX_TOP_WIDTH := 640.0
 
-# Codepoints of Material Icons rounded font
-const ICON_CLOSE := 0xf647
+const ICON_PAUSE := 0xf0056
 const ICON_STAR := 0xf01d4
 const ICON_HEART := 0xf738
 const ICON_HEART_EMPTY := 0xf737
-const ICON_TIMER := 0xf44a
-const ICON_SCHOOL := 0xf016e
-const ICON_GAMEPAD := 0xf01dd
-const ICON_PREV := 0xf63a
-const ICON_NEXT := 0xf63b
-const ICON_CAMERA := 0xf62c
-const ICON_REFRESH := 0xf00e2
-const ICON_WARNING := 0xf0289
-const ICON_BOLT := 0xf588
+const ICON_TIMER := 0xf023c
+const ICON_CAMERA := 0xf627
+const ICON_WARNING := 0xf02a0
 
-# UI nodes
 var _top_bar: VBoxContainer
 var _hud_row: HBoxContainer
 var _close_btn: Button
 var _hud: PanelContainer
+var _hud_line1: HBoxContainer
+var _hud_line2: HBoxContainer
+var _score_group: HBoxContainer
+var _timer_group: HBoxContainer
+var _score_spacer: Control
+var _timer_spacer: Control
 var _score_label: Label
+var _combo_chip: PanelContainer
+var _combo_label: Label
 var _timer_label: Label
 var _timer_icon: Label
 var _lives_container: HBoxContainer
 var _hearts: Array[Label] = []
-var _mode_btn: Button
-var _training_hud_panel: PanelContainer
-var _training_title: Label
 
-# Training mode controls
-var _training_nav_row: Container
-var _prev_btn: Button
-var _next_btn: Button
-var _cat_buttons: Dictionary = {}
-
-# Caption card
 var _caption_card: PanelContainer
 var _caption_prompt: Label
-var _caption_title: Label
 var _caption_subtitle: Label
-var _caption_step: Label
 var _step_pill: PanelContainer
 var _step_pill_label: Label
 var _hard_badge: PanelContainer
-
-# Camera reset button
+var _hard_badge_label: Label
 var _reset_cam_btn: Button
+var _bonus_tween: Tween
+var _bonus_visible := false
 
-# Hard bonus toast
-var _toast: PanelContainer
-var _toast_label: Label
-
-# Collision breakdown modal
 var _collision_backdrop: ColorRect
 var _collision_card: PanelContainer
+var _collision_content: VBoxContainer
 var _collision_title: Label
 var _collision_should_go: Label
 var _collision_reason: Label
 var _collision_article: Label
-var _collision_btn_row: HBoxContainer
+var _collision_btn_row: BoxContainer
 var _collision_retry_btn: Button
 var _collision_next_btn: Button
 var _collision_game_over_btn: Button
 
-# Result dialog
+var _pause: ColorRect
+var _pause_card: PanelContainer
+var _pause_content: VBoxContainer
+var _pause_resume_btn: Button
 var _result: ColorRect
 var _result_card: PanelContainer
-var _cover: TextureRect
+var _result_content: VBoxContainer
 var _result_title: Label
 var _final_score: Label
 var _record_badge: PanelContainer
@@ -93,26 +80,25 @@ var _best_label: Label
 var _stat_solved_val: Label
 var _stat_acc_val: Label
 var _stat_combo_val: Label
-
-var is_training := false
-var cur_category := "all"
+var _result_buttons: BoxContainer
+var _modal_open := false
 
 
 func _init() -> void:
 	anchor_right = 0.0
 	anchor_bottom = 0.0
 	mouse_filter = MOUSE_FILTER_IGNORE
-
 	_build_top_bar()
 	_build_reset_camera_btn()
-	_build_toast()
 	_build_collision_modal()
+	_build_pause()
 	_build_result_dialog()
 
 
 func _ready() -> void:
 	get_viewport().size_changed.connect(_layout)
 	_layout()
+	call_deferred("_layout")
 
 
 func _layout() -> void:
@@ -123,630 +109,514 @@ func _layout() -> void:
 	scale = Vector2(u, u)
 	position = Vector2.ZERO
 	size = viewport.get_visible_rect().size / u
-
 	var safe := Ui.insets(viewport)
 	var top := float(safe["top"]) / u
 	var bottom := float(safe["bottom"]) / u
+	var left := float(safe["left"]) / u + SCREEN_PAD
+	var right := float(safe["right"]) / u + SCREEN_PAD
+	var available_width := maxf(160.0, size.x - left - right)
+	var top_width := minf(MAX_TOP_WIDTH, available_width)
+	_top_bar.position = Vector2(left + (available_width - top_width) * 0.5, top + 8.0)
+	_top_bar.size = Vector2(top_width, 0)
+	var badge_width := _hard_badge_label.get_theme_font("font").get_string_size(_hard_badge_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, _hard_badge_label.get_theme_font_size("font_size")).x + 16.0
+	_hard_badge.custom_minimum_size.x = minf(top_width - 28.0, badge_width)
+	_fit_hud(top_width - CHROME - 8.0)
+	_top_bar.size.y = _top_bar.get_combined_minimum_size().y
+	_reset_cam_btn.position = Vector2(size.x - right - CHROME, size.y - bottom - CHROME - 12.0)
+	for backdrop in [_collision_backdrop, _pause, _result]:
+		backdrop.size = size
+	var card_width := minf(420.0, available_width)
+	var modal_top := top + 16.0
+	var modal_height := maxf(100.0, size.y - modal_top - bottom - 16.0)
+	var inner_width := card_width - 40.0
+	# Stack long action labels rather than shrinking the text or the tap target.
+	var stack_actions := inner_width < 300.0 or Ui.text_scale() > 1.2
+	_collision_btn_row.vertical = stack_actions
+	_result_buttons.vertical = stack_actions
+	_fit_modal(_collision_card, _collision_content, card_width, modal_height, modal_top, left, available_width)
+	_fit_modal(_pause_card, _pause_content, card_width, modal_height, modal_top, left, available_width)
+	_fit_modal(_result_card, _result_content, card_width, modal_height, modal_top, left, available_width)
 
-	_top_bar.offset_top = top + 8.0
-	_top_bar.offset_left = SCREEN_PAD
-	_top_bar.offset_right = size.x - SCREEN_PAD
 
-	_reset_cam_btn.position = Vector2(
-		size.x - SCREEN_PAD - CHROME,
-		size.y - bottom - CHROME - 12.0
-	)
-
-	_collision_backdrop.size = size
-	var modal_w := minf(500.0, size.x)
-	_collision_card.custom_minimum_size = Vector2(modal_w, 0)
-	_collision_card.size = Vector2(modal_w, 0)
-	_collision_card.reset_size()
-	_collision_card.position = Vector2((size.x - modal_w) * 0.5, size.y - _collision_card.size.y - bottom)
-
-	_result.size = size
-	var card_w := minf(320.0, size.x - 32.0)
-	_result_card.custom_minimum_size = Vector2(card_w, 0)
-	_result_card.size = Vector2(card_w, 0)
-	if _cover != null and _cover.is_inside_tree():
-		_cover.custom_minimum_size.y = (card_w - 40.0) * 9.0 / 16.0
-	_result_card.reset_size()
-	_result_card.position = Vector2((size.x - card_w) * 0.5, maxf(top + 16.0, (size.y - _result_card.size.y) * 0.5))
+## Camera fitting uses the unobscured junction, in viewport pixels rather than dp.
+func scene_rect() -> Rect2:
+	var viewport := get_viewport()
+	if viewport == null:
+		return Rect2()
+	var u := Ui.dp(viewport)
+	var safe := Ui.insets(viewport)
+	var left := float(safe["left"]) / u + SCREEN_PAD
+	var right := float(safe["right"]) / u + SCREEN_PAD
+	var top := _top_bar.position.y + _top_bar.size.y + 12.0
+	var bottom := _reset_cam_btn.position.y - 12.0
+	return Rect2(Vector2(left, top) * u, Vector2(maxf(100.0, size.x - left - right), maxf(100.0, bottom - top)) * u)
 
 
-# --- Top Bar ---
+func _fit_modal(card: PanelContainer, content: VBoxContainer, width: float, max_height: float, top: float, left: float, available_width: float) -> void:
+	# The ScrollContainer does not propagate the text's height to its parent. Measure
+	# the inner column explicitly, then cap it to the safe viewport and allow scrolling.
+	# Reserve the scrollbar as well: its minimum width must never push the card
+	# past the phone's safe margins when a long explanation starts scrolling.
+	content.custom_minimum_size.x = maxf(100.0, width - 56.0)
+	content.size.x = content.custom_minimum_size.x
+	var height := minf(max_height, content.get_combined_minimum_size().y + 40.0)
+	card.custom_minimum_size = Vector2(width, height)
+	card.size = card.custom_minimum_size
+	card.position = Vector2(left + (available_width - width) * 0.5, top + (max_height - height) * 0.5)
+
 
 func _build_top_bar() -> void:
 	_top_bar = VBoxContainer.new()
 	_top_bar.add_theme_constant_override("separation", 8)
 	add_child(_top_bar)
-
 	_hud_row = HBoxContainer.new()
 	_hud_row.add_theme_constant_override("separation", 8)
 	_top_bar.add_child(_hud_row)
-
-	# Close button
-	_close_btn = _chrome_btn(ICON_CLOSE)
+	_close_btn = _chrome_btn(ICON_PAUSE, Ui.t("gamePause"))
 	_close_btn.pressed.connect(func(): close_pressed.emit())
 	_hud_row.add_child(_close_btn)
 
-	# HUD Panel
 	_hud = PanelContainer.new()
+	_hud.custom_minimum_size.y = CHROME
 	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
-	var hud_box := Ui.box(Ui.c("card"), 10)
-	hud_box.content_margin_left = 12
-	hud_box.content_margin_right = 12
-	hud_box.content_margin_top = 6
-	hud_box.content_margin_bottom = 6
-	_hud.add_theme_stylebox_override("panel", hud_box)
+	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 12, 12, 8))
 	_hud_row.add_child(_hud)
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", 6)
+	_hud.add_child(lines)
+	_hud_line1 = HBoxContainer.new()
+	_hud_line1.add_theme_constant_override("separation", 10)
+	lines.add_child(_hud_line1)
+	_hud_line2 = HBoxContainer.new()
+	_hud_line2.add_theme_constant_override("separation", 8)
+	_hud_line2.visible = false
+	lines.add_child(_hud_line2)
 
-	var hud_content := HBoxContainer.new()
-	hud_content.add_theme_constant_override("separation", 10)
-	_hud.add_child(hud_content)
-
-	# Score
-	var star := Ui.icon(ICON_STAR, 18, Ui.c("gold"))
-	hud_content.add_child(star)
-	_score_label = Ui.label("0", 17, 700, Ui.c("text"))
-	hud_content.add_child(_score_label)
-
-	var sp1 := Control.new()
-	sp1.size_flags_horizontal = SIZE_EXPAND_FILL
-	hud_content.add_child(sp1)
-
-	# Timer
+	_score_group = HBoxContainer.new()
+	_score_group.add_theme_constant_override("separation", 4)
+	_score_group.add_child(Ui.icon(ICON_STAR, 20, Ui.c("gold")))
+	_score_label = Ui.scaled_label("0", 17, 800, Ui.c("text"))
+	_score_group.add_child(_score_label)
+	_combo_chip = PanelContainer.new()
+	_combo_chip.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 6, 5, 2))
+	_combo_label = Ui.scaled_label("", 11, 700, Ui.c("gold"))
+	_combo_chip.add_child(_combo_label)
+	_combo_chip.visible = false
+	_score_group.add_child(_combo_chip)
+	_hud_line1.add_child(_score_group)
+	_score_spacer = _spacer()
+	_hud_line1.add_child(_score_spacer)
+	_timer_group = HBoxContainer.new()
+	_timer_group.add_theme_constant_override("separation", 4)
 	_timer_icon = Ui.icon(ICON_TIMER, 18, Ui.c("secondary"))
-	hud_content.add_child(_timer_icon)
-	_timer_label = Ui.label("60", 17, 700, Ui.c("text"))
-	hud_content.add_child(_timer_label)
-
-	var sp2 := Control.new()
-	sp2.size_flags_horizontal = SIZE_EXPAND_FILL
-	hud_content.add_child(sp2)
-
-	# Lives (hearts)
+	_timer_group.add_child(_timer_icon)
+	_timer_label = Ui.scaled_label("60", 15, 700, Ui.c("text"))
+	_timer_group.add_child(_timer_label)
+	_hud_line1.add_child(_timer_group)
+	_timer_spacer = _spacer()
+	_hud_line1.add_child(_timer_spacer)
 	_lives_container = HBoxContainer.new()
-	_lives_container.add_theme_constant_override("separation", 3)
-	hud_content.add_child(_lives_container)
+	_lives_container.add_theme_constant_override("separation", 2)
 	for i in LIVES:
-		var h := Ui.icon(ICON_HEART, 16, Ui.c("red"))
-		_hearts.append(h)
-		_lives_container.add_child(h)
+		var heart := Ui.icon(ICON_HEART, 15, Ui.c("red"))
+		_hearts.append(heart)
+		_lives_container.add_child(heart)
+	_hud_line1.add_child(_lives_container)
 
-	# Training HUD title panel (visible in training mode)
-	_training_hud_panel = PanelContainer.new()
-	_training_hud_panel.size_flags_horizontal = SIZE_EXPAND_FILL
-	var th_box := Ui.box(Ui.c("card"), 10)
-	th_box.content_margin_left = 8
-	th_box.content_margin_right = 8
-	th_box.content_margin_top = 4
-	th_box.content_margin_bottom = 4
-	_training_hud_panel.add_theme_stylebox_override("panel", th_box)
-	_training_hud_panel.visible = false
-	_hud_row.add_child(_training_hud_panel)
-
-	var th_content := HBoxContainer.new()
-	th_content.alignment = BoxContainer.ALIGNMENT_CENTER
-	th_content.add_theme_constant_override("separation", 6)
-	_training_hud_panel.add_child(th_content)
-
-	_prev_btn = _chrome_btn(ICON_PREV)
-	_prev_btn.custom_minimum_size = Vector2(32, 32)
-	_prev_btn.pressed.connect(func(): prev_scenario_pressed.emit())
-	th_content.add_child(_prev_btn)
-
-	var school_icon := Ui.icon(ICON_SCHOOL, 16, Ui.c("accent"))
-	th_content.add_child(school_icon)
-
-	_training_title = Ui.label(Ui.t("gameCrossroadsModeTraining"), 14, 700, Ui.c("text"))
-	_training_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_training_title.size_flags_horizontal = SIZE_EXPAND_FILL
-	th_content.add_child(_training_title)
-
-	_next_btn = _chrome_btn(ICON_NEXT)
-	_next_btn.custom_minimum_size = Vector2(32, 32)
-	_next_btn.pressed.connect(func(): next_scenario_pressed.emit())
-	th_content.add_child(_next_btn)
-
-	# Mode toggle button
-	_mode_btn = _chrome_btn(ICON_SCHOOL)
-	_mode_btn.pressed.connect(func(): mode_toggled.emit())
-	_hud_row.add_child(_mode_btn)
-
-	# Training category navigation row: HFlowContainer so chips wrap and fit on any screen
-	_training_nav_row = HFlowContainer.new()
-	_training_nav_row.size_flags_horizontal = SIZE_EXPAND_FILL
-	_training_nav_row.add_theme_constant_override("h_separation", 6)
-	_training_nav_row.add_theme_constant_override("v_separation", 6)
-	_training_nav_row.visible = false
-	_top_bar.add_child(_training_nav_row)
-
-	var cats := [
-		{"key": "all", "label": Ui.t("gameCrossroadsCatAll")},
-		{"key": "prioritySigns", "label": Ui.t("gameCrossroadsCatSigns")},
-		{"key": "trafficLights", "label": Ui.t("gameCrossroadsCatTrafficLights")},
-		{"key": "hardSituations", "label": Ui.t("gameCrossroadsCatHard")},
-	]
-	for c in cats:
-		var chip := _cat_chip(c.key, c.label)
-		_cat_buttons[c.key] = chip
-		_training_nav_row.add_child(chip)
-
-	# Caption card
 	_caption_card = PanelContainer.new()
-	var cap_box := Ui.box(Ui.c("card"), 12)
-	cap_box.content_margin_left = 14
-	cap_box.content_margin_right = 14
-	cap_box.content_margin_top = 10
-	cap_box.content_margin_bottom = 10
-	_caption_card.add_theme_stylebox_override("panel", cap_box)
+	_caption_card.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 16, 14, 12))
 	_top_bar.add_child(_caption_card)
-
-	var cap_vbox := VBoxContainer.new()
-	cap_vbox.add_theme_constant_override("separation", 4)
-	_caption_card.add_child(cap_vbox)
-
-	# Top row: Prompt on left, Step capsule pill on right
+	var caption := VBoxContainer.new()
+	caption.add_theme_constant_override("separation", 5)
+	_caption_card.add_child(caption)
 	var prompt_row := HBoxContainer.new()
 	prompt_row.add_theme_constant_override("separation", 8)
-	cap_vbox.add_child(prompt_row)
-
+	caption.add_child(prompt_row)
 	_caption_prompt = Ui.scaled_label(Ui.t("gameCrossroadsPromptWhoGoesFirst"), 16, 700, Ui.c("text"), true)
-	_caption_prompt.size_flags_horizontal = SIZE_EXPAND_FILL
 	prompt_row.add_child(_caption_prompt)
-
-	# Step pill capsule
 	_step_pill = PanelContainer.new()
-	var pill_box := Ui.box(Ui.c("card"), 12)
-	pill_box.content_margin_left = 10
-	pill_box.content_margin_right = 10
-	pill_box.content_margin_top = 3
-	pill_box.content_margin_bottom = 3
-	_step_pill.add_theme_stylebox_override("panel", pill_box)
-	_step_pill_label = Ui.label("1 / 3", 12, 700, Ui.c("accent"))
+	_step_pill.size_flags_vertical = SIZE_SHRINK_BEGIN
+	_step_pill.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 8, 8, 4))
+	_step_pill_label = Ui.scaled_label("1 / 3", 12, 700, Ui.c("accent"))
 	_step_pill.add_child(_step_pill_label)
 	prompt_row.add_child(_step_pill)
-
-	# Subtitle description
 	_caption_subtitle = Ui.scaled_label("", 13, 400, Ui.c("secondary"), true)
-	cap_vbox.add_child(_caption_subtitle)
-
-	# Legacy label for backwards compatibility
-	_caption_title = _caption_prompt
-	_caption_step = _step_pill_label
-
-	# Hard situation badge
+	caption.add_child(_caption_subtitle)
 	_hard_badge = PanelContainer.new()
-	var hb_box := Ui.box(Color("#FFF7E6"), 6)
-	hb_box.content_margin_left = 8
-	hb_box.content_margin_right = 8
-	hb_box.content_margin_top = 2
-	hb_box.content_margin_bottom = 2
-	_hard_badge.add_theme_stylebox_override("panel", hb_box)
-	var hb_label := Ui.label(Ui.t("crossroadsHardSituationBadge"), 11, 700, Color("#C77800"))
-	_hard_badge.add_child(hb_label)
+	_hard_badge.size_flags_horizontal = SIZE_SHRINK_BEGIN
+	_hard_badge.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 6, 8, 4))
+	_hard_badge_label = Ui.scaled_label(Ui.t("crossroadsHardSituationBadge"), 11, 700, Ui.c("gold"), true)
+	_hard_badge.add_child(_hard_badge_label)
 	_hard_badge.visible = false
-	cap_vbox.add_child(_hard_badge)
+	caption.add_child(_hard_badge)
 
 
-func _cat_chip(cat_key: String, label_text: String) -> Button:
-	var btn := Button.new()
-	btn.text = label_text
-	btn.add_theme_font_override("font", Ui.font(600))
-	btn.add_theme_font_size_override("font_size", 12)
-	btn.custom_minimum_size = Vector2(0, 32)
-	var active := cat_key == cur_category
-	btn.add_theme_color_override("font_color", Color.WHITE if active else Ui.c("secondary"))
-	var box := Ui.box(Ui.c("accent") if active else Ui.c("card"), 16)
-	box.content_margin_left = 12
-	box.content_margin_right = 12
-	btn.add_theme_stylebox_override("normal", box)
-	btn.pressed.connect(func():
-		cur_category = cat_key
-		_update_cat_chips()
-		category_selected.emit(cat_key)
-	)
-	return btn
+func _fit_hud(width: float) -> void:
+	var available := maxf(100.0, width - 24.0)
+	var font_size := roundi(17.0 * Ui.text_scale())
+	var combo_width := _combo_chip.get_combined_minimum_size().x + 4.0 if _combo_chip.visible else 0.0
+	var score_room := maxf(30.0, available - combo_width - 24.0)
+	var measured := _score_label.get_theme_font("font").get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	if measured > score_room:
+		font_size = maxi(12, floori(font_size * score_room / measured))
+	_score_label.add_theme_font_size_override("font_size", font_size)
+	var score_width := _score_group.get_combined_minimum_size().x
+	var timer_width := _timer_group.get_combined_minimum_size().x
+	var needed := score_width + timer_width + _lives_container.get_combined_minimum_size().x + 40.0
+	var one_line := needed <= available
+	var timer_wrap := score_width + timer_width + 20.0 > available
+	var timer_parent := _hud_line2 if timer_wrap else _hud_line1
+	if _timer_group.get_parent() != timer_parent:
+		_timer_group.reparent(timer_parent, false)
+	if timer_parent == _hud_line1:
+		_hud_line1.move_child(_timer_group, _timer_spacer.get_index() - 1 if _timer_group.get_index() < _timer_spacer.get_index() else _timer_spacer.get_index())
+	else:
+		_hud_line2.move_child(_timer_group, 0)
+	var lives_parent := _hud_line1 if one_line else _hud_line2
+	if _lives_container.get_parent() != lives_parent:
+		_lives_container.reparent(lives_parent, false)
+	_hud_line2.visible = not one_line
+	_score_spacer.visible = not timer_wrap
+	_timer_spacer.visible = one_line
 
 
-func _update_cat_chips() -> void:
-	for k in _cat_buttons:
-		var btn: Button = _cat_buttons[k]
-		var active: bool = str(k) == cur_category
-		btn.add_theme_color_override("font_color", Color.WHITE if active else Ui.c("secondary"))
-		var box := Ui.box(Ui.c("accent") if active else Ui.c("card"), 16)
-		box.content_margin_left = 12
-		box.content_margin_right = 12
-		btn.add_theme_stylebox_override("normal", box)
-
-
-func set_mode(training: bool) -> void:
-	is_training = training
-	_training_nav_row.visible = training
-	_hud.visible = not training
-	if _training_hud_panel != null:
-		_training_hud_panel.visible = training
-	_mode_btn.text = char(ICON_GAMEPAD if training else ICON_SCHOOL)
-
-
-func set_training_scenario_index(current: int, total: int) -> void:
-	if _training_title != null:
-		_training_title.text = "%s • %d/%d" % [Ui.t("gameCrossroadsModeTraining"), current, total]
-
-
-func update_hud(score: int, seconds: int, lives: int, _combo: int) -> void:
+func update_hud(score: int, seconds: int, lives: int, combo: int) -> void:
+	var score_changed := _score_label.text != str(score)
+	var combo_changed := _combo_chip.visible != (combo > 1) or _combo_label.text != "×%d" % combo
 	_score_label.text = str(score)
+	_combo_chip.visible = combo > 1
+	_combo_label.text = "×%d" % combo
 	_timer_label.text = str(maxi(0, seconds))
 	var urgent := seconds <= 10
+	var timer_color := Ui.c("red") if urgent else Ui.c("text")
 	_timer_icon.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("secondary"))
-	_timer_label.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("text"))
-
+	_timer_label.add_theme_color_override("font_color", timer_color)
 	for i in LIVES:
-		var h := _hearts[i]
-		if i < lives:
-			h.text = char(ICON_HEART)
-			h.add_theme_color_override("font_color", Ui.c("red"))
-		else:
-			h.text = char(ICON_HEART_EMPTY)
-			h.add_theme_color_override("font_color", Ui.c("secondary"))
+		_hearts[i].text = char(ICON_HEART if i < lives else ICON_HEART_EMPTY)
+		_hearts[i].add_theme_color_override("font_color", Ui.c("red") if i < lives else Ui.c("secondary"))
+	if is_inside_tree() and (score_changed or combo_changed):
+		_layout()
 
 
-func update_caption(title: String, subtitle: String, step: int, total_steps: int, is_hard: bool = false) -> void:
+func update_caption(title: String, _subtitle: String, step: int, total_steps: int, is_hard: bool = false) -> void:
 	_hard_badge.visible = is_hard
+	var complete := step > total_steps
+	_caption_prompt.text = Ui.t("gameCrossroadsCompleteTitle") if complete else (
+		Ui.t("gameCrossroadsPromptWhoGoesFirst") if step <= 1 else Ui.t("gameCrossroadsPromptWhoGoesNext", {"step": step}))
+	var color := Ui.c("green") if complete else Ui.c("accent")
+	_caption_prompt.add_theme_color_override("font_color", Ui.c("green") if complete else Ui.c("text"))
+	_step_pill_label.text = "%s%d / %d" % ["✓ " if complete else "", mini(step, total_steps), total_steps]
+	_step_pill_label.add_theme_color_override("font_color", color)
+	# Scenario subtitles used to explain the complete passing order in training.
+	# The single game asks the player to decide; keep only its neutral title here.
+	_caption_subtitle.text = title
+	_caption_subtitle.visible = _caption_subtitle.text != ""
+	if is_inside_tree():
+		call_deferred("_layout")
 
-	if step > total_steps:
-		_caption_prompt.text = Ui.t("gameCrossroadsCompleteTitle")
-		_caption_prompt.add_theme_color_override("font_color", Color("#2BC280"))
-		_step_pill_label.text = "✓ %d/%d" % [total_steps, total_steps]
-		_step_pill_label.add_theme_color_override("font_color", Color("#2BC280"))
-		_caption_subtitle.text = title
-	elif step == 1:
-		_caption_prompt.text = Ui.t("gameCrossroadsPromptWhoGoesFirst")
-		_caption_prompt.add_theme_color_override("font_color", Ui.c("text"))
-		_step_pill_label.text = "%d/%d" % [1, total_steps]
-		_step_pill_label.add_theme_color_override("font_color", Ui.c("accent"))
-		_caption_subtitle.text = subtitle if subtitle != "" else title
-	else:
-		_caption_prompt.text = Ui.t("gameCrossroadsPromptWhoGoesNext", {"step": step})
-		_caption_prompt.add_theme_color_override("font_color", Ui.c("text"))
-		_step_pill_label.text = "%d/%d" % [step, total_steps]
-		_step_pill_label.add_theme_color_override("font_color", Ui.c("accent"))
-		_caption_subtitle.text = subtitle if subtitle != "" else title
-
-
-# --- Reset Camera Button ---
 
 func _build_reset_camera_btn() -> void:
-	_reset_cam_btn = _chrome_btn(ICON_CAMERA)
+	_reset_cam_btn = _chrome_btn(ICON_CAMERA, Ui.t("gameCrossroadsResetCamera"))
 	_reset_cam_btn.pressed.connect(func(): reset_camera_pressed.emit())
 	add_child(_reset_cam_btn)
 
 
-# --- Bonus Toast ---
-
-func _build_toast() -> void:
-	_toast = PanelContainer.new()
-	var box := Ui.box(Ui.c("accent"), 12)
-	box.content_margin_left = 16
-	box.content_margin_right = 16
-	box.content_margin_top = 8
-	box.content_margin_bottom = 8
-	_toast.add_theme_stylebox_override("panel", box)
-	_toast_label = Ui.label("", 14, 700, Color.WHITE)
-	_toast.add_child(_toast_label)
-	_toast.visible = false
-	add_child(_toast)
-
-
 func show_hard_bonus_toast() -> void:
-	_toast_label.text = "%s • %s" % [Ui.t("crossroadsHardSituationBadge"), Ui.t("crossroadsTimeBonus10s")]
-	_toast.visible = true
-	_toast.position = Vector2((size.x - _toast.size.x) * 0.5, _top_bar.position.y + _top_bar.size.y + 12.0)
-	var t := create_tween()
-	t.tween_interval(2.2)
-	t.tween_property(_toast, "modulate:a", 0.0, 0.4)
-	t.tween_callback(func():
-		_toast.visible = false
-		_toast.modulate.a = 1.0
-	)
+	if is_instance_valid(_bonus_tween):
+		_bonus_tween.kill()
+	# Use the existing gold task badge. A floating toast can obscure an actor's
+	# answer button on a short screen, even when its own height is compact.
+	_bonus_visible = true
+	_hard_badge_label.text = Ui.t("crossroadsHardBonusBadge")
+	if is_inside_tree(): call_deferred("_layout")
+	_bonus_tween = create_tween()
+	_bonus_tween.tween_interval(2.2)
+	_bonus_tween.tween_callback(_hide_hard_bonus)
 
 
-# --- Collision Breakdown Modal ---
+func _hide_hard_bonus() -> void:
+	_bonus_visible = false
+	_hard_badge_label.text = Ui.t("crossroadsHardSituationBadge")
+	if is_inside_tree(): call_deferred("_layout")
+
 
 func _build_collision_modal() -> void:
-	_collision_backdrop = ColorRect.new()
-	_collision_backdrop.color = Color(0, 0, 0, 0.6)
-	_collision_backdrop.visible = false
-	add_child(_collision_backdrop)
-
-	_collision_card = PanelContainer.new()
-	var box := Ui.box(Ui.c("card"), 24)
-	box.corner_radius_bottom_left = 0
-	box.corner_radius_bottom_right = 0
-	box.content_margin_left = 20
-	box.content_margin_right = 20
-	box.content_margin_top = 22
-	box.content_margin_bottom = 20
-	_collision_card.add_theme_stylebox_override("panel", box)
-	_collision_card.visible = false
-	add_child(_collision_card)
-
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 10)
-	_collision_card.add_child(vb)
-
-	# Warning Icon + Title
+	_collision_backdrop = _backdrop()
+	var modal := _modal(_collision_backdrop)
+	_collision_card = modal[0]
+	_collision_content = modal[1]
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 8)
-	vb.add_child(header)
-
-	var warn := Ui.icon(ICON_WARNING, 24, Ui.c("red"))
-	header.add_child(warn)
-
-	_collision_title = Ui.label(Ui.t("gameCrossroadsCollision"), 17, 700, Ui.c("red"))
+	header.add_child(Ui.icon(ICON_WARNING, 24, Ui.c("red")))
+	_collision_title = Ui.scaled_label(Ui.t("gameCrossroadsCollision"), 18, 700, Ui.c("red"), true)
 	header.add_child(_collision_title)
-
-	_collision_should_go = Ui.scaled_label("", 15, 600, Ui.c("accent"), true)
-	vb.add_child(_collision_should_go)
-
+	_collision_content.add_child(header)
+	_collision_should_go = Ui.scaled_label("", 15, 700, Ui.c("accent"), true)
+	_collision_content.add_child(_collision_should_go)
 	_collision_reason = Ui.scaled_label("", 14, 400, Ui.c("text"), true)
-	vb.add_child(_collision_reason)
-
+	_collision_content.add_child(_collision_reason)
 	_collision_article = Ui.scaled_label("", 13, 600, Ui.c("secondary"), true)
-	vb.add_child(_collision_article)
-
-	var div := HSeparator.new()
-	vb.add_child(div)
-
-	# Buttons container: supports both two-button row and single full-width button
-	_collision_btn_row = HBoxContainer.new()
-	_collision_btn_row.add_theme_constant_override("separation", 10)
-	vb.add_child(_collision_btn_row)
-
-	_collision_retry_btn = Button.new()
-	_collision_retry_btn.text = Ui.t("gameCrossroadsRepeatCrossroad")
-	_collision_retry_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	_collision_retry_btn.custom_minimum_size = Vector2(0, 48)
-	_collision_retry_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_collision_retry_btn.add_theme_font_override("font", Ui.font(600))
-	_collision_retry_btn.add_theme_font_size_override("font_size", 14)
-	_collision_retry_btn.add_theme_color_override("font_color", Ui.c("text"))
-	var retry_box := Ui.box(Ui.c("field"), 10)
-	retry_box.content_margin_left = 10
-	retry_box.content_margin_right = 10
-	retry_box.content_margin_top = 8
-	retry_box.content_margin_bottom = 8
-	_collision_retry_btn.add_theme_stylebox_override("normal", retry_box)
-	_collision_retry_btn.pressed.connect(func():
+	_collision_content.add_child(_collision_article)
+	_collision_content.add_child(_divider())
+	_collision_btn_row = BoxContainer.new()
+	_collision_btn_row.add_theme_constant_override("separation", 8)
+	_collision_content.add_child(_collision_btn_row)
+	_collision_retry_btn = _action_button(Ui.t("gameCrossroadsRepeatCrossroad"), false, func():
 		hide_collision_modal()
-		retry_pressed.emit()
-	)
+		retry_pressed.emit())
 	_collision_btn_row.add_child(_collision_retry_btn)
-
-	_collision_next_btn = Button.new()
-	_collision_next_btn.text = Ui.t("gameCrossroadsNextCrossroad")
-	_collision_next_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	_collision_next_btn.custom_minimum_size = Vector2(0, 48)
-	_collision_next_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_collision_next_btn.add_theme_font_override("font", Ui.font(700))
-	_collision_next_btn.add_theme_font_size_override("font_size", 14)
-	_collision_next_btn.add_theme_color_override("font_color", Color.WHITE)
-	var next_box := Ui.box(Ui.c("accent"), 10)
-	next_box.content_margin_left = 10
-	next_box.content_margin_right = 10
-	next_box.content_margin_top = 8
-	next_box.content_margin_bottom = 8
-	_collision_next_btn.add_theme_stylebox_override("normal", next_box)
-	_collision_next_btn.pressed.connect(func():
+	_collision_next_btn = _action_button(Ui.t("gameCrossroadsNextCrossroad"), true, func():
 		hide_collision_modal()
-		next_scenario_pressed.emit()
-	)
+		next_scenario_pressed.emit())
 	_collision_btn_row.add_child(_collision_next_btn)
-
-	_collision_game_over_btn = Button.new()
-	_collision_game_over_btn.text = Ui.t("gameOver")
-	_collision_game_over_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	_collision_game_over_btn.custom_minimum_size = Vector2(0, 50)
-	_collision_game_over_btn.add_theme_font_override("font", Ui.font(700))
-	_collision_game_over_btn.add_theme_font_size_override("font_size", 15)
-	_collision_game_over_btn.add_theme_color_override("font_color", Color.WHITE)
-	_collision_game_over_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("red"), 10))
-	_collision_game_over_btn.visible = false
-	_collision_game_over_btn.pressed.connect(func():
+	_collision_game_over_btn = _action_button(Ui.t("gameOver"), true, func():
 		hide_collision_modal()
-		retry_pressed.emit()
-	)
-	vb.add_child(_collision_game_over_btn)
+		retry_pressed.emit())
+	_collision_game_over_btn.visible = false
+	_collision_content.add_child(_collision_game_over_btn)
 
 
 func show_collision_modal(priority_name: String, reason: String, article: String, out_of_lives: bool) -> void:
+	hide_pause()
 	_collision_backdrop.visible = true
 	_collision_card.visible = true
 	_collision_should_go.text = Ui.t("gameCrossroadsShouldGo", {"name": priority_name})
 	_collision_reason.text = reason
 	_collision_article.text = article
-
-	if out_of_lives:
-		_collision_btn_row.visible = false
-		_collision_game_over_btn.visible = true
-	else:
-		_collision_btn_row.visible = true
-		_collision_game_over_btn.visible = false
+	_collision_article.visible = article != ""
+	_collision_btn_row.visible = not out_of_lives
+	_collision_game_over_btn.visible = out_of_lives
+	_refresh_modal_visibility()
 	_layout()
+	if is_inside_tree():
+		call_deferred("_layout")
+		(_collision_game_over_btn if out_of_lives else _collision_next_btn).grab_focus()
 
 
 func hide_collision_modal() -> void:
 	_collision_backdrop.visible = false
 	_collision_card.visible = false
+	_refresh_modal_visibility()
 
 
-# --- Result Dialog ---
+func _build_pause() -> void:
+	_pause = _backdrop()
+	var modal := _modal(_pause)
+	_pause_card = modal[0]
+	_pause_content = modal[1]
+	_pause_content.add_child(Ui.scaled_label(Ui.t("gamePause"), 22, 800, Ui.c("text"), true))
+	_pause_content.add_child(Ui.scaled_label(Ui.t("gameCrossroadsPriorityTitle"), 14, 600, Ui.c("secondary"), true))
+	_pause_content.add_child(_divider())
+	_pause_content.add_child(Ui.scaled_label(Ui.t("gameCrossroadsHowTo"), 15, 600, Ui.c("text"), true))
+	_pause_content.add_child(Ui.scaled_label(Ui.t("gameCrossroadsTapHint"), 13, 400, Ui.c("secondary"), true))
+	_pause_resume_btn = _action_button(Ui.t("continueButton"), true, func(): resume_pressed.emit())
+	_pause_content.add_child(_pause_resume_btn)
+	_pause_content.add_child(_action_button(Ui.t("gameExit"), false, func(): exit_pressed.emit()))
+
+
+func show_pause() -> void:
+	if _collision_backdrop.visible or _result.visible:
+		return
+	_pause.visible = true
+	_pause_card.visible = true
+	_refresh_modal_visibility()
+	_layout()
+	if is_inside_tree():
+		call_deferred("_layout")
+		_pause_resume_btn.grab_focus()
+
+
+func hide_pause() -> void:
+	_pause.visible = false
+	_pause_card.visible = false
+	_refresh_modal_visibility()
+
+
+func is_pause_visible() -> bool:
+	return _pause.visible
+
 
 func _build_result_dialog() -> void:
-	_result = ColorRect.new()
-	_result.color = Color(0, 0, 0, 0.72)
-	_result.visible = false
-	add_child(_result)
-
-	_result_card = PanelContainer.new()
-	var box := Ui.box(Ui.c("card"), 18)
-	box.content_margin_left = 18
-	box.content_margin_right = 18
-	box.content_margin_top = 16
-	box.content_margin_bottom = 16
-	_result_card.add_theme_stylebox_override("panel", box)
-	_result_card.visible = false
-	add_child(_result_card)
-
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 8)
-	_result_card.add_child(vb)
-
-	# Keep _cover allocated so any external reference remains valid, but do not display giant banner
-	_cover = TextureRect.new()
-	_cover.texture = load("res://art/crossroads_cover.webp")
-	_cover.visible = false
-
-	_result_title = Ui.label(Ui.t("gameOverTitle"), 18, 800, Ui.c("text"))
+	_result = _backdrop()
+	var modal := _modal(_result)
+	_result_card = modal[0]
+	_result_content = modal[1]
+	_result_title = Ui.scaled_label(Ui.t("gameOverTitle"), 20, 800, Ui.c("text"), true)
 	_result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(_result_title)
-
-	# Score display
+	_result_content.add_child(_result_title)
 	var score_row := HBoxContainer.new()
 	score_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	score_row.add_theme_constant_override("separation", 6)
-	vb.add_child(score_row)
-
-	var star := Ui.icon(ICON_STAR, 24, Ui.c("gold"))
-	score_row.add_child(star)
-
-	_final_score = Ui.label("0", 28, 800, Ui.c("gold"))
+	score_row.add_child(Ui.icon(ICON_STAR, 30, Ui.c("gold")))
+	_final_score = Ui.scaled_label("0", 36, 800, Ui.c("text"))
 	score_row.add_child(_final_score)
-
+	_result_content.add_child(score_row)
 	_record_badge = PanelContainer.new()
-	var r_box := Ui.box(Ui.c("gold"), 6)
-	r_box.content_margin_left = 8
-	r_box.content_margin_right = 8
-	r_box.content_margin_top = 3
-	r_box.content_margin_bottom = 3
-	_record_badge.add_theme_stylebox_override("panel", r_box)
+	_record_badge.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 8, 10, 4))
 	_record_badge.size_flags_horizontal = SIZE_SHRINK_CENTER
-	var r_lbl := Ui.label(Ui.t("gameNewRecord"), 11, 700, Color.WHITE)
-	_record_badge.add_child(r_lbl)
-	vb.add_child(_record_badge)
-
-	_best_label = Ui.label("", 12, 500, Ui.c("secondary"))
+	_record_badge.add_child(Ui.scaled_label(Ui.t("gameNewRecord"), 12, 700, Ui.c("gold")))
+	_result_content.add_child(_record_badge)
+	_best_label = Ui.scaled_label("", 12, 500, Ui.c("secondary"), true)
 	_best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(_best_label)
-
-	var sep := HSeparator.new()
-	vb.add_child(sep)
-
-	# 3-column stats row matching Flutter GameResultOverlay
+	_result_content.add_child(_best_label)
+	_result_content.add_child(_divider())
 	var stats_row := HBoxContainer.new()
-	stats_row.add_theme_constant_override("separation", 0)
-	vb.add_child(stats_row)
-
-	var stat1 := _build_stat_col(Ui.t("gameSolvedLabel"))
-	_stat_solved_val = stat1[0]
-	stats_row.add_child(stat1[1])
-
-	var stat2 := _build_stat_col(Ui.t("gameAccuracyLabel"))
-	_stat_acc_val = stat2[0]
-	stats_row.add_child(stat2[1])
-
-	var stat3 := _build_stat_col(Ui.t("gameComboLabel"))
-	_stat_combo_val = stat3[0]
-	stats_row.add_child(stat3[1])
-
-	# Action buttons
-	var btn_row := HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 8)
-	vb.add_child(btn_row)
-
-	var restart_btn := Button.new()
-	restart_btn.text = Ui.t("gameRestart")
-	restart_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	restart_btn.custom_minimum_size = Vector2(0, 44)
-	restart_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	restart_btn.add_theme_font_override("font", Ui.font(700))
-	restart_btn.add_theme_font_size_override("font_size", 13)
-	var restart_box := Ui.box(Ui.c("accent"), 10)
-	restart_box.content_margin_left = 8
-	restart_box.content_margin_right = 8
-	restart_box.content_margin_top = 6
-	restart_box.content_margin_bottom = 6
-	restart_btn.add_theme_stylebox_override("normal", restart_box)
-	restart_btn.pressed.connect(func():
+	stats_row.add_theme_constant_override("separation", 8)
+	_result_content.add_child(stats_row)
+	var solved := _build_stat_col(Ui.t("gameSolvedLabel"))
+	_stat_solved_val = solved[0]
+	stats_row.add_child(solved[1])
+	var accuracy := _build_stat_col(Ui.t("gameAccuracyLabel"))
+	_stat_acc_val = accuracy[0]
+	stats_row.add_child(accuracy[1])
+	var combo := _build_stat_col(Ui.t("gameComboLabel"))
+	_stat_combo_val = combo[0]
+	stats_row.add_child(combo[1])
+	_result_buttons = BoxContainer.new()
+	_result_buttons.add_theme_constant_override("separation", 8)
+	_result_buttons.add_child(_action_button(Ui.t("gameRestart"), true, func():
 		hide_results()
-		restart_pressed.emit()
-	)
-	btn_row.add_child(restart_btn)
-
-	var exit_btn := Button.new()
-	exit_btn.text = Ui.t("gameExit")
-	exit_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	exit_btn.custom_minimum_size = Vector2(0, 44)
-	exit_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	exit_btn.add_theme_font_override("font", Ui.font(600))
-	exit_btn.add_theme_font_size_override("font_size", 13)
-	exit_btn.add_theme_color_override("font_color", Ui.c("text"))
-	var exit_box := Ui.box(Ui.c("field"), 10)
-	exit_box.content_margin_left = 8
-	exit_box.content_margin_right = 8
-	exit_box.content_margin_top = 6
-	exit_box.content_margin_bottom = 6
-	exit_btn.add_theme_stylebox_override("normal", exit_box)
-	exit_btn.pressed.connect(func():
-		exit_pressed.emit()
-	)
-	btn_row.add_child(exit_btn)
+		restart_pressed.emit()))
+	_result_buttons.add_child(_action_button(Ui.t("gameExit"), false, func(): exit_pressed.emit()))
+	_result_content.add_child(_result_buttons)
 
 
 func _build_stat_col(label_text: String) -> Array:
-	var col := VBoxContainer.new()
-	col.size_flags_horizontal = SIZE_EXPAND_FILL
-	col.add_theme_constant_override("separation", 2)
-	var val := Ui.label("0", 16, 800, Ui.c("text"))
-	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var caption := Ui.scaled_label(label_text, 11, 600, Ui.c("secondary"), false)
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = SIZE_EXPAND_FILL
+	column.size_flags_stretch_ratio = 1.0
+	column.add_theme_constant_override("separation", 3)
+	var value := Ui.scaled_label("0", 18, 800, Ui.c("text"))
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(value)
+	var caption := Ui.scaled_label(label_text, 11, 500, Ui.c("secondary"), true)
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	col.add_child(val)
-	col.add_child(caption)
-	return [val, col]
+	column.add_child(caption)
+	return [value, column]
 
 
 func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, prev_best: int) -> void:
+	hide_pause()
+	hide_collision_modal()
 	_result.visible = true
 	_result_card.visible = true
 	_final_score.text = str(score)
 	_record_badge.visible = is_record
-	_best_label.text = "%s: %d" % [Ui.t("gameBestScoreLabel"), prev_best if not is_record else score]
+	_best_label.text = "%s: %d" % [Ui.t("gameBestScoreLabel"), score if is_record else prev_best]
 	_stat_solved_val.text = str(solved)
 	var total := solved + wrong
-	var acc := roundi((float(solved) / total) * 100.0) if total > 0 else 0
-	_stat_acc_val.text = "%d%%" % acc
-	_stat_combo_val.text = "x%d" % max_combo
-	_result_card.reset_size()
+	var accuracy := roundi(float(solved) / total * 100.0) if total > 0 else 0
+	_stat_acc_val.text = "%d%%" % accuracy
+	_stat_combo_val.text = "×%d" % max_combo
+	_refresh_modal_visibility()
 	_layout()
+	if is_inside_tree():
+		call_deferred("_layout")
+		_result_buttons.get_child(0).grab_focus()
 
 
 func hide_results() -> void:
 	_result.visible = false
 	_result_card.visible = false
+	_refresh_modal_visibility()
 
 
-# --- Helpers ---
+func _refresh_modal_visibility() -> void:
+	# Called while constructing too: a later overlay may not yet have been allocated.
+	_modal_open = (_collision_backdrop != null and _collision_backdrop.visible) or (_pause != null and _pause.visible) or (_result != null and _result.visible)
+	_top_bar.visible = not _modal_open
+	_reset_cam_btn.visible = not _modal_open
+	if _modal_open:
+		_hide_hard_bonus()
 
-func _chrome_btn(icon_codepoint: int) -> Button:
-	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(CHROME, CHROME)
-	btn.text = char(icon_codepoint)
+
+func _backdrop() -> ColorRect:
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0, 0, 0, 0.58)
+	backdrop.mouse_filter = MOUSE_FILTER_STOP
+	backdrop.visible = false
+	add_child(backdrop)
+	return backdrop
+
+
+func _modal(backdrop: ColorRect) -> Array:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 20, 20, 20))
+	card.visible = false
+	backdrop.add_child(card)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.size_flags_horizontal = SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = SIZE_EXPAND_FILL
+	card.add_child(scroll)
+	var content := VBoxContainer.new()
+	content.size_flags_horizontal = SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 12)
+	scroll.add_child(content)
+	return [card, content]
+
+
+func _chrome_btn(icon: int, tooltip: String) -> Button:
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(CHROME, CHROME)
+	button.size_flags_vertical = SIZE_SHRINK_BEGIN
+	button.text = char(icon)
+	button.tooltip_text = tooltip
 	if Ui._icon_font == null:
 		Ui._icon_font = load(Ui.ICON_FONT)
-	btn.add_theme_font_override("font", Ui._icon_font)
-	btn.add_theme_font_size_override("font_size", 20)
-	btn.add_theme_color_override("font_color", Ui.c("text"))
-	btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("card"), 10))
-	return btn
+	button.add_theme_font_override("font", Ui._icon_font)
+	button.add_theme_font_size_override("font_size", 22)
+	_style_button(button, Ui.c("card"), Ui.c("text"))
+	return button
+
+
+func _action_button(text: String, primary: bool, pressed: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.size_flags_horizontal = SIZE_EXPAND_FILL
+	button.custom_minimum_size.y = 48
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.add_theme_font_override("font", Ui.font(700 if primary else 600))
+	button.add_theme_font_size_override("font_size", roundi(14.0 * Ui.text_scale()))
+	_style_button(button, Ui.c("accent") if primary else Ui.c("field"), Color.WHITE if primary else Ui.c("text"), 12, 10)
+	button.pressed.connect(pressed)
+	return button
+
+
+func _style_button(button: Button, background: Color, foreground: Color, horizontal := 0, vertical := 0) -> void:
+	button.add_theme_color_override("font_color", foreground)
+	button.add_theme_color_override("font_hover_color", foreground)
+	button.add_theme_color_override("font_pressed_color", foreground)
+	button.add_theme_color_override("font_focus_color", foreground)
+	button.add_theme_stylebox_override("normal", _padded(background, 12, horizontal, vertical))
+	button.add_theme_stylebox_override("hover", _padded(background.lerp(Ui.c("accent"), 0.08), 12, horizontal, vertical))
+	button.add_theme_stylebox_override("pressed", _padded(background.darkened(0.1), 12, horizontal, vertical))
+	var focus := Ui.box(Color.TRANSPARENT, 12)
+	focus.border_color = Ui.c("accent")
+	focus.set_border_width_all(2)
+	button.add_theme_stylebox_override("focus", focus)
+
+
+func _padded(color: Color, radius: int, horizontal: float, vertical: float) -> StyleBoxFlat:
+	var style := Ui.box(color, radius)
+	style.content_margin_left = horizontal
+	style.content_margin_right = horizontal
+	style.content_margin_top = vertical
+	style.content_margin_bottom = vertical
+	return style
+
+
+func _spacer() -> Control:
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = SIZE_EXPAND_FILL
+	return spacer
+
+
+func _divider() -> HSeparator:
+	var divider := HSeparator.new()
+	var style := StyleBoxLine.new()
+	style.color = Ui.c("divider")
+	style.thickness = 1
+	divider.add_theme_stylebox_override("separator", style)
+	return divider

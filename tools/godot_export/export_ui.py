@@ -31,9 +31,9 @@ KEYS = [
     'gameCrossroadsStepOf', 'gameCrossroadsCollision', 'gameCrossroadsShouldGo',
     'gameCrossroadsHowTo', 'gameCrossroadsTapHint', 'gameCrossroadsResetCamera',
     'gameCrossroadsNextCrossroad', 'gameCrossroadsRepeatCrossroad',
-    'gameCrossroadsModeArcade', 'gameCrossroadsModeTraining',
+    'continueButton', 'crossroadsReasonRedLight', 'crossroadsArticleRedLight',
     'gameCrossroadsCatAll', 'gameCrossroadsCatSigns', 'gameCrossroadsCatTrafficLights', 'gameCrossroadsCatHard',
-    'crossroadsHardSituationBadge', 'crossroadsTimeBonus10s', 'crossroadsPedestrian',
+    'crossroadsHardSituationBadge', 'crossroadsHardBonusBadge', 'crossroadsTimeBonus10s', 'crossroadsPedestrian',
     'crossroadsReasonPedestrianViolation', 'crossroadsArticlePedestrian',
     'gameCrossroadsSolvedCount', 'gameCrossroadsExplanationTitle', 'gameCrossroadsCompleteTitle',
 ]

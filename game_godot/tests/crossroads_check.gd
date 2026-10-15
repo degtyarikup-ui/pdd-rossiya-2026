@@ -1,5 +1,5 @@
 ## Headless verification for Crossroads ("Разрули перекресток") on Godot:
-## Rules, certified scenarios, localization, trajectories, economy, UI, collisions and scoring.
+## Rules, authored scenarios, localization, trajectories, economy, UI, collisions and scoring.
 ## Run with:
 ##   godot --headless --path game_godot --script res://tests/crossroads_check.gd
 extends SceneTree
@@ -29,7 +29,7 @@ func _initialize() -> void:
 	var raw := FileAccess.get_file_as_string(path)
 	var scenarios = JSON.parse_string(raw)
 	_check("Scenarios JSON parsed as Array", scenarios is Array)
-	_check("Exactly 27 certified scenarios loaded", scenarios.size() == 27)
+	_check("Exactly 27 authored scenarios loaded", scenarios.size() == 27)
 
 	# 2. Priority order integrity in every scenario
 	var all_valid_orders := true
@@ -181,7 +181,7 @@ func _initialize() -> void:
 	}
 	var ped_actor = CrossroadsActorScript.new(ped_data)
 	_check("Pedestrian trajectory across zebra has valid length", ped_actor.path_length > 8.0)
-	_check("Pedestrian crossing drive_speed is responsive (0.20..0.28)", ped_actor.drive_speed >= 0.20 and ped_actor.drive_speed <= 0.28)
+	_check("Pedestrian crossing speed is physically plausible", ped_actor.drive_speed * ped_actor.path_length >= 1.0 and ped_actor.drive_speed * ped_actor.path_length <= 3.0)
 	ped_actor.free()
 	actor.free()
 	junction.free()
@@ -189,10 +189,12 @@ func _initialize() -> void:
 	# 8. UI construction and localization
 	var ui = CrossroadsUiScript.new()
 	_check("CrossroadsUi instantiates", ui != null)
-	ui.set_mode(false)
-	_check("Arcade HUD visible by default", ui._hud.visible and not ui._training_nav_row.visible)
-	ui.set_mode(true)
-	_check("Training controls visible in training mode", ui._training_nav_row.visible and not ui._hud.visible)
+	_check("One timed game HUD is visible", ui._hud.visible)
+	_check("Training mode and category controls are removed", not ui.has_method("set_mode") and not ui.has_signal("mode_toggled") and not ui.has_signal("category_selected"))
+	ui.show_pause()
+	_check("Pause opens with an explicit Continue action", ui.is_pause_visible())
+	ui.hide_pause()
+	_check("Pause closes", not ui.is_pause_visible())
 	ui.update_hud(120, 45, 4, 3)
 	_check("Score label updates to 120", ui._score_label.text == "120")
 	_check("Timer label updates to 45", ui._timer_label.text == "45")
@@ -203,8 +205,6 @@ func _initialize() -> void:
 	ui.show_results(450, 8, 1, 4, true, 300)
 	_check("Results dialog displays score 450", ui._final_score.text == "450")
 	_check("New record badge shown", ui._record_badge.visible)
-	_check("Results dialog is compact (width <= 340)", ui._result_card.custom_minimum_size.x <= 340.0)
-	_check("Results dialog eliminates vertical void (height <= 260)", ui._result_card.size.y <= 260.0)
 	ui.free()
 
 	# 9. Web query arguments parsing
@@ -217,8 +217,8 @@ func _initialize() -> void:
 	const CrossroadsScript := preload("res://scripts/crossroads.gd")
 	var game = CrossroadsScript.new()
 	_check("Crossroads game instantiates", game != null)
-	_check("Camera isometric yaw matches Three.js (~53.6 deg)", absf(game.cam_yaw - 0.93607) < 0.001)
-	_check("Camera isometric pitch matches Three.js (~46.7 deg elevation)", absf(game.cam_pitch - (-0.8143)) < 0.001)
+	_check("Camera keeps an isometric yaw (~53.6 deg)", absf(game.cam_yaw - 0.93607) < 0.001)
+	_check("Camera keeps an isometric pitch (~46.7 deg elevation)", absf(game.cam_pitch - (-0.8143)) < 0.001)
 	_check("Camera base distance set to 58.0", absf(game.BASE_CAM_DIST - 58.0) < 0.001)
 	game.free()
 

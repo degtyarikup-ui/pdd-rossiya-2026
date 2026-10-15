@@ -1,12 +1,17 @@
 ## Full 3D "Разрули перекресток" (Crossroads Priority) game on Godot.
 ## Uses authentic 3D vehicle models from "Живой город", GOST signs,
-## procedural audio, interactive camera, and native Russian PDD rules solver.
+## procedural audio, an interactive camera and verified scenario priorities.
 class_name Crossroads
 extends Node3D
 
 const CrossroadsJunctionScript := preload("res://scripts/crossroads_junction.gd")
 const CrossroadsActorScript := preload("res://scripts/crossroads_actor.gd")
 const CrossroadsUiScript := preload("res://scripts/crossroads_ui.gd")
+const FrameBudget := preload("res://scripts/frame_budget.gd")
+
+var frame_budget = FrameBudget.new()
+var tier := "mid"
+var adaptive_quality := false
 
 var junction: CrossroadsJunction
 var ui: CrossroadsUi
@@ -29,8 +34,12 @@ var cur_scenario_idx := 0
 var cur_step := 1
 
 # Game state
-var is_training := false
-var cur_category := "all"
+var paused := false
+var ready_for_play := false
+var scene_sequence := 0
+var _round_completing := false
+var _rewarded_hard := {}
+var _preview_scenario := ""
 var score := 0
 var combo := 0
 var max_combo := 0
@@ -58,7 +67,7 @@ var _target_cam_pitch := -0.8143
 var _target_cam_zoom := 1.0
 const ZOOM_MIN := 0.65
 const ZOOM_MAX := 2.2
-const HALF_ROAD := 6.0
+const HALF_ROAD := CrossroadsJunction.HALF_ROAD
 const BASE_CAM_DIST := 58.0
 var base_cam_dist := BASE_CAM_DIST
 var cam_shake := 0.0
@@ -69,6 +78,7 @@ var _touch_start_pos := {}
 var _pinch_span := 0.0
 var _pinch_zoom := 1.0
 var _is_dragging := false
+var _had_multitouch := false
 var _drag_start := Vector2.ZERO
 
 var auto_play := false
@@ -82,7 +92,9 @@ func _ready() -> void:
 	_setup_audio()
 	_setup_scene_nodes()
 	_setup_ui()
+	_setup_quality()
 	_load_scenarios_data()
+	get_viewport().size_changed.connect(_on_viewport_resized)
 	_dismiss_loader(loader)
 
 
@@ -124,53 +136,21 @@ func _setup_args() -> void:
 				economy.merge(config, true)
 		elif arg.begins_with("--season="):
 			season_name = arg.trim_prefix("--season=")
-		elif arg == "--training" or arg == "--mode=training":
-			is_training = true
 		elif arg == "--auto":
 			auto_play = true
 		elif arg.begins_with("--shot="):
 			shot_path = arg.trim_prefix("--shot=")
-		elif arg.begins_with("--category="):
-			cur_category = arg.trim_prefix("--category=")
+		elif arg.begins_with("--scenario="):
+			_preview_scenario = arg.trim_prefix("--scenario=")
 
 
 func _setup_environment() -> void:
 	sun = DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-62, 35, 0)
-	sun.light_color = Color("#FFF8EC")
-	sun.light_energy = 0.80
-	sun.shadow_enabled = true
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.directional_shadow_max_distance = 56.0
-	sun.shadow_blur = 1.3
-	sun.shadow_bias = 0.03
 	add_child(sun)
-
 	env = WorldEnvironment.new()
-	var e := Environment.new()
-	var sky := Sky.new()
-	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color("#225B96")
-	sky_mat.sky_horizon_color = Color("#78A2CA")
-	sky_mat.ground_horizon_color = Color("#78A2CA")
-	sky_mat.ground_bottom_color = Color("#384C32")
-	sky.sky_material = sky_mat
-	e.sky = sky
-	e.background_mode = Environment.BG_SKY
-
-	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color("#8BB2D8").lerp(Color.WHITE, 0.40)
-	e.ambient_light_energy = 0.45
-
-	e.fog_enabled = true
-	e.fog_mode = Environment.FOG_MODE_DEPTH
-	e.fog_light_color = Color("#82A8CC")
-	e.fog_depth_begin = 95.0
-	e.fog_depth_end = 240.0
-
-	e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	env.environment = e
+	env.environment = Environment.new()
+	MiniGameLighting.apply(sun, env.environment, season_name)
 	add_child(env)
 
 	# Camera with orbital pivot
@@ -194,6 +174,32 @@ func _setup_audio() -> void:
 	add_child(sound)
 
 
+func _setup_quality() -> void:
+	var mobile := OS.has_feature("android") or OS.has_feature("ios")
+	var override := ""
+	for arg in Host.user_args():
+		if arg.begins_with("--quality="): override = arg.trim_prefix("--quality=")
+	tier = override if override in Quality.PROFILES else Quality.initial(RenderingServer.get_video_adapter_name(), mobile)
+	var profile: Dictionary = Quality.PROFILES[tier]
+	get_viewport().scaling_3d_scale = profile.scale
+	get_viewport().msaa_3d = profile.msaa
+	sun.shadow_enabled = profile.shadows
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if tier == "high" else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	Engine.max_fps = 60 if mobile and profile.max_fps == 0 else int(profile.max_fps)
+	adaptive_quality = mobile and not override in Quality.PROFILES
+	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
+
+
+func _update_frame_budget(delta: float) -> void:
+	if not adaptive_quality: return
+	var update: Dictionary = frame_budget.sample(delta, ready_for_play and not paused and not is_game_over, Engine.max_fps)
+	if update.is_empty(): return
+	get_viewport().scaling_3d_scale = update.scale
+	get_viewport().msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
+	sun.shadow_enabled = update.shadows
+	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
+
+
 func _setup_scene_nodes() -> void:
 	junction = CrossroadsJunctionScript.new(season_name)
 	junction.name = "Junction"
@@ -212,16 +218,13 @@ func _setup_ui() -> void:
 	ui = CrossroadsUiScript.new()
 	ui.name = "CrossroadsUI"
 	ui.close_pressed.connect(_on_close_pressed)
-	ui.mode_toggled.connect(_on_mode_toggled)
-	ui.category_selected.connect(_on_category_selected)
-	ui.prev_scenario_pressed.connect(_on_prev_scenario)
+	ui.resume_pressed.connect(_on_resume_pressed)
 	ui.next_scenario_pressed.connect(_on_next_scenario)
 	ui.reset_camera_pressed.connect(_reset_camera)
 	ui.retry_pressed.connect(_on_retry_pressed)
 	ui.restart_pressed.connect(_start_game)
 	ui.exit_pressed.connect(_on_exit_pressed)
 	add_child(ui)
-	ui.set_mode(is_training)
 
 
 func _load_scenarios_data() -> void:
@@ -238,17 +241,15 @@ func _load_scenarios_data() -> void:
 func _rebuild_scenario_order() -> void:
 	filtered_indices.clear()
 	for i in all_scenarios.size():
-		var sc: Dictionary = all_scenarios[i]
-		if cur_category == "all" or sc.get("category", "") == cur_category:
-			filtered_indices.append(i)
-
-	scenario_order = filtered_indices.duplicate()
-	if not is_training and cur_category == "all":
-		# Balanced arcade order: interleave signs and lights
-		_create_balanced_arcade_order()
-	elif not is_training:
-		scenario_order.shuffle()
-
+		filtered_indices.append(i)
+	_create_balanced_arcade_order()
+	if not _preview_scenario.is_empty():
+		for i in scenario_order.size():
+			if all_scenarios[scenario_order[i]].id == _preview_scenario:
+				var first := scenario_order[i]
+				scenario_order.remove_at(i)
+				scenario_order.push_front(first)
+				break
 	cur_scenario_idx = 0
 
 
@@ -304,7 +305,11 @@ func _start_game() -> void:
 	is_game_over = false
 	is_resolving = false
 	is_new_record = false
+	_rewarded_hard.clear()
 
+	ready_for_play = true
+	_set_paused(false)
+	_update_gameplay_processing()
 	ui.hide_results()
 	ui.hide_collision_modal()
 	_rebuild_scenario_order()
@@ -315,44 +320,24 @@ func _load_current_scenario() -> void:
 	if scenario_order.is_empty():
 		return
 
+	scene_sequence += 1
+	_round_completing = false
 	is_resolving = false
 	cur_step = 1
+	_clear_input()
 
 	for c in actors_root.get_children():
+		actors_root.remove_child(c)
 		c.queue_free()
 	for c in fx_root.get_children():
+		fx_root.remove_child(c)
 		c.queue_free()
 	active_actors.clear()
-	junction.clear_props()
 
 	var sc_idx := scenario_order[cur_scenario_idx % scenario_order.size()]
 	var sc: Dictionary = all_scenarios[sc_idx]
 
-	# Closed side (T-junction)
-	var closed := str(sc.get("closedSide", ""))
-	junction.set_closed_side(closed)
-
-	# Signs and Traffic lights (mounting sign on light post when present on same side)
-	var signs_by_side := {}
-	for s_data in sc.get("signs", []):
-		signs_by_side[str(s_data.get("side", ""))] = s_data
-
-	for tl_data in sc.get("trafficLights", []):
-		var s_name := str(tl_data.get("side", ""))
-		var sign_for_tl = signs_by_side.get(s_name, null)
-		if sign_for_tl != null:
-			junction.add_traffic_light(tl_data, sign_for_tl)
-			signs_by_side.erase(s_name)
-		else:
-			junction.add_traffic_light(tl_data)
-
-	for s_name in signs_by_side:
-		var s_data: Dictionary = signs_by_side[s_name]
-		junction.add_sign(
-			str(s_data.get("code", "2.1")),
-			str(s_data.get("side", "south")),
-			str(s_data.get("table8_13", ""))
-		)
+	junction.configure_scenario(sc)
 
 	# Localized scenario texts
 	var lang := Ui.lang
@@ -362,18 +347,9 @@ func _load_current_scenario() -> void:
 
 	# Spawn actors
 	var actors_data: Array = sc.get("actors", [])
-	var has_tram_ns := false
-	var has_tram_ew := false
 	for a_raw in actors_data:
-		var a_type: String = a_raw.get("type", "")
-		if a_type == "tram":
-			var s: String = a_raw.get("side", "")
-			if s == "north" or s == "south":
-				has_tram_ns = true
-			elif s == "east" or s == "west":
-				has_tram_ew = true
-
 		var a_dict: Dictionary = a_raw.duplicate(true)
+		a_dict["guideLabel"] = ["А", "Б", "В", "Г", "Д"][active_actors.size() % 5]
 		var actor_id: String = a_dict.get("id", "")
 		var a_l10n: Dictionary = t_table.get("actors", {}).get(actor_id, {})
 		if not a_l10n.is_empty():
@@ -383,42 +359,39 @@ func _load_current_scenario() -> void:
 		var tl = _find_traffic_light(sc, str(a_dict.get("side", "")))
 		if tl != null:
 			a_dict["trafficLight"] = tl
+		for sign_data in sc.get("signs", []):
+			if sign_data.get("side", "") == a_dict.get("side", "") and sign_data.get("code", "") == "2.5":
+				a_dict["stopSign"] = tl == null or tl.get("state", "") in ["off", "flashing_yellow"]
 
 		var actor := CrossroadsActorScript.new(a_dict)
 		actor.drive_completed.connect(_on_actor_drive_completed)
 		actors_root.add_child(actor)
 		active_actors.append(actor)
+		if actor.is_tram:
+			junction.build_tram_path(actor.path_curve)
 
-	if has_tram_ns:
-		junction.build_tram_rails("ns")
-	if has_tram_ew:
-		junction.build_tram_rails("ew")
-
-	# Hard situation bonus in Arcade
+	# A difficult junction adds time once, including after a retry.
 	var is_hard: bool = sc.get("isHard", false)
-	if not is_training and is_hard:
+	if is_hard and not _rewarded_hard.has(cur_scenario_idx):
+		_rewarded_hard[cur_scenario_idx] = true
 		seconds_left = minf(float(economy.get("seconds", 60)), seconds_left + 10.0)
 		ui.show_hard_bonus_toast()
 
-	ui.update_hud(score, int(seconds_left), lives, combo)
+	ui.update_hud(score, ceili(seconds_left), lives, combo)
 	ui.update_caption(sc_title, sc_sub, cur_step, active_actors.size(), is_hard)
-	if is_training:
-		ui.set_training_scenario_index(cur_scenario_idx + 1, scenario_order.size())
 	fit_camera_to_scenario()
+	_fit_scenario_after_layout(scene_sequence)
 
 
 func _is_any_actor_driving() -> bool:
 	for a in active_actors:
-		if a.state == "driving":
-			if a.is_pedestrian:
-				return true
-			if a.position.distance_to(Vector3.ZERO) < 18.0:
-				return true
+		if a.state == "driving" and not a.has_cleared_junction():
+			return true
 	return false
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if is_game_over or is_resolving or _is_any_actor_driving():
+	if not ready_for_play or paused or is_game_over or is_resolving or _round_completing or _is_any_actor_driving():
 		return
 
 	if event is InputEventMouseButton:
@@ -450,15 +423,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			_touches[st.index] = st.position
 			_touch_start_pos[st.index] = st.position
 			if _touches.size() == 2:
+				_had_multitouch = true
 				var t_keys: Array = _touches.keys()
 				_pinch_span = _touches[t_keys[0]].distance_to(_touches[t_keys[1]])
 				_pinch_zoom = _target_cam_zoom
 		else:
 			var start: Vector2 = _touch_start_pos.get(st.index, st.position)
-			if _touches.size() == 1 and st.position.distance_to(start) < 14.0:
+			if not _had_multitouch and _touches.size() == 1 and st.position.distance_to(start) < 14.0:
 				_handle_screen_tap(st.position)
 			_touches.erase(st.index)
 			_touch_start_pos.erase(st.index)
+			if _touches.is_empty(): _had_multitouch = false
 
 	elif event is InputEventScreenDrag:
 		var sd := event as InputEventScreenDrag
@@ -477,7 +452,7 @@ var _last_tap_pos := Vector2(-999, -999)
 var _last_tap_time := -999.0
 
 func _handle_screen_tap(screen_pos: Vector2) -> void:
-	if is_game_over or is_resolving or active_actors.is_empty() or _is_any_actor_driving():
+	if not ready_for_play or paused or is_game_over or is_resolving or _round_completing or active_actors.is_empty() or _is_any_actor_driving():
 		return
 
 	var now := float(Time.get_ticks_msec())
@@ -568,7 +543,7 @@ func _handle_actor_selection(chosen: CrossroadsActor) -> void:
 			is_illegal_red = true
 
 	if is_illegal_red:
-		_trigger_collision(chosen, priority_actor, "Проезд на запрещающий сигнал светофора!", "Пункт 6.2 ПДД РФ")
+		_trigger_collision(chosen, priority_actor, Ui.t("crossroadsReasonRedLight"), Ui.t("crossroadsArticleRedLight"))
 		return
 
 	# 2. Check priority order
@@ -587,7 +562,7 @@ func _handle_actor_selection(chosen: CrossroadsActor) -> void:
 		ui.update_caption(sc_table.get("title", sc.get("title", "")), sc_table.get("subtitle", sc.get("subtitle", "")), cur_step, active_actors.size(), sc.get("isHard", false))
 	else:
 		# MISTAKE / COLLISION!
-		var reason: String = priority_actor.data.get("explanation", "Нарушение очередности проезда!")
+		var reason: String = priority_actor.data.get("explanation", Ui.t("gamePriorityViolation"))
 		var article: String = sc_table_article(sc)
 		if priority_actor.is_pedestrian and not chosen.is_pedestrian:
 			reason = Ui.t("crossroadsReasonPedestrianViolation")
@@ -604,18 +579,23 @@ func _find_traffic_light(sc: Dictionary, side_name: String):
 
 func sc_table_article(sc: Dictionary) -> String:
 	var t_table: Dictionary = sc.get("translations", {}).get(Ui.lang, sc.get("translations", {}).get("ru", {}))
-	return str(t_table.get("pddArticle", sc.get("pddArticle", "Пункт 13.9 ПДД РФ")))
+	return str(t_table.get("pddArticle", sc.get("pddArticle", "")))
 
 
 func _on_actor_drive_completed(_actor: CrossroadsActor) -> void:
+	_check_junction_completed()
+
+
+func _check_junction_completed() -> void:
 	# Check if all actors are completed
 	var any_remaining := false
 	for a in active_actors:
-		if a.state == "waiting" or a.state == "driving":
+		if a.state == "waiting" or (a.state == "driving" and not a.has_cleared_junction()):
 			any_remaining = true
 			break
 
-	if not any_remaining and not is_resolving and not is_game_over:
+	if not any_remaining and not active_actors.is_empty() and not _round_completing and not is_resolving and not is_game_over:
+		_round_completing = true
 		_on_crossroad_completed()
 
 
@@ -633,16 +613,16 @@ func _on_crossroad_completed() -> void:
 	var gained := base_score * (3 if is_hard else 1)
 	score = mini(int(economy.get("maxScore", 1500)), score + gained)
 
-	if not is_training:
-		seconds_left = minf(float(economy.get("seconds", 60)), seconds_left + 6.0)
+	seconds_left = minf(float(economy.get("seconds", 60)), seconds_left + 6.0)
 
-	ui.update_hud(score, int(seconds_left), lives, combo)
+	ui.update_hud(score, ceili(seconds_left), lives, combo)
 	sound.play("correct")
 	GameSound.buzz(45)
 
 	# Advance to next crossroad after brief delay
-	await get_tree().create_timer(0.85).timeout
-	if is_game_over:
+	var sequence := scene_sequence
+	await _gameplay_delay(0.85, sequence)
+	if not _sequence_active(sequence):
 		return
 
 	cur_scenario_idx += 1
@@ -650,31 +630,45 @@ func _on_crossroad_completed() -> void:
 
 
 func _trajectory_min_distance(a: CrossroadsActor, b: CrossroadsActor) -> float:
+	return _trajectory_conflict(a, b).distance
+
+
+func _trajectory_conflict(a: CrossroadsActor, b: CrossroadsActor) -> Dictionary:
+	var result := {"distance": 999.0, "a": 0.0, "b": 0.0}
 	if a.path_curve == null or b.path_curve == null:
-		return 999.0
-	var len_a := maxf(1.0, a.path_length)
-	var len_b := maxf(1.0, b.path_length)
-	var min_d := 999.0
-	for ia in range(1, 26):
-		var pa := a.path_curve.sample_baked(float(ia) / 25.0 * len_a * 0.65)
-		for ib in range(1, 26):
-			var pb := b.path_curve.sample_baked(float(ib) / 25.0 * len_b * 0.65)
-			var d := pa.distance_to(pb)
-			if d < min_d:
-				min_d = d
-	return min_d
+		return result
+	var points_a := _conflict_samples(a)
+	var points_b := _conflict_samples(b)
+	for pa in points_a:
+		for pb in points_b:
+			var distance: float = pa.position.distance_to(pb.position)
+			if distance < result.distance:
+				result = {"distance": distance, "a": pa.offset / a.path_length, "b": pb.offset / b.path_length}
+	return result
+
+
+func _conflict_samples(actor: CrossroadsActor) -> Array[Dictionary]:
+	var points: Array[Dictionary] = []
+	var length := actor.path_length
+	for i in ceili(length / 0.4) + 1:
+		var offset := minf(length, i * 0.4)
+		var point := actor.path_curve.sample_baked(offset)
+		# A later merge on the avenue is not the junction conflict being tested.
+		if maxf(absf(point.x), absf(point.z)) <= CrossroadsJunction.STOP_DIST + 0.5:
+			points.append({"position": point, "offset": offset})
+	return points
 
 
 # --- Collision (ДТП) Animation & Handling ---
 
 func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reason: String, article: String) -> void:
+	var sequence := scene_sequence
 	is_resolving = true
 	wrong_count += 1
 	combo = 0
-	if not is_training:
-		lives -= 1
+	lives -= 1
 
-	ui.update_hud(score, int(seconds_left), lives, combo)
+	ui.update_hud(score, ceili(seconds_left), lives, combo)
 
 	# Hide trajectory ribbons and arrows immediately
 	if chosen.trajectory_guide != null:
@@ -689,22 +683,10 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	# High-precision search for trajectory conflict point strictly within intersection zone
 	var len_c := maxf(1.0, chosen.path_length)
 	var len_p := maxf(1.0, priority.path_length)
-	var best_tc := 0.35
-	var best_tp := 0.35
-	var min_dist := 999.0
-
-	var steps := 100
-	for ic in range(1, steps + 1):
-		var tc := float(ic) / float(steps) * 0.82
-		var pos_c := chosen.path_curve.sample_baked(tc * len_c)
-		for ip in range(1, steps + 1):
-			var tp := float(ip) / float(steps) * 0.82
-			var pos_p := priority.path_curve.sample_baked(tp * len_p)
-			var d := pos_c.distance_to(pos_p)
-			if d < min_dist:
-				min_dist = d
-				best_tc = tc
-				best_tp = tp
+	var conflict := _trajectory_conflict(chosen, priority)
+	var best_tc: float = conflict.a
+	var best_tp: float = conflict.b
+	var min_dist: float = conflict.distance
 
 	var start_tc := chosen.drive_progress
 	var start_tp := priority.drive_progress
@@ -715,21 +697,25 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	var target_tc := minf(0.85, best_tc + 0.06)
 	var target_tp := minf(0.85, best_tp + 0.06)
 
-	var pos_c_imp := chosen.path_curve.sample_baked(best_tc * len_c)
-	var pos_p_imp := priority.path_curve.sample_baked(best_tp * len_p)
-	var mid_impact := (pos_c_imp + pos_p_imp) * 0.5
-	var needs_swerve := min_dist > 3.0
+	# A rule violation never invents an off-road crash between unrelated paths.
+	if chosen == priority or min_dist > 3.0:
+		chosen.set_badge_error()
+		if priority != chosen: priority.set_badge_priority()
+		sound.play("incorrect")
+		GameSound.buzz(70)
+		ui.show_collision_modal(str(priority.data.get("name", "")), reason, article, lives <= 0)
+		return
 
 	# Smoothly drive both actors along their curves towards collision
-	var drive_duration := 0.50
+	var drive_duration := clampf(maxf(best_tc * len_c, best_tp * len_p) / 12.0, 0.8, 2.2)
 	var elapsed := 0.0
-	var max_drive_time := 0.85
+	var max_drive_time := drive_duration + 0.15
 	var has_collided := false
-	var prev_c_pos := chosen.position
-	var prev_p_pos := priority.position
 
 	while elapsed < max_drive_time:
 		await get_tree().process_frame
+		if not _sequence_active(sequence): return
+		if paused: continue
 		var dt := get_process_delta_time()
 		if dt <= 0.0 or dt > 0.1:
 			dt = 1.0 / 60.0
@@ -756,11 +742,6 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		var pos_p := priority.path_curve.sample_baked(off_p)
 		var next_p := priority.path_curve.sample_baked(minf(len_p, off_p + 0.3))
 
-		if needs_swerve and prog > 0.2:
-			var swerve_p := smoothstep(0.2, 0.75, prog)
-			pos_c = pos_c.lerp(mid_impact, swerve_p)
-			pos_p = pos_p.lerp(mid_impact, swerve_p)
-
 		chosen.position = pos_c
 		if pos_c.distance_to(next_c) > 0.01:
 			var dir_c := (next_c - pos_c).normalized()
@@ -771,31 +752,18 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 			var dir_p := (next_p - pos_p).normalized()
 			priority.rotation.y = atan2(dir_p.x, dir_p.z)
 
-		# Wheel rotation animation
-		var moved_c := pos_c.distance_to(prev_c_pos)
-		var moved_p := pos_p.distance_to(prev_p_pos)
-		prev_c_pos = pos_c
-		prev_p_pos = pos_p
-		if chosen.model_node is NpcVehicle:
-			chosen.model_node._distance += moved_c
-			var mat: ShaderMaterial = chosen.model_node._material
-			if mat != null:
-				mat.set_shader_parameter("wheel_distance", chosen.model_node._distance)
-		if priority.model_node is NpcVehicle:
-			priority.model_node._distance += moved_p
-			var mat_p: ShaderMaterial = priority.model_node._material
-			if mat_p != null:
-				mat_p.set_shader_parameter("wheel_distance", priority.model_node._distance)
-
 		# Physical collision contact check: exact SAT oriented bounding boxes with metal touch
 		if Drive.overlap(chosen.footprint(), priority.footprint(), 0.0):
 			has_collided = true
 			break
-		# Proximity fallback when bounding boxes are within touching distance
-		var contact_dist := (chosen.hw + priority.hw) * 0.95 if (chosen.is_pedestrian or priority.is_pedestrian) else (chosen.hl + priority.hl) * 0.42
-		if pos_c.distance_to(pos_p) < contact_dist:
-			has_collided = true
-			break
+	if not has_collided:
+		chosen.state = "crashed"
+		priority.state = "crashed"
+		chosen.set_badge_error()
+		priority.set_badge_priority()
+		sound.play("incorrect")
+		ui.show_collision_modal(str(priority.data.get("name", "")), reason, article, lives <= 0)
+		return
 
 	# Impact handling & FX — fires instantaneously upon physical contact!
 	var impact := (chosen.position + priority.position) * 0.5
@@ -829,11 +797,12 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	chosen.set_badge_error()
 	priority.set_badge_priority()
 
-	await get_tree().create_timer(0.5).timeout
+	await _gameplay_delay(0.5, sequence)
+	if not _sequence_active(sequence): return
 
 	# Show modal
-	var prio_name: String = priority.data.get("name", "Автомобиль")
-	ui.show_collision_modal(prio_name, reason, article, lives <= 0 and not is_training)
+	var prio_name: String = priority.data.get("name", "")
+	ui.show_collision_modal(prio_name, reason, article, lives <= 0)
 
 
 func _create_skid_marks(at: Vector3, dir: Vector3 = Vector3.FORWARD) -> void:
@@ -904,35 +873,18 @@ func _create_crash_smoke(at: Vector3) -> void:
 
 
 func _on_retry_pressed() -> void:
-	if not is_training and lives <= 0:
+	_set_paused(false)
+	ui.hide_collision_modal()
+	if lives <= 0:
 		_end_game()
 	else:
 		_load_current_scenario()
 
 
-# --- Mode & Category Navigation ---
-
-func _on_mode_toggled() -> void:
-	is_training = not is_training
-	ui.set_mode(is_training)
-	_rebuild_scenario_order()
-	_load_current_scenario()
-
-
-func _on_category_selected(cat: String) -> void:
-	cur_category = cat
-	_rebuild_scenario_order()
-	_load_current_scenario()
-
-
-func _on_prev_scenario() -> void:
-	if scenario_order.is_empty(): return
-	cur_scenario_idx = (cur_scenario_idx - 1 + scenario_order.size()) % scenario_order.size()
-	_load_current_scenario()
-
-
 func _on_next_scenario() -> void:
 	if scenario_order.is_empty(): return
+	_set_paused(false)
+	ui.hide_collision_modal()
 	cur_scenario_idx = (cur_scenario_idx + 1) % scenario_order.size()
 	_load_current_scenario()
 
@@ -940,9 +892,13 @@ func _on_next_scenario() -> void:
 # --- Game Timer & Frame Updates ---
 
 func _process(delta: float) -> void:
-	if not is_training and not is_game_over and not is_resolving:
+	_update_frame_budget(delta)
+	if paused or not ready_for_play: return
+	if not is_game_over and not is_resolving:
+		_check_junction_completed()
+	if ready_for_play and not paused and not is_game_over and not is_resolving and not _round_completing and not _is_any_actor_driving():
 		seconds_left -= delta
-		ui.update_hud(score, int(seconds_left), lives, combo)
+		ui.update_hud(score, ceili(seconds_left), lives, combo)
 		if seconds_left <= 0:
 			seconds_left = 0
 			_end_game()
@@ -965,7 +921,7 @@ func _process(delta: float) -> void:
 	if cam_changed:
 		_update_camera()
 
-	if auto_play and not is_resolving and not is_game_over and not active_actors.is_empty():
+	if auto_play and not paused and not _round_completing and not _is_any_actor_driving() and not is_resolving and not is_game_over and not active_actors.is_empty():
 		_process_auto_play()
 
 
@@ -980,6 +936,8 @@ func _end_game() -> void:
 	if is_game_over:
 		return
 	is_game_over = true
+	_set_paused(false)
+	_update_gameplay_processing()
 	is_new_record = score > 0 and score > previous_best
 
 	ui.show_results(score, solved_count, wrong_count, max_combo, is_new_record, previous_best)
@@ -1012,11 +970,81 @@ func _checkpoint() -> void:
 
 
 func _on_close_pressed() -> void:
-	Host.exit(_session_summary(), get_tree())
+	_set_paused(not paused)
 
 
 func _on_exit_pressed() -> void:
 	Host.exit(_session_summary(), get_tree())
+
+
+func _on_resume_pressed() -> void:
+	_set_paused(false)
+
+
+func _set_paused(value: bool) -> void:
+	paused = value and not is_game_over
+	_clear_input()
+	_update_gameplay_processing()
+	if ui != null:
+		if paused: ui.show_pause()
+		else: ui.hide_pause()
+
+
+func _update_gameplay_processing() -> void:
+	var mode := Node.PROCESS_MODE_DISABLED if paused or is_game_over else Node.PROCESS_MODE_INHERIT
+	for node in [junction, actors_root, fx_root, sound]:
+		if node != null: node.process_mode = mode
+	if sound != null and is_instance_valid(sound._player):
+		sound._player.stream_paused = paused or is_game_over
+
+
+func _clear_input() -> void:
+	_touches.clear()
+	_touch_start_pos.clear()
+	_pinch_span = 0.0
+	_is_dragging = false
+	_had_multitouch = false
+	_last_tap_time = -999.0
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		if ready_for_play and not is_game_over:
+			_set_paused.call_deferred(true)
+	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if ready_for_play and not is_game_over: _set_paused.call_deferred(not paused)
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
+		if ready_for_play and not is_game_over:
+			_set_paused(not paused)
+			get_viewport().set_input_as_handled()
+
+
+func _sequence_active(sequence: int) -> bool:
+	return is_inside_tree() and not is_queued_for_deletion() and not is_game_over and scene_sequence == sequence
+
+
+func _gameplay_delay(seconds: float, sequence: int) -> void:
+	var elapsed := 0.0
+	while elapsed < seconds:
+		await get_tree().process_frame
+		if not _sequence_active(sequence): return
+		if not paused: elapsed += minf(get_process_delta_time(), 0.1)
+
+
+func _on_viewport_resized() -> void:
+	# Containers settle their sizes on the next frame.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if is_inside_tree() and ready_for_play: fit_camera_to_scenario()
+
+
+func _fit_scenario_after_layout(sequence: int) -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if _sequence_active(sequence): fit_camera_to_scenario()
 
 
 # --- Camera Updates ---
@@ -1049,11 +1077,13 @@ func fit_camera_to_scenario() -> void:
 		_update_camera()
 		return
 
-	var u := Ui.dp(vp)
-	var top_margin := 110.0 * u
-	var bottom_margin := h - 110.0 * u
-	var left_margin := 24.0 * u
-	var right_margin := w - 24.0 * u
+	var area := ui.scene_rect()
+	var top_margin := area.position.y
+	var bottom_margin := area.end.y
+	var left_margin := area.position.x
+	var right_margin := area.end.x
+	var badge_margin := 26.0 * Ui.dp(vp)
+	_fit_projection(area)
 
 	var probe_pts: Array[Vector3] = [
 		Vector3(-HALF_ROAD, 0, -HALF_ROAD),
@@ -1061,13 +1091,16 @@ func fit_camera_to_scenario() -> void:
 		Vector3(-HALF_ROAD, 0, HALF_ROAD),
 		Vector3(HALF_ROAD, 0, -HALF_ROAD)
 	]
+	var badge_points: Array[Vector3] = []
 
 	for a in active_actors:
 		var p: Vector3 = a.global_position
 		probe_pts.append(p)
-		probe_pts.append(p + Vector3(0, 4.2, 0))
-		probe_pts.append(p + Vector3(2.5, 0, 2.5))
-		probe_pts.append(p + Vector3(-2.5, 0, -2.5))
+		for x in [-a.hw, a.hw]:
+			for z in [-a.hl, a.hl]:
+				probe_pts.append(a.global_transform * Vector3(x, 0.0, z))
+		if a.badge_sprite != null:
+			badge_points.append(a.badge_sprite.global_position)
 
 	var fits := func(dist: float) -> bool:
 		cam_pivot.rotation = Vector3(cam_pitch, cam_yaw, 0)
@@ -1076,10 +1109,14 @@ func fit_camera_to_scenario() -> void:
 			var scr := camera.unproject_position(pt)
 			if scr.x < left_margin or scr.x > right_margin or scr.y < top_margin or scr.y > bottom_margin:
 				return false
+		for point in badge_points:
+			var screen := camera.unproject_position(point)
+			if screen.x < left_margin + badge_margin or screen.x > right_margin - badge_margin or screen.y < top_margin + badge_margin or screen.y > bottom_margin - badge_margin:
+				return false
 		return true
 
 	var lo := 38.0
-	var hi := 105.0
+	var hi := 240.0
 	if fits.call(lo):
 		hi = lo
 	else:
@@ -1106,6 +1143,16 @@ func _update_camera() -> void:
 		camera.position += Vector3(randf_range(-cam_shake, cam_shake), randf_range(-cam_shake, cam_shake), 0)
 	for actor in active_actors:
 		actor.update_badge_orientation(camera)
+
+
+func _fit_projection(area: Rect2) -> void:
+	var height := get_viewport().get_visible_rect().size.y
+	if height <= 0.0: return
+	# Keep the playable centre inside the actual UI opening, including large text.
+	var frustum_height := 2.0 * camera.near * tan(deg_to_rad(40.0) * 0.5)
+	var offset := Vector2(0, frustum_height * (area.get_center().y / height - 0.5))
+	camera.keep_aspect = Camera3D.KEEP_HEIGHT
+	camera.set_frustum(frustum_height, offset, camera.near, camera.far)
 
 
 func _has_arg(name: String) -> bool:

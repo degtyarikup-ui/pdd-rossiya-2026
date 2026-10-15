@@ -3436,6 +3436,12 @@ abstract class AppLocalizations {
   /// **'⚡ Сложная ситуация • 3× очков'**
   String get crossroadsHardSituationBadge;
 
+  /// No description provided for @crossroadsHardBonusBadge.
+  ///
+  /// In ru, this message translates to:
+  /// **'⚡ Сложная ситуация · +10 сек'**
+  String get crossroadsHardBonusBadge;
+
   /// No description provided for @crossroadsTimeBonus10s.
   ///
   /// In ru, this message translates to:

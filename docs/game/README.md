@@ -50,6 +50,11 @@ godot --headless --path game_godot --script res://tests/regulator_check.gd # р�
 godot --headless --path game_godot --script res://tests/regulator_performance_check.gd # регулировщик: профили телефона, адаптация, разрешение UI и повторный вход
 godot --headless --path game_godot --script res://tests/regulator_atmosphere_check.gd # регулировщик: стабильная погода без лишних обновлений рендера и переходы
 godot --headless --path game_godot --script res://tests/crossroads_check.gd # разъезд на перекрёстках: 27 сценариев, ПДД, траектории, UI
+godot --headless --path game_godot --script res://tests/crossroads_play_check.gd # все 27 задач: проезд, пауза, камера, таймер, повтор и мультитач
+godot --headless --path game_godot --script res://tests/crossroads_routes_check.gd # реальные кузова, полосы, остановка у 2.5 и экранный размер кнопок
+godot --headless --path game_godot --script res://tests/crossroads_world_check.gd # все знаки/дубли, переходы, стоп-линии, рельсы, сезонные материалы
+godot --path game_godot --script res://tests/crossroads_world_check.gd # дополнительно реальные пиксели скруглений и пандусов
+godot --headless --path game_godot --script res://tests/crossroads_ui_check.gd # HUD, диалоги, короткий экран; повторить с -- --text-scale=1.6
 godot --headless --path game_godot --script res://tests/rules_check.gd      # нарушения: 47 проверок
 godot --headless --path game_godot --script res://tests/road_check.gd       # дорожные вопросы: 70 проверок
 godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя
@@ -261,6 +266,7 @@ MP3 и локальный манифест не коммитятся. В Git л�
 
 ## Документы
 
+- `crossroads-refinement-2026-10-15.md` — один формат «Разрули перекрёсток», интерфейс, общая атмосфера и аудит дорожной сцены
 - `question-semantic-audit-2026-10-15.md` — смысловые повторы игровых заданий, исключённые сцены и сохранённые различия
 - `garage-achievements.md` — общая палитра машин, награды за правильные ответы и перенос старого гаража
 - `building-models.md` — модели домов, пересборка и ограничения для слабых телефонов

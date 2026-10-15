@@ -1,14 +1,21 @@
 ## Actor (vehicle or pedestrian) on the Crossroads intersection.
-## Handles authentic 3D model instantiation, pin maneuver badge,
-## road trajectory guide ribbons, wheel rotation, turn signals, and animations.
+## Shared vehicle models, app-style maneuver buttons and the main game's
+## compact route arrows. Paths keep each maneuver in the correct traffic lane.
 class_name CrossroadsActor
 extends Node3D
 
 signal drive_completed(actor: CrossroadsActor)
+signal junction_cleared(actor: CrossroadsActor)
 
 const HALF_ROAD := 7.2
-const LANE_OFFSET := 3.4
-const STOP_DIST := 14.5
+const LANE_WIDTH := 3.6
+const LANE_OFFSET := LANE_WIDTH * 0.5
+const OUTER_LANE := LANE_WIDTH * 1.5
+const STOP_DIST := 13.2
+const STOP_SIGN_DIST := 7.6
+const STOP_SIGN_SECONDS := 0.8
+const BADGE_CARD_WIDTH_PIXELS := 192.0
+const BADGE_CARD_SCREEN_DP := 40.0
 const EXIT_DIST := 110.0
 
 var data: Dictionary
@@ -26,7 +33,7 @@ var trajectory_guide: MeshInstance3D
 var path_curve: Curve3D
 var path_length := 0.0
 var drive_progress := 0.0
-var drive_speed := 6.2  # m/s
+var drive_speed := 0.0  # Normalised route progress per second.
 var is_pedestrian := false
 var is_tram := false
 var has_siren := false
@@ -34,12 +41,22 @@ var has_siren := false
 var blink_timer := 0.0
 var badge_pop := 1.0
 var _completed_emitted := false
+var _cleared_emitted := false
+var _badge_height := 3.1
+var _badge_screen_scale := 1.0
+var _badge_camera: Camera3D
+var _model_height := 1.65
+var _turn_end_distance := 0.0
+var _signal_side := ""
+var _signals: Fleet.Signals
+var _stop_pause_left := 0.0
+var _stop_done := false
 
 var hw := 0.95
 var hl := 2.15
 
-static var _maneuver_cache: Dictionary = {}
-static var _maneuver_shader: Shader = null
+static var _badge_cache: Dictionary = {}
+const GUIDE_LABELS := ["А", "Б", "В", "Г", "Д"]
 
 
 func _init(actor_data: Dictionary) -> void:
@@ -62,7 +79,10 @@ func _init(actor_data: Dictionary) -> void:
 	elif type_str == "truck":
 		hw = 1.15
 		hl = 4.5
-	elif type_str == "police" or has_siren or type_str == "emergency":
+	elif type_str == "emergency":
+		hw = 1.0
+		hl = 2.65
+	elif type_str == "police" or has_siren:
 		hw = 0.95
 		hl = 2.2
 	elif type_str == "motorcycle":
@@ -76,6 +96,7 @@ func _init(actor_data: Dictionary) -> void:
 		hl = 2.15
 
 	_build_model()
+	_measure_model()
 	_place_at_start()
 	_build_trajectory()
 	_build_trajectory_guide()
@@ -86,7 +107,7 @@ func _build_model() -> void:
 	var type_str: String = data.get("type", "car")
 	var color_str: String = data.get("color", "#317ED4")
 	var paint := Color(color_str)
-	var model_str: String = data.get("model", "sedan")
+	var model_str: String = data.get("model", "")
 
 	if is_pedestrian:
 		var ped := Pedestrian.new()
@@ -96,10 +117,14 @@ func _build_model() -> void:
 	elif type_str == "police":
 		model_node = Fleet.dps_car()
 	elif has_siren or type_str == "emergency":
-		model_node = NpcVehicle.make("van", Color.WHITE, {"beacon": "amber"})
-		var siren_halo := Glow.halo(Color("#2F6BFF"), 2.2)
-		siren_halo.position = Vector3(0, 2.1, 0)
-		model_node.add_child(siren_halo)
+		model_node = NpcVehicle.make("van", Color.WHITE)
+		# Priority belongs to blue beacons plus siren (3.1), never amber lamps.
+		for x in [-0.98, 0.98]:
+			Fleet._box(model_node, Vector3(0.035, 0.26, 3.5), Vector3(x, 1.05, 0), Ui.c("red"))
+		Fleet._box(model_node, Vector3(1.05, 0.10, 0.32), Vector3(0, 2.30, 0.3), Color("#1E293B"))
+		var flash := Fleet.Flasher.new()
+		flash.lamps = [Fleet._lamp(model_node, Vector3(-0.28, 2.4, 0.3), Color("#2F6BFF")), Fleet._lamp(model_node, Vector3(0.28, 2.4, 0.3), Color("#2F6BFF"))]
+		model_node.add_child(flash)
 	elif type_str == "truck":
 		model_node = NpcVehicle.make("truck", paint)
 	elif type_str == "bus":
@@ -114,12 +139,50 @@ func _build_model() -> void:
 		model_node = NpcVehicle.make("car", paint, {"car_model": car_model})
 
 	add_child(model_node)
+	if not is_pedestrian:
+		var maneuver: String = data.get("maneuver", "straight")
+		_signal_side = "L" if maneuver in ["left", "uTurn"] else ("R" if maneuver == "right" else "")
+		_signals = Fleet._signals(model_node)
+		_signals.set_side(_signal_side)
+
+
+func _measure_model() -> void:
+	if is_pedestrian: return
+	var bounds := AABB()
+	var found := false
+	for mesh: MeshInstance3D in model_node.find_children("*", "MeshInstance3D", true, false):
+		# Ignore beacon bloom, decals and turn-signal halos; the shared road body
+		# carries this tag, including the NPC nested inside the police wrapper.
+		if not mesh.get_meta("npc_vehicle", false) or mesh.mesh == null: continue
+		var transform := mesh.transform
+		var cursor := mesh.get_parent()
+		while cursor != model_node and cursor is Node3D:
+			transform = cursor.transform * transform
+			cursor = cursor.get_parent()
+		var part := transform * mesh.mesh.get_aabb()
+		bounds = bounds.merge(part) if found else part
+		found = true
+	if found:
+		hw = maxf(absf(bounds.position.x), absf(bounds.end.x))
+		hl = maxf(absf(bounds.position.z), absf(bounds.end.z))
+		_model_height = bounds.end.y
+
+
+func _lane_offset() -> float:
+	if is_tram or str(data.get("maneuver", "straight")) in ["left", "uTurn"]:
+		return LANE_OFFSET
+	return OUTER_LANE
+
+
+func _side_angle() -> float:
+	return {"south": 0.0, "north": PI, "east": PI * 0.5, "west": -PI * 0.5}.get(str(data.get("side", "south")), 0.0)
 
 
 func _place_at_start() -> void:
 	var side_name: String = data.get("side", "south")
-	var lane_x := 0.0 if is_tram else LANE_OFFSET
-	var stop_d := 17.0 if is_tram else (17.2 if data.get("type", "") == "bus" else (15.8 if data.get("type", "") == "truck" else 14.8))
+	var lane_x := _lane_offset()
+	# The complete front bumper stays behind 1.12, including a long tram/bus.
+	var stop_d := STOP_DIST + hl + 0.75
 
 	if is_pedestrian:
 		var p_start := _pedestrian_start(side_name)
@@ -168,347 +231,190 @@ func _pedestrian_end(side_name: String) -> Vector3:
 	return Vector3(0, 0.16, 10.0)
 
 
-# --- Authentic Maneuver Badge ---
+# --- App-style maneuver buttons ---
 
 func _build_badge() -> void:
 	badge_node = Node3D.new()
 	badge_node.name = "Badge"
-
-	var type_str: String = data.get("type", "")
-	var h := 2.25
-	if type_str == "tram": h = 4.4
-	elif type_str == "bus": h = 3.9
-	elif type_str == "truck": h = 3.8
-	elif is_pedestrian: h = 2.9
-	elif type_str == "motorcycle": h = 2.4
-	badge_node.position = Vector3(0, h, 0)
+	_badge_height = _model_height + 1.45 if not is_pedestrian else 2.95
+	if str(data.get("type", "")) == "emergency":
+		_badge_height = maxf(_badge_height, 3.9)
+	badge_node.position.y = _badge_height
 	add_child(badge_node)
 
-	# 1. Authentic billboard map-pin sprite matching Three.js scale
 	badge_sprite = Sprite3D.new()
 	badge_sprite.name = "BadgeSprite"
-	var m_name: String = str(data.get("maneuver", "straight"))
-	var tex := _generate_badge_texture(
-		"normal",
-		m_name,
-		data.get("color", "#317ED4"),
-		data.get("order", 1),
-		has_siren,
-		data.get("trafficLight", null),
-		0.0
-	)
-	badge_sprite.texture = tex
+	badge_sprite.texture = _badge_texture("normal", 0)
 	badge_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	badge_sprite.pixel_size = 0.015
-	badge_sprite.offset = Vector2(0, 108)
+	badge_sprite.pixel_size = 0.014
+	badge_sprite.shaded = false
 	badge_sprite.no_depth_test = true
 	badge_sprite.render_priority = 15
+	badge_sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	badge_sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	# Its visible centre is also the tap target; no offset pin above the node.
 	badge_node.add_child(badge_sprite)
 
-	# 3. Legacy fallback nodes for backwards compatibility
-	badge_bg = MeshInstance3D.new()
-	var q := QuadMesh.new()
-	q.size = Vector2(0.01, 0.01)
-	badge_bg.mesh = q
-	var bm := StandardMaterial3D.new()
-	bm.albedo_color = Color("#0574F8")
-	badge_bg.material_override = bm
-	badge_bg.visible = false
-	badge_node.add_child(badge_bg)
 
-	badge_label = Label3D.new()
-	badge_label.text = _maneuver_symbol(data.get("maneuver", "straight"))
-	badge_label.visible = false
-	badge_node.add_child(badge_label)
+func guide_color() -> Color:
+	var fallback: int = posmod(str(data.get("id", "actor")).hash(), GUIDE_LABELS.size())
+	return Situation.letter_colour(str(data.get("guideLabel", GUIDE_LABELS[fallback])))
 
 
-func _maneuver_symbol(maneuver: String) -> String:
-	match maneuver:
-		"straight": return "↑"
-		"right": return "↱"
-		"left": return "↰"
-		"uTurn": return "⤹"
-		"cross": return "🚶"
-	return "↑"
+func _badge_texture(status: String, step_num: int) -> ImageTexture:
+	return _generate_badge_texture(status, str(data.get("maneuver", "straight")), guide_color().to_html(), step_num, has_siren, data.get("trafficLight"), 0.0)
 
 
 func set_badge_solved(step_num: int) -> void:
 	badge_pop = 0.0
-	if arrow_sprite != null:
-		arrow_sprite.visible = false
-	badge_sprite.texture = _generate_badge_texture("solved", "none", data.get("color", "#317ED4"), step_num, false, null, 0.0)
-	if badge_label != null: badge_label.text = str(step_num)
-	if badge_bg != null and badge_bg.material_override != null: (badge_bg.material_override as StandardMaterial3D).albedo_color = Color("#2BC280")
+	badge_sprite.texture = _badge_texture("solved", step_num)
 
 
 func set_badge_error() -> void:
 	badge_pop = 0.0
-	if arrow_sprite != null:
-		arrow_sprite.visible = false
-	badge_sprite.texture = _generate_badge_texture("error", "none", data.get("color", "#317ED4"), 1, false, null, 0.0)
-	if badge_label != null: badge_label.text = "✗"
-	if badge_bg != null and badge_bg.material_override != null: (badge_bg.material_override as StandardMaterial3D).albedo_color = Color("#ED4621")
+	badge_sprite.texture = _badge_texture("error", 0)
 
 
 func set_badge_priority() -> void:
 	badge_pop = 0.0
-	if arrow_sprite != null:
-		arrow_sprite.visible = false
-	badge_sprite.texture = _generate_badge_texture("priority", "none", data.get("color", "#317ED4"), 1, false, null, 0.0)
-	if badge_label != null: badge_label.text = "!"
-	if badge_bg != null and badge_bg.material_override != null: (badge_bg.material_override as StandardMaterial3D).albedo_color = Color("#FFA53C")
+	badge_sprite.texture = _badge_texture("priority", 0)
 
 
-func update_badge_orientation(_cam: Camera3D) -> void:
-	# Maneuver arrow represents driver maneuver (straight/turn) on the billboard pin.
-	# Keep rotation 0.0 so turning the camera does not flip or distort arrow directions.
-	if arrow_mat != null:
-		arrow_mat.set_shader_parameter("rotation_angle", 0.0)
+func update_badge_orientation(cam: Camera3D) -> void:
+	_badge_camera = cam
+	if not is_instance_valid(cam) or not is_inside_tree() or badge_sprite == null: return
+	# Project a metre in the camera's plane: this works for perspective/frustum
+	# and orthogonal cameras and compensates both orbit depth and zoom.
+	var centre := badge_node.global_position
+	var right := cam.global_basis.x.normalized()
+	var pixels_per_metre := cam.unproject_position(centre).distance_to(cam.unproject_position(centre + right))
+	if pixels_per_metre <= 0.001: return
+	var card_width := BADGE_CARD_WIDTH_PIXELS * badge_sprite.pixel_size
+	_badge_screen_scale = BADGE_CARD_SCREEN_DP * Ui.dp(cam.get_viewport()) / (pixels_per_metre * card_width)
+	_apply_badge_scale()
+
+
+func _apply_badge_scale() -> void:
+	if badge_sprite == null: return
+	var feedback := 1.0 + sin(badge_pop * PI) * 0.12 if badge_pop < 1.0 else 1.0
+	badge_sprite.scale = Vector3.ONE * (_badge_screen_scale * feedback)
 
 
 # --- Trajectory Generation ---
 
 func _build_trajectory() -> void:
 	path_curve = Curve3D.new()
+	path_curve.bake_interval = 0.15
 	var side_name: String = data.get("side", "south")
 	var maneuver: String = data.get("maneuver", "straight")
-	var lane_x := 0.0 if is_tram else LANE_OFFSET
-	var p_start := position
-
 	if is_pedestrian:
 		var p_end := _pedestrian_end(side_name)
-		path_curve.add_point(p_start)
+		path_curve.add_point(position)
+		# Feet follow the road surface, with gentle ramps down from the sidewalk.
+		var p_curb_a := position.lerp(p_end, 1.6 / position.distance_to(p_end))
+		var p_curb_b := p_end.lerp(position, 1.6 / position.distance_to(p_end))
+		p_curb_a.y = 0.025
+		p_curb_b.y = 0.025
+		path_curve.add_point(p_curb_a)
+		path_curve.add_point(p_curb_b)
 		path_curve.add_point(p_end)
-		path_length = p_start.distance_to(p_end)
-		drive_speed = 0.24
+		path_length = path_curve.get_baked_length()
+		drive_speed = 1.8 / maxf(path_length, 1.0)
+		_turn_end_distance = path_length
 		return
 
-	var type_str: String = data.get("type", "car")
-	if is_tram:
-		drive_speed = 0.10
-	elif type_str in ["bus", "truck"]:
-		drive_speed = 0.11
-	else:
-		drive_speed = 0.14
-
+	var lane := _lane_offset()
+	var start := Vector3(lane, 0, STOP_DIST + hl + 0.75)
+	var angle := _side_angle()
+	_add_route_point(start, angle)
 	match maneuver:
-		"straight":
-			var p_end := Vector3.ZERO
-			match side_name:
-				"south": p_end = Vector3(lane_x, 0, -EXIT_DIST)
-				"north": p_end = Vector3(-lane_x, 0, EXIT_DIST)
-				"east": p_end = Vector3(-EXIT_DIST, 0, -lane_x)
-				"west": p_end = Vector3(EXIT_DIST, 0, lane_x)
-			path_curve.add_point(p_start)
-			path_curve.add_point(p_end)
-
 		"right":
-			var t_r: float = 6.0 if is_tram else 6.2
-			var r: float = t_r - lane_x
-			var k: float = 0.55228 * r
-			var p_turn_start := Vector3.ZERO
-			var p_c1 := Vector3.ZERO
-			var p_c2 := Vector3.ZERO
-			var p_turn_end := Vector3.ZERO
-			var p_end := Vector3.ZERO
-
-			match side_name:
-				"south":
-					p_turn_start = Vector3(lane_x, 0, t_r)
-					p_c1 = Vector3(lane_x, 0, t_r - k)
-					p_c2 = Vector3(t_r - k, 0, lane_x)
-					p_turn_end = Vector3(t_r, 0, lane_x)
-					p_end = Vector3(EXIT_DIST, 0, lane_x)
-				"north":
-					p_turn_start = Vector3(-lane_x, 0, -t_r)
-					p_c1 = Vector3(-lane_x, 0, -t_r + k)
-					p_c2 = Vector3(-t_r + k, 0, -lane_x)
-					p_turn_end = Vector3(-t_r, 0, -lane_x)
-					p_end = Vector3(-EXIT_DIST, 0, -lane_x)
-				"east":
-					p_turn_start = Vector3(t_r, 0, -lane_x)
-					p_c1 = Vector3(t_r - k, 0, -lane_x)
-					p_c2 = Vector3(lane_x, 0, -t_r + k)
-					p_turn_end = Vector3(lane_x, 0, -t_r)
-					p_end = Vector3(lane_x, 0, -EXIT_DIST)
-				"west":
-					p_turn_start = Vector3(-t_r, 0, lane_x)
-					p_c1 = Vector3(-t_r + k, 0, lane_x)
-					p_c2 = Vector3(-lane_x, 0, t_r - k)
-					p_turn_end = Vector3(-lane_x, 0, t_r)
-					p_end = Vector3(-lane_x, 0, EXIT_DIST)
-
-			path_curve.add_point(p_start)
-			path_curve.add_point(p_turn_start, Vector3.ZERO, p_c1 - p_turn_start)
-			path_curve.add_point(p_turn_end, p_c2 - p_turn_end, Vector3.ZERO)
-			path_curve.add_point(p_end)
-
+			# 3.8 m for the outer car lane, 7.4 m for a tram on the inner track.
+			var tangent := 9.2
+			var radius := tangent - lane
+			var k := radius * 0.55228475
+			_add_route_point(Vector3(lane, 0, tangent), angle, Vector3.ZERO, Vector3(0, 0, -k))
+			_add_route_point(Vector3(tangent, 0, lane), angle, Vector3(-k, 0, 0))
+			_turn_end_distance = path_curve.get_baked_length()
+			_add_route_point(Vector3(EXIT_DIST, 0, lane), angle)
 		"left":
-			var delta_z: float = 4.0 + lane_x
-			var delta_x: float = lane_x + HALF_ROAD
-			var p_turn_start := Vector3.ZERO
-			var p_c1 := Vector3.ZERO
-			var p_c2 := Vector3.ZERO
-			var p_turn_end := Vector3.ZERO
-			var p_end := Vector3.ZERO
-
-			match side_name:
-				"south":
-					p_turn_start = Vector3(lane_x, 0, 4.0)
-					p_c1 = Vector3(lane_x, 0, 4.0 - 0.55 * delta_z)
-					p_c2 = Vector3(-HALF_ROAD + 0.55 * delta_x, 0, -lane_x)
-					p_turn_end = Vector3(-HALF_ROAD, 0, -lane_x)
-					p_end = Vector3(-EXIT_DIST, 0, -lane_x)
-				"north":
-					p_turn_start = Vector3(-lane_x, 0, -4.0)
-					p_c1 = Vector3(-lane_x, 0, -4.0 + 0.55 * delta_z)
-					p_c2 = Vector3(HALF_ROAD - 0.55 * delta_x, 0, lane_x)
-					p_turn_end = Vector3(HALF_ROAD, 0, lane_x)
-					p_end = Vector3(EXIT_DIST, 0, lane_x)
-				"east":
-					p_turn_start = Vector3(4.0, 0, -lane_x)
-					p_c1 = Vector3(4.0 - 0.55 * delta_x, 0, -lane_x)
-					p_c2 = Vector3(-lane_x, 0, HALF_ROAD - 0.55 * delta_z)
-					p_turn_end = Vector3(-lane_x, 0, HALF_ROAD)
-					p_end = Vector3(-lane_x, 0, EXIT_DIST)
-				"west":
-					p_turn_start = Vector3(-4.0, 0, lane_x)
-					p_c1 = Vector3(-4.0 + 0.55 * delta_x, 0, lane_x)
-					p_c2 = Vector3(lane_x, 0, -HALF_ROAD + 0.55 * delta_z)
-					p_turn_end = Vector3(lane_x, 0, -HALF_ROAD)
-					p_end = Vector3(lane_x, 0, -EXIT_DIST)
-
-			path_curve.add_point(p_start)
-			path_curve.add_point(p_turn_start, Vector3.ZERO, p_c1 - p_turn_start)
-			path_curve.add_point(p_turn_end, p_c2 - p_turn_end, Vector3.ZERO)
-			path_curve.add_point(p_end)
-
+			# Begin in the leftmost lane and leave entirely on the right half of the exit.
+			var tangent := 5.4
+			var radius := tangent + lane
+			var k := radius * 0.55228475
+			_add_route_point(Vector3(lane, 0, tangent), angle, Vector3.ZERO, Vector3(0, 0, -k))
+			_add_route_point(Vector3(-tangent, 0, -lane), angle, Vector3(k, 0, 0))
+			_turn_end_distance = path_curve.get_baked_length()
+			_add_route_point(Vector3(-EXIT_DIST, 0, -lane), angle)
 		"uTurn":
-			var p_end := Vector3.ZERO
-			var p_c1 := Vector3.ZERO
-			var p_c2 := Vector3.ZERO
-			match side_name:
-				"south":
-					p_end = Vector3(-lane_x, 0, EXIT_DIST)
-					p_c1 = Vector3(lane_x, 0, -2.5)
-					p_c2 = Vector3(-lane_x, 0, -2.5)
-				"north":
-					p_end = Vector3(lane_x, 0, -EXIT_DIST)
-					p_c1 = Vector3(-lane_x, 0, 2.5)
-					p_c2 = Vector3(lane_x, 0, 2.5)
-				"east":
-					p_end = Vector3(EXIT_DIST, 0, lane_x)
-					p_c1 = Vector3(-2.5, 0, -lane_x)
-					p_c2 = Vector3(-2.5, 0, lane_x)
-				"west":
-					p_end = Vector3(-EXIT_DIST, 0, -lane_x)
-					p_c1 = Vector3(2.5, 0, lane_x)
-					p_c2 = Vector3(2.5, 0, -lane_x)
-
-			path_curve.add_point(p_start, Vector3.ZERO, p_c1 - p_start)
-			path_curve.add_point(p_end, p_c2 - p_end, Vector3.ZERO)
-
+			# Two quarter circles finish the U-turn inside the intersection; the long
+			# exit is a straight segment, rather than a 100 m stretched Bezier loop.
+			var radius := (lane + OUTER_LANE) * 0.5
+			var centre_x := lane - radius
+			var tangent_z := 2.6
+			var k := radius * 0.55228475
+			_add_route_point(Vector3(lane, 0, tangent_z), angle, Vector3.ZERO, Vector3(0, 0, -k))
+			_add_route_point(Vector3(centre_x, 0, tangent_z - radius), angle, Vector3(k, 0, 0), Vector3(-k, 0, 0))
+			_add_route_point(Vector3(-OUTER_LANE, 0, tangent_z), angle, Vector3(0, 0, -k))
+			_turn_end_distance = path_curve.get_baked_length()
+			_add_route_point(Vector3(-OUTER_LANE, 0, EXIT_DIST), angle)
+		_:
+			_turn_end_distance = start.z + HALF_ROAD
+			_add_route_point(Vector3(lane, 0, -EXIT_DIST), angle)
 	path_length = path_curve.get_baked_length()
+	# Normalised progress is retained for collision animation; actual road speed
+	# stays independent of the route's 110 m invisible continuation.
+	var speed_mps := 6.8 if is_tram else (7.2 if str(data.get("type", "")) in ["bus", "truck"] else 8.5)
+	drive_speed = speed_mps / maxf(path_length, 1.0)
 
 
-# --- 3D Road Trajectory Guide Ribbon ---
+func _add_route_point(point: Vector3, angle: float, in_handle := Vector3.ZERO, out_handle := Vector3.ZERO) -> void:
+	path_curve.add_point(point.rotated(Vector3.UP, angle), in_handle.rotated(Vector3.UP, angle), out_handle.rotated(Vector3.UP, angle))
+
+
+# --- The main game's compact road arrows ---
 
 func _build_trajectory_guide() -> void:
-	var color_str: String = data.get("color", "#317ED4")
-	var paint := Color(color_str)
-	var maneuver: String = data.get("maneuver", "straight")
-
 	trajectory_guide = MeshInstance3D.new()
 	trajectory_guide.name = "TrajectoryGuide"
 	trajectory_guide.top_level = true
-
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(paint.r, paint.g, paint.b, 0.65)
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-
-	if is_pedestrian or maneuver == "cross":
-		var st := SurfaceTool.new()
-		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		var p_start := position
-		var p_end := _pedestrian_end(data.get("side", "south"))
-		for t in [0.20, 0.40, 0.60, 0.80]:
-			var pt := p_start.lerp(p_end, t)
-			_add_flat_quad(st, pt, Vector2(0.40, 0.40))
-		trajectory_guide.mesh = st.commit()
-		trajectory_guide.material_override = mat
-		add_child(trajectory_guide)
-		return
-
-	var t_min := 0.05
-	var t_max := 0.38 if maneuver == "straight" else 0.46
-	var N := 14
-	var half_w := 0.42 if is_tram else 0.30
-
-	var pts: Array[Vector3] = []
-	for i in range(N + 1):
-		var frac := t_min + (t_max - t_min) * (float(i) / float(N))
-		var offset := frac * path_length
-		pts.append(path_curve.sample_baked(offset))
-
+	trajectory_guide.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var begin_distance := hl + 0.75 if not is_pedestrian else 0.8
+	var finish_distance := minf(path_length - 0.8, begin_distance + 5.8)
+	var maneuver: String = data.get("maneuver", "straight")
+	if not is_pedestrian and maneuver in ["left", "right", "uTurn"]:
+		# Reveal the actual turn, then stop shortly after it instead of painting
+		# a percentage of the full 110 m departure along the avenue.
+		finish_distance = minf(path_length - 1.0, _turn_end_distance + 2.3)
+	var points := PackedVector2Array()
+	var steps := maxi(2, ceili((finish_distance - begin_distance) / 0.35))
+	for i in steps + 1:
+		var p := path_curve.sample_baked(lerpf(begin_distance, finish_distance, float(i) / steps))
+		points.append(Vector2(p.x, p.z))
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-
-	# Build ribbon strips
-	for i in range(N):
-		var p0 := pts[i]
-		var p1 := pts[i + 1]
-		var dir0 := (p1 - p0).normalized()
-		var perp0 := Vector3(-dir0.z, 0, dir0.x).normalized()
-
-		var l0 := p0 + perp0 * half_w
-		var r0 := p0 - perp0 * half_w
-		var l1 := p1 + perp0 * half_w
-		var r1 := p1 - perp0 * half_w
-		l0.y = 0.035; r0.y = 0.035; l1.y = 0.035; r1.y = 0.035
-
-		st.add_vertex(l0)
-		st.add_vertex(r0)
-		st.add_vertex(l1)
-
-		st.add_vertex(r0)
-		st.add_vertex(r1)
-		st.add_vertex(l1)
-
-	# Arrow head at the end
-	var last_p := pts[-1]
-	var prev_p := pts[-2]
-	var a_dir := (last_p - prev_p).normalized()
-	var a_perp := Vector3(-a_dir.z, 0, a_dir.x).normalized()
-	var tip := last_p + a_dir * 1.3
-	var fin_l := last_p + a_perp * (half_w * 2.2)
-	var fin_r := last_p - a_perp * (half_w * 2.2)
-	tip.y = 0.036; fin_l.y = 0.036; fin_r.y = 0.036
-
-	st.add_vertex(tip)
-	st.add_vertex(fin_r)
-	st.add_vertex(fin_l)
-
+	Situation._strip(st, Situation._shorten(points, 1.6), Situation.GUIDE_WIDTH)
+	Situation._round_start(st, points, Situation.GUIDE_WIDTH)
+	Situation._arrowhead(st, Situation._before_tip(points, 1.6), points[-1])
 	trajectory_guide.mesh = st.commit()
-	trajectory_guide.material_override = mat
+	trajectory_guide.material_override = Situation._guide_material(guide_color())
 	add_child(trajectory_guide)
 
 
-static func _add_flat_quad(st: SurfaceTool, center: Vector3, size: Vector2) -> void:
-	var hx := size.x * 0.5
-	var hz := size.y * 0.5
-	var y := 0.035
-	var p0 := center + Vector3(-hx, 0, -hz); p0.y = y
-	var p1 := center + Vector3(hx, 0, -hz); p1.y = y
-	var p2 := center + Vector3(hx, 0, hz); p2.y = y
-	var p3 := center + Vector3(-hx, 0, hz); p3.y = y
-	st.add_vertex(p0)
-	st.add_vertex(p1)
-	st.add_vertex(p2)
-	st.add_vertex(p0)
-	st.add_vertex(p2)
-	st.add_vertex(p3)
+## The route's complete footprint has passed the conflict/crossing area. The
+## controller can score the intersection while the cars continue along the road.
+func has_cleared_junction() -> bool:
+	if state == "done": return true
+	if state != "driving" or drive_progress <= 0.0: return false
+	if is_pedestrian:
+		return position.distance_to(_pedestrian_end(str(data.get("side", "south")))) <= 1.6 - hw
+	var p := position.rotated(Vector3.UP, -_side_angle())
+	var clearance := STOP_DIST + hl + 0.6
+	match str(data.get("maneuver", "straight")):
+		"right": return p.x > clearance
+		"left": return p.x < -clearance
+		"uTurn": return drive_progress * path_length > _turn_end_distance and p.z > clearance
+	return p.z < -clearance
 
 
 # --- Drive Process ---
@@ -533,180 +439,118 @@ func _process(delta: float) -> void:
 		_process_crashed(delta)
 	elif state == "waiting":
 		_process_waiting(delta)
+	# Departing vehicles change their camera depth even while the orbit is still.
+	if is_instance_valid(_badge_camera):
+		update_badge_orientation(_badge_camera)
 
 
 func _process_drive(delta: float) -> void:
 	if path_length <= 0.01:
-		state = "done"
-		visible = false
-		drive_completed.emit(self)
+		_finish_driving()
 		return
-
-	var prog_step := drive_speed * delta
-	drive_progress += prog_step
-
+	var move_delta := delta
+	if _stop_pause_left > 0.0:
+		move_delta = maxf(0.0, delta - _stop_pause_left)
+		_stop_pause_left = maxf(0.0, _stop_pause_left - delta)
+		if move_delta <= 0.0: return
+	var offset := minf(path_length, drive_progress * path_length + drive_speed * path_length * move_delta)
+	if bool(data.get("stopSign", false)) and not _stop_done and not is_pedestrian:
+		# 2.5 requires a complete stop at its own line, after giving way at the
+		# crossing. This is separate from the initial pre-crosswalk selection pose.
+		var stop_offset := STOP_DIST + 0.75 - STOP_SIGN_DIST - 0.3
+		if offset >= stop_offset:
+			offset = stop_offset
+			_stop_pause_left = STOP_SIGN_SECONDS
+			_stop_done = true
+	drive_progress = offset / path_length
+	position = path_curve.sample_baked(offset)
+	var next := path_curve.sample_baked(minf(path_length, offset + 0.3))
+	var direction := next - position
+	if direction.length_squared() > 0.0001:
+		var yaw := atan2(direction.x, direction.z)
+		rotation.y = PI if is_equal_approx(absf(yaw), PI) else yaw
+	if _signals != null and offset >= _turn_end_distance:
+		_signals.set_side("")
+	if not _cleared_emitted and has_cleared_junction():
+		_cleared_emitted = true
+		junction_cleared.emit(self)
 	if drive_progress >= 1.0:
-		drive_progress = 1.0
-		state = "done"
-		visible = false
+		_finish_driving()
+
+
+func _finish_driving() -> void:
+	state = "done"
+	visible = false
+	if _signals != null: _signals.set_side("")
+	if not _cleared_emitted:
+		_cleared_emitted = true
+		junction_cleared.emit(self)
+	if not _completed_emitted:
+		_completed_emitted = true
 		drive_completed.emit(self)
-		return
-
-	var offset := drive_progress * path_length
-	var new_pos := path_curve.sample_baked(offset)
-	var next_pos := path_curve.sample_baked(minf(path_length, offset + 0.3))
-
-	position = new_pos
-	if new_pos.distance_to(next_pos) > 0.01:
-		var dir := (next_pos - new_pos).normalized()
-		if absf(dir.x) < 0.0001:
-			dir.x = 0.0
-		if absf(dir.z) < 0.0001:
-			dir.z = 0.0
-		var yaw := atan2(dir.x, dir.z)
-		if is_equal_approx(absf(yaw), PI):
-			yaw = PI
-		rotation.y = yaw
-
-	# Animate wheels and turn signals
-	var dist_step := prog_step * path_length
-	if model_node is NpcVehicle:
-		model_node._distance += dist_step
-		var mat: ShaderMaterial = model_node._material
-		if mat != null:
-			mat.set_shader_parameter("wheel_distance", model_node._distance)
-			mat.set_shader_parameter("braking", false)
-			var blink_on := (int(blink_timer * 4.0) % 2 == 0) and drive_progress < 0.72
-			var m: String = data.get("maneuver", "")
-			if m in ["left", "uTurn"]:
-				mat.set_shader_parameter("left_on", blink_on)
-			elif m == "right":
-				mat.set_shader_parameter("right_on", blink_on)
 
 
-func _process_crashed(delta: float) -> void:
-	var hazard_on := int(blink_timer * 6.0) % 2 == 0
-	if model_node is NpcVehicle:
-		var mat: ShaderMaterial = model_node._material
-		if mat != null:
-			mat.set_shader_parameter("left_on", hazard_on)
-			mat.set_shader_parameter("right_on", hazard_on)
-			mat.set_shader_parameter("braking", true)
-	if badge_sprite != null:
-		badge_sprite.modulate.a = 1.0 if hazard_on else 0.5
+func _process_crashed(_delta: float) -> void:
+	if _signals != null:
+		_signals.set_side("")
+		_signals.set_hazards(true)
 
 
-func _process_waiting(delta: float) -> void:
-	var order_val := float(data.get("order", 1))
-	var h_base := 1.9 if is_pedestrian else (3.4 if is_tram else (3.0 if data.get("type", "") in ["bus", "truck"] else 2.25))
-	badge_node.position.y = h_base + sin(blink_timer * 2.6 + order_val) * 0.08
-	var k: float = 1.0 + sin(blink_timer * 4.0 + order_val) * 0.035
-	if badge_pop < 1.0:
-		k *= 1.0 + sin(badge_pop * PI) * 0.25
-	if badge_sprite != null:
-		badge_sprite.scale = Vector3.ONE * k
-
-	if model_node is NpcVehicle:
-		var mat: ShaderMaterial = model_node._material
-		if mat != null:
-			var blink_on := int(blink_timer * 4.0) % 2 == 0
-			var m: String = data.get("maneuver", "")
-			if m in ["left", "uTurn"]:
-				mat.set_shader_parameter("left_on", blink_on)
-			elif m == "right":
-				mat.set_shader_parameter("right_on", blink_on)
+func _process_waiting(_delta: float) -> void:
+	# A stable button stays easy to tap; only feedback briefly changes its scale.
+	badge_node.position.y = _badge_height
+	_apply_badge_scale()
 
 
-# --- Authentic 2D Vector Pin Badge Generator ---
-
-static func _get_cached_maneuver_texture(maneuver: String) -> ImageTexture:
-	if not _maneuver_cache.has(maneuver):
-		var img := Image.create(256, 256, false, Image.FORMAT_RGBA8)
-		img.fill(Color(0, 0, 0, 0))
-		_draw_maneuver(img, maneuver, Color("#101828"), 0.0)
-		_maneuver_cache[maneuver] = ImageTexture.create_from_image(img)
-	return _maneuver_cache[maneuver]
-
+# --- Cached rounded button texture ---
 
 static func _generate_badge_texture(status: String, maneuver: String, color_hex: String, step_num: int, has_siren: bool, traffic_light, arrow_angle: float = 0.0) -> ImageTexture:
-	var img := Image.create(256, 256, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-
-	var cx := 128.0
-	var cy := 104.0
-	var r := 92.0
-	var tail_tip := Vector2(128, 240)
-	var sin_t := sin(0.38 * PI)
-	var cos_t := cos(0.38 * PI)
-	var y_tan := cy + r * sin_t
-	var x_tan := r * cos_t
-
-	var bg_color := Color.WHITE
-	var paint_color := Color(color_hex)
-	var ink_color := Color("#101828")
-
+	var cache_key := "%s/%s/%s/%d/%s/%s/%s" % [status, maneuver, color_hex, step_num, has_siren, traffic_light, Ui.dark]
+	if _badge_cache.has(cache_key): return _badge_cache[cache_key]
+	var img := Image.create(256, 208, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	var background := Ui.c("card")
+	var border := Ui.c("divider")
+	var ink := Color(color_hex)
 	if status == "solved":
-		bg_color = Color("#2BC280")
-		ink_color = Color.WHITE
+		background = Ui.c("green")
+		border = background
+		ink = Color.WHITE
 	elif status == "error":
-		bg_color = Color("#ED4621")
-		ink_color = Color.WHITE
+		background = Ui.c("red")
+		border = background
+		ink = Color.WHITE
 	elif status == "priority":
-		bg_color = Color("#FFA53C")
-		ink_color = Color.WHITE
-
-	# Render pin mask: crisp dark outline, solid body, vehicle paint in tail tip
-	for y in range(12, 242):
-		var yf := float(y)
-		for x in range(35, 222):
-			var xf := float(x)
-			var dx := xf - cx
-			var dy := yf - cy
-			var dist := sqrt(dx * dx + dy * dy)
-			var in_pin := false
-			var on_edge := false
-
-			if yf <= y_tan:
-				if dist <= r:
-					in_pin = true
-					if dist >= r - 2.8:
-						on_edge = true
-			else:
-				var half_w: float = (tail_tip.y - yf) / (tail_tip.y - y_tan) * x_tan
-				if absf(dx) <= half_w:
-					in_pin = true
-					if absf(dx) >= half_w - 2.8 or yf >= tail_tip.y - 2.8:
-						on_edge = true
-
-			if in_pin:
-				if on_edge:
-					img.set_pixel(x, y, Color("#0F172A"))
-				elif status == "normal":
-					# Reduced vehicle paint fill strictly at the bottom pointed tail of the pin (yf >= 180),
-					# leaving the main circle clean white so paint never creeps onto the maneuver arrow
-					if yf >= 180.0:
-						img.set_pixel(x, y, paint_color)
-					else:
-						img.set_pixel(x, y, bg_color)
-				else:
-					img.set_pixel(x, y, bg_color)
-
-	# Render icon contents
+		background = Ui.c("gold")
+		border = background
+		ink = Ui.c("text")
+	# 192 x 176 card with a 28 px corner: the app's white card, subtle border,
+	# no map-pin tail, drop shadow, or black outline.
+	for y in range(15, 193):
+		for x in range(31, 225):
+			var q := (Vector2(x + 0.5, y + 0.5) - Vector2(128, 104)).abs() - Vector2(68, 60)
+			var d := Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length() + minf(maxf(q.x, q.y), 0.0) - 28.0
+			var alpha := clampf(0.5 - d, 0.0, 1.0)
+			if alpha <= 0.0: continue
+			var colour := border if d > -2.0 else background
+			colour.a = alpha
+			img.set_pixel(x, y, colour)
 	if status == "normal":
-		if maneuver != "none" and maneuver != "":
-			_draw_maneuver(img, maneuver, ink_color, arrow_angle)
-		if has_siren:
-			_draw_siren_dot(img)
-		if traffic_light is Dictionary:
-			_draw_traffic_light_badge(img, traffic_light)
+		_draw_maneuver(img, maneuver, ink, arrow_angle)
+		if has_siren: _draw_siren_dot(img)
+		if traffic_light is Dictionary: _draw_traffic_light_badge(img, traffic_light)
 	elif status == "solved":
-		_draw_step_number(img, step_num, ink_color)
+		_draw_step_number(img, step_num, ink)
 	elif status == "error":
-		_draw_cross(img, ink_color)
+		_draw_cross(img, ink)
 	elif status == "priority":
-		_draw_exclamation(img, ink_color)
-
-	return ImageTexture.create_from_image(img)
+		_draw_exclamation(img, ink)
+	img.generate_mipmaps()
+	var texture := ImageTexture.create_from_image(img)
+	# A finite palette, maneuvers and statuses; actor IDs never enter the key.
+	if _badge_cache.size() > 128: _badge_cache.clear()
+	_badge_cache[cache_key] = texture
+	return texture
 
 
 static func _draw_thick_seg(img: Image, p0: Vector2, p1: Vector2, rad: float, col: Color) -> void:
@@ -756,7 +600,7 @@ static func _draw_siren_dot(img: Image) -> void:
 		for x in range(int(sx - sr - 2), int(sx + sr + 3)):
 			var d := sqrt(pow(x - sx, 2) + pow(y - sy, 2))
 			if d <= sr:
-				img.set_pixel(x, y, Color("#ED4621"))
+				img.set_pixel(x, y, Color("#0574F8"))
 			elif d <= sr + 2.5:
 				img.set_pixel(x, y, Color.WHITE)
 
@@ -909,5 +753,9 @@ static func _draw_step_number(img: Image, num: int, col: Color) -> void:
 			_draw_thick_seg(img, Vector2(138, 66), Vector2(138, 142), 7.5, col)
 			_draw_thick_seg(img, Vector2(138, 66), Vector2(108, 116), 7.0, col)
 			_draw_thick_seg(img, Vector2(106, 116), Vector2(148, 116), 7.0, col)
+		5:
+			var pts := [Vector2(146, 66), Vector2(110, 66), Vector2(110, 98), Vector2(132, 98), Vector2(144, 106), Vector2(148, 118), Vector2(142, 132), Vector2(130, 140), Vector2(110, 138)]
+			for i in range(pts.size() - 1):
+				_draw_thick_seg(img, pts[i], pts[i + 1], 7.0, col)
 		_:
 			_draw_thick_seg(img, Vector2(128, 66), Vector2(128, 142), 7.5, col)

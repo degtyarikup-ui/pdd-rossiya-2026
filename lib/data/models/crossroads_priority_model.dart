@@ -1736,17 +1736,17 @@ class CrossroadsScenariosLibrary {
         CrossroadsSignPlacement(
           code: '2.1',
           side: CrossroadsSide.east,
-          table8_13: 'left_top',
+          table8_13: 'bottom_left',
         ),
         CrossroadsSignPlacement(
           code: '2.4',
           side: CrossroadsSide.north,
-          table8_13: 'top_right',
+          table8_13: 'left_top',
         ),
         CrossroadsSignPlacement(
           code: '2.4',
           side: CrossroadsSide.west,
-          table8_13: 'bottom_left',
+          table8_13: 'top_right',
         ),
       ],
       actors: [
