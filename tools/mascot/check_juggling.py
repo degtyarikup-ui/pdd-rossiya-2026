@@ -67,7 +67,218 @@ def velocity_seam(times: list[float], values: list[tuple], path: str) -> dict:
                 (distance(a, b) for a, b in zip(velocities, velocities[1:])), default=0)}
 
 
-def inspect_juggling(path: Path) -> dict:
+def quaternion_product(first: tuple, second: tuple) -> tuple:
+    x, y, z, w = first
+    X, Y, Z, W = second
+    return (w * X + x * W + y * Z - z * Y, w * Y - x * Z + y * W + z * X,
+            w * Z + x * Y - y * X + z * W, w * W - x * X - y * Y - z * Z)
+
+
+def angular_metrics(track: dict) -> dict:
+    """Shortest quaternion deltas, expressed as angular velocity in radians/s."""
+    times = [index / 30 for index in range(round(DURATION * 30) + 1)]
+    values = [rotation_at(track, time, (0, 0, 0, 1)) for time in times]
+    velocities = []
+    for first, second, start, end in zip(values, values[1:], times, times[1:]):
+        delta = quaternion_product(second, (-first[0], -first[1], -first[2], first[3]))
+        if delta[3] < 0:
+            delta = tuple(-component for component in delta)
+        sine = math.sqrt(sum(component * component for component in delta[:3]))
+        angle = 2 * math.atan2(sine, delta[3])
+        velocities.append(tuple(component / sine * angle / (end - start) if sine > 1e-10 else 0
+                                for component in delta[:3]))
+    norm = lambda value: math.sqrt(sum(component * component for component in value))
+    jumps = [norm(tuple(y - x for x, y in zip(a, b))) for a, b in zip(velocities, velocities[1:])]
+    speeds = [norm(value) for value in velocities]
+    percentile = lambda values, fraction: sorted(values)[round((len(values) - 1) * fraction)]
+    if not jumps:
+        return {"max_speed_rad_s": max(speeds, default=0), "max_velocity_jump_rad_s": 0}
+    return {"analysis_hz": 30, "max_speed_rad_s": max(speeds), "max_velocity_jump_rad_s": max(jumps),
+            "p95_velocity_jump_rad_s": percentile(jumps, .95),
+            "median_velocity_jump_rad_s": percentile(jumps, .5),
+            "max_jump_time_s": times[jumps.index(max(jumps)) + 1],
+            "loop_velocity_jump_rad_s": norm(tuple(y - x for x, y in zip(velocities[-1], velocities[0])))}
+
+
+def rotation_at(track: dict | None, time: float, fallback: tuple) -> tuple:
+    if track is None or len(track["times"]) == 1:
+        return track["values"][0] if track else fallback
+    times, values = track["times"], track["values"]
+    index = max(0, min(len(times) - 2, bisect.bisect_right(times, time) - 1))
+    if time <= times[0]:
+        return values[0]
+    if time >= times[-1]:
+        return values[-1]
+    if track["interpolation"] == "STEP":
+        return values[index]
+    first, second = values[index], values[index + 1]
+    cosine = sum(a * b for a, b in zip(first, second))
+    if cosine < 0:
+        cosine, second = -cosine, tuple(-value for value in second)
+    fraction = (time - times[index]) / (times[index + 1] - times[index])
+    if cosine > .9995:
+        result = tuple(a + (b - a) * fraction for a, b in zip(first, second))
+    else:
+        angle = math.acos(min(1, cosine))
+        result = tuple((a * math.sin((1 - fraction) * angle) + b * math.sin(fraction * angle)) /
+                       math.sin(angle) for a, b in zip(first, second))
+    length = math.sqrt(sum(value * value for value in result))
+    return tuple(value / length for value in result)
+
+
+def matrix_product(first: list, second: list) -> list:
+    return [[sum(first[row][k] * second[k][column] for k in range(4)) for column in range(4)]
+            for row in range(4)]
+
+
+def matrix_inverse(matrix: list) -> list:
+    rows = [list(row) + [1 if i == j else 0 for j in range(4)] for i, row in enumerate(matrix)]
+    for column in range(4):
+        pivot = max(range(column, 4), key=lambda index: abs(rows[index][column]))
+        rows[column], rows[pivot] = rows[pivot], rows[column]
+        amount = rows[column][column]
+        if abs(amount) < 1e-12:
+            raise ValueError("Singular animated hand transform")
+        rows[column] = [value / amount for value in rows[column]]
+        for index in range(4):
+            if index != column:
+                amount = rows[index][column]
+                rows[index] = [a - amount * b for a, b in zip(rows[index], rows[column])]
+    return [row[4:] for row in rows]
+
+
+def transform_point(matrix: list, point: tuple) -> tuple:
+    return tuple(sum(matrix[row][column] * point[column] for column in range(3)) + matrix[row][3]
+                 for row in range(3))
+
+
+def node_matrix(node: dict, node_id: int, tracks: dict, time: float) -> list:
+    if "matrix" in node:
+        return [[node["matrix"][column * 4 + row] for column in range(4)] for row in range(4)]
+    translation = sample(tracks.get((node_id, "translation")), time, tuple(node.get("translation", (0, 0, 0))))
+    scale = sample(tracks.get((node_id, "scale")), time, tuple(node.get("scale", (1, 1, 1))))
+    x, y, z, w = rotation_at(tracks.get((node_id, "rotation")), time,
+                              tuple(node.get("rotation", (0, 0, 0, 1))))
+    rotation = [[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]]
+    return [[rotation[row][column] * scale[column] for column in range(3)] + [translation[row]]
+            for row in range(3)] + [[0, 0, 0, 1]]
+
+
+def point_triangle_distance(point: tuple, first: tuple, second: tuple, third: tuple) -> float:
+    """Closest Euclidean distance to actual exported glove triangles."""
+    sub = lambda a, b: tuple(x - y for x, y in zip(a, b))
+    dot = lambda a, b: sum(x * y for x, y in zip(a, b))
+    length = lambda vector: math.sqrt(dot(vector, vector))
+    ab, ac, ap = sub(second, first), sub(third, first), sub(point, first)
+    d1, d2 = dot(ab, ap), dot(ac, ap)
+    if d1 <= 0 and d2 <= 0:
+        return length(ap)
+    bp = sub(point, second)
+    d3, d4 = dot(ab, bp), dot(ac, bp)
+    if d3 >= 0 and d4 <= d3:
+        return length(bp)
+    vc = d1 * d4 - d3 * d2
+    if vc <= 0 and d1 >= 0 and d3 <= 0:
+        v = d1 / (d1 - d3)
+        return length(sub(ap, tuple(v * value for value in ab)))
+    cp = sub(point, third)
+    d5, d6 = dot(ab, cp), dot(ac, cp)
+    if d6 >= 0 and d5 <= d6:
+        return length(cp)
+    vb = d5 * d2 - d1 * d6
+    if vb <= 0 and d2 >= 0 and d6 <= 0:
+        w = d2 / (d2 - d6)
+        return length(sub(ap, tuple(w * value for value in ac)))
+    va = d3 * d6 - d5 * d4
+    if va <= 0 and d4 - d3 >= 0 and d5 - d6 >= 0:
+        w = (d4 - d3) / ((d4 - d3) + (d5 - d6))
+        return length(sub(bp, tuple(w * value for value in sub(third, second))))
+    denominator = 1 / (va + vb + vc)
+    v, w = vb * denominator, vc * denominator
+    return length(sub(ap, tuple(v * x + w * y for x, y in zip(ab, ac))))
+
+
+def contact_metrics(document: dict, accessors: Accessors, tracks: dict, balls: list,
+                    flight: float) -> dict:
+    nodes = document["nodes"]
+    parents = {child: index for index, node in enumerate(nodes) for child in node.get("children", [])}
+    hands = {}
+    for side in ("L", "R"):
+        joint_id = next(i for i, node in enumerate(nodes) if node.get("name") == f"Hand_{side}")
+        mesh_node = next(node for node in nodes if node.get("name") == f"Glove_{side}")
+        skin = document["skins"][mesh_node["skin"]]
+        joint_slot = skin["joints"].index(joint_id)
+        flat = accessors.read(skin["inverseBindMatrices"])[joint_slot]
+        inverse_bind = [[flat[column * 4 + row] for column in range(4)] for row in range(4)]
+        primitives = []
+        for primitive in document["meshes"][mesh_node["mesh"]]["primitives"]:
+            joints = accessors.read(primitive["attributes"]["JOINTS_0"])
+            weights = accessors.read(primitive["attributes"]["WEIGHTS_0"])
+            if any(weight > 1e-6 and joint != joint_slot
+                   for joint_row, weight_row in zip(joints, weights)
+                   for joint, weight in zip(joint_row, weight_row)):
+                raise ValueError(f"Contact test expects {side} glove rigidly weighted to its Hand bone")
+            positions = accessors.read(primitive["attributes"]["POSITION"])
+            indices = [row[0] for row in accessors.read(primitive["indices"])]
+            primitives.append((positions, indices))
+        hands[side] = {"node": joint_id, "inverse_bind": inverse_bind, "primitives": primitives}
+    def pose_at(time_value):
+        cache = {}
+        def world(node_id):
+            if node_id not in cache:
+                local = node_matrix(nodes[node_id], node_id, tracks, time_value)
+                cache[node_id] = matrix_product(world(parents[node_id]), local) if node_id in parents else local
+            return cache[node_id]
+        return world
+    events = []
+    for throw in range(18):
+        release = throw * .4
+        source = "L" if throw % 2 == 0 else "R"
+        ball = next(ball for ball in balls if ball["name"] == f"Loading_dot_{throw % 3 + 1}")
+        for event, time, side in (("release", release, source),
+                                  ("catch", (release + flight) % DURATION, "R" if source == "L" else "L")):
+            world = pose_at(time)
+            hand = hands[side]
+            skinning = matrix_product(world(hand["node"]), hand["inverse_bind"])
+            center = sample(ball["translation"], time, (0, 0, 0))
+            distance = math.inf
+            for positions, indices in hand["primitives"]:
+                transformed = [transform_point(skinning, point) for point in positions]
+                distance = min(distance, min(point_triangle_distance(center, *(transformed[i] for i in indices[start:start + 3]))
+                                             for start in range(0, len(indices), 3)))
+            scale = sample(ball["scale"], time, (1, 1, 1))
+            gap = distance - ball["radius"] * max(scale)
+            # Freeze the actual ball-center offset in this hand's coordinate
+            # system. Its world velocity is the contact velocity of the moving
+            # glove, without reusing any authoring trajectory equations.
+            local_center = transform_point(matrix_inverse(world(hand["node"])), center)
+            delta = 1 / 120
+            past, future = (time - delta) % DURATION, (time + delta) % DURATION
+            hand_before = transform_point(pose_at(past)(hand["node"]), local_center)
+            hand_after = transform_point(pose_at(future)(hand["node"]), local_center)
+            hand_velocity = tuple((b - a) / (2 * delta) for a, b in zip(hand_before, hand_after))
+            if event == "release":
+                ball_after = sample(ball["translation"], future, (0, 0, 0))
+                air_velocity = tuple((b - a) / delta for a, b in zip(center, ball_after))
+            else:
+                ball_before = sample(ball["translation"], past, (0, 0, 0))
+                air_velocity = tuple((b - a) / delta for a, b in zip(ball_before, center))
+            velocity_difference = math.sqrt(sum((a - b) ** 2 for a, b in zip(air_velocity, hand_velocity)))
+            events.append({"event": event, "time": time, "side": side, "ball": ball["name"],
+                           "distance_to_glove_surface": distance, "surface_gap": gap,
+                           "air_hand_velocity_difference": velocity_difference})
+    return {"flight_seconds": flight, "minimum_surface_gap": min(event["surface_gap"] for event in events),
+            "maximum_surface_gap": max(event["surface_gap"] for event in events),
+            "velocity_sampling_seconds": 1 / 120,
+            "maximum_air_hand_velocity_difference": max(event["air_hand_velocity_difference"] for event in events),
+            "rms_air_hand_velocity_difference": math.sqrt(sum(event["air_hand_velocity_difference"] ** 2
+                                                             for event in events) / len(events)),
+            "events": events}
+
+
+def inspect_juggling(path: Path, expected_radius: float = .20) -> dict:
     geometry = inspect_model(path)
     document, binary = load_glb(path)
     accessors = Accessors(document, binary)
@@ -191,7 +402,7 @@ def inspect_juggling(path: Path) -> dict:
         points = [point for primitive in document["meshes"][node["mesh"]]["primitives"]
                   for point in accessors.read(primitive["attributes"]["POSITION"])]
         radius = max(math.sqrt(sum(x * x for x in point)) for point in points)
-        require(.145 < radius < .155, f"Unexpected actual ball radius for {name}: {radius}")
+        require(abs(radius - expected_radius) < .005, f"Unexpected actual ball radius for {name}: {radius}")
         balls.append({"node": index, "name": name, "translation": translation,
                       "scale": tracks.get((index, "scale")), "radius": radius,
                       "bounds": bounds, "motion_ranges": ranges})
@@ -223,6 +434,13 @@ def inspect_juggling(path: Path) -> dict:
                 f"Balls {first['name']} and {second['name']} overlap in front projection by {-best_front['surface_gap']:.4f}")
         separation.append({"balls": [first["name"], second["name"]],
                            "three_dimensional": best_3d, "front_xy_projection": best_front})
+    arm_motion = {nodes[node_id].get("name"): angular_metrics(track)
+                  for (node_id, target_path), track in tracks.items()
+                  if target_path == "rotation" and nodes[node_id].get("name", "").startswith(
+                      ("UpperArm_", "Forearm_", "Hand_"))}
+    info_path = path.with_name("juggling-info.json")
+    flight = json.loads(info_path.read_text()).get("ball_flight_seconds", 1.0) if info_path.exists() else 1.0
+    contact = contact_metrics(document, accessors, tracks, balls, flight) if len(balls) == 3 else None
     return {"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "bytes": path.stat().st_size, "errors": sorted(set(errors)),
             "clip": animation.get("name"), "duration_seconds": latest_time,
@@ -232,6 +450,8 @@ def inspect_juggling(path: Path) -> dict:
             "blended_vertices": geometry["blended_vertices"],
             "active_bones": geometry["influencing_joint_names"],
             "max_loop_seam_error": max_seam_error, "max_quaternion_error": max_quaternion_error,
+            "arm_angular_metrics_30hz": arm_motion,
+            "hand_contact": contact,
             "ball_trajectories": [{key: ball[key] for key in ("name", "radius", "bounds", "motion_ranges")}
                                   for ball in balls], "ball_separation_120hz": separation,
             "animation_tracks": track_summary}
@@ -242,9 +462,10 @@ def main() -> None:
     parser.add_argument("model", type=Path, nargs="?",
                         default=Path("assets/mascot/3d/cone-juggling.glb"))
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--expected-radius", type=float, default=.20)
     args = parser.parse_args()
     try:
-        report = inspect_juggling(args.model)
+        report = inspect_juggling(args.model, expected_radius=args.expected_radius)
     except (ValueError, KeyError, IndexError, OSError, struct.error) as error:
         report = {"path": str(args.model), "errors": [str(error)]}
     text = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
