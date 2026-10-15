@@ -33,8 +33,7 @@ with tempfile.TemporaryDirectory(prefix='question-pool-godot-', dir=root / 'scra
     pool = question_pool.QuestionPool()
     records = pool.list()['questions']
     chosen = [next(q for q in records if q['category'] == 'ab' and not q['image']),
-              next(q for q in records if q['category'] == 'ab' and q['image']),
-              next(q for q in records if q['category'] == 'cd' and q['image'])]
+              next(q for q in records if q['category'] == 'ab' and q['image'])]
     engine_sync.engine_base.cache_clear()
     try:
         with patch.object(check, 'NET', net), patch.object(engine_sync, 'SIT', sit):

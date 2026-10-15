@@ -327,7 +327,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send(422, {"error": f"Сцена не собралась: {type(e).__name__}: {e}"})
 
     def scene_exists(self, sid: str) -> bool:
-        return bool(ID.match(sid)) and (NET / f"{sid}.json").exists()
+        return bool(ID.match(sid)) and not sid.startswith("ticket_cd_") and (NET / f"{sid}.json").exists()
 
     def route_get(self):
         path = self.path.split("?")[0]
@@ -417,6 +417,8 @@ class Handler(BaseHTTPRequestHandler):
         m = re.match(r"^/api/(scene|preview)/([a-z0-9_]+)$", path)
         if not m or not ID.match(m[2]):
             return self.send(404, {"error": "not found"})
+        if m[1] == "scene" and m[2].startswith("ticket_cd_"):
+            return self.send(400, {"error": "В редакторе используются только вопросы A/B"})
         scene = self.body()
         if scene.get("id") != m[2]:
             return self.send(400, {"error": "scene id does not match the URL"})
@@ -528,6 +530,8 @@ class Handler(BaseHTTPRequestHandler):
     def scene_list(self):
         out = []
         for p in sorted(NET.glob("*.json")):
+            if p.stem.startswith("ticket_cd_"):
+                continue
             s = json.loads(p.read_text(encoding="utf-8"))
             if s.get("questionPool"):
                 continue

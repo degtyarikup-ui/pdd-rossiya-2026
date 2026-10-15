@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Canonical question coverage, persistent sorting and real editor save/promotion.
+"""A/B-only question coverage, persistent sorting and real editor save/promotion.
 
 All writes and HTTP routes use disposable directories below scratch/. The author's
 network scenes, decisions and situation assets are never changed by this check.
@@ -51,12 +51,13 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
            question("linked", "Связанный вопрос", "d" * 32)],
           [question("collision", "Где разрешено стоять?", "e" * 32),
            question("road", "Дорожной вопрос уже реализован"),
-           question("linked-copy", "Связанный вопрос", "f" * 32)]]
+           question("linked-copy", "Связанный вопрос", "f" * 32),
+           question("exact-copy", "Связанный вопрос", "d" * 32)]]
     cd = copy.deepcopy(ab)
     cd[0][0]["id"] = "shared-cd"   # Different IDs may still denote the same source task.
     cd[0][1]["image"] = "1" * 32  # Same ticket/task, category-specific cabin illustration.
     cd[0][2] = question("cd-specific", "Можно ли ехать грузовому автомобилю?", "2" * 32)
-    cd[0][4]["image"] = "f" * 32  # A transitive link to the second AB ticket.
+    cd[0][4]["image"] = "f" * 32  # Former C/D links must no longer merge different A/B pictures.
     for category, tickets in (("ab", ab), ("cd", cd)):
         data = {"tickets": [{"number": i, "questions": qs} for i, qs in enumerate(tickets, 1)]}
         write(questions / f"questions_{category}.json", data)
@@ -77,13 +78,33 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
     pool = question_pool.QuestionPool(questions, network, images)
     result = pool.list()
     records = {q["id"]: q for q in result["questions"]}
-    assert set(records) == {"ticket_1_1", "ticket_1_3", "ticket_1_4", "ticket_1_5", "ticket_2_1", "ticket_cd_1_3"}
-    assert records["ticket_1_1"]["categories"] == ["ab", "cd"]
-    assert len(records["ticket_1_5"]["occurrences"]) == 4, "Transitive same-image and paired-position links must combine"
+    assert set(records) == {"ticket_1_1", "ticket_1_3", "ticket_1_4", "ticket_1_5", "ticket_2_1", "ticket_2_3"}
+    assert all(record["category"] == "ab" and record["categories"] == ["ab"] for record in records.values())
+    assert all(o["category"] == "ab" for record in records.values() for o in record["occurrences"])
+    assert len(records["ticket_1_5"]["occurrences"]) == 2, "Identical A/B task+picture copies still combine"
+    assert records["ticket_1_5"]["image"] != records["ticket_2_3"]["image"]
     assert records["ticket_1_4"]["sourceQuestionId"] == records["ticket_2_1"]["sourceQuestionId"]
     assert records["ticket_1_4"]["image"] != records["ticket_2_1"]["image"]
     assert not (network / "question_review").exists(), "Reading a pool must not write files"
     assert len(list(network.glob("*.json"))) == 1
+    # Even approved/rejected legacy C/D decisions and saved drafts never reappear.
+    write(pool.decisions_path, {"schema": 1, "decisions": {
+        "ticket_1_5": "yes", "ticket_cd_1_3": "yes", "ticket_cd_2_1": "no"}})
+    write(network / "ticket_cd_1_3.json", {"id": "ticket_cd_1_3", "questionPool": {"category": "cd"}})
+    write(network / "ticket_cd_2_1.json", {"id": "ticket_cd_2_1", "reviewed": True})
+    assert pool.get("ticket_1_5")["decision"] == "yes", "Existing A/B choices keep their stable keys"
+    assert pool.get("ticket_2_3")["decision"] is None, "A different A/B picture must await its own review"
+    assert pool.list()["counts"] == {"total": 6, "unreviewed": 5, "yes": 1, "no": 0}
+    assert pool.source("ticket_cd_1_3") is None and pool.get("ticket_cd_1_3") is None
+    try:
+        pool.template("ticket_cd_1_3")
+        raise AssertionError("C/D templates are unavailable, even for former approved questions")
+    except KeyError:
+        pass
+    # Neither reading nor cache invalidation should consult the excluded source.
+    (questions / "questions_cd.json").write_text("not JSON", encoding="utf-8")
+    assert pool.list()["counts"]["total"] == 6
+    assert question_pool.QuestionPool(questions, network, images).list()["counts"]["total"] == 6
 
     scene = pool.template("ticket_1_1")
     assert check.check_scene(scene) == []
@@ -106,7 +127,8 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
     reopened.decide("ticket_1_1", None)
     assert reopened.get("ticket_1_1")["decision"] is None
     before = pool.decisions_path.read_bytes()
-    for sid, decision in (("ticket_1_1", "invalid"), ("ticket_99_99", "yes")):
+    for sid, decision in (("ticket_1_1", "invalid"), ("ticket_99_99", "yes"),
+                          ("ticket_cd_1_3", "yes"), ("ticket_cd_2_1", "no"), ("ticket_cd_1_3", None)):
         try:
             pool.decide(sid, decision)
             raise AssertionError("Invalid/unknown decisions must fail")
@@ -152,10 +174,19 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
         assert response["scene"]["actors"] == [] and response["build"]["surfaces"]
         assert not (situations / "ticket_1_1").exists(), "Opening templates must never materialise engine files"
         assert request("/api/scene/ticket_99_99")[0] == 404
-        cd_source = request("/api/scene/ticket_cd_1_3")[1]["source"]
-        assert cd_source["category"] == "cd" and cd_source["imageUrl"].startswith("/asset/source/cd/")
-        assert request(cd_source["imageUrl"], raw=True)[1].startswith(b"fixture cd ")
-        assert request(cd_source["imageUrl"].replace("/cd/", "/ab/"))[0] == 404
+        assert request("/api/questions/ticket_cd_1_3/template")[0] == 404
+        assert request("/api/scene/ticket_cd_1_3")[0] == 404
+        assert request("/api/scene/ticket_cd_2_1")[0] == 404
+        assert not any(item["id"].startswith("ticket_cd_") for item in request("/api/scenes")[1])
+        assert request("/api/game/include/ticket_cd_2_1", {"playable": True})[0] == 404
+        assert request("/api/game/run/ticket_cd_2_1", {})[0] == 404
+        assert request("/api/scene/ticket_cd_1_3", {"id": "ticket_cd_1_3"})[0] == 400
+        assert request("/api/questions/ticket_cd_1_3/decision", {"decision": "yes"})[0] == 404
+        assert request("/api/questions/ticket_cd_2_1/decision", {"decision": "no"})[0] == 404
+        assert request("/api/questions/ticket_cd_1_3/decision", {"decision": None})[0] == 404
+        ab_source = request("/api/scene/ticket_1_3")[1]["source"]
+        assert ab_source["category"] == "ab" and ab_source["imageUrl"].startswith("/asset/source/ab/")
+        assert request(ab_source["imageUrl"], raw=True)[1].startswith(b"fixture ab ")
         scene = response["scene"]
         scene["decor"] = [{"id": "author-item", "prop": "trees/oak", "pos": [35, 35], "yaw": 0, "scale": [1, 1, 1]}]
         scene["reviewed"] = True  # Save alone must not publish a draft.
@@ -196,8 +227,10 @@ full = real_pool.list()
 ids = {record["id"] for record in full["questions"]}
 assert "ticket_5_12" in ids and "ticket_24_12" in ids
 assert "ticket_1_16" not in ids, "The game's 45 road questions are already implemented too"
-assert any(record["category"] == "cd" for record in full["questions"])
-assert len(real_pool._sources) == 1600
-assert len(real_pool._groups) == 986
+assert all(record["category"] == "ab" and record["categories"] == ["ab"] for record in full["questions"])
+assert not any(record["id"].startswith("ticket_cd_") for record in full["questions"])
+assert real_pool.source("ticket_cd_1_3") is None and real_pool.get("ticket_cd_1_3") is None
+assert len(real_pool._sources) == 800
+assert len(real_pool._groups) == 800
 assert sum(full["counts"][key] for key in ("unreviewed", "yes", "no")) == full["counts"]["total"]
-print(f"Question pool PASS: 1,600 source questions, 986 distinct cards, {full['counts']['total']} remaining; HTTP sorting, blank geometry, export, history and permanent promotion")
+print(f"Question pool PASS: 800 A/B source questions/cards, {full['counts']['total']} remaining; C/D sources, saved approvals and templates excluded; HTTP sorting, blank geometry, export, history and permanent promotion")

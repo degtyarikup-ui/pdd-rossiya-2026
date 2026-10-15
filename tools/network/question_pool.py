@@ -1,4 +1,4 @@
-"""Unbuilt exam questions and the author's first-pass decisions.
+"""Unbuilt A/B exam questions and the author's first-pass decisions.
 
 Reading the pool never creates hundreds of editable scenes or game assets. A scene is
 generated in memory when opened and materialised by the editor's ordinary Save action.
@@ -23,12 +23,14 @@ DECISION_LOCK = threading.RLock()
 
 
 def scene_id(category: str, ticket: int, number: int) -> str:
-    return f"ticket_{'cd_' if category == 'cd' else ''}{ticket}_{number}"
+    if category != "ab":
+        raise ValueError("В редакторе используются только вопросы A/B")
+    return f"ticket_{ticket}_{number}"
 
 
 def _words(value: str) -> tuple:
     # Ignore typography and hyphenation while preserving word/number boundaries.
-    # The illustration/paired position distinguishes tasks with a generic title.
+    # The illustration distinguishes different tasks with a generic title.
     return tuple(re.findall(r"[a-zа-я0-9]+", value.casefold().replace("ё", "е")))
 
 
@@ -69,12 +71,14 @@ class QuestionPool:
         self._groups = []
 
     def _load_sources(self) -> None:
-        paths = [self.questions / f"questions_{cat}.json" for cat in ("ab", "cd")]
+        # The author reviews only the A/B collection. In particular, old saved
+        # C/D decisions must never bring C/D questions back into this list.
+        paths = [self.questions / "questions_ab.json"]
         stamp = tuple((p.stat().st_mtime_ns, p.stat().st_size) if p.exists() else None for p in paths)
         if stamp == self._source_stamp:
             return
         sources, records = {}, []
-        for category, path in zip(("ab", "cd"), paths):
+        for category, path in zip(("ab",), paths):
             if not path.exists():
                 continue
             data = json.loads(path.read_text(encoding="utf-8"))
@@ -92,46 +96,17 @@ class QuestionPool:
                               "pddPoints": question.get("pddPoints", [])}
                     sources[sid] = record
                     records.append(record)
-        # Union all safe equivalences before choosing representatives. One-pass
-        # grouping misses transitive duplicates when a CD cabin variant links
-        # an existing exact-image duplicate to its matching AB ticket position.
-        parents = list(range(len(records)))
-
-        def representative(index):
-            while parents[index] != index:
-                parents[index] = parents[parents[index]]
-                index = parents[index]
-            return index
-
-        def merge(first, second):
-            a, b = representative(first), representative(second)
-            if a != b:
-                parents[max(a, b)] = min(a, b)
-
-        illustrations, positions = {}, {}
-        for i, record in enumerate(records):
-            key = _fingerprint(record)
-            if key in illustrations:
-                merge(i, illustrations[key])
-            else:
-                illustrations[key] = i
-            # Source IDs are not globally unique: AB 5/12 and 24/12 share
-            # one but show different parking situations. Paired AB/CD ticket
-            # positions may differ solely by their driver's cabin illustration.
-            position = (record["ticket"], record["number"], key[:2])
-            if position in positions:
-                merge(i, positions[position])
-            else:
-                positions[position] = i
+        # Only merge the same full task AND illustration. Source IDs alone are
+        # not unique: AB 5/12 and 24/12 share one but show different parking.
+        # Removing C/D also removes its transitive links between distinct A/B
+        # illustrations; existing A/B representatives keep their decision keys.
         grouped = {}
-        for i, record in enumerate(records):
-            root = representative(i)
-            if root not in grouped:
-                grouped[root] = {**record, "categories": [], "occurrences": []}
-            group = grouped[root]
+        for record in records:
+            key = _fingerprint(record)
+            if key not in grouped:
+                grouped[key] = {**record, "categories": ["ab"], "occurrences": []}
+            group = grouped[key]
             group["occurrences"].append({k: record[k] for k in ("id", "ticket", "number", "category", "sourceQuestionId")})
-            if record["category"] not in group["categories"]:
-                group["categories"].append(record["category"])
         groups = list(grouped.values())
         self._sources, self._groups, self._source_stamp = sources, groups, stamp
 
@@ -153,12 +128,16 @@ class QuestionPool:
         self._load_sources()
         implemented, drafts = set(), set()
         for path in self.network.glob("ticket_*.json"):
+            if not re.fullmatch(r"ticket_\d+_\d+", path.stem):
+                continue
             scene = json.loads(path.read_text(encoding="utf-8"))
             (drafts if scene.get("questionPool") else implemented).add(path.stem)
         roads_path = self.network.parent / "roads" / "road_scenes.json"
         if roads_path.exists():
             roads = json.loads(roads_path.read_text(encoding="utf-8"))
             for scene in roads.get("scenes", []):
+                if scene.get("category", "ab") != "ab":
+                    continue
                 match = re.fullmatch(r"road_(\d+)_(\d+)", scene.get("id", ""))
                 if match:
                     implemented.add(scene_id(scene.get("category", "ab"), int(match[1]), int(match[2])))
