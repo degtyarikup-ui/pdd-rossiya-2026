@@ -3477,7 +3477,13 @@
    "length": 55.873,
    "clearDistance": 19.085,
    "maxSpeed": 12,
-   "signalPlan": null,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 19.085,
+     "side": "right"
+    }
+   ],
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,

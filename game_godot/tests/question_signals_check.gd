@@ -46,7 +46,7 @@ func run() -> void:
 	tram.set_process(false)
 	car.set_process(false)
 	check(tram.side == "" and car.side == "", "Participants do not blink during distant approach")
-	check(Fleet.actor_signal_side(sit.data.actors[0]) == "L", "Tram follows saved left signal")
+	check(Fleet.actor_signal_side(sit.data.actors[0]) == "R", "Tram follows saved right signal")
 	check(Fleet.actor_signal_side(sit.data.actors[1]) == "R", "Oncoming car follows saved right signal")
 	# Empty background isolates question timing from ambient clearance.
 	world.traffic.clear()
@@ -57,8 +57,8 @@ func run() -> void:
 	world._update_junction(0.0)
 	check(world.phase == "question" and world.ui.counting(), "Question and timer open in the arrival update when signals first light")
 	check(not world.controls.active, "Pedals are released when the question opens")
-	check(world.blink.side == "L" and tram.side == "L" and car.side == "R", "Player, tram and car signal together")
-	check(tram.materials[0].get_shader_parameter("left_on") and car.materials[0].get_shader_parameter("right_on"), "Participants' first pulse is lit immediately")
+	check(world.blink.side == "L" and tram.side == "R" and car.side == "R", "Player, tram and car signal together")
+	check(tram.materials[0].get_shader_parameter("right_on") and not tram.materials[0].get_shader_parameter("left_on") and car.materials[0].get_shader_parameter("right_on"), "Participants' first pulse is lit immediately")
 	check(world.blinkers.L[0].emission_enabled and not world.blinkers.R[0].emission_enabled, "Player's actual left lenses light immediately")
 	var pose: Vector3 = world.drive.pos
 	var seconds: float = world.ui.remaining_seconds()
@@ -76,7 +76,7 @@ func run() -> void:
 		world._update_lamps(0.05)
 		tram._process(0.05)
 		car._process(0.05)
-	check(world.blink.side == "L" and tram.side == "L" and car.side == "R", "Intended signals persist past the manual 2.2-second timeout")
+	check(world.blink.side == "L" and tram.side == "R" and car.side == "R", "Intended signals persist past the manual 2.2-second timeout")
 	for arg in OS.get_cmdline_user_args():
 		if not arg.begins_with("--out=") or DisplayServer.get_name() == "headless": continue
 		world.hud.visible = false

@@ -122,7 +122,7 @@ var auto_answer := false          # debug: answer correctly by itself
 var spawn_after := 0.0            # world z after which the next junction may come
 var texture_frame := Transform3D()
 var pending_connection := {}
-var street_connector := {}       # runtime-only lane transition between unlike highway ports
+var street_connector := {}       # runtime-only transition between different lane counts
 var tram_scenery_revision := 0
 var tram_scenery_built_revision := -1
 var tram_scenery_buckets := {}    # world OBBs rebuilt only when static chunks/scenes change
@@ -1272,13 +1272,17 @@ func _next_id() -> String:
 	if next_port.is_empty(): return bag.pop_front()
 	var best := 0;var score := INF
 	var through_highway := false
+	var matching_lanes := false
 	for id in bag:
 		var candidate: Dictionary=_scene_connections(str(id))
+		var entry: Dictionary=candidate.get("entry",{})
+		if not entry.is_empty() and int(entry.lanes)==int(next_port.lanes): matching_lanes=true
 		if int(candidate.get("entry",{}).get("lanes",2))==6 and int(candidate.get("preferred_exit",{}).get("lanes",6))==6: through_highway=true
 	for i in bag.size():
 		var candidate: Dictionary=_scene_connections(str(bag[i]))
 		var entry: Dictionary = candidate.get("entry",{})
 		if entry.is_empty(): continue
+		if matching_lanes and int(entry.lanes)!=int(next_port.lanes): continue
 		if through_highway and int(entry.get("lanes",2))==6 and int(candidate.get("preferred_exit",{}).get("lanes",6))!=6: continue
 		var cost := SceneStitch.match_score(next_port,entry)
 		if cost<score: score=cost;best=i
@@ -1289,11 +1293,36 @@ func _next_id() -> String:
 	return id
 
 
+## A prefetched question is chosen before the player commits to an exit.
+## Recheck against the physical departure, without replaying a used question.
+## The old reservation remains available later in the same shuffled bag.
+func _reselect_for_departure() -> void:
+	if staging or only_id!="" or next_id=="" or pending_connection.is_empty(): return
+	var port: Dictionary=pending_connection.port
+	var entry: Dictionary=_scene_connections(next_id).get("entry",{})
+	if entry.is_empty() or int(entry.lanes)==int(port.lanes): return
+	var compatible := false
+	for id in bag:
+		var candidate: Dictionary=_scene_connections(str(id)).get("entry",{})
+		if not candidate.is_empty() and int(candidate.lanes)==int(port.lanes):
+			compatible=true
+			break
+	if not compatible: return
+	var postponed := next_id
+	next_id=_next_id()
+	bag.push_front(postponed)
+	if staged_sit!=null:
+		staged_sit.queue_free()
+		staged_sit=null
+
+
 ## The next junction is laid out ahead, beyond the view: its streets replace
 ## the ring there (blank chunks), chunk-aligned on both ends. On the web its
 ## files come first (PackFiles): the junction waits for them, the car drives on.
 func _prestage() -> void:
-	if staging or staged_sit != null or road_force != "": return
+	if staging or road_force != "": return
+	_reselect_for_departure()
+	if staged_sit != null: return
 	if next_id == "": next_id = _next_id()
 	if next_id == "": return
 	staging = true
@@ -1313,7 +1342,7 @@ func _build_staged(id: String) -> void:
 			if current and current.sit.network:
 				var previous: Situation=current.sit
 				for out in SceneStitch.departure_ports(previous.network.connections).values():
-					if SceneStitch.needs_highway_transition(out,entry): continue
+					if SceneStitch.needs_lane_transition(out,entry): continue
 					var profile:=SceneStitch.joint_profile(out,entry)
 					var candidate:=Situation.bindings_with([],entry,float(profile.width),profile)
 					if not bases.has(candidate): bases.append(candidate)
@@ -1350,10 +1379,10 @@ func _maybe_spawn() -> void:
 			anchor.merge({"width":street_half*2.0,"lanes":4 if street_half>6.5 else 2,
 				"median":street.profile.get("median",0.0),"declared_median":street.profile.get("median",0.0),
 				"walk":street.profile.get("walk",true),"edge":true,"centre":"dashed","surface":"asphalt"},true)
-		var transition := SceneStitch.needs_highway_transition(anchor,entry)
+		var transition := anchor.has("lanes") and SceneStitch.needs_lane_transition(anchor,entry)
 		var placement_anchor: Dictionary = anchor.duplicate()
 		if transition:
-			placement_anchor.p=anchor.p+anchor.out*SceneStitch.HIGHWAY_TRANSITION
+			placement_anchor.p=anchor.p+anchor.out*SceneStitch.LANE_TRANSITION
 		sit.transform=SceneStitch.placement(entry,placement_anchor)
 		if not pending_connection.is_empty():
 			var previous: Situation = pending_connection.sit

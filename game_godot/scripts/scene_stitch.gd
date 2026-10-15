@@ -5,7 +5,7 @@ extends RefCounted
 const END_INSET := 24.0
 const END_BLEND := 10.0
 const WALK_WIDTH := 3.2
-const HIGHWAY_TRANSITION := 90.0
+const LANE_TRANSITION := 90.0
 
 static func v(p) -> Vector3:
 	return Vector3(float(p[0]), 0.0, float(p[1]))
@@ -198,8 +198,8 @@ static func _port(p: Vector3, out: Vector3, width: float, built: Dictionary) -> 
 static func match_score(a: Dictionary, b: Dictionary) -> float:
 	return 500.0*absf(float(a.lanes)-float(b.lanes)) + (200.0 if a.surface!=b.surface else 0.0) + (50.0 if absf(a.declared_median-b.declared_median)>0.1 else 0.0) + absf(a.width-b.width) + (5.0 if a.walk!=b.walk else 0.0)
 
-static func needs_highway_transition(a: Dictionary,b: Dictionary) -> bool:
-	return int(a.get("lanes",2))!=int(b.get("lanes",2)) and (int(a.get("lanes",2))==6 or int(b.get("lanes",2))==6)
+static func needs_lane_transition(a: Dictionary,b: Dictionary) -> bool:
+	return int(a.get("lanes",2))!=int(b.get("lanes",2))
 
 ## Place the next entrance exactly against the previous exit, with tangents opposed.
 static func placement(entry: Dictionary, exit: Dictionary, previous := Transform3D()) -> Transform3D:

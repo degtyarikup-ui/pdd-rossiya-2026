@@ -114,11 +114,13 @@ godot --headless --path game_godot --script res://tests/controls_layout_check.gd
 godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # штатные линзы, мигание и синхронное процедурное свечение
 godot --path game_godot --script res://tests/beacon_render_check.gd # дневная яркость маячков ДПС/спецмашин относительно аварийки, low/high
 godot --headless --path game_godot --script res://tests/question_signals_check.gd # намерения игрока/участников, вопрос без задержки, поворотники и пауза
+godot --headless --path game_godot --script res://tests/tram_question_signals_check.gd # правые сигналы трамваев 15/13, 28/13, 36/14: линзы, ореолы, ответ, пауза и выключение
 godot --headless --path game_godot --script res://tests/actor_hazards_check.gd # постоянная аварийка участников, стоянка, обе стороны, пауза и старые настройки
 godot --headless --path game_godot --script res://tests/signal_glow_check.gd # свечение и цвета секций светофора без текстур
 godot --headless --path game_godot --script res://tests/ride_pause_check.gd # быстрый старт, цвет, звук, сохранение состояния при паузе
 godot --headless --path game_godot --script res://tests/lifecycle_pause_check.gd # системное сворачивание/фокус, достижимая пауза и восстановление управления
 godot --headless --path game_godot --script res://tests/exit_continuity_check.gd # все физические выезды, короткие улицы, полный кузов и стыковка следующего вопроса
+godot --headless --path game_godot --script res://tests/lane_join_check.gd # подбор по фактическим полосам, въезд в 13/13 и плавные переходы 1+1 ↔ 2+2
 godot --path game_godot --resolution 1280x900 --script res://tests/signal_glow_check.gd # нужен широкий кадр: видимое свечение, включая пакетный трафик
 godot --path game_godot --script res://tests/building_fade_check.gd # нужен рендер: пачки прозрачных зданий и переиспользование
 godot --headless --path game_godot --script res://tests/median_join_check.gd # границы разделительных островов
