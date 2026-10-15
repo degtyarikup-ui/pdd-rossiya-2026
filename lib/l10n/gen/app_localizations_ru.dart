@@ -1973,10 +1973,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameCrossroadsResetCamera => 'Вернуть камеру';
 
   @override
-  String get gameCrossroadsNextCrossroad => 'Следующий перекресток';
+  String get gameCrossroadsNextCrossroad => 'Следующий';
 
   @override
-  String get gameCrossroadsRepeatCrossroad => 'Попробовать снова';
+  String get gameCrossroadsRepeatCrossroad => 'Повторить';
 
   @override
   String get gameCrossroadsModeArcade => 'Аркада';

@@ -9,7 +9,7 @@ signal drive_completed(actor: CrossroadsActor)
 const HALF_ROAD := 7.2
 const LANE_OFFSET := 3.4
 const STOP_DIST := 14.5
-const EXIT_DIST := 38.0
+const EXIT_DIST := 110.0
 
 var data: Dictionary
 var state := "waiting"  # "waiting", "driving", "done", "crashed"
@@ -33,6 +33,7 @@ var has_siren := false
 
 var blink_timer := 0.0
 var badge_pop := 1.0
+var _completed_emitted := false
 
 var hw := 0.95
 var hl := 2.15
@@ -187,10 +188,9 @@ func _build_badge() -> void:
 	badge_sprite = Sprite3D.new()
 	badge_sprite.name = "BadgeSprite"
 	var m_name: String = str(data.get("maneuver", "straight"))
-	var draw_arrow_on_pin := is_pedestrian or m_name == "cross"
 	var tex := _generate_badge_texture(
 		"normal",
-		m_name if draw_arrow_on_pin else "none",
+		m_name,
 		data.get("color", "#317ED4"),
 		data.get("order", 1),
 		has_siren,
@@ -204,29 +204,6 @@ func _build_badge() -> void:
 	badge_sprite.no_depth_test = true
 	badge_sprite.render_priority = 15
 	badge_node.add_child(badge_sprite)
-
-	# 2. Fast GPU-rotated billboard maneuver arrow sprite
-	if not draw_arrow_on_pin:
-		arrow_sprite = Sprite3D.new()
-		arrow_sprite.name = "ArrowSprite"
-		arrow_sprite.pixel_size = 0.015
-		arrow_sprite.offset = Vector2(0, 108)
-		arrow_sprite.position = Vector3(0, 0, 0.02)
-		arrow_sprite.no_depth_test = true
-		arrow_sprite.render_priority = 16
-
-		if _maneuver_shader == null:
-			_maneuver_shader = load("res://shaders/badge_arrow.gdshader")
-		arrow_mat = ShaderMaterial.new()
-		arrow_mat.shader = _maneuver_shader
-		arrow_mat.render_priority = 16
-		var a_tex := _get_cached_maneuver_texture(m_name)
-		arrow_sprite.texture = a_tex
-		arrow_mat.set_shader_parameter("texture_albedo", a_tex)
-		arrow_mat.set_shader_parameter("rotation_angle", 0.0)
-		arrow_mat.set_shader_parameter("pivot_offset", Vector2(0.0, 1.98))
-		arrow_sprite.material_override = arrow_mat
-		badge_node.add_child(arrow_sprite)
 
 	# 3. Legacy fallback nodes for backwards compatibility
 	badge_bg = MeshInstance3D.new()
@@ -282,20 +259,11 @@ func set_badge_priority() -> void:
 	if badge_bg != null and badge_bg.material_override != null: (badge_bg.material_override as StandardMaterial3D).albedo_color = Color("#FFA53C")
 
 
-func update_badge_orientation(cam: Camera3D) -> void:
-	if state != "waiting" or is_pedestrian or arrow_mat == null or cam == null:
-		return
-	if path_length <= 0.1:
-		return
-	var p0 := path_curve.sample_baked(0.0)
-	var p1 := path_curve.sample_baked(minf(path_length, 4.0))
-	var v0 := cam.unproject_position(p0)
-	var v1 := cam.unproject_position(p1)
-	var d := v1 - v0
-	if d.length_squared() > 1.0:
-		var angle_math := atan2(-d.y, d.x)
-		var arrow_angle := (angle_math - PI * 0.5)
-		arrow_mat.set_shader_parameter("rotation_angle", arrow_angle)
+func update_badge_orientation(_cam: Camera3D) -> void:
+	# Maneuver arrow represents driver maneuver (straight/turn) on the billboard pin.
+	# Keep rotation 0.0 so turning the camera does not flip or distort arrow directions.
+	if arrow_mat != null:
+		arrow_mat.set_shader_parameter("rotation_angle", 0.0)
 
 
 # --- Trajectory Generation ---
@@ -312,10 +280,16 @@ func _build_trajectory() -> void:
 		path_curve.add_point(p_start)
 		path_curve.add_point(p_end)
 		path_length = p_start.distance_to(p_end)
-		drive_speed = 0.32
+		drive_speed = 0.24
 		return
 
-	drive_speed = 0.38 if is_tram else 0.48
+	var type_str: String = data.get("type", "car")
+	if is_tram:
+		drive_speed = 0.10
+	elif type_str in ["bus", "truck"]:
+		drive_speed = 0.11
+	else:
+		drive_speed = 0.14
 
 	match maneuver:
 		"straight":
@@ -585,7 +559,14 @@ func _process_drive(delta: float) -> void:
 	position = new_pos
 	if new_pos.distance_to(next_pos) > 0.01:
 		var dir := (next_pos - new_pos).normalized()
-		rotation.y = atan2(dir.x, dir.z)
+		if absf(dir.x) < 0.0001:
+			dir.x = 0.0
+		if absf(dir.z) < 0.0001:
+			dir.z = 0.0
+		var yaw := atan2(dir.x, dir.z)
+		if is_equal_approx(absf(yaw), PI):
+			yaw = PI
+		rotation.y = yaw
 
 	# Animate wheels and turn signals
 	var dist_step := prog_step * path_length
@@ -674,7 +655,7 @@ static func _generate_badge_texture(status: String, maneuver: String, color_hex:
 		bg_color = Color("#FFA53C")
 		ink_color = Color.WHITE
 
-	# Render pin mask: filled white pin, bottom colored arc for vehicle paint
+	# Render pin mask: crisp dark outline, solid body, vehicle paint in tail tip
 	for y in range(12, 242):
 		var yf := float(y)
 		for x in range(35, 222):
@@ -683,18 +664,27 @@ static func _generate_badge_texture(status: String, maneuver: String, color_hex:
 			var dy := yf - cy
 			var dist := sqrt(dx * dx + dy * dy)
 			var in_pin := false
+			var on_edge := false
 
-			if dist <= r:
-				in_pin = true
-			elif yf >= y_tan and yf <= tail_tip.y:
+			if yf <= y_tan:
+				if dist <= r:
+					in_pin = true
+					if dist >= r - 2.8:
+						on_edge = true
+			else:
 				var half_w: float = (tail_tip.y - yf) / (tail_tip.y - y_tan) * x_tan
 				if absf(dx) <= half_w:
 					in_pin = true
+					if absf(dx) >= half_w - 2.8 or yf >= tail_tip.y - 2.8:
+						on_edge = true
 
 			if in_pin:
-				if status == "normal":
-					# Authentic bottom colored arc: paint color on lower part
-					if yf >= 148.0 or (dist <= r and dy >= absf(dx)):
+				if on_edge:
+					img.set_pixel(x, y, Color("#0F172A"))
+				elif status == "normal":
+					# Reduced vehicle paint fill strictly at the bottom pointed tail of the pin (yf >= 180),
+					# leaving the main circle clean white so paint never creeps onto the maneuver arrow
+					if yf >= 180.0:
 						img.set_pixel(x, y, paint_color)
 					else:
 						img.set_pixel(x, y, bg_color)
@@ -776,13 +766,29 @@ static func _draw_traffic_light_badge(img: Image, tl: Dictionary) -> void:
 	var is_green: bool = tl.get("state", "") == "green"
 	var has_arrow: bool = tl.get("arrowActive", false) and str(tl.get("arrow", "")) != ""
 
-	var x0 := 36
-	var y0 := 24
-	var w := 68 if has_arrow and is_red else 40
-	var h := 34
-	var r := 17.0
-	for y in range(y0, y0 + h):
-		for x in range(x0, x0 + w):
+	var x0 := 46
+	var y0 := 26
+	var w := 66 if has_arrow and is_red else 36
+	var h := 32
+	var r := 16.0
+
+	# 1. White border outline
+	for y in range(y0 - 2, y0 + h + 3):
+		for x in range(x0 - 2, x0 + w + 3):
+			var in_border := false
+			var r_out := r + 2.0
+			if x < x0 + r:
+				in_border = sqrt(pow(x - (x0 + r), 2) + pow(y - (y0 + r), 2)) <= r_out
+			elif x > x0 + w - r:
+				in_border = sqrt(pow(x - (x0 + w - r), 2) + pow(y - (y0 + r), 2)) <= r_out
+			else:
+				in_border = y >= y0 - 2 and y <= y0 + h + 2
+			if in_border:
+				img.set_pixel(x, y, Color.WHITE)
+
+	# 2. Dark pill background
+	for y in range(y0, y0 + h + 1):
+		for x in range(x0, x0 + w + 1):
 			var in_pill := false
 			if x < x0 + r:
 				in_pill = sqrt(pow(x - (x0 + r), 2) + pow(y - (y0 + r), 2)) <= r
@@ -793,25 +799,26 @@ static func _draw_traffic_light_badge(img: Image, tl: Dictionary) -> void:
 			if in_pill:
 				img.set_pixel(x, y, Color("#111827"))
 
-	# Light circle
-	var lx := float(x0 + 17)
-	var ly := float(y0 + 17)
-	var lr := 10.0
+	# 3. Main traffic light signal
+	var lx := float(x0 + 16)
+	var ly := float(y0 + 16)
+	var lr := 9.0
+	var sig_col := Color("#EF4444") if is_red else (Color("#22C55E") if is_green else Color("#F59E0B"))
 	for y in range(int(ly - lr), int(ly + lr + 1)):
 		for x in range(int(lx - lr), int(lx + lr + 1)):
 			if sqrt(pow(x - lx, 2) + pow(y - ly, 2)) <= lr:
-				img.set_pixel(x, y, Color("#EF4444") if is_red else (Color("#2BC280") if is_green else Color("#F59E0B")))
+				img.set_pixel(x, y, sig_col)
 
-	# Green arrow
+	# 4. Green turn arrow for additional section
 	if has_arrow and is_red:
-		var ax := float(x0 + 48)
-		var ay := float(y0 + 17)
+		var ax := float(x0 + 46)
+		var ay := float(y0 + 16)
 		var arrow_dir: String = str(tl.get("arrow", "right"))
-		_draw_thick_seg(img, Vector2(ax - 9, ay), Vector2(ax + 9, ay), 2.5, Color("#2BC280"))
+		_draw_thick_seg(img, Vector2(ax - 8, ay), Vector2(ax + 8, ay), 2.5, Color("#22C55E"))
 		if arrow_dir == "right":
-			_fill_tri(img, Vector2(ax + 11, ay), Vector2(ax + 3, ay - 6), Vector2(ax + 3, ay + 6), Color("#2BC280"))
+			_fill_tri(img, Vector2(ax + 10, ay), Vector2(ax + 2, ay - 6), Vector2(ax + 2, ay + 6), Color("#22C55E"))
 		else:
-			_fill_tri(img, Vector2(ax - 11, ay), Vector2(ax - 3, ay - 6), Vector2(ax - 3, ay + 6), Color("#2BC280"))
+			_fill_tri(img, Vector2(ax - 10, ay), Vector2(ax - 2, ay - 6), Vector2(ax - 2, ay + 6), Color("#22C55E"))
 
 
 static func _rot_pt(p: Vector2, angle: float) -> Vector2:

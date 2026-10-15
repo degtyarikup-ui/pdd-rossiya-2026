@@ -380,6 +380,10 @@ func _load_current_scenario() -> void:
 			a_dict["name"] = a_l10n.get("name", a_dict.get("name", ""))
 			a_dict["explanation"] = a_l10n.get("explanation", a_dict.get("explanation", ""))
 
+		var tl = _find_traffic_light(sc, str(a_dict.get("side", "")))
+		if tl != null:
+			a_dict["trafficLight"] = tl
+
 		var actor := CrossroadsActorScript.new(a_dict)
 		actor.drive_completed.connect(_on_actor_drive_completed)
 		actors_root.add_child(actor)
@@ -403,10 +407,18 @@ func _load_current_scenario() -> void:
 	fit_camera_to_scenario()
 
 
-# --- User Input & Vehicle Selection ---
+func _is_any_actor_driving() -> bool:
+	for a in active_actors:
+		if a.state == "driving":
+			if a.is_pedestrian:
+				return true
+			if a.position.distance_to(Vector3.ZERO) < 18.0:
+				return true
+	return false
+
 
 func _unhandled_input(event: InputEvent) -> void:
-	if is_game_over or is_resolving:
+	if is_game_over or is_resolving or _is_any_actor_driving():
 		return
 
 	if event is InputEventMouseButton:
@@ -465,7 +477,7 @@ var _last_tap_pos := Vector2(-999, -999)
 var _last_tap_time := -999.0
 
 func _handle_screen_tap(screen_pos: Vector2) -> void:
-	if is_game_over or is_resolving or active_actors.is_empty():
+	if is_game_over or is_resolving or active_actors.is_empty() or _is_any_actor_driving():
 		return
 
 	var now := float(Time.get_ticks_msec())
@@ -483,7 +495,8 @@ func _handle_screen_tap(screen_pos: Vector2) -> void:
 
 
 func _pick_actor(screen_pos: Vector2) -> CrossroadsActor:
-	var best_dist := 120.0 * Ui.dp(get_viewport())
+	# Accurate touch target (38 dp radius) directly targeting vehicle body and badge
+	var best_dist := 38.0 * Ui.dp(get_viewport())
 	var best_actor: CrossroadsActor = null
 
 	for actor in active_actors:
@@ -492,21 +505,12 @@ func _pick_actor(screen_pos: Vector2) -> CrossroadsActor:
 
 		var probe_pts: Array[Vector3] = [
 			actor.global_position,
-			actor.global_position + Vector3(0, 1.2, 0),
-			actor.global_position + actor.transform.basis.z * 1.8,
-			actor.global_position - actor.transform.basis.z * 1.8,
+			actor.global_position + Vector3(0, 0.8, 0),
 		]
 		if actor.badge_node != null:
 			probe_pts.append(actor.badge_node.global_position)
-			probe_pts.append(actor.badge_node.global_position + Vector3(0, 1.62, 0))
-			probe_pts.append(actor.badge_node.global_position + Vector3(0, 2.04, 0))
 		if actor.badge_sprite != null:
 			probe_pts.append(actor.badge_sprite.global_position)
-		if actor.arrow_sprite != null:
-			probe_pts.append(actor.arrow_sprite.global_position)
-		if actor.path_curve != null and actor.path_length > 0.1:
-			for f in [0.05, 0.15, 0.25, 0.35, 0.45]:
-				probe_pts.append(actor.path_curve.sample_baked(f * actor.path_length))
 
 		for pt in probe_pts:
 			var p := camera.unproject_position(pt)
@@ -521,21 +525,22 @@ func _pick_actor(screen_pos: Vector2) -> CrossroadsActor:
 # --- Rules Solver & Priority Checking ---
 
 func _handle_actor_selection(chosen: CrossroadsActor) -> void:
-	# Find candidate priority actors among waiting or currently driving actors with lower order
+	# Find candidate priority actors strictly among remaining waiting actors with lower order.
+	# Any actor that is already driving or done has already been resolved and dispatched!
 	var candidate_priorities: Array[CrossroadsActor] = []
 	for a in active_actors:
-		if a.state == "waiting" or a.state == "driving":
+		if a.state == "waiting":
 			if a.data.get("order", 99) < chosen.data.get("order", 99):
 				candidate_priorities.append(a)
 
-	# If none has strictly lower order (e.g. equal order), find any waiting/driving actor with min order
+	# If none has strictly lower order (e.g. equal order), find any waiting actor with min order
 	if candidate_priorities.is_empty():
 		var min_order := 999
 		for a in active_actors:
-			if a.state == "waiting" or a.state == "driving":
+			if a.state == "waiting":
 				min_order = mini(min_order, a.data.get("order", 99))
 		for a in active_actors:
-			if (a.state == "waiting" or a.state == "driving") and a.data.get("order", 99) == min_order:
+			if a.state == "waiting" and a.data.get("order", 99) == min_order:
 				candidate_priorities.append(a)
 
 	if candidate_priorities.is_empty():
@@ -688,12 +693,12 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	var best_tp := 0.35
 	var min_dist := 999.0
 
-	var steps := 80
+	var steps := 100
 	for ic in range(1, steps + 1):
-		var tc := float(ic) / float(steps) * 0.65
+		var tc := float(ic) / float(steps) * 0.82
 		var pos_c := chosen.path_curve.sample_baked(tc * len_c)
 		for ip in range(1, steps + 1):
-			var tp := float(ip) / float(steps) * 0.65
+			var tp := float(ip) / float(steps) * 0.82
 			var pos_p := priority.path_curve.sample_baked(tp * len_p)
 			var d := pos_c.distance_to(pos_p)
 			if d < min_dist:
@@ -751,8 +756,8 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		var pos_p := priority.path_curve.sample_baked(off_p)
 		var next_p := priority.path_curve.sample_baked(minf(len_p, off_p + 0.3))
 
-		if needs_swerve and prog > 0.3:
-			var swerve_p := smoothstep(0.3, 0.75, prog) * 0.85
+		if needs_swerve and prog > 0.2:
+			var swerve_p := smoothstep(0.2, 0.75, prog)
 			pos_c = pos_c.lerp(mid_impact, swerve_p)
 			pos_p = pos_p.lerp(mid_impact, swerve_p)
 
@@ -782,12 +787,13 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 			if mat_p != null:
 				mat_p.set_shader_parameter("wheel_distance", priority.model_node._distance)
 
-		# Instant physical collision contact check using oriented bounding boxes
-		if Drive.overlap(chosen.footprint(), priority.footprint(), 0.04):
+		# Physical collision contact check: exact SAT oriented bounding boxes with metal touch
+		if Drive.overlap(chosen.footprint(), priority.footprint(), 0.0):
 			has_collided = true
 			break
-		# Proximity fallback check based on vehicle extents
-		if pos_c.distance_to(pos_p) < (chosen.hl + priority.hl) * 0.72:
+		# Proximity fallback when bounding boxes are within touching distance
+		var contact_dist := (chosen.hw + priority.hw) * 0.95 if (chosen.is_pedestrian or priority.is_pedestrian) else (chosen.hl + priority.hl) * 0.42
+		if pos_c.distance_to(pos_p) < contact_dist:
 			has_collided = true
 			break
 
@@ -799,16 +805,16 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	GameSound.buzz(70)
 	cam_shake = 0.55
 
-	# Recoil bounce backwards along reverse direction
+	# Slight recoil bounce backwards so vehicles stay in visual contact with bumpers touching
 	var tan_c := Vector3(sin(chosen.rotation.y), 0, cos(chosen.rotation.y))
 	if not chosen.is_pedestrian:
-		chosen.position -= tan_c * (0.08 if chosen.is_tram else 0.18)
+		chosen.position -= tan_c * (0.02 if chosen.is_tram else 0.04)
 		chosen.rotation.z += 0.035
 		chosen.rotation.x -= 0.025
 
 	var tan_p := Vector3(sin(priority.rotation.y), 0, cos(priority.rotation.y))
 	if not priority.is_pedestrian:
-		priority.position -= tan_p * (0.08 if priority.is_tram else 0.14)
+		priority.position -= tan_p * (0.02 if priority.is_tram else 0.04)
 		priority.rotation.z -= 0.030
 
 	if not chosen.is_pedestrian:

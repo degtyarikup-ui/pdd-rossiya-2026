@@ -1954,7 +1954,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameCrossroadsResetCamera => 'Reset camera';
 
   @override
-  String get gameCrossroadsNextCrossroad => 'Next intersection';
+  String get gameCrossroadsNextCrossroad => 'Next';
 
   @override
   String get gameCrossroadsRepeatCrossroad => 'Try again';

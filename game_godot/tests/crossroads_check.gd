@@ -181,6 +181,7 @@ func _initialize() -> void:
 	}
 	var ped_actor = CrossroadsActorScript.new(ped_data)
 	_check("Pedestrian trajectory across zebra has valid length", ped_actor.path_length > 8.0)
+	_check("Pedestrian crossing drive_speed is responsive (0.20..0.28)", ped_actor.drive_speed >= 0.20 and ped_actor.drive_speed <= 0.28)
 	ped_actor.free()
 	actor.free()
 	junction.free()
@@ -203,6 +204,7 @@ func _initialize() -> void:
 	_check("Results dialog displays score 450", ui._final_score.text == "450")
 	_check("New record badge shown", ui._record_badge.visible)
 	_check("Results dialog is compact (width <= 340)", ui._result_card.custom_minimum_size.x <= 340.0)
+	_check("Results dialog eliminates vertical void (height <= 260)", ui._result_card.size.y <= 260.0)
 	ui.free()
 
 	# 9. Web query arguments parsing

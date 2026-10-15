@@ -1956,10 +1956,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameCrossroadsResetCamera => 'Камераны қайтару';
 
   @override
-  String get gameCrossroadsNextCrossroad => 'Келесі қиылыс';
+  String get gameCrossroadsNextCrossroad => 'Келесі';
 
   @override
-  String get gameCrossroadsRepeatCrossroad => 'Қайталап көріңіз';
+  String get gameCrossroadsRepeatCrossroad => 'Қайталау';
 
   @override
   String get gameCrossroadsModeArcade => 'Аркада';

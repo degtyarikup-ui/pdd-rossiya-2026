@@ -139,12 +139,15 @@ func _layout() -> void:
 
 	_collision_backdrop.size = size
 	var modal_w := minf(500.0, size.x)
-	_collision_card.custom_minimum_size.x = modal_w
+	_collision_card.custom_minimum_size = Vector2(modal_w, 0)
+	_collision_card.size = Vector2(modal_w, 0)
+	_collision_card.reset_size()
 	_collision_card.position = Vector2((size.x - modal_w) * 0.5, size.y - _collision_card.size.y - bottom)
 
 	_result.size = size
 	var card_w := minf(320.0, size.x - 32.0)
-	_result_card.custom_minimum_size.x = card_w
+	_result_card.custom_minimum_size = Vector2(card_w, 0)
+	_result_card.size = Vector2(card_w, 0)
 	if _cover != null and _cover.is_inside_tree():
 		_cover.custom_minimum_size.y = (card_w - 40.0) * 9.0 / 16.0
 	_result_card.reset_size()
@@ -504,11 +507,17 @@ func _build_collision_modal() -> void:
 	_collision_retry_btn = Button.new()
 	_collision_retry_btn.text = Ui.t("gameCrossroadsRepeatCrossroad")
 	_collision_retry_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	_collision_retry_btn.custom_minimum_size = Vector2(0, 50)
+	_collision_retry_btn.custom_minimum_size = Vector2(0, 48)
+	_collision_retry_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_collision_retry_btn.add_theme_font_override("font", Ui.font(600))
 	_collision_retry_btn.add_theme_font_size_override("font_size", 14)
 	_collision_retry_btn.add_theme_color_override("font_color", Ui.c("text"))
-	_collision_retry_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("field"), 10))
+	var retry_box := Ui.box(Ui.c("field"), 10)
+	retry_box.content_margin_left = 10
+	retry_box.content_margin_right = 10
+	retry_box.content_margin_top = 8
+	retry_box.content_margin_bottom = 8
+	_collision_retry_btn.add_theme_stylebox_override("normal", retry_box)
 	_collision_retry_btn.pressed.connect(func():
 		hide_collision_modal()
 		retry_pressed.emit()
@@ -518,11 +527,17 @@ func _build_collision_modal() -> void:
 	_collision_next_btn = Button.new()
 	_collision_next_btn.text = Ui.t("gameCrossroadsNextCrossroad")
 	_collision_next_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	_collision_next_btn.custom_minimum_size = Vector2(0, 50)
+	_collision_next_btn.custom_minimum_size = Vector2(0, 48)
+	_collision_next_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_collision_next_btn.add_theme_font_override("font", Ui.font(700))
 	_collision_next_btn.add_theme_font_size_override("font_size", 14)
 	_collision_next_btn.add_theme_color_override("font_color", Color.WHITE)
-	_collision_next_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent"), 10))
+	var next_box := Ui.box(Ui.c("accent"), 10)
+	next_box.content_margin_left = 10
+	next_box.content_margin_right = 10
+	next_box.content_margin_top = 8
+	next_box.content_margin_bottom = 8
+	_collision_next_btn.add_theme_stylebox_override("normal", next_box)
 	_collision_next_btn.pressed.connect(func():
 		hide_collision_modal()
 		next_scenario_pressed.emit()
@@ -653,9 +668,16 @@ func _build_result_dialog() -> void:
 	var restart_btn := Button.new()
 	restart_btn.text = Ui.t("gameRestart")
 	restart_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	restart_btn.custom_minimum_size = Vector2(0, 40)
+	restart_btn.custom_minimum_size = Vector2(0, 44)
+	restart_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	restart_btn.add_theme_font_override("font", Ui.font(700))
-	restart_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("accent"), 8))
+	restart_btn.add_theme_font_size_override("font_size", 13)
+	var restart_box := Ui.box(Ui.c("accent"), 10)
+	restart_box.content_margin_left = 8
+	restart_box.content_margin_right = 8
+	restart_box.content_margin_top = 6
+	restart_box.content_margin_bottom = 6
+	restart_btn.add_theme_stylebox_override("normal", restart_box)
 	restart_btn.pressed.connect(func():
 		hide_results()
 		restart_pressed.emit()
@@ -665,10 +687,17 @@ func _build_result_dialog() -> void:
 	var exit_btn := Button.new()
 	exit_btn.text = Ui.t("gameExit")
 	exit_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	exit_btn.custom_minimum_size = Vector2(0, 40)
+	exit_btn.custom_minimum_size = Vector2(0, 44)
+	exit_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	exit_btn.add_theme_font_override("font", Ui.font(600))
+	exit_btn.add_theme_font_size_override("font_size", 13)
 	exit_btn.add_theme_color_override("font_color", Ui.c("text"))
-	exit_btn.add_theme_stylebox_override("normal", Ui.box(Ui.c("field"), 8))
+	var exit_box := Ui.box(Ui.c("field"), 10)
+	exit_box.content_margin_left = 8
+	exit_box.content_margin_right = 8
+	exit_box.content_margin_top = 6
+	exit_box.content_margin_bottom = 6
+	exit_btn.add_theme_stylebox_override("normal", exit_box)
 	exit_btn.pressed.connect(func():
 		exit_pressed.emit()
 	)
@@ -681,7 +710,7 @@ func _build_stat_col(label_text: String) -> Array:
 	col.add_theme_constant_override("separation", 2)
 	var val := Ui.label("0", 16, 800, Ui.c("text"))
 	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var caption := Ui.scaled_label(label_text, 11, 600, Ui.c("secondary"), true)
+	var caption := Ui.scaled_label(label_text, 11, 600, Ui.c("secondary"), false)
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(val)
 	col.add_child(caption)

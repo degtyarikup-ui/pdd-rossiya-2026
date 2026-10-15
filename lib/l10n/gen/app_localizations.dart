@@ -3385,13 +3385,13 @@ abstract class AppLocalizations {
   /// No description provided for @gameCrossroadsNextCrossroad.
   ///
   /// In ru, this message translates to:
-  /// **'Следующий перекресток'**
+  /// **'Следующий'**
   String get gameCrossroadsNextCrossroad;
 
   /// No description provided for @gameCrossroadsRepeatCrossroad.
   ///
   /// In ru, this message translates to:
-  /// **'Попробовать снова'**
+  /// **'Повторить'**
   String get gameCrossroadsRepeatCrossroad;
 
   /// No description provided for @gameCrossroadsModeArcade.
