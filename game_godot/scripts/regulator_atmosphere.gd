@@ -22,6 +22,10 @@ var dry_sky: Color
 var clear_fog_begin := 75.0
 var clear_fog_end := 260.0
 var clear_fog_density := 0.82
+var _applied_rain := -1.0
+var _applied_fog := -1.0
+
+const WEATHER_EPSILON := 0.001
 
 
 func _init(cam: Camera3D, env: Environment, light: DirectionalLight3D,
@@ -64,10 +68,13 @@ func _ready() -> void:
 	headlight.spot_range = 22
 	headlight.spot_angle = 30
 	headlight.light_color = Color("#FFF3D5")
+	headlight.light_energy = 0.0
+	headlight.visible = false
 	car.add_child(headlight)
 	for arg in Host.user_args():
 		if arg.begins_with("--weather="):
 			set_weather(arg.trim_prefix("--weather="), true)
+	_apply_weather()
 
 
 func set_weather(kind: String, immediate := false) -> void:
@@ -83,8 +90,32 @@ func _process(delta: float) -> void:
 		set_weather("rain" if weather == "clear" and randf() < 0.15 else "clear")
 		auto_timer = randf_range(240, 420) if weather == "clear" else randf_range(25, 45)
 	var blend := 1.0 - exp(-delta * 0.6)
-	rain = lerpf(rain, 1.0 if weather == "rain" else 0.0, blend)
-	fog = lerpf(fog, 1.0 if weather == "fog" else 0.0, blend)
+	var target_rain := 1.0 if weather == "rain" else 0.0
+	var target_fog := 1.0 if weather == "fog" else 0.0
+	rain = lerpf(rain, target_rain, blend)
+	fog = lerpf(fog, target_fog, blend)
+	# Exponential transitions otherwise keep dirtying render state forever.
+	if absf(rain - target_rain) < WEATHER_EPSILON: rain = target_rain
+	if absf(fog - target_fog) < WEATHER_EPSILON: fog = target_fog
+	_apply_weather()
+	if not drops.visible: return
+	# Cover the visible street, including the distant north avenue at max zoom.
+	var bounds := rain_bounds()
+	for i in positions.size():
+		var p := positions[i]
+		p.y = fposmod(p.y - delta * 14.0, 18.0)
+		positions[i] = p
+		var pos := Vector3(lerpf(bounds.position.x, bounds.end.x, (p.x + 1.0) * 0.5), p.y,
+			lerpf(bounds.position.y, bounds.end.y, (p.z + 1.0) * 0.5))
+		drops.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ONE * rain), pos))
+
+
+## Clear weather is the normal whole-round state. Do not resend unchanged
+## light, environment and shader properties to the renderer every frame.
+func _apply_weather() -> void:
+	if rain == _applied_rain and fog == _applied_fog: return
+	_applied_rain = rain
+	_applied_fog = fog
 	# Distance atmospheric haze blends the avenue into the horizon; weather fog brings it closer.
 	environment.fog_enabled = true
 	var overcast := maxf(rain, fog * 0.85)
@@ -102,17 +133,8 @@ func _process(delta: float) -> void:
 	var walk_colour := dry_walk.lerp(dry_walk * 0.72, rain * 0.35 + fog * 0.15)
 	junction.sidewalk_mat.set_shader_parameter("surface_colour", Vector3(walk_colour.r, walk_colour.g, walk_colour.b))
 	headlight.light_energy = overcast * 2.0
+	headlight.visible = overcast > 0.0
 	drops.visible = rain > 0.01
-	if not drops.visible: return
-	# Cover the visible street, including the distant north avenue at max zoom.
-	var bounds := rain_bounds()
-	for i in positions.size():
-		var p := positions[i]
-		p.y = fposmod(p.y - delta * 14.0, 18.0)
-		positions[i] = p
-		var pos := Vector3(lerpf(bounds.position.x, bounds.end.x, (p.x + 1.0) * 0.5), p.y,
-			lerpf(bounds.position.y, bounds.end.y, (p.z + 1.0) * 0.5))
-		drops.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ONE * rain), pos))
 
 
 func rain_bounds() -> Rect2:

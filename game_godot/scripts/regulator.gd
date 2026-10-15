@@ -8,6 +8,14 @@ const RegulatorOfficerScript := preload("res://scripts/regulator_officer.gd")
 const RegulatorJunctionScript := preload("res://scripts/regulator_junction.gd")
 const RegulatorCarScript := preload("res://scripts/regulator_car.gd")
 const RegulatorUiScript := preload("res://scripts/regulator_ui.gd")
+const FrameBudget := preload("res://scripts/frame_budget.gd")
+const PerfHud := preload("res://scripts/perf_hud.gd")
+
+var frame_budget = FrameBudget.new()
+var tier := "mid"
+var adaptive_quality := false
+var _quality_mobile := false
+var hud: PerfHud
 
 var officer: RegulatorOfficer
 var junction: RegulatorJunction
@@ -70,6 +78,13 @@ func _ready() -> void:
 	_setup_audio()
 	_setup_scene_objects()
 	_setup_ui()
+	_setup_quality(RenderingServer.get_video_adapter_name(), OS.has_feature("android") or OS.has_feature("ios"))
+	if _has_arg("--perf"):
+		hud = PerfHud.new()
+		hud.tier = tier
+		hud.snapshot = _performance_snapshot
+		hud.tier_changed.connect(_apply_tier)
+		add_child(hud)
 	_dismiss_loader(loader)
 
 
@@ -132,7 +147,7 @@ func _setup_environment() -> void:
 	sun.light_color = Color(season.sun)
 	sun.light_energy = float(season.sunIntensity) * 0.8
 	sun.shadow_enabled = true
-	# 4-split PSSM eliminates staircase pixelation in perspective view:
+	# Perspective shadows retain near detail; the quality profile limits their cost.
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 	sun.directional_shadow_max_distance = 56.0
 	sun.directional_shadow_split_1 = 0.18
@@ -233,6 +248,53 @@ func _setup_ui() -> void:
 	ui.restart_pressed.connect(_start_game)
 	ui.exit_pressed.connect(_on_exit_pressed)
 	add_child(ui)
+
+
+## Apply a fresh profile on every entry, including when iOS reuses the engine.
+## The 3D scale leaves the native HUD and touch controls at full resolution.
+func _setup_quality(gpu: String, mobile: bool) -> void:
+	_quality_mobile = mobile
+	var override := ""
+	for arg in Host.user_args():
+		if arg.begins_with("--quality="):
+			override = arg.trim_prefix("--quality=")
+	var fixed := override in Quality.PROFILES
+	_apply_tier(override if fixed else Quality.initial(gpu, mobile), not fixed)
+
+
+func _apply_tier(next: String, automatic := false) -> void:
+	tier = next
+	var profile: Dictionary = Quality.PROFILES[tier]
+	var viewport := get_viewport()
+	viewport.scaling_3d_scale = profile.scale
+	viewport.msaa_3d = profile.msaa
+	sun.shadow_enabled = profile.shadows
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if tier == "high" else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	Engine.max_fps = 60 if _quality_mobile and profile.max_fps == 0 else int(profile.max_fps)
+	adaptive_quality = automatic and _quality_mobile
+	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
+	if leaves:
+		leaves.multimesh.visible_instance_count = 6 if tier == "low" else -1
+	if hud: hud.tier = tier
+
+
+func _update_frame_budget(delta: float) -> void:
+	if not adaptive_quality: return
+	var eligible := ready_for_play and not is_game_over and not get_tree().paused
+	var update: Dictionary = frame_budget.sample(delta, eligible, Engine.max_fps)
+	if update.is_empty(): return
+	var viewport := get_viewport()
+	viewport.scaling_3d_scale = update.scale
+	viewport.msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
+	sun.shadow_enabled = update.shadows
+	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
+
+
+func _performance_snapshot() -> Dictionary:
+	return {"game": "regulator", "phase": "over" if is_game_over else ("play" if ready_for_play else "loading"),
+		"question": solved_count + wrong_count, "tier": tier,
+		"render_scale": get_viewport().scaling_3d_scale, "max_fps": Engine.max_fps,
+		"shadows": sun.shadow_enabled, "msaa": get_viewport().msaa_3d, "quality_changes": frame_budget.changes}
 
 
 func _start_game() -> void:
@@ -353,6 +415,7 @@ func _on_hint_toggled() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_frame_budget(delta)
 	_update_camera(delta)
 	if leaves:
 		leaves.step(delta, Vector3.ZERO)

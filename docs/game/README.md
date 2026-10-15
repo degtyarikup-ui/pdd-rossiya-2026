@@ -47,6 +47,8 @@ godot --path game_godot -- --situation=ticket_10_13 --auto --near   # один �
 
 ```bash
 godot --headless --path game_godot --script res://tests/regulator_check.gd # регулировщик: правила, экономика, UI, рестарты
+godot --headless --path game_godot --script res://tests/regulator_performance_check.gd # регулировщик: профили телефона, адаптация, разрешение UI и повторный вход
+godot --headless --path game_godot --script res://tests/regulator_atmosphere_check.gd # регулировщик: стабильная погода без лишних обновлений рендера и переходы
 godot --headless --path game_godot --script res://tests/crossroads_check.gd # разъезд на перекрёстках: 27 сценариев, ПДД, траектории, UI
 godot --headless --path game_godot --script res://tests/rules_check.gd      # нарушения: 47 проверок
 godot --headless --path game_godot --script res://tests/road_check.gd       # дорожные вопросы: 70 проверок
@@ -267,6 +269,7 @@ MP3 и локальный манифест не коммитятся. В Git л�
 - `environment-models.md` — лёгкие деревья и уличные объекты с исходными точками установки
 - `signs-and-signals.md` — знаки/светофоры, нормативные формы, серый оборот и сохранённые крепления
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
+- `regulator-performance-2026-10-15.md` — профили слабых телефонов, автоматический бюджет и контроль нагрузки регулировщика
 - `ride-performance-2026-10-14.md` — очистка старых локаций по пути, длительный тест и диагностика dev-сборки
 - `participant-lifetime-2026-10-15.md` — нативный вылет после удаления сбитого участника и регрессионная проверка
 - `ride-completion-2026-10-15.md` — два штатных заезда, неверная нумерация HUD и оставшийся доступ к удалённому участнику
