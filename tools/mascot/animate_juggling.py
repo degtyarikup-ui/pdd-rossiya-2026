@@ -8,6 +8,7 @@ No physics engine, textures, runtime IK, or application integration is needed.
 from pathlib import Path
 import json
 import math
+import re
 import sys
 
 import bpy
@@ -22,7 +23,15 @@ BEAT = .4
 FLIGHT = 1.0
 TRANSFER = 3 * BEAT
 HAND_PERIOD = 2 * BEAT
-BALL_RADIUS = .108
+BALL_RADIUS = .15
+accent_source = (ROOT / "lib/core/constants/app_colors.dart").read_text()
+accent_match = re.search(
+    r"static const light\s*=\s*AppThemeColors\(\s*accent:\s*Color\(0xFF([0-9A-Fa-f]{6})\)",
+    accent_source,
+)
+if accent_match is None:
+    raise ValueError("Cannot read the application's light-theme brand accent")
+BALL_COLOR = accent_match.group(1).upper()
 LAST_FRAME = round(DURATION * FPS)
 
 bpy.ops.wm.open_mainfile(filepath=str(OUT / "cone-mascot.blend"))
@@ -89,7 +98,7 @@ def ball_state(index, time):
     # apex. Endpoints and their tangents remain unchanged at both palms.
     lane = math.sin(math.pi * p) ** 2
     source_sign = -1 if source == "L" else 1
-    position.x -= source_sign * .15 * lane
+    position.x -= source_sign * .21 * lane
     position.y += source_sign * .025 * lane
     # The crossing is above the tip, keeping the entire face unobstructed.
     flourish = .20 if throw_number % 18 == 13 else 0
@@ -144,9 +153,16 @@ def blink(time, center):
 
 
 balls = []
-ball_material = bpy.data.materials["Iris_sky_blue"].copy()
-ball_material.name = "Loading_blue_satin"
-ball_material.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = .31
+ball_material = bpy.data.materials.new("Loading_brand_blue_satin")
+ball_material.use_nodes = True
+ball_shader = ball_material.node_tree.nodes["Principled BSDF"]
+def linear_color(value):
+    return value / 12.92 if value <= .04045 else ((value + .055) / 1.055) ** 2.4
+ball_rgb = tuple(linear_color(int(BALL_COLOR[i:i+2], 16) / 255) for i in (0, 2, 4))
+ball_shader.inputs["Base Color"].default_value = (*ball_rgb, 1)
+ball_shader.inputs["Roughness"].default_value = .38
+ball_material.diffuse_color = (*ball_rgb, 1)
+ball_material["brand_srgb"] = "#" + BALL_COLOR
 for index in range(3):
     if index == 0:
         bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=8, radius=BALL_RADIUS)
@@ -269,6 +285,7 @@ info = {
     "clip": "JuggleLoop", "duration_seconds": DURATION, "authored_fps": FPS,
     "base_rhythm_seconds": 2.4, "throw_interval_seconds": BEAT,
     "ball_flight_seconds": FLIGHT, "hand_dwell_seconds": TRANSFER - FLIGHT,
+    "ball_radius": BALL_RADIUS, "ball_color_srgb": "#" + BALL_COLOR,
     "glb_bytes": (OUT / "cone-juggling.glb").stat().st_size,
     "mesh_objects": len(meshes) + len(balls),
     "rendered_triangles": sum(sum(len(face.vertices) - 2 for face in obj.data.polygons) for obj in [*meshes, *balls]),
