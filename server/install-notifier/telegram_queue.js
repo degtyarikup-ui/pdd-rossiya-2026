@@ -1,4 +1,5 @@
 import { buildIncidentMessage } from './diagnostics.js';
+import { setupTelegramTopics } from './telegram_topics.js';
 import { EXPORT_COMMAND_MAX_AGE_MS, buildErrorCsv, errorLevelLabel, errorLogKey, errorLogRecord, exportStart, mskStamp, parseExportCommand, ERROR_LOG_PREFIX } from './telegram_export.js';
 
 export function telegramChatId(env) {
@@ -63,33 +64,38 @@ export class TelegramQueue {
     return this.serial(async () => {
       if (new URL(request.url).pathname === '/incident') return this.enqueueIncident(await request.json());
       if (new URL(request.url).pathname === '/poll-commands') return Response.json(await this.pollErrorCommands());
-      const body = await request.json();
-      const { text, dedupKey, photoBase64, messages, topic } = body;
-      const explicitThreadId = body.threadId ?? body.message_thread_id;
-      const resolvedThreadId = explicitThreadId ? Number(explicitThreadId) : await getTopicThreadId(this.env, topic);
-      const items = messages || [{ text, ...(photoBase64 ? { photoBase64 } : {}) }];
-      if (!Array.isArray(items) || items.length < 1 || items.length > 2 || items.some(item =>
-        typeof item.text !== 'string' || !item.text || item.text.length > (item.photoBase64 ? 1024 : 4096) ||
-        (item.photoBase64 && (typeof item.photoBase64 !== 'string' || item.photoBase64.length > 100000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(item.photoBase64)))
-      )) return new Response('invalid message', { status: 400 });
-      if (!this.env.BOT_TOKEN || !this.env.CHAT_ID) return new Response('not configured', { status: 503 });
-      if (dedupKey && await this.state.storage.get('seen:' + dedupKey)) return Response.json({ ok: true, duplicate: true });
-      if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + 1000);
-      const sequence = (await this.state.storage.get('sequence') || 0) + 1;
-      await this.state.storage.transaction(async txn => {
-        for (let i=0; i<items.length; i++) {
-          const itemThreadId = items[i].threadId ?? items[i].message_thread_id ?? resolvedThreadId;
-          await txn.put('q:' + String(sequence+i).padStart(16, '0'), {
-            text: items[i].text,
-            ...(items[i].photoBase64 ? { photoBase64: items[i].photoBase64 } : {}),
-            ...(itemThreadId ? { threadId: Number(itemThreadId) } : {})
-          });
-        }
-        await txn.put('sequence', sequence+items.length-1);
-        if (dedupKey) await txn.put('seen:' + dedupKey, Date.now());
-      });
-      return Response.json({ ok: true, queued: true });
+      if (new URL(request.url).pathname === '/setup-topics') {
+        return setupTelegramTopics(request, this.env, (_env, text, dedupKey, options) => this.enqueue({ text, dedupKey, ...options }));
+      }
+      return this.enqueue(await request.json());
     });
+  }
+  async enqueue(body) {
+    const { text, dedupKey, photoBase64, messages, topic } = body;
+    const explicitThreadId = body.threadId ?? body.message_thread_id;
+    const resolvedThreadId = explicitThreadId ? Number(explicitThreadId) : await getTopicThreadId(this.env, topic);
+    const items = messages || [{ text, ...(photoBase64 ? { photoBase64 } : {}) }];
+    if (!Array.isArray(items) || items.length < 1 || items.length > 2 || items.some(item =>
+      typeof item.text !== 'string' || !item.text || item.text.length > (item.photoBase64 ? 1024 : 4096) ||
+      (item.photoBase64 && (typeof item.photoBase64 !== 'string' || item.photoBase64.length > 100000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(item.photoBase64)))
+    )) return new Response('invalid message', { status: 400 });
+    if (!this.env.BOT_TOKEN || !this.env.CHAT_ID) return new Response('not configured', { status: 503 });
+    if (dedupKey && await this.state.storage.get('seen:' + dedupKey)) return Response.json({ ok: true, duplicate: true });
+    if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + 1000);
+    const sequence = (await this.state.storage.get('sequence') || 0) + 1;
+    await this.state.storage.transaction(async txn => {
+      for (let i=0; i<items.length; i++) {
+        const itemThreadId = items[i].threadId ?? items[i].message_thread_id ?? resolvedThreadId;
+        await txn.put('q:' + String(sequence+i).padStart(16, '0'), {
+          text: items[i].text,
+          ...(items[i].photoBase64 ? { photoBase64: items[i].photoBase64 } : {}),
+          ...(itemThreadId ? { threadId: Number(itemThreadId) } : {})
+        });
+      }
+      await txn.put('sequence', sequence+items.length-1);
+      if (dedupKey) await txn.put('seen:' + dedupKey, Date.now());
+    });
+    return Response.json({ ok: true, queued: true });
   }
   async enqueueIncident({ incident, fingerprint }) {
     if (!incident || !/^[a-f0-9]{64}$/.test(fingerprint || '')) return new Response('invalid incident', { status: 400 });

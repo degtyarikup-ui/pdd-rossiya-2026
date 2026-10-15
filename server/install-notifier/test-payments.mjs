@@ -17,7 +17,7 @@ class KV {
 }
 
 // Подменяем Platega: создание платежа и чтение статуса.
-function fakePlatega() {
+function fakePlatega({ create, status } = {}) {
   const txs = new Map();
   const calls = [];
   const original = globalThis.fetch;
@@ -28,11 +28,13 @@ function fakePlatega() {
     assert.equal(init.headers['X-MerchantId'], 'merchant-1');
     assert.equal(init.headers['X-Secret'], 'secret-1');
     if (u.endsWith('/transaction/process')) {
+      if (create) return create(url, init);
       const body = JSON.parse(init.body);
       const id = crypto.randomUUID();
       txs.set(id, { id, status: 'PENDING', paymentDetails: body.paymentDetails, payload: body.payload, body });
       return Response.json({ transactionId: id, url: 'https://pay.platega.io/' + id, status: 'PENDING' });
     }
+    if (status) return status(url, init);
     const id = u.split('/transaction/')[1];
     const tx = txs.get(id);
     return tx ? Response.json(tx) : new Response('{}', { status: 404 });
@@ -55,6 +57,15 @@ async function login(env, id = 'google_1') {
 const callback = (env, body, secret = 'secret-1') => worker.fetch(req('/api/pay/platega/callback', body, null,
   { 'X-MerchantId': 'merchant-1', 'X-Secret': secret }), env);
 const user = env => JSON.parse(env.INSTALLS.data.get('user:google_1') || 'null');
+function captureIncidents(env) {
+  const incidents = [];
+  env.BOT_TOKEN = 'bot-test'; env.CHAT_ID = 'chat-test';
+  env.TELEGRAM = { idFromName: value => value, get: () => ({ fetch: async (url, init) => {
+    if (String(url).endsWith('/incident')) incidents.push(JSON.parse(init.body).incident);
+    return Response.json({ ok: true });
+  } }) };
+  return incidents;
+}
 
 test('без ключей Platega оплата выключена — только заглушка', async () => {
   const env = baseEnv(); delete env.PLATEGA_SECRET;
@@ -202,4 +213,87 @@ test('Android: после оплаты возврат на страницу «в
     const txW = [...fake.txs.values()].slice(-1)[0];
     assert.equal(txW.body.return, `https://pdd-drive.ru/app/?pay=done&order=${web.order}`);
   } finally { fake.restore(); }
+});
+
+test('сбой создания СБП: один подробный инцидент, безопасная причина и проверенный аккаунт', async () => {
+  const cases = [
+    ['payment_provider_unavailable', null, () => { throw new Error('secret-1 https://pay.test/?token=private'); }],
+    ['payment_provider_timeout', null, () => { throw new DOMException('private token', 'TimeoutError'); }],
+    ['payment_provider_auth', 401, () => new Response('secret-1 raw provider response', { status: 401 })],
+    ['payment_provider_rate_limited', 429, () => new Response('{}', { status: 429 })],
+    ['payment_provider_rejected', 422, () => new Response('{}', { status: 422 })],
+    ['payment_provider_unavailable', 502, () => new Response('{}', { status: 502 })],
+    ['payment_provider_invalid_response', null, () => new Response('private non-json response')],
+    ['payment_provider_invalid_response', null, () => Response.json({ transactionId: 'private', token: 'private' })],
+    ['payment_provider_invalid_response', null, () => Response.json([])],
+  ];
+  for (const [code, providerStatus, create] of cases) {
+    const fake = fakePlatega({ create });
+    try {
+      const env = baseEnv(); const token = await login(env); const incidents = captureIncidents(env);
+      const response = await worker.fetch(req('/api/user/pay-intent', { email: 'receipt@example.org', tier: 'weekly', method: 'sbp', client: 'android', name: 'Подделка', userEmail: 'fake@example.org' }, token), env);
+      assert.equal(response.status, 503, code);
+      assert.equal(incidents.length, 1, code + ': без дублирующего общего лога');
+      const event = incidents[0];
+      assert.equal(event.operation, 'api.user.pay-intent'); assert.equal(event.code, code);
+      assert.equal(event.userId, 'google_1'); assert.equal(event.userName, 'Анна'); assert.equal(event.userEmail, 'anna@example.com');
+      assert.equal(event.payment.tier, 'weekly'); assert.equal(event.payment.amountRub, 99);
+      assert.equal(event.payment.method, 'sbp'); assert.equal(event.payment.client, 'android');
+      assert.equal(event.payment.providerOperation, 'create'); assert.equal(event.payment.providerStatus, providerStatus);
+      assert.match(event.payment.orderId, /^[0-9a-f-]{36}$/);
+      assert.doesNotMatch(JSON.stringify(event), /secret-1|private|Подделка|fake@example|receipt@example/);
+      assert.ok(!user(env)?.isPremium);
+    } finally { fake.restore(); }
+  }
+});
+
+test('проверка и колбэк СБП сохраняют контекст заказа и точную причину сбоя Platega', async () => {
+  let fail = false;
+  const fake = fakePlatega({ status: () => {
+    assert.ok(fail); return new Response('private provider body', { status: 503 });
+  } });
+  try {
+    const env = baseEnv(); const token = await login(env);
+    const start = await (await worker.fetch(req('/api/user/pay-intent', { email: 'a@b.ru', tier: 'threeMonths', method: 'sbp' }, token), env)).json();
+    fail = true;
+    const incidents = captureIncidents(env);
+    const response = await worker.fetch(req('/api/user/pay-check', { order: start.order }, token), env);
+    assert.equal(response.status, 200); assert.equal((await response.json()).status, 'pending');
+    assert.equal(incidents.length, 1); assert.equal(incidents[0].operation, 'payment.check');
+    const [tx] = fake.txs.values();
+    const result = await callback(env, { id: tx.id, payload: start.order, status: 'CONFIRMED' });
+    assert.equal(result.status, 503); assert.equal(incidents.length, 2);
+    assert.equal(incidents[1].operation, 'api.pay.platega.callback');
+    for (const event of incidents) {
+      assert.equal(event.code, 'payment_provider_unavailable');
+      assert.equal(event.userName, 'Анна'); assert.equal(event.userEmail, 'anna@example.com');
+      assert.equal(event.payment.orderId, start.order); assert.equal(event.payment.txId, tx.id);
+      assert.equal(event.payment.amountRub, 290); assert.equal(event.payment.tier, 'threeMonths');
+      assert.equal(event.payment.providerOperation, 'status'); assert.equal(event.payment.providerStatus, 503);
+      assert.doesNotMatch(JSON.stringify(event), /private provider body/);
+    }
+    assert.ok(!user(env)?.isPremium);
+  } finally { fake.restore(); }
+});
+
+test('сбой сохранения после создания СБП не раскрывает исключение и сохраняет номер транзакции в логе', async () => {
+  for (const prefix of ['pay_order:', 'pay_tx:', 'pay_intent:']) {
+    const fake = fakePlatega();
+    try {
+      const env = baseEnv(); const token = await login(env); const incidents = captureIncidents(env);
+      const put = env.INSTALLS.put.bind(env.INSTALLS);
+      env.INSTALLS.put = async (key, ...args) => {
+        if (key.startsWith(prefix)) throw new Error('put 429 secret-1 private details');
+        return put(key, ...args);
+      };
+      const response = await worker.fetch(req('/api/user/pay-intent', { email: 'a@b.ru', tier: 'weekly', method: 'sbp' }, token), env);
+      assert.equal(response.status, 503); assert.deepEqual(await response.json(), { error: 'storage unavailable' });
+      assert.equal(incidents.length, 1, prefix);
+      const event = incidents[0], [tx] = fake.txs.values();
+      assert.equal(event.code, 'storage_rate_limited'); assert.equal(event.payment.txId, tx.id);
+      assert.match(event.payment.orderId, /^[0-9a-f-]{36}$/);
+      assert.doesNotMatch(JSON.stringify(event), /secret-1|private details/);
+      assert.ok(!user(env)?.isPremium);
+    } finally { fake.restore(); }
+  }
 });

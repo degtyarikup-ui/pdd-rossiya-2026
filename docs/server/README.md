@@ -16,6 +16,7 @@
 | Буфер статистики | `stats_buffer.js` |
 | Аналитика | `analytics_*.js`, `usage_analytics.js`, `premium_analytics.js`, `attribution.js` |
 | Обновления и уведомления | `app_updates.js`, `notifications.js` |
+| Telegram и диагностика | `diagnostics.js`, `incident_copy.js`, `telegram_queue.js`, `telegram_topics.js`, `telegram_export.js` |
 | Публикации | `publications_data.js`, `social.js`, `threads.js` |
 | Поддержка и задачи | `support_*.js`, `tasks_admin.js` |
 | Панель управления | [карта админок](../admin/README.md) |

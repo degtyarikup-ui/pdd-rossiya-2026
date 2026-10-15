@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Отправка жалобы на конкретный вопрос: «здесь опечатка», «ответ неверный»,
@@ -37,6 +38,7 @@ class QuestionReportService {
     int? ticketNumber,
     String? topic,
     String? mode,
+    AuthService? auth,
   }) async {
     if (!BackendConfig.hasNotifier) return false;
     final text = message.trim();
@@ -68,11 +70,9 @@ class QuestionReportService {
       final resp = await http
           .post(
             Uri.parse(BackendConfig.notifierUrl),
-            headers: {
-              'content-type': 'application/json',
-              if (BackendConfig.notifierSecret.isNotEmpty)
-                'x-install-secret': BackendConfig.notifierSecret,
-            },
+            // Сервер определяет автора по сессии, а не по имени/почте из
+            // тела запроса. Для гостя serverHeaders не содержит authorization.
+            headers: (auth ?? AuthService.instance).serverHeaders,
             body: json.encode(payload),
           )
           .timeout(const Duration(seconds: 15));

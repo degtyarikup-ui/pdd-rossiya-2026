@@ -1,4 +1,4 @@
-import { reportIncident, errorCode } from './diagnostics.js';
+import { reportIncident, errorCode, markIncidentReported } from './diagnostics.js';
 // Оплата премиума на сайте: СБП через агрегатора Platega (docs.platega.io).
 // Покупка периода — разовая, без автопродления; срок начисляется через
 // extendEntitlement (источник `web`) и работает на всех платформах, где
@@ -42,7 +42,12 @@ const REPEAT_MS = 10 * 60 * 1000;
 const DAY_MS = 86400000;
 
 export class PaymentError extends Error {
-  constructor(code, status = 503) { super(code); this.status = status; }
+  constructor(code, status = 503, diagnostic = {}) {
+    super(code); this.status = status;
+    this.diagnosticCode = diagnostic.code;
+    this.providerStatus = diagnostic.status;
+    this.providerOperation = diagnostic.operation;
+  }
 }
 
 export function webPaymentsLive(env) {
@@ -57,6 +62,7 @@ function safeEquals(a, b) {
 }
 
 async function platega(env, path, body) {
+  const operation = body ? 'create' : 'status';
   let response;
   try {
     response = await fetch((env.PLATEGA_API || PLATEGA_API) + path, {
@@ -65,12 +71,35 @@ async function platega(env, path, body) {
       ...(body ? { body: JSON.stringify(body) } : {}),
       signal: AbortSignal.timeout(7000),
     });
-  } catch (_) { throw new PaymentError('payment provider unavailable'); }
+  } catch (error) {
+    const code = ['AbortError', 'TimeoutError'].includes(error?.name) ? 'payment_provider_timeout' : 'payment_provider_unavailable';
+    throw new PaymentError('payment provider unavailable', 503, { code, operation });
+  }
   let data = null;
   try { data = await response.json(); } catch (_) {}
-  if (response.status === 404) throw new PaymentError('transaction not found', 404);
-  if (!response.ok || !data || typeof data !== 'object') throw new PaymentError('payment provider error');
+  if (response.status === 404) throw new PaymentError('transaction not found', 404, { code: 'payment_transaction_not_found', status: response.status, operation });
+  if (!response.ok) {
+    const code = [401, 403].includes(response.status) ? 'payment_provider_auth'
+      : response.status === 429 ? 'payment_provider_rate_limited'
+      : response.status >= 500 ? 'payment_provider_unavailable' : 'payment_provider_rejected';
+    throw new PaymentError('payment provider error', 503, { code, status: response.status, operation });
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new PaymentError('payment provider error', 503, { code: 'payment_provider_invalid_response', operation });
+  }
   return data;
+}
+
+async function reportPaymentFailure(env, operation, error, order, user, response) {
+  const account = user || { id: order.userId, name: order.name, email: order.accountEmail, provider: order.provider };
+  const reported = await reportIncident(env, {
+    category: 'purchase', operation, provider: 'platega', userId: account.id, user: account,
+    code: error instanceof PaymentError ? error.diagnosticCode || 'payment_provider_error' : errorCode(error),
+    status: response?.status >= 400 ? response.status : null,
+    payment: { orderId: order.orderId, txId: order.txId, tier: order.tier, amountRub: order.amount ?? order.priceRub,
+      method: order.method, client: order.client, providerOperation: error?.providerOperation, providerStatus: error?.providerStatus },
+  });
+  return response && reported ? markIncidentReported(response) : response;
 }
 
 async function readJson(env, key) {
@@ -122,12 +151,12 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   let order = null;
   if (live) {
     const orderId = crypto.randomUUID();
+    const attempt = { ...intent, orderId };
     const back = client === 'android'
       ? { ok: `${PAY_DONE_URL}?order=${orderId}`, fail: `${PAY_DONE_URL}?order=${orderId}&failed=1` }
       : { ok: `${PAY_RETURN_URL}?pay=done&order=${orderId}`, fail: `${PAY_RETURN_URL}?pay=failed&order=${orderId}` };
-    let tx;
     try {
-      tx = await platega(env, '/transaction/process', {
+      const tx = await platega(env, '/transaction/process', {
         paymentMethod: PLATEGA_METHODS[method],
         paymentDetails: { amount: tariff.priceRub, currency: 'RUB' },
         description: `Премиум «ПДД Россия 2026» — ${tariff.title}`,
@@ -136,27 +165,35 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
         payload: orderId,
         metadata: { userId: user.id },
       });
+      const url = tx.url || tx.redirect;
+      if (typeof tx.transactionId !== 'string' || typeof url !== 'string' || !url.startsWith('https://')) {
+        throw new PaymentError('payment provider error', 503, { code: 'payment_provider_invalid_response', operation: 'create' });
+      }
+      attempt.txId = tx.transactionId;
+      order = {
+        orderId, txId: tx.transactionId, userId: user.id, name: user.name || '', accountEmail: user.email || '',
+        provider: user.provider || null, email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB',
+        method, app, client, status: 'pending', url, createdAt: new Date(now).toISOString(),
+      };
+      await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
+      await env.INSTALLS.put('pay_tx:' + tx.transactionId, orderId);
+      intent.lastOrder = { orderId, url, tier, client };
     } catch (error) {
-      return jsonResponse({ error: error.message }, error instanceof PaymentError ? error.status : 503);
+      return reportPaymentFailure(env, 'api.user.pay-intent', error, attempt, user,
+        jsonResponse({ error: error instanceof PaymentError ? error.message : 'storage unavailable' }, error instanceof PaymentError ? error.status : 503));
     }
-    const url = tx.url || tx.redirect;
-    if (typeof tx.transactionId !== 'string' || typeof url !== 'string' || !url.startsWith('https://')) {
-      return jsonResponse({ error: 'payment provider error' }, 503);
-    }
-    order = {
-      orderId, txId: tx.transactionId, userId: user.id, name: user.name || '', accountEmail: user.email || '',
-      provider: user.provider || null, email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB',
-      method, app, client, status: 'pending', url, createdAt: new Date(now).toISOString(),
-    };
-    await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
-    await env.INSTALLS.put('pay_tx:' + tx.transactionId, orderId);
-    intent.lastOrder = { orderId, url, tier, client };
   }
 
   // Сводка в метаданных — список в админке читается одним list() без get.
-  await env.INSTALLS.put(key, JSON.stringify(intent), {
-    metadata: { email: email.slice(0, 120), tier, method, app, at: intent.at, count: intent.count, live },
-  });
+  try {
+    await env.INSTALLS.put(key, JSON.stringify(intent), {
+      metadata: { email: email.slice(0, 120), tier, method, app, at: intent.at, count: intent.count, live },
+    });
+  } catch (error) {
+    if (!order) throw error;
+    return reportPaymentFailure(env, 'api.user.pay-intent', error, order, user,
+      jsonResponse({ error: 'storage unavailable' }, 503));
+  }
 
   if (!live && !previous && env.BOT_TOKEN && env.CHAT_ID) {
     const text = [
@@ -269,7 +306,8 @@ export async function handlePlategaCallback(request, env, deps) {
   try {
     await settleOrder(env, order, deps);
   } catch (error) {
-    return jsonResponse({ error: error.message }, error instanceof PaymentError && error.status < 500 ? 200 : 503);
+    return reportPaymentFailure(env, 'api.pay.platega.callback', error, order, null,
+      jsonResponse({ error: error instanceof PaymentError ? error.message : 'storage unavailable' }, error instanceof PaymentError && error.status < 500 ? 200 : 503));
   }
   return jsonResponse({ ok: true });
 }
@@ -288,7 +326,7 @@ export async function handlePayCheck(request, env, user, deps) {
   if (!order || order.userId !== user.id) return jsonResponse({ error: 'order not found' }, 404);
   if (order.status === 'pending' && webPaymentsLive(env)) {
     try { await settleOrder(env, order, deps); } catch (error) {
-      await reportIncident(env, { category: 'purchase', operation: 'payment.check', code: errorCode(error), userId: user.id, provider: 'platega' });
+      await reportPaymentFailure(env, 'payment.check', error, order, user);
     }
   }
   return jsonResponse({ ok: true, status: order.status });

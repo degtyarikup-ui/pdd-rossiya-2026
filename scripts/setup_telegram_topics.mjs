@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * Скрипт для настройки 3-х подгрупп (тем/форума) в Telegram-чате логов.
+ * Скрипт для первичного создания 4-х тем в Telegram-чате логов.
+ * Для существующей группы используйте /api/admin/telegram/setup-topics:
+ * он сохраняет текущие темы и создаёт только недостающие.
  *
  * Использование:
  *   node setup_telegram_topics.mjs [BOT_TOKEN] [CHAT_ID]
@@ -59,6 +61,7 @@ async function run() {
     { key: 'errors', name: '🔴 Ошибки и падения', color: 0xFB6F5F },
     { key: 'purchases', name: '💳 Покупки и премиум', color: 0xFFD67E },
     { key: 'registrations', name: '👤 Регистрации', color: 0x6FB9F0 },
+    { key: 'reports', name: '🚩 Жалобы на вопросы', color: 0xCB86DB },
   ];
 
   console.log('\nСоздание тем форума...');
@@ -87,6 +90,7 @@ async function run() {
     if (results.errors) console.log(`  npx wrangler secret put TELEGRAM_TOPIC_ERRORS       # значение: ${results.errors}`);
     if (results.purchases) console.log(`  npx wrangler secret put TELEGRAM_TOPIC_PURCHASES    # значение: ${results.purchases}`);
     if (results.registrations) console.log(`  npx wrangler secret put TELEGRAM_TOPIC_REGISTRATIONS # значение: ${results.registrations}`);
+    if (results.reports) console.log(`  npx wrangler secret put TELEGRAM_TOPIC_REPORTS       # значение: ${results.reports}`);
     console.log('\n(Или пропишите их в [vars] в wrangler.toml)');
   }
 }

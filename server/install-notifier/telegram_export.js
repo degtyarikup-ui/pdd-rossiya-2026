@@ -50,6 +50,14 @@ export function errorLogRecord(incident, { ts, sent, level }) {
     userEmail: incident.userEmail || '',
     status: Number.isInteger(incident.status) ? incident.status : '',
     diagnosticId: incident.diagnosticId || '',
+    paymentOrderId: incident.payment?.orderId || '',
+    paymentTxId: incident.payment?.txId || '',
+    paymentTier: incident.payment?.tier || '',
+    paymentAmountRub: incident.payment?.amountRub || '',
+    paymentMethod: incident.payment?.method || '',
+    paymentClient: incident.payment?.client || '',
+    paymentProviderOperation: incident.payment?.providerOperation || '',
+    paymentProviderStatus: incident.payment?.providerStatus || '',
   };
 }
 
@@ -73,6 +81,7 @@ const HEADER = [
   'Время (МСК)', 'Срочность', 'Ушло в чат', 'Источник', 'Раздел', 'Операция', 'Код',
   'Провайдер входа', 'Платформа', 'Версия приложения', 'Устройство', 'Магазин', 'Страна по IP',
   'ID пользователя', 'Имя', 'Почта', 'HTTP-статус', 'ID диагностики',
+  'Заказ оплаты', 'Транзакция Platega', 'Тариф', 'Сумма (RUB)', 'Метод оплаты', 'Клиент оплаты', 'Запрос Platega', 'HTTP Platega',
 ];
 
 function rowOf(record) {
@@ -95,6 +104,14 @@ function rowOf(record) {
     record.userEmail,
     record.status,
     record.diagnosticId,
+    record.paymentOrderId,
+    record.paymentTxId,
+    record.paymentTier,
+    record.paymentAmountRub,
+    record.paymentMethod,
+    record.paymentClient,
+    record.paymentProviderOperation,
+    record.paymentProviderStatus,
   ];
 }
 

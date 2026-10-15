@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { incidentCopy, incidentGuide, platformLabel } from './incident_copy.js';
-import { buildIncidentMessage } from './diagnostics.js';
+import { buildIncidentMessage, reportIncident } from './diagnostics.js';
 
 const base = { ts: Date.UTC(2026, 9, 10, 12), origin: 'client', category: 'auth', operation: 'auth.provider', code: 'timeout', userId: 'google_1', userName: 'Анна', userEmail: 'a@b.ru' };
 const guide = overrides => incidentGuide({ ...base, ...overrides });
@@ -79,4 +79,33 @@ test('пустой ответ магазина объясняется понят
   const copy = incidentCopy({ ...base, category: 'purchase', operation: 'iap.products', code: 'products_not_found' });
   assert.match(copy.reason, /не вернул наш тариф Premium/);
   assert.match(incidentCopy({ ...base, category: 'purchase', operation: 'iap.products', code: 'channel-error' }).reason, /Модуль покупок/);
+});
+
+test('ошибка СБП показывает сумму, тариф, заказ, этап и честное последствие', () => {
+  const payment = { orderId: crypto.randomUUID(), txId: crypto.randomUUID(), amountRub: 290, tier: 'threeMonths', method: 'sbp', client: 'android', providerOperation: 'create', providerStatus: 401 };
+  const message = buildIncidentMessage({ ...base, origin: 'server', category: 'purchase', operation: 'api.user.pay-intent', code: 'payment_provider_auth', provider: 'platega', payment });
+  assert.match(message, /Platega отклонила доступ кассы/);
+  assert.match(message, /СБП · 290 ₽ · 3 месяца/);
+  assert.match(message, /Оплата из: приложения Android/);
+  assert.match(message, /POST \/transaction\/process · HTTP 401/);
+  assert.ok(message.includes(payment.orderId)); assert.ok(message.includes(payment.txId));
+  assert.match(message, /человек не смог начать оплату/);
+  assert.doesNotMatch(message, /Деньги не списаны/i);
+  const check = buildIncidentMessage({ ...base, category: 'purchase', operation: 'payment.check', code: 'payment_provider_timeout', payment: { ...payment, providerOperation: 'status', providerStatus: null } });
+  assert.match(check, /GET \/transaction\/\{id\}/);
+  assert.match(check, /повторно платить не нужно/);
+  assert.ok(message.length < 4096);
+});
+
+test('контекст оплаты пропускает только безопасные серверные поля', async () => {
+  const events = [];
+  const env = { BOT_TOKEN: 'test', CHAT_ID: 'test', TELEGRAM: { idFromName: value => value, get: () => ({ fetch: async (_, init) => {
+    events.push(JSON.parse(init.body).incident); return new Response('ok');
+  } }) } };
+  const payment = { orderId: 'https://private.test', txId: '<secret>', tier: 'custom', amountRub: Infinity, method: 'secret', client: 'secret', providerOperation: 'POST /secret', providerStatus: 1000, raw: 'private body' };
+  assert.equal(await reportIncident(env, { category: 'purchase', operation: 'api.user.pay-intent', code: 'payment_provider_error', payment }), true);
+  assert.deepEqual(events[0].payment, { orderId: null, txId: null, tier: null, amountRub: null, method: null, client: null, providerOperation: null, providerStatus: null });
+  assert.doesNotMatch(JSON.stringify(events[0]), /private|secret|Infinity/);
+  assert.equal(await reportIncident(env, { origin: 'client', category: 'purchase', operation: 'web_payment.start', code: 'timeout', payment: { tier: 'weekly', amountRub: 99 } }), true);
+  assert.equal(events[1].payment, null);
 });

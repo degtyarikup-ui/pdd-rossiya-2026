@@ -5,6 +5,25 @@ const escape = value => String(value ?? '').replaceAll('&', '&amp;').replaceAll(
 const tag = (value, fallback = 'unknown') => typeof value === 'string' && /^[a-zA-Z0-9_.:-]{1,80}$/.test(value) ? value : fallback;
 const GROUPS = { auth: 'Не удалось войти', purchase: 'Ошибка Premium / оплаты', app: 'Ошибка приложения', infrastructure: 'Сбой инфраструктуры' };
 const text = (value, max) => typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max) : null;
+const reportedResponses = new WeakSet();
+export const isIncidentReported = response => reportedResponses.has(response);
+export function markIncidentReported(response) { reportedResponses.add(response); return response; }
+
+// Only server-built payment details are accepted. Never forward provider bodies,
+// exception messages, checkout URLs, credentials or arbitrary metadata.
+function paymentContext(value) {
+  if (!value || typeof value !== 'object') return null;
+  return {
+    orderId: typeof value.orderId === 'string' && /^[0-9a-f-]{36}$/.test(value.orderId) ? value.orderId : null,
+    txId: typeof value.txId === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(value.txId) ? value.txId : null,
+    tier: ['weekly', 'threeMonths'].includes(value.tier) ? value.tier : null,
+    amountRub: Number.isFinite(value.amountRub) && value.amountRub > 0 && value.amountRub <= 1000000 ? value.amountRub : null,
+    method: value.method === 'sbp' ? 'sbp' : null,
+    client: ['android', 'web'].includes(value.client) ? value.client : null,
+    providerOperation: ['create', 'status'].includes(value.providerOperation) ? value.providerOperation : null,
+    providerStatus: Number.isInteger(value.providerStatus) && value.providerStatus >= 400 && value.providerStatus <= 599 ? value.providerStatus : null,
+  };
+}
 export function errorCode(error) {
   // Never forward exception messages: SDK errors can contain URLs and tokens.
   if (/too many requests.*same key|(?:put|write).*429|(?:put|write).*rate.?limit/i.test(String(error?.message || ''))) return 'storage_rate_limited';
@@ -26,6 +45,16 @@ export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
     guide.emoji + ' <b>' + copy.title + '</b>',
     '<b>Причина:</b> ' + copy.reason + (guide.what ? ' ' + guide.what : ''),
     guide.steps[0] ? '→ ' + guide.steps[0] : null,
+    event.payment ? (event.operation === 'api.user.pay-intent'
+      ? 'Форма оплаты не выдана: человек не смог начать оплату.'
+      : 'Подтверждение оплаты не завершено. Если человек уже оплатил, повторно платить не нужно.') : null,
+    event.payment ? '💳 ' + [event.payment.method === 'sbp' ? 'СБП' : null, event.payment.amountRub ? event.payment.amountRub + ' ₽' : null,
+      ({ weekly: '1 неделя', threeMonths: '3 месяца' })[event.payment.tier]].filter(Boolean).join(' · ') : null,
+    event.payment?.client ? '🌐 Оплата из: ' + (event.payment.client === 'android' ? 'приложения Android' : 'веб-версии') : null,
+    event.payment?.providerOperation ? 'Запрос Platega: ' + (event.payment.providerOperation === 'create' ? 'POST /transaction/process' : 'GET /transaction/{id}') +
+      (event.payment.providerStatus ? ' · HTTP ' + event.payment.providerStatus : '') : null,
+    event.payment?.orderId ? 'Заказ: <code>' + escape(event.payment.orderId) + '</code>' : null,
+    event.payment?.txId ? 'Транзакция Platega: <code>' + escape(event.payment.txId) + '</code>' : null,
     '',
     event.userId || event.category !== 'infrastructure' ? '👤 ' + escape(account) : null,
     event.userEmail ? '✉️ ' + escape(event.userEmail) : null,
@@ -80,6 +109,7 @@ export async function reportIncident(env, incident) {
       installation: typeof incident.installation === 'string' && /^[a-f0-9]{16}$/.test(incident.installation) ? incident.installation : null,
       diagnosticId: typeof incident.diagnosticId === 'string' && /^[a-f0-9-]{36}$/.test(incident.diagnosticId) ? incident.diagnosticId : null,
       status: Number.isInteger(incident.status) && incident.status >= 400 && incident.status <= 599 ? incident.status : null,
+      payment: incident.origin === 'client' ? null : paymentContext(incident.payment),
     };
     if (event.diagnosticId) console.log(JSON.stringify({ event: 'incident', diagnosticId: event.diagnosticId, operation: event.operation, code: event.code, status: event.status }));
     // Group the same failure across accounts to keep a widespread outage readable.

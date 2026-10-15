@@ -40,7 +40,7 @@ test('CSV: BOM, разделитель «;», кавычки для спецси
   assert.ok(csv.startsWith('﻿'));
   const [header, row] = csv.slice(1).trim().split('\r\n');
   assert.match(header, /^Время \(МСК\);Срочность;Ушло в чат;/);
-  assert.equal(header.split(';').length, 18);
+  assert.equal(header.split(';').length, 26);
   assert.match(row, /^11\.10\.2026 09:57:04;Важно;да;приложение;auth;auth\.provider;timeout;Google;Android;2\.2\.3\+59;realme RMX5303;;RU;/);
   assert.ok(row.includes('"\'=HYPERLINK(""https://x"",""k"")"'), 'формула экранирована и кавычки удвоены');
   assert.ok(row.includes('"a;b""c@mail.ru"'), 'точка с запятой внутри ячейки заключена в кавычки');
@@ -56,4 +56,15 @@ test('пустой журнал даёт только заголовок, нео
 test('срочность в журнале совпадает с Telegram-сообщением', () => {
   assert.equal(errorLevelLabel({ category: 'purchase', operation: 'api.pay.platega.callback', code: 'operation_failed' }), 'Срочно');
   assert.equal(errorLevelLabel({ category: 'auth', operation: 'auth.provider', code: 'timeout' }), 'Важно');
+});
+
+test('CSV сохраняет детали неудачной оплаты, включая свёрнутые сообщения', () => {
+  const orderId = crypto.randomUUID(), txId = crypto.randomUUID();
+  const record = errorLogRecord({ category: 'purchase', operation: 'payment.check', code: 'payment_provider_unavailable',
+    payment: { orderId, txId, tier: 'threeMonths', amountRub: 290, method: 'sbp', client: 'web', providerOperation: 'status', providerStatus: 503 },
+  }, { ts: Date.UTC(2026, 9, 15), sent: false, level: 'Срочно' });
+  const csv = buildErrorCsv([record]);
+  assert.match(csv, /Заказ оплаты;Транзакция Platega;Тариф;Сумма \(RUB\)/);
+  assert.ok(csv.includes(`${orderId};${txId};threeMonths;290;sbp;web;status;503`));
+  assert.match(csv, /нет \(повтор, свёрнуто\)/);
 });

@@ -14,7 +14,8 @@ import { renderDailyChart, pngBase64 } from './daily_chart.js';
 import { getAdsConfig, filterAdsForClient } from './ads_config.js';
 export { TrafficState } from './traffic_state.js';
 export { TelegramQueue, resolveTopicThreadId, getTopicThreadId, telegramChatId } from './telegram_queue.js';
-import { pollErrorCommands, resolveTopicThreadId, telegramChatId } from './telegram_queue.js';
+import { pollErrorCommands, getTopicThreadId, telegramChatId } from './telegram_queue.js';
+import { readTelegramTopics, setupTelegramTopics } from './telegram_topics.js';
 import {
   handleSupportSendMessage,
   handleSupportGetMessages,
@@ -32,7 +33,7 @@ import { setEntitlement } from './entitlements.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession } from './user_auth.js';
 import { handleTelegramAuthRequest, handleTelegramAuthCheck } from './telegram_auth.js';
-import { handleClientIncident, deferIncident, errorCode } from './diagnostics.js';
+import { handleClientIncident, deferIncident, errorCode, isIncidentReported } from './diagnostics.js';
 import { APPLE_WEB_CALLBACK_PATH, handleAppleWebCallback } from './apple_web_callback.js';
 import { premiumEventSource, isPaidPremiumEvent } from './premium_analytics.js';
 import { handleSocialAdmin, handleVideoStream, handleVideoThumb, runAutoPost } from './social.js';
@@ -680,7 +681,7 @@ export function buildPremiumGrantMessage(user, grant) {
 // вопроса), клиент шлёт сюда {kind:'report', ...}. Раньше это был mailto —
 // но почтовый клиент есть не у всех, и до отправки доходили единицы.
 
-export function buildReportMessage(b) {
+export function buildReportMessage(b, user = null) {
   const flag = FLAGS[b.country] || '🌍';
   const meta = [];
   if (b.ticket) meta.push(`билет ${esc(b.ticket)}`);
@@ -692,6 +693,11 @@ export function buildReportMessage(b) {
     `🚩 ${flag} <b>Жалоба на вопрос</b>`,
     '',
     esc(String(b.message || '').slice(0, 1500)),
+    '',
+    user ? `• <b>Пользователь:</b> ${esc(String(user.name || 'Имя не указано').slice(0, 120))}`
+      : '• <b>Отправитель:</b> Гость (без подтверждённого входа)',
+    user ? `• <b>Email:</b> ${displayUserEmail(user.email)}` : null,
+    user ? `• <b>ID аккаунта:</b> <code>${esc(String(user.id).slice(0, 200))}</code>` : null,
     '',
     meta.length ? `- ${meta.join(' • ')}` : null,
     b.question_id ? `- <code>${esc(b.question_id)}</code>` : null,
@@ -919,7 +925,7 @@ export async function sendTelegram(env, text, dedupKey = null, options = {}) {
     });
   }
   const url = `https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`;
-  const resolvedThread = explicitThreadId ? Number(explicitThreadId) : resolveTopicThreadId(env, topic);
+  const resolvedThread = explicitThreadId ? Number(explicitThreadId) : await getTopicThreadId(env, topic);
   const payload = {
     chat_id: chatId,
     text,
@@ -3634,72 +3640,21 @@ const workerHandlers = {
       const isAuthorized = await verifyAdminAuth(request, env) ||
         (Boolean(env.SHARED_SECRET) && request.headers.get('x-install-secret') === env.SHARED_SECRET);
       if (!isAuthorized) return jsonResponse({ error: 'unauthorized' }, 401);
-      let topics = {};
-      try {
-        const raw = env.INSTALLS ? await env.INSTALLS.get('telegram_topics') : null;
-        if (raw) topics = JSON.parse(raw);
-      } catch (_) {}
-      return jsonResponse({
-        ok: true,
-        topics: {
-          errors: env.TELEGRAM_TOPIC_ERRORS ? Number(env.TELEGRAM_TOPIC_ERRORS) : (topics.errors || null),
-          purchases: env.TELEGRAM_TOPIC_PURCHASES ? Number(env.TELEGRAM_TOPIC_PURCHASES) : (topics.purchases || null),
-          registrations: env.TELEGRAM_TOPIC_REGISTRATIONS ? Number(env.TELEGRAM_TOPIC_REGISTRATIONS) : (topics.registrations || null),
-        }
-      });
+      return jsonResponse({ ok: true, topics: await readTelegramTopics(env) });
     }
 
     if (url.pathname === '/api/admin/telegram/setup-topics' && request.method === 'POST') {
       const isAuthorized = await verifyAdminAuth(request, env) ||
         (Boolean(env.SHARED_SECRET) && request.headers.get('x-install-secret') === env.SHARED_SECRET);
       if (!isAuthorized) return jsonResponse({ error: 'unauthorized' }, 401);
-      const chatId = telegramChatId(env);
-      if (!env.BOT_TOKEN || !chatId) return jsonResponse({ error: 'bot not configured' }, 503);
-
-      let body = {};
-      try { body = await request.json(); } catch (_) {}
-
-      let errors = body.errors ? Number(body.errors) : null;
-      let purchases = body.purchases ? Number(body.purchases) : null;
-      let registrations = body.registrations ? Number(body.registrations) : null;
-
-      if (!errors || !purchases || !registrations) {
-        const createTopic = async (name, color) => {
-          const res = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/createForumTopic`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, name, icon_color: color }),
-          });
-          const data = await res.json();
-          if (!data.ok) throw new Error(data.description || 'failed to create topic');
-          return data.result.message_thread_id;
-        };
-
-        try {
-          if (!errors) errors = await createTopic('🔴 Ошибки и падения', 0xFB6F5F);
-          if (!purchases) purchases = await createTopic('💳 Покупки и премиум', 0xFFD67E);
-          if (!registrations) registrations = await createTopic('👤 Регистрации', 0x6FB9F0);
-        } catch (e) {
-          return jsonResponse({ error: 'create_topic_failed', detail: e.message }, 400);
-        }
-      }
-
-      const topicsMap = { errors, purchases, registrations };
-      if (env.INSTALLS) {
-        await env.INSTALLS.put('telegram_topics', JSON.stringify(topicsMap));
-      }
-
-      if (errors) {
-        await sendTelegram(env, '🔴 <b>Тема «Ошибки и падения» подключена</b>\nСюда будут приходить падения приложения, серверные сбои и жалобы.', null, { threadId: errors });
-      }
-      if (purchases) {
-        await sendTelegram(env, '💳 <b>Тема «Покупки и премиум» подключена</b>\nСюда будут приходить покупки в сторах, оплата по СБП и выдачи Premium.', null, { threadId: purchases });
-      }
-      if (registrations) {
-        await sendTelegram(env, '👤 <b>Тема «Регистрации» подключена</b>\nСюда будут приходить новые пользователи.', null, { threadId: registrations });
-      }
-
-      return jsonResponse({ ok: true, topics: topicsMap });
+      // The chat's durable queue serializes setup as well as delivery, so
+      // concurrent setup requests cannot create duplicate forum topics.
+      const response = env.TELEGRAM
+        ? await env.TELEGRAM.get(env.TELEGRAM.idFromName(telegramChatId(env))).fetch('https://telegram/setup-topics', {
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: await request.text(),
+        })
+        : await setupTelegramTopics(request, env, sendTelegram);
+      return jsonResponse(await response.json(), response.status);
     }
 
     // ────────────────────── Support Chat API ──────────────────────
@@ -4131,7 +4086,19 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         return jsonResponse({ ok: true, throttled: true });
       }
 
-      const tg = await sendTelegram(env, buildReportMessage(body), null, { topic: 'errors' });
+      // Identity comes only from a verified session and the server profile.
+      // Old clients and guests may still report without an Authorization header.
+      let reporter = null;
+      try {
+        const session = await readSession(request, env);
+        if (session?.user?.id) {
+          reporter = session.user;
+          const raw = await env.INSTALLS.get('user:' + reporter.id);
+          const stored = raw ? JSON.parse(raw) : null;
+          if (stored?.id === reporter.id) reporter = { ...reporter, ...stored };
+        }
+      } catch (_) { /* Account lookup must not prevent sending a complaint. */ }
+      const tg = await sendTelegram(env, buildReportMessage(body, reporter), null, { topic: 'reports' });
       if (!tg.ok) {
         const detail = await tg.text();
         return jsonResponse({ error: 'telegram failed', detail }, 502);
@@ -4248,7 +4215,7 @@ export default {
     };
     try {
       const response = await workerHandlers.fetch(request, env, ctx);
-      if (path !== '/api/auth/session' && (response.status >= 500 || (path === '/api/user/purchase' && [400, 403, 409, 422].includes(response.status)))) {
+      if (!isIncidentReported(response) && path !== '/api/auth/session' && (response.status >= 500 || (path === '/api/user/purchase' && [400, 403, 409, 422].includes(response.status)))) {
         let code = 'http_' + response.status;
         try {
           const reason = (await response.clone().json()).error;
