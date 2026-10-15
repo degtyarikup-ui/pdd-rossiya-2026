@@ -661,6 +661,8 @@
     p.innerHTML = `${head(`<span class="ibadge">${ic(n.ring ? "ring" : "junction")}</span>`, n.ring ? "Кольцо" : kind === "junction" ? "Перекрёсток" : "Точка дороги", `дорог: ${arms}`)}
       ${arms >= 2 ? card("Вид", chips("ring", [{ value: "cross", icon: "junction", title: "Перекрёсток" }, { value: "ring", icon: "ring", title: "Кольцо" }], n.ring ? "ring" : "cross", { cls: "tiles" })
         + (n.ring ? `<div class="sub-h">Размер</div>${chips("size", sizes.map((x) => ({ value: x.value, title: x.title })), size)}` : "")) : ""}
+      ${n.ring ? card("Разметка кольца", toggle("ring-outer-edge", "Внешняя сплошная", n.ring.outerEdge !== false, "marking")
+        + toggle("ring-inner-edge", "Сплошная вокруг островка", n.ring.innerEdge !== false, "marking")) : ""}
       ${kind === "junction" || kind === "ring" ? card("Светофоры", hasLights
         ? `${button("lights-off", "Убрать светофоры", "light", "ghost wide")}`
         : `${button("lights-on", "Поставить на все въезды", "light", "primary wide")}`) : ""}
@@ -668,7 +670,9 @@
     bind({
       del: () => App.remove(),
       "chip:ring": (v) => App.edit(() => { if (v === "ring") n.ring = { r: 20, island: 9 }; else delete n.ring; }),
-      "chip:size": (v) => App.edit(() => { const x = sizes.find((y) => y.value === v); n.ring = { r: x.r, island: x.island }; }),
+      "chip:size": (v) => App.edit(() => { const x = sizes.find((y) => y.value === v); n.ring = { ...n.ring, r: x.r, island: x.island }; }),
+      "toggle:ring-outer-edge": (on) => App.edit(() => { if (on) delete n.ring.outerEdge; else n.ring.outerEdge = false; }),
+      "toggle:ring-inner-edge": (on) => App.edit(() => { if (on) delete n.ring.innerEdge; else n.ring.innerEdge = false; }),
       "lights-on": () => App.edit((sc) => placeLights(sc, n)),
       "lights-off": () => App.edit((sc) => { sc.lights = sc.lights.filter((l) => Math.hypot(l.pos[0] - n.x, l.pos[1] - n.z) >= (n.ring ? n.ring.r + 12 : 20)); }),
     });

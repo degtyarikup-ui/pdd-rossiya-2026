@@ -386,7 +386,8 @@ const Layout = (() => {
       const at = streetsAt(L, n.id);
       if (!at.length) continue;
       if (kind === "ring") {
-        roads.push({ id: `road_${n.id}`, auto: true, outer: circle(xy(n), n.ring.r, 64), holes: [circle(xy(n), n.ring.island, 48).reverse()] });
+        roads.push({ id: `road_${n.id}`, auto: true, outer: circle(xy(n), n.ring.r, 64), holes: [circle(xy(n), n.ring.island, 48).reverse()],
+          outerEdge: n.ring.outerEdge !== false, innerEdge: n.ring.innerEdge !== false });
       } else if (kind !== "border") {
         roads.push({ id: `road_${n.id}`, auto: true, outer: circle(xy(n), Math.max(...at.map(st => streetProfile(L,st,st.a === n.id ? 0 : polyLen(centreline(L,st)),crop).width)) / 2, 40), holes: [] });
       }

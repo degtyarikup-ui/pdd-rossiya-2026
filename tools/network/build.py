@@ -286,6 +286,31 @@ def edge_lines(roads, box: Polygon):
     return band.difference(box.exterior.buffer(1.0))
 
 
+def disabled_edge_mask(scene: dict, roads_all):
+    """Arm edges and the roundabout's two contours have independent switches."""
+    roads = scene.get("roads", [])
+    disabled = unary_union([polygon_of(r) for r in roads if r.get("edge") is False])
+    # Include rounded joins between disabled arms, just like the carriageway.
+    mask = disabled.buffer(CURB_RADIUS, quad_segs=32).buffer(-CURB_RADIUS, quad_segs=32).buffer(0.6)
+    # Arm rectangles reach into the island. They must not interrupt its enabled line.
+    rings = [r for r in roads if "innerEdge" in r or "outerEdge" in r]
+    ring_holes = unary_union([Polygon(h).buffer(0) for r in rings for h in r.get("holes", [])])
+    mask = mask.difference(ring_holes.buffer(0.6))
+    for r in rings:
+        holes = unary_union([Polygon(h).buffer(0) for h in r.get("holes", [])])
+        if r.get("outerEdge") is False:
+            # The area added by this ring includes its approach fillets. Comparing
+            # actual smoothed roads avoids cutting enabled edges farther up an arm.
+            other = road_geometry({**scene, "roads": [item for item in roads if item is not r]})[2]
+            # Tidy/closing can shift an otherwise identical arm by micrometres;
+            # ignore those slivers before expanding the suppression mask.
+            added = roads_all.difference(other.buffer(0.01)).buffer(0.6)
+            mask = mask.union(added.difference(ring_holes.buffer(0.6)))
+        if r.get("innerEdge") is False:
+            mask = mask.union(holes.buffer(0.6))
+    return mask
+
+
 def along_kerb(poly, kerb) -> float:
     """The share of a polygon's outline that lies in the kerb's band (its edge runs along the kerb)."""
     total = near = 0
@@ -472,10 +497,7 @@ def build(scene: dict) -> dict:
         # wedges at the junction while keeping the remaining pavement inside its footprint.
         finish_radius = SIDEWALK * 0.45
         pavement = pavement.buffer(-finish_radius, quad_segs=24).buffer(finish_radius, quad_segs=24).intersection(pavement)
-    # Round the disabled roads together, just like the carriageway: the corner fillets
-    # lie outside the original rectangular arms and must also lose their edge paint.
-    disabled_edges = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("edge") is False])
-    no_edge = disabled_edges.buffer(CURB_RADIUS, quad_segs=32).buffer(-CURB_RADIUS, quad_segs=32).buffer(0.6)
+    no_edge = disabled_edge_mask(scene, roads_all)
     sand_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") == "sand"])
     asphalt_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") != "sand"]
                               + [line.buffer(TRACK_BED / 2, cap_style=2) for line in track_lines(scene)])
