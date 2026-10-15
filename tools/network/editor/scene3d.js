@@ -496,7 +496,7 @@ const Scene3D = (() => {
     };
     if (t === "decor") {
       const url = o.prop === "parked" ? "/asset/models/vehicles/sedan.glb" : `/asset/scenery/${o.prop}.glb`;
-      attach(url, fallbackBox(0xb9b4ab, [2, 2, 2]), o.tint);
+      attach(url, fallbackBox(0xb9b4ab, [2, 2, 2]), o.tint || Catalog.PROP_TINTS?.[o.prop]);
     } else if (t === "actor") {
       const ped = o.type === "pedestrian" || o.type === "cyclist";
       attach(`/asset/scene/${o.asset}`, fallbackBox(TYPE_COLOUR[o.type] || 0x888888, ped ? [0.6, 1.7, 0.6] : [1.9, 1.4, 4.2]));
@@ -1071,6 +1071,48 @@ const Scene3D = (() => {
     needsRender = true;
   }
 
+  // Footprints are batched into four small buffers. A district preview never loads dozens of
+  // glTFs, and it shows exactly which houses / trees the collision-checked brush will place.
+  function setBrushPreview(plan) {
+    if (!scene) return;
+    if (!plan && !groups.brushPreview) return;
+    const group = setGroup("brushPreview");
+    if (!plan) { needsRender = true; return; }
+    for (const [objects, colour] of [[plan.accepted || [], 0x18ad77], [plan.rejected || [], 0xe36b53]]) {
+      if (!objects.length) continue;
+      const lines = [], faces = [];
+      for (const object of objects) {
+        const polygon = object.polygon;
+        if (!polygon || polygon.length < 3) continue;
+        const size = App.catalogSize?.(object.prop) || [2, 2, 2];
+        const scale = Array.isArray(object.scale) ? object.scale[1] : object.scale || 1;
+        const y = 0.27, top = y + Math.min(4, size[1] * scale);
+        for (let i = 0; i < polygon.length; i++) {
+          const a = polygon[i], b = polygon[(i + 1) % polygon.length];
+          lines.push(a[0], y, a[1], b[0], y, b[1]);
+          lines.push(a[0], y, a[1], a[0], top, a[1]);
+          lines.push(a[0], top, a[1], b[0], top, b[1]);
+        }
+        for (let i = 1; i + 1 < polygon.length; i++) faces.push(polygon[0][0], y, polygon[0][1], polygon[i][0], y, polygon[i][1], polygon[i + 1][0], y, polygon[i + 1][1]);
+      }
+      const lineGeo = new THREE.BufferGeometry();
+      lineGeo.setAttribute("position", new THREE.Float32BufferAttribute(lines, 3));
+      const lineKey = `brush-line-${colour}`;
+      if (!materials.has(lineKey)) materials.set(lineKey, new THREE.LineBasicMaterial({ color: colour, transparent: true, opacity: .85, depthWrite: false }));
+      const outline = new THREE.LineSegments(lineGeo, materials.get(lineKey));
+      outline.userData.own = true;
+      outline.renderOrder = 25;
+      group.add(outline);
+      const fillGeo = new THREE.BufferGeometry();
+      fillGeo.setAttribute("position", new THREE.Float32BufferAttribute(faces, 3));
+      const fill = new THREE.Mesh(fillGeo, basic(colour, { transparent: true, opacity: .16, depthWrite: false }));
+      fill.userData.own = true;
+      fill.renderOrder = 24;
+      group.add(fill);
+    }
+    needsRender = true;
+  }
+
   // ---- labels (HTML over the view) -----------------------------------------------------
   function dropLabels(kind) {
     labels = labels.filter((l) => {
@@ -1618,7 +1660,7 @@ const Scene3D = (() => {
   }
 
   return {
-    mount, load, refresh, setBuild, setSelection, setHover, setDraft, setGhost, setHidden, setPlanHandles,
+    mount, load, refresh, setBuild, setSelection, setHover, setDraft, setGhost, setBrushPreview, setHidden, setPlanHandles,
     setSimMode, setFollow, setPhone, phoneRect, getView, setView, setPose, setMode, fit, focus, zoomBy, panBy, worldAt, screenOf, worldPerPixel, hitAt, inRect,
     setTextures, reloadPicture, capture, smooth,
     on(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },

@@ -40,11 +40,11 @@ const QuestionReview = (() => {
   function filterHtml() {
     return `<div class="chips question-filters" role="group" aria-label="Решение по вопросу">${FILTERS.map(([key, label]) => `<button class="${filter === key ? 'on' : ''}" data-qfilter="${key}" ${busy ? 'disabled' : ''}>${label} <em>${count(key)}</em></button>`).join('')}</div>`;
   }
-  function sidebarHtml(text = query) {
+  function sidebarHtml(text = query, { filtersCollapsed = false } = {}) {
     if (!state.questionsLoaded) return `<div class="question-pane-tools"><p class="muted">${error ? esc(error) : 'Загружаем вопросы из билетов…'}</p>${error ? '<button class="btn wide" data-qr="retry">Повторить загрузку</button>' : ''}</div>`;
     const items = list(text);
-    return `<div class="question-pane-tools">${filterHtml()}<div class="question-mode"><button class="btn ${mode === 'review' ? 'primary' : ''}" data-qr="start">Да / Нет</button><button class="btn ${mode === 'editor' ? 'primary' : ''}" data-qr="editor-mode">Редактор</button></div><p class="muted">Решения сохраняются сразу. «Да» добавляет вопрос в планы.</p></div>
-      <div class="scene-list question-list">${items.map(question => `<button class="scene-row ${question.id === selected ? 'on' : ''}" data-question="${esc(question.id)}"><span class="scene-pic question-pic">${photo(question)}</span><span class="scene-text"><b>${esc(title(question))}</b><small>${esc(category(question))}</small><small>${esc(question.question)}</small><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
+    return `<div class="question-pane-tools"><div id="question-filter-options" ${filtersCollapsed ? 'hidden' : ''}>${filterHtml()}</div><div class="question-mode" role="group" aria-label="Режим работы с вопросами"><button class="btn ${mode === 'review' ? 'primary' : ''}" data-qr="start" aria-pressed="${mode === 'review'}">Да / Нет</button><button class="btn ${mode === 'editor' ? 'primary' : ''}" data-qr="editor-mode" aria-pressed="${mode === 'editor'}">Редактор</button></div></div>
+      <div class="scene-list question-list">${items.map(question => `<button class="scene-row ${question.id === selected ? 'on' : ''}" data-question="${esc(question.id)}" aria-label="${esc(title(question))}"><span class="scene-pic question-pic">${photo(question)}</span><span class="scene-text"><b>${esc(title(question))}</b><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
   }
   function homeHtml(text = query) {
     return `<div class="question-home-tools">${filterHtml()}<button class="btn primary" data-qr="start">${ic('play')}Начать отбор: Да / Нет</button></div><div class="home-grid">${list(text).map(question => `<button class="card-scene" data-question="${esc(question.id)}"><span class="card-pic question-card-pic">${photo(question)}</span><span class="card-body"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-card-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
@@ -266,5 +266,6 @@ const QuestionReview = (() => {
     else if (action === 'zoom' || action === 'zoom-close') { imageZoom = action === 'zoom'; render(); }
   });
   return { load, open, close, active: () => shown, keydown, currentId: () => selected, refresh,
-    sidebarHtml, homeHtml, setQuery, setFilter, list, count, mode: () => mode };
+    sidebarHtml, homeHtml, setQuery, setFilter, list, count, mode: () => mode,
+    filterSummary: text => ({ label: FILTERS.find(([key]) => key === filter)[1], count: list(text).length }) };
 })();

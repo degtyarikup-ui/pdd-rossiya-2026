@@ -64,6 +64,12 @@ function mount(records = fixture) {
   assert.match(ui.html(), /A\/B · C\/D/);
   assert.match(ui.review.sidebarHtml(), /loading="lazy"/);
   assert(!ui.review.sidebarHtml().includes('preview/'), 'question list uses original exam pictures');
+  assert.doesNotMatch(ui.review.sidebarHtml(), /<small>|Кому уступить дорогу|A\/B|C\/D/, 'left rows keep only the illustration, reference and decision');
+  assert.match(ui.review.sidebarHtml('', { filtersCollapsed: true }), /id="question-filter-options" hidden/);
+  assert.match(ui.review.sidebarHtml('', { filtersCollapsed: true }), /data-qr="start"/);
+  assert.match(ui.review.sidebarHtml('', { filtersCollapsed: true }), /data-qr="editor-mode"/, 'work mode remains available with collapsed filters');
+  assert.equal(ui.review.filterSummary().label, 'Не просмотрены');
+  assert.equal(ui.review.filterSummary().count, 2);
   assert.equal(ui.urls.at(-1), '?filter=questions&question=ticket_1_1');
   await ui.key('ArrowRight', { repeat: true });
   await ui.key('ArrowLeft', { target: { tagName: 'INPUT' } });
@@ -122,6 +128,7 @@ function mount(records = fixture) {
   assert.match(ui.html(), /Без иллюстрации/);
   ui.review.setQuery('грузовой c/d');
   assert.equal(ui.review.list().length, 1, 'search includes category and full question text');
+  assert.equal(ui.review.filterSummary().count, 1, 'compact status reflects the search and current decision group');
   ui.review.setQuery('1 3');
   assert.equal(ui.review.list().length, 1, 'ticket/question search works');
   ui.App.state.questions.find(question => question.id === fixture[2].id).occurrences = [{id:'ticket_cd_40_20',ticket:40,number:20}];

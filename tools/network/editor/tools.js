@@ -20,9 +20,10 @@ const Tools = (() => {
     { id: "answer", key: "A", title: "Вариант ответа", icon: "route", hint: "Кликайте точки пути. ↵ — готово" },
     { sep: true },
     { id: "prop", key: "O", title: "Объект", icon: "tree", hint: "Клик — поставить, тянуть — повернуть. Выберите объект слева" },
-    { id: "brush", key: "B", title: "Кисть деревьев", icon: "brush", hint: "Ведите с зажатой кнопкой — посадите деревья. ⌥ — стирать" },
+    { id: "brush", key: "B", title: "Кисть окружения", icon: "brush", hint: "Клик — готовая локация. Ведите — рисовать. ⌥ — стирать окружение" },
   ];
-  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", actorType: "car", prop: "trees/round_0", brushProps: ["trees/round_0", "trees/pine_0", "trees/birch_0"], brushSize: 8, tram: false, answerArrowhead: true };
+  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerArrowhead: true };
+  const SHORT_LABEL = { select: "Выбор", hand: "Рука", road: "Дорога", junction: "Перекрёсток", marking: "Разметка", track: "Рельсы", lawn: "Газон", actor: "Транспорт", light: "Светофор", sign: "Знак", officer: "Регулировщик", answer: "Ответ", prop: "Объект", brush: "Кисть" };
   let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null;
 
   const S = () => App.state.S;
@@ -32,22 +33,28 @@ const Tools = (() => {
   // ---- the toolbar -----------------------------------------------------------------------
   function renderBar() {
     $("#toolbar").innerHTML = LIST.filter(t => allowed(t.id)).map((t) => t.sep ? `<span class="tsep"></span>` :
-      `<button data-tool="${t.id}" class="${t.id === tool ? "on" : ""}" data-tip="${esc(t.title)}  ${t.key}">${ic(t.icon)}</button>`).join("");
+      `<button data-tool="${t.id}" class="${t.id === tool ? "on" : ""}" data-tip="${esc(t.title)}  ${t.key}" aria-label="${esc(t.title)} (${t.key})" aria-pressed="${t.id === tool}">${ic(t.icon)}<span class="tool-label">${SHORT_LABEL[t.id] || t.title}</span></button>`).join("");
     renderPopover();
     renderHint();
   }
 
-  function set(id) {
+  function set(id, { keepLibrary = false } = {}) {
     if (!allowed(id)) return App.toast("В мини-игре редактируются дороги, разметка и окружение");
     if (!LIST.find((t) => t.id === id)) return;
+    if (drag?.kind === "brush") { App.endDrag({ rebuild: false }); drag = null; }
     finishDraft(true);
     tool = id;
     opts.pathFor = null;
     placeYaw = null;
     Scene3D.setGhost(null);
+    Scene3D.setBrushPreview?.(null);
     Scene3D.setPanTool(id === "hand");
     Scene3D.setPlanHandles(["select", "road"].includes(id));
-    if (id === "prop" && App.state.ltab !== "library") App.setLeftTab?.("library");
+    const libraryCategory = { prop: "decor", brush: "decor", actor: "traffic", officer: "traffic", light: "traffic", sign: "signs" }[id];
+    if (libraryCategory && !keepLibrary) {
+      if (App.setLibraryCategory) App.setLibraryCategory(libraryCategory);
+      else if (App.state.ltab !== "library") App.setLeftTab?.("library");
+    }
     renderBar();
   }
   const current = () => tool;
@@ -69,9 +76,7 @@ const Tools = (() => {
       const types = Catalog.ACTOR_ORDER.filter((t) => App.state.catalog?.actorTypes[t]);
       html = types.map((t) => `<button class="ptile small ${opts.actorType === t ? "on" : ""}" data-actor="${t}">${Thumbs.img("actor", t)}<span>${Catalog.ACTORS[t].name}</span></button>`).join("");
     } else if (tool === "brush") {
-      const trees = ["trees/round_0", "trees/pine_0", "trees/birch_0", "street/bush"];
-      html = trees.map((p) => `<button class="ptile small ${opts.brushProps.includes(p) ? "on" : ""}" data-brush="${p}">${Thumbs.img("prop", p)}<span>${Catalog.propName(p)}</span></button>`).join("")
-        + `<span class="psep"></span>` + [4, 8, 16].map((s) => `<button class="pchip ${opts.brushSize === s ? "on" : ""}" data-bsize="${s}"><span class="dot-pic" style="--d:${4 + s}px"></span></button>`).join("");
+      html = renderBrushOptions();
     } else if (tool === "prop") {
       html = `<button class="ptile wide on">${Thumbs.img("prop", opts.prop)}<span>${esc(Catalog.propName(opts.prop))}</span></button>`;
     } else if (tool === "light") {
@@ -82,8 +87,39 @@ const Tools = (() => {
     }
     pop.innerHTML = html;
     pop.classList.toggle("grid", tool === "junction");
+    pop.classList.toggle("brush-popover", tool === "brush");
     pop.hidden = !html || !S();
     pop.querySelectorAll("img[data-thumb]").forEach((img) => Thumbs.fill(img));
+  }
+
+  function renderBrushOptions() {
+    const modes = EnvironmentBrush.MODES, diameter = Math.round(EnvironmentBrush.diameter(opts, App.state.catalog));
+    const cards = modes.map(m => {
+      const fence = m.id === "fences" || m.id === "selected" && opts.prop.startsWith("street/fence_");
+      const picture = fence ? EnvironmentBrush.illustration("fences") : m.compound ? EnvironmentBrush.illustration(m.id) : Thumbs.img("prop", m.id === "selected" ? opts.prop : m.prop);
+      const title = m.id === "selected" ? "Свой объект" : m.title;
+      return `<button class="brush-card ${m.compound ? "location-card" : "object-card"} ${opts.brushMode === m.id ? "on" : ""}" data-brush-mode="${m.id}" aria-pressed="${opts.brushMode === m.id}" aria-label="${esc(title)}">${picture}<span>${esc(title)}</span>${m.id === "selected" ? `<small>${esc(Catalog.propName(opts.prop))}</small>` : ""}</button>`;
+    }).join("");
+    return `<div class="brush-toolbar"><div class="brush-presets">${cards}</div><div class="brush-settings">
+      <div class="brush-setting"><span>Размер</span><div class="brush-stepper">${[[.75,"Малый"],[1,"Средний"],[1.35,"Большой"]].map(([n,label]) => `<button class="pchip ${opts.brushScale === n ? "on" : ""}" data-brush-scale="${n}" aria-label="${label} размер кисти">${label}</button>`).join("")}</div></div>
+      <div class="brush-setting"><span>Поворот</span><div class="brush-stepper"><button class="pchip" data-brush-turn="-90" aria-label="Повернуть кисть на 90° влево">↶</button><span>${Math.round(opts.brushYaw * 180 / Math.PI)}°</span><button class="pchip" data-brush-turn="90" aria-label="Повернуть кисть на 90° вправо">↷</button></div></div>
+      <div class="brush-setting"><span>Интервал</span><div class="brush-stepper">${[[.8,"Плотно"],[1,"Обычно"],[1.4,"Редко"]].map(([n,label]) => `<button class="pchip ${opts.brushSpacing === n ? "on" : ""}" data-brush-spacing="${n}">${label}</button>`).join("")}</div></div>
+      <button class="pchip" data-brush-variation="next" aria-label="Другой вариант расположения объектов">Другой вариант</button>
+      <button class="pchip" data-brush-library="true">Объект из библиотеки</button></div>
+      <div class="brush-summary"><span>${diameter} м · клик — поставить · ⌥ — стереть</span><span class="brush-preview-key"><span class="brush-preview-ok">● свободно</span> <span class="brush-preview-blocked">● занято</span></span></div></div>`;
+  }
+
+  function refreshBrushPreview() {
+    if (tool !== "brush" || !lastWorld) return;
+    brushPreview({ world: lastWorld, alt: false });
+  }
+
+  function rotateBrush(deg) {
+    if (tool !== "brush") return false;
+    opts.brushYaw = (opts.brushYaw + deg * Math.PI / 180 + Math.PI * 2) % (Math.PI * 2);
+    renderPopover();
+    refreshBrushPreview();
+    return true;
   }
 
   function renderHint(text) {
@@ -112,12 +148,12 @@ const Tools = (() => {
       if (b.dataset.actor) { opts.actorType = b.dataset.actor; renderPopover(); }
       if (b.dataset.answerStyle) { opts.answerArrowhead = b.dataset.answerStyle === "arrow"; renderPopover(); }
       if (b.dataset.tpl) applyTemplate(b.dataset.tpl);
-      if (b.dataset.brush) {
-        const p = b.dataset.brush, list = opts.brushProps;
-        opts.brushProps = list.includes(p) ? (list.length > 1 ? list.filter((x) => x !== p) : list) : [...list, p];
-        renderPopover();
-      }
-      if (b.dataset.bsize) { opts.brushSize = Number(b.dataset.bsize); renderPopover(); }
+      if (b.dataset.brushMode) { opts.brushMode = b.dataset.brushMode; renderPopover(); refreshBrushPreview(); }
+      if (b.dataset.brushScale) { opts.brushScale = Number(b.dataset.brushScale); renderPopover(); refreshBrushPreview(); }
+      if (b.dataset.brushTurn) { opts.brushYaw = ((opts.brushYaw + Number(b.dataset.brushTurn) * Math.PI / 180 + Math.PI * 2) % (Math.PI * 2)); renderPopover(); refreshBrushPreview(); }
+      if (b.dataset.brushSpacing) { opts.brushSpacing = Number(b.dataset.brushSpacing); renderPopover(); refreshBrushPreview(); }
+      if (b.dataset.brushVariation) { opts.brushVariation++; renderPopover(); refreshBrushPreview(); }
+      if (b.dataset.brushLibrary) App.setLibraryCategory?.("decor");
       if (b.dataset.lightType) { opts.tram = b.dataset.lightType === "tram"; renderPopover(); Scene3D.wake(); }
     });
   }
@@ -184,7 +220,7 @@ const Tools = (() => {
   // ---- the pointer ---------------------------------------------------------------------------
   function onPointer(e) {
     if (!S()) return;
-    if (e.type === "leave") { Scene3D.setGhost(null); setHover(null); return; }
+    if (e.type === "leave") { Scene3D.setGhost(null); Scene3D.setBrushPreview?.(null); if (tool === "brush") Scene3D.setDraft(null); setHover(null); return; }
     if (e.world) lastWorld = e.world;
     const handler = HANDLERS[tool] || HANDLERS.select;
     handler[e.type] && handler[e.type](e);
@@ -700,71 +736,73 @@ const Tools = (() => {
     if (ref) App.select(ref);
   }
 
-  // ---- the brush: trees along the stroke, a little apart and each a bit different ---------------------
+  // ---- environment brush: preview and placement share one collision-checked plan ------------
+  let lastBrushPreview = 0;
   const brush = {
     move(e) {
       if (!e.world) return;
-      Scene3D.setDraft({ kind: "line", points: circle([e.world.x, e.world.z], opts.brushSize / 2), cursor: null, colour: e.alt ? 0xed4621 : 0x2bc280, closed: true, bare: true });
-      if (drag && drag.kind === "brush") brushAt(e);
+      // Drawing is sampled by distance, the outline is capped at 30 fps on dense scenes.
+      if (drag?.kind === "brush") brushAt(e);
+      if (Date.now() - lastBrushPreview < 32) return;
+      brushPreview(e);
+      lastBrushPreview = Date.now();
     },
     down(e) {
       if (!e.world) return;
+      if (!App.pickable({ t: "decor" })) return App.toast("Откройте и разблокируйте слой «Окружение»", "warn");
       App.beginDrag();
-      drag = { kind: "brush", erase: e.alt, last: null };
+      drag = { kind: "brush", erase: e.alt, last: null, placed: 0, removed: 0 };
       brushAt(e);
+      brushPreview(e);
     },
-    up() {
-      if (drag && drag.kind === "brush") { App.endDrag(); App.renderPanels?.(); }
+    up(e) {
+      if (drag?.kind !== "brush") return;
+      if (e?.world) brushAt(e);
+      const result = drag;
       drag = null;
+      App.endDrag({ rebuild: false });
+      App.renderPanels?.();
+      if (!result.placed && !result.removed && !result.erase) App.toast("Здесь нет свободного места: сдвиньте кисть от дороги или объектов", "warn");
+      if (e?.world) brushPreview(e);
     },
   };
   function circle(c, r) {
-    return Array.from({ length: 24 }, (_, i) => [c[0] + Math.cos((i / 24) * Math.PI * 2) * r, c[1] + Math.sin((i / 24) * Math.PI * 2) * r]);
+    return Array.from({ length: 36 }, (_, i) => [c[0] + Math.cos((i / 36) * Math.PI * 2) * r, c[1] + Math.sin((i / 36) * Math.PI * 2) * r]);
   }
-  function brushAt(e) {
-    const s = S(), p = [e.world.x, e.world.z], r = opts.brushSize / 2;
-    if (drag.erase || e.alt) {
-      App.dragMove((sc) => { sc.decor = sc.decor.filter((d) => !(opts.brushProps.includes(d.prop) && Math.hypot(d.pos[0] - p[0], d.pos[1] - p[1]) < r)); });
+  function brushPreview(e) {
+    if (!App.pickable({ t: "decor" })) { Scene3D.setDraft(null); Scene3D.setBrushPreview?.(null); return; }
+    const point = [e.world.x, e.world.z], erase = e.alt || drag?.erase;
+    const radius = EnvironmentBrush.diameter(opts, App.state.catalog) / 2;
+    Scene3D.setDraft({ kind: "line", points: circle(point, radius), cursor: null, colour: erase ? 0xed4621 : 0x0574f8, closed: true, bare: true });
+    if (erase) {
+      const objects = (S().decor || []).filter(d => EnvironmentBrush.matches(opts, d) && Math.hypot(d.pos[0] - point[0], d.pos[1] - point[1]) <= radius);
+      Scene3D.setBrushPreview?.({ accepted: [], rejected: objects.map(d => ({ ...d, polygon: EnvironmentBrush.footprint(d, App.state.catalog) })) });
       return;
     }
-    if (drag.last && Math.hypot(p[0] - drag.last[0], p[1] - drag.last[1]) < Math.max(2.5, r * 0.6)) return;
-    drag.last = p;
-    const spacing = 3.2;
-    const count = Math.max(1, Math.round((r * r) / 16));
-    const road = App.state.build;
-    App.dragMove((sc) => {
-      for (let k = 0; k < count; k++) {
-        const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * r;
-        const q = [p[0] + Math.cos(a) * d, p[1] + Math.sin(a) * d];
-        if (sc.decor.some((x) => Math.hypot(x.pos[0] - q[0], x.pos[1] - q[1]) < spacing)) continue;
-        if (onRoad(q, road)) continue;
-        const prop = opts.brushProps[Math.floor(Math.random() * opts.brushProps.length)];
-        const tints = (Catalog.TINTS.trees || []).filter(Boolean).slice(0, 4);
-        const k1 = 0.85 + Math.random() * 0.3;
-        sc.decor.push({ prop, pos: [r3(q[0]), r3(q[1])], yaw: r3(Math.random() * Math.PI * 2 - Math.PI), scale: [r3(k1), r3(k1), r3(k1)],
-          tint: prop.startsWith("trees/") ? tints[Math.floor(Math.random() * tints.length)] : null, id: App.uniqueId("decor_", sc.decor.map((x) => x.id)) });
-      }
-    });
+    Scene3D.setBrushPreview?.(EnvironmentBrush.plan(S(), App.state.build, App.state.catalog, opts, point));
   }
-  // Trees keep off the carriageway and the pavement (the build's surfaces).
-  function onRoad(q, B) {
-    if (!B) return false;
-    for (const surf of B.surfaces) {
-      if (surf.id !== "asphalt" && surf.id !== "pavement" && surf.id !== "island") continue;
-      const v = surf.verts, idx = surf.idx;
-      for (let k = 0; k + 2 < idx.length; k += 3) {
-        const a = idx[k] * 2, b = idx[k + 1] * 2, c = idx[k + 2] * 2;
-        if (inTri(q, v[a], v[a + 1], v[b], v[b + 1], v[c], v[c + 1])) return true;
+  function brushAt(e) {
+    const point = [e.world.x, e.world.z];
+    const step = Math.max(1, EnvironmentBrush.interval(opts, App.state.catalog));
+    const previous = drag.last;
+    if (previous && Math.hypot(point[0] - previous[0], point[1] - previous[1]) < (drag.erase ? Math.min(3, step / 3) : step)) return;
+    // Interpolate large mouse moves, rather than leaving holes on a fast stroke.
+    const length = previous ? Math.hypot(point[0] - previous[0], point[1] - previous[1]) : 0;
+    const count = previous ? Math.min(12, Math.max(1, Math.floor(length / (drag.erase ? Math.min(3, step / 3) : step)))) : 1;
+    let mutated = false;
+    for (let i = 1; i <= count; i++) {
+      const p = previous ? [previous[0] + (point[0] - previous[0]) * i / count, previous[1] + (point[1] - previous[1]) * i / count] : point;
+      if (drag.erase || e.alt) {
+        const removed = EnvironmentBrush.erase(S(), App.state.catalog, opts, p);
+        drag.removed += removed; mutated ||= removed > 0;
+      } else {
+        const planned = EnvironmentBrush.plan(S(), App.state.build, App.state.catalog, opts, p);
+        const ids = EnvironmentBrush.append(S(), planned);
+        drag.placed += ids.length; mutated ||= ids.length > 0;
       }
     }
-    return false;
-  }
-  function inTri(p, ax, az, bx, bz, cx, cz) {
-    const d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
-    if (Math.abs(d) < 1e-12) return false;
-    const w1 = ((bz - cz) * (p[0] - cx) + (cx - bx) * (p[1] - cz)) / d;
-    const w2 = ((cz - az) * (p[0] - cx) + (ax - cx) * (p[1] - cz)) / d;
-    return w1 >= 0 && w2 >= 0 && 1 - w1 - w2 >= 0;
+    drag.last = point;
+    if (mutated) App.dragMove(() => {}, { rebuild: false });
   }
 
   // Tram tracks: a line by clicks, its points snap onto the tracks already there.
@@ -875,15 +913,20 @@ const Tools = (() => {
   // A prop chosen in the library: placing it is the next click.
   function pickProp(prop) {
     opts.prop = prop;
-    set("prop");
+    // The library can be used as the source of a repeating brush without leaving that tool.
+    if (tool === "brush") {
+      opts.brushMode = "selected";
+      renderPopover();
+      refreshBrushPreview();
+    } else set("prop", { keepLibrary: true });
   }
   function pickSign(code) {
     opts.sign = code;
-    set("sign");
+    set("sign", { keepLibrary: true });
   }
   function pickActor(type) {
     opts.actorType = type;
-    set("actor");
+    set("actor", { keepLibrary: true });
   }
   // The next drawing with the answer tool is a participant's path.
   function drawPathFor(id) {
@@ -895,7 +938,7 @@ const Tools = (() => {
 
   function pickLight(tram = false) {
     opts.tram = !!tram;
-    set("light");
+    set("light", { keepLibrary: true });
   }
 
   // Dropped from the library onto the view.
@@ -925,5 +968,5 @@ const Tools = (() => {
   }
 
   return { init, set, current, list: () => LIST.filter((t) => !t.sep), escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, convertScene,
-    applyTemplate, renderBar, renderHint, lightSpot, get opts() { return opts; } };
+    applyTemplate, renderBar, renderHint, lightSpot, rotateBrush, get opts() { return opts; } };
 })();

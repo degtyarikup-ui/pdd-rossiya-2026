@@ -5,7 +5,15 @@
   const { esc, ic, state } = App;
   state.ltab = "scenes";
   state.texSel = null;
-  let query = "", filter = "all", libQuery = "", open = { decor: false };
+  let query = "", filter = "all", libQuery = "", libraryCategory = "all", filtersCollapsed = false, open = { decor: false };
+  const COLLAPSE_STORAGE = "network-editor-scene-filters-collapsed";
+  const LIBRARY_STORAGE = "network-editor-library-category";
+  const LIBRARY_CATEGORIES = [["all", "Все"], ["traffic", "Транспорт"], ["signs", "Знаки"], ["decor", "Окружение"]];
+  try {
+    filtersCollapsed = localStorage.getItem(COLLAPSE_STORAGE) === "true";
+    const category = localStorage.getItem(LIBRARY_STORAGE);
+    if (LIBRARY_CATEGORIES.some(([key]) => key === category)) libraryCategory = category;
+  } catch (_) { /* Optional workspace preferences. */ }
 
   // ---- dispatch ----------------------------------------------------------------------------
   App.renderPanels = (o = {}) => {
@@ -23,6 +31,15 @@
     App.renderInspector?.();
   };
   document.querySelectorAll("[data-ltab]").forEach((b) => b.addEventListener("click", () => App.setLeftTab(b.dataset.ltab)));
+  App.libraryCategory = () => libraryCategory;
+  App.setLibraryCategory = (category, { open: show = true, clearSearch = true } = {}) => {
+    if (!LIBRARY_CATEGORIES.some(([key]) => key === category)) return;
+    libraryCategory = category;
+    if (clearSearch) libQuery = "";
+    try { localStorage.setItem(LIBRARY_STORAGE, category); } catch (_) { /* Optional preference. */ }
+    if (show) App.setLeftTab("library");
+    else if (state.ltab === "library") renderLeft();
+  };
 
   function renderLeft() {
     const body = $("#left-body");
@@ -64,8 +81,9 @@
     const questions = filter === "questions" && state.section !== "regulator";
     const list = questions ? [] : filtered();
     return `${state.section === "regulator" ? `<div class="pane-head"><p>Сцена мини-игры. Объекты и разметка редактируются на виде.</p></div>` : `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="scene-q" placeholder="Билет или слова из вопроса" value="${esc(query)}"></label>
-      <div class="chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t} <em>${count(k)}</em></button>`).join("")}</div></div>`}
-      ${questions ? QuestionReview.sidebarHtml(query) : `<div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${s.id}">
+      <div class="scene-filter-bar"><span class="scene-filter-current">${esc(FILTERS.find(([key]) => key === filter)[1])}${questions && QuestionReview.filterSummary ? ` · ${esc(QuestionReview.filterSummary().label)}` : ""} <em>${questions && QuestionReview.filterSummary ? QuestionReview.filterSummary(query).count : list.length}</em></span><button class="scene-filter-toggle" data-toggle-scene-filters aria-expanded="${!filtersCollapsed}" aria-controls="scene-filters${questions ? " question-filter-options" : ""}" aria-label="${filtersCollapsed ? "Показать фильтры вопросов" : "Скрыть фильтры вопросов"}">${ic("chevron", filtersCollapsed ? "" : "rot")}${filtersCollapsed ? "Фильтры" : "Скрыть"}</button></div>
+      <div id="scene-filters" ${filtersCollapsed ? "hidden" : ""}><div class="chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}" aria-pressed="${filter === k}">${t} <em>${count(k)}</em></button>`).join("")}</div></div></div>`}
+      ${questions ? QuestionReview.sidebarHtml(query, { filtersCollapsed }) : `<div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${s.id}">
         <span class="scene-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : ""}</span>
         <span class="scene-text"><b>${esc(App.sceneTitle(s.id))}</b>
         <span class="badges">${badges(s)}</span></span></button>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`}`;
@@ -99,6 +117,12 @@
   const renderHome = App.renderHome;
   const count = (k) => k === "questions" ? (state.questions || []).length : state.scenes.filter((s) => s.id !== "mini_regulator" && (k === "all" || (k === "game" && s.playable) || (k === "err" && s.errors))).length;
   App.sceneFilter = () => filter;
+  App.sceneFiltersCollapsed = () => filtersCollapsed;
+  App.setSceneFiltersCollapsed = (collapsed) => {
+    filtersCollapsed = !!collapsed;
+    try { localStorage.setItem(COLLAPSE_STORAGE, String(filtersCollapsed)); } catch (_) { /* Optional preference. */ }
+    renderLeft();
+  };
   App.setSceneFilter = (next) => {
     if (!FILTERS.some(([key]) => key === next)) return;
     filter = next;
@@ -122,6 +146,7 @@
     if (e.target.id === "lib-q") { libQuery = e.target.value; renderLeft.focus = true; renderLeft(); }
   });
   document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-toggle-scene-filters]")) { App.setSceneFiltersCollapsed(!filtersCollapsed); return; }
     const f = e.target.closest("[data-filter]");
     if (f) {
       App.setSceneFilter(f.dataset.filter);
@@ -190,7 +215,8 @@
             const key = "decor:" + p, op = open[key];
             const any = list.some(isOn);
             return `<div class="lrow sub ${any ? "on-in" : ""}" data-kind="${esc(p)}">${Thumbs.img("prop", p, "mini")}<span>${esc(Catalog.propName(p))}</span><em>${list.length}</em>
-              <button class="lbtn" data-open="${esc(key)}">${ic("chevron", op ? "rot" : "")}</button></div>`
+              <button class="lbtn lselect" data-select-prop="${esc(p)}" aria-label="Выбрать все: ${esc(Catalog.propName(p))}" title="Выбрать все">${ic("cursor")}</button>
+              <button class="lbtn" data-open="${esc(key)}" aria-expanded="${!!op}" aria-label="${op ? "Свернуть" : "Раскрыть"}: ${esc(Catalog.propName(p))}">${ic("chevron", op ? "rot" : "")}</button></div>`
               + (op ? list.map((r, i) => `<div class="lrow sub2 ${isOn(r) ? "on" : ""}" data-ref='${esc(JSON.stringify(r))}'><span>${esc(Catalog.propName(p))} ${i + 1}</span></div>`).join("") : "");
           }).join("");
         } else {
@@ -199,12 +225,28 @@
       }
       return `<section class="lgroup ${hiddenL ? "off" : ""}">
         <div class="lhead" data-open="${L.id}"><span class="caret">${ic("chevron", expanded ? "rot" : "")}</span>${ic(L.icon)}<b>${L.title}</b><em>${L.id === "actors" ? rows.length - 1 : rows.length}</em>
-          <button class="lbtn ${lockedL ? "on" : ""}" data-lock="${L.id}" data-tip="${lockedL ? "Открыть" : "Запереть"}">${ic(lockedL ? "lock" : "unlock")}</button>
-          <button class="lbtn ${hiddenL ? "on" : ""}" data-eye="${L.id}" data-tip="${hiddenL ? "Показать" : "Скрыть"}">${ic(hiddenL ? "eye-off" : "eye")}</button></div>
+          <button class="lbtn lselect" data-select-layer="${L.id}" aria-label="Выбрать все: ${L.title}" title="Выбрать все" ${hiddenL || lockedL || !rows.length ? "disabled" : ""}>${ic("cursor")}</button>
+          <button class="lbtn ${lockedL ? "on" : ""}" data-lock="${L.id}" data-tip="${lockedL ? "Открыть" : "Запереть"}" aria-label="${lockedL ? "Разблокировать" : "Заблокировать"}: ${L.title}">${ic(lockedL ? "lock" : "unlock")}</button>
+          <button class="lbtn ${hiddenL ? "on" : ""}" data-eye="${L.id}" data-tip="${hiddenL ? "Показать" : "Скрыть"}" aria-label="${hiddenL ? "Показать" : "Скрыть"}: ${L.title}">${ic(hiddenL ? "eye-off" : "eye")}</button></div>
         ${expanded ? `<div class="lbody">${body}</div>` : ""}</section>`;
     }).join("")}</div>`;
   }
   $("#left-body").addEventListener("click", (e) => {
+    const selectLayer = e.target.closest("[data-select-layer]");
+    if (selectLayer) {
+      e.stopPropagation();
+      if (selectLayer.disabled) return;
+      let refs = rowsOf(selectLayer.dataset.selectLayer);
+      if (selectLayer.dataset.selectLayer === "roads") refs = refs.filter(ref => ref.t === "street" || ref.t === "road");
+      return App.select(refs.filter(App.pickable), { add: e.shiftKey });
+    }
+    const selectProp = e.target.closest("[data-select-prop]");
+    if (selectProp) {
+      e.stopPropagation();
+      return App.select(state.S.decor.filter(item => item.prop === selectProp.dataset.selectProp).map(item => ({ t: "decor", id: item.id })).filter(App.pickable), { add: e.shiftKey });
+    }
+    const category = e.target.closest("[data-library-category]");
+    if (category) return App.setLibraryCategory(category.dataset.libraryCategory, { clearSearch: false });
     const eye = e.target.closest("[data-eye]");
     if (eye) { e.stopPropagation(); return App.toggleHidden(eye.dataset.eye); }
     const lock = e.target.closest("[data-lock]");
@@ -230,7 +272,7 @@
       if (!state.S) return App.toast("Сначала откройте сцену", "warn");
       if (item.kind === "prop") Tools.pickProp(item.id);
       else if (item.kind === "actor") Tools.pickActor(item.id);
-      else if (item.kind === "officer") Tools.set("officer");
+      else if (item.kind === "officer") Tools.set("officer", { keepLibrary: true });
       else if (item.kind === "sign") Tools.pickSign(item.id);
       else if (item.kind === "light") Tools.pickLight(item.id === "light_tram" || !!item.tram);
       else Tools.set("light");
@@ -246,14 +288,15 @@
     if (!cat) return "";
     const q = libQuery.trim().toLowerCase();
     const hit = (name) => !q || name.toLowerCase().includes(q);
-    const tile = (item, name, pic, on) => `<button class="lib-tile ${on ? "on" : ""}" draggable="true" data-lib='${esc(JSON.stringify(item))}' data-tip="${esc(name)}">${pic}<span>${esc(name)}</span></button>`;
+    const inCategory = category => libraryCategory === "all" || libraryCategory === category;
+    const tile = (item, name, pic, on) => `<button class="lib-tile ${on ? "on" : ""}" draggable="true" data-lib='${esc(JSON.stringify(item))}' data-tip="${esc(name)}" aria-label="Добавить: ${esc(name)}" aria-pressed="${!!on}">${pic}<span>${esc(name)}</span></button>`;
     const sections = [];
     const vehicles = Catalog.ACTOR_ORDER.filter((t) => cat.actorTypes[t] && hit(Catalog.ACTORS[t].name));
-    if (vehicles.length) sections.push(`<h4>${ic("car")}Машины и люди</h4><div class="lib-grid">${vehicles.map((t) => tile({ kind: "actor", id: t }, Catalog.ACTORS[t].name, Thumbs.img("actor", t), Tools.current() === "actor" && Tools.opts.actorType === t)).join("")}</div>`);
+    if (inCategory("traffic") && vehicles.length) sections.push(`<h4>${ic("car")}Машины и люди</h4><div class="lib-grid">${vehicles.map((t) => tile({ kind: "actor", id: t }, Catalog.ACTORS[t].name, Thumbs.img("actor", t), Tools.current() === "actor" && Tools.opts.actorType === t)).join("")}</div>`);
     const signs = (cat.signs || []).filter((c) => hit(Catalog.signName(c)) || c.startsWith(q));
-    if (signs.length) sections.push(`<h4>${ic("flag")}Знаки</h4><div class="lib-grid signs">${signs.map((c) => tile({ kind: "sign", id: c }, Catalog.signName(c), `<img class="thumb sign-pic" src="/asset/sign/${c}.svg" alt="">`, Tools.current() === "sign" && Tools.opts.sign === c)).join("")}</div>`);
-    if (hit("регулировщик")) sections.push(`<h4>${ic("person")}Регулировщик</h4><div class="lib-grid">${tile({ kind: "officer", id: "officer" }, "Регулировщик", `<span class="lib-icon">${ic("person")}</span>`, Tools.current() === "officer")}</div>`);
-    if (cat.lightAsset && hit("светофор")) {
+    if (inCategory("signs") && signs.length) sections.push(`<h4>${ic("flag")}Знаки</h4><div class="lib-grid signs">${signs.map((c) => tile({ kind: "sign", id: c }, Catalog.signName(c), `<img class="thumb sign-pic" src="/asset/sign/${c}.svg" alt="">`, Tools.current() === "sign" && Tools.opts.sign === c)).join("")}</div>`);
+    if (inCategory("traffic") && hit("регулировщик")) sections.push(`<h4>${ic("person")}Регулировщик</h4><div class="lib-grid">${tile({ kind: "officer", id: "officer" }, "Регулировщик", `<span class="lib-icon">${ic("person")}</span>`, Tools.current() === "officer")}</div>`);
+    if (inCategory("traffic") && cat.lightAsset && hit("светофор")) {
       sections.push(`<h4>${ic("light")}Светофоры</h4><div class="lib-grid">
         ${tile({ kind: "light", id: "light" }, "Светофор", Thumbs.img("light", "light"), Tools.current() === "light" && !Tools.opts.tram)}
         ${cat.lightTramAsset ? tile({ kind: "light", id: "light_tram", tram: true }, "С трамвайной секцией", Thumbs.img("light", "light_tram"), Tools.current() === "light" && Tools.opts.tram) : ""}
@@ -261,11 +304,18 @@
     }
     const props = [...cat.props.map((p) => p.id), ...(state.id === "mini_regulator" ? [] : ["parked"])];
     for (const g of Catalog.PROP_GROUPS) {
+      if (!inCategory("decor")) continue;
       const items = props.filter((p) => g.match(p) && hit(Catalog.propName(p)));
       if (!items.length) continue;
       sections.push(`<h4>${ic(g.icon)}${g.title}</h4><div class="lib-grid">${items.map((p) => tile({ kind: "prop", id: p }, Catalog.propName(p), Thumbs.img("prop", p), Tools.current() === "prop" && Tools.opts.prop === p)).join("")}</div>`);
     }
-    return `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="lib-q" placeholder="Найти: ель, автобус, киоск" value="${esc(libQuery)}"></label></div>
+    const categoryPictures = {
+      all: `<span class="library-category-collage">${Thumbs.img("actor", "car")}${Thumbs.img("prop", "trees/round_0")}</span>`,
+      traffic: Thumbs.img("actor", "bus"),
+      signs: `<img class="thumb" src="/asset/sign/${cat.signs?.includes("2.1") ? "2.1" : cat.signs?.[0] || "2.4"}.svg" alt="">`,
+      decor: Thumbs.img("prop", "buildings/home_0"),
+    };
+    return `<div class="pane-head"><div class="library-categories" role="group" aria-label="Категории объектов">${LIBRARY_CATEGORIES.map(([key, label]) => `<button class="library-category ${libraryCategory === key ? "on" : ""}" data-library-category="${key}" aria-pressed="${libraryCategory === key}">${categoryPictures[key]}<span>${label}</span></button>`).join("")}</div><label class="search">${ic("search")}<input type="search" id="lib-q" aria-label="Поиск объектов" placeholder="Найти: ель, автобус, киоск" value="${esc(libQuery)}"></label></div>
       <div class="lib">${sections.join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`;
   }
   $("#left-body").addEventListener("dragstart", (e) => {

@@ -10,6 +10,8 @@ const Catalog = (() => {
     { id: "street", title: "Улица", icon: "lamp", match: (p) => p.startsWith("street/") && p !== "street/bush" },
     { id: "parked", title: "Стоящие машины", icon: "parked", match: (p) => p === "parked" },
   ];
+  // Untinted foliage uses the same summer palette in the view and model thumbnails.
+  const PROP_TINTS = { "trees/pine_0": "#3e7c42", "trees/round_0": "#5f8f3e", "trees/birch_0": "#7fa34a", "street/bush": "#467e3c" };
   const PROP_NAMES = {
     "trees/pine_0": "Ель", "trees/round_0": "Дерево", "trees/birch_0": "Берёза", "street/bush": "Куст",
     "street/fence_12": "Забор 12 м", "street/fence_14": "Забор 14 м", "street/lamp": "Фонарь",
@@ -96,5 +98,5 @@ const Catalog = (() => {
   SIGN_NAMES["8.13"] = "Направление главной дороги";
   const signName = (code) => SIGN_NAMES[code] || `Знак ${code}`;
 
-  return { signName, PROP_GROUPS, propName, groupOf, ACTORS, ACTOR_ORDER, SPEEDS, speedOf, TINTS, EXITS, LETTERS, LETTER_COLOUR, LIGHTS, MARKS };
+  return { signName, PROP_TINTS, PROP_GROUPS, propName, groupOf, ACTORS, ACTOR_ORDER, SPEEDS, speedOf, TINTS, EXITS, LETTERS, LETTER_COLOUR, LIGHTS, MARKS };
 })();

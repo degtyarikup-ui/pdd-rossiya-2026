@@ -3,9 +3,9 @@
 // (localStorage) so the next visit shows them at once.
 const Thumbs = (() => {
   const SIZE = 160;
-  const VERSION = "t3";
+  const VERSION = "t4";
   // Trees and bushes are white in their files: the game paints them (the season's colour).
-  const TINT = { "trees/pine_0": "#3e7c42", "trees/round_0": "#5f8f3e", "trees/birch_0": "#7fa34a", "street/bush": "#467e3c" };
+  const TINT = Catalog.PROP_TINTS;
   const cache = new Map();
   const waiting = new Map();      // url -> [img]
   let renderer = null, scene = null, camera = null, queue = Promise.resolve();

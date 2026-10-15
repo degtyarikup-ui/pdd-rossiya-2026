@@ -9,18 +9,16 @@
   // ---- small builders -----------------------------------------------------------------------
   const card = (title, body, opts = {}) => `<section class="card ${opts.cls || ""}">${title ? `<h3>${opts.icon ? ic(opts.icon) : ""}${title}${opts.aside || ""}</h3>` : ""}${body}</section>`;
   const chips = (name, items, value, opts = {}) => `<div class="seg-chips ${opts.cls || ""}">${items.map((it) =>
-    `<button class="${String(it.value) === String(value) ? "on" : ""} ${it.disabled ? "off" : ""}" data-chip="${name}" data-value="${esc(it.value)}" ${it.disabled ? "disabled" : ""} ${it.tip ? `data-tip="${esc(it.tip)}"` : ""}>${it.icon ? ic(it.icon) : ""}${it.html || ""}${it.title ? `<span>${esc(it.title)}</span>` : ""}</button>`).join("")}</div>`;
+    `<button class="${String(it.value) === String(value) ? "on" : ""} ${it.disabled ? "off" : ""}" data-chip="${name}" data-value="${esc(it.value)}" aria-label="${esc(it.tip || it.title || it.value)}" aria-pressed="${String(it.value) === String(value)}" ${it.disabled ? "disabled" : ""} ${it.tip ? `data-tip="${esc(it.tip)}"` : ""}>${it.icon ? ic(it.icon) : ""}${it.html || ""}${it.title ? `<span>${esc(it.title)}</span>` : ""}</button>`).join("")}</div>`;
   const toggle = (name, label, on, icon) => `<label class="switch-row">${icon ? ic(icon) : ""}<span>${esc(label)}</span><input type="checkbox" data-toggle="${name}" ${on ? "checked" : ""}><i class="switch"></i></label>`;
   const button = (act, label, icon, cls = "") => `<button class="btn ${cls}" data-act="${act}">${icon ? ic(icon) : ""}<span>${esc(label)}</span></button>`;
   const slider = (name, label, value, min, max, step, shown) => `<div class="slider-row"><div class="slider-h"><span>${esc(label)}</span><em data-shown="${name}">${esc(shown)}</em></div>
     <input type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-slider="${name}"></div>`;
 
   function compactHelp(p) {
-    p.querySelectorAll("p.muted").forEach((text) => {
-      if (text.closest(".info-help")) return;
-      const info = document.createElement("details"); info.className = "info-help";
-      const summary = document.createElement("summary"); summary.textContent = "i"; summary.setAttribute("aria-label", "Подсказка");
-      text.replaceWith(info); info.append(summary, text);
+    p.querySelectorAll(".info-help, p.muted").forEach(text => text.remove());
+    p.querySelectorAll(".card").forEach(section => {
+      if (!section.querySelector("button, input, select, canvas, svg, .edges, p, .slider-row")) section.remove();
     });
   }
 
@@ -160,6 +158,7 @@
     const curLane = plan ? plan.laneIndex : 0;
     const yields = s.actors.map((a) => `<button class="pick ${(q.yieldTo || []).includes(a.id) ? "on" : ""}" data-act="yield" data-id="${a.id}">${Thumbs.img("actor", a.type, "mini")}<span>${esc(a.name || a.id)}</span></button>`).join("");
     const edges = state.edges || {};
+    const edgeMismatch = Object.values(edges).some(e => e && !(e.connectable ?? e.street));
     const side = (k) => { const e = edges[k]; return e ? ((e.connectable ?? e.street) ? "ok" : "bad") : "none"; };
     p.innerHTML = `
       ${head(`<span class="ibadge">${ic("map")}</span>`, App.sceneTitle(state.id), s.layout ? "Дороги в конструкторе" : "Дороги из картинки билета")}
@@ -173,11 +172,11 @@
         ${s.actors.length ? `<div class="sub-h">Уступить дорогу</div><div class="picks">${yields}</div>` : ""}`, { icon: "flag" })}
       ${playerGuideCard(q)}
       ${card("Дороги", s.layout
-        ? `<p class="muted">Двигайте узлы, тяните дороги инструментом ${ic("road", "inline")} R. Разметка и маршруты строятся сами.</p>${button("templates", "Готовые перекрёстки", "junction", "ghost wide")}`
+        ? `${button("select-roads", "Выбрать все дороги", "road", "ghost wide")}${button("templates", "Готовые перекрёстки", "junction", "ghost wide")}`
         : `<p class="muted">Дороги сняты с картинки билета. В конструкторе их можно двигать и менять как в SimCity.</p>${button("convert", "Перевести в конструктор", "magic", "primary wide")}`, { icon: "road" })}
-      ${card("Камера вопроса", `<p class="muted">${s.questionView ? "Кадр задан вручную." : "Кадр подбирается сам."} Видно, что попадёт на экран телефона над карточкой вопроса.</p>${button("frame", "Настроить кадр", "video", "primary wide")}`, { icon: "video" })}
+      ${card("Камера вопроса", `<p class="selection-status">${s.questionView ? "Свой кадр" : "Автоматический кадр"}</p>${button("frame", "Настроить кадр", "video", "primary wide")}`, { icon: "video" })}
       ${card("Края сцены", `<div class="edges"><span class="edge-box"><i class="e-n ${side("n")}"></i><i class="e-s ${side("s")}"></i><i class="e-e ${side("e")}"></i><i class="e-w ${side("w")}"></i>${ic("car")}</span>
-        <p class="muted">${Object.values(edges).some((e) => e && !(e.connectable ?? e.street)) ? "Проверьте ширину дороги у края сцены." : "Стыковка учитывает фактическое направление дороги, число полос, ширину и разделитель. Центрировать косые выезды не требуется."}</p></div>`, { icon: "edges" })}
+        <p class="${edgeMismatch ? "warn" : "muted"}">${edgeMismatch ? "Проверьте ширину дороги у края сцены." : "Стыковка учитывает фактическое направление дороги, число полос, ширину и разделитель. Центрировать косые выезды не требуется."}</p></div>`, { icon: "edges" })}
       <section class="card" id="checks"><h3>${ic(errors.length ? "error" : "check-circle")}Проверка${errors.length + warns.length ? `<em class="count ${errors.length ? "bad" : "warn"}">${errors.length + warns.length}</em>` : ""}</h3>
         ${state.findings.length ? state.findings.map((f, i) => `<button class="finding ${f.level}" data-act="finding" data-i="${i}">${ic(f.level === "error" ? "error" : "alert")}<span>${esc(f.message)}</span></button>`).join("")
           : `<p class="ok-line">${ic("check-circle")}Ошибок нет</p>`}</section>
@@ -185,6 +184,7 @@
     compactHelp(p);
     Thumbs.fillAll(p);
     bind({
+      ...selectionHandlers,
       "toggle:playable": (on) => App.setPlayable(on),
       "player-guide": togglePlayerGuide,
       run: () => App.runInGame(false),
@@ -238,29 +238,117 @@
     Tools.fitSelection();
   }
 
-  // ---- several things -------------------------------------------------------------------------
+  // ---- selection and shared settings -----------------------------------------------------------
+  const editableRefs = refs => refs.filter(ref => App.objectOf(ref) && !App.isLocked(ref));
+  const selectedOf = (refs, type) => editableRefs(refs).filter(ref => ref.t === type).map(App.objectOf);
+  const shared = (objects, get) => {
+    if (!objects.length) return undefined;
+    const first = get(objects[0]);
+    return objects.every(object => Object.is(get(object), first)) ? first : undefined;
+  };
+  const mixedBadge = mixed => mixed ? '<span class="mixed-badge">Разные</span>' : "";
+  const fieldTitle = (title, value) => `<div class="setting-title"><span>${esc(title)}</span>${mixedBadge(value === undefined)}</div>`;
+  const selectionActions = () => `<div class="selection-actions">${button("select-roads", "Все дороги", "road", "ghost small")}${button("clear-selection", "Снять выбор", "x", "ghost small")}</div>`;
+  const selectionHandlers = {
+    "select-roads": () => App.select((state.S.layout?.streets || []).map(st => ({t:"street",id:st.id})).filter(App.pickable)),
+    "clear-selection": () => App.select([]),
+  };
+  function changeSelected(refs, type, fn, opts) {
+    const objects = selectedOf(refs, type);
+    if (objects.length) App.edit(sc => objects.forEach(object => fn(object, sc)), opts);
+  }
+
+  function roadPicture(kind) {
+    const lanes = {yard:2,street:2,avenue:4,highway:6}[kind] || 2;
+    const width = {yard:32,street:48,avenue:66,highway:84}[kind] || 48;
+    const start = (96 - width) / 2, lane = width / lanes;
+    const lines = Array.from({length:lanes-1}, (_, i) => {
+      const x = start + lane * (i + 1), centre = i + 1 === lanes / 2;
+      return centre && kind === "highway"
+        ? `<path d="M${x} 0V52" stroke="#8cbd74" stroke-width="5"/>`
+        : `<path d="M${x} 0V52" stroke="#fff" stroke-width="1.4" ${centre ? "" : 'stroke-dasharray="6 5"'}/>`;
+    }).join("");
+    return `<svg class="road-profile" viewBox="0 0 96 52" aria-hidden="true"><rect x="${start-4}" width="${width+8}" height="52" rx="4" fill="#c4c9bd"/><rect x="${start}" width="${width}" height="52" fill="#424954"/>${lines}<path d="M${start+lane/2} 32v-13m-3 4 3-4 3 4 M${start+width-lane/2} 19v13m-3-4 3 4 3-4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+  const roadValue = (st, key) => key === "kind" ? st.kind || "street" : key === "surface" ? st.surface || "asphalt"
+    : key === "centre" ? st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed")
+    : key === "median" ? Layout.medianOf(st) : st[key] !== false;
+  function roadSettings(streets, prefix = "") {
+    const val = key => shared(streets, st => roadValue(st,key));
+    const field = (title,key,html) => `<div class="road-setting">${fieldTitle(title,val(key))}${html}</div>`;
+    const binary = (name, value, icon) => chips(prefix+name,[{value:"true",title:"Да",icon},{value:"false",title:"Нет"}],value);
+    const soil = streets.filter(st => st.surface === "sand").length;
+    const manual = streets.filter(st => st.manualMarks).length;
+    const median = streets.filter(st => Layout.medianOf(st) > 0).length;
+    const count = n => streets.length > 1 ? ` · дорог: ${n}` : "";
+    return card("Дорога", [
+      field("Покрытие", "surface", chips(prefix+"surface", [{value:"asphalt",title:"Асфальт",html:'<span class="surface-preview asphalt"></span>'},{value:"sand",title:"Грунт",html:'<span class="surface-preview sand"></span>'}],val("surface"),{cls:"surface-choices"})),
+      soil ? `<p class="selection-status">Грунт: без разметки и тротуаров${count(soil)}</p>` : "",
+      field("Полосы и ширина", "kind", chips(prefix+"kind", Object.entries(Layout.KINDS).map(([key, info]) => ({value:key,title:info.title,html:roadPicture(key)+`<small>${key === "yard" ? "Узкий · 5 м" : key === "street" ? "2 полосы · 8,4 м" : key === "avenue" ? "4 полосы · 14 м" : "6 полос · разделитель"}</small>`})),val("kind"),{cls:"road-profiles"})),
+      field("По центру", "centre", chips(prefix+"centre", [{value:"none",title:"Нет",html:'<span class="mark-pic m-none"></span>'},{value:"dashed",title:"Прерывистая",html:'<span class="mark-pic m-dashed"></span>'},{value:"solid",title:"Сплошная",html:'<span class="mark-pic m-solid"></span>'},{value:"double",title:"Двойная",html:'<span class="mark-pic m-double"></span>'}],val("centre"),{cls:"mark-choices"})),
+      median ? `<p class="selection-status">По центру — разделитель${count(median)}</p>` : "",
+      manual ? `<div class="road-setting"><p class="selection-status">Ручная разметка${count(manual)}</p>${button(prefix+"marks-auto","Вернуть авторазметку","restart","ghost wide")}</div>` : "",
+      `<div class="road-setting road-binary">${fieldTitle("Боковая сплошная",val("edge"))}${binary("edge",val("edge"),"marking")}</div>`,
+      `<div class="road-setting road-binary">${fieldTitle("Тротуары",val("walk"))}${binary("walk",val("walk"),"person")}</div>`,
+    ].join(""),{cls:"road-settings"});
+  }
+  function roadHandlers(refs, prefix = "") {
+    const handlers = {
+      [prefix+"marks-auto"]: () => changeSelected(refs,"street",st => { delete st.manualMarks; }),
+    };
+    for (const key of ["surface","kind","centre","walk","edge"]) handlers["chip:"+prefix+key] = value => {
+      if (key === "surface" && !["asphalt","sand"].includes(value)) return;
+      if (key === "kind" && !Layout.KINDS[value]) return;
+      if (key === "centre" && !["none","dashed","solid","double"].includes(value)) return;
+      if (["walk","edge"].includes(key) && !["true","false"].includes(value)) return;
+      changeSelected(refs,"street",st => { st[key] = ["walk","edge"].includes(key) ? value === "true" : value; });
+    };
+    return handlers;
+  }
+
   function multiInspector(p) {
-    const sel = state.sel;
-    const decor = sel.filter((r) => r.t === "decor").map(App.objectOf);
+    const refs = [...state.sel], streets = selectedOf(refs,"street"), decor = selectedOf(refs,"decor"), actors = selectedOf(refs,"actor");
+    const signalActors = actors.filter(actor => ActorSignals.supports(actor.type));
+    const locked = refs.length - editableRefs(refs).length;
+    const canRotate = refs.some(ref => ["decor","actor","sign","officer","light","marking","lawn","road","stop"].includes(ref.t));
+    const canCopy = refs.some(ref => ["decor","actor","sign","officer","light","marking","lawn"].includes(ref.t));
+    const tint = shared(decor,d => d.tint || null), scale = shared(decor,d => d.scale[0]);
+    const speed = shared(actors,a => Catalog.speedOf(a.maxSpeed || 10).id), signal = shared(signalActors,ActorSignals.mode);
     const kinds = {};
-    sel.forEach((r) => { const n = App.nameOf(r); kinds[n] = (kinds[n] || 0) + 1; });
-    p.innerHTML = `${head(`<span class="ibadge">${ic("layers")}</span>`, `Выбрано: ${sel.length}`, Object.entries(kinds).map(([k, n]) => `${k} × ${n}`).join(", "))}
-      ${decor.length ? card("Цвет", tints(decor[0].prop, decor.every((d) => d.tint === decor[0].tint) ? decor[0].tint : undefined)) : ""}
-      ${decor.length ? card("Размер", slider("scale", "Масштаб", 1, 0.5, 1.6, 0.05, "×1")) : ""}
-      ${card("", `<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div>${deleteRow()}`)}`;
-    const base = decor.map((d) => [...d.scale]);
+    refs.forEach(ref => { const name = App.nameOf(ref); kinds[name] = (kinds[name] || 0) + 1; });
+    p.innerHTML = `${head(`<span class="ibadge">${ic("layers")}</span>`, `Выбрано: ${refs.length}`, Object.entries(kinds).map(([kind,n]) => `${kind} × ${n}`).join(", "))}
+      ${selectionActions()}
+      ${locked ? `<p class="selection-status">${ic("lock")}Заблокировано: ${locked}</p>` : ""}
+      ${streets.length ? `<div class="selection-section">Дороги · ${streets.length}</div>${roadSettings(streets,"bulk-road-")}` : ""}
+      ${decor.length ? `<div class="selection-section">Окружение · ${decor.length}</div>${card("Цвет",fieldTitle("Цвет моделей",tint)+tints(decor[0].prop,tint))}
+        ${card("Размер", `${fieldTitle("Масштаб",scale)}${chips("bulk-scale",[.75,1,1.25,1.5].map(value => ({value,title:`×${value}`})),scale)}${slider("scale","Размер группы",1,.5,1.6,.05,"×1")}`)}` : ""}
+      ${actors.length ? `<div class="selection-section">Участники · ${actors.length}</div>${card("Скорость",fieldTitle("Скорость",speed)+chips("bulk-speed",Catalog.SPEEDS.map(item => ({value:item.id,title:item.title})),speed))}` : ""}
+      ${signalActors.length ? card("Поворотники", fieldTitle("Режим",signal)+chips("bulk-signal",[{value:"auto",title:"Авто"},{value:"left",title:"Левый",icon:"arrow-left"},{value:"right",title:"Правый",icon:"arrow-right"},{value:"off",title:"Выкл"}],signal)) : ""}
+      ${card("Действия", `${canRotate ? `<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div>` : ""}<div class="insp-actions">${canCopy ? button("dup","Копия","copy","ghost") : ""}${button("del","Удалить выбранное","trash","danger ghost")}</div>`)}`;
+    const base = new Map(decor.map(d => [d.id,[...d.scale]]));
+    const rotate = degree => {
+      const selected = editableRefs(refs), before = [...state.sel];
+      App.select(selected); App.rotate(degree); App.select(before);
+    };
     bind({
-      ...common,
-      rotl: () => App.rotate(-15), rotr: () => App.rotate(15),
-      "chip:tint": (v) => App.edit(() => decor.forEach((d) => { d.tint = v || null; })),
-      "slider:scale": live((s, v) => { decor.forEach((d, i) => { d.scale = base[i].map((x) => r3(x * v)); }); }, (v) => { $("[data-shown=scale]").textContent = `×${v.toFixed(2)}`; }),
+      ...selectionHandlers, ...roadHandlers(refs,"bulk-road-"),
+      dup: () => { App.select(editableRefs(refs)); App.duplicate(); },
+      del: () => { App.select(editableRefs(refs)); App.remove(); },
+      rotl: () => rotate(-15), rotr: () => rotate(15),
+      "chip:tint": value => changeSelected(refs,"decor",d => { d.tint = value || null; }),
+      "chip:bulk-scale": value => { const n = Number(value); if ([.75,1,1.25,1.5].includes(n)) changeSelected(refs,"decor",d => { d.scale = [n,n,n]; }); },
+      "slider:scale": live((_sc,value) => selectedOf(refs,"decor").forEach(d => { if (base.has(d.id)) d.scale = base.get(d.id).map(v => r3(v*value)); }), value => { const label = $("[data-shown=scale]"); if (label) label.textContent = `×${value.toFixed(2)}`; }),
+      "chip:bulk-speed": value => { const item = Catalog.SPEEDS.find(item => item.id === value); if (item) changeSelected(refs,"actor",a => { a.maxSpeed = item.v; }); },
+      "chip:bulk-signal": value => { if (["auto","left","right","off"].includes(value)) changeSelected(refs,"actor",a => { if (ActorSignals.supports(a.type)) ActorSignals.setTurn(a,value); },{rebuild:false}); },
     });
+    compactHelp(p);
+    Thumbs.fillAll(p);
   }
 
   // ---- a prop ---------------------------------------------------------------------------------
   function tints(prop, value) {
     const list = Catalog.TINTS[Catalog.groupOf(prop).id] || [null];
-    return `<div class="swatches">${list.map((c) => `<button class="sw ${c === value || (!c && !value && value !== undefined) ? "on" : ""}" data-chip="tint" data-value="${c || ""}" style="--c:${c || "transparent"}" data-tip="${c ? "" : "Свой цвет модели"}">${c ? "" : ic("x")}</button>`).join("")}</div>`;
+    return `<div class="swatches">${list.map((c) => `<button class="sw ${c === value || (!c && !value && value !== undefined) ? "on" : ""}" data-chip="tint" data-value="${c || ""}" aria-label="${c ? `Цвет ${c}` : "Свой цвет модели"}" aria-pressed="${c === value || (!c && !value && value !== undefined)}" style="--c:${c || "transparent"}" data-tip="${c ? "" : "Свой цвет модели"}">${c ? "" : ic("x")}</button>`).join("")}</div>`;
   }
   function decorInspector(p, ref, d) {
     const group = Catalog.groupOf(d.prop);
@@ -336,7 +424,7 @@
       ${card("Кто это", `<div class="variant-grid">${types.map((t) => `<button class="variant ${t === a.type ? "on" : ""}" data-chip="type" data-value="${t}" data-tip="${esc(Catalog.ACTORS[t].name)}">${Thumbs.img("actor", t)}</button>`).join("")}</div>
         <input class="name-input" type="text" data-text="name" value="${esc(a.name || "")}" placeholder="Подпись над ним в игре">`)}
       ${a.type === "tram" && (s.tracks || []).length ? tramCard(s, a) : ""}
-      ${a.type !== "pedestrian" && a.type !== "special" ? card("Цвет", `<div class="swatches">${PAINTS.map((c) => `<button class="sw ${(a.paint || null) === c ? "on" : ""}" data-chip="paint" data-value="${c || ""}" style="--c:${c || "transparent"}" data-tip="${c ? "" : "Как у модели"}">${c ? "" : ic("x")}</button>`).join("")}</div>`) : ""}
+      ${a.type !== "pedestrian" && a.type !== "special" ? card("Цвет", `<div class="swatches">${PAINTS.map((c) => `<button class="sw ${(a.paint || null) === c ? "on" : ""}" data-chip="paint" data-value="${c || ""}" aria-label="${c ? `Цвет ${c}` : "Цвет модели"}" aria-pressed="${(a.paint || null) === c}" style="--c:${c || "transparent"}" data-tip="${c ? "" : "Как у модели"}">${c ? "" : ic("x")}</button>`).join("")}</div>`) : ""}
       ${ActorSignals.supports(a.type) ? card("Сигналы", `<label class="route-field">Поворотник<select data-text="turnSignal">${[["auto","Автоматически"],["left","Левый"],["right","Правый"],["off","Выключен"]].map(([value,title]) => `<option value="${value}" ${ActorSignals.mode(a) === value ? "selected" : ""}>${title}</option>`).join("")}</select></label>`
         + toggle("hazards", "Аварийная сигнализация", ActorSignals.hazards(a), "alert")
         + `<p class="muted">Автоматически — по выбранному манёвру или пути. Ручной поворотник не меняет маршрут. Аварийка включает обе стороны. Для неподвижной машины выберите «Стоит» в разделе «Куда едет».</p>`) : ""}
@@ -561,9 +649,10 @@
   }
 
   // ---- the road plan: a street, a node -----------------------------------------------------------
+  let roadMoreOpen = false;
   function streetInspector(p, ref, st) {
     const s = state.S, L = s.layout, crop = s.crop || 90;
-    const centre = st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed");
+    const edit = (fn, opts) => { if (!App.isLocked(ref)) return App.edit(fn,opts); };
     const allEnds = [st.a, st.b].map((nid) => {
       const n = Layout.nodeOf(L, nid), kind = Layout.nodeKind(L, n, crop);
       return { nid, end: nid === st.a ? "a" : "b", kind, set: (st.ends || {})[nid === st.a ? "a" : "b"] || {} };
@@ -581,8 +670,9 @@
     const isPlayer = pl && pl.st.id === st.id;
     const offsetText = v => v === 0 ? "Без сдвига" : `${Math.abs(v).toFixed(1)} м ${v < 0 ? "ближе" : "дальше"}`;
     p.innerHTML = `${head(`<span class="ibadge">${ic("road")}</span>`, Layout.KINDS[st.kind || "street"].title, isPlayer ? "по ней едет игрок" : "")}
-      ${card("Покрытие", chips("surface", [{ value: "asphalt", title: "Асфальт" }, { value: "sand", title: "Грунт" }], st.surface || "asphalt"))}
-      ${card("Ширина", chips("kind", Object.entries(Layout.KINDS).map(([k, v]) => ({ value: k, html: `<span class="road-pic k-${k}"></span>`, title: v.title })), st.kind || "street", { cls: "tiles" }))}
+      ${selectionActions()}
+      ${roadSettings([st])}
+      <details class="inspector-more" ${roadMoreOpen ? "open" : ""}><summary>${ic("sliders")}Перекрёстки и другие настройки</summary>
       ${st.kind !== "yard" ? card("Разделительная полоса", chips("median", [...(st.kind === "highway" ? [] : [{ value: 0, title: "Нет" }]), { value: 2, title: "2 м" }, { value: 3, title: "3 м" }, { value: 5, title: "5 м" }], Layout.medianOf(st))
         + `<p class="muted">Газон с бордюром посередине. На него можно ставить знаки и светофоры: кликните прямо на полосу.</p>`) : ""}
       ${st.kind === "highway" ? card("Стыки трассы", `<p class="muted">Сквозная трасса соединяет вопросы без сужений. Игра добавляет переход 90 м только при смене на обычную дорогу. Для перехода внутри этой сцены выберите «Дорога 2+2» у нужного конца.</p>
@@ -590,12 +680,8 @@
         ${highwayEnds.length === 2 ? `<p class="muted">Готовые варианты ${isPlayer ? "по ходу игрока" : "от начала к концу"}:</p><div class="insp-actions">${[["through","Сквозная"],["entry","Въезд на трассу"],["exit","Выезд с трассы"],["both","Оба перехода"]].map(([v,t]) => `<button class="btn ghost" data-act="highway-preset" data-preset="${v}">${t}</button>`).join("")}</div>` : ""}
         ${shortHighway ? `<p class="warn">Переходы занимают весь этот короткий участок. Удлините дорогу или выберите сквозные стыки: игра построит переход за пределами вопроса.</p>` : ""}
         <p class="muted">Шесть полос и разделитель сохраняются на стыке 3+3. Внутри сцены соединение с «Проспектом» плавно переходит к его ширине.</p>`) : ""}
-      ${st.kind !== "yard" && !Layout.medianOf(st) ? card("Линия по центру", chips("centre", [{ value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" },
-        { value: "double", html: `<span class="mark-pic m-double"></span>`, tip: "Двойная сплошная" }, { value: "none", title: "Нет" }], centre, { cls: "tiles" })) : ""}
-      ${st.kind !== "yard" ? card("Разметка вручную", st.manualMarks
-        ? `<p class="muted">Линии этой улицы — ваши: выберите линию, чтобы менять вид, резать и двигать точки.</p>${button("marks-auto", "Снова строить сами", "restart", "ghost wide")}`
-        : `<p class="muted">Чтобы задать участок сплошной, двойную или сплошную рядом с прерывистой.</p>${button("marks-own", "Сделать линии редактируемыми", "marking", "ghost wide")}`) : ""}
-      ${card("", toggle("walk", "Тротуары", st.walk !== false && st.surface !== "sand", "person") + toggle("edge", "Боковая сплошная", st.edge !== false && st.surface !== "sand", "marking") + (st.bend ? button("straighten", "Выпрямить", "road", "ghost wide") : `<p class="muted">Тяните ромб на середине, чтобы изогнуть.</p>`))}
+      ${st.kind !== "yard" && !st.manualMarks ? card("Разметка вручную", button("marks-own", "Сделать линии редактируемыми", "marking", "ghost wide")) : ""}
+      ${st.bend ? card("Геометрия",button("straighten", "Выпрямить", "road", "ghost wide")) : ""}
       ${ends.length ? card("У перекрёстка", ends.map((e, i) => `<div class="end-row"><span>${ends.length > 1 ? `Конец ${i + 1}` : "Въезд"}</span>
           <button class="pick ${e.set.stop ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="stop">${ic("stopline")}Стоп-линия</button>
           <button class="pick ${e.set.zebra ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="zebra">${ic("zebra")}Зебра</button></div>
@@ -610,47 +696,49 @@
         const where = k === "junction" ? "к перекрёстку" : k === "ring" ? "к кольцу" : k === "border" ? "к краю сцены" : "к концу дороги";
         return `<button class="btn ${on ? "primary" : "ghost"}" data-act="player" data-toward="${nid}">${ic("car")}${esc(where)}</button>`;
       }).join("")}</div>`)}
+      </details>
       ${card("", `<div class="insp-actions">${button("del", "Удалить дорогу", "trash", "danger ghost")}</div>`)}`;
     bind({
-      del: () => App.remove(),
-      "chip:surface": (v) => App.edit(() => { st.surface = v; }),
-      "toggle:edge": (on) => App.edit(() => { st.edge = on; }),
-      "chip:kind": (v) => App.edit(() => { st.kind = v; }),
-      "chip:centre": (v) => App.edit(() => { st.centre = v; }),
-      "chip:median": (v) => App.edit(() => { if (Number(v)) st.median = Number(v); else delete st.median; }),
-      ...Object.fromEntries(highwayEnds.map(e => [`chip:port-${e.end}`, v => App.edit(() => Layout.setHighwayPort(st,e.end,v))])),
-      "highway-preset": d => App.edit(() => {
+      ...selectionHandlers,
+      ...roadHandlers([ref]),
+      del: () => { if (!App.isLocked(ref)) App.remove(); },
+      "chip:median": (v) => edit(() => { if (Number(v)) st.median = Number(v); else delete st.median; }),
+      ...Object.fromEntries(highwayEnds.map(e => [`chip:port-${e.end}`, v => edit(() => Layout.setHighwayPort(st,e.end,v))])),
+      "highway-preset": d => edit(() => {
         const exit = isPlayer ? (pl.nid === st.a ? "a" : "b") : "b";
         const entry = exit === "a" ? "b" : "a";
         for (const e of highwayEnds) Layout.setHighwayPort(st,e.end,
           d.preset === "both" || (d.preset === "entry" && e.end === entry) || (d.preset === "exit" && e.end === exit) ? "avenue" : "highway");
       }),
-      "toggle:walk": (on) => App.edit(() => { if (on) delete st.walk; else st.walk = false; }),
-      straighten: () => App.edit(() => { st.bend = null; }),
-      "marks-own": () => App.edit((sc) => {
+      "toggle:walk": on => edit(() => { st.walk = on; }),
+      "toggle:edge": on => edit(() => { st.edge = on; }),
+      straighten: () => edit(() => { st.bend = null; }),
+      "marks-own": () => edit((sc) => {
         const own = sc.markings.filter((m) => m.auto && m.street === st.id && (m.type === "solid" || m.type === "dashed"));
         for (const m of own) sc.markings.push({ ...JSON.parse(JSON.stringify(m)), id: App.uniqueId("mark_", sc.markings.map((x) => x.id)), auto: undefined, street: undefined });
         st.manualMarks = true;
       }),
-      "marks-auto": () => App.edit(() => { delete st.manualMarks; }),
-      end: (d) => App.edit(() => {
+      "marks-auto": () => edit(() => { delete st.manualMarks; }),
+      end: (d) => edit(() => {
         st.ends = st.ends || {};
         st.ends[d.end] = { ...(st.ends[d.end] || {}) };
         st.ends[d.end][d.what] = !st.ends[d.end][d.what];
       }),
-      "approach-reset": d => App.edit(sc => Layout.setEndOffset(sc, st.id, d.nid, 0)),
+      "approach-reset": d => edit(sc => Layout.setEndOffset(sc, st.id, d.nid, 0)),
       ...Object.fromEntries(ends.filter(e => e.kind === "junction").flatMap(e => [
-        [`slider:approach-${e.end}`, live((sc, v) => Layout.setEndOffset(sc, st.id, e.nid, v), v => {
+        [`slider:approach-${e.end}`, live((sc, v) => { if (!App.isLocked(ref)) Layout.setEndOffset(sc, st.id, e.nid, v); }, v => {
           const value = Layout.endOffset(state.S.layout, Layout.streetOf(state.S.layout, st.id), e.nid, crop);
           const label = pane().querySelector(`[data-shown="approach-${e.end}"]`);
           if (label) label.textContent = offsetText(value);
           const field = pane().querySelector(`[data-text="approach-${e.end}"]`);
           if (field) field.value = value;
         })],
-        [`text:approach-${e.end}`, v => App.edit(sc => Layout.setEndOffset(sc, st.id, e.nid, Number(v)))],
+        [`text:approach-${e.end}`, v => edit(sc => Layout.setEndOffset(sc, st.id, e.nid, Number(v)))],
       ])),
-      player: (d) => App.edit((sc) => { sc.layout.player = { street: st.id, toward: d.toward }; }),
+      player: (d) => edit((sc) => { sc.layout.player = { street: st.id, toward: d.toward }; }),
     });
+    const more = p.querySelector(".inspector-more");
+    more?.addEventListener("toggle", () => { roadMoreOpen = more.open; });
   }
 
   function nodeInspector(p, ref, n) {

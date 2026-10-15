@@ -134,20 +134,22 @@ const App = (() => {
   // A drag: one undo step from its start, the view follows every move.
   let dragBase = null;
   function beginDrag() { dragBase = snapshotText(); }
-  function dragMove(fn) {
+  function dragMove(fn, opts = {}) {
     fn(state.S);
-    if (state.S.layout) Layout.apply(state.S);
-    if (state.S.tracks) Tracks.apply(state.S);
-    if (!state.S.layout && state.plan) Layout.applyActors(state.S, planScene());
+    if (opts.rebuild !== false) {
+      if (state.S.layout) Layout.apply(state.S);
+      if (state.S.tracks) Tracks.apply(state.S);
+      if (!state.S.layout && state.plan) Layout.applyActors(state.S, planScene());
+    }
     Scene3D.refresh(state.S);
     App.renderSelection?.();
   }
-  function endDrag() {
+  function endDrag(opts = {}) {
     if (dragBase === null) return;
     if (snapshotText() !== dragBase) {
       state.undo.push(dragBase);
       state.redo = [];
-      changed();
+      changed(opts);
     }
     dragBase = null;
   }
@@ -352,6 +354,9 @@ const App = (() => {
     if (!s) return;
     const kinds = new Set(state.sel.map((r) => r.t));
     const all = [];
+    if (!kinds.size || kinds.has("street")) (s.layout?.streets || []).forEach(st => all.push({t:"street",id:st.id}));
+    if (!kinds.size || kinds.has("sign")) (s.signs || []).forEach(o => all.push({t:"sign",id:o.id}));
+    if (!kinds.size || kinds.has("officer")) (s.officers || []).forEach(o => all.push({t:"officer",id:o.id}));
     if (!kinds.size || kinds.has("decor")) s.decor.forEach((d) => all.push({ t: "decor", id: d.id }));
     if (!kinds.size || kinds.has("actor")) s.actors.forEach((a) => all.push({ t: "actor", id: a.id }));
     if (!kinds.size || kinds.has("light")) s.lights.forEach((l) => all.push({ t: "light", id: l.id }));
@@ -397,7 +402,7 @@ const App = (() => {
     }
   }
   function nudge(dx, dz) {
-    const list = state.sel.filter(movable);
+    const list = state.sel.filter(r => !isLocked(r) && movable(r));
     if (!list.length) return;
     edit((s) => list.forEach((r) => moveRef(s, r, dx, dz)), { merge: Date.now() - nudge.last < 600 });
     nudge.last = Date.now();
@@ -422,7 +427,7 @@ const App = (() => {
 
   // Turns the selection by `deg` degrees: each object about itself; a shape about its middle.
   function rotate(deg) {
-    const list = state.sel.filter((r) => ["decor", "sign", "actor", "officer", "light", "marking", "lawn", "road", "stop"].includes(r.t));
+    const list = state.sel.filter((r) => !isLocked(r) && ["decor", "sign", "actor", "officer", "light", "marking", "lawn", "road", "stop"].includes(r.t));
     if (!list.length) return;
     const a = (deg * Math.PI) / 180;
     edit((s) => {
@@ -456,7 +461,7 @@ const App = (() => {
   // Copies of things: props, participants (with their path), lights, markings, lawns.
   const COPYABLE = ["decor", "sign", "actor", "officer", "light", "marking", "lawn"];
   function copy() {
-    const list = state.sel.filter((r) => COPYABLE.includes(r.t));
+    const list = state.sel.filter((r) => !isLocked(r) && COPYABLE.includes(r.t));
     if (!list.length) return false;
     state.clipboard = list.map((r) => {
       const o = JSON.parse(JSON.stringify(objectOf(r)));
@@ -513,7 +518,7 @@ const App = (() => {
   }
 
   async function remove() {
-    const list = state.sel;
+    const list = state.sel.filter(r => !isLocked(r));
     if (!list.length) return;
     // A point of a shape or route, when one is picked.
     if (list.length === 1 && list[0].v !== undefined) {
@@ -665,8 +670,8 @@ const App = (() => {
     key(G2, "backspace", "Удалить", () => remove(), { needScene: true, hiddenInHelp: true });
     key(G2, "escape", "Снять выбор, отменить", () => Tools.escape(), { needScene: true });
     key(G2, "enter", "Готово (рисование)", () => Tools.enter(), { needScene: true });
-    key(G2, "q", "Повернуть на −15°", () => rotate(-15), { needScene: true, show: ["q", "e"] });
-    key(G2, "e", "Повернуть на +15°", () => rotate(15), { needScene: true, hiddenInHelp: true });
+    key(G2, "q", "Повернуть на −15°", () => { if (!Tools.rotateBrush?.(-15)) rotate(-15); }, { needScene: true, show: ["q", "e"] });
+    key(G2, "e", "Повернуть на +15°", () => { if (!Tools.rotateBrush?.(15)) rotate(15); }, { needScene: true, hiddenInHelp: true });
     key(G2, "arrowleft", "Сдвинуть на 10 см (⇧ — на 1 м)", () => nudgeScreen(-1, 0, 0.1), { needScene: true, show: ["arrowleft", "arrowright", "arrowup", "arrowdown"] });
     key(G2, "arrowright", "", () => nudgeScreen(1, 0, 0.1), { needScene: true, hiddenInHelp: true });
     key(G2, "arrowup", "", () => nudgeScreen(0, 1, 0.1), { needScene: true, hiddenInHelp: true });
