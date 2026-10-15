@@ -91,7 +91,7 @@ static func prepare(situation_id: String, on_done: Callable) -> void:
 				more.append(dir + "actor_%d.glb" % i)
 		# Optional: the route guide (only for a scene without trajectories) and the ticket picture.
 		var optional: Array = []
-		if not (data.get("trajectories", []) is Array) or data.trajectories.is_empty():
+		if data.get("showPlayerGuide", true) != false and (not (data.get("trajectories", []) is Array) or data.trajectories.is_empty()):
 			optional.append(dir + "guide.glb")
 		var picture := GameUi.picture_name(situation_id)
 		if picture != "":
@@ -656,11 +656,11 @@ const TOKEN_BLUE := Color("#0574F8")
 
 func _build_evidence(dir: String) -> void:
 	# The question's route lines come from the network's trajectories (what the editor shows);
-	var has_traj: bool = (data.trajectories is Array and not data.trajectories.is_empty()) or (data.get("spec") is Dictionary and data.get("exits") is Dictionary and data.spec.get("maneuver", "") != "" and data.exits.has(data.spec.get("maneuver", "")))
+	var has_traj: bool = (data.trajectories is Array and not data.trajectories.is_empty()) or (data.get("showPlayerGuide", true) != false and data.get("spec") is Dictionary and data.get("exits") is Dictionary and data.spec.get("maneuver", "") != "" and data.exits.has(data.spec.get("maneuver", "")))
 	if has_traj:
 		_guide = _trajectory_guide()
 		add_child(_guide)
-	elif PackFiles.exists(dir + "guide.glb"):
+	elif data.get("showPlayerGuide", true) != false and PackFiles.exists(dir + "guide.glb"):
 		_guide = PackFiles.instance(dir + "guide.glb")
 		for mi in _guide.find_children("*", "MeshInstance3D", true, false):
 			var mat := StandardMaterial3D.new()
@@ -697,7 +697,7 @@ func _trajectory_guide() -> Node3D:
 	var traj_list: Array = []
 	if data.trajectories is Array and not data.trajectories.is_empty():
 		traj_list = data.trajectories
-	elif data.get("spec") is Dictionary and data.get("exits") is Dictionary:
+	elif data.get("showPlayerGuide", true) != false and data.get("spec") is Dictionary and data.get("exits") is Dictionary:
 		var man: String = str(data.spec.get("maneuver", ""))
 		if man != "" and data.exits.has(man) and data.exits[man].has("points"):
 			traj_list = [{"label": "", "points": data.exits[man].points}]

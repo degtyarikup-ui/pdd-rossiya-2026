@@ -218,6 +218,9 @@ def sync(sid: str) -> dict:
 
     q = net.get("question") or {}
     out["correctAnswerIndex"] = q.get("correct")
+    # Only an explicit editor false hides the visual hint. Always overwrite
+    # the archived value so clearing the option restores its default.
+    out["showPlayerGuide"] = q.get("showPlayerGuide") is not False
     for k in ("speedLimit", "requiredStop", "redWait"):
         if k in q:
             out[k] = q[k]

@@ -327,6 +327,10 @@ const Scene3D = (() => {
     if (r.kind === "approach") return { colour: APPROACH_COLOUR, px: 3 };
     return { colour: ACTOR_COLOUR, px: 2, dashed: true };
   }
+  function playerGuideHidden(route) {
+    return model?.id !== "mini_regulator" && model?.question?.showPlayerGuide === false && route?.kind === "manoeuvre";
+  }
+  const hiddenPlayerGuideRef = ref => ref?.t === "route" && playerGuideHidden(model?.routes.find(r => r.id === ref.id));
   const isSel = (r) => sel.some((s) => keyOf(s) === keyOf(r));
 
   function rebuildRoutes() {
@@ -334,9 +338,10 @@ const Scene3D = (() => {
     dropLabels("route");
     const selActor = sel.find((s) => s.t === "actor");
     const actorRouteId = selActor ? (model.actors.find((x) => x.id === selActor.id)?.route || `actor_${selActor.id}`) : null;
-    const focusRoute = sel.find((s) => s.t === "route")?.id || actorRouteId || (hover && hover.t === "route" ? hover.id : null);
-    const answers = model.routes.some((x) => x.kind === "choice");
+    const focusId = sel.find((s) => s.t === "route")?.id || actorRouteId || (hover && hover.t === "route" ? hover.id : null);
+    const focusRoute = hiddenPlayerGuideRef({ t: "route", id: focusId }) ? null : focusId;
     for (const r of model.routes) {
+      if (playerGuideHidden(r)) continue;
       if (r.points.length < 2) continue;
       if (r.kind === "actor" && model.actors.some(a => (a.route || `actor_${a.id}`) === r.id && a.behaviour?.staysPut)) continue;
       // With answer lines on the road the manoeuvres are only drawn when picked: they are how the car
@@ -963,6 +968,7 @@ const Scene3D = (() => {
     turnHandle = null;
     if (!model || simMode) return;
     const draw = (ref, colour, px) => {
+      if (hiddenPlayerGuideRef(ref)) return null;
       const f = footprintOf(ref);
       if (f) { g.add(polyline(rect(f, 0.35), 0.2, colour, px)); return f; }
       const pts = App.pointsOfRef(ref);
@@ -991,7 +997,7 @@ const Scene3D = (() => {
       const r = a && model.routes.find((x) => x.id === (a.route || `actor_${a.id}`));
       if (r) pointRef = { t: "route", id: r.id, v: sel[0].v };
     }
-    if (pointRef) {
+    if (pointRef && !hiddenPlayerGuideRef(pointRef)) {
       const pts = App.pointsOfRef(pointRef);
       if (pts && !(pointRef.t === "marking" && App.isPaint(pointRef))) {
         pts.forEach((p, i) => g.add(handle(p, "circle", i === pointRef.v ? ACCENT : 0xffffff, ACCENT, 0.8)));
@@ -1369,7 +1375,7 @@ const Scene3D = (() => {
       const r = a && model.routes.find((x) => x.id === (a.route || `actor_${a.id}`));
       if (r) pointRef = { t: "route", id: r.id };
     }
-    if (pointRef) {
+    if (pointRef && !hiddenPlayerGuideRef(pointRef)) {
       const pts = App.pointsOfRef(pointRef) || [];
       for (let i = 0; i < pts.length; i++) if (near(pts[i], 14)) return { ...pointRef, v: i, point: true };
     }
@@ -1420,6 +1426,7 @@ const Scene3D = (() => {
     };
     if (!hidden.has("routes")) {
       for (const r of model.routes) {
+        if (playerGuideHidden(r)) continue;
         const isMain = r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
         if (!isMain && !simMode && !sel.some((s) => s.t === "route" && s.id === r.id)) continue;
         const ref = { t: "route", id: r.id };

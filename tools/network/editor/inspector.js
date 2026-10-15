@@ -80,6 +80,14 @@
   const deleteRow = (extra = "") => `<div class="insp-actions">${extra}${button("dup", "Копия", "copy", "ghost")}${button("del", "Удалить", "trash", "danger ghost")}</div>`;
   const common = { dup: () => App.duplicate(), del: () => App.remove() };
 
+  function playerGuideCard(question) {
+    const hidden = question?.showPlayerGuide === false;
+    return card("Синяя стрелка игрока", `<p${hidden ? ' class="ok-line"' : ""}>${hidden ? "Скрыта в этой сцене" : "Включена в этой сцене"}</p>
+      ${button("player-guide", hidden ? "Вернуть синюю стрелку" : "Убрать синюю стрелку", hidden ? "eye" : "trash", "ghost wide")}
+      <p class="muted">Машина проедет тем же путём после ответа.</p>`);
+  }
+  const togglePlayerGuide = () => App.setPlayerGuideVisible(state.S.question?.showPlayerGuide === false);
+
   // ---- the scene ----------------------------------------------------------------------------
   function regulatorInspector(p) {
     const s = state.S;
@@ -163,6 +171,7 @@
         <div class="sub-h">Знак скорости</div>${chips("speed", [{ value: "", title: "Нет" }, ...[20, 40, 60].map((v) => ({ value: v, html: `<span class="speed-sign">${v}</span>` }))], q.speedLimit ?? "", { cls: "signs" })}
         <div class="sub-h">Ждать на красном</div>${chips("redWait", [{ value: "", title: "Нет" }, { value: 2, title: "2 с" }, { value: 5, title: "5 с" }], q.redWait ?? "")}
         ${s.actors.length ? `<div class="sub-h">Уступить дорогу</div><div class="picks">${yields}</div>` : ""}`, { icon: "flag" })}
+      ${playerGuideCard(q)}
       ${card("Дороги", s.layout
         ? `<p class="muted">Двигайте узлы, тяните дороги инструментом ${ic("road", "inline")} R. Разметка и маршруты строятся сами.</p>${button("templates", "Готовые перекрёстки", "junction", "ghost wide")}`
         : `<p class="muted">Дороги сняты с картинки билета. В конструкторе их можно двигать и менять как в SimCity.</p>${button("convert", "Перевести в конструктор", "magic", "primary wide")}`, { icon: "road" })}
@@ -177,6 +186,7 @@
     Thumbs.fillAll(p);
     bind({
       "toggle:playable": (on) => App.setPlayable(on),
+      "player-guide": togglePlayerGuide,
       run: () => App.runInGame(false),
       "run-auto": () => App.runInGame(true),
       correct: (d) => App.edit((sc) => { sc.question.correct = Number(d.i); }),
@@ -778,13 +788,15 @@
     if (r.kind === "manoeuvre") {
       const points = playerRoutePointTools(ref, r);
       const main = s.question.maneuver === r.exit;
+      const guideVisible = s.question?.showPlayerGuide !== false;
       p.innerHTML = `${head(`<span class="ibadge">${ic(Catalog.EXITS[r.exit]?.icon || "route")}</span>`, `Манёвр: ${Catalog.EXITS[r.exit]?.title.toLowerCase()}`, main ? "так едет игрок" : "другой выезд")}
         ${card("", `${main ? `<p class="ok-line">${ic("check-circle")}Этот манёвр — по условию вопроса</p>` : button("make-main", "Игрок едет так", "flag", "primary wide")}
-          ${r.auto ? `<p class="muted">Путь строится сам по дорогам.</p>${button("own-path", "Править путь вручную", "points", "ghost wide")}`
+          ${!guideVisible ? "" : r.auto ? `<p class="muted">Путь строится сам по дорогам.</p>${button("own-path", "Править путь вручную", "points", "ghost wide")}`
             : `<p class="muted">Тяните точки на виде, двойной клик по линии — новая точка.</p>${r.manual && s.layout ? button("auto-path", "Снова строить по дорогам", "restart", "ghost wide") : ""}`}
-          <p class="muted">По этой линии машина игрока едет после ответа. Если в вопросе есть линии ответов, она видна только когда выбрана.</p>`)}${points.html}`;
+          ${guideVisible ? `<p class="muted">По этой линии машина игрока едет после ответа. Если в вопросе есть линии ответов, она видна только когда выбрана.</p>` : ""}`)}${playerGuideCard(s.question)}${guideVisible ? points.html : ""}`;
       bind({
         ...points.handlers,
+        "player-guide": togglePlayerGuide,
         "make-main": () => App.edit((sc) => { sc.question.maneuver = r.exit; sc.spec = { ...(sc.spec || {}), maneuver: r.exit }; }),
         "own-path": () => { App.select({t:"route",id:r.id}); App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), true)); },
         "auto-path": () => { App.select({t:"route",id:r.id}); App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), false)); },

@@ -118,9 +118,11 @@ const App = (() => {
     if (!state.S) return;
     const before = snapshotText();
     const result = fn(state.S);
-    if (state.S.layout) Layout.apply(state.S);
-    if (state.S.tracks) Tracks.apply(state.S);
-    if (!state.S.layout && state.plan) Layout.applyActors(state.S, planScene());
+    if (opts.rebuild !== false) {
+      if (state.S.layout) Layout.apply(state.S);
+      if (state.S.tracks) Tracks.apply(state.S);
+      if (!state.S.layout && state.plan) Layout.applyActors(state.S, planScene());
+    }
     const after = snapshotText();
     if (after === before) return result;
     if (!opts.merge || !state.undo.length) state.undo.push(before);
@@ -479,6 +481,22 @@ const App = (() => {
     if (copy()) paste(3);
   }
 
+  // The blue arrow is a question visual, independent of its driving route and
+  // the editor's local layer visibility. Hide/show is an ordinary undoable edit.
+  function setPlayerGuideVisible(visible) {
+    if (!state.S || state.S.id === "mini_regulator" || state.id === "mini_regulator") return;
+    select(state.sel.map(ref => {
+      if (ref.t !== "route" || objectOf(ref)?.kind !== "manoeuvre") return ref;
+      const {v, point, ...route} = ref;
+      return route;
+    }));
+    edit(sc => {
+      sc.question = sc.question || {};
+      if (visible) delete sc.question.showPlayerGuide;
+      else sc.question.showPlayerGuide = false;
+    }, {rebuild:false});
+  }
+
   async function remove() {
     const list = state.sel;
     if (!list.length) return;
@@ -499,9 +517,13 @@ const App = (() => {
       });
       return select({ ...ref, v: undefined });
     }
-    const removable = list.filter((r) => r.t !== "stop" && !(r.t === "route" && (objectOf(r)?.auto || objectOf(r)?.kind === "approach" || (state.S.id === "mini_regulator" && objectOf(r)?.kind === "manoeuvre"))) && !(r.t === "marking" && objectOf(r)?.auto));
+    const hidesPlayerGuide = state.S.id !== "mini_regulator" && list.some(r => r.t === "route" && objectOf(r)?.kind === "manoeuvre");
+    const removable = list.filter((r) => r.t !== "stop" && !(r.t === "route" && (objectOf(r)?.auto || ["approach", "manoeuvre"].includes(objectOf(r)?.kind))) && !(r.t === "marking" && objectOf(r)?.auto));
+    if (!removable.length && hidesPlayerGuide) return setPlayerGuideVisible(false);
     if (!removable.length) return toast("Это строится само по дорогам", "warn");
+    if (hidesPlayerGuide) select([]);
     edit((s) => {
+      if (hidesPlayerGuide) { s.question = s.question || {}; s.question.showPlayerGuide = false; }
       for (const ref of removable) {
         if (ref.t === "street") { Layout.removeStreet(s, ref.id); continue; }
         if (ref.t === "node") { Layout.removeNode(s, ref.id); continue; }
@@ -697,7 +719,7 @@ const App = (() => {
   return {
     state, planScene, api, toast, confirm: confirmBox, esc, ic, r3, objectOf, pointsOfRef, isPaint, layerOf, catalogSize, sameRef, nameOf,
     edit, beginDrag, dragMove, endDrag, cancelDrag, undo, redo, changed, openScene, sceneTitle, save, setPlayable, runInGame,
-    select, toggle, pickable, isLocked, moveRef, nudge, rotate, copy, paste, duplicate, remove, uniqueId, toggleHidden, toggleLocked,
+    select, toggle, pickable, isLocked, moveRef, nudge, rotate, copy, paste, duplicate, remove, setPlayerGuideVisible, uniqueId, toggleHidden, toggleLocked,
     renderTop, showHome, setView, plural, thumbRev, boot, loadList,
     get S() { return state.S; },
   };
