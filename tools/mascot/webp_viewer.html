@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Конус-жонглёр · Animated WebP</title>
+<style>
+  :root { color-scheme:light; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#17263b; background:#f7f8fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:28px 22px; }
+  main { max-width:1000px; margin:auto; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:18px; margin-bottom:20px; }
+  h1 { font-size:clamp(24px,4vw,31px); font-weight:650; letter-spacing:-.9px; margin:0 0 5px; }
+  p { margin:0; font-size:13px; color:#7c879a; line-height:1.55; }
+  select { font:inherit; font-size:13px; color:#40536d; background:#fff; border:1px solid #dce3ed; border-radius:10px; padding:10px; min-height:42px; max-width:100%; }
+  .stage { display:grid; place-items:center; position:relative; height:clamp(410px,69vh,620px); border:1px solid #e3e8f0; border-radius:26px; overflow:hidden; background:#edf2f8; }
+  .stage[data-theme="dark"] { background:#141b28; }
+  .stage[data-theme="blue"] { background:#0574f8; }
+  .stage[data-theme="checker"] { background-color:#fff; background-image:conic-gradient(#e4e8ed 25%,transparent 0 50%,#e4e8ed 0 75%,transparent 0); background-size:24px 24px; }
+  .loader { display:grid; justify-items:center; gap:12px; max-width:100%; padding:12px; }
+  .image-box { position:relative; width:min(var(--preview-size,384px),calc(100vw - 78px)); aspect-ratio:1; }
+  .image-box img { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; }
+  .status { font-size:15px; font-weight:500; color:#526783; }
+  .stage[data-theme="dark"] .status { color:#bdcde2; }
+  .stage[data-theme="blue"] .status { color:#fff; }
+  .stage[data-theme="checker"] .status { background:#fffffff0; padding:3px 9px; border-radius:7px; }
+  .stage[data-small="true"] .status { font-size:12px; }
+  .message { position:absolute; inset:0; background:#edf2f8; display:grid; place-content:center; justify-items:center; gap:10px; padding:28px; text-align:center; }
+  .message strong { font-weight:600; font-size:16px; }
+  .message p { max-width:520px; overflow-wrap:anywhere; }
+  [hidden] { display:none !important; }
+  .controls { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-top:18px; }
+  .group { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  button { font:inherit; font-size:13px; background:#e9eef5; color:#40536d; border:0; border-radius:10px; padding:10px 13px; min-height:42px; cursor:pointer; }
+  button:hover { background:#e0e8f3; }
+  button[aria-pressed="true"] { color:#fff; background:#0574f8; }
+  button:disabled { opacity:.45; cursor:default; }
+  button:focus-visible,select:focus-visible,a:focus-visible { outline:3px solid #87b8fa; outline-offset:3px; }
+  .variant-group { margin-top:18px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .variant-group label { font-size:12px; color:#7c879a; }
+  .notes { margin-top:15px; display:grid; gap:5px; }
+  footer { display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:18px; font-size:12px; color:#8993a3; }
+  footer a { color:#526783; text-underline-offset:3px; }
+  @media(max-width:560px) { body { padding:20px 14px; } .stage { border-radius:20px; height:440px; } .controls { gap:12px; } button { padding:10px 11px; } header { align-items:flex-start; } }
+</style>
+<main>
+  <header><div><h1 data-text="title">Конус-жонглёр</h1><p data-text="subtitle">Готовая анимация · прозрачный фон</p></div><select id="language" aria-label="Язык"><option value="ru">RU</option><option value="en">EN</option><option value="kk">ҚАЗ</option></select></header>
+  <div class="stage" id="stage" data-theme="light" data-small="false">
+    <div class="loader"><div class="image-box"><img id="poster" alt="" decoding="async" draggable="false"><img id="mascot" alt="" decoding="async" draggable="false"></div><div class="status" role="status" data-text="loading">Загрузка…</div></div>
+    <div class="message" id="message" role="status" aria-live="polite"><strong id="message-title">Открываем Animated WebP</strong><p id="message-detail"></p><button id="retry" data-text="retry" hidden>Повторить</button></div>
+  </div>
+  <div class="controls">
+    <div class="group"><button id="play" disabled>Пауза</button><button id="replay" disabled data-text="replay">Заново</button></div>
+    <div class="group" id="sizes"><button data-size="72" aria-pressed="false">72</button><button data-size="120" aria-pressed="false">120</button><button data-size="240" aria-pressed="false">240</button><button data-size="384" aria-pressed="true">384 px</button></div>
+    <div class="group" id="themes"><button data-theme="light" aria-pressed="true" data-text="light">Светлый</button><button data-theme="dark" aria-pressed="false" data-text="dark">Тёмный</button><button data-theme="blue" aria-pressed="false" data-text="blue">Синий</button><button data-theme="checker" aria-pressed="false" data-text="checker">Прозрачность</button></div>
+  </div>
+  <div class="variant-group"><label for="variant" data-text="variant">Вариант экспорта</label><select id="variant" disabled></select><span id="stats"></span></div>
+  <div class="notes"><p id="pause-note" data-text="pauseNote">Пауза показывает статичный постер. Воспроизведение начинается заново.</p><p id="motion-note" hidden data-text="reduced">Движение уменьшено в настройках системы. Для запуска нажмите «Воспроизвести».</p></div>
+  <footer><span data-text="native">Animated WebP в обычном изображении · без 3D-движка</span><span><a id="download" download data-text="download">Скачать вариант</a> · <a href="/webp/manifest.json" data-text="manifest">Параметры файлов</a></span></footer>
+</main>
+<script>
+(() => {
+  'use strict';
+  const dictionaries = {
+    ru:{title:'Конус-жонглёр',subtitle:'Готовая анимация · прозрачный фон',loading:'Загрузка…',opening:'Открываем Animated WebP',failed:'Не удалось открыть предпросмотр',missing:'Экспорт ещё не готов. После создания файлов нажмите «Повторить».',imageFailed:'Не удалось загрузить файл изображения.',invalid:'В manifest.json нет подходящих вариантов WebP.',retry:'Повторить',replay:'Заново',light:'Светлый',dark:'Тёмный',blue:'Синий',checker:'Прозрачность',pause:'Пауза',play:'Воспроизвести',variant:'Вариант экспорта',pauseNote:'Пауза показывает статичный постер. Воспроизведение начинается заново.',reduced:'Движение уменьшено в настройках системы. Для запуска нажмите «Воспроизвести».',native:'Animated WebP в обычном изображении · без 3D-движка',download:'Скачать вариант',manifest:'Параметры файлов',language:'Язык',alt:'Конус жонглирует тремя синими шарами.',seconds:'с',frames:'кадров',bytes:'байт'},
+    en:{title:'The juggling cone',subtitle:'Rendered animation · transparent background',loading:'Loading…',opening:'Opening Animated WebP',failed:'Could not open the preview',missing:'The export is not ready yet. Select Retry after the files are created.',imageFailed:'Could not load the image file.',invalid:'manifest.json contains no supported WebP variants.',retry:'Retry',replay:'Replay',light:'Light',dark:'Dark',blue:'Blue',checker:'Transparency',pause:'Pause',play:'Play',variant:'Export variant',pauseNote:'Pause displays a static poster. Playback starts again from the beginning.',reduced:'Reduced motion is enabled in system settings. Select Play to start.',native:'Animated WebP in a standard image · no 3D engine',download:'Download variant',manifest:'File details',language:'Language',alt:'A cone juggling three blue balls.',seconds:'s',frames:'frames',bytes:'bytes'},
+    kk:{title:'Жонглёр конус',subtitle:'Дайын анимация · мөлдір фон',loading:'Жүктелуде…',opening:'Animated WebP ашылуда',failed:'Алдын ала қарауды ашу мүмкін болмады',missing:'Экспорт әлі дайын емес. Файлдар жасалғаннан кейін «Қайталау» түймесін басыңыз.',imageFailed:'Кескін файлын жүктеу мүмкін болмады.',invalid:'manifest.json ішінде қолдау көрсетілетін WebP нұсқалары жоқ.',retry:'Қайталау',replay:'Қайта бастау',light:'Ашық',dark:'Қараңғы',blue:'Көк',checker:'Мөлдірлік',pause:'Кідірту',play:'Ойнату',variant:'Экспорт нұсқасы',pauseNote:'Кідірту кезінде статикалық постер көрсетіледі. Ойнату басынан басталады.',reduced:'Жүйе баптауларында қозғалыс азайтылған. Бастау үшін ойнату түймесін басыңыз.',native:'Кәдімгі кескіндегі Animated WebP · 3D қозғалтқышсыз',download:'Нұсқаны жүктеу',manifest:'Файл параметрлері',language:'Тіл',alt:'Үш көк доппен жонглёрлік жасайтын конус.',seconds:'с',frames:'кадр',bytes:'байт'},
+  };
+  const params = new URLSearchParams(location.search);
+  let language = dictionaries[params.get('lang')] ? params.get('lang') : 'ru';
+  const text = key => dictionaries[language][key];
+  const stage = document.getElementById('stage'), image = document.getElementById('mascot'), poster = document.getElementById('poster');
+  const select = document.getElementById('variant'), message = document.getElementById('message');
+  const reducedQuery = matchMedia('(prefers-reduced-motion: reduce)');
+  let manifest = null, variants = [], selected = null, size = 384, theme = 'light';
+  let wantsPlaying = !reducedQuery.matches, visible = true, generation = 0, replayId = 0;
+  const api = window.webpPreview = {ready:false,error:null};
+  const fileURL = filename => '/webp/' + encodeURIComponent(filename);
+  const bytesLabel = bytes => {
+    if (bytes < 1024) return bytes.toLocaleString(language) + ' B';
+    const unit = bytes < 1024 * 1024 ? ' KiB' : ' MiB';
+    return (bytes / (bytes < 1024 * 1024 ? 1024 : 1024 * 1024)).toLocaleString(language, {maximumFractionDigits:1}) + unit;
+  };
+  const active = () => wantsPlaying && !document.hidden && visible;
+  function localize() {
+    document.documentElement.lang = language;
+    document.title = text('title') + ' · Animated WebP';
+    document.querySelectorAll('[data-text]').forEach(node => node.textContent = text(node.dataset.text));
+    document.getElementById('language').value = language;
+    document.getElementById('language').setAttribute('aria-label',text('language'));
+    document.getElementById('play').textContent = text(wantsPlaying ? 'pause' : 'play');
+    document.getElementById('play').setAttribute('aria-pressed',String(!wantsPlaying));
+    image.alt = text('alt');
+    document.getElementById('motion-note').hidden = !reducedQuery.matches;
+    select.replaceChildren(...variants.map(variant => {
+      const option = new Option(`${variant.width} × ${variant.height} · ${variant.fps} fps · ${bytesLabel(variant.bytes)}`,variant.id);
+      option.selected = variant === selected; return option;
+    }));
+    document.getElementById('stats').style.cssText = 'font-size:12px;color:#7c879a';
+    document.getElementById('stats').textContent = selected ? `${selected.bytes.toLocaleString(language)} ${text('bytes')} · ${selected.frames} ${text('frames')} · ${Number(manifest.durationSeconds).toLocaleString(language)} ${text('seconds')}` : '';
+    if (!api.error) document.getElementById('message-title').textContent = text('opening');
+  }
+  function fail(key) {
+    api.ready = false; api.error = key;
+    document.getElementById('message-title').textContent = text('failed');
+    document.getElementById('message-detail').textContent = text(key);
+    document.getElementById('retry').hidden = false; message.hidden = false;
+  }
+  async function display(forceReplay = false) {
+    if (!selected) return;
+    const token = ++generation;
+    const filename = active() ? selected.file : selected.poster;
+    const source = fileURL(filename) + (forceReplay ? '?replay=' + ++replayId : '');
+    api.ready = false; api.error = null;
+    document.getElementById('retry').hidden = true;
+    document.getElementById('message-detail').textContent = '';
+    image.style.opacity = '0'; poster.hidden = false;
+    poster.onload = () => {if (token === generation && !api.error) message.hidden = true;};
+    poster.src = fileURL(selected.poster);
+    image.onload = () => {
+      if (token !== generation) return;
+      api.ready = true; image.style.opacity = '1'; poster.hidden = true; message.hidden = true;
+    };
+    image.onerror = () => { if (token === generation) fail('imageFailed'); };
+    image.src = source;
+    localize();
+  }
+  async function loadManifest() {
+    ++generation; api.ready = false; api.error = null; message.hidden = false;
+    document.getElementById('retry').hidden = true;
+    document.getElementById('message-detail').textContent = ''; localize();
+    try {
+      const response = await fetch('/webp/manifest.json',{cache:'no-store'});
+      if (!response.ok) throw new Error('missing');
+      const data = await response.json();
+      const safeFile = value => typeof value === 'string' && /^cone-juggling[-a-z0-9]*\.webp$/.test(value);
+      const supported = new Set(['384-30','384-24','256-30','256-24']);
+      const parsed = Array.isArray(data.variants) ? data.variants.filter(variant => supported.has(variant.id) && safeFile(variant.file) && safeFile(variant.poster) && [variant.width,variant.height,variant.fps,variant.frames,variant.bytes].every(number => Number.isFinite(number) && number > 0)) : [];
+      if (!parsed.length || !Number.isFinite(data.durationSeconds) || data.durationSeconds <= 0) throw new Error('invalid');
+      manifest = data; variants = parsed;
+      selected = variants.find(variant => variant.id === (params.get('variant') || selected?.id || data.recommended || '384-30')) || variants[0];
+      select.disabled = false; document.getElementById('play').disabled = false; document.getElementById('replay').disabled = false;
+      document.getElementById('download').href = fileURL(selected.file);
+      localize(); await display();
+    } catch (error) { fail(error.message === 'invalid' ? 'invalid' : 'missing'); }
+  }
+  function setPlaying(value) { wantsPlaying = Boolean(value); display(wantsPlaying); }
+  function setVariant(id) {
+    const variant = variants.find(candidate => candidate.id === id);
+    if (!variant) return;
+    selected = variant; document.getElementById('download').href = fileURL(selected.file); display(true);
+  }
+  function setTheme(value) {
+    if (!['light','dark','blue','checker'].includes(value)) return;
+    theme = value; stage.dataset.theme = theme;
+    document.querySelectorAll('#themes button').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.theme === theme)));
+  }
+  function setSize(value) {
+    if (![72,120,240,384].includes(value)) return;
+    size = value; stage.style.setProperty('--preview-size',size + 'px'); stage.dataset.small = String(size <= 120);
+    document.querySelectorAll('#sizes button').forEach(button => button.setAttribute('aria-pressed',String(Number(button.dataset.size) === size)));
+  }
+  Object.assign(api,{setPlaying,setVariant,setTheme,setSize,replay:() => {wantsPlaying = true; display(true);},snapshot:() => ({ready:api.ready,error:api.error,variant:selected?.id || null,theme,size,displaySize:image.getBoundingClientRect().width,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight,source:image.currentSrc || image.src,sourceBytes:(active() ? selected?.bytes : selected?.posterBytes) || null,variantBytes:selected?.bytes || null,playing:active() && api.ready,reducedMotion:reducedQuery.matches,poster:!active(),durationSeconds:manifest?.durationSeconds || null,frames:selected?.frames || null,fps:selected?.fps || null,language})});
+  document.getElementById('language').addEventListener('change',event => {language = event.target.value; localize(); if(api.error) fail(api.error);});
+  document.getElementById('play').addEventListener('click',() => setPlaying(!wantsPlaying));
+  document.getElementById('replay').addEventListener('click',api.replay);
+  document.getElementById('retry').addEventListener('click',loadManifest);
+  select.addEventListener('change',event => setVariant(event.target.value));
+  document.querySelectorAll('#themes button').forEach(button => button.addEventListener('click',() => setTheme(button.dataset.theme)));
+  document.querySelectorAll('#sizes button').forEach(button => button.addEventListener('click',() => setSize(Number(button.dataset.size))));
+  document.addEventListener('visibilitychange',() => display());
+  reducedQuery.addEventListener('change',() => {wantsPlaying = !reducedQuery.matches; display(); localize();});
+  const observer = new IntersectionObserver(entries => {const next = entries[0].isIntersecting; if(visible !== next) {visible = next; display();}},{threshold:0});
+  observer.observe(stage);
+  setTheme(params.get('theme') || theme); setSize(Number(params.get('size')) || size); localize(); loadManifest();
+})();
+</script>
+</html>

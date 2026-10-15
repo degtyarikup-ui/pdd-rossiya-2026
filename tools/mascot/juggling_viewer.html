@@ -59,6 +59,9 @@
 <script>
 (() => {
   'use strict';
+  // Offline asset export uses the same camera, lights, rig and materials as
+  // this approved preview, with a truly transparent WebGL drawing buffer.
+  const captureMode = new URLSearchParams(location.search).get('capture') === '1';
   const dictionaries = {
     ru:{title:'Конус-жонглёр',subtitle:'Анимация загрузки',loading:'Загрузка…',done:'Готово',opening:'Открываем 3D-анимацию',reading:'Загружаем модель и движение…',failed:'Не удалось открыть анимацию',missing:'Файл cone-juggling.glb пока не собран. Нажмите «Повторить» после сборки.',retry:'Повторить',replay:'Заново',finish:'Завершить',large:'Крупно',light:'Светлый',dark:'Тёмный',blue:'Синий',pause:'Пауза',play:'Воспроизвести',hint:'Можно слегка повернуть мышью или пальцем',reduced:'Движение уменьшено в настройках системы. Запуск — кнопкой воспроизведения.',loop:'Цикл',seconds:'с',language:'Язык',canvas:'Конус жонглирует тремя шарами. Анимация загрузки.'},
     en:{title:'The juggling cone',subtitle:'Loading animation',loading:'Loading…',done:'Ready',opening:'Opening the 3D animation',reading:'Loading the model and motion…',failed:'Could not open the animation',missing:'cone-juggling.glb has not been built yet. Select Retry after building it.',retry:'Retry',replay:'Replay',finish:'Finish',large:'Large',light:'Light',dark:'Dark',blue:'Blue',pause:'Pause',play:'Play',hint:'Drag gently with a mouse or finger to turn',reduced:'Reduced motion is enabled in system settings. Use Play to start.',loop:'Loop',seconds:'s',language:'Language',canvas:'A cone juggling three balls. Loading animation.'},
@@ -111,7 +114,7 @@
     fail(new Error('Local Three.js dependencies unavailable. Open through tools/mascot/serve_model.py.'), true);
     return;
   }
-  try { renderer = new THREE.WebGLRenderer({antialias:true,alpha:false}); }
+  try { renderer = new THREE.WebGLRenderer({antialias:true,alpha:captureMode,preserveDrawingBuffer:captureMode}); }
   catch (error) { fail(new Error('WebGL: ' + error.message), true); return; }
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.outputEncoding = THREE.sRGBEncoding;
@@ -122,7 +125,8 @@
   renderer.domElement.tabIndex = 0;
   viewport.append(renderer.domElement);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xedf2f8);
+  scene.background = captureMode ? null : new THREE.Color(0xedf2f8);
+  if (captureMode) renderer.setClearColor(0x000000, 0);
   const camera = new THREE.PerspectiveCamera(32, 1, .01, 100);
   camera.position.set(.5, 1.6, 6);
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -191,7 +195,8 @@
   function setTheme(theme) {
     const colors = {light:0xedf2f8,dark:0x141b28,blue:0x0574f8};
     if (!(theme in colors)) return;
-    stage.dataset.theme = theme; scene.background.setHex(colors[theme]);
+    stage.dataset.theme = theme;
+    if (!captureMode) scene.background.setHex(colors[theme]);
     shadow.material.opacity = theme === 'dark' ? .35 : .2;
     document.querySelectorAll('[data-theme]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.theme === theme)));
     render();
@@ -226,6 +231,15 @@
     return normalized;
   }
   api.seek = seek;
+  api.captureFrame = (seconds, pixels = 384) => {
+    if (!captureMode || !api.ready) throw new Error('Transparent export requires ?capture=1 and a ready model.');
+    if (!Number.isInteger(pixels) || pixels < 32 || pixels > 2048) throw new Error('Invalid capture dimensions.');
+    seek(seconds);
+    renderer.setPixelRatio(1);
+    renderer.setSize(pixels, pixels, false);
+    render();
+    return renderer.domElement.toDataURL('image/png');
+  };
   api.replay = () => { if (api.ready) { resetLoop(); setPlaying(true); } };
   api.finish = () => { if (finishAction && mode === 'loop') { pendingFinish = true; document.getElementById('finish').disabled = true; setPlaying(true); } };
   api.snapshot = () => {
