@@ -965,6 +965,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameDebugUnlimitedFuel => 'Бесконечные заезды';
 
   @override
+  String get gameDebugMenuTitle => 'Тест уведомлений';
+
+  @override
+  String get gameDebugRewardCar => 'Показать машину';
+
+  @override
+  String get gameDebugRewardPaint => 'Показать цвет';
+
+  @override
+  String get gameDebugRewardQueue => 'Показать очередь';
+
+  @override
+  String get gameDebugRewardHint =>
+      'Только предпросмотр — прогресс не меняется';
+
+  @override
   String get gameDebugTier => 'Уровень графики';
 
   @override

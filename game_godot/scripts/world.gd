@@ -142,6 +142,8 @@ var ride_options := {
 	"record": 0, "can_start": true, "texts": {},
 }
 var notified_rewards: Array[String] = [] # Only banners that reached their readable pose.
+var debug_menu_unlocked := false # Session-only; available only with the host's dev flag.
+var _debug_reward_serial := 0
 var next_id := ""                 # the junction picked next (its files may still be coming)
 var preparing := false            # its files are being fetched (web)
 var road_queue: Array = []        # the road questions still to come (road_scenes.json, all kinds)
@@ -238,7 +240,7 @@ func _ready() -> void:
 	ui.exit_pressed.connect(_on_exit)
 	ui.tip_next.connect(_on_tip_next)
 	ui.reward_revealed.connect(func(id: String):
-		if not notified_rewards.has(id): notified_rewards.append(id)
+		if not id.begins_with("debug:") and not notified_rewards.has(id): notified_rewards.append(id)
 		sound.play_unlock()
 	)
 	# Analytics: every event of the game goes to the app (Host.send; a no-op on the desktop).
@@ -2694,6 +2696,8 @@ func _show_pause_menu() -> void:
 	options.sound = sound.enabled
 	options.voice = voice.enabled
 	options.voice_available = voice.available and Ui.lang == "ru"
+	options.debug_menu = _has_arg("--debug-menu") and phase != "over"
+	options.debug_menu_open = debug_menu_unlocked
 	pause_menu = RidePause.new(options, chosen)
 	add_child(pause_menu)
 	# Android Back/app suspension can pause during the first scene's preparation.
@@ -2704,6 +2708,8 @@ func _show_pause_menu() -> void:
 	pause_menu.vehicle_changed.connect(_on_vehicle_changed)
 	pause_menu.sound_changed.connect(func(on): sound.enabled = on)
 	pause_menu.voice_changed.connect(func(on): voice.set_enabled(on))
+	pause_menu.debug_menu_revealed.connect(func(): debug_menu_unlocked = true)
+	pause_menu.debug_reward_requested.connect(_preview_reward)
 
 
 ## The host has already booked previous visits of a resumed ride. Add only
@@ -2794,6 +2800,25 @@ func _notify_garage_rewards() -> void:
 			if not model: notice.hex = str(item.get("hex", ""))
 			ui.show_reward(notice)
 			break
+
+
+## Reuse the real animation and sound without unlocking anything or reporting
+## a real reward. Unique preview IDs allow the same action to be tried again.
+func _preview_reward(kind: String) -> void:
+	if not _has_arg("--debug-menu") or not debug_menu_unlocked or not paused or phase == "over" or kind not in ["car", "paint", "queue"]:
+		return
+	_debug_reward_serial += 1
+	var prefix := "debug:%d:" % _debug_reward_serial
+	var hex := "#" + Ui.c("accent").to_html(false)
+	for paint: Dictionary in ride_options.get("reward_paints", []):
+		if str(paint.get("paint", "")) == "blue":
+			hex = str(paint.hex)
+			break
+	_on_resume()
+	if kind in ["car", "queue"]:
+		ui.show_reward({"id": prefix + "car", "name": Ui.t("gameCarSedan")})
+	if kind in ["paint", "queue"]:
+		ui.show_reward({"id": prefix + "paint", "name": Ui.t("gamePaintBlue"), "hex": hex})
 
 
 func _on_resume() -> void:

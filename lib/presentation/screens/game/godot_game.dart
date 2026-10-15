@@ -119,6 +119,7 @@ class GodotGame {
         ...safe,
         '--ride-options=${jsonEncode(options)}',
         if (const bool.fromEnvironment('GAME_DEBUG')) '--perf',
+        if (const bool.fromEnvironment('GAME_DEBUG')) '--debug-menu',
       ]);
     } on PlatformException {
       json = null;

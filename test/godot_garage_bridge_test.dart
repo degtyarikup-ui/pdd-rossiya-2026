@@ -128,6 +128,22 @@ void main() {
     'car': {'id': 'hatch', 'paint': 'red'},
   });
 
+  testWidgets('notification previews are available only in a debug city ride', (
+    tester,
+  ) async {
+    await open(tester);
+    await launch(tester);
+
+    const gameDebug = bool.fromEnvironment('GAME_DEBUG');
+    expect(launches.last.contains('--debug-menu'), gameDebug);
+    expect(launches.last.contains('--perf'), gameDebug);
+
+    for (final game in ['Regulator', 'Crossroads']) {
+      await launch(tester, game);
+      expect(launches.last, isNot(contains('--debug-menu')));
+    }
+  });
+
   testWidgets('all earned colours are identical for every owned model', (
     tester,
   ) async {

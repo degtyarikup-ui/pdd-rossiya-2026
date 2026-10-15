@@ -946,6 +946,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameDebugUnlimitedFuel => 'Endless races';
 
   @override
+  String get gameDebugMenuTitle => 'Test notifications';
+
+  @override
+  String get gameDebugRewardCar => 'Show car';
+
+  @override
+  String get gameDebugRewardPaint => 'Show colour';
+
+  @override
+  String get gameDebugRewardQueue => 'Show queue';
+
+  @override
+  String get gameDebugRewardHint => 'Preview only — progress stays the same';
+
+  @override
   String get gameDebugTier => 'Graphics level';
 
   @override

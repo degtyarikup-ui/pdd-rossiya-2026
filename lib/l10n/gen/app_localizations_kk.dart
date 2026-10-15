@@ -947,6 +947,21 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameDebugUnlimitedFuel => 'Шексіз жарыстар';
 
   @override
+  String get gameDebugMenuTitle => 'Хабарландыруларды тексеру';
+
+  @override
+  String get gameDebugRewardCar => 'Көлікті көрсету';
+
+  @override
+  String get gameDebugRewardPaint => 'Түсті көрсету';
+
+  @override
+  String get gameDebugRewardQueue => 'Кезекті көрсету';
+
+  @override
+  String get gameDebugRewardHint => 'Тек алдын ала қарау — прогресс өзгермейді';
+
+  @override
   String get gameDebugTier => 'Графика деңгейі';
 
   @override

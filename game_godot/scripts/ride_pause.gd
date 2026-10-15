@@ -7,6 +7,11 @@ signal exit_requested
 signal vehicle_changed(selection: Dictionary)
 signal sound_changed(enabled: bool)
 signal voice_changed(enabled: bool)
+signal debug_menu_revealed
+signal debug_reward_requested(kind: String)
+
+const DEBUG_TAP_COUNT := 7
+const DEBUG_TAP_GAP_MSEC := 3000
 
 var data: Dictionary
 var car_index := 0
@@ -30,6 +35,10 @@ var _voice_button: Button
 var _preview: SubViewport
 var _preview_car: Node3D
 var _studio: Node3D
+var _debug_panel: PanelContainer
+var _debug_title_button: Button
+var _debug_tap_count := 0
+var _debug_last_tap_msec := -1
 
 func _init(options: Dictionary, selection := {}) -> void:
 	data = options
@@ -75,7 +84,20 @@ func _ready() -> void:
 	var title := Ui.scaled_label(Ui.t("gamePause"), 22, 800, Ui.c("text"))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_head.add_child(title)
+	if bool(data.get("debug_menu", false)):
+		_debug_title_button = Button.new()
+		_debug_title_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_debug_title_button.custom_minimum_size = title.get_combined_minimum_size()
+		_debug_title_button.accessibility_name = Ui.t("gamePause")
+		for state in ["normal", "hover", "pressed", "focus"]:
+			_debug_title_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_debug_title_button.add_child(title)
+		title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_debug_title_button.pressed.connect(_on_debug_title_pressed)
+		_head.add_child(_debug_title_button)
+	else:
+		_head.add_child(title)
 	_head.add_child(_icon_button(0xf647, func(): resume_requested.emit()))
 	_shell.add_child(_head)
 	_scroll = ScrollContainer.new()
@@ -108,6 +130,8 @@ func _ready() -> void:
 	_palette.add_theme_constant_override("v_separation", 12)
 	palette_center.add_child(_palette)
 	_build_audio_controls()
+	if bool(data.get("debug_menu", false)) and bool(data.get("debug_menu_open", false)):
+		_build_debug_menu()
 	# Keep the ride actions reachable while the customization content scrolls.
 	_actions = GridContainer.new()
 	_actions.columns = 1
@@ -125,6 +149,50 @@ func _ready() -> void:
 	create_tween().tween_property(_panel, "modulate:a", 1.0, 0.18)
 	_box.minimum_size_changed.connect(_layout.call_deferred)
 	_actions.minimum_size_changed.connect(_layout.call_deferred)
+
+
+func _on_debug_title_pressed() -> void:
+	if not bool(data.get("debug_menu", false)) or _debug_panel != null:
+		return
+	var now := Time.get_ticks_msec()
+	if _debug_last_tap_msec < 0 or now - _debug_last_tap_msec > DEBUG_TAP_GAP_MSEC:
+		_debug_tap_count = 0
+	_debug_last_tap_msec = now
+	_debug_tap_count += 1
+	if _debug_tap_count < DEBUG_TAP_COUNT:
+		return
+	_build_debug_menu()
+	debug_menu_revealed.emit()
+	_layout.call_deferred()
+	_scroll_to_debug.call_deferred()
+
+
+func _build_debug_menu() -> void:
+	_debug_panel = PanelContainer.new()
+	_debug_panel.add_theme_stylebox_override("panel", Ui.box(Ui.c("field"), 16))
+	_box.add_child(_debug_panel)
+	var margin := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 12)
+	_debug_panel.add_child(margin)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	margin.add_child(box)
+	box.add_child(Ui.scaled_label(Ui.t("gameDebugMenuTitle"), 14, 700, Ui.c("text"), true))
+	for item in [["car", "gameDebugRewardCar"], ["paint", "gameDebugRewardPaint"], ["queue", "gameDebugRewardQueue"]]:
+		var kind: String = item[0]
+		var button := _button(Ui.t(item[1]), false, func(): debug_reward_requested.emit(kind))
+		button.name = "DebugReward" + kind.capitalize()
+		button.accessibility_name = Ui.t(item[1])
+		box.add_child(button)
+	box.add_child(Ui.scaled_label(Ui.t("gameDebugRewardHint"), 12, 500, Ui.c("secondary"), true))
+
+
+func _scroll_to_debug() -> void:
+	# Wait for the panel's wrapped text and the scroll area to take their final size.
+	await get_tree().process_frame
+	if is_instance_valid(_debug_panel):
+		_scroll.ensure_control_visible(_debug_panel)
 
 
 func _build_audio_controls() -> void:
@@ -184,6 +252,8 @@ func _layout() -> void:
 	var top: float = ins.top / unit + 16.0
 	var bottom: float = ins.bottom / unit + 16.0
 	var width := minf(420.0, view.x - 32.0)
+	# Leave room for the scrollbar when a short/narrow screen wraps the palette.
+	_palette.custom_minimum_size.x = minf(228.0, width - 40.0 - _scroll.get_v_scroll_bar().get_combined_minimum_size().x)
 	_actions.columns = 2 if view.x > view.y else 1
 	# The content scrolls on landscape screens and with large accessibility text.
 	var available := maxf(100.0, view.y - top - bottom)

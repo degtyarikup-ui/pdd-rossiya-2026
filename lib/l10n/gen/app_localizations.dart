@@ -1696,6 +1696,36 @@ abstract class AppLocalizations {
   /// **'Бесконечные заезды'**
   String get gameDebugUnlimitedFuel;
 
+  /// No description provided for @gameDebugMenuTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тест уведомлений'**
+  String get gameDebugMenuTitle;
+
+  /// No description provided for @gameDebugRewardCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Показать машину'**
+  String get gameDebugRewardCar;
+
+  /// No description provided for @gameDebugRewardPaint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Показать цвет'**
+  String get gameDebugRewardPaint;
+
+  /// No description provided for @gameDebugRewardQueue.
+  ///
+  /// In ru, this message translates to:
+  /// **'Показать очередь'**
+  String get gameDebugRewardQueue;
+
+  /// No description provided for @gameDebugRewardHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Только предпросмотр — прогресс не меняется'**
+  String get gameDebugRewardHint;
+
   /// No description provided for @gameDebugTier.
   ///
   /// In ru, this message translates to:
