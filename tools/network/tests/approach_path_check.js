@@ -43,4 +43,29 @@ for(const free of [false,true]) {
   assert.ok(route(reload).auto&&!route(reload).manual);
   assert.equal(reload.layout[key],undefined);
 }
+// A branch off a bent road splits the player's street. The new segment may be
+// shorter than the normal stop setback; rebuilding it used to abort every later
+// edit (including unrelated signs) before dirty/undo/preview were updated.
+for (const kind of ['yard','street','avenue','highway']) {
+  const base=scene('cross');
+  base.layout={nodes:[{id:'s',x:0,z:-90},{id:'c',x:0,z:90}],
+    streets:[{id:'s1',a:'s',b:'c',kind,bend:[-46.677,59.41],ends:{}}],
+    player:{street:'s1',toward:'c'}};
+  L.apply(base);
+  for (const distance of [5,20,40,70,90,110,140,160,175]) {
+    const sc=copy(base);
+    const at=L.along(L.centreline(sc.layout,sc.layout.streets[0]),distance).p;
+    L.addStreet(sc,at,[-80,at[1]],'street');
+    assert.doesNotThrow(()=>L.apply(sc),`${kind} split at ${distance} remains editable`);
+    const plan=L.playerPlan(sc);
+    assert.ok(plan.sd>=0 && plan.sd<plan.total,'car setback fits remaining street');
+    sc.signs=[{id:'sign_1',code:'1.11.2',pos:[-35,-15],yaw:Math.PI}];
+    assert.doesNotThrow(()=>L.apply(sc),'placing a sign after splitting still rebuilds');
+    assert.equal(sc.signs.length,1);
+    for (const r of sc.routes) {
+      assert.ok(r.points.length>=2,`${r.id} has usable endpoints`);
+      assert.ok(r.points.every(p=>p.length===2 && p.every(Number.isFinite)));
+    }
+  }
+}
 console.log('Approach: near-entry lap/direction/manual-edit/save-load/anchor/mode/reset PASS');

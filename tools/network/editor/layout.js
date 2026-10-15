@@ -920,7 +920,9 @@ const Layout = (() => {
     const sd = kind === "junction" || kind === "ring" ? stopDistance(L, st, nid, crop)
       : Math.min(total - 2, projectOn(inLine, [0, 0]) + 10.7);
     // The car stands with its front at the stop line, not on it (the game puts its centre at the stop).
-    const carD = Math.max(sd + CAR_BACK, Math.min(total - 1, Number(pl.questionAt) || sd + CAR_BACK));
+    // Splitting/shortening a street can leave less room than the usual stop setback.
+    // Keep the car on this segment so the approach never ends before its beginning.
+    const carD = Math.min(Math.max(0, total - 1), Math.max(sd + CAR_BACK, Number(pl.questionAt) || sd + CAR_BACK));
     const s = along(inLine, carD);
     if (st.kind === "highway") {
       const profile = streetProfile(L,st,st.a === nid ? carD : total-carD,crop);
