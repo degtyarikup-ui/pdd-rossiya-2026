@@ -10,7 +10,7 @@
 | Запуск и инициализация | `lib/main.dart` |
 | Экран | `lib/presentation/screens/<экран>/` |
 | Общий UI | `lib/presentation/widgets/` |
-| Маскот и загрузчики | [mascot-loader.md](mascot-loader.md) |
+| Маскот и загрузчики | [3D-модель](mascot-3d.md), [векторные эксперименты](mascot-loader.md) |
 | Состояние Riverpod | `lib/data/repositories/providers.dart` |
 | Модели и локальные данные | `lib/data/models/`, `lib/data/sources/` |
 | Запросы и интеграции | `lib/data/services/` |
