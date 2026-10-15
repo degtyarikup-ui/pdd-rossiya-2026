@@ -1,5 +1,5 @@
 ## Crossroads responsive UI: one game, safe-area layout, readable text, scrollable
-## explanations, pause/resume and results on phones, tablets and short viewports.
+## explanations, direct exit and results on phones, tablets and short viewports.
 ## Also run with -- --text-scale=1.6 to check the app's larger type setting.
 ## godot --headless --path game_godot --script res://tests/crossroads_ui_check.gd
 extends SceneTree
@@ -30,7 +30,7 @@ func _run() -> void:
 	var ui := CrossroadsUi.new()
 	root.add_child(ui)
 	_check("One game has no training switch", not ui.has_signal("mode_toggled") and not ui.has_method("set_mode"))
-	_check("Pause resume is localised", Ui.t("continueButton") != "continueButton")
+	_check("Top control exits directly without pause or resume UI", not ui.has_method("show_pause") and not ui.has_signal("resume_pressed") and ui._close_btn.text == char(CrossroadsUi.ICON_CLOSE) and ui._close_btn.tooltip_text == Ui.t("gameExit"))
 	for viewport_size in [Vector2i(280, 640), Vector2i(390, 844), Vector2i(844, 390), Vector2i(1024, 768)]:
 		# Respect the project's canvas stretch: tests need to change both sizes.
 		root.content_scale_size = viewport_size
@@ -54,14 +54,6 @@ func _run() -> void:
 		_check("Bonus does not increase task-card height" + suffix, ui._hard_badge.size.y <= badge_height)
 		_check("Bonus text stays inside the card, above the scene" + suffix, _labels_fit(ui._hard_badge) and ui._hard_badge.get_global_rect().end.y < ui.scene_rect().position.y)
 
-		ui.show_pause()
-		await _settle(ui)
-		_check("Pause covers game controls" + suffix, ui.is_pause_visible() and not ui._top_bar.visible and not ui._reset_cam_btn.visible)
-		_check("Pause card fits viewport" + suffix, _contained(ui._pause_card.get_global_rect(), viewport_size, 15.0))
-		_check("Pause text has no horizontal clipping" + suffix, _labels_fit(ui._pause_content))
-		ui.hide_pause()
-		_check("Resume restores game controls" + suffix, not ui.is_pause_visible() and ui._top_bar.visible and ui._reset_cam_btn.visible)
-
 		ui.show_collision_modal("Синий автомобиль", "Водитель должен уступить дорогу транспортным средствам, движущимся по главной дороге. ".repeat(20), "Пункт 13.9 ПДД РФ", false)
 		await _settle(ui)
 		_check("Long explanation card fits viewport" + suffix, _contained(ui._collision_card.get_global_rect(), viewport_size, 15.0))
@@ -76,14 +68,43 @@ func _run() -> void:
 
 		ui.show_results(1540, 12, 2, 8, true, 1000)
 		await _settle(ui)
-		_check("Results card fits viewport" + suffix, _contained(ui._result_card.get_global_rect(), viewport_size, 15.0))
-		_check("Result labels have no horizontal clipping" + suffix, _labels_fit(ui._result_content))
-		_check("Results keep score, record and accuracy" + suffix, ui._final_score.text == "1540" and ui._record_badge.visible and ui._stat_acc_val.text == "86%")
+		_check("Results card fits viewport" + suffix, _contained(ui._results.card.get_global_rect(), viewport_size, 15.0))
+		_check("Result labels have no horizontal clipping" + suffix, _labels_fit(ui._results.content))
+		_check("Results keep score, record and accuracy" + suffix, ui._results.score_label.text == "1540" and ui._results.record_badge.visible and ui._results.stat_values[1].text == "86%")
 		ui.hide_results()
 	ui.queue_free()
 	await process_frame
+	await _check_real_caption_sequence()
 	print("Crossroads UI: %d passed, %d failed" % [_total - _bad, _bad])
 	quit(1 if _bad > 0 else 0)
+
+
+## Match the live game: reward text is changed while its badge is still hidden,
+## then the title/step changes several times before the next junction is loaded.
+## The first hard scene previously retained a 901 dp top card at text-scale=1.6.
+func _check_real_caption_sequence() -> void:
+	root.size = Vector2i(390, 844)
+	root.content_scale_size = root.size
+	var ui := CrossroadsUi.new()
+	root.add_child(ui)
+	var scenarios: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/crossroads_scenarios.json"))
+	for index in scenarios.size():
+		var scenario: Dictionary = scenarios[index]
+		var hard: bool = scenario.get("isHard", false)
+		if hard: ui.show_hard_bonus_toast()
+		ui.update_hud(index * 100, 60, 5, index + 1)
+		ui.update_caption(scenario.title, scenario.subtitle, 1, scenario.actors.size(), hard)
+		# Do not force _layout here: real camera fitting sees this exact two-frame state.
+		await process_frame
+		await process_frame
+		var area := ui.scene_rect()
+		_check("Real caption retains a useful scene opening: " + str(scenario.id), area.position.y < 422.0 and area.size.y > 350.0 and area.end.y <= 844.0)
+		_check("Real caption and badge fit after switching: " + str(scenario.id), _labels_fit(ui._caption_card))
+		for step in range(2, scenario.actors.size() + 2):
+			ui.update_caption(scenario.title, scenario.subtitle, step, scenario.actors.size(), hard)
+			ui.update_hud(index * 100 + step, 60, 5, index + 1)
+	ui.queue_free()
+	await process_frame
 
 
 func _contained(rect: Rect2, viewport_size: Vector2i, margin: float) -> bool:

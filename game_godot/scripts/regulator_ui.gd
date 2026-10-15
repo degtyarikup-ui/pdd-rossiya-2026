@@ -62,15 +62,7 @@ var _panel_style: StyleBoxFlat
 var _question: Label
 var move_buttons := {}
 
-var _result: Control
-var _result_card: PanelContainer
-var _cover: TextureRect
-var _result_title: Label
-var _final_score: Label
-var _record_box: VBoxContainer
-var _record_badge: PanelContainer
-var _best_label: Label
-var _stat_values: Array[Label] = []
+var _results: MiniGameResults
 
 var hint_open := false
 var awaiting := false
@@ -105,10 +97,10 @@ func _layout() -> void:
 	_top_bar.offset_top = top + 8.0
 	_top_bar.offset_bottom = _top_bar.offset_top + CHROME
 	_panel_style.content_margin_bottom = 16.0 + bottom
-	var card_width := minf(420.0, size.x - 40.0)
-	_result_card.custom_minimum_size.x = card_width
-	# The cover is 16:9 of the card's inner width (the card has 20 dp padding on both sides).
-	_cover.custom_minimum_size.y = (card_width - 2.0 * SCREEN_PAD) * 9.0 / 16.0
+	_results.size = size
+	var left := float(safe["left"]) / u + 20.0
+	var right := float(safe["right"]) / u + 20.0
+	_results.layout(Rect2(left, top + 24.0, maxf(160.0, size.x - left - right), maxf(100.0, size.y - top - bottom - 48.0)))
 	_fit_hud()
 
 
@@ -320,7 +312,7 @@ func _move_button(move: RegulatorRules.Move, icon_code: int, label_key: String, 
 	content.add_child(label)
 	box.add_child(content)
 	box.add_child(_tap(func():
-		if not awaiting and not _result.visible:
+		if not awaiting and not _results.visible:
 			move_selected.emit(move)))
 
 	move_buttons[move] = { "panel": box, "style": style, "icon": icon, "label": label }
@@ -336,118 +328,10 @@ func _paint_move(entry: Dictionary, background: Color, text: Color, icon: Color)
 # --- Result card: the app's GameResultOverlay ---
 
 func _build_result() -> void:
-	_result = Control.new()
-	_result.set_anchors_preset(PRESET_FULL_RECT)
-	_result.mouse_filter = MOUSE_FILTER_STOP
-	_result.visible = false
-	add_child(_result)
-
-	var scrim := ColorRect.new()
-	scrim.set_anchors_preset(PRESET_FULL_RECT)
-	scrim.color = Color(0, 0, 0, 0.5)
-	scrim.mouse_filter = MOUSE_FILTER_STOP
-	_result.add_child(scrim)
-
-	var scroll := ScrollContainer.new()
-	scroll.set_anchors_preset(PRESET_FULL_RECT)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_result.add_child(scroll)
-	var center := CenterContainer.new()
-	center.size_flags_horizontal = SIZE_EXPAND_FILL
-	center.size_flags_vertical = SIZE_EXPAND_FILL
-	scroll.add_child(center)
-
-	_result_card = PanelContainer.new()
-	_result_card.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 24, SCREEN_PAD, SCREEN_PAD))
-	center.add_child(_result_card)
-
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 0)
-	_result_card.add_child(column)
-
-	_cover = TextureRect.new()
-	_cover.texture = load(COVER)
-	_cover.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_cover.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	_cover.size_flags_horizontal = SIZE_EXPAND_FILL
-	column.add_child(_cover)
-	column.add_child(_spacer(0.0, 10.0))
-
-	_result_title = _label("", 22, 800, Ui.c("text"), true)
-	_result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(_result_title)
-	column.add_child(_spacer(0.0, 18.0))
-
-	var score_row := HBoxContainer.new()
-	score_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	score_row.add_theme_constant_override("separation", 6)
-	column.add_child(score_row)
-	score_row.add_child(Ui.icon(ICON_STAR, 40, Ui.c("gold")))
-	_final_score = _label("0", 44, 800, Ui.c("gold"))
-	score_row.add_child(_final_score)
-
-	_record_box = VBoxContainer.new()
-	_record_box.add_theme_constant_override("separation", 6)
-	_record_box.visible = false
-	column.add_child(_record_box)
-	_record_badge = PanelContainer.new()
-	_record_badge.size_flags_horizontal = SIZE_SHRINK_CENTER
-	_record_badge.add_theme_stylebox_override("panel", _padded(_alpha(Ui.c("gold"), 0.16), 12, 12.0, 5.0))
-	var badge_row := HBoxContainer.new()
-	badge_row.add_theme_constant_override("separation", 5)
-	_record_badge.add_child(badge_row)
-	badge_row.add_child(Ui.icon(ICON_TROPHY, 16, Ui.c("gold")))
-	badge_row.add_child(_label(Ui.t("gameNewRecord"), 13, 800, Ui.c("gold")))
-	_record_box.add_child(_record_badge)
-	_best_label = _label("", 12, 600, Ui.c("secondary"), true)
-	_best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_record_box.add_child(_best_label)
-
-	column.add_child(_spacer(0.0, 18.0))
-
-	var stats := HBoxContainer.new()
-	stats.add_theme_constant_override("separation", 0)
-	column.add_child(stats)
-	for label_key in ["gameSolvedLabel", "gameAccuracyLabel", "gameComboLabel"]:
-		stats.add_child(_stat(Ui.t(label_key)))
-
-	column.add_child(_spacer(0.0, 18.0))
-
-	var restart := PanelContainer.new()
-	restart.custom_minimum_size = Vector2(0, 50)
-	restart.add_theme_stylebox_override("panel", Ui.box(Ui.c("accent"), 12))
-	var restart_label := _label(Ui.t("gameRestart"), 15, 700, Color.WHITE)
-	restart_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	restart_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	restart.add_child(restart_label)
-	restart.add_child(_tap(func(): restart_pressed.emit()))
-	column.add_child(restart)
-
-	column.add_child(_spacer(0.0, 4.0))
-
-	var exit := PanelContainer.new()
-	exit.custom_minimum_size = Vector2(0, 44)
-	exit.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	var exit_label := _label(Ui.t("gameExit"), 14, 700, Ui.c("secondary"))
-	exit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	exit_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	exit.add_child(exit_label)
-	exit.add_child(_tap(func(): exit_pressed.emit()))
-	column.add_child(exit)
-
-
-func _stat(label_text: String) -> VBoxContainer:
-	var box := VBoxContainer.new()
-	box.size_flags_horizontal = SIZE_EXPAND_FILL
-	box.add_theme_constant_override("separation", 2)
-	var value := _label("0", 18, 800, Ui.c("text"))
-	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var caption := _label(label_text, 12, 600, Ui.c("secondary"), true)
-	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(value)
-	box.add_child(caption)
-	_stat_values.append(value)
-	return box
+	_results = MiniGameResults.new(COVER)
+	_results.restart_pressed.connect(func(): restart_pressed.emit())
+	_results.exit_pressed.connect(func(): exit_pressed.emit())
+	add_child(_results)
 
 
 # --- Public API (regulator.gd) ---
@@ -499,25 +383,18 @@ func reset_buttons_visuals() -> void:
 
 
 func show_game_over(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, time_up := false, best := 0) -> void:
-	_hint_row.visible = false
-	_result.visible = true
-	_result_title.text = Ui.t("gameTimeUp") if time_up else Ui.t("gameOverTitle")
-	_final_score.text = str(score)
-	_record_badge.visible = is_record
-	_best_label.visible = not is_record and best > 0
-	_best_label.text = Ui.t("gameBestScore", { "score": best })
-	_record_box.visible = is_record or best > 0
-
-	var total := solved + wrong
-	var accuracy := int(round(float(solved) * 100.0 / float(total))) if total > 0 else 0
-	_stat_values[0].text = str(solved)
-	_stat_values[1].text = "%d%%" % accuracy
-	_stat_values[2].text = "x%d" % max_combo
+	_top_bar.visible = false
+	_bottom.visible = false
+	_results.show_results(score, solved, wrong, max_combo, is_record, best, time_up)
+	if is_inside_tree():
+		_layout()
+		call_deferred("_layout")
 
 
 func hide_game_over() -> void:
-	_result.visible = false
-	_hint_row.visible = true
+	_results.hide_results()
+	_top_bar.visible = true
+	_bottom.visible = true
 
 
 # --- Helpers ---
@@ -579,10 +456,6 @@ func _padded(color: Color, radius: int, pad_x: float, pad_y: float) -> StyleBoxF
 	box.content_margin_top = pad_y
 	box.content_margin_bottom = pad_y
 	return box
-
-
-func _alpha(color: Color, alpha: float) -> Color:
-	return Color(color.r, color.g, color.b, alpha)
 
 
 func _spacer(width: float, height: float) -> Control:

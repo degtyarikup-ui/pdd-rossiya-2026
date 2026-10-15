@@ -282,7 +282,7 @@ class GodotGame {
   static Future<String?> _start(BuildContext context, List<String> args) {
     if (kIsWeb) {
       return Navigator.of(context).push<String>(
-        MaterialPageRoute<String>(builder: (_) => GodotWebScreen(args: args)),
+        GodotWebScreen.route(args: args),
       );
     }
     return _channel.invokeMethod<String>('start', {'args': args});

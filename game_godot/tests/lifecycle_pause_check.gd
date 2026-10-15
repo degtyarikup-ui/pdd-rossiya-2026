@@ -88,6 +88,12 @@ func _cycle(world: Node, label: String, enter_background: bool) -> void:
 
 
 func _run() -> void:
+	# The main scene also dispatches mini-game startup before mounting voice/UI.
+	var dispatch: Node = load("res://main.tscn").instantiate()
+	dispatch.propagate_notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	dispatch._on_pause(true)
+	check(not dispatch.paused and dispatch.pause_menu == null, "uninitialised mini-game dispatcher ignores focus loss")
+	dispatch.free()
 	var world: Node = load("res://main.tscn").instantiate()
 	world.only_id = "ticket_10_13"
 	world.bag = [world.only_id]
@@ -144,6 +150,17 @@ func _run() -> void:
 	world.phase = "over"
 	world.propagate_notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	check(not world.paused and world.pause_menu == null, "finished run keeps its result screen")
+	var exit_camera: Transform3D = world.camera.transform
+	world.phase = "driving"
+	world._exiting = true
+	world.propagate_notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	world.propagate_notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	world._on_pause(true)
+	world._show_pause_menu()
+	world._process(1.0)
+	await process_frame
+	check(not world.paused and world.pause_menu == null, "exit cannot reopen pause after focus or Back notification")
+	check(world.camera.transform.is_equal_approx(exit_camera), "exit retains the exact camera frame")
 	world.queue_free()
 	await process_frame
 	await process_frame

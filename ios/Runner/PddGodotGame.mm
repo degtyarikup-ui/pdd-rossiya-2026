@@ -60,6 +60,7 @@ static UIWindow *gAppWindow = nil;
 static NSTimer *gPollTimer = nil;
 static NSTimer *gMemoryTimer = nil;
 static FlutterResult gPending = nil;
+static BOOL gGameClosing = NO;
 
 /// Where the app and the game exchange requests and results: Library/Caches/pdd_game.
 static NSString *ExchangeFolder(void) {
@@ -68,7 +69,7 @@ static NSString *ExchangeFolder(void) {
 }
 
 static BOOL IsGameVisible(void) {
-  return gGameWindow != nil && !gGameWindow.hidden;
+  return gGameWindow != nil && !gGameWindow.hidden && !gGameClosing;
 }
 
 static void StopPerformanceMemorySampling(void) {
@@ -212,15 +213,28 @@ static BOOL ShowGame(void) {
   return YES;
 }
 
-static void HideGame(void) {
+static void HideGame(dispatch_block_t completion) {
   StopPerformanceMemorySampling();
-  [EngineService() sceneWillResignActive:gGameWindow.windowScene];
+  gGameClosing = YES;
+  UIWindow *closingWindow = gGameWindow;
+  // Stop at the opaque frame presented by Host.exit before UIKit changes focus/layout.
+  // Leaving the live renderer visible while detaching its controller caused a last
+  // resize/repaint of the game immediately before returning to Flutter.
   [gController.godotView stopRendering];
-  gGameWindow.hidden = YES;
-  gGameWindow.rootViewController = nil;
-  gGameWindow = nil;
+  [EngineService() sceneWillResignActive:closingWindow.windowScene];
   [gAppWindow makeKeyAndVisible];
-  gAppWindow = nil;
+  [UIView animateWithDuration:0.12
+                        delay:0
+                      options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState
+                   animations:^{ closingWindow.alpha = 0; }
+                   completion:^(BOOL finished) {
+                     closingWindow.hidden = YES;
+                     closingWindow.rootViewController = nil;
+                     gGameWindow = nil;
+                     gAppWindow = nil;
+                     gGameClosing = NO;
+                     if (completion) completion();
+                   }];
 }
 
 #endif
@@ -278,7 +292,7 @@ static void HideGame(void) {
   }
   StartPerformanceMemorySampling(gameArgs);
   gPending = result;
-  gPollTimer = [NSTimer scheduledTimerWithTimeInterval:0.2
+  gPollTimer = [NSTimer scheduledTimerWithTimeInterval:0.04
                                                repeats:YES
                                                  block:^(NSTimer *timer) {
                                                    [self pollSummary];
@@ -313,7 +327,7 @@ static void HideGame(void) {
                         error:nil];
 }
 
-/// Runs every 0.2 s while a run is shown. «run_finished» keeps the game open; the exit
+/// Runs every 40 ms while a run is shown. «run_finished» keeps the game open; the exit
 /// event carries the final summary and closes the game.
 - (void)pollSummary {
   NSString *path = [ExchangeFolder() stringByAppendingPathComponent:@"summary.json"];
@@ -339,12 +353,9 @@ static void HideGame(void) {
   }
   [gPollTimer invalidate];
   gPollTimer = nil;
-  HideGame();
   FlutterResult result = gPending;
   gPending = nil;
-  if (result) {
-    result(json);
-  }
+  HideGame(^{ if (result) result(json); });
 }
 
 // The engine's lifecycle hooks, passed on as the template's app delegate does.

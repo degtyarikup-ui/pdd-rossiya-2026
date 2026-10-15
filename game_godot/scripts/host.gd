@@ -17,6 +17,11 @@ extends RefCounted
 static var io := ""
 static var io_args: Array = []
 
+const EXIT_META := &"pdd_game_exiting"
+const EXIT_LAYER := "GameExitTransition"
+const EXIT_FADE := 0.14
+static var _exit_generation := 0
+
 
 static func embedded() -> bool:
 	return Engine.has_singleton("PddHost")
@@ -74,6 +79,36 @@ static func begin_events() -> void:
 ## Leaves the game: the app gets the run's summary and closes the game screen.
 ## On the web the page closes the frame; standalone (no parent) the game stays.
 static func exit(summary: Dictionary, tree: SceneTree) -> void:
+	if is_exiting(tree):
+		return
+	# Keep the final camera and participants still, even during native engine teardown.
+	# A paused tree alone does not stop process_frame continuations or ALWAYS nodes.
+	_exit_generation += 1
+	tree.root.set_meta(EXIT_META, _exit_generation)
+	tree.paused = true
+	if tree.current_scene != null:
+		tree.current_scene.process_mode = Node.PROCESS_MODE_DISABLED
+	# Back/focus notifications can arrive while the root's child list is locked.
+	# Reserve the exit synchronously, then mount its input shield outside that traversal.
+	var transition := ExitTransition.new(summary.duplicate(true), _exit_generation)
+	tree.root.add_child.call_deferred(transition)
+
+
+static func is_exiting(tree: SceneTree) -> bool:
+	return tree != null and bool(tree.root.get_meta(EXIT_META, false))
+
+
+## iOS keeps the engine: the next request removes the preceding run's opaque cover.
+## Its disabled scene stays frozen until EmbeddedIO replaces it through the dispatcher.
+static func reset_exit(tree: SceneTree) -> void:
+	tree.root.remove_meta(EXIT_META)
+	var transition := tree.root.get_node_or_null(EXIT_LAYER)
+	if transition != null:
+		tree.root.remove_child(transition)
+		transition.queue_free()
+
+
+static func _complete_exit(summary: Dictionary, tree: SceneTree) -> void:
 	if embedded():
 		# The result first, then the engine stops itself: the app closes the activity when it
 		# terminates (never from here, while a frame is still being drawn).
@@ -86,6 +121,48 @@ static func exit(summary: Dictionary, tree: SceneTree) -> void:
 		_post_to_parent("exit", JSON.stringify(summary))
 	else:
 		tree.quit()
+
+
+## An app-coloured cover hides surface/window destruction, never a moving camera.
+class ExitTransition extends CanvasLayer:
+	var summary: Dictionary
+	var generation: int
+
+	func _init(final_summary: Dictionary, token: int) -> void:
+		name = EXIT_LAYER
+		layer = 1024
+		process_mode = Node.PROCESS_MODE_ALWAYS
+		summary = final_summary
+		generation = token
+
+	func _ready() -> void:
+		if not _owns_exit():
+			# reset_exit can run before the deferred mount. Free its reserved name
+			# immediately so a fresh exit in this same frame gets the normal layer.
+			name = "CancelledGameExitTransition"
+			queue_free()
+			return
+		var cover := ColorRect.new()
+		cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		cover.color = Ui.c("background")
+		cover.mouse_filter = Control.MOUSE_FILTER_STOP
+		cover.modulate.a = 0.0
+		add_child(cover)
+		var fade := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		fade.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		fade.tween_property(cover, "modulate:a", 1.0, EXIT_FADE)
+		await fade.finished
+		# The host can stop the renderer synchronously; first present the opaque frame.
+		if DisplayServer.get_name() != "headless":
+			await RenderingServer.frame_post_draw
+		if _owns_exit():
+			Host._complete_exit(summary, get_tree())
+
+	func _owns_exit() -> bool:
+		return is_inside_tree() and not is_queued_for_deletion() and int(get_tree().root.get_meta(EXIT_META, 0)) == generation
+
+	func _input(_event: InputEvent) -> void:
+		get_viewport().set_input_as_handled()
 
 
 ## One event appended to events.jsonl (iOS). The file is written by the game only, one line per event.

@@ -1,6 +1,11 @@
-## One seasonal daylight and distance-haze setup for both intersection mini-games.
+## One daylight and airy blue distance-haze setup for both intersection mini-games.
 class_name MiniGameLighting
 extends RefCounted
+
+const CLEAR_SKY := Color("#BDDCF3")
+const HAZE_BEGIN := 110.0
+const HAZE_END := 300.0
+const HAZE_DENSITY := 0.30
 
 
 static func apply(sun: DirectionalLight3D, environment: Environment, season_name: String) -> void:
@@ -21,7 +26,7 @@ static func apply(sun: DirectionalLight3D, environment: Environment, season_name
 	sun.shadow_normal_bias = 1.0
 	sun.directional_shadow_fade_start = 0.85
 	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = Color(season.sky)
+	environment.background_color = CLEAR_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_sky_contribution = 0.0
 	environment.ambient_light_color = Color.WHITE
@@ -30,11 +35,11 @@ static func apply(sun: DirectionalLight3D, environment: Environment, season_name
 	environment.fog_enabled = true
 	environment.fog_mode = Environment.FOG_MODE_DEPTH
 	# Godot resets density when fog_mode changes; set it afterwards.
-	environment.fog_density = 0.82
-	environment.fog_light_color = Color(season.sky)
+	environment.fog_density = HAZE_DENSITY
+	environment.fog_light_color = CLEAR_SKY
 	environment.fog_sun_scatter = 0.0
 	environment.fog_aerial_perspective = 0.0
-	environment.fog_depth_begin = 75.0
-	environment.fog_depth_end = 260.0
+	environment.fog_depth_begin = HAZE_BEGIN
+	environment.fog_depth_end = HAZE_END
 	environment.fog_depth_curve = 1.35
 	environment.fog_sky_affect = 0.0

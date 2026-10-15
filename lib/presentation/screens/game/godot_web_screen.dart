@@ -10,6 +10,22 @@ class GodotWebScreen extends StatefulWidget {
 
   final List<String> args;
 
+  /// Keep the fullscreen road and the menu stationary throughout the handover.
+  static PageRouteBuilder<String> route({required List<String> args}) =>
+      PageRouteBuilder<String>(
+        transitionDuration: const Duration(milliseconds: 180),
+        reverseTransitionDuration: const Duration(milliseconds: 120),
+        pageBuilder: (_, _, _) => GodotWebScreen(args: args),
+        transitionsBuilder: (_, animation, _, child) => FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeOutCubic,
+          ),
+          child: child,
+        ),
+      );
+
   @override
   State<GodotWebScreen> createState() => _GodotWebScreenState();
 }
@@ -46,13 +62,14 @@ class _GodotWebScreenState extends State<GodotWebScreen> {
       canPop: _closing || !isMiniGame,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          final gameId =
-              widget.args.contains('--crossroads') ? 'crossroads' : 'regulator';
+          final gameId = widget.args.contains('--crossroads')
+              ? 'crossroads'
+              : 'regulator';
           _exit(_summary ?? '{"game":"$gameId","runs":[]}');
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SizedBox.expand(child: _frame.widget),
       ),
     );

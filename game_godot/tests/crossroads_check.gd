@@ -191,10 +191,7 @@ func _initialize() -> void:
 	_check("CrossroadsUi instantiates", ui != null)
 	_check("One timed game HUD is visible", ui._hud.visible)
 	_check("Training mode and category controls are removed", not ui.has_method("set_mode") and not ui.has_signal("mode_toggled") and not ui.has_signal("category_selected"))
-	ui.show_pause()
-	_check("Pause opens with an explicit Continue action", ui.is_pause_visible())
-	ui.hide_pause()
-	_check("Pause closes", not ui.is_pause_visible())
+	_check("One game exits directly without a pause dialog", not ui.has_method("show_pause") and not ui.has_method("hide_pause") and not ui.has_signal("resume_pressed"))
 	ui.update_hud(120, 45, 4, 3)
 	_check("Score label updates to 120", ui._score_label.text == "120")
 	_check("Timer label updates to 45", ui._timer_label.text == "45")
@@ -203,8 +200,8 @@ func _initialize() -> void:
 	ui.hide_collision_modal()
 	_check("Collision modal closes", not ui._collision_card.visible)
 	ui.show_results(450, 8, 1, 4, true, 300)
-	_check("Results dialog displays score 450", ui._final_score.text == "450")
-	_check("New record badge shown", ui._record_badge.visible)
+	_check("Results dialog displays score 450", ui._results.score_label.text == "450")
+	_check("New record badge shown", ui._results.record_badge.visible)
 	ui.free()
 
 	# 9. Web query arguments parsing

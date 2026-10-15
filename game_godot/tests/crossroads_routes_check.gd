@@ -53,6 +53,7 @@ func _run_checks() -> void:
 			_check("%s/%s begins facing its path" % [side, maneuver], actor.basis.z.dot((actor.path_curve.sample_baked(0.3) - actor.position).normalized()) > 0.999)
 			actor.free()
 	_check_stop_sign()
+	_check_badge_style()
 	_check_badge_projection()
 	print("Crossroads routes: %d authored paths; %d checks passed, %d failed; longest arrow %.2f m" % [routes, total - bad, bad, longest_guide])
 	quit(1 if bad else 0)
@@ -162,7 +163,7 @@ func _check_badge_projection() -> void:
 			actor.badge_pop = 1.0
 			actor.update_badge_orientation(camera)
 			var expected := ActorScript.BADGE_CARD_SCREEN_DP * Ui.dp(camera.get_viewport())
-			_check("badge projects to 40 dp at %s zoom %.2f" % [size, zoom], absf(_projected_badge_width(actor, camera) - expected) < 0.15)
+			_check("badge projects to 54 dp at %s zoom %.2f" % [size, zoom], absf(_projected_badge_width(actor, camera) - expected) < 0.15)
 			actor._process_waiting(0.1)
 			_check("waiting keeps the compensated badge scale", absf(_projected_badge_width(actor, camera) - expected) < 0.15)
 			actor.position = Vector3(20, 0, 5)
@@ -173,6 +174,20 @@ func _check_badge_projection() -> void:
 			_check("feedback composes with the compensated badge scale", absf(_projected_badge_width(actor, camera) - expected * 1.12) < 0.15)
 	root.size = viewport_size
 	scene.free()
+
+func _check_badge_style() -> void:
+	var image := ActorScript._generate_badge_texture("normal", "straight", "#317ED4", 0, false, {"state":"green"}).get_image()
+	var background := Ui.c("card")
+	_check("maneuver card has no contrasting border", image.get_pixel(33, 104).is_equal_approx(background))
+	_check("signal disc is large enough to read", image.get_pixel(77, 44).is_equal_approx(Color("#22C55E")))
+	_check("signal disc has no dark capsule or outer ring", image.get_pixel(62, 64).is_equal_approx(background))
+	var green_pixels := 0
+	for y in range(20, 68):
+		for x in range(38, 86):
+			if image.get_pixel(x, y).is_equal_approx(Color("#22C55E")): green_pixels += 1
+	_check("signal disc remains visible at phone density", green_pixels >= 950)
+	var arrow_image := ActorScript._generate_badge_texture("normal", "right", "#317ED4", 0, false, {"state":"red", "arrow":"right", "arrowActive":true}).get_image()
+	_check("supplementary green arrow stays independent of the red disc", arrow_image.get_pixel(62, 44).is_equal_approx(Color("#EF4444")) and arrow_image.get_pixel(107, 44).is_equal_approx(Color("#22C55E")))
 
 func _projected_badge_width(actor: CrossroadsActor, camera: Camera3D) -> float:
 	var centre := actor.badge_node.global_position

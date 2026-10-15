@@ -15,7 +15,7 @@ const STOP_DIST := 13.2
 const STOP_SIGN_DIST := 7.6
 const STOP_SIGN_SECONDS := 0.8
 const BADGE_CARD_WIDTH_PIXELS := 192.0
-const BADGE_CARD_SCREEN_DP := 40.0
+const BADGE_CARD_SCREEN_DP := 54.0
 const EXIT_DIST := 110.0
 
 var data: Dictionary
@@ -510,29 +510,24 @@ static func _generate_badge_texture(status: String, maneuver: String, color_hex:
 	var img := Image.create(256, 208, false, Image.FORMAT_RGBA8)
 	img.fill(Color.TRANSPARENT)
 	var background := Ui.c("card")
-	var border := Ui.c("divider")
 	var ink := Color(color_hex)
 	if status == "solved":
 		background = Ui.c("green")
-		border = background
 		ink = Color.WHITE
 	elif status == "error":
 		background = Ui.c("red")
-		border = background
 		ink = Color.WHITE
 	elif status == "priority":
 		background = Ui.c("gold")
-		border = background
 		ink = Ui.c("text")
-	# 192 x 176 card with a 28 px corner: the app's white card, subtle border,
-	# no map-pin tail, drop shadow, or black outline.
+	# The app's flat card: a single fill, rounded corners and no outline.
 	for y in range(15, 193):
 		for x in range(31, 225):
 			var q := (Vector2(x + 0.5, y + 0.5) - Vector2(128, 104)).abs() - Vector2(68, 60)
 			var d := Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length() + minf(maxf(q.x, q.y), 0.0) - 28.0
 			var alpha := clampf(0.5 - d, 0.0, 1.0)
 			if alpha <= 0.0: continue
-			var colour := border if d > -2.0 else background
+			var colour := background
 			colour.a = alpha
 			img.set_pixel(x, y, colour)
 	if status == "normal":
@@ -610,53 +605,20 @@ static func _draw_traffic_light_badge(img: Image, tl: Dictionary) -> void:
 	var is_green: bool = tl.get("state", "") == "green"
 	var has_arrow: bool = tl.get("arrowActive", false) and str(tl.get("arrow", "")) != ""
 
-	var x0 := 46
-	var y0 := 26
-	var w := 66 if has_arrow and is_red else 36
-	var h := 32
-	var r := 16.0
-
-	# 1. White border outline
-	for y in range(y0 - 2, y0 + h + 3):
-		for x in range(x0 - 2, x0 + w + 3):
-			var in_border := false
-			var r_out := r + 2.0
-			if x < x0 + r:
-				in_border = sqrt(pow(x - (x0 + r), 2) + pow(y - (y0 + r), 2)) <= r_out
-			elif x > x0 + w - r:
-				in_border = sqrt(pow(x - (x0 + w - r), 2) + pow(y - (y0 + r), 2)) <= r_out
-			else:
-				in_border = y >= y0 - 2 and y <= y0 + h + 2
-			if in_border:
-				img.set_pixel(x, y, Color.WHITE)
-
-	# 2. Dark pill background
-	for y in range(y0, y0 + h + 1):
-		for x in range(x0, x0 + w + 1):
-			var in_pill := false
-			if x < x0 + r:
-				in_pill = sqrt(pow(x - (x0 + r), 2) + pow(y - (y0 + r), 2)) <= r
-			elif x > x0 + w - r:
-				in_pill = sqrt(pow(x - (x0 + w - r), 2) + pow(y - (y0 + r), 2)) <= r
-			else:
-				in_pill = true
-			if in_pill:
-				img.set_pixel(x, y, Color("#111827"))
-
-	# 3. Main traffic light signal
-	var lx := float(x0 + 16)
-	var ly := float(y0 + 16)
-	var lr := 9.0
+	# A clear signal disc, with no dark capsule or contrasting outer ring.
+	var lx := 62.0
+	var ly := 44.0
+	var lr := 18.0
 	var sig_col := Color("#EF4444") if is_red else (Color("#22C55E") if is_green else Color("#F59E0B"))
 	for y in range(int(ly - lr), int(ly + lr + 1)):
 		for x in range(int(lx - lr), int(lx + lr + 1)):
 			if sqrt(pow(x - lx, 2) + pow(y - ly, 2)) <= lr:
 				img.set_pixel(x, y, sig_col)
 
-	# 4. Green turn arrow for additional section
+	# Keep the independent supplementary section readable next to the disc.
 	if has_arrow and is_red:
-		var ax := float(x0 + 46)
-		var ay := float(y0 + 16)
+		var ax := 100.0
+		var ay := ly
 		var arrow_dir: String = str(tl.get("arrow", "right"))
 		_draw_thick_seg(img, Vector2(ax - 8, ay), Vector2(ax + 8, ay), 2.5, Color("#22C55E"))
 		if arrow_dir == "right":

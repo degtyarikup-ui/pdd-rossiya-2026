@@ -34,7 +34,8 @@ var cur_scenario_idx := 0
 var cur_step := 1
 
 # Game state
-var paused := false
+var _suspended := false
+var _exiting := false
 var ready_for_play := false
 var scene_sequence := 0
 var _round_completing := false
@@ -66,7 +67,7 @@ var _target_cam_yaw := 0.93607
 var _target_cam_pitch := -0.8143
 var _target_cam_zoom := 1.0
 const ZOOM_MIN := 0.65
-const ZOOM_MAX := 2.2
+const ZOOM_MAX := 1.18
 const HALF_ROAD := CrossroadsJunction.HALF_ROAD
 const BASE_CAM_DIST := 58.0
 var base_cam_dist := BASE_CAM_DIST
@@ -99,16 +100,16 @@ func _ready() -> void:
 
 
 func _dismiss_loader(loader: Loader) -> void:
-	if is_queued_for_deletion() or not is_inside_tree(): return
+	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
-	if is_queued_for_deletion() or not is_inside_tree(): return
+	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
-	if is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
+	if _exiting or is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
 	_start_game()
 	loader.dismiss()
 	if shot_path != "":
 		await get_tree().create_timer(Loader.FADE + 0.3).timeout
-		if is_queued_for_deletion() or not is_inside_tree(): return
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 		_take_screenshot(shot_path)
 
 
@@ -192,7 +193,7 @@ func _setup_quality() -> void:
 
 func _update_frame_budget(delta: float) -> void:
 	if not adaptive_quality: return
-	var update: Dictionary = frame_budget.sample(delta, ready_for_play and not paused and not is_game_over, Engine.max_fps)
+	var update: Dictionary = frame_budget.sample(delta, ready_for_play and not _exiting and not _suspended and not is_game_over, Engine.max_fps)
 	if update.is_empty(): return
 	get_viewport().scaling_3d_scale = update.scale
 	get_viewport().msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
@@ -204,6 +205,9 @@ func _setup_scene_nodes() -> void:
 	junction = CrossroadsJunctionScript.new(season_name)
 	junction.name = "Junction"
 	add_child(junction)
+	for prop: String in junction.pools:
+		if prop.begins_with("buildings/"):
+			junction.sc.register_building_pool(junction.pools[prop].node)
 
 	actors_root = Node3D.new()
 	actors_root.name = "ActorsRoot"
@@ -218,7 +222,6 @@ func _setup_ui() -> void:
 	ui = CrossroadsUiScript.new()
 	ui.name = "CrossroadsUI"
 	ui.close_pressed.connect(_on_close_pressed)
-	ui.resume_pressed.connect(_on_resume_pressed)
 	ui.next_scenario_pressed.connect(_on_next_scenario)
 	ui.reset_camera_pressed.connect(_reset_camera)
 	ui.retry_pressed.connect(_on_retry_pressed)
@@ -294,6 +297,7 @@ func _create_balanced_arcade_order() -> void:
 # --- Game Lifecycle ---
 
 func _start_game() -> void:
+	if _exiting: return
 	run_sequence += 1
 	score = 0
 	combo = 0
@@ -308,7 +312,7 @@ func _start_game() -> void:
 	_rewarded_hard.clear()
 
 	ready_for_play = true
-	_set_paused(false)
+	_set_suspended(false)
 	_update_gameplay_processing()
 	ui.hide_results()
 	ui.hide_collision_modal()
@@ -391,7 +395,7 @@ func _is_any_actor_driving() -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not ready_for_play or paused or is_game_over or is_resolving or _round_completing or _is_any_actor_driving():
+	if not ready_for_play or _exiting or _suspended or is_game_over or is_resolving or _round_completing or _is_any_actor_driving():
 		return
 
 	if event is InputEventMouseButton:
@@ -452,7 +456,7 @@ var _last_tap_pos := Vector2(-999, -999)
 var _last_tap_time := -999.0
 
 func _handle_screen_tap(screen_pos: Vector2) -> void:
-	if not ready_for_play or paused or is_game_over or is_resolving or _round_completing or active_actors.is_empty() or _is_any_actor_driving():
+	if not ready_for_play or _exiting or _suspended or is_game_over or is_resolving or _round_completing or active_actors.is_empty() or _is_any_actor_driving():
 		return
 
 	var now := float(Time.get_ticks_msec())
@@ -715,7 +719,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	while elapsed < max_drive_time:
 		await get_tree().process_frame
 		if not _sequence_active(sequence): return
-		if paused: continue
+		if _suspended: continue
 		var dt := get_process_delta_time()
 		if dt <= 0.0 or dt > 0.1:
 			dt = 1.0 / 60.0
@@ -873,7 +877,8 @@ func _create_crash_smoke(at: Vector3) -> void:
 
 
 func _on_retry_pressed() -> void:
-	_set_paused(false)
+	if _exiting: return
+	_set_suspended(false)
 	ui.hide_collision_modal()
 	if lives <= 0:
 		_end_game()
@@ -882,8 +887,9 @@ func _on_retry_pressed() -> void:
 
 
 func _on_next_scenario() -> void:
+	if _exiting: return
 	if scenario_order.is_empty(): return
-	_set_paused(false)
+	_set_suspended(false)
 	ui.hide_collision_modal()
 	cur_scenario_idx = (cur_scenario_idx + 1) % scenario_order.size()
 	_load_current_scenario()
@@ -893,10 +899,10 @@ func _on_next_scenario() -> void:
 
 func _process(delta: float) -> void:
 	_update_frame_budget(delta)
-	if paused or not ready_for_play: return
+	if _exiting or _suspended or not ready_for_play: return
 	if not is_game_over and not is_resolving:
 		_check_junction_completed()
-	if ready_for_play and not paused and not is_game_over and not is_resolving and not _round_completing and not _is_any_actor_driving():
+	if ready_for_play and not _suspended and not is_game_over and not is_resolving and not _round_completing and not _is_any_actor_driving():
 		seconds_left -= delta
 		ui.update_hud(score, ceili(seconds_left), lives, combo)
 		if seconds_left <= 0:
@@ -920,8 +926,9 @@ func _process(delta: float) -> void:
 
 	if cam_changed:
 		_update_camera()
+	_update_occlusion(delta)
 
-	if auto_play and not paused and not _round_completing and not _is_any_actor_driving() and not is_resolving and not is_game_over and not active_actors.is_empty():
+	if auto_play and not _suspended and not _round_completing and not _is_any_actor_driving() and not is_resolving and not is_game_over and not active_actors.is_empty():
 		_process_auto_play()
 
 
@@ -936,11 +943,11 @@ func _end_game() -> void:
 	if is_game_over:
 		return
 	is_game_over = true
-	_set_paused(false)
+	_set_suspended(false)
 	_update_gameplay_processing()
 	is_new_record = score > 0 and score > previous_best
 
-	ui.show_results(score, solved_count, wrong_count, max_combo, is_new_record, previous_best)
+	ui.show_results(score, solved_count, wrong_count, max_combo, is_new_record, previous_best, seconds_left <= 0.0)
 
 	completed_runs.append(_run_summary())
 	previous_best = maxi(previous_best, score)
@@ -970,32 +977,31 @@ func _checkpoint() -> void:
 
 
 func _on_close_pressed() -> void:
-	_set_paused(not paused)
+	_on_exit_pressed()
 
 
 func _on_exit_pressed() -> void:
+	if _exiting: return
+	_exiting = true
+	_clear_input()
+	_update_gameplay_processing()
 	Host.exit(_session_summary(), get_tree())
 
 
-func _on_resume_pressed() -> void:
-	_set_paused(false)
-
-
-func _set_paused(value: bool) -> void:
-	paused = value and not is_game_over
+## System interruptions freeze the game without adding a pause mode or menu.
+func _set_suspended(value: bool) -> void:
+	if _exiting: return
+	_suspended = value and not is_game_over
 	_clear_input()
 	_update_gameplay_processing()
-	if ui != null:
-		if paused: ui.show_pause()
-		else: ui.hide_pause()
 
 
 func _update_gameplay_processing() -> void:
-	var mode := Node.PROCESS_MODE_DISABLED if paused or is_game_over else Node.PROCESS_MODE_INHERIT
+	var mode := Node.PROCESS_MODE_DISABLED if _suspended or _exiting or is_game_over else Node.PROCESS_MODE_INHERIT
 	for node in [junction, actors_root, fx_root, sound]:
 		if node != null: node.process_mode = mode
 	if sound != null and is_instance_valid(sound._player):
-		sound._player.stream_paused = paused or is_game_over
+		sound._player.stream_paused = _suspended or _exiting or is_game_over
 
 
 func _clear_input() -> void:
@@ -1009,21 +1015,24 @@ func _clear_input() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
-		if ready_for_play and not is_game_over:
-			_set_paused.call_deferred(true)
+		if ready_for_play and not is_game_over: _set_suspended(true)
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
+		if ready_for_play: _set_suspended(false)
 	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		if ready_for_play and not is_game_over: _set_paused.call_deferred(not paused)
+		if ready_for_play and not _exiting:
+			_set_suspended(true)
+			_on_exit_pressed.call_deferred()
 
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
-		if ready_for_play and not is_game_over:
-			_set_paused(not paused)
+		if ready_for_play and not _exiting:
+			_on_exit_pressed()
 			get_viewport().set_input_as_handled()
 
 
 func _sequence_active(sequence: int) -> bool:
-	return is_inside_tree() and not is_queued_for_deletion() and not is_game_over and scene_sequence == sequence
+	return is_inside_tree() and not is_queued_for_deletion() and not _exiting and not is_game_over and scene_sequence == sequence
 
 
 func _gameplay_delay(seconds: float, sequence: int) -> void:
@@ -1031,14 +1040,14 @@ func _gameplay_delay(seconds: float, sequence: int) -> void:
 	while elapsed < seconds:
 		await get_tree().process_frame
 		if not _sequence_active(sequence): return
-		if not paused: elapsed += minf(get_process_delta_time(), 0.1)
+		if not _suspended: elapsed += minf(get_process_delta_time(), 0.1)
 
 
 func _on_viewport_resized() -> void:
 	# Containers settle their sizes on the next frame.
 	await get_tree().process_frame
 	await get_tree().process_frame
-	if is_inside_tree() and ready_for_play: fit_camera_to_scenario()
+	if is_inside_tree() and ready_for_play and not _exiting: fit_camera_to_scenario()
 
 
 func _fit_scenario_after_layout(sequence: int) -> void:
@@ -1082,7 +1091,7 @@ func fit_camera_to_scenario() -> void:
 	var bottom_margin := area.end.y
 	var left_margin := area.position.x
 	var right_margin := area.end.x
-	var badge_margin := 26.0 * Ui.dp(vp)
+	var badge_margin := (CrossroadsActor.BADGE_CARD_SCREEN_DP * 0.5 + 7.0) * Ui.dp(vp)
 	_fit_projection(area)
 
 	var probe_pts: Array[Vector3] = [
@@ -1143,6 +1152,24 @@ func _update_camera() -> void:
 		camera.position += Vector3(randf_range(-cam_shake, cam_shake), randf_range(-cam_shake, cam_shake), 0)
 	for actor in active_actors:
 		actor.update_badge_orientation(camera)
+
+
+## Reuse the city's per-building transparent batches. Keep the intersection,
+## waiting participants and the actual signs/signals visible while orbiting.
+func _update_occlusion(delta: float) -> void:
+	if junction == null or camera == null: return
+	var targets: Array[Vector3] = [Vector3(0, 0.4, 0)]
+	for actor in active_actors:
+		if actor.state == "done" or actor.has_cleared_junction(): continue
+		targets.append(actor.global_position + Vector3.UP * 0.9)
+		if actor.badge_node != null: targets.append(actor.badge_node.global_position)
+	for group in [junction.signs_root, junction.lights_root]:
+		for item: Node3D in group.get_children():
+			if targets.size() >= 24: break
+			targets.append(item.global_position + Vector3.UP * 3.0)
+	for corner in [Vector3(-6, 0.2, -6), Vector3(6, 0.2, -6), Vector3(-6, 0.2, 6), Vector3(6, 0.2, 6)]:
+		targets.append(corner)
+	junction.sc.update_occluders(camera, targets, delta)
 
 
 func _fit_projection(area: Rect2) -> void:

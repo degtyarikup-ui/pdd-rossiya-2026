@@ -1,5 +1,5 @@
 ## Real mini-game scenes: every scenario can be solved, animations do not consume
-## thinking time, retries cannot farm time, and pause/resize retain a usable game.
+## thinking time, retries cannot farm time, and system interruptions/resize retain a usable game.
 extends SceneTree
 
 var checks := 0
@@ -48,9 +48,10 @@ func run() -> void:
 		var scenario: Dictionary = game.all_scenarios[index]
 		var area := game.ui.scene_rect()
 		for actor in game.active_actors:
-			check(area.has_point(game.camera.unproject_position(actor.global_position))
-				and area.has_point(game.camera.unproject_position(actor.badge_sprite.global_position)),
-				scenario.id + "/" + actor.name + ": car and button fit the visible opening")
+			var car_screen := game.camera.unproject_position(actor.global_position)
+			var badge_screen := game.camera.unproject_position(actor.badge_sprite.global_position)
+			check(area.has_point(car_screen) and area.has_point(badge_screen),
+				scenario.id + "/" + actor.name + ": car and button fit the visible opening (%s, %s, area %s, distance %.1f)" % [car_screen, badge_screen, area, game.base_cam_dist])
 			actor.set_process(false)
 		var ordered := game.active_actors.duplicate()
 		ordered.sort_custom(func(a, b): return a.data.order < b.data.order)
@@ -82,13 +83,13 @@ func run() -> void:
 	var actor: CrossroadsActor = game.active_actors[0]
 	var seconds := game.seconds_left
 	var pose := actor.position
-	game._set_paused(true)
+	game._set_suspended(true)
 	game._process(30.0)
 	await process_frame
-	check(game.paused and game.ui.is_pause_visible(), "pause exposes Continue")
-	check(game.seconds_left == seconds and actor.position == pose and not actor.can_process(), "pause freezes time and participants")
-	game._on_resume_pressed()
-	check(not game.paused and not game.ui.is_pause_visible() and actor.can_process(), "Continue restores the game")
+	check(game._suspended and not game.ui.has_method("show_pause"), "system interruption adds no pause screen")
+	check(game.seconds_left == seconds and actor.position == pose and not actor.can_process(), "system interruption freezes time and participants")
+	game._set_suspended(false)
+	check(not game._suspended and actor.can_process(), "foreground restores the game without an extra action")
 	var button := game.camera.unproject_position(actor.badge_sprite.global_position)
 	for index in 2:
 		var press := InputEventScreenTouch.new()
@@ -109,8 +110,9 @@ func run() -> void:
 	game._reset_camera()
 	game.propagate_notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	await process_frame
-	check(game.paused and game.ui.is_pause_visible(), "focus loss preserves the game behind a reachable pause")
-	game._on_resume_pressed()
+	check(game._suspended, "focus loss preserves the game")
+	game.propagate_notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	check(not game._suspended and actor.can_process(), "focus return automatically restores the game")
 	for size in [Vector2i(280, 640), Vector2i(844, 390), Vector2i(1024, 768)]:
 		root.size = size
 		root.content_scale_size = size
@@ -122,6 +124,13 @@ func run() -> void:
 		for participant in game.active_actors:
 			fitted = fitted and area.has_point(game.camera.unproject_position(participant.global_position))
 		check(fitted, "camera frames the game after resize to " + str(size))
+	game.seconds_left = 0.0
+	game._end_game()
+	check(game.ui._results.title_label.text == Ui.t("gameTimeUp"), "timeout uses the shared mini-game result title")
+	game._end_game()
+	check(game.completed_runs.size() == 1, "repeated completion records one run")
+	game._start_game()
+	check(not game.is_game_over and not game.ui._results.visible, "restart dismisses the shared results and restores play")
 	game.queue_free()
 	await process_frame
 	await process_frame

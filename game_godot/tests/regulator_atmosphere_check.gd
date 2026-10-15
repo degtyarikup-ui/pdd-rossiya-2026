@@ -24,13 +24,8 @@ func run() -> void:
 	camera.position = Vector3(5.6, 4.0, 26.8)
 	camera.look_at(Vector3(1.4, 1.25, 0.0))
 	var environment := Environment.new()
-	environment.background_color = Color("#C4D6E5")
-	environment.fog_light_color = environment.background_color
-	environment.fog_depth_begin = 75.0
-	environment.fog_depth_end = 260.0
-	environment.fog_density = 0.82
 	var sun := DirectionalLight3D.new()
-	sun.light_energy = 0.45
+	MiniGameLighting.apply(sun, environment, "autumn")
 	scene.add_child(sun)
 	var junction := RegulatorJunction.new("summer")
 	scene.add_child(junction)
@@ -48,6 +43,18 @@ func run() -> void:
 	expect(not atmosphere.headlight.visible and atmosphere.headlight.light_energy == 0.0,
 		"clear weather excludes the unused headlight from rendering")
 	expect(not atmosphere.drops.visible, "clear weather has no rain")
+	expect(environment.background_color.is_equal_approx(MiniGameLighting.CLEAR_SKY)
+		and environment.fog_light_color.is_equal_approx(MiniGameLighting.CLEAR_SKY)
+		and environment.fog_depth_begin >= 110.0 and environment.fog_density <= 0.35,
+		"normal daylight keeps the junction clear and blends distant objects into a blue sky")
+	for season in ["summer", "autumn", "winter", "spring"]:
+		var seasonal := Environment.new()
+		MiniGameLighting.apply(sun, seasonal, season)
+		expect(seasonal.background_color.is_equal_approx(environment.background_color)
+			and seasonal.fog_light_color.is_equal_approx(environment.fog_light_color)
+			and seasonal.fog_density == environment.fog_density,
+			"%s retains the same airy sky and haze in both mini-games" % season)
+	sun.light_energy = atmosphere.clear_sun
 	_check_stable(atmosphere, sun, environment, junction, "clear")
 
 	atmosphere.set_weather("rain", true)

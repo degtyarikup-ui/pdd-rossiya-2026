@@ -19,9 +19,9 @@ var dry_road: Color
 var dry_walk: Color
 var clear_sun := 0.45
 var dry_sky: Color
-var clear_fog_begin := 75.0
-var clear_fog_end := 260.0
-var clear_fog_density := 0.82
+var clear_fog_begin := MiniGameLighting.HAZE_BEGIN
+var clear_fog_end := MiniGameLighting.HAZE_END
+var clear_fog_density := MiniGameLighting.HAZE_DENSITY
 var _applied_rain := -1.0
 var _applied_fog := -1.0
 

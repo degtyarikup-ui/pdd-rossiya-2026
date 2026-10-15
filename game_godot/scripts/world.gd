@@ -30,6 +30,7 @@ var road_nodes: Array[MeshInstance3D] = []
 var scenery: Scenery
 var street: Street
 var paused := false
+var _exiting := false
 var ghost: Node3D                 # the street before the last turn, frozen until it is far behind
 var ghost_until := 0.0
 const RETAIN_DISTANCE := 260.0
@@ -345,17 +346,17 @@ func _dismiss_loader() -> void:
 		traffic_glows.set_instance_transform(0, Transform3D(Basis(), drive.pos + Vector3.UP))
 		traffic_glows.set_instance_custom_data(0, BLINK_COLOUR)
 	await get_tree().process_frame
-	if is_queued_for_deletion() or not is_inside_tree(): return
+	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
-	if is_queued_for_deletion() or not is_inside_tree(): return
+	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	# Staging includes asynchronous files and mesh work. Two frames alone can reveal the
 	# temporary street, which changes width, surface and plots when the first scene arrives.
 	while road_force == "" and not previews and not startup_loading_failed and current.is_empty() and (staging or staged_sit != null or next_id != ""):
 		await get_tree().process_frame
-		if is_queued_for_deletion() or not is_inside_tree(): return
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	# Render the installed scene while the loading screen is still opaque.
 	await get_tree().process_frame
-	if is_queued_for_deletion() or not is_inside_tree(): return
+	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	warm_signals=false
 	if traffic_glows != null:
 		traffic_glows.set_instance_custom_data(0, Color(1, 0.68, 0.05, 0))
@@ -1301,6 +1302,10 @@ func _prestage() -> void:
 func _build_staged(id: String) -> void:
 	var started := Time.get_ticks_msec()
 	staged_sit = await Situation.load_scene_staged(id, scenery, get_tree(), self)
+	if _exiting:
+		Situation.forget(id)
+		staging = false
+		return
 	if staged_sit!=null and staged_sit.network:
 		var entry: Dictionary=staged_sit.network.connections.entry
 		if not entry.is_empty():
@@ -1446,6 +1451,10 @@ func _approach_start(sit: Situation, back: float) -> Dictionary:
 
 
 func _on_prepared(ok: bool, id: String) -> void:
+	if _exiting:
+		Situation.forget(id)
+		staging = false
+		return
 	preparing = false
 	if ok:
 		_build_staged(id)
@@ -1645,10 +1654,12 @@ func _on_road_answer(index: int) -> void:
 		ui.mark_answer(index, right)
 	if is_correct:
 		await _wait_active(0.9)
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 		ui.hide_cards()
 		_road_resume()
 	else:
 		await _wait_active(0.9 if index >= 0 else 0.0)
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 		ui.show_explanation(road.question_text(), right, index < 0)
 
 
@@ -1726,10 +1737,12 @@ func _on_answer_chosen(index: int) -> void:
 	if is_correct:
 		# The card stays a moment so the green answer is seen, then the car goes.
 		await _wait_active(0.9)
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 		ui.hide_cards()
 		answer(true)
 	else:
 		await _wait_active(0.9 if index >= 0 else 0.0)
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 		ui.show_explanation(text, right, index < 0)
 
 
@@ -2573,6 +2586,7 @@ func _plan_walker_direction(at: Vector3, toward: Vector3) -> Vector3:
 # --- frame -----------------------------------------------------------------
 
 func _notification(what: int) -> void:
+	if _exiting or voice == null or controls == null or ui == null: return
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		if paused:
 			_on_resume()
@@ -2589,7 +2603,7 @@ func _notification(what: int) -> void:
 
 ## Pause preserves the world, current card/photo, timer, camera and run counters.
 func _on_pause(from_notification := false) -> void:
-	if paused or phase == "over":
+	if _exiting or paused or phase == "over" or voice == null or controls == null or ui == null:
 		return
 	paused = true
 	voice.suspend()
@@ -2607,7 +2621,7 @@ func _on_pause(from_notification := false) -> void:
 
 
 func _show_pause_menu() -> void:
-	if not paused or is_queued_for_deletion() or not is_inside_tree() or is_instance_valid(pause_menu):
+	if _exiting or not paused or is_queued_for_deletion() or not is_inside_tree() or is_instance_valid(pause_menu):
 		return
 	var options := _live_garage_options()
 	options.sound = sound.enabled
@@ -2694,6 +2708,7 @@ func _on_vehicle_changed(selection: Dictionary) -> void:
 
 
 func _on_resume() -> void:
+	if _exiting: return
 	if not paused:
 		return
 	var resume_controls: bool = saved_ride.get("controls", true)
@@ -2709,6 +2724,8 @@ func _on_resume() -> void:
 
 
 func _on_exit() -> void:
+	if _exiting: return
+	_exiting = true
 	voice.shutdown()
 	_report_run_end()
 	Host.exit(_exit_summary(), get_tree())
@@ -2820,6 +2837,7 @@ func _question_number() -> int:
 
 
 func _process(delta: float) -> void:
+	if _exiting: return
 	_tips_frame()
 	_update_frame_budget(delta)
 	if paused:
@@ -3364,17 +3382,17 @@ func _exit_tree() -> void:
 
 func _wait_active(seconds: float) -> void:
 	var left := seconds
-	while left > 0.0:
+	while left > 0.0 and not _exiting:
 		await get_tree().process_frame
 		if not paused: left -= get_process_delta_time()
 
 
 func _warm_connections() -> void:
 	for id in playable_ids:
-		if is_queued_for_deletion() or not is_inside_tree(): return
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 		await get_tree().process_frame
 		# iOS can replace this scene while its connection cache is warming up.
-		if is_queued_for_deletion() or not is_inside_tree(): return
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 		_scene_connections(id)
 
 

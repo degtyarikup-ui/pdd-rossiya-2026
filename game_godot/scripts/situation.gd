@@ -123,6 +123,7 @@ static func load_scene(situation_id: String, scenery: Scenery) -> Situation:
 
 
 static func load_scene_staged(situation_id: String, scenery: Scenery, frames: SceneTree = null, staging_parent: Node = null) -> Situation:
+	if frames != null and Host.is_exiting(frames): return null
 	var s := Situation.new()
 	s._ground_scenery = scenery
 	if staging_parent:
@@ -156,11 +157,11 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		TramTracks.prepare_props({"props": [prop], "actors": tram_data.get("actors", [])})
 		if frames and Time.get_ticks_usec() - prop_slice > 2000:
 			await frames.process_frame
-			if not is_instance_valid(s): return null
+			if _staging_cancelled(s, frames): return null
 			prop_slice = Time.get_ticks_usec()
 	if frames and not PackFiles.web():
 		var staged_tram_plan := await _data_in_background(func(): return TramTracks.plan(tram_data, tram_network, scenery), frames)
-		if not is_instance_valid(s): return null
+		if _staging_cancelled(s, frames): return null
 		s.tram_plan = staged_tram_plan
 	else:
 		s.tram_plan = TramTracks.plan(tram_data, tram_network, scenery)
@@ -171,13 +172,13 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		if mi.name == "static":
 			if frames and PackFiles.web():
 				var processed := await _without_baked_ground_staged(mi.mesh, s.network, frames)
-				if not is_instance_valid(s): return null
+				if _staging_cancelled(s, frames): return null
 				mi.mesh = processed
 			elif frames:
 				var immutable_mesh := mi.mesh
 				var immutable_network := s.network
 				var processed := await _mesh_in_background(func(): return _without_baked_ground(immutable_mesh, immutable_network), frames)
-				if not is_instance_valid(s): return null
+				if _staging_cancelled(s, frames): return null
 				mi.mesh = processed
 			else:
 				mi.mesh = _without_baked_ground(mi.mesh, s.network)
@@ -203,12 +204,12 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			s.add_child(surf)
 			if PackFiles.web():
 				var processed: Mesh = await s.network.surface_mesh_staged(scenery, frames)
-				if not is_instance_valid(s): return null
+				if _staging_cancelled(s, frames): return null
 				surf.mesh = processed
 			else:
 				var immutable_network := s.network
 				var processed: Mesh = await _mesh_in_background(func(): return immutable_network.surface_mesh(scenery), frames)
-				if not is_instance_valid(s): return null
+				if _staging_cancelled(s, frames): return null
 				surf.mesh = processed
 		else:
 			s.add_child(_surface_node(s.network, scenery))
@@ -218,11 +219,12 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			s._mask.decompress()
 	if frames:
 		await s._place_props(scenery, frames)
+		if _staging_cancelled(s, frames): return null
 	else:
 		s._place_props.call(scenery)
 	for i in s.data.lights.size():
 		if frames: await frames.process_frame
-		if not is_instance_valid(s): return null
+		if _staging_cancelled(s, frames): return null
 		var l: Dictionary = s.data.lights[i]
 		var light: Node3D = TrafficSignal.make(l) if TrafficSignal.supports(l) else PackFiles.instance(dir + "light_%d.glb" % i)
 		light = RoadBuild.light_with_signs(light, l.get("mountedSigns", []), l.get("mountedMainRoad", []))
@@ -234,7 +236,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 	s._build_evidence(dir)
 	for i in s.data.actors.size():
 		if frames: await frames.process_frame
-		if not is_instance_valid(s): return null
+		if _staging_cancelled(s, frames): return null
 		var a: Dictionary = s.data.actors[i]
 		var actor: Node3D
 		if a.type == "special":
@@ -278,6 +280,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 	if s.network:
 		for sg in s.network.data.get("signs", []):
 			if frames: await frames.process_frame
+			if _staging_cancelled(s, frames): return null
 			var plate: String = sg.get("plate") if sg.get("plate") is String else ""
 			var plate_sign: String = sg.get("plateSign") if sg.get("plateSign") is String else ""
 			var main_road: Array = sg.get("mainRoad") if sg.get("mainRoad") is Array else []
@@ -295,6 +298,17 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		s._surface_cache[s._surface_signature]=s.get_node("surfaces").mesh
 		s.refresh_uv(scenery)
 	return s
+
+
+## A hidden staged scene has no visible state to preserve once the host starts
+## closing. Stop between slices so iOS can replace its owner without leaving a
+## nested builder suspended with captured network/scenery resources.
+static func _staging_cancelled(scene, frames: SceneTree) -> bool:
+	if not is_instance_valid(scene): return true
+	if frames != null and Host.is_exiting(frames):
+		scene.queue_free()
+		return true
+	return false
 
 
 ## Puts the junction at world z. Its road surfaces are laid on the world grid
@@ -953,6 +967,7 @@ static func bindings_with(bindings: Array, port: Dictionary, width: float, profi
 ## Precompute clipping/width variants while driving toward the question. Only immutable meshes
 ## run in the worker; the saved network and its current runtime bindings are never modified here.
 func warm_bindings(bindings: Array, scenery: Scenery, frames: SceneTree) -> void:
+	if Host.is_exiting(frames): return
 	var signature:=hash(bindings)
 	if _surface_cache.has(signature): return
 	var work:=RoadNetwork.new()
@@ -963,7 +978,7 @@ func warm_bindings(bindings: Array, scenery: Scenery, frames: SceneTree) -> void
 	var mesh: Mesh
 	if PackFiles.web(): mesh=await work.surface_mesh_staged(scenery,frames)
 	else: mesh=await _mesh_in_background(func(): return work.surface_mesh(scenery),frames)
-	if not is_instance_valid(self): return
+	if not is_instance_valid(self) or Host.is_exiting(frames): return
 	_surface_cache[signature]=mesh
 
 

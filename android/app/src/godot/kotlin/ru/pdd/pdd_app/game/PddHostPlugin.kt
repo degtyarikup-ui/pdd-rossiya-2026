@@ -63,7 +63,10 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
      *  from here, while the engine still draws a frame, crashed the render thread (SIGSEGV). */
     @UsedByGodot
     fun result(summary: String) {
-        host.runOnUiThread { host.keepSummary(summary) }
+        host.runOnUiThread {
+            host.keepSummary(summary)
+            host.prepareExit()
+        }
     }
 
     override fun onGodotTerminating() {

@@ -33,6 +33,7 @@ var cur_approach: RegulatorRules.Approach = RegulatorRules.Approach.LEFT
 var hint_used := false
 var awaiting_next := false
 var is_game_over := false
+var _exiting := false
 
 var score := 0
 var combo := 0
@@ -91,17 +92,17 @@ func _ready() -> void:
 ## The loader stays over the first frames: the scene is built, shaded and drawn before it goes. The
 ## screenshot (--shot) is taken after it, so it shows the game and not the loader.
 func _dismiss_loader(loader: Loader) -> void:
-	if is_queued_for_deletion() or not is_inside_tree(): return
+	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
-	if is_queued_for_deletion() or not is_inside_tree(): return
+	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
-	if is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
+	if _exiting or is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
 	ready_for_play = true
 	_start_game()
 	loader.dismiss()
 	if shot_path != "":
 		await get_tree().create_timer(Loader.FADE + 0.2).timeout
-		if is_queued_for_deletion() or not is_inside_tree(): return
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 		_take_screenshot(shot_path)
 
 
@@ -259,6 +260,7 @@ func _performance_snapshot() -> Dictionary:
 
 
 func _start_game() -> void:
+	if _exiting: return
 	run_sequence += 1
 	next_delay = 0.0
 	score = 0
@@ -321,7 +323,7 @@ func _perform_auto_answer() -> void:
 
 
 func _on_move_selected(move: RegulatorRules.Move) -> void:
-	if awaiting_next or is_game_over:
+	if _exiting or awaiting_next or is_game_over:
 		return
 
 	awaiting_next = true
@@ -376,6 +378,7 @@ func _on_hint_toggled() -> void:
 
 
 func _process(delta: float) -> void:
+	if _exiting: return
 	_update_frame_budget(delta)
 	_update_camera(delta)
 	if leaves:
@@ -406,6 +409,7 @@ func _process(delta: float) -> void:
 ## Pinch zoom: the fingers apart bring the camera closer, together move it away; a trackpad's magnify
 ## gesture does the same on desktop. Buttons still take their taps: this only reads the touches.
 func _input(event: InputEvent) -> void:
+	if _exiting: return
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			_touches[event.index] = event.position
@@ -505,6 +509,8 @@ func _checkpoint() -> void:
 
 
 func _on_exit_pressed() -> void:
+	if _exiting: return
+	_exiting = true
 	Host.exit(_session_summary(), get_tree())
 
 

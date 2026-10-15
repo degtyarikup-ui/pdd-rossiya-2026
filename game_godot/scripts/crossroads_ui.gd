@@ -1,11 +1,10 @@
 ## Crossroads uses the same Onest typography, Material icons, colours and dp as the app.
-## There is one timed game. Pausing keeps the junction visible; explanations and results
+## There is one timed game with a direct exit to the menu; explanations and results
 ## use scrollable cards, so every action remains reachable with large text or a short screen.
 class_name CrossroadsUi
 extends Control
 
 signal close_pressed()
-signal resume_pressed()
 signal next_scenario_pressed()
 signal reset_camera_pressed()
 signal retry_pressed()
@@ -17,7 +16,7 @@ const CHROME := 44.0
 const LIVES := 5
 const MAX_TOP_WIDTH := 640.0
 
-const ICON_PAUSE := 0xf0056
+const ICON_CLOSE := 0xf647
 const ICON_STAR := 0xf01d4
 const ICON_HEART := 0xf738
 const ICON_HEART_EMPTY := 0xf737
@@ -44,6 +43,9 @@ var _lives_container: HBoxContainer
 var _hearts: Array[Label] = []
 
 var _caption_card: PanelContainer
+var _caption_content: VBoxContainer
+var _caption_header: HBoxContainer
+var _layout_pending := false
 var _caption_prompt: Label
 var _caption_subtitle: Label
 var _step_pill: PanelContainer
@@ -66,21 +68,7 @@ var _collision_retry_btn: Button
 var _collision_next_btn: Button
 var _collision_game_over_btn: Button
 
-var _pause: ColorRect
-var _pause_card: PanelContainer
-var _pause_content: VBoxContainer
-var _pause_resume_btn: Button
-var _result: ColorRect
-var _result_card: PanelContainer
-var _result_content: VBoxContainer
-var _result_title: Label
-var _final_score: Label
-var _record_badge: PanelContainer
-var _best_label: Label
-var _stat_solved_val: Label
-var _stat_acc_val: Label
-var _stat_combo_val: Label
-var _result_buttons: BoxContainer
+var _results: MiniGameResults
 var _modal_open := false
 
 
@@ -91,7 +79,6 @@ func _init() -> void:
 	_build_top_bar()
 	_build_reset_camera_btn()
 	_build_collision_modal()
-	_build_pause()
 	_build_result_dialog()
 
 
@@ -117,14 +104,12 @@ func _layout() -> void:
 	var available_width := maxf(160.0, size.x - left - right)
 	var top_width := minf(MAX_TOP_WIDTH, available_width)
 	_top_bar.position = Vector2(left + (available_width - top_width) * 0.5, top + 8.0)
-	_top_bar.size = Vector2(top_width, 0)
-	var badge_width := _hard_badge_label.get_theme_font("font").get_string_size(_hard_badge_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, _hard_badge_label.get_theme_font_size("font_size")).x + 16.0
-	_hard_badge.custom_minimum_size.x = minf(top_width - 28.0, badge_width)
+	_fit_caption(top_width)
 	_fit_hud(top_width - CHROME - 8.0)
-	_top_bar.size.y = _top_bar.get_combined_minimum_size().y
+	_top_bar.size = Vector2(top_width, _top_bar.get_combined_minimum_size().y)
 	_reset_cam_btn.position = Vector2(size.x - right - CHROME, size.y - bottom - CHROME - 12.0)
-	for backdrop in [_collision_backdrop, _pause, _result]:
-		backdrop.size = size
+	for overlay in [_collision_backdrop, _results]:
+		overlay.size = size
 	var card_width := minf(420.0, available_width)
 	var modal_top := top + 16.0
 	var modal_height := maxf(100.0, size.y - modal_top - bottom - 16.0)
@@ -132,10 +117,42 @@ func _layout() -> void:
 	# Stack long action labels rather than shrinking the text or the tap target.
 	var stack_actions := inner_width < 300.0 or Ui.text_scale() > 1.2
 	_collision_btn_row.vertical = stack_actions
-	_result_buttons.vertical = stack_actions
 	_fit_modal(_collision_card, _collision_content, card_width, modal_height, modal_top, left, available_width)
-	_fit_modal(_pause_card, _pause_content, card_width, modal_height, modal_top, left, available_width)
-	_fit_modal(_result_card, _result_content, card_width, modal_height, modal_top, left, available_width)
+	var result_left := float(safe["left"]) / u + 20.0
+	var result_right := float(safe["right"]) / u + 20.0
+	_results.layout(Rect2(result_left, top + 24.0, maxf(160.0, size.x - result_left - result_right), maxf(100.0, size.y - top - bottom - 48.0)))
+
+
+## Hidden labels have never been sorted by their Container and can still be one
+## pixel wide. Prime every wrapping label with its real width before measuring the
+## card; the first difficult junction must not inherit a one-character-per-line height.
+func _fit_caption(width: float) -> void:
+	var inner := maxf(100.0, width - 28.0)
+	var badge_width := _hard_badge_label.get_theme_font("font").get_string_size(_hard_badge_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, _hard_badge_label.get_theme_font_size("font_size")).x + 16.0
+	badge_width = minf(inner, badge_width)
+	_hard_badge.custom_minimum_size.x = badge_width
+	_hard_badge.size.x = badge_width
+	_hard_badge_label.size.x = maxf(1.0, badge_width - 16.0)
+	_step_pill_label.update_minimum_size()
+	_step_pill.update_minimum_size()
+	_caption_prompt.size.x = maxf(40.0, inner - _step_pill.get_combined_minimum_size().x - 8.0)
+	_caption_subtitle.size.x = inner
+	_caption_header.size.x = inner
+	_caption_content.size.x = inner
+	_caption_card.size.x = width
+	for control in [_caption_prompt, _caption_subtitle, _hard_badge_label, _hard_badge, _caption_header, _caption_content, _caption_card, _top_bar]:
+		control.update_minimum_size()
+
+
+func _queue_layout() -> void:
+	if not is_inside_tree() or _layout_pending: return
+	_layout_pending = true
+	call_deferred("_settle_layout")
+
+
+func _settle_layout() -> void:
+	_layout_pending = false
+	_layout()
 
 
 ## Camera fitting uses the unobscured junction, in viewport pixels rather than dp.
@@ -168,11 +185,12 @@ func _fit_modal(card: PanelContainer, content: VBoxContainer, width: float, max_
 func _build_top_bar() -> void:
 	_top_bar = VBoxContainer.new()
 	_top_bar.add_theme_constant_override("separation", 8)
+	_top_bar.minimum_size_changed.connect(_queue_layout)
 	add_child(_top_bar)
 	_hud_row = HBoxContainer.new()
 	_hud_row.add_theme_constant_override("separation", 8)
 	_top_bar.add_child(_hud_row)
-	_close_btn = _chrome_btn(ICON_PAUSE, Ui.t("gamePause"))
+	_close_btn = _chrome_btn(ICON_CLOSE, Ui.t("gameExit"))
 	_close_btn.pressed.connect(func(): close_pressed.emit())
 	_hud_row.add_child(_close_btn)
 
@@ -226,29 +244,29 @@ func _build_top_bar() -> void:
 	_caption_card = PanelContainer.new()
 	_caption_card.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 16, 14, 12))
 	_top_bar.add_child(_caption_card)
-	var caption := VBoxContainer.new()
-	caption.add_theme_constant_override("separation", 5)
-	_caption_card.add_child(caption)
-	var prompt_row := HBoxContainer.new()
-	prompt_row.add_theme_constant_override("separation", 8)
-	caption.add_child(prompt_row)
+	_caption_content = VBoxContainer.new()
+	_caption_content.add_theme_constant_override("separation", 5)
+	_caption_card.add_child(_caption_content)
+	_caption_header = HBoxContainer.new()
+	_caption_header.add_theme_constant_override("separation", 8)
+	_caption_content.add_child(_caption_header)
 	_caption_prompt = Ui.scaled_label(Ui.t("gameCrossroadsPromptWhoGoesFirst"), 16, 700, Ui.c("text"), true)
-	prompt_row.add_child(_caption_prompt)
+	_caption_header.add_child(_caption_prompt)
 	_step_pill = PanelContainer.new()
 	_step_pill.size_flags_vertical = SIZE_SHRINK_BEGIN
 	_step_pill.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 8, 8, 4))
 	_step_pill_label = Ui.scaled_label("1 / 3", 12, 700, Ui.c("accent"))
 	_step_pill.add_child(_step_pill_label)
-	prompt_row.add_child(_step_pill)
+	_caption_header.add_child(_step_pill)
 	_caption_subtitle = Ui.scaled_label("", 13, 400, Ui.c("secondary"), true)
-	caption.add_child(_caption_subtitle)
+	_caption_content.add_child(_caption_subtitle)
 	_hard_badge = PanelContainer.new()
 	_hard_badge.size_flags_horizontal = SIZE_SHRINK_BEGIN
 	_hard_badge.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 6, 8, 4))
 	_hard_badge_label = Ui.scaled_label(Ui.t("crossroadsHardSituationBadge"), 11, 700, Ui.c("gold"), true)
 	_hard_badge.add_child(_hard_badge_label)
 	_hard_badge.visible = false
-	caption.add_child(_hard_badge)
+	_caption_content.add_child(_hard_badge)
 
 
 func _fit_hud(width: float) -> void:
@@ -377,7 +395,6 @@ func _build_collision_modal() -> void:
 
 
 func show_collision_modal(priority_name: String, reason: String, article: String, out_of_lives: bool) -> void:
-	hide_pause()
 	_collision_backdrop.visible = true
 	_collision_card.visible = true
 	_collision_should_go.text = Ui.t("gameCrossroadsShouldGo", {"name": priority_name})
@@ -399,131 +416,31 @@ func hide_collision_modal() -> void:
 	_refresh_modal_visibility()
 
 
-func _build_pause() -> void:
-	_pause = _backdrop()
-	var modal := _modal(_pause)
-	_pause_card = modal[0]
-	_pause_content = modal[1]
-	_pause_content.add_child(Ui.scaled_label(Ui.t("gamePause"), 22, 800, Ui.c("text"), true))
-	_pause_content.add_child(Ui.scaled_label(Ui.t("gameCrossroadsPriorityTitle"), 14, 600, Ui.c("secondary"), true))
-	_pause_content.add_child(_divider())
-	_pause_content.add_child(Ui.scaled_label(Ui.t("gameCrossroadsHowTo"), 15, 600, Ui.c("text"), true))
-	_pause_content.add_child(Ui.scaled_label(Ui.t("gameCrossroadsTapHint"), 13, 400, Ui.c("secondary"), true))
-	_pause_resume_btn = _action_button(Ui.t("continueButton"), true, func(): resume_pressed.emit())
-	_pause_content.add_child(_pause_resume_btn)
-	_pause_content.add_child(_action_button(Ui.t("gameExit"), false, func(): exit_pressed.emit()))
-
-
-func show_pause() -> void:
-	if _collision_backdrop.visible or _result.visible:
-		return
-	_pause.visible = true
-	_pause_card.visible = true
-	_refresh_modal_visibility()
-	_layout()
-	if is_inside_tree():
-		call_deferred("_layout")
-		_pause_resume_btn.grab_focus()
-
-
-func hide_pause() -> void:
-	_pause.visible = false
-	_pause_card.visible = false
-	_refresh_modal_visibility()
-
-
-func is_pause_visible() -> bool:
-	return _pause.visible
-
-
 func _build_result_dialog() -> void:
-	_result = _backdrop()
-	var modal := _modal(_result)
-	_result_card = modal[0]
-	_result_content = modal[1]
-	_result_title = Ui.scaled_label(Ui.t("gameOverTitle"), 20, 800, Ui.c("text"), true)
-	_result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_result_content.add_child(_result_title)
-	var score_row := HBoxContainer.new()
-	score_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	score_row.add_theme_constant_override("separation", 6)
-	score_row.add_child(Ui.icon(ICON_STAR, 30, Ui.c("gold")))
-	_final_score = Ui.scaled_label("0", 36, 800, Ui.c("text"))
-	score_row.add_child(_final_score)
-	_result_content.add_child(score_row)
-	_record_badge = PanelContainer.new()
-	_record_badge.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 8, 10, 4))
-	_record_badge.size_flags_horizontal = SIZE_SHRINK_CENTER
-	_record_badge.add_child(Ui.scaled_label(Ui.t("gameNewRecord"), 12, 700, Ui.c("gold")))
-	_result_content.add_child(_record_badge)
-	_best_label = Ui.scaled_label("", 12, 500, Ui.c("secondary"), true)
-	_best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_result_content.add_child(_best_label)
-	_result_content.add_child(_divider())
-	var stats_row := HBoxContainer.new()
-	stats_row.add_theme_constant_override("separation", 8)
-	_result_content.add_child(stats_row)
-	var solved := _build_stat_col(Ui.t("gameSolvedLabel"))
-	_stat_solved_val = solved[0]
-	stats_row.add_child(solved[1])
-	var accuracy := _build_stat_col(Ui.t("gameAccuracyLabel"))
-	_stat_acc_val = accuracy[0]
-	stats_row.add_child(accuracy[1])
-	var combo := _build_stat_col(Ui.t("gameComboLabel"))
-	_stat_combo_val = combo[0]
-	stats_row.add_child(combo[1])
-	_result_buttons = BoxContainer.new()
-	_result_buttons.add_theme_constant_override("separation", 8)
-	_result_buttons.add_child(_action_button(Ui.t("gameRestart"), true, func():
+	_results = MiniGameResults.new("res://art/crossroads_cover.webp")
+	_results.restart_pressed.connect(func():
 		hide_results()
-		restart_pressed.emit()))
-	_result_buttons.add_child(_action_button(Ui.t("gameExit"), false, func(): exit_pressed.emit()))
-	_result_content.add_child(_result_buttons)
+		restart_pressed.emit())
+	_results.exit_pressed.connect(func(): exit_pressed.emit())
+	add_child(_results)
 
 
-func _build_stat_col(label_text: String) -> Array:
-	var column := VBoxContainer.new()
-	column.size_flags_horizontal = SIZE_EXPAND_FILL
-	column.size_flags_stretch_ratio = 1.0
-	column.add_theme_constant_override("separation", 3)
-	var value := Ui.scaled_label("0", 18, 800, Ui.c("text"))
-	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(value)
-	var caption := Ui.scaled_label(label_text, 11, 500, Ui.c("secondary"), true)
-	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(caption)
-	return [value, column]
-
-
-func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, prev_best: int) -> void:
-	hide_pause()
+func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, prev_best: int, time_up := false) -> void:
 	hide_collision_modal()
-	_result.visible = true
-	_result_card.visible = true
-	_final_score.text = str(score)
-	_record_badge.visible = is_record
-	_best_label.text = "%s: %d" % [Ui.t("gameBestScoreLabel"), score if is_record else prev_best]
-	_stat_solved_val.text = str(solved)
-	var total := solved + wrong
-	var accuracy := roundi(float(solved) / total * 100.0) if total > 0 else 0
-	_stat_acc_val.text = "%d%%" % accuracy
-	_stat_combo_val.text = "×%d" % max_combo
+	_results.show_results(score, solved, wrong, max_combo, is_record, prev_best, time_up)
 	_refresh_modal_visibility()
 	_layout()
-	if is_inside_tree():
-		call_deferred("_layout")
-		_result_buttons.get_child(0).grab_focus()
+	if is_inside_tree(): call_deferred("_layout")
 
 
 func hide_results() -> void:
-	_result.visible = false
-	_result_card.visible = false
+	_results.hide_results()
 	_refresh_modal_visibility()
 
 
 func _refresh_modal_visibility() -> void:
 	# Called while constructing too: a later overlay may not yet have been allocated.
-	_modal_open = (_collision_backdrop != null and _collision_backdrop.visible) or (_pause != null and _pause.visible) or (_result != null and _result.visible)
+	_modal_open = (_collision_backdrop != null and _collision_backdrop.visible) or (_results != null and _results.visible)
 	_top_bar.visible = not _modal_open
 	_reset_cam_btn.visible = not _modal_open
 	if _modal_open:

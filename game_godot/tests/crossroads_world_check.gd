@@ -53,6 +53,8 @@ func check_approaches(junction: Node3D, scenario: Dictionary) -> void:
 		if group.has_meta("duplicate_code"): duplicates += 1
 		var facing := Vector3(0, 0, -1).rotated(Vector3.UP, group.rotation.y)
 		check(facing.dot(group.position.normalized()) > 0.6, str(scenario.id) + " signs face their approaching driver")
+		var board := group.get_child(0) as Node3D
+		check(is_equal_approx(float(board.get_meta("nominal_width")), 1.9), str(scenario.id) + " question signs have readable enlarged faces")
 	var expected_duplicates := 0
 	for entry: Dictionary in scenario.signs:
 		if entry.code in ["2.4", "2.5"]: expected_duplicates += 1
@@ -65,6 +67,9 @@ func check_approaches(junction: Node3D, scenario: Dictionary) -> void:
 		var signal_node := TrafficSignal.in_assembly(light)
 		var green := signal_node.find_child("lamp_green", true, false) as Node3D
 		check(green != null and green.position.y < 3.1, str(scenario.id) + " roadside signal is not lifted by priority signs")
+		var yellow := signal_node.find_child("lamp_yellow", true, false) as Node3D
+		check(green != null and yellow != null and green.position.distance_to(yellow.position) >= 0.64, str(scenario.id) + " question signal head/lenses are enlarged together")
+		check(green != null and is_equal_approx(green.scale.x, 0.20 / 0.21 * 1.25), str(scenario.id) + " readable signal lenses keep their correct housing proportions")
 
 func check_markings(junction: Node3D, scenario: Dictionary) -> void:
 	for side in ["south", "north", "east", "west"]:
@@ -93,11 +98,38 @@ func check_markings(junction: Node3D, scenario: Dictionary) -> void:
 				check(is_equal_approx(item.mesh.size.y, 4.0), str(scenario.id) + " crossing has its full four-metre width")
 			if item.get_meta("sign_code", "") in ["5.19.1", "5.19.2"]:
 				cross_faces += 1
-				check(is_equal_approx(float(item.get_meta("nominal_width")), 0.9), "crossing faces do not obscure question actors")
+				check(is_equal_approx(float(item.get_meta("nominal_width")), 1.1), "crossing question has readable enlarged sign faces")
 			if str(item.name).begins_with("CrossingOverhead_"):
 				overhead += 1
 				check(item.position.y + RoadBuild.SIGN_BOTTOM >= 5.5, "overhead crossing sign keeps full traffic clearance")
-		check(stripe_count == 14 and cross_faces == 6 and overhead == 2, str(scenario.id) + " crossing signs serve both directions and duplicate above right lanes")
+		var crossing := false
+		for actor: Dictionary in scenario.actors:
+			if actor.side == side and (actor.type == "pedestrian" or actor.maneuver == "cross"): crossing = true
+		if crossing:
+			check(stripe_count == 14 and cross_faces == 6 and overhead == 2, str(scenario.id) + " question crossing serves both directions and duplicates above right lanes")
+		else:
+			check(stripe_count == 0 and cross_faces == 0 and overhead == 0, str(scenario.id) + " unrelated approach has no zebra, crossing signs or overhead masts")
+		for flank in [-1.0, 1.0]:
+			var corner := Vector2(flank, 1 if side == "south" else -1) if side in ["south", "north"] else Vector2(1 if side == "east" else -1, flank)
+			var point := Vector2(Junction.HALF_ROAD, Junction.HALF_ROAD + Junction.CORNER_RADIUS) if side in ["south", "north"] else Vector2(Junction.HALF_ROAD + Junction.CORNER_RADIUS, Junction.HALF_ROAD)
+			var height := sidewalk_vertex_height(junction, point * corner)
+			check(is_equal_approx(height, 0.0 if crossing else Junction.SIDEWALK_Y), str(scenario.id) + " built sidewalk is lowered only at the question crossing")
+			var curb_point := Vector3(corner.x * (Junction.HALF_ROAD if side in ["south", "north"] else 10.0), 0.08, corner.y * (10.0 if side in ["south", "north"] else Junction.HALF_ROAD))
+			check(curb_covers(junction, curb_point) != crossing, str(scenario.id) + " built curb is continuous on approaches without a crossing")
+
+func sidewalk_vertex_height(junction: Node3D, point: Vector2) -> float:
+	for mesh: MeshInstance3D in junction.ground_root.get_children():
+		if mesh.material_override != junction.sidewalk_mat or not mesh.mesh is ArrayMesh: continue
+		var vertices: PackedVector3Array = mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		for vertex in vertices:
+			if Vector2(vertex.x, vertex.z).distance_to(point) < 0.0001: return vertex.y
+	return -1.0
+
+func curb_covers(junction: Node3D, point: Vector3) -> bool:
+	for mesh: MeshInstance3D in junction.ground_root.get_children():
+		if mesh.material_override == junction.curb_mat and mesh.mesh is BoxMesh:
+			if (mesh.transform * mesh.mesh.get_aabb()).has_point(point): return true
+	return false
 
 func check_tram(junction: Node3D, tram: Node3D, id: String) -> void:
 	var curve: Curve3D = tram.path_curve

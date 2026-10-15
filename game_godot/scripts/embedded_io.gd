@@ -28,6 +28,7 @@ func _process(_delta: float) -> void:
 	if not request is Dictionary:
 		return
 	Host.io_args = request.get("args", [])
+	Host.reset_exit(get_tree())
 	get_tree().paused = false
 	# Route each request through the mode dispatcher, including after a mini-game.
 	get_tree().change_scene_to_file("res://main.tscn")

@@ -2,11 +2,15 @@ package ru.pdd.pdd_app.game
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Process
+import android.view.View
+import android.view.ViewGroup
 import org.godotengine.godot.Godot
 import org.godotengine.godot.GodotActivity
 import org.godotengine.godot.plugin.GodotPlugin
+import ru.pdd.pdd_app.R
 
 /**
  * The 3D game «Живой город» (Godot, game_godot/) on its own screen.
@@ -27,6 +31,8 @@ class GodotGameActivity : GodotActivity() {
     }
 
     private var summary: String? = null
+    private var exitCover: View? = null
+    private var closing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +62,31 @@ class GodotGameActivity : GodotActivity() {
     fun leave(json: String) {
         keepSummary(json)
         finish()
+    }
+
+    /** The engine destroys its Surface before termination. Keep that teardown behind a
+     * static app-coloured Android view, matching Host.exit's final opaque frame. */
+    fun prepareExit() {
+        if (exitCover != null) return
+        val dark = intent?.getStringArrayExtra(EXTRA_ARGS)?.contains("--dark") == true
+        exitCover = View(this).apply {
+            setBackgroundColor(Color.parseColor(if (dark) "#121214" else "#F8F8FA"))
+            isClickable = true
+        }
+        (window.decorView as ViewGroup).addView(
+            exitCover,
+            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+        )
+    }
+
+    override fun finish() {
+        if (closing) return
+        closing = true
+        prepareExit()
+        super.finish()
+        // No slide/scale of the road or the Flutter menu while the game process stops.
+        @Suppress("DEPRECATION")
+        overridePendingTransition(R.anim.godot_game_return_in, R.anim.godot_game_return_out)
     }
 
     override fun onGodotForceQuit(instance: Godot) {

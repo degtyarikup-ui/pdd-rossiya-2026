@@ -42,6 +42,7 @@ godot --path game_godot -- --situation=ticket_10_13 --auto --near   # один �
 
 Флаги — в `game_godot/README.md`. Игра стартует сразу; выбор машины/цвета, звук и выход доступны в окне паузы.
 Приложение передаёт коллекцию и настройки через `--ride-options=<JSON>`.
+В мини-играх верхняя кнопка сразу возвращает в меню; отдельного окна паузы нет.
 
 ## Проверки (headless)
 
@@ -50,11 +51,14 @@ godot --headless --path game_godot --script res://tests/regulator_check.gd # р�
 godot --headless --path game_godot --script res://tests/regulator_performance_check.gd # регулировщик: профили телефона, адаптация, разрешение UI и повторный вход
 godot --headless --path game_godot --script res://tests/regulator_atmosphere_check.gd # регулировщик: стабильная погода без лишних обновлений рендера и переходы
 godot --headless --path game_godot --script res://tests/crossroads_check.gd # разъезд на перекрёстках: 27 сценариев, ПДД, траектории, UI
-godot --headless --path game_godot --script res://tests/crossroads_play_check.gd # все 27 задач: проезд, пауза, камера, таймер, повтор и мультитач
+godot --headless --path game_godot --script res://tests/crossroads_play_check.gd # все 27 задач: проезд, фокус, камера, таймер, повтор и мультитач
+godot --headless --path game_godot --script res://tests/crossroads_camera_check.gd # ограничение zoom и прозрачность только закрывающих обзор зданий; также native
 godot --headless --path game_godot --script res://tests/crossroads_routes_check.gd # реальные кузова, полосы, остановка у 2.5 и экранный размер кнопок
 godot --headless --path game_godot --script res://tests/crossroads_world_check.gd # все знаки/дубли, переходы, стоп-линии, рельсы, сезонные материалы
 godot --path game_godot --script res://tests/crossroads_world_check.gd # дополнительно реальные пиксели скруглений и пандусов
 godot --headless --path game_godot --script res://tests/crossroads_ui_check.gd # HUD, диалоги, короткий экран; повторить с -- --text-scale=1.6
+godot --headless --path game_godot --script res://tests/mini_game_results_check.gd # общий результат мини-игр: ru/en/kk, малые экраны, текст 1,6
+godot --path game_godot --script res://tests/exit_transition_check.gd # реальный fade выхода: неподвижный кадр, покрытие, summary и повторный вход
 godot --headless --path game_godot --script res://tests/rules_check.gd      # нарушения: 47 проверок
 godot --headless --path game_godot --script res://tests/road_check.gd       # дорожные вопросы: 70 проверок
 godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя

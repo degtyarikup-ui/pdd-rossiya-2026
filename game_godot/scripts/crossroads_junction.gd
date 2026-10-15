@@ -16,8 +16,9 @@ const SIDEWALK_WIDTH := 4.2
 const SIDEWALK_Y := 0.16
 const CORNER_RADIUS := 2.4
 const SIGN_CURB_OFFSET := 2.1  # Keeps roadside boards outside the full carriageway.
-const PRIORITY_SIGN_WIDTH := 1.5
-const CROSSING_SIGN_WIDTH := 0.9
+const PRIORITY_SIGN_WIDTH := 1.9
+const CROSSING_SIGN_WIDTH := 1.1
+const QUESTION_SIGNAL_SCALE := 1.25
 const LIGHT_DIST := 8.5       # The stop line is 4.7 m before the roadside signal.
 
 var sc: Scenery
@@ -41,6 +42,7 @@ var _light_clock := 0.0
 var _light_flash := true
 var _scenario: Dictionary = {}
 var _rail_segments := {}
+static var _question_signal_bodies := {}
 
 
 func _update_light_cycle(delta: float) -> void:
@@ -329,7 +331,7 @@ func _build_quadrant_sidewalks() -> void:
 				var a := Vector2(tangent, tangent) + Vector2(cos(angle_a), sin(angle_a)) * CORNER_RADIUS
 				var b := Vector2(tangent, tangent) + Vector2(cos(angle_b), sin(angle_b)) * CORNER_RADIUS
 				var mid := (a + b) * 0.5
-				if _crossing_exit(mid): continue
+				if _crossing_exit(mid, corner): continue
 				_add_curb_segment(Vector3(sx * a.x, 0, sz * a.y), Vector3(sx * b.x, 0, sz * b.y))
 
 		# Long sidewalk strips use the same ramp profile as the corner mesh.
@@ -353,18 +355,20 @@ func _build_quadrant_sidewalks() -> void:
 		ground_root.add_child(curb_lawn_z)
 
 
-func _crossing_exit(p: Vector2) -> bool:
-	return (p.x >= ZEBRA_START and p.x <= ZEBRA_END) or (p.y >= ZEBRA_START and p.y <= ZEBRA_END)
+func _crossing_exit(p: Vector2, corner: Vector2) -> bool:
+	return (_has_crossing("east" if corner.x > 0 else "west") and p.x >= ZEBRA_START and p.x <= ZEBRA_END) or (_has_crossing("south" if corner.y > 0 else "north") and p.y >= ZEBRA_START and p.y <= ZEBRA_END)
 
 
-func _sidewalk_height(p: Vector2) -> float:
+func _sidewalk_height(p: Vector2, corner: Vector2) -> float:
 	var height := SIDEWALK_Y
 	# The lowered exit has short blended shoulders. A hard height switch at
 	# the zebra edge creates almost vertical sliver triangles on the fillet.
 	var along_z := smoothstep(ZEBRA_START - 0.4, ZEBRA_START + 0.2, p.y) * (1.0 - smoothstep(ZEBRA_END - 0.2, ZEBRA_END + 0.4, p.y))
 	var along_x := smoothstep(ZEBRA_START - 0.4, ZEBRA_START + 0.2, p.x) * (1.0 - smoothstep(ZEBRA_END - 0.2, ZEBRA_END + 0.4, p.x))
-	height = minf(height, lerpf(SIDEWALK_Y, SIDEWALK_Y * clampf((p.x - HALF_ROAD) / 1.6, 0.0, 1.0), along_z))
-	height = minf(height, lerpf(SIDEWALK_Y, SIDEWALK_Y * clampf((p.y - HALF_ROAD) / 1.6, 0.0, 1.0), along_x))
+	if _has_crossing("south" if corner.y > 0 else "north"):
+		height = minf(height, lerpf(SIDEWALK_Y, SIDEWALK_Y * clampf((p.x - HALF_ROAD) / 1.6, 0.0, 1.0), along_z))
+	if _has_crossing("east" if corner.x > 0 else "west"):
+		height = minf(height, lerpf(SIDEWALK_Y, SIDEWALK_Y * clampf((p.y - HALF_ROAD) / 1.6, 0.0, 1.0), along_x))
 	return height
 
 
@@ -382,7 +386,7 @@ func _add_sidewalk_patch(polygon: PackedVector2Array, corner: Vector2) -> void:
 				var triangles := Geometry2D.triangulate_polygon(clipped)
 				var start := vertices.size()
 				for p in clipped:
-					vertices.append(Vector3(corner.x * p.x, _sidewalk_height(p), corner.y * p.y))
+					vertices.append(Vector3(corner.x * p.x, _sidewalk_height(p, corner), corner.y * p.y))
 				for index in triangles: indices.append(start + index)
 	if not indices.is_empty():
 		var mesh := _surface(vertices, indices, sidewalk_mat)
@@ -401,7 +405,9 @@ func _add_polygon(polygon: PackedVector2Array, corner: Vector2, height: float, m
 func _add_straight_curbs(a: Vector3, b: Vector3, along_z: bool) -> void:
 	var from := absf(a.z if along_z else a.x)
 	var to := absf(b.z if along_z else b.x)
-	for span: Vector2 in [Vector2(from, minf(ZEBRA_START, to)), Vector2(maxf(from, ZEBRA_END), to)]:
+	var side := ("south" if b.z > 0 else "north") if along_z else ("east" if b.x > 0 else "west")
+	var spans := [Vector2(from, minf(ZEBRA_START, to)), Vector2(maxf(from, ZEBRA_END), to)] if _has_crossing(side) else [Vector2(from, to)]
+	for span: Vector2 in spans:
 		if span.y <= span.x: continue
 		var p := a
 		var q := a
@@ -466,17 +472,9 @@ func _build_arm_markings(arm: String) -> void:
 		yield_line.name = "YieldLine"
 		arm_root.add_child(yield_line)
 
-	# 1.14.1: a four-metre pedestrian crossing, symmetrical 0.5 m
-	# stripes/gaps; paint remains flat and does not cast road-shaped shadows.
-	for i in 14:
-		var stripe := _quad(Vector2(0.5, ZEBRA_END - ZEBRA_START), marking_mat)
-		stripe.name = "ZebraStripe_%d" % i
-		stripe.position = Vector3(-6.5 + i, 0.022, (ZEBRA_START + ZEBRA_END) * 0.5)
-		arm_root.add_child(stripe)
-
 	# 1.3 separates the four-lane road's opposing directions. Both
 	# carriageway halves receive their own 1.5 lane divider.
-	var line_start := ZEBRA_END + 0.25
+	var line_start := ZEBRA_END + 0.25 if _has_crossing(arm) else HALF_ROAD + 0.8
 	var line_len := ROAD_EXTENT - line_start
 	for offset in [-0.12, 0.12]:
 		var solid := _quad(Vector2(0.12, line_len), marking_mat)
@@ -489,6 +487,17 @@ func _build_arm_markings(arm: String) -> void:
 			dash.position = Vector3(x, 0.022, z + 1.0)
 			arm_root.add_child(dash)
 		z += 6.0
+	if _has_crossing(arm): _build_crossing(arm_root)
+
+
+func _build_crossing(arm_root: Node3D) -> void:
+	# The only crossings in this mini-game are the ones used by its walkers.
+	# Paint, roadside/overhead signs and lowered curbs all use that same rule.
+	for i in 14:
+		var stripe := _quad(Vector2(0.5, ZEBRA_END - ZEBRA_START), marking_mat)
+		stripe.name = "ZebraStripe_%d" % i
+		stripe.position = Vector3(-6.5 + i, 0.022, (ZEBRA_START + ZEBRA_END) * 0.5)
+		arm_root.add_child(stripe)
 
 	# 5.19.1 is on the right/near boundary and 5.19.2 on the left/far
 	# boundary, both facing the same approaching driver. Repeat for traffic
@@ -526,6 +535,14 @@ func _build_arm_markings(arm: String) -> void:
 
 func _has_stop_control(side: String) -> bool:
 	return _has_signal(side) or _has_sign(side, "2.5")
+
+
+func _has_crossing(side: String) -> bool:
+	if side == closed_side: return false
+	for actor: Dictionary in _scenario.get("actors", []):
+		if str(actor.get("side", "")) == side and (actor.get("type", "") == "pedestrian" or actor.get("maneuver", "") == "cross"):
+			return true
+	return false
 
 
 func _has_signal(side: String) -> bool:
@@ -921,6 +938,7 @@ func add_traffic_light(tl_data: Dictionary, sign_data: Dictionary = {}) -> void:
 
 func _create_traffic_light_node(tl_data: Dictionary, sign_data: Dictionary) -> Node3D:
 	var root := TrafficSignal.make_mini(tl_data)
+	_enlarge_question_signal(root, TrafficSignal.kind(tl_data))
 	var side := str(tl_data.get("side", "south"))
 	root.name = "TrafficLight_" + side
 	# Keep roadside signal apertures at their canonical height. Adding a
@@ -936,6 +954,30 @@ func _create_traffic_light_node(tl_data: Dictionary, sign_data: Dictionary) -> N
 		root = assembly
 	_place_approach(root, side, LIGHT_DIST, true)
 	return root
+
+
+## The main game's shared model stays canonical. Only this question's signal
+## heads/lenses grow, around their existing anchor; its mast stays full height.
+func _enlarge_question_signal(signal_node: Node3D, variant: String) -> void:
+	var anchor := Vector3(0, 3.5, 0.22)
+	var body := signal_node.find_child("body", true, false) as MeshInstance3D
+	if not _question_signal_bodies.has(variant):
+		var arrays := body.mesh.surface_get_arrays(0)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX].duplicate()
+		var roles: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2]
+		for i in vertices.size():
+			if roles[i].x >= 1.5:
+				vertices[i] = anchor + (vertices[i] - anchor) * QUESTION_SIGNAL_SCALE
+		arrays[Mesh.ARRAY_VERTEX] = vertices
+		var importer := ImporterMesh.new()
+		importer.add_surface(Mesh.PRIMITIVE_TRIANGLES, arrays, [], {}, body.material_override)
+		importer.generate_lods(60, 25, [])
+		_question_signal_bodies[variant] = importer.get_mesh()
+	body.mesh = _question_signal_bodies[variant]
+	for lamp: Node3D in signal_node.find_children("lamp_*", "Node3D", true, false):
+		lamp.position = anchor + (lamp.position - anchor) * QUESTION_SIGNAL_SCALE
+		lamp.scale *= QUESTION_SIGNAL_SCALE
+	signal_node.set_meta("question_signal_scale", QUESTION_SIGNAL_SCALE)
 
 
 # --- Helper Mesh Builders ---
