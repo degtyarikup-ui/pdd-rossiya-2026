@@ -45,14 +45,6 @@ class SignalMesh(PropMesh):
             j=(i+1)%8
             self.face([back[i],back[j],front[j],front[i]],color)
 
-    def visor(self,x,y,r=.26):
-        # Broad top half of a hood; open lower/front side, never covers the aperture.
-        for i in range(8):
-            a=-math.pi/2+i*math.pi/8;b=a+math.pi/8
-            p=lambda angle,z:(x+r*math.sin(angle),y+r*math.cos(angle),z)
-            self.face([p(a,.47),p(b,.47),p(b,.73),p(a,.73)],BLACK)
-            self.face([p(a,.47),p(a,.73),p(b,.73),p(b,.47)],BLACK)
-
     def line(self,a,b,width,color,z=.001):
         dx,dy=b[0]-a[0],b[1]-a[1];length=math.hypot(dx,dy)
         nx,ny=-dy/length*width/2,dx/length*width/2
@@ -76,27 +68,24 @@ def body(tram=False,arrow=''):
     m=SignalMesh()
     m.role=1 # mast: lets the smaller mini-game preserve its own mounting profile
     m.stem((0,0,0),(0,5.4 if tram else 4.2,0),.08,.08,STEEL,None,8)
-    m.role=2 # main housing/shield/hoods
+    m.role=2 # main housing/shield, without visors for the overhead camera
     m.rounded_box(0,3.4,.25,.65,1.6,.4,.055,BLACK)
-    m.box((0,3.4,.01),(1.01,1.96,.02),STEEL,bottom=True)
+    m.box((0,3.4,.01),(1.01,1.96,.02),BLACK,bottom=True)
     m.box((0,3.4,.03),(.95,1.9,.03),BLACK,bottom=True)
     for side in [-1,1]:
         m.box((side*.49,3.4,.024),(.03,1.96,.008),WHITE,bottom=True)
         m.box((0,3.4+side*.965,.024),(.95,.03,.008),WHITE,bottom=True)
-    for y in [3.85,3.4,2.95]:m.visor(0,y)
     if arrow:
         m.role=3 # supplementary section
         x=-.70 if arrow=='left' else .70
         m.rounded_box(x,2.95,.25,.64,.64,.4,.055,BLACK)
         m.disk(x,2.95,.451,.29,BLACK)
-        m.visor(x,2.95,.29)
     if tram:
         m.role=4
         m.box((0,2.05,.16),(.24,.28,.22),BLACK,bottom=True)
         m.rounded_box(0,4.6,.25,.65,.44,.4,.035,BLACK)
         m.rounded_box(0,5.06,.25,1.40,.48,.4,.04,BLACK)
-        m.box((0,5.06,.03),(1.52,.56,.03),STEEL,bottom=True)
-        for x,y in [(0,4.6),(0,5.06),(-.42,5.06),(.42,5.06)]:m.visor(x,y,.22)
+        m.box((0,5.06,.03),(1.52,.56,.03),BLACK,bottom=True)
     return m
 
 
