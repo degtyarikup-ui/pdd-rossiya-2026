@@ -6,7 +6,9 @@
   "throw_interval_seconds": 0.4,
   "ball_flight_seconds": 1.0,
   "hand_dwell_seconds": 0.20000000000000018,
-  "glb_bytes": 523284,
+  "ball_radius": 0.15,
+  "ball_color_srgb": "#0574F8",
+  "glb_bytes": 523064,
   "mesh_objects": 28,
   "rendered_triangles": 14718,
   "textures": 0,
@@ -17,12 +19,12 @@
     "min": [
       -0.9260000586509705,
       -0.4619113504886627,
-      1.2461528778076172
+      1.288152813911438
     ],
     "max": [
       0.9176000356674194,
       -0.3181999921798706,
-      3.2730002403259277
+      3.315000057220459
     ]
   },
   "source": "tools/mascot/animate_juggling.py; original approval model retained"

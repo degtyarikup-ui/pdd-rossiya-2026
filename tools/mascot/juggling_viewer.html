@@ -150,7 +150,9 @@
   scene.add(key, key.target);
   const fill = new THREE.DirectionalLight(0xe4f0ff, .25); fill.position.set(4, 3, 2); scene.add(fill);
   const rim = new THREE.DirectionalLight(0xffffff, .55); rim.position.set(2, 4, -4); scene.add(rim);
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({color:0x172c4c,opacity:.18}));
+  // Neutral black remains black through output encoding; the transparent
+  // receiver can only darken a background, including dark and brand blue.
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({color:0x000000,opacity:.2,toneMapped:false}));
   shadow.rotation.x = -Math.PI / 2; shadow.receiveShadow = true; scene.add(shadow);
   Object.assign(api, {scene,camera,renderer,controls,model:null,mixer:null});
   function render() { if (!document.hidden) { renderer.render(scene, camera); api.frames += 1; } }
@@ -190,6 +192,7 @@
     const colors = {light:0xedf2f8,dark:0x141b28,blue:0x0574f8};
     if (!(theme in colors)) return;
     stage.dataset.theme = theme; scene.background.setHex(colors[theme]);
+    shadow.material.opacity = theme === 'dark' ? .35 : .2;
     document.querySelectorAll('[data-theme]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.theme === theme)));
     render();
   }
