@@ -1514,6 +1514,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifAdminChannelName => 'Application messages';
 
   @override
+  String get noticeImageBanner => 'Information banner';
+
+  @override
   String get noticeAcknowledge => 'Clear';
 
   @override

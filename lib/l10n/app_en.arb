@@ -521,6 +521,7 @@
   "gameUturn": "U-turn",
   "purchaseVerificationPending": "Payment went through, but access isn't confirmed yet. Don't pay again: tap “Restore” while you're online.",
   "notifAdminChannelName": "Application messages",
+  "noticeImageBanner": "Information banner",
   "noticeAcknowledge": "Clear",
   "noticeOpen": "Open",
   "pushMessagesSetting": "Application news",

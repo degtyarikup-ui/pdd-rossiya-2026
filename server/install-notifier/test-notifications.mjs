@@ -123,6 +123,51 @@ test('customization: banner limits, https-only images/links, accent format, sche
   assert.equal(item.status,'scheduled');assert.equal(campaignMatches(item,'ru','ios'),false);assert.equal(campaignMatches(item,'ru','ios',start+1),true);
   assert.equal(clientMessage(item).kind,'banner');assert.equal(clientMessage(item).status,undefined);
 });
+test('image banners accept image-only content and preserve the link in the client payload',()=>{
+  const item=validateCampaign(sample({kind:'banner',layout:'image',title:undefined,body:undefined,imageUrl:'https://cdn.test/banner.png',action:'url',actionUrl:'https://pdd-drive.ru/tarify/'}));
+  assert.equal(item.title,'');assert.equal(item.body,'');
+  const message=clientMessage(item);
+  assert.equal(message.layout,'image');assert.equal(message.imageUrl,'https://cdn.test/banner.png');
+  assert.equal(message.action,'url');assert.equal(message.actionUrl,'https://pdd-drive.ru/tarify/');
+  assert.equal(validateCampaign(sample({kind:'banner',layout:'image',title:'',body:'',imageUrl:'https://cdn.test/banner.png'})).action,'none');
+});
+test('image-only layout requires a banner and an HTTPS image; ordinary messages still require text',()=>{
+  const image={layout:'image',imageUrl:'https://cdn.test/banner.png',title:'',body:''};
+  for(const bad of [{...image,kind:'popup'},{...image,kind:'push'},{...image,kind:'banner',imageUrl:''},{...image,kind:'banner',imageUrl:'http://cdn.test/banner.png'},{...image,kind:'banner',imageUrl:'javascript:alert(1)'},{...image,kind:'banner',action:'url',actionUrl:''},{...image,kind:'banner',action:'url',actionUrl:'http://pdd-drive.ru'},{...image,kind:'banner',title:42},{kind:'banner',title:'',body:''},{kind:'popup',title:'',body:''}]) {
+    assert.throws(()=>validateCampaign(sample(bad)));
+  }
+});
+test('image campaigns survive publication, retry and dismissal toggles in the client feed',async()=>{
+  const {call}=setup(),msg=sample({kind:'banner',layout:'image',title:'',body:'',imageUrl:'https://cdn.test/banner.webp',action:'url',actionUrl:'https://pdd-drive.ru/'});
+  assert.equal((await call('/publish',msg)).status,200);
+  assert.equal((await (await call('/publish',msg)).json()).duplicate,true);
+  const feed=await (await call('/client?app=ru&platform=android&imageBanners=1')).json();
+  assert.equal(feed.messages.length,1);assert.equal(feed.messages[0].layout,'image');assert.equal(feed.messages[0].title,'');
+  assert.equal(feed.messages[0].actionUrl,'https://pdd-drive.ru/');
+  assert.equal((await call('/publish',{...msg,layout:'standard',title:'Новости',body:'Новые вопросы'})).status,409);
+  await call('/toggle',{id:msg.id,enabled:false});
+  assert.equal((await (await call('/client?app=ru&platform=android&imageBanners=1')).json()).messages.length,0);
+});
+test('image campaigns require explicit client capability while legacy cards remain visible',async()=>{
+  const {call}=setup();
+  const image=sample({kind:'banner',layout:'image',title:'',body:'',imageUrl:'https://cdn.test/banner.png'});
+  const ordinary=sample({kind:'banner'});
+  await call('/publish',image);await call('/publish',ordinary);
+  for(const suffix of ['', '&imageBanners=0', '&imageBanners=true']) {
+    const feed=await (await call('/client?app=ru&platform=ios'+suffix)).json();
+    assert.deepEqual(feed.messages.map(m=>m.id),[ordinary.id]);
+  }
+  const feed=await (await call('/client?app=ru&platform=ios&imageBanners=1')).json();
+  assert.equal(feed.messages.length,2);assert.ok(feed.messages.some(m=>m.id===image.id));
+});
+test('public notification route forwards image capability to the Durable Object',async()=>{
+  const paths=[];
+  const env={NOTIFICATIONS:{idFromName:()=> 'state',get:()=>({fetch:async path=>{paths.push(new URL(path));return Response.json({messages:[]});}})}};
+  await worker.fetch(new Request('https://test/api/notifications?app=ru&platform=web&imageBanners=1'),env);
+  assert.equal(paths[0].searchParams.get('imageBanners'),'1');
+  await worker.fetch(new Request('https://test/api/notifications?app=ru&platform=web'),env);
+  assert.notEqual(paths[1].searchParams.get('imageBanners'),'1');
+});
 test('push payload carries image, accent, action and iOS mutable-content',()=>{
   const m=buildPushMessage(validateCampaign(sample({kind:'push',emoji:'🎉',imageUrl:'https://x.test/a.png',accent:'#112233',action:'game'})));
   assert.equal(m.notification.image,'https://x.test/a.png');assert.equal(m.notification.title,'🎉 Новости');

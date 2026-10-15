@@ -9,7 +9,7 @@ const reply = (value, status = 200) => Response.json(value, { status, headers: {
 // push   — system notification via FCM (optionally duplicated in-app as popup).
 export const KINDS = ['popup', 'banner', 'push'];
 export const ACTIONS = ['none', 'url', 'tickets', 'topics', 'game', 'feed', 'settings'];
-export const LAYOUTS = ['standard', 'cover', 'compact'];
+export const LAYOUTS = ['standard', 'cover', 'compact', 'image'];
 const choices = { kind: KINDS, app: ['all', 'ru', 'by', 'rs'], platform: ['all', 'ios', 'android', 'web'] };
 const DAY = 86400000;
 const str = (value, max, label, required = false) => {
@@ -36,9 +36,16 @@ export function validateCampaign(input, now = Date.now()) {
     if (!allowed.includes(value[key])) throw new Error('Некорректный тип или аудитория');
   }
   if (value.kind === 'push' && value.platform === 'web') throw new Error('Веб-пуши пока не поддерживаются');
+  value.layout = input.layout || 'standard';
+  if (!LAYOUTS.includes(value.layout)) throw new Error('Некорректный макет');
+  const imageBanner = value.layout === 'image';
+  if (imageBanner && value.kind !== 'banner') throw new Error('Макет «Только картинка» доступен только для баннера');
   for (const [key, max] of [['title', 80], ['body', 1000]]) {
-    if (typeof input[key] !== 'string' || !input[key].trim() || input[key].trim().length > max) throw new Error('Заполните заголовок и текст в пределах лимита');
-    value[key] = input[key].trim();
+    if (imageBanner) value[key] = str(input[key], max, key === 'title' ? 'Заголовок' : 'Текст');
+    else {
+      if (typeof input[key] !== 'string' || !input[key].trim() || input[key].trim().length > max) throw new Error('Заполните заголовок и текст в пределах лимита');
+      value[key] = input[key].trim();
+    }
   }
   if (value.kind === 'push' && value.body.length > 300) throw new Error('Текст пуша: не более 300 символов');
   if (value.kind === 'banner' && value.body.length > 200) throw new Error('Текст баннера: не более 200 символов');
@@ -55,11 +62,10 @@ export function validateCampaign(input, now = Date.now()) {
   if (value.target && /[\s'"<>]/.test(value.target)) throw new Error('Аккаунт для теста: укажите корректный email или ID');
   // Customization.
   value.imageUrl = httpsUrl(input.imageUrl, 'Картинка');
+  if (imageBanner && !value.imageUrl) throw new Error('Для баннера «Только картинка» загрузите изображение или укажите ссылку https://');
   value.emoji = str(input.emoji, 8, 'Эмодзи');
   value.accent = input.accent ? String(input.accent) : '';
   if (value.accent && !/^#[0-9a-fA-F]{6}$/.test(value.accent)) throw new Error('Цвет: формат #RRGGBB');
-  value.layout = input.layout || 'standard';
-  if (!LAYOUTS.includes(value.layout)) throw new Error('Некорректный макет');
   value.buttonText = str(input.buttonText, 24, 'Текст кнопки');
   value.dismissText = str(input.dismissText, 24, 'Текст второй кнопки');
   value.action = input.action || 'none';
@@ -191,7 +197,10 @@ export class NotificationsState {
       const user = { userId: url.searchParams.get('userId') || '', email: url.searchParams.get('email') || '' };
       if (!['ru','by','rs'].includes(app) || !['ios','android','web'].includes(platform)) return reply({ error: 'invalid audience' }, 400);
       const records = await this.state.storage.list({ prefix: 'message:' });
-      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp) && campaignMatches(item, app, platform, Date.now(), user)) : [];
+      // Older clients treat unknown layouts as standard cards and would show an
+      // empty card. Only send image banners to builds declaring support.
+      const imageBanners = url.searchParams.get('imageBanners') === '1';
+      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp) && (item.layout !== 'image' || imageBanners) && campaignMatches(item, app, platform, Date.now(), user)) : [];
       return reply({ config, messages: visible.sort((a,b) => b.createdAt-a.createdAt).slice(0, 10).map(clientMessage) });
     }
     if (path === '/alarm') {

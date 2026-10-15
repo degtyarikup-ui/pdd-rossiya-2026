@@ -568,6 +568,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                         child: AppNoticeBanner(
                           key: ValueKey(banner.id),
                           notice: banner,
+                          imageFallback: progressCard,
                           onDismiss: () => RemoteNotificationsService.instance
                               .dismissBanner(banner.id),
                           onTap: () {

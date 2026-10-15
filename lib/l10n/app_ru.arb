@@ -835,6 +835,7 @@
   "gameUturn": "Разворот",
   "purchaseVerificationPending": "Оплата прошла, но доступ ещё не подтверждён. Не платите повторно: нажмите «Восстановить» при включённом интернете.",
   "notifAdminChannelName": "Сообщения приложения",
+  "noticeImageBanner": "Информационный баннер",
   "noticeAcknowledge": "Понятно",
   "noticeOpen": "Открыть",
   "pushMessagesSetting": "Новости приложения",

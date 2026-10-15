@@ -3244,7 +3244,8 @@ const workerHandlers = {
         '/client?app=' + encodeURIComponent(url.searchParams.get('app') || '') +
         '&platform=' + encodeURIComponent(url.searchParams.get('platform') || '') +
         '&userId=' + encodeURIComponent(url.searchParams.get('userId') || '') +
-        '&email=' + encodeURIComponent(url.searchParams.get('email') || '')
+        '&email=' + encodeURIComponent(url.searchParams.get('email') || '') +
+        '&imageBanners=' + encodeURIComponent(url.searchParams.get('imageBanners') || '')
       );
       // Responses from a Durable Object fetch have immutable headers.
       const headers = new Headers(response.headers);

@@ -39,7 +39,7 @@ class AppNotice {
   final String kind;
   final String imageUrl, emoji, buttonText, dismissText, actionUrl;
 
-  /// `standard` (image on top), `compact` (small icon), `cover` (tall image).
+  /// `standard`, `compact`, `cover`, or `image` (image-only home banner).
   final String layout;
   final Color? accent;
   final NoticeAction action;
@@ -60,6 +60,7 @@ class AppNotice {
   });
 
   bool get isBanner => kind == 'banner';
+  bool get isImageBanner => isBanner && layout == 'image';
   NoticeTap? get tap => action == NoticeAction.none
       ? null
       : NoticeTap.fromData({'action': action.name, 'actionUrl': actionUrl});
@@ -83,6 +84,11 @@ class AppNotice {
     final id = value['id'] as String;
     if (!RegExp(r'^[a-f0-9-]{36}$').hasMatch(id)) return null;
     final image = _str(value['imageUrl']);
+    final kind = value['kind'] == 'banner' ? 'banner' : 'popup';
+    if (value['layout'] == 'image' &&
+        (kind != 'banner' || !image.startsWith('https://'))) {
+      return null;
+    }
     final action =
         NoticeAction.values.asNameMap()[value['action']] ?? NoticeAction.none;
     final actionUrl = _str(value['actionUrl']);
@@ -93,12 +99,18 @@ class AppNotice {
       expiresAt: DateTime.fromMillisecondsSinceEpoch(
         (value['expiresAt'] as num).toInt(),
       ),
-      kind: value['kind'] == 'banner' ? 'banner' : 'popup',
+      kind: kind,
       imageUrl: image.startsWith('https://') ? image : '',
       emoji: _str(value['emoji'], 8),
       buttonText: _str(value['buttonText'], 24),
       dismissText: _str(value['dismissText'], 24),
-      layout: const ['standard', 'compact', 'cover'].contains(value['layout'])
+      layout:
+          const [
+            'standard',
+            'compact',
+            'cover',
+            'image',
+          ].contains(value['layout'])
           ? value['layout']
           : 'standard',
       accent: parseColor(value['accent']),
@@ -273,6 +285,7 @@ class RemoteNotificationsService {
             queryParameters: {
               'app': CountryConfig.current.code,
               'platform': platform,
+              'imageBanners': '1',
               if (user != null && user.id.trim().isNotEmpty)
                 'userId': user.id.trim(),
               if (user != null && user.email.trim().isNotEmpty)

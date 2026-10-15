@@ -8,16 +8,15 @@ import 'package:pdd_app/l10n/l10n.dart';
 class _NoticeImage extends StatelessWidget {
   final String url;
   final double? height, width;
-  final Widget? fallback;
-  const _NoticeImage(this.url, {this.height, this.width, this.fallback});
+  const _NoticeImage(this.url, {this.height, this.width});
 
   @override
   Widget build(BuildContext context) => Image.network(
     url,
     height: height,
     width: width,
-    fit: BoxFit.cover,
-    errorBuilder: (_, _, _) => fallback ?? const SizedBox.shrink(),
+    fit: BoxFit.contain,
+    errorBuilder: (_, _, _) => const SizedBox.shrink(),
     loadingBuilder: (context, child, progress) => progress == null
         ? child
         : SizedBox(
@@ -49,6 +48,7 @@ class AppNoticeDialog extends StatelessWidget {
         : Colors.white;
     final hasImage = notice.imageUrl.isNotEmpty;
     final compact = notice.layout == 'compact';
+    final colors = AppColors.of(context);
     final primary = notice.buttonText.isNotEmpty
         ? notice.buttonText
         : notice.tap == null
@@ -60,84 +60,105 @@ class AppNoticeDialog extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 420,
-          maxHeight: size.height * .85,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (hasImage && !compact)
-                AspectRatio(
-                  aspectRatio: notice.layout == 'cover' ? 4 / 3 : 16 / 9,
-                  child: _NoticeImage(notice.imageUrl),
-                ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(22, 22, 22, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (hasImage && compact)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: _NoticeImage(
-                            notice.imageUrl,
-                            width: 64,
-                            height: 64,
+      backgroundColor: colors.cardBackground,
+      child: Stack(
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 420,
+              maxHeight: size.height * .85,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (hasImage && !compact)
+                    AspectRatio(
+                      aspectRatio: notice.layout == 'cover' ? 4 / 3 : 16 / 9,
+                      child: _NoticeImage(notice.imageUrl),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (hasImage && compact)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: _NoticeImage(
+                                notice.imageUrl,
+                                width: 64,
+                                height: 64,
+                              ),
+                            ),
+                          ),
+                        Padding(
+                          padding: EdgeInsets.only(
+                            right: hasImage && !compact ? 0 : 32,
+                          ),
+                          child: Text(
+                            notice.title,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.4,
+                              color: colors.primaryText,
+                            ),
                           ),
                         ),
-                      ),
-                    if (notice.emoji.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Text(
-                          notice.emoji,
-                          style: const TextStyle(fontSize: 36, height: 1),
-                        ),
-                      ),
-                    Text(
-                      notice.title,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(notice.body, style: theme.textTheme.bodyMedium),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: accent,
-                          foregroundColor: onAccent,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                        const SizedBox(height: 8),
+                        Text(
+                          notice.body,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.5,
+                            color: colors.primaryText.withValues(alpha: .68),
                           ),
                         ),
-                        onPressed: () => Navigator.of(context).pop(true),
-                        child: Text(primary),
-                      ),
-                    ),
-                    if (notice.dismissText.isNotEmpty)
-                      SizedBox(
-                        width: double.infinity,
-                        child: TextButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          child: Text(notice.dismissText),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: accent,
+                              foregroundColor: onAccent,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.buttonRadius,
+                                ),
+                              ),
+                            ),
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: Text(primary),
+                          ),
                         ),
-                      ),
-                  ],
-                ),
+                        if (notice.dismissText.isNotEmpty)
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: Text(notice.dismissText),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _NoticeCloseButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              overImage: hasImage && !compact,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -147,134 +168,215 @@ class AppNoticeDialog extends StatelessWidget {
 class AppNoticeBanner extends StatelessWidget {
   final AppNotice notice;
   final VoidCallback onTap, onDismiss;
+
+  /// Keep statistics visible until an image is available, including load errors.
+  final Widget? imageFallback;
   const AppNoticeBanner({
     super.key,
     required this.notice,
     required this.onTap,
     required this.onDismiss,
+    this.imageFallback,
   });
+
+  Widget _surface(BuildContext context, Widget content, {bool image = false}) {
+    final colors = AppColors.of(context);
+    return Material(
+      color: colors.cardBackground,
+      borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          content,
+          Positioned.fill(
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: notice.tap == null ? null : onTap,
+                child: notice.tap == null
+                    ? null
+                    : Semantics(
+                        label: notice.isImageBanner
+                            ? appL10n.noticeImageBanner
+                            : notice.title,
+                      ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: _NoticeCloseButton(onPressed: onDismiss, overImage: image),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final theme = Theme.of(context);
-    final accent = notice.accent ?? theme.colorScheme.primary;
-    final hasImage = notice.imageUrl.isNotEmpty;
-    return Material(
-      color: colors.cardBackground,
-      borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: notice.tap == null ? null : onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: accent, width: 5)),
-          ),
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.spacingL,
-                  AppDimensions.spacingL,
-                  36,
-                  AppDimensions.spacingL,
-                ),
-                child: Center(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 84,
-                        height: 84,
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        alignment: Alignment.center,
-                        child: hasImage
-                            ? _NoticeImage(
-                                notice.imageUrl,
-                                width: 84,
-                                height: 84,
-                                fallback: Text(
-                                  notice.emoji.isEmpty ? '🔔' : notice.emoji,
-                                  style: const TextStyle(fontSize: 38),
-                                ),
-                              )
-                            : Text(
-                                notice.emoji.isEmpty ? '🔔' : notice.emoji,
-                                style: const TextStyle(fontSize: 38),
-                              ),
+    final accent = notice.accent ?? colors.accent;
+    if (notice.isImageBanner) {
+      return Image.network(
+        notice.imageUrl,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.contain,
+        semanticLabel: notice.title.isNotEmpty
+            ? notice.title
+            : appL10n.noticeImageBanner,
+        frameBuilder: (context, child, frame, _) =>
+            frame == null && imageFallback != null
+            ? imageFallback!
+            : _surface(context, child, image: true),
+        errorBuilder: (context, _, _) =>
+            imageFallback ??
+            _surface(context, const SizedBox.expand(), image: true),
+      );
+    }
+    return _surface(
+      context,
+      Padding(
+        padding: const EdgeInsets.all(AppDimensions.spacingL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 24,
+              height: 3,
+              decoration: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (notice.imageUrl.isNotEmpty) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.smallRadius,
                       ),
-                      const SizedBox(width: AppDimensions.spacingL),
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              hasImage && notice.emoji.isNotEmpty
-                                  ? '${notice.emoji} ${notice.title}'
-                                  : notice.title,
+                      child: _NoticeImage(
+                        notice.imageUrl,
+                        width: 64,
+                        height: 64,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                  ],
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            flex: 2,
+                            child: Text(
+                              notice.title,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.titleMedium?.copyWith(
+                                fontSize: 17,
                                 fontWeight: FontWeight.w700,
-                                height: 1.25,
+                                height: 1.2,
+                                letterSpacing: -0.25,
                                 color: colors.primaryText,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Flexible(
-                              child: Text(
-                                notice.body,
-                                maxLines: 4,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontSize: 13.5,
-                                  height: 1.35,
-                                  color: colors.secondaryText,
-                                ),
+                          ),
+                          const SizedBox(height: 6),
+                          Flexible(
+                            flex: 3,
+                            child: Text(
+                              notice.body,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontSize: 13,
+                                height: 1.4,
+                                color: colors.primaryText.withValues(alpha: .68),
                               ),
                             ),
-                            if (notice.tap != null) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                '${notice.buttonText.isNotEmpty ? notice.buttonText : appL10n.noticeOpen} →',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: accent,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (notice.tap != null) ...[
+              const SizedBox(height: AppDimensions.spacingS),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: colors.isDark ? .18 : .08),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.smallRadius,
                   ),
                 ),
-              ),
-              Positioned(
-                top: 6,
-                right: 6,
-                child: IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(
-                    Icons.close_rounded,
-                    size: 20,
-                    color: colors.secondaryText,
-                  ),
-                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                  onPressed: onDismiss,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        notice.buttonText.isNotEmpty
+                            ? notice.buttonText
+                            : appL10n.noticeOpen,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontSize: 12,
+                          height: 1.2,
+                          color: accent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.arrow_forward_rounded, size: 15, color: accent),
+                  ],
                 ),
               ),
             ],
-          ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _NoticeCloseButton extends StatelessWidget {
+  const _NoticeCloseButton({required this.onPressed, this.overImage = false});
+  final VoidCallback onPressed;
+  final bool overImage;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return IconButton(
+      style: IconButton.styleFrom(
+        backgroundColor: overImage ? Colors.black.withValues(alpha: .48) : null,
+        minimumSize: const Size(36, 36),
+        padding: const EdgeInsets.all(8),
+      ),
+      icon: Icon(
+        Icons.close_rounded,
+        size: 20,
+        color: overImage ? Colors.white : colors.secondaryText,
+      ),
+      tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+      onPressed: onPressed,
     );
   }
 }

@@ -521,6 +521,7 @@
   "gameUturn": "Кері бұрылу",
   "purchaseVerificationPending": "Төлем өтті, бірақ қолжетімділік әлі расталмады. Қайта төлемеңіз: интернет қосулы кезде «Қалпына келтіру» түймесін басыңыз.",
   "notifAdminChannelName": "Қолданба хабарламалары",
+  "noticeImageBanner": "Ақпараттық баннер",
   "noticeAcknowledge": "Мен көремін",
   "noticeOpen": "Ашық",
   "pushMessagesSetting": "Қолданба жаңалықтары",

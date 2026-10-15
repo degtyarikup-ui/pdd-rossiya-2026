@@ -31,6 +31,7 @@ void main() {
   test('message shown once remains seen after app restart', () async {
     final client = MockClient((request) async {
       expect(request.url.queryParameters['app'], 'ru');
+      expect(request.url.queryParameters['imageBanners'], '1');
       return http.Response(
         jsonEncode({
           'config': config,
@@ -141,6 +142,44 @@ void main() {
     expect(bad.layout, 'standard');
     expect(bad.tap, isNull);
   });
+  test('image-only banners accept empty text and a secure link', () {
+    final banner = AppNotice.parse({
+      ...notice(),
+      'kind': 'banner',
+      'layout': 'image',
+      'title': '',
+      'body': '',
+      'imageUrl': 'https://x.test/banner.png',
+      'action': 'url',
+      'actionUrl': 'https://pdd-drive.ru/blog/',
+    })!;
+    expect(banner.isBanner, isTrue);
+    expect(banner.isImageBanner, isTrue);
+    expect(banner.layout, 'image');
+    expect(banner.title, isEmpty);
+    expect(banner.body, isEmpty);
+    expect(banner.imageUrl, 'https://x.test/banner.png');
+    expect(banner.tap?.action, NoticeAction.url);
+    expect(banner.tap?.url, 'https://pdd-drive.ru/blog/');
+  });
+  test('image layout requires a banner and a secure image', () {
+    final imageBanner = {
+      ...notice(),
+      'kind': 'banner',
+      'layout': 'image',
+      'imageUrl': 'https://x.test/banner.png',
+    };
+    expect(AppNotice.parse({...imageBanner, 'imageUrl': ''}), isNull);
+    expect(
+      AppNotice.parse({...imageBanner, 'imageUrl': 'http://x.test/banner.png'}),
+      isNull,
+    );
+    expect(AppNotice.parse({...imageBanner, 'kind': 'popup'}), isNull);
+    expect(
+      AppNotice.parse({...notice(), 'kind': 'banner'})?.isImageBanner,
+      isFalse,
+    );
+  });
   test('banners are separate from popups and stay dismissed', () async {
     final client = MockClient(
       (request) async => http.Response(
@@ -161,6 +200,37 @@ void main() {
     expect(service.banners.value, isEmpty);
     await service.refresh();
     expect(service.banners.value, isEmpty);
+  });
+  test('dismissed image banner remains hidden after app restart', () async {
+    final client = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'config': config,
+          'messages': [
+            {
+              ...notice(),
+              'kind': 'banner',
+              'layout': 'image',
+              'title': '',
+              'body': '',
+              'imageUrl': 'https://x.test/banner.png',
+            },
+          ],
+        }),
+        200,
+      ),
+    );
+    final service = RemoteNotificationsService.forTesting(client: client);
+    await service.refresh();
+    expect(service.banners.value.single.isImageBanner, isTrue);
+    expect(service.nextNotice, isNull);
+    await service.dismissBanner(id);
+    expect(service.banners.value, isEmpty);
+
+    final restarted = RemoteNotificationsService.forTesting(client: client);
+    await restarted.refresh();
+    expect(restarted.banners.value, isEmpty);
+    expect(restarted.nextNotice, isNull);
   });
   test(
     'signed-in user passes userId and email for personal test campaigns',

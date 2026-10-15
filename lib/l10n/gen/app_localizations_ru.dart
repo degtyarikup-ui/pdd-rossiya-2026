@@ -1540,6 +1540,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get notifAdminChannelName => 'Сообщения приложения';
 
   @override
+  String get noticeImageBanner => 'Информационный баннер';
+
+  @override
   String get noticeAcknowledge => 'Понятно';
 
   @override

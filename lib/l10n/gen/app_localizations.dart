@@ -2620,6 +2620,12 @@ abstract class AppLocalizations {
   /// **'Сообщения приложения'**
   String get notifAdminChannelName;
 
+  /// No description provided for @noticeImageBanner.
+  ///
+  /// In ru, this message translates to:
+  /// **'Информационный баннер'**
+  String get noticeImageBanner;
+
   /// No description provided for @noticeAcknowledge.
   ///
   /// In ru, this message translates to:

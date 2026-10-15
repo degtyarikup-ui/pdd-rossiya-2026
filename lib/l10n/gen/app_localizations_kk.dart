@@ -1514,6 +1514,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get notifAdminChannelName => 'Қолданба хабарламалары';
 
   @override
+  String get noticeImageBanner => 'Ақпараттық баннер';
+
+  @override
   String get noticeAcknowledge => 'Мен көремін';
 
   @override
