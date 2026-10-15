@@ -819,6 +819,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Earn rewards with correct answers in Living City only.';
 
   @override
+  String get gameUnlockCar => 'New car';
+
+  @override
+  String get gameUnlockPaint => 'New colour';
+
+  @override
   String get gameSoundOn => 'Turn off game sounds';
 
   @override

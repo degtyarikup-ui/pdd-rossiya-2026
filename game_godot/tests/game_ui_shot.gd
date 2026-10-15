@@ -1,5 +1,6 @@
 ## Phone UI fixture: --out=<png> [--scene=<id>] [--pause|--notice|--explanation|--timeout|--answered]
-## [--photo] [--lang=en|kk] [--dark]. --photo works on both question and explanation cards.
+## [--photo] [--reward|--reward-paint] [--lang=en|kk] [--dark].
+## --photo works on both question and explanation cards; rewards use a fixed, fully visible frame.
 extends SceneTree
 
 var out_path := ""
@@ -51,7 +52,24 @@ func _capture() -> void:
 			var panel: PanelContainer = ui._card if ui._card != null else ui._sheet
 			var chip: Control = panel.get_meta("box").get_child(0).get_child(0)
 			ui._toggle_picture(scene_id, chip, chip.find_children("*", "Label", true, false)[1])
+		if args.has("--reward") or args.has("--reward-paint"):
+			_show_reward(ui, args.has("--reward-paint"))
 	await create_timer(0.8).timeout
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(out_path)
 	quit()
+
+
+func _show_reward(ui: GameUi, paint: bool) -> void:
+	if paint:
+		var data := preload("res://tests/fixtures/game_ui_data.gd").collection(Ui.lang)
+		for colour: Dictionary in data.cars[0].paints:
+			if colour.paint == "blue":
+				ui.show_reward({"id": "paint:blue", "name": colour.name, "hex": colour.hex})
+				break
+	else:
+		var arb: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://../lib/l10n/app_%s.arb" % Ui.lang))
+		ui.show_reward({"id": "model:sedan", "name": arb.gameCarSedan})
+	ui._reward_toast._clock = ui._reward_toast.ENTER + 0.5
+	ui._reward_toast.set_process(false)
+	ui._reward_toast._apply_motion()

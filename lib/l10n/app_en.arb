@@ -242,6 +242,8 @@
   "gameGaragePremiumCar": "All cars and all colors are available with premium",
   "gameAchievementsTitle": "Achievements",
   "gameAchievementsHint": "Earn rewards with correct answers in Living City only.",
+  "gameUnlockCar": "New car",
+  "gameUnlockPaint": "New colour",
   "gameSoundOn": "Turn off game sounds",
   "gameSoundOff": "Turn on game sounds",
   "gameVoiceOn": "Turn off question narration",

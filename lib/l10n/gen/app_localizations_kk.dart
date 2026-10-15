@@ -820,6 +820,12 @@ class AppLocalizationsKk extends AppLocalizations {
       'Марапаттар тек «Тірі қаладағы» дұрыс жауаптар үшін беріледі.';
 
   @override
+  String get gameUnlockCar => 'Жаңа көлік';
+
+  @override
+  String get gameUnlockPaint => 'Жаңа түс';
+
+  @override
   String get gameSoundOn => 'Ойын дыбыстарын өшіру';
 
   @override

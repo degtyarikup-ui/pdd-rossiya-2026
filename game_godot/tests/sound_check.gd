@@ -17,6 +17,24 @@ func run() -> void:
 	sound.enabled = false
 	root.add_child(sound)
 	sound.set_process(false)
+	sound.play_unlock()
+	check(sound._events.is_empty(), "muted unlock does not queue delayed feedback")
+	sound.enabled = true
+	sound.play_unlock()
+	check(sound._events.size() == 1 and sound._events[0].dur > 0.7 and sound._events[0].dur <= 1.0, "unlock queues one short chime in the shared audio stream")
+	var energy := 0.0
+	var peak := 0.0
+	var duration: float = sound._events[0].dur
+	for i in int(GameSound.RATE * duration):
+		var sample: float = sound._one_shot({"kind": "unlock", "t": float(i) / GameSound.RATE, "dur": duration})
+		energy += sample * sample
+		peak = maxf(peak, absf(sample))
+	check(energy > 1.0 and peak < 0.3, "unlock chime is audible and leaves mixing headroom")
+	check(is_zero_approx(sound._unlock_chime(0.0)) and absf(sound._unlock_chime(duration - 0.001)) < 0.0001 and is_zero_approx(sound._unlock_chime(duration)), "unlock has a smooth attack and reaches silence before release")
+	for i in int(GameSound.RATE * duration) + 1:
+		sound._sample()
+	check(sound._events.is_empty(), "unlock releases its event after the tail")
+	sound.enabled = false
 	if DisplayServer.get_name() == "headless":
 		check(sound._player == null and sound._playback == null, "headless does not allocate a dummy generator")
 		sound.enabled = true
@@ -29,6 +47,7 @@ func run() -> void:
 		check(sound._player.playing and sound._playback != null, "enabling starts native audio generation")
 		sound.play("correct")
 		check(sound._events.size() == 1, "enabled feedback is queued")
+		sound.play_unlock()
 		sound.enabled = false
 		sound._process(1.0 / 60.0)
 		check(not sound._player.playing and sound._playback == null and sound._events.is_empty(), "muting stops generation and clears stale feedback")

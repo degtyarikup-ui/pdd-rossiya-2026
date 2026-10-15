@@ -281,9 +281,9 @@ class GodotGame {
 
   static Future<String?> _start(BuildContext context, List<String> args) {
     if (kIsWeb) {
-      return Navigator.of(context).push<String>(
-        GodotWebScreen.route(args: args),
-      );
+      return Navigator.of(
+        context,
+      ).push<String>(GodotWebScreen.route(args: args));
     }
     return _channel.invokeMethod<String>('start', {'args': args});
   }
@@ -517,7 +517,16 @@ class GodotGame {
     }
     if (!context.mounted) return;
     if (!premium) {
+      // Only fully presented in-game banners are acknowledged. A reward still
+      // waiting in the queue when the ride closes keeps the reveal fallback.
+      final notifiedRewards = summary['notified_rewards'] is List
+          ? (summary['notified_rewards'] as List).whereType<String>().toSet()
+          : const <String>{};
       for (final reward in unlocked) {
+        final id = reward.isModel
+            ? 'model:${reward.model}'
+            : 'paint:${reward.paint}';
+        if (notifiedRewards.contains(id)) continue;
         await _showReveal(context, reward);
         if (!context.mounted) return;
       }

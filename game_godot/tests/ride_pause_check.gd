@@ -5,7 +5,6 @@ extends SceneTree
 var failures := 0
 var out := ""
 var pause_out := ""
-var rewards_out := ""
 var capture_size := Vector2i(360, 780)
 
 
@@ -66,21 +65,15 @@ func _settle_layout() -> void:
 
 
 func _pause_snapshots(world: Node) -> void:
-	if pause_out == "" and rewards_out == "":
+	if pause_out == "":
 		return
 	world._process(0.0)
 	await _settle_layout()
 	world._on_pause()
 	await _settle_layout()
 	await create_timer(0.25).timeout
-	if pause_out != "":
-		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png(pause_out)
-	if rewards_out != "":
-		world.pause_menu._achievement_toggle.button_pressed = true
-		await _settle_layout()
-		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png(rewards_out)
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png(pause_out)
 	world.pause_menu.resume_requested.emit()
 	await _settle_layout()
 
@@ -99,9 +92,9 @@ func _check_menu_bounds(menu: RidePause, viewport: Viewport, label: String) -> v
 	for button in [menu._continue_button, menu._exit_button]:
 		var rect: Rect2 = button.get_global_rect()
 		check(rect.position.y >= panel.position.y and rect.end.y <= panel.end.y - 19.0,
-			label + ": ride actions remain visible outside the catalog scroll")
+			label + ": ride actions remain visible outside the customization scroll")
 	check(menu._scroll.get_global_rect().end.y <= menu._actions.get_global_rect().position.y,
-		label + ": catalog never overlaps ride actions")
+		label + ": customization never overlaps ride actions")
 
 
 func _check_pause_collection(options: Dictionary) -> void:
@@ -150,38 +143,22 @@ func _check_pause_collection(options: Dictionary) -> void:
 				"Every unlocked model keeps global paint %s" % selection.paint)
 			check(menu._palette.get_child_count() == 8, "Switching models keeps all eight shared paints")
 	await _settle_layout()
-	check(menu._achievement != null, "Pause renders achievement summary")
-	check(menu._achievement.get_index() > menu._palette.get_parent().get_index(),
-		"Bright compact achievement card follows the customization controls")
-	check(menu._achievement_next.text == options.achievement.next, "Next reward comes from localized host text")
-	check(is_equal_approx(menu._achievement_progress.value, 0.4), "Achievement bar shows interval progress")
-	check(menu._reward_list.get_child_count() == 12 and not menu._reward_list.visible, "All twelve milestones start folded")
+	check(menu._box.find_children("*", "ProgressBar", true, false).is_empty(), "Pause omits achievement progress even when the host supplies it")
+	for label: Label in menu._box.find_children("*", "Label", true, false):
+		check(label.text != options.achievement.title and label.text != options.achievement.next,
+			"Pause omits achievement titles and rewards supplied by the host")
 	_check_menu_bounds(menu, viewport, "360 dp phone")
-	var actions_before: Rect2 = menu._actions.get_global_rect()
-	menu._achievement_toggle.button_pressed = true
-	await _settle_layout()
-	check(menu._reward_list.visible and menu._achievement_hint.visible, "Achievement button expands milestones and explanation")
-	check(menu._scroll.scroll_vertical >= int(menu._achievement.position.y) - 1,
-		"Opening achievements brings the requested catalog into view")
-	check(menu._scroll.get_v_scroll_bar().max_value > menu._scroll.size.y, "Expanded milestones scroll on narrow phone")
-	_check_menu_bounds(menu, viewport, "Expanded 360 dp phone")
 	check(menu._continue_button.get_parent() == menu._actions and menu._exit_button.get_parent() == menu._actions,
-		"Primary and exit actions are outside the expanding achievements scroll")
-	check(menu._actions.get_global_rect().end.y <= viewport.size.y - 16.0 and actions_before.size == menu._actions.size,
-		"Opening the catalog preserves the ride action area")
+		"Primary and exit actions are outside the customization scroll")
 	viewport.size = Vector2i(740, 360)
 	await _settle_layout()
-	_check_menu_bounds(menu, viewport, "Expanded landscape")
-	check(menu._scroll.get_v_scroll_bar().max_value > menu._scroll.size.y, "Landscape achievements remain scrollable")
+	_check_menu_bounds(menu, viewport, "Landscape")
+	check(menu._scroll.get_v_scroll_bar().max_value > menu._scroll.size.y, "Landscape customization remains scrollable")
 	menu._scroll.scroll_vertical = 100000
 	await _settle_layout()
 	var scroll := menu._scroll.get_global_rect()
 	check(menu._exit_button.get_global_rect().position.y >= scroll.end.y and menu._exit_button.get_global_rect().end.y <= viewport.size.y - 16.0,
 		"Exit button remains reachable without scrolling in landscape")
-	menu._achievement_toggle.button_pressed = false
-	await _settle_layout()
-	check(not menu._reward_list.visible and not menu._achievement_hint.visible, "Achievements collapse without leaving explanatory text")
-	check(menu._scroll.scroll_vertical == 0, "Closing the catalog returns to the car customization")
 	menu.queue_free()
 	await process_frame
 	var unavailable_options := options.duplicate(true)
@@ -194,24 +171,14 @@ func _check_pause_collection(options: Dictionary) -> void:
 	check(menu._voice_button.tooltip_text == Ui.t("gameVoiceUnavailable"), "Unavailable voice explains its state in the chosen language")
 	menu.queue_free()
 	await process_frame
-	var complete_options := options.duplicate(true)
-	complete_options.achievement.complete = true
-	complete_options.achievement.fraction = 1.0
-	complete_options.achievement.next = "Все награды получены"
-	menu = RidePause.new(complete_options, {})
-	viewport.add_child(menu)
-	await _settle_layout()
-	check(menu._achievement_next.text == complete_options.achievement.next and is_equal_approx(menu._achievement_progress.value, 1.0),
-		"Completed collection keeps a full progress bar and localized completion text")
-	menu.queue_free()
-	await process_frame
 	var standalone_options := options.duplicate(true)
 	standalone_options.erase("achievement")
 	standalone_options.erase("reward_list")
 	menu = RidePause.new(standalone_options, {})
 	viewport.add_child(menu)
 	await _settle_layout()
-	check(menu._achievement == null, "Standalone pause still works without host achievements")
+	check(menu.current().id == standalone_options.cars[0].id and menu._palette.get_child_count() == 8,
+		"Standalone pause works without host achievement data")
 	menu.queue_free()
 	viewport.queue_free()
 	await process_frame
@@ -258,13 +225,11 @@ func _run() -> void:
 			out = arg.trim_prefix("--out=")
 		if arg.begins_with("--pause-out="):
 			pause_out = arg.trim_prefix("--pause-out=")
-		if arg.begins_with("--rewards-out="):
-			rewards_out = arg.trim_prefix("--rewards-out=")
 		if arg.begins_with("--capture-size="):
 			var parts: PackedStringArray = str(arg).trim_prefix("--capture-size=").split("x")
 			if parts.size() == 2:
 				capture_size = Vector2i(int(parts[0]), int(parts[1]))
-	if pause_out != "" or rewards_out != "":
+	if pause_out != "":
 		root.content_scale_size = capture_size
 	var options := _options()
 	await _check_pause_collection(options)

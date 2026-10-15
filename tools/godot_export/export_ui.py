@@ -11,6 +11,7 @@ KEYS = [
     'gameExitToMenu', 'soundEffects', 'gameSeconds', 'gameContinue', 'gameFinishRide', 'gameCorrect', 'gameMistake', 'gameTimeUp', 'gameCorrectAnswer',
     'gameGarage', 'gameLobbyRecord', 'gameLobbyColour', 'gameLobbyNewRun', 'gameRunsTitle',
     'gameAchievementsTitle', 'gameAchievementsHint', 'gameAchievementProgress',
+    'gameUnlockCar', 'gameUnlockPaint',
     'gameAchievementsComplete', 'gamePaintAllCars',
     'gameAchievementCount', 'gameSoundOn', 'gameSoundOff',
     'gameVoiceOn', 'gameVoiceOff', 'gameVoiceUnavailable',

@@ -120,6 +120,8 @@ godot --headless --path game_godot --script res://tests/tram_question_signals_ch
 godot --headless --path game_godot --script res://tests/actor_hazards_check.gd # постоянная аварийка участников, стоянка, обе стороны, пауза и старые настройки
 godot --headless --path game_godot --script res://tests/signal_glow_check.gd # свечение и цвета секций светофора без текстур
 godot --headless --path game_godot --script res://tests/ride_pause_check.gd # быстрый старт, цвет, звук, сохранение состояния при паузе
+godot --headless --path game_godot --script res://tests/reward_toast_check.gd # плашки открытий: очередь, анимации, HUD, ru/en/kk и темы; повторить с -- --text-scale=1.6
+godot --headless --path game_godot --script res://tests/garage_rewards_check.gd # награды в заезде, продолжение, подтверждённые показы и пауза финальной плашки
 godot --headless --path game_godot --script res://tests/lifecycle_pause_check.gd # системное сворачивание/фокус, достижимая пауза и восстановление управления
 godot --headless --path game_godot --script res://tests/exit_continuity_check.gd # все физические выезды, короткие улицы, полный кузов и стыковка следующего вопроса
 godot --headless --path game_godot --script res://tests/lane_join_check.gd # подбор по фактическим полосам, въезд в 13/13 и плавные переходы 1+1 ↔ 2+2

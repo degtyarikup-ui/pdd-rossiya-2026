@@ -289,6 +289,62 @@ void main() {
     },
   );
 
+  for (final reward in {'model:sedan': 4, 'paint:blue': 9}.entries) {
+    testWidgets(
+      '${reward.key} shown in Godot is saved without a duplicate reveal',
+      (tester) async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('game_garage_correct', reward.value);
+        await open(tester);
+        nativeResponse = jsonEncode({
+          'run_started': true,
+          'finished': false,
+          'answered': 1,
+          'correct': 1,
+          'score': 10,
+          'notified_rewards': [reward.key],
+        });
+        await launch(tester);
+
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(garage.correctTotal, reward.value + 1);
+        expect(prefs.getInt('game_garage_correct'), reward.value + 1);
+        expect(
+          garage.owns('sedan', reward.key == 'paint:blue' ? 'blue' : 'red'),
+          isTrue,
+        );
+        expect(
+          (jsonDecode(prefs.getString('game_run_pending')!) as Map)['correct'],
+          1,
+        );
+      },
+    );
+  }
+
+  testWidgets('reward still queued at exit keeps its reveal fallback', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('game_garage_correct', 4);
+    await open(tester);
+    nativeResponse = jsonEncode({
+      'run_started': true,
+      'finished': false,
+      'answered': 7,
+      'correct': 7,
+      'score': 70,
+      'notified_rewards': ['model:sedan'],
+    });
+    await launch(tester);
+
+    expect(find.text(appL10n.gameRevealTitle), findsNothing);
+    expect(find.text(appL10n.gameRevealPaintTitle), findsOneWidget);
+    expect(garage.owns('sedan', 'blue'), isTrue);
+    await tester.tap(find.text(appL10n.gameRevealClose));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
   testWidgets('city voice inherits app choice without requiring premium', (
     tester,
   ) async {

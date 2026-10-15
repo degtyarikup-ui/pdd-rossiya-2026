@@ -1498,6 +1498,18 @@ abstract class AppLocalizations {
   /// **'Награды за правильные ответы только в «Живом городе».'**
   String get gameAchievementsHint;
 
+  /// No description provided for @gameUnlockCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новая машина'**
+  String get gameUnlockCar;
+
+  /// No description provided for @gameUnlockPaint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый цвет'**
+  String get gameUnlockPaint;
+
   /// No description provided for @gameSoundOn.
   ///
   /// In ru, this message translates to:

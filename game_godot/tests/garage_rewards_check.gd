@@ -1,5 +1,5 @@
 ## Actual pause integration: live permanent rewards, shared paint ownership,
-## immutable launch totals, and resumed rides whose earlier answers were booked.
+## queued unlock banners, and resumed rides whose earlier answers were booked.
 extends SceneTree
 
 var failures := 0
@@ -88,6 +88,64 @@ func _discard_world(world: Node) -> void:
 		await process_frame
 
 
+func _pending_ids(world: Node) -> Array:
+	var toast: Control = world.ui._reward_toast
+	if not is_instance_valid(toast):
+		return []
+	var ids: Array = []
+	if not toast._current.is_empty():
+		ids.append(str(toast._current.id))
+	for reward: Dictionary in toast._queue:
+		ids.append(str(reward.id))
+	return ids
+
+
+func _check_historical_notifications() -> void:
+	var world := _world(_options(35))
+	world._notify_garage_rewards()
+	check(_pending_ids(world).is_empty() and world.notified_rewards.is_empty(),
+		"Starting above old thresholds does not replay historical rewards")
+	world.run.answer("historical_correct", true)
+	world._notify_garage_rewards()
+	check(_pending_ids(world).is_empty(), "A later correct answer never replays historical unlocks")
+	await _discard_world(world)
+	var legacy_options := _options(9)
+	legacy_options.reward_list[1].unlocked = true
+	world = _world(legacy_options)
+	world._notify_garage_rewards()
+	world.run.answer("legacy_correct", true)
+	world._notify_garage_rewards()
+	check(_pending_ids(world).is_empty() and world._exit_summary().notified_rewards.is_empty(),
+		"Crossing a threshold for a legacy owned paint does not replay its banner")
+	await _discard_world(world)
+
+
+func _check_completed_reward_lifecycle() -> void:
+	var world := _world(_options(4))
+	world.run.answer("final_answer", true)
+	world.run.answered = Run.QUESTIONS
+	world._notify_garage_rewards()
+	var toast: Control = world.ui._reward_toast
+	toast.set_process(false)
+	toast._process(toast.ENTER * 0.5)
+	world.phase = "over"
+	world.controls.set_active(false)
+	var frozen_clock: float = toast._clock
+	toast.set_process(true)
+	world._notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(world.paused and world.pause_menu == null and world.ui.process_mode == Node.PROCESS_MODE_DISABLED,
+		"Focus loss immediately pauses a finished ride while its final banner is pending")
+	await create_timer(0.12).timeout
+	check(is_instance_valid(world.pause_menu), "The finished ride mounts its lifecycle pause menu after notification traversal")
+	check(is_equal_approx(toast._clock, frozen_clock), "Focus loss freezes the final unlock banner clock")
+	check(world._exit_summary().notified_rewards.is_empty(), "The suspended final banner is not reported before it becomes readable")
+	await _resume(world)
+	check(world.phase == "over" and not world.controls.active, "Continue preserves completed ride state and keeps driving controls disabled")
+	check(toast._clock > frozen_clock and toast.busy(), "Continue resumes the pending final banner from its saved elapsed time")
+	toast.set_process(false)
+	await _discard_world(world)
+
+
 func _run() -> void:
 	Ui.lang = "ru"
 	Host.io = ProjectSettings.globalize_path("res://../scratch/garage-rewards-regression")
@@ -96,11 +154,24 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	world.run.answer("wrong", false)
+	world._notify_garage_rewards()
+	check(_pending_ids(world).is_empty() and world._exit_summary().notified_rewards.is_empty(),
+		"Wrong answers queue no unlock notification")
 	var options := _pause(world)
 	check(options.garage_correct == 4 and options.cars.size() == 1, "Wrong answers do not count toward rewards")
 	check(not options.reward_list[0].unlocked, "The fifth correct answer is still required")
 	await _resume(world)
 	world.run.answer("correct", true)
+	world._notify_garage_rewards()
+	var toast: Control = world.ui._reward_toast
+	check(is_instance_valid(toast) and _pending_ids(world) == ["model:sedan"],
+		"The new model queues its own achievement banner at the fifth correct answer")
+	toast.set_process(false)
+	check(toast._current.name == "sedan" and not toast._current.has("hex"),
+		"The model notification uses the host model name and model presentation")
+	check(world._exit_summary().notified_rewards.is_empty(), "An entering banner is not reported as read")
+	toast._process(toast.ENTER * 0.5)
+	var paused_clock: float = toast._clock
 	options = _pause(world)
 	check(options.garage_correct == 5 and options.cars.size() == 2, "Fifth correct answer opens the sedan during this ride")
 	check(options.cars[1].id == "sedan" and options.cars[1]["new"], "New model keeps its new badge")
@@ -110,12 +181,31 @@ func _run() -> void:
 	check(is_equal_approx(options.achievement.fraction, 0.0), "New interval begins at zero")
 	_check_selection(world, "New model")
 	check(world.ride_options.garage_correct == 4 and world.ride_options.cars.size() == 1, "Launch baseline and collection stay immutable")
+	toast.set_process(true)
+	await create_timer(0.12).timeout
+	check(is_equal_approx(toast._clock, paused_clock), "The actual pause freezes the inherited unlock animation clock")
+	check(world._exit_summary().notified_rewards.is_empty(), "Paused entering banners remain unreported")
+	toast.set_process(false)
 	await _resume(world)
+	check(is_equal_approx(toast._clock, paused_clock), "Resuming preserves the partially entered banner")
+	toast._process(toast.ENTER * 0.5 + 0.01)
+	check(world.notified_rewards == ["model:sedan"] and world._exit_summary().notified_rewards == ["model:sedan"],
+		"Only the banner reaching its readable pose is included in the exit summary")
+	world._notify_garage_rewards()
+	world._notify_garage_rewards()
+	check(_pending_ids(world) == ["model:sedan"], "Repeated reward checks cannot duplicate the model banner")
 	options = _pause(world)
 	check(options.garage_correct == 5 and options.cars.size() == 2, "Reopening pause neither recounts answers nor duplicates the model")
 	await _resume(world)
 	for i in 5:
 		world.run.answer("correct_%d" % i, true)
+		world._notify_garage_rewards()
+	check(_pending_ids(world) == ["model:sedan", "paint:blue"],
+		"The next threshold queues the new paint after the current model notification")
+	check(toast._queue[0].name == "blue" and toast._queue[0].hex == "#317ED4",
+		"The paint notification uses the host color name and exact shared palette swatch")
+	check(world._exit_summary().notified_rewards == ["model:sedan"],
+		"A queued paint is not reported before the player can read it")
 	options = _pause(world)
 	check(options.garage_correct == 10 and options.reward_list[1].unlocked, "Tenth correct answer opens blue during this ride")
 	_check_paints(options, ["red", "blue"], "New global color")
@@ -131,6 +221,18 @@ func _run() -> void:
 	world.pause_menu._select_paint(0)
 	await _resume(world)
 	world.run.answer("timeout", false)
+	world._notify_garage_rewards()
+	check(_pending_ids(world) == ["model:sedan", "paint:blue"], "Mistakes and repeated checks leave the unlock queue unchanged")
+	toast._process(toast.DURATION + toast.GAP - toast._clock + 0.01)
+	toast.set_process(false)
+	check(_pending_ids(world) == ["paint:blue"] and world._exit_summary().notified_rewards == ["model:sedan"],
+		"Paint starts after the model leaves and still waits to be readable")
+	toast._process(toast.ENTER + 0.01)
+	check(world._exit_summary().notified_rewards == ["model:sedan", "paint:blue"],
+		"Exit reports the distinct car and paint whose banners became readable")
+	toast._process(toast.DURATION + toast.GAP)
+	world._notify_garage_rewards()
+	check(not toast.busy() and not toast.visible, "Finished notifications disappear and cannot be replayed in the same ride")
 	options = _pause(world)
 	check(options.garage_correct == 10, "Later mistakes and timeouts leave the correct-answer total unchanged")
 	await _resume(world)
@@ -142,12 +244,20 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	check(world.resumed and world.run.correct == 3, "The real start contract restores saved correct answers")
+	world._notify_garage_rewards()
+	check(_pending_ids(world).is_empty() and world.notified_rewards.is_empty(),
+		"Restoring booked ride answers queues no historical notification")
 	options = _pause(world)
 	check(options.garage_correct == 9 and not options.reward_list[1].unlocked, "Resumed answers were already booked in the launch total")
 	check(is_equal_approx(options.achievement.fraction, 0.8), "Resumed achievement interval uses the permanent total")
 	await _resume(world)
 	world.run.answer("resumed_wrong", false)
+	world._notify_garage_rewards()
+	check(_pending_ids(world).is_empty(), "A resumed mistake queues no reward")
 	world.run.answer("resumed_correct", true)
+	world._notify_garage_rewards()
+	check(_pending_ids(world) == ["paint:blue"], "Only the newly earned paint is notified after resuming")
+	world.ui._reward_toast.set_process(false)
 	options = _pause(world)
 	check(options.garage_correct == 10, "Only new correct answers of this visit count")
 	_check_paints(options, ["red", "blue"], "Resumed unlock")
@@ -185,10 +295,22 @@ func _run() -> void:
 
 	world.ride_options = {"cars": [_options(0).cars[0]], "texts": {}}
 	options = _pause(world)
-	check(not options.has("achievement") and world.pause_menu._achievement == null, "Standalone options without reward data still open pause")
+	check(not options.has("achievement") and world.pause_menu._palette.get_child_count() == 1,
+		"Standalone options without reward data still open a usable pause")
 	_check_selection(world, "Standalone")
 	await _resume(world)
 	await _discard_world(world)
+	await _check_historical_notifications()
+	world = _world(_options(4, true))
+	world.run.answer("premium_correct", true)
+	world._notify_garage_rewards()
+	options = world._live_garage_options()
+	check(options.garage_correct == 5 and options.reward_list[0].unlocked,
+		"Premium still gains the permanent reward at its correct-answer threshold")
+	check(_pending_ids(world).is_empty() and world._exit_summary().notified_rewards.is_empty(),
+		"Premium queues no notification for cars and colors already usable at launch")
+	await _discard_world(world)
+	await _check_completed_reward_lifecycle()
 	Host.io_args = []
 	Host.io = ""
 	print("garage_rewards_check: ", "PASS" if failures == 0 else "%d failures" % failures)

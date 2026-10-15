@@ -25,13 +25,6 @@ var _continue_button: Button
 var _exit_button: Button
 var _model_label: Label
 var _palette: HFlowContainer
-var _achievement: PanelContainer
-var _achievement_next: Label
-var _achievement_progress: ProgressBar
-var _achievement_toggle: Button
-var _achievement_chevron: Label
-var _achievement_hint: Label
-var _reward_list: VBoxContainer
 var _sound_button: Button
 var _voice_button: Button
 var _preview: SubViewport
@@ -115,8 +108,7 @@ func _ready() -> void:
 	_palette.add_theme_constant_override("v_separation", 12)
 	palette_center.add_child(_palette)
 	_build_audio_controls()
-	_build_achievements()
-	# Catalog expansion never moves the ride actions out of reach.
+	# Keep the ride actions reachable while the customization content scrolls.
 	_actions = GridContainer.new()
 	_actions.columns = 1
 	_actions.add_theme_constant_override("h_separation", 8)
@@ -181,122 +173,6 @@ func _refresh_audio_controls() -> void:
 		var icon: Label = button.get_child(0)
 		icon.text = char(code)
 		icon.add_theme_color_override("font_color", Ui.c("white") if enabled else Ui.c("secondary"))
-
-
-func _build_achievements() -> void:
-	var achievement: Dictionary = data.get("achievement", {})
-	if achievement.is_empty():
-		return
-	var ink := Color(Ui.LIGHT.text)
-	_achievement = PanelContainer.new()
-	_achievement.add_theme_stylebox_override("panel", Ui.box(Ui.c("gold"), 18))
-	_achievement.mouse_filter = Control.MOUSE_FILTER_STOP
-	_achievement.gui_input.connect(func(event):
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not _achievement_toggle.disabled:
-			_achievement_toggle.button_pressed = not _achievement_toggle.button_pressed
-			_achievement.accept_event()
-	)
-	_box.add_child(_achievement)
-	var margin := MarginContainer.new()
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 14)
-	_achievement.add_child(margin)
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 8)
-	margin.add_child(content)
-	_achievement_toggle = Button.new()
-	_achievement_toggle.custom_minimum_size.y = 24
-	_achievement_toggle.toggle_mode = true
-	_achievement_toggle.accessibility_name = str(achievement.get("title", ""))
-	for state in ["normal", "hover", "pressed", "focus"]:
-		_achievement_toggle.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	content.add_child(_achievement_toggle)
-	var head := HBoxContainer.new()
-	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	head.add_theme_constant_override("separation", 8)
-	_achievement_toggle.add_child(head)
-	head.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var title := Ui.scaled_label(str(achievement.get("title", "")), 13, 700, ink, true)
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	head.add_child(title)
-	_achievement_chevron = Ui.icon(0xf720, 22, ink)
-	_achievement_chevron.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_achievement_chevron.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	head.add_child(_achievement_chevron)
-	head.minimum_size_changed.connect(func(): _achievement_toggle.custom_minimum_size.y = maxf(24.0, head.get_combined_minimum_size().y))
-	var reward := HBoxContainer.new()
-	reward.add_theme_constant_override("separation", 12)
-	content.add_child(reward)
-	var trophy := Ui.icon(0xf707, 44, ink)
-	trophy.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	reward.add_child(trophy)
-	var next := VBoxContainer.new()
-	next.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	next.add_theme_constant_override("separation", 4)
-	reward.add_child(next)
-	_achievement_next = Ui.scaled_label(str(achievement.get("next", "")), 15, 800, ink, true)
-	next.add_child(_achievement_next)
-	var count := str(achievement.get("count", ""))
-	if not count.is_empty():
-		next.add_child(Ui.scaled_label(count, 12, 700, ink, true))
-	_achievement_progress = ProgressBar.new()
-	_achievement_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_achievement_progress.custom_minimum_size.y = 6
-	_achievement_progress.max_value = 1.0
-	_achievement_progress.value = clampf(float(achievement.get("fraction", 0.0)), 0.0, 1.0)
-	_achievement_progress.show_percentage = false
-	_achievement_progress.add_theme_stylebox_override("background", Ui.box(Color(ink, 0.13), 3))
-	_achievement_progress.add_theme_stylebox_override("fill", Ui.box(ink, 3))
-	content.add_child(_achievement_progress)
-	_achievement_hint = Ui.scaled_label(str(achievement.get("hint", "")), 11, 500, Ui.c("secondary"), true)
-	_achievement_hint.visible = false
-	_box.add_child(_achievement_hint)
-	_reward_list = VBoxContainer.new()
-	_reward_list.add_theme_constant_override("separation", 8)
-	_reward_list.visible = false
-	_box.add_child(_reward_list)
-	for milestone in data.get("reward_list", []):
-		var item := PanelContainer.new()
-		item.add_theme_stylebox_override("panel", Ui.box(Ui.c("field"), 14))
-		_reward_list.add_child(item)
-		var item_margin := MarginContainer.new()
-		for side in ["left", "right", "top", "bottom"]:
-			item_margin.add_theme_constant_override("margin_" + side, 12)
-		item.add_child(item_margin)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
-		item_margin.add_child(row)
-		var unlocked := bool(milestone.get("unlocked", false))
-		var icon := Ui.icon(0xf636 if unlocked else 0xf889, 20, Ui.c("green" if unlocked else "secondary"))
-		icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		row.add_child(icon)
-		var details := VBoxContainer.new()
-		details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		details.add_theme_constant_override("separation", 2)
-		row.add_child(details)
-		details.add_child(Ui.scaled_label(str(milestone.get("title", "")), 13, 600, Ui.c("text"), true))
-		details.add_child(Ui.scaled_label(str(milestone.get("progress", "")), 11, 500, Ui.c("secondary"), true))
-	_achievement_toggle.disabled = _reward_list.get_child_count() == 0
-	_achievement_chevron.visible = not _achievement_toggle.disabled
-	_achievement_toggle.toggled.connect(func(expanded):
-		_reward_list.visible = expanded
-		_achievement_hint.visible = expanded and not _achievement_hint.text.is_empty()
-		_achievement_chevron.text = char(0xf71f if expanded else 0xf720)
-		_layout.call_deferred()
-		if expanded:
-			_scroll_to_achievement.call_deferred()
-		else:
-			_scroll.scroll_vertical = 0
-	)
-
-
-func _scroll_to_achievement() -> void:
-	# Bring the newly requested catalog into view, while the footer stays fixed.
-	await get_tree().process_frame
-	await get_tree().process_frame
-	if _achievement_toggle.button_pressed:
-		_scroll.scroll_vertical = int(_achievement.position.y)
 
 
 func _layout() -> void:

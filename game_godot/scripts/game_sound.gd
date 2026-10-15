@@ -1,13 +1,15 @@
 ## Sounds of the game, made in code (no files), like assets/game/ambient-audio.js:
 ## engine that rises with speed, tyre hiss, indicator click, crash, scrape, the
-## last-seconds tick and the answer tones. Vibration goes with the sharp events.
+## last-seconds tick, answer tones and a soft unlock chime. Vibration goes with the sharp events.
 class_name GameSound
 extends Node
 
 const RATE := 22050.0
 const DURATION := {
 	"click": 0.03, "tick": 0.06, "correct": 0.35, "incorrect": 0.4, "crash": 0.32, "scrape": 0.25,
+	"unlock": 0.95,
 }
+const UNLOCK_NOTES := [Vector2(0.0, 523.251), Vector2(0.085, 659.255), Vector2(0.17, 783.991), Vector2(0.27, 1046.502)]
 
 var enabled := true
 var speed := 0.0                  # m/s, set by the world every frame
@@ -55,6 +57,12 @@ func play(kind: String) -> void:
 		if kind == "crash" and _events.any(func(e): return e.kind == "crash"):
 			return
 		_events.append({ "kind": kind, "t": 0.0, "dur": DURATION.get(kind, 0.1) })
+
+
+## A small ascending major arpeggio for a new car or colour. Uses the same stream
+## as driving sounds, so mute, pause and shutdown keep their existing behaviour.
+func play_unlock() -> void:
+	play("unlock")
 
 
 static var haptics := true         # the app's setting («Вибрация»): off, the phone stays quiet
@@ -118,6 +126,8 @@ func _one_shot(e: Dictionary) -> float:
 			return sin(TAU * 1000.0 * t) * 0.2 * env
 		"correct":
 			return sin(TAU * (880.0 * t + 220.0 * t * u)) * 0.2 * env
+		"unlock":
+			return _unlock_chime(t)
 		"incorrect":
 			return (1.0 if sin(TAU * 220.0 * t) >= 0.0 else -1.0) * 0.12 * env
 		"crash":
@@ -127,3 +137,19 @@ func _one_shot(e: Dictionary) -> float:
 		"scrape":
 			return (randf() * 2.0 - 1.0) * 0.25 * env
 	return 0.0
+
+
+func _unlock_chime(t: float) -> float:
+	var out := 0.0
+	for note in UNLOCK_NOTES:
+		var age: float = t - note.x
+		if age < 0.0:
+			continue
+		# Rounded attacks and a quiet bell overtone give the chime a gentle lift;
+		# every voice reaches silence before the event ends, avoiding a cut-off click.
+		var attack := smoothstep(0.0, 0.009, age)
+		var release := smoothstep(0.0, 0.14, float(DURATION.unlock) - t)
+		var envelope := attack * exp(-6.5 * age) * release
+		var phase: float = TAU * note.y * age
+		out += (sin(phase) + sin(phase * 2.0) * 0.16) * envelope * 0.085
+	return out

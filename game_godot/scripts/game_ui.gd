@@ -12,6 +12,11 @@ signal pause_pressed
 signal exit_pressed
 signal resume_pressed
 signal tip_next
+signal reward_revealed(id: String)
+signal rewards_settled
+
+const RewardBanner := preload("res://scripts/reward_toast.gd")
+var _reward_toast: Control
 
 var snow := false                 # winter: HUD numbers are dark on the light snow
 
@@ -83,10 +88,40 @@ func _view_size() -> Vector2:
 func _process(delta: float) -> void:
 	_layout_hud()
 	_layout_picture()
+	if is_instance_valid(_reward_toast) and _reward_toast.busy():
+		_layout_reward()
 	if _notice_timer > 0.0:
 		_notice_timer -= delta
 		if _notice_timer <= 0.0:
 			_notice.visible = false
+
+
+func show_reward(reward: Dictionary) -> void:
+	if not is_instance_valid(_reward_toast):
+		_reward_toast = RewardBanner.new()
+		_reward_toast.z_index = 50
+		_root.add_child(_reward_toast)
+		_reward_toast.revealed.connect(func(id: String): reward_revealed.emit(id))
+		_reward_toast.settled.connect(func(): rewards_settled.emit())
+	_reward_toast.enqueue(reward)
+	_layout_reward()
+
+
+func _layout_reward() -> void:
+	var width := _view_size().x
+	# Wide screens have room between Pause and the counters. Use that space
+	# so the short landscape question keeps its full height.
+	if width >= 600.0 and _hud_row.position.x - 82.0 >= 280.0 and not _notice.visible:
+		_reward_toast.place(width, _top + 8.0, 70.0, _hud_row.position.x - 12.0)
+		return
+	var top := _notice.position.y
+	if _notice.visible:
+		top += _notice.size.y + 8.0
+	_reward_toast.place(width, top)
+
+
+func rewards_busy() -> bool:
+	return is_instance_valid(_reward_toast) and _reward_toast.busy()
 
 
 # --- HUD ----------------------------------------------------------------------

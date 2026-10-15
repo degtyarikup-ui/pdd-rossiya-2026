@@ -141,6 +141,7 @@ var ride_options := {
 	"cars": [{"id": "hatch", "name": "", "owned": true, "paints": [{"paint": "red", "name": "", "hex": "#ED4621", "owned": true}]}],
 	"record": 0, "can_start": true, "texts": {},
 }
+var notified_rewards: Array[String] = [] # Only banners that reached their readable pose.
 var next_id := ""                 # the junction picked next (its files may still be coming)
 var preparing := false            # its files are being fetched (web)
 var road_queue: Array = []        # the road questions still to come (road_scenes.json, all kinds)
@@ -236,6 +237,10 @@ func _ready() -> void:
 	ui.resume_pressed.connect(_on_resume)
 	ui.exit_pressed.connect(_on_exit)
 	ui.tip_next.connect(_on_tip_next)
+	ui.reward_revealed.connect(func(id: String):
+		if not notified_rewards.has(id): notified_rewards.append(id)
+		sound.play_unlock()
+	)
 	# Analytics: every event of the game goes to the app (Host.send; a no-op on the desktop).
 	if not _has_arg("--benchmark"): event.connect(Host.send)
 	Host.begin_events()
@@ -1677,6 +1682,7 @@ func _on_road_answer(index: int) -> void:
 	_report_answer(road.id, is_correct, index)
 	print("[road] answer ", index, " correct ", is_correct)
 	sound.play("correct" if is_correct else "incorrect")
+	if is_correct: _notify_garage_rewards()
 	if not is_correct:
 		GameSound.buzz(150)
 	if index >= 0:
@@ -1759,6 +1765,7 @@ func _on_answer_chosen(index: int) -> void:
 	run.answer(sit.id, is_correct)
 	_report_answer(sit.id, is_correct, index)
 	sound.play("correct" if is_correct else "incorrect")
+	if is_correct: _notify_garage_rewards()
 	if not is_correct:
 		GameSound.buzz(150)
 	if index >= 0:
@@ -1807,9 +1814,17 @@ func _finish_run() -> void:
 	drive.turning_at_junction = false
 	event.emit({ "event": "run_finished", "summary": run.summary() })
 	if Host.embedded() and not _has_arg("--benchmark"):
-		_on_exit()
+		_exit_after_rewards()
 	else:
 		ui.show_result(run.summary())
+
+
+## A reward on the twentieth answer still gets its full reveal before Flutter's result.
+func _exit_after_rewards() -> void:
+	if ui.rewards_busy():
+		await ui.rewards_settled
+	if not _exiting and is_inside_tree():
+		_on_exit()
 
 
 ## finishManeuver: the player has left by an exit. A turn rebases the world
@@ -2644,7 +2659,7 @@ func _notification(what: int) -> void:
 			_on_exit()
 		else:
 			_on_pause(true)
-	elif what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED] and phase in ["driving", "question", "resolving"]:
+	elif what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED] and (phase in ["driving", "question", "resolving"] or (phase == "over" and ui.rewards_busy())):
 		# iOS stops rendering at focus loss, before entering the background. The
 		# app switcher/notification centre can also return without PAUSED at all.
 		# Foreground notifications deliberately keep the ride paused until Continue.
@@ -2653,7 +2668,9 @@ func _notification(what: int) -> void:
 
 ## Pause preserves the world, current card/photo, timer, camera and run counters.
 func _on_pause(from_notification := false) -> void:
-	if _exiting or paused or phase == "over" or voice == null or controls == null or ui == null:
+	if _exiting or paused or voice == null or controls == null or ui == null:
+		return
+	if phase == "over" and not ui.rewards_busy():
 		return
 	paused = true
 	voice.suspend()
@@ -2757,6 +2774,28 @@ func _on_vehicle_changed(selection: Dictionary) -> void:
 	_mount_car(selection.id, selection.hex)
 
 
+## Cross only thresholds earned in this visit. Opening pause and restoring an
+## already booked ride must never replay a reward; the banner also deduplicates its queue.
+func _notify_garage_rewards() -> void:
+	if bool(ride_options.get("garage_premium", false)):
+		return # The whole collection is already available from launch.
+	var baseline := int(ride_options.get("garage_correct", 0))
+	var total := baseline + maxi(0, run.correct - int(resume_state.get("correct", 0)))
+	for reward: Dictionary in ride_options.get("reward_list", []):
+		var threshold := int(reward.get("threshold", 0))
+		if threshold <= baseline or threshold > total or bool(reward.get("unlocked", false)):
+			continue
+		var model := reward.has("model")
+		var target := str(reward.get("model" if model else "paint", ""))
+		for item: Dictionary in ride_options.get("reward_models" if model else "reward_paints", []):
+			if str(item.get("id" if model else "paint", "")) != target:
+				continue
+			var notice := {"id": ("model:" if model else "paint:") + target, "name": str(item.get("name", ""))}
+			if not model: notice.hex = str(item.get("hex", ""))
+			ui.show_reward(notice)
+			break
+
+
 func _on_resume() -> void:
 	if _exiting: return
 	if not paused:
@@ -2845,6 +2884,7 @@ func _exit_summary() -> Dictionary:
 	out["tips_seen"] = tips_seen
 	out["resumed"] = resumed
 	out["finished"] = run.finished()
+	out["notified_rewards"] = notified_rewards.duplicate()
 	out["sound"] = sound.enabled
 	out["voice"] = voice.enabled
 	out["voice_available"] = voice.available and Ui.lang == "ru"

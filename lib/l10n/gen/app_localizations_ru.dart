@@ -834,6 +834,12 @@ class AppLocalizationsRu extends AppLocalizations {
       'Награды за правильные ответы только в «Живом городе».';
 
   @override
+  String get gameUnlockCar => 'Новая машина';
+
+  @override
+  String get gameUnlockPaint => 'Новый цвет';
+
+  @override
   String get gameSoundOn => 'Выключить звуки игры';
 
   @override
