@@ -1,30 +1,32 @@
 {
   "clip": "JuggleLoop",
   "duration_seconds": 7.2,
-  "authored_fps": 30,
+  "authored_fps": 60,
   "base_rhythm_seconds": 2.4,
   "throw_interval_seconds": 0.4,
   "ball_flight_seconds": 1.0,
   "hand_dwell_seconds": 0.20000000000000018,
-  "ball_radius": 0.15,
+  "ball_radius": 0.2,
   "ball_color_srgb": "#0574F8",
-  "glb_bytes": 523064,
+  "wrist_motion": "C2 quintic catch, dip, scoop, release and follow-through",
+  "flight_motion": "Hermite with C1 hand-contact velocities",
+  "glb_bytes": 573472,
   "mesh_objects": 28,
-  "rendered_triangles": 14718,
+  "rendered_triangles": 14886,
   "textures": 0,
   "runtime_physics": false,
   "runtime_inverse_kinematics": false,
   "max_authored_contact_error": 0,
   "ball_center_bounds_blender": {
     "min": [
-      -0.9260000586509705,
-      -0.4619113504886627,
-      1.288152813911438
+      -0.9411323070526123,
+      -0.43545734882354736,
+      1.3007487058639526
     ],
     "max": [
-      0.9176000356674194,
-      -0.3181999921798706,
-      3.315000057220459
+      0.9313499927520752,
+      -0.3395726978778839,
+      3.2836053371429443
     ]
   },
   "source": "tools/mascot/animate_juggling.py; original approval model retained"
