@@ -78,6 +78,7 @@ godot --path game_godot --script res://tests/ambient_transition_check.gd -- --se
 godot --headless --path game_godot --script res://tests/lighting_check.gd # свет/тени в том же кадре при поворотах мира, все уровни качества
 godot --path game_godot --script res://tests/lighting_render_check.gd # нужен рендер: яркость граней, машина и тени до/после перехода
 godot --headless --path game_godot --script res://tests/retained_surface_check.gd # старые улицы и сцены не перекрывают дорогу после цепочки поворотов
+godot --headless --path game_godot --script res://tests/retirement_support_check.gd # очистка старых дорог не удаляет опору машины после долгого манёвра
 godot --headless --path game_godot --script res://tests/traffic_check.gd    # трафик
 godot --headless --path game_godot --script res://tests/ambient_focus_check.gd # чистый кадр вопроса, плавный отвод трафика, объезд парковки и встречный поток
 godot --headless --path game_godot --script res://tests/terrain_motion_check.gd # проезд стыков, изменённые тротуары, движение копий и участников по видимой поверхности
@@ -277,6 +278,7 @@ MP3 и локальный манифест не коммитятся. В Git л�
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
 - `regulator-performance-2026-10-15.md` — профили слабых телефонов, автоматический бюджет и контроль нагрузки регулировщика
 - `ride-performance-2026-10-14.md` — очистка старых локаций по пути, длительный тест и диагностика dev-сборки
+- `road-retirement-2026-10-15.md` — исчезновение дороги под машиной после лимита хранения и защита от застревания на траве
 - `participant-lifetime-2026-10-15.md` — нативный вылет после удаления сбитого участника и регрессионная проверка
 - `ride-completion-2026-10-15.md` — два штатных заезда, неверная нумерация HUD и оставшийся доступ к удалённому участнику
 - `background-pause-2026-10-15.md` — исчезнувшее управление после сворачивания, безопасный показ паузы и продолжение

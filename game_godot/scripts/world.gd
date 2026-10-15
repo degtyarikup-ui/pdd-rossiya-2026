@@ -1887,7 +1887,8 @@ func _trim_ghost_props_at_join(old: Node3D) -> void:
 func _retire_far() -> void:
 	for j in retired.duplicate():
 		var c: Vector3 = j.sit.global_position
-		if c.distance_to(drive.pos) > RETAIN_DISTANCE or drive.distance_traveled - float(j.get("retire_distance", drive.distance_traveled)) > RETAIN_DISTANCE:
+		var expired := c.distance_to(drive.pos) > RETAIN_DISTANCE or drive.distance_traveled - float(j.get("retire_distance", drive.distance_traveled)) > RETAIN_DISTANCE
+		if expired and not _retained_road_needed(j.sit):
 			retired.erase(j)
 			if pending_connection.get("sit") == j.sit: pending_connection.sit = null
 			j.sit.queue_free()
@@ -1899,14 +1900,54 @@ func _retire_far() -> void:
 func _retire_streets() -> void:
 	for i in range(older_ghosts.size() - 1, -1, -1):
 		var old := older_ghosts[i]
-		if drive.pos.distance_to(old.get_meta("retire_anchor")) > RETAIN_DISTANCE or _street_expired(old):
+		var expired := drive.pos.distance_to(old.get_meta("retire_anchor")) > RETAIN_DISTANCE or _street_expired(old)
+		if expired and not _retained_road_needed(old):
 			old.queue_free()
 			older_ghosts.remove_at(i)
 			tram_scenery_revision += 1
-	if ghost and (drive.pos.z > ghost_until or _street_expired(ghost)):
+	if ghost and (drive.pos.z > ghost_until or _street_expired(ghost)) and not _retained_road_needed(ghost):
 		ghost.queue_free()
 		ghost = null
 		tram_scenery_revision += 1
+
+## Returning to an old branch must not let the distance budget remove the
+## ground under the car. Keep only geometry that uniquely supports its footprint;
+## overlapping old copies can still expire, even on a looping route. Cleanup
+## removes each candidate from its list before checking the next one.
+func _retained_road_needed(candidate: Node3D) -> bool:
+	var points: Array[Vector3] = [drive.pos]
+	for x in [-drive.half_width, drive.half_width]:
+		for z in [-drive.half_length, drive.half_length]:
+			points.append(drive.pos + Vector3(x, 0, z).rotated(Vector3.UP, drive.yaw))
+	for p in points:
+		if _retained_road_at(candidate, p) and not _rendered_road_supports(p, candidate):
+			return true
+	return false
+
+
+func _retained_road_at(node: Node3D, p: Vector3) -> bool:
+	if node is Situation:
+		if node.network and node.ground_map() == null: return false
+		return node.road_at(node.global_transform.affine_inverse() * p)
+	for child in node.get_children():
+		if child is MeshInstance3D and child.mesh and child.get_meta("street_surface", false):
+			if (_street_ground(child).at(child.global_transform.affine_inverse() * p) & GroundMap.ROAD) != 0:
+				return true
+	return false
+
+
+## Test the surfaces that will survive removal, including the actual ring
+## meshes. The lane-width fallback cannot substitute for a missing road mesh.
+func _rendered_road_supports(p: Vector3, excluded: Node3D) -> bool:
+	for j in _junctions():
+		if j.sit != excluded and _retained_road_at(j.sit, p): return true
+	for old in older_ghosts + ([ghost] if ghost else []):
+		if old != excluded and _retained_road_at(old, p): return true
+	for node in road_nodes:
+		if node.mesh and (_street_ground(node).at(node.global_transform.affine_inverse() * p) & GroundMap.ROAD) != 0:
+			return true
+	return false
+
 
 func _street_expired(old: Node3D) -> bool:
 	return drive.distance_traveled - float(old.get_meta("retire_distance", drive.distance_traveled)) > RETAIN_DISTANCE
@@ -1919,6 +1960,7 @@ func _performance_snapshot() -> Dictionary:
 		"displayed_question": _question_number(), "question_over": question_over,
 		"retired": retired.size(), "streets": older_ghosts.size() + (1 if ghost else 0),
 		"staging": staging, "phase": phase, "distance": int(drive.distance_traveled), "cpu_ms": cpu_ms,
+		"position": [drive.pos.x, drive.pos.y, drive.pos.z], "yaw": drive.yaw, "on_road": drive.on_road(),
 		"render_scale": get_viewport().scaling_3d_scale, "max_fps": Engine.max_fps,
 		"shadows": sun.shadow_enabled, "msaa": get_viewport().msaa_3d, "quality_changes": frame_budget.changes}
 
