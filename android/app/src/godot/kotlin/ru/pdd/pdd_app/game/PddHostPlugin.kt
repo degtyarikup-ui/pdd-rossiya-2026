@@ -8,18 +8,45 @@ import org.godotengine.godot.plugin.UsedByGodot
 class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPlugin(godot) {
     override fun getPluginName() = "PddHost"
 
-    /** Whole game-process memory, including engine/native allocations and mapped assets. */
-    @UsedByGodot
-    fun processMemoryMb(): Int = (android.os.Debug.getPss() / 1024).toInt()
+    private var performanceExecutor: java.util.concurrent.ExecutorService? = null
+    private val performanceState = lazy {
+        val executor = java.util.concurrent.Executors.newSingleThreadExecutor { task ->
+            Thread(task, "pdd-performance").apply { isDaemon = true }
+        }
+        performanceExecutor = executor
+        PerformanceSnapshotCache(executor, android.os.SystemClock::elapsedRealtime,
+            { collectPerformanceSnapshot() }, 5000)
+    }
 
-    /** Android thermal status (0–6), sampled with the memory counter, never every frame. */
+    /** No memory-map scan runs on the Godot/JNI caller. Hidden release HUDs never start it. */
     @UsedByGodot
-    fun thermalState(): Int = if (android.os.Build.VERSION.SDK_INT >= 29) {
-        host.getSystemService(android.os.PowerManager::class.java)?.currentThermalStatus ?: -1
-    } else -1
+    fun setPerformanceSamplingEnabled(enabled: Boolean) {
+        if (enabled) performanceState.value.setEnabled(true)
+        else if (performanceState.isInitialized()) performanceState.value.setEnabled(false)
+    }
 
+    /** Returns immediately with the latest immutable sample, and requests at most one refresh. */
     @UsedByGodot
-    fun lowPowerMode(): Boolean = host.getSystemService(android.os.PowerManager::class.java)?.isPowerSaveMode ?: false
+    fun performanceSnapshot(): String =
+        if (performanceState.isInitialized()) performanceState.value.read() else ""
+
+    private fun collectPerformanceSnapshot(): String {
+        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
+        val started = android.os.SystemClock.elapsedRealtimeNanos()
+        // PSS walks shared-page accounting and can be slow. Record its own duration.
+        val pss = try { (android.os.Debug.getPss() / 1024).toInt() } catch (_: RuntimeException) { -1 }
+        val pssFinished = android.os.SystemClock.elapsedRealtimeNanos()
+        val power = host.getSystemService(android.os.PowerManager::class.java)
+        val thermal = if (android.os.Build.VERSION.SDK_INT >= 29) power?.currentThermalStatus ?: -1 else -1
+        return org.json.JSONObject().apply {
+            put("pss_mb", if (pss >= 0) pss else org.json.JSONObject.NULL)
+            put("thermal_state", if (thermal >= 0) thermal else org.json.JSONObject.NULL)
+            put("low_power", power?.isPowerSaveMode ?: org.json.JSONObject.NULL)
+            put("sample_time", System.currentTimeMillis() / 1000.0)
+            put("pss_duration_ms", (pssFinished - started) / 1000000.0)
+            put("sample_duration_ms", (android.os.SystemClock.elapsedRealtimeNanos() - started) / 1000000.0)
+        }.toString()
+    }
 
     /** App-owned external storage lets adb pull retrieve counters without a debug Flutter build. */
     @UsedByGodot
@@ -73,6 +100,8 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     }
 
     override fun onGodotTerminating() {
+        if (performanceState.isInitialized()) performanceState.value.close()
+        performanceExecutor?.shutdownNow()
         host.runOnUiThread { host.finish() }
     }
 }

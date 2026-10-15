@@ -19,6 +19,7 @@ func run() -> void:
 	boundaries()
 	differential()
 	repeated_cuts()
+	generated_flat_streets()
 	fixture("ticket_20_15")
 	fixture("ticket_12_14")
 	print("mesh clipping: ", checks, " checks, ", failures, " failures")
@@ -119,6 +120,24 @@ func repeated_cuts() -> void:
 		actual = SceneStitch.clip_mesh(actual, frames[i]) if actual else null
 		reference = oracle(reference, frames[i]) if reference else null
 		compare(actual, reference, "accumulated cut " + str(i))
+
+func generated_flat_streets() -> void:
+	var holder := Node3D.new(); root.add_child(holder)
+	var scenery := Scenery.new("summer")
+	var street := Street.new(holder, scenery, 60.0, 1)
+	for index in [-9, -1, 0, 1, 8, 15]:
+		var mesh := street.build_chunk(0, index)
+		var before := mesh_state(mesh)
+		var frame := Transform3D(Basis(Vector3.UP, 0.43), Vector3(0, 0, -10000))
+		var reference := oracle(mesh, frame)
+		SceneStitch.mark_generated_flat_mesh(mesh)
+		expect(SceneStitch.clip_mesh(mesh, frame) == mesh, "generated street reuses its first retained cut " + str(index))
+		compare(mesh, reference, "generated street oracle " + str(index))
+		for surface in mesh.get_surface_count():
+			expect(mesh.surface_get_arrays(surface) == reference.surface_get_arrays(surface), "generated street exact raw attribute arrays " + str(index))
+		expect(mesh_state(mesh) == before, "flat marker never mutates generated geometry " + str(index))
+		compare(SceneStitch.clip_mesh(mesh, Transform3D()), oracle(mesh, Transform3D()), "generated crossing cut " + str(index))
+	holder.free()
 
 func expanded(mesh: Mesh, surface: int, slot: int) -> Array:
 	var arrays := mesh.surface_get_arrays(surface)

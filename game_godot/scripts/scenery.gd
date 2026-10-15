@@ -110,6 +110,8 @@ class Pool:
 	var render_index := {}
 	var render_transforms: Array[Transform3D] = []
 	var render_tints: Array[Color] = []
+	var _batch_depth := 0
+	var _batch_dirty := false
 
 	func _init(parent: Node, mesh: Mesh, mat: Material, chunks: int, cap: int, shadows: bool) -> void:
 		per_chunk = cap
@@ -171,6 +173,29 @@ class Pool:
 		Scenery.sync_pool_bounds(copy)
 		parent.add_child(copy)
 
+	## A synchronous street rebuild can replace several slots before one GPU upload.
+	## Logical slots remain immediately available to snapshots and obstacle readers.
+	func begin_batch() -> void:
+		_batch_depth += 1
+
+	func end_batch() -> void:
+		if _batch_depth <= 0:
+			push_error("Scenery.Pool.end_batch without begin_batch")
+			return
+		_batch_depth -= 1
+		if _batch_depth == 0 and _batch_dirty:
+			_batch_dirty = false
+			_sync_draw()
+
+	func _clear_slot_fade(rendered: int) -> void:
+		if rendered < 0: return
+		if _batch_depth == 0:
+			Scenery.clear_fade_slot(node, rendered)
+			return
+		# Preserve untouched fade keys until _sync_draw repacks the old prefix.
+		if node.has_meta("occlusion_originals"): (node.get_meta("occlusion_originals") as Dictionary).erase(rendered)
+		if node.has_meta("occlusion_fades"): (node.get_meta("occlusion_fades") as Dictionary).erase(rendered)
+
 	func begin(slot: int) -> void:
 		used[slot] = 0
 
@@ -181,11 +206,15 @@ class Pool:
 			return false
 		var i := slot * per_chunk + n
 		var rendered: int = render_index.get(i, -1)
-		if rendered >= 0: Scenery.clear_fade_slot(node, rendered)
+		_clear_slot_fade(rendered)
 		transforms[i] = xform
 		tints[i] = tint
 		multi.set_instance_transform(i, xform)
 		multi.set_instance_custom_data(i, tint)
+		if _batch_depth > 0:
+			_batch_dirty = true
+			used[slot] = n + 1
+			return true
 		if rendered < 0:
 			rendered = render_slots.size()
 			render_slots.append(i)
@@ -209,10 +238,18 @@ class Pool:
 		for n in range(used.get(slot, 0), per_chunk):
 			var i := slot * per_chunk + n
 			var rendered: int = render_index.get(i, -1)
-			if rendered >= 0: Scenery.clear_fade_slot(node, rendered)
+			# Reserved capacity is already hidden in the authoritative logical array.
+			# A stale packed entry can still own a fade during a batched replacement.
+			if transforms[i] == HIDDEN:
+				if rendered >= 0: _clear_slot_fade(rendered)
+				continue
+			_clear_slot_fade(rendered)
 			transforms[i] = HIDDEN
 			multi.set_instance_transform(i, HIDDEN)
-		_sync_draw()
+		if _batch_depth > 0:
+			_batch_dirty = true
+		else:
+			_sync_draw()
 
 	func _sync_draw() -> void:
 		var originals: Dictionary = node.get_meta("occlusion_originals", {})
@@ -349,8 +386,10 @@ static func sync_pool_bounds(node: MultiMeshInstance3D) -> void:
 
 
 static func clear_fade_slot(node: MultiMeshInstance3D, index: int) -> void:
-	(node.get_meta("occlusion_originals",{}) as Dictionary).erase(index)
-	var fades: Dictionary = node.get_meta("occlusion_fades",{})
+	var originals: Dictionary = node.get_meta("occlusion_originals", {})
+	var fades: Dictionary = node.get_meta("occlusion_fades", {})
+	if not originals.has(index) and not fades.has(index): return
+	originals.erase(index)
 	fades.erase(index)
 	if node.has_meta("occlusion_fade_node"): sync_fade_batch(node)
 

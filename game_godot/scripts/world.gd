@@ -374,6 +374,11 @@ func _dismiss_loader() -> void:
 	# Render the installed scene while the loading screen is still opaque.
 	await get_tree().process_frame
 	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
+	if DisplayServer.get_name() != "headless":
+		# Compatibility compiles a material on its first actual draw. A process
+		# tick alone does not prove that the installed city reached the renderer.
+		await RenderingServer.frame_post_draw
+		if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	warm_signals=false
 	if traffic_glows != null:
 		traffic_glows.set_instance_custom_data(0, Color(1, 0.68, 0.05, 0))
@@ -600,7 +605,7 @@ func _blank(index: int) -> bool:
 ## junction's approach (two lanes) over the last Street.TAPER metres: a multi-lane street meets
 ## it in a taper, not in one step.
 func _half_at(z: float) -> float:
-	if not street_connector.is_empty(): return float(street.profile_at(z).width)*0.5
+	if not street_connector.is_empty(): return street.half_width_at(z)
 	# Connected scenes carry their real profile; the old forced two-lane taper is only a legacy fallback.
 	for j in _junctions():
 		if j.sit.network and not j.sit.network.connections.entry.is_empty(): return street_half
@@ -634,8 +639,10 @@ func _rebuild_ring() -> void:
 	if not pending_connection.is_empty(): street.profile=pending_connection.port
 	elif current and current.sit.network: street.profile=current.sit.network.connections.entry
 	var first := int(floor(drive.pos.z / L)) - int(cfg.chunks_behind)
+	street.begin_batch()
 	for slot in chunk_count:
 		_place_chunk(slot, first + slot)
+	street.end_batch()
 
 
 func _recycle_chunks() -> void:
@@ -2276,15 +2283,46 @@ func _keep_ambient(parent: Node3D) -> void:
 	trail.add_to_group("ambient_trails")
 	trail.ground_check = _ambient_trail_clear
 	trail.ground_height = _pavement_height
+	trail.collision_sources = func():
+		var sources: Array = obstacles()
+		sources.append(drive)
+		for retained in get_tree().get_nodes_in_group("ambient_trails"):
+			sources.append_array(retained.actors)
+		# Retained cars can follow the stitched road into the next question. Apply
+		# the ordinary traffic reservation before accelerating them, once per frame.
+		var zone_key := hash(_ambient_quiet_zones())
+		for actor in trail.actors:
+			var at: Vector3 = actor.node.global_position
+			var toward: Vector3 = trail.global_basis * actor.cruise_velocity.normalized()
+			var car: Dictionary = actor.get("quiet_car", {})
+			if actor.get("quiet_zone_key", -1) != zone_key: car.erase("quiet_stop_z")
+			# Only an actual +Z follower uses the longitudinal stop policy. A turned
+			# old street may point sideways; its real yaw still clips the zone circle.
+			car.merge({"x": at.x, "z": at.z, "yaw": SceneStitch.yaw(toward),
+				"dir": 1.0 if toward.z > 0.5 else -1.0, "len": actor.hl * 2.0,
+				"spd": actor.velocity.length()}, true)
+			if not _ambient_in_quiet_zone(car): car.erase("quiet_stop_z")
+			var gap := _ambient_quiet_gap(car)
+			actor["quiet_car"] = car
+			actor["quiet_zone_key"] = zone_key
+			actor["quiet_origin"] = at
+			actor["quiet_gap"] = gap
+			actor["speed_limit"] = sqrt(maxf(0.0, 12.0 * gap))
+		return sources
+	# These bodies belong to the frozen street, not the ring that is rebuilt next.
+	for bodies in street.parked_bodies.values():
+		for body in bodies:
+			if (parent.global_transform * body.p).z <= 0.0: trail.parked_bodies.append(body.duplicate(true))
 	for car in traffic:
 		if car.get("sheltered", false):
 			continue
 		var heading: float = car.get("yaw",0.0 if car.dir>0.0 else PI)
 		var direction := Vector3(sin(heading),0,cos(heading))
+		var cruise := float(car.base) if car.get("moves", true) else 0.0
 		if car.has("node"):
-			trail.keep(car.node.duplicate(), car.dir * car.spd, false, float(car.get("hw",0.95)),float(car.len)*0.5,direction)
+			trail.keep(car.node.duplicate(), car.dir * car.spd, false, float(car.get("hw",0.95)),float(car.len)*0.5,direction,cruise)
 		else:
-			trail.keep_copy(car.mm, car.slot, car.dir * car.spd, false, float(car.get("hw",0.95)),float(car.len)*0.5,direction)
+			trail.keep_copy(car.mm, car.slot, car.dir * car.spd, false, float(car.get("hw",0.95)),float(car.len)*0.5,direction,cruise)
 
 
 func _ambient_trail_clear(p: Vector3, toward: Vector3, actor: Dictionary) -> bool:
@@ -2292,6 +2330,19 @@ func _ambient_trail_clear(p: Vector3, toward: Vector3, actor: Dictionary) -> boo
 		if not _walk_clear(p): return false
 	elif not _departure_clear(p, toward, actor.hw, actor.hl): return false
 	var body := {"p": p, "yaw": SceneStitch.yaw(toward), "hw": actor.hw, "hl": actor.hl}
+	if not actor.pedestrian:
+		if actor.has("quiet_origin") and p.distance_to(actor.quiet_origin) > float(actor.quiet_gap) + 0.000001: return false
+		for source in actor.get("collision_sources", []):
+			var other: Dictionary
+			if source is Dictionary:
+				if source == actor: continue
+				if not is_instance_valid(source.node): continue
+				other = {"p": source.node.global_position, "yaw": SceneStitch.yaw(source.node.global_basis.z), "hw": source.hw, "hl": source.hl}
+			else:
+				other = source.footprint()
+			var radius: float = actor.hw + actor.hl + other.hw + other.hl + 0.1
+			if p.distance_squared_to(other.p) > radius * radius: continue
+			if Drive.overlap(body, other, 0.06): return false
 	for j in _junctions():
 		if not j.get("junction") is Junction: continue
 		for motion in j.junction.motions:
@@ -2450,6 +2501,15 @@ func _ambient_visible(car: Dictionary) -> bool:
 func _ambient_stage_clear() -> bool:
 	for car in traffic:
 		if not car.get("sheltered", false) and _ambient_in_quiet_zone(car) and _ambient_visible(car): return false
+	# Sheltered ring entries have a separate, still-visible copy on the old street.
+	# It may drive out normally, but the next question must wait for that real pose.
+	if is_inside_tree():
+		for trail in get_tree().get_nodes_in_group("ambient_trails"):
+			for actor in trail.actors:
+				if actor.pedestrian or not is_instance_valid(actor.node) or not actor.node.is_visible_in_tree(): continue
+				var at: Vector3 = actor.node.global_position
+				var car := {"x": at.x, "z": at.z, "yaw": SceneStitch.yaw(actor.node.global_basis.z), "len": actor.hl * 2.0}
+				if _ambient_in_quiet_zone(car) and _ambient_visible(car): return false
 	return true
 
 

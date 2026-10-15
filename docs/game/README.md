@@ -77,6 +77,10 @@ godot --headless --path game_godot --script res://tests/dirt_surface_check.gd # 
 godot --headless --path game_godot --script res://tests/human_collision_check.gd # наезд: регулировщик и пешеходы
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
 godot --path game_godot --script res://tests/pool_packing_check.gd # пустые экземпляры не рисуются; цвета, прозрачность, индексы чанков и границы пакетов
+godot --path game_godot --script res://tests/pool_batch_check.gd # одна упаковка нескольких чанков, вложенность, сохранение прозрачности
+godot --path game_godot --script res://tests/street_batch_check.gd # точное совпадение дороги, декораций и парковочных коллизий с последовательной сборкой
+godot --path game_godot --script res://tests/street_profile_cache_check.gd # кеш профиля ограничен чанком; атрибуты дороги, ширина, декорации и парковка совпадают с исходным расчётом
+godot --headless --path game_godot --script res://tests/ambient_trail_motion_check.gd # временно остановленная фоновая машина продолжает движение после перехода, препятствия сохраняются
 godot --headless --path game_godot --script res://tests/ambient_transition_check.gd -- --season=autumn # пешеходы, листья и трафик при переходах
 godot --path game_godot --script res://tests/ambient_transition_check.gd -- --season=autumn # реальные позы MultiMesh и положение в кадре
 godot --headless --path game_godot --script res://tests/lighting_check.gd # свет/тени в том же кадре при поворотах мира, все уровни качества
@@ -308,6 +312,7 @@ MP3 и локальный манифест не коммитятся. В Git л�
 - `regulator-migration-2026-10-13.md` — паритет регулировщика и удаление WebView
 - `regulator-performance-2026-10-15.md` — профили слабых телефонов, автоматический бюджет и контроль нагрузки регулировщика
 - `ride-performance-2026-10-14.md` — очистка старых локаций по пути, длительный тест и диагностика dev-сборки
+- `transition-performance-2026-10-15.md` — пакетная перестройка улиц, обрезка геометрии, неблокирующие замеры Android и остановленный фоновый транспорт
 - `road-retirement-2026-10-15.md` — исчезновение дороги под машиной после лимита хранения и защита от застревания на траве
 - `participant-lifetime-2026-10-15.md` — нативный вылет после удаления сбитого участника и регрессионная проверка
 - `ride-completion-2026-10-15.md` — два штатных заезда, неверная нумерация HUD и оставшийся доступ к удалённому участнику

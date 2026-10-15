@@ -48,6 +48,10 @@ var edge := 0.0                   # the row being laid out: how far the carriage
 var _build_half_at := Callable()
 var _prop_boxes := {}
 var _build_z0 := 0.0
+const PROFILE_CACHE_LIMIT := 256
+var _build_profiles := {}
+var _constant_build_profile := {}
+var _profile_build_active := false
 
 
 func _init(parent: Node3D, scenery: Scenery, chunk_length: float, chunks: int) -> void:
@@ -81,6 +85,18 @@ func snapshot(parent: Node3D) -> void:
 		p.snapshot(parent)
 
 
+## A ring rebuild replaces several chunks in the same frame. Publish each
+## packed prop buffer once, after all logical chunk slots have been written.
+func begin_batch() -> void:
+	for p in pools.values(): p.begin_batch()
+	for p in parked.values(): p.begin_batch()
+
+
+func end_batch() -> void:
+	for p in pools.values(): p.end_batch()
+	for p in parked.values(): p.end_batch()
+
+
 ## District of the plot row at world z (with the blend into the next one).
 func style_at(z: float) -> int:
 	var group_len := L * GROUP_CHUNKS
@@ -97,6 +113,7 @@ func style_at(z: float) -> int:
 ## `half_at(world z)` is the carriageway half-width there: a multi-lane exit widens the street,
 ## a lane drop before a junction narrows it (world.gd _half_at). Plots stand outside it.
 func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), ranges: Array = []) -> ArrayMesh:
+	_begin_profile_build()
 	_build_half_at = half_at
 	visible_ranges = [[0.0,L]] if ranges.is_empty() else ranges
 	for p in pools.values():
@@ -111,6 +128,7 @@ func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), r
 		for p in parked.values():
 			p.finish(slot)
 		_build_half_at = Callable()
+		_end_profile_build()
 		return null
 	var z0 := index * L
 	_build_z0 = z0
@@ -139,7 +157,10 @@ func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), r
 	var mesh := st.commit()
 	mesh.surface_set_material(0, sc.material)
 	_build_half_at = Callable()
-	return mesh
+	_end_profile_build()
+	# SurfaceTool already generated the same unindexed flat normals the clipper
+	# uses. Fully retained chunks can be shared without rebuilding all vertices.
+	return SceneStitch.mark_generated_flat_mesh(mesh)
 
 
 # --- road surface (one mesh per chunk, local z from 0) ----------------------
@@ -163,8 +184,8 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 			continue
 		var ha := _half(half_at, z0 + z)
 		var hb := _half(half_at, z0 + ze)
-		var pa := profile_at(z0+z);var pb := profile_at(z0+ze)
-		var mid := profile_at(z0+(z+ze)*0.5)
+		var pa := _road_profile_at(z0+z);var pb := _road_profile_at(z0+ze)
+		var mid := _road_profile_at(z0+(z+ze)*0.5)
 		var ma := float(pa.get("median",0.0))*0.5;var mb := float(pb.get("median",0.0))*0.5
 		var road_kind := "dirt" if float(mid.dirt_amount)>0.5 else "asphalt"
 		_quad(st, -ha, ha, -hb, hb, z, ze, ROAD_LEVEL, _road_colour(pa), road_kind, z0, ROAD_LEVEL, _road_colour(pb), Vector2(pa.detail_strength,pb.detail_strength))
@@ -191,7 +212,7 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 		for span in visible_ranges:
 			var a := maxf(z,float(span[0]));var b := minf(minf(z+2.0,L),float(span[1]))
 			if b<=a: continue
-			var pa := profile_at(z0+a);var pb := profile_at(z0+b)
+			var pa := _road_profile_at(z0+a);var pb := _road_profile_at(z0+b)
 			var median: float=maxf(float(pa.get("median",0.0)),float(pb.get("median",0.0)))
 			if median<=0.001 and maxf(float(pa.centre_dashed),float(pb.centre_dashed))>0.001:
 				_quad(st,-0.09,0.09,-0.09,0.09,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,float(pa.centre_dashed)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,float(pb.centre_dashed)))
@@ -206,7 +227,7 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 		for span in visible_ranges:
 			var a:=maxf(z,float(span[0]));var b:=minf(end,float(span[1]))
 			if b<=a: continue
-			var pa := profile_at(z0+a);var pb := profile_at(z0+b)
+			var pa := _road_profile_at(z0+a);var pb := _road_profile_at(z0+b)
 			if maxf(float(pa.get("median",0.0)),float(pb.get("median",0.0)))>0.001: continue
 			for mode in ["solid","double"]:
 				var sa := float(pa["centre_"+mode]);var sb := float(pb["centre_"+mode])
@@ -240,6 +261,38 @@ func profile_at(z: float) -> Dictionary:
 	for mode in ["dashed","solid","double"]:
 		result["centre_"+mode]=lerpf(1.0 if a.get("centre","dashed")==mode and ad==0.0 else 0.0,1.0 if b.get("centre","dashed")==mode and bd==0.0 else 0.0,t)
 	return result
+
+## Internal readers never mutate profiles. Their cache lives only for one
+## synchronous chunk build; public profile_at always returns an independent dictionary.
+func _begin_profile_build() -> void:
+	_build_profiles.clear()
+	_constant_build_profile = {}
+	_profile_build_active = true
+
+func _end_profile_build() -> void:
+	_profile_build_active = false
+	_build_profiles.clear()
+	_constant_build_profile = {}
+
+func _road_profile_at(z: float) -> Dictionary:
+	if not _profile_build_active: return profile_at(z)
+	if connector.is_empty():
+		if _constant_build_profile.is_empty():
+			_constant_build_profile = profile_at(z)
+			_constant_build_profile.make_read_only()
+		return _constant_build_profile
+	if _build_profiles.has(z): return _build_profiles[z]
+	var result := profile_at(z)
+	result.make_read_only()
+	if _build_profiles.size() < PROFILE_CACHE_LIMIT: _build_profiles[z] = result
+	return result
+
+## Width queries do not need any derived markings, materials or sidewalk dictionary.
+func half_width_at(z: float) -> float:
+	if connector.is_empty(): return float(profile.get("width", ROAD_HALF * 2.0)) * 0.5
+	return lerpf(float(connector.from.get("width", ROAD_HALF * 2.0)),
+		float(connector.to.get("width", ROAD_HALF * 2.0)),
+		smoothstep(float(connector.start), float(connector.end), z)) * 0.5
 
 func _road_colour(at: Dictionary) -> Color:
 	return Color("#2C2F36").lerp(Color("#6f5840"),float(at.dirt_amount))
@@ -323,7 +376,7 @@ func _from_kerb(pos: Vector3) -> Vector3:
 	# object follows its own section rather than the width sampled for the row.
 	var offset := _half(_build_half_at,pos.z)-ROAD_HALF if _build_half_at.is_valid() else edge
 	pos.x += signf(pos.x) * offset
-	if is_equal_approx(pos.y,KERB): pos.y = float(profile_at(pos.z).get("walk_height",KERB))
+	if is_equal_approx(pos.y,KERB): pos.y = float(_road_profile_at(pos.z).get("walk_height",KERB))
 	return pos
 
 

@@ -204,8 +204,14 @@ Android 10+ также пишет thermal_state (системная шкала 0
 
 ```bash
 adb shell am start -n ru.pdd.pdd_app.dev/ru.pdd.pdd_app.game.GodotGameActivity \
-  --esa pdd_game_args '--perf,--benchmark,--mute,--lang=ru'
+  --esa pdd_game_args '--perf,--benchmark,--mute,--lang=ru,--screen-dp=448,--safe-top=66.2,--safe-bottom=24,--text-scale=1.0'
 ```
+
+Параметры экрана в примере — **для Pixel 9 Pro XL с 1008×2244 px и density 360**.
+На другом устройстве передать его реальные ширину в dp, системные отступы и
+масштаб текста, как это делает Flutter `GodotGame._safeArea()`. Прямой запуск
+без `screen-dp` использует Android fallback Godot и уменьшает интерфейс;
+такой прогон нельзя считать воспроизведением обычного запуска приложения.
 
 Для сравнения фиксированного high добавить `--quality=high`; для проверки
 обычного режима оставить выбор профиля автоматическим. Итог бенчмарка

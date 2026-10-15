@@ -7,6 +7,12 @@ var checks := 0
 var simulate_broken := false
 var output_dir := ""
 
+## OS window focus can change while an automated native renderer owns the fixture.
+## Suppress that unrelated pause overlay here; lifecycle_pause_check covers the
+## production notification/pause behavior. All lighting and pixel assertions remain.
+class FixtureWorld extends "res://scripts/world.gd":
+	func _on_pause(_from_notification := false) -> void: pass
+
 func expect(ok: bool, label: String) -> void:
 	checks += 1
 	if not ok:
@@ -35,6 +41,8 @@ func run() -> void:
 
 func run_tier(quality: String) -> void:
 	var world = load("res://main.tscn").instantiate()
+	# main.tscn is a single World Node3D; retain that scene and replace only its test driver.
+	world.set_script(FixtureWorld)
 	world.only_id = "ticket_13_14"
 	world.bag = [world.only_id]
 	root.add_child(world)
@@ -123,6 +131,7 @@ func render_transition(world, quality: String, direction: String) -> void:
 	hide_except(world, probe, world.player)
 	for i in 6: await process_frame
 	await RenderingServer.frame_post_draw
+	expect(not world.paused and world.pause_menu == null, label + " before capture has no pause overlay")
 	var before := root.get_texture().get_image()
 	var before_budget := budget()
 	# Both visible vertical faces, upper faces and a receiver outside the car's silhouette.
@@ -141,10 +150,12 @@ func render_transition(world, quality: String, direction: String) -> void:
 	world.camera.global_transform = xf * old_camera
 	hide_except(world, probe, world.player)
 	await RenderingServer.frame_post_draw
+	expect(not world.paused and world.pause_menu == null, label + " first capture has no pause overlay")
 	var first := root.get_texture().get_image()
 	var first_budget := budget()
 	for i in 4: await process_frame
 	await RenderingServer.frame_post_draw
+	expect(not world.paused and world.pause_menu == null, label + " settled capture has no pause overlay")
 	var settled := root.get_texture().get_image()
 	var prefix := output_dir.path_join(("broken-" if simulate_broken else "") + label)
 	before.save_png(prefix + "-before.png")

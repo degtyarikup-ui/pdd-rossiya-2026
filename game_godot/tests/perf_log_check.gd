@@ -20,6 +20,21 @@ func expect(ok: bool, name: String) -> void:
 	checks += 1
 	if not ok: bad += 1; print("FAIL ", name)
 
+class FakeAndroidHost extends RefCounted:
+	var enabled_calls: Array[bool] = []
+	var reads := 0
+	var payload := ""
+	func has_java_method(method: String) -> bool:
+		return method in ["performanceSnapshot", "setPerformanceSamplingEnabled"]
+	func setPerformanceSamplingEnabled(enabled: bool) -> void: enabled_calls.append(enabled)
+	func performanceSnapshot() -> String:
+		reads += 1
+		return payload
+
+class AndroidHud extends ClockHud:
+	var bridge := FakeAndroidHost.new()
+	func _android_host() -> Object: return bridge
+
 func _initialize() -> void: run.call_deferred()
 
 func check_frame_metrics() -> void:
@@ -98,6 +113,40 @@ func check_hud_clock() -> void:
 	hud.queue_free()
 	await process_frame
 
+func check_android_cache() -> void:
+	var hud := AndroidHud.new()
+	hud.visible = false
+	root.add_child(hud)
+	hud.set_process(false)
+	expect(hud.bridge.enabled_calls.is_empty() and hud.bridge.reads == 0, "hidden Android diagnostics do not enable or poll native sampler")
+	hud.set_enabled(true)
+	expect(hud.bridge.enabled_calls == [true], "first diagnostics activation enables one background native sampler")
+	var now := Time.get_unix_time_from_system()
+	hud.bridge.payload = JSON.stringify({"sample_time": now, "pss_mb": 333, "thermal_state": 4, "low_power": true,
+		"pss_duration_ms": 547.0, "sample_duration_ms": 548.0})
+	hud._poll_native_metrics()
+	expect(hud.bridge.reads == 1 and hud._pss == 333 and hud._thermal_state == 4 and hud._low_power == true,
+		"fresh asynchronous Android snapshot supplies whole-process memory and flags")
+	expect(hud._native_pss_sample_ms == 547.0 and hud._native_sample_ms == 548.0 and hud._native_sample_age_s >= 0.0 and hud._native_poll_ms >= 0.0 and absf(hud._native_sample_time - now) < 0.001,
+		"background scan duration and foreground cached poll are separate diagnostics")
+	hud._read_android_snapshot(hud.bridge.payload, now + 16.0)
+	expect(hud._pss == -1 and hud._thermal_state == -1 and hud._low_power == null and hud._native_pss_sample_ms < 0,
+		"old cached memory and flags never appear current")
+	hud._read_android_snapshot("", now)
+	expect(hud._pss == -1 and hud._native_sample_age_s < 0, "uncompleted background scan stays unavailable rather than 0 MB")
+	hud._read_android_snapshot(JSON.stringify({"sample_time": now, "pss_mb": -2, "thermal_state": 1.5, "low_power": "yes", "pss_duration_ms": -3}), now)
+	expect(hud._pss == -1 and hud._thermal_state == -1 and hud._low_power == null and hud._native_pss_sample_ms < 0,
+		"malformed cached native values are rejected")
+	hud._read_android_snapshot(hud.bridge.payload, now - 2.0)
+	expect(hud._pss == -1 and hud._native_sample_age_s < 0, "future-dated cached sample is unavailable")
+	hud.set_enabled(false)
+	var reads: int = hud.bridge.reads
+	for i in 10: hud.advance(1.0)
+	expect(hud.bridge.enabled_calls == [true, false] and hud.bridge.reads == reads,
+		"disabling diagnostics stops native sampling and cache polling")
+	hud.queue_free()
+	await process_frame
+
 func run() -> void:
 	check_frame_metrics()
 	var folder := ProjectSettings.globalize_path("res://../scratch/perf-log-check")
@@ -145,6 +194,8 @@ func run() -> void:
 	hud.advance(1.0)
 	expect(resets == 2, "CPU starts clean and resets once after five-second log")
 	var log = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl")).strip_edges())
+	expect(log.diagnostic_emit_ms_previous == null and is_finite(hud._diagnostic_emit_ms_previous) and hud._diagnostic_emit_ms_previous >= 0.0,
+		"first emission has no previous duration and records its finite synchronous cost")
 	expect(log.thermal_state == 2 and log.low_power == true and is_equal_approx(log.footprint_mb,321.5), "native fields preserved in diagnostic log")
 	expect(log.frame_count == 5 and log.window_seconds == 5.0 and log.worst_ms == 1000.0 and log.slow == 5,
 		"whole five-second statistics include frames slower than 250 ms and preserve legacy keys")
@@ -194,6 +245,7 @@ func run() -> void:
 	var new_log := FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl"))
 	source.cpu = 99.0; source.transitions["OLD"] = {"count": 7}
 	lazy_hud.set_enabled(false)
+	expect(lazy_hud._diagnostic_emit_ms_previous < 0.0, "disable clears previous diagnostic emission duration")
 	expect(source.cpu == 0.0 and source.transitions.is_empty(), "disable clears unfinished source aggregates with its frame window")
 	source.cpu = 88.0; source.transitions["HIDDEN"] = {"count": 4}
 	for i in 10: lazy_hud.advance(1.0)
@@ -211,6 +263,8 @@ func run() -> void:
 	for i in 5: lazy_hud.advance(1.0)
 	var lines := FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl")).strip_edges().split("\n")
 	var paused_log = JSON.parse_string(lines[-1])
+	expect(paused_log.diagnostic_emit_ms_previous == null, "first emission after re-enable excludes the previous session cost")
+	var previous_emit_ms: float = lazy_hud._diagnostic_emit_ms_previous
 	expect(paused_log.cpu_ms.walkers == 7.0 and paused_log.transition_ms.size() == 1 and paused_log.transition_ms.TOTAL.count == 1,
 		"fresh logged CPU and transition window contains no pre-disable or hidden samples")
 	expect(paused_log.phase == "paused" and paused_log.frame_count == 5 and paused_log.frame_scope == "all_visible_diagnostic_phases",
@@ -221,6 +275,8 @@ func run() -> void:
 	full.store_string("x".repeat(Hud.LOG_LIMIT + 1)); full.close()
 	for i in 5: lazy_hud.advance(1.0)
 	var rotated = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl")).strip_edges())
+	expect(is_finite(rotated.diagnostic_emit_ms_previous) and rotated.diagnostic_emit_ms_previous >= 0.0 and is_equal_approx(rotated.diagnostic_emit_ms_previous, previous_emit_ms),
+		"following complete window reports exactly the preceding diagnostic emission cost")
 	expect(rotated.frame_count == 5 and rotated.overflow_frames == 0 and lazy_hud._frame_metrics.frame_count == 0,
 		"file rotation retains only the fresh complete sampling window")
 	expect(FileAccess.get_file_as_string(folder.path_join("ride-performance-previous.jsonl")).length() > Hud.LOG_LIMIT,
@@ -228,6 +284,7 @@ func run() -> void:
 	lazy_hud.queue_free()
 	await process_frame
 	await check_hud_clock()
+	await check_android_cache()
 	Host.io = ""
 	print("perf log: ", checks, " checks, ", bad, " failures")
 	quit(1 if bad else 0)

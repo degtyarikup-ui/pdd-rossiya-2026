@@ -23,6 +23,12 @@ var _pss := -1
 var _footprint := -1.0
 var _thermal_state := -1
 var _low_power: Variant = null
+var _native_poll_ms := -1.0
+var _native_pss_sample_ms := -1.0
+var _native_sample_ms := -1.0
+var _native_sample_age_s := -1.0
+var _native_sample_time := -1.0
+var _diagnostic_emit_ms_previous := -1.0
 var _log_frames := 0
 var _log_sum := 0.0
 var _log_worst := 0.0
@@ -73,6 +79,7 @@ func set_enabled(enabled: bool) -> void:
 		_start_log_session()
 	else:
 		_reset_log_window(true)
+		_set_native_sampling(enabled)
 	visible = enabled
 	_frames = 0
 	_sum = 0.0
@@ -85,14 +92,15 @@ func set_enabled(enabled: bool) -> void:
 func _start_log_session() -> void:
 	if _log_started: return
 	_log_started = true
+	_set_native_sampling(true)
 	_frame_metrics = FrameMetrics.new()
 	_reset_log_window(true)
 	if Host.io != "":
 		_log_path = Host.io.path_join("ride-performance.jsonl")
 		_previous_log_path = Host.io.path_join("ride-performance-previous.jsonl")
 		_footprint = _read_ios_footprint()
-	elif Engine.has_singleton("PddHost"):
-		var host = Engine.get_singleton("PddHost")
+	elif _android_host() != null:
+		var host = _android_host()
 		if host.has_java_method("performanceLogDirectory"):
 			var directory := str(host.performanceLogDirectory())
 			_log_path = directory.path_join("ride-performance.jsonl")
@@ -151,13 +159,7 @@ func _process(delta: float) -> void:
 	_log_slow += _slow
 	# Whole-process metrics are sampled every five seconds, outside the HUD's one-second refresh.
 	var write_log := _log_clock >= 5.0
-	if write_log and Engine.has_singleton("PddHost"):
-		var host = Engine.get_singleton("PddHost")
-		if host.has_java_method("processMemoryMb"): _pss = int(host.processMemoryMb())
-		if host.has_java_method("thermalState"): _thermal_state = int(host.thermalState())
-		if host.has_java_method("lowPowerMode"): _low_power = bool(host.lowPowerMode())
-	elif write_log and Host.io != "":
-		_footprint = _read_ios_footprint()
+	if write_log: _poll_native_metrics()
 	var process_metric := Ui.t("gameDebugPerfMemoryFootprint") if Host.io != "" else "PSS"
 	var process_mb := _footprint if Host.io != "" else float(_pss)
 	_label.text = "GODOT %d FPS  %.1f ms (max %d, >33 ms %d)\nGPU %d  %dk tri  %d obj\n%s / VRAM %.0f MB / %s %s\n%s\n%s\n%d ms / %s: %s\n%s" % [
@@ -175,9 +177,20 @@ func _process(delta: float) -> void:
 			"triangles": tris, "render_objects": objects,
 			"mem_mb": snappedf(mem, 0.1) if mem > 0 else null, "vram_mb": snappedf(vmem, 0.1), "pss_mb": _pss,
 			"footprint_mb": snappedf(_footprint, 0.1) if _footprint >= 0 else null, "tier": tier,
-			"thermal_state": _thermal_state if _thermal_state >= 0 else null, "low_power": _low_power}, true)
-		print("[godot-perf] ", JSON.stringify(state))
-		_write_log(state)
+			"thermal_state": _thermal_state if _thermal_state >= 0 else null, "low_power": _low_power,
+			"native_poll_ms": _native_poll_ms if _native_poll_ms >= 0 else null,
+			"native_pss_sample_ms": _native_pss_sample_ms if _native_pss_sample_ms >= 0 else null,
+			"native_sample_ms": _native_sample_ms if _native_sample_ms >= 0 else null,
+			"native_sample_age_s": _native_sample_age_s if _native_sample_age_s >= 0 else null,
+			"native_sample_time": _native_sample_time if _native_sample_time >= 0 else null,
+			"diagnostic_emit_ms_previous": _diagnostic_emit_ms_previous if _diagnostic_emit_ms_previous >= 0 else null}, true)
+		# This duration can only be reported by the following emission. Include
+		# serialization, stdout and synchronous file close, serializing only once.
+		var emit_started_at := Time.get_ticks_usec()
+		var encoded := JSON.stringify(state)
+		print("[godot-perf] ", encoded)
+		_write_log(encoded)
+		_diagnostic_emit_ms_previous = (Time.get_ticks_usec() - emit_started_at) / 1000.0
 		_reset_log_window()
 	_frames = 0
 	_sum = 0.0
@@ -193,6 +206,7 @@ func _now_usec() -> int:
 
 
 func _reset_log_window(reset_frame_clock := false) -> void:
+	if reset_frame_clock: _diagnostic_emit_ms_previous = -1.0
 	_log_clock = 0.0
 	_log_frames = 0
 	_log_sum = 0.0
@@ -228,6 +242,73 @@ func _render_snapshot() -> Dictionary:
 		"render_driver": RenderingServer.get_current_rendering_driver_name()}
 
 
+func _android_host() -> Object:
+	return Engine.get_singleton("PddHost") if Engine.has_singleton("PddHost") else null
+
+
+func _set_native_sampling(enabled: bool) -> void:
+	var host := _android_host()
+	if host != null and host.has_java_method("setPerformanceSamplingEnabled"):
+		host.setPerformanceSamplingEnabled(enabled)
+	_pss = -1
+	_footprint = -1.0
+	_thermal_state = -1
+	_low_power = null
+	_native_sample_time = -1.0
+	_native_poll_ms = -1.0
+	_native_pss_sample_ms = -1.0
+	_native_sample_ms = -1.0
+	_native_sample_age_s = -1.0
+
+
+func _exit_tree() -> void:
+	if _log_started: _set_native_sampling(false)
+
+
+func _poll_native_metrics() -> void:
+	_native_poll_ms = -1.0
+	var start := Time.get_ticks_usec()
+	var host := _android_host()
+	if host != null:
+		# Do not fall back to the old synchronous Debug.getPss() bridge.
+		var raw := str(host.performanceSnapshot()) if host.has_java_method("performanceSnapshot") else ""
+		_read_android_snapshot(raw, Time.get_unix_time_from_system())
+	elif Host.io != "":
+		_footprint = _read_ios_footprint()
+	else:
+		return
+	_native_poll_ms = (Time.get_ticks_usec() - start) / 1000.0
+
+
+## Cache age is independent of the 5 s diagnostic cadence. Missing/stale fields
+## stay unavailable; 0 MB must never stand in for an uncompleted background scan.
+func _read_android_snapshot(raw: String, now_seconds: float) -> void:
+	_native_sample_time = -1.0
+	_pss = -1
+	_thermal_state = -1
+	_low_power = null
+	_native_pss_sample_ms = -1.0
+	_native_sample_ms = -1.0
+	_native_sample_age_s = -1.0
+	var sample = JSON.parse_string(raw) if not raw.is_empty() else null
+	if not sample is Dictionary: return
+	var sampled_at = sample.get("sample_time")
+	if not (sampled_at is int or sampled_at is float) or not is_finite(float(sampled_at)): return
+	var age := now_seconds - float(sampled_at)
+	if age < -1.0 or age > 15.0: return
+	_native_sample_age_s = maxf(0.0, age)
+	_native_sample_time = float(sampled_at)
+	var pss = sample.get("pss_mb")
+	if (pss is int or pss is float) and is_finite(float(pss)) and pss >= 0 and pss == floor(pss): _pss = int(pss)
+	var thermal = sample.get("thermal_state")
+	if (thermal is int or thermal is float) and thermal >= 0 and thermal <= 6 and thermal == floor(thermal): _thermal_state = int(thermal)
+	if sample.get("low_power") is bool: _low_power = sample.low_power
+	var pss_ms = sample.get("pss_duration_ms")
+	if (pss_ms is int or pss_ms is float) and is_finite(float(pss_ms)) and pss_ms >= 0: _native_pss_sample_ms = float(pss_ms)
+	var total_ms = sample.get("sample_duration_ms")
+	if (total_ms is int or total_ms is float) and is_finite(float(total_ms)) and total_ms >= 0: _native_sample_ms = float(total_ms)
+
+
 ## iOS writes an atomic native memory snapshot next to the requests and performance logs.
 ## Reject unavailable/old samples rather than displaying a previous run's memory as current.
 func _read_ios_footprint() -> float:
@@ -249,7 +330,7 @@ func _read_ios_footprint() -> float:
 	return float(value) if float(value) >= 0.0 else -1.0
 
 
-func _write_log(state: Dictionary) -> void:
+func _write_log(encoded: String) -> void:
 	var log := FileAccess.open(_log_path, FileAccess.READ_WRITE if FileAccess.file_exists(_log_path) else FileAccess.WRITE)
 	if log == null: return
 	if log.get_length() > LOG_LIMIT:
@@ -258,5 +339,5 @@ func _write_log(state: Dictionary) -> void:
 		log = FileAccess.open(_log_path, FileAccess.WRITE)
 		if log == null: return
 	log.seek_end()
-	log.store_line(JSON.stringify(state))
+	log.store_line(encoded)
 	log.close()

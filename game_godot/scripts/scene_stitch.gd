@@ -302,6 +302,13 @@ static func median_at(p: Vector3,bindings: Array) -> bool:
 		if d>=-0.001 and d<=END_BLEND and absf((p-binding.port.p).dot(right(binding.port.out)))<median/2.0-0.001: return true
 	return false
 
+## Only generated triangle meshes with SurfaceTool.set_smooth_group(-1) and
+## generate_normals after all vertices are emitted may opt into first-cut reuse.
+## Imported/smoothed geometry must still pass through the normal-flattening oracle.
+static func mark_generated_flat_mesh(mesh: ArrayMesh) -> ArrayMesh:
+	if mesh != null: mesh.set_meta(_CLIPPED_MESH_META, true)
+	return mesh
+
 ## Trim a frozen street to the old side of a join, interpolating all texture/color attributes.
 static func clip_mesh(mesh: Mesh, placement: Transform3D) -> Mesh:
 	if mesh.get_surface_count() == 0: return null
@@ -341,6 +348,22 @@ static func clip_mesh(mesh: Mesh, placement: Transform3D) -> Mesh:
 		tool.set_smooth_group(-1)
 		var count := 0
 		for k in range(0,indices.size(),3):
+			var ia := indices[k]; var ib := indices[k + 1]; var ic := indices[k + 2]
+			var da: float = (placement * verts[ia]).z
+			var db: float = (placement * verts[ib]).z
+			var dc: float = (placement * verts[ic]).z
+			# Most triangles of a crossing mesh lie wholly on one side. Preserve
+			# the oracle's emitted order/default attributes without per-point dictionaries.
+			# The asymmetric 0 / 1e-5 boundary band still uses the original polygon path.
+			if da <= 0.0 and db <= 0.0 and dc <= 0.0:
+				for i in [ia, ib, ic]:
+					tool.set_uv(uvs[i] if not uvs.is_empty() else Vector2.ZERO)
+					tool.set_uv2(uv2[i] if not uv2.is_empty() else Vector2.ZERO)
+					tool.set_color(colours[i] if not colours.is_empty() else Color.WHITE)
+					tool.add_vertex(verts[i])
+				count += 3
+				continue
+			if da > 0.00001 and db > 0.00001 and dc > 0.00001: continue
 			var poly: Array = []
 			for i in [indices[k],indices[k+1],indices[k+2]]:
 				poly.append({"p":verts[i],"u":uvs[i] if not uvs.is_empty() else Vector2.ZERO,
@@ -348,10 +371,10 @@ static func clip_mesh(mesh: Mesh, placement: Transform3D) -> Mesh:
 			var kept: Array = []
 			for i in 3:
 				var a: Dictionary = poly[i];var b: Dictionary = poly[(i+1)%3]
-				var da: float = (placement*a.p).z;var db: float = (placement*b.p).z
-				if da<=0.00001: kept.append(a)
-				if (da>0)!=(db>0):
-					var t := da/(da-db)
+				var edge_a: float = (placement*a.p).z;var edge_b: float = (placement*b.p).z
+				if edge_a<=0.00001: kept.append(a)
+				if (edge_a>0)!=(edge_b>0):
+					var t := edge_a/(edge_a-edge_b)
 					kept.append({"p":a.p.lerp(b.p,t),"u":a.u.lerp(b.u,t),"v":a.v.lerp(b.v,t),"c":a.c.lerp(b.c,t)})
 			for fan in range(1,kept.size()-1):
 				for point in [kept[0],kept[fan],kept[fan+1]]:
