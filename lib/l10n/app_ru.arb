@@ -498,6 +498,8 @@
   "gameDebugRewardPaint": "Показать цвет",
   "gameDebugRewardQueue": "Показать очередь",
   "gameDebugRewardHint": "Только предпросмотр — прогресс не меняется",
+  "gameDebugPerfShow": "Показать FPS и память",
+  "gameDebugPerfHide": "Скрыть FPS и память",
   "gameDebugTier": "Уровень графики",
   "gameDebugTierHint": "Авто выбирает по видеочипу; «Низкий» — имитация бюджетного телефона (сглаживание — после перезапуска игры)",
   "gameDebugTierLow": "Низкий",

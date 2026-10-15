@@ -1726,6 +1726,18 @@ abstract class AppLocalizations {
   /// **'Только предпросмотр — прогресс не меняется'**
   String get gameDebugRewardHint;
 
+  /// No description provided for @gameDebugPerfShow.
+  ///
+  /// In ru, this message translates to:
+  /// **'Показать FPS и память'**
+  String get gameDebugPerfShow;
+
+  /// No description provided for @gameDebugPerfHide.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скрыть FPS и память'**
+  String get gameDebugPerfHide;
+
   /// No description provided for @gameDebugTier.
   ///
   /// In ru, this message translates to:

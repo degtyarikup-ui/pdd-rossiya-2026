@@ -48,6 +48,32 @@ func run() -> void:
 	for i in 10: hud._process(1.0)
 	expect(resets == 1, "hidden HUD does not sample or log")
 	hud.queue_free()
+	await process_frame
+	# A HUD enabled from the hidden menu still writes to the host's diagnostic
+	# folder. Repeated show/hide must not rotate away this ride's evidence.
+	var old_log := FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl"))
+	var lazy_hud = Hud.new()
+	lazy_hud.visible = false
+	root.add_child(lazy_hud)
+	lazy_hud.set_process(false)
+	expect(not lazy_hud._log_started and FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl")) == old_log,
+		"hidden startup preserves previous ride evidence")
+	lazy_hud.set_enabled(true)
+	expect(lazy_hud.visible and lazy_hud._log_started and lazy_hud._log_path == folder.path_join("ride-performance.jsonl"),
+		"menu activation initialises host log path")
+	expect(FileAccess.get_file_as_string(folder.path_join("ride-performance-previous.jsonl")) == old_log,
+		"first activation rotates previous evidence exactly once")
+	for i in 5: lazy_hud._process(1.0)
+	var new_log := FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl"))
+	lazy_hud.set_enabled(false)
+	for i in 10: lazy_hud._process(1.0)
+	expect(FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl")) == new_log, "disabled diagnostics stop sampling")
+	lazy_hud.set_enabled(true)
+	expect(lazy_hud._frames == 0 and lazy_hud._clock == 0.0 and lazy_hud._log_frames == 0,
+		"re-enabled HUD starts a fresh sampling window")
+	expect(FileAccess.get_file_as_string(folder.path_join("ride-performance.jsonl")) == new_log and FileAccess.get_file_as_string(folder.path_join("ride-performance-previous.jsonl")) == old_log,
+		"repeated activation preserves this ride and previous ride logs")
+	lazy_hud.queue_free()
 	Host.io = ""
 	await process_frame
 	print("perf log: ", checks, " checks, ", bad, " failures")

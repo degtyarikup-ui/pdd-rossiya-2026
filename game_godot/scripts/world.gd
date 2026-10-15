@@ -2698,6 +2698,7 @@ func _show_pause_menu() -> void:
 	options.voice_available = voice.available and Ui.lang == "ru"
 	options.debug_menu = _has_arg("--debug-menu") and phase != "over"
 	options.debug_menu_open = debug_menu_unlocked
+	options.debug_perf_visible = hud.visible
 	pause_menu = RidePause.new(options, chosen)
 	add_child(pause_menu)
 	# Android Back/app suspension can pause during the first scene's preparation.
@@ -2710,6 +2711,7 @@ func _show_pause_menu() -> void:
 	pause_menu.voice_changed.connect(func(on): voice.set_enabled(on))
 	pause_menu.debug_menu_revealed.connect(func(): debug_menu_unlocked = true)
 	pause_menu.debug_reward_requested.connect(_preview_reward)
+	pause_menu.debug_perf_changed.connect(_set_debug_perf)
 
 
 ## The host has already booked previous visits of a resumed ride. Add only
@@ -2797,7 +2799,11 @@ func _notify_garage_rewards() -> void:
 			if str(item.get("id" if model else "paint", "")) != target:
 				continue
 			var notice := {"id": ("model:" if model else "paint:") + target, "name": str(item.get("name", ""))}
-			if not model: notice.hex = str(item.get("hex", ""))
+			if model:
+				notice.model = target
+				notice.vehicle_hex = _reward_vehicle_hex()
+			else:
+				notice.hex = str(item.get("hex", ""))
 			ui.show_reward(notice)
 			break
 
@@ -2816,9 +2822,29 @@ func _preview_reward(kind: String) -> void:
 			break
 	_on_resume()
 	if kind in ["car", "queue"]:
-		ui.show_reward({"id": prefix + "car", "name": Ui.t("gameCarSedan")})
+		ui.show_reward({"id": prefix + "car", "name": Ui.t("gameCarSedan"), "model":"sedan", "vehicle_hex":_reward_vehicle_hex()})
 	if kind in ["paint", "queue"]:
 		ui.show_reward({"id": prefix + "paint", "name": Ui.t("gamePaintBlue"), "hex": hex})
+
+
+## Model rewards use the actual earned vehicle with the player's current paint.
+func _reward_vehicle_hex() -> String:
+	var selected_paint := str(chosen.get("paint", "red"))
+	for paint: Dictionary in ride_options.get("reward_paints", []):
+		if str(paint.get("paint", "")) == selected_paint:
+			return str(paint.hex)
+	for car: Dictionary in ride_options.get("cars", []):
+		for paint: Dictionary in car.get("paints", []):
+			if str(paint.get("paint", "")) == selected_paint:
+				return str(paint.hex)
+	return "#" + Ui.c("red").to_html(false)
+
+
+func _set_debug_perf(enabled: bool) -> void:
+	if not _has_arg("--debug-menu") or not debug_menu_unlocked or not paused or _exiting:
+		return
+	hud.set_enabled(enabled)
+	if enabled: _reset_performance_snapshot()
 
 
 func _on_resume() -> void:
@@ -2910,6 +2936,7 @@ func _exit_summary() -> Dictionary:
 	out["resumed"] = resumed
 	out["finished"] = run.finished()
 	out["notified_rewards"] = notified_rewards.duplicate()
+	if _has_arg("--debug-menu"): out["debug_perf"] = hud.visible
 	out["sound"] = sound.enabled
 	out["voice"] = voice.enabled
 	out["voice_available"] = voice.available and Ui.lang == "ru"

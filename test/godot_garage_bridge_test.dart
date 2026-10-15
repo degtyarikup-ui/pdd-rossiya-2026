@@ -136,11 +136,76 @@ void main() {
 
     const gameDebug = bool.fromEnvironment('GAME_DEBUG');
     expect(launches.last.contains('--debug-menu'), gameDebug);
-    expect(launches.last.contains('--perf'), gameDebug);
+    expect(launches.last, isNot(contains('--perf')));
+    expect(options().containsKey('debug_perf'), gameDebug);
+    if (gameDebug) expect(options()['debug_perf'], isFalse);
 
     for (final game in ['Regulator', 'Crossroads']) {
       await launch(tester, game);
       expect(launches.last, isNot(contains('--debug-menu')));
+      expect(launches.last, isNot(contains('--perf')));
+    }
+  });
+
+  testWidgets('city performance overlay choice persists only in dev builds', (
+    tester,
+  ) async {
+    const gameDebug = bool.fromEnvironment('GAME_DEBUG');
+    final prefs = await SharedPreferences.getInstance();
+    await open(tester);
+
+    nativeResponse = jsonEncode({'run_started': false, 'debug_perf': true});
+    await launch(tester);
+    expect(prefs.getBool('godot_city_perf'), gameDebug ? isTrue : isNull);
+
+    nativeResponse = null;
+    await launch(tester);
+    expect(launches.last.contains('--perf'), gameDebug);
+    expect(options().containsKey('debug_perf'), gameDebug);
+    if (gameDebug) expect(options()['debug_perf'], isTrue);
+
+    nativeResponse = jsonEncode({'run_started': false, 'debug_perf': false});
+    await launch(tester);
+    expect(prefs.getBool('godot_city_perf'), gameDebug ? isFalse : isNull);
+
+    nativeResponse = null;
+    await launch(tester);
+    expect(launches.last, isNot(contains('--perf')));
+    if (gameDebug) expect(options()['debug_perf'], isFalse);
+  });
+
+  testWidgets('saved diagnostics stay hidden in production and mini-games', (
+    tester,
+  ) async {
+    const gameDebug = bool.fromEnvironment('GAME_DEBUG');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('godot_city_perf', true);
+    await open(tester);
+    await launch(tester);
+    expect(launches.last.contains('--perf'), gameDebug);
+    expect(options().containsKey('debug_perf'), gameDebug);
+    if (gameDebug) expect(options()['debug_perf'], isTrue);
+
+    for (final game in ['Regulator', 'Crossroads']) {
+      await launch(tester, game);
+      expect(launches.last, isNot(contains('--perf')));
+    }
+
+    nativeResponse = jsonEncode({'run_started': false, 'debug_perf': false});
+    await launch(tester);
+    expect(prefs.getBool('godot_city_perf'), gameDebug ? isFalse : isTrue);
+  });
+
+  testWidgets('malformed diagnostics summaries preserve the saved choice', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('godot_city_perf', true);
+    await open(tester);
+    for (final value in ['false', 0, null]) {
+      nativeResponse = jsonEncode({'run_started': false, 'debug_perf': value});
+      await launch(tester);
+      expect(prefs.getBool('godot_city_perf'), isTrue);
     }
   });
 

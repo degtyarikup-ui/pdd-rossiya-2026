@@ -35,23 +35,12 @@ var _clock := 0.0
 var _input_at := 0
 var _input_ms := 0.0
 var _tiers := ["low", "mid", "high"]
+var _log_started := false
 
 
 func _ready() -> void:
 	layer = 20
-	if visible and Host.io != "":
-		_log_path = Host.io.path_join("ride-performance.jsonl")
-		_previous_log_path = Host.io.path_join("ride-performance-previous.jsonl")
-		_footprint = _read_ios_footprint()
-	elif visible and Engine.has_singleton("PddHost"):
-		var host = Engine.get_singleton("PddHost")
-		if host.has_java_method("performanceLogDirectory"):
-			var directory := str(host.performanceLogDirectory())
-			_log_path = directory.path_join("ride-performance.jsonl")
-			_previous_log_path = directory.path_join("ride-performance-previous.jsonl")
-	# Keep the preceding ride's evidence after a process crash or next launch.
-	if visible and FileAccess.file_exists(_log_path):
-		DirAccess.rename_absolute(_log_path, _previous_log_path)
+	if visible: _start_log_session()
 	var bg := PanelContainer.new()
 	_bg = bg
 	var style := StyleBoxFlat.new()
@@ -69,6 +58,43 @@ func _ready() -> void:
 	bg.add_child(_label)
 	add_child(bg)
 	_label.text = "..."
+
+
+## The dev menu can enable diagnostics after startup. Initialise logging once,
+## then reuse the same HUD and preserve the preceding ride's crash evidence.
+func set_enabled(enabled: bool) -> void:
+	if enabled == visible: return
+	if enabled: _start_log_session()
+	visible = enabled
+	_frames = 0
+	_sum = 0.0
+	_worst = 0.0
+	_slow = 0
+	_clock = 0.0
+	_input_at = 0
+	_log_clock = 0.0
+	_log_frames = 0
+	_log_sum = 0.0
+	_log_worst = 0.0
+	_log_slow = 0
+
+
+func _start_log_session() -> void:
+	if _log_started: return
+	_log_started = true
+	if Host.io != "":
+		_log_path = Host.io.path_join("ride-performance.jsonl")
+		_previous_log_path = Host.io.path_join("ride-performance-previous.jsonl")
+		_footprint = _read_ios_footprint()
+	elif Engine.has_singleton("PddHost"):
+		var host = Engine.get_singleton("PddHost")
+		if host.has_java_method("performanceLogDirectory"):
+			var directory := str(host.performanceLogDirectory())
+			_log_path = directory.path_join("ride-performance.jsonl")
+			_previous_log_path = directory.path_join("ride-performance-previous.jsonl")
+	# Keep the preceding ride's evidence after a process crash or next launch.
+	if FileAccess.file_exists(_log_path):
+		DirAccess.rename_absolute(_log_path, _previous_log_path)
 
 
 func mark_input() -> void:

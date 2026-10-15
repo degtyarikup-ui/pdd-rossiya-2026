@@ -42,8 +42,12 @@ func _check_gate_and_requests() -> void:
 	var menu := RidePause.new(normal_options)
 	viewport.add_child(menu)
 	await _settle()
-	check(menu._debug_panel == null and menu._debug_title_button == null,
+	check(menu._debug_panel == null and menu._debug_title_button == null and menu._debug_perf_button == null,
 		"Normal builds create neither a debug section nor a hidden title button")
+	var normal_perf_changes := [0]
+	menu.debug_perf_changed.connect(func(_enabled: bool): normal_perf_changes[0] += 1)
+	menu._on_debug_perf_pressed()
+	check(normal_perf_changes[0] == 0, "Normal builds ignore performance toggle requests")
 	for i in 14: menu._on_debug_title_pressed()
 	check(menu._debug_panel == null and menu._debug_tap_count == 0,
 		"Normal builds ignore the reveal gesture even with a stale open preference")
@@ -108,6 +112,47 @@ func _check_gate_and_requests() -> void:
 	await _settle()
 
 
+func _check_perf_toggle() -> void:
+	for initial_visible in [false, true]:
+		var viewport := SubViewport.new()
+		viewport.size = Vector2i(360, 780)
+		root.add_child(viewport)
+		var options := _options()
+		options.debug_menu = true
+		options.debug_menu_open = true
+		options.debug_perf_visible = initial_visible
+		var before := JSON.stringify(options)
+		var menu := RidePause.new(options)
+		var changes: Array[bool] = []
+		menu.debug_perf_changed.connect(func(enabled: bool): changes.append(enabled))
+		var resumes := [0]
+		menu.resume_requested.connect(func(): resumes[0] += 1)
+		viewport.add_child(menu)
+		await _settle()
+		var panel := menu._debug_panel
+		var selection := menu.current().duplicate(true)
+		var button := menu._debug_perf_button
+		var label: Label = button.get_child(0)
+		var initial_key := "gameDebugPerfHide" if initial_visible else "gameDebugPerfShow"
+		check(menu.debug_perf_visible == initial_visible and label.text == Ui.t(initial_key) and
+			button.accessibility_name == Ui.t(initial_key) and changes.is_empty(),
+			"Performance button starts from the actual HUD visibility without emitting a change")
+		button.pressed.emit()
+		var toggled_key := "gameDebugPerfShow" if initial_visible else "gameDebugPerfHide"
+		check(menu.debug_perf_visible == not initial_visible and changes == [not initial_visible] and
+			label.text == Ui.t(toggled_key) and button.accessibility_name == Ui.t(toggled_key),
+			"First tap emits the opposite visibility and immediately updates visible/accessibility labels")
+		button.pressed.emit()
+		check(menu.debug_perf_visible == initial_visible and changes == [not initial_visible, initial_visible] and
+			label.text == Ui.t(initial_key), "Second tap restores the previous performance visibility")
+		check(is_instance_valid(panel) and menu._debug_panel == panel and resumes[0] == 0,
+			"Performance toggle keeps the same pause and debug menu open")
+		check(menu.current() == selection and JSON.stringify(options) == before,
+			"Performance toggle leaves garage input and selected vehicle unchanged")
+		viewport.queue_free()
+		await _settle()
+
+
 func _check_layout(menu: RidePause, viewport: Viewport, context: String) -> void:
 	var view := viewport.get_visible_rect().size
 	var panel := menu._panel.get_global_rect()
@@ -132,6 +177,7 @@ func _check_layout(menu: RidePause, viewport: Viewport, context: String) -> void
 
 func _run() -> void:
 	await _check_gate_and_requests()
+	await _check_perf_toggle()
 	var original_io := Host.io
 	var original_args := Host.io_args.duplicate()
 	Host.io = "debug-menu-layout-fixture"

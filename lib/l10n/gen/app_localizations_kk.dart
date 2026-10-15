@@ -962,6 +962,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameDebugRewardHint => 'Тек алдын ала қарау — прогресс өзгермейді';
 
   @override
+  String get gameDebugPerfShow => 'FPS пен жадты көрсету';
+
+  @override
+  String get gameDebugPerfHide => 'FPS пен жадты жасыру';
+
+  @override
   String get gameDebugTier => 'Графика деңгейі';
 
   @override

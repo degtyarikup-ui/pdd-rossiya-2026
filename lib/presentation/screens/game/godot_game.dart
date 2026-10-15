@@ -56,6 +56,7 @@ class GodotGame {
   // Per-game sound preference, preserved after leaving a ride.
   static const _citySoundKey = 'godot_city_sound';
   static const _cityVoiceKey = 'godot_city_voice';
+  static const _cityPerfKey = 'godot_city_perf';
   static const _runQuestions = GameState.runQuestions;
   static Future<bool>? _available;
   static Future<bool>? _webAvailable;
@@ -118,7 +119,9 @@ class GodotGame {
         if (dark) '--dark',
         ...safe,
         '--ride-options=${jsonEncode(options)}',
-        if (const bool.fromEnvironment('GAME_DEBUG')) '--perf',
+        if (const bool.fromEnvironment('GAME_DEBUG') &&
+            options['debug_perf'] == true)
+          '--perf',
         if (const bool.fromEnvironment('GAME_DEBUG')) '--debug-menu',
       ]);
     } on PlatformException {
@@ -398,6 +401,8 @@ class GodotGame {
       'haptics': HapticFeedbackHelper.enabled,
       'voice': voiceAvailable && voice,
       'voice_available': voiceAvailable,
+      if (const bool.fromEnvironment('GAME_DEBUG'))
+        'debug_perf': prefs?.getBool(_cityPerfKey) ?? false,
       'can_start': unlimited || runs > 0 || pending != null,
       if (pending != null) 'resume': pending.toJson(),
       'texts': {
@@ -451,6 +456,10 @@ class GodotGame {
     Map<String, dynamic> summary,
   ) async {
     final premium = ref.read(isPremiumProvider);
+    final debugPerf = summary['debug_perf'];
+    if (const bool.fromEnvironment('GAME_DEBUG') && debugPerf is bool) {
+      await (await _prefs())?.setBool(_cityPerfKey, debugPerf);
+    }
     final sound = summary['sound'];
     if (sound is bool) {
       await (await _prefs())?.setBool(_citySoundKey, sound);

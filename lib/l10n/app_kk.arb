@@ -335,6 +335,8 @@
   "gameDebugRewardPaint": "Түсті көрсету",
   "gameDebugRewardQueue": "Кезекті көрсету",
   "gameDebugRewardHint": "Тек алдын ала қарау — прогресс өзгермейді",
+  "gameDebugPerfShow": "FPS пен жадты көрсету",
+  "gameDebugPerfHide": "FPS пен жадты жасыру",
   "gameDebugTier": "Графика деңгейі",
   "gameDebugTierHint": "Авто бейнечип бойынша таңдайды; «Төмен» — бюджеттік телефонды имитациялайды (тегістеу ойынды қайта іске қосқаннан кейін)",
   "gameDebugTierLow": "Төмен",

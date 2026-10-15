@@ -335,6 +335,8 @@
   "gameDebugRewardPaint": "Show colour",
   "gameDebugRewardQueue": "Show queue",
   "gameDebugRewardHint": "Preview only — progress stays the same",
+  "gameDebugPerfShow": "Show FPS and memory",
+  "gameDebugPerfHide": "Hide FPS and memory",
   "gameDebugTier": "Graphics level",
   "gameDebugTierHint": "Auto picks by the GPU; “Low” simulates a budget phone (antialiasing applies after a restart)",
   "gameDebugTierLow": "Low",

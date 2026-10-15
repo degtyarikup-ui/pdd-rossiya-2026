@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 KEYS = [
     'gameDebugPerfMemoryFootprint', 'gameDebugTier', 'gameDebugPerfObjects', 'gameDebugPerfRetained',
     'gameDebugMenuTitle', 'gameDebugRewardCar', 'gameDebugRewardPaint', 'gameDebugRewardQueue', 'gameDebugRewardHint',
+    'gameDebugPerfShow', 'gameDebugPerfHide',
     'gameCarSedan', 'gamePaintBlue',
     'gameExitToMenu', 'soundEffects', 'gameSeconds', 'gameContinue', 'gameFinishRide', 'gameCorrect', 'gameMistake', 'gameTimeUp', 'gameCorrectAnswer',
     'gameGarage', 'gameLobbyRecord', 'gameLobbyColour', 'gameLobbyNewRun', 'gameRunsTitle',

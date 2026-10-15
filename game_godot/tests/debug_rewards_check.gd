@@ -51,6 +51,8 @@ func _run() -> void:
 	world.hud.visible = false
 	await _settle()
 	await _pause(world)
+	world._set_debug_perf(true)
+	check(not world.hud.visible and not world._exit_summary().has("debug_perf"), "Release host cannot enable or export debug diagnostics")
 	world._preview_reward("car")
 	check(world.paused and not is_instance_valid(world.ui._reward_toast), "Release host has no preview capability even if called directly")
 	world._on_resume()
@@ -60,11 +62,24 @@ func _run() -> void:
 	check(world.pause_menu.data.debug_menu and not world.pause_menu.data.debug_menu_open, "Dev host allows the initially hidden menu")
 	world._preview_reward("car")
 	check(world.paused and not is_instance_valid(world.ui._reward_toast), "The secret gesture is required before preview actions")
+	world._set_debug_perf(true)
+	check(not world.hud.visible, "Hidden diagnostics require the secret gesture")
 	for i in 7: world.pause_menu._debug_title_button.pressed.emit()
 	check(world.debug_menu_unlocked, "Seven title taps unlock the menu for this game session")
 	var before_options := JSON.stringify(world.ride_options)
 	var before_run := JSON.stringify(world.run.summary())
 	var before_car: Dictionary = world.chosen.duplicate(true)
+	var original_hud: Node = world.hud
+	for enabled in [true, false, true, false]:
+		world.pause_menu.debug_perf_changed.emit(enabled)
+		check(world.paused and world.hud.visible == enabled and world.hud == original_hud and world._exit_summary().debug_perf == enabled,
+			"FPS switch updates the same HUD without leaving pause and returns its actual state")
+		world._on_resume()
+		await _settle()
+		await _pause(world)
+		check(world.pause_menu.data.debug_perf_visible == enabled, "Reopening pause reflects current FPS visibility")
+	check(JSON.stringify(world.ride_options) == before_options and JSON.stringify(world.run.summary()) == before_run and world.chosen == before_car,
+		"FPS controls do not change garage or run progress")
 	for kind in ["car", "paint", "queue", "car"]:
 		if not world.paused: await _pause(world)
 		check(is_instance_valid(world.pause_menu._debug_panel) and world.debug_menu_unlocked, "Reopening pause keeps the test controls available for this session")
@@ -73,6 +88,8 @@ func _run() -> void:
 		var toast: RewardToast = world.ui._reward_toast
 		toast.set_process(false)
 		check(toast._current.id.begins_with("debug:") and toast._queue.size() == (1 if kind == "queue" else 0), "Preview uses isolated IDs and the requested queue length")
+		if kind in ["car", "queue"]:
+			check(toast._current.model == "sedan" and toast._current.vehicle_hex == "#ED4621", "Preview uses the sedan model with the selected garage paint")
 		if kind == "paint":
 			check(toast._current.hex == "#317ED4", "Preview swatch comes from the actual garage palette")
 		await _finish_toast(world)
@@ -83,6 +100,7 @@ func _run() -> void:
 	world.run.answer("earned", true)
 	world._notify_garage_rewards()
 	check(world.ui._reward_toast._current.id == "model:sedan", "Preview does not mark a genuine threshold as already shown")
+	check(world.ui._reward_toast._current.model == "sedan" and world.ui._reward_toast._current.vehicle_hex == "#ED4621", "Genuine reward carries the earned model and selected paint")
 	for i in 900:
 		if not world.staging: break
 		await process_frame

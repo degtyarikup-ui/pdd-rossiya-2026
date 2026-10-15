@@ -1,5 +1,6 @@
 ## Phone UI fixture: --out=<png> [--scene=<id>] [--pause|--notice|--explanation|--timeout|--answered]
-## [--photo] [--reward|--reward-paint] [--lang=en|kk] [--dark].
+## [--photo] [--reward|--reward-paint|--reward-model=sedan|--reward-colour=#317ED4]
+## [--lang=en|kk] [--dark] [--text-scale=1.6].
 ## --photo works on both question and explanation cards; rewards use a fixed, fully visible frame.
 extends SceneTree
 
@@ -13,6 +14,10 @@ func _initialize() -> void:
 func _capture() -> void:
 	var args := OS.get_cmdline_user_args()
 	var scene_id := "ticket_10_13"
+	var model := "sedan"
+	var colour := "#317ED4"
+	var reward := args.has("--reward") or args.has("--reward-paint")
+	var paint := args.has("--reward-paint")
 	for arg in args:
 		if arg.begins_with("--out="):
 			out_path = arg.trim_prefix("--out=")
@@ -20,6 +25,13 @@ func _capture() -> void:
 			Ui.lang = arg.trim_prefix("--lang=")
 		if arg.begins_with("--scene="):
 			scene_id = arg.trim_prefix("--scene=")
+		if arg.begins_with("--reward-model="):
+			model = arg.trim_prefix("--reward-model=")
+			reward = true
+		if arg.begins_with("--reward-colour="):
+			colour = arg.trim_prefix("--reward-colour=")
+			paint = true
+			reward = true
 	Ui.dark = args.has("--dark")
 	var bg := ColorRect.new()
 	bg.color = Ui.c("background")
@@ -52,24 +64,22 @@ func _capture() -> void:
 			var panel: PanelContainer = ui._card if ui._card != null else ui._sheet
 			var chip: Control = panel.get_meta("box").get_child(0).get_child(0)
 			ui._toggle_picture(scene_id, chip, chip.find_children("*", "Label", true, false)[1])
-		if args.has("--reward") or args.has("--reward-paint"):
-			_show_reward(ui, args.has("--reward-paint"))
+		if reward:
+			_show_reward(ui, paint, model, colour)
 	await create_timer(0.8).timeout
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(out_path)
 	quit()
 
 
-func _show_reward(ui: GameUi, paint: bool) -> void:
+func _show_reward(ui: GameUi, paint: bool, model: String, hex: String) -> void:
+	var arb: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://../lib/l10n/app_%s.arb" % Ui.lang))
 	if paint:
-		var data := preload("res://tests/fixtures/game_ui_data.gd").collection(Ui.lang)
-		for colour: Dictionary in data.cars[0].paints:
-			if colour.paint == "blue":
-				ui.show_reward({"id": "paint:blue", "name": colour.name, "hex": colour.hex})
-				break
+		var colours := {"#ED4621":"Red", "#317ED4":"Blue", "#4D7768":"Green", "#F2F3F5":"White", "#2B2F36":"Black", "#B9C0C7":"Silver", "#E8C547":"Yellow", "#8B1E2D":"Wine"}
+		var colour_name: String = arb.get("gamePaint" + str(colours.get(hex.to_upper(), "")), hex)
+		ui.show_reward({"id":"paint:" + hex, "name":colour_name, "hex":hex})
 	else:
-		var arb: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://../lib/l10n/app_%s.arb" % Ui.lang))
-		ui.show_reward({"id": "model:sedan", "name": arb.gameCarSedan})
+		ui.show_reward({"id":"model:" + model, "name":arb.get("gameCar" + model.capitalize(), model), "model":model, "vehicle_hex":"#ED4621"})
 	ui._reward_toast._clock = ui._reward_toast.ENTER + 0.5
 	ui._reward_toast.set_process(false)
 	ui._reward_toast._apply_motion()

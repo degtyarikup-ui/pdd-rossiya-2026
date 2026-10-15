@@ -981,6 +981,12 @@ class AppLocalizationsRu extends AppLocalizations {
       'Только предпросмотр — прогресс не меняется';
 
   @override
+  String get gameDebugPerfShow => 'Показать FPS и память';
+
+  @override
+  String get gameDebugPerfHide => 'Скрыть FPS и память';
+
+  @override
   String get gameDebugTier => 'Уровень графики';
 
   @override

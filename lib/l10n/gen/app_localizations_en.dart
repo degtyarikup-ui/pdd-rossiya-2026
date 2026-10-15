@@ -961,6 +961,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameDebugRewardHint => 'Preview only — progress stays the same';
 
   @override
+  String get gameDebugPerfShow => 'Show FPS and memory';
+
+  @override
+  String get gameDebugPerfHide => 'Hide FPS and memory';
+
+  @override
   String get gameDebugTier => 'Graphics level';
 
   @override

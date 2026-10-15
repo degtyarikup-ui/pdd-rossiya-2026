@@ -96,7 +96,7 @@ func _run() -> void:
 				ui.set_hud(32, 60, 0, 1234, 240, 5, 20)
 				await _settle()
 				var names := {"ru":"Внедорожник", "en":"Sport utility vehicle", "kk":"Жол талғамайтын көлік"}
-				var reward := {"id":"model:suv", "name":names[lang]}
+				var reward := {"id":"model:suv", "name":names[lang], "model":"suv", "vehicle_hex":"#ED4621"}
 				var revealed: Array[String] = []
 				var ended := [0]
 				ui.reward_revealed.connect(func(id: String): revealed.append(id))
@@ -115,11 +115,17 @@ func _run() -> void:
 				await _settle()
 				ui._layout_reward()
 				check(revealed == ["model:suv"] and is_equal_approx(toast.modulate.a, 1.0), "Only readable model is acknowledged")
-				check(toast._kind.text == Ui.t("gameUnlockCar") and toast._symbol.visible and not toast._swatch.visible, "Model has localized short label and car icon")
+				check(toast._kind.text == Ui.t("gameUnlockCar") and toast._car_image.visible and not toast._palette.visible, "Model has localized short label and actual vehicle artwork")
+				var car_style: StyleBoxFlat = toast._panel.get_theme_stylebox("panel")
+				check(car_style.bg_color.is_equal_approx(Ui.c("gold")) and car_style.border_width_left == 0, "Car uses the borderless brand gold card")
+				var material: ShaderMaterial = toast._preview_car.find_child("body", true, false).get_active_material(0)
+				check(toast._preview_car.scene_file_path == "res://models/vehicles/suv.glb" and material.get_shader_parameter("paint_colour").is_equal_approx(Vector3(Color("#ED4621").r, Color("#ED4621").g, Color("#ED4621").b)), "Thumbnail is the earned in-game model in the selected paint")
+				check(toast._preview.own_world_3d and toast._preview.transparent_bg and toast._preview.render_target_update_mode != SubViewport.UPDATE_ALWAYS, "Thumbnail renders once in an isolated transparent studio")
 				var panel := toast._panel.get_global_rect()
 				var title := toast._name.get_global_rect()
 				check(panel.position.x >= 15 and panel.end.x <= dimensions.x - 15, "Toast fits phone / landscape width")
 				check(title.position.x >= panel.position.x and title.end.x <= panel.end.x - 12 and title.end.y <= panel.end.y - 10, "Long localized name stays inside card")
+				check(toast._name.get_visible_line_count() <= 2, "Long localized name stays compact at large text sizes")
 				for hud: Control in ui._hud_nodes:
 					if hud.visible: check(not panel.intersects(hud.get_global_rect()), "Toast preserves essential HUD")
 				for control: Control in toast.find_children("*", "Control", true, false):
@@ -136,9 +142,10 @@ func _run() -> void:
 				toast.set_process(false)
 				toast._process(RewardToast.ENTER)
 				check(revealed == ["model:suv", "paint:blue"] and toast._kind.text == Ui.t("gameUnlockPaint"), "Paint gets its own localized reveal")
-				check(toast._swatch.visible and not toast._symbol.visible, "Paint reward displays actual swatch")
-				var paint_style: StyleBoxFlat = toast._swatch.get_theme_stylebox("panel")
-				check(paint_style.bg_color.is_equal_approx(Color("#317ED4")), "Swatch uses the garage colour")
+				check(toast._palette.visible and not toast._car_image.visible and toast._palette.text == char(0xf0041), "Paint uses the app palette icon without a separate swatch")
+				var paint_style: StyleBoxFlat = toast._panel.get_theme_stylebox("panel")
+				check(paint_style.bg_color.is_equal_approx(Color("#317ED4")), "Whole paint card uses the received garage colour")
+				check(toast._preview == null and toast._car_image.texture == null, "Paint releases the previous 3D thumbnail")
 				toast._process(RewardToast.HOLD + RewardToast.LEAVE + RewardToast.GAP + 0.01)
 				check(not toast.busy() and not toast.visible and not toast.is_processing() and ended[0] == 1, "Completed queue idles without processing")
 				ui.show_reward(reward)
@@ -147,6 +154,35 @@ func _run() -> void:
 				await _settle()
 	Ui.lang = "ru"
 	Ui.dark = false
+	await _check_all_artwork()
 	await _check_exit_gate()
 	print("reward_toast_check: %d checks, %d failures" % [checks, failures])
 	quit(0 if failures == 0 else 1)
+
+
+func _check_all_artwork() -> void:
+	var toast := RewardToast.new()
+	root.add_child(toast)
+	for model in Models.CARS:
+		toast.enqueue({"id":"model:" + model, "name":model, "model":model, "vehicle_hex":"#317ED4"})
+		toast.set_process(false)
+		check(toast._preview_car.scene_file_path == "res://models/vehicles/%s.glb" % model, "Each regular model has its own real garage thumbnail: " + model)
+		check(not toast._preview_car.find_children("*", "MeshInstance3D", true, false).is_empty(), "Reward thumbnail has actual vehicle geometry: " + model)
+		toast._process(RewardToast.DURATION + RewardToast.GAP + 0.01)
+		check(toast._preview == null and not toast.is_processing(), "Settled card releases rendering resources: " + model)
+		await process_frame
+	var colours := ["#ED4621", "#317ED4", "#4D7768", "#F2F3F5", "#2B2F36", "#B9C0C7", "#E8C547", "#8B1E2D"]
+	for hex: String in colours:
+		toast.enqueue({"id":"paint:" + hex, "name":hex, "hex":hex})
+		toast.set_process(false)
+		var style: StyleBoxFlat = toast._panel.get_theme_stylebox("panel")
+		var ink := toast._name.get_theme_color("font_color")
+		var bg_luminance := Color(hex).srgb_to_linear().get_luminance()
+		var ink_luminance := ink.srgb_to_linear().get_luminance()
+		var contrast := (maxf(bg_luminance, ink_luminance) + 0.05) / (minf(bg_luminance, ink_luminance) + 0.05)
+		check(style.bg_color.is_equal_approx(Color(hex)), "Paint background preserves the exact received hex: " + hex)
+		check(contrast >= 4.5, "Paint text reaches 4.5:1 contrast: " + hex)
+		check(toast._kind.get_theme_color("font_color") == ink and toast._palette.get_theme_color("font_color") == ink, "All paint text and the palette share legible ink: " + hex)
+		toast._process(RewardToast.DURATION + RewardToast.GAP + 0.01)
+	toast.queue_free()
+	await process_frame

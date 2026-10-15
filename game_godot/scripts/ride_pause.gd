@@ -9,6 +9,7 @@ signal sound_changed(enabled: bool)
 signal voice_changed(enabled: bool)
 signal debug_menu_revealed
 signal debug_reward_requested(kind: String)
+signal debug_perf_changed(enabled: bool)
 
 const DEBUG_TAP_COUNT := 7
 const DEBUG_TAP_GAP_MSEC := 3000
@@ -19,6 +20,7 @@ var paint_index := 0
 var sound_enabled := true
 var voice_enabled := false
 var voice_available := true
+var debug_perf_visible := false
 var _root: Control
 var _panel: PanelContainer
 var _shell: VBoxContainer
@@ -37,6 +39,7 @@ var _preview_car: Node3D
 var _studio: Node3D
 var _debug_panel: PanelContainer
 var _debug_title_button: Button
+var _debug_perf_button: Button
 var _debug_tap_count := 0
 var _debug_last_tap_msec := -1
 
@@ -45,6 +48,7 @@ func _init(options: Dictionary, selection := {}) -> void:
 	sound_enabled = bool(options.get("sound", true))
 	voice_available = bool(options.get("voice_available", true))
 	voice_enabled = bool(options.get("voice", false)) and voice_available
+	debug_perf_visible = bool(options.get("debug_perf_visible", false))
 	for i in data.cars.size():
 		if data.cars[i].id == selection.get("id", ""):
 			car_index = i
@@ -179,6 +183,10 @@ func _build_debug_menu() -> void:
 	box.add_theme_constant_override("separation", 8)
 	margin.add_child(box)
 	box.add_child(Ui.scaled_label(Ui.t("gameDebugMenuTitle"), 14, 700, Ui.c("text"), true))
+	_debug_perf_button = _button("", false, _on_debug_perf_pressed)
+	_debug_perf_button.name = "DebugPerfToggle"
+	box.add_child(_debug_perf_button)
+	_refresh_debug_perf_button()
 	for item in [["car", "gameDebugRewardCar"], ["paint", "gameDebugRewardPaint"], ["queue", "gameDebugRewardQueue"]]:
 		var kind: String = item[0]
 		var button := _button(Ui.t(item[1]), false, func(): debug_reward_requested.emit(kind))
@@ -186,6 +194,21 @@ func _build_debug_menu() -> void:
 		button.accessibility_name = Ui.t(item[1])
 		box.add_child(button)
 	box.add_child(Ui.scaled_label(Ui.t("gameDebugRewardHint"), 12, 500, Ui.c("secondary"), true))
+
+
+func _on_debug_perf_pressed() -> void:
+	if _debug_perf_button == null or not bool(data.get("debug_menu", false)):
+		return
+	debug_perf_visible = not debug_perf_visible
+	_refresh_debug_perf_button()
+	debug_perf_changed.emit(debug_perf_visible)
+
+
+func _refresh_debug_perf_button() -> void:
+	var text := Ui.t("gameDebugPerfHide" if debug_perf_visible else "gameDebugPerfShow")
+	_debug_perf_button.accessibility_name = text
+	var label: Label = _debug_perf_button.get_child(0)
+	label.text = text
 
 
 func _scroll_to_debug() -> void:
