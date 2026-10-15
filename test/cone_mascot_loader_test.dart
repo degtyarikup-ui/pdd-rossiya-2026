@@ -10,6 +10,7 @@ Widget _host({
   double size = 144,
   bool reducedMotion = false,
   bool tickerEnabled = true,
+  Color activityColor = const Color(0xFF0574F8),
   String? label,
   Key? captureKey,
 }) => MaterialApp(
@@ -25,6 +26,7 @@ Widget _host({
             child: ConeMascotLoader(
               key: const ValueKey('cone'),
               size: size,
+              activityColor: activityColor,
               semanticsLabel: label,
             ),
           ),
@@ -46,8 +48,22 @@ void main() {
     for (final size in [72.0, 144.0, 240.0]) {
       await tester.pumpWidget(_host(size: size));
       expect(tester.getSize(find.byType(ConeMascotLoader)), Size.square(size));
-      // Exercise the thumb, blink, wink and the exact loop boundary.
-      for (final milliseconds in [1800, 850, 1850, 1500, 1]) {
+      // Exercise anticipation, both hops, both depth layers, blink and wrap.
+      for (final milliseconds in [
+        176,
+        176,
+        208,
+        256,
+        208,
+        512,
+        352,
+        480,
+        282,
+        25,
+        115,
+        409,
+        1,
+      ]) {
         await tester.pump(Duration(milliseconds: milliseconds));
         expect(tester.takeException(), isNull);
       }
@@ -111,27 +127,34 @@ void main() {
   });
 
   if (const bool.fromEnvironment('CAPTURE_MASCOT')) {
-    testWidgets('captures the native vector art for visual review', (
+    testWidgets('captures native poses and both orbit depth layers', (
       tester,
     ) async {
       final captureKey = GlobalKey();
-      await tester.pumpWidget(
-        _host(size: 240, reducedMotion: true, captureKey: captureKey),
-      );
-      final boundary =
-          captureKey.currentContext!.findRenderObject()!
-              as RenderRepaintBoundary;
-      await tester.runAsync(() async {
-        final image = await boundary.toImage(pixelRatio: 2);
-        try {
-          final data = await image.toByteData(format: ui.ImageByteFormat.png);
-          final destination = File('output/mascot/flutter-mascot.png');
-          await destination.parent.create(recursive: true);
-          await destination.writeAsBytes(data!.buffer.asUint8List());
-        } finally {
-          image.dispose();
-        }
-      });
+      await tester.pumpWidget(_host(size: 240, captureKey: captureKey));
+      for (final (milliseconds, filename) in [
+        (0, 'flutter-mascot.png'),
+        (560, 'flutter-mascot-hop.png'),
+        (1040, 'flutter-mascot-lap.png'),
+        (1050, 'flutter-mascot-blink.png'),
+      ]) {
+        await tester.pump(Duration(milliseconds: milliseconds));
+        final boundary =
+            captureKey.currentContext!.findRenderObject()!
+                as RenderRepaintBoundary;
+        await tester.runAsync(() async {
+          final image = await boundary.toImage(pixelRatio: 2);
+          try {
+            final data = await image.toByteData(format: ui.ImageByteFormat.png);
+            final destination = File('output/mascot/$filename');
+            await destination.parent.create(recursive: true);
+            await destination.writeAsBytes(data!.buffer.asUint8List());
+          } finally {
+            image.dispose();
+          }
+        });
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
     });
   }
 }

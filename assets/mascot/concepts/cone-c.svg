@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" fill="none">
+  <title>Графичный маскот-конус</title>
+  <desc>Округлый дорожный конус с двумя оранжевыми плоскостями, белыми полосами и доброй улыбкой. Статичный векторный концепт.</desc>
+  <!-- A rounded square plinth in perspective: one top plane and one side plane. -->
+  <path fill="#EC6410" d="M92 355c-3 11 2 21 15 24l126 24c8 2 15 2 23 0l123-27c10-2 13-9 10-19l-5-10-292 8Z"/>
+  <path fill="#FF971B" d="m236 315-129 31c-15 4-21 15-7 20l133 25c8 2 15 2 23 0l123-27c14-3 15-13 1-18l-125-31c-6-2-13-2-19 0Z"/>
+  <!-- The cap, tapered sides, and elliptical foot make the cone volume explicit. -->
+  <path fill="#FF971B" d="M215 83c4-17 26-18 33 0l99 244c4 9-1 16-10 20-54 24-135 24-189-1-11-5-14-11-11-20l78-243Z"/>
+  <path fill="#EC6410" d="M235 71c6 1 10 5 13 12l99 244c4 9-1 16-10 20-12 5-25 9-40 12L235 71Z"/>
+  <path fill="#FFAF32" d="M215 83c4-17 26-18 33 0-7 9-25 10-33 0Z"/>
+  <!-- Both bands wrap around the cone rather than crossing it as straight bars. -->
+  <path fill="#FFFDF7" d="M199 132c18 11 48 15 69 1l15 36c-26 17-67 17-95-2l11-35Z"/>
+  <path fill="#E8EEF2" d="m248 143 20-10 15 36c-7 5-14 8-22 10l-13-36Z"/>
+  <path fill="#FFFDF7" d="M150 286c49 27 129 30 180 0l15 36c-55 33-148 33-207 0l12-36Z"/>
+  <path fill="#E8EEF2" d="M287 303c16-3 30-9 43-17l15 36c-14 8-29 14-49 18l-9-37Z"/>
+  <!-- Minimal facial shapes stay legible at loading-indicator sizes. -->
+  <path fill="#134B70" d="M211 211c0-5 3-8 7-8s7 3 7 8v15c0 5-3 8-7 8s-7-3-7-8v-15Zm48-2c0-5 3-8 7-8s7 3 7 8v15c0 5-3 8-7 8s-7-3-7-8v-15Z"/>
+  <path fill="#134B70" d="M224 254c10 9 23 9 35-3 2-2 5 0 4 3-5 13-15 20-26 17-7-2-12-7-16-13-2-3 1-6 3-4Z"/>
+</svg>
