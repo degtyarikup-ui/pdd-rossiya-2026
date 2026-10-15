@@ -3,8 +3,8 @@
 const Framing = (() => {
   const $ = (s) => document.querySelector(s);
   const { esc, ic, state } = App;
-  const PHONE_H = 844, TILT = Math.sin(Math.atan2(42, 44));
-  let phone = null, before = null;
+  const PHONE_H = 844, TILT = Math.sin(QuestionCamera.DEFAULT_PITCH), DEG = 180 / Math.PI;
+  let phone = null, before = null, gesture = "pan", headerWasInert = false;
 
   // How tall the question card is on a phone (px of 844): its title, the question and the answers.
   function cardHeight() {
@@ -19,7 +19,7 @@ const Framing = (() => {
   // The framing the game would use now: the editor's own, or the exported samples for this card.
   function current(card) {
     const s = state.S;
-    if (s.questionView) return { centre: [...s.questionView.centre], height: s.questionView.height, card };
+    if (s.questionView) return QuestionCamera.normalize({ ...s.questionView, card });
     const samples = s.questionCamera || [];
     let look = [0, -8], size = 42;
     if (samples.length) {
@@ -30,24 +30,31 @@ const Framing = (() => {
       size = lo.size + (hi.size - lo.size) * k;
     }
     const free = Math.max(0.3, 1 - card / PHONE_H);
-    return { centre: [look[0], look[1] + (1 - free) * size * 0.5 / TILT], height: size * free, card };
+    return QuestionCamera.normalize({ centre: [look[0], look[1] + (1 - free) * size * 0.5 / TILT], height: size * free, card });
   }
 
   function start() {
-    if (!state.S) return;
+    if (!state.S || phone) return;
     Tools.set("select");
     App.select([]);
+    Scene3D.setHover(null);
     before = Scene3D.getView();
     phone = current(cardHeight());
+    headerWasInert = !!$(".top").inert;
+    $(".top").inert = true;
+    gesture = "pan";
+    Scene3D.setPhoneGesture(gesture);
     Scene3D.setPhone(phone);
     document.body.classList.add("framing");
     render();
   }
   function stop(save) {
     if (!phone) return;
-    if (save === "save") App.edit((s) => { s.questionView = { centre: phone.centre.map(App.r3), height: App.r3(phone.height) }; });
-    if (save === "auto") App.edit((s) => { delete s.questionView; });
+    if (save === "save") App.edit((s) => { s.questionView = { centre: phone.centre.map(App.r3), height: App.r3(phone.height),
+      yaw: App.r3(phone.yaw), pitch: App.r3(phone.pitch), elevation: App.r3(phone.elevation) }; }, { rebuild: false });
+    if (save === "auto") App.edit((s) => { delete s.questionView; }, { rebuild: false });
     phone = null;
+    $(".top").inert = headerWasInert;
     Scene3D.setPhone(null);
     if (before) { Scene3D.setView(before); App.setView(before.mode); }
     document.body.classList.remove("framing");
@@ -56,6 +63,26 @@ const Framing = (() => {
   }
 
   // The phone over the view: dark around it, the question card at its bottom, the buttons below.
+  function control(key, title, min, max, step, value, unit) {
+    return `<label class="phone-control"><span>${title}<output data-camera-value="${key}">${value}${unit}</output></span>
+      <input type="range" data-camera="${key}" aria-label="${title}" min="${min}" max="${max}" step="${step}" value="${key === "height" ? Math.log(value) : value}"></label>`;
+  }
+  const displayed = key => key === "height" || key === "elevation" ? Math.round(phone[key] * 10) / 10 : Math.round(phone[key] * DEG);
+  function syncControls() {
+    if (!phone) return;
+    const el = $("#phone");
+    for (const key of ["yaw", "pitch", "height", "elevation"]) {
+      const input = el.querySelector(`[data-camera="${key}"]`), output = el.querySelector(`[data-camera-value="${key}"]`);
+      if (input) input.value = key === "height" ? Math.log(phone.height) : displayed(key);
+      if (output) output.textContent = displayed(key) + (["yaw", "pitch"].includes(key) ? "°" : " м");
+    }
+    el.querySelectorAll("[data-camera-gesture]").forEach(b => {
+      const on = b.dataset.cameraGesture === gesture;
+      b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
+    });
+    const hint = el.querySelector("[data-camera-hint]");
+    if (hint) hint.textContent = gesture === "orbit" ? "Тяните — поворот · Shift — сдвиг · колесо — масштаб" : "Тяните — сдвиг · правая кнопка — поворот · колесо — масштаб";
+  }
   function render() {
     const el = $("#phone");
     if (!phone) { el.hidden = true; return; }
@@ -67,23 +94,56 @@ const Framing = (() => {
         <div class="phone-card" style="height:${phone.card * k}px;font-size:${Math.max(7, 13 * k)}px">
           <b>${esc(src ? src.question : q.text?.ru?.title || "")}</b>${answers.map((a, i) => `<span>${i + 1}. ${esc(a)}</span>`).join("")}</div>
       </div>
+      <details class="phone-camera" open><summary>${ic("video")}Камера вопроса</summary>
+        <div class="phone-camera-body">
+          <div class="phone-gestures segments"><button class="btn" data-camera-gesture="pan" aria-pressed="${gesture === "pan"}">${ic("hand")}Двигать</button>
+            <button class="btn" data-camera-gesture="orbit" aria-pressed="${gesture === "orbit"}">${ic("rotr")}Вращать</button></div>
+          <div class="phone-presets"><button class="btn ghost small" data-camera-preset="road">${ic("car")}С дороги</button><button class="btn ghost small" data-camera-preset="overview">${ic("cube")}Обзор</button><button class="btn ghost small" data-camera-preset="top">${ic("map")}Сверху</button></div>
+          <div class="phone-controls-grid">
+            ${control("yaw", "Поворот", -180, 180, 1, displayed("yaw"), "°")}
+            ${control("pitch", "Наклон", 10, 85, 1, displayed("pitch"), "°")}
+            ${control("height", "Охват кадра", Math.log(1.5), Math.log(140), 0.001, displayed("height"), " м")}
+            ${control("elevation", "Высота цели", 0, 30, 0.1, displayed("elevation"), " м")}
+          </div>
+        </div>
+      </details>
       <div class="phone-bar">
-        <span class="muted">Тяните — двигать кадр, колесо — ближе и дальше</span>
+        <span class="muted" data-camera-hint></span>
         <button class="btn ghost" data-frame="auto">${ic("restart")}Сам подбирать</button>
         <button class="btn ghost" data-frame="cancel">Отмена</button>
         <button class="btn primary" data-frame="save">${ic("check-circle")}Готово</button>
       </div>`;
+    syncControls();
   }
   $("#phone").addEventListener("click", (e) => {
+    const mode = e.target.closest("[data-camera-gesture]");
+    if (mode) { gesture = mode.dataset.cameraGesture; Scene3D.setPhoneGesture(gesture); syncControls(); return; }
+    const preset = e.target.closest("[data-camera-preset]");
+    if (preset && phone) {
+      const name = preset.dataset.cameraPreset;
+      phone = QuestionCamera.normalize({ ...phone, pitch: name === "road" ? 18 / DEG : name === "top" ? 85 / DEG : QuestionCamera.DEFAULT_PITCH });
+      Scene3D.setPhone(phone); syncControls(); return;
+    }
     const b = e.target.closest("[data-frame]");
     if (b) stop(b.dataset.frame === "cancel" ? null : b.dataset.frame);
   });
-  Scene3D.on("phone", (p) => { phone = { ...phone, ...p }; });
-  new ResizeObserver(() => { if (phone) { Scene3D.setPhone(phone); render(); } }).observe($("#view"));
+  $("#phone").addEventListener("input", (e) => {
+    const input = e.target.closest("[data-camera]");
+    if (!input || !phone) return;
+    const key = input.dataset.camera, value = Number(input.value);
+    if (!Number.isFinite(value)) return;
+    phone = QuestionCamera.normalize({ ...phone, [key]: key === "height" ? Math.exp(value) : key === "elevation" ? value : value / DEG });
+    Scene3D.setPhone(phone); syncControls();
+  });
+  Scene3D.on("phone", (p) => { if (phone) { phone = QuestionCamera.normalize({ ...phone, ...p }); syncControls(); } });
+  // The canvas owns viewport dimensions. A separate ResizeObserver can run first after the side
+  // panels collapse and draw the frame using yesterday's width while the camera already resizes.
+  Scene3D.on("resize", () => { if (phone) render(); });
   document.addEventListener("keydown", (e) => {
     if (!phone) return;
-    if (e.key === "Escape") { e.stopPropagation(); stop(null); }
-    if (e.key === "Enter") { e.stopPropagation(); stop("save"); }
+    const typing = e.target.closest?.("input, textarea, select, [contenteditable=true]");
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); stop(null); }
+    if (e.key === "Enter" && !typing && !e.target.closest?.("button, summary")) { e.preventDefault(); e.stopPropagation(); stop("save"); }
   }, true);
 
   // ---- the ticket's photo ---------------------------------------------------------------------

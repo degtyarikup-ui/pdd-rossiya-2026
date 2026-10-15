@@ -75,7 +75,16 @@ var question_signal_side := ""
 var tier := "high"
 var street_half := Street.ROAD_HALF   # carriageway half-width of the ring street (a multi-lane exit widens it)
 var leaves: Leaves                # autumn only
+const CAMERA_PITCH := atan2(42.0, 44.0)
+const CAMERA_DISTANCE := 60.8276253029822 # hypot(42, 44); a rotation preserves the legacy offset.
 var cam_heading := 0.0            # smoothed like cameraHeading in game.js
+var cam_pitch := CAMERA_PITCH
+var cam_question_blend := 0.0
+var cam_last_player := Vector3.ZERO
+var cam_question_focus := Vector3.ZERO
+var cam_custom_focus := false
+var cam_question_pose := {}
+var cam_fog_baseline := Vector2(-1.0, -1.0)
 var cam_look := Vector3.ZERO      # smoothed look point (game.js cameraLook)
 var cam_ready := false
 var cam_covered := 280.0
@@ -378,7 +387,7 @@ func _dismiss_loader() -> void:
 		var first: Situation = current.sit
 		var first_text: Dictionary = first.data.text.get(Ui.lang, first.data.text.ru).duplicate()
 		first_text["id"] = first.id
-		var seconds := Ui.answer_seconds(int(first.data.sourceTextLength))
+		var seconds := Ui.answer_seconds(_source_text_length(first.data))
 		if voice != null and voice.enabled: seconds = maxf(seconds, voice.duration(first.id) + 2.0)
 		warm_card = ui.warm_question(first_text, seconds)
 	elif loader != null and road != null:
@@ -573,7 +582,7 @@ func _setup_environment() -> void:
 	camera.keep_aspect = Camera3D.KEEP_HEIGHT
 	camera.size = 42.0
 	camera.near = 2.0          # the camera is 20+ m away: a far near plane keeps depth precise (no flicker)
-	camera.far = 400.0
+	camera.far = 5000.0       # match the editor, including large low-angle frames above a tall card
 	add_child(camera)
 
 
@@ -1632,7 +1641,7 @@ func _update_junction(dt: float) -> void:
 		text = sit.data.text.get(Ui.lang, sit.data.text.ru)
 		text = text.duplicate()
 		text["id"] = sit.id
-		_show_voiced_question(text, sit.id, Ui.answer_seconds(int(sit.data.sourceTextLength)))
+		_show_voiced_question(text, sit.id, Ui.answer_seconds(_source_text_length(sit.data)))
 		event.emit({ "event": "approach_situation", "situation": sit.id })
 		print("[game] question ", sit.id)
 		if qshot != "":
@@ -1960,9 +1969,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	# The rebase and the visual car move in the SAME frame (no one-frame disappearance).
 	player.position = drive.pos
 	player.rotation.y = drive.yaw
-	cam_heading-=heading
-	cam_look=xf*cam_look
-	camera.global_transform = xf * camera.global_transform
+	_rebase_camera(xf, heading)
 	_rebase_walkers(xf)
 	if leaves:
 		leaves.transform = xf * leaves.transform
@@ -3271,66 +3278,7 @@ func _process(delta: float) -> void:
 	_recycle_chunks()
 	_retire_streets()
 	if perf_tick: perf_tick = _perf_time("ring", perf_tick)
-	# The camera heading follows the car's slowly (game.js updateCamera:
-	# exp(-3 dt)) and only for real turns: small corrections and U-turn
-	# wobbles must not swing the view.
-	# While approaching an exam junction (within 35 m of the stop line), smoothly
-	# blend target look, size and heading towards the question framing position
-	# configured in the editor. By the time the car stops, the camera is already
-	# in position with zero jerking or sudden jump.
-	var blend := 0.0
-	var question_look := Vector3.ZERO
-	var question_size := 42.0
-
-	if current and current.has("sit") and current.sit and current.sit.data:
-		var target_cov := _card_covered()
-		cam_covered = lerpf(cam_covered, target_cov, 1.0 - exp(-10.0 * delta))
-
-		var stop_point: Vector3 = current.sit.global_transform*(current.sit.network.stop_point() if current.sit.network else Vector3(0,0,float(current.sit.data.stopZ)))
-		var dist_to_stop := drive.pos.distance_to(stop_point)
-		var qc := _question_framing()
-		question_look = current.sit.global_transform * Vector3(qc.look.x, 0, qc.look.y)
-		question_size = qc.size
-
-		if phase == "question":
-			blend = 1.0
-		elif phase == "driving" and dist_to_stop <= 35.0 and dist_to_stop > -5.0 and cos(drive.yaw) > 0.2:
-			var t := clampf(1.0 - maxf(0.0, dist_to_stop) / 35.0, 0.0, 1.0)
-			blend = t * t * (3.0 - 2.0 * t)   # smoothstep cubic curve
-
-	var question_heading: float = current.sit.rotation.y if current else drive.yaw
-	var want := lerp_angle(drive.yaw,question_heading,blend)
-	cam_heading += atan2(sin(want - cam_heading), cos(want - cam_heading)) * (1.0 - exp(-3.0 * delta))
-
-	var fwd := Vector3(sin(cam_heading), 0, cos(cam_heading))
-	var driving_look := Vector3(drive.pos.x, 0, drive.pos.z) + fwd * 10.0
-	var look := driving_look.lerp(question_look, blend) if blend > 0.0 else driving_look
-	var target_size := lerpf(42.0, question_size, blend)
-
-	camera.size = lerpf(camera.size, target_size, 1.0 - exp(-5.0 * delta))
-
-	# The look point glides to its target (game.js: cameraLook.lerp): a sudden
-	# change of framing never jumps the picture.
-	# A jump of the look point (the car placed far away, a question at a new junction) is not a
-	# pan: the camera goes there at once, else the junction is out of frame for seconds.
-	if not cam_ready or cam_look.distance_to(look) > 60.0:
-		cam_look = look
-		camera.size = target_size
-		cam_heading = want
-		cam_ready = true
-	else:
-		# Exponential glide, but never faster than 25 m/s: a long way to catch up
-		# (the question view to the driving view) is a steady pan, not a jump.
-		var glide := cam_look.lerp(look, 1.0 - exp(-6.0 * delta))
-		cam_look = cam_look + (glide - cam_look).limit_length(25.0 * delta)
-	look = cam_look
-	if not topdown_cam_locked:
-		camera.position = look + Vector3(-sin(cam_heading) * 44.0, 42, -cos(cam_heading) * 44.0)
-		camera.look_at(look)
-	if overview and current and not topdown_cam_locked:
-		camera.size = 220.0
-		camera.position = current.sit.global_position + Vector3(0, 300, -1.0)
-		camera.look_at(current.sit.global_position)
+	var look := _update_camera(delta)
 	if perf_tick: perf_tick = _perf_time("camera", perf_tick)
 	_update_occlusion(delta)
 	if perf_tick: perf_tick = _perf_time("occlusion", perf_tick)
@@ -3366,6 +3314,161 @@ func _process(delta: float) -> void:
 	if perf_tick:
 		_perf_time("effects", perf_tick)
 		perf_frames += 1
+
+## A scene rebase changes coordinates, including the teleport detector, in one frame.
+func _rebase_camera(xf: Transform3D, heading: float) -> void:
+	cam_heading -= heading
+	cam_look = xf * cam_look
+	cam_last_player = xf * cam_last_player
+	cam_question_focus = xf * cam_question_focus
+	if not cam_question_pose.is_empty():
+		cam_question_pose.look = xf * cam_question_pose.look
+		cam_question_pose.focus = xf * cam_question_pose.focus
+		cam_question_pose.heading -= heading
+	camera.global_transform = xf * camera.global_transform
+
+
+## The editor and the game share an orthographic orbit. Blend the entire pose,
+## including the aim height and the shortest yaw, during arrival and departure.
+## Target distance must never trigger a snap: authors can frame a distant sign.
+func _update_camera(delta: float) -> Vector3:
+	if topdown_cam_locked:
+		return cam_look
+	var blend := 0.0
+	var question_look := Vector3.ZERO
+	var question_size := 42.0
+	var question_heading := drive.yaw
+	var question_pitch := CAMERA_PITCH
+	cam_custom_focus = false
+	if current and current.has("sit") and current.sit and current.sit.data:
+		cam_covered = lerpf(cam_covered, _card_covered(), 1.0 - exp(-10.0 * delta))
+		var sit: Situation = current.sit
+		var stop_point: Vector3 = sit.global_transform * (sit.network.stop_point() if sit.network else Vector3(0, 0, float(sit.data.stopZ)))
+		var qc := _question_framing()
+		question_look = sit.global_transform * Vector3(qc.look.x, float(qc.get("elevation", 0.0)), qc.look.y)
+		question_size = float(qc.size)
+		question_heading = sit.global_rotation.y + float(qc.get("yaw", 0.0))
+		question_pitch = float(qc.get("pitch", CAMERA_PITCH))
+		cam_custom_focus = bool(qc.get("authored", false))
+		if cam_custom_focus:
+			var centre: Vector2 = qc.centre
+			cam_question_focus = sit.global_transform * Vector3(centre.x, float(qc.get("elevation", 0.0)), centre.y)
+		if phase == "question":
+			blend = 1.0
+		elif phase == "driving":
+			# A close-up with a large orbit/offset needs more travel time than the
+			# original 35 m framing. Begin while there is still room to fly there.
+			var turn := absf(angle_difference(drive.yaw, question_heading))
+			var flight_span := clampf(stop_point.distance_to(question_look) * 1.2 + turn * 20.0, 35.0, 220.0)
+			var remaining := drive.pos.distance_to(stop_point)
+			if sit.network and sit.network.has_route("approach"):
+				var progress := _approach_projection(sit, drive.pos)
+				if float(progress.offset) < 8.0:
+					remaining = maxf(float(progress.remaining), float(progress.offset))
+			if remaining < flight_span:
+				var t := clampf(1.0 - maxf(0.0, remaining - 12.0) / maxf(1.0, flight_span - 12.0), 0.0, 1.0)
+				blend = t * t * (3.0 - 2.0 * t)
+
+		# Finish releasing the previous question before accepting a new one.
+		# The loader may clear/swap current in the same frame as a world rebase.
+		var same_question: bool = cam_question_pose.get("id", 0) == sit.get_instance_id()
+		if not same_question and cam_question_blend > 0.001:
+			blend = 0.0
+		elif blend > 0.0:
+			cam_question_pose = {"id": sit.get_instance_id(), "look": question_look, "size": question_size,
+				"heading": question_heading, "pitch": question_pitch, "focus": cam_question_focus, "authored": cam_custom_focus,
+				"pan_speed": clampf(stop_point.distance_to(question_look) * 0.4, 25.0, 60.0)}
+	if not cam_question_pose.is_empty() and (blend > 0.0 or cam_question_blend > 0.001):
+		question_look = cam_question_pose.look
+		question_size = cam_question_pose.size
+		question_heading = cam_question_pose.heading
+		question_pitch = cam_question_pose.pitch
+		cam_question_focus = cam_question_pose.focus
+		cam_custom_focus = cam_question_pose.authored
+
+	var teleport := cam_ready and cam_last_player.distance_to(drive.pos) > 60.0
+	var snap := not cam_ready or teleport
+	cam_last_player = drive.pos
+	cam_question_blend = blend if snap else lerpf(cam_question_blend, blend, 1.0 - exp(-8.0 * delta))
+	var want := lerp_angle(drive.yaw, question_heading, cam_question_blend)
+	var wanted_pitch := lerpf(CAMERA_PITCH, question_pitch, cam_question_blend)
+	var heading_step := angle_difference(cam_heading, want) * (1.0 - exp(-3.0 * delta))
+	var pitch_step := (wanted_pitch - cam_pitch) * (1.0 - exp(-4.0 * delta))
+	var next_heading := want if snap else cam_heading + clampf(heading_step, -0.9 * delta, 0.9 * delta)
+	var next_pitch := wanted_pitch if snap else cam_pitch + clampf(pitch_step, -0.7 * delta, 0.7 * delta)
+	var fwd := Vector3(sin(next_heading), 0, cos(next_heading))
+	var driving_look := Vector3(drive.pos.x, 0, drive.pos.z) + fwd * 10.0
+	var look := driving_look.lerp(question_look, cam_question_blend)
+	var target_size := lerpf(42.0, question_size, cam_question_blend)
+	if snap:
+		cam_look = look
+		cam_heading = next_heading
+		cam_pitch = next_pitch
+		camera.size = target_size
+		cam_ready = true
+	else:
+		# Wide, shallow frames can move the optical centre hundreds of metres.
+		# Match their screen-space speed instead of making a wide shot fly for 30 s.
+		var motion_scale := maxf(1.0, camera.size / 42.0)
+		var pan_speed := maxf(25.0 * motion_scale, float(cam_question_pose.get("pan_speed", 25.0)))
+		var next_look := cam_look + (cam_look.lerp(look, 1.0 - exp(-6.0 * delta)) - cam_look).limit_length(pan_speed * delta)
+		# Rotating a 60 m orbit can move the camera farther than its look point.
+		# Bound the combined translation/orbit, not merely the target pan.
+		var next_position := next_look + _camera_offset(next_heading, next_pitch)
+		var step := camera.position.distance_to(next_position)
+		var max_step := 60.0 * motion_scale * delta
+		var fraction := minf(1.0, max_step / step) if step > 0.00001 else 1.0
+		# An interpolated orbit follows an arc, slightly longer than its chord.
+		# Correct that difference so the actual rendered position obeys the cap.
+		for i in 2:
+			var at := cam_look.lerp(next_look, fraction) + _camera_offset(cam_heading + angle_difference(cam_heading, next_heading) * fraction, lerpf(cam_pitch, next_pitch, fraction))
+			var actual_step := camera.position.distance_to(at)
+			if actual_step <= max_step or actual_step < 0.00001: break
+			fraction *= max_step / actual_step
+		cam_look = cam_look.lerp(next_look, fraction)
+		cam_heading += angle_difference(cam_heading, next_heading) * fraction
+		cam_pitch = lerpf(cam_pitch, next_pitch, fraction)
+		# Log interpolation makes a very tight sign close-up zoom out at a
+		# steady perceived speed, instead of jumping by several view widths.
+		camera.size = exp(lerpf(log(maxf(0.1, camera.size)), log(maxf(0.1, target_size)), 1.0 - exp(-5.0 * delta)))
+	camera.position = cam_look + _camera_offset(cam_heading, cam_pitch)
+	camera.look_at(cam_look)
+	if environment:
+		if cam_fog_baseline.x < 0.0:
+			cam_fog_baseline = Vector2(environment.fog_depth_begin, environment.fog_depth_end)
+		# At a shallow pitch the point above a tall card can lie hundreds of
+		# metres ahead of the optical centre. Keep that authored focus clear.
+		var depth := maxf(0.0, (cam_question_focus - camera.position).dot(-camera.basis.z)) if cam_custom_focus and cam_question_blend > 0.001 else 0.0
+		var ease := 1.0 if snap else 1.0 - exp(-8.0 * delta)
+		environment.fog_depth_begin = lerpf(environment.fog_depth_begin, maxf(cam_fog_baseline.x, depth - 80.0), ease)
+		environment.fog_depth_end = lerpf(environment.fog_depth_end, maxf(cam_fog_baseline.y, depth + 100.0), ease)
+	if blend == 0.0 and cam_question_blend < 0.001 and cam_look.distance_to(driving_look) < 0.1:
+		cam_question_pose.clear()
+	if overview and current:
+		camera.size = 220.0
+		camera.position = current.sit.global_position + Vector3(0, 300, -1.0)
+		camera.look_at(current.sit.global_position)
+	return cam_look
+
+
+func _camera_offset(yaw: float, pitch: float) -> Vector3:
+	return Vector3(-sin(yaw) * cos(pitch), sin(pitch), -cos(yaw) * cos(pitch)) * CAMERA_DISTANCE
+
+
+## Older manually created questions predate this generated timing field.
+## Keep explicit export values; otherwise derive the same title/options total.
+func _source_text_length(sit_data: Dictionary) -> int:
+	var explicit = sit_data.get("sourceTextLength")
+	if (explicit is int or explicit is float) and is_finite(float(explicit)) and float(explicit) >= 0.0:
+		return int(explicit)
+	var all_text = sit_data.get("text", {})
+	var ru = all_text.get("ru", {}) if all_text is Dictionary else {}
+	if not ru is Dictionary: return 0
+	var count := str(ru.get("title", "")).length()
+	for option in ru.get("options", []):
+		count += str(option).length()
+	return count
+
 
 ## Card height on an 844 px phone screen, matching Framing.cardHeight in the web editor
 ## (tools/network/editor/framing.js).
@@ -3416,10 +3519,15 @@ func _question_framing() -> Dictionary:
 		qv = current.sit.data.get("questionView")
 	if qv is Dictionary:
 		var free_part := clampf(1.0 - covered / 844.0, 0.3, 1.0)
-		var view_size := float(qv.height) / free_part
-		var tilt := sin(atan2(42.0, 44.0))     # the camera's pitch (see the camera below)
-		var up := (1.0 - free_part) * view_size * 0.5 / tilt
-		return { "look": Vector2(qv.centre[0], qv.centre[1] - up), "size": view_size }
+		var view_size := maxf(1.5, float(qv.height)) / free_part
+		var yaw := float(qv.get("yaw", 0.0))
+		var pitch := clampf(float(qv.get("pitch", CAMERA_PITCH)), deg_to_rad(10.0), deg_to_rad(85.0))
+		var elevation := clampf(float(qv.get("elevation", 0.0)), 0.0, 30.0)
+		var up := (1.0 - free_part) * view_size * 0.5 / sin(pitch)
+		var forward := Vector2(sin(yaw), cos(yaw))
+		return { "look": Vector2(qv.centre[0], qv.centre[1]) - forward * up, "size": view_size,
+			"yaw": yaw, "pitch": pitch, "elevation": elevation,
+			"authored": true, "centre": Vector2(qv.centre[0], qv.centre[1]) }
 	var samples: Array = current.sit.data.get("questionCamera", [])
 	var lo: Dictionary = samples[0] if not samples.is_empty() else {}
 	var hi: Dictionary = samples[samples.size() - 1] if not samples.is_empty() else {}
@@ -3574,9 +3682,19 @@ func _street_ranges(index: int) -> Array:
 	return spans
 
 
+## Scenery culls potential blockers near the first target. A free question
+## frame must reveal its own point of interest even when the car is far away.
+func _camera_occlusion_targets() -> Array[Vector3]:
+	var targets: Array[Vector3] = []
+	if cam_custom_focus and cam_question_blend > 0.001:
+		targets.append(cam_question_focus)
+	targets.append(player.global_position + Vector3.UP * 1.2)
+	return targets
+
+
 ## Only buildings receive this material; roads, trees and all vehicles keep their opaque material.
 func _update_occlusion(delta := 1.0/60.0) -> void:
-	var targets: Array[Vector3] = [player.global_position + Vector3.UP * 1.2]
+	var targets := _camera_occlusion_targets()
 	for j in _junctions():
 		if j.sit.network == null: continue
 		for sg in j.sit.network.data.get("signs", []):

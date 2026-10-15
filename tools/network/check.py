@@ -9,6 +9,7 @@ not be answered on the road); warnings are things to look at by hand.
 The web editor calls check_scene() on every save.
 """
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -43,6 +44,31 @@ def finding(out, level, code, message, ref=None):
 MARKING_TYPES = ("paint", "solid", "dashed", "stop", "zebra")
 MARKING_COLOURS = ("white", "yellow")
 LINE_MARKINGS = ("solid", "dashed", "stop", "zebra")
+
+
+def check_question_view(scene: dict, out: list) -> None:
+    """Old centre/height frames remain valid; optional free-camera values must be finite."""
+    view = scene.get("questionView")
+    if view is None:
+        return
+
+    def number(value):
+        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+    valid = isinstance(view, dict)
+    if valid:
+        centre = view.get("centre")
+        valid = (isinstance(centre, list) and len(centre) == 2
+                 and all(number(v) for v in centre)
+                 and number(view.get("height")) and view["height"] > 0)
+        for key in ("yaw", "pitch", "elevation"):
+            if key in view and not number(view[key]):
+                valid = False
+        if number(view.get("pitch")) and not 0 < view["pitch"] < math.pi / 2:
+            valid = False
+    if not valid:
+        finding(out, "error", "question-camera", "Некорректный ракурс камеры вопроса: настройте кадр заново",
+                {"type": "question"})
 
 
 def check_layers(scene: dict, area, out: list) -> None:
@@ -87,6 +113,7 @@ def check_layers(scene: dict, area, out: list) -> None:
 
 def check_scene(scene: dict) -> list:
     out = []
+    check_question_view(scene, out)
     if scene.get("schema") != 1:
         finding(out, "error", "schema", f"неизвестная версия схемы: {scene.get('schema')!r}")
     roads = scene.get("roads", [])

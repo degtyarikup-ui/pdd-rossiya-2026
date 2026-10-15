@@ -294,9 +294,50 @@ func register_building_pool(node: MultiMeshInstance3D) -> void:
 	node.set_meta("occlusion_originals", originals)
 	var fades := {}
 	node.set_meta("occlusion_fades",fades)
-	occluders.append({"node":weakref(node),"originals":originals,"fades":fades,"fade_node":null})
+	occluders.append({"node":weakref(node),"originals":originals,"fades":fades,"fade_node":null,"spheres":{}})
+
+
+## Orthographic pixels have parallel sightlines, including when a question card
+## moves the visible target far from the optical centre of a shallow camera.
+func _orthographic_occlusion_rays(camera: Camera3D, targets: Array[Vector3]) -> Array[Dictionary]:
+	var rays: Array[Dictionary] = []
+	var direction := -camera.global_basis.z.normalized()
+	for target in targets:
+		var depth := (target - camera.global_position).dot(direction) - camera.near
+		if depth <= 0.0: continue
+		var origin := target - direction * depth
+		rays.append({"origin":origin,"target":target,"delta":target-origin,"length_squared":depth*depth})
+	return rays
+
+
+## The local sphere is cached across frames and world rebases. Exact inverses
+## and mesh intersections are only needed for buildings near an actual ray.
+func _occlusion_sphere(state: Dictionary, index: int, pose: Transform3D, bounds: AABB) -> Dictionary:
+	var spheres: Dictionary = state.spheres
+	var cached: Dictionary = spheres.get(index,{})
+	if cached.is_empty() or cached.pose != pose:
+		var scale := maxf(pose.basis.x.length(),maxf(pose.basis.y.length(),pose.basis.z.length()))
+		cached = {"pose":pose,"centre":pose*bounds.get_center(),"radius":bounds.size.length()*0.5*scale}
+		spheres[index] = cached
+	return cached
+
+
+func _occlusion_ray_near(ray: Dictionary, centre: Vector3, radius_squared: float) -> bool:
+	var offset: Vector3 = centre-ray.origin
+	var t := clampf(offset.dot(ray.delta)/float(ray.length_squared),0.0,1.0)
+	return offset.distance_squared_to(ray.delta*t) <= radius_squared
 
 func update_occluders(camera: Camera3D, targets: Array[Vector3], delta: float) -> void:
+	var orthographic := camera.projection == Camera3D.PROJECTION_ORTHOGONAL
+	var rays: Array[Dictionary] = []
+	if orthographic: rays = _orthographic_occlusion_rays(camera,targets)
+	var ray_box := AABB()
+	var first_ray := true
+	for ray in rays:
+		if first_ray:
+			ray_box = AABB(ray.origin,Vector3.ZERO)
+			first_ray = false
+		ray_box = ray_box.expand(ray.origin).expand(ray.target)
 	for state in occluders.duplicate():
 		var node: MultiMeshInstance3D = state.node.get_ref()
 		if node == null:
@@ -305,6 +346,10 @@ func update_occluders(camera: Camera3D, targets: Array[Vector3], delta: float) -
 		if not node.is_visible_in_tree(): continue
 		var multi := node.multimesh
 		var bounds := multi.mesh.get_aabb().grow(0.12)
+		if not state.has("spheres") or state.get("sphere_bounds") != bounds:
+			state.spheres = {}
+			state.sphere_bounds = bounds
+		var world_scale := maxf(node.global_basis.x.length(),maxf(node.global_basis.y.length(),node.global_basis.z.length()))
 		var poses: Array = node.get_meta("instance_transforms",[])
 		var count := multi.instance_count if multi.visible_instance_count < 0 else multi.visible_instance_count
 		var bounds_dirty := false
@@ -312,16 +357,31 @@ func update_occluders(camera: Camera3D, targets: Array[Vector3], delta: float) -
 		for i in count:
 			var xf: Transform3D = state.originals.get(i,poses[i] if poses.size()>i else multi.get_instance_transform(i))
 			if xf.origin.y < -10.0: continue
-			var world: Transform3D = node.global_transform * xf
-			var nearby := world.origin.distance_to(targets[0]) < 85.0
+			var nearby := false
+			if orthographic:
+				var sphere := _occlusion_sphere(state,i,xf,bounds)
+				var centre: Vector3 = node.global_transform*sphere.centre
+				var radius: float = sphere.radius*world_scale
+				if not first_ray and ray_box.grow(radius).has_point(centre):
+					for ray in rays:
+						if _occlusion_ray_near(ray,centre,radius*radius):
+							nearby = true; break
+			else:
+				nearby = not targets.is_empty() and (node.global_transform*xf).origin.distance_to(targets[0]) < 85.0
 			if not nearby and not state.fades.has(i): continue
 			var blocked := false
 			if nearby:
+				var world: Transform3D = node.global_transform * xf
 				var inv := world.affine_inverse()
-				var origin: Vector3 = inv * camera.global_position
-				for target in targets:
-					if bounds.intersects_segment(origin,inv*target) != null:
-						blocked=true;break
+				if orthographic:
+					for ray in rays:
+						if bounds.intersects_segment(inv*ray.origin,inv*ray.target) != null:
+							blocked=true;break
+				else:
+					var origin: Vector3 = inv * camera.global_position
+					for target in targets:
+						if bounds.intersects_segment(origin,inv*target) != null:
+							blocked=true;break
 			var opacity := move_toward(float(state.fades.get(i,1.0)),0.25 if blocked else 1.0,delta*4.0)
 			if opacity >= 0.999:
 				if state.originals.has(i):

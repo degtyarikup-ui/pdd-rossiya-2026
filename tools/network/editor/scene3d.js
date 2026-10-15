@@ -46,7 +46,7 @@ const Scene3D = (() => {
       groups[name].traverse((o) => { if (o.geometry && o.userData.own) o.geometry.dispose(); });
     }
     groups[name] = new THREE.Group();
-    groups[name].visible = !hidden.has(GROUP_LAYER[name] || "");
+    groups[name].visible = !hidden.has(GROUP_LAYER[name] || "") && !(phone && ["plan", "selection", "draft", "brushPreview"].includes(name));
     scene.add(groups[name]);
     return groups[name];
   }
@@ -340,7 +340,10 @@ const Scene3D = (() => {
     const actorRouteId = selActor ? (model.actors.find((x) => x.id === selActor.id)?.route || `actor_${selActor.id}`) : null;
     const focusId = sel.find((s) => s.t === "route")?.id || actorRouteId || (hover && hover.t === "route" ? hover.id : null);
     const focusRoute = hiddenPlayerGuideRef({ t: "route", id: focusId }) ? null : focusId;
+    const phoneManoeuvre = phone && !model.routes.some(r => r.kind === "choice" && r.points.length >= 2) ? model.question?.maneuver : null;
     for (const r of model.routes) {
+      const phoneGuide = phoneManoeuvre && r.kind === "manoeuvre" && r.exit === phoneManoeuvre;
+      if (phone && r.kind !== "choice" && !phoneGuide) continue;
       if (playerGuideHidden(r)) continue;
       if (r.points.length < 2) continue;
       if (r.kind === "actor" && model.actors.some(a => (a.route || `actor_${a.id}`) === r.id && a.behaviour?.staysPut)) continue;
@@ -348,7 +351,7 @@ const Scene3D = (() => {
       // drives, not what the question shows.
       // The exits are where the game continues the street after each way out (and its autopilot's path):
       // not something the player is told to drive. Drawn only when one is picked.
-      if (r.kind === "manoeuvre" && focusRoute !== r.id) continue;
+      if (r.kind === "manoeuvre" && !phoneGuide && focusRoute !== r.id) continue;
       // The question's way and the answers always show; the other exits only on focus or in the test.
       const st = routeStyle(r);
       const focused = focusRoute === r.id;
@@ -1139,7 +1142,7 @@ const Scene3D = (() => {
       const w = l.text.length * 7 + 16, h = 22;
       const box = { x0: x - w / 2, y0: y - h, x1: x + w / 2, y1: y };
       const clash = placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0);
-      const visible = tmp.z < 1 && x > -40 && x < width + 40 && y > -20 && y < height + 20 && !clash && (mode === "3d" || pxPerM > 1.6 || l.cls === "letter");
+      const visible = (!phone || l.cls === "letter") && tmp.z < 1 && x > -40 && x < width + 40 && y > -20 && y < height + 20 && !clash && (mode === "3d" || pxPerM > 1.6 || l.cls === "letter");
       if (visible) placed.push(box);
       l.el.style.display = visible ? "" : "none";
       l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
@@ -1187,34 +1190,43 @@ const Scene3D = (() => {
     renderer.setSize(width, height);
     lineMaterials.forEach((m) => m.resolution.set(width, height));
     applyCamera();
+    emit("resize", { width, height });
   }
 
-  // The question's camera of the game (world.gd): orthographic, pitched atan2(42, 44), looking along +z,
-  // framed on a phone held upright. phone: { centre: [x, z], height (m above the card), card (px of 844) }.
-  const PHONE_W = 390, PHONE_H = 844, TILT = Math.sin(Math.atan2(42, 44));
+  // The same orthographic pose as world.gd. Orientation and target elevation are editable; the
+  // legacy pose remains the default for questionView records authored before free camera controls.
+  const PHONE_W = 390, PHONE_H = 844;
   let phone = null;
+  let phoneGesture = "pan";
   function phoneRect() {
-    const ph = Math.min(height - 40, (width - 40) * PHONE_H / PHONE_W), pw = ph * PHONE_W / PHONE_H;
-    return { x: (width - pw) / 2, y: (height - ph) / 2, w: pw, h: ph };
+    // Leave the controls and bottom actions outside the actual phone picture, including on laptops.
+    const panelSpace = width <= 850 ? 234 : 284;
+    const pictureWidth = Math.max(90, width - panelSpace - 40);
+    const ph = Math.max(100, Math.min(height - 100, pictureWidth * PHONE_H / PHONE_W)), pw = ph * PHONE_W / PHONE_H;
+    const x = Math.max(16, Math.min((width - pw) / 2, width - panelSpace - pw - 16));
+    return { x, y: Math.max(16, (height - ph - 64) / 2), w: pw, h: ph };
   }
   function applyPhoneCamera() {
     const rc = phoneRect();
-    const free = Math.max(0.3, 1 - phone.card / PHONE_H);
-    const size = phone.height / free;
-    const up = (1 - free) * size * 0.5 / TILT;
-    const look = new THREE.Vector3(phone.centre[0], 0, phone.centre[1] - up);
-    const V = size * height / rc.h;
+    const pose = QuestionCamera.pose(phone);
     camera = planCam;
-    Object.assign(camera, { left: -V / 2 * width / height, right: V / 2 * width / height, top: V / 2, bottom: -V / 2 });
+    Object.assign(camera, QuestionCamera.viewport(phone, width, height, rc));
     camera.updateProjectionMatrix();
-    camera.position.set(look.x, 42, look.z - 44);
+    camera.position.set(...pose.position);
     camera.up.set(0, 1, 0);
-    camera.lookAt(look);
+    camera.lookAt(...pose.look);
     camera.updateMatrixWorld();
     needsRender = true;
   }
   function setPhone(p) {
-    phone = p ? { ...p } : null;
+    const toggled = !!phone !== !!p;
+    phone = p ? QuestionCamera.normalize(p) : null;
+    if (toggled) {
+      if (model) rebuildRoutes();
+      for (const name of ["plan", "selection", "draft", "brushPreview"]) {
+        if (groups[name]) groups[name].visible = !phone && !hidden.has(GROUP_LAYER[name] || "");
+      }
+    }
     applyCamera();
   }
 
@@ -1251,6 +1263,7 @@ const Scene3D = (() => {
 
   // Metres per screen pixel at a point of the ground.
   function worldPerPixel(x, z) {
+    if (phone) return (camera.top - camera.bottom) / height;
     if (mode === "plan") return 1 / pxPerM;
     const d = camera.position.distanceTo(new THREE.Vector3(x, 0, z));
     return (2 * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) / height;
@@ -1573,6 +1586,12 @@ const Scene3D = (() => {
     el.addEventListener("pointerdown", (e) => {
       const p = local(e);
       el.focus();
+      if (phone && [0, 1, 2].includes(e.button)) {
+        nav = { kind: e.button === 2 || (e.button === 0 && phoneGesture === "orbit" && !spaceDown && !e.shiftKey) ? "phone-orbit" : "phone", last: p };
+        el.setPointerCapture(e.pointerId);
+        el.classList.add("grabbing");
+        return;
+      }
       const panning = e.button === 1 || (e.button === 0 && (spaceDown || panTool));
       const orbit = e.button === 2;
       if (panning || orbit) {
@@ -1583,17 +1602,14 @@ const Scene3D = (() => {
       }
       if (e.button !== 0) return;
       el.setPointerCapture(e.pointerId);
-      if (phone) { nav = { kind: "phone", last: p }; return; }
       emit("pointer", pack("down", e, p));
     });
     el.addEventListener("pointermove", (e) => {
       const p = local(e);
       if (nav) {
         const dx = p.x - nav.last.x, dy = p.y - nav.last.y;
-        if (nav.kind === "phone") {
-          // Dragging the picture: the scene follows the finger (screen right is -x, up is +z).
-          const rc = phoneRect(), V = phone.height / Math.max(0.3, 1 - phone.card / PHONE_H) * height / rc.h, k = V / height;
-          phone.centre = [phone.centre[0] + dx * k, phone.centre[1] + dy * k / TILT];
+        if (nav.kind === "phone" || nav.kind === "phone-orbit") {
+          phone = nav.kind === "phone-orbit" ? QuestionCamera.orbit(phone, dx, dy) : QuestionCamera.pan(phone, dx, dy, phoneRect().h);
           applyCamera();
           emit("phone", phone);
         } else if (nav.kind === "orbit") {
@@ -1612,14 +1628,15 @@ const Scene3D = (() => {
       if (nav) { nav = null; el.classList.remove("grabbing"); return; }
       emit("pointer", pack("up", e, p));
     });
-    el.addEventListener("dblclick", (e) => emit("pointer", pack("dblclick", e, local(e))));
+    el.addEventListener("pointercancel", () => { nav = null; el.classList.remove("grabbing"); });
+    el.addEventListener("dblclick", (e) => { if (!phone) emit("pointer", pack("dblclick", e, local(e))); });
     el.addEventListener("pointerleave", () => emit("pointer", { type: "leave" }));
     // A trackpad scrolls to pan and pinches to zoom (as in Figma); a mouse wheel zooms.
     el.addEventListener("wheel", (e) => {
       e.preventDefault();
       const p = local(e);
       if (phone) {
-        phone.height = Math.max(8, Math.min(140, phone.height * Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0015))));
+        phone = QuestionCamera.zoom(phone, Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
         applyCamera();
         emit("phone", phone);
         return;
@@ -1662,6 +1679,7 @@ const Scene3D = (() => {
   return {
     mount, load, refresh, setBuild, setSelection, setHover, setDraft, setGhost, setBrushPreview, setHidden, setPlanHandles,
     setSimMode, setFollow, setPhone, phoneRect, getView, setView, setPose, setMode, fit, focus, zoomBy, panBy, worldAt, screenOf, worldPerPixel, hitAt, inRect,
+    setPhoneGesture(value) { phoneGesture = value === "orbit" ? "orbit" : "pan"; },
     setTextures, reloadPicture, capture, smooth,
     on(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
     setPanTool(on) { panTool = !!on; renderer && renderer.domElement.classList.toggle("grab", panTool); },

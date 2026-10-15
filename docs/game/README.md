@@ -131,6 +131,8 @@ tools/network/.venv/bin/python tools/network/tests/actor_turn_signals_check.py #
 godot --headless --path game_godot --script res://tests/actor_turn_signals_check.gd # ручной/автоматический сигнал, линзы всех типов транспорта, аварийка и ответ
 tools/network/.venv/bin/python tools/network/tests/show_player_guide_check.py # экспорт переключателя синей стрелки на копиях, фикстуры в scratch
 godot --headless --path game_godot --script res://tests/show_player_guide_check.gd # синяя стрелка/А-Б, старый guide.glb, камера и неизменный реальный проезд
+godot --headless --path game_godot --script res://tests/question_camera_pose_check.gd # свободный ракурс вопроса, карточка, поворот локации и плавный прилёт/возврат
+godot --headless --path game_godot --script res://tests/question_camera_occlusion_check.gd # параллельные лучи камеры и прозрачность зданий в удалённом низком ракурсе
 godot --headless --path game_godot --script res://tests/tram_question_signals_check.gd # правые сигналы трамваев 15/13, 28/13, 36/14: линзы, ореолы, ответ, пауза и выключение
 godot --headless --path game_godot --script res://tests/actor_hazards_check.gd # постоянная аварийка участников, стоянка, обе стороны, пауза и старые настройки
 godot --headless --path game_godot --script res://tests/signal_glow_check.gd # свечение и цвета секций светофора без текстур

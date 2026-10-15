@@ -414,13 +414,43 @@ details summary { cursor: pointer; color: var(--ink-3); margin-top: 8px; font-si
 .dialog-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
 /* ---- question camera on a phone, the ticket photo ---- */
-body.framing .toolbar, body.framing .popover, body.framing .hint, body.framing .viewbar { display: none; }
+body.framing .toolbar, body.framing .popover, body.framing .hint, body.framing .viewbar,
+body.framing .refpic { display: none; }
+body.framing .app { grid-template-columns: 0 minmax(0, 1fr) 0; }
+body.framing .left, body.framing .right, body.framing .top-actions { visibility: hidden; }
 .phone { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
 .phone-frame { position: absolute; border-radius: 26px; box-shadow: 0 0 0 4000px rgba(18, 20, 24, .62), inset 0 0 0 3px #111; }
 .phone-card { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: .35em; padding: 1em; border-radius: 1.4em 1.4em 23px 23px; background: rgba(255, 255, 255, .96); color: var(--ink); overflow: hidden; line-height: 1.25; }
 .phone-card span { padding: .45em .6em; border-radius: .6em; background: var(--field); }
 .phone-bar { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 14px; border-radius: 14px; background: #fff; box-shadow: var(--float); pointer-events: auto; white-space: nowrap; }
 .phone-bar .muted { margin: 0; }
+.phone-camera { position: absolute; top: 20px; right: 20px; width: 252px; max-height: calc(100% - 100px); overflow: auto;
+  display: grid; gap: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: #fff;
+  box-shadow: var(--float); pointer-events: auto; }
+.phone-camera summary { display: flex; align-items: center; gap: 8px; margin-top: 0; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; list-style: none; }
+.phone-camera summary::-webkit-details-marker { display: none; }
+.phone-camera summary::after { content: "−"; color: var(--ink-3); margin-left: auto; }
+.phone-camera:not([open]) summary::after { content: "+"; }
+.phone-camera-body { display: grid; gap: 16px; margin-top: 16px; }
+.phone-camera .segments { width: 100%; }
+.phone-camera .segments button { flex: 1; }
+.phone-controls-grid { display: grid; gap: 16px; }
+.phone-control { display: grid; gap: 8px; font-size: 12px; font-weight: 500; color: var(--ink-2); }
+.phone-control > span { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.phone-control output { color: var(--ink); font-variant-numeric: tabular-nums; }
+.phone-control input[type=range] { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.phone-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.phone-presets .btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  min-height: 60px; padding: 8px 3px; border-radius: 10px; background: var(--field); font-size: 11px; }
+.phone-presets .btn:hover { background: var(--accent-soft); color: var(--accent); }
+.phone-presets button .i { width: 23px; height: 23px; }
+.phone-camera .muted { margin: 0; font-size: 11px; line-height: 1.45; }
+@media (max-width: 850px) {
+  .phone-camera { top: 12px; right: 12px; width: 210px; padding: 12px; gap: 12px; }
+  .phone-controls-grid { gap: 12px; }
+  .phone-bar { max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: center; white-space: normal; padding: 8px; }
+  .phone-bar .muted { width: 100%; text-align: center; font-size: 11px; }
+}
 .lightbox { flex-direction: column; gap: 12px; }
 .lightbox img { max-width: calc(100vw - 80px); max-height: calc(100vh - 140px); border-radius: 14px; box-shadow: var(--float); }
 .lightbox:not([hidden]) { display: flex; align-items: center; justify-content: center; }

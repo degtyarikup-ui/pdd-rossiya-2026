@@ -628,6 +628,7 @@ const App = (() => {
     return shift === e.shiftKey;
   }
   function onKey(e) {
+    if (typeof Framing !== "undefined" && Framing.on) return;
     if (typeof QuestionReview !== "undefined" && QuestionReview.active()) return;
     const typing = e.target && (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) || e.target.isContentEditable);
     if (!$("#keys").hidden && e.key === "Escape") { $("#keys").hidden = true; return; }

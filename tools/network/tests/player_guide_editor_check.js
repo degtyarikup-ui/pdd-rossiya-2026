@@ -33,6 +33,7 @@ const bootstrap = `  return {
       group(name) { return groups[name]; },
       labels() { return labels; },
       sim(on) { simMode = on; },
+      frame(on) { phone = on ? {} : null; rebuildRoutes(); rebuildSelection(); },
     },
     mount, load, refresh`;
 vm.runInContext(source.replace(marker, bootstrap), context);
@@ -118,5 +119,17 @@ regulator.question.showPlayerGuide = false;
 test.configure(regulator); app.select(guide);
 assert.ok(colours(test.group('routes')).includes(0x0574f8),'city guide flag does not hide regulator maneuvers');
 assert.ok(test.group('selection').children.length > 0,'regulator route editing remains available');
+
+const preview = fixture();
+test.configure(preview); test.frame(true);
+assert.ok(!colours(test.group('routes')).includes(0x16a34a),'phone hides the approach editing line');
+assert.deepEqual(choiceSnapshot().labels.map(l => l[0]),['А','Б'],'phone preserves the actual answer choices');
+assert.ok(!colours(test.group('routes')).includes(0x0574f8),'choices replace the fallback player guide in the phone');
+preview.routes = preview.routes.filter(r => r.kind !== 'choice');
+test.redraw();
+assert.ok(colours(test.group('routes')).includes(0x0574f8),'phone shows the actual player guide when there are no choice routes');
+preview.question.showPlayerGuide = false; test.redraw();
+assert.ok(!colours(test.group('routes')).includes(0x0574f8),'phone respects the hidden player guide');
+test.frame(false);
 
 console.log('Player guide editor: actual render/picking, hidden selection/hover/supports, choices, layer restore and regulator PASS');
