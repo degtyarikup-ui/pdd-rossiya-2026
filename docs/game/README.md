@@ -108,6 +108,7 @@ godot --headless --path game_godot --script res://tests/shared_pictures_check.gd
 godot --headless --path game_godot --script res://tests/game_ui_check.gd # анимации, фото, компактный HUD и окно паузы
 godot --headless --path game_godot --script res://tests/controls_layout_check.gd # крупные педали/повороты: экраны 280–640 dp, плотности, системные отступы и мультитач
 godot --headless --path game_godot --script res://tests/vehicle_lights_check.gd # штатные линзы, мигание и синхронное процедурное свечение
+godot --path game_godot --script res://tests/beacon_render_check.gd # дневная яркость маячков ДПС/спецмашин относительно аварийки, low/high
 godot --headless --path game_godot --script res://tests/question_signals_check.gd # намерения игрока/участников, вопрос без задержки, поворотники и пауза
 godot --headless --path game_godot --script res://tests/actor_hazards_check.gd # постоянная аварийка участников, стоянка, обе стороны, пауза и старые настройки
 godot --headless --path game_godot --script res://tests/signal_glow_check.gd # свечение и цвета секций светофора без текстур

@@ -29,6 +29,21 @@ static func halo(colour: Color, size: float, front_only := false) -> MeshInstanc
 	return mi
 
 
+## Roof beacons need a bright core in daylight, especially saturated blue in
+## Compatibility's LDR buffer. Ordinary indicators keep their existing profile.
+static func beacon(colour: Color, size := 3.2) -> MeshInstance3D:
+	var key := "beacon/" + colour.to_html()
+	if not _materials.has(key):
+		var m := material(colour).duplicate() as ShaderMaterial
+		m.set_shader_parameter("intensity", 3.0)
+		m.set_shader_parameter("white_core", 0.6)
+		m.set_shader_parameter("core_sharpness", 3.0)
+		_materials[key] = m
+	var glow := halo(colour, size)
+	glow.material_override = _materials[key]
+	return glow
+
+
 ## Effect centres come from the model's own lens triangles, in the vehicle's coordinates.
 ## Baked traffic uses its original non-paint lens colours; other meshes use their `lens` surfaces.
 static func lens_centres(root: Node3D) -> Array[Dictionary]:

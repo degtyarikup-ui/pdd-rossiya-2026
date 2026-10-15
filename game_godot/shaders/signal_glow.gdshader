@@ -4,6 +4,9 @@ render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabl
 uniform vec4 glow_colour : source_color = vec4(1.0, 0.68, 0.05, 1.0);
 uniform bool batched = false;
 uniform bool front_only = false;
+uniform float intensity = 1.0;
+uniform float white_core = 0.35;
+uniform float core_sharpness = 6.0;
 varying vec4 tint;
 varying float facing;
 
@@ -22,9 +25,9 @@ void fragment() {
 	if (front_only && facing <= 0.02) discard;
 	float radius = length(UV * 2.0 - 1.0);
 	float falloff = max(0.0, 1.0 - radius);
-	float core = pow(falloff, 6.0);
+	float core = pow(falloff, core_sharpness);
 	// Keep the coloured fringe saturated so green/amber/blue remain distinguishable in daylight.
 	vec3 colour = pow(tint.rgb, vec3(3.0));
-	ALBEDO = mix(colour, vec3(1.0), core * 0.35) * 2.0;
+	ALBEDO = mix(colour, vec3(1.0), core * white_core) * 2.0 * intensity;
 	ALPHA = falloff * falloff * tint.a;
 }

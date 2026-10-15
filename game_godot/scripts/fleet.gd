@@ -80,11 +80,13 @@ static func _box(root: Node3D, size: Vector3, at: Vector3, colour: Color) -> Mes
 static func _lamp(root: Node3D, at: Vector3, colour: Color) -> StandardMaterial3D:
 	var mi := _box(root, Vector3(0.4, 0.16, 0.22), at, colour)
 	var mat := mi.material_override as StandardMaterial3D
-	mat.emission_enabled = true
+	mat.set_meta("beacon_colour", colour)
+	mat.albedo_color = colour.darkened(0.9)
+	mat.emission_enabled = false
 	mat.emission = Glow.emission_colour(colour)
-	mat.emission_energy_multiplier = 4.0
+	mat.emission_energy_multiplier = 6.0
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	var halo := Glow.halo(colour, 2.4)
+	var halo := Glow.beacon(colour)
 	halo.visible = false
 	mi.add_child(halo)
 	mat.set_meta("halo", halo)
