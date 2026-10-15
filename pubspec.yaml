@@ -98,6 +98,9 @@ flutter:
     - assets/audio/feed/
     - assets/audio/game_questions/
     - assets/game/
+    # Only the production loader and static fallback; experiments stay unbundled.
+    - assets/mascot/raster/cone-juggling-384-30.webp
+    - assets/mascot/raster/cone-juggling-poster-384.webp
     # Контент России.
     - assets/countries/ru/questions/
     - assets/countries/ru/images/questions_ab/

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:pdd_app/core/config/country_config.dart';
@@ -7,6 +8,8 @@ import 'package:pdd_app/data/models/ticket_category.dart';
 /// Загрузка контента страны (вопросы, темы, знаки) из ассетов.
 /// Все пути строятся от [CountryConfig.assetsRoot] — контент каждой страны
 /// лежит в assets/countries/{code}/.
+/// На native разбор JSON и построение вопросов идут в отдельном isolate,
+/// чтобы загрузчик продолжал двигаться. Веб-версия compute использует UI isolate.
 class QuestionsDataSource {
   static const CountryConfig _config = CountryConfig.current;
 
@@ -34,31 +37,10 @@ class QuestionsDataSource {
         _config.questionsJson(cat, lang),
         _config.questionsJson(cat),
       );
-      final dynamic data = json.decode(content);
-      final List<dynamic> tickets = data is Map
-          ? (data['tickets'] as List<dynamic>? ?? [])
-          : [];
-
-      final List<Question> allQuestions = [];
-      for (final ticket in tickets) {
-        if (ticket is! Map) continue;
-        final int ticketNumber = (ticket['number'] as num?)?.toInt() ?? 0;
-        final List<dynamic> questions =
-            ticket['questions'] as List<dynamic>? ?? [];
-        for (final q in questions) {
-          if (q is! Map) continue;
-          final map = Map<String, dynamic>.from(q);
-          map['ticketNumber'] = ticketNumber;
-          if (map['image'] == null || map['image'] == 'no_image') {
-            map['image'] = null;
-          } else {
-            map['image'] =
-                '${_config.questionImagesDir(cat)}/${map['image']}.webp';
-          }
-          allQuestions.add(Question.fromJson(map));
-        }
-      }
-      return allQuestions;
+      return await compute(_parseTickets, (
+        content: content,
+        imageDir: _config.questionImagesDir(cat),
+      ), debugLabel: 'parse tickets');
     } catch (e) {
       return [];
     }
@@ -74,34 +56,10 @@ class QuestionsDataSource {
         _config.topicsJson(cat, lang),
         _config.topicsJson(cat),
       );
-      final dynamic data = json.decode(content);
-      final List<dynamic> topics = data is Map
-          ? (data['topics'] as List<dynamic>? ?? [])
-          : [];
-
-      final List<Map<String, dynamic>> result = [];
-      for (final topic in topics) {
-        if (topic is! Map) continue;
-        final String name = topic['name']?.toString() ?? '';
-        final List<dynamic> questions =
-            topic['questions'] as List<dynamic>? ?? [];
-        final List<Question> parsedQuestions = [];
-
-        for (final q in questions) {
-          if (q is! Map) continue;
-          final map = Map<String, dynamic>.from(q);
-          if (map['image'] == null || map['image'] == 'no_image') {
-            map['image'] = null;
-          } else {
-            map['image'] =
-                '${_config.questionImagesDir(cat)}/${map['image']}.webp';
-          }
-          parsedQuestions.add(Question.fromJson(map));
-        }
-
-        result.add({'name': name, 'questions': parsedQuestions});
-      }
-      return result;
+      return await compute(_parseTopics, (
+        content: content,
+        imageDir: _config.questionImagesDir(cat),
+      ), debugLabel: 'parse topics');
     } catch (e) {
       return [];
     }
@@ -113,7 +71,11 @@ class QuestionsDataSource {
         _config.signsJson(lang),
         _config.signsJson(),
       );
-      final dynamic decoded = json.decode(content);
+      final dynamic decoded = await compute(
+        jsonDecode,
+        content,
+        debugLabel: 'parse signs',
+      );
       return decoded is Map ? Map<String, dynamic>.from(decoded) : {};
     } catch (_) {
       return {};
@@ -128,7 +90,11 @@ class QuestionsDataSource {
         _config.signsFeedManifestJson(lang),
         _config.signsFeedManifestJson(),
       );
-      final dynamic decoded = json.decode(content);
+      final dynamic decoded = await compute(
+        jsonDecode,
+        content,
+        debugLabel: 'parse signs feed',
+      );
       if (decoded is List) {
         return decoded
             .whereType<Map>()
@@ -150,23 +116,7 @@ class QuestionsDataSource {
       _config.markupJson(lang),
       _config.markupJson(),
     );
-    final dynamic decoded = json.decode(content);
-    if (decoded is! Map) return {};
-    return decoded.map((group, entries) {
-      if (entries is! List) {
-        return MapEntry(group.toString(), <Map<String, String>>[]);
-      }
-      final list = entries
-          .whereType<Map>()
-          .map(
-            (e) => {
-              'title': (e['title'] as String?) ?? '',
-              'description': (e['description'] as String?) ?? '',
-            },
-          )
-          .toList();
-      return MapEntry(group.toString(), list);
-    });
+    return compute(_parseMarkup, content, debugLabel: 'parse markup');
   }
 
   /// Разделы текста ПДД для вкладки «ПДД»: [{'title':…, 'content':…}, …].
@@ -175,16 +125,96 @@ class QuestionsDataSource {
       _config.pddSectionsJson(lang),
       _config.pddSectionsJson(),
     );
-    final dynamic decoded = json.decode(content);
-    if (decoded is! List) return [];
-    return decoded
+    return compute(_parsePddSections, content, debugLabel: 'parse PDD');
+  }
+}
+
+typedef _QuestionSource = ({String content, String imageDir});
+
+// Only sendable source text and a resolved path cross the isolate boundary.
+// Asset loading and country/language fallback remain on the calling isolate.
+List<Question> _parseTickets(_QuestionSource source) {
+  final dynamic data = jsonDecode(source.content);
+  final List<dynamic> tickets = data is Map
+      ? (data['tickets'] as List<dynamic>? ?? [])
+      : [];
+  final allQuestions = <Question>[];
+  for (final ticket in tickets) {
+    if (ticket is! Map) continue;
+    final ticketNumber = (ticket['number'] as num?)?.toInt() ?? 0;
+    final questions = ticket['questions'] as List<dynamic>? ?? [];
+    for (final question in questions) {
+      if (question is! Map) continue;
+      final map = _withImagePath(question, source.imageDir);
+      map['ticketNumber'] = ticketNumber;
+      allQuestions.add(Question.fromJson(map));
+    }
+  }
+  return allQuestions;
+}
+
+List<Map<String, dynamic>> _parseTopics(_QuestionSource source) {
+  final dynamic data = jsonDecode(source.content);
+  final List<dynamic> topics = data is Map
+      ? (data['topics'] as List<dynamic>? ?? [])
+      : [];
+  final result = <Map<String, dynamic>>[];
+  for (final topic in topics) {
+    if (topic is! Map) continue;
+    final questions = topic['questions'] as List<dynamic>? ?? [];
+    final parsedQuestions = <Question>[];
+    for (final question in questions) {
+      if (question is! Map) continue;
+      parsedQuestions.add(
+        Question.fromJson(_withImagePath(question, source.imageDir)),
+      );
+    }
+    result.add({
+      'name': topic['name']?.toString() ?? '',
+      'questions': parsedQuestions,
+    });
+  }
+  return result;
+}
+
+Map<String, dynamic> _withImagePath(Map question, String imageDir) {
+  final map = Map<String, dynamic>.from(question);
+  map['image'] = map['image'] == null || map['image'] == 'no_image'
+      ? null
+      : '$imageDir/${map['image']}.webp';
+  return map;
+}
+
+Map<String, List<Map<String, String>>> _parseMarkup(String content) {
+  final dynamic decoded = jsonDecode(content);
+  if (decoded is! Map) return {};
+  return decoded.map((group, entries) {
+    if (entries is! List) {
+      return MapEntry(group.toString(), <Map<String, String>>[]);
+    }
+    final list = entries
         .whereType<Map>()
         .map(
-          (s) => {
-            'title': (s['title'] as String?) ?? '',
-            'content': (s['content'] as String?) ?? '',
+          (entry) => {
+            'title': (entry['title'] as String?) ?? '',
+            'description': (entry['description'] as String?) ?? '',
           },
         )
         .toList();
-  }
+    return MapEntry(group.toString(), list);
+  });
+}
+
+List<Map<String, String>> _parsePddSections(String content) {
+  final dynamic decoded = jsonDecode(content);
+  if (decoded is! List) return [];
+  return decoded
+      .whereType<Map>()
+      .map(
+        (section) => {
+          'title': (section['title'] as String?) ?? '',
+          'content': (section['content'] as String?) ?? '',
+        },
+      )
+      .toList();
 }

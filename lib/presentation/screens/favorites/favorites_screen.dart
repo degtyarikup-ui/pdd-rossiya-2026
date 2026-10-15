@@ -10,6 +10,7 @@ import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 class FavoritesScreen extends ConsumerStatefulWidget {
   const FavoritesScreen({super.key});
@@ -121,7 +122,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       );
                     }
                     if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(child: AppLoadingIndicator());
                     }
 
                     final allQuestions = snapshot.data!;
@@ -201,7 +202,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: AppLoadingIndicator()),
               error: (error, _) =>
                   Center(child: Text(dataLoadErrorMessage(error))),
             ),

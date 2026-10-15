@@ -99,6 +99,10 @@ func _dismiss_loader(loader: Loader) -> void:
 	if _exiting or is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
 	ready_for_play = true
 	_start_game()
+	# Starting builds the real question and actor pose. Only an actual draw proves readiness.
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		if _exiting or is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
 	loader.dismiss()
 	if shot_path != "":
 		await get_tree().create_timer(Loader.FADE + 0.2).timeout

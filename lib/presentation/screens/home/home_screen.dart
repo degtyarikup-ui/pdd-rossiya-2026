@@ -14,6 +14,7 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/app_update_service.dart';
 import 'package:pdd_app/presentation/widgets/app_update_dialog.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
@@ -548,7 +549,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                         : const Center(
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 48),
-                              child: CircularProgressIndicator(),
+                              child: AppLoadingIndicator(size: 100),
                             ),
                           ),
                     error: (error, _) => ProgressPanelCard(stats: emptyStats),

@@ -12,6 +12,7 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/screens/signs/markup_category_screen.dart';
 import 'package:pdd_app/presentation/screens/signs/sign_detail_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/presentation/widgets/app_pill_search_field.dart';
 
 /// Иконка для категории знаков по её названию; для неизвестной категории —
@@ -255,7 +256,7 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
                 },
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: AppLoadingIndicator()),
             error: (e, _) => Center(child: Text(dataLoadErrorMessage(e))),
           ),
         ),

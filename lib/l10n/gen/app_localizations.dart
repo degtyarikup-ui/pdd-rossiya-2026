@@ -2176,6 +2176,24 @@ abstract class AppLocalizations {
   /// **'СТОП'**
   String get gameStop;
 
+  /// No description provided for @appLoading.
+  ///
+  /// In ru, this message translates to:
+  /// **'Загрузка…'**
+  String get appLoading;
+
+  /// No description provided for @appLoadingFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть приложение'**
+  String get appLoadingFailed;
+
+  /// No description provided for @gameReturning.
+  ///
+  /// In ru, this message translates to:
+  /// **'Возвращаемся в приложение…'**
+  String get gameReturning;
+
   /// No description provided for @gameLoading.
   ///
   /// In ru, this message translates to:

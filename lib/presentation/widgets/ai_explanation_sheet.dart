@@ -6,6 +6,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/gemini_ai_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 class AiExplanationSheet extends StatefulWidget {
   final String questionId;
@@ -470,28 +471,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 32,
-              height: 32,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: colors.premiumAmber,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              appL10n.aiThinking,
-              style: TextStyle(
-                fontSize: 14,
-                color: colors.secondaryText,
-                fontFamily: 'Onest',
-              ),
-            ),
-          ],
-        ),
+        child: AppLoadingIndicator(size: 120, label: appL10n.aiThinking),
       ),
     );
   }
