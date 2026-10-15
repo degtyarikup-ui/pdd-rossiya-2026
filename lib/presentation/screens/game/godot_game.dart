@@ -678,6 +678,11 @@ class GodotGame {
     BuildContext context,
     GameGarageReward reward,
   ) async {
+    final soundEnabled =
+        (await _prefs())?.getBool(_citySoundKey) ??
+        SoundEffectsService.instance.isEnabled;
+    if (!context.mounted) return;
+    if (soundEnabled) SoundEffectsService.instance.playStreak();
     final colors = AppColors.of(context);
     final choose = await showDialog<bool>(
       context: context,

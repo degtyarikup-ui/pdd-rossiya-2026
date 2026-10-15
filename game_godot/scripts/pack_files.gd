@@ -59,7 +59,7 @@ static func _is_picture(path: String) -> bool:
 
 
 static func _is_answer_audio(path: String) -> bool:
-	return path in ["res://answer_audio/correct.wav", "res://answer_audio/incorrect.wav"]
+	return path in ["res://answer_audio/correct.wav", "res://answer_audio/incorrect.wav", "res://answer_audio/tick.wav", "res://answer_audio/streak.wav"]
 
 
 static func _answer_audio_bytes(res_path: String) -> PackedByteArray:

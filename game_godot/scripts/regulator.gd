@@ -378,6 +378,9 @@ func _on_hint_toggled() -> void:
 
 
 func _process(delta: float) -> void:
+	if sound != null and car != null:
+		sound.speed = 8.5 if car.is_moving else 0.0
+		sound.player_kind = "suv" if car.vehicle_id in ["suv", "pickup"] else "car"
 	if _exiting: return
 	_update_frame_budget(delta)
 	_update_camera(delta)

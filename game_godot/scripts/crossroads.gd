@@ -900,6 +900,11 @@ func _on_next_scenario() -> void:
 func _process(delta: float) -> void:
 	_update_frame_budget(delta)
 	if _exiting or _suspended or not ready_for_play: return
+	if not is_game_over:
+		for actor in active_actors:
+			if actor.is_pedestrian or actor.state in ["done", "crashed"]: continue
+			var velocity := actor.drive_speed * actor.path_length if actor.state == "driving" and actor._stop_pause_left <= 0.0 else 0.0
+			sound.vehicle(str(actor.get_instance_id()), str(actor.data.get("type", "car")), velocity, actor.has_siren)
 	if not is_game_over and not is_resolving:
 		_check_junction_completed()
 	if ready_for_play and not _suspended and not is_game_over and not is_resolving and not _round_completing and not _is_any_actor_driving():

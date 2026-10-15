@@ -61,7 +61,15 @@ func run() -> void:
 			check(actor.state == "driving" and game.cur_step == step + 1,
 				scenario.id + "/" + actor.name + ": correct priority accepted")
 			var seconds := game.seconds_left
+			game.sound._vehicles.clear()
+			game.sound._mix_voices.clear()
 			game._process(0.5)
+			var sound_id := str(actor.get_instance_id())
+			check(game.sound._vehicles.has(sound_id) != actor.is_pedestrian,
+				scenario.id + "/" + actor.name + ": real vehicle movement reaches shared audio, pedestrians stay silent")
+			if not actor.is_pedestrian and game.sound._vehicles.has(sound_id):
+				check(game.sound._vehicles[sound_id].siren == actor.has_siren,
+					scenario.id + "/" + actor.name + ": siren follows the actual special-signal flag")
 			check(is_equal_approx(seconds, game.seconds_left), scenario.id + ": driving does not consume answer time")
 			for frame in 600:
 				if actor.has_cleared_junction(): break

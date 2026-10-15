@@ -48,7 +48,7 @@ print(f"{len(index)} scenes, {len(set(index.values()))} shared pictures" +
 # Standalone exports use links to the same answer WAVs, never maintained copies.
 answer_out = ROOT / "game_godot" / "answer_audio"
 answer_out.mkdir(exist_ok=True)
-for kind in ("correct", "incorrect"):
+for kind in ("correct", "incorrect", "tick", "streak"):
     dst = answer_out / f"{kind}.wav"
     dst.unlink(missing_ok=True)
     dst.with_suffix(".wav.import").unlink(missing_ok=True)

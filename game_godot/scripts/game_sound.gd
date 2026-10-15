@@ -1,25 +1,66 @@
-## Driving sounds are procedural; answer effects reuse the canonical Flutter WAVs.
-## engine that rises with speed, tyre hiss, indicator click, crash, scrape, the
-## last-seconds tick, recorded answer effects and a soft unlock chime. Vibration goes with the sharp events.
+## Shared Flutter feedback recordings and procedural transport ported from
+## assets/game/ambient-audio.js. One mixer for all three games; no audio copies.
 class_name GameSound
 extends Node
 
 const RATE := 22050.0
 const DURATION := {
-	"click": 0.03, "tick": 0.06, "crash": 0.32, "scrape": 0.25,
-	"unlock": 0.95,
+	"click": 0.03, "crash": 0.32, "scrape": 0.25,
+	"bell": 1.3,
 }
-const UNLOCK_NOTES := [Vector2(0.0, 523.251), Vector2(0.085, 659.255), Vector2(0.17, 783.991), Vector2(0.27, 1046.502)]
+const EFFECT_VOLUMES := {"correct": 0.55, "incorrect": 0.45, "tick": 0.35, "streak": 0.70}
+# Original WebAudio engine ranges, including the electric tram motor.
+const ENGINES := {"car": Vector2(70, 150), "suv": Vector2(62, 135),
+	"truck": Vector2(45, 95), "bus": Vector2(48, 100),
+	"motorcycle": Vector2(110, 260), "police": Vector2(70, 150),
+	"emergency": Vector2(64, 140), "tram": Vector2(110, 190)}
+const MAX_VOICES := 4
+const VOICE_TAIL := 0.20
+
+
+# Typed state keeps the per-sample mixer cheap on phones. Filter coefficients
+# and motor pitch change only when the vehicle's speed changes.
+class TransportVoice:
+	var phase := 0.0
+	var lp := 0.0
+	var age := 0.0
+	var level := 0.0
+	var kind := ""
+	var speed := -1.0
+	var siren := false
+	var gain := 1.0
+	var seen := 0.0
+	var phase_step := 0.0
+	var filter_alpha := 0.0
+	var motor_gain := 0.045
+	var tyre_gain := 0.0
+	var electric := false
+
+	func configure(next_kind: String, velocity: float) -> void:
+		if kind == next_kind and is_equal_approx(speed, velocity): return
+		kind = next_kind
+		speed = velocity
+		var profile: Vector2 = ENGINES.get(kind, ENGINES.car)
+		var rev := clampf(velocity / 14.0, 0.0, 1.0)
+		phase_step = lerpf(profile.x, profile.y, rev) / RATE
+		filter_alpha = 1.0 - exp(-TAU * lerpf(380.0, 900.0, rev) / RATE)
+		motor_gain = 0.06 if kind in ["truck", "bus"] else 0.045
+		tyre_gain = 0.008 * rev
+		electric = kind == "tram"
 
 var enabled := true
 var speed := 0.0                  # m/s, set by the world every frame
 var _player: AudioStreamPlayer
 var _playback: AudioStreamGeneratorPlayback
-var _engine_phase := 0.0
-var _tyre_lp := 0.0
 var _impact_lp := 0.0
 var _events: Array = []
 var _answers: Dictionary = {}
+var _vehicles: Dictionary = {}
+var _mix_voices: Array[TransportVoice] = []
+var _clock := 0.0
+var player_kind := "car"
+var _player_voice := TransportVoice.new()
+
 
 
 func _ready() -> void:
@@ -27,10 +68,10 @@ func _ready() -> void:
 	# playback at shutdown. Do not allocate or synthesize an audio stream in that environment.
 	if DisplayServer.get_name() == "headless":
 		return
-	for kind in ["correct", "incorrect"]:
+	for kind in EFFECT_VOLUMES:
 		var answer := AudioStreamPlayer.new()
 		answer.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
-		answer.volume_db = linear_to_db(0.55 if kind == "correct" else 0.45)
+		answer.volume_db = linear_to_db(EFFECT_VOLUMES[kind])
 		add_child(answer)
 		_answers[kind] = answer
 		var path := "res://answer_audio/%s.wav" % kind
@@ -58,6 +99,8 @@ func _exit_tree() -> void:
 		_player.stop()
 	_playback = null
 	_events.clear()
+	_vehicles.clear()
+	_mix_voices.clear()
 	for answer in _answers.values():
 		answer.stop()
 
@@ -74,7 +117,7 @@ static func _answer_loaded(ok: bool, holder: WeakRef, kind: String, path: String
 ## One-shot sound by name (see DURATION). Silent when sound is off.
 func play(kind: String) -> void:
 	if enabled:
-		if kind in ["correct", "incorrect"]:
+		if kind in EFFECT_VOLUMES:
 			var answer: AudioStreamPlayer = _answers.get(kind)
 			if answer != null and answer.stream != null:
 				answer.play()
@@ -84,10 +127,9 @@ func play(kind: String) -> void:
 		_events.append({ "kind": kind, "t": 0.0, "dur": DURATION.get(kind, 0.1) })
 
 
-## A small ascending major arpeggio for a new car or colour. Uses the same stream
-## as driving sounds, so mute, pause and shutdown keep their existing behaviour.
+## The app's existing celebration fanfare for a new car or colour.
 func play_unlock() -> void:
-	play("unlock")
+	play("streak")
 
 
 static var haptics := true         # the app's setting («Вибрация»): off, the phone stays quiet
@@ -98,21 +140,29 @@ static func buzz(ms: int) -> void:
 		Input.vibrate_handheld(ms)
 
 
-func _process(_delta: float) -> void:
-	if _player == null:
-		return
+func _process(delta: float) -> void:
 	if not enabled:
 		for answer in _answers.values():
 			answer.stop()
-		if _player.playing:
+		if _player != null and _player.playing:
 			_player.stop()
 		_playback = null
 		_events.clear()
+		_vehicles.clear()
+		_mix_voices.clear()
+		return
+	_clock += delta
+	for id in _vehicles.keys():
+		if _clock - float(_vehicles[id].seen) > VOICE_TAIL:
+			_vehicles.erase(id)
+			_mix_voices.assign(_vehicles.values())
+	if _player == null:
 		return
 	if _playback == null:
 		_start_playback()
 	if _playback == null:
 		return
+	_player_voice.configure(player_kind, absf(speed))
 	for _i in _playback.get_frames_available():
 		var s := _sample()
 		_playback.push_frame(Vector2(s, s))
@@ -120,16 +170,12 @@ func _process(_delta: float) -> void:
 
 func _sample() -> float:
 	var dt := 1.0 / RATE
-	# Engine: a sawtooth-like tone whose pitch rises with speed (idle when stopped).
-	var f := 28.0 + absf(speed) * 3.2
-	_engine_phase = fposmod(_engine_phase + f * dt, 1.0)
-	var engine := (2.0 * _engine_phase - 1.0) * 0.5 + sin(TAU * _engine_phase * 2.0) * 0.2
-	engine *= 0.03 + clampf(absf(speed) / 25.0, 0.0, 1.0) * 0.03
-	# Tyres: low-passed noise, louder with speed.
-	var noise := randf() * 2.0 - 1.0
-	_tyre_lp += (noise - _tyre_lp) * 0.08
-	var tyres := _tyre_lp * clampf(absf(speed) / 20.0, 0.0, 1.0) * 0.06
-	var out := engine + tyres
+	var out := _engine_sample(_player_voice, 1.0 if absf(speed) > 0.1 else 0.0)
+	for voice: TransportVoice in _mix_voices:
+		var fade := clampf(1.0 - (_clock - float(voice.seen)) / VOICE_TAIL, 0.0, 1.0)
+		out += _engine_sample(voice, voice.gain * fade)
+		if voice.siren:
+			out += _siren_sample(voice.age) * voice.gain * fade
 	var i := 0
 	while i < _events.size():
 		var e: Dictionary = _events[i]
@@ -149,10 +195,8 @@ func _one_shot(e: Dictionary) -> float:
 	match e.kind:
 		"click":
 			return sin(TAU * 1400.0 * t) * 0.25 * env
-		"tick":
-			return sin(TAU * 1000.0 * t) * 0.2 * env
-		"unlock":
-			return _unlock_chime(t)
+		"bell":
+			return _bell_sample(t) * float(e.get("gain", 1.0))
 		"crash":
 			_impact_lp += ((randf() * 2.0 - 1.0) - _impact_lp) * 0.045
 			var attack := minf(1.0, t / 0.012)
@@ -162,17 +206,66 @@ func _one_shot(e: Dictionary) -> float:
 	return 0.0
 
 
-func _unlock_chime(t: float) -> float:
+## Refresh only audible, actually moving vehicles (or an active special signal).
+## Callers use stable IDs; no scene nodes are retained after a junction is freed.
+func vehicle(id: String, kind: String, metres_per_second: float, siren := false, gain := 1.0) -> void:
+	if not enabled or gain <= 0.0 or (metres_per_second <= 0.1 and not siren):
+		return
+	if kind in ["pedestrian", "cyclist", "cart", "barrier", "train"]:
+		return
+	if not _vehicles.has(id):
+		if _vehicles.size() >= MAX_VOICES:
+			# A quiet background motor must never occupy the last slot needed
+			# by a nearby tram or an explicit special signal.
+			var quietest := ""
+			var lowest := INF
+			for key in _vehicles:
+				var candidate: TransportVoice = _vehicles[key]
+				var rank := candidate.gain + (2.0 if candidate.siren else 0.0)
+				if rank < lowest:
+					lowest = rank
+					quietest = key
+			if gain + (2.0 if siren else 0.0) <= lowest: return
+			_vehicles.erase(quietest)
+		_vehicles[id] = TransportVoice.new()
+		_mix_voices.assign(_vehicles.values())
+		if kind == "tram" and metres_per_second > 0.1:
+			_events.append({"kind": "bell", "t": 0.0, "dur": DURATION.bell, "gain": gain})
+	var voice: TransportVoice = _vehicles[id]
+	voice.configure(kind, metres_per_second)
+	voice.siren = siren
+	voice.gain = clampf(gain, 0.0, 1.0)
+	voice.seen = _clock
+
+
+## Original engine frequencies, saw/triangle oscillator, low-pass and tyre layer.
+## Pitch follows motion; short smoothing ramps avoid clicks on stop/start.
+func _engine_sample(voice: TransportVoice, gain: float) -> float:
+	voice.age += 1.0 / RATE
+	var target := gain if voice.speed > 0.1 else 0.0
+	voice.level = move_toward(voice.level, target, 1.0 / (RATE * 0.08))
+	if voice.level <= 0.0001:
+		return 0.0
+	voice.phase = fposmod(voice.phase + voice.phase_step, 1.0)
+	var oscillator := (1.0 - 4.0 * absf(voice.phase - 0.5)) if voice.electric else (2.0 * voice.phase - 1.0)
+	voice.lp += (oscillator - voice.lp) * voice.filter_alpha
+	return (voice.lp * voice.motor_gain + (randf() * 2.0 - 1.0) * voice.tyre_gain) * voice.level
+
+
+static func _siren_sample(t: float) -> float:
+	var frequency := 960.0 if int(t / 0.36) % 2 else 720.0
+	var interval := int(t / 0.36)
+	var cycles := float(interval / 2) * (720.0 + 960.0) * 0.36 + (720.0 * 0.36 if interval % 2 else 0.0)
+	var phase := fposmod(cycles + fmod(t, 0.36) * frequency, 1.0)
+	return (1.0 - 4.0 * absf(phase - 0.5)) * 0.035 * minf(1.0, t / 0.1)
+
+
+static func _bell_sample(t: float) -> float:
 	var out := 0.0
-	for note in UNLOCK_NOTES:
-		var age: float = t - note.x
-		if age < 0.0:
-			continue
-		# Rounded attacks and a quiet bell overtone give the chime a gentle lift;
-		# every voice reaches silence before the event ends, avoiding a cut-off click.
-		var attack := smoothstep(0.0, 0.009, age)
-		var release := smoothstep(0.0, 0.14, float(DURATION.unlock) - t)
-		var envelope := attack * exp(-6.5 * age) * release
-		var phase: float = TAU * note.y * age
-		out += (sin(phase) + sin(phase * 2.0) * 0.16) * envelope * 0.085
+	for strike in [0.0, 0.28]:
+		var age: float = t - strike
+		if age < 0.0 or age > 1.0: continue
+		var envelope := minf(1.0, age / 0.005) * exp(-8.0 * age)
+		for partial in [Vector2(1180, 0.05), Vector2(1770, 0.025), Vector2(2950, 0.012)]:
+			out += sin(TAU * partial.x * age) * partial.y * envelope
 	return out

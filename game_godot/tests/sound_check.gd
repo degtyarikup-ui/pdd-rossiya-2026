@@ -13,7 +13,7 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
-	for kind in ["correct", "incorrect"]:
+	for kind in GameSound.EFFECT_VOLUMES:
 		var path := "res://answer_audio/%s.wav" % kind
 		var shared := PackFiles.bytes(path)
 		var source := FileAccess.get_file_as_bytes(ProjectSettings.globalize_path("res://").path_join("../assets/audio/%s.wav" % kind))
@@ -25,22 +25,43 @@ func run() -> void:
 	root.add_child(sound)
 	sound.set_process(false)
 	sound.play_unlock()
-	check(sound._events.is_empty(), "muted unlock does not queue delayed feedback")
+	sound.play("tick")
+	sound.vehicle("muted", "tram", 5.0, true)
+	check(sound._events.is_empty() and sound._vehicles.is_empty(), "mute queues neither transport nor delayed reward/tick")
 	sound.enabled = true
-	sound.play_unlock()
-	check(sound._events.size() == 1 and sound._events[0].dur > 0.7 and sound._events[0].dur <= 1.0, "unlock queues one short chime in the shared audio stream")
+	sound.vehicle("tram", "tram", 6.8)
+	check(sound._vehicles.size() == 1 and sound._events.size() == 1 and sound._events[0].kind == "bell", "moving tram starts electric motor and one bell")
+	sound.vehicle("tram", "tram", 6.8)
+	check(sound._events.size() == 1, "continuous tram motion does not repeat the bell every frame")
+	sound.vehicle("pedestrian", "pedestrian", 2.0)
+	sound.vehicle("stationary", "car", 0.0)
+	check(sound._vehicles.size() == 1, "pedestrians and stopped cars do not create engines")
+	sound.vehicle("emergency", "police", 0.0, true)
+	check(sound._vehicles.emergency.siren, "explicit special signal sounds even while vehicle waits")
+	for i in 10:
+		sound.vehicle("car%d" % i, "car", 8.0)
+	check(sound._vehicles.size() == GameSound.MAX_VOICES, "transport mixer has a fixed voice budget")
+	sound.vehicle("priority_siren", "police", 5.0, true, 0.5)
+	check(sound._vehicles.has("priority_siren") and sound._vehicles.size() == GameSound.MAX_VOICES, "active siren takes precedence over a background motor")
 	var energy := 0.0
-	var peak := 0.0
-	var duration: float = sound._events[0].dur
-	for i in int(GameSound.RATE * duration):
-		var sample: float = sound._one_shot({"kind": "unlock", "t": float(i) / GameSound.RATE, "dur": duration})
+	for i in int(GameSound.RATE * 0.1):
+		var sample: float = sound._sample()
 		energy += sample * sample
-		peak = maxf(peak, absf(sample))
-	check(energy > 1.0 and peak < 0.3, "unlock chime is audible and leaves mixing headroom")
-	check(is_zero_approx(sound._unlock_chime(0.0)) and absf(sound._unlock_chime(duration - 0.001)) < 0.0001 and is_zero_approx(sound._unlock_chime(duration)), "unlock has a smooth attack and reaches silence before release")
-	for i in int(GameSound.RATE * duration) + 1:
-		sound._sample()
-	check(sound._events.is_empty(), "unlock releases its event after the tail")
+	check(energy > 0.1, "ported transport and bell produce audible samples")
+	sound._events.clear()
+	sound._vehicles.clear()
+	sound._mix_voices.clear()
+	var profiles := []
+	for kind in ["car", "truck", "bus", "motorcycle", "tram"]:
+		var voice := GameSound.TransportVoice.new()
+		voice.configure(kind, 8.0)
+		var checksum := 0.0
+		seed(42)
+		for i in 2205:
+			checksum += sound._engine_sample(voice, 1.0) * float(i + 1)
+		profiles.append(checksum)
+	check(absf(profiles[0] - profiles[1]) > 0.1 and absf(profiles[1] - profiles[2]) > 0.1 and absf(profiles[3] - profiles[4]) > 0.1, "car, truck, bus, motorcycle and tram retain distinct motors")
+	check(is_zero_approx(GameSound._bell_sample(0.0)) and absf(GameSound._bell_sample(1.3)) < 0.0001, "tram bell has a smooth attack and silent tail")
 	sound.enabled = false
 	if DisplayServer.get_name() == "headless":
 		check(sound._player == null and sound._playback == null, "headless does not allocate a dummy generator")
@@ -59,14 +80,21 @@ func run() -> void:
 		sound.play("incorrect")
 		check(sound._answers.incorrect.playing, "incorrect answer plays the shared recording")
 		check(is_equal_approx(sound._answers.incorrect.volume_db, linear_to_db(0.45)), "incorrect answer matches Flutter volume")
+		sound.play("tick")
+		check(sound._answers.tick.playing and is_equal_approx(sound._answers.tick.volume_db, linear_to_db(0.35)), "countdown plays the app tick at its original volume")
 		sound.play_unlock()
+		check(sound._answers.streak.playing and sound._events.is_empty(), "new car and paint use the existing celebration recording")
+		sound.vehicle("moving", "car", 8.0)
+		sound._clock += GameSound.VOICE_TAIL + 0.1
+		sound._process(0.0)
+		check(sound._vehicles.is_empty(), "transport voices expire when scene stops refreshing them")
 		sound.enabled = false
 		sound._process(1.0 / 60.0)
-		check(not sound._answers.correct.playing and not sound._answers.incorrect.playing and not sound._player.playing and sound._playback == null and sound._events.is_empty(), "muting stops generation and clears stale feedback")
-		var phase: float = sound._engine_phase
+		check(not sound._answers.streak.playing and not sound._answers.tick.playing and not sound._answers.correct.playing and not sound._answers.incorrect.playing and not sound._player.playing and sound._playback == null and sound._events.is_empty(), "muting stops generation and clears stale feedback")
+		var phase: float = sound._player_voice.phase
 		for i in 120:
 			sound._process(1.0 / 60.0)
-		check(sound._engine_phase == phase, "muted frames do not synthesize zero audio buffers")
+		check(sound._player_voice.phase == phase, "muted frames do not synthesize zero audio buffers")
 		sound.enabled = true
 		sound._process(1.0 / 60.0)
 		check(sound._player.playing and sound._playback != null, "unmuting resumes native playback")

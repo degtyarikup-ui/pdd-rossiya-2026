@@ -70,7 +70,7 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     /** The same answer effects used by the Flutter feed and exams. */
     @UsedByGodot
     fun answerAudioBytes(kind: String): ByteArray {
-        if (kind != "correct" && kind != "incorrect") return byteArrayOf()
+        if (kind !in setOf("correct", "incorrect", "tick", "streak")) return byteArrayOf()
         return try {
             host.assets.open("flutter_assets/assets/audio/$kind.wav").use { it.readBytes() }
         } catch (_: java.io.IOException) {

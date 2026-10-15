@@ -1590,6 +1590,12 @@ func _update_junction(dt: float) -> void:
 		var fwd: Vector3 = j.sit.global_transform.basis.inverse() * Vector3(sin(drive.yaw), 0, cos(drive.yaw))
 		var me := { "p": local, "yaw": atan2(fwd.x, fwd.z), "hw": drive.half_width, "hl": drive.half_length }
 		var hit = j.junction.update_actors(dt, me, drive.speed)
+		for motion in j.junction.motions:
+			if motion.done or motion.crashed or not is_instance_valid(motion.node): continue
+			var distance: float = motion.node.global_position.distance_to(drive.pos)
+			var gain := clampf(1.0 - distance / 55.0, 0.0, 1.0) * 0.65
+			var siren := bool(motion.config.get("siren", false)) and str(motion.config.get("beacon", "")) in ["blue", "blue_red"]
+			sound.vehicle(str(motion.node.get_instance_id()), "police" if motion.type == "special" else motion.type, motion.speed, siren, gain)
 		if hit:
 			on_collision(WorldMotion.new(hit, j.sit.global_transform))
 	if not current:
@@ -2184,7 +2190,7 @@ func _spawn_traffic() -> void:
 		var kind: String = kinds[i]
 		var base: float = rng.randf_range(cfg.traffic.speed_min, cfg.traffic.speed_max)
 		var car := {
-			"dir": dir, "base": base, "spd": base, "v": dir * base, "len": CAR_LENGTH,
+			"sound_kind": kind, "dir": dir, "base": base, "spd": base, "v": dir * base, "len": CAR_LENGTH,
 			"shove": 0.0, "moves": true,   # a hit car rolls away (m/s along the road) and slows back
 			"x": -dir * _ambient_lane_offset(), "z": drive.pos.z - 150.0 - (i / 2) * spacing if dir > 0 else drive.pos.z + 280.0 + (i / 2) * spacing,
 		}
@@ -3340,6 +3346,17 @@ func _process(delta: float) -> void:
 			dbg_t = 0.0
 			print("[dbg] phase ", phase, " pos ", drive.pos, " yaw ", snappedf(drive.yaw, 0.01), " speed ", snappedf(drive.speed, 0.1), " gas ", controls.gas, " rec ", drive.recovery)
 	sound.speed = drive.speed
+	sound.player_kind = "suv" if str(chosen.get("id", "")) in ["suv", "pickup"] else "car"
+	if road != null:
+		for body in road.bodies:
+			if body.done or body.crashed or not is_instance_valid(body.node): continue
+			var gain := clampf(1.0 - body.node.global_position.distance_to(drive.pos) / 55.0, 0.0, 1.0) * 0.65
+			sound.vehicle(str(body.node.get_instance_id()), body.kind, body.speed, road.kind == "emergency_lane" and body == road.police, gain)
+	for i in traffic.size():
+		var car: Dictionary = traffic[i]
+		if car.get("sheltered", false): continue
+		var distance := Vector2(car.x - drive.pos.x, car.z - drive.pos.z).length()
+		sound.vehicle("ambient:%d" % i, str(car.get("sound_kind", "car")), float(car.spd), false, clampf(1.0 - distance / 35.0, 0.0, 1.0) * 0.25)
 	if phase == "question" and ui.counting():
 		var sec := ceili(ui.remaining_seconds())
 		if sec <= 3 and sec != last_tick_second:
