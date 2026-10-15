@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" fill="none">
+  <title>Конус — маскот ПДД Россия</title>
+  <desc>Улыбающийся оранжевый дорожный конус с голубыми глазами и белой перчаткой с поднятым большим пальцем.</desc>
+  <style>
+#mascot { transform-origin: 240px 380px; animation: breathe 6s ease-in-out infinite; }
+#thumb { transform-origin: 124px 334px; animation: affirm 6s ease-in-out infinite; }
+#blink-left { transform-origin: 201px 232px; animation: blink-left 6s ease-in-out infinite; }
+#blink-right { transform-origin: 283px 218px; animation: blink-right 6s ease-in-out infinite; }
+#lid-left { animation: lid-left 6s linear infinite; }
+#lid-right { animation: lid-right 6s linear infinite; }
+@keyframes breathe {
+  0%,50%,100% { transform: translateY(0) rotate(-.7deg); }
+  25%,75% { transform: translateY(-4px) rotate(.7deg); }
+}
+@keyframes affirm {
+  0%,15%,44%,100% { transform: rotate(0); }
+  25%,36% { transform: rotate(-7deg); }
+  31% { transform: rotate(-1deg); }
+}
+@keyframes blink-left {
+  0%,43%,47%,100% { transform: scaleY(1); }
+  44.5%,45.5% { transform: scaleY(.03); }
+}
+@keyframes blink-right {
+  0%,43%,47%,73%,81%,100% { transform: scaleY(1); }
+  44.5%,45.5%,75%,79% { transform: scaleY(.03); }
+}
+@keyframes lid-left { 0%,43%,47%,100% {opacity:0;} 44.5%,45.5% {opacity:1;} }
+@keyframes lid-right { 0%,43%,47%,73%,81%,100% {opacity:0;} 44.5%,45.5%,75%,79% {opacity:1;} }
+.paused * { animation-play-state: paused !important; }
+.still * { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style><defs>
+    <linearGradient id="cone" x1="124" y1="260" x2="352" y2="221" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E9540B" /><stop offset=".21" stop-color="#FF8A13" /><stop offset=".52" stop-color="#FFB83F" /><stop offset=".79" stop-color="#FF951D" /><stop offset="1" stop-color="#F36A0C" />
+    </linearGradient>
+    <linearGradient id="base" x1="158" y1="359" x2="260" y2="443" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB62F" /><stop offset=".48" stop-color="#FF9016" /><stop offset="1" stop-color="#EE620E" />
+    </linearGradient>
+    <linearGradient id="foot" x1="77" y1="398" x2="405" y2="409" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EE600D" /><stop offset=".48" stop-color="#FF971F" /><stop offset="1" stop-color="#DC4C08" />
+    </linearGradient>
+    <linearGradient id="white" x1="151" y1="169" x2="310" y2="140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D1DCF1" /><stop offset=".36" stop-color="#FAFCFF" /><stop offset=".72" stop-color="#FFFFFF" /><stop offset="1" stop-color="#E4EAF5" />
+    </linearGradient>
+    <linearGradient id="glove" x1="103" y1="273" x2="173" y2="365" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" /><stop offset=".55" stop-color="#F9FBFF" /><stop offset="1" stop-color="#D7E0F0" />
+    </linearGradient>
+    <linearGradient id="iris" x1="0" y1="-17" x2="0" y2="19" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#164695" /><stop offset=".58" stop-color="#0574F8" /><stop offset="1" stop-color="#5CD4FF" />
+    </linearGradient>
+    <linearGradient id="mouth" x1="238" y1="251" x2="248" y2="299" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#321B22" /><stop offset="1" stop-color="#7C2524" />
+    </linearGradient>
+    <linearGradient id="tongue" x1="241" y1="284" x2="251" y2="307" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF8791" /><stop offset="1" stop-color="#F0485D" />
+    </linearGradient>
+    <clipPath id="silhouette"><path d="M113 361 L188 91 C195 64 204 47 226 46 C244 45 253 59 262 82 L365 351 C323 385 165 397 113 361 Z" /></clipPath>
+    <clipPath id="smile"><path d="M205 256 C232 269 268 263 294 246 C289 278 274 303 249 306 C228 308 212 290 205 256 Z" /></clipPath>
+  </defs>
+  <g id="mascot">
+    <g id="rear-arm">
+      <path d="M337 284 C371 275 391 293 392 313 C392 329 378 340 363 337 L353 318 C373 320 377 308 365 304 L343 308 Z" fill="#E8630C" />
+      <path d="M344 286 C366 282 382 294 383 308" stroke="#FFBA45" stroke-width="8" stroke-linecap="round" />
+      <path d="M371 314 C386 313 390 321 385 332 C381 344 366 351 354 345 L348 328 Z" fill="url(#white)" />
+    </g>
+    <g id="body">
+      <path d="M90 370 Q94 359 112 356 L349 342 Q363 341 374 349 L413 378 Q422 385 419 398 L415 411 Q413 418 401 421 L144 446 Q132 447 121 440 L64 407 Q57 403 60 391 L64 381 Q67 373 90 370 Z" fill="url(#foot)" />
+      <path d="M81 370 L348 346 Q359 344 370 351 L410 378 Q418 385 404 389 L146 415 Q134 416 123 410 L70 383 Q59 377 81 370 Z" fill="url(#base)" />
+      <path d="M79 378 L129 404 Q137 408 150 407 L395 384" stroke="#FFD36D" stroke-opacity=".72" stroke-width="4" stroke-linecap="round" />
+      <path d="M126 419 L124 433 Q130 439 142 439 L399 414" stroke="#FFAB39" stroke-opacity=".5" stroke-width="3" stroke-linecap="round" />
+      <path d="M113 361 L188 91 C195 64 204 47 226 46 C244 45 253 59 262 82 L365 351 C323 385 165 397 113 361 Z" fill="url(#cone)" />
+      <g clip-path="url(#silhouette)">
+        <path d="M179 123 C211 111 249 108 279 115 L300 170 C251 162 201 176 161 189 Z" fill="url(#white)" />
+        <path d="M130 303 C191 332 297 324 345 302 L361 345 C302 375 171 382 117 348 Z" fill="url(#white)" />
+        <path d="M188 90 C196 66 207 53 222 52 C202 94 174 210 149 301" stroke="#FFFFFF" stroke-opacity=".38" stroke-width="5" stroke-linecap="round" />
+        <path d="M260 87 L360 350" stroke="#D94B0A" stroke-opacity=".22" stroke-width="9" />
+        <path d="M164 354 C213 375 311 365 349 347" stroke="#FFFFFF" stroke-opacity=".44" stroke-width="3" stroke-linecap="round" />
+      </g>
+      <path d="M200 74 C205 61 212 55 224 54" stroke="#FFF0BE" stroke-width="4" stroke-linecap="round" />
+      <path d="M121 358 C172 387 306 381 358 353" stroke="#E9680E" stroke-opacity=".52" stroke-width="3" stroke-linecap="round" />
+    </g>
+    <g id="face">
+      <path d="M177 208 C182 193 194 183 209 183" stroke="#B85217" stroke-opacity=".25" stroke-width="13" stroke-linecap="round" />
+      <path d="M177 203 C184 188 195 181 209 182" stroke="#4B2B24" stroke-width="11" stroke-linecap="round" />
+      <path d="M183 197 C190 188 199 185 207 185" stroke="#73503A" stroke-width="3" stroke-linecap="round" />
+      <path d="M269 179 C277 170 289 170 297 177" stroke="#4B2B24" stroke-width="10" stroke-linecap="round" />
+      <path d="M274 175 C280 172 286 172 291 174" stroke="#73503A" stroke-width="2.5" stroke-linecap="round" />
+      <path d="M171 259 C176 253 185 253 191 257" stroke="#F16B24" stroke-opacity=".6" stroke-width="6" stroke-linecap="round" />
+      <path d="M299 243 C304 240 310 242 312 247" stroke="#E56815" stroke-width="4" stroke-linecap="round" />
+      <path d="M205 256 C232 269 268 263 294 246 C289 278 274 303 249 306 C228 308 212 290 205 256 Z" fill="url(#mouth)" stroke="#A84519" stroke-width="2.5" stroke-linejoin="round" />
+      <g clip-path="url(#smile)">
+        <path d="M206 256 C233 267 267 262 294 246 L289 260 C265 277 232 280 211 268 Z" fill="#FFFFFF" />
+        <path d="M225 300 C225 283 240 281 249 287 C260 279 276 283 278 294 L263 311 L237 314 Z" fill="url(#tongue)" />
+        <path d="M249 288 L250 294" stroke="#D63C52" stroke-width="2" stroke-linecap="round" />
+      </g>
+      <path d="M220 311 C233 319 250 321 264 314" stroke="#FFD36B" stroke-opacity=".65" stroke-width="3" stroke-linecap="round" />
+      <path d="M206 256 C232 269 268 263 294 246" stroke="#7A321C" stroke-width="3.5" stroke-linecap="round" />
+    </g>
+    <g id="blink-left"><g id="eye-left" transform="translate(201 232)">
+      <ellipse rx="26" ry="32" fill="#9E471C" fill-opacity=".25" />
+      <ellipse cy="-2" rx="24" ry="30" fill="#FFFFFF" stroke="#563026" stroke-width="3" />
+      <g transform="translate(5 -1)">
+        <ellipse rx="16" ry="20" fill="url(#iris)" />
+        <ellipse cy="-2" rx="10" ry="14" fill="#142C48" />
+        <ellipse cx="-5" cy="-9" rx="5" ry="6" fill="#FFFFFF" />
+        <circle cx="7" cy="8" r="2.7" fill="#BCEEFF" />
+      </g>
+    </g>
+    </g><g id="blink-right"><g id="eye-right" transform="translate(283 218)">
+      <ellipse rx="20" ry="26" fill="#9E471C" fill-opacity=".22" />
+      <ellipse cy="-2" rx="19" ry="25" fill="#FFFFFF" stroke="#563026" stroke-width="2.8" />
+      <g transform="translate(3 -1)">
+        <ellipse rx="13" ry="17" fill="url(#iris)" />
+        <ellipse cy="-2" rx="8.5" ry="12" fill="#142C48" />
+        <ellipse cx="-4" cy="-8" rx="4.5" ry="5" fill="#FFFFFF" />
+        <circle cx="5" cy="7" r="2" fill="#BCEEFF" />
+      </g>
+    </g>
+    </g><g id="lid-left" opacity="0"><path d="M180 232 Q200 246 221 230" stroke="#563026" stroke-width="5" stroke-linecap="round" /></g>
+    <g id="lid-right" opacity="0"><path d="M268 218 Q282 228 298 214" stroke="#563026" stroke-width="5" stroke-linecap="round" /></g>
+    <g id="thumb">
+      <path d="M129 300 C100 294 85 310 88 334 C89 348 102 357 117 354 L137 330 Z" fill="#EB6A13" />
+      <path d="M98 322 Q99 305 114 302 L128 305 L134 350 L112 357 Q101 350 98 337 Z" fill="url(#white)" />
+      <path d="M116 309 C122 295 119 286 115 275 C111 263 112 251 121 248 C132 244 142 257 145 271 L149 289 C162 286 180 288 185 297 C190 304 186 311 181 314 C192 317 194 326 188 333 C195 340 190 352 183 356 C185 365 176 374 162 377 L143 380 C123 381 109 370 107 355 C105 342 109 324 116 309 Z" fill="url(#glove)" stroke="#CDD7E8" stroke-width="1.8" stroke-linejoin="round" />
+      <path d="M150 311 C159 307 174 307 180 312 M152 331 C164 327 177 328 185 331 M150 351 C163 347 176 348 183 352" stroke="#BDCBE2" stroke-opacity=".78" stroke-width="2.5" stroke-linecap="round" />
+      <path d="M122 258 C128 260 132 270 133 279" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" />
+      <path d="M116 329 C112 348 118 363 133 367" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
+    </g>
+  </g>
+</svg>
