@@ -45,6 +45,9 @@ var parked_chance := 0.02
 var _vehicle_meta: Dictionary
 var winter := false
 var edge := 0.0                   # the row being laid out: how far the carriageway is wider than ROAD_HALF
+var _build_half_at := Callable()
+var _prop_boxes := {}
+var _build_z0 := 0.0
 
 
 func _init(parent: Node3D, scenery: Scenery, chunk_length: float, chunks: int) -> void:
@@ -94,6 +97,7 @@ func style_at(z: float) -> int:
 ## `half_at(world z)` is the carriageway half-width there: a multi-lane exit widens the street,
 ## a lane drop before a junction narrows it (world.gd _half_at). Plots stand outside it.
 func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), ranges: Array = []) -> ArrayMesh:
+	_build_half_at = half_at
 	visible_ranges = [[0.0,L]] if ranges.is_empty() else ranges
 	for p in pools.values():
 		p.begin(slot)
@@ -106,8 +110,10 @@ func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), r
 			p.finish(slot)
 		for p in parked.values():
 			p.finish(slot)
+		_build_half_at = Callable()
 		return null
 	var z0 := index * L
+	_build_z0 = z0
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(index * 7919)
 	var st := SurfaceTool.new()
@@ -132,6 +138,7 @@ func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), r
 	st.generate_normals()
 	var mesh := st.commit()
 	mesh.surface_set_material(0, sc.material)
+	_build_half_at = Callable()
 	return mesh
 
 
@@ -140,8 +147,6 @@ func build_chunk(slot: int, index: int, blank := false, half_at := Callable(), r
 ## The carriageway is cut into strips of STRIP metres, each one as wide as the street at its
 ## ends: a width change (a lane drop) is a taper, not a step.
 func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
-	var sandy: bool = profile.get("surface","asphalt")=="sand"
-	var asphalt := Color("#c2a570") if sandy else Color("#2C2F36")
 	var pave := sc.color("sidewalk")
 	var mark := Color("#F2F4F8")
 	var z := 0.0
@@ -150,25 +155,30 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 		for span in visible_ranges:
 			for edge_z in span:
 				if edge_z>z+0.001: ze=minf(ze,edge_z)
+		if not connector.is_empty():
+			for edge_z in [float(connector.start)-z0,(float(connector.start)+float(connector.end))*0.5-z0,float(connector.end)-z0]:
+				if edge_z>z+0.001: ze=minf(ze,edge_z)
 		if not _visible((z+ze)*0.5):
 			z=ze
 			continue
 		var ha := _half(half_at, z0 + z)
 		var hb := _half(half_at, z0 + ze)
 		var pa := profile_at(z0+z);var pb := profile_at(z0+ze)
+		var mid := profile_at(z0+(z+ze)*0.5)
 		var ma := float(pa.get("median",0.0))*0.5;var mb := float(pb.get("median",0.0))*0.5
-		_quad(st, -ha, ha, -hb, hb, z, ze, ROAD_LEVEL, asphalt, "" if sandy else "asphalt", z0)
+		var road_kind := "dirt" if float(mid.dirt_amount)>0.5 else "asphalt"
+		_quad(st, -ha, ha, -hb, hb, z, ze, ROAD_LEVEL, _road_colour(pa), road_kind, z0, ROAD_LEVEL, _road_colour(pb), Vector2(pa.detail_strength,pb.detail_strength))
 		for side: float in [-1.0, 1.0]:
 			# Pavement: SIDEWALK metres out from the kerb, and the kerb itself.
 			var ea := side * ha
 			var eb := side * hb
 			var wa := float(pa.get("walk_width",SIDEWALK if pa.get("walk",true) else 0.0))
 			var wb := float(pb.get("walk_width",SIDEWALK if pb.get("walk",true) else 0.0))
-			if maxf(wa,wb)>0.001 and not sandy:
-				_quad(st,ea,ea+side*wa,eb,eb+side*wb,z,ze,KERB,pave,"pavement",z0)
-				_kerb(st,ea,eb,z,ze,pave,side)
-			if profile.get("edge",true) and not sandy:
-				_quad(st,side*(ha-0.325),side*(ha-0.175),side*(hb-0.325),side*(hb-0.175),z,ze,MARK_LEVEL,mark,"",z0)
+			if maxf(wa,wb)>0.001:
+				_quad(st,ea,ea+side*wa,eb,eb+side*wb,z,ze,float(pa.walk_height),pave,"pavement",z0,float(pb.walk_height))
+				_kerb(st,ea,eb,z,ze,pave,side,float(pa.walk_height),float(pb.walk_height))
+			if maxf(float(pa.edge_strength),float(pb.edge_strength))>0.001:
+				_quad(st,side*(ha-0.325),side*(ha-0.175),side*(hb-0.325),side*(hb-0.175),z,ze,MARK_LEVEL,_road_colour(pa).lerp(mark,float(pa.edge_strength)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,float(pb.edge_strength)))
 		if maxf(ma,mb)>0.001:
 			_quad(st,-ma,ma,-mb,mb,z,ze,KERB+0.005,sc.color("ground"),"grass",z0)
 			for side in [-1.0,1.0]:
@@ -180,44 +190,59 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 	while z < L:
 		for span in visible_ranges:
 			var a := maxf(z,float(span[0]));var b := minf(minf(z+2.0,L),float(span[1]))
-			if b<=a or sandy: continue
+			if b<=a: continue
 			var pa := profile_at(z0+a);var pb := profile_at(z0+b)
 			var median: float=maxf(float(pa.get("median",0.0)),float(pb.get("median",0.0)))
-			if median<=0.001 and pa.get("centre","dashed")=="dashed": _flat(st,-0.09,0.09,a,b,MARK_LEVEL,mark,"",z0)
+			if median<=0.001 and maxf(float(pa.centre_dashed),float(pb.centre_dashed))>0.001:
+				_quad(st,-0.09,0.09,-0.09,0.09,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,float(pa.centre_dashed)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,float(pb.centre_dashed)))
 			var lanes_a := lane_boundaries(z0+a,_half(half_at,z0+a));var lanes_b := lane_boundaries(z0+b,_half(half_at,z0+b))
 			for lane in mini(lanes_a.size(),lanes_b.size()):
-				for side in [-1.0,1.0]: _quad(st,side*lanes_a[lane]-0.065,side*lanes_a[lane]+0.065,side*lanes_b[lane]-0.065,side*lanes_b[lane]+0.065,a,b,MARK_LEVEL,mark,"",z0)
+				if minf(float(pa.dirt_amount),float(pb.dirt_amount))>=0.999: continue
+				for side in [-1.0,1.0]: _quad(st,side*lanes_a[lane]-0.065,side*lanes_a[lane]+0.065,side*lanes_b[lane]-0.065,side*lanes_b[lane]+0.065,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,1.0-float(pa.dirt_amount)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,1.0-float(pb.dirt_amount)))
 		z += 5.0
-	if not sandy:
-		z=0.0
-		while z<L:
-			var end := minf(z+STRIP,L)
-			var at := profile_at(z0+(z+end)*0.5)
-			if float(at.get("median",0.0))<=0.001 and at.get("centre","") in ["solid","double"]:
-				for span in visible_ranges:
-					var a:=maxf(z,float(span[0]));var b:=minf(end,float(span[1]))
-					if b<=a: continue
-					if at.centre=="solid": _flat(st,-0.065,0.065,a,b,MARK_LEVEL,mark,"",z0)
-					else:
-						for x in [-0.15,0.15]: _flat(st,x-0.065,x+0.065,a,b,MARK_LEVEL,mark,"",z0)
-			z=end
+	z=0.0
+	while z<L:
+		var end := minf(z+STRIP,L)
+		for span in visible_ranges:
+			var a:=maxf(z,float(span[0]));var b:=minf(end,float(span[1]))
+			if b<=a: continue
+			var pa := profile_at(z0+a);var pb := profile_at(z0+b)
+			if maxf(float(pa.get("median",0.0)),float(pb.get("median",0.0)))>0.001: continue
+			for mode in ["solid","double"]:
+				var sa := float(pa["centre_"+mode]);var sb := float(pb["centre_"+mode])
+				if maxf(sa,sb)<=0.001: continue
+				for x in ([0.0] if mode=="solid" else [-0.15,0.15]):
+					_quad(st,x-0.065,x+0.065,x-0.065,x+0.065,a,b,MARK_LEVEL,_road_colour(pa).lerp(mark,sa),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,sb))
+		z=end
 	# No ground here: the world's one lawn (world.gd _build_ground) lies under everything.
 	# Stacked grass planes a few centimetres apart flicker on a phone's depth buffer.
 
 ## A highway lane drop lives between scenes, leaving question geometry intact.
 ## Inner lanes keep their width; only boundaries of disappearing outer lanes meet the edge.
 func profile_at(z: float) -> Dictionary:
-	if connector.is_empty(): return profile
-	var a: Dictionary=connector.from;var b: Dictionary=connector.to
-	var t := smoothstep(float(connector.start),float(connector.end),z)
+	var a: Dictionary=profile if connector.is_empty() else connector.from
+	var b: Dictionary=profile if connector.is_empty() else connector.to
+	var t := 0.0 if connector.is_empty() else smoothstep(float(connector.start),float(connector.end),z)
 	var result: Dictionary=a.duplicate() if t<0.5 else b.duplicate()
-	result.width=lerpf(float(a.width),float(b.width),t)
+	result.width=lerpf(float(a.get("width",ROAD_HALF*2.0)),float(b.get("width",ROAD_HALF*2.0)),t)
 	result.median=lerpf(float(a.get("median",0.0)),float(b.get("median",0.0)),t)
-	var aw: float=(float(a.width)-float(a.get("median",0.0)))/maxi(2,int(a.get("lanes",2)))
-	var bw: float=(float(b.width)-float(b.get("median",0.0)))/maxi(2,int(b.get("lanes",2)))
+	var aw: float=(float(a.get("width",ROAD_HALF*2.0))-float(a.get("median",0.0)))/maxi(2,int(a.get("lanes",2)))
+	var bw: float=(float(b.get("width",ROAD_HALF*2.0))-float(b.get("median",0.0)))/maxi(2,int(b.get("lanes",2)))
 	result.lane_width=lerpf(aw,bw,t)
-	result.walk_width=lerpf(SIDEWALK if a.get("walk",true) else 0.0,SIDEWALK if b.get("walk",true) else 0.0,t)
+	var ad := 1.0 if a.get("surface","asphalt")=="sand" else 0.0
+	var bd := 1.0 if b.get("surface","asphalt")=="sand" else 0.0
+	result.dirt_amount=lerpf(ad,bd,t)
+	# Switch texture layers only where both detail maps have faded to zero.
+	result.detail_strength=1.0 if ad==bd else absf(t*2.0-1.0)
+	result.walk_width=lerpf(SIDEWALK if a.get("walk",true) and ad==0.0 else 0.0,SIDEWALK if b.get("walk",true) and bd==0.0 else 0.0,t)
+	result.walk_height=KERB*float(result.walk_width)/SIDEWALK
+	result.edge_strength=lerpf(1.0 if a.get("edge",true) and ad==0.0 else 0.0,1.0 if b.get("edge",true) and bd==0.0 else 0.0,t)
+	for mode in ["dashed","solid","double"]:
+		result["centre_"+mode]=lerpf(1.0 if a.get("centre","dashed")==mode and ad==0.0 else 0.0,1.0 if b.get("centre","dashed")==mode and bd==0.0 else 0.0,t)
 	return result
+
+func _road_colour(at: Dictionary) -> Color:
+	return Color("#2C2F36").lerp(Color("#6f5840"),float(at.dirt_amount))
 
 func lane_boundaries(z: float,half: float) -> Array[float]:
 	var result: Array[float]=[]
@@ -249,19 +274,23 @@ func _half(half_at: Callable, z: float) -> float:
 ## UV in metres / tile in world space (continuous between chunks), so the pattern never jumps at a
 ## chunk border.
 func _quad(st: SurfaceTool, xa0: float, xa1: float, xb0: float, xb1: float, za: float, zb: float,
-		y: float, color: Color, kind: String, world_z: float) -> void:
+		y: float, color: Color, kind: String, world_z: float, end_y := NAN, end_colour := Color(-1,0,0,1), detail := Vector2.ONE) -> void:
 	var layer := sc.layer_of(kind) if kind != "" else 0
 	var period: float = sc.kinds[kind].period if kind != "" else 1.0
 	var a0 := minf(xa0, xa1)
 	var a1 := maxf(xa0, xa1)
 	var b0 := minf(xb0, xb1)
 	var b1 := maxf(xb0, xb1)
-	st.set_color(Color(color.r, color.g, color.b, 0.0))
-	for p in [Vector3(a0, y, za), Vector3(a1, y, za), Vector3(b1, y, zb),
-			Vector3(a0, y, za), Vector3(b1, y, zb), Vector3(b0, y, zb)]:
+	if is_nan(end_y): end_y=y
+	if end_colour.r<0.0: end_colour=color
+	for p in [Vector3(a0, y, za), Vector3(a1, y, za), Vector3(b1, end_y, zb),
+			Vector3(a0, y, za), Vector3(b1, end_y, zb), Vector3(b0, end_y, zb)]:
+		var at_end := is_equal_approx(p.z,zb)
+		var tint := end_colour if at_end else color
+		st.set_color(Color(tint.r,tint.g,tint.b,0.0))
 		var w := texture_frame * Vector3(p.x,p.y,p.z+world_z)
 		st.set_uv(Vector2(w.x / period, w.z / period))
-		st.set_uv2(Vector2(layer, 0))
+		st.set_uv2(Vector2(layer,(detail.y if at_end else detail.x)-1.0))
 		st.add_vertex(p)
 
 
@@ -271,11 +300,11 @@ func _flat(st: SurfaceTool, x0: float, x1: float, z0: float, z1: float, y: float
 
 
 ## The kerb wall on one side, between two cross-sections; xa/xb are the kerb's x at each end.
-func _kerb(st: SurfaceTool, xa: float, xb: float, za: float, zb: float, color: Color, side: float) -> void:
+func _kerb(st: SurfaceTool, xa: float, xb: float, za: float, zb: float, color: Color, side: float, height_a := KERB, height_b := KERB) -> void:
 	st.set_color(Color(color.r, color.g, color.b, 0.0))
 	# Faces the road (normal towards x = 0): clockwise seen from there.
-	var pts := [Vector3(xa, 0, za), Vector3(xa, KERB, za), Vector3(xb, KERB, zb),
-		Vector3(xa, 0, za), Vector3(xb, KERB, zb), Vector3(xb, 0, zb)]
+	var pts := [Vector3(xa, 0, za), Vector3(xa, height_a, za), Vector3(xb, height_b, zb),
+		Vector3(xa, 0, za), Vector3(xb, height_b, zb), Vector3(xb, 0, zb)]
 	if side < 0:
 		pts = [pts[0], pts[2], pts[1], pts[3], pts[5], pts[4]]
 	# A 18 cm wall is drawn in one plain colour: the stone pattern squeezed into that height
@@ -290,12 +319,30 @@ func _kerb(st: SurfaceTool, xa: float, xb: float, za: float, zb: float, color: C
 
 ## A plot position is laid out for ROAD_HALF; a wider carriageway moves it out by `edge`.
 func _from_kerb(pos: Vector3) -> Vector3:
-	pos.x += signf(pos.x) * edge
+	# A row's props can be ten metres ahead/behind its centre. On a taper each
+	# object follows its own section rather than the width sampled for the row.
+	var offset := _half(_build_half_at,pos.z)-ROAD_HALF if _build_half_at.is_valid() else edge
+	pos.x += signf(pos.x) * offset
+	if is_equal_approx(pos.y,KERB): pos.y = float(profile_at(pos.z).get("walk_height",KERB))
 	return pos
 
 
 func _put(slot: int, prop: String, pos: Vector3, yaw := 0.0, scale := Vector3.ONE, tint := Color.WHITE) -> void:
 	var t := Transform3D(Basis(Vector3.UP, yaw).scaled(scale), _from_kerb(pos))
+	if not _prop_boxes.has(prop):
+		_prop_boxes[prop] = Models.contact_mesh().get_aabb() if prop == "tree_contact" else Models.mesh_of("res://scenery/%s.glb" % prop).get_aabb()
+	var box: AABB = t * _prop_boxes[prop]
+	var local_z := pos.z - _build_z0
+	var low := local_z + box.position.z-pos.z
+	var high := local_z + box.end.z-pos.z
+	# Only internal cuts are real scene boundaries; an ordinary chunk edge is
+	# followed by another street chunk. Keep the entire prop off a clipped gap.
+	var fits := false
+	for span in visible_ranges:
+		if (float(span[0]) <= 0.001 or low >= float(span[0])) and (float(span[1]) >= L-0.001 or high <= float(span[1])):
+			fits = true
+			break
+	if not fits: return
 	pools[prop].put(slot, t, Color(tint.r, tint.g, tint.b, 1.0 if winter else 0.0))
 
 

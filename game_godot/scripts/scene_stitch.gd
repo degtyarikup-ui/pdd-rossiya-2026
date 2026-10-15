@@ -198,6 +198,18 @@ static func _port(p: Vector3, out: Vector3, width: float, built: Dictionary) -> 
 static func match_score(a: Dictionary, b: Dictionary) -> float:
 	return 500.0*absf(float(a.lanes)-float(b.lanes)) + (200.0 if a.surface!=b.surface else 0.0) + (50.0 if absf(a.declared_median-b.declared_median)>0.1 else 0.0) + absf(a.width-b.width) + (5.0 if a.walk!=b.walk else 0.0)
 
+## First selection tier: matching physical sections need only a straight seam.
+## Other same-lane profiles remain valid fallbacks, with their existing end blend.
+static func directly_compatible(a: Dictionary, b: Dictionary) -> bool:
+	if a.is_empty() or b.is_empty(): return false
+	return int(a.get("lanes",2)) == int(b.get("lanes",2)) \
+		and str(a.get("surface","asphalt")) == str(b.get("surface","asphalt")) \
+		and absf(float(a.get("median",0.0))-float(b.get("median",0.0))) <= 0.1 \
+		and absf(float(a.get("width",8.4))-float(b.get("width",8.4))) <= 0.15 \
+		and bool(a.get("walk",true)) == bool(b.get("walk",true)) \
+		and bool(a.get("edge",true)) == bool(b.get("edge",true)) \
+		and str(a.get("centre","dashed")) == str(b.get("centre","dashed"))
+
 static func needs_lane_transition(a: Dictionary,b: Dictionary) -> bool:
 	return int(a.get("lanes",2))!=int(b.get("lanes",2))
 

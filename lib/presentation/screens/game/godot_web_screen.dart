@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import 'package:pdd_app/data/services/game_question_history_service.dart';
 import 'package:pdd_app/presentation/screens/game/platform/godot_web_frame.dart';
 
 /// «Живой город» on the web: the Godot game fills the screen. Its exit pops
@@ -35,6 +38,8 @@ class _GodotWebScreenState extends State<GodotWebScreen> {
     args: widget.args,
     onExit: _exit,
     onSummary: (json) => _summary = json,
+    onEvent: (event) =>
+        unawaited(GameQuestionHistoryService.instance.recordEvent(event)),
   );
   bool _closing = false;
   String? _summary;

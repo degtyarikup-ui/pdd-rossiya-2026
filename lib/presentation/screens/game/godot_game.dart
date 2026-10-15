@@ -17,6 +17,7 @@ import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
+import 'package:pdd_app/data/services/game_question_history_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
@@ -67,6 +68,9 @@ class GodotGame {
     _available = null;
     _webAvailable = null;
     _running = false;
+    // This wrapper itself is test-only, and resets all city-bridge state.
+    // ignore: invalid_use_of_visible_for_testing_member
+    GameQuestionHistoryService.instance.resetForTest();
   }
 
   /// Android and iOS run the game on their native screens (see ios/Runner/PddGodotGame.mm).
@@ -131,7 +135,11 @@ class GodotGame {
     }
     if (json == null) return;
     final decoded = jsonDecode(json);
-    if (decoded is! Map || !context.mounted) return;
+    if (decoded is! Map) return;
+    await GameQuestionHistoryService.instance.recordSnapshot(
+      decoded['question_history'],
+    );
+    if (!context.mounted) return;
     await _afterGame(context, ref, decoded.cast<String, dynamic>());
   }
 
@@ -404,6 +412,7 @@ class GodotGame {
       if (const bool.fromEnvironment('GAME_DEBUG'))
         'debug_perf': prefs?.getBool(_cityPerfKey) ?? false,
       'can_start': unlimited || runs > 0 || pending != null,
+      'question_history': await GameQuestionHistoryService.instance.load(),
       if (pending != null) 'resume': pending.toJson(),
       'texts': {
         'start': appL10n.gameLobbyStart,

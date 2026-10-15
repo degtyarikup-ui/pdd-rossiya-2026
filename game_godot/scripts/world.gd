@@ -115,6 +115,7 @@ var overview := false             # debug: look at the whole situation from abov
 
 # Exam junctions.
 var bag: Array = []               # situation ids still to come (shuffled)
+var question_history := QuestionHistory.new({}, "")
 var current: Dictionary = {}      # { sit, junction, zc } of the next/current junction
 var retired: Array = []           # junctions behind the player, still on screen
 var phase := "driving"            # driving | question | resolving
@@ -264,6 +265,9 @@ func _ready() -> void:
 	spawn_after = drive.pos.z
 	if _has_arg("--ride-options"):
 		_start_ride()
+	var history_seed: Variant = ride_options.get("question_history", {})
+	var history_path := "" if _is_test_run() or only_id != "" or "--script" in OS.get_cmdline_args() else QuestionHistory.SAVE_PATH
+	question_history = QuestionHistory.new(history_seed if history_seed is Dictionary else {}, history_path)
 	# Desktop checks: `godot --path game_godot -- --shot=out.png [--season=winter]
 	# [--situation=<id>] [--auto] [--overview] [--start=<z>] [--wait=<s>]`.
 	for arg in Host.user_args():
@@ -1266,6 +1270,51 @@ func _scene_connections(id: String) -> Dictionary:
 	return profile
 
 
+## Join quality is considered inside the least-shown pool, so old questions
+## never displace unseen ones merely to obtain a familiar road profile.
+func _join_rank(out: Dictionary, entry: Dictionary) -> int:
+	if out.is_empty() or entry.is_empty(): return 5
+	if SceneStitch.directly_compatible(out, entry): return 0
+	if int(out.get("lanes", 2)) != int(entry.get("lanes", 2)): return 4
+	if str(out.get("surface", "asphalt")) != str(entry.get("surface", "asphalt")): return 3
+	if absf(float(out.get("declared_median", 0.0)) - float(entry.get("declared_median", 0.0))) > 0.1: return 2
+	return 1
+
+
+func _pick_question(ids: Array, port: Dictionary) -> String:
+	if ids.is_empty(): return ""
+	if port.is_empty(): return str(ids[0])
+	var profiles := {}
+	for id in ids: profiles[id] = _scene_connections(str(id))
+	var best := str(ids[0])
+	var best_rank := 6
+	var best_next := 6
+	var best_cost := INF
+	for id in ids:
+		var candidate: Dictionary = profiles[id]
+		var entry: Dictionary = candidate.get("entry", {})
+		if entry.is_empty(): continue
+		var rank := _join_rank(port, entry)
+		if rank > best_rank: continue
+		# One-step lookahead keeps a 2-lane -> 4-lane question available as a
+		# natural bridge instead of exhausting the wrong side of the route.
+		var departure: Dictionary = candidate.get("preferred_exit", {})
+		var next_rank := 0
+		if not departure.is_empty() and ids.size() > 1:
+			next_rank = 5
+			for other in ids:
+				if other == id: continue
+				next_rank = mini(next_rank, _join_rank(departure, profiles[other].get("entry", {})))
+				if next_rank == 0: break
+		var cost := SceneStitch.match_score(port, entry)
+		if rank < best_rank or (rank == best_rank and (next_rank < best_next or (next_rank == best_next and cost < best_cost))):
+			best = str(id)
+			best_rank = rank
+			best_next = next_rank
+			best_cost = cost
+	return best
+
+
 func _next_id() -> String:
 	if only_id != "": return only_id
 	if bag.is_empty():
@@ -1276,27 +1325,8 @@ func _next_id() -> String:
 	if next_port.is_empty() and current and current.sit.network:
 		var maneuver: String = str(current.sit.data.spec.get("maneuver", "straight"))
 		next_port = current.sit.network.connections.exits.get(maneuver, {})
-	if next_port.is_empty(): return bag.pop_front()
-	var best := 0;var score := INF
-	var through_highway := false
-	var matching_lanes := false
-	for id in bag:
-		var candidate: Dictionary=_scene_connections(str(id))
-		var entry: Dictionary=candidate.get("entry",{})
-		if not entry.is_empty() and int(entry.lanes)==int(next_port.lanes): matching_lanes=true
-		if int(candidate.get("entry",{}).get("lanes",2))==6 and int(candidate.get("preferred_exit",{}).get("lanes",6))==6: through_highway=true
-	for i in bag.size():
-		var candidate: Dictionary=_scene_connections(str(bag[i]))
-		var entry: Dictionary = candidate.get("entry",{})
-		if entry.is_empty(): continue
-		if matching_lanes and int(entry.lanes)!=int(next_port.lanes): continue
-		if through_highway and int(entry.get("lanes",2))==6 and int(candidate.get("preferred_exit",{}).get("lanes",6))!=6: continue
-		var cost := SceneStitch.match_score(next_port,entry)
-		if cost<score: score=cost;best=i
-	# Pick only from remaining questions. Re-adding a compatible scene from the
-	# full list can loop forever on a highway or starve its first entrance.
-	var id: String = bag[best]
-	bag.remove_at(best)
+	var id := _pick_question(question_history.candidates(bag), next_port)
+	bag.erase(id)
 	return id
 
 
@@ -1306,17 +1336,13 @@ func _next_id() -> String:
 func _reselect_for_departure() -> void:
 	if staging or only_id!="" or next_id=="" or pending_connection.is_empty(): return
 	var port: Dictionary=pending_connection.port
-	var entry: Dictionary=_scene_connections(next_id).get("entry",{})
-	if entry.is_empty() or int(entry.lanes)==int(port.lanes): return
-	var compatible := false
-	for id in bag:
-		var candidate: Dictionary=_scene_connections(str(id)).get("entry",{})
-		if not candidate.is_empty() and int(candidate.lanes)==int(port.lanes):
-			compatible=true
-			break
-	if not compatible: return
+	var available := bag.duplicate()
+	available.push_front(next_id)
+	var selected := _pick_question(question_history.candidates(available), port)
+	if selected == next_id: return
 	var postponed := next_id
-	next_id=_next_id()
+	next_id=selected
+	bag.erase(selected)
 	bag.push_front(postponed)
 	if staged_sit!=null:
 		staged_sit.queue_free()
@@ -1573,6 +1599,8 @@ func _show_voiced_question(card: Dictionary, id: String, seconds: float) -> void
 	if voice.enabled:
 		seconds = maxf(seconds, voice.duration(id) + 2.0)
 	ui.show_question(card, seconds)
+	var history := question_history.mark_shown(id)
+	event.emit({"event": "question_shown", "situation": id, "question_history": history})
 	voice.begin(id)
 
 
@@ -2941,6 +2969,7 @@ func _arg_text(name: String) -> String:
 ## What the app gets back: the run (run.gd summary), whether a run began, the car driven.
 func _exit_summary() -> Dictionary:
 	var out := run.summary()
+	out["question_history"] = question_history.snapshot()
 	out["run_started"] = run_started
 	out["car"] = chosen
 	out["tips_seen"] = tips_seen

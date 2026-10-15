@@ -15,6 +15,7 @@ class GodotWebFrame {
   final _frame = web.HTMLIFrameElement();
   final void Function(String summaryJson) _onExit;
   final void Function(String summaryJson)? _onSummary;
+  final void Function(Map<String, dynamic> event)? _onEvent;
   late final String _viewType;
   late final JSFunction _listener;
   bool _disposed = false;
@@ -23,8 +24,10 @@ class GodotWebFrame {
     required List<String> args,
     required void Function(String summaryJson) onExit,
     void Function(String summaryJson)? onSummary,
+    void Function(Map<String, dynamic> event)? onEvent,
   }) : _onExit = onExit,
-       _onSummary = onSummary {
+       _onSummary = onSummary,
+       _onEvent = onEvent {
     _viewType = 'pdd-godot-${++_sequence}';
     _frame.style
       ..border = '0'
@@ -48,6 +51,7 @@ class GodotWebFrame {
           _onExit(json);
         } else if (data['kind'] == 'send') {
           final event = jsonDecode(json);
+          if (event is Map<String, dynamic>) _onEvent?.call(event);
           if (event is Map &&
               event['event'] == 'run_finished' &&
               event['summary'] is Map) {

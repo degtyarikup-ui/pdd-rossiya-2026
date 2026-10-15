@@ -128,6 +128,37 @@ void main() {
     'car': {'id': 'hatch', 'paint': 'red'},
   });
 
+  testWidgets(
+    'shown city history survives exit before any answer on Android and iOS',
+    (tester) async {
+      await open(tester);
+      final history = {
+        'version': 1,
+        'sequence': 4,
+        'last_shown': {'ticket_19_13': 4, 'ticket_29_14': 2},
+        'show_counts': {'ticket_19_13': 3, 'ticket_29_14': 1},
+      };
+      for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+        nativeResponse = jsonEncode({
+          'run_started': false,
+          'answered': 0,
+          'question_history': history,
+        });
+        debugDefaultTargetPlatformOverride = platform;
+        await tester.tap(find.text('City'));
+        await tester.pumpAndSettle();
+        // A fresh Dart bridge/session must recover history from local preferences.
+        GodotGame.resetForTest();
+        nativeResponse = null;
+        await tester.tap(find.text('City'));
+        await tester.pumpAndSettle();
+        expect(options()['question_history'], history);
+        expect(tester.takeException(), isNull);
+      }
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
+
   testWidgets('notification previews are available only in a debug city ride', (
     tester,
   ) async {
