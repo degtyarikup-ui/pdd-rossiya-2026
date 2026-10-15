@@ -14,7 +14,6 @@ from build_vehicles import write_model
 
 BLACK=(.10,.12,.14,1)
 STEEL=(.43,.47,.50,1)
-WHITE=(.87,.90,.92,1)
 INK=(0,0,0,1)
 LENS=(1,1,1,1)
 
@@ -68,13 +67,8 @@ def body(tram=False,arrow=''):
     m=SignalMesh()
     m.role=1 # mast: lets the smaller mini-game preserve its own mounting profile
     m.stem((0,0,0),(0,5.4 if tram else 4.2,0),.08,.08,STEEL,None,8)
-    m.role=2 # main housing/shield, without visors for the overhead camera
+    m.role=2 # main housing, without a backing board or visors
     m.rounded_box(0,3.4,.25,.65,1.6,.4,.055,BLACK)
-    m.box((0,3.4,.01),(1.01,1.96,.02),BLACK,bottom=True)
-    m.box((0,3.4,.03),(.95,1.9,.03),BLACK,bottom=True)
-    for side in [-1,1]:
-        m.box((side*.49,3.4,.024),(.03,1.96,.008),WHITE,bottom=True)
-        m.box((0,3.4+side*.965,.024),(.95,.03,.008),WHITE,bottom=True)
     if arrow:
         m.role=3 # supplementary section
         x=-.70 if arrow=='left' else .70
@@ -85,7 +79,6 @@ def body(tram=False,arrow=''):
         m.box((0,2.05,.16),(.24,.28,.22),BLACK,bottom=True)
         m.rounded_box(0,4.6,.25,.65,.44,.4,.035,BLACK)
         m.rounded_box(0,5.06,.25,1.40,.48,.4,.04,BLACK)
-        m.box((0,5.06,.03),(1.52,.56,.03),BLACK,bottom=True)
     return m
 
 
