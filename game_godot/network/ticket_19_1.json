@@ -1,0 +1,784 @@
+{
+ "schema": 1,
+ "id": "ticket_19_1",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     8.5,
+     -69
+    ],
+    [
+     8.5,
+     69
+    ],
+    [
+     -8.5,
+     69
+    ],
+    [
+     -8.5,
+     -69
+    ]
+   ],
+   "holes": [
+    [
+     [
+      1.5,
+      -60
+     ],
+     [
+      1.5,
+      60
+     ],
+     [
+      -1.5,
+      60
+     ],
+     [
+      -1.5,
+      -60
+     ]
+    ]
+   ],
+   "walk": false,
+   "edge": true,
+   "surface": "asphalt",
+   "green": true
+  },
+  {
+   "id": "road_s1_plain",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -91
+    ],
+    [
+     7,
+     -90
+    ],
+    [
+     7,
+     90
+    ],
+    [
+     7,
+     91
+    ],
+    [
+     -7,
+     91
+    ],
+    [
+     -7,
+     90
+    ],
+    [
+     -7,
+     -90
+    ],
+    [
+     -7,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "full_width_carriageway",
+   "outer": [
+    [
+     -8.5,
+     -91
+    ],
+    [
+     8.5,
+     -91
+    ],
+    [
+     8.5,
+     91
+    ],
+    [
+     -8.5,
+     91
+    ]
+   ],
+   "holes": [],
+   "surface": "asphalt",
+   "walk": false,
+   "edge": true
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     -5,
+     -90
+    ],
+    [
+     -5,
+     90
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     5,
+     -90
+    ],
+    [
+     5,
+     90
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     -90
+    ],
+    [
+     0,
+     -64
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     64
+    ],
+    [
+     0,
+     90
+    ]
+   ]
+  }
+ ],
+ "lawns": [
+  {
+   "id": "auto_lawn_s1_r",
+   "auto": true,
+   "outer": [
+    [
+     -8.5,
+     -91
+    ],
+    [
+     -8.5,
+     -90
+    ],
+    [
+     -8.5,
+     90
+    ],
+    [
+     -8.5,
+     91
+    ],
+    [
+     -11.9,
+     91
+    ],
+    [
+     -11.9,
+     90
+    ],
+    [
+     -11.9,
+     -90
+    ],
+    [
+     -11.9,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s1_l",
+   "auto": true,
+   "outer": [
+    [
+     8.5,
+     -91
+    ],
+    [
+     8.5,
+     -90
+    ],
+    [
+     8.5,
+     90
+    ],
+    [
+     8.5,
+     91
+    ],
+    [
+     11.9,
+     91
+    ],
+    [
+     11.9,
+     90
+    ],
+    [
+     11.9,
+     -90
+    ],
+    [
+     11.9,
+     -91
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -6.75,
+     -91
+    ],
+    [
+     -6.75,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -6.75,
+     -13.1
+    ],
+    [
+     -6.75,
+     90
+    ]
+   ],
+   "exitYaw": 0
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -16,
+    -57
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f",
+   "id": "decor_0"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -11,
+    -52
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_1"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -18,
+    -28
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f",
+   "id": "decor_2"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -11,
+    -23
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_3"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -16,
+    5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f",
+   "id": "decor_4"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -11,
+    10
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_5"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -18,
+    38
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f",
+   "id": "decor_6"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -11,
+    43
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_7"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -16,
+    67
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f",
+   "id": "decor_8"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -11,
+    72
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_9"
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    -34,
+    15
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#d5dce5",
+   "id": "decor_10"
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -34,
+    52
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#d5dce5",
+   "id": "decor_11"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    16,
+    -57
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f",
+   "id": "decor_12"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    11,
+    -52
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_13"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    18,
+    -28
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f",
+   "id": "decor_14"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    11,
+    -23
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_15"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    16,
+    5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f",
+   "id": "decor_16"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    11,
+    10
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_17"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    18,
+    38
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f",
+   "id": "decor_18"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    11,
+    43
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_19"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    16,
+    67
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f",
+   "id": "decor_20"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    11,
+    72
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null,
+   "id": "decor_21"
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    34,
+    15
+   ],
+   "yaw": 3.141592653589793,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#d5dce5",
+   "id": "decor_22"
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    34,
+    52
+   ],
+   "yaw": 3.141592653589793,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#d5dce5",
+   "id": "decor_23"
+  }
+ ],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 19 · Вопрос 1",
+    "title": "Сколько проезжих частей имеет данная дорога?",
+    "options": [
+     "Одну",
+     "Две",
+     "Четыре"
+    ],
+    "explanation": "Разделительная полоса делит дорогу на проезжие части. Данная дорога имеет две проезжие части, четыре полосы движения.(Пункт 1.2 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 19 · Question 1",
+    "title": "How many carriageways does this road have?",
+    "options": [
+     "One",
+     "Two",
+     "Four"
+    ],
+    "explanation": "A median strip divides the road into carriageways. This road has two carriageways, four lanes. (Clause 1.2 of the traffic rules)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "19-билет · 1-сұрақ",
+    "title": "Бұл жолдың қанша жүріс бөлігі бар?",
+    "options": [
+     "Бір",
+     "Екі",
+     "Төрт"
+    ],
+    "explanation": "Бөлу жолағы жолды жүріс бөлігіне бөледі. Бұл жолдың екі жүріс бөлігі, төрт жолағы бар. (Жол қозғалысы ережесінің 1.2 тармағы)",
+    "pddRule": ""
+   }
+  },
+  "correct": 1,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "c016b781a5d47a61c557adbc1dfc1829",
+  "sourceCategory": "ab",
+  "sourceImage": "08198e3f5a965a89216704b4fd5f1b26",
+  "sourceTextLength": 57
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "n",
+    "kind": "avenue",
+    "ends": {},
+    "centre": "none",
+    "walk": false,
+    "edge": true,
+    "median": 3
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "n",
+   "lane": 1
+  }
+ },
+ "stop": {
+  "x": -6.75,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 17
+ },
+ "approachWidth": 17,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "road_divided",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "ok"
+ },
+ "questionPool": {
+  "sourceQuestionId": "c016b781a5d47a61c557adbc1dfc1829",
+  "category": "ab",
+  "ticket": 19,
+  "number": 1
+ },
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "questionView": {
+  "centre": [
+   0,
+   -3
+  ],
+  "height": 45
+ }
+}

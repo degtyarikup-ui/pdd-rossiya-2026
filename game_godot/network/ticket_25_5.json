@@ -1,0 +1,1312 @@
+{
+ "schema": 1,
+ "id": "ticket_25_5",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt"
+  }
+ ],
+ "markings": [
+  {
+   "id": "centre_1_5_00",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -87.0
+    ],
+    [
+     0.0,
+     -84.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_01",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -75.0
+    ],
+    [
+     0.0,
+     -72.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_02",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -63.0
+    ],
+    [
+     0.0,
+     -60.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_03",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -51.0
+    ],
+    [
+     0.0,
+     -48.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_04",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -39.0
+    ],
+    [
+     0.0,
+     -36.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_05",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -27.0
+    ],
+    [
+     0.0,
+     -24.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_06",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -15.0
+    ],
+    [
+     0.0,
+     -12.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_07",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -3.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_08",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     9.0
+    ],
+    [
+     0.0,
+     12.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_09",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     21.0
+    ],
+    [
+     0.0,
+     24.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_10",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     33.0
+    ],
+    [
+     0.0,
+     36.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_11",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     45.0
+    ],
+    [
+     0.0,
+     48.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_12",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     57.0
+    ],
+    [
+     0.0,
+     60.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_13",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     69.0
+    ],
+    [
+     0.0,
+     72.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_1_5_14",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     81.0
+    ],
+    [
+     0.0,
+     84.0
+    ]
+   ]
+  }
+ ],
+ "lawns": [
+  {
+   "id": "auto_lawn_s1_r",
+   "auto": true,
+   "outer": [
+    [
+     -4.2,
+     -91
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -7.6,
+     91
+    ],
+    [
+     -7.6,
+     90
+    ],
+    [
+     -7.6,
+     -90
+    ],
+    [
+     -7.6,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s1_l",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     7.6,
+     91
+    ],
+    [
+     7.6,
+     90
+    ],
+    [
+     7.6,
+     -90
+    ],
+    [
+     7.6,
+     -91
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     90
+    ]
+   ],
+   "exitYaw": 0
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [
+  {
+   "id": "pine_-1_0",
+   "prop": "trees/pine_0",
+   "pos": [
+    -12,
+    -78
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_0",
+   "prop": "trees/birch_0",
+   "pos": [
+    -20,
+    -73
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_1",
+   "prop": "trees/pine_0",
+   "pos": [
+    -13,
+    -65
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.3199999999999998,
+    1.3199999999999998,
+    1.3199999999999998
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_1",
+   "prop": "trees/birch_0",
+   "pos": [
+    -21,
+    -60
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_2",
+   "prop": "trees/pine_0",
+   "pos": [
+    -14,
+    -52
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.44,
+    1.44,
+    1.44
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_2",
+   "prop": "trees/birch_0",
+   "pos": [
+    -22,
+    -47
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_3",
+   "prop": "trees/pine_0",
+   "pos": [
+    -12,
+    -39
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_3",
+   "prop": "trees/birch_0",
+   "pos": [
+    -23,
+    -34
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_4",
+   "prop": "trees/pine_0",
+   "pos": [
+    -13,
+    -26
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.3199999999999998,
+    1.3199999999999998,
+    1.3199999999999998
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_4",
+   "prop": "trees/birch_0",
+   "pos": [
+    -20,
+    -21
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_5",
+   "prop": "trees/pine_0",
+   "pos": [
+    -14,
+    -13
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.44,
+    1.44,
+    1.44
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_5",
+   "prop": "trees/birch_0",
+   "pos": [
+    -21,
+    -8
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_6",
+   "prop": "trees/pine_0",
+   "pos": [
+    -12,
+    0
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_6",
+   "prop": "trees/birch_0",
+   "pos": [
+    -22,
+    5
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_7",
+   "prop": "trees/pine_0",
+   "pos": [
+    -13,
+    13
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.3199999999999998,
+    1.3199999999999998,
+    1.3199999999999998
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_7",
+   "prop": "trees/birch_0",
+   "pos": [
+    -23,
+    18
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_8",
+   "prop": "trees/pine_0",
+   "pos": [
+    -14,
+    26
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.44,
+    1.44,
+    1.44
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_8",
+   "prop": "trees/birch_0",
+   "pos": [
+    -20,
+    31
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_9",
+   "prop": "trees/pine_0",
+   "pos": [
+    -12,
+    39
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_9",
+   "prop": "trees/birch_0",
+   "pos": [
+    -21,
+    44
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_10",
+   "prop": "trees/pine_0",
+   "pos": [
+    -13,
+    52
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.3199999999999998,
+    1.3199999999999998,
+    1.3199999999999998
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_10",
+   "prop": "trees/birch_0",
+   "pos": [
+    -22,
+    57
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_11",
+   "prop": "trees/pine_0",
+   "pos": [
+    -14,
+    65
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.44,
+    1.44,
+    1.44
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_11",
+   "prop": "trees/birch_0",
+   "pos": [
+    -23,
+    70
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_-1_12",
+   "prop": "trees/pine_0",
+   "pos": [
+    -12,
+    78
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_-1_12",
+   "prop": "trees/birch_0",
+   "pos": [
+    -20,
+    83
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_0",
+   "prop": "trees/pine_0",
+   "pos": [
+    12,
+    -78
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_0",
+   "prop": "trees/birch_0",
+   "pos": [
+    20,
+    -73
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_1",
+   "prop": "trees/pine_0",
+   "pos": [
+    13,
+    -65
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.3199999999999998,
+    1.3199999999999998,
+    1.3199999999999998
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_1",
+   "prop": "trees/birch_0",
+   "pos": [
+    21,
+    -60
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_2",
+   "prop": "trees/pine_0",
+   "pos": [
+    14,
+    -52
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.44,
+    1.44,
+    1.44
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_2",
+   "prop": "trees/birch_0",
+   "pos": [
+    22,
+    -47
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_3",
+   "prop": "trees/pine_0",
+   "pos": [
+    12,
+    -39
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_3",
+   "prop": "trees/birch_0",
+   "pos": [
+    23,
+    -34
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_4",
+   "prop": "trees/pine_0",
+   "pos": [
+    13,
+    -26
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.3199999999999998,
+    1.3199999999999998,
+    1.3199999999999998
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_4",
+   "prop": "trees/birch_0",
+   "pos": [
+    20,
+    -21
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_5",
+   "prop": "trees/pine_0",
+   "pos": [
+    14,
+    -13
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.44,
+    1.44,
+    1.44
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_5",
+   "prop": "trees/birch_0",
+   "pos": [
+    21,
+    -8
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_6",
+   "prop": "trees/pine_0",
+   "pos": [
+    12,
+    0
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_6",
+   "prop": "trees/birch_0",
+   "pos": [
+    22,
+    5
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_7",
+   "prop": "trees/pine_0",
+   "pos": [
+    13,
+    13
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.3199999999999998,
+    1.3199999999999998,
+    1.3199999999999998
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_7",
+   "prop": "trees/birch_0",
+   "pos": [
+    23,
+    18
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_8",
+   "prop": "trees/pine_0",
+   "pos": [
+    14,
+    26
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.44,
+    1.44,
+    1.44
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_8",
+   "prop": "trees/birch_0",
+   "pos": [
+    20,
+    31
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_9",
+   "prop": "trees/pine_0",
+   "pos": [
+    12,
+    39
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_9",
+   "prop": "trees/birch_0",
+   "pos": [
+    21,
+    44
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_10",
+   "prop": "trees/pine_0",
+   "pos": [
+    13,
+    52
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.3199999999999998,
+    1.3199999999999998,
+    1.3199999999999998
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_10",
+   "prop": "trees/birch_0",
+   "pos": [
+    22,
+    57
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_11",
+   "prop": "trees/pine_0",
+   "pos": [
+    14,
+    65
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.44,
+    1.44,
+    1.44
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_11",
+   "prop": "trees/birch_0",
+   "pos": [
+    23,
+    70
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  },
+  {
+   "id": "pine_1_12",
+   "prop": "trees/pine_0",
+   "pos": [
+    12,
+    78
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "tint": "#3e7c42"
+  },
+  {
+   "id": "birch_1_12",
+   "prop": "trees/birch_0",
+   "pos": [
+    20,
+    83
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.1,
+    1.1,
+    1.1
+   ],
+   "tint": "#7fa34a"
+  }
+ ],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 25 · Вопрос 5",
+    "title": "Какой маневр Вам запрещается выполнить при наличии данной линии разметки?",
+    "options": [
+     "Обгон",
+     "Объезд",
+     "Разворот",
+     "Разрешаются все перечисленные маневры"
+    ],
+    "explanation": "В данном случае прерывистая линия горизонтальной разметки 1.5 разделяет транспортные потоки. Пересечение ее разрешается с любой стороны. Она ничего не запрещает при выполнении перечисленных маневров. Наоборот, чётко Вас ориентирует, на какой стороне движения находитесь.(«Горизонтальная разметка»)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 25 · Question 5",
+    "title": "What maneuver are you prohibited from performing with this marking line?",
+    "options": [
+     "Overtaking",
+     "Detour",
+     "U-turn",
+     "All of the above maneuvers are permitted"
+    ],
+    "explanation": "In this case, a broken horizontal line 1.5 separates traffic flows. Crossing it is allowed from any direction. It does not prohibit anything when performing the listed maneuvers. On the contrary, it clearly guides you on which side of the road you are on. (“Horizontal markings”)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "25-билет · 5-сұрақ",
+    "title": "Сізге осы таңбалау сызығымен қандай маневр жасауға тыйым салынады?",
+    "options": [
+     "Басып озу",
+     "Айналып өту",
+     "Кері бұрылу",
+     "Жоғарыда аталған барлық маневрлерге рұқсат етілген"
+    ],
+    "explanation": "Бұл жағдайда үзік көлденең сызық 1.5 көлік ағындарын бөледі. Оны кез келген бағытта кесіп өтуге рұқсат етіледі. Аталған маневрлерді орындау кезінде ол ештеңеге тыйым салмайды. Керісінше, ол жолдың қай жағында жүргеніңізді анық көрсетеді. («Көлденең таңбалар»)",
+    "pddRule": ""
+   }
+  },
+  "correct": 3,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "47ccf276664a128954065ef61a7a3991",
+  "sourceCategory": "ab",
+  "sourceImage": "cb0d50cc6d43aa4f484c589ae1ba0677",
+  "requiredStop": null,
+  "redWait": null,
+  "speedLimit": null
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "n",
+    "kind": "street",
+    "ends": {},
+    "centre": "none",
+    "edge": false,
+    "walk": false
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "n",
+   "lane": 0
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionPool": {
+  "sourceQuestionId": "47ccf276664a128954065ef61a7a3991",
+  "category": "ab",
+  "ticket": 25,
+  "number": 5
+ },
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "questionView": {
+  "centre": [
+   0.0,
+   7.0
+  ],
+  "height": 45.0
+ }
+}

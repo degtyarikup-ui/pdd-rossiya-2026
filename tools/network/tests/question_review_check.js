@@ -66,9 +66,10 @@ function mount(records = fixture) {
   assert(!ui.review.sidebarHtml().includes('preview/'), 'question list uses original exam pictures');
   assert.doesNotMatch(ui.review.sidebarHtml(), /<small>|Кому уступить дорогу|A\/B|C\/D/, 'left rows keep only the illustration, reference and decision');
   assert.match(ui.review.sidebarHtml('', { filtersCollapsed: true }), /id="question-filter-options" hidden/);
-  assert.match(ui.review.sidebarHtml('', { filtersCollapsed: true }), /data-qr="start"/);
-  assert.match(ui.review.sidebarHtml('', { filtersCollapsed: true }), /data-qr="editor-mode"/, 'work mode remains available with collapsed filters');
-  assert.equal(ui.review.filterSummary().label, 'Не просмотрены');
+  assert.doesNotMatch(ui.review.sidebarHtml(), /data-qr="start"|data-qr="editor-mode"|Да \/ Нет/, 'sidebar has no hidden review/editor mode');
+  assert.match(ui.review.sidebarHtml(), /select data-question-status aria-label="Решение по вопросу"/);
+  assert.match(ui.html(), /data-qr="editor"[^>]*>Открыть в редакторе/);
+  assert.equal(ui.review.filterSummary().label, 'Решение ещё не принято');
   assert.equal(ui.review.filterSummary().count, 2);
   assert.equal(ui.urls.at(-1), '?filter=questions&question=ticket_1_1');
   await ui.key('ArrowRight', { repeat: true });
@@ -145,10 +146,9 @@ function mount(records = fixture) {
   assert(!ui.classes.has('question-reviewing'));
   assert.equal(ui.review.mode(), 'editor');
   await ui.click('question', fixture[0].id);
-  assert.equal(ui.App.state.id, fixture[0].id, 'editor mode opens the next candidate directly');
-  assert(!ui.review.active());
-  await ui.click('qr', 'start');
-  assert(ui.review.active(), 'explicit Yes / No control returns to review mode');
+  assert.equal(ui.App.state.id, fixture[2].id, 'selecting another plan question leaves the edited scene intact');
+  assert(ui.review.active(), 'every plan question opens the same explicit review view');
+  assert.equal(ui.review.currentId(), fixture[0].id);
   assert.equal(ui.review.mode(), 'review');
   ui = mount([{ ...fixture[0], decision: 'yes' }, fixture[1], fixture[2]]);
   await ui.review.open();

@@ -1,0 +1,105 @@
+{
+ "id": "ticket_24_6",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4,
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 24 · Вопрос 6",
+   "title": "Что означает мигание жёлтого сигнала светофора?",
+   "options": [
+    "Предупреждает о неисправности светофора",
+    "Разрешает движение и информирует о наличии нерегулируемого перекрёстка или пешеходного перехода",
+    "Запрещает дальнейшее движение"
+   ],
+   "explanation": "Жёлтый мигающий сигнал разрешает движение и информирует о наличии нерегулируемого перекрёстка или пешеходного перехода, предупреждает участников дорожного движения об опасности.(Пункт 6.2 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 24 · Question 6",
+   "title": "What does a flashing yellow traffic light mean?",
+   "options": [
+    "Warns of a malfunction of the traffic light",
+    "Allows movement and informs about the presence of an unregulated intersection or pedestrian crossing",
+    "Prohibits further movement"
+   ],
+   "explanation": "A yellow flashing signal allows movement and informs about the presence of an uncontrolled intersection or pedestrian crossing, warns road users about the danger. (Clause 6.2 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "24-билет · 6-сұрақ",
+   "title": "Сары бағдаршамның жыпылықтауы нені білдіреді?",
+   "options": [
+    "Бағдаршамның істен шығуын ескертеді",
+    "Қозғалысқа рұқсат береді және реттелмейтін қиылыс пен жаяу жүргіншілер өткелінің болуы туралы хабарлайды",
+    "Әрі қарай қозғалуға тыйым салады"
+   ],
+   "explanation": "Сары жыпылықтайтын сигнал қозғалысқа мүмкіндік береді және бақыланбайтын қиылыстың немесе жаяу жүргіншілер өткелінің болуы туралы хабарлайды, жол қозғалысына қатысушыларға қауіп туралы ескертеді. (Жол қозғалысы ережесінің 6.2 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 210,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "712bf5cf673e05d4113df3756f4d9809",
+ "sourceCategory": "ab",
+ "sourceImage": null,
+ "questionPool": {
+  "sourceQuestionId": "712bf5cf673e05d4113df3756f4d9809",
+  "category": "ab",
+  "ticket": 24,
+  "number": 6
+ },
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ }
+}

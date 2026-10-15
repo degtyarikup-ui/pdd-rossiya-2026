@@ -1,0 +1,99 @@
+{
+ "id": "ticket_6_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad_priority_turn",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4,
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "left",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 6 · Вопрос 7",
+   "title": "Вы намерены продолжить движение по главной дороге. Обязаны ли Вы включить указатели левого поворота?",
+   "options": [
+    "Обязаны",
+    "Обязаны, если с других направлений приближаются транспортные средства",
+    "Не обязаны"
+   ],
+   "explanation": "Где бы ни происходило управление автомобилем, Вы должны строго придерживаться «своего внутреннего правила», которое можно сформулировать так: «Моя езда является безопасной в том случае, когда мои действия понятны всем остальным участникам дорожного движения». Вы намерены совершить маневр-поворот налево – обязательно информируйте других участников дорожного движения об этом, включив указатель поворота.(Пункт 8.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 6 · Question 7",
+   "title": "You intend to continue driving along the main road. Are you required to turn on your left turn signals?",
+   "options": [
+    "Required",
+    "Obligated if vehicles are approaching from other directions",
+    "Not required"
+   ],
+   "explanation": "Wherever you drive, you must strictly adhere to “your internal rule,” which can be formulated as follows: “My driving is safe when my actions are clear to all other road users.” You intend to make a left turn - be sure to inform other road users about this by turning on the turn signal. (Clause 8.1 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "6-билет · 7-сұрақ",
+   "title": "Сіз негізгі жолдың бойымен жүруді жалғастырасыз. Солға бұрылу сигналдарын қосу қажет пе?",
+   "options": [
+    "Міндетті",
+    "Егер көлік құралдары басқа бағыттардан жақындаса, міндетті",
+    "Міндетті емес"
+   ],
+   "explanation": "Қай жерде жүрсеңіз де, сіз «ішкі ережеңізді» қатаң сақтауыңыз керек, оны келесідей тұжырымдауға болады: «Менің әрекеттерім жол қозғалысының басқа қатысушыларына түсінікті болған кезде менің жүргізуім қауіпсіз». Сіз солға бұрылғыңыз келеді - бұрылыс сигналын қосып, бұл туралы жол қозғалысының басқа қатысушыларына хабарлауды ұмытпаңыз. (Жол қозғалысы ережесінің 8.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": true,
+ "sourceQuestionId": "cb57e6a2fa841818a28e7b2c49adc97b",
+ "sourceCategory": "ab",
+ "sourceImage": "815b0c662f4110b4065f47e9f0d5b411",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "sourceTextLength": 186
+}

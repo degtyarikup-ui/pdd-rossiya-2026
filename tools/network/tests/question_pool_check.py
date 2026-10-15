@@ -116,6 +116,8 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
     assert scene["question"]["showPlayerGuide"] is False
     assert scene["question"]["text"]["en"]["title"].startswith("en: ")
     assert scene["question"]["text"]["kk"]["title"].startswith("kk: ")
+    engine = question_pool.engine_template(scene)
+    assert engine["sourceTextLength"] > 0, "The first card warmup and answer timer require the source text length"
     scene["layout"]["nodes"][0]["x"] = 100
     assert pool.template("ticket_1_1")["layout"]["nodes"][0]["x"] == 0, "Template callers must own independent objects"
 

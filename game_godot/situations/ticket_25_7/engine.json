@@ -1,0 +1,105 @@
+{
+ "id": "ticket_25_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4,
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "right",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 25 · Вопрос 7",
+   "title": "Обязаны ли Вы включить указатели поворота в данной ситуации?",
+   "options": [
+    "Обязаны",
+    "Обязаны только при наличии на перекрестке других транспортных средств",
+    "Не обязаны"
+   ],
+   "explanation": "Вы согласно знаку 4.1.2 «Движение направо» можете продолжить движение, только повернув направо. Перед поворотом обязательно должны подать соответствующий предупредительный сигнал.(«Дорожные знаки», пункт 8.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 25 · Question 7",
+   "title": "Are you required to turn on your turn signals in this situation?",
+   "options": [
+    "Required",
+    "Obligated only if there are other vehicles at the intersection",
+    "Not required"
+   ],
+   "explanation": "According to sign 4.1.2 “Move to the right”, you can continue driving only by turning right. Before turning, you must give the appropriate warning signal. (“Road signs”, paragraph 8.1 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "25-билет · 7-сұрақ",
+   "title": "Осы жағдайдағы бағыт индикаторларын қосуға міндеттісіз бе?",
+   "options": [
+    "Міндетті",
+    "Қиылыста басқа көлік құралдары болған жағдайда ғана міндетті",
+    "Міндетті емес"
+   ],
+   "explanation": "4.1.2 «Оңға қозғалыс» белгісіне сәйкес қозғалысты тек оңға бұрылу арқылы жалғастыруға болады. Бұрылмас бұрын тиісті ескерту сигналын беру керек. («Жол белгілері», Жол қозғалысы ережелерінің 8.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 146,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "cdcd81894d611369779ffd8f740425dc",
+ "sourceCategory": "ab",
+ "sourceImage": "8dcad54c06148fbc02af406d9b35d7e7",
+ "questionPool": {
+  "sourceQuestionId": "cdcd81894d611369779ffd8f740425dc",
+  "category": "ab",
+  "ticket": 25,
+  "number": 7
+ },
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ }
+}

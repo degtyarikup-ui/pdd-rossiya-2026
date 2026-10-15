@@ -1,0 +1,1112 @@
+{
+ "schema": 1,
+ "id": "ticket_3_1",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "sand"
+  },
+  {
+   "id": "road_s3",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -4.2
+    ],
+    [
+     90,
+     -4.2
+    ],
+    [
+     91,
+     -4.2
+    ],
+    [
+     91,
+     4.2
+    ],
+    [
+     90,
+     4.2
+    ],
+    [
+     0,
+     4.2
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s4",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     4.2
+    ],
+    [
+     -90,
+     4.2
+    ],
+    [
+     -91,
+     4.2
+    ],
+    [
+     -91,
+     -4.2
+    ],
+    [
+     -90,
+     -4.2
+    ],
+    [
+     0,
+     -4.2
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "asphalt_apron",
+   "outer": [
+    [
+     -4.2,
+     -16
+    ],
+    [
+     4.2,
+     -16
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ]
+   ],
+   "holes": [],
+   "surface": "asphalt",
+   "walk": false,
+   "edge": false
+  }
+ ],
+ "markings": [
+  {
+   "id": "main_centre_-90",
+   "type": "dashed",
+   "colour": "white",
+   "points": [
+    [
+     -90,
+     0
+    ],
+    [
+     -7,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "main_centre_7",
+   "type": "dashed",
+   "colour": "white",
+   "points": [
+    [
+     7,
+     0
+    ],
+    [
+     90,
+     0
+    ]
+   ]
+  }
+ ],
+ "lawns": [
+  {
+   "id": "auto_lawn_s1_r",
+   "auto": true,
+   "outer": [
+    [
+     -4.2,
+     -91
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -7.6,
+     0
+    ],
+    [
+     -7.6,
+     -90
+    ],
+    [
+     -7.6,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s1_l",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     7.6,
+     0
+    ],
+    [
+     7.6,
+     -90
+    ],
+    [
+     7.6,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s3_r",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     4.2
+    ],
+    [
+     90,
+     4.2
+    ],
+    [
+     91,
+     4.2
+    ],
+    [
+     91,
+     7.6
+    ],
+    [
+     90,
+     7.6
+    ],
+    [
+     0,
+     7.6
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s3_l",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -4.2
+    ],
+    [
+     90,
+     -4.2
+    ],
+    [
+     91,
+     -4.2
+    ],
+    [
+     91,
+     -7.6
+    ],
+    [
+     90,
+     -7.6
+    ],
+    [
+     0,
+     -7.6
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s4_r",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -4.2
+    ],
+    [
+     -90,
+     -4.2
+    ],
+    [
+     -91,
+     -4.2
+    ],
+    [
+     -91,
+     -7.6
+    ],
+    [
+     -90,
+     -7.6
+    ],
+    [
+     0,
+     -7.6
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s4_l",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     4.2
+    ],
+    [
+     -90,
+     4.2
+    ],
+    [
+     -91,
+     4.2
+    ],
+    [
+     -91,
+     7.6
+    ],
+    [
+     -90,
+     7.6
+    ],
+    [
+     0,
+     7.6
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -24
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_left",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "left",
+   "points": [
+    [
+     -1.8,
+     -24
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.709,
+     -3.101
+    ],
+    [
+     -1.431,
+     -1.745
+    ],
+    [
+     -0.955,
+     -0.624
+    ],
+    [
+     -0.274,
+     0.274
+    ],
+    [
+     0.624,
+     0.955
+    ],
+    [
+     1.745,
+     1.431
+    ],
+    [
+     3.101,
+     1.709
+    ],
+    [
+     4.7,
+     1.8
+    ],
+    [
+     5.2,
+     1.8
+    ],
+    [
+     24.7,
+     1.8
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  {
+   "id": "manoeuvre_right",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "right",
+   "points": [
+    [
+     -1.8,
+     -24
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.841,
+     -3.987
+    ],
+    [
+     -1.965,
+     -3.382
+    ],
+    [
+     -2.177,
+     -2.881
+    ],
+    [
+     -2.481,
+     -2.481
+    ],
+    [
+     -2.881,
+     -2.177
+    ],
+    [
+     -3.382,
+     -1.965
+    ],
+    [
+     -3.987,
+     -1.841
+    ],
+    [
+     -4.7,
+     -1.8
+    ],
+    [
+     -5.2,
+     -1.8
+    ],
+    [
+     -24.7,
+     -1.8
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  {
+   "id": "manoeuvre_uturn",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "uturn",
+   "points": [
+    [
+     -1.8,
+     -24
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.8,
+     -7.7
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "exitYaw": 3.142
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -17,
+    -62
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#65894d",
+   "id": "decor_0"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -21,
+    -40
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e",
+   "id": "decor_1"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -25,
+    -15
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#507c48",
+   "id": "decor_2"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -17,
+    22
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#65894d",
+   "id": "decor_3"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -21,
+    45
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e",
+   "id": "decor_4"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -25,
+    68
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#507c48",
+   "id": "decor_5"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -42,
+    17
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#789652",
+   "id": "decor_6"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -63,
+    17
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#789652",
+   "id": "decor_7"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    17,
+    -62
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#65894d",
+   "id": "decor_8"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    21,
+    -40
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e",
+   "id": "decor_9"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    25,
+    -15
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#507c48",
+   "id": "decor_10"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    17,
+    22
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#65894d",
+   "id": "decor_11"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    21,
+    45
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e",
+   "id": "decor_12"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    25,
+    68
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#507c48",
+   "id": "decor_13"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    42,
+    17
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#789652",
+   "id": "decor_14"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    63,
+    17
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#789652",
+   "id": "decor_15"
+  }
+ ],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 3 · Вопрос 1",
+    "title": "Выезжая с грунтовой дороги на перекресток, Вы попадаете:",
+    "options": [
+     "На главную дорогу",
+     "На равнозначную дорогу, поскольку отсутствуют знаки приоритета",
+     "На равнозначную дорогу, поскольку проезжая часть имеет твердое покрытие перед перекрестком"
+    ],
+    "explanation": "Главной является дорога с покрытием по отношению к грунтовой. Перекрёсток неравнозначный. Вы находитесь на второстепенной дороге, выезжать будете на главную.(Пункт 1.2 термин «Главная дорога»)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 3 · Question 1",
+    "title": "When leaving the dirt road at the intersection, you find:",
+    "options": [
+     "To the main road",
+     "On an equivalent road because there are no priority signs",
+     "On an equivalent road, since the roadway has a hard surface in front of the intersection"
+    ],
+    "explanation": "The main one is the paved road in relation to the dirt road. The intersection is unequal. You are on a secondary road, you will exit onto the main road. (Clause 1.2, the term “Main Road”)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "3-билет · 1-сұрақ",
+    "title": "Қиылыста қара жолдан шыққанда мынаны табасыз:",
+    "options": [
+     "Негізгі жолға",
+     "Баламалы жолда, себебі басымдық белгілері жоқ",
+     "Баламалы жолда, өйткені жол қиылысының алдында қатты жабын бар"
+    ],
+    "explanation": "Негізгі жол – топырақ жолға қарағанда қатты жамылғысы бар жол. Қиылысу тең емес. Сіз қосалқы жолда келесіз, негізгі жолға шығасыз. («Негізгі жол» термині, 1.2-тармақ)",
+    "pddRule": ""
+   }
+  },
+  "correct": 0,
+  "maneuver": "right",
+  "yieldTo": [],
+  "showPlayerGuide": true,
+  "sourceQuestionId": "0dddc0be36a1ea143d6fffd862ac405f",
+  "sourceCategory": "ab",
+  "sourceImage": "e72bbb0a6d603fa37ff31ffd3bd2d515",
+  "sourceTextLength": 225
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "e",
+    "x": 90,
+    "z": 0
+   },
+   {
+    "id": "w",
+    "x": -90,
+    "z": 0
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {},
+    "centre": "none",
+    "walk": false,
+    "edge": false,
+    "surface": "sand"
+   },
+   {
+    "id": "s3",
+    "a": "c",
+    "b": "e",
+    "kind": "street",
+    "ends": {},
+    "centre": "none",
+    "walk": false,
+    "edge": false
+   },
+   {
+    "id": "s4",
+    "a": "c",
+    "b": "w",
+    "kind": "street",
+    "ends": {},
+    "centre": "none",
+    "walk": false,
+    "edge": false
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "lane": 0,
+   "questionAt": 24
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -24,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad_dirt_approach",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "ok"
+ },
+ "questionPool": {
+  "sourceQuestionId": "0dddc0be36a1ea143d6fffd862ac405f",
+  "category": "ab",
+  "ticket": 3,
+  "number": 1
+ },
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "questionView": {
+  "centre": [
+   0,
+   -7
+  ],
+  "height": 40
+ }
+}

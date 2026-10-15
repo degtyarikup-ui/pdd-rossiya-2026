@@ -710,3 +710,21 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); 
 .brush-card.object-card > img.thumb { height: 40px; flex-basis: 40px; }
 .brush-card.object-card > svg { height: 40px; }
 .brush-card.object-card small { font-size: 9px; }
+
+/* Codex approval navigation: one section and one contextual status filter. */
+.scene-sections { display: grid; gap: 3px; }
+.scene-sections button { display: flex; align-items: center; gap: 9px; min-height: 34px; padding: 6px 9px; border-radius: var(--r); text-align: left; color: var(--ink-2); }
+.scene-sections button:hover { background: var(--field); }
+.scene-sections button.on { background: var(--accent-soft); color: var(--accent); }
+.scene-sections button span { flex: 1; font-weight: 600; }
+.scene-sections button em { font-style: normal; font-size: 11px; min-width: 24px; text-align: center; padding: 2px 5px; border-radius: 6px; background: var(--field); }
+.scene-status-filter { display: grid; gap: 5px; font-size: 11px; font-weight: 500; color: var(--ink-2); }
+.scene-status-filter select { width: 100%; min-width: 0; height: 34px; font-size: 12px; }
+.home-scene-navigation { display: flex; align-items: flex-end; gap: 18px; margin: 0 0 18px; }
+.home-scene-navigation .scene-sections { display: flex; flex-wrap: wrap; }
+.home-scene-navigation .scene-status-filter { width: 220px; }
+.assistant-review-card { border-color: var(--accent); background: var(--accent-soft); }
+.assistant-review-status { font-weight: 600; color: var(--accent); margin: 0 0 8px; }
+.assistant-review-help { color: var(--ink-2); font-size: 12px; line-height: 1.5; margin: 0 0 12px; }
+.assistant-review-card .btn { height: auto; min-height: 36px; white-space: normal; padding: 8px 10px; text-align: center; }
+/* End Codex approval navigation. */

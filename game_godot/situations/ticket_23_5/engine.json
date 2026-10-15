@@ -1,0 +1,102 @@
+{
+ "id": "ticket_23_5",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 23 · Вопрос 5",
+   "title": "Разрешается ли Вам поставить автомобиль на стоянку в этом месте?",
+   "options": [
+    "Разрешается",
+    "Разрешается только с частичным заездом на тротуар",
+    "Запрещается"
+   ],
+   "explanation": "Жёлтая прерывистая линия разметки 1.10 горизонтальной разметки обозначает места, где запрещена стоянка. Применяется только самостоятельно (как в данной ситуации). Осуществлять стоянку в этом месте ЗАПРЕЩАЕТСЯ.(«Горизонтальная разметка»).",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 23 · Question 5",
+   "title": "Are you allowed to park your car in this place?",
+   "options": [
+    "Allowed",
+    "Allowed only with partial access to the sidewalk",
+    "Prohibited"
+   ],
+   "explanation": "The yellow broken line marking 1.10 horizontal markings indicates places where parking is prohibited. Can only be used independently (as in this situation). Parking in this place is PROHIBITED (“Horizontal markings”).",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "23-билет · 5-сұрақ",
+   "title": "Көлігіңізді осы жерге қоюға рұқсат етілген бе?",
+   "options": [
+    "Рұқсат етілген",
+    "Тротуарға жартылай кіруге ғана рұқсат етіледі",
+    "Тыйым салынған"
+   ],
+   "explanation": "1.10 көлденең таңбалары бар сары түсті үзік сызық тұраққа тыйым салынған жерлерді көрсетеді. Өз бетінше ғана қолдануға болады (осы жағдайдағыдай). Бұл жерде тұрақ қоюға тыйым салынады («Көлденең таңбалар»).",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 135,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "24720e946d8800902286987ee59d35b7",
+ "sourceCategory": "ab",
+ "sourceImage": "f0786637b0a0eded6f0b89858be4f026",
+ "questionPool": {
+  "sourceQuestionId": "24720e946d8800902286987ee59d35b7",
+  "category": "ab",
+  "ticket": 23,
+  "number": 5
+ },
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ }
+}

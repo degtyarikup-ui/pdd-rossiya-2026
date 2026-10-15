@@ -160,9 +160,12 @@
     const edges = state.edges || {};
     const edgeMismatch = Object.values(edges).some(e => e && !(e.connectable ?? e.street));
     const side = (k) => { const e = edges[k]; return e ? ((e.connectable ?? e.street) ? "ok" : "bad") : "none"; };
+    const assistant = s.assistantReview?.author === "codex";
+    const approved = assistant && s.assistantReview.status === "approved" && state.playable;
     p.innerHTML = `
       ${head(`<span class="ibadge">${ic("map")}</span>`, App.sceneTitle(state.id), s.layout ? "Дороги в конструкторе" : "Дороги из картинки билета")}
-      ${card("", `${toggle("playable", "Сцена в игре", state.playable, "gamepad")}
+      ${assistant ? card("Подготовлено Codex", `<p class="assistant-review-status">${approved ? "Одобрено вами · сцена в игре" : "Ожидает вашего одобрения"}</p><p class="assistant-review-help">${approved ? "Можно редактировать сцену или снять одобрение и вернуть её на проверку." : "Проверьте вопрос и проезд. Все объекты и маршруты доступны для ручной правки. Сохранение и тест не добавляют сцену в игру."}</p>${button(approved ? "withdraw-approval" : "approve-scene", approved ? "Снять одобрение и убрать из игры" : "Одобрить и добавить в игру", approved ? "undo" : "check-circle", approved ? "ghost wide" : "primary wide")}`, { cls: "assistant-review-card" }) : ""}
+      ${card("", `${assistant ? "" : toggle("playable", "Сцена в игре", state.playable, "gamepad")}
         <div class="insp-actions">${button("run", "Тест в игре", "play", "primary")}</div>
         ${button("run-auto", "В игре на автопилоте", "video", "ghost small wide")}`)}
       ${card("Игрок едет", `${chips("maneuver", ["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: k !== "straight" && !routes.includes(k) && !(s.layout) })), q.maneuver, { cls: "arrows" })}
@@ -186,6 +189,8 @@
     bind({
       ...selectionHandlers,
       "toggle:playable": (on) => App.setPlayable(on),
+      "approve-scene": () => App.setPlayable(true),
+      "withdraw-approval": () => App.setPlayable(false),
       "player-guide": togglePlayerGuide,
       run: () => App.runInGame(false),
       "run-auto": () => App.runInGame(true),

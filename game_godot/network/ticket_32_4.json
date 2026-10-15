@@ -1,0 +1,2512 @@
+{
+ "schema": 1,
+ "id": "ticket_32_4",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s3",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -4.2
+    ],
+    [
+     90,
+     -4.2
+    ],
+    [
+     91,
+     -4.2
+    ],
+    [
+     91,
+     4.2
+    ],
+    [
+     90,
+     4.2
+    ],
+    [
+     0,
+     4.2
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s4",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     4.2
+    ],
+    [
+     -90,
+     4.2
+    ],
+    [
+     -91,
+     4.2
+    ],
+    [
+     -91,
+     -4.2
+    ],
+    [
+     -90,
+     -4.2
+    ],
+    [
+     0,
+     -4.2
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "centre_s_00",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -87.0
+    ],
+    [
+     0.0,
+     -86.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_01",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -83.0
+    ],
+    [
+     0.0,
+     -82.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_02",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -79.0
+    ],
+    [
+     0.0,
+     -78.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_03",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -75.0
+    ],
+    [
+     0.0,
+     -74.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_04",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -71.0
+    ],
+    [
+     0.0,
+     -70.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_05",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -67.0
+    ],
+    [
+     0.0,
+     -66.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_06",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -63.0
+    ],
+    [
+     0.0,
+     -62.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_07",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -59.0
+    ],
+    [
+     0.0,
+     -58.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_08",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -55.0
+    ],
+    [
+     0.0,
+     -54.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_09",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -51.0
+    ],
+    [
+     0.0,
+     -50.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_10",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -47.0
+    ],
+    [
+     0.0,
+     -46.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_11",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -43.0
+    ],
+    [
+     0.0,
+     -42.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_12",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -39.0
+    ],
+    [
+     0.0,
+     -38.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_13",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -35.0
+    ],
+    [
+     0.0,
+     -34.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_14",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -31.0
+    ],
+    [
+     0.0,
+     -30.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_15",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -27.0
+    ],
+    [
+     0.0,
+     -26.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_16",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -23.0
+    ],
+    [
+     0.0,
+     -22.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_17",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -19.0
+    ],
+    [
+     0.0,
+     -18.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_s_18",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     -15.0
+    ],
+    [
+     0.0,
+     -14.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_00",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     11.0
+    ],
+    [
+     0.0,
+     12.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_01",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     15.0
+    ],
+    [
+     0.0,
+     16.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_02",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     19.0
+    ],
+    [
+     0.0,
+     20.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_03",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     23.0
+    ],
+    [
+     0.0,
+     24.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_04",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     27.0
+    ],
+    [
+     0.0,
+     28.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_05",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     31.0
+    ],
+    [
+     0.0,
+     32.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_06",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     35.0
+    ],
+    [
+     0.0,
+     36.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_07",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     39.0
+    ],
+    [
+     0.0,
+     40.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_08",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     43.0
+    ],
+    [
+     0.0,
+     44.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_09",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     47.0
+    ],
+    [
+     0.0,
+     48.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_10",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     51.0
+    ],
+    [
+     0.0,
+     52.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_11",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     55.0
+    ],
+    [
+     0.0,
+     56.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_12",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     59.0
+    ],
+    [
+     0.0,
+     60.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_13",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     63.0
+    ],
+    [
+     0.0,
+     64.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_14",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     67.0
+    ],
+    [
+     0.0,
+     68.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_15",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     71.0
+    ],
+    [
+     0.0,
+     72.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_16",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     75.0
+    ],
+    [
+     0.0,
+     76.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_17",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     79.0
+    ],
+    [
+     0.0,
+     80.0
+    ]
+   ]
+  },
+  {
+   "id": "centre_n_18",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     0.0,
+     83.0
+    ],
+    [
+     0.0,
+     84.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_00",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     11.0,
+     0.0
+    ],
+    [
+     12.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_01",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     15.0,
+     0.0
+    ],
+    [
+     16.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_02",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     19.0,
+     0.0
+    ],
+    [
+     20.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_03",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     23.0,
+     0.0
+    ],
+    [
+     24.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_04",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     27.0,
+     0.0
+    ],
+    [
+     28.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_05",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     31.0,
+     0.0
+    ],
+    [
+     32.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_06",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     35.0,
+     0.0
+    ],
+    [
+     36.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_07",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     39.0,
+     0.0
+    ],
+    [
+     40.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_08",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     43.0,
+     0.0
+    ],
+    [
+     44.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_09",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     47.0,
+     0.0
+    ],
+    [
+     48.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_10",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     51.0,
+     0.0
+    ],
+    [
+     52.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_11",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     55.0,
+     0.0
+    ],
+    [
+     56.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_12",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     59.0,
+     0.0
+    ],
+    [
+     60.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_13",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     63.0,
+     0.0
+    ],
+    [
+     64.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_14",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     67.0,
+     0.0
+    ],
+    [
+     68.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_15",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     71.0,
+     0.0
+    ],
+    [
+     72.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_16",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     75.0,
+     0.0
+    ],
+    [
+     76.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_17",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     79.0,
+     0.0
+    ],
+    [
+     80.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_e_18",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     83.0,
+     0.0
+    ],
+    [
+     84.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_00",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -87.0,
+     0.0
+    ],
+    [
+     -86.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_01",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -83.0,
+     0.0
+    ],
+    [
+     -82.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_02",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -79.0,
+     0.0
+    ],
+    [
+     -78.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_03",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -75.0,
+     0.0
+    ],
+    [
+     -74.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_04",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -71.0,
+     0.0
+    ],
+    [
+     -70.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_05",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -67.0,
+     0.0
+    ],
+    [
+     -66.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_06",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -63.0,
+     0.0
+    ],
+    [
+     -62.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_07",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -59.0,
+     0.0
+    ],
+    [
+     -58.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_08",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -55.0,
+     0.0
+    ],
+    [
+     -54.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_09",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -51.0,
+     0.0
+    ],
+    [
+     -50.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_10",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -47.0,
+     0.0
+    ],
+    [
+     -46.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_11",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -43.0,
+     0.0
+    ],
+    [
+     -42.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_12",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -39.0,
+     0.0
+    ],
+    [
+     -38.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_13",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -35.0,
+     0.0
+    ],
+    [
+     -34.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_14",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -31.0,
+     0.0
+    ],
+    [
+     -30.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_15",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -27.0,
+     0.0
+    ],
+    [
+     -26.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_16",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -23.0,
+     0.0
+    ],
+    [
+     -22.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_17",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -19.0,
+     0.0
+    ],
+    [
+     -18.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "one_way_w_18",
+   "type": "solid",
+   "colour": "white",
+   "width": 0.15,
+   "points": [
+    [
+     -15.0,
+     0.0
+    ],
+    [
+     -14.0,
+     0.0
+    ]
+   ]
+  }
+ ],
+ "lawns": [],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "straight",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.8,
+     4.7
+    ],
+    [
+     -1.8,
+     5.2
+    ],
+    [
+     -1.8,
+     24.7
+    ]
+   ],
+   "exitYaw": 0
+  },
+  {
+   "id": "manoeuvre_left",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "left",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.709,
+     -3.101
+    ],
+    [
+     -1.431,
+     -1.745
+    ],
+    [
+     -0.955,
+     -0.624
+    ],
+    [
+     -0.274,
+     0.274
+    ],
+    [
+     0.624,
+     0.955
+    ],
+    [
+     1.745,
+     1.431
+    ],
+    [
+     3.101,
+     1.709
+    ],
+    [
+     4.7,
+     1.8
+    ],
+    [
+     5.2,
+     1.8
+    ],
+    [
+     24.7,
+     1.8
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  {
+   "id": "manoeuvre_right",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "right",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.841,
+     -3.987
+    ],
+    [
+     -1.965,
+     -3.382
+    ],
+    [
+     -2.177,
+     -2.881
+    ],
+    [
+     -2.481,
+     -2.481
+    ],
+    [
+     -2.881,
+     -2.177
+    ],
+    [
+     -3.382,
+     -1.965
+    ],
+    [
+     -3.987,
+     -1.841
+    ],
+    [
+     -4.7,
+     -1.8
+    ],
+    [
+     -5.2,
+     -1.8
+    ],
+    [
+     -24.7,
+     -1.8
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  {
+   "id": "manoeuvre_uturn",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "uturn",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.8,
+     -7.7
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "exitYaw": 3.142
+  },
+  {
+   "id": "choice_А",
+   "kind": "choice",
+   "label": "А",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.8,
+     4.7
+    ],
+    [
+     -1.8,
+     5.2
+    ],
+    [
+     -1.8,
+     24.7
+    ]
+   ],
+   "labelPosition": [
+    -3.8,
+    17
+   ],
+   "arrowhead": true
+  },
+  {
+   "id": "choice_Б",
+   "kind": "choice",
+   "label": "Б",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.709,
+     -3.101
+    ],
+    [
+     -1.431,
+     -1.745
+    ],
+    [
+     -0.955,
+     -0.624
+    ],
+    [
+     -0.274,
+     0.274
+    ],
+    [
+     0.624,
+     0.955
+    ],
+    [
+     1.745,
+     1.431
+    ],
+    [
+     3.101,
+     1.709
+    ],
+    [
+     4.7,
+     1.8
+    ],
+    [
+     5.2,
+     1.8
+    ],
+    [
+     24.7,
+     1.8
+    ]
+   ],
+   "labelPosition": [
+    9,
+    3.2
+   ],
+   "arrowhead": true
+  },
+  {
+   "id": "choice_В",
+   "kind": "choice",
+   "label": "В",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.8,
+     -7.7
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "labelPosition": [
+    4.5,
+    -17
+   ],
+   "arrowhead": true
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [
+  {
+   "id": "house_-1_0",
+   "prop": "buildings/block_0",
+   "pos": [
+    -23,
+    -65
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ddd1bc"
+  },
+  {
+   "id": "tree_-1_0",
+   "prop": "trees/round_0",
+   "pos": [
+    -13,
+    -56
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "id": "house_-1_1",
+   "prop": "buildings/block_1",
+   "pos": [
+    -23,
+    -39
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ccd6d9"
+  },
+  {
+   "id": "tree_-1_1",
+   "prop": "trees/round_0",
+   "pos": [
+    -13,
+    -30
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "id": "house_-1_2",
+   "prop": "buildings/block_2",
+   "pos": [
+    -23,
+    31
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#e0d9ce"
+  },
+  {
+   "id": "tree_-1_2",
+   "prop": "trees/round_0",
+   "pos": [
+    -13,
+    40
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "id": "house_-1_3",
+   "prop": "buildings/block_3",
+   "pos": [
+    -23,
+    59
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#d5dfd0"
+  },
+  {
+   "id": "tree_-1_3",
+   "prop": "trees/round_0",
+   "pos": [
+    -13,
+    68
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "id": "lamp_-1_0",
+   "prop": "street/lamp",
+   "pos": [
+    -7.5,
+    -61
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "id": "lamp_-1_1",
+   "prop": "street/lamp",
+   "pos": [
+    -7.5,
+    -27
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "id": "lamp_-1_2",
+   "prop": "street/lamp",
+   "pos": [
+    -7.5,
+    28
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "id": "lamp_-1_3",
+   "prop": "street/lamp",
+   "pos": [
+    -7.5,
+    62
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "id": "bush_-1_0",
+   "prop": "street/bush",
+   "pos": [
+    -10.0,
+    -49
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "id": "bush_-1_1",
+   "prop": "street/bush",
+   "pos": [
+    -10.0,
+    43
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "id": "house_1_0",
+   "prop": "buildings/block_0",
+   "pos": [
+    23,
+    -65
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ddd1bc"
+  },
+  {
+   "id": "tree_1_0",
+   "prop": "trees/round_0",
+   "pos": [
+    13,
+    -56
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "id": "house_1_1",
+   "prop": "buildings/block_1",
+   "pos": [
+    23,
+    -39
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ccd6d9"
+  },
+  {
+   "id": "tree_1_1",
+   "prop": "trees/round_0",
+   "pos": [
+    13,
+    -30
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "id": "house_1_2",
+   "prop": "buildings/block_2",
+   "pos": [
+    23,
+    31
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#e0d9ce"
+  },
+  {
+   "id": "tree_1_2",
+   "prop": "trees/round_0",
+   "pos": [
+    13,
+    40
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "id": "house_1_3",
+   "prop": "buildings/block_3",
+   "pos": [
+    23,
+    59
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#d5dfd0"
+  },
+  {
+   "id": "tree_1_3",
+   "prop": "trees/round_0",
+   "pos": [
+    13,
+    68
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "id": "lamp_1_0",
+   "prop": "street/lamp",
+   "pos": [
+    7.5,
+    -61
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "id": "lamp_1_1",
+   "prop": "street/lamp",
+   "pos": [
+    7.5,
+    -27
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "id": "lamp_1_2",
+   "prop": "street/lamp",
+   "pos": [
+    7.5,
+    28
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "id": "lamp_1_3",
+   "prop": "street/lamp",
+   "pos": [
+    7.5,
+    62
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "id": "bush_1_0",
+   "prop": "street/bush",
+   "pos": [
+    10.0,
+    -49
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "id": "bush_1_1",
+   "prop": "street/bush",
+   "pos": [
+    10.0,
+    43
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  }
+ ],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 32 · Вопрос 4",
+    "title": "Вам разрешается движение:",
+    "options": [
+     "Только в направлении Б",
+     "В направлениях А и Б",
+     "В направлениях Б и В",
+     "В любом направлении из указанных"
+    ],
+    "explanation": "Знак 5.7.2 «Выезд на дорогу с односторонним движением» запрещает поворот направо, т.е. встречное движение. Разрешённые направления движения на таком пересечении – прямо, налево (в направлении стрелки на знаке) и разворот. Можете продолжить движение в любом направлении из указанных.(«Дорожные знаки»)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 32 · Question 4",
+    "title": "You are allowed to move:",
+    "options": [
+     "Only in direction Б",
+     "In directions А and Б",
+     "In directions Б and В",
+     "In any of the directions indicated"
+    ],
+    "explanation": "Sign 5.7.2 “Entering a one-way road” prohibits turning right, i.e. oncoming traffic. The permitted directions of movement at such an intersection are straight, left (in the direction of the arrow on the sign) and a U-turn. You can continue driving in any of the directions indicated. (“Road signs”)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "32-билет · 4-сұрақ",
+    "title": "Сізге қозғалуға рұқсат етіледі:",
+    "options": [
+     "Тек Б бағытында",
+     "А және Б бағыттары бойынша",
+     "Б және В бағыттары бойынша",
+     "Көрсетілген бағыттардың кез келгенінде"
+    ],
+    "explanation": "5.7.2 «Бір жақты жолға шығу» белгісі оңға бұрылу, яғни қарсы қозғалысқа тыйым салады. Мұндай қиылыста қозғалыстың рұқсат етілген бағыттары түзу, солға (белгідегі көрсеткі бағытында) және кері бұрылу. Көрсетілген бағыттардың кез келгенімен жүруді жалғастыра аласыз. («Жол белгілері»)",
+    "pddRule": ""
+   }
+  },
+  "correct": 3,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "dc46cdaf611ddaa0d97f37bed701c284",
+  "sourceCategory": "ab",
+  "sourceImage": "591bb1f7ed9e6de766dcb13966bc70ad",
+  "requiredStop": null,
+  "redWait": null,
+  "speedLimit": null
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   },
+   {
+    "id": "e",
+    "x": 90,
+    "z": 0
+   },
+   {
+    "id": "w",
+    "x": -90,
+    "z": 0
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {},
+    "centre": "none",
+    "edge": false
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "street",
+    "ends": {},
+    "centre": "none",
+    "edge": false
+   },
+   {
+    "id": "s3",
+    "a": "c",
+    "b": "e",
+    "kind": "street",
+    "ends": {},
+    "centre": "none",
+    "edge": false
+   },
+   {
+    "id": "s4",
+    "a": "c",
+    "b": "w",
+    "kind": "street",
+    "ends": {},
+    "centre": "none",
+    "edge": false
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "lane": 0
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 8.4,
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [
+  {
+   "id": "one_way_left_exit",
+   "code": "5.7.2",
+   "pos": [
+    -5.4,
+    -10.4
+   ],
+   "yaw": 3.141593
+  },
+  {
+   "id": "one_way_direction",
+   "code": "5.5",
+   "pos": [
+    -31.0,
+    -5.3
+   ],
+   "yaw": -1.570796
+  }
+ ],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionPool": {
+  "sourceQuestionId": "dc46cdaf611ddaa0d97f37bed701c284",
+  "category": "ab",
+  "ticket": 32,
+  "number": 4
+ },
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "questionView": {
+  "centre": [
+   0.0,
+   0.0
+  ],
+  "height": 45.0
+ }
+}

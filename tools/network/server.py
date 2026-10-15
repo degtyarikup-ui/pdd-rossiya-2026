@@ -433,6 +433,16 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "Исправьте ошибки мини-игры перед сохранением", "findings": findings})
         target = NET / f"{m[2]}.json"
         old = check.load(m[2]) if target.exists() else {}
+        assistant = (old.get("assistantReview") or {}).get("author") == "codex"
+        if assistant:
+            # Approval is changed only by the explicit include action. Saving an
+            # edited or stale browser copy must preserve its source and status.
+            scene["assistantReview"] = old["assistantReview"].copy()
+            scene["reviewed"] = old.get("reviewed") is True and old["assistantReview"].get("status") == "approved"
+            if old.get("questionPool"):
+                scene["questionPool"] = old["questionPool"].copy()
+            else:
+                scene.pop("questionPool", None)
         if candidate:
             # A saved question remains a draft until the author's explicit “В игре”.
             scene["questionPool"] = {k: candidate[k] for k in ("sourceQuestionId", "category", "ticket", "number")}
@@ -442,7 +452,7 @@ class Handler(BaseHTTPRequestHandler):
                 base_path.parent.mkdir(parents=True, exist_ok=True)
                 engine_sync.write_json(base_path, question_pool.engine_template(scene))
                 engine_sync.engine_base.cache_clear()
-        else:
+        elif not assistant:
             # A formerly promoted scene must never re-enter the review queue.
             scene.pop("questionPool", None)
         removed = removed_items(old, scene)
@@ -453,7 +463,9 @@ class Handler(BaseHTTPRequestHandler):
             synced = engine_sync.sync(m[2])
         except (ValueError, KeyError) as e:
             return self.send(422, {"error": str(e), "findings": findings})
-        self.send(200, {"findings": findings, "synced": synced, "removed": removed})
+        self.send(200, {"findings": findings, "synced": synced, "removed": removed,
+                        "reviewed": scene.get("reviewed"), "assistantReview": scene.get("assistantReview"),
+                        "questionPool": scene.get("questionPool")})
 
     def question_scene(self, sid: str):
         candidate = QUESTION_POOL.get(sid)
@@ -472,14 +484,20 @@ class Handler(BaseHTTPRequestHandler):
         if playable and any(f["level"] == "error" for f in check.check_scene(s)):
             return self.send(400, {"error": "Сначала исправьте ошибки сцены"})
         promoted = playable and bool(s.get("questionPool"))
-        if s.get("reviewed") is not playable or promoted:
+        assistant = (s.get("assistantReview") or {}).get("author") == "codex"
+        review_status = "approved" if playable else "pending"
+        changed_review = assistant and s["assistantReview"].get("status") != review_status
+        if s.get("reviewed") is not playable or promoted or changed_review:
             s["reviewed"] = playable
+            if assistant:
+                s["assistantReview"] = {**s["assistantReview"], "status": review_status}
             if promoted:
                 s.pop("questionPool", None)
             keep_history(sid)
             target.write_text(json.dumps(s, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         ids = engine_sync.write_index()
-        return self.send(200, {"playable": engine_sync.playable(sid), "count": len(ids)})
+        return self.send(200, {"playable": engine_sync.playable(sid), "count": len(ids),
+                               "assistantReview": s.get("assistantReview")})
 
     def texture_list(self):
         out = []
@@ -533,7 +551,8 @@ class Handler(BaseHTTPRequestHandler):
             if p.stem.startswith("ticket_cd_"):
                 continue
             s = json.loads(p.read_text(encoding="utf-8"))
-            if s.get("questionPool"):
+            assistant = (s.get("assistantReview") or {}).get("author") == "codex"
+            if s.get("questionPool") and not assistant:
                 continue
             found = check.check_scene(s)
             q = s.get("question") or {}
@@ -543,6 +562,7 @@ class Handler(BaseHTTPRequestHandler):
                         "warns": sum(f["level"] == "warn" for f in found),
                         "playable": p.stem != "mini_regulator" and s.get("reviewed") is True,
                         "reviewGroup": s.get("reviewGroup"),
+                        "assistantReview": s.get("assistantReview"),
                         "miniGame": s.get("miniGame"),
                         "regulator": bool(s.get("regulator", False)),
                         "layout": bool(s.get("layout")),

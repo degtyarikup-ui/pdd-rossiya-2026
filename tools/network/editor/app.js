@@ -113,6 +113,18 @@ const App = (() => {
 
   // ---- history -----------------------------------------------------------------------------
   const snapshotText = () => JSON.stringify(state.S);
+  function followAssistantApproval(review, reviewed, questionPool) {
+    const apply = scene => {
+      scene.assistantReview = { ...review };
+      scene.reviewed = reviewed === true;
+      if (questionPool) scene.questionPool = { ...questionPool };
+      else delete scene.questionPool;
+      return scene;
+    };
+    apply(state.S);
+    // Undo remains available for geometry, but can never undo an approval action.
+    for (const key of ["undo", "redo"]) state[key] = state[key].map(text => JSON.stringify(apply(JSON.parse(text))));
+  }
   // One undo step around fn (which changes state.S). The road plan rebuilds what it makes.
   function edit(fn, opts = {}) {
     if (!state.S) return;
@@ -279,6 +291,10 @@ const App = (() => {
     if (!state.S || (!state.dirty && !state.virtual)) { toast("Всё сохранено"); renderTop(); return; }
     try {
       const r = await api(`/api/scene/${state.id}`, state.S);
+      if (r.assistantReview) {
+        followAssistantApproval(r.assistantReview, r.reviewed, r.questionPool);
+        state.playable = state.S.reviewed;
+      }
       state.savedJson = snapshotText();
       state.dirty = false;
       state.virtual = false;
@@ -304,18 +320,27 @@ const App = (() => {
   const thumbRev = {};
 
   async function setPlayable(on) {
-    if (state.dirty || state.virtual) { await save(); if (state.dirty || state.virtual) return; }
+    if (!state.S || state.including) return;
+    const sid = state.id;
+    state.including = true;
     try {
-      const r = await api(`/api/game/include/${state.id}`, { playable: on });
+      if (state.dirty || state.virtual) { await save(); if (state.dirty || state.virtual) return; }
+      if (state.id !== sid) return;
+      const r = await api(`/api/game/include/${sid}`, { playable: on });
+      if (state.id !== sid) { await loadList(); App.renderPanels?.(); return; }
       state.playable = r.playable;
       // The file changed on the server (its "reviewed" flag): the open copy follows.
       state.S.reviewed = on;
+      if (r.assistantReview) followAssistantApproval(r.assistantReview, on, on ? null : state.S.questionPool);
       if (on) delete state.S.questionPool;
       state.savedJson = snapshotText();
       toast(on ? `Сцена в игре. Всего в игре: ${r.count}` : "Сцена убрана из игры", "good");
       loadList().then(async () => { if (typeof QuestionReview !== "undefined") await QuestionReview.load({refresh:true}); App.renderPanels?.(); });
     } catch (e) {
       toast(e.message, "bad");
+    } finally {
+      state.including = false;
+      App.renderInspector?.();
     }
     renderTop();
   }

@@ -5,7 +5,7 @@ const QuestionReview = (() => {
   const { state, esc, ic } = App;
   const $ = selector => document.querySelector(selector);
   const STORE = 'network-editor-question-review';
-  const FILTERS = [['pending', 'Не просмотрены'], ['yes', 'Реализуем'], ['no', 'Не добавляем'], ['all', 'Все']];
+  const FILTERS = [['yes', 'Запланированы к реализации'], ['pending', 'Решение ещё не принято'], ['no', 'Не добавляем'], ['all', 'Весь план вопросов']];
   let filter = 'pending', query = '', selected = null, shown = false, loading = null;
   let busy = false, editing = false, error = '', saved = '', history = [], imageZoom = false;
   let trail = [], trailIndex = -1, mode = 'review';
@@ -38,16 +38,16 @@ const QuestionReview = (() => {
     return question.imageUrl ? `<img class="${cls}" src="${esc(question.imageUrl)}" alt="Иллюстрация к вопросу" ${lazy ? 'loading="lazy"' : ''}>` : `<span class="qr-no-photo ${cls}">${ic('image')}<span>Без иллюстрации</span></span>`;
   }
   function filterHtml() {
-    return `<div class="chips question-filters" role="group" aria-label="Решение по вопросу">${FILTERS.map(([key, label]) => `<button class="${filter === key ? 'on' : ''}" data-qfilter="${key}" ${busy ? 'disabled' : ''}>${label} <em>${count(key)}</em></button>`).join('')}</div>`;
+    return `<label class="scene-status-filter question-filters">Решение по вопросу<select data-question-status aria-label="Решение по вопросу" ${busy ? 'disabled' : ''}>${FILTERS.map(([key, label]) => `<option value="${key}" ${filter === key ? 'selected' : ''}>${label} · ${count(key)}</option>`).join('')}</select></label>`;
   }
   function sidebarHtml(text = query, { filtersCollapsed = false } = {}) {
     if (!state.questionsLoaded) return `<div class="question-pane-tools"><p class="muted">${error ? esc(error) : 'Загружаем вопросы из билетов…'}</p>${error ? '<button class="btn wide" data-qr="retry">Повторить загрузку</button>' : ''}</div>`;
     const items = list(text);
-    return `<div class="question-pane-tools"><div id="question-filter-options" ${filtersCollapsed ? 'hidden' : ''}>${filterHtml()}</div><div class="question-mode" role="group" aria-label="Режим работы с вопросами"><button class="btn ${mode === 'review' ? 'primary' : ''}" data-qr="start" aria-pressed="${mode === 'review'}">Да / Нет</button><button class="btn ${mode === 'editor' ? 'primary' : ''}" data-qr="editor-mode" aria-pressed="${mode === 'editor'}">Редактор</button></div></div>
+    return `<div class="question-pane-tools"><div id="question-filter-options" ${filtersCollapsed ? 'hidden' : ''}>${filterHtml()}</div></div>
       <div class="scene-list question-list">${items.map(question => `<button class="scene-row ${question.id === selected ? 'on' : ''}" data-question="${esc(question.id)}" aria-label="${esc(title(question))}"><span class="scene-pic question-pic">${photo(question)}</span><span class="scene-text"><b>${esc(title(question))}</b><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
   }
   function homeHtml(text = query) {
-    return `<div class="question-home-tools">${filterHtml()}<button class="btn primary" data-qr="start">${ic('play')}Начать отбор: Да / Нет</button></div><div class="home-grid">${list(text).map(question => `<button class="card-scene" data-question="${esc(question.id)}"><span class="card-pic question-card-pic">${photo(question)}</span><span class="card-body"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-card-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
+    return `<div class="question-home-tools">${filterHtml()}<button class="btn primary" data-qr="start">${ic('play')}Открыть вопросы для отбора</button></div><div class="home-grid">${list(text).map(question => `<button class="card-scene" data-question="${esc(question.id)}"><span class="card-pic question-card-pic">${photo(question)}</span><span class="card-body"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-card-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
   }
   function remember() {
     try { localStorage.setItem(STORE, JSON.stringify({ filter })); } catch (_) { /* Optional view preference. */ }
@@ -200,7 +200,7 @@ const QuestionReview = (() => {
     const complete = state.questionsLoaded && !question && !count('pending') && pool().length;
     const disabled = busy || editing ? 'disabled' : '';
     mount.innerHTML = `<header class="qr-head"><div><span class="qr-eyebrow">ВОПРОСЫ ДЛЯ ИГРЫ</span><h1>${question ? esc(title(question)) : complete ? 'Первый проход завершён' : 'Отбор вопросов'}</h1>${question ? `<p>${esc(category(question))} ${badge(question)}</p>` : ''}</div>
-      <div class="qr-mode" role="group" aria-label="Режим работы"><button class="btn on" aria-pressed="true">Отбор: Да / Нет</button><button class="btn" data-qr="editor" ${!question || disabled ? 'disabled' : ''}>${ic('cursor')}${editing ? 'Открываем…' : 'Редактор'}</button><button class="icon-btn" data-qr="close" aria-label="Вернуться к текущей сцене" ${disabled}>${ic('x')}</button></div></header>
+      <div class="qr-mode"><button class="btn primary" data-qr="editor" ${!question || disabled ? 'disabled' : ''}>${ic('cursor')}${editing ? 'Открываем…' : 'Открыть в редакторе'}</button><button class="icon-btn" data-qr="close" aria-label="Вернуться к текущей сцене" ${disabled}>${ic('x')}</button></div></header>
       <div class="qr-progress"><span><b>${count('yes') + count('no')}</b> из ${pool().length} просмотрено</span><progress max="${Math.max(1, pool().length)}" value="${count('yes') + count('no')}" aria-label="Просмотренные вопросы"></progress><span>${count('yes')} реализуем · ${count('no')} не добавляем · ${count('pending')} осталось</span></div>
       ${error ? `<div class="qr-error" role="alert">${ic('alert')}<span>${esc(error)}</span>${!state.questionsLoaded ? '<button class="btn" data-qr="retry">Повторить</button>' : ''}</div>` : ''}
       <div class="qr-scroll">${!state.questionsLoaded ? `<div class="qr-empty"><h2>${error ? 'Вопросы не загружены' : 'Загружаем экзаменационные билеты…'}</h2></div>` : question ? `<article class="qr-card"><div class="qr-photo">${question.imageUrl ? `<button data-qr="zoom" aria-label="Увеличить иллюстрацию">${photo(question, '', false)}<span class="qr-zoom-hint">${ic('zoomin')}Увеличить</span></button>` : photo(question)}</div><div class="qr-question"><h2>${esc(question.question)}</h2><ol class="qr-answers">${(question.answers || []).map(answer => `<li class="${answer.correct ? 'correct' : ''}"><span>${esc(answer.text)}</span>${answer.correct ? `<span class="qr-correct">${ic('check-circle')}Верный ответ</span>` : ''}</li>`).join('')}</ol>${question.comment ? `<details class="qr-comment"><summary>Пояснение к вопросу</summary><div>${esc(question.comment).replace(/\n/g, '<br>')}</div></details>` : ''}</div></article>` : `<div class="qr-empty">${ic('check-circle')}<h2>${complete ? 'Все вопросы распределены' : 'В этой группе больше нет вопросов'}</h2><p>${complete ? 'Откройте «Реализуем», чтобы начать строить сцены. Любое решение можно пересмотреть.' : query ? 'Измените поиск или выберите другую группу слева.' : 'Выберите другую группу слева, чтобы посмотреть принятые решения.'}</p><div>${filterHtml()}</div>${count('yes') ? '<button class="btn primary" data-qfilter="yes">Перейти к вопросам, которые реализуем</button>' : ''}</div>`}</div>
@@ -239,12 +239,14 @@ const QuestionReview = (() => {
     if (action) { event.preventDefault(); event.stopImmediatePropagation(); action(); }
   }
   document.addEventListener('keydown', keydown, true);
+  document.addEventListener('change', event => {
+    if (event.target.matches?.('[data-question-status]')) setFilter(event.target.value);
+  });
   document.addEventListener('click', event => {
     const candidate = event.target.closest('[data-question]');
     if (candidate) {
       if (!busy) {
-        if (mode === 'editor') openEditor(candidate.dataset.question);
-        else App.showQuestions(candidate.dataset.question);
+        App.showQuestions(candidate.dataset.question);
       }
       return;
     }

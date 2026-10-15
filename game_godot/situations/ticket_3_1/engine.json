@@ -1,0 +1,98 @@
+{
+ "id": "ticket_3_1",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad_dirt_approach",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -24,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "right",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 3 · Вопрос 1",
+   "title": "Выезжая с грунтовой дороги на перекресток, Вы попадаете:",
+   "options": [
+    "На главную дорогу",
+    "На равнозначную дорогу, поскольку отсутствуют знаки приоритета",
+    "На равнозначную дорогу, поскольку проезжая часть имеет твердое покрытие перед перекрестком"
+   ],
+   "explanation": "Главной является дорога с покрытием по отношению к грунтовой. Перекрёсток неравнозначный. Вы находитесь на второстепенной дороге, выезжать будете на главную.(Пункт 1.2 термин «Главная дорога»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 3 · Question 1",
+   "title": "When leaving the dirt road at the intersection, you find:",
+   "options": [
+    "To the main road",
+    "On an equivalent road because there are no priority signs",
+    "On an equivalent road, since the roadway has a hard surface in front of the intersection"
+   ],
+   "explanation": "The main one is the paved road in relation to the dirt road. The intersection is unequal. You are on a secondary road, you will exit onto the main road. (Clause 1.2, the term “Main Road”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "3-билет · 1-сұрақ",
+   "title": "Қиылыста қара жолдан шыққанда мынаны табасыз:",
+   "options": [
+    "Негізгі жолға",
+    "Баламалы жолда, себебі басымдық белгілері жоқ",
+    "Баламалы жолда, өйткені жол қиылысының алдында қатты жабын бар"
+   ],
+   "explanation": "Негізгі жол – топырақ жолға қарағанда қатты жамылғысы бар жол. Қиылысу тең емес. Сіз қосалқы жолда келесіз, негізгі жолға шығасыз. («Негізгі жол» термині, 1.2-тармақ)",
+   "pddRule": ""
+  }
+ },
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": true,
+ "sourceQuestionId": "0dddc0be36a1ea143d6fffd862ac405f",
+ "sourceCategory": "ab",
+ "sourceImage": "e72bbb0a6d603fa37ff31ffd3bd2d515",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "sourceTextLength": 225
+}

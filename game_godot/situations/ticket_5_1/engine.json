@@ -1,0 +1,96 @@
+{
+ "id": "ticket_5_1",
+ "procedural": true,
+ "geometry": null,
+ "type": "road_undivided",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -5.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 5 · Вопрос 1",
+   "title": "Сколько проезжих частей имеет данная дорога?",
+   "options": [
+    "Одну",
+    "Две",
+    "Четыре"
+   ],
+   "explanation": "Данная горизонтальная разметка 1.3 не делит дорогу на проезжие части. Поэтому в изображенной ситуации дорога имеет четыре полосы движения и одну проезжую часть.(Пункт 1.2 ПДД термин «Разделительная полоса»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 5 · Question 1",
+   "title": "How many carriageways does this road have?",
+   "options": [
+    "One",
+    "Two",
+    "Four"
+   ],
+   "explanation": "This horizontal marking 1.3 does not divide the road into carriageways. Therefore, in the situation depicted, the road has four lanes and one carriageway. (Clause 1.2 of the traffic rules, the term “Dividing strip”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "5-билет · 1-сұрақ",
+   "title": "Бұл жолдың қанша жүріс бөлігі бар?",
+   "options": [
+    "Бір",
+    "Екі",
+    "Төрт"
+   ],
+   "explanation": "Бұл көлденең таңбалау 1.3 жолды жүріс бөлігіне бөлмейді. Сондықтан, бейнеленген жағдайда жолдың төрт жолағы және бір жүріс бөлігі бар. (Жол қозғалысы ережесінің 1.2 тармағы, «Бөлу жолағы» термині)",
+   "pddRule": ""
+  }
+ },
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "949ad9d90453b3e0ae538134a76ec3b1",
+ "sourceCategory": "ab",
+ "sourceImage": "ce8143ad50a020d95e71ef301c5b4db8",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "sourceTextLength": 57
+}

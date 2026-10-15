@@ -56,24 +56,45 @@
   }
 
   // ---- scenes --------------------------------------------------------------------------------
-  const FILTERS = [["all", "Все"], ["game", "В игре"], ["err", "С ошибками"], ["questions", "Вопросы"]];
+  const FILTERS = [["game", "В игре"], ["all", "Все созданные сцены"], ["err", "С ошибками"], ["assistant", "На одобрение"], ["questions", "План вопросов"]];
+  const SECTIONS = [["scenes", "Игровые сцены", "gamepad"], ["assistant", "На одобрение", "check-circle"], ["questions", "План вопросов", "ticket"]];
+  const APPROVAL_FILTERS = [["pending", "Ожидают одобрения"], ["approved", "Одобрены вами"], ["all", "Все сцены Codex"]];
+  let approvalFilter = "pending", sceneSubfilter = "all";
   const FILTER_STORAGE = "network-editor-scene-filter";
   const linkedFilter = new URLSearchParams(location.search).get("filter");
   try {
     const saved = linkedFilter || localStorage.getItem(FILTER_STORAGE);
     if (FILTERS.some(([key]) => key === saved)) filter = saved;
+    if (["all", "game", "err"].includes(filter)) sceneSubfilter = filter;
     if (linkedFilter && filter === linkedFilter) localStorage.setItem(FILTER_STORAGE, filter);
   } catch (_) { /* Filtering also works when browser storage is unavailable. */ }
+  const isAssistant = s => s.assistantReview?.author === "codex";
+  const section = () => filter === "questions" ? "questions" : filter === "assistant" ? "assistant" : "scenes";
+  const pendingApproval = s => isAssistant(s) && (s.assistantReview.status !== "approved" || !s.playable);
+  function sectionNav() {
+    return `<nav class="scene-sections" aria-label="Разделы сцен">${SECTIONS.map(([key, label, icon]) => `<button class="${section() === key ? "on" : ""}" data-scene-section="${key}" aria-pressed="${section() === key}">${ic(icon)}<span>${label}</span><em>${key === "assistant" ? count("assistant") : count(key === "scenes" ? "all" : "questions")}</em></button>`).join("")}</nav>`;
+  }
+  function statusOptions() {
+    if (section() === "questions") return "";
+    const options = section() === "assistant" ? APPROVAL_FILTERS : FILTERS.filter(([key]) => ["all", "game", "err"].includes(key));
+    const selected = section() === "assistant" ? approvalFilter : filter;
+    return `<label class="scene-status-filter">${section() === "assistant" ? "Статус одобрения" : "Показать сцены"}<select data-scene-status aria-label="${section() === "assistant" ? "Статус одобрения" : "Показать сцены"}">${options.map(([key, label]) => `<option value="${key}" ${selected === key ? "selected" : ""}>${label}</option>`).join("")}</select></label>`;
+  }
   function filtered() {
     const q = query.trim().toLowerCase();
     return state.scenes.filter((s) => {
       if ((s.id === "mini_regulator") !== (state.section === "regulator")) return false;
       if (state.section === "regulator") return true;
+      if (filter === "assistant") {
+        if (!isAssistant(s) || (approvalFilter === "pending" && !pendingApproval(s)) || (approvalFilter === "approved" && pendingApproval(s))) return false;
+      } else if (isAssistant(s) && pendingApproval(s)) return false;
       if (q && !(s.id.includes(q.replace(/\s+/g, "_")) || App.sceneTitle(s.id).toLowerCase().includes(q) || (s.questionText || "").toLowerCase().includes(q))) return false;
       if (filter === "game") return s.playable;
       if (filter === "err") return s.errors > 0;
-      if (filter === "plan") return s.layout;
       return true;
+    }).sort((a, b) => {
+      const first = a.id.match(/^ticket_(\d+)_(\d+)$/), second = b.id.match(/^ticket_(\d+)_(\d+)$/);
+      return first && second ? Number(first[1]) - Number(second[1]) || Number(first[2]) - Number(second[2]) : a.id.localeCompare(b.id);
     });
   }
   const thumbUrl = (s) => s.preview ? `/preview/${s.id}.png?v=${App.thumbRev[s.id] || 0}` : "";
@@ -81,8 +102,8 @@
     const questions = filter === "questions" && state.section !== "regulator";
     const list = questions ? [] : filtered();
     return `${state.section === "regulator" ? `<div class="pane-head"><p>Сцена мини-игры. Объекты и разметка редактируются на виде.</p></div>` : `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="scene-q" placeholder="Билет или слова из вопроса" value="${esc(query)}"></label>
-      <div class="scene-filter-bar"><span class="scene-filter-current">${esc(FILTERS.find(([key]) => key === filter)[1])}${questions && QuestionReview.filterSummary ? ` · ${esc(QuestionReview.filterSummary().label)}` : ""} <em>${questions && QuestionReview.filterSummary ? QuestionReview.filterSummary(query).count : list.length}</em></span><button class="scene-filter-toggle" data-toggle-scene-filters aria-expanded="${!filtersCollapsed}" aria-controls="scene-filters${questions ? " question-filter-options" : ""}" aria-label="${filtersCollapsed ? "Показать фильтры вопросов" : "Скрыть фильтры вопросов"}">${ic("chevron", filtersCollapsed ? "" : "rot")}${filtersCollapsed ? "Фильтры" : "Скрыть"}</button></div>
-      <div id="scene-filters" ${filtersCollapsed ? "hidden" : ""}><div class="chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}" aria-pressed="${filter === k}">${t} <em>${count(k)}</em></button>`).join("")}</div></div></div>`}
+      ${sectionNav()}<div class="scene-filter-bar"><span class="scene-filter-current">${questions && QuestionReview.filterSummary ? esc(QuestionReview.filterSummary().label) : filter === "assistant" ? esc(APPROVAL_FILTERS.find(([key]) => key === approvalFilter)[1]) : esc(FILTERS.find(([key]) => key === filter)[1])} <em>${questions && QuestionReview.filterSummary ? QuestionReview.filterSummary(query).count : list.length}</em></span><button class="scene-filter-toggle" data-toggle-scene-filters aria-expanded="${!filtersCollapsed}" aria-controls="scene-filters" aria-label="${filtersCollapsed ? "Показать фильтры" : "Скрыть фильтры"}">${ic("chevron", filtersCollapsed ? "" : "rot")}${filtersCollapsed ? "Фильтры" : "Скрыть"}</button></div>
+      <div id="scene-filters" ${filtersCollapsed ? "hidden" : ""}>${statusOptions()}</div></div>`}
       ${questions ? QuestionReview.sidebarHtml(query, { filtersCollapsed }) : `<div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${s.id}">
         <span class="scene-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : ""}</span>
         <span class="scene-text"><b>${esc(App.sceneTitle(s.id))}</b>
@@ -92,6 +113,7 @@
     const out = [];
     if (s.errors) out.push(`<i class="badge bad">${ic("error")}${s.errors}</i>`);
     if (s.playable) out.push(`<i class="badge good">${ic("gamepad")}в игре</i>`);
+    if (isAssistant(s)) out.push(`<i class="badge ${pendingApproval(s) ? "" : "good"}">${pendingApproval(s) ? "Codex · на одобрении" : "Codex · одобрено"}</i>`);
     if (s.regulator) out.push(`<i class="badge">регулировщик</i>`);
     return out.join("");
   }
@@ -101,11 +123,11 @@
     const questions = filter === "questions";
     const list = questions ? [] : filtered();
     $("#home-screen").innerHTML = `<div class="home-head">
-        <div><h1>${questions ? "Вопросы для игры" : "Сцены игры"}</h1><p>${questions ? "Выберите, какие вопросы реализуем в следующих сценах" : `${count("all")} перекрёстков из билетов · в игре ${count("game")}`}</p></div>
+        <div><h1>${questions ? "План вопросов" : filter === "assistant" ? "Сцены Codex" : "Игровые сцены"}</h1><p>${questions ? "Решите, какие вопросы добавить, или откройте вопрос в редакторе" : filter === "assistant" ? "Проверьте сцену, при необходимости исправьте и одобрите добавление в игру" : `${count("all")} перекрёстков из билетов · в игре ${count("game")}`}</p></div>
         <label class="search big">${ic("search")}<input type="search" id="home-q" placeholder="Номер билета или слова из вопроса" value="${esc(query)}"></label>
         ${state.S ? `<button class="btn ghost" id="home-back">${ic("x")}Вернуться к сцене</button>` : ""}
       </div>
-      <div class="chips home-chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t} <em>${count(k)}</em></button>`).join("")}</div>
+      <div class="home-scene-navigation">${sectionNav()}${statusOptions()}</div>
       ${questions ? QuestionReview.homeHtml(query) : `<div class="home-grid">${list.map((s) => `<button class="card-scene" data-scene="${s.id}">
         <span class="card-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : `<span class="no-pic">${ic("image")}</span>`}</span>
         <span class="card-body"><b>${esc(App.sceneTitle(s.id))}</b><span class="badges">${badges(s)}</span></span>
@@ -115,7 +137,7 @@
     renderHome.focus = false;
   };
   const renderHome = App.renderHome;
-  const count = (k) => k === "questions" ? (state.questions || []).length : state.scenes.filter((s) => s.id !== "mini_regulator" && (k === "all" || (k === "game" && s.playable) || (k === "err" && s.errors))).length;
+  const count = (k) => k === "questions" ? (state.questions || []).length : state.scenes.filter((s) => s.id !== "mini_regulator" && (k === "assistant" ? pendingApproval(s) : !pendingApproval(s) && (k === "all" || (k === "game" && s.playable) || (k === "err" && s.errors)))).length;
   App.sceneFilter = () => filter;
   App.sceneFiltersCollapsed = () => filtersCollapsed;
   App.setSceneFiltersCollapsed = (collapsed) => {
@@ -126,10 +148,18 @@
   App.setSceneFilter = (next) => {
     if (!FILTERS.some(([key]) => key === next)) return;
     filter = next;
+    if (["all", "game", "err"].includes(next)) sceneSubfilter = next;
     try { localStorage.setItem(FILTER_STORAGE, filter); } catch (_) { /* Optional preference. */ }
     renderLeft();
     if (!$("#home-screen").hidden) App.renderHome();
   };
+  App.setApprovalFilter = next => {
+    if (!APPROVAL_FILTERS.some(([key]) => key === next)) return;
+    approvalFilter = next;
+    renderLeft();
+    if (!$("#home-screen").hidden) App.renderHome();
+  };
+  App.approvalFilter = () => approvalFilter;
   App.showQuestions = (id) => {
     state.section = "city";
     App.setLeftTab("scenes");
@@ -147,6 +177,14 @@
   });
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-toggle-scene-filters]")) { App.setSceneFiltersCollapsed(!filtersCollapsed); return; }
+    const navigation = e.target.closest("[data-scene-section]");
+    if (navigation) {
+      const next = navigation.dataset.sceneSection;
+      App.setSceneFilter(next === "scenes" ? sceneSubfilter : next);
+      if (next === "questions") QuestionReview.open().catch(err => App.toast(err.message, "bad"));
+      else if (typeof QuestionReview !== "undefined") QuestionReview.close();
+      return;
+    }
     const f = e.target.closest("[data-filter]");
     if (f) {
       App.setSceneFilter(f.dataset.filter);
@@ -157,6 +195,11 @@
     const sc = e.target.closest("[data-scene]");
     if (sc) { App.openScene(sc.dataset.scene).catch((err) => App.toast(err.message, "bad")); return; }
     if (e.target.closest("#home-back")) App.showHome(false);
+  });
+  document.addEventListener("change", e => {
+    if (!e.target.matches?.("[data-scene-status]")) return;
+    if (filter === "assistant") App.setApprovalFilter(e.target.value);
+    else App.setSceneFilter(e.target.value);
   });
 
   // ---- layers ----------------------------------------------------------------------------------

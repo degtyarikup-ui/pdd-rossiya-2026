@@ -1,0 +1,108 @@
+{
+ "id": "ticket_32_4",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4,
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 32 · Вопрос 4",
+   "title": "Вам разрешается движение:",
+   "options": [
+    "Только в направлении Б",
+    "В направлениях А и Б",
+    "В направлениях Б и В",
+    "В любом направлении из указанных"
+   ],
+   "explanation": "Знак 5.7.2 «Выезд на дорогу с односторонним движением» запрещает поворот направо, т.е. встречное движение. Разрешённые направления движения на таком пересечении – прямо, налево (в направлении стрелки на знаке) и разворот. Можете продолжить движение в любом направлении из указанных.(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 32 · Question 4",
+   "title": "You are allowed to move:",
+   "options": [
+    "Only in direction Б",
+    "In directions А and Б",
+    "In directions Б and В",
+    "In any of the directions indicated"
+   ],
+   "explanation": "Sign 5.7.2 “Entering a one-way road” prohibits turning right, i.e. oncoming traffic. The permitted directions of movement at such an intersection are straight, left (in the direction of the arrow on the sign) and a U-turn. You can continue driving in any of the directions indicated. (“Road signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "32-билет · 4-сұрақ",
+   "title": "Сізге қозғалуға рұқсат етіледі:",
+   "options": [
+    "Тек Б бағытында",
+    "А және Б бағыттары бойынша",
+    "Б және В бағыттары бойынша",
+    "Көрсетілген бағыттардың кез келгенінде"
+   ],
+   "explanation": "5.7.2 «Бір жақты жолға шығу» белгісі оңға бұрылу, яғни қарсы қозғалысқа тыйым салады. Мұндай қиылыста қозғалыстың рұқсат етілген бағыттары түзу, солға (белгідегі көрсеткі бағытында) және кері бұрылу. Көрсетілген бағыттардың кез келгенімен жүруді жалғастыра аласыз. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 119,
+ "correctAnswerIndex": 3,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "dc46cdaf611ddaa0d97f37bed701c284",
+ "sourceCategory": "ab",
+ "sourceImage": "591bb1f7ed9e6de766dcb13966bc70ad",
+ "questionPool": {
+  "sourceQuestionId": "dc46cdaf611ddaa0d97f37bed701c284",
+  "category": "ab",
+  "ticket": 32,
+  "number": 4
+ },
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ }
+}

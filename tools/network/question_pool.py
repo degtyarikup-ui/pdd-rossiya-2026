@@ -131,7 +131,10 @@ class QuestionPool:
             if not re.fullmatch(r"ticket_\d+_\d+", path.stem):
                 continue
             scene = json.loads(path.read_text(encoding="utf-8"))
-            (drafts if scene.get("questionPool") else implemented).add(path.stem)
+            # Authored assistant scenes have their own review queue, including
+            # before approval. They must not appear again as unbuilt questions.
+            assistant = (scene.get("assistantReview") or {}).get("author") == "codex"
+            (drafts if scene.get("questionPool") and not assistant else implemented).add(path.stem)
         roads_path = self.network.parent / "roads" / "road_scenes.json"
         if roads_path.exists():
             roads = json.loads(roads_path.read_text(encoding="utf-8"))
@@ -234,6 +237,10 @@ def engine_template(scene: dict) -> dict:
     crop = float(scene.get("crop", 90))
     stop = scene["stop"]
     question = scene["question"]
+    russian = question["text"].get("ru", {})
+    # World warms the question card before the first approach and requires this
+    # value even for a brand-new procedural scene with no legacy engine base.
+    source_text_length = len(russian.get("title", "")) + sum(len(option) for option in russian.get("options", []))
     return {"id": scene["id"], "procedural": True, "geometry": None, "type": scene.get("type", "crossroad"),
             "reviewed": False, "regulator": False, "crop": crop,
             "centerZ": 0, "startZ": -crop, "stopZ": stop["z"], "playerStartX": stop["x"],
@@ -246,6 +253,7 @@ def engine_template(scene: dict) -> dict:
             "labels": [], "trajectories": [], "legend": [], "trafficLights": None,
             "stopPositions": None, "requiredStop": None, "redWait": None, "speedLimit": None,
             "questionCamera": [], "text": copy.deepcopy(question["text"]),
+            "sourceTextLength": source_text_length,
             "correctAnswerIndex": question["correct"], "showPlayerGuide": question.get("showPlayerGuide", True),
             "sourceQuestionId": question.get("sourceQuestionId"), "sourceCategory": question.get("sourceCategory"),
             "sourceImage": question.get("sourceImage")}
