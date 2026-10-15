@@ -70,6 +70,21 @@ static func send(data: Dictionary) -> void:
 		_post_to_parent("send", JSON.stringify(data))
 
 
+## The native/page host plays the shared animated WebP independently of scene construction.
+## `false` is a rendered-frame readiness signal, never a timeout or a guessed progress value.
+static func loading(visible: bool, phase: String = "loading") -> void:
+	send({"event": "loading", "visible": visible, "phase": phase})
+	if io != "":
+		# iOS polls this small atomic state separately from the final summary. A fast
+		# startup can replace loading=true with ready=false before the next host poll.
+		var path := io.path_join("loading.json")
+		var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
+		if file == null: return
+		file.store_string(JSON.stringify({"visible": visible, "phase": phase}))
+		file.close()
+		DirAccess.rename_absolute(path + ".tmp", path)
+
+
 ## iOS: the game clears the events of the previous run when a new run's scene starts.
 static func begin_events() -> void:
 	if io != "":
@@ -85,6 +100,7 @@ static func exit(summary: Dictionary, tree: SceneTree) -> void:
 	# A paused tree alone does not stop process_frame continuations or ALWAYS nodes.
 	_exit_generation += 1
 	tree.root.set_meta(EXIT_META, _exit_generation)
+	loading(true, "returning")
 	tree.paused = true
 	if tree.current_scene != null:
 		tree.current_scene.process_mode = Node.PROCESS_MODE_DISABLED

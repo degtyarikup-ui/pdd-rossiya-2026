@@ -1225,6 +1225,15 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameStop => 'ТОҚТАТУ';
 
   @override
+  String get appLoading => 'Жүктелуде…';
+
+  @override
+  String get appLoadingFailed => 'Қолданбаны ашу мүмкін болмады';
+
+  @override
+  String get gameReturning => 'Қолданбаға оралу…';
+
+  @override
   String get gameLoading => 'Ойын жүктелуде';
 
   @override

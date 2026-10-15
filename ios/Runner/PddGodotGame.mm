@@ -17,11 +17,13 @@
 // - the app polls summary.json; the exit event hides the window and answers Dart.
 
 static PddGodotGame *gInstance = nil;
+static FlutterMethodChannel *gChannel = nil;
 
 #if defined(PDD_GODOT_ENGINE)
 
 static NSString *const kExchangeFolderName = @"pdd_game";
 static NSString *const kPerformanceMemoryFileName = @"performance-memory.json";
+static NSString *const kLoadingFileName = @"loading.json";
 
 // libgodot ships without headers. The declarations here follow Godot 4.7.2:
 // platform/ios/main_ios.mm, drivers/apple_embedded/*.h, app_delegate_service.mm.
@@ -61,6 +63,16 @@ static NSTimer *gPollTimer = nil;
 static NSTimer *gMemoryTimer = nil;
 static FlutterResult gPending = nil;
 static BOOL gGameClosing = NO;
+static NSUInteger gRunGeneration = 0;
+static NSData *gLastLoadingState = nil;
+
+/// Dart acknowledges after its overlay frame is present. Returning to Flutter must
+/// not reveal a menu frame between the native game's window and the animated cover.
+static void NotifyLoading(BOOL visible, NSString *phase, dispatch_block_t completion) {
+  [gChannel invokeMethod:@"loading"
+               arguments:@{@"visible": @(visible), @"phase": phase}
+                  result:^(id response) { if (completion) completion(); }];
+}
 
 /// Where the app and the game exchange requests and results: Library/Caches/pdd_game.
 static NSString *ExchangeFolder(void) {
@@ -205,6 +217,9 @@ static BOOL ShowGame(void) {
   gGameWindow = [[UIWindow alloc] initWithWindowScene:scene];
   gGameWindow.windowLevel = UIWindowLevelNormal + 1;
   gGameWindow.rootViewController = GameController();
+  // Keep Flutter's WebP visible while Godot initializes and compiles its first frame.
+  // The Godot view still renders; loading.json releases this cover after frame_post_draw.
+  gGameWindow.alpha = 0;
   [gGameWindow makeKeyAndVisible];
   if (scene.activationState == UISceneActivationStateForegroundActive) {
     [EngineService() sceneDidBecomeActive:scene];
@@ -217,24 +232,28 @@ static void HideGame(dispatch_block_t completion) {
   StopPerformanceMemorySampling();
   gGameClosing = YES;
   UIWindow *closingWindow = gGameWindow;
-  // Stop at the opaque frame presented by Host.exit before UIKit changes focus/layout.
-  // Leaving the live renderer visible while detaching its controller caused a last
-  // resize/repaint of the game immediately before returning to Flutter.
-  [gController.godotView stopRendering];
-  [EngineService() sceneWillResignActive:closingWindow.windowScene];
-  [gAppWindow makeKeyAndVisible];
-  [UIView animateWithDuration:0.12
-                        delay:0
-                      options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState
-                   animations:^{ closingWindow.alpha = 0; }
-                   completion:^(BOOL finished) {
-                     closingWindow.hidden = YES;
-                     closingWindow.rootViewController = nil;
-                     gGameWindow = nil;
-                     gAppWindow = nil;
-                     gGameClosing = NO;
-                     if (completion) completion();
-                   }];
+  const NSUInteger generation = gRunGeneration;
+  NotifyLoading(YES, @"returning", ^{
+    if (generation != gRunGeneration || closingWindow != gGameWindow) return;
+    // Stop at the opaque frame presented by Host.exit before UIKit changes focus/layout.
+    // Leaving the live renderer visible while detaching its controller caused a last
+    // resize/repaint of the game immediately before returning to Flutter.
+    [gController.godotView stopRendering];
+    [EngineService() sceneWillResignActive:closingWindow.windowScene];
+    [gAppWindow makeKeyAndVisible];
+    [UIView animateWithDuration:0.12
+                          delay:0
+                        options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState
+                     animations:^{ closingWindow.alpha = 0; }
+                     completion:^(BOOL finished) {
+                       closingWindow.hidden = YES;
+                       closingWindow.rootViewController = nil;
+                       gGameWindow = nil;
+                       gAppWindow = nil;
+                       gGameClosing = NO;
+                       if (completion) completion();
+                     }];
+  });
 }
 
 #endif
@@ -245,6 +264,7 @@ static void HideGame(dispatch_block_t completion) {
   gInstance = [[PddGodotGame alloc] init];
   FlutterMethodChannel *channel = [FlutterMethodChannel methodChannelWithName:@"pdd/godot_game"
                                                               binaryMessenger:registrar.messenger];
+  gChannel = channel;
   [channel setMethodCallHandler:^(FlutterMethodCall *call, FlutterResult result) {
     [gInstance handleCall:call result:result];
   }];
@@ -286,6 +306,7 @@ static void HideGame(dispatch_block_t completion) {
     gPending = nil;
     previous(nil);
   }
+  gRunGeneration += 1;
   if (!BootEngine(exchange) || !ShowGame()) {
     result(nil);
     return;
@@ -313,6 +334,8 @@ static void HideGame(dispatch_block_t completion) {
   // No run is going on in the engine now, so a leftover summary belongs to the last run.
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"summary.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:kPerformanceMemoryFileName] error:nil];
+  [files removeItemAtPath:[folder stringByAppendingPathComponent:kLoadingFileName] error:nil];
+  gLastLoadingState = nil;
   NSMutableArray *gameArgs = [NSMutableArray arrayWithArray:args ? args : @[]];
   for (NSString *category in @[@"ab", @"cd"]) {
     NSString *pictures = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
@@ -336,6 +359,7 @@ static void HideGame(dispatch_block_t completion) {
 /// Runs every 40 ms while a run is shown. «run_finished» keeps the game open; the exit
 /// event carries the final summary and closes the game.
 - (void)pollSummary {
+  [self pollLoading];
   NSString *path = [ExchangeFolder() stringByAppendingPathComponent:@"summary.json"];
   NSData *data = [NSData dataWithContentsOfFile:path];
   if (!data) {
@@ -362,6 +386,32 @@ static void HideGame(dispatch_block_t completion) {
   FlutterResult result = gPending;
   gPending = nil;
   HideGame(^{ if (result) result(json); });
+}
+
+/// Only explicit loading covers the game. Normal scene streaming remains playable.
+- (void)pollLoading {
+  NSString *path = [ExchangeFolder() stringByAppendingPathComponent:kLoadingFileName];
+  NSData *data = [NSData dataWithContentsOfFile:path];
+  if (!data || gGameClosing || !gGameWindow) return;
+  if ([data isEqualToData:gLastLoadingState]) return;
+  id message = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+  if (![message isKindOfClass:[NSDictionary class]]) return;
+  // Keep the file: unlinking after reading can delete a newer atomic ready state.
+  gLastLoadingState = data;
+  NSDictionary *state = (NSDictionary *)message;
+  BOOL visible = [state[@"visible"] boolValue];
+  NSString *phase = [state[@"phase"] isKindOfClass:NSString.class] ? state[@"phase"] : @"loading";
+  if (!visible) {
+    // Reveal the already-rendered game before stopping Flutter's hidden WebP decoder.
+    gGameWindow.alpha = 1;
+    NotifyLoading(NO, phase, nil);
+  } else {
+    const NSUInteger generation = gRunGeneration;
+    UIWindow *window = gGameWindow;
+    NotifyLoading(YES, phase, ^{
+      if (generation == gRunGeneration && window == gGameWindow && !gGameClosing) window.alpha = 0;
+    });
+  }
 }
 
 // The engine's lifecycle hooks, passed on as the template's app delegate does.

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:intl/intl.dart';
 import 'package:pdd_app/presentation/widgets/user_avatar.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -219,7 +220,7 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
                     final board = snapshot.data ?? _shown;
                     if (board == null &&
                         snapshot.connectionState != ConnectionState.done) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(child: AppLoadingIndicator());
                     }
                     if (board == null) {
                       return _Message(

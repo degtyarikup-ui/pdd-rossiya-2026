@@ -30,6 +30,7 @@ import 'package:pdd_app/presentation/screens/home/home_screen.dart';
 import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
+import 'package:pdd_app/presentation/widgets/app_startup_gate.dart';
 import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
     if (dart.library.js_interop) 'package:pdd_app/data/services/web_oauth_redirect.dart';
 
@@ -74,6 +75,14 @@ void main() async {
     debugPrint('SystemChrome config error: $e');
   }
 
+  runApp(
+    AppStartupGate(initialize: () => _initializeApplication(webAuthReturn)),
+  );
+}
+
+Future<Widget> _initializeApplication(
+  Map<String, String>? webAuthReturn,
+) async {
   // До инициализации сервисов: они пишут в настройки, и свежая установка
   // иначе выглядит как обновление.
   await InstallReporter.captureLaunchState();
@@ -163,13 +172,11 @@ void main() async {
   // Инициализация сервиса звуковых эффектов (правильный/неправильный ответ)
   unawaited(SoundEffectsService.instance.init());
 
-  runApp(
-    ProviderScope(
-      overrides: [
-        progressDataSourceProvider.overrideWithValue(progressDataSource),
-      ],
-      child: PddApp(webAuthReturn: webAuthReturn),
-    ),
+  return ProviderScope(
+    overrides: [
+      progressDataSourceProvider.overrideWithValue(progressDataSource),
+    ],
+    child: PddApp(webAuthReturn: webAuthReturn),
   );
 }
 
@@ -214,7 +221,8 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     // Operator replies while the app is open: a sound and a banner that opens the chat.
-    SupportInbox.instance.onSound = () => SoundEffectsService.instance.playMessage();
+    SupportInbox.instance.onSound = () =>
+        SoundEffectsService.instance.playMessage();
     SupportInbox.instance.onReply = (reply) {
       final navigator = _navigatorKey.currentState;
       final overlay = navigator?.overlay;

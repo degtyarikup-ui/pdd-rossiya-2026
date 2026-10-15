@@ -2,11 +2,19 @@ package ru.pdd.pdd_app.game
 
 import org.godotengine.godot.Godot
 import org.godotengine.godot.plugin.GodotPlugin
+import org.godotengine.godot.plugin.SignalInfo
 import org.godotengine.godot.plugin.UsedByGodot
 
 /** `Engine.get_singleton("PddHost")` in the game (game_godot/scripts/host.gd). */
 class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPlugin(godot) {
     override fun getPluginName() = "PddHost"
+    private val cancelLoading = SignalInfo("cancel_loading")
+
+    override fun getPluginSignals(): MutableSet<SignalInfo> = mutableSetOf(cancelLoading)
+
+    fun requestLoadingCancel() {
+        emitSignal(cancelLoading)
+    }
 
     private var performanceExecutor: java.util.concurrent.ExecutorService? = null
     private val performanceState = lazy {
@@ -93,9 +101,17 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     /** Any event of the game; «run_finished» carries the final summary. */
     @UsedByGodot
     fun send(json: String) {
-        if (json.contains("\"run_finished\"")) {
-            val summary = org.json.JSONObject(json).optJSONObject("summary")?.toString() ?: return
-            host.runOnUiThread { host.keepSummary(summary) }
+        val event = try { org.json.JSONObject(json) } catch (_: org.json.JSONException) { return }
+        when (event.optString("event")) {
+            "loading" -> {
+                val visible = event.optBoolean("visible", true)
+                val phase = event.optString("phase", "loading")
+                host.runOnUiThread { host.setLoading(visible, phase) }
+            }
+            "run_finished" -> {
+                val summary = event.optJSONObject("summary")?.toString() ?: return
+                host.runOnUiThread { host.keepSummary(summary) }
+            }
         }
     }
 
