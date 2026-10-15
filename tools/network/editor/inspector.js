@@ -678,17 +678,83 @@
   }
 
   // ---- routes ------------------------------------------------------------------------------
+  function playerRoutePointTools(ref, route) {
+    const count = route.points.length;
+    const index = Number.isInteger(ref.v) ? Math.max(0, Math.min(count - 1, ref.v)) : 0;
+    const point = route.points[index];
+    // Traced scenes predate the manual flag: any non-generated player route
+    // is already authored and must remain editable without a mode switch.
+    const manual = !!route.manual || !route.auto;
+    const anchored = route.kind === "manoeuvre" ? index === 0
+      : !!state.S.layout && (index === 0 || index === count - 1);
+    const current = sc => sc.routes.find(r => r.id === route.id);
+    const editing = manual && point ? `<label class="route-field">Точка<input type="number" min="1" max="${count}" step="1" data-text="routeIndex" value="${index + 1}"></label>
+      <label class="route-field">X, м<input type="number" step="0.1" data-text="routeX" value="${r3(point[0])}" ${anchored ? "disabled" : ""}></label>
+      <label class="route-field">Z, м<input type="number" step="0.1" data-text="routeZ" value="${r3(point[1])}" ${anchored ? "disabled" : ""}></label>
+      ${anchored ? `<p class="muted">${route.kind === "manoeuvre" || index === count - 1 ? "Эта точка закреплена у машины игрока. Чтобы изменить её, переместите машину." : "Эта точка закреплена у въезда на дорогу."}</p>` : count > 2 ? button("route-delete-point", "Удалить точку", "trash", "ghost wide") : ""}
+      ${index < count - 1 ? button("route-add-point", "Добавить точку после выбранной", "points", "ghost wide") : ""}
+      ${count > 3 ? button("route-compact", "Упростить точки", "points", "ghost wide") + `<p class="muted">Убирает лишние точки, сохраняя форму пути. Изменение можно отменить.</p>` : ""}` : `<p class="muted">Опорные точки строятся по дорогам. Для изменения включите ручной путь.</p>`;
+    return {
+      html: card("Опорные точки", `<p>Опорных точек: ${count} · ${manual ? "ручной путь" : "строится по дорогам"}</p>${editing}`),
+      handlers: {
+        "text:routeIndex": v => {
+          const i = Number(v) - 1;
+          const r = current(state.S);
+          if (Number.isInteger(i) && r && i >= 0 && i < r.points.length) App.select({t:"route", id:route.id, v:i});
+        },
+        ...Object.fromEntries(["routeX", "routeZ"].map((key, axis) => [`text:${key}`, v => {
+          if (!manual || anchored || !v.trim() || !Number.isFinite(Number(v))) return;
+          App.edit(sc => {
+            const r = current(sc);
+            if (!r?.points[index]) return;
+            Layout.editPlayerRoute(sc, r);
+            r.points[index][axis] = r3(Number(v));
+            if (r.kind === "approach" && !sc.layout && index === r.points.length - 1 && sc.stop) {
+              sc.stop[axis === 0 ? "x" : "z"] = r.points[index][axis];
+            }
+          });
+        }])),
+        "route-delete-point": () => {
+          if (!manual || anchored || count <= 2) return;
+          App.select({t:"route", id:route.id, v:index});
+          App.remove();
+        },
+        "route-add-point": () => {
+          if (!manual || index >= count - 1) return;
+          App.edit(sc => {
+            const r = current(sc);
+            if (!r?.points[index + 1]) return;
+            Layout.editPlayerRoute(sc, r);
+            const a = r.points[index], b = r.points[index + 1];
+            r.points.splice(index + 1, 0, a.map((n, axis) => r3((n + b[axis]) / 2)));
+          });
+          App.select({t:"route", id:route.id, v:index + 1});
+        },
+        "route-compact": () => {
+          if (!manual || count <= 3) return;
+          // Simplification changes indices. Drop the old selected vertex before
+          // App.edit rebuilds the route and immediately rerenders the inspector.
+          App.select({t:"route", id:route.id});
+          App.edit(sc => Layout.compactPlayerRoute(sc, current(sc)));
+        },
+      },
+    };
+  }
+
   function routeInspector(p, ref, r) {
     const s = state.S;
     if (state.id === "mini_regulator" && ["approach", "manoeuvre"].includes(r.kind)) return regulatorRouteInspector(p, ref, r);
     if (r.kind === "approach") {
-      p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, "Подъезд игрока", r.manual ? "ручной путь" : "строится сам")}
+      const points = playerRoutePointTools(ref, r);
+      const manual = !!r.manual || !r.auto;
+      p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, "Подъезд игрока", manual ? "ручной путь" : "строится сам")}
         ${card("До начала вопроса", `<p>Зелёная линия показывает, как игрок подъезжает к месту вопроса. После ответа он едет по линии выбранного манёвра.</p>
-          ${r.manual ? `<p class="muted">Тяните промежуточные точки. Двойной клик по линии добавляет точку. Начало закреплено у въезда, конец — у машины игрока.</p>${button("auto-path", "Снова строить по дорогам", "restart", "ghost wide")}`
-            : `<p class="muted">Путь пересчитывается при перемещении игрока.</p>${button("own-path", "Править путь вручную", "points", "ghost wide")}${button("auto-path", "Пересчитать подъезд", "restart", "ghost wide")}`}`)}`;
+          ${manual ? `<p class="muted">Тяните точки или задавайте координаты справа. Двойной клик по линии добавляет точку.${s.layout ? " Начало закреплено у въезда, конец — у машины игрока." : ""}</p>${s.layout ? button("auto-path", "Снова строить по дорогам", "restart", "ghost wide") : ""}`
+            : `<p class="muted">Путь пересчитывается при перемещении игрока.</p>${button("own-path", "Править путь вручную", "points", "ghost wide")}${button("auto-path", "Пересчитать подъезд", "restart", "ghost wide")}`}`)}${points.html}`;
       bind({
-        "own-path": () => App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), true)),
-        "auto-path": () => App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), false)),
+        ...points.handlers,
+        "own-path": () => { App.select({t:"route",id:r.id}); App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), true)); },
+        "auto-path": () => { App.select({t:"route",id:r.id}); App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), false)); },
       });
       return;
     }
@@ -710,16 +776,18 @@
       return;
     }
     if (r.kind === "manoeuvre") {
+      const points = playerRoutePointTools(ref, r);
       const main = s.question.maneuver === r.exit;
       p.innerHTML = `${head(`<span class="ibadge">${ic(Catalog.EXITS[r.exit]?.icon || "route")}</span>`, `Манёвр: ${Catalog.EXITS[r.exit]?.title.toLowerCase()}`, main ? "так едет игрок" : "другой выезд")}
         ${card("", `${main ? `<p class="ok-line">${ic("check-circle")}Этот манёвр — по условию вопроса</p>` : button("make-main", "Игрок едет так", "flag", "primary wide")}
           ${r.auto ? `<p class="muted">Путь строится сам по дорогам.</p>${button("own-path", "Править путь вручную", "points", "ghost wide")}`
-            : `<p class="muted">Тяните точки на виде, двойной клик по линии — новая точка.</p>${r.manual ? button("auto-path", "Снова строить по дорогам", "restart", "ghost wide") : ""}`}
-          <p class="muted">По этой линии машина игрока едет после ответа. Если в вопросе есть линии ответов, она видна только когда выбрана.</p>`)}`;
+            : `<p class="muted">Тяните точки на виде, двойной клик по линии — новая точка.</p>${r.manual && s.layout ? button("auto-path", "Снова строить по дорогам", "restart", "ghost wide") : ""}`}
+          <p class="muted">По этой линии машина игрока едет после ответа. Если в вопросе есть линии ответов, она видна только когда выбрана.</p>`)}${points.html}`;
       bind({
+        ...points.handlers,
         "make-main": () => App.edit((sc) => { sc.question.maneuver = r.exit; sc.spec = { ...(sc.spec || {}), maneuver: r.exit }; }),
-        "own-path": () => App.edit((sc) => { const x = sc.routes.find((y) => y.id === r.id); Layout.setPlayerRouteManual(sc, x, true); }),
-        "auto-path": () => App.edit((sc) => { const x = sc.routes.find((y) => y.id === r.id); Layout.setPlayerRouteManual(sc, x, false); }),
+        "own-path": () => { App.select({t:"route",id:r.id}); App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), true)); },
+        "auto-path": () => { App.select({t:"route",id:r.id}); App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), false)); },
       });
       return;
     }

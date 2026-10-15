@@ -230,14 +230,14 @@ const App = (() => {
     state.sel = [];
     state.savedJson = snapshotText();
     state.dirty = false;
-    // Older highway saves contain automatic tapers at both borders. Refresh only the
-    // generated geometry in memory; manual edits and the on-disk source wait for Save.
+    // Refresh generated views in memory; author paths and on-disk sources wait for Save.
     if (state.S.layout?.streets?.some(st => st.kind === "highway")) {
       Layout.apply(state.S);
-      if (snapshotText() !== state.savedJson) {
-        state.undo.push(state.savedJson);
-        state.dirty = true;
-      }
+    }
+    if (state.S.layout) Layout.refreshPlayerRoutes(state.S);
+    if (snapshotText() !== state.savedJson) {
+      state.undo.push(state.savedJson);
+      state.dirty = true;
     }
     Tools.set("select");
     Scene3D.load(state.S, state.dirty ? null : r.build);
@@ -247,7 +247,7 @@ const App = (() => {
     App.renderPanels?.();
     if (state.dirty) {
       schedulePreview();
-      toast("Трасса пересобрана по настройкам стыков. Сохраните, чтобы обновить игру.", "good");
+      toast("Автоматические пути обновлены. Сохраните, чтобы применить их в игре.", "good");
     }
     if (typeof Framing !== "undefined") Framing.refresh();
   }
@@ -488,6 +488,7 @@ const App = (() => {
       const least = ref.t === "route" || (ref.t === "marking") ? 2 : 3;
       if (!pts || pts.length <= least) return toast("Меньше точек нельзя", "warn");
       const o = objectOf(ref);
+      if (ref.t === "route" && o?.kind === "manoeuvre" && ref.v === 0) return toast("Эта точка закреплена у автомобиля игрока", "warn");
       if (ref.t === "route" && state.S.id === "mini_regulator" && ((o?.kind === "manoeuvre" && ref.v === 0) || (o?.kind === "approach" && ref.v === pts.length - 1))) return toast("Эта точка закреплена у автомобиля игрока", "warn");
       if (ref.t === "route" && o?.kind === "approach" && state.S.layout && (!o.manual || ref.v === 0 || ref.v === pts.length - 1)) return toast("Начало подъезда закреплено у въезда, конец — у игрока", "warn");
       edit(() => {

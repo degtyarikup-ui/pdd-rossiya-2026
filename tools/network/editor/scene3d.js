@@ -968,7 +968,8 @@ const Scene3D = (() => {
       const pts = App.pointsOfRef(ref);
       if (pts && pts.length > 1) {
         const closed = ref.t === "road" || ref.t === "lawn" || (ref.t === "marking" && App.isPaint(ref));
-        g.add(polyline(closed ? [...pts, pts[0]] : pts, 0.2, colour, px));
+        const line = ref.t === "route" ? smooth(pts) : pts;
+        g.add(polyline(closed ? [...line, line[0]] : line, 0.2, colour, px));
       }
       return null;
     };

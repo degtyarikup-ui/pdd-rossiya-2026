@@ -536,7 +536,15 @@ const Layout = (() => {
   }
   function setPlayerRouteManual(scene, route, manual) {
     if (!route) return;
-    if (manual) return editPlayerRoute(scene, route);
+    if (manual) {
+      // This explicit conversion happens before the user selects a control point.
+      // Point drags call editPlayerRoute instead, which must never renumber vertices.
+      if (route.auto) {
+        const fresh = generateRoutes(scene).routes.find(r => r.id === route.id);
+        if (fresh && !fresh.manual) route.points = compactRoutePoints(fresh.points);
+      }
+      return editPlayerRoute(scene, route);
+    }
     if (scene.layout && route.kind === "approach") delete scene.layout[isFreePlayer(scene) ? "freeApproachPath" : "approachPath"];
     if (scene.layout && route.kind === "manoeuvre") {
       if (isFreePlayer(scene)) (scene.layout.freePaths = scene.layout.freePaths || {})[route.exit] = null;
@@ -601,6 +609,112 @@ const Layout = (() => {
     }
     return out.map(P).filter((p, i, a) => !i || dist(p, a[i - 1]) > 0.001);
   };
+
+  // Runtime readers use both the raw polyline and Catmull-Rom. Keep each within
+  // five centimetres of the original while removing sampling-only vertices.
+  // Manual routes opt into this explicitly; dragging never changes their indices.
+  function compactRoutePoints(points, tolerance = 0.047) {
+    if (!Array.isArray(points)) return [];
+    if (points.length < 4) return points.map(p => p.slice());
+    const pts = points.map(p => p.slice()), last = pts.length - 1;
+    const segmentDistance = (p, a, b) => {
+      const ab = sub(b, a), square = dot(ab, ab);
+      const t = square ? Math.max(0, Math.min(1, dot(sub(p, a), ab) / square)) : 0;
+      return dist(p, add(a, mul(ab, t)));
+    };
+    const gap = (a, b) => Math.max(...a.map(p => {
+      let closest = Infinity;
+      for (let i = 1; i < b.length; i++) closest = Math.min(closest, segmentDistance(p, b[i - 1], b[i]));
+      return closest;
+    }));
+    const sample = (p, from, to) => {
+      const out = [p[from]];
+      for (let i = from; i < to; i++) {
+        const a = p[Math.max(0, i - 1)], b = p[i], c = p[i + 1], d = p[Math.min(p.length - 1, i + 2)];
+        const steps = Math.max(2, Math.ceil(dist(b, c) / 0.2));
+        for (let j = 1; j <= steps; j++) {
+          const t = j / steps;
+          out.push([0, 1].map(k => 0.5 * (2 * b[k] + (c[k] - a[k]) * t
+            + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * t * t
+            + (3 * b[k] - a[k] - 3 * c[k] + d[k]) * t * t * t)));
+        }
+      }
+      return out;
+    };
+    const kept = new Set([0, last]);
+    const reduce = (a, b) => {
+      let worst = tolerance * 0.75, index = -1;
+      for (let i = a + 1; i < b; i++) {
+        const error = segmentDistance(pts[i], pts[a], pts[b]);
+        if (error > worst) { worst = error; index = i; }
+      }
+      if (index >= 0) { kept.add(index); reduce(a, index); reduce(index, b); }
+    };
+    reduce(0, last);
+    const baseline = new Map();
+    const intervalError = (indices, j, controls = indices.map(i => pts[i])) => {
+      const a = indices[j], b = indices[j + 1], key = `${a},${b}`;
+      if (!baseline.has(key)) baseline.set(key, sample(pts, a, b));
+      const original = baseline.get(key), candidate = sample(controls, j, j + 1);
+      const raw = pts.slice(a, b + 1), chord = densePath([pts[a], pts[b]], 0.2);
+      return Math.max(gap(original, candidate), gap(candidate, original), gap(raw, chord), gap(chord, raw));
+    };
+    const finish = (indices) => {
+      // Refining neighbouring Catmull tangents can temporarily retain more
+      // vertices than necessary. Remove each only if all three affected
+      // spline intervals and their raw chords still meet the original bound.
+      for (let i = 1; i + 1 < indices.length;) {
+        const candidate = indices.filter((_, j) => j !== i), controls = candidate.map(j => pts[j]);
+        let safe = true;
+        for (let j = Math.max(0, i - 2); j <= Math.min(candidate.length - 2, i); j++) {
+          if (intervalError(candidate, j, controls) > tolerance) { safe = false; break; }
+        }
+        if (safe) indices = candidate;
+        else i++;
+      }
+      return indices.map(i => pts[i].slice());
+    };
+    for (let pass = 0; pass < pts.length; pass++) {
+      const indices = [...kept].sort((a, b) => a - b), controls = indices.map(i => pts[i]);
+      const additions = new Set();
+      for (let j = 0; j + 1 < indices.length; j++) {
+        const a = indices[j], b = indices[j + 1], error = intervalError(indices, j, controls);
+        if (error <= tolerance) continue;
+        // A neighbouring omitted point also influences Catmull's tangent when
+        // this interval already contains consecutive original vertices.
+        if (b > a + 1) additions.add(Math.floor((a + b) / 2));
+        else {
+          if (a > 0 && !kept.has(a - 1)) additions.add(a - 1);
+          if (b < last && !kept.has(b + 1)) additions.add(b + 1);
+        }
+      }
+      if (!additions.size) return finish(indices);
+      for (const index of additions) kept.add(index);
+    }
+    return pts;
+  }
+
+  function compactPlayerRoute(scene, route) {
+    if (!route || !["approach", "manoeuvre"].includes(route.kind)) return false;
+    const before = route.points;
+    route.points = compactRoutePoints(before);
+    editPlayerRoute(scene, route);
+    return route.points.length < before.length;
+  }
+
+  // Upgrade generated editor arrows only, without rebuilding the road, moving
+  // the player or touching authored street/free-mode paths. Opening a scene
+  // can then offer the new controls as an undoable, unsaved editor change.
+  function refreshPlayerRoutes(scene) {
+    if (!scene.layout) return scene;
+    const fresh = new Map(generateRoutes(scene).routes.map(r => [r.id, r]));
+    for (const route of scene.routes || []) {
+      if (!route.auto || route.manual || !["approach", "manoeuvre"].includes(route.kind)) continue;
+      const next = fresh.get(route.id);
+      if (next && !next.manual) Object.assign(route, next);
+    }
+    return scene;
+  }
   function freeRoutes(scene, original) {
     const pose = playerPose(scene), stop = [pose.x, pose.z], toward = [Math.sin(pose.yaw), Math.cos(pose.yaw)];
     const at = drivingArea(scene);
@@ -745,7 +859,11 @@ const Layout = (() => {
         const lateral = dot(sub(r.points.at(-1), centred.p), right(centred.t));
         const lane = laneAway(scene.layout, out.street, entryPlan.nid, lateral, scene.crop || 90);
         const former = projectOn(lane, r.points.at(-1));
-        const tail = cut(lane, former + 0.1, polyLen(lane) - 3.3);
+        // The teaching arrow ends after the turn. Extend it only when a free
+        // pose already lies beyond that old endpoint; the full road and its
+        // physical exit still provide the runtime continuation to the border.
+        const ahead = Math.max(former, projectOn(lane, stop) + 20);
+        const tail = cut(lane, former + 0.1, Math.min(ahead, polyLen(lane) - 3.3));
         if (tail.length) r.points.push(...tail);
       } else if (!r.manual && polyLen(r.points) > 3.4) {
         // A street without a junction already runs to its border. Keep the routing goal a car
@@ -773,7 +891,7 @@ const Layout = (() => {
         }
       }
       if (!path && !r.manual) path = navigate(stop, end);
-      if (path) routes.push({ ...r, points: densePath(path), playerFree: true });
+      if (path) routes.push({ ...r, points: r.manual ? path.map(P) : compactRoutePoints(densePath(path)), playerFree: true });
       else errors.push(`Не удалось построить путь игрока: ${r.exit}. Переместите машину или измените угол.`);
     }
     return { ...original, routes, errors, stop: { x: r3(pose.x), z: r3(pose.z), yaw: r3(pose.yaw) } };
@@ -1265,6 +1383,7 @@ const Layout = (() => {
     applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
     isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, editPlayerRoute, setPlayerRouteManual,
+    compactRoutePoints, compactPlayerRoute, refreshPlayerRoutes,
   };
 })();
 
