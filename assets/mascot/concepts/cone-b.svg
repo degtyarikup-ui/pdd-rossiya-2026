@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" fill="none">
+  <title>Конус Б — мягкая игрушка</title>
+  <desc>Невысокий округлый конус тёплого оранжевого цвета с одной широкой белой полосой, голубыми глазами и маленькими ладошками.</desc>
+  <defs>
+    <linearGradient id="b-body" x1="139" y1="222" x2="344" y2="244" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFAD51"/><stop offset=".44" stop-color="#FFA345"/><stop offset="1" stop-color="#F0822B"/>
+    </linearGradient>
+    <linearGradient id="b-base" x1="239" y1="310" x2="243" y2="395" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFAF55"/><stop offset="1" stop-color="#F49034"/>
+    </linearGradient>
+    <clipPath id="b-body-clip"><path d="M212 101 C216 83 264 83 268 101 L349 295 C358 319 304 344 240 344 C176 344 122 319 131 295 Z"/></clipPath>
+  </defs>
+  <path d="M123 325 C136 314 343 314 357 325 L382 357 C390 373 374 383 356 389 C288 410 192 410 124 389 C106 383 90 373 98 357 Z" fill="#E7802D"/>
+  <path d="M139 310 C133 310 128 312 123 319 L98 350 C88 364 101 374 120 380 C190 402 290 402 360 380 C379 374 392 364 382 350 L357 319 C352 312 347 310 341 310 Z" fill="url(#b-base)"/>
+  <path d="M149 267 C132 263 119 271 118 284 C117 296 129 303 141 297 L148 285 C137 290 130 287 133 281 C136 277 141 279 146 281 Z" fill="#F2913D"/>
+  <path d="M331 267 C348 263 361 271 362 284 C363 296 351 303 339 297 L332 285 C343 290 350 287 347 281 C344 277 339 279 334 281 Z" fill="#E7822F"/>
+  <path d="M212 101 C216 83 264 83 268 101 L349 295 C358 319 304 344 240 344 C176 344 122 319 131 295 Z" fill="url(#b-body)"/>
+  <g clip-path="url(#b-body-clip)">
+    <path d="M190 150 C216 166 264 166 290 150 L311 200 C270 225 210 225 169 200 Z" fill="#FFF9ED"/>
+  </g>
+  <ellipse cx="240" cy="100" rx="27" ry="12" fill="#FFBB6B"/>
+  <path d="M188 220 C199 211 213 211 223 218" stroke="#754A34" stroke-width="5.5" stroke-linecap="round"/>
+  <path d="M257 218 C267 211 281 211 292 220" stroke="#754A34" stroke-width="5.5" stroke-linecap="round"/>
+  <ellipse cx="207" cy="251" rx="25" ry="28" fill="#FFFDF8"/>
+  <ellipse cx="273" cy="251" rx="25" ry="28" fill="#FFFDF8"/>
+  <ellipse cx="211" cy="253" rx="15" ry="18" fill="#5CB5E3"/>
+  <ellipse cx="269" cy="253" rx="15" ry="18" fill="#5CB5E3"/>
+  <ellipse cx="212" cy="252" rx="8" ry="11" fill="#294963"/>
+  <ellipse cx="268" cy="252" rx="8" ry="11" fill="#294963"/>
+  <ellipse cx="179" cy="277" rx="10" ry="5.5" fill="#F39259"/>
+  <ellipse cx="301" cy="277" rx="10" ry="5.5" fill="#EA8550"/>
+  <path d="M223 287 C233 299 247 299 257 287" stroke="#754A34" stroke-width="5.5" stroke-linecap="round"/>
+  <path d="M126 286 C125 278 116 271 110 271 C104 271 103 277 106 283 C96 282 91 289 94 298 C97 308 108 313 118 308 C128 304 132 294 126 286 Z" fill="#FFF9ED"/>
+  <path d="M354 286 C355 278 364 271 370 271 C376 271 377 277 374 283 C384 282 389 289 386 298 C383 308 372 313 362 308 C352 304 348 294 354 286 Z" fill="#FFF9ED"/>
+</svg>
