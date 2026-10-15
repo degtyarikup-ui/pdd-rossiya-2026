@@ -38,7 +38,15 @@
   }
 
   // ---- scenes --------------------------------------------------------------------------------
-  const FILTERS = [["all", "Все"], ["game", "В игре"], ["err", "С ошибками"]];
+  const REVIEW_GROUP = "unmarked-2026-10-15";
+  const FILTERS = [["all", "Все"], ["game", "В игре"], ["review", "На просмотр"], ["err", "С ошибками"]];
+  const FILTER_STORAGE = "network-editor-scene-filter";
+  const linkedFilter = new URLSearchParams(location.search).get("filter");
+  try {
+    const saved = linkedFilter || localStorage.getItem(FILTER_STORAGE);
+    if (FILTERS.some(([key]) => key === saved)) filter = saved;
+    if (linkedFilter && filter === linkedFilter) localStorage.setItem(FILTER_STORAGE, filter);
+  } catch (_) { /* Filtering also works when browser storage is unavailable. */ }
   function filtered() {
     const q = query.trim().toLowerCase();
     return state.scenes.filter((s) => {
@@ -46,16 +54,18 @@
       if (state.section === "regulator") return true;
       if (q && !(s.id.includes(q.replace(/\s+/g, "_")) || App.sceneTitle(s.id).toLowerCase().includes(q) || (s.questionText || "").toLowerCase().includes(q))) return false;
       if (filter === "game") return s.playable;
+      if (filter === "review") return s.reviewGroup === REVIEW_GROUP;
       if (filter === "err") return s.errors > 0;
       if (filter === "plan") return s.layout;
       return true;
     });
   }
   const thumbUrl = (s) => s.preview ? `/preview/${s.id}.png?v=${App.thumbRev[s.id] || 0}` : "";
+  const reviewNote = () => filter === "review" ? `<p class="muted">Сцены без прежней отметки «В игре». Просмотрите их и включите нужные. Список сохраняется после включения.</p>` : "";
   function scenesPane() {
     const list = filtered();
     return `${state.section === "regulator" ? `<div class="pane-head"><p>Сцена мини-игры. Объекты и разметка редактируются на виде.</p></div>` : `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="scene-q" placeholder="Билет, например 10 13" value="${esc(query)}"></label>
-      <div class="chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t}</button>`).join("")}</div></div>`}
+      <div class="chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t} <em>${count(k)}</em></button>`).join("")}</div>${reviewNote()}</div>`}
       <div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${s.id}">
         <span class="scene-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : ""}</span>
         <span class="scene-text"><b>${esc(App.sceneTitle(s.id))}</b>
@@ -65,6 +75,7 @@
     const out = [];
     if (s.errors) out.push(`<i class="badge bad">${ic("error")}${s.errors}</i>`);
     if (s.playable) out.push(`<i class="badge good">${ic("gamepad")}в игре</i>`);
+    if (s.reviewGroup === REVIEW_GROUP) out.push(`<i class="badge">на просмотр</i>`);
     if (s.regulator) out.push(`<i class="badge">регулировщик</i>`);
     return out.join("");
   }
@@ -73,11 +84,12 @@
   App.renderHome = () => {
     const list = filtered();
     $("#home-screen").innerHTML = `<div class="home-head">
-        <div><h1>Сцены игры</h1><p>${state.scenes.length} перекрёстков из билетов · в игре ${state.scenes.filter((s) => s.playable).length}</p></div>
+        <div><h1>Сцены игры</h1><p>${count("all")} перекрёстков из билетов · в игре ${count("game")}</p></div>
         <label class="search big">${ic("search")}<input type="search" id="home-q" placeholder="Номер билета или слова из вопроса" value="${esc(query)}"></label>
         ${state.S ? `<button class="btn ghost" id="home-back">${ic("x")}Вернуться к сцене</button>` : ""}
       </div>
       <div class="chips home-chips">${FILTERS.map(([k, t]) => `<button class="${filter === k ? "on" : ""}" data-filter="${k}">${t} <em>${count(k)}</em></button>`).join("")}</div>
+      ${reviewNote()}
       <div class="home-grid">${list.map((s) => `<button class="card-scene" data-scene="${s.id}">
         <span class="card-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : `<span class="no-pic">${ic("image")}</span>`}</span>
         <span class="card-body"><b>${esc(App.sceneTitle(s.id))}</b><span class="badges">${badges(s)}</span></span>
@@ -87,7 +99,7 @@
     renderHome.focus = false;
   };
   const renderHome = App.renderHome;
-  const count = (k) => state.scenes.filter((s) => k === "all" || (k === "game" && s.playable) || (k === "err" && s.errors) || (k === "plan" && s.layout)).length;
+  const count = (k) => state.scenes.filter((s) => s.id !== "mini_regulator" && (k === "all" || (k === "game" && s.playable) || (k === "review" && s.reviewGroup === REVIEW_GROUP) || (k === "err" && s.errors) || (k === "plan" && s.layout))).length;
 
   document.addEventListener("input", (e) => {
     if (e.target.id === "scene-q" || e.target.id === "home-q") {
@@ -98,7 +110,11 @@
   });
   document.addEventListener("click", (e) => {
     const f = e.target.closest("[data-filter]");
-    if (f) { filter = f.dataset.filter; renderLeft(); if (!$("#home-screen").hidden) App.renderHome(); return; }
+    if (f) {
+      filter = f.dataset.filter;
+      try { localStorage.setItem(FILTER_STORAGE, filter); } catch (_) { /* Optional browser preference. */ }
+      renderLeft(); if (!$("#home-screen").hidden) App.renderHome(); return;
+    }
     const sc = e.target.closest("[data-scene]");
     if (sc) { App.openScene(sc.dataset.scene).catch((err) => App.toast(err.message, "bad")); return; }
     if (e.target.closest("#home-back")) App.showHome(false);

@@ -434,7 +434,7 @@ class Handler(BaseHTTPRequestHandler):
         s = check.load(sid)
         if playable and any(f["level"] == "error" for f in check.check_scene(s)):
             return self.send(400, {"error": "Сначала исправьте ошибки сцены"})
-        if bool(s.get("reviewed", True)) != playable:
+        if s.get("reviewed") is not playable:
             s["reviewed"] = playable
             keep_history(sid)
             target.write_text(json.dumps(s, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
@@ -497,7 +497,8 @@ class Handler(BaseHTTPRequestHandler):
             out.append({"id": p.stem, "status": (s.get("compliance") or {}).get("status"),
                         "errors": sum(f["level"] == "error" for f in found),
                         "warns": sum(f["level"] == "warn" for f in found),
-                        "playable": p.stem != "mini_regulator" and bool(s.get("reviewed", True)),
+                        "playable": p.stem != "mini_regulator" and s.get("reviewed") is True,
+                        "reviewGroup": s.get("reviewGroup"),
                         "miniGame": s.get("miniGame"),
                         "regulator": bool(s.get("regulator", False)),
                         "layout": bool(s.get("layout")),

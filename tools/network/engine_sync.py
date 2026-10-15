@@ -297,7 +297,7 @@ def playable(sid: str) -> bool:
     if sid == "mini_regulator":
         return False  # Dedicated mini-game; never a junction in the city ride.
     net = check.load(sid)
-    return bool(net.get("reviewed", True))
+    return net.get("reviewed") is True
 
 
 def write_index() -> list:
