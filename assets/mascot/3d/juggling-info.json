@@ -1,0 +1,29 @@
+{
+  "clip": "JuggleLoop",
+  "duration_seconds": 7.2,
+  "authored_fps": 30,
+  "base_rhythm_seconds": 2.4,
+  "throw_interval_seconds": 0.4,
+  "ball_flight_seconds": 1.0,
+  "hand_dwell_seconds": 0.20000000000000018,
+  "glb_bytes": 523284,
+  "mesh_objects": 28,
+  "rendered_triangles": 14718,
+  "textures": 0,
+  "runtime_physics": false,
+  "runtime_inverse_kinematics": false,
+  "max_authored_contact_error": 0,
+  "ball_center_bounds_blender": {
+    "min": [
+      -0.9260000586509705,
+      -0.4619113504886627,
+      1.2461528778076172
+    ],
+    "max": [
+      0.9176000356674194,
+      -0.3181999921798706,
+      3.2730002403259277
+    ]
+  },
+  "source": "tools/mascot/animate_juggling.py; original approval model retained"
+}
