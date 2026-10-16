@@ -5,6 +5,7 @@ var failed := 0
 
 class FlatWorld extends "res://scripts/world.gd":
 	var support_queries := 0
+	var detour_searches := 0
 	var wall_z := INF
 	var visible_all := false
 	func _ready() -> void: pass
@@ -15,6 +16,9 @@ class FlatWorld extends "res://scripts/world.gd":
 	func _half_at(_z: float) -> float: return 4.2
 	func _pavement_height(_p: Vector3) -> float: return 0.18
 	func _walker_visible(p: Vector3) -> bool: return visible_all or absf(p.z) < 20.0
+	func _walker_detour(at: Vector3, toward: Vector3, walker: Dictionary, trams: Array) -> Vector3:
+		detour_searches += 1
+		return super._walker_detour(at, toward, walker, trams)
 
 class ProfileWorld extends "res://scripts/world.gd":
 	var forced_profile := "low"
@@ -117,6 +121,24 @@ func population_switches() -> void:
 	expect(knocked.knocked_down and not knocked.alive, "quality switches never resurrect a knocked-down person")
 	world.free()
 
+func detour_budget() -> void:
+	for profile in ["low", "mid", "high"]:
+		var world = flat(profile)
+		for i in world.walkers.size():
+			var w: Dictionary = world.walkers[i]
+			w.x = 5.2; w.z = 0.0; w.zw = 0.0
+			w.alive = w.budget_active
+			w.v = 1.2 if i%2 == 0 else -1.2
+			w.heading = 0.0 if i%2 == 0 else PI
+			w.walk_blocked = 1.0
+		var bounded := true
+		for frame in 180:
+			var previous: int = world.detour_searches
+			world._update_walkers(1.0/30.0 if profile == "low" else 1.0/60.0)
+			bounded = bounded and world.detour_searches - previous <= (1 if profile == "low" else 2)
+		expect(bounded and world.detour_searches > 0, profile + " crowded sidewalk respects per-frame detour budget")
+		world.free()
+
 func walker_pause_state(world) -> Array:
 	var state := []
 	for w in world.walkers:
@@ -188,6 +210,7 @@ func run() -> void:
 	expect(Quality.ambient_walkers("high", 12, 30) == 6, "adaptive CPU cap uses low population independently of render tier")
 	workload_and_safety()
 	population_switches()
+	detour_budget()
 	await real_profiles()
 	print("ambient budget: ", checks, " checks, ", failed, " failures")
 	quit(1 if failed else 0)

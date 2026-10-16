@@ -55,6 +55,7 @@ const WALKER_RETIRE_DISTANCE := 60.0
 const WALK_PLAN_INTERVAL := 0.1
 const WALKER_CLEARANCE := 0.7
 const WALKER_DETOUR_WAIT := 0.35
+var walker_detours_left := 0
 var walker_surfaces_active := false
 var walker_scene_surfaces: Array[Dictionary] = []
 var walker_street_surfaces: Array[Dictionary] = []
@@ -2764,14 +2765,19 @@ func _walker_visible(at: Vector3) -> bool:
 ## Rejecting every step inside the clearance radius traps both people forever.
 func _walker_people_clear(at: Vector3, next: Vector3, walker: Dictionary) -> bool:
 	var step := next - at
+	var low := Vector2(minf(at.x, next.x) - WALKER_CLEARANCE, minf(at.z, next.z) - WALKER_CLEARANCE)
+	var high := Vector2(maxf(at.x, next.x) + WALKER_CLEARANCE, maxf(at.z, next.z) + WALKER_CLEARANCE)
+	var step_squared := step.length_squared()
 	for other in walkers:
-		if other == walker or not other.get("alive", false): continue
+		if is_same(other, walker) or not other.get("alive", false): continue
+		# Most people are many metres away: only nearby neighbours need a sweep.
+		if other.x < low.x or other.x > high.x or other.zw < low.y or other.zw > high.y: continue
 		var offset := at - Vector3(other.x, 0, other.zw)
 		var distance := offset.length_squared()
 		if distance < WALKER_CLEARANCE * WALKER_CLEARANCE - 0.000001:
 			if offset.dot(step) < -0.000000001 or (offset + step).length_squared() <= distance + 0.000000001: return false
 		else:
-			var along := clampf(-offset.dot(step) / maxf(step.length_squared(), 0.000001), 0.0, 1.0)
+			var along := clampf(-offset.dot(step) / maxf(step_squared, 0.000001), 0.0, 1.0)
 			if (offset + step * along).length_squared() < WALKER_CLEARANCE * WALKER_CLEARANCE - 0.000001: return false
 	return true
 
@@ -2796,6 +2802,8 @@ func _walker_detour(at: Vector3, toward: Vector3, walker: Dictionary, trams: Arr
 
 func _update_walkers(delta: float) -> void:
 	_prepare_walker_surfaces()
+	# A jam must not make the whole crowd search five side routes in one frame.
+	walker_detours_left = 1 if tier == "low" or (walker_target > 0 and walker_target <= 6) else 2
 	var span := L * chunk_count
 	var base := drive.pos.z - L * float(cfg.chunks_behind)
 	var trams: Array = []
@@ -2854,7 +2862,8 @@ func _update_walkers(delta: float) -> void:
 				if free and not _walker_people_clear(at, next, w):
 					w.walk_blocked = float(w.get("walk_blocked", 0.0)) + delta
 					free = false
-					if w.walk_blocked >= WALKER_DETOUR_WAIT:
+					if w.walk_blocked >= WALKER_DETOUR_WAIT and walker_detours_left > 0:
+						walker_detours_left -= 1
 						# Retry at the planning cadence, not on every rendered frame.
 						w.walk_blocked = WALKER_DETOUR_WAIT - WALK_PLAN_INTERVAL
 						var detour := _walker_detour(at, direction, w, trams)
