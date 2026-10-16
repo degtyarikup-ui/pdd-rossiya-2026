@@ -1,4 +1,7 @@
-"""Unbuilt A/B exam questions and the author's first-pass decisions.
+"""A/B exam questions for the stand: their place in the game and the author's decisions.
+
+Each question has a status: in the game, an assistant variant awaiting approval, or
+still in the plan. Questions the author marked "no" stay readable here for undo only.
 
 Reading the pool never creates hundreds of editable scenes or game assets. A scene is
 generated in memory when opened and materialised by the editor's ordinary Save action.
@@ -126,15 +129,24 @@ class QuestionPool:
 
     def list(self) -> dict:
         self._load_sources()
-        implemented, drafts = set(), set()
+        # Each question's place in the game (status), shown in the stand:
+        # "game" — a reviewed scene or a road question the game already asks;
+        # "ai" — an assistant variant waiting for the author's approval;
+        # "plan" — everything else: unbuilt, drafts and built scenes not yet in the game.
+        reviewed, waiting, drafts, files = set(), set(), set(), set()
         for path in self.network.glob("ticket_*.json"):
             if not re.fullmatch(r"ticket_\d+_\d+", path.stem):
                 continue
+            files.add(path.stem)
             scene = json.loads(path.read_text(encoding="utf-8"))
-            # Authored assistant scenes have their own review queue, including
-            # before approval. They must not appear again as unbuilt questions.
             assistant = (scene.get("assistantReview") or {}).get("author") == "codex"
-            (drafts if scene.get("questionPool") and not assistant else implemented).add(path.stem)
+            if assistant and (scene["assistantReview"].get("status") != "approved" or scene.get("reviewed") is not True):
+                waiting.add(path.stem)
+            elif scene.get("reviewed") is True:
+                reviewed.add(path.stem)
+            elif scene.get("questionPool") and not assistant:
+                drafts.add(path.stem)
+        road = set()
         roads_path = self.network.parent / "roads" / "road_scenes.json"
         if roads_path.exists():
             roads = json.loads(roads_path.read_text(encoding="utf-8"))
@@ -143,29 +155,42 @@ class QuestionPool:
                     continue
                 match = re.fullmatch(r"road_(\d+)_(\d+)", scene.get("id", ""))
                 if match:
-                    implemented.add(scene_id(scene.get("category", "ab"), int(match[1]), int(match[2])))
+                    road.add(scene_id(scene.get("category", "ab"), int(match[1]), int(match[2])))
                 elif scene.get("sourceQuestionId"):
                     # Legacy road exports without coordinates can still be
                     # matched safely by their source identity AND illustration.
-                    implemented.update(sid for sid, source in self._sources.items()
-                                       if source["category"] == scene.get("category", "ab")
-                                       and source["sourceQuestionId"] == scene["sourceQuestionId"]
-                                       and source["image"] == scene.get("sourceImage"))
+                    road.update(sid for sid, source in self._sources.items()
+                                if source["category"] == scene.get("category", "ab")
+                                and source["sourceQuestionId"] == scene["sourceQuestionId"]
+                                and source["image"] == scene.get("sourceImage"))
+        in_game = reviewed | road
         decisions = self.decisions()
         records = []
         for group in self._groups:
             ids = {item["id"] for item in group["occurrences"]}
-            if ids & implemented:
-                continue
-            records.append({**copy.deepcopy(group), "decision": decisions.get(group["id"]),
-                            "sceneExists": group["id"] in drafts})
-        counts = {"total": len(records), "unreviewed": sum(q["decision"] is None for q in records),
-                  "yes": sum(q["decision"] == "yes" for q in records),
-                  "no": sum(q["decision"] == "no" for q in records)}
+            status = "game" if ids & in_game else "ai" if ids & waiting else "plan"
+            records.append({**copy.deepcopy(group), "decision": decisions.get(group["id"]), "status": status,
+                            "sceneExists": group["id"] in drafts, "hasScene": group["id"] in files})
+        # "no" questions are kept for undo and revision, but the stand hides them.
+        shown = [q for q in records if q["decision"] != "no"]
+        counts = {"total": len(records), "no": len(records) - len(shown),
+                  **{key: sum(q["status"] == key for q in shown) for key in ("game", "ai", "plan")}}
         return {"questions": records, "counts": counts}
 
     def get(self, sid: str) -> dict | None:
         return next((q for q in self.list()["questions"] if q["id"] == sid), None)
+
+    def draft_source(self, sid: str) -> dict | None:
+        """The question a scene is saved from while it is unbuilt or a pool draft.
+
+        Built scenes and questions already in the game are never turned back into drafts.
+        """
+        record = self.get(sid)
+        if record is None or record["status"] != "plan":
+            return None
+        if record["sceneExists"] or not (self.network / f"{sid}.json").exists():
+            return record
+        return None
 
     def decide(self, sid: str, decision) -> dict:
         if decision not in (None, "yes", "no"):

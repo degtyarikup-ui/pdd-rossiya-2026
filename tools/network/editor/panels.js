@@ -137,7 +137,7 @@
     renderHome.focus = false;
   };
   const renderHome = App.renderHome;
-  const count = (k) => k === "questions" ? (state.questions || []).length : state.scenes.filter((s) => s.id !== "mini_regulator" && (k === "assistant" ? pendingApproval(s) : !pendingApproval(s) && (k === "all" || (k === "game" && s.playable) || (k === "err" && s.errors)))).length;
+  const count = (k) => k === "questions" ? (typeof QuestionReview !== "undefined" ? QuestionReview.visibleCount() : 0) : state.scenes.filter((s) => s.id !== "mini_regulator" && (k === "assistant" ? pendingApproval(s) : !pendingApproval(s) && (k === "all" || (k === "game" && s.playable) || (k === "err" && s.errors)))).length;
   App.sceneFilter = () => filter;
   App.sceneFiltersCollapsed = () => filtersCollapsed;
   App.setSceneFiltersCollapsed = (collapsed) => {

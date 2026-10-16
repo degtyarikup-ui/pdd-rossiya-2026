@@ -22,7 +22,7 @@ function mount(search = '') {
   const opened = [], reviewed = [];
   const QuestionReview = { open: async id => reviewed.push(id || 'first-pending'), close() {}, setQuery() {},
     sidebarHtml: () => questions.map(question => `<button data-question="${question.id}">question photo</button>`).join(''),
-    homeHtml: () => '<div>question cards</div>' };
+    homeHtml: () => '<div>question cards</div>', visibleCount: () => questions.length };
   const App = { state: { scenes: structuredClone(scenes), questions, section: 'city' }, esc: value => String(value ?? ''), ic: () => '', thumbRev: {},
     sceneTitle: id => id.replace(/^ticket_/, '').replace('_', ' '), openScene: async id => opened.push(id) };
   vm.runInNewContext(source, { App, QuestionReview, document, URLSearchParams, location: { search }, Thumbs: { fillAll() {} }, Tools: { renderBar() {} },

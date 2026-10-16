@@ -425,7 +425,7 @@ class Handler(BaseHTTPRequestHandler):
         findings = check.check_scene(scene)
         if m[1] == "preview":
             return self.send(200, {"findings": findings, "build": build.build(scene), "edges": edges(scene)})
-        candidate = QUESTION_POOL.get(m[2])
+        candidate = QUESTION_POOL.draft_source(m[2])
         base_path = SIT / m[2] / "engine.json"
         if m[2] != "mini_regulator" and not base_path.exists() and candidate is None:
             return self.send(400, {"error": "У сцены нет основы игры (situations/<id>/engine.json)"})
@@ -468,9 +468,9 @@ class Handler(BaseHTTPRequestHandler):
                         "questionPool": scene.get("questionPool")})
 
     def question_scene(self, sid: str):
-        candidate = QUESTION_POOL.get(sid)
+        candidate = QUESTION_POOL.draft_source(sid)
         if candidate is None:
-            return self.send(404, {"error": "Вопрос не найден в списке для просмотра"})
+            return self.send(404, {"error": "Для этого вопроса нет сцены в редакторе"})
         exists = self.scene_exists(sid)
         scene = check.load(sid) if exists else QUESTION_POOL.template(sid)
         return self.send(200, {"scene": scene, "findings": check.check_scene(scene), "build": build.build(scene),

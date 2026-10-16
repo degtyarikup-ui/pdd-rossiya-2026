@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory(prefix='question-pool-godot-', dir=root / 'scra
     (net / 'build').mkdir(parents=True)
     sit.mkdir()
     pool = question_pool.QuestionPool()
-    records = pool.list()['questions']
+    records = [q for q in pool.list()['questions'] if q['status'] == 'plan' and q['decision'] != 'no']
     chosen = [next(q for q in records if q['category'] == 'ab' and not q['image']),
               next(q for q in records if q['category'] == 'ab' and q['image'])]
     engine_sync.engine_base.cache_clear()

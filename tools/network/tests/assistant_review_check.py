@@ -67,8 +67,8 @@ with tempfile.TemporaryDirectory(prefix="assistant-review-", dir=check.ROOT / "s
             listed = request("/api/scenes")[1]
             assert len(listed) == 1 and listed[0]["assistantReview"] == review
             assert listed[0]["playable"] is False
-            assert pool.get("ticket_1_1") is None, "Assistant drafts have their own queue, not duplicate plan entries"
-            assert pool.list()["counts"]["total"] == 1
+            assert pool.get("ticket_1_1")["status"] == "ai", "An assistant variant waits in Реализовано ИИ until approved"
+            assert pool.list()["counts"] == {"total": 2, "no": 1, "game": 0, "ai": 1, "plan": 0}
             assert engine_sync.write_index() == []
             reopened = request("/api/scene/ticket_1_1")[1]
             assert reopened["scene"]["assistantReview"] == review and not reopened["playable"]
@@ -105,6 +105,7 @@ with tempfile.TemporaryDirectory(prefix="assistant-review-", dir=check.ROOT / "s
             assert "questionPool" not in source
             assert source["decor"] == edited["decor"] and source["questionView"] == edited["questionView"]
             assert engine_sync.write_index() == ["ticket_1_1"]
+            assert pool.get("ticket_1_1")["status"] == "game", "An approved variant moves to В игре"
             assert request("/api/scenes")[1][0]["assistantReview"] == approved
 
             # A stale pre-approval browser copy may edit geometry, never approval/provenance.
@@ -116,7 +117,7 @@ with tempfile.TemporaryDirectory(prefix="assistant-review-", dir=check.ROOT / "s
             assert request("/api/game/include/ticket_1_1", {"playable": False})[1]["assistantReview"] == review
             withdrawn = check.load("ticket_1_1")
             assert withdrawn["reviewed"] is False and withdrawn["decor"] == source["decor"]
-            assert pool.get("ticket_1_1") is None and engine_sync.write_index() == []
+            assert pool.get("ticket_1_1")["status"] == "ai" and engine_sync.write_index() == [], "Withdrawn approval returns to Реализовано ИИ"
             assert request("/api/game/include/ticket_1_1", {"playable": True})[1]["assistantReview"] == approved
             assert check.load("ticket_1_1")["decor"] == source["decor"]
             assert pool.decisions_path.read_bytes() == decisions_before

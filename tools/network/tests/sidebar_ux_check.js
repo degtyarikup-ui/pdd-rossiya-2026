@@ -18,7 +18,7 @@ function mount() {
     objectOf: ref => ref.t === 'decor' ? state.S.decor.find(item => item.id === ref.id) : {}, sameRef: (a, b) => a.t === b.t && a.id === b.id,
     pickable: ref => !state.hidden.has(layerOf(ref)) && !state.locked.has(layerOf(ref)), nameOf: ref => ref.id,
     select(refs, { add = false } = {}) { state.sel = add ? [...state.sel, ...refs] : refs; }, toast() {} };
-  const QuestionReview = { close() {}, sidebarHtml: (_query, options) => `<div id="question-filter-options" ${options.filtersCollapsed ? 'hidden' : ''}>Subfilters</div>`, filterSummary: () => ({ label: 'Реализуем', count: 1 }) };
+  const QuestionReview = { close() {}, sidebarHtml: (_query, options) => `<div id="question-filter-options" ${options.filtersCollapsed ? 'hidden' : ''}>Subfilters</div>`, filterSummary: () => ({ label: 'Реализуем', count: 1 }), visibleCount: () => 1 };
   const context = vm.createContext({ App, document, QuestionReview, URLSearchParams, location: { search: '' }, localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
     Thumbs: { fillAll() {}, img: (kind, id) => `<img class="thumb" data-thumb="${kind}|${id}" alt="">` }, Tools: { renderBar() {}, current: () => 'select', opts: {} }, Layout: { nodeKind: () => 'junction' } });
   vm.runInContext(source('catalog.js') + '\nglobalThis.Catalog = Catalog;', context);

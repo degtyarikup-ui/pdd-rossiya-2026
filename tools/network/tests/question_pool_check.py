@@ -78,7 +78,9 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
     pool = question_pool.QuestionPool(questions, network, images)
     result = pool.list()
     records = {q["id"]: q for q in result["questions"]}
-    assert set(records) == {"ticket_1_1", "ticket_1_3", "ticket_1_4", "ticket_1_5", "ticket_2_1", "ticket_2_3"}
+    assert set(records) == {"ticket_1_1", "ticket_1_2", "ticket_1_3", "ticket_1_4", "ticket_1_5", "ticket_2_1", "ticket_2_2", "ticket_2_3"}
+    assert records["ticket_2_2"]["status"] == "game", "A road question the game already asks is in the game"
+    assert records["ticket_1_2"]["status"] == "plan", "A built scene that is not in the game yet stays in the plan"
     assert all(record["category"] == "ab" and record["categories"] == ["ab"] for record in records.values())
     assert all(o["category"] == "ab" for record in records.values() for o in record["occurrences"])
     assert len(records["ticket_1_5"]["occurrences"]) == 2, "Identical A/B task+picture copies still combine"
@@ -94,7 +96,7 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
     write(network / "ticket_cd_2_1.json", {"id": "ticket_cd_2_1", "reviewed": True})
     assert pool.get("ticket_1_5")["decision"] == "yes", "Existing A/B choices keep their stable keys"
     assert pool.get("ticket_2_3")["decision"] is None, "A different A/B picture must await its own review"
-    assert pool.list()["counts"] == {"total": 6, "unreviewed": 5, "yes": 1, "no": 0}
+    assert pool.list()["counts"] == {"total": 8, "no": 0, "game": 1, "ai": 0, "plan": 7}
     assert pool.source("ticket_cd_1_3") is None and pool.get("ticket_cd_1_3") is None
     try:
         pool.template("ticket_cd_1_3")
@@ -103,8 +105,8 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
         pass
     # Neither reading nor cache invalidation should consult the excluded source.
     (questions / "questions_cd.json").write_text("not JSON", encoding="utf-8")
-    assert pool.list()["counts"]["total"] == 6
-    assert question_pool.QuestionPool(questions, network, images).list()["counts"]["total"] == 6
+    assert pool.list()["counts"]["total"] == 8
+    assert question_pool.QuestionPool(questions, network, images).list()["counts"]["total"] == 8
 
     scene = pool.template("ticket_1_1")
     assert check.check_scene(scene) == []
@@ -166,7 +168,7 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
             return error.code, json.loads(error.read())
 
     try:
-        assert request("/api/questions")[1]["counts"]["total"] == 6
+        assert request("/api/questions")[1]["counts"]["total"] == 8
         assert request("/api/questions/ticket_1_1/decision", {"decision": "bad"})[0] == 400
         assert request("/api/questions/ticket_1_1/decision", {})[0] == 400
         assert request("/api/questions/ticket_99_1/decision", {"decision": "no"})[0] == 404
@@ -206,15 +208,17 @@ with tempfile.TemporaryDirectory(prefix="question-pool-check-", dir=scratch) as 
         assert request("/api/scene/ticket_1_1", scene)[0] == 200
         assert list((network / "history" / "ticket_1_1").glob("*.json"))
         assert request("/api/game/include/ticket_1_1", {"playable": True})[1]["playable"] is True
-        assert pool.get("ticket_1_1") is None
+        assert pool.get("ticket_1_1")["status"] == "game", "A promoted scene is in the game, not a pool draft"
         promoted = json.loads((network / "ticket_1_1.json").read_text())
         assert "questionPool" not in promoted and promoted["decor"][0]["pos"] == [38, 32]
+        assert request("/api/scene/ticket_1_1", promoted)[0] == 200
+        assert json.loads((network / "ticket_1_1.json").read_text())["reviewed"] is True, "Saving a game scene must not withdraw it"
         assert request("/api/game/include/ticket_1_1", {"playable": False})[1]["playable"] is False
-        assert pool.get("ticket_1_1") is None, "Disabling a promoted scene must not put it back in Questions"
+        assert pool.get("ticket_1_1")["status"] == "plan" and pool.get("ticket_1_1")["sceneExists"] is False, "Disabling a promoted scene must not restore a pool draft"
         promoted["questionPool"] = {"category": "ab"}  # A stale browser cannot undo promotion.
         assert request("/api/scene/ticket_1_1", promoted)[0] == 200
         assert "questionPool" not in json.loads((network / "ticket_1_1.json").read_text())
-        assert request("/api/questions/ticket_1_1/decision", {"decision": "no"})[0] == 404
+        assert request("/api/questions/ticket_1_1/decision", {"decision": "no"})[0] == 200, "Every A/B question keeps its stand decision"
     finally:
         http.shutdown()
         http.server_close()
@@ -228,11 +232,11 @@ real_pool = question_pool.QuestionPool()
 full = real_pool.list()
 ids = {record["id"] for record in full["questions"]}
 assert "ticket_5_12" in ids and "ticket_24_12" in ids
-assert "ticket_1_16" not in ids, "The game's 45 road questions are already implemented too"
+assert {record["id"]: record["status"] for record in full["questions"]}["ticket_1_16"] == "game", "The game's road questions are in the game"
 assert all(record["category"] == "ab" and record["categories"] == ["ab"] for record in full["questions"])
 assert not any(record["id"].startswith("ticket_cd_") for record in full["questions"])
 assert real_pool.source("ticket_cd_1_3") is None and real_pool.get("ticket_cd_1_3") is None
 assert len(real_pool._sources) == 800
 assert len(real_pool._groups) == 800
-assert sum(full["counts"][key] for key in ("unreviewed", "yes", "no")) == full["counts"]["total"]
-print(f"Question pool PASS: 800 A/B source questions/cards, {full['counts']['total']} remaining; C/D sources, saved approvals and templates excluded; HTTP sorting, blank geometry, export, history and permanent promotion")
+assert sum(full["counts"][key] for key in ("game", "ai", "plan", "no")) == full["counts"]["total"]
+print(f"Question pool PASS: 800 A/B source questions/cards, {full['counts']['total']} questions with stand statuses; C/D sources, saved approvals and templates excluded; HTTP sorting, blank geometry, export, history and permanent promotion")

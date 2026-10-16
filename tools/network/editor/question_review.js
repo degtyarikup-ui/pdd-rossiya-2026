@@ -5,8 +5,9 @@ const QuestionReview = (() => {
   const { state, esc, ic } = App;
   const $ = selector => document.querySelector(selector);
   const STORE = 'network-editor-question-review';
-  const FILTERS = [['yes', 'Запланированы к реализации'], ['pending', 'Решение ещё не принято'], ['no', 'Не добавляем'], ['all', 'Весь план вопросов']];
-  let filter = 'pending', query = '', selected = null, shown = false, loading = null;
+  // Statuses come from the server (question_pool.py): game, ai (awaiting approval), plan.
+  const FILTERS = [['game', 'В игре'], ['plan', 'Не в игре'], ['ai', 'Реализовано ИИ']];
+  let filter = 'plan', query = '', selected = null, shown = false, loading = null;
   let busy = false, editing = false, error = '', saved = '', history = [], imageZoom = false;
   let trail = [], trailIndex = -1, mode = 'review';
   state.questions = state.questions || [];
@@ -16,6 +17,8 @@ const QuestionReview = (() => {
     if (FILTERS.some(([key]) => key === preference.filter)) filter = preference.filter;
   } catch (_) { /* The server keeps decisions even without browser storage. */ }
   const pool = () => state.questions || [];
+  // Questions sorted as "не добавляем" leave the stand; their decision stays on the server for undo.
+  const kept = () => pool().filter(question => question.decision !== 'no');
   const current = () => pool().find(question => question.id === selected);
   const title = question => `Билет ${question.ticket} · вопрос ${question.number}`;
   const category = question => (question.categories || [question.category]).filter(Boolean).map(key => ({ab:'A/B',cd:'C/D'}[key] || key)).join(' · ');
@@ -28,17 +31,19 @@ const QuestionReview = (() => {
     return needle.split(' ').every(word => haystack.includes(word));
   }
   function list(text = query) {
-    return pool().filter(question => matches(question, text) && (filter === 'all' || (filter === 'pending' ? !question.decision : question.decision === filter)));
+    return kept().filter(question => matches(question, text) && question.status === filter);
   }
-  const count = key => key === 'all' ? pool().length : pool().filter(question => key === 'pending' ? !question.decision : question.decision === key).length;
+  const count = key => kept().filter(question => question.status === key).length;
   function badge(question) {
-    return question.decision === 'yes' ? '<i class="badge good">Реализуем</i>' : question.decision === 'no' ? '<i class="badge bad">Не добавляем</i>' : '<i class="badge">Не просмотрен</i>';
+    if (question.status === 'game') return '<i class="badge good">В игре</i>';
+    if (question.status === 'ai') return '<i class="badge ai">Реализовано ИИ</i>';
+    return question.decision === 'yes' ? '<i class="badge good">Реализуем</i>' : '<i class="badge">Не просмотрен</i>';
   }
   function photo(question, cls = '', lazy = true) {
     return question.imageUrl ? `<img class="${cls}" src="${esc(question.imageUrl)}" alt="Иллюстрация к вопросу" ${lazy ? 'loading="lazy"' : ''}>` : `<span class="qr-no-photo ${cls}">${ic('image')}<span>Без иллюстрации</span></span>`;
   }
   function filterHtml() {
-    return `<label class="scene-status-filter question-filters">Решение по вопросу<select data-question-status aria-label="Решение по вопросу" ${busy ? 'disabled' : ''}>${FILTERS.map(([key, label]) => `<option value="${key}" ${filter === key ? 'selected' : ''}>${label} · ${count(key)}</option>`).join('')}</select></label>`;
+    return `<label class="scene-status-filter question-filters">Показать вопросы<select data-question-status aria-label="Показать вопросы" ${busy ? 'disabled' : ''}>${FILTERS.map(([key, label]) => `<option value="${key}" ${filter === key ? 'selected' : ''}>${label} · ${count(key)}</option>`).join('')}</select></label>`;
   }
   function sidebarHtml(text = query, { filtersCollapsed = false } = {}) {
     if (!state.questionsLoaded) return `<div class="question-pane-tools"><p class="muted">${error ? esc(error) : 'Загружаем вопросы из билетов…'}</p>${error ? '<button class="btn wide" data-qr="retry">Повторить загрузку</button>' : ''}</div>`;
@@ -95,6 +100,7 @@ const QuestionReview = (() => {
     setSelected(id);
     imageZoom = false;
     error = '';
+    saved = '';
     updateLocation();
     render();
     refreshPanels();
@@ -109,9 +115,9 @@ const QuestionReview = (() => {
     render();
     try { await load(); } catch (_) { return; }
     const requested = id && pool().find(question => question.id === id);
-    if (requested && !list().includes(requested)) { filter = requested.decision || 'pending'; remember(); }
+    if (requested && !list().includes(requested)) { filter = requested.status || 'plan'; remember(); }
     const keep = list().find(question => question.id === selected);
-    choose(requested?.id || keep?.id || list()[0]?.id);
+    choose(requested?.id || keep?.id || (list().find(question => !question.decision) || list()[0])?.id);
   }
   function close() {
     if (!shown) return;
@@ -127,7 +133,7 @@ const QuestionReview = (() => {
     if (step < 0 || trailIndex < trail.length - 1) {
       const index = trailIndex + step;
       if (index >= 0 && index < trail.length) {
-        trailIndex = index; selected = trail[index]; imageZoom = false; error = ''; updateLocation(); refresh();
+        trailIndex = index; selected = trail[index]; imageZoom = false; error = ''; saved = ''; updateLocation(); refresh();
       }
       return;
     }
@@ -141,7 +147,8 @@ const QuestionReview = (() => {
   }
   async function decide(decision) {
     const question = current();
-    if (busy || !question || !['yes', 'no'].includes(decision)) return;
+    // Questions already in the game or waiting for AI approval have no plan decision.
+    if (busy || !question || question.status !== 'plan' || !['yes', 'no'].includes(decision)) return;
     const id = question.id, before = question.decision || null;
     busy = true; error = ''; saved = '';
     render();
@@ -152,8 +159,9 @@ const QuestionReview = (() => {
       state.questions = pool().map(item => item.id === id ? updated : item);
       if (before !== decision) history.push({ id, before, after: decision });
       saved = `${title(question)}: ${decision === 'yes' ? 'реализуем' : 'не добавляем'} · сохранено`;
-      const candidates = filter === 'pending' || filter === 'all' ? pool().filter(item => !item.decision && matches(item)) : list().filter(item => item.id !== id);
-      setSelected(nextAfter(id, candidates)?.id);
+      const candidates = list().filter(item => item.id !== id);
+      const undecided = candidates.filter(item => !item.decision);
+      setSelected(nextAfter(id, undecided.length ? undecided : candidates)?.id);
       imageZoom = false;
       updateLocation();
     } catch (reason) {
@@ -171,7 +179,8 @@ const QuestionReview = (() => {
       const record = response.question || response;
       state.questions = pool().map(item => item.id === previous.id ? { ...item, ...record, decision: previous.before } : item);
       history.pop();
-      filter = previous.before || 'pending';
+      // A question sorted "no" is hidden; undo must bring it back into the group it belongs to.
+      filter = pool().find(item => item.id === previous.id)?.status || 'plan';
       remember();
       setSelected(previous.id);
       saved = 'Последнее решение отменено · сохранено';
@@ -197,14 +206,18 @@ const QuestionReview = (() => {
     if (!mount) return;
     const question = current(), visible = list();
     const index = visible.findIndex(item => item.id === selected);
-    const complete = state.questionsLoaded && !question && !count('pending') && pool().length;
     const disabled = busy || editing ? 'disabled' : '';
-    mount.innerHTML = `<header class="qr-head"><div><span class="qr-eyebrow">ВОПРОСЫ ДЛЯ ИГРЫ</span><h1>${question ? esc(title(question)) : complete ? 'Первый проход завершён' : 'Отбор вопросов'}</h1>${question ? `<p>${esc(category(question))} ${badge(question)}</p>` : ''}</div>
-      <div class="qr-mode"><button class="btn primary" data-qr="editor" ${!question || disabled ? 'disabled' : ''}>${ic('cursor')}${editing ? 'Открываем…' : 'Открыть в редакторе'}</button><button class="icon-btn" data-qr="close" aria-label="Вернуться к текущей сцене" ${disabled}>${ic('x')}</button></div></header>
-      <div class="qr-progress"><span><b>${count('yes') + count('no')}</b> из ${pool().length} просмотрено</span><progress max="${Math.max(1, pool().length)}" value="${count('yes') + count('no')}" aria-label="Просмотренные вопросы"></progress><span>${count('yes')} реализуем · ${count('no')} не добавляем · ${count('pending')} осталось</span></div>
+    // Only plan questions take a decision; game and AI questions are handled elsewhere.
+    const decidable = Boolean(question && question.status === 'plan');
+    // A road question already in the game has no ticket scene to build or edit.
+    const editable = Boolean(question && (question.hasScene || question.status !== 'game'));
+    const total = Math.max(1, kept().length);
+    mount.innerHTML = `<header class="qr-head"><div><span class="qr-eyebrow">ВОПРОСЫ ДЛЯ ИГРЫ</span><h1>${question ? esc(title(question)) : 'Отбор вопросов'}</h1>${question ? `<p>${esc(category(question))} ${badge(question)}</p>` : ''}</div>
+      <div class="qr-mode"><button class="btn primary" data-qr="editor" ${!editable || disabled ? 'disabled' : ''} title="${editable ? '' : 'Дорожный вопрос уже в игре: отдельной сцены в редакторе нет'}">${ic('cursor')}${editing ? 'Открываем…' : 'Открыть в редакторе'}</button><button class="icon-btn" data-qr="close" aria-label="Вернуться к текущей сцене" ${disabled}>${ic('x')}</button></div></header>
+      <div class="qr-progress"><span><b>${count('game')}</b> из ${kept().length} в игре</span><progress max="${total}" value="${count('game')}" aria-label="Вопросы в игре"></progress><span>${count('ai')} реализовано ИИ · ${count('plan')} не в игре</span></div>
       ${error ? `<div class="qr-error" role="alert">${ic('alert')}<span>${esc(error)}</span>${!state.questionsLoaded ? '<button class="btn" data-qr="retry">Повторить</button>' : ''}</div>` : ''}
-      <div class="qr-scroll">${!state.questionsLoaded ? `<div class="qr-empty"><h2>${error ? 'Вопросы не загружены' : 'Загружаем экзаменационные билеты…'}</h2></div>` : question ? `<article class="qr-card"><div class="qr-photo">${question.imageUrl ? `<button data-qr="zoom" aria-label="Увеличить иллюстрацию">${photo(question, '', false)}<span class="qr-zoom-hint">${ic('zoomin')}Увеличить</span></button>` : photo(question)}</div><div class="qr-question"><h2>${esc(question.question)}</h2><ol class="qr-answers">${(question.answers || []).map(answer => `<li class="${answer.correct ? 'correct' : ''}"><span>${esc(answer.text)}</span>${answer.correct ? `<span class="qr-correct">${ic('check-circle')}Верный ответ</span>` : ''}</li>`).join('')}</ol>${question.comment ? `<details class="qr-comment"><summary>Пояснение к вопросу</summary><div>${esc(question.comment).replace(/\n/g, '<br>')}</div></details>` : ''}</div></article>` : `<div class="qr-empty">${ic('check-circle')}<h2>${complete ? 'Все вопросы распределены' : 'В этой группе больше нет вопросов'}</h2><p>${complete ? 'Откройте «Реализуем», чтобы начать строить сцены. Любое решение можно пересмотреть.' : query ? 'Измените поиск или выберите другую группу слева.' : 'Выберите другую группу слева, чтобы посмотреть принятые решения.'}</p><div>${filterHtml()}</div>${count('yes') ? '<button class="btn primary" data-qfilter="yes">Перейти к вопросам, которые реализуем</button>' : ''}</div>`}</div>
-      <footer class="qr-foot"><div class="qr-feedback" role="status">${busy ? 'Сохраняем решение…' : saved ? esc(saved) : '«Да» — запланировать сцену. «Нет» — исключить из планов.'}</div><div class="qr-actions"><button class="qr-decision no" data-qr="no" ${!question || disabled ? 'disabled' : ''}>${ic('x')}Нет — не добавляем<kbd>←</kbd></button><button class="qr-decision yes" data-qr="yes" ${!question || disabled ? 'disabled' : ''}>${ic('check-circle')}Да — реализуем<kbd>→</kbd></button></div><div class="qr-navigation"><button class="btn ghost" data-qr="previous" ${trailIndex <= 0 || disabled ? 'disabled' : ''}>${ic('chevron', 'qr-back')}Предыдущий</button><button class="btn ghost" data-qr="undo" ${!history.length || disabled ? 'disabled' : ''}>${ic('undo')}Отменить решение</button><button class="btn ghost" data-qr="next" ${(trailIndex >= trail.length - 1 && (index < 0 && !visible.length || index >= visible.length - 1)) || disabled ? 'disabled' : ''}>Пропустить${ic('chevron')}</button></div></footer>
+      <div class="qr-scroll">${!state.questionsLoaded ? `<div class="qr-empty"><h2>${error ? 'Вопросы не загружены' : 'Загружаем экзаменационные билеты…'}</h2></div>` : question ? `<article class="qr-card"><div class="qr-photo">${question.imageUrl ? `<button data-qr="zoom" aria-label="Увеличить иллюстрацию">${photo(question, '', false)}<span class="qr-zoom-hint">${ic('zoomin')}Увеличить</span></button>` : photo(question)}</div><div class="qr-question"><h2>${esc(question.question)}</h2><ol class="qr-answers">${(question.answers || []).map(answer => `<li class="${answer.correct ? 'correct' : ''}"><span>${esc(answer.text)}</span>${answer.correct ? `<span class="qr-correct">${ic('check-circle')}Верный ответ</span>` : ''}</li>`).join('')}</ol>${question.comment ? `<details class="qr-comment"><summary>Пояснение к вопросу</summary><div>${esc(question.comment).replace(/\n/g, '<br>')}</div></details>` : ''}</div></article>` : `<div class="qr-empty">${ic('check-circle')}<h2>В этой группе вопросов нет</h2><p>${query ? 'Измените поиск или выберите другую группу слева.' : 'Выберите другую группу слева, чтобы посмотреть остальные вопросы.'}</p><div>${filterHtml()}</div></div>`}</div>
+      <footer class="qr-foot"><div class="qr-feedback" role="status">${busy ? 'Сохраняем решение…' : saved ? esc(saved) : !question ? '' : question.status === 'game' ? 'Вопрос уже в игре.' : question.status === 'ai' ? 'Вариант ИИ ждёт одобрения в разделе «На одобрение».' : '«Да» — запланировать сцену. «Нет» — исключить из планов.'}</div><div class="qr-actions"><button class="qr-decision no" data-qr="no" ${!decidable || disabled ? 'disabled' : ''}>${ic('x')}Нет — не добавляем<kbd>←</kbd></button><button class="qr-decision yes" data-qr="yes" ${!decidable || disabled ? 'disabled' : ''}>${ic('check-circle')}Да — реализуем<kbd>→</kbd></button></div><div class="qr-navigation"><button class="btn ghost" data-qr="previous" ${trailIndex <= 0 || disabled ? 'disabled' : ''}>${ic('chevron', 'qr-back')}Предыдущий</button><button class="btn ghost" data-qr="undo" ${!history.length || disabled ? 'disabled' : ''}>${ic('undo')}Отменить решение</button><button class="btn ghost" data-qr="next" ${(trailIndex >= trail.length - 1 && (index < 0 && !visible.length || index >= visible.length - 1)) || disabled ? 'disabled' : ''}>Пропустить${ic('chevron')}</button></div></footer>
       ${imageZoom && question?.imageUrl ? `<div class="qr-lightbox" role="dialog" aria-modal="true" aria-label="Иллюстрация к вопросу" data-qr="zoom-close"><button class="icon-btn" data-qr="zoom-close" aria-label="Закрыть иллюстрацию">${ic('x')}</button>${photo(question, '', false)}</div>` : ''}`;
   }
   function setQuery(value) {
@@ -268,6 +281,6 @@ const QuestionReview = (() => {
     else if (action === 'zoom' || action === 'zoom-close') { imageZoom = action === 'zoom'; render(); }
   });
   return { load, open, close, active: () => shown, keydown, currentId: () => selected, refresh,
-    sidebarHtml, homeHtml, setQuery, setFilter, list, count, mode: () => mode,
+    sidebarHtml, homeHtml, setQuery, setFilter, list, count, visibleCount: () => kept().length, mode: () => mode,
     filterSummary: text => ({ label: FILTERS.find(([key]) => key === filter)[1], count: list(text).length }) };
 })();
