@@ -76,6 +76,7 @@ var cam_shake := 0.0
 # Input tracking
 var _touches := {}
 var _touch_start_pos := {}
+var _touch_dragged := {}
 var _pinch_span := 0.0
 var _pinch_zoom := 1.0
 var _is_dragging := false
@@ -404,7 +405,7 @@ func _is_any_actor_driving() -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not ready_for_play or _exiting or _suspended or is_game_over or is_resolving or _round_completing or _is_any_actor_in_motion():
+	if not ready_for_play or _exiting or _suspended or is_game_over:
 		return
 
 	if event is InputEventMouseButton:
@@ -414,19 +415,23 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
 			_set_zoom(_target_cam_zoom + 0.08)
 		elif mb.button_index == MOUSE_BUTTON_LEFT:
+			if not _touches.is_empty():
+				return
 			if mb.pressed:
 				_drag_start = mb.position
 				_is_dragging = false
 			else:
-				if not _is_dragging and mb.position.distance_to(_drag_start) < 14.0:
+				if not _is_dragging and not _touch_dragged.values().has(true) and mb.position.distance_to(_drag_start) < 12.0:
 					_handle_screen_tap(mb.position)
 				_is_dragging = false
 
 	elif event is InputEventMouseMotion and (event as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
+		if not _touches.is_empty():
+			return
 		var mm := event as InputEventMouseMotion
-		if not _is_dragging and mm.position.distance_to(_drag_start) >= 14.0:
+		if not _is_dragging and mm.position.distance_to(_drag_start) >= 12.0:
 			_is_dragging = true
-		if _is_dragging and _pick_actor(_drag_start) == null:
+		if _is_dragging:
 			_target_cam_yaw -= mm.relative.x * 0.005
 			_target_cam_pitch = clampf(_target_cam_pitch - mm.relative.y * 0.004, -1.25, -0.28)
 
@@ -435,6 +440,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if st.pressed:
 			_touches[st.index] = st.position
 			_touch_start_pos[st.index] = st.position
+			_touch_dragged[st.index] = false
 			if _touches.size() == 2:
 				_had_multitouch = true
 				var t_keys: Array = _touches.keys()
@@ -442,15 +448,20 @@ func _unhandled_input(event: InputEvent) -> void:
 				_pinch_zoom = _target_cam_zoom
 		else:
 			var start: Vector2 = _touch_start_pos.get(st.index, st.position)
-			if not _had_multitouch and _touches.size() == 1 and st.position.distance_to(start) < 14.0:
+			var dragged: bool = _touch_dragged.get(st.index, false)
+			if not _had_multitouch and not dragged and _touches.size() == 1 and st.position.distance_to(start) < 12.0:
 				_handle_screen_tap(st.position)
 			_touches.erase(st.index)
 			_touch_start_pos.erase(st.index)
+			_touch_dragged.erase(st.index)
 			if _touches.is_empty(): _had_multitouch = false
 
 	elif event is InputEventScreenDrag:
 		var sd := event as InputEventScreenDrag
 		_touches[sd.index] = sd.position
+		if not _touch_start_pos.has(sd.index):
+			_touch_start_pos[sd.index] = sd.position - sd.relative
+			_touch_dragged[sd.index] = sd.relative.length() >= 12.0
 		if _touches.size() == 2:
 			var t_keys: Array = _touches.keys()
 			var span: float = _touches[t_keys[0]].distance_to(_touches[t_keys[1]])
@@ -458,7 +469,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_set_zoom(_pinch_zoom * (_pinch_span / maxf(span, 1.0)))
 		elif _touches.size() == 1:
 			var start_pos: Vector2 = _touch_start_pos.get(sd.index, sd.position)
-			if sd.position.distance_to(start_pos) >= 14.0 and _pick_actor(start_pos) == null:
+			if not _touch_dragged.get(sd.index, false) and sd.position.distance_to(start_pos) >= 12.0:
+				_touch_dragged[sd.index] = true
+			if _touch_dragged.get(sd.index, false):
 				_target_cam_yaw -= sd.relative.x * 0.005
 				_target_cam_pitch = clampf(_target_cam_pitch - sd.relative.y * 0.004, -1.25, -0.28)
 
@@ -937,30 +950,23 @@ func _process(delta: float) -> void:
 			seconds_left = 0
 			_end_game()
 
-	var in_motion := _is_any_actor_in_motion() or is_resolving
-	if in_motion:
-		_target_cam_yaw = cam_yaw
-		_target_cam_pitch = cam_pitch
-		_target_cam_zoom = cam_zoom
-		cam_shake = 0.0
-	else:
-		var cam_changed := false
-		if absf(cam_yaw - _target_cam_yaw) > 0.0001:
-			cam_yaw = lerp_angle(cam_yaw, _target_cam_yaw, minf(1.0, 16.0 * delta))
-			cam_changed = true
-		if absf(cam_pitch - _target_cam_pitch) > 0.0001:
-			cam_pitch = lerpf(cam_pitch, _target_cam_pitch, minf(1.0, 16.0 * delta))
-			cam_changed = true
-		if absf(cam_zoom - _target_cam_zoom) > 0.0001:
-			cam_zoom = lerpf(cam_zoom, _target_cam_zoom, minf(1.0, 14.0 * delta))
-			cam_changed = true
+	var cam_changed := false
+	if absf(cam_yaw - _target_cam_yaw) > 0.0001:
+		cam_yaw = lerp_angle(cam_yaw, _target_cam_yaw, minf(1.0, 16.0 * delta))
+		cam_changed = true
+	if absf(cam_pitch - _target_cam_pitch) > 0.0001:
+		cam_pitch = lerpf(cam_pitch, _target_cam_pitch, minf(1.0, 16.0 * delta))
+		cam_changed = true
+	if absf(cam_zoom - _target_cam_zoom) > 0.0001:
+		cam_zoom = lerpf(cam_zoom, _target_cam_zoom, minf(1.0, 14.0 * delta))
+		cam_changed = true
 
-		if cam_shake > 0:
-			cam_shake = maxf(0, cam_shake - delta * 2.0)
-			cam_changed = true
+	if cam_shake > 0:
+		cam_shake = maxf(0, cam_shake - delta * 2.0)
+		cam_changed = true
 
-		if cam_changed:
-			_update_camera()
+	if cam_changed:
+		_update_camera()
 	_update_occlusion(delta)
 
 	if auto_play and not _suspended and not _round_completing and not _is_any_actor_driving() and not is_resolving and not is_game_over and not active_actors.is_empty():
@@ -1044,6 +1050,7 @@ func _update_gameplay_processing() -> void:
 func _clear_input() -> void:
 	_touches.clear()
 	_touch_start_pos.clear()
+	_touch_dragged.clear()
 	_pinch_span = 0.0
 	_is_dragging = false
 	_had_multitouch = false
@@ -1100,8 +1107,6 @@ func _set_zoom(z: float) -> void:
 
 
 func _reset_camera() -> void:
-	if _is_any_actor_in_motion():
-		return
 	cam_yaw = 0.93607
 	cam_pitch = -0.8143
 	cam_zoom = 1.0
@@ -1208,6 +1213,8 @@ func _update_occlusion(delta: float) -> void:
 			targets.append(item.global_position + Vector3.UP * 3.0)
 	for corner in [Vector3(-6, 0.2, -6), Vector3(6, 0.2, -6), Vector3(-6, 0.2, 6), Vector3(6, 0.2, 6)]:
 		targets.append(corner)
+	for approach in [Vector3(0, 0.2, -14), Vector3(0, 0.2, 14), Vector3(-14, 0.2, 0), Vector3(14, 0.2, 0)]:
+		targets.append(approach)
 	junction.sc.update_occluders(camera, targets, delta)
 
 

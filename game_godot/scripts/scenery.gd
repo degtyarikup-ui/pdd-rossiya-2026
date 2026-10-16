@@ -367,9 +367,10 @@ func update_occluders(camera: Camera3D, targets: Array[Vector3], delta: float) -
 						if _occlusion_ray_near(ray,centre,radius*radius):
 							nearby = true; break
 			else:
-				nearby = not targets.is_empty() and (node.global_transform*xf).origin.distance_to(targets[0]) < 85.0
+				nearby = not targets.is_empty() and ((node.global_transform*xf).origin.distance_to(targets[0]) < 85.0 or (node.global_transform*xf).origin.distance_to(camera.global_position) < 25.0)
 			if not nearby and not state.fades.has(i): continue
 			var blocked := false
+			var camera_intersecting := false
 			if nearby:
 				var world: Transform3D = node.global_transform * xf
 				var inv := world.affine_inverse()
@@ -379,10 +380,21 @@ func update_occluders(camera: Camera3D, targets: Array[Vector3], delta: float) -
 							blocked=true;break
 				else:
 					var origin: Vector3 = inv * camera.global_position
-					for target in targets:
-						if bounds.intersects_segment(origin,inv*target) != null:
-							blocked=true;break
-			var opacity := move_toward(float(state.fades.get(i,1.0)),0.25 if blocked else 1.0,delta*4.0)
+					if bounds.grow(camera.near + 4.0).has_point(origin):
+						camera_intersecting = true
+						blocked = true
+					if not blocked:
+						for target in targets:
+							var hit = bounds.intersects_segment(origin,inv*target)
+							if hit != null:
+								blocked = true
+								if origin.distance_to(hit) < 8.0:
+									camera_intersecting = true
+								break
+			var target_alpha := 1.0
+			if blocked:
+				target_alpha = 0.15 if camera_intersecting else 0.25
+			var opacity := move_toward(float(state.fades.get(i,1.0)), target_alpha, delta*4.0)
 			if opacity >= 0.999:
 				if state.originals.has(i):
 					set_opaque_pose(node, i, xf)
