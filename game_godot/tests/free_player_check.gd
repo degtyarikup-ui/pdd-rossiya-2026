@@ -2,6 +2,9 @@
 extends SceneTree
 var failures := 0
 var checks := 0
+class ArrivalWorld extends "res://scripts/world.gd":
+	# Window focus is incidental to native automation; lifecycle tests cover pausing.
+	func _on_pause(_from_notification := false) -> void: pass
 func check(ok: bool, message: String) -> void:
 	checks += 1
 	if not ok:
@@ -9,6 +12,73 @@ func check(ok: bool, message: String) -> void:
 		push_error(message)
 func _initialize() -> void:
 	run.call_deferred()
+
+## Narrow five-metre road: the full steering-assist correction clips a kerb.
+## Before the fix the unchanged yaw kept sliding past the 0.4 m question gate.
+func narrow_approach(world: Node, sit: Situation, template: Dictionary, dt: float) -> void:
+	var network := RoadNetwork.new()
+	network.data = template.duplicate(true)
+	network.data.layout.player = {"mode":"free","pose":{"x":-1.014,"z":-12.559,"yaw":0.0}}
+	network.data.crop = 90.0
+	var rectangle := PackedVector2Array([Vector2(-2.5,-90),Vector2(2.5,-90),Vector2(2.5,90),Vector2(-2.5,90)])
+	network._roads = [{"outer":rectangle,"holes":[],"box":RoadNetwork._box(rectangle)}]
+	network._routes["approach"] = PackedVector2Array([Vector2(-1.25,-80),Vector2(-1.014,-12.559)])
+	network.connections = {"entry":{},"exits":{},"ports":[]}
+	network.build = {"surfaces":[{"id":"road","layer":"asphalt","colour":"#2c2f36","y":0.0,
+		"verts":[-2.5,-90,2.5,-90,2.5,90,-2.5,90],"idx":[0,1,2,0,2,3]}],
+		"kerbs":{"segs":[],"y0":0.0,"y1":0.18}}
+	sit.network = network
+	sit.position = Vector3.ZERO
+	for child in sit.get_children():
+		if child is Node3D: child.visible = child.name == "surfaces"
+	sit.get_node("surfaces").mesh = network.surface_mesh(world.scenery)
+	sit._ground_maps.clear()
+	world.current = {"sit":sit,"junction":Junction.new(sit),"zc":0.0}
+	world.current.junction.motions.clear()
+	world.blanks = [[-90.0,90.0]]
+	world._rebuild_ring()
+	world.ui.hide_cards()
+	world._clear_question_signals()
+	world.controls.set_active(true)
+	world.drive = Drive.new()
+	world.drive.world = world
+	world.drive.guide = world._guide_target
+	world.controls.gas = true; world.controls.brake = false; world.controls.steer = 0.0
+	world.drive.pos = Vector3(-1.62,0,-57.559)
+	world.drive.yaw = -0.00885
+	world.drive.speed = 0.0; world.drive.recovery = 0.0
+	world.drive._contact_key = null
+	world.drive_faults.clear()
+	world.phase = "driving"
+	check(world.drive.on_road(),"narrow arrival starts with the whole car on the road")
+	var supported := true
+	var max_step := 0.0
+	var seconds := 0.0
+	for i in ceili(120.0/dt):
+		if world.phase == "question": break
+		var before: Vector3 = world.drive.pos
+		world._process(dt)
+		seconds += dt
+		supported = supported and world.drive.on_road()
+		max_step = maxf(max_step,before.distance_to(world.drive.pos))
+	check(world.phase == "question" and world.ui.counting(),"two-minute narrow-road regression reaches the actual question")
+	check(seconds < 25.0,"narrow arrival does not spend minutes crawling past the question")
+	check(supported and max_step < .46,"partial assist keeps the whole car on asphalt without teleporting")
+	check(not world.drive_faults.has("offroad"),"supported automatic correction creates no offroad penalty")
+	check(world.drive.pos.is_equal_approx(network.stop_point()),"narrow arrival preserves the exact authored question pose")
+	print("narrow assisted arrival dt=",dt," seconds=",seconds)
+	if DisplayServer.get_name() != "headless":
+		world.player.position = world.drive.pos
+		world.player.rotation.y = world.drive.yaw
+		world.camera.position = world.drive.pos + Vector3(0,35,-25)
+		world.camera.look_at(world.drive.pos + Vector3(0,0,6))
+		world.camera.size = 30.0
+		await create_timer(.4).timeout
+		await RenderingServer.frame_post_draw
+		var out := ProjectSettings.globalize_path("res://../output/infinite-road")
+		DirAccess.make_dir_recursive_absolute(out)
+		check(root.get_texture().get_image().save_png(out.path_join("narrow-%d.png" % roundi(1.0/dt))) == OK,"native narrow arrival frame is saved")
+
 func run() -> void:
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/free_player.json"))
 	var network := RoadNetwork.new()
@@ -34,7 +104,9 @@ func run() -> void:
 	network.connections = SceneStitch.describe(fixture, {})
 	check(network.connections.entry.boundary.z < -80, "city connection remains at entry border, separate from ring pose")
 	var world: Node = load("res://main.tscn").instantiate()
+	world.set_script(ArrivalWorld)
 	root.add_child(world)
+	world.voice.set_enabled(false)
 	world.set_process(false)
 	for i in 5: await process_frame
 	for i in 900:
@@ -174,6 +246,7 @@ func run() -> void:
 		world._process(1.0 / 60.0)
 	check(world.drive_faults.has("offroad"), "manual kerb attempt retains its road fault")
 	check(world.drive.on_road(), "manual kerb collision keeps whole body solid on road")
+	for dt in [1.0/30.0,0.05]: await narrow_approach(world,sit,fixture,dt)
 	world.queue_free()
 	await process_frame
 	await process_frame

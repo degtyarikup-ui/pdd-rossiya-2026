@@ -71,9 +71,15 @@ def main():
     secret = ROOT / 'secrets/install_notify_secret.txt'
     if secret.is_file():
         command += ['--dart-define=INSTALL_NOTIFY_SECRET=' + secret.read_text().strip()]
-    if not (ROOT / 'android/godot/assets/project.binary').is_file():
-        print('Godot ещё не экспортирован: игра недоступна. Для игры: ./scripts/godot_android_assets.sh', flush=True)
     env = dict(os.environ, ANDROID_HOME=str(sdk))
+    if (ROOT / 'android/godot/assets/project.binary').is_file() or shutil.which('godot'):
+        # The Git label describes these sources, never an older cached Godot export.
+        print('Пересобираем Godot из текущих исходников перед сборкой APK.', flush=True)
+        exported = subprocess.run(['bash', str(ROOT / 'scripts/godot_android_assets.sh')], cwd=ROOT, env=env)
+        if exported.returncode:
+            return exported.returncode
+    else:
+        print('Godot ещё не экспортирован: игра недоступна. Для игры: ./scripts/godot_android_assets.sh', flush=True)
     with fallback(env) if args.download_fallback else contextlib.nullcontext(env) as child:
         result = subprocess.run(command, cwd=ROOT, env=child)
     if result.returncode and not args.download_fallback:

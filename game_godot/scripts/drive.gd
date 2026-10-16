@@ -135,8 +135,17 @@ func integrate(dt: float, limit: float, stop_z := INF) -> void:
 		# Steering assist obeys the same footprint as translation. Capture the angle before
 		# correction so a blocked rotation cannot become the movement's rollback angle.
 		if not on_road(pos, yaw):
+			var wanted_yaw := yaw
 			yaw = before_assist
-		else:
+			# Near a kerb a full correction may not fit, while a smaller inward
+			# rotation does. Rejecting every correction leaves the car sliding past
+			# its question forever on narrow approaches.
+			for fraction in [0.5, 0.25, 0.125, 0.0625]:
+				var candidate := lerp_angle(before_assist, wanted_yaw, fraction)
+				if on_road(pos, candidate):
+					yaw = candidate
+					break
+		if not is_equal_approx(yaw, before_assist):
 			var before_box := {"p": pos, "yaw": before_assist, "hw": half_width, "hl": half_length}
 			for solid in world.obstacles():
 				if not overlap(before_box, solid.footprint(), 0.025) and overlap(footprint(), solid.footprint(), 0.025):

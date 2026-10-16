@@ -302,6 +302,7 @@ class FallbackTests(unittest.TestCase):
                     mock.patch.object(build_dev, 'prerequisites', return_value=sdk), \
                     mock.patch.object(build_dev, 'fallback', return_value=contextlib.nullcontext(child)) as fallback, \
                     mock.patch.object(build_dev.subprocess, 'check_output', return_value='abc123\n'), \
+                    mock.patch.object(build_dev.shutil, 'which', return_value=None), \
                     mock.patch.object(build_dev.subprocess, 'run',
                                       return_value=subprocess.CompletedProcess([], 7)) as run, \
                     mock.patch.dict(build_dev.os.environ, {'DEVICE_REGION': 'RU'}, clear=True), \
@@ -315,6 +316,37 @@ class FallbackTests(unittest.TestCase):
             self.assertEqual(command[command.index('--target-platform') + 1], 'android-arm64')
             self.assertEqual(run.call_args[1]['env'], child)
             self.assertEqual(fallback.call_args[0][0]['ANDROID_HOME'], str(sdk))
+
+    def test_dev_build_refreshes_cached_game_and_stops_on_failed_export(self):
+        for cached, godot, export_code in [(True, '/bin/godot', 0), (False, '/bin/godot', 0),
+                                            (True, '/bin/godot', 9), (True, None, 1)]:
+            with self.subTest(cached=cached, godot=godot, export_code=export_code), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                sdk = root / 'sdk'
+                cmake = sdk / 'cmake' / build_dev.CMAKE_VERSION / 'bin/cmake'
+                cmake.parent.mkdir(parents=True)
+                cmake.touch()
+                if cached:
+                    asset = root / 'android/godot/assets/project.binary'
+                    asset.parent.mkdir(parents=True)
+                    asset.write_bytes(b'old exported game')
+                with mock.patch.object(build_dev, 'ROOT', root), \
+                        mock.patch.object(build_dev, 'prerequisites', return_value=sdk), \
+                        mock.patch.object(build_dev.shutil, 'which', return_value=godot), \
+                        mock.patch.object(build_dev.subprocess, 'check_output', return_value='abc123\n'), \
+                        mock.patch.object(build_dev.subprocess, 'run', side_effect=[
+                            subprocess.CompletedProcess([], export_code), subprocess.CompletedProcess([], 0)]) as run, \
+                        mock.patch.dict(build_dev.os.environ, {}, clear=True), \
+                        mock.patch.object(sys, 'argv', ['build_dev.py']), \
+                        mock.patch('builtins.print'):
+                    self.assertEqual(build_dev.main(), export_code)
+                self.assertEqual(run.call_args_list[0].args[0], ['bash', str(root / 'scripts/godot_android_assets.sh')])
+                self.assertEqual(run.call_args_list[0].kwargs['env']['ANDROID_HOME'], str(sdk))
+                if export_code:
+                    self.assertEqual(run.call_count, 1, 'failed export must never package the old game')
+                else:
+                    self.assertEqual(run.call_count, 2)
+                    self.assertEqual(run.call_args_list[1].args[0][:3], ['flutter', 'build', 'apk'])
 
 
 class EnvironmentTests(unittest.TestCase):
