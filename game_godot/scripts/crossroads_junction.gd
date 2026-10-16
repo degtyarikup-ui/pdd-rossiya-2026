@@ -6,7 +6,7 @@ extends Node3D
 
 const ROAD_WIDTH := 14.4        # 4 lanes of 3.6 m (2 in each direction)
 const HALF_ROAD := ROAD_WIDTH * 0.5
-const ROAD_EXTENT := 260.0
+const ROAD_EXTENT := 345.0
 const STOP_DIST := 13.2
 const STOP_SIGN_DIST := HALF_ROAD + 0.4
 const ZEBRA_START := 8.0
@@ -291,22 +291,6 @@ func _build_bench(pos: Vector3, yaw: float, parent: Node3D) -> void:
 	parent.add_child(root)
 
 
-func _build_bollard(pos: Vector3, parent: Node3D) -> void:
-	var bollard := MeshInstance3D.new()
-	bollard.name = "Bollard"
-	var cylinder := CylinderMesh.new()
-	cylinder.top_radius = 0.09
-	cylinder.bottom_radius = 0.10
-	cylinder.height = 0.65
-	cylinder.radial_segments = 8
-	bollard.mesh = cylinder
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color("#555A64")
-	mat.roughness = 0.6
-	bollard.material_override = mat
-	bollard.position = pos + Vector3(0, 0.325, 0)
-	parent.add_child(bollard)
-
 
 func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 	var crossing_active := _has_crossing(arm)
@@ -423,12 +407,6 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 	_build_bench(b1_pos, rot_y + PI * 0.5, park_root)
 	_build_bench(b2_pos, rot_y - PI * 0.5, park_root)
 
-	# Row of safety bollards separating the street from the pedestrian plaza
-	var bollard_dist := base_d + 0.5
-	for bi in 7:
-		var bx := -HALF_ROAD + 1.8 + float(bi) * 1.8
-		var b_pos := Vector3(bx, 0.16, bollard_dist).rotated(Vector3.UP, rot_y)
-		_build_bollard(b_pos, park_root)
 
 
 func _build_quadrant_sidewalks() -> void:
@@ -606,7 +584,7 @@ func _add_straight_curbs(a: Vector3, b: Vector3, along_z: bool) -> void:
 
 func _add_curb_segment(a: Vector3, b: Vector3) -> void:
 	var edge := b - a
-	var curb := _box(Vector3(0.2, 0.16, edge.length()), curb_mat)
+	var curb := _box(Vector3(0.2, 0.16, edge.length() + 0.04), curb_mat)
 	curb.position = (a + b) * 0.5 + Vector3.UP * 0.08
 	curb.rotation.y = atan2(edge.x, edge.z)
 	ground_root.add_child(curb)
@@ -869,6 +847,12 @@ func _build_scenery_decor() -> void:
 	_put_prop("buildings/home_0", Vector3(26.0, 0.15, -240.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#F3E3C3"), true)
 	_put_prop("buildings/block_4", Vector3(-26.0, 0.15, -264.0), PI * 0.5, Vector3.ONE * 1.05, Color("#E9ECF2"), true)
 	_put_prop("buildings/tower_1", Vector3(26.0, 0.15, -264.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/block_6", Vector3(-26.0, 0.15, -288.0), PI * 0.5, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
+	_put_prop("buildings/block_3", Vector3(26.0, 0.15, -288.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"), true)
+	_put_prop("buildings/tower_2", Vector3(-26.0, 0.15, -312.0), PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
+	_put_prop("buildings/tower_0", Vector3(26.0, 0.15, -312.0), -PI * 0.5, Vector3.ONE * 1.1, Color("#E9ECF2"), true)
+	_put_prop("buildings/block_7", Vector3(-26.0, 0.15, -336.0), PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
+	_put_prop("buildings/home_1", Vector3(26.0, 0.15, -336.0), -PI * 0.5, Vector3.ONE, Color("#E8CFA8"), true)
 
 	# South Avenue (+Z)
 	_put_prop("buildings/block_3", Vector3(-26.0, 0.15, 72.0), PI * 0.5, Vector3.ONE, Color("#B5675A"), true)
@@ -889,6 +873,12 @@ func _build_scenery_decor() -> void:
 	_put_prop("buildings/home_3", Vector3(26.0, 0.15, 240.0), -PI * 0.5, Vector3.ONE, Color("#E8CFA8"), true)
 	_put_prop("buildings/tower_3", Vector3(-26.0, 0.15, 264.0), PI * 0.5, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
 	_put_prop("buildings/block_5", Vector3(26.0, 0.15, 264.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"), true)
+	_put_prop("buildings/block_2", Vector3(-26.0, 0.15, 288.0), PI * 0.5, Vector3.ONE, Color("#B5675A"), true)
+	_put_prop("buildings/tower_1", Vector3(26.0, 0.15, 288.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/tower_0", Vector3(-26.0, 0.15, 312.0), PI * 0.5, Vector3.ONE * 1.1, Color("#E9ECF2"), true)
+	_put_prop("buildings/block_6", Vector3(26.0, 0.15, 312.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
+	_put_prop("buildings/block_1", Vector3(-26.0, 0.15, 336.0), PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/home_2", Vector3(26.0, 0.15, 336.0), -PI * 0.5, Vector3.ONE, Color("#F5F6FA"), true)
 
 	# East Avenue (+X)
 	_put_prop("buildings/tower_1", Vector3(72.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
@@ -909,6 +899,12 @@ func _build_scenery_decor() -> void:
 	_put_prop("buildings/home_4", Vector3(240.0, 0.15, 26.0), PI, Vector3.ONE, Color("#F5F6FA"), true)
 	_put_prop("buildings/block_6", Vector3(264.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
 	_put_prop("buildings/home_2", Vector3(264.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
+	_put_prop("buildings/tower_2", Vector3(288.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
+	_put_prop("buildings/block_3", Vector3(288.0, 0.15, 26.0), PI, Vector3.ONE, Color("#B5675A"), true)
+	_put_prop("buildings/block_0", Vector3(312.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
+	_put_prop("buildings/tower_0", Vector3(312.0, 0.15, 26.0), PI, Vector3.ONE * 1.1, Color("#E9ECF2"), true)
+	_put_prop("buildings/tower_3", Vector3(336.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
+	_put_prop("buildings/block_7", Vector3(336.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 
 	# West Avenue (-X)
 	_put_prop("buildings/tower_3", Vector3(-72.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
@@ -929,6 +925,49 @@ func _build_scenery_decor() -> void:
 	_put_prop("buildings/home_1", Vector3(-240.0, 0.15, 26.0), PI, Vector3.ONE, Color("#E8CFA8"), true)
 	_put_prop("buildings/tower_2", Vector3(-264.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 	_put_prop("buildings/block_3", Vector3(-264.0, 0.15, 26.0), PI, Vector3.ONE, Color("#B5675A"), true)
+	_put_prop("buildings/block_1", Vector3(-288.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/tower_2", Vector3(-288.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
+	_put_prop("buildings/tower_1", Vector3(-312.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/block_6", Vector3(-312.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
+	_put_prop("buildings/block_0", Vector3(-336.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
+	_put_prop("buildings/home_3", Vector3(-336.0, 0.15, 26.0), PI, Vector3.ONE, Color("#E8CFA8"), true)
+
+	# Avenue vista terminus skyline (closing the horizon at 338-348m so the road end is never visible)
+	if closed_side != "north":
+		_put_prop("buildings/block_1", Vector3(-18.0, 0.15, -338.0), 0.0, Vector3(1.15, 1.25, 1.0), Color("#C6CCD8"), true)
+		_put_prop("buildings/block_3", Vector3(-7.5, 0.15, -338.0), 0.0, Vector3(1.15, 1.25, 1.0), Color("#B5675A"), true)
+		_put_prop("buildings/block_0", Vector3(7.5, 0.15, -338.0), 0.0, Vector3(1.15, 1.25, 1.0), Color("#F5F6FA"), true)
+		_put_prop("buildings/block_6", Vector3(18.0, 0.15, -338.0), 0.0, Vector3(1.15, 1.25, 1.0), Color("#A9B4C2"), true)
+		_put_prop("buildings/tower_2", Vector3(0.0, 0.15, -345.0), 0.0, Vector3.ONE * 1.6, Color("#DDE1EA"), true)
+		_put_prop("buildings/tower_0", Vector3(-12.0, 0.15, -348.0), 0.0, Vector3.ONE * 1.4, Color("#E9ECF2"), true)
+		_put_prop("buildings/tower_3", Vector3(12.0, 0.15, -348.0), 0.0, Vector3.ONE * 1.4, Color("#F5F6FA"), true)
+
+	if closed_side != "south":
+		_put_prop("buildings/block_1", Vector3(18.0, 0.15, 338.0), PI, Vector3(1.15, 1.25, 1.0), Color("#C6CCD8"), true)
+		_put_prop("buildings/block_3", Vector3(7.5, 0.15, 338.0), PI, Vector3(1.15, 1.25, 1.0), Color("#B5675A"), true)
+		_put_prop("buildings/block_0", Vector3(-7.5, 0.15, 338.0), PI, Vector3(1.15, 1.25, 1.0), Color("#F5F6FA"), true)
+		_put_prop("buildings/block_6", Vector3(-18.0, 0.15, 338.0), PI, Vector3(1.15, 1.25, 1.0), Color("#A9B4C2"), true)
+		_put_prop("buildings/tower_2", Vector3(0.0, 0.15, 345.0), PI, Vector3.ONE * 1.6, Color("#DDE1EA"), true)
+		_put_prop("buildings/tower_0", Vector3(12.0, 0.15, 348.0), PI, Vector3.ONE * 1.4, Color("#E9ECF2"), true)
+		_put_prop("buildings/tower_3", Vector3(-12.0, 0.15, 348.0), PI, Vector3.ONE * 1.4, Color("#F5F6FA"), true)
+
+	if closed_side != "east":
+		_put_prop("buildings/block_1", Vector3(338.0, 0.15, 18.0), -PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#C6CCD8"), true)
+		_put_prop("buildings/block_3", Vector3(338.0, 0.15, 7.5), -PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#B5675A"), true)
+		_put_prop("buildings/block_0", Vector3(338.0, 0.15, -7.5), -PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#F5F6FA"), true)
+		_put_prop("buildings/block_6", Vector3(338.0, 0.15, -18.0), -PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#A9B4C2"), true)
+		_put_prop("buildings/tower_2", Vector3(345.0, 0.15, 0.0), -PI * 0.5, Vector3.ONE * 1.6, Color("#DDE1EA"), true)
+		_put_prop("buildings/tower_0", Vector3(348.0, 0.15, 12.0), -PI * 0.5, Vector3.ONE * 1.4, Color("#E9ECF2"), true)
+		_put_prop("buildings/tower_3", Vector3(348.0, 0.15, -12.0), -PI * 0.5, Vector3.ONE * 1.4, Color("#F5F6FA"), true)
+
+	if closed_side != "west":
+		_put_prop("buildings/block_1", Vector3(-338.0, 0.15, -18.0), PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#C6CCD8"), true)
+		_put_prop("buildings/block_3", Vector3(-338.0, 0.15, -7.5), PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#B5675A"), true)
+		_put_prop("buildings/block_0", Vector3(-338.0, 0.15, 7.5), PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#F5F6FA"), true)
+		_put_prop("buildings/block_6", Vector3(-338.0, 0.15, 18.0), PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#A9B4C2"), true)
+		_put_prop("buildings/tower_2", Vector3(-345.0, 0.15, 0.0), PI * 0.5, Vector3.ONE * 1.6, Color("#DDE1EA"), true)
+		_put_prop("buildings/tower_0", Vector3(-348.0, 0.15, -12.0), PI * 0.5, Vector3.ONE * 1.4, Color("#E9ECF2"), true)
+		_put_prop("buildings/tower_3", Vector3(-348.0, 0.15, 12.0), PI * 0.5, Vector3.ONE * 1.4, Color("#F5F6FA"), true)
 
 	var bush_color := Color("#3E6B32")
 	if sc.season.has("pine"):
@@ -944,17 +983,21 @@ func _build_scenery_decor() -> void:
 	var fence_curb_off := HALF_ROAD + 0.8
 	for c in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
 		# Fences along NS road (length along Z, yaw = 0.0)
-		_put_prop("street/fence_12", Vector3(c.x * fence_curb_off, 0.16, c.y * 24.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
-		_put_prop("street/fence_12", Vector3(c.x * fence_curb_off, 0.16, c.y * 36.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
+		var ns_side := "south" if c.y > 0 else "north"
+		if ns_side != closed_side:
+			_put_prop("street/fence_12", Vector3(c.x * fence_curb_off, 0.16, c.y * 24.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
+			_put_prop("street/fence_12", Vector3(c.x * fence_curb_off, 0.16, c.y * 36.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
 		# Fences along EW road (length along X, yaw = PI * 0.5)
-		_put_prop("street/fence_12", Vector3(c.x * 24.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
-		_put_prop("street/fence_12", Vector3(c.x * 36.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
+		var ew_side := "east" if c.x > 0 else "west"
+		if ew_side != closed_side:
+			_put_prop("street/fence_12", Vector3(c.x * 24.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
+			_put_prop("street/fence_12", Vector3(c.x * 36.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
 
 	# --- 4. Trees & Greenery ---
 	# Trees placed strictly on lawn verge (offset 13.5m, well behind 11.4m sidewalk edge)
 	# Distances start at 28.0m to give plaza and approach signs clear open space
 	var tree_verge := HALF_ROAD + 6.3  # 13.5m
-	for dist in [28.0, 44.0, 60.0, 78.0, 96.0, 116.0, 136.0, 156.0, 176.0, 196.0, 216.0, 236.0, 256.0]:
+	for dist in [28.0, 44.0, 60.0, 78.0, 96.0, 116.0, 136.0, 156.0, 176.0, 196.0, 216.0, 236.0, 256.0, 276.0, 296.0, 316.0, 336.0]:
 		for sx in [-1, 1]:
 			_put_prop("trees/birch_0", Vector3(sx * tree_verge, 0.16, -dist), 0.0, Vector3.ONE * 0.95, birch_color, true)
 			_put_prop("trees/round_0", Vector3(sx * tree_verge, 0.16, dist), 0.0, Vector3.ONE * 0.95, leaf_color, true)
@@ -970,8 +1013,9 @@ func _build_scenery_decor() -> void:
 	_put_prop("trees/birch_0", Vector3(-25.5, 0.15, -14.0), 1.2, Vector3.ONE * 1.0, birch_color, true)
 	_put_prop("trees/round_0", Vector3(25.5, 0.15, 14.0), -0.7, Vector3.ONE * 1.0, leaf_color, true)
 
+
 	for sx in [-1, 1]:
-		for b_dist in [22.0, 36.0, 52.0, 70.0, 88.0, 108.0, 128.0, 148.0, 168.0, 188.0, 208.0, 228.0, 248.0]:
+		for b_dist in [22.0, 36.0, 52.0, 70.0, 88.0, 108.0, 128.0, 148.0, 168.0, 188.0, 208.0, 228.0, 248.0, 268.0, 288.0, 308.0, 328.0]:
 			_put_prop("street/bush", Vector3(sx * 12.2, 0.15, b_dist), 0.0, Vector3.ONE * 0.85, bush_color, false)
 			_put_prop("street/bush", Vector3(sx * 12.2, 0.15, -b_dist), 0.0, Vector3.ONE * 0.85, bush_color, false)
 			_put_prop("street/bush", Vector3(b_dist, 0.15, sx * 12.2), PI * 0.5, Vector3.ONE * 0.85, bush_color, false)
@@ -1248,20 +1292,39 @@ static func _surface(vertices: PackedVector3Array, indices: PackedInt32Array, ma
 	var normals := PackedVector3Array()
 	normals.resize(vertices.size())
 	for i in range(0, indices.size(), 3):
-		var a := indices[i]
-		var b := indices[i + 1]
-		var c := indices[i + 2]
-		var normal := (vertices[b] - vertices[a]).cross(vertices[c] - vertices[a])
-		if normal.y < 0.0:
+		var a: int = indices[i]
+		var b: int = indices[i + 1]
+		var c: int = indices[i + 2]
+		var cross := (vertices[b] - vertices[a]).cross(vertices[c] - vertices[a])
+		# In Godot 3D XZ plane (Y=up, Z=towards viewer), front-facing CCW triangles viewed from above have cross.y < 0.0.
+		# If cross.y > 0.0, winding is reversed (back-facing), so swap vertices to make it front-facing.
+		if cross.y > 0.0:
 			indices[i + 1] = c
 			indices[i + 2] = b
-			normal = -normal
-		for index in [a, b, c]: normals[index] += normal
-	for i in normals.size(): normals[i] = normals[i].normalized()
+			cross = -cross
+		var upward_normal := -cross
+		normals[a] += upward_normal
+		normals[b] += upward_normal
+		normals[c] += upward_normal
+	for i in normals.size():
+		normals[i] = Vector3.UP if normals[i].is_zero_approx() else normals[i].normalized()
+	var uvs := PackedVector2Array()
+	uvs.resize(vertices.size())
+	var uvs2 := PackedVector2Array()
+	uvs2.resize(vertices.size())
+	var colors := PackedColorArray()
+	colors.resize(vertices.size())
+	colors.fill(Color.WHITE)
+	for i in vertices.size():
+		uvs[i] = Vector2(vertices[i].x, vertices[i].z)
+		uvs2[i] = Vector2.ZERO
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_TEX_UV2] = uvs2
+	arrays[Mesh.ARRAY_COLOR] = colors
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
