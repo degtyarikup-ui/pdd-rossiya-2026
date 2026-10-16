@@ -6,6 +6,7 @@ PDD app or send reports. Requires one adb-connected Android device and JDK/SDK.
 import os
 from pathlib import Path
 import secrets
+import struct
 import shutil
 import subprocess
 import tempfile
@@ -106,7 +107,7 @@ class ReportReceiverDeviceTests(unittest.TestCase):
             classes = tmp / 'classes'
             classes.mkdir()
             run([tool('javac'), '--release', '8', '-cp', android_jar, '-d', classes,
-                 ROOT / 'android/app/src/main/kotlin/ru/pdd/pdd_app/GodotReportReceiver.java', tmp / 'Probe.java'])
+                 ROOT / 'android/app/src/main/java/ru/pdd/pdd_app/GodotReportReceiver.java', tmp / 'Probe.java'])
             dex = tmp / 'dex'
             dex.mkdir()
             run([build_tools / 'd8', '--min-api', '24', '--lib', android_jar,
@@ -128,6 +129,30 @@ class ReportReceiverDeviceTests(unittest.TestCase):
                 print(output.strip())
             finally:
                 run(['adb', 'uninstall', PACKAGE])
+
+
+@unittest.skipUnless(os.environ.get('PDD_VERIFY_DEV_APK') == '1', 'opt-in assembled APK check')
+class ReportReceiverApkTests(unittest.TestCase):
+    def test_receiver_is_in_the_actual_application_dex(self):
+        apk = ROOT / 'build/app/outputs/flutter-apk/app-ru-release.apk'
+        with ZipFile(apk) as zipped:
+            dex = [zipped.read(name) for name in zipped.namelist()
+                   if name.startswith('classes') and name.endswith('.dex')]
+        def defines_receiver(data):
+            strings = struct.unpack_from('<I', data, 60)[0]
+            types = struct.unpack_from('<I', data, 68)[0]
+            count, classes = struct.unpack_from('<II', data, 96)
+            for i in range(count):
+                class_index = struct.unpack_from('<I', data, classes + i * 32)[0]
+                string_index = struct.unpack_from('<I', data, types + class_index * 4)[0]
+                offset = struct.unpack_from('<I', data, strings + string_index * 4)[0]
+                while data[offset] & 0x80: offset += 1
+                offset += 1
+                if data[offset:data.index(b'\0', offset)] == b'Lru/pdd/pdd_app/GodotReportReceiver;':
+                    return True
+            return False
+        self.assertTrue(any(defines_receiver(data) for data in dex),
+                        'GodotReportReceiver must be compiled into the app, not only visible to Kotlin')
 
 
 if __name__ == '__main__':

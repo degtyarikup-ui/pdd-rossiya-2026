@@ -450,3 +450,8 @@ iOS и веб используют загрузчик приложения до 
 
 Стыковка билетов по фактическим концам дорог, ширине, полосам и разделителям —
 [scene-stitching.md](scene-stitching.md) (устройство и три проверки стыковки).
+
+Android-класс `GodotReportReceiver.java` должен лежать в `src/main/java/`, чтобы
+Gradle включил его в DEX. Kotlin видит Java в `src/main/kotlin/` при компиляции,
+но это не гарантирует упаковку. После сборки проверить реальный APK:
+`PDD_VERIFY_DEV_APK=1 python3 -m unittest discover -s tools/android_build -p test_report_receiver.py`.
