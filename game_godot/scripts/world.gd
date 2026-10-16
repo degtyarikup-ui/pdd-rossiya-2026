@@ -170,6 +170,7 @@ var only_id := ""                 # --situation: the one junction of a test run
 var road_after := 300.0           # world z after which the next road question may come
 var road_base_limit := 60         # the built-up limit to return to after a zone
 var pause_menu: RidePause
+var report_dialog: CanvasLayer
 var loader: Loader                # the preloader over the first frames (loader.gd); null once dismissed
 var startup_loading_failed := false
 var run_started := false          # a run began (the app charges one run then)
@@ -257,6 +258,7 @@ func _ready() -> void:
 	ui.answer_chosen.connect(_on_answer_chosen)
 	ui.continue_pressed.connect(_on_continue)
 	ui.pause_pressed.connect(_on_pause)
+	ui.report_pressed.connect(_on_report_question)
 	ui.resume_pressed.connect(_on_resume)
 	ui.exit_pressed.connect(_on_exit)
 	ui.tip_next.connect(_on_tip_next)
@@ -2907,7 +2909,9 @@ func _plan_walker_direction(at: Vector3, toward: Vector3) -> Vector3:
 func _notification(what: int) -> void:
 	if _exiting or voice == null or controls == null or ui == null: return
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		if paused:
+		if is_instance_valid(report_dialog):
+			report_dialog.close.call_deferred()
+		elif paused:
 			_on_resume()
 		elif phase == "over":
 			_on_exit()
@@ -2922,23 +2926,37 @@ func _notification(what: int) -> void:
 
 ## Pause preserves the world, current card/photo, timer, camera and run counters.
 func _on_pause(from_notification := false) -> void:
+	if not _freeze_ride(): return
+	# SceneTree propagates lifecycle/back notifications with each parent's child
+	# list locked. Freeze immediately, then mount the overlay after that traversal.
+	if from_notification:
+		_show_pause_menu.call_deferred()
+	else:
+		_show_pause_menu()
+
+
+func _on_report_question(question: Dictionary) -> void:
+	if phase != "question" or not ui.counting() or not _freeze_ride(): return
+	report_dialog = preload("res://scripts/question_report_dialog.gd").new(question)
+	add_child(report_dialog)
+	report_dialog.sent.connect(func(): ui.show_notice("report_sent"))
+	report_dialog.closed.connect(func():
+		report_dialog = null
+		_on_resume())
+
+
+func _freeze_ride() -> bool:
 	if _exiting or paused or voice == null or controls == null or ui == null:
-		return
+		return false
 	if phase == "over" and not ui.rewards_busy():
-		return
+		return false
 	paused = true
 	voice.suspend()
 	saved_ride = {"controls": controls.active}
 	controls.set_active(false)
 	_freeze_world_actors()
 	ui.process_mode = Node.PROCESS_MODE_DISABLED
-	# SceneTree propagates lifecycle/back notifications with each parent's child
-	# list locked. Freeze immediately, then mount the overlay after that traversal:
-	# adding it here used to fail and leave both controls and Continue unreachable.
-	if from_notification:
-		_show_pause_menu.call_deferred()
-	else:
-		_show_pause_menu()
+	return true
 
 
 func _show_pause_menu() -> void:
@@ -3100,7 +3118,7 @@ func _set_debug_perf(enabled: bool) -> void:
 
 
 func _on_resume() -> void:
-	if _exiting: return
+	if _exiting or is_instance_valid(report_dialog): return
 	if not paused:
 		return
 	var resume_controls: bool = saved_ride.get("controls", true)

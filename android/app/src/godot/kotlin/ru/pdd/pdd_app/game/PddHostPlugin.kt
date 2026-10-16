@@ -9,8 +9,31 @@ import org.godotengine.godot.plugin.UsedByGodot
 class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPlugin(godot) {
     override fun getPluginName() = "PddHost"
     private val cancelLoading = SignalInfo("cancel_loading")
+    private val reportResult = SignalInfo("question_report_result", String::class.java, Boolean::class.javaObjectType)
 
-    override fun getPluginSignals(): MutableSet<SignalInfo> = mutableSetOf(cancelLoading)
+    override fun getPluginSignals(): MutableSet<SignalInfo> = mutableSetOf(cancelLoading, reportResult)
+
+    /** Binder carries only the report to Flutter; session credentials stay in the app process. */
+    @UsedByGodot
+    fun reportQuestion(requestId: String, json: String) {
+        host.runOnUiThread {
+            @Suppress("DEPRECATION")
+            val receiver = host.intent.getParcelableExtra<android.os.ResultReceiver>("pdd_report_receiver")
+            if (receiver == null) {
+                emitSignal(reportResult, requestId, false)
+                return@runOnUiThread
+            }
+            val reply = object : android.os.ResultReceiver(android.os.Handler(android.os.Looper.getMainLooper())) {
+                override fun onReceiveResult(code: Int, data: android.os.Bundle?) {
+                    emitSignal(reportResult, requestId, code == 1)
+                }
+            }
+            receiver.send(0, android.os.Bundle().apply {
+                putString("json", json)
+                putParcelable("reply", reply)
+            })
+        }
+    }
 
     fun requestLoadingCancel() {
         emitSignal(cancelLoading)

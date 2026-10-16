@@ -335,6 +335,8 @@ static void HideGame(dispatch_block_t completion) {
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"summary.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:kPerformanceMemoryFileName] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:kLoadingFileName] error:nil];
+  [files removeItemAtPath:[folder stringByAppendingPathComponent:@"report-request.json"] error:nil];
+  [files removeItemAtPath:[folder stringByAppendingPathComponent:@"report-result.json"] error:nil];
   gLastLoadingState = nil;
   NSMutableArray *gameArgs = [NSMutableArray arrayWithArray:args ? args : @[]];
   for (NSString *category in @[@"ab", @"cd"]) {
@@ -360,6 +362,7 @@ static void HideGame(dispatch_block_t completion) {
 /// event carries the final summary and closes the game.
 - (void)pollSummary {
   [self pollLoading];
+  [self pollQuestionReport];
   NSString *path = [ExchangeFolder() stringByAppendingPathComponent:@"summary.json"];
   NSData *data = [NSData dataWithContentsOfFile:path];
   if (!data) {
@@ -386,6 +389,31 @@ static void HideGame(dispatch_block_t completion) {
   FlutterResult result = gPending;
   gPending = nil;
   HideGame(^{ if (result) result(json); });
+}
+
+/// The Flutter service owns the session and device metadata, also while its window is hidden.
+- (void)pollQuestionReport {
+  NSString *path = [ExchangeFolder() stringByAppendingPathComponent:@"report-request.json"];
+  NSData *data = [NSData dataWithContentsOfFile:path];
+  if (!data) return;
+  [NSFileManager.defaultManager removeItemAtPath:path error:nil];
+  id request = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+  if (![request isKindOfClass:NSDictionary.class]) return;
+  NSString *requestId = request[@"request_id"];
+  NSDictionary *payload = request[@"payload"];
+  if (![requestId isKindOfClass:NSString.class] || ![payload isKindOfClass:NSDictionary.class]) return;
+  NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+  if (!body) return;
+  const NSUInteger generation = gRunGeneration;
+  [gChannel invokeMethod:@"reportQuestion" arguments:[[NSString alloc] initWithData:body encoding:NSUTF8StringEncoding]
+                  result:^(id result) {
+    if (generation != gRunGeneration || !gPending) return;
+    BOOL success = [result isKindOfClass:NSNumber.class] && [result boolValue];
+    NSData *reply = [NSJSONSerialization dataWithJSONObject:@{@"request_id": requestId, @"success": @(success)}
+                                                   options:0 error:nil];
+    [reply writeToFile:[ExchangeFolder() stringByAppendingPathComponent:@"report-result.json"]
+              options:NSDataWritingAtomic error:nil];
+  }];
 }
 
 /// Only explicit loading covers the game. Normal scene streaming remains playable.

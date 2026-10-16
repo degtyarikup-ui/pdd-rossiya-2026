@@ -23,6 +23,7 @@ import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
+import 'package:pdd_app/data/services/question_report_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 import 'package:pdd_app/presentation/screens/game/godot_web_screen.dart';
@@ -385,9 +386,18 @@ class GodotGame {
       if (MediaQuery.disableAnimationsOf(context)) '--reduce-motion',
       if (const bool.fromEnvironment('GAME_DEBUG')) '--loader-profile',
     ];
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+    if (!kIsWeb) {
       _channel.setMethodCallHandler((call) async {
-        if (call.method != 'loading' || call.arguments is! Map) return;
+        if (call.method == 'reportQuestion' && call.arguments is String) {
+          try {
+            final report = jsonDecode(call.arguments as String);
+            if (report is Map<String, dynamic>) {
+              return await QuestionReportService.sendGameReport(report);
+            }
+          } catch (_) {}
+          return false;
+        }
+        if (call.method != 'loading' || call.arguments is! Map) return null;
         final data = call.arguments as Map;
         overlay.setVisible(
           data['visible'] == true,
@@ -397,6 +407,7 @@ class GodotGame {
         );
         // UIKit can reveal/hide its window only after this Flutter frame.
         await WidgetsBinding.instance.endOfFrame;
+        return null;
       });
     }
     try {
@@ -406,8 +417,9 @@ class GodotGame {
       if (kIsWeb) {
         // The web route owns its own loading surface above the iframe.
         overlay.close();
-        result = await Navigator.of(context)
-            .push<String>(GodotWebScreen.route(args: args));
+        result = await Navigator.of(
+          context,
+        ).push<String>(GodotWebScreen.route(args: args));
       } else {
         result = await _channel.invokeMethod<String>('start', {'args': args});
       }
@@ -417,7 +429,7 @@ class GodotGame {
       }
       return result;
     } finally {
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      if (!kIsWeb) {
         _channel.setMethodCallHandler(null);
       }
       overlay.close();

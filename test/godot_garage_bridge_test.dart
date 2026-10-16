@@ -150,7 +150,46 @@ void main() {
     'car': {'id': 'hatch', 'paint': 'red'},
   });
 
+  Future<void> pumpUntilLaunched(WidgetTester tester, int count) async {
+    for (var attempt = 0; attempt < 20 && launches.length < count; attempt++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(launches, hasLength(count));
+  }
+
   for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+    testWidgets(
+      'native report validation replies on $platform without ending the ride',
+      (tester) async {
+        await open(tester, premium: true);
+        debugDefaultTargetPlatformOverride = platform;
+        nativePending = Completer<String?>();
+        final ride = GodotGame.play(gameContext, gameRef);
+        await pumpUntilLaunched(tester, 1);
+        const codec = StandardMethodCodec();
+        final reply = Completer<Object?>();
+        tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          channel.name,
+          codec.encodeMethodCall(
+            const MethodCall(
+              'reportQuestion',
+              '{"question_id":8,"message":"bug"}',
+            ),
+          ),
+          (bytes) => reply.complete(codec.decodeEnvelope(bytes!)),
+        );
+        await tester.pumpAndSettle();
+        expect(reply.isCompleted, isTrue);
+        expect(await reply.future, isFalse);
+        expect(nativePending!.isCompleted, isFalse);
+        expect(launches, hasLength(1));
+        nativePending!.complete(null);
+        await tester.pumpAndSettle();
+        await ride;
+        debugDefaultTargetPlatformOverride = null;
+      },
+    );
+
     testWidgets(
       'all games follow the selected app theme on $platform on every launch',
       (tester) async {
@@ -184,13 +223,6 @@ void main() {
         }
       },
     );
-  }
-
-  Future<void> pumpUntilLaunched(WidgetTester tester, int count) async {
-    for (var attempt = 0; attempt < 20 && launches.length < count; attempt++) {
-      await tester.pump(const Duration(milliseconds: 16));
-    }
-    expect(launches, hasLength(count));
   }
 
   for (final firstGame in ['City', 'Regulator', 'Crossroads']) {

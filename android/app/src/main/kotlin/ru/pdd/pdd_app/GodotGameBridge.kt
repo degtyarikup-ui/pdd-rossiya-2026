@@ -2,6 +2,10 @@ package ru.pdd.pdd_app
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.ResultReceiver
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 
@@ -20,9 +24,10 @@ class GodotGameBridge(private val activity: Activity, messenger: BinaryMessenger
     }
 
     private var pending: MethodChannel.Result? = null
+    private val channel = MethodChannel(messenger, "pdd/godot_game")
 
     init {
-        MethodChannel(messenger, "pdd/godot_game").setMethodCallHandler { call, result ->
+        channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "available" -> result.success(available())
                 "start" -> {
@@ -35,6 +40,19 @@ class GodotGameBridge(private val activity: Activity, messenger: BinaryMessenger
                     val args = (call.argument<List<String>>("args") ?: emptyList()).toTypedArray()
                     val intent = Intent().setClassName(activity, GAME_ACTIVITY)
                         .putExtra("pdd_game_args", args)
+                        .putExtra("pdd_report_receiver", object : ResultReceiver(Handler(Looper.getMainLooper())) {
+                            override fun onReceiveResult(resultCode: Int, data: Bundle?) {
+                                @Suppress("DEPRECATION")
+                                val reply = data?.getParcelable<ResultReceiver>("reply") ?: return
+                                val json = data.getString("json") ?: return
+                                if (pending !== result) { reply.send(0, null); return }
+                                channel.invokeMethod("reportQuestion", json, object : MethodChannel.Result {
+                                    override fun success(value: Any?) = reply.send(if (value == true) 1 else 0, null)
+                                    override fun error(code: String, message: String?, details: Any?) = reply.send(0, null)
+                                    override fun notImplemented() = reply.send(0, null)
+                                })
+                            }
+                        })
                     activity.startActivityForResult(intent, REQUEST)
                     // Both processes already paint the same loader: avoid a dark
                     // starting-window flash or moving that loading surface.

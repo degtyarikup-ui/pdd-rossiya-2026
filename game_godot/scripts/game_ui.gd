@@ -9,6 +9,7 @@ extends CanvasLayer
 signal answer_chosen(index: int)
 signal continue_pressed
 signal pause_pressed
+signal report_pressed(question: Dictionary)
 signal exit_pressed
 signal resume_pressed
 signal tip_next
@@ -319,6 +320,7 @@ func show_notice(type: String, seconds := 3.0) -> void:
 		"collision": "gameCollision", "offroad": "gameOffroad", "priority": "gamePriorityViolation",
 		"speeding": "gameSpeeding", "overtaking": "gameOvertakingProhibited", "pedestrian": "gamePedestrianYield",
 		"railway": "gameRailwayViolation", "stop": "gameStopViolation", "red_light": "gameRedLightViolation",
+		"report_sent": "reportSent",
 	}.get(type, "gameWrongManeuver")
 	_notice_text.text = Ui.t(key)
 	_notice.visible = true
@@ -496,6 +498,7 @@ func _place_sheet(panel: PanelContainer) -> void:
 
 func _ticket_chip(text: String, scene_id := "", width_budget := -1.0, interactive := true) -> PanelContainer:
 	var p := PanelContainer.new()
+	p.name = "TicketChip"
 	p.add_theme_stylebox_override("panel", Ui.box(Ui.c("field"), 8))
 	var m := MarginContainer.new()
 	m.add_theme_constant_override("margin_left", 9)
@@ -743,7 +746,24 @@ func _build_question(text: Dictionary, seconds: float, interactive := true) -> D
 	var timer_label := Ui.scaled_label("%.1f %s" % [seconds, Ui.t("gameSeconds")], 13, 700, Ui.c("text"))
 	timer.add_child(timer_label)
 	var timer_width := ceilf(Ui.font(700).get_string_size(timer_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, roundi(13 * Ui.text_scale())).x) + 20.0
-	head.add_child(_ticket_chip(text.ticket, str(text.get("id", "")), _view_size().x - 48.0 - timer_width, interactive))
+	var report := Button.new()
+	report.name = "ReportQuestion"
+	report.custom_minimum_size = Vector2(36, 36)
+	report.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	report.tooltip_text = Ui.t("reportQuestionTooltip")
+	report.accessibility_name = Ui.t("reportQuestionTooltip")
+	report.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		report.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	var flag := Ui.icon(0xf07b, 18, Ui.c("secondary")) # flag_outlined, as in Flutter
+	flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flag.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	flag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	report.add_child(flag)
+	if interactive: report.pressed.connect(func(): report_pressed.emit(text.duplicate(true)))
+	head.add_child(report)
+	head.add_child(_ticket_chip(text.ticket, str(text.get("id", "")), _view_size().x - 92.0 - timer_width, interactive))
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(sp)

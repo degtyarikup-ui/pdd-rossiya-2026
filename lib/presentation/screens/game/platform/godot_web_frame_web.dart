@@ -3,6 +3,7 @@ import 'dart:js_interop';
 import 'dart:ui_web' as ui;
 
 import 'package:flutter/widgets.dart';
+import 'package:pdd_app/data/services/question_report_service.dart';
 import 'package:web/web.dart' as web;
 
 /// The Godot build of the game, in a frame on the same site: the folder
@@ -101,6 +102,10 @@ class GodotWebFrame {
           _onExit(json);
         } else if (data['kind'] == 'send') {
           final event = jsonDecode(json);
+          if (event is Map<String, dynamic> &&
+              event['event'] == 'question_report') {
+            _reportQuestion(event);
+          }
           if (event is Map && event['event'] == 'loading') {
             _setLoading(
               event['visible'] == true,
@@ -128,6 +133,23 @@ class GodotWebFrame {
         .resolve('${_folder}index.html')
         .replace(queryParameters: _query(args))
         .toString();
+  }
+
+  Future<void> _reportQuestion(Map<String, dynamic> event) async {
+    final id = event['request_id'];
+    final payload = event['payload'];
+    if (id is! String || payload is! Map<String, dynamic>) return;
+    final success = await QuestionReportService.sendGameReport(payload);
+    if (_disposed) return;
+    _frame.contentWindow?.postMessage(
+      jsonEncode({
+        'bridge': 'pdd-godot',
+        'kind': 'question_report_result',
+        'request_id': id,
+        'success': success,
+      }).toJS,
+      web.window.location.origin.toJS,
+    );
   }
 
   /// Whether the game is on this site: its pack is there. A site without the

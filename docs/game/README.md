@@ -143,6 +143,7 @@ godot --headless --path game_godot --script res://tests/garage_rewards_check.gd 
 godot --headless --path game_godot --script res://tests/ride_debug_menu_check.gd # скрытое меню dev-сборки: семь нажатий на «Пауза», размеры и локализации
 godot --headless --path game_godot --script res://tests/debug_rewards_check.gd # тестовые плашки в игре без выдачи наград и изменения счётчиков
 godot --headless --path game_godot --script res://tests/lifecycle_pause_check.gd # системное сворачивание/фокус, достижимая пауза и восстановление управления
+godot --headless --path game_godot --script res://tests/question_report_check.gd # флажок/форма жалобы, ru/en/kk, маленькие экраны, пауза, повтор отправки и ответ хоста
 godot --headless --path game_godot --script res://tests/exit_continuity_check.gd # все физические выезды, короткие улицы, полный кузов и стыковка следующего вопроса
 godot --headless --path game_godot --script res://tests/lane_join_check.gd # подбор по фактическим полосам, въезд в 13/13 и плавные переходы 1+1 ↔ 2+2
 godot --path game_godot --resolution 1280x900 --script res://tests/signal_glow_check.gd # нужен широкий кадр: видимое свечение, включая пакетный трафик
@@ -323,6 +324,21 @@ MP3 и локальный манифест не коммитятся. В Git л�
 `lib/presentation/screens/game/godot_game.dart` — запуск/продолжение заезда, коллекция для паузы, итоги,
 разбор ошибок; канал `pdd/godot_game`. Android — `android/app/src/godot/` (экран игры в процессе
 `:game`), iOS — `ios/Runner/PddGodotGame.mm`, web — iframe `/app/godot/`.
+
+Флажок слева от номера билета открывает `question_report_dialog.gd`: форма
+использует строки обычной жалобы из ARB и сохраняет текущий вопрос, таймер,
+озвучку и участников через общую паузу заезда. Ошибка отправки оставляет текст
+для повтора; закрытие формы возвращает к тому же вопросу с тем же временем.
+`question_report_bridge.gd` передаёт в Flutter только сообщение, ID сцены и
+текст вопроса: Android — через `ResultReceiver` между процессами, iOS — через
+атомарные `report-request.json`/`report-result.json`, веб — через сообщения
+между iframe и родителем с проверкой origin/source. Ответ сопоставляется с ID
+попытки; ожидание ограничено 30 секундами. `QuestionReportService` добавляет
+сведения об устройстве, ОС, версии, установке и действующую сессию; секреты
+и сессия не попадают в аргументы Godot, URL или сохранение заезда. Серверный
+журнал жалоб уже выводит эти сведения, а имя/email/ID берёт из подтверждённого
+аккаунта. У гостя или аккаунта без email почту получить нельзя. Проверки:
+`test/question_report_service_test.dart`, `server/install-notifier/test-question-reports.mjs`.
 Экономика заездов и очков — `docs/game/game-economy-2026-10-10.md`.
 Загрузчик и handover движка — [маскот WebP](../application/mascot-webp.md):
 Host.loading сигнализирует готовый кадр, Android рисует нативный маскот,

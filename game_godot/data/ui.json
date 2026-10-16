@@ -1,5 +1,12 @@
 {
  "ru": {
+  "reportQuestionTooltip": "Сообщить об ошибке",
+  "reportQuestionBody": "Что не так с этим вопросом? Опечатка, неверный ответ, не та картинка — напишите своими словами.",
+  "reportQuestionHint": "Например: в ответе Б опечатка",
+  "reportSend": "Отправить",
+  "reportSent": "Спасибо! Сообщение отправлено",
+  "reportFailed": "Не удалось отправить. Проверьте интернет и попробуйте ещё раз",
+  "cancel": "Отмена",
   "gameDebugPerfMemoryFootprint": "RAM",
   "gameDebugTier": "Уровень графики",
   "gameDebugPerfObjects": "Узлы: {nodes}; ресурсы: {resources}",
@@ -136,6 +143,13 @@
   "gameCrossroadsCompleteTitle": "Перекресток разрулен!"
  },
  "en": {
+  "reportQuestionTooltip": "Report an error",
+  "reportQuestionBody": "What's wrong with this question? A typo, wrong answer, wrong picture - write in your own words.",
+  "reportQuestionHint": "For example: there is a typo in the second answer",
+  "reportSend": "Submit",
+  "reportSent": "Thank you! Message sent",
+  "reportFailed": "Failed to send. Check the Internet and try again",
+  "cancel": "Cancel",
   "gameDebugPerfMemoryFootprint": "RAM",
   "gameDebugTier": "Graphics level",
   "gameDebugPerfObjects": "Nodes: {nodes}; resources: {resources}",
@@ -272,6 +286,13 @@
   "gameCrossroadsCompleteTitle": "The intersection has been cleared!"
  },
  "kk": {
+  "reportQuestionTooltip": "Қате туралы хабарлау",
+  "reportQuestionBody": "Бұл сұрақта не дұрыс емес? Қате, қате жауап, қате сурет - өз сөзіңізбен жазыңыз.",
+  "reportQuestionHint": "Мысалы: В жауабында қате бар",
+  "reportSend": "Жіберу",
+  "reportSent": "Рахмет! Хабар жіберілді",
+  "reportFailed": "Жіберілмеді. Интернетті тексеріп, әрекетті қайталаңыз",
+  "cancel": "Болдырмау",
   "gameDebugPerfMemoryFootprint": "RAM",
   "gameDebugTier": "Графика деңгейі",
   "gameDebugPerfObjects": "Түйіндер: {nodes}; ресурстар: {resources}",

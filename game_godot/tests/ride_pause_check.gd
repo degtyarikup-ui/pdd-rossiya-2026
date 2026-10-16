@@ -286,7 +286,7 @@ func _run() -> void:
 		world._update_junction(1.0 / 60.0)
 	check(world.phase == "question", "Actual question opens at its authored stop position")
 	await create_timer(0.7).timeout
-	var chip: Control = world.ui._card.get_meta("box").get_child(0).get_child(0)
+	var chip: Control = world.ui._card.find_child("TicketChip", true, false)
 	world.ui._toggle_picture(sit.id, chip, chip.find_children("*", "Label", true, false)[1])
 	await create_timer(0.4).timeout
 	check(world.ui._picture_open, "Actual question photo opens over the actual scene")
@@ -303,7 +303,7 @@ func _run() -> void:
 		check(world.ui._card.position.y <= last_y + 0.5, "Sheet rise is monotonic without visible downward jerk")
 		last_y = world.ui._card.position.y
 	await create_timer(0.4).timeout
-	chip = world.ui._card.get_meta("box").get_child(0).get_child(0)
+	chip = world.ui._card.find_child("TicketChip", true, false)
 	world.ui._toggle_picture(sit.id, chip, chip.find_children("*", "Label", true, false)[1])
 	await create_timer(0.5).timeout
 	if out != "":

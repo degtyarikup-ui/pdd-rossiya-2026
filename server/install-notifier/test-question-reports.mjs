@@ -61,6 +61,24 @@ test('guests, old clients, invalid, expired and revoked sessions can report with
   }
 });
 
+test('game complaints log verified email, device, OS, scene and question text', async () => {
+  const { env, state } = setup();
+  const user = { id: 'google_driver', name: 'Водитель', email: 'driver@example.com' };
+  const token = await session(env, user);
+  const response = await worker.fetch(request({
+    kind: 'report', mode: 'city', question_id: 'ticket_8_15', ticket: 8,
+    question_text: 'Кому уступить дорогу?', message: 'Машина едет неверно',
+    device: 'Google Pixel 9', os: 'Android 16 (SDK 36)', version: '2.3.0+59',
+    platform: 'android', email: 'forged@example.com',
+  }, token), env);
+  assert.equal(response.status, 200);
+  const [item] = await queued(state);
+  for (const field of ['driver@example.com', 'Google Pixel 9', 'Android 16', 'ticket_8_15', 'билет 8', 'city', 'Кому уступить дорогу?', '2.3.0+59']) {
+    assert.ok(item.text.includes(field), field);
+  }
+  assert.doesNotMatch(item.text, /forged@example.com/);
+});
+
 test('verified session identity survives a missing profile or profile lookup failure', async () => {
   for (const failLookup of [false, true]) {
     const { env, state } = setup(), user = { id: 'apple_real', name: 'Иван', email: '' };

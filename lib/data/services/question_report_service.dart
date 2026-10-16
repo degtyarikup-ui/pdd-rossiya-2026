@@ -26,6 +26,28 @@ class QuestionReportService {
   /// не напишет с телефона.
   static const int maxMessageLength = 1000;
 
+  /// Godot sends question data only. Identity and device metadata stay in Flutter.
+  static Future<bool> sendGameReport(
+    Map<String, dynamic> report, {
+    AuthService? auth,
+  }) async {
+    final id = report['question_id'];
+    final message = report['message'];
+    final title = report['question_text'];
+    if (id is! String || id.isEmpty || id.length > 120 || message is! String) {
+      return false;
+    }
+    final ref = RegExp(r'^ticket_(?:cd_)?(\d+)_(\d+)$').firstMatch(id);
+    return send(
+      message: message,
+      questionId: id,
+      questionText: title is String ? title : null,
+      ticketNumber: ref == null ? null : int.parse(ref.group(1)!),
+      mode: 'city',
+      auth: auth,
+    );
+  }
+
   /// Отправляет жалобу. Возвращает true при успехе.
   ///
   /// Идентификатор установки берём тот же, что у пинга об установке, — чтобы
