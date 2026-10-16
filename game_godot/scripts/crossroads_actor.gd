@@ -319,7 +319,7 @@ func _build_trajectory() -> void:
 		path_curve.add_point(p_curb_b)
 		path_curve.add_point(p_end)
 		path_length = path_curve.get_baked_length()
-		drive_speed = 1.8 / maxf(path_length, 1.0)
+		drive_speed = 3.6 / maxf(path_length, 1.0)
 		_turn_end_distance = path_length
 		return
 
@@ -364,7 +364,7 @@ func _build_trajectory() -> void:
 	path_length = path_curve.get_baked_length()
 	# Normalised progress is retained for collision animation; actual road speed
 	# stays independent of the route's 110 m invisible continuation.
-	# Speed is tuned so vehicles cross the intersection briskly and responsively (~0.95 - 1.35s per traverse).
+	# Mini-game playback runs at double speed; route geometry and priority stay the same.
 	var maneuver_str: String = data.get("maneuver", "straight")
 	var speed_mps: float
 	if is_tram:
@@ -375,7 +375,7 @@ func _build_trajectory() -> void:
 		speed_mps = 21.0 if maneuver_str == "right" else 28.0
 	else:
 		speed_mps = 17.0 if maneuver_str == "right" else 26.0
-	drive_speed = speed_mps / maxf(path_length, 1.0)
+	drive_speed = speed_mps * 2.0 / maxf(path_length, 1.0)
 
 
 func _add_route_point(point: Vector3, angle: float, in_handle := Vector3.ZERO, out_handle := Vector3.ZERO) -> void:

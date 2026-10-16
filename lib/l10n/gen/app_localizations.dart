@@ -3529,7 +3529,7 @@ abstract class AppLocalizations {
   /// No description provided for @crossroadsHardBonusBadge.
   ///
   /// In ru, this message translates to:
-  /// **'⚡ Сложная ситуация · +10 сек'**
+  /// **'⚡ Сложная ситуация · очки ×3'**
   String get crossroadsHardBonusBadge;
 
   /// No description provided for @crossroadsTimeBonus10s.

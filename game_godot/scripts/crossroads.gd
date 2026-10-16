@@ -383,11 +383,10 @@ func _load_current_scenario() -> void:
 		if actor.is_tram:
 			junction.build_tram_path(actor.path_curve)
 
-	# A difficult junction adds time once, including after a retry.
+	# A difficult junction has triple points; the countdown never gains time.
 	var is_hard: bool = sc.get("isHard", false)
 	if is_hard and not _rewarded_hard.has(cur_scenario_idx):
 		_rewarded_hard[cur_scenario_idx] = true
-		seconds_left = minf(float(economy.get("seconds", 60)), seconds_left + 10.0)
 		ui.show_hard_bonus_toast()
 
 	ui.update_hud(score, ceili(seconds_left), lives, combo)
@@ -486,7 +485,7 @@ var _last_tap_pos := Vector2(-999, -999)
 var _last_tap_time := -999.0
 
 func _handle_screen_tap(screen_pos: Vector2) -> void:
-	if not ready_for_play or _exiting or _suspended or is_game_over or is_resolving or _round_completing or active_actors.is_empty() or _is_any_actor_in_motion():
+	if not ready_for_play or _exiting or _suspended or is_game_over or is_resolving or _round_completing or active_actors.is_empty():
 		return
 
 	var now := float(Time.get_ticks_msec())
@@ -658,8 +657,6 @@ func _on_crossroad_completed() -> void:
 	var base_score: int = int(economy.get("base", 40)) + mini(combo - 1, int(economy.get("bonusCap", 5))) * int(economy.get("step", 2))
 	var gained := base_score * (3 if is_hard else 1)
 	score = mini(int(economy.get("maxScore", 1500)), score + gained)
-
-	seconds_left = minf(float(economy.get("seconds", 60)), seconds_left + 6.0)
 
 	ui.update_hud(score, ceili(seconds_left), lives, combo)
 	sound.play("correct")

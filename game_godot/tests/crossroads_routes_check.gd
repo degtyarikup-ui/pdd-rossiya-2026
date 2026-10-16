@@ -69,7 +69,7 @@ func _check_route(actor: CrossroadsActor, label: String) -> void:
 		_check_footprint(actor, label)
 	else:
 		_check(label + " crosses along the zebra centre", is_equal_approx(absf(actor.position.x) if str(actor.data.side) in ["east", "west"] else absf(actor.position.z), 10.0))
-		_check(label + " walks at 1.8 m/s", is_equal_approx(actor.drive_speed * actor.path_length, 1.8))
+		_check(label + " crosses briskly at 3.6 m/s", is_equal_approx(actor.drive_speed * actor.path_length, 3.6))
 		_check(label + " feet follow the asphalt", actor.path_curve.sample_baked(actor.path_length * 0.5).y < 0.03)
 	var guide := actor.trajectory_guide
 	var aabb := guide.mesh.get_aabb()
@@ -86,10 +86,10 @@ func _check_route(actor: CrossroadsActor, label: String) -> void:
 	actor.start_driving()
 	_check(label + " arrow disappears on departure", not guide.visible)
 	var elapsed := 0.0
-	while not actor.has_cleared_junction() and elapsed < 12.0:
+	while not actor.has_cleared_junction() and elapsed < 6.0:
 		actor._process_drive(0.05)
 		elapsed += 0.05
-	_check(label + " clears the junction within 12 seconds", actor.has_cleared_junction())
+	_check(label + " clears the junction within 6 seconds", actor.has_cleared_junction())
 	_check(label + " emits one clearance signal", clear_events[0] == 1)
 	_check(label + " remains visible after clearance", actor.state == "driving" and actor.visible and done_events[0] == 0)
 	actor._process_drive(100.0)

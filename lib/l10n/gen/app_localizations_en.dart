@@ -2026,7 +2026,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get crossroadsHardSituationBadge => '⚡ Hard situation • 3× points';
 
   @override
-  String get crossroadsHardBonusBadge => '⚡ Hard situation · +10 sec';
+  String get crossroadsHardBonusBadge => '⚡ Hard situation · points ×3';
 
   @override
   String get crossroadsTimeBonus10s => '+10 sec';

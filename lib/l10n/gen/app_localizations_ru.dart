@@ -2046,7 +2046,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get crossroadsHardSituationBadge => '⚡ Сложная ситуация • 3× очков';
 
   @override
-  String get crossroadsHardBonusBadge => '⚡ Сложная ситуация · +10 сек';
+  String get crossroadsHardBonusBadge => '⚡ Сложная ситуация · очки ×3';
 
   @override
   String get crossroadsTimeBonus10s => '+10 сек';

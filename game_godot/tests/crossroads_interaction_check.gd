@@ -109,17 +109,16 @@ func run() -> void:
 	check(absf(game.cam_yaw - cam_yaw_before_process) > 0.001,
 		"camera yaw smoothly lerps during _process while vehicle is in motion")
 
-	# Verify selecting another vehicle during motion is blocked
+	# The next correct participant can depart before the first one clears
 	var other_actor: CrossroadsActor = null
 	for a in game.active_actors:
-		if a != order_1_actor and a.state == "waiting":
+		if a != order_1_actor and a.state == "waiting" and (other_actor == null or a.data.order < other_actor.data.order):
 			other_actor = a
-			break
 	if other_actor != null:
 		var other_badge := game.camera.unproject_position(other_actor.badge_sprite.global_position)
 		game._handle_screen_tap(other_badge)
-		check(other_actor.state == "waiting",
-			"tapping another vehicle while one is driving is ignored")
+		check(other_actor.state == "driving" and order_1_actor.state == "driving",
+			"next participant launches immediately while previous participant is still moving")
 
 	# --- Test 3: Increased transparency when buildings intersect camera ---
 	# Setup test box mesh in scenery

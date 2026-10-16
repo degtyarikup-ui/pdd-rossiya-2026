@@ -303,7 +303,8 @@ func _setup_walkers() -> void:
 		var crowd := Models.crowd(self, "res://models/walkers/walker_%d.glb" % look, 1)
 		walker_crowds.append(crowd)
 		var tint := sc.color("canopy", look).lerp(Color("#6586A0"), 0.65)
-		crowd.set_instance_custom_data(0, Color(tint.r, tint.g, tint.b, rng.randf()))
+		var phase := rng.randf_range(0.0, TAU)
+		crowd.set_instance_custom_data(0, Models.walker_gait(tint, phase, 1.0))
 		var axis_x := look >= 8
 		var direction := 1.0 if look % 2 == 0 else -1.0
 		var side := 1.0 if (look / 2) % 2 == 0 else -1.0
@@ -312,7 +313,8 @@ func _setup_walkers() -> void:
 		walkers_data.append({"axis_x": axis_x, "side": side,
 			"fixed": direction * (HALF_ROAD + 0.9 + (look % 3) * 0.65),
 			"low": low, "high": high, "at": rng.randf_range(low, high),
-			"dir": direction, "spd": rng.randf_range(1.0, 1.6)})
+			"dir": direction, "spd": rng.randf_range(1.0, 1.6),
+			"tint": tint, "walk_phase": phase})
 	_update_walkers(0.0)
 
 
@@ -333,6 +335,8 @@ func _update_walkers(delta: float) -> void:
 		var pos := Vector3(w.at, 0.15, w.fixed) if w.axis_x else Vector3(w.fixed, 0.15, w.at)
 		var yaw := (PI * 0.5 if w.dir > 0 else -PI * 0.5) if w.axis_x else (0.0 if w.dir > 0 else PI)
 		walker_crowds[i].set_instance_transform(0, Transform3D(Basis(Vector3.UP, yaw), pos))
+		w.walk_phase = fposmod(float(w.walk_phase) + w.spd * delta * 3.5, TAU)
+		walker_crowds[i].set_instance_custom_data(0, Models.walker_gait(w.tint, w.walk_phase, 1.0))
 
 
 func _quad(size: Vector2, mat: Material) -> MeshInstance3D:

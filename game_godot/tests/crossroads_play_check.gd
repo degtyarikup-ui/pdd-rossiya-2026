@@ -77,7 +77,9 @@ func run() -> void:
 			check(actor.has_cleared_junction() and actor.drive_progress < 1.0,
 				scenario.id + "/" + actor.name + ": the whole actor clears before its distant exit")
 		var solved := game.solved_count
+		var before_solve := game.seconds_left
 		game._process(0.0)
+		check(is_equal_approx(before_solve, game.seconds_left), scenario.id + ": correct answer adds no time")
 		check(game.solved_count == solved + 1 and game._round_completing,
 			scenario.id + ": scores when everyone has cleared the junction")
 	# A new scenario invalidates the delayed transition of the previous one.
@@ -85,6 +87,7 @@ func run() -> void:
 	game.seconds_left = 20.0
 	game._rewarded_hard.clear()
 	game._load_current_scenario()
+	check(is_equal_approx(game.seconds_left, 20.0), "hard scenario adds no time")
 	var rewarded_seconds := game.seconds_left
 	game._on_retry_pressed()
 	check(is_equal_approx(rewarded_seconds, game.seconds_left), "retry cannot award another hard-scenario time bonus")
@@ -134,7 +137,7 @@ func run() -> void:
 		check(fitted, "camera frames the game after resize to " + str(size))
 	game.seconds_left = 0.0
 	game._end_game()
-	check(game.ui._results.title_label.text == Ui.t("gameTimeUp"), "timeout uses the shared mini-game result title")
+	check(game.ui._results.title_label.text == Ui.t("gameOver"), "timeout uses the shared mini-game result title")
 	game._end_game()
 	check(game.completed_runs.size() == 1, "repeated completion records one run")
 	game._start_game()
