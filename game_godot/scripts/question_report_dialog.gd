@@ -16,6 +16,8 @@ var _counter: Label
 var _status: Label
 var _cancel: Button
 var _send: Button
+var _loading: HBoxContainer
+var _spinner: Control
 var _bridge: Node
 var _scale := 1.0
 
@@ -71,6 +73,8 @@ func _ready() -> void:
 	field_box.content_margin_top = 12
 	field_box.content_margin_bottom = 12
 	_field.add_theme_stylebox_override("normal", field_box)
+	_field.add_theme_stylebox_override("read_only", field_box)
+	_field.add_theme_color_override("font_readonly_color", Ui.c("text"))
 	var focus_box := Ui.box(Color.TRANSPARENT, 8)
 	focus_box.set_border_width_all(1)
 	focus_box.border_color = Ui.c("accent")
@@ -88,6 +92,19 @@ func _ready() -> void:
 	shell.add_child(actions)
 	_cancel = _button(Ui.t("cancel"), close)
 	actions.add_child(_cancel)
+	_loading = HBoxContainer.new()
+	_loading.add_theme_constant_override("separation", 8)
+	_loading.custom_minimum_size.y = 44
+	_loading.visible = false
+	_spinner = preload("res://scripts/loader.gd").Spinner.new()
+	_spinner.set_process(false)
+	_spinner.custom_minimum_size = Vector2(20, 20)
+	_spinner.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_loading.add_child(_spinner)
+	var loading_text := Ui.scaled_label(Ui.t("reportSending"), 14, 600, Ui.c("secondary"))
+	loading_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_loading.add_child(loading_text)
+	actions.add_child(_loading)
 	_send = _button(Ui.t("reportSend"), _submit)
 	_send.disabled = true
 	actions.add_child(_send)
@@ -152,7 +169,11 @@ func _submit() -> void:
 	sending = true
 	_field.editable = false
 	_cancel.disabled = true
+	_cancel.visible = false
 	_send.disabled = true
+	_send.visible = false
+	_loading.visible = true
+	_spinner.set_process(true)
 	_status.visible = false
 	_bridge.submit({"message": _field.text.strip_edges(), "question_id": str(question.get("id", "")),
 		"question_text": str(question.get("title", ""))})
@@ -160,6 +181,10 @@ func _submit() -> void:
 
 func _on_result(success: bool) -> void:
 	sending = false
+	_spinner.set_process(false)
+	_cancel.visible = true
+	_loading.visible = false
+	_send.visible = true
 	if success:
 		sent.emit()
 		close()

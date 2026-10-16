@@ -70,9 +70,20 @@ func run() -> void:
 					dialog._field.text = "я".repeat(1001)
 					dialog._text_changed()
 					check(dialog._field.text.length() == 1000 and not dialog._send.disabled, "message length bounded")
+					dialog._field.text = "Проверка отправки"
+					dialog._text_changed()
+					dialog._submit()
+					check(dialog._loading.visible and not dialog._send.visible and not dialog._cancel.visible, "sending displays progress instead of inactive actions")
+					var angle: float = dialog._spinner._angle
+					await layout()
+					check(dialog._spinner._angle != angle, "progress animates while the question is paused")
+					check(dialog._loading.get_global_rect().end.x <= dimensions.x + 1 and dialog._loading.get_global_rect().end.y <= dimensions.y + 1,
+						"localized sending indicator fits small screens and large text")
 					if language == "ru" and dark and scale == 1.0 and dimensions.x == 360 and DisplayServer.get_name() != "headless":
 						RenderingServer.force_draw(false)
-						viewport.get_texture().get_image().save_png(exchange.path_join("dialog.png"))
+						viewport.get_texture().get_image().save_png(exchange.path_join("sending.png"))
+					dialog._bridge._on_result(dialog._bridge.request_id, false)
+					check(not dialog._loading.visible and dialog._send.visible and dialog._cancel.visible and not dialog._spinner.is_processing(), "failure restores actions and stops animation")
 					viewport.free()
 	# iOS-style request/reply exercises the exact payload and stale reply guard.
 	Host.io_args = []

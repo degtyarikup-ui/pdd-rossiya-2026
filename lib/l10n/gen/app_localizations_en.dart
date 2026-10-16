@@ -154,6 +154,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportSend => 'Submit';
 
   @override
+  String get reportSending => 'Sending…';
+
+  @override
   String get reportSent => 'Thank you! Message sent';
 
   @override

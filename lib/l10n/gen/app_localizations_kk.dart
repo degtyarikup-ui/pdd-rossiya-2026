@@ -153,6 +153,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get reportSend => 'Жіберу';
 
   @override
+  String get reportSending => 'Жіберілуде…';
+
+  @override
   String get reportSent => 'Рахмет! Хабар жіберілді';
 
   @override

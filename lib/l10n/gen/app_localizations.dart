@@ -376,6 +376,12 @@ abstract class AppLocalizations {
   /// **'Отправить'**
   String get reportSend;
 
+  /// No description provided for @reportSending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправляем…'**
+  String get reportSending;
+
   /// No description provided for @reportSent.
   ///
   /// In ru, this message translates to:

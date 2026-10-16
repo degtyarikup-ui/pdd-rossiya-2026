@@ -4,6 +4,7 @@ import org.godotengine.godot.Godot
 import org.godotengine.godot.plugin.GodotPlugin
 import org.godotengine.godot.plugin.SignalInfo
 import org.godotengine.godot.plugin.UsedByGodot
+import ru.pdd.pdd_app.GodotReportReceiver
 
 /** `Engine.get_singleton("PddHost")` in the game (game_godot/scripts/host.gd). */
 class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPlugin(godot) {
@@ -16,6 +17,7 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     /** Binder carries only the report to Flutter; session credentials stay in the app process. */
     @UsedByGodot
     fun reportQuestion(requestId: String, json: String) {
+        android.util.Log.i("PddQuestionReport", "Game submitted report")
         host.runOnUiThread {
             @Suppress("DEPRECATION")
             val receiver = host.intent.getParcelableExtra<android.os.ResultReceiver>("pdd_report_receiver")
@@ -25,12 +27,13 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
             }
             val reply = object : android.os.ResultReceiver(android.os.Handler(android.os.Looper.getMainLooper())) {
                 override fun onReceiveResult(code: Int, data: android.os.Bundle?) {
+                    android.util.Log.i("PddQuestionReport", "Game received result: ${code == 1}")
                     emitSignal(reportResult, requestId, code == 1)
                 }
             }
             receiver.send(0, android.os.Bundle().apply {
                 putString("json", json)
-                putParcelable("reply", reply)
+                putParcelable("reply", GodotReportReceiver.remote(reply))
             })
         }
     }

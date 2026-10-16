@@ -153,6 +153,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get reportSend => 'Отправить';
 
   @override
+  String get reportSending => 'Отправляем…';
+
+  @override
   String get reportSent => 'Спасибо! Сообщение отправлено';
 
   @override

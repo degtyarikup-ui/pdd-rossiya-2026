@@ -46,6 +46,7 @@
   "reportQuestionBody": "What's wrong with this question? A typo, wrong answer, wrong picture - write in your own words.",
   "reportQuestionHint": "For example: there is a typo in the second answer",
   "reportSend": "Submit",
+  "reportSending": "Sending…",
   "reportSent": "Thank you! Message sent",
   "reportFailed": "Failed to send. Check the Internet and try again",
   "correctAnswers": "Correct answers",
