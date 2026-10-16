@@ -228,7 +228,51 @@ if (process.argv.includes('--serve')) {
       await save();
       const yearly = (await config()).extraExpenses.find(item => item.title === 'Годовая лицензия');
       assert.equal(yearly.frequency, 'yearly'); assert.equal(yearly.endDate, day(365));
-      await open(`[data-expense-id="${yearly.id}"]`); await remove();
+      const writesBeforeCancel = preview.requests.filter(request => request.method === 'POST').length;
+      await open(`[data-delete-expense-id="${yearly.id}"]`);
+      assert.equal(await page.locator('#ec-dialog-title').innerText(), 'Удалить расход?');
+      assert.equal(await page.locator('#ec-form [name="title"]').count(), 0, 'trash opens confirmation instead of editing');
+      assert.equal(await page.locator('#ec-submit').innerText(), 'Удалить');
+      await screenshot('delete-expense-dialog');
+      await page.locator('#ec-cancel').click();
+      await page.locator('#ec-dialog').waitFor({ state: 'hidden' });
+      assert.equal(preview.requests.filter(request => request.method === 'POST').length, writesBeforeCancel, 'cancel never writes');
+      assert.equal((await config()).extraExpenses.some(item => item.id === yearly.id), true);
+      await open(`[data-delete-expense-id="${yearly.id}"]`); await save();
+      assert.equal((await config()).extraExpenses.some(item => item.id === yearly.id), false);
+
+      // Built-in budgets use the same direct action and retain their configured amount.
+      const beforeBuiltinDeletion = await stats();
+      for (const [id, flag, amountField] of [
+        ['builtin-cloudflare', 'cloudflareEnabled', 'cloudflareMonthlyUsd'],
+        ['builtin-domain', 'domainEnabled', 'domainMonthlyRub'],
+      ]) {
+        const before = await stats();
+        const line = before.expenses.lines.find(item => item.id === id);
+        const originalAmount = (await config())[amountField];
+        assert.ok(line);
+        await open(`[data-delete-expense-id="${id}"]`); await save();
+        const deletedConfig = await config(), after = await stats();
+        assert.equal(deletedConfig[flag], false);
+        assert.equal(deletedConfig[amountField], originalAmount, 'deletion preserves the amount for restoration');
+        assert.equal(after.expenses.lines.some(item => item.id === id), false);
+        assert.ok(Math.abs(after.expenses.totalRub - (before.expenses.totalRub - line.periodRub)) <= 0.01);
+        assert.ok(Math.abs(after.expenses.monthlyRub - (before.expenses.monthlyRub - line.monthlyRub)) <= 0.01);
+        await page.reload(); await settled();
+        assert.equal(await page.locator(`[data-delete-expense-id="${id}"]`).count(), 0, 'removed budget stays absent after reload');
+      }
+      await open('#ec-settings');
+      assert.equal(await page.locator('#ec-form [name="cloudflareMonthlyUsd"]').inputValue(), '5');
+      assert.equal(await page.locator('#ec-form [name="domainMonthlyRub"]').inputValue(), '67');
+      await page.locator('#ec-form [name="cloudflareEnabled"]').check();
+      await page.locator('#ec-form [name="domainEnabled"]').check();
+      await save();
+      const restored = await stats();
+      assert.equal(restored.expenses.totalRub, beforeBuiltinDeletion.expenses.totalRub);
+      assert.equal(restored.expenses.monthlyRub, beforeBuiltinDeletion.expenses.monthlyRub);
+      for (const id of ['builtin-cloudflare', 'builtin-domain']) {
+        assert.equal(await page.locator(`[data-delete-expense-id="${id}"]`).count(), 1, 'settings restore the expense row');
+      }
 
       await open('#ec-add-revenue');
       await field('title', 'Выплата Google Play'); await field('amountRub', 4500);
@@ -266,6 +310,8 @@ if (process.argv.includes('--serve')) {
       }
       await page.locator('[data-expense-id="fixture-once"]').evaluate(button => button.click());
       assert.equal(await page.locator('#ec-dialog').isVisible(), false, 'row editing also waits for the new snapshot');
+      await page.locator('[data-delete-expense-id="fixture-once"]').evaluate(button => button.click());
+      assert.equal(await page.locator('#ec-dialog').isVisible(), false, 'direct deletion also waits for the new snapshot');
       releaseReload(); await settled();
       await page.waitForFunction(() => !document.querySelector('#ec-add-expense').disabled);
       assert.equal((await config()).domainMonthlyRub, 0); assert.equal((await config()).cloudflareMonthlyUsd, 0);
@@ -286,10 +332,17 @@ if (process.argv.includes('--serve')) {
           const r = node.getBoundingClientRect(); return { text: node.textContent.trim(), left: r.left, right: r.right };
         }));
         assert.deepEqual(controls.filter(r => r.left < -1 || r.right > width + 1), [], `controls fit ${width}px`);
-        const rowActions = await page.locator('#ec-expenses-body .ec-money:visible, #ec-expenses-body .ec-edit:visible, #ec-receipts-body .ec-money:visible, #ec-receipts-body .ec-edit:visible').evaluateAll(nodes => nodes.map(node => {
+        const rowActions = await page.locator('#ec-expenses-body .ec-money:visible, #ec-expenses-body .ec-edit:visible, #ec-expenses-body [data-delete-expense-id]:visible, #ec-receipts-body .ec-money:visible, #ec-receipts-body .ec-edit:visible').evaluateAll(nodes => nodes.map(node => {
           const r = node.getBoundingClientRect(); return { text: node.textContent.trim() || node.getAttribute('aria-label'), left: r.left, right: r.right };
         }));
-        assert.deepEqual(rowActions.filter(r => r.left < -1 || r.right > width + 1), [], `amounts and edit controls fit ${width}px`);
+        assert.deepEqual(rowActions.filter(r => r.left < -1 || r.right > width + 1), [], `amounts, edit and trash controls fit ${width}px`);
+        assert.equal(await page.locator('#ec-expenses-body [data-delete-expense-id]:visible').count(), 4, 'every expense has a visible delete action');
+        await open('[data-delete-expense-id="fixture-once"]');
+        assert.equal(await page.locator('#ec-dialog-title').innerText(), 'Удалить расход?');
+        await screenshot(`mobile-${width}-delete-dialog`);
+        await page.keyboard.press('Escape');
+        await page.locator('#ec-dialog').waitFor({ state: 'hidden' });
+        assert.equal(await page.locator('[data-delete-expense-id="fixture-once"]').evaluate(node => node === document.activeElement), true);
         await open('#ec-add-expense');
         const bounds = await page.locator('#ec-dialog').boundingBox();
         assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width + 1);

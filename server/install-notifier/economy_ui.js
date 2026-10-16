@@ -36,6 +36,9 @@ export const ECONOMY_VIEW_HTML = String.raw`
 .ec-pill.blue{background:#E8F1FF;color:var(--ec-blue)}.ec-pill.green{background:#E9F6EF;color:var(--ec-green)}.ec-pill.amber{background:#FFF3DC;color:#A66A12}
 #economy-view .ec-edit{display:inline-flex;align-items:center;justify-content:center;border:0;background:#F3F5F8;color:#717D90;width:30px;height:30px;border-radius:8px;padding:6px;flex-shrink:0}
 #economy-view .ec-edit:hover{background:#E8F1FF;color:var(--ec-blue)}.ec-edit svg{width:14px;height:14px}
+.ec-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+#economy-view .ec-remove{color:var(--ec-red);background:#FCF1EE}#economy-view .ec-remove:hover{color:#A93A25;background:#F9DFD7}
+.ec-delete-summary{grid-column:1/-1;background:#F4F6F9;border-radius:12px;padding:15px;overflow-wrap:anywhere}.ec-delete-summary strong{font-size:14px;font-weight:550;display:block}.ec-delete-summary span{display:block;font-size:12px;color:#747B88;margin-top:5px}
 .ec-expense-foot{display:flex;gap:14px;justify-content:space-between;flex-wrap:wrap;border-top:1px solid #EDF0F3;padding-top:14px;margin-top:2px;font-size:11px;color:var(--ec-muted)}.ec-expense-foot b{color:#343B49;font-weight:550;margin-left:5px}
 .ec-ai-note{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;margin-top:16px;background:var(--ec-soft);border-radius:10px;padding:11px 12px;color:var(--ec-muted)}.ec-ai-note strong{color:#424C5B;font-weight:550}
 .ec-split{display:flex;overflow:hidden;height:8px;border-radius:10px;margin:0 0 20px;background:#EDF0F4}.ec-split i{display:block;background:var(--ec-blue);transition:width .2s}.ec-split i+i{background:var(--ec-green)}
@@ -67,7 +70,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
  #economy-view #ec-expenses-body td:nth-child(2){grid-column:1;grid-row:2;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
  #economy-view #ec-expenses-body td:nth-child(2) .ec-sub{margin:0}
  #economy-view #ec-expenses-body td:nth-child(3){grid-column:2;grid-row:1/3}
- #economy-view #ec-expenses-body td:nth-child(4){grid-column:3;grid-row:1/3}
+ #economy-view #ec-expenses-body td:nth-child(4){grid-column:3;grid-row:1/3}#economy-view #ec-expenses-body .ec-row-actions{flex-direction:column}
  #economy-view #ec-receipts-body tr{grid-template-columns:minmax(0,1fr) auto;gap:7px 10px}
  #economy-view #ec-receipts-body td:nth-child(2){grid-column:1;grid-row:1}
  #economy-view #ec-receipts-body td:nth-child(5){grid-column:2;grid-row:1;align-self:start;padding-top:1px}
@@ -130,6 +133,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
  var stores = {web:'СБП',appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'};
  var frequencies = {once:'Разовый',monthly:'Ежемесячно',yearly:'Ежегодно'};
  var editIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z M14 5l5 5"/></svg>';
+ var deleteIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>';
  function el(id) { return document.getElementById(id); }
  function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
  function num(n, decimals) { return Number(n || 0).toLocaleString('ru-RU',{maximumFractionDigits:decimals == null ? 2 : decimals}); }
@@ -194,7 +198,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
    var rate=(currency==='USD'?'$'+num(amount):rub(amount));
    var meta=builtin?'Бюджет':frequency==='once'?dateText(line.date||line.createdAt,true):'С '+dateText(line.date||line.createdAt,true)+(line.endDate?' · до '+dateText(line.endDate,true):'');
    var count=Number(line.occurrences)||0;
-   return '<tr><td class="ec-name"><strong>'+esc(line.title)+'</strong><span class="ec-sub">'+esc(meta)+'</span></td><td><span class="ec-pill '+(frequency==='once'?'':'blue')+'">'+esc(frequencies[frequency]||'По расходу')+'</span><span class="ec-sub">'+rate+(frequency==='monthly'?' / мес':frequency==='yearly'?' / год':'')+'</span></td><td class="ec-money">'+rub(line.periodRub)+'<span class="ec-sub">'+(builtin?'По дням периода':count===0?'Вне периода':count>1?count+' платежа':'')+'</span></td><td class="ec-cell-action">'+(builtin?'<button type="button" class="ec-edit" data-builtin="true" aria-label="Изменить бюджет '+esc(line.title)+'">'+editIcon+'</button>':editButton('expense',line.id,'Редактировать '+line.title))+'</td></tr>';
+   return '<tr><td class="ec-name"><strong>'+esc(line.title)+'</strong><span class="ec-sub">'+esc(meta)+'</span></td><td><span class="ec-pill '+(frequency==='once'?'':'blue')+'">'+esc(frequencies[frequency]||'По расходу')+'</span><span class="ec-sub">'+rate+(frequency==='monthly'?' / мес':frequency==='yearly'?' / год':'')+'</span></td><td class="ec-money">'+rub(line.periodRub)+'<span class="ec-sub">'+(builtin?'По дням периода':count===0?'Вне периода':count>1?count+' платежа':'')+'</span></td><td class="ec-cell-action"><div class="ec-row-actions">'+(builtin?'<button type="button" class="ec-edit" data-builtin="true" aria-label="Изменить бюджет '+esc(line.title)+'" title="Изменить">'+editIcon+'</button>':editButton('expense',line.id,'Редактировать '+line.title))+'<button type="button" class="ec-edit ec-remove" data-delete-expense-id="'+esc(line.id)+'" aria-label="Удалить расход '+esc(line.title)+'" title="Удалить">'+deleteIcon+'</button></div></td></tr>';
   }).join(''):'<tr><td colspan="4" class="ec-empty">'+(expenseFilter==='once'?'Разовых расходов пока нет':'Расходов пока нет')+'</td></tr>';
  }
  function renderReceipts() {
@@ -233,11 +237,13 @@ export const ECONOMY_CLIENT_JS = String.raw`
   } else if(kind==='shares') {
    title='Распределение прибыли';html=input('sergeySharePercent','Сергей, %',cfg.sergeySharePercent,{max:100})+input('nikitaSharePercent','Никита, %',cfg.nikitaSharePercent,{max:100})+input('reinvestPercent','Фонд развития, %',cfg.reinvestPercent,{max:100,full:true})+'<div class="ec-form-preview" id="ec-form-preview"></div>';note='Доли применяются ко всем периодам расчёта.';
   } else if(kind==='settings') {
-   title='Параметры экономики';html=input('usdRate','Курс доллара, ₽',cfg.usdRate,{min:0.01,full:true})+input('cloudflareMonthlyUsd','Cloudflare, $ / мес',cfg.cloudflareMonthlyUsd)+input('domainMonthlyRub','Домен, ₽ / мес',cfg.domainMonthlyRub)+'<label class="ec-form-check"><input type="checkbox" name="excludeTestOrders" '+(cfg.excludeTestOrders?'checked':'')+'>Не учитывать тестовые оплаты в доходе</label>';note='Cloudflare и домен — бюджет по дням периода. Для точных платежей обнулите бюджет и добавьте расходы с датой.';
+   title='Параметры экономики';html=input('usdRate','Курс доллара, ₽',cfg.usdRate,{min:0.01,full:true})+input('cloudflareMonthlyUsd','Cloudflare, $ / мес',cfg.cloudflareMonthlyUsd)+input('domainMonthlyRub','Домен, ₽ / мес',cfg.domainMonthlyRub)+'<label class="ec-form-check"><input type="checkbox" name="cloudflareEnabled" '+(cfg.cloudflareEnabled!==false?'checked':'')+'>Учитывать бюджет Cloudflare</label><label class="ec-form-check"><input type="checkbox" name="domainEnabled" '+(cfg.domainEnabled!==false?'checked':'')+'>Учитывать бюджет домена</label><label class="ec-form-check"><input type="checkbox" name="excludeTestOrders" '+(cfg.excludeTestOrders?'checked':'')+'>Не учитывать тестовые оплаты в доходе</label>';note='Для точных списаний отключите бюджет и добавьте расходы с датой.';
+  } else if(kind==='delete-expense') {
+   title='Удалить расход?';html='<div class="ec-delete-summary"><strong>'+esc(item.title)+'</strong><span>'+rub(item.periodRub)+' в выбранном периоде</span></div>';note=item.builtin?'Можно вернуть в параметрах экономики.':'Расход будет исключён из расчётов за все периоды.';
   } else {
    title=item.id?'Редактировать поступление':'Новое поступление';html=input('title','Описание',item.title||'',{type:'text',full:true})+input('amountRub','Получено, ₽',item.amountRub??'',{min:0.01})+input('date','Дата получения',(item.date||today()).slice(0,10),{type:'date'})+select('store','Источник',item.store||'appstore',{appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'},true);note='Сумма фактической выплаты после комиссии магазина.';
   }
-  set('ec-dialog-title',title);el('ec-fields').innerHTML=html;el('ec-form-error').hidden=true;el('ec-form-note').hidden=!note;set('ec-form-note',note);el('ec-delete').hidden=!item.id;set('ec-delete','Удалить');set('ec-submit',item.id||kind==='shares'||kind==='settings'?'Сохранить':'Добавить');el('ec-dialog').showModal();updateFormPreview();
+  set('ec-dialog-title',title);el('ec-fields').innerHTML=html;el('ec-form-error').hidden=true;el('ec-form-note').hidden=!note;set('ec-form-note',note);el('ec-delete').hidden=!item.id||kind==='delete-expense';set('ec-delete','Удалить');set('ec-submit',kind==='delete-expense'?'Удалить':item.id||kind==='shares'||kind==='settings'?'Сохранить':'Добавить');el('ec-submit').classList.toggle('btn-danger',kind==='delete-expense');el('ec-submit').classList.toggle('btn-primary',kind!=='delete-expense');el('ec-dialog').showModal();updateFormPreview();
  }
  function updateFormPreview(changed) {
   if(!dialogContext)return;
@@ -259,19 +265,20 @@ export const ECONOMY_CLIENT_JS = String.raw`
  async function submitForm(event,deleting) {
   if(event)event.preventDefault();if(saving||!dialogContext)return;
   var context=dialogContext,body={},path='',kind=context.kind;
-  if(deleting){path=(kind==='expense'?'expenses':'revenues')+'/delete';body.id=context.id;}
+  deleting=deleting===true||kind==='delete-expense';
+  if(deleting){path=(kind==='expense'||kind==='delete-expense'?'expenses':'revenues')+'/delete';body.id=context.id;}
   else {
    if(!el('ec-form').reportValidity())return;
    if(kind==='expense'){body={title:field('title').value.trim(),amount:Number(field('amount').value),currency:field('currency').value,frequency:field('frequency').value,date:field('date').value,endDate:field('frequency').value==='once'?null:field('endDate').value||null};path='expenses/'+(context.id?'update':'add');}
    else if(kind==='revenue'){body={title:field('title').value.trim(),amountRub:Number(field('amountRub').value),store:field('store').value,date:field('date').value};path='revenues/'+(context.id?'update':'add');}
    else if(kind==='shares'){body={nikitaSharePercent:Number(field('nikitaSharePercent').value),reinvestPercent:Number(field('reinvestPercent').value)};if(Math.abs(Number(field('sergeySharePercent').value)+body.nikitaSharePercent-100)>.001){formError('Сумма долей должна быть 100%');return;}path='settings';}
-   else{body={usdRate:Number(field('usdRate').value),cloudflareMonthlyUsd:Number(field('cloudflareMonthlyUsd').value),domainMonthlyRub:Number(field('domainMonthlyRub').value),excludeTestOrders:field('excludeTestOrders').checked};path='settings';}
+   else{body={usdRate:Number(field('usdRate').value),cloudflareMonthlyUsd:Number(field('cloudflareMonthlyUsd').value),domainMonthlyRub:Number(field('domainMonthlyRub').value),cloudflareEnabled:field('cloudflareEnabled').checked,domainEnabled:field('domainEnabled').checked,excludeTestOrders:field('excludeTestOrders').checked};path='settings';}
    if(context.id)body.id=context.id;
   }
   saving=true;enableActions();el('ec-form-error').hidden=true;var submitLabel=el('ec-submit').textContent;el('ec-form').querySelectorAll('button').forEach(function(button){button.disabled=true;});set('ec-submit',deleting?'Удаление…':'Сохранение…');
-  try{await mutate(path,body);saving=false;closeForm();saving=true;feedback(deleting?'Запись удалена':'Сохранено');await loadEconomy(true);}
+  try{await mutate(path,body);saving=false;closeForm();saving=true;feedback(deleting?(kind==='revenue'?'Поступление удалено':'Расход удалён'):'Сохранено');await loadEconomy(true);}
   catch(error){formError(error.message);}
-  finally{saving=false;enableActions();el('ec-form').querySelectorAll('button').forEach(function(button){button.disabled=false;});set('ec-submit',submitLabel);}
+  finally{saving=false;enableActions();el('ec-form').querySelectorAll('button').forEach(function(button){button.disabled=false;});set('ec-submit',submitLabel);if(deleting&&!dialogContext&&!returnFocus?.isConnected)el(kind==='revenue'?'ec-add-revenue':'ec-add-expense').focus();}
  }
  function formError(message){el('ec-form-error').hidden=false;set('ec-form-error',message);}
  function init() {
@@ -284,7 +291,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   ['ec-search','ec-store-filter','ec-show-tests'].forEach(function(id){el(id).addEventListener(id==='ec-search'?'input':'change',function(){page=0;renderReceipts();});});
   el('ec-prev').onclick=function(){page--;renderReceipts();};el('ec-next').onclick=function(){page++;renderReceipts();};
   el('ec-settings').onclick=function(){showForm('settings');};el('ec-edit-shares').onclick=function(){showForm('shares');};el('ec-add-expense').onclick=function(){showForm('expense');};el('ec-add-revenue').onclick=function(){showForm('revenue');};
-  el('ec-expenses-body').addEventListener('click',function(event){var button=event.target.closest('button');if(!button||!stats)return;if(button.hasAttribute('data-builtin'))return showForm('settings');var item=stats.config.extraExpenses.find(function(expense){return expense.id===button.dataset.expenseId;});if(item)showForm('expense',item);});
+  el('ec-expenses-body').addEventListener('click',function(event){var button=event.target.closest('button');if(!button||!stats)return;if(button.dataset.deleteExpenseId){var line=stats.expenses.lines.find(function(expense){return expense.id===button.dataset.deleteExpenseId;});if(line)showForm('delete-expense',line);return;}if(button.hasAttribute('data-builtin'))return showForm('settings');var item=stats.config.extraExpenses.find(function(expense){return expense.id===button.dataset.expenseId;});if(item)showForm('expense',item);});
   el('ec-receipts-body').addEventListener('click',async function(event){var button=event.target.closest('button');if(!button)return;if(button.dataset.revenueId){var item=stats.config.manualRevenues.find(function(revenue){return revenue.id===button.dataset.revenueId;});if(item)showForm('revenue',item);}else if(button.dataset.copy){try{await navigator.clipboard.writeText(button.dataset.copy);feedback('Номер заказа скопирован');}catch(_){feedback('Не удалось скопировать номер заказа',true);}}});
   el('ec-feedback').querySelector('button').onclick=function(){el('ec-feedback').hidden=true;};
   ['ec-plan-target','ec-plan-average'].forEach(function(id){el(id).addEventListener('input',updatePlanner);});

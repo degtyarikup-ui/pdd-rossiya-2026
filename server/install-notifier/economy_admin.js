@@ -3,7 +3,9 @@
 export const DEFAULT_ECONOMY_CONFIG = {
   usdRate: 95,
   cloudflareMonthlyUsd: 5,
+  cloudflareEnabled: true,
   domainMonthlyRub: 67,
+  domainEnabled: true,
   reinvestPercent: 15,
   nikitaSharePercent: 6.7,
   sergeySharePercent: 93.3,
@@ -24,6 +26,7 @@ const numericRules = {
   nikitaSharePercent: [0, 100], sergeySharePercent: [0, 100],
   targetMonthlyProfit: [0, 1000000000],
 };
+const booleanSettings = ['excludeTestOrders', 'cloudflareEnabled', 'domainEnabled'];
 const round = value => Math.round((value + Number.EPSILON) * 100) / 100;
 const dayString = value => new Date(value).toISOString().slice(0, 10);
 const dayStart = value => Date.parse(dayString(value));
@@ -100,7 +103,9 @@ function safeConfig(parsed = {}) {
   }
   if (!Object.hasOwn(parsed, 'nikitaSharePercent') && typeof parsed.sergeySharePercent === 'number') result.nikitaSharePercent = round(100 - result.sergeySharePercent);
   result.sergeySharePercent = round(100 - result.nikitaSharePercent);
-  if (typeof parsed.excludeTestOrders === 'boolean') result.excludeTestOrders = parsed.excludeTestOrders;
+  for (const key of booleanSettings) {
+    if (typeof parsed[key] === 'boolean') result[key] = parsed[key];
+  }
   result.extraExpenses = normalizeList(parsed.extraExpenses, normalizeExpense);
   result.manualRevenues = normalizeList(parsed.manualRevenues, item => normalizeRevenue(item, Date.now(), true));
   return result;
@@ -124,8 +129,8 @@ export async function saveEconomyConfig(env, updates) {
   const next = await getEconomyConfig(env);
   for (const [key, value] of Object.entries(updates)) {
     if (numericRules[key]) next[key] = number(value, key, ...numericRules[key]);
-    else if (key === 'excludeTestOrders') {
-      if (typeof value !== 'boolean') throw new Error('Некорректный фильтр тестовых оплат');
+    else if (booleanSettings.includes(key)) {
+      if (typeof value !== 'boolean') throw new Error('Некорректное значение: ' + key);
       next[key] = value;
     } else if (key === 'extraExpenses' || key === 'manualRevenues') {
       if (!Array.isArray(value) || value.length > 1000) throw new Error('Слишком много записей');
@@ -279,17 +284,20 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
     ? (knownDates.length ? Date.parse(reportDay(Math.min(...knownDates))) : monthStart)
     : calendarPeriodStart;
   const multiplier = budgetMonths(budgetStart, calendarNow);
-  const cloudflareMonthlyRub = round(config.cloudflareMonthlyUsd * config.usdRate);
+  const cloudflareMonthlyRub = config.cloudflareEnabled ? round(config.cloudflareMonthlyUsd * config.usdRate) : 0;
+  const domainMonthlyRub = config.domainEnabled ? config.domainMonthlyRub : 0;
+  const cloudflarePeriodRub = round(cloudflareMonthlyRub * multiplier);
+  const domainPeriodRub = round(domainMonthlyRub * multiplier);
   const lines = [
     { id: 'builtin-cloudflare', title: 'Cloudflare', amount: config.cloudflareMonthlyUsd, currency: 'USD', frequency: 'monthly',
       date: dayString(budgetStart), endDate: null, builtin: true, source: 'cloudflare', basis: 'budget',
-      periodRub: round(cloudflareMonthlyRub * multiplier), monthlyRub: cloudflareMonthlyRub, occurrences: null },
+      periodRub: cloudflarePeriodRub, monthlyRub: cloudflareMonthlyRub, occurrences: null },
     { id: 'builtin-domain', title: 'Домен pdd-drive.ru', amount: config.domainMonthlyRub, currency: 'RUB', frequency: 'monthly',
       date: dayString(budgetStart), endDate: null, builtin: true, source: 'domain', basis: 'budget',
-      periodRub: round(config.domainMonthlyRub * multiplier), monthlyRub: config.domainMonthlyRub, occurrences: null },
-  ];
+      periodRub: domainPeriodRub, monthlyRub: domainMonthlyRub, occurrences: null },
+  ].filter(line => line.source === 'cloudflare' ? config.cloudflareEnabled : config.domainEnabled);
   let extraExpensesRub = 0, oneOffRub = 0, recurringRub = lines.reduce((sum, line) => sum + line.periodRub, 0);
-  let monthlyRub = cloudflareMonthlyRub + config.domainMonthlyRub;
+  let monthlyRub = cloudflareMonthlyRub + domainMonthlyRub;
   for (const expense of config.extraExpenses) {
     const amountRub = expense.amount * (expense.currency === 'USD' ? config.usdRate : 1);
     const count = occurrences(expense, calendarPeriodStart, calendarNow);
@@ -333,8 +341,8 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       estimatedStoresRub, estimatesIncludedInGross: false },
     receipts, estimatedReceipts,
     expenses: { totalRub: totalExpensesRub, monthlyRub: round(monthlyRub), recurringRub: round(recurringRub), oneOffRub: round(oneOffRub),
-      lines, cloudflare: { usd: config.cloudflareMonthlyUsd, rub: lines[0].periodRub, monthlyRub: cloudflareMonthlyRub, basis: 'budget' },
-      domain: { rub: lines[1].periodRub, monthlyRub: config.domainMonthlyRub, basis: 'budget' },
+      lines, cloudflare: { usd: config.cloudflareMonthlyUsd, rub: cloudflarePeriodRub, monthlyRub: cloudflareMonthlyRub, enabled: config.cloudflareEnabled, basis: 'budget' },
+      domain: { rub: domainPeriodRub, monthlyRub: domainMonthlyRub, enabled: config.domainEnabled, basis: 'budget' },
       ai: { usd: Number(aiCostUsd.toFixed(6)), rub: aiCostRub, periodRub: aiPeriodRub, scope: 'all',
         includedInTotal: aiIncluded, available: aiValues[0] !== null && aiValues[0] !== undefined,
         totalRequests: aiNumbers[1] || 0, promptTokens: aiNumbers[2] || 0, candidateTokens: aiNumbers[3] || 0 },
@@ -376,6 +384,11 @@ export async function handleEconomyAdmin(request, env, url, deps = {}) {
   const config = await getEconomyConfig(env);
   const list = config[key];
   const id = typeof body.id === 'string' ? body.id : '';
+  const builtinConfigKey = id === 'builtin-cloudflare' ? 'cloudflareEnabled' : id === 'builtin-domain' ? 'domainEnabled' : null;
+  if (kind === 'expenses' && action === 'delete' && builtinConfigKey) {
+    await saveEconomyConfig(env, { [builtinConfigKey]: false });
+    return reply({ ok: true, id });
+  }
   const index = list.findIndex(item => item.id === id);
   if (action !== 'add' && !id) return reply({ error: 'Не указан ID' }, 400);
   if (action !== 'add' && index < 0) return reply({ error: 'Запись не найдена' }, 404);

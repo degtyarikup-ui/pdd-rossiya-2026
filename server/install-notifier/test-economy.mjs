@@ -376,3 +376,68 @@ test('legacy ISO dates migrate to the Moscow day while date-only dates stay lite
   await saveEconomyConfig(env, { domainMonthlyRub: 0 });
   assert.equal((await getEconomyConfig(env)).manualRevenues[0].date, '2026-10-01');
 });
+
+
+test('infrastructure flags default to enabled for new and legacy configurations', async () => {
+  const env = environment();
+  const defaults = await getEconomyConfig(env);
+  assert.equal(defaults.cloudflareEnabled, true);
+  assert.equal(defaults.domainEnabled, true);
+  await env.INSTALLS.put('economy_config', JSON.stringify({ cloudflareMonthlyUsd: 5, domainMonthlyRub: 67 }));
+  const legacy = await stats(env);
+  assert.equal(legacy.config.cloudflareEnabled, true);
+  assert.equal(legacy.config.domainEnabled, true);
+  assert.equal(legacy.expenses.monthlyRub, 542);
+  assert.equal(legacy.expenses.lines.length, 2);
+});
+
+test('deleting builtin expenses disables their budget, preserves the rate and supports restoring', async () => {
+  for (const [id, flag, amountKey, amount, source] of [
+    ['builtin-cloudflare', 'cloudflareEnabled', 'cloudflareMonthlyUsd', 5, 'cloudflare'],
+    ['builtin-domain', 'domainEnabled', 'domainMonthlyRub', 67, 'domain'],
+  ]) {
+    const env = environment();
+    const otherFlag = flag === 'cloudflareEnabled' ? 'domainEnabled' : 'cloudflareEnabled';
+    await seedConfig(env, { [amountKey]: amount, [otherFlag]: false,
+      extraExpenses: [{ id: 'custom', title: 'Custom', amount: 25, currency: 'RUB', frequency: 'once', date: '2026-10-01' }] });
+    const before = await stats(env);
+    const previousCost = before.expenses[source].rub;
+    assert.ok(previousCost > 0);
+    const removed = await api(env, 'expenses/delete', { id });
+    assert.equal(removed.status, 200);
+    assert.equal(removed.data.id, id);
+    const stored = await getEconomyConfig(env);
+    assert.equal(stored[flag], false);
+    assert.equal(stored[amountKey], amount);
+    assert.equal(stored.extraExpenses.length, 1);
+    const disabled = await stats(env);
+    assert.equal(disabled.expenses.lines.some(line => line.id === id), false);
+    assert.equal(disabled.expenses[source].rub, 0);
+    assert.equal(disabled.expenses[source].monthlyRub, 0);
+    assert.equal(disabled.expenses[source].enabled, false);
+    assert.equal(disabled.expenses.monthlyRub, 0);
+    assert.equal(disabled.expenses.recurringRub, 0);
+    assert.equal(disabled.expenses.totalRub, 25);
+    assert.equal(disabled.breakEven.monthlyRub, 0);
+    assert.equal((await api(env, 'expenses/delete', { id })).status, 200);
+    assert.equal((await api(env, 'settings', { [flag]: true })).status, 200);
+    const restored = await stats(env);
+    assert.equal(restored.expenses.lines.some(line => line.id === id), true);
+    assert.equal(restored.expenses[source].rub, previousCost);
+    assert.equal(restored.config[amountKey], amount);
+    assert.equal(restored.expenses.extraList.length, 1);
+  }
+});
+
+test('infrastructure enable settings accept only booleans and failed saves preserve prior flags', async () => {
+  const env = environment();
+  assert.equal((await api(env, 'settings', { cloudflareEnabled: false, domainEnabled: false })).status, 200);
+  for (const key of ['cloudflareEnabled', 'domainEnabled']) {
+    for (const value of ['false', 0, 1, null, [], {}]) {
+      assert.equal((await api(env, 'settings', { [key]: value })).status, 400);
+      assert.equal((await getEconomyConfig(env))[key], false);
+    }
+  }
+  assert.equal((await api(env, 'revenues/delete', { id: 'builtin-cloudflare' })).status, 404);
+  assert.equal((await getEconomyConfig(env)).cloudflareEnabled, false);
+});
