@@ -25,7 +25,40 @@ func check(ok: bool, label: String) -> void:
 func _initialize() -> void:
 	call_deferred("run")
 
+func foliage_colours() -> void:
+	for season_name in ["summer", "autumn", "winter"]:
+		var sc := Scenery.new(season_name)
+		var props: Array = []
+		for prop in ["trees/pine_0", "trees/round_0", "trees/birch_0", "street/bush", "street/lamp"]:
+			# Editor brushes save null; older/manual data can omit tint or use an empty string.
+			for value in [null, "", "missing", "#654321", "#ffffff"]:
+				var item := {"prop":prop, "pos":[props.size()*3.0, 0.0, 0.0], "yaw":0.3, "scale":[1.0, 1.0, 1.0]}
+				if value != "missing": item["tint"] = value
+				props.append(item)
+		var sit := Situation.new()
+		sit.data = {"props":props}
+		sit._place_props(sc)
+		for prop: String in sit._pool_nodes:
+			var tints: Array = sit._pool_nodes[prop].get_meta("instance_tints")
+			var label: String = season_name+" "+prop
+			for i in 3:
+				var tint: Color = tints[i]
+				if prop == "street/lamp":
+					check(Vector3(tint.r,tint.g,tint.b).is_equal_approx(Vector3.ONE),label+" untinted furniture stays neutral")
+				else:
+					check(tint.s > (.02 if season_name == "winter" else .1) and tint.v < .95,label+" absent foliage tint has a natural colour")
+					if prop == "trees/pine_0": check(tint.g > tint.r and tint.g > tint.b,label+" conifers remain green")
+				check(is_equal_approx(tint.a,1.0 if season_name == "winter" else 0.0),label+" winter snow is independent of RGB")
+			check(tints[3].is_equal_approx(Color("#654321",tints[3].a)),label+" explicit author colour is preserved")
+			check(tints[4].is_equal_approx(Color(1,1,1,tints[4].a)),label+" explicit white is preserved")
+			if DisplayServer.get_name() != "headless":
+				for i in tints.size():
+					var actual: Color = sit._pools[prop].get_instance_custom_data(i)
+					check(Vector4(actual.r,actual.g,actual.b,actual.a).distance_to(Vector4(tints[i].r,tints[i].g,tints[i].b,tints[i].a)) < .001,label+" native buffer receives foliage colour and snow")
+		sit.free()
+
 func run() -> void:
+	foliage_colours()
 	var sc := Scenery.new("summer")
 	var vertices_total := 0
 	var triangles_total := 0
@@ -97,12 +130,16 @@ func run() -> void:
 			check(multi.instance_count==list.size(),id+" "+prop+" authored instance count")
 			check((sit._pool_nodes[prop] as MultiMeshInstance3D).material_override==sc.material,id+" shared material/pool")
 			var poses: Array=sit._pool_nodes[prop].get_meta("instance_transforms")
+			var tints: Array=sit._pool_nodes[prop].get_meta("instance_tints")
 			for i in list.size():
 				var p: Dictionary=list[i]
 				var expected:=Transform3D(Basis(Vector3.UP,p.yaw).scaled(Situation._v(p.scale)),Situation._v(p.pos))
 				# Dummy headless RenderingServer cannot read MultiMesh transforms back.
 				var actual: Transform3D=poses[i] if DisplayServer.get_name()=="headless" else multi.get_instance_transform(i)
 				check(actual.is_equal_approx(expected),id+" saved pos/yaw/scale unchanged")
+				if not p.get("tint") and (prop.begins_with("trees/") or prop=="street/bush"):
+					var tint: Color = tints[i]
+					check(tint.s>.1 and tint.v<.95,id+" untinted foliage is coloured")
 				authored+=1
 		sit.free()
 	check(authored>100,"real authored environment instances covered")
