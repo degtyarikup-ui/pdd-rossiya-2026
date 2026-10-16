@@ -24,6 +24,8 @@ func _settle(ui: CrossroadsUi) -> void:
 	for i in 4:
 		await process_frame
 	ui._layout()
+	if ui._results.visible and ui._results._numbers != null and ui._results._numbers.is_running():
+		await ui._results._numbers.finished
 
 
 func _run() -> void:

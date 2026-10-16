@@ -23,6 +23,10 @@ func _settle(crossroads: CrossroadsUi, regulator: RegulatorUi) -> void:
 	regulator._layout()
 	for frame in 8:
 		await process_frame
+	for result in [crossroads._results, regulator._results]:
+		if result._numbers != null and result._numbers.is_running():
+			await result._numbers.finished
+	for frame in 2: await process_frame
 
 
 func _run() -> void:
@@ -32,7 +36,7 @@ func _run() -> void:
 		var regulator := RegulatorUi.new()
 		root.add_child(crossroads)
 		root.add_child(regulator)
-		for viewport_size in [Vector2i(280, 640), Vector2i(390, 844), Vector2i(844, 390), Vector2i(1024, 768)]:
+		for viewport_size in [Vector2i(280, 640), Vector2i(320, 568), Vector2i(360, 640), Vector2i(390, 844), Vector2i(430, 932), Vector2i(844, 390), Vector2i(932, 430), Vector2i(768, 1024), Vector2i(1024, 768)]:
 			root.content_scale_size = viewport_size
 			root.size = viewport_size
 			crossroads.show_results(1540, 12, 2, 8, true, 1000)
@@ -56,6 +60,7 @@ func _run() -> void:
 					"result statistics agree " + context)
 				_expect(result.cover.size.y >= 150.0,
 					"vehicle keeps a readable preview " + context)
+				_expect(result.exit_button.size.is_equal_approx(Vector2(48, 48)), "close stays exactly square with wrapped headings " + context)
 				_expect(result.restart_button.size.y >= 48.0 and result.exit_button.size.y >= 48.0,
 					"full-width actions keep comfortable tap targets " + context)
 				result.scroll.scroll_vertical = 2147483647

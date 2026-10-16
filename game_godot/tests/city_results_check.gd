@@ -39,7 +39,7 @@ func _run() -> void:
 	check(world.ui.results.visible, "full-screen result belongs to the game")
 	check(world.camera.cull_mask == 0 and world.sound.suspended, "covered world stops rendering and traffic audio")
 	check(world.ui.results.stat_values[0].text == "11/20", "city answer count")
-	check(world.ui.results.stat_values[1].text.begins_with("3.1"), "city distance metric")
+	check(world.ui.results.stat_values[1].text.begins_with("3,1"), "city distance metric")
 	check(world.ui.results._car.scene_file_path == "res://models/vehicles/coupe.glb", "actual selected vehicle")
 	check(world.ui.results._preview.render_target_update_mode != SubViewport.UPDATE_ALWAYS, "preview stops updating after arrival")
 	world._restart_result()

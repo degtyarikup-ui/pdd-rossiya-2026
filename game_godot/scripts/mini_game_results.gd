@@ -28,6 +28,19 @@ var _studio: Node3D
 var _car: Node3D
 var _arrival: Tween
 var _reveal: Tween
+var _numbers: Tween
+var _rays: Rays
+var _glow: ColorRect
+var _score_pill: PanelContainer
+var _score_layout_key := Vector3(-1, -1, -1)
+var _score_total := 0
+var _solved_total := 0
+var _answered_total := 0
+var _count_progress := 1.0
+var _distance_m := -1.0
+var _wheel_starts: Array[Dictionary] = []
+const COUNT_DURATION := 0.56
+const ARRIVAL_DURATION := 0.82
 var _review: PanelContainer
 var _actions: GridContainer
 var _footer: VBoxContainer
@@ -39,10 +52,9 @@ func _init(_legacy_cover := "") -> void:
 	background.color = Color(Ui.LIGHT.accent)
 	background.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	add_child(background)
-	var rays := Rays.new()
-	rays.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	rays.mouse_filter = MOUSE_FILTER_IGNORE
-	add_child(rays)
+	_rays = Rays.new()
+	add_child(_rays)
+	visibility_changed.connect(_visibility_changed)
 	card = PanelContainer.new()
 	card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(card)
@@ -60,6 +72,9 @@ func _init(_legacy_cover := "") -> void:
 	exit_button = _button("", true)
 	exit_button.custom_minimum_size = Vector2(48, 48)
 	exit_button.size_flags_horizontal = SIZE_SHRINK_END
+	exit_button.size_flags_vertical = SIZE_SHRINK_CENTER
+	# Icon-only control: neither text scaling nor a wrapped title may stretch it.
+	exit_button.add_theme_font_size_override("font_size", 14)
 	exit_button.accessibility_name = Ui.t("gameExit")
 	var close := Ui.icon(0xf647, 24, Ui.c("text"))
 	close.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
@@ -83,8 +98,10 @@ func _init(_legacy_cover := "") -> void:
 	cover.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	cover.mouse_filter = MOUSE_FILTER_IGNORE
 	content.add_child(cover)
+	_build_glow()
 	_build_studio()
-	var score_pill := PanelContainer.new()
+	_score_pill = PanelContainer.new()
+	var score_pill := _score_pill
 	score_pill.size_flags_horizontal = SIZE_SHRINK_CENTER
 	var gold := Ui.box(Ui.c("gold"), 40)
 	gold.content_margin_left = 24
@@ -139,6 +156,8 @@ func _init(_legacy_cover := "") -> void:
 	restart_button.pressed.connect(func(): restart_pressed.emit())
 	_footer.add_child(restart_button)
 	body.add_child(_footer)
+	set_process(false)
+	_rays.set_process(false)
 
 func _build_studio() -> void:
 	_preview = SubViewport.new()
@@ -173,22 +192,34 @@ func set_vehicle(id: String, paint: Color) -> void:
 	var model := id if ResourceLoader.exists("res://models/vehicles/%s.glb" % id) else "sedan"
 	_car = Models.player_car(model, paint)
 	_studio.add_child(_car)
+	_wheel_starts.clear()
+	for wheel in _car.find_children("wheel_*", "", true, false):
+		_wheel_starts.append({"node": wheel, "rotation": wheel.rotation})
 	_preview.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func layout(bounds: Rect2) -> void:
 	_bounds = bounds
 	var width := minf(520, bounds.size.x)
+	_fit_score(width)
 	card.position = Vector2(bounds.position.x + (bounds.size.x - width) / 2, bounds.position.y)
 	card.size = Vector2(width, bounds.size.y)
-	_actions.columns = 1 if width < 300 or Ui.text_scale() > 1.3 else 2
+	_actions.columns = 1 if width < 300 or (Ui.text_scale() > 1.3 and width < 420) else 2
+	var button_height := maxf(48, roundf((22 if bounds.size.y < 320 else 32) * Ui.text_scale() + (12 if bounds.size.y < 320 else 16)))
+	for button in [mistakes_button, ranking_button, restart_button]:
+		button.custom_minimum_size.y = button_height
 	cover.custom_minimum_size.y = clampf(bounds.size.y * 0.36, 150, 300)
 
 func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, best: int, _time_up := false) -> void:
-	score_label.text = str(score)
+	_score_total = maxi(0, score)
+	_solved_total = maxi(0, solved)
+	_answered_total = maxi(_solved_total, solved + wrong)
+	_distance_m = -1
+	_score_layout_key.x = -1
+	_fit_score(minf(520, _bounds.size.x) if _bounds.size.x > 0 else 520)
+	_update_count(1.0)
 	record_badge.visible = is_record and best > 0
 	best_label.visible = not is_record and best > 0
 	best_label.text = Ui.t("gameBestScore", {"score": best})
-	stat_values[0].text = "%d/%d" % [solved, solved + wrong]
 	stat_values[1].text = "×%d" % max_combo
 	stat_captions[1].text = Ui.t("gameComboLabel")
 	(mistakes_button.get_meta("caption") as Label).text = Ui.t("gameRunMistakesButton", {"count": wrong})
@@ -204,17 +235,104 @@ func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record
 		set_vehicle(vehicle, paint)
 	if not is_inside_tree(): return
 	if is_instance_valid(_reveal): _reveal.kill()
+	if is_instance_valid(_numbers): _numbers.kill()
+	if is_instance_valid(_arrival): _arrival.kill()
+	_update_count(0.0)
+	_numbers = create_tween()
+	_numbers.tween_method(_update_count, 0.0, 1.0, COUNT_DURATION).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	modulate.a = 0
-	_reveal = create_tween()
-	_reveal.tween_property(self, "modulate:a", 1.0, 0.22)
-	_car.position = Vector3(0, 0, -5)
+	_glow.modulate.a = 0
+	_reveal = create_tween().set_parallel(true)
+	_reveal.tween_property(self, "modulate:a", 1.0, 0.18)
+	_reveal.tween_property(_glow, "modulate:a", 1.0, 0.65)
+	_drive_in(0.0)
 	_preview.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_arrival = create_tween()
-	_arrival.tween_property(_car, "position", Vector3.ZERO, 0.7).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_arrival.tween_method(_drive_in, 0.0, 1.0, ARRIVAL_DURATION).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_arrival.tween_callback(func(): _preview.render_target_update_mode = SubViewport.UPDATE_ONCE)
+	_rays.rotation = -0.12
+	_visibility_changed()
+
+func _fit_score(width: float) -> void:
+	var digits := str(_score_total).length()
+	var key := Vector3(width, digits, Ui.text_scale())
+	if key == _score_layout_key: return
+	_score_layout_key = key
+	var font_size := roundi(36 * Ui.text_scale())
+	# Always reserve scrollbar room; 4 digits and large type must also fit 280 dp.
+	var room := maxf(40, width - scroll.get_v_scroll_bar().get_combined_minimum_size().x - 48 - 32 - 10 - 2)
+	var number_width := _widest_digit(font_size) * digits
+	if number_width > room:
+		font_size = maxi(20, floori(font_size * room / number_width))
+	score_label.add_theme_font_size_override("font_size", font_size)
+	# Reserve the widest digits, not only the final string (888 can exceed 111).
+	score_label.custom_minimum_size.x = ceilf(_widest_digit(font_size) * digits)
+
+func _widest_digit(font_size: int) -> float:
+	var width := 0.0
+	for digit in "0123456789":
+		width = maxf(width, Ui.font(800).get_string_size(digit, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+	return width
+
+func _update_count(progress: float) -> void:
+	_count_progress = progress
+	score_label.text = str(roundi(_score_total * progress))
+	stat_values[0].text = "%d/%d" % [roundi(_solved_total * progress), _answered_total]
+	if _distance_m >= 0:
+		stat_values[1].text = _distance_text(roundf(_distance_m / 100.0 * progress) / 10.0)
+
+func set_distance(distance_m: float) -> void:
+	_distance_m = maxf(0, distance_m)
+	stat_captions[1].text = Ui.t("gameDistance")
+	_update_count(_count_progress)
+
+func _distance_text(km: float) -> String:
+	var number := "%.1f" % km
+	if Ui.lang in ["ru", "kk"]: number = number.replace(".", ",")
+	return number + " " + Ui.t("gameKilometers")
+
+func _drive_in(progress: float) -> void:
+	_car.position = Vector3(0, 0, lerpf(-6.0, 0.0, progress))
+	_car.rotation.y = lerpf(-0.12, 0.0, progress)
+	for wheel in _wheel_starts:
+		wheel.node.rotation = wheel.rotation + Vector3(progress * 6.0 / 0.32, 0, 0)
+
+func _build_glow() -> void:
+	_glow = ColorRect.new()
+	_glow.mouse_filter = MOUSE_FILTER_IGNORE
+	_glow.show_behind_parent = true
+	_glow.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	var shader := Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 p = (UV - vec2(0.5)) * vec2(2.2, 2.5);
+	float glow = exp(-dot(p, p) * 3.0);
+	COLOR = vec4(0.25, 0.85, 1.0, glow * 0.28) * COLOR;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	_glow.material = material
+	cover.add_child(_glow)
+
+func _process(_delta: float) -> void:
+	# Track actual container layout/scrolling. Rotation only changes a 2D transform.
+	var center := _score_pill.get_global_rect().get_center()
+	_rays.position = get_global_transform().affine_inverse() * center
+	_rays.set_radius(minf(size.y * 0.45, 390))
+
+func _visibility_changed() -> void:
+	var active := is_visible_in_tree()
+	set_process(active)
+	_rays.set_process(active and not is_instance_valid(_review))
 
 func hide_results() -> void:
 	dismiss_review()
+	if is_instance_valid(_numbers): _numbers.kill()
+	_update_count(1.0)
+	for button in [exit_button, restart_button, mistakes_button, ranking_button]:
+		_reset_button(button)
 	if is_instance_valid(_arrival): _arrival.kill()
 	if is_instance_valid(_reveal): _reveal.kill()
 	_preview.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -229,8 +347,15 @@ func _button(text: String, primary: bool) -> Button:
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.add_theme_font_override("font", Ui.font(600))
 	button.add_theme_font_size_override("font_size", roundi(14 * Ui.text_scale()))
-	for state in ["normal", "hover", "pressed", "focus"]:
-		var box := Ui.box(Color.WHITE if primary else Color(1, 1, 1, 0.18), 12)
+	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
+		var background := Color.WHITE if primary else Color(1, 1, 1, 0.18)
+		if state == "hover": background = Color("#EDF5FF") if primary else Color(1, 1, 1, 0.24)
+		if state in ["pressed", "hover_pressed"]: background = Color("#DDEBFF") if primary else Color(1, 1, 1, 0.30)
+		var box := Ui.box(background, 12)
+		if state == "focus":
+			box.bg_color = Color.TRANSPARENT
+			box.border_color = Color(Ui.LIGHT.accent) if primary else Color.WHITE
+			box.set_border_width_all(2)
 		box.content_margin_left = 8
 		box.content_margin_right = 8
 		box.content_margin_top = 10
@@ -238,7 +363,26 @@ func _button(text: String, primary: bool) -> Button:
 		button.add_theme_stylebox_override(state, box)
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		button.add_theme_color_override(state, Color(Ui.LIGHT.accent) if primary else Color.WHITE)
+	button.resized.connect(func(): button.pivot_offset = button.size * 0.5)
+	button.button_down.connect(func(): _press_button(button, true))
+	button.button_up.connect(func(): _press_button(button, false))
+	button.focus_exited.connect(func(): _press_button(button, false))
+	button.pressed.connect(func(): GameSound.buzz(8))
 	return button
+
+func _press_button(button: Button, down: bool) -> void:
+	if button.disabled or not button.is_inside_tree(): return
+	var previous: Tween = button.get_meta("press_tween") if button.has_meta("press_tween") else null
+	if is_instance_valid(previous): previous.kill()
+	button.pivot_offset = button.size * 0.5
+	var tween := button.create_tween()
+	button.set_meta("press_tween", tween)
+	tween.tween_property(button, "scale", Vector2.ONE * (0.97 if down else 1.0), 0.07 if down else 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+func _reset_button(button: Button) -> void:
+	var tween: Tween = button.get_meta("press_tween") if button.has_meta("press_tween") else null
+	if is_instance_valid(tween): tween.kill()
+	button.scale = Vector2.ONE
 
 func _action_icon(button: Button, code: int) -> void:
 	var row := HBoxContainer.new()
@@ -270,6 +414,7 @@ func _show_mistakes(explanations: Array[String]) -> void:
 	if is_instance_valid(_review): return
 	var panel := PanelContainer.new()
 	_review = panel
+	_rays.set_process(false)
 	panel.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	var style := Ui.box(Ui.c("background"), 0)
 	style.content_margin_left = 20
@@ -295,19 +440,23 @@ func _show_mistakes(explanations: Array[String]) -> void:
 		rows.add_child(Ui.scaled_label("%d. %s" % [i + 1, explanations[i]], 16, 500, Ui.c("text"), true))
 	add_child(panel)
 
-class Rays extends Control:
+class Rays extends Node2D:
+	var radius := 360.0
+	func set_radius(value: float) -> void:
+		if is_equal_approx(radius, value): return
+		radius = value
+		queue_redraw()
+	func _process(delta: float) -> void:
+		rotation = fposmod(rotation + delta * TAU / 60.0, TAU)
 	func _draw() -> void:
-		var origin := Vector2(size.x * 0.5, size.y * 0.5)
-		var radius := minf(size.y * 0.42, 360)
 		for i in 12:
 			var angle := float(i) * TAU / 12.0
-			var points := PackedVector2Array([origin, origin + Vector2.from_angle(angle) * radius, origin + Vector2.from_angle(angle + 0.19) * radius])
-			draw_polygon(points, PackedColorArray([Color(1, 1, 1, 0.025), Color(1, 1, 1, 0), Color(1, 1, 1, 0)]))
-	func _notification(what: int) -> void:
-		if what == NOTIFICATION_RESIZED: queue_redraw()
+			var points := PackedVector2Array([Vector2.ZERO, Vector2.from_angle(angle) * radius, Vector2.from_angle(angle + 0.19) * radius])
+			draw_polygon(points, PackedColorArray([Color(1, 1, 1, 0.045), Color(1, 1, 1, 0), Color(1, 1, 1, 0)]))
 
 func dismiss_review() -> bool:
 	if not is_instance_valid(_review): return false
 	_review.queue_free()
 	_review = null
+	_visibility_changed()
 	return true

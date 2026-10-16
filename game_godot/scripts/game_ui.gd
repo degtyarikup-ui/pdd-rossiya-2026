@@ -986,8 +986,7 @@ func show_result(summary: Dictionary, selection := {}, best := 0, can_restart :=
 	results.ranking_pressed.connect(func(): result_action_pressed.emit("ranking"))
 	results.mistakes_pressed.connect(func(): result_action_pressed.emit("mistakes"))
 	results.show_results(int(summary.score), int(summary.correct), int(summary.answered) - int(summary.correct), 0, int(summary.score) > best, best)
-	results.stat_values[1].text = "%.1f %s" % [float(summary.get("distance_m", 0)) / 1000.0, Ui.t("gameKilometers")]
-	results.stat_captions[1].text = Ui.t("gameDistance")
+	results.set_distance(float(summary.get("distance_m", 0)))
 	results.restart_button.disabled = not can_restart
 	if not can_restart: results.restart_button.text = Ui.t("gameResultNoRuns")
 	_layout_results()
