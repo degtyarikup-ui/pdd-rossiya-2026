@@ -1,4 +1,5 @@
 import 'package:pdd_app/data/services/usage_reporter.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/widgets/report_question_dialog.dart';
+import 'package:pdd_app/presentation/widgets/completion_review_prompt.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
@@ -53,6 +55,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   final List<int> _correctIndices = [];
   final List<int> _wrongIndices = [];
   bool _showHint = false;
+  bool _finishing = false;
   String? _lastSpokenQuestionId;
   int _voiceScheduleGen = 0;
   late final PageController _pageController;
@@ -252,6 +255,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   /// одной ошибки из «Работы над ошибками» — это один вопрос, и подводить
   /// по нему итог было бы издевательством.
   void _finishSession() {
+    if (_finishing || !_isAllAnswered) return;
+    _finishing = true;
     _voiceScheduleGen++;
     // Озвучку останавливаем, но НЕ ждём: это обращение к плагину, и если он
     // не ответит, человек останется на последнем вопросе с нажатой кнопкой.
@@ -270,11 +275,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     // незачем — «назад» должно вести к списку билетов или тем.
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => TrainingResultScreen(
-          title: widget.title,
-          total: widget.questions.length,
-          correct: _correctIndices.length,
-          wrongQuestions: wrongQuestions,
+        builder: (_) => CompletionReviewPrompt(
+          child: TrainingResultScreen(
+            title: widget.title,
+            total: widget.questions.length,
+            correct: _correctIndices.length,
+            wrongQuestions: wrongQuestions,
+          ),
         ),
       ),
     );

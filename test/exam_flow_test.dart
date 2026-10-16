@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
+import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
@@ -63,6 +64,7 @@ Future<ProgressDataSource> pumpExam(
   ExamRules? rules,
   List<Map<String, dynamic>>? questions,
   Map<String, dynamic>? resume,
+  ReviewPromptService? review,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final dataSource = ProgressDataSource();
@@ -75,6 +77,8 @@ Future<ProgressDataSource> pumpExam(
       overrides: [
         progressDataSourceProvider.overrideWithValue(dataSource),
         ttsServiceProvider.overrideWithValue(_SilentTts()),
+        if (review != null)
+          reviewPromptServiceProvider.overrideWithValue(review),
       ],
       child: MaterialApp(
         locale: const Locale('ru'),
@@ -108,6 +112,41 @@ Future<void> tapStripCell(WidgetTester tester, int number) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  for (final passed in [true, false]) {
+    testWidgets(
+      'exam requests review once at its natural end, passed=$passed',
+      (tester) async {
+        var requests = 0;
+        final review = ReviewPromptService.forTesting(
+          platform: TargetPlatform.iOS,
+          isAvailable: () async => true,
+          requestReview: () async {
+            requests++;
+          },
+        );
+        await pumpExam(tester, review: review);
+        await answerCurrent(tester, correct: passed);
+        expect(requests, 0);
+        if (passed) {
+          for (var i = 1; i < 20; i++) {
+            await answerCurrent(tester, correct: true);
+          }
+        } else {
+          // Two wrong answers in the same thematic block end an exam early.
+          await answerCurrent(tester, correct: false);
+        }
+        expect(requests, 1);
+        expect(
+          find.text(passed ? 'Экзамен сдан!' : 'Экзамен не сдан'),
+          findsOneWidget,
+        );
+        await tester.pump();
+        expect(requests, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('без ошибок: экзамен завершается сдачей после 20 ответов', (
     tester,

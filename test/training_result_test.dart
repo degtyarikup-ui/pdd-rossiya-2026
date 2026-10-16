@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
+import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
@@ -69,6 +70,7 @@ void main() {
     WidgetTester tester, {
     required int questions,
     ProgressDataSource? source,
+    ReviewPromptService? review,
   }) async {
     SharedPreferences.setMockInitialValues({});
     final data = source ?? ProgressDataSource();
@@ -85,6 +87,8 @@ void main() {
         overrides: [
           progressDataSourceProvider.overrideWithValue(data),
           ttsServiceProvider.overrideWithValue(_SilentTts()),
+          if (review != null)
+            reviewPromptServiceProvider.overrideWithValue(review),
         ],
         child: MaterialApp(
           key: UniqueKey(),
@@ -228,6 +232,52 @@ void main() {
 
     // Подводить итог по единственному вопросу — издевательство.
     expect(find.byType(TrainingResultScreen), findsNothing);
+  });
+
+  for (final correct in [true, false]) {
+    testWidgets(
+      'completed training requests once regardless of success: $correct',
+      (tester) async {
+        var requests = 0;
+        final review = ReviewPromptService.forTesting(
+          platform: TargetPlatform.iOS,
+          isAvailable: () async => true,
+          requestReview: () async {
+            requests++;
+          },
+        );
+        await pumpTraining(tester, questions: 2, review: review);
+        await answer(tester, correct: correct);
+        expect(requests, 0);
+        await nextOrFinish(tester);
+        await answer(tester, correct: correct);
+        expect(requests, 0);
+        // Two taps in the same frame must replace the route only once.
+        await tester.tap(find.text('Завершить'));
+        await tester.tap(find.text('Завершить'), warnIfMissed: false);
+        await tester.pumpAndSettle();
+        expect(requests, 1);
+        expect(find.byType(TrainingResultScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('single-question review never requests a store review', (
+    tester,
+  ) async {
+    var requests = 0;
+    final review = ReviewPromptService.forTesting(
+      platform: TargetPlatform.iOS,
+      isAvailable: () async => true,
+      requestReview: () async {
+        requests++;
+      },
+    );
+    await pumpTraining(tester, questions: 1, review: review);
+    await answer(tester, correct: true);
+    await nextOrFinish(tester);
+    expect(requests, 0);
   });
 
   testWidgets('пустая тренировка показывает заглушку без ошибки индекса', (

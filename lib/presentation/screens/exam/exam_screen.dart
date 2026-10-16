@@ -1,4 +1,5 @@
 import 'package:pdd_app/data/services/usage_reporter.dart';
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -22,6 +23,7 @@ import 'package:pdd_app/data/services/share_card_renderer.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_review_screen.dart';
 import 'package:pdd_app/presentation/widgets/share_result_card.dart';
+import 'package:pdd_app/presentation/widgets/completion_review_prompt.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
@@ -270,9 +272,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   /// лимиту экзамен ещё продолжался бы.
   bool _failedByBlockRule({bool countUnanswered = false}) {
     if (!_rules.hasBlockRule) return false;
-    return _mistakesByBlock(
-      countUnanswered: countUnanswered,
-    ).values.any((count) => count >= _rules.maxMistakesPerBlock);
+    return _mistakesByBlock(countUnanswered: countUnanswered).values
+        .any((count) => count >= _rules.maxMistakesPerBlock);
   }
 
   /// Ошибки среди отвеченных доп. вопросов (правило «ошибка в доп. блоке — не сдал»).
@@ -643,7 +644,11 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   @override
   Widget build(BuildContext context) {
     if (_examFinished) {
-      return _buildResultsScreen();
+      final result = _buildResultsScreen();
+      // A timeout with no answers is not a completed ticket.
+      return _savedAnswers.any((answer) => answer != null)
+          ? CompletionReviewPrompt(child: result)
+          : result;
     }
 
     if (_examQuestions.isEmpty) {
@@ -924,9 +929,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     }
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(appL10n.copiedToClipboard)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(appL10n.copiedToClipboard)));
   }
 
   Widget _buildResultsScreen() {

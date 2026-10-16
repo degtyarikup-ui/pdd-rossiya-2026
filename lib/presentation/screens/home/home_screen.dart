@@ -16,7 +16,6 @@ import 'package:pdd_app/data/services/app_update_service.dart';
 import 'package:pdd_app/presentation/widgets/app_update_dialog.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/data/services/remote_notifications_service.dart';
-import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
@@ -474,9 +473,6 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     final streak = await ref.read(streakProvider.future);
     if (!mounted || streak.current == 0) return;
     await showStreakCelebrationDialog(context: context, streak: streak);
-    // Сразу после поздравления — момент, когда пользователь доволен. Сервис
-    // сам решит, показывать ли (серия ≥ 3 дней и просим только один раз).
-    await ReviewPromptService.maybeRequest(currentStreak: streak.current);
   }
 
   @override

@@ -11,6 +11,8 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/game_question_history_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
+import 'package:pdd_app/data/services/review_prompt_service.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -66,6 +68,7 @@ void main() {
     bool premium = false,
     Locale locale = const Locale('ru'),
     ThemeMode themeMode = ThemeMode.system,
+    ReviewPromptService? review,
   }) async {
     garage.resetForTest();
     updateAppLocale(locale);
@@ -74,6 +77,8 @@ void main() {
         overrides: [
           progressDataSourceProvider.overrideWithValue(progress),
           isPremiumProvider.overrideWithValue(premium),
+          if (review != null)
+            reviewPromptServiceProvider.overrideWithValue(review),
         ],
         child: MaterialApp(
           locale: locale,
@@ -284,6 +289,97 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+    for (final behavior in ['dismiss', 'throw', 'hang']) {
+      testWidgets(
+        'city preserves saved results after review $behavior on $platform',
+        (tester) async {
+          final request = Completer<void>();
+          var requests = 0;
+          int? savedScoreAtRequest;
+          bool? hadResultAtRequest;
+          final review = ReviewPromptService.forTesting(
+            platform: platform,
+            isAvailable: () async => true,
+            requestReview: () {
+              requests++;
+              // Bookkeeping must finish before the native prompt starts.
+              hadResultAtRequest = find
+                  .byType(GameOverDialog)
+                  .evaluate()
+                  .isNotEmpty;
+              savedScoreAtRequest = progress.getGameBestScore();
+              if (behavior == 'throw') {
+                throw PlatformException(code: 'unavailable');
+              }
+              return request.future;
+            },
+          );
+          await open(tester, premium: true, review: review);
+          debugDefaultTargetPlatformOverride = platform;
+          nativeResponse = jsonEncode({
+            'run_started': true,
+            'finished': true,
+            'answered': 20,
+            'correct': 5,
+            'score': 50,
+            'mistakes': ['ticket_10_13'],
+          });
+          await tester.tap(find.text('City'));
+          await tester.pumpAndSettle();
+          expect(requests, 1);
+          expect(hadResultAtRequest, isFalse);
+          expect(savedScoreAtRequest, 50);
+          if (behavior != 'throw') {
+            expect(find.byType(GameOverDialog), findsNothing);
+            // The launching menu must not start a second game behind the prompt.
+            await GodotGame.playRegulator(gameContext, gameRef);
+            expect(launches, hasLength(1));
+            if (behavior == 'dismiss') {
+              request.complete();
+            } else {
+              await tester.pump(const Duration(seconds: 3));
+            }
+            await tester.pumpAndSettle();
+          }
+          final result = tester.widget<GameOverDialog>(
+            find.byType(GameOverDialog),
+          );
+          expect(result.state.score, 50);
+          expect(result.state.totalAnswered, 20);
+          expect(result.state.totalCorrect, 5);
+          expect(result.state.mistakes.single.id, 'ticket_10_13');
+          expect(progress.getGameBestScore(), 50);
+          if (!request.isCompleted) request.complete();
+          await tester.pumpAndSettle();
+          expect(find.byType(GameOverDialog), findsOneWidget);
+          expect(requests, 1);
+          debugDefaultTargetPlatformOverride = null;
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+
+  testWidgets('partial city ride never consumes a completion milestone', (
+    tester,
+  ) async {
+    var requests = 0;
+    final review = ReviewPromptService.forTesting(
+      platform: TargetPlatform.android,
+      isAvailable: () async => true,
+      requestReview: () async {
+        requests++;
+      },
+    );
+    await open(tester, premium: true, review: review);
+    nativeResponse = citySummary(3);
+    await launch(tester);
+    expect(requests, 0);
+    await review.onCompleted();
+    expect(requests, 1);
+  });
 
   testWidgets('city history persists after its launching route is disposed', (
     tester,

@@ -20,6 +20,7 @@ import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/game_question_history_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
+import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -405,9 +406,8 @@ class GodotGame {
       if (kIsWeb) {
         // The web route owns its own loading surface above the iframe.
         overlay.close();
-        result = await Navigator.of(
-          context,
-        ).push<String>(GodotWebScreen.route(args: args));
+        result = await Navigator.of(context)
+            .push<String>(GodotWebScreen.route(args: args));
       } else {
         result = await _channel.invokeMethod<String>('start', {'args': args});
       }
@@ -668,7 +668,6 @@ class GodotGame {
       }
       if (!context.mounted) return;
       loading.close();
-      _releaseRun(token);
       if (!premium) {
         // Only fully presented in-game banners are acknowledged. A reward still
         // waiting in the queue when the ride closes keeps the reveal fallback.
@@ -688,6 +687,21 @@ class GodotGame {
       // Left before the last question: the run waits for «Продолжить».
       if (!finished) return;
       if (!context.mounted) return;
+      // Progress, rewards and pending-run cleanup are already durable. Keep the
+      // launch guard until the optional request finishes, so a second game
+      // cannot start while we are preparing this ride's results.
+      final review = ref.read(reviewPromptServiceProvider);
+      await WidgetsBinding.instance.endOfFrame;
+      await review.onCompleted(
+        readyToRequest: () async =>
+            context.mounted &&
+            (ModalRoute.of(context)?.isCurrent ?? false) &&
+            (WidgetsBinding.instance.lifecycleState == null ||
+                WidgetsBinding.instance.lifecycleState ==
+                    AppLifecycleState.resumed),
+      );
+      if (!context.mounted) return;
+      _releaseRun(token);
       await _showResult(context, ref, summary, best: best, record: record);
     } finally {
       loading.close();
