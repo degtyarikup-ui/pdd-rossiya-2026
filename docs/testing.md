@@ -14,6 +14,7 @@ flutter test                        # все тесты Flutter
 | Android-скрипты сборки / загрузки | `python3 -m unittest discover -s tools/android_build -p 'test_*.py'`, `bash -n scripts/*.sh`, dev APK с подготовленным Godot через `scripts/build_dev.sh` |
 | Строки `*.arb` | `flutter gen-l10n`, затем `flutter test` |
 | Вход / Премиум / оплату | список из `docs/premium/README.md` + `npm run test:security` в `server/install-notifier` |
+| Экономику админки | `npm run test:economy`, `npm run test:economy:ui` из `server/install-notifier/` (Playwright + Chrome, см. `docs/admin/README.md`) |
 | Воркер | `cd server/install-notifier && npm test` и нужные `npm run test:*` |
 | Игру (`game_godot/`) | тесты Godot из `game_godot/tests/`, см. `docs/game/README.md`; мини-игры (`assets/game/`) — `tools/game_tests/*.cjs` |
 | Общие студийные записи Flutter/Godot | `python3 -m unittest tools/godot_export/test_question_audio.py`, `python3 tools/godot_export/export_question_audio.py --check` |

@@ -1,552 +1,397 @@
-// API раздела «Экономика»: доходы, расходы, фонд развития, доли партнеров,
-// точка безубыточности, юнит-экономика и реестр чеков.
-// Хранилище настроек и кастомных записей: KV env.INSTALLS (economy_config).
-
+// Админский учёт экономики. Платежи и сроки Premium здесь не изменяются.
+// Денежные поступления, оценки продаж и бюджет расходов считаются отдельно.
 export const DEFAULT_ECONOMY_CONFIG = {
-  usdRate: 95.0,             // Курс USD/RUB
-  cloudflareMonthlyUsd: 5.0,  // Подписка Cloudflare в $
-  domainMonthlyRub: 67.0,     // Домен pdd-drive.ru (800 ₽ в год = ~67 ₽ / мес)
-  reinvestPercent: 15.0,      // % реинвестиций в развитие (15% от операционной прибыли)
-  nikitaSharePercent: 6.7,    // Доля Никиты (6.7% от распределяемой прибыли)
-  sergeySharePercent: 93.3,   // Доля Сергея (93.3% от распределяемой прибыли)
-  targetMonthlyProfit: 50000, // Целевая прибыль по умолчанию (50 000 ₽)
-  excludeTestOrders: true,    // Исключать тестовые заказы (включая 99 ₽ СБП от разработчика)
+  usdRate: 95,
+  cloudflareMonthlyUsd: 5,
+  domainMonthlyRub: 67,
+  reinvestPercent: 15,
+  nikitaSharePercent: 6.7,
+  sergeySharePercent: 93.3,
+  targetMonthlyProfit: 50000,
+  excludeTestOrders: true,
   extraExpenses: [],
-  manualRevenues: [],         // Фактические подтвержденные выплаты от сторов (Apple, Google, RuStore)
+  manualRevenues: [],
 };
-
-const KV_ECONOMY_CONFIG_KEY = 'economy_config';
-
-function reply(data, status = 200, extraHeaders = {}) {
-  return Response.json(data, {
-    status,
-    headers: {
-      'Cache-Control': 'no-store',
-      'Content-Type': 'application/json; charset=utf-8',
-      ...extraHeaders,
-    },
-  });
+const CONFIG_KEY = 'economy_config';
+const DAY = 86400000;
+// Вся админка ведёт календарные даты по МСК (UTC+3). Суррогат UTC
+// используется только для арифметики календаря, а не для времени платежа.
+const MOSCOW_OFFSET = 3 * 3600000;
+const stores = { web: 'СБП (Platega)', appstore: 'App Store', googleplay: 'Google Play', rustore: 'RuStore', other: 'Другое' };
+const numericRules = {
+  usdRate: [0.0001, 100000], cloudflareMonthlyUsd: [0, 100000000],
+  domainMonthlyRub: [0, 100000000], reinvestPercent: [0, 100],
+  nikitaSharePercent: [0, 100], sergeySharePercent: [0, 100],
+  targetMonthlyProfit: [0, 1000000000],
+};
+const round = value => Math.round((value + Number.EPSILON) * 100) / 100;
+const dayString = value => new Date(value).toISOString().slice(0, 10);
+const dayStart = value => Date.parse(dayString(value));
+const reportDay = value => dayString(value + MOSCOW_OFFSET);
+function reply(data, status = 200) {
+  return Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
 }
-
-export function isTestOrder(ord) {
-  if (!ord) return false;
-  if (ord.isTest === true || ord.test === true) return true;
-  const email = String(ord.email || ord.accountEmail || '').toLowerCase();
-  const name = String(ord.name || '').toLowerCase();
-  const userId = String(ord.userId || '').toLowerCase();
-  if (email.includes('mojomaker') || email.includes('sergei') || name.includes('сергей') || userId.includes('test') || userId === 'admin') {
-    return true;
-  }
-  // Тестовая покупка за 99 ₽ в СБП от создателя
-  if (ord.amount === 99 && (ord.method === 2 || ord.method === 'sbp' || String(ord.tier).toLowerCase().includes('week'))) {
-    return true;
-  }
-  return false;
+function object(value) {
+  return value && typeof value === 'object' && !Array.isArray(value);
 }
-
-export async function getEconomyConfig(env) {
-  if (!env || !env.INSTALLS) return { ...DEFAULT_ECONOMY_CONFIG };
-  try {
-    const raw = await env.INSTALLS.get(KV_ECONOMY_CONFIG_KEY);
-    if (!raw) return { ...DEFAULT_ECONOMY_CONFIG };
-    const parsed = JSON.parse(raw);
-    return {
-      ...DEFAULT_ECONOMY_CONFIG,
-      ...parsed,
-      sergeySharePercent: Math.max(0, 100 - (Number(parsed.nikitaSharePercent) || DEFAULT_ECONOMY_CONFIG.nikitaSharePercent)),
-    };
-  } catch (err) {
-    console.error('getEconomyConfig error:', err);
-    return { ...DEFAULT_ECONOMY_CONFIG };
+function number(value, label, min = 0, max = 1000000000) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) {
+    throw new Error('Некорректное значение: ' + label);
   }
+  return value;
 }
-
-export async function saveEconomyConfig(env, updates) {
-  if (!env || !env.INSTALLS) return false;
-  const current = await getEconomyConfig(env);
-  const next = {
-    ...current,
-    ...updates,
+function date(value, label, fallback) {
+  if (value === undefined || value === null || value === '') {
+    if (fallback) return fallback;
+    throw new Error('Укажите дату: ' + label);
+  }
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2}))?$/.test(value)) {
+    throw new Error('Некорректная дата: ' + label);
+  }
+  const day = value.slice(0, 10);
+  const stamp = Date.parse(value);
+  const midnight = Date.parse(day);
+  if (!Number.isFinite(stamp) || !Number.isFinite(midnight) || dayString(midnight) !== day || day < '2000-01-01' || day > '2100-12-31') {
+    throw new Error('Некорректная дата: ' + label);
+  }
+  return value.length > 10 ? reportDay(stamp) : day;
+}
+function title(value) {
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > 160) throw new Error('Название: от 1 до 160 символов');
+  return value.trim();
+}
+function normalizeExpense(input, now = Date.now()) {
+  if (!object(input)) throw new Error('Некорректный расход');
+  const frequency = input.frequency ?? (input.monthly ? 'monthly' : 'once');
+  if (!['once', 'monthly', 'yearly'].includes(frequency)) throw new Error('Укажите периодичность расхода');
+  const currency = input.currency ?? 'RUB';
+  if (!['RUB', 'USD'].includes(currency)) throw new Error('Укажите валюту RUB или USD');
+  const amount = number(input.amount ?? input.amountRub, 'сумма расхода', 0.01);
+  const starts = date(input.date ?? input.createdAt, 'расход', reportDay(now));
+  const endDate = input.endDate ? date(input.endDate, 'окончание') : null;
+  if (endDate && endDate < starts) throw new Error('Дата окончания раньше даты начала');
+  return {
+    id: typeof input.id === 'string' ? input.id : crypto.randomUUID(),
+    title: title(input.title), amount, currency, frequency, date: starts, endDate,
+    // Совместимость с сохранёнными расходами и предыдущей версией панели.
+    amountRub: currency === 'RUB' ? amount : undefined, monthly: frequency === 'monthly',
+    createdAt: input.createdAt || new Date(now).toISOString(),
   };
-  if (typeof updates.nikitaSharePercent === 'number') {
-    next.nikitaSharePercent = Math.min(100, Math.max(0, updates.nikitaSharePercent));
-    next.sergeySharePercent = Number((100 - next.nikitaSharePercent).toFixed(2));
+}
+function normalizeRevenue(input, now = Date.now(), allowFuture = false) {
+  if (!object(input)) throw new Error('Некорректное поступление');
+  const store = input.store ?? 'other';
+  if (!Object.hasOwn(stores, store)) throw new Error('Укажите источник поступления');
+  const received = date(input.date ?? input.createdAt, 'поступление', reportDay(now));
+  if (!allowFuture && received > reportDay(now)) throw new Error('Поступление не может быть в будущем');
+  return { id: typeof input.id === 'string' ? input.id : crypto.randomUUID(),
+    title: title(input.title), amountRub: number(input.amountRub, 'сумма поступления', 0.01), store,
+    date: received, createdAt: input.createdAt || new Date(now).toISOString() };
+}
+function normalizeList(items, normalize) {
+  if (!Array.isArray(items)) return [];
+  return items.flatMap(item => { try { return [normalize(item)]; } catch (_) { return []; } });
+}
+function safeConfig(parsed = {}) {
+  const result = { ...DEFAULT_ECONOMY_CONFIG, extraExpenses: [], manualRevenues: [] };
+  for (const [key, [min, max]] of Object.entries(numericRules)) {
+    const value = parsed[key];
+    if (typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max) result[key] = value;
   }
-  if (typeof updates.reinvestPercent === 'number') {
-    next.reinvestPercent = Math.min(100, Math.max(0, updates.reinvestPercent));
+  if (!Object.hasOwn(parsed, 'nikitaSharePercent') && typeof parsed.sergeySharePercent === 'number') result.nikitaSharePercent = round(100 - result.sergeySharePercent);
+  result.sergeySharePercent = round(100 - result.nikitaSharePercent);
+  if (typeof parsed.excludeTestOrders === 'boolean') result.excludeTestOrders = parsed.excludeTestOrders;
+  result.extraExpenses = normalizeList(parsed.extraExpenses, normalizeExpense);
+  result.manualRevenues = normalizeList(parsed.manualRevenues, item => normalizeRevenue(item, Date.now(), true));
+  return result;
+}
+export function isTestOrder(order) {
+  if (!order) return false;
+  if (order.isTest === true || order.test === true || String(order.environment || '').toLowerCase() === 'sandbox') return true;
+  // Старые собственные проверки не имели isTest. Цена 99 ₽, имя и способ
+  // оплаты не являются признаками теста: это также обычные покупки клиентов.
+  const email = String(order.email || order.accountEmail || '').trim().toLowerCase();
+  return email === 'mojomaker.play@gmail.com';
+}
+export async function getEconomyConfig(env) {
+  if (!env?.INSTALLS) return safeConfig();
+  try { return safeConfig(JSON.parse(await env.INSTALLS.get(CONFIG_KEY) || '{}')); }
+  catch (_) { return safeConfig(); }
+}
+export async function saveEconomyConfig(env, updates) {
+  if (!env?.INSTALLS) throw new Error('Хранилище недоступно');
+  if (!object(updates)) throw new Error('Некорректные настройки');
+  const next = await getEconomyConfig(env);
+  for (const [key, value] of Object.entries(updates)) {
+    if (numericRules[key]) next[key] = number(value, key, ...numericRules[key]);
+    else if (key === 'excludeTestOrders') {
+      if (typeof value !== 'boolean') throw new Error('Некорректный фильтр тестовых оплат');
+      next[key] = value;
+    } else if (key === 'extraExpenses' || key === 'manualRevenues') {
+      if (!Array.isArray(value) || value.length > 1000) throw new Error('Слишком много записей');
+      next[key] = value.map(item => key === 'extraExpenses' ? normalizeExpense(item) : normalizeRevenue(item, Date.now(), true));
+    } else throw new Error('Неизвестная настройка: ' + key);
   }
-  if (typeof updates.usdRate === 'number' && updates.usdRate > 0) {
-    next.usdRate = updates.usdRate;
-  }
-  if (typeof updates.cloudflareMonthlyUsd === 'number' && updates.cloudflareMonthlyUsd >= 0) {
-    next.cloudflareMonthlyUsd = updates.cloudflareMonthlyUsd;
-  }
-  if (typeof updates.domainMonthlyRub === 'number' && updates.domainMonthlyRub >= 0) {
-    next.domainMonthlyRub = updates.domainMonthlyRub;
-  }
-  if (typeof updates.excludeTestOrders === 'boolean') {
-    next.excludeTestOrders = updates.excludeTestOrders;
-  }
-  if (Array.isArray(updates.extraExpenses)) {
-    next.extraExpenses = updates.extraExpenses;
-  }
-  if (Array.isArray(updates.manualRevenues)) {
-    next.manualRevenues = updates.manualRevenues;
-  }
-  await env.INSTALLS.put(KV_ECONOMY_CONFIG_KEY, JSON.stringify(next));
+  const hasNikita = Object.hasOwn(updates, 'nikitaSharePercent');
+  const hasSergey = Object.hasOwn(updates, 'sergeySharePercent');
+  if (hasNikita && hasSergey && Math.abs(updates.nikitaSharePercent + updates.sergeySharePercent - 100) > 0.001) throw new Error('Сумма долей должна быть 100%');
+  if (hasSergey && !hasNikita) next.nikitaSharePercent = round(100 - next.sergeySharePercent);
+  next.sergeySharePercent = round(100 - next.nikitaSharePercent);
+  await env.INSTALLS.put(CONFIG_KEY, JSON.stringify(next));
   return next;
 }
-
+async function listAll(env, prefix) {
+  if (!env?.INSTALLS) return [];
+  const keys = [];
+  let cursor;
+  do {
+    const page = await env.INSTALLS.list({ prefix, limit: 1000, ...(cursor ? { cursor } : {}) });
+    keys.push(...(page.keys || []));
+    cursor = !page.list_complete && page.cursor ? page.cursor : null;
+  } while (cursor);
+  return keys;
+}
+function timestamp(value) {
+  const parsed = typeof value === 'number' ? value
+    : typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? Date.parse(value) - MOSCOW_OFFSET
+    : Date.parse(value || '');
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+function inPeriod(time, start, now) { return time !== null && time >= start && time <= now; }
+function dueDate(expense, index) {
+  const start = new Date(expense.date + 'T00:00:00Z');
+  const month = start.getUTCMonth() + index * (expense.frequency === 'yearly' ? 12 : 1);
+  const first = new Date(Date.UTC(start.getUTCFullYear(), month, 1));
+  const lastDay = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+  return Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), Math.min(start.getUTCDate(), lastDay));
+}
+function occurrences(expense, periodStart, now) {
+  const start = Date.parse(expense.date);
+  const end = Math.min(now, expense.endDate ? Date.parse(expense.endDate) + DAY - 1 : now);
+  if (end < start) return 0;
+  if (expense.frequency === 'once') return inPeriod(start, periodStart, end) ? 1 : 0;
+  const from = new Date(Math.max(periodStart, start));
+  const anchor = new Date(start);
+  const monthDelta = (from.getUTCFullYear() - anchor.getUTCFullYear()) * 12 + from.getUTCMonth() - anchor.getUTCMonth();
+  const step = expense.frequency === 'yearly' ? 12 : 1;
+  let i = Math.max(0, Math.floor(monthDelta / step));
+  let count = 0;
+  for (let due = dueDate(expense, i); due <= end; due = dueDate(expense, ++i)) {
+    if (due >= periodStart) count++;
+  }
+  return count;
+}
+// Инфраструктура без дат списания — именно бюджет, пропорционально дням
+// каждого календарного месяца. Текущий день включён; будущие дни исключены.
+function budgetMonths(start, now) {
+  let cursor = dayStart(start);
+  const end = dayStart(now) + DAY;
+  let months = 0;
+  while (cursor < end) {
+    const date = new Date(cursor);
+    const nextMonth = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1);
+    const daysInMonth = new Date(nextMonth - DAY).getUTCDate();
+    const until = Math.min(end, nextMonth);
+    months += (until - cursor) / DAY / daysInMonth;
+    cursor = until;
+  }
+  return months;
+}
 export async function computeEconomyStats(env, period = 'month', deps = {}) {
+  if (!['month', '30d', 'all'].includes(period)) throw new Error('Неизвестный период');
+  const now = deps.now ?? Date.now();
+  const calendarNow = Date.parse(reportDay(now));
+  const nowDate = new Date(calendarNow);
+  const monthStart = Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), 1);
+  const calendarPeriodStart = period === 'month' ? monthStart : period === '30d' ? calendarNow - 29 * DAY : 0;
+  const periodStart = period === 'all' ? 0 : calendarPeriodStart - MOSCOW_OFFSET;
   const config = await getEconomyConfig(env);
-  const { listUserSummaries } = deps;
-
-  const now = Date.now();
-  const nowDate = new Date(now);
-  const currentMonthStart = new Date(Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), 1)).getTime();
-  const thirtyDaysStart = now - 30 * 86400000;
-
-  let periodStart = 0;
-  if (period === 'month') {
-    periodStart = currentMonthStart;
-  } else if (period === '30d') {
-    periodStart = thirtyDaysStart;
-  } else {
-    periodStart = 0; // all time
-  }
-
-  // 1. ИИ Затраты (Gemini)
-  let aiCostUsd = 0.18; // Базовое значение из Google AI Studio
-  let aiTotalRequests = 0;
-  let aiPromptTokens = 0;
-  let aiCandidateTokens = 0;
-  if (env && env.INSTALLS) {
-    try {
-      const rawCost = await env.INSTALLS.get('ai_stats_cost_usd');
-      if (rawCost !== null) aiCostUsd = parseFloat(rawCost);
-      aiTotalRequests = parseInt(await env.INSTALLS.get('ai_stats_total_req') || '0', 10);
-      aiPromptTokens = parseInt(await env.INSTALLS.get('ai_stats_prompt_tokens') || '0', 10);
-      aiCandidateTokens = parseInt(await env.INSTALLS.get('ai_stats_candidate_tokens') || '0', 10);
-    } catch (_) {}
-  }
-  const aiCostRub = Number((aiCostUsd * config.usdRate).toFixed(2));
-
-  // 2. Расходы на Cloudflare ($5) и Домен
-  const cloudflareMonthlyRub = Number((config.cloudflareMonthlyUsd * config.usdRate).toFixed(2));
-  const domainMonthlyRub = Number(config.domainMonthlyRub || 67.0);
-
-  // 3. Кастомные расходы из настроек
-  const extraExpenses = Array.isArray(config.extraExpenses) ? config.extraExpenses : [];
-  let extraExpensesRub = 0;
-  for (const exp of extraExpenses) {
-    const expDate = exp.createdAt ? new Date(exp.createdAt).getTime() : now;
-    if (exp.monthly || expDate >= periodStart) {
-      extraExpensesRub += Number(exp.amountRub) || 0;
-    }
-  }
-
-  const totalExpensesRub = Number((cloudflareMonthlyRub + domainMonthlyRub + aiCostRub + extraExpensesRub).toFixed(2));
-
-  // 4. Доходы и Чеки (Receipts)
-  const receipts = [];
+  const receipts = [], estimatedReceipts = [];
+  const knownDates = [];
+  const revenueByStore = { web: 0, appstore: 0, googleplay: 0, rustore: 0, other: 0 };
+  const remember = value => { const time = timestamp(value); if (time !== null && time <= now) knownDates.push(time); return time; };
   let webConfirmedOrdersCount = 0;
-  let webRevenueRub = 0;
-
-  if (env && env.INSTALLS) {
+  for (const key of await listAll(env, 'pay_order:')) {
     try {
-      const orderKeys = await env.INSTALLS.list({ prefix: 'pay_order:', limit: 500 });
-      for (const k of orderKeys.keys || []) {
-        try {
-          const rawOrder = await env.INSTALLS.get(k.name);
-          if (!rawOrder) continue;
-          const ord = JSON.parse(rawOrder);
-          if (ord && (ord.status === 'confirmed' || ord.confirmedAt)) {
-            const ordTime = Date.parse(ord.confirmedAt || ord.createdAt || 0);
-            const isTest = isTestOrder(ord);
-            const amt = Number(ord.amount) || (ord.tier === 'threeMonths' ? 290 : 99);
-
-            receipts.push({
-              id: ord.orderId || ord.txId,
-              date: ord.confirmedAt || ord.createdAt || new Date().toISOString(),
-              customer: ord.name || ord.accountEmail || ord.email || ord.userId || 'Пользователь',
-              email: ord.email || ord.accountEmail || '',
-              store: 'СБП (Platega)',
-              storeKey: 'web',
-              tier: ord.tier === 'threeMonths' ? '3 месяца' : '1 неделя',
-              amountRub: amt,
-              txId: ord.txId || ord.orderId || '—',
-              isTest,
-              status: ord.status || 'confirmed',
-            });
-
-            // Тестовые заказы исключаем из выручки, если включен фильтр excludeTestOrders
-            if (ordTime >= periodStart) {
-              if (!isTest || !config.excludeTestOrders) {
-                webRevenueRub += amt;
-                webConfirmedOrdersCount++;
-              }
-            }
-          }
-        } catch (_) {}
-      }
-    } catch (_) {}
+      const order = JSON.parse(await env.INSTALLS.get(key.name));
+      // Возврат сохраняет confirmedAt. Историческая дата подтверждения
+      // не делает chargebacked/canceled/mismatch оплату доходом.
+      if (!order || (order.status ? order.status !== 'confirmed' : !order.confirmedAt)) continue;
+      const time = remember(order.confirmedAt || order.createdAt);
+      if (!inPeriod(time, periodStart, now)) continue;
+      const amount = Number(order.amount);
+      if (!Number.isFinite(amount) || amount <= 0) continue;
+      const isTest = isTestOrder(order);
+      receipts.push({ id: order.orderId || order.txId || key.name, date: new Date(time).toISOString(),
+        customer: order.name || order.accountEmail || order.email || order.userId || 'Пользователь',
+        email: order.email || order.accountEmail || '', store: stores.web, storeKey: 'web',
+        tier: order.tier === 'threeMonths' ? '3 месяца' : '1 неделя', amountRub: amount,
+        txId: order.txId || order.orderId || key.name, isTest, status: 'confirmed', type: 'payment',
+        includedInRevenue: !isTest || !config.excludeTestOrders });
+      if (!isTest || !config.excludeTestOrders) { revenueByStore.web += amount; webConfirmedOrdersCount++; }
+    } catch (_) { /* Повреждённая отдельная запись не скрывает всю страницу. */ }
   }
-
-  // 5. Пользователи
-  let totalUsersCount = 0;
-  let activePayingCount = webConfirmedOrdersCount;
-  const storeCounts = {
-    web: webConfirmedOrdersCount,
-    appstore: 0,
-    googleplay: 0,
-    rustore: 0,
-    admin_grant: 0,
-  };
-
-  let appstoreRevenueRub = 0;
-  let gplayRevenueRub = 0;
-  let rustoreRevenueRub = 0;
+  let users = [];
+  if (typeof deps.listUserSummaries === 'function') users = await deps.listUserSummaries(env);
+  const storeCounts = { web: 0, appstore: 0, googleplay: 0, rustore: 0, admin_grant: 0 };
+  let activePayingCount = 0;
+  const seenTransactions = new Set();
+  for (const user of users) {
+    remember(user.createdAt);
+    const source = String(user.premiumSource || '').toLowerCase();
+    const expiry = timestamp(user.premiumExpiresAt);
+    if (user.isPremium && (!expiry || expiry > now)) {
+      if (Object.hasOwn(storeCounts, source)) storeCounts[source]++;
+      if (['web', 'appstore', 'googleplay', 'rustore'].includes(source)) activePayingCount++;
+    }
+    if (!['appstore', 'googleplay', 'rustore'].includes(source)) continue;
+    let full = user;
+    try { full = JSON.parse(await env.INSTALLS.get('user:' + user.id) || 'null') || user; } catch (_) {}
+    const purchase = full.verifiedPurchase || {};
+    // Проверка подписки может повторяться: storeVerifiedAt не дата продажи.
+    const time = remember(full.purchasedAt || user.purchasedAt || full.storeVerifiedAt || user.storeVerifiedAt);
+    if (!inPeriod(time, periodStart, now)) continue;
+    const txId = purchase.transactionId || purchase.orderId || user.id;
+    const unique = source + ':' + txId;
+    if (seenTransactions.has(unique)) continue;
+    seenTransactions.add(unique);
+    const product = String(purchase.productId || '').toLowerCase();
+    const duration = expiry && time ? (expiry - time) / DAY : 0;
+    const is3m = product.includes('3month') || duration >= 60;
+    const isTest = isTestOrder({ ...full, environment: purchase.environment });
+    estimatedReceipts.push({ id: txId, date: new Date(time).toISOString(), customer: user.name || user.email || 'Пользователь',
+      email: user.email || '', store: stores[source], storeKey: source, tier: is3m ? '3 месяца' : '1 неделя',
+      amountRub: is3m ? 290 : 99, txId, isTest, status: 'estimated', type: 'estimate', includedInRevenue: false,
+      dateBasis: full.purchasedAt || user.purchasedAt ? 'purchase' : 'verification' });
+  }
   let manualRevenuesRub = 0;
-
-  if (typeof listUserSummaries === 'function') {
-    try {
-      const users = await listUserSummaries(env);
-      totalUsersCount = users.length;
-      for (const u of users) {
-        if (u.isPremium) {
-          const src = (u.premiumSource || '').toLowerCase();
-          if (storeCounts[src] !== undefined) {
-            storeCounts[src]++;
-          }
-          if (src && src !== 'admin_grant' && src !== 'web') {
-            activePayingCount++;
-
-            // Получаем полную запись пользователя для чека и продукта
-            let fullUser = null;
-            if (env && env.INSTALLS && typeof env.INSTALLS.get === 'function') {
-              try {
-                const raw = await env.INSTALLS.get('user:' + u.id);
-                if (raw) fullUser = JSON.parse(raw);
-              } catch (_) {}
-            }
-
-            const vp = fullUser?.verifiedPurchase || {};
-            const prod = String(vp.productId || '').toLowerCase();
-            const purchaseTime = u.storeVerifiedAt
-              ? Number(u.storeVerifiedAt)
-              : Date.parse(u.purchasedAt || u.createdAt || 0);
-            const purchaseDate = new Date(purchaseTime).toISOString();
-            const expiryTime = Date.parse(u.premiumExpiresAt || 0);
-            const diffDays = (expiryTime && purchaseTime && expiryTime > purchaseTime)
-              ? Math.round((expiryTime - purchaseTime) / 86400000)
-              : 0;
-
-            const is3m = prod.includes('3month') || diffDays >= 60;
-            const amt = is3m ? 290 : 99;
-            const tierTitle = is3m ? '3 месяца' : '1 неделя';
-            const txId = vp.transactionId || u.id;
-
-            const storeName = src === 'appstore' ? 'App Store' : src === 'googleplay' ? 'Google Play' : src === 'rustore' ? 'RuStore' : 'Стор';
-
-            receipts.push({
-              id: txId,
-              date: purchaseDate,
-              customer: u.name || u.email || ('Пользователь ' + storeName),
-              email: u.email || '',
-              store: storeName,
-              storeKey: src,
-              tier: tierTitle,
-              amountRub: amt,
-              txId: txId,
-              isTest: false,
-              status: 'confirmed',
-            });
-
-            if (purchaseTime >= periodStart) {
-              if (src === 'appstore') appstoreRevenueRub += amt;
-              else if (src === 'googleplay') gplayRevenueRub += amt;
-              else if (src === 'rustore') rustoreRevenueRub += amt;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.error('listUserSummaries error in economy:', e);
-    }
+  for (const revenue of config.manualRevenues) {
+    const time = remember(revenue.date);
+    if (!inPeriod(time, periodStart, now)) continue;
+    revenueByStore[revenue.store] += revenue.amountRub;
+    manualRevenuesRub += revenue.amountRub;
+    receipts.push({ id: revenue.id, date: revenue.date, customer: revenue.title, email: '', store: stores[revenue.store],
+      storeKey: revenue.store, tier: 'Поступление', amountRub: revenue.amountRub, txId: revenue.id,
+      isTest: false, status: 'confirmed', type: 'manual', includedInRevenue: true, editable: true });
   }
-
-  // Ручные фактические выплаты от сторов (Apple, Google, RuStore)
-  const manualRevenues = Array.isArray(config.manualRevenues) ? config.manualRevenues : [];
-
-  for (const mr of manualRevenues) {
-    const mrDate = mr.date ? new Date(mr.date).getTime() : now;
-    const amt = Number(mr.amountRub) || 0;
-    receipts.push({
-      id: mr.id,
-      date: mr.date || mr.createdAt || new Date().toISOString(),
-      customer: mr.title || 'Выплата магазина',
-      email: '',
-      store: mr.store === 'appstore' ? 'App Store' : mr.store === 'googleplay' ? 'Google Play' : mr.store === 'rustore' ? 'RuStore' : 'Выплата',
-      storeKey: mr.store || 'other',
-      tier: 'Выплата стора',
-      amountRub: amt,
-      txId: mr.id,
-      isTest: false,
-      status: 'confirmed',
-    });
-
-    if (mrDate >= periodStart) {
-      manualRevenuesRub += amt;
-      if (mr.store === 'appstore') appstoreRevenueRub += amt;
-      else if (mr.store === 'googleplay') gplayRevenueRub += amt;
-      else if (mr.store === 'rustore') rustoreRevenueRub += amt;
-    }
+  config.extraExpenses.forEach(expense => remember(expense.date));
+  const budgetStart = period === 'all'
+    ? (knownDates.length ? Date.parse(reportDay(Math.min(...knownDates))) : monthStart)
+    : calendarPeriodStart;
+  const multiplier = budgetMonths(budgetStart, calendarNow);
+  const cloudflareMonthlyRub = round(config.cloudflareMonthlyUsd * config.usdRate);
+  const lines = [
+    { id: 'builtin-cloudflare', title: 'Cloudflare', amount: config.cloudflareMonthlyUsd, currency: 'USD', frequency: 'monthly',
+      date: dayString(budgetStart), endDate: null, builtin: true, source: 'cloudflare', basis: 'budget',
+      periodRub: round(cloudflareMonthlyRub * multiplier), monthlyRub: cloudflareMonthlyRub, occurrences: null },
+    { id: 'builtin-domain', title: 'Домен pdd-drive.ru', amount: config.domainMonthlyRub, currency: 'RUB', frequency: 'monthly',
+      date: dayString(budgetStart), endDate: null, builtin: true, source: 'domain', basis: 'budget',
+      periodRub: round(config.domainMonthlyRub * multiplier), monthlyRub: config.domainMonthlyRub, occurrences: null },
+  ];
+  let extraExpensesRub = 0, oneOffRub = 0, recurringRub = lines.reduce((sum, line) => sum + line.periodRub, 0);
+  let monthlyRub = cloudflareMonthlyRub + config.domainMonthlyRub;
+  for (const expense of config.extraExpenses) {
+    const amountRub = expense.amount * (expense.currency === 'USD' ? config.usdRate : 1);
+    const count = occurrences(expense, calendarPeriodStart, calendarNow);
+    const periodRub = round(amountRub * count);
+    const activeRecurring = expense.frequency !== 'once' && expense.date <= reportDay(now) && (!expense.endDate || expense.endDate >= reportDay(now));
+    const monthly = activeRecurring ? round(amountRub / (expense.frequency === 'yearly' ? 12 : 1)) : 0;
+    extraExpensesRub += periodRub;
+    monthlyRub += monthly;
+    if (expense.frequency === 'once') oneOffRub += periodRub; else recurringRub += periodRub;
+    lines.push({ ...expense, builtin: false, source: 'custom', basis: 'scheduled', amountRub: round(amountRub),
+      periodRub, monthlyRub: monthly, occurrences: count });
   }
-
-  // Сортировка чеков: новые сверху
-  receipts.sort((a, b) => Date.parse(b.date || 0) - Date.parse(a.date || 0));
-
-  const grossRevenueRub = Number((webRevenueRub + appstoreRevenueRub + gplayRevenueRub + rustoreRevenueRub).toFixed(2));
-
-  // 6. Операционная прибыль и Реинвестиции
-  const operatingProfitRub = Number((grossRevenueRub - totalExpensesRub).toFixed(2));
-
-  // Фонд развития (15% от операционной прибыли, если она положительная)
-  const reinvestPercent = Number(config.reinvestPercent) || 15.0;
-  const reinvestRub = operatingProfitRub > 0
-    ? Number(((operatingProfitRub * reinvestPercent) / 100).toFixed(2))
-    : 0;
-
-  // Чистая распределяемая прибыль = Операционная прибыль - Реинвестиции
-  const distributableNetProfitRub = operatingProfitRub > 0
-    ? Number((operatingProfitRub - reinvestRub).toFixed(2))
-    : operatingProfitRub;
-
-  // 7. Доли основателей (Никита 6.7%, Сергей 93.3% от чистой распределяемой прибыли)
-  const nikitaSharePercent = Number(config.nikitaSharePercent) || 6.7;
-  const sergeySharePercent = Number((100 - nikitaSharePercent).toFixed(2));
-
-  const sergeyPayoutRub = distributableNetProfitRub > 0
-    ? Number(((distributableNetProfitRub * sergeySharePercent) / 100).toFixed(2))
-    : 0;
-  const nikitaPayoutRub = distributableNetProfitRub > 0
-    ? Number(((distributableNetProfitRub * nikitaSharePercent) / 100).toFixed(2))
-    : 0;
-
-  // Рентабельность (Margin)
-  const marginPercent = grossRevenueRub > 0
-    ? Number(((distributableNetProfitRub / grossRevenueRub) * 100).toFixed(1))
-    : 0;
-
-  // 8. Точка безубыточности (Break-Even)
-  const weeklySubsToBreakEven = Math.max(1, Math.ceil(totalExpensesRub / 99));
-  const threeMonthSubsToBreakEven = Math.max(1, Math.ceil(totalExpensesRub / 290));
-  const coveragePercent = totalExpensesRub > 0
-    ? Math.round((grossRevenueRub / totalExpensesRub) * 100)
-    : 100;
-
-  // 9. Юнит-экономика
-  const payingConversionRate = totalUsersCount > 0
-    ? Number(((activePayingCount / totalUsersCount) * 100).toFixed(2))
-    : 0;
-  const arppu = activePayingCount > 0
-    ? Number((grossRevenueRub / activePayingCount).toFixed(0))
-    : 0;
-  const arpu = totalUsersCount > 0
-    ? Number((grossRevenueRub / totalUsersCount).toFixed(2))
-    : 0;
-
+  const aiKeys = ['ai_stats_cost_usd', 'ai_stats_total_req', 'ai_stats_prompt_tokens', 'ai_stats_candidate_tokens'];
+  const aiValues = env?.INSTALLS ? await Promise.all(aiKeys.map(key => env.INSTALLS.get(key))) : [];
+  const aiNumbers = aiValues.map(value => Math.max(0, Number(value) || 0));
+  const aiCostUsd = aiNumbers[0] || 0;
+  const aiCostRub = round(aiCostUsd * config.usdRate);
+  const aiIncluded = period === 'all' && aiValues[0] !== null && aiValues[0] !== undefined;
+  // В KV есть только накопительная стоимость ИИ. Не приписываем её месяцу.
+  const aiPeriodRub = aiIncluded ? aiCostRub : 0;
+  const totalExpensesRub = round(recurringRub + oneOffRub + aiPeriodRub);
+  const grossRevenueRub = round(Object.values(revenueByStore).reduce((sum, value) => sum + value, 0));
+  const operatingProfitRub = round(grossRevenueRub - totalExpensesRub);
+  const reinvestRub = round(Math.max(0, operatingProfitRub) * config.reinvestPercent / 100);
+  const distributableNetProfitRub = round(operatingProfitRub - reinvestRub);
+  const payout = Math.max(0, distributableNetProfitRub);
+  const nikitaPayoutRub = round(payout * config.nikitaSharePercent / 100);
+  const sergeyPayoutRub = round(payout - nikitaPayoutRub);
+  receipts.sort((a, b) => timestamp(b.date) - timestamp(a.date));
+  estimatedReceipts.sort((a, b) => timestamp(b.date) - timestamp(a.date));
+  const estimatedStoresRub = round(estimatedReceipts.reduce((sum, receipt) => sum + ((!receipt.isTest || !config.excludeTestOrders) ? receipt.amountRub : 0), 0));
   return {
-    period,
-    updatedAt: new Date(now).toISOString(),
-    config: {
-      usdRate: config.usdRate,
-      cloudflareMonthlyUsd: config.cloudflareMonthlyUsd,
-      domainMonthlyRub,
-      reinvestPercent,
-      nikitaSharePercent,
-      sergeySharePercent,
-      targetMonthlyProfit: config.targetMonthlyProfit,
-      excludeTestOrders: config.excludeTestOrders,
-      extraExpenses,
-      manualRevenues,
-    },
-    revenue: {
-      grossRub: grossRevenueRub,
-      webRub: Number(webRevenueRub.toFixed(2)),
-      appstoreRub: Number(appstoreRevenueRub.toFixed(2)),
-      gplayRub: Number(gplayRevenueRub.toFixed(2)),
-      rustoreRub: Number(rustoreRevenueRub.toFixed(2)),
-      manualRub: Number(manualRevenuesRub.toFixed(2)),
-      ordersCount: webConfirmedOrdersCount,
-      activePayingCount,
-      storeCounts,
-    },
-    receipts,
-    expenses: {
-      totalRub: totalExpensesRub,
-      cloudflare: {
-        usd: config.cloudflareMonthlyUsd,
-        rub: cloudflareMonthlyRub,
-      },
-      domain: {
-        rub: domainMonthlyRub,
-      },
-      ai: {
-        usd: Number(aiCostUsd.toFixed(4)),
-        rub: aiCostRub,
-        totalRequests: aiTotalRequests,
-        promptTokens: aiPromptTokens,
-        candidateTokens: aiCandidateTokens,
-      },
-      extraExpensesRub,
-      extraList: extraExpenses,
-    },
-    profit: {
-      operatingRub: operatingProfitRub,
-      reinvestPercent,
-      reinvestRub,
-      distributableNetRub: distributableNetProfitRub,
-      marginPercent,
-    },
+    period, updatedAt: new Date(now).toISOString(),
+    periodInfo: { from: dayString(budgetStart), to: reportDay(now), timeZone: 'Europe/Moscow',
+      budgetMonths: Math.round(multiplier * 10000) / 10000, infrastructureBasis: 'prorated_monthly_budget',
+      allTimeStartBasis: period === 'all' ? 'earliest_known_record' : undefined },
+    config,
+    revenue: { grossRub: grossRevenueRub, webRub: round(revenueByStore.web), appstoreRub: round(revenueByStore.appstore),
+      gplayRub: round(revenueByStore.googleplay), rustoreRub: round(revenueByStore.rustore), otherRub: round(revenueByStore.other),
+      manualRub: round(manualRevenuesRub), ordersCount: webConfirmedOrdersCount, activePayingCount, storeCounts,
+      estimatedStoresRub, estimatesIncludedInGross: false },
+    receipts, estimatedReceipts,
+    expenses: { totalRub: totalExpensesRub, monthlyRub: round(monthlyRub), recurringRub: round(recurringRub), oneOffRub: round(oneOffRub),
+      lines, cloudflare: { usd: config.cloudflareMonthlyUsd, rub: lines[0].periodRub, monthlyRub: cloudflareMonthlyRub, basis: 'budget' },
+      domain: { rub: lines[1].periodRub, monthlyRub: config.domainMonthlyRub, basis: 'budget' },
+      ai: { usd: Number(aiCostUsd.toFixed(6)), rub: aiCostRub, periodRub: aiPeriodRub, scope: 'all',
+        includedInTotal: aiIncluded, available: aiValues[0] !== null && aiValues[0] !== undefined,
+        totalRequests: aiNumbers[1] || 0, promptTokens: aiNumbers[2] || 0, candidateTokens: aiNumbers[3] || 0 },
+      extraExpensesRub: round(extraExpensesRub), extraList: lines.filter(line => !line.builtin) },
+    profit: { operatingRub: operatingProfitRub, reinvestPercent: config.reinvestPercent, reinvestRub,
+      distributableNetRub: distributableNetProfitRub, marginPercent: grossRevenueRub > 0 ? round(distributableNetProfitRub / grossRevenueRub * 100) : 0 },
     partners: {
-      sergey: {
-        name: 'Сергей',
-        role: 'Основатель / Разработка',
-        percent: sergeySharePercent,
-        payoutRub: sergeyPayoutRub,
-      },
-      nikita: {
-        name: 'Никита',
-        role: 'Партнёр / Развитие',
-        percent: nikitaSharePercent,
-        payoutRub: nikitaPayoutRub,
-      },
+      sergey: { name: 'Сергей', role: 'Основатель / Разработка', percent: config.sergeySharePercent, payoutRub: sergeyPayoutRub },
+      nikita: { name: 'Никита', role: 'Партнёр / Развитие', percent: config.nikitaSharePercent, payoutRub: nikitaPayoutRub },
     },
-    breakEven: {
-      targetRub: totalExpensesRub,
-      weeklySubsNeeded: weeklySubsToBreakEven,
-      threeMonthSubsNeeded: threeMonthSubsToBreakEven,
-      coveragePercent,
-      isProfitable: grossRevenueRub >= totalExpensesRub,
-    },
-    unitEconomics: {
-      totalUsersCount,
-      activePayingCount,
-      payingConversionRate,
-      arppu,
-      arpu,
-    },
+    breakEven: { targetRub: totalExpensesRub, monthlyRub: round(monthlyRub), weeklySubsNeeded: Math.ceil(totalExpensesRub / 99),
+      threeMonthSubsNeeded: Math.ceil(totalExpensesRub / 290), coveragePercent: totalExpensesRub > 0 ? Math.round(grossRevenueRub / totalExpensesRub * 100) : 100,
+      isProfitable: grossRevenueRub >= totalExpensesRub },
+    unitEconomics: { totalUsersCount: users.length, activePayingCount,
+      payingConversionRate: users.length ? round(activePayingCount / users.length * 100) : 0,
+      arppu: activePayingCount ? round(grossRevenueRub / activePayingCount) : 0, arpu: users.length ? round(grossRevenueRub / users.length) : 0 },
   };
 }
-
-/**
- * Маршрутизатор /api/admin/economy*
- */
 export async function handleEconomyAdmin(request, env, url, deps = {}) {
   const path = url.pathname;
-  const method = request.method;
-
-  if (path === '/api/admin/economy/stats' && method === 'GET') {
+  if (path === '/api/admin/economy/stats' && request.method === 'GET') {
     const period = url.searchParams.get('period') || 'month';
-    const stats = await computeEconomyStats(env, period, deps);
-    return reply({ ok: true, ...stats });
+    if (!['month', '30d', 'all'].includes(period)) return reply({ error: 'Неизвестный период' }, 400);
+    return reply({ ok: true, ...await computeEconomyStats(env, period, deps) });
   }
-
-  if (path === '/api/admin/economy/settings' && method === 'POST') {
-    let body;
-    try {
-      body = await request.json();
-    } catch (_) {
-      return reply({ error: 'Некорректный JSON' }, 400);
-    }
-    const updated = await saveEconomyConfig(env, body);
-    return reply({ ok: true, config: updated });
+  const match = path.match(/^\/api\/admin\/economy\/(expenses|revenues)\/(add|update|delete)$/);
+  if (request.method !== 'POST' || (!match && path !== '/api/admin/economy/settings')) return reply({ error: 'not found' }, 404);
+  let body;
+  try { body = await request.json(); } catch (_) { return reply({ error: 'Некорректный JSON' }, 400); }
+  if (!object(body)) return reply({ error: 'Некорректные данные' }, 400);
+  if (!env?.INSTALLS) return reply({ error: 'Хранилище недоступно' }, 503);
+  if (path.endsWith('/settings')) {
+    if (Object.hasOwn(body, 'extraExpenses') || Object.hasOwn(body, 'manualRevenues')) return reply({ error: 'Изменяйте записи через список расходов и поступлений' }, 400);
+    try { return reply({ ok: true, config: await saveEconomyConfig(env, body) }); }
+    catch (error) { return reply({ error: error.message }, 400); }
   }
-
-  if (path === '/api/admin/economy/expenses/add' && method === 'POST') {
-    let body;
-    try {
-      body = await request.json();
-    } catch (_) {
-      return reply({ error: 'Некорректный JSON' }, 400);
-    }
-    const title = String(body.title || '').trim();
-    const amountRub = Number(body.amountRub);
-    if (!title) return reply({ error: 'Укажите название расхода' }, 400);
-    if (!Number.isFinite(amountRub) || amountRub <= 0) return reply({ error: 'Укажите корректную сумму расхода' }, 400);
-
-    const config = await getEconomyConfig(env);
-    const item = {
-      id: crypto.randomUUID(),
-      title,
-      amountRub,
-      monthly: Boolean(body.monthly),
-      createdAt: new Date().toISOString(),
-    };
-    const nextList = [item, ...(config.extraExpenses || [])];
-    await saveEconomyConfig(env, { extraExpenses: nextList });
-    return reply({ ok: true, expense: item });
-  }
-
-  if (path === '/api/admin/economy/expenses/delete' && method === 'POST') {
-    let body;
-    try {
-      body = await request.json();
-    } catch (_) {
-      return reply({ error: 'Некорректный JSON' }, 400);
-    }
-    const id = String(body.id || '');
-    if (!id) return reply({ error: 'Не указан ID' }, 400);
-
-    const config = await getEconomyConfig(env);
-    const nextList = (config.extraExpenses || []).filter(e => e.id !== id);
-    await saveEconomyConfig(env, { extraExpenses: nextList });
+  const [, kind, action] = match;
+  const key = kind === 'expenses' ? 'extraExpenses' : 'manualRevenues';
+  const config = await getEconomyConfig(env);
+  const list = config[key];
+  const id = typeof body.id === 'string' ? body.id : '';
+  const index = list.findIndex(item => item.id === id);
+  if (action !== 'add' && !id) return reply({ error: 'Не указан ID' }, 400);
+  if (action !== 'add' && index < 0) return reply({ error: 'Запись не найдена' }, 404);
+  if (action === 'delete') {
+    await saveEconomyConfig(env, { [key]: list.filter(item => item.id !== id) });
     return reply({ ok: true, id });
   }
-
-  if (path === '/api/admin/economy/revenues/add' && method === 'POST') {
-    let body;
-    try {
-      body = await request.json();
-    } catch (_) {
-      return reply({ error: 'Некорректный JSON' }, 400);
-    }
-    const title = String(body.title || '').trim();
-    const amountRub = Number(body.amountRub);
-    const store = String(body.store || 'other');
-    if (!title) return reply({ error: 'Укажите описание поступления' }, 400);
-    if (!Number.isFinite(amountRub) || amountRub <= 0) return reply({ error: 'Укажите корректную сумму' }, 400);
-
-    const config = await getEconomyConfig(env);
-    const item = {
-      id: crypto.randomUUID(),
-      title,
-      amountRub,
-      store,
-      date: body.date || new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-    };
-    const nextList = [item, ...(config.manualRevenues || [])];
-    await saveEconomyConfig(env, { manualRevenues: nextList });
-    return reply({ ok: true, revenue: item });
-  }
-
-  if (path === '/api/admin/economy/revenues/delete' && method === 'POST') {
-    let body;
-    try {
-      body = await request.json();
-    } catch (_) {
-      return reply({ error: 'Некорректный JSON' }, 400);
-    }
-    const id = String(body.id || '');
-    if (!id) return reply({ error: 'Не указан ID' }, 400);
-
-    const config = await getEconomyConfig(env);
-    const nextList = (config.manualRevenues || []).filter(r => r.id !== id);
-    await saveEconomyConfig(env, { manualRevenues: nextList });
-    return reply({ ok: true, id });
-  }
-
-  return reply({ error: 'not found' }, 404);
+  let item;
+  try {
+    const input = action === 'update' ? { ...list[index], ...body, id, createdAt: list[index].createdAt } : { ...body, id: crypto.randomUUID(), createdAt: new Date(deps.now ?? Date.now()).toISOString() };
+    // Обновление старым клиентом не оставляет новое amount/frequency поверх legacy.
+    if (Object.hasOwn(body, 'amountRub') && !Object.hasOwn(body, 'amount')) input.amount = body.amountRub;
+    if (Object.hasOwn(body, 'monthly') && !Object.hasOwn(body, 'frequency')) input.frequency = body.monthly ? 'monthly' : 'once';
+    item = kind === 'expenses' ? normalizeExpense(input, deps.now ?? Date.now()) : normalizeRevenue(input, deps.now ?? Date.now());
+  } catch (error) { return reply({ error: error.message }, 400); }
+  if (action === 'add') list.unshift(item); else list[index] = item;
+  await saveEconomyConfig(env, { [key]: list });
+  return reply({ ok: true, [kind === 'expenses' ? 'expense' : 'revenue']: item });
 }

@@ -12,6 +12,7 @@
     "test:publications": "node --test test-publications.mjs test-blog-ui.mjs",
     "test:progress": "node --test test-progress.mjs",
     "test:economy": "node --test test-economy.mjs",
+    "test:economy:ui": "node --test test-economy-ui.mjs",
     "test:reports": "node --test test-question-reports.mjs"
   },
   "dependencies": {
