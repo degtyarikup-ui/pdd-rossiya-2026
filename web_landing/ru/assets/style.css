@@ -792,3 +792,8 @@ h2[id] { scroll-margin-top: 90px; }
 .section.alt .btn-ghost:hover { background: var(--light-accent); }
 @media (max-width: 720px) { .mobile-nav { display: flex; } }
 .prose .breadcrumbs a, .prose .post-card { text-decoration: none; }
+
+/* Переход от разбора статьи к тренировке. */
+.practice-cta { margin: 28px 0; padding: 24px; border: 1px solid var(--border); border-radius: 20px; background: var(--light-accent); }
+.practice-cta h2 { margin-top: 0; }
+.practice-cta .btn { white-space: normal; text-align: center; }
