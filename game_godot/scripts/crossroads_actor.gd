@@ -42,7 +42,7 @@ var blink_timer := 0.0
 var badge_pop := 1.0
 var _completed_emitted := false
 var _cleared_emitted := false
-var _badge_height := 3.1
+var _badge_height := 4.8
 var _badge_screen_scale := 1.0
 var _badge_camera: Camera3D
 var _model_height := 1.65
@@ -236,9 +236,9 @@ func _pedestrian_end(side_name: String) -> Vector3:
 func _build_badge() -> void:
 	badge_node = Node3D.new()
 	badge_node.name = "Badge"
-	_badge_height = _model_height + 1.45 if not is_pedestrian else 2.95
+	_badge_height = _model_height + 3.3 if not is_pedestrian else 3.8
 	if str(data.get("type", "")) == "emergency":
-		_badge_height = maxf(_badge_height, 3.9)
+		_badge_height = maxf(_badge_height, 5.6)
 	badge_node.position.y = _badge_height
 	add_child(badge_node)
 
@@ -364,17 +364,17 @@ func _build_trajectory() -> void:
 	path_length = path_curve.get_baked_length()
 	# Normalised progress is retained for collision animation; actual road speed
 	# stays independent of the route's 110 m invisible continuation.
-	# Speed is tuned so vehicles cross the intersection briskly and responsively (~1.2 - 1.8s per traverse).
+	# Speed is tuned so vehicles cross the intersection briskly and responsively (~0.95 - 1.35s per traverse).
 	var maneuver_str: String = data.get("maneuver", "straight")
 	var speed_mps: float
 	if is_tram:
-		speed_mps = 20.0 if maneuver_str == "right" else 24.0
+		speed_mps = 23.0 if maneuver_str == "right" else 28.0
 	elif str(data.get("type", "")) in ["bus", "truck"]:
-		speed_mps = 18.0 if maneuver_str == "right" else 23.0
+		speed_mps = 21.0 if maneuver_str == "right" else 27.0
 	elif has_siren or str(data.get("type", "")) in ["emergency", "police"]:
-		speed_mps = 18.0 if maneuver_str == "right" else 24.0
+		speed_mps = 21.0 if maneuver_str == "right" else 28.0
 	else:
-		speed_mps = 14.5 if maneuver_str == "right" else 22.0
+		speed_mps = 17.0 if maneuver_str == "right" else 26.0
 	drive_speed = speed_mps / maxf(path_length, 1.0)
 
 

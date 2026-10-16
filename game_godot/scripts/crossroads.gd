@@ -165,7 +165,7 @@ func _setup_environment() -> void:
 	camera.name = "MainCamera"
 	camera.fov = 40.0
 	camera.near = 0.5
-	camera.far = 400.0
+	camera.far = 600.0
 	cam_pivot.add_child(camera)
 
 	_update_camera()
