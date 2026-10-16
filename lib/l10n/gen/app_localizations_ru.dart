@@ -1246,6 +1246,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameStop => 'СТОП';
 
   @override
+  String get appLoading => 'Загрузка…';
+
+  @override
+  String get appLoadingFailed => 'Не удалось открыть приложение';
+
+  @override
+  String get gameReturning => 'Возвращаемся в приложение…';
+
+  @override
   String get gameLoading => 'Загрузка игры';
 
   @override

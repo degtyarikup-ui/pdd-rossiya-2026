@@ -106,6 +106,10 @@ func _dismiss_loader(loader: Loader) -> void:
 	await get_tree().process_frame
 	if _exiting or is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
 	_start_game()
+	# The first scenario is built by _start_game; include its first material draw under the cover.
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		if _exiting or is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
 	loader.dismiss()
 	if shot_path != "":
 		await get_tree().create_timer(Loader.FADE + 0.3).timeout

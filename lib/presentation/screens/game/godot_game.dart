@@ -32,6 +32,7 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet
 import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 /// «Живой город» on Godot (game_godot/): the game runs on its own native
 /// screen (Android: GodotGameActivity in the process `:game`). The ride
@@ -61,13 +62,14 @@ class GodotGame {
   static const _runQuestions = GameState.runQuestions;
   static Future<bool>? _available;
   static Future<bool>? _webAvailable;
-  static bool _running = false;
+  static int _nextRunToken = 0;
+  static int? _activeRunToken;
 
   @visibleForTesting
   static void resetForTest() {
     _available = null;
     _webAvailable = null;
-    _running = false;
+    _activeRunToken = null;
     // This wrapper itself is test-only, and resets all city-bridge state.
     // ignore: invalid_use_of_visible_for_testing_member
     GameQuestionHistoryService.instance.resetForTest();
@@ -93,13 +95,43 @@ class GodotGame {
   }
 
   /// Starts or resumes a ride immediately; the owned collection is available in pause.
-  static Future<void> play(BuildContext context, WidgetRef ref) async {
-    if (_running) return;
+  static Future<void> play(BuildContext context, WidgetRef ref) =>
+      _withRun(context, (token) => _play(context, ref, token));
+
+  static Future<void> _withRun(
+    BuildContext context,
+    Future<void> Function(int token) work,
+  ) async {
+    if (!context.mounted || _activeRunToken != null) return;
+    final token = ++_nextRunToken;
+    _activeRunToken = token;
+    try {
+      await work(token);
+    } finally {
+      _releaseRun(token);
+    }
+  }
+
+  static void _releaseRun(int token) {
+    // An interactive result can start a fresh run before the preceding dialog
+    // future completes. Its older finally must never release the new run.
+    if (_activeRunToken == token) _activeRunToken = null;
+  }
+
+  static Future<void> _play(
+    BuildContext context,
+    WidgetRef ref,
+    int token,
+  ) async {
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
-    final options = await _rideOptions(ref, lang: lang);
-    if (!context.mounted) return;
+    final options = await _prepare(
+      context,
+      () => _rideOptions(ref, lang: lang),
+    );
+    if (!context.mounted || options == null) return;
     if (options['can_start'] != true) {
+      _releaseRun(token);
       await showGameRunsSheet(
         context,
         maxRuns: GameRunsService.maxRuns,
@@ -113,7 +145,6 @@ class GodotGame {
       return;
     }
     final safe = _safeArea(context);
-    _running = true;
     String? json;
     try {
       json = await _start(context, [
@@ -129,25 +160,39 @@ class GodotGame {
       ]);
     } on PlatformException {
       json = null;
-    } finally {
-      _running = false;
     }
     if (json == null) return;
     final decoded = jsonDecode(json);
     if (decoded is! Map) return;
-    await GameQuestionHistoryService.instance.recordSnapshot(
-      decoded['question_history'],
-    );
+    // History is persistent game data, even if its launching route was closed.
+    // It does not access WidgetRef, so it can complete without a mounted UI.
+    final historyLoading = context.mounted
+        ? AppLoadingOverlay.show(context, label: appL10n.gameReturning)
+        : null;
+    try {
+      if (historyLoading != null) await WidgetsBinding.instance.endOfFrame;
+      await GameQuestionHistoryService.instance.recordSnapshot(
+        decoded['question_history'],
+      );
+    } finally {
+      historyLoading?.close();
+    }
     if (!context.mounted) return;
-    await _afterGame(context, ref, decoded.cast<String, dynamic>());
+    await _afterGame(context, ref, decoded.cast<String, dynamic>(), token);
   }
 
   /// Plays the 3D Regulator mini-game on Godot.
-  static Future<void> playRegulator(BuildContext context, WidgetRef ref) async {
-    if (_running) return;
+  static Future<void> playRegulator(BuildContext context, WidgetRef ref) =>
+      _withRun(context, (_) => _playRegulator(context, ref));
+
+  static Future<void> _playRegulator(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
-    final prefs = await _prefs();
+    final prefs = await _prepare(context, _prefs);
+    if (!context.mounted) return;
     final vehicle = prefs?.getString(_vehicleKey) ?? 'sedan';
     final paint = GameGarageService.normalizePaint(
       prefs?.getString(_paintKey) ?? GameGarageService.starter.paint,
@@ -155,7 +200,6 @@ class GodotGame {
     final paintHex = _hex(gamePaintColors[paint]!);
     if (!context.mounted) return;
     final safe = _safeArea(context);
-    _running = true;
     String? json;
     try {
       json = await _start(context, [
@@ -174,8 +218,6 @@ class GodotGame {
       ]);
     } on PlatformException {
       json = null;
-    } finally {
-      _running = false;
     }
     if (json == null) return;
     final decoded = jsonDecode(json);
@@ -183,39 +225,55 @@ class GodotGame {
     final map = decoded.cast<String, dynamic>();
     // A single native screen can contain several restarted rounds. Book each
     // round separately, including an unfinished round left with system Back.
-    final runs = map['runs'] is List ? map['runs'] as List : [map];
-    final seen = <String>{};
-    var changed = false;
-    for (final run in runs.whereType<Map>()) {
-      final id = run['id'] as String? ?? GameLeaderboardService.newRunId();
-      if (!seen.add(id)) continue;
-      final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
-      final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
-      if (solved + wrong == 0) continue;
-      final score = GameEconomy.rankedScore(
-        (run['score'] as num?)?.toInt() ?? 0,
-        correct: solved,
-        wrong: wrong,
-      );
-      final combo = ((run['combo'] as num?)?.toInt() ?? 0).clamp(0, solved);
-      unawaited(GameLeaderboardService.instance.submitRun(score, runId: id));
-      await ref
-          .read(trafficControllerProgressProvider.notifier)
-          .recordGameResult(score: score, combo: combo, solved: solved);
-      changed = true;
+    final loading = AppLoadingOverlay.show(
+      context,
+      label: appL10n.gameReturning,
+    );
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) return;
+      final progress = ref.read(trafficControllerProgressProvider.notifier);
+      final runs = map['runs'] is List ? map['runs'] as List : [map];
+      final seen = <String>{};
+      var changed = false;
+      for (final run in runs.whereType<Map>()) {
+        final id = run['id'] as String? ?? GameLeaderboardService.newRunId();
+        if (!seen.add(id)) continue;
+        final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
+        final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
+        if (solved + wrong == 0) continue;
+        final score = GameEconomy.rankedScore(
+          (run['score'] as num?)?.toInt() ?? 0,
+          correct: solved,
+          wrong: wrong,
+        );
+        final combo = ((run['combo'] as num?)?.toInt() ?? 0).clamp(0, solved);
+        unawaited(GameLeaderboardService.instance.submitRun(score, runId: id));
+        await progress.recordGameResult(
+          score: score,
+          combo: combo,
+          solved: solved,
+        );
+        changed = true;
+      }
+      if (changed) unawaited(ProgressSyncService.instance.syncWithServer());
+    } finally {
+      loading.close();
     }
-    if (changed) unawaited(ProgressSyncService.instance.syncWithServer());
   }
 
   /// Plays the 3D Crossroads Priority mini-game on Godot.
-  static Future<void> playCrossroads(
+  static Future<void> playCrossroads(BuildContext context, WidgetRef ref) =>
+      _withRun(context, (_) => _playCrossroads(context, ref));
+
+  static Future<void> _playCrossroads(
     BuildContext context,
     WidgetRef ref,
   ) async {
-    if (_running) return;
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
-    final prefs = await _prefs();
+    final prefs = await _prepare(context, _prefs);
+    if (!context.mounted) return;
     final vehicle = prefs?.getString(_vehicleKey) ?? 'sedan';
     final paint = GameGarageService.normalizePaint(
       prefs?.getString(_paintKey) ?? GameGarageService.starter.paint,
@@ -223,7 +281,6 @@ class GodotGame {
     final paintHex = _hex(gamePaintColors[paint]!);
     if (!context.mounted) return;
     final safe = _safeArea(context);
-    _running = true;
     String? json;
     try {
       json = await _start(context, [
@@ -242,35 +299,46 @@ class GodotGame {
       ]);
     } on PlatformException {
       json = null;
-    } finally {
-      _running = false;
     }
     if (json == null) return;
     final decoded = jsonDecode(json);
     if (decoded is! Map || !context.mounted) return;
     final map = decoded.cast<String, dynamic>();
-    final runs = map['runs'] is List ? map['runs'] as List : [map];
-    final seen = <String>{};
-    var changed = false;
-    for (final run in runs.whereType<Map>()) {
-      final id = run['id'] as String? ?? GameLeaderboardService.newRunId();
-      if (!seen.add(id)) continue;
-      final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
-      final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
-      if (solved + wrong == 0) continue;
-      final score = GameEconomy.rankedScore(
-        (run['score'] as num?)?.toInt() ?? 0,
-        correct: solved,
-        wrong: wrong,
-      );
-      final combo = ((run['combo'] as num?)?.toInt() ?? 0).clamp(0, solved);
-      unawaited(GameLeaderboardService.instance.submitRun(score, runId: id));
-      await ref
-          .read(crossroadsPriorityProgressProvider.notifier)
-          .recordGameResult(score: score, combo: combo, solved: solved);
-      changed = true;
+    final loading = AppLoadingOverlay.show(
+      context,
+      label: appL10n.gameReturning,
+    );
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) return;
+      final progress = ref.read(crossroadsPriorityProgressProvider.notifier);
+      final runs = map['runs'] is List ? map['runs'] as List : [map];
+      final seen = <String>{};
+      var changed = false;
+      for (final run in runs.whereType<Map>()) {
+        final id = run['id'] as String? ?? GameLeaderboardService.newRunId();
+        if (!seen.add(id)) continue;
+        final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
+        final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
+        if (solved + wrong == 0) continue;
+        final score = GameEconomy.rankedScore(
+          (run['score'] as num?)?.toInt() ?? 0,
+          correct: solved,
+          wrong: wrong,
+        );
+        final combo = ((run['combo'] as num?)?.toInt() ?? 0).clamp(0, solved);
+        unawaited(GameLeaderboardService.instance.submitRun(score, runId: id));
+        await progress.recordGameResult(
+          score: score,
+          combo: combo,
+          solved: solved,
+        );
+        changed = true;
+      }
+      if (changed) unawaited(ProgressSyncService.instance.syncWithServer());
+    } finally {
+      loading.close();
     }
-    if (changed) unawaited(ProgressSyncService.instance.syncWithServer());
   }
 
   /// Opens the game and waits for its summary (JSON), null if it did not end
@@ -288,13 +356,72 @@ class GodotGame {
     ];
   }
 
-  static Future<String?> _start(BuildContext context, List<String> args) {
-    if (kIsWeb) {
-      return Navigator.of(
-        context,
-      ).push<String>(GodotWebScreen.route(args: args));
+  static Future<T?> _prepare<T>(
+    BuildContext context,
+    Future<T> Function() work, {
+    String? label,
+  }) async {
+    if (!context.mounted) return null;
+    final loading = AppLoadingOverlay.show(
+      context,
+      label: label ?? appL10n.gameLoading,
+    );
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) return null;
+      return await work();
+    } finally {
+      loading.close();
     }
-    return _channel.invokeMethod<String>('start', {'args': args});
+  }
+
+  static Future<String?> _start(BuildContext context, List<String> args) async {
+    final overlay = AppLoadingOverlay.show(context, label: appL10n.gameLoading);
+    args = [
+      ...args,
+      '--loading-label=${appL10n.gameLoading}',
+      '--returning-label=${appL10n.gameReturning}',
+      if (MediaQuery.disableAnimationsOf(context)) '--reduce-motion',
+      if (const bool.fromEnvironment('GAME_DEBUG')) '--loader-profile',
+    ];
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      _channel.setMethodCallHandler((call) async {
+        if (call.method != 'loading' || call.arguments is! Map) return;
+        final data = call.arguments as Map;
+        overlay.setVisible(
+          data['visible'] == true,
+          label: data['phase'] == 'returning'
+              ? appL10n.gameReturning
+              : appL10n.gameLoading,
+        );
+        // UIKit can reveal/hide its window only after this Flutter frame.
+        await WidgetsBinding.instance.endOfFrame;
+      });
+    }
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) return null;
+      final String? result;
+      if (kIsWeb) {
+        // The web route owns its own loading surface above the iframe.
+        overlay.close();
+        result = await Navigator.of(
+          context,
+        ).push<String>(GodotWebScreen.route(args: args));
+      } else {
+        result = await _channel.invokeMethod<String>('start', {'args': args});
+      }
+      if (context.mounted) {
+        overlay.setVisible(true, label: appL10n.gameReturning);
+        await WidgetsBinding.instance.endOfFrame;
+      }
+      return result;
+    } finally {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        _channel.setMethodCallHandler(null);
+      }
+      overlay.close();
+    }
   }
 
   /// Owned cars/paints and settings for immediate start and the pause menu.
@@ -460,98 +587,111 @@ class GodotGame {
     BuildContext context,
     WidgetRef ref,
     Map<String, dynamic> summary,
+    int token,
   ) async {
-    final premium = ref.read(isPremiumProvider);
-    final debugPerf = summary['debug_perf'];
-    if (const bool.fromEnvironment('GAME_DEBUG') && debugPerf is bool) {
-      await (await _prefs())?.setBool(_cityPerfKey, debugPerf);
-    }
-    final sound = summary['sound'];
-    if (sound is bool) {
-      await (await _prefs())?.setBool(_citySoundKey, sound);
-    }
-    final voice = summary['voice'];
-    if (voice is bool && summary['voice_available'] == true) {
-      await (await _prefs())?.setBool(_cityVoiceKey, voice);
-    }
-    final car = summary['car'];
-    if (car is Map && car['id'] is String && car['paint'] is String) {
-      await _saveVehicle(car['id'] as String, car['paint'] as String);
-    }
-    if (summary['tips_seen'] == true) {
-      await _rememberTips();
-    }
-    if (summary['run_started'] != true) return;
-
-    final resumed = summary['resumed'] == true;
-    final finished = summary['finished'] == true;
-    final pending = await _pendingRun();
-    if (!resumed) {
-      // The run is charged now: it began. Free players pay one run; premium is unlimited.
-      if (!premium) await GameRunsService.instance.consume();
-      UsageReporter.track(UsageFeature.game);
-    }
-    if (car is Map && car['id'] is String) {
-      await _markDriven(car['id'] as String);
-    }
-
-    final correct = (summary['correct'] as num?)?.toInt() ?? 0;
-    final score = (summary['score'] as num?)?.toInt() ?? 0;
-    // Only what this visit added: the earlier visits of a resumed run were booked then.
-    final bookedScore = resumed ? (pending?.score ?? 0) : 0;
-    final bookedCorrect = resumed ? (pending?.correct ?? 0) : 0;
-    final runId = resumed && pending != null
-        ? pending.runId
-        : GameLeaderboardService.newRunId();
-    final best = await _bestScore();
-    final record = score > 0 && score > best;
-    await _book(
-      runId: runId,
-      score: score,
-      delta: score - bookedScore,
-      newRun: !resumed,
-      record: record,
+    final loading = AppLoadingOverlay.show(
+      context,
+      label: appL10n.gameReturning,
     );
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) return;
+      final premium = ref.read(isPremiumProvider);
+      final debugPerf = summary['debug_perf'];
+      if (const bool.fromEnvironment('GAME_DEBUG') && debugPerf is bool) {
+        await (await _prefs())?.setBool(_cityPerfKey, debugPerf);
+      }
+      final sound = summary['sound'];
+      if (sound is bool) {
+        await (await _prefs())?.setBool(_citySoundKey, sound);
+      }
+      final voice = summary['voice'];
+      if (voice is bool && summary['voice_available'] == true) {
+        await (await _prefs())?.setBool(_cityVoiceKey, voice);
+      }
+      final car = summary['car'];
+      if (car is Map && car['id'] is String && car['paint'] is String) {
+        await _saveVehicle(car['id'] as String, car['paint'] as String);
+      }
+      if (summary['tips_seen'] == true) {
+        await _rememberTips();
+      }
+      if (summary['run_started'] != true) return;
 
-    final deltaCorrect = (correct - bookedCorrect).clamp(0, 10000);
-    final unlocked = await GameGarageService.instance.recordCorrectAnswers(
-      deltaCorrect,
-    );
-    if (deltaCorrect > 0) {
-      ProgressSyncService.instance.scheduleSync();
-    }
-    // Keep the booked answer count before any dialog can interrupt this visit.
-    if (finished) {
-      await _clearPendingRun();
-    } else {
-      await _keepPendingRun(
-        summary,
+      final resumed = summary['resumed'] == true;
+      final finished = summary['finished'] == true;
+      final pending = await _pendingRun();
+      if (!resumed) {
+        // The run is charged now: it began. Free players pay one run; premium is unlimited.
+        if (!premium) await GameRunsService.instance.consume();
+        UsageReporter.track(UsageFeature.game);
+      }
+      if (car is Map && car['id'] is String) {
+        await _markDriven(car['id'] as String);
+      }
+
+      final correct = (summary['correct'] as num?)?.toInt() ?? 0;
+      final score = (summary['score'] as num?)?.toInt() ?? 0;
+      // Only what this visit added: the earlier visits of a resumed run were booked then.
+      final bookedScore = resumed ? (pending?.score ?? 0) : 0;
+      final bookedCorrect = resumed ? (pending?.correct ?? 0) : 0;
+      final runId = resumed && pending != null
+          ? pending.runId
+          : GameLeaderboardService.newRunId();
+      final best = await _bestScore();
+      final record = score > 0 && score > best;
+      await _book(
         runId: runId,
         score: score,
-        correct: correct,
+        delta: score - bookedScore,
+        newRun: !resumed,
+        record: record,
       );
-    }
-    if (!context.mounted) return;
-    if (!premium) {
-      // Only fully presented in-game banners are acknowledged. A reward still
-      // waiting in the queue when the ride closes keeps the reveal fallback.
-      final notifiedRewards = summary['notified_rewards'] is List
-          ? (summary['notified_rewards'] as List).whereType<String>().toSet()
-          : const <String>{};
-      for (final reward in unlocked) {
-        final id = reward.isModel
-            ? 'model:${reward.model}'
-            : 'paint:${reward.paint}';
-        if (notifiedRewards.contains(id)) continue;
-        await _showReveal(context, reward);
-        if (!context.mounted) return;
-      }
-    }
 
-    // Left before the last question: the run waits for «Продолжить».
-    if (!finished) return;
-    if (!context.mounted) return;
-    await _showResult(context, ref, summary, best: best, record: record);
+      final deltaCorrect = (correct - bookedCorrect).clamp(0, 10000);
+      final unlocked = await GameGarageService.instance.recordCorrectAnswers(
+        deltaCorrect,
+      );
+      if (deltaCorrect > 0) {
+        ProgressSyncService.instance.scheduleSync();
+      }
+      // Keep the booked answer count before any dialog can interrupt this visit.
+      if (finished) {
+        await _clearPendingRun();
+      } else {
+        await _keepPendingRun(
+          summary,
+          runId: runId,
+          score: score,
+          correct: correct,
+        );
+      }
+      if (!context.mounted) return;
+      loading.close();
+      _releaseRun(token);
+      if (!premium) {
+        // Only fully presented in-game banners are acknowledged. A reward still
+        // waiting in the queue when the ride closes keeps the reveal fallback.
+        final notifiedRewards = summary['notified_rewards'] is List
+            ? (summary['notified_rewards'] as List).whereType<String>().toSet()
+            : const <String>{};
+        for (final reward in unlocked) {
+          final id = reward.isModel
+              ? 'model:${reward.model}'
+              : 'paint:${reward.paint}';
+          if (notifiedRewards.contains(id)) continue;
+          await _showReveal(context, reward);
+          if (!context.mounted) return;
+        }
+      }
+
+      // Left before the last question: the run waits for «Продолжить».
+      if (!finished) return;
+      if (!context.mounted) return;
+      await _showResult(context, ref, summary, best: best, record: record);
+    } finally {
+      loading.close();
+    }
   }
 
   static Future<_PendingRun?> _pendingRun() async {

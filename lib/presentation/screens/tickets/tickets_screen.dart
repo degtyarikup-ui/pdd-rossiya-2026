@@ -10,6 +10,7 @@ import 'package:pdd_app/core/utils/safe_user_message.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 /// Две колонки — карточка шире, номер билета и «12/20» помещаются без обрезки.
 int _ticketGridCrossAxisCount(double gridWidth) {
@@ -169,7 +170,7 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
                     },
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: AppLoadingIndicator()),
                 error: (e, _) => Center(child: Text(dataLoadErrorMessage(e))),
               ),
             ),

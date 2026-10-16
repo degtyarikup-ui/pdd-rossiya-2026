@@ -1225,6 +1225,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameStop => 'STOP';
 
   @override
+  String get appLoading => 'Loading…';
+
+  @override
+  String get appLoadingFailed => 'Could not open the app';
+
+  @override
+  String get gameReturning => 'Returning to the app…';
+
+  @override
   String get gameLoading => 'Loading game';
 
   @override

@@ -36,6 +36,10 @@ class GodotGameBridge(private val activity: Activity, messenger: BinaryMessenger
                     val intent = Intent().setClassName(activity, GAME_ACTIVITY)
                         .putExtra("pdd_game_args", args)
                     activity.startActivityForResult(intent, REQUEST)
+                    // Both processes already paint the same loader: avoid a dark
+                    // starting-window flash or moving that loading surface.
+                    @Suppress("DEPRECATION")
+                    activity.overridePendingTransition(0, 0)
                 }
                 else -> result.notImplemented()
             }

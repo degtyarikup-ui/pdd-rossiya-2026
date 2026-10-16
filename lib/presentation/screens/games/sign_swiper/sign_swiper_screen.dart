@@ -19,6 +19,7 @@ import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/swipe_car
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 class SignSwiperScreen extends ConsumerStatefulWidget {
   const SignSwiperScreen({super.key});
@@ -218,8 +219,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       backgroundColor: colors.background,
       body: SafeArea(
         child: signsAsync.when(
-          loading: () =>
-              Center(child: CircularProgressIndicator(color: colors.accent)),
+          loading: () => const Center(child: AppLoadingIndicator()),
           error: (error, _) => _buildError(colors),
           data: (signsJson) {
             _initEngine(signsJson);
@@ -326,7 +326,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
 
   Widget _buildCardStack(AppThemeColors colors) {
     if (_currentIndex >= _deck.length) {
-      return Center(child: CircularProgressIndicator(color: colors.accent));
+      return const Center(child: AppLoadingIndicator());
     }
 
     final topCard = _deck[_currentIndex];
