@@ -3799,4 +3799,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameResultNoRuns => 'Жарыстар аяқталды';
+
+  @override
+  String get gameRatingLoading => 'Рейтинг жүктелуде…';
+
+  @override
+  String get gameRatingReload => 'Жаңарту';
+
+  @override
+  String get gameRatingPendingRun =>
+      'Осы ойындағы ұпайлар мәзірге шыққаннан кейін рейтингке қосылады.';
 }

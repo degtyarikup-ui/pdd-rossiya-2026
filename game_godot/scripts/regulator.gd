@@ -44,7 +44,6 @@ var solved_count := 0
 var wrong_count := 0
 var _result_camera_mask := 0
 var result_action := ""
-var result_mistakes: Array[String] = []
 var previous_best := 0
 var completed_runs: Array[Dictionary] = []
 var session_id := "regulator"
@@ -279,7 +278,6 @@ func _start_game() -> void:
 	seconds_left = int(economy.seconds)
 	solved_count = 0
 	wrong_count = 0
-	result_mistakes.clear()
 	is_game_over = false
 	awaiting_next = false
 	hint_used = false
@@ -365,7 +363,6 @@ func _on_move_selected(move: RegulatorRules.Move) -> void:
 		combo = 0
 		lives -= 1
 		wrong_count += 1
-		result_mistakes.append(RegulatorRules.mnemonic_verse(cur_gesture, cur_approach, "car"))
 		ui.update_hud(score, combo, seconds_left, lives)
 
 		if lives <= 0:
@@ -495,9 +492,6 @@ func _end_game() -> void:
 	is_new_record = score > 0 and score > previous_best
 
 	ui.show_game_over(score, solved_count, wrong_count, max_combo, is_new_record, seconds_left <= 0, previous_best)
-	ui._results.set_mistakes(result_mistakes)
-	if not ui._results.ranking_pressed.is_connected(_open_ranking):
-		ui._results.ranking_pressed.connect(_open_ranking)
 
 	car.is_moving = false
 	completed_runs.append(_run_summary())
@@ -551,9 +545,6 @@ func _has_arg(name: String) -> bool:
 			return true
 	return false
 
-func _open_ranking() -> void:
-	result_action = "ranking"
-	_on_exit_pressed()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST and ui != null:

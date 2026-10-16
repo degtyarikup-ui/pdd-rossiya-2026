@@ -50,7 +50,6 @@ var solved_count := 0
 var wrong_count := 0
 var _result_camera_mask := 0
 var result_action := ""
-var result_mistakes: Array[String] = []
 var previous_best := 0
 var is_game_over := false
 var is_resolving := false
@@ -316,7 +315,6 @@ func _start_game() -> void:
 	seconds_left = float(economy.get("seconds", 60))
 	solved_count = 0
 	wrong_count = 0
-	result_mistakes.clear()
 	is_game_over = false
 	is_resolving = false
 	is_new_record = false
@@ -713,7 +711,6 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	var sequence := scene_sequence
 	is_resolving = true
 	wrong_count += 1
-	result_mistakes.append(reason + "\n" + article)
 	combo = 0
 	lives -= 1
 
@@ -1001,9 +998,6 @@ func _end_game() -> void:
 	is_new_record = score > 0 and score > previous_best
 
 	ui.show_results(score, solved_count, wrong_count, max_combo, is_new_record, previous_best, seconds_left <= 0.0)
-	ui._results.set_mistakes(result_mistakes)
-	if not ui._results.ranking_pressed.is_connected(_open_ranking):
-		ui._results.ranking_pressed.connect(_open_ranking)
 
 	completed_runs.append(_run_summary())
 	previous_best = maxi(previous_best, score)
@@ -1087,7 +1081,7 @@ func _notification(what: int) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
 		if ready_for_play and not _exiting:
-			_on_exit_pressed()
+			if not ui._results.dismiss_review(): _on_exit_pressed()
 			get_viewport().set_input_as_handled()
 
 
@@ -1260,7 +1254,3 @@ func _take_screenshot(path: String) -> void:
 		if img:
 			img.save_png(path)
 	get_tree().quit()
-
-func _open_ranking() -> void:
-	result_action = "ranking"
-	_on_exit_pressed()

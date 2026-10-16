@@ -1789,5 +1789,8 @@
   "driverTipCategoryOther": "Советы",
   "gameIllegalManeuver": "Нарушение правил маневрирования",
   "gameResultRanking": "Рейтинг",
-  "gameResultNoRuns": "Заезды закончились"
+  "gameResultNoRuns": "Заезды закончились",
+  "gameRatingLoading": "Загружаем рейтинг…",
+  "gameRatingReload": "Обновить",
+  "gameRatingPendingRun": "Очки этой игры добавятся в рейтинг после выхода в меню."
 }

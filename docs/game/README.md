@@ -50,10 +50,18 @@
 диалог (`native_result`). iOS сбрасывает состояние посещения при новом запросе приложения.
 Фоновые задачи подготовки дороги отменяются при перезапуске сцены.
 
-Крестик возвращает в приложение. Рейтинг открывает существующую таблицу Flutter после
-сохранения результатов; разбор ошибок города также использует существующий экран
-приложения. Мини-игры показывают список своих объяснений внутри движка; «Назад» закрывает
-этот список перед выходом. При отсутствии ошибок кнопка недоступна.
+Крестик возвращает в приложение. Рейтинг открывается внутри игры поверх результата;
+крестик таблицы или «Назад» возвращают к тому же результату, не выгружая движок.
+Flutter загружает существующий рейтинг/кеш через общий мост запроса данных (Android
+ResultReceiver, iOS атомарные файлы, web postMessage с проверкой origin/source).
+В Godot передаются только место, имя, очки и признак своего игрока, без сессий/ключей.
+Ошибку сети можно повторить, кеш помечается временем. Очки текущего посещения, как и
+раньше, сохраняются при выходе в меню; таблица явно сообщает об этом.
+
+У регулировщика и перекрёстков кнопки «Ошибки» нет, рейтинг занимает весь ряд.
+В городе разбор ошибок использует существующий экран приложения. Стойка пары знаков
+на результате перекрёстков проходит за знаками и заканчивается под непрозрачной плашкой
+очков; её положение учитывает прокрутку, масштаб UI и высоту окна.
 
 Проверки: `tests/result_motion_check.gd`, `tests/city_results_check.gd`, `tests/mini_game_results_check.gd` (также
 `-- --text-scale=1.6`), `tests/reward_toast_check.gd`, `tests/ui_theme_check.gd`,
@@ -105,6 +113,7 @@ godot --headless --path game_godot --script res://tests/crossroads_routes_check.
 godot --headless --path game_godot --script res://tests/crossroads_world_check.gd # все знаки/дубли, переходы, стоп-линии, рельсы, сезонные материалы
 godot --path game_godot --script res://tests/crossroads_world_check.gd # дополнительно реальные пиксели скруглений и пандусов
 godot --headless --path game_godot --script res://tests/crossroads_ui_check.gd # HUD, диалоги, короткий экран; повторить с -- --text-scale=1.6
+godot --headless --path game_godot --script res://tests/result_ranking_check.gd # рейтинг внутри игры, возврат, локали и RPC
 godot --headless --path game_godot --script res://tests/mini_game_results_check.gd # общий результат мини-игр: ru/en/kk, малые экраны, текст 1,6
 godot --path game_godot --script res://tests/exit_transition_check.gd # реальный fade выхода: неподвижный кадр, покрытие, summary и повторный вход
 godot --headless --path game_godot --script res://tests/rules_check.gd      # нарушения: 47 проверок

@@ -1289,5 +1289,8 @@
   "driverTipCategoryOther": "Кеңестер",
   "gameIllegalManeuver": "Манёвр жасау ережесін бұзу",
   "gameResultRanking": "Рейтинг",
-  "gameResultNoRuns": "Жарыстар аяқталды"
+  "gameResultNoRuns": "Жарыстар аяқталды",
+  "gameRatingLoading": "Рейтинг жүктелуде…",
+  "gameRatingReload": "Жаңарту",
+  "gameRatingPendingRun": "Осы ойындағы ұпайлар мәзірге шыққаннан кейін рейтингке қосылады."
 }

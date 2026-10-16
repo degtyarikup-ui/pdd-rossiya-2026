@@ -1,5 +1,14 @@
 {
  "ru": {
+  "close": "Закрыть",
+  "gameLeaderboard": "Таблица лидеров",
+  "gameRatingLoading": "Загружаем рейтинг…",
+  "gameRatingReload": "Обновить",
+  "gameRatingPendingRun": "Очки этой игры добавятся в рейтинг после выхода в меню.",
+  "gameRatingEmpty": "На этой неделе ещё никто не проехал. Будьте первым!",
+  "gameRatingUnavailable": "Не удалось загрузить рейтинг. Проверьте интернет.",
+  "gameRatingStaleAt": "Нет связи. Показан рейтинг на {time}.",
+  "gameRatingYou": "Вы",
   "gameResultNoRuns": "Заезды закончились",
   "gameResultRanking": "Рейтинг",
   "gameRunMistakesButton": "Ошибки · {count}",
@@ -149,6 +158,15 @@
   "gameCrossroadsCompleteTitle": "Перекресток разрулен!"
  },
  "en": {
+  "close": "Close",
+  "gameLeaderboard": "Leaderboard",
+  "gameRatingLoading": "Loading rankings…",
+  "gameRatingReload": "Refresh",
+  "gameRatingPendingRun": "Points from this game will be added when you return to the menu.",
+  "gameRatingEmpty": "No one has ridden this week yet. Be the first!",
+  "gameRatingUnavailable": "Failed to load rating. Check the Internet.",
+  "gameRatingStaleAt": "No connection. Showing the rating as of {time}.",
+  "gameRatingYou": "You",
   "gameResultNoRuns": "No runs left",
   "gameResultRanking": "Ranking",
   "gameRunMistakesButton": "Errors · {count}",
@@ -298,6 +316,15 @@
   "gameCrossroadsCompleteTitle": "The intersection has been cleared!"
  },
  "kk": {
+  "close": "Жабу",
+  "gameLeaderboard": "Көшбасшылар тақтасы",
+  "gameRatingLoading": "Рейтинг жүктелуде…",
+  "gameRatingReload": "Жаңарту",
+  "gameRatingPendingRun": "Осы ойындағы ұпайлар мәзірге шыққаннан кейін рейтингке қосылады.",
+  "gameRatingEmpty": "Бұл аптада әлі ешкім өткен жоқ. Бірінші болыңыз!",
+  "gameRatingUnavailable": "Рейтинг жүктелмеді. Интернетті тексеріңіз.",
+  "gameRatingStaleAt": "Байланыс жоқ. {time} уақыттағы рейтинг көрсетілген.",
+  "gameRatingYou": "Сіз",
   "gameResultNoRuns": "Жарыстар аяқталды",
   "gameResultRanking": "Рейтинг",
   "gameRunMistakesButton": "Қателер {count}",

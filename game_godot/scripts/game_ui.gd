@@ -983,7 +983,6 @@ func show_result(summary: Dictionary, selection := {}, best := 0, can_restart :=
 	results.set_vehicle(str(selection.get("id", "hatch")), Color(str(selection.get("hex", "#ED4621"))))
 	results.restart_pressed.connect(func(): restart_pressed.emit())
 	results.exit_pressed.connect(func(): exit_pressed.emit())
-	results.ranking_pressed.connect(func(): result_action_pressed.emit("ranking"))
 	results.mistakes_pressed.connect(func(): result_action_pressed.emit("mistakes"))
 	results.show_results(int(summary.score), int(summary.correct), int(summary.answered) - int(summary.correct), 0, int(summary.score) > best, best)
 	results.set_distance(float(summary.get("distance_m", 0)))

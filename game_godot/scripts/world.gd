@@ -2960,6 +2960,7 @@ func _notification(what: int) -> void:
 		elif paused:
 			_on_resume()
 		elif phase == "over":
+			if is_instance_valid(ui.results) and ui.results.dismiss_review(): return
 			_on_exit()
 		else:
 			_on_pause(true)

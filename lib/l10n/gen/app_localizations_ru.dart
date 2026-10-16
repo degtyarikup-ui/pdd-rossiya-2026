@@ -3826,4 +3826,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameResultNoRuns => 'Заезды закончились';
+
+  @override
+  String get gameRatingLoading => 'Загружаем рейтинг…';
+
+  @override
+  String get gameRatingReload => 'Обновить';
+
+  @override
+  String get gameRatingPendingRun =>
+      'Очки этой игры добавятся в рейтинг после выхода в меню.';
 }

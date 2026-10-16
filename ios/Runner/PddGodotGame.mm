@@ -409,8 +409,12 @@ static void HideGame(dispatch_block_t completion) {
                   result:^(id result) {
     if (generation != gRunGeneration || !gPending) return;
     BOOL success = [result isKindOfClass:NSNumber.class] && [result boolValue];
-    NSData *reply = [NSJSONSerialization dataWithJSONObject:@{@"request_id": requestId, @"success": @(success)}
-                                                   options:0 error:nil];
+    NSMutableDictionary *response = [@{@"request_id": requestId, @"success": @(success)} mutableCopy];
+    if ([result isKindOfClass:NSString.class]) {
+      id payload = [NSJSONSerialization JSONObjectWithData:[result dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+      if ([payload isKindOfClass:NSDictionary.class]) response[@"data"] = payload;
+    }
+    NSData *reply = [NSJSONSerialization dataWithJSONObject:response options:0 error:nil];
     [reply writeToFile:[ExchangeFolder() stringByAppendingPathComponent:@"report-result.json"]
               options:NSDataWritingAtomic error:nil];
   }];

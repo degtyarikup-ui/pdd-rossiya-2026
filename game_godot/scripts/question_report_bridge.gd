@@ -3,6 +3,8 @@
 extends Node
 
 signal finished(success: bool)
+signal data_received(data: Dictionary)
+var expects_data := false
 var request_id := ""
 var _deadline := 0
 var _next_poll := 0
@@ -11,11 +13,13 @@ var _plugin: Object
 
 func submit(payload: Dictionary) -> void:
 	if request_id != "": return
+	expects_data = payload.get("request_kind", "") == "leaderboard"
 	request_id = "%s-%s" % [Time.get_ticks_usec(), get_instance_id()]
 	_deadline = Time.get_ticks_msec() + 30000
 	if Host.embedded():
 		_plugin = Engine.get_singleton("PddHost")
-		_plugin.connect("question_report_result", _on_result)
+		if expects_data: _plugin.connect("game_data_result", _on_data_result)
+		else: _plugin.connect("question_report_result", _on_result)
 		_plugin.reportQuestion(request_id, JSON.stringify(payload))
 	elif Host.io != "":
 		var path := Host.io.path_join("report-request.json")
@@ -60,14 +64,30 @@ func _process(_delta: float) -> void:
 	if raw.is_empty(): return
 	var reply = JSON.parse_string(raw)
 	if reply is Dictionary and str(reply.get("request_id", "")) == request_id:
-		_finish(reply.get("success", false) == true)
+		if expects_data:
+			var data: Variant = reply.get("data", {})
+			_finish_data(data if data is Dictionary else {})
+		else: _finish(reply.get("success", false) == true)
 
 
 func _on_result(id: String, success: bool) -> void:
 	if id == request_id: _finish(success)
 
 
+func _on_data_result(id: String, json: String) -> void:
+	if id != request_id: return
+	var data: Variant = JSON.parse_string(json)
+	_finish_data(data if data is Dictionary else {})
+
+func _finish_data(data: Dictionary) -> void:
+	_cleanup()
+	request_id = ""
+	data_received.emit(data)
+
 func _finish(success: bool) -> void:
+	if expects_data:
+		_finish_data({})
+		return
 	_cleanup()
 	request_id = ""
 	finished.emit(success)
@@ -76,6 +96,8 @@ func _finish(success: bool) -> void:
 func _cleanup() -> void:
 	if _plugin != null and _plugin.is_connected("question_report_result", _on_result):
 		_plugin.disconnect("question_report_result", _on_result)
+	if _plugin != null and _plugin.is_connected("game_data_result", _on_data_result):
+		_plugin.disconnect("game_data_result", _on_data_result)
 	_plugin = null
 	if Host.on_web() and request_id != "":
 		JavaScriptBridge.eval("window.removeEventListener('message', window.pddReportListener); delete window.pddReportListener; delete window.pddReportReply;", true)

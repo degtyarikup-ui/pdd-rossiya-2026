@@ -48,6 +48,7 @@ func _run() -> void:
 			var cross := crossroads._results
 			var reg := regulator._results
 			var context := "%s %s" % [language, viewport_size]
+			_expect(not cross.mistakes_button.visible and not reg.mistakes_button.visible, "mini-games do not expose mistake review " + context)
 			_expect(cross.card.position.is_equal_approx(reg.card.position) and cross.card.size.is_equal_approx(reg.card.size),
 				"identical result card geometry " + context)
 			_expect(cross.cover.texture != reg.cover.texture and cross.cover.texture != null and reg.cover.texture != null,

@@ -6351,6 +6351,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Заезды закончились'**
   String get gameResultNoRuns;
+
+  /// No description provided for @gameRatingLoading.
+  ///
+  /// In ru, this message translates to:
+  /// **'Загружаем рейтинг…'**
+  String get gameRatingLoading;
+
+  /// No description provided for @gameRatingReload.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновить'**
+  String get gameRatingReload;
+
+  /// No description provided for @gameRatingPendingRun.
+  ///
+  /// In ru, this message translates to:
+  /// **'Очки этой игры добавятся в рейтинг после выхода в меню.'**
+  String get gameRatingPendingRun;
 }
 
 class _AppLocalizationsDelegate

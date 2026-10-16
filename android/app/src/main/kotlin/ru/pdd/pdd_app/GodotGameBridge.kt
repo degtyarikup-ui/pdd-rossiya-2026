@@ -50,7 +50,8 @@ class GodotGameBridge(private val activity: Activity, messenger: BinaryMessenger
                                 channel.invokeMethod("reportQuestion", json, object : MethodChannel.Result {
                                     override fun success(value: Any?) {
                                         android.util.Log.i("PddQuestionReport", "Flutter result: ${value == true}")
-                                        reply.send(if (value == true) 1 else 0, null)
+                                        if (value is String) reply.send(1, Bundle().apply { putString("json", value) })
+                                        else reply.send(if (value == true) 1 else 0, null)
                                     }
                                     override fun error(code: String, message: String?, details: Any?) = reply.send(0, null)
                                     override fun notImplemented() = reply.send(0, null)

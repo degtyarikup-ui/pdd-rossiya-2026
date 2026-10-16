@@ -3807,4 +3807,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameResultNoRuns => 'No runs left';
+
+  @override
+  String get gameRatingLoading => 'Loading rankings…';
+
+  @override
+  String get gameRatingReload => 'Refresh';
+
+  @override
+  String get gameRatingPendingRun =>
+      'Points from this game will be added when you return to the menu.';
 }

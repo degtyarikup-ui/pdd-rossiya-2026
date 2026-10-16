@@ -10,25 +10,29 @@ import ru.pdd.pdd_app.GodotReportReceiver
 class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPlugin(godot) {
     override fun getPluginName() = "PddHost"
     private val cancelLoading = SignalInfo("cancel_loading")
+    private val gameDataResult = SignalInfo("game_data_result", String::class.java, String::class.java)
     private val reportResult = SignalInfo("question_report_result", String::class.java, Boolean::class.javaObjectType)
 
-    override fun getPluginSignals(): MutableSet<SignalInfo> = mutableSetOf(cancelLoading, reportResult)
+    override fun getPluginSignals(): MutableSet<SignalInfo> = mutableSetOf(cancelLoading, reportResult, gameDataResult)
 
     /** Binder carries only the report to Flutter; session credentials stay in the app process. */
     @UsedByGodot
     fun reportQuestion(requestId: String, json: String) {
         android.util.Log.i("PddQuestionReport", "Game submitted report")
+        val expectsData = runCatching { org.json.JSONObject(json).optString("request_kind") == "leaderboard" }.getOrDefault(false)
         host.runOnUiThread {
             @Suppress("DEPRECATION")
             val receiver = host.intent.getParcelableExtra<android.os.ResultReceiver>("pdd_report_receiver")
             if (receiver == null) {
-                emitSignal(reportResult, requestId, false)
+                if (expectsData) emitSignal(gameDataResult, requestId, "{}")
+                else emitSignal(reportResult, requestId, false)
                 return@runOnUiThread
             }
             val reply = object : android.os.ResultReceiver(android.os.Handler(android.os.Looper.getMainLooper())) {
                 override fun onReceiveResult(code: Int, data: android.os.Bundle?) {
                     android.util.Log.i("PddQuestionReport", "Game received result: ${code == 1}")
-                    emitSignal(reportResult, requestId, code == 1)
+                    if (expectsData) emitSignal(gameDataResult, requestId, data?.getString("json") ?: "{}")
+                    else emitSignal(reportResult, requestId, code == 1)
                 }
             }
             receiver.send(0, android.os.Bundle().apply {

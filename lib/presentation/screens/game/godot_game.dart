@@ -24,6 +24,7 @@ import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/data/services/question_report_service.dart';
+import 'package:pdd_app/data/services/godot_game_data_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 import 'package:pdd_app/presentation/screens/game/godot_web_screen.dart';
@@ -436,6 +437,9 @@ class GodotGame {
           try {
             final report = jsonDecode(call.arguments as String);
             if (report is Map<String, dynamic>) {
+              if (report['request_kind'] == 'leaderboard') {
+                return await GodotGameDataService.leaderboard();
+              }
               return await QuestionReportService.sendGameReport(report);
             }
           } catch (_) {}
