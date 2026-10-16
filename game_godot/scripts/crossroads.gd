@@ -700,8 +700,8 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	best_tc = maxf(best_tc, start_tc + 0.05)
 	best_tp = maxf(best_tp, start_tp + 0.05)
 
-	var target_tc := minf(0.85, best_tc + 0.06)
-	var target_tp := minf(0.85, best_tp + 0.06)
+	var target_tc := minf(0.95, best_tc + 0.16)
+	var target_tp := minf(0.95, best_tp + 0.16)
 
 	# A rule violation never invents an off-road crash between unrelated paths.
 	if chosen == priority or min_dist > 3.0:
@@ -713,9 +713,9 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		return
 
 	# Smoothly drive both actors along their curves towards collision
-	var drive_duration := clampf(maxf(best_tc * len_c, best_tp * len_p) / 12.0, 0.8, 2.2)
+	var drive_duration := clampf(maxf(best_tc * len_c, best_tp * len_p) / 13.0, 0.75, 2.0)
 	var elapsed := 0.0
-	var max_drive_time := drive_duration + 0.15
+	var max_drive_time := drive_duration + 0.3
 	var has_collided := false
 
 	while elapsed < max_drive_time:
@@ -759,7 +759,9 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 			priority.rotation.y = atan2(dir_p.x, dir_p.z)
 
 		# Physical collision contact check: exact SAT oriented bounding boxes with metal touch
-		if Drive.overlap(chosen.footprint(), priority.footprint(), 0.0):
+		# Negative margin guarantees bumper-to-bumper physical contact with zero air gap
+		var contact_margin := -0.10 if (chosen.is_pedestrian or priority.is_pedestrian) else -0.05
+		if Drive.overlap(chosen.footprint(), priority.footprint(), contact_margin):
 			has_collided = true
 			break
 	if not has_collided:
@@ -779,16 +781,14 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	GameSound.buzz(70)
 	cam_shake = 0.55
 
-	# Slight recoil bounce backwards so vehicles stay in visual contact with bumpers touching
+	# Deform slightly on impact while maintaining exact bumper contact (no backward gap recoil)
 	var tan_c := Vector3(sin(chosen.rotation.y), 0, cos(chosen.rotation.y))
 	if not chosen.is_pedestrian:
-		chosen.position -= tan_c * (0.02 if chosen.is_tram else 0.04)
 		chosen.rotation.z += 0.035
 		chosen.rotation.x -= 0.025
 
 	var tan_p := Vector3(sin(priority.rotation.y), 0, cos(priority.rotation.y))
 	if not priority.is_pedestrian:
-		priority.position -= tan_p * (0.02 if priority.is_tram else 0.04)
 		priority.rotation.z -= 0.030
 
 	if not chosen.is_pedestrian:
@@ -1100,7 +1100,7 @@ func fit_camera_to_scenario() -> void:
 	var bottom_margin := area.end.y
 	var left_margin := area.position.x
 	var right_margin := area.end.x
-	var badge_margin := (CrossroadsActor.BADGE_CARD_SCREEN_DP * 0.5 + 7.0) * Ui.dp(vp)
+	var badge_margin := (CrossroadsActor.BADGE_CARD_SCREEN_DP * 0.5 + 2.0) * Ui.dp(vp)
 	_fit_projection(area)
 
 	var probe_pts: Array[Vector3] = [
@@ -1114,8 +1114,8 @@ func fit_camera_to_scenario() -> void:
 	for a in active_actors:
 		var p: Vector3 = a.global_position
 		probe_pts.append(p)
-		for x in [-a.hw, a.hw]:
-			for z in [-a.hl, a.hl]:
+		for x in [-a.hw * 0.85, a.hw * 0.85]:
+			for z in [-a.hl * 0.85, a.hl * 0.85]:
 				probe_pts.append(a.global_transform * Vector3(x, 0.0, z))
 		if a.badge_sprite != null:
 			badge_points.append(a.badge_sprite.global_position)

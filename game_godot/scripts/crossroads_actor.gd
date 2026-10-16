@@ -68,8 +68,8 @@ func _init(actor_data: Dictionary) -> void:
 
 	var type_str: String = data.get("type", "car")
 	if is_pedestrian:
-		hw = 0.4
-		hl = 0.4
+		hw = 0.25
+		hl = 0.25
 	elif type_str == "tram":
 		hw = 1.3
 		hl = 7.5
@@ -364,7 +364,7 @@ func _build_trajectory() -> void:
 	path_length = path_curve.get_baked_length()
 	# Normalised progress is retained for collision animation; actual road speed
 	# stays independent of the route's 110 m invisible continuation.
-	var speed_mps := 6.8 if is_tram else (7.2 if str(data.get("type", "")) in ["bus", "truck"] else 8.5)
+	var speed_mps := 8.4 if is_tram else (9.2 if str(data.get("type", "")) in ["bus", "truck"] else 11.0)
 	drive_speed = speed_mps / maxf(path_length, 1.0)
 
 
@@ -387,13 +387,16 @@ func _build_trajectory_guide() -> void:
 		# a percentage of the full 110 m departure along the avenue.
 		finish_distance = minf(path_length - 1.0, _turn_end_distance + 2.3)
 	var points := PackedVector2Array()
-	var steps := maxi(2, ceili((finish_distance - begin_distance) / 0.35))
+	# High sampling density (0.08 m) for smooth continuous ribbon on curves
+	var steps := maxi(8, ceili((finish_distance - begin_distance) / 0.08))
 	for i in steps + 1:
 		var p := path_curve.sample_baked(lerpf(begin_distance, finish_distance, float(i) / steps))
 		points.append(Vector2(p.x, p.z))
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	Situation._strip(st, Situation._shorten(points, 1.6), Situation.GUIDE_WIDTH)
+	# Overlap the ribbon slightly under the arrowhead (1.2m shorten vs 1.6m head)
+	# to eliminate any seam or empty gap on curves!
+	Situation._strip(st, Situation._shorten(points, 1.2), Situation.GUIDE_WIDTH)
 	Situation._round_start(st, points, Situation.GUIDE_WIDTH)
 	Situation._arrowhead(st, Situation._before_tip(points, 1.6), points[-1])
 	trajectory_guide.mesh = st.commit()

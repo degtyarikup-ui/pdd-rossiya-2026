@@ -34,6 +34,7 @@ var rails_root: Node3D
 var ground_root: Node3D
 var markings_root: Node3D
 var closed_root: Node3D
+var decor_root: Node3D
 
 var closed_side := ""
 var walker_crowds: Array[MultiMesh] = []
@@ -87,6 +88,10 @@ func _init(season_name := "summer") -> void:
 	closed_root = Node3D.new()
 	closed_root.name = "ClosedRoot"
 	add_child(closed_root)
+
+	decor_root = Node3D.new()
+	decor_root.name = "DecorRoot"
+	add_child(decor_root)
 
 	_build_ground()
 	_build_junction_surfaces()
@@ -215,6 +220,9 @@ func _rebuild_surfaces_and_markings() -> void:
 	for c in closed_root.get_children():
 		closed_root.remove_child(c)
 		c.queue_free()
+	for c in decor_root.get_children():
+		decor_root.remove_child(c)
+		c.queue_free()
 	_build_junction_surfaces()
 	_build_markings()
 
@@ -253,6 +261,53 @@ func _build_open_arm_surface(arm: String, arm_len: float) -> void:
 	ground_root.add_child(road)
 
 
+func _build_bench(pos: Vector3, yaw: float, parent: Node3D) -> void:
+	var root := Node3D.new()
+	root.name = "Bench"
+	root.position = pos
+	root.rotation.y = yaw
+
+	var wood_mat := StandardMaterial3D.new()
+	wood_mat.albedo_color = Color("#8D5832")
+	wood_mat.roughness = 0.75
+
+	var seat := _box(Vector3(1.6, 0.04, 0.42), wood_mat)
+	seat.position = Vector3(0, 0.42, 0)
+	root.add_child(seat)
+
+	var back := _box(Vector3(1.6, 0.32, 0.04), wood_mat)
+	back.position = Vector3(0, 0.70, -0.19)
+	root.add_child(back)
+
+	var leg_mat := _pole_material()
+	for lx in [-0.65, 0.65]:
+		var leg := _box(Vector3(0.06, 0.42, 0.42), leg_mat)
+		leg.position = Vector3(lx, 0.21, 0)
+		root.add_child(leg)
+		var back_post := _box(Vector3(0.06, 0.45, 0.06), leg_mat)
+		back_post.position = Vector3(lx, 0.60, -0.19)
+		root.add_child(back_post)
+
+	parent.add_child(root)
+
+
+func _build_bollard(pos: Vector3, parent: Node3D) -> void:
+	var bollard := MeshInstance3D.new()
+	bollard.name = "Bollard"
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = 0.09
+	cylinder.bottom_radius = 0.10
+	cylinder.height = 0.65
+	cylinder.radial_segments = 8
+	bollard.mesh = cylinder
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color("#555A64")
+	mat.roughness = 0.6
+	bollard.material_override = mat
+	bollard.position = pos + Vector3(0, 0.325, 0)
+	parent.add_child(bollard)
+
+
 func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 	var sw_w := 4.2
 	var sw := _quad(Vector2(ROAD_WIDTH, sw_w), sidewalk_mat)
@@ -260,38 +315,102 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 	var curb := _box(Vector3(ROAD_WIDTH, 0.20, 0.3), curb_mat)
 	curb.position.y = 0.10
 
-	# Lawn covering the closed road arm
-	var lawn := _quad(Vector2(ROAD_WIDTH, arm_len - sw_w), grass_mat)
-	lawn.position.y = -0.02
-	var lawn_mid := HALF_ROAD + sw_w + (arm_len - sw_w) * 0.5
+	# Paved pedestrian plaza / pocket park occupying the first 22m of the closed arm
+	var plaza_len := 22.0
+	var plaza := _quad(Vector2(ROAD_WIDTH, plaza_len), sidewalk_mat)
+	plaza.position.y = 0.155
+	var plaza_mid := HALF_ROAD + sw_w + plaza_len * 0.5
 
+	# Lawn covering the rest of the closed arm beyond the plaza
+	var rem_lawn_len := arm_len - sw_w - plaza_len
+	var lawn := _quad(Vector2(ROAD_WIDTH, rem_lawn_len), grass_mat)
+	lawn.position.y = 0.15
+	var lawn_mid := HALF_ROAD + sw_w + plaza_len + rem_lawn_len * 0.5
+
+	# Raised central flowerbed inside the pocket plaza
+	var fb_size := Vector2(6.0, 8.0)
+	var fb_lawn := _quad(fb_size, grass_mat)
+	fb_lawn.position.y = 0.22
+	var fb_curb_n := _box(Vector3(fb_size.x + 0.3, 0.14, 0.2), curb_mat)
+	fb_curb_n.position = Vector3(0, 0.21, fb_size.y * 0.5)
+	var fb_curb_s := _box(Vector3(fb_size.x + 0.3, 0.14, 0.2), curb_mat)
+	fb_curb_s.position = Vector3(0, 0.21, -fb_size.y * 0.5)
+	var fb_curb_e := _box(Vector3(0.2, 0.14, fb_size.y), curb_mat)
+	fb_curb_e.position = Vector3(fb_size.x * 0.5, 0.21, 0)
+	var fb_curb_w := _box(Vector3(0.2, 0.14, fb_size.y), curb_mat)
+	fb_curb_w.position = Vector3(-fb_size.x * 0.5, 0.21, 0)
+
+	var fb_root := Node3D.new()
+	fb_root.name = "Flowerbed"
+	fb_root.add_child(fb_lawn)
+	fb_root.add_child(fb_curb_n)
+	fb_root.add_child(fb_curb_s)
+	fb_root.add_child(fb_curb_e)
+	fb_root.add_child(fb_curb_w)
+
+	var park_root := Node3D.new()
+	park_root.name = "PocketPark_" + arm
+	closed_root.add_child(park_root)
+
+	var rot_y := 0.0
 	match arm:
 		"south":
 			sw.position = Vector3(0, 0.16, HALF_ROAD + sw_w * 0.5)
 			curb.position = Vector3(0, 0.10, HALF_ROAD + 0.15)
+			plaza.position = Vector3(0, 0.155, plaza_mid)
 			lawn.position = Vector3(0, 0.15, lawn_mid)
+			fb_root.position = Vector3(0, 0, plaza_mid)
+			rot_y = 0.0
 		"north":
 			sw.position = Vector3(0, 0.16, -(HALF_ROAD + sw_w * 0.5))
 			curb.position = Vector3(0, 0.10, -(HALF_ROAD + 0.15))
+			plaza.position = Vector3(0, 0.155, -plaza_mid)
 			lawn.position = Vector3(0, 0.15, -lawn_mid)
+			fb_root.position = Vector3(0, 0, -plaza_mid)
+			rot_y = PI
 		"east":
 			sw.position = Vector3(HALF_ROAD + sw_w * 0.5, 0.16, 0)
 			sw.rotation.y = PI * 0.5
 			curb.position = Vector3(HALF_ROAD + 0.15, 0.10, 0)
 			curb.rotation.y = PI * 0.5
+			plaza.position = Vector3(plaza_mid, 0.155, 0)
+			plaza.rotation.y = PI * 0.5
 			lawn.position = Vector3(lawn_mid, 0.15, 0)
 			lawn.rotation.y = PI * 0.5
+			fb_root.position = Vector3(plaza_mid, 0, 0)
+			rot_y = -PI * 0.5
 		"west":
 			sw.position = Vector3(-(HALF_ROAD + sw_w * 0.5), 0.16, 0)
 			sw.rotation.y = PI * 0.5
 			curb.position = Vector3(-(HALF_ROAD + 0.15), 0.10, 0)
 			curb.rotation.y = PI * 0.5
+			plaza.position = Vector3(-plaza_mid, 0.155, 0)
+			plaza.rotation.y = PI * 0.5
 			lawn.position = Vector3(-lawn_mid, 0.15, 0)
 			lawn.rotation.y = PI * 0.5
+			fb_root.position = Vector3(-plaza_mid, 0, 0)
+			rot_y = PI * 0.5
 
+	fb_root.rotation.y = rot_y
 	ground_root.add_child(sw)
 	ground_root.add_child(curb)
+	ground_root.add_child(plaza)
 	ground_root.add_child(lawn)
+	park_root.add_child(fb_root)
+
+	# Benches flanking the central flowerbed
+	var bench_offset := 4.6
+	var b1_pos := fb_root.position + Vector3(-bench_offset, 0.155, 0).rotated(Vector3.UP, rot_y)
+	var b2_pos := fb_root.position + Vector3(bench_offset, 0.155, 0).rotated(Vector3.UP, rot_y)
+	_build_bench(b1_pos, rot_y + PI * 0.5, park_root)
+	_build_bench(b2_pos, rot_y - PI * 0.5, park_root)
+
+	# Row of safety bollards separating the street from the pedestrian plaza
+	var bollard_dist := HALF_ROAD + 0.5
+	for bi in 7:
+		var bx := -HALF_ROAD + 1.8 + float(bi) * 1.8
+		var b_pos := Vector3(bx, 0.16, bollard_dist).rotated(Vector3.UP, rot_y)
+		_build_bollard(b_pos, park_root)
 
 
 func _build_quadrant_sidewalks() -> void:
@@ -347,12 +466,53 @@ func _build_quadrant_sidewalks() -> void:
 		var lawn := _quad(Vector2(extent, extent), grass_mat)
 		lawn.position = Vector3(sx * (outer + extent * 0.5), 0.15, sz * (outer + extent * 0.5))
 		ground_root.add_child(lawn)
-		var curb_lawn_x := _box(Vector3(0.18, 0.18, extent), curb_mat)
-		curb_lawn_x.position = Vector3(sx * (outer - 0.09), 0.10, sz * (outer + extent * 0.5))
-		ground_root.add_child(curb_lawn_x)
+		# Lawn border curbs with openings for pedestrian pathway (14.5-17.5m) and courtyard driveway (29.9-34.1m)
+		var curb_x1 := _box(Vector3(0.18, 0.18, 3.1), curb_mat)
+		curb_x1.position = Vector3(sx * (outer - 0.09), 0.10, sz * 12.95)
+		ground_root.add_child(curb_x1)
+
+		var curb_x2 := _box(Vector3(0.18, 0.18, 12.4), curb_mat)
+		curb_x2.position = Vector3(sx * (outer - 0.09), 0.10, sz * 23.70)
+		ground_root.add_child(curb_x2)
+
+		var curb_x3 := _box(Vector3(0.18, 0.18, 115.9), curb_mat)
+		curb_x3.position = Vector3(sx * (outer - 0.09), 0.10, sz * 92.05)
+		ground_root.add_child(curb_x3)
+
 		var curb_lawn_z := _box(Vector3(extent, 0.18, 0.18), curb_mat)
 		curb_lawn_z.position = Vector3(sx * (outer + extent * 0.5), 0.10, sz * (outer - 0.09))
 		ground_root.add_child(curb_lawn_z)
+
+		# Courtyard paved pathway and asphalt driveway in each quadrant
+		var drive_z := sz * 32.0
+		var drive_w := 4.2
+		var drive_len := 16.0
+		var drive := _quad(Vector2(drive_len, drive_w), asphalt_mat)
+		drive.position = Vector3(sx * (outer + drive_len * 0.5), 0.155, drive_z)
+		ground_root.add_child(drive)
+
+		var drive_curb_a := _box(Vector3(drive_len, 0.14, 0.16), curb_mat)
+		drive_curb_a.position = Vector3(sx * (outer + drive_len * 0.5), 0.19, drive_z - sz * (drive_w * 0.5 + 0.08))
+		ground_root.add_child(drive_curb_a)
+
+		var drive_curb_b := _box(Vector3(drive_len, 0.14, 0.16), curb_mat)
+		drive_curb_b.position = Vector3(sx * (outer + drive_len * 0.5), 0.19, drive_z + sz * (drive_w * 0.5 + 0.08))
+		ground_root.add_child(drive_curb_b)
+
+		# Courtyard pedestrian square with benches and flowerbed
+		var plaza_center := Vector3(sx * 19.5, 0.155, sz * 19.5)
+		var court_plaza := _quad(Vector2(8.0, 8.0), sidewalk_mat)
+		court_plaza.position = plaza_center
+		ground_root.add_child(court_plaza)
+
+		# Paved path connecting sidewalk corner to court plaza
+		var path_len := 8.0
+		var path := _quad(Vector2(path_len, 3.0), sidewalk_mat)
+		path.position = Vector3(sx * (outer + path_len * 0.5), 0.155, sz * 16.0)
+		ground_root.add_child(path)
+
+		_build_bench(Vector3(sx * 17.5, 0.155, sz * 22.0), atan2(-sx, 0.0), decor_root)
+		_build_bench(Vector3(sx * 22.0, 0.155, sz * 17.5), atan2(0.0, -sz), decor_root)
 
 
 func _crossing_exit(p: Vector2, corner: Vector2) -> bool:
@@ -502,12 +662,14 @@ func _build_crossing(arm_root: Node3D) -> void:
 	# 5.19.1 is on the right/near boundary and 5.19.2 on the left/far
 	# boundary, both facing the same approaching driver. Repeat for traffic
 	# leaving the junction, with the symbols on the backs of these masts.
+	# Offset each sign slightly (+/-0.10m) from pole Z so they mount cleanly
+	# on opposite sides of the pole bracket without intersecting each other.
 	var sign_x := HALF_ROAD + SIGN_CURB_OFFSET
 	for placement: Array in [
-		["5.19.1", Vector3(sign_x, SIDEWALK_Y, ZEBRA_END), PI],
-		["5.19.2", Vector3(-sign_x, SIDEWALK_Y, ZEBRA_START), PI],
-		["5.19.1", Vector3(-sign_x, SIDEWALK_Y, ZEBRA_START), 0.0],
-		["5.19.2", Vector3(sign_x, SIDEWALK_Y, ZEBRA_END), 0.0],
+		["5.19.1", Vector3(sign_x, SIDEWALK_Y, ZEBRA_END + 0.10), PI],
+		["5.19.2", Vector3(-sign_x, SIDEWALK_Y, ZEBRA_START - 0.10), PI],
+		["5.19.1", Vector3(-sign_x, SIDEWALK_Y, ZEBRA_START + 0.10), 0.0],
+		["5.19.2", Vector3(sign_x, SIDEWALK_Y, ZEBRA_END - 0.10), 0.0],
 	]:
 		var sign_node := _sized_sign(placement[0], CROSSING_SIGN_WIDTH, "", [], [], {}, false)
 		if sign_node == null: continue
@@ -524,7 +686,7 @@ func _build_crossing(arm_root: Node3D) -> void:
 		# lane (GOST 5.1.6), using the same roadside mast.
 		var over_x := LANE_W * 1.5 * signf(x)
 		var overhead := _sized_sign("5.19.1", CROSSING_SIGN_WIDTH, "", [], [], {}, false)
-		overhead.position = Vector3(over_x, SIDEWALK_Y + 3.3, z_at)
+		overhead.position = Vector3(over_x, SIDEWALK_Y + 3.3, z_at + (0.08 if x > 0 else -0.08))
 		overhead.rotation.y = PI if x > 0 else 0.0
 		overhead.name = "CrossingOverhead_" + ("incoming" if x > 0 else "outgoing")
 		arm_root.add_child(overhead)
@@ -566,11 +728,13 @@ func _pole_material() -> StandardMaterial3D:
 
 func _build_street_lamps() -> void:
 	# The main game's canonical street lamp and scenery batching.
+	# Position corner lamps at (HALF_ROAD + 4.8) on the corner plaza so they
+	# do not collide with pedestrian crossing masts at (9.3, 12.0).
 	var offset := HALF_ROAD + 1.8
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
-			_put_prop("street/lamp", Vector3(sx * (HALF_ROAD + 3.6), SIDEWALK_Y, sz * (HALF_ROAD + 3.6)), atan2(-sx, -sz), Vector3.ONE * 0.95, Color.WHITE, true)
-	for d in [26.0, 50.0, 74.0, 98.0, 122.0, 146.0]:
+			_put_prop("street/lamp", Vector3(sx * (HALF_ROAD + 4.8), SIDEWALK_Y, sz * (HALF_ROAD + 4.8)), atan2(-sx, -sz), Vector3.ONE * 0.95, Color.WHITE, true)
+	for d in [28.0, 52.0, 76.0, 100.0, 124.0, 148.0]:
 		for side in [-1.0, 1.0]:
 			for end in [-1.0, 1.0]:
 				_put_prop("street/lamp", Vector3(side * offset, SIDEWALK_Y, end * d), PI * 0.5 if side < 0 else -PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, true)
@@ -690,25 +854,29 @@ func _build_scenery_decor() -> void:
 	_put_prop("buildings/tower_2", Vector3(-144.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 	_put_prop("buildings/home_3", Vector3(-144.0, 0.15, 26.0), PI, Vector3.ONE, Color("#E8CFA8"), true)
 
-	# --- 2. Street Kiosks ---
-	_put_prop("street/kiosk_1", Vector3(HALF_ROAD + 5.7, 0.16, 17.5), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, true)
-	_put_prop("street/kiosk_0", Vector3(-(HALF_ROAD + 5.7), 0.16, -17.5), -PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, true)
-	_put_prop("street/kiosk_2", Vector3(-17.5, 0.16, HALF_ROAD + 5.7), PI, Vector3.ONE * 0.95, Color.WHITE, true)
-	_put_prop("street/kiosk_1", Vector3(17.5, 0.16, -(HALF_ROAD + 5.7)), 0.0, Vector3.ONE * 0.95, Color.WHITE, true)
+	var bush_color := Color("#3E6B32")
+	if sc.season.has("pine"):
+		pine_color = sc.color("pine")
+	else:
+		pine_color = Color("#2D5428")
+
+	# --- 2. Street Kiosk (single kiosk at the SE corner plaza, avoid copy-pasting everywhere) ---
+	_put_prop("street/kiosk_1", Vector3(HALF_ROAD + 6.2, 0.16, 21.0), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, true)
 
 	# --- 3. Pedestrian Guardrail Fences along curbs on sidewalks ---
+	# Starts at 18.0m outward so approach signs at 14.2m have 3.8m of open clearance (no clipping into posts).
 	var fence_curb_off := HALF_ROAD + 0.8
 	for c in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
 		# Fences along NS road (length along Z, yaw = 0.0)
-		_put_prop("street/fence_14", Vector3(c.x * fence_curb_off, 0.16, c.y * 21.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
-		_put_prop("street/fence_12", Vector3(c.x * fence_curb_off, 0.16, c.y * 34.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_12", Vector3(c.x * fence_curb_off, 0.16, c.y * 24.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_12", Vector3(c.x * fence_curb_off, 0.16, c.y * 36.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
 		# Fences along EW road (length along X, yaw = PI * 0.5)
-		_put_prop("street/fence_14", Vector3(c.x * 21.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
-		_put_prop("street/fence_12", Vector3(c.x * 34.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_12", Vector3(c.x * 24.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
+		_put_prop("street/fence_12", Vector3(c.x * 36.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
 
 	# --- 4. Trees & Greenery ---
 	# Trees placed strictly on lawn verge (offset 13.5m, well behind 11.4m sidewalk edge)
-	# Distances start at 28.0m to give kiosks at 17.5m clear open space (no tree in kiosks!)
+	# Distances start at 28.0m to give plaza and approach signs clear open space
 	var tree_verge := HALF_ROAD + 6.3  # 13.5m
 	for dist in [28.0, 44.0, 60.0, 78.0, 96.0, 116.0, 136.0]:
 		for sx in [-1, 1]:
@@ -718,20 +886,20 @@ func _build_scenery_decor() -> void:
 			_put_prop("trees/round_0", Vector3(-dist, 0.16, sz * tree_verge), PI * 0.5, Vector3.ONE * 0.95, leaf_color, true)
 			_put_prop("trees/birch_0", Vector3(dist, 0.16, sz * tree_verge), -PI * 0.5, Vector3.ONE * 0.95, birch_color, true)
 
-	# Corner park trees placed in open lawn with generous 11m clearance from buildings
-	_put_prop("trees/pine_0", Vector3(-14.5, 0.15, -14.5), 0.3, Vector3.ONE * 1.05, pine_color, true)
-	_put_prop("trees/pine_0", Vector3(14.5, 0.15, -14.5), -0.5, Vector3.ONE * 1.05, pine_color, true)
-	_put_prop("trees/pine_0", Vector3(-14.5, 0.15, 14.5), 0.8, Vector3.ONE * 1.05, pine_color, true)
-	_put_prop("trees/pine_0", Vector3(14.5, 0.15, 14.5), 0.8, Vector3.ONE * 1.05, pine_color, true)
-	_put_prop("trees/birch_0", Vector3(15.5, 0.15, 23.0), 1.2, Vector3.ONE * 1.0, birch_color, true)
-	_put_prop("trees/round_0", Vector3(23.0, 0.15, 15.5), -0.7, Vector3.ONE * 1.0, leaf_color, true)
+	# Corner park trees placed in open lawn verges with generous clearance from paths and benches
+	_put_prop("trees/pine_0", Vector3(-14.0, 0.15, -25.5), 0.3, Vector3.ONE * 1.05, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(14.0, 0.15, -25.5), -0.5, Vector3.ONE * 1.05, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(-14.0, 0.15, 25.5), 0.8, Vector3.ONE * 1.05, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(14.0, 0.15, 25.5), 0.8, Vector3.ONE * 1.05, pine_color, true)
+	_put_prop("trees/birch_0", Vector3(-25.5, 0.15, -14.0), 1.2, Vector3.ONE * 1.0, birch_color, true)
+	_put_prop("trees/round_0", Vector3(25.5, 0.15, 14.0), -0.7, Vector3.ONE * 1.0, leaf_color, true)
 
 	for sx in [-1, 1]:
 		for b_dist in [22.0, 36.0, 52.0, 70.0, 88.0, 108.0, 128.0]:
-			_put_prop("street/bush", Vector3(sx * 12.2, 0.15, b_dist), 0.0, Vector3.ONE * 0.85, leaf_color, false)
-			_put_prop("street/bush", Vector3(sx * 12.2, 0.15, -b_dist), 0.0, Vector3.ONE * 0.85, leaf_color, false)
-			_put_prop("street/bush", Vector3(b_dist, 0.15, sx * 12.2), PI * 0.5, Vector3.ONE * 0.85, leaf_color, false)
-			_put_prop("street/bush", Vector3(-b_dist, 0.15, sx * 12.2), -PI * 0.5, Vector3.ONE * 0.85, leaf_color, false)
+			_put_prop("street/bush", Vector3(sx * 12.2, 0.15, b_dist), 0.0, Vector3.ONE * 0.85, bush_color, false)
+			_put_prop("street/bush", Vector3(sx * 12.2, 0.15, -b_dist), 0.0, Vector3.ONE * 0.85, bush_color, false)
+			_put_prop("street/bush", Vector3(b_dist, 0.15, sx * 12.2), PI * 0.5, Vector3.ONE * 0.85, bush_color, false)
+			_put_prop("street/bush", Vector3(-b_dist, 0.15, sx * 12.2), -PI * 0.5, Vector3.ONE * 0.85, bush_color, false)
 
 	_finish_pools()
 

@@ -121,17 +121,20 @@ def tree(m, kind):
             for row in range(2):
                 for i in range(8):
                     j=(i+1)%8
-                    color = SNOW if row==1 and i%3==tier%3 else (.83,.83,.83,1)
+                    shade = .80 + .12 * ((i + tier * 2) % 4) / 3.0
+                    color = (shade, shade, shade, 1)
                     m.face([rings[row][j],rings[row][i],rings[row+1][i],rings[row+1][j]],color,'leaves')
             for i in range(8):
                 j=(i+1)%8
-                m.face([rings[-1][j],rings[-1][i],(0,bottom+height,0)],SNOW,'leaves')
+                shade_top = .86 + .06 * (i % 2)
+                m.face([rings[-1][j],rings[-1][i],(0,bottom+height,0)],(shade_top, shade_top, shade_top, 1),'leaves')
                 m.face([rings[0][i],rings[0][j],(0,bottom,0)],(.72,.72,.72,1),'leaves')
 
 
 def bush(m):
-    for i,(pos,size) in enumerate([((-.38,-.04,0),(.76,.92,.88)),((.36,0,.02),(.88,1.1,1.0)),((.0,.08,-.18),(.80,.84,.72))]):
-        m.crown(pos,size,i+7,sides=6)
+    # Two well-proportioned smooth 8-sided crowns (2*64 = 128 tris <= 150) forming a lush natural shrub.
+    for i,(pos,size) in enumerate([((-.22,-.02,0),(.92,.98,.90)),((.20,.04,.02),(.98,1.08,1.02))]):
+        m.crown(pos,size,i+7,sides=8)
 
 
 def fence(m, length):
