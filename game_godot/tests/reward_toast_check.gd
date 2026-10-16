@@ -47,7 +47,7 @@ func _check_exit_gate() -> void:
 	world.ui.show_reward({"id":"paint:blue", "name":"Blue", "hex":"#317ED4"})
 	var toast: RewardToast = world.ui._reward_toast
 	toast.set_process(false)
-	world._exit_after_rewards()
+	world._show_run_result()
 	check(world.exits == 0, "Final exit waits for the queued rewards")
 	toast._process(RewardToast.DURATION + RewardToast.GAP - 0.01)
 	check(world.exits == 0, "First reward keeps its full animation before final exit")
@@ -57,16 +57,16 @@ func _check_exit_gate() -> void:
 	toast._process(RewardToast.DURATION + RewardToast.GAP - 0.01)
 	check(world.exits == 0, "Last reward also keeps its full hold and exit animation")
 	toast._process(0.02)
-	check(world.exits == 1 and not world.ui.rewards_busy(), "Full reward queue triggers exactly one final exit")
+	check(world.exits == 0 and is_instance_valid(world.ui.results) and world.ui.results.visible and not world.ui.rewards_busy(), "Full reward queue opens in-game result without exiting")
 	world.ui.rewards_settled.emit()
-	world._exit_after_rewards()
-	check(world.exits == 1, "A settled queue cannot repeat a completed exit")
+	world._show_run_result()
+	check(world.exits == 0, "A settled queue never exits the game")
 	world.queue_free()
 	await process_frame
 
 	world = _exit_fixture()
-	world._exit_after_rewards()
-	check(world.exits == 1, "A ride without a reward exits immediately")
+	world._show_run_result()
+	check(world.exits == 0 and world.ui.results.visible, "A ride without a reward immediately opens its result")
 	world.queue_free()
 	await process_frame
 
@@ -74,7 +74,7 @@ func _check_exit_gate() -> void:
 	world.ui.show_reward({"id":"model:sedan", "name":"Sedan"})
 	toast = world.ui._reward_toast
 	toast.set_process(false)
-	world._exit_after_rewards()
+	world._show_run_result()
 	world._exiting = true # Another exit path already took ownership of shutdown.
 	toast._process(RewardToast.DURATION + RewardToast.GAP + 0.01)
 	check(world.exits == 0, "An existing exit cancels the pending reward completion callback")

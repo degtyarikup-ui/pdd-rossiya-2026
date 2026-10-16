@@ -48,6 +48,7 @@ class TransportVoice:
 		tyre_gain = 0.008 * rev
 		electric = kind == "tram"
 
+var suspended := false
 var enabled := true
 var speed := 0.0                  # m/s, set by the world every frame
 var _player: AudioStreamPlayer
@@ -141,7 +142,7 @@ static func buzz(ms: int) -> void:
 
 
 func _process(delta: float) -> void:
-	if not enabled:
+	if not enabled or suspended:
 		for answer in _answers.values():
 			answer.stop()
 		if _player != null and _player.playing:

@@ -6333,6 +6333,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Нарушение правил маневрирования'**
   String get gameIllegalManeuver;
+
+  /// No description provided for @gameResultRanking.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рейтинг'**
+  String get gameResultRanking;
+
+  /// No description provided for @gameResultNoRuns.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезды закончились'**
+  String get gameResultNoRuns;
 }
 
 class _AppLocalizationsDelegate

@@ -3817,4 +3817,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameIllegalManeuver => 'Нарушение правил маневрирования';
+
+  @override
+  String get gameResultRanking => 'Рейтинг';
+
+  @override
+  String get gameResultNoRuns => 'Заезды закончились';
 }

@@ -100,7 +100,7 @@ func _layout() -> void:
 	_results.size = size
 	var left := float(safe["left"]) / u + 20.0
 	var right := float(safe["right"]) / u + 20.0
-	_results.layout(Rect2(left, top + 24.0, maxf(160.0, size.x - left - right), maxf(100.0, size.y - top - bottom - 48.0)))
+	_results.layout(Rect2(left, top + 16.0, maxf(160.0, size.x - left - right), maxf(100.0, size.y - top - bottom - 32.0)))
 	_fit_hud()
 
 

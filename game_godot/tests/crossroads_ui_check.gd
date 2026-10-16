@@ -70,7 +70,7 @@ func _run() -> void:
 		await _settle(ui)
 		_check("Results card fits viewport" + suffix, _contained(ui._results.card.get_global_rect(), viewport_size, 15.0))
 		_check("Result labels have no horizontal clipping" + suffix, _labels_fit(ui._results.content))
-		_check("Results keep score, record and accuracy" + suffix, ui._results.score_label.text == "1540" and ui._results.record_badge.visible and ui._results.stat_values[1].text == "86%")
+		_check("Results keep score, record and accuracy" + suffix, ui._results.score_label.text == "1540" and ui._results.record_badge.visible and ui._results.stat_values[1].text == "×8")
 		ui.hide_results()
 	ui.queue_free()
 	await process_frame

@@ -1286,5 +1286,7 @@
   "driverTipCategoryFuel": "Economy",
   "driverTipCategoryMirrors": "Mirrors",
   "driverTipCategoryOther": "Tips",
-  "gameIllegalManeuver": "Illegal maneuver"
+  "gameIllegalManeuver": "Illegal maneuver",
+  "gameResultRanking": "Ranking",
+  "gameResultNoRuns": "No runs left"
 }

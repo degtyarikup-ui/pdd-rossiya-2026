@@ -77,14 +77,11 @@ func _check_launches() -> void:
 
 
 func _check_results(result: MiniGameResults, palette: Dictionary, context: String) -> void:
-	_surface(result.card, "card", palette, context + " result card")
-	_ink(result.title_label, "text", palette, context + " result title")
-	_surface(result.record_badge, "gold_surface", palette, context + " record surface")
-	_ink(result.best_label, "secondary", palette, context + " previous record")
+	_ink(result.title_label, "white", Ui.LIGHT, context + " result title")
 	for value in result.stat_values:
-		_ink(value, "text", palette, context + " result statistic")
-	_button(result.restart_button, "accent", palette, context + " restart action")
-	_ink(result.exit_button, "secondary", palette, context + " exit action")
+		_ink(value, "white", Ui.LIGHT, context + " result statistic")
+	_button(result.restart_button, "white", Ui.LIGHT, context + " restart action")
+	_ink(result.restart_button, "accent", Ui.LIGHT, context + " restart text")
 
 
 func _check_mini_games(palette: Dictionary, context: String) -> void:
@@ -144,8 +141,7 @@ func _check_city(palette: Dictionary, context: String) -> void:
 	_surface(ui._sheet, "card", palette, context + " city explanation panel")
 	_ink(_text(ui._sheet, question.explanation), "text", palette, context + " city explanation text")
 	ui.show_result({"correct": 4, "answered": 5, "score": 100, "violations": 0})
-	_surface(ui._sheet, "card", palette, context + " city result panel")
-	_ink(_text(ui._sheet, Ui.t("gameOver")), "text", palette, context + " city result title")
+	_check_results(ui.results, palette, context + " city result")
 	ui.queue_free()
 	await process_frame
 

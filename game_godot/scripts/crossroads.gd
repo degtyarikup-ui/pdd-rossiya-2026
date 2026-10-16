@@ -48,6 +48,9 @@ var lives := 5
 var seconds_left := 60.0
 var solved_count := 0
 var wrong_count := 0
+var _result_camera_mask := 0
+var result_action := ""
+var result_mistakes: Array[String] = []
 var previous_best := 0
 var is_game_over := false
 var is_resolving := false
@@ -300,6 +303,10 @@ func _create_balanced_arcade_order() -> void:
 # --- Game Lifecycle ---
 
 func _start_game() -> void:
+	sound.suspended = false
+	if _result_camera_mask != 0:
+		camera.cull_mask = _result_camera_mask
+		_result_camera_mask = 0
 	if _exiting: return
 	run_sequence += 1
 	score = 0
@@ -309,6 +316,7 @@ func _start_game() -> void:
 	seconds_left = float(economy.get("seconds", 60))
 	solved_count = 0
 	wrong_count = 0
+	result_mistakes.clear()
 	is_game_over = false
 	is_resolving = false
 	is_new_record = false
@@ -705,6 +713,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	var sequence := scene_sequence
 	is_resolving = true
 	wrong_count += 1
+	result_mistakes.append(reason + "\n" + article)
 	combo = 0
 	lives -= 1
 
@@ -984,11 +993,17 @@ func _end_game() -> void:
 	if is_game_over:
 		return
 	is_game_over = true
+	_result_camera_mask = camera.cull_mask
+	camera.cull_mask = 0
+	sound.suspended = true
 	_set_suspended(false)
 	_update_gameplay_processing()
 	is_new_record = score > 0 and score > previous_best
 
 	ui.show_results(score, solved_count, wrong_count, max_combo, is_new_record, previous_best, seconds_left <= 0.0)
+	ui._results.set_mistakes(result_mistakes)
+	if not ui._results.ranking_pressed.is_connected(_open_ranking):
+		ui._results.ranking_pressed.connect(_open_ranking)
 
 	completed_runs.append(_run_summary())
 	previous_best = maxi(previous_best, score)
@@ -1007,7 +1022,7 @@ func _session_summary() -> Dictionary:
 	var runs := completed_runs.duplicate(true)
 	if not is_game_over and (solved_count + wrong_count > 0):
 		runs.append(_run_summary())
-	return { "game": "crossroads", "runs": runs }
+	return { "game": "crossroads", "runs": runs, "result_action": result_action }
 
 
 func _checkpoint() -> void:
@@ -1063,6 +1078,7 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
 		if ready_for_play: _set_suspended(false)
 	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if ui != null and ui._results.dismiss_review(): return
 		if ready_for_play and not _exiting:
 			_set_suspended(true)
 			_on_exit_pressed.call_deferred()
@@ -1244,3 +1260,7 @@ func _take_screenshot(path: String) -> void:
 		if img:
 			img.save_png(path)
 	get_tree().quit()
+
+func _open_ranking() -> void:
+	result_action = "ranking"
+	_on_exit_pressed()

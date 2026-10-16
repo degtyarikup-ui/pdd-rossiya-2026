@@ -1,5 +1,10 @@
 {
  "ru": {
+  "gameResultNoRuns": "Заезды закончились",
+  "gameResultRanking": "Рейтинг",
+  "gameRunMistakesButton": "Ошибки · {count}",
+  "gameDistance": "Дистанция",
+  "gameMistakesReview": "Разбор ошибок",
   "reportQuestionTooltip": "Сообщить об ошибке",
   "reportQuestionBody": "Что не так с этим вопросом? Опечатка, неверный ответ, не та картинка — напишите своими словами.",
   "reportQuestionHint": "Например: в ответе Б опечатка",
@@ -143,6 +148,11 @@
   "gameCrossroadsCompleteTitle": "Перекресток разрулен!"
  },
  "en": {
+  "gameResultNoRuns": "No runs left",
+  "gameResultRanking": "Ranking",
+  "gameRunMistakesButton": "Errors · {count}",
+  "gameDistance": "Distance",
+  "gameMistakesReview": "Error analysis",
   "reportQuestionTooltip": "Report an error",
   "reportQuestionBody": "What's wrong with this question? A typo, wrong answer, wrong picture - write in your own words.",
   "reportQuestionHint": "For example: there is a typo in the second answer",
@@ -286,6 +296,11 @@
   "gameCrossroadsCompleteTitle": "The intersection has been cleared!"
  },
  "kk": {
+  "gameResultNoRuns": "Жарыстар аяқталды",
+  "gameResultRanking": "Рейтинг",
+  "gameRunMistakesButton": "Қателер {count}",
+  "gameDistance": "Қашықтық",
+  "gameMistakesReview": "Қателерді талдау",
   "reportQuestionTooltip": "Қате туралы хабарлау",
   "reportQuestionBody": "Бұл сұрақта не дұрыс емес? Қате, қате жауап, қате сурет - өз сөзіңізбен жазыңыз.",
   "reportQuestionHint": "Мысалы: В жауабында қате бар",

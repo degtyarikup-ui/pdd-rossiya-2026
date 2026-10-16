@@ -3790,4 +3790,10 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameIllegalManeuver => 'Манёвр жасау ережесін бұзу';
+
+  @override
+  String get gameResultRanking => 'Рейтинг';
+
+  @override
+  String get gameResultNoRuns => 'Жарыстар аяқталды';
 }

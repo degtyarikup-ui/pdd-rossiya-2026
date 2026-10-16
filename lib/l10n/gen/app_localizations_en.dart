@@ -3798,4 +3798,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameIllegalManeuver => 'Illegal maneuver';
+
+  @override
+  String get gameResultRanking => 'Ranking';
+
+  @override
+  String get gameResultNoRuns => 'No runs left';
 }

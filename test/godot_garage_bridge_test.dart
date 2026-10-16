@@ -297,6 +297,56 @@ void main() {
   );
 
   testWidgets(
+    'native city visit books completed replays and the unfinished last run',
+    (tester) async {
+      await open(tester, premium: true);
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      nativeResponse = jsonEncode({
+        'native_result': true,
+        'run_started': true,
+        'finished': false,
+        'answered': 2,
+        'correct': 2,
+        'score': 20,
+        'city_runs': [
+          {
+            'native_result': true,
+            'run_started': true,
+            'finished': true,
+            'answered': 20,
+            'correct': 3,
+            'score': 120,
+          },
+          {
+            'native_result': true,
+            'run_started': true,
+            'finished': true,
+            'answered': 20,
+            'correct': 4,
+            'score': 160,
+          },
+        ],
+      });
+      await tester.tap(find.text('City'));
+      await tester.pumpAndSettle();
+      expect(find.byType(GameOverDialog), findsNothing);
+      expect(progress.getGameBestScore(), 160);
+      expect(garage.correctTotal, 9);
+      final prefs = await SharedPreferences.getInstance();
+      final pending = jsonDecode(prefs.getString('game_run_pending')!);
+      expect(pending['score'], 20);
+      expect(pending['correct'], 2);
+      nativeResponse = null;
+      await tester.tap(find.text('City'));
+      await tester.pumpAndSettle();
+      expect(launches, hasLength(2));
+      expect(options()['resume']['score'], 20);
+      debugDefaultTargetPlatformOverride = null;
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'result restart reserves a new run while the old dialog completes',
     (tester) async {
       await open(tester, premium: true);

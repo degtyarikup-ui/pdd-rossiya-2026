@@ -180,7 +180,25 @@ class GodotGame {
       historyLoading?.close();
     }
     if (!context.mounted) return;
-    await _afterGame(context, ref, decoded.cast<String, dynamic>(), token);
+    final summary = decoded.cast<String, dynamic>();
+    final previous = summary['city_runs'];
+    if (previous is List) {
+      for (final run in previous.whereType<Map>()) {
+        if (!context.mounted) return;
+        await _afterGame(context, ref, run.cast<String, dynamic>(), token);
+      }
+    }
+    if (!context.mounted) return;
+    await _afterGame(context, ref, summary, token);
+    if (!context.mounted) return;
+    if (summary['result_action'] == 'ranking') {
+      await GameLeaderboardSheet.show(context);
+    } else if (summary['result_action'] == 'mistakes') {
+      await reviewMistakes(context, ref, [
+        for (final id in summary['mistakes'] as List? ?? const [])
+          _situationOf('$id'),
+      ]);
+    }
   }
 
   /// Plays the 3D Regulator mini-game on Godot.
@@ -237,6 +255,7 @@ class GodotGame {
       final progress = ref.read(trafficControllerProgressProvider.notifier);
       final runs = map['runs'] is List ? map['runs'] as List : [map];
       final seen = <String>{};
+      final rankingSubmissions = <Future<int?>>[];
       var changed = false;
       for (final run in runs.whereType<Map>()) {
         final id = run['id'] as String? ?? GameLeaderboardService.newRunId();
@@ -250,7 +269,15 @@ class GodotGame {
           wrong: wrong,
         );
         final combo = ((run['combo'] as num?)?.toInt() ?? 0).clamp(0, solved);
-        unawaited(GameLeaderboardService.instance.submitRun(score, runId: id));
+        final submission = GameLeaderboardService.instance.submitRun(
+          score,
+          runId: id,
+        );
+        if (map['result_action'] == 'ranking') {
+          rankingSubmissions.add(submission);
+        } else {
+          unawaited(submission);
+        }
         await progress.recordGameResult(
           score: score,
           combo: combo,
@@ -258,9 +285,13 @@ class GodotGame {
         );
         changed = true;
       }
+      if (rankingSubmissions.isNotEmpty) await Future.wait(rankingSubmissions);
       if (changed) unawaited(ProgressSyncService.instance.syncWithServer());
     } finally {
       loading.close();
+    }
+    if (context.mounted && map['result_action'] == 'ranking') {
+      await GameLeaderboardSheet.show(context);
     }
   }
 
@@ -316,6 +347,7 @@ class GodotGame {
       final progress = ref.read(crossroadsPriorityProgressProvider.notifier);
       final runs = map['runs'] is List ? map['runs'] as List : [map];
       final seen = <String>{};
+      final rankingSubmissions = <Future<int?>>[];
       var changed = false;
       for (final run in runs.whereType<Map>()) {
         final id = run['id'] as String? ?? GameLeaderboardService.newRunId();
@@ -329,7 +361,15 @@ class GodotGame {
           wrong: wrong,
         );
         final combo = ((run['combo'] as num?)?.toInt() ?? 0).clamp(0, solved);
-        unawaited(GameLeaderboardService.instance.submitRun(score, runId: id));
+        final submission = GameLeaderboardService.instance.submitRun(
+          score,
+          runId: id,
+        );
+        if (map['result_action'] == 'ranking') {
+          rankingSubmissions.add(submission);
+        } else {
+          unawaited(submission);
+        }
         await progress.recordGameResult(
           score: score,
           combo: combo,
@@ -337,9 +377,13 @@ class GodotGame {
         );
         changed = true;
       }
+      if (rankingSubmissions.isNotEmpty) await Future.wait(rankingSubmissions);
       if (changed) unawaited(ProgressSyncService.instance.syncWithServer());
     } finally {
       loading.close();
+    }
+    if (context.mounted && map['result_action'] == 'ranking') {
+      await GameLeaderboardSheet.show(context);
     }
   }
 
@@ -547,6 +591,8 @@ class GodotGame {
       'voice_available': voiceAvailable,
       if (const bool.fromEnvironment('GAME_DEBUG'))
         'debug_perf': prefs?.getBool(_cityPerfKey) ?? false,
+      'unlimited': unlimited,
+      'available_runs': runs,
       'can_start': unlimited || runs > 0 || pending != null,
       'question_history': await GameQuestionHistoryService.instance.load(),
       if (pending != null) 'resume': pending.toJson(),
@@ -713,8 +759,10 @@ class GodotGame {
                     AppLifecycleState.resumed),
       );
       if (!context.mounted) return;
-      _releaseRun(token);
-      await _showResult(context, ref, summary, best: best, record: record);
+      if (summary['native_result'] != true) {
+        _releaseRun(token);
+        await _showResult(context, ref, summary, best: best, record: record);
+      }
     } finally {
       loading.close();
     }

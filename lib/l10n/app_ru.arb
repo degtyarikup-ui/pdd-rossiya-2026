@@ -1786,5 +1786,7 @@
   "driverTipCategoryFuel": "Экономия",
   "driverTipCategoryMirrors": "Зеркала",
   "driverTipCategoryOther": "Советы",
-  "gameIllegalManeuver": "Нарушение правил маневрирования"
+  "gameIllegalManeuver": "Нарушение правил маневрирования",
+  "gameResultRanking": "Рейтинг",
+  "gameResultNoRuns": "Заезды закончились"
 }

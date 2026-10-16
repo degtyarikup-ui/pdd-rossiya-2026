@@ -1286,5 +1286,7 @@
   "driverTipCategoryFuel": "Үнемдеу",
   "driverTipCategoryMirrors": "Айналар",
   "driverTipCategoryOther": "Кеңестер",
-  "gameIllegalManeuver": "Манёвр жасау ережесін бұзу"
+  "gameIllegalManeuver": "Манёвр жасау ережесін бұзу",
+  "gameResultRanking": "Рейтинг",
+  "gameResultNoRuns": "Жарыстар аяқталды"
 }

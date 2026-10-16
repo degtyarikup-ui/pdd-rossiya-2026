@@ -10,6 +10,8 @@ signal answer_chosen(index: int)
 signal continue_pressed
 signal pause_pressed
 signal report_pressed(question: Dictionary)
+signal restart_pressed
+signal result_action_pressed(action: String)
 signal exit_pressed
 signal resume_pressed
 signal tip_next
@@ -21,6 +23,7 @@ var _reward_toast: Control
 
 var snow := false                 # winter: HUD numbers are dark on the light snow
 
+var results: MiniGameResults
 var _root: Control
 var _tip: PanelContainer           # the first-drive tips card (three steps)
 var _gas_hint: PanelContainer      # «Зажмите и держите — это газ» beside the gas pedal
@@ -90,6 +93,7 @@ func _view_size() -> Vector2:
 
 
 func _process(delta: float) -> void:
+	_layout_results()
 	_layout_hud()
 	_layout_picture()
 	if is_instance_valid(_reward_toast) and _reward_toast.busy():
@@ -970,18 +974,30 @@ func show_explanation(text: Dictionary, correct: int, timed_out: bool, finish_ri
 
 # --- end of run ------------------------------------------------------------------
 
-func show_result(summary: Dictionary) -> void:
+func show_result(summary: Dictionary, selection := {}, best := 0, can_restart := true) -> void:
 	hide_cards()
-	var shell := _sheet_shell(0.5)
-	_sheet = shell[0]
-	var box: VBoxContainer = shell[1]
-	box.add_child(Ui.scaled_label(Ui.t("gameOver"), 18, 800, Ui.c("text")))
-	box.add_child(Ui.scaled_label("%s: %s" % [Ui.t("gameCorrectAnswers"), Ui.t("gameAnswersOf", { "correct": summary.correct, "total": summary.answered })], 14, 600, Ui.c("text"), true))
-	box.add_child(Ui.scaled_label("%s: %d" % [Ui.t("gameScore"), summary.score], 14, 600, Ui.c("text")))
-	box.add_child(Ui.scaled_label(Ui.t("gameNoViolations") if summary.violations == 0 else "%s: %d" % [Ui.t("gameViolations"), summary.violations], 14, 500, Ui.c("secondary")))
-	box.add_child(_wide_button(Ui.t("gameExit"), Ui.c("accent"), Color.WHITE, func(): exit_pressed.emit()))
-	_root.add_child(_sheet)
-	_place_sheet(_sheet)
+	if is_instance_valid(results): results.queue_free()
+	results = MiniGameResults.new()
+	results.size = _view_size()
+	_root.add_child(results)
+	results.set_vehicle(str(selection.get("id", "hatch")), Color(str(selection.get("hex", "#ED4621"))))
+	results.restart_pressed.connect(func(): restart_pressed.emit())
+	results.exit_pressed.connect(func(): exit_pressed.emit())
+	results.ranking_pressed.connect(func(): result_action_pressed.emit("ranking"))
+	results.mistakes_pressed.connect(func(): result_action_pressed.emit("mistakes"))
+	results.show_results(int(summary.score), int(summary.correct), int(summary.answered) - int(summary.correct), 0, int(summary.score) > best, best)
+	results.stat_values[1].text = "%.1f %s" % [float(summary.get("distance_m", 0)) / 1000.0, Ui.t("gameKilometers")]
+	results.stat_captions[1].text = Ui.t("gameDistance")
+	results.restart_button.disabled = not can_restart
+	if not can_restart: results.restart_button.text = Ui.t("gameResultNoRuns")
+	_layout_results()
+
+func _layout_results() -> void:
+	if not is_instance_valid(results): return
+	var ins := Ui.insets(get_viewport())
+	results.size = _view_size()
+	results.layout(Rect2(Vector2(ins.left / _u + 20, ins.top / _u + 16),
+		_view_size() - Vector2((ins.left + ins.right) / _u + 40, (ins.top + ins.bottom) / _u + 32)))
 
 
 func _wide_button(text: String, bg: Color, fg: Color, action: Callable) -> PanelContainer:

@@ -120,7 +120,7 @@ func _layout() -> void:
 	_fit_modal(_collision_card, _collision_content, card_width, modal_height, modal_top, left, available_width)
 	var result_left := float(safe["left"]) / u + 20.0
 	var result_right := float(safe["right"]) / u + 20.0
-	_results.layout(Rect2(result_left, top + 24.0, maxf(160.0, size.x - result_left - result_right), maxf(100.0, size.y - top - bottom - 48.0)))
+	_results.layout(Rect2(result_left, top + 16.0, maxf(160.0, size.x - result_left - result_right), maxf(100.0, size.y - top - bottom - 32.0)))
 
 
 ## Hidden labels have never been sorted by their Container and can still be one

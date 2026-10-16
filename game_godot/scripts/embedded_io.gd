@@ -27,6 +27,8 @@ func _process(_delta: float) -> void:
 	DirAccess.remove_absolute(path)
 	if not request is Dictionary:
 		return
+	for key in ["city_completed_runs", "city_replay_options"]:
+		if get_tree().root.has_meta(key): get_tree().root.remove_meta(key)
 	Host.io_args = request.get("args", [])
 	Host.reset_exit(get_tree())
 	get_tree().paused = false

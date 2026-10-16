@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 KEYS = [
+    "gameResultNoRuns", "gameResultRanking", "gameRunMistakesButton", "gameDistance", "gameMistakesReview",
     'reportQuestionTooltip', 'reportQuestionBody', 'reportQuestionHint',
     'reportSend', 'reportSent', 'reportFailed', 'cancel',
     'gameDebugPerfMemoryFootprint', 'gameDebugTier', 'gameDebugPerfObjects', 'gameDebugPerfRetained',

@@ -173,6 +173,8 @@ var pause_menu: RidePause
 var report_dialog: CanvasLayer
 var loader: Loader                # the preloader over the first frames (loader.gd); null once dismissed
 var startup_loading_failed := false
+var _restarting := false
+var result_action := ""
 var run_started := false          # a run began (the app charges one run then)
 var run_end_sent := false         # the run_end event went out (once per visit)
 var chosen := {}                  # { id, paint } of the car the player drove, for the app
@@ -261,6 +263,8 @@ func _ready() -> void:
 	ui.report_pressed.connect(_on_report_question)
 	ui.resume_pressed.connect(_on_resume)
 	ui.exit_pressed.connect(_on_exit)
+	ui.restart_pressed.connect(_restart_result)
+	ui.result_action_pressed.connect(_result_action)
 	ui.tip_next.connect(_on_tip_next)
 	ui.reward_revealed.connect(func(id: String):
 		if not id.begins_with("debug:") and not notified_rewards.has(id): notified_rewards.append(id)
@@ -1423,6 +1427,7 @@ func _prestage() -> void:
 func _build_staged(id: String) -> void:
 	var started := Time.get_ticks_msec()
 	staged_sit = await Situation.load_scene_staged(id, scenery, get_tree(), self)
+	if _exiting or _restarting or not is_inside_tree(): return
 	if _exiting:
 		Situation.forget(id)
 		staging = false
@@ -1439,11 +1444,15 @@ func _build_staged(id: String) -> void:
 					var candidate:=Situation.bindings_with([],entry,float(profile.width),profile)
 					if not bases.has(candidate): bases.append(candidate)
 					await previous.warm_bindings(Situation.bindings_with(previous.network.stitch_bindings,out,float(out.width)),scenery,get_tree())
+					if _exiting or _restarting or not is_inside_tree(): return
 					await previous.warm_bindings(Situation.bindings_with(previous.network.stitch_bindings,out,float(profile.width),profile),scenery,get_tree())
+					if _exiting or _restarting or not is_inside_tree(): return
 			for base in bases:
 				await staged_sit.warm_bindings(base,scenery,get_tree())
+				if _exiting or _restarting or not is_inside_tree(): return
 				for out in SceneStitch.departure_ports(staged_sit.network.connections).values():
 					await staged_sit.warm_bindings(Situation.bindings_with(base,out,float(out.width)),scenery,get_tree())
+					if _exiting or _restarting or not is_inside_tree(): return
 	Situation.forget(id)
 	staging = false
 	if loader != null and staged_sit == null: startup_loading_failed = true
@@ -1918,19 +1927,56 @@ func _finish_run() -> void:
 	controls.set_active(false)
 	drive.speed = 0.0
 	drive.turning_at_junction = false
-	event.emit({ "event": "run_finished", "summary": run.summary() })
-	if Host.embedded() and not _has_arg("--benchmark"):
-		_exit_after_rewards()
-	else:
-		ui.show_result(run.summary())
+	# The engine stays open. Checkpoint the complete visit before exposing actions.
+	var checkpoint := _exit_summary()
+	event.emit({"event": "run_finished", "summary": checkpoint})
+	if Host.io != "": Host._write({"event": "run_finished", "summary": checkpoint})
+	_show_run_result()
 
+func _show_run_result() -> void:
+	if ui.rewards_busy(): await ui.rewards_settled
+	if _exiting or not is_inside_tree(): return
+	if is_instance_valid(ui.results) and ui.results.visible: return
+	if camera != null: camera.cull_mask = 0
+	if sound != null: sound.suspended = true
+	var selection := chosen.duplicate()
+	selection["hex"] = _selected_paint_hex()
+	var best := int(ride_options.get("record", 0))
+	ui.show_result(run.summary(), selection, best, _can_replay())
 
-## A reward on the twentieth answer still gets its full reveal before Flutter's result.
-func _exit_after_rewards() -> void:
-	if ui.rewards_busy():
-		await ui.rewards_settled
-	if not _exiting and is_inside_tree():
-		_on_exit()
+func _selected_paint_hex() -> String:
+	for vehicle: Dictionary in ride_options.get("cars", []):
+		if vehicle.id != chosen.get("id", "hatch"): continue
+		for paint: Dictionary in vehicle.paints:
+			if paint.paint == chosen.get("paint", "red"): return str(paint.hex)
+	return "#ED4621"
+
+func _can_replay() -> bool:
+	return bool(ride_options.get("unlimited", not Host.embedded() and not Host.on_web() and Host.io == "")) or int(ride_options.get("available_runs", 1)) > (0 if resumed else 1)
+
+func _result_action(action: String) -> void:
+	result_action = action
+	_on_exit()
+
+func _restart_result() -> void:
+	if phase != "over" or not _can_replay() or _exiting or _restarting: return
+	_restarting = true
+	var root := get_tree().root
+	var previous: Array = root.get_meta("city_completed_runs", [])
+	var snapshot := _exit_summary()
+	snapshot.erase("city_runs")
+	previous.append(snapshot)
+	root.set_meta("city_completed_runs", previous)
+	var options := _live_garage_options()
+	options.erase("resume")
+	options.record = maxi(int(options.get("record", 0)), run.score)
+	options["available_runs"] = int(options.get("available_runs", 1)) - (0 if resumed else 1)
+	options.selected = chosen.duplicate()
+	options.question_history = question_history.snapshot()
+	root.set_meta("city_replay_options", options)
+	voice.shutdown()
+	process_mode = Node.PROCESS_MODE_DISABLED
+	get_tree().reload_current_scene.call_deferred()
 
 
 ## finishManeuver: the player has left by an exit. A turn rebases the world
@@ -3138,7 +3184,10 @@ func _on_exit() -> void:
 	_exiting = true
 	voice.shutdown()
 	_report_run_end()
-	Host.exit(_exit_summary(), get_tree())
+	var summary := _exit_summary()
+	if get_tree().root.has_meta("city_completed_runs"): get_tree().root.remove_meta("city_completed_runs")
+	if get_tree().root.has_meta("city_replay_options"): get_tree().root.remove_meta("city_replay_options")
+	Host.exit(summary, get_tree())
 
 
 ## Analytics events of a run (Host.send): the start of a run the app charges, its end once,
@@ -3163,7 +3212,7 @@ func _report_answer(situation_id: String, is_correct: bool, index: int) -> void:
 ## Flutter passes the owned collection/settings, then a new or resumed ride starts immediately.
 func _start_ride() -> void:
 	var raw := _arg_text("--ride-options")
-	var options: Variant = JSON.parse_string(raw)
+	var options: Variant = get_tree().root.get_meta("city_replay_options", JSON.parse_string(raw))
 	if not options is Dictionary or options.get("cars", []).is_empty():
 		return
 	ride_options = options.duplicate(true)
@@ -3200,6 +3249,10 @@ func _arg_text(name: String) -> String:
 ## What the app gets back: the run (run.gd summary), whether a run began, the car driven.
 func _exit_summary() -> Dictionary:
 	var out := run.summary()
+	out["native_result"] = true
+	out["result_action"] = result_action
+	var previous: Array = get_tree().root.get_meta("city_completed_runs", [])
+	if not previous.is_empty(): out["city_runs"] = previous.duplicate(true)
 	out["question_history"] = question_history.snapshot()
 	out["run_started"] = run_started
 	out["car"] = chosen
@@ -3249,7 +3302,7 @@ func _question_number() -> int:
 
 
 func _process(delta: float) -> void:
-	if _exiting: return
+	if _exiting or phase == "over": return
 	_tips_frame()
 	_update_frame_budget(delta)
 	if paused:
@@ -3917,6 +3970,7 @@ func _sign_reveal_point(sg: Dictionary) -> Vector3:
 
 
 func _exit_tree() -> void:
+	_exiting = true
 	if is_instance_valid(voice): voice.shutdown()
 	Situation.finish_background_work()
 
