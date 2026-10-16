@@ -53,6 +53,8 @@ var walker_mm: Array[MultiMesh] = []
 var walker_target := -1             # -1: no population budget (isolated test fixtures)
 const WALKER_RETIRE_DISTANCE := 60.0
 const WALK_PLAN_INTERVAL := 0.1
+const WALKER_CLEARANCE := 0.7
+const WALKER_DETOUR_WAIT := 0.35
 var walker_surfaces_active := false
 var walker_scene_surfaces: Array[Dictionary] = []
 var walker_street_surfaces: Array[Dictionary] = []
@@ -2269,12 +2271,7 @@ func _sync_walker_budget(trams: Array) -> void:
 			(w.mm as MultiMesh).set_instance_transform(w.slot, Transform3D(Basis(), Vector3(0, -100, 0)))
 			count -= 1
 		elif count < walker_target and not w.get("budget_active", true):
-			var clear := _walk_clear(at)
-			for other in walkers:
-				if other != w and other.get("alive", false) and at.distance_squared_to(Vector3(other.x, 0, other.zw)) < 0.49: clear = false; break
-			if clear:
-				for tram in trams:
-					if not Junction.pedestrian_tram_clear(at, at, tram.motion, tram.frame): clear = false; break
+			var clear := _walk_clear(at) and _walker_people_clear(at, at, w) and _walker_trams_clear(at, at, trams)
 			if not clear: continue
 			w.budget_active = true
 			w.erase("walk_plan"); w.erase("walk_plan_wait"); w.erase("walk_plan_revision")
@@ -2763,6 +2760,40 @@ func _walker_visible(at: Vector3) -> bool:
 	return false
 
 
+## Check the whole step, permitting an already overlapping pair to walk apart.
+## Rejecting every step inside the clearance radius traps both people forever.
+func _walker_people_clear(at: Vector3, next: Vector3, walker: Dictionary) -> bool:
+	var step := next - at
+	for other in walkers:
+		if other == walker or not other.get("alive", false): continue
+		var offset := at - Vector3(other.x, 0, other.zw)
+		var distance := offset.length_squared()
+		if distance < WALKER_CLEARANCE * WALKER_CLEARANCE - 0.000001:
+			if offset.dot(step) < -0.000000001 or (offset + step).length_squared() <= distance + 0.000000001: return false
+		else:
+			var along := clampf(-offset.dot(step) / maxf(step.length_squared(), 0.000001), 0.0, 1.0)
+			if (offset + step * along).length_squared() < WALKER_CLEARANCE * WALKER_CLEARANCE - 0.000001: return false
+	return true
+
+
+func _walker_trams_clear(at: Vector3, next: Vector3, trams: Array) -> bool:
+	for tram in trams:
+		if not Junction.pedestrian_tram_clear(at, next, tram.motion, tram.frame): return false
+	return true
+
+
+## Try a short sideways route before turning back. Every probe remains on the
+## real sidewalk and respects people/trams; visible people are never relocated.
+func _walker_detour(at: Vector3, toward: Vector3, walker: Dictionary, trams: Array) -> Vector3:
+	for angle in [PI * .5, -PI * .5, PI * .75, -PI * .75, PI]:
+		var direction := toward.rotated(Vector3.UP, angle)
+		var next := at + direction * 0.8
+		if not _walker_people_clear(at, next, walker): continue
+		if not _walk_clear(next) or not _walk_clear(at + direction * 0.4): continue
+		if _walker_trams_clear(at, next, trams): return direction
+	return Vector3.ZERO
+
+
 func _update_walkers(delta: float) -> void:
 	_prepare_walker_surfaces()
 	var span := L * chunk_count
@@ -2782,18 +2813,26 @@ func _update_walkers(delta: float) -> void:
 			var entry_z := base+fposmod(z-base,span)
 			var entry := Vector3(w.dir*(_half_at(entry_z)+1.0+(0.0 if w.v>0 else 1.1)),0,entry_z)
 			# Both ends of recycling must be outside the view, including after turns.
-			if not _walker_visible(entry) and _walk_clear(entry):
+			if not _walker_visible(entry) and _walk_clear(entry) and _walker_people_clear(entry, entry, w) and _walker_trams_clear(entry, entry, trams):
 				w.z = entry_z
 				w.x = entry.x
 				w.erase("heading"); w.erase("knocked_down")
 				w.erase("walk_plan"); w.erase("walk_plan_wait"); w.erase("walk_plan_revision")
+				w.erase("walk_blocked")
 		var initial_x: float = w.dir*(_half_at(w.z)+1.0+(0.0 if w.v>0 else 1.1))
 		if not w.has("x"): w.x = initial_x
 		var at := Vector3(w.x,0,w.z)
 		var before := at
+		if w.get("walk_plan_revision", walker_surface_revision) != walker_surface_revision:
+			w.erase("walk_plan")
 		var supported := _walk_clear(at)
+		# A previously hidden slot can gain pavement after a scene change. Admit
+		# it only when there is space, just as for recycling and quality changes.
+		var admitted: bool = w.get("alive", false)
+		if not admitted and supported:
+			admitted = _walker_people_clear(at, at, w) and _walker_trams_clear(at, at, trams)
 		var direction := Vector3(sin(float(w.get("heading",0.0 if w.v>0 else PI))),0,cos(float(w.get("heading",0.0 if w.v>0 else PI))))
-		if not w.get("knocked_down",false) and supported:
+		if not w.get("knocked_down",false) and supported and admitted:
 			# The one-metre route search is a decision, not a render operation.
 			# Verify the exact next footprint and tram/people collisions every frame.
 			w.walk_plan_wait = maxf(0.0, float(w.get("walk_plan_wait", 0.0)) - delta)
@@ -2812,20 +2851,28 @@ func _update_walkers(delta: float) -> void:
 					w.walk_plan_wait = WALK_PLAN_INTERVAL
 					next = at + next_direction * absf(w.v) * delta
 					free = next_direction != Vector3.ZERO and _walk_clear(next)
-				for other in walkers:
-					if other == w or not other.get("alive",false): continue
-					if next.distance_squared_to(Vector3(other.x,0,other.zw))<0.49: free=false; break
-				if free:
-					var walker_body := {"p": next, "yaw": SceneStitch.yaw(next_direction), "hw": 0.3, "hl": 0.3}
-					for tram in trams:
-						if not Junction.pedestrian_tram_clear(at, walker_body.p, tram.motion, tram.frame): free = false; break
+				if free and not _walker_people_clear(at, next, w):
+					w.walk_blocked = float(w.get("walk_blocked", 0.0)) + delta
+					free = false
+					if w.walk_blocked >= WALKER_DETOUR_WAIT:
+						# Retry at the planning cadence, not on every rendered frame.
+						w.walk_blocked = WALKER_DETOUR_WAIT - WALK_PLAN_INTERVAL
+						var detour := _walker_detour(at, direction, w, trams)
+						if detour != Vector3.ZERO:
+							next_direction = detour
+							next = at + detour * absf(w.v) * delta
+							w.walk_plan = detour
+							w.walk_plan_wait = WALK_PLAN_INTERVAL
+							free = _walk_clear(next) and _walker_people_clear(at, next, w)
+				if free: free = _walker_trams_clear(at, next, trams)
 				if free:
 					at = next
 					w.heading = atan2(next_direction.x,next_direction.z)
+					w.walk_blocked = 0.0
 		w.x = at.x; w.z = at.z; w.zw = at.z
 		# Cropping a street at a close turn can remove the pavement beneath a
 		# visible person. Keep that person still until they leave the view.
-		w.alive = not w.get("knocked_down",false) and (supported or (w.get("alive",false) and _walker_visible(at)))
+		w.alive = not w.get("knocked_down",false) and admitted and (supported or (w.get("alive",false) and _walker_visible(at)))
 		var distance := before.distance_to(at)
 		w["walk_phase"] = fposmod(float(w.get("walk_phase",0.0)) + distance * 3.5, TAU)
 		var amount := clampf(distance / maxf(delta,0.001) / 1.2,0,1)

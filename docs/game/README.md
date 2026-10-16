@@ -116,6 +116,7 @@ godot --headless --path game_godot --script res://tests/exit_loading_check.gd # 
 godot --headless --path game_godot --script res://tests/embedded_io_check.gd # iOS: повторные запуски основной игры и переходы после мини-игр
 godot --headless --path game_godot --script res://tests/ambient_budget_check.gd # low: только декоративные люди, безопасная смена качества и неизменные участники задач
 godot --headless --path game_godot --script res://tests/walking_budget_check.gd # точность тротуаров, ограниченный кеш и бюджет поиска пути пешеходов
+godot --headless --path game_godot --script res://tests/walker_spacing_check.gd # свободное место при появлении, обход встречных и выход из наложения; native — снимки настоящего тротуара
 godot --headless --path game_godot --script res://tests/actor_visibility_check.gd # участники без dir не вызывают покадровые ошибки проверки видимости
 godot --headless --path game_godot --script res://tests/frame_budget_check.gd # подстройка нагрузки телефона без реакции на загрузку и паузу
 godot --headless --path game_godot --script res://tests/perf_log_check.gd # температура iOS и синхронные интервалы CPU/кадров

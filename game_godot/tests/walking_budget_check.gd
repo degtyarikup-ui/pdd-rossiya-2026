@@ -101,10 +101,21 @@ func fixture(id: String) -> void:
 	# searches each render frame. Keep exact per-frame footprints within budget.
 	expect(world.support_queries <= 180 * 240, id + " bounded exact sidewalk queries")
 	expect(world.route_searches <= 3 * 240, id + " route decisions below render frequency")
-	expect(world.geometry_queries < world.support_queries / 2, id + " stationary crowd reuses exact geometry answers")
+	var support_per_frame: float = world.support_queries / 240.0
+	var searches_per_frame: float = world.route_searches / 240.0
+	var geometry_per_frame: float = world.geometry_queries / 240.0
+	# People can now escape overlaps instead of staying at the same probe forever.
+	# Measure cache reuse on repeated standing footprints, independently of movement.
+	world._prepare_walker_surfaces()
+	var geometry_before: int = world.geometry_queries
+	for repeat in 10:
+		for w in world.walkers: world._walk_clear(Vector3(w.x, 0, w.z))
+	expect(world.geometry_queries - geometry_before <= world.walkers.size() * 5, id + " repeated standing footprints query geometry at most once")
+	world.walker_surfaces_active = false
+	world.walker_scene_surfaces.clear(); world.walker_street_surfaces.clear()
 	expect(world.walkers.all(func(w): return w.get("alive", false)), id + " visible walkers preserved")
 	expect(world.walker_pavement_queries.size() <= world.WALK_QUERY_CACHE_LIMIT, id + " exact query cache stays bounded")
-	print("[walking budget] ", id, " ms=", snappedf(ms, 0.001), " support/frame=", world.support_queries / 240.0, " searches/frame=", world.route_searches / 240.0, " geometry/frame=", world.geometry_queries / 240.0)
+	print("[walking budget] ", id, " ms=", snappedf(ms, 0.001), " support/frame=", support_per_frame, " searches/frame=", searches_per_frame, " geometry/frame=", geometry_per_frame)
 	# Geometry changed since a previous plan: next update must invalidate it.
 	var previous_revision: int = world.walker_surface_revision
 	sit.position.x += 0.5
