@@ -468,9 +468,16 @@ static func _without_baked_ground(mesh: Mesh, net: RoadNetwork = null) -> Mesh:
 
 static func _without_baked_ground_staged(mesh: Mesh, net: RoadNetwork = null, frames: SceneTree = null) -> Mesh:
 	var out := ArrayMesh.new()
+	# Baked UV2 encodes the original scenery texture layer. Sleepers are a
+	# separate wooden layer, so the grey-rail colour filter cannot catch them.
+	var textures: Array = JSON.parse_string(FileAccess.get_file_as_string("res://scenery/index.json")).textures
+	var sleeper_layer := -1
+	for i in textures.size():
+		if textures[i].kind == "sleeper": sleeper_layer = i + 1
 	for s in mesh.get_surface_count():
 		var arrays := mesh.surface_get_arrays(s)
 		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var layers: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2] if arrays[Mesh.ARRAY_TEX_UV2] != null else PackedVector2Array()
 		var colours: PackedColorArray = arrays[Mesh.ARRAY_COLOR] if arrays[Mesh.ARRAY_COLOR] != null else PackedColorArray()
 		var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
 		if idx.is_empty():
@@ -484,6 +491,9 @@ static func _without_baked_ground_staged(mesh: Mesh, net: RoadNetwork = null, fr
 			var a := verts[idx[k]]
 			var b := verts[idx[k + 1]]
 			var c := verts[idx[k + 2]]
+			# Remove every baked sleeper face, including raised tops outside
+			# the edited road. Runtime TramGeometry is built separately.
+			if sleeper_layer > 0 and not layers.is_empty() and is_equal_approx(layers[idx[k]].x, float(sleeper_layer)) and is_equal_approx(layers[idx[k + 1]].x, float(sleeper_layer)) and is_equal_approx(layers[idx[k + 2]].x, float(sleeper_layer)): continue
 			if _legacy_rail_triangle(a, b, c, colours, idx[k], idx[k + 1], idx[k + 2]): continue
 			var flat := absf(a.y - b.y) < 0.001 and absf(a.y - c.y) < 0.001
 			if flat and a.y < -0.001 and a.y > -0.5:
