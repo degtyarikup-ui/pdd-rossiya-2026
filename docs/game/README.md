@@ -211,6 +211,7 @@ tools/network/.venv/bin/python tools/network/tests/highway_check.py # фикст
 godot --headless --path game_godot --script res://tests/highway_check.gd # реальные стыки 3+3 и 2+2 по фикстурам предыдущей команды
 godot --headless --path game_godot --script res://tests/highway_run_check.gd # цепочка вопросов, переход 90 м, кривой въезд, разделители и кузов
 godot --headless --path game_godot --script res://tests/ambient_lane_check.gd # фоновые машины и разделитель на стыке
+godot --path game_godot --script res://tests/transport_audio_check.gd # шум шин, один голос на машину, реальная пауза кадра 110мс
 godot --path game_godot --script res://tests/sound_check.gd # аудио: запуск, выключение, включение и освобождение
 godot --path game_godot --script res://tests/occlusion_render_check.gd # нужен рендер: прозрачность зданий
 godot --path game_godot --script res://tests/stitch_shader_render_check.gd # нужен рендер: мировая сетка текстур после стыковки
@@ -351,7 +352,10 @@ iOS — через `--answer-audio-dir`, веб — из соседних Flutte
 «Живой город» уменьшает громкость по расстоянию и озвучивает максимум четыре
 ближайших/громких транспорта с приоритетом активной сирены; состояние не хранит
 ссылок на удаляемые сцены. Пауза, выключение звука и выход останавливают также
-общие записи. Проверка: `tests/sound_check.gd` (headless и native).
+общие записи. Шум шин проходит отдельный НЧ-фильтр; 240-мс кольцевой буфер
+заполняется одним блоком на кадр. Затухание покинувшего сцену транспорта
+начинается с запасом 80 мс, чтобы обычный интервал кадров не модулировал двигатель.
+Проверки: `tests/sound_check.gd` и `tests/transport_audio_check.gd` (headless и native).
 
 Озвучка вопросов — существующие российские записи `assets/audio/feed/q_<id>.opus`,
 без системного синтеза речи. Godot не декодирует Opus, поэтому

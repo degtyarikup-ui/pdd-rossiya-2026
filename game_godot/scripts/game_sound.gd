@@ -23,6 +23,7 @@ const VOICE_TAIL := 0.20
 class TransportVoice:
 	var phase := 0.0
 	var lp := 0.0
+	var tyre_lp := 0.0
 	var age := 0.0
 	var level := 0.0
 	var kind := ""
@@ -45,7 +46,7 @@ class TransportVoice:
 		phase_step = lerpf(profile.x, profile.y, rev) / RATE
 		filter_alpha = 1.0 - exp(-TAU * lerpf(380.0, 900.0, rev) / RATE)
 		motor_gain = 0.06 if kind in ["truck", "bus"] else 0.045
-		tyre_gain = 0.008 * rev
+		tyre_gain = 0.003 * rev
 		electric = kind == "tram"
 
 var suspended := false
@@ -54,6 +55,7 @@ var speed := 0.0                  # m/s, set by the world every frame
 var _player: AudioStreamPlayer
 var _playback: AudioStreamGeneratorPlayback
 var _impact_lp := 0.0
+var _buffer := PackedVector2Array()
 var _events: Array = []
 var _answers: Dictionary = {}
 var _vehicles: Dictionary = {}
@@ -79,7 +81,7 @@ func _ready() -> void:
 		PackFiles.fetch(path, GameSound._answer_loaded.bind(weakref(self), kind, path))
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = RATE
-	gen.buffer_length = 0.12
+	gen.buffer_length = 0.24
 	_player = AudioStreamPlayer.new()
 	# Procedural generators need streaming on Web too; the default sample backend cannot play them.
 	_player.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
@@ -164,16 +166,21 @@ func _process(delta: float) -> void:
 	if _playback == null:
 		return
 	_player_voice.configure(player_kind, absf(speed))
-	for _i in _playback.get_frames_available():
+	# Submit one block per frame, rather than thousands of engine API calls.
+	# A 240 ms ring keeps audio fed through short rendering/streaming stalls.
+	var frames := _playback.get_frames_available()
+	_buffer.resize(frames)
+	for i in frames:
 		var s := _sample()
-		_playback.push_frame(Vector2(s, s))
+		_buffer[i] = Vector2(s, s)
+	if frames > 0: _playback.push_buffer(_buffer)
 
 
 func _sample() -> float:
 	var dt := 1.0 / RATE
 	var out := _engine_sample(_player_voice, 1.0 if absf(speed) > 0.1 else 0.0)
 	for voice: TransportVoice in _mix_voices:
-		var fade := clampf(1.0 - (_clock - float(voice.seen)) / VOICE_TAIL, 0.0, 1.0)
+		var fade := clampf(1.0 - maxf(0.0, _clock - float(voice.seen) - 0.08) / (VOICE_TAIL - 0.08), 0.0, 1.0)
 		out += _engine_sample(voice, voice.gain * fade)
 		if voice.siren:
 			out += _siren_sample(voice.age) * voice.gain * fade
@@ -250,7 +257,10 @@ func _engine_sample(voice: TransportVoice, gain: float) -> float:
 	voice.phase = fposmod(voice.phase + voice.phase_step, 1.0)
 	var oscillator := (1.0 - 4.0 * absf(voice.phase - 0.5)) if voice.electric else (2.0 * voice.phase - 1.0)
 	voice.lp += (oscillator - voice.lp) * voice.filter_alpha
-	return (voice.lp * voice.motor_gain + (randf() * 2.0 - 1.0) * voice.tyre_gain) * voice.level
+	# Road noise must be low-passed too: raw white noise overwhelms the
+	# quiet motor with broadband hiss, especially with several nearby cars.
+	voice.tyre_lp += ((randf() * 2.0 - 1.0) - voice.tyre_lp) * 0.09
+	return (voice.lp * voice.motor_gain + voice.tyre_lp * voice.tyre_gain) * voice.level
 
 
 static func _siren_sample(t: float) -> float:
