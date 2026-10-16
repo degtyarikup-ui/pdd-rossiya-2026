@@ -389,6 +389,13 @@ func _load_current_scenario() -> void:
 	_fit_scenario_after_layout(scene_sequence)
 
 
+func _is_any_actor_in_motion() -> bool:
+	for a in active_actors:
+		if a.state == "driving":
+			return true
+	return false
+
+
 func _is_any_actor_driving() -> bool:
 	for a in active_actors:
 		if a.state == "driving" and not a.has_cleared_junction():
@@ -397,7 +404,7 @@ func _is_any_actor_driving() -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not ready_for_play or _exiting or _suspended or is_game_over or is_resolving or _round_completing or _is_any_actor_driving():
+	if not ready_for_play or _exiting or _suspended or is_game_over or is_resolving or _round_completing or _is_any_actor_in_motion():
 		return
 
 	if event is InputEventMouseButton:
@@ -411,15 +418,15 @@ func _unhandled_input(event: InputEvent) -> void:
 				_drag_start = mb.position
 				_is_dragging = false
 			else:
-				if not _is_dragging:
+				if not _is_dragging and mb.position.distance_to(_drag_start) < 14.0:
 					_handle_screen_tap(mb.position)
 				_is_dragging = false
 
 	elif event is InputEventMouseMotion and (event as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
 		var mm := event as InputEventMouseMotion
-		if mm.position.distance_to(_drag_start) > 8.0:
+		if not _is_dragging and mm.position.distance_to(_drag_start) >= 14.0:
 			_is_dragging = true
-		if _is_dragging:
+		if _is_dragging and _pick_actor(_drag_start) == null:
 			_target_cam_yaw -= mm.relative.x * 0.005
 			_target_cam_pitch = clampf(_target_cam_pitch - mm.relative.y * 0.004, -1.25, -0.28)
 
@@ -450,15 +457,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _pinch_span > 10.0:
 				_set_zoom(_pinch_zoom * (_pinch_span / maxf(span, 1.0)))
 		elif _touches.size() == 1:
-			_target_cam_yaw -= sd.relative.x * 0.005
-			_target_cam_pitch = clampf(_target_cam_pitch - sd.relative.y * 0.004, -1.25, -0.28)
+			var start_pos: Vector2 = _touch_start_pos.get(sd.index, sd.position)
+			if sd.position.distance_to(start_pos) >= 14.0 and _pick_actor(start_pos) == null:
+				_target_cam_yaw -= sd.relative.x * 0.005
+				_target_cam_pitch = clampf(_target_cam_pitch - sd.relative.y * 0.004, -1.25, -0.28)
 
 
 var _last_tap_pos := Vector2(-999, -999)
 var _last_tap_time := -999.0
 
 func _handle_screen_tap(screen_pos: Vector2) -> void:
-	if not ready_for_play or _exiting or _suspended or is_game_over or is_resolving or _round_completing or active_actors.is_empty() or _is_any_actor_driving():
+	if not ready_for_play or _exiting or _suspended or is_game_over or is_resolving or _round_completing or active_actors.is_empty() or _is_any_actor_in_motion():
 		return
 
 	var now := float(Time.get_ticks_msec())
@@ -470,6 +479,12 @@ func _handle_screen_tap(screen_pos: Vector2) -> void:
 	var chosen: CrossroadsActor = _pick_actor(screen_pos)
 	if chosen == null or chosen.state != "waiting":
 		return
+
+	# Freeze camera completely stationary on tap
+	_target_cam_yaw = cam_yaw
+	_target_cam_pitch = cam_pitch
+	_target_cam_zoom = cam_zoom
+	cam_shake = 0.0
 
 	sound.play("click")
 	_handle_actor_selection(chosen)
@@ -506,6 +521,12 @@ func _pick_actor(screen_pos: Vector2) -> CrossroadsActor:
 # --- Rules Solver & Priority Checking ---
 
 func _handle_actor_selection(chosen: CrossroadsActor) -> void:
+	# Freeze camera immediately so it remains completely stable and stationary
+	_target_cam_yaw = cam_yaw
+	_target_cam_pitch = cam_pitch
+	_target_cam_zoom = cam_zoom
+	cam_shake = 0.0
+
 	# Find candidate priority actors strictly among remaining waiting actors with lower order.
 	# Any actor that is already driving or done has already been resolved and dispatched!
 	var candidate_priorities: Array[CrossroadsActor] = []
@@ -713,7 +734,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		return
 
 	# Smoothly drive both actors along their curves towards collision
-	var drive_duration := clampf(maxf(best_tc * len_c, best_tp * len_p) / 13.0, 0.75, 2.0)
+	var drive_duration := clampf(maxf(best_tc * len_c, best_tp * len_p) / 22.0, 0.45, 1.5)
 	var elapsed := 0.0
 	var max_drive_time := drive_duration + 0.3
 	var has_collided := false
@@ -779,7 +800,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 
 	sound.play("crash")
 	GameSound.buzz(70)
-	cam_shake = 0.55
+	cam_shake = 0.0
 
 	# Deform slightly on impact while maintaining exact bumper contact (no backward gap recoil)
 	var tan_c := Vector3(sin(chosen.rotation.y), 0, cos(chosen.rotation.y))
@@ -916,23 +937,30 @@ func _process(delta: float) -> void:
 			seconds_left = 0
 			_end_game()
 
-	var cam_changed := false
-	if absf(cam_yaw - _target_cam_yaw) > 0.0001:
-		cam_yaw = lerp_angle(cam_yaw, _target_cam_yaw, minf(1.0, 16.0 * delta))
-		cam_changed = true
-	if absf(cam_pitch - _target_cam_pitch) > 0.0001:
-		cam_pitch = lerpf(cam_pitch, _target_cam_pitch, minf(1.0, 16.0 * delta))
-		cam_changed = true
-	if absf(cam_zoom - _target_cam_zoom) > 0.0001:
-		cam_zoom = lerpf(cam_zoom, _target_cam_zoom, minf(1.0, 14.0 * delta))
-		cam_changed = true
+	var in_motion := _is_any_actor_in_motion() or is_resolving
+	if in_motion:
+		_target_cam_yaw = cam_yaw
+		_target_cam_pitch = cam_pitch
+		_target_cam_zoom = cam_zoom
+		cam_shake = 0.0
+	else:
+		var cam_changed := false
+		if absf(cam_yaw - _target_cam_yaw) > 0.0001:
+			cam_yaw = lerp_angle(cam_yaw, _target_cam_yaw, minf(1.0, 16.0 * delta))
+			cam_changed = true
+		if absf(cam_pitch - _target_cam_pitch) > 0.0001:
+			cam_pitch = lerpf(cam_pitch, _target_cam_pitch, minf(1.0, 16.0 * delta))
+			cam_changed = true
+		if absf(cam_zoom - _target_cam_zoom) > 0.0001:
+			cam_zoom = lerpf(cam_zoom, _target_cam_zoom, minf(1.0, 14.0 * delta))
+			cam_changed = true
 
-	if cam_shake > 0:
-		cam_shake = maxf(0, cam_shake - delta * 2.0)
-		cam_changed = true
+		if cam_shake > 0:
+			cam_shake = maxf(0, cam_shake - delta * 2.0)
+			cam_changed = true
 
-	if cam_changed:
-		_update_camera()
+		if cam_changed:
+			_update_camera()
 	_update_occlusion(delta)
 
 	if auto_play and not _suspended and not _round_completing and not _is_any_actor_driving() and not is_resolving and not is_game_over and not active_actors.is_empty():
@@ -1056,13 +1084,13 @@ func _on_viewport_resized() -> void:
 	# Containers settle their sizes on the next frame.
 	await get_tree().process_frame
 	await get_tree().process_frame
-	if is_inside_tree() and ready_for_play and not _exiting: fit_camera_to_scenario()
+	if is_inside_tree() and ready_for_play and not _exiting and not _is_any_actor_in_motion(): fit_camera_to_scenario()
 
 
 func _fit_scenario_after_layout(sequence: int) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
-	if _sequence_active(sequence): fit_camera_to_scenario()
+	if _sequence_active(sequence) and not _is_any_actor_in_motion(): fit_camera_to_scenario()
 
 
 # --- Camera Updates ---
@@ -1072,6 +1100,8 @@ func _set_zoom(z: float) -> void:
 
 
 func _reset_camera() -> void:
+	if _is_any_actor_in_motion():
+		return
 	cam_yaw = 0.93607
 	cam_pitch = -0.8143
 	cam_zoom = 1.0

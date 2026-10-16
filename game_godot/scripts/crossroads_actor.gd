@@ -364,7 +364,17 @@ func _build_trajectory() -> void:
 	path_length = path_curve.get_baked_length()
 	# Normalised progress is retained for collision animation; actual road speed
 	# stays independent of the route's 110 m invisible continuation.
-	var speed_mps := 8.4 if is_tram else (9.2 if str(data.get("type", "")) in ["bus", "truck"] else 11.0)
+	# Speed is tuned so vehicles cross the intersection briskly and responsively (~1.2 - 1.8s per traverse).
+	var maneuver_str: String = data.get("maneuver", "straight")
+	var speed_mps: float
+	if is_tram:
+		speed_mps = 20.0 if maneuver_str == "right" else 24.0
+	elif str(data.get("type", "")) in ["bus", "truck"]:
+		speed_mps = 18.0 if maneuver_str == "right" else 23.0
+	elif has_siren or str(data.get("type", "")) in ["emergency", "police"]:
+		speed_mps = 18.0 if maneuver_str == "right" else 24.0
+	else:
+		speed_mps = 14.5 if maneuver_str == "right" else 22.0
 	drive_speed = speed_mps / maxf(path_length, 1.0)
 
 

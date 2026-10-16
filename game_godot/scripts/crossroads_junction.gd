@@ -309,23 +309,41 @@ func _build_bollard(pos: Vector3, parent: Node3D) -> void:
 
 
 func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
+	var crossing_active := _has_crossing(arm)
+	var cross_clearance := ZEBRA_END + 0.6
+	var base_d := cross_clearance if crossing_active else HALF_ROAD
 	var sw_w := 4.2
 	var sw := _quad(Vector2(ROAD_WIDTH, sw_w), sidewalk_mat)
 	sw.position.y = 0.16
 	var curb := _box(Vector3(ROAD_WIDTH, 0.20, 0.3), curb_mat)
 	curb.position.y = 0.10
 
+	if crossing_active:
+		var road_span := cross_clearance - HALF_ROAD
+		var road := _quad(Vector2(ROAD_WIDTH, road_span), asphalt_mat)
+		var road_mid := HALF_ROAD + road_span * 0.5
+		match arm:
+			"south": road.position = Vector3(0, 0, road_mid)
+			"north": road.position = Vector3(0, 0, -road_mid)
+			"east":
+				road.position = Vector3(road_mid, 0, 0)
+				road.rotation.y = PI * 0.5
+			"west":
+				road.position = Vector3(-road_mid, 0, 0)
+				road.rotation.y = PI * 0.5
+		ground_root.add_child(road)
+
 	# Paved pedestrian plaza / pocket park occupying the first 22m of the closed arm
 	var plaza_len := 22.0
 	var plaza := _quad(Vector2(ROAD_WIDTH, plaza_len), sidewalk_mat)
 	plaza.position.y = 0.155
-	var plaza_mid := HALF_ROAD + sw_w + plaza_len * 0.5
+	var plaza_mid := base_d + sw_w + plaza_len * 0.5
 
 	# Lawn covering the rest of the closed arm beyond the plaza
-	var rem_lawn_len := arm_len - sw_w - plaza_len
+	var rem_lawn_len := maxf(10.0, arm_len - (base_d - HALF_ROAD) - sw_w - plaza_len)
 	var lawn := _quad(Vector2(ROAD_WIDTH, rem_lawn_len), grass_mat)
 	lawn.position.y = 0.15
-	var lawn_mid := HALF_ROAD + sw_w + plaza_len + rem_lawn_len * 0.5
+	var lawn_mid := base_d + sw_w + plaza_len + rem_lawn_len * 0.5
 
 	# Raised central flowerbed inside the pocket plaza
 	var fb_size := Vector2(6.0, 8.0)
@@ -355,23 +373,23 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 	var rot_y := 0.0
 	match arm:
 		"south":
-			sw.position = Vector3(0, 0.16, HALF_ROAD + sw_w * 0.5)
-			curb.position = Vector3(0, 0.10, HALF_ROAD + 0.15)
+			sw.position = Vector3(0, 0.16, base_d + sw_w * 0.5)
+			curb.position = Vector3(0, 0.10, base_d + 0.15)
 			plaza.position = Vector3(0, 0.155, plaza_mid)
 			lawn.position = Vector3(0, 0.15, lawn_mid)
 			fb_root.position = Vector3(0, 0, plaza_mid)
 			rot_y = 0.0
 		"north":
-			sw.position = Vector3(0, 0.16, -(HALF_ROAD + sw_w * 0.5))
-			curb.position = Vector3(0, 0.10, -(HALF_ROAD + 0.15))
+			sw.position = Vector3(0, 0.16, -(base_d + sw_w * 0.5))
+			curb.position = Vector3(0, 0.10, -(base_d + 0.15))
 			plaza.position = Vector3(0, 0.155, -plaza_mid)
 			lawn.position = Vector3(0, 0.15, -lawn_mid)
 			fb_root.position = Vector3(0, 0, -plaza_mid)
 			rot_y = PI
 		"east":
-			sw.position = Vector3(HALF_ROAD + sw_w * 0.5, 0.16, 0)
+			sw.position = Vector3(base_d + sw_w * 0.5, 0.16, 0)
 			sw.rotation.y = PI * 0.5
-			curb.position = Vector3(HALF_ROAD + 0.15, 0.10, 0)
+			curb.position = Vector3(base_d + 0.15, 0.10, 0)
 			curb.rotation.y = PI * 0.5
 			plaza.position = Vector3(plaza_mid, 0.155, 0)
 			plaza.rotation.y = PI * 0.5
@@ -380,9 +398,9 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 			fb_root.position = Vector3(plaza_mid, 0, 0)
 			rot_y = -PI * 0.5
 		"west":
-			sw.position = Vector3(-(HALF_ROAD + sw_w * 0.5), 0.16, 0)
+			sw.position = Vector3(-(base_d + sw_w * 0.5), 0.16, 0)
 			sw.rotation.y = PI * 0.5
-			curb.position = Vector3(-(HALF_ROAD + 0.15), 0.10, 0)
+			curb.position = Vector3(-(base_d + 0.15), 0.10, 0)
 			curb.rotation.y = PI * 0.5
 			plaza.position = Vector3(-plaza_mid, 0.155, 0)
 			plaza.rotation.y = PI * 0.5
@@ -406,7 +424,7 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 	_build_bench(b2_pos, rot_y - PI * 0.5, park_root)
 
 	# Row of safety bollards separating the street from the pedestrian plaza
-	var bollard_dist := HALF_ROAD + 0.5
+	var bollard_dist := base_d + 0.5
 	for bi in 7:
 		var bx := -HALF_ROAD + 1.8 + float(bi) * 1.8
 		var b_pos := Vector3(bx, 0.16, bollard_dist).rotated(Vector3.UP, rot_y)
@@ -458,10 +476,15 @@ func _build_quadrant_sidewalks() -> void:
 		_add_sidewalk_patch(PackedVector2Array([Vector2(outer, HALF_ROAD), Vector2(ROAD_EXTENT, HALF_ROAD), Vector2(ROAD_EXTENT, outer), Vector2(outer, outer)]), corner)
 
 		var curb_start := tangent if rounded else HALF_ROAD
-		if ns_open:
-			_add_straight_curbs(Vector3(sx * HALF_ROAD, 0, sz * curb_start), Vector3(sx * HALF_ROAD, 0, sz * ROAD_EXTENT), true)
-		if ew_open:
-			_add_straight_curbs(Vector3(sx * curb_start, 0, sz * HALF_ROAD), Vector3(sx * ROAD_EXTENT, 0, sz * HALF_ROAD), false)
+		var ns_cross := _has_crossing("south" if sz > 0 else "north")
+		var ew_cross := _has_crossing("east" if sx > 0 else "west")
+		var cross_clearance := ZEBRA_END + 0.6
+		if ns_open or ns_cross:
+			var ns_end := ROAD_EXTENT if ns_open else cross_clearance
+			_add_straight_curbs(Vector3(sx * HALF_ROAD, 0, sz * curb_start), Vector3(sx * HALF_ROAD, 0, sz * ns_end), true)
+		if ew_open or ew_cross:
+			var ew_end := ROAD_EXTENT if ew_open else cross_clearance
+			_add_straight_curbs(Vector3(sx * curb_start, 0, sz * HALF_ROAD), Vector3(sx * ew_end, 0, sz * HALF_ROAD), false)
 
 		var lawn := _quad(Vector2(extent, extent), grass_mat)
 		lawn.position = Vector3(sx * (outer + extent * 0.5), 0.15, sz * (outer + extent * 0.5))
@@ -591,7 +614,7 @@ func _add_curb_segment(a: Vector3, b: Vector3) -> void:
 func _build_markings() -> void:
 	var arms := ["south", "north", "east", "west"]
 	for arm in arms:
-		if arm == closed_side:
+		if arm == closed_side and not _has_crossing(arm):
 			continue
 		_build_arm_markings(arm)
 
@@ -611,42 +634,43 @@ func _build_arm_markings(arm: String) -> void:
 		"west":
 			arm_root.rotation.y = PI * 0.5
 
-	# 1.12 is required by STOP/signal control, never by an equal junction
-	# or by a yield sign alone (GOST R 52289, 6.2.14).
-	if _has_stop_control(arm):
-		var stop_line := _quad(Vector2(HALF_ROAD - 0.2, 0.4), marking_mat)
-		stop_line.name = "StopLine"
-		stop_line.position = Vector3(HALF_ROAD * 0.5, 0.025, STOP_DIST if _has_signal(arm) else STOP_SIGN_DIST)
-		arm_root.add_child(stop_line)
-	elif _has_sign(arm, "2.4"):
-		# 1.13 gives the actual yielding boundary at the intersecting road,
-		# beyond the pedestrian crossing; it must not resemble a stop line.
-		var vertices := PackedVector3Array()
-		var indices := PackedInt32Array()
-		for i in 11:
-			var x := 0.45 + float(i) * 0.6
-			var start := vertices.size()
-			vertices.append_array(PackedVector3Array([Vector3(x - 0.2, 0.025, HALF_ROAD + 0.15), Vector3(x + 0.2, 0.025, HALF_ROAD + 0.15), Vector3(x, 0.025, HALF_ROAD + 0.55)]))
-			indices.append_array(PackedInt32Array([start, start + 1, start + 2]))
-		var yield_line := _surface(vertices, indices, marking_mat)
-		yield_line.name = "YieldLine"
-		arm_root.add_child(yield_line)
+	if arm != closed_side:
+		# 1.12 is required by STOP/signal control, never by an equal junction
+		# or by a yield sign alone (GOST R 52289, 6.2.14).
+		if _has_stop_control(arm):
+			var stop_line := _quad(Vector2(HALF_ROAD - 0.2, 0.4), marking_mat)
+			stop_line.name = "StopLine"
+			stop_line.position = Vector3(HALF_ROAD * 0.5, 0.025, STOP_DIST if _has_signal(arm) else STOP_SIGN_DIST)
+			arm_root.add_child(stop_line)
+		elif _has_sign(arm, "2.4"):
+			# 1.13 gives the actual yielding boundary at the intersecting road,
+			# beyond the pedestrian crossing; it must not resemble a stop line.
+			var vertices := PackedVector3Array()
+			var indices := PackedInt32Array()
+			for i in 11:
+				var x := 0.45 + float(i) * 0.6
+				var start := vertices.size()
+				vertices.append_array(PackedVector3Array([Vector3(x - 0.2, 0.025, HALF_ROAD + 0.15), Vector3(x + 0.2, 0.025, HALF_ROAD + 0.15), Vector3(x, 0.025, HALF_ROAD + 0.55)]))
+				indices.append_array(PackedInt32Array([start, start + 1, start + 2]))
+			var yield_line := _surface(vertices, indices, marking_mat)
+			yield_line.name = "YieldLine"
+			arm_root.add_child(yield_line)
 
-	# 1.3 separates the four-lane road's opposing directions. Both
-	# carriageway halves receive their own 1.5 lane divider.
-	var line_start := ZEBRA_END + 0.25 if _has_crossing(arm) else HALF_ROAD + 0.8
-	var line_len := ROAD_EXTENT - line_start
-	for offset in [-0.12, 0.12]:
-		var solid := _quad(Vector2(0.12, line_len), marking_mat)
-		solid.position = Vector3(offset, 0.022, line_start + line_len * 0.5)
-		arm_root.add_child(solid)
-	var z := line_start
-	while z + 2.0 < ROAD_EXTENT:
-		for x in [-LANE_W, LANE_W]:
-			var dash := _quad(Vector2(0.12, 2.0), marking_mat)
-			dash.position = Vector3(x, 0.022, z + 1.0)
-			arm_root.add_child(dash)
-		z += 6.0
+		# 1.3 separates the four-lane road's opposing directions. Both
+		# carriageway halves receive their own 1.5 lane divider.
+		var line_start := ZEBRA_END + 0.25 if _has_crossing(arm) else HALF_ROAD + 0.8
+		var line_len := ROAD_EXTENT - line_start
+		for offset in [-0.12, 0.12]:
+			var solid := _quad(Vector2(0.12, line_len), marking_mat)
+			solid.position = Vector3(offset, 0.022, line_start + line_len * 0.5)
+			arm_root.add_child(solid)
+		var z := line_start
+		while z + 2.0 < ROAD_EXTENT:
+			for x in [-LANE_W, LANE_W]:
+				var dash := _quad(Vector2(0.12, 2.0), marking_mat)
+				dash.position = Vector3(x, 0.022, z + 1.0)
+				arm_root.add_child(dash)
+			z += 6.0
 	if _has_crossing(arm): _build_crossing(arm_root)
 
 
@@ -700,10 +724,21 @@ func _has_stop_control(side: String) -> bool:
 
 
 func _has_crossing(side: String) -> bool:
-	if side == closed_side: return false
-	for actor: Dictionary in _scenario.get("actors", []):
-		if str(actor.get("side", "")) == side and (actor.get("type", "") == "pedestrian" or actor.get("maneuver", "") == "cross"):
+	var s := side.to_lower().strip_edges()
+	for c in _scenario.get("crossings", []):
+		if str(c).to_lower().strip_edges() == s:
 			return true
+	for p in _scenario.get("pedestrians", []):
+		if p is Dictionary and str(p.get("side", "")).to_lower().strip_edges() == s:
+			return true
+		elif str(p).to_lower().strip_edges() == s:
+			return true
+	for actor in _scenario.get("actors", []):
+		if actor is Dictionary and str(actor.get("side", "")).to_lower().strip_edges() == s:
+			var atype := str(actor.get("type", "")).to_lower()
+			var amaneuver := str(actor.get("maneuver", "")).to_lower()
+			if atype == "pedestrian" or amaneuver == "cross":
+				return true
 	return false
 
 
