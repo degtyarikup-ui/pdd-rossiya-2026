@@ -40,10 +40,22 @@ Godot — [инструкции игры](../game/README.md); платформе
 
 ## Нативный запрос отзыва
 
-`ReviewPromptService` использует уже подключённый `in_app_review`: StoreKit на iOS,
-Google Play In-App Review на Android-сборке `STORE=play`. Веб, RuStore, desktop и
-Flutter debug-сборки запрос не вызывают. Debug-проверки подставляют сервис через
-`reviewPromptServiceProvider`, чтобы не расходовать квоты реального магазина.
+`ReviewPromptService` выбирает SDK через `StoreReviewClient`:
+`in_app_review` (StoreKit на iOS и Google Play In-App Review в Android-сборке
+`STORE=play`), `flutter_rustore_review` в Android-сборке `STORE=rustore`.
+RuStore инициализируется лениво только при подходящем завершении, затем
+`request()` подготавливает ReviewInfo, `review()` показывает окно. Веб,
+desktop и Flutter debug-сборки запрос не вызывают. Debug-проверки подставляют
+сервис через `reviewPromptServiceProvider`, чтобы не расходовать квоты магазина.
+
+Официальный [RuStore SDK для Flutter](https://www.rustore.ru/help/sdk/reviews-ratings/flutter/10-5-4)
+требует Android 7.0+ (API 24, уже минимальная версия приложения), актуальный
+RuStore и вход в него. Приложение должно быть опубликовано с соответствующими
+package name и подписью; по инструкции RuStore сведения о нём должны быть
+добавлены в «Push-уведомления → Проекты» консоли. SDK не требует секретов в коде.
+Без магазина/аккаунта, при исчерпанной квоте или уже оставленном отзыве попытка
+завершается тихо. Сборка RuStore не вызывает Google Play Review API.
+При замене магазина с сохранением данных общий счётчик не сбрасывается.
 
 Общий локальный счётчик `review_prompt_completions_v1` учитывает только завершения:
 
@@ -84,4 +96,6 @@ Google завершает Future после закрытия окна, Apple —
 `test/completion_review_prompt_test.dart`, `test/training_result_test.dart`,
 `test/exam_flow_test.dart`, `test/godot_garage_bridge_test.dart`. Реальное окно и
 публикацию отзыва проверять через сборку из магазина: квоты и разрешение показа
-остаются за Google/Apple; локальный APK не подтверждает работу Play Review.
+остаются за Google/Apple/RuStore; локальный APK не подтверждает работу SDK
+с опубликованным приложением. Проверки маршрутизации и ошибок SDK RuStore —
+`test/store_review_client_test.dart`.

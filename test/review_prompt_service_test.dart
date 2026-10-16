@@ -151,13 +151,30 @@ void main() {
     );
   }
 
-  test(
-    'RuStore and web never use Google Play reviews or consume milestones',
-    () async {
-      await service(store: AppStore.rustore).onCompleted();
-      await service(platform: TargetPlatform.iOS, isWeb: true).onCompleted();
-      await service().onCompleted();
-      expect(requestedAt, hasLength(1));
-    },
-  );
+  test('RuStore shares the same persistent first/tenth limit', () async {
+    var review = service(store: AppStore.rustore);
+    for (completion = 1; completion <= 30; completion++) {
+      if (completion == 6 || completion == 11) {
+        review = service(store: AppStore.rustore);
+      }
+      await review.onCompleted();
+    }
+    expect(requestedAt, [1, 10]);
+  });
+
+  test('switching Android stores does not reset the shared counter', () async {
+    for (completion = 1; completion <= 20; completion++) {
+      await service(
+        store: completion.isEven ? AppStore.rustore : AppStore.googlePlay,
+      ).onCompleted();
+    }
+    expect(requestedAt, [1, 10]);
+  });
+
+  test('web never consumes milestones', () async {
+    await service(store: AppStore.rustore, isWeb: true).onCompleted();
+    await service(platform: TargetPlatform.iOS, isWeb: true).onCompleted();
+    await service().onCompleted();
+    expect(requestedAt, hasLength(1));
+  });
 }

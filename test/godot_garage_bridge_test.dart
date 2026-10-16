@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/game_question_history_service.dart';
@@ -290,10 +291,14 @@ void main() {
     },
   );
 
-  for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+  for (final (platform, store) in [
+    (TargetPlatform.android, AppStore.googlePlay),
+    (TargetPlatform.iOS, AppStore.googlePlay),
+    (TargetPlatform.android, AppStore.rustore),
+  ]) {
     for (final behavior in ['dismiss', 'throw', 'hang']) {
       testWidgets(
-        'city preserves saved results after review $behavior on $platform',
+        'city preserves saved results after review $behavior on $platform/$store',
         (tester) async {
           final request = Completer<void>();
           var requests = 0;
@@ -301,6 +306,7 @@ void main() {
           bool? hadResultAtRequest;
           final review = ReviewPromptService.forTesting(
             platform: platform,
+            store: store,
             isAvailable: () async => true,
             requestReview: () {
               requests++;

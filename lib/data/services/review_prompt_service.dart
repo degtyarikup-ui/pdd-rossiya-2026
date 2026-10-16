@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:in_app_review/in_app_review.dart';
 import 'package:pdd_app/core/config/store_config.dart';
+import 'package:pdd_app/data/services/store_review_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final reviewPromptServiceProvider = Provider<ReviewPromptService>(
@@ -16,11 +16,16 @@ final reviewPromptServiceProvider = Provider<ReviewPromptService>(
 class ReviewPromptService {
   ReviewPromptService._()
     : _platform = (() => defaultTargetPlatform),
-      _store = (() => StoreConfig.current),
       _isWeb = kIsWeb,
       _enabled = !kDebugMode,
-      _isAvailable = InAppReview.instance.isAvailable,
-      _requestReview = InAppReview.instance.requestReview,
+      _isAvailable = StoreReviewClient(
+        platform: defaultTargetPlatform,
+        store: StoreConfig.current,
+      ).isAvailable,
+      _requestReview = StoreReviewClient(
+        platform: defaultTargetPlatform,
+        store: StoreConfig.current,
+      ).requestReview,
       _pluginTimeout = const Duration(seconds: 2);
 
   @visibleForTesting
@@ -28,22 +33,24 @@ class ReviewPromptService {
     required TargetPlatform platform,
     AppStore store = AppStore.googlePlay,
     bool isWeb = false,
-    required Future<bool> Function() isAvailable,
-    required Future<void> Function() requestReview,
+    Future<bool> Function()? isAvailable,
+    Future<void> Function()? requestReview,
     Duration pluginTimeout = const Duration(seconds: 2),
   }) : _platform = (() => platform),
-       _store = (() => store),
        _isWeb = isWeb,
        _enabled = true,
-       _isAvailable = isAvailable,
-       _requestReview = requestReview,
+       _isAvailable =
+           isAvailable ??
+           StoreReviewClient(platform: platform, store: store).isAvailable,
+       _requestReview =
+           requestReview ??
+           StoreReviewClient(platform: platform, store: store).requestReview,
        _pluginTimeout = pluginTimeout;
 
   static final instance = ReviewPromptService._();
   static const _countKey = 'review_prompt_completions_v1';
   static const _legacyRequestedKey = 'review_prompt_requested';
   final TargetPlatform Function() _platform;
-  final AppStore Function() _store;
   final bool _isWeb;
   final bool _enabled;
   final Future<bool> Function() _isAvailable;
@@ -55,8 +62,7 @@ class ReviewPromptService {
       _enabled &&
       !_isWeb &&
       (_platform() == TargetPlatform.iOS ||
-          (_platform() == TargetPlatform.android &&
-              _store() == AppStore.googlePlay));
+          _platform() == TargetPlatform.android);
 
   /// Saves the completion BEFORE invoking any native code. A skipped, failed or
   /// suppressed request consumes its milestone too: never retry on later visits.
