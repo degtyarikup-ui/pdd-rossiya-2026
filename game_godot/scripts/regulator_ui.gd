@@ -328,7 +328,8 @@ func _paint_move(entry: Dictionary, background: Color, text: Color, icon: Color)
 # --- Result card: the app's GameResultOverlay ---
 
 func _build_result() -> void:
-	_results = MiniGameResults.new(COVER)
+	_results = MiniGameResults.new()
+	_results.set_subject("regulator")
 	_results.restart_pressed.connect(func(): restart_pressed.emit())
 	_results.exit_pressed.connect(func(): exit_pressed.emit())
 	add_child(_results)

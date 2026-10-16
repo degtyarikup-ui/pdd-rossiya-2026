@@ -417,7 +417,8 @@ func hide_collision_modal() -> void:
 
 
 func _build_result_dialog() -> void:
-	_results = MiniGameResults.new("res://art/crossroads_cover.webp")
+	_results = MiniGameResults.new()
+	_results.set_subject("crossroads")
 	_results.restart_pressed.connect(func():
 		hide_results()
 		restart_pressed.emit())

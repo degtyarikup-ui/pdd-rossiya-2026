@@ -24,6 +24,8 @@ var ranking_button: Button
 var scroll: ScrollContainer
 var _bounds := Rect2()
 var _preview: SubViewport
+var _subject := "vehicle"
+var _camera: Camera3D
 var _studio: Node3D
 var _car: Node3D
 var _arrival: Tween
@@ -178,13 +180,17 @@ func _build_studio() -> void:
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-45, -25, 0)
 	_studio.add_child(light)
-	var camera := Camera3D.new()
+	_camera = Camera3D.new()
+	var camera := _camera
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = 3.2
 	_studio.add_child(camera)
 	camera.transform = Transform3D(Basis.IDENTITY, Vector3(5, 3.2, 6)).looking_at(Vector3(0, 0.7, 0))
 
 func set_vehicle(id: String, paint: Color) -> void:
+	_subject = "vehicle"
+	_camera.size = 3.2
+	_camera.transform = Transform3D(Basis.IDENTITY, Vector3(5, 3.2, 6)).looking_at(Vector3(0, 0.7, 0))
 	if is_instance_valid(_arrival): _arrival.kill()
 	if is_instance_valid(_car):
 		_studio.remove_child(_car)
@@ -195,6 +201,41 @@ func set_vehicle(id: String, paint: Color) -> void:
 	_wheel_starts.clear()
 	for wheel in _car.find_children("wheel_*", "", true, false):
 		_wheel_starts.append({"node": wheel, "rotation": wheel.rotation})
+	_preview.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+## Mini-games supply their own emblem while sharing counters, controls and motion.
+func set_subject(kind: String) -> void:
+	if kind not in ["regulator", "crossroads"]: return
+	if is_instance_valid(_arrival): _arrival.kill()
+	if is_instance_valid(_car):
+		_studio.remove_child(_car)
+		_car.queue_free()
+	_subject = kind
+	_wheel_starts.clear()
+	if kind == "regulator":
+		var officer := RegulatorOfficer.new()
+		officer.set_pose(RegulatorRules.Gesture.ARM_UP, false)
+		officer.set_approach(RegulatorRules.Approach.FRONT, false)
+		_car = officer
+		_studio.add_child(officer)
+		officer.set_process(false)
+		_camera.size = 2.8
+		_camera.transform = Transform3D(Basis.IDENTITY, Vector3(2.2, 2.0, 7)).looking_at(Vector3(0, 1.15, 0))
+	else:
+		_car = Node3D.new()
+		_car.name = "PrioritySigns"
+		_studio.add_child(_car)
+		# Official catalogue art, including the complete 8.13 supplementary plate.
+		for data in [{"code":"2.1", "width":1.45, "height":1.7}, {"code":"8.13", "width":1.05, "height":0.6}]:
+			var face := Sprite3D.new()
+			face.name = "Sign_" + data.code.replace(".", "_")
+			face.texture = SignFace.texture(data.code)
+			face.pixel_size = float(data.width) / face.texture.get_width()
+			face.position.y = float(data.height)
+			face.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			_car.add_child(face)
+		_camera.size = 2.9
+		_camera.transform = Transform3D(Basis.IDENTITY, Vector3(0, 1.25, 7)).looking_at(Vector3(0, 1.25, 0))
 	_preview.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func layout(bounds: Rect2) -> void:
@@ -292,7 +333,11 @@ func _distance_text(km: float) -> String:
 	return number + " " + Ui.t("gameKilometers")
 
 func _drive_in(progress: float) -> void:
-	_car.position = Vector3(0, 0, lerpf(-6.0, 0.0, progress))
+	if _subject == "vehicle":
+		_car.position = Vector3(0, 0, lerpf(-6.0, 0.0, progress))
+	else:
+		_car.position = Vector3(0, lerpf(-0.18, 0.0, progress), 0)
+		_car.scale = Vector3.ONE * lerpf(0.94, 1.0, progress)
 	_car.rotation.y = lerpf(-0.12, 0.0, progress)
 	for wheel in _wheel_starts:
 		wheel.node.rotation = wheel.rotation + Vector3(progress * 6.0 / 0.32, 0, 0)

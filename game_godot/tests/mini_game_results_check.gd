@@ -34,6 +34,9 @@ func _run() -> void:
 		Ui.lang = language
 		var crossroads := CrossroadsUi.new()
 		var regulator := RegulatorUi.new()
+		_expect(crossroads._results._subject == "crossroads" and regulator._results._subject == "regulator", "each mini-game selects its own hero " + language)
+		_expect(regulator._results._car is RegulatorOfficer, "regulator result uses the real officer model " + language)
+		_expect(crossroads._results._car.get_node_or_null("Sign_2_1") != null and crossroads._results._car.get_node_or_null("Sign_8_13") != null, "crossroads result has priority sign and main-road direction plate " + language)
 		root.add_child(crossroads)
 		root.add_child(regulator)
 		for viewport_size in [Vector2i(280, 640), Vector2i(320, 568), Vector2i(360, 640), Vector2i(390, 844), Vector2i(430, 932), Vector2i(844, 390), Vector2i(932, 430), Vector2i(768, 1024), Vector2i(1024, 768)]:
