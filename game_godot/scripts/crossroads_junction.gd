@@ -7,7 +7,7 @@ extends Node3D
 const ROAD_WIDTH := 14.4        # 4 lanes of 3.6 m (2 in each direction)
 const HALF_ROAD := ROAD_WIDTH * 0.5
 const DIRT_BLEND := 8.0        # metres of asphalt-to-dirt transition at an unpaved arm
-const BLEND_Y := 0.006         # just above both road quads
+const BLEND_Y := 0.03          # clearly above both road quads, even on a phone depth buffer
 const ROAD_EXTENT := 345.0
 const STOP_DIST := 13.2
 const STOP_SIGN_DIST := HALF_ROAD + 0.4
@@ -628,20 +628,22 @@ func _build_quadrant_sidewalks() -> void:
 			# Shoulder strips along the open arms:
 			# Along dirt arms, the surface is natural unpaved dirt/grass.
 			# Along paved rural highway arms, an unpaved gravel/dirt shoulder (обочина) of width SIDEWALK_WIDTH.
-			var ns_end := ROAD_EXTENT if ns_open else tangent
-			var ns_shoulder_len := ns_end - tangent
+			# Shoulders start where the corner patch ends (outer > tangent): coplanar
+			# overlapping quads of different materials flicker on phone depth buffers.
+			var ns_end := ROAD_EXTENT if ns_open else outer
+			var ns_shoulder_len := ns_end - outer
 			if ns_open and ns_shoulder_len > 0.1:
 				var ns_shoulder_mat := grass_mat if ns_dirt else dirt_mat
 				var ns_shoulder := _quad(Vector2(SIDEWALK_WIDTH, ns_shoulder_len), ns_shoulder_mat)
-				ns_shoulder.position = Vector3(sx * (HALF_ROAD + SIDEWALK_WIDTH * 0.5), 0.001, sz * (tangent + ns_shoulder_len * 0.5))
+				ns_shoulder.position = Vector3(sx * (HALF_ROAD + SIDEWALK_WIDTH * 0.5), 0.001, sz * (outer + ns_shoulder_len * 0.5))
 				ground_root.add_child(ns_shoulder)
 
-			var ew_end := ROAD_EXTENT if ew_open else tangent
-			var ew_shoulder_len := ew_end - tangent
+			var ew_end := ROAD_EXTENT if ew_open else outer
+			var ew_shoulder_len := ew_end - outer
 			if ew_open and ew_shoulder_len > 0.1:
 				var ew_shoulder_mat := grass_mat if ew_dirt else dirt_mat
 				var ew_shoulder := _quad(Vector2(ew_shoulder_len, SIDEWALK_WIDTH), ew_shoulder_mat)
-				ew_shoulder.position = Vector3(sx * (tangent + ew_shoulder_len * 0.5), 0.001, sz * (HALF_ROAD + SIDEWALK_WIDTH * 0.5))
+				ew_shoulder.position = Vector3(sx * (outer + ew_shoulder_len * 0.5), 0.001, sz * (HALF_ROAD + SIDEWALK_WIDTH * 0.5))
 				ground_root.add_child(ew_shoulder)
 
 			# Flat corner ground outside the fillet
@@ -655,7 +657,9 @@ func _build_quadrant_sidewalks() -> void:
 			corner_ground.append(Vector2(outer, HALF_ROAD))
 			corner_ground.append(Vector2(outer, outer))
 			corner_ground.append(Vector2(HALF_ROAD, outer))
-			var patch_mat := dirt_mat if (ns_dirt or ew_dirt) else grass_mat
+			# The corner continues the shoulders: a paved arm has a dirt shoulder, only two
+			# unpaved arms meet on grass.
+			var patch_mat := grass_mat if (ns_dirt and ew_dirt) else dirt_mat
 			_add_polygon(corner_ground, corner, 0.001, patch_mat, ground_root)
 
 			# Level grass field across the quadrant (at ground level 0.002, not raised to 0.15m)
