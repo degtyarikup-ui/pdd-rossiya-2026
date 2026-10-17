@@ -25,9 +25,9 @@ def fix(frame: Image.Image) -> Image.Image:
     img = Image.fromarray(np.dstack([rgb, al]).astype(np.uint8))
     r, g, b, alpha = img.split()
     c = Image.merge("RGB", (r, g, b))
-    c = ImageEnhance.Color(c).enhance(1.25)
-    c = ImageEnhance.Contrast(c).enhance(1.08)
-    c = ImageEnhance.Brightness(c).enhance(1.06)
+    # Gentle vibrance: richer colours without lifting highlights.
+    c = ImageEnhance.Color(c).enhance(1.18)
+    c = ImageEnhance.Contrast(c).enhance(1.03)
     return Image.merge("RGBA", (*c.split(), alpha))
 
 
