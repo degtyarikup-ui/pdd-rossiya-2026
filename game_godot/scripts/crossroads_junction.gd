@@ -359,49 +359,108 @@ func _build_open_arm_surface(arm: String, arm_len: float) -> void:
 		ground_root.add_child(_dirt_blend(arm))
 
 
-## Where an unpaved arm meets the paved junction the surface blends over
-## DIRT_BLEND metres, as on the main game's streets (street.gd profile_at):
-## colour lerps, the asphalt grain fades out by the middle, the dirt grain fades in.
-## Across the arm the asphalt tone also fades towards both edges and spans the
-## shoulders, so the apron has no hard side edges against the dirt corners.
-func _dirt_blend(arm: String) -> MeshInstance3D:
-	var asphalt := Color("#2C2F36")
-	var dirt := Color("#8D7151")
-	var yaw: float = {"south": 0.0, "north": PI, "east": PI * 0.5, "west": -PI * 0.5}.get(arm, 0.0)
-	var outer := HALF_ROAD + SIDEWALK_WIDTH
-	var xs: Array[float] = []
-	for i in 13: xs.append(lerpf(-outer, outer, float(i) / 12.0))
-	var ts: Array[float] = []
-	for i in 13: ts.append(float(i) / 12.0)
-	# Dirt share at a point: along the arm, or towards its edges, whichever is more.
-	var share := func(x: float, t: float) -> float:
-		return clampf(maxf(t, smoothstep(HALF_ROAD - 3.0, outer - 0.6, absf(x))), 0.0, 1.0)
+## --- Soft rural ground ------------------------------------------------------
+## One continuous field gives every point near the roads its share of asphalt,
+## dirt and grass, by the distance to the paved and to the unpaved carriageway.
+## Corners, shoulders and the dirt apron all sample it, so they cannot disagree
+## at a seam; the grain switches layers only where both layers have faded out
+## (as street.gd does between asphalt and dirt).
+const GROUND_Y := 0.015        # soft ground over the lawn and the corner paving
+const SHOULDER_EDGE := 0.6     # asphalt tone running onto a shoulder
+const GRASS_FADE := 1.1        # half-width of the shoulder-to-grass blend
+const FIELD_STEP := 0.45
+
+func _arm_open(arm: String) -> bool:
+	return arm != closed_side
+
+## Distance from p to an axis-aligned rectangle (0 inside).
+static func _rect_distance(p: Vector2, lo: Vector2, hi: Vector2) -> float:
+	var dx := maxf(maxf(lo.x - p.x, p.x - hi.x), 0.0)
+	var dy := maxf(maxf(lo.y - p.y, p.y - hi.y), 0.0)
+	return Vector2(dx, dy).length()
+
+## Shares (asphalt, dirt, grass) at a ground point, summing to 1.
+func _ground_shares(p: Vector2) -> Vector3:
+	var far := ROAD_EXTENT + 10.0
+	var paved := _rect_distance(p, Vector2(-HALF_ROAD, -HALF_ROAD), Vector2(HALF_ROAD, HALF_ROAD))
+	var unpaved := INF
+	var arms := {"south": [Vector2(-HALF_ROAD, HALF_ROAD), Vector2(HALF_ROAD, far)],
+		"north": [Vector2(-HALF_ROAD, -far), Vector2(HALF_ROAD, -HALF_ROAD)],
+		"east": [Vector2(HALF_ROAD, -HALF_ROAD), Vector2(far, HALF_ROAD)],
+		"west": [Vector2(-far, -HALF_ROAD), Vector2(-HALF_ROAD, HALF_ROAD)]}
+	for arm in arms:
+		if not _arm_open(arm): continue
+		var d := _rect_distance(p, arms[arm][0], arms[arm][1])
+		if _is_dirt_arm(arm): unpaved = minf(unpaved, d)
+		else: paved = minf(paved, d)
+	# Rounded corner paving between two open arms.
+	var q := Vector2(absf(p.x), absf(p.y))
+	var tangent := HALF_ROAD + CORNER_RADIUS
+	var ns := "south" if p.y > 0 else "north"
+	var ew := "east" if p.x > 0 else "west"
+	if _arm_open(ns) and _arm_open(ew) and q.x <= tangent and q.y <= tangent:
+		var fillet := maxf(0.0, CORNER_RADIUS - q.distance_to(Vector2(tangent, tangent)))
+		if _is_dirt_arm(ns) or _is_dirt_arm(ew): unpaved = minf(unpaved, fillet)
+		else: paved = minf(paved, fillet)
+	# On (and beside) an unpaved road the asphalt tone runs DIRT_BLEND metres in,
+	# like the main game's surface transition; beside a paved road only a metre.
+	var reach := lerpf(DIRT_BLEND, SHOULDER_EDGE, smoothstep(0.0, 2.0, unpaved)) if unpaved < INF else SHOULDER_EDGE
+	var asphalt := 1.0 - smoothstep(0.0, reach, paved)
+	var grass := minf(smoothstep(SIDEWALK_WIDTH - GRASS_FADE * 0.5, SIDEWALK_WIDTH + GRASS_FADE * 1.5, paved),
+		smoothstep(0.2, 0.2 + GRASS_FADE * 2.0, unpaved) if unpaved < INF else 1.0)
+	grass *= 1.0 - asphalt
+	return Vector3(asphalt, 1.0 - asphalt - grass, grass)
+
+## A ground mesh over [x0, x1] × [z0, z1] sampled from the field.
+func _field_mesh(x0: float, x1: float, z0: float, z1: float, y: float, max_long := FIELD_STEP) -> MeshInstance3D:
+	var colours := [Color("#2C2F36"), Color("#8D7151"), sc.color("ground")]
+	var layers := [sc.layer_of("asphalt"), sc.layer_of("dirt"), sc.layer_of("grass")]
+	var nx := maxi(1, ceili((x1 - x0) / (FIELD_STEP if x1 - x0 < 20.0 else max_long)))
+	var nz := maxi(1, ceili((z1 - z0) / (FIELD_STEP if z1 - z0 < 20.0 else max_long)))
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for zi in ts.size() - 1:
-		for xi in xs.size() - 1:
-			var cell := [[xs[xi], ts[zi]], [xs[xi + 1], ts[zi]], [xs[xi + 1], ts[zi + 1]], [xs[xi], ts[zi + 1]]]
-			var mean := 0.0
-			for c in cell: mean += share.call(c[0], c[1]) * 0.25
-			# A cell carries one grain layer; its detail is zero where the layers meet.
-			var layer := sc.layer_of("asphalt" if mean < 0.5 else "dirt")
+	for iz in nz:
+		for ix in nx:
+			var cell := [Vector2(lerpf(x0, x1, float(ix) / nx), lerpf(z0, z1, float(iz) / nz)),
+				Vector2(lerpf(x0, x1, float(ix + 1) / nx), lerpf(z0, z1, float(iz) / nz)),
+				Vector2(lerpf(x0, x1, float(ix + 1) / nx), lerpf(z0, z1, float(iz + 1) / nz)),
+				Vector2(lerpf(x0, x1, float(ix) / nx), lerpf(z0, z1, float(iz + 1) / nz))]
+			var shares := []
+			var mean := Vector3.ZERO
+			for c in cell:
+				var w := _ground_shares(c)
+				shares.append(w)
+				mean += w * 0.25
+			var kind := 0 if mean.x >= mean.y and mean.x >= mean.z else (1 if mean.y >= mean.z else 2)
 			for v in [0, 1, 2, 0, 2, 3]:
-				var x: float = cell[v][0]
-				var t: float = cell[v][1]
-				var d: float = share.call(x, t)
-				var colour: Color = asphalt.lerp(dirt, smoothstep(0.0, 1.0, d))
-				var detail: float = clampf((0.5 - d) * 2.0, 0.0, 1.0) if mean < 0.5 else clampf((d - 0.5) * 2.0, 0.0, 1.0)
+				var w: Vector3 = shares[v]
+				var colour: Color = colours[0] * w.x + colours[1] * w.y + colours[2] * w.z
 				st.set_color(Color(colour.r, colour.g, colour.b, 0.0))
-				st.set_uv2(Vector2(layer, detail - 1.0))
+				st.set_uv2(Vector2(layers[kind], clampf((w[kind] - 0.5) * 2.0, 0.0, 1.0) - 1.0))
 				st.set_normal(Vector3.UP)
-				st.add_vertex(Vector3(x, BLEND_Y, HALF_ROAD + t * DIRT_BLEND).rotated(Vector3.UP, yaw))
+				st.add_vertex(Vector3(cell[v].x, y, cell[v].y))
 	var mi := MeshInstance3D.new()
-	mi.name = "DirtBlend_" + arm
 	mi.mesh = st.commit()
-	var mat := sc.material.duplicate() as ShaderMaterial
-	mat.set_shader_parameter("grid_uv", true)
-	mi.material_override = mat
+	if _field_material == null:
+		_field_material = sc.material.duplicate() as ShaderMaterial
+		_field_material.set_shader_parameter("grid_uv", true)
+	mi.material_override = _field_material
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
+
+var _field_material: ShaderMaterial
+
+## The unpaved road's first metres take their asphalt tone from the same field.
+func _dirt_blend(arm: String) -> MeshInstance3D:
+	var near := HALF_ROAD
+	var end := HALF_ROAD + DIRT_BLEND + 1.0
+	var mi: MeshInstance3D
+	match arm:
+		"south": mi = _field_mesh(-HALF_ROAD, HALF_ROAD, near, end, BLEND_Y)
+		"north": mi = _field_mesh(-HALF_ROAD, HALF_ROAD, -end, -near, BLEND_Y)
+		"east": mi = _field_mesh(near, end, -HALF_ROAD, HALF_ROAD, BLEND_Y)
+		_: mi = _field_mesh(-end, -near, -HALF_ROAD, HALF_ROAD, BLEND_Y)
+	mi.name = "DirtBlend_" + arm
 	return mi
 
 
@@ -619,52 +678,21 @@ func _build_quadrant_sidewalks() -> void:
 		var ew_dirt := _is_dirt_arm(ew_side)
 
 		if is_rural or is_highway or ns_dirt or ew_dirt:
-			# Rural / highway / dirt road: natural roadside terrain and shoulders (обочины).
-			# NO raised concrete sidewalks (0.16m) and NO granite/concrete curbs!
-			if rounded:
-				var paving := PackedVector2Array([Vector2(HALF_ROAD, HALF_ROAD)])
-				for i in range(16, -1, -1):
-					var angle := PI + PI * 0.5 * float(i) / 16.0
-					paving.append(Vector2(tangent, tangent) + Vector2(cos(angle), sin(angle)) * CORNER_RADIUS)
-				var corner_mat := dirt_mat if (ns_dirt or ew_dirt) else asphalt_mat
-				_add_polygon(paving, corner, 0.001, corner_mat, ground_root)
-
-			# Shoulder strips along the open arms:
-			# Along dirt arms, the surface is natural unpaved dirt/grass.
-			# Along paved rural highway arms, an unpaved gravel/dirt shoulder (обочина) of width SIDEWALK_WIDTH.
-			# Shoulders start where the corner patch ends (outer > tangent): coplanar
-			# overlapping quads of different materials flicker on phone depth buffers.
-			var ns_end := ROAD_EXTENT if ns_open else outer
-			var ns_shoulder_len := ns_end - outer
-			if ns_open and ns_shoulder_len > 0.1:
-				var ns_shoulder_mat := grass_mat if ns_dirt else dirt_mat
-				var ns_shoulder := _quad(Vector2(SIDEWALK_WIDTH, ns_shoulder_len), ns_shoulder_mat)
-				ns_shoulder.position = Vector3(sx * (HALF_ROAD + SIDEWALK_WIDTH * 0.5), 0.001, sz * (outer + ns_shoulder_len * 0.5))
-				ground_root.add_child(ns_shoulder)
-
-			var ew_end := ROAD_EXTENT if ew_open else outer
-			var ew_shoulder_len := ew_end - outer
-			if ew_open and ew_shoulder_len > 0.1:
-				var ew_shoulder_mat := grass_mat if ew_dirt else dirt_mat
-				var ew_shoulder := _quad(Vector2(ew_shoulder_len, SIDEWALK_WIDTH), ew_shoulder_mat)
-				ew_shoulder.position = Vector3(sx * (outer + ew_shoulder_len * 0.5), 0.001, sz * (HALF_ROAD + SIDEWALK_WIDTH * 0.5))
-				ground_root.add_child(ew_shoulder)
-
-			# Flat corner ground outside the fillet
-			var corner_ground := PackedVector2Array()
-			if rounded:
-				for i in 17:
-					var angle := PI + PI * 0.5 * float(i) / 16.0
-					corner_ground.append(Vector2(tangent, tangent) + Vector2(cos(angle), sin(angle)) * CORNER_RADIUS)
-			else:
-				corner_ground.append(Vector2(HALF_ROAD, HALF_ROAD))
-			corner_ground.append(Vector2(outer, HALF_ROAD))
-			corner_ground.append(Vector2(outer, outer))
-			corner_ground.append(Vector2(HALF_ROAD, outer))
-			# The corner continues the shoulders: a paved arm has a dirt shoulder, only two
-			# unpaved arms meet on grass.
-			var patch_mat := grass_mat if (ns_dirt and ew_dirt) else dirt_mat
-			_add_polygon(corner_ground, corner, 0.001, patch_mat, ground_root)
+			# Rural / highway / dirt road: natural roadside terrain and shoulders (обочины),
+			# no raised sidewalks or kerbs. Corner and shoulders come from one soft field.
+			var reach := outer + GRASS_FADE + 0.6
+			var lo := HALF_ROAD
+			var corner_mesh := _field_mesh(minf(sx * lo, sx * reach), maxf(sx * lo, sx * reach), minf(sz * lo, sz * reach), maxf(sz * lo, sz * reach), GROUND_Y)
+			corner_mesh.name = "RuralCorner"
+			ground_root.add_child(corner_mesh)
+			if ns_open:
+				var shoulder := _field_mesh(minf(sx * lo, sx * reach), maxf(sx * lo, sx * reach), minf(sz * reach, sz * ROAD_EXTENT), maxf(sz * reach, sz * ROAD_EXTENT), GROUND_Y, 30.0)
+				shoulder.name = "RuralShoulder"
+				ground_root.add_child(shoulder)
+			if ew_open:
+				var shoulder := _field_mesh(minf(sx * reach, sx * ROAD_EXTENT), maxf(sx * reach, sx * ROAD_EXTENT), minf(sz * lo, sz * reach), maxf(sz * lo, sz * reach), GROUND_Y, 30.0)
+				shoulder.name = "RuralShoulder"
+				ground_root.add_child(shoulder)
 
 			# Level grass field across the quadrant (at ground level 0.002, not raised to 0.15m)
 			var lawn := _quad(Vector2(extent, extent), grass_mat)
