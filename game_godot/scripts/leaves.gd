@@ -87,6 +87,10 @@ func step(delta: float, centre: Vector3) -> void:
 		# Leaves left far behind the moving view start again above it.
 		if absf(leaf.x - centre.x) > SPAN_X * 0.72 or absf(leaf.z - centre.z) > SPAN_Z * 0.72:
 			_spawn(leaf, centre, false)
+		# A respawned leaf grows in instead of appearing whole in mid-air, and shrinks
+		# away before recycling at the span's edge, which can still be in view.
+		var reach := maxf(absf(leaf.x - centre.x) / SPAN_X, absf(leaf.z - centre.z) / SPAN_Z)
+		fade *= smoothstep(0.0, 0.6, leaf.time) * (1.0 - smoothstep(0.6, 0.72, reach))
 		var s: float = leaf.scale * maxf(0.0001, fade)
 		multimesh.set_instance_transform(i, Transform3D(basis.scaled(Vector3(s, s, s)), Vector3(leaf.x, leaf.y, leaf.z)))
 		multimesh.set_instance_color(i, leaf.color)
