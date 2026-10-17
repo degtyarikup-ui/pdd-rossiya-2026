@@ -277,13 +277,13 @@ func _is_highway_junction() -> bool:
 
 
 func _is_dirt_arm(arm: String) -> bool:
-	if not _is_rural_junction():
-		return false
-	var dirt_arms: Array = _scenario.get("dirtArms", [])
-	if dirt_arms.has(arm):
+	var dirt_arms: Variant = _scenario.get("dirtArms", null)
+	if dirt_arms is Array and dirt_arms.has(arm):
 		return true
-	var single_dirt := str(_scenario.get("dirtArm", ""))
-	if single_dirt == arm:
+	var single_dirt: Variant = _scenario.get("dirtArm", null)
+	if single_dirt is Array and single_dirt.has(arm):
+		return true
+	if single_dirt is String and single_dirt == arm:
 		return true
 	var sid := str(_scenario.get("id", ""))
 	if sid == "cross_junction_right_2_3_2" and arm == "east":
@@ -416,6 +416,43 @@ func _add_closed_arm_building(parent: Node3D, prop: String, local_pos: Vector3, 
 
 
 func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
+	if _is_rural_junction() or _is_highway_junction():
+		# In rural / highway T-junction, no concrete city sidewalk or curb.
+		# Natural grass lawn extends right from HALF_ROAD, level with the road.
+		var rural_lawn := _quad(Vector2(ROAD_WIDTH, arm_len), grass_mat)
+		var rural_lawn_mid := HALF_ROAD + arm_len * 0.5
+		var rot_y := 0.0
+		match arm:
+			"south":
+				rural_lawn.position = Vector3(0, 0.002, rural_lawn_mid)
+				rot_y = 0.0
+			"north":
+				rural_lawn.position = Vector3(0, 0.002, -rural_lawn_mid)
+				rot_y = PI
+			"east":
+				rural_lawn.position = Vector3(rural_lawn_mid, 0.002, 0)
+				rural_lawn.rotation.y = PI * 0.5
+				rot_y = PI * 0.5
+			"west":
+				rural_lawn.position = Vector3(-rural_lawn_mid, 0.002, 0)
+				rural_lawn.rotation.y = PI * 0.5
+				rot_y = -PI * 0.5
+		ground_root.add_child(rural_lawn)
+
+		var block_root := Node3D.new()
+		block_root.name = "ClosedBlock_" + arm
+		closed_root.add_child(block_root)
+
+		var d_offset := HALF_ROAD + 4.0
+		_add_closed_arm_building(block_root, "buildings/home_0", Vector3(0.0, 0.02, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), rot_y)
+		_add_closed_arm_building(block_root, "buildings/home_3", Vector3(-12.0, 0.02, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#E8CFA8"), rot_y)
+		_add_closed_arm_building(block_root, "buildings/home_5", Vector3(12.0, 0.02, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#F3E3C3"), rot_y)
+		_add_closed_arm_building(block_root, "buildings/home_1", Vector3(-8.5, 0.02, d_offset + 16.0), PI, Vector3.ONE * 0.95, Color("#C6CCD8"), rot_y)
+		_add_closed_arm_building(block_root, "buildings/home_4", Vector3(8.5, 0.02, d_offset + 16.0), PI, Vector3.ONE * 0.95, Color("#DDE1EA"), rot_y)
+		_add_closed_arm_building(block_root, "trees/pine_0", Vector3(-10.0, 0.02, d_offset + 36.0), 0.0, Vector3.ONE * 2.2, Color("#2D4D2E"), rot_y)
+		_add_closed_arm_building(block_root, "trees/birch_0", Vector3(10.0, 0.02, d_offset + 36.0), 0.0, Vector3.ONE * 2.0, Color("#C8E8B2"), rot_y)
+		return
+
 	var crossing_active := _has_crossing(arm)
 	var cross_clearance := ZEBRA_END + 0.6
 	var base_d := cross_clearance if crossing_active else HALF_ROAD
@@ -530,15 +567,71 @@ func _build_quadrant_sidewalks() -> void:
 	var outer := HALF_ROAD + SIDEWALK_WIDTH
 	var tangent := HALF_ROAD + CORNER_RADIUS
 	var extent := ROAD_EXTENT - outer
+	var is_rural := _is_rural_junction()
+	var is_highway := _is_highway_junction()
+
 	for corner: Vector2 in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
 		var sx := corner.x
 		var sz := corner.y
-		var ns_open := ("south" if sz > 0 else "north") != closed_side
-		var ew_open := ("east" if sx > 0 else "west") != closed_side
+		var ns_side := "south" if sz > 0 else "north"
+		var ew_side := "east" if sx > 0 else "west"
+		var ns_open := ns_side != closed_side
+		var ew_open := ew_side != closed_side
 		var rounded := ns_open and ew_open
+		var ns_dirt := _is_dirt_arm(ns_side)
+		var ew_dirt := _is_dirt_arm(ew_side)
 
-		# Sidewalks meet at a real rounded corner, with flush lowered exits
-		# across the complete zebra. No continuous kerb cuts through walkers.
+		if is_rural or is_highway or ns_dirt or ew_dirt:
+			# Rural / highway / dirt road: natural roadside terrain and shoulders (обочины).
+			# NO raised concrete sidewalks (0.16m) and NO granite/concrete curbs!
+			if rounded:
+				var paving := PackedVector2Array([Vector2(HALF_ROAD, HALF_ROAD)])
+				for i in range(16, -1, -1):
+					var angle := PI + PI * 0.5 * float(i) / 16.0
+					paving.append(Vector2(tangent, tangent) + Vector2(cos(angle), sin(angle)) * CORNER_RADIUS)
+				var corner_mat := dirt_mat if (ns_dirt or ew_dirt) else asphalt_mat
+				_add_polygon(paving, corner, 0.001, corner_mat, ground_root)
+
+			# Shoulder strips along the open arms:
+			# Along dirt arms, the surface is natural unpaved dirt/grass.
+			# Along paved rural highway arms, an unpaved gravel/dirt shoulder (обочина) of width SIDEWALK_WIDTH.
+			var ns_end := ROAD_EXTENT if ns_open else tangent
+			var ns_shoulder_len := ns_end - tangent
+			if ns_open and ns_shoulder_len > 0.1:
+				var ns_shoulder_mat := grass_mat if ns_dirt else dirt_mat
+				var ns_shoulder := _quad(Vector2(SIDEWALK_WIDTH, ns_shoulder_len), ns_shoulder_mat)
+				ns_shoulder.position = Vector3(sx * (HALF_ROAD + SIDEWALK_WIDTH * 0.5), 0.001, sz * (tangent + ns_shoulder_len * 0.5))
+				ground_root.add_child(ns_shoulder)
+
+			var ew_end := ROAD_EXTENT if ew_open else tangent
+			var ew_shoulder_len := ew_end - tangent
+			if ew_open and ew_shoulder_len > 0.1:
+				var ew_shoulder_mat := grass_mat if ew_dirt else dirt_mat
+				var ew_shoulder := _quad(Vector2(ew_shoulder_len, SIDEWALK_WIDTH), ew_shoulder_mat)
+				ew_shoulder.position = Vector3(sx * (tangent + ew_shoulder_len * 0.5), 0.001, sz * (HALF_ROAD + SIDEWALK_WIDTH * 0.5))
+				ground_root.add_child(ew_shoulder)
+
+			# Flat corner ground outside the fillet
+			var corner_ground := PackedVector2Array()
+			if rounded:
+				for i in 17:
+					var angle := PI + PI * 0.5 * float(i) / 16.0
+					corner_ground.append(Vector2(tangent, tangent) + Vector2(cos(angle), sin(angle)) * CORNER_RADIUS)
+			else:
+				corner_ground.append(Vector2(HALF_ROAD, HALF_ROAD))
+			corner_ground.append(Vector2(outer, HALF_ROAD))
+			corner_ground.append(Vector2(outer, outer))
+			corner_ground.append(Vector2(HALF_ROAD, outer))
+			var patch_mat := dirt_mat if (ns_dirt or ew_dirt) else grass_mat
+			_add_polygon(corner_ground, corner, 0.001, patch_mat, ground_root)
+
+			# Level grass field across the quadrant (at ground level 0.002, not raised to 0.15m)
+			var lawn := _quad(Vector2(extent, extent), grass_mat)
+			lawn.position = Vector3(sx * (outer + extent * 0.5), 0.002, sz * (outer + extent * 0.5))
+			ground_root.add_child(lawn)
+			continue
+
+		# --- Standard Urban / Suburban: Elevated concrete sidewalks and curbs ---
 		var boundary := PackedVector2Array()
 		if rounded:
 			for i in 17:
@@ -572,8 +665,8 @@ func _build_quadrant_sidewalks() -> void:
 		_add_sidewalk_patch(PackedVector2Array([Vector2(outer, HALF_ROAD), Vector2(ROAD_EXTENT, HALF_ROAD), Vector2(ROAD_EXTENT, outer), Vector2(outer, outer)]), corner)
 
 		var curb_start := tangent if rounded else HALF_ROAD
-		var ns_cross := _has_crossing("south" if sz > 0 else "north")
-		var ew_cross := _has_crossing("east" if sx > 0 else "west")
+		var ns_cross := _has_crossing(ns_side)
+		var ew_cross := _has_crossing(ew_side)
 		var cross_clearance := ZEBRA_END + 0.6
 		if ns_open or ns_cross:
 			var ns_end := ROAD_EXTENT if ns_open else cross_clearance
@@ -734,6 +827,10 @@ func _build_arm_markings(arm: String) -> void:
 		"west":
 			arm_root.rotation.y = -PI * 0.5
 
+	# On unpaved dirt / gravel arms, there is ZERO painted road marking!
+	if _is_dirt_arm(arm):
+		return
+
 	if arm != closed_side:
 		# 1.12 is required by STOP/signal control, never by an equal junction
 		# or by a yield sign alone (GOST R 52289, 6.2.14).
@@ -756,21 +853,37 @@ func _build_arm_markings(arm: String) -> void:
 			yield_line.name = "YieldLine"
 			arm_root.add_child(yield_line)
 
-		# 1.3 separates the four-lane road's opposing directions. Both
-		# carriageway halves receive their own 1.5 lane divider.
 		var line_start := ZEBRA_END + 0.25 if _has_crossing(arm) else HALF_ROAD + 0.8
 		var line_len := ROAD_EXTENT - line_start
-		for offset in [-0.12, 0.12]:
-			var solid := _quad(Vector2(0.12, line_len), marking_mat)
-			solid.position = Vector3(offset, 0.022, line_start + line_len * 0.5)
+
+		if _is_rural_junction():
+			# On rural 2-lane asphalt highway: single clean centerline (solid 1.1 near junction, dashed 1.5 further out).
+			# NO 4-lane city double solid lines, NO side lane dividers!
+			var solid_len := minf(line_len, 24.0)
+			var solid := _quad(Vector2(0.12, solid_len), marking_mat)
+			solid.position = Vector3(0.0, 0.022, line_start + solid_len * 0.5)
 			arm_root.add_child(solid)
-		var z := line_start
-		while z + 2.0 < ROAD_EXTENT:
-			for x in [-LANE_W, LANE_W]:
+
+			var dash_start := line_start + solid_len + 2.0
+			var z := dash_start
+			while z + 2.0 < ROAD_EXTENT:
 				var dash := _quad(Vector2(0.12, 2.0), marking_mat)
-				dash.position = Vector3(x, 0.022, z + 1.0)
+				dash.position = Vector3(0.0, 0.022, z + 1.0)
 				arm_root.add_child(dash)
-			z += 6.0
+				z += 6.0
+		else:
+			# Standard urban/suburban 4-lane street: 1.3 double solid center and 1.5 lane dividers
+			for offset in [-0.12, 0.12]:
+				var solid := _quad(Vector2(0.12, line_len), marking_mat)
+				solid.position = Vector3(offset, 0.022, line_start + line_len * 0.5)
+				arm_root.add_child(solid)
+			var z := line_start
+			while z + 2.0 < ROAD_EXTENT:
+				for x in [-LANE_W, LANE_W]:
+					var dash := _quad(Vector2(0.12, 2.0), marking_mat)
+					dash.position = Vector3(x, 0.022, z + 1.0)
+					arm_root.add_child(dash)
+				z += 6.0
 	if _has_crossing(arm): _build_crossing(arm_root)
 
 
@@ -873,9 +986,9 @@ func _build_street_lamps() -> void:
 					var arm_ns := "south" if end > 0 else "north"
 					var arm_ew := "east" if end > 0 else "west"
 					if arm_ns != closed_side and not _is_dirt_arm(arm_ns):
-						_put_prop("street/lamp", Vector3(side * offset, SIDEWALK_Y, end * d), PI * 0.5 if side < 0 else -PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, true)
+						_put_prop("street/lamp", Vector3(side * offset, 0.02, end * d), PI * 0.5 if side < 0 else -PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, true)
 					if arm_ew != closed_side and not _is_dirt_arm(arm_ew):
-						_put_prop("street/lamp", Vector3(end * d, SIDEWALK_Y, side * offset), PI if side < 0 else 0.0, Vector3.ONE * 0.95, Color.WHITE, true)
+						_put_prop("street/lamp", Vector3(end * d, 0.02, side * offset), PI if side < 0 else 0.0, Vector3.ONE * 0.95, Color.WHITE, true)
 		return
 
 	if _is_highway_junction():
@@ -1060,38 +1173,38 @@ func _build_rural_scenery_decor() -> void:
 	# NO high-rise towers or multi-story apartment blocks anywhere!
 
 	# North-West Quadrant (-X, -Z)
-	_put_prop("buildings/home_0", Vector3(-26.0, 0.15, -26.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/home_3", Vector3(-42.0, 0.15, -24.0), PI * 0.5, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/home_1", Vector3(-24.0, 0.15, -42.0), 0.0, Vector3.ONE * 0.95, Color("#DDE1EA"), true)
-	_put_prop("buildings/home_5", Vector3(-42.0, 0.15, -42.0), PI * 0.25, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
-	_put_prop("buildings/home_2", Vector3(-24.0, 0.15, -58.0), 0.0, Vector3.ONE * 0.95, Color("#B5675A"), true)
-	_put_prop("buildings/home_4", Vector3(-42.0, 0.15, -58.0), PI * 0.5, Vector3.ONE * 0.95, Color("#DDE1EA"), true)
+	_put_prop("buildings/home_0", Vector3(-26.0, 0.02, -26.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
+	_put_prop("buildings/home_3", Vector3(-42.0, 0.02, -24.0), PI * 0.5, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
+	_put_prop("buildings/home_1", Vector3(-24.0, 0.02, -42.0), 0.0, Vector3.ONE * 0.95, Color("#DDE1EA"), true)
+	_put_prop("buildings/home_5", Vector3(-42.0, 0.02, -42.0), PI * 0.25, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
+	_put_prop("buildings/home_2", Vector3(-24.0, 0.02, -58.0), 0.0, Vector3.ONE * 0.95, Color("#B5675A"), true)
+	_put_prop("buildings/home_4", Vector3(-42.0, 0.02, -58.0), PI * 0.5, Vector3.ONE * 0.95, Color("#DDE1EA"), true)
 
 	# North-East Quadrant (+X, -Z)
-	_put_prop("buildings/home_1", Vector3(26.0, 0.15, -26.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/home_4", Vector3(42.0, 0.15, -24.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/home_2", Vector3(24.0, 0.15, -42.0), 0.0, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
-	_put_prop("buildings/home_0", Vector3(42.0, 0.15, -42.0), -PI * 0.25, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/home_3", Vector3(24.0, 0.15, -58.0), 0.0, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/home_5", Vector3(42.0, 0.15, -58.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
+	_put_prop("buildings/home_1", Vector3(26.0, 0.02, -26.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
+	_put_prop("buildings/home_4", Vector3(42.0, 0.02, -24.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
+	_put_prop("buildings/home_2", Vector3(24.0, 0.02, -42.0), 0.0, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
+	_put_prop("buildings/home_0", Vector3(42.0, 0.02, -42.0), -PI * 0.25, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
+	_put_prop("buildings/home_3", Vector3(24.0, 0.02, -58.0), 0.0, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
+	_put_prop("buildings/home_5", Vector3(42.0, 0.02, -58.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
 	# Village shop / kiosk at NE corner
-	_put_prop("street/kiosk_0", Vector3(20.0, 0.16, -18.0), -PI * 0.25, Vector3.ONE * 0.95, Color.WHITE, true)
+	_put_prop("street/kiosk_0", Vector3(20.0, 0.02, -18.0), -PI * 0.25, Vector3.ONE * 0.95, Color.WHITE, true)
 
 	# South-West Quadrant (-X, +Z)
-	_put_prop("buildings/home_2", Vector3(-26.0, 0.15, 26.0), PI * 0.5, Vector3.ONE * 0.95, Color("#B5675A"), true)
-	_put_prop("buildings/home_5", Vector3(-42.0, 0.15, 24.0), PI * 0.5, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
-	_put_prop("buildings/home_0", Vector3(-24.0, 0.15, 42.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/home_3", Vector3(-42.0, 0.15, 42.0), PI * 0.25, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/home_1", Vector3(-24.0, 0.15, 58.0), PI, Vector3.ONE * 0.95, Color("#DDE1EA"), true)
-	_put_prop("buildings/home_4", Vector3(-42.0, 0.15, 58.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
+	_put_prop("buildings/home_2", Vector3(-26.0, 0.02, 26.0), PI * 0.5, Vector3.ONE * 0.95, Color("#B5675A"), true)
+	_put_prop("buildings/home_5", Vector3(-42.0, 0.02, 24.0), PI * 0.5, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
+	_put_prop("buildings/home_0", Vector3(-24.0, 0.02, 42.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
+	_put_prop("buildings/home_3", Vector3(-42.0, 0.02, 42.0), PI * 0.25, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
+	_put_prop("buildings/home_1", Vector3(-24.0, 0.02, 58.0), PI, Vector3.ONE * 0.95, Color("#DDE1EA"), true)
+	_put_prop("buildings/home_4", Vector3(-42.0, 0.02, 58.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
 
 	# South-East Quadrant (+X, +Z)
-	_put_prop("buildings/home_4", Vector3(26.0, 0.15, 26.0), -PI * 0.75, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/home_1", Vector3(42.0, 0.15, 24.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/home_3", Vector3(24.0, 0.15, 42.0), 0.0, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
-	_put_prop("buildings/home_2", Vector3(42.0, 0.15, 42.0), -PI * 0.25, Vector3.ONE * 0.95, Color("#B5675A"), true)
-	_put_prop("buildings/home_5", Vector3(24.0, 0.15, 58.0), PI, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/home_0", Vector3(42.0, 0.15, 58.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
+	_put_prop("buildings/home_4", Vector3(26.0, 0.02, 26.0), -PI * 0.75, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
+	_put_prop("buildings/home_1", Vector3(42.0, 0.02, 24.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
+	_put_prop("buildings/home_3", Vector3(24.0, 0.02, 42.0), 0.0, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
+	_put_prop("buildings/home_2", Vector3(42.0, 0.02, 42.0), -PI * 0.25, Vector3.ONE * 0.95, Color("#B5675A"), true)
+	_put_prop("buildings/home_5", Vector3(24.0, 0.02, 58.0), PI, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
+	_put_prop("buildings/home_0", Vector3(42.0, 0.02, 58.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
 
 	# --- 2. Village Houses along Avenues (replaces city blocks/towers with village cottages) ---
 	var house_models := ["buildings/home_0", "buildings/home_1", "buildings/home_2", "buildings/home_3", "buildings/home_4", "buildings/home_5"]
@@ -1105,8 +1218,8 @@ func _build_rural_scenery_decor() -> void:
 			var hc_l: Color = house_colors[idx % house_colors.size()]
 			var hm_r: String = house_models[(idx + 2) % house_models.size()]
 			var hc_r: Color = house_colors[(idx + 2) % house_colors.size()]
-			_put_prop(hm_l, Vector3(-24.0, 0.15, -d), PI * 0.5, Vector3.ONE * 0.95, hc_l, true)
-			_put_prop(hm_r, Vector3(24.0, 0.15, -d), -PI * 0.5, Vector3.ONE * 0.95, hc_r, true)
+			_put_prop(hm_l, Vector3(-24.0, 0.02, -d), PI * 0.5, Vector3.ONE * 0.95, hc_l, true)
+			_put_prop(hm_r, Vector3(24.0, 0.02, -d), -PI * 0.5, Vector3.ONE * 0.95, hc_r, true)
 
 	# South Avenue (+Z)
 	if "south" != closed_side:
@@ -1116,8 +1229,8 @@ func _build_rural_scenery_decor() -> void:
 			var hc_l: Color = house_colors[(idx + 1) % house_colors.size()]
 			var hm_r: String = house_models[(idx + 3) % house_models.size()]
 			var hc_r: Color = house_colors[(idx + 3) % house_colors.size()]
-			_put_prop(hm_l, Vector3(-24.0, 0.15, d), PI * 0.5, Vector3.ONE * 0.95, hc_l, true)
-			_put_prop(hm_r, Vector3(24.0, 0.15, d), -PI * 0.5, Vector3.ONE * 0.95, hc_r, true)
+			_put_prop(hm_l, Vector3(-24.0, 0.02, d), PI * 0.5, Vector3.ONE * 0.95, hc_l, true)
+			_put_prop(hm_r, Vector3(24.0, 0.02, d), -PI * 0.5, Vector3.ONE * 0.95, hc_r, true)
 
 	# East Avenue (+X)
 	if "east" != closed_side:
@@ -1127,8 +1240,8 @@ func _build_rural_scenery_decor() -> void:
 			var hc_l: Color = house_colors[(idx + 2) % house_colors.size()]
 			var hm_r: String = house_models[(idx + 4) % house_models.size()]
 			var hc_r: Color = house_colors[(idx + 4) % house_colors.size()]
-			_put_prop(hm_l, Vector3(d, 0.15, -24.0), 0.0, Vector3.ONE * 0.95, hc_l, true)
-			_put_prop(hm_r, Vector3(d, 0.15, 24.0), PI, Vector3.ONE * 0.95, hc_r, true)
+			_put_prop(hm_l, Vector3(d, 0.02, -24.0), 0.0, Vector3.ONE * 0.95, hc_l, true)
+			_put_prop(hm_r, Vector3(d, 0.02, 24.0), PI, Vector3.ONE * 0.95, hc_r, true)
 
 	# West Avenue (-X)
 	if "west" != closed_side:
@@ -1138,8 +1251,8 @@ func _build_rural_scenery_decor() -> void:
 			var hc_l: Color = house_colors[(idx + 3) % house_colors.size()]
 			var hm_r: String = house_models[(idx + 5) % house_models.size()]
 			var hc_r: Color = house_colors[(idx + 5) % house_colors.size()]
-			_put_prop(hm_l, Vector3(-d, 0.15, -24.0), 0.0, Vector3.ONE * 0.95, hc_l, true)
-			_put_prop(hm_r, Vector3(-d, 0.15, 24.0), PI, Vector3.ONE * 0.95, hc_r, true)
+			_put_prop(hm_l, Vector3(-d, 0.02, -24.0), 0.0, Vector3.ONE * 0.95, hc_l, true)
+			_put_prop(hm_r, Vector3(-d, 0.02, 24.0), PI, Vector3.ONE * 0.95, hc_r, true)
 
 	# --- 3. Dense Forest Horizon (replaces skyscraper vista with Russian taiga forest skyline) ---
 	_build_rural_forest_skyline("north")
@@ -1148,43 +1261,44 @@ func _build_rural_scenery_decor() -> void:
 	_build_rural_forest_skyline("west")
 
 	# --- 4. Village Wooden Fences ---
+	var fence_offset := HALF_ROAD + 2.4
 	for c in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
 		var ns_side := "south" if c.y > 0 else "north"
 		var ew_side := "east" if c.x > 0 else "west"
 		# Along highway (NS)
 		if not _is_dirt_arm(ns_side) and ns_side != closed_side:
-			_put_prop("street/fence_14", Vector3(c.x * (HALF_ROAD + 1.2), 0.16, c.y * 22.0), 0.0, Vector3.ONE * 0.95, Color.WHITE, false)
-			_put_prop("street/fence_14", Vector3(c.x * (HALF_ROAD + 1.2), 0.16, c.y * 34.0), 0.0, Vector3.ONE * 0.95, Color.WHITE, false)
+			_put_prop("street/fence_14", Vector3(c.x * fence_offset, 0.02, c.y * 22.0), 0.0, Vector3.ONE * 0.95, Color.WHITE, false)
+			_put_prop("street/fence_14", Vector3(c.x * fence_offset, 0.02, c.y * 34.0), 0.0, Vector3.ONE * 0.95, Color.WHITE, false)
 		# Along dirt / side road (EW)
 		if ew_side != closed_side:
-			_put_prop("street/fence_14", Vector3(c.x * 22.0, 0.16, c.y * (HALF_ROAD + 1.2)), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, false)
-			_put_prop("street/fence_14", Vector3(c.x * 34.0, 0.16, c.y * (HALF_ROAD + 1.2)), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, false)
+			_put_prop("street/fence_14", Vector3(c.x * 22.0, 0.02, c.y * fence_offset), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, false)
+			_put_prop("street/fence_14", Vector3(c.x * 34.0, 0.02, c.y * fence_offset), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, false)
 
 	# --- 5. Rich Russian Countryside Trees & Greenery ---
 	var tree_verge := HALF_ROAD + 6.3
 	for dist in [28.0, 48.0, 68.0, 92.0, 116.0, 140.0, 168.0, 196.0, 224.0, 252.0, 280.0, 308.0]:
 		for sx in [-1, 1]:
-			_put_prop("trees/birch_0", Vector3(sx * tree_verge, 0.16, -dist), 0.4, Vector3.ONE * 1.1, birch_color, true)
-			_put_prop("trees/pine_0", Vector3(sx * tree_verge, 0.16, dist), -0.3, Vector3.ONE * 1.2, pine_color, true)
+			_put_prop("trees/birch_0", Vector3(sx * tree_verge, 0.02, -dist), 0.4, Vector3.ONE * 1.1, birch_color, true)
+			_put_prop("trees/pine_0", Vector3(sx * tree_verge, 0.02, dist), -0.3, Vector3.ONE * 1.2, pine_color, true)
 		for sz in [-1, 1]:
-			_put_prop("trees/pine_0", Vector3(-dist, 0.16, sz * tree_verge), PI * 0.5 + 0.2, Vector3.ONE * 1.2, pine_color, true)
-			_put_prop("trees/birch_0", Vector3(dist, 0.16, sz * tree_verge), -PI * 0.5 - 0.4, Vector3.ONE * 1.1, birch_color, true)
+			_put_prop("trees/pine_0", Vector3(-dist, 0.02, sz * tree_verge), PI * 0.5 + 0.2, Vector3.ONE * 1.2, pine_color, true)
+			_put_prop("trees/birch_0", Vector3(dist, 0.02, sz * tree_verge), -PI * 0.5 - 0.4, Vector3.ONE * 1.1, birch_color, true)
 
 	# Corner groves of tall pines and birches
-	_put_prop("trees/pine_0", Vector3(-14.0, 0.15, -25.5), 0.3, Vector3.ONE * 1.4, pine_color, true)
-	_put_prop("trees/pine_0", Vector3(14.0, 0.15, -25.5), -0.5, Vector3.ONE * 1.4, pine_color, true)
-	_put_prop("trees/pine_0", Vector3(-14.0, 0.15, 25.5), 0.8, Vector3.ONE * 1.4, pine_color, true)
-	_put_prop("trees/pine_0", Vector3(14.0, 0.15, 25.5), 0.8, Vector3.ONE * 1.4, pine_color, true)
-	_put_prop("trees/birch_0", Vector3(-25.5, 0.15, -14.0), 1.2, Vector3.ONE * 1.3, birch_color, true)
-	_put_prop("trees/birch_0", Vector3(25.5, 0.15, 14.0), -0.7, Vector3.ONE * 1.3, birch_color, true)
+	_put_prop("trees/pine_0", Vector3(-14.0, 0.02, -25.5), 0.3, Vector3.ONE * 1.4, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(14.0, 0.02, -25.5), -0.5, Vector3.ONE * 1.4, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(-14.0, 0.02, 25.5), 0.8, Vector3.ONE * 1.4, pine_color, true)
+	_put_prop("trees/pine_0", Vector3(14.0, 0.02, 25.5), 0.8, Vector3.ONE * 1.4, pine_color, true)
+	_put_prop("trees/birch_0", Vector3(-25.5, 0.02, -14.0), 1.2, Vector3.ONE * 1.3, birch_color, true)
+	_put_prop("trees/birch_0", Vector3(25.5, 0.02, 14.0), -0.7, Vector3.ONE * 1.3, birch_color, true)
 
 	# Shrubs and lilac bushes
 	for sx in [-1, 1]:
 		for b_dist in [22.0, 42.0, 66.0, 90.0, 118.0, 150.0, 186.0, 226.0, 268.0, 310.0]:
-			_put_prop("street/bush", Vector3(sx * 12.2, 0.15, b_dist), 0.0, Vector3.ONE * 0.9, bush_color, false)
-			_put_prop("street/bush", Vector3(sx * 12.2, 0.15, -b_dist), 0.0, Vector3.ONE * 0.9, bush_color, false)
-			_put_prop("street/bush", Vector3(b_dist, 0.15, sx * 12.2), PI * 0.5, Vector3.ONE * 0.9, bush_color, false)
-			_put_prop("street/bush", Vector3(-b_dist, 0.15, sx * 12.2), -PI * 0.5, Vector3.ONE * 0.9, bush_color, false)
+			_put_prop("street/bush", Vector3(sx * 12.2, 0.02, b_dist), 0.0, Vector3.ONE * 0.9, bush_color, false)
+			_put_prop("street/bush", Vector3(sx * 12.2, 0.02, -b_dist), 0.0, Vector3.ONE * 0.9, bush_color, false)
+			_put_prop("street/bush", Vector3(b_dist, 0.02, sx * 12.2), PI * 0.5, Vector3.ONE * 0.9, bush_color, false)
+			_put_prop("street/bush", Vector3(-b_dist, 0.02, sx * 12.2), -PI * 0.5, Vector3.ONE * 0.9, bush_color, false)
 
 	_finish_pools()
 

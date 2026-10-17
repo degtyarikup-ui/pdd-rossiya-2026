@@ -78,8 +78,9 @@ func check_markings(junction: Node3D, scenario: Dictionary) -> void:
 			check(marking == null, str(scenario.id) + " closed approach has no crossing/markings")
 			continue
 		check(marking != null, str(scenario.id) + " open approach has markings")
+		var is_dirt: bool = bool(junction._is_dirt_arm(side))
 		var stop := marking.get_node_or_null("StopLine") as MeshInstance3D
-		var expected_stop: bool = junction._has_signal(side) or junction._has_sign(side, "2.5")
+		var expected_stop: bool = not is_dirt and (junction._has_signal(side) or junction._has_sign(side, "2.5"))
 		check((stop != null) == expected_stop, str(scenario.id) + " stop line only accompanies signal/STOP control")
 		if stop != null:
 			if junction._has_signal(side):
@@ -88,7 +89,8 @@ func check_markings(junction: Node3D, scenario: Dictionary) -> void:
 			else:
 				check(stop.position.z - Junction.HALF_ROAD <= 1.0, str(scenario.id) + " STOP line is at the intersecting carriageway")
 		var yield_line: Node3D = marking.get_node_or_null("YieldLine")
-		check((yield_line != null) == (not expected_stop and junction._has_sign(side, "2.4")), str(scenario.id) + " yield boundary uses triangles, not a stop line")
+		var expected_yield: bool = not is_dirt and not expected_stop and junction._has_sign(side, "2.4")
+		check((yield_line != null) == expected_yield, str(scenario.id) + " yield boundary uses triangles, not a stop line")
 		var stripe_count := 0
 		var cross_faces := 0
 		var overhead := 0
@@ -113,9 +115,16 @@ func check_markings(junction: Node3D, scenario: Dictionary) -> void:
 			var corner := Vector2(flank, 1 if side == "south" else -1) if side in ["south", "north"] else Vector2(1 if side == "east" else -1, flank)
 			var point := Vector2(Junction.HALF_ROAD, Junction.HALF_ROAD + Junction.CORNER_RADIUS) if side in ["south", "north"] else Vector2(Junction.HALF_ROAD + Junction.CORNER_RADIUS, Junction.HALF_ROAD)
 			var height := sidewalk_vertex_height(junction, point * corner)
-			check(is_equal_approx(height, 0.0 if crossing else Junction.SIDEWALK_Y), str(scenario.id) + " built sidewalk is lowered only at the question crossing")
 			var curb_point := Vector3(corner.x * (Junction.HALF_ROAD if side in ["south", "north"] else 10.0), 0.08, corner.y * (10.0 if side in ["south", "north"] else Junction.HALF_ROAD))
-			check(curb_covers(junction, curb_point) != crossing, str(scenario.id) + " built curb is continuous on approaches without a crossing")
+			var corner_ns := "south" if corner.y > 0 else "north"
+			var corner_ew := "east" if corner.x > 0 else "west"
+			var is_rural_or_dirt: bool = bool(junction._is_rural_junction() or junction._is_highway_junction() or junction._is_dirt_arm(corner_ns) or junction._is_dirt_arm(corner_ew))
+			if is_rural_or_dirt:
+				check(height < 0.0, str(scenario.id) + " rural/dirt approach has no elevated concrete sidewalk")
+				check(not curb_covers(junction, curb_point), str(scenario.id) + " rural/dirt approach has no granite curb")
+			else:
+				check(is_equal_approx(height, 0.0 if crossing else Junction.SIDEWALK_Y), str(scenario.id) + " built sidewalk is lowered only at the question crossing")
+				check(curb_covers(junction, curb_point) != crossing, str(scenario.id) + " built curb is continuous on approaches without a crossing")
 
 func sidewalk_vertex_height(junction: Node3D, point: Vector2) -> float:
 	for mesh: MeshInstance3D in junction.ground_root.get_children():
