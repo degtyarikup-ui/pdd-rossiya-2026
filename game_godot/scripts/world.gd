@@ -2967,6 +2967,17 @@ func _update_walkers(delta: float) -> void:
 		if w.get("walk_plan_revision", walker_surface_revision) != walker_surface_revision:
 			w.erase("walk_plan")
 		var supported := _walk_clear(at)
+		if not supported and not w.get("knocked_down", false):
+			# The street under the person changed width (a 4-lane first scene widens the
+			# 2-lane start street): step back onto its pavement. Under the loader or out of
+			# view this is unseen; a person left standing on the carriageway is worse.
+			var seat := Vector3(initial_x, 0, w.z)
+			if _walk_clear(seat) and (loader != null or not _walker_visible(at) or road_supports(at)):
+				at = seat
+				before = seat
+				w.x = seat.x
+				w.erase("walk_plan")
+				supported = true
 		# A previously hidden slot can gain pavement after a scene change. Admit
 		# it only when there is space, just as for recycling and quality changes.
 		var admitted: bool = w.get("alive", false)
