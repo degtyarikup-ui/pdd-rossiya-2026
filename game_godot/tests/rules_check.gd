@@ -46,7 +46,13 @@ func _initialize() -> void:
 	_junction_rules()
 	_events()
 	_drop_junction()
+	# Match Host.exit: close speech/workers before freeing their owning scene,
+	# then let the audio mixer release streaming MP3 playbacks on a real tick.
+	world._exiting = true
+	world.voice.shutdown()
+	await create_timer(0.16).timeout
 	world.queue_free()
+	await create_timer(0.16).timeout
 	print("rules check: %d checks, %d failed, %d skipped" % [checks, failed, skipped])
 	print("PASS" if failed == 0 else "FAIL")
 	quit(1 if failed else 0)
