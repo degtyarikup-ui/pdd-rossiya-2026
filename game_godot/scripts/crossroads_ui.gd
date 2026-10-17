@@ -70,6 +70,9 @@ var _collision_game_over_btn: Button
 
 var _results: MiniGameResults
 var _modal_open := false
+var _notice: PanelContainer
+var _notice_tween: Tween
+var _notice_label: Label
 
 
 func _init() -> void:
@@ -77,6 +80,7 @@ func _init() -> void:
 	anchor_bottom = 0.0
 	mouse_filter = MOUSE_FILTER_IGNORE
 	_build_top_bar()
+	_build_notice()
 	_build_reset_camera_btn()
 	_build_collision_modal()
 	_build_result_dialog()
@@ -108,6 +112,8 @@ func _layout() -> void:
 	_fit_hud(top_width - CHROME - 8.0)
 	_top_bar.size = Vector2(top_width, _top_bar.get_combined_minimum_size().y)
 	_reset_cam_btn.position = Vector2(size.x - right - CHROME, size.y - bottom - CHROME - 12.0)
+	_notice.size = _notice.get_combined_minimum_size()
+	_notice.position = Vector2((size.x - _notice.size.x) * 0.5, _top_bar.position.y + _top_bar.size.y + 10.0)
 	for overlay in [_collision_backdrop, _results]:
 		overlay.size = size
 	var card_width := minf(420.0, available_width)
@@ -353,6 +359,45 @@ func _hide_hard_bonus() -> void:
 	_bonus_visible = false
 	_hard_badge_label.text = Ui.t("crossroadsHardSituationBadge")
 	if is_inside_tree(): call_deferred("_layout")
+
+
+## A crash does not stop the game: a short red pill under the top bar, as the city game's
+## violation notice (game_ui.gd show_notice), and the round moves on by itself.
+func _build_notice() -> void:
+	_notice = PanelContainer.new()
+	_notice.add_theme_stylebox_override("panel", Ui.box(Ui.c("red"), 8))
+	_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var margin := MarginContainer.new()
+	for side in ["left", "right"]: margin.add_theme_constant_override("margin_" + side, 14)
+	for side in ["top", "bottom"]: margin.add_theme_constant_override("margin_" + side, 8)
+	_notice.add_child(margin)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(row)
+	row.add_child(Ui.icon(ICON_WARNING, 16, Color.WHITE))
+	_notice_label = Ui.scaled_label(Ui.t("gameCrossroadsCrash"), 14, 800, Color.WHITE)
+	_notice_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(_notice_label)
+	_notice.visible = false
+	add_child(_notice)
+
+
+## «ДТП» after a contact, «Неверно» for a wrong order that ends without one.
+func show_crash_notice(crashed := true, seconds := 1.6) -> void:
+	if is_instance_valid(_notice_tween): _notice_tween.kill()
+	_notice_label.text = Ui.t("gameCrossroadsCrash" if crashed else "gameAnswerWrong")
+	_notice.visible = true
+	_notice.modulate.a = 1.0
+	_layout()
+	_notice_tween = create_tween()
+	_notice_tween.tween_interval(seconds)
+	_notice_tween.tween_property(_notice, "modulate:a", 0.0, 0.25)
+	_notice_tween.tween_callback(func(): _notice.visible = false)
+
+
+func crash_notice_visible() -> bool:
+	return _notice != null and _notice.visible
 
 
 ## Crash card: the world behind turns grey and dim; a red card names the

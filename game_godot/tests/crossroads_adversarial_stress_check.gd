@@ -251,8 +251,8 @@ func _test_fast_dispatch_multi_timing_sweep() -> void:
 				for f: int in 40:
 					await process_frame
 				
-				var modal_article: String = game.ui._collision_article.text if game.ui._collision_article != null else ""
-				var modal_reason: String = game.ui._collision_reason.text if game.ui._collision_reason != null else ""
+				var modal_article: String = str(game.last_mistake.get("article", ""))
+				var modal_reason: String = str(game.last_mistake.get("reason", ""))
 				var expected_article: String = Ui.t("crossroadsArticleEarlyExit")
 				var expected_reason: String = Ui.t("crossroadsReasonEarlyExit")
 

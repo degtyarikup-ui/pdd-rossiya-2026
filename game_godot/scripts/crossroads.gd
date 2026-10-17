@@ -815,7 +815,7 @@ func _crash_on_contact(sent: CrossroadsActor, struck: CrossroadsActor) -> void:
 	struck.set_badge_priority()
 	await _gameplay_delay(0.5, sequence)
 	if not _sequence_active(sequence): return
-	ui.show_collision_modal(str(struck.data.get("name", "")), Ui.t("crossroadsReasonEarlyExit"), Ui.t("crossroadsArticleEarlyExit"), lives <= 0)
+	_after_crash(sequence, true, Ui.t("crossroadsReasonEarlyExit"), Ui.t("crossroadsArticleEarlyExit"))
 
 
 func _trajectory_min_distance(a: CrossroadsActor, b: CrossroadsActor) -> float:
@@ -892,7 +892,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		if priority != chosen: priority.set_badge_priority()
 		sound.play("incorrect")
 		GameSound.buzz(70)
-		ui.show_collision_modal(str(priority.data.get("name", "")), reason, article, lives <= 0)
+		_after_crash(sequence, false, reason, article)
 		return
 
 	# Smoothly drive both actors along their curves towards collision
@@ -953,7 +953,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		chosen.set_badge_error()
 		priority.set_badge_priority()
 		sound.play("incorrect")
-		ui.show_collision_modal(str(priority.data.get("name", "")), reason, article, lives <= 0)
+		_after_crash(sequence, false, reason, article)
 		return
 
 	# Impact handling & FX — fires instantaneously upon physical contact!
@@ -989,9 +989,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	await _gameplay_delay(0.5, sequence)
 	if not _sequence_active(sequence): return
 
-	# Show modal
-	var prio_name: String = priority.data.get("name", "")
-	ui.show_collision_modal(prio_name, reason, article, lives <= 0)
+	_after_crash(sequence, true, reason, article)
 
 
 func _create_skid_marks(at: Vector3, dir: Vector3 = Vector3.FORWARD) -> void:
@@ -1059,6 +1057,20 @@ func _create_crash_smoke(at: Vector3) -> void:
 	smoke.mesh = sphere
 	smoke.material_override = sm
 	fx_root.add_child(smoke)
+
+
+## The crash stays on screen briefly (badges show who had priority), then the game goes on
+## without a card to dismiss: the next situation, or the results when no lives are left.
+## Why the last mistake was one (the rule and its clause), kept for checks and reports.
+var last_mistake := {}
+
+func _after_crash(sequence: int, crashed: bool, reason: String, article: String) -> void:
+	last_mistake = {"crashed": crashed, "reason": reason, "article": article}
+	ui.show_crash_notice(crashed)
+	await _gameplay_delay(1.4, sequence)
+	if not _sequence_active(sequence) or _exiting: return
+	if lives <= 0: _end_game()
+	else: _on_next_scenario()
 
 
 func _on_retry_pressed() -> void:
