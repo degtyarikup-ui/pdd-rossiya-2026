@@ -82,6 +82,8 @@ def polygon_of(item: dict):
     return poly
 
 
+SAND_JOIN = 6.0       # asphalt fades into a dirt road over this length (m)
+SAND_SIDE_JOIN = 0.6  # ... and into dirt beside a paved road
 SAND_EDGE = 2.0     # a dirt road fades into the lawn over this width (m), no kerb
 SAND_EDGE_BANDS = 8
 CURB_RADIUS = 5.0   # the inner corners of a junction get a curb radius (m), not a chamfer
@@ -505,6 +507,21 @@ def build(scene: dict) -> dict:
                               + [line.buffer(TRACK_BED / 2, cap_style=2) for line in track_lines(scene)])
     # Give the smoothed shoulder the same material as its road. Only genuine asphalt
     # roads can create an asphalt transition; a contour adjustment must not create one.
+    if not sand_raw.is_empty and scene.get("layout"):
+        # As in crossroads: the rounded corners beside a dirt arm are dirt, not asphalt.
+        # A junction's own outline (road_<node>) is no paved road there; its fillet
+        # pieces that touch the dirt road go to the dirt, the rest stays asphalt.
+        nodes = {f"road_{n.get('id')}" for n in scene["layout"].get("nodes", [])}
+        junctions = [r for r in scene.get("roads", []) if r.get("id") in nodes and r.get("surface") != "sand"]
+        if junctions:
+            streets = unary_union([polygon_of(r) for r in scene.get("roads", [])
+                                   if r.get("surface") != "sand" and r.get("id") not in nodes])
+            corners = unary_union([polygon_of(r) for r in junctions]).difference(streets.buffer(0.05))
+            parts = getattr(corners, "geoms", [corners])
+            dirt_corners = unary_union([g for g in parts if not g.is_empty and g.intersects(sand_raw.buffer(0.5))])
+            if not dirt_corners.is_empty:
+                asphalt_raw = asphalt_raw.difference(dirt_corners.buffer(0.05))
+                sand_raw = sand_raw.union(dirt_corners)
     sand = road.intersection(sand_raw.buffer(CURB_RADIUS + TIDY_RADIUS)).difference(asphalt_raw) if not sand_raw.is_empty else Polygon()
     # Markings lie on the carriageway only; the island and the pavement are never painted over.
     marks = {}
@@ -536,9 +553,16 @@ def build(scene: dict) -> dict:
     surfaces = [asphalt, island, median, pave]
     # Six metres of blended colours at asphalt joins (as crossroads); the shoulder fades separately.
     asphalt_join = sand.boundary.intersection(road.difference(sand).buffer(0.01)) if not sand.is_empty else Polygon()
+    # As crossroads: the asphalt tone runs SAND_JOIN metres up the dirt road itself, but only
+    # SAND_SIDE_JOIN beside a paved road (the corners next to the through road stay dirt).
+    along = asphalt_join.intersection(sand_raw.buffer(-0.3)) if not asphalt_join.is_empty else asphalt_join
+    side = asphalt_join.difference(along.buffer(0.3)) if not asphalt_join.is_empty else asphalt_join
     previous = sand
     for i in range(12):
-        inner = sand.difference(asphalt_join.buffer((i + 1) * 0.5)) if not asphalt_join.is_empty else sand
+        reach = Polygon()
+        if not along.is_empty: reach = reach.union(along.buffer((i + 1) * SAND_JOIN / 12))
+        if not side.is_empty: reach = reach.union(side.buffer((i + 1) * SAND_SIDE_JOIN / 12))
+        inner = sand.difference(reach) if not reach.is_empty else sand
         band = previous.difference(inner)
         k = (i + 0.5) / 12
         colour = "#" + "".join(f"{round(a + (b-a)*k):02x}" for a,b in zip((44,47,54),(194,165,112)))
