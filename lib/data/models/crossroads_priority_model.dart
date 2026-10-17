@@ -453,8 +453,10 @@ class CrossroadsScenariosLibrary {
       pddArticle: 'Пункт 13.9 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '4.1.4', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.north),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.east),
+        CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.east),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.west),
       ],
       actors: [
@@ -600,7 +602,9 @@ class CrossroadsScenariosLibrary {
       pddArticle: 'Пункт 3.2 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '5.15.1', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.north),
+        CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.north),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.east),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.west),
       ],
@@ -653,6 +657,7 @@ class CrossroadsScenariosLibrary {
       pddArticle: 'Пункты 13.9 и 13.12 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.north),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.east),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.west),
@@ -706,7 +711,9 @@ class CrossroadsScenariosLibrary {
       pddArticle: 'Знак 2.5, пункты 13.9 и 13.12 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.east),
+        CrossroadsSignPlacement(code: '5.15.2', side: CrossroadsSide.east),
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.west),
+        CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.west),
         CrossroadsSignPlacement(code: '2.5', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.north),
       ],
@@ -924,9 +931,11 @@ class CrossroadsScenariosLibrary {
       pddArticle: 'Знак 2.3.1 и п. 13.12 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.3.1', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '5.15.2', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '2.3.1', side: CrossroadsSide.north),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.east),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.west),
+        CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.west),
       ],
       actors: [
         CrossroadsActor(
@@ -977,6 +986,8 @@ class CrossroadsScenariosLibrary {
       closedSide: CrossroadsSide.west,
       signs: [
         CrossroadsSignPlacement(code: '2.3.2', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '2.3.3', side: CrossroadsSide.north),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.east),
       ],
       actors: [
@@ -1124,6 +1135,8 @@ class CrossroadsScenariosLibrary {
       closedSide: CrossroadsSide.east,
       signs: [
         CrossroadsSignPlacement(code: '2.3.3', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '2.3.2', side: CrossroadsSide.north),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.west),
       ],
       actors: [
@@ -1161,6 +1174,11 @@ class CrossroadsScenariosLibrary {
           'При повороте налево водитель обязан уступить встречному ТС, движущемуся прямо.',
       pddArticle: 'Пункт 13.12 ПДД РФ',
       isEqualCrossroad: true,
+      signs: [
+        CrossroadsSignPlacement(code: '1.6', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '1.6', side: CrossroadsSide.north),
+        CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.north),
+      ],
       actors: [
         CrossroadsActor(
           id: 'moto_north',
@@ -1545,6 +1563,12 @@ class CrossroadsScenariosLibrary {
       pddArticle: 'Пункты 13.1, 13.11 и 14.1 ПДД РФ',
       isEqualCrossroad: true,
       isHardSituation: true,
+      signs: [
+        CrossroadsSignPlacement(code: '4.1.2', side: CrossroadsSide.south),
+        CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.west),
+        CrossroadsSignPlacement(code: '1.6', side: CrossroadsSide.north),
+        CrossroadsSignPlacement(code: '1.6', side: CrossroadsSide.east),
+      ],
       actors: [
         CrossroadsActor(
           id: 'pedestrian_east',
@@ -1605,6 +1629,7 @@ class CrossroadsScenariosLibrary {
       isHardSituation: true,
       signs: [
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.west),
+        CrossroadsSignPlacement(code: '4.1.1', side: CrossroadsSide.west),
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.east),
         CrossroadsSignPlacement(code: '2.4', side: CrossroadsSide.south),
       ],

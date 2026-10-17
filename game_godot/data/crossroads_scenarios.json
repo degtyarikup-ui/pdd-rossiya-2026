@@ -166,11 +166,19 @@
         "side": "south"
       },
       {
+        "code": "4.1.4",
+        "side": "south"
+      },
+      {
         "code": "2.1",
         "side": "north"
       },
       {
         "code": "2.4",
+        "side": "east"
+      },
+      {
+        "code": "4.1.1",
         "side": "east"
       },
       {
@@ -507,7 +515,15 @@
         "side": "south"
       },
       {
+        "code": "5.15.1",
+        "side": "south"
+      },
+      {
         "code": "2.1",
+        "side": "north"
+      },
+      {
+        "code": "4.1.1",
         "side": "north"
       },
       {
@@ -629,6 +645,10 @@
     "signs": [
       {
         "code": "2.1",
+        "side": "south"
+      },
+      {
+        "code": "4.1.1",
         "side": "south"
       },
       {
@@ -757,7 +777,15 @@
         "side": "east"
       },
       {
+        "code": "5.15.2",
+        "side": "east"
+      },
+      {
         "code": "2.1",
+        "side": "west"
+      },
+      {
+        "code": "4.1.1",
         "side": "west"
       },
       {
@@ -1227,6 +1255,10 @@
         "side": "south"
       },
       {
+        "code": "5.15.2",
+        "side": "south"
+      },
+      {
         "code": "2.3.1",
         "side": "north"
       },
@@ -1236,6 +1268,10 @@
       },
       {
         "code": "2.4",
+        "side": "west"
+      },
+      {
+        "code": "4.1.1",
         "side": "west"
       }
     ],
@@ -1351,6 +1387,14 @@
       {
         "code": "2.3.2",
         "side": "south"
+      },
+      {
+        "code": "4.1.1",
+        "side": "south"
+      },
+      {
+        "code": "2.3.3",
+        "side": "north"
       },
       {
         "code": "2.4",
@@ -1705,6 +1749,14 @@
         "side": "south"
       },
       {
+        "code": "4.1.1",
+        "side": "south"
+      },
+      {
+        "code": "2.3.2",
+        "side": "north"
+      },
+      {
         "code": "2.4",
         "side": "west"
       }
@@ -1792,7 +1844,20 @@
     "pddArticle": "Пункт 13.12 ПДД РФ",
     "isEqual": true,
     "isHard": false,
-    "signs": [],
+    "signs": [
+      {
+        "code": "1.6",
+        "side": "south"
+      },
+      {
+        "code": "1.6",
+        "side": "north"
+      },
+      {
+        "code": "4.1.1",
+        "side": "north"
+      }
+    ],
     "trafficLights": [],
     "actors": [
       {
@@ -2677,7 +2742,24 @@
     "pddArticle": "Пункты 13.1, 13.11 и 14.1 ПДД РФ",
     "isEqual": true,
     "isHard": true,
-    "signs": [],
+    "signs": [
+      {
+        "code": "4.1.2",
+        "side": "south"
+      },
+      {
+        "code": "4.1.1",
+        "side": "west"
+      },
+      {
+        "code": "1.6",
+        "side": "north"
+      },
+      {
+        "code": "1.6",
+        "side": "east"
+      }
+    ],
     "trafficLights": [],
     "actors": [
       {
@@ -2813,6 +2895,10 @@
     "signs": [
       {
         "code": "2.1",
+        "side": "west"
+      },
+      {
+        "code": "4.1.1",
         "side": "west"
       },
       {

@@ -275,7 +275,35 @@ func _create_balanced_arcade_order() -> void:
 		else:
 			signs.append(idx)
 
-	signs.shuffle()
+	var rich_signs: Array[int] = []
+	var regular_signs: Array[int] = []
+	for idx in signs:
+		var sc: Dictionary = all_scenarios[idx]
+		var is_rich := false
+		for sign_data: Dictionary in sc.get("signs", []):
+			var code := str(sign_data.get("code", ""))
+			if sign_data.has("table8_13") or code.begins_with("4.") or code.begins_with("5.15") or code.begins_with("2.3") or code == "2.1":
+				is_rich = true
+				break
+		if is_rich:
+			rich_signs.append(idx)
+		else:
+			regular_signs.append(idx)
+
+	rich_signs.shuffle()
+	regular_signs.shuffle()
+
+	signs.clear()
+	var r_i := 0
+	var reg_i := 0
+	while r_i < rich_signs.size() or reg_i < regular_signs.size():
+		if r_i < rich_signs.size():
+			signs.append(rich_signs[r_i])
+			r_i += 1
+		if reg_i < regular_signs.size():
+			signs.append(regular_signs[reg_i])
+			reg_i += 1
+
 	lights.shuffle()
 	hard.shuffle()
 

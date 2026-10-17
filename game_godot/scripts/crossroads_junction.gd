@@ -356,7 +356,7 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 			curb.rotation.y = PI * 0.5
 			lawn.position = Vector3(lawn_mid, 0.15, 0)
 			lawn.rotation.y = PI * 0.5
-			rot_y = -PI * 0.5
+			rot_y = PI * 0.5
 		"west":
 			sw.position = Vector3(-(base_d + sw_w * 0.5), 0.16, 0)
 			sw.rotation.y = PI * 0.5
@@ -364,7 +364,7 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 			curb.rotation.y = PI * 0.5
 			lawn.position = Vector3(-lawn_mid, 0.15, 0)
 			lawn.rotation.y = PI * 0.5
-			rot_y = PI * 0.5
+			rot_y = -PI * 0.5
 
 	ground_root.add_child(sw)
 	ground_root.add_child(curb)
