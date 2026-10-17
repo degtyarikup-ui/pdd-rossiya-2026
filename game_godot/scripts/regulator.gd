@@ -234,7 +234,7 @@ func _apply_tier(next: String, automatic := false) -> void:
 	var viewport := get_viewport()
 	viewport.scaling_3d_scale = profile.scale
 	viewport.msaa_3d = profile.msaa
-	sun.shadow_enabled = profile.shadows
+	Quality.set_sun_shadows(sun, env.environment, profile.shadows)
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if tier == "high" else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	Engine.max_fps = 60 if _quality_mobile and profile.max_fps == 0 else int(profile.max_fps)
 	adaptive_quality = automatic and _quality_mobile
@@ -252,7 +252,7 @@ func _update_frame_budget(delta: float) -> void:
 	var viewport := get_viewport()
 	viewport.scaling_3d_scale = update.scale
 	viewport.msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
-	sun.shadow_enabled = update.shadows
+	Quality.set_sun_shadows(sun, env.environment, update.shadows)
 	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
 
 

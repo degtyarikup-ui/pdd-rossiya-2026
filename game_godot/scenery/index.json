@@ -539,6 +539,7 @@
    "sky": "#e8e1d1",
    "skyDark": "#2a2823",
    "sun": "#ffe3b8",
+   "ambientTint": "#fff1de",
    "sunIntensity": 0.56,
    "ambient": 0.7,
    "canopy": [

@@ -33,7 +33,7 @@ static func apply(sun: DirectionalLight3D, environment: Environment, season_name
 	environment.background_color = CLEAR_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_sky_contribution = 0.0
-	environment.ambient_light_color = Color.WHITE
+	environment.ambient_light_color = Color(season.get("ambientTint", "#ffffff"))
 	environment.ambient_light_energy = float(season.ambient) * 0.8
 	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	environment.fog_enabled = true

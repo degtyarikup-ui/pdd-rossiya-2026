@@ -47,3 +47,21 @@ static func initial(gpu: String, mobile: bool) -> String:
 ## Decorative street people only; task participants keep their authored population.
 static func ambient_walkers(profile: String, configured: int, max_fps := 0) -> int:
 	return mini(configured, 6) if profile == "low" or max_fps == 30 else configured
+
+
+## Godot's Compatibility renderer lights a scene noticeably brighter while the sun
+## casts shadows (measured: about 1.35× on asphalt, pavement and grass, on a desktop
+## and on a Pixel 9). Weak phones and the frame budget switch shadows off, which used
+## to dim the whole picture. Without shadows the sun and the ambient light are raised
+## so the scene keeps its look (within ~10%); the shadowed look is the reference.
+const NO_SHADOW_SUN := 2.8
+const NO_SHADOW_AMBIENT := 1.15
+
+static func set_sun_shadows(sun: DirectionalLight3D, environment: Environment, enabled: bool) -> void:
+	if not sun.has_meta("lit_energy"):
+		sun.set_meta("lit_energy", sun.light_energy)
+		sun.set_meta("lit_ambient", environment.ambient_light_energy if environment != null else 1.0)
+	sun.shadow_enabled = enabled
+	sun.light_energy = float(sun.get_meta("lit_energy")) * (1.0 if enabled else NO_SHADOW_SUN)
+	if environment != null:
+		environment.ambient_light_energy = float(sun.get_meta("lit_ambient")) * (1.0 if enabled else NO_SHADOW_AMBIENT)

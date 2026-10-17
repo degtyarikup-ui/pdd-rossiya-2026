@@ -190,7 +190,7 @@ func _setup_quality() -> void:
 	var profile: Dictionary = Quality.PROFILES[tier]
 	get_viewport().scaling_3d_scale = profile.scale
 	get_viewport().msaa_3d = profile.msaa
-	sun.shadow_enabled = profile.shadows
+	Quality.set_sun_shadows(sun, env.environment, profile.shadows)
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if tier == "high" else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	Engine.max_fps = 60 if mobile and profile.max_fps == 0 else int(profile.max_fps)
 	if leaves != null: leaves.multimesh.visible_instance_count = 24 if tier == "low" else -1
@@ -204,7 +204,7 @@ func _update_frame_budget(delta: float) -> void:
 	if update.is_empty(): return
 	get_viewport().scaling_3d_scale = update.scale
 	get_viewport().msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
-	sun.shadow_enabled = update.shadows
+	Quality.set_sun_shadows(sun, env.environment, update.shadows)
 	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
 
 

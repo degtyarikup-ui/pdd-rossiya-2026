@@ -553,7 +553,8 @@ func _setup_environment() -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(s.sky)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color.WHITE
+	# Autumn: a faint golden fill (scenery/index.json ambientTint); no post-processing.
+	env.ambient_light_color = Color(s.get("ambientTint", "#ffffff"))
 	# 0.8: matched on screen against the WebView game (same season, same view).
 	env.ambient_light_energy = float(s.ambient) * 0.8
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
@@ -573,13 +574,30 @@ func _setup_environment() -> void:
 	sun.light_color = Color(s.sun)
 	sun.light_energy = float(s.sunIntensity) * 0.8
 	sun.shadow_enabled = true
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	# Two cascades, not ORTHOGONAL: on a Mali phone (Pixel 9) the orthogonal map left a
+	# faint, straight, oblique edge across the road that travelled with the car, and the
+	# car's own shadow nearly vanished. Two splits keep it crisp at little extra cost.
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.directional_shadow_split_1 = 0.5
+	sun.directional_shadow_blend_splits = false
 	sun.directional_shadow_max_distance = 52.0
 	# Soft, steady edges: a blurred filter over a finer map, so the shadow does not crawl as the view moves.
 	sun.shadow_blur = 1.25
 	sun.shadow_bias = 0.025
 	sun.shadow_normal_bias = 0.35
 	sun.directional_shadow_fade_start = 0.9
+	# Device tuning without a rebuild: --sun-bias=, --sun-normal-bias=, --sun-blur=, --sun-distance=.
+	for arg in Host.user_args():
+		var value := float(arg.get_slice("=", 1))
+		if arg.begins_with("--sun-bias="): sun.shadow_bias = value
+		elif arg.begins_with("--sun-normal-bias="): sun.shadow_normal_bias = value
+		elif arg.begins_with("--sun-blur="): sun.shadow_blur = value
+		elif arg.begins_with("--sun-distance="): sun.directional_shadow_max_distance = value
+		elif arg == "--sun-mode=split2": sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		elif arg == "--sun-mode=split4": sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+		elif arg.begins_with("--sun-fade="): sun.directional_shadow_fade_start = value
+		elif arg.begins_with("--sun-energy-mul="): sun.light_energy *= value
+		elif arg.begins_with("--ambient-mul="): env.ambient_light_energy *= value
 	add_child(sun)
 	var snow := Color(s.roof) if s.roof != null else Color("#C7D0D8")
 	scenery.material.set_shader_parameter("snow_color", Vector3(snow.r, snow.g, snow.b))
@@ -3860,7 +3878,7 @@ func _apply_tier(next: String, automatic := false) -> void:
 	var vp := get_viewport()
 	vp.scaling_3d_scale = prof.scale
 	vp.msaa_3d = prof.msaa
-	sun.shadow_enabled = prof.shadows
+	Quality.set_sun_shadows(sun, environment, prof.shadows)
 	Engine.max_fps = prof.max_fps
 	# Sustained phone sessions should not render 90–120 full 3D frames per second.
 	# Low remains 30 FPS; other mobile tiers keep a 60 FPS frame budget.
@@ -3883,7 +3901,7 @@ func _update_frame_budget(delta: float) -> void:
 	var vp := get_viewport()
 	vp.scaling_3d_scale = update.scale
 	vp.msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
-	sun.shadow_enabled = update.shadows
+	Quality.set_sun_shadows(sun, environment, update.shadows)
 	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
 	walker_target = Quality.ambient_walkers(tier, int(cfg.get("pedestrians", 12)), Engine.max_fps)
 
