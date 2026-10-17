@@ -1,5 +1,5 @@
 ## The game's own on-screen UI, drawn by Godot (the pedals live in controls.gd):
-## HUD (limit sign, violations, distance, score, run progress, speed, notice),
+## HUD (distance, score, violations, limit sign, run progress, speed, notice),
 ## question card and explanation sheet. Looks and sizes follow the Flutter
 ## widgets they replace (game_hud.dart, game_question_card.dart,
 ## game_explanation_sheet.dart). Texts: Ui.t() (ARB), situations: scene.json.
@@ -181,7 +181,7 @@ func _build_hud() -> void:
 	pause.gui_input.connect(func(e): if _is_tap(e): pause_pressed.emit())
 	_root.add_child(pause)
 	_hud_nodes.append(pause)
-	# Counters: limit sign, violations, distance, score (right aligned row).
+	# Counters: distance, score, violations, limit sign (right aligned row).
 	var row := GridContainer.new()
 	_hud_row = row
 	row.columns = 4
@@ -203,16 +203,16 @@ func _build_hud() -> void:
 	_limit_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_limit.add_child(_limit_text)
 	_limit.visible = false
-	row.add_child(_limit)
 	var v := _pill("hud_warning", Ui.c("red"))
 	_violations = v[1]
-	row.add_child(v[0])
 	var d := _pill("hud_location", Ui.c("card"), Ui.c("text"))
 	_distance = d[1]
 	row.add_child(d[0])
 	var s := _pill("hud_star", Ui.c("gold"))
 	_score = s[1]
 	row.add_child(s[0])
+	row.add_child(v[0])
+	row.add_child(_limit)
 	# Answered questions (left) and speed (right).
 	_run_big = Ui.scaled_label("0", 20, 800, white)
 	_run_small = Ui.scaled_label(" / 20", 12, 800, white)
