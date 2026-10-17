@@ -153,6 +153,8 @@
   "crossroadsPedestrian": "Пешеход",
   "crossroadsReasonPedestrianViolation": "Не уступили дорогу пешеходу, переходящему проезжую часть (п. 13.1 ПДД РФ). При повороте водитель обязан уступить пешеходам!",
   "crossroadsArticlePedestrian": "Пункт 13.1 ПДД РФ",
+  "crossroadsReasonEarlyExit": "Слишком ранний выезд: не уступил дорогу и не дождался освобождения перекрестка движущимся транспортом! (п. 13.8 ПДД РФ)",
+  "crossroadsArticleEarlyExit": "Пункт 13.8 ПДД РФ",
   "gameCrossroadsSolvedCount": "Разрулено: {count}",
   "gameCrossroadsExplanationTitle": "Разбор ситуации по ПДД РФ",
   "gameCrossroadsCompleteTitle": "Перекресток разрулен!"
@@ -311,6 +313,8 @@
   "crossroadsPedestrian": "Pedestrian",
   "crossroadsReasonPedestrianViolation": "Did not yield to a pedestrian crossing the carriageway (clause 13.1 of the Russian Traffic Regulations). When turning, drivers must yield to pedestrians!",
   "crossroadsArticlePedestrian": "Clause 13.1 of the Russian Traffic Regulations",
+  "crossroadsReasonEarlyExit": "Entering too early: you did not yield and did not wait for the moving traffic to clear the intersection! (clause 13.8 of the Russian Traffic Regulations)",
+  "crossroadsArticleEarlyExit": "Clause 13.8 of the Russian Traffic Regulations",
   "gameCrossroadsSolvedCount": "Cleared: {count}",
   "gameCrossroadsExplanationTitle": "Analysis of the situation according to the Russian Federation traffic rules",
   "gameCrossroadsCompleteTitle": "The intersection has been cleared!"
@@ -469,6 +473,8 @@
   "crossroadsPedestrian": "Жаяу жүргінші",
   "crossroadsReasonPedestrianViolation": "Жүріс бөлігінен өтіп бара жатқан жаяу жүргіншіге жол бермедіңіз (ЖЖЕ 13.1-тармағы). Бұрылған кезде жүргізуші жаяу жүргіншілерге жол беруге міндетті!",
   "crossroadsArticlePedestrian": "ЖЖЕ 13.1-тармағы",
+  "crossroadsReasonEarlyExit": "Тым ерте шығу: жол бермедіңіз және қиылысты қозғалыстағы көліктер босатқанын күтпедіңіз! (ЖЖЕ 13.8-тармағы)",
+  "crossroadsArticleEarlyExit": "ЖЖЕ 13.8-тармағы",
   "gameCrossroadsSolvedCount": "Шешілген: {count}",
   "gameCrossroadsExplanationTitle": "Ресей Федерациясының жол қозғалысы ережелеріне сәйкес жағдайды талдау",
   "gameCrossroadsCompleteTitle": "Қиылыс тазартылды!"

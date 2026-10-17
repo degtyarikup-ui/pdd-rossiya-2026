@@ -687,6 +687,7 @@ func _handle_actor_selection(chosen: CrossroadsActor) -> void:
 	if chosen_order == prio_order:
 		# CORRECT CHOICE!
 		chosen.set_badge_solved(cur_step)
+		chosen.set_meta("dispatch", cur_step)
 		chosen.start_driving()
 		sound.play("correct")
 		GameSound.buzz(25)
@@ -759,6 +760,53 @@ func _on_crossroad_completed() -> void:
 
 	cur_scenario_idx += 1
 	_load_current_scenario()
+
+
+## Taps are never rate-limited: the right order sent too quickly still counts as a
+## mistake when two moving participants actually touch (п. 13.8: the junction must
+## be clear). Real bodies only; a pedestrian is a small footprint, not a car box.
+func _check_driving_contacts() -> void:
+	for i in active_actors.size():
+		var a := active_actors[i]
+		if a.state != "driving": continue
+		for j in range(i + 1, active_actors.size()):
+			var b := active_actors[j]
+			if b.state != "driving": continue
+			var margin := -0.10 if (a.is_pedestrian or b.is_pedestrian) else -0.05
+			if Drive.overlap(_contact_footprint(a), _contact_footprint(b), margin):
+				var later := a if int(a.get_meta("dispatch", 0)) > int(b.get_meta("dispatch", 0)) else b
+				_crash_on_contact(later, b if later == a else a)
+				return
+
+
+func _contact_footprint(actor: CrossroadsActor) -> Dictionary:
+	if actor.is_pedestrian:
+		return {"p": actor.position, "yaw": actor.rotation.y, "hw": 0.3, "hl": 0.3}
+	return actor.footprint()
+
+
+func _crash_on_contact(sent: CrossroadsActor, struck: CrossroadsActor) -> void:
+	var sequence := scene_sequence
+	is_resolving = true
+	wrong_count += 1
+	combo = 0
+	lives -= 1
+	ui.update_hud(score, ceili(seconds_left), lives, combo)
+	var impact := (sent.position + struck.position) * 0.5
+	impact.y = 0.0
+	sound.play("crash")
+	GameSound.buzz(70)
+	for actor in [sent, struck]:
+		actor.state = "crashed"
+		if not actor.is_pedestrian:
+			_create_skid_marks(actor.position, Vector3(sin(actor.rotation.y), 0, cos(actor.rotation.y)))
+	_create_crash_sparks(impact)
+	_create_crash_smoke(impact)
+	sent.set_badge_error()
+	struck.set_badge_priority()
+	await _gameplay_delay(0.5, sequence)
+	if not _sequence_active(sequence): return
+	ui.show_collision_modal(str(struck.data.get("name", "")), Ui.t("crossroadsReasonEarlyExit"), Ui.t("crossroadsArticleEarlyExit"), lives <= 0)
 
 
 func _trajectory_min_distance(a: CrossroadsActor, b: CrossroadsActor) -> float:
@@ -1036,6 +1084,8 @@ func _process(delta: float) -> void:
 			if actor.is_pedestrian or actor.state in ["done", "crashed"]: continue
 			var velocity := actor.drive_speed * actor.path_length if actor.state == "driving" and actor._stop_pause_left <= 0.0 else 0.0
 			sound.vehicle(str(actor.get_instance_id()), str(actor.data.get("type", "car")), velocity, actor.has_siren)
+	if not is_game_over and not is_resolving:
+		_check_driving_contacts()
 	if not is_game_over and not is_resolving:
 		_check_junction_completed()
 	if ready_for_play and not _suspended and not is_game_over and not is_resolving and not _round_completing and not _is_any_actor_driving():

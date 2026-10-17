@@ -72,9 +72,12 @@ func run() -> void:
 				check(game.sound._vehicles[sound_id].siren == actor.has_siren,
 					scenario.id + "/" + actor.name + ": siren follows the actual special-signal flag")
 			check(is_equal_approx(seconds, game.seconds_left), scenario.id + ": driving does not consume answer time")
+			# Earlier participants keep driving away, as in the game: a frozen one just past
+			# the junction would be struck by the next and count as a real contact (13.8).
 			for frame in 600:
 				if actor.has_cleared_junction(): break
-				actor._process_drive(0.05)
+				for moving in game.active_actors:
+					if moving.state == "driving": moving._process_drive(0.05)
 			check(actor.has_cleared_junction() and actor.drive_progress < 1.0,
 				scenario.id + "/" + actor.name + ": the whole actor clears before its distant exit")
 		var solved := game.solved_count
