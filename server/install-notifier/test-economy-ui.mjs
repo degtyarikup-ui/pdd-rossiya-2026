@@ -159,12 +159,15 @@ if (process.argv.includes('--serve')) {
       await page.goto(`${preview.url}/admin#economy`);
       await page.locator('#economy-view').waitFor({ state: 'visible' });
       await settled();
-      assert.equal((await stats()).revenue.grossRub, 35290);
+      assert.equal((await stats()).revenue.grossRub, 35580);
+      assert.match(await page.locator('#ec-gross-sub').innerText(), /App Store/);
+      assert.equal(await page.locator('#ec-receipts-body [data-copy="fixture-ios"]').count(), 1);
+      assert.match(await page.locator('#ec-receipts-body').innerText(), /По тарифу · в доходе/);
       await screenshot('desktop');
 
       await page.locator('#ec-show-tests').check();
       assert.equal(await page.locator('#ec-receipts-body [data-copy="fixture-test"]').count(), 1);
-      assert.equal((await stats()).revenue.grossRub, 35290, 'showing test receipts never changes income');
+      assert.equal((await stats()).revenue.grossRub, 35580, 'showing test receipts never changes income');
       await page.locator('#ec-show-tests').uncheck();
       await page.locator('#ec-store-filter').selectOption('rustore');
       assert.equal(await page.locator('#ec-receipts-body tr').count(), 1);
@@ -175,8 +178,8 @@ if (process.argv.includes('--serve')) {
       await page.locator('#ec-receipt-mode [data-mode="estimated"]').click();
       assert.equal(await page.locator('#ec-receipts-body [data-copy="fixture-ios"]').count(), 1);
       assert.equal(await page.locator('#ec-receipts-body [data-revenue-id]').count(), 0);
-      assert.match(await page.locator('#ec-ledger-note').innerText(), /вне дохода/);
-      assert.equal((await stats()).revenue.grossRub, 35290);
+      assert.match(await page.locator('#ec-ledger-note').innerText(), /выплата заменяет оценку/);
+      assert.equal((await stats()).revenue.grossRub, 35580);
       await page.locator('#ec-receipt-mode [data-mode="actual"]').click();
 
       // Shares are saved together; zero must survive a reload and recalculation.
@@ -278,11 +281,11 @@ if (process.argv.includes('--serve')) {
       await field('title', 'Выплата Google Play'); await field('amountRub', 4500);
       await select('store', 'googleplay'); await field('date', day()); await save();
       let revenue = (await config()).manualRevenues.find(item => item.title === 'Выплата Google Play');
-      assert.ok(revenue); assert.equal((await stats()).revenue.grossRub, 39790);
+      assert.ok(revenue); assert.equal((await stats()).revenue.grossRub, 40080);
       await open(`[data-revenue-id="${revenue.id}"]`);
       await field('title', 'Уточнённая выплата Google Play'); await field('amountRub', 4800); await save();
       revenue = (await config()).manualRevenues.find(item => item.id === revenue.id);
-      assert.equal(revenue.amountRub, 4800); assert.equal((await stats()).revenue.grossRub, 40090);
+      assert.equal(revenue.amountRub, 4800); assert.equal((await stats()).revenue.grossRub, 40380);
       await open(`[data-revenue-id="${revenue.id}"]`); await remove();
       assert.equal((await config()).manualRevenues.some(item => item.id === revenue.id), false);
 

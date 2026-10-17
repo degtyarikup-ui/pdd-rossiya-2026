@@ -89,7 +89,7 @@ export const ECONOMY_VIEW_HTML = String.raw`
 <div id="ec-feedback" class="ec-feedback" role="status" hidden><span></span><button type="button" aria-label="Закрыть сообщение">×</button></div>
 <p class="ec-period-note" id="ec-period-note">&nbsp;</p>
 <div class="ec-kpis" aria-label="Итоги периода">
- <div class="ec-card"><div class="ec-kpi-label">Поступления</div><div class="ec-value" id="ec-gross-val">—</div><div class="ec-caption" id="ec-gross-sub">СБП и выплаты магазинов</div></div>
+ <div class="ec-card"><div class="ec-kpi-label">Поступления</div><div class="ec-value" id="ec-gross-val">—</div><div class="ec-caption" id="ec-gross-sub">Все источники · продажи магазинов по тарифу</div></div>
  <div class="ec-card"><div class="ec-kpi-label">Расходы</div><div class="ec-value" id="ec-costs-val">—</div><div class="ec-caption" id="ec-costs-sub">За выбранный период</div></div>
  <div class="ec-card"><div class="ec-kpi-label">В развитие</div><div class="ec-value" id="ec-reinvest-val">—</div><div class="ec-caption" id="ec-reinvest-sub">От прибыли после расходов</div></div>
  <div class="ec-card ec-net" id="ec-net-card"><div class="ec-kpi-label" id="ec-net-label">К распределению</div><div class="ec-value" id="ec-net-val">—</div><div class="ec-caption" id="ec-net-sub">Сергей и Никита</div></div>
@@ -175,7 +175,8 @@ export const ECONOMY_CLIENT_JS = String.raw`
  function render() {
   var rev=stats.revenue,exp=stats.expenses,profit=stats.profit,cfg=stats.config;
   set('ec-gross-val',rub(rev.grossRub));set('ec-costs-val',rub(exp.totalRub));set('ec-reinvest-val',rub(profit.reinvestRub));set('ec-net-val',rub(profit.distributableNetRub));
-  set('ec-gross-sub','СБП '+rub(rev.webRub)+' · выплаты '+rub(rev.manualRub));
+  var byStore={web:rev.webRub,appstore:rev.appstoreRub,googleplay:rev.gplayRub,rustore:rev.rustoreRub,other:rev.otherRub};
+  set('ec-gross-sub',Object.keys(stores).filter(function(key){return key==='web'||Number(byStore[key])>0;}).map(function(key){return stores[key]+' '+rub(byStore[key]);}).join(' · ')+(rev.includedStoreSalesRub>0?' · магазины по тарифу':''));
   set('ec-costs-sub','Разовые '+rub(exp.oneOffRub)+' · постоянные '+rub(exp.recurringRub)+(exp.ai?.includedInTotal?' · ИИ '+rub(exp.ai.periodRub):''));
   set('ec-reinvest-sub',pct(cfg.reinvestPercent)+' от прибыли после расходов');
   var loss=profit.distributableNetRub<0;el('ec-net-card').classList.toggle('is-loss',loss);set('ec-net-label',loss?'Убыток':'К распределению');set('ec-net-sub',loss?'Выплаты — 0 ₽':'Сергей и Никита');
@@ -207,11 +208,11 @@ export const ECONOMY_CLIENT_JS = String.raw`
   var rows=(receiptMode==='actual'?stats.receipts:stats.estimatedReceipts)||[];
   rows=rows.filter(function(row){return (showTests||!row.isTest)&&(store==='all'||row.storeKey===store)&&(!q||[row.customer,row.title,row.email,row.txId,row.id,row.store].join(' ').toLowerCase().includes(q));});
   var pageSize=12,pages=Math.max(1,Math.ceil(rows.length/pageSize));page=Math.min(page,pages-1);
-  set('ec-receipts-count',num(rows.length));set('ec-ledger-note',receiptMode==='actual'?'Учтены в доходе':'Оценка по тарифу · вне дохода');
-  el('ec-show-tests').closest('label').hidden=receiptMode==='estimated';
+  set('ec-receipts-count',num(rows.length));set('ec-ledger-note',receiptMode==='actual'?'Все источники · покупки магазинов по тарифу':'По тарифу · выплата заменяет оценку своего магазина за период');
+  el('ec-show-tests').closest('label').hidden=false;
   el('ec-receipts-body').innerHTML=rows.length?rows.slice(page*pageSize,(page+1)*pageSize).map(function(row){
    var manual=(stats.config.manualRevenues||[]).some(function(r){return r.id===row.id;});
-   var status=row.isTest?'<span class="ec-pill amber">'+(row.includedInRevenue?'Тест · в доходе':'Тест · вне дохода')+'</span>':receiptMode==='estimated'?'<span class="ec-pill">Оценка</span>':'<span class="ec-pill green">Получено</span>';
+   var status=row.isTest?'<span class="ec-pill amber">'+(row.includedInRevenue?'Тест · в доходе':'Тест · вне дохода')+'</span>':row.type==='estimate'?'<span class="ec-pill">'+(row.replacedByPayout?'Учтено выплатой':'По тарифу · в доходе')+'</span>':'<span class="ec-pill green">Получено</span>';
    var title=row.customer||row.title||'Поступление';
    return '<tr><td style="white-space:nowrap">'+esc(dateText(row.date,true))+'</td><td class="ec-name"><strong>'+esc(title)+'</strong>'+(row.email?'<span class="ec-sub">'+esc(row.email)+'</span>':'')+'<span class="ec-sub">'+esc(row.tier||'')+'</span>'+(row.txId?'<button type="button" class="ec-receipt-id" data-copy="'+esc(row.txId)+'" title="Скопировать '+esc(row.txId)+'" aria-label="Скопировать номер заказа">'+esc(row.txId)+'</button>':'')+'</td><td><span class="ec-pill '+(row.storeKey==='web'?'blue':'')+'">'+esc(stores[row.storeKey]||row.store||'Другое')+'</span></td><td>'+status+'</td><td class="ec-money">'+rub(row.amountRub)+'</td><td class="ec-cell-action">'+(manual?editButton('revenue',row.id,'Редактировать '+title):'')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" class="ec-empty">'+(q||store!=='all'?'Ничего не найдено':receiptMode==='actual'?'Поступлений за этот период пока нет':'Покупок за этот период пока нет')+'</td></tr>';
@@ -241,7 +242,7 @@ export const ECONOMY_CLIENT_JS = String.raw`
   } else if(kind==='delete-expense') {
    title='Удалить расход?';html='<div class="ec-delete-summary"><strong>'+esc(item.title)+'</strong><span>'+rub(item.periodRub)+' в выбранном периоде</span></div>';note=item.builtin?'Можно вернуть в параметрах экономики.':'Расход будет исключён из расчётов за все периоды.';
   } else {
-   title=item.id?'Редактировать поступление':'Новое поступление';html=input('title','Описание',item.title||'',{type:'text',full:true})+input('amountRub','Получено, ₽',item.amountRub??'',{min:0.01})+input('date','Дата получения',(item.date||today()).slice(0,10),{type:'date'})+select('store','Источник',item.store||'appstore',{appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'},true);note='Сумма фактической выплаты после комиссии магазина.';
+   title=item.id?'Редактировать поступление':'Новое поступление';html=input('title','Описание',item.title||'',{type:'text',full:true})+input('amountRub','Получено, ₽',item.amountRub??'',{min:0.01})+input('date','Дата получения',(item.date||today()).slice(0,10),{type:'date'})+select('store','Источник',item.store||'appstore',{appstore:'App Store',googleplay:'Google Play',rustore:'RuStore',other:'Другое'},true);note='Выплата магазина за выбранный период заменяет оценку его продаж в доходе. Другие поступления прибавляются отдельно.';
   }
   set('ec-dialog-title',title);el('ec-fields').innerHTML=html;el('ec-form-error').hidden=true;el('ec-form-note').hidden=!note;set('ec-form-note',note);el('ec-delete').hidden=!item.id||kind==='delete-expense';set('ec-delete','Удалить');set('ec-submit',kind==='delete-expense'?'Удалить':item.id||kind==='shares'||kind==='settings'?'Сохранить':'Добавить');el('ec-submit').classList.toggle('btn-danger',kind==='delete-expense');el('ec-submit').classList.toggle('btn-primary',kind!=='delete-expense');el('ec-dialog').showModal();updateFormPreview();
  }

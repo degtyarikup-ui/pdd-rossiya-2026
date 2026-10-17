@@ -248,8 +248,9 @@ test('estimated store sales do not duplicate actual store payouts', async () => 
   assert.equal(result.revenue.appstoreRub, 250);
   assert.equal(result.revenue.estimatedStoresRub, 290);
   assert.equal(result.revenue.estimatesIncludedInGross, false);
-  assert.equal(result.receipts.length, 1);
+  assert.equal(result.receipts.length, 2);
   assert.equal(result.estimatedReceipts.length, 1);
+  assert.equal(result.estimatedReceipts[0].replacedByPayout, true);
   assert.equal(result.estimatedReceipts[0].includedInRevenue, false);
   assert.equal(result.estimatedReceipts[0].dateBasis, 'purchase');
 });
@@ -440,4 +441,63 @@ test('infrastructure enable settings accept only booleans and failed saves prese
   }
   assert.equal((await api(env, 'revenues/delete', { id: 'builtin-cloudflare' })).status, 404);
   assert.equal((await getEconomyConfig(env)).cloudflareEnabled, false);
+});
+
+
+test('all store sales enter income and profit alongside SBP and other receipts', async () => {
+  const env = environment();
+  await seedConfig(env, { reinvestPercent: 50, nikitaSharePercent: 10,
+    manualRevenues: [{ id: 'other', title: 'Доход', store: 'other', amountRub: 100, date: '2026-10-10' }] });
+  await order(env, 'sbp', { amount: 99 });
+  const users = ['appstore', 'googleplay', 'rustore'].map(store => ({
+    id: store, premiumSource: store, isPremium: true, purchasedAt: '2026-10-10T12:00:00Z',
+    verifiedPurchase: { store, transactionId: store + '-tx', productId: 'premium_3months' },
+  }));
+  users.push({ ...users[0], id: 'duplicate' });
+  users.push({ ...users[1], id: 'sandbox', verifiedPurchase: { ...users[1].verifiedPurchase, transactionId: 'sandbox', environment: 'Sandbox' } });
+  users.push({ ...users[0], id: 'old', purchasedAt: '2026-09-01T12:00:00Z', verifiedPurchase: { ...users[0].verifiedPurchase, transactionId: 'old' } });
+  for (const user of users) await env.INSTALLS.put('user:' + user.id, JSON.stringify(user));
+  const result = await stats(env, 'month', { listUserSummaries: async () => users });
+  assert.equal(result.revenue.grossRub, 1069);
+  assert.equal(result.revenue.includedStoreSalesRub, 870);
+  assert.equal(result.revenue.estimatesIncludedInGross, true);
+  assert.equal(result.revenue.appstoreRub, 290);
+  assert.equal(result.revenue.gplayRub, 290);
+  assert.equal(result.revenue.rustoreRub, 290);
+  assert.equal(result.receipts.length, 6);
+  assert.equal(result.profit.reinvestRub, 534.5);
+  assert.equal(result.partners.nikita.payoutRub, 53.45);
+  assert.equal(result.partners.sergey.payoutRub, 481.05);
+  await saveEconomyConfig(env, { excludeTestOrders: false });
+  assert.equal((await stats(env, 'month', { listUserSummaries: async () => users })).revenue.grossRub, 1359);
+});
+
+test('store purchase remains counted when another entitlement becomes the main source', async () => {
+  const env = environment();
+  await seedConfig(env);
+  const user = { id: 'mixed', premiumSource: 'web', premiumExpiresAt: '2027-10-10T12:00:00Z', purchasedAt: '2026-10-10T12:00:00Z',
+    verifiedPurchase: { store: 'appstore', transactionId: 'mixed-tx', productId: 'premium_week' } };
+  await env.INSTALLS.put('user:mixed', JSON.stringify(user));
+  const result = await stats(env, 'month', { listUserSummaries: async () => [user] });
+  assert.equal(result.revenue.grossRub, 99);
+  assert.equal(result.revenue.appstoreRub, 99);
+  assert.equal(result.receipts[0].storeKey, 'appstore');
+});
+
+
+test('a payout replaces only its store and only within the selected period', async () => {
+  const env = environment();
+  await seedConfig(env, { manualRevenues: [{ id: 'payout', title: 'Apple', store: 'appstore', amountRub: 250, date: '2026-09-20' }] });
+  const users = ['appstore', 'googleplay'].map(store => ({ id: store, premiumSource: store,
+    purchasedAt: '2026-10-10T12:00:00Z', verifiedPurchase: { store, transactionId: store, productId: 'premium_3months' } }));
+  for (const user of users) await env.INSTALLS.put('user:' + user.id, JSON.stringify(user));
+  const deps = { listUserSummaries: async () => users };
+  assert.equal((await stats(env, 'month', deps)).revenue.grossRub, 580);
+  const all = await stats(env, 'all', deps);
+  assert.equal(all.revenue.grossRub, 540);
+  assert.equal(all.revenue.appstoreRub, 250);
+  assert.equal(all.revenue.gplayRub, 290);
+  assert.equal(all.revenue.includedStoreSalesRub, 290);
+  assert.equal(all.estimatedReceipts.find(row => row.storeKey === 'appstore').replacedByPayout, true);
+  assert.equal(all.estimatedReceipts.find(row => row.storeKey === 'googleplay').includedInRevenue, true);
 });

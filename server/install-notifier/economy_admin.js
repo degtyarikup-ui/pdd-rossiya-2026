@@ -1,5 +1,5 @@
 // Админский учёт экономики. Платежи и сроки Premium здесь не изменяются.
-// Денежные поступления, оценки продаж и бюджет расходов считаются отдельно.
+// Доход включает продажи магазинов; фактическая выплата заменяет оценку источника.
 export const DEFAULT_ECONOMY_CONFIG = {
   usdRate: 95,
   cloudflareMonthlyUsd: 5,
@@ -249,35 +249,51 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       if (Object.hasOwn(storeCounts, source)) storeCounts[source]++;
       if (['web', 'appstore', 'googleplay', 'rustore'].includes(source)) activePayingCount++;
     }
-    if (!['appstore', 'googleplay', 'rustore'].includes(source)) continue;
+    if (!['appstore', 'googleplay', 'rustore'].includes(source) && !user.purchasedAt && !user.storeVerifiedAt) continue;
     let full = user;
     try { full = JSON.parse(await env.INSTALLS.get('user:' + user.id) || 'null') || user; } catch (_) {}
     const purchase = full.verifiedPurchase || {};
+    const purchaseSource = String(purchase.store || source).toLowerCase();
+    if (!['appstore', 'googleplay', 'rustore'].includes(purchaseSource)) continue;
     // Проверка подписки может повторяться: storeVerifiedAt не дата продажи.
     const time = remember(full.purchasedAt || user.purchasedAt || full.storeVerifiedAt || user.storeVerifiedAt);
     if (!inPeriod(time, periodStart, now)) continue;
     const txId = purchase.transactionId || purchase.orderId || user.id;
-    const unique = source + ':' + txId;
+    const unique = purchaseSource + ':' + txId;
     if (seenTransactions.has(unique)) continue;
     seenTransactions.add(unique);
     const product = String(purchase.productId || '').toLowerCase();
     const duration = expiry && time ? (expiry - time) / DAY : 0;
-    const is3m = product.includes('3month') || duration >= 60;
+    const is3m = product.includes('3month') || (!product && duration >= 60);
     const isTest = isTestOrder({ ...full, environment: purchase.environment });
     estimatedReceipts.push({ id: txId, date: new Date(time).toISOString(), customer: user.name || user.email || 'Пользователь',
-      email: user.email || '', store: stores[source], storeKey: source, tier: is3m ? '3 месяца' : '1 неделя',
+      email: user.email || '', store: stores[purchaseSource], storeKey: purchaseSource, tier: is3m ? '3 месяца' : '1 неделя',
       amountRub: is3m ? 290 : 99, txId, isTest, status: 'estimated', type: 'estimate', includedInRevenue: false,
       dateBasis: full.purchasedAt || user.purchasedAt ? 'purchase' : 'verification' });
   }
   let manualRevenuesRub = 0;
+  const paidStores = new Set();
   for (const revenue of config.manualRevenues) {
     const time = remember(revenue.date);
     if (!inPeriod(time, periodStart, now)) continue;
+    paidStores.add(revenue.store);
     revenueByStore[revenue.store] += revenue.amountRub;
     manualRevenuesRub += revenue.amountRub;
     receipts.push({ id: revenue.id, date: revenue.date, customer: revenue.title, email: '', store: stores[revenue.store],
       storeKey: revenue.store, tier: 'Поступление', amountRub: revenue.amountRub, txId: revenue.id,
       isTest: false, status: 'confirmed', type: 'manual', includedInRevenue: true, editable: true });
+  }
+  let includedStoreSalesRub = 0;
+  for (const receipt of estimatedReceipts) {
+    // Выплата за выбранный период — фактическая сумма после комиссии.
+    // Для этого источника она заменяет оценку продаж, а не складывается с ней.
+    receipt.replacedByPayout = paidStores.has(receipt.storeKey);
+    receipt.includedInRevenue = (!receipt.isTest || !config.excludeTestOrders) && !receipt.replacedByPayout;
+    if (receipt.includedInRevenue) {
+      revenueByStore[receipt.storeKey] += receipt.amountRub;
+      includedStoreSalesRub += receipt.amountRub;
+    }
+    receipts.push(receipt);
   }
   config.extraExpenses.forEach(expense => remember(expense.date));
   const budgetStart = period === 'all'
@@ -338,7 +354,8 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
     revenue: { grossRub: grossRevenueRub, webRub: round(revenueByStore.web), appstoreRub: round(revenueByStore.appstore),
       gplayRub: round(revenueByStore.googleplay), rustoreRub: round(revenueByStore.rustore), otherRub: round(revenueByStore.other),
       manualRub: round(manualRevenuesRub), ordersCount: webConfirmedOrdersCount, activePayingCount, storeCounts,
-      estimatedStoresRub, estimatesIncludedInGross: false },
+      estimatedStoresRub, includedStoreSalesRub: round(includedStoreSalesRub),
+      estimatesIncludedInGross: estimatedReceipts.some(receipt => receipt.includedInRevenue) },
     receipts, estimatedReceipts,
     expenses: { totalRub: totalExpensesRub, monthlyRub: round(monthlyRub), recurringRub: round(recurringRub), oneOffRub: round(oneOffRub),
       lines, cloudflare: { usd: config.cloudflareMonthlyUsd, rub: cloudflarePeriodRub, monthlyRub: cloudflareMonthlyRub, enabled: config.cloudflareEnabled, basis: 'budget' },
