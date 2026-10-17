@@ -5,13 +5,14 @@ const fixtureProviderKey = randomUUID();
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import worker from './worker.js';
+import { signSession } from './user_auth.js';
 import { readAiRequest, AiRequestError, AI_REQUEST_LIMITS as limits, AI_PROVIDER_TIMEOUT_MS } from './ai_request.js';
 
 const request = body => new Request('https://audit.invalid/api/ai/chat', {
   method: 'POST', headers: { 'content-type': 'application/json', 'x-install-secret': fixtureSharedSecret },
-  body: JSON.stringify(body),
+  body: JSON.stringify({ installationId: 'a'.repeat(32), ...body }),
 });
-const env = { SHARED_SECRET: fixtureSharedSecret, GEMINI_API_KEY: fixtureProviderKey, INSTALLS: { get: async () => null } };
+const env = { __AI_TEST_QUOTA: true, SHARED_SECRET: fixtureSharedSecret, GEMINI_API_KEY: fixtureProviderKey, INSTALLS: { get: async () => null } };
 
 test('all 4800 current RU/EN/KK question payloads fit without truncation', async () => {
   const directory = new URL('../../assets/countries/ru/questions/', import.meta.url);
@@ -36,7 +37,7 @@ test('malformed AI schemas return 400 before making a paid request', async () =>
     for (const body of [null, [], { questionText: {} }, { answers: {} }, { answers: [42] },
       { messages: 'history' }, { messages: [null] }, { messages: [{ text: 'test' }] },
       { messages: [{ isUser: true, text: {} }] }, { officialExplanation: 42 }, { userMessage: [] }]) {
-      assert.equal((await worker.fetch(request(body), env)).status, 400);
+      assert.equal((await worker.fetch(new Request('https://audit.invalid/api/ai/chat', { method: 'POST', headers: { 'x-install-secret': 'fixture-key' }, body: JSON.stringify(body) }), env)).status, 400);
     }
     assert.equal(calls, 0);
   } finally { globalThis.fetch = original; }
@@ -74,8 +75,13 @@ test('Gemini request receives a deadline inside the client timeout and bounded c
     return Response.json({ candidates: [{ content: { parts: [{ text: 'fixture answer' }] } }] });
   };
   try {
-    const response = await worker.fetch(request({ questionText: 'fixture', answers: ['answer'], correctAnswerIndex: 0,
-      officialExplanation: 'e'.repeat(9000), messages: [{ isUser: true, text: 'm'.repeat(3000) }], userMessage: 'u'.repeat(5000) }), env);
+    const sessionCredential = crypto.randomUUID();
+    const token = await signSession({ SESSION_SECRET: sessionCredential }, { user: { id: 'google_fixture' }, expiresAt: Date.now() + 60000, generation: '' });
+    const signedEnv = { ...env, SESSION_SECRET: sessionCredential };
+    const aiRequest = request({ questionText: 'fixture', answers: ['answer'], correctAnswerIndex: 0,
+      officialExplanation: 'e'.repeat(9000), messages: [{ isUser: true, text: 'm'.repeat(3000) }], userMessage: 'u'.repeat(5000) });
+    aiRequest.headers.set('authorization', 'Bearer ' + token);
+    const response = await worker.fetch(aiRequest, signedEnv);
     assert.equal(response.status, 200);
     assert.equal((await response.json()).reply, 'fixture answer');
     assert.equal(calls.length, 1);
@@ -95,6 +101,8 @@ test('provider timeout preserves the existing deterministic explanation fallback
   try {
     const response = await worker.fetch(request({ questionText: 'Fixture?', answers: ['First'], correctAnswerIndex: 0, officialExplanation: 'Official fixture comment.' }), env);
     assert.equal(response.status, 200);
-    assert.match((await response.json()).reply, /Official fixture comment\./);
+    const value = await response.json();
+    assert.equal(value.reply, 'Official fixture comment.');
+    assert.equal(value.generated, false);
   } finally { globalThis.fetch = original; console.error = originalLog; }
 });

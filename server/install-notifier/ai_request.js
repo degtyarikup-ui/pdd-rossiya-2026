@@ -51,6 +51,7 @@ export async function readAiRequest(request) {
     return { isUser: message.isUser, text: text(message.text, limit.messageChars) };
   });
   return {
+    installationId: text(body.installationId || body.installId, 80), locale: text(body.locale, 16),
     questionText: text(body.questionText, limit.questionChars), answers,
     correctAnswerIndex: Number.isInteger(body.correctAnswerIndex) && body.correctAnswerIndex >= 0 && body.correctAnswerIndex < answers.length ? body.correctAnswerIndex : undefined,
     officialExplanation: text(body.officialExplanation, limit.explanationChars),

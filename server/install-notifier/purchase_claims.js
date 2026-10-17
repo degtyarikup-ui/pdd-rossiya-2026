@@ -3,6 +3,7 @@
 export class PurchaseClaims {
   constructor(state) { this.state = state; }
   async fetch(request) {
+    if (request.method === 'GET') return Response.json({ userId: await this.state.storage.get('owner') || null });
     if (request.method !== 'POST') return new Response(null, { status: 405 });
     const { userId } = await request.json();
     if (typeof userId !== 'string' || !userId) return new Response(null, { status: 400 });

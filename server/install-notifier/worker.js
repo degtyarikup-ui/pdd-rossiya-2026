@@ -30,9 +30,18 @@ export { PurchaseClaims } from './purchase_claims.js';
 export { SupportThread } from './support_thread.js';
 import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError } from './store_verification.js';
 import { setEntitlement } from './entitlements.js';
-import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
+import { accountTokenForUserId } from './store_account.js';
+import { deleteAccountDocuments } from './apple_account.js';
+import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive, settleOrder } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession } from './user_auth.js';
 import { readAiRequest, AiRequestError, AI_PROVIDER_TIMEOUT_MS } from './ai_request.js';
+import { routeAccountRequest, accountRead, accountWrite, accountRpc } from './account_state.js';
+export { AccountState } from './account_state.js';
+export { AiQuotaState } from './ai_quota.js';
+import { aiQuota } from './ai_quota.js';
+import { privatePushTopic } from './notification_identity.js';
+import { reconcileAccounts } from './account_maintenance.js';
+import { handleStoreNotification, appleNotificationToken } from './store_notifications.js';
 import { handleTelegramAuthRequest, handleTelegramAuthCheck } from './telegram_auth.js';
 import { handleClientIncident, deferIncident, errorCode, isIncidentReported } from './diagnostics.js';
 import { APPLE_WEB_CALLBACK_PATH, handleAppleWebCallback } from './apple_web_callback.js';
@@ -902,6 +911,14 @@ async function pollReviews(env) {
 }
 
 export async function sendTelegram(env, text, dedupKey = null, options = {}) {
+  if (env.__DURABLE_EFFECTS) {
+    env.__DURABLE_EFFECTS.push({ kind: 'telegram', text, dedupKey, options });
+    return Response.json({ ok: true, deferred: true });
+  }
+  if (env.__AFTER_ACCOUNT_COMMIT) {
+    env.__AFTER_ACCOUNT_COMMIT.push(() => sendTelegram({ ...env, __AFTER_ACCOUNT_COMMIT: null }, text, dedupKey, options));
+    return Response.json({ ok: true, deferred: true });
+  }
   let dedup = dedupKey;
   let opts = options;
   if (dedupKey && typeof dedupKey === 'object' && !Array.isArray(dedupKey)) {
@@ -2077,6 +2094,11 @@ export function sanitizeAnalyticsEvent(event) {
 }
 
 async function trackStats(env, ctx, item) {
+  if (env.__DURABLE_EFFECTS) { env.__DURABLE_EFFECTS.push({ kind: 'stats', item }); return; }
+  if (env.__AFTER_ACCOUNT_COMMIT) {
+    env.__AFTER_ACCOUNT_COMMIT.push(() => trackStats({ ...env, __AFTER_ACCOUNT_COMMIT: null }, null, item));
+    return;
+  }
   if (!env.INSTALLS) return;
   if (item && item.kind === 'analytics') item.event = sanitizeAnalyticsEvent(item.event);
   item.ts = item.ts || Date.now();
@@ -2752,7 +2774,7 @@ async function getAiAnalyticsStats(env) {
 // ────────────────────── User Profile & Premium Security ──────────────────────
 function publicUser(user) {
   if (!user) return null;
-  const { verifiedPurchase, storeVerifiedAt, ...profile } = user;
+  const { verifiedPurchase, verifiedPurchases, storeVerifiedAt, storeVerifiedAtByStore, ...profile } = user;
   return profile;
 }
 
@@ -2765,6 +2787,8 @@ async function saveUserProfile(env, user) {
     if (raw) existing = JSON.parse(raw);
   } catch (_) {}
 
+  const deletion = JSON.parse(await env.INSTALLS.get('account_deleted:' + user.id) || 'null');
+  if (deletion && Date.parse(user.createdAt || '') <= deletion.at) throw new Error('account deleted');
   existing = await refreshStoreEntitlement(env, existing);
   // SECURITY: Subscriptions are strictly server-authoritative!
   let isPremium = existing ? (existing.isPremium || false) : false;
@@ -2804,6 +2828,8 @@ async function saveUserProfile(env, user) {
     purchasedAt: existing?.purchasedAt || undefined,
     autoRenewEnabled: existing?.autoRenewEnabled ?? null,
     verifiedPurchase: existing?.verifiedPurchase || null,
+    verifiedPurchases: existing?.verifiedPurchases || null,
+    storeVerifiedAtByStore: existing?.storeVerifiedAtByStore || null,
     storeVerifiedAt: existing?.storeVerifiedAt || null,
     grantedAt: existing ? existing.grantedAt : (user.grantedAt || null),
     grantNotice: existing?.grantNotice || null,
@@ -2820,6 +2846,11 @@ async function saveUserProfile(env, user) {
   }
 
   if (env.TRAFFIC && merged.provider && merged.provider !== 'guest' && !merged.suspect) {
+    if (env.__DURABLE_EFFECTS) {
+      const { verifiedPurchase, verifiedPurchases, webPayments, ...registrationUser } = merged;
+      env.__DURABLE_EFFECTS.push({ kind: 'registration', user: registrationUser });
+      return merged;
+    }
     try {
       await trafficRequest(env, 'counter:registered_users', 'install', {
         installId: merged.id, legacyKey: 'notified_reg:' + merged.id, registrationUser: merged,
@@ -2879,6 +2910,15 @@ const workerHandlers = {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
     const url = new URL(request.url);
+
+    if (url.pathname === '/api/store/apple/notifications') return handleStoreNotification(request, env, 'appstore');
+    if (url.pathname === '/api/store/google/notifications') return handleStoreNotification(request, env, 'googleplay');
+    if (url.pathname === '/api/admin/store-webhooks' && request.method === 'GET') {
+      if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
+      const token = await appleNotificationToken(env);
+      return jsonResponse({ appleCallbackUrl: token ? url.origin + '/api/store/apple/notifications?token=' + token : null,
+        googleCallbackUrl: url.origin + '/api/store/google/notifications', googleConfigured: Boolean(env.GOOGLE_RTDN_AUDIENCE && env.GOOGLE_RTDN_SERVICE_ACCOUNT_EMAIL) }, 200, { 'Cache-Control': 'no-store' });
+    }
 
     if (url.pathname === APPLE_WEB_CALLBACK_PATH) return handleAppleWebCallback(request);
 
@@ -3232,6 +3272,15 @@ const workerHandlers = {
         if (request.method === 'GET') return notificationRequest(env, '/admin');
         let body;
         try { body = await request.json(); } catch { return jsonResponse({ error: 'invalid json' }, 400); }
+        if (action === '/publish' && body.target) {
+          const target = String(body.target).trim().toLowerCase();
+          const targetId = target.includes('@') ? await env.INSTALLS.get('user_email:' + target) : target;
+          const raw = targetId ? await accountRead(env, targetId, 'user:' + targetId) : null;
+          if (!raw) return jsonResponse({ error: 'target account not found' }, 404);
+          const targetUser = JSON.parse(raw);
+          if (target !== targetUser.id.toLowerCase() && target !== String(targetUser.email || '').toLowerCase()) return jsonResponse({ error: 'target account not found' }, 404);
+          body.targetTopic = await privatePushTopic(env, targetId);
+        }
         return notificationRequest(env, action, 'POST', body);
       }
       return jsonResponse({ error: 'not found' }, 404);
@@ -3240,18 +3289,22 @@ const workerHandlers = {
       return serveNotificationImage(env, url.pathname.slice('/api/notifications/image/'.length));
     }
     if (url.pathname === '/api/notifications' && request.method === 'GET') {
+      const noticeSession = await readSession(request, env);
       const response = await notificationRequest(
         env,
         '/client?app=' + encodeURIComponent(url.searchParams.get('app') || '') +
         '&platform=' + encodeURIComponent(url.searchParams.get('platform') || '') +
-        '&userId=' + encodeURIComponent(url.searchParams.get('userId') || '') +
-        '&email=' + encodeURIComponent(url.searchParams.get('email') || '') +
+        '&userId=' + encodeURIComponent(noticeSession?.user?.id || '') +
+        '&email=' + encodeURIComponent(noticeSession?.user?.email || '') +
         '&imageBanners=' + encodeURIComponent(url.searchParams.get('imageBanners') || '')
       );
       // Responses from a Durable Object fetch have immutable headers.
       const headers = new Headers(response.headers);
       for (const [key, value] of Object.entries(CORS_HEADERS)) headers.set(key, value);
-      return new Response(response.body, { status: response.status, headers });
+      if (!response.ok) return new Response(response.body, { status: response.status, headers });
+      const feed = await response.json();
+      feed.pushTopics = noticeSession ? [await privatePushTopic(env, noticeSession.user.id)] : [];
+      return jsonResponse(feed, response.status, Object.fromEntries(headers));
     }
 
     // ────────────────────── Ads API Endpoints ──────────────────────
@@ -3300,6 +3353,7 @@ const workerHandlers = {
       return authorization.response;
     }
     const authenticatedUser = authorization.session?.user;
+    if (url.pathname === '/api/user/store/account-token' && request.method === 'GET') return jsonResponse({ ok: true, accountToken: await accountTokenForUserId(authenticatedUser.id) }, 200, { 'Cache-Control': 'no-store' });
     if (url.pathname === '/api/user/store/status' && request.method === 'GET') {
       const store = url.searchParams.get('store');
       const configured = Boolean(env.PURCHASE_CLAIMS) && (store === 'googleplay'
@@ -3441,15 +3495,8 @@ const workerHandlers = {
       try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
       const userId = String(body?.userId || '').trim();
       if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
-      let email = null;
-      try {
-        const raw = await env.INSTALLS.get('user:' + userId);
-        if (raw) email = JSON.parse(raw).email || null;
-      } catch (_) {}
       await revokeUserSessions(env, userId);
-      await env.INSTALLS.delete('user:' + userId);
-      await env.INSTALLS.delete('user_progress:' + userId);
-      if (email) await env.INSTALLS.delete('user_email:' + email.toLowerCase().trim());
+      const deletionResult = await deleteAccountDocuments(env, userId);
       try {
         const week = gameWeekKey();
         await deleteGamePlayer(env, week, userId);
@@ -3462,7 +3509,7 @@ const workerHandlers = {
           await env.INSTALLS.put('users_list', JSON.stringify(userIds.filter(id => id !== userId)));
         }
       } catch (_) {}
-      return jsonResponse({ ok: true, deleted: userId });
+      return jsonResponse({ ok: true, deleted: userId, ...deletionResult });
     }
 
     // Оплата на сайте (СБП через Platega, см. payments.js): выбор тарифа
@@ -3506,7 +3553,6 @@ const workerHandlers = {
       let verified;
       try {
         verified = await verifyStorePurchase(body, env, authenticatedUser.id);
-        if (!verified.active) return jsonResponse({ ok: true, isPremium: false, premiumExpiresAt: verified.expiresAt });
         await claimPurchase(env, authenticatedUser.id, verified);
       } catch (error) {
         return jsonResponse({ error: error instanceof StoreError ? error.message : 'store verification unavailable' }, error instanceof StoreError ? error.status : 503);
@@ -3542,6 +3588,8 @@ const workerHandlers = {
       // Срок стора — отдельно от сайта и админки: итог берёт самый дальний.
       setEntitlement(user, store, storeEntitlementExpiry(verified));
       user.verifiedPurchase = verified.reference;
+      user.verifiedPurchases = { ...(user.verifiedPurchases || {}), [store]: verified.reference };
+      user.storeVerifiedAtByStore = { ...(user.storeVerifiedAtByStore || {}), [store]: Date.now() };
       user.autoRenewEnabled = verified.autoRenewEnabled;
       user.storeVerifiedAt = Date.now();
       user.purchasedAt = new Date().toISOString();
@@ -3698,9 +3746,14 @@ const workerHandlers = {
     if (url.pathname.startsWith('/api/admin/users')) {
       const usersResponse = await handleUsersAdmin(request, env, url, {
         verifyAdminAuth, getAllUsers, revokeUserSessions, readGameBoard, deleteGamePlayer, gameWeekKey, jsonResponse,
-        sendTelegram, buildPremiumGrantMessage,
+        sendTelegram, buildPremiumGrantMessage, esc, trackStats,
       });
       if (usersResponse) return usersResponse;
+    }
+
+    if (url.pathname === '/api/ai/status' && request.method === 'GET') {
+      const access = await aiQuota(request, env, {}, false);
+      return access.response || jsonResponse(access.quota, 200, { 'Cache-Control': 'no-store' });
     }
 
     // ────────────────────── AI Assistant & Chat API ──────────────────────
@@ -3722,25 +3775,11 @@ const workerHandlers = {
       const appAuthorized = Boolean(env.SHARED_SECRET) &&
         safeEquals(request.headers.get('x-install-secret') || '', env.SHARED_SECRET);
 
-      if (!appAuthorized) {
-        const legacyOpen = env.INSTALLS ? (await env.INSTALLS.get('ai_legacy_open')) !== 'off' : false;
-        if (!legacyOpen) {
-          return jsonResponse({ error: 'Обнови приложение — эта версия больше не поддерживается' }, 403);
-        }
-        // Свободный чат — только для подписанных запросов: именно он превращает
-        // эндпоинт в бесплатный доступ к нейросети.
-        if ((userMessage && String(userMessage).trim()) || (Array.isArray(messages) && messages.length > 0)) {
-          return jsonResponse({ error: 'Обнови приложение, чтобы задавать вопросы ИИ' }, 403);
-        }
-        if (env.INSTALLS) {
-          const ip = request.headers.get('cf-connecting-ip') || 'unknown';
-          const quotaKey = `ai_legacy:${mskDayKey(new Date())}:${ip}`;
-          const used = parseInt((await env.INSTALLS.get(quotaKey)) || '0', 10);
-          if (used >= AI_LEGACY_DAILY_LIMIT) {
-            return jsonResponse({ error: 'Слишком много запросов, попробуй позже' }, 429);
-          }
-          await env.INSTALLS.put(quotaKey, String(used + 1), { expirationTtl: 26 * 3600 });
-        }
+      if (!appAuthorized) return jsonResponse({ error: 'forbidden' }, 403);
+      const access = await aiQuota(request, env, body);
+      if (access.response) {
+        for (const [key, value] of Object.entries(CORS_HEADERS)) access.response.headers.set(key, value);
+        return access.response;
       }
 
       // Длину входа режем всегда: она напрямую превращается в оплаченные токены.
@@ -3754,6 +3793,7 @@ const workerHandlers = {
 Твоя задача — кратко, наглядно и человеческим языком объяснить дорожную ситуацию.
 
 ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА:
+Пиши на ${{ru: 'русском', en: 'английском', kk: 'казахском'}[body.locale] || 'русском'} языке.
 1. Пиши СТРОГО БЕЗ ПРИВЕТСТВИЙ, вступлений и общих фраз (запрещено писать "Привет!", "Давай разберем..."). Сразу начинай с сути.
 2. Текст должен быть очень коротким и понятным (3-5 строк максимум).
 3. Выделяй жирным шрифтом **главные термины**, **названия знаков** и **правильные действия**.
@@ -3837,17 +3877,16 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
       }
 
       if (!reply) {
-        if (userMessage && userMessage.trim().length > 0) {
-          reply = `По вопросу: **${correctAnswerText}**.\n\nСогласно правилам ПДД РФ, водитель обязан строго руководствоваться требованиями разметки и дорожных знаков.\n\n💡 Если остались сомнения, ориентируйтесь на приоритет регулировщика и знаков приоритета.`;
-        } else {
-          reply = `🚗 **Что на дороге:** ${questionText ? questionText.replace(/\?$/, '.') : 'Оценка дорожной обстановки.'}\n\n💡 **Логика ПДД:** ${officialExplanation || 'Согласно правилам, водитель обязан уступить дорогу имеющим преимущество.'}\n\n⚡ **Подсказка:** Правильный вариант — **«${correctAnswerText}»**.`;
-        }
+        if (!userMessage && !messages.length && officialExplanation) return jsonResponse({ ok: true, reply: officialExplanation, generated: false, aiUnavailable: true, ...access.quota });
+        return jsonResponse({ error: 'ai_unavailable', generated: false, ...access.quota }, 503);
       }
 
       return jsonResponse({
         ok: true,
         reply,
-        model: activeModel
+        generated: true,
+        model: activeModel,
+        ...access.quota
       });
     }
 
@@ -4173,6 +4212,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
     // Триггер автопостинга: проверяет расписание и продолжает оборвавшиеся
     // публикации (у Instagram уходит несколько минут только на кодирование).
     if (event.cron === HOURLY_CRON) {
+      ctx.waitUntil(reconcileAccounts(env));
       let origin = DEFAULT_WORKER_ORIGIN;
       try {
         const settings = JSON.parse(await env.INSTALLS.get('social:settings'));
@@ -4202,6 +4242,54 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
   },
 };
 
+export async function executeAccountEffect(effect, env) {
+  if (effect.kind === 'telegram') {
+    const response = await sendTelegram(env, effect.text, effect.dedupKey, effect.options);
+    if (!response.ok) throw new Error('telegram queue unavailable');
+  } else if (effect.kind === 'stats') await trackStats(env, null, effect.item);
+  else if (effect.kind === 'registration') await trafficRequest(env, 'counter:registered_users', 'install', {
+    installId: effect.user.id, legacyKey: 'notified_reg:' + effect.user.id, registrationUser: effect.user,
+  });
+  else throw new Error('unknown account effect');
+}
+
+// Only invoked over the private Durable Object binding after account routing.
+export async function handleAccountHttp(request, env) {
+  return workerHandlers.fetch(request, env, { waitUntil: task => env.__AFTER_ACCOUNT_COMMIT.push(() => task) });
+}
+export async function handleAccountMaintenance(path, request, env) {
+  if (path === '/_account/iap-event') {
+    const { reference, key } = await request.json();
+    const raw = await env.INSTALLS.get('user:' + env.__ACCOUNT_ID);
+    if (!raw) return jsonResponse({ error: 'account deleted' }, 410);
+    const user = JSON.parse(raw);
+    const verified = await verifyStorePurchase(reference, env, user.id, { refresh: true });
+    if (verified.key !== key) return jsonResponse({ error: 'wrong subscription' }, 403);
+    const ownerResponse = await env.PURCHASE_CLAIMS.get(env.PURCHASE_CLAIMS.idFromName(key)).fetch('https://purchase-claims/owner');
+    if (!ownerResponse.ok || (await ownerResponse.json()).userId !== user.id) return jsonResponse({ error: 'wrong account' }, 403);
+    setEntitlement(user, reference.store, storeEntitlementExpiry(verified));
+    user.verifiedPurchases = { ...(user.verifiedPurchases || {}), [reference.store]: verified.reference };
+    user.storeVerifiedAtByStore = { ...(user.storeVerifiedAtByStore || {}), [reference.store]: Date.now() };
+    user.verifiedPurchase = verified.reference; user.storeVerifiedAt = Date.now(); user.autoRenewEnabled = verified.autoRenewEnabled;
+    await putUserRecord(env, user);
+  } else if (path === '/_account/refresh') {
+    const raw = await env.INSTALLS.get('user:' + env.__ACCOUNT_ID);
+    if (raw) await refreshStoreEntitlement(env, JSON.parse(raw));
+  } else {
+    const { orderId } = await request.json();
+    const raw = await env.INSTALLS.get('pay_order:' + orderId);
+    if (raw) {
+      const order = JSON.parse(raw);
+      if (order.userId !== env.__ACCOUNT_ID) return jsonResponse({ error: 'wrong account' }, 403);
+      if (!order.txId && order.status === 'creating' && Date.now() - Date.parse(order.createdAt) >= 20 * 60000) {
+        order.status = 'creation_unknown';
+        await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
+      } else await settleOrder(env, order, { jsonResponse, sendTelegram, esc, trackStats });
+    }
+  }
+  return jsonResponse({ ok: true });
+}
+
 // Capture response failures and unexpected exceptions without reading request
 // credentials, URLs with query parameters, receipts, or exception messages.
 export default {
@@ -4218,7 +4306,7 @@ export default {
       return deferIncident(ctx, env, { category, operation, status, code, userId: session?.user?.id, user: session?.user, diagnosticId });
     };
     try {
-      const response = await workerHandlers.fetch(request, env, ctx);
+      const response = await routeAccountRequest(request, env, { readSession, verifyAdminAuth }) || await workerHandlers.fetch(request, env, ctx);
       if (!isIncidentReported(response) && path !== '/api/auth/session' && (response.status >= 500 || (path === '/api/user/purchase' && [400, 403, 409, 422].includes(response.status)))) {
         let code = 'http_' + response.status;
         try {

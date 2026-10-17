@@ -90,6 +90,8 @@ async function platega(env, path, body) {
   return data;
 }
 
+export async function readPaymentTransaction(env, txId) { return platega(env, '/transaction/' + encodeURIComponent(txId)); }
+
 async function reportPaymentFailure(env, operation, error, order, user, response) {
   const account = user || { id: order.userId, name: order.name, email: order.accountEmail, provider: order.provider };
   const reported = await reportIncident(env, {
@@ -132,6 +134,18 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   const repeat = previous && previous.email === email && previous.tier === tier && previous.method === method &&
     now - Date.parse(previous.at) < REPEAT_MS;
   if (repeat && !live) return jsonResponse({ ok: true, available: false });
+  if (previous?.lastOrder?.orderId) {
+    const reserved = await readJson(env, 'pay_order:' + previous.lastOrder.orderId);
+    if (reserved && ['creating', 'creation_unknown'].includes(reserved.status)) {
+      if (reserved.status === 'creating' && now - Date.parse(reserved.createdAt) >= 20 * 60000) {
+        reserved.status = 'creation_unknown';
+        await env.INSTALLS.put('pay_order:' + reserved.orderId, JSON.stringify(reserved));
+      }
+      // An uncertain external create never becomes safe to repeat with age.
+      // 409 commits the unknown marker and asks support to reconcile it.
+      return jsonResponse({ error: reserved.status === 'creation_unknown' ? 'payment creation requires review' : 'payment creation pending', code: reserved.status === 'creation_unknown' ? 'payment_creation_unknown' : 'payment_creation_pending', order: reserved.orderId, status: reserved.status }, reserved.status === 'creation_unknown' ? 409 : 503);
+    }
+  }
   if (repeat && previous.lastOrder?.url && previous.lastOrder.tier === tier && previous.lastOrder.client === client) {
     // Только неоплаченный заказ: после оплаты новая покупка — новый платёж.
     const last = await readJson(env, 'pay_order:' + previous.lastOrder.orderId);
@@ -156,6 +170,14 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
       ? { ok: `${PAY_DONE_URL}?order=${orderId}`, fail: `${PAY_DONE_URL}?order=${orderId}&failed=1` }
       : { ok: `${PAY_RETURN_URL}?pay=done&order=${orderId}`, fail: `${PAY_RETURN_URL}?pay=failed&order=${orderId}` };
     try {
+      if (env.__ACCOUNT_CHECKPOINT) {
+        order = { orderId, txId: null, userId: user.id, name: user.name || '', accountEmail: user.email || '', provider: user.provider || null,
+          email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB', method, app, client, status: 'creating', createdAt: new Date(now).toISOString() };
+        intent.lastOrder = { orderId, tier, client };
+        await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
+        await env.INSTALLS.put(key, JSON.stringify(intent));
+        await env.__ACCOUNT_CHECKPOINT();
+      }
       const tx = await platega(env, '/transaction/process', {
         paymentMethod: PLATEGA_METHODS[method],
         paymentDetails: { amount: tariff.priceRub, currency: 'RUB' },
@@ -179,8 +201,13 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
       await env.INSTALLS.put('pay_tx:' + tx.transactionId, orderId);
       intent.lastOrder = { orderId, url, tier, client };
     } catch (error) {
+      if (order?.status === 'creating' && [400, 401, 403, 404, 422].includes(error?.providerStatus)) {
+        order.status = 'create_failed';
+        await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
+        await env.__ACCOUNT_CHECKPOINT?.();
+      }
       return reportPaymentFailure(env, 'api.user.pay-intent', error, attempt, user,
-        jsonResponse({ error: error instanceof PaymentError ? error.message : 'storage unavailable' }, error instanceof PaymentError ? error.status : 503));
+        jsonResponse({ error: error instanceof PaymentError ? error.message : 'storage unavailable', ...(order?.status === 'creating' ? { code: 'payment_creation_pending', order: order.orderId, status: order.status } : {}) }, error instanceof PaymentError ? error.status : 503));
     }
   }
 
@@ -216,31 +243,67 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
 export async function settleOrder(env, order, deps) {
   // Оплаченный заказ ещё может вернуться возвратом (CHARGEBACKED).
   if (order.status === 'chargebacked' || order.status === 'mismatch') return order;
-  const tx = await platega(env, '/transaction/' + encodeURIComponent(order.txId));
+  if (!order.txId) return order; // Unknown create is never retried as a POST.
+  const tx = await readPaymentTransaction(env, order.txId);
+  if (order.requirePayload && tx.payload !== order.orderId) throw new PaymentError('payment payload mismatch', 409);
   const status = String(tx.status || '').toUpperCase();
   const details = typeof tx.paymentDetails === 'object' && tx.paymentDetails ? tx.paymentDetails : null;
 
-  if (status === 'CONFIRMED' && order.status !== 'confirmed') {
+  if (['creating', 'creation_unknown'].includes(order.status)) await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
+  if (status === 'CONFIRMED' && ['pending', 'confirmed', 'creating', 'creation_unknown'].includes(order.status)) {
     // Касса может добавлять покупателю комиссию сверху (99 ₽ → 106,92 ₽ при 8%):
     // принимаем сумму не меньше цены тарифа и не больше цены плюс 15%.
-    const paid = Number(details?.amount);
-    if (!details || !(paid >= order.amount && paid <= order.amount * 1.15) || String(details.currency).toUpperCase() !== order.currency) {
+    const paidAmount = Number(details?.amount);
+    if (!details || !(paidAmount >= order.amount && paidAmount <= order.amount * 1.15) || String(details.currency).toUpperCase() !== order.currency) {
       order.status = 'mismatch';
       await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
       await notify(env, deps, `⚠️ <b>Оплата на сайте: сумма не совпала</b>\nЗаказ ${deps.esc(order.orderId)} · ожидали ${order.amount} ₽`, 'pay_mismatch:' + order.orderId);
       return order;
     }
+    const deleted = await readJson(env, 'account_deleted:' + order.userId);
+    if (deleted && (!order.createdAt || Date.parse(order.createdAt) <= deleted.at)) {
+      order.status = 'requires_refund'; order.supportReason = 'account_deleted';
+      order.name = ''; order.accountEmail = '';
+      await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
+      return order;
+    }
     const user = await loadUser(env, order);
     user.webPayments = user.webPayments || {};
-    if (!user.webPayments[order.orderId]) {
-      extendEntitlement(user, 'web', order.days);
-      user.webPayments[order.orderId] = { tier: order.tier, days: order.days, amount: order.amount, txId: order.txId, at: new Date().toISOString() };
-      user.purchasedAt = new Date().toISOString();
+    let ledger = await readJson(env, 'payment_ledger:' + order.orderId);
+    const paid = user.webPayments[order.orderId];
+    const wasConfirmed = order.status === 'confirmed';
+    if (!ledger && paid) ledger = { ...paid, awarded: true, expiresAt: entitlementsOf(user).web?.expiresAt || null };
+    if (!ledger) {
+      if (wasConfirmed) {
+        // Repair historic confirmed orders whose KV profile was overwritten.
+        // The original confirmation anchors the grant; never add a fresh period
+        // today for an old/expired payment whose history cannot be reconstructed.
+        const at = Date.parse(order.confirmedAt || order.createdAt);
+        if (!Number.isFinite(at)) throw new PaymentError('payment history requires review', 409);
+        const expiry = new Date(at + order.days * DAY_MS).toISOString();
+        const current = entitlementsOf(user).web;
+        if (!current || (current.expiresAt != null && Date.parse(current.expiresAt) < Date.parse(expiry))) setEntitlement(user, 'web', expiry);
+        ledger = { awarded: true, legacyReconciled: true, expiresAt: expiry };
+      } else {
+        extendEntitlement(user, 'web', order.days);
+        ledger = { awarded: true, expiresAt: entitlementsOf(user).web?.expiresAt || null };
+      }
+      ledger = { ...ledger, tier: order.tier, days: order.days, amount: order.amount, txId: order.txId, at: order.confirmedAt || new Date().toISOString() };
+    }
+    if (!paid) {
+      if (ledger.expiresAt && !ledger.reversed) {
+        const current = entitlementsOf(user).web;
+        if (!current || (current.expiresAt != null && Date.parse(current.expiresAt) < Date.parse(ledger.expiresAt))) setEntitlement(user, 'web', ledger.expiresAt);
+      }
+      user.webPayments[order.orderId] = { ...ledger };
+      user.purchasedAt = ledger.at;
       await putUserRecord(env, user);
     }
+    await env.INSTALLS.put('payment_ledger:' + order.orderId, JSON.stringify(ledger));
     order.status = 'confirmed';
-    order.confirmedAt = new Date().toISOString();
+    order.confirmedAt = order.confirmedAt || new Date().toISOString();
     await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
+    if (wasConfirmed) return order;
     const tariff = WEB_TARIFFS[order.tier];
     await notify(env, deps, [
       '💰 <b>Оплата на сайте</b> (СБП)',
@@ -253,18 +316,20 @@ export async function settleOrder(env, order, deps) {
     } catch (_) {}
   } else if (status === 'CHARGEBACKED' && order.status === 'confirmed') {
     const user = await loadUser(env, order);
-    const paid = user.webPayments?.[order.orderId];
+    const paid = await readJson(env, 'payment_ledger:' + order.orderId) || user.webPayments?.[order.orderId];
     if (paid && !paid.reversed) {
       const web = entitlementsOf(user).web;
       if (web?.expiresAt) setEntitlement(user, 'web', new Date(Date.parse(web.expiresAt) - paid.days * DAY_MS).toISOString());
       paid.reversed = new Date().toISOString();
+      if (user.webPayments?.[order.orderId]) user.webPayments[order.orderId].reversed = paid.reversed;
+      await env.INSTALLS.put('payment_ledger:' + order.orderId, JSON.stringify(paid));
       await putUserRecord(env, user);
     }
     order.status = 'chargebacked';
     await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
     await notify(env, deps, `↩️ <b>Возврат платежа на сайте</b>\n${deps.esc(order.accountEmail || order.userId)} · ${order.amount} ₽ — срок снят`, 'pay_chargeback:' + order.orderId);
-  } else if (status === 'CANCELED' && order.status === 'pending') {
-    order.status = 'canceled';
+  } else if (['CANCELED', 'FAILED'].includes(status) && ['pending', 'creating', 'creation_unknown'].includes(order.status)) {
+    order.status = status === 'FAILED' ? 'failed' : 'canceled';
     await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
   }
   return order;
@@ -298,11 +363,16 @@ export async function handlePlategaCallback(request, env, deps) {
   let body;
   try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
   const txId = typeof body?.id === 'string' ? body.id : '';
-  const orderId = (typeof body?.payload === 'string' && ORDER_RE.test(body.payload) ? body.payload : null) ||
+  const orderId = (env.__ACCOUNT_ID && ORDER_RE.test(request.headers.get('x-account-order') || '') ? request.headers.get('x-account-order') : null) || (typeof body?.payload === 'string' && ORDER_RE.test(body.payload) ? body.payload : null) ||
     (txId ? await env.INSTALLS.get('pay_tx:' + txId) : null);
   const order = orderId ? await readJson(env, 'pay_order:' + orderId) : null;
   // Чужой или неизвестный платёж подтверждаем, чтобы Platega не повторяла.
-  if (!order || (txId && order.txId !== txId)) return jsonResponse({ ok: true, ignored: true });
+  if (!order) return jsonResponse({ error: 'payment order not ready' }, 503);
+  if (!order.txId && txId && ['creating', 'creation_unknown'].includes(order.status)) {
+    order.txId = txId; order.status = 'creation_unknown'; order.requirePayload = true;
+    await env.INSTALLS.put('pay_tx:' + txId, order.orderId);
+  }
+  if (txId && order.txId !== txId) return jsonResponse({ ok: true, ignored: true });
   try {
     await settleOrder(env, order, deps);
   } catch (error) {
@@ -310,6 +380,26 @@ export async function handlePlategaCallback(request, env, deps) {
       jsonResponse({ error: error instanceof PaymentError ? error.message : 'storage unavailable' }, error instanceof PaymentError && error.status < 500 ? 200 : 503));
   }
   return jsonResponse({ ok: true });
+}
+
+/** Admin-only caller supplies the provider transaction found by payload in
+ * the merchant dashboard. Never accepts a declared paid/cancelled status. */
+export async function reconcilePayment(env, userId, body, deps) {
+  const orderId = String(body.order || '');
+  const txId = String(body.txId || '').trim();
+  if (!ORDER_RE.test(orderId) || !txId || txId.length > 128) throw new PaymentError('invalid payment reference', 400);
+  const order = await readJson(env, 'pay_order:' + orderId);
+  if (!order || order.userId !== userId) throw new PaymentError('order not found', 404);
+  if (order.txId && order.txId !== txId) throw new PaymentError('payment transaction mismatch', 409);
+  const tx = await readPaymentTransaction(env, txId);
+  if (tx.payload !== orderId) throw new PaymentError('payment payload mismatch', 409);
+  order.txId = txId; order.requirePayload = true;
+  if (order.status === 'creating') order.status = 'creation_unknown';
+  order.reconciledAt = new Date().toISOString();
+  await env.INSTALLS.put('pay_tx:' + txId, orderId);
+  await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
+  await settleOrder(env, order, deps);
+  return order;
 }
 
 /**
@@ -324,7 +414,7 @@ export async function handlePayCheck(request, env, user, deps) {
   if (!ORDER_RE.test(orderId)) return jsonResponse({ error: 'invalid order' }, 400);
   const order = env.INSTALLS ? await readJson(env, 'pay_order:' + orderId) : null;
   if (!order || order.userId !== user.id) return jsonResponse({ error: 'order not found' }, 404);
-  if (order.status === 'pending' && webPaymentsLive(env)) {
+  if (['pending', 'confirmed', 'creating', 'creation_unknown'].includes(order.status) && order.txId && webPaymentsLive(env)) {
     try { await settleOrder(env, order, deps); } catch (error) {
       await reportPaymentFailure(env, 'payment.check', error, order, user);
     }

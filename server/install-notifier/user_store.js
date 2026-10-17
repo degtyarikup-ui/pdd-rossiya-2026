@@ -1,3 +1,4 @@
+import { accountRpc } from './account_state.js';
 import { recordActivity } from './analytics_activity.js';
 
 // Запись профиля пользователя `user:<id>` вместе с краткой сводкой в
@@ -88,7 +89,10 @@ export async function listUserSummaries(env) {
         if (!raw) continue;
         const user = JSON.parse(raw);
         if (!user || !user.id) continue;
-        await putUserRecord(env, user);
+        if (env.ACCOUNTS) {
+          const response = await accountRpc(env, user.id, '/_account/metadata');
+          if (!response.ok) continue;
+        } else await putUserRecord(env, user);
         const oldIndex = users.findIndex(u => u.id === user.id);
         if (oldIndex >= 0) users[oldIndex] = userSummary(user);
         else users.push(userSummary(user));

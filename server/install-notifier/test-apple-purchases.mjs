@@ -4,6 +4,7 @@ import { generateKeyPair, exportPKCS8, SignJWT } from 'jose';
 import { verifyStorePurchase, refreshStoreEntitlement } from './store_verification.js';
 import worker from './worker.js';
 import { signSession } from './user_auth.js';
+import { accountTokenForUserId } from './store_account.js';
 const { privateKey } = await generateKeyPair('ES256', { extractable: true });
 const env = { APPLE_IAP_PRIVATE_KEY: await exportPKCS8(privateKey), APPLE_IAP_KEY_ID: 'test-key', APPLE_IAP_ISSUER_ID: 'test-issuer' };
 const body = { store: 'appstore', country: 'ru', productId: 'u.pdd.pddApp.premium.week', transactionId: '123' };
@@ -41,7 +42,7 @@ test('expired and refunded transactions do not grant access', async () => {
 test('purchase endpoint grants access, restore is idempotent, another account is rejected', async () => {
   const records = new Map(), owners = new Map();
   const e = { ...env, SHARED_SECRET: 'test-secret', SESSION_SECRET: 'test-session', INSTALLS: { get: async k => records.get(k) ?? null, put: async (k, v) => records.set(k, v) }, PURCHASE_CLAIMS: { idFromName: k => k, get: k => ({ fetch: async (_, options) => { const { userId } = JSON.parse(options.body); if (owners.has(k) && owners.get(k) !== userId) return new Response('', { status: 403 }); owners.set(k, userId); return Response.json({ ok: true }); } }) } };
-  const data = transaction();
+  const data = transaction({ appAccountToken: await accountTokenForUserId('apple_test') });
   const purchase = async id => {
     const token = await signSession(e, { user: { id, provider: 'apple', email: 'test@example.com' }, expiresAt: Date.now() + 60000, generation: '' });
     return worker.fetch(new Request('https://test/api/user/purchase', { method: 'POST', headers: { 'content-type': 'application/json', 'x-install-secret': e.SHARED_SECRET, authorization: `Bearer ${token}` }, body: JSON.stringify({ ...body, userId: id }) }), e);

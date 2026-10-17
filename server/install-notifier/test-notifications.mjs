@@ -194,8 +194,9 @@ test('personal account test targeting delivers only to matching email or userId 
   assert.equal((await (await call('/client?app=ru&platform=ios&email=other@test.ru')).json()).messages.length,0);
   assert.equal((await (await call('/client?app=ru&platform=ios&email=admin@test.ru')).json()).messages.length,1);
   assert.equal((await (await call('/client?app=ru&platform=ios&userId=admin@test.ru')).json()).messages.length,1);
-  const topic=userTopic('Admin@Test.ru');
-  assert.match(topic,/^pdd_u_[0-9a-f]+$/);
+  const topic='pdd_account_'+'a'.repeat(64);
+  personal.targetTopic=topic;
+  assert.throws(()=>pushCondition({...personal,targetTopic:''}),/защищённым аккаунтом/);
   assert.equal(pushCondition(validateCampaign({...personal,kind:'push'})),`'${topic}' in topics && 'pdd_ru_ios' in topics`);
   assert.equal(pushCondition(validateCampaign({...personal,kind:'push',platform:'all'})),`'${topic}' in topics`);
 });

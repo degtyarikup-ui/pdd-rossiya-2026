@@ -159,7 +159,8 @@ test('чужой заказ не проверить, сумма не совпа�
     assert.equal(JSON.parse(env.INSTALLS.data.get('pay_order:' + start.order)).status, 'mismatch');
     // Неизвестный платёж подтверждается без действий, чтобы Platega не повторяла.
     const unknown = await callback(env, { id: crypto.randomUUID(), status: 'CONFIRMED' });
-    assert.deepEqual(await unknown.json(), { ok: true, ignored: true });
+    assert.equal(unknown.status, 503);
+    assert.deepEqual(await unknown.json(), { error: 'payment order not ready' });
   } finally { fake.restore(); }
 });
 

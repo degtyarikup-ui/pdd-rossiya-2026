@@ -1,3 +1,5 @@
+import { reconcilePayment, PaymentError } from './payments.js';
+import { deleteAccountDocuments } from './apple_account.js';
 // API раздела «Пользователи» админки: список, подробная карточка, Premium на
 // срок, заметка администратора, история действий, выход со всех устройств.
 //
@@ -146,7 +148,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
   }
 
   if (path === '/api/admin/users/detail' && request.method === 'GET') {
-    const userId = String(url.searchParams.get('id') || '');
+    const userId = String(url.searchParams.get('id') || '').trim();
     const user = userId ? await readJson(env, 'user:' + userId) : null;
     if (!user) return jsonResponse({ error: 'user not found' }, 404);
     await refreshStoreEntitlement(env, user);
@@ -168,13 +170,17 @@ export async function handleUsersAdmin(request, env, url, deps) {
   const userId = String(body.userId || '').trim();
   if (!userId) return jsonResponse({ error: 'missing userId' }, 400);
 
+  if (path === '/api/admin/users/reconcile-payment') {
+    try {
+      const order = await reconcilePayment(env, userId, body, deps);
+      await writeAdminMeta(env, userId, await readAdminMeta(env, userId), { action: 'payment-reconcile', orderId: order.orderId, status: order.status });
+      return jsonResponse({ ok: true, order: order.orderId, status: order.status });
+    } catch (error) { return jsonResponse({ error: error instanceof PaymentError ? error.message : 'payment reconciliation unavailable' }, error instanceof PaymentError ? error.status : 503); }
+  }
+
   if (path === '/api/admin/users/delete') {
-    const user = await readJson(env, 'user:' + userId);
     await revokeUserSessions(env, userId);
-    await env.INSTALLS.delete('user:' + userId);
-    await env.INSTALLS.delete('user_progress:' + userId);
-    await env.INSTALLS.delete('user_admin:' + userId);
-    if (user?.email) await env.INSTALLS.delete('user_email:' + user.email.toLowerCase().trim());
+    const deletionResult = await deleteAccountDocuments(env, userId);
     try {
       const week = gameWeekKey();
       await deleteGamePlayer(env, week, userId);
@@ -186,7 +192,7 @@ export async function handleUsersAdmin(request, env, url, deps) {
         await env.INSTALLS.put('users_list', JSON.stringify(list.filter(id => id !== userId)));
       }
     } catch (_) {}
-    return jsonResponse({ ok: true, deleted: userId });
+    return jsonResponse({ ok: true, deleted: userId, ...deletionResult });
   }
 
   const user = await readJson(env, 'user:' + userId);

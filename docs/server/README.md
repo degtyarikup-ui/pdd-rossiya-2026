@@ -9,13 +9,14 @@
 | Область | Файлы в `server/install-notifier/` |
 | --- | --- |
 | Входная точка и маршруты | `worker.js`, `wrangler.toml` |
-| Вход и аккаунты | `user_auth.js`, `user_store.js`, `telegram_auth.js`, `apple_web_callback.js` |
-| Premium и оплата | `entitlements.js`, `payments.js`, `store_verification.js`, `purchase_claims.js` |
+| Вход и аккаунты | `account_state.js`, `account_maintenance.js`, `user_auth.js`, `user_store.js`, `telegram_auth.js`, `apple_web_callback.js`, `apple_account.js` |
+| Premium и оплата | `entitlements.js`, `payments.js`, `store_verification.js`, `purchase_claims.js`, `store_account.js`, `store_notifications.js` |
+| ИИ и квоты | `ai_request.js`, `ai_quota.js` |
 | Прогресс | `progress_merge.js` |
 | Игра и экономика | `game_profile.js`, `game_scoring.js`, `game_weeks.js`, `economy_admin.js` |
 | Буфер статистики | `stats_buffer.js` |
 | Аналитика | `analytics_*.js`, `usage_analytics.js`, `premium_analytics.js`, `attribution.js` |
-| Обновления и уведомления | `app_updates.js`, `notifications.js` |
+| Обновления и уведомления | `app_updates.js`, `notifications.js`, `notification_identity.js` |
 | Telegram и диагностика | `diagnostics.js`, `incident_copy.js`, `telegram_queue.js`, `telegram_topics.js`, `telegram_export.js` |
 | Публикации | `publications_data.js`, `social.js`, `threads.js` |
 | Поддержка и задачи | `support_*.js`, `tasks_admin.js` |
@@ -37,3 +38,7 @@
 `legacy/` — исторические одноразовые патчи, не рабочий способ редактирования.
 Деплой — отдельная операция через `deploy.sh` или Wrangler; изменение файла
 локально не меняет опубликованный Worker.
+
+Миграция аккаунтов в DO, платёжный журнал, новые контракты и обязательные
+шаги выпуска — [AccountState rollout](../premium/account-state-rollout.md).
+После включения DO нельзя откатываться на старую запись аккаунтов в KV.
