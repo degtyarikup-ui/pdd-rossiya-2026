@@ -86,6 +86,9 @@ static func describe(data: Dictionary, built: Dictionary) -> Dictionary:
 				# Finish after turning into a short branch, while the whole car is
 				# still on its road. A minimum lead keeps the nose away from the edge.
 				port["finish_distance"] = minf(maxf(20.0, port.p.dot(port.out) - 24.0), maxf(2.5, length - 12.0))
+				# A road ending inside the scene is the author's dead end: it finishes the
+				# question but never grows a continuation in front of the player.
+				port["dead_end"] = true
 			ports.append(port)
 	# For traced scenes, derive connections from real carriageway sections at the crop.
 	# Old exported route tails can be shortened or skewed; extrapolating them may land on the lawn.

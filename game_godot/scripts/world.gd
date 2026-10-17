@@ -2120,6 +2120,10 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	var perf_start := Time.get_ticks_usec()
 	var perf_step := perf_start
 	var sit: Situation = current.sit
+	var dead_end: Dictionary = SceneStitch.departure_ports(sit.network.connections).get(exit_direction,{}) if sit.network else {}
+	if dead_end.get("dead_end", false):
+		_finish_in_dead_end(dead_end, exit_direction)
+		return
 	var crop: float = sit.data.crop
 	var centre := sit.position
 	drive.turning_at_junction = false
@@ -2229,6 +2233,22 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	if follow:
 		print("[jerk] %s %s: max yaw %.2f rad/s, camera %.2f m/s, camera heading %.2f rad/s" % [sit.id, exit_direction, jerk.yaw, jerk.cam, jerk.heading])
 		jerk = { "yaw": 0.0, "cam": 0.0, "heading": 0.0, "turns": 0 }
+
+
+## The question is done inside an authored dead end. Its road stays closed: nothing is
+## joined there. The scene waits as an old scene until the player turns round and
+## leaves by another end (_check_turnaround), which then departs as usual.
+func _finish_in_dead_end(port: Dictionary, exit_direction: String) -> void:
+	var sit: Situation = current.sit
+	current["retire_distance"] = drive.distance_traveled + 1.0e9
+	current["exit_id"] = str(port.get("id", exit_direction))
+	retired.append(current)
+	current = {}
+	pending_connection = {}
+	phase = "driving"
+	spawn_after = 1.0e9
+	event.emit({ "event": "situation_cleared", "situationId": sit.id, "exit": exit_direction })
+	print("[game] cleared ", sit.id, " in a dead end by ", exit_direction)
 
 
 ## A street snapshot can survive several nearby turns. Crop it again at each

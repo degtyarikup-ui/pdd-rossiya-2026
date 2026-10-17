@@ -233,6 +233,12 @@ func world_departure(first_id: String, port_id: String, back: float) -> void:
 		await process_frame
 		return
 	world._maybe_spawn()
+	if port.get("dead_end", false):
+		# An authored dead end stays closed; dead_end_check covers turning round out of it.
+		expect(world.current.is_empty() and world.pending_connection.is_empty(), label + "nothing is joined to a dead end")
+		world.queue_free()
+		await process_frame
+		return
 	expect(not world.current.is_empty() and world.current.sit.id == "ticket_21_13", label + "next authored question activates after physical departure")
 	if not world.current.is_empty():
 		var next: Situation = world.current.sit
