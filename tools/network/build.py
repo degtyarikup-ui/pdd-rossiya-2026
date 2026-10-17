@@ -85,7 +85,7 @@ def polygon_of(item: dict):
 # Soft rural ground, the same field as crossroads_junction.gd _ground_shares: every point near a
 # dirt road gets its share of asphalt, dirt and grass by the distance to the paved and the unpaved
 # carriageway, so the corners, the paved stretch and the grass shoulders cannot seam.
-DIRT_BLEND = 8.0      # asphalt tone runs this far up a dirt road (m)
+DIRT_BLEND = 1.5      # asphalt tone runs this far up a dirt road (m): the dirt reaches the asphalt
 SHOULDER_EDGE = 0.6   # ... and this far onto dirt beside a paved road
 GRASS_FADE = 1.1      # half-width of the dirt-to-grass blend
 FIELD_EDGE = 0.2 + GRASS_FADE * 2.0   # the soft shoulder ends in pure grass this far out (m)

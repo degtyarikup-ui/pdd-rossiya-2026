@@ -6,7 +6,7 @@ extends Node3D
 
 const ROAD_WIDTH := 14.4        # 4 lanes of 3.6 m (2 in each direction)
 const HALF_ROAD := ROAD_WIDTH * 0.5
-const DIRT_BLEND := 8.0        # metres of asphalt-to-dirt transition at an unpaved arm
+const DIRT_BLEND := 1.5        # metres of asphalt-to-dirt transition: the dirt reaches the asphalt road
 const BLEND_Y := 0.03          # clearly above both road quads, even on a phone depth buffer
 const ROAD_EXTENT := 345.0
 const STOP_DIST := 13.2
@@ -452,7 +452,8 @@ var _field_material: ShaderMaterial
 
 ## The unpaved road's first metres take their asphalt tone from the same field.
 func _dirt_blend(arm: String) -> MeshInstance3D:
-	var near := HALF_ROAD
+	# Starts a little inside the asphalt square: the overlap hides the seam between the two.
+	var near := HALF_ROAD - 0.4
 	var end := HALF_ROAD + DIRT_BLEND + 1.0
 	var mi: MeshInstance3D
 	match arm:
@@ -544,6 +545,17 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 				rural_lawn.rotation.y = PI * 0.5
 				rot_y = -PI * 0.5
 		ground_root.add_child(rural_lawn)
+		# The through road's shoulder runs on across the closed arm, as in the quadrants;
+		# without it the sandy shoulder broke off opposite the side road.
+		var reach := HALF_ROAD + SIDEWALK_WIDTH + GRASS_FADE + 0.6
+		var strip: MeshInstance3D
+		match arm:
+			"south": strip = _field_mesh(-HALF_ROAD, HALF_ROAD, HALF_ROAD, reach, GROUND_Y)
+			"north": strip = _field_mesh(-HALF_ROAD, HALF_ROAD, -reach, -HALF_ROAD, GROUND_Y)
+			"east": strip = _field_mesh(HALF_ROAD, reach, -HALF_ROAD, HALF_ROAD, GROUND_Y)
+			_: strip = _field_mesh(-reach, -HALF_ROAD, -HALF_ROAD, HALF_ROAD, GROUND_Y)
+		strip.name = "RuralShoulder_closed"
+		ground_root.add_child(strip)
 
 		var block_root := Node3D.new()
 		block_root.name = "ClosedBlock_" + arm
