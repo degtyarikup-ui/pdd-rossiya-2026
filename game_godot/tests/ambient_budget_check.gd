@@ -38,6 +38,9 @@ func flat(profile: String):
 	world.drive = Drive.new()
 	world.tier = profile
 	root.add_child(world)
+	# Ground support is stubbed below, but the production retirement decision
+	# still reads whether this street actually has a sidewalk.
+	world.street = Street.new(world, Scenery.new("autumn"), world.L, world.chunk_count)
 	world._spawn_walkers()
 	for i in world.walkers.size():
 		var w: Dictionary = world.walkers[i]

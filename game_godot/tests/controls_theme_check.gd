@@ -41,7 +41,10 @@ func _run() -> void:
 		var ui := GameUi.new()
 		root.add_child(ui)
 		ui.set_hud(42, 60, 1, 1200, 10, 3, 20)
-		var distance: PanelContainer = ui._hud_row.get_child(2)
+		# HUD counter order is a presentation detail; identify the actual live
+		# distance pill through its label rather than accidentally testing warnings.
+		var distance: Node = ui._distance.get_parent()
+		while not distance is PanelContainer: distance = distance.get_parent()
 		check(distance.get_theme_stylebox("panel").bg_color == Ui.c("card"), tag + ": distance uses the selected surface")
 		check(ui._distance.get_theme_color("font_color") == Ui.c("text"), tag + ": distance text contrasts with its surface")
 		var location: TextureRect = distance.find_children("*", "TextureRect", true, false)[0]

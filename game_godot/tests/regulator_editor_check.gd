@@ -36,6 +36,10 @@ func _initialize() -> void:
 	assert(moved.position.is_equal_approx(Vector3(6,0,21)), "Edited player pose reaches the mini-game")
 	assert(moved._evaluate_trajectory(RegulatorRules.Move.STRAIGHT,0)[0].is_equal_approx(moved.position))
 	assert(moved._evaluate_trajectory(RegulatorRules.Move.STRAIGHT,0.5)[0].is_equal_approx(Vector3(7,0,0)), "Edited intermediate route point reaches the game")
+	# These painted reference cars never enter a viewport. Explicitly detach
+	# geometry just as the live preview owner does before destroying it.
+	Models.release_geometry(authored)
+	Models.release_geometry(moved)
 	authored.free()
 	moved.free()
 	junction.free()

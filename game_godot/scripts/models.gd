@@ -23,6 +23,14 @@ static var _lens_centres := {}
 static var _traffic_meshes := {}
 
 
+## Detach geometry before a preview viewport or a painted model is destroyed.
+## Otherwise the renderer can inspect an already released material while
+## unregistering its instance uniforms during the parent/viewport teardown.
+static func release_geometry(root: Node) -> void:
+	for geometry: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
+		geometry.mesh = null
+
+
 static func traffic_lenses(id: String) -> Array:
 	if not _lens_centres.has(id):
 		_lens_centres[id] = VehicleBatch.lenses(traffic_mesh(id))

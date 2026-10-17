@@ -63,6 +63,7 @@ func run_tier(quality: String) -> void:
 	world.staged_sit = null
 	world.road_force = ""
 	world._apply_tier(quality)
+	print("lighting settings ",quality,": bias=",world.sun.shadow_bias," normal=",world.sun.shadow_normal_bias)
 	world.ui.visible = false
 	world.controls.visible = false
 	world.hud.visible = false

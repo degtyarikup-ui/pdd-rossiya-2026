@@ -91,6 +91,10 @@ func current() -> Dictionary:
 	return {"id": vehicle.id, "paint": paint.paint, "hex": paint.hex}
 
 
+func _exit_tree() -> void:
+	Models.release_geometry(self)
+
+
 func _circular() -> bool:
 	return data.cars.size() > 2
 

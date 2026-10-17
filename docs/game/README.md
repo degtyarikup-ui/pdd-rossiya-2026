@@ -140,6 +140,8 @@ godot --headless --path game_godot --script res://tests/crossroads_ui_check.gd #
 godot --headless --path game_godot --script res://tests/crossroads_layout_check.gd # здания не пересекаются друг с другом, здания и деревья не стоят на дорогах и тротуарах (все сценарии и сезоны)
 godot --headless --path game_godot --script res://tests/mini_game_results_check.gd # общий результат мини-игр: ru/en/kk, малые экраны, текст 1,6
 godot --path game_godot --script res://tests/exit_transition_check.gd # реальный fade выхода: неподвижный кадр, покрытие, summary и повторный вход
+godot --path game_godot --script res://tests/result_motion_check.gd # реальная анимация результата, локали, стабильная геометрия и повторные заезды
+godot --path game_godot --script res://tests/regulator_walk_check.gd # точные MultiMesh-данные походки всех пешеходов; headless отдельно проверяет физическое состояние
 godot --headless --path game_godot --script res://tests/rules_check.gd      # нарушения: 47 проверок
 godot --headless --path game_godot --script res://tests/road_check.gd       # дорожные вопросы: 70 проверок
 godot --headless --path game_godot --script res://tests/surface_check.gd    # перекрёстки без дублей дорожного слоя
@@ -199,6 +201,7 @@ godot --headless --path game_godot --script res://tests/impact_feel_check.gd # �
 godot --path game_godot --resolution 448x970 --script res://tests/popin_ride_check.gd -- --benchmark --mute # что появляется/исчезает в кадре (только с рендером)
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
+godot --headless --path game_godot --script res://tests/staging_cancellation_check.gd # отмена воркера при закрытии/удалении владельца и выходе хоста
 godot --headless --path game_godot --script res://tests/embedded_io_check.gd # iOS: повторные запуски основной игры и переходы после мини-игр
 godot --headless --path game_godot --script res://tests/ambient_budget_check.gd # low: только декоративные люди, безопасная смена качества и неизменные участники задач
 godot --headless --path game_godot --script res://tests/walking_budget_check.gd # точность тротуаров, ограниченный кеш и бюджет поиска пути пешеходов
@@ -249,19 +252,42 @@ godot --path game_godot --script res://tests/stitch_shader_render_check.gd # н�
 (`perl -e 'alarm 300; exec @ARGV' godot ...`). После изменения скриптов с `class_name`
 выполните `godot --headless --path game_godot --import`.
 
-Известная проблема проверки (14 октября 2026): `signals_models_check.gd` загружает
-старую фикстуру `situations/ticket_37_13/light_0.glb`, которой нет в Git.
-В чистой копии проверка зависает после ошибки загрузки; её нельзя считать пройденной.
+Перед пакетным прогоном выполните три команды подготовки фикстур из списка:
+`python3 tools/network/tests/actor_turn_signals_check.py`,
+`python3 tools/network/tests/show_player_guide_check.py` и
+`python3 tools/network/tests/highway_check.py`. Они пишут только одноразовые данные
+в `scratch/`. Без них соответствующие Godot-проверки завершаются ошибкой или
+зависают на `assert` — это отсутствие входных данных проверки.
 
-`people_models_check.gd` на 14 октября 2026 имеет три ошибки проверки общего материала
-регулировщика (`officer: shared cached material`), воспроизводимые до исправления переходов.
-`pause_actor_check.gd` проходит свои семь проверок, но в headless выдаёт ошибку dummy-рендера
-`Parameter "material" is null`; она также воспроизводится на исходном коде.
+В исправлениях от 18 октября 2026 закрыты ошибки старых фикстур: контактная тень
+не считается лишней фарой, пешеходы переходов размещаются на настоящем тротуаре,
+камера имеет согласованную историю позиции. Рендерные материалы отсоединяются
+до удаления окрашенной машины/превью; закрытие владельца отменяет фоновую сборку
+и освобождает захваченные ресурсы. `SCRIPT ERROR`, `ERROR` и утечки RID в журнале
+нельзя считать успешной проверкой даже при коде завершения 0.
 
-`camera_check.gd` также имеет сбой фикстуры: после первого вопроса очистка оставляет
-`question_signal_id`, и второй сценарий `ticket_12_5` не движется. На 14 октября 2026
-ошибка воспроизведена с исходным `world.gd` до исправления освещения; тест не вызывает
-переход локаций (`_on_finished`). Её нельзя считать успешной проверкой камеры.
+Проверки, завершающие движок после проигрывания MP3, ждут 0,12 с после удаления
+сцены: аудиомикшер освобождает playback на реальном тике, а не за два быстрых
+headless-кадра. Удаление World в тесте повторяет закрытие хоста: сначала `_exiting`,
+затем два кадра для отмены фоновых continuations, затем `queue_free` и ожидание
+удаления. Графические свойства MultiMesh проверяются native: dummy-рендерер
+headless сбрасывает их буфер на границе кадра.
+
+Дополнительные 27 проверок тем, озвучки, истории вопросов, быстрого разъезда,
+разворотов и редакторских данных (вместе с основным списком — 118):
+
+```bash
+python3 tools/godot_export/export_question_audio.py
+for game_check in actor_paint_check camera_check cd_shared_pictures_check \
+  choice_line_check city_results_check connector_surface_check controls_theme_check \
+  crossroads_adversarial_stress_check crossroads_fast_dispatch_check crossroads_interaction_check \
+  dead_end_check kerb_angle_check loading_ready_check missing_player_route_check \
+  question_history_check question_selection_check question_voice_check regulator_editor_check \
+  regulator_walk_check sign_check stitch_check stitch_mesh_check stitch_runtime_check \
+  turnaround_check ui_theme_check visual_geometry_check walker_wide_start_check; do
+  godot --headless --path game_godot --script "res://tests/$game_check.gd"
+done
+```
 
 Фоновый поток задаётся в `data/world.json`: две машины на кольцо,
 `parked_chance: 0.02` для подходящих мест парковки. Перед вопросом резервируется
@@ -317,12 +343,24 @@ godot --path game_godot --script res://tests/stitch_shader_render_check.gd # н�
 ./scripts/build_dev.sh                # тестовый APK без установки на телефон
 ./scripts/install_dev.sh --build      # тестовый APK ru.pdd.pdd_app.dev на телефон по Wi-Fi
 ./scripts/godot_ios_assets.sh         # то же для iOS (ios/Godot/)
-./scripts/godot_dev.sh web            # игра для сайта: build/web/godot/
+./scripts/godot_web_assets.sh         # игра для сайта: build/web/godot/
 ```
 
-Без `android/godot/` приложение собирается, но в разделе «Игры» игра недоступна
-(`GodotGame.available()` = false, показывается сообщение). Подробности — `game_godot/README.md` и
-комментарии в начале скриптов.
+Релизный `scripts/build.sh` всегда пересобирает игры для своей платформы и
+останавливается при отсутствии Godot/шаблонов, ошибке импорта, экспорта или
+отсутствующем пакете. Android-архив дополнительно проверяется на `project.binary`
+и ARM64-библиотеку движка; iOS-архив — на `Runner.pck`. Для Web нельзя выпустить
+сборку без игры через старый `SKIP_GODOT_WEB`.
+
+Импортеры Android/iOS/Web работают в частной копии проекта внутри `scratch/`;
+исходные `.import` и настройки экспорта не переписываются. Ошибка сохраняет
+предыдущие исправные файлы движка/пакета. Если общая MP3-озвучка ещё не подготовлена,
+сначала выполните `python3 tools/godot_export/export_question_audio.py`.
+
+Прямой dev-вызов Flutter без `android/godot/` по-прежнему позволяет проверять
+учебную часть без игры (`GodotGame.available()` = false). Игра поддерживается
+на Android ARM64; другие ABI получают сообщение о недоступности до запуска
+Activity. Подробности — `game_godot/README.md` и комментарии в скриптах.
 
 При тайм-аутах загрузки Google Maven: `./scripts/build_dev.sh --download-fallback`
 или `./scripts/install_dev.sh --build --download-fallback`. Промежуточный Godot

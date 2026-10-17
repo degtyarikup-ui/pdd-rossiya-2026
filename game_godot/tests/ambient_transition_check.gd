@@ -28,6 +28,7 @@ func recycling() -> void:
 	world.cfg = {"chunks_behind": 4}
 	world.L = 60.0; world.chunk_count = 9
 	root.add_child(world)
+	world.street = Street.new(world, Scenery.new("autumn"), world.L, world.chunk_count)
 	world.camera = Camera3D.new()
 	world.add_child(world.camera)
 	world.camera.projection = Camera3D.PROJECTION_ORTHOGONAL
@@ -86,7 +87,10 @@ func authored_gait() -> void:
 
 func transition(world, direction: String, index: int) -> void:
 	var sit: Situation = world.current.sit
-	var port: Dictionary = sit.network.connections.exits[direction]
+	var port: Dictionary = SceneStitch.departure_ports(sit.network.connections)[direction]
+	# Apply the departure width before placing probes: widening a four-lane
+	# mouth can legitimately replace the former narrow sidewalk with asphalt.
+	sit.bind_end(port, float(port.width), world.scenery, world.texture_frame)
 	var heading := SceneStitch.yaw(sit.basis * port.out)
 	var rotation := Basis(Vector3.UP,-heading)
 	var xf := Transform3D(rotation,-(rotation * (sit.global_transform * port.p)))
@@ -101,10 +105,28 @@ func transition(world, direction: String, index: int) -> void:
 	world.camera.look_at(world.cam_look)
 	var label := "%d %s" % [index,direction]
 	var states := []
+	var probes: Array[Vector3] = []
+	world._prepare_walker_surfaces()
+		# Probe actual visible sidewalks: arbitrary points around the look target
+	# can lie on the road, where current walkers must correctly be retired.
+	for z in range(-36, 37, 2):
+		for x in range(-36, 37, 2):
+			var p: Vector3 = world.cam_look + Vector3(x, 0, z)
+			var supported: bool = world._walk_clear(p)
+			# Several deliberately close transitions retain overlapping ghosts.
+			# Seed this junction's own pavement, not a former narrow sidewalk
+			# underneath its wider carriageway.
+			for offset in [Vector3.ZERO, Vector3(0.28,0,0), Vector3(-0.28,0,0), Vector3(0,0,0.28), Vector3(0,0,-0.28)]:
+				supported = supported and sit.pavement_at(sit.to_local(p + offset))
+			var visible: bool = world._walker_visible(p)
+			if supported and visible:
+				probes.append(p)
+	expect(probes.size() >= world.walkers.size(), label + " visible supported sidewalk probes exist")
+	if probes.size() < world.walkers.size(): return
 	for i in world.walkers.size():
 		var w: Dictionary = world.walkers[i]
 		# Visible probes exercise nonzero yaw, both walking directions and gait.
-		var at: Vector3 = world.cam_look + Vector3((i%3-1)*3.0,0,(i/3-1)*3.0)
+		var at: Vector3 = probes[i]
 		w.x = at.x; w.z = at.z; w.zw = at.z
 		w.heading = heading+0.2; w.alive = true
 		w.walk_phase = 1.7; w.walk_amount = 0.6
@@ -177,7 +199,11 @@ func transition(world, direction: String, index: int) -> void:
 			var pose: Transform3D = car.node.transform if car.has("node") else car.mm.get_instance_transform(car.slot)
 			expect(pose.origin.y < -50.0,label+" no stale traffic source in first frame")
 	if native:
-		expect((world.leaves.global_transform*world.leaves.multimesh.get_instance_transform(0)).is_equal_approx(xf*leaf_before),label+" immediate resting leaf pose")
+		var actual: Transform3D = world.leaves.global_transform * world.leaves.multimesh.get_instance_transform(0)
+		var expected: Transform3D = xf * leaf_before
+		# Associating three float32 transforms differently loses a few microns
+		# after chained turns. Assert an absolute subpixel bound and exact basis.
+		expect(actual.origin.distance_to(expected.origin) < 0.001 and actual.basis.is_equal_approx(expected.basis),label+" immediate resting leaf pose")
 	world._update_walkers(0.0)
 	for i in world.walkers.size()-1:
 		var w: Dictionary = world.walkers[i]
@@ -200,7 +226,7 @@ func run() -> void:
 	recycling()
 	authored_gait()
 	var world = load("res://main.tscn").instantiate()
-	world.only_id = "ticket_17_6"; world.bag = [world.only_id]
+	world.only_id = "ticket_3_6"; world.bag = [world.only_id]
 	root.add_child(world)
 	for i in 1500:
 		# Native automation can lose focus while Codex runs other checks. This

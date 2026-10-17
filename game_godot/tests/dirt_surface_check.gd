@@ -12,8 +12,10 @@ func run() -> void:
 	var transition: Dictionary = {}
 	for surface in net.build.surfaces:
 		if surface.id == "sand": body = surface
-		if surface.id == "sand_join_6": transition = surface
+		if surface.id == "dirt_field": transition = surface
 	check(not body.is_empty() and not transition.is_empty(), "actual soil road and asphalt transition exist")
+	check(transition.get("layer") == "field" and not transition.get("verts", []).is_empty(),
+		"current soft ground has real mixed-surface triangles")
 	var shape := SurfaceTool.new(); shape.begin(Mesh.PRIMITIVE_TRIANGLES)
 	net._add_triangles.call(shape, body, scenery, Transform3D())
 	var mesh := shape.commit()

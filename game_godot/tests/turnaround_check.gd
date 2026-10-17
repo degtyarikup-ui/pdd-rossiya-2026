@@ -32,7 +32,7 @@ func run() -> void:
 	root.add_child(world)
 	world.sound.enabled = false
 	world.voice.enabled = false
-	if not await wait_for(func(): return world.loader == null and not world.current.is_empty() and not world.staging, 60.0, "first scene activates"): return finish()
+	if not await wait_for(func(): return world.loader == null and not world.current.is_empty() and not world.staging, 60.0, "first scene activates"): await finish(); return
 	world.set_process(false)
 	world.traffic.clear()
 	var first: Situation = world.current.sit
@@ -40,7 +40,7 @@ func run() -> void:
 	world.drive.yaw = SceneStitch.yaw(first.basis * Vector3.BACK)
 	world._update_junction(0.0)
 	world.ui.answer_chosen.emit(int(first.data.correctAnswerIndex))
-	if not await wait_for(func(): return world.phase == "resolving", 5.0, "answer releases driving"): return finish()
+	if not await wait_for(func(): return world.phase == "resolving", 5.0, "answer releases driving"): await finish(); return
 	# Leave straight ahead; the next scene is installed in front.
 	world.only_id = "ticket_21_13"
 	world.next_id = ""
@@ -58,7 +58,7 @@ func run() -> void:
 		world._process(DT)
 		if not world.current.is_empty() and world.current.sit != first: break
 	expect(not world.current.is_empty() and world.current.sit.id == "ticket_21_13", "the scene ahead is installed after the departure")
-	if world.current.is_empty(): return finish()
+	if world.current.is_empty(): await finish(); return
 	var unreached: Situation = world.current.sit
 	# Turn round: drive back through the old scene towards its entrance.
 	world.only_id = "ticket_14_8"
@@ -91,9 +91,15 @@ func run() -> void:
 	expect(world.phase == "question" and world.current.sit.id == "ticket_14_8", "real driving reaches a question in the new direction")
 	expect(world.run.answered == 1, "turning round adds no answer")
 	expect(supported, "the chassis stays on the road throughout")
-	finish()
+	await finish()
 
 func finish() -> void:
 	print("turnaround: ", checks, " checks, ", failures, " failures")
-	if is_instance_valid(world): world.queue_free()
+	if is_instance_valid(world):
+		world._exiting = true
+		await process_frame
+		await process_frame
+		world.queue_free()
+	# queue_free is deferred and the audio mixer drains independently of frames.
+	await create_timer(0.12).timeout
 	quit(1 if failures else 0)

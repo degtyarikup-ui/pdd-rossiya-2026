@@ -30,6 +30,8 @@ var _crop := 90.0
 var _guide: Node3D                   # route ribbons (visible while the question is open)
 var _evidence: Array[Node3D] = []    # letter tokens
 var _badges: Array[Node3D] = []      # name plates over the participants
+## Staging may outlive its owner for a few frames while a worker is joined.
+var _staging_owner: WeakRef
 
 
 static var _tasks: Array[int] = []
@@ -134,6 +136,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 	s._ground_scenery = scenery
 	if staging_parent:
 		s.visible = false
+		s._staging_owner = weakref(staging_parent)
 		staging_parent.add_child(s)
 	s.id = situation_id
 	s.name = situation_id
@@ -166,7 +169,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			if _staging_cancelled(s, frames): return null
 			prop_slice = Time.get_ticks_usec()
 	if frames and not PackFiles.web():
-		var staged_tram_plan := await _data_in_background(func(): return TramTracks.plan(tram_data, tram_network, scenery), frames)
+		var staged_tram_plan := await _data_in_background(func(): return TramTracks.plan(tram_data, tram_network, scenery), frames, weakref(s))
 		if _staging_cancelled(s, frames): return null
 		s.tram_plan = staged_tram_plan
 	else:
@@ -183,7 +186,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			elif frames:
 				var immutable_mesh := mi.mesh
 				var immutable_network := s.network
-				var processed := await _mesh_in_background(func(): return _without_baked_ground(immutable_mesh, immutable_network), frames)
+				var processed := await _mesh_in_background(func(): return _without_baked_ground(immutable_mesh, immutable_network), frames, weakref(s))
 				if _staging_cancelled(s, frames): return null
 				mi.mesh = processed
 			else:
@@ -214,7 +217,7 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 				surf.mesh = processed
 			else:
 				var immutable_network := s.network
-				var processed: Mesh = await _mesh_in_background(func(): return immutable_network.surface_mesh(scenery), frames)
+				var processed: Mesh = await _mesh_in_background(func(): return immutable_network.surface_mesh(scenery), frames, weakref(s))
 				if _staging_cancelled(s, frames): return null
 				surf.mesh = processed
 		else:
@@ -311,10 +314,20 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 ## nested builder suspended with captured network/scenery resources.
 static func _staging_cancelled(scene, frames: SceneTree) -> bool:
 	if not is_instance_valid(scene): return true
-	if frames != null and Host.is_exiting(frames):
+	if scene.staging_cancelled() or (frames != null and Host.is_exiting(frames)):
 		scene.queue_free()
 		return true
 	return false
+
+
+func staging_cancelled() -> bool:
+	var owner: Node = _staging_owner.get_ref() if _staging_owner else null
+	var closing := is_queued_for_deletion() or (_staging_owner != null and (owner == null or owner.is_queued_for_deletion()))
+	# World exposes the same cancellation flag before its children are freed;
+	# standalone render fixtures may use an ordinary Node3D as staging parent.
+	if owner != null and owner.has_method("staging_cancelled"):
+		closing = closing or owner.staging_cancelled()
+	return closing
 
 
 ## Puts the junction at world z. Its road surfaces are laid on the world grid
@@ -1015,8 +1028,8 @@ func warm_bindings(bindings: Array, scenery: Scenery, frames: SceneTree) -> void
 	work.stitch_bindings=bindings.duplicate(true)
 	var mesh: Mesh
 	if PackFiles.web(): mesh=await work.surface_mesh_staged(scenery,frames)
-	else: mesh=await _mesh_in_background(func(): return work.surface_mesh(scenery),frames)
-	if not is_instance_valid(self) or Host.is_exiting(frames): return
+	else: mesh=await _mesh_in_background(func(): return work.surface_mesh(scenery),frames,weakref(self))
+	if not is_instance_valid(self) or staging_cancelled() or Host.is_exiting(frames): return
 	_surface_cache[signature]=mesh
 
 
@@ -1052,11 +1065,15 @@ func _trim_end_props() -> void:
 
 
 ## Only immutable mesh processing runs off-thread; Node trees are always assembled on the main thread.
-static func _mesh_in_background(work: Callable, frames: SceneTree) -> Mesh:
+static func _mesh_in_background(work: Callable, frames: SceneTree, owner: WeakRef = null) -> Mesh:
 	var result := [null]
 	var task := WorkerThreadPool.add_task(func(): result[0] = work.call())
 	_tasks.append(task)
 	while _tasks.has(task) and not WorkerThreadPool.is_task_completed(task):
+		if _background_cancelled(owner, frames):
+			WorkerThreadPool.wait_for_task_completion(task)
+			_tasks.erase(task)
+			return null
 		await frames.process_frame
 	# World exit already joined/removed the task; never poll or join an invalid task ID.
 	if not _tasks.has(task): return null
@@ -1065,15 +1082,27 @@ static func _mesh_in_background(work: Callable, frames: SceneTree) -> Mesh:
 	return result[0]
 
 
-static func _data_in_background(work: Callable, frames: SceneTree) -> Dictionary:
+static func _data_in_background(work: Callable, frames: SceneTree, owner: WeakRef = null) -> Dictionary:
 	var result := [{}]
 	var task := WorkerThreadPool.add_task(func(): result[0] = work.call())
 	_tasks.append(task)
-	while _tasks.has(task) and not WorkerThreadPool.is_task_completed(task): await frames.process_frame
+	while _tasks.has(task) and not WorkerThreadPool.is_task_completed(task):
+		if _background_cancelled(owner, frames):
+			WorkerThreadPool.wait_for_task_completion(task)
+			_tasks.erase(task)
+			return {}
+		await frames.process_frame
 	if not _tasks.has(task): return {}
 	WorkerThreadPool.wait_for_task_completion(task)
 	_tasks.erase(task)
 	return result[0]
+
+
+static func _background_cancelled(owner: WeakRef, frames: SceneTree) -> bool:
+	if Host.is_exiting(frames): return true
+	if owner == null: return false
+	var scene: Node = owner.get_ref()
+	return scene == null or scene.staging_cancelled()
 
 
 static func _native_prepare(situation_id: String, on_done: Callable) -> void:
