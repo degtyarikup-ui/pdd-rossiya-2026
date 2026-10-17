@@ -1351,6 +1351,7 @@ func _pick_question(ids: Array, port: Dictionary) -> String:
 	for id in ids: profiles[id] = _scene_connections(str(id))
 	var best := str(ids[0])
 	var best_rank := 6
+	var best_widened := true
 	var best_next := 6
 	var best_cost := INF
 	for id in ids:
@@ -1370,9 +1371,15 @@ func _pick_question(ids: Array, port: Dictionary) -> String:
 				next_rank = mini(next_rank, _join_rank(departure, profiles[other].get("entry", {})))
 				if next_rank == 0: break
 		var cost := SceneStitch.match_score(port, entry)
-		if rank < best_rank or (rank == best_rank and (next_rank < best_next or (next_rank == best_next and cost < best_cost))):
+		# Within a rank a visible width change (yard 5 m -> street 8.4 m) is worse than a
+		# markings-only difference, so it outranks the lookahead; markings stay with cost.
+		var widened := absf(float(port.get("width", 8.4)) - float(entry.get("width", 8.4))) > 0.15
+		var better: bool = rank < best_rank or (rank == best_rank and (widened != best_widened and not widened \
+			or widened == best_widened and (next_rank < best_next or (next_rank == best_next and cost < best_cost))))
+		if better:
 			best = str(id)
 			best_rank = rank
+			best_widened = widened
 			best_next = next_rank
 			best_cost = cost
 	return best

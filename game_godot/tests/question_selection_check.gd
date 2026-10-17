@@ -69,6 +69,20 @@ func selection_cases() -> void:
 	world._reselect_for_departure()
 	expect(world.next_id == "dirt" and world.bag.is_empty(), "an exhausted bag is never refilled during reservation rechecking")
 	world.free()
+	# Within one rank a width change outranks the lookahead; markings alone do not.
+	world = fixture()
+	var street := port()
+	var plain := port(); plain.edge = false
+	var yard := port(2, "asphalt", 5.0)
+	world.connection_cache = {
+		"markings": {"entry": plain, "preferred_exit": port(4, "asphalt", 14.0)},
+		"narrow": {"entry": yard, "preferred_exit": street},
+		"next": {"entry": street, "preferred_exit": street}}
+	world.pending_connection = {"port": street}
+	world.bag = ["narrow", "markings", "next"]
+	world.question_history.mark_shown("next")
+	expect(world._next_id() == "markings", "a markings-only join beats a width change despite a worse lookahead")
+	world.free()
 
 func real_cycles() -> void:
 	seed(20261015)
