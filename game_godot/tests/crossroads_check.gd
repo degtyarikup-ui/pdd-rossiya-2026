@@ -29,7 +29,7 @@ func _initialize() -> void:
 	var raw := FileAccess.get_file_as_string(path)
 	var scenarios = JSON.parse_string(raw)
 	_check("Scenarios JSON parsed as Array", scenarios is Array)
-	_check("Exactly 27 authored scenarios loaded", scenarios.size() == 27)
+	_check("Exactly 33 authored scenarios loaded", scenarios.size() == 33)
 
 	# 2. Priority order integrity in every scenario
 	var all_valid_orders := true
@@ -46,7 +46,7 @@ func _initialize() -> void:
 			if orders[i] != i + 1:
 				all_valid_orders = false
 				break
-	_check("All 27 scenarios have sequential 1..N priority order", all_valid_orders)
+	_check("All scenarios have sequential 1..N priority order", all_valid_orders)
 
 	# 3. Vehicle types coverage
 	var found_types := {}
@@ -66,7 +66,7 @@ func _initialize() -> void:
 			var lang_data: Dictionary = trans.get(lang, {})
 			if str(lang_data.get("title", "")).is_empty() or str(lang_data.get("pddArticle", "")).is_empty():
 				all_l10n_ok = false
-	_check("All 27 scenarios fully translated into ru, en, and kk", all_l10n_ok)
+	_check("All scenarios fully translated into ru, en, and kk", all_l10n_ok)
 
 	# 5. Rule specifics
 	# Emergency has order 1
