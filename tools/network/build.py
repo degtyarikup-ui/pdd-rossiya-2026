@@ -82,6 +82,8 @@ def polygon_of(item: dict):
     return poly
 
 
+SAND_EDGE = 2.0     # a dirt road fades into the lawn over this width (m), no kerb
+SAND_EDGE_BANDS = 8
 CURB_RADIUS = 5.0   # the inner corners of a junction get a curb radius (m), not a chamfer
 TIDY_RADIUS = 0.6   # the outlines of roads and islands are closed and opened with this radius (m):
                     # the traced edges jitter by a few tenths of a metre, the kerbs must run smooth
@@ -532,11 +534,11 @@ def build(scene: dict) -> dict:
     v, t = triangulate(pavement)
     pave = {"id": "pavement", "y": KERB, "layer": "pavement", "colour": PAVEMENT, "verts": v, "idx": t}
     surfaces = [asphalt, island, median, pave]
-    # Three metres of blended colours at asphalt joins; never fade the outer sandy shoulder.
+    # Six metres of blended colours at asphalt joins (as crossroads); the shoulder fades separately.
     asphalt_join = sand.boundary.intersection(road.difference(sand).buffer(0.01)) if not sand.is_empty else Polygon()
     previous = sand
     for i in range(12):
-        inner = sand.difference(asphalt_join.buffer((i + 1) * 0.25)) if not asphalt_join.is_empty else sand
+        inner = sand.difference(asphalt_join.buffer((i + 1) * 0.5)) if not asphalt_join.is_empty else sand
         band = previous.difference(inner)
         k = (i + 0.5) / 12
         colour = "#" + "".join(f"{round(a + (b-a)*k):02x}" for a,b in zip((44,47,54),(194,165,112)))
@@ -545,10 +547,25 @@ def build(scene: dict) -> dict:
         previous = inner
     v,t = triangulate(previous)
     surfaces.append({"id": "sand", "y": ROAD_Y, "layer": "sand", "colour": "#c2a570", "verts": v, "idx": t})
+    # A dirt road has no kerb: its sides fade into the lawn over SAND_EDGE metres (the game lerps
+    # the soil to the season's grass and switches grain where both have faded, like crossroads).
+    shoulder = Polygon()
+    if not sand.is_empty:
+        open_side = sand.buffer(SAND_EDGE).difference(roads_all.union(pavement).union(islands)).intersection(box)
+        previous = sand
+        for i in range(SAND_EDGE_BANDS):
+            outer = sand.buffer((i + 1) * SAND_EDGE / SAND_EDGE_BANDS, quad_segs=16)
+            band = outer.difference(previous.buffer(0)).intersection(open_side)
+            previous = outer
+            if band.is_empty:
+                continue
+            v, t = triangulate(band)
+            surfaces.append({"id": f"sand_edge_{i}", "y": LAWN_Y, "layer": "sand", "colour": "#9ca66b", "verts": v, "idx": t})
+        shoulder = open_side
     if scene.get("layout"):
         # A scene laid out from a road plan (the editor) has its own ground everywhere else: the baked
         # scene's old roads (where the plan has none now) are covered, and the game drops them (covers()).
-        v, t = triangulate(box.difference(roads_all.union(pavement)))
+        v, t = triangulate(box.difference(roads_all.union(pavement).union(shoulder)))
         surfaces.append({"id": "ground", "y": LAWN_Y, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t})
     if any(a.get("type") == "tram" for a in scene.get("actors", [])):
         marks.setdefault("rail", []).append(rails(scene))

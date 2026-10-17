@@ -15,6 +15,8 @@ const KERB := 0.18
 const GROUND_LEVEL := -0.08      # the ground beside the town
 const ROAD_LEVEL := 0.0          # carriageway
 const MARK_LEVEL := 0.04         # road markings
+const DIRT_EDGE := 2.0           # a dirt road fades into the lawn over this width (m)
+const DIRT_EDGE_BANDS := 8
 const VERGE_LEVEL := -0.03       # grass rows between the ground and the pavements
 const ROW := 20.0
 const GROUP_CHUNKS := 2           # chunks per district (then it blends on)
@@ -227,6 +229,16 @@ func _road(st: SurfaceTool, z0: float, half_at: Callable) -> void:
 			if maxf(wa,wb)>0.001:
 				_quad(st,ea,ea+side*wa,eb,eb+side*wb,z,ze,float(pa.walk_height),pave,"pavement",z0,float(pb.walk_height))
 				_kerb(st,ea,eb,z,ze,pave,side,float(pa.walk_height),float(pb.walk_height))
+			# A dirt road has no kerb: its sides fade into the lawn (as build.py sand_edge bands).
+			var da := float(pa.dirt_amount);var db := float(pb.dirt_amount)
+			if maxf(da,db)>0.001 and maxf(wa,wb)<=0.001:
+				var ground := sc.color("ground");var soil := _road_colour({"dirt_amount":1.0})
+				for band in DIRT_EDGE_BANDS:
+					var k := (band+0.5)/DIRT_EDGE_BANDS
+					var c := soil.lerp(ground,smoothstep(0.0,1.0,k))
+					var x0 := DIRT_EDGE*band/DIRT_EDGE_BANDS;var x1 := DIRT_EDGE*(band+1)/DIRT_EDGE_BANDS
+					var detail := absf(k*2.0-1.0)
+					_quad(st,ea+side*x0,ea+side*x1,eb+side*x0,eb+side*x1,z,ze,ROAD_LEVEL-0.01,ground.lerp(c,da),"dirt" if k<0.5 else "grass",z0,ROAD_LEVEL-0.01,ground.lerp(c,db),Vector2(detail,detail))
 			if maxf(float(pa.edge_strength),float(pb.edge_strength))>0.001:
 				_quad(st,side*(ha-0.325),side*(ha-0.175),side*(hb-0.325),side*(hb-0.175),z,ze,MARK_LEVEL,_road_colour(pa).lerp(mark,float(pa.edge_strength)),"",z0,MARK_LEVEL,_road_colour(pb).lerp(mark,float(pb.edge_strength)))
 		if maxf(ma,mb)>0.001:

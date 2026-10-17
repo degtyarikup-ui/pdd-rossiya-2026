@@ -3122,7 +3122,10 @@ func _update_walkers(delta: float) -> void:
 		w.x = at.x; w.z = at.z; w.zw = at.z
 		# Cropping a street at a close turn can remove the pavement beneath a
 		# visible person. Keep that person still until they leave the view.
-		w.alive = not w.get("knocked_down",false) and admitted and (supported or (w.get("alive",false) and _walker_visible(at)))
+		# Kept standing only where a pavement can still be: a dirt or no-walk street has
+		# none, and a person must not stand on its grass shoulder.
+		var stranded := not supported and float(street.profile_at(at.z).get("walk_width", Street.SIDEWALK)) <= 0.01
+		w.alive = not w.get("knocked_down",false) and admitted and (supported or (w.get("alive",false) and _walker_visible(at) and not stranded))
 		var distance := before.distance_to(at)
 		w["walk_phase"] = fposmod(float(w.get("walk_phase",0.0)) + distance * 3.5, TAU)
 		var amount := clampf(distance / maxf(delta,0.001) / 1.2,0,1)

@@ -219,10 +219,24 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 	elif s.layer == "sand":
 		# Keep saved networks compatible: their legacy sand polygons now render as textured soil.
 		colour = Color("#6f5840")
-		if str(s.id).begins_with("sand_join_"):
-			var band := int(str(s.id).trim_prefix("sand_join_"))
-			colour = Color("#2c2f36").lerp(colour, (band + 0.5) / 12.0)
+	# Blend bands: the colour lerps across them and the grain layer switches only where both
+	# grains have faded (street.gd detail_strength), so asphalt, soil and grass meet softly.
+	var detail := 1.0
 	var kind: String = "dirt" if s.layer == "sand" else s.layer
+	if s.layer == "sand":
+		var k := -1.0
+		var other := Color()
+		var other_kind := ""
+		if str(s.id).begins_with("sand_join_"):
+			k = 1.0 - (int(str(s.id).trim_prefix("sand_join_")) + 0.5) / 12.0
+			other = Color("#2c2f36");other_kind = "asphalt"
+		elif str(s.id).begins_with("sand_edge_"):
+			k = (int(str(s.id).trim_prefix("sand_edge_")) + 0.5) / 8.0
+			other = scenery.color("ground");other_kind = "grass"
+		if k >= 0.0:
+			colour = colour.lerp(other, smoothstep(0.0, 1.0, k))
+			detail = absf(k * 2.0 - 1.0)
+			if k > 0.5: kind = other_kind
 	var layer := scenery.layer_of(kind)  # 0 (plain paint) for markings: layer ""
 	var period: float = scenery.kinds[kind].period if scenery.kinds.has(kind) else 1.0
 	var v: Array = s.verts
@@ -258,7 +272,7 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 							if distance<6.0 and absf(delta.dot(SceneStitch.right(end.direction)))<1.2:
 								tint = Color("#2c2f36").lerp(tint,smoothstep(0.0,6.0,distance))
 						st.set_color(Color(tint.r,tint.g,tint.b,0.0))
-						st.set_uv2(Vector2(layer,-blend))
+						st.set_uv2(Vector2(layer,minf(-blend,detail-1.0)))
 						st.add_vertex(p)
 		k += 3
 
