@@ -464,7 +464,7 @@ class _HubCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (footer != null) footer!,
+                    ?footer,
                   ],
                 ),
               ),
