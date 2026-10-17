@@ -261,45 +261,45 @@ class CrossroadsTranslations {
         },
       ),
       'cross_junction_2_3_1': LocalizedScenarioText(
-        title: 'Intersection with a minor road (sign 2.3.1)',
+        title: 'Intersection with a secondary road (sign 2.3.1)',
         subtitle:
-            'Sign 2.3.1 gives priority to vehicles on the secondary road being crossed.',
+            'Paved main highway intersects with an unpaved rural dirt road (sign 2.3.1).',
         pddArticle:
-            'Sign 2.3.1 and clause 13.12 of the Russian Traffic Regulations',
+            'Sign 2.3.1, clauses 1.2, 13.9, 13.12 of the Russian Traffic Regulations',
         actors: {
           'moto_south': LocalizedActorText(
             name: 'Sports motorcycle',
             ruleExplanation:
-                'The motorcycle moves straight along the main road and has priority over all participants.',
+                'The motorcycle travels straight along the main paved road and has right-of-way (sign 2.3.1, clause 1.2).',
           ),
           'car_north': LocalizedActorText(
             name: 'Blue sedan',
             ruleExplanation:
-                'The sedan on the main road turns left and gives way to the oncoming motorcycle (section 13.12).',
+                'The sedan on the main road turns left and gives way to the oncoming motorcycle (clause 13.12).',
           ),
           'truck_west': LocalizedActorText(
             name: 'Gray truck',
             ruleExplanation:
-                'The truck is on a secondary road with sign 2.4 and allows traffic on the main road to pass.',
+                'The truck on the unpaved rural dirt road with sign 2.4 yields to all main road traffic (clauses 1.2, 13.9).',
           ),
         },
       ),
       'cross_junction_right_2_3_2': LocalizedScenarioText(
         title: 'Secondary road joining from the right (sign 2.3.2)',
         subtitle:
-            'The main road goes straight on; a secondary road joins from the right.',
+            'Paved main road continues straight; an unpaved rural dirt road joins from the right (sign 2.3.2).',
         pddArticle:
-            'Sign 2.3.2 and clause 13.9 of the Russian Traffic Regulations',
+            'Sign 2.3.2, clauses 1.2, 13.9 of the Russian Traffic Regulations',
         actors: {
           'suv_south': LocalizedActorText(
             name: 'Green crossover (main road)',
             ruleExplanation:
-                'The crossover drives straight along the main road (sign 2.3.2).',
+                'The crossover travels straight on the paved main road and has right-of-way (sign 2.3.2, clause 1.2).',
           ),
           'truck_east': LocalizedActorText(
-            name: 'Flatbed truck (joining road)',
+            name: 'Flatbed truck (dirt road)',
             ruleExplanation:
-                'The truck leaves the joining road (sign 2.4) and lets the crossover on the main road pass.',
+                'The truck exits from the rural dirt road (sign 2.4) and yields to the crossover on the main road (clauses 1.2, 13.9).',
           ),
         },
       ),
@@ -354,19 +354,19 @@ class CrossroadsTranslations {
       'cross_junction_left_2_3_3': LocalizedScenarioText(
         title: 'Secondary road joining from the left (sign 2.3.3)',
         subtitle:
-            'The main road goes straight on; a secondary road joins from the left.',
+            'Paved main road continues straight; an unpaved rural dirt road joins from the left (sign 2.3.3).',
         pddArticle:
-            'Sign 2.3.3 and clause 13.9 of the Russian Traffic Regulations',
+            'Sign 2.3.3, clauses 1.2, 13.9 of the Russian Traffic Regulations',
         actors: {
           'car_south': LocalizedActorText(
             name: 'Yellow sedan (main road)',
             ruleExplanation:
-                'The sedan drives straight along the main road (sign 2.3.3).',
+                'The sedan travels straight on the paved main road and has right-of-way (sign 2.3.3, clause 1.2).',
           ),
           'truck_west': LocalizedActorText(
-            name: 'Van (joining road)',
+            name: 'Van (dirt road)',
             ruleExplanation:
-                'The van leaves the joining road (sign 2.4) and lets the sedan on the main road pass.',
+                'The van exits from the rural dirt road (sign 2.4) and yields to traffic on the main road (clauses 1.2, 13.9).',
           ),
         },
       ),
@@ -881,42 +881,43 @@ class CrossroadsTranslations {
         },
       ),
       'cross_junction_2_3_1': LocalizedScenarioText(
-        title: 'Қосалқы жолдың қиылысы (2.3.1 белгісі)',
+        title: 'Қосалқы жолмен қиылысу (2.3.1 белгісі)',
         subtitle:
-            '2.3.1 белгісі кесіп өтетін қосалқы жолдағы көліктерге басымдық береді.',
-        pddArticle: '2.3.1 белгісі және ЖЖЕ 13.12-тармағы',
+            'Басты асфальтты тасжол ауылдық қара жолмен (топырақ жол) қиылысады (2.3.1 белгісі).',
+        pddArticle: '2.3.1 белгісі, ЖЖЕ 1.2, 13.9, 13.12-тармақтары',
         actors: {
           'moto_south': LocalizedActorText(
             name: 'Спорттық мотоцикл',
             ruleExplanation:
-                'Мотоцикл негізгі жол бойымен тікелей қозғалады және барлық қатысушылардан басымдыққа ие.',
+                'Мотоцикл басты асфальтты жолмен тура қозғалады және басымдыққа ие (2.3.1 белгісі, 1.2-т.).',
           ),
           'car_north': LocalizedActorText(
             name: 'Көк седан',
             ruleExplanation:
-                'Негізгі жолдағы седан солға бұрылып, қарсы келе жатқан мотоциклге жол береді (13.12-тармақ).',
+                'Басты жолдағы седан солға бұрылып, қарсы келе жатқан мотоциклге жол береді (13.12-тармақ).',
           ),
           'truck_west': LocalizedActorText(
             name: 'Сұр жүк көлігі',
             ruleExplanation:
-                'Жүк көлігі 2.4 «Жол беріңіз» белгісі бар қосалқы жолда, негізгі жолдағы көлікке жол береді.',
+                '2.4 белгісі бар ауылдық топырақ жолдағы жүк көлігі басты жолдағы көлікке жол береді (1.2, 13.9-т.).',
           ),
         },
       ),
       'cross_junction_right_2_3_2': LocalizedScenarioText(
         title: 'Оң жақтан қосалқы жолдың қосылуы (2.3.2 белгісі)',
-        subtitle: 'Негізгі жол тура жалғасады, оң жақтан қосалқы жол қосылады.',
-        pddArticle: '2.3.2 белгісі және ЖЖЕ 13.9-тармағы',
+        subtitle:
+            'Басты асфальтты жол тура өтеді, оң жақтан ауылдық қара жол (топырақ жол) қосылады (2.3.2 белгісі).',
+        pddArticle: '2.3.2 белгісі, ЖЖЕ 1.2, 13.9-тармақтары',
         actors: {
           'suv_south': LocalizedActorText(
             name: 'Жасыл кроссовер (негізгі жол)',
             ruleExplanation:
-                'Кроссовер негізгі жолмен тура жүреді (2.3.2 белгісі).',
+                'Кроссовер басты асфальтты жолмен тура жүреді (2.3.2 белгісі, 1.2-т.).',
           ),
           'truck_east': LocalizedActorText(
-            name: 'Жүк көлігі (қосылатын жол)',
+            name: 'Жүк көлігі (топырақ жол)',
             ruleExplanation:
-                'Жүк көлігі қосылатын жолдан шығады (2.4 «Жол беріңіз» белгісі) және негізгі жолдағы кроссоверге жол береді.',
+                'Жүк көлігі ауылдық топырақ жолдан шығады (2.4 «Жол беріңіз» белгісі) және негізгі жолдағы кроссоверге жол береді (1.2, 13.9-т.).',
           ),
         },
       ),
@@ -968,18 +969,18 @@ class CrossroadsTranslations {
       'cross_junction_left_2_3_3': LocalizedScenarioText(
         title: 'Сол жақтан қосалқы жолдың қосылуы (2.3.3 белгісі)',
         subtitle:
-            'Негізгі жол тура жалғасады, сол жақтан қосалқы жол қосылады.',
-        pddArticle: '2.3.3 белгісі және ЖЖЕ 13.9-тармағы',
+            'Басты асфальтты жол тура өтеді, сол жақтан ауылдық қара жол (топырақ жол) қосылады (2.3.3 белгісі).',
+        pddArticle: '2.3.3 белгісі, ЖЖЕ 1.2, 13.9-тармақтары',
         actors: {
           'car_south': LocalizedActorText(
             name: 'Сары седан (негізгі жол)',
             ruleExplanation:
-                'Седан негізгі жолмен тура жүреді (2.3.3 белгісі).',
+                'Седан басты асфальтты жолмен тура жүреді (2.3.3 белгісі, 1.2-т.).',
           ),
           'truck_west': LocalizedActorText(
-            name: 'Жүк фургоны (қосылатын жол)',
+            name: 'Жүк фургоны (топырақ жол)',
             ruleExplanation:
-                'Фургон қосылатын жолдан шығады (2.4 «Жол беріңіз» белгісі) және негізгі жолдағы седанды өткізеді.',
+                'Фургон ауылдық топырақ жолдан шығады (2.4 «Жол беріңіз» белгісі) және негізгі жолдағы седанды өткізеді (1.2, 13.9-т.).',
           ),
         },
       ),

@@ -293,6 +293,7 @@
     "pddArticle": "Пункт 13.11 ПДД РФ",
     "isEqual": true,
     "isHard": false,
+    "environment": "suburban",
     "signs": [],
     "trafficLights": [],
     "actors": [
@@ -401,6 +402,7 @@
     "pddArticle": "Пункт 13.11 ПДД РФ",
     "isEqual": true,
     "isHard": false,
+    "environment": "suburban",
     "signs": [],
     "trafficLights": [],
     "actors": [
@@ -771,6 +773,7 @@
     "pddArticle": "Знак 2.5, пункты 13.9 и 13.12 ПДД РФ",
     "isEqual": false,
     "isHard": false,
+    "environment": "suburban",
     "signs": [
       {
         "code": "2.1",
@@ -904,6 +907,7 @@
     "pddArticle": "Пункт 13.12 ПДД РФ",
     "isEqual": true,
     "isHard": false,
+    "environment": "suburban",
     "signs": [],
     "trafficLights": [],
     "actors": [
@@ -1245,10 +1249,15 @@
     "id": "cross_junction_2_3_1",
     "category": "prioritySigns",
     "title": "Пересечение со второстепенной дорогой (знак 2.3.1)",
-    "subtitle": "Знак 2.3.1 предоставляет приоритет перед ТС на пересекаемой второстепенной дороге.",
-    "pddArticle": "Знак 2.3.1 и п. 13.12 ПДД РФ",
+    "subtitle": "Главная асфальтированная дорога пересекается с сельской грунтовой (знак 2.3.1).",
+    "pddArticle": "Знак 2.3.1, пп. 1.2, 13.9, 13.12 ПДД РФ",
     "isEqual": false,
     "isHard": false,
+    "environment": "rural",
+    "dirtArm": [
+      "east",
+      "west"
+    ],
     "signs": [
       {
         "code": "2.3.1",
@@ -1286,7 +1295,7 @@
         "side": "south",
         "maneuver": "straight",
         "order": 1,
-        "explanation": "Мотоцикл движется по главной дороге прямо и имеет приоритет перед всеми участниками.",
+        "explanation": "Мотоцикл движется прямо по главной дороге и имеет приоритет (знак 2.3.1, п. 1.2).",
         "hasSiren": false
       },
       {
@@ -1310,19 +1319,19 @@
         "side": "west",
         "maneuver": "straight",
         "order": 3,
-        "explanation": "Грузовик находится на второстепенной дороге со знаком 2.4 и пропускает транспорт главной дороги.",
+        "explanation": "Грузовик на сельской грунтовой дороге со знаком 2.4 пропускает транспорт главной дороги (пп. 1.2, 13.9).",
         "hasSiren": false
       }
     ],
     "translations": {
       "ru": {
         "title": "Пересечение со второстепенной дорогой (знак 2.3.1)",
-        "subtitle": "Знак 2.3.1 предоставляет приоритет перед ТС на пересекаемой второстепенной дороге.",
-        "pddArticle": "Знак 2.3.1 и п. 13.12 ПДД РФ",
+        "subtitle": "Главная асфальтированная дорога пересекается с сельской грунтовой (знак 2.3.1).",
+        "pddArticle": "Знак 2.3.1, пп. 1.2, 13.9, 13.12 ПДД РФ",
         "actors": {
           "moto_south": {
             "name": "Спортивный мотоцикл",
-            "explanation": "Мотоцикл движется по главной дороге прямо и имеет приоритет перед всеми участниками."
+            "explanation": "Мотоцикл движется прямо по главной дороге и имеет приоритет (знак 2.3.1, п. 1.2)."
           },
           "car_north": {
             "name": "Синий седан",
@@ -1330,45 +1339,45 @@
           },
           "truck_west": {
             "name": "Серый грузовик",
-            "explanation": "Грузовик находится на второстепенной дороге со знаком 2.4 и пропускает транспорт главной дороги."
+            "explanation": "Грузовик на сельской грунтовой дороге со знаком 2.4 пропускает транспорт главной дороги (пп. 1.2, 13.9)."
           }
         }
       },
       "en": {
-        "title": "Intersection with a minor road (sign 2.3.1)",
-        "subtitle": "Sign 2.3.1 gives priority to vehicles on the secondary road being crossed.",
-        "pddArticle": "Sign 2.3.1 and clause 13.12 of the Russian Traffic Regulations",
+        "title": "Intersection with a secondary road (sign 2.3.1)",
+        "subtitle": "Paved main highway intersects with an unpaved rural dirt road (sign 2.3.1).",
+        "pddArticle": "Sign 2.3.1, clauses 1.2, 13.9, 13.12 of the Russian Traffic Regulations",
         "actors": {
           "moto_south": {
             "name": "Sports motorcycle",
-            "explanation": "The motorcycle moves straight along the main road and has priority over all participants."
+            "explanation": "The motorcycle travels straight along the main paved road and has right-of-way (sign 2.3.1, clause 1.2)."
           },
           "car_north": {
             "name": "Blue sedan",
-            "explanation": "The sedan on the main road turns left and gives way to the oncoming motorcycle (section 13.12)."
+            "explanation": "The sedan on the main road turns left and gives way to the oncoming motorcycle (clause 13.12)."
           },
           "truck_west": {
             "name": "Gray truck",
-            "explanation": "The truck is on a secondary road with sign 2.4 and allows traffic on the main road to pass."
+            "explanation": "The truck on the unpaved rural dirt road with sign 2.4 yields to all main road traffic (clauses 1.2, 13.9)."
           }
         }
       },
       "kk": {
-        "title": "Қосалқы жолдың қиылысы (2.3.1 белгісі)",
-        "subtitle": "2.3.1 белгісі кесіп өтетін қосалқы жолдағы көліктерге басымдық береді.",
-        "pddArticle": "2.3.1 белгісі және ЖЖЕ 13.12-тармағы",
+        "title": "Қосалқы жолмен қиылысу (2.3.1 белгісі)",
+        "subtitle": "Басты асфальтты тасжол ауылдық қара жолмен (топырақ жол) қиылысады (2.3.1 белгісі).",
+        "pddArticle": "2.3.1 белгісі, ЖЖЕ 1.2, 13.9, 13.12-тармақтары",
         "actors": {
           "moto_south": {
             "name": "Спорттық мотоцикл",
-            "explanation": "Мотоцикл негізгі жол бойымен тікелей қозғалады және барлық қатысушылардан басымдыққа ие."
+            "explanation": "Мотоцикл басты асфальтты жолмен тура қозғалады және басымдыққа ие (2.3.1 белгісі, 1.2-т.)."
           },
           "car_north": {
             "name": "Көк седан",
-            "explanation": "Негізгі жолдағы седан солға бұрылып, қарсы келе жатқан мотоциклге жол береді (13.12-тармақ)."
+            "explanation": "Басты жолдағы седан солға бұрылып, қарсы келе жатқан мотоциклге жол береді (13.12-тармақ)."
           },
           "truck_west": {
             "name": "Сұр жүк көлігі",
-            "explanation": "Жүк көлігі 2.4 «Жол беріңіз» белгісі бар қосалқы жолда, негізгі жолдағы көлікке жол береді."
+            "explanation": "2.4 белгісі бар ауылдық топырақ жолдағы жүк көлігі басты жолдағы көлікке жол береді (1.2, 13.9-т.)."
           }
         }
       }
@@ -1378,10 +1387,12 @@
     "id": "cross_junction_right_2_3_2",
     "category": "prioritySigns",
     "title": "Примыкание второстепенной дороги справа (знак 2.3.2)",
-    "subtitle": "Главная дорога идет прямо, справа примыкает второстепенная.",
-    "pddArticle": "Знак 2.3.2 и пункт 13.9 ПДД РФ",
+    "subtitle": "Главная асфальтированная дорога идет прямо, справа примыкает сельская грунтовая (знак 2.3.2).",
+    "pddArticle": "Знак 2.3.2, пп. 1.2, 13.9 ПДД РФ",
     "isEqual": false,
     "isHard": false,
+    "environment": "rural",
+    "dirtArm": "east",
     "closedSide": "west",
     "signs": [
       {
@@ -1412,65 +1423,65 @@
         "side": "south",
         "maneuver": "straight",
         "order": 1,
-        "explanation": "Кроссовер едет по главной дороге прямо (знак 2.3.2).",
+        "explanation": "Кроссовер едет по главной асфальтированной дороге прямо (знак 2.3.2, п. 1.2).",
         "hasSiren": false
       },
       {
         "id": "truck_east",
         "type": "truck",
-        "name": "Бортовой грузовик (примыкание)",
+        "name": "Бортовой грузовик (грунтовка)",
         "model": "truck",
         "color": "#D7AA60",
         "side": "east",
         "maneuver": "left",
         "order": 2,
-        "explanation": "Грузовик выезжает с примыкающей дороги (знак 2.4) и пропускает кроссовер на главной.",
+        "explanation": "Грузовик выезжает с грунтовой сельской дороги (знак 2.4) и пропускает кроссовер на главной (пп. 1.2, 13.9).",
         "hasSiren": false
       }
     ],
     "translations": {
       "ru": {
         "title": "Примыкание второстепенной дороги справа (знак 2.3.2)",
-        "subtitle": "Главная дорога идет прямо, справа примыкает второстепенная.",
-        "pddArticle": "Знак 2.3.2 и пункт 13.9 ПДД РФ",
+        "subtitle": "Главная асфальтированная дорога идет прямо, справа примыкает сельская грунтовая (знак 2.3.2).",
+        "pddArticle": "Знак 2.3.2, пп. 1.2, 13.9 ПДД РФ",
         "actors": {
           "suv_south": {
             "name": "Зеленый кроссовер (главная)",
-            "explanation": "Кроссовер едет по главной дороге прямо (знак 2.3.2)."
+            "explanation": "Кроссовер едет по главной асфальтированной дороге прямо (знак 2.3.2, п. 1.2)."
           },
           "truck_east": {
-            "name": "Бортовой грузовик (примыкание)",
-            "explanation": "Грузовик выезжает с примыкающей дороги (знак 2.4) и пропускает кроссовер на главной."
+            "name": "Бортовой грузовик (грунтовка)",
+            "explanation": "Грузовик выезжает с грунтовой сельской дороги (знак 2.4) и пропускает кроссовер на главной (пп. 1.2, 13.9)."
           }
         }
       },
       "en": {
         "title": "Secondary road joining from the right (sign 2.3.2)",
-        "subtitle": "The main road goes straight on; a secondary road joins from the right.",
-        "pddArticle": "Sign 2.3.2 and clause 13.9 of the Russian Traffic Regulations",
+        "subtitle": "Paved main road continues straight; an unpaved rural dirt road joins from the right (sign 2.3.2).",
+        "pddArticle": "Sign 2.3.2, clauses 1.2, 13.9 of the Russian Traffic Regulations",
         "actors": {
           "suv_south": {
             "name": "Green crossover (main road)",
-            "explanation": "The crossover drives straight along the main road (sign 2.3.2)."
+            "explanation": "The crossover travels straight on the paved main road and has right-of-way (sign 2.3.2, clause 1.2)."
           },
           "truck_east": {
-            "name": "Flatbed truck (joining road)",
-            "explanation": "The truck leaves the joining road (sign 2.4) and lets the crossover on the main road pass."
+            "name": "Flatbed truck (dirt road)",
+            "explanation": "The truck exits from the rural dirt road (sign 2.4) and yields to the crossover on the main road (clauses 1.2, 13.9)."
           }
         }
       },
       "kk": {
         "title": "Оң жақтан қосалқы жолдың қосылуы (2.3.2 белгісі)",
-        "subtitle": "Негізгі жол тура жалғасады, оң жақтан қосалқы жол қосылады.",
-        "pddArticle": "2.3.2 белгісі және ЖЖЕ 13.9-тармағы",
+        "subtitle": "Басты асфальтты жол тура өтеді, оң жақтан ауылдық қара жол (топырақ жол) қосылады (2.3.2 белгісі).",
+        "pddArticle": "2.3.2 белгісі, ЖЖЕ 1.2, 13.9-тармақтары",
         "actors": {
           "suv_south": {
             "name": "Жасыл кроссовер (негізгі жол)",
-            "explanation": "Кроссовер негізгі жолмен тура жүреді (2.3.2 белгісі)."
+            "explanation": "Кроссовер басты асфальтты жолмен тура жүреді (2.3.2 белгісі, 1.2-т.)."
           },
           "truck_east": {
-            "name": "Жүк көлігі (қосылатын жол)",
-            "explanation": "Жүк көлігі қосылатын жолдан шығады (2.4 «Жол беріңіз» белгісі) және негізгі жолдағы кроссоверге жол береді."
+            "name": "Жүк көлігі (топырақ жол)",
+            "explanation": "Жүк көлігі ауылдық топырақ жолдан шығады (2.4 «Жол беріңіз» белгісі) және негізгі жолдағы кроссоверге жол береді (1.2, 13.9-т.)."
           }
         }
       }
@@ -1738,10 +1749,12 @@
     "id": "cross_junction_left_2_3_3",
     "category": "prioritySigns",
     "title": "Примыкание второстепенной дороги слева (знак 2.3.3)",
-    "subtitle": "Главная дорога идет прямо, слева примыкает второстепенная.",
-    "pddArticle": "Знак 2.3.3 и пункт 13.9 ПДД РФ",
+    "subtitle": "Главная асфальтированная дорога идет прямо, слева примыкает сельская грунтовая (знак 2.3.3).",
+    "pddArticle": "Знак 2.3.3, пп. 1.2, 13.9 ПДД РФ",
     "isEqual": false,
     "isHard": false,
+    "environment": "rural",
+    "dirtArm": "west",
     "closedSide": "east",
     "signs": [
       {
@@ -1772,65 +1785,65 @@
         "side": "south",
         "maneuver": "straight",
         "order": 1,
-        "explanation": "Седан едет по главной дороге прямо (знак 2.3.3).",
+        "explanation": "Седан едет прямо по главной асфальтированной дороге (знак 2.3.3, п. 1.2).",
         "hasSiren": false
       },
       {
         "id": "truck_west",
         "type": "truck",
-        "name": "Грузовой фургон (примыкание)",
+        "name": "Грузовой фургон (грунтовка)",
         "model": "truck",
         "color": "#2B2F36",
         "side": "west",
         "maneuver": "left",
         "order": 2,
-        "explanation": "Фургон выезжает с примыкающей дороги (знак 2.4) и пропускает седан на главной.",
+        "explanation": "Фургон выезжает с грунтовой сельской дороги (знак 2.4) и пропускает транспорт на главной (пп. 1.2, 13.9).",
         "hasSiren": false
       }
     ],
     "translations": {
       "ru": {
         "title": "Примыкание второстепенной дороги слева (знак 2.3.3)",
-        "subtitle": "Главная дорога идет прямо, слева примыкает второстепенная.",
-        "pddArticle": "Знак 2.3.3 и пункт 13.9 ПДД РФ",
+        "subtitle": "Главная асфальтированная дорога идет прямо, слева примыкает сельская грунтовая (знак 2.3.3).",
+        "pddArticle": "Знак 2.3.3, пп. 1.2, 13.9 ПДД РФ",
         "actors": {
           "car_south": {
             "name": "Желтый седан (главная)",
-            "explanation": "Седан едет по главной дороге прямо (знак 2.3.3)."
+            "explanation": "Седан едет прямо по главной асфальтированной дороге (знак 2.3.3, п. 1.2)."
           },
           "truck_west": {
-            "name": "Грузовой фургон (примыкание)",
-            "explanation": "Фургон выезжает с примыкающей дороги (знак 2.4) и пропускает седан на главной."
+            "name": "Грузовой фургон (грунтовка)",
+            "explanation": "Фургон выезжает с грунтовой сельской дороги (знак 2.4) и пропускает транспорт на главной (пп. 1.2, 13.9)."
           }
         }
       },
       "en": {
         "title": "Secondary road joining from the left (sign 2.3.3)",
-        "subtitle": "The main road goes straight on; a secondary road joins from the left.",
-        "pddArticle": "Sign 2.3.3 and clause 13.9 of the Russian Traffic Regulations",
+        "subtitle": "Paved main road continues straight; an unpaved rural dirt road joins from the left (sign 2.3.3).",
+        "pddArticle": "Sign 2.3.3, clauses 1.2, 13.9 of the Russian Traffic Regulations",
         "actors": {
           "car_south": {
             "name": "Yellow sedan (main road)",
-            "explanation": "The sedan drives straight along the main road (sign 2.3.3)."
+            "explanation": "The sedan travels straight on the paved main road and has right-of-way (sign 2.3.3, clause 1.2)."
           },
           "truck_west": {
-            "name": "Van (joining road)",
-            "explanation": "The van leaves the joining road (sign 2.4) and lets the sedan on the main road pass."
+            "name": "Van (dirt road)",
+            "explanation": "The van exits from the rural dirt road (sign 2.4) and yields to traffic on the main road (clauses 1.2, 13.9)."
           }
         }
       },
       "kk": {
         "title": "Сол жақтан қосалқы жолдың қосылуы (2.3.3 белгісі)",
-        "subtitle": "Негізгі жол тура жалғасады, сол жақтан қосалқы жол қосылады.",
-        "pddArticle": "2.3.3 белгісі және ЖЖЕ 13.9-тармағы",
+        "subtitle": "Басты асфальтты жол тура өтеді, сол жақтан ауылдық қара жол (топырақ жол) қосылады (2.3.3 белгісі).",
+        "pddArticle": "2.3.3 белгісі, ЖЖЕ 1.2, 13.9-тармақтары",
         "actors": {
           "car_south": {
             "name": "Сары седан (негізгі жол)",
-            "explanation": "Седан негізгі жолмен тура жүреді (2.3.3 белгісі)."
+            "explanation": "Седан басты асфальтты жолмен тура жүреді (2.3.3 белгісі, 1.2-т.)."
           },
           "truck_west": {
-            "name": "Жүк фургоны (қосылатын жол)",
-            "explanation": "Фургон қосылатын жолдан шығады (2.4 «Жол беріңіз» белгісі) және негізгі жолдағы седанды өткізеді."
+            "name": "Жүк фургоны (топырақ жол)",
+            "explanation": "Фургон ауылдық топырақ жолдан шығады (2.4 «Жол беріңіз» белгісі) және негізгі жолдағы седанды өткізеді (1.2, 13.9-т.)."
           }
         }
       }

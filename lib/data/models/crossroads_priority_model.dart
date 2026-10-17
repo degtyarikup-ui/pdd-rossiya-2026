@@ -927,8 +927,8 @@ class CrossroadsScenariosLibrary {
       id: 'cross_junction_2_3_1',
       title: 'Пересечение со второстепенной дорогой (знак 2.3.1)',
       subtitle:
-          'Знак 2.3.1 предоставляет приоритет перед ТС на пересекаемой второстепенной дороге.',
-      pddArticle: 'Знак 2.3.1 и п. 13.12 ПДД РФ',
+          'Главная асфальтированная дорога пересекается с сельской грунтовой (знак 2.3.1).',
+      pddArticle: 'Знак 2.3.1, пп. 1.2, 13.9, 13.12 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.3.1', side: CrossroadsSide.south),
         CrossroadsSignPlacement(code: '5.15.2', side: CrossroadsSide.south),
@@ -947,7 +947,7 @@ class CrossroadsScenariosLibrary {
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
           ruleExplanation:
-              'Мотоцикл движется по главной дороге прямо и имеет приоритет перед всеми участниками.',
+              'Мотоцикл движется прямо по главной дороге и имеет приоритет (знак 2.3.1, п. 1.2).',
           vehicleModel: 'motorcycle',
         ),
         CrossroadsActor(
@@ -971,7 +971,7 @@ class CrossroadsScenariosLibrary {
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 3,
           ruleExplanation:
-              'Грузовик находится на второстепенной дороге со знаком 2.4 и пропускает транспорт главной дороги.',
+              'Грузовик на сельской грунтовой дороге со знаком 2.4 пропускает транспорт главной дороги (пп. 1.2, 13.9).',
           vehicleModel: 'truck',
         ),
       ],
@@ -981,8 +981,9 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_junction_right_2_3_2',
       title: 'Примыкание второстепенной дороги справа (знак 2.3.2)',
-      subtitle: 'Главная дорога идет прямо, справа примыкает второстепенная.',
-      pddArticle: 'Знак 2.3.2 и пункт 13.9 ПДД РФ',
+      subtitle:
+          'Главная асфальтированная дорога идет прямо, справа примыкает сельская грунтовая (знак 2.3.2).',
+      pddArticle: 'Знак 2.3.2, пп. 1.2, 13.9 ПДД РФ',
       closedSide: CrossroadsSide.west,
       signs: [
         CrossroadsSignPlacement(code: '2.3.2', side: CrossroadsSide.south),
@@ -1000,19 +1001,19 @@ class CrossroadsScenariosLibrary {
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
           ruleExplanation:
-              'Кроссовер едет по главной дороге прямо (знак 2.3.2).',
+              'Кроссовер едет по главной асфальтированной дороге прямо (знак 2.3.2, п. 1.2).',
           vehicleModel: 'suv',
         ),
         CrossroadsActor(
           id: 'truck_east',
           type: CrossroadsVehicleType.truck,
-          name: 'Бортовой грузовик (примыкание)',
+          name: 'Бортовой грузовик (грунтовка)',
           colorHex: '#D7AA60',
           side: CrossroadsSide.east,
           maneuver: CrossroadsManeuver.left,
           priorityOrder: 2,
           ruleExplanation:
-              'Грузовик выезжает с примыкающей дороги (знак 2.4) и пропускает кроссовер на главной.',
+              'Грузовик выезжает с грунтовой сельской дороги (знак 2.4) и пропускает кроссовер на главной (пп. 1.2, 13.9).',
           vehicleModel: 'truck',
         ),
       ],
@@ -1130,8 +1131,9 @@ class CrossroadsScenariosLibrary {
     const CrossroadsScenario(
       id: 'cross_junction_left_2_3_3',
       title: 'Примыкание второстепенной дороги слева (знак 2.3.3)',
-      subtitle: 'Главная дорога идет прямо, слева примыкает второстепенная.',
-      pddArticle: 'Знак 2.3.3 и пункт 13.9 ПДД РФ',
+      subtitle:
+          'Главная асфальтированная дорога идет прямо, слева примыкает сельская грунтовая (знак 2.3.3).',
+      pddArticle: 'Знак 2.3.3, пп. 1.2, 13.9 ПДД РФ',
       closedSide: CrossroadsSide.east,
       signs: [
         CrossroadsSignPlacement(code: '2.3.3', side: CrossroadsSide.south),
@@ -1148,19 +1150,20 @@ class CrossroadsScenariosLibrary {
           side: CrossroadsSide.south,
           maneuver: CrossroadsManeuver.straight,
           priorityOrder: 1,
-          ruleExplanation: 'Седан едет по главной дороге прямо (знак 2.3.3).',
+          ruleExplanation:
+              'Седан едет прямо по главной асфальтированной дороге (знак 2.3.3, п. 1.2).',
           vehicleModel: 'sedan',
         ),
         CrossroadsActor(
           id: 'truck_west',
           type: CrossroadsVehicleType.truck,
-          name: 'Грузовой фургон (примыкание)',
+          name: 'Грузовой фургон (грунтовка)',
           colorHex: '#2B2F36',
           side: CrossroadsSide.west,
           maneuver: CrossroadsManeuver.left,
           priorityOrder: 2,
           ruleExplanation:
-              'Фургон выезжает с примыкающей дороги (знак 2.4) и пропускает седан на главной.',
+              'Фургон выезжает с грунтовой сельской дороги (знак 2.4) и пропускает транспорт на главной (пп. 1.2, 13.9).',
           vehicleModel: 'truck',
         ),
       ],
