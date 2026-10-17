@@ -29,14 +29,15 @@ func run() -> void:
 	game.set_process(false)
 	var reference_sun := DirectionalLight3D.new()
 	var reference_env := Environment.new()
-	MiniGameLighting.apply(reference_sun, reference_env, game.season_name)
+	MiniGameLighting.apply(reference_sun, reference_env, game.season_name, true)
 	check(game.sun.light_color == reference_sun.light_color and game.sun.light_energy == reference_sun.light_energy,
 		"seasonal sunlight matches Regulator")
 	check(game.env.environment.fog_depth_begin == reference_env.fog_depth_begin
 		and game.env.environment.fog_depth_end == reference_env.fog_depth_end
 		and game.env.environment.fog_light_color == reference_env.fog_light_color
-		and game.env.environment.fog_density == reference_env.fog_density,
-		"distance haze matches Regulator")
+		and game.env.environment.fog_density == reference_env.fog_density
+		and game.env.environment.fog_density == 1.0,
+		"distance fog conceals road boundary")
 	reference_sun.free()
 	for index in game.all_scenarios.size():
 		game.scenario_order.assign(range(game.all_scenarios.size()))

@@ -69,7 +69,7 @@ var _target_cam_yaw := 0.93607
 var _target_cam_pitch := -0.8143
 var _target_cam_zoom := 1.0
 const ZOOM_MIN := 0.65
-const ZOOM_MAX := 1.18
+const ZOOM_MAX := 1.02
 const HALF_ROAD := CrossroadsJunction.HALF_ROAD
 const BASE_CAM_DIST := 58.0
 var base_cam_dist := BASE_CAM_DIST
@@ -156,7 +156,7 @@ func _setup_environment() -> void:
 	add_child(sun)
 	env = WorldEnvironment.new()
 	env.environment = Environment.new()
-	MiniGameLighting.apply(sun, env.environment, season_name)
+	MiniGameLighting.apply(sun, env.environment, season_name, true)
 	add_child(env)
 
 	# Camera with orbital pivot
@@ -1205,8 +1205,6 @@ func _update_camera() -> void:
 		actor.update_badge_orientation(camera)
 
 
-## Reuse the city's per-building transparent batches. Keep the intersection,
-## waiting participants and the actual signs/signals visible while orbiting.
 func _update_occlusion(delta: float) -> void:
 	if junction == null or camera == null: return
 	var targets: Array[Vector3] = [Vector3(0, 0.4, 0)]
@@ -1214,38 +1212,42 @@ func _update_occlusion(delta: float) -> void:
 		if actor.state == "done" or actor.has_cleared_junction(): continue
 		targets.append(actor.global_position + Vector3.UP * 0.9)
 		if actor.badge_node != null: targets.append(actor.badge_node.global_position)
-	for group in [junction.signs_root, junction.lights_root]:
-		for item: Node3D in group.get_children():
-			if targets.size() >= 24: break
-			targets.append(item.global_position + Vector3.UP * 3.0)
 	for corner in [Vector3(-6, 0.2, -6), Vector3(6, 0.2, -6), Vector3(-6, 0.2, 6), Vector3(6, 0.2, 6)]:
 		targets.append(corner)
 	for approach in [Vector3(0, 0.2, -14), Vector3(0, 0.2, 14), Vector3(-14, 0.2, 0), Vector3(14, 0.2, 0)]:
 		targets.append(approach)
+	for group in [junction.signs_root, junction.lights_root]:
+		for item: Node3D in group.get_children():
+			if targets.size() >= 24: break
+			targets.append(item.global_position + Vector3.UP * 1.5)
 	junction.sc.update_occluders(camera, targets, delta)
-	# User requirement: buildings must not obstruct view of road/vehicles.
-	# Hide occluding building transparent instances completely so there is zero visual obstruction.
-	for state in junction.sc.occluders:
-		if state.fade_node != null and state.fade_node.visible:
-			state.fade_node.visible = false
-	_update_closed_block_occlusion(targets)
+	_update_closed_block_occlusion(targets, delta)
 
 
-func _update_closed_block_occlusion(targets: Array[Vector3]) -> void:
+func _update_closed_block_occlusion(targets: Array[Vector3], delta: float) -> void:
 	if junction == null or junction.closed_root == null or camera == null: return
 	for child in junction.closed_root.get_children():
 		if not child.name.begins_with("ClosedBlock_"): continue
 		for b in child.get_children():
-			if not b is MeshInstance3D or b.mesh == null: continue
-			var world_box: AABB = b.global_transform * b.mesh.get_aabb()
+			var mi := b as MeshInstance3D
+			if mi == null or mi.mesh == null: continue
+			var mat := mi.material_override as ShaderMaterial
+			if mat == null: continue
+			var inv: Transform3D = mi.global_transform.affine_inverse()
+			var origin: Vector3 = inv * camera.global_position
+			var bounds: AABB = mi.mesh.get_aabb().grow(0.12)
 			var occluding := false
-			var cam_pos := camera.global_position
-			for target in targets:
-				var hit = world_box.intersects_segment(cam_pos, target)
-				if hit != null:
-					occluding = true
-					break
-			b.visible = not occluding
+			if bounds.grow(camera.near + 4.0).has_point(origin):
+				occluding = true
+			if not occluding:
+				for target in targets:
+					if bounds.intersects_segment(origin, inv * target) != null:
+						occluding = true
+						break
+			var target_alpha := 0.25 if occluding else 1.0
+			var cur_alpha: float = mat.get_shader_parameter("uniform_alpha") if mat.get_shader_parameter("uniform_alpha") != null else 1.0
+			var next_alpha := move_toward(cur_alpha, target_alpha, delta * 4.0)
+			mat.set_shader_parameter("uniform_alpha", next_alpha)
 
 
 func _fit_projection(area: Rect2) -> void:

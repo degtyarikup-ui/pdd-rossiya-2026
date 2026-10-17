@@ -7,8 +7,12 @@ const HAZE_BEGIN := 110.0
 const HAZE_END := 300.0
 const HAZE_DENSITY := 0.30
 
+const CROSSROADS_FOG_BEGIN := 75.0
+const CROSSROADS_FOG_END := 210.0
+const CROSSROADS_FOG_DENSITY := 1.0
 
-static func apply(sun: DirectionalLight3D, environment: Environment, season_name: String) -> void:
+
+static func apply(sun: DirectionalLight3D, environment: Environment, season_name: String, for_crossroads := false) -> void:
 	var seasons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://scenery/index.json")).seasons
 	var season: Dictionary = seasons.get(season_name, seasons.summer)
 	sun.rotation_degrees = Vector3(-68, 30, 0)
@@ -35,11 +39,11 @@ static func apply(sun: DirectionalLight3D, environment: Environment, season_name
 	environment.fog_enabled = true
 	environment.fog_mode = Environment.FOG_MODE_DEPTH
 	# Godot resets density when fog_mode changes; set it afterwards.
-	environment.fog_density = HAZE_DENSITY
+	environment.fog_density = CROSSROADS_FOG_DENSITY if for_crossroads else HAZE_DENSITY
 	environment.fog_light_color = CLEAR_SKY
 	environment.fog_sun_scatter = 0.0
 	environment.fog_aerial_perspective = 0.0
-	environment.fog_depth_begin = HAZE_BEGIN
-	environment.fog_depth_end = HAZE_END
-	environment.fog_depth_curve = 1.35
+	environment.fog_depth_begin = CROSSROADS_FOG_BEGIN if for_crossroads else HAZE_BEGIN
+	environment.fog_depth_end = CROSSROADS_FOG_END if for_crossroads else HAZE_END
+	environment.fog_depth_curve = 1.15 if for_crossroads else 1.35
 	environment.fog_sky_affect = 0.0

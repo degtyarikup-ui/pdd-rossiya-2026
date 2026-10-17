@@ -30,6 +30,7 @@ uniform int surface_layer = 0;
 uniform float texture_period = 1.0;
 uniform vec3 surface_colour = vec3(1.0);
 uniform float wetness = 0.0;
+uniform float uniform_alpha = 1.0;
 varying vec3 surface_position;
 varying float surface_side;
 varying vec3 tint;
@@ -41,7 +42,7 @@ void vertex() {
 	surface_side = abs(NORMAL.y) < 0.5 ? 1.0 : 0.0;
 	tint = INSTANCE_CUSTOM.rgb;
 	snow = floor(INSTANCE_CUSTOM.a + 0.001);
-	building_opacity = fract(INSTANCE_CUSTOM.a) * 2.0;
+	building_opacity = INSTANCE_CUSTOM.a > 0.0001 ? fract(INSTANCE_CUSTOM.a) * 2.0 : uniform_alpha;
 }
 
 void fragment() {

@@ -296,8 +296,9 @@ func _add_closed_arm_building(parent: Node3D, prop: String, local_pos: Vector3, 
 	if mesh == null: return
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
-	var mat := sc.material.duplicate() as ShaderMaterial
+	var mat := sc.building_material.duplicate() as ShaderMaterial
 	mat.set_shader_parameter("plain_tint", Vector3(tint.r, tint.g, tint.b))
+	mat.set_shader_parameter("uniform_alpha", 1.0)
 	mi.material_override = mat
 	mi.position = local_pos.rotated(Vector3.UP, arm_yaw)
 	mi.rotation.y = yaw + arm_yaw
