@@ -1747,7 +1747,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get achievementDescGame =>
-      '«Жанды қалада» бір жүрісте 200, 400, 700 және 950 ұпай жинаңыз.';
+      '«Жанды қалада» бір жүрісте 100, 200, 300 және 450 ұпай жинаңыз.';
 
   @override
   String get achievementTitleRank => 'Рейтинг жеңімпазы';

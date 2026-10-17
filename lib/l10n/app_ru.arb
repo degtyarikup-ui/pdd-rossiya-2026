@@ -966,7 +966,7 @@
   "achievementDescExams": "Сданные пробные экзамены",
   "achievementDescFlawless": "Экзамены, сданные без ошибок",
   "achievementDescMistakes": "Вопросы, в которых ошибался, а потом ответил верно",
-  "achievementDescGame": "Наберите 200, 400, 700 и 950 очков за один заезд в «Живом городе».",
+  "achievementDescGame": "Наберите 100, 200, 300 и 450 очков за один заезд в «Живом городе».",
   "achievementTitleRank": "Покоритель рейтинга",
   "achievementDescRank": "Лучшее место в недельном рейтинге игры",
   "achievementRankTop": "Топ-{count}",

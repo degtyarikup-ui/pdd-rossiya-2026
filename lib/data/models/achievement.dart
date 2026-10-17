@@ -22,7 +22,7 @@ abstract final class AchievementThresholds {
   static const List<int> mistakes = [10, 50, 100, 200];
   // Each tier is reachable within one finite round of its game. Historical
   // personal bests remain valid, so previously earned badges are preserved.
-  static const List<int> game = [200, 400, 700, 950];
+  static const List<int> game = [100, 200, 300, 450];
   static const List<int> trafficController = [150, 300, 600, 900];
   static const List<int> signSwiper = [100, 200, 300, 450];
 

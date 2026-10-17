@@ -3025,7 +3025,7 @@ abstract class AppLocalizations {
   /// No description provided for @achievementDescGame.
   ///
   /// In ru, this message translates to:
-  /// **'Наберите 200, 400, 700 и 950 очков за один заезд в «Живом городе».'**
+  /// **'Наберите 100, 200, 300 и 450 очков за один заезд в «Живом городе».'**
   String get achievementDescGame;
 
   /// No description provided for @achievementTitleRank.

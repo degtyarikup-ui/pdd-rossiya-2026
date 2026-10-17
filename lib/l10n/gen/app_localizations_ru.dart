@@ -1769,7 +1769,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get achievementDescGame =>
-      'Наберите 200, 400, 700 и 950 очков за один заезд в «Живом городе».';
+      'Наберите 100, 200, 300 и 450 очков за один заезд в «Живом городе».';
 
   @override
   String get achievementTitleRank => 'Покоритель рейтинга';

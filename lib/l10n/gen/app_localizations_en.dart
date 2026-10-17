@@ -1747,7 +1747,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementDescGame =>
-      'Score 200, 400, 700 and 950 points in a single Living City drive.';
+      'Score 100, 200, 300 and 450 points in a single Living City drive.';
 
   @override
   String get achievementTitleRank => 'Conqueror of the rating';

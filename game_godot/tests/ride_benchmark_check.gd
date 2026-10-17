@@ -105,7 +105,7 @@ func run_check() -> void:
 		var authored = JSON.parse_string(FileAccess.get_file_as_string(path))
 		expect(authored.get("reviewed", false) and authored.get("playerRouteErrors", []).is_empty(), "benchmark route remains reviewed/playable: " + id)
 	expect(unique.size() == Run.QUESTIONS, "captured ride has no duplicated questions")
-	expect(Benchmark.ROUTE[14] == "ticket_12_13" and not Benchmark.ROUTE.has("ticket_20_13"), "v2 uses the approved substitute for the revoked review")
+	expect(not Benchmark.ROUTE.has("ticket_20_13"), "the route never uses the revoked review")
 	var pair := fixture()
 	var world: WorldFixture = pair[0]
 	var driver: Node = pair[1]

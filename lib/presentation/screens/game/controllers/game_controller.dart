@@ -15,7 +15,7 @@ class GameState {
   static const int maxRuns = 3;
 
   /// A run ends after this many answered questions.
-  static const int runQuestions = 20;
+  static const int runQuestions = 10;
   final int score;
   final int distanceM;
   final int speedKmH;

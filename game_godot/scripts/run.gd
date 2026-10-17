@@ -1,9 +1,9 @@
-## State of one run (game_controller.dart GameState): 20 questions, score by
+## State of one run (game_controller.dart GameState): 10 questions, score by
 ## streak (GameEconomy.city), violations, distance. Pure data, no nodes.
 class_name Run
 extends RefCounted
 
-const QUESTIONS := 20
+const QUESTIONS := 10
 
 var answered := 0
 var correct := 0

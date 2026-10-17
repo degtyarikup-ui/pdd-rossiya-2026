@@ -363,17 +363,17 @@ void main() {
       },
     );
 
-    test('game: счёт 400 → уровень 2, счёт 0 → уровень 0', () {
+    test('game: счёт 200 → уровень 2, счёт 0 → уровень 0', () {
       final list400 = computeAchievements(
         longestStreak: 0,
         stats: {'totalQuestions': 800, 'totalTickets': 40},
         questionProgress: {},
         examResults: [],
-        gameBestScore: 400,
+        gameBestScore: 200,
       );
       final game400 = list400.firstWhere((a) => a.id == AchievementId.game);
-      expect(game400.levels, [200, 400, 700, 950]);
-      expect(game400.value, 400);
+      expect(game400.levels, [100, 200, 300, 450]);
+      expect(game400.value, 200);
       expect(game400.level, 2);
       expect(game400.isUnlocked, isTrue);
 

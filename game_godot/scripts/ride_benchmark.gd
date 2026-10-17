@@ -5,13 +5,12 @@ extends Node
 
 signal completed(summary: Dictionary)
 
-const ROUTE_ID := "ride-20-2026-10-15-v2"
+const ROUTE_ID := "ride-10-2026-10-17-v3"
+# v3: a ride is 10 questions; the first half of the v2 route.
 # v2 replaces captured ticket_20_13 with approved ticket_12_13 after 4410da90 revoked its review.
 const ROUTE := [
 	"ticket_13_13", "ticket_27_13", "ticket_1_14", "ticket_28_13", "ticket_15_13",
 	"ticket_14_13", "ticket_19_13", "ticket_13_14", "ticket_23_14", "ticket_11_14",
-	"ticket_18_9", "ticket_28_2", "ticket_25_14", "ticket_28_15", "ticket_12_13",
-	"ticket_21_16", "ticket_24_14", "ticket_1_13", "ticket_20_15", "ticket_27_15",
 ]
 
 var question_hold_seconds := 6.0

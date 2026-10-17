@@ -588,7 +588,7 @@
   "achievementDescExams": "Trial exams passed",
   "achievementDescFlawless": "Exams passed without errors",
   "achievementDescMistakes": "Questions in which I was wrong and then answered correctly",
-  "achievementDescGame": "Score 200, 400, 700 and 950 points in a single Living City drive.",
+  "achievementDescGame": "Score 100, 200, 300 and 450 points in a single Living City drive.",
   "achievementTitleRank": "Conqueror of the rating",
   "achievementDescRank": "Best place in the weekly rating of the game",
   "achievementRankTop": "Top-{count}",
