@@ -957,7 +957,7 @@ class AmbientObstacle:
 		car = c
 
 	func footprint() -> Dictionary:
-		return { "p": Vector3(car.x, 0, car.z), "yaw": float(car.get("yaw", 0.0 if car.dir > 0.0 else PI)), "hw": float(car.get("hw", 0.95)), "hl": float(car.get("len", CAR_LENGTH)) * 0.5 }
+		return { "p": Vector3(car.x + float(car.get("kx", 0.0)), 0, car.z), "yaw": float(car.get("yaw", 0.0 if car.dir > 0.0 else PI)) + float(car.get("kyaw", 0.0)), "hw": float(car.get("hw", 0.95)), "hl": float(car.get("len", CAR_LENGTH)) * 0.5 }
 
 	## The player keeps the gas on a car it is pushing: a moving car takes the push and rolls on
 	## at the pace of the gas (its shove), the player follows. A parked car does not move: 1.5 m/s.
@@ -1137,8 +1137,11 @@ func on_collision(o) -> void:
 		m.crashed = true
 		Fleet.hazards(m.node, m.hl, m.hw)
 		m.speed = 0
-		drive.recovery = 0.38
-		drive.speed = 0
+		var knock := _knock(o.footprint())
+		if m.type != "tram":   # a tram does not move off its rails
+			m.knock = o.xf.basis.inverse() * knock.velocity
+			m.knock_spin = knock.spin
+		_absorb_impact(knock.head)
 		on_fault("collision", "collision:" + m.id)
 	elif "w" in o and o.w != null:
 		o.w.knocked_down = true
@@ -1160,15 +1163,45 @@ func on_collision(o) -> void:
 		if o.car.has("node"):
 			Fleet.hazards(o.car.node, float(o.car.get("len", CAR_LENGTH)) * 0.5, 0.95)
 		var away := 1.0 if o.car.z >= drive.pos.z else -1.0
+		var knock := _knock(o.footprint())
 		if o.car.get("moves", false):
-			o.car.shove = away * (maxf(0.0, drive.speed) * 0.8 + 2.0)   # at least 2 m/s: a visible roll
+			# The harder and straighter the hit, the further it rolls (at least 2 m/s: visible).
+			o.car.shove = away * (maxf(0.0, drive.speed) * (0.3 + 0.5 * knock.head) + 2.0)
 		else:
 			o.car.spd = 0.0
 			o.car.v = 0.0
-		drive.recovery = 0.38
-		drive.speed = 0
-		drive.bounce = -2.0
+		# Sideways it slides and turns a little, then straightens back into its lane.
+		o.car.kvx = knock.velocity.x
+		o.car.kspin = knock.spin
+		_absorb_impact(knock.head)
 		on_fault("collision", "collision:ambient")
+
+
+## The struck car's push from the player's car. The contact normal is the side
+## of the struck body facing the player (its flank, nose or tail); `head` is how
+## squarely the player drives into it: 1 for a straight hit, 0 for a graze.
+func _knock(body: Dictionary) -> Dictionary:
+	var forward := Vector3(sin(drive.yaw), 0, cos(drive.yaw)) * (1.0 if drive.speed >= 0.0 else -1.0)
+	var local: Vector3 = (drive.pos - (body.p as Vector3)).rotated(Vector3.UP, -float(body.yaw))
+	var flank := absf(local.x) / maxf(0.1, float(body.hw)) > absf(local.z) / maxf(0.1, float(body.hl))
+	var outward := Vector3(signf(local.x), 0, 0) if flank else Vector3(0, 0, signf(local.z))
+	var normal := -outward.rotated(Vector3.UP, float(body.yaw))   # from the player into the body
+	var head := clampf(forward.dot(normal), 0.0, 1.0)
+	var strength := minf(KNOCK_MAX, absf(drive.speed) * 0.6 * maxf(head, 0.3))
+	var side := forward.cross(normal).y
+	return {"head": head, "velocity": normal * strength,
+		"spin": clampf(side * absf(drive.speed) * 0.2, -1.5, 1.5)}
+
+
+## A straight hit stops the player and bounces it back; a graze only takes
+## away part of the speed, so the car keeps going and can steer out.
+func _absorb_impact(head: float) -> void:
+	if head > 0.75:
+		drive.recovery = 0.38
+		drive.bounce = -2.0 * head
+		drive.speed = 0
+	else:
+		drive.speed *= 1.0 - head
 
 
 func _person_hit(id: String) -> void:
@@ -2576,6 +2609,7 @@ func _car_ahead_in_lane(distance: float) -> bool:
 ## Length of a car nose to tail, and the least bumper-to-bumper gap a car keeps from the one
 ## ahead of it; the gap a driver keeps also grows with speed (HEADWAY seconds).
 const CAR_LENGTH := 4.4
+const KNOCK_MAX := 4.0          # m/s: the most a hit throws another car
 const CAR_GAP := 6.0
 const HEADWAY := 1.5
 
@@ -2776,6 +2810,7 @@ func _update_traffic(delta: float) -> void:
 					step = car.dir * maxf(step*car.dir, -maxf(0.0,rear-(car.len+other.len)*0.5-0.08))
 		_ambient_advance(car, step, solids, delta)
 		car.shove = move_toward(car.shove, 0.0, 2.5 * delta)   # the push runs out on its own
+		_settle_ring_knock(car, delta)
 	for car in traffic:
 		car.v = car.dir * car.spd
 		# A car in the player's lane ahead: smooth speed regulation without snapping
@@ -2788,8 +2823,8 @@ func _update_traffic(delta: float) -> void:
 			else:
 				var approach_limit: float = rolling + (gap - 4.6) * 2.5
 				drive.speed = minf(drive.speed, maxf(0.0, approach_limit))
-		var face: float = car.get("yaw", 0.0 if car.dir > 0.0 else PI)
-		var at := Vector3(car.x, 0, car.z)
+		var face: float = float(car.get("yaw", 0.0 if car.dir > 0.0 else PI)) + float(car.get("kyaw", 0.0))
+		var at := Vector3(car.x + float(car.get("kx", 0.0)), 0, car.z)
 		# Inside a junction's square the street does not go on (a bend, a T, a roundabout): the ring
 		# traffic is not drawn there, or it would drive straight over lawns and through houses.
 		if car.get("sheltered", false):
@@ -2809,6 +2844,20 @@ func _update_traffic(delta: float) -> void:
 					var xf := Transform3D(Basis(Vector3.UP, face), at)
 					traffic_glows.set_instance_transform(car.glow_slot + i, Transform3D(Basis(), xf * centre))
 					traffic_glows.set_instance_custom_data(car.glow_slot + i, Color(BLINK_COLOUR.r, BLINK_COLOUR.g, BLINK_COLOUR.b, paint.a))
+
+
+## A hit ring car slides sideways and turns, friction stops it, then it eases back
+## into its lane. Only the drawn pose and the footprint carry it; lanes keep car.x.
+func _settle_ring_knock(car: Dictionary, delta: float) -> void:
+	var kvx := float(car.get("kvx", 0.0))
+	var kspin := float(car.get("kspin", 0.0))
+	if kvx == 0.0 and kspin == 0.0 and float(car.get("kx", 0.0)) == 0.0 and float(car.get("kyaw", 0.0)) == 0.0: return
+	car.kx = clampf(float(car.get("kx", 0.0)) + kvx * delta, -1.2, 1.2)
+	car.kyaw = clampf(float(car.get("kyaw", 0.0)) + kspin * delta, -0.5, 0.5)
+	car.kvx = move_toward(kvx, 0.0, 6.0 * delta)
+	car.kspin = move_toward(kspin, 0.0, 4.0 * delta)
+	if car.kvx == 0.0: car.kx = move_toward(car.kx, 0.0, 0.7 * delta)
+	if car.kspin == 0.0: car.kyaw = move_toward(car.kyaw, 0.0, 0.5 * delta)
 
 
 func _walk_clear(p: Vector3) -> bool:

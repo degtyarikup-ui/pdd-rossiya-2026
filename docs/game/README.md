@@ -184,6 +184,7 @@ godot --path game_godot --script res://tests/ride_runtime_stress_check.gd -- --s
 godot --headless --path game_godot --script res://tests/question_streaming_check.gd # задержка/ошибка загрузки: ожидание у стыка и следующий вопрос
 godot --headless --path game_godot --script res://tests/departure_progress_check.gd # наклонный выезд, разворот, задний ход и следующий вопрос
 godot --headless --path game_godot --script res://tests/wide_street_exit_check.gd # выезд из узкого двора на широкую улицу и следующий вопрос
+godot --headless --path game_godot --script res://tests/impact_feel_check.gd # бордюр и удары по машинам зависят от угла, отброс машин
 godot --path game_godot --resolution 448x970 --script res://tests/popin_ride_check.gd -- --benchmark --mute # что появляется/исчезает в кадре (только с рендером)
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
@@ -473,3 +474,17 @@ Android-класс `GodotReportReceiver.java` должен лежать в `src/
 Gradle включил его в DEX. Kotlin видит Java в `src/main/kotlin/` при компиляции,
 но это не гарантирует упаковку. После сборки проверить реальный APK:
 `PDD_VERIFY_DEV_APK=1 python3 -m unittest discover -s tools/android_build -p test_report_receiver.py`.
+
+## Удары о бордюр и машины
+
+Без физического движка, только кинематика в момент контакта (`drive.gd`, `world.gd`, `junction.gd`):
+- **Бордюр.** В момент удара теряется только составляющая скорости, направленная в бордюр
+  (доля фактического скольжения). Дальше при скольжении действует трение 2,5 м/с², и машина
+  плавно доворачивается вдоль бордюра (1,6 рад/с). Удар почти в лоб (скольжение < 15%) — остановка.
+- **Машины.** Прямота удара считается по нормали к стороне кузова, в которую пришёлся удар
+  (борт, нос или корма). Прямой удар (> 0,75): игрок останавливается и отскакивает, как раньше.
+  Скользящий: игрок теряет часть скорости и едет дальше. Ударенная машина отлетает
+  (до 4 м/с, с трением 6 м/с²) и разворачивается от внецентренного удара. Машина сцены
+  не въезжает при этом в игрока, других участников или за пределы своей дороги; трамвай
+  не сдвигается. Потом машина плавно возвращается на свой маршрут или в полосу.
+- Нарушение «столкновение» засчитывается как раньше.

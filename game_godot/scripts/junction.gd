@@ -105,6 +105,10 @@ class Motion:
 	var exported_length := 0.0
 	var extended := false
 	var impact_wait := 0.0
+	var knock := Vector3.ZERO        # local m/s a player's hit throws this car
+	var knock_spin := 0.0
+	var offset := Vector3.ZERO       # where the hit left it beside its path; eased back while driving
+	var yaw_offset := 0.0
 	var tail_retry := 0.0
 	var rail_blocked := false
 	var walk_probe_key := Vector2(-1,-1)
@@ -614,6 +618,7 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 				a.impact_wait = 3.0
 				Fleet.hazards(a.node, a.hl, a.hw)
 			a.impact_wait -= dt
+			_settle_knock(a, dt, player, boxes)
 			if a.impact_wait > 0.0:
 				continue
 			a.crashed = false
@@ -674,8 +679,11 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 				a.speed = 0.0
 				a.rail_blocked = true
 				break
-			a.node.position = p
-			a.node.rotation.y = heading
+			# After a hit the car rejoins its path gradually: half a metre per metre driven.
+			a.offset = a.offset.move_toward(Vector3.ZERO, maxf(0.02, advance / steps * 0.5))
+			a.yaw_offset = move_toward(a.yaw_offset, 0.0, maxf(0.01, advance / steps * 0.15))
+			a.node.position = p + a.offset
+			a.node.rotation.y = heading + a.yaw_offset
 			var me := a.footprint()
 			var player_contact: bool = swept.get("player", false) or DRIVE.overlap(me, player, 0.04)
 			var traffic_contact: bool = swept.get("blocked", false)
@@ -847,6 +855,34 @@ func update_resolution(dt: float, player: Drive, local_pos: Vector3) -> void:
 					a.waits_for_player = false
 			finished.emit(e[0], e[1])
 			return
+
+
+## Slide a struck car with friction. Never into the player, another participant or off its ground.
+func _settle_knock(a: Motion, dt: float, player: Dictionary, boxes: Array) -> void:
+	if a.knock.length() < 0.01 and absf(a.knock_spin) < 0.01: return
+	var before := a.node.position
+	var before_yaw := a.node.rotation.y
+	a.node.position += a.knock * dt
+	a.node.rotation.y += a.knock_spin * dt
+	var blocked: bool = motion_ground.is_valid() and not motion_ground.call(a.node.position, a.type)
+	var me := a.footprint()
+	if not blocked and DRIVE.overlap(me, player, 0.02) and not DRIVE.overlap({"p": before, "yaw": before_yaw, "hw": a.hw, "hl": a.hl}, player, 0.02):
+		blocked = true
+	if not blocked:
+		for entry in boxes:
+			if entry.who != null and entry.who != a and not entry.who.done and DRIVE.overlap(me, entry.who.footprint(), 0.02):
+				blocked = true
+				break
+	if blocked:
+		a.node.position = before
+		a.node.rotation.y = before_yaw
+		a.knock = Vector3.ZERO
+		a.knock_spin = 0.0
+		return
+	a.offset += a.node.position - before
+	a.yaw_offset += a.node.rotation.y - before_yaw
+	a.knock = a.knock.move_toward(Vector3.ZERO, 6.0 * dt)
+	a.knock_spin = move_toward(a.knock_spin, 0.0, 4.0 * dt)
 
 
 func _check_required_stop(line: float, front: float, speed: float, dt: float) -> void:

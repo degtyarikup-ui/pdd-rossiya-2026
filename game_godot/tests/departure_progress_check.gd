@@ -129,7 +129,9 @@ func world_departure(direction: String) -> void:
 		supported = supported and world.drive.on_road()
 		if not cleared.is_empty(): break
 	expect(cleared.size() == 1, label + "real tilted driving clears the answered scene once")
-	expect(world.drive.distance_traveled > before + 8.0, label + "the car physically drives to the join")
+	# The kerb now turns a tilted car along itself, so it may take the ordinary early
+	# gate before the join; it must still clear by real driving, not a teleport.
+	expect(world.drive.distance_traveled > before + 0.5, label + "the car physically drives before clearing")
 	expect(supported, label + "the complete chassis stays on the actual road")
 	if cleared.is_empty():
 		world.queue_free()

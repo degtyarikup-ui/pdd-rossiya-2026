@@ -21,6 +21,8 @@ var half_length := 1.75
 var turning_at_junction := false # free steering inside a junction: ~20 km/h
 var curb_clear_time := 0.0
 var distance_traveled := 0.0
+const KERB_SCRUB := 2.5          # m/s² lost while sliding along a kerb
+const KERB_ALIGN := 1.6          # rad/s the kerb turns a sliding car along itself
 var recovery := 0.0              # control released after an impact (s)
 var hazards_left := 0.0          # automatic hazard signal after contact (s)
 var _contact_key: Variant = null
@@ -172,6 +174,8 @@ func integrate(dt: float, limit: float, stop_z := INF) -> void:
 		speed = minf(limit, speed + dt * 9) if accelerating else maxf(0.0, speed - dt * 22)
 	var steps := maxi(1, ceili(absf(speed) * dt / 0.15))
 	var curb := false
+	var intended := 0.0             # path length asked of this frame's kerb substeps
+	var slid := Vector3.ZERO        # what the kerb let through
 	# Reuse the world wrappers through all swept substeps; contact stays active in every game phase.
 	var solids: Array = world.obstacles()
 	if _contact_key != null:
@@ -219,6 +223,8 @@ func integrate(dt: float, limit: float, stop_z := INF) -> void:
 			if not supported:
 				pos = before
 				yaw = old_yaw
+			intended += absf(step)
+			slid += pos - before
 		if absf(step) > 0.0001:
 			var me := footprint()
 			for m in solids:
@@ -229,7 +235,9 @@ func integrate(dt: float, limit: float, stop_z := INF) -> void:
 						yaw = old_yaw
 						var key: Variant = _obstacle_key(m)
 						if _same_contact(key, _contact_key):
-							speed = 0.0
+							# Still touching the car just hit while it is thrown clear:
+							# lose speed, but a graze must not freeze the car.
+							speed *= 0.5
 							return
 						_contact_key = key
 						hazards_left = 3.0
@@ -254,10 +262,32 @@ func integrate(dt: float, limit: float, stop_z := INF) -> void:
 		# An assist prediction that was canceled while the whole body stayed on the road is
 		# not the driver's violation. Manual kerb attempts and unsupported bodies still count.
 		world.on_fault("offroad", "offroad")
-		speed = maxf(-2.0, minf(speed, 4.0))
+		_glance_off_kerb(dt, intended, slid)
 		curb_clear_time = 0.0
 	else:
 		curb_clear_time += dt
+
+
+## A kerb takes away only the part of the motion pointing into it: a glancing
+## contact keeps most of the speed and turns the car along the kerb, a
+## head-on one stops it. Plus a little scrub, so touching it is never free.
+func _glance_off_kerb(dt: float, intended: float, slid: Vector3) -> void:
+	if intended < 0.0001 or dt <= 0.0:
+		speed = maxf(-2.0, minf(speed, 4.0))
+		return
+	var kept := clampf(slid.length() / intended, 0.0, 1.0)
+	var glide := absf(speed)
+	if kept < 0.15:
+		glide *= kept                 # pressed straight into it: nothing slides
+	elif curb_clear_time > 0.0:
+		glide *= kept                 # the impact itself, once per contact
+	glide = maxf(0.0, glide - KERB_SCRUB * dt)   # then only scrub while sliding along
+	speed = maxf(-2.0, signf(speed) * glide)
+	# Ease the heading toward the sliding direction so steering out is easy.
+	if kept > 0.2 and absf(speed) > 0.5:
+		var along := SceneStitch.yaw(slid.normalized() * signf(speed))
+		var turned := rotate_toward(yaw, along, KERB_ALIGN * dt)
+		if on_road(pos, turned): yaw = turned
 
 
 ## World wrappers are reconstructed every frame; latch the actual actor/car, not its wrapper.
