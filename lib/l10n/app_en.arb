@@ -604,7 +604,7 @@
   "paywallFreeNote": "Tickets, exam and traffic rules remain free",
   "paywallFeatureFeed": "Unlimited feed of questions",
   "paywallFeatureAi": "AI explanations: up to 200 questions a day",
-  "paywallFeatureVoice": "Studio voice-over of tickets",
+  "paywallFeatureVoice": "Russian studio narration",
   "paywallFeatureGame": "Unlimited races in the game",
   "paywallPlanQuarter": "3 months",
   "paywallPlanWeek": "1 week",
@@ -1085,8 +1085,8 @@
   "subscriptionPerkFeedDescription": "All questions and categories are available without limits",
   "subscriptionPerkAiTitle": "AI explanation for every question",
   "subscriptionPerkAiDescription": "Up to 200 AI questions a day. The limit resets at midnight UTC.",
-  "subscriptionPerkVoiceTitle": "Professional voice-over",
-  "subscriptionPerkVoiceDescription": "Studio narrator for questions and tickets",
+  "subscriptionPerkVoiceTitle": "Russian studio narration",
+  "subscriptionPerkVoiceDescription": "Studio narration of questions and tickets in Russian",
   "subscriptionCancelInfoApple": "You can turn off auto-renewal or change your subscription at any time in your Apple ID account settings. If you cancel, access will remain until {date}.",
   "@subscriptionCancelInfoApple": {
     "placeholders": {

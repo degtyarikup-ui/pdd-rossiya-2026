@@ -1819,7 +1819,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get paywallFeatureAi => 'ИИ-разборы: до 200 вопросов в сутки';
 
   @override
-  String get paywallFeatureVoice => 'Студийная озвучка билетов';
+  String get paywallFeatureVoice => 'Студийная озвучка на русском';
 
   @override
   String get paywallFeatureGame => 'Безлимитные заезды в игре';
@@ -3441,11 +3441,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'До 200 вопросов ИИ в сутки. Лимит обновляется в полночь UTC.';
 
   @override
-  String get subscriptionPerkVoiceTitle => 'Профессиональная озвучка';
+  String get subscriptionPerkVoiceTitle => 'Студийная озвучка на русском';
 
   @override
   String get subscriptionPerkVoiceDescription =>
-      'Студийный диктор для вопросов и билетов';
+      'Студийная озвучка вопросов и билетов на русском языке';
 
   @override
   String subscriptionCancelInfoApple(String date) {

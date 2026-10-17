@@ -995,7 +995,7 @@
   "paywallFreeNote": "Билеты, экзамен и ПДД остаются бесплатными",
   "paywallFeatureFeed": "Безлимитная лента вопросов",
   "paywallFeatureAi": "ИИ-разборы: до 200 вопросов в сутки",
-  "paywallFeatureVoice": "Студийная озвучка билетов",
+  "paywallFeatureVoice": "Студийная озвучка на русском",
   "paywallFeatureGame": "Безлимитные заезды в игре",
   "paywallPlanQuarter": "3 месяца",
   "paywallPlanWeek": "1 неделя",
@@ -1626,8 +1626,8 @@
   "subscriptionPerkFeedDescription": "Все вопросы и категории доступны без ограничений",
   "subscriptionPerkAiTitle": "ИИ-разбор каждого вопроса",
   "subscriptionPerkAiDescription": "До 200 вопросов ИИ в сутки. Лимит обновляется в полночь UTC.",
-  "subscriptionPerkVoiceTitle": "Профессиональная озвучка",
-  "subscriptionPerkVoiceDescription": "Студийный диктор для вопросов и билетов",
+  "subscriptionPerkVoiceTitle": "Студийная озвучка на русском",
+  "subscriptionPerkVoiceDescription": "Студийная озвучка вопросов и билетов на русском языке",
   "subscriptionCancelInfoApple": "Вы можете отключить автопродление или изменить подписку в любой момент в настройках учетной записи Apple ID. При отмене доступ сохранится до {date}.",
   "@subscriptionCancelInfoApple": {
     "placeholders": {

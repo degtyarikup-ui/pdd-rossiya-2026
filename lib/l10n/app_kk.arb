@@ -604,7 +604,7 @@
   "paywallFreeNote": "Билеттер, емтихан және жол жүру ережелері тегін қалады",
   "paywallFeatureFeed": "Шексіз сұрақтар арнасы",
   "paywallFeatureAi": "ЖИ түсіндірмелері: тәулігіне 200 сұраққа дейін",
-  "paywallFeatureVoice": "Билеттерге арналған студиялық дауыс актісі",
+  "paywallFeatureVoice": "Орыс тіліндегі студиялық дыбыстау",
   "paywallFeatureGame": "Ойында шектеусіз жарыстар",
   "paywallPlanQuarter": "3 ай",
   "paywallPlanWeek": "1 апта",
@@ -1085,8 +1085,8 @@
   "subscriptionPerkFeedDescription": "Барлық сұрақтар мен санаттар шектеусіз қолжетімді",
   "subscriptionPerkAiTitle": "Әр сұраққа AI талдауы",
   "subscriptionPerkAiDescription": "Тәулігіне 200 ЖИ сұрағына дейін. Шек UTC бойынша түн ортасында жаңарады.",
-  "subscriptionPerkVoiceTitle": "Кәсіби дауыспен оқу",
-  "subscriptionPerkVoiceDescription": "Сұрақтар мен билеттерге арналған студиялық диктор",
+  "subscriptionPerkVoiceTitle": "Орыс тіліндегі студиялық дыбыстау",
+  "subscriptionPerkVoiceDescription": "Сұрақтар мен билеттерді орыс тілінде студиялық дыбыстау",
   "subscriptionCancelInfoApple": "Автоматты жаңартуды кез келген уақытта өшіріп, жазылымды Apple ID аккаунтының параметрлерінде өзгертуге болады. Бас тартсаңыз, қолжетімділік {date} дейін сақталады.",
   "@subscriptionCancelInfoApple": {
     "placeholders": {

@@ -1800,8 +1800,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'ЖИ түсіндірмелері: тәулігіне 200 сұраққа дейін';
 
   @override
-  String get paywallFeatureVoice =>
-      'Билеттерге арналған студиялық дауыс актісі';
+  String get paywallFeatureVoice => 'Орыс тіліндегі студиялық дыбыстау';
 
   @override
   String get paywallFeatureGame => 'Ойында шектеусіз жарыстар';
@@ -3431,11 +3430,11 @@ class AppLocalizationsKk extends AppLocalizations {
       'Тәулігіне 200 ЖИ сұрағына дейін. Шек UTC бойынша түн ортасында жаңарады.';
 
   @override
-  String get subscriptionPerkVoiceTitle => 'Кәсіби дауыспен оқу';
+  String get subscriptionPerkVoiceTitle => 'Орыс тіліндегі студиялық дыбыстау';
 
   @override
   String get subscriptionPerkVoiceDescription =>
-      'Сұрақтар мен билеттерге арналған студиялық диктор';
+      'Сұрақтар мен билеттерді орыс тілінде студиялық дыбыстау';
 
   @override
   String subscriptionCancelInfoApple(String date) {

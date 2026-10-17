@@ -3121,7 +3121,7 @@ abstract class AppLocalizations {
   /// No description provided for @paywallFeatureVoice.
   ///
   /// In ru, this message translates to:
-  /// **'Студийная озвучка билетов'**
+  /// **'Студийная озвучка на русском'**
   String get paywallFeatureVoice;
 
   /// No description provided for @paywallFeatureGame.
@@ -5683,13 +5683,13 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptionPerkVoiceTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Профессиональная озвучка'**
+  /// **'Студийная озвучка на русском'**
   String get subscriptionPerkVoiceTitle;
 
   /// No description provided for @subscriptionPerkVoiceDescription.
   ///
   /// In ru, this message translates to:
-  /// **'Студийный диктор для вопросов и билетов'**
+  /// **'Студийная озвучка вопросов и билетов на русском языке'**
   String get subscriptionPerkVoiceDescription;
 
   /// No description provided for @subscriptionCancelInfoApple.

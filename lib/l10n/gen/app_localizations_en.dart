@@ -1798,7 +1798,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallFeatureAi => 'AI explanations: up to 200 questions a day';
 
   @override
-  String get paywallFeatureVoice => 'Studio voice-over of tickets';
+  String get paywallFeatureVoice => 'Russian studio narration';
 
   @override
   String get paywallFeatureGame => 'Unlimited races in the game';
@@ -3428,11 +3428,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Up to 200 AI questions a day. The limit resets at midnight UTC.';
 
   @override
-  String get subscriptionPerkVoiceTitle => 'Professional voice-over';
+  String get subscriptionPerkVoiceTitle => 'Russian studio narration';
 
   @override
   String get subscriptionPerkVoiceDescription =>
-      'Studio narrator for questions and tickets';
+      'Studio narration of questions and tickets in Russian';
 
   @override
   String subscriptionCancelInfoApple(String date) {
