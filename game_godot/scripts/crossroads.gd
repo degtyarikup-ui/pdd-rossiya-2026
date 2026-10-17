@@ -23,6 +23,7 @@ var sun: DirectionalLight3D
 var env: WorldEnvironment
 
 var actors_root: Node3D
+var leaves: Leaves                # autumn only, the main game's falling leaves
 var fx_root: Node3D
 var active_actors: Array[CrossroadsActor] = []
 
@@ -192,6 +193,7 @@ func _setup_quality() -> void:
 	sun.shadow_enabled = profile.shadows
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if tier == "high" else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	Engine.max_fps = 60 if mobile and profile.max_fps == 0 else int(profile.max_fps)
+	if leaves != null: leaves.multimesh.visible_instance_count = 24 if tier == "low" else -1
 	adaptive_quality = mobile and not override in Quality.PROFILES
 	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
 
@@ -221,6 +223,13 @@ func _setup_scene_nodes() -> void:
 	fx_root = Node3D.new()
 	fx_root.name = "FxRoot"
 	add_child(fx_root)
+
+	if season_name == "autumn":
+		leaves = Leaves.new(junction.sc.season.canopy, 56)
+		leaves.name = "Leaves"
+		# The orbit camera stands farther than the city's: larger leaves over a larger area.
+		leaves.scale = Vector3.ONE * 1.7
+		add_child(leaves)
 
 
 func _setup_ui() -> void:
@@ -1095,6 +1104,8 @@ func _process(delta: float) -> void:
 			seconds_left = 0
 			_end_game()
 
+	if leaves != null and not _suspended:
+		leaves.step(delta, cam_pivot.global_position)
 	var cam_changed := false
 	if absf(cam_yaw - _target_cam_yaw) > 0.0001:
 		cam_yaw = lerp_angle(cam_yaw, _target_cam_yaw, minf(1.0, 16.0 * delta))

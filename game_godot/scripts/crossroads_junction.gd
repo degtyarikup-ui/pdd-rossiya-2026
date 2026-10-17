@@ -6,6 +6,8 @@ extends Node3D
 
 const ROAD_WIDTH := 14.4        # 4 lanes of 3.6 m (2 in each direction)
 const HALF_ROAD := ROAD_WIDTH * 0.5
+const DIRT_BLEND := 8.0        # metres of asphalt-to-dirt transition at an unpaved arm
+const BLEND_Y := 0.006         # just above both road quads
 const ROAD_EXTENT := 345.0
 const STOP_DIST := 13.2
 const STOP_SIGN_DIST := HALF_ROAD + 0.4
@@ -354,20 +356,49 @@ func _build_open_arm_surface(arm: String, arm_len: float) -> void:
 	ground_root.add_child(road)
 
 	if is_dirt:
-		# Sandy / gravel entrance apron where the unpaved track meets the paved highway
-		var apron := _quad(Vector2(ROAD_WIDTH + 1.2, 3.2), dirt_mat)
-		match arm:
-			"south":
-				apron.position = Vector3(0, 0.005, HALF_ROAD + 1.0)
-			"north":
-				apron.position = Vector3(0, 0.005, -HALF_ROAD - 1.0)
-			"east":
-				apron.position = Vector3(HALF_ROAD + 1.0, 0.005, 0)
-				apron.rotation.y = PI * 0.5
-			"west":
-				apron.position = Vector3(-HALF_ROAD - 1.0, 0.005, 0)
-				apron.rotation.y = PI * 0.5
-		ground_root.add_child(apron)
+		ground_root.add_child(_dirt_blend(arm))
+
+
+## Where an unpaved arm meets the paved junction the surface blends over
+## DIRT_BLEND metres, as on the main game's streets (street.gd profile_at):
+## colour lerps, the asphalt grain fades out by the middle, the dirt grain fades in.
+func _dirt_blend(arm: String) -> MeshInstance3D:
+	var asphalt := Color("#2C2F36")
+	var dirt := Color("#8D7151")
+	var yaw: float = {"south": 0.0, "north": PI, "east": PI * 0.5, "west": -PI * 0.5}.get(arm, 0.0)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rows := 12
+	for i in rows:
+		var t0 := float(i) / rows
+		var t1 := float(i + 1) / rows
+		for half in [0, 1]:
+			# The first half carries the asphalt layer, the second the dirt layer;
+			# each layer's detail is zero at the middle, so the switch is invisible.
+			var a := maxf(t0, 0.5 * half)
+			var b := minf(t1, 0.5 + 0.5 * half)
+			if b <= a: continue
+			var layer := sc.layer_of("asphalt" if half == 0 else "dirt")
+			var corners := []
+			for t in [a, b]:
+				var colour: Color = asphalt.lerp(dirt, smoothstep(0.0, 1.0, t))
+				var detail: float = absf(t * 2.0 - 1.0)
+				var z: float = HALF_ROAD + t * DIRT_BLEND
+				corners.append([Vector3(-HALF_ROAD, BLEND_Y, z).rotated(Vector3.UP, yaw), Vector3(HALF_ROAD, BLEND_Y, z).rotated(Vector3.UP, yaw), colour, detail])
+			for v in [[0, 0], [0, 1], [1, 1], [0, 0], [1, 1], [1, 0]]:
+				var row: Array = corners[v[0]]
+				st.set_color(Color(row[2].r, row[2].g, row[2].b, 0.0))
+				st.set_uv2(Vector2(layer, float(row[3]) - 1.0))
+				st.set_normal(Vector3.UP)
+				st.add_vertex(row[v[1]])
+	var mi := MeshInstance3D.new()
+	mi.name = "DirtBlend_" + arm
+	mi.mesh = st.commit()
+	var mat := sc.material.duplicate() as ShaderMaterial
+	mat.set_shader_parameter("grid_uv", true)
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
 
 
 func _build_bench(pos: Vector3, yaw: float, parent: Node3D) -> void:
@@ -376,9 +407,11 @@ func _build_bench(pos: Vector3, yaw: float, parent: Node3D) -> void:
 	root.position = pos
 	root.rotation.y = yaw
 
-	var wood_mat := StandardMaterial3D.new()
-	wood_mat.albedo_color = Color("#8D5832")
-	wood_mat.roughness = 0.75
+	if _wood_mat == null:
+		_wood_mat = StandardMaterial3D.new()
+		_wood_mat.albedo_color = Color("#8D5832")
+		_wood_mat.roughness = 0.75
+	var wood_mat := _wood_mat
 
 	var seat := _box(Vector3(1.6, 0.04, 0.42), wood_mat)
 	seat.position = Vector3(0, 0.42, 0)
@@ -969,11 +1002,16 @@ func _has_sign(side: String, code: String) -> bool:
 	return false
 
 
+var _pole_mat: StandardMaterial3D
+var _wood_mat: StandardMaterial3D
+
+## One shared material per junction: every pole and bench batches with the others.
 func _pole_material() -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color("#7A7F87")
-	material.roughness = 0.85
-	return material
+	if _pole_mat == null:
+		_pole_mat = StandardMaterial3D.new()
+		_pole_mat.albedo_color = Color("#7A7F87")
+		_pole_mat.roughness = 0.85
+	return _pole_mat
 
 
 func _build_street_lamps() -> void:
