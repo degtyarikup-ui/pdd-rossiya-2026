@@ -2476,6 +2476,18 @@ abstract class AppLocalizations {
   /// **'Пауза'**
   String get gamePause;
 
+  /// Short label of the game-sounds toggle pill in the city game pause
+  ///
+  /// In ru, this message translates to:
+  /// **'Звуки'**
+  String get gamePauseSound;
+
+  /// Short label of the recorded question voice toggle pill in the city game pause
+  ///
+  /// In ru, this message translates to:
+  /// **'Озвучка'**
+  String get gamePauseVoice;
+
   /// No description provided for @gameExitToMenu.
   ///
   /// In ru, this message translates to:

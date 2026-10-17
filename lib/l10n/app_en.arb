@@ -497,6 +497,8 @@
   "gameTipNext": "Next",
   "gameTipDone": "Let's go",
   "gamePause": "Pause",
+  "gamePauseSound": "Sounds",
+  "gamePauseVoice": "Voice",
   "gameExitToMenu": "Exit to menu",
   "gameLobbyControls": "Controls",
   "gameRunProgress": "Question {n} from {total}",

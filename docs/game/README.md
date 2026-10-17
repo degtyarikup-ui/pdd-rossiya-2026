@@ -111,6 +111,16 @@ godot --path game_godot -- --situation=ticket_10_13 --auto --near   # один �
 ```
 
 Флаги — в `game_godot/README.md`. Игра стартует сразу; выбор машины/цвета, звук и выход доступны в окне паузы.
+
+Окно паузы (`scripts/ride_pause.gd`): заголовок по центру и крестик 48 dp; карусель машин —
+выбранная крупно в центре, соседи меньше и бледнее по краям (по кругу от трёх машин,
+у двух — без круга, с пружиной на краю). Свайп/перетаскивание доводит до ближайшей машины
+(флик — ровно на одну), тап по соседу или ←/→ катит её в центр за 0,34 с с доворотом кузова;
+каждая машина — своё 3D-превью, перерисовывается только во время движения. Свотчи
+квадратные (12 dp), до 6 в ряд, 7–8 цветов — двумя ровными рядами; смена цвета плавно
+перекрашивает кузов. Пилюли «Звуки»/«Озвучка» (вкл. — `accent_light` + синий, выкл. — серые)
+встают в столбик, если крупный текст не помещается. «Продолжить заезд» — синяя, «Выйти» —
+`red_light` с красным текстом. Нажатия сжимают элементы, переключения дают короткую вибрацию.
 Приложение передаёт коллекцию и настройки через `--ride-options=<JSON>`.
 В мини-играх верхняя кнопка сразу возвращает в меню; отдельного окна паузы нет.
 
@@ -213,7 +223,7 @@ godot --headless --path game_godot --script res://tests/question_camera_occlusio
 godot --headless --path game_godot --script res://tests/tram_question_signals_check.gd # правые сигналы трамваев 15/13, 28/13, 36/14: линзы, ореолы, ответ, пауза и выключение
 godot --headless --path game_godot --script res://tests/actor_hazards_check.gd # постоянная аварийка участников, стоянка, обе стороны, пауза и старые настройки
 godot --headless --path game_godot --script res://tests/signal_glow_check.gd # свечение и цвета секций светофора без текстур
-godot --headless --path game_godot --script res://tests/ride_pause_check.gd # быстрый старт, цвет, звук, сохранение состояния при паузе
+godot --headless --path game_godot --script res://tests/ride_pause_check.gd # быстрый старт, цвет, звук, сохранение состояния при паузе, карусель машин (снап, флик, тап по соседу, клавиши, круг); также -- --text-scale=1.6
 godot --headless --path game_godot --script res://tests/reward_toast_check.gd # плашки открытий: очередь, анимации, HUD, ru/en/kk и темы; повторить с -- --text-scale=1.6
 godot --headless --path game_godot --script res://tests/garage_rewards_check.gd # награды в заезде, продолжение, подтверждённые показы и пауза финальной плашки
 godot --headless --path game_godot --script res://tests/ride_debug_menu_check.gd # скрытое меню dev-сборки: семь нажатий на «Пауза», размеры и локализации

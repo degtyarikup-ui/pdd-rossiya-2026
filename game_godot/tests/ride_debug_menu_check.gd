@@ -51,7 +51,7 @@ func _check_gate_and_requests() -> void:
 	for i in 14: menu._on_debug_title_pressed()
 	check(menu._debug_panel == null and menu._debug_tap_count == 0,
 		"Normal builds ignore the reveal gesture even with a stale open preference")
-	var normal_title: Label = menu._head.get_child(0)
+	var normal_title: Label = menu._head.get_child(1)  # after the centring spacer
 	check(normal_title.text == Ui.t("gamePause"), "Normal title remains the existing localised label")
 	var title_font_size := normal_title.get_theme_font_size("font_size")
 	var title_min := normal_title.get_combined_minimum_size()

@@ -151,8 +151,11 @@ func _check_city(palette: Dictionary, context: String) -> void:
 	root.add_child(pause)
 	_surface(pause._panel, "card", palette, context + " city pause dialog")
 	_ink(pause._model_label, "text", palette, context + " city pause model name")
-	_button(pause._exit_button, "field", palette, context + " city pause exit control")
-	_ink(pause._exit_button.get_child(0), "text", palette, context + " city pause exit text")
+	_button(pause._exit_button, "red_light", palette, context + " city pause exit control")
+	_ink(pause._exit_button.get_child(0), "red", palette, context + " city pause exit text")
+	_button(pause._continue_button, "accent", palette, context + " city pause continue control")
+	_button(pause._sound_button, "accent_light" if pause.sound_enabled else "field", palette, context + " city pause sound pill")
+	_ink(pause._sound_button.get_child(0), "accent" if pause.sound_enabled else "secondary", palette, context + " city pause sound icon")
 	pause.queue_free()
 	await process_frame
 

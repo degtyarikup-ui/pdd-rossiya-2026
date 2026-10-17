@@ -1403,6 +1403,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamePause => 'Pause';
 
   @override
+  String get gamePauseSound => 'Sounds';
+
+  @override
+  String get gamePauseVoice => 'Voice';
+
+  @override
   String get gameExitToMenu => 'Exit to menu';
 
   @override

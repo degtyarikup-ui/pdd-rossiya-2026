@@ -497,6 +497,8 @@
   "gameTipNext": "Келесі",
   "gameTipDone": "кеттік",
   "gamePause": "Кідірту",
+  "gamePauseSound": "Дыбыстар",
+  "gamePauseVoice": "Дауыс",
   "gameExitToMenu": "Мәзірге шығу",
   "gameLobbyControls": "Басқару",
   "gameRunProgress": "{n} / {total} сұрақ",

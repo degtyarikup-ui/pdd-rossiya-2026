@@ -1404,6 +1404,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamePause => 'Кідірту';
 
   @override
+  String get gamePauseSound => 'Дыбыстар';
+
+  @override
+  String get gamePauseVoice => 'Дауыс';
+
+  @override
   String get gameExitToMenu => 'Мәзірге шығу';
 
   @override

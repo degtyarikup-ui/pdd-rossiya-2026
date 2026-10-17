@@ -1424,6 +1424,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gamePause => 'Пауза';
 
   @override
+  String get gamePauseSound => 'Звуки';
+
+  @override
+  String get gamePauseVoice => 'Озвучка';
+
+  @override
   String get gameExitToMenu => 'Выйти в меню';
 
   @override

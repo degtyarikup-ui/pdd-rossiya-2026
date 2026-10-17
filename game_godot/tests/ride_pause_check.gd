@@ -85,7 +85,8 @@ func _check_menu_bounds(menu: RidePause, viewport: Viewport, label: String) -> v
 	check(panel.position.y >= 15.0 and panel.end.y <= view.y - 15.0, label + ": dialog fits screen height")
 	check(menu._box.size.x <= menu._scroll.size.x + 1.0, label + ": content has no horizontal overflow")
 	for control: Control in menu._box.find_children("*", "Control", true, false):
-		if control.is_visible_in_tree():
+		# Carousel neighbours are deliberately cut by the clipped stage.
+		if control.is_visible_in_tree() and control.get_parent() != menu._carousel:
 			var rect := control.get_global_rect()
 			check(rect.position.x >= panel.position.x + 19.0 and rect.end.x <= panel.end.x - 19.0,
 				label + ": wrapped content fits dialog: " + control.get_class())
@@ -95,6 +96,138 @@ func _check_menu_bounds(menu: RidePause, viewport: Viewport, label: String) -> v
 			label + ": ride actions remain visible outside the customization scroll")
 	check(menu._scroll.get_global_rect().end.y <= menu._actions.get_global_rect().position.y,
 		label + ": customization never overlaps ride actions")
+
+
+func _click(menu: RidePause, x: float, pressed: bool) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = pressed
+	event.position = Vector2(x, menu._carousel.size.y * 0.5)
+	menu._on_carousel_input(event)
+
+
+func _move(menu: RidePause, x: float) -> void:
+	var event := InputEventMouseMotion.new()
+	event.position = Vector2(x, menu._carousel.size.y * 0.5)
+	menu._on_carousel_input(event)
+
+
+func _settle_carousel(menu: RidePause) -> void:
+	await create_timer(RidePause.SNAP_SECONDS + 0.15).timeout
+	await process_frame
+
+
+## Carousel: snapping, flicks, neighbour taps, keys, wrap-around, two cars and animated paint.
+func _check_carousel(options: Dictionary) -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(360, 760)
+	root.add_child(viewport)
+	var collection := options.duplicate(true)
+	collection.cars.append({"id":"sedan", "name":"Седан", "paints":options.cars[0].paints.duplicate(true)})
+	var menu := RidePause.new(collection, {"id":"hatch", "paint":"red"})
+	viewport.add_child(menu)
+	await _settle_layout()
+	var changes: Array = []
+	menu.vehicle_changed.connect(func(selection): changes.append(selection.id))
+	var w: float = menu._carousel.size.x
+	check(is_equal_approx(menu.item_offset(0), 0.0) and menu._stages[0].rect.scale.is_equal_approx(Vector2.ONE),
+		"Carousel: chosen car rests large in the centre")
+	var side: TextureRect = menu._stages[1].rect
+	check(side.scale.x < 0.7 and side.modulate.a < 0.6 and menu._stages[2].rect.visible,
+		"Carousel: both neighbours are smaller and faded at the edges (circular)")
+	# A short slow drag springs back to the same car.
+	_click(menu, w * 0.5, true)
+	for i in 4:
+		_move(menu, w * 0.5 - i * 8.0)
+		await create_timer(0.05).timeout
+	await create_timer(0.2).timeout
+	_click(menu, w * 0.5 - 24.0, false)
+	await _settle_carousel(menu)
+	check(menu.car_index == 0 and changes.is_empty() and is_equal_approx(menu.position_items, 0.0),
+		"Carousel: a short drag snaps back without changing the car")
+	# A drag past half a car lands on the next one exactly.
+	_click(menu, w * 0.8, true)
+	for i in 6:
+		_move(menu, w * 0.8 - i * w * 0.07)
+		await create_timer(0.05).timeout
+	await create_timer(0.2).timeout
+	_click(menu, w * 0.8 - 5 * w * 0.07, false)
+	await _settle_carousel(menu)
+	check(menu.car_index == 1 and changes == ["cyber"] and is_equal_approx(menu.position_items, 1.0),
+		"Carousel: dragging past halfway snaps to the next car")
+	check(menu._stages[1].car.rotation.y == 0.0 and menu._stages[1].viewport.render_target_update_mode != SubViewport.UPDATE_ALWAYS,
+		"Carousel: the settled car faces the camera and stops re-rendering")
+	# A quick flick moves exactly one car, never more.
+	_click(menu, w * 0.7, true)
+	await process_frame
+	_move(menu, w * 0.7 - 30.0)
+	await process_frame
+	_move(menu, w * 0.7 - 60.0)
+	_click(menu, w * 0.7 - 60.0, false)
+	await _settle_carousel(menu)
+	check(menu.car_index == 2 and changes.back() == "sedan", "Carousel: a short fast flick advances one car")
+	# Tapping the left neighbour rolls it into the centre.
+	_click(menu, w * 0.04, true)
+	_click(menu, w * 0.04, false)
+	check(menu.car_index == 1, "Carousel: tapping a neighbour selects it immediately")
+	await _settle_carousel(menu)
+	check(is_equal_approx(menu.item_offset(1), 0.0), "Carousel: the tapped neighbour rolls into the centre")
+	# Tapping the centre does nothing.
+	_click(menu, w * 0.5, true)
+	_click(menu, w * 0.5, false)
+	await _settle_carousel(menu)
+	check(menu.car_index == 1 and changes.size() == 3, "Carousel: tapping the centre car keeps the selection")
+	# Keys and wrap-around.
+	var key := InputEventAction.new()
+	key.action = "ui_right"
+	key.pressed = true
+	menu._on_carousel_input(key)
+	menu._on_carousel_input(key)
+	check(menu.car_index == 0 and menu.current().id == "hatch", "Carousel: right key wraps from the last car to the first")
+	await _settle_carousel(menu)
+	check(is_equal_approx(menu.item_offset(0), 0.0) and is_equal_approx(fmod(menu.position_items, 1.0), 0.0),
+		"Carousel: wrap-around still rests on a whole item")
+	# Paint is shared and animates on every visible car.
+	menu._select_paint(1)
+	check(menu._paint_tween != null and menu._paint_tween.is_running(), "Paint change animates the car body")
+	await create_timer(RidePause.PAINT_SECONDS + 0.1).timeout
+	check(menu._shown_hex.is_equal_approx(Color(menu.current().hex)) and menu._palette.get_child(1).get_meta("selected"),
+		"Paint change finishes on the exact garage colour and marks one swatch")
+	check(menu._palette.get_child(1).get_node("Fill/Check").visible and not menu._palette.get_child(0).get_node("Fill/Check").visible,
+		"Only the selected swatch shows the check")
+	menu.queue_free()
+	await process_frame
+	# Two cars: no wrap, the neighbour sits on one side only, a drag past the end bounces back.
+	var pair := options.duplicate(true)
+	menu = RidePause.new(pair, {"id":"hatch"})
+	viewport.add_child(menu)
+	await _settle_layout()
+	check(menu._stages.size() == 2 and menu.item_offset(1) > 0.0, "Two cars: the only neighbour waits on the right")
+	_click(menu, w * 0.3, true)
+	for i in 6:
+		_move(menu, w * 0.3 + i * w * 0.08)
+		await create_timer(0.05).timeout
+	await create_timer(0.2).timeout
+	_click(menu, w * 0.3 + 5 * w * 0.08, false)
+	await _settle_carousel(menu)
+	check(menu.car_index == 0 and is_equal_approx(menu.position_items, 0.0), "Two cars: dragging before the first car bounces back")
+	menu._change_car(1)
+	await _settle_carousel(menu)
+	check(menu.car_index == 1 and is_equal_approx(menu.position_items, 1.0), "Two cars: the arrow step reaches the other car")
+	menu.queue_free()
+	await process_frame
+	# One car: nothing to swipe, the stage takes no focus.
+	var single := options.duplicate(true)
+	single.cars = [options.cars[0]]
+	menu = RidePause.new(single, {})
+	viewport.add_child(menu)
+	await _settle_layout()
+	_click(menu, 10.0, true)
+	_click(menu, 10.0, false)
+	check(menu.car_index == 0 and menu._carousel.focus_mode == Control.FOCUS_NONE, "Single car: carousel is static")
+	menu.queue_free()
+	viewport.queue_free()
+	await process_frame
 
 
 func _check_pause_collection(options: Dictionary) -> void:
@@ -233,6 +366,7 @@ func _run() -> void:
 		root.content_scale_size = capture_size
 	var options := _options()
 	await _check_pause_collection(options)
+	await _check_carousel(options)
 	# Feed the normal embedded-host argument contract; all test output remains in scratch/.
 	Host.io = ProjectSettings.globalize_path("res://../scratch/ride-ui-regression")
 	DirAccess.make_dir_recursive_absolute(Host.io)

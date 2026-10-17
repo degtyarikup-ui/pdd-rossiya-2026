@@ -15,11 +15,13 @@ const LIGHT := {
 	"accent": "#0574F8", "text": "#121212", "secondary": "#A1A6B7", "card": "#FFFFFF", "green": "#2BC280",
 	"green_light": "#E8F8F0", "red": "#ED4621", "red_light": "#FFECE8", "gray": "#EFF0F4", "field": "#F2F2F7",
 	"gold": "#FFA53C", "divider": "#E8E8E8", "background": "#F8F8FA", "gold_surface": "#FFF7ED", "white": "#FFFFFF",
+	"accent_light": "#E8F2FE",
 }
 const DARK := {
 	"accent": "#298BFE", "text": "#F2F3F7", "secondary": "#8A90A2", "card": "#1C1D22", "green": "#2BC280",
 	"green_light": "#162B1D", "red": "#ED4621", "red_light": "#341717", "gray": "#25272E", "field": "#202229",
 	"gold": "#FFA53C", "divider": "#22242B", "background": "#121214", "gold_surface": "#2E2215", "white": "#FFFFFF",
+	"accent_light": "#18283C",
 }
 
 

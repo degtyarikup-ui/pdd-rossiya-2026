@@ -22,7 +22,7 @@ KEYS = [
     'gameAchievementsComplete', 'gamePaintAllCars',
     'gameAchievementCount', 'gameSoundOn', 'gameSoundOff',
     'gameVoiceOn', 'gameVoiceOff', 'gameVoiceUnavailable',
-    'gameSpeedUnit', 'gameMeters', 'gameKilometers', 'gameViolations', 'gamePause', 'gameRunProgress',
+    'gameSpeedUnit', 'gameMeters', 'gameKilometers', 'gameViolations', 'gamePause', 'gamePauseSound', 'gamePauseVoice', 'gameRunProgress',
     'gameSpeedLimitLabel', 'gameOncoming', 'gameOneWayAgainst', 'gameRoadworksHit', 'gameCollision',
     'gameOffroad', 'gamePriorityViolation', 'gameSpeeding', 'gameOvertakingProhibited', 'gamePedestrianYield',
     'gameRailwayViolation', 'gameStopViolation', 'gameRedLightViolation', 'gameWrongManeuver', 'gameIllegalManeuver', 'gameLeft',
