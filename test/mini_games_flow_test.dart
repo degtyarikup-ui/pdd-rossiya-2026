@@ -394,7 +394,8 @@ void main() {
     expect(progress.getSignSwiperProgress().trainingCount, 0);
 
     await tester.tap(find.text(appL10n.gameRunMistakesButton(5)));
-    await tester.pumpAndSettle();
+    // The result rays turn endlessly: wait for the sheet, not for a settle.
+    await tester.pump(const Duration(seconds: 1));
     expect(find.byType(BottomSheet), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
@@ -515,57 +516,44 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  for (final (name, art) in [
-    ('Traffic', const TrafficControllerArt()),
-    ('Swiper', const SignSwiperArt()),
-  ]) {
-    testWidgets('$name result shows the full cover on a compact screen', (
+  testWidgets('Swiper result uses the shared full-screen format', (
+    tester,
+  ) async {
+    var restarts = 0, exits = 0, mistakes = 0;
+    await open(
       tester,
-    ) async {
-      var restarts = 0, exits = 0;
-      await open(
-        tester,
-        Scaffold(
-          body: GameResultOverlay(
-            art: art,
-            title: appL10n.gameOverTitle,
-            score: 3900,
-            bestScore: 1500,
-            isNewRecord: false,
-            stats: [
-              GameResultStat(appL10n.gameSolvedLabel, '10'),
-              GameResultStat(appL10n.gameAccuracyLabel, '77%'),
-              GameResultStat(appL10n.gameComboLabel, 'x8'),
-            ],
-            mistakesCount: 3,
-            onMistakes: () {},
-            onRestart: () => restarts++,
-            onExit: () => exits++,
-          ),
+      Scaffold(
+        body: GameResultOverlay(
+          emblem: const SignSwiperEmblem(),
+          title: appL10n.gameOverTitle,
+          score: 3900,
+          bestScore: 1500,
+          isNewRecord: false,
+          stats: [
+            GameResultStat(appL10n.gameCorrectAnswers, '10/13'),
+            GameResultStat(appL10n.gameComboLabel, 'x8'),
+          ],
+          mistakesCount: 3,
+          onMistakes: () => mistakes++,
+          onRestart: () => restarts++,
+          onExit: () => exits++,
         ),
-        size: const Size(320, 568),
-        textScale: 1.6,
-      );
-      await tester.pumpAndSettle();
-      final image = find.byType(Image);
-      final frame = tester.getRect(image);
-      // BoxFit.cover can crop only if the box disagrees with the 16:9 source.
-      expect(frame.width / frame.height, closeTo(16 / 9, 0.001));
-      final provider = tester.widget<Image>(image).image as ResizeImage;
-      expect(
-        (provider.imageProvider as AssetImage).assetName,
-        endsWith('_cover.webp'),
-      );
-      await tester.ensureVisible(find.text(appL10n.gameRestart));
-      await tester.tap(find.text(appL10n.gameRestart));
-      expect(restarts, 1);
-      await tester.ensureVisible(find.text(appL10n.gameExit));
-      await tester.tap(find.text(appL10n.gameExit));
-      expect(exits, 1);
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox());
-    });
-  }
+      ),
+      size: const Size(320, 568),
+      textScale: 1.6,
+    );
+    // The rays keep turning: settle the counters, not the endless rotation.
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('3900'), findsOneWidget);
+    expect(find.text('10/13'), findsOneWidget);
+    expect(find.text(appL10n.gameBestScore(1500)), findsOneWidget);
+    await tester.tap(find.text(appL10n.gameRestart));
+    await tester.tap(find.text(appL10n.gameRunMistakesButton(3)));
+    await tester.tap(find.byTooltip(appL10n.gameExit));
+    expect((restarts, mistakes, exits), (1, 1, 1));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('Hub cover cards remain readable at 320px and large text', (
     tester,

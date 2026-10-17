@@ -408,23 +408,17 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   }
 
   Widget _buildResult(AppThemeColors colors) {
-    final accuracy = _totalSwipedInRound > 0
-        ? ((_correctAnswers / _totalSwipedInRound) * 100).round()
-        : 0;
-
     return GameResultOverlay(
-      art: const SignSwiperArt(),
+      emblem: const SignSwiperEmblem(),
       title: _timeUp ? appL10n.gameTimeUp : appL10n.gameOverTitle,
       score: _score,
       bestScore: _previousBest,
       isNewRecord: _isNewRecord,
       stats: [
         GameResultStat(
-          appL10n.gameCorrectShort,
-          '$_correctAnswers',
-          color: colors.green,
+          appL10n.gameCorrectAnswers,
+          '$_correctAnswers/$_totalSwipedInRound',
         ),
-        GameResultStat(appL10n.gameAccuracyLabel, '$accuracy%'),
         GameResultStat(appL10n.gameComboLabel, 'x$_maxCombo'),
       ],
       mistakesCount: _mistakes.length,
