@@ -6016,6 +6016,12 @@ abstract class AppLocalizations {
   /// **'Фотография'**
   String get supportChatPhoto;
 
+  /// No description provided for @supportChatClosed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обращение завершено. Если появятся вопросы — просто напишите сюда.'**
+  String get supportChatClosed;
+
   /// No description provided for @supportChatImageTooLarge.
   ///
   /// In ru, this message translates to:

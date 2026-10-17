@@ -131,6 +131,51 @@ async function sendPhotoToTelegram(env, base64Data, mimeType, caption = '', thre
   }
 }
 
+// /close (или /close@ИмяБота) в теме пользователя — обращение завершено.
+const CLOSE_COMMAND = /^\/close(@\w+)?$/i;
+const CLOSED_TEXT = 'Обращение завершено. Если появятся вопросы — просто напишите сюда.';
+
+async function telegramCall(env, method, payload) {
+  return fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${method}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(10000),
+  }).catch((err) => {
+    console.error(method + ' error:', err);
+    return null;
+  });
+}
+
+/**
+ * Оператор закрыл обращение: пользователь получает служебное сообщение (kind: closed,
+ * приложение показывает его на своём языке), тема в Telegram закрывается. Новое сообщение
+ * пользователя открывает её снова (handleSupportSendMessage).
+ */
+async function closeSupportTicket(env, clientId, messageId, threadId) {
+  const ts = Date.now();
+  await appendSupportMessage(env, clientId, {
+    id: 'tg_' + messageId,
+    sender: 'support',
+    kind: 'closed',
+    text: CLOSED_TEXT,
+    ts,
+    authorName: 'Менеджер Сергей',
+  });
+  const clientKey = 'support:client:' + clientId;
+  const client = env.INSTALLS ? await env.INSTALLS.get(clientKey, { type: 'json' }) : null;
+  if (client) {
+    client.closed = true;
+    client.closedAt = ts;
+    client.lastMsgAt = ts;
+    await env.INSTALLS.put(clientKey, JSON.stringify(client));
+  }
+  await sendToTelegram(env, '✅ Обращение завершено, пользователю отправлено уведомление. Новое сообщение откроет тему снова.', threadId);
+  if (env.BOT_TOKEN) {
+    await telegramCall(env, 'closeForumTopic', { chat_id: telegramChatId(env), message_thread_id: Number(threadId) });
+  }
+}
+
 /**
  * Обработка входящего сообщения от Telegram (webhook или getUpdates).
  */
@@ -151,6 +196,11 @@ export async function processTelegramMessageUpdate(msg, env) {
 
   let text = msg.caption ? msg.caption.trim() : (msg.text ? msg.text.trim() : '');
   let imageUrl = null;
+
+  if (!msg.caption && CLOSE_COMMAND.test(text)) {
+    await closeSupportTicket(env, clientId, msg.message_id, threadId);
+    return true;
+  }
 
   if (Array.isArray(msg.photo) && msg.photo.length > 0) {
     const largestPhoto = msg.photo[msg.photo.length - 1];
@@ -332,6 +382,15 @@ export async function handleSupportSendMessage(request, env) {
         `⭐ <b>Премиум:</b> ${isPremium ? 'Да' : 'Нет'}`;
       await sendToTelegram(env, introText, threadId);
     }
+  }
+
+  if (client?.closed && threadId) {
+    // Обращение было закрыто командой /close — новое сообщение открывает его снова.
+    client.closed = false;
+    if (env.BOT_TOKEN) {
+      await telegramCall(env, 'reopenForumTopic', { chat_id: telegramChatId(env), message_thread_id: Number(threadId) });
+    }
+    if (env.INSTALLS) await env.INSTALLS.put(clientKey, JSON.stringify(client));
   }
 
   let imageUrl = null;

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -87,6 +88,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     );
 
     if (!mounted || incoming.isEmpty) return;
+    // Shown here, so the banner over the app must not bring them up again.
+    unawaited(SupportInbox.instance
+        .markSeen(incoming.map((m) => m.timestamp).reduce(max)));
 
     final existingIds = _messages.map((m) => m.id).toSet();
     final newItems = incoming.where((m) => !existingIds.contains(m.id)).toList();
@@ -619,15 +623,15 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                         ),
                       ),
                     ),
-                    if (msg.text.isNotEmpty) const SizedBox(height: 6),
+                    if (msg.displayText.isNotEmpty) const SizedBox(height: 6),
                   ],
-                  if (msg.text.isNotEmpty)
+                  if (msg.displayText.isNotEmpty)
                     Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: imageProvider != null ? 4 : 0,
                       ),
                       child: Text(
-                        msg.text,
+                        msg.displayText,
                         style: TextStyle(
                           fontSize: 14.5,
                           color: isUser ? Colors.white : colors.primaryText,

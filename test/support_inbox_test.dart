@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/models/support_chat_message.dart';
 import 'package:pdd_app/data/services/support_inbox.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 SupportChatMessage _msg(String id, SupportMessageSender sender, int ts) => SupportChatMessage(
       id: id,
@@ -17,6 +18,8 @@ void main() {
     var sounds = 0;
     List<SupportChatMessage> next = [];
     int? lastSince;
+    SharedPreferences.setMockInitialValues({});
+    inbox.clientId = () async => 'client_a';
 
     inbox.fetch = ({int? since}) async {
       lastSince = since;
@@ -55,5 +58,46 @@ void main() {
     expect(sounds, 1);
     expect(lastSince, 2500);
     inbox.chatOpen = false;
+  });
+
+  test('support inbox: an old reply never comes back after a failed poll or a restart', () async {
+    SharedPreferences.setMockInitialValues({});
+    final inbox = SupportInbox.instance;
+    final replies = <SupportChatMessage>[];
+    final history = [
+      _msg('u1', SupportMessageSender.user, 1000),
+      _msg('s1', SupportMessageSender.support, 1500),
+    ];
+    List<SupportChatMessage>? next;
+    inbox.clientId = () async => 'client_b';
+    inbox.fetch = ({int? since}) async =>
+        next?.where((m) => since == null || m.timestamp > since).toList();
+    inbox.onReply = replies.add;
+    inbox.onSound = null;
+    inbox.chatOpen = false;
+
+    // Offline at launch: the poll fails. It must not count as "seen, nothing there".
+    next = null;
+    await inbox.poll();
+    // Back online: the server returns the whole history. Still the first look — silent.
+    next = history;
+    await inbox.poll();
+    expect(replies, isEmpty);
+
+    // App restarted (the mark is on disk): the same history is not announced again.
+    await inbox.poll();
+    expect(replies, isEmpty);
+
+    // The chat screen showed a reply: the banner does not repeat it later.
+    next = [...history, _msg('s2', SupportMessageSender.support, 2000)];
+    await inbox.markSeen(2000);
+    await inbox.poll();
+    expect(replies, isEmpty);
+
+    // A really new reply shows exactly once.
+    next = [...next, _msg('s3', SupportMessageSender.support, 3000)];
+    await inbox.poll();
+    await inbox.poll();
+    expect(replies.map((m) => m.id), ['s3']);
   });
 }

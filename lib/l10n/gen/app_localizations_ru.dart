@@ -3637,6 +3637,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get supportChatPhoto => 'Фотография';
 
   @override
+  String get supportChatClosed =>
+      'Обращение завершено. Если появятся вопросы — просто напишите сюда.';
+
+  @override
   String get supportChatImageTooLarge =>
       'Изображение слишком большое (макс. 10 МБ)';
 

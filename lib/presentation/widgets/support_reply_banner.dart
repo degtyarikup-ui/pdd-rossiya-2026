@@ -25,8 +25,8 @@ class SupportReplyBanner {
     late final OverlayEntry entry;
     entry = OverlayEntry(
       builder: (context) => _BannerView(
-        text: reply.text.isNotEmpty
-            ? reply.text
+        text: reply.displayText.isNotEmpty
+            ? reply.displayText
             : appL10n.supportChatPhoto,
         onTap: () {
           hide();

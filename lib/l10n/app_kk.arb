@@ -1227,6 +1227,7 @@
   "supportChatCamera": "Суретке түсіру",
   "supportChatGallery": "Галереядан таңдау",
   "supportChatPhoto": "Фотосурет",
+  "supportChatClosed": "Өтініш аяқталды. Сұрақтарыңыз болса, осында жаза беріңіз.",
   "supportChatImageTooLarge": "Сурет тым үлкен (макс. 10 МБ)",
   "appVersion": "{version} нұсқасы",
   "@appVersion": {

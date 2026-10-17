@@ -13,7 +13,8 @@
     "test:progress": "node --test test-progress.mjs",
     "test:economy": "node --test test-economy.mjs",
     "test:economy:ui": "node --test test-economy-ui.mjs",
-    "test:reports": "node --test test-question-reports.mjs"
+    "test:reports": "node --test test-question-reports.mjs",
+    "test:support": "node --test test-support-thread.mjs test-support-close.mjs"
   },
   "dependencies": {
     "jose": "^6.2.12"

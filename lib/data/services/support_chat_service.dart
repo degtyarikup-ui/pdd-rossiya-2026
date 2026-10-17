@@ -113,8 +113,13 @@ class SupportChatService {
   }
 
   /// Загрузить актуальные сообщения с сервера
-  Future<List<SupportChatMessage>> fetchMessages({int? since}) async {
-    if (!BackendConfig.hasNotifier) return [];
+  Future<List<SupportChatMessage>> fetchMessages({int? since}) async =>
+      await tryFetchMessages(since: since) ?? const [];
+
+  /// Как [fetchMessages], но сбой сети или сервера — null, а не пустой список:
+  /// иначе сбой неотличим от «новых сообщений нет».
+  Future<List<SupportChatMessage>?> tryFetchMessages({int? since}) async {
+    if (!BackendConfig.hasNotifier) return null;
     final clientId = await getClientId();
 
     try {
@@ -139,19 +144,19 @@ class SupportChatService {
         ],
       );
 
-      if (response.statusCode != 200) return [];
+      if (response.statusCode != 200) return null;
       final body = jsonDecode(response.body) as Map<String, dynamic>?;
-      if (body == null || body['ok'] != true) return [];
+      if (body == null || body['ok'] != true) return null;
 
       final list = body['messages'] as List<dynamic>?;
-      if (list == null) return [];
+      if (list == null) return null;
 
       return list
           .whereType<Map<String, dynamic>>()
           .map((item) => SupportChatMessage.fromJson(item))
           .toList();
     } catch (_) {
-      return [];
+      return null;
     }
   }
 

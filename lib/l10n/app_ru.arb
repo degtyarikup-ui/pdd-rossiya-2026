@@ -1727,6 +1727,7 @@
   "supportChatCamera": "Сделать снимок",
   "supportChatGallery": "Выбрать из галереи",
   "supportChatPhoto": "Фотография",
+  "supportChatClosed": "Обращение завершено. Если появятся вопросы — просто напишите сюда.",
   "supportChatImageTooLarge": "Изображение слишком большое (макс. 10 МБ)",
   "appVersion": "Версия {version}",
   "@appVersion": {

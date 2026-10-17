@@ -3611,6 +3611,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get supportChatPhoto => 'Фотосурет';
 
   @override
+  String get supportChatClosed =>
+      'Өтініш аяқталды. Сұрақтарыңыз болса, осында жаза беріңіз.';
+
+  @override
   String get supportChatImageTooLarge => 'Сурет тым үлкен (макс. 10 МБ)';
 
   @override

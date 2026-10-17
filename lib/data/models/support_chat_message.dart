@@ -1,4 +1,5 @@
 import 'package:pdd_app/core/config/backend_config.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
 enum SupportMessageSender { user, support }
 
@@ -15,6 +16,9 @@ class SupportChatMessage {
   final String? authorName;
   final SupportMessageStatus status;
 
+  /// Служебное сообщение: `closed` — оператор завершил обращение командой /close.
+  final String? kind;
+
   const SupportChatMessage({
     required this.id,
     required this.text,
@@ -24,10 +28,17 @@ class SupportChatMessage {
     required this.timestamp,
     this.authorName,
     this.status = SupportMessageStatus.sent,
+    this.kind,
   });
 
   bool get isUser => sender == SupportMessageSender.user;
   bool get isSupport => sender == SupportMessageSender.support;
+  bool get isClosedNotice => kind == 'closed';
+
+  /// Текст для показа: служебные сообщения — на языке приложения.
+  String get displayText =>
+      isClosedNotice ? appL10n.supportChatClosed : text;
+
   bool get hasImage =>
       (imageUrl != null && imageUrl!.isNotEmpty) ||
       (localImagePath != null && localImagePath!.isNotEmpty);
@@ -52,6 +63,7 @@ class SupportChatMessage {
     'ts': timestamp,
     if (authorName != null) 'authorName': authorName,
     'status': status.name,
+    if (kind != null) 'kind': kind,
   };
 
   factory SupportChatMessage.fromJson(Map<String, dynamic> json) {
@@ -70,6 +82,7 @@ class SupportChatMessage {
         (s) => s.name == json['status'],
         orElse: () => SupportMessageStatus.sent,
       ),
+      kind: json['kind'] as String?,
     );
   }
 
@@ -92,6 +105,7 @@ class SupportChatMessage {
       timestamp: timestamp ?? this.timestamp,
       authorName: authorName ?? this.authorName,
       status: status ?? this.status,
+      kind: kind,
     );
   }
 }

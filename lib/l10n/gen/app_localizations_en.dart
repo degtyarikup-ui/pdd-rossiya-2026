@@ -3619,6 +3619,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportChatPhoto => 'Photo';
 
   @override
+  String get supportChatClosed =>
+      'Your request is closed. If you have more questions, just write here.';
+
+  @override
   String get supportChatImageTooLarge => 'Image is too large (max 10 MB)';
 
   @override

@@ -1227,6 +1227,7 @@
   "supportChatCamera": "Take photo",
   "supportChatGallery": "Choose from gallery",
   "supportChatPhoto": "Photo",
+  "supportChatClosed": "Your request is closed. If you have more questions, just write here.",
   "supportChatImageTooLarge": "Image is too large (max 10 MB)",
   "appVersion": "Version {version}",
   "@appVersion": {
