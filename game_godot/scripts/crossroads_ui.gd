@@ -65,7 +65,6 @@ var _collision_should_go: Label
 var _collision_reason: Label
 var _collision_article: Label
 var _collision_btn_row: BoxContainer
-var _collision_retry_btn: Button
 var _collision_next_btn: Button
 var _collision_game_over_btn: Button
 
@@ -357,7 +356,7 @@ func _hide_hard_bonus() -> void:
 
 
 ## Crash card: the world behind turns grey and dim; a red card names the
-## participant who goes now and explains the rule; actions sit below the card.
+## participant who goes now and explains the rule; Continue sits below the card.
 func _build_collision_modal() -> void:
 	_collision_backdrop = _backdrop()
 	var grey := ShaderMaterial.new()
@@ -401,10 +400,6 @@ func _build_collision_modal() -> void:
 		hide_collision_modal()
 		next_scenario_pressed.emit())
 	_collision_btn_row.add_child(_collision_next_btn)
-	_collision_retry_btn = _action_button(Ui.t("gameCrossroadsRepeatCrossroad"), false, func():
-		hide_collision_modal()
-		retry_pressed.emit())
-	_collision_btn_row.add_child(_collision_retry_btn)
 	_collision_game_over_btn = _action_button(Ui.t("gameOver"), true, func():
 		hide_collision_modal()
 		retry_pressed.emit())

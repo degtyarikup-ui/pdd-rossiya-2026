@@ -62,7 +62,7 @@ func _run() -> void:
 		_check("Explanation text has no horizontal clipping" + suffix, _labels_fit(ui._collision_content))
 		var collision_scroll: ScrollContainer = ui._collision_content.get_parent()
 		_check("Long explanation scrolls instead of clipping actions" + suffix, collision_scroll.get_v_scroll_bar().max_value > collision_scroll.get_v_scroll_bar().page)
-		_check("Retry and next remain separate reachable actions" + suffix, ui._collision_retry_btn.visible and ui._collision_next_btn.visible and ui._collision_retry_btn.size.y >= 48 and ui._collision_next_btn.size.y >= 48)
+		_check("Continue is the one reachable action" + suffix, ui._collision_next_btn.visible and ui._collision_next_btn.size.y >= 48)
 		ui.show_collision_modal("Синий автомобиль", "Нарушена очередность движения.", "Пункт 13.9 ПДД РФ", true)
 		await _settle(ui)
 		_check("Last life shows the game-over action" + suffix, ui._collision_game_over_btn.visible and not ui._collision_btn_row.visible)
