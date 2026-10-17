@@ -227,7 +227,8 @@ test('manual revenue CRUD includes other income, dates and missing-record errors
   const updated = await api(env, 'revenues/update', { id, amountRub: 1200, store: 'appstore', date: '2026-09-01' });
   assert.equal(updated.status, 200);
   assert.equal((await stats(env)).revenue.grossRub, 0);
-  assert.equal((await stats(env, 'all')).revenue.appstoreRub, 1200);
+  assert.equal((await stats(env, 'all')).revenue.appstoreRub, 0);
+  assert.equal((await stats(env, 'all')).receipts[0].includedInRevenue, false);
   assert.equal((await api(env, 'revenues/delete', { id })).status, 200);
   assert.equal((await api(env, 'revenues/delete', { id })).status, 404);
   const base = { title: 'Выплата', amountRub: 100, store: 'appstore', date: '2026-10-01' };
@@ -244,14 +245,14 @@ test('estimated store sales do not duplicate actual store payouts', async () => 
     verifiedPurchase: { productId: 'ru.pdd.pddApp.sub.3months', transactionId: 'apple-tx' } };
   await env.INSTALLS.put('user:' + user.id, JSON.stringify(user));
   const result = await stats(env, 'month', { listUserSummaries: async () => [user, { ...user, id: 'duplicate-user' }, { id: 'free', isPremium: false }] });
-  assert.equal(result.revenue.grossRub, 250);
-  assert.equal(result.revenue.appstoreRub, 250);
+  assert.equal(result.revenue.grossRub, 290);
+  assert.equal(result.revenue.appstoreRub, 290);
   assert.equal(result.revenue.estimatedStoresRub, 290);
-  assert.equal(result.revenue.estimatesIncludedInGross, false);
+  assert.equal(result.revenue.estimatesIncludedInGross, true);
   assert.equal(result.receipts.length, 2);
   assert.equal(result.estimatedReceipts.length, 1);
-  assert.equal(result.estimatedReceipts[0].replacedByPayout, true);
-  assert.equal(result.estimatedReceipts[0].includedInRevenue, false);
+  assert.equal(result.receipts.find(row => row.type === 'manual').includedInRevenue, false);
+  assert.equal(result.estimatedReceipts[0].includedInRevenue, true);
   assert.equal(result.estimatedReceipts[0].dateBasis, 'purchase');
 });
 
@@ -485,7 +486,7 @@ test('store purchase remains counted when another entitlement becomes the main s
 });
 
 
-test('a payout replaces only its store and only within the selected period', async () => {
+test('store payouts remain informational across periods', async () => {
   const env = environment();
   await seedConfig(env, { manualRevenues: [{ id: 'payout', title: 'Apple', store: 'appstore', amountRub: 250, date: '2026-09-20' }] });
   const users = ['appstore', 'googleplay'].map(store => ({ id: store, premiumSource: store,
@@ -494,10 +495,10 @@ test('a payout replaces only its store and only within the selected period', asy
   const deps = { listUserSummaries: async () => users };
   assert.equal((await stats(env, 'month', deps)).revenue.grossRub, 580);
   const all = await stats(env, 'all', deps);
-  assert.equal(all.revenue.grossRub, 540);
-  assert.equal(all.revenue.appstoreRub, 250);
+  assert.equal(all.revenue.grossRub, 580);
+  assert.equal(all.revenue.appstoreRub, 290);
   assert.equal(all.revenue.gplayRub, 290);
-  assert.equal(all.revenue.includedStoreSalesRub, 290);
-  assert.equal(all.estimatedReceipts.find(row => row.storeKey === 'appstore').replacedByPayout, true);
+  assert.equal(all.revenue.includedStoreSalesRub, 580);
+  assert.equal(all.receipts.find(row => row.type === 'manual').includedInRevenue, false);
   assert.equal(all.estimatedReceipts.find(row => row.storeKey === 'googleplay').includedInRevenue, true);
 });

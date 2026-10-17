@@ -1,5 +1,5 @@
 // Админский учёт экономики. Платежи и сроки Premium здесь не изменяются.
-// Доход включает продажи магазинов; фактическая выплата заменяет оценку источника.
+// Доход включает продажи магазинов по тарифу; выплаты магазинов — справочные.
 export const DEFAULT_ECONOMY_CONFIG = {
   usdRate: 95,
   cloudflareMonthlyUsd: 5,
@@ -272,23 +272,21 @@ export async function computeEconomyStats(env, period = 'month', deps = {}) {
       dateBasis: full.purchasedAt || user.purchasedAt ? 'purchase' : 'verification' });
   }
   let manualRevenuesRub = 0;
-  const paidStores = new Set();
   for (const revenue of config.manualRevenues) {
     const time = remember(revenue.date);
     if (!inPeriod(time, periodStart, now)) continue;
-    paidStores.add(revenue.store);
-    revenueByStore[revenue.store] += revenue.amountRub;
-    manualRevenuesRub += revenue.amountRub;
+    const isStorePayout = ['appstore', 'googleplay', 'rustore'].includes(revenue.store);
+    if (!isStorePayout) {
+      revenueByStore[revenue.store] += revenue.amountRub;
+      manualRevenuesRub += revenue.amountRub;
+    }
     receipts.push({ id: revenue.id, date: revenue.date, customer: revenue.title, email: '', store: stores[revenue.store],
       storeKey: revenue.store, tier: 'Поступление', amountRub: revenue.amountRub, txId: revenue.id,
-      isTest: false, status: 'confirmed', type: 'manual', includedInRevenue: true, editable: true });
+      isTest: false, status: 'confirmed', type: 'manual', includedInRevenue: !isStorePayout, editable: true });
   }
   let includedStoreSalesRub = 0;
   for (const receipt of estimatedReceipts) {
-    // Выплата за выбранный период — фактическая сумма после комиссии.
-    // Для этого источника она заменяет оценку продаж, а не складывается с ней.
-    receipt.replacedByPayout = paidStores.has(receipt.storeKey);
-    receipt.includedInRevenue = (!receipt.isTest || !config.excludeTestOrders) && !receipt.replacedByPayout;
+    receipt.includedInRevenue = !receipt.isTest || !config.excludeTestOrders;
     if (receipt.includedInRevenue) {
       revenueByStore[receipt.storeKey] += receipt.amountRub;
       includedStoreSalesRub += receipt.amountRub;
