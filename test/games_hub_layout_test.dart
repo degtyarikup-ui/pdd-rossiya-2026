@@ -521,7 +521,7 @@ void main() {
     await open(tester, onCity: () => city++, onRunsInfo: () => info++);
     expect(find.text(appL10n.gamesRunsFraction(3, 3)), findsOneWidget);
     final target = find.byKey(const ValueKey('games-runs-info'));
-    expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
+    expect(tester.getSize(target).height, greaterThanOrEqualTo(44));
     await tester.tap(target);
     expect(info, 1);
     expect(city, 0);

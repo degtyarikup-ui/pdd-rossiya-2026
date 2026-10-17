@@ -464,10 +464,7 @@ class _HubCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (footer != null) ...[
-                      const SizedBox(height: AppDimensions.spacingXS),
-                      footer!,
-                    ],
+                    if (footer != null) footer!,
                   ],
                 ),
               ),
@@ -540,7 +537,8 @@ class _RunsFooter extends StatelessWidget {
             foregroundColor: AppColors.white,
             alignment: Alignment.centerLeft,
             padding: EdgeInsets.zero,
-            minimumSize: const Size(48, 48),
+            // 44 pt (Apple HIG): the text's own air reads as the gap.
+            minimumSize: const Size(48, 44),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           onPressed: onInfo,
@@ -598,7 +596,6 @@ class _RunsFooter extends StatelessWidget {
           ),
         ),
         if (waiting) ...[
-          const SizedBox(height: AppDimensions.spacingXS),
           FilledButton.icon(
             key: const ValueKey('games-premium'),
             onPressed: onPremium,
