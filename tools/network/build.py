@@ -583,6 +583,9 @@ def build(scene: dict) -> dict:
                 asphalt_raw = asphalt_raw.difference(dirt_corners.buffer(0.05))
                 sand_raw = sand_raw.union(dirt_corners)
     sand = road.intersection(sand_raw.buffer(CURB_RADIUS + TIDY_RADIUS)).difference(asphalt_raw) if not sand_raw.is_empty else Polygon()
+    # Hairline slivers where the smoothed road edge passes the asphalt outline are no dirt road:
+    # their soft shoulder would show up across the paved road.
+    sand = sand.buffer(-0.05).buffer(0.05).intersection(road) if not sand.is_empty else sand
     # Markings lie on the carriageway only; the island and the pavement are never painted over.
     marks = {}
     for m in scene.get("markings", []):
