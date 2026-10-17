@@ -1388,8 +1388,7 @@ func _update_closed_block_occlusion(_targets: Array[Vector3], delta: float) -> v
 		for b in child.get_children():
 			var mi := b as MeshInstance3D
 			if mi == null or mi.mesh == null: continue
-			var mat := mi.material_override as ShaderMaterial
-			if mat == null: continue
+			if not mi.has_meta("fade_material"): continue
 			var inv: Transform3D = mi.global_transform.affine_inverse()
 			var origin: Vector3 = inv * camera.global_position
 			var bounds: AABB = mi.mesh.get_aabb().grow(0.12)
@@ -1409,9 +1408,11 @@ func _update_closed_block_occlusion(_targets: Array[Vector3], delta: float) -> v
 				if not occluding and bounds.intersects_segment(origin, inv * Vector3(0, 0.4, 0)) != null:
 					occluding = true
 			var target_alpha := 0.25 if occluding else 1.0
-			var cur_alpha: float = mat.get_shader_parameter("uniform_alpha") if mat.get_shader_parameter("uniform_alpha") != null else 1.0
-			var next_alpha := move_toward(cur_alpha, target_alpha, delta * 4.0)
-			mat.set_shader_parameter("uniform_alpha", next_alpha)
+			var next_alpha := move_toward(float(mi.get_meta("fade_alpha", 1.0)), target_alpha, delta * 4.0)
+			mi.set_meta("fade_alpha", next_alpha)
+			var fade: ShaderMaterial = mi.get_meta("fade_material")
+			fade.set_shader_parameter("uniform_alpha", next_alpha)
+			mi.material_override = mi.get_meta("opaque_material") if next_alpha >= 0.999 else fade
 
 
 func _fit_projection(area: Rect2) -> void:

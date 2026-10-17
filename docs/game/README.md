@@ -127,6 +127,7 @@ godot --headless --path game_godot --script res://tests/crossroads_routes_check.
 godot --headless --path game_godot --script res://tests/crossroads_world_check.gd # все знаки/дубли, переходы, стоп-линии, рельсы, сезонные материалы
 godot --path game_godot --script res://tests/crossroads_world_check.gd # дополнительно реальные пиксели скруглений и пандусов
 godot --headless --path game_godot --script res://tests/crossroads_ui_check.gd # HUD, диалоги, короткий экран; повторить с -- --text-scale=1.6
+godot --headless --path game_godot --script res://tests/crossroads_layout_check.gd # здания не пересекаются друг с другом, здания и деревья не стоят на дорогах и тротуарах (все сценарии и сезоны)
 godot --headless --path game_godot --script res://tests/mini_game_results_check.gd # общий результат мини-игр: ru/en/kk, малые экраны, текст 1,6
 godot --path game_godot --script res://tests/exit_transition_check.gd # реальный fade выхода: неподвижный кадр, покрытие, summary и повторный вход
 godot --headless --path game_godot --script res://tests/rules_check.gd      # нарушения: 47 проверок
