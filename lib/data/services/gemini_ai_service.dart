@@ -39,6 +39,80 @@ class GeminiAiService {
   static const String _prefKeyPrefix = 'ai_explanation_cache_';
   final Map<String, String> _memoryCache = {};
 
+  /// The worker reads at most 64 KiB before validating recent chat turns.
+  /// Bound the outgoing copy, keeping the complete conversation in the UI.
+  Map<String, dynamic> _requestPayload({
+    required String questionId,
+    required String questionText,
+    required List<String> answers,
+    required int correctAnswerIndex,
+    required String? officialExplanation,
+    List<AiChatMessage> messages = const [],
+    String? userMessage,
+  }) {
+    String clip(String value, int limit) =>
+        value.length <= limit ? value : value.substring(0, limit);
+    final recent = messages
+        .skip(messages.length > 20 ? messages.length - 20 : 0)
+        .map(
+          (message) => {
+            'text': clip(message.text, 2000),
+            'isUser': message.isUser,
+          },
+        )
+        .toList();
+    final boundedAnswers = answers.take(6).map((a) => clip(a, 1000)).toList();
+    final payload = <String, dynamic>{
+      'questionId': clip(questionId, 128),
+      'questionText': clip(questionText, 1000),
+      'answers': boundedAnswers,
+      'correctAnswerIndex': correctAnswerIndex,
+      'officialExplanation': clip(officialExplanation ?? '', 8000),
+      if (messages.isNotEmpty) 'messages': recent,
+      if (userMessage != null) 'userMessage': clip(userMessage, 4000),
+    };
+    // Character limits alone are insufficient: Cyrillic, emoji and JSON escape
+    // sequences can require several bytes per character.
+    while (utf8.encode(jsonEncode(payload)).length > 65536) {
+      if (recent.isNotEmpty) {
+        recent.removeAt(0);
+        continue;
+      }
+      final explanation = payload['officialExplanation'] as String;
+      if (explanation.isNotEmpty) {
+        payload['officialExplanation'] = clip(
+          explanation,
+          explanation.length ~/ 2,
+        );
+        continue;
+      }
+      var longestAnswer = -1;
+      for (var i = 0; i < boundedAnswers.length; i++) {
+        if (boundedAnswers[i].isNotEmpty &&
+            (longestAnswer < 0 ||
+                boundedAnswers[i].length >
+                    boundedAnswers[longestAnswer].length)) {
+          longestAnswer = i;
+        }
+      }
+      if (longestAnswer >= 0) {
+        final answer = boundedAnswers[longestAnswer];
+        boundedAnswers[longestAnswer] = clip(answer, answer.length ~/ 2);
+      } else {
+        // Only pathological escaped text can reach this fallback: real
+        // question/answer payloads fit the worker's limits without changes.
+        final question = payload['questionText'] as String;
+        if (question.isNotEmpty) {
+          payload['questionText'] = clip(question, question.length ~/ 2);
+        } else {
+          final message = payload['userMessage'] as String? ?? '';
+          payload['userMessage'] = clip(message, message.length ~/ 2);
+        }
+      }
+    }
+    return payload;
+  }
+
   /// Первичный разбор дорожной ситуации для вопроса ПДД
   Future<String> explainQuestion({
     required String questionId,
@@ -78,13 +152,15 @@ class GeminiAiService {
                 if (BackendConfig.notifierSecret.isNotEmpty)
                   'x-install-secret': BackendConfig.notifierSecret,
               },
-              body: jsonEncode({
-                'questionId': questionId,
-                'questionText': questionText,
-                'answers': answers,
-                'correctAnswerIndex': correctAnswerIndex,
-                'officialExplanation': officialExplanation,
-              }),
+              body: jsonEncode(
+                _requestPayload(
+                  questionId: questionId,
+                  questionText: questionText,
+                  answers: answers,
+                  correctAnswerIndex: correctAnswerIndex,
+                  officialExplanation: officialExplanation,
+                ),
+              ),
             )
             .timeout(const Duration(seconds: 10));
 
@@ -208,15 +284,17 @@ ${answers.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
                 if (BackendConfig.notifierSecret.isNotEmpty)
                   'x-install-secret': BackendConfig.notifierSecret,
               },
-              body: jsonEncode({
-                'questionId': questionId,
-                'questionText': questionText,
-                'answers': answers,
-                'correctAnswerIndex': correctAnswerIndex,
-                'officialExplanation': officialExplanation,
-                'messages': conversationHistory.map((m) => m.toJson()).toList(),
-                'userMessage': userMessage,
-              }),
+              body: jsonEncode(
+                _requestPayload(
+                  questionId: questionId,
+                  questionText: questionText,
+                  answers: answers,
+                  correctAnswerIndex: correctAnswerIndex,
+                  officialExplanation: officialExplanation,
+                  messages: conversationHistory,
+                  userMessage: userMessage,
+                ),
+              ),
             )
             .timeout(const Duration(seconds: 12));
 

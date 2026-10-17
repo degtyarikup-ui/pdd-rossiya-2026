@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/config/backend_config.dart';
+import 'package:pdd_app/core/config/store_config.dart';
 import 'package:crypto/crypto.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
@@ -34,6 +35,13 @@ enum PurchaseFailure {
 class IapService extends ChangeNotifier {
   static final IapService instance = IapService._internal();
   IapService._internal();
+
+  // RuStore distributes the app with SBP payments only. Keep the guard at the
+  // store boundary: startup, paywall and restore can all call this service.
+  bool get supportsStoreBilling =>
+      !kIsWeb &&
+      (defaultTargetPlatform != TargetPlatform.android ||
+          StoreConfig.current == AppStore.googlePlay);
 
   late final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
@@ -118,7 +126,7 @@ class IapService extends ChangeNotifier {
 
   Future<void> _init() async {
     try {
-      if (kIsWeb) return;
+      if (!supportsStoreBilling) return;
       if (!_observingAuth) {
         AuthService.instance.addListener(_onAuthChanged);
         _observingAuth = true;
@@ -188,7 +196,7 @@ class IapService extends ChangeNotifier {
     _retryTimer?.cancel();
     _retryTimer = null;
     final auth = AuthService.instance;
-    if (!auth.hasServerSession) return;
+    if (!supportsStoreBilling || !auth.hasServerSession) return;
     final purchases = _pendingVerification.values
         .where((entry) => entry.$2 == null || entry.$2 == auth.currentUser?.id)
         .toList();
@@ -216,6 +224,7 @@ class IapService extends ChangeNotifier {
       });
 
   Future<void> _loadProducts() async {
+    if (!supportsStoreBilling) return;
     try {
       if (!_isAvailable) {
         _isAvailable = await _iap.isAvailable();
@@ -356,7 +365,7 @@ class IapService extends ChangeNotifier {
   }
 
   Future<PurchaseResult> _buyNative(PremiumTier tier) async {
-    if (kIsWeb) {
+    if (!supportsStoreBilling) {
       return PurchaseResult.storeUnavailable;
     }
 
@@ -447,7 +456,7 @@ class IapService extends ChangeNotifier {
 
   Future<bool> _restoreNative() async {
     final owner = AuthService.instance.currentUser?.id;
-    if (kIsWeb || !AuthService.instance.hasServerSession) {
+    if (!supportsStoreBilling || !AuthService.instance.hasServerSession) {
       return false;
     }
 

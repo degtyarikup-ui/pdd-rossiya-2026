@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -336,7 +335,7 @@ class _SubscriptionManagementSheetState
 
               // 7. Restore & Support (покупки магазинов восстанавливаются
               // только в приложениях; на сайте статус приходит с аккаунтом).
-              if (!kIsWeb)
+              if (IapService.instance.supportsStoreBilling)
                 Center(
                   child: TextButton(
                     onPressed: _isRestoring ? null : _handleRestore,
