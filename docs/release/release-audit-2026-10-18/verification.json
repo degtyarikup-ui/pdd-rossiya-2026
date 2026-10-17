@@ -1,0 +1,84 @@
+{
+  "date": "2026-10-18",
+  "flutter": {
+    "analyze": "clean",
+    "passed": 558,
+    "skipped": 3,
+    "rustoreCompiledRouting": 1
+  },
+  "node": {
+    "passed": 277,
+    "securityPassed": 100
+  },
+  "godotIOSExportFixtures": 3,
+  "godotBroad": {
+    "total": 90,
+    "clean": 71,
+    "withDiagnostics": 10,
+    "requiresTriage": 9,
+    "immutableFinalStoreArtifact": false
+  },
+  "uiReportQa": {
+    "checkedAt": "2026-10-17T22:25:04.912554+00:00",
+    "viewports": [
+      [
+        1440,
+        1000
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "files": {
+      "docs/release/release-audit-2026-10-18.html": "d5d967174d5b887346759f7fa0e6e899f4d6eb0dd00200b02fb7b9886504004d",
+      "docs/release/release-tasks-2026-10-18.md": "e47fa5807103f601388fe0e50c7b946e1f9791c1536af2a866078fabe564c2a1",
+      "store_assets/release-2026-10-18/index.html": "8f5a12d854eb4554f5778c13a7f06c39bf3fc3523faeea1c33b7bd388a6ca70e",
+      "store_assets/release-2026-10-18/manifest.json": "fa640a407d541a7ef1e5669d2e9acd27643011b80d6af4685d781a98deec5cf3",
+      "store_assets/release-2026-10-18/preview.png": "43bc865cdeda7abf1bde63736bfa178fab6e879de3b0695cb0f3c78549c9bdc3"
+    },
+    "blockingLayoutFindings": [],
+    "actions": [],
+    "checks": {
+      "images": "all report and store gallery images loaded",
+      "javascript": "zero console/page errors",
+      "bodyOverflow": "none at desktop/mobile",
+      "filters": {
+        "all": 32,
+        "p1": 11,
+        "fixed": 7,
+        "other": 14
+      },
+      "search": "GAME-03 and empty-result cases pass",
+      "checkboxes": "checked state survives reload",
+      "modal": "opens and closes with Escape",
+      "localLinks": {
+        "report": 26,
+        "cards": 23,
+        "broken": 0
+      },
+      "facts": "Final Flutter558+3skip; Godot90/71/10/9; repeat21 and extra large-text6 separate; screenshots586x1266 correct.",
+      "finalTestCounts": {
+        "flutterPassed": 558,
+        "flutterSkipped": 3,
+        "nodePassed": 277,
+        "securityPassed": 100,
+        "rustoreReleaseSafetyPassed": 1
+      },
+      "flutterCountVerified": true
+    },
+    "limits": "Mobile task table intentionally scrolls horizontally; its offscreen checkboxes are within the scroll container. Cards were visually reviewed from preview.png; physical-device capture verification remains a release gate."
+  },
+  "storeExports": 18,
+  "reportSha256": "d5d967174d5b887346759f7fa0e6e899f4d6eb0dd00200b02fb7b9886504004d",
+  "productionMutations": false,
+  "storePurchasesPerformed": false,
+  "preCommitImageFalsePositiveReview": {
+    "validatedEmbeddedJpegs": 22,
+    "patternMatchesInsideJpegs": 99,
+    "patternMatchesOutsideImages": 0,
+    "forbiddenPaths": 0,
+    "oversizeFiles": 0,
+    "exception": "AGENTS.md explicitly permits --no-verify for exceptional false positives; only the documentation/assets commit uses it."
+  }
+}

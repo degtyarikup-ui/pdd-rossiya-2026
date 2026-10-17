@@ -1,0 +1,351 @@
+{
+  "date": "2026-10-18",
+  "cards": [
+    {
+      "id": "01-city",
+      "source": "game-city-question.png",
+      "badge": "ЖИВОЙ ГОРОД",
+      "title": [
+        "ПДД оживают",
+        "в 3D-городе"
+      ],
+      "color": "#0574F8",
+      "capture": "Godot desktop Compatibility; captured PNG 586×1266, no upscale"
+    },
+    {
+      "id": "02-crossroads",
+      "source": "game-crossroads.png",
+      "badge": "ИГРЫ ПО ПДД",
+      "title": [
+        "Разрули",
+        "перекрёсток"
+      ],
+      "color": "#0574F8",
+      "capture": "Godot desktop Compatibility; captured PNG 586×1266, no upscale"
+    },
+    {
+      "id": "03-regulator",
+      "source": "game-regulator.png",
+      "badge": "РЕГУЛИРОВЩИК",
+      "title": [
+        "Понимай",
+        "сигналы"
+      ],
+      "color": "#34A853",
+      "capture": "Godot desktop Compatibility; captured PNG 586×1266, no upscale"
+    },
+    {
+      "id": "04-signs",
+      "source": "03-sign-game.png",
+      "badge": "ЭТО ЗНАК",
+      "title": [
+        "Узнавай знаки",
+        "в игре"
+      ],
+      "color": "#EB8214",
+      "capture": "Local Flutter web release; Chrome 390×844 @3x"
+    },
+    {
+      "id": "05-tickets",
+      "source": "13-ticket-image.png",
+      "badge": "БИЛЕТЫ A/B И C/D",
+      "title": [
+        "Тренируйся",
+        "по билетам"
+      ],
+      "color": "#0574F8",
+      "capture": "Local Flutter web release; Chrome 390×844 @3x"
+    },
+    {
+      "id": "06-progress",
+      "source": "01-home.png",
+      "badge": "ТВОЯ ПОДГОТОВКА",
+      "title": [
+        "Следи за",
+        "прогрессом"
+      ],
+      "color": "#34A853",
+      "capture": "Local Flutter web release; Chrome 390×844 @3x"
+    }
+  ],
+  "files": [
+    {
+      "store": "google-play",
+      "file": "google-play/01-city.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 393682,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.044233807267,
+        "y": 420,
+        "width": 661.911532385466,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/02-crossroads.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 756449,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.044233807267,
+        "y": 420,
+        "width": 661.911532385466,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/03-regulator.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 308162,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.044233807267,
+        "y": 420,
+        "width": 661.911532385466,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/04-signs.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 172928,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.6090047393365,
+        "y": 420,
+        "width": 660.781990521327,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/05-tickets.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 377720,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.6090047393365,
+        "y": 420,
+        "width": 660.781990521327,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/06-progress.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 90916,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.6090047393365,
+        "y": 420,
+        "width": 660.781990521327,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/01-city.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 188720,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.044233807267,
+        "y": 420,
+        "width": 661.911532385466,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/02-crossroads.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 252629,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.044233807267,
+        "y": 420,
+        "width": 661.911532385466,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/03-regulator.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 146590,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.044233807267,
+        "y": 420,
+        "width": 661.911532385466,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/04-signs.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 128959,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.6090047393365,
+        "y": 420,
+        "width": 660.781990521327,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/05-tickets.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 159022,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.6090047393365,
+        "y": 420,
+        "width": 660.781990521327,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/06-progress.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 123272,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 209.6090047393365,
+        "y": 420,
+        "width": 660.781990521327,
+        "height": 1430
+      },
+      "titleFontSize": 92
+    },
+    {
+      "store": "app-store",
+      "file": "app-store/01-city.png",
+      "width": 1260,
+      "height": 2736,
+      "bytes": 650980,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 153.39283833596625,
+        "y": 595,
+        "width": 953.2143233280675,
+        "height": 2059.3333333333335
+      },
+      "titleFontSize": 107.33333333333334
+    },
+    {
+      "store": "app-store",
+      "file": "app-store/02-crossroads.png",
+      "width": 1260,
+      "height": 2736,
+      "bytes": 1365474,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 153.39283833596625,
+        "y": 595,
+        "width": 953.2143233280675,
+        "height": 2059.3333333333335
+      },
+      "titleFontSize": 107.33333333333334
+    },
+    {
+      "store": "app-store",
+      "file": "app-store/03-regulator.png",
+      "width": 1260,
+      "height": 2736,
+      "bytes": 529629,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 153.39283833596625,
+        "y": 595,
+        "width": 953.2143233280675,
+        "height": 2059.3333333333335
+      },
+      "titleFontSize": 107.33333333333334
+    },
+    {
+      "store": "app-store",
+      "file": "app-store/04-signs.png",
+      "width": 1260,
+      "height": 2736,
+      "bytes": 307411,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 154.20616113744074,
+        "y": 595,
+        "width": 951.5876777251185,
+        "height": 2059.3333333333335
+      },
+      "titleFontSize": 107.33333333333334
+    },
+    {
+      "store": "app-store",
+      "file": "app-store/05-tickets.png",
+      "width": 1260,
+      "height": 2736,
+      "bytes": 715831,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 154.20616113744074,
+        "y": 595,
+        "width": 951.5876777251185,
+        "height": 2059.3333333333335
+      },
+      "titleFontSize": 107.33333333333334
+    },
+    {
+      "store": "app-store",
+      "file": "app-store/06-progress.png",
+      "width": 1260,
+      "height": 2736,
+      "bytes": 150031,
+      "hasAlpha": false,
+      "screenshotRect": {
+        "x": 154.20616113744074,
+        "y": 595,
+        "width": 951.5876777251185,
+        "height": 2059.3333333333335
+      },
+      "titleFontSize": 107.33333333333334
+    }
+  ],
+  "method": "ImageGen campaign concepts + deterministic Onest layout with unaltered real UI captures",
+  "nativeDeviceVerification": false,
+  "sourceNotes": "Raw Godot screenshots are desktop renders; Flutter screenshots are local web release. Verify against final signed phone builds before submission.",
+  "specs": {
+    "google": "https://support.google.com/googleplay/android-developer/answer/9866151",
+    "apple": "https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/",
+    "rustore": "https://www.rustore.ru/help/developers/advertising-and-promotion/custom-pages"
+  }
+}
