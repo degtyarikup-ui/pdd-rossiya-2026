@@ -1687,6 +1687,50 @@ func _advance_pending_join() -> void:
 	pending_connection.sit = null
 
 
+## A player may turn round between junctions and drive back through the scene just
+## left. Leaving it by another end is a new departure: that end gets the next scene,
+## like any exit. The scene ahead in the old direction was never reached; it becomes
+## an old scene behind the car (freed by distance, out of view) and its question
+## returns to the bag. Nothing is rebuilt in view beyond an ordinary departure.
+func _check_turnaround() -> void:
+	if phase != "driving" or road_force != "" or road != null: return
+	var forward := Vector3(sin(drive.yaw), 0, cos(drive.yaw))
+	for j in retired:
+		var sit: Situation = j.sit
+		if sit.network == null or not is_instance_valid(sit): continue
+		var local: Vector3 = sit.global_transform.affine_inverse() * drive.pos
+		if not sit.covers(local): continue
+		var heading: Vector3 = sit.global_transform.basis.inverse() * forward
+		var departures := SceneStitch.departure_ports(sit.network.connections)
+		for key in departures:
+			var port: Dictionary = departures[key]
+			if str(port.get("id", key)) == str(j.get("exit_id", "")): continue
+			var toward: Vector3 = port.out
+			var remaining: float = (port.p - local).dot(toward)
+			var lateral: float = absf((local - port.p).dot(SceneStitch.right(toward)))
+			var finish: float = float(port.get("finish_distance", maxf(20.0, port.p.dot(toward) - 24.0)))
+			if remaining > finish or remaining < -2.0 or lateral > float(port.width) * 0.5: continue
+			if heading.dot(toward) < 0.75 or drive.speed < 0.5: continue
+			_turn_around_to(j, str(key), SceneStitch.yaw(toward))
+			return
+
+
+func _turn_around_to(old: Dictionary, exit_key: String, exit_yaw: float) -> void:
+	if current:
+		var abandoned: Dictionary = current
+		if not bag.has(abandoned.sit.id): bag.push_front(abandoned.sit.id)
+		abandoned["retire_distance"] = drive.distance_traveled
+		abandoned["exit_id"] = ""
+		retired.append(abandoned)
+		current = {}
+	pending_connection = {}
+	street_connector = {}
+	retired.erase(old)
+	current = old
+	print("[game] turned round: leaving ", old.sit.id, " by ", exit_key)
+	_on_finished(exit_key, exit_yaw)
+
+
 ## The next entrance has a fixed contact with the road just left. Until it
 ## is installed, the player must not drive past it and leave its question behind.
 func _streaming_stop_z() -> float:
@@ -2169,6 +2213,7 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 		street_half = float(ring_profile.get("width", street_half * 2.0)) / 2.0
 		_advance_pending_join()
 	current["retire_distance"] = drive.distance_traveled
+	current["exit_id"] = str(port.get("id", exit_direction))
 	retired.append(current)
 	current={}
 	phase="driving"
@@ -3516,6 +3561,7 @@ func _process(delta: float) -> void:
 	_maybe_spawn()
 	if perf_tick: perf_tick = _perf_time("spawn", perf_tick)
 	_update_junction(delta)
+	_check_turnaround()
 	_update_road(delta)
 	if perf_tick: perf_tick = _perf_time("actors", perf_tick)
 	_retire_far()
