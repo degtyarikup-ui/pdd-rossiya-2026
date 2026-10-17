@@ -208,6 +208,9 @@ func surface_mesh_staged(scenery: Scenery, frames: SceneTree = null, uv_z := 0.0
 
 
 func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transform3D, frames: SceneTree = null) -> void:
+	if s.layer == "field":
+		await _add_field(st, s, scenery, uv_xf, frames)
+		return
 	# The street's own colours (street.gd), so the junction and the street meet without a seam.
 	var colour := Color(s.colour)
 	if s.layer == "pavement":
@@ -230,9 +233,6 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 		if str(s.id).begins_with("sand_join_"):
 			k = 1.0 - (int(str(s.id).trim_prefix("sand_join_")) + 0.5) / 12.0
 			other = Color("#2c2f36");other_kind = "asphalt"
-		elif str(s.id).begins_with("sand_edge_"):
-			k = (int(str(s.id).trim_prefix("sand_edge_")) + 0.5) / 8.0
-			other = scenery.color("ground");other_kind = "grass"
 		if k >= 0.0:
 			colour = colour.lerp(other, smoothstep(0.0, 1.0, k))
 			detail = absf(k * 2.0 - 1.0)
@@ -275,6 +275,58 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 						st.set_uv2(Vector2(layer,minf(-blend,detail-1.0)))
 						st.add_vertex(p)
 		k += 3
+
+
+## Soft rural ground (build.py soft_ground): per-vertex shares of asphalt, dirt and grass, as the
+## crossroads game draws its unpaved arms. Each triangle takes its dominant layer, whose grain
+## fades with its share, so layers switch only where both have faded.
+func _add_field(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transform3D, frames: SceneTree = null) -> void:
+	var colours := [Color("#2C2F36"), Color("#6f5840"), scenery.color("ground")]
+	var kinds := ["asphalt", "dirt", "grass"]
+	var v: Array = s.verts
+	var w: Array = s.shares
+	var idx: Array = s.idx
+	var y: float = s.y
+	var k := 0
+	var slice := Time.get_ticks_usec()
+	while k < idx.size():
+		if frames and Time.get_ticks_usec()-slice > 2000:
+			await frames.process_frame
+			slice = Time.get_ticks_usec()
+		var corners: Array = []
+		var share: Array = []
+		var mean := Vector3.ZERO
+		for c in 3:
+			var i: int = idx[k + c]
+			corners.append(Vector3(v[i * 2], y, v[i * 2 + 1]))
+			var sh := Vector3(w[i * 3], w[i * 3 + 1], w[i * 3 + 2])
+			share.append(sh)
+			mean += sh / 3.0
+		k += 3
+		var dominant := 0 if mean.x >= mean.y and mean.x >= mean.z else (1 if mean.y >= mean.z else 2)
+		var layer := scenery.layer_of(kinds[dominant])
+		var period: float = scenery.kinds[kinds[dominant]].period
+		for poly in SceneStitch.render_pieces(corners, stitch_bindings):
+			for fan in range(1, poly.size()-1):
+				for p: Vector3 in [poly[0], poly[fan], poly[fan+1]]:
+					var b := _barycentric(p, corners)
+					var sh: Vector3 = share[0] * b.x + share[1] * b.y + share[2] * b.z
+					var colour: Color = colours[0] * sh.x + colours[1] * sh.y + colours[2] * sh.z
+					var uv := uv_xf * p
+					st.set_color(Color(colour.r, colour.g, colour.b, 0.0))
+					st.set_uv(Vector2(uv.x / period, uv.z / period))
+					st.set_uv2(Vector2(layer, clampf((sh[dominant] - 0.5) * 2.0, 0.0, 1.0) - 1.0))
+					st.add_vertex(p)
+
+
+static func _barycentric(p: Vector3, t: Array) -> Vector3:
+	var a := Vector2(t[0].x, t[0].z);var b := Vector2(t[1].x, t[1].z);var c := Vector2(t[2].x, t[2].z)
+	var q := Vector2(p.x, p.z)
+	var d := (b - a).cross(c - a)
+	if absf(d) < 0.0000001: return Vector3(1, 0, 0)
+	var u := (b - q).cross(c - q) / d
+	var vv := (c - q).cross(a - q) / d
+	return Vector3(u, vv, 1.0 - u - vv)
 
 
 ## Kerbs: vertical walls between the carriageway and the raised ground, one set for the

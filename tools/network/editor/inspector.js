@@ -695,7 +695,9 @@
           ${e.kind === "junction" ? (() => {
             const value = Layout.endOffset(L, st, e.nid, crop), limits = Layout.endOffsetLimits(L, st, e.nid, crop);
             return slider(`approach-${e.end}`, Number(st.median) ? "Островок и стоп-линия" : "Положение стоп-линии", value, limits.min, limits.max, 0.1, offsetText(value))
-              + `<label>Сдвиг, м<input type="number" min="${limits.min}" max="${limits.max}" step="0.1" data-text="approach-${e.end}" value="${value}" style="width:100%"></label><p class="muted">Отрицательное значение — ближе к перекрёстку, положительное — дальше. Конец островка, стоп-линия и зебра двигаются вместе.</p><button class="btn ghost wide" data-act="approach-reset" data-nid="${e.nid}">${ic("restart")}Вернуть исходное положение</button>`;
+              + `<label>Сдвиг, м<input type="number" min="${limits.min}" max="${limits.max}" step="0.1" data-text="approach-${e.end}" value="${value}" style="width:100%"></label><p class="muted">Отрицательное значение — ближе к перекрёстку, положительное — дальше. Конец островка, стоп-линия и зебра двигаются вместе.</p><button class="btn ghost wide" data-act="approach-reset" data-nid="${e.nid}">${ic("restart")}Вернуть исходное положение</button>`
+              + (st.surface === "sand" ? slider(`paved-${e.end}`, "Асфальт перед перекрёстком", Layout.pavedEnd(st, e.end), 0, Layout.PAVED_MAX, 1, `${Layout.pavedEnd(st, e.end)} м`)
+                + `<p class="muted">Участок с твёрдым покрытием у перекрёстка. Грунт плавно переходит в асфальт и в траву по краям. 0 — грунт до самого перекрёстка.</p>` : "");
           })() : ""}`).join("")) : ""}
       ${card("Игрок едет по ней", `<div class="insp-actions">${[st.a, st.b].map((nid) => {
         const on = isPlayer && pl.nid === nid;
@@ -741,6 +743,10 @@
           if (field) field.value = value;
         })],
         [`text:approach-${e.end}`, v => edit(sc => Layout.setEndOffset(sc, st.id, e.nid, Number(v)))],
+        [`slider:paved-${e.end}`, live((sc, v) => { if (!App.isLocked(ref)) Layout.setPavedEnd(sc, st.id, e.end, v); }, v => {
+          const label = pane().querySelector(`[data-shown="paved-${e.end}"]`);
+          if (label) label.textContent = `${Layout.pavedEnd(Layout.streetOf(state.S.layout, st.id), e.end)} м`;
+        })],
       ])),
       player: (d) => edit((sc) => { sc.layout.player = { street: st.id, toward: d.toward }; }),
     });

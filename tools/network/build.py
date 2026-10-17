@@ -82,10 +82,14 @@ def polygon_of(item: dict):
     return poly
 
 
-SAND_JOIN = 6.0       # asphalt fades into a dirt road over this length (m)
-SAND_SIDE_JOIN = 0.6  # ... and into dirt beside a paved road
-SAND_EDGE = 2.0     # a dirt road fades into the lawn over this width (m), no kerb
-SAND_EDGE_BANDS = 8
+# Soft rural ground, the same field as crossroads_junction.gd _ground_shares: every point near a
+# dirt road gets its share of asphalt, dirt and grass by the distance to the paved and the unpaved
+# carriageway, so the corners, the paved stretch and the grass shoulders cannot seam.
+DIRT_BLEND = 8.0      # asphalt tone runs this far up a dirt road (m)
+SHOULDER_EDGE = 0.6   # ... and this far onto dirt beside a paved road
+GRASS_FADE = 1.1      # half-width of the dirt-to-grass blend
+FIELD_EDGE = 0.2 + GRASS_FADE * 2.0   # the soft shoulder ends in pure grass this far out (m)
+FIELD_STEP = 0.5      # grid of the blended mesh (m)
 CURB_RADIUS = 5.0   # the inner corners of a junction get a curb radius (m), not a chamfer
 TIDY_RADIUS = 0.6   # the outlines of roads and islands are closed and opened with this radius (m):
                     # the traced edges jitter by a few tenths of a metre, the kerbs must run smooth
@@ -485,6 +489,62 @@ def ground(scene: dict):
     return road, islands, roads_all, ring
 
 
+def _smooth(e0, e1, x):
+    t = min(1.0, max(0.0, (x - e0) / (e1 - e0)))
+    return t * t * (3 - 2 * t)
+
+
+def ground_shares(p: Point, paved, unpaved) -> tuple:
+    """(asphalt, dirt, grass) at p, summing to 1 (crossroads_junction.gd _ground_shares)."""
+    dp = paved.distance(p) if not paved.is_empty else math.inf
+    du = unpaved.distance(p)
+    reach = DIRT_BLEND + (SHOULDER_EDGE - DIRT_BLEND) * _smooth(0.0, 2.0, du)
+    asphalt = 1.0 - _smooth(0.0, reach, dp) if dp < math.inf else 0.0
+    grass = _smooth(0.2, FIELD_EDGE, du) * (1.0 - asphalt)
+    return asphalt, 1.0 - asphalt - grass, grass
+
+
+def soft_ground(sand, paved, solid, box):
+    """The dirt road as surfaces: a blended grid where anything changes (DIRT_BLEND metres from the
+    asphalt and the grass shoulder around it) and plain soil elsewhere. Returns (surfaces, the
+    shoulder area taken from the lawn)."""
+    shoulder = sand.buffer(FIELD_EDGE, quad_segs=16).difference(solid).intersection(box)
+    near = sand.intersection(paved.buffer(DIRT_BLEND + 0.5)) if not paved.is_empty else Polygon()
+    edge_band = sand.difference(sand.buffer(-0.6))
+    region = unary_union([shoulder, near, edge_band]).intersection(box)
+    plain = sand.difference(region)
+    verts, idx, shares = [], [], []
+    x0, z0, x1, z1 = region.bounds
+    nx, nz = max(1, math.ceil((x1 - x0) / FIELD_STEP)), max(1, math.ceil((z1 - z0) / FIELD_STEP))
+    from shapely.prepared import prep
+    covered = prep(region)
+    index = {}
+    def vertex(x, z):
+        key = (round(x, 4), round(z, 4))
+        if key not in index:
+            index[key] = len(verts) // 2
+            verts.extend([round(x, 3), round(z, 3)])
+            shares.extend(round(w, 3) for w in ground_shares(Point(x, z), paved, sand))
+        return index[key]
+    for iz in range(nz):
+        for ix in range(nx):
+            cell = Polygon([(x0 + ix * FIELD_STEP, z0 + iz * FIELD_STEP), (x0 + (ix + 1) * FIELD_STEP, z0 + iz * FIELD_STEP),
+                            (x0 + (ix + 1) * FIELD_STEP, z0 + (iz + 1) * FIELD_STEP), (x0 + ix * FIELD_STEP, z0 + (iz + 1) * FIELD_STEP)])
+            if not covered.intersects(cell):
+                continue
+            piece = cell if covered.contains(cell) else cell.intersection(region)
+            for g in getattr(piece, "geoms", [piece]):
+                if g.geom_type != "Polygon" or g.area < 1e-6:
+                    continue
+                v, t = triangulate(g)
+                ids = [vertex(v[i * 2], v[i * 2 + 1]) for i in range(len(v) // 2)]
+                idx.extend(ids[i] for i in t)
+    out = [{"id": "dirt_field", "y": ROAD_Y, "layer": "field", "colour": "#6f5840", "verts": verts, "idx": idx, "shares": shares}]
+    v, t = triangulate(plain)
+    out.append({"id": "sand", "y": ROAD_Y, "layer": "sand", "colour": "#c2a570", "verts": v, "idx": t})
+    return out, shoulder
+
+
 def build(scene: dict) -> dict:
     road, islands, roads_all, ring = ground(scene)
     box = crop_box(scene)
@@ -551,41 +611,12 @@ def build(scene: dict) -> dict:
     v, t = triangulate(pavement)
     pave = {"id": "pavement", "y": KERB, "layer": "pavement", "colour": PAVEMENT, "verts": v, "idx": t}
     surfaces = [asphalt, island, median, pave]
-    # Six metres of blended colours at asphalt joins (as crossroads); the shoulder fades separately.
-    asphalt_join = sand.boundary.intersection(road.difference(sand).buffer(0.01)) if not sand.is_empty else Polygon()
-    # As crossroads: the asphalt tone runs SAND_JOIN metres up the dirt road itself, but only
-    # SAND_SIDE_JOIN beside a paved road (the corners next to the through road stay dirt).
-    along = asphalt_join.intersection(sand_raw.buffer(-0.3)) if not asphalt_join.is_empty else asphalt_join
-    side = asphalt_join.difference(along.buffer(0.3)) if not asphalt_join.is_empty else asphalt_join
-    previous = sand
-    for i in range(12):
-        reach = Polygon()
-        if not along.is_empty: reach = reach.union(along.buffer((i + 1) * SAND_JOIN / 12))
-        if not side.is_empty: reach = reach.union(side.buffer((i + 1) * SAND_SIDE_JOIN / 12))
-        inner = sand.difference(reach) if not reach.is_empty else sand
-        band = previous.difference(inner)
-        k = (i + 0.5) / 12
-        colour = "#" + "".join(f"{round(a + (b-a)*k):02x}" for a,b in zip((44,47,54),(194,165,112)))
-        v,t = triangulate(band)
-        surfaces.append({"id": f"sand_join_{i}", "y": ROAD_Y, "layer": "sand", "colour": colour, "verts": v, "idx": t})
-        previous = inner
-    v,t = triangulate(previous)
-    surfaces.append({"id": "sand", "y": ROAD_Y, "layer": "sand", "colour": "#c2a570", "verts": v, "idx": t})
-    # A dirt road has no kerb: its sides fade into the lawn over SAND_EDGE metres (the game lerps
-    # the soil to the season's grass and switches grain where both have faded, like crossroads).
     shoulder = Polygon()
     if not sand.is_empty:
-        open_side = sand.buffer(SAND_EDGE).difference(roads_all.union(pavement).union(islands)).intersection(box)
-        previous = sand
-        for i in range(SAND_EDGE_BANDS):
-            outer = sand.buffer((i + 1) * SAND_EDGE / SAND_EDGE_BANDS, quad_segs=16)
-            band = outer.difference(previous.buffer(0)).intersection(open_side)
-            previous = outer
-            if band.is_empty:
-                continue
-            v, t = triangulate(band)
-            surfaces.append({"id": f"sand_edge_{i}", "y": LAWN_Y, "layer": "sand", "colour": "#9ca66b", "verts": v, "idx": t})
-        shoulder = open_side
+        # Slivers left between the smoothed road and the dirt outline are not asphalt.
+        paved = road.difference(sand).buffer(-0.05).buffer(0.05)
+        field, shoulder = soft_ground(sand, paved, roads_all.union(pavement).union(islands), box)
+        surfaces.extend(field)
     if scene.get("layout"):
         # A scene laid out from a road plan (the editor) has its own ground everywhere else: the baked
         # scene's old roads (where the plan has none now) are covered, and the game drops them (covers()).

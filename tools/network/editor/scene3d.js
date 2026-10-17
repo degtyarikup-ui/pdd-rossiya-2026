@@ -148,6 +148,23 @@ const Scene3D = (() => {
   }
 
   function surfaceMesh(s) {
+    if (s.layer === "field") {
+      // Soft rural ground (build.py soft_ground): the per-vertex blend of asphalt, soil and grass.
+      const tones = [new THREE.Color("#2c2f36"), new THREE.Color("#6f5840"), new THREE.Color(GRASS_COLOUR)];
+      const pos = [], col = [];
+      for (const i of s.idx) {
+        pos.push(s.verts[i * 2], s.y, s.verts[i * 2 + 1]);
+        const w = [s.shares[i * 3], s.shares[i * 3 + 1], s.shares[i * 3 + 2]];
+        for (const c of ["r", "g", "b"]) col.push(tones[0][c] * w[0] + tones[1][c] * w[1] + tones[2][c] * w[2]);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+      geo.computeVertexNormals();
+      const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, ...OFFSET }));
+      m.userData.own = true;
+      return m;
+    }
     const kind = s.layer === "" ? null : s.layer === "sand" ? "dirt" : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
     const period = kind ? periodOf(kind) : 1;
     const pos = [], uv = [];

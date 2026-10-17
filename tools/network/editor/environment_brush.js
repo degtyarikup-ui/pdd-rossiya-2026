@@ -93,7 +93,7 @@ const EnvironmentBrush = (() => {
     if (surfaceCache.has(build)) return surfaceCache.get(build);
     const index = spatial();
     for (const surface of build.surfaces || []) {
-      if (!["asphalt", "pavement", "island", "sand", "median"].includes(surface.id) && !surface.id?.startsWith("sand_join_")) continue;
+      if (!["asphalt", "pavement", "island", "sand", "median", "dirt_field"].includes(surface.id) && !surface.id?.startsWith("sand_join_")) continue;
       const { verts = [], idx = [] } = surface;
       for (let i = 0; i + 2 < idx.length; i += 3) {
         const tri = idx.slice(i, i + 3).map(v => [verts[v * 2], verts[v * 2 + 1]]);

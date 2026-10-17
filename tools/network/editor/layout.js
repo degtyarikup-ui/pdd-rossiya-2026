@@ -238,6 +238,21 @@ const Layout = (() => {
     const value = Number((st.ends || {})[endOf(st, nid)]?.approachOffset) || 0;
     return Math.max(limits.min, Math.min(limits.max, value));
   }
+  // Paved stretch of a dirt street at one end (metres from the node), 0 = dirt to the end.
+  const PAVED_MAX = 40;
+  function pavedEnd(st, end) {
+    const value = Math.round(Number((st.ends || {})[end]?.paved) || 0);
+    return Math.max(0, Math.min(PAVED_MAX, value));
+  }
+  function setPavedEnd(scene, streetId, end, value) {
+    const st = streetOf(scene.layout, streetId);
+    if (!st || !["a", "b"].includes(end) || !Number.isFinite(value)) return false;
+    st.ends = st.ends || {};
+    st.ends[end] = { ...(st.ends[end] || {}) };
+    const v = Math.max(0, Math.min(PAVED_MAX, Math.round(value)));
+    if (v) st.ends[end].paved = v; else delete st.ends[end].paved;
+    return true;
+  }
   function setEndOffset(scene, streetId, nid, value) {
     const st = streetOf(scene.layout, streetId), crop = scene.crop || 90;
     if (!st || ![st.a, st.b].includes(nid) || !Number.isFinite(value)) return false;
@@ -282,7 +297,17 @@ const Layout = (() => {
       const plainEnds = !highway && medianOf(st) > 0 && (borderA || borderB);
       const lenAll = polyLen(pts);
       const wide = plainEnds ? cut(pts, borderA ? 22 : 0, lenAll - (borderB ? 22 : 0)) : pts;
-      const roadItem = { id: `road_${st.id}`, auto: true, outer: highway ? profileOutline(L,st,densePath(pts,1.5),crop) : outline(wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
+      // A dirt street may keep a paved stretch at a junction end (ends.<a|b>.paved metres):
+      // the builder blends it into the dirt and the grass like the crossroads game.
+      const pavedA = st.surface === "sand" && !highway ? pavedEnd(st, "a") : 0, pavedB = st.surface === "sand" && !highway ? pavedEnd(st, "b") : 0;
+      const lenWide = polyLen(wide.length >= 2 ? wide : pts);
+      const dirtPath = pavedA || pavedB ? cut(wide.length >= 2 ? wide : pts, pavedA, lenWide - pavedB) : null;
+      for (const [end, len] of [["a", pavedA], ["b", pavedB]]) {
+        if (!len) continue;
+        const piece = end === "a" ? cut(wide.length >= 2 ? wide : pts, 0, len + 0.5) : cut(wide.length >= 2 ? wide : pts, lenWide - len - 0.5, lenWide);
+        if (piece.length >= 2) roads.push({ id: `road_${st.id}_paved_${end}`, auto: true, outer: outline(piece, w), holes: [], walk: false, edge: false, surface: "asphalt" });
+      }
+      const roadItem = { id: `road_${st.id}`, auto: true, outer: highway ? profileOutline(L,st,densePath(pts,1.5),crop) : outline(dirtPath && dirtPath.length >= 2 ? dirtPath : wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
       roads.push(roadItem);
       // The taper carries the street's switches: an edge line turned off is off on the narrowing too.
       if (plainEnds) roads.push({ id: `road_${st.id}_plain`, auto: true, outer: outline(pts, kindOf(st).width), holes: [], walk: roadItem.walk, edge: roadItem.edge, surface: roadItem.surface });
@@ -1384,7 +1409,7 @@ const Layout = (() => {
 
   return {
     medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile, highwayPort, setHighwayPort,
-    applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
+    applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, pavedEnd, setPavedEnd, PAVED_MAX, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
     isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, editPlayerRoute, setPlayerRouteManual,
     compactRoutePoints, compactPlayerRoute, refreshPlayerRoutes,
