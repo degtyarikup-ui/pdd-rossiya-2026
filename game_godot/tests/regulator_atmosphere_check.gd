@@ -45,8 +45,8 @@ func run() -> void:
 	expect(not atmosphere.drops.visible, "clear weather has no rain")
 	expect(environment.background_color.is_equal_approx(MiniGameLighting.CLEAR_SKY)
 		and environment.fog_light_color.is_equal_approx(MiniGameLighting.CLEAR_SKY)
-		and environment.fog_depth_begin >= 110.0 and environment.fog_density <= 0.35,
-		"normal daylight keeps the junction clear and blends distant objects into a blue sky")
+		and environment.fog_depth_begin >= 70.0 and environment.fog_density >= 0.99,
+		"normal daylight keeps the junction clear and hides the distant avenue end in atmospheric fog")
 	for season in ["summer", "autumn", "winter", "spring"]:
 		var seasonal := Environment.new()
 		MiniGameLighting.apply(sun, seasonal, season)

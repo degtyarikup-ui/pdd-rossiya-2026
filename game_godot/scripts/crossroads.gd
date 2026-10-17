@@ -1365,19 +1365,23 @@ func _update_occlusion(delta: float) -> void:
 		if actor.state == "done" or actor.has_cleared_junction(): continue
 		targets.append(actor.global_position + Vector3.UP * 0.9)
 		if actor.badge_node != null: targets.append(actor.badge_node.global_position)
-	for corner in [Vector3(-6, 0.2, -6), Vector3(6, 0.2, -6), Vector3(-6, 0.2, 6), Vector3(6, 0.2, 6)]:
+	for corner in [Vector3(-5, 0.2, -5), Vector3(5, 0.2, -5), Vector3(-5, 0.2, 5), Vector3(5, 0.2, 5)]:
 		targets.append(corner)
-	for approach in [Vector3(0, 0.2, -14), Vector3(0, 0.2, 14), Vector3(-14, 0.2, 0), Vector3(14, 0.2, 0)]:
-		targets.append(approach)
-	for group in [junction.signs_root, junction.lights_root]:
-		for item: Node3D in group.get_children():
-			if targets.size() >= 24: break
-			targets.append(item.global_position + Vector3.UP * 1.5)
+	# Only add approaches that are open and within the intersection apron (8.5m), never behind closed arm
+	for side in ["south", "north", "east", "west"]:
+		if side == junction.closed_side: continue
+		var app_pos := Vector3.ZERO
+		match side:
+			"south": app_pos = Vector3(0, 0.2, 8.5)
+			"north": app_pos = Vector3(0, 0.2, -8.5)
+			"east": app_pos = Vector3(8.5, 0.2, 0)
+			"west": app_pos = Vector3(-8.5, 0.2, 0)
+		targets.append(app_pos)
 	junction.sc.update_occluders(camera, targets, delta)
 	_update_closed_block_occlusion(targets, delta)
 
 
-func _update_closed_block_occlusion(targets: Array[Vector3], delta: float) -> void:
+func _update_closed_block_occlusion(_targets: Array[Vector3], delta: float) -> void:
 	if junction == null or junction.closed_root == null or camera == null: return
 	for child in junction.closed_root.get_children():
 		if not child.name.begins_with("ClosedBlock_"): continue
@@ -1393,10 +1397,17 @@ func _update_closed_block_occlusion(targets: Array[Vector3], delta: float) -> vo
 			if bounds.grow(camera.near + 4.0).has_point(origin):
 				occluding = true
 			if not occluding:
-				for target in targets:
-					if bounds.intersects_segment(origin, inv * target) != null:
+				# Only fade if this building physically blocks the camera from seeing an active actor or junction center
+				for actor in active_actors:
+					if actor.state == "done" or actor.has_cleared_junction(): continue
+					if bounds.intersects_segment(origin, inv * (actor.global_position + Vector3.UP * 0.9)) != null:
 						occluding = true
 						break
+					if actor.badge_node != null and bounds.intersects_segment(origin, inv * actor.badge_node.global_position) != null:
+						occluding = true
+						break
+				if not occluding and bounds.intersects_segment(origin, inv * Vector3(0, 0.4, 0)) != null:
+					occluding = true
 			var target_alpha := 0.25 if occluding else 1.0
 			var cur_alpha: float = mat.get_shader_parameter("uniform_alpha") if mat.get_shader_parameter("uniform_alpha") != null else 1.0
 			var next_alpha := move_toward(cur_alpha, target_alpha, delta * 4.0)

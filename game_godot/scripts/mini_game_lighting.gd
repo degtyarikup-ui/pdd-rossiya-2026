@@ -3,9 +3,9 @@ class_name MiniGameLighting
 extends RefCounted
 
 const CLEAR_SKY := Color("#BDDCF3")
-const HAZE_BEGIN := 110.0
-const HAZE_END := 300.0
-const HAZE_DENSITY := 0.30
+const HAZE_BEGIN := 75.0
+const HAZE_END := 185.0
+const HAZE_DENSITY := 1.0
 
 const CROSSROADS_FOG_BEGIN := 145.0
 const CROSSROADS_FOG_END := 280.0

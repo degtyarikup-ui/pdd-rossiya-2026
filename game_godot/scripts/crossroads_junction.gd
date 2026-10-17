@@ -540,13 +540,12 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 		closed_root.add_child(block_root)
 
 		var d_offset := HALF_ROAD + 4.0
-		_add_closed_arm_building(block_root, "buildings/home_0", Vector3(0.0, 0.02, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_3", Vector3(-12.0, 0.02, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#E8CFA8"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_5", Vector3(12.0, 0.02, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#F3E3C3"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_1", Vector3(-8.5, 0.02, d_offset + 16.0), PI, Vector3.ONE * 0.95, Color("#C6CCD8"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_4", Vector3(8.5, 0.02, d_offset + 16.0), PI, Vector3.ONE * 0.95, Color("#DDE1EA"), rot_y)
-		_add_closed_arm_building(block_root, "trees/pine_0", Vector3(-10.0, 0.02, d_offset + 36.0), 0.0, Vector3.ONE * 2.2, Color("#2D4D2E"), rot_y)
-		_add_closed_arm_building(block_root, "trees/birch_0", Vector3(10.0, 0.02, d_offset + 36.0), 0.0, Vector3.ONE * 2.0, Color("#C8E8B2"), rot_y)
+		_add_closed_arm_building(block_root, "buildings/home_0", Vector3(0.0, 0.02, d_offset + 8.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), rot_y)
+		_add_closed_arm_building(block_root, "trees/birch_0", Vector3(-7.5, 0.02, d_offset + 6.0), 0.0, Vector3.ONE * 1.1, Color("#C8E8B2"), rot_y)
+		_add_closed_arm_building(block_root, "trees/pine_0", Vector3(7.5, 0.02, d_offset + 6.0), 0.0, Vector3.ONE * 1.2, Color("#2D4D2E"), rot_y)
+		_add_closed_arm_building(block_root, "buildings/home_3", Vector3(-8.5, 0.02, d_offset + 28.0), PI, Vector3.ONE * 0.95, Color("#E8CFA8"), rot_y)
+		_add_closed_arm_building(block_root, "buildings/home_1", Vector3(8.5, 0.02, d_offset + 28.0), PI, Vector3.ONE * 0.95, Color("#DDE1EA"), rot_y)
+		_add_closed_arm_building(block_root, "trees/pine_0", Vector3(0.0, 0.02, d_offset + 48.0), 0.0, Vector3.ONE * 2.2, Color("#2D4D2E"), rot_y)
 		return
 
 	var crossing_active := _has_crossing(arm)
@@ -618,44 +617,19 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 	closed_root.add_child(block_root)
 
 	var d_offset := base_d + sw_w
-	if _is_rural_junction():
-		# Village houses, gardens and pine/birch grove closing the T-junction (no city blocks or towers)
-		# Row 1: Along the fence facing the road
-		_add_closed_arm_building(block_root, "buildings/home_0", Vector3(0.0, 0.15, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_3", Vector3(-12.0, 0.15, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#E8CFA8"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_5", Vector3(12.0, 0.15, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#F3E3C3"), rot_y)
-		# Row 2: Mid-depth houses and gardens
-		_add_closed_arm_building(block_root, "buildings/home_1", Vector3(-8.5, 0.15, d_offset + 16.0), PI, Vector3.ONE * 0.95, Color("#C6CCD8"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_4", Vector3(8.5, 0.15, d_offset + 16.0), PI, Vector3.ONE * 0.95, Color("#DDE1EA"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_2", Vector3(-22.0, 0.15, d_offset + 16.0), PI, Vector3.ONE * 0.95, Color("#B5675A"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_3", Vector3(22.0, 0.15, d_offset + 16.0), PI, Vector3.ONE * 0.95, Color("#E8CFA8"), rot_y)
-		# Row 3: Back cottages and pine/birch grove
-		_add_closed_arm_building(block_root, "buildings/home_5", Vector3(0.0, 0.15, d_offset + 32.0), PI, Vector3.ONE * 0.95, Color("#E9ECF2"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_0", Vector3(-14.0, 0.15, d_offset + 32.0), PI, Vector3.ONE * 0.95, Color("#DDE1EA"), rot_y)
-		_add_closed_arm_building(block_root, "buildings/home_2", Vector3(14.0, 0.15, d_offset + 32.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), rot_y)
-		_add_closed_arm_building(block_root, "trees/pine_0", Vector3(-10.0, 0.15, d_offset + 48.0), 0.0, Vector3.ONE * 2.2, Color("#2D4D2E"), rot_y)
-		_add_closed_arm_building(block_root, "trees/birch_0", Vector3(10.0, 0.15, d_offset + 48.0), 0.0, Vector3.ONE * 2.0, Color("#C8E8B2"), rot_y)
-		_add_closed_arm_building(block_root, "trees/pine_0", Vector3(0.0, 0.15, d_offset + 50.0), 0.0, Vector3.ONE * 2.4, Color("#2D4D2E"), rot_y)
-		return
 
-	# Row 1: Along the sidewalk, front facades facing the junction (low-rise homes)
-	_add_closed_arm_building(block_root, "buildings/home_0", Vector3(0.0, 0.15, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), rot_y)
-	_add_closed_arm_building(block_root, "buildings/home_3", Vector3(-12.0, 0.15, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#E8CFA8"), rot_y)
-	_add_closed_arm_building(block_root, "buildings/home_5", Vector3(12.0, 0.15, d_offset + 5.5), PI, Vector3.ONE * 0.95, Color("#F3E3C3"), rot_y)
+	# T-junction urban terminus:
+	# Front apartment block closing the street corridor (width 10.4m, cleanly centered within 14.4m road)
+	_add_closed_arm_building(block_root, "buildings/block_0", Vector3(0.0, 0.15, d_offset + 8.5), PI, Vector3.ONE * 1.05, Color("#F5F6FA"), rot_y)
+	_add_closed_arm_building(block_root, "trees/birch_0", Vector3(-6.2, 0.15, d_offset + 5.0), 0.0, Vector3.ONE * 1.1, Color("#C8E8B2"), rot_y)
+	_add_closed_arm_building(block_root, "trees/round_0", Vector3(6.2, 0.15, d_offset + 5.0), 0.0, Vector3.ONE * 1.1, Color("#76B852"), rot_y)
 
-	# Row 2: Mid-depth residential houses and side blocks
-	_add_closed_arm_building(block_root, "buildings/home_1", Vector3(-8.5, 0.15, d_offset + 16.0), PI, Vector3.ONE * 0.95, Color("#C6CCD8"), rot_y)
-	_add_closed_arm_building(block_root, "buildings/home_4", Vector3(8.5, 0.15, d_offset + 16.0), PI, Vector3.ONE * 0.95, Color("#DDE1EA"), rot_y)
-	_add_closed_arm_building(block_root, "buildings/block_2", Vector3(-22.0, 0.15, d_offset + 16.0), PI, Vector3.ONE * 1.0, Color("#B5675A"), rot_y)
-	_add_closed_arm_building(block_root, "buildings/block_6", Vector3(22.0, 0.15, d_offset + 16.0), PI, Vector3.ONE * 1.0, Color("#A9B4C2"), rot_y)
-
-	# Row 3: Deep urban skyline layer
+	# Deep urban skyline layer:
+	# Middle tower placed 24m behind the front block
 	_add_closed_arm_building(block_root, "buildings/tower_0", Vector3(0.0, 0.15, d_offset + 32.0), PI, Vector3.ONE * 1.25, Color("#E9ECF2"), rot_y)
-	_add_closed_arm_building(block_root, "buildings/block_4", Vector3(-14.0, 0.15, d_offset + 32.0), PI, Vector3.ONE * 1.1, Color("#DDE1EA"), rot_y)
-	_add_closed_arm_building(block_root, "buildings/block_1", Vector3(14.0, 0.15, d_offset + 32.0), PI, Vector3.ONE * 1.1, Color("#C6CCD8"), rot_y)
-	_add_closed_arm_building(block_root, "buildings/tower_3", Vector3(-12.0, 0.15, d_offset + 50.0), PI, Vector3.ONE * 1.3, Color("#F5F6FA"), rot_y)
-	_add_closed_arm_building(block_root, "buildings/tower_2", Vector3(12.0, 0.15, d_offset + 50.0), PI, Vector3.ONE * 1.3, Color("#DDE1EA"), rot_y)
-	_add_closed_arm_building(block_root, "buildings/block_7", Vector3(0.0, 0.15, d_offset + 52.0), PI, Vector3.ONE * 1.15, Color("#DDE1EA"), rot_y)
+	# Skyline towers placed at 52m depth, well clear of quadrant buildings
+	_add_closed_arm_building(block_root, "buildings/tower_1", Vector3(-16.0, 0.15, d_offset + 52.0), PI, Vector3.ONE * 1.3, Color("#C6CCD8"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/tower_2", Vector3(16.0, 0.15, d_offset + 52.0), PI, Vector3.ONE * 1.3, Color("#DDE1EA"), rot_y)
 
 
 
@@ -1506,43 +1480,38 @@ func _build_urban_scenery_decor() -> void:
 
 	# --- 1. City Buildings (Authentic Russian City Districts in all 4 Quadrants & along Avenues) ---
 	# North-West Quadrant (-X, -Z)
-	_put_prop("buildings/home_0", Vector3(-26.0, 0.15, -26.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/home_1", Vector3(-42.0, 0.15, -24.0), PI * 0.5, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/home_2", Vector3(-24.0, 0.15, -42.0), 0.0, Vector3.ONE * 0.95, Color("#DDE1EA"), true)
-	_put_prop("buildings/home_5", Vector3(-40.0, 0.15, -40.0), PI * 0.25, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
-	_put_prop("buildings/block_0", Vector3(-24.0, 0.15, -54.0), 0.0, Vector3.ONE * 1.05, Color("#E9ECF2"), true)
-	_put_prop("buildings/block_6", Vector3(-42.0, 0.15, -54.0), PI * 0.5, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
-	_put_prop("buildings/block_2", Vector3(-54.0, 0.15, -24.0), PI * 0.5, Vector3.ONE * 1.0, Color("#B5675A"), true)
-	_put_prop("buildings/tower_1", Vector3(-54.0, 0.15, -40.0), PI, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/block_0", Vector3(-20.0, 0.15, -28.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#E9ECF2"), true)
+	_put_prop("buildings/block_2", Vector3(-30.0, 0.15, -20.0), PI, Vector3.ONE * 1.05, Color("#B5675A"), true)
+	_put_prop("buildings/block_6", Vector3(-34.0, 0.15, -34.0), -PI * 0.25, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
+	_put_prop("buildings/tower_0", Vector3(-20.0, 0.15, -48.0), 0.0, Vector3.ONE * 1.15, Color("#E9ECF2"), true)
+	_put_prop("buildings/tower_1", Vector3(-48.0, 0.15, -20.0), PI * 0.5, Vector3.ONE * 1.15, Color("#C6CCD8"), true)
+	_put_prop("buildings/block_4", Vector3(-48.0, 0.15, -48.0), 0.0, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
+	_put_prop("street/kiosk_0", Vector3(-14.5, 0.16, -15.5), -PI * 0.25, Vector3.ONE * 0.95, Color.WHITE, true)
 
 	# North-East Quadrant (+X, -Z)
-	_put_prop("buildings/home_1", Vector3(26.0, 0.15, -26.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/home_2", Vector3(42.0, 0.15, -24.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/home_3", Vector3(24.0, 0.15, -42.0), 0.0, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
-	_put_prop("buildings/home_0", Vector3(40.0, 0.15, -40.0), -PI * 0.25, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/block_4", Vector3(24.0, 0.15, -54.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
-	_put_prop("buildings/block_7", Vector3(42.0, 0.15, -54.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
-	_put_prop("buildings/block_3", Vector3(54.0, 0.15, -24.0), -PI * 0.5, Vector3.ONE * 1.0, Color("#B5675A"), true)
-	_put_prop("buildings/tower_2", Vector3(54.0, 0.15, -40.0), PI, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
+	_put_prop("buildings/block_1", Vector3(20.0, 0.15, -28.0), PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/block_3", Vector3(30.0, 0.15, -20.0), PI, Vector3.ONE * 1.05, Color("#B5675A"), true)
+	_put_prop("buildings/block_7", Vector3(34.0, 0.15, -34.0), PI * 0.25, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
+	_put_prop("buildings/tower_2", Vector3(20.0, 0.15, -48.0), 0.0, Vector3.ONE * 1.15, Color("#DDE1EA"), true)
+	_put_prop("buildings/tower_3", Vector3(48.0, 0.15, -20.0), -PI * 0.5, Vector3.ONE * 1.15, Color("#F5F6FA"), true)
+	_put_prop("buildings/block_5", Vector3(48.0, 0.15, -48.0), 0.0, Vector3.ONE * 1.05, Color("#B5675A"), true)
 
 	# South-West Quadrant (-X, +Z)
-	_put_prop("buildings/home_3", Vector3(-26.0, 0.15, 26.0), PI * 0.5, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/home_0", Vector3(-42.0, 0.15, 24.0), PI * 0.5, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/home_2", Vector3(-24.0, 0.15, 42.0), PI, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/home_4", Vector3(-40.0, 0.15, 40.0), PI * 0.25, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/block_2", Vector3(-24.0, 0.15, 54.0), PI, Vector3.ONE * 1.05, Color("#B5675A"), true)
-	_put_prop("buildings/block_4", Vector3(-42.0, 0.15, 54.0), PI, Vector3.ONE * 1.0, Color("#DDE1EA"), true)
-	_put_prop("buildings/block_1", Vector3(-54.0, 0.15, 24.0), PI * 0.5, Vector3.ONE * 1.0, Color("#C6CCD8"), true)
-	_put_prop("buildings/tower_0", Vector3(-54.0, 0.15, 40.0), PI * 0.5, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
+	_put_prop("buildings/block_3", Vector3(-20.0, 0.15, 28.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#B5675A"), true)
+	_put_prop("buildings/block_5", Vector3(-30.0, 0.15, 20.0), 0.0, Vector3.ONE * 1.05, Color("#B5675A"), true)
+	_put_prop("buildings/block_2", Vector3(-34.0, 0.15, 34.0), PI * 0.25, Vector3.ONE * 1.05, Color("#B5675A"), true)
+	_put_prop("buildings/tower_1", Vector3(-20.0, 0.15, 48.0), PI, Vector3.ONE * 1.15, Color("#C6CCD8"), true)
+	_put_prop("buildings/tower_0", Vector3(-48.0, 0.15, 20.0), PI * 0.5, Vector3.ONE * 1.15, Color("#E9ECF2"), true)
+	_put_prop("buildings/block_6", Vector3(-48.0, 0.15, 48.0), PI, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
 
 	# South-East Quadrant (+X, +Z)
-	_put_prop("buildings/home_4", Vector3(26.0, 0.15, 26.0), -PI * 0.75, Vector3.ONE * 0.95, Color("#F5F6FA"), true)
-	_put_prop("buildings/home_1", Vector3(42.0, 0.15, 24.0), -PI * 0.5, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/home_3", Vector3(24.0, 0.15, 42.0), 0.0, Vector3.ONE * 0.95, Color("#F3E3C3"), true)
-	_put_prop("buildings/home_5", Vector3(40.0, 0.15, 40.0), -PI * 0.25, Vector3.ONE * 0.95, Color("#E8CFA8"), true)
-	_put_prop("buildings/block_5", Vector3(40.0, 0.15, 54.0), PI, Vector3.ONE * 1.0, Color("#B5675A"), true)
-	_put_prop("buildings/block_0", Vector3(54.0, 0.15, 40.0), -PI * 0.5, Vector3.ONE * 1.0, Color("#E9ECF2"), true)
-	_put_prop("buildings/tower_3", Vector3(54.0, 0.15, 24.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/block_4", Vector3(20.0, 0.15, 28.0), PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
+	_put_prop("buildings/block_0", Vector3(30.0, 0.15, 20.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
+	_put_prop("buildings/block_1", Vector3(34.0, 0.15, 34.0), -PI * 0.25, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
+	_put_prop("buildings/tower_3", Vector3(20.0, 0.15, 48.0), PI, Vector3.ONE * 1.15, Color("#F5F6FA"), true)
+	_put_prop("buildings/tower_2", Vector3(48.0, 0.15, 20.0), -PI * 0.5, Vector3.ONE * 1.15, Color("#DDE1EA"), true)
+	_put_prop("buildings/block_7", Vector3(48.0, 0.15, 48.0), PI, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
+	_put_prop("street/kiosk_2", Vector3(14.5, 0.16, 15.5), PI * 0.75, Vector3.ONE * 0.95, Color.WHITE, true)
 
 	# Continuous City Blocks Along Avenues (so road does not abruptly end into empty space)
 	# North Avenue (-Z)
@@ -1554,7 +1523,7 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/tower_2", Vector3(-26.0, 0.15, -120.0), PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 		_put_prop("buildings/tower_0", Vector3(26.0, 0.15, -120.0), -PI * 0.5, Vector3.ONE * 1.1, Color("#E9ECF2"), true)
 		_put_prop("buildings/block_7", Vector3(-26.0, 0.15, -144.0), PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
-		_put_prop("buildings/home_1", Vector3(26.0, 0.15, -144.0), -PI * 0.5, Vector3.ONE, Color("#E8CFA8"), true)
+		_put_prop("buildings/block_2", Vector3(26.0, 0.15, -144.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"), true)
 		_put_prop("buildings/block_4", Vector3(-26.0, 0.15, -168.0), PI * 0.5, Vector3.ONE * 1.05, Color("#E9ECF2"), true)
 		_put_prop("buildings/tower_3", Vector3(26.0, 0.15, -168.0), -PI * 0.5, Vector3.ONE * 1.1, Color("#F5F6FA"), true)
 		_put_prop("buildings/block_0", Vector3(-26.0, 0.15, -192.0), PI * 0.5, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
@@ -1562,7 +1531,7 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/tower_1", Vector3(-26.0, 0.15, -216.0), PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
 		_put_prop("buildings/block_2", Vector3(26.0, 0.15, -216.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"), true)
 		_put_prop("buildings/block_6", Vector3(-26.0, 0.15, -240.0), PI * 0.5, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
-		_put_prop("buildings/home_0", Vector3(26.0, 0.15, -240.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#F3E3C3"), true)
+		_put_prop("buildings/block_0", Vector3(26.0, 0.15, -240.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
 		_put_prop("buildings/block_4", Vector3(-26.0, 0.15, -264.0), PI * 0.5, Vector3.ONE * 1.05, Color("#E9ECF2"), true)
 		_put_prop("buildings/tower_1", Vector3(26.0, 0.15, -264.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
 		_put_prop("buildings/block_6", Vector3(-26.0, 0.15, -288.0), PI * 0.5, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
@@ -1570,7 +1539,7 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/tower_2", Vector3(-26.0, 0.15, -312.0), PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 		_put_prop("buildings/tower_0", Vector3(26.0, 0.15, -312.0), -PI * 0.5, Vector3.ONE * 1.1, Color("#E9ECF2"), true)
 		_put_prop("buildings/block_7", Vector3(-26.0, 0.15, -336.0), PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
-		_put_prop("buildings/home_1", Vector3(26.0, 0.15, -336.0), -PI * 0.5, Vector3.ONE, Color("#E8CFA8"), true)
+		_put_prop("buildings/block_1", Vector3(26.0, 0.15, -336.0), -PI * 0.5, Vector3.ONE, Color("#C6CCD8"), true)
 
 	# South Avenue (+Z)
 	if closed_side != "south":
@@ -1581,7 +1550,7 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/tower_0", Vector3(-26.0, 0.15, 120.0), PI * 0.5, Vector3.ONE * 1.1, Color("#E9ECF2"), true)
 		_put_prop("buildings/tower_2", Vector3(26.0, 0.15, 120.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 		_put_prop("buildings/block_1", Vector3(-26.0, 0.15, 144.0), PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
-		_put_prop("buildings/home_2", Vector3(26.0, 0.15, 144.0), -PI * 0.5, Vector3.ONE, Color("#F5F6FA"), true)
+		_put_prop("buildings/block_3", Vector3(26.0, 0.15, 144.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"), true)
 		_put_prop("buildings/block_4", Vector3(-26.0, 0.15, 168.0), PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 		_put_prop("buildings/tower_1", Vector3(26.0, 0.15, 168.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
 		_put_prop("buildings/block_0", Vector3(-26.0, 0.15, 192.0), PI * 0.5, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
@@ -1589,7 +1558,7 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/tower_2", Vector3(-26.0, 0.15, 216.0), PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 		_put_prop("buildings/tower_0", Vector3(26.0, 0.15, 216.0), -PI * 0.5, Vector3.ONE * 1.1, Color("#E9ECF2"), true)
 		_put_prop("buildings/block_7", Vector3(-26.0, 0.15, 240.0), PI * 0.5, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
-		_put_prop("buildings/home_3", Vector3(26.0, 0.15, 240.0), -PI * 0.5, Vector3.ONE, Color("#E8CFA8"), true)
+		_put_prop("buildings/block_5", Vector3(26.0, 0.15, 240.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"), true)
 		_put_prop("buildings/tower_3", Vector3(-26.0, 0.15, 264.0), PI * 0.5, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
 		_put_prop("buildings/block_5", Vector3(26.0, 0.15, 264.0), -PI * 0.5, Vector3.ONE, Color("#B5675A"), true)
 		_put_prop("buildings/block_2", Vector3(-26.0, 0.15, 288.0), PI * 0.5, Vector3.ONE, Color("#B5675A"), true)
@@ -1597,7 +1566,7 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/tower_0", Vector3(-26.0, 0.15, 312.0), PI * 0.5, Vector3.ONE * 1.1, Color("#E9ECF2"), true)
 		_put_prop("buildings/block_6", Vector3(26.0, 0.15, 312.0), -PI * 0.5, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
 		_put_prop("buildings/block_1", Vector3(-26.0, 0.15, 336.0), PI * 0.5, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
-		_put_prop("buildings/home_2", Vector3(26.0, 0.15, 336.0), -PI * 0.5, Vector3.ONE, Color("#F5F6FA"), true)
+		_put_prop("buildings/block_4", Vector3(26.0, 0.15, 336.0), -PI * 0.5, Vector3.ONE, Color("#DDE1EA"), true)
 
 	# East Avenue (+X)
 	if closed_side != "east":
@@ -1608,7 +1577,7 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/tower_2", Vector3(120.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 		_put_prop("buildings/block_6", Vector3(120.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
 		_put_prop("buildings/block_4", Vector3(144.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#E9ECF2"), true)
-		_put_prop("buildings/home_5", Vector3(144.0, 0.15, 26.0), PI, Vector3.ONE, Color("#E8CFA8"), true)
+		_put_prop("buildings/block_1", Vector3(144.0, 0.15, 26.0), PI, Vector3.ONE, Color("#C6CCD8"), true)
 		_put_prop("buildings/block_1", Vector3(168.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
 		_put_prop("buildings/tower_0", Vector3(168.0, 0.15, 26.0), PI, Vector3.ONE * 1.1, Color("#E9ECF2"), true)
 		_put_prop("buildings/block_3", Vector3(192.0, 0.15, -26.0), 0.0, Vector3.ONE, Color("#B5675A"), true)
@@ -1616,9 +1585,9 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/tower_1", Vector3(216.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
 		_put_prop("buildings/block_7", Vector3(216.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 		_put_prop("buildings/block_0", Vector3(240.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
-		_put_prop("buildings/home_4", Vector3(240.0, 0.15, 26.0), PI, Vector3.ONE, Color("#F5F6FA"), true)
+		_put_prop("buildings/block_2", Vector3(240.0, 0.15, 26.0), PI, Vector3.ONE, Color("#B5675A"), true)
 		_put_prop("buildings/block_6", Vector3(264.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
-		_put_prop("buildings/home_2", Vector3(264.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
+		_put_prop("buildings/block_4", Vector3(264.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#E9ECF2"), true)
 		_put_prop("buildings/tower_2", Vector3(288.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 		_put_prop("buildings/block_3", Vector3(288.0, 0.15, 26.0), PI, Vector3.ONE, Color("#B5675A"), true)
 		_put_prop("buildings/block_0", Vector3(312.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
@@ -1635,7 +1604,7 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/block_5", Vector3(-120.0, 0.15, -26.0), 0.0, Vector3.ONE, Color("#B5675A"), true)
 		_put_prop("buildings/tower_1", Vector3(-120.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
 		_put_prop("buildings/tower_2", Vector3(-144.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
-		_put_prop("buildings/home_3", Vector3(-144.0, 0.15, 26.0), PI, Vector3.ONE, Color("#E8CFA8"), true)
+		_put_prop("buildings/block_2", Vector3(-144.0, 0.15, 26.0), PI, Vector3.ONE, Color("#B5675A"), true)
 		_put_prop("buildings/block_0", Vector3(-168.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
 		_put_prop("buildings/tower_1", Vector3(-168.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
 		_put_prop("buildings/tower_0", Vector3(-192.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.1, Color("#E9ECF2"), true)
@@ -1643,7 +1612,7 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/block_4", Vector3(-216.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#E9ECF2"), true)
 		_put_prop("buildings/tower_3", Vector3(-216.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
 		_put_prop("buildings/block_2", Vector3(-240.0, 0.15, -26.0), 0.0, Vector3.ONE, Color("#B5675A"), true)
-		_put_prop("buildings/home_1", Vector3(-240.0, 0.15, 26.0), PI, Vector3.ONE, Color("#E8CFA8"), true)
+		_put_prop("buildings/block_0", Vector3(-240.0, 0.15, 26.0), PI, Vector3.ONE, Color("#F5F6FA"), true)
 		_put_prop("buildings/tower_2", Vector3(-264.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#DDE1EA"), true)
 		_put_prop("buildings/block_3", Vector3(-264.0, 0.15, 26.0), PI, Vector3.ONE, Color("#B5675A"), true)
 		_put_prop("buildings/block_1", Vector3(-288.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
@@ -1651,7 +1620,7 @@ func _build_urban_scenery_decor() -> void:
 		_put_prop("buildings/tower_1", Vector3(-312.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#C6CCD8"), true)
 		_put_prop("buildings/block_6", Vector3(-312.0, 0.15, 26.0), PI, Vector3.ONE * 1.05, Color("#A9B4C2"), true)
 		_put_prop("buildings/block_0", Vector3(-336.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
-		_put_prop("buildings/home_3", Vector3(-336.0, 0.15, 26.0), PI, Vector3.ONE, Color("#E8CFA8"), true)
+		_put_prop("buildings/block_4", Vector3(-336.0, 0.15, 26.0), PI, Vector3.ONE, Color("#E9ECF2"), true)
 
 	# Avenue vista terminus skyline (solid, dense, wide overlapping wall of buildings closing the horizon at 336-348m across all 4 directions without gaps)
 	if closed_side != "north":
