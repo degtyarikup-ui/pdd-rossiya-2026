@@ -1223,6 +1223,29 @@ func _update_occlusion(delta: float) -> void:
 	for approach in [Vector3(0, 0.2, -14), Vector3(0, 0.2, 14), Vector3(-14, 0.2, 0), Vector3(14, 0.2, 0)]:
 		targets.append(approach)
 	junction.sc.update_occluders(camera, targets, delta)
+	# User requirement: buildings must not obstruct view of road/vehicles.
+	# Hide occluding building transparent instances completely so there is zero visual obstruction.
+	for state in junction.sc.occluders:
+		if state.fade_node != null and state.fade_node.visible:
+			state.fade_node.visible = false
+	_update_closed_block_occlusion(targets)
+
+
+func _update_closed_block_occlusion(targets: Array[Vector3]) -> void:
+	if junction == null or junction.closed_root == null or camera == null: return
+	for child in junction.closed_root.get_children():
+		if not child.name.begins_with("ClosedBlock_"): continue
+		for b in child.get_children():
+			if not b is MeshInstance3D or b.mesh == null: continue
+			var world_box: AABB = b.global_transform * b.mesh.get_aabb()
+			var occluding := false
+			var cam_pos := camera.global_position
+			for target in targets:
+				var hit = world_box.intersects_segment(cam_pos, target)
+				if hit != null:
+					occluding = true
+					break
+			b.visible = not occluding
 
 
 func _fit_projection(area: Rect2) -> void:

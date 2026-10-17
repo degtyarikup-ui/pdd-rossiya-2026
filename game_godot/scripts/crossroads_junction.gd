@@ -291,6 +291,19 @@ func _build_bench(pos: Vector3, yaw: float, parent: Node3D) -> void:
 	parent.add_child(root)
 
 
+func _add_closed_arm_building(parent: Node3D, prop: String, local_pos: Vector3, yaw: float, scale: Vector3, tint: Color, arm_yaw: float) -> void:
+	var mesh := Models.mesh_of("res://scenery/%s.glb" % prop)
+	if mesh == null: return
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	var mat := sc.material.duplicate() as ShaderMaterial
+	mat.set_shader_parameter("plain_tint", Vector3(tint.r, tint.g, tint.b))
+	mi.material_override = mat
+	mi.position = local_pos.rotated(Vector3.UP, arm_yaw)
+	mi.rotation.y = yaw + arm_yaw
+	mi.scale = scale
+	parent.add_child(mi)
+
 
 func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 	var crossing_active := _has_crossing(arm)
@@ -317,95 +330,69 @@ func _build_closed_arm_surface(arm: String, arm_len: float) -> void:
 				road.rotation.y = PI * 0.5
 		ground_root.add_child(road)
 
-	# Paved pedestrian plaza / pocket park occupying the first 22m of the closed arm
-	var plaza_len := 22.0
-	var plaza := _quad(Vector2(ROAD_WIDTH, plaza_len), sidewalk_mat)
-	plaza.position.y = 0.155
-	var plaza_mid := base_d + sw_w + plaza_len * 0.5
-
-	# Lawn covering the rest of the closed arm beyond the plaza
-	var rem_lawn_len := maxf(10.0, arm_len - (base_d - HALF_ROAD) - sw_w - plaza_len)
+	# Lawn covering the closed arm beyond the sidewalk
+	var rem_lawn_len := maxf(20.0, arm_len - (base_d - HALF_ROAD) - sw_w)
 	var lawn := _quad(Vector2(ROAD_WIDTH, rem_lawn_len), grass_mat)
 	lawn.position.y = 0.15
-	var lawn_mid := base_d + sw_w + plaza_len + rem_lawn_len * 0.5
-
-	# Raised central flowerbed inside the pocket plaza
-	var fb_size := Vector2(6.0, 8.0)
-	var fb_lawn := _quad(fb_size, grass_mat)
-	fb_lawn.position.y = 0.22
-	var fb_curb_n := _box(Vector3(fb_size.x + 0.3, 0.14, 0.2), curb_mat)
-	fb_curb_n.position = Vector3(0, 0.21, fb_size.y * 0.5)
-	var fb_curb_s := _box(Vector3(fb_size.x + 0.3, 0.14, 0.2), curb_mat)
-	fb_curb_s.position = Vector3(0, 0.21, -fb_size.y * 0.5)
-	var fb_curb_e := _box(Vector3(0.2, 0.14, fb_size.y), curb_mat)
-	fb_curb_e.position = Vector3(fb_size.x * 0.5, 0.21, 0)
-	var fb_curb_w := _box(Vector3(0.2, 0.14, fb_size.y), curb_mat)
-	fb_curb_w.position = Vector3(-fb_size.x * 0.5, 0.21, 0)
-
-	var fb_root := Node3D.new()
-	fb_root.name = "Flowerbed"
-	fb_root.add_child(fb_lawn)
-	fb_root.add_child(fb_curb_n)
-	fb_root.add_child(fb_curb_s)
-	fb_root.add_child(fb_curb_e)
-	fb_root.add_child(fb_curb_w)
-
-	var park_root := Node3D.new()
-	park_root.name = "PocketPark_" + arm
-	closed_root.add_child(park_root)
+	var lawn_mid := base_d + sw_w + rem_lawn_len * 0.5
 
 	var rot_y := 0.0
 	match arm:
 		"south":
 			sw.position = Vector3(0, 0.16, base_d + sw_w * 0.5)
 			curb.position = Vector3(0, 0.10, base_d + 0.15)
-			plaza.position = Vector3(0, 0.155, plaza_mid)
 			lawn.position = Vector3(0, 0.15, lawn_mid)
-			fb_root.position = Vector3(0, 0, plaza_mid)
 			rot_y = 0.0
 		"north":
 			sw.position = Vector3(0, 0.16, -(base_d + sw_w * 0.5))
 			curb.position = Vector3(0, 0.10, -(base_d + 0.15))
-			plaza.position = Vector3(0, 0.155, -plaza_mid)
 			lawn.position = Vector3(0, 0.15, -lawn_mid)
-			fb_root.position = Vector3(0, 0, -plaza_mid)
 			rot_y = PI
 		"east":
 			sw.position = Vector3(base_d + sw_w * 0.5, 0.16, 0)
 			sw.rotation.y = PI * 0.5
 			curb.position = Vector3(base_d + 0.15, 0.10, 0)
 			curb.rotation.y = PI * 0.5
-			plaza.position = Vector3(plaza_mid, 0.155, 0)
-			plaza.rotation.y = PI * 0.5
 			lawn.position = Vector3(lawn_mid, 0.15, 0)
 			lawn.rotation.y = PI * 0.5
-			fb_root.position = Vector3(plaza_mid, 0, 0)
 			rot_y = -PI * 0.5
 		"west":
 			sw.position = Vector3(-(base_d + sw_w * 0.5), 0.16, 0)
 			sw.rotation.y = PI * 0.5
 			curb.position = Vector3(-(base_d + 0.15), 0.10, 0)
 			curb.rotation.y = PI * 0.5
-			plaza.position = Vector3(-plaza_mid, 0.155, 0)
-			plaza.rotation.y = PI * 0.5
 			lawn.position = Vector3(-lawn_mid, 0.15, 0)
 			lawn.rotation.y = PI * 0.5
-			fb_root.position = Vector3(-plaza_mid, 0, 0)
 			rot_y = PI * 0.5
 
-	fb_root.rotation.y = rot_y
 	ground_root.add_child(sw)
 	ground_root.add_child(curb)
-	ground_root.add_child(plaza)
 	ground_root.add_child(lawn)
-	park_root.add_child(fb_root)
 
-	# Benches flanking the central flowerbed
-	var bench_offset := 4.6
-	var b1_pos := fb_root.position + Vector3(-bench_offset, 0.155, 0).rotated(Vector3.UP, rot_y)
-	var b2_pos := fb_root.position + Vector3(bench_offset, 0.155, 0).rotated(Vector3.UP, rot_y)
-	_build_bench(b1_pos, rot_y + PI * 0.5, park_root)
-	_build_bench(b2_pos, rot_y - PI * 0.5, park_root)
+	# Replace the pocket park and alley with a solid city block of buildings closing the T-junction
+	var block_root := Node3D.new()
+	block_root.name = "ClosedBlock_" + arm
+	closed_root.add_child(block_root)
+
+	var d_offset := base_d + sw_w
+	# Row 1: Along the sidewalk, front facades facing the junction
+	_add_closed_arm_building(block_root, "buildings/block_0", Vector3(0.0, 0.15, d_offset + 6.0), PI, Vector3.ONE * 1.05, Color("#F5F6FA"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/home_3", Vector3(-12.0, 0.15, d_offset + 5.5), PI, Vector3.ONE * 1.0, Color("#E8CFA8"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/home_5", Vector3(12.0, 0.15, d_offset + 5.5), PI, Vector3.ONE * 1.05, Color("#F3E3C3"), rot_y)
+
+	# Row 2: Mid-depth residential buildings and towers
+	_add_closed_arm_building(block_root, "buildings/tower_1", Vector3(-8.5, 0.15, d_offset + 18.0), PI, Vector3.ONE * 1.1, Color("#C6CCD8"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/tower_2", Vector3(8.5, 0.15, d_offset + 18.0), PI, Vector3.ONE * 1.15, Color("#DDE1EA"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/block_2", Vector3(-22.0, 0.15, d_offset + 16.0), PI, Vector3.ONE * 1.05, Color("#B5675A"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/block_6", Vector3(22.0, 0.15, d_offset + 16.0), PI, Vector3.ONE * 1.05, Color("#A9B4C2"), rot_y)
+
+	# Row 3: Deep urban skyline layer
+	_add_closed_arm_building(block_root, "buildings/tower_0", Vector3(0.0, 0.15, d_offset + 32.0), PI, Vector3.ONE * 1.25, Color("#E9ECF2"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/block_4", Vector3(-14.0, 0.15, d_offset + 32.0), PI, Vector3.ONE * 1.1, Color("#DDE1EA"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/block_1", Vector3(14.0, 0.15, d_offset + 32.0), PI, Vector3.ONE * 1.1, Color("#C6CCD8"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/tower_3", Vector3(-12.0, 0.15, d_offset + 50.0), PI, Vector3.ONE * 1.3, Color("#F5F6FA"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/tower_2", Vector3(12.0, 0.15, d_offset + 50.0), PI, Vector3.ONE * 1.3, Color("#DDE1EA"), rot_y)
+	_add_closed_arm_building(block_root, "buildings/block_7", Vector3(0.0, 0.15, d_offset + 52.0), PI, Vector3.ONE * 1.15, Color("#DDE1EA"), rot_y)
 
 
 
@@ -783,6 +770,54 @@ func _finish_pools() -> void:
 		p.finish(0)
 
 
+func _build_vista_skyline(arm: String) -> void:
+	var rot := 0.0
+	match arm:
+		"south": rot = PI
+		"north": rot = 0.0
+		"east": rot = -PI * 0.5
+		"west": rot = PI * 0.5
+
+	# Front row at distance 336m: 13 wide overlapping buildings from offset -72 to +72
+	var front_props := [
+		"buildings/block_2", "buildings/block_5", "buildings/block_0",
+		"buildings/block_4", "buildings/block_1", "buildings/block_3",
+		"buildings/block_0", "buildings/block_6", "buildings/block_1",
+		"buildings/block_7", "buildings/block_2", "buildings/block_4",
+		"buildings/block_3"
+	]
+	var front_colors := [
+		Color("#B5675A"), Color("#B5675A"), Color("#F5F6FA"),
+		Color("#E9ECF2"), Color("#C6CCD8"), Color("#B5675A"),
+		Color("#F5F6FA"), Color("#A9B4C2"), Color("#C6CCD8"),
+		Color("#DDE1EA"), Color("#B5675A"), Color("#E9ECF2"),
+		Color("#B5675A")
+	]
+	for i in front_props.size():
+		var x_off := -72.0 + float(i) * 12.0
+		var pos := Vector3(x_off, 0.15, -336.0).rotated(Vector3.UP, rot)
+		_put_prop(front_props[i], pos, rot, Vector3(1.15, 1.25, 1.0), front_colors[i], true)
+
+	# Back row at distance 345-348m: 12 tall towers and large blocks staggered between front row
+	var back_props := [
+		"buildings/tower_1", "buildings/tower_3", "buildings/tower_0",
+		"buildings/tower_2", "buildings/tower_0", "buildings/tower_2",
+		"buildings/tower_3", "buildings/tower_1", "buildings/tower_2",
+		"buildings/tower_0", "buildings/tower_3", "buildings/tower_1"
+	]
+	var back_colors := [
+		Color("#C6CCD8"), Color("#F5F6FA"), Color("#E9ECF2"),
+		Color("#DDE1EA"), Color("#E9ECF2"), Color("#DDE1EA"),
+		Color("#F5F6FA"), Color("#C6CCD8"), Color("#DDE1EA"),
+		Color("#E9ECF2"), Color("#F5F6FA"), Color("#C6CCD8")
+	]
+	for i in back_props.size():
+		var x_off := -66.0 + float(i) * 12.0
+		var z_depth := -345.0 if i % 2 == 0 else -348.0
+		var pos := Vector3(x_off, 0.15, z_depth).rotated(Vector3.UP, rot)
+		_put_prop(back_props[i], pos, rot, Vector3.ONE * 1.5, back_colors[i], true)
+
+
 func _build_scenery_decor() -> void:
 	var canopy_colors: Array = sc.season.canopy
 	var birch_color: Color = sc.color("birch")
@@ -932,42 +967,11 @@ func _build_scenery_decor() -> void:
 	_put_prop("buildings/block_0", Vector3(-336.0, 0.15, -26.0), 0.0, Vector3.ONE * 1.05, Color("#F5F6FA"), true)
 	_put_prop("buildings/home_3", Vector3(-336.0, 0.15, 26.0), PI, Vector3.ONE, Color("#E8CFA8"), true)
 
-	# Avenue vista terminus skyline (closing the horizon at 338-348m so the road end is never visible)
-	if closed_side != "north":
-		_put_prop("buildings/block_1", Vector3(-18.0, 0.15, -338.0), 0.0, Vector3(1.15, 1.25, 1.0), Color("#C6CCD8"), true)
-		_put_prop("buildings/block_3", Vector3(-7.5, 0.15, -338.0), 0.0, Vector3(1.15, 1.25, 1.0), Color("#B5675A"), true)
-		_put_prop("buildings/block_0", Vector3(7.5, 0.15, -338.0), 0.0, Vector3(1.15, 1.25, 1.0), Color("#F5F6FA"), true)
-		_put_prop("buildings/block_6", Vector3(18.0, 0.15, -338.0), 0.0, Vector3(1.15, 1.25, 1.0), Color("#A9B4C2"), true)
-		_put_prop("buildings/tower_2", Vector3(0.0, 0.15, -345.0), 0.0, Vector3.ONE * 1.6, Color("#DDE1EA"), true)
-		_put_prop("buildings/tower_0", Vector3(-12.0, 0.15, -348.0), 0.0, Vector3.ONE * 1.4, Color("#E9ECF2"), true)
-		_put_prop("buildings/tower_3", Vector3(12.0, 0.15, -348.0), 0.0, Vector3.ONE * 1.4, Color("#F5F6FA"), true)
-
-	if closed_side != "south":
-		_put_prop("buildings/block_1", Vector3(18.0, 0.15, 338.0), PI, Vector3(1.15, 1.25, 1.0), Color("#C6CCD8"), true)
-		_put_prop("buildings/block_3", Vector3(7.5, 0.15, 338.0), PI, Vector3(1.15, 1.25, 1.0), Color("#B5675A"), true)
-		_put_prop("buildings/block_0", Vector3(-7.5, 0.15, 338.0), PI, Vector3(1.15, 1.25, 1.0), Color("#F5F6FA"), true)
-		_put_prop("buildings/block_6", Vector3(-18.0, 0.15, 338.0), PI, Vector3(1.15, 1.25, 1.0), Color("#A9B4C2"), true)
-		_put_prop("buildings/tower_2", Vector3(0.0, 0.15, 345.0), PI, Vector3.ONE * 1.6, Color("#DDE1EA"), true)
-		_put_prop("buildings/tower_0", Vector3(12.0, 0.15, 348.0), PI, Vector3.ONE * 1.4, Color("#E9ECF2"), true)
-		_put_prop("buildings/tower_3", Vector3(-12.0, 0.15, 348.0), PI, Vector3.ONE * 1.4, Color("#F5F6FA"), true)
-
-	if closed_side != "east":
-		_put_prop("buildings/block_1", Vector3(338.0, 0.15, 18.0), -PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#C6CCD8"), true)
-		_put_prop("buildings/block_3", Vector3(338.0, 0.15, 7.5), -PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#B5675A"), true)
-		_put_prop("buildings/block_0", Vector3(338.0, 0.15, -7.5), -PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#F5F6FA"), true)
-		_put_prop("buildings/block_6", Vector3(338.0, 0.15, -18.0), -PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#A9B4C2"), true)
-		_put_prop("buildings/tower_2", Vector3(345.0, 0.15, 0.0), -PI * 0.5, Vector3.ONE * 1.6, Color("#DDE1EA"), true)
-		_put_prop("buildings/tower_0", Vector3(348.0, 0.15, 12.0), -PI * 0.5, Vector3.ONE * 1.4, Color("#E9ECF2"), true)
-		_put_prop("buildings/tower_3", Vector3(348.0, 0.15, -12.0), -PI * 0.5, Vector3.ONE * 1.4, Color("#F5F6FA"), true)
-
-	if closed_side != "west":
-		_put_prop("buildings/block_1", Vector3(-338.0, 0.15, -18.0), PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#C6CCD8"), true)
-		_put_prop("buildings/block_3", Vector3(-338.0, 0.15, -7.5), PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#B5675A"), true)
-		_put_prop("buildings/block_0", Vector3(-338.0, 0.15, 7.5), PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#F5F6FA"), true)
-		_put_prop("buildings/block_6", Vector3(-338.0, 0.15, 18.0), PI * 0.5, Vector3(1.15, 1.25, 1.0), Color("#A9B4C2"), true)
-		_put_prop("buildings/tower_2", Vector3(-345.0, 0.15, 0.0), PI * 0.5, Vector3.ONE * 1.6, Color("#DDE1EA"), true)
-		_put_prop("buildings/tower_0", Vector3(-348.0, 0.15, -12.0), PI * 0.5, Vector3.ONE * 1.4, Color("#E9ECF2"), true)
-		_put_prop("buildings/tower_3", Vector3(-348.0, 0.15, 12.0), PI * 0.5, Vector3.ONE * 1.4, Color("#F5F6FA"), true)
+	# Avenue vista terminus skyline (solid, dense, wide overlapping wall of buildings closing the horizon at 336-348m across all 4 directions without gaps)
+	_build_vista_skyline("north")
+	_build_vista_skyline("south")
+	_build_vista_skyline("east")
+	_build_vista_skyline("west")
 
 	var bush_color := Color("#3E6B32")
 	if sc.season.has("pine"):

@@ -319,7 +319,7 @@ func _build_trajectory() -> void:
 		path_curve.add_point(p_curb_b)
 		path_curve.add_point(p_end)
 		path_length = path_curve.get_baked_length()
-		drive_speed = 3.6 / maxf(path_length, 1.0)
+		drive_speed = 2.4 / maxf(path_length, 1.0)
 		_turn_end_distance = path_length
 		return
 
