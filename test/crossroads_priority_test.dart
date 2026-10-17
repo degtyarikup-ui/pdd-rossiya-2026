@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/models/crossroads_priority_model.dart';
 import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
@@ -428,6 +431,84 @@ void main() {
               reason: 'Actor ${a.id} starts on closedSide ${s.closedSide}',
             );
           }
+        }
+      },
+    );
+  });
+
+  group('Godot Crossroads Scenarios Source of Truth Integrity Tests', () {
+    test(
+      'game_godot/data/crossroads_scenarios.json contains all 33 scenarios with full ru/en/kk translations',
+      () {
+        final file = File('game_godot/data/crossroads_scenarios.json');
+        expect(file.existsSync(), isTrue,
+            reason: 'crossroads_scenarios.json must exist');
+
+        final raw = file.readAsStringSync();
+        final List<dynamic> scenarios = jsonDecode(raw) as List<dynamic>;
+
+        expect(scenarios.length, equals(33),
+            reason: 'Must contain all 33 authored scenarios');
+
+        final ids = <String>{};
+        for (final item in scenarios) {
+          final sc = item as Map<String, dynamic>;
+          final id = sc['id'] as String;
+          expect(ids.add(id), isTrue, reason: 'Duplicate scenario id: $id');
+
+          final actors = (sc['actors'] as List).cast<Map<String, dynamic>>();
+          expect(actors.length, greaterThanOrEqualTo(2),
+              reason: 'Scenario $id must have at least 2 actors');
+
+          final orders = actors.map((a) => a['order'] as int).toList()..sort();
+          for (int i = 0; i < orders.length; i++) {
+            expect(orders[i], equals(i + 1),
+                reason:
+                    'Scenario $id priority order sequence broken: $orders');
+          }
+
+          final tr = sc['translations'] as Map<String, dynamic>?;
+          expect(tr, isNotNull, reason: 'Scenario $id missing translations');
+          for (final lang in ['ru', 'en', 'kk']) {
+            expect(tr!.containsKey(lang), isTrue,
+                reason: 'Scenario $id missing $lang');
+            final tLang = tr[lang] as Map<String, dynamic>;
+            expect((tLang['title'] as String?)?.isNotEmpty, isTrue,
+                reason: 'Scenario $id empty title in $lang');
+            expect((tLang['subtitle'] as String?)?.isNotEmpty, isTrue,
+                reason: 'Scenario $id empty subtitle in $lang');
+            expect((tLang['pddArticle'] as String?)?.isNotEmpty, isTrue,
+                reason: 'Scenario $id empty pddArticle in $lang');
+
+            final tActors = tLang['actors'] as Map<String, dynamic>?;
+            expect(tActors, isNotNull,
+                reason: 'Scenario $id missing actor translations for $lang');
+            for (final a in actors) {
+              final aid = a['id'] as String;
+              expect(tActors!.containsKey(aid), isTrue,
+                  reason: 'Scenario $id missing actor $aid in $lang');
+              final aData = tActors[aid] as Map<String, dynamic>;
+              expect((aData['name'] as String?)?.isNotEmpty, isTrue,
+                  reason: 'Scenario $id actor $aid missing name in $lang');
+              expect((aData['explanation'] as String?)?.isNotEmpty, isTrue,
+                  reason:
+                      'Scenario $id actor $aid missing explanation in $lang');
+            }
+          }
+        }
+
+        // Verify all 6 newer Godot scenarios are present
+        const newerScenarios = [
+          't_equal_right_hand',
+          't_main_through_left',
+          'hard_t_pedestrian_right_hand',
+          't_emergency_from_secondary',
+          'cross_secondary_straight_waits',
+          'cross_equal_bus_oncoming',
+        ];
+        for (final ns in newerScenarios) {
+          expect(ids.contains(ns), isTrue,
+              reason: 'Missing Godot scenario $ns');
         }
       },
     );
