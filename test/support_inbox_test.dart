@@ -100,4 +100,19 @@ void main() {
     await inbox.poll();
     expect(replies.map((m) => m.id), ['s3']);
   });
+
+  test('support inbox: the closed notice is a plaque in the chat, not a banner', () async {
+    SharedPreferences.setMockInitialValues({'support_inbox_seen_client_c': 1000});
+    final inbox = SupportInbox.instance;
+    final replies = <SupportChatMessage>[];
+    inbox.clientId = () async => 'client_c';
+    inbox.fetch = ({int? since}) async => [
+          const SupportChatMessage(id: 'tg_1', text: 'x', sender: SupportMessageSender.support, timestamp: 2000, kind: 'closed'),
+        ];
+    inbox.onReply = replies.add;
+    inbox.onSound = null;
+    inbox.chatOpen = false;
+    await inbox.poll();
+    expect(replies, isEmpty);
+  });
 }

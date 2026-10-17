@@ -525,7 +525,36 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     );
   }
 
+  /// Служебная плашка по центру (обращение завершено): не сообщение менеджера.
+  Widget _buildSystemNotice(SupportChatMessage msg, AppThemeColors colors) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: AppDimensions.spacingS,
+        horizontal: AppDimensions.spacingL,
+      ),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: colors.divider.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            msg.displayText,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.secondaryText,
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildMessageItem(SupportChatMessage msg, AppThemeColors colors) {
+    if (msg.isClosedNotice) return _buildSystemNotice(msg, colors);
     final isUser = msg.isUser;
     final timeStr = _formatTime(msg.timestamp);
     final imageProvider = _resolveImageProvider(msg);

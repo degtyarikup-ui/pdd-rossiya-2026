@@ -71,7 +71,7 @@ class SupportInbox {
       if (seen == null || newest > seen) await prefs.setInt(key, newest);
       if (seen == null) return; // First look at this thread: old replies stay silent.
 
-      final replies = list.where((m) => m.isSupport && m.timestamp > seen).toList();
+      final replies = list.where((m) => m.isSupport && !m.isClosedNotice && m.timestamp > seen).toList();
       if (replies.isEmpty || chatOpen) return;
       onSound?.call();
       onReply?.call(replies.last);
