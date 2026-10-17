@@ -3921,4 +3921,14 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get aiTemporaryWait =>
       'ЖИ уақытша қолжетімсіз. Кейінірек қайталап көріңіз.';
+
+  @override
+  String webPayCreationReview(String order) {
+    return 'Бұл төлемді тексеру қажет. Қайта төлемеңіз. Баптаулар → Қолдау бөлімін ашып, тапсырыс нөмірін көрсетіңіз: $order';
+  }
+
+  @override
+  String webPayCreationPending(String order) {
+    return 'Төлем сұрауы әлі өңделуде. Қайта төлем жасамаңыз. Тапсырыс: $order. Төлем беті ашылмаса, Баптаулар → Қолдау бөліміне жазыңыз.';
+  }
 }

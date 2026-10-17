@@ -3928,4 +3928,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aiTemporaryWait =>
       'AI is temporarily unavailable. Try again later.';
+
+  @override
+  String webPayCreationReview(String order) {
+    return 'We need to check this payment. Do not pay again. Open Settings → Support and give this order ID: $order';
+  }
+
+  @override
+  String webPayCreationPending(String order) {
+    return 'Your payment request is still processing. Do not pay again. Order: $order. If the payment page did not open, go to Settings → Support.';
+  }
 }

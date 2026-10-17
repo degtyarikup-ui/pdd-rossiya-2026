@@ -47,6 +47,8 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
   );
   bool _sending = false;
   bool _failed = false;
+  String? _creationErrorCode;
+  String? _creationOrder;
 
   @override
   void dispose() {
@@ -56,7 +58,11 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
 
   Future<void> _send() async {
     final email = _controller.text.trim();
-    if (!_emailPattern.hasMatch(email) || _sending) return;
+    if (!_emailPattern.hasMatch(email) ||
+        _sending ||
+        _creationErrorCode != null) {
+      return;
+    }
     setState(() {
       _sending = true;
       _failed = false;
@@ -66,13 +72,20 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
       email: email,
     );
     if (!mounted) return;
+    if (start?.errorCode != null) {
+      HapticFeedbackHelper.error();
+      setState(() {
+        _sending = false;
+        _creationErrorCode = start!.errorCode;
+        _creationOrder = start.order;
+      });
+      return;
+    }
     final url = start?.url;
     if (url != null) {
       // Веб — та же вкладка, после оплаты Platega вернёт на /app/?pay=done.
       // Android — внешний браузер: заказ запоминаем, приложение проверит его
       // при возврате (см. PremiumService.checkPendingPayment).
-      final order = start?.order;
-      if (!kIsWeb && order != null) await PendingPayment.remember(order);
       var opened = false;
       try {
         opened = await launchUrl(
@@ -104,7 +117,9 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
         return;
       }
       if (!kIsWeb) {
-        await PendingPayment.clear();
+        await PendingPayment.clear(
+          ownerId: AuthService.instance.currentUser?.id,
+        );
         if (!mounted) return;
       }
     }
@@ -182,6 +197,19 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
               );
             },
           ),
+          if (_creationErrorCode != null) ...[
+            const SizedBox(height: AppDimensions.spacingL),
+            SelectableText(
+              _creationErrorCode == 'payment_creation_unknown'
+                  ? appL10n.webPayCreationReview(_creationOrder ?? '')
+                  : appL10n.webPayCreationPending(_creationOrder ?? ''),
+              style: TextStyle(
+                color: colors.primaryText,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ],
         ],
       ),
       actions: [
@@ -193,7 +221,9 @@ class _WebPaymentDialogState extends State<_WebPaymentDialog> {
           valueListenable: _controller,
           builder: (context, value, _) {
             final canSend =
-                _emailPattern.hasMatch(value.text.trim()) && !_sending;
+                _emailPattern.hasMatch(value.text.trim()) &&
+                !_sending &&
+                _creationErrorCode == null;
             return TextButton(
               onPressed: canSend ? _send : null,
               child: _sending

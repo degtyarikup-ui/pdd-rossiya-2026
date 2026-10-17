@@ -1869,5 +1869,21 @@
   "purchaseLegacyOwnerRequired": "Старую покупку App Store нужно связать с аккаунтом через поддержку. Не платите повторно: напишите в поддержку и приложите чек Apple.",
   "profileAppleRevokeInstructions": "Данные аккаунта удалены. Для старого входа через Apple также откройте настройки Apple Account → «Вход с Apple», выберите приложение и прекратите использование Apple ID.",
   "profileAppleOpenSettings": "Настройки Apple Account",
-  "aiTemporaryWait": "ИИ временно недоступен. Попробуйте позже."
+  "aiTemporaryWait": "ИИ временно недоступен. Попробуйте позже.",
+  "webPayCreationReview": "Нужно проверить эту оплату. Не платите повторно. Откройте «Настройки → Поддержка» и укажите номер заказа: {order}",
+  "webPayCreationPending": "Запрос оплаты ещё обрабатывается. Не платите повторно. Заказ: {order}. Если страница оплаты не открылась, обратитесь в «Настройки → Поддержка».",
+  "@webPayCreationReview": {
+    "placeholders": {
+      "order": {
+        "type": "String"
+      }
+    }
+  },
+  "@webPayCreationPending": {
+    "placeholders": {
+      "order": {
+        "type": "String"
+      }
+    }
+  }
 }

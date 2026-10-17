@@ -3941,4 +3941,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get aiTemporaryWait => 'ИИ временно недоступен. Попробуйте позже.';
+
+  @override
+  String webPayCreationReview(String order) {
+    return 'Нужно проверить эту оплату. Не платите повторно. Откройте «Настройки → Поддержка» и укажите номер заказа: $order';
+  }
+
+  @override
+  String webPayCreationPending(String order) {
+    return 'Запрос оплаты ещё обрабатывается. Не платите повторно. Заказ: $order. Если страница оплаты не открылась, обратитесь в «Настройки → Поддержка».';
+  }
 }

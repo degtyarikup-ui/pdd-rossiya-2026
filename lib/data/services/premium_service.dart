@@ -557,9 +557,10 @@ class PremiumService extends ChangeNotifier {
 
   /// Оплата на сайте: сервер записывает выбор (аккаунт, тариф, почта для
   /// чека) и, если платёжка подключена, создаёт платёж. null — ошибка;
-  /// `url == null` — платёжка ещё не подключена (заглушка). Премиум этим
+  /// `errorCode` preserves an unresolved order for support; otherwise a null
+  /// URL means payments are not connected yet. Премиум этим
   /// не выдаётся: только после подтверждения оплаты платёжным сервисом.
-  Future<({String? url, String? order})?> startWebPayment({
+  Future<({String? url, String? order, String? errorCode})?> startWebPayment({
     required PremiumTier tier,
     required String email,
     String method = 'sbp',
@@ -577,6 +578,8 @@ class PremiumService extends ChangeNotifier {
     }
     final auth = AuthService.instance;
     if (!auth.hasServerSession || !BackendConfig.hasNotifier) return null;
+    final owner = auth.currentUser!.id;
+    final revision = auth.accountRevision;
     try {
       final response = await NotifierApi.post(
         '/api/user/pay-intent',
@@ -591,8 +594,27 @@ class PremiumService extends ChangeNotifier {
           'client': kIsWeb ? 'web' : 'android',
         }),
       );
-      if (response.statusCode != 200) return null;
       final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final order = data['order'] as String?;
+      final code = data['code'];
+      if ([409, 503].contains(response.statusCode) &&
+          [
+            'payment_creation_pending',
+            'payment_creation_unknown',
+          ].contains(code) &&
+          order != null &&
+          RegExp(r'^[0-9a-f-]{36}$').hasMatch(order)) {
+        await PendingPayment.remember(
+          order,
+          ownerId: owner,
+          keepUntilResolved: true,
+        );
+        if (revision != auth.accountRevision) return null;
+        return (url: null, order: order, errorCode: code as String);
+      }
+      if (response.statusCode != 200 || revision != auth.accountRevision) {
+        return null;
+      }
       final url = data['available'] == true ? data['url'] as String? : null;
       if (url != null && !url.startsWith('https://')) {
         ErrorReporter.report(
@@ -603,7 +625,10 @@ class PremiumService extends ChangeNotifier {
         );
         return null;
       }
-      return (url: url, order: data['order'] as String?);
+      if (url != null && order != null) {
+        await PendingPayment.remember(order, ownerId: owner);
+      }
+      return (url: url, order: order, errorCode: null);
     } catch (error) {
       ErrorReporter.report(
         ErrorCategory.purchase,
@@ -621,6 +646,7 @@ class PremiumService extends ChangeNotifier {
   Future<String?> checkWebPayment(String order) async {
     final auth = AuthService.instance;
     if (!auth.hasServerSession || !BackendConfig.hasNotifier) return null;
+    final revision = auth.accountRevision;
     try {
       final response = await NotifierApi.post(
         '/api/user/pay-check',
@@ -628,7 +654,9 @@ class PremiumService extends ChangeNotifier {
         headers: auth.serverHeaders,
         body: jsonEncode({'order': order}),
       );
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200 || revision != auth.accountRevision) {
+        return null;
+      }
       final status =
           (jsonDecode(response.body) as Map<String, dynamic>)['status']
               as String?;
@@ -649,10 +677,30 @@ class PremiumService extends ChangeNotifier {
   /// возврате в приложение; заказ закрывается, когда сервер получил
   /// окончательный статус (подтверждён, отменён, возврат).
   Future<String?> checkPendingPayment() async {
-    final order = await PendingPayment.current();
+    final owner = AuthService.instance.currentUser?.id;
+    final order = await PendingPayment.current(ownerId: owner);
     if (order == null) return null;
     final status = await checkWebPayment(order);
-    if (status != null && status != 'pending') await PendingPayment.clear();
+    if ([
+      'confirmed',
+      'canceled',
+      'chargebacked',
+      'create_failed',
+      'failed',
+    ].contains(status)) {
+      await PendingPayment.clear(ownerId: owner);
+    } else if ([
+      'creating',
+      'creation_unknown',
+      'requires_refund',
+      'mismatch',
+    ].contains(status)) {
+      await PendingPayment.remember(
+        order,
+        ownerId: owner,
+        keepUntilResolved: true,
+      );
+    }
     return status;
   }
 

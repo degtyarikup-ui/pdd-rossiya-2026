@@ -6543,6 +6543,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'ИИ временно недоступен. Попробуйте позже.'**
   String get aiTemporaryWait;
+
+  /// No description provided for @webPayCreationReview.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нужно проверить эту оплату. Не платите повторно. Откройте «Настройки → Поддержка» и укажите номер заказа: {order}'**
+  String webPayCreationReview(String order);
+
+  /// No description provided for @webPayCreationPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрос оплаты ещё обрабатывается. Не платите повторно. Заказ: {order}. Если страница оплаты не открылась, обратитесь в «Настройки → Поддержка».'**
+  String webPayCreationPending(String order);
 }
 
 class _AppLocalizationsDelegate

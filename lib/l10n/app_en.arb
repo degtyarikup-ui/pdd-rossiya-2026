@@ -1321,5 +1321,7 @@
   "purchaseLegacyOwnerRequired": "An older App Store purchase needs ownership verification by support. Do not pay again: contact support with your Apple receipt.",
   "profileAppleRevokeInstructions": "Your account data has been deleted. For an older Apple sign-in, also open Apple Account settings → “Sign in with Apple”, choose this app and stop using your Apple ID.",
   "profileAppleOpenSettings": "Apple Account settings",
-  "aiTemporaryWait": "AI is temporarily unavailable. Try again later."
+  "aiTemporaryWait": "AI is temporarily unavailable. Try again later.",
+  "webPayCreationReview": "We need to check this payment. Do not pay again. Open Settings → Support and give this order ID: {order}",
+  "webPayCreationPending": "Your payment request is still processing. Do not pay again. Order: {order}. If the payment page did not open, go to Settings → Support."
 }

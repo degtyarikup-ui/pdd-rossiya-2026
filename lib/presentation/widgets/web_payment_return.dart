@@ -35,6 +35,12 @@ Future<void> handleWebPaymentReturn(BuildContext context) async {
       AppToast.show(context, appL10n.webPaySuccess, type: AppToastType.success);
     case 'canceled':
       AppToast.show(context, appL10n.webPayCanceled);
+    case 'creation_unknown':
+    case 'requires_refund':
+    case 'mismatch':
+      AppToast.show(context, appL10n.webPayCreationReview(ret.order));
+    case 'creating':
+      AppToast.show(context, appL10n.webPayCreationPending(ret.order));
     default:
       AppToast.show(context, appL10n.webPayPending);
   }
