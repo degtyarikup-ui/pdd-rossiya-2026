@@ -746,6 +746,20 @@ func _mount_car(id: String, hex: String) -> void:
 	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://models/index.json"))["vehicles/" + id].meta
 	drive.half_width = meta.halfWidth
 	drive.half_length = meta.halfLength
+	# The sun's shadow of the player's car lands in the coarse far part of the shadow
+	# map (the car is ~55 m from the camera): a blurred patch about 1.5 lanes wide that
+	# stepped from texel to texel as the car drove. The car casts no sun shadow; a
+	# soft contact patch, as under the trees, sits under it and moves exactly with it.
+	for geometry: GeometryInstance3D in car.find_children("*", "GeometryInstance3D", true, false):
+		geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var contact := MeshInstance3D.new()
+	contact.name = "contact_shadow"
+	contact.mesh = Models.contact_mesh()
+	contact.material_override = Models.contact_material()
+	contact.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	contact.position = Vector3(0, 0.03, 0)
+	contact.scale = Vector3(float(meta.halfWidth) * 1.35, 1.0, float(meta.halfLength) * 1.2)
+	car.add_child(contact)
 	wheels.clear()
 	front_axles.clear()
 	blinkers.clear()
