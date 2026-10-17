@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/data/services/network_retry.dart';
+import 'package:pdd_app/data/services/notifier_api.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
@@ -45,6 +46,7 @@ class AuthService extends ChangeNotifier {
   AuthFailure? lastFailure;
   String? lastDiagnosticId;
   bool sessionIsTemporary = false;
+  Uri? appleManualRevocationUrl;
 
   String _signInProvider = 'unknown';
   // Сколько попыток сделал последний запрос выдачи сессии и где он удался —
@@ -243,7 +245,9 @@ class AuthService extends ChangeNotifier {
         clientId: defaultTargetPlatform == TargetPlatform.iOS
             ? googleClientId
             : null,
-        // Android continues to use its existing access-token flow.
+        serverClientId: defaultTargetPlatform == TargetPlatform.android
+            ? googleWebClientId
+            : null,
       );
       final account = await googleSignIn.signIn();
       return account == null ? false : await _completeGoogleAccount(account);
@@ -299,10 +303,7 @@ class AuthService extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
     // Web always sends a signed ID token, including on Android browsers.
-    final credential =
-        !kIsWeb && defaultTargetPlatform == TargetPlatform.android
-        ? authentication.accessToken
-        : authentication.idToken;
+    final credential = authentication.idToken;
     return _completeSignIn(profile, credential);
   }
 
@@ -452,7 +453,13 @@ class AuthService extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
 
-    return await _completeSignIn(profile, credential.identityToken);
+    return await _completeCredential(
+      'apple',
+      credential.identityToken,
+      expectedUserId: profile.id,
+      name: profile.name,
+      authorizationCode: credential.authorizationCode,
+    );
   }
 
   Future<bool> completeWebSignIn(Map<String, String> params) async {
@@ -593,6 +600,7 @@ class AuthService extends ChangeNotifier {
     String? credential, {
     String? expectedUserId,
     String? name,
+    String? authorizationCode,
   }) async {
     _signInProvider = provider;
     if (credential == null ||
@@ -625,6 +633,8 @@ class AuthService extends ChangeNotifier {
           'provider': provider,
           'credential': credential,
           'name': ?name,
+          if (authorizationCode != null && authorizationCode.isNotEmpty)
+            'authorizationCode': authorizationCode,
           'platform': metadata['platform'],
           'appVersion': metadata['version'],
           'device': metadata['device'],
@@ -765,13 +775,15 @@ class AuthService extends ChangeNotifier {
   /// score) and signs out locally. Returns whether the server confirmed.
   Future<bool> deleteAccount() async {
     var deleted = false;
+    var requiresAppleRevocation = false;
+    appleManualRevocationUrl = null;
     final user = _currentUser;
     final revision = _accountRevision;
     try {
       if (user != null && BackendConfig.hasNotifier) {
         final resp = await http
             .post(
-              Uri.parse('${BackendConfig.notifierUrl}/api/user/delete'),
+              NotifierApi.uri('/api/user/delete'),
               headers: serverHeaders,
               body: jsonEncode({'userId': user.id}),
             )
@@ -780,6 +792,10 @@ class AuthService extends ChangeNotifier {
           final body = jsonDecode(resp.body);
           deleted =
               body is Map && body['ok'] == true && body['deleted'] == user.id;
+          requiresAppleRevocation =
+              deleted &&
+              user.provider == AuthProviderType.apple &&
+              body['appleRevocation'] == 'manual_required';
         }
       }
     } catch (e) {
@@ -787,6 +803,12 @@ class AuthService extends ChangeNotifier {
     }
     if (!deleted) return false;
     if (revision != _accountRevision) return true;
+    if (requiresAppleRevocation) {
+      // Use a fixed Apple URL; never open an arbitrary URL from a response.
+      appleManualRevocationUrl = Uri.parse(
+        'https://account.apple.com/account/manage',
+      );
+    }
     try {
       await signOut();
     } catch (e) {

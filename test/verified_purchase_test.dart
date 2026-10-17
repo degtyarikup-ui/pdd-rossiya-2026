@@ -91,6 +91,28 @@ void main() {
     expect(premium.isPremium, isFalse);
   });
   test(
+    'legacy Apple ownership rejection requires support and cannot become retryable',
+    () async {
+      expect(
+        await http.runWithClient(
+          verify,
+          () => MockClient(
+            (_) async => http.Response(
+              '{"error":"legacy purchase owner required"}',
+              409,
+            ),
+          ),
+        ),
+        isFalse,
+      );
+      expect(
+        premium.purchaseVerificationFailure,
+        PurchaseVerificationFailure.legacyOwnerRequired,
+      );
+      expect(premium.isPremium, isFalse);
+    },
+  );
+  test(
     'an expired or incomplete server response never activates premium',
     () async {
       for (final data in [

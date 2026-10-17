@@ -143,10 +143,12 @@ List<Question> _parseTickets(_QuestionSource source) {
     if (ticket is! Map) continue;
     final ticketNumber = (ticket['number'] as num?)?.toInt() ?? 0;
     final questions = ticket['questions'] as List<dynamic>? ?? [];
-    for (final question in questions) {
+    for (var index = 0; index < questions.length; index++) {
+      final question = questions[index];
       if (question is! Map) continue;
       final map = _withImagePath(question, source.imageDir);
       map['ticketNumber'] = ticketNumber;
+      map['questionNumber'] = index + 1;
       allQuestions.add(Question.fromJson(map));
     }
   }

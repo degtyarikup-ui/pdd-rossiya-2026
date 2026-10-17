@@ -1795,7 +1795,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallFeatureFeed => 'Unlimited feed of questions';
 
   @override
-  String get paywallFeatureAi => 'AI analysis of your mistakes';
+  String get paywallFeatureAi => 'AI explanations: up to 200 questions a day';
 
   @override
   String get paywallFeatureVoice => 'Studio voice-over of tickets';
@@ -3367,7 +3367,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumBannerSubtitleUnlimited =>
-      'Smart feed and AI without limits';
+      'Unlimited feed, drives and more AI';
 
   @override
   String premiumBannerCardsLeft(int remaining, int limit) {
@@ -3425,7 +3425,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get subscriptionPerkAiDescription =>
-      'Instant explanations of rules and road situations';
+      'Up to 200 AI questions a day. The limit resets at midnight UTC.';
 
   @override
   String get subscriptionPerkVoiceTitle => 'Professional voice-over';
@@ -3610,7 +3610,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get aiGoPremium => 'Get Premium for unlimited AI';
+  String get aiGoPremium => 'Premium — up to 200 AI questions a day';
 
   @override
   String get crossroadsReasonRedLight =>
@@ -3880,4 +3880,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameCrossroadsCrash => 'Crash';
+
+  @override
+  String aiCorrectAnswer(String answer) {
+    return 'Correct answer: **$answer**';
+  }
+
+  @override
+  String get aiOfficialComment => 'Official explanation';
+
+  @override
+  String get aiNoOfficialComment =>
+      'No official explanation is available for this question.';
+
+  @override
+  String get aiSuggestRule => 'Which rule applies to this question?';
+
+  @override
+  String get aiSuggestWhy => 'Why is this answer correct?';
+
+  @override
+  String get aiSuggestExceptions => 'Are there exceptions to this rule?';
+
+  @override
+  String get aiSignInRequired =>
+      'Sign in to ask the AI. Official explanations are available without signing in.';
+
+  @override
+  String get aiQuotaWait =>
+      'The daily AI limit has been reached. Try again after it resets.';
+
+  @override
+  String get subscriptionPerkGameDescription =>
+      'City drives without waiting for runs to recharge';
+
+  @override
+  String get purchaseLegacyOwnerRequired =>
+      'An older App Store purchase needs ownership verification by support. Do not pay again: contact support with your Apple receipt.';
+
+  @override
+  String get profileAppleRevokeInstructions =>
+      'Your account data has been deleted. For an older Apple sign-in, also open Apple Account settings → “Sign in with Apple”, choose this app and stop using your Apple ID.';
+
+  @override
+  String get profileAppleOpenSettings => 'Apple Account settings';
+
+  @override
+  String get aiTemporaryWait =>
+      'AI is temporarily unavailable. Try again later.';
 }

@@ -233,7 +233,7 @@ void main() {
     expect(restarted.nextNotice, isNull);
   });
   test(
-    'signed-in user passes userId and email for personal test campaigns',
+    'personal identity is never sent in notification query parameters',
     () async {
       Uri? requested;
       final service = RemoteNotificationsService.forTesting(
@@ -256,12 +256,9 @@ void main() {
         ),
       );
       await service.refresh();
-      expect(requested?.queryParameters['userId'], 'google_123');
-      expect(requested?.queryParameters['email'], 'admin@test.ru');
-      expect(
-        RemoteNotificationsService.userTopic('  Admin@Test.ru '),
-        'pdd_u_61646d696e40746573742e7275',
-      );
+      expect(requested?.queryParameters.containsKey('userId'), isFalse);
+      expect(requested?.queryParameters.containsKey('email'), isFalse);
+      expect(requested.toString(), isNot(contains('admin')));
     },
   );
 }

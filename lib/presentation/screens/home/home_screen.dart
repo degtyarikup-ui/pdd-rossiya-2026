@@ -82,6 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // A Premium granted from the admin panel shows up while the app is open
     // (a read-only check, no write on the server).
     _grantPoll = Timer.periodic(const Duration(minutes: 5), (_) {
+      unawaited(PremiumService.instance.refreshDailyLimits());
       unawaited(PremiumService.instance.checkForGrant());
       unawaited(_checkNotices());
       unawaited(_checkPendingPayment());

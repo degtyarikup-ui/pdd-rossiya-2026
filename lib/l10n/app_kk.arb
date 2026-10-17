@@ -603,7 +603,7 @@
   "paywallTitle": "Шектеусіз дайындалыңыз",
   "paywallFreeNote": "Билеттер, емтихан және жол жүру ережелері тегін қалады",
   "paywallFeatureFeed": "Шексіз сұрақтар арнасы",
-  "paywallFeatureAi": "AI қателерін талдау",
+  "paywallFeatureAi": "ЖИ түсіндірмелері: тәулігіне 200 сұраққа дейін",
   "paywallFeatureVoice": "Билеттерге арналған студиялық дауыс актісі",
   "paywallFeatureGame": "Ойында шектеусіз жарыстар",
   "paywallPlanQuarter": "3 ай",
@@ -1050,7 +1050,7 @@
     }
   },
   "premiumAccessTitle": "Премиум қолжетімділік",
-  "premiumBannerSubtitleUnlimited": "Ақылды арна мен AI шектеусіз",
+  "premiumBannerSubtitleUnlimited": "Шексіз лента, жарыстар және көбірек ЖИ",
   "premiumBannerCardsLeft": "Тегін карточкалар қалды: {remaining} / {limit}",
   "@premiumBannerCardsLeft": {
     "placeholders": {
@@ -1084,7 +1084,7 @@
   "subscriptionPerkFeedTitle": "Шексіз ақылды арна",
   "subscriptionPerkFeedDescription": "Барлық сұрақтар мен санаттар шектеусіз қолжетімді",
   "subscriptionPerkAiTitle": "Әр сұраққа AI талдауы",
-  "subscriptionPerkAiDescription": "Ережелер мен жол жағдайларын лезде түсіндіру",
+  "subscriptionPerkAiDescription": "Тәулігіне 200 ЖИ сұрағына дейін. Шек UTC бойынша түн ортасында жаңарады.",
   "subscriptionPerkVoiceTitle": "Кәсіби дауыспен оқу",
   "subscriptionPerkVoiceDescription": "Сұрақтар мен билеттерге арналған студиялық диктор",
   "subscriptionCancelInfoApple": "Автоматты жаңартуды кез келген уақытта өшіріп, жазылымды Apple ID аккаунтының параметрлерінде өзгертуге болады. Бас тартсаңыз, қолжетімділік {date} дейін сақталады.",
@@ -1221,7 +1221,7 @@
       }
     }
   },
-  "aiGoPremium": "Шексіз AI үшін Premium жазылыңыз",
+  "aiGoPremium": "Premium — тәулігіне 200 ЖИ сұрағына дейін",
   "crossroadsReasonRedLight": "Тыйым салатын бағдаршам сигналында өту (ЖЖЕ 6.2-тармағы). Қызыл жанғанда қозғалуға қатаң тыйым салынады!",
   "crossroadsReasonEarlyExit": "Тым ерте шығу: жол бермедіңіз және қиылысты қозғалыстағы көліктер босатқанын күтпедіңіз! (ЖЖЕ 13.8-тармағы)",
   "crossroadsArticleRedLight": "ЖЖЕ 6.2-тармағы",
@@ -1308,5 +1308,18 @@
   "gameRatingPendingRun": "Осы ойындағы ұпайлар мәзірге шыққаннан кейін рейтингке қосылады.",
   "gameRatingNotRanked": "Рейтингке кіру үшін ойнаңыз",
   "gameRatingSignIn": "Рейтингке қатысу үшін аккаунтқа кіріңіз",
-  "gameCrossroadsCrash": "Жол апаты"
+  "gameCrossroadsCrash": "Жол апаты",
+  "aiCorrectAnswer": "Дұрыс жауап: **{answer}**",
+  "aiOfficialComment": "Ресми түсіндірме",
+  "aiNoOfficialComment": "Бұл сұраққа ресми түсіндірме жоқ.",
+  "aiSuggestRule": "Бұл сұраққа қандай ереже қолданылады?",
+  "aiSuggestWhy": "Неліктен осы жауап дұрыс?",
+  "aiSuggestExceptions": "Бұл ережеде ерекшеліктер бар ма?",
+  "aiSignInRequired": "ЖИ-ге сұрақ қою үшін есептік жазбаға кіріңіз. Ресми түсіндірмелер кірусіз қолжетімді.",
+  "aiQuotaWait": "ЖИ сұрақтарының күндік шегі аяқталды. Шек жаңарғаннан кейін қайталаңыз.",
+  "subscriptionPerkGameDescription": "«Жанды қалада» жарыстардың қалпына келуін күтпей ойнау",
+  "purchaseLegacyOwnerRequired": "Бұрынғы App Store сатып алуын аккаунтқа байланыстыру үшін қолдау қызметі иесін растауы керек. Қайта төлемеңіз: Apple түбіртегін тіркеп, қолдау қызметіне жазыңыз.",
+  "profileAppleRevokeInstructions": "Аккаунт деректері жойылды. Бұрын Apple арқылы кірген болсаңыз, Apple Account баптауларындағы «Apple арқылы кіру» бөлімін ашып, осы қолданбаны таңдап, Apple ID пайдалануды тоқтатыңыз.",
+  "profileAppleOpenSettings": "Apple Account баптаулары",
+  "aiTemporaryWait": "ЖИ уақытша қолжетімсіз. Кейінірек қайталап көріңіз."
 }

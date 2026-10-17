@@ -110,7 +110,10 @@ class _SubscriptionManagementSheetState
         } else {
           AppToast.show(
             context,
-            appL10n.payRestoreNone,
+            IapService.instance.lastFailure ==
+                    PurchaseFailure.legacyOwnerRequired
+                ? appL10n.purchaseLegacyOwnerRequired
+                : appL10n.payRestoreNone,
             type: AppToastType.normal,
           );
         }
@@ -248,6 +251,15 @@ class _SubscriptionManagementSheetState
                       icon: Icons.record_voice_over_rounded,
                       title: appL10n.subscriptionPerkVoiceTitle,
                       description: appL10n.subscriptionPerkVoiceDescription,
+                      accentColor: greenAccent,
+                      surfaceColor: greenSurface,
+                      colors: colors,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildFeatureItem(
+                      icon: Icons.sports_esports_rounded,
+                      title: appL10n.paywallFeatureGame,
+                      description: appL10n.subscriptionPerkGameDescription,
                       accentColor: greenAccent,
                       surfaceColor: greenSurface,
                       colors: colors,

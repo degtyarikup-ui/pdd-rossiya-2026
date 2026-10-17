@@ -10,6 +10,9 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/data/services/network_retry.dart';
+import 'package:pdd_app/data/services/notifier_api.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum PurchaseResult {
   success,
@@ -30,11 +33,16 @@ enum PurchaseFailure {
 
   /// Оплата прошла, но доступ пока не подтверждён — повторно платить не нужно.
   verificationPending,
+
+  /// A legacy Apple transaction needs ownership evidence from support.
+  legacyOwnerRequired,
 }
 
 class IapService extends ChangeNotifier {
   static final IapService instance = IapService._internal();
   IapService._internal();
+  @visibleForTesting
+  IapService.forTesting();
 
   // RuStore distributes the app with SBP payments only. Keep the guard at the
   // store boundary: startup, paywall and restore can all call this service.
@@ -48,6 +56,56 @@ class IapService extends ChangeNotifier {
   Future<void> _purchaseQueue = Future.value();
   final Map<String, (PurchaseDetails, String?)> _pendingVerification = {};
   final Map<String, String> _pendingStoreOwners = {};
+  static const _ownersKey = 'iap_pending_owners_v1';
+  bool _ownersLoaded = false;
+
+  Future<void> _loadOwners() async {
+    if (_ownersLoaded) return;
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_ownersKey);
+    if (raw != null) {
+      final data = jsonDecode(raw);
+      if (data is Map) {
+        for (final entry in data.entries) {
+          if (entry.key is String && entry.value is String) {
+            _pendingStoreOwners[entry.key as String] = entry.value as String;
+          }
+        }
+      }
+    }
+    _ownersLoaded = true;
+  }
+
+  Future<void> _saveOwners() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setString(_ownersKey, jsonEncode(_pendingStoreOwners))) {
+      throw StateError('purchase ownership storage unavailable');
+    }
+  }
+
+  Future<void> _clearOwner(String product) async {
+    _pendingStoreOwners.remove(product);
+    await _saveOwners();
+  }
+
+  Future<String?> _appleAccountToken() async {
+    final response = await sendWithRetry(
+      (host) => http.get(
+        Uri.parse('$host/api/user/store/account-token'),
+        headers: AuthService.instance.serverHeaders,
+      ),
+      hosts: BackendConfig.notifierHosts,
+    );
+    if (response.statusCode != 200) return null;
+    final value = jsonDecode(response.body)['accountToken'];
+    return value is String &&
+            RegExp(
+              r'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-5[a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$',
+            ).hasMatch(value)
+        ? value
+        : null;
+  }
+
   Timer? _retryTimer;
   bool _observingAuth = false;
   Future<void>? _initializing;
@@ -127,6 +185,7 @@ class IapService extends ChangeNotifier {
   Future<void> _init() async {
     try {
       if (!supportsStoreBilling) return;
+      await _loadOwners();
       if (!_observingAuth) {
         AuthService.instance.addListener(_onAuthChanged);
         _observingAuth = true;
@@ -167,6 +226,11 @@ class IapService extends ChangeNotifier {
       if (purchase.status == PurchaseStatus.pending && owner != null) {
         // Ask to Buy can complete after a temporary purchase-stream error.
         _pendingStoreOwners.putIfAbsent(purchase.productID, () => owner);
+        unawaited(
+          _saveOwners().catchError(
+            (Object error) => _report('iap.owner', error: error),
+          ),
+        );
       }
       return (purchase, owner);
     }).toList();
@@ -337,14 +401,11 @@ class IapService extends ChangeNotifier {
       return false;
     }
     try {
-      final response = await http
-          .get(
-            Uri.parse(
-              '${BackendConfig.notifierUrl}/api/user/store/status',
-            ).replace(queryParameters: {'store': _store}),
-            headers: AuthService.instance.serverHeaders,
-          )
-          .timeout(const Duration(seconds: 8));
+      final response = await NotifierApi.get(
+        '/api/user/store/status',
+        query: {'store': _store},
+        headers: AuthService.instance.serverHeaders,
+      );
       return response.statusCode == 200 &&
           jsonDecode(response.body)['configured'] == true;
     } catch (error) {
@@ -413,6 +474,29 @@ class IapService extends ChangeNotifier {
       _currentPurchaseCompleter = null;
       return PurchaseResult.error;
     }
+    String? appleToken;
+    try {
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        appleToken = await _appleAccountToken();
+        if (appleToken == null) {
+          _safeCompletePurchase(PurchaseResult.storeUnavailable);
+          return PurchaseResult.storeUnavailable;
+        }
+      }
+      if (AuthService.instance.currentUser?.id != owner ||
+          !AuthService.instance.hasServerSession) {
+        _safeCompletePurchase(PurchaseResult.error);
+        return PurchaseResult.error;
+      }
+      _pendingStoreOwners[product.id] = owner!;
+      // Persist before the OS payment sheet: deferred StoreKit transactions can
+      // be delivered after the process dies and another account signs in.
+      await _saveOwners();
+    } catch (error) {
+      _report('iap.owner', error: error);
+      _safeCompletePurchase(PurchaseResult.error);
+      return PurchaseResult.error;
+    }
     final purchaseParam = PurchaseParam(
       productDetails: product,
       applicationUserName:
@@ -420,7 +504,7 @@ class IapService extends ChangeNotifier {
           ? sha256
                 .convert(utf8.encode(AuthService.instance.currentUser!.id))
                 .toString()
-          : null,
+          : appleToken,
     );
     _currentPurchaseOwner = owner;
     _currentPurchaseProductId = product.id;
@@ -429,6 +513,9 @@ class IapService extends ChangeNotifier {
         purchaseParam: purchaseParam,
       );
       if (!launched) {
+        // No OS purchase was created. Do not leave a durable reservation that
+        // would prevent another signed-in account from opening this product.
+        await _clearOwner(product.id);
         _report('iap.buy', code: 'purchase_not_started');
         _safeCompletePurchase(PurchaseResult.error);
         return PurchaseResult.error;
@@ -455,6 +542,7 @@ class IapService extends ChangeNotifier {
   }
 
   Future<bool> _restoreNative() async {
+    _lastFailure = PurchaseFailure.other;
     final owner = AuthService.instance.currentUser?.id;
     if (!supportsStoreBilling || !AuthService.instance.hasServerSession) {
       return false;
@@ -526,7 +614,7 @@ class IapService extends ChangeNotifier {
             'purchase_canceled',
             'user_canceled',
           ].contains(purchaseDetails.error?.code)) {
-            _pendingStoreOwners.remove(purchaseDetails.productID);
+            await _clearOwner(purchaseDetails.productID);
             _safeCompletePurchase(PurchaseResult.canceled);
             _safeCompleteRestore(false);
             if (purchaseDetails.pendingCompletePurchase) {
@@ -552,7 +640,6 @@ class IapService extends ChangeNotifier {
             key,
             () => (purchaseDetails, owner),
           );
-          _pendingStoreOwners.remove(purchaseDetails.productID);
           if (pending.$2 != null && pending.$2 != auth.currentUser?.id) {
             _safeCompletePurchase(PurchaseResult.error);
             _safeCompleteRestore(false);
@@ -575,9 +662,17 @@ class IapService extends ChangeNotifier {
                 purchaseDetails.verificationData.serverVerificationData,
           );
           if (!verified) {
-            _lastErrorMessage = appL10n.purchaseVerificationPending;
-            _lastFailure = PurchaseFailure.verificationPending;
+            final legacy =
+                PremiumService.instance.purchaseVerificationFailure ==
+                PurchaseVerificationFailure.legacyOwnerRequired;
+            _lastErrorMessage = legacy
+                ? appL10n.purchaseLegacyOwnerRequired
+                : appL10n.purchaseVerificationPending;
+            _lastFailure = legacy
+                ? PurchaseFailure.legacyOwnerRequired
+                : PurchaseFailure.verificationPending;
             _safeCompletePurchase(PurchaseResult.error);
+            _safeCompleteRestore(false);
             // Do not acknowledge a payment we could not deliver. The store
             // can redeliver it; the user can retry restoration after reconnecting.
             if (PremiumService.instance.purchaseVerificationFailure ==
@@ -604,9 +699,10 @@ class IapService extends ChangeNotifier {
             }
           }
           _pendingVerification.remove(key);
+          await _clearOwner(purchaseDetails.productID);
           continue;
         } else if (purchaseDetails.status == PurchaseStatus.canceled) {
-          _pendingStoreOwners.remove(purchaseDetails.productID);
+          await _clearOwner(purchaseDetails.productID);
           _safeCompletePurchase(PurchaseResult.canceled);
           _safeCompleteRestore(false);
         }

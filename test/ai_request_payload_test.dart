@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:pdd_app/data/services/gemini_ai_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   Future<http.Request> send({
     required List<AiChatMessage> history,
@@ -69,7 +71,7 @@ void main() {
       final history = List.generate(
         300,
         (i) => AiChatMessage(
-        text: '$i: ${'Дорожная ситуация 🚦\\" ' * 150}',
+          text: '$i: ${'Дорожная ситуация 🚦\\" ' * 150}',
           isUser: i.isEven,
           timestamp: DateTime(2026),
         ),

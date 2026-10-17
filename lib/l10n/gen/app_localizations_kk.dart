@@ -1796,7 +1796,8 @@ class AppLocalizationsKk extends AppLocalizations {
   String get paywallFeatureFeed => 'Шексіз сұрақтар арнасы';
 
   @override
-  String get paywallFeatureAi => 'AI қателерін талдау';
+  String get paywallFeatureAi =>
+      'ЖИ түсіндірмелері: тәулігіне 200 сұраққа дейін';
 
   @override
   String get paywallFeatureVoice =>
@@ -3368,7 +3369,8 @@ class AppLocalizationsKk extends AppLocalizations {
   String get premiumAccessTitle => 'Премиум қолжетімділік';
 
   @override
-  String get premiumBannerSubtitleUnlimited => 'Ақылды арна мен AI шектеусіз';
+  String get premiumBannerSubtitleUnlimited =>
+      'Шексіз лента, жарыстар және көбірек ЖИ';
 
   @override
   String premiumBannerCardsLeft(int remaining, int limit) {
@@ -3426,7 +3428,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get subscriptionPerkAiDescription =>
-      'Ережелер мен жол жағдайларын лезде түсіндіру';
+      'Тәулігіне 200 ЖИ сұрағына дейін. Шек UTC бойынша түн ортасында жаңарады.';
 
   @override
   String get subscriptionPerkVoiceTitle => 'Кәсіби дауыспен оқу';
@@ -3604,7 +3606,7 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get aiGoPremium => 'Шексіз AI үшін Premium жазылыңыз';
+  String get aiGoPremium => 'Premium — тәулігіне 200 ЖИ сұрағына дейін';
 
   @override
   String get crossroadsReasonRedLight =>
@@ -3872,4 +3874,51 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameCrossroadsCrash => 'Жол апаты';
+
+  @override
+  String aiCorrectAnswer(String answer) {
+    return 'Дұрыс жауап: **$answer**';
+  }
+
+  @override
+  String get aiOfficialComment => 'Ресми түсіндірме';
+
+  @override
+  String get aiNoOfficialComment => 'Бұл сұраққа ресми түсіндірме жоқ.';
+
+  @override
+  String get aiSuggestRule => 'Бұл сұраққа қандай ереже қолданылады?';
+
+  @override
+  String get aiSuggestWhy => 'Неліктен осы жауап дұрыс?';
+
+  @override
+  String get aiSuggestExceptions => 'Бұл ережеде ерекшеліктер бар ма?';
+
+  @override
+  String get aiSignInRequired =>
+      'ЖИ-ге сұрақ қою үшін есептік жазбаға кіріңіз. Ресми түсіндірмелер кірусіз қолжетімді.';
+
+  @override
+  String get aiQuotaWait =>
+      'ЖИ сұрақтарының күндік шегі аяқталды. Шек жаңарғаннан кейін қайталаңыз.';
+
+  @override
+  String get subscriptionPerkGameDescription =>
+      '«Жанды қалада» жарыстардың қалпына келуін күтпей ойнау';
+
+  @override
+  String get purchaseLegacyOwnerRequired =>
+      'Бұрынғы App Store сатып алуын аккаунтқа байланыстыру үшін қолдау қызметі иесін растауы керек. Қайта төлемеңіз: Apple түбіртегін тіркеп, қолдау қызметіне жазыңыз.';
+
+  @override
+  String get profileAppleRevokeInstructions =>
+      'Аккаунт деректері жойылды. Бұрын Apple арқылы кірген болсаңыз, Apple Account баптауларындағы «Apple арқылы кіру» бөлімін ашып, осы қолданбаны таңдап, Apple ID пайдалануды тоқтатыңыз.';
+
+  @override
+  String get profileAppleOpenSettings => 'Apple Account баптаулары';
+
+  @override
+  String get aiTemporaryWait =>
+      'ЖИ уақытша қолжетімсіз. Кейінірек қайталап көріңіз.';
 }

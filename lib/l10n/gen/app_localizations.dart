@@ -3115,7 +3115,7 @@ abstract class AppLocalizations {
   /// No description provided for @paywallFeatureAi.
   ///
   /// In ru, this message translates to:
-  /// **'Разбор ошибок от ИИ'**
+  /// **'ИИ-разборы: до 200 вопросов в сутки'**
   String get paywallFeatureAi;
 
   /// No description provided for @paywallFeatureVoice.
@@ -5575,7 +5575,7 @@ abstract class AppLocalizations {
   /// No description provided for @premiumBannerSubtitleUnlimited.
   ///
   /// In ru, this message translates to:
-  /// **'Умная лента и ИИ без ограничений'**
+  /// **'Безлимитная лента, заезды и больше ИИ'**
   String get premiumBannerSubtitleUnlimited;
 
   /// No description provided for @premiumBannerCardsLeft.
@@ -5677,7 +5677,7 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptionPerkAiDescription.
   ///
   /// In ru, this message translates to:
-  /// **'Мгновенное объяснение правил и дорожных ситуаций'**
+  /// **'До 200 вопросов ИИ в сутки. Лимит обновляется в полночь UTC.'**
   String get subscriptionPerkAiDescription;
 
   /// No description provided for @subscriptionPerkVoiceTitle.
@@ -5983,7 +5983,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiGoPremium.
   ///
   /// In ru, this message translates to:
-  /// **'Оформите Premium для безлимитного ИИ'**
+  /// **'Premium — до 200 вопросов ИИ в сутки'**
   String get aiGoPremium;
 
   /// No description provided for @crossroadsReasonRedLight.
@@ -6465,6 +6465,84 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'ДТП'**
   String get gameCrossroadsCrash;
+
+  /// No description provided for @aiCorrectAnswer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правильный ответ: **{answer}**'**
+  String aiCorrectAnswer(String answer);
+
+  /// No description provided for @aiOfficialComment.
+  ///
+  /// In ru, this message translates to:
+  /// **'Официальный комментарий'**
+  String get aiOfficialComment;
+
+  /// No description provided for @aiNoOfficialComment.
+  ///
+  /// In ru, this message translates to:
+  /// **'Для этого вопроса официальный комментарий отсутствует.'**
+  String get aiNoOfficialComment;
+
+  /// No description provided for @aiSuggestRule.
+  ///
+  /// In ru, this message translates to:
+  /// **'Какое правило применяется в этом вопросе?'**
+  String get aiSuggestRule;
+
+  /// No description provided for @aiSuggestWhy.
+  ///
+  /// In ru, this message translates to:
+  /// **'Почему верен именно этот ответ?'**
+  String get aiSuggestWhy;
+
+  /// No description provided for @aiSuggestExceptions.
+  ///
+  /// In ru, this message translates to:
+  /// **'Есть ли исключения из этого правила?'**
+  String get aiSuggestExceptions;
+
+  /// No description provided for @aiSignInRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Для вопросов ИИ войдите в аккаунт. Официальные комментарии доступны без входа.'**
+  String get aiSignInRequired;
+
+  /// No description provided for @aiQuotaWait.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дневной лимит ИИ исчерпан. Попробуйте после обновления лимита.'**
+  String get aiQuotaWait;
+
+  /// No description provided for @subscriptionPerkGameDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезды в «Живом городе» без ожидания восстановления'**
+  String get subscriptionPerkGameDescription;
+
+  /// No description provided for @purchaseLegacyOwnerRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Старую покупку App Store нужно связать с аккаунтом через поддержку. Не платите повторно: напишите в поддержку и приложите чек Apple.'**
+  String get purchaseLegacyOwnerRequired;
+
+  /// No description provided for @profileAppleRevokeInstructions.
+  ///
+  /// In ru, this message translates to:
+  /// **'Данные аккаунта удалены. Для старого входа через Apple также откройте настройки Apple Account → «Вход с Apple», выберите приложение и прекратите использование Apple ID.'**
+  String get profileAppleRevokeInstructions;
+
+  /// No description provided for @profileAppleOpenSettings.
+  ///
+  /// In ru, this message translates to:
+  /// **'Настройки Apple Account'**
+  String get profileAppleOpenSettings;
+
+  /// No description provided for @aiTemporaryWait.
+  ///
+  /// In ru, this message translates to:
+  /// **'ИИ временно недоступен. Попробуйте позже.'**
+  String get aiTemporaryWait;
 }
 
 class _AppLocalizationsDelegate

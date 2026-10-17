@@ -187,6 +187,8 @@ final unfinishedSessionProvider = FutureProvider<Map<String, dynamic>?>((
     return {
       'kind': 'exam',
       'questions': questions,
+      'allQuestions': all.map((q) => q.toMap()).toList(),
+      if (saved['examGroups'] is List) 'examGroups': saved['examGroups'],
       'index': index,
       'total': questions.length,
       'answers': answers,

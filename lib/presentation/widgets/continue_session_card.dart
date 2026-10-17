@@ -73,7 +73,8 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
         .map((m) => Map<String, dynamic>.from(m))
         .toList();
     final index = (session['index'] as num?)?.toInt() ?? 0;
-    final total = (session['total'] as num?)?.toInt() ??
+    final total =
+        (session['total'] as num?)?.toInt() ??
         (questions.isNotEmpty ? questions.length : 1);
     // У экзамена своего названия нет — он один, в отличие от билетов и тем.
     final title = isExam ? appL10n.exam : ((session['title'] as String?) ?? '');
@@ -109,7 +110,13 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
                           // остатком времени и доп. фазой. allQuestions ему
                           // нужен только для новой жеребьёвки — здесь набор
                           // уже готов.
-                          ? ExamScreen(allQuestions: questions, resume: session)
+                          ? ExamScreen(
+                              allQuestions:
+                                  (session['allQuestions'] as List?)
+                                      ?.cast<Map<String, dynamic>>() ??
+                                  questions,
+                              resume: session,
+                            )
                           : TrainingScreen(
                               questions: questions,
                               title: title,

@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:pdd_app/data/services/notifier_api.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/core/config/country_config.dart';
@@ -19,7 +19,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 enum PremiumTier { weekly, threeMonths }
 
-enum PurchaseVerificationFailure { unavailable, rejected, inactive }
+enum PurchaseVerificationFailure {
+  unavailable,
+  rejected,
+  inactive,
+  legacyOwnerRequired,
+}
 
 class PremiumService extends ChangeNotifier {
   static final PremiumService instance = PremiumService._internal();
@@ -36,7 +41,7 @@ class PremiumService extends ChangeNotifier {
   /// Лимит бесплатных карточек в ленте в день: 5 для гостей, 10 для зарегистрированных
   int get dailyFreeLimit => _currentUserId != null ? 10 : 5;
 
-  /// Лимит бесплатных сообщений/вопросов ИИ: 10 на аккаунт/гостя (не сбрасывается по дням)
+  /// Server quota: authenticated free accounts receive 10 requests per UTC day.
   int get aiFreeLimit => 10;
 
   bool _isPremium = false;
@@ -44,7 +49,31 @@ class PremiumService extends ChangeNotifier {
   String? _purchaseStore;
   String? get purchaseStore => _purchaseStore;
   int _dailyCardsCount = 0;
+  String? _dailyCardsDate;
+  @visibleForTesting
+  static DateTime Function() currentTime = DateTime.now;
   int _aiMessagesCount = 0;
+  int? _serverAiRemaining;
+  int? _serverAiLimit;
+  DateTime? _serverAiResetsAt;
+  bool get _aiQuotaFresh =>
+      _serverAiRemaining != null &&
+      (_serverAiResetsAt == null ||
+          DateTime.now().isBefore(_serverAiResetsAt!));
+  bool get hasServerAiQuota => _aiQuotaFresh;
+  int get aiDailyLimit => _aiQuotaFresh
+      ? _serverAiLimit ?? aiFreeLimit
+      : (isPremium ? 200 : aiFreeLimit);
+  void applyAiQuota(Map<String, dynamic> data) {
+    if (data['remaining'] is! num) return;
+    _serverAiRemaining = math.max(0, (data['remaining'] as num).toInt());
+    if (data['limit'] is num) _serverAiLimit = (data['limit'] as num).toInt();
+    if (data['resetsAt'] is String) {
+      _serverAiResetsAt = DateTime.tryParse(data['resetsAt'] as String);
+    }
+    notifyListeners();
+  }
+
   bool _isInitialized = false;
   int _entitlementRevision = 0;
   PurchaseVerificationFailure? _purchaseVerificationFailure;
@@ -86,15 +115,19 @@ class PremiumService extends ChangeNotifier {
   }
 
   DateTime? get expiresAt => _expiresAt;
-  int get dailyCardsCount => _dailyCardsCount;
+  int get dailyCardsCount =>
+      _dailyCardsDate == _getTodayString() ? _dailyCardsCount : 0;
   int get remainingFreeCards =>
-      isPremium ? 999999 : math.max(0, dailyFreeLimit - _dailyCardsCount);
+      isPremium ? 999999 : math.max(0, dailyFreeLimit - dailyCardsCount);
   bool get canAccessFeed => isPremium || remainingFreeCards > 0;
 
   int get aiMessagesCount => _aiMessagesCount;
-  int get remainingAiMessages =>
-      isPremium ? 999999 : math.max(0, aiFreeLimit - _aiMessagesCount);
-  bool get canSendAiMessage => isPremium || remainingAiMessages > 0;
+  int get remainingAiMessages => _aiQuotaFresh
+      ? _serverAiRemaining!
+      : isPremium
+      ? 200
+      : math.max(0, aiFreeLimit - _aiMessagesCount);
+  bool get canSendAiMessage => remainingAiMessages > 0;
 
   String _getDailyCardsKey([String? userId]) {
     final uid =
@@ -138,6 +171,7 @@ class PremiumService extends ChangeNotifier {
 
       // Check daily reset for current user / guest
       final todayStr = _getTodayString();
+      _dailyCardsDate = todayStr;
       final dateKey = _getDailyDateKey();
       final cardsKey = _getDailyCardsKey();
       final lastDate =
@@ -175,6 +209,9 @@ class PremiumService extends ChangeNotifier {
       final changedAccount = _currentUserId != user?.id;
       _currentUserId = user?.id;
       if (changedAccount) {
+        _serverAiRemaining = null;
+        _serverAiLimit = null;
+        _serverAiResetsAt = null;
         _purchaseStore = null;
         _isPremium = false;
         _expiresAt = null;
@@ -184,6 +221,7 @@ class PremiumService extends ChangeNotifier {
 
       final prefs = await SharedPreferences.getInstance();
       final todayStr = _getTodayString();
+      _dailyCardsDate = todayStr;
       final uid = _currentUserId ?? 'guest';
       final dateKey = _getDailyDateKey(uid);
       final cardsKey = _getDailyCardsKey(uid);
@@ -220,9 +258,6 @@ class PremiumService extends ChangeNotifier {
       debugPrint('PremiumService: onAuthChanged error: $e');
     }
   }
-
-  static const String _syncEndpoint =
-      '${BackendConfig.notifierUrl}/api/user/sync';
 
   Future<void> syncWithServer() async {
     final user = AuthService.instance.currentUser;
@@ -262,13 +297,12 @@ class PremiumService extends ChangeNotifier {
         if (appVersion.isNotEmpty) 'appVersion': appVersion,
       };
 
-      final resp = await http
-          .post(
-            Uri.parse(_syncEndpoint),
-            headers: AuthService.instance.serverHeaders,
-            body: jsonEncode(payload),
-          )
-          .timeout(const Duration(seconds: 10));
+      final resp = await NotifierApi.post(
+        '/api/user/sync',
+        idempotent: true,
+        headers: AuthService.instance.serverHeaders,
+        body: jsonEncode(payload),
+      );
 
       if (resp.statusCode == 200 &&
           revision == AuthService.instance.accountRevision &&
@@ -326,9 +360,6 @@ class PremiumService extends ChangeNotifier {
     _premiumGrantedStreamController.add(serverExpiresAt);
   }
 
-  static const String _statusEndpoint =
-      '${BackendConfig.notifierUrl}/api/user/status';
-
   /// Picks up administrative grants and store renewals while the app is open.
   Future<void> checkForGrant() async {
     final user = AuthService.instance.currentUser;
@@ -337,12 +368,10 @@ class PremiumService extends ChangeNotifier {
     final revision = AuthService.instance.accountRevision;
     final entitlementRevision = _entitlementRevision;
     try {
-      final resp = await http
-          .get(
-            Uri.parse(_statusEndpoint),
-            headers: AuthService.instance.serverHeaders,
-          )
-          .timeout(const Duration(seconds: 10));
+      final resp = await NotifierApi.get(
+        '/api/user/status',
+        headers: AuthService.instance.serverHeaders,
+      );
       if (resp.statusCode != 200 ||
           revision != AuthService.instance.accountRevision ||
           entitlementRevision != _entitlementRevision) {
@@ -373,8 +402,21 @@ class PremiumService extends ChangeNotifier {
   }
 
   String _getTodayString() {
-    final now = DateTime.now();
+    final now = currentTime();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> refreshDailyLimits() async {
+    final today = _getTodayString();
+    if (_dailyCardsDate == today) return;
+    final prefs = await SharedPreferences.getInstance();
+    _dailyCardsDate = today;
+    _dailyCardsCount = prefs.getString(_getDailyDateKey()) == today
+        ? prefs.getInt(_getDailyCardsKey()) ?? 0
+        : 0;
+    await prefs.setString(_getDailyDateKey(), today);
+    await prefs.setInt(_getDailyCardsKey(), _dailyCardsCount);
+    notifyListeners();
   }
 
   Future<void> recordCardCompleted() async {
@@ -382,6 +424,7 @@ class PremiumService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final todayStr = _getTodayString();
+      _dailyCardsDate = todayStr;
       final cardsKey = _getDailyCardsKey();
       final dateKey = _getDailyDateKey();
       final lastDate = prefs.getString(dateKey);
@@ -430,24 +473,28 @@ class PremiumService extends ChangeNotifier {
     }
     final revision = auth.accountRevision;
     try {
-      final response = await http
-          .post(
-            Uri.parse('${BackendConfig.notifierUrl}/api/user/purchase'),
-            headers: auth.serverHeaders,
-            body: jsonEncode({
-              'userId': user.id,
-              'tier': tier.name,
-              'price': price,
-              'store': store,
-              'productId': productId,
-              'purchaseToken': purchaseToken,
-              'transactionId': ?transactionId,
-              'country': CountryConfig.current.code,
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await NotifierApi.post(
+        '/api/user/purchase',
+        idempotent: true,
+        headers: auth.serverHeaders,
+        body: jsonEncode({
+          'userId': user.id,
+          'tier': tier.name,
+          'price': price,
+          'store': store,
+          'productId': productId,
+          'purchaseToken': purchaseToken,
+          'transactionId': ?transactionId,
+          'country': CountryConfig.current.code,
+        }),
+      );
       if (response.statusCode != 200) {
-        if ([400, 403, 422].contains(response.statusCode)) {
+        if (response.statusCode == 409 &&
+            jsonDecode(response.body)['error'] ==
+                'legacy purchase owner required') {
+          _purchaseVerificationFailure =
+              PurchaseVerificationFailure.legacyOwnerRequired;
+        } else if ([400, 403, 409, 422].contains(response.statusCode)) {
           _purchaseVerificationFailure = PurchaseVerificationFailure.rejected;
         }
         return false;
@@ -499,9 +546,7 @@ class PremiumService extends ChangeNotifier {
   Future<bool> webPaymentsAvailable() async {
     if (!BackendConfig.hasNotifier) return false;
     try {
-      final response = await http
-          .get(Uri.parse('${BackendConfig.notifierUrl}/api/pay/status'))
-          .timeout(const Duration(seconds: 8));
+      final response = await NotifierApi.get('/api/pay/status');
       if (response.statusCode != 200) return false;
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return data['available'] == true;
@@ -533,20 +578,19 @@ class PremiumService extends ChangeNotifier {
     final auth = AuthService.instance;
     if (!auth.hasServerSession || !BackendConfig.hasNotifier) return null;
     try {
-      final response = await http
-          .post(
-            Uri.parse('${BackendConfig.notifierUrl}/api/user/pay-intent'),
-            headers: auth.serverHeaders,
-            body: jsonEncode({
-              'tier': tier.name,
-              'email': email.trim(),
-              'method': method,
-              'app': CountryConfig.current.code,
-              // Android возвращает человека в приложение, а не на сайт.
-              'client': kIsWeb ? 'web' : 'android',
-            }),
-          )
-          .timeout(const Duration(seconds: 25));
+      final response = await NotifierApi.post(
+        '/api/user/pay-intent',
+        idempotent: false,
+        headers: auth.serverHeaders,
+        body: jsonEncode({
+          'tier': tier.name,
+          'email': email.trim(),
+          'method': method,
+          'app': CountryConfig.current.code,
+          // Android возвращает человека в приложение, а не на сайт.
+          'client': kIsWeb ? 'web' : 'android',
+        }),
+      );
       if (response.statusCode != 200) return null;
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final url = data['available'] == true ? data['url'] as String? : null;
@@ -578,13 +622,12 @@ class PremiumService extends ChangeNotifier {
     final auth = AuthService.instance;
     if (!auth.hasServerSession || !BackendConfig.hasNotifier) return null;
     try {
-      final response = await http
-          .post(
-            Uri.parse('${BackendConfig.notifierUrl}/api/user/pay-check'),
-            headers: auth.serverHeaders,
-            body: jsonEncode({'order': order}),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await NotifierApi.post(
+        '/api/user/pay-check',
+        idempotent: true,
+        headers: auth.serverHeaders,
+        body: jsonEncode({'order': order}),
+      );
       if (response.statusCode != 200) return null;
       final status =
           (jsonDecode(response.body) as Map<String, dynamic>)['status']

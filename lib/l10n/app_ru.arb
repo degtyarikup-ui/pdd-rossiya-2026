@@ -735,8 +735,12 @@
   "gamePause": "Пауза",
   "gamePauseSound": "Звуки",
   "gamePauseVoice": "Озвучка",
-  "@gamePauseSound": {"description": "Short label of the game-sounds toggle pill in the city game pause"},
-  "@gamePauseVoice": {"description": "Short label of the recorded question voice toggle pill in the city game pause"},
+  "@gamePauseSound": {
+    "description": "Short label of the game-sounds toggle pill in the city game pause"
+  },
+  "@gamePauseVoice": {
+    "description": "Short label of the recorded question voice toggle pill in the city game pause"
+  },
   "gameExitToMenu": "Выйти в меню",
   "gameLobbyControls": "Управ.",
   "gameRunProgress": "Вопрос {n} из {total}",
@@ -990,7 +994,7 @@
   "paywallTitle": "Готовьтесь без ограничений",
   "paywallFreeNote": "Билеты, экзамен и ПДД остаются бесплатными",
   "paywallFeatureFeed": "Безлимитная лента вопросов",
-  "paywallFeatureAi": "Разбор ошибок от ИИ",
+  "paywallFeatureAi": "ИИ-разборы: до 200 вопросов в сутки",
   "paywallFeatureVoice": "Студийная озвучка билетов",
   "paywallFeatureGame": "Безлимитные заезды в игре",
   "paywallPlanQuarter": "3 месяца",
@@ -1587,7 +1591,7 @@
     }
   },
   "premiumAccessTitle": "Премиум доступ",
-  "premiumBannerSubtitleUnlimited": "Умная лента и ИИ без ограничений",
+  "premiumBannerSubtitleUnlimited": "Безлимитная лента, заезды и больше ИИ",
   "premiumBannerCardsLeft": "Осталось бесплатных карточек: {remaining} из {limit}",
   "@premiumBannerCardsLeft": {
     "placeholders": {
@@ -1621,7 +1625,7 @@
   "subscriptionPerkFeedTitle": "Безлимитная умная лента",
   "subscriptionPerkFeedDescription": "Все вопросы и категории доступны без ограничений",
   "subscriptionPerkAiTitle": "ИИ-разбор каждого вопроса",
-  "subscriptionPerkAiDescription": "Мгновенное объяснение правил и дорожных ситуаций",
+  "subscriptionPerkAiDescription": "До 200 вопросов ИИ в сутки. Лимит обновляется в полночь UTC.",
   "subscriptionPerkVoiceTitle": "Профессиональная озвучка",
   "subscriptionPerkVoiceDescription": "Студийный диктор для вопросов и билетов",
   "subscriptionCancelInfoApple": "Вы можете отключить автопродление или изменить подписку в любой момент в настройках учетной записи Apple ID. При отмене доступ сохранится до {date}.",
@@ -1758,7 +1762,7 @@
       }
     }
   },
-  "aiGoPremium": "Оформите Premium для безлимитного ИИ",
+  "aiGoPremium": "Premium — до 200 вопросов ИИ в сутки",
   "crossroadsReasonRedLight": "Проезд на запрещающий сигнал светофора (п. 6.2 ПДД РФ). Движение на красный свет категорически запрещено!",
   "crossroadsReasonEarlyExit": "Слишком ранний выезд: не уступил дорогу и не дождался освобождения перекрестка движущимся транспортом! (п. 13.8 ПДД РФ)",
   "crossroadsArticleRedLight": "Пункт 6.2 ПДД РФ",
@@ -1845,5 +1849,25 @@
   "gameRatingPendingRun": "Очки этой игры добавятся в рейтинг после выхода в меню.",
   "gameRatingNotRanked": "Сыграйте, чтобы попасть в рейтинг",
   "gameRatingSignIn": "Войдите в аккаунт, чтобы участвовать в рейтинге",
-  "gameCrossroadsCrash": "ДТП"
+  "gameCrossroadsCrash": "ДТП",
+  "aiCorrectAnswer": "Правильный ответ: **{answer}**",
+  "aiOfficialComment": "Официальный комментарий",
+  "aiNoOfficialComment": "Для этого вопроса официальный комментарий отсутствует.",
+  "aiSuggestRule": "Какое правило применяется в этом вопросе?",
+  "aiSuggestWhy": "Почему верен именно этот ответ?",
+  "aiSuggestExceptions": "Есть ли исключения из этого правила?",
+  "aiSignInRequired": "Для вопросов ИИ войдите в аккаунт. Официальные комментарии доступны без входа.",
+  "aiQuotaWait": "Дневной лимит ИИ исчерпан. Попробуйте после обновления лимита.",
+  "subscriptionPerkGameDescription": "Заезды в «Живом городе» без ожидания восстановления",
+  "@aiCorrectAnswer": {
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseLegacyOwnerRequired": "Старую покупку App Store нужно связать с аккаунтом через поддержку. Не платите повторно: напишите в поддержку и приложите чек Apple.",
+  "profileAppleRevokeInstructions": "Данные аккаунта удалены. Для старого входа через Apple также откройте настройки Apple Account → «Вход с Apple», выберите приложение и прекратите использование Apple ID.",
+  "profileAppleOpenSettings": "Настройки Apple Account",
+  "aiTemporaryWait": "ИИ временно недоступен. Попробуйте позже."
 }

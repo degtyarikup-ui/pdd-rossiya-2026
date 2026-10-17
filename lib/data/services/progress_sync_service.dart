@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:pdd_app/data/services/notifier_api.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
@@ -61,9 +61,6 @@ class ProgressSyncService {
     _isSyncing = true;
     try {
       final localSnapshot = ds.exportProgressSnapshot();
-      final url = Uri.parse(
-        '${BackendConfig.notifierUrl}/api/user/progress/sync',
-      );
 
       // Получаем версию приложения и платформу для отображения в админке
       String appVersion = '';
@@ -82,18 +79,17 @@ class ProgressSyncService {
         }
       } catch (_) {}
 
-      final resp = await http
-          .post(
-            url,
-            headers: AuthService.instance.serverHeaders,
-            body: jsonEncode({
-              'userId': user.id,
-              'progress': localSnapshot,
-              if (appVersion.isNotEmpty) 'appVersion': appVersion,
-              if (platform.isNotEmpty) 'platform': platform,
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
+      final resp = await NotifierApi.post(
+        '/api/user/progress/sync',
+        idempotent: true,
+        headers: AuthService.instance.serverHeaders,
+        body: jsonEncode({
+          'userId': user.id,
+          'progress': localSnapshot,
+          if (appVersion.isNotEmpty) 'appVersion': appVersion,
+          if (platform.isNotEmpty) 'platform': platform,
+        }),
+      );
 
       if (resp.statusCode == 200 &&
           revision == AuthService.instance.accountRevision) {
@@ -125,12 +121,11 @@ class ProgressSyncService {
     final revision = AuthService.instance.accountRevision;
 
     try {
-      final url = Uri.parse(
-        '${BackendConfig.notifierUrl}/api/user/progress?userId=${Uri.encodeComponent(user.id)}',
+      final resp = await NotifierApi.get(
+        '/api/user/progress',
+        query: {'userId': user.id},
+        headers: AuthService.instance.serverHeaders,
       );
-      final resp = await http
-          .get(url, headers: AuthService.instance.serverHeaders)
-          .timeout(const Duration(seconds: 10));
 
       if (resp.statusCode == 200 &&
           revision == AuthService.instance.accountRevision) {

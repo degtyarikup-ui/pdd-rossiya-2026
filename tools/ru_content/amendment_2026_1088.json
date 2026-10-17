@@ -1,0 +1,13 @@
+{
+  "decree": "Постановление Правительства Российской Федерации от 28.08.2026 № 1088",
+  "officialUrl": "http://publication.pravo.gov.ru/Document/View/0001202608310048",
+  "officialPdfUrl": "http://publication.pravo.gov.ru/file/pdf?eoNumber=0001202608310048",
+  "pdfSha256": "ff18b36f1f438e50a1360925e855037df0c22faca58815d639623675a8b2f55d",
+  "section": 2,
+  "point": "2.1.1",
+  "footnoteAddition": "Предъявление в многофункциональном сервисе обмена информацией в электронном виде сведений, содержащихся в документах, указанных в абзацах втором и третьем настоящего пункта, с применением двухмерного штрихового кода при взаимодействии с федеральной государственной информационной системой \"Единый портал государственных и муниципальных услуг (функций)\" приравнивается к предъявлению таких документов.",
+  "translations": {
+    "en": "Presentation, in the multifunctional information exchange service, of electronic information contained in the documents specified in the second and third paragraphs of this clause, using a two-dimensional barcode in interaction with the federal state information system \"Unified Portal of State and Municipal Services (Functions)\", is equivalent to presenting those documents.",
+    "kk": "Осы тармақтың екінші және үшінші абзацтарында көрсетілген құжаттардағы мәліметтерді көпфункциялы ақпарат алмасу сервисінде электрондық түрде, «Мемлекеттік және муниципалдық қызметтердің (функциялардың) бірыңғай порталы» федералдық мемлекеттік ақпараттық жүйесімен өзара әрекеттесу кезінде екіөлшемді штрих-кодты қолданып ұсыну сол құжаттарды ұсынуға теңестіріледі."
+  }
+}

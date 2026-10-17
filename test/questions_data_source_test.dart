@@ -100,6 +100,7 @@ void main() {
         'id': '42',
         'question': 'Исходный вопрос',
         'ticketNumber': 7,
+        'questionNumber': 2,
         'image': '${config.questionImagesDir('cd')}/photo_hash.webp',
         'comment': 'Разбор',
         'pddPoints': ['13.1'],

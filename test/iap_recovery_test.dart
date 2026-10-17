@@ -29,6 +29,8 @@ class FakeStore extends InAppPurchasePlatform {
   PurchaseStatus nextStatus = PurchaseStatus.purchased;
   int sequence = 0;
   bool failAcknowledgement = false;
+  PurchaseParam? lastPurchaseParam;
+  bool launchSucceeds = true;
   PurchaseDetails payment(PurchaseStatus status) => PurchaseDetails(
     purchaseID: '${++sequence}',
     productID: product.id,
@@ -50,6 +52,8 @@ class FakeStore extends InAppPurchasePlatform {
   ) async => ProductDetailsResponse(productDetails: [product], notFoundIDs: []);
   @override
   Future<bool> buyNonConsumable({required PurchaseParam purchaseParam}) async {
+    lastPurchaseParam = purchaseParam;
+    if (!launchSucceeds) return false;
     updates.add([payment(nextStatus)]);
     return true;
   }
@@ -149,6 +153,12 @@ void main() {
           expect(PremiumService.instance.isPremium, isFalse);
         },
         () => MockClient((request) async {
+          if (request.url.path == '/api/user/store/account-token') {
+            return http.Response(
+              '{"accountToken":"11111111-1111-5111-8111-111111111111"}',
+              200,
+            );
+          }
           if (request.url.path == '/api/user/store/status') {
             return http.Response('{"configured":true}', 200);
           }

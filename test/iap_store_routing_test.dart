@@ -9,6 +9,7 @@ import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_inte
 import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CountingBillingStore extends InAppPurchasePlatform {
   final updates = StreamController<List<PurchaseDetails>>.broadcast();
@@ -51,6 +52,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('Android billing boundary follows the compiled distribution', () async {
+    SharedPreferences.setMockInitialValues({});
     debugDefaultTargetPlatformOverride = TargetPlatform.linux;
     InAppPurchase.instance;
     final store = CountingBillingStore();
