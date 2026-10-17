@@ -1,5 +1,5 @@
 ## Diagnostic frame distributions and native process metrics.
-## Tap the counter to select a fixed quality tier for comparisons.
+## Read-only: a stray tap on the panel must never change the graphics tier.
 extends CanvasLayer
 
 const FrameMetrics := preload("res://scripts/frame_metrics.gd")
@@ -112,16 +112,6 @@ func _start_log_session() -> void:
 
 func mark_input() -> void:
 	_input_at = Time.get_ticks_usec()
-
-
-func _input(event: InputEvent) -> void:
-	if not visible: return
-	if event is InputEventScreenTouch and event.pressed:
-		var box: Control = _label.get_parent()
-		if box.get_global_rect().has_point(event.position):
-			var next: String = _tiers[(_tiers.find(tier) + 1) % _tiers.size()]
-			tier_changed.emit(next)
-			get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
