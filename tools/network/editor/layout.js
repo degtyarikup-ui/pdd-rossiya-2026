@@ -284,7 +284,8 @@ const Layout = (() => {
       const wide = plainEnds ? cut(pts, borderA ? 22 : 0, lenAll - (borderB ? 22 : 0)) : pts;
       const roadItem = { id: `road_${st.id}`, auto: true, outer: highway ? profileOutline(L,st,densePath(pts,1.5),crop) : outline(wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
       roads.push(roadItem);
-      if (plainEnds) roads.push({ id: `road_${st.id}_plain`, auto: true, outer: outline(pts, kindOf(st).width), holes: [] });
+      // The taper carries the street's switches: an edge line turned off is off on the narrowing too.
+      if (plainEnds) roads.push({ id: `road_${st.id}_plain`, auto: true, outer: outline(pts, kindOf(st).width), holes: [], walk: roadItem.walk, edge: roadItem.edge, surface: roadItem.surface });
       if (st.walk === false || st.surface === "sand") {
         for (const side of [1, -1]) {
           const inner = offsetRight(pts, side * w / 2), outer = offsetRight(pts, side * (w / 2 + 3.4)).reverse();

@@ -996,7 +996,7 @@ static func bindings_with(bindings: Array, port: Dictionary, width: float, profi
 			binding.merge(profile,true)
 			return result
 	var binding: Dictionary={"port":port,"width":width,
-		"median":maxf(float(port.get("median",0.0)),float(port.get("declared_median",0.0))),
+		"median":SceneStitch.contact_median(port),
 		"walk":port.get("walk",true),"surface":port.get("surface","asphalt")}
 	binding.merge(profile,true)
 	result.append(binding)

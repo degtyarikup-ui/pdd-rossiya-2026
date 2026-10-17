@@ -168,7 +168,7 @@ static func _crossings(ring: Array, p: Vector3, out: Vector3) -> Array:
 static func _port(p: Vector3, out: Vector3, width: float, built: Dictionary) -> Dictionary:
 	var lo := -width/2.0;var hi := width/2.0;var median := 0.0
 	var left: Array = [];var opposite: Array = []
-	var spanning := false
+	var spanning := false;var measured := false
 	for road in built.get("carriageway", []):
 		var xs := _crossings(road.outer,p,out)
 		for i in range(0,xs.size()-1,2):
@@ -177,6 +177,7 @@ static func _port(p: Vector3, out: Vector3, width: float, built: Dictionary) -> 
 			var start := maxf(float(xs[i]), -width/2.0)
 			var end := minf(float(xs[i+1]), width/2.0)
 			if end <= start: continue
+			measured=true
 			if start<=0.5 and end>=-0.5:
 				lo=start;hi=end
 				spanning=true
@@ -194,7 +195,14 @@ static func _port(p: Vector3, out: Vector3, width: float, built: Dictionary) -> 
 		opposite.sort_custom(func(a,b): return a[0]<b[0])
 		lo=float(left[0][0]);hi=float(opposite[0][1])
 		median=maxf(0.0,float(opposite[0][0])-float(left[0][1]))
-	return {"p":p+right(out)*(lo+hi)/2.0,"out":out,"width":hi-lo,"median":median}
+	return {"p":p+right(out)*(lo+hi)/2.0,"out":out,"width":hi-lo,"median":median,"measured":measured}
+
+## The divider really present at the contact. A divided street narrows back to the plain
+## width before the scene's edge (its own rounded nose and taper), so the declared strip
+## must not reappear there as a square block; only an unmeasured contact falls back to it.
+static func contact_median(port: Dictionary) -> float:
+	if port.get("measured",false): return float(port.get("median",0.0))
+	return maxf(float(port.get("median",0.0)),float(port.get("declared_median",0.0)))
 
 static func match_score(a: Dictionary, b: Dictionary) -> float:
 	return 500.0*absf(float(a.lanes)-float(b.lanes)) + (200.0 if a.surface!=b.surface else 0.0) + (50.0 if absf(a.declared_median-b.declared_median)>0.1 else 0.0) + absf(a.width-b.width) + (5.0 if a.walk!=b.walk else 0.0)
@@ -256,7 +264,7 @@ static func warp(p: Vector3,bindings: Array,inverse := false) -> Vector3:
 		if inverse:
 			var swap := source;source=target;target=swap
 		if absf(x)>source+WALK_WIDTH+2.0: continue
-		var sm: float = maxf(float(port.get("median",0.0)),float(port.get("declared_median",0.0)))/2.0
+		var sm: float = contact_median(port)/2.0
 		var tm: float = lerpf(sm,float(binding.get("median",sm*2.0))/2.0,smoothstep(END_BLEND,0.0,d))
 		if inverse:
 			var swap := sm;sm=tm;tm=swap
@@ -280,7 +288,8 @@ static func warp(p: Vector3,bindings: Array,inverse := false) -> Vector3:
 
 
 static func joint_profile(a: Dictionary,b: Dictionary) -> Dictionary:
-	return {"width":joint_width(a,b),"median":(float(a.declared_median)+float(b.declared_median))*0.5 if a.declared_median>0.01 and b.declared_median>0.01 else 0.0,
+	var ma := contact_median(a);var mb := contact_median(b)
+	return {"width":joint_width(a,b),"median":(ma+mb)*0.5 if ma>0.01 and mb>0.01 else 0.0,
 		"walk":a.walk and b.walk,"surface":a.surface if a.surface==b.surface else "blend"}
 
 static func surface_blend(p: Vector3,bindings: Array) -> float:

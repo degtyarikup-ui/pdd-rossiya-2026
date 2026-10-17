@@ -183,7 +183,10 @@
      7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": true,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",

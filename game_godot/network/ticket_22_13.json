@@ -81,7 +81,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": true,
+   "surface": "asphalt"
   },
   {
    "id": "road_s2",
@@ -158,7 +161,10 @@
      0
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": true,
+   "surface": "asphalt"
   },
   {
    "id": "road_s3",
