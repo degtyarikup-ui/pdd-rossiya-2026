@@ -36,19 +36,30 @@ export async function retainAppleAuthorization(env, user, body) {
   // Private DO-only document: never projected to KV/admin/user responses.
   await accountWrite(env, user.id, 'apple_auth:' + user.id, JSON.stringify({ clientId, codeHash, refreshToken: data.refresh_token, savedAt: Date.now() }));
 }
+// Called by the private account outbox too. Throws to retain the durable job;
+// it never logs the token or sends it through a public/KV document.
+export async function executeAppleRevocation(env, authorization) {
+  if (!appleAuthConfigured(env)) throw new Error('Apple revocation unavailable');
+  const response = await fetch('https://appleid.apple.com/auth/revoke', {
+    method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, signal: AbortSignal.timeout(7000),
+    body: new URLSearchParams({ token: authorization.refreshToken, token_type_hint: 'refresh_token', client_id: authorization.clientId, client_secret: await clientSecret(env, authorization.clientId) }),
+  });
+  if (!response.ok) throw new Error('Apple revocation unavailable');
+}
 export async function revokeAppleAuthorization(env, userId) {
   const raw = await accountRead(env, userId, 'apple_auth:' + userId);
   const stored = raw ? JSON.parse(raw) : null;
   if (!stored?.refreshToken || !appleAuthConfigured(env)) return { appleRevocation: 'manual_required', appleManageUrl: APPLE_MANAGE_URL };
   try {
-    const response = await fetch('https://appleid.apple.com/auth/revoke', {
-      method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, signal: AbortSignal.timeout(7000),
-      body: new URLSearchParams({ token: stored.refreshToken, token_type_hint: 'refresh_token', client_id: stored.clientId, client_secret: await clientSecret(env, stored.clientId) }),
-    });
-    if (!response.ok) return { appleRevocation: 'manual_required', appleManageUrl: APPLE_MANAGE_URL };
+    await executeAppleRevocation(env, stored);
     return { appleRevocation: 'revoked' };
-  } catch { return { appleRevocation: 'manual_required', appleManageUrl: APPLE_MANAGE_URL }; }
-  finally { await accountWrite(env, userId, 'apple_auth:' + userId, null); }
+  } catch {
+    if (env.__DURABLE_EFFECTS) {
+      env.__DURABLE_EFFECTS.push({ kind: 'apple-revoke', authorization: { clientId: stored.clientId, refreshToken: stored.refreshToken } });
+      return { appleRevocation: 'pending' };
+    }
+    return { appleRevocation: 'manual_required', appleManageUrl: APPLE_MANAGE_URL };
+  } finally { await accountWrite(env, userId, 'apple_auth:' + userId, null); }
 }
 export async function deleteAccountDocuments(env, userId) {
   const raw = await env.INSTALLS.get('user:' + userId);

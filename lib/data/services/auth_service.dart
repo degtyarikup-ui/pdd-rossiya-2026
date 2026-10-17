@@ -47,6 +47,7 @@ class AuthService extends ChangeNotifier {
   String? lastDiagnosticId;
   bool sessionIsTemporary = false;
   Uri? appleManualRevocationUrl;
+  bool appleRevocationPending = false;
 
   String _signInProvider = 'unknown';
   // Сколько попыток сделал последний запрос выдачи сессии и где он удался —
@@ -776,7 +777,9 @@ class AuthService extends ChangeNotifier {
   Future<bool> deleteAccount() async {
     var deleted = false;
     var requiresAppleRevocation = false;
+    var pendingAppleRevocation = false;
     appleManualRevocationUrl = null;
+    appleRevocationPending = false;
     final user = _currentUser;
     final revision = _accountRevision;
     try {
@@ -796,6 +799,10 @@ class AuthService extends ChangeNotifier {
               deleted &&
               user.provider == AuthProviderType.apple &&
               body['appleRevocation'] == 'manual_required';
+          pendingAppleRevocation =
+              deleted &&
+              user.provider == AuthProviderType.apple &&
+              body['appleRevocation'] == 'pending';
         }
       }
     } catch (e) {
@@ -803,6 +810,7 @@ class AuthService extends ChangeNotifier {
     }
     if (!deleted) return false;
     if (revision != _accountRevision) return true;
+    appleRevocationPending = pendingAppleRevocation;
     if (requiresAppleRevocation) {
       // Use a fixed Apple URL; never open an arbitrary URL from a response.
       appleManualRevocationUrl = Uri.parse(

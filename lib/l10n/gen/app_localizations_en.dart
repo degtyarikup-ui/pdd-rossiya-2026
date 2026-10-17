@@ -3938,4 +3938,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String webPayCreationPending(String order) {
     return 'Your payment request is still processing. Do not pay again. Order: $order. If the payment page did not open, go to Settings → Support.';
   }
+
+  @override
+  String get profileAppleRevokePending =>
+      'Your account data has been deleted. The request to revoke Apple access has been saved. We will finish revoking access automatically when Apple is available again.';
 }

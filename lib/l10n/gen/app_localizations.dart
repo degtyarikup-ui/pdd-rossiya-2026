@@ -6555,6 +6555,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Запрос оплаты ещё обрабатывается. Не платите повторно. Заказ: {order}. Если страница оплаты не открылась, обратитесь в «Настройки → Поддержка».'**
   String webPayCreationPending(String order);
+
+  /// No description provided for @profileAppleRevokePending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Данные аккаунта удалены. Запрос на отзыв доступа Apple сохранён. Мы завершим отзыв автоматически, когда сервис Apple снова станет доступен.'**
+  String get profileAppleRevokePending;
 }
 
 class _AppLocalizationsDelegate

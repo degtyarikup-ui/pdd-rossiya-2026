@@ -144,10 +144,16 @@ Android access-token входа нужны точные Android OAuth client IDs
 `APPLE_IAP_ISSUER_ID`/`APPLE_IAP_KEY_ID`/`APPLE_IAP_PRIVATE_KEY`.
 `authorizationCode` клиента обменивается на token и хранится только в DO,
 без проекции в KV и без выдачи в профиль/админку. Удаление вызывает Apple
-`/auth/revoke` и удаляет retained token. Если старый аккаунт не имеет retained
-токена, секретов нет либо Apple недоступен, локальное удаление завершается с
-`appleRevocation:manual_required` и `appleManageUrl` для ручного отзыва.
-Клиент показывает этот шаг. Для полного автоматического сценария настроить
+`/auth/revoke` и удаляет retained token после успешного отзыва. При временном
+отказе Apple локальное удаление завершается с `appleRevocation:pending`:
+refresh token переносится в приватный durable outbox той же транзакции.
+Alarm, сохранённый до commit, повторяет REST revoke после перезапуска; после
+успеха job и token удаляются. В KV, профиль и публичный ответ token не попадает.
+Если старый аккаунт не имеет retained токена либо секретов нет, удаление
+завершается с `appleRevocation:manual_required` и `appleManageUrl` для ручного
+отзыва. Обязательного повторного входа для legacy нет: TN3194 допускает этот
+случай, если token раньше не сохранялся. Клиент различает pending и manual.
+Для полного автоматического сценария настроить
 ключ и подтвердить login → delete → Apple credential revoked на устройстве.
 Финансовые записи/тумбстоуны сохраняются для сверки; исторические записи
 аналитики/поддержки требуют отдельной политики хранения, это не полный DSR-аудит.

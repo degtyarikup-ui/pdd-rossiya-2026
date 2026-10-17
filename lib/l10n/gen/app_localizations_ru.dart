@@ -3951,4 +3951,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String webPayCreationPending(String order) {
     return 'Запрос оплаты ещё обрабатывается. Не платите повторно. Заказ: $order. Если страница оплаты не открылась, обратитесь в «Настройки → Поддержка».';
   }
+
+  @override
+  String get profileAppleRevokePending =>
+      'Данные аккаунта удалены. Запрос на отзыв доступа Apple сохранён. Мы завершим отзыв автоматически, когда сервис Apple снова станет доступен.';
 }

@@ -14,9 +14,9 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
   });
   test(
-    'legacy Apple deletion signs out and exposes a fixed manual revocation URL',
+    'Apple deletion distinguishes revoked, manual legacy and queued provider outage',
     () async {
-      for (final state in ['manual_required', 'revoked']) {
+      for (final state in ['manual_required', 'pending', 'revoked']) {
         final auth = AuthService.forTesting(writeSession: (_) async {});
         final user = UserProfile(
           id: 'apple_legacy',
@@ -35,6 +35,7 @@ void main() {
             expect(await auth.deleteAccount(), isTrue);
             expect(auth.currentUser, isNull);
             expect(auth.hasServerSession, isFalse);
+            expect(auth.appleRevocationPending, state == 'pending');
             expect(
               auth.appleManualRevocationUrl?.toString(),
               state == 'manual_required'

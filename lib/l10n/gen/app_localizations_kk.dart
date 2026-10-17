@@ -3931,4 +3931,8 @@ class AppLocalizationsKk extends AppLocalizations {
   String webPayCreationPending(String order) {
     return 'Төлем сұрауы әлі өңделуде. Қайта төлем жасамаңыз. Тапсырыс: $order. Төлем беті ашылмаса, Баптаулар → Қолдау бөліміне жазыңыз.';
   }
+
+  @override
+  String get profileAppleRevokePending =>
+      'Аккаунт деректері жойылды. Apple рұқсатын қайтарып алу сұрауы сақталды. Apple сервисі қайта қолжетімді болғанда, рұқсат автоматты түрде қайтарылып алынады.';
 }

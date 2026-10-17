@@ -78,26 +78,32 @@ class ProfileModalSheet extends ConsumerWidget {
     if (confirmed == true) {
       final deleted = await AuthService.instance.deleteAccount();
       final appleUrl = AuthService.instance.appleManualRevocationUrl;
-      if (deleted && appleUrl != null && context.mounted) {
+      final applePending = AuthService.instance.appleRevocationPending;
+      if (deleted && (appleUrl != null || applePending) && context.mounted) {
         await showDialog<void>(
           context: context,
           builder: (ctx) => AlertDialog(
             title: Text(appL10n.accountDeleted),
-            content: Text(appL10n.profileAppleRevokeInstructions),
+            content: Text(
+              applePending
+                  ? appL10n.profileAppleRevokePending
+                  : appL10n.profileAppleRevokeInstructions,
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: Text(appL10n.close),
               ),
-              TextButton(
-                onPressed: () async {
-                  await launchUrl(
-                    appleUrl,
-                    mode: LaunchMode.externalApplication,
-                  );
-                },
-                child: Text(appL10n.profileAppleOpenSettings),
-              ),
+              if (appleUrl != null)
+                TextButton(
+                  onPressed: () async {
+                    await launchUrl(
+                      appleUrl,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  },
+                  child: Text(appL10n.profileAppleOpenSettings),
+                ),
             ],
           ),
         );

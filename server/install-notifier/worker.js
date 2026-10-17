@@ -31,7 +31,7 @@ export { SupportThread } from './support_thread.js';
 import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError } from './store_verification.js';
 import { setEntitlement } from './entitlements.js';
 import { accountTokenForUserId } from './store_account.js';
-import { deleteAccountDocuments } from './apple_account.js';
+import { deleteAccountDocuments, executeAppleRevocation } from './apple_account.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive, settleOrder } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession } from './user_auth.js';
 import { readAiRequest, AiRequestError, AI_PROVIDER_TIMEOUT_MS } from './ai_request.js';
@@ -4243,6 +4243,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
 };
 
 export async function executeAccountEffect(effect, env) {
+  if (effect.kind === 'apple-revoke') return executeAppleRevocation(env, effect.authorization);
   if (effect.kind === 'telegram') {
     const response = await sendTelegram(env, effect.text, effect.dedupKey, effect.options);
     if (!response.ok) throw new Error('telegram queue unavailable');

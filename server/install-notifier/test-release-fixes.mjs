@@ -8,7 +8,7 @@ import { verifyIdentity, handleAuth } from './user_auth.js';
 import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement } from './store_verification.js';
 import { PurchaseClaims } from './purchase_claims.js';
 import { accountTokenForUserId } from './store_account.js';
-import { accountRead } from './account_state.js';
+import { accountRead, accountWrite } from './account_state.js';
 import { privatePushTopic } from './notification_identity.js';
 import { fixture, identity, session, request, MemoryStorage } from './fixture-account.mjs';
 
@@ -153,5 +153,21 @@ test('Google Pub/Sub authentication requires exact audience and configured verif
  const signed=async(aud,email,verified=true)=>new SignJWT({email,email_verified:verified}).setProtectedHeader({alg:'RS256',kid:'fixture-google-push'}).setIssuer('https://accounts.google.com').setAudience(aud).setSubject('123').setIssuedAt().setExpirationTime('5m').sign(key);
  try{for(const[aud,email,verified,expected]of[[env.GOOGLE_RTDN_AUDIENCE,env.GOOGLE_RTDN_SERVICE_ACCOUNT_EMAIL,true,true],['wrong',env.GOOGLE_RTDN_SERVICE_ACCOUNT_EMAIL,true,false],[env.GOOGLE_RTDN_AUDIENCE,'foreign@example.invalid',true,false],[env.GOOGLE_RTDN_AUDIENCE,env.GOOGLE_RTDN_SERVICE_ACCOUNT_EMAIL,false,false]]){const token=await signed(aud,email,verified);assert.equal(await verifyGooglePush(new Request(env.GOOGLE_RTDN_AUDIENCE,{headers:{authorization:'Bearer '+token}}),env),expected);}
  assert.equal(await verifyGooglePush(new Request(env.GOOGLE_RTDN_AUDIENCE),env),false);
+ }finally{globalThis.fetch=original;}
+});
+
+
+test('Apple revoke outage deletes local account but retains private durable retry across restart',async()=>{
+ const{env,states,objects,restart}=fixture();const authKey=appleFixture();Object.assign(env,{APPLE_AUTH_PRIVATE_KEY:authKey.pem,APPLE_AUTH_KEY_ID:'fixture-auth',APPLE_AUTH_TEAM_ID:'fixture-team'});const id='apple_revoke_pending';await env.INSTALLS.put('user:'+id,JSON.stringify(identity(id)));await accountWrite(env,id,'apple_auth:'+id,JSON.stringify({clientId:'ru.pdd.pddApp',refreshToken:'fixture-outbox-private-refresh'}));const token=await session(env,id);const original=globalThis.fetch;let available=false,calls=0;
+ globalThis.fetch=async(url,options)=>{assert.equal(String(url),'https://appleid.apple.com/auth/revoke');assert.equal(options.body.get('token'),'fixture-outbox-private-refresh');calls++;return new Response(null,{status:available?200:503});};
+ try{const response=await worker.fetch(request('/api/user/delete',{userId:id},token),env);assert.equal(response.status,200);assert.equal((await response.json()).appleRevocation,'pending');assert.equal(await accountRead(env,id,'user:'+id),null);assert.equal(await accountRead(env,id,'apple_auth:'+id),null);assert.equal((await worker.fetch(request('/api/user/status',undefined,token),env)).status,401);
+ assert.ok((await states.get(id).list({prefix:'effect:'})).size>0);assert.ok(await states.get(id).getAlarm());for(const value of env.INSTALLS.data.values())assert.ok(!value.includes('fixture-outbox-private-refresh'));
+ restart(id);available=true;await accountRead(env,id,'user:'+id);await objects.get(id).alarm();assert.equal((await states.get(id).list({prefix:'effect:'})).size,0);assert.ok(calls>=2);
+ }finally{globalThis.fetch=original;}
+});
+
+test('configured Apple legacy account without retained tokens stays deletable with explicit manual instructions',async()=>{
+ const{env}=fixture();const authKey=appleFixture();Object.assign(env,{APPLE_AUTH_PRIVATE_KEY:authKey.pem,APPLE_AUTH_KEY_ID:'fixture-auth',APPLE_AUTH_TEAM_ID:'fixture-team'});const id='apple_configured_legacy';await env.INSTALLS.put('user:'+id,JSON.stringify(identity(id)));const token=await session(env,id);const original=globalThis.fetch;globalThis.fetch=async()=>{throw new Error('legacy deletion must not demand fresh credentials');};
+ try{const response=await worker.fetch(request('/api/user/delete',{userId:id},token),env);assert.equal(response.status,200);const body=await response.json();assert.equal(body.appleRevocation,'manual_required');assert.match(body.appleManageUrl,/^https:\/\/account\.apple\.com\//);assert.equal(await accountRead(env,id,'user:'+id),null);assert.equal((await worker.fetch(request('/api/user/status',undefined,token),env)).status,401);
  }finally{globalThis.fetch=original;}
 });
