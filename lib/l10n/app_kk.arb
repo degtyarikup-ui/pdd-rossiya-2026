@@ -992,7 +992,7 @@
   "gamesWeeklyScore": "Апталық ұпай: {score}",
   "gamesRecordScore": "Рекорд: {score}",
   "gamesRunsFraction": "{max, plural, one{{count}/{max} жарыс} other{{count}/{max} жарыс}}",
-  "gamesRefillIn": "Барлық жарыс {time} кейін қалпына келеді",
+  "gamesRefillIn": "Жарыстардың қалпына келуіне: {time}",
   "gamesUnlimitedAction": "Шектеусіз ойнау",
   "gamesResumeRide": "Жарысты жалғастыру",
   "gamesBeta": "Бета",

@@ -5407,7 +5407,7 @@ abstract class AppLocalizations {
   /// Time left until the entire free city run supply refills.
   ///
   /// In ru, this message translates to:
-  /// **'Все заезды через {time}'**
+  /// **'Заезды восстановятся через: {time}'**
   String gamesRefillIn(String time);
 
   /// No description provided for @gamesUnlimitedAction.

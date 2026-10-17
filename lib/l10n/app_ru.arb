@@ -1477,7 +1477,7 @@
       }
     }
   },
-  "gamesRefillIn": "Все заезды через {time}",
+  "gamesRefillIn": "Заезды восстановятся через: {time}",
   "@gamesRefillIn": {
     "description": "Time left until the entire free city run supply refills.",
     "placeholders": {

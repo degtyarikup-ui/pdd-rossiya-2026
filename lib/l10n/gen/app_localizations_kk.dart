@@ -3251,7 +3251,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String gamesRefillIn(String time) {
-    return 'Барлық жарыс $time кейін қалпына келеді';
+    return 'Жарыстардың қалпына келуіне: $time';
   }
 
   @override

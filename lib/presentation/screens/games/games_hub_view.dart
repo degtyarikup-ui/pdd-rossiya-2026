@@ -92,14 +92,17 @@ class GamesHubView extends StatelessWidget {
                               key: const ValueKey('games-leaderboard'),
                               style: FilledButton.styleFrom(
                                 backgroundColor: colors.gold,
-                                foregroundColor: AppColors.primaryText,
+                                foregroundColor: AppColors.white,
                                 minimumSize: const Size(64, 48),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                 ),
                               ),
                               onPressed: onLeaderboard,
-                              icon: const Icon(Icons.star_rounded, size: 22),
+                              icon: const Icon(
+                                Icons.emoji_events_outlined,
+                                size: 22,
+                              ),
                               label: Text(
                                 _number(context, weekScore),
                                 maxLines: 1,
@@ -107,7 +110,7 @@ class GamesHubView extends StatelessWidget {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.primaryText,
+                                  color: AppColors.white,
                                 ),
                               ),
                             ),
@@ -329,6 +332,7 @@ class _HubCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final enabled = onTap != null;
+    final foreground = AppColors.white.withValues(alpha: enabled ? 1 : .6);
     final record = bestScore != null && bestScore! > 0;
     final status =
         caption ?? (record ? _number(context, bestScore!) : appL10n.gamesPlay);
@@ -407,7 +411,7 @@ class _HubCard extends StatelessWidget {
                                       fontSize: featured ? 24 : titleSize,
                                       height: 1.12,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.white,
+                                      color: foreground,
                                     ),
                                   ),
                                   if (!hideStatus) ...[
@@ -418,7 +422,7 @@ class _HubCard extends StatelessWidget {
                                       children: [
                                         if (record && caption == null) ...[
                                           Icon(
-                                            Icons.star_rounded,
+                                            Icons.emoji_events_rounded,
                                             size: 14,
                                             color: colors.gold,
                                           ),
@@ -433,7 +437,7 @@ class _HubCard extends StatelessWidget {
                                               fontWeight: FontWeight.w600,
                                               color: record && caption == null
                                                   ? colors.gold
-                                                  : AppColors.white,
+                                                  : foreground,
                                             ),
                                           ),
                                         ),
@@ -544,7 +548,11 @@ class _RunsFooter extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.star_rounded, size: 14, color: colors.gold),
+                      Icon(
+                        Icons.emoji_events_rounded,
+                        size: 14,
+                        color: colors.gold,
+                      ),
                       const SizedBox(width: 3),
                       Text(
                         _number(context, bestScore),
@@ -557,26 +565,25 @@ class _RunsFooter extends StatelessWidget {
                     ],
                   ),
                 ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    waiting
-                        ? Icons.schedule_rounded
-                        : Icons.local_gas_station_rounded,
-                    size: 16,
-                    color: colors.gold,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    appL10n.gamesRunsFraction(runs, GameRunsService.maxRuns),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+              if (runs > 0)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.local_gas_station_rounded,
+                      size: 16,
+                      color: colors.gold,
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 5),
+                    Text(
+                      appL10n.gamesRunsFraction(runs, GameRunsService.maxRuns),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               if (refillAt != null)
                 _RefillCountdown(at: refillAt!, onRefilled: onRefilled),
             ],

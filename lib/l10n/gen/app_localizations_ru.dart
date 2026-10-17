@@ -3256,7 +3256,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String gamesRefillIn(String time) {
-    return 'Все заезды через $time';
+    return 'Заезды восстановятся через: $time';
   }
 
   @override

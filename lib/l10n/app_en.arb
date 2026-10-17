@@ -992,7 +992,7 @@
   "gamesWeeklyScore": "Weekly points: {score}",
   "gamesRecordScore": "Best: {score}",
   "gamesRunsFraction": "{max, plural, one{{count}/{max} run} other{{count}/{max} runs}}",
-  "gamesRefillIn": "All runs refill in {time}",
+  "gamesRefillIn": "Runs refill in: {time}",
   "gamesUnlimitedAction": "Play without limits",
   "gamesResumeRide": "Resume drive",
   "gamesBeta": "Beta",

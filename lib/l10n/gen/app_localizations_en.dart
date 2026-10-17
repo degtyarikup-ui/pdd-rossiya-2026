@@ -3248,7 +3248,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gamesRefillIn(String time) {
-    return 'All runs refill in $time';
+    return 'Runs refill in: $time';
   }
 
   @override

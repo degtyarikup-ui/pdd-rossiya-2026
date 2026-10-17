@@ -371,7 +371,7 @@ void main() {
       );
       for (final finder in [
         find.text(appL10n.gameCityTitle),
-        find.text(appL10n.gamesRunsFraction(0, 3)),
+        find.textContaining(appL10n.gamesRefillIn('')),
         find.text(appL10n.gamesUnlimitedAction),
       ]) {
         final label = tester.getRect(finder);
@@ -421,7 +421,8 @@ void main() {
     );
     expect(card.properties.label, contains(appL10n.gameFuelEmptyTitle));
     expect(card.properties.label, isNot(contains(appL10n.gamesPlay)));
-    expect(find.text(appL10n.gamesRunsFraction(0, 3)), findsOneWidget);
+    expect(find.text(appL10n.gamesRunsFraction(0, 3)), findsNothing);
+    expect(find.textContaining(appL10n.gamesRefillIn('')), findsOneWidget);
     handle.dispose();
     await tester.pumpWidget(const SizedBox());
   });
@@ -457,7 +458,8 @@ void main() {
         onPremium: () => premium++,
         onSigns: () => signs++,
       );
-      expect(find.text(appL10n.gamesRunsFraction(0, 3)), findsOneWidget);
+      expect(find.text(appL10n.gamesRunsFraction(0, 3)), findsNothing);
+      expect(find.textContaining(appL10n.gamesRefillIn('')), findsOneWidget);
       expect(find.text(appL10n.gamesUnlimitedAction), findsOneWidget);
       await tester.tap(find.text(appL10n.gamesUnlimitedAction));
       expect(premium, 1);
@@ -481,6 +483,8 @@ void main() {
       onCity: () => city++,
     );
     expect(find.text(appL10n.gamesResumeRide), findsOneWidget);
+    expect(find.text(appL10n.gamesRunsFraction(0, 3)), findsNothing);
+    expect(find.textContaining(appL10n.gamesRefillIn('')), findsOneWidget);
     await tester.tapAt(tester.getCenter(find.text(appL10n.gamesResumeRide)));
     expect(city, 1);
     expect(tester.takeException(), isNull);
@@ -515,6 +519,7 @@ void main() {
     var city = 0;
     var info = 0;
     await open(tester, onCity: () => city++, onRunsInfo: () => info++);
+    expect(find.text(appL10n.gamesRunsFraction(3, 3)), findsOneWidget);
     final target = find.byKey(const ValueKey('games-runs-info'));
     expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
     await tester.tap(target);
