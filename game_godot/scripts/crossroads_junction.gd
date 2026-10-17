@@ -362,35 +362,39 @@ func _build_open_arm_surface(arm: String, arm_len: float) -> void:
 ## Where an unpaved arm meets the paved junction the surface blends over
 ## DIRT_BLEND metres, as on the main game's streets (street.gd profile_at):
 ## colour lerps, the asphalt grain fades out by the middle, the dirt grain fades in.
+## Across the arm the asphalt tone also fades towards both edges and spans the
+## shoulders, so the apron has no hard side edges against the dirt corners.
 func _dirt_blend(arm: String) -> MeshInstance3D:
 	var asphalt := Color("#2C2F36")
 	var dirt := Color("#8D7151")
 	var yaw: float = {"south": 0.0, "north": PI, "east": PI * 0.5, "west": -PI * 0.5}.get(arm, 0.0)
+	var outer := HALF_ROAD + SIDEWALK_WIDTH
+	var xs: Array[float] = []
+	for i in 13: xs.append(lerpf(-outer, outer, float(i) / 12.0))
+	var ts: Array[float] = []
+	for i in 13: ts.append(float(i) / 12.0)
+	# Dirt share at a point: along the arm, or towards its edges, whichever is more.
+	var share := func(x: float, t: float) -> float:
+		return clampf(maxf(t, smoothstep(HALF_ROAD - 3.0, outer - 0.6, absf(x))), 0.0, 1.0)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rows := 12
-	for i in rows:
-		var t0 := float(i) / rows
-		var t1 := float(i + 1) / rows
-		for half in [0, 1]:
-			# The first half carries the asphalt layer, the second the dirt layer;
-			# each layer's detail is zero at the middle, so the switch is invisible.
-			var a := maxf(t0, 0.5 * half)
-			var b := minf(t1, 0.5 + 0.5 * half)
-			if b <= a: continue
-			var layer := sc.layer_of("asphalt" if half == 0 else "dirt")
-			var corners := []
-			for t in [a, b]:
-				var colour: Color = asphalt.lerp(dirt, smoothstep(0.0, 1.0, t))
-				var detail: float = absf(t * 2.0 - 1.0)
-				var z: float = HALF_ROAD + t * DIRT_BLEND
-				corners.append([Vector3(-HALF_ROAD, BLEND_Y, z).rotated(Vector3.UP, yaw), Vector3(HALF_ROAD, BLEND_Y, z).rotated(Vector3.UP, yaw), colour, detail])
-			for v in [[0, 0], [0, 1], [1, 1], [0, 0], [1, 1], [1, 0]]:
-				var row: Array = corners[v[0]]
-				st.set_color(Color(row[2].r, row[2].g, row[2].b, 0.0))
-				st.set_uv2(Vector2(layer, float(row[3]) - 1.0))
+	for zi in ts.size() - 1:
+		for xi in xs.size() - 1:
+			var cell := [[xs[xi], ts[zi]], [xs[xi + 1], ts[zi]], [xs[xi + 1], ts[zi + 1]], [xs[xi], ts[zi + 1]]]
+			var mean := 0.0
+			for c in cell: mean += share.call(c[0], c[1]) * 0.25
+			# A cell carries one grain layer; its detail is zero where the layers meet.
+			var layer := sc.layer_of("asphalt" if mean < 0.5 else "dirt")
+			for v in [0, 1, 2, 0, 2, 3]:
+				var x: float = cell[v][0]
+				var t: float = cell[v][1]
+				var d: float = share.call(x, t)
+				var colour: Color = asphalt.lerp(dirt, smoothstep(0.0, 1.0, d))
+				var detail: float = clampf((0.5 - d) * 2.0, 0.0, 1.0) if mean < 0.5 else clampf((d - 0.5) * 2.0, 0.0, 1.0)
+				st.set_color(Color(colour.r, colour.g, colour.b, 0.0))
+				st.set_uv2(Vector2(layer, detail - 1.0))
 				st.set_normal(Vector3.UP)
-				st.add_vertex(row[v[1]])
+				st.add_vertex(Vector3(x, BLEND_Y, HALF_ROAD + t * DIRT_BLEND).rotated(Vector3.UP, yaw))
 	var mi := MeshInstance3D.new()
 	mi.name = "DirtBlend_" + arm
 	mi.mesh = st.commit()
