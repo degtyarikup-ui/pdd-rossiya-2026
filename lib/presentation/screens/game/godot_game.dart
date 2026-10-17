@@ -768,6 +768,10 @@ class GodotGame {
     }
   }
 
+  /// The hub may offer resume even when all free runs have been spent.
+  /// Reuse the same validated saved-run parser as the launch path.
+  static Future<bool> hasPendingRun() async => await _pendingRun() != null;
+
   static Future<_PendingRun?> _pendingRun() async {
     try {
       final prefs = await SharedPreferences.getInstance();

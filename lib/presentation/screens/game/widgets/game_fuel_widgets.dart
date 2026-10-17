@@ -408,8 +408,7 @@ class GameRunsSheetState extends State<GameRunsSheet> {
     final now = DateTime.now();
     const tabular = [FontFeature.tabularFigures()];
 
-    // One tile per run: a ready one shows the wheel; an empty one counts
-    // down to its own return, the next one filling up as time passes.
+    // Spent runs return together, so every empty tile shares one countdown.
     Widget tile(int i) {
       final radius = BorderRadius.circular(AppDimensions.radiusMedium);
       if (widget.unlimited || i < runs) {
@@ -452,10 +451,9 @@ class GameRunsSheetState extends State<GameRunsSheet> {
           ),
         );
       }
-      final k = i - runs; // 0: the run that comes back first
-      final at = next?.add(interval * k);
+      final at = next;
       final left = at == null ? Duration.zero : at.difference(now);
-      final progress = k == 0 && !left.isNegative
+      final progress = at != null && !left.isNegative
           ? (1 - left.inMilliseconds / interval.inMilliseconds).clamp(0.0, 1.0)
           : 0.0;
       return ClipRRect(
@@ -486,7 +484,7 @@ class GameRunsSheetState extends State<GameRunsSheet> {
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         fontFeatures: tabular,
-                        color: k == 0 ? colors.accent : colors.secondaryText,
+                        color: colors.accent,
                       ),
                     ),
                   ),

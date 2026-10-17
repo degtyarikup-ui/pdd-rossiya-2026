@@ -1479,7 +1479,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gameRunsExplain(int questions, int max, int minutes) {
-    return 'A race is $questions questions on the road. Up to $max races are in stock; each one used comes back after $minutes minutes.';
+    return 'A race is $questions questions on the road. You have up to $max races. The full stock returns $minutes minutes after the first race is used.';
   }
 
   @override
@@ -3212,6 +3212,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get gameSignScenario5_15_1_1Explanation =>
       'No. Only straight ahead is allowed from this lane. To turn, you need to take a suitable lane in advance.';
+
+  @override
+  String get gamesParkingTitle => 'Parking';
+
+  @override
+  String get gamesSignsTitle => 'Sign quiz';
+
+  @override
+  String get gamesCrossroadsTitle => 'Crossroads';
+
+  @override
+  String get gamesPlay => 'Play';
+
+  @override
+  String gamesWeeklyScore(int score) {
+    return 'Weekly points: $score';
+  }
+
+  @override
+  String gamesRecordScore(String score) {
+    return 'Best: $score';
+  }
+
+  @override
+  String gamesRunsFraction(int count, int max) {
+    String _temp0 = intl.Intl.pluralLogic(
+      max,
+      locale: localeName,
+      other: '$count/$max runs',
+      one: '$count/$max run',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gamesRefillIn(String time) {
+    return 'All runs refill in $time';
+  }
+
+  @override
+  String get gamesUnlimitedAction => 'Play without limits';
+
+  @override
+  String get gamesResumeRide => 'Resume drive';
 
   @override
   String get gamesBeta => 'Beta';

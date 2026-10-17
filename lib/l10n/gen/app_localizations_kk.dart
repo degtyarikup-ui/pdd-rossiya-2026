@@ -1479,7 +1479,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String gameRunsExplain(int questions, int max, int minutes) {
-    return 'Жарыс — бұл жолда $questions сұрақ. $max жарысқа дейін қор бар, әрбір жұмсалған жарыс $minutes минуттан кейін қайтарылады.';
+    return 'Жарыс — бұл жолда $questions сұрақ. Қорда $max жарысқа дейін болады. Алғашқы жарыс жұмсалғаннан кейін $minutes минуттан соң бүкіл қор қалпына келеді.';
   }
 
   @override
@@ -3215,6 +3215,50 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get gameSignScenario5_15_1_1Explanation =>
       'Жоқ. Бұл жолақтан тек алға жүруге рұқсат етіледі. Бұрылу үшін алдын ала қолайлы жолақты алу керек.';
+
+  @override
+  String get gamesParkingTitle => 'Тұрақ';
+
+  @override
+  String get gamesSignsTitle => 'Бұл — белгі';
+
+  @override
+  String get gamesCrossroadsTitle => 'Қиылыс';
+
+  @override
+  String get gamesPlay => 'Ойнау';
+
+  @override
+  String gamesWeeklyScore(int score) {
+    return 'Апталық ұпай: $score';
+  }
+
+  @override
+  String gamesRecordScore(String score) {
+    return 'Рекорд: $score';
+  }
+
+  @override
+  String gamesRunsFraction(int count, int max) {
+    String _temp0 = intl.Intl.pluralLogic(
+      max,
+      locale: localeName,
+      other: '$count/$max жарыс',
+      one: '$count/$max жарыс',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gamesRefillIn(String time) {
+    return 'Барлық жарыс $time кейін қалпына келеді';
+  }
+
+  @override
+  String get gamesUnlimitedAction => 'Шектеусіз ойнау';
+
+  @override
+  String get gamesResumeRide => 'Жарысты жалғастыру';
 
   @override
   String get gamesBeta => 'Бета';

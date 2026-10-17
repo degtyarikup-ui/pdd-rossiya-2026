@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,6 +102,9 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(
               textScaler: TextScaler.linear(textScale),
@@ -584,8 +588,14 @@ void main() {
       findsNothing,
     );
     for (final titleAndRecord in [
-      (appL10n.gameTrafficControllerTitle, appL10n.gameBestScore(123456789)),
-      (appL10n.gameSignSwiperTitle, appL10n.gameBestScore(987654321)),
+      (
+        appL10n.gameTrafficControllerTitle,
+        NumberFormat.decimalPattern('ru').format(123456789),
+      ),
+      (
+        appL10n.gamesSignsTitle,
+        NumberFormat.decimalPattern('ru').format(987654321),
+      ),
     ]) {
       await tester.scrollUntilVisible(find.text(titleAndRecord.$1), 200);
       await tester.pumpAndSettle();
@@ -612,27 +622,21 @@ void main() {
       }
     }
     await tester.scrollUntilVisible(
-      find.text(appL10n.gameCrossroadsPriorityTitle),
+      find.text(appL10n.gamesCrossroadsTitle),
       200,
     );
     await tester.tapAt(
-      tester.getCenter(find.text(appL10n.gameCrossroadsPriorityTitle)),
+      tester.getCenter(find.text(appL10n.gamesCrossroadsTitle)),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text(appL10n.gameUnavailable), findsOneWidget);
     await tester.pumpAndSettle();
     expect(find.byType(GamesHubScreen), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text(appL10n.gameRoundaboutTitle),
-      200,
-    );
+    await tester.scrollUntilVisible(find.text(appL10n.gamesParkingTitle), 200);
     await tester.pumpAndSettle();
-    expect(
-      find.text(appL10n.gameSoonBadge),
-      findsOneWidget,
-    );
-    await tester.tap(find.text(appL10n.gameRoundaboutTitle));
+    expect(find.text(appL10n.gameSoonBadge), findsOneWidget);
+    await tester.tapAt(tester.getCenter(find.text(appL10n.gamesParkingTitle)));
     await tester.pumpAndSettle();
     expect(find.byType(GamesHubScreen), findsOneWidget);
     expect(find.byType(SignSwiperScreen), findsNothing);
@@ -718,14 +722,9 @@ void main() {
     tester,
   ) async {
     await open(tester, const GamesHubScreen());
-    await tester.scrollUntilVisible(
-      find.text(appL10n.gameSignSwiperTitle),
-      200,
-    );
+    await tester.scrollUntilVisible(find.text(appL10n.gamesSignsTitle), 200);
     await tester.pumpAndSettle();
-    await tester.tapAt(
-      tester.getCenter(find.text(appL10n.gameSignSwiperTitle)),
-    );
+    await tester.tapAt(tester.getCenter(find.text(appL10n.gamesSignsTitle)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();

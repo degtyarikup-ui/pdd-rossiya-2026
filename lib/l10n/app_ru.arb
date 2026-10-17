@@ -791,7 +791,7 @@
   },
   "gameRunsUnlimitedPill": "Заезды ∞",
   "gameRunsTitle": "Заезды",
-  "gameRunsExplain": "Заезд — это {questions} вопросов на дороге. В запасе до {max} заездов, каждый потраченный возвращается через {minutes} минут.",
+  "gameRunsExplain": "Заезд — это {questions} вопросов на дороге. В запасе до {max} заездов. Весь запас восстанавливается через {minutes} минут после первого потраченного заезда.",
   "@gameRunsExplain": {
     "placeholders": {
       "questions": {
@@ -1443,6 +1443,51 @@
   "gameSignScenario8_17_1Explanation": "Нет. Эти парковочные места предназначены для машин со знаком «Инвалид», имеющих право на льготу.",
   "gameSignScenario5_15_1_1Prompt": "Из средней полосы стрелка только прямо. Можно повернуть налево?",
   "gameSignScenario5_15_1_1Explanation": "Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.",
+  "gamesParkingTitle": "Парковка",
+  "gamesSignsTitle": "Это знак",
+  "gamesCrossroadsTitle": "Перекрёсток",
+  "gamesPlay": "Играть",
+  "gamesWeeklyScore": "Очки за неделю: {score}",
+  "@gamesWeeklyScore": {
+    "description": "Accessible label for the games hub leaderboard button.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "gamesRecordScore": "Рекорд: {score}",
+  "@gamesRecordScore": {
+    "description": "Accessible label for a personal best; score is already formatted for the current locale.",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "gamesRunsFraction": "{count}/{max} заездов",
+  "@gamesRunsFraction": {
+    "description": "Available free city runs out of the maximum.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "gamesRefillIn": "Все заезды через {time}",
+  "@gamesRefillIn": {
+    "description": "Time left until the entire free city run supply refills.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "gamesUnlimitedAction": "Играть без ограничений",
+  "gamesResumeRide": "Продолжить заезд",
   "gamesBeta": "Бета",
   "gameCityTitle": "Живой город",
   "gamesRunsAvailable": "{count, plural, one{{count} заезд доступен} few{{count} заезда доступны} many{{count} заездов доступны} other{{count} заезда доступны}}",

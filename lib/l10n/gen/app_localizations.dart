@@ -2581,7 +2581,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameRunsExplain.
   ///
   /// In ru, this message translates to:
-  /// **'Заезд — это {questions} вопросов на дороге. В запасе до {max} заездов, каждый потраченный возвращается через {minutes} минут.'**
+  /// **'Заезд — это {questions} вопросов на дороге. В запасе до {max} заездов. Весь запас восстанавливается через {minutes} минут после первого потраченного заезда.'**
   String gameRunsExplain(int questions, int max, int minutes);
 
   /// No description provided for @gameRunsNextIn.
@@ -5361,6 +5361,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.'**
   String get gameSignScenario5_15_1_1Explanation;
+
+  /// No description provided for @gamesParkingTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Парковка'**
+  String get gamesParkingTitle;
+
+  /// No description provided for @gamesSignsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это знак'**
+  String get gamesSignsTitle;
+
+  /// No description provided for @gamesCrossroadsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перекрёсток'**
+  String get gamesCrossroadsTitle;
+
+  /// No description provided for @gamesPlay.
+  ///
+  /// In ru, this message translates to:
+  /// **'Играть'**
+  String get gamesPlay;
+
+  /// Accessible label for the games hub leaderboard button.
+  ///
+  /// In ru, this message translates to:
+  /// **'Очки за неделю: {score}'**
+  String gamesWeeklyScore(int score);
+
+  /// Accessible label for a personal best; score is already formatted for the current locale.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рекорд: {score}'**
+  String gamesRecordScore(String score);
+
+  /// Available free city runs out of the maximum.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count}/{max} заездов'**
+  String gamesRunsFraction(int count, int max);
+
+  /// Time left until the entire free city run supply refills.
+  ///
+  /// In ru, this message translates to:
+  /// **'Все заезды через {time}'**
+  String gamesRefillIn(String time);
+
+  /// No description provided for @gamesUnlimitedAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Играть без ограничений'**
+  String get gamesUnlimitedAction;
+
+  /// No description provided for @gamesResumeRide.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить заезд'**
+  String get gamesResumeRide;
 
   /// No description provided for @gamesBeta.
   ///

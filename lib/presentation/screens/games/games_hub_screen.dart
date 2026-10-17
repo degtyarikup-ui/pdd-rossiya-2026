@@ -1,7 +1,5 @@
-import 'dart:math' as math;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/presentation/screens/game/godot_game.dart';
@@ -9,13 +7,14 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pdd_app/core/constants/app_colors.dart';
-import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
-import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
+import 'package:pdd_app/presentation/screens/games/games_hub_view.dart';
+import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
+import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
+import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 
 class GamesHubScreen extends ConsumerStatefulWidget {
   const GamesHubScreen({super.key});
@@ -25,7 +24,9 @@ class GamesHubScreen extends ConsumerStatefulWidget {
 
 class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     with WidgetsBindingObserver {
-  int _runs = GameRunsService.maxRuns;
+  int _runs = 0;
+  bool _runsLoaded = false;
+  bool _hasPendingRun = false;
   int _cityBest = 0;
   int _weekScore = 0;
   Timer? _timer;
@@ -42,7 +43,14 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
   Future<void> _refreshRuns() async {
     await (_loadedRuns ??= GameRunsService.instance.load());
     final runs = GameRunsService.instance.refresh();
-    if (mounted) setState(() => _runs = runs);
+    final pending = await GodotGame.hasPendingRun();
+    if (mounted) {
+      setState(() {
+        _runs = runs;
+        _runsLoaded = true;
+        _hasPendingRun = pending;
+      });
+    }
   }
 
   /// Сохранённые очки показываем сразу, затем свежие. Без связи остаются
@@ -89,6 +97,12 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
   /// The Godot game on its own screen (Android, iOS, the site). A platform without the
   /// game in its build says so: the old WebView game is gone.
   Future<void> _openCity() async {
+    await _refreshRuns();
+    if (!mounted) return;
+    if (!ref.read(isPremiumProvider) && _runs == 0 && !_hasPendingRun) {
+      await _showRunsInfo();
+      return;
+    }
     if (!await GodotGame.available()) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -140,6 +154,25 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     await _refreshRating();
   }
 
+  Future<void> _openPremium() async {
+    await PremiumPaywallSheet.show(context);
+    await _refreshRuns();
+  }
+
+  Future<void> _showRunsInfo() async {
+    await showGameRunsSheet(
+      context,
+      maxRuns: GameRunsService.maxRuns,
+      questions: GameState.runQuestions,
+      refillMinutes: GameRunsService.refillInterval.inMinutes,
+      unlimited: ref.read(isPremiumProvider),
+      runs: () => GameRunsService.instance.refresh(),
+      nextRefillAt: () => GameRunsService.instance.nextRefillAt,
+      onBuyPremium: () => unawaited(_openPremium()),
+    );
+    await _refreshRuns();
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(progressImportsProvider, (_, next) {
@@ -151,330 +184,31 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
         );
       }
     });
-    final colors = AppColors.of(context);
     final traffic = ref.watch(trafficControllerProgressProvider);
     final signs = ref.watch(signSwiperProgressProvider);
     final crossroads = ref.watch(crossroadsPriorityProgressProvider);
-    final topInset = MediaQuery.paddingOf(context).top;
-
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          AppDimensions.screenPadding,
-          topInset + 16,
-          AppDimensions.screenPadding,
-          32,
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppDimensions.spacingL),
-            child: Row(
-              children: [
-                Text(
-                  appL10n.navGames,
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: colors.primaryText,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.searchFieldFill,
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Text(
-                    appL10n.gamesBeta,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: colors.secondaryText,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: colors.gold,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    await GameLeaderboardSheet.show(context);
-                    await _refreshRating();
-                  },
-                  icon: Icon(Icons.emoji_events_outlined, color: Colors.white),
-                  label: Text(
-                    NumberFormat.decimalPattern('ru').format(_weekScore),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          _GameCard(
-            art: const CityArt(forCard: true),
-            title: appL10n.gameCityTitle,
-            status: ref.watch(isPremiumProvider)
-                ? appL10n.gameRunsUnlimitedPill
-                : appL10n.gamesRunsAvailable(_runs),
-            statusIcon: Icons.local_gas_station_rounded,
-            secondaryScore: _cityBest,
-            onTap: _openCity,
-          ),
-          const SizedBox(height: AppDimensions.spacingL),
-          _GameCard(
-            art: const TrafficControllerArt(forCard: true),
-            title: appL10n.gameTrafficControllerTitle,
-            bestScore: traffic.bestScore,
-            onTap: _openTrafficController,
-          ),
-          const SizedBox(height: AppDimensions.spacingL),
-          _GameCard(
-            art: const SignSwiperArt(forCard: true),
-            title: appL10n.gameSignSwiperTitle,
-            bestScore: signs.bestScore,
-            onTap: () => _open(context, const SignSwiperScreen()),
-          ),
-          const SizedBox(height: AppDimensions.spacingL),
-          _GameCard(
-            art: const CrossroadsArt(forCard: true),
-            title: appL10n.gameCrossroadsPriorityTitle,
-            bestScore: crossroads.bestScore,
-            onTap: _openCrossroads,
-          ),
-          const SizedBox(height: AppDimensions.spacingL),
-          _GameCard(
-            art: const RoundaboutArt(forCard: true),
-            title: appL10n.gameRoundaboutTitle,
-          ),
-        ],
-      ),
+    return GamesHubView(
+      weekScore: _weekScore,
+      cityBest: _cityBest,
+      trafficBest: traffic.bestScore,
+      signsBest: signs.bestScore,
+      crossroadsBest: crossroads.bestScore,
+      premium: ref.watch(isPremiumProvider),
+      runsLoaded: _runsLoaded,
+      hasPendingRun: _hasPendingRun,
+      runs: _runs,
+      refillAt: _runsLoaded ? GameRunsService.instance.nextRefillAt : null,
+      onCity: _openCity,
+      onTrafficController: _openTrafficController,
+      onSigns: () => _open(context, const SignSwiperScreen()),
+      onCrossroads: _openCrossroads,
+      onLeaderboard: () async {
+        await GameLeaderboardSheet.show(context);
+        await _refreshRating();
+      },
+      onRunsInfo: _showRunsInfo,
+      onPremium: _openPremium,
+      onRefilled: () => unawaited(_refreshRuns()),
     );
-  }
-}
-
-/// Общая обложка: название и рекорд либо отметка ещё недоступной игры.
-class _GameCard extends StatelessWidget {
-  const _GameCard({
-    required this.art,
-    required this.title,
-    this.bestScore,
-    this.onTap,
-    this.status,
-    this.statusIcon,
-    this.secondaryScore,
-  });
-
-  final Widget art;
-  final String title;
-  final int? bestScore;
-  final VoidCallback? onTap;
-  final String? status;
-  final IconData? statusIcon;
-  final int? secondaryScore;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final radius = BorderRadius.circular(AppDimensions.cardRadius);
-    final available = onTap != null;
-    final status =
-        this.status ??
-        (bestScore == null
-            ? appL10n.gameSoonBadge
-            : appL10n.gameBestScore(bestScore!));
-    final scaler = MediaQuery.textScalerOf(context);
-
-    final card = Align(
-      alignment: Alignment.center,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Большой системный шрифт получает место, сохраняя обложку сверху.
-            final height = math.max(
-              constraints.maxWidth * 9 / 16,
-              math.max(190.0, 112.0 + scaler.scale(22) * 2 + scaler.scale(13)),
-            );
-            return Semantics(
-              button: true,
-              enabled: available,
-              label: '$title, $status',
-              onTap: onTap,
-              child: ExcludeSemantics(
-                child: ClipRRect(
-                  borderRadius: radius,
-                  child: SizedBox(
-                    height: height,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        ColorFiltered(
-                          colorFilter: available
-                              ? const ColorFilter.mode(
-                                  Colors.transparent,
-                                  BlendMode.dst,
-                                )
-                              : const ColorFilter.matrix([
-                                  .2126,
-                                  .7152,
-                                  .0722,
-                                  0,
-                                  0,
-                                  .2126,
-                                  .7152,
-                                  .0722,
-                                  0,
-                                  0,
-                                  .2126,
-                                  .7152,
-                                  .0722,
-                                  0,
-                                  0,
-                                  0,
-                                  0,
-                                  0,
-                                  1,
-                                  0,
-                                ]),
-                          child: art,
-                        ),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                available
-                                    ? const Color(0x18091121)
-                                    : const Color(0x18101010),
-                                available
-                                    ? const Color(0xD9091121)
-                                    : const Color(0xD9101010),
-                              ],
-                              stops: [0.25, 0.45, 1],
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: AppDimensions.spacingL,
-                          right: AppDimensions.spacingL,
-                          bottom: AppDimensions.spacingL,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      title,
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        height: 1.12,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                      height: AppDimensions.spacingS,
-                                    ),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          statusIcon ??
-                                              (available
-                                                  ? Icons.emoji_events_rounded
-                                                  : Icons.schedule_rounded),
-                                          size: 16,
-                                          color: available
-                                              ? colors.gold
-                                              : Colors.white,
-                                        ),
-                                        const SizedBox(
-                                          width: AppDimensions.spacingXS,
-                                        ),
-                                        Flexible(
-                                          child: Text(
-                                            status,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              height: 1.2,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                        if (secondaryScore != null) ...[
-                                          const SizedBox(width: 12),
-                                          Icon(
-                                            Icons.emoji_events_outlined,
-                                            size: 16,
-                                            color: colors.gold,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            NumberFormat.decimalPattern(
-                                              'ru',
-                                            ).format(secondaryScore!),
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (available) ...[
-                                const SizedBox(width: AppDimensions.spacingM),
-                                const Padding(
-                                  padding: EdgeInsets.only(bottom: 1),
-                                  child: Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 24,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        if (available)
-                          Material(
-                            type: MaterialType.transparency,
-                            child: InkWell(
-                              onTap: onTap,
-                              borderRadius: radius,
-                              splashColor: Colors.white24,
-                              highlightColor: Colors.white10,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-    if (available) return RepaintBoundary(child: card);
-    return Opacity(opacity: 0.55, child: RepaintBoundary(child: card));
   }
 }

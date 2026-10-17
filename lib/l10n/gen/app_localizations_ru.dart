@@ -1503,7 +1503,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String gameRunsExplain(int questions, int max, int minutes) {
-    return 'Заезд — это $questions вопросов на дороге. В запасе до $max заездов, каждый потраченный возвращается через $minutes минут.';
+    return 'Заезд — это $questions вопросов на дороге. В запасе до $max заездов. Весь запас восстанавливается через $minutes минут после первого потраченного заезда.';
   }
 
   @override
@@ -3226,6 +3226,44 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get gameSignScenario5_15_1_1Explanation =>
       'Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.';
+
+  @override
+  String get gamesParkingTitle => 'Парковка';
+
+  @override
+  String get gamesSignsTitle => 'Это знак';
+
+  @override
+  String get gamesCrossroadsTitle => 'Перекрёсток';
+
+  @override
+  String get gamesPlay => 'Играть';
+
+  @override
+  String gamesWeeklyScore(int score) {
+    return 'Очки за неделю: $score';
+  }
+
+  @override
+  String gamesRecordScore(String score) {
+    return 'Рекорд: $score';
+  }
+
+  @override
+  String gamesRunsFraction(int count, int max) {
+    return '$count/$max заездов';
+  }
+
+  @override
+  String gamesRefillIn(String time) {
+    return 'Все заезды через $time';
+  }
+
+  @override
+  String get gamesUnlimitedAction => 'Играть без ограничений';
+
+  @override
+  String get gamesResumeRide => 'Продолжить заезд';
 
   @override
   String get gamesBeta => 'Бета';
