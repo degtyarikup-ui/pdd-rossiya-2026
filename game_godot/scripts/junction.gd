@@ -663,8 +663,10 @@ func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion
 			var t := a.path.tangent_at(a.distance)
 			var p := a.path.point_at(a.distance)
 			var heading := atan2(t.x, t.z)
-			# Saved crossing/rail paths retain their role; cars cannot continue over edited lawn.
-			if motion_ground.is_valid() and not motion_ground.call(p, a.type):
+			# Authored bicycle crossings can span a verge at a yard entrance.
+			# Keep their teaching route, but validate every generated continuation.
+			var authored_cycle := a.type == "cyclist" and a.distance <= a.exported_length
+			if not authored_cycle and motion_ground.is_valid() and not motion_ground.call(p, a.type):
 				a.distance = before_d
 				a.speed = 0.0
 				break

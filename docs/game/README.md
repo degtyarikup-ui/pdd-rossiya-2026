@@ -165,6 +165,7 @@ godot --headless --path game_godot --script res://tests/traffic_check.gd    # т
 godot --headless --path game_godot --script res://tests/ambient_focus_check.gd # чистый кадр вопроса, плавный отвод трафика, объезд парковки и встречный поток
 godot --headless --path game_godot --script res://tests/terrain_motion_check.gd # проезд стыков, изменённые тротуары, движение копий и участников по видимой поверхности
 godot --headless --path game_godot --script res://tests/participant_motion_check.gd # коллизии и отъезд после стрелки
+godot --headless --path game_godot --script res://tests/cyclist_crossing_check.gd # 21·8: велосипедист пересекает въезд по заданному пути, продолжение проверяет поверхность
 godot --headless --path game_godot --script res://tests/participant_lifetime_check.gd # наезд: реальное удаление модели через 20 секунд, старые участники и подписи
 godot --headless --path game_godot --script res://tests/answer_traffic_check.gd # порядок старта после ответа, ожидание игрока, holdFor и движение после завершения вопроса
 godot --headless --path game_godot --script res://tests/answer_traffic_world_check.gd # реальные сцены: проезд игрока, перебазирование мира и отъезд участников
