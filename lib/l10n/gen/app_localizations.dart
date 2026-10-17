@@ -6369,6 +6369,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Очки этой игры добавятся в рейтинг после выхода в меню.'**
   String get gameRatingPendingRun;
+
+  /// No description provided for @gameRatingNotRanked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сыграйте, чтобы попасть в рейтинг'**
+  String get gameRatingNotRanked;
+
+  /// No description provided for @gameRatingSignIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войдите в аккаунт, чтобы участвовать в рейтинге'**
+  String get gameRatingSignIn;
 }
 
 class _AppLocalizationsDelegate

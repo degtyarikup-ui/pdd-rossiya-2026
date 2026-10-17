@@ -6,6 +6,7 @@ import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
+import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 
@@ -28,21 +29,32 @@ class GameLeaderboardSheet extends StatefulWidget {
 }
 
 class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
-  late Future<GameLeaderboard?> _future = _load();
+  /// Показанный рейтинг: сначала сохранённый (сразу), затем свежий с сервера.
+  /// Без связи сервис возвращает последний удачный ответ с пометкой stale.
+  GameLeaderboard? _board;
+  bool _loading = true;
+  Timer? _timer;
 
-  /// Последний сохранённый рейтинг: показываем до ответа сервера.
-  GameLeaderboard? _shown;
-
-  Future<GameLeaderboard?> _load() async {
-    final saved = await GameLeaderboardService.instance.lastKnown();
-    if (mounted && saved != null) setState(() => _shown = saved);
-    return GameLeaderboardService.instance.fetch();
+  Future<void> _refresh() async {
+    if (mounted) setState(() => _loading = true);
+    if (_board == null) {
+      final saved = await GameLeaderboardService.instance.lastKnown();
+      if (mounted && saved != null && _board == null) {
+        setState(() => _board = saved);
+      }
+    }
+    final fresh = await GameLeaderboardService.instance.fetch();
+    if (!mounted) return;
+    setState(() {
+      if (fresh != null) _board = fresh;
+      _loading = false;
+    });
   }
 
-  Timer? _timer;
   @override
   void initState() {
     super.initState();
+    unawaited(_refresh());
     _timer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -52,6 +64,17 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  /// «13:05» для сегодняшних данных, «16 окт., 13:05» для более старых.
+  String _savedAt(DateTime at) {
+    final now = DateTime.now();
+    final today =
+        at.year == now.year && at.month == now.month && at.day == now.day;
+    final locale = appL10n.localeName;
+    return today
+        ? DateFormat.Hm(locale).format(at)
+        : DateFormat.MMMd(locale).add_Hm().format(at);
   }
 
   void _showScoreRules() {
@@ -151,115 +174,179 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
                   ),
                 ],
               ),
+              // Обновление поверх уже показанных данных: тонкая полоска, без мигания списка.
+              SizedBox(
+                height: 2,
+                child: _loading && _board != null
+                    ? const LinearProgressIndicator(minHeight: 2)
+                    : null,
+              ),
               const SizedBox(height: 6),
-              FutureBuilder<GameLeaderboard?>(
-                future: _future,
-                builder: (context, snapshot) {
-                  final board = snapshot.data ?? _shown;
-                  final end = board?.endsAt;
-                  if (board == null || end == null) {
-                    return const SizedBox.shrink();
-                  }
-                  final hours = end
-                      .difference(DateTime.now())
-                      .inHours
-                      .clamp(0, 168);
-                  final savedAt = board.stale ? board.fetchedAt : null;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          appL10n.gameRatingResultsIn(hours ~/ 24, hours % 24),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.secondaryText,
-                          ),
-                        ),
-                        if (savedAt != null)
-                          Text(
-                            appL10n.gameRatingStaleAt(
-                              DateFormat.Hm().format(savedAt),
-                            ),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colors.secondaryText,
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              FutureBuilder<GameLeaderboard?>(
-                future: _future,
-                builder: (context, snapshot) {
-                  final me = (snapshot.data ?? _shown)?.me;
-                  if (me?.dailyLimit == null) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      appL10n.gameScoreDailyBudget(
-                        me!.dailyEarned ?? 0,
-                        me.dailyLimit!,
-                      ),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colors.secondaryText,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              Expanded(
-                child: FutureBuilder<GameLeaderboard?>(
-                  future: _future,
-                  builder: (context, snapshot) {
-                    // Сохранённый рейтинг показываем сразу, пока идёт обновление.
-                    final board = snapshot.data ?? _shown;
-                    if (board == null &&
-                        snapshot.connectionState != ConnectionState.done) {
-                      return const Center(child: AppLoadingIndicator());
-                    }
-                    if (board == null) {
-                      return _Message(
-                        icon: Icons.wifi_off_rounded,
-                        text: appL10n.gameRatingUnavailable,
-                        onRetry: () => setState(() => _future = _load()),
-                      );
-                    }
-                    if (board.top.isEmpty) {
-                      return _Message(
-                        icon: Icons.flag_rounded,
-                        text: appL10n.gameRatingEmpty,
-                      );
-                    }
-                    final me = board.me;
-                    final pinMe = me != null && me.rank > board.top.length;
-                    return Column(
-                      children: [
-                        Expanded(
-                          child: ListView.separated(
-                            itemCount: board.top.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(height: 6),
-                            itemBuilder: (context, i) =>
-                                GameLeaderboardRow(entry: board.top[i]),
-                          ),
-                        ),
-                        if (pinMe) ...[
-                          const SizedBox(height: 8),
-                          GameLeaderboardRow(entry: me),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ),
+              ..._status(colors),
+              Expanded(child: _body(colors)),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  List<Widget> _status(AppThemeColors colors) {
+    final board = _board;
+    if (board == null) return const [];
+    final small = TextStyle(fontSize: 12, color: colors.secondaryText);
+    final end = board.endsAt;
+    final me = board.me;
+    final savedAt = board.stale ? board.fetchedAt : null;
+    return [
+      if (end != null)
+        Builder(
+          builder: (_) {
+            final hours = end.difference(DateTime.now()).inHours.clamp(0, 168);
+            return Text(
+              appL10n.gameRatingResultsIn(hours ~/ 24, hours % 24),
+              style: small,
+            );
+          },
+        ),
+      if (me?.dailyLimit != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Text(
+            appL10n.gameScoreDailyBudget(me!.dailyEarned ?? 0, me.dailyLimit!),
+            style: small,
+          ),
+        ),
+      if (savedAt != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Material(
+            color: colors.background,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+              onTap: _loading ? null : _refresh,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.wifi_off_rounded,
+                      size: 16,
+                      color: colors.secondaryText,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        appL10n.gameRatingStaleAt(_savedAt(savedAt)),
+                        style: small,
+                      ),
+                    ),
+                    Text(
+                      appL10n.gameRatingReload,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _loading ? colors.secondaryText : colors.accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      const SizedBox(height: 12),
+    ];
+  }
+
+  Widget _body(AppThemeColors colors) {
+    final board = _board;
+    if (board == null) {
+      if (_loading) return const Center(child: AppLoadingIndicator());
+      return _Message(
+        icon: Icons.wifi_off_rounded,
+        text: appL10n.gameRatingUnavailable,
+        onRetry: _refresh,
+      );
+    }
+    final me = board.me;
+    final signedIn = AuthService.instance.currentUser != null;
+    // Своя строка снизу: вне топа — с местом, без очков за неделю — с нулём,
+    // без входа — подсказка. Прочерков вместо чисел не показываем.
+    final Widget? pinned = me != null
+        ? (me.rank > board.top.length ? GameLeaderboardRow(entry: me) : null)
+        : signedIn
+        ? GameLeaderboardRow(
+            entry: GameLeaderboardEntry(
+              rank: 0,
+              name: AuthService.instance.currentUser!.name,
+              score: 0,
+              runs: 0,
+              isMe: true,
+              avatarUrl: AuthService.instance.currentUser!.avatarUrl,
+            ),
+            note: appL10n.gameRatingNotRanked,
+          )
+        : _Hint(text: appL10n.gameRatingSignIn);
+    return Column(
+      children: [
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _refresh,
+            child: board.top.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      const SizedBox(height: 40),
+                      _Message(
+                        icon: Icons.flag_rounded,
+                        text: appL10n.gameRatingEmpty,
+                      ),
+                    ],
+                  )
+                : ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: board.top.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 6),
+                    itemBuilder: (context, i) =>
+                        GameLeaderboardRow(entry: board.top[i]),
+                  ),
+          ),
+        ),
+        if (pinned != null) ...[const SizedBox(height: 8), pinned],
+      ],
+    );
+  }
+}
+
+class _Hint extends StatelessWidget {
+  final String text;
+  const _Hint({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: colors.background,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.login_rounded, size: 20, color: colors.secondaryText),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 13, color: colors.secondaryText),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -267,7 +354,10 @@ class _GameLeaderboardSheetState extends State<GameLeaderboardSheet> {
 
 class GameLeaderboardRow extends StatelessWidget {
   final GameLeaderboardEntry entry;
-  const GameLeaderboardRow({super.key, required this.entry});
+
+  /// Подпись вместо «Вы»/«N заездов» (например, «Сыграйте, чтобы попасть…»).
+  final String? note;
+  const GameLeaderboardRow({super.key, required this.entry, this.note});
 
   @override
   Widget build(BuildContext context) {
@@ -295,7 +385,7 @@ class GameLeaderboardRow extends StatelessWidget {
               color: Colors.transparent,
             ),
             child: Text(
-              '${entry.rank}',
+              entry.rank > 0 ? '${entry.rank}' : '',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
@@ -339,9 +429,10 @@ class GameLeaderboardRow extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  entry.isMe
-                      ? appL10n.gameRatingYou
-                      : appL10n.gameRatingRuns(entry.runs),
+                  note ??
+                      (entry.isMe
+                          ? appL10n.gameRatingYou
+                          : appL10n.gameRatingRuns(entry.runs)),
                   style: TextStyle(fontSize: 11, color: colors.secondaryText),
                 ),
               ],
@@ -394,7 +485,10 @@ class _Message extends StatelessWidget {
             style: TextStyle(fontFamily: 'Onest', color: colors.secondaryText),
           ),
           if (onRetry != null)
-            TextButton(onPressed: onRetry, child: Text(appL10n.gameRestart)),
+            TextButton(
+              onPressed: onRetry,
+              child: Text(appL10n.gameRatingReload),
+            ),
         ],
       ),
     );

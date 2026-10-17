@@ -1792,5 +1792,7 @@
   "gameResultNoRuns": "Заезды закончились",
   "gameRatingLoading": "Загружаем рейтинг…",
   "gameRatingReload": "Обновить",
-  "gameRatingPendingRun": "Очки этой игры добавятся в рейтинг после выхода в меню."
+  "gameRatingPendingRun": "Очки этой игры добавятся в рейтинг после выхода в меню.",
+  "gameRatingNotRanked": "Сыграйте, чтобы попасть в рейтинг",
+  "gameRatingSignIn": "Войдите в аккаунт, чтобы участвовать в рейтинге"
 }

@@ -39,7 +39,7 @@ func _run() -> void:
 		check(result._car.position.is_zero_approx() and is_zero_approx(result._car.rotation.y), "car settles in its final pose " + locale)
 		check(result._preview.render_target_update_mode != SubViewport.UPDATE_ALWAYS, "3D rendering ends after arrival " + locale)
 		check(result._glow.modulate.a == 1.0 and result._rays.is_processing(), "glow and inexpensive rays remain " + locale)
-		for control in [result.exit_button, result.mistakes_button, result.ranking_button, result.restart_button]:
+		for control in [result.exit_button, result.mistakes_button, result.restart_button]:
 			for state in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
 				var style := control.get_theme_stylebox(state) as StyleBoxFlat
 				check(style != null and style.corner_radius_top_left == 12 and style.corner_radius_top_right == 12 and style.corner_radius_bottom_left == 12 and style.corner_radius_bottom_right == 12, "all button states preserve rounding %s %s" % [locale, state])
@@ -93,11 +93,11 @@ func _run() -> void:
 		result.set_distance(1200)
 		await create_timer(0.62).timeout
 		check(result.score_label.text == "48" and result.stat_values[0].text == "1/2", "a new result cancels old counters " + locale)
-		result.ranking_button.button_down.emit()
+		result.restart_button.button_down.emit()
 		await create_timer(0.09).timeout
 		result.hide_results()
 		check(not result.is_processing() and not result._rays.is_processing(), "hidden result stops continuous animations " + locale)
-		check(result.ranking_button.scale.is_equal_approx(Vector2.ONE) and not result._numbers.is_running() and not result._arrival.is_running(), "hide resets pressed controls and stops tweens " + locale)
+		check(result.restart_button.scale.is_equal_approx(Vector2.ONE) and not result._numbers.is_running() and not result._arrival.is_running(), "hide resets pressed controls and stops tweens " + locale)
 		result.queue_free()
 		await process_frame
 	Ui.lang = "ru"

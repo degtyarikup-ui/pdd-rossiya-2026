@@ -4,7 +4,6 @@ import 'dart:ui_web' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:pdd_app/data/services/question_report_service.dart';
-import 'package:pdd_app/data/services/godot_game_data_service.dart';
 import 'package:web/web.dart' as web;
 
 /// The Godot build of the game, in a frame on the same site: the folder
@@ -140,11 +139,7 @@ class GodotWebFrame {
     final id = event['request_id'];
     final payload = event['payload'];
     if (id is! String || payload is! Map<String, dynamic>) return;
-    final board = payload['request_kind'] == 'leaderboard'
-        ? jsonDecode(await GodotGameDataService.leaderboard())
-        : null;
-    final success =
-        board != null || await QuestionReportService.sendGameReport(payload);
+    final success = await QuestionReportService.sendGameReport(payload);
     if (_disposed) return;
     _frame.contentWindow?.postMessage(
       jsonEncode({
@@ -152,7 +147,6 @@ class GodotWebFrame {
         'kind': 'question_report_result',
         'request_id': id,
         'success': success,
-        'data': ?board,
       }).toJS,
       web.window.location.origin.toJS,
     );

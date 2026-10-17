@@ -81,4 +81,29 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('a player without weekly points shows 0 and a hint, no dash', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: GameLeaderboardRow(
+            entry: const GameLeaderboardEntry(
+              rank: 0,
+              name: 'Learner',
+              score: 0,
+              runs: 0,
+              isMe: true,
+            ),
+            note: appL10n.gameRatingNotRanked,
+          ),
+        ),
+      ),
+    );
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text(appL10n.gameRatingNotRanked), findsOneWidget);
+    expect(find.text('—'), findsNothing);
+    expect(find.text('-'), findsNothing);
+  });
 }

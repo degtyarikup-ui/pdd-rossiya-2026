@@ -1292,5 +1292,7 @@
   "gameResultNoRuns": "No runs left",
   "gameRatingLoading": "Loading rankings…",
   "gameRatingReload": "Refresh",
-  "gameRatingPendingRun": "Points from this game will be added when you return to the menu."
+  "gameRatingPendingRun": "Points from this game will be added when you return to the menu.",
+  "gameRatingNotRanked": "Play to get on the board",
+  "gameRatingSignIn": "Sign in to take part in the rating"
 }

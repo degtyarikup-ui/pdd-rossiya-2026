@@ -19,16 +19,10 @@ var stat_captions: Array[Label] = []
 var restart_button: Button
 var exit_button: Button
 var mistakes_button: Button
-var ranking_button: Button
 var scroll: ScrollContainer
 var _bounds := Rect2()
 var _preview: SubViewport
 var _post: SignPost
-var _ranking: PanelContainer
-var _ranking_rows: VBoxContainer
-var _ranking_status: Label
-var _ranking_retry: Button
-var _ranking_bridge: Node
 var _subject := "vehicle"
 var _camera: Camera3D
 var _studio: Node3D
@@ -143,10 +137,6 @@ func _init(_legacy_cover := "") -> void:
 	mistakes_button.pressed.connect(func(): mistakes_pressed.emit())
 	_action_icon(mistakes_button, 0xf712)
 	actions.add_child(mistakes_button)
-	ranking_button = _button(Ui.t("gameResultRanking"), false)
-	ranking_button.pressed.connect(_show_ranking)
-	_action_icon(ranking_button, 0xf707)
-	actions.add_child(ranking_button)
 	_footer.add_child(actions)
 	restart_button = _button(Ui.t("gameRestart"), true)
 	restart_button.pressed.connect(func(): restart_pressed.emit())
@@ -184,6 +174,7 @@ func _build_studio() -> void:
 func set_vehicle(id: String, paint: Color) -> void:
 	_subject = "vehicle"
 	mistakes_button.visible = true
+	_actions.visible = true
 	_post.visible = false
 	_camera.size = 3.2
 	_camera.transform = Transform3D(Basis.IDENTITY, Vector3(5, 3.2, 6)).looking_at(Vector3(0, 0.7, 0))
@@ -208,6 +199,7 @@ func set_subject(kind: String) -> void:
 		_car.queue_free()
 	_subject = kind
 	mistakes_button.visible = false
+	_actions.visible = false
 	_actions.columns = 1
 	_post.visible = kind == "crossroads"
 	_wheel_starts.clear()
@@ -243,9 +235,11 @@ func layout(bounds: Rect2) -> void:
 	_fit_score(width)
 	card.position = Vector2(bounds.position.x + (bounds.size.x - width) / 2, bounds.position.y)
 	card.size = Vector2(width, bounds.size.y)
-	_actions.columns = 1 if not mistakes_button.visible or width < 300 or (Ui.text_scale() > 1.3 and width < 420) else 2
+	# The weekly rating lives only in the app's Games tab; the city keeps its mistakes button.
+	_actions.columns = 1
+	_actions.visible = mistakes_button.visible
 	var button_height := maxf(48, roundf((22 if bounds.size.y < 320 else 32) * Ui.text_scale() + (12 if bounds.size.y < 320 else 16)))
-	for button in [mistakes_button, ranking_button, restart_button]:
+	for button in [mistakes_button, restart_button]:
 		button.custom_minimum_size.y = button_height
 	cover.custom_minimum_size.y = clampf(bounds.size.y * 0.36, 150, 300)
 
@@ -378,13 +372,13 @@ func _process(_delta: float) -> void:
 func _visibility_changed() -> void:
 	var active := is_visible_in_tree()
 	set_process(active)
-	_rays.set_process(active and not is_instance_valid(_review) and not is_instance_valid(_ranking))
+	_rays.set_process(active and not is_instance_valid(_review))
 
 func hide_results() -> void:
 	dismiss_review()
 	if is_instance_valid(_numbers): _numbers.kill()
 	_update_count(1.0)
-	for button in [exit_button, restart_button, mistakes_button, ranking_button]:
+	for button in [exit_button, restart_button, mistakes_button]:
 		_reset_button(button)
 	if is_instance_valid(_arrival): _arrival.kill()
 	if is_instance_valid(_reveal): _reveal.kill()
@@ -508,9 +502,6 @@ class Rays extends Node2D:
 			draw_polygon(points, PackedColorArray([Color(1, 1, 1, 0.045), Color(1, 1, 1, 0), Color(1, 1, 1, 0)]))
 
 func dismiss_review() -> bool:
-	if is_instance_valid(_ranking):
-		_close_ranking()
-		return true
 	if not is_instance_valid(_review): return false
 	_review.queue_free()
 	_review = null
@@ -532,99 +523,6 @@ func _close_control(action: Callable, label := "") -> Button:
 	button.add_child(icon)
 	button.pressed.connect(action)
 	return button
-
-func _show_ranking() -> void:
-	if is_instance_valid(_ranking): return
-	if is_instance_valid(_numbers): _numbers.kill()
-	_update_count(1.0)
-	_ranking = PanelContainer.new()
-	_ranking.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	var style := Ui.box(Ui.c("card"), 0)
-	style.content_margin_left = _bounds.position.x
-	style.content_margin_right = size.x - _bounds.end.x
-	style.content_margin_top = _bounds.position.y
-	style.content_margin_bottom = size.y - _bounds.end.y
-	_ranking.add_theme_stylebox_override("panel", style)
-	var shell := VBoxContainer.new()
-	shell.add_theme_constant_override("separation", 12)
-	_ranking.add_child(shell)
-	var head := HBoxContainer.new()
-	var title := Ui.scaled_label(Ui.t("gameLeaderboard"), 22, 800, Ui.c("text"), true)
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	head.add_child(title)
-	head.add_child(_close_control(_close_ranking))
-	shell.add_child(head)
-	shell.add_child(Ui.scaled_label(Ui.t("gameRatingPendingRun"), 12, 500, Ui.c("secondary"), true))
-	_ranking_status = Ui.scaled_label("", 14, 500, Ui.c("secondary"), true)
-	shell.add_child(_ranking_status)
-	var list := ScrollContainer.new()
-	list.size_flags_vertical = SIZE_EXPAND_FILL
-	list.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	shell.add_child(list)
-	_ranking_rows = VBoxContainer.new()
-	_ranking_rows.size_flags_horizontal = SIZE_EXPAND_FILL
-	_ranking_rows.add_theme_constant_override("separation", 8)
-	list.add_child(_ranking_rows)
-	_ranking_retry = _button(Ui.t("gameRatingReload"), true)
-	_ranking_retry.pressed.connect(_load_ranking)
-	shell.add_child(_ranking_retry)
-	add_child(_ranking)
-	card.visible = false
-	_visibility_changed()
-	_load_ranking()
-
-func _load_ranking() -> void:
-	if is_instance_valid(_ranking_bridge): _ranking_bridge.queue_free()
-	_ranking_status.text = Ui.t("gameRatingLoading")
-	_ranking_retry.disabled = true
-	_ranking_bridge = preload("res://scripts/question_report_bridge.gd").new()
-	add_child(_ranking_bridge)
-	_ranking_bridge.data_received.connect(_render_ranking)
-	_ranking_bridge.submit({"request_kind": "leaderboard"})
-
-func _render_ranking(board: Dictionary) -> void:
-	if not is_instance_valid(_ranking): return
-	_ranking_retry.disabled = false
-	for child in _ranking_rows.get_children():
-		_ranking_rows.remove_child(child)
-		child.queue_free()
-	if not board.get("available", false):
-		_ranking_status.text = Ui.t("gameRatingUnavailable")
-		return
-	var top: Array = board.get("top", [])
-	_ranking_status.text = Ui.t("gameRatingStaleAt", {"time": board.get("time", "")}) if board.get("stale", false) else (Ui.t("gameRatingEmpty") if top.is_empty() else "")
-	var has_me := false
-	for entry: Dictionary in top:
-		_add_rank_row(entry)
-		has_me = has_me or bool(entry.get("is_me", false))
-	if board.get("me") is Dictionary and not has_me:
-		_add_rank_row(board.me)
-
-func _add_rank_row(entry: Dictionary) -> void:
-	var panel := PanelContainer.new()
-	var style := Ui.box(Ui.c("field"), 12)
-	style.set_content_margin_all(12)
-	panel.add_theme_stylebox_override("panel", style)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	panel.add_child(row)
-	row.add_child(Ui.scaled_label(str(entry.get("rank", 0)), 15, 700, Ui.c("secondary")))
-	var name := str(entry.get("name", "—")).left(80)
-	if entry.get("is_me", false): name += " · " + Ui.t("gameRatingYou")
-	row.add_child(Ui.scaled_label(name, 15, 600, Ui.c("text"), true))
-	row.add_child(Ui.scaled_label(str(entry.get("score", 0)), 16, 800, Ui.c("accent")))
-	_ranking_rows.add_child(panel)
-
-func _close_ranking() -> void:
-	card.visible = true
-	if is_instance_valid(_ranking_bridge):
-		_ranking_bridge.queue_free()
-		_ranking_bridge = null
-	if is_instance_valid(_ranking):
-		_ranking.visible = false
-		_ranking.queue_free()
-		_ranking = null
-	_visibility_changed()
 
 class SignPost extends Node2D:
 	var height := 0.0

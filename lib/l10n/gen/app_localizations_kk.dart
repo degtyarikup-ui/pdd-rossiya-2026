@@ -3809,4 +3809,10 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get gameRatingPendingRun =>
       'Осы ойындағы ұпайлар мәзірге шыққаннан кейін рейтингке қосылады.';
+
+  @override
+  String get gameRatingNotRanked => 'Рейтингке кіру үшін ойнаңыз';
+
+  @override
+  String get gameRatingSignIn => 'Рейтингке қатысу үшін аккаунтқа кіріңіз';
 }

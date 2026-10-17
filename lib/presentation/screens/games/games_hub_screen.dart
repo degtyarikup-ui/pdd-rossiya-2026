@@ -27,7 +27,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     with WidgetsBindingObserver {
   int _runs = GameRunsService.maxRuns;
   int _cityBest = 0;
-  GameLeaderboardEntry? _me;
+  int _weekScore = 0;
   Timer? _timer;
   Future<int>? _loadedRuns;
   @override
@@ -45,14 +45,20 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
     if (mounted) setState(() => _runs = runs);
   }
 
+  /// Сохранённые очки показываем сразу, затем свежие. Без связи остаются
+  /// последние загруженные; без очков за неделю (или без входа) — 0.
   Future<void> _refreshRating() async {
     final prefs = await SharedPreferences.getInstance();
-    final board = await GameLeaderboardService.instance.fetch();
+    final saved = await GameLeaderboardService.instance.lastKnown();
     if (mounted) {
       setState(() {
         _cityBest = prefs.getInt('game_best_score') ?? 0;
-        _me = board?.me;
+        if (saved != null) _weekScore = saved.me?.score ?? 0;
       });
+    }
+    final board = await GameLeaderboardService.instance.fetch();
+    if (mounted && board != null) {
+      setState(() => _weekScore = board.me?.score ?? 0);
     }
   }
 
@@ -204,9 +210,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
                   },
                   icon: Icon(Icons.emoji_events_outlined, color: Colors.white),
                   label: Text(
-                    _me == null
-                        ? '—'
-                        : NumberFormat.decimalPattern('ru').format(_me!.score),
+                    NumberFormat.decimalPattern('ru').format(_weekScore),
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,

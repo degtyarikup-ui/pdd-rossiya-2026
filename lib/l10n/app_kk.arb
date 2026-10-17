@@ -1292,5 +1292,7 @@
   "gameResultNoRuns": "Жарыстар аяқталды",
   "gameRatingLoading": "Рейтинг жүктелуде…",
   "gameRatingReload": "Жаңарту",
-  "gameRatingPendingRun": "Осы ойындағы ұпайлар мәзірге шыққаннан кейін рейтингке қосылады."
+  "gameRatingPendingRun": "Осы ойындағы ұпайлар мәзірге шыққаннан кейін рейтингке қосылады.",
+  "gameRatingNotRanked": "Рейтингке кіру үшін ойнаңыз",
+  "gameRatingSignIn": "Рейтингке қатысу үшін аккаунтқа кіріңіз"
 }

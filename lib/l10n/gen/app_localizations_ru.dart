@@ -3836,4 +3836,11 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get gameRatingPendingRun =>
       'Очки этой игры добавятся в рейтинг после выхода в меню.';
+
+  @override
+  String get gameRatingNotRanked => 'Сыграйте, чтобы попасть в рейтинг';
+
+  @override
+  String get gameRatingSignIn =>
+      'Войдите в аккаунт, чтобы участвовать в рейтинге';
 }
