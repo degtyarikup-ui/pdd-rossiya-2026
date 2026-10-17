@@ -3815,4 +3815,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameRatingSignIn => 'Рейтингке қатысу үшін аккаунтқа кіріңіз';
+
+  @override
+  String get gameCrossroadsCrash => 'Жол апаты';
 }

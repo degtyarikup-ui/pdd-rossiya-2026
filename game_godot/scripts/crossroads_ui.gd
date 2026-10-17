@@ -58,6 +58,7 @@ var _bonus_visible := false
 
 var _collision_backdrop: ColorRect
 var _collision_card: PanelContainer
+var _collision_panel: PanelContainer
 var _collision_content: VBoxContainer
 var _collision_title: Label
 var _collision_should_go: Label
@@ -114,9 +115,6 @@ func _layout() -> void:
 	var modal_top := top + 16.0
 	var modal_height := maxf(100.0, size.y - modal_top - bottom - 16.0)
 	var inner_width := card_width - 40.0
-	# Stack long action labels rather than shrinking the text or the tap target.
-	var stack_actions := inner_width < 300.0 or Ui.text_scale() > 1.2
-	_collision_btn_row.vertical = stack_actions
 	_fit_modal(_collision_card, _collision_content, card_width, modal_height, modal_top, left, available_width)
 	var result_left := float(safe["left"]) / u + 20.0
 	var result_right := float(safe["right"]) / u + 20.0
@@ -358,35 +356,55 @@ func _hide_hard_bonus() -> void:
 	if is_inside_tree(): call_deferred("_layout")
 
 
+## Crash card: the world behind turns grey and dim; a red card names the
+## participant who goes now and explains the rule; actions sit below the card.
 func _build_collision_modal() -> void:
 	_collision_backdrop = _backdrop()
+	var grey := ShaderMaterial.new()
+	grey.shader = preload("res://shaders/grey.gdshader")
+	grey.set_shader_parameter("dim", 0.5)
+	_collision_backdrop.material = grey
 	var modal := _modal(_collision_backdrop)
 	_collision_card = modal[0]
 	_collision_content = modal[1]
+	_collision_card.add_theme_stylebox_override("panel", _padded(Color.TRANSPARENT, 0, 20, 20))
+	_collision_panel = PanelContainer.new()
+	_collision_panel.add_theme_stylebox_override("panel", _padded(Ui.c("red"), 20, 20, 20))
+	_collision_content.add_child(_collision_panel)
+	var text := VBoxContainer.new()
+	text.add_theme_constant_override("separation", 10)
+	_collision_panel.add_child(text)
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 8)
-	header.add_child(Ui.icon(ICON_WARNING, 24, Ui.c("red")))
-	_collision_title = Ui.scaled_label(Ui.t("gameCrossroadsCollision"), 18, 700, Ui.c("red"), true)
+	header.add_theme_constant_override("separation", 12)
+	header.add_child(Ui.icon(ICON_WARNING, 32, Color.WHITE))
+	_collision_title = Ui.scaled_label(Ui.t("gameCrossroadsCrash"), 30, 800, Color.WHITE, true)
+	_collision_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	header.add_child(_collision_title)
-	_collision_content.add_child(header)
-	_collision_should_go = Ui.scaled_label("", 15, 700, Ui.c("accent"), true)
-	_collision_content.add_child(_collision_should_go)
-	_collision_reason = Ui.scaled_label("", 14, 400, Ui.c("text"), true)
-	_collision_content.add_child(_collision_reason)
-	_collision_article = Ui.scaled_label("", 13, 600, Ui.c("secondary"), true)
-	_collision_content.add_child(_collision_article)
-	_collision_content.add_child(_divider())
+	text.add_child(header)
+	var gap := Control.new()
+	gap.custom_minimum_size.y = 4
+	text.add_child(gap)
+	_collision_should_go = Ui.scaled_label("", 16, 600, Color.WHITE, true)
+	text.add_child(_collision_should_go)
+	_collision_reason = Ui.scaled_label("", 14, 500, Color(1, 1, 1, 0.82), true)
+	text.add_child(_collision_reason)
+	_collision_article = Ui.scaled_label("", 12, 600, Color(1, 1, 1, 0.64), true)
+	text.add_child(_collision_article)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 8
+	_collision_content.add_child(spacer)
 	_collision_btn_row = BoxContainer.new()
+	_collision_btn_row.vertical = true
 	_collision_btn_row.add_theme_constant_override("separation", 8)
 	_collision_content.add_child(_collision_btn_row)
+	_collision_next_btn = _action_button(Ui.t("continueButton"), true, func():
+		hide_collision_modal()
+		next_scenario_pressed.emit())
+	_collision_btn_row.add_child(_collision_next_btn)
 	_collision_retry_btn = _action_button(Ui.t("gameCrossroadsRepeatCrossroad"), false, func():
 		hide_collision_modal()
 		retry_pressed.emit())
 	_collision_btn_row.add_child(_collision_retry_btn)
-	_collision_next_btn = _action_button(Ui.t("gameCrossroadsNextCrossroad"), true, func():
-		hide_collision_modal()
-		next_scenario_pressed.emit())
-	_collision_btn_row.add_child(_collision_next_btn)
 	_collision_game_over_btn = _action_button(Ui.t("gameOver"), true, func():
 		hide_collision_modal()
 		retry_pressed.emit())

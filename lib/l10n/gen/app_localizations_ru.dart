@@ -3843,4 +3843,7 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get gameRatingSignIn =>
       'Войдите в аккаунт, чтобы участвовать в рейтинге';
+
+  @override
+  String get gameCrossroadsCrash => 'ДТП';
 }

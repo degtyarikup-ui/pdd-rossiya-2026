@@ -155,6 +155,7 @@
   "crossroadsArticlePedestrian": "Пункт 13.1 ПДД РФ",
   "crossroadsReasonEarlyExit": "Слишком ранний выезд: не уступил дорогу и не дождался освобождения перекрестка движущимся транспортом! (п. 13.8 ПДД РФ)",
   "crossroadsArticleEarlyExit": "Пункт 13.8 ПДД РФ",
+  "gameCrossroadsCrash": "ДТП",
   "gameCrossroadsSolvedCount": "Разрулено: {count}",
   "gameCrossroadsExplanationTitle": "Разбор ситуации по ПДД РФ",
   "gameCrossroadsCompleteTitle": "Перекресток разрулен!"
@@ -315,6 +316,7 @@
   "crossroadsArticlePedestrian": "Clause 13.1 of the Russian Traffic Regulations",
   "crossroadsReasonEarlyExit": "Entering too early: you did not yield and did not wait for the moving traffic to clear the intersection! (clause 13.8 of the Russian Traffic Regulations)",
   "crossroadsArticleEarlyExit": "Clause 13.8 of the Russian Traffic Regulations",
+  "gameCrossroadsCrash": "Crash",
   "gameCrossroadsSolvedCount": "Cleared: {count}",
   "gameCrossroadsExplanationTitle": "Analysis of the situation according to the Russian Federation traffic rules",
   "gameCrossroadsCompleteTitle": "The intersection has been cleared!"
@@ -475,6 +477,7 @@
   "crossroadsArticlePedestrian": "ЖЖЕ 13.1-тармағы",
   "crossroadsReasonEarlyExit": "Тым ерте шығу: жол бермедіңіз және қиылысты қозғалыстағы көліктер босатқанын күтпедіңіз! (ЖЖЕ 13.8-тармағы)",
   "crossroadsArticleEarlyExit": "ЖЖЕ 13.8-тармағы",
+  "gameCrossroadsCrash": "Жол апаты",
   "gameCrossroadsSolvedCount": "Шешілген: {count}",
   "gameCrossroadsExplanationTitle": "Ресей Федерациясының жол қозғалысы ережелеріне сәйкес жағдайды талдау",
   "gameCrossroadsCompleteTitle": "Қиылыс тазартылды!"

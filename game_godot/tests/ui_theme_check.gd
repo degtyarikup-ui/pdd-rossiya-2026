@@ -113,8 +113,10 @@ func _check_mini_games(palette: Dictionary, context: String) -> void:
 	_button(crossroads._close_btn, "card", palette, context + " crossroads close control")
 	_ink(crossroads._close_btn, "text", palette, context + " crossroads close icon")
 	crossroads.show_collision_modal("", "Theme explanation", "", false)
-	_surface(crossroads._collision_card, "card", palette, context + " crossroads explanation panel")
-	_ink(crossroads._collision_reason, "text", palette, context + " crossroads explanation text")
+	# The crash card is red in both themes, with white text over a grey, dimmed world.
+	_surface(crossroads._collision_panel, "red", palette, context + " crossroads crash card")
+	_check(crossroads._collision_title.get_theme_color("font_color").is_equal_approx(Color.WHITE), context + " crossroads crash title")
+	_check(crossroads._collision_reason.get_theme_color("font_color").is_equal_approx(Color(1, 1, 1, 0.82)), context + " crossroads crash explanation")
 	_button(crossroads._collision_retry_btn, "field", palette, context + " crossroads retry control")
 	_ink(crossroads._collision_retry_btn, "text", palette, context + " crossroads retry text")
 	crossroads.show_results(100, 4, 1, 3, true, 0)

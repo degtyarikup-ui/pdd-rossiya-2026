@@ -1294,5 +1294,6 @@
   "gameRatingReload": "Жаңарту",
   "gameRatingPendingRun": "Осы ойындағы ұпайлар мәзірге шыққаннан кейін рейтингке қосылады.",
   "gameRatingNotRanked": "Рейтингке кіру үшін ойнаңыз",
-  "gameRatingSignIn": "Рейтингке қатысу үшін аккаунтқа кіріңіз"
+  "gameRatingSignIn": "Рейтингке қатысу үшін аккаунтқа кіріңіз",
+  "gameCrossroadsCrash": "Жол апаты"
 }

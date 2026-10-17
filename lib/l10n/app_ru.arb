@@ -1794,5 +1794,6 @@
   "gameRatingReload": "Обновить",
   "gameRatingPendingRun": "Очки этой игры добавятся в рейтинг после выхода в меню.",
   "gameRatingNotRanked": "Сыграйте, чтобы попасть в рейтинг",
-  "gameRatingSignIn": "Войдите в аккаунт, чтобы участвовать в рейтинге"
+  "gameRatingSignIn": "Войдите в аккаунт, чтобы участвовать в рейтинге",
+  "gameCrossroadsCrash": "ДТП"
 }

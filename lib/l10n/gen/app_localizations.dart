@@ -6381,6 +6381,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Войдите в аккаунт, чтобы участвовать в рейтинге'**
   String get gameRatingSignIn;
+
+  /// No description provided for @gameCrossroadsCrash.
+  ///
+  /// In ru, this message translates to:
+  /// **'ДТП'**
+  String get gameCrossroadsCrash;
 }
 
 class _AppLocalizationsDelegate

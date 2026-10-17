@@ -42,7 +42,7 @@ KEYS = [
     'continueButton', 'crossroadsReasonRedLight', 'crossroadsArticleRedLight',
     'gameCrossroadsCatAll', 'gameCrossroadsCatSigns', 'gameCrossroadsCatTrafficLights', 'gameCrossroadsCatHard',
     'crossroadsHardSituationBadge', 'crossroadsHardBonusBadge', 'crossroadsTimeBonus10s', 'crossroadsPedestrian',
-    'crossroadsReasonPedestrianViolation', 'crossroadsArticlePedestrian', 'crossroadsReasonEarlyExit', 'crossroadsArticleEarlyExit',
+    'crossroadsReasonPedestrianViolation', 'crossroadsArticlePedestrian', 'crossroadsReasonEarlyExit', 'crossroadsArticleEarlyExit', 'gameCrossroadsCrash',
     'gameCrossroadsSolvedCount', 'gameCrossroadsExplanationTitle', 'gameCrossroadsCompleteTitle',
 ]
 out = {}

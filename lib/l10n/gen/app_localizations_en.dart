@@ -3823,4 +3823,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameRatingSignIn => 'Sign in to take part in the rating';
+
+  @override
+  String get gameCrossroadsCrash => 'Crash';
 }
