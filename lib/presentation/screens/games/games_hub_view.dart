@@ -361,11 +361,13 @@ class _HubCard extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    stops: const [0, .35, 1],
+                    stops: const [0, .4, 1],
                     colors: [
                       Colors.transparent,
-                      featured ? const Color(0x78000A15) : Colors.transparent,
-                      const Color(0xEB000A15),
+                      featured
+                          ? const Color(0x66000A15)
+                          : const Color(0x14000A15),
+                      const Color(0xF0000A15),
                     ],
                   ),
                 ),
@@ -385,11 +387,13 @@ class _HubCard extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: featured
-                      ? 16
+                      ? AppDimensions.spacingL
                       : titleSize < 18
-                      ? 8
-                      : 12,
-                  vertical: featured ? 16 : 12,
+                      ? AppDimensions.spacingS
+                      : AppDimensions.spacingM,
+                  vertical: featured
+                      ? AppDimensions.spacingL
+                      : AppDimensions.spacingM,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -397,69 +401,73 @@ class _HubCard extends StatelessWidget {
                   children: [
                     IgnorePointer(
                       child: ExcludeSemantics(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
+                            // The arrow sits on the title line in every state,
+                            // so it never drifts with the caption or footer.
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
                                     title,
                                     style: TextStyle(
                                       fontSize: featured ? 24 : titleSize,
-                                      height: 1.12,
+                                      height: 1.15,
                                       fontWeight: FontWeight.w700,
                                       color: foreground,
                                     ),
                                   ),
-                                  if (!hideStatus) ...[
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        if (record && caption == null) ...[
-                                          Icon(
-                                            Icons.emoji_events_rounded,
-                                            size: 14,
-                                            color: colors.gold,
-                                          ),
-                                          const SizedBox(width: 3),
-                                        ],
-                                        Flexible(
-                                          child: Text(
-                                            status,
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              height: 1.2,
-                                              fontWeight: FontWeight.w600,
-                                              color: record && caption == null
-                                                  ? colors.gold
-                                                  : foreground,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                ),
+                                if (featured) ...[
+                                  const SizedBox(width: AppDimensions.spacingS),
+                                  const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 24,
+                                    color: AppColors.white,
+                                  ),
+                                ],
+                              ],
+                            ),
+                            if (!hideStatus) ...[
+                              const SizedBox(height: AppDimensions.spacingXS),
+                              Row(
+                                children: [
+                                  if (record && caption == null) ...[
+                                    Icon(
+                                      Icons.emoji_events_rounded,
+                                      size: 14,
+                                      color: colors.gold,
+                                    ),
+                                    const SizedBox(
+                                      width: AppDimensions.spacingXS,
                                     ),
                                   ],
+                                  Flexible(
+                                    child: Text(
+                                      status,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        height: 1.25,
+                                        fontWeight: FontWeight.w600,
+                                        color: record && caption == null
+                                            ? colors.gold
+                                            : foreground,
+                                      ),
+                                    ),
+                                  ),
                                 ],
-                              ),
-                            ),
-                            if (featured) ...[
-                              const SizedBox(width: 8),
-                              const Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 26,
-                                color: AppColors.white,
                               ),
                             ],
                           ],
                         ),
                       ),
                     ),
-                    if (footer != null) ...[const SizedBox(height: 6), footer!],
+                    if (footer != null) ...[
+                      const SizedBox(height: AppDimensions.spacingXS),
+                      footer!,
+                    ],
                   ],
                 ),
               ),
@@ -538,8 +546,8 @@ class _RunsFooter extends StatelessWidget {
           onPressed: onInfo,
           child: Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 10,
-            runSpacing: 4,
+            spacing: AppDimensions.spacingM,
+            runSpacing: AppDimensions.spacingXS,
             children: [
               if (bestScore > 0)
                 Semantics(
@@ -589,7 +597,8 @@ class _RunsFooter extends StatelessWidget {
             ],
           ),
         ),
-        if (waiting)
+        if (waiting) ...[
+          const SizedBox(height: AppDimensions.spacingXS),
           FilledButton.icon(
             key: const ValueKey('games-premium'),
             onPressed: onPremium,
@@ -613,6 +622,7 @@ class _RunsFooter extends StatelessWidget {
               ),
             ),
           ),
+        ],
       ],
     );
   }
