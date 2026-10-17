@@ -1462,6 +1462,10 @@ func _maybe_spawn() -> void:
 	_prestage()
 	if current or road != null or insert_road or drive.pos.z < spawn_after or staged_sit == null or staging:
 		return
+	# Whatever confirmed the departure late, the next question must stay ahead.
+	if not pending_connection.is_empty() and float(pending_connection.port.p.z) < drive.pos.z:
+		push_warning("join behind the car at z %.1f, moved ahead of %.1f" % [float(pending_connection.port.p.z), drive.pos.z])
+		_advance_pending_join()
 	var sit := staged_sit
 	staged_sit = null
 	if sit.get_parent(): sit.get_parent().remove_child(sit)
@@ -1596,13 +1600,28 @@ func _on_prepared(ok: bool, id: String) -> void:
 		if pending_connection.is_empty(): spawn_after = drive.pos.z + 20.0
 
 
+## Room for the whole body at every steering angle, plus a metre before a seam.
+func _join_clearance() -> float:
+	return Vector2(drive.half_width, drive.half_length).length() + 1.0
+
+
+## Moves a not yet installed join ahead of the car, far enough to brake normally.
+## The street between keeps the join's profile, so the car never leaves the road.
+func _advance_pending_join() -> void:
+	var ahead := drive.pos.z + _join_clearance() + maxf(drive.speed, 0.0) ** 2 / 12.0 + 2.0
+	if float(pending_connection.port.p.z) >= ahead: return
+	pending_connection.port.p = Vector3(0, 0, ahead)
+	pending_connection.local_port = {}
+	pending_connection.sit = null
+
+
 ## The next entrance has a fixed contact with the road just left. Until it
 ## is installed, the player must not drive past it and leave its question behind.
 func _streaming_stop_z() -> float:
 	if current or road != null or insert_road or road_force != "" or pending_connection.is_empty():
 		return INF
 	# Reserve the whole body at every steering angle, plus a metre before the seam.
-	return float(pending_connection.port.p.z) - Vector2(drive.half_width, drive.half_length).length() - 1.0
+	return float(pending_connection.port.p.z) - _join_clearance()
 
 
 func _update_junction(dt: float) -> void:
@@ -1988,6 +2007,8 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	var crop: float = sit.data.crop
 	var centre := sit.position
 	drive.turning_at_junction = false
+	# The street under the car, should it already be past the join (read before the rebase).
+	var ring_profile := street.profile_at(drive.pos.z)
 	var port: Dictionary = SceneStitch.departure_ports(sit.network.connections).get(exit_direction,{}) if sit.network else {}
 	if port.is_empty():
 		port={"p":Vector3(sin(exit_yaw)*crop,0,cos(exit_yaw)*crop),"out":Vector3(sin(exit_yaw),0,cos(exit_yaw)),"width":8.4,"lanes":2,"median":0.0,"declared_median":0.0,"walk":true,"edge":true,"centre":"dashed","surface":"asphalt"}
@@ -2067,6 +2088,14 @@ func _on_finished(exit_direction: String, exit_yaw: float) -> void:
 	pending_connection={"port":port.duplicate(),"local_port":port,"sit":sit}
 	pending_connection.port.p=Vector3.ZERO
 	pending_connection.port.out=Vector3.BACK
+	if drive.pos.z > 0.0:
+		# The departure was confirmed beyond the join. A scene joined there would stand
+		# behind the car (its question never reached) or freeze it past the seam.
+		# Join ahead on the street the car is actually on; this end keeps its own binding.
+		pending_connection.port = ring_profile.duplicate()
+		pending_connection.port.out = Vector3.BACK
+		street_half = float(ring_profile.get("width", street_half * 2.0)) / 2.0
+		_advance_pending_join()
 	current["retire_distance"] = drive.distance_traveled
 	retired.append(current)
 	current={}

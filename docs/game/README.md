@@ -183,6 +183,7 @@ godot --path game_godot --script res://tests/ride_runtime_stress_check.gd -- --s
 godot --path game_godot --script res://tests/ride_runtime_stress_check.gd -- --stress-scenes=40 --stress-dwell=6 --stress-mixed-answers # верные/неверные ответы, таймауты, повторный тап, номера 1–20 и завершение
 godot --headless --path game_godot --script res://tests/question_streaming_check.gd # задержка/ошибка загрузки: ожидание у стыка и следующий вопрос
 godot --headless --path game_godot --script res://tests/departure_progress_check.gd # наклонный выезд, разворот, задний ход и следующий вопрос
+godot --headless --path game_godot --script res://tests/wide_street_exit_check.gd # выезд из узкого двора на широкую улицу и следующий вопрос
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
 godot --headless --path game_godot --script res://tests/embedded_io_check.gd # iOS: повторные запуски основной игры и переходы после мини-игр
@@ -455,6 +456,7 @@ iOS и веб используют загрузчик приложения до 
 - `background-pause-2026-10-15.md` — исчезнувшее управление после сворачивания, безопасный показ паузы и продолжение
 - `infinite-road-2026-10-15.md` — бесконечная прямая при поздней подготовке вопроса и наклонном выезде после ответа
 - `infinite-road-2026-10-16.md` — пропущенный вопрос на узком подъезде при низком FPS и автоматическое обновление Godot в dev APK
+- `infinite-road-2026-10-17.md` — бесконечная прямая за узким выездом (двор 5 м → улица 8.4 м), стык всегда впереди машины
 - `road-exit-continuity-2026-10-15.md` — тупик `ticket_20_6`, все физические выезды и стыки коротких дорог
 - `ride-fixes-2026-10-13.md` — загрузка сцен, коллизии, продолжение маршрутов, интерфейс и гараж
 - `local-changes-sync-2026-10-14.md` — опубликованные локации и архивы всех локальных stash

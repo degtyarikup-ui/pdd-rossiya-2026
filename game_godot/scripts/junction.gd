@@ -11,6 +11,8 @@ signal fault(type: String, key: String)
 signal finished(exit_direction: String, exit_yaw: float)
 
 const DRIVE := preload("res://scripts/drive.gd")
+## Past a departure join: the widest procedural street half beyond a port's own half-width.
+const LEFT_SCENE_MARGIN := 8.0
 
 
 ## A polyline sampled every metre along the game's centripetal Catmull-Rom.
@@ -811,7 +813,11 @@ func update_resolution(dt: float, player: Drive, local_pos: Vector3) -> void:
 			# forever while the supported car drives along the procedural continuation.
 			var near_join := remaining <= maxf(player.half_length+1.0, minf(finish_distance,8.0))
 			var moving_out := player.speed*cos(error)>0.1
-			if remaining>finish_distance or lateral+footprint>float(port.width)/2.0+0.12 or (absf(error)>0.7 and not (near_join and moving_out)): continue
+			# Beyond the join the car is on the procedural street, which can be wider than
+			# this end (a 5 m yard meets an 8.4 m street). Its right lane would fail the
+			# port-width gate forever; having physically left by this road is enough.
+			var left_scene := remaining < 0.0 and moving_out and lateral < float(port.width)/2.0+LEFT_SCENE_MARGIN
+			if not left_scene and (remaining>finish_distance or lateral+footprint>float(port.width)/2.0+0.12 or (absf(error)>0.7 and not (near_join and moving_out))): continue
 			var done_res=resolution
 			resolution=null
 			complete=true
