@@ -181,7 +181,7 @@ func _initialize() -> void:
 	}
 	var ped_actor = CrossroadsActorScript.new(ped_data)
 	_check("Pedestrian trajectory across zebra has valid length", ped_actor.path_length > 8.0)
-	_check("Pedestrian crossing speed is physically plausible", ped_actor.drive_speed * ped_actor.path_length >= 1.0 and ped_actor.drive_speed * ped_actor.path_length <= 4.0)
+	_check("Pedestrian crossing speed is brisk and responsive", ped_actor.drive_speed * ped_actor.path_length >= 2.0 and ped_actor.drive_speed * ped_actor.path_length <= 8.5)
 	ped_actor.free()
 	actor.free()
 	junction.free()

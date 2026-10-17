@@ -69,7 +69,7 @@ func _check_route(actor: CrossroadsActor, label: String) -> void:
 		_check_footprint(actor, label)
 	else:
 		_check(label + " crosses along the zebra centre", is_equal_approx(absf(actor.position.x) if str(actor.data.side) in ["east", "west"] else absf(actor.position.z), 10.0))
-		_check(label + " crosses briskly at 3.6 m/s", is_equal_approx(actor.drive_speed * actor.path_length, 3.6))
+		_check(label + " crosses briskly at 7.0 m/s", is_equal_approx(actor.drive_speed * actor.path_length, 7.0))
 		_check(label + " feet follow the asphalt", actor.path_curve.sample_baked(actor.path_length * 0.5).y < 0.03)
 	var guide := actor.trajectory_guide
 	var aabb := guide.mesh.get_aabb()

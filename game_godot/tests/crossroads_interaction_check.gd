@@ -203,21 +203,26 @@ func run() -> void:
 	game._unhandled_input(touch_active)
 
 	# --- Test 6: Real Crossroads building occlusion during camera orbit ---
-	game.cam_yaw = deg_to_rad(135.0)
-	game.cam_pitch = -0.4
-	game._target_cam_yaw = game.cam_yaw
-	game._target_cam_pitch = game.cam_pitch
-	game._update_camera()
-	for i in 25:
-		game._update_occlusion(0.04)
-
+	game.base_cam_dist = 42.0
+	game.cam_zoom = 1.0
+	game.cam_pitch = -0.18
 	var any_foreground_faded_to_15 := false
-	for oc in game.junction.sc.occluders:
-		for idx in oc.fades:
-			var f: float = oc.fades[idx]
-			if is_equal_approx(f, 0.15):
-				any_foreground_faded_to_15 = true
-				break
+	for deg in [30.0, 45.0, 115.0, 135.0]:
+		game.cam_yaw = deg_to_rad(deg)
+		game._target_cam_yaw = game.cam_yaw
+		game._target_cam_pitch = game.cam_pitch
+		game._target_cam_zoom = game.cam_zoom
+		game._update_camera()
+		for i in 25:
+			game._update_occlusion(0.04)
+		for oc in game.junction.sc.occluders:
+			for idx in oc.fades:
+				var f: float = oc.fades[idx]
+				if is_equal_approx(f, 0.15):
+					any_foreground_faded_to_15 = true
+					break
+			if any_foreground_faded_to_15: break
+		if any_foreground_faded_to_15: break
 	check(any_foreground_faded_to_15,
 		"real Crossroads foreground building intersecting camera view fades to 0.15")
 

@@ -262,9 +262,31 @@ func _rebuild_scenario_order() -> void:
 
 
 func _create_balanced_arcade_order() -> void:
-	var signs: Array[int] = []
+	if filtered_indices.is_empty():
+		scenario_order.clear()
+		return
+
+	# If category filter is active (training mode), preserve filtered pool
+	var has_category_filter := false
+	for arg in Host.user_args():
+		if arg.begins_with("--category="):
+			has_category_filter = true
+			break
+
+	if has_category_filter:
+		var order: Array[int] = filtered_indices.duplicate()
+		order.shuffle()
+		scenario_order = order
+		return
+
+	# Smart Weighted Arcade Deck: Diversify drop chances across distinct categories
 	var lights: Array[int] = []
 	var hard: Array[int] = []
+	var rural_signs: Array[int] = []
+	var highway_signs: Array[int] = []
+	var table_813_signs: Array[int] = []
+	var special_signs: Array[int] = []
+	var regular_signs: Array[int] = []
 
 	for idx in filtered_indices:
 		var sc: Dictionary = all_scenarios[idx]
@@ -273,58 +295,97 @@ func _create_balanced_arcade_order() -> void:
 		elif sc.get("category", "") == "trafficLights":
 			lights.append(idx)
 		else:
-			signs.append(idx)
-
-	var rich_signs: Array[int] = []
-	var regular_signs: Array[int] = []
-	for idx in signs:
-		var sc: Dictionary = all_scenarios[idx]
-		var is_rich := false
-		for sign_data: Dictionary in sc.get("signs", []):
-			var code := str(sign_data.get("code", ""))
-			if sign_data.has("table8_13") or code.begins_with("4.") or code.begins_with("5.15") or code.begins_with("2.3") or code == "2.1":
-				is_rich = true
-				break
-		if is_rich:
-			rich_signs.append(idx)
-		else:
-			regular_signs.append(idx)
-
-	rich_signs.shuffle()
-	regular_signs.shuffle()
-
-	signs.clear()
-	var r_i := 0
-	var reg_i := 0
-	while r_i < rich_signs.size() or reg_i < regular_signs.size():
-		if r_i < rich_signs.size():
-			signs.append(rich_signs[r_i])
-			r_i += 1
-		if reg_i < regular_signs.size():
-			signs.append(regular_signs[reg_i])
-			reg_i += 1
+			var env := str(sc.get("environment", "")).to_lower()
+			var has_813 := false
+			for sign_data: Dictionary in sc.get("signs", []):
+				if sign_data.has("table8_13"):
+					has_813 = true
+					break
+			var has_special := false
+			for a in sc.get("actors", []):
+				if bool(a.get("hasSiren", false)) or str(a.get("type", "")) in ["tram", "police", "emergency"]:
+					has_special = true
+					break
+			if env in ["rural", "village", "countryside"] or str(sc.get("id", "")).begins_with("cross_junction_"):
+				rural_signs.append(idx)
+			elif env in ["highway", "country_road", "motorway", "expressway"] or str(sc.get("id", "")).begins_with("cross_end_of_main") or str(sc.get("id", "")).begins_with("cross_truck_left"):
+				highway_signs.append(idx)
+			elif has_813:
+				table_813_signs.append(idx)
+			elif has_special:
+				special_signs.append(idx)
+			else:
+				regular_signs.append(idx)
 
 	lights.shuffle()
 	hard.shuffle()
+	rural_signs.shuffle()
+	highway_signs.shuffle()
+	table_813_signs.shuffle()
+	special_signs.shuffle()
+	regular_signs.shuffle()
 
 	scenario_order.clear()
-	var s_i := 0
-	var l_i := 0
-	var h_i := 0
 
-	while s_i < signs.size() or l_i < lights.size() or h_i < hard.size():
-		if s_i < signs.size():
-			scenario_order.append(signs[s_i])
-			s_i += 1
-		if l_i < lights.size():
-			scenario_order.append(lights[l_i])
-			l_i += 1
-		if s_i < signs.size():
-			scenario_order.append(signs[s_i])
-			s_i += 1
-		if h_i < hard.size():
-			scenario_order.append(hard[h_i])
-			h_i += 1
+	# Round 1 (Slot 0): Introductory clear priority sign or equal crossroad
+	if not regular_signs.is_empty():
+		scenario_order.append(regular_signs.pop_back())
+	elif not table_813_signs.is_empty():
+		scenario_order.append(table_813_signs.pop_back())
+	elif not rural_signs.is_empty():
+		scenario_order.append(rural_signs.pop_back())
+	elif not special_signs.is_empty():
+		scenario_order.append(special_signs.pop_back())
+
+	# Round 2 (Slot 1): Traffic light scenario (guaranteed invariant)
+	if not lights.is_empty():
+		scenario_order.append(lights.pop_back())
+
+	var pools: Array[Dictionary] = [
+		{"pool": rural_signs, "type": "rural", "weight": 2.2},
+		{"pool": highway_signs, "type": "highway", "weight": 1.8},
+		{"pool": lights, "type": "light", "weight": 2.5},
+		{"pool": hard, "type": "hard", "weight": 2.0},
+		{"pool": table_813_signs, "type": "table_813", "weight": 1.8},
+		{"pool": special_signs, "type": "special", "weight": 1.8},
+		{"pool": regular_signs, "type": "regular", "weight": 2.0},
+	]
+
+	var last_type := "light"
+
+	var any_remaining := func() -> bool:
+		for g in pools:
+			if not (g.pool as Array[int]).is_empty(): return true
+		return false
+
+	while any_remaining.call():
+		var candidates: Array[Dictionary] = []
+		var available: Array[Dictionary] = []
+		for g in pools:
+			if not (g.pool as Array[int]).is_empty():
+				available.append(g)
+				if g.type != last_type:
+					candidates.append(g)
+
+		if candidates.is_empty():
+			candidates = available
+
+		var total_w := 0.0
+		for c in candidates:
+			total_w += float(c.weight) * float((c.pool as Array[int]).size())
+
+		var r := randf() * total_w
+		var accum := 0.0
+		var chosen: Dictionary = candidates[0]
+		for c in candidates:
+			accum += float(c.weight) * float((c.pool as Array[int]).size())
+			if r <= accum:
+				chosen = c
+				break
+
+		var pool: Array[int] = chosen.pool
+		scenario_order.append(pool.pop_back())
+		last_type = chosen.type
 
 
 # --- Game Lifecycle ---
@@ -958,7 +1019,10 @@ func _on_next_scenario() -> void:
 	if scenario_order.is_empty(): return
 	_set_suspended(false)
 	ui.hide_collision_modal()
-	cur_scenario_idx = (cur_scenario_idx + 1) % scenario_order.size()
+	cur_scenario_idx += 1
+	if cur_scenario_idx >= scenario_order.size():
+		cur_scenario_idx = 0
+		_rebuild_scenario_order()
 	_load_current_scenario()
 
 

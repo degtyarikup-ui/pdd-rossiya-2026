@@ -1490,6 +1490,7 @@
   {
     "id": "cross_end_of_main_2_2",
     "category": "prioritySigns",
+    "environment": "highway",
     "title": "Конец главной дороги (знаки 2.2 и 2.4)",
     "subtitle": "После знака 2.2 главная кончилась: на перекрестке со знаком 2.4 нужно уступить.",
     "pddArticle": "Знаки 2.2, 2.4 и пункт 13.9 ПДД РФ",
@@ -1852,6 +1853,7 @@
   {
     "id": "cross_truck_left_turn",
     "category": "prioritySigns",
+    "environment": "highway",
     "title": "Поворот налево: разъезд со встречным транспортом",
     "subtitle": "При повороте налево водитель обязан уступить встречному ТС, движущемуся прямо.",
     "pddArticle": "Пункт 13.12 ПДД РФ",
@@ -2750,6 +2752,7 @@
   {
     "id": "hard_equal_4way_3cars_pedestrian",
     "category": "hardSituations",
+    "environment": "suburban",
     "title": "Равнозначный перекресток с пешеходом",
     "subtitle": "Помеха справа между автомобилями и приоритет пешехода на переходе.",
     "pddArticle": "Пункты 13.1, 13.11 и 14.1 ПДД РФ",
@@ -3198,6 +3201,7 @@
   {
     "id": "hard_priority_main_turns_right_pedestrian",
     "category": "hardSituations",
+    "environment": "suburban",
     "title": "Главная дорога поворачивает направо и пешеход",
     "subtitle": "Разъезд на главной дороге со знаком 8.13 и пропуск пешехода.",
     "pddArticle": "Пункты 13.1, 13.10 и 13.11 ПДД РФ",
