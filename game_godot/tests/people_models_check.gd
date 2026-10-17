@@ -29,9 +29,10 @@ func run() -> void:
 		var pivots: PackedVector2Array = a[Mesh.ARRAY_TEX_UV2]
 		var colors: PackedColorArray = a[Mesh.ARRAY_COLOR]
 		vertices_total += vertices.size()
-		check(not indices.is_empty() and indices.size()/3 <= 580 and vertices.size() <= 680,"walker %d: indexed phone budget" % look)
+		check(not indices.is_empty() and indices.size()/3 <= 260 and vertices.size() <= 480,"walker %d: indexed phone budget" % look)
 		var bounds := mesh.get_aabb()
-		check(absf(bounds.position.y) < .001 and bounds.end.y > 1.6 and bounds.end.y < 1.85,"walker %d: ground and adult height" % look)
+		var child := look in Models.CHILD_WALKERS
+		check(absf(bounds.position.y) < .001 and (bounds.end.y > 1.2 and bounds.end.y < 1.4 if child else bounds.end.y > 1.6 and bounds.end.y < 1.85),"walker %d: ground and %s height" % [look, "child" if child else "adult"])
 		check(bounds.size.x < .76 and bounds.size.z < .45,"walker %d: sidewalk collision envelope" % look)
 		check(uv.size() == vertices.size() and pivots.size() == vertices.size() and colors.size() == vertices.size(),"walker %d: gait and paint channels retained" % look)
 		var painted := false
@@ -43,12 +44,12 @@ func run() -> void:
 		for i in vertices.size():
 			painted = painted or colors[i].a > .9
 			fixed_color = fixed_color or colors[i].a < .1
-			left_leg = left_leg or pivots[i].x > .25
-			right_leg = right_leg or pivots[i].x < -.25
-			shin = shin or (uv[i].x > .9 and uv[i].y > .35 and uv[i].y < .48)
-			knee_seam = knee_seam or (absf(pivots[i].x) > .25 and uv[i].y > .35 and absf(vertices[i].y-uv[i].y) < .001 and absf(uv[i].x) < .001)
+			left_leg = left_leg or pivots[i].x > .2
+			right_leg = right_leg or pivots[i].x < -.2
+			shin = shin or (uv[i].x > .9 and uv[i].y > .28 and uv[i].y < .5)
+			knee_seam = knee_seam or (absf(pivots[i].x) > .2 and uv[i].y > .28 and absf(vertices[i].y-uv[i].y) < .001 and absf(uv[i].x) < .001)
 		check(painted and fixed_color and left_leg and right_leg and shin and knee_seam,"walker %d: opposed limbs and closed weighted knee seam" % look)
-	check(vertices_total < 8000,"all walkers use fewer vertices than old 12600")
+	check(vertices_total < 5200,"all walkers use fewer vertices than the old 7560")
 	check(Models.walker_material().get_shader_parameter("articulated_walk") == true,"crowd knees enabled")
 	# Unset parameters read null; the shader's default for this flag is false.
 	check(Models.baked_material().get_shader_parameter("articulated_walk") != true,"traffic/officer never use knee UVs")
@@ -61,8 +62,8 @@ func run() -> void:
 		check(node.mesh.get_surface_count() == 1,"officer: one surface per moving part")
 		var a := node.mesh.surface_get_arrays(0)
 		officer_triangles += a[Mesh.ARRAY_INDEX].size()/3
-		check(node.material_override == Models.baked_material(),"officer: shared cached material")
-	check(officer_triangles <= 720,"officer geometry budget below old 2232 triangles")
+		check(node.material_override == RegulatorOfficer.officer_material(),"officer: shared cached material")
+	check(officer_triangles <= 400,"officer geometry budget below old 703 triangles")
 	check(cop.left_arm_pivot.position.x > 0 and cop.right_arm_pivot.position.x < 0,"officer faces +Z with anatomical right on -X")
 	var expected: Array[Vector3] = [Vector3.DOWN,Vector3.LEFT,Vector3.BACK,Vector3.UP]
 	for approach in 4:

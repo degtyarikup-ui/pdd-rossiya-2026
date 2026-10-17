@@ -201,7 +201,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 500
+   "tris": 194
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -212,7 +212,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 530
+   "tris": 212
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -223,7 +223,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 556
+   "tris": 204
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -234,7 +234,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 540
+   "tris": 212
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -245,7 +245,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 506
+   "tris": 200
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -256,7 +256,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 530
+   "tris": 194
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -267,7 +267,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 556
+   "tris": 212
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -278,7 +278,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 540
+   "tris": 174
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -289,7 +289,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 506
+   "tris": 212
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -300,7 +300,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 530
+   "tris": 212
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -311,7 +311,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 556
+   "tris": 194
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -322,7 +322,7 @@
   },
   "after": {
    "meshes": 1,
-   "tris": 540
+   "tris": 202
   },
   "source": "tools/godot_export/build_people.py"
  },
@@ -339,21 +339,21 @@
  "people/officer_body": {
   "after": {
    "meshes": 1,
-   "tris": 507
+   "tris": 230
   },
   "source": "tools/godot_export/build_people.py"
  },
  "people/officer_left_arm": {
   "after": {
    "meshes": 1,
-   "tris": 64
+   "tris": 32
   },
   "source": "tools/godot_export/build_people.py"
  },
  "people/officer_right_arm": {
   "after": {
    "meshes": 1,
-   "tris": 132
+   "tris": 74
   },
   "source": "tools/godot_export/build_people.py"
  },

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Build indexed, vertex-coloured pedestrians and a three-piece traffic officer.
+"""Build stylized blocky pedestrians (man, woman, child) and a three-piece officer.
 
-One surface per mesh, no textures, bones or runtime primitive tessellation.
-Walker UV2 carries hip/shoulder swing; UV0 carries the lower-leg knee pivot.
+One flat-shaded surface per mesh, no textures. Walker UV2 carries the
+hip/shoulder swing, UV0 the knee; vertex alpha 1 marks clothes that take the
+instance paint. `head()` is the older round head still used by vehicle drivers.
 """
 from __future__ import annotations
 
@@ -133,105 +134,178 @@ def head(mesh, y, skin, hair, style=0, officer=False):
         mesh.panel(0,y+.144,.115,.038,.043,(.85,.68,.30,0))
 
 
-def shoes(mesh, x, swing=0, hip=.91, knee=.45, officer=False):
+# --- Stylized blocky people -------------------------------------------------
+# Every figure is a handful of flat-shaded boxes: a cube head, a solid torso
+# and limbs that start inside it, so a swing never opens a gap. Each limb is a
+# rigid segment with one joint (hip/shoulder in UV2, knee in UV0): the vertex
+# shader is the skeleton, with no bones, nodes or extra draw calls.
+
+KINDS = ['man','woman','man','woman','child','man','woman','man','woman','child','man','woman']
+SCALES = [1.0,.95,.97,.93,.70,1.02,.96,.99,.92,.66,.98,.94]
+TROUSERS = [(.20,.25,.33,0),(.25,.26,.28,0),(.36,.31,.26,0),(.16,.18,.22,0)]
+SKIRTS = [(.20,.22,.30,0),(.42,.20,.24,0),(.25,.30,.27,0),(.18,.18,.20,0)]
+SHOES = [(.16,.17,.19,0),(.36,.27,.20,0),(.85,.86,.86,0)]
+BAGS = [(.95,.73,.15,0),(.85,.25,.22,0),(.25,.62,.45,0)]
+EYES = (.11,.12,.14,0)
+CHEEK = (.93,.62,.58,0)
+PAINT = (.92,.92,.92,1)
+SLEEVE = (.84,.84,.84,1)
+
+
+def frustum(mesh, y0, y1, w0, d0, w1, d1, color, cz=0):
+    """Closed tapered box: (w0,d0) at y0, (w1,d1) at y1."""
+    b = [(-w0/2,y0,cz+d0/2),(w0/2,y0,cz+d0/2),(w0/2,y0,cz-d0/2),(-w0/2,y0,cz-d0/2)]
+    t = [(-w1/2,y1,cz+d1/2),(w1/2,y1,cz+d1/2),(w1/2,y1,cz-d1/2),(-w1/2,y1,cz-d1/2)]
+    for i in range(4):
+        j = (i+1)%4
+        mesh.face([b[i],b[j],t[j],t[i]],color)
+    mesh.face([t[0],t[1],t[2],t[3]],color)
+    mesh.face([b[3],b[2],b[1],b[0]],color)
+
+
+def block_head(mesh, s, neck, skin, hair, style, eyes=True):
+    """Cube head on a short neck; hair is a cap plus an optional back block."""
+    h = .25*s
+    mesh.box((0,neck+.03*s,0),(.10*s,.07*s,.10*s),skin)
+    cy = neck+.05*s+h/2
+    mesh.box((0,cy,0),(.24*s,h,.235*s),skin,bottom=True)
+    front = .1175*s+.002
+    if eyes:
+        for x in [-.052*s,.052*s]:
+            mesh.panel(x,cy+.005*s,front,.034*s,.040*s,EYES)
+        for x in [-.078*s,.078*s]:
+            mesh.panel(x,cy-.045*s,front,.032*s,.018*s,CHEEK)
+    top = cy+h/2
+    if style is None:
+        return top
+    mesh.box((0,top+.012*s,-.004*s),(.255*s,.05*s,.25*s),hair)
+    # Fringe: a thin band over the brow keeps the face open and readable.
+    mesh.box((0,top-.025*s,.112*s),(.255*s,.035*s,.03*s),hair)
+    if style == 'short':
+        mesh.box((0,cy+.03*s,-.118*s),(.255*s,.17*s,.03*s),hair)
+    elif style == 'long':
+        mesh.box((0,cy-.06*s,-.125*s),(.27*s,.36*s,.05*s),hair)
+        for x in [-.126*s,.126*s]:
+            mesh.box((x,cy-.01*s,-.02*s),(.03*s,.24*s,.19*s),hair)
+    elif style == 'bun':
+        mesh.box((0,cy+.03*s,-.118*s),(.255*s,.17*s,.03*s),hair)
+        mesh.box((0,top+.06*s,-.07*s),(.11*s,.09*s,.10*s),hair)
+    elif style == 'cap':
+        mesh.box((0,top+.025*s,0),(.265*s,.06*s,.26*s),(.85,.30,.22,0))
+        mesh.box((0,top,.17*s),(.22*s,.02*s,.10*s),(.85,.30,.22,0),bottom=True)
+    return top
+
+
+def block_leg(mesh, s, x, hip, swing, trousers, shoe, bare=None):
+    """Thigh from inside the pelvis to the knee, then shin + shoe on the knee."""
+    knee = .47*s
     mesh.swing = (swing,hip)
+    mesh.box((x,(hip+.03*s+knee-.02*s)/2,0),(.14*s,hip+.05*s-knee,.15*s),trousers)
     mesh.knee = (1 if swing else 0,knee if swing else 0)
-    col = OFFICER_BLACK if officer else (.22,.24,.25,0)
-    mesh.profile([(0,.071,.137,x,.034),(.06,.076,.140,x,.034),
-                  (.115,.065,.110,x,.020)],col,6)
+    shin = bare or trousers
+    mesh.box((x,(knee+.085*s)/2,0),(.125*s,knee-.085*s,.135*s),shin)
+    mesh.box((x,.045*s,.03*s),(.14*s,.09*s,.25*s),shoe,bottom=True)
     mesh.knee = (0,0)
+    mesh.swing = (0,0)
 
 
-def legs(mesh, color, hip=.91, officer=False):
-    for side in [-1,1]:
-        x = side*(.13 if officer else .105)
-        swing = 0 if officer else side*.29
-        mesh.swing = (swing,hip)
-        mesh.profile([(.45,.070,.075,x,0),(.69,.088,.086,x,0),
-                      (hip+.015,.093,.094,x,0)],color,6,caps=False)
-        mesh.knee = (1 if swing else 0,.45 if swing else 0)
-        mesh.profile([(.085,.048,.051,x,0),(.29,.062,.064,x,-.005),
-                      (.45,.070,.075,x,0)],color,6,caps=False)
-        if officer:
-            # Red DPS police side stripes down the outer sides of trousers
-            mesh.panel(x+side*.076,.50,0,.018,.82,OFFICER_RED)
-        shoes(mesh,x,swing,hip,.45,officer)
-    mesh.swing = mesh.knee = (0,0)
+def block_arm(mesh, s, x, shoulder, swing, skin, top, sleeve=SLEEVE):
+    mesh.swing = (swing,shoulder)
+    mesh.box((x,shoulder-.20*s,0),(.105*s,.48*s,.12*s),sleeve)
+    mesh.box((x,shoulder-.49*s,0),(.09*s,.11*s,.10*s),skin,bottom=True)
+    mesh.swing = (0,0)
 
 
 def pedestrian(mesh, variant):
+    kind = KINDS[variant]
+    s = SCALES[variant]
     skin = SKINS[variant%3]
-    hair = HAIR[(variant//2)%4]
-    slim = variant%3 == 1
-    waist = .15 if slim else .177
-    shoulder = .21 if slim else .234
-    hip = .91
-    trousers = [(.23,.29,.35,0),(.26,.26,.27,0),(.33,.30,.28,0)][variant%3]
-    legs(mesh,trousers)
-    mesh.profile([(.88,waist+.01,.103,0,0),(1.12,waist,.109,0,0),
-                  (1.38,shoulder,.125,0,0),(1.435,.15,.085,0,0)],JACKET,8)
-    # Shirt opening, zip, hem and collars share the torso's vertex colours.
-    mesh.face([(-.085,1.427,.102),(0,1.335,.14),(.085,1.427,.102)],SHIRT)
-    mesh.panel(0,1.16,.123,.016,.36,(.52,.52,.52,1))
-    mesh.panel(-.10,.968,.112,.065,.014,(.70,.70,.70,1))
-    mesh.panel(.10,.968,.112,.065,.014,(.70,.70,.70,1))
-    mesh.profile([(1.423,.060,.059,0,0),(1.505,.056,.054,0,0)],skin,6,caps=False)
+    hair = HAIR[(variant*3+1)%4]
+    shoe = SHOES[variant%3]
+    hip = .90*s
+    if kind == 'child':
+        # Child proportions: shorter limbs, broader cube head, bright backpack.
+        hip = .92*s
+        trousers = TROUSERS[(variant//2)%4]
+        for side in [-1,1]:
+            block_leg(mesh,s,side*.09*s,hip,side*.30,trousers,shoe)
+        mesh.box((0,hip+.03*s,0),(.32*s,.10*s,.21*s),trousers,bottom=True)
+        shoulder = 1.36*s
+        mesh.box((0,(hip+shoulder+.04*s)/2,0),(.38*s,shoulder+.04*s-hip,.22*s),PAINT)
+        for side in [-1,1]:
+            block_arm(mesh,s,side*.245*s,shoulder,-side*.20,skin,PAINT)
+        mesh.box((0,shoulder-.17*s,-.165*s),(.30*s,.34*s,.12*s),BAGS[variant%3])
+        block_head(mesh,s*1.42,shoulder+.03*s,skin,hair,'cap' if variant == 9 else 'short')
+        return
+    if kind == 'woman':
+        shoulder = 1.40*s
+        legs = TROUSERS[variant%4]
+        skirt = SKIRTS[(variant//2)%4]
+        for side in [-1,1]:
+            block_leg(mesh,s,side*.085*s,hip,side*.23,legs,shoe,
+                      bare=skin if variant in (3,8) else None)
+        # The flared skirt clears the thighs at full stride.
+        frustum(mesh,.58*s,hip+.08*s,.42*s,.34*s,.34*s,.22*s,skirt)
+        frustum(mesh,hip+.06*s,shoulder+.04*s,.32*s,.20*s,.38*s,.22*s,PAINT)
+        for side in [-1,1]:
+            block_arm(mesh,s,side*.235*s,shoulder,-side*.17,skin,PAINT)
+        if variant == 6:
+            mesh.box((.31*s,.98*s,0),(.06*s,.20*s,.16*s),BAGS[1])
+        block_head(mesh,s*1.15,shoulder+.04*s,skin,hair,'bun' if variant in (6,11) else 'long')
+        return
+    shoulder = 1.38*s
+    trousers = TROUSERS[variant%4]
     for side in [-1,1]:
-        x = side*(shoulder+.047)
-        mesh.swing = (-side*.18,1.40)
-        mesh.profile([(.952,.051,.057,x,.018),(1.17,.062,.065,x,-.014),
-                      (1.395,.074,.074,x,0),(1.445,.036,.045,x,0)],(.86,.86,.86,1),6,caps=False)
-        mesh.profile([(.943,.054,.059,x,.018),(.985,.054,.060,x,.014)],(.69,.69,.69,1),6,caps=False)
-        mesh.profile([(.843,.033,.045,x,.025),(.952,.039,.044,x,.020)],skin,6)
-    mesh.swing = (0,0)
-    head(mesh,1.615,skin,hair,variant%4)
-    if variant in (2,6,10):
-        # Compact backpack with a shaped bottom, not a box floating behind the body.
-        mesh.profile([(1.01,.105,.045,0,-.121),(1.12,.133,.058,0,-.133),
-                      (1.35,.115,.051,0,-.121)],(.25,.28,.30,0),6)
-        for x in [-.11,.11]: mesh.panel(x,1.28,.117,.025,.20,(.30,.31,.31,0))
-    if variant in (4,8):
-        for x in [-.046,.046]: mesh.panel(x,1.617,.107,.047,.025,(.17,.22,.24,0))
-        mesh.panel(0,1.622,.108,.033,.008,BLACK)
+        block_leg(mesh,s,side*.10*s,hip,side*.29,trousers,shoe)
+    mesh.box((0,hip+.03*s,0),(.36*s,.12*s,.23*s),trousers,bottom=True)
+    frustum(mesh,hip+.08*s,shoulder+.05*s,.38*s,.23*s,.46*s,.25*s,PAINT)
+    # Collar and zip on the jacket front take the instance paint too.
+    mesh.panel(0,(hip+shoulder)/2+.08*s,.126*s,.02*s,.40*s,(.70,.70,.70,1))
+    for side in [-1,1]:
+        block_arm(mesh,s,side*.285*s,shoulder,-side*.18,skin,PAINT)
+    if variant == 2:
+        mesh.box((0,shoulder-.20*s,-.17*s),(.32*s,.38*s,.12*s),(.28,.31,.34,0))
+    style = 'short' if variant not in (7,) else None
+    top = block_head(mesh,s*1.15,shoulder+.03*s,skin,hair,style)
+    if style is None:  # bald: just a short dark stubble cap
+        mesh.box((0,top-.02*s*1.15,-.03*s*1.15),(.245*s*1.15,.05*s*1.15,.19*s*1.15),HAIR[3])
 
 
 def officer_body(mesh):
-    legs(mesh,OFFICER_NAVY,1.01,True)
-    mesh.profile([(.97,.198,.125,0,0),(1.18,.224,.144,0,0),
-                  (1.465,.27,.143,0,0),(1.55,.145,.088,0,0)],OFFICER_NAVY,8)
-    mesh.profile([(1.015,.211,.135,0,0),(1.20,.236,.153,0,0),
-                  (1.47,.274,.149,0,0)],OFFICER_VEST,8,caps=False)
-    mesh.profile([(1.19,.237,.154,0,0),(1.25,.247,.155,0,0)],OFFICER_SILVER,8,caps=False)
-    for back in [False,True]:
-        z = -.145 if back else .145
-        for x in [-.125,.125]: mesh.panel(x,1.365,z,.037,.225,OFFICER_SILVER,back)
-        mesh.panel(0,1.35,-.158 if back else .158,.018,.265,OFFICER_NAVY,back)
-    mesh.profile([(1.525,.068,.065,0,0),(1.635,.062,.059,0,0)],SKINS[1],6,caps=False)
-    for x in [-.056,.056]:
-        mesh.face([(x-.037,1.545,.109),(x+.037,1.545,.109),(x,1.48,.126)],OFFICER_WHITE)
-    mesh.panel(0,1.50,.126,.032,.092,OFFICER_NAVY)
-    for x in [-.248,.248]: mesh.box((x,1.497,0),(.064,.025,.17),OFFICER_SILVER,bottom=True)
-    head(mesh,1.735,SKINS[1],HAIR[0],officer=True)
+    s = 1.04
+    hip = .97
+    for side in [-1,1]:
+        x = side*.115
+        block_leg(mesh,s,x,hip,0,OFFICER_NAVY,OFFICER_BLACK)
+        # Red DPS stripe along the outer side of each trouser leg.
+        mesh.box((x+side*.075,.52,0),(.012,.80,.03),OFFICER_RED)
+    mesh.box((0,hip+.03,0),(.40,.12,.24),OFFICER_NAVY,bottom=True)
+    top = 1.53
+    frustum(mesh,hip+.06,top,.42,.25,.50,.26,OFFICER_NAVY)
+    # Hi-vis vest over the jacket with two retroreflective bands.
+    frustum(mesh,hip+.10,top-.07,.445,.275,.515,.285,OFFICER_VEST)
+    for y in [1.17,1.33]:
+        frustum(mesh,y,y+.05,.47,.282,.49,.286,OFFICER_SILVER)
+    for x in [-.26,.26]:
+        mesh.box((x,top-.02,0),(.09,.03,.17),OFFICER_SILVER)
+    head_top = block_head(mesh,s*1.12,top-.02,SKINS[1],None,None)
+    # Peaked cap: navy crown, black visor, gold badge.
+    mesh.box((0,head_top+.04,0),(.29,.08,.28),OFFICER_NAVY,bottom=True)
+    mesh.box((0,head_top+.095,-.01),(.31,.035,.30),OFFICER_NAVY)
+    mesh.box((0,head_top+.005,.17),(.26,.022,.11),OFFICER_BLACK,bottom=True)
+    mesh.panel(0,head_top+.05,.141,.045,.05,(.85,.68,.30,0))
 
 
 def officer_arm(mesh, right=False):
-    # All positions relative to the existing shoulder pivot: gestures keep their anatomy.
-    mesh.profile([(-.485,.049,.052,0,0),(-.265,.066,.066,0,-.008),
-                  (.028,.080,.080,0,0)],OFFICER_NAVY,6)
-    mesh.profile([(-.49,.054,.057,0,0),(-.442,.057,.060,0,0)],OFFICER_SILVER,6,caps=False)
-    mesh.profile([(-.603,.032,.042,0,.012),(-.49,.039,.045,0,.006)],OFFICER_WHITE,6)
+    # Coordinates relative to the shoulder pivot (0,0,0); the arm hangs to -Y.
+    mesh.box((0,-.22,0),(.12,.56,.13),OFFICER_NAVY)
+    mesh.box((0,-.44,0),(.128,.05,.138),OFFICER_SILVER)
+    mesh.box((0,-.56,0),(.10,.14,.11),OFFICER_WHITE,bottom=True)
     if right:
-        rings = [(-1.025,.022,.022,0,.013),(-.94,.022,.022,0,.013),
-                 (-.86,.022,.022,0,.013),(-.78,.022,.022,0,.013),
-                 (-.70,.022,.022,0,.013),(-.58,.022,.022,0,.013)]
-        for i in range(len(rings)-1):
-            mesh.profile(rings[i:i+2],OFFICER_WHITE if i%2 == 0 else OFFICER_BLACK,6,caps=False)
-        # Only end caps: avoid five overlapping cylinders for baton bands.
-        for y,col in [(rings[0][0],OFFICER_WHITE),(rings[-1][0],OFFICER_BLACK)]:
-            pts = [(.022*math.cos(i*math.tau/6),y,.013+.022*math.sin(i*math.tau/6)) for i in range(6)]
-            if y==rings[-1][0]: pts.reverse()
-            for i in range(1,5): mesh.face([pts[0],pts[i],pts[i+1]],col)
-
+        for i in range(4):
+            y = -.60-.11*i
+            mesh.box((0,y-.055,.02),(.045,.11,.045),OFFICER_WHITE if i%2 else OFFICER_BLACK,
+                     bottom=(i == 3))
 
 
 def main():
@@ -239,9 +313,8 @@ def main():
     parser.add_argument('--output',type=Path,default=MODELS)
     args = parser.parse_args()
     index = json.loads((MODELS/'index.json').read_text())
-    heights = [1.72,1.66,1.79,1.70,1.75,1.65,1.77,1.69,1.73,1.67,1.81,1.71]
-    for variant,height in enumerate(heights):
-        mesh = PersonMesh(height/1.805)
+    for variant in range(len(KINDS)):
+        mesh = PersonMesh()
         pedestrian(mesh,variant)
         name = f'walkers/walker_{variant}'
         path = args.output/(name+'.glb')

@@ -4,12 +4,15 @@
 ##   parts as named nodes (axle_front_*, wheel_*, brake_*, blink_L/R).
 ## - traffic/<id>.glb is a virtual compatibility path: a cached single mesh
 ##   built from vehicles/<id>.glb, with no duplicate GLB on disk.
-## - walkers/walker_<n>.glb — one mesh/material, drawn as MultiMesh.
+## - walkers/walker_<n>.glb — stylized blocky man/woman/child, one mesh/material,
+##   drawn as MultiMesh; arms/legs swing in baked.gdshader (UV2 hip/shoulder, UV knee).
 class_name Models
 extends RefCounted
 
 const CARS := ["hatch", "sedan", "coupe", "wagon", "suv", "pickup"]
 const WALKERS := 12
+## Walker looks (build_people.py KINDS): men, women and two children.
+const CHILD_WALKERS := [4, 9]
 
 static var _baked: ShaderMaterial
 static var _traffic_baked: ShaderMaterial
