@@ -528,6 +528,11 @@ const App = (() => {
 
   // The blue arrow is a question visual, independent of its driving route and
   // the editor's local layer visibility. Hide/show is an ordinary undoable edit.
+  function selectPlayerPath() {
+    const route = state.S?.routes.find(r => r.kind === "manoeuvre" && r.exit === (state.S.question?.maneuver || "straight"));
+    if (route) select({t:"route", id:route.id});
+  }
+
   function setPlayerGuideVisible(visible) {
     if (!state.S || state.S.id === "mini_regulator" || state.id === "mini_regulator") return;
     select(state.sel.map(ref => {
@@ -540,6 +545,9 @@ const App = (() => {
       if (visible) delete sc.question.showPlayerGuide;
       else sc.question.showPlayerGuide = false;
     }, {rebuild:false});
+    // Manoeuvres are drawn in the editor only while selected. Make restoring
+    // the guide visible immediately, including from the scene/player cards.
+    if (visible) selectPlayerPath();
   }
 
   async function remove() {
@@ -771,7 +779,7 @@ const App = (() => {
   return {
     state, planScene, api, toast, confirm: confirmBox, esc, ic, r3, objectOf, pointsOfRef, isPaint, layerOf, catalogSize, sameRef, nameOf,
     edit, beginDrag, dragMove, endDrag, cancelDrag, undo, redo, changed, openScene, sceneTitle, save, setPlayable, runInGame,
-    select, toggle, pickable, isLocked, moveRef, nudge, rotate, copy, paste, duplicate, remove, setPlayerGuideVisible, uniqueId, toggleHidden, toggleLocked,
+    select, toggle, pickable, isLocked, moveRef, nudge, rotate, copy, paste, duplicate, remove, setPlayerGuideVisible, selectPlayerPath, uniqueId, toggleHidden, toggleLocked,
     renderTop, showHome, setView, plural, thumbRev, boot, loadList,
     get S() { return state.S; },
   };

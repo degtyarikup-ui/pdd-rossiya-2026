@@ -8,7 +8,7 @@ const Layout = require('../editor/layout.js');
 const clone = value => JSON.parse(JSON.stringify(value));
 const deepEqual = (actual,expected,label) => assert.deepEqual(clone(actual),clone(expected),label);
 const listeners = {};
-const pane = {innerHTML:'', addEventListener:(kind,fn) => {listeners[kind] = fn;}, querySelectorAll:() => []};
+const pane = {innerHTML:'', addEventListener:(kind,fn) => {listeners[kind] = fn;}, querySelector:() => null, querySelectorAll:() => []};
 let state, removeCalls = 0, compactSelection;
 const wrappedLayout = {...Layout, compactPlayerRoute:(scene,route) => {
   compactSelection = clone(state.sel[0]);
@@ -217,6 +217,77 @@ for (const mode of ['auto','manual','traced','А/Б']) {
     deepEqual(state.S.routes,before,'point Delete remains undoable');
   }
 }
+// The car is the natural entry point when a newly imported question hides its
+// blue guide. Exercise that inspector with street, freely placed and traced cars.
+for (const mode of ['street','free','traced']) {
+  if (mode === 'traced') {
+    state.S=legacyFixture('player-guide-traced');
+    state.id=state.S.id;
+  } else {
+    setup('manoeuvre',mode === 'free');
+  }
+  state.S.question.maneuver='right';
+  state.S.question.showPlayerGuide=false;
+  resetHistory();
+  App.select({t:'stop'});
+  const hidden=clone(state.S);
+  const paths=clone(state.S.routes);
+  const main=state.S.routes.find(r => r.kind === 'manoeuvre' && r.exit === 'right');
+  assert.ok(main,`${mode}: fixture has the current manoeuvre`);
+  assert.match(pane.innerHTML,/Вернуть синюю стрелку/,`${mode}: player inspector exposes a hidden guide`);
+  assert.doesNotMatch(pane.innerHTML,/data-act="player-path"/,`${mode}: hidden guide has no path-edit shortcut`);
+  click('player-guide');
+  assert.equal(Object.hasOwn(state.S.question,'showPlayerGuide'),false,`${mode}: player inspector restores the guide`);
+  deepEqual(state.S.routes,paths,`${mode}: restoring preserves all driving and answer paths`);
+  deepEqual(state.sel,[{t:'route',id:main.id}],`${mode}: restoring selects the current manoeuvre for immediate drawing`);
+  assert.ok(state.dirty,`${mode}: restoring is an unsaved scene edit`);
+  assert.equal(state.undo.length,1,`${mode}: restoring is one undo step`);
+  App.undo();
+  deepEqual(state.S,hidden,`${mode}: undo returns the hidden guide and complete original scene`);
+  assert.equal(state.dirty,false,`${mode}: undo returns to the saved scene`);
+
+  App.select({t:'stop'});
+  click('player-guide');
+  resetHistory();
+  const visible=clone(state.S);
+  // Every shared blue-guide card must wire the path button, including when an
+  // alternative route is selected instead of the question's current manoeuvre.
+  const other=state.S.routes.find(r => r.kind === 'manoeuvre' && r.exit !== 'right');
+  for (const selection of [{t:'stop'},[],{t:'route',id:other.id}]) {
+    App.select(selection);
+    assert.match(pane.innerHTML,/data-act="player-path"/,`${mode}: enabled guide exposes its edit shortcut`);
+    assert.match(pane.innerHTML,/Править путь игрока/);
+    click('player-path');
+    deepEqual(state.sel,[{t:'route',id:main.id}],`${mode}: shortcut selects the question's current manoeuvre`);
+    deepEqual(state.S,visible,`${mode}: opening the path never changes scene data`);
+    assert.equal(state.dirty,false,`${mode}: opening the path keeps the saved state`);
+    assert.equal(state.undo.length,0,`${mode}: opening the path creates no undo step`);
+  }
+  App.select({t:'stop'});
+  assert.match(pane.innerHTML,/Убрать синюю стрелку/,`${mode}: player inspector can hide an enabled guide`);
+  click('player-guide');
+  assert.equal(state.S.question.showPlayerGuide,false,`${mode}: player inspector hides the guide`);
+  deepEqual(state.S.routes,paths,`${mode}: hiding preserves every route`);
+  assert.ok(state.dirty,`${mode}: hiding marks an unsaved scene edit`);
+  assert.equal(state.undo.length,1,`${mode}: hiding is one undo step`);
+  assert.match(pane.innerHTML,/Вернуть синюю стрелку/);
+  App.undo();
+  deepEqual(state.S,visible,`${mode}: undo restores the enabled guide`);
+  assert.equal(state.dirty,false,`${mode}: undo restores the saved visible scene`);
+}
+{
+  setup('manoeuvre');
+  delete state.S.question.maneuver;
+  state.S.question.showPlayerGuide=false;
+  resetHistory();
+  App.select({t:'stop'});
+  const paths=clone(state.S.routes);
+  const straight=state.S.routes.find(r => r.kind === 'manoeuvre' && r.exit === 'straight');
+  click('player-guide');
+  deepEqual(state.sel,[{t:'route',id:straight.id}],'missing question manoeuvre defaults to the straight path');
+  deepEqual(state.S.routes,paths,'default path selection preserves all authored routes');
+  assert.equal(Object.hasOwn(state.S.question,'maneuver'),false,'default path selection never writes a question manoeuvre');
+}
 {
   const route=setup('manoeuvre');
   state.S.routes.push({id:'choice_А',kind:'choice',label:'А',points:[[1,1],[2,2]]});
@@ -246,5 +317,8 @@ for (const mode of ['auto','manual','traced','А/Б']) {
   assert.equal(state.undo.length,0,'mini-game guide protection creates no edit');
   App.select([]);
   assert.doesNotMatch(pane.innerHTML,/data-act="player-guide"/,'mini-game general inspector also has no toggle');
+  App.select({t:'stop'});
+  assert.doesNotMatch(pane.innerHTML,/data-act="player-guide"/,'mini-game player inspector has no city-only toggle');
+  assert.doesNotMatch(pane.innerHTML,/data-act="player-path"/,'mini-game player inspector has no city-only path shortcut');
 }
-console.log('Player route inspector: generated/legacy/manual, anchors, point edits, compact, guide visibility, actual Delete/undo/dirty and mini-game protection PASS');
+console.log('Player route inspector: generated/legacy/manual, anchors, point edits, compact, guide visibility, player restore/path shortcuts, actual Delete/undo/dirty and mini-game protection PASS');

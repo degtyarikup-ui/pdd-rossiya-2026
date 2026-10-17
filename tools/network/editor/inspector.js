@@ -82,9 +82,11 @@
     const hidden = question?.showPlayerGuide === false;
     return card("Синяя стрелка игрока", `<p${hidden ? ' class="ok-line"' : ""}>${hidden ? "Скрыта в этой сцене" : "Включена в этой сцене"}</p>
       ${button("player-guide", hidden ? "Вернуть синюю стрелку" : "Убрать синюю стрелку", hidden ? "eye" : "trash", "ghost wide")}
+      ${!hidden ? button("player-path", "Править путь игрока", "route", "ghost wide") : ""}
       <p class="muted">Машина проедет тем же путём после ответа.</p>`);
   }
   const togglePlayerGuide = () => App.setPlayerGuideVisible(state.S.question?.showPlayerGuide === false);
+  const playerGuideHandlers = {"player-guide": togglePlayerGuide, "player-path": () => App.selectPlayerPath()};
 
   // ---- the scene ----------------------------------------------------------------------------
   function regulatorInspector(p) {
@@ -191,7 +193,7 @@
       "toggle:playable": (on) => App.setPlayable(on),
       "approve-scene": () => App.setPlayable(true),
       "withdraw-approval": () => App.setPlayable(false),
-      "player-guide": togglePlayerGuide,
+      ...playerGuideHandlers,
       run: () => App.runInGame(false),
       "run-auto": () => App.runInGame(true),
       correct: (d) => App.edit((sc) => { sc.question.correct = Number(d.i); }),
@@ -895,7 +897,7 @@
           ${guideVisible ? `<p class="muted">По этой линии машина игрока едет после ответа. Если в вопросе есть линии ответов, она видна только когда выбрана.</p>` : ""}`)}${playerGuideCard(s.question)}${guideVisible ? points.html : ""}`;
       bind({
         ...points.handlers,
-        "player-guide": togglePlayerGuide,
+        ...playerGuideHandlers,
         "make-main": () => App.edit((sc) => { sc.question.maneuver = r.exit; sc.spec = { ...(sc.spec || {}), maneuver: r.exit }; }),
         "own-path": () => { App.select({t:"route",id:r.id}); App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), true)); },
         "auto-path": () => { App.select({t:"route",id:r.id}); App.edit(sc => Layout.setPlayerRouteManual(sc, sc.routes.find(x => x.id === r.id), false)); },
@@ -999,6 +1001,7 @@
 
     p.innerHTML = `${head(`<span class="ibadge">${ic("car")}</span>`, "Игрок", "место начала вопроса")}
       ${card("Едет", chips("maneuver", ["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !routes.includes(k) && k !== "straight" })), q.maneuver, { cls: "arrows" }))}
+      ${s.id !== "mini_regulator" ? playerGuideCard(q) : ""}
       ${s.layout ? card("Размещение", chips("playerMode", [{value:"street",title:"По улице"},{value:"free",title:"Свободно"}], free ? "free" : "street")) : ""}
       ${free ? card("Положение на дороге", `<div class="insp-actions"><label>X, м<input type="number" step="0.1" data-text="playerX" value="${pose.x}" style="width:100%"></label><label>Z, м<input type="number" step="0.1" data-text="playerZ" value="${pose.z}" style="width:100%"></label></div><div class="turn-row">${dial(pose.yaw)}<label>Поворот, °<input type="number" step="1" data-text="playerYaw" value="${r3(pose.yaw * 180 / Math.PI)}" style="width:100%"></label></div><div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div>`) : ""}
       ${lanes.length > 1 ? card("Полоса", chips("lane", laneItems, curLane, { cls: "tiles" })) : ""}
@@ -1008,6 +1011,7 @@
     const moveFree = (axis, value) => App.edit(sc => { const at = Layout.playerPose(sc), number = Number(value); if (!Number.isFinite(number)) return; at[axis] = number; if (!Layout.movePlayer(sc, [at.x, at.z])) App.toast("Весь автомобиль должен оставаться на проезжей части"); });
     const turnFree = angle => App.edit(sc => { if (!Layout.rotatePlayer(sc, angle)) App.toast("После поворота автомобиль выходит за край дороги"); });
     bind({
+      ...playerGuideHandlers,
       "chip:playerMode": (v) => App.edit(sc => Layout.setPlayerMode(sc, v)),
       "text:playerX": (v) => moveFree("x", v),
       "text:playerZ": (v) => moveFree("z", v),
