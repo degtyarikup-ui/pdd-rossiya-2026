@@ -32,6 +32,7 @@ import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntit
 import { setEntitlement } from './entitlements.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession } from './user_auth.js';
+import { readAiRequest, AiRequestError, AI_PROVIDER_TIMEOUT_MS } from './ai_request.js';
 import { handleTelegramAuthRequest, handleTelegramAuthCheck } from './telegram_auth.js';
 import { handleClientIncident, deferIncident, errorCode, isIncidentReported } from './diagnostics.js';
 import { APPLE_WEB_CALLBACK_PATH, handleAppleWebCallback } from './apple_web_callback.js';
@@ -1892,8 +1893,8 @@ const ADMIN_LOGIN_BLOCK_SEC = 900;
 // Потолок для неподписанных запросов к ИИ (старые сборки приложения).
 const AI_LEGACY_DAILY_LIMIT = 40;
 // Обрезка входа: сколько символов вопроса и вариантов уходит в модель.
-const AI_MAX_QUESTION_CHARS = 400;
-const AI_MAX_ANSWER_CHARS = 200;
+const AI_MAX_QUESTION_CHARS = 1000;
+const AI_MAX_ANSWER_CHARS = 1000;
 
 /** Сравнение без утечки времени: длина ответа не должна зависеть от пароля. */
 function safeEquals(a, b) {
@@ -3705,7 +3706,8 @@ const workerHandlers = {
     // ────────────────────── AI Assistant & Chat API ──────────────────────
     if (url.pathname === '/api/ai/chat' && request.method === 'POST') {
       let body;
-      try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
+      try { body = await readAiRequest(request); }
+      catch (error) { return jsonResponse({ error: error instanceof AiRequestError ? error.message : 'invalid json' }, error instanceof AiRequestError ? error.status : 400); }
       const { questionText, answers, correctAnswerIndex, officialExplanation, messages, userMessage } = body || {};
 
       // Эндпоинт ходит в Gemini по нашему ключу, то есть за наши деньги.
@@ -3803,6 +3805,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
           const geminiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${geminiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(AI_PROVIDER_TIMEOUT_MS),
             body: JSON.stringify({
               systemInstruction: {
                 parts: [{ text: systemPrompt }]
