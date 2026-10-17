@@ -23,6 +23,8 @@ var curb_clear_time := 0.0
 var distance_traveled := 0.0
 const KERB_SCRUB := 2.5          # m/s² lost while sliding along a kerb
 const KERB_ALIGN := 1.6          # rad/s the kerb turns a sliding car along itself
+const KERB_PROBE := 1.0          # metres a slide direction must stay on the road
+const KERB_SLIDE_ANGLES := [5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 60.0]  # steeper is an impact, not a graze
 var recovery := 0.0              # control released after an impact (s)
 var hazards_left := 0.0          # automatic hazard signal after contact (s)
 var _contact_key: Variant = null
@@ -214,6 +216,22 @@ func integrate(dt: float, limit: float, stop_z := INF) -> void:
 			var candidates := [[dx, 0.0, yaw], [0.0, dz, yaw], [correction, dz, yaw], [-correction, dz, yaw],
 				[dx, correction, yaw], [dx, -correction, yaw], [dx, 0.0, old_yaw], [0.0, dz, old_yaw]]
 			var supported := false
+			# Slide along the kerb in whatever direction it runs (a turned street or a
+			# bend is not axis-aligned): the smallest deflection of this step that keeps
+			# the body on the road, shortened by its cosine. Axis moves remain the fallback.
+			for degrees in KERB_SLIDE_ANGLES:
+				for sign in [1.0, -1.0]:
+					var deflect: float = deg_to_rad(degrees) * sign
+					var heading := Vector3(sin(yaw + deflect), 0, cos(yaw + deflect)) * signf(step)
+					# The direction must stay clear for a metre, not just this few-cm
+					# substep: a steep hit must not find a sliver and count as a graze.
+					if not on_road(before + heading * KERB_PROBE): continue
+					pos = before + heading * absf(step) * cos(deflect)
+					if pos.z <= maxf(stop_z, before.z) and on_road():
+						supported = true
+						break
+				if supported: break
+			if supported: candidates = []
 			for c in candidates:
 				pos = before + Vector3(c[0], 0, c[1])
 				yaw = c[2]
