@@ -246,9 +246,9 @@ class AuthService extends ChangeNotifier {
         clientId: defaultTargetPlatform == TargetPlatform.iOS
             ? googleClientId
             : null,
-        serverClientId: defaultTargetPlatform == TargetPlatform.android
-            ? googleWebClientId
-            : null,
+        // No serverClientId on Android: the app's Android OAuth clients live
+        // in other Cloud projects than the Web client, and Google rejects
+        // the pair (DEVELOPER_ERROR). Android sends an access token instead.
       );
       final account = await googleSignIn.signIn();
       return account == null ? false : await _completeGoogleAccount(account);
@@ -304,7 +304,10 @@ class AuthService extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
     // Web always sends a signed ID token, including on Android browsers.
-    final credential = authentication.idToken;
+    final credential =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+        ? authentication.accessToken
+        : authentication.idToken;
     return _completeSignIn(profile, credential);
   }
 
