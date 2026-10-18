@@ -16,6 +16,12 @@ ACCOUNT_STATE_REQUIRED = "true"
 AI_GLOBAL_DAILY_LIMIT = "5000"
 AI_LEGACY_EXPLANATIONS = "true"
 AI_LEGACY_UNTIL = "2026-11-18T00:00:00Z"
+# Старые iOS-сборки (до 2.2.4) не передают appAccountToken: до этой даты их
+# новая покупка привязывается к первому заявителю, как раньше.
+APPLE_LEGACY_CLAIMS_UNTIL = "2027-01-31T00:00:00Z"
+# Смена номера заставляет AccountState заново импортировать документы из KV
+# (нужно только после отката на старый Worker, см. account-state-rollout.md).
+ACCOUNT_STATE_EPOCH = "1"
 TELEGRAM_TOPIC_ERRORS = "7"
 TELEGRAM_TOPIC_PURCHASES = "8"
 TELEGRAM_TOPIC_REGISTRATIONS = "9"

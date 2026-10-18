@@ -137,6 +137,11 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
     reference: { store, country, productId: data.productId, transactionId: String(data.transactionId) } };
 }
 
+export function legacyAppleClaimsOpen(env, now = Date.now()) {
+  const until = Date.parse(env.APPLE_LEGACY_CLAIMS_UNTIL || '');
+  return Number.isFinite(until) && now < until;
+}
+
 export async function claimPurchase(env, userId, verified) {
   if (!env.PURCHASE_CLAIMS) throw new StoreError('purchase ownership not configured');
   const stub = env.PURCHASE_CLAIMS.get(env.PURCHASE_CLAIMS.idFromName(verified.key));
@@ -145,7 +150,11 @@ export async function claimPurchase(env, userId, verified) {
     // claimant is not proof of who started an unbound/pending StoreKit payment.
     const ownerResponse = await stub.fetch('https://purchase-claims/owner');
     const owner = ownerResponse.ok ? (await ownerResponse.json()).userId : null;
-    if (owner !== userId) throw new StoreError(owner ? 'purchase belongs to another account' : 'legacy purchase owner required', owner ? 403 : 409);
+    if (owner && owner !== userId) throw new StoreError('purchase belongs to another account', 403);
+    // Store builds before 2.2.4 cannot send appAccountToken at all. Until the
+    // transition date they keep the previous first-claimant rule, otherwise
+    // every new purchase from an old iPhone build would be left without Premium.
+    if (!owner && !legacyAppleClaimsOpen(env)) throw new StoreError('legacy purchase owner required', 409);
   }
   const response = await stub.fetch('https://purchase-claims/claim', {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }),

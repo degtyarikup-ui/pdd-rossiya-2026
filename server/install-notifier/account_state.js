@@ -7,6 +7,11 @@ const scoped = (key, id) => ACCOUNT_PREFIXES.some(prefix => key === prefix + id)
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 const parse = raw => { try { return raw ? JSON.parse(raw) : null; } catch { return null; } };
 const noProjection = key => key.startsWith('apple_auth:');
+// After a rollback to the KV-only Worker, KV holds newer writes than this DO.
+// Raising ACCOUNT_STATE_EPOCH makes older projected documents re-import from KV
+// instead of overwriting it. Private DO-only documents keep their value.
+const accountEpoch = env => String(env.ACCOUNT_STATE_EPOCH || '1');
+const stale = (env, record) => Boolean(record) && !noProjection(record.key) && String(record.epoch || '1') !== accountEpoch(env);
 
 export function accountStateRequired(env) { return env.ACCOUNT_STATE_REQUIRED === 'true'; }
 export async function accountRpc(env, id, path, body) {
@@ -84,7 +89,7 @@ export class AccountState {
   async expireRecords() {
     const records = await this.state.storage.list({ prefix: 'doc:' });
     let next = Infinity;
-    for (const record of records.values()) if (record.expiresAt) {
+    for (const record of records.values()) if (record.expiresAt && !stale(this.env, record)) {
       if (record.expiresAt <= Date.now()) {
         await this.state.storage.transaction(async txn => {
           await this.persistRecord(txn, { key: record.key, value: null, options: {} });
@@ -105,9 +110,10 @@ export class AccountState {
     }
     const bytes = new Uint8Array(size); let offset = 0;
     for (const part of parts) { bytes.set(part, offset); offset += part.length; }
-    return { key, value: new TextDecoder().decode(bytes), options: record.options || {}, expiresAt: record.expiresAt };
+    return { key, value: new TextDecoder().decode(bytes), options: record.options || {}, expiresAt: record.expiresAt, epoch: record.epoch };
   }
   async persistRecord(txn, record) {
+    record = { ...record, epoch: accountEpoch(this.env) };
     const previous = await txn.get('doc:' + record.key);
     const bytes = record.value == null ? null : new TextEncoder().encode(record.value);
     let chunks = 0;
@@ -117,7 +123,7 @@ export class AccountState {
         const part = bytes.subarray(i * 49152, (i + 1) * 49152);
         await txn.put('chunk:' + record.key + ':' + i, btoa(String.fromCharCode(...part)));
       }
-      await txn.put('doc:' + record.key, { key: record.key, chunks, options: record.options, expiresAt: record.expiresAt });
+      await txn.put('doc:' + record.key, { key: record.key, chunks, options: record.options, expiresAt: record.expiresAt, epoch: record.epoch });
     } else await txn.put('doc:' + record.key, record);
     for (let i = chunks; i < (previous?.chunks || 0); i++) await txn.delete('chunk:' + record.key + ':' + i);
   }
@@ -144,7 +150,7 @@ export class AccountState {
     for (const [key, pendingRecord] of pending) {
       try {
         const record = await this.loadRecord(pendingRecord.key);
-        if (!record) { await this.state.storage.delete(key); continue; }
+        if (!record || stale(this.env, record)) { await this.state.storage.delete(key); continue; }
         if (record.value == null) await this.env.INSTALLS.delete(record.key);
         else await this.env.INSTALLS.put(record.key, record.value, record.options);
         await this.state.storage.delete(key);
@@ -163,6 +169,7 @@ export class AccountState {
     const get = async (key, options) => {
       if (!scoped(key, id)) return this.env.INSTALLS.get(key, options);
       let record = writes.get(key) || await this.loadRecord(key);
+      if (!writes.has(key) && stale(this.env, record)) record = null;
       if (!record) {
         let value = null;
         if (!noProjection(key)) value = await this.env.INSTALLS.get(key);
