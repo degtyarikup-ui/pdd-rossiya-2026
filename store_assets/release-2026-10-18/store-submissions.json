@@ -1,33 +1,40 @@
 {
   "version": "2.2.4",
-  "build": 63,
-  "runtimeSourceCommit": "3fc26867",
   "publication": "manual-after-approval",
-  "change": "Games catalogue requires an authenticated account; Premium is not required.",
+  "change": "Android build 65 removes extra launcher icon padding and includes the Google sign-in fix from build 64. App Store remains the previous build 63; its status was not rechecked in this Android update.",
+  "artifactManifest": "android-build-65.json",
   "checks": {
     "flutterAnalyze": "no issues",
     "flutterTest": {
       "passed": 596,
       "skipped": 3
     },
-    "serverSecurityTests": 134
+    "apkSignature": "v2; same certificate as build 64",
+    "aabSignature": "JAR verified",
+    "packagedAdaptiveIconInset": "0%"
   },
   "stores": {
     "googlePlay": {
       "submitted": true,
       "status": "Changes in review",
-      "releaseId": 23,
+      "releaseId": 24,
       "url": "https://play.google.com/console/u/0/developers/8172841311997997566/app/4973863096146245225/publishing",
       "aiAssetDeclaration": "Don't label assets",
       "reviewAccessNote": "No separate review account provided. Existing saved access declaration is unchanged; access may be requested during review.",
-      "preReviewChecks": "running; automatically forwards to review after successful checks"
+      "preReviewChecks": "running; automatically forwards to review after successful checks",
+      "build": 65,
+      "runtimeSourceCommit": "247a50f1"
     },
     "rustore": {
+      "build": 65,
+      "runtimeSourceCommit": "247a50f1",
       "submitted": true,
       "status": "Ожидает модерацию",
-      "supersededVersionId": "2064891934",
-      "url": "https://console.rustore.ru/apps/2063722239/versions",
-      "versionId": "2064892287"
+      "versionId": "2064892628",
+      "copiedFromVersionId": "2064892287",
+      "previousPublishedBuild": 63,
+      "url": "https://console.rustore.ru/apps/2063722239/versions/2064892628",
+      "publication": "manual-after-approval"
     },
     "appStore": {
       "submitted": true,
@@ -35,8 +42,12 @@
       "previousSubmissionId": "0d60618d-23a3-4cfc-b9f3-d79e140151dd",
       "url": "https://appstoreconnect.apple.com/apps/6792369533/distribution/reviewsubmissions/details/9e0c5c7a-7507-4326-a2e0-bc09cd65a2d9",
       "submissionId": "9e0c5c7a-7507-4326-a2e0-bc09cd65a2d9",
-      "buildId": "939e990d-a928-4669-97b6-f2e6425c276c"
+      "buildId": "939e990d-a928-4669-97b6-f2e6425c276c",
+      "build": 63,
+      "runtimeSourceCommit": "3fc26867",
+      "recordedAt": "2026-10-18T15:22:59.251138+00:00",
+      "updatedInThisSubmission": false
     }
   },
-  "recordedAt": "2026-10-18T15:22:59.251138+00:00"
+  "recordedAt": "2026-10-18T18:47:24.009372+00:00"
 }

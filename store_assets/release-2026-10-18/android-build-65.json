@@ -1,0 +1,34 @@
+{
+  "version": "2.2.4",
+  "versionCode": 65,
+  "package": "ru.pdd.pdd_app",
+  "sourceCommit": "247a50f1e7265da1329568e40fe5368970b7c8a1",
+  "includesAuthFixCommit": "5a5a4b2b",
+  "change": "Remove the extra adaptive foreground inset; retain the Android Google sign-in fix from build 64.",
+  "files": [
+    {
+      "file": "pdd-2.2.4-65-play.aab",
+      "bytes": 274796488,
+      "sha256": "9c535bf7e8bc68f97adf223b76cf3b9dd5981736fee13d48af957b60cde6e2d6"
+    },
+    {
+      "file": "pdd-2.2.4-65-rustore.apk",
+      "bytes": 330469004,
+      "sha256": "cb3b89112b93a0c4f3ca67af4db9d710a86ba19d45beabeddf3e16bd0df0c9cd"
+    }
+  ],
+  "signatures": {
+    "apk": "APK Signature Scheme v2 verified; same certificate as build 64",
+    "aab": "JAR verified"
+  },
+  "packagedAdaptiveIconInset": "0%",
+  "checks": {
+    "flutterAnalyze": "no issues",
+    "flutterTest": {
+      "passed": 596,
+      "skipped": 3
+    },
+    "countryContentAndGodot": "verified by build.sh in both artifacts"
+  },
+  "nativeDeviceSmokeTest": false
+}

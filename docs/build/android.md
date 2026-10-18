@@ -101,6 +101,17 @@ Flutter/Dart AOT и движок Godot остаются release, `debuggable=fal
 На других платформах также передавать `GIT_COMMIT` и отдельный build number
 через соответствующий скрипт сборки; не добавлять тестовый суффикс к store version.
 
+## Значок приложения
+
+`assets/images/app_icon_foreground.png` содержит рисунок 512×512 по центру
+холста 768×768: внешние поля предназначены для маски адаптивного значка Android.
+В `flutter_launcher_icons-ru.yaml` и `pubspec.yaml` задан
+`adaptive_icon_foreground_inset: 0`. Дополнительный отступ генератора 16%
+уменьшал рисунок и оставлял видимую синюю рамку (исправлено в сборке 65).
+После `dart run flutter_launcher_icons` XML из
+`android/app/src/ru/res/mipmap-anydpi-v26/ic_launcher.xml` также копируется
+в соответствующий каталог `src/main/res`, чтобы резервная конфигурация совпадала.
+
 ## Сборка с 3D-игрой
 
 Движок и экспортированные ресурсы игры не хранятся в Git. После установки
