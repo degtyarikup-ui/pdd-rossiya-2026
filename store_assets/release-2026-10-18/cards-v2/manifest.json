@@ -1,0 +1,491 @@
+{
+  "date": "2026-10-18",
+  "sourceCommit": "22165f2ca6a55863b728c2e4a83f0b0f26d91e9e",
+  "order": [
+    "01-city",
+    "02-regulator",
+    "03-crossroads",
+    "04-tickets",
+    "05-exam",
+    "06-signs",
+    "07-feed",
+    "08-progress"
+  ],
+  "cards": [
+    {
+      "id": "01-city",
+      "badge": "ЖИВОЙ ГОРОД",
+      "title": [
+        "Учи ПДД",
+        "за рулём"
+      ],
+      "color": "#0574F8",
+      "source": "output/store-cards-2026-10-18/city-alt.png",
+      "capture": "Godot 4.7.2 Compatibility, current sources; real ticket 5/14; 1080×1920",
+      "alt": "Живой город: автомобиль и трамвай на перекрёстке, вопрос по билету 5",
+      "sourceSha256": "23b82e0b4ab580fb600752e4688763b3ad6572e92188623bfbc965c5ed360e3c"
+    },
+    {
+      "id": "02-regulator",
+      "badge": "РЕГУЛИРОВЩИК",
+      "title": [
+        "Разбирайся",
+        "в сигналах"
+      ],
+      "color": "#34A853",
+      "source": "output/store-cards-2026-10-18/regulator.png",
+      "capture": "Godot 4.7.2 Compatibility, current sources; 1080×1920",
+      "alt": "Игра Регулировщик: инспектор показывает сигнал, внизу варианты разрешённых направлений",
+      "sourceSha256": "e31f2f73ee1791fc36db03cca8cc468c2ad4a649bf4153ac4c6e73d322aa4464"
+    },
+    {
+      "id": "03-crossroads",
+      "badge": "РАЗРУЛИ ПЕРЕКРЁСТОК",
+      "title": [
+        "Кто проедет",
+        "первым?"
+      ],
+      "color": "#0574F8",
+      "source": "output/store-cards-2026-10-18/crossroads.png",
+      "capture": "Godot 4.7.2 Compatibility, current sources; 1080×1920",
+      "alt": "Три автомобиля с направлениями движения на перекрёстке — определите очерёдность проезда",
+      "sourceSha256": "c3dbff765fd73f033a8f6b448e999b6cde251a1cad24a4c4c5d83156c9499404"
+    },
+    {
+      "id": "04-tickets",
+      "badge": "КАТЕГОРИИ A/B И C/D",
+      "title": [
+        "Билеты",
+        "с объяснениями"
+      ],
+      "color": "#0574F8",
+      "source": "store_assets/release-2026-10-18/raw/13-ticket-image.png",
+      "crop": true,
+      "capture": "Actual Flutter web release capture, ticket 1/2; unchanged visible region",
+      "alt": "Вопрос билета с фотографией дорожной ситуации и вариантами ответа",
+      "sourceSha256": "80511e7cdacfae12f6557c1ec89456371ff62104f39d1f0ecf6a77620fc47a93"
+    },
+    {
+      "id": "05-exam",
+      "badge": "20 ВОПРОСОВ · 20 МИНУТ",
+      "title": [
+        "Проверь себя",
+        "как в ГИБДД"
+      ],
+      "color": "#34A853",
+      "source": "output/release-audit-2026-10-18/screenshots/20-exam.png",
+      "crop": true,
+      "capture": "Actual Flutter web release capture; unchanged visible region",
+      "alt": "Экзамен ПДД: таймер 20 минут, номера вопросов и варианты ответа",
+      "sourceSha256": "d8a56dcf14e23bb963a87358c467c339f2f5a2721cbeb8f14ccf15f75115859c"
+    },
+    {
+      "id": "06-signs",
+      "badge": "СПРАВОЧНИКИ ОФЛАЙН",
+      "title": [
+        "Знаки и ПДД",
+        "под рукой"
+      ],
+      "color": "#EB8214",
+      "source": "output/release-audit-2026-10-18/screenshots/10-signs.png",
+      "crop": true,
+      "capture": "Actual Flutter web release capture; unchanged visible region",
+      "alt": "Справочник дорожных знаков: предупреждающие знаки, знаки приоритета и запрещающие",
+      "sourceSha256": "92cd5119bfd2128f70c7736cdd1006c33afb21692395f67f204c04ff5bf4b07b"
+    },
+    {
+      "id": "07-feed",
+      "badge": "ЛЕНТА С ОЗВУЧКОЙ",
+      "title": [
+        "Листай вопросы",
+        "слушай ответы"
+      ],
+      "color": "#0574F8",
+      "source": "output/store-cards-2026-10-18/feed.png",
+      "capture": "Current Flutter FeedCard rendered with bundled ticket 27/13, light theme, Onest; 1080×1920",
+      "alt": "Лента ПДД: вопрос с изображением регулировщика и трамвая, кнопка озвучки и варианты ответа",
+      "sourceSha256": "eff6b7278ff06e9c155d415b3227783fc777d3a454b9ad6d9473e843f1b8423b"
+    },
+    {
+      "id": "08-progress",
+      "badge": "ПРОГРЕСС · ОШИБКИ · ИЗБРАННОЕ",
+      "title": [
+        "Следи за",
+        "подготовкой"
+      ],
+      "color": "#34A853",
+      "source": "store_assets/release-2026-10-18/raw/01-home.png",
+      "capture": "Actual Flutter web release capture; initial local progress, unchanged visible region",
+      "alt": "Экран подготовки: шкала готовности, статистика, экзамен, темы, билеты, ошибки и избранное",
+      "sourceSha256": "40559b0c9a8aa28b67e822eb3852e7197d10600712c19a9d857909a3b4de45ff"
+    }
+  ],
+  "files": [
+    {
+      "store": "google-play",
+      "file": "google-play/01-city.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 408463,
+      "sha256": "0d6783c183a4fe465e8bf78d7db2cb1769bb9aa2368e8e0a4e3bbd54e708248b",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Живой город: автомобиль и трамвай на перекрёстке, вопрос по билету 5"
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/02-regulator.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 421164,
+      "sha256": "b9e043890316a047dea848f2e08587f03197e7450610761257279674771da326",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Игра Регулировщик: инспектор показывает сигнал, внизу варианты разрешённых направлений"
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/03-crossroads.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 766634,
+      "sha256": "5d5f6aa9c09fad9206cf321d3dd06d29e861e7c473b0da88aa8ea29102e08a5d",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Три автомобиля с направлениями движения на перекрёстке — определите очерёдность проезда"
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/04-tickets.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 543196,
+      "sha256": "b441be45ecc4bc85f45c7c17328a02afe3cae2d706ff0aaafe4c5b5a4b35e17e",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1170,
+        "height": 2080
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Вопрос билета с фотографией дорожной ситуации и вариантами ответа"
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/05-exam.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 177040,
+      "sha256": "08e1753d7c3232ff104f1024392ac977a06c0ce89bf19a6f5736b794080eb7cb",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1170,
+        "height": 2080
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Экзамен ПДД: таймер 20 минут, номера вопросов и варианты ответа"
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/06-signs.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 104904,
+      "sha256": "48f00e8a0aedac2f3e398dea38f1b38406006cffc34aa16c53af1590234909f1",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1170,
+        "height": 2080
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Справочник дорожных знаков: предупреждающие знаки, знаки приоритета и запрещающие"
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/07-feed.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 600793,
+      "sha256": "3da01c1700ef3d738c6df5ae315a65090cae23c94d0c97dd97d4475eab8ac485",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Лента ПДД: вопрос с изображением регулировщика и трамвая, кнопка озвучки и варианты ответа"
+    },
+    {
+      "store": "google-play",
+      "file": "google-play/08-progress.png",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 96047,
+      "sha256": "2e60199eb8b05bdd7cc3ff82a776b916ab1ce9b95384486fa06fb0d5e053e491",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1170,
+        "height": 2532
+      },
+      "screenshotRect": {
+        "x": 200.36729857819904,
+        "y": 370,
+        "width": 679.2654028436019,
+        "height": 1470
+      },
+      "alt": "Экран подготовки: шкала готовности, статистика, экзамен, темы, билеты, ошибки и избранное"
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/01-city.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 194377,
+      "sha256": "82567c726bf618196f84b75a586330e5fea841fff2f0a1ca5a6a5ecad227d886",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Живой город: автомобиль и трамвай на перекрёстке, вопрос по билету 5"
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/02-regulator.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 210199,
+      "sha256": "92c54adce8f617e0149780f41c750e77d2b2d0a29bc6facea76addf75c2356b8",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Игра Регулировщик: инспектор показывает сигнал, внизу варианты разрешённых направлений"
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/03-crossroads.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 306575,
+      "sha256": "d952c8c159eaecef660acc6cff51a39af032a57a2947e449466bb277c02a10d0",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Три автомобиля с направлениями движения на перекрёстке — определите очерёдность проезда"
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/04-tickets.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 200362,
+      "sha256": "a06f94e77105112babd6a4d5c35c62929c3833acd2fc6b7bf713e183e34bceff",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1170,
+        "height": 2080
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Вопрос билета с фотографией дорожной ситуации и вариантами ответа"
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/05-exam.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 218590,
+      "sha256": "cd34d371fa209027aca5d49cb91852946d543becd042aecca835b140248a2f0b",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1170,
+        "height": 2080
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Экзамен ПДД: таймер 20 минут, номера вопросов и варианты ответа"
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/06-signs.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 138285,
+      "sha256": "cf54ed1f17afdbe1865c806c257cc590c46ce171a3217b8e8b3a20873569d50e",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1170,
+        "height": 2080
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Справочник дорожных знаков: предупреждающие знаки, знаки приоритета и запрещающие"
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/07-feed.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 235054,
+      "sha256": "2d2537e4f0b0b71e8c10e3358d7defb4b3cce98940791802db9a5a311bba139f",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 1920
+      },
+      "screenshotRect": {
+        "x": 126.5625,
+        "y": 370,
+        "width": 826.875,
+        "height": 1470
+      },
+      "alt": "Лента ПДД: вопрос с изображением регулировщика и трамвая, кнопка озвучки и варианты ответа"
+    },
+    {
+      "store": "rustore",
+      "file": "rustore/08-progress.jpg",
+      "width": 1080,
+      "height": 1920,
+      "bytes": 138742,
+      "sha256": "a5f540b6a7698c0a3656e8fb4c5d3b088b41d25aefdc178baddc6b44c74dfee4",
+      "headlineFont": 102,
+      "sourceCrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1170,
+        "height": 2532
+      },
+      "screenshotRect": {
+        "x": 200.36729857819904,
+        "y": 370,
+        "width": 679.2654028436019,
+        "height": 1470
+      },
+      "alt": "Экран подготовки: шкала готовности, статистика, экзамен, темы, билеты, ошибки и избранное"
+    }
+  ],
+  "featureGraphic": {
+    "file": "google-play/feature-1024x500.png",
+    "width": 1024,
+    "height": 500,
+    "sha256": "05ff7bee86ef488bd12a77dc7c959c8c042599bf48c4c8d4f541006d75c074ac",
+    "alt": "ПДД оживают в игре: городской перекрёсток с автомобилем и трамваем"
+  },
+  "method": "Actual Godot captures, actual Flutter screenshots/component rendering, deterministic Onest composition. No generated or retouched gameplay.",
+  "nativeAndroidScreenshots": false,
+  "status": "design-review; not submitted",
+  "specs": {
+    "google": "https://support.google.com/googleplay/android-developer/answer/9866151",
+    "rustore": "https://www.rustore.ru/help/developers/publishing-and-verifying-apps/app-publication"
+  }
+}
