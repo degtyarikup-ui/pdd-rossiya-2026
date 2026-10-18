@@ -41,8 +41,13 @@ class AppNotice {
   final String kind;
   final String imageUrl, emoji, buttonText, dismissText, actionUrl;
 
-  /// `standard`, `compact`, `cover`, or `image` (image-only home banner).
+  /// `standard`, `compact`, `cover`, or `image` (the picture is the whole
+  /// message: a home banner or a window without text).
   final String layout;
+
+  /// Whether a window shows its primary button (banners: the link chip).
+  /// Without it the whole message runs the action on tap.
+  final bool button;
   final Color? accent;
   final NoticeAction action;
   const AppNotice({
@@ -57,12 +62,14 @@ class AppNotice {
     this.dismissText = '',
     this.actionUrl = '',
     this.layout = 'standard',
+    this.button = true,
     this.accent,
     this.action = NoticeAction.none,
   });
 
   bool get isBanner => kind == 'banner';
-  bool get isImageBanner => isBanner && layout == 'image';
+  bool get isImageOnly => layout == 'image';
+  bool get isImageBanner => isBanner && isImageOnly;
   NoticeTap? get tap => action == NoticeAction.none
       ? null
       : NoticeTap.fromData({'action': action.name, 'actionUrl': actionUrl});
@@ -87,8 +94,7 @@ class AppNotice {
     if (!RegExp(r'^[a-f0-9-]{36}$').hasMatch(id)) return null;
     final image = _str(value['imageUrl']);
     final kind = value['kind'] == 'banner' ? 'banner' : 'popup';
-    if (value['layout'] == 'image' &&
-        (kind != 'banner' || !image.startsWith('https://'))) {
+    if (value['layout'] == 'image' && !image.startsWith('https://')) {
       return null;
     }
     final action =
@@ -115,6 +121,7 @@ class AppNotice {
           ].contains(value['layout'])
           ? value['layout']
           : 'standard',
+      button: value['button'] != false && value['layout'] != 'image',
       accent: parseColor(value['accent']),
       action: action == NoticeAction.url && !actionUrl.startsWith('https://')
           ? NoticeAction.none
@@ -282,6 +289,7 @@ class RemoteNotificationsService {
         'app': CountryConfig.current.code,
         'platform': platform,
         'imageBanners': '1',
+        'imagePopups': '1',
       };
       final response = await sendWithRetry(
         (host) => _client.get(

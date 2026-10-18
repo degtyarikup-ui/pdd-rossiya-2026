@@ -32,6 +32,7 @@ void main() {
     final client = MockClient((request) async {
       expect(request.url.queryParameters['app'], 'ru');
       expect(request.url.queryParameters['imageBanners'], '1');
+      expect(request.url.queryParameters['imagePopups'], '1');
       return http.Response(
         jsonEncode({
           'config': config,
@@ -162,7 +163,7 @@ void main() {
     expect(banner.tap?.action, NoticeAction.url);
     expect(banner.tap?.url, 'https://pdd-drive.ru/blog/');
   });
-  test('image layout requires a banner and a secure image', () {
+  test('image layout requires a secure image', () {
     final imageBanner = {
       ...notice(),
       'kind': 'banner',
@@ -174,11 +175,20 @@ void main() {
       AppNotice.parse({...imageBanner, 'imageUrl': 'http://x.test/banner.png'}),
       isNull,
     );
-    expect(AppNotice.parse({...imageBanner, 'kind': 'popup'}), isNull);
+    final popup = AppNotice.parse({...imageBanner, 'kind': 'popup'})!;
+    expect(popup.isImageOnly, isTrue);
+    expect(popup.isBanner, isFalse);
+    expect(popup.button, isFalse);
     expect(
       AppNotice.parse({...notice(), 'kind': 'banner'})?.isImageBanner,
       isFalse,
     );
+  });
+  test('the button is optional; legacy notices keep it', () {
+    expect(AppNotice.parse(notice())!.button, isTrue);
+    final plain = AppNotice.parse({...notice(), 'body': '', 'button': false})!;
+    expect(plain.button, isFalse);
+    expect(plain.body, isEmpty);
   });
   test('banners are separate from popups and stay dismissed', () async {
     final client = MockClient(

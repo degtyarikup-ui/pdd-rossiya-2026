@@ -55,6 +55,100 @@ class AppNoticeDialog extends StatelessWidget {
         ? appL10n.noticeAcknowledge
         : appL10n.noticeOpen;
     final size = MediaQuery.sizeOf(context);
+    final tappable = notice.tap != null && !notice.button;
+    if (notice.isImageOnly) return _imageOnly(context, size);
+
+    final texts = <Widget>[
+      if (notice.title.isNotEmpty)
+        Text(
+          notice.title,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.4,
+            color: colors.primaryText,
+          ),
+        ),
+      if (notice.title.isNotEmpty && notice.body.isNotEmpty)
+        const SizedBox(height: 8),
+      if (notice.body.isNotEmpty)
+        Text(
+          notice.body,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            height: 1.5,
+            color: colors.primaryText.withValues(alpha: .68),
+          ),
+        ),
+    ];
+
+    Widget content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (hasImage && !compact)
+          AspectRatio(
+            aspectRatio: notice.layout == 'cover' ? 4 / 3 : 16 / 9,
+            child: _NoticeImage(notice.imageUrl),
+          ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(22, 22, 22, notice.button ? 16 : 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (hasImage && compact)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _NoticeImage(notice.imageUrl, width: 64, height: 64),
+                  ),
+                ),
+              Padding(
+                padding: EdgeInsets.only(right: hasImage && !compact ? 0 : 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: texts,
+                ),
+              ),
+              if (notice.button) ...[
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: onAccent,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.buttonRadius,
+                        ),
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: Text(primary),
+                  ),
+                ),
+                if (notice.dismissText.isNotEmpty)
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: Text(notice.dismissText),
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+    if (tappable) {
+      content = InkWell(
+        onTap: () => Navigator.of(context).pop(true),
+        child: content,
+      );
+    }
 
     return Dialog(
       clipBehavior: Clip.antiAlias,
@@ -68,87 +162,7 @@ class AppNoticeDialog extends StatelessWidget {
               maxWidth: 420,
               maxHeight: size.height * .85,
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (hasImage && !compact)
-                    AspectRatio(
-                      aspectRatio: notice.layout == 'cover' ? 4 / 3 : 16 / 9,
-                      child: _NoticeImage(notice.imageUrl),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (hasImage && compact)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 14),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: _NoticeImage(
-                                notice.imageUrl,
-                                width: 64,
-                                height: 64,
-                              ),
-                            ),
-                          ),
-                        Padding(
-                          padding: EdgeInsets.only(
-                            right: hasImage && !compact ? 0 : 32,
-                          ),
-                          child: Text(
-                            notice.title,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.4,
-                              color: colors.primaryText,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          notice.body,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            height: 1.5,
-                            color: colors.primaryText.withValues(alpha: .68),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: accent,
-                              foregroundColor: onAccent,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppDimensions.buttonRadius,
-                                ),
-                              ),
-                            ),
-                            onPressed: () => Navigator.of(context).pop(true),
-                            child: Text(primary),
-                          ),
-                        ),
-                        if (notice.dismissText.isNotEmpty)
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: Text(notice.dismissText),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            child: SingleChildScrollView(child: content),
           ),
           Positioned(
             top: 8,
@@ -159,6 +173,62 @@ class AppNoticeDialog extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+extension on AppNoticeDialog {
+  /// The picture is the whole window; tapping it runs the action.
+  Widget _imageOnly(BuildContext context, Size size) {
+    final colors = AppColors.of(context);
+    final tap = notice.tap;
+    return Dialog(
+      clipBehavior: Clip.antiAlias,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: colors.cardBackground,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 420,
+          maxHeight: size.height * .85,
+        ),
+        child: Stack(
+          children: [
+            Semantics(
+              button: tap != null,
+              label: notice.title.isNotEmpty
+                  ? notice.title
+                  : appL10n.noticeImageBanner,
+              child: InkWell(
+                onTap: tap == null
+                    ? null
+                    : () => Navigator.of(context).pop(true),
+                child: Image.network(
+                  notice.imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) =>
+                      const SizedBox(height: 160, width: double.infinity),
+                  loadingBuilder: (context, child, progress) => progress == null
+                      ? child
+                      : const AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: _NoticeCloseButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                overImage: true,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -276,35 +346,40 @@ class AppNoticeBanner extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Flexible(
-                            flex: 2,
-                            child: Text(
-                              notice.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                height: 1.2,
-                                letterSpacing: -0.25,
-                                color: colors.primaryText,
+                          if (notice.title.isNotEmpty)
+                            Flexible(
+                              flex: 2,
+                              child: Text(
+                                notice.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.2,
+                                  letterSpacing: -0.25,
+                                  color: colors.primaryText,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Flexible(
-                            flex: 3,
-                            child: Text(
-                              notice.body,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontSize: 13,
-                                height: 1.4,
-                                color: colors.primaryText.withValues(alpha: .68),
+                          if (notice.title.isNotEmpty && notice.body.isNotEmpty)
+                            const SizedBox(height: 6),
+                          if (notice.body.isNotEmpty)
+                            Flexible(
+                              flex: 3,
+                              child: Text(
+                                notice.body,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontSize: 13,
+                                  height: 1.4,
+                                  color: colors.primaryText.withValues(
+                                    alpha: .68,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -312,7 +387,7 @@ class AppNoticeBanner extends StatelessWidget {
                 ],
               ),
             ),
-            if (notice.tap != null) ...[
+            if (notice.tap != null && notice.button) ...[
               const SizedBox(height: AppDimensions.spacingS),
               Container(
                 padding: const EdgeInsets.symmetric(

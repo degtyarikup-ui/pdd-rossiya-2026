@@ -11,7 +11,7 @@ function setup(env={}) {
  return {call,data,object};
 }
 test('input validation rejects missing text, unknown country, expired and oversized campaigns',()=>{
- for(const bad of [{body:''},{app:'xx'},{expiresAt:Date.now()-1},{title:'x'.repeat(81)},{kind:'push',body:'x'.repeat(301)},{kind:'push',platform:'web'}])assert.throws(()=>validateCampaign(sample(bad)));
+ for(const bad of [{kind:'push',body:''},{app:'xx'},{expiresAt:Date.now()-1},{title:'x'.repeat(81)},{kind:'push',body:'x'.repeat(301)},{kind:'push',platform:'web'}])assert.throws(()=>validateCampaign(sample(bad)));
 });
 test('country and platform targeting is exact; expired/disabled messages are hidden',()=>{
  const item=validateCampaign(sample({platform:'ios'}));
@@ -131,9 +131,9 @@ test('image banners accept image-only content and preserve the link in the clien
   assert.equal(message.action,'url');assert.equal(message.actionUrl,'https://pdd-drive.ru/tarify/');
   assert.equal(validateCampaign(sample({kind:'banner',layout:'image',title:'',body:'',imageUrl:'https://cdn.test/banner.png'})).action,'none');
 });
-test('image-only layout requires a banner and an HTTPS image; ordinary messages still require text',()=>{
+test('image-only layout requires an HTTPS image and is not allowed for pushes; empty messages are rejected',()=>{
   const image={layout:'image',imageUrl:'https://cdn.test/banner.png',title:'',body:''};
-  for(const bad of [{...image,kind:'popup'},{...image,kind:'push'},{...image,kind:'banner',imageUrl:''},{...image,kind:'banner',imageUrl:'http://cdn.test/banner.png'},{...image,kind:'banner',imageUrl:'javascript:alert(1)'},{...image,kind:'banner',action:'url',actionUrl:''},{...image,kind:'banner',action:'url',actionUrl:'http://pdd-drive.ru'},{...image,kind:'banner',title:42},{kind:'banner',title:'',body:''},{kind:'popup',title:'',body:''}]) {
+  for(const bad of [{...image,kind:'push'},{...image,kind:'banner',imageUrl:''},{...image,kind:'banner',imageUrl:'http://cdn.test/banner.png'},{...image,kind:'banner',imageUrl:'javascript:alert(1)'},{...image,kind:'banner',action:'url',actionUrl:''},{...image,kind:'banner',action:'url',actionUrl:'http://pdd-drive.ru'},{...image,kind:'banner',title:42},{kind:'banner',title:'',body:''},{kind:'popup',title:'',body:''}]) {
     assert.throws(()=>validateCampaign(sample(bad)));
   }
 });
@@ -218,3 +218,23 @@ test('alarm route dispatches due pushes and onFormEdit handles form events',asyn
 });
 
 
+
+test('windows and banners compose optional title, text and button',()=>{
+  const popup=validateCampaign(sample({kind:'popup',title:'',body:'',layout:'standard',imageUrl:'https://cdn.test/p.png',action:'url',actionUrl:'https://pdd-drive.ru/',buttonText:'Открыть'}));
+  assert.equal(popup.layout,'image');assert.equal(popup.button,false);assert.equal(popup.buttonText,'');
+  const titleOnly=validateCampaign(sample({title:'Новая версия',body:'',button:false,buttonText:'x',dismissText:'Позже'}));
+  assert.equal(titleOnly.layout,'standard');assert.equal(titleOnly.body,'');assert.equal(titleOnly.button,false);assert.equal(titleOnly.buttonText,'');assert.equal(titleOnly.dismissText,'');
+  const textOnly=validateCampaign(sample({kind:'banner',title:'',body:'Обновитесь',layout:'image'}));
+  assert.equal(textOnly.layout,'standard');assert.equal(textOnly.button,true);
+  assert.equal(clientMessage(titleOnly).button,false);
+  assert.equal(clientMessage({...titleOnly,button:undefined}).button,true,'legacy campaigns keep their button');
+  assert.throws(()=>validateCampaign(sample({title:'',body:'',imageUrl:''})));
+});
+test('picture-only windows require the newer client capability',async()=>{
+  const {call}=setup(),msg=sample({kind:'popup',title:'',body:'',imageUrl:'https://cdn.test/p.png'});
+  assert.equal((await call('/publish',msg)).status,200);
+  assert.equal((await (await call('/client?app=ru&platform=android&imageBanners=1')).json()).messages.length,0);
+  assert.equal((await (await call('/client?app=ru&platform=android&imagePopups=1')).json()).messages.length,0);
+  const feed=await (await call('/client?app=ru&platform=android&imageBanners=1&imagePopups=1')).json();
+  assert.equal(feed.messages.length,1);assert.equal(feed.messages[0].kind,'popup');assert.equal(feed.messages[0].layout,'image');
+});

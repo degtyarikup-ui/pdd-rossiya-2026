@@ -38,15 +38,21 @@ export function validateCampaign(input, now = Date.now()) {
   if (value.kind === 'push' && value.platform === 'web') throw new Error('Веб-пуши пока не поддерживаются');
   value.layout = input.layout || 'standard';
   if (!LAYOUTS.includes(value.layout)) throw new Error('Некорректный макет');
-  const imageBanner = value.layout === 'image';
-  if (imageBanner && value.kind !== 'banner') throw new Error('Макет «Только картинка» доступен только для баннера');
-  for (const [key, max] of [['title', 80], ['body', 1000]]) {
-    if (imageBanner) value[key] = str(input[key], max, key === 'title' ? 'Заголовок' : 'Текст');
-    else {
+  if (value.kind === 'push') {
+    // A system notification needs both lines; FCM shows nothing useful otherwise.
+    if (value.layout === 'image') throw new Error('Пуш не может состоять только из картинки');
+    for (const [key, max] of [['title', 80], ['body', 1000]]) {
       if (typeof input[key] !== 'string' || !input[key].trim() || input[key].trim().length > max) throw new Error('Заполните заголовок и текст в пределах лимита');
       value[key] = input[key].trim();
     }
+  } else {
+    // Windows and banners are composed from optional parts: picture, title,
+    // text and button. Without any text the message is the picture itself.
+    value.title = str(input.title, 80, 'Заголовок');
+    value.body = str(input.body, 1000, 'Текст');
+    value.layout = value.title || value.body ? (value.layout === 'image' ? 'standard' : value.layout) : 'image';
   }
+  const imageBanner = value.layout === 'image';
   if (value.kind === 'push' && value.body.length > 300) throw new Error('Текст пуша: не более 300 символов');
   if (value.kind === 'banner' && value.body.length > 200) throw new Error('Текст баннера: не более 200 символов');
   value.id = input.id;
@@ -63,12 +69,14 @@ export function validateCampaign(input, now = Date.now()) {
   if (value.target && /[\s'"<>]/.test(value.target)) throw new Error('Аккаунт для теста: укажите корректный email или ID');
   // Customization.
   value.imageUrl = httpsUrl(input.imageUrl, 'Картинка');
-  if (imageBanner && !value.imageUrl) throw new Error('Для баннера «Только картинка» загрузите изображение или укажите ссылку https://');
+  if (imageBanner && !value.imageUrl) throw new Error('Добавьте картинку, заголовок или текст');
   value.emoji = str(input.emoji, 8, 'Эмодзи');
   value.accent = input.accent ? String(input.accent) : '';
   if (value.accent && !/^#[0-9a-fA-F]{6}$/.test(value.accent)) throw new Error('Цвет: формат #RRGGBB');
-  value.buttonText = str(input.buttonText, 24, 'Текст кнопки');
-  value.dismissText = str(input.dismissText, 24, 'Текст второй кнопки');
+  // Absent on campaigns saved before buttons became optional: they had one.
+  value.button = !imageBanner && input.button !== false;
+  value.buttonText = value.button ? str(input.buttonText, 24, 'Текст кнопки') : '';
+  value.dismissText = value.button ? str(input.dismissText, 24, 'Текст второй кнопки') : '';
   value.action = input.action || 'none';
   if (!ACTIONS.includes(value.action)) throw new Error('Некорректное действие');
   value.actionUrl = value.action === 'url' ? httpsUrl(input.actionUrl, 'Ссылка действия') : '';
@@ -79,7 +87,7 @@ export function validateCampaign(input, now = Date.now()) {
   value.status = value.kind === 'push' ? 'queued' : (value.startAt > now ? 'scheduled' : 'published');
   return value;
 }
-const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'expiresAt', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp'];
+const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'expiresAt', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp'];
 export function campaignMatches(item, app, platform, now = Date.now(), user = {}) {
   if (!item.enabled || item.expiresAt <= now || (item.startAt || 0) > now) return false;
   if (item.app !== 'all' && item.app !== app) return false;
@@ -97,7 +105,7 @@ export function clientMessage(item) {
   const kind = item.kind === 'push' ? 'popup' : item.kind;
   return { id: item.id, kind, title: item.title, body: item.body, expiresAt: item.expiresAt, createdAt: item.createdAt,
     imageUrl: item.imageUrl || '', emoji: item.emoji || '', accent: item.accent || '', layout: item.layout || 'standard',
-    buttonText: item.buttonText || '', dismissText: item.dismissText || '', action: item.action || 'none', actionUrl: item.actionUrl || '' };
+    button: item.button !== false && item.layout !== 'image', buttonText: item.buttonText || '', dismissText: item.dismissText || '', action: item.action || 'none', actionUrl: item.actionUrl || '' };
 }
 export function pushCondition(item) {
   if (item.target) {
@@ -202,7 +210,9 @@ export class NotificationsState {
       // Older clients treat unknown layouts as standard cards and would show an
       // empty card. Only send image banners to builds declaring support.
       const imageBanners = url.searchParams.get('imageBanners') === '1';
-      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp) && (item.layout !== 'image' || imageBanners) && campaignMatches(item, app, platform, Date.now(), user)) : [];
+      // Picture-only windows arrived later than picture-only banners.
+      const imagePopups = imageBanners && url.searchParams.get('imagePopups') === '1';
+      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp) && (item.layout !== 'image' || (item.kind === 'banner' ? imageBanners : imagePopups)) && campaignMatches(item, app, platform, Date.now(), user)) : [];
       return reply({ config, messages: visible.sort((a,b) => b.createdAt-a.createdAt).slice(0, 10).map(clientMessage) });
     }
     if (path === '/alarm') {
