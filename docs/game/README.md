@@ -156,7 +156,8 @@ godot --headless --path game_godot --script res://tests/signals_models_check.gd 
 godot --path game_godot --script res://tests/signals_render_check.gd # реальный фронт/тыл и отдельные трамвайные апертуры
 godot --headless --path game_godot --script res://tests/lane_sign_check.gd # конструктор направлений по полосам
 godot --headless --path game_godot --script res://tests/free_player_check.gd # 76 проверок свободной позы, 12 углов и подъезда по кольцу
-godot --headless --path game_godot --script res://tests/dirt_surface_check.gd # грунт, текстура и удаление старых накладок
+godot --headless --path game_godot --script res://tests/question_brake_check.gd -- --situation=ticket_29_13 --mute # торможение перед вопросом: коротко, за ~30 м (также ticket_29_16)
+godot --headless --path game_godot --script res://tests/dirt_surface_check.gd # грунт, текстура, ровный край обочины, стык с асфальтом без «ушей»
 godot --headless --path game_godot --script res://tests/human_collision_check.gd # наезд: регулировщик и пешеходы
 godot --headless --path game_godot --script res://tests/ghost_check.gd      # призрак улицы
 godot --path game_godot --script res://tests/pool_packing_check.gd # пустые экземпляры не рисуются; цвета, прозрачность, индексы чанков и границы пакетов
@@ -237,7 +238,7 @@ godot --headless --path game_godot --script res://tests/exit_continuity_check.gd
 godot --headless --path game_godot --script res://tests/lane_join_check.gd # подбор по фактическим полосам, въезд в 13/13 и плавные переходы 1+1 ↔ 2+2
 godot --path game_godot --resolution 1280x900 --script res://tests/signal_glow_check.gd # нужен широкий кадр: видимое свечение, включая пакетный трафик
 godot --path game_godot --script res://tests/building_fade_check.gd # нужен рендер: пачки прозрачных зданий и переиспользование
-godot --headless --path game_godot --script res://tests/median_join_check.gd # границы разделительных островов
+godot --headless --path game_godot --script res://tests/median_join_check.gd # разделительный газон на стыке сцен — сплошной, от носа до носа
 tools/network/.venv/bin/python tools/network/tests/highway_check.py # фикстуры сквозных трасс и переходов, сохранение, сборка, весь кузов
 godot --headless --path game_godot --script res://tests/highway_check.gd # реальные стыки 3+3 и 2+2 по фикстурам предыдущей команды
 godot --headless --path game_godot --script res://tests/highway_run_check.gd # цепочка вопросов, переход 90 м, кривой въезд, разделители и кузов
@@ -532,6 +533,11 @@ Gradle включил его в DEX. Kotlin видит Java в `src/main/kotlin/
   при котором кузов остаётся на дороге на метр вперёд, — так работают косые улицы после
   поворотов и изгибы сцен, а не только оси мира. Круче 60° — удар, не касание
   (`tests/kerb_angle_check.gd`).
+- **Край грунтовки** скользит так же: стрелка, зажатая в косой или изогнутый край, не
+  останавливает машину (скольжение пробует и прежний курс), а кадр без касания при
+  скольжении не считается новым ударом (повторный удар — после 0,2 с без контакта).
+  Край мягкой обочины (`field`) режется по линии «половина травы», без лесенки
+  (`tests/kerb_angle_check.gd`, `tests/dirt_surface_check.gd`).
 - **Бордюр.** В момент удара теряется только составляющая скорости, направленная в бордюр
   (доля фактического скольжения). Дальше при скольжении действует трение 2,5 м/с², и машина
   плавно доворачивается вдоль бордюра (1,6 рад/с). Удар почти в лоб (скольжение < 15%) — остановка.

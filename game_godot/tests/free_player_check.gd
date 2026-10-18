@@ -57,10 +57,13 @@ func narrow_approach(world: Node, sit: Situation, template: Dictionary, dt: floa
 	for i in ceili(120.0/dt):
 		if world.phase == "question": break
 		var before: Vector3 = world.drive.pos
+		var speed_before: float = absf(world.drive.speed)
 		world._process(dt)
 		seconds += dt
 		supported = supported and world.drive.on_road()
-		max_step = maxf(max_step,before.distance_to(world.drive.pos))
+		# A teleport is motion beyond what the speed covers in the frame (the arrival keeps
+		# street speed until it brakes, so a long frame is a long but honest step).
+		max_step = maxf(max_step,before.distance_to(world.drive.pos)-maxf(speed_before,absf(world.drive.speed))*dt)
 	check(world.phase == "question" and world.ui.counting(),"two-minute narrow-road regression reaches the actual question")
 	check(seconds < 25.0,"narrow arrival does not spend minutes crawling past the question")
 	check(supported and max_step < .46,"partial assist keeps the whole car on asphalt without teleporting")

@@ -44,6 +44,38 @@ func run() -> void:
 	var textures := actual.find_children("tex_2","MeshInstance3D",true,false)
 	check(not textures.is_empty() and textures[0].mesh.get_surface_count()==0,"actual old distant soil photograph no longer overlays new road")
 	actual.free()
+	# The soft-ground shoulder meets the road on a straight cut through each triangle, not on a
+	# half-metre staircase of whole triangles: the drawn edge is neat and a car slides along it.
+	var map := GroundMap.new(net.surface_mesh(scenery), scenery)
+	var previous := NAN
+	var largest_step := 0.0
+	var z := 5.6
+	while z < 11.0:
+		var x := -16.0
+		while x < 4.0 and (map.at(Vector3(x,0,z)) & GroundMap.ROAD) == 0: x += 0.02
+		if not is_nan(previous): largest_step = maxf(largest_step, absf(x-previous))
+		previous = x
+		z += 0.05
+	check(largest_step < 0.2, "the dirt fillet edge has no staircase (largest step %.2f m)" % largest_step)
+	# Dirt meeting asphalt keeps its own width up to the contact: no torn soft-edged ears where
+	# only the paved middle was pulled to the asphalt's width, and only a short colour fade.
+	var exit: Dictionary = net.connections.exits.right
+	var asphalt := {"width":5.0,"declared_median":0.0,"median":0.0,"measured":true,"walk":true,"surface":"asphalt"}
+	var profile := SceneStitch.joint_profile(asphalt,exit)
+	check(profile.surface == "blend" and absf(float(profile.width)-float(exit.width))>1.0, "a real dirt/asphalt contact of different widths")
+	var reach := func(bindings: Array) -> float:
+		net.stitch_bindings = bindings
+		var widest := 0.0
+		var lateral := SceneStitch.right(exit.out)
+		for p: Vector3 in net.surface_mesh(scenery).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
+			var depth: float = -(p-exit.p).dot(exit.out)
+			if depth>=0.0 and depth<SceneStitch.END_BLEND and absf(p.y)<0.05: widest = maxf(widest, absf((p-exit.p).dot(lateral)))
+		return widest
+	var own: float = reach.call(Situation.bindings_with([],exit,float(exit.width)))
+	var joined: float = reach.call(Situation.bindings_with([],exit,float(profile.width),profile))
+	check(absf(own-joined)<0.01, "the dirt end keeps its width at an asphalt contact (%.2f vs %.2f m)" % [joined, own])
+	check(SceneStitch.surface_blend(exit.p-exit.out*(SceneStitch.SURFACE_BLEND+0.5),net.stitch_bindings)==0.0, "the colour fade is a short band at the contact")
+	net.stitch_bindings = []
 	if DisplayServer.get_name() != "headless":
 		var node := MeshInstance3D.new();node.mesh=net.surface_mesh(scenery);root.add_child(node)
 		var ground := MeshInstance3D.new();var plane := PlaneMesh.new();plane.size=Vector2(300,300);ground.mesh=plane

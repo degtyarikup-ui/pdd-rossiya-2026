@@ -531,6 +531,14 @@ func _qshot_later(path: String) -> void:
 	get_tree().quit()
 
 
+## A desktop capture (--shot / --qshot) keeps driving when its window is not focused.
+func _capturing() -> bool:
+	if qshot != "": return true
+	for arg in Host.user_args():
+		if arg.begins_with("--shot="): return true
+	return false
+
+
 func _shot(path: String) -> void:
 	controls.gas = true
 	var wait := 4.0
@@ -1312,7 +1320,7 @@ func _guide_target(p: Vector3) -> Vector3:
 func _approach_projection(sit: Situation, world_pos: Vector3) -> Dictionary:
 	var pts := sit.network.route("approach")
 	if pts.size() < 2:
-		return {"ahead": sit.network.stop_point(), "remaining": 0.0, "offset": INF}
+		return {"ahead": sit.network.stop_point(), "remaining": 0.0, "offset": INF, "turn": 0.0}
 	var local := sit.global_transform.affine_inverse() * world_pos
 	var p := Vector2(local.x, local.z)
 	var best_distance := INF
@@ -1334,6 +1342,22 @@ func _approach_projection(sit: Situation, world_pos: Vector3) -> Dictionary:
 			along = total + t * length
 		total += length
 	var distance_left := maxf(0.0, total - along)
+	# Heading change over the route's last 45 m (radians): fixed for the route, so the
+	# braking mode cannot switch halfway through a ring.
+	var turn := 0.0
+	var heading := INF
+	var from_end := 0.0
+	for i in range(pts.size() - 2, -1, -1):
+		var step := pts[i + 1] - pts[i]
+		if step.length() < 0.0001:
+			continue
+		var h := step.angle()
+		if is_finite(heading):
+			turn += absf(angle_difference(heading, h))
+		heading = h
+		from_end += step.length()
+		if from_end > 45.0:
+			break
 	var lookahead := minf(4.0, maxf(0.6, distance_left * 0.25)) if sit.network.free_player() else 4.0
 	var remaining := lookahead + (pts[best_index + 1] - pts[best_index]).length() * best_t
 	var ahead := pts[pts.size() - 1]
@@ -1344,7 +1368,7 @@ func _approach_projection(sit: Situation, world_pos: Vector3) -> Dictionary:
 			ahead = pts[i] + delta.normalized() * remaining
 			break
 		remaining -= length
-	return {"ahead": Vector3(ahead.x, 0, ahead.y), "remaining": distance_left, "offset": sqrt(best_distance)}
+	return {"ahead": Vector3(ahead.x, 0, ahead.y), "remaining": distance_left, "offset": sqrt(best_distance), "turn": turn}
 
 
 ## A violation, counted once per episode (game.js drivingFault / roadViolation):
@@ -3163,7 +3187,7 @@ func _notification(what: int) -> void:
 			_on_exit()
 		else:
 			_on_pause(true)
-	elif what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED] and (phase in ["driving", "question", "resolving"] or (phase == "over" and ui.rewards_busy())):
+	elif what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED] and not _capturing() and (phase in ["driving", "question", "resolving"] or (phase == "over" and ui.rewards_busy())):
 		# iOS stops rendering at focus loss, before entering the background. The
 		# app switcher/notification centre can also return without PAUSED at all.
 		# Foreground notifications deliberately keep the ride paused until Continue.
@@ -3546,7 +3570,7 @@ func _process(delta: float) -> void:
 		if sit.network and sit.network.has_route("approach"):
 			var progress := _approach_projection(sit, drive.pos)
 			# Follow the measured route to stop at any heading. Free poses may be inside a bend:
-			# take the last 45 m at junction speed, rather than entering the circle at street speed.
+			# take a bend at junction speed, rather than entering the circle at street speed.
 			if float(progress.offset) < 8.0:
 				var remaining: float = float(progress.remaining)
 				if sit.network.free_player():
@@ -3555,10 +3579,19 @@ func _process(delta: float) -> void:
 					remaining = maxf(remaining, float(progress.offset))
 				limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * remaining)))
 				if sit.network.free_player() and remaining < 45.0:
-					limit = minf(limit, 6.5 if remaining > 6.0 else 2.0)
-					if float(progress.remaining) < 6.0:
-						var rho := drive.pos.distance_to(sit.global_transform * sit.network.stop_point())
-						limit = minf(limit, maxf(0.12, rho * 0.7))
+					var rho := drive.pos.distance_to(sit.global_transform * sit.network.stop_point())
+					if float(progress.turn) > 0.6:
+						# The last 45 m of the route bend (a ring, a turn): junction speed, then a crawl
+						# onto the pose, which is captured within 0.4 m and aligned.
+						limit = minf(limit, 6.5 if remaining > 6.0 else 2.0)
+						if float(progress.remaining) < 6.0:
+							limit = minf(limit, maxf(0.12, rho * 0.7))
+					else:
+						# A straight arrival keeps street speed and brakes late and short, at 4 m/s²
+						# (a car with the gas held sheds 6 m/s², drive.gd), then eases onto the pose.
+						limit = minf(limit, 1.0 + sqrt(maxf(0.0, 2 * 4 * remaining)))
+						if float(progress.remaining) < 6.0:
+							limit = minf(limit, maxf(0.5, rho * 1.5))
 		elif cos(drive.yaw) > 0.2:
 			var distance: float = current.zc + float(sit.data.stopZ) - drive.pos.z
 			limit = minf(limit, sqrt(maxf(0.0, 2 * 8 * distance)))

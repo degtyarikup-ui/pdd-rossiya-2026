@@ -121,6 +121,12 @@ static func _box(poly: PackedVector2Array) -> Rect2:
 func is_drivable(local: Vector3) -> bool:
 	if not SceneStitch.contains(local, stitch_bindings) or SceneStitch.median_at(local,stitch_bindings):
 		return false
+	for binding in stitch_bindings:
+		var bridge := median_bridge(binding)
+		if bridge.is_empty(): continue
+		var d: float = -(local-binding.port.p).dot(binding.port.out)
+		if d>=-0.001 and d<=bridge.depth and absf((local-binding.port.p).dot(SceneStitch.right(binding.port.out)))<bridge.width/2.0-0.001:
+			return false
 	local = SceneStitch.warp(local, stitch_bindings, true)
 	var p := Vector2(local.x, local.z)
 	for road in _roads:
@@ -264,7 +270,7 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 					for p: Vector3 in [poly[0],poly[fan],poly[fan+1]]:
 						var w := uv_xf * p
 						st.set_uv(Vector2(w.x / period, w.z / period))
-						var blend := SceneStitch.surface_blend(p,stitch_bindings) if s.layer in ["asphalt","sand"] else 0.0
+						var blend := SceneStitch.surface_blend(p,stitch_bindings) if s.layer=="asphalt" else 0.0
 						var tint := colour.lerp(Color("#776a53"),blend)
 						for end in s.get("fade_ends",[]):
 							var delta: Vector3 = p-end.p
@@ -295,28 +301,52 @@ func _add_field(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transfo
 			slice = Time.get_ticks_usec()
 		var corners: Array = []
 		var share: Array = []
-		var mean := Vector3.ZERO
 		for c in 3:
 			var i: int = idx[k + c]
 			corners.append(Vector3(v[i * 2], y, v[i * 2 + 1]))
 			var sh := Vector3(w[i * 3], w[i * 3 + 1], w[i * 3 + 2])
 			share.append(sh)
-			mean += sh / 3.0
 		k += 3
-		var dominant := 0 if mean.x >= mean.y and mean.x >= mean.z else (1 if mean.y >= mean.z else 2)
-		var layer := scenery.layer_of(kinds[dominant])
-		var period: float = scenery.kinds[kinds[dominant]].period
-		for poly in SceneStitch.render_pieces(corners, stitch_bindings):
-			for fan in range(1, poly.size()-1):
-				for p: Vector3 in [poly[0], poly[fan], poly[fan+1]]:
-					var b := _barycentric(p, corners)
-					var sh: Vector3 = share[0] * b.x + share[1] * b.y + share[2] * b.z
-					var colour: Color = colours[0] * sh.x + colours[1] * sh.y + colours[2] * sh.z
-					var uv := uv_xf * p
-					st.set_color(Color(colour.r, colour.g, colour.b, 0.0))
-					st.set_uv(Vector2(uv.x / period, uv.z / period))
-					st.set_uv2(Vector2(layer, clampf((sh[dominant] - 0.5) * 2.0, 0.0, 1.0) - 1.0))
-					st.add_vertex(p)
+		# Cut the triangle where the lawn share crosses one half: the road (asphalt or dirt) and the
+		# grass meet on a straight line inside it. A whole-triangle choice by the dominant share
+		# made a half-metre staircase, drawn and driven on (GroundMap): a car stuck on its teeth.
+		var road_side: Array = []
+		var grass_side: Array = []
+		for c in 3:
+			var n := (c + 1) % 3
+			var fa: float = 0.5 - float(share[c].z)
+			var fb: float = 0.5 - float(share[n].z)
+			if fa >= 0.0: road_side.append(corners[c])
+			else: grass_side.append(corners[c])
+			if (fa >= 0.0) != (fb >= 0.0):
+				var cut: Vector3 = (corners[c] as Vector3).lerp(corners[n], fa / (fa - fb))
+				road_side.append(cut)
+				grass_side.append(cut)
+		for side in 2:
+			var piece: Array = road_side if side == 0 else grass_side
+			if piece.size() < 3: continue
+			var dominant := 2
+			if side == 0:
+				var road_mean := Vector3.ZERO
+				for p: Vector3 in piece: road_mean += _shares_at(p, corners, share)
+				dominant = 0 if road_mean.x >= road_mean.y else 1
+			var layer := scenery.layer_of(kinds[dominant])
+			var period: float = scenery.kinds[kinds[dominant]].period
+			for poly in SceneStitch.render_pieces(piece, stitch_bindings):
+				for fan in range(1, poly.size()-1):
+					for p: Vector3 in [poly[0], poly[fan], poly[fan+1]]:
+						var sh := _shares_at(p, corners, share)
+						var colour: Color = colours[0] * sh.x + colours[1] * sh.y + colours[2] * sh.z
+						var uv := uv_xf * p
+						st.set_color(Color(colour.r, colour.g, colour.b, 0.0))
+						st.set_uv(Vector2(uv.x / period, uv.z / period))
+						st.set_uv2(Vector2(layer, clampf((sh[dominant] - 0.5) * 2.0, 0.0, 1.0) - 1.0))
+						st.add_vertex(p)
+
+
+static func _shares_at(p: Vector3, corners: Array, share: Array) -> Vector3:
+	var b := _barycentric(p, corners)
+	return share[0] * b.x + share[1] * b.y + share[2] * b.z
 
 
 static func _barycentric(p: Vector3, t: Array) -> Vector3:
@@ -514,7 +544,9 @@ func _add_end_medians(st: SurfaceTool,scenery: Scenery,uv_xf: Transform3D) -> vo
 	for binding in stitch_bindings:
 		if _continuous_highway(binding): continue
 		var median: float = binding.get("median",0.0)
-		if median<=0.001: continue
+		if median<=0.001:
+			_add_median_bridge(st,scenery,uv_xf,binding)
+			continue
 		var port: Dictionary = binding.port
 		var r := SceneStitch.right(port.out)
 		var a: Vector3 = port.p-r*median/2.0
@@ -536,6 +568,65 @@ func _add_end_medians(st: SurfaceTool,scenery: Scenery,uv_xf: Transform3D) -> vo
 			var x: Vector3 = edge[0];var y: Vector3 = edge[1]
 			for p: Vector3 in [x,y,y+Vector3.UP*0.18,x,y+Vector3.UP*0.18,x+Vector3.UP*0.18]:
 				st.set_uv(Vector2.ZERO);st.set_uv2(Vector2(0,1));st.add_vertex(p)
+
+
+var _bridge_cache := {}
+
+## Width, depth from the contact and top height of the lawn bridged to the divider's nose
+## (empty when the joint has none). Cached: the saved build never changes at runtime.
+func median_bridge(binding: Dictionary) -> Dictionary:
+	var width: float = binding.get("bridge",0.0)
+	if width<=0.01: return {}
+	var port: Dictionary = binding.port
+	var key := "%s|%s|%.3f" % [port.get("id",""),port.p,width]
+	if _bridge_cache.has(key): return _bridge_cache[key]
+	var r := SceneStitch.right(port.out)
+	var nose := INF
+	var top := 0.185
+	for s in build.surfaces:
+		if s.layer!="grass" or s.y<=0.16: continue
+		var v: Array = s.verts
+		for i in v.size()/2:
+			var p := Vector3(v[i*2],s.y,v[i*2+1])
+			var d: float = -(p-port.p).dot(port.out)
+			if d>=-0.001 and d<SceneStitch.END_BLEND*3.0 and absf((p-port.p).dot(r))<width*0.5+0.5 and d<nose:
+				nose=d;top=s.y
+	# Run a radius into the nose: its rounded tip disappears under the strip.
+	var result := {} if nose==INF or nose<0.05 else {"width":width,"depth":nose+width*0.5+0.1,"top":top}
+	_bridge_cache[key]=result
+	return result
+
+
+## The divider's own nose ends a few metres before the contact: continue its lawn (with kerbs)
+## from the contact into the nose, so two divided streets meet with one unbroken divider.
+func _add_median_bridge(st: SurfaceTool,scenery: Scenery,uv_xf: Transform3D,binding: Dictionary) -> void:
+	var bridge := median_bridge(binding)
+	if bridge.is_empty(): return
+	var port: Dictionary = binding.port
+	var r := SceneStitch.right(port.out)
+	var width: float = bridge.width
+	var depth: float = bridge.depth
+	var top: float = bridge.top
+	var a: Vector3 = port.p-r*width/2.0
+	var b: Vector3 = port.p+r*width/2.0
+	var c: Vector3 = b-port.out*depth
+	var d: Vector3 = a-port.out*depth
+	var colour := scenery.color("ground")
+	var period: float = scenery.kinds.grass.period
+	st.set_color(Color(colour.r,colour.g,colour.b,0.0))
+	for p: Vector3 in [a,b,c,a,c,d]:
+		p.y=top+0.002
+		var w := uv_xf*p
+		st.set_uv(Vector2(w.x,w.z)/period)
+		st.set_uv2(Vector2(scenery.layer_of("grass"),0))
+		st.add_vertex(p)
+	colour=scenery.color("sidewalk")
+	st.set_color(Color(colour.r,colour.g,colour.b,0.0))
+	for edge in [[a,d],[c,b]]:
+		var x: Vector3 = edge[0];var y: Vector3 = edge[1]
+		var up := Vector3.UP*(top+0.002)
+		for p: Vector3 in [x,y,y+up,x,y+up,x+up]:
+			st.set_uv(Vector2.ZERO);st.set_uv2(Vector2(0,1));st.add_vertex(p)
 
 
 ## Replace the last two metres of old paint: rounded endcaps and coincident middle strokes
@@ -570,7 +661,8 @@ func _add_join_marks(st: SurfaceTool) -> void:
 		var port: Dictionary = binding.port
 		if port.get("surface", "asphalt") == "sand": continue
 		var lateral := SceneStitch.right(port.out)
-		var half: float = binding.width * 0.5
+		# A blend joint keeps the port's own width (SceneStitch.warp).
+		var half: float = (float(port.width) if binding.get("surface","")=="blend" else float(binding.width)) * 0.5
 		var median: float = binding.get("median", 0.0)
 		var strokes: Array[float] = []
 		if port.get("edge", true): strokes.append_array([-half+0.25,half-0.25])
@@ -578,10 +670,14 @@ func _add_join_marks(st: SurfaceTool) -> void:
 			if not _continuous_highway(binding): strokes.append_array([-median*0.5-0.2,median*0.5+0.2])
 		elif port.get("centre", "") == "solid": strokes.append(0.0)
 		elif port.get("centre", "") == "double": strokes.append_array([-0.15,0.15])
+		# A bridged divider keeps its border lines up to the contact, like the scene's own.
+		var bridge := median_bridge(binding)
+		if not bridge.is_empty(): strokes.append_array([-float(bridge.width)*0.5-0.2,float(bridge.width)*0.5+0.2])
 		for x in strokes:
 			var a: Vector3 = port.p + lateral * (x-0.075) + Vector3.UP * 0.04
 			var b: Vector3 = port.p + lateral * (x+0.075) + Vector3.UP * 0.04
 			var length: float=SceneStitch.END_BLEND if median>0.01 and absf(x)<median*0.5+0.5 else 2.0
+			if not bridge.is_empty() and absf(absf(x)-float(bridge.width)*0.5-0.2)<0.01: length=float(bridge.depth)
 			var c: Vector3 = b-port.out*length
 			var d: Vector3 = a-port.out*length
 			for p: Vector3 in [a,b,c,a,c,d]: st.add_vertex(p)

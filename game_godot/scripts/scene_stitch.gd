@@ -4,6 +4,7 @@ extends RefCounted
 
 const END_INSET := 24.0
 const END_BLEND := 10.0
+const SURFACE_BLEND := 2.5     # asphalt -> dirt colour fade at a contact (m)
 const WALK_WIDTH := 3.2
 const LANE_TRANSITION := 90.0
 const _CLIPPED_MESH_META := "_scene_stitch_flat_normals_v1"
@@ -257,6 +258,9 @@ static func contains(p: Vector3,bindings: Array) -> bool:
 ## Only the last END_BLEND metres of a road change width. Its centre and every saved node stay put.
 static func warp(p: Vector3,bindings: Array,inverse := false) -> Vector3:
 	for binding in bindings:
+		# Asphalt meeting a dirt road keeps both widths: the asphalt ends in a straight edge on
+		# the dirt. Bending only the paved middle of the dirt left its soft sides as torn ears.
+		if binding.get("surface","")=="blend": continue
 		var port: Dictionary = binding.port
 		var d: float = -(p-port.p).dot(port.out)
 		if d< -0.001 or d>END_BLEND: continue
@@ -292,15 +296,20 @@ static func warp(p: Vector3,bindings: Array,inverse := false) -> Vector3:
 
 static func joint_profile(a: Dictionary,b: Dictionary) -> Dictionary:
 	var ma := contact_median(a);var mb := contact_median(b)
+	# Both streets are divided but end their dividers in a nose before the contact: the lawn
+	# is bridged nose to nose (RoadNetwork._add_median_bridge), so the divider runs on unbroken.
+	var da := float(a.get("declared_median",0.0));var db := float(b.get("declared_median",0.0))
+	var bridge := minf(da,db) if da>0.01 and db>0.01 and not (ma>0.01 and mb>0.01) else 0.0
 	return {"width":joint_width(a,b),"median":(ma+mb)*0.5 if ma>0.01 and mb>0.01 else 0.0,
-		"walk":a.walk and b.walk,"surface":a.surface if a.surface==b.surface else "blend"}
+		"bridge":bridge,"walk":a.walk and b.walk,"surface":a.surface if a.surface==b.surface else "blend"}
 
+## Asphalt tone fading into a dirt road over the last SURFACE_BLEND metres before the contact.
 static func surface_blend(p: Vector3,bindings: Array) -> float:
 	var blend := 0.0
 	for binding in bindings:
 		if binding.get("surface","")!="blend": continue
 		var d: float = -(p-binding.port.p).dot(binding.port.out)
-		if d>=-0.001 and d<END_BLEND: blend=maxf(blend,smoothstep(END_BLEND,0.0,d))
+		if d>=-0.001 and d<SURFACE_BLEND: blend=maxf(blend,smoothstep(SURFACE_BLEND,0.0,d))
 	return blend
 
 
