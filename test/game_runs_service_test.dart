@@ -22,6 +22,12 @@ void main() {
     reminders = [];
   });
 
+  test('without premium an empty stock blocks starting and resuming', () {
+    expect(GameRunsService.canRide(premium: false, runs: 0), isFalse);
+    expect(GameRunsService.canRide(premium: false, runs: 1), isTrue);
+    expect(GameRunsService.canRide(premium: true, runs: 0), isTrue);
+  });
+
   test('new stock has three runs without a refill deadline', () async {
     final runs = service();
     expect(await runs.load(), 3);

@@ -143,8 +143,10 @@ class GamesHubView extends StatelessWidget {
                         final showWait =
                             !premium &&
                             runsLoaded &&
-                            runs == 0 &&
-                            !hasPendingRun;
+                            !GameRunsService.canRide(
+                              premium: premium,
+                              runs: runs,
+                            );
                         final minCity =
                             (showWait
                                 ? compactHeight
@@ -219,10 +221,10 @@ class GamesHubView extends StatelessWidget {
                           onTap: onCity,
                           featured: true,
                           hideStatus: !premium && !hasPendingRun,
-                          caption: hasPendingRun
-                              ? appL10n.gamesResumeRide
-                              : showWait
+                          caption: showWait
                               ? appL10n.gameFuelEmptyTitle
+                              : hasPendingRun
+                              ? appL10n.gamesResumeRide
                               : null,
                           footer: !premium && runsLoaded
                               ? _RunsFooter(
@@ -405,30 +407,14 @@ class _HubCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // The arrow sits on the title line in every state,
-                            // so it never drifts with the caption or footer.
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    title,
-                                    style: TextStyle(
-                                      fontSize: featured ? 24 : titleSize,
-                                      height: 1.15,
-                                      fontWeight: FontWeight.w700,
-                                      color: foreground,
-                                    ),
-                                  ),
-                                ),
-                                if (featured) ...[
-                                  const SizedBox(width: AppDimensions.spacingS),
-                                  const Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 24,
-                                    color: AppColors.white,
-                                  ),
-                                ],
-                              ],
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: featured ? 24 : titleSize,
+                                height: 1.15,
+                                fontWeight: FontWeight.w700,
+                                color: foreground,
+                              ),
                             ),
                             if (!hideStatus) ...[
                               const SizedBox(height: AppDimensions.spacingXS),

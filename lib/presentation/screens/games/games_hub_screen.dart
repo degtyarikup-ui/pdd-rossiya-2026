@@ -99,7 +99,10 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
   Future<void> _openCity() async {
     await _refreshRuns();
     if (!mounted) return;
-    if (!ref.read(isPremiumProvider) && _runs == 0 && !_hasPendingRun) {
+    if (!GameRunsService.canRide(
+      premium: ref.read(isPremiumProvider),
+      runs: _runs,
+    )) {
       await _showRunsInfo();
       return;
     }

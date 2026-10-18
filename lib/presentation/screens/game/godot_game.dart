@@ -593,7 +593,7 @@ class GodotGame {
         'debug_perf': prefs?.getBool(_cityPerfKey) ?? false,
       'unlimited': unlimited,
       'available_runs': runs,
-      'can_start': unlimited || runs > 0 || pending != null,
+      'can_start': GameRunsService.canRide(premium: unlimited, runs: runs),
       'question_history': await GameQuestionHistoryService.instance.load(),
       if (pending != null) 'resume': pending.toJson(),
       'texts': {

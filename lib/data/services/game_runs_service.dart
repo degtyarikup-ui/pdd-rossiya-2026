@@ -26,6 +26,12 @@ class GameRunsService {
   static final GameRunsService instance = GameRunsService._();
 
   static const int maxRuns = 3;
+
+  /// Whether a free player may start or resume a city run. A saved run does
+  /// not bypass the limit: resuming needs a run in stock too. Premium is unlimited.
+  static bool canRide({required bool premium, required int runs}) =>
+      premium || runs > 0;
+
   static const Duration refillInterval = Duration(hours: 1);
   static const _runsKey = 'game_runs';
   static const _sinceKey = 'game_runs_since';

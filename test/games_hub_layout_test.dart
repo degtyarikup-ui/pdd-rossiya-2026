@@ -427,6 +427,26 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('A saved run does not offer to continue without runs', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await open(
+      tester,
+      runs: 0,
+      pending: true,
+      refillAt: DateTime.now().add(const Duration(minutes: 59)),
+    );
+    final card = tester.widget<Semantics>(
+      find.byKey(const ValueKey('games-card-city')),
+    );
+    expect(card.properties.label, contains(appL10n.gameFuelEmptyTitle));
+    expect(card.properties.label, isNot(contains(appL10n.gamesResumeRide)));
+    expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+    handle.dispose();
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('Premium removes run limits and the unlimited upsell', (
     tester,
   ) async {
@@ -470,26 +490,6 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
-
-  testWidgets('A saved drive remains resumable with no new free runs', (
-    tester,
-  ) async {
-    var city = 0;
-    await open(
-      tester,
-      runs: 0,
-      pending: true,
-      refillAt: DateTime.now().add(const Duration(minutes: 38)),
-      onCity: () => city++,
-    );
-    expect(find.text(appL10n.gamesResumeRide), findsOneWidget);
-    expect(find.text(appL10n.gamesRunsFraction(0, 3)), findsNothing);
-    expect(find.textContaining(appL10n.gamesRefillIn('')), findsOneWidget);
-    await tester.tapAt(tester.getCenter(find.text(appL10n.gamesResumeRide)));
-    expect(city, 1);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox());
-  });
 
   testWidgets('Game covers and the weekly score invoke their own action', (
     tester,
