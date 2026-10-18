@@ -97,6 +97,21 @@ func _start_playback() -> void:
 	_playback = _player.get_stream_playback()
 
 
+## Android/iOS may stop or reset the audio output while the app is in the background
+## (or during a phone call). A generator player then stays "paused" or silently loses
+## its playback while QuestionVoice, which starts a fresh stream per card, still plays.
+## Drop the old playback; _process starts a new one as soon as the scene thaws.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED:
+		_reset_output()
+
+
+func _reset_output() -> void:
+	if _player != null and _player.playing:
+		_player.stop()
+	_playback = null
+
+
 func _exit_tree() -> void:
 	if is_instance_valid(_player):
 		_player.stop()
@@ -161,7 +176,10 @@ func _process(delta: float) -> void:
 			_mix_voices.assign(_vehicles.values())
 	if _player == null:
 		return
-	if _playback == null:
+	if _player.stream_paused:
+		return
+	# A stopped player (lost output, finished stream) never plays again by itself.
+	if _playback == null or not _player.playing:
 		_start_playback()
 	if _playback == null:
 		return
