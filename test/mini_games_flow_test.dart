@@ -97,6 +97,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          isAuthenticatedProvider.overrideWithValue(true),
           progressDataSourceProvider.overrideWithValue(progress),
           signsProvider.overrideWith((ref) async => signData ?? signs),
         ],

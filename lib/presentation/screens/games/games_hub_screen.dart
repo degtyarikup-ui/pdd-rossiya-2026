@@ -15,14 +15,35 @@ import 'package:pdd_app/presentation/screens/games/games_hub_view.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+import 'package:pdd_app/presentation/widgets/sign_in_required_view.dart';
 
-class GamesHubScreen extends ConsumerStatefulWidget {
+/// Gate every entry to the catalogue, including the standalone debug route.
+/// The signed-in subtree is disposed on sign-out, along with its timers.
+class GamesHubScreen extends ConsumerWidget {
   const GamesHubScreen({super.key});
+
   @override
-  ConsumerState<GamesHubScreen> createState() => _GamesHubScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(isAuthenticatedProvider)) {
+      return SignInRequiredView(
+        icon: Icons.sports_esports_rounded,
+        title: appL10n.gameLockedTitle,
+        body: appL10n.gameLockedHint,
+      );
+    }
+    return const _SignedInGamesHubScreen();
+  }
 }
 
-class _GamesHubScreenState extends ConsumerState<GamesHubScreen>
+class _SignedInGamesHubScreen extends ConsumerStatefulWidget {
+  const _SignedInGamesHubScreen();
+
+  @override
+  ConsumerState<_SignedInGamesHubScreen> createState() =>
+      _GamesHubScreenState();
+}
+
+class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
     with WidgetsBindingObserver {
   int _runs = 0;
   bool _runsLoaded = false;
