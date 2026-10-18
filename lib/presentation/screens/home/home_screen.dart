@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pdd_app/presentation/widgets/notification_prompt_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,6 +47,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
+
+const _notificationPromptKey = 'notification_prompt_shown';
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver, RouteAware {
@@ -211,6 +216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         PremiumService.instance.hasPendingGrant) {
       return;
     }
+    if (await _askNotificationsOnce()) return;
     final notice = service.nextNotice;
     if (notice == null) return;
     _noticeOpen = true;
@@ -228,6 +234,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       _noticeOpen = false;
       _retryQueuedUpdate();
     }
+  }
+
+  /// Asks once for notifications with our own sheet; the system dialog only
+  /// follows an explicit "enable". Returns true when the sheet was shown.
+  Future<bool> _askNotificationsOnce() async {
+    if (kIsWeb) return false;
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_notificationPromptKey) == true || !mounted) return false;
+    await prefs.setBool(_notificationPromptKey, true);
+    if (!mounted) return false;
+    _noticeOpen = true;
+    try {
+      if (!await NotificationPromptSheet.show(context)) return true;
+      final settings = ref.read(appSettingsProvider.notifier);
+      await settings.setNotificationsEnabled(true);
+      await settings.setPushMessagesEnabled(true);
+    } finally {
+      _noticeOpen = false;
+    }
+    return true;
   }
 
   /// Executes the action attached to a popup / banner / push.

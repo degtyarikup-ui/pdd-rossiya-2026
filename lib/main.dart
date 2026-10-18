@@ -194,7 +194,7 @@ Future<void> _initStreakNotifications(ProgressDataSource ds) async {
     await StreakNotifier.instance.setUserStreakEnabled(
       (await ds.loadAppSettings()).notificationsEnabled,
     );
-    await StreakNotifier.instance.requestPermission();
+    // The system dialog follows our opt-in sheet on the home screen.
     await StreakNotifier.instance.refreshStreakReminder(await ds.loadStreak());
     // Тестовый показ уведомления через несколько секунд после запуска.
     // Включается только сборкой с --dart-define=NOTIF_TEST=true; в прод нет.

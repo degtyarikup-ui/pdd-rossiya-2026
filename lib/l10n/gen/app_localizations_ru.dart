@@ -3955,4 +3955,17 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get profileAppleRevokePending =>
       'Данные аккаунта удалены. Запрос на отзыв доступа Apple сохранён. Мы завершим отзыв автоматически, когда сервис Apple снова станет доступен.';
+
+  @override
+  String get notificationPromptTitle => 'Не пропускайте важное';
+
+  @override
+  String get notificationPromptBody =>
+      'Напомним о занятиях, чтобы не прерывать серию, и расскажем о новых функциях приложения. Отключить можно в настройках.';
+
+  @override
+  String get notificationPromptEnable => 'Включить уведомления';
+
+  @override
+  String get notificationPromptLater => 'Не сейчас';
 }

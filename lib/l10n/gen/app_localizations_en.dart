@@ -3942,4 +3942,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileAppleRevokePending =>
       'Your account data has been deleted. The request to revoke Apple access has been saved. We will finish revoking access automatically when Apple is available again.';
+
+  @override
+  String get notificationPromptTitle => 'Don\'t miss what matters';
+
+  @override
+  String get notificationPromptBody =>
+      'We\'ll remind you to practise so your streak keeps going and tell you about new app features. You can turn this off in Settings.';
+
+  @override
+  String get notificationPromptEnable => 'Turn on notifications';
+
+  @override
+  String get notificationPromptLater => 'Not now';
 }

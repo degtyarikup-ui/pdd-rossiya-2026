@@ -3934,4 +3934,17 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get profileAppleRevokePending =>
       'Аккаунт деректері жойылды. Apple рұқсатын қайтарып алу сұрауы сақталды. Apple сервисі қайта қолжетімді болғанда, рұқсат автоматты түрде қайтарылып алынады.';
+
+  @override
+  String get notificationPromptTitle => 'Маңыздысын өткізіп алмаңыз';
+
+  @override
+  String get notificationPromptBody =>
+      'Серияңыз үзілмеуі үшін сабақтар туралы еске саламыз және қолданбаның жаңа мүмкіндіктері туралы айтамыз. Баптауларда өшіруге болады.';
+
+  @override
+  String get notificationPromptEnable => 'Хабарландыруларды қосу';
+
+  @override
+  String get notificationPromptLater => 'Қазір емес';
 }

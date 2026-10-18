@@ -6561,6 +6561,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Данные аккаунта удалены. Запрос на отзыв доступа Apple сохранён. Мы завершим отзыв автоматически, когда сервис Apple снова станет доступен.'**
   String get profileAppleRevokePending;
+
+  /// No description provided for @notificationPromptTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не пропускайте важное'**
+  String get notificationPromptTitle;
+
+  /// No description provided for @notificationPromptBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Напомним о занятиях, чтобы не прерывать серию, и расскажем о новых функциях приложения. Отключить можно в настройках.'**
+  String get notificationPromptBody;
+
+  /// No description provided for @notificationPromptEnable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Включить уведомления'**
+  String get notificationPromptEnable;
+
+  /// No description provided for @notificationPromptLater.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не сейчас'**
+  String get notificationPromptLater;
 }
 
 class _AppLocalizationsDelegate
