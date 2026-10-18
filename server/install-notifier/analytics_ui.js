@@ -65,15 +65,17 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 @media(max-width:1120px){.an-charts-grid{grid-template-columns:1fr}.an-chart-card .an-legend{margin:0 0 8px}.an-grid{gap:12px}.an-kpi{padding:20px}.an-big{font-size:34px}}
 @media(max-width:900px){.an-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now span{justify-content:flex-start}.an-now b{margin-left:auto}}
 @media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-row2{grid-template-columns:1fr}.an-geo-card{grid-column:auto}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-activity-summary{gap:14px 10px;grid-template-columns:1.1fr repeat(3,1fr)}.an-activity-summary b{font-size:18px}.an-activity-summary>span:first-child b{font-size:34px}.an-activity-summary>span{font-size:10px;line-height:1.4}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
+.an-updates{padding:18px 24px}.an-updates>summary{display:flex;align-items:center;gap:20px;cursor:pointer;list-style:none;min-height:30px}.an-updates>summary::-webkit-details-marker{display:none}.an-updates>summary .an-title{font-size:14px}.an-updates #an-updates-summary{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--an-muted)}.an-updates #an-updates-summary b{font-size:22px;color:var(--an-text);font-variant-numeric:tabular-nums}.an-updates-toggle{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--an-muted)}.an-updates-toggle i:after{content:'+';font-size:20px;font-style:normal}.an-updates[open] .an-updates-toggle i:after{content:'−'}.an-updates-body{padding-top:20px}.an-updates .an-table-wrap{max-height:300px;overflow:auto}.an-updates .an-table td{padding:10px 0}
+@media(max-width:640px){.an-updates{padding:16px 20px}.an-updates>summary{flex-wrap:wrap;gap:8px 16px}.an-updates>summary .an-title{flex:1 1 100%}.an-updates #an-updates-summary{font-size:11px}.an-updates .an-table{min-width:300px}}
 </style>
 <div class="an-period" id="an-period"></div>
 <div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов"></div>
-<div class="an-card">
- <div class="an-head"><div class="an-title">Обновления и версии приложения</div></div>
- <div class="an-dynamics-summary" id="an-updates-summary"></div>
- <div class="an-table-wrap" id="an-versions"></div>
+<details class="an-card an-updates" id="an-updates">
+ <summary><span class="an-title">Обновления приложения</span><span id="an-updates-summary"></span><span class="an-updates-toggle">Версии <i aria-hidden="true"></i></span></summary>
+ <div class="an-updates-body"><div class="an-table-wrap" id="an-versions"></div>
  <div class="an-caption">Обновились — зарегистрированные аккаунты, у которых сервер подтвердил переход на более новую версию Android или iOS за выбранный период. Один аккаунт считается один раз. Сбор истории с 19.10.2026: первый контакт задаёт исходную версию и не считается обновлением. В таблице — последняя известная версия каждого мобильного аккаунта за всё время; новые установки тоже входят. Гости не учитываются.</div>
-</div>
+ </div>
+</details>
 <div class="an-charts-grid">
  <div class="an-card an-activity-card">
   <div class="an-head"><div class="an-title">Ежедневное использование</div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Уникальные зарегистрированные аккаунты, обращавшиеся к серверу за день по МСК. Повторные обращения не увеличивают число. Аккаунт с двумя платформами входит в обе группы, в общем числе учитывается один раз. Гости и использование без интернета сюда не входят. Сегодня — неполный день, среднее включает сегодня.</div></details></div>
@@ -372,7 +374,7 @@ document.getElementById('an-usage-details').addEventListener('toggle',function()
 
 function anRenderVersions(data) {
  var versions=data.users&&data.users.versions;
- document.getElementById('an-updates-summary').innerHTML='<span>Обновились за период<b>'+(versions?anNum(versions.updated):'—')+'</b></span>';
+ document.getElementById('an-updates-summary').innerHTML='<span>Обновились за период</span><b>'+(versions?anNum(versions.updated):'—')+'</b>';
  var rows=versions&&versions.rows||[], total=rows.reduce(function(n,r){return n+r.accounts;},0);
  document.getElementById('an-versions').innerHTML=rows.length?anTable(['Платформа','Версия','Аккаунты','Доля'],rows.map(function(r){return '<tr><td>'+(r.platform==='android'?'Android':'iOS')+'</td><td>'+anEsc(r.version)+'</td>'+anCell(r.accounts)+'<td>'+anShare(r.accounts,total)+'</td></tr>'; })): '<div class="an-empty">Нет данных о версиях мобильных аккаунтов</div>';
 }
