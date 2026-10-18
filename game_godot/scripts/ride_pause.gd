@@ -110,6 +110,7 @@ func _ready() -> void:
 	_root.add_child(veil)
 	_panel = PanelContainer.new()
 	_panel.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 24))
+	_panel.clip_contents = true
 	_root.add_child(_panel)
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
@@ -264,26 +265,15 @@ func _scroll_to_debug() -> void:
 
 func _build_carousel() -> void:
 	_carousel = Control.new()
-	_carousel.clip_contents = true
+	# Side cars reach past the card padding and are cut only by the card edge.
+	_carousel.clip_contents = false
 	_carousel.custom_minimum_size = Vector2(0, 150)
 	_carousel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_carousel.focus_mode = Control.FOCUS_ALL if data.cars.size() > 1 else Control.FOCUS_NONE
 	_carousel.mouse_default_cursor_shape = Control.CURSOR_DRAG if data.cars.size() > 1 else Control.CURSOR_ARROW
 	_carousel.gui_input.connect(_on_carousel_input)
 	_carousel.resized.connect(_place_items)
-	_carousel.draw.connect(_draw_carousel_focus)
-	_carousel.focus_entered.connect(_carousel.queue_redraw)
-	_carousel.focus_exited.connect(_carousel.queue_redraw)
 	_box.add_child(_carousel)
-
-
-func _draw_carousel_focus() -> void:
-	if _carousel.has_focus():
-		var style := Ui.box(Color.TRANSPARENT, 16)
-		style.border_color = Ui.c("accent")
-		style.set_border_width_all(2)
-		style.draw_center = false
-		_carousel.draw_style_box(style, Rect2(Vector2.ZERO, _carousel.size))
 
 
 ## Offset of item i from the centre, in items (negative = left).
@@ -656,7 +646,7 @@ func _build_audio_controls() -> void:
 	_sound_button.button_pressed = sound_enabled
 	_sound_button.toggled.connect(func(on):
 		sound_enabled = on
-		_refresh_audio_controls(true)
+		_refresh_audio_controls(_sound_button)
 		sound_changed.emit(on)
 	)
 	row.add_child(_sound_button)
@@ -665,11 +655,11 @@ func _build_audio_controls() -> void:
 	_voice_button.disabled = not voice_available
 	_voice_button.toggled.connect(func(on):
 		voice_enabled = on
-		_refresh_audio_controls(true)
+		_refresh_audio_controls(_voice_button)
 		voice_changed.emit(on)
 	)
 	row.add_child(_voice_button)
-	_refresh_audio_controls(false)
+	_refresh_audio_controls(null)
 
 
 ## A pill toggle: child 0 is the state icon (right), child 1 the label (left).
@@ -705,8 +695,10 @@ func _audio_button(text: String) -> Button:
 	return button
 
 
-func _refresh_audio_controls(animate: bool) -> void:
+## Only [param toggled] animates; the other pill keeps still.
+func _refresh_audio_controls(toggled: Button) -> void:
 	for button: Button in [_sound_button, _voice_button]:
+		var animate := button == toggled
 		var is_voice := button == _voice_button
 		var enabled := voice_enabled if is_voice else sound_enabled
 		var code := (0xf00e5 if enabled else 0xf0295) if is_voice else (0xf029a if enabled else 0xf0299)
@@ -791,6 +783,8 @@ func _layout_content() -> void:
 	var fixed := _head.get_combined_minimum_size().y + _actions.get_combined_minimum_size().y + 72.0
 	var height := minf(maxf(100.0, available), _box.get_combined_minimum_size().y + fixed)
 	_scroll.custom_minimum_size.y = maxf(0.0, height - fixed)
+	# Clip only when the content really scrolls, so side cars are not cut at the padding.
+	_scroll.clip_contents = _box.get_combined_minimum_size().y > _scroll.custom_minimum_size.y + 0.5
 	_panel.size.y = height
 	_panel.position.y = top + (available - height) * 0.5
 	_panel.pivot_offset = _panel.size * 0.5

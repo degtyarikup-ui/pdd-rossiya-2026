@@ -35,9 +35,7 @@ String gamePaintName(String paint) =>
       'green' => appL10n.gamePaintGreen,
       'white' => appL10n.gamePaintWhite,
       'black' => appL10n.gamePaintBlack,
-      'silver' => appL10n.gamePaintSilver,
       'yellow' => appL10n.gamePaintYellow,
-      'wine' => appL10n.gamePaintWine,
       _ => appL10n.gamePaintRed,
     };
 

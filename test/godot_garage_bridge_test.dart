@@ -627,8 +627,8 @@ void main() {
     expect(ride['selected'], {'id': 'pickup', 'paint': 'yellow'});
     expect(prefs.getString('game_vehicle_paint'), 'yellow');
     expect((ride['achievement'] as Map)['complete'], isTrue);
-    expect((ride['reward_list'] as List).length, 12);
-    expect((ride['reward_paints'] as List).length, 8);
+    expect((ride['reward_list'] as List).length, 10);
+    expect((ride['reward_paints'] as List).length, 6);
   });
 
   testWidgets('legacy per-car paints become a single shared palette', (
@@ -669,7 +669,7 @@ void main() {
     for (final car in cars) {
       expect(paints(car), GameGarageService.paints);
     }
-    expect(ride['selected'], {'id': 'cyber', 'paint': 'wine'});
+    expect(ride['selected'], {'id': 'cyber', 'paint': 'red'});
     expect(ride['garage_premium'], isTrue);
   });
 

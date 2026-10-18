@@ -56,26 +56,24 @@ class GameGarageService {
     'red': 0xFFED4621,
     'blue': 0xFF317ED4,
     'green': 0xFF4D7768,
+    'yellow': 0xFFE8C547,
     'white': 0xFFF2F3F5,
     'black': 0xFF2B2F36,
-    'silver': 0xFFB9C0C7,
-    'yellow': 0xFFE8C547,
-    'wine': 0xFF8B1E2D,
   };
   static const paints = [
     'red',
     'blue',
     'green',
+    'yellow',
     'white',
     'black',
-    'silver',
-    'yellow',
-    'wine',
   ];
   static const legacyPaints = {
     'sand': 'yellow',
     'orange': 'red',
-    'purple': 'wine',
+    'purple': 'red',
+    'wine': 'red',
+    'silver': 'white',
     'teal': 'green',
     'gold': 'yellow',
   };
@@ -92,11 +90,9 @@ class GameGarageService {
     GameGarageReward.model(55, 'coupe'),
     GameGarageReward.paint(80, 'black'),
     GameGarageReward.model(110, 'suv'),
-    GameGarageReward.paint(150, 'silver'),
     GameGarageReward.model(200, 'pickup'),
     GameGarageReward.paint(260, 'green'),
     GameGarageReward.paint(330, 'yellow'),
-    GameGarageReward.paint(420, 'wine'),
   ];
   static const _carsKey = 'game_garage_cars';
   static const _correctKey = 'game_garage_correct';

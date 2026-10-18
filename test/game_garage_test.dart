@@ -15,9 +15,9 @@ void main() {
     garage.resetForTest();
   });
 
-  test('starter and exactly eight shared paints', () async {
+  test('starter and exactly six shared paints', () async {
     await garage.load();
-    expect(GameGarageService.paints.length, 8);
+    expect(GameGarageService.paints.length, 6);
     expect(
       GameGarageService.paints.toSet(),
       GameGarageService.paintHex.keys.toSet(),
@@ -79,19 +79,19 @@ void main() {
       expect(earned.length, GameGarageService.rewards.length);
       expect(garage.ownedModels, GameGarageService.models);
       expect(garage.ownedPaints, GameGarageService.paints);
-      expect(garage.cars.length, 48);
+      expect(garage.cars.length, 36);
       expect(garage.nextReward, isNull);
       expect(garage.correctUntilNext, 0);
       expect(await garage.recordCorrectAnswers(1000), isEmpty);
       garage.invalidate();
       await garage.load();
       expect(garage.correctTotal, 1420);
-      expect(garage.cars.length, 48);
+      expect(garage.cars.length, 36);
       expect(garage.nextReward, isNull);
       final prefs = await SharedPreferences.getInstance();
       final cars = jsonDecode(prefs.getString('game_garage_cars')!) as List;
-      expect(cars.length, 48);
-      expect(prefs.getInt('game_garage_unlocks'), 12);
+      expect(cars.length, 36);
+      expect(prefs.getInt('game_garage_unlocks'), 10);
     },
   );
 
@@ -120,7 +120,7 @@ void main() {
         'sedan',
         'cyber',
       });
-      expect(garage.ownedPaints.toSet(), {'red', 'wine', 'green', 'yellow'});
+      expect(garage.ownedPaints.toSet(), {'red', 'green', 'yellow'});
       for (final id in garage.ownedModels) {
         for (final paint in garage.ownedPaints) {
           expect(garage.owns(id, paint), isTrue);
@@ -132,7 +132,7 @@ void main() {
       expect(garage.correctUntilNext, 8);
       garage.invalidate();
       await garage.load();
-      expect(garage.cars.length, 24);
+      expect(garage.cars.length, 18);
     },
   );
 
@@ -155,7 +155,6 @@ void main() {
       'blue',
       'white',
       'black',
-      'silver',
     });
     expect(garage.nextReward!.model, 'suv');
     expect(garage.correctUntilNext, 30);
