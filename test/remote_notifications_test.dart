@@ -33,6 +33,7 @@ void main() {
       expect(request.url.queryParameters['app'], 'ru');
       expect(request.url.queryParameters['imageBanners'], '1');
       expect(request.url.queryParameters['imagePopups'], '1');
+      expect(request.url.queryParameters['store'], 'play');
       return http.Response(
         jsonEncode({
           'config': config,

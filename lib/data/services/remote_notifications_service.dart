@@ -8,6 +8,7 @@ import 'package:flutter/painting.dart' show Color;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
@@ -290,6 +291,8 @@ class RemoteNotificationsService {
         'platform': platform,
         'imageBanners': '1',
         'imagePopups': '1',
+        if (platform == 'android')
+          'store': StoreConfig.current == AppStore.rustore ? 'rustore' : 'play',
       };
       final response = await sendWithRetry(
         (host) => _client.get(

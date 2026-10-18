@@ -36,6 +36,12 @@ export function validateCampaign(input, now = Date.now()) {
     if (!allowed.includes(value[key])) throw new Error('Некорректный тип или аудитория');
   }
   if (value.kind === 'push' && value.platform === 'web') throw new Error('Веб-пуши пока не поддерживаются');
+  // Android store (Google Play / RuStore) for in-app messages only: push topics
+  // are per platform. Builds that do not report a store never match a store.
+  value.store = input.store === undefined || input.store === '' ? 'all' : input.store;
+  if (!['all', 'play', 'rustore'].includes(value.store)) throw new Error('Некорректный магазин');
+  if (value.store !== 'all' && value.platform !== 'android') throw new Error('Магазин выбирается только для Android');
+  if (value.store !== 'all' && value.kind === 'push') throw new Error('Пуш нельзя отправить в один магазин — выберите окно или баннер');
   value.layout = input.layout || 'standard';
   if (!LAYOUTS.includes(value.layout)) throw new Error('Некорректный макет');
   if (value.kind === 'push') {
@@ -87,11 +93,12 @@ export function validateCampaign(input, now = Date.now()) {
   value.status = value.kind === 'push' ? 'queued' : (value.startAt > now ? 'scheduled' : 'published');
   return value;
 }
-const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'expiresAt', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp'];
-export function campaignMatches(item, app, platform, now = Date.now(), user = {}) {
+const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'store', 'expiresAt', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp'];
+export function campaignMatches(item, app, platform, now = Date.now(), user = {}, store = '') {
   if (!item.enabled || item.expiresAt <= now || (item.startAt || 0) > now) return false;
   if (item.app !== 'all' && item.app !== app) return false;
   if (item.platform !== 'all' && item.platform !== platform) return false;
+  if (item.store && item.store !== 'all' && item.store !== store) return false;
   if (item.target) {
     const t = item.target.toLowerCase();
     const uid = String(user.userId || '').trim().toLowerCase();
@@ -212,7 +219,7 @@ export class NotificationsState {
       const imageBanners = url.searchParams.get('imageBanners') === '1';
       // Picture-only windows arrived later than picture-only banners.
       const imagePopups = imageBanners && url.searchParams.get('imagePopups') === '1';
-      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp) && (item.layout !== 'image' || (item.kind === 'banner' ? imageBanners : imagePopups)) && campaignMatches(item, app, platform, Date.now(), user)) : [];
+      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp) && (item.layout !== 'image' || (item.kind === 'banner' ? imageBanners : imagePopups)) && campaignMatches(item, app, platform, Date.now(), user, url.searchParams.get('store') || '')) : [];
       return reply({ config, messages: visible.sort((a,b) => b.createdAt-a.createdAt).slice(0, 10).map(clientMessage) });
     }
     if (path === '/alarm') {

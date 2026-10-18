@@ -3297,7 +3297,8 @@ const workerHandlers = {
         '&userId=' + encodeURIComponent(noticeSession?.user?.id || '') +
         '&email=' + encodeURIComponent(noticeSession?.user?.email || '') +
         '&imageBanners=' + encodeURIComponent(url.searchParams.get('imageBanners') || '') +
-        '&imagePopups=' + encodeURIComponent(url.searchParams.get('imagePopups') || '')
+        '&imagePopups=' + encodeURIComponent(url.searchParams.get('imagePopups') || '') +
+        '&store=' + encodeURIComponent(url.searchParams.get('store') || '')
       );
       // Responses from a Durable Object fetch have immutable headers.
       const headers = new Headers(response.headers);

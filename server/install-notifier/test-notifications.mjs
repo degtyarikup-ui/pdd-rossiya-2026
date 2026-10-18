@@ -238,3 +238,14 @@ test('picture-only windows require the newer client capability',async()=>{
   const feed=await (await call('/client?app=ru&platform=android&imageBanners=1&imagePopups=1')).json();
   assert.equal(feed.messages.length,1);assert.equal(feed.messages[0].kind,'popup');assert.equal(feed.messages[0].layout,'image');
 });
+
+test('in-app messages can target one Android store',async()=>{
+  for(const bad of [{store:'play'},{platform:'android',store:'apple'},{kind:'push',platform:'android',store:'rustore'}])assert.throws(()=>validateCampaign(sample(bad)));
+  const {call}=setup(),msg=sample({platform:'android',store:'rustore'});
+  assert.equal((await call('/publish',msg)).status,200);
+  const feed=async q=>(await (await call('/client?app=ru&platform=android'+q)).json()).messages.length;
+  assert.equal(await feed('&store=rustore'),1);
+  assert.equal(await feed('&store=play'),0);
+  assert.equal(await feed(''),0,'builds without a store never get store-only messages');
+  assert.equal(validateCampaign(sample()).store,'all');
+});
