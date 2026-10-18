@@ -35,11 +35,11 @@
      ],
      [
       1,
-      -18.3
+      -13.3
      ],
      [
       -1,
-      -18.3
+      -13.3
      ],
      [
       -1,
@@ -47,6 +47,9 @@
      ]
     ]
    ],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt",
    "green": true
   },
   {
@@ -78,7 +81,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_n",
@@ -109,11 +115,11 @@
      ],
      [
       -1,
-      14.2
+      9.2
      ],
      [
       1,
-      14.2
+      9.2
      ],
      [
       1,
@@ -121,6 +127,9 @@
      ]
     ]
    ],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt",
    "green": true
   },
   {
@@ -152,7 +161,10 @@
      91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -183,7 +195,10 @@
      -4.2
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_w",
@@ -214,7 +229,10 @@
      4.2
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -389,6 +407,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -2.75,
@@ -396,10 +415,9 @@
     ],
     [
      -2.75,
-     -21
+     -16
     ]
-   ],
-   "manual": false
+   ]
   },
   {
    "id": "manoeuvre_straight",
@@ -410,7 +428,7 @@
    "points": [
     [
      -2.75,
-     -21
+     -16
     ],
     [
      -2.75,
@@ -440,7 +458,7 @@
    "points": [
     [
      -2.75,
-     -21
+     -16
     ],
     [
      -2.75,
@@ -498,7 +516,7 @@
    "points": [
     [
      -2.75,
-     -21
+     -16
     ],
     [
      -2.75,
@@ -556,7 +574,7 @@
    "points": [
     [
      -2.75,
-     -21
+     -16
     ],
     [
      -2.75,
@@ -615,11 +633,11 @@
    "points": [
     [
      -6,
-     -23
+     -18.5
     ],
     [
-     -7,
-     -4
+     -7.5,
+     -3.5
     ],
     [
      -23.5,
@@ -635,7 +653,7 @@
  ],
  "stop": {
   "x": -2.75,
-  "z": -21,
+  "z": -16,
   "yaw": 0.0
  },
  "lights": [
@@ -661,7 +679,7 @@
    "route": "actor_truck_1",
    "pos": [
     -6,
-    -23
+    -18.5
    ],
    "yaw": 0,
    "scale": [
@@ -3886,7 +3904,8 @@
    {
     "color": "#ED4621"
    }
-  ]
+  ],
+  "showPlayerGuide": false
  },
  "approachWidth": 16,
  "exitWidths": {
@@ -3918,7 +3937,7 @@
     ],
     [
      -4.5,
-     -17.3
+     -12.3
     ]
    ]
   },
@@ -3935,7 +3954,7 @@
     ],
     [
      4.5,
-     -17.3
+     -12.3
     ]
    ]
   },
@@ -3966,11 +3985,11 @@
    "points": [
     [
      0,
-     -18.6
+     -13.6
     ],
     [
      -8,
-     -18.6
+     -13.6
     ]
    ]
   },
@@ -3984,11 +4003,11 @@
    "points": [
     [
      8,
-     -15.5
+     -10.5
     ],
     [
      -8,
-     -15.5
+     -10.5
     ]
    ]
   },
@@ -4005,7 +4024,7 @@
     ],
     [
      4.5,
-     13.2
+     8.2
     ]
    ]
   },
@@ -4022,7 +4041,7 @@
     ],
     [
      -4.5,
-     13.2
+     8.2
     ]
    ]
   },
@@ -4047,6 +4066,24 @@
    "id": "auto_mark_9",
    "auto": true,
    "colour": "white",
+   "street": "s_n",
+   "type": "stop",
+   "width": 0.4,
+   "points": [
+    [
+     0,
+     9.5
+    ],
+    [
+     8,
+     9.5
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_10",
+   "auto": true,
+   "colour": "white",
    "street": "s_e",
    "type": "dashed",
    "points": [
@@ -4061,7 +4098,7 @@
    ]
   },
   {
-   "id": "auto_mark_10",
+   "id": "auto_mark_11",
    "auto": true,
    "colour": "white",
    "street": "s_w",
@@ -4078,7 +4115,7 @@
    ]
   },
   {
-   "id": "auto_mark_11",
+   "id": "auto_mark_12",
    "auto": true,
    "colour": "white",
    "street": "s_w",
@@ -4133,26 +4170,35 @@
     "ends": {
      "b": {
       "stop": true,
-      "zebra": true
+      "zebra": true,
+      "approachOffset": -5
      }
     },
     "centre": "double",
-    "median": 2
+    "median": 2,
+    "edge": false
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "avenue",
-    "ends": {},
-    "median": 2
+    "ends": {
+     "b": {
+      "stop": true,
+      "approachOffset": -5
+     }
+    },
+    "median": 2,
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_w",
@@ -4163,7 +4209,8 @@
      "b": {
       "zebra": true
      }
-    }
+    },
+    "edge": false
    }
   ],
   "player": {
@@ -4171,5 +4218,15 @@
    "toward": "c",
    "stopAt": 18.6
   }
+ },
+ "questionView": {
+  "centre": [
+   -0.035,
+   5.221
+  ],
+  "height": 25.016,
+  "yaw": 0.002,
+  "pitch": 0.414,
+  "elevation": 0
  }
 }

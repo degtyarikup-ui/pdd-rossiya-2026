@@ -37,7 +37,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -3911,7 +3911,8 @@
       "stop": false
      }
     },
-    "centre": "solid"
+    "centre": "solid",
+    "edge": false
    },
    {
     "id": "s_n",

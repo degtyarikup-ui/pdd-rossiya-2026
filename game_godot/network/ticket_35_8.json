@@ -413,7 +413,7 @@
    "points": [
     [
      6,
-     -6.5
+     -7
     ],
     [
      6,
@@ -451,7 +451,7 @@
    "route": "actor_pedestrian",
    "pos": [
     6,
-    -6.5
+    -7
    ],
    "yaw": 0,
    "scale": [
@@ -3057,16 +3057,32 @@
    "auto": true,
    "colour": "white",
    "street": "s_s",
-   "type": "stop",
-   "width": 0.4,
+   "type": "dashed",
    "points": [
     [
      0,
-     -10.7
+     -91
     ],
     [
-     -4.2,
-     -10.7
+     0,
+     -9.4
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s_n",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     91
+    ],
+    [
+     0,
+     9.4
     ]
    ]
   }
@@ -3103,11 +3119,11 @@
     "kind": "street",
     "ends": {
      "b": {
-      "stop": true
+      "stop": false
      }
     },
     "edge": false,
-    "centre": "none"
+    "centre": "dashed"
    },
    {
     "id": "s_n",
@@ -3116,7 +3132,7 @@
     "kind": "street",
     "ends": {},
     "edge": false,
-    "centre": "none"
+    "centre": "dashed"
    },
    {
     "id": "s_e",

@@ -473,7 +473,7 @@
    ],
    "holes": [],
    "walk": false,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -507,7 +507,7 @@
    ],
    "holes": [],
    "walk": false,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -683,6 +683,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.897,
@@ -772,8 +773,7 @@
      -3.718,
      -12.734
     ]
-   ],
-   "manual": false
+   ]
   },
   {
    "id": "manoeuvre_straight",
@@ -6873,7 +6873,8 @@
     "b": "c",
     "kind": "street",
     "ends": {},
-    "walk": false
+    "walk": false,
+    "edge": false
    },
    {
     "id": "s_w",
@@ -6881,7 +6882,8 @@
     "b": "c",
     "kind": "street",
     "ends": {},
-    "walk": false
+    "walk": false,
+    "edge": false
    }
   ],
   "player": {

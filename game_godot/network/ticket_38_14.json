@@ -3811,7 +3811,8 @@
    {
     "color": "#ED4621"
    }
-  ]
+  ],
+  "showPlayerGuide": false
  },
  "approachWidth": 16,
  "exitWidths": {

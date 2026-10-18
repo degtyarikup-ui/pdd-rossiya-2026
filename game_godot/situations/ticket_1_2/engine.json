@@ -1,0 +1,90 @@
+{
+ "id": "ticket_1_2",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -15.897,
+ "playerStartX": -20.528,
+ "playerStartRotY": -0.181,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "left": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "left",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 2",
+   "title": "Разрешен ли Вам поворот на дорогу с грунтовым покрытием?",
+   "options": [
+    "Разрешен",
+    "Разрешен только при технической неисправности транспортного средства",
+    "Запрещен"
+   ],
+   "explanation": "Впереди по ходу Вашего движения предупреждающий знак 1.11.2 «Опасный поворот» и знаки 1.34.2 «Направление поворота», которые указывают направление движения на закруглении дороги малого радиуса с ограниченной видимостью. Ничего, что бы Вам запрещало поворот на дорогу с грунтовым покрытием, нет. По Вашему желанию поворачиваете направо.(«Дорожные знаки»).",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 2",
+   "title": "Are you allowed to turn onto a dirt road?",
+   "options": [
+    "Allowed",
+    "Allowed only in case of technical malfunction of the vehicle",
+    "Prohibited"
+   ],
+   "explanation": "Ahead in the direction of your movement is warning sign 1.11.2 “Dangerous turn” and signs 1.34.2 “Direction of turn”, which indicate the direction of movement on a curved road with a small radius with limited visibility. There is nothing that would prohibit you from turning onto a dirt road. At your request, turn right (“Road signs”).",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 2-сұрақ",
+   "title": "Сізге топырақ жолға бұрылуға рұқсат етілген бе?",
+   "options": [
+    "Рұқсат етілген",
+    "Көлік құралының техникалық ақауы болған жағдайда ғана рұқсат етіледі",
+    "Тыйым салынған"
+   ],
+   "explanation": "Алда сіздің қозғалыс бағыты бойынша 1.11.2 «Қауіпті бұрылыс» ескерту белгісі және 1.34.2 «Бұрылу бағыты» белгілері көрінеді, олар радиусы шектеулі қисық жолда қозғалыс бағытын көрсетеді. Топырақ жамылғысы бар жолға бұрылуға ештеңе тыйым салмайды. Қалауыңыз бойынша оңға бұрылыңыз («Жол белгілері»).",
+   "pddRule": ""
+  }
+ },
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "050bbd8d2ba901e0b895141adadf7a60",
+ "sourceCategory": "ab",
+ "sourceImage": "eca08a0e2b5ffcd12bdd8ffee34afcc3"
+}

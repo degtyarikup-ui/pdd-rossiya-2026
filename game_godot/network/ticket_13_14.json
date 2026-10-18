@@ -47,6 +47,9 @@
      ]
     ]
    ],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt",
    "green": true
   },
   {
@@ -78,7 +81,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_n",
@@ -121,6 +127,9 @@
      ]
     ]
    ],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt",
    "green": true
   },
   {
@@ -152,7 +161,10 @@
      91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -183,7 +195,10 @@
      -4.2
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_w",
@@ -214,7 +229,10 @@
      4.2
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -389,6 +407,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -6.25,
@@ -4161,7 +4180,8 @@
       "stop": false
      }
     },
-    "median": 2
+    "median": 2,
+    "edge": false
    },
    {
     "id": "s_n",
@@ -4169,7 +4189,8 @@
     "b": "c",
     "kind": "avenue",
     "ends": {},
-    "median": 2
+    "median": 2,
+    "edge": false
    },
    {
     "id": "s_e",
@@ -4180,7 +4201,8 @@
      "b": {
       "zebra": true
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_w",
@@ -4191,7 +4213,8 @@
      "b": {
       "zebra": true
      }
-    }
+    },
+    "edge": false
    }
   ],
   "player": {

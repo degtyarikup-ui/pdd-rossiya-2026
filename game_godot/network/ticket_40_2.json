@@ -48,7 +48,7 @@
     ]
    ],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt",
    "green": true
   },
@@ -83,7 +83,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -128,7 +128,7 @@
     ]
    ],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt",
    "green": true
   },
@@ -163,7 +163,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -197,7 +197,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -581,8 +581,8 @@
   {
    "id": "manoeuvre_straight",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "straight",
    "points": [
     [
@@ -594,16 +594,8 @@
      -8.5
     ],
     [
-     -2.75,
-     8.5
-    ],
-    [
-     -2.75,
-     9
-    ],
-    [
-     -2.75,
-     28.5
+     -2.5,
+     -3
     ]
    ],
    "exitYaw": 0
@@ -3540,7 +3532,8 @@
     "label": "Вы прямо",
     "color": "#ED4621"
    }
-  ]
+  ],
+  "showPlayerGuide": false
  },
  "approachWidth": 16,
  "exitWidths": {
@@ -3728,7 +3721,8 @@
      }
     },
     "median": 2,
-    "surface": "asphalt"
+    "surface": "asphalt",
+    "edge": false
    },
    {
     "id": "s_n",
@@ -3740,19 +3734,37 @@
       "approachOffset": -5
      }
     },
-    "median": 2
+    "median": 2,
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    }
   ],
   "player": {
    "street": "s_s",
    "toward": "c"
+  },
+  "paths": {
+   "straight": [
+    [
+     -2.75,
+     -11.9
+    ],
+    [
+     -2.75,
+     -8.5
+    ],
+    [
+     -2.5,
+     -3
+    ]
+   ]
   }
  },
  "questionView": {

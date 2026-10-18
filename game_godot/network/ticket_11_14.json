@@ -37,7 +37,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -71,7 +71,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -97,7 +97,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -3589,6 +3589,23 @@
    "id": "auto_mark_1",
    "auto": true,
    "colour": "white",
+   "street": "s_s",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     -9.4
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
    "street": "s_n",
    "type": "dashed",
    "points": [
@@ -3603,7 +3620,7 @@
    ]
   },
   {
-   "id": "auto_mark_2",
+   "id": "auto_mark_3",
    "auto": true,
    "colour": "white",
    "street": "s_e",
@@ -3657,14 +3674,16 @@
       "stop": false
      }
     },
-    "centre": "none"
+    "centre": "dashed",
+    "edge": false
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_e",
@@ -3675,7 +3694,8 @@
      "a": {
       "zebra": false
      }
-    }
+    },
+    "edge": false
    }
   ],
   "player": {
@@ -3694,5 +3714,15 @@
     ]
    ]
   }
+ },
+ "questionView": {
+  "centre": [
+   1.434,
+   5.748
+  ],
+  "height": 28.747,
+  "yaw": -0.002,
+  "pitch": 0.637,
+  "elevation": 0
  }
 }
