@@ -1,0 +1,26 @@
+{
+  "version": "2.2.4",
+  "publication": "manual; draft-only",
+  "promotionalText": "ПДД оживают в игре: «Живой город», регулировщик и перекрёстки. Затем закрепляйте знания в билетах, экзамене и ленте с озвучкой.",
+  "description": "Изучайте ПДД в игре и готовьтесь к теоретическому экзамену ГИБДД. Управляйте машиной в «Живом городе», разбирайте сигналы регулировщика и определяйте порядок проезда перекрёстков.\n\nИГРЫ ПО ПДД\n• «Живой город»: управляйте машиной в 3D, отвечайте на вопросы и проезжайте дорожные ситуации.\n• «Регулировщик»: учитесь понимать сигналы инспектора.\n• «Разрули перекрёсток»: определяйте порядок проезда участников движения.\n• Игра со знаками: закрепляйте знания в коротких заданиях.\n• Гараж, награды и учебный прогресс.\n\nБИЛЕТЫ И ЭКЗАМЕН\n• 40 билетов по 20 вопросов для A/B и отдельный комплект для C/D.\n• Объяснения ответов со ссылками на пункты ПДД.\n• Тренировка по билетам и темам, избранное и работа над ошибками.\n• Экзамен с таймером, тематическими блоками и дополнительными вопросами за ошибки.\n• Озвучка вопросов и сохранение незаконченной сессии.\n\nСПРАВОЧНИКИ И ПРОГРЕСС\nДорожные знаки, разметка и текст ПДД всегда под рукой. Следите за результатами, повторяйте сложные темы и поддерживайте серию занятий. Билеты и справочники доступны без интернета. Для входа, синхронизации и ИИ нужен интернет.\n\nАККАУНТ И ПРЕМИУМ\nУчёба и экзамен доступны без регистрации. Вход через Apple, Яндекс ID или Google позволяет синхронизировать прогресс и пользоваться игрой и лентой вопросов. Дополнительные возможности Премиум включают безлимитные заезды, машины и цвета в гараже, разборы от ИИ. Бесплатные заезды восстанавливаются со временем. Премиум оформляется через встроенные покупки App Store; доступные условия и цены показаны в приложении.\n\nПриложение разработано независимым разработчиком в образовательных целях и не является продуктом ГИБДД, МВД РФ или других государственных органов. Экзаменационные материалы основаны на опубликованных билетах ГИБДД: gibdd.ru. Результат экзамена зависит от вашей подготовки.\n\nСайт: https://pdd-drive.ru\nПолитика конфиденциальности: https://pdd-drive.ru/privacy.html\n\nУсловия использования (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+  "whatsNew": "• Новая иконка приложения.\n• «Живой город»: обучение ПДД в 3D, обновлённые дорожные ситуации и гараж.\n• Игры «Разрули перекрёсток» и «Регулировщик».\n• Улучшены экзамен, сохранение прогресса и работа аккаунта.\n• Исправлены ошибки и повышена стабильность.",
+  "keywords": "пдд,билеты,экзамен,гибдд,регулировщик,перекрёсток,игра,вождение,знаки,автошкола,теория,2026",
+  "supportUrl": "https://pdd-drive.ru",
+  "marketingUrl": "https://pdd-drive.ru",
+  "subtitle": "Игры, билеты и экзамен ГИБДД",
+  "ageRating": {
+    "appleGlobal": "13+",
+    "medicalOrTreatmentInformation": "INFREQUENT",
+    "alcoholTobaccoOrDrugUseOrReferences": "INFREQUENT",
+    "violenceCartoonOrFantasy": "INFREQUENT",
+    "contests": "INFREQUENT",
+    "basis": "First-aid exam material, educational alcohol references, non-graphic game collisions and optional leaderboard",
+    "saved": true,
+    "beforeIOS26": "12+"
+  },
+  "reviewNotes": "Educational app for the Russian driving-license theory exam. Tickets, topic training, reference material and the exam simulation work without an account. The Games and Feed tabs require sign-in; Sign in with Apple, Google and Yandex ID are available. Games: Living City (3D driving with exam situations), Traffic Controller (recognize signals), Crossroads (choose the order of passage). Free city play has up to 3 runs of 10 questions; the whole stock refills one hour after the first run is spent. Premium is optional and uses App Store in-app subscriptions, with restore purchases in the Premium screen. It includes unlimited city runs, garage cars/colours and AI explanations. Account deletion is available in the profile/settings screen. This app is independent and is not an official product of the traffic police or any government body.",
+  "screenshots": {
+    "iPhone": "cards-v2/app-store/iphone-dynamic-medium; 8 uploaded; other iPhone sizes inherit",
+    "iPad": "cards-v2/app-store/ipad-13; 3 uploaded"
+  }
+}

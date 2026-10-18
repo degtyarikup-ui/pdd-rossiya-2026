@@ -1,0 +1,253 @@
+{
+  "source": "../manifest.json",
+  "method": "Actual source captures recomposed without screenshot upscaling; verify against signed iOS build before review",
+  "exports": [
+    {
+      "file": "iphone-faceid-large/01-city.png",
+      "width": 1242,
+      "height": 2688,
+      "sha256": "532fad317c66c91b2215be828a986f5ed2c70c66db9a015457374c3af993a9c7",
+      "source": "../raw/01-city.png",
+      "screenshotRect": {
+        "x": 81,
+        "y": 621,
+        "width": 1080,
+        "height": 1920
+      }
+    },
+    {
+      "file": "iphone-faceid-large/02-regulator.png",
+      "width": 1242,
+      "height": 2688,
+      "sha256": "bfa38264afa86f00d05d9695772e98acdf7b98a9f552d7037f3d3fba304cb970",
+      "source": "../raw/02-regulator.png",
+      "screenshotRect": {
+        "x": 81,
+        "y": 621,
+        "width": 1080,
+        "height": 1920
+      }
+    },
+    {
+      "file": "iphone-faceid-large/03-crossroads.png",
+      "width": 1242,
+      "height": 2688,
+      "sha256": "1320c27f239f5fdfa147a33fe4a5d1e8d682c60e316668052cab338e4bb93204",
+      "source": "../raw/03-crossroads.png",
+      "screenshotRect": {
+        "x": 81,
+        "y": 621,
+        "width": 1080,
+        "height": 1920
+      }
+    },
+    {
+      "file": "iphone-faceid-large/04-tickets.png",
+      "width": 1242,
+      "height": 2688,
+      "sha256": "3b0f85019c6fc85fa9f9e5402babe86844d8bd6b5306d4157a23486458d1fc6e",
+      "source": "../raw/04-tickets.png",
+      "screenshotRect": {
+        "x": 68.765625,
+        "y": 621,
+        "width": 1104.46875,
+        "height": 1963.5
+      }
+    },
+    {
+      "file": "iphone-faceid-large/05-exam.png",
+      "width": 1242,
+      "height": 2688,
+      "sha256": "1b66395c586a60cfd4f5a9fadbe0716d44359ae2f2ceadded080cd29a305b7a4",
+      "source": "../raw/05-exam.png",
+      "screenshotRect": {
+        "x": 68.765625,
+        "y": 621,
+        "width": 1104.46875,
+        "height": 1963.5
+      }
+    },
+    {
+      "file": "iphone-faceid-large/06-signs.png",
+      "width": 1242,
+      "height": 2688,
+      "sha256": "8b99c77d4531413721aa1d0381f3bd3bea16581a0e83e569653d771fba9a3b27",
+      "source": "../raw/06-signs.png",
+      "screenshotRect": {
+        "x": 68.765625,
+        "y": 621,
+        "width": 1104.46875,
+        "height": 1963.5
+      }
+    },
+    {
+      "file": "iphone-faceid-large/07-feed.png",
+      "width": 1242,
+      "height": 2688,
+      "sha256": "f95dfc2b805a4a14fb1cd9e61fd3ae5142d4ce11db8b6d0b338cc13183bdce17",
+      "source": "../raw/07-feed.png",
+      "screenshotRect": {
+        "x": 81,
+        "y": 621,
+        "width": 1080,
+        "height": 1920
+      }
+    },
+    {
+      "file": "iphone-faceid-large/08-progress.png",
+      "width": 1242,
+      "height": 2688,
+      "sha256": "b48ace4992ce791f20dddec6ca33af1fce0bfb21c662389247fe880a04db83f8",
+      "source": "../raw/08-progress.png",
+      "screenshotRect": {
+        "x": 167.34774881516586,
+        "y": 621,
+        "width": 907.3045023696683,
+        "height": 1963.5
+      }
+    },
+    {
+      "file": "iphone-dynamic-medium/01-city.png",
+      "width": 1179,
+      "height": 2556,
+      "sha256": "b2e10ed82748a66d2539a2cf5bf23cba0007381b8d947d8eba77f314f864c771",
+      "source": "../raw/01-city.png",
+      "screenshotRect": {
+        "x": 64.0546875,
+        "y": 589.5,
+        "width": 1050.890625,
+        "height": 1868.25
+      }
+    },
+    {
+      "file": "iphone-dynamic-medium/02-regulator.png",
+      "width": 1179,
+      "height": 2556,
+      "sha256": "f852b574ca7210bb7c1555d30fbf62e79990b54df34a402ff7ea81ed7a9cf295",
+      "source": "../raw/02-regulator.png",
+      "screenshotRect": {
+        "x": 64.0546875,
+        "y": 589.5,
+        "width": 1050.890625,
+        "height": 1868.25
+      }
+    },
+    {
+      "file": "iphone-dynamic-medium/03-crossroads.png",
+      "width": 1179,
+      "height": 2556,
+      "sha256": "6f0a20669f766fe23cab27b56cee303ef563f85c1d895bda7fcbb592f4917d34",
+      "source": "../raw/03-crossroads.png",
+      "screenshotRect": {
+        "x": 64.0546875,
+        "y": 589.5,
+        "width": 1050.890625,
+        "height": 1868.25
+      }
+    },
+    {
+      "file": "iphone-dynamic-medium/04-tickets.png",
+      "width": 1179,
+      "height": 2556,
+      "sha256": "41148e0ad82ed3774b5eb86725773ab9c10e038cc23980f55589157f809db83b",
+      "source": "../raw/04-tickets.png",
+      "screenshotRect": {
+        "x": 64.0546875,
+        "y": 589.5,
+        "width": 1050.890625,
+        "height": 1868.25
+      }
+    },
+    {
+      "file": "iphone-dynamic-medium/05-exam.png",
+      "width": 1179,
+      "height": 2556,
+      "sha256": "eac47efcedf7fad2cd71a2b425c81dea04dcbdd3cc94b3c8bb6b268f3731caa6",
+      "source": "../raw/05-exam.png",
+      "screenshotRect": {
+        "x": 64.0546875,
+        "y": 589.5,
+        "width": 1050.890625,
+        "height": 1868.25
+      }
+    },
+    {
+      "file": "iphone-dynamic-medium/06-signs.png",
+      "width": 1179,
+      "height": 2556,
+      "sha256": "28bf038be04247ec520c38345989bfaea22266c73cf5d6122b3fbed7c0b146f5",
+      "source": "../raw/06-signs.png",
+      "screenshotRect": {
+        "x": 64.0546875,
+        "y": 589.5,
+        "width": 1050.890625,
+        "height": 1868.25
+      }
+    },
+    {
+      "file": "iphone-dynamic-medium/07-feed.png",
+      "width": 1179,
+      "height": 2556,
+      "sha256": "50c010166c8e84fe9f174213da6f932f59f800e56879ba236966edb482d6f169",
+      "source": "../raw/07-feed.png",
+      "screenshotRect": {
+        "x": 64.0546875,
+        "y": 589.5,
+        "width": 1050.890625,
+        "height": 1868.25
+      }
+    },
+    {
+      "file": "iphone-dynamic-medium/08-progress.png",
+      "width": 1179,
+      "height": 2556,
+      "sha256": "9152c9a0637da38f498ae475df9de98b9e888ac233fea697c496a6dd407a3477",
+      "source": "../raw/08-progress.png",
+      "screenshotRect": {
+        "x": 157.85456161137444,
+        "y": 589.5,
+        "width": 863.2908767772511,
+        "height": 1868.25
+      }
+    },
+    {
+      "file": "ipad-13/01-city.png",
+      "width": 2048,
+      "height": 2732,
+      "sha256": "b7a071ade398ae0d4746848b2f1af72a5b701313c962fcfc2fb02af9aa6815d7",
+      "source": "raw/01-city.png",
+      "screenshotRect": {
+        "x": 311.5,
+        "y": 680,
+        "width": 1425,
+        "height": 1900
+      }
+    },
+    {
+      "file": "ipad-13/02-regulator.png",
+      "width": 2048,
+      "height": 2732,
+      "sha256": "f99b4109804e2e20144f94f36216a43775390f35f1b667d4dc16ca1a414f41bb",
+      "source": "raw/02-regulator.png",
+      "screenshotRect": {
+        "x": 311.5,
+        "y": 680,
+        "width": 1425,
+        "height": 1900
+      }
+    },
+    {
+      "file": "ipad-13/03-crossroads.png",
+      "width": 2048,
+      "height": 2732,
+      "sha256": "cdfa16c8f15272325075223645e2c1fbb5e49bfb2433b7d8236b6651d26ab500",
+      "source": "raw/03-crossroads.png",
+      "screenshotRect": {
+        "x": 311.5,
+        "y": 680,
+        "width": 1425,
+        "height": 1900
+      }
+    }
+  ]
+}
