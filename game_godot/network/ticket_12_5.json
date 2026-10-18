@@ -35,7 +35,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_n",
@@ -66,7 +69,10 @@
      91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -97,7 +103,10 @@
      -2.5
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -272,6 +281,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.75,
@@ -374,8 +384,8 @@
   {
    "id": "manoeuvre_uturn",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "uturn",
    "points": [
     [
@@ -425,10 +435,6 @@
     [
      1.75,
      -10.5
-    ],
-    [
-     1.75,
-     -30.5
     ]
    ],
    "exitYaw": 3.142
@@ -541,7 +547,7 @@
    ],
    "halfLength": 1.84,
    "halfWidth": 0.983,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 18.95,
    "behaviour": {
     "stopAtDistance": 0,
@@ -568,15 +574,16 @@
    },
    "wheelsRadius": 0.36,
    "asset": "ticket_12_5/actor_0.glb",
-   "way": "left"
+   "way": "left",
+   "paint": "#B9C0C7"
   }
  ],
  "decor": [
   {
    "prop": "buildings/block_0",
    "pos": [
-    14.55,
-    -7.363
+    15.03,
+    -7.334
    ],
    "yaw": 0,
    "scale": [
@@ -3186,7 +3193,9 @@
   "requiredStop": null,
   "speedLimit": null,
   "maneuver": "uturn",
-  "yieldTo": [],
+  "yieldTo": [
+   "yard_car"
+  ],
   "legend": [
    {
     "label": "Вы на разворот",
@@ -3196,7 +3205,8 @@
     "label": "Автомобиль",
     "color": "#E8EAEC"
    }
-  ]
+  ],
+  "showPlayerGuide": false
  },
  "approachWidth": 14,
  "exitWidths": {
@@ -3406,7 +3416,8 @@
       "stop": false
      }
     },
-    "manualMarks": true
+    "manualMarks": true,
+    "edge": false
    },
    {
     "id": "s_n",
@@ -3417,28 +3428,82 @@
      "b": {
       "stop": false
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "yard",
-    "ends": {}
+    "ends": {},
+    "edge": false
    }
   ],
   "player": {
    "street": "s_s",
    "toward": "c"
+  },
+  "paths": {
+   "uturn": [
+    [
+     -1.75,
+     -15.9
+    ],
+    [
+     -1.75,
+     -7.5
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.75,
+     -10.5
+    ]
+   ]
   }
  },
  "questionView": {
   "centre": [
-   4.591,
-   4.659
+   3.38,
+   4.154
   ],
   "height": 41.582
  },
- "reviewed": false,
+ "reviewed": true,
  "reviewGroup": "unmarked-2026-10-15"
 }

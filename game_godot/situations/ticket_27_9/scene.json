@@ -2870,7 +2870,8 @@
      3.5,
      -2.5
     ]
-   ]
+   ],
+   "arrowhead": true
   },
   {
    "label": "Б",
@@ -2891,18 +2892,23 @@
      1.8,
      -11.8
     ]
-   ]
+   ],
+   "arrowhead": true
   }
  ],
  "lights": [],
  "actors": [],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   0.52,
-   1.261
+   -0.438,
+   2.735
   ],
-  "height": 35.231
+  "height": 41.597,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  },
  "officers": []
 }

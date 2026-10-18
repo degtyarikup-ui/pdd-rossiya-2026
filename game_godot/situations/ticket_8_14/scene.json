@@ -3124,19 +3124,7 @@
     ],
     [
      -1.8,
-     -4.7
-    ],
-    [
-     -1.8,
-     4.7
-    ],
-    [
-     -1.8,
      5.2
-    ],
-    [
-     -1.8,
-     24.7
     ]
    ],
    "exitYaw": 0
@@ -3391,16 +3379,12 @@
     "rotationY": 1.571,
     "route": [
      [
-      -10.0,
+      -10,
       1.8
      ],
      [
-      0.5,
-      0.5
-     ],
-     [
-      2,
-      -11.5
+      1,
+      -4
      ],
      [
       1.8,
@@ -3433,19 +3417,14 @@
    ],
    "path": [
     [
-     -10.0,
+     -10,
      0.0,
      1.8
     ],
     [
-     0.5,
+     1,
      0.0,
-     0.5
-    ],
-    [
-     2,
-     0.0,
-     -11.5
+     -4
     ],
     [
      1.8,
@@ -3453,7 +3432,7 @@
      -44.7
     ]
    ],
-   "length": 55.874,
+   "length": 53.143,
    "clearDistance": 22.09,
    "maxSpeed": 15,
    "signalPlan": [
@@ -3469,8 +3448,11 @@
     "player",
     "npc_moto"
    ],
-   "waitsForPlayer": true,
+   "waitsForPlayer": false,
    "staysPut": false,
+   "paint": "#F2F3F5",
+   "way": "left",
+   "turnSignal": "auto",
    "hazards": false
   },
   {
@@ -3495,7 +3477,7 @@
     "rotationY": -1.571,
     "route": [
      [
-      10.0,
+      10,
       -1.8
      ],
      [
@@ -3529,7 +3511,7 @@
    ],
    "path": [
     [
-     10.0,
+     10,
      0.0,
      -1.8
     ],
@@ -3548,9 +3530,23 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": "#1F3A5F",
+   "way": "straight",
+   "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
+ "questionView": {
+  "centre": [
+   -0.282,
+   14.904
+  ],
+  "height": 34.988,
+  "yaw": 0.011,
+  "pitch": 0.515,
+  "elevation": 0
+ },
  "officers": []
 }

@@ -3434,6 +3434,9 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
    "hazards": false
   },
   {
@@ -3448,15 +3451,15 @@
     "targetAction": "straight",
     "color": "#0574F8",
     "position": [
-     -9.701,
+     -10,
      0.0,
-     -3.289
+     -5
     ],
     "rotationY": 2.698,
     "route": [
      [
-      -9.701,
-      -3.289
+      -10,
+      -5
      ],
      [
       -10.5,
@@ -3485,9 +3488,9 @@
     "height": 2.8
    },
    "pos": [
-    -9.701,
+    -10,
     0.0,
-    -3.289
+    -5
    ],
    "yaw": 2.698,
    "scale": [
@@ -3497,9 +3500,9 @@
    ],
    "path": [
     [
-     -9.701,
+     -10,
      0.0,
-     -3.289
+     -5
     ],
     [
      -10.5,
@@ -3517,7 +3520,7 @@
      5.5
     ]
    ],
-   "length": 22.848,
+   "length": 24.533,
    "clearDistance": 12.5,
    "maxSpeed": 3.6,
    "signalPlan": null,
@@ -3526,6 +3529,9 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
    "hazards": false
   },
   {
@@ -3618,10 +3624,14 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    0.454,

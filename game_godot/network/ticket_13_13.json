@@ -35,7 +35,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_n",
@@ -66,7 +69,10 @@
      91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -97,7 +103,10 @@
      -7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_w",
@@ -128,7 +137,10 @@
      7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -303,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -5.25,
@@ -317,8 +330,8 @@
   {
    "id": "manoeuvre_straight",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "straight",
    "points": [
     [
@@ -327,19 +340,7 @@
     ],
     [
      -5.25,
-     -7.5
-    ],
-    [
-     -5.25,
-     7.5
-    ],
-    [
-     -5.25,
      8
-    ],
-    [
-     -5.25,
-     27.5
     ]
    ],
    "exitYaw": 0
@@ -4004,7 +4005,8 @@
       "stop": false
      }
     },
-    "centre": "solid"
+    "centre": "solid",
+    "edge": false
    },
    {
     "id": "s_n",
@@ -4012,7 +4014,8 @@
     "b": "c",
     "kind": "avenue",
     "ends": {},
-    "centre": "solid"
+    "centre": "solid",
+    "edge": false
    },
    {
     "id": "s_e",
@@ -4020,7 +4023,8 @@
     "b": "c",
     "kind": "avenue",
     "ends": {},
-    "centre": "solid"
+    "centre": "solid",
+    "edge": false
    },
    {
     "id": "s_w",
@@ -4028,7 +4032,8 @@
     "b": "c",
     "kind": "avenue",
     "ends": {},
-    "centre": "solid"
+    "centre": "solid",
+    "edge": false
    }
   ],
   "player": {
@@ -4036,13 +4041,28 @@
    "toward": "c",
    "stopAt": 12.6,
    "lane": 1
+  },
+  "paths": {
+   "straight": [
+    [
+     -5.25,
+     -15
+    ],
+    [
+     -5.25,
+     8
+    ]
+   ]
   }
  },
  "questionView": {
   "centre": [
-   -4.665,
-   -5.857
+   -4.762,
+   14.148
   ],
-  "height": 28.415
+  "height": 30.166,
+  "yaw": 0,
+  "pitch": 0.388,
+  "elevation": 0
  }
 }

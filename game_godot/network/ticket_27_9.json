@@ -37,7 +37,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -71,7 +71,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -116,7 +116,7 @@
     ]
    ],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt",
    "green": true
   },
@@ -149,7 +149,10 @@
      4.2
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -3246,14 +3249,16 @@
      "b": {
       "stop": false
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s2",
@@ -3261,7 +3266,8 @@
     "b": "n1",
     "kind": "street",
     "ends": {},
-    "median": 3
+    "median": 3,
+    "edge": false
    }
   ],
   "player": {
@@ -3283,9 +3289,12 @@
  },
  "questionView": {
   "centre": [
-   0.52,
-   1.261
+   -0.438,
+   2.735
   ],
-  "height": 35.231
+  "height": 41.597,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  }
 }

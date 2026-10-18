@@ -3373,7 +3373,8 @@
  },
  "trafficLights": {
   "state": "red",
-  "arrow": null
+  "arrow": null,
+  "tram": null
  },
  "crop": 90,
  "roadMask": {
@@ -3443,7 +3444,10 @@
    ],
    "yaw": 3.142,
    "scale": 1,
-   "arrow": null
+   "arrow": null,
+   "tram": null,
+   "mountedSigns": [],
+   "mountedMainRoad": []
   }
  ],
  "actors": [
@@ -3481,7 +3485,8 @@
       -48.5,
       -1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -3535,8 +3540,14 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": false,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#317ED4",
+   "way": "right",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "officers": []
 }

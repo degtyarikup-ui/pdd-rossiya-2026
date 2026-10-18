@@ -35,7 +35,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_n",
@@ -66,7 +69,10 @@
      91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -97,7 +103,10 @@
      -7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_w",
@@ -128,7 +137,10 @@
      7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -303,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -317,8 +330,8 @@
   {
    "id": "manoeuvre_straight",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "straight",
    "points": [
     [
@@ -326,20 +339,8 @@
      -15.9
     ],
     [
-     -1.8,
-     -7.5
-    ],
-    [
-     -1.8,
-     4.7
-    ],
-    [
-     -1.8,
-     5.2
-    ],
-    [
-     -1.8,
-     24.7
+     -2,
+     8.5
     ]
    ],
    "exitYaw": 0
@@ -568,14 +569,17 @@
   {
    "id": "light_0",
    "pos": [
-    -5.4,
-    -8.5
+    -4.446,
+    -11.384
    ],
    "yaw": -3.142,
    "scale": 1.16,
    "arrow": null,
    "state": "flashing_yellow",
-   "asset": "ticket_11_15/light_0.glb"
+   "asset": "ticket_11_15/light_0.glb",
+   "mountedSigns": [
+    "2.1"
+   ]
   }
  ],
  "actors": [
@@ -596,7 +600,7 @@
    ],
    "halfLength": 3.585,
    "halfWidth": 0.84,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 19.085,
    "behaviour": {
     "stopAtDistance": null,
@@ -634,7 +638,7 @@
    ],
    "halfLength": 2.915,
    "halfWidth": 1.046,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 18.415,
    "behaviour": {
     "stopAtDistance": null,
@@ -3714,41 +3718,6 @@
    "id": "auto_mark_1",
    "auto": true,
    "colour": "white",
-   "street": "s_s",
-   "type": "dashed",
-   "points": [
-    [
-     0,
-     -91
-    ],
-    [
-     0,
-     -12.2
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_2",
-   "auto": true,
-   "colour": "white",
-   "street": "s_s",
-   "type": "stop",
-   "width": 0.4,
-   "points": [
-    [
-     0,
-     -13.5
-    ],
-    [
-     -4.2,
-     -13.5
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_3",
-   "auto": true,
-   "colour": "white",
    "street": "s_n",
    "type": "dashed",
    "points": [
@@ -3763,7 +3732,7 @@
    ]
   },
   {
-   "id": "auto_mark_4",
+   "id": "auto_mark_2",
    "auto": true,
    "colour": "white",
    "street": "s_e",
@@ -3776,6 +3745,40 @@
     [
      12.2,
      -0.15
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s_e",
+   "type": "solid",
+   "points": [
+    [
+     91,
+     0.15
+    ],
+    [
+     12.2,
+     0.15
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s_e",
+   "type": "dashed",
+   "points": [
+    [
+     91,
+     -3.5
+    ],
+    [
+     12.2,
+     -3.5
     ]
    ]
   },
@@ -3784,15 +3787,15 @@
    "auto": true,
    "colour": "white",
    "street": "s_e",
-   "type": "solid",
+   "type": "dashed",
    "points": [
     [
      91,
-     0.15
+     3.5
     ],
     [
      12.2,
-     0.15
+     3.5
     ]
    ]
   },
@@ -3800,16 +3803,16 @@
    "id": "auto_mark_6",
    "auto": true,
    "colour": "white",
-   "street": "s_e",
-   "type": "dashed",
+   "street": "s_w",
+   "type": "solid",
    "points": [
     [
-     91,
-     -3.5
+     -91,
+     0.15
     ],
     [
-     12.2,
-     -3.5
+     -12.2,
+     0.15
     ]
    ]
   },
@@ -3817,16 +3820,16 @@
    "id": "auto_mark_7",
    "auto": true,
    "colour": "white",
-   "street": "s_e",
-   "type": "dashed",
+   "street": "s_w",
+   "type": "solid",
    "points": [
     [
-     91,
-     3.5
+     -91,
+     -0.15
     ],
     [
-     12.2,
-     3.5
+     -12.2,
+     -0.15
     ]
    ]
   },
@@ -3835,40 +3838,6 @@
    "auto": true,
    "colour": "white",
    "street": "s_w",
-   "type": "solid",
-   "points": [
-    [
-     -91,
-     0.15
-    ],
-    [
-     -12.2,
-     0.15
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_9",
-   "auto": true,
-   "colour": "white",
-   "street": "s_w",
-   "type": "solid",
-   "points": [
-    [
-     -91,
-     -0.15
-    ],
-    [
-     -12.2,
-     -0.15
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_10",
-   "auto": true,
-   "colour": "white",
-   "street": "s_w",
    "type": "dashed",
    "points": [
     [
@@ -3882,7 +3851,7 @@
    ]
   },
   {
-   "id": "auto_mark_11",
+   "id": "auto_mark_9",
    "auto": true,
    "colour": "white",
    "street": "s_w",
@@ -3935,59 +3904,66 @@
     "kind": "street",
     "ends": {
      "b": {
-      "stop": true
+      "stop": false
      }
-    }
+    },
+    "edge": false,
+    "centre": "none"
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "avenue",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_w",
     "a": "w",
     "b": "c",
     "kind": "avenue",
-    "ends": {}
+    "ends": {},
+    "edge": false
    }
   ],
   "player": {
    "street": "s_s",
    "toward": "c"
+  },
+  "paths": {
+   "straight": [
+    [
+     -1.8,
+     -15.9
+    ],
+    [
+     -2,
+     8.5
+    ]
+   ]
   }
  },
- "signs": [
-  {
-   "id": "sign_1",
-   "code": "2.1",
-   "pos": [
-    -5.414,
-    -12.479
-   ],
-   "yaw": 3.142
-  }
- ],
+ "signs": [],
  "bakedSigns": [
   "tex_0",
   "tex_1"
  ],
  "questionView": {
   "centre": [
-   0.044,
-   1.801
+   -0.657,
+   4.048
   ],
-  "height": 35.242
+  "height": 39.548
  },
- "reviewed": false,
+ "reviewed": true,
  "reviewGroup": "unmarked-2026-10-15"
 }

@@ -37,7 +37,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -71,7 +71,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -105,7 +105,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -139,7 +139,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.75,
@@ -547,7 +548,7 @@
      -3
     ],
     [
-     -10.5,
+     -13,
      -2
     ]
    ],
@@ -3665,7 +3666,8 @@
     "label": "Вы прямо",
     "color": "#ED4621"
    }
-  ]
+  ],
+  "showPlayerGuide": false
  },
  "approachWidth": 14,
  "exitWidths": {
@@ -3909,28 +3911,32 @@
      "b": {
       "stop": true
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "avenue",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_w",
     "a": "w",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    }
   ],
   "player": {
@@ -3942,11 +3948,14 @@
  },
  "questionView": {
   "centre": [
-   -1.952,
-   0.097
+   -7.137,
+   11.609
   ],
-  "height": 29.184
+  "height": 24.377,
+  "yaw": -0.034,
+  "pitch": 0.387,
+  "elevation": 0
  },
- "reviewed": false,
+ "reviewed": true,
  "reviewGroup": "unmarked-2026-10-15"
 }

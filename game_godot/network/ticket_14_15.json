@@ -35,7 +35,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_n",
@@ -66,7 +69,10 @@
      91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -109,6 +115,9 @@
      ]
     ]
    ],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt",
    "green": true
   },
   {
@@ -140,7 +149,10 @@
      -7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_w",
@@ -183,6 +195,9 @@
      ]
     ]
    ],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt",
    "green": true
   },
   {
@@ -214,7 +229,10 @@
      7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -389,6 +407,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -627,7 +646,7 @@
    ],
    "halfLength": 2.992,
    "halfWidth": 1.046,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 17.492,
    "behaviour": {
     "stopAtDistance": null,
@@ -635,7 +654,7 @@
     "holdFor": null,
     "staysPut": false,
     "signalPlan": null,
-    "waitsForPlayer": true,
+    "waitsForPlayer": false,
     "config": {
      "id": "npc_bus",
      "type": "bus",
@@ -666,7 +685,7 @@
    ],
    "halfLength": 1.84,
    "halfWidth": 0.983,
-   "maxSpeed": 12,
+   "maxSpeed": 5,
    "clearDistance": 17.34,
    "behaviour": {
     "stopAtDistance": null,
@@ -4019,8 +4038,8 @@
    "id": "sign_1",
    "code": "2.1",
    "pos": [
-    -5.4,
-    -10.97
+    -4.879,
+    -11.387
    ],
    "yaw": -3.142
   }
@@ -4067,14 +4086,16 @@
      "b": {
       "stop": false
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_e",
@@ -4082,7 +4103,8 @@
     "b": "c",
     "kind": "avenue",
     "ends": {},
-    "median": 2
+    "median": 2,
+    "edge": false
    },
    {
     "id": "s_w",
@@ -4090,7 +4112,8 @@
     "b": "c",
     "kind": "avenue",
     "ends": {},
-    "median": 2
+    "median": 2,
+    "edge": false
    }
   ],
   "player": {
@@ -4117,11 +4140,11 @@
  },
  "questionView": {
   "centre": [
-   -2.435,
-   6.627
+   -0.274,
+   10.904
   ],
-  "height": 48.228
+  "height": 52.621
  },
- "reviewed": false,
+ "reviewed": true,
  "reviewGroup": "unmarked-2026-10-15"
 }

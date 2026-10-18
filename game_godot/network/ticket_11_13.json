@@ -35,7 +35,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": true,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -66,7 +69,10 @@
      -7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": true,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_w",
@@ -97,7 +103,10 @@
      7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": true,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -272,6 +281,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -5.25,
@@ -344,8 +354,8 @@
   {
    "id": "manoeuvre_right",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "right",
    "points": [
     [
@@ -353,48 +363,12 @@
      -15.25
     ],
     [
-     -5.25,
-     -7.5
+     -6,
+     -6.5
     ],
     [
-     -5.281,
-     -6.947
-    ],
-    [
-     -5.378,
-     -6.477
-    ],
-    [
-     -5.542,
-     -6.089
-    ],
-    [
-     -5.778,
-     -5.778
-    ],
-    [
-     -6.089,
-     -5.542
-    ],
-    [
-     -6.477,
-     -5.378
-    ],
-    [
-     -6.947,
-     -5.281
-    ],
-    [
-     -7.5,
-     -5.25
-    ],
-    [
-     -8,
-     -5.25
-    ],
-    [
-     -27.5,
-     -5.25
+     -12,
+     -5
     ]
    ],
    "exitYaw": -1.571
@@ -470,12 +444,12 @@
      2.05
     ],
     [
-     -2.5,
-     2.5
+     1.5,
+     2
     ],
     [
-     -3.5,
-     -3
+     0.5,
+     -3.5
     ],
     [
      -22,
@@ -485,7 +459,8 @@
      -67,
      -2
     ]
-   ]
+   ],
+   "manual": true
   }
  ],
  "stop": {
@@ -525,7 +500,7 @@
    ],
    "halfLength": 2.34,
    "halfWidth": 1.023,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 20,
    "behaviour": {
     "stopAtDistance": null,
@@ -539,7 +514,7 @@
       "side": "left"
      }
     ],
-    "waitsForPlayer": true,
+    "waitsForPlayer": false,
     "config": {
      "id": "npc_car",
      "type": "car",
@@ -3770,8 +3745,31 @@
    "street": "s_s",
    "toward": "c",
    "stopAt": 12.85
+  },
+  "paths": {
+   "right": [
+    [
+     -5.25,
+     -15.25
+    ],
+    [
+     -6,
+     -6.5
+    ],
+    [
+     -12,
+     -5
+    ]
+   ]
   }
  },
- "reviewed": false,
- "reviewGroup": "unmarked-2026-10-15"
+ "reviewed": true,
+ "reviewGroup": "unmarked-2026-10-15",
+ "questionView": {
+  "centre": [
+   -5.933,
+   4.008
+  ],
+  "height": 51.599
+ }
 }

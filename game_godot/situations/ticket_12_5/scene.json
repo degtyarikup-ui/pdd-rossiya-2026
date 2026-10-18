@@ -3,9 +3,9 @@
   {
    "prop": "buildings/block_0",
    "pos": [
-    14.55,
+    15.03,
     0.0,
-    -7.363
+    -7.334
    ],
    "yaw": 0,
    "scale": [
@@ -2611,7 +2611,9 @@
  "segmentLength": 0,
  "spec": {
   "maneuver": "uturn",
-  "yieldTo": [],
+  "yieldTo": [
+   "yard_car"
+  ],
   "paths": {
    "uturn": [
     [
@@ -2823,10 +2825,6 @@
     [
      1.75,
      -10.5
-    ],
-    [
-     1.75,
-     -30.5
     ]
    ],
    "exitYaw": 3.142
@@ -2911,7 +2909,8 @@
      -2,
      13
     ]
-   ]
+   ],
+   "arrowhead": true
   },
   {
    "label": "Б",
@@ -2936,7 +2935,8 @@
      5,
      -13
     ]
-   ]
+   ],
+   "arrowhead": true
   }
  ],
  "lights": [],
@@ -2976,7 +2976,8 @@
       -1.75,
       43
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.84,
    "halfWidth": 0.983,
@@ -3024,19 +3025,24 @@
    ],
    "length": 54.59,
    "clearDistance": 18.95,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": null,
    "stopAtDistance": 0,
    "stopFor": "inf",
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#B9C0C7",
+   "way": "left",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": false,
  "questionView": {
   "centre": [
-   4.591,
-   4.659
+   3.38,
+   4.154
   ],
   "height": 41.582
  },

@@ -5001,6 +5001,8 @@
  "trajectories": [],
  "lights": [],
  "actors": [],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    -0.55,

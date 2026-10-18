@@ -271,31 +271,6 @@
     ]
    ],
    "holes": []
-  },
-  {
-   "id": "asphalt_apron",
-   "outer": [
-    [
-     -4.2,
-     -16
-    ],
-    [
-     4.2,
-     -16
-    ],
-    [
-     4.2,
-     0
-    ],
-    [
-     -4.2,
-     0
-    ]
-   ],
-   "holes": [],
-   "surface": "asphalt",
-   "walk": false,
-   "edge": false
   }
  ],
  "markings": [
@@ -596,8 +571,8 @@
   {
    "id": "manoeuvre_right",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "right",
    "points": [
     [
@@ -605,48 +580,12 @@
      -24
     ],
     [
-     -1.8,
-     -4.7
+     -3,
+     -4
     ],
     [
-     -1.841,
-     -3.987
-    ],
-    [
-     -1.965,
-     -3.382
-    ],
-    [
-     -2.177,
-     -2.881
-    ],
-    [
-     -2.481,
-     -2.481
-    ],
-    [
-     -2.881,
-     -2.177
-    ],
-    [
-     -3.382,
-     -1.965
-    ],
-    [
-     -3.987,
-     -1.841
-    ],
-    [
-     -4.7,
-     -1.8
-    ],
-    [
-     -5.2,
-     -1.8
-    ],
-    [
-     -24.7,
-     -1.8
+     -10.5,
+     -2
     ]
    ],
    "exitYaw": -1.571
@@ -720,8 +659,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -17,
-    -62
+    -6.442,
+    -69.657
    ],
    "yaw": 0,
    "scale": [
@@ -735,8 +674,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -21,
-    -40
+    -8.931,
+    -39.874
    ],
    "yaw": 0,
    "scale": [
@@ -750,8 +689,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -25,
-    -15
+    -7.602,
+    -9.6
    ],
    "yaw": 0,
    "scale": [
@@ -765,8 +704,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -17,
-    22
+    -21.358,
+    8.865
    ],
    "yaw": 0,
    "scale": [
@@ -780,8 +719,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -21,
-    45
+    -62.112,
+    -8.079
    ],
    "yaw": 0,
    "scale": [
@@ -795,8 +734,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    -25,
-    68
+    -40.012,
+    12.467
    ],
    "yaw": 0,
    "scale": [
@@ -810,8 +749,8 @@
   {
    "prop": "trees/birch_0",
    "pos": [
-    -42,
-    17
+    -49.961,
+    7.781
    ],
    "yaw": 0,
    "scale": [
@@ -825,8 +764,8 @@
   {
    "prop": "trees/birch_0",
    "pos": [
-    -63,
-    17
+    -70.961,
+    7.781
    ],
    "yaw": 0,
    "scale": [
@@ -840,8 +779,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    17,
-    -62
+    8.344,
+    -59.568
    ],
    "yaw": 0,
    "scale": [
@@ -855,8 +794,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    21,
-    -40
+    6.653,
+    -36.779
    ],
    "yaw": 0,
    "scale": [
@@ -870,8 +809,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    25,
-    -15
+    9.356,
+    -9.935
    ],
    "yaw": 0,
    "scale": [
@@ -885,8 +824,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    17,
-    22
+    34.719,
+    8.175
    ],
    "yaw": 0,
    "scale": [
@@ -900,8 +839,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    21,
-    45
+    52.695,
+    -8.72
    ],
    "yaw": 0,
    "scale": [
@@ -915,8 +854,8 @@
   {
    "prop": "trees/round_0",
    "pos": [
-    25,
-    68
+    7.245,
+    7.082
    ],
    "yaw": 0,
    "scale": [
@@ -930,8 +869,8 @@
   {
    "prop": "trees/birch_0",
    "pos": [
-    42,
-    17
+    72.386,
+    8.209
    ],
    "yaw": 0,
    "scale": [
@@ -945,8 +884,8 @@
   {
    "prop": "trees/birch_0",
    "pos": [
-    63,
-    17
+    84.686,
+    -8.368
    ],
    "yaw": 0,
    "scale": [
@@ -1032,7 +971,9 @@
     "a": "s",
     "b": "c",
     "kind": "street",
-    "ends": {},
+    "ends": {
+     "b": {}
+    },
     "centre": "none",
     "walk": false,
     "edge": false,
@@ -1064,6 +1005,22 @@
    "toward": "c",
    "lane": 0,
    "questionAt": 24
+  },
+  "paths": {
+   "right": [
+    [
+     -1.8,
+     -24
+    ],
+    [
+     -3,
+     -4
+    ],
+    [
+     -10.5,
+     -2
+    ]
+   ]
   }
  },
  "stop": {
@@ -1081,7 +1038,7 @@
  "geometry": null,
  "type": "crossroad_dirt_approach",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [],
@@ -1091,22 +1048,19 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "0dddc0be36a1ea143d6fffd862ac405f",
-  "category": "ab",
-  "ticket": 3,
-  "number": 1
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-10-16-first-12",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [
-   0,
-   -7
+   -4.921,
+   -3.879
   ],
-  "height": 40
+  "height": 41.835,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  }
 }

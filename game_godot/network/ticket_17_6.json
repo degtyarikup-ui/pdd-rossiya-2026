@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -544,14 +545,17 @@
   {
    "id": "light_0",
    "pos": [
-    -5.452,
-    -8.849
+    -4.464,
+    -10.505
    ],
    "yaw": -3.142,
    "scale": 1.16,
    "arrow": null,
    "state": "red",
-   "asset": "ticket_17_6/light_0.glb"
+   "asset": "ticket_17_6/light_0.glb",
+   "mountedSigns": [
+    "6.16"
+   ]
   }
  ],
  "actors": [],
@@ -3922,17 +3926,7 @@
   }
  ],
  "markings": [],
- "signs": [
-  {
-   "id": "sign_1",
-   "code": "6.16",
-   "pos": [
-    -4.813,
-    -10.775
-   ],
-   "yaw": -3.142
-  }
- ],
+ "signs": [],
  "bakedSigns": [
   "tex_0",
   "tex_1"
@@ -4018,11 +4012,11 @@
  },
  "questionView": {
   "centre": [
-   0,
-   2.335
+   -0.287,
+   2.316
   ],
-  "height": 29.46
+  "height": 37.166
  },
- "reviewed": false,
+ "reviewed": true,
  "reviewGroup": "unmarked-2026-10-15"
 }

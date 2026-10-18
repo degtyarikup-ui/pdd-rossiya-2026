@@ -2992,19 +2992,7 @@
     ],
     [
      -1.8,
-     -7.5
-    ],
-    [
-     -1.8,
-     4.7
-    ],
-    [
-     -1.8,
      5.2
-    ],
-    [
-     -1.8,
-     24.7
     ]
    ],
    "exitYaw": 0
@@ -3175,7 +3163,8 @@
  },
  "trafficLights": {
   "state": "flashing_yellow",
-  "arrow": null
+  "arrow": null,
+  "tram": null
  },
  "crop": 90,
  "roadMask": {
@@ -3245,7 +3234,10 @@
    ],
    "yaw": -3.142,
    "scale": 1.16,
-   "arrow": null
+   "arrow": null,
+   "tram": null,
+   "mountedSigns": [],
+   "mountedMainRoad": []
   }
  ],
  "actors": [
@@ -3279,7 +3271,8 @@
       1.8,
       -47.5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.84,
    "halfWidth": 0.983,
@@ -3334,7 +3327,10 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": false,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#B9C0C7",
+   "way": "left",
+   "hazards": false
   },
   {
    "id": "tram_1",
@@ -3359,8 +3355,8 @@
       -2.05
      ],
      [
-      -66,
-      -2.5
+      -67,
+      -3.5
      ],
      [
       -80,
@@ -3370,7 +3366,8 @@
       -64.5,
       -37
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 3.585,
    "halfWidth": 0.84,
@@ -3401,9 +3398,9 @@
      -2.05
     ],
     [
-     -66,
+     -67,
      0.0,
-     -2.5
+     -3.5
     ],
     [
      -80,
@@ -3416,7 +3413,7 @@
      -37
     ]
    ],
-   "length": 121.429,
+   "length": 121.028,
    "clearDistance": 19.085,
    "maxSpeed": 5,
    "signalPlan": null,
@@ -3424,15 +3421,20 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#F08A24",
+   "way": null,
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    0.649,
    4.089
   ],
-  "height": 38.565
+  "height": 42.007
  },
  "officers": []
 }

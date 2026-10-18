@@ -37,7 +37,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -71,7 +71,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -105,7 +105,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -139,7 +139,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -557,20 +558,16 @@
      1.829
     ],
     [
-     12.269,
-     4.952
+     13.5,
+     4.5
     ],
     [
-     17.207,
-     5.632
+     25,
+     5
     ],
     [
-     23.196,
-     5.88
-    ],
-    [
-     52.155,
-     5.548
+     53,
+     5
     ]
    ],
    "manual": true
@@ -4047,7 +4044,7 @@
    ]
   }
  ],
- "reviewed": false,
+ "reviewed": true,
  "layout": {
   "nodes": [
    {
@@ -4086,7 +4083,8 @@
      "b": {
       "stop": true
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_n",
@@ -4097,7 +4095,8 @@
      "b": {
       "stop": true
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_e",
@@ -4108,7 +4107,8 @@
      "b": {
       "zebra": true
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_w",
@@ -4119,7 +4119,8 @@
      "b": {
       "zebra": true
      }
-    }
+    },
+    "edge": false
    }
   ],
   "player": {
@@ -4152,5 +4153,15 @@
     ]
    ]
   }
+ },
+ "questionView": {
+  "centre": [
+   3.671,
+   7.208
+  ],
+  "height": 37.968,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  }
 }

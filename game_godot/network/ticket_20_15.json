@@ -37,7 +37,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -71,7 +71,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -105,7 +105,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -139,7 +139,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -3898,24 +3898,6 @@
    "id": "auto_mark_2",
    "auto": true,
    "colour": "white",
-   "street": "s_s",
-   "type": "stop",
-   "width": 0.4,
-   "points": [
-    [
-     0,
-     -10.7
-    ],
-    [
-     -4.2,
-     -10.7
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_3",
-   "auto": true,
-   "colour": "white",
    "street": "s_n",
    "type": "dashed",
    "points": [
@@ -3930,7 +3912,7 @@
    ]
   },
   {
-   "id": "auto_mark_4",
+   "id": "auto_mark_3",
    "auto": true,
    "colour": "white",
    "street": "s_e",
@@ -3947,7 +3929,7 @@
    ]
   },
   {
-   "id": "auto_mark_5",
+   "id": "auto_mark_4",
    "auto": true,
    "colour": "white",
    "street": "s_w",
@@ -3969,8 +3951,8 @@
    "id": "sign_1",
    "code": "2.4",
    "pos": [
-    -5.4,
-    -10.97
+    -4.524,
+    -8.94
    ],
    "yaw": -3.142,
    "mainRoad": [
@@ -4026,30 +4008,34 @@
     "kind": "street",
     "ends": {
      "b": {
-      "stop": true
+      "stop": false
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_w",
     "a": "w",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    }
   ],
   "player": {
@@ -4075,9 +4061,12 @@
  },
  "questionView": {
   "centre": [
-   -0.025,
-   9.664
+   -1.422,
+   8.888
   ],
-  "height": 42.809
+  "height": 41.838,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  }
 }

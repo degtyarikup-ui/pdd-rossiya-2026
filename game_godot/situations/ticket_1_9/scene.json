@@ -3620,7 +3620,8 @@
      6.5,
      -11
     ]
-   ]
+   ],
+   "arrowhead": true
   },
   {
    "label": "Б",
@@ -3645,12 +3646,14 @@
      3.5,
      -11
     ]
-   ]
+   ],
+   "arrowhead": true
   }
  ],
  "lights": [],
  "actors": [],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    1.22,

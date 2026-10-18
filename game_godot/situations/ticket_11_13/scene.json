@@ -2958,48 +2958,12 @@
      -15.25
     ],
     [
-     -5.25,
-     -7.5
+     -6,
+     -6.5
     ],
     [
-     -5.281,
-     -6.947
-    ],
-    [
-     -5.378,
-     -6.477
-    ],
-    [
-     -5.542,
-     -6.089
-    ],
-    [
-     -5.778,
-     -5.778
-    ],
-    [
-     -6.089,
-     -5.542
-    ],
-    [
-     -6.477,
-     -5.378
-    ],
-    [
-     -6.947,
-     -5.281
-    ],
-    [
-     -7.5,
-     -5.25
-    ],
-    [
-     -8,
-     -5.25
-    ],
-    [
-     -27.5,
-     -5.25
+     -12,
+     -5
     ]
    ],
    "exitYaw": -1.571
@@ -3064,7 +3028,8 @@
  },
  "trafficLights": {
   "state": "red",
-  "arrow": "right"
+  "arrow": "right",
+  "tram": null
  },
  "crop": 90,
  "roadMask": {
@@ -3134,7 +3099,10 @@
    ],
    "yaw": -3.142,
    "scale": 1.16,
-   "arrow": "right"
+   "arrow": "right",
+   "tram": null,
+   "mountedSigns": [],
+   "mountedMainRoad": []
   }
  ],
  "actors": [
@@ -3161,12 +3129,12 @@
       2.05
      ],
      [
-      -2.5,
-      2.5
+      1.5,
+      2
      ],
      [
-      -3.5,
-      -3
+      0.5,
+      -3.5
      ],
      [
       -22,
@@ -3176,7 +3144,8 @@
       -67,
       -2
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.34,
    "halfWidth": 1.023,
@@ -3207,14 +3176,14 @@
      2.05
     ],
     [
-     -2.5,
+     1.5,
      0.0,
-     2.5
+     2
     ],
     [
-     -3.5,
+     0.5,
      0.0,
-     -3
+     -3.5
     ],
     [
      -22,
@@ -3227,9 +3196,9 @@
      -2
     ]
    ],
-   "length": 76.631,
+   "length": 84.64,
    "clearDistance": 20,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": [
     {
      "from": 0,
@@ -3240,9 +3209,21 @@
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": false
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
+ "questionView": {
+  "centre": [
+   -5.933,
+   4.008
+  ],
+  "height": 51.599
+ },
  "officers": []
 }

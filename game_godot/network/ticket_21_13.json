@@ -37,7 +37,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -71,7 +71,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -105,7 +105,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -139,7 +139,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -3883,28 +3884,32 @@
      "b": {
       "stop": false
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_w",
     "a": "w",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    }
   ],
   "player": {

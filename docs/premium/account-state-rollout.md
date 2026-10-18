@@ -99,6 +99,10 @@ Platega не документирует идемпотентность созд�
   OAuth client ID из Google Cloud → APIs & Services → Credentials для
   `ru.pdd.pdd_app` (SHA-1 подписи Google Play и upload-ключа) и `ru.pdd.pdd_app.dev`.
   `npx wrangler secret put GOOGLE_ANDROID_CLIENT_IDS`.
+  На 18.10 в production заданы два клиента: `505681869803-bdnp…` (проект «My Project 2910»)
+  и `92147521898-5u7h…` — именно им выдаёт токены сборка из Google Play (найден по логу
+  `google access token client rejected`; в консолях проектов, которые видел владелец, его нет).
+  Отклонённый клиент пишется в лог воркера: `npx wrangler tail --search "client rejected"`.
 - **`APPLE_LEGACY_CLAIMS_UNTIL`** (в `wrangler.toml`, 2027-01-31). Сборки iOS до
   2.2.4 не передают `appAccountToken`; до этой даты их новая покупка
   привязывается к первому заявителю, как в текущем production. Без переходного

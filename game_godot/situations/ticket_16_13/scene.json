@@ -3017,7 +3017,7 @@
  "type": "crossroad_tram",
  "centerZ": 0,
  "startZ": -26,
- "stopZ": -15.9,
+ "stopZ": -13.8,
  "playerStartX": null,
  "playerStartRotY": 0.0,
  "leftLane": 1.8,
@@ -3045,7 +3045,7 @@
    "points": [
     [
      -1.8,
-     -15.9
+     -13.8
     ],
     [
      -1.8,
@@ -3070,7 +3070,7 @@
    "points": [
     [
      -1.8,
-     -15.9
+     -13.8
     ],
     [
      -1.8,
@@ -3123,7 +3123,7 @@
    "points": [
     [
      -1.8,
-     -15.9
+     -13.8
     ],
     [
      -1.8,
@@ -3176,7 +3176,7 @@
    "points": [
     [
      -1.8,
-     -15.9
+     -13.8
     ],
     [
      -1.8,
@@ -3304,7 +3304,9 @@
    "yaw": -3.142,
    "scale": 1.16,
    "arrow": null,
-   "tram": null
+   "tram": null,
+   "mountedSigns": [],
+   "mountedMainRoad": []
   }
  ],
  "actors": [
@@ -3342,7 +3344,8 @@
       -47.5,
       -1.75
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 3.585,
    "halfWidth": 0.84,
@@ -3402,7 +3405,10 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#F08A24",
+   "way": "left",
+   "hazards": false
   },
   {
    "id": "npc_car",
@@ -3438,7 +3444,8 @@
       -47.5,
       -5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.19,
    "halfWidth": 1.023,
@@ -3498,15 +3505,20 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#4D7768",
+   "way": "left",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   -0.594,
-   5.854
+   -0.369,
+   10.822
   ],
-  "height": 41.87
+  "height": 46.676
  },
  "officers": []
 }

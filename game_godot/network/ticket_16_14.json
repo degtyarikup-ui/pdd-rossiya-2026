@@ -35,7 +35,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -66,7 +69,10 @@
      -7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_w",
@@ -97,7 +103,10 @@
      7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -555,7 +564,9 @@
       0
      ]
     ]
-   ]
+   ],
+   "outerEdge": false,
+   "innerEdge": false
   }
  ],
  "routes": [
@@ -563,6 +574,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.75,
@@ -700,8 +712,8 @@
      -14
     ],
     [
-     -7.5,
-     -11
+     -9,
+     -10.5
     ]
    ],
    "exitYaw": -1.571
@@ -915,7 +927,7 @@
    ],
    "halfLength": 2.454,
    "halfWidth": 1.09,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 47.265,
    "behaviour": {
     "stopAtDistance": null,
@@ -923,7 +935,7 @@
     "holdFor": null,
     "staysPut": false,
     "signalPlan": null,
-    "waitsForPlayer": true,
+    "waitsForPlayer": false,
     "config": {
      "id": "ring_car",
      "type": "van",
@@ -939,7 +951,8 @@
    },
    "wheelsRadius": 0.36,
    "asset": "ticket_16_14/actor_0.glb",
-   "way": "straight"
+   "way": "straight",
+   "paint": "#1F3A5F"
   },
   {
    "id": "ring_moto",
@@ -958,7 +971,7 @@
    ],
    "halfLength": 1.075,
    "halfWidth": 0.949,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 58.439,
    "behaviour": {
     "stopAtDistance": null,
@@ -966,7 +979,7 @@
     "holdFor": null,
     "staysPut": false,
     "signalPlan": null,
-    "waitsForPlayer": true,
+    "waitsForPlayer": false,
     "config": {
      "id": "ring_moto",
      "type": "motorcycle",
@@ -983,7 +996,8 @@
    },
    "wheelsRadius": 0.36,
    "asset": "ticket_16_14/actor_1.glb",
-   "way": "straight"
+   "way": "straight",
+   "paint": "#C0392B"
   }
  ],
  "decor": [
@@ -4237,7 +4251,9 @@
     "z": 0,
     "ring": {
      "r": 20,
-     "island": 9
+     "island": 9,
+     "innerEdge": false,
+     "outerEdge": false
     }
    },
    {
@@ -4266,21 +4282,24 @@
      "b": {
       "stop": false
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "avenue",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_w",
     "a": "w",
     "b": "c",
     "kind": "avenue",
-    "ends": {}
+    "ends": {},
+    "edge": false
    }
   ],
   "player": {
@@ -4326,8 +4345,8 @@
      -14
     ],
     [
-     -7.5,
-     -11
+     -9,
+     -10.5
     ]
    ]
   }
@@ -4337,11 +4356,14 @@
  },
  "questionView": {
   "centre": [
-   -3.685,
-   7.092
+   -0.082,
+   1.959
   ],
-  "height": 55.163
+  "height": 50.251,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  },
- "reviewed": false,
+ "reviewed": true,
  "reviewGroup": "unmarked-2026-10-15"
 }

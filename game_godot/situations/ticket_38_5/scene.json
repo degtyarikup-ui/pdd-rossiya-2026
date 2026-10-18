@@ -50,424 +50,274 @@
  },
  "props": [
   {
-   "prop": "buildings/block_0",
-   "pos": [
-    -18,
-    0.0,
-    -65
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": "#ddd1bc"
-  },
-  {
-   "prop": "trees/round_0",
-   "pos": [
-    -9.6,
-    0.0,
-    -56
-   ],
-   "yaw": 0.0,
-   "scale": [
-    1.15,
-    1.15,
-    1.15
-   ],
-   "tint": "#5f8f3e"
-  },
-  {
    "prop": "buildings/block_1",
    "pos": [
-    -18,
+    14.5,
     0.0,
-    -39
+    -43
    ],
-   "yaw": -1.5707963267948966,
+   "yaw": 0,
    "scale": [
     1.0,
     1.0,
     1.0
    ],
-   "tint": "#ccd6d9"
-  },
-  {
-   "prop": "trees/round_0",
-   "pos": [
-    -9.6,
-    0.0,
-    -30
-   ],
-   "yaw": 0.0,
-   "scale": [
-    1.15,
-    1.15,
-    1.15
-   ],
-   "tint": "#5f8f3e"
+   "tint": "#f3e3c3"
   },
   {
    "prop": "buildings/block_2",
    "pos": [
-    -18,
+    14.5,
     0.0,
-    31
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": "#e0d9ce"
-  },
-  {
-   "prop": "trees/round_0",
-   "pos": [
-    -9.6,
-    0.0,
-    40
+    -22.5
    ],
    "yaw": 0.0,
    "scale": [
-    1.15,
-    1.15,
-    1.15
-   ],
-   "tint": "#5f8f3e"
-  },
-  {
-   "prop": "buildings/block_3",
-   "pos": [
-    -18,
-    0.0,
-    59
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": "#d5dfd0"
-  },
-  {
-   "prop": "trees/round_0",
-   "pos": [
-    -9.6,
-    0.0,
-    68
-   ],
-   "yaw": 0.0,
-   "scale": [
-    1.15,
-    1.15,
-    1.15
-   ],
-   "tint": "#5f8f3e"
-  },
-  {
-   "prop": "street/lamp",
-   "pos": [
-    -7.5,
-    0.0,
-    -61
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
+    1,
+    1,
+    1
    ],
    "tint": null
-  },
-  {
-   "prop": "street/lamp",
-   "pos": [
-    -7.5,
-    0.0,
-    -27
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": null
-  },
-  {
-   "prop": "street/lamp",
-   "pos": [
-    -7.5,
-    0.0,
-    28
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": null
-  },
-  {
-   "prop": "street/lamp",
-   "pos": [
-    -7.5,
-    0.0,
-    62
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": null
-  },
-  {
-   "prop": "street/bush",
-   "pos": [
-    -10.0,
-    0.0,
-    -49
-   ],
-   "yaw": 0.0,
-   "scale": [
-    1.5,
-    1.5,
-    1.5
-   ],
-   "tint": "#467e3c"
-  },
-  {
-   "prop": "street/bush",
-   "pos": [
-    -10.0,
-    0.0,
-    43
-   ],
-   "yaw": 0.0,
-   "scale": [
-    1.5,
-    1.5,
-    1.5
-   ],
-   "tint": "#467e3c"
-  },
-  {
-   "prop": "buildings/block_0",
-   "pos": [
-    18,
-    0.0,
-    -65
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": "#ddd1bc"
-  },
-  {
-   "prop": "trees/round_0",
-   "pos": [
-    9.6,
-    0.0,
-    -56
-   ],
-   "yaw": 0.0,
-   "scale": [
-    1.15,
-    1.15,
-    1.15
-   ],
-   "tint": "#5f8f3e"
-  },
-  {
-   "prop": "buildings/block_1",
-   "pos": [
-    18,
-    0.0,
-    -39
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": "#ccd6d9"
-  },
-  {
-   "prop": "trees/round_0",
-   "pos": [
-    9.6,
-    0.0,
-    -30
-   ],
-   "yaw": 0.0,
-   "scale": [
-    1.15,
-    1.15,
-    1.15
-   ],
-   "tint": "#5f8f3e"
   },
   {
    "prop": "buildings/block_2",
    "pos": [
-    18,
+    15.5,
     0.0,
-    31
+    5
    ],
-   "yaw": 1.5707963267948966,
+   "yaw": 0,
    "scale": [
     1.0,
     1.0,
     1.0
    ],
-   "tint": "#e0d9ce"
+   "tint": "#f3e3c3"
   },
   {
-   "prop": "trees/round_0",
+   "prop": "buildings/block_2",
    "pos": [
-    9.6,
+    -15,
     0.0,
-    40
+    11
    ],
    "yaw": 0.0,
    "scale": [
-    1.15,
-    1.15,
-    1.15
+    1,
+    1,
+    1
    ],
-   "tint": "#5f8f3e"
+   "tint": "#f3e3c3"
+  },
+  {
+   "prop": "buildings/block_4",
+   "pos": [
+    -14,
+    0.0,
+    -3.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#e8e8e8"
+  },
+  {
+   "prop": "buildings/block_7",
+   "pos": [
+    -15.5,
+    0.0,
+    -16.5
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/tower_2",
+   "pos": [
+    -16.5,
+    0.0,
+    23
+   ],
+   "yaw": 0,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/tower_2",
+   "pos": [
+    16.5,
+    0.0,
+    29
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#d9b99b"
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    16,
+    0.0,
+    -58.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#e8e8e8"
+  },
+  {
+   "prop": "buildings/tower_1",
+   "pos": [
+    18,
+    0.0,
+    -78
+   ],
+   "yaw": -1.572,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#d9b99b"
+  },
+  {
+   "prop": "buildings/tower_1",
+   "pos": [
+    -16.5,
+    0.0,
+    -80
+   ],
+   "yaw": 0,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#e8e8e8"
+  },
+  {
+   "prop": "buildings/tower_2",
+   "pos": [
+    -16.5,
+    0.0,
+    -65.5
+   ],
+   "yaw": -1.572,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
   },
   {
    "prop": "buildings/block_3",
    "pos": [
-    18,
+    -16.923,
     0.0,
-    59
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": "#d5dfd0"
-  },
-  {
-   "prop": "trees/round_0",
-   "pos": [
-    9.6,
-    0.0,
-    68
+    -40.016
    ],
    "yaw": 0.0,
    "scale": [
-    1.15,
-    1.15,
-    1.15
+    1,
+    1,
+    1
    ],
-   "tint": "#5f8f3e"
+   "tint": "#c8d9c0"
   },
   {
-   "prop": "street/lamp",
+   "prop": "buildings/block_3",
    "pos": [
-    7.5,
+    -16,
     0.0,
-    -61
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": null
-  },
-  {
-   "prop": "street/lamp",
-   "pos": [
-    7.5,
-    0.0,
-    -27
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": null
-  },
-  {
-   "prop": "street/lamp",
-   "pos": [
-    7.5,
-    0.0,
-    28
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": null
-  },
-  {
-   "prop": "street/lamp",
-   "pos": [
-    7.5,
-    0.0,
-    62
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ],
-   "tint": null
-  },
-  {
-   "prop": "street/bush",
-   "pos": [
-    10.0,
-    0.0,
-    -49
+    43.5
    ],
    "yaw": 0.0,
    "scale": [
-    1.5,
-    1.5,
-    1.5
+    1,
+    1,
+    1
    ],
-   "tint": "#467e3c"
+   "tint": "#e8e8e8"
   },
   {
-   "prop": "street/bush",
+   "prop": "buildings/block_3",
    "pos": [
-    10.0,
+    17,
     0.0,
-    43
+    54.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#f3e3c3"
+  },
+  {
+   "prop": "buildings/block_4",
+   "pos": [
+    -13.5,
+    0.0,
+    56.5
    ],
    "yaw": 0.0,
    "scale": [
-    1.5,
-    1.5,
-    1.5
+    1,
+    1,
+    1
    ],
-   "tint": "#467e3c"
+   "tint": null
+  },
+  {
+   "prop": "buildings/tower_0",
+   "pos": [
+    16,
+    0.0,
+    70
+   ],
+   "yaw": 0,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#d9b99b"
+  },
+  {
+   "prop": "buildings/tower_0",
+   "pos": [
+    -16,
+    0.0,
+    82
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#f3e3c3"
   }
  ],
  "actors": [],
@@ -492,12 +342,8 @@
      -11.0
     ],
     [
-     -2.5,
-     -7.5
-    ],
-    [
-     -3.05,
-     -4.5
+     -3,
+     -6.5
     ],
     [
      -3.05,
@@ -572,9 +418,12 @@
  "playerPlacement": "street",
  "questionView": {
   "centre": [
-   -1.0,
-   1.5
+   -1.258,
+   1.848
   ],
-  "height": 34.0
+  "height": 28.236,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  }
 }

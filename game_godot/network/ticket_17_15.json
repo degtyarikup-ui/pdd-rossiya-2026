@@ -37,7 +37,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -71,7 +71,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -105,7 +105,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -564,7 +564,9 @@
       0
      ]
     ]
-   ]
+   ],
+   "outerEdge": false,
+   "innerEdge": false
   }
  ],
  "routes": [
@@ -572,6 +574,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -595,32 +598,16 @@
      -18.9
     ],
     [
-     -1.8,
-     -18.0
+     -2.5,
+     -11.5
     ],
     [
-     -2,
-     -11
+     -9.5,
+     -5
     ],
     [
-     -6.071,
-     -8.567
-    ],
-    [
-     -7.992,
-     -6.811
-    ],
-    [
-     -9.421,
-     -4.636
-    ],
-    [
-     -10.272,
-     -2.176
-    ],
-    [
-     -10.492,
-     0.418
+     -8.5,
+     5
     ]
    ],
    "exitYaw": 1.571
@@ -4140,7 +4127,9 @@
     "z": 0,
     "ring": {
      "r": 15,
-     "island": 6
+     "island": 6,
+     "innerEdge": false,
+     "outerEdge": false
     }
    },
    {
@@ -4169,26 +4158,31 @@
      "b": {
       "stop": false
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_w",
     "a": "w",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    }
   ],
   "player": {
    "street": "s_s",
-   "toward": "c"
+   "toward": "c",
+   "questionAt": 18.9,
+   "lane": 0
   },
   "paths": {
    "left": [
@@ -4197,43 +4191,27 @@
      -18.9
     ],
     [
-     -1.8,
-     -18
+     -2.5,
+     -11.5
     ],
     [
-     -2,
-     -11
+     -9.5,
+     -5
     ],
     [
-     -6.071,
-     -8.567
-    ],
-    [
-     -7.992,
-     -6.811
-    ],
-    [
-     -9.421,
-     -4.636
-    ],
-    [
-     -10.272,
-     -2.176
-    ],
-    [
-     -10.492,
-     0.418
+     -8.5,
+     5
     ]
    ]
   }
  },
  "questionView": {
   "centre": [
-   -11.753,
-   5.304
+   -7.83,
+   10.407
   ],
-  "height": 51.052
+  "height": 56.019
  },
- "reviewed": false,
+ "reviewed": true,
  "reviewGroup": "unmarked-2026-10-15"
 }

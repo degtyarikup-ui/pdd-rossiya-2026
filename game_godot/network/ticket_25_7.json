@@ -1811,8 +1811,8 @@
    "id": "house_-1_0",
    "prop": "buildings/block_0",
    "pos": [
-    -23,
-    -65
+    -15.602,
+    -42.571
    ],
    "yaw": -1.5707963267948966,
    "scale": [
@@ -1841,8 +1841,8 @@
    "id": "house_-1_1",
    "prop": "buildings/block_1",
    "pos": [
-    -23,
-    -39
+    -14.326,
+    -15.52
    ],
    "yaw": -1.5707963267948966,
    "scale": [
@@ -1871,8 +1871,8 @@
    "id": "house_-1_2",
    "prop": "buildings/block_2",
    "pos": [
-    -23,
-    31
+    -16.945,
+    19.359
    ],
    "yaw": -1.5707963267948966,
    "scale": [
@@ -1901,8 +1901,8 @@
    "id": "house_-1_3",
    "prop": "buildings/block_3",
    "pos": [
-    -23,
-    59
+    -30.569,
+    18.476
    ],
    "yaw": -1.5707963267948966,
    "scale": [
@@ -1928,69 +1928,13 @@
    "tint": "#5f8f3e"
   },
   {
-   "id": "lamp_-1_0",
-   "prop": "street/lamp",
-   "pos": [
-    -7.5,
-    -61
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ]
-  },
-  {
-   "id": "lamp_-1_1",
-   "prop": "street/lamp",
-   "pos": [
-    -7.5,
-    -27
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ]
-  },
-  {
-   "id": "lamp_-1_2",
-   "prop": "street/lamp",
-   "pos": [
-    -7.5,
-    28
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ]
-  },
-  {
-   "id": "lamp_-1_3",
-   "prop": "street/lamp",
-   "pos": [
-    -7.5,
-    62
-   ],
-   "yaw": -1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ]
-  },
-  {
    "id": "bush_-1_0",
    "prop": "street/bush",
    "pos": [
-    -10.0,
+    -10,
     -49
    ],
-   "yaw": 0.0,
+   "yaw": 0,
    "scale": [
     1.5,
     1.5,
@@ -2002,10 +1946,10 @@
    "id": "bush_-1_1",
    "prop": "street/bush",
    "pos": [
-    -10.0,
+    -10,
     43
    ],
-   "yaw": 0.0,
+   "yaw": 0,
    "scale": [
     1.5,
     1.5,
@@ -2017,8 +1961,8 @@
    "id": "house_1_0",
    "prop": "buildings/block_0",
    "pos": [
-    23,
-    -65
+    15.093,
+    -41.301
    ],
    "yaw": 1.5707963267948966,
    "scale": [
@@ -2035,7 +1979,7 @@
     13,
     -56
    ],
-   "yaw": 0.0,
+   "yaw": 0,
    "scale": [
     1.15,
     1.15,
@@ -2047,14 +1991,14 @@
    "id": "house_1_1",
    "prop": "buildings/block_1",
    "pos": [
-    23,
-    -39
+    18.339,
+    -16.582
    ],
    "yaw": 1.5707963267948966,
    "scale": [
-    1.0,
-    1.0,
-    1.0
+    1,
+    1,
+    1
    ],
    "tint": "#ccd6d9"
   },
@@ -2077,8 +2021,8 @@
    "id": "house_1_2",
    "prop": "buildings/block_2",
    "pos": [
-    23,
-    31
+    15.383,
+    20.721
    ],
    "yaw": 1.5707963267948966,
    "scale": [
@@ -2107,8 +2051,8 @@
    "id": "house_1_3",
    "prop": "buildings/block_3",
    "pos": [
-    23,
-    59
+    30.562,
+    16.562
    ],
    "yaw": 1.5707963267948966,
    "scale": [
@@ -2134,69 +2078,13 @@
    "tint": "#5f8f3e"
   },
   {
-   "id": "lamp_1_0",
-   "prop": "street/lamp",
-   "pos": [
-    7.5,
-    -61
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ]
-  },
-  {
-   "id": "lamp_1_1",
-   "prop": "street/lamp",
-   "pos": [
-    7.5,
-    -27
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ]
-  },
-  {
-   "id": "lamp_1_2",
-   "prop": "street/lamp",
-   "pos": [
-    7.5,
-    28
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ]
-  },
-  {
-   "id": "lamp_1_3",
-   "prop": "street/lamp",
-   "pos": [
-    7.5,
-    62
-   ],
-   "yaw": 1.5707963267948966,
-   "scale": [
-    1.0,
-    1.0,
-    1.0
-   ]
-  },
-  {
    "id": "bush_1_0",
    "prop": "street/bush",
    "pos": [
-    10.0,
+    10,
     -49
    ],
-   "yaw": 0.0,
+   "yaw": 0,
    "scale": [
     1.5,
     1.5,
@@ -2208,7 +2096,7 @@
    "id": "bush_1_1",
    "prop": "street/bush",
    "pos": [
-    10.0,
+    10,
     43
    ],
    "yaw": 0.0,
@@ -2218,6 +2106,651 @@
     1.5
    ],
    "tint": "#467e3c"
+  },
+  {
+   "id": "decor_1",
+   "prop": "buildings/home_0",
+   "pos": [
+    -49.266,
+    -16.827
+   ],
+   "yaw": 0,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_3",
+   "prop": "street/fence_12",
+   "pos": [
+    -57.266,
+    -16.827
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_4",
+   "prop": "street/fence_12",
+   "pos": [
+    -49.152,
+    -8.756
+   ],
+   "yaw": 1.571,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_5",
+   "prop": "trees/pine_0",
+   "pos": [
+    -64.489,
+    -18.086
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_6",
+   "prop": "trees/birch_0",
+   "pos": [
+    -39.689,
+    -10.632
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.797,
+    0.797,
+    0.797
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_7",
+   "prop": "street/bush",
+   "pos": [
+    -46.589,
+    -10.532
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_8",
+   "prop": "buildings/home_1",
+   "pos": [
+    -32.266,
+    -16.827
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_10",
+   "prop": "street/fence_12",
+   "pos": [
+    -24.266,
+    -16.827
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_11",
+   "prop": "street/fence_12",
+   "pos": [
+    -32.152,
+    -8.756
+   ],
+   "yaw": 1.571,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_12",
+   "prop": "trees/pine_0",
+   "pos": [
+    -40.499,
+    -21.864
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_13",
+   "prop": "trees/round_0",
+   "pos": [
+    -22.689,
+    -10.632
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.835,
+    0.835,
+    0.835
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_14",
+   "prop": "street/bush",
+   "pos": [
+    -29.589,
+    -10.532
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_15",
+   "prop": "buildings/home_1",
+   "pos": [
+    -74.697,
+    -17.116
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_17",
+   "prop": "street/fence_12",
+   "pos": [
+    -66.697,
+    -17.116
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_18",
+   "prop": "street/fence_12",
+   "pos": [
+    -74.583,
+    -9.045
+   ],
+   "yaw": 1.571,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_19",
+   "prop": "trees/pine_0",
+   "pos": [
+    -84.508,
+    -14.221
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_20",
+   "prop": "trees/round_0",
+   "pos": [
+    -58.575,
+    -10.452
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.835,
+    0.835,
+    0.835
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_21",
+   "prop": "street/bush",
+   "pos": [
+    -65.475,
+    -10.352
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_22",
+   "prop": "buildings/home_0",
+   "pos": [
+    -70.865,
+    20.165
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_23",
+   "prop": "street/fence_14",
+   "pos": [
+    -70.865,
+    8.665
+   ],
+   "yaw": 1.571,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_24",
+   "prop": "street/fence_12",
+   "pos": [
+    -78.865,
+    20.165
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_25",
+   "prop": "street/fence_12",
+   "pos": [
+    -70.865,
+    30.665
+   ],
+   "yaw": 1.571,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_26",
+   "prop": "trees/pine_0",
+   "pos": [
+    -74.265,
+    12.365
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_27",
+   "prop": "trees/birch_0",
+   "pos": [
+    -67.565,
+    27.065
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.797,
+    0.797,
+    0.797
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_28",
+   "prop": "street/bush",
+   "pos": [
+    -74.465,
+    27.165
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_29",
+   "prop": "buildings/home_1",
+   "pos": [
+    -53.865,
+    20.165
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_30",
+   "prop": "street/fence_14",
+   "pos": [
+    -53.865,
+    8.665
+   ],
+   "yaw": 1.571,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_31",
+   "prop": "street/fence_12",
+   "pos": [
+    -45.865,
+    20.165
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_32",
+   "prop": "street/fence_12",
+   "pos": [
+    -53.865,
+    30.665
+   ],
+   "yaw": 1.571,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_33",
+   "prop": "trees/pine_0",
+   "pos": [
+    -57.265,
+    12.365
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_34",
+   "prop": "trees/round_0",
+   "pos": [
+    -50.565,
+    27.065
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.835,
+    0.835,
+    0.835
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_35",
+   "prop": "street/bush",
+   "pos": [
+    -57.465,
+    27.165
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_36",
+   "prop": "buildings/home_0",
+   "pos": [
+    44.553,
+    -12.371
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_37",
+   "prop": "buildings/home_0",
+   "pos": [
+    78.311,
+    -12.182
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_38",
+   "prop": "buildings/home_0",
+   "pos": [
+    63.877,
+    12.973
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_39",
+   "prop": "buildings/home_0",
+   "pos": [
+    11.82,
+    60.075
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_40",
+   "prop": "buildings/home_0",
+   "pos": [
+    -13.486,
+    81.388
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_41",
+   "prop": "buildings/block_0",
+   "pos": [
+    -20.529,
+    47.208
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_42",
+   "prop": "trees/pine_0",
+   "pos": [
+    -29.529,
+    47.208
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_43",
+   "prop": "trees/birch_0",
+   "pos": [
+    -10.029,
+    50.708
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_44",
+   "prop": "trees/pine_0",
+   "pos": [
+    -10.029,
+    56.208
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_45",
+   "prop": "trees/round_0",
+   "pos": [
+    -10.029,
+    61.708
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_46",
+   "prop": "street/lamp",
+   "pos": [
+    -14.029,
+    56.208
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
   }
  ],
  "question": {
@@ -2459,7 +2992,7 @@
  "geometry": null,
  "type": "crossroad",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [
@@ -2479,22 +3012,19 @@
  "compliance": {
   "status": "unverified"
  },
- "questionPool": {
-  "sourceQuestionId": "cdcd81894d611369779ffd8f740425dc",
-  "category": "ab",
-  "ticket": 25,
-  "number": 7
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-10-16-first-12",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [
    -3.0,
    1.5
   ],
-  "height": 39.0
+  "height": 39.0,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  }
 }

@@ -69,48 +69,12 @@
      -13.1
     ],
     [
-     -1.8,
-     -4.7
+     -1,
+     0
     ],
     [
-     -1.709,
-     -3.101
-    ],
-    [
-     -1.431,
-     -1.745
-    ],
-    [
-     -0.955,
-     -0.624
-    ],
-    [
-     -0.274,
-     0.274
-    ],
-    [
-     0.624,
-     0.955
-    ],
-    [
-     1.745,
-     1.431
-    ],
-    [
-     3.101,
-     1.709
-    ],
-    [
-     4.7,
-     1.8
-    ],
-    [
-     5.2,
-     1.8
-    ],
-    [
-     24.7,
-     1.8
+     8.5,
+     1.5
     ]
    ],
    "exitYaw": 1.571
@@ -228,11 +192,11 @@
  },
  "props": [
   {
-   "prop": "buildings/home_0",
+   "prop": "buildings/block_1",
    "pos": [
-    -28,
+    19.675,
     0.0,
-    -54
+    13.989
    ],
    "yaw": 0,
    "scale": [
@@ -240,29 +204,29 @@
     1,
     1
    ],
-   "tint": "#e8cfa8"
+   "tint": null
   },
   {
    "prop": "trees/birch_0",
    "pos": [
-    -14,
+    28.675,
     0.0,
-    -58
+    13.989
    ],
-   "yaw": 0,
+   "yaw": 4.562,
    "scale": [
-    1,
-    1,
-    1
+    0.847,
+    0.847,
+    0.847
    ],
-   "tint": "#6f914f"
+   "tint": null
   },
   {
-   "prop": "buildings/home_1",
+   "prop": "buildings/block_3",
    "pos": [
-    -28,
+    19.675,
     0.0,
-    -28
+    31.989
    ],
    "yaw": 0,
    "scale": [
@@ -270,74 +234,119 @@
     1,
     1
    ],
-   "tint": "#e9d5cc"
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    28.675,
+    0.0,
+    31.989
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
   },
   {
    "prop": "trees/birch_0",
    "pos": [
-    -14,
+    9.175,
     0.0,
-    -32
+    11.989
    ],
-   "yaw": 0,
+   "yaw": 5.36,
    "scale": [
-    1,
-    1,
-    1
+    0.911,
+    0.911,
+    0.911
    ],
-   "tint": "#6f914f"
-  },
-  {
-   "prop": "buildings/home_2",
-   "pos": [
-    -28,
-    0.0,
-    35
-   ],
-   "yaw": 0,
-   "scale": [
-    1,
-    1,
-    1
-   ],
-   "tint": "#c8d9c0"
+   "tint": null
   },
   {
    "prop": "trees/birch_0",
    "pos": [
-    -14,
+    9.175,
     0.0,
-    31
+    17.489
    ],
-   "yaw": 0,
+   "yaw": 5.247,
    "scale": [
-    1,
-    1,
-    1
+    0.894,
+    0.894,
+    0.894
    ],
-   "tint": "#6f914f"
+   "tint": null
   },
   {
-   "prop": "buildings/home_3",
+   "prop": "trees/pine_0",
    "pos": [
-    -28,
+    9.175,
     0.0,
-    65
+    22.989
    ],
-   "yaw": 0,
+   "yaw": 1.733,
    "scale": [
-    1,
-    1,
-    1
+    0.875,
+    0.875,
+    0.875
    ],
-   "tint": "#d5dce5"
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    9.175,
+    0.0,
+    28.489
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
   },
   {
    "prop": "trees/birch_0",
    "pos": [
-    -14,
+    9.175,
     0.0,
-    61
+    33.989
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    13.175,
+    0.0,
+    22.989
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    13.675,
+    0.0,
+    39.989
    ],
    "yaw": 0,
    "scale": [
@@ -345,14 +354,14 @@
     1,
     1
    ],
-   "tint": "#6f914f"
+   "tint": null
   },
   {
-   "prop": "trees/round_0",
+   "prop": "buildings/block_0",
    "pos": [
-    -46,
+    -39.868,
     0.0,
-    -17
+    18.106
    ],
    "yaw": 0,
    "scale": [
@@ -360,14 +369,29 @@
     1,
     1
    ],
-   "tint": "#64874c"
+   "tint": null
   },
   {
-   "prop": "trees/round_0",
+   "prop": "trees/pine_0",
    "pos": [
-    -46,
+    -48.868,
     0.0,
-    19
+    18.106
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    -18.868,
+    0.0,
+    18.106
    ],
    "yaw": 0,
    "scale": [
@@ -375,59 +399,29 @@
     1,
     1
    ],
-   "tint": "#76914e"
-  },
-  {
-   "prop": "trees/round_0",
-   "pos": [
-    -70,
-    0.0,
-    -17
-   ],
-   "yaw": 0,
-   "scale": [
-    1,
-    1,
-    1
-   ],
-   "tint": "#64874c"
-  },
-  {
-   "prop": "trees/round_0",
-   "pos": [
-    -70,
-    0.0,
-    19
-   ],
-   "yaw": 0,
-   "scale": [
-    1,
-    1,
-    1
-   ],
-   "tint": "#76914e"
-  },
-  {
-   "prop": "buildings/home_0",
-   "pos": [
-    28,
-    0.0,
-    -54
-   ],
-   "yaw": 3.141592653589793,
-   "scale": [
-    1,
-    1,
-    1
-   ],
-   "tint": "#e8cfa8"
+   "tint": null
   },
   {
    "prop": "trees/birch_0",
    "pos": [
-    14,
+    -9.868,
     0.0,
-    -58
+    18.106
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -39.868,
+    0.0,
+    36.106
    ],
    "yaw": 0,
    "scale": [
@@ -435,89 +429,134 @@
     1,
     1
    ],
-   "tint": "#6f914f"
+   "tint": null
   },
   {
-   "prop": "buildings/home_1",
+   "prop": "trees/pine_0",
    "pos": [
-    28,
+    -48.868,
     0.0,
-    -28
+    36.106
    ],
-   "yaw": 3.141592653589793,
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    -18.868,
+    0.0,
+    36.106
+   ],
+   "yaw": 0,
    "scale": [
     1,
     1,
     1
    ],
-   "tint": "#e9d5cc"
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -9.868,
+    0.0,
+    36.106
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
   },
   {
    "prop": "trees/birch_0",
    "pos": [
-    14,
+    -29.368,
     0.0,
-    -32
+    16.106
    ],
-   "yaw": 0,
+   "yaw": 5.36,
    "scale": [
-    1,
-    1,
-    1
+    0.911,
+    0.911,
+    0.911
    ],
-   "tint": "#6f914f"
-  },
-  {
-   "prop": "buildings/home_2",
-   "pos": [
-    28,
-    0.0,
-    35
-   ],
-   "yaw": 3.141592653589793,
-   "scale": [
-    1,
-    1,
-    1
-   ],
-   "tint": "#c8d9c0"
+   "tint": null
   },
   {
    "prop": "trees/birch_0",
    "pos": [
-    14,
+    -29.368,
     0.0,
-    31
+    21.606
    ],
-   "yaw": 0,
+   "yaw": 5.247,
    "scale": [
-    1,
-    1,
-    1
+    0.894,
+    0.894,
+    0.894
    ],
-   "tint": "#6f914f"
+   "tint": null
   },
   {
-   "prop": "buildings/home_3",
+   "prop": "trees/pine_0",
    "pos": [
-    28,
+    -29.368,
     0.0,
-    65
+    27.106
    ],
-   "yaw": 3.141592653589793,
+   "yaw": 1.733,
    "scale": [
-    1,
-    1,
-    1
+    0.875,
+    0.875,
+    0.875
    ],
-   "tint": "#d5dce5"
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -29.368,
+    0.0,
+    32.606
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
   },
   {
    "prop": "trees/birch_0",
    "pos": [
-    14,
+    -29.368,
     0.0,
-    61
+    38.106
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -33.368,
+    0.0,
+    27.106
    ],
    "yaw": 0,
    "scale": [
@@ -525,29 +564,254 @@
     1,
     1
    ],
-   "tint": "#6f914f"
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -25.368,
+    0.0,
+    27.106
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -33.868,
+    0.0,
+    10.106
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -24.868,
+    0.0,
+    44.106
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    20.247,
+    0.0,
+    52.65
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    11.247,
+    0.0,
+    52.65
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    41.247,
+    0.0,
+    52.65
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    50.247,
+    0.0,
+    52.65
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    20.247,
+    0.0,
+    70.65
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    11.247,
+    0.0,
+    70.65
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    41.247,
+    0.0,
+    70.65
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
   },
   {
    "prop": "trees/round_0",
    "pos": [
-    46,
+    50.247,
     0.0,
-    -17
+    70.65
    ],
-   "yaw": 0,
+   "yaw": 2.256,
    "scale": [
-    1,
-    1,
-    1
+    0.888,
+    0.888,
+    0.888
    ],
-   "tint": "#64874c"
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    30.747,
+    0.0,
+    50.65
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    30.747,
+    0.0,
+    56.15
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    30.747,
+    0.0,
+    61.65
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
   },
   {
    "prop": "trees/round_0",
    "pos": [
-    46,
+    30.747,
     0.0,
-    19
+    67.15
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    30.747,
+    0.0,
+    72.65
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    26.747,
+    0.0,
+    61.65
    ],
    "yaw": 0,
    "scale": [
@@ -555,29 +819,254 @@
     1,
     1
    ],
-   "tint": "#76914e"
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    34.747,
+    0.0,
+    61.65
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    26.247,
+    0.0,
+    44.65
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    35.247,
+    0.0,
+    78.65
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -40.127,
+    0.0,
+    59.587
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -49.127,
+    0.0,
+    59.587
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    -19.127,
+    0.0,
+    59.587
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -10.127,
+    0.0,
+    59.587
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -40.127,
+    0.0,
+    77.587
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -49.127,
+    0.0,
+    77.587
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    -19.127,
+    0.0,
+    77.587
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
   },
   {
    "prop": "trees/round_0",
    "pos": [
-    70,
+    -10.127,
     0.0,
-    -17
+    77.587
    ],
-   "yaw": 0,
+   "yaw": 2.256,
    "scale": [
-    1,
-    1,
-    1
+    0.888,
+    0.888,
+    0.888
    ],
-   "tint": "#64874c"
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -29.627,
+    0.0,
+    57.587
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -29.627,
+    0.0,
+    63.087
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -29.627,
+    0.0,
+    68.587
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
   },
   {
    "prop": "trees/round_0",
    "pos": [
-    70,
+    -29.627,
     0.0,
-    19
+    74.087
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -29.627,
+    0.0,
+    79.587
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -33.627,
+    0.0,
+    68.587
    ],
    "yaw": 0,
    "scale": [
@@ -585,7 +1074,1102 @@
     1,
     1
    ],
-   "tint": "#76914e"
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -25.627,
+    0.0,
+    68.587
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -34.127,
+    0.0,
+    51.587
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -25.127,
+    0.0,
+    85.587
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    42.331,
+    0.0,
+    17.125
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    33.331,
+    0.0,
+    17.125
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    63.331,
+    0.0,
+    17.125
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    72.331,
+    0.0,
+    17.125
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    52.831,
+    0.0,
+    13.625
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    52.831,
+    0.0,
+    19.125
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    48.831,
+    0.0,
+    8.125
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    56.831,
+    0.0,
+    8.125
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    48.331,
+    0.0,
+    -8.875
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    57.331,
+    0.0,
+    25.125
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    56.637,
+    0.0,
+    -17.382
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    47.637,
+    0.0,
+    -17.382
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    77.637,
+    0.0,
+    -17.382
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    86.637,
+    0.0,
+    -17.382
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    67.137,
+    0.0,
+    -19.382
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    67.137,
+    0.0,
+    -13.882
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    63.137,
+    0.0,
+    -8.382
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    71.137,
+    0.0,
+    -8.382
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    62.637,
+    0.0,
+    -25.382
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    71.637,
+    0.0,
+    8.618
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    18.85,
+    0.0,
+    -35.224
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    9.85,
+    0.0,
+    -35.224
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    39.85,
+    0.0,
+    -35.224
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    48.85,
+    0.0,
+    -35.224
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    18.85,
+    0.0,
+    -17.224
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    9.85,
+    0.0,
+    -17.224
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    29.35,
+    0.0,
+    -37.224
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    29.35,
+    0.0,
+    -31.724
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    29.35,
+    0.0,
+    -26.224
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    29.35,
+    0.0,
+    -20.724
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    29.35,
+    0.0,
+    -15.224
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    25.35,
+    0.0,
+    -26.224
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    33.35,
+    0.0,
+    -26.224
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    24.85,
+    0.0,
+    -43.224
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    33.85,
+    0.0,
+    -9.224
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -39.467,
+    0.0,
+    -35.31
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -48.467,
+    0.0,
+    -35.31
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    -18.467,
+    0.0,
+    -35.31
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -9.467,
+    0.0,
+    -35.31
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -39.467,
+    0.0,
+    -17.31
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -48.467,
+    0.0,
+    -17.31
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    -18.467,
+    0.0,
+    -17.31
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -9.467,
+    0.0,
+    -17.31
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -28.967,
+    0.0,
+    -37.31
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -28.967,
+    0.0,
+    -31.81
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -28.967,
+    0.0,
+    -26.31
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -28.967,
+    0.0,
+    -20.81
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -28.967,
+    0.0,
+    -15.31
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -32.967,
+    0.0,
+    -26.31
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -24.967,
+    0.0,
+    -26.31
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -33.467,
+    0.0,
+    -43.31
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -24.467,
+    0.0,
+    -9.31
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -22.776,
+    0.0,
+    -67.456
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -31.776,
+    0.0,
+    -67.456
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -22.776,
+    0.0,
+    -49.456
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -31.776,
+    0.0,
+    -49.456
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -12.276,
+    0.0,
+    -69.456
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -12.276,
+    0.0,
+    -63.956
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -12.276,
+    0.0,
+    -58.456
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -12.276,
+    0.0,
+    -52.956
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -12.276,
+    0.0,
+    -47.456
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -16.276,
+    0.0,
+    -58.456
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -16.776,
+    0.0,
+    -75.456
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    16.996,
+    0.0,
+    -74.323
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    25.996,
+    0.0,
+    -74.323
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    16.996,
+    0.0,
+    -56.323
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    25.996,
+    0.0,
+    -56.323
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    10.496,
+    0.0,
+    -65.323
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    10.996,
+    0.0,
+    -48.323
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/kiosk_0",
+   "pos": [
+    -11.158,
+    0.0,
+    9.953
+   ],
+   "yaw": 3.084,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
   }
  ],
  "actors": [],

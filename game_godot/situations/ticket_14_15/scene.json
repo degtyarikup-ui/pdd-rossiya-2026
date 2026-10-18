@@ -3387,7 +3387,8 @@
       1.8,
       -56.0
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.992,
    "halfWidth": 1.046,
@@ -3425,13 +3426,16 @@
    ],
    "length": 68.5,
    "clearDistance": 17.492,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": false
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#4D7768",
+   "way": null,
+   "hazards": false
   },
   {
    "id": "npc_car",
@@ -3459,7 +3463,8 @@
       55.0,
       2.05
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.84,
    "halfWidth": 0.983,
@@ -3497,21 +3502,26 @@
    ],
    "length": 69.001,
    "clearDistance": 17.34,
-   "maxSpeed": 12,
+   "maxSpeed": 5,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#B9C0C7",
+   "way": null,
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   -2.435,
-   6.627
+   -0.274,
+   10.904
   ],
-  "height": 48.228
+  "height": 52.621
  },
  "officers": []
 }

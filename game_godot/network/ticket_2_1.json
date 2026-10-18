@@ -86,7 +86,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": false,
+   "edge": true,
+   "surface": "asphalt"
   },
   {
    "id": "full_width_carriageway",
@@ -455,8 +458,8 @@
   {
    "prop": "buildings/block_1",
    "pos": [
-    -34,
-    15
+    -17.119,
+    19.997
    ],
    "yaw": 0,
    "scale": [
@@ -470,8 +473,8 @@
   {
    "prop": "buildings/block_2",
    "pos": [
-    -34,
-    52
+    -17.119,
+    56.997
    ],
    "yaw": 0,
    "scale": [
@@ -635,8 +638,8 @@
   {
    "prop": "buildings/block_1",
    "pos": [
-    34,
-    15
+    16.71,
+    20.029
    ],
    "yaw": 3.141592653589793,
    "scale": [
@@ -650,8 +653,8 @@
   {
    "prop": "buildings/block_2",
    "pos": [
-    34,
-    52
+    16.71,
+    57.029
    ],
    "yaw": 3.141592653589793,
    "scale": [
@@ -737,7 +740,8 @@
   "player": {
    "street": "s1",
    "toward": "n",
-   "lane": 1
+   "lane": 1,
+   "questionAt": 103.1
   }
  },
  "stop": {
@@ -753,7 +757,7 @@
  "geometry": null,
  "type": "road_divided",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [],
@@ -763,16 +767,10 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "40edd1d720133385413d2302583b2eee",
-  "category": "ab",
-  "ticket": 2,
-  "number": 1
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-10-16-first-12",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [

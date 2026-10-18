@@ -2816,7 +2816,8 @@
       1.8,
       -44.7
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -2870,16 +2871,24 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#B9C0C7",
+   "way": "left",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   -4.726,
-   5.557
+   -5.975,
+   6.201
   ],
-  "height": 37.145
+  "height": 38.864,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  },
- "officers": [],
- "playerPlacement": "street"
+ "officers": []
 }

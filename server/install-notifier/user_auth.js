@@ -36,7 +36,11 @@ export async function verifyIdentity(body, env) {
     const tok = await info.json();
     const androidClients = audiences(env.GOOGLE_ANDROID_CLIENT_IDS, '');
     const allowed = [...androidClients, ...audiences(env.GOOGLE_CLIENT_IDS, GOOGLE_CLIENT)];
-    if (!allowed.includes(tok.aud) && !allowed.includes(tok.azp)) throw new Error('wrong client');
+    if (!allowed.includes(tok.aud) && !allowed.includes(tok.azp)) {
+      // Client IDs are public; logging them identifies an OAuth client missing from the allowlist.
+      console.warn('google access token client rejected', JSON.stringify({ aud: tok.aud || null, azp: tok.azp || null }));
+      throw new Error('wrong client');
+    }
     if (!tok.sub || !Number.isFinite(Number(tok.expires_in)) || Number(tok.expires_in) <= 0) throw authFailure('invalid credential', 'google_tokeninfo_claims');
     let profile = {};
     try {

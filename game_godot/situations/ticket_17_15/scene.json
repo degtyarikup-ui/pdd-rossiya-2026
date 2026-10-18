@@ -3143,32 +3143,16 @@
      -18.9
     ],
     [
-     -1.8,
-     -18.0
+     -2.5,
+     -11.5
     ],
     [
-     -2,
-     -11
+     -9.5,
+     -5
     ],
     [
-     -6.071,
-     -8.567
-    ],
-    [
-     -7.992,
-     -6.811
-    ],
-    [
-     -9.421,
-     -4.636
-    ],
-    [
-     -10.272,
-     -2.176
-    ],
-    [
-     -10.492,
-     0.418
+     -8.5,
+     5
     ]
    ],
    "exitYaw": 1.571
@@ -3448,7 +3432,8 @@
       40,
       1.792
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.19,
    "halfWidth": 1.023,
@@ -3517,15 +3502,21 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#4D7768",
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   -11.753,
-   5.304
+   -7.83,
+   10.407
   ],
-  "height": 51.052
+  "height": 56.019
  },
  "officers": [],
  "approachW": 8.4

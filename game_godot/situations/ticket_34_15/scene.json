@@ -2933,7 +2933,8 @@
       -1.8,
       44.7
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.992,
    "halfWidth": 1.046,
@@ -2988,7 +2989,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": "left",
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "npc_car",
@@ -3016,7 +3021,8 @@
       1.8,
       -56
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.84,
    "halfWidth": 0.983,
@@ -3060,10 +3066,15 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    2.996,

@@ -330,8 +330,8 @@
   {
    "id": "manoeuvre_straight",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "straight",
    "points": [
     [
@@ -340,19 +340,7 @@
     ],
     [
      -5.25,
-     -7.5
-    ],
-    [
-     -5.25,
-     7.5
-    ],
-    [
-     -5.25,
      8
-    ],
-    [
-     -5.25,
-     27.5
     ]
    ],
    "exitYaw": 0
@@ -3963,6 +3951,18 @@
    "toward": "c",
    "questionAt": 15,
    "lane": 1
+  },
+  "paths": {
+   "straight": [
+    [
+     -5.25,
+     -15
+    ],
+    [
+     -5.25,
+     8
+    ]
+   ]
   }
  },
  "questionView": {

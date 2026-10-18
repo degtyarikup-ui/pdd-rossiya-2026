@@ -3432,7 +3432,8 @@
       1.8,
       -44.7
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.84,
    "halfWidth": 0.983,
@@ -3492,7 +3493,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": "left",
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "npc_bus",
@@ -3520,7 +3525,8 @@
       1.8,
       -56
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.992,
    "halfWidth": 1.046,
@@ -3564,7 +3570,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "npc_moto",
@@ -3592,7 +3602,8 @@
       -44.7,
       -1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.075,
    "halfWidth": 0.348,
@@ -3636,16 +3647,24 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": "straight",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    -0.402,
    7.613
   ],
-  "height": 34.58
+  "height": 37.356,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  },
- "officers": [],
- "playerPlacement": "street"
+ "officers": []
 }

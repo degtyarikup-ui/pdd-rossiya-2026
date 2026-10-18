@@ -3040,19 +3040,7 @@
     ],
     [
      -5.25,
-     -7.5
-    ],
-    [
-     -5.25,
-     7.5
-    ],
-    [
-     -5.25,
      8
-    ],
-    [
-     -5.25,
-     27.5
     ]
    ],
    "exitYaw": 0
@@ -3309,7 +3297,8 @@
       -1.856,
       51.695
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 3.585,
    "halfWidth": 0.84,
@@ -3359,7 +3348,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#F08A24",
+   "way": "straight",
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "npc_truck",
@@ -3395,7 +3388,8 @@
       1.75,
       -44.7
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -3449,10 +3443,15 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#317ED4",
+   "way": "left",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    -7.729,

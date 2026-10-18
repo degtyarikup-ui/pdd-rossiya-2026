@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -3990,5 +3991,12 @@
     ]
    ]
   }
+ },
+ "questionView": {
+  "centre": [
+   -5.763,
+   2.243
+  ],
+  "height": 37.353
  }
 }

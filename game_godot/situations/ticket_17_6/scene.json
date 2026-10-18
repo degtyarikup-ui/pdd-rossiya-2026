@@ -3332,23 +3332,29 @@
  "lights": [
   {
    "pos": [
-    -5.452,
+    -4.464,
     0.0,
-    -8.849
+    -10.505
    ],
    "yaw": -3.142,
    "scale": 1.16,
    "arrow": null,
-   "tram": null
+   "tram": null,
+   "mountedSigns": [
+    "6.16"
+   ],
+   "mountedMainRoad": []
   }
  ],
  "actors": [],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   0,
-   2.335
+   -0.287,
+   2.316
   ],
-  "height": 29.46
+  "height": 37.166
  },
  "officers": []
 }

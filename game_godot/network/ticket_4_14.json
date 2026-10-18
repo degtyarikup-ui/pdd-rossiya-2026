@@ -523,8 +523,8 @@
    "kind": "actor",
    "points": [
     [
-     -9.701,
-     -3.289
+     -10,
+     -5
     ],
     [
      -10.5,
@@ -604,8 +604,8 @@
    "asset": "ticket_12_13/actor_0.glb",
    "route": "actor_pedestrian_2",
    "pos": [
-    -9.701,
-    -3.289
+    -10,
+    -5
    ],
    "yaw": 2.698,
    "scale": [

@@ -158,8 +158,8 @@
   {
    "prop": "buildings/block_0",
    "pos": [
-    -22,
-    -60
+    -16.719,
+    -64.959
    ],
    "yaw": 0,
    "scale": [
@@ -188,10 +188,10 @@
   {
    "prop": "street/lamp",
    "pos": [
-    -10.5,
-    -58
+    -9.861,
+    -58.982
    ],
-   "yaw": 0,
+   "yaw": -3.139,
    "scale": [
     1,
     1,
@@ -203,8 +203,8 @@
   {
    "prop": "buildings/block_1",
    "pos": [
-    -22,
-    -28
+    -17.427,
+    -32.145
    ],
    "yaw": 0,
    "scale": [
@@ -233,10 +233,10 @@
   {
    "prop": "street/lamp",
    "pos": [
-    -10.5,
-    -26
+    -9.926,
+    -26.495
    ],
-   "yaw": 0,
+   "yaw": -3.139,
    "scale": [
     1,
     1,
@@ -248,8 +248,8 @@
   {
    "prop": "buildings/block_2",
    "pos": [
-    -22,
-    25
+    -17.423,
+    3.242
    ],
    "yaw": 0,
    "scale": [
@@ -278,10 +278,10 @@
   {
    "prop": "street/lamp",
    "pos": [
-    -10.5,
-    27
+    -9.926,
+    26.505
    ],
-   "yaw": 0,
+   "yaw": -3.139,
    "scale": [
     1,
     1,
@@ -293,8 +293,8 @@
   {
    "prop": "buildings/block_3",
    "pos": [
-    -22,
-    57
+    -18.352,
+    75.832
    ],
    "yaw": 0,
    "scale": [
@@ -323,10 +323,10 @@
   {
    "prop": "street/lamp",
    "pos": [
-    -10.5,
-    59
+    -9.926,
+    58.505
    ],
-   "yaw": 0,
+   "yaw": -3.139,
    "scale": [
     1,
     1,
@@ -338,8 +338,8 @@
   {
    "prop": "buildings/block_0",
    "pos": [
-    22,
-    -60
+    16.78,
+    -78.201
    ],
    "yaw": 3.141592653589793,
    "scale": [
@@ -368,8 +368,8 @@
   {
    "prop": "street/lamp",
    "pos": [
-    10.5,
-    -58
+    9.901,
+    -57.94
    ],
    "yaw": 0,
    "scale": [
@@ -383,8 +383,8 @@
   {
    "prop": "buildings/block_1",
    "pos": [
-    22,
-    -28
+    18.337,
+    -40.787
    ],
    "yaw": 3.141592653589793,
    "scale": [
@@ -413,8 +413,8 @@
   {
    "prop": "street/lamp",
    "pos": [
-    10.5,
-    -26
+    9.901,
+    -25.94
    ],
    "yaw": 0,
    "scale": [
@@ -428,8 +428,8 @@
   {
    "prop": "buildings/block_2",
    "pos": [
-    22,
-    25
+    18.221,
+    16.444
    ],
    "yaw": 3.141592653589793,
    "scale": [
@@ -458,8 +458,8 @@
   {
    "prop": "street/lamp",
    "pos": [
-    10.5,
-    27
+    9.901,
+    27.06
    ],
    "yaw": 0,
    "scale": [
@@ -473,8 +473,8 @@
   {
    "prop": "buildings/block_3",
    "pos": [
-    22,
-    57
+    19.449,
+    52.188
    ],
    "yaw": 3.141592653589793,
    "scale": [
@@ -503,8 +503,8 @@
   {
    "prop": "street/lamp",
    "pos": [
-    10.5,
-    59
+    9.901,
+    59.06
    ],
    "yaw": 0,
    "scale": [
@@ -605,7 +605,7 @@
  "geometry": null,
  "type": "road_undivided",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [],
@@ -615,16 +615,10 @@
  "compliance": {
   "status": "ok"
  },
- "questionPool": {
-  "sourceQuestionId": "949ad9d90453b3e0ae538134a76ec3b1",
-  "category": "ab",
-  "ticket": 5,
-  "number": 1
- },
  "assistantReview": {
   "author": "codex",
   "batch": "2026-10-16-first-12",
-  "status": "pending"
+  "status": "approved"
  },
  "questionView": {
   "centre": [

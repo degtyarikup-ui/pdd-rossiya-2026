@@ -37,7 +37,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -71,7 +71,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -105,7 +105,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -139,7 +139,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -504,34 +504,31 @@
    "kind": "actor",
    "points": [
     [
-     -6.959,
-     -10.22
+     -12,
+     -5.5
     ],
     [
-     -6.959,
-     -1.311
+     -12.34,
+     3.613
     ],
     [
-     -9.516,
-     2.038
+     -17.84,
+     5.613
     ],
     [
-     -18.148,
-     1.946
-    ],
-    [
-     -48.859,
-     1.78
+     -35.34,
+     5.613
     ]
-   ]
+   ],
+   "manual": true
   },
   {
    "id": "actor_pedestrian_1",
    "kind": "actor",
    "points": [
     [
-     11.949,
-     4.9
+     12,
+     5
     ],
     [
      11,
@@ -549,7 +546,8 @@
      6,
      -30.5
     ]
-   ]
+   ],
+   "manual": true
   }
  ],
  "stop": {
@@ -565,8 +563,8 @@
    "name": "Пешеход",
    "route": "actor_pedestrian",
    "pos": [
-    -10.959,
-    -6.22
+    -12,
+    -5.5
    ],
    "yaw": 0,
    "scale": [
@@ -603,8 +601,8 @@
    "name": "Пешеход",
    "route": "actor_pedestrian_1",
    "pos": [
-    11.949,
-    4.9
+    12,
+    5
    ],
    "yaw": 3.142,
    "scale": [
@@ -3798,24 +3796,6 @@
    "id": "auto_mark_2",
    "auto": true,
    "colour": "white",
-   "street": "s_s",
-   "type": "stop",
-   "width": 0.4,
-   "points": [
-    [
-     0,
-     -10.7
-    ],
-    [
-     -4.2,
-     -10.7
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_3",
-   "auto": true,
-   "colour": "white",
    "street": "s_n",
    "type": "dashed",
    "points": [
@@ -3830,7 +3810,7 @@
    ]
   },
   {
-   "id": "auto_mark_4",
+   "id": "auto_mark_3",
    "auto": true,
    "colour": "white",
    "street": "s_e",
@@ -3847,7 +3827,7 @@
    ]
   },
   {
-   "id": "auto_mark_5",
+   "id": "auto_mark_4",
    "auto": true,
    "colour": "white",
    "street": "s_e",
@@ -3865,7 +3845,7 @@
    ]
   },
   {
-   "id": "auto_mark_6",
+   "id": "auto_mark_5",
    "auto": true,
    "colour": "white",
    "street": "s_w",
@@ -3882,7 +3862,7 @@
    ]
   },
   {
-   "id": "auto_mark_7",
+   "id": "auto_mark_6",
    "auto": true,
    "colour": "white",
    "street": "s_w",
@@ -3947,16 +3927,18 @@
     "kind": "street",
     "ends": {
      "b": {
-      "stop": true
+      "stop": false
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_e",
@@ -3967,7 +3949,8 @@
      "b": {
       "zebra": true
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_w",
@@ -3978,7 +3961,8 @@
      "b": {
       "zebra": true
      }
-    }
+    },
+    "edge": false
    }
   ],
   "player": {
@@ -4004,9 +3988,12 @@
  },
  "questionView": {
   "centre": [
-   -6.005,
-   0.132
+   -8.166,
+   1.38
   ],
-  "height": 30.924
+  "height": 22.674,
+  "yaw": -0.492,
+  "pitch": 0.584,
+  "elevation": 0
  }
 }

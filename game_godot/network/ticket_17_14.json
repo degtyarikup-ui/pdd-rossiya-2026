@@ -315,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -551,7 +552,7 @@
    ],
    "halfLength": 2.915,
    "halfWidth": 1.046,
-   "maxSpeed": 12,
+   "maxSpeed": 10,
    "clearDistance": 17.415,
    "behaviour": {
     "stopAtDistance": null,
@@ -559,7 +560,7 @@
     "holdFor": null,
     "staysPut": false,
     "signalPlan": null,
-    "waitsForPlayer": true,
+    "waitsForPlayer": false,
     "config": {
      "id": "npc_truck_opposite",
      "type": "truck",
@@ -590,7 +591,7 @@
    ],
    "halfLength": 2.915,
    "halfWidth": 1.046,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 18.415,
    "behaviour": {
     "stopAtDistance": null,
@@ -598,7 +599,7 @@
     "holdFor": null,
     "staysPut": false,
     "signalPlan": null,
-    "waitsForPlayer": true,
+    "waitsForPlayer": false,
     "config": {
      "id": "npc_truck_right",
      "type": "tanker",
@@ -6158,6 +6159,13 @@
    ]
   }
  },
- "reviewed": false,
- "reviewGroup": "unmarked-2026-10-15"
+ "reviewed": true,
+ "reviewGroup": "unmarked-2026-10-15",
+ "questionView": {
+  "centre": [
+   -2.045,
+   11.018
+  ],
+  "height": 41.985
+ }
 }

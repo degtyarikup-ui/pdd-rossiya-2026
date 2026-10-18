@@ -35,7 +35,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_n",
@@ -66,7 +69,10 @@
      91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -97,7 +103,10 @@
      -7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_w",
@@ -128,7 +137,10 @@
      7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -303,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.8,
@@ -317,8 +330,8 @@
   {
    "id": "manoeuvre_straight",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "straight",
    "points": [
     [
@@ -327,19 +340,7 @@
     ],
     [
      -1.8,
-     -7.5
-    ],
-    [
-     -1.8,
-     4.7
-    ],
-    [
-     -1.8,
      5.2
-    ],
-    [
-     -1.8,
-     24.7
     ]
    ],
    "exitYaw": 0
@@ -531,8 +532,8 @@
      -2.05
     ],
     [
-     -66,
-     -2.5
+     -67,
+     -3.5
     ],
     [
      -80,
@@ -3718,24 +3719,6 @@
    "id": "auto_mark_2",
    "auto": true,
    "colour": "white",
-   "street": "s_s",
-   "type": "stop",
-   "width": 0.4,
-   "points": [
-    [
-     0,
-     -13.5
-    ],
-    [
-     -4.2,
-     -13.5
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_3",
-   "auto": true,
-   "colour": "white",
    "street": "s_n",
    "type": "dashed",
    "points": [
@@ -3750,7 +3733,7 @@
    ]
   },
   {
-   "id": "auto_mark_4",
+   "id": "auto_mark_3",
    "auto": true,
    "colour": "white",
    "street": "s_e",
@@ -3767,7 +3750,7 @@
    ]
   },
   {
-   "id": "auto_mark_5",
+   "id": "auto_mark_4",
    "auto": true,
    "colour": "white",
    "street": "s_e",
@@ -3780,6 +3763,23 @@
     [
      12.2,
      0.15
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_5",
+   "auto": true,
+   "colour": "white",
+   "street": "s_e",
+   "type": "dashed",
+   "points": [
+    [
+     91,
+     -3.5
+    ],
+    [
+     12.2,
+     -3.5
     ]
    ]
   },
@@ -3792,11 +3792,11 @@
    "points": [
     [
      91,
-     -3.5
+     3.5
     ],
     [
      12.2,
-     -3.5
+     3.5
     ]
    ]
   },
@@ -3804,16 +3804,16 @@
    "id": "auto_mark_7",
    "auto": true,
    "colour": "white",
-   "street": "s_e",
-   "type": "dashed",
+   "street": "s_w",
+   "type": "solid",
    "points": [
     [
-     91,
-     3.5
+     -91,
+     0.15
     ],
     [
-     12.2,
-     3.5
+     -12.2,
+     0.15
     ]
    ]
   },
@@ -3826,33 +3826,16 @@
    "points": [
     [
      -91,
-     0.15
+     -0.15
     ],
     [
      -12.2,
-     0.15
+     -0.15
     ]
    ]
   },
   {
    "id": "auto_mark_9",
-   "auto": true,
-   "colour": "white",
-   "street": "s_w",
-   "type": "solid",
-   "points": [
-    [
-     -91,
-     -0.15
-    ],
-    [
-     -12.2,
-     -0.15
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_10",
    "auto": true,
    "colour": "white",
    "street": "s_w",
@@ -3869,7 +3852,7 @@
    ]
   },
   {
-   "id": "auto_mark_11",
+   "id": "auto_mark_10",
    "auto": true,
    "colour": "white",
    "street": "s_w",
@@ -3949,35 +3932,51 @@
     "kind": "street",
     "ends": {
      "b": {
-      "stop": true
+      "stop": false
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "avenue",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_w",
     "a": "w",
     "b": "c",
     "kind": "avenue",
-    "ends": {}
+    "ends": {},
+    "edge": false
    }
   ],
   "player": {
    "street": "s_s",
    "toward": "c"
+  },
+  "paths": {
+   "straight": [
+    [
+     -1.8,
+     -15.9
+    ],
+    [
+     -1.8,
+     5.2
+    ]
+   ]
   }
  },
  "questionView": {
@@ -3985,8 +3984,8 @@
    0.649,
    4.089
   ],
-  "height": 38.565
+  "height": 42.007
  },
- "reviewed": false,
+ "reviewed": true,
  "reviewGroup": "unmarked-2026-10-15"
 }

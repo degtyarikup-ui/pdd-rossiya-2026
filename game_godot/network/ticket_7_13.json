@@ -37,7 +37,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -71,7 +71,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -105,7 +105,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -139,7 +139,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -3940,7 +3940,8 @@
      "b": {
       "stop": true
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_n",
@@ -3951,7 +3952,8 @@
      "b": {
       "stop": true
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_e",
@@ -3962,7 +3964,8 @@
      "b": {
       "stop": true
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_w",
@@ -3973,7 +3976,8 @@
      "b": {
       "stop": true
      }
-    }
+    },
+    "edge": false
    }
   ],
   "player": {

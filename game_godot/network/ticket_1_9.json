@@ -48,7 +48,7 @@
     ]
    ],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt",
    "green": true
   },
@@ -81,7 +81,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s2",
@@ -125,7 +128,7 @@
     ]
    ],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt",
    "green": true
   },
@@ -158,7 +161,10 @@
      0
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s3",
@@ -191,7 +197,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -225,7 +231,7 @@
    ],
    "holes": [],
    "walk": true,
-   "edge": true,
+   "edge": false,
    "surface": "asphalt"
   },
   {
@@ -4019,7 +4025,8 @@
       "approachOffset": -5
      }
     },
-    "median": 3
+    "median": 3,
+    "edge": false
    },
    {
     "id": "s2",
@@ -4031,14 +4038,16 @@
       "approachOffset": -5
      }
     },
-    "median": 3
+    "median": 3,
+    "edge": false
    },
    {
     "id": "s3",
     "a": "c",
     "b": "e",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s4",
@@ -4046,7 +4055,8 @@
     "b": "w",
     "kind": "street",
     "ends": {},
-    "manualMarks": true
+    "manualMarks": true,
+    "edge": false
    }
   ],
   "player": {

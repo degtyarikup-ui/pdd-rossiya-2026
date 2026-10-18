@@ -35,7 +35,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_n",
@@ -66,7 +69,10 @@
      91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -97,7 +103,10 @@
      -7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_w",
@@ -128,7 +137,10 @@
      7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -303,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.79,
@@ -317,8 +330,8 @@
   {
    "id": "manoeuvre_straight",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "straight",
    "points": [
     [
@@ -330,16 +343,8 @@
      -7.5
     ],
     [
-     -1.801,
-     4.7
-    ],
-    [
-     -1.801,
-     5.2
-    ],
-    [
-     -1.803,
-     24.7
+     -2,
+     12.5
     ]
    ],
    "exitYaw": 0
@@ -531,8 +536,8 @@
      -2.05
     ],
     [
-     -67,
-     -1.5
+     -69,
+     -3
     ],
     [
      -83,
@@ -542,34 +547,23 @@
      -63,
      -43.5
     ]
-   ]
+   ],
+   "manual": true
   },
   {
    "id": "actor_npc_truck",
    "kind": "actor",
-   "auto": true,
    "points": [
     [
      -14.883,
      1.75
     ],
     [
-     -7.5,
-     1.75
-    ],
-    [
-     7.5,
-     1.75
-    ],
-    [
-     8,
-     1.75
-    ],
-    [
      47.5,
      1.75
     ]
-   ]
+   ],
+   "manual": true
   }
  ],
  "stop": {
@@ -596,7 +590,7 @@
    ],
    "halfLength": 3.585,
    "halfWidth": 0.84,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 19.085,
    "behaviour": {
     "stopAtDistance": null,
@@ -604,7 +598,7 @@
     "holdFor": null,
     "staysPut": false,
     "signalPlan": null,
-    "waitsForPlayer": true,
+    "waitsForPlayer": false,
     "config": {
      "id": "tram_1",
      "type": "tram",
@@ -634,7 +628,7 @@
    ],
    "halfLength": 2.915,
    "halfWidth": 1.046,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 18.415,
    "behaviour": {
     "stopAtDistance": null,
@@ -642,7 +636,7 @@
     "holdFor": null,
     "staysPut": false,
     "signalPlan": null,
-    "waitsForPlayer": true,
+    "waitsForPlayer": false,
     "config": {
      "id": "npc_truck",
      "type": "truck",
@@ -655,31 +649,6 @@
    "wheelsRadius": 0.36,
    "asset": "ticket_10_14/actor_1.glb",
    "way": "straight"
-  },
-  {
-   "id": "pedestrian_1",
-   "type": "pedestrian",
-   "name": "",
-   "asset": "ticket_12_13/actor_0.glb",
-   "route": null,
-   "pos": [
-    -14.69,
-    -9.234
-   ],
-   "yaw": 1.047,
-   "scale": [
-    1,
-    1,
-    1
-   ],
-   "maxSpeed": 3.6,
-   "clearDistance": 12.5,
-   "halfLength": 0.229,
-   "halfWidth": 0.411,
-   "behaviour": {
-    "staysPut": true,
-    "waitsForPlayer": true
-   }
   }
  ],
  "decor": [
@@ -3689,11 +3658,11 @@
    "points": [
     [
      91,
-     -0.15
+     0
     ],
     [
      12.2,
-     -0.15
+     0
     ]
    ]
   },
@@ -3702,15 +3671,15 @@
    "auto": true,
    "colour": "white",
    "street": "s_e",
-   "type": "solid",
+   "type": "dashed",
    "points": [
     [
      91,
-     0.15
+     -3.5
     ],
     [
      12.2,
-     0.15
+     -3.5
     ]
    ]
   },
@@ -3723,11 +3692,11 @@
    "points": [
     [
      91,
-     -3.5
+     3.5
     ],
     [
      12.2,
-     -3.5
+     3.5
     ]
    ]
   },
@@ -3735,16 +3704,16 @@
    "id": "auto_mark_6",
    "auto": true,
    "colour": "white",
-   "street": "s_e",
-   "type": "dashed",
+   "street": "s_w",
+   "type": "solid",
    "points": [
     [
-     91,
-     3.5
+     -91,
+     0
     ],
     [
-     12.2,
-     3.5
+     -12.2,
+     0
     ]
    ]
   },
@@ -3753,40 +3722,6 @@
    "auto": true,
    "colour": "white",
    "street": "s_w",
-   "type": "solid",
-   "points": [
-    [
-     -91,
-     0.15
-    ],
-    [
-     -12.2,
-     0.15
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_8",
-   "auto": true,
-   "colour": "white",
-   "street": "s_w",
-   "type": "solid",
-   "points": [
-    [
-     -91,
-     -0.15
-    ],
-    [
-     -12.2,
-     -0.15
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_9",
-   "auto": true,
-   "colour": "white",
-   "street": "s_w",
    "type": "dashed",
    "points": [
     [
@@ -3800,7 +3735,7 @@
    ]
   },
   {
-   "id": "auto_mark_10",
+   "id": "auto_mark_8",
    "auto": true,
    "colour": "white",
    "street": "s_w",
@@ -3855,36 +3790,65 @@
      "b": {
       "stop": false
      }
-    }
+    },
+    "edge": false
    },
    {
     "id": "s_n",
     "a": "n",
     "b": "c",
     "kind": "street",
-    "ends": {}
+    "ends": {},
+    "edge": false
    },
    {
     "id": "s_e",
     "a": "e",
     "b": "c",
     "kind": "avenue",
-    "ends": {}
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
    },
    {
     "id": "s_w",
     "a": "w",
     "b": "c",
     "kind": "avenue",
-    "ends": {}
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
    }
   ],
   "player": {
    "street": "s_s",
    "toward": "c",
    "stopAt": 7.85
+  },
+  "paths": {
+   "straight": [
+    [
+     -1.799,
+     -10.25
+    ],
+    [
+     -1.799,
+     -7.5
+    ],
+    [
+     -2,
+     12.5
+    ]
+   ]
   }
  },
- "reviewed": false,
- "reviewGroup": "unmarked-2026-10-15"
+ "reviewed": true,
+ "reviewGroup": "unmarked-2026-10-15",
+ "questionView": {
+  "centre": [
+   -2.541,
+   9.653
+  ],
+  "height": 56.521
+ }
 }

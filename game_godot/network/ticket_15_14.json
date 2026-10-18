@@ -35,7 +35,10 @@
      -91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_n",
@@ -66,7 +69,10 @@
      91
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_e",
@@ -97,7 +103,10 @@
      -7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_s_w",
@@ -128,7 +137,10 @@
      7
     ]
    ],
-   "holes": []
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
   },
   {
    "id": "road_c",
@@ -303,6 +315,7 @@
    "id": "approach",
    "kind": "approach",
    "auto": true,
+   "manual": false,
    "points": [
     [
      -1.75,
@@ -317,8 +330,8 @@
   {
    "id": "manoeuvre_straight",
    "kind": "manoeuvre",
-   "auto": true,
-   "manual": false,
+   "auto": false,
+   "manual": true,
    "exit": "straight",
    "points": [
     [
@@ -326,20 +339,8 @@
      -12.5
     ],
     [
-     -1.75,
-     -7.5
-    ],
-    [
-     -1.75,
-     7.5
-    ],
-    [
-     -1.75,
-     8
-    ],
-    [
-     -1.75,
-     27.5
+     -2,
+     15
     ]
    ],
    "exitYaw": 0
@@ -532,7 +533,7 @@
     ],
     [
      2,
-     -3
+     -2
     ],
     [
      -16.5,
@@ -554,8 +555,8 @@
      13
     ],
     [
-     -4.5,
-     -1
+     -4,
+     -0.5
     ],
     [
      -47.5,
@@ -589,7 +590,7 @@
    ],
    "halfLength": 3.585,
    "halfWidth": 0.84,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "clearDistance": 26.522,
    "behaviour": {
     "stopAtDistance": null,
@@ -603,7 +604,7 @@
       "side": "left"
      }
     ],
-    "waitsForPlayer": true,
+    "waitsForPlayer": false,
     "config": {
      "id": "tram_1",
      "type": "tram",
@@ -621,7 +622,8 @@
    },
    "wheelsRadius": 0.36,
    "asset": "ticket_15_14/actor_0.glb",
-   "way": "left"
+   "way": "left",
+   "paint": "#F08A24"
   },
   {
    "id": "npc_car",
@@ -640,7 +642,7 @@
    ],
    "halfLength": 1.84,
    "halfWidth": 0.983,
-   "maxSpeed": 12,
+   "maxSpeed": 5,
    "clearDistance": 25.214,
    "behaviour": {
     "stopAtDistance": null,
@@ -671,7 +673,8 @@
     }
    },
    "wheelsRadius": 0.36,
-   "asset": "ticket_15_14/actor_1.glb"
+   "asset": "ticket_15_14/actor_1.glb",
+   "paint": "#4D7768"
   }
  ],
  "decor": [
@@ -4001,7 +4004,8 @@
       "stop": false
      }
     },
-    "centre": "solid"
+    "centre": "solid",
+    "edge": false
    },
    {
     "id": "s_n",
@@ -4009,7 +4013,8 @@
     "b": "c",
     "kind": "avenue",
     "ends": {},
-    "centre": "solid"
+    "centre": "solid",
+    "edge": false
    },
    {
     "id": "s_e",
@@ -4017,7 +4022,8 @@
     "b": "c",
     "kind": "avenue",
     "ends": {},
-    "centre": "solid"
+    "centre": "solid",
+    "edge": false
    },
    {
     "id": "s_w",
@@ -4025,7 +4031,8 @@
     "b": "c",
     "kind": "avenue",
     "ends": {},
-    "centre": "solid"
+    "centre": "solid",
+    "edge": false
    }
   ],
   "player": {
@@ -4033,6 +4040,18 @@
    "toward": "c",
    "stopAt": 10.1,
    "lane": 0
+  },
+  "paths": {
+   "straight": [
+    [
+     -1.75,
+     -12.5
+    ],
+    [
+     -2,
+     15
+    ]
+   ]
   }
  },
  "questionView": {
@@ -4042,6 +4061,6 @@
   ],
   "height": 37.347
  },
- "reviewed": false,
+ "reviewed": true,
  "reviewGroup": "unmarked-2026-10-15"
 }
