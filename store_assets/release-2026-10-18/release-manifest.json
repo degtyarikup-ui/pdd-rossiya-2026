@@ -1,0 +1,57 @@
+{
+  "version": "2.2.4",
+  "versionCode": 62,
+  "package": "ru.pdd.pdd_app",
+  "sourceCommit": "00fad9b4",
+  "stores": {
+    "google-play": "STORE=play; AAB",
+    "rustore": "STORE=rustore; APK"
+  },
+  "files": [
+    {
+      "file": "Icon-512.png",
+      "bytes": 347112,
+      "sha256": "b70c66463624e9fedcbbf16be24912f8e891d3688fade5d5f642345dc45b9e20"
+    },
+    {
+      "file": "PDD-2.2.4-62-google-play.aab",
+      "bytes": 274808911,
+      "sha256": "7192c3d995b3939fbe9da007e37e8bcaccdb56718125e67753ad02e398fa23ae"
+    },
+    {
+      "file": "PDD-2.2.4-62-rustore.apk",
+      "bytes": 330469056,
+      "sha256": "a65fff10601259106938317f1669c8bb51edf509050da306acc17f35a85049a2"
+    }
+  ],
+  "checks": {
+    "flutterAnalyze": "no issues",
+    "flutterTest": {
+      "passed": 592,
+      "skipped": 3
+    },
+    "questionPool": 26,
+    "sharedPictures": 207,
+    "rules": 47,
+    "road": 67
+  },
+  "published": false,
+  "nativeDeviceSmokeTest": false,
+  "signatures": {
+    "apk": "APK Signature Scheme v2 verified",
+    "aab": "JAR verified; Google Play processed artifact 62"
+  },
+  "drafts": {
+    "googlePlay": "https://play.google.com/console/u/0/developers/8172841311997997566/app/4973863096146245225/tracks/4697424229056526249/releases/22/prepare",
+    "rustore": "https://console.rustore.ru/apps/2063722239/versions/2064891934/edit"
+  },
+  "googlePlayWarnings": [
+    "210 MB initial download",
+    "26 previously supported devices excluded: 6 tablets, 3 TVs, 17 cars; no phones excluded"
+  ],
+  "pending": [
+    "Store screenshot/feature graphic revision",
+    "Dedicated reviewer account with Premium and Sign in details",
+    "Signed native phone smoke test"
+  ]
+}
