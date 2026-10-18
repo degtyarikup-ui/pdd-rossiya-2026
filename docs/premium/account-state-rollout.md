@@ -209,6 +209,17 @@ Google RTDN: `/api/store/google/notifications`, секреты/vars
 Проверяются подпись Google, issuer, audience, подтверждённый email и точный
 service account email. Затем актуальный статус покупки перечитывается у Google.
 
+Настроено 18.10.2026:
+- Google RTDN: тема `projects/gen-lang-client-0736141197/topics/play-rtdn` (проект PDD Russia App),
+  publisher — `google-play-developer-notifications@system.gserviceaccount.com`; push-подписка
+  `play-rtdn-push` с OIDC от `pdd-play-verifier@gen-lang-client-0736141197.iam.gserviceaccount.com`,
+  audience = адрес callback, без срока истечения, повтор с backoff 10–600 с. Секреты воркера
+  `GOOGLE_RTDN_AUDIENCE` и `GOOGLE_RTDN_SERVICE_ACCOUNT_EMAIL` заданы; тестовое уведомление из Play
+  Console принято (200). В Play Console включён режим «подписки и аннулированные покупки».
+- App Store Server Notifications: рабочий URL в App Store Connect = приватный адрес из
+  `/api/admin/store-webhooks` (с `?token=`). Sandbox URL не задан.
+- APNs не нужен: удалённые пуши в сборках выключены (`ENABLE_REMOTE_PUSH` не передаётся).
+
 Apple: админский `GET /api/admin/store-webhooks` возвращает приватный URL
 `/api/store/apple/notifications?token=...`. Настроить его в App Store Connect,
 не копировать токен в отчёт/логи. MAC URL защищает callback; содержимое JWS
