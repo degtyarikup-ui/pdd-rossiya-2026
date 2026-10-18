@@ -1,0 +1,25 @@
+{
+  "version": "2.2.4",
+  "build": "62",
+  "bundleId": "ru.pdd.pddApp",
+  "file": "ПДД Россия 2026.ipa",
+  "bytes": 235090863,
+  "sha256": "43e0fce049b238ca54f5500d9aa693cbdb60a913518bdf2a8988d08813cfc908",
+  "uploadConfirmedAt": "2026-10-18T13:07:47Z",
+  "uploadState": "success",
+  "processing": "complete",
+  "archive": "build/ios/archive/Runner.xcarchive",
+  "runtimeSourceCommit": "00fad9b4",
+  "contentVerified": true,
+  "gamePackBytes": 79405884,
+  "attachedToVersion": "2.2.4",
+  "buildId": "f0d9d56b-0557-4759-8d6a-0363868d52d6",
+  "publication": "manual",
+  "submittedForReview": false,
+  "screenshots": {
+    "iPhone": 8,
+    "iPad": 3
+  },
+  "reviewStatus": "Отклонено разработчиком",
+  "submissionId": "0d60618d-23a3-4cfc-b9f3-d79e140151dd"
+}

@@ -1,0 +1,30 @@
+{
+  "version": "2.2.4",
+  "build": 62,
+  "publication": "manual-after-approval",
+  "stores": {
+    "rustore": {
+      "status": "Опубликовано",
+      "submitted": true,
+      "versionId": "2064891934",
+      "url": "https://console.rustore.ru/apps/2063722239/versions",
+      "publishedAt": "2026-10-18T18:02:00+03:00"
+    },
+    "appStore": {
+      "status": "Отклонено разработчиком: отозвано для замены на build 63",
+      "submitted": false,
+      "submissionId": "0d60618d-23a3-4cfc-b9f3-d79e140151dd",
+      "buildId": "f0d9d56b-0557-4759-8d6a-0363868d52d6",
+      "url": "https://appstoreconnect.apple.com/apps/6792369533/distribution/ios/version/inflight"
+    },
+    "googlePlay": {
+      "status": "superseded by build 63; never submitted",
+      "submitted": false,
+      "releasePrepared": true,
+      "releaseId": 22,
+      "url": "https://play.google.com/console/u/0/developers/8172841311997997566/app/4973863096146245225/publishing"
+    }
+  },
+  "recordedAt": "2026-10-18T13:26:03.190668+00:00",
+  "supersededByBuild": 63
+}

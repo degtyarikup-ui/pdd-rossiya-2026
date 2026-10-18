@@ -1,32 +1,42 @@
 {
   "version": "2.2.4",
-  "build": 62,
+  "build": 63,
+  "runtimeSourceCommit": "3fc26867",
   "publication": "manual-after-approval",
+  "change": "Games catalogue requires an authenticated account; Premium is not required.",
+  "checks": {
+    "flutterAnalyze": "no issues",
+    "flutterTest": {
+      "passed": 596,
+      "skipped": 3
+    },
+    "serverSecurityTests": 134
+  },
   "stores": {
-    "rustore": {
-      "status": "Ожидает модерацию",
+    "googlePlay": {
       "submitted": true,
-      "versionId": "2064891934",
-      "url": "https://console.rustore.ru/apps/2063722239/versions"
+      "status": "Changes in review",
+      "releaseId": 23,
+      "url": "https://play.google.com/console/u/0/developers/8172841311997997566/app/4973863096146245225/publishing",
+      "aiAssetDeclaration": "Don't label assets",
+      "reviewAccessNote": "No separate review account provided. Existing saved access declaration is unchanged; access may be requested during review.",
+      "preReviewChecks": "running; automatically forwards to review after successful checks"
+    },
+    "rustore": {
+      "submitted": true,
+      "status": "Ожидает модерацию",
+      "supersededVersionId": "2064891934",
+      "url": "https://console.rustore.ru/apps/2063722239/versions",
+      "versionId": "2064892287"
     },
     "appStore": {
-      "status": "Ожидание проверки",
       "submitted": true,
-      "submissionId": "0d60618d-23a3-4cfc-b9f3-d79e140151dd",
-      "buildId": "f0d9d56b-0557-4759-8d6a-0363868d52d6",
-      "url": "https://appstoreconnect.apple.com/apps/6792369533/distribution/ios/version/inflight"
-    },
-    "googlePlay": {
-      "status": "blocked pending required declarations",
-      "submitted": false,
-      "releasePrepared": true,
-      "blockers": [
-        "Icon.jpg AI-origin declaration requires owner answer",
-        "Dedicated Google/Yandex review account with Premium: form rejects access instructions without full-access confirmation"
-      ],
-      "releaseId": 22,
-      "url": "https://play.google.com/console/u/0/developers/8172841311997997566/app/4973863096146245225/publishing"
+      "status": "Ожидание проверки",
+      "previousSubmissionId": "0d60618d-23a3-4cfc-b9f3-d79e140151dd",
+      "url": "https://appstoreconnect.apple.com/apps/6792369533/distribution/reviewsubmissions/details/9e0c5c7a-7507-4326-a2e0-bc09cd65a2d9",
+      "submissionId": "9e0c5c7a-7507-4326-a2e0-bc09cd65a2d9",
+      "buildId": "939e990d-a928-4669-97b6-f2e6425c276c"
     }
   },
-  "recordedAt": "2026-10-18T13:26:03.190668+00:00"
+  "recordedAt": "2026-10-18T15:22:59.251138+00:00"
 }
