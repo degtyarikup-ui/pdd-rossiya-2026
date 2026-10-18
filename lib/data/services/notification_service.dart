@@ -195,6 +195,20 @@ class StreakNotifier {
         ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
+  /// Системный запрос на Android 13+; true — уведомления разрешены
+  /// (на Android 12 и ниже разрешение не нужно).
+  Future<bool> requestAndroidPermission() async {
+    if (kIsWeb || !_initialized) return false;
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return false;
+    return await android.requestNotificationsPermission() ??
+        await android.areNotificationsEnabled() ??
+        false;
+  }
+
   /// Пересчитать напоминание под текущее состояние серии.
   /// Правила — в [computeStreakReminderTime].
   Future<void> refreshStreakReminder(Streak streak) async {

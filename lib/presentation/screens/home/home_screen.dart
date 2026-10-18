@@ -19,6 +19,7 @@ import 'package:pdd_app/data/services/app_update_service.dart';
 import 'package:pdd_app/presentation/widgets/app_update_dialog.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/data/services/remote_notifications_service.dart';
+import 'package:pdd_app/data/services/notification_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
@@ -236,18 +237,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
-  /// Asks once for notifications with our own sheet; the system dialog only
-  /// follows an explicit "enable". Returns true when the sheet was shown.
+  /// Asks once for notifications. iOS: our own sheet first, the system dialog
+  /// only after an explicit "enable" (App Store 4.5.4). Android: the system
+  /// dialog directly. Returns true when the sheet was shown.
   Future<bool> _askNotificationsOnce() async {
     if (kIsWeb) return false;
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool(_notificationPromptKey) == true || !mounted) return false;
     await prefs.setBool(_notificationPromptKey, true);
     if (!mounted) return false;
+    final settings = ref.read(appSettingsProvider.notifier);
+    // Android: the system dialog is consent enough; allowing it enables news.
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      if (await StreakNotifier.instance.requestAndroidPermission()) {
+        await settings.setNotificationsEnabled(true);
+        await settings.setPushMessagesEnabled(true);
+      }
+      return false;
+    }
     _noticeOpen = true;
     try {
       if (!await NotificationPromptSheet.show(context)) return true;
-      final settings = ref.read(appSettingsProvider.notifier);
       await settings.setNotificationsEnabled(true);
       await settings.setPushMessagesEnabled(true);
     } finally {
