@@ -15,9 +15,11 @@
   "attachedToVersion": "2.2.4",
   "buildId": "f0d9d56b-0557-4759-8d6a-0363868d52d6",
   "publication": "manual",
-  "submittedForReview": false,
+  "submittedForReview": true,
   "screenshots": {
     "iPhone": 8,
     "iPad": 3
-  }
+  },
+  "reviewStatus": "Ожидание проверки",
+  "submissionId": "0d60618d-23a3-4cfc-b9f3-d79e140151dd"
 }
