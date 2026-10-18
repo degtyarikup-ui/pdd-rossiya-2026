@@ -2812,6 +2812,7 @@ async function saveUserProfile(env, user) {
     appVersion: user.appVersion || (existing ? existing.appVersion : null),
     createdAt: (existing && existing.createdAt) ? existing.createdAt : (user.createdAt || new Date().toISOString()),
     activity: existing?.activity || null,
+    versionObservations: existing?.versionObservations || null,
     lastSeenAt: new Date().toISOString(),
     ...metadataFields({ ...existing, ...user,
       marketingSource: existing?.marketingSource && existing.marketingSource !== 'unknown' ? existing.marketingSource : user.marketingSource,

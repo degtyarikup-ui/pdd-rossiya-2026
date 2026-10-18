@@ -1,0 +1,51 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {recordVersion, versionsSnapshot} from './analytics_versions.js';
+import {userSummary} from './user_store.js';
+const now=Date.parse('2026-10-19T09:00:00Z');
+const day=d=>new Date(d.getTime()+3*3600000).toISOString().slice(0,10);
+test('baseline, repeated reports, older devices and platform switches do not fake updates',()=>{
+ const u={platform:'android',appVersion:'2.2.4+65',lastSeenAt:new Date(now).toISOString()};
+ recordVersion(u,now); assert.equal(u.versionObservations.android.updatedAt,undefined);
+ u.appVersion='2.2.4+66'; recordVersion(u,now);
+ const updated=u.versionObservations.android.updatedAt;
+ u.appVersion='2.2.3+64';recordVersion(u,now+1000);
+ assert.equal(u.versionObservations.android.version,'2.2.4+66');
+ u.appVersion='2.2.4+66';recordVersion(u,now+2000);
+ assert.equal(u.versionObservations.android.updatedAt,updated);
+ u.platform='ios';recordVersion(u,now);assert.equal(u.versionObservations.ios.updatedAt,undefined);
+ assert.equal(versionsSnapshot([u],['2026-10-19'],day).updated,1);
+ assert.equal(versionsSnapshot([u],['2026-10-18'],day).updated,0);
+});
+test('new accounts and web do not count as mobile updates, version rows include unknown',()=>{
+ const users=[{platform:'android',appVersion:'2.2.4+65'},{platform:'ios'},{platform:'web',appVersion:'2.2.4+65'}];
+ assert.deepEqual(versionsSnapshot(users,['2026-10-19'],day).rows,[{platform:'android',version:'2.2.4+65',accounts:1},{platform:'ios',version:'Неизвестна',accounts:1}]);
+ assert.equal(versionsSnapshot(users,['2026-10-19'],day).updated,0);
+});
+test('version observations persist in bounded summary with multilingual metadata',()=>{
+ const u={id:'google_'+'.'.repeat(30),provider:'google',app:'ru',platform:'android',appVersion:'2.2.4+65',name:'Ш'.repeat(60),email:'я'.repeat(80),ipCity:'Ш'.repeat(60),ipRegion:'Ш'.repeat(60),activity:{date:'2026-10-19',android:'f'.repeat(23),ios:'f'.repeat(23)},versionObservations:{android:{version:'2.2.4+65',updatedAt:new Date(now).toISOString()},ios:{version:'2.2.4+65',updatedAt:new Date(now).toISOString()}}};
+ const summary=userSummary(u);
+ assert.ok(new TextEncoder().encode(JSON.stringify(summary)).length<=1024);
+ assert.deepEqual(summary.versionObservations,u.versionObservations);
+});
+test('account sync persists version observations across updates and ignores client-supplied history',async()=>{
+ const {default:worker}=await import('./worker.js');
+ const {accountRead}=await import('./account_state.js');
+ const {fixture,identity,session,request}=await import('./fixture-account.mjs');
+ const {env,restart}=fixture();
+ await env.INSTALLS.put('user:google_123',JSON.stringify({...identity(),platform:'android',appVersion:'2.2.3+64'}));
+ const token=await session(env);
+ const sync=appVersion=>worker.fetch(request('/api/user/sync',{id:'google_123',platform:'android',appVersion,versionObservations:{android:{version:'0.0.0',updatedAt:'2000-01-01T00:00:00Z'}}},token),env);
+ assert.equal((await sync('2.2.3+64')).status,200);
+ let u=JSON.parse(await accountRead(env,'google_123','user:google_123'));
+ assert.equal(u.versionObservations.android.version,'2.2.3+64');
+ assert.equal(u.versionObservations.android.updatedAt,undefined);
+ assert.equal((await sync('2.2.4+65')).status,200);
+ restart('google_123');
+ u=JSON.parse(await accountRead(env,'google_123','user:google_123'));
+ assert.equal(u.versionObservations.android.version,'2.2.4+65');
+ assert.ok(u.versionObservations.android.updatedAt);
+ assert.equal((await sync('2.2.4+65')).status,200);
+ const next=JSON.parse(await accountRead(env,'google_123','user:google_123'));
+ assert.equal(next.versionObservations.android.updatedAt,u.versionObservations.android.updatedAt);
+});

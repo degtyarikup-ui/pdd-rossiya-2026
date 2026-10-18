@@ -1,4 +1,5 @@
 import { accountRpc } from './account_state.js';
+import { recordVersion } from './analytics_versions.js';
 import { recordActivity } from './analytics_activity.js';
 
 // Запись профиля пользователя `user:<id>` вместе с краткой сводкой в
@@ -23,6 +24,7 @@ export function userSummary(user) {
     app: cut(user.app, 4),
     platform: cut(user.platform, 12),
     appVersion: cut(user.appVersion, 20),
+    versionObservations: user.versionObservations || null,
     createdAt: user.createdAt || null,
     lastSeenAt: user.lastSeenAt || null,
     isPremium: Boolean(user.isPremium),
@@ -50,6 +52,7 @@ export function userSummary(user) {
 
 export async function putUserRecord(env, user, options = {}) {
   recordActivity(user);
+  recordVersion(user);
   await env.INSTALLS.put('user:' + user.id, JSON.stringify(user), { ...options, metadata: userSummary(user) });
 }
 

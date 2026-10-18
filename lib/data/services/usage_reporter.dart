@@ -16,7 +16,9 @@ enum UsageFeature {
   game,
   signSwiper('sign_swiper'),
   trafficController('traffic_controller'),
-  roundabout('roundabout');
+  roundabout('roundabout'),
+  crossroads,
+  parking;
 
   const UsageFeature([this.wireName]);
   final String? wireName;

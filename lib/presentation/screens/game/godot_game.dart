@@ -263,6 +263,7 @@ class GodotGame {
         final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         if (solved + wrong == 0) continue;
+        UsageReporter.track(UsageFeature.trafficController);
         final score = GameEconomy.rankedScore(
           (run['score'] as num?)?.toInt() ?? 0,
           correct: solved,
@@ -355,6 +356,7 @@ class GodotGame {
         final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         if (solved + wrong == 0) continue;
+        UsageReporter.track(UsageFeature.crossroads);
         final score = GameEconomy.rankedScore(
           (run['score'] as num?)?.toInt() ?? 0,
           correct: solved,

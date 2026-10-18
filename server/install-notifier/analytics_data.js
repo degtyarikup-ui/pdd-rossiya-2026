@@ -1,3 +1,4 @@
+import { versionsSnapshot } from './analytics_versions.js';
 import { activitySnapshot } from './analytics_activity.js';
 
 // Показатели аналитики, которые берутся из профилей пользователей, а не из
@@ -99,6 +100,7 @@ export function usersSnapshot(users, days, app, dayKey, now = Date.now()) {
       cities: Object.values(geo.cities).sort((a, b) => b.accounts - a.accounts),
     },
     activity: activitySnapshot(list, periodKeys, now),
+    versions: versionsSnapshot(list, periodKeys, dayKey),
     registered: list.length,
     registrations,
     previousRegistrations,

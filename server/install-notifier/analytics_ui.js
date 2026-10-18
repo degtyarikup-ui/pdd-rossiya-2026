@@ -68,6 +68,12 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 </style>
 <div class="an-period" id="an-period"></div>
 <div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов"></div>
+<div class="an-card">
+ <div class="an-head"><div class="an-title">Обновления и версии приложения</div></div>
+ <div class="an-dynamics-summary" id="an-updates-summary"></div>
+ <div class="an-table-wrap" id="an-versions"></div>
+ <div class="an-caption">Обновились — зарегистрированные аккаунты, у которых сервер подтвердил переход на более новую версию Android или iOS за выбранный период. Один аккаунт считается один раз. Сбор истории с 19.10.2026: первый контакт задаёт исходную версию и не считается обновлением. В таблице — последняя известная версия каждого мобильного аккаунта за всё время; новые установки тоже входят. Гости не учитываются.</div>
+</div>
 <div class="an-charts-grid">
  <div class="an-card an-activity-card">
   <div class="an-head"><div class="an-title">Ежедневное использование</div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Уникальные зарегистрированные аккаунты, обращавшиеся к серверу за день по МСК. Повторные обращения не увеличивают число. Аккаунт с двумя платформами входит в обе группы, в общем числе учитывается один раз. Гости и использование без интернета сюда не входят. Сегодня — неполный день, среднее включает сегодня.</div></details></div>
@@ -84,7 +90,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
  </div>
 </div>
 <div class="an-card an-usage" id="an-usage">
- <div class="an-head"><div class="an-usage-heading"><div class="an-title">Использование режимов</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуск — открытие билета, темы, экзамена или ленты, либо начало заезда в 3D-игре. Возврат в прерванную тренировку считается запуском. Активные установки — установки приложения, в которых запускали режим за выбранный период, включая гостей. Один человек на двух устройствах считается дважды. Частота — среднее число запусков на активную установку. Полоса и процент показывают долю запусков режима. Данные поступают из обновлённых приложений; офлайн-события отправляются позже.</div></details></div><div class="an-usage-total" id="an-usage-total"></div></div>
+ <div class="an-head"><div class="an-usage-heading"><div class="an-title">Использование режимов</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуск — открытие билета, темы, экзамена или ленты, либо начало заезда в 3D-игре. Возврат в прерванную тренировку считается запуском. Активные установки — установки приложения, в которых запускали режим за выбранный период, включая гостей. Один человек на двух устройствах считается дважды. Частота — среднее число запусков на активную установку. Полоса и процент показывают долю запусков режима. Данные поступают из обновлённых приложений; офлайн-события отправляются позже. Для регулировщика и перекрёстка учитываются раунды с хотя бы одним ответом после выхода из игры. Их учёт добавлен в следующую сборку; прежние запуски восстановить нельзя. Круговое движение удалено из списка, исторические события сохранены. Парковка ещё не выпущена.</div></details></div><div class="an-usage-total" id="an-usage-total"></div></div>
  <div id="an-usage-table"></div>
  <div class="an-usage-empty" id="an-usage-empty" hidden></div>
  <details class="an-usage-details" id="an-usage-details">
@@ -328,8 +334,8 @@ function anRenderActivity(data) {
  document.getElementById('an-activity-table').innerHTML=days.length?anTable(['День','Всего','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('android') + 'Android</span>','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('apple') + 'iOS</span>','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('web') + 'Веб</span>','Неизвестно'],days.slice().reverse().map(function(d){return '<tr><td>'+anDayLabel(d.date)+'</td>'+['total','android','ios','web','unknown'].map(function(k){return '<td>'+(d[k]==null?'—':anNum(d[k]))+'</td>';}).join('')+'</tr>';})):'<div class="an-empty">Нет данных</div>';
 }
 var anUsageFeature = 'tickets';
-var AN_USAGE_NAMES = {tickets:'Билеты',topics:'Темы',exam:'Экзамен',feed:'Лента',game:'3D-игра',sign_swiper:'Знак-Свайпер',traffic_controller:'Регулировщик 3D',roundabout:'Круговое 3D'};
- var AN_USAGE_COLORS = {tickets:'#0574F8',topics:'#7C5CFC',exam:'#F5582A',feed:'#0BB8A8',game:'#10B981',sign_swiper:'#F59E0B',traffic_controller:'#D946EF',roundabout:'#06B6D4'};
+var AN_USAGE_NAMES = {tickets:'Билеты',topics:'Темы',exam:'Экзамен',feed:'Лента',game:'Живой город',sign_swiper:'Знак-Свайпер',traffic_controller:'Регулировщик 3D',crossroads:'Разрули перекрёсток',parking:'Парковка · скоро'};
+ var AN_USAGE_COLORS = {tickets:'#0574F8',topics:'#7C5CFC',exam:'#F5582A',feed:'#0BB8A8',game:'#10B981',sign_swiper:'#F59E0B',traffic_controller:'#D946EF',crossroads:'#06B6D4',parking:'#94A3B8'};
 function anRenderUsage(data) {
  var usage=data.usage, features=usage&&usage.features||{}, timeline=usage&&usage.timeline||[], keys=Object.keys(AN_USAGE_NAMES);
  var starts=keys.reduce(function(n,k){return n+(features[k]&&features[k].starts||0);},0);
@@ -341,6 +347,7 @@ function anRenderUsage(data) {
  empty.innerHTML=beforeCollection?'За этот период данных нет<p>'+coverage+'.</p>':'Пока нет данных<p>Статистика появится после обновления приложений.'+(coverage?' '+coverage+'.':'')+'</p>';
  table.innerHTML=starts?anTable(['Режим','Запуски','<abbr title="Установки, в которых запускали режим за выбранный период">Активные установки</abbr>','<abbr title="Среднее число запусков на активную установку">На установку</abbr>'],keys.map(function(k){
   var f=features[k]||{starts:0,installations:0};
+  if(k==='parking'&&!f.starts)return '<tr><td>Парковка · скоро</td><td>—</td><td>—</td><td>—</td></tr>';
   var share=starts?f.starts/starts*100:0, label=share>0&&share<1?'&lt;1%':Math.round(share)+'%';
   var mc=AN_USAGE_COLORS[k]||'var(--an-accent)';return '<tr style="--an-mode-color:'+mc+'"><td><div class="an-usage-name"><button type="button" class="an-usage-mode" data-usage="'+k+'" aria-controls="an-usage-details" aria-expanded="'+(details.open&&k===anUsageFeature)+'" aria-label="Показать динамику: '+AN_USAGE_NAMES[k]+'"><span class="an-usage-mode-dot" aria-hidden="true"></span>'+AN_USAGE_NAMES[k]+'</button><div class="an-usage-track" aria-hidden="true"><i style="width:'+share+'%"></i></div><span class="an-usage-share">'+label+'</span></div></td>'+anCell(f.starts)+anCell(f.installations)+'<td>'+(f.installations?(f.starts/f.installations).toLocaleString('ru-RU',{maximumFractionDigits:1}):'—')+'</td></tr>';
  })):'';
@@ -363,6 +370,12 @@ document.getElementById('an-usage-table').addEventListener('click',function(e){v
 document.getElementById('an-usage-feature').addEventListener('change',function(e){anUsageFeature=e.target.value;anRenderUsage(window.__anData);});
 document.getElementById('an-usage-details').addEventListener('toggle',function(){if(window.__anData)anRenderUsage(window.__anData);});
 
+function anRenderVersions(data) {
+ var versions=data.users&&data.users.versions;
+ document.getElementById('an-updates-summary').innerHTML='<span>Обновились за период<b>'+(versions?anNum(versions.updated):'—')+'</b></span>';
+ var rows=versions&&versions.rows||[], total=rows.reduce(function(n,r){return n+r.accounts;},0);
+ document.getElementById('an-versions').innerHTML=rows.length?anTable(['Платформа','Версия','Аккаунты','Доля'],rows.map(function(r){return '<tr><td>'+(r.platform==='android'?'Android':'iOS')+'</td><td>'+anEsc(r.version)+'</td>'+anCell(r.accounts)+'<td>'+anShare(r.accounts,total)+'</td></tr>'; })): '<div class="an-empty">Нет данных о версиях мобильных аккаунтов</div>';
+}
 function renderDashboard(data) {
  if(!document.getElementById('an-now'))return;
  window.__anData=data;
@@ -373,6 +386,7 @@ function renderDashboard(data) {
  anPlot(data);
  anRenderActivity(data);
  anRenderUsage(data);
+ anRenderVersions(data);
  var src={};(data.sources||[]).forEach(function(r){if(!r.views&&!r.clicks)return;var k=anSourceKey(r.name);if(!src[k])src[k]={views:0,clicks:0};src[k].views+=r.views||0;src[k].clicks+=r.clicks||0;});
  var keys=Object.keys(src).sort(function(a,b){return src[b].views-src[a].views||src[b].clicks-src[a].clicks;});
  document.getElementById('an-sources').innerHTML=keys.length?anTable(['Источник','Просмотры','Переходы'],keys.map(function(k){return '<tr><td><div class="an-table-name">'+anLogo(AN_SOURCES[k])+anEsc(AN_SOURCES[k].name)+'</div></td>'+anCell(src[k].views)+anCell(src[k].clicks)+'</tr>';})):'<div class="an-empty">Нет событий сайта</div>';
