@@ -603,8 +603,8 @@
   "paywallTitle": "Get ready without restrictions",
   "paywallFreeNote": "Tickets, exam and traffic rules remain free",
   "paywallFeatureFeed": "Unlimited feed of questions",
-  "paywallFeatureAi": "AI analysis of your mistakes",
-  "paywallFeatureVoice": "Studio voice-over of tickets",
+  "paywallFeatureAi": "AI explanations: up to 200 questions a day",
+  "paywallFeatureVoice": "Russian studio narration",
   "paywallFeatureGame": "Unlimited races in the game",
   "paywallPlanQuarter": "3 months",
   "paywallPlanWeek": "1 week",
@@ -1050,7 +1050,7 @@
     }
   },
   "premiumAccessTitle": "Premium access",
-  "premiumBannerSubtitleUnlimited": "Smart feed and AI without limits",
+  "premiumBannerSubtitleUnlimited": "Unlimited feed, drives and more AI",
   "premiumBannerCardsLeft": "Free cards left: {remaining} of {limit}",
   "@premiumBannerCardsLeft": {
     "placeholders": {
@@ -1084,9 +1084,9 @@
   "subscriptionPerkFeedTitle": "Unlimited smart feed",
   "subscriptionPerkFeedDescription": "All questions and categories are available without limits",
   "subscriptionPerkAiTitle": "AI explanation for every question",
-  "subscriptionPerkAiDescription": "Instant explanations of rules and road situations",
-  "subscriptionPerkVoiceTitle": "Professional voice-over",
-  "subscriptionPerkVoiceDescription": "Studio narrator for questions and tickets",
+  "subscriptionPerkAiDescription": "Up to 200 AI questions a day. The limit resets at midnight UTC.",
+  "subscriptionPerkVoiceTitle": "Russian studio narration",
+  "subscriptionPerkVoiceDescription": "Studio narration of questions and tickets in Russian",
   "subscriptionCancelInfoApple": "You can turn off auto-renewal or change your subscription at any time in your Apple ID account settings. If you cancel, access will remain until {date}.",
   "@subscriptionCancelInfoApple": {
     "placeholders": {
@@ -1221,7 +1221,7 @@
       }
     }
   },
-  "aiGoPremium": "Get Premium for unlimited AI",
+  "aiGoPremium": "Premium — up to 200 AI questions a day",
   "crossroadsReasonRedLight": "Driving through a red light (clause 6.2 of the Russian Traffic Regulations). Driving on red is strictly forbidden!",
   "crossroadsReasonEarlyExit": "Entering too early: you did not yield and did not wait for the moving traffic to clear the intersection! (clause 13.8 of the Russian Traffic Regulations)",
   "crossroadsArticleRedLight": "Clause 6.2 of the Russian Traffic Regulations",
@@ -1308,5 +1308,21 @@
   "gameRatingPendingRun": "Points from this game will be added when you return to the menu.",
   "gameRatingNotRanked": "Play to get on the board",
   "gameRatingSignIn": "Sign in to take part in the rating",
-  "gameCrossroadsCrash": "Crash"
+  "gameCrossroadsCrash": "Crash",
+  "aiCorrectAnswer": "Correct answer: **{answer}**",
+  "aiOfficialComment": "Official explanation",
+  "aiNoOfficialComment": "No official explanation is available for this question.",
+  "aiSuggestRule": "Which rule applies to this question?",
+  "aiSuggestWhy": "Why is this answer correct?",
+  "aiSuggestExceptions": "Are there exceptions to this rule?",
+  "aiSignInRequired": "Sign in to ask the AI. Official explanations are available without signing in.",
+  "aiQuotaWait": "The daily AI limit has been reached. Try again after it resets.",
+  "subscriptionPerkGameDescription": "City drives without waiting for runs to recharge",
+  "purchaseLegacyOwnerRequired": "An older App Store purchase needs ownership verification by support. Do not pay again: contact support with your Apple receipt.",
+  "profileAppleRevokeInstructions": "Your account data has been deleted. For an older Apple sign-in, also open Apple Account settings → “Sign in with Apple”, choose this app and stop using your Apple ID.",
+  "profileAppleOpenSettings": "Apple Account settings",
+  "aiTemporaryWait": "AI is temporarily unavailable. Try again later.",
+  "webPayCreationReview": "We need to check this payment. Do not pay again. Open Settings → Support and give this order ID: {order}",
+  "webPayCreationPending": "Your payment request is still processing. Do not pay again. Order: {order}. If the payment page did not open, go to Settings → Support.",
+  "profileAppleRevokePending": "Your account data has been deleted. The request to revoke Apple access has been saved. We will finish revoking access automatically when Apple is available again."
 }

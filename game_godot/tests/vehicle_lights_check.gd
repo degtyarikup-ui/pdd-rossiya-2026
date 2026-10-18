@@ -61,15 +61,23 @@ func run() -> void:
 		world._mount_car(id, "#0574F8")
 		var reference := Models.player_car(id, Color("#0574F8"))
 		var actual: Node3D = world.player.get_node("car")
-		check(actual.find_children("*", "MeshInstance3D", true, false).filter(func(m): return not m.has_meta("signal_glow")).size() == reference.find_children("*", "MeshInstance3D", true, false).size(), "Player has no added solid lamp: " + id)
+		check(actual.find_children("*", "MeshInstance3D", true, false).filter(func(m): return not m.has_meta("signal_glow") and m.name != "contact_shadow").size() == reference.find_children("*", "MeshInstance3D", true, false).size(), "Player has no added solid lamp: " + id)
 		for mesh: MeshInstance3D in actual.find_children("*", "MeshInstance3D", true, false):
 			if mesh.has_meta("signal_glow"):
 				check(mesh.material_override is ShaderMaterial and not (mesh.material_override as ShaderMaterial).shader.code.contains("uniform sampler"), "Bloom has no sampled texture")
+				continue
+			if mesh.name == "contact_shadow":
+				check(mesh.mesh == Models.contact_mesh() and mesh.material_override == Models.contact_material()
+					and mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,
+					"Only the shared non-light ground contact is added: " + id)
 				continue
 			var original: Node3D = reference.get_node(actual.get_path_to(mesh))
 			check(mesh.transform.is_equal_approx(original.transform), "Player mesh stays attached: " + id)
 		for side in world.blinkers:
 			check(world.blinkers[side].size() == 2, "Player front/rear lenses are pulsed exactly once: " + id)
+		# This comparison model never enters a world/viewport. Detach its painted
+		# surfaces before freeing it, just as the live car owner does on teardown.
+		Models.release_geometry(reference)
 		reference.free()
 	# Baked traffic carries its hazard pulse in instance data, without a separate light node.
 	var traffic: Dictionary = {}

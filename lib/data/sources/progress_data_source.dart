@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:pdd_app/data/models/progress_snapshot.dart';
+import 'package:pdd_app/data/models/question_identity.dart';
 
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/streak.dart';
@@ -65,6 +66,7 @@ class ProgressDataSource {
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     _migrateLegacyIfNeeded();
+    _migrateQuestionIdentities();
     _purgeObsoleteCloudKeys();
   }
 
@@ -92,6 +94,50 @@ class ProgressDataSource {
       if (_prefs.containsKey(key)) {
         _prefs.remove(key);
       }
+    }
+  }
+
+  // Older versions shared one record between different ticket illustrations.
+  // Preserve that initial state for both variants, then store future changes
+  // independently. An explicit new favorite tombstone must never be recreated.
+  void _migrateQuestionIdentities() {
+    for (final category in TicketCategory.values) {
+      final progress = _loadMap(_progressKey(category));
+      final favorites = _loadList(_favoritesKey(category));
+      final stateKey = category == TicketCategory.ab
+          ? _keyFavoriteStatesAb
+          : _keyFavoriteStatesCd;
+      final states = _loadMap(stateKey);
+      var progressChanged = false;
+      var favoritesChanged = false;
+      var statesChanged = false;
+      for (final entry in QuestionIdentity.aliases[category]!.entries) {
+        final variant = entry.key;
+        final legacy = entry.value;
+        if (!progress.containsKey(variant) && progress[legacy] is Map) {
+          progress[variant] = jsonDecode(jsonEncode(progress[legacy]));
+          progressChanged = true;
+        }
+        if (!states.containsKey(variant)) {
+          final oldState = states[legacy];
+          final present = oldState is Map
+              ? oldState['present'] == true
+              : favorites.contains(legacy);
+          if (present) {
+            states[variant] = oldState is Map
+                ? Map<String, dynamic>.from(oldState)
+                : {'present': true, 'updatedAt': 0};
+            statesChanged = true;
+            if (!favorites.contains(variant)) {
+              favorites.add(variant);
+              favoritesChanged = true;
+            }
+          }
+        }
+      }
+      if (progressChanged) _saveMap(_progressKey(category), progress);
+      if (favoritesChanged) _saveList(_favoritesKey(category), favorites);
+      if (statesChanged) _saveMap(stateKey, states);
     }
   }
 
@@ -505,6 +551,7 @@ class ProgressDataSource {
     required bool additionalPhase,
     required int additionalQuestionsCount,
     required int initialWrongCount,
+    List<int>? examGroups,
     required TicketCategory category,
   }) async {
     await _prefs.setString(
@@ -519,6 +566,7 @@ class ProgressDataSource {
         'additionalPhase': additionalPhase,
         'additionalQuestionsCount': additionalQuestionsCount,
         'initialWrongCount': initialWrongCount,
+        'examGroups': ?examGroups,
         'category': category.name,
         'savedAt': DateTime.now().millisecondsSinceEpoch,
       }),
@@ -921,6 +969,7 @@ class ProgressDataSource {
         await _prefs.setStringList(_keyStreakActiveDays, union);
       }
     }
+    _migrateQuestionIdentities();
     _imports.add(++_importRevision);
   }
 }

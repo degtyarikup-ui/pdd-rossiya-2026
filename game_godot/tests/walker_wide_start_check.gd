@@ -36,6 +36,11 @@ func run() -> void:
 			var at := Vector3(float(w.x), 0, float(w.z))
 			expect(not world.road_supports(at), id + ": pedestrian at x=%.1f z=%.1f is not on the carriageway" % [at.x, at.z])
 		expect(alive > 0, id + ": ambient pedestrians are present")
+		# Host.exit marks the owner closing before its opaque teardown fade.
+		# Give worker continuations the same cancellation window in this fixture.
+		world._exiting = true
+		await process_frame
+		await process_frame
 		world.queue_free()
 		await process_frame
 		await process_frame

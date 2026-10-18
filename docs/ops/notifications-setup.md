@@ -50,10 +50,13 @@ Apple Developer запросил повторный вход владельца 
 создать APNs authentication key и загрузить в Firebase Cloud Messaging (Key ID,
 Team ID и файл `.p8`). Ключ оплаты App Store **не подходит** для APNs.
 
-После этого обновить provisioning profile и включить Push Notifications в
-целевом Runner (entitlement `aps-environment`); для обычных видимых пушей
-используется системная доставка APNs. В текущие entitlement не добавлена
-неподдерживаемая возможность, чтобы не сломать существующую подпись.
+В исходниках Runner включён Push Notifications и entitlement `aps-environment`
+(для разработки — `development`; при App Store export Xcode выбирает production
+по distribution profile). Он подключён во всех трёх конфигурациях. Перед подписанной
+сборкой необходимо обновить provisioning profile после включения capability у App ID.
+Без APNs-ключа в Firebase реальная доставка iOS-пушей ещё не проверена; серверный
+переключатель нельзя считать подтверждением доставки. Для обычных видимых пушей
+используется системная доставка APNs.
 
 ## Сборка
 

@@ -59,6 +59,7 @@ export function validateCampaign(input, now = Date.now()) {
   if (!Number.isFinite(value.expiresAt) || value.expiresAt <= value.startAt || value.expiresAt > value.startAt + 30 * DAY) throw new Error('Срок показа: от времени старта до 30 дней');
   // Personal test account (email or user ID). Empty = broadcast to all users.
   value.target = str(input.target, 120, 'Аккаунт для теста').toLowerCase();
+  value.targetTopic = typeof input.targetTopic === 'string' && /^pdd_account_[a-f0-9]{64}$/.test(input.targetTopic) ? input.targetTopic : '';
   if (value.target && /[\s'"<>]/.test(value.target)) throw new Error('Аккаунт для теста: укажите корректный email или ID');
   // Customization.
   value.imageUrl = httpsUrl(input.imageUrl, 'Картинка');
@@ -100,7 +101,8 @@ export function clientMessage(item) {
 }
 export function pushCondition(item) {
   if (item.target) {
-    const topic = `'${userTopic(item.target)}' in topics`;
+    if (!/^pdd_account_[a-f0-9]{64}$/.test(item.targetTopic || '')) throw new Error('Пересоздайте адресный пуш с защищённым аккаунтом');
+    const topic = `'${item.targetTopic}' in topics`;
     if (item.platform === 'ios' || item.platform === 'android') {
       const app = item.app === 'all' ? 'ru' : item.app;
       return `${topic} && 'pdd_${app}_${item.platform}' in topics`;

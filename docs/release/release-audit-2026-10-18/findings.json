@@ -1,0 +1,905 @@
+{
+  "date": "2026-10-18",
+  "timezone": "Europe/Minsk",
+  "verdict": "NO-GO until release blockers are closed",
+  "baseHead": "3139f10e928fb9cfa9a04f7f25ea5780cb90f2fd",
+  "sourceCaveat": "Audit spans concurrent commits and uncommitted game content. Tests are evidence for the recorded runs, not certification of a single final store artifact.",
+  "findings": [
+    {
+      "id": "BE-PAY-RACE",
+      "severity": "P1",
+      "title": "Оплаченный Premium теряется при одновременной синхронизации профиля",
+      "status": "open",
+      "releaseBlocker": true,
+      "confidence": "high",
+      "evidence": [
+        "server/install-notifier/payments.js:233",
+        "server/install-notifier/payments.js:239",
+        "server/install-notifier/payments.js:241",
+        "server/install-notifier/worker.js:2764",
+        "server/install-notifier/worker.js:2803",
+        "server/install-notifier/worker.js:2816",
+        "server/install-notifier/payments.js:327"
+      ],
+      "impact": "KV read-modify-write без общей сериализации: /sync сохраняет устаревшую копию user после callback оплаты. Исчезают entitlements и webPayments, а pay_order уже confirmed; pay-check больше не перечитывает confirmed заказ. Аналогичный риск у IAP/admin/refresh/progress-profile writers и двух разных оплаченных заказов.",
+      "reproduction": "node output/release-audit-2026-10-18/backend/reproduce.mjs; BE-PAY-RACE. Приостановить user read синхронизации, подтвердить платеж, затем завершить sync: Premium true → false, ledger 1 → 0, order confirmed.",
+      "task": "Сделать атомарное изменение аккаунта через один Durable Object/транзакционное хранилище для ВСЕХ writers; payment ledger хранить устойчиво. Добавить reconciliation подтверждённых заказов и восстановление уже потерянных начислений после сверки.",
+      "acceptance": [
+        "Параллельные sync + callback + IAP + admin grant/refresh не стирают сроки и ledger.",
+        "Два одновременно оплаченных заказа суммируют дни; callback/pay-check retry одного заказа не удваивает срок.",
+        "Сбой между записью аккаунта и заказа автоматически восстанавливается; confirmed заказ с отсутствующим ledger исправляется."
+      ],
+      "priority": "P1",
+      "scenario": "node output/release-audit-2026-10-18/backend/reproduce.mjs; BE-PAY-RACE. Приостановить user read синхронизации, подтвердить платеж, затем завершить sync: Premium true → false, ledger 1 → 0, order confirmed.",
+      "platform": [
+        "android",
+        "ios",
+        "web",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "KV read-modify-write без общей сериализации: /sync сохраняет устаревшую копию user после callback оплаты. Исчезают entitlements и webPayments, а pay_order уже confirmed; pay-check больше не перечитывает confirmed заказ. Аналогичный риск у IAP/admin/refresh/progress-profile writers и двух разных оплаченных заказов."
+    },
+    {
+      "id": "BE-GOOGLE-AUD",
+      "severity": "P1",
+      "title": "Google access-token вход принимает OAuth-токен чужого приложения",
+      "status": "open",
+      "releaseBlocker": true,
+      "confidence": "high",
+      "evidence": [
+        "server/install-notifier/user_auth.js:35",
+        "server/install-notifier/user_auth.js:38",
+        "server/install-notifier/user_auth.js:39",
+        "lib/data/services/auth_service.dart:241",
+        "lib/data/services/auth_service.dart:303",
+        "output/release-audit-2026-10-18/backend/secret-names.json"
+      ],
+      "impact": "Если GOOGLE_ANDROID_CLIENT_IDS пуст, allowlist становится пустым и audience/azp вообще не проверяются даже при заданном GOOGLE_CLIENT_IDS. В живом Worker Android-список отсутствует. Токен остаётся настоящим Google токеном, но выданным постороннему OAuth-клиенту: возможна подмена доверенного приложения и вход с учётными данными, полученными им.",
+      "reproduction": "BE-GOOGLE-AUD PoC: tokeninfo aud=unrelated-foreign-client, env.GOOGLE_CLIENT_IDS=our-own-client, Android list absent; verifyIdentity возвращает google_123.",
+      "task": "В Google Cloud собрать реальные Android OAuth client IDs (Play App Signing/dev отличаются); сохранить GOOGLE_ANDROID_CLIENT_IDS и включить fail-closed audience validation. Предпочтительно перевести Android на ID token с serverClientId. Не включать вслепую до проверки нативного aud.",
+      "acceptance": [
+        "Google Android Play-signed, iOS и web логин работают с правильными IDs.",
+        "Чужой aud/azp отвергается, отсутствие optional Android списка больше не отключает web/iOS allowlist.",
+        "Проверки отсутствующей/просроченной credential, JWT issuer/signature и Google subject mismatch проходят."
+      ],
+      "priority": "P1",
+      "scenario": "BE-GOOGLE-AUD PoC: tokeninfo aud=unrelated-foreign-client, env.GOOGLE_CLIENT_IDS=our-own-client, Android list absent; verifyIdentity возвращает google_123.",
+      "platform": [
+        "android",
+        "web",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "Если GOOGLE_ANDROID_CLIENT_IDS пуст, allowlist становится пустым и audience/azp вообще не проверяются даже при заданном GOOGLE_CLIENT_IDS. В живом Worker Android-список отсутствует. Токен остаётся настоящим Google токеном, но выданным постороннему OAuth-клиенту: возможна подмена доверенного приложения и вход с учётными данными, полученными им."
+    },
+    {
+      "id": "BE-IOS-OWNER",
+      "severity": "P1",
+      "title": "Отложенная покупка iOS после cold start может попасть другому аккаунту",
+      "status": "open",
+      "releaseBlocker": true,
+      "confidence": "high",
+      "evidence": [
+        "lib/data/services/iap_service.dart:166",
+        "lib/data/services/iap_service.dart:418",
+        "server/install-notifier/store_verification.js:93",
+        "server/install-notifier/store_verification.js:137",
+        "server/install-notifier/purchase_claims.js:9",
+        "lib/data/services/iap_service.dart:162-166: replay без in-memory owner получает текущий auth user",
+        "lib/data/services/iap_service.dart:49-50: pending owners/verification только в памяти",
+        "lib/data/services/iap_service.dart:417-423: applicationUserName передаётся только Android; iOS получает null",
+        "server/install-notifier/store_verification.js:93-95,116-119: Apple appAccountToken не сопоставляется с userId",
+        "server/install-notifier/store_verification.js:137-144: originalTransactionId claim закрепляется за первым userId",
+        "Независимо подтверждено backend audit agent; текущее owner-test покрывает один живой процесс"
+      ],
+      "impact": "Владелец начала покупки только в памяти процесса; iOS PurchaseParam не передаёт account binding. Apple appAccountToken не проверяется на сервере, DO закрепляет чек за первым приславшим. После kill/account switch delayed purchase A может навсегда закрепиться за B.",
+      "reproduction": "Client audit cold-start replay + BE-IOS-OWNER backend fixture: Apple transaction с appAccountToken принят для apple_B; first claim B succeeds, later A gets403. Это проверка backend на фиктивном HTTPS Apple response, не реальная покупка.",
+      "task": "Сохранить purchase owner до открытия оплаты в устойчивом хранилище; передавать стабильный UUID appAccountToken в StoreKit и проверять его mapping на сервере; legacy restore обрабатывать отдельно.",
+      "acceptance": [
+        "A starts pending/Ask-to-Buy, kill, B sign-in, StoreKit delivered: B не получает Premium; A восстанавливает.",
+        "Восстановление старых чеков не создаёт перенос между аккаунтами и не удлиняет срок.",
+        "Проверить реальный TestFlight/iPhone pending purchase lifecycle."
+      ],
+      "priority": "P1",
+      "scenario": "Client audit cold-start replay + BE-IOS-OWNER backend fixture: Apple transaction с appAccountToken принят для apple_B; first claim B succeeds, later A gets403. Это проверка backend на фиктивном HTTPS Apple response, не реальная покупка.",
+      "platform": [
+        "ios",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "Владелец начала покупки только в памяти процесса; iOS PurchaseParam не передаёт account binding. Apple appAccountToken не проверяется на сервере, DO закрепляет чек за первым приславшим. После kill/account switch delayed purchase A может навсегда закрепиться за B.",
+      "relatedIds": [
+        "CLIENT-02"
+      ]
+    },
+    {
+      "id": "CLIENT-03",
+      "priority": "P1",
+      "title": "Экзамен формирует случайные вопросы вместо исходных тематических блоков",
+      "status": "open",
+      "platform": [
+        "all"
+      ],
+      "evidence": [
+        "lib/presentation/screens/exam/exam_screen.dart:133-136: shuffle всех вопросов и take20",
+        "lib/presentation/screens/exam/exam_screen.dart:261: blockIndex определяется позицией на экране",
+        "lib/presentation/screens/exam/exam_screen.dart:479-482: доп.вопросы берутся из всех оставшихся, группа ошибки не учитывается",
+        "output/release-audit-2026-10-18/client/exam_block_regression_test.dart: real ExamScreen + actual 800-question A/B corpus",
+        "output/release-audit-2026-10-18/client/exam-block-regression.log: содержательный failing regression, first generated block не равен ни одному исходному блоку группы1",
+        "Официальный приказ МВД80: publication.pravo.gov.ru/Document/View/0001202103230031; PDF сохранён, страницы36/37 визуально прочитаны (п.130,138,139)"
+      ],
+      "scenario": "Любой новый экзамен: вопросы произвольно смешаны между исходными группами; два неверных ответа оцениваются по случайному соседству на экране. За ошибку выдаются произвольные доп.вопросы из всей базы.",
+      "impact": "Режим не воспроизводит формирование экзамена ГИБДД; тренировка неправильно группирует ошибки и доп.вопросы.",
+      "task": "Сохранить происхождение каждого вопроса (номер билета/позиция/группа), формировать четыре целых блока из соответствующих групп и доп.блоки из групп ошибок. Убрать зависимость семантики от произвольной позиции.",
+      "acceptance": [
+        "Реальные A/B и C/D datasets: каждый блок1..4 принадлежит исходной соответствующей группе",
+        "За ошибку в группеG доп.блок состоит из другой допустимой пятёрки группыG без повторов",
+        "Две ошибки одной группы немедленно проваливают экзамен; в разных группах дают по5 вопросов",
+        "Persist/resume сохраняет group identity",
+        "Existing exam-flow tests и сохранённый содержательный regression зелёные после исправления"
+      ],
+      "releaseBlocker": true,
+      "area": "client",
+      "detail": "Режим не воспроизводит формирование экзамена ГИБДД; тренировка неправильно группирует ошибки и доп.вопросы."
+    },
+    {
+      "id": "BE-AI-QUOTA",
+      "severity": "P1",
+      "title": "Оплачиваемый AI API не ограничивает использование серверной квотой",
+      "status": "open",
+      "releaseBlocker": true,
+      "confidence": "high",
+      "evidence": [
+        "server/install-notifier/worker.js:3707",
+        "server/install-notifier/worker.js:3722",
+        "server/install-notifier/worker.js:3773",
+        "lib/data/services/gemini_ai_service.dart:75"
+      ],
+      "impact": "Shared app key присутствует в распространяемом клиенте/web и не является пользовательской авторизацией. Зная его, можно без bearer/session/Premium вызывать свободный Gemini-чат сколько угодно. Локальные Premium лимиты не защищают бюджет API. Для legacy question explanations лимит IP тоже KV read-modify-write и default открыто при отсутствии ai_legacy_open.",
+      "reproduction": "BE-AI-QUOTA fixture: 3 запроса свободного чата, serverSessions=0, все200 и3 вызова fake provider. Никаких платных запросов Gemini не делалось.",
+      "task": "Серверный quota/credit accounting в strongly consistent хранилище по аккаунту/установке + IP/global ceiling; для чата проверять session и entitlement; сохранить явный бесплатный guest allowance. Настроить бюджет/уведомления в Google Cloud.",
+      "acceptance": [
+        "Без session нельзя обходить платные/free лимиты одним shared key.",
+        "Параллельные запросы не превышают квоту; превышение429 без вызова Gemini.",
+        "Есть глобальный spending cap/оперативное отключение при сбое; гостевой легитимный поток сохраняется."
+      ],
+      "priority": "P1",
+      "scenario": "BE-AI-QUOTA fixture: 3 запроса свободного чата, serverSessions=0, все200 и3 вызова fake provider. Никаких платных запросов Gemini не делалось.",
+      "platform": [
+        "android",
+        "ios",
+        "web",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "Shared app key присутствует в распространяемом клиенте/web и не является пользовательской авторизацией. Зная его, можно без bearer/session/Premium вызывать свободный Gemini-чат сколько угодно. Локальные Premium лимиты не защищают бюджет API. Для legacy question explanations лимит IP тоже KV read-modify-write и default открыто при отсутствии ai_legacy_open."
+    },
+    {
+      "id": "BE-APPLE-DELETE",
+      "severity": "P1",
+      "title": "Удаление Apple-аккаунта не отзывает Sign in with Apple авторизацию",
+      "status": "open",
+      "releaseBlocker": true,
+      "confidence": "high",
+      "evidence": [
+        "lib/data/services/auth_service.dart:338",
+        "lib/data/services/auth_service.dart:481",
+        "server/install-notifier/worker.js:3439",
+        "server/install-notifier/user_auth.js:54",
+        "https://developer.apple.com/support/offering-account-deletion-in-your-app/",
+        "https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple"
+      ],
+      "impact": "Локальные записи и app sessions удаляются, но нет Apple /auth/token exchange, защищённого refresh/access token хранения, /auth/revoke, а также предусмотренного Apple manual revocation fallback для старых учёток. Это gap соответствия App Store account-deletion guidance, а не вывод о фактическом отказе ревью.",
+      "reproduction": "Поиск /auth/revoke, revokeToken и Apple token exchange в рабочем auth/backend коде пуст. Apple code существует в web callback, но identity verification использует только idToken.",
+      "task": "Реализовать Apple authorization-code exchange и revocation при удалении; для старых аккаунтов выполнить удаление и показать точную инструкцию manual revoke по TN3194; обработать credential-revoked.",
+      "acceptance": [
+        "Реальный Apple login → delete удаляет данные и отзывает Apple consent либо проходит документированный legacy fallback.",
+        "Повторный Apple вход корректно запрашивает consent/имя/email там, где применимо.",
+        "Нет токенов в логах и публичном репозитории."
+      ],
+      "priority": "P1",
+      "scenario": "Поиск /auth/revoke, revokeToken и Apple token exchange в рабочем auth/backend коде пуст. Apple code существует в web callback, но identity verification использует только idToken.",
+      "platform": [
+        "ios",
+        "web",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "Локальные записи и app sessions удаляются, но нет Apple /auth/token exchange, защищённого refresh/access token хранения, /auth/revoke, а также предусмотренного Apple manual revocation fallback для старых учёток. Это gap соответствия App Store account-deletion guidance, а не вывод о фактическом отказе ревью."
+    },
+    {
+      "id": "CONTENT-01",
+      "priority": "P1",
+      "status": "open",
+      "title": "Актуальность ПДД 2.1.1: отсутствует поправка от 08.09.2026",
+      "file": "tools/ru_content/raw/pdd2.html",
+      "line": 1,
+      "details": "Сохранённый официальный текст и generated JSON согласованы, но сноска2.1.1 содержит только старый абзац. №1088 от28.08.2026 добавил предъявление сведений ВУ/СТС через двухмерный код в многофункциональном сервисе.",
+      "evidence": [
+        "content-validation.json"
+      ],
+      "sources": [
+        "https://publication.pravo.gov.ru/document/0001202608310048",
+        "https://base.garant.ru/414837893/",
+        "https://www.kontur-extern.ru/info/normativ/document/1/508111-postanovlenie-pravitelstva-rf-ot-28-08-2026-n-1088"
+      ],
+      "task": "Обновить сохранённый raw первоисточник, пересобрать parse_pdd, синхронно актуализировать en/kk и справочные утверждения сайта; exact statutory text без пересказа. Официальный portal в этом сеансе timeout, зеркала legal дают полный текст.",
+      "area": "game-platform",
+      "detail": "Сохранённый официальный текст и generated JSON согласованы, но сноска2.1.1 содержит только старый абзац. №1088 от28.08.2026 добавил предъявление сведений ВУ/СТС через двухмерный код в многофункциональном сервисе. Важное ограничение: первичная официальная страница в ходе аудита не загрузилась; текст изменения сверялся по правовым зеркалам. До правки необходимо перечитать официальную публикацию, не вставлять норму по памяти.",
+      "scenario": ""
+    },
+    {
+      "id": "CONTENT-02",
+      "priority": "P1",
+      "status": "open",
+      "title": "Пять тематических карточек A/B показывают другую иллюстрацию",
+      "file": "assets/countries/ru/questions/topics_ab.json",
+      "line": 1,
+      "details": "Вопросы с одинаковыми id/текстом/ответами встречаются в разных билетах с разными картинками/комментариями.5 rows topicsAB объединяют image позднего билета с comment раннего; воспроизводится ru/en/kk. Пример8/8 объясняет трамвайные пути, но фото10/8 про одностороннюю дорогу.",
+      "evidence": [
+        "topic-content-differences.json",
+        "content-validation.json"
+      ],
+      "task": "Исправить сборку тем через уникальную идентичность исходного билетного вопроса, пересобрать ru/en/kk, проверить соответствие image+comment. Миграцию существующих id/progress делать отдельно.",
+      "area": "game-platform",
+      "detail": "Вопросы с одинаковыми id/текстом/ответами встречаются в разных билетах с разными картинками/комментариями.5 rows topicsAB объединяют image позднего билета с comment раннего; воспроизводится ru/en/kk. Пример8/8 объясняет трамвайные пути, но фото10/8 про одностороннюю дорогу.",
+      "scenario": ""
+    },
+    {
+      "id": "CONTENT-03",
+      "priority": "P2",
+      "status": "open",
+      "title": "Повторяющиеся ID смешивают прогресс, избранное и ИИ у разных иллюстраций",
+      "file": "lib/data/services/gemini_ai_service.dart",
+      "line": 51,
+      "details": "AB has six duplicate-ID pairs; CD has five pairs. Questions and answers match, illustrations/comments differ. Gemini memory/preferences caches use only questionId; progress/favorites are keyed by questionId within category. A result for ticket8/8 can affect ticket10/8.",
+      "evidence": [
+        "topic-content-differences.json",
+        "content-validation.json"
+      ],
+      "task": "Introduce stable unique ticket-question identity with progress/favorites/sync/AI-cache migration. Keep a regression for8/8 versus10/8.",
+      "area": "game-platform",
+      "detail": "AB has six duplicate-ID pairs; CD has five pairs. Questions and answers match, illustrations/comments differ. Gemini memory/preferences caches use only questionId; progress/favorites are keyed by questionId within category. A result for ticket8/8 can affect ticket10/8.",
+      "scenario": ""
+    },
+    {
+      "id": "GAME-03",
+      "priority": "P1",
+      "status": "open_triage",
+      "title": "Игровые проверки пока не зелёные: 9 проблем и 10 сценариев с диагностикой",
+      "details": "Broad90 unique headless scenarios:71clean,10rc0with material-null diagnostics,9nonclean. Includes vehicle_lights timeout/OOB contact_shadow; answer_traffic_world1/84 yielding participant ticket12/5; lighting6/162 camera invariants; participant_lifetime sound=null; ambient tests street=null; missing scene.glb; stale soil surface fixture; question_report RIDleaks. Some appear stale fixtures, but not all have been proven obsolete.",
+      "evidence": [
+        "godot-final-summary.json",
+        "vehicle_lights_check.log",
+        "answer_traffic_world_check-after-compile-fix.log",
+        "lighting_check-after-compile-fix.log",
+        "participant_lifetime_check-after-compile-fix.log",
+        "surface_check.log"
+      ],
+      "task": "Freeze one release SHA. Separate real game regressions from incomplete/stale fixtures, investigate material-null and RID diagnostics, preserve meaningful assertions, fix or justify each case, then rerun the90 unique scenarios and native/device smoke tests.",
+      "area": "game-platform",
+      "detail": "Broad90 unique headless scenarios:71clean,10rc0with material-null diagnostics,9nonclean. Includes vehicle_lights timeout/OOB contact_shadow; answer_traffic_world1/84 yielding participant ticket12/5; lighting6/162 camera invariants; participant_lifetime sound=null; ambient tests street=null; missing scene.glb; stale soil surface fixture; question_report RIDleaks. Some appear stale fixtures, but not all have been proven obsolete.",
+      "scenario": ""
+    },
+    {
+      "id": "RELEASE-01",
+      "priority": "P1",
+      "status": "manual_gate",
+      "title": "Финальные native store артефакты пока не проверены",
+      "file": "scripts/build.sh",
+      "line": 150,
+      "details": "build.sh требует заранее выполнить godot_{android,ios}_assets.sh; это документированная предпосылка, автоматического freshness guard нет. На диске APK321.4MiB dev package, iOS pack от16октября; AAB/IPA актуального immutable SHA не проверены.",
+      "evidence": [
+        "current-apk-badging.txt",
+        "apk-size.json",
+        "snapshot.json"
+      ],
+      "task": "Заморозить и push snapshot, экспортировать свежий Godot, собрать обычные GoogleAAB/RuStoreAPK/iOSarchive; проверить подпись/пакет/buildnumber, install/update и три игры на физ.ARM64Android+iPhone.",
+      "area": "game-platform",
+      "detail": "build.sh требует заранее выполнить godot_{android,ios}_assets.sh; это документированная предпосылка, автоматического freshness guard нет. На диске APK321.4MiB dev package, iOS pack от16октября; AAB/IPA актуального immutable SHA не проверены.",
+      "scenario": ""
+    },
+    {
+      "id": "CLIENT-06",
+      "priority": "P1",
+      "title": "iOS push нельзя считать готовыми: отсутствует APNs entitlement и незавершён setup",
+      "status": "not-verified",
+      "platform": [
+        "ios"
+      ],
+      "evidence": [
+        "ios/Runner/Runner.entitlements: нет aps-environment",
+        "docs/ops/notifications-setup.md: Apple Developer требует входа владельца, нужно создать APNs key, включить capability и обновить provisioning",
+        "docs/ops/notifications-setup.md: push общий switch оставлен off; validate_only FCM от04.10 подтверждает API, а не доставку APNs"
+      ],
+      "scenario": "Включить remote push перед публикацией и ожидать доставку на iOS.",
+      "impact": "FCM sender может принимать запросы, но iOS-устройства не имеют подтверждённой APNs доставки. Маркетинговый релиз с обещанием push будет неполным.",
+      "task": "Либо оставить push off и честно зафиксировать ограничение iOS, либо закончить APNs key/capability/provisioning и проверить подписанную магазинную сборку.",
+      "acceptance": [
+        "APNs key загружен в Firebase; production/sandbox environment соответствует подписи",
+        "Runner содержит корректный aps-environment через поддерживаемую capability",
+        "Real iPhone: foreground/background/terminated delivery, tap routing и отказ от push",
+        "Без обещаний image push на iOS до Notification Service Extension либо явного fallback"
+      ],
+      "releaseBlocker": false,
+      "releaseCondition": "Блокирует включение/обещание remote push на iOS",
+      "area": "client",
+      "detail": "FCM sender может принимать запросы, но iOS-устройства не имеют подтверждённой APNs доставки. Маркетинговый релиз с обещанием push будет неполным.",
+      "relatedIds": [
+        "RELEASE-02"
+      ]
+    },
+    {
+      "id": "GAME-01",
+      "priority": "P0",
+      "status": "fixed",
+      "title": "Godot не компилировался после правок меню паузы",
+      "file": "game_godot/scripts/ride_pause.gd",
+      "line": 285,
+      "details": "Вывод n из Variant и перепутанные аргументы _inset ломали world.gd зависимость. Godot иногда возвращает0 даже при SCRIPT ERROR. Исправлены ровно2 строки с сохранением чужой dirty работы.",
+      "evidence": [
+        "game-regulator.log",
+        "ride-pause-audit-fix.patch",
+        "capture-city.log"
+      ],
+      "task": "Включить hunk-only исправление в согласованный release snapshot, повторить Godot проверки и mobile export.",
+      "area": "game-platform",
+      "detail": "Вывод n из Variant и перепутанные аргументы _inset ломали world.gd зависимость. Godot иногда возвращает0 даже при SCRIPT ERROR. Исправлены ровно2 строки с сохранением чужой dirty работы. Эти строки уже вошли в параллельный коммит 3139f10e; повторно чужой файл в аудитный коммит не включён.",
+      "scenario": ""
+    },
+    {
+      "id": "BE-AI-BOUNDS",
+      "severity": "P1",
+      "title": "Неограниченные поля AI и отсутствие deadline исправлены локально",
+      "status": "fixed-local",
+      "releaseBlocker": false,
+      "confidence": "high",
+      "evidence": [
+        "server/install-notifier/ai_request.js:4",
+        "server/install-notifier/ai_request.js:23",
+        "server/install-notifier/worker.js:3709",
+        "server/install-notifier/worker.js:3808",
+        "server/install-notifier/test-ai-request.mjs:13"
+      ],
+      "impact": "Ранее officialExplanation, history и userMessage не ограничивались; Gemini fetch мог продолжаться после клиентского timeout. Теперь body ≤64KiB, schema validation, recent20 turns, лимиты всех строк и timeout9с. Увеличены пределы question/answers до1000, чтобы сохранить все реальные переводы (раньше ответы >200 обрезались).",
+      "reproduction": "6 targeted tests: oversize/malformed payloads fail before provider; provider получает AbortSignal; все4800 текущих question payloads RU/EN/KK сохраняются полностью.",
+      "task": "Включить эти4 файла в проверенный коммит и развернуть Worker после решения blockers; не считать квоты закрытыми.",
+      "acceptance": [
+        "test-ai-request.mjs зелёный.",
+        "npm run test:security100/100 и full node tests277/277.",
+        "wrangler dry-run зелёный; после approved deployment fingerprint/version зафиксирован."
+      ],
+      "priority": "P1",
+      "scenario": "6 targeted tests: oversize/malformed payloads fail before provider; provider получает AbortSignal; все4800 текущих question payloads RU/EN/KK сохраняются полностью.",
+      "platform": [
+        "android",
+        "ios",
+        "web",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "Ранее officialExplanation, history и userMessage не ограничивались; Gemini fetch мог продолжаться после клиентского timeout. Теперь body ≤64KiB, schema validation, recent20 turns, лимиты всех строк и timeout9с. Увеличены пределы question/answers до1000, чтобы сохранить все реальные переводы (раньше ответы >200 обрезались)."
+    },
+    {
+      "id": "CLIENT-01",
+      "priority": "P1",
+      "title": "RuStore вызывал Google Play Billing из общих точек входа",
+      "status": "fixed",
+      "platform": [
+        "android-rustore"
+      ],
+      "evidence": [
+        "lib/main.dart:162: IapService.init вызывается на старте всех native сборок",
+        "lib/presentation/widgets/premium_paywall_sheet.dart:50: loadProducts вызывается для всех native сборок",
+        "lib/data/services/iap_service.dart:41: добавлен общий supportsStoreBilling guard для init, products, buy, restore, retry",
+        "lib/presentation/widgets/subscription_management_sheet.dart:338: restore скрыт, если магазинный Billing не поддерживается",
+        "test/iap_store_routing_test.dart:62: настоящий service entry-point test считает обращения к billing boundary"
+      ],
+      "scenario": "Открыть RuStore-сборку или её paywall: до исправления сервис подписывался на purchaseStream, проверял Play Billing и загружал продукты; management sheet предлагал восстановление Play-покупок.",
+      "impact": "Нарушался инвариант проекта «Google Play Billing в RuStore не используется».",
+      "task": "Сохранить guards при дальнейших изменениях, включить routing test в оба build modes.",
+      "acceptance": [
+        "flutter test test/iap_store_routing_test.dart — pass",
+        "flutter test --dart-define=STORE=rustore test/iap_store_routing_test.dart — pass и 0 billing calls",
+        "IAP recovery/account-owner/product-retry — 4 existing tests pass",
+        "targeted analyze трёх изменённых файлов — clean"
+      ],
+      "releaseBlocker": false,
+      "area": "client",
+      "detail": "Нарушался инвариант проекта «Google Play Billing в RuStore не используется»."
+    },
+    {
+      "id": "GAME-02",
+      "priority": "P1",
+      "status": "fixed_pending_commit",
+      "title": "iOS exporter пропускал ошибки и сбрасывал чужие scenery изменения",
+      "file": "scripts/godot_ios_assets.sh",
+      "line": 12,
+      "details": "Изолированная fixture: SCRIPT ERROR+rc0 приводили к успеху с отсутствующим game.pck; git checkout стирал незакоммиченный scenery. Исправлено: private staging, strict import/export logs, проверка непустого pack, сохранение предыдущего пакета при ошибке.",
+      "evidence": [
+        "ios-export-reproduction.json",
+        "ios-export-tests-after-fix.log",
+        "android-python-tests-after-fix.log"
+      ],
+      "task": "Закоммитить exporter+tests; перед iOS release выполнить export, не использовать pack от16октября.",
+      "area": "game-platform",
+      "detail": "Изолированная fixture: SCRIPT ERROR+rc0 приводили к успеху с отсутствующим game.pck; git checkout стирал незакоммиченный scenery. Исправлено: private staging, strict import/export logs, проверка непустого pack, сохранение предыдущего пакета при ошибке.",
+      "scenario": ""
+    },
+    {
+      "id": "BE-ACCOUNT-DELETE",
+      "severity": "P2",
+      "title": "Self-delete оставляет записи и поздний платеж восстанавливает профиль",
+      "status": "open",
+      "releaseBlocker": false,
+      "confidence": "high",
+      "evidence": [
+        "server/install-notifier/worker.js:3449",
+        "server/install-notifier/worker.js:3450",
+        "server/install-notifier/users_admin.js:176",
+        "server/install-notifier/payments.js:273"
+      ],
+      "impact": "Self-delete не удаляет user_admin:<id>/pay_intent:<id>, в отличие от части admin delete. Pending payment callback при отсутствии профиля создаёт его заново с именем/email из order. Финансовые записи могут требовать отдельного хранения, но текущее обещание «удалить аккаунт и данные» не описывает такое поведение.",
+      "reproduction": "BE-ACCOUNT-DELETE fixture: delete200, user profile gone, note/pay_intent remain; late confirmed payment recreates user profile.",
+      "task": "Единый deletion workflow/tombstone; разнести минимальный retention financial ledger и удаляемый профиль/заметки/intents; определить обработку pending payments и запретить автоматическое восстановление профиля callback.",
+      "acceptance": [
+        "Self/admin deletion удаляют одинаковый предусмотренный набор personal records.",
+        "Late webhook не создаёт удалённый профиль; деньги/возврат обрабатываются по явному процессу.",
+        "Retention policy соответствует фактическому хранению, с датами удаления."
+      ],
+      "priority": "P2",
+      "scenario": "BE-ACCOUNT-DELETE fixture: delete200, user profile gone, note/pay_intent remain; late confirmed payment recreates user profile.",
+      "platform": [
+        "android",
+        "ios",
+        "web",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "Self-delete не удаляет user_admin:<id>/pay_intent:<id>, в отличие от части admin delete. Pending payment callback при отсутствии профиля создаёт его заново с именем/email из order. Финансовые записи могут требовать отдельного хранения, но текущее обещание «удалить аккаунт и данные» не описывает такое поведение."
+    },
+    {
+      "id": "BE-IAP-LIFECYCLE",
+      "severity": "P2",
+      "title": "Нет server-to-server обработки обновлений подписок Apple/Google",
+      "status": "open",
+      "releaseBlocker": false,
+      "confidence": "high",
+      "evidence": [
+        "server/install-notifier/store_verification.js:157",
+        "server/install-notifier/worker.js:4164",
+        "https://developer.android.com/google/play/billing/rtdn-reference",
+        "https://developer.apple.com/documentation/appstoreservernotifications/enabling-app-store-server-notifications"
+      ],
+      "impact": "Рабочие маршруты не содержат RTDN/App Store Server Notifications receiver; автоматического периодического reconciler подписок также нет. Сроки проверяются при status/sync/admin read не чаще5мин. Refund/renewal не попадают в backend, пока никто не читает профиль; это gap оперативности, не утверждение о неверной проверке чеков.",
+      "reproduction": "Поиск маршрутов и scheduled handler: crons занимаются social/notifications/Telegram/game, не IAP. Store polling trigger только клиентский/админский.",
+      "task": "Добавить аутентифицированные Google Pub/Sub RTDN и signed Apple notifications v2, reread provider status, durable idempotency/reconciliation; test endpoints из кабинетов.",
+      "acceptance": [
+        "Renew/grace/refund/revoke обновляют аккаунт при закрытом приложении.",
+        "Поддельные/replay webhook не дают доступ; status перечитывается у provider.",
+        "Доказан test notification delivery в обоих кабинетах."
+      ],
+      "priority": "P2",
+      "scenario": "Поиск маршрутов и scheduled handler: crons занимаются social/notifications/Telegram/game, не IAP. Store polling trigger только клиентский/админский.",
+      "platform": [
+        "android",
+        "ios",
+        "web",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "Рабочие маршруты не содержат RTDN/App Store Server Notifications receiver; автоматического периодического reconciler подписок также нет. Сроки проверяются при status/sync/admin read не чаще5мин. Refund/renewal не попадают в backend, пока никто не читает профиль; это gap оперативности, не утверждение о неверной проверке чеков."
+    },
+    {
+      "id": "BE-RECEIPT-EMAIL",
+      "severity": "P2",
+      "title": "Выбранная почта для чека не передаётся в запрос создания Platega платежа",
+      "status": "needs-external-verification",
+      "releaseBlocker": false,
+      "confidence": "high",
+      "evidence": [
+        "server/install-notifier/payments.js:118",
+        "server/install-notifier/payments.js:153",
+        "server/install-notifier/payments.js:171",
+        "server/install-notifier/payments.js:249"
+      ],
+      "impact": "Email хранится в intent/order и выводится админу в Telegram, но Platega POST содержит лишь metadata.userId. Отдельной генерации/отправки чека в просмотренном payment модуле нет. Фискальную конфигурацию кабинета не удалось подтвердить; наличие реального чека нельзя вывести из available=true.",
+      "reproduction": "Trace handlePayIntent collected email → Platega payload не содержит email/receipt/customer. Реальную оплату не делали.",
+      "task": "Подтвердить в кабинете provider процесс выдачи/отправки чека и интегрировать collected email при необходимости; привести UI promise к реальной доставке.",
+      "acceptance": [
+        "Контрольная разрешённая реальная оплата выдаёт корректный чек на введённую почту.",
+        "Реквизиты и получатель платежа сверены с офертой.",
+        "Документирован refund/receipt workflow."
+      ],
+      "priority": "P2",
+      "scenario": "Trace handlePayIntent collected email → Platega payload не содержит email/receipt/customer. Реальную оплату не делали.",
+      "platform": [
+        "android",
+        "ios",
+        "web",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "Email хранится в intent/order и выводится админу в Telegram, но Platega POST содержит лишь metadata.userId. Отдельной генерации/отправки чека в просмотренном payment модуле нет. Фискальную конфигурацию кабинета не удалось подтвердить; наличие реального чека нельзя вывести из available=true."
+    },
+    {
+      "id": "BE-STORE-POINTER",
+      "severity": "P2",
+      "title": "У аккаунта хранится только одна ссылка для проверки подписки магазина",
+      "status": "open",
+      "releaseBlocker": false,
+      "confidence": "high",
+      "evidence": [
+        "server/install-notifier/worker.js:3544",
+        "server/install-notifier/store_verification.js:158",
+        "server/install-notifier/store_verification.js:159",
+        "server/install-notifier/store_verification.js:167"
+      ],
+      "impact": "Entitlements разделены на appstore/googleplay, но verifiedPurchase и storeVerifiedAt общие. После покупки во втором магазине refresh перестаёт перепроверять первый. Его renewal/refund может не синхронизироваться до явного восстановления/новой отправки чека клиентом.",
+      "reproduction": "Статический trace: /purchase всегда заменяет user.verifiedPurchase; refreshStoreEntitlement берёт ровно store из этого одного поля.",
+      "task": "Хранить verifiedPurchases/storeVerifiedAt по источнику с миграцией старого поля; refresh учитывать каждый источник отдельно.",
+      "acceptance": [
+        "Google+Apple покупки одного аккаунта сохраняют обе verification references.",
+        "Renew/refund любого источника корректно пересчитывает max entitlement, сохраняя web/admin.",
+        "Legacy single-reference профили мигрируют без потери Premium."
+      ],
+      "priority": "P2",
+      "scenario": "Статический trace: /purchase всегда заменяет user.verifiedPurchase; refreshStoreEntitlement берёт ровно store из этого одного поля.",
+      "platform": [
+        "android",
+        "ios",
+        "web",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "Entitlements разделены на appstore/googleplay, но verifiedPurchase и storeVerifiedAt общие. После покупки во втором магазине refresh перестаёт перепроверять первый. Его renewal/refund может не синхронизироваться до явного восстановления/новой отправки чека клиентом."
+    },
+    {
+      "id": "BE-TARGETED-FEED",
+      "severity": "P2",
+      "title": "Адресные popup/banner сообщения доступны анонимно по email или userId",
+      "status": "open",
+      "releaseBlocker": false,
+      "confidence": "high",
+      "evidence": [
+        "server/install-notifier/worker.js:3242",
+        "server/install-notifier/worker.js:3247",
+        "server/install-notifier/notifications.js:87",
+        "server/install-notifier/notifications.js:30"
+      ],
+      "impact": "Адресные сообщения отбираются по query email/userId, пришедшим от самого клиента, без readSession. Локальный PoC анонимно получил test-targeted сообщение. FCM account topics также детерминированы от открытого идентификатора и не являются средством авторизации. Сейчас live общая лента пустая; private live targets не пробовались.",
+      "reproduction": "BE-TARGETED-FEED fixture: anonymous GET /api/notifications?app=ru&platform=android&email=fixture-email →200 и1 targeted message.",
+      "task": "Общую ленту оставить публичной, account targets выводить только по verified session; добавить bearer в клиенте. Персональные push отправлять на защищённые зарегистрированные device tokens либо считать их неконфиденциальными.",
+      "acceptance": [
+        "Гость не видит сообщения другого email/userId.",
+        "Вошедший пользователь видит адресное сообщение только своему аккаунту.",
+        "Общая лента/гостевые баннеры сохраняют работу."
+      ],
+      "priority": "P2",
+      "scenario": "BE-TARGETED-FEED fixture: anonymous GET /api/notifications?app=ru&platform=android&email=fixture-email →200 и1 targeted message.",
+      "platform": [
+        "android",
+        "ios",
+        "web",
+        "backend"
+      ],
+      "area": "backend",
+      "detail": "Адресные сообщения отбираются по query email/userId, пришедшим от самого клиента, без readSession. Локальный PoC анонимно получил test-targeted сообщение. FCM account topics также детерминированы от открытого идентификатора и не являются средством авторизации. Сейчас live общая лента пустая; private live targets не пробовались."
+    },
+    {
+      "id": "CLIENT-04",
+      "priority": "P2",
+      "title": "В Firebase передаются обратимо закодированные email/ID, хотя документация отрицает передачу email",
+      "status": "open",
+      "platform": [
+        "android",
+        "ios"
+      ],
+      "evidence": [
+        "lib/data/services/remote_notifications_service.dart:147-153: userTopic — lowercase UTF8→hex, не криптографический hash",
+        "lib/data/services/remote_notifications_service.dart:429-430: userTopic(user.email) входит в topics Firebase",
+        "docs/ops/notifications-setup.md: утверждение об отсутствии передачи email в Firebase",
+        "https://firebase.google.com/docs/cloud-messaging/manage-topic-subscriptions: темы допускают подписку произвольного клиента"
+      ],
+      "scenario": "Пользователь входит и включает новостные push. В Firebase отправляется topic с восстановимым email. Любой клиент, знающий тему и конфигурацию проекта, может попытаться на неё подписаться.",
+      "impact": "Раскрытия/документация не соответствуют фактическим данным. Темы нельзя считать механизмом приватной доставки. При добавлении ПД в персональные push это становится P1.",
+      "task": "Убрать email из имён тем, выбрать opaque targeting; приватные сообщения отправлять сервером на токены с проверенной связью аккаунта/установки. Исправить раскрытия фактически включённых данных.",
+      "acceptance": [
+        "В Firebase topic отсутствуют обратимо закодированные email/внешние userId",
+        "В privacy/Data Safety/App Privacy отражены реальные FCM данные",
+        "Персональные push не содержат чувствительные данные до безопасного targeting",
+        "Проверена миграция старых подписок"
+      ],
+      "releaseBlocker": false,
+      "releaseCondition": "До включения push с персональными данными",
+      "area": "client",
+      "detail": "Раскрытия/документация не соответствуют фактическим данным. Темы нельзя считать механизмом приватной доставки. При добавлении ПД в персональные push это становится P1."
+    },
+    {
+      "id": "CLIENT-05",
+      "priority": "P2",
+      "title": "Старые FCM user topics переживают cold start и не очищаются при истечении сессии",
+      "status": "open",
+      "platform": [
+        "android",
+        "ios"
+      ],
+      "evidence": [
+        "lib/data/services/remote_notifications_service.dart:168: _subscribedUserTopics инициализируется пустым, нигде не сохраняется",
+        "lib/data/services/remote_notifications_service.dart:451-454: unsubscribe только по разнице in-memory set",
+        "lib/data/services/auth_service.dart:177-190: истёкшая cached auth session удаляет profile на cold start",
+        "Firebase topic membership относится к installation/token и не исчезает от завершения Dart process"
+      ],
+      "scenario": "A подписан на личные topics. Приложение убито. При следующем запуске auth session истекла или восстановлен B. FCM всё ещё подписан на A, но сервис помнит только пустой set и не отправляет unsubscribe(A).",
+      "impact": "Установка продолжает получать персональные кампании прежнего аккаунта. При чувствительном тексте приоритет повышается до P1.",
+      "task": "Хранить installation topic state и очищать старые темы при cold start/logout/switch/consent off с retry; рассмотреть серверную per-installation адресацию.",
+      "acceptance": [
+        "A→kill→expired session→guest: old user topics отписаны",
+        "A→kill→B: A topics удалены, B добавлены",
+        "Offline unsubscribe повторяется после восстановления связи",
+        "Consent off переживает restart и не оставляет прежние user topics"
+      ],
+      "releaseBlocker": false,
+      "area": "client",
+      "detail": "Установка продолжает получать персональные кампании прежнего аккаунта. При чувствительном тексте приоритет повышается до P1."
+    },
+    {
+      "id": "CLIENT-07",
+      "priority": "P2",
+      "title": "Дневной лимит ленты после полуночи требует перезапуска или повторного входа",
+      "status": "open",
+      "platform": [
+        "all"
+      ],
+      "evidence": [
+        "lib/data/services/premium_service.dart:90-92: canAccessFeed использует in-memory dailyCardsCount без проверки даты",
+        "lib/data/services/premium_service.dart:139-152,185-198: сброс даты только init/onAuthChanged",
+        "lib/data/services/premium_service.dart:380-395: reset при recordCardCompleted, который недоступен если canAccessFeed=false",
+        "lib/presentation/screens/feed/feed_screen.dart:173-176,281-284: лимит блокирует переход/ответ до recordCardCompleted"
+      ],
+      "scenario": "Израсходовать бесплатные10 карточек до00:00 и оставить приложение открытым/в фоне до следующего дня. Возврат не сбрасывает счётчик, лента продолжает открывать paywall.",
+      "impact": "Пользователь не получает обещанный новый дневной лимит до restart/login.",
+      "task": "Обновлять дневной bucket до проверки доступа и на app resume/date boundary; уведомлять providers об изменении.",
+      "acceptance": [
+        "После смены local date exhausted user получает новый лимит без restart",
+        "Смена часового пояса имеет определённое поведение",
+        "Нет начисления >лимита из-за двух параллельных ответов"
+      ],
+      "releaseBlocker": false,
+      "area": "client",
+      "detail": "Пользователь не получает обещанный новый дневной лимит до restart/login."
+    },
+    {
+      "id": "CLIENT-08",
+      "priority": "P2",
+      "title": "ИИ-экран содержит русские hardcoded строки и несоответствующие вопросу локальные подсказки",
+      "status": "open",
+      "platform": [
+        "all"
+      ],
+      "evidence": [
+        "lib/data/services/gemini_ai_service.dart:432-495,558-620: заголовки/подсказки UI hardcoded по-русски, вне gen-l10n",
+        "lib/data/services/gemini_ai_service.dart:511-514: проверка «сигнал» предшествует регулировщику",
+        "lib/presentation/widgets/ai_explanation_sheet.dart:99-106: первоначальный «разбор от ИИ» всегда локальный шаблон, API не вызывается",
+        "AB билет12 вопрос6 (2f8adb9763d4c4e47b02bf37b8f0c76a): о свистке регулировщика, получает мнемонику про зелёный свет и поворот налево",
+        "lib/data/services/gemini_ai_service.dart:278-299: язык интерфейса не отправляется backend",
+        "lib/l10n/app_{ru,en,kk}.arb: набор UI ключей совпадает, 1060ключей, но этот service проходит мимо локализаций"
+      ],
+      "scenario": "Открыть AI sheet при English/Kazakh UI либо открыть билет12/6 о свистке регулировщика: русские локальные headings/suggestions и нерелевантный mnemonic.",
+      "impact": "Нарушение правил проекта ru/en/kk, смешение языков; обучающая подсказка не соответствует вопросу. Paywall обещает AI-разбор, а первичный блок не является вызовом модели.",
+      "task": "Локализовать UI через ARB всех3 языков; передавать locale в AI; убрать/редактировать непроверенные универсальные mnemonic и ясно различать официальный комментарий/локальную подсказку/ответ ИИ.",
+      "acceptance": [
+        "Нет hardcoded UI fallback/suggestions в service",
+        "ru/en/kk отображают корректные headings и подсказки",
+        "Регулировщик/круг/приоритет имеют тематически проверенные mnemonic",
+        "Offline/online тексты не выдаются друг за друга"
+      ],
+      "releaseBlocker": false,
+      "area": "client",
+      "detail": "Нарушение правил проекта ru/en/kk, смешение языков; обучающая подсказка не соответствует вопросу. Paywall обещает AI-разбор, а первичный блок не является вызовом модели."
+    },
+    {
+      "id": "CLIENT-09",
+      "priority": "P2",
+      "title": "Fallback входа не распространяется на Premium, оплату и прогресс",
+      "status": "open",
+      "platform": [
+        "all"
+      ],
+      "evidence": [
+        "docs/premium/api-fallback.md: прямо отмечено, что остальные запросы идут только на primary workers.dev",
+        "lib/data/services/premium_service.dart:265-271,340-345,531-549: запросы на один notifierUrl",
+        "lib/data/services/iap_service.dart:327-335: store verification status только primary",
+        "lib/data/services/progress_sync_service.dart:64-66: progress sync только primary",
+        "lib/data/services/auth_service.dart:620-635: auth использует notifierHosts/sendWithRetry"
+      ],
+      "scenario": "Оператор фильтрует *.workers.dev, но api.pdd-drive.app доступен. Вход с fallback проходит, а статус Premium/оплата/restore/progress продолжают падать на основном адресе.",
+      "impact": "У пользователя есть аккаунт, но платные/облачные функции недоступны в уже известном проекту сетевом сценарии.",
+      "task": "Расширить host selection на read/idempotent API с безопасной стратегией повторов для purchase/pay-intent; операции с побочными эффектами должны иметь idempotency.",
+      "acceptance": [
+        "Primary заблокирован, fallback работает: status, restore verification и progress доступны",
+        "Не создаются повторные заказы/платежи при неизвестном исходе POST",
+        "События диагностируют выбранный host"
+      ],
+      "releaseBlocker": false,
+      "area": "client",
+      "detail": "У пользователя есть аккаунт, но платные/облачные функции недоступны в уже известном проекту сетевом сценарии."
+    },
+    {
+      "id": "CLIENT-10",
+      "priority": "P2",
+      "title": "Экран активного Премиума отстаёт от paywall: нет игрового преимущества",
+      "status": "open",
+      "platform": [
+        "all"
+      ],
+      "evidence": [
+        "lib/presentation/widgets/premium_paywall_sheet.dart:394-399: продаётся «Безлимитные заезды в игре»",
+        "lib/presentation/widgets/subscription_management_sheet.dart:229-254: активный Premium перечисляет только ленту, AI, голос",
+        "lib/presentation/screens/games/games_hub_screen.dart:102: premium действительно снимает запрет на запуск без заездов"
+      ],
+      "scenario": "Купить Premium ради новой игры и открыть карточку активной подписки.",
+      "impact": "Преимущество работает, но экран статуса не подтверждает пользователю главный новый продуктовый смысл.",
+      "task": "Добавить игровое преимущество в management sheet и выровнять формулировки с paywall/сторами на3 языках.",
+      "acceptance": [
+        "Paywall, active Premium screen и store copy называют одинаковые реальные преимущества",
+        "«Безлимитные заезды» явно относится к Живому городу, мини-игры не рекламируются как платные без причины",
+        "Новые строки ru/en/kk сгенерированы штатно"
+      ],
+      "releaseBlocker": false,
+      "area": "client",
+      "detail": "Преимущество работает, но экран статуса не подтверждает пользователю главный новый продуктовый смысл."
+    },
+    {
+      "id": "CLIENT-11",
+      "priority": "P2",
+      "title": "Исходящая история ИИ-чата могла превысить новый лимит worker64KiB",
+      "status": "fixed",
+      "platform": [
+        "all"
+      ],
+      "evidence": [
+        "lib/data/services/gemini_ai_service.dart:42: общий helper ограничивает исходящую копию истории/полей и фактический JSON UTF8 byte size",
+        "test/ai_request_payload_test.dart: ordinary payload сохраняется;300 multibyte сообщений и escaped base content помещаются в64KiB",
+        "output/release-audit-2026-10-18/logs/flutter-ai-payload-targeted.log:3passed"
+      ],
+      "scenario": "Длинный локальный чат отправлял всю историю. Новый защищённый worker отклонял>64KiB ещё до собственной обрезки последних20 сообщений.",
+      "impact": "После serverhardening длинный диалог мог постоянно получать413 и деградировать в локальный fallback.",
+      "task": "Совместить client payload с server limits; сохранить всю локальную историю.",
+      "acceptance": [
+        "Исходящий payload≤65536 UTF8 bytes с учётом JSON escaping",
+        "Передаются самые новые≤20turns, каждый≤2000symbols; currentmessage≤4000",
+        "Нормальный вопрос/ответ/официальный комментарий передаются без потери",
+        "Локальная история не изменена",
+        "Meaningful HTTP MockClient boundary tests зелёные"
+      ],
+      "releaseBlocker": false,
+      "area": "client",
+      "detail": "После serverhardening длинный диалог мог постоянно получать413 и деградировать в локальный fallback."
+    },
+    {
+      "id": "CLIENT-12",
+      "priority": "P2",
+      "title": "Premium-карточка сохраняла предыдущий язык после переключения интерфейса",
+      "status": "fixed",
+      "platform": [
+        "all"
+      ],
+      "evidence": [
+        "lib/presentation/screens/profile/profile_screen.dart:261: const PremiumBannerCard сохраняется в дереве",
+        "lib/presentation/widgets/premium_banner_card.dart:23: appL10n заменён на context.l10n для подписки на Localizations",
+        "ui/29-english-profile.txt: английский профиль и русская Premium-карточка",
+        "ui/35-kazakh-profile.txt: казахский профиль и английская Premium-карточка",
+        "test/premium_banner_locale_test.dart: один const child переключается ru→en→kk→ru",
+        "logs/flutter-premium-locale-before.log: FAIL до исправления",
+        "logs/flutter-premium-locale-after.log: PASS после исправления",
+        "logs/flutter-premium-locale-analyze.log: No issues found"
+      ],
+      "scenario": "Настройки → смена RU→English или English→Қазақша → возврат в профиль. Const child не перестраивался, поскольку глобальный appL10n не создаёт зависимости от Localizations, а Premium-провайдеры не меняются.",
+      "impact": "Смешанный язык профиля до последующего перестроения карточки.",
+      "task": "Использовать context.l10n в PremiumBannerCard; исправлено без новых строк.",
+      "acceptance": [
+        "Заголовок и подпись сразу обновляются при RU→EN→KK→RU",
+        "Не требуется менять вкладку или статус Premium",
+        "Regression красный до и зелёный после исправления"
+      ],
+      "releaseBlocker": false,
+      "area": "client",
+      "detail": "Смешанный язык профиля до последующего перестроения карточки."
+    },
+    {
+      "id": "TEST-01",
+      "priority": "P2",
+      "status": "fixed_pending_commit",
+      "title": "Часть Godot проверок устарела относительно новогоUI и10вопросов",
+      "file": "game_godot/tests/ride_completion_check.gd",
+      "line": 69,
+      "details": "Run.QUESTIONS fixture now uses10-question run correctly:59checks0failures. TicketChip helper finds named chip after report flag insertion: game_ui headless/native and ru/en/kk text-scale1.6 dark pass. Concurrent ride_pause_check changes belong to the other author.",
+      "evidence": [
+        "ride_completion_check-parameterized.log",
+        "game_ui_check-native.log"
+      ],
+      "task": "Завершить green regression set на финальном immutable snapshot и актуализировать documented known failures.",
+      "area": "game-platform",
+      "detail": "Run.QUESTIONS fixture now uses10-question run correctly:59checks0failures. TicketChip helper finds named chip after report flag insertion: game_ui headless/native and ru/en/kk text-scale1.6 dark pass. Concurrent ride_pause_check changes belong to the other author.",
+      "scenario": ""
+    },
+    {
+      "id": "TEST-02",
+      "priority": "P2",
+      "status": "open",
+      "title": "Часть старых тестов не создаёт все зависимости текущего игрового мира",
+      "details": "ambient_transition fixture bypasses _ready and leaves street nil, participant_lifetime fixture leaves sound nil; surface_check loads nonexistent legacy scene.glb for newer authored scenes; dirt_surface_check expects old sand_join_6 surfaceID. These failures need fixture repair rather than being presented as successful checks. vehicle_lights expects removed contact_shadow and times out. question_report has RID diagnostics at exit.",
+      "evidence": [
+        "ambient_transition_check-after-compile-fix.log",
+        "participant_lifetime_check-after-compile-fix.log",
+        "surface_check.log",
+        "dirt_surface_check.log"
+      ],
+      "task": "Repair fixtures with current dependencies/asset layout; keep assertions for pedestrian lifetime, supports, collision priority and soil/asphalt transitions. Separate headless material warnings from assertion failures.",
+      "area": "game-platform",
+      "detail": "ambient_transition fixture bypasses _ready and leaves street nil, participant_lifetime fixture leaves sound nil; surface_check loads nonexistent legacy scene.glb for newer authored scenes; dirt_surface_check expects old sand_join_6 surfaceID. These failures need fixture repair rather than being presented as successful checks. vehicle_lights expects removed contact_shadow and times out. question_report has RID diagnostics at exit.",
+      "scenario": ""
+    },
+    {
+      "id": "PLATFORM-01",
+      "priority": "P3",
+      "status": "verified",
+      "title": "Базовые требованияSDK и64bit16KB соблюдены для провереннойdevсборки",
+      "details": "Flutter defaults compile/target36, NDK28.2, AGP8.11.1; Xcode27.1 SDK27.1.64bit ELF Godot/Flutter/app/libc++/datastore alignment>=16KB; ZIP alignment check passed. Не доказывает содержимое будущегоAAB.",
+      "evidence": [
+        "native-elf-alignment.json",
+        "apk-zipalign.log",
+        "current-apk-badging.txt"
+      ],
+      "sources": [
+        "https://support.google.com/googleplay/android-developer/answer/11926878",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://developer.apple.com/news/?id=ueeok6yw"
+      ],
+      "task": "Повторить binary checks для финального store артефакта.",
+      "area": "game-platform",
+      "detail": "Flutter defaults compile/target36, NDK28.2, AGP8.11.1; Xcode27.1 SDK27.1.64bit ELF Godot/Flutter/app/libc++/datastore alignment>=16KB; ZIP alignment check passed. Не доказывает содержимое будущегоAAB.",
+      "scenario": ""
+    }
+  ],
+  "ownedSourceSha256": {
+    "lib/data/services/iap_service.dart": "75bc9d6f7b2dff47d1b12a8454296b2f749240d001e7ebaf28bb09ae13459fdd",
+    "lib/presentation/widgets/subscription_management_sheet.dart": "702db16b9d624a402bfd24241b2d34bf2bb6cc8bd38bdec0ea17a730d0ae30fb",
+    "lib/data/services/gemini_ai_service.dart": "5707f686cec5739d3d42fde0b27fb3f2818f299217cd4874cdc9bc5e550f6a08",
+    "lib/presentation/widgets/premium_banner_card.dart": "5f8421c0400cc8f33cbe588e259c6da15dac9cf1cf6e02d48dc9bd2e37bae389",
+    "test/iap_store_routing_test.dart": "7f62b543dda03be4b6a2b80558ed34d35aa13265d694c7b5672ccd05cf324427",
+    "test/ai_request_payload_test.dart": "a034838174c4948745055fe1b90ae0cb11c84964b26ab3cabda6c9cdd227ceab",
+    "test/premium_banner_locale_test.dart": "8113233d6b4965cd0ea3308367d4d6b8233af86e783e132767821707a71765cc",
+    "test/release_safety_test.dart": "280aa6a73539650ff7d7401a0e462d7777da9366597156f676c51d079ad0615f",
+    "server/install-notifier/ai_request.js": "71763b386457c18e274d16e07fa77dbe8f283a6879de16f16efd4619a55a5cdc",
+    "server/install-notifier/test-ai-request.mjs": "fe4cc96e3ada08ae57b54deed1d224f77cc23635cf2e4096118ea4e0a1f00d70",
+    "server/install-notifier/worker.js": "fab091da000785ae530cd86a491014bdb7dab5062fb4544b46aefa63de294721",
+    "server/install-notifier/package.json": "1254eb2c63534eb3ae9a015bed889e566bc8704fa67d17d6b51b4d5b747b4310",
+    "scripts/godot_ios_assets.sh": "c044ce5592169250086834828e0c7c519a945cc27b7dfae1c9d8a2c1768c733c",
+    "tools/android_build/test_godot_export.py": "61e493cb359ce8d0ee33fd900219f0b8853106276ea6013e0d201e68043d3c2c",
+    "game_godot/tests/game_ui_check.gd": "e7642a873a5b82cc389822736b325777ce19e5a226648716c3fd2de1d9763f69",
+    "game_godot/tests/ride_completion_check.gd": "c2e7b78b8641ff451e9d047f1ea1c0eaabcbdc5a7a680cf9a4f013d8a829380c"
+  },
+  "checks": {
+    "flutterAnalyze": "clean",
+    "flutterTests": "558 passed, 3 skipped; final isolated branch run including the locale regression",
+    "nodeTests": 277,
+    "securityTests": 100,
+    "godot": {
+      "documented_headless_tests": 90,
+      "passed": 71,
+      "passed_with_renderer_warnings": 10,
+      "failed": 9
+    },
+    "uiPageErrors": []
+  },
+  "production": {
+    "mutations": false,
+    "realPurchases": false,
+    "messagesSent": false,
+    "deployments": false,
+    "readOnlyApiProbes": true
+  }
+}

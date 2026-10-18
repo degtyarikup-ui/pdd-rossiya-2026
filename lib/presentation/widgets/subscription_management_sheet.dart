@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -111,7 +110,10 @@ class _SubscriptionManagementSheetState
         } else {
           AppToast.show(
             context,
-            appL10n.payRestoreNone,
+            IapService.instance.lastFailure ==
+                    PurchaseFailure.legacyOwnerRequired
+                ? appL10n.purchaseLegacyOwnerRequired
+                : appL10n.payRestoreNone,
             type: AppToastType.normal,
           );
         }
@@ -253,6 +255,15 @@ class _SubscriptionManagementSheetState
                       surfaceColor: greenSurface,
                       colors: colors,
                     ),
+                    const SizedBox(height: 12),
+                    _buildFeatureItem(
+                      icon: Icons.sports_esports_rounded,
+                      title: appL10n.paywallFeatureGame,
+                      description: appL10n.subscriptionPerkGameDescription,
+                      accentColor: greenAccent,
+                      surfaceColor: greenSurface,
+                      colors: colors,
+                    ),
                   ],
                 ),
               ),
@@ -336,7 +347,7 @@ class _SubscriptionManagementSheetState
 
               // 7. Restore & Support (покупки магазинов восстанавливаются
               // только в приложениях; на сайте статус приходит с аккаунтом).
-              if (!kIsWeb)
+              if (IapService.instance.supportsStoreBilling)
                 Center(
                   child: TextButton(
                     onPressed: _isRestoring ? null : _handleRestore,

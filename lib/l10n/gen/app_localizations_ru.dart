@@ -1816,10 +1816,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get paywallFeatureFeed => 'Безлимитная лента вопросов';
 
   @override
-  String get paywallFeatureAi => 'Разбор ошибок от ИИ';
+  String get paywallFeatureAi => 'ИИ-разборы: до 200 вопросов в сутки';
 
   @override
-  String get paywallFeatureVoice => 'Студийная озвучка билетов';
+  String get paywallFeatureVoice => 'Студийная озвучка на русском';
 
   @override
   String get paywallFeatureGame => 'Безлимитные заезды в игре';
@@ -3380,7 +3380,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get premiumBannerSubtitleUnlimited =>
-      'Умная лента и ИИ без ограничений';
+      'Безлимитная лента, заезды и больше ИИ';
 
   @override
   String premiumBannerCardsLeft(int remaining, int limit) {
@@ -3438,14 +3438,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get subscriptionPerkAiDescription =>
-      'Мгновенное объяснение правил и дорожных ситуаций';
+      'До 200 вопросов ИИ в сутки. Лимит обновляется в полночь UTC.';
 
   @override
-  String get subscriptionPerkVoiceTitle => 'Профессиональная озвучка';
+  String get subscriptionPerkVoiceTitle => 'Студийная озвучка на русском';
 
   @override
   String get subscriptionPerkVoiceDescription =>
-      'Студийный диктор для вопросов и билетов';
+      'Студийная озвучка вопросов и билетов на русском языке';
 
   @override
   String subscriptionCancelInfoApple(String date) {
@@ -3623,7 +3623,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get aiGoPremium => 'Оформите Premium для безлимитного ИИ';
+  String get aiGoPremium => 'Premium — до 200 вопросов ИИ в сутки';
 
   @override
   String get crossroadsReasonRedLight =>
@@ -3894,4 +3894,65 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameCrossroadsCrash => 'ДТП';
+
+  @override
+  String aiCorrectAnswer(String answer) {
+    return 'Правильный ответ: **$answer**';
+  }
+
+  @override
+  String get aiOfficialComment => 'Официальный комментарий';
+
+  @override
+  String get aiNoOfficialComment =>
+      'Для этого вопроса официальный комментарий отсутствует.';
+
+  @override
+  String get aiSuggestRule => 'Какое правило применяется в этом вопросе?';
+
+  @override
+  String get aiSuggestWhy => 'Почему верен именно этот ответ?';
+
+  @override
+  String get aiSuggestExceptions => 'Есть ли исключения из этого правила?';
+
+  @override
+  String get aiSignInRequired =>
+      'Для вопросов ИИ войдите в аккаунт. Официальные комментарии доступны без входа.';
+
+  @override
+  String get aiQuotaWait =>
+      'Дневной лимит ИИ исчерпан. Попробуйте после обновления лимита.';
+
+  @override
+  String get subscriptionPerkGameDescription =>
+      'Заезды в «Живом городе» без ожидания восстановления';
+
+  @override
+  String get purchaseLegacyOwnerRequired =>
+      'Старую покупку App Store нужно связать с аккаунтом через поддержку. Не платите повторно: напишите в поддержку и приложите чек Apple.';
+
+  @override
+  String get profileAppleRevokeInstructions =>
+      'Данные аккаунта удалены. Для старого входа через Apple также откройте настройки Apple Account → «Вход с Apple», выберите приложение и прекратите использование Apple ID.';
+
+  @override
+  String get profileAppleOpenSettings => 'Настройки Apple Account';
+
+  @override
+  String get aiTemporaryWait => 'ИИ временно недоступен. Попробуйте позже.';
+
+  @override
+  String webPayCreationReview(String order) {
+    return 'Нужно проверить эту оплату. Не платите повторно. Откройте «Настройки → Поддержка» и укажите номер заказа: $order';
+  }
+
+  @override
+  String webPayCreationPending(String order) {
+    return 'Запрос оплаты ещё обрабатывается. Не платите повторно. Заказ: $order. Если страница оплаты не открылась, обратитесь в «Настройки → Поддержка».';
+  }
+
+  @override
+  String get profileAppleRevokePending =>
+      'Данные аккаунта удалены. Запрос на отзыв доступа Apple сохранён. Мы завершим отзыв автоматически, когда сервис Apple снова станет доступен.';
 }

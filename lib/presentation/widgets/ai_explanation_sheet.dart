@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -5,6 +6,8 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/gemini_ai_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
+import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
@@ -33,10 +36,6 @@ class AiExplanationSheet extends StatefulWidget {
     String? officialExplanation,
   }) async {
     HapticFeedbackHelper.tap();
-    if (!PremiumService.instance.canSendAiMessage) {
-      await PremiumPaywallSheet.show(context);
-      return;
-    }
 
     return showModalBottomSheet<void>(
       context: context,
@@ -67,6 +66,10 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
 
   final List<AiChatMessage> _chatMessages = [];
   bool _isSendingMessage = false;
+  Timer? _retryTimer;
+  DateTime? _retryAt;
+  bool get _waitingToRetry =>
+      _retryAt != null && DateTime.now().isBefore(_retryAt!);
 
   List<String> _quickSuggestions = [];
 
@@ -87,6 +90,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
     );
 
     _loadInitialExplanation();
+    GeminiAiService.instance.refreshQuota();
   }
 
   void _loadInitialExplanation() {
@@ -96,7 +100,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
         ? widget.answers[widget.correctAnswerIndex]
         : '';
 
-    // Мгновенный готовый первичный разбор от ИИ без задержек и спиннеров
+    // Official source content is immediately available, including offline.
     setState(() {
       _initialExplanation = GeminiAiService.instance
           .buildInstantPrewrittenExplanation(
@@ -111,6 +115,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
 
   @override
   void dispose() {
+    _retryTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -119,21 +124,29 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
 
   Future<void> _handleSendMessage([String? predefinedText]) async {
     final textToSend = (predefinedText ?? _textController.text).trim();
-    if (textToSend.isEmpty || _isSendingMessage) return;
+    if (textToSend.isEmpty || _isSendingMessage || _waitingToRetry) return;
+    if (!AuthService.instance.hasServerSession) {
+      final signedIn = await AuthModalSheet.show(context);
+      if (!mounted ||
+          signedIn != true ||
+          !AuthService.instance.hasServerSession) {
+        return;
+      }
+      await GeminiAiService.instance.refreshQuota();
+      if (!mounted) return;
+    }
 
     final isPremium = PremiumService.instance.isPremium;
-    if (!isPremium && PremiumService.instance.remainingAiMessages <= 0) {
-      await PremiumPaywallSheet.show(context);
+    if (PremiumService.instance.hasServerAiQuota &&
+        PremiumService.instance.remainingAiMessages <= 0) {
+      if (!isPremium) await PremiumPaywallSheet.show(context);
       return;
     }
 
     HapticFeedbackHelper.tap();
     _textController.clear();
 
-    // Списываем 1 бесплатный вопрос из общего лимита ИИ для аккаунта
-    if (!isPremium) {
-      await PremiumService.instance.recordAiMessageSent();
-    }
+    // The server atomically counts daily quota; local attempts never consume it.
 
     final userMessage = AiChatMessage(
       text: textToSend,
@@ -184,10 +197,26 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
       }
     } catch (e) {
       if (mounted) {
+        if (e is AiServiceException &&
+            !e.quotaExceeded &&
+            e.retryAfterSeconds > 0) {
+          final delay = Duration(seconds: e.retryAfterSeconds);
+          _retryAt = DateTime.now().add(delay);
+          _retryTimer?.cancel();
+          _retryTimer = Timer(delay, () {
+            if (mounted) setState(() => _retryAt = null);
+          });
+        }
         setState(() {
           _chatMessages.add(
             AiChatMessage(
-              text: appL10n.aiLoadError,
+              text: e is AiServiceException && e.authenticationRequired
+                  ? appL10n.aiSignInRequired
+                  : e is AiServiceException && e.quotaExceeded
+                  ? appL10n.aiQuotaWait
+                  : e is AiServiceException && e.retryAfterSeconds > 0
+                  ? appL10n.aiTemporaryWait
+                  : appL10n.aiLoadError,
               isUser: false,
               timestamp: DateTime.now(),
             ),
@@ -221,9 +250,11 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
       listenable: PremiumService.instance,
       builder: (context, _) {
         final isPrem = PremiumService.instance.isPremium;
-        final remaining = PremiumService.instance.remainingAiMessages;
-        final limit = PremiumService.instance.aiFreeLimit;
-        final hasReachedLimit = !isPrem && remaining <= 0;
+        final remaining = PremiumService.instance.hasServerAiQuota
+            ? PremiumService.instance.remainingAiMessages
+            : PremiumService.instance.aiDailyLimit;
+        final limit = PremiumService.instance.aiDailyLimit;
+        final hasReachedLimit = remaining <= 0 || _waitingToRetry;
 
         return GestureDetector(
           behavior: HitTestBehavior.translucent,
@@ -275,7 +306,7 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  appL10n.aiAnalysisTitle,
+                                  appL10n.aiOfficialComment,
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
@@ -418,7 +449,11 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  appL10n.aiLimitExhausted(PremiumService.instance.aiFreeLimit),
+                  _waitingToRetry
+                      ? appL10n.aiTemporaryWait
+                      : appL10n.aiLimitExhausted(
+                          PremiumService.instance.aiDailyLimit,
+                        ),
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -426,42 +461,50 @@ class _AiExplanationSheetState extends State<AiExplanationSheet> {
                     fontFamily: 'Onest',
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  appL10n.aiGoPremium,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: Colors.white.withValues(alpha: 0.95),
-                    fontFamily: 'Onest',
+                if (!_waitingToRetry) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    PremiumService.instance.isPremium
+                        ? appL10n.aiQuotaWait
+                        : appL10n.aiGoPremium,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Colors.white.withValues(alpha: 0.95),
+                      fontFamily: 'Onest',
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
           const SizedBox(width: 10),
-          ElevatedButton(
-            onPressed: () => PremiumPaywallSheet.show(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF121212),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+          if (!PremiumService.instance.isPremium && !_waitingToRetry)
+            ElevatedButton(
+              onPressed: () => PremiumPaywallSheet.show(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF121212),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'Premium',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF121212),
+                  fontFamily: 'Onest',
+                ),
               ),
             ),
-            child: const Text(
-              'Premium',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF121212),
-                fontFamily: 'Onest',
-              ),
-            ),
-          ),
         ],
       ),
     );

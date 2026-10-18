@@ -113,6 +113,8 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
       PurchaseFailure.verificationPending =>
         appL10n.purchaseVerificationPending,
       PurchaseFailure.storeRefused => appL10n.payErrorStoreRefused(store),
+      PurchaseFailure.legacyOwnerRequired =>
+        appL10n.purchaseLegacyOwnerRequired,
       PurchaseFailure.other => appL10n.payErrorGeneric,
     };
   }
@@ -233,7 +235,9 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
       } else {
         AppToast.show(
           context,
-          appL10n.payRestoreNone,
+          IapService.instance.lastFailure == PurchaseFailure.legacyOwnerRequired
+              ? appL10n.purchaseLegacyOwnerRequired
+              : appL10n.payRestoreNone,
           type: AppToastType.normal,
         );
       }

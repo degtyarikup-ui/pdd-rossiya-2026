@@ -1,3 +1,4 @@
+import { accountRead } from './account_state.js';
 // Авторизация через Telegram-бота (@pdda_bot): генерация одноразовой ссылки,
 // приём команды /start через Webhook и подтверждение сессии для мобильного приложения.
 
@@ -187,7 +188,7 @@ export async function handleTelegramAuthCheck(request, env, signSessionFn) {
 
     const user = entry.user;
     const expiresAt = Date.now() + SESSION_SECONDS * 1000;
-    const generation = (await env.INSTALLS.get('auth_generation:' + user.id)) || '';
+    const generation = (await accountRead(env, user.id, 'auth_generation:' + user.id)) || '';
 
     // Подписание сессии через переданную функцию или модуль user_auth
     const sign = signSessionFn || ((await import('./user_auth.js')).signSession);

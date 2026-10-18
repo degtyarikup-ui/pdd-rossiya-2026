@@ -1,3 +1,4 @@
+import { accountTokenForUserId } from './store_account.js';
 import { putUserRecord } from './user_store.js';
 import { entitlementsOf, setEntitlement } from './entitlements.js';
 import { SignJWT, importPKCS8, decodeJwt } from 'jose';
@@ -93,6 +94,7 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
   if (data.bundleId !== bundleId || data.productId !== productId || String(data.transactionId) !== transactionId ||
       data.environment !== (sandbox ? 'Sandbox' : 'Production') || !Number.isFinite(data.expiresDate) ||
       typeof data.originalTransactionId !== 'string' || !/^\d{1,40}$/.test(data.originalTransactionId)) throw new StoreError('wrong transaction', 422);
+  if (data.appAccountToken && data.appAccountToken.toLowerCase() !== await accountTokenForUserId(userId)) throw new StoreError('purchase belongs to another account', 403);
   let active = !data.revocationDate && data.expiresDate > Date.now();
   let expiresDate = data.expiresDate;
   let autoRenewEnabled = null;
@@ -118,6 +120,7 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
         !/^\d{1,40}$/.test(data.transactionId) || !Number.isFinite(data.expiresDate)) {
       throw new StoreError('wrong subscription', 422);
     }
+    if (data.appAccountToken && data.appAccountToken.toLowerCase() !== await accountTokenForUserId(userId)) throw new StoreError('purchase belongs to another account', 403);
     expiresDate = data.expiresDate;
     if (latest.signedRenewalInfo) {
       const renewal = decodeJwt(latest.signedRenewalInfo);
@@ -129,14 +132,30 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
     }
     active = [1, 4].includes(latest.status) && !data.revocationDate && expiresDate > Date.now();
   }
-  return { active, autoRenewEnabled, expiresAt: new Date(expiresDate).toISOString(),
+  return { active, autoRenewEnabled, accountToken: data.appAccountToken || null, expiresAt: new Date(expiresDate).toISOString(),
     orderId: String(data.transactionId), key: `appstore:${data.originalTransactionId}`,
     reference: { store, country, productId: data.productId, transactionId: String(data.transactionId) } };
+}
+
+export function legacyAppleClaimsOpen(env, now = Date.now()) {
+  const until = Date.parse(env.APPLE_LEGACY_CLAIMS_UNTIL || '');
+  return Number.isFinite(until) && now < until;
 }
 
 export async function claimPurchase(env, userId, verified) {
   if (!env.PURCHASE_CLAIMS) throw new StoreError('purchase ownership not configured');
   const stub = env.PURCHASE_CLAIMS.get(env.PURCHASE_CLAIMS.idFromName(verified.key));
+  if (verified.reference?.store === 'appstore' && !verified.accountToken) {
+    // Old receipts may restore only to an already recorded owner. A first
+    // claimant is not proof of who started an unbound/pending StoreKit payment.
+    const ownerResponse = await stub.fetch('https://purchase-claims/owner');
+    const owner = ownerResponse.ok ? (await ownerResponse.json()).userId : null;
+    if (owner && owner !== userId) throw new StoreError('purchase belongs to another account', 403);
+    // Store builds before 2.2.4 cannot send appAccountToken at all. Until the
+    // transition date they keep the previous first-claimant rule, otherwise
+    // every new purchase from an old iPhone build would be left without Premium.
+    if (!owner && !legacyAppleClaimsOpen(env)) throw new StoreError('legacy purchase owner required', 409);
+  }
   const response = await stub.fetch('https://purchase-claims/claim', {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }),
   });
@@ -155,26 +174,34 @@ export function storeEntitlementExpiry(verified, now = Date.now()) {
 const REFRESH_AFTER_EXPIRY_MS = 60 * 86400000;
 
 export async function refreshStoreEntitlement(env, user) {
-  if (!user?.verifiedPurchase || Date.now() - (user.storeVerifiedAt || 0) < 300000) return user;
-  const store = user.verifiedPurchase.store;
-  // Отзыв в админке снимает срок стора — такая покупка не возвращается сама.
-  // Доступ из других источников (сайт, админка) от проверки стора не зависит.
-  const entry = entitlementsOf(user)[store];
-  if (!entry || (entry.expiresAt && Date.now() - Date.parse(entry.expiresAt) > REFRESH_AFTER_EXPIRY_MS)) return user;
-  try {
-    const verified = await verifyStorePurchase(user.verifiedPurchase, env, user.id, { refresh: true });
-    setEntitlement(user, store, storeEntitlementExpiry(verified));
-    user.verifiedPurchase = verified.reference;
-    user.autoRenewEnabled = verified.autoRenewEnabled;
-    user.storeVerifiedAt = Date.now();
-    await putUserRecord(env, user);
-  } catch (error) {
-    // A network/configuration failure never creates or extends an entitlement.
-    if (error instanceof StoreError && error.status === 422) {
-      setEntitlement(user, store, storeEntitlementExpiry({ active: false, expiresAt: entry.expiresAt || new Date().toISOString() }));
-      user.storeVerifiedAt = Date.now();
-      await putUserRecord(env, user);
+  if (!user) return user;
+  const references = { ...(user.verifiedPurchases || {}) };
+  if (user.verifiedPurchase?.store && !references[user.verifiedPurchase.store]) references[user.verifiedPurchase.store] = user.verifiedPurchase;
+  const verifiedAt = { ...(user.storeVerifiedAtByStore || {}) };
+  let changed = false;
+  for (const [store, reference] of Object.entries(references)) {
+    if (Date.now() - (verifiedAt[store] || (user.verifiedPurchase?.store === store ? user.storeVerifiedAt : 0) || 0) < 300000) continue;
+    const entry = entitlementsOf(user)[store];
+    if (!entry || (entry.expiresAt && Date.now() - Date.parse(entry.expiresAt) > REFRESH_AFTER_EXPIRY_MS)) continue;
+    try {
+      const verified = await verifyStorePurchase(reference, env, user.id, { refresh: true });
+      setEntitlement(user, store, storeEntitlementExpiry(verified));
+      references[store] = verified.reference;
+      verifiedAt[store] = Date.now();
+      user.verifiedPurchase = verified.reference; // Compatible read projection.
+      user.autoRenewEnabled = verified.autoRenewEnabled;
+      user.storeVerifiedAt = verifiedAt[store];
+      changed = true;
+    } catch (error) {
+      if (error instanceof StoreError && error.status === 422) {
+        setEntitlement(user, store, storeEntitlementExpiry({ active: false, expiresAt: entry.expiresAt || new Date().toISOString() }));
+        verifiedAt[store] = Date.now(); changed = true;
+      }
     }
+  }
+  if (changed) {
+    user.verifiedPurchases = references; user.storeVerifiedAtByStore = verifiedAt;
+    await putUserRecord(env, user);
   }
   return user;
 }

@@ -584,7 +584,9 @@ func _setup_environment() -> void:
 	# Soft, steady edges: a blurred filter over a finer map, so the shadow does not crawl as the view moves.
 	sun.shadow_blur = 1.25
 	sun.shadow_bias = 0.025
-	sun.shadow_normal_bias = 0.35
+	# Below the engine's 2-texel default, broad lit faces self-shadow in
+	# Compatibility and their striped brightness changes after a world rebase.
+	sun.shadow_normal_bias = 2.0
 	sun.directional_shadow_fade_start = 0.9
 	# Device tuning without a rebuild: --sun-bias=, --sun-normal-bias=, --sun-blur=, --sun-distance=.
 	for arg in Host.user_args():
@@ -738,6 +740,7 @@ func _build_player() -> void:
 func _mount_car(id: String, hex: String) -> void:
 	var old := player.get_node_or_null("car")
 	if old:
+		Models.release_geometry(old)
 		player.remove_child(old)
 		old.queue_free()
 	var car := Models.player_car(id, Color(hex))
@@ -4167,10 +4170,15 @@ func _sign_reveal_point(sg: Dictionary) -> Vector3:
 	return at
 
 
+func staging_cancelled() -> bool:
+	return _exiting or _restarting or is_queued_for_deletion() or not is_inside_tree()
+
+
 func _exit_tree() -> void:
 	_exiting = true
 	if is_instance_valid(voice): voice.shutdown()
 	Situation.finish_background_work()
+	Models.release_geometry(self)
 
 
 func _wait_active(seconds: float) -> void:

@@ -1,3 +1,5 @@
+import { retainAppleAuthorization } from './apple_account.js';
+import { accountRead, accountWrite } from './account_state.js';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
@@ -33,11 +35,9 @@ export async function verifyIdentity(body, env) {
     if (!info.ok) throw authFailure('invalid credential', 'google_tokeninfo_' + info.status);
     const tok = await info.json();
     const androidClients = audiences(env.GOOGLE_ANDROID_CLIENT_IDS, '');
-    const allowed = androidClients.length
-      ? [...androidClients, ...audiences(env.GOOGLE_CLIENT_IDS, GOOGLE_CLIENT)]
-      : []; // Preserve the existing fallback for unconfigured Android clients.
-    if (allowed.length && !allowed.includes(tok.aud) && !allowed.includes(tok.azp)) throw new Error('wrong client');
-    if (!tok.sub || Number(tok.expires_in) <= 0) throw authFailure('invalid credential', 'google_tokeninfo_claims');
+    const allowed = [...androidClients, ...audiences(env.GOOGLE_CLIENT_IDS, GOOGLE_CLIENT)];
+    if (!allowed.includes(tok.aud) && !allowed.includes(tok.azp)) throw new Error('wrong client');
+    if (!tok.sub || !Number.isFinite(Number(tok.expires_in)) || Number(tok.expires_in) <= 0) throw authFailure('invalid credential', 'google_tokeninfo_claims');
     let profile = {};
     try {
       const user = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: 'Bearer ' + credential }, signal: AbortSignal.timeout(4000) });
@@ -115,7 +115,7 @@ async function hmacHex(env, data) {
 }
 export async function signSession(env, entry) {
   if (!env.SESSION_SECRET) return null;
-  const body = 'v1.' + b64url(new TextEncoder().encode(JSON.stringify(entry)));
+  const body = 'v1.' + b64url(new TextEncoder().encode(JSON.stringify({ sessionId: randomToken(), ...entry })));
   return body + '.' + await hmacHex(env, body);
 }
 async function readSignedSession(env, token) {
@@ -135,9 +135,12 @@ export async function readSession(request, env) {
   if (raw.startsWith('v1.')) {
     const entry = await readSignedSession(env, raw);
     if (!entry?.user?.id || !Number.isFinite(entry.expiresAt) || entry.expiresAt <= Date.now()) return null;
-    const generation = await env.INSTALLS.get('auth_generation:' + entry.user.id);
+    const generation = await accountRead(env, entry.user.id, 'auth_generation:' + entry.user.id);
     if ((generation || '') !== entry.generation) return null;
-    return { ...entry, key: null };
+    const sessionTokenHash = await tokenHash(raw);
+    const revoked = await accountRead(env, entry.user.id, 'revoked_session:' + entry.user.id + ':' + sessionTokenHash);
+    if (revoked && Number(revoked) > Date.now()) return null;
+    return { ...entry, key: null, sessionTokenHash };
   }
   const token = /^[a-f0-9]{64}$/.test(raw) ? raw : null;
   if (!token) return null;
@@ -145,13 +148,16 @@ export async function readSession(request, env) {
   let entry;
   try { entry = JSON.parse(await env.INSTALLS.get(key)); } catch { return null; }
   if (!entry?.user?.id || !Number.isFinite(entry.expiresAt) || entry.expiresAt <= Date.now()) return null;
-  const generation = await env.INSTALLS.get('auth_generation:' + entry.user.id);
+  const generation = await accountRead(env, entry.user.id, 'auth_generation:' + entry.user.id);
   if ((generation || '') !== entry.generation) return null;
-  return { ...entry, key };
+  const sessionTokenHash = await tokenHash(raw);
+  const revoked = await accountRead(env, entry.user.id, 'revoked_session:' + entry.user.id + ':' + sessionTokenHash);
+  if (revoked && Number(revoked) > Date.now()) return null;
+  return { ...entry, key, sessionTokenHash };
 }
 
 export async function revokeUserSessions(env, userId) {
-  await env.INSTALLS.put('auth_generation:' + userId, randomToken());
+  await accountWrite(env, userId, 'auth_generation:' + userId, randomToken());
 }
 
 export async function handleAuth(request, env, verify = verifyIdentity, onFailure = () => {}) {
@@ -188,9 +194,11 @@ export async function handleAuth(request, env, verify = verifyIdentity, onFailur
         : 'credential_rejected';
       return finish({ error: 'invalid credentials' }, 401, outcome, credentialReason(error));
     }
+    try { await retainAppleAuthorization(env, user, body); }
+    catch { return finish({ error: 'provider unavailable' }, 503, 'apple_authorization_unavailable'); }
     const expiresAt = Date.now() + SESSION_SECONDS * 1000;
     try {
-      const generation = await env.INSTALLS.get('auth_generation:' + user.id) || '';
+      const generation = await accountRead(env, user.id, 'auth_generation:' + user.id) || '';
       // Stateless signed session: issuing it needs no KV write, so sign-in keeps
       // working when the free KV daily write quota is exhausted.
       const token = await signSession(env, { user, expiresAt, generation });
@@ -204,6 +212,7 @@ export async function handleAuth(request, env, verify = verifyIdentity, onFailur
     const session = await readSession(request, env);
     // Legacy KV sessions are deleted; signed ones simply expire on the client.
     if (session?.key) { try { await env.INSTALLS.delete(session.key); } catch {} }
+    if (session?.sessionTokenHash) await accountWrite(env, session.user.id, 'revoked_session:' + session.user.id + ':' + session.sessionTokenHash, String(session.expiresAt), { expiration: Math.ceil(session.expiresAt / 1000) });
     return reply({ ok: true });
   }
   return null;

@@ -65,24 +65,24 @@ func check_card(world, road_card: bool) -> void:
 	await process_frame
 	expect(world.ui._run_big.text == "1", label + ": driving still shows one answered question")
 
-	right = open_question(world, 19, road_card)
+	right = open_question(world, Run.QUESTIONS - 1, road_card)
 	await process_frame
 	await process_frame
-	expect(world.ui._run_big.text == "19", label + ": opening last card does not count it")
+	expect(world.ui._run_big.text == str(Run.QUESTIONS - 1), label + ": opening last card does not count it")
 	var before: Vector3 = world.drive.pos
 	world.ui.answer_chosen.emit(right)
-	expect(world.phase == "over" and world.run.answered == 20, label + ": correct twentieth answer finishes synchronously")
+	expect(world.phase == "over" and world.run.answered == Run.QUESTIONS, label + ": correct final answer finishes synchronously")
 	expect(world.drive.pos == before and not world.current.junction.complete and world.current.junction.resolution == null,
 		label + ": completion requires no maneuver or location exit")
 	expect(not world.controls.active and world.drive.speed == 0.0, label + ": completion disables driving")
 	world.ui.answer_chosen.emit(right)
 	world.ui.continue_pressed.emit()
-	expect(world.run.answered == 20 and finished_events.size() == 1 and world.phase == "over", label + ": repeated input cannot count or restart finished ride")
-	expect(finished_events[0].answered == 20 and finished_events[0].correct == 20, label + ": final summary includes last answer")
+	expect(world.run.answered == Run.QUESTIONS and finished_events.size() == 1 and world.phase == "over", label + ": repeated input cannot count or restart finished ride")
+	expect(finished_events[0].answered == Run.QUESTIONS and finished_events[0].correct == Run.QUESTIONS, label + ": final summary includes last answer")
 	finished_events.clear()
 
 	for kind in ["wrong", "timeout"]:
-		right = open_question(world, 19, road_card)
+		right = open_question(world, Run.QUESTIONS - 1, road_card)
 		await process_frame
 		await process_frame
 		before = world.drive.pos
@@ -91,12 +91,12 @@ func check_card(world, road_card: bool) -> void:
 		else:
 			world.ui.answer_chosen.emit((right + 1) % world.text.options.size())
 		if not await wait_for(func(): return is_instance_valid(world.ui._sheet), label + ": final " + kind + " shows explanation"): return
-		expect(world.run.answered == 20 and world.run.correct == 19 and world.run.mistakes.size() == 1,
+		expect(world.run.answered == Run.QUESTIONS and world.run.correct == Run.QUESTIONS - 1 and world.run.mistakes.size() == 1,
 			label + ": " + kind + " counts as one answered question")
 		expect(world.phase == "question" and finished_events.is_empty() and not world.controls.active,
 			label + ": " + kind + " waits for explicit finish")
 		await create_timer(GameUi.SHEET_OUT + GameUi.SHEET_IN + 0.1).timeout
-		expect(world.ui._run_big.text == "20", label + ": explanation displays twenty answered")
+		expect(world.ui._run_big.text == str(Run.QUESTIONS), label + ": explanation displays all answered questions")
 		var footer: Control = world.ui._sheet.get_meta("footer")
 		var labels := footer.find_children("*", "Label", true, false)
 		expect(labels.size() == 1 and labels[0].text == Ui.t("gameFinishRide"), label + ": bottom action says Finish ride")
@@ -110,7 +110,7 @@ func check_card(world, road_card: bool) -> void:
 		world.ui.continue_pressed.emit()
 		expect(world.phase == "over" and finished_events.size() == 1 and world.drive.pos == before,
 			label + ": finish ends once without driving out")
-		expect(finished_events[0].answered == 20 and finished_events[0].correct == 19, label + ": mistaken last answer reaches result")
+		expect(finished_events[0].answered == Run.QUESTIONS and finished_events[0].correct == Run.QUESTIONS - 1, label + ": mistaken last answer reaches result")
 		finished_events.clear()
 
 func run() -> void:

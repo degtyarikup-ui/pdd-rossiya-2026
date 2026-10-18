@@ -162,6 +162,12 @@ void main() {
         expect(store.completed, ['purchase', 'restore', 'replay']);
       },
       () => MockClient((request) async {
+        if (request.url.path == '/api/user/store/account-token') {
+          return http.Response(
+            '{"accountToken":"11111111-1111-5111-8111-111111111111"}',
+            200,
+          );
+        }
         if (request.url.path == '/api/auth/session') {
           final body = jsonDecode(request.body) as Map;
           final user = profile(body['name'] as String);

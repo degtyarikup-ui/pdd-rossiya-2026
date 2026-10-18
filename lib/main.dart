@@ -267,6 +267,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     // Пересчитываем напоминание при уходе в фон (учитывает сегодняшнюю
     // тренировку) и при возврате (держит расписание свежим).
     if (state == AppLifecycleState.resumed) {
+      unawaited(PremiumService.instance.refreshDailyLimits());
       unawaited(UsageReporter.instance.flush());
       unawaited(ErrorReporter.instance.flush());
       SupportInbox.instance.start();

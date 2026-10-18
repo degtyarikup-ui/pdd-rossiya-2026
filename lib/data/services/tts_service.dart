@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:pdd_app/core/config/country_config.dart';
+import 'package:pdd_app/data/models/question_identity.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 
 class TtsService {
@@ -34,9 +35,11 @@ class TtsService {
   final FlutterTts _tts = FlutterTts();
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _configured = false;
+  String _languageCode = 'ru';
   int _activeRequestId = 0;
 
   Future<void> updateLanguage(String lang) async {
+    _languageCode = lang;
     try {
       await _tts.setLanguage(CountryConfig.current.ttsLocaleFor(lang));
     } catch (_) {}
@@ -46,7 +49,7 @@ class TtsService {
     if (_configured) return;
 
     try {
-      await _tts.setLanguage(CountryConfig.current.ttsLocale);
+      await _tts.setLanguage(CountryConfig.current.ttsLocaleFor(_languageCode));
     } catch (_) {}
     await _tts.setSpeechRate(_speechRate);
     await _tts.setPitch(1.0);
@@ -96,13 +99,16 @@ class TtsService {
     required String question,
     required List<String> answers,
   }) async {
+    if (rawQuestionId != null) {
+      rawQuestionId = QuestionIdentity.sourceId(rawQuestionId);
+    }
     await stop();
     final currentId = _activeRequestId;
     await _ensureConfigured();
     if (currentId != _activeRequestId) return null;
 
     final isPremium = PremiumService.instance.isPremium;
-    if (isPremium && rawQuestionId != null) {
+    if (isPremium && _languageCode == 'ru' && rawQuestionId != null) {
       final candidates = [
         rawQuestionId.startsWith('sign_')
             ? '$rawQuestionId.opus'
@@ -156,6 +162,9 @@ class TtsService {
     required String question,
     required List<String> answers,
   }) async {
+    if (rawQuestionId != null) {
+      rawQuestionId = QuestionIdentity.sourceId(rawQuestionId);
+    }
     await stop();
     final currentId = _activeRequestId;
     await _ensureConfigured();
@@ -163,7 +172,7 @@ class TtsService {
 
     // Free users get device system TTS in training modes; Premium gets studio neural voice (.opus)
     final isPremium = PremiumService.instance.isPremium;
-    if (isPremium && rawQuestionId != null) {
+    if (isPremium && _languageCode == 'ru' && rawQuestionId != null) {
       final candidates = [
         rawQuestionId.startsWith('sign_')
             ? '$rawQuestionId.opus'
@@ -195,13 +204,12 @@ class TtsService {
 
     if (currentId != _activeRequestId) return;
 
-    const numberWords = ['Один', 'Два', 'Три', 'Четыре', 'Пять', 'Шесть'];
     final buffer = StringBuffer()
       ..write(stripForSpeech(question))
       ..write('. ');
 
     for (var i = 0; i < answers.length; i++) {
-      final numPrefix = i < numberWords.length ? numberWords[i] : '${i + 1}';
+      final numPrefix = '${i + 1}';
       buffer
         ..write(numPrefix)
         ..write(' — ')

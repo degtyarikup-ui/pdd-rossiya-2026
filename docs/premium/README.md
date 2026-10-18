@@ -36,10 +36,12 @@ Apple — разные аккаунты.
 | `lib/presentation/widgets/premium_paywall_sheet.dart`, `web_payment_dialog.dart`, `web_payment_return.dart`, `subscription_management_sheet.dart`, `premium_granted_dialog.dart` | Пейвол и экраны оплаты |
 | `lib/presentation/widgets/auth_modal_sheet.dart`, `auth_provider_button.dart`, `yandex_*`, `google_web_sign_in_button*` | Экраны входа |
 | `web_landing/ru/tarify/`, `pay-done/` | Тарифы на сайте и возврат после оплаты |
+| `server/install-notifier/account_state.js`, `account_maintenance.js` | Авторитетное хранилище аккаунта, атомарный журнал, сверка |
 | `server/install-notifier/entitlements.js` | Сроки Премиума по источникам |
 | `server/install-notifier/payments.js` | Тарифы `WEB_TARIFFS`, Platega, подтверждение оплаты |
 | `server/install-notifier/store_verification.js`, `purchase_claims.js` | Проверка чеков сторов |
 | `docs/premium/web-payments-launch.md` | Запуск веб-оплаты, секреты, устройство |
+| `docs/premium/account-state-rollout.md` | DO миграция, контракты безопасности и порядок выпуска |
 | `docs/premium/web-auth.md` | Веб-вход |
 | `docs/premium/api-fallback.md` | Запасной адрес сервера и повторы входа |
 | `docs/premium/error-messages.md` | Тексты ошибок для пользователя и сообщения в Telegram |
@@ -63,6 +65,15 @@ Apple — разные аккаунты.
    для ключей нет (репозиторий публичный).
 7. Веб-OAuth принимается только во вкладке, которая начала вход; личность
    подтверждает сервер.
+
+8. Все изменения аккаунта проходят через его `AccountState`; профиль, прогресс,
+   начисление и `payment_ledger` фиксируются транзакционно. KV — проекция,
+   её нельзя использовать для перезаписи авторитетного профиля.
+9. Квоты ИИ проверяет сервер атомарно; Premium и личность берутся из сессии,
+   не из полей запроса. Ключ приложения не заменяет сессию для свободного чата.
+10. Новый App Store claim требует серверный `appAccountToken`; legacy-чек
+    без UUID не привязывается первому обратившемуся. Retained Apple auth token
+    не выдаётся клиенту, при удалении отзывается либо явно требуется ручной отзыв.
 
 ## Как проверить
 

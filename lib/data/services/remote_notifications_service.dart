@@ -13,6 +13,8 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
+import 'package:pdd_app/data/services/push_topic_state.dart';
+import 'package:pdd_app/data/services/network_retry.dart';
 
 /// Where a notice button / push tap leads.
 enum NoticeAction { none, url, tickets, topics, game, feed, settings }
@@ -144,14 +146,6 @@ class RemoteNotificationsService {
       ? 'ios'
       : 'android';
 
-  /// Deterministic FCM topic for a personal account test target (email or ID).
-  static String userTopic(String value) {
-    final raw = value.trim().toLowerCase();
-    if (raw.isEmpty) return '';
-    final bytes = utf8.encode(raw).take(64);
-    return 'pdd_u_${bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join()}';
-  }
-
   String get _prefix => 'notifications_${CountryConfig.current.code}_';
   SharedPreferences? _prefs;
   Future<void>? _refreshing;
@@ -165,7 +159,8 @@ class RemoteNotificationsService {
   bool _firebaseReady = false;
   bool _pushOptIn = false;
   bool? _subscriptionState;
-  Set<String> _subscribedUserTopics = {};
+  Set<String> _authorizedTopics = {};
+  Future<void> _pushSync = Future.value();
   bool _authListening = false;
   String _lastAuthKey = '';
   StreamSubscription<String>? _tokenRefreshSub;
@@ -225,7 +220,9 @@ class RemoteNotificationsService {
         final key = '${cur?.id ?? ''}|${cur?.email ?? ''}';
         if (key != _lastAuthKey) {
           _lastAuthKey = key;
-          unawaited(refresh());
+          _authorizedTopics = {};
+          unawaited(_syncPushSubscriptions().catchError((Object _) {}));
+          unawaited(refresh().then((_) => refresh()));
         }
       });
     }
@@ -280,21 +277,26 @@ class RemoteNotificationsService {
     try {
       if (_prefs == null) await init();
       final user = _userProvider();
-      final uri = Uri.parse('${BackendConfig.notifierUrl}/api/notifications')
-          .replace(
-            queryParameters: {
-              'app': CountryConfig.current.code,
-              'platform': platform,
-              'imageBanners': '1',
-              if (user != null && user.id.trim().isNotEmpty)
-                'userId': user.id.trim(),
-              if (user != null && user.email.trim().isNotEmpty)
-                'email': user.email.trim(),
-            },
-          );
-      final response = await _client
-          .get(uri)
-          .timeout(const Duration(seconds: 6));
+      final revision = AuthService.instance.accountRevision;
+      final query = {
+        'app': CountryConfig.current.code,
+        'platform': platform,
+        'imageBanners': '1',
+      };
+      final response = await sendWithRetry(
+        (host) => _client.get(
+          Uri.parse('$host/api/notifications').replace(queryParameters: query),
+          headers: AuthService.instance.serverHeaders,
+        ),
+        hosts: BackendConfig.notifierHosts,
+        attempts: const [Duration(seconds: 6), Duration(seconds: 6)],
+        pause: Duration.zero,
+      );
+      if (revision != AuthService.instance.accountRevision ||
+          user?.id != _userProvider()?.id) {
+        _messages = [];
+        return;
+      }
       if (response.statusCode != 200) {
         _messages = [];
         return;
@@ -305,6 +307,13 @@ class RemoteNotificationsService {
         return;
       }
       _applyConfig(data['config']);
+      _authorizedTopics =
+          AuthService.instance.hasServerSession && data['pushTopics'] is List
+          ? (data['pushTopics'] as List)
+                .whereType<String>()
+                .where((t) => RegExp(r'^pdd_account_[a-f0-9]{64}$').hasMatch(t))
+                .toSet()
+          : {};
       await _prefs!.setString('${_prefix}config', jsonEncode(_config));
       await StreakNotifier.instance.applyRemotePolicy(
         streakEnabled: _config['streakEnabled']!,
@@ -364,12 +373,17 @@ class RemoteNotificationsService {
     }
   }
 
-  Future<void> _syncPushSubscriptions() async {
+  Future<void> _syncPushSubscriptions() {
+    _pushSync = _pushSync
+        .catchError((Object _) {})
+        .then((_) => _performPushSync());
+    return _pushSync;
+  }
+
+  Future<void> _performPushSync() async {
     // Missing configuration must never initialize an unrelated Firebase project
     // or break builds/country variants that have no push integration yet.
-    if (kIsWeb ||
-        !const bool.fromEnvironment('ENABLE_REMOTE_PUSH') ||
-        (!_pushOptIn && !_firebaseReady)) {
+    if (kIsWeb || !const bool.fromEnvironment('ENABLE_REMOTE_PUSH')) {
       return;
     }
     const project = String.fromEnvironment('FIREBASE_PROJECT_ID');
@@ -395,11 +409,13 @@ class RemoteNotificationsService {
       );
       _firebaseReady = true;
       await StreakNotifier.instance.prepareAdminChannel();
-      await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      if (_pushOptIn) {
+        await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+      }
       _foregroundSub ??= FirebaseMessaging.onMessage.listen((message) {
         final note = message.notification;
         if (_pushOptIn && _config['pushEnabled'] == true && note != null) {
@@ -413,9 +429,11 @@ class RemoteNotificationsService {
       if (initial != null) _emitTap(NoticeTap.fromData(initial.data));
     }
     final messaging = FirebaseMessaging.instance;
+    final topicState = PushTopicState(_prefs!, _prefix);
+    await topicState.migrate(messaging.deleteToken);
     _tokenRefreshSub ??= messaging.onTokenRefresh.listen((_) {
       _subscriptionState = null;
-      _subscribedUserTopics = {};
+      unawaited(PushTopicState(_prefs!, _prefix).clear());
       unawaited(_syncPushSubscriptions().catchError((Object _) {}));
     });
     if (platform == 'ios' && await messaging.getAPNSToken() == null) return;
@@ -425,40 +443,22 @@ class RemoteNotificationsService {
         _config['pushEnabled'] == true &&
         (permission.authorizationStatus == AuthorizationStatus.authorized ||
             permission.authorizationStatus == AuthorizationStatus.provisional);
-    final user = _userProvider();
-    final desiredUserTopics = enabled && user != null
-        ? (<String>{userTopic(user.id), userTopic(user.email)}..remove(''))
+    final desiredTopics = enabled
+        ? {
+            'pdd_mobile',
+            'pdd_${CountryConfig.current.code}_$platform',
+            ..._authorizedTopics,
+          }
         : <String>{};
-    if (_subscriptionState == enabled &&
-        setEquals(_subscribedUserTopics, desiredUserTopics)) {
-      return;
-    }
     if (_subscriptionState != enabled) {
       await messaging.setAutoInitEnabled(enabled);
-      // Exact country/platform audience; guests can also receive opt-in messages.
-      for (final topic in [
-        'pdd_mobile',
-        'pdd_${CountryConfig.current.code}_$platform',
-      ]) {
-        if (enabled) {
-          await messaging.subscribeToTopic(topic);
-        } else {
-          await messaging.unsubscribeFromTopic(topic);
-        }
-      }
       _subscriptionState = enabled;
     }
-    for (final oldTopic in _subscribedUserTopics.difference(
-      desiredUserTopics,
-    )) {
-      await messaging.unsubscribeFromTopic(oldTopic);
-    }
-    for (final newTopic in desiredUserTopics.difference(
-      _subscribedUserTopics,
-    )) {
-      await messaging.subscribeToTopic(newTopic);
-    }
-    _subscribedUserTopics = desiredUserTopics;
+    await topicState.reconcile(
+      desiredTopics,
+      subscribe: messaging.subscribeToTopic,
+      unsubscribe: messaging.unsubscribeFromTopic,
+    );
   }
 
   Future<void> _showForeground(RemoteMessage message) async {

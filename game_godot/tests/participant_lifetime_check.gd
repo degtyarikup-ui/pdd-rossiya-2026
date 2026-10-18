@@ -33,6 +33,11 @@ func run() -> void:
 	world.drive = Drive.new()
 	world.drive.speed = 8.0
 	root.add_child(world)
+	# This fixture bypasses World._ready; keep the real transport dependency
+	# while muting audio so collision processing reaches the production handler.
+	world.sound = GameSound.new()
+	world.sound.enabled = false
+	world.add_child(world.sound)
 	var sit := Situation.new()
 	sit.id = "participant_lifetime_fixture"
 	sit.data = {"spec": {"yieldTo": ["pedestrian"], "maneuver": "straight"},

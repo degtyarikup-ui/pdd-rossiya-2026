@@ -9,6 +9,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileModalSheet extends ConsumerWidget {
   final UserProfile profile;
@@ -76,6 +77,37 @@ class ProfileModalSheet extends ConsumerWidget {
 
     if (confirmed == true) {
       final deleted = await AuthService.instance.deleteAccount();
+      final appleUrl = AuthService.instance.appleManualRevocationUrl;
+      final applePending = AuthService.instance.appleRevocationPending;
+      if (deleted && (appleUrl != null || applePending) && context.mounted) {
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(appL10n.accountDeleted),
+            content: Text(
+              applePending
+                  ? appL10n.profileAppleRevokePending
+                  : appL10n.profileAppleRevokeInstructions,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(appL10n.close),
+              ),
+              if (appleUrl != null)
+                TextButton(
+                  onPressed: () async {
+                    await launchUrl(
+                      appleUrl,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  },
+                  child: Text(appL10n.profileAppleOpenSettings),
+                ),
+            ],
+          ),
+        );
+      }
       if (context.mounted) {
         if (deleted) Navigator.of(context).pop();
         AppToast.show(

@@ -23,7 +23,9 @@ func wait_motion(seconds := 0.65) -> void:
 
 
 func ticket_chip(panel: PanelContainer) -> Control:
-	return panel.get_meta("box").get_child(0).get_child(0)
+	# The report flag is now the first control in the header; use the actual
+	# named ticket control rather than depending on its sibling position.
+	return panel.find_child("TicketChip", true, false)
 
 
 func sheet_radius(panel: PanelContainer) -> int:

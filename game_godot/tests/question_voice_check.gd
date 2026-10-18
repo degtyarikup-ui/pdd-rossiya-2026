@@ -126,21 +126,17 @@ func _world_checks() -> void:
 	DirAccess.make_dir_recursive_absolute(Host.io)
 	Host.io_args = ["--ride-options=" + JSON.stringify(options), "--mute", "--lang=ru"]
 	var world: Node = load("res://main.tscn").instantiate()
+	world.only_id = JUNCTION
+	world.bag = [JUNCTION]
 	root.add_child(world)
-	world.set_process(false)
 	world.hud.visible = false
-	for i in 600:
-		if not world.staging:
-			break
+	# Pin the real startup before entering the tree. Calling _build_staged by
+	# hand raced the deferred loader and bypassed its staging ownership flag.
+	for i in 1800:
+		if world.loader == null and not world.staging and not world.current.is_empty(): break
 		await process_frame
-	if world.staged_sit != null:
-		world.staged_sit.queue_free()
-		world.staged_sit = null
-	await world._build_staged(JUNCTION)
-	world.next_id = JUNCTION
-	world.spawn_after = -1.0e9
-	world._maybe_spawn()
-	check(not world.current.is_empty(), "Voice fixture uses the actual junction")
+	check(not world.current.is_empty() and world.current.sit.id == JUNCTION, "Voice fixture uses the actual junction")
+	world.set_process(false)
 	world.phase = "question"
 	world.question_over = false
 	var entry: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://situations/%s/scene.json" % JUNCTION))
@@ -199,10 +195,11 @@ func _world_checks() -> void:
 		world._on_answer_chosen(index)
 		check(not world.voice._player.playing and world.voice._active_id.is_empty(), "Timeout/wrong road answer stops speech immediately")
 		await create_timer(1.0).timeout
+	world._exiting = true
 	world.voice.shutdown()
+	await create_timer(0.16).timeout
 	world.queue_free()
-	await process_frame
-	await process_frame
+	await create_timer(0.16).timeout
 	Host.io = ""
 	Host.io_args = []
 

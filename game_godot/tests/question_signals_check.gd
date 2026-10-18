@@ -166,5 +166,8 @@ func run() -> void:
 	world.queue_free()
 	await process_frame
 	await process_frame
+	# Streaming MP3 playbacks are released by the audio mixer on its next real
+	# tick, not by two unthrottled headless frames immediately before shutdown.
+	await create_timer(0.12).timeout
 	print("question signals: ", checks, " checks, ", failures, " failures")
 	quit(0 if failures == 0 else 1)

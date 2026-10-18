@@ -5,6 +5,7 @@ import { TrafficState, trafficRequest } from './traffic_state.js';
 import { StatsBuffer } from './stats_buffer.js';
 import { TelegramQueue } from './telegram_queue.js';
 import { signSession } from './user_auth.js';
+import { accountTokenForUserId } from './store_account.js';
 import { PurchaseClaims } from './purchase_claims.js';
 import { generateKeyPair, exportPKCS8, SignJWT } from 'jose';
 
@@ -260,7 +261,7 @@ test('verified App Store purchase succeeds even when the Telegram queue is unava
   e.TELEGRAM = { idFromName: k => k, get: () => ({ fetch: async () => new Response('unavailable', { status: 503 }) }) };
   const productId = 'u.pdd.pddApp.premium.week';
   const expiresDate = Date.now() + 7 * 86400000;
-  const transaction = { bundleId: 'ru.pdd.pddApp', productId, transactionId: '123', originalTransactionId: '100', environment: 'Production', expiresDate };
+  const transaction = { appAccountToken: await accountTokenForUserId(userId), bundleId: 'ru.pdd.pddApp', productId, transactionId: '123', originalTransactionId: '100', environment: 'Production', expiresDate };
   const token = await signSession(e, { user: { id: userId, provider: 'apple', email: '' }, expiresAt: Date.now() + 60000, generation: '' });
   const original = globalThis.fetch;
   try {

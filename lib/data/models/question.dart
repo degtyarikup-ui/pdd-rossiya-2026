@@ -7,6 +7,7 @@ class Question {
   final String? image;
   final List<String> topic;
   final int ticketNumber;
+  final int questionNumber;
 
   Question({
     required this.id,
@@ -17,11 +18,12 @@ class Question {
     this.image,
     this.topic = const [],
     this.ticketNumber = 0,
+    this.questionNumber = 0,
   });
 
   factory Question.fromJson(Map<String, dynamic> json) {
     return Question(
-      id: json['id']?.toString() ?? '',
+      id: (json['variantId'] ?? json['id'])?.toString() ?? '',
       question: json['question']?.toString() ?? '',
       answers:
           (json['answers'] as List<dynamic>?)
@@ -45,6 +47,7 @@ class Question {
               .toList() ??
           [],
       ticketNumber: (json['ticketNumber'] as num?)?.toInt() ?? 0,
+      questionNumber: (json['questionNumber'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -65,6 +68,7 @@ class Question {
       'image': image,
       'topic': topic,
       'ticketNumber': ticketNumber,
+      'questionNumber': questionNumber,
     };
   }
 

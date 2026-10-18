@@ -60,8 +60,13 @@ func _run() -> void:
 	var summary: Dictionary = world._exit_summary()
 	check(summary.city_runs.size() == 1 and summary.city_runs[0].score == 452 and summary.score == 400, "exit includes both independent runs")
 	check(summary.native_result and summary.finished, "Flutter does not repeat the result dialog")
+	# Use the same closing window as the host, rather than destroying a world
+	# while its immutable background prefetch is still returning to its owner.
+	world._exiting = true
+	world.voice.shutdown()
+	await create_timer(0.16).timeout
 	world.queue_free()
-	await process_frame
+	await create_timer(0.16).timeout
 	for key in ["city_completed_runs", "city_replay_options"]:
 		if root.has_meta(key): root.remove_meta(key)
 	Host.io = ""

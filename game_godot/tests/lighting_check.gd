@@ -78,6 +78,12 @@ func finish(world, direction: String, quality: String) -> void:
 	world.cam_heading = heading - 0.31
 	world.cam_look = world.drive.pos + Vector3(sin(world.cam_heading), 0, cos(world.cam_heading)) * 10.0
 	world.cam_ready = true
+	# Relocating the fixture car is not an in-game teleport. Keep all follow
+	# camera memory consistent so _process(0) only tests the coordinate rebase.
+	world.cam_last_player = world.drive.pos
+	world.cam_pitch = world.CAMERA_PITCH
+	world.cam_question_blend = 0.0
+	world.cam_question_pose.clear()
 	world.camera.position = world.cam_look + Vector3(-sin(world.cam_heading) * 44.0, 42, -cos(world.cam_heading) * 44.0)
 	world.camera.look_at(world.cam_look)
 	var frames := retained_frames(world)

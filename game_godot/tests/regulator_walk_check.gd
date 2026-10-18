@@ -13,6 +13,7 @@ func run() -> void:
  var junction := RegulatorJunction.new()
  root.add_child(junction)
  junction.set_process(false)
+ var native := DisplayServer.get_name() != "headless"
  check(not junction.walkers_data.is_empty(), "regulator contains pedestrians")
  for i in junction.walkers_data.size():
   var crowd := junction.walker_crowds[i]
@@ -20,16 +21,23 @@ func run() -> void:
   var origin := crowd.get_instance_transform(0).origin
   var w: Dictionary = junction.walkers_data[i]
   var phase: float = w.walk_phase
-  check(floorf(before.a * 0.5) == 15.0, "walker %d has full leg/arm articulation" % i)
+  var at: float = w.at
+  # The dummy renderer drops MultiMesh buffers at a frame boundary. Headless
+  # verifies physical state; native additionally verifies the exact GPU payload.
+  if native: check(floorf(before.a * 0.5) == 15.0, "walker %d has full leg/arm articulation" % i)
   junction._update_walkers(0.1)
   var after := crowd.get_instance_custom_data(0)
-  check(not is_equal_approx(before.a, after.a), "walker %d advances the rendered gait" % i)
-  check(crowd.get_instance_transform(0).origin.distance_to(origin) > 0.0, "walker %d actually walks" % i)
+  if native:
+   check(not is_equal_approx(before.a, after.a), "walker %d advances the rendered gait" % i)
+   check(crowd.get_instance_transform(0).origin.distance_to(origin) > 0.0, "walker %d actually walks" % i)
+   check(Vector3(before.r,before.g,before.b).is_equal_approx(Vector3(after.r,after.g,after.b)), "walker %d retains clothing colour" % i)
+  check(not is_equal_approx(w.at, at), "walker %d advances physical position" % i)
   check(is_equal_approx(w.walk_phase, fposmod(phase + w.spd * 0.1 * 3.5, TAU)), "walker %d stride follows distance" % i)
-  check(Vector3(before.r,before.g,before.b).is_equal_approx(Vector3(after.r,after.g,after.b)), "walker %d retains clothing colour" % i)
  var frozen := junction.walker_crowds[0].get_instance_custom_data(0)
+ var frozen_state := junction.walkers_data.duplicate(true)
  for frame in 5: await process_frame
- check(junction.walker_crowds[0].get_instance_custom_data(0) == frozen, "paused junction freezes gait as well as position")
+ check(junction.walkers_data == frozen_state, "paused junction freezes physical gait and position")
+ if native: check(junction.walker_crowds[0].get_instance_custom_data(0) == frozen, "paused junction freezes rendered gait as well as position")
  junction.queue_free()
  await process_frame
  print("Regulator walking: %d checks, %d failures" % [checks, failures])

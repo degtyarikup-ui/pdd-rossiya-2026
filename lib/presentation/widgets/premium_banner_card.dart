@@ -20,6 +20,7 @@ class PremiumBannerCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final isPremium = ref.watch(isPremiumProvider);
     final remaining = ref.watch(dailyCardsRemainingProvider);
     final limit = ref.watch(dailyFreeLimitProvider);
@@ -31,15 +32,15 @@ class PremiumBannerCard extends ConsumerWidget {
     if (isPremium) {
       cardColor = const Color(0xFF2BC280);
       svgAsset = 'assets/images/traffic_light_green.svg';
-      subtitleText = appL10n.premiumBannerSubtitleUnlimited;
+      subtitleText = l10n.premiumBannerSubtitleUnlimited;
     } else if (remaining > 0) {
       cardColor = const Color(0xFFFFA53C);
       svgAsset = 'assets/images/traffic_light_yellow.svg';
-      subtitleText = appL10n.premiumBannerCardsLeft(remaining, limit);
+      subtitleText = l10n.premiumBannerCardsLeft(remaining, limit);
     } else {
       cardColor = const Color(0xFFED4621);
       svgAsset = 'assets/images/traffic_light_red.svg';
-      subtitleText = appL10n.premiumBannerCardsLeft(0, limit);
+      subtitleText = l10n.premiumBannerCardsLeft(0, limit);
     }
 
     return Container(
@@ -77,7 +78,7 @@ class PremiumBannerCard extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
-                              appL10n.premiumAccessTitle,
+                              l10n.premiumAccessTitle,
                               style: TextStyle(
                                 fontSize: 15.5,
                                 fontWeight: FontWeight.w700,
@@ -97,7 +98,7 @@ class PremiumBannerCard extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  appL10n.premiumBannerActive,
+                                  l10n.premiumBannerActive,
                                   style: TextStyle(
                                     color: Color(0xFF121212),
                                     fontSize: 9.5,

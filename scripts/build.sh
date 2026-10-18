@@ -43,6 +43,13 @@ else
   exit 1
 fi
 
+# A release always contains games rebuilt from these sources. Missing templates
+# or a failed export are release errors; an older local pack cannot be reused.
+case "$TARGET" in
+  aab|apk|rustore-apk) ./scripts/godot_android_assets.sh ;;
+  ipa) ./scripts/godot_ios_assets.sh ;;
+esac
+
 # Дополнительные параметры сборки через окружение.
 # GAME_DEBUG / NOTIF_TEST / SCREEN не включают отладку в release.
 EXTRA_DEFINES_ARR=()
@@ -68,15 +75,20 @@ fi
 verify_archive() {
   local archive="$1"
   local needle="assets/countries/$COUNTRY/questions/questions_ab.json"
-  # Список файлов сначала в переменную: при `grep -q` в конвейере unzip
-  # получает SIGPIPE, а из-за pipefail это выглядит как «не нашли».
+  # Here-string avoids SIGPIPE from either unzip or printf when grep exits early.
   local listing
   listing="$(unzip -l "$archive")"
-  if ! printf '%s' "$listing" | grep -q -- "$needle"; then
+  if ! grep -Fq -- "$needle" <<< "$listing"; then
     echo "СБОРКА БРАКОВАННАЯ: в $archive нет $needle" >&2
     exit 1
   fi
-  echo "проверка: контент страны $COUNTRY в артефакте есть"
+  for needle in 'assets/project.binary' 'lib/arm64-v8a/libgodot_android.so'; do
+    if ! grep -Fq -- "$needle" <<< "$listing"; then
+      echo "СБОРКА БРАКОВАННАЯ: в $archive нет игры Godot ($needle)" >&2
+      exit 1
+    fi
+  done
+  echo "проверка: контент страны $COUNTRY и игра Godot в артефакте есть"
 }
 
 # Flutter считает успешным архив, даже если последующий экспорт/загрузка
@@ -113,6 +125,8 @@ app = archive / 'Products/Applications/Runner.app'
 content = app / f'Frameworks/App.framework/flutter_assets/assets/countries/{country}/questions/questions_ab.json'
 if not content.is_file():
     fail(f"в {archive} нет контента страны {country}")
+if not (app / 'Runner.pck').is_file() or (app / 'Runner.pck').stat().st_size == 0:
+    fail(f"в {archive} нет игрового пакета Runner.pck")
 try:
     info = plistlib.loads((archive / 'Info.plist').read_bytes())
 except (OSError, plistlib.InvalidFileException):
@@ -188,16 +202,7 @@ case "$TARGET" in
       ${NOTIFY_DEFINES[@]+"${NOTIFY_DEFINES[@]}"} \
       ${EXTRA_DEFINES_ARR[@]+"${EXTRA_DEFINES_ARR[@]}"}
     python3 tools/web/version_web_build.py build/web
-    # The Godot game for the site (build/web/godot/, opened by «Живой город»):
-    # only when godot is installed (the scenes are in git: game_godot/situations).
-    # Otherwise the site has no game: the button says it is unavailable.
-    if [[ "${SKIP_GODOT_WEB:-0}" != "1" ]]; then
-      if command -v godot >/dev/null && [[ -d game_godot/situations ]]; then
-        ./scripts/godot_dev.sh web
-      else
-        echo "Godot для сайта не собран (нет godot или game_godot/situations): на сайте игра будет недоступна."
-      fi
-    fi
+    ./scripts/godot_web_assets.sh
     echo "Web: build/web (COUNTRY=$COUNTRY)"
     ;;
   *) echo "unknown target: $TARGET (expected aab|apk|rustore-apk|ipa|web)"; exit 1 ;;

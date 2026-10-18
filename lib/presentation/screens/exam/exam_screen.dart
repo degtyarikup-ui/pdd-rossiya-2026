@@ -19,6 +19,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/models/exam_question_bank.dart';
 import 'package:pdd_app/data/services/share_card_renderer.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_review_screen.dart';
@@ -58,6 +59,9 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   int get _mainCount => _rules.mainCount;
 
   late List<Map<String, dynamic>> _examQuestions;
+  late final ExamQuestionBank? _bank = _rules.hasBlockRule
+      ? ExamQuestionBank(widget.allQuestions, _rules)
+      : null;
   late List<int?> _savedAnswers;
   int _currentIndex = 0;
   int? _selectedAnswerIndex;
@@ -131,9 +135,13 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     if (resume != null && _restoreExam(resume)) return;
 
     final random = Random();
-    final shuffled = List<Map<String, dynamic>>.from(widget.allQuestions)
-      ..shuffle(random);
-    _examQuestions = shuffled.take(_mainCount).toList();
+    if (_bank != null) {
+      _examQuestions = _bank.mainQuestions(random);
+    } else {
+      _examQuestions = (List<Map<String, dynamic>>.from(
+        widget.allQuestions,
+      )..shuffle(random)).take(_mainCount).toList();
+    }
     // ВАЖНО: growable — при переходе к доп. вопросам список расширяется.
     // List.filled по умолчанию фиксированной длины, addAll на нём бросает
     // UnsupportedError и оставляет экзамен в полусломанном состоянии.
@@ -157,6 +165,13 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
         .toList();
     if (questions == null || answers == null) return false;
     if (questions.isEmpty || questions.length != answers.length) return false;
+    final groups = (resume['examGroups'] as List?)?.cast<int>();
+    if (groups != null && groups.length != questions.length) return false;
+    if (groups != null) {
+      for (var i = 0; i < questions.length; i++) {
+        questions[i]['examGroup'] = groups[i];
+      }
+    }
 
     _examQuestions = List<Map<String, dynamic>>.from(questions);
     _savedAnswers = List<int?>.from(answers, growable: true);
@@ -198,6 +213,15 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
           additionalPhase: _additionalPhase,
           additionalQuestionsCount: _additionalQuestionsCount,
           initialWrongCount: _initialWrongCount,
+          examGroups: _examQuestions
+              .asMap()
+              .entries
+              .map(
+                (e) =>
+                    (e.value['examGroup'] as int?) ??
+                    _rules.blockIndexOf(e.key),
+              )
+              .toList(),
           category: ref.read(appSettingsProvider).ticketCategory,
         );
   }
@@ -258,7 +282,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
           ? (_savedAnswers[i] == null || _isAnswerWrongAt(i))
           : _isAnswerWrongAt(i);
       if (!isMistake) continue;
-      final block = _rules.blockIndexOf(i);
+      final block =
+          (_examQuestions[i]['examGroup'] as int?) ?? _rules.blockIndexOf(i);
       byBlock[block] = (byBlock[block] ?? 0) + 1;
     }
     return byBlock;
@@ -272,8 +297,9 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   /// лимиту экзамен ещё продолжался бы.
   bool _failedByBlockRule({bool countUnanswered = false}) {
     if (!_rules.hasBlockRule) return false;
-    return _mistakesByBlock(countUnanswered: countUnanswered).values
-        .any((count) => count >= _rules.maxMistakesPerBlock);
+    return _mistakesByBlock(
+      countUnanswered: countUnanswered,
+    ).values.any((count) => count >= _rules.maxMistakesPerBlock);
   }
 
   /// Ошибки среди отвеченных доп. вопросов (правило «ошибка в доп. блоке — не сдал»).
@@ -476,10 +502,19 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
 
     final random = Random();
     final usedIds = _examQuestions.map((q) => q['id'] as String).toSet();
-    final available =
-        widget.allQuestions.where((q) => !usedIds.contains(q['id'])).toList()
-          ..shuffle(random);
-    final additional = available.take(count).toList();
+    final List<Map<String, dynamic>> additional;
+    if (_bank != null) {
+      additional = _bank.additionalQuestions(
+        groups: _mistakesByBlock().keys,
+        usedIds: usedIds,
+        random: random,
+      );
+    } else {
+      final available =
+          widget.allQuestions.where((q) => !usedIds.contains(q['id'])).toList()
+            ..shuffle(random);
+      additional = available.take(count).toList();
+    }
 
     // Вырожденный случай: в базе не нашлось доп. вопросов — завершаем как есть.
     if (additional.isEmpty) {
@@ -929,8 +964,9 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     }
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(appL10n.copiedToClipboard)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(appL10n.copiedToClipboard)));
   }
 
   Widget _buildResultsScreen() {
