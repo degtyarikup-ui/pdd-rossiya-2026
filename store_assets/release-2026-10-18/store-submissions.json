@@ -1,6 +1,6 @@
 {
   "version": "2.2.4",
-  "publication": "manual-after-approval",
+  "publication": "automatic-after-approval (Android build 65)",
   "change": "Android build 65 removes extra launcher icon padding and includes the Google sign-in fix from build 64. App Store remains the previous build 63; its status was not rechecked in this Android update.",
   "artifactManifest": "android-build-65.json",
   "checks": {
@@ -23,18 +23,20 @@
       "reviewAccessNote": "No separate review account provided. Existing saved access declaration is unchanged; access may be requested during review.",
       "preReviewChecks": "running; automatically forwards to review after successful checks",
       "build": 65,
-      "runtimeSourceCommit": "247a50f1"
+      "runtimeSourceCommit": "247a50f1",
+      "publication": "automatic-after-approval; managed publishing off"
     },
     "rustore": {
       "build": 65,
       "runtimeSourceCommit": "247a50f1",
       "submitted": true,
-      "status": "Ожидает модерацию",
+      "status": "Опубликовано",
       "versionId": "2064892628",
       "copiedFromVersionId": "2064892287",
       "previousPublishedBuild": 63,
       "url": "https://console.rustore.ru/apps/2063722239/versions/2064892628",
-      "publication": "manual-after-approval"
+      "publication": "automatic-after-approval",
+      "publishedAt": "2026-10-18T21:52:00+03:00"
     },
     "appStore": {
       "submitted": true,
@@ -46,8 +48,11 @@
       "build": 63,
       "runtimeSourceCommit": "3fc26867",
       "recordedAt": "2026-10-18T15:22:59.251138+00:00",
-      "updatedInThisSubmission": false
+      "updatedInThisSubmission": false,
+      "publication": "manual-after-approval; unchanged in this Android update"
     }
   },
-  "recordedAt": "2026-10-18T18:47:24.009372+00:00"
+  "recordedAt": "2026-10-18T18:53:37.335335+00:00",
+  "publicationPreference": "Future releases in Google Play, RuStore and App Store publish automatically after approval unless the owner explicitly requests manual release. Do not withdraw an active review merely to change publication mode.",
+  "publicationChangedWithoutWithdrawingReview": true
 }

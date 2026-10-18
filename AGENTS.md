@@ -123,6 +123,11 @@ assets/countries/ru/images/     questions_ab/, questions_cd/, signs/, markup/
 
 ## Сборка и деплой
 
+Релизы Google Play, RuStore и App Store отправлять с **автоматической публикацией
+сразу после одобрения** (пожелание владельца 18.10.2026). Ручной выпуск — только
+по явному запросу. Для уже отправленной версии менять эту настройку без отзыва
+заявки; если без отмены проверки переключить нельзя — заявку не отменять.
+
 ```bash
 ./scripts/build.sh ru aab|apk|rustore-apk|ipa|web  # сборка (rustore-apk — для RuStore)
 ./scripts/deploy_web.sh ru             # веб-деплой приложения (pdd-drive.ru/app/)
