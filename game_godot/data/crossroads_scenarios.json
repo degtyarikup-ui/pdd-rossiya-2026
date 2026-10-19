@@ -4080,7 +4080,7 @@
         "order": 1,
         "explanation": "Синий седан уже движется по кольцу и имеет безоговорочный приоритет перед въезжающими (п. 13.11(1) ПДД РФ).",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "circle"
       },
       {
         "id": "car_south",
@@ -4114,7 +4114,7 @@
         "order": 2,
         "explanation": "Красный кроссовер въезжает на перекресток со знаком 4.3 и 2.4. Он обязан уступить дорогу синему седану на кольце.",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "right"
       }
     ],
     "translations": {
@@ -4234,7 +4234,7 @@
         "order": 1,
         "explanation": "Белый хэтчбек движется по кольцу и проезжает первым.",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "circle"
       },
       {
         "id": "car_south",
@@ -4310,7 +4310,7 @@
         "order": 3,
         "explanation": "Оранжевый седан уступает зеленому седану справа и проезжает третьим.",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "right"
       }
     ],
     "translations": {
@@ -4436,7 +4436,7 @@
         "order": 1,
         "explanation": "Желтый хэтчбек на главной дороге. Для синего кроссовера он помеха справа, поэтому едет первым.",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "right"
       },
       {
         "id": "car_east",
@@ -4470,7 +4470,7 @@
         "order": 2,
         "explanation": "Синий кроссовер тоже на главной дороге, но уступает желтому хэтчбеку справа.",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "right"
       },
       {
         "id": "car_west",
@@ -4504,7 +4504,7 @@
         "order": 3,
         "explanation": "Белый седан на второстепенной дороге пропускает участников на главной и едет последним.",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "right"
       }
     ],
     "translations": {
@@ -4666,7 +4666,7 @@
         "order": 2,
         "explanation": "Серый хэтчбек движется по кольцу, но перед пересечением с главной дорогой обязан уступить.",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "circle"
       },
       {
         "id": "car_east",
@@ -4700,7 +4700,7 @@
         "order": 3,
         "explanation": "Зеленый кроссовер на второстепенной дороге пропускает обоих участников.",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "right"
       }
     ],
     "translations": {
@@ -4828,7 +4828,7 @@
         "order": 1,
         "explanation": "Синий кроссовер движется по своей полосе внешнего кольца. Грузовик при перестроении для съезда обязан уступить ему.",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "circle"
       },
       {
         "id": "truck_inner",
@@ -4866,7 +4866,7 @@
         "order": 2,
         "explanation": "Грузовик съезжает с кольца из внутренней полосы и при перестроении обязан уступить дорогу кроссоверу (п. 8.4).",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "right"
       },
       {
         "id": "car_south",
@@ -5048,7 +5048,7 @@
         "order": 2,
         "explanation": "Синий седан съезжает с кольца направо и обязан уступить дорогу пешеходу.",
         "hasSiren": false,
-        "maneuver": "straight"
+        "maneuver": "right"
       },
       {
         "id": "car_south",

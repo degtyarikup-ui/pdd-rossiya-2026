@@ -43,7 +43,7 @@ var _close_btn: Button
 var _hud: PanelContainer
 var _hud_line1: HBoxContainer
 var _hud_line2: HBoxContainer
-var _practice_row: HBoxContainer
+var _practice_row: BoxContainer
 var _topic_btn: Button
 var _prev_btn: Button
 var _solved_chip: PanelContainer
@@ -233,17 +233,17 @@ func _build_top_bar() -> void:
 	_hud = PanelContainer.new()
 	_hud.custom_minimum_size.y = CHROME
 	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
-	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 8, 8, 6))
+	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 10, 10, 5))
 	_hud_row.add_child(_hud)
 
 	_mode_pill = PanelContainer.new()
 	_mode_pill.custom_minimum_size.y = CHROME
 	_mode_pill.size_flags_vertical = SIZE_SHRINK_BEGIN
-	_mode_pill.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 3, 3, 4))
+	_mode_pill.add_theme_stylebox_override("panel", _padded(Color.TRANSPARENT, 0, 0, 0))
 	_hud_row.add_child(_mode_pill)
 
 	var mode_tabs := HBoxContainer.new()
-	mode_tabs.add_theme_constant_override("separation", 2)
+	mode_tabs.add_theme_constant_override("separation", 4)
 	mode_tabs.size_flags_vertical = SIZE_SHRINK_CENTER
 	_mode_pill.add_child(mode_tabs)
 
@@ -251,7 +251,7 @@ func _build_top_bar() -> void:
 	_blitz_tab.text = char(ICON_BOLT)
 	_blitz_tab.tooltip_text = Ui.t("gameCrossroadsModeBlitz")
 	_blitz_tab.custom_minimum_size = Vector2(28, 32)
-	_style_tab(_blitz_tab, true)
+	_style_tab(_blitz_tab, true, Ui.c("gold"))
 	_blitz_tab.pressed.connect(func():
 		if current_mode != "blitz":
 			set_mode("blitz")
@@ -263,93 +263,119 @@ func _build_top_bar() -> void:
 	_practice_tab.text = char(ICON_PRACTICE)
 	_practice_tab.tooltip_text = Ui.t("gameCrossroadsModePractice")
 	_practice_tab.custom_minimum_size = Vector2(28, 32)
-	_style_tab(_practice_tab, false)
+	_style_tab(_practice_tab, false, Ui.c("accent"))
 	_practice_tab.pressed.connect(func():
 		if current_mode != "practice":
 			set_mode("practice")
 			mode_changed.emit("practice")
 			mode_toggled.emit("practice"))
 	mode_tabs.add_child(_practice_tab)
+
 	var lines := VBoxContainer.new()
-	lines.add_theme_constant_override("separation", 6)
+	lines.add_theme_constant_override("separation", 2)
+	lines.alignment = BoxContainer.ALIGNMENT_CENTER
+	lines.size_flags_vertical = SIZE_EXPAND_FILL
 	_hud.add_child(lines)
+
 	_hud_line1 = HBoxContainer.new()
 	_hud_line1.add_theme_constant_override("separation", 6)
+	_hud_line1.alignment = BoxContainer.ALIGNMENT_CENTER
+	_hud_line1.size_flags_vertical = SIZE_SHRINK_CENTER
 	lines.add_child(_hud_line1)
+
 	_hud_line2 = HBoxContainer.new()
 	_hud_line2.add_theme_constant_override("separation", 6)
+	_hud_line2.alignment = BoxContainer.ALIGNMENT_CENTER
+	_hud_line2.size_flags_vertical = SIZE_SHRINK_CENTER
 	_hud_line2.visible = false
 	lines.add_child(_hud_line2)
 
-	_practice_row = HBoxContainer.new()
-	_practice_row.add_theme_constant_override("separation", 4)
+	_practice_row = VBoxContainer.new()
+	_practice_row.add_theme_constant_override("separation", 2)
+	_practice_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_practice_row.size_flags_horizontal = SIZE_EXPAND_FILL
+	_practice_row.size_flags_vertical = SIZE_SHRINK_CENTER
 	_practice_row.visible = false
 	lines.add_child(_practice_row)
 
 	_topic_btn = Button.new()
 	_topic_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	_topic_btn.custom_minimum_size = Vector2(50, 28)
 	_topic_btn.text = Ui.t("gameCrossroadsCatSigns") + " ▾"
-	_topic_btn.clip_text = true
+	_topic_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_topic_btn.add_theme_font_override("font", Ui.font(600))
-	_topic_btn.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
-	_style_button(_topic_btn, Ui.c("field"), Ui.c("text"), 8, 4)
+	_topic_btn.add_theme_font_size_override("font_size", roundi(12.0 * Ui.text_scale()))
+	_style_button(_topic_btn, Color.TRANSPARENT, Ui.c("text"), 2, 0)
 	_topic_btn.pressed.connect(func(): topics_requested.emit())
 	_practice_row.add_child(_topic_btn)
 
+	var stepper := HBoxContainer.new()
+	stepper.alignment = BoxContainer.ALIGNMENT_CENTER
+	stepper.add_theme_constant_override("separation", 6)
+	_practice_row.add_child(stepper)
+
 	_prev_btn = Button.new()
 	_prev_btn.text = "◀"
-	_prev_btn.custom_minimum_size = Vector2(26, 28)
+	_prev_btn.custom_minimum_size = Vector2(24, 18)
 	_prev_btn.add_theme_font_override("font", Ui.font(700))
-	_prev_btn.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
-	_style_button(_prev_btn, Ui.c("field"), Ui.c("text"), 4, 4)
+	_prev_btn.add_theme_font_size_override("font_size", roundi(10.0 * Ui.text_scale()))
+	_style_button(_prev_btn, Ui.c("field"), Ui.c("text"), 3, 2)
 	_prev_btn.pressed.connect(func(): prev_scenario_pressed.emit())
-	_practice_row.add_child(_prev_btn)
+	stepper.add_child(_prev_btn)
 
 	_solved_chip = PanelContainer.new()
-	_solved_chip.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 6, 6, 4))
-	_solved_chip_label = Ui.scaled_label("1 / 22", 12, 700, Ui.c("secondary"))
+	_solved_chip.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 6, 6, 2))
+	_solved_chip_label = Ui.scaled_label("1 / 22", 11, 700, Ui.c("secondary"))
 	_solved_chip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_solved_chip.add_child(_solved_chip_label)
-	_practice_row.add_child(_solved_chip)
+	stepper.add_child(_solved_chip)
 
 	_next_btn = Button.new()
 	_next_btn.text = "▶"
-	_next_btn.custom_minimum_size = Vector2(26, 28)
+	_next_btn.custom_minimum_size = Vector2(24, 18)
 	_next_btn.add_theme_font_override("font", Ui.font(700))
-	_next_btn.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
-	_style_button(_next_btn, Ui.c("field"), Ui.c("text"), 4, 4)
+	_next_btn.add_theme_font_size_override("font_size", roundi(10.0 * Ui.text_scale()))
+	_style_button(_next_btn, Ui.c("field"), Ui.c("text"), 3, 2)
 	_next_btn.pressed.connect(func(): next_scenario_pressed.emit())
-	_practice_row.add_child(_next_btn)
+	stepper.add_child(_next_btn)
 
 	_score_group = HBoxContainer.new()
 	_score_group.add_theme_constant_override("separation", 3)
-	_score_group.add_child(Ui.icon(ICON_STAR, 18, Ui.c("gold")))
-	_score_label = Ui.scaled_label("0", 16, 800, Ui.c("text"))
+	_score_group.size_flags_horizontal = SIZE_EXPAND_FILL
+	_score_group.alignment = BoxContainer.ALIGNMENT_BEGIN
+	var star := Ui.icon(ICON_STAR, 16, Ui.c("gold"))
+	star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_score_group.add_child(star)
+	_score_label = Ui.scaled_label("0", 15, 800, Ui.c("text"))
+	_score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_score_group.add_child(_score_label)
 	_combo_chip = PanelContainer.new()
 	_combo_chip.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 5, 4, 2))
 	_combo_label = Ui.scaled_label("", 11, 700, Ui.c("gold"))
+	_combo_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_combo_chip.add_child(_combo_label)
 	_combo_chip.visible = false
 	_score_group.add_child(_combo_chip)
 	_hud_line1.add_child(_score_group)
-	_score_spacer = _spacer()
-	_hud_line1.add_child(_score_spacer)
+
 	_timer_group = HBoxContainer.new()
 	_timer_group.add_theme_constant_override("separation", 3)
-	_timer_icon = Ui.icon(ICON_TIMER, 16, Ui.c("secondary"))
+	_timer_group.size_flags_horizontal = SIZE_EXPAND_FILL
+	_timer_group.alignment = BoxContainer.ALIGNMENT_CENTER
+	_timer_icon = Ui.icon(ICON_TIMER, 15, Ui.c("secondary"))
+	_timer_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_timer_group.add_child(_timer_icon)
 	_timer_label = Ui.scaled_label("60", 14, 700, Ui.c("text"))
+	_timer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_timer_group.add_child(_timer_label)
 	_hud_line1.add_child(_timer_group)
-	_timer_spacer = _spacer()
-	_hud_line1.add_child(_timer_spacer)
+
 	_lives_container = HBoxContainer.new()
-	_lives_container.add_theme_constant_override("separation", 1)
+	_lives_container.add_theme_constant_override("separation", 2)
+	_lives_container.size_flags_horizontal = SIZE_EXPAND_FILL
+	_lives_container.alignment = BoxContainer.ALIGNMENT_END
 	for i in LIVES:
 		var heart := Ui.icon(ICON_HEART, 13, Ui.c("red"))
+		heart.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_hearts.append(heart)
 		_lives_container.add_child(heart)
 	_hud_line1.add_child(_lives_container)
@@ -382,9 +408,8 @@ func _build_top_bar() -> void:
 	_caption_content.add_child(_hard_badge)
 
 
-func _style_tab(button: Button, active: bool) -> void:
-	var bg := Ui.c("accent") if active else Color.TRANSPARENT
-	var fg := Color.WHITE if active else Ui.c("secondary")
+func _style_tab(button: Button, active: bool, active_color: Color) -> void:
+	var fg := active_color if active else Ui.c("secondary")
 	button.add_theme_color_override("font_color", fg)
 	button.add_theme_color_override("font_hover_color", fg)
 	button.add_theme_color_override("font_pressed_color", fg)
@@ -392,12 +417,12 @@ func _style_tab(button: Button, active: bool) -> void:
 	if Ui._icon_font == null:
 		Ui._icon_font = load(Ui.ICON_FONT)
 	button.add_theme_font_override("font", Ui._icon_font)
-	button.add_theme_font_size_override("font_size", 17)
-	var style := _padded(bg, 5, 5, 3)
+	button.add_theme_font_size_override("font_size", 20)
+	var style := _padded(Color.TRANSPARENT, 3, 3, 2)
 	button.add_theme_stylebox_override("normal", style)
 	button.add_theme_stylebox_override("hover", style)
 	button.add_theme_stylebox_override("pressed", style)
-	var focus := Ui.box(Color.TRANSPARENT, 8)
+	var focus := Ui.box(Color.TRANSPARENT, 0)
 	button.add_theme_stylebox_override("focus", focus)
 
 
@@ -408,8 +433,8 @@ func set_mode(mode: String) -> void:
 		current_mode = "blitz"
 
 	var is_practice := current_mode == "practice"
-	_style_tab(_blitz_tab, not is_practice)
-	_style_tab(_practice_tab, is_practice)
+	_style_tab(_blitz_tab, not is_practice, Ui.c("gold"))
+	_style_tab(_practice_tab, is_practice, Ui.c("accent"))
 
 	_hud_line1.visible = not is_practice
 	_hud_line2.visible = false
@@ -430,6 +455,15 @@ func update_practice_status(topic_name: String, current_num: int, total_num: int
 	else:
 		_solved_chip_label.text = "%d / %d" % [current_num, total_num]
 		_solved_chip_label.add_theme_color_override("font_color", Ui.c("secondary"))
+	# Ensure topic title never gets clipped or truncated
+	var font: Font = _topic_btn.get_theme_font("font")
+	if font != null and _hud != null:
+		var hud_w: float = maxf(120.0, _hud.size.x - 24.0)
+		var f_sz: int = roundi(12.0 * Ui.text_scale())
+		var txt_w: float = font.get_string_size(_topic_btn.text, HORIZONTAL_ALIGNMENT_CENTER, -1, f_sz).x
+		if txt_w > hud_w:
+			f_sz = maxi(9, floori(f_sz * hud_w / txt_w))
+		_topic_btn.add_theme_font_size_override("font_size", f_sz)
 	if is_inside_tree():
 		call_deferred("_layout")
 
@@ -438,32 +472,40 @@ func _fit_hud(width: float) -> void:
 	if current_mode == "practice":
 		_hud_line2.visible = false
 		return
-	var available := maxf(70.0, width - 16.0)
-	var font_size := roundi(16.0 * Ui.text_scale())
+	var available := maxf(60.0, width - 16.0)
+	var font_size := roundi(15.0 * Ui.text_scale())
 	var combo_width := _combo_chip.get_combined_minimum_size().x + 4.0 if _combo_chip.visible else 0.0
-	var score_room := maxf(24.0, available - combo_width - 20.0)
-	var measured := _score_label.get_theme_font("font").get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-	if measured > score_room:
-		font_size = maxi(11, floori(font_size * score_room / measured))
+	var score_room := maxf(20.0, available * 0.35 - combo_width - 18.0)
+	var font: Font = _score_label.get_theme_font("font")
+	if font != null:
+		var measured := font.get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		if measured > score_room:
+			font_size = maxi(10, floori(font_size * score_room / measured))
 	_score_label.add_theme_font_size_override("font_size", font_size)
-	var score_width := _score_group.get_combined_minimum_size().x
-	var timer_width := _timer_group.get_combined_minimum_size().x
-	var needed := score_width + timer_width + _lives_container.get_combined_minimum_size().x + 24.0
+
+	var score_w := _score_group.get_combined_minimum_size().x
+	var timer_w := _timer_group.get_combined_minimum_size().x
+	var lives_w := _lives_container.get_combined_minimum_size().x
+	var needed := score_w + timer_w + lives_w + 16.0
 	var one_line := needed <= available
-	var timer_wrap := score_width + timer_width + 12.0 > available
-	var timer_parent := _hud_line2 if timer_wrap else _hud_line1
-	if _timer_group.get_parent() != timer_parent:
-		_timer_group.reparent(timer_parent, false)
-	if timer_parent == _hud_line1:
-		_hud_line1.move_child(_timer_group, _timer_spacer.get_index() - 1 if _timer_group.get_index() < _timer_spacer.get_index() else _timer_spacer.get_index())
+
+	if one_line:
+		if _timer_group.get_parent() != _hud_line1:
+			_timer_group.reparent(_hud_line1, false)
+		if _lives_container.get_parent() != _hud_line1:
+			_lives_container.reparent(_hud_line1, false)
+		_hud_line1.move_child(_score_group, 0)
+		_hud_line1.move_child(_timer_group, 1)
+		_hud_line1.move_child(_lives_container, 2)
+		_hud_line2.visible = false
 	else:
+		if _timer_group.get_parent() != _hud_line2:
+			_timer_group.reparent(_hud_line2, false)
+		if _lives_container.get_parent() != _hud_line2:
+			_lives_container.reparent(_hud_line2, false)
 		_hud_line2.move_child(_timer_group, 0)
-	var lives_parent := _hud_line1 if one_line else _hud_line2
-	if _lives_container.get_parent() != lives_parent:
-		_lives_container.reparent(lives_parent, false)
-	_hud_line2.visible = not one_line
-	_score_spacer.visible = not timer_wrap
-	_timer_spacer.visible = one_line
+		_hud_line2.move_child(_lives_container, 1)
+		_hud_line2.visible = true
 
 
 func update_hud(score: int, seconds: int, lives: int, combo: int) -> void:

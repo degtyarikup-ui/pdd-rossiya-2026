@@ -1540,7 +1540,14 @@ func fit_camera_to_scenario() -> void:
 				return false
 		return true
 
-	var lo := 38.0
+	var is_regulator := false
+	if not scenario_order.is_empty():
+		var sc_idx: int = scenario_order[cur_scenario_idx % scenario_order.size()]
+		if sc_idx < all_scenarios.size():
+			var sc: Dictionary = all_scenarios[sc_idx]
+			is_regulator = sc.has("officer") or str(sc.get("category", "")) == "regulator"
+
+	var lo := 28.0 if is_regulator else 38.0
 	var hi := 240.0
 	if fits.call(lo):
 		hi = lo
@@ -1551,6 +1558,10 @@ func fit_camera_to_scenario() -> void:
 				hi = mid
 			else:
 				lo = mid
+
+	if is_regulator:
+		# Zoom in closer on crossroads with traffic controller (officer) so his gestures and baton are prominent
+		hi = maxf(32.0, hi * 0.74)
 
 	base_cam_dist = hi
 	_target_cam_yaw = cam_yaw

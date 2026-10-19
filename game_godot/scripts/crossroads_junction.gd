@@ -32,6 +32,7 @@ var curb_mat: ShaderMaterial
 var sidewalk_mat: ShaderMaterial
 var grass_mat: ShaderMaterial
 var dirt_mat: ShaderMaterial
+var stone_mat: ShaderMaterial
 
 var signs_root: Node3D
 var lights_root: Node3D
@@ -257,6 +258,7 @@ func _create_materials() -> void:
 	curb_mat = sc.surface_material("pavement", sc.color("sidewalk"))
 	sidewalk_mat = sc.surface_material("pavement", sc.color("sidewalk"))
 	grass_mat = sc.surface_material("grass", sc.color("ground"))
+	stone_mat = sc.surface_material("pavement", Color("#8D7E75"))
 
 
 func _update_asphalt_tint() -> void:
@@ -398,32 +400,67 @@ func _build_roundabout_surfaces() -> void:
 
 
 func _build_roundabout_island() -> void:
+	# 1. Paved truck apron (R: 4.15m to 5.6m, height 0.035m) - signature European/Russian traversable ring
+	var apron_mesh := CylinderMesh.new()
+	apron_mesh.top_radius = 5.6
+	apron_mesh.bottom_radius = 5.6
+	apron_mesh.height = 0.03
+	apron_mesh.radial_segments = 48
+	var apron_inst := MeshInstance3D.new()
+	apron_inst.name = "RoundaboutTruckApron"
+	apron_inst.mesh = apron_mesh
+	apron_inst.material_override = stone_mat
+	apron_inst.position = Vector3(0, 0.015, 0)
+	ground_root.add_child(apron_inst)
+
+	# Low mountable curb separating circulating asphalt lane from truck apron at R = 5.6m
+	var apron_curb_mesh := CylinderMesh.new()
+	apron_curb_mesh.top_radius = 5.64
+	apron_curb_mesh.bottom_radius = 5.68
+	apron_curb_mesh.height = 0.035
+	apron_curb_mesh.radial_segments = 48
+	var apron_curb_inst := MeshInstance3D.new()
+	apron_curb_inst.name = "RoundaboutApronCurb"
+	apron_curb_inst.mesh = apron_curb_mesh
+	apron_curb_inst.material_override = curb_mat
+	apron_curb_inst.position = Vector3(0, 0.018, 0)
+	ground_root.add_child(apron_curb_inst)
+
+	# 2. Raised central landscaped island (R = 4.15m, height 0.20m)
 	var island := MeshInstance3D.new()
 	island.name = "RoundaboutIsland"
 	var cyl := CylinderMesh.new()
-	cyl.top_radius = 4.0
-	cyl.bottom_radius = 4.0
-	cyl.height = SIDEWALK_Y
+	cyl.top_radius = 4.15
+	cyl.bottom_radius = 4.15
+	cyl.height = 0.20
 	cyl.radial_segments = 36
 	island.mesh = cyl
 	island.material_override = grass_mat
-	island.position = Vector3(0, SIDEWALK_Y * 0.5, 0)
+	island.position = Vector3(0, 0.10, 0)
 	ground_root.add_child(island)
 
 	var curb_ring := MeshInstance3D.new()
 	curb_ring.name = "RoundaboutCurbRing"
 	var ring_cyl := CylinderMesh.new()
-	ring_cyl.top_radius = 4.18
-	ring_cyl.bottom_radius = 4.2
-	ring_cyl.height = SIDEWALK_Y * 0.95
+	ring_cyl.top_radius = 4.25
+	ring_cyl.bottom_radius = 4.30
+	ring_cyl.height = 0.22
 	ring_cyl.radial_segments = 36
 	curb_ring.mesh = ring_cyl
 	curb_ring.material_override = curb_mat
-	curb_ring.position = Vector3(0, SIDEWALK_Y * 0.48, 0)
+	curb_ring.position = Vector3(0, 0.11, 0)
 	ground_root.add_child(curb_ring)
 
+	# 3. Central landscaping: Birch tree in center + ring of 6 decorative bushes
 	var birch_color: Color = sc.color("birch")
-	_put_prop("trees/birch_0", Vector3(0, SIDEWALK_Y, 0), 0.5, Vector3.ONE * 0.9, birch_color, true)
+	var leaf_color: Color = Color(sc.season.canopy[0])
+	_put_prop("trees/birch_0", Vector3(0, 0.20, 0), 0.5, Vector3.ONE * 1.05, birch_color, true)
+
+	for i in 6:
+		var ang := float(i) * TAU / 6.0
+		var pos := Vector3(sin(ang) * 2.3, 0.20, cos(ang) * 2.3)
+		var shrub_scale := 0.55 if (i % 2 == 0) else 0.45
+		_put_prop("trees/round_0", pos, ang, Vector3.ONE * shrub_scale, leaf_color, true)
 
 
 func _build_open_arm_surface(arm: String, arm_len: float) -> void:
@@ -908,7 +945,7 @@ func _build_quadrant_sidewalks() -> void:
 		lawn.position = Vector3(sx * (outer + extent * 0.5), 0.15, sz * (outer + extent * 0.5))
 		ground_root.add_child(lawn)
 
-		if not _is_rural_junction() and not _is_highway_junction():
+		if not _is_rural_junction() and not _is_highway_junction() and not _is_suburban_junction() and not _is_roundabout():
 			# Lawn border curbs with openings for pedestrian pathway (14.5-17.5m) and courtyard driveway (29.9-34.1m)
 			var curb_x1 := _box(Vector3(0.18, 0.18, 3.1), curb_mat)
 			curb_x1.position = Vector3(sx * (outer - 0.09), 0.10, sz * 12.95)
@@ -957,6 +994,14 @@ func _build_quadrant_sidewalks() -> void:
 
 			_build_bench(Vector3(sx * 17.5, 0.155, sz * 22.0), atan2(-sx, 0.0), decor_root)
 			_build_bench(Vector3(sx * 22.0, 0.155, sz * 17.5), atan2(0.0, -sz), decor_root)
+		elif _is_suburban_junction() or _is_roundabout():
+			var curb_x := _box(Vector3(0.18, 0.18, extent), curb_mat)
+			curb_x.position = Vector3(sx * (outer - 0.09), 0.10, sz * (outer + extent * 0.5))
+			ground_root.add_child(curb_x)
+
+			var curb_lawn_z := _box(Vector3(extent, 0.18, 0.18), curb_mat)
+			curb_lawn_z.position = Vector3(sx * (outer + extent * 0.5), 0.10, sz * (outer - 0.09))
+			ground_root.add_child(curb_lawn_z)
 
 
 func _crossing_exit(p: Vector2, corner: Vector2) -> bool:
@@ -1047,11 +1092,22 @@ func _build_roundabout_markings() -> void:
 	var ring_root := Node3D.new()
 	ring_root.name = "RoundaboutMarkings"
 	markings_root.add_child(ring_root)
-	var radius := 8.1
+
+	# 1. Solid circular border 1.1 along truck apron perimeter at R = 5.62m
+	var apron_count := 36
+	for i in apron_count:
+		var angle := float(i) * TAU / float(apron_count)
+		var seg := _quad(Vector2(0.14, 0.98), marking_mat)
+		seg.position = Vector3(sin(angle) * 5.62, 0.025, cos(angle) * 5.62)
+		seg.rotation.y = angle + PI * 0.5
+		ring_root.add_child(seg)
+
+	# 2. Dashed lane divider 1.5 separating circulation lanes at R = 8.5m
+	var radius := 8.5
 	var count := 24
 	for i in count:
 		var angle := float(i) * TAU / float(count)
-		var dash := _quad(Vector2(0.15, 1.0), marking_mat)
+		var dash := _quad(Vector2(0.14, 1.1), marking_mat)
 		dash.position = Vector3(sin(angle) * radius, 0.025, cos(angle) * radius)
 		dash.rotation.y = angle + PI * 0.5
 		ring_root.add_child(dash)
@@ -1077,60 +1133,139 @@ func _build_arm_markings(arm: String) -> void:
 		return
 
 	if arm != closed_side:
-		# 1.12 is required by STOP/signal control, never by an equal junction
-		# or by a yield sign alone (GOST R 52289, 6.2.14).
-		if _has_stop_control(arm):
-			var stop_line := _quad(Vector2(HALF_ROAD - 0.2, 0.4), marking_mat)
-			stop_line.name = "StopLine"
-			stop_line.position = Vector3(HALF_ROAD * 0.5, 0.025, STOP_DIST if _has_signal(arm) else STOP_SIGN_DIST)
-			arm_root.add_child(stop_line)
-		elif _has_sign(arm, "2.4"):
-			# 1.13 gives the actual yielding boundary at the intersecting road,
-			# beyond the pedestrian crossing; it must not resemble a stop line.
-			var vertices := PackedVector3Array()
-			var indices := PackedInt32Array()
-			var z_base := 10.0 if _is_roundabout() else (HALF_ROAD + 0.15)
-			var z_apex := 10.4 if _is_roundabout() else (HALF_ROAD + 0.55)
-			for i in 11:
-				var x := 0.45 + float(i) * 0.6
-				var start := vertices.size()
-				vertices.append_array(PackedVector3Array([Vector3(x - 0.2, 0.025, z_base), Vector3(x + 0.2, 0.025, z_base), Vector3(x, 0.025, z_apex)]))
-				indices.append_array(PackedInt32Array([start, start + 1, start + 2]))
-			var yield_line := _surface(vertices, indices, marking_mat)
-			yield_line.name = "YieldLine"
-			arm_root.add_child(yield_line)
+		if _is_roundabout():
+			# 1. Splitter Island with 1.16.1 chevron markings (разделительный островок)
+			# Separates entering traffic (+X) from exiting traffic (-X) between z = 10.5m and z = 18.0m
+			var island_z_near := 10.5
+			var island_z_far := 18.0
+			var island_hw := 0.75
 
-		var line_start := 10.0 if _is_roundabout() else (ZEBRA_END + 0.25 if _has_crossing(arm) else HALF_ROAD + 0.8)
-		var line_len := ROAD_EXTENT - line_start
+			var base_line := _quad(Vector2(island_hw * 2.0, 0.14), marking_mat)
+			base_line.position = Vector3(0.0, 0.025, island_z_near)
+			arm_root.add_child(base_line)
 
-		if _is_rural_junction():
-			# On rural 2-lane asphalt highway: single clean centerline (solid 1.1 near junction, dashed 1.5 further out).
-			# NO 4-lane city double solid lines, NO side lane dividers!
-			var solid_len := minf(line_len, 24.0)
-			var solid := _quad(Vector2(0.12, solid_len), marking_mat)
-			solid.position = Vector3(0.0, 0.022, line_start + solid_len * 0.5)
-			arm_root.add_child(solid)
+			var diag_len := Vector2(island_hw, island_z_far - island_z_near).length()
+			var diag_ang := atan2(island_hw, island_z_far - island_z_near)
+			var left_border := _quad(Vector2(0.14, diag_len), marking_mat)
+			left_border.position = Vector3(-island_hw * 0.5, 0.025, (island_z_near + island_z_far) * 0.5)
+			left_border.rotation.y = diag_ang
+			arm_root.add_child(left_border)
 
-			var dash_start := line_start + solid_len + 2.0
-			var z := dash_start
-			while z + 2.0 < ROAD_EXTENT:
-				var dash := _quad(Vector2(0.12, 2.0), marking_mat)
-				dash.position = Vector3(0.0, 0.022, z + 1.0)
-				arm_root.add_child(dash)
-				z += 6.0
-		else:
-			# Standard urban/suburban 4-lane street: 1.3 double solid center and 1.5 lane dividers
+			var right_border := _quad(Vector2(0.14, diag_len), marking_mat)
+			right_border.position = Vector3(island_hw * 0.5, 0.025, (island_z_near + island_z_far) * 0.5)
+			right_border.rotation.y = -diag_ang
+			arm_root.add_child(right_border)
+
+			# Chevrons inside the splitter island (marking 1.16.1)
+			for cz: float in [12.0, 13.5, 15.0, 16.5]:
+				var t: float = (cz - island_z_near) / (island_z_far - island_z_near)
+				var cur_w: float = island_hw * (1.0 - t) * 1.6
+				if cur_w > 0.2:
+					var chev_l := _quad(Vector2(0.10, cur_w * 0.8), marking_mat)
+					chev_l.position = Vector3(-cur_w * 0.2, 0.025, cz)
+					chev_l.rotation.y = PI * 0.25
+					arm_root.add_child(chev_l)
+
+					var chev_r := _quad(Vector2(0.10, cur_w * 0.8), marking_mat)
+					chev_r.position = Vector3(cur_w * 0.2, 0.025, cz)
+					chev_r.rotation.y = -PI * 0.25
+					arm_root.add_child(chev_r)
+
+			# 2. Curved 1.13 Yield Line along the entry mouth (R = 12.0m arc)
+			if _has_sign(arm, "2.4"):
+				var vertices := PackedVector3Array()
+				var indices := PackedInt32Array()
+				for i in 8:
+					var x := 1.2 + float(i) * 0.65
+					var arc_z := sqrt(maxf(1.0, 144.0 - x * x)) - 0.2
+					var norm := Vector2(-x, -arc_z).normalized()
+					var tang := Vector2(arc_z, -x).normalized()
+					var base_center := Vector2(x, arc_z)
+					var p_bl := base_center - tang * 0.18
+					var p_br := base_center + tang * 0.18
+					var p_ap := base_center + norm * 0.42
+					var start_idx := vertices.size()
+					vertices.append_array(PackedVector3Array([
+						Vector3(p_bl.x, 0.025, p_bl.y),
+						Vector3(p_br.x, 0.025, p_br.y),
+						Vector3(p_ap.x, 0.025, p_ap.y)
+					]))
+					indices.append_array(PackedInt32Array([start_idx, start_idx + 1, start_idx + 2]))
+				var yield_line := _surface(vertices, indices, marking_mat)
+				yield_line.name = "YieldLine"
+				arm_root.add_child(yield_line)
+
+			# 3. Beyond the splitter island (z >= 18.0m): Double solid centerline
+			var solid_start := island_z_far
+			var solid_len := ROAD_EXTENT - solid_start
 			for offset in [-0.12, 0.12]:
-				var solid := _quad(Vector2(0.12, line_len), marking_mat)
-				solid.position = Vector3(offset, 0.022, line_start + line_len * 0.5)
+				var solid := _quad(Vector2(0.12, solid_len), marking_mat)
+				solid.position = Vector3(offset, 0.022, solid_start + solid_len * 0.5)
 				arm_root.add_child(solid)
-			var z := line_start
+
+			# Lane dividers further out
+			var z := 13.0
 			while z + 2.0 < ROAD_EXTENT:
 				for x in [-LANE_W, LANE_W]:
 					var dash := _quad(Vector2(0.12, 2.0), marking_mat)
 					dash.position = Vector3(x, 0.022, z + 1.0)
 					arm_root.add_child(dash)
 				z += 6.0
+		else:
+			# 1.12 is required by STOP/signal control, never by an equal junction
+			# or by a yield sign alone (GOST R 52289, 6.2.14).
+			if _has_stop_control(arm):
+				var stop_line := _quad(Vector2(HALF_ROAD - 0.2, 0.4), marking_mat)
+				stop_line.name = "StopLine"
+				stop_line.position = Vector3(HALF_ROAD * 0.5, 0.025, STOP_DIST if _has_signal(arm) else STOP_SIGN_DIST)
+				arm_root.add_child(stop_line)
+			elif _has_sign(arm, "2.4"):
+				# 1.13 gives the actual yielding boundary at the intersecting road,
+				# beyond the pedestrian crossing; it must not resemble a stop line.
+				var vertices := PackedVector3Array()
+				var indices := PackedInt32Array()
+				var z_base := HALF_ROAD + 0.15
+				var z_apex := HALF_ROAD + 0.55
+				for i in 11:
+					var x := 0.45 + float(i) * 0.6
+					var start := vertices.size()
+					vertices.append_array(PackedVector3Array([Vector3(x - 0.2, 0.025, z_base), Vector3(x + 0.2, 0.025, z_base), Vector3(x, 0.025, z_apex)]))
+					indices.append_array(PackedInt32Array([start, start + 1, start + 2]))
+				var yield_line := _surface(vertices, indices, marking_mat)
+				yield_line.name = "YieldLine"
+				arm_root.add_child(yield_line)
+
+			var line_start := ZEBRA_END + 0.25 if _has_crossing(arm) else HALF_ROAD + 0.8
+			var line_len := ROAD_EXTENT - line_start
+
+			if _is_rural_junction():
+				# On rural 2-lane asphalt highway: single clean centerline (solid 1.1 near junction, dashed 1.5 further out).
+				# NO 4-lane city double solid lines, NO side lane dividers!
+				var solid_len := minf(line_len, 24.0)
+				var solid := _quad(Vector2(0.12, solid_len), marking_mat)
+				solid.position = Vector3(0.0, 0.022, line_start + solid_len * 0.5)
+				arm_root.add_child(solid)
+
+				var dash_start := line_start + solid_len + 2.0
+				var z := dash_start
+				while z + 2.0 < ROAD_EXTENT:
+					var dash := _quad(Vector2(0.12, 2.0), marking_mat)
+					dash.position = Vector3(0.0, 0.022, z + 1.0)
+					arm_root.add_child(dash)
+					z += 6.0
+			else:
+				# Standard urban/suburban 4-lane street: 1.3 double solid center and 1.5 lane dividers
+				for offset in [-0.12, 0.12]:
+					var solid := _quad(Vector2(0.12, line_len), marking_mat)
+					solid.position = Vector3(offset, 0.022, line_start + line_len * 0.5)
+					arm_root.add_child(solid)
+				var z := line_start
+				while z + 2.0 < ROAD_EXTENT:
+					for x in [-LANE_W, LANE_W]:
+						var dash := _quad(Vector2(0.12, 2.0), marking_mat)
+						dash.position = Vector3(x, 0.022, z + 1.0)
+						arm_root.add_child(dash)
+					z += 6.0
 	if _has_crossing(arm): _build_crossing(arm_root)
 
 

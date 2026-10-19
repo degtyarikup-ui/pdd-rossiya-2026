@@ -329,11 +329,12 @@ func _build_trajectory() -> void:
 	var maneuver: String = data.get("maneuver", "straight")
 	if data.has("waypoints") and (data["waypoints"] as Array).size() >= 2:
 		var wp: Array = data["waypoints"]
+		var pts: Array[Vector3] = []
 		for pt in wp:
-			path_curve.add_point(Vector3(float(pt[0]), 0, float(pt[1])))
-		var n: int = wp.size()
-		var p_prev := Vector3(float(wp[n-2][0]), 0, float(wp[n-2][1]))
-		var p_last := Vector3(float(wp[n-1][0]), 0, float(wp[n-1][1]))
+			pts.append(Vector3(float(pt[0]), 0, float(pt[1])))
+		var n: int = pts.size()
+		var p_prev := pts[n-2]
+		var p_last := pts[n-1]
 		var exit_dir := (p_last - p_prev).normalized()
 		var exit_end := Vector3.ZERO
 		if absf(exit_dir.z) > absf(exit_dir.x):
@@ -341,7 +342,19 @@ func _build_trajectory() -> void:
 		else:
 			exit_end = Vector3(EXIT_DIST, 0, 5.4) if exit_dir.x > 0.0 else Vector3(-EXIT_DIST, 0, -5.4)
 		if exit_end != Vector3.ZERO and p_last.distance_to(exit_end) > 1.0:
-			path_curve.add_point(exit_end)
+			pts.append(exit_end)
+			n = pts.size()
+		for i in n:
+			var tangent := Vector3.ZERO
+			if i == 0:
+				tangent = (pts[1] - pts[0]) * 0.35
+				path_curve.add_point(pts[i], Vector3.ZERO, tangent)
+			elif i == n - 1:
+				tangent = (pts[n - 1] - pts[n - 2]) * 0.35
+				path_curve.add_point(pts[i], -tangent, Vector3.ZERO)
+			else:
+				tangent = (pts[i + 1] - pts[i - 1]) * 0.25
+				path_curve.add_point(pts[i], -tangent, tangent)
 		path_length = path_curve.get_baked_length()
 		_turn_end_distance = minf(35.0, path_length * 0.35)
 		var is_bike := str(data.get("type", "")) in ["bicycle", "cyclist"]
@@ -523,11 +536,16 @@ func _process_drive(delta: float) -> void:
 			_stop_done = true
 	drive_progress = offset / path_length
 	position = path_curve.sample_baked(offset)
-	var next := path_curve.sample_baked(minf(path_length, offset + 0.3))
+	var next := path_curve.sample_baked(minf(path_length, offset + 0.35))
 	var direction := next - position
 	if direction.length_squared() > 0.0001:
-		var yaw := atan2(direction.x, direction.z)
-		rotation.y = PI if is_equal_approx(absf(yaw), PI) else yaw
+		var target_yaw := atan2(direction.x, direction.z)
+		if is_equal_approx(absf(target_yaw), PI):
+			target_yaw = PI
+		if drive_progress < 0.02:
+			rotation.y = target_yaw
+		else:
+			rotation.y = lerp_angle(rotation.y, target_yaw, minf(1.0, delta * 20.0))
 	if _signals != null and offset >= _turn_end_distance:
 		_signals.set_side("")
 	if not _cleared_emitted and has_cleared_junction():
@@ -717,6 +735,26 @@ static func _draw_maneuver(img: Image, maneuver: String, col: Color, arrow_angle
 			for i in range(pts.size() - 1):
 				_draw_thick_seg(img, _rot_pt(pts[i], arrow_angle), _rot_pt(pts[i+1], arrow_angle), 8.0, col)
 			_fill_tri(img, _rot_pt(Vector2(108, 150), arrow_angle), _rot_pt(Vector2(84, 118), arrow_angle), _rot_pt(Vector2(132, 118), arrow_angle), col)
+		"circle", "roundabout":
+			var center := Vector2(128, 104)
+			var r := 38.0
+			var segs := 18
+			var start_ang := -PI * 0.25
+			var end_ang := PI * 1.3
+			for i in segs:
+				var a1 := lerpf(start_ang, end_ang, float(i) / float(segs))
+				var a2 := lerpf(start_ang, end_ang, float(i + 1) / float(segs))
+				var p1 := center + Vector2(cos(a1), sin(a1)) * r
+				var p2 := center + Vector2(cos(a2), sin(a2)) * r
+				_draw_thick_seg(img, _rot_pt(p1, arrow_angle), _rot_pt(p2, arrow_angle), 8.0, col)
+			var tip_ang := end_ang
+			var tip_pt := center + Vector2(cos(tip_ang), sin(tip_ang)) * r
+			var tangent := Vector2(-sin(tip_ang), cos(tip_ang)).normalized()
+			var normal := Vector2(cos(tip_ang), sin(tip_ang)).normalized()
+			var t1 := tip_pt + tangent * 16.0
+			var t2 := tip_pt - tangent * 10.0 + normal * 12.0
+			var t3 := tip_pt - tangent * 10.0 - normal * 12.0
+			_fill_tri(img, _rot_pt(t1, arrow_angle), _rot_pt(t2, arrow_angle), _rot_pt(t3, arrow_angle), col)
 		"cross":
 			var hx := 128.0; var hy := 68.0; var hr := 13.0
 			for y in range(int(hy - hr), int(hy + hr + 1)):
