@@ -150,6 +150,7 @@ ACCOUNT_ISOLATION_JS = r"""// Explicit account-login preview. Same account backe
   const apiOrigins = new Set(['https://pdd-install-notifier.sergei-pdd.workers.dev', 'https://api.pdd-drive.app']);
   const apiMethods = new Map([
     ['/api/auth/session', 'POST'], ['/api/auth/logout', 'POST'],
+    ['/api/auth/telegram/request', 'POST'], ['/api/auth/telegram/check', 'POST'],
     ['/api/user/status', 'GET'], ['/api/user/sync', 'POST'],
     ['/api/user/progress', 'GET'], ['/api/user/progress/sync', 'POST'],
   ]);
@@ -172,7 +173,25 @@ ACCOUNT_ISOLATION_JS = r"""// Explicit account-login preview. Same account backe
       return url.origin==='https://accounts.google.com' && path.startsWith('/gsi/') && ['GET','POST'].includes(method);
     } catch (_) {return false;}
   };
+  const permitsTelegramNavigation = value => {
+    try {
+      const url=new URL(value,document.baseURI);
+      if(url.username || url.password || url.port || url.hash)return false;
+      const fields=[...url.searchParams.entries()];
+      const start=url.searchParams.get('start');
+      if(!/^auth_[a-f0-9]{32}$/.test(start || ''))return false;
+      if(url.protocol==='https:' && url.hostname==='t.me' && url.pathname==='/pdda_bot') {
+        return fields.length===1 && fields[0][0]==='start';
+      }
+      if(url.protocol==='tg:' && url.hostname==='resolve' && url.pathname==='') {
+        return fields.length===2 && url.searchParams.getAll('domain').length===1 &&
+          url.searchParams.get('domain')==='pdda_bot' && url.searchParams.getAll('start').length===1;
+      }
+      return false;
+    } catch (_) {return false;}
+  };
   const permitsNavigation = value => {
+    if(permitsTelegramNavigation(value))return true;
     try {
       const {url,path}=parse(value);
       if(url.origin===location.origin)return permitsTransport(value,'GET');

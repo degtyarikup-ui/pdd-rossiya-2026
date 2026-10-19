@@ -15,6 +15,10 @@ Worker `pdd-domain-migration-preview` получает только ASSETS; ос
 | Яндекс | `94aa539db4634e44bf0b209d9a2205d2` | `https://pdd-drive.app/app/yandex-auth.html` и тот же URI с `?flow=redirect` |
 | Apple | Services ID `ru.pdd.pddapp.auth`, primary App ID `ru.pdd.pddApp` | Domain `pdd-drive.app`, Return URL `https://pdd-drive.app/auth/apple/callback` |
 
+Telegram использует прежнего бота `pdda_bot`, две существующие операции
+`/api/auth/telegram/request` и `/api/auth/telegram/check` и одноразовую ссылку;
+нового бота/вебхука на `.app` не создаём.
+
 Google остаётся GIS TokenClient с прежними scopes. Яндекс вычисляет callback
 относительно текущей вкладки. Apple выбирает новый фиксированный callback только
 на точном HTTPS origin `pdd-drive.app`; остальные сборки сохраняют старый URL.
@@ -43,7 +47,7 @@ python3 tools/domain_migration/prepare_preview_host.py \
 без основного server/install-notifier/wrangler.toml.
 
 Этот режим разрешает браузеру существующие auth/session/logout, user/status,
-user/sync и user/progress/sync/read на двух прежних API origins. Это **реальные
+user/sync и user/progress/sync/read, а также две операции Telegram на двух прежних API origins. Это **реальные
 аккаунты и облачный прогресс**, поэтому режим не является закрытым стендом
 восстановления. Действия после входа синхронизируются с рабочими аккаунтами.
 Оплата, удаление аккаунта, аналитика и прочие API в тестовой копии заблокированы.

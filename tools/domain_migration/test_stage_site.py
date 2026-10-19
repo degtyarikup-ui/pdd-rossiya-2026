@@ -244,6 +244,60 @@ vm.runInNewContext(GUARD,context);
         self.assertTrue(data["mode"])
 
     @unittest.skipUnless(shutil.which("node"), "Node is needed for exercising browser transport guards")
+    def test_account_telegram_guard_allows_only_existing_post_endpoints_and_exact_bot_links(self):
+        harness = r'''
+const vm=require('node:vm');const sent=[];const events={};
+class XHR{open(method,url){sent.push(['xhr',method,url]);}}
+const context={URL,DOMException,location:{origin:'https://pdd-drive.app'},document:{baseURI:'https://pdd-drive.app/app/',addEventListener:(name,fn)=>events[name]=fn},navigator:{},XMLHttpRequest:XHR};
+context.window=context;context.fetch=(...args)=>{sent.push(['fetch',...args]);return Promise.resolve('synthetic');};
+context.open=(...args)=>{sent.push(['open',...args]);return 'opened';};
+vm.runInNewContext(GUARD,context);
+(async()=>{
+ let allowed=0,denied=0;
+ for(const origin of ['https://api.pdd-drive.app','https://pdd-install-notifier.sergei-pdd.workers.dev']){
+  for(const path of ['/api/auth/telegram/request','/api/auth/telegram/check']){
+   await context.fetch(origin+path,{method:'POST'});allowed++;
+   new XHR().open('POST',origin+path);allowed++;
+   for(const method of ['GET','HEAD','PUT','DELETE'])try{await context.fetch(origin+path,{method});}catch(_){denied++;}
+   for(const suffix of ['/','/extra'])try{await context.fetch(origin+path+suffix,{method:'POST'});}catch(_){denied++;}
+  }
+ }
+ const nonce='auth_'+'a'.repeat(32);
+ const valid=['https://t.me/pdda_bot?start='+nonce,'tg://resolve?domain=pdda_bot&start='+nonce,'tg://resolve?start='+nonce+'&domain=pdda_bot'];
+ for(const url of valid){
+  if(context.open(url)!=='opened')throw Error('valid bot navigation blocked');
+  let prevented=false;events.click({target:{closest:()=>({href:url})},preventDefault(){prevented=true;},stopImmediatePropagation(){}});
+  if(prevented)throw Error('valid bot link blocked');
+ }
+ const invalid=[
+  'http://t.me/pdda_bot?start='+nonce,'https://t.me:8443/pdda_bot?start='+nonce,
+  'https://user@t.me/pdda_bot?start='+nonce,'https://t.me.evil.test/pdda_bot?start='+nonce,
+  'https://evil.t.me/pdda_bot?start='+nonce,'https://t.me/other_bot?start='+nonce,
+  'https://t.me/pdda_bot/?start='+nonce,'https://t.me/pdda_bot?start='+nonce+'&extra=1',
+  'https://t.me/pdda_bot?start='+nonce+'&start='+nonce,'https://t.me/pdda_bot?start='+nonce+'#extra',
+  'https://t.me/pdda_bot?start=auth_'+'a'.repeat(31),'https://t.me/pdda_bot?start=auth_'+'A'.repeat(32),
+  'tg://resolve?domain=other_bot&start='+nonce,'tg://resolve/?domain=pdda_bot&start='+nonce,
+  'tg://resolve?domain=pdda_bot&start='+nonce+'&extra=1','tg://resolve?domain=pdda_bot&domain=pdda_bot&start='+nonce,
+  'tg://resolve?domain=pdda_bot&start='+nonce+'&start='+nonce,'tg://other?domain=pdda_bot&start='+nonce,
+  'tg:resolve?domain=pdda_bot&start='+nonce,'tg://user@resolve?domain=pdda_bot&start='+nonce,
+ ];let navigationDenied=0;
+ for(const url of invalid){
+  if(context.open(url)!==null)throw Error('invalid bot navigation allowed: '+url);
+  let prevented=false;events.click({target:{closest:()=>({href:url})},preventDefault(){prevented=true;},stopImmediatePropagation(){}});
+  if(!prevented)throw Error('invalid bot link allowed');navigationDenied++;
+ }
+ for(const url of valid)try{await context.fetch(url);}catch(_){denied++;}
+ process.stdout.write(JSON.stringify({allowed,denied,navigationDenied,sent}));
+})();
+'''
+        result = subprocess.run([shutil.which("node"), "-e", "const GUARD=" + json.dumps(stage.ACCOUNT_ISOLATION_JS) + ";\n" + harness], text=True, capture_output=True, check=True)
+        data = json.loads(result.stdout)
+        self.assertEqual(data["allowed"], 8)
+        self.assertEqual(data["denied"], 27)
+        self.assertEqual(data["navigationDenied"], 20)
+        self.assertEqual(len(data["sent"]), 11)
+
+    @unittest.skipUnless(shutil.which("node"), "Node is needed for exercising browser transport guards")
     def test_runtime_guards_allow_assets_but_block_all_production_transports(self):
         harness = r'''
 const vm = require('node:vm');
@@ -265,6 +319,8 @@ vm.runInNewContext(GUARD,context);
  const attempts = [
    ['https://api.pdd-drive.app/api/user/status',{}],
    ['https://pdd-install-notifier.sergei-pdd.workers.dev/api/track',{method:'POST'}],
+   ['https://api.pdd-drive.app/api/auth/telegram/request',{method:'POST'}],
+   ['https://pdd-install-notifier.sergei-pdd.workers.dev/api/auth/telegram/check',{method:'POST'}],
    ['/api/pay/lead',{}], ['/api',{}], ['/%61pi/user/status',{}],
    ['/__staging_disabled__/api/auth/yandex/start',{}],
    ['/assets/config.json',{method:'POST'}],
@@ -278,6 +334,7 @@ vm.runInNewContext(GUARD,context);
  try{new context.EventSource('https://api.pdd-drive.app')}catch(e){denied++}
  if(context.navigator.sendBeacon('https://api.pdd-drive.app/x')!==false)throw Error('beacon');
  if(context.open('https://oauth.yandex.ru')!==null)throw Error('popup');
+ for(const url of ['https://t.me/pdda_bot?start=auth_'+'a'.repeat(32),'tg://resolve?domain=pdda_bot&start=auth_'+'a'.repeat(32)])if(context.open(url)!==null)throw Error('guest telegram popup');
  let prevented=0;
  events.click({target:{closest:()=>({href:'https://pdd-drive.ru/tarify/'})},preventDefault(){prevented++},stopImmediatePropagation(){}});
  events.submit({preventDefault(){prevented++},stopImmediatePropagation(){}});
@@ -287,7 +344,7 @@ vm.runInNewContext(GUARD,context);
         program = "const GUARD=" + json.dumps(stage.ISOLATION_JS) + ";\n" + harness
         result = subprocess.run([shutil.which("node"), "-e", program], text=True, capture_output=True, check=True)
         data = json.loads(result.stdout)
-        self.assertEqual(data["denied"], 11)
+        self.assertEqual(data["denied"], 13)
         self.assertEqual(data["prevented"], 2)
         self.assertEqual(data["sent"], [["fetch", "/app/canvaskit/canvaskit.wasm", "GET"]])
 
