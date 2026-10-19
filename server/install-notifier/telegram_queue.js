@@ -1,4 +1,5 @@
 import { processTelegramMessageUpdate } from './support_chat.js';
+import { isBackupRequest, handleBackupExport } from './durable_backup.js';
 import { isReportPhotoUrl } from './report_questions.js';
 import { buildIncidentMessage } from './diagnostics.js';
 import { setupTelegramTopics } from './telegram_topics.js';
@@ -77,6 +78,7 @@ export class TelegramQueue {
   }
   fetch(request) {
     return this.serial(async () => {
+      if (isBackupRequest(request)) return handleBackupExport(request, { state: this.state, env: this.env, className: 'TelegramQueue' });
       if (new URL(request.url).pathname === '/incident') return this.enqueueIncident(await request.json());
       if (new URL(request.url).pathname === '/export-command') return Response.json({ handled: await this.handleExportUpdate(await request.json()) });
       if (new URL(request.url).pathname === '/poll-commands') return Response.json(await this.pollErrorCommands());

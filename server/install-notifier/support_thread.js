@@ -1,12 +1,14 @@
+import { isBackupRequest, handleBackupExport } from './durable_backup.js';
 // The support messages of one client, strongly consistent: a reply written by the Telegram
 // webhook is read at once by the app. Workers KV is eventually consistent (a write may be
 // read from another location up to a minute later), so the messages are kept here.
 const MAX_MESSAGES = 200;
 
 export class SupportThread {
-  constructor(state) { this.state = state; }
+  constructor(state, env) { this.state = state; this.env = env; }
 
   async fetch(request) {
+    if (isBackupRequest(request)) return handleBackupExport(request, { state: this.state, env: this.env, className: 'SupportThread' });
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/append') {
       const msg = await request.json();

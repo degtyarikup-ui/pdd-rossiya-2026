@@ -42,6 +42,7 @@ Apple — разные аккаунты.
 | `server/install-notifier/store_verification.js`, `purchase_claims.js` | Проверка чеков сторов |
 | `docs/premium/web-payments-launch.md` | Запуск веб-оплаты, секреты, устройство |
 | `docs/premium/account-state-rollout.md` | DO миграция, контракты безопасности и порядок выпуска |
+| `docs/ops/account-backup-rehearsal.md` | Защищённые копии DO/KV и закрытая репетиция восстановления перед сменой домена |
 | `docs/premium/web-auth.md` | Веб-вход |
 | `docs/premium/api-fallback.md` | Запасной адрес сервера и повторы входа |
 | `docs/premium/error-messages.md` | Тексты ошибок для пользователя и сообщения в Telegram |
