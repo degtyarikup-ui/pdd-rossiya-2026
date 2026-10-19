@@ -130,8 +130,8 @@ godot --path game_godot -- --situation=ticket_10_13 --auto --near   # один �
 godot --headless --path game_godot --script res://tests/regulator_check.gd # регулировщик: правила, экономика, UI, рестарты
 godot --headless --path game_godot --script res://tests/regulator_performance_check.gd # регулировщик: профили телефона, адаптация, разрешение UI и повторный вход
 godot --headless --path game_godot --script res://tests/regulator_atmosphere_check.gd # регулировщик: стабильная погода без лишних обновлений рендера и переходы
-godot --headless --path game_godot --script res://tests/crossroads_check.gd # разъезд на перекрёстках: 27 сценариев, ПДД, траектории, UI
-godot --headless --path game_godot --script res://tests/crossroads_play_check.gd # все 27 задач: проезд, фокус, камера, таймер, повтор и мультитач
+godot --headless --path game_godot --script res://tests/crossroads_check.gd # разъезд на перекрёстках: 50 сценариев (6 категорий), режимы Блиц и Тренировка, ПДД, траектории, UI
+godot --headless --path game_godot --script res://tests/crossroads_play_check.gd # все 50 задач: проезд, фокус, камера, таймер, повтор и мультитач
 godot --headless --path game_godot --script res://tests/crossroads_camera_check.gd # ограничение zoom и прозрачность только закрывающих обзор зданий; также native
 godot --headless --path game_godot --script res://tests/crossroads_routes_check.gd # реальные кузова, полосы, остановка у 2.5 и экранный размер кнопок
 godot --headless --path game_godot --script res://tests/crossroads_world_check.gd # все знаки/дубли, переходы, стоп-линии, рельсы, сезонные материалы
