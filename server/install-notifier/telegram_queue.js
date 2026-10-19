@@ -1,3 +1,4 @@
+import { processTelegramMessageUpdate } from './support_chat.js';
 import { isReportPhotoUrl } from './report_questions.js';
 import { buildIncidentMessage } from './diagnostics.js';
 import { setupTelegramTopics } from './telegram_topics.js';
@@ -39,13 +40,26 @@ export async function getTopicThreadId(env, topic, fallback = null) {
   return fallback;
 }
 
-// Крон проверяет команды выгрузки. Тот же экземпляр очереди, что и у алертов:
+// Резервный опрос без webhook. Тот же экземпляр очереди, что и у алертов:
 // журнал и отправка идут через одну сериализованную очередь.
 export async function pollErrorCommands(env) {
   if (!env?.TELEGRAM || !env.BOT_TOKEN || !env.CHAT_ID) return null;
   const stub = env.TELEGRAM.get(env.TELEGRAM.idFromName(String(env.CHAT_ID)));
   const response = await stub.fetch('https://telegram/poll-commands', { method: 'POST' });
   return response.ok ? response.json() : null;
+}
+
+// Webhook and polling share the log-owning DO and its serial command handler.
+export async function handleErrorExportUpdate(env, update) {
+  if (!env?.TELEGRAM || !parseExportCommand(update?.message?.text)) return false;
+  // Keep the storage identity used by diagnostics, including pre-migration
+  // group IDs. Only the outgoing Telegram destination is normalized.
+  const stub = env.TELEGRAM.get(env.TELEGRAM.idFromName(String(env.CHAT_ID)));
+  const response = await stub.fetch('https://telegram/export-command', {
+    method: 'POST', body: JSON.stringify(update),
+  });
+  if (!response.ok) throw new Error('error export unavailable');
+  return Boolean((await response.json()).handled);
 }
 
 // Persist before acknowledging a notification. One chat is drained at a
@@ -64,6 +78,7 @@ export class TelegramQueue {
   fetch(request) {
     return this.serial(async () => {
       if (new URL(request.url).pathname === '/incident') return this.enqueueIncident(await request.json());
+      if (new URL(request.url).pathname === '/export-command') return Response.json({ handled: await this.handleExportUpdate(await request.json()) });
       if (new URL(request.url).pathname === '/poll-commands') return Response.json(await this.pollErrorCommands());
       if (new URL(request.url).pathname === '/setup-topics') {
         return setupTelegramTopics(request, this.env, (_env, text, dedupKey, options) => this.enqueue({ text, dedupKey, ...options }));
@@ -146,12 +161,17 @@ export class TelegramQueue {
       console.error('Error log write failed', error?.name || 'unknown');
     }
   }
-  // Команды из подчата ошибок. Telegram отдаёт их через getUpdates (webhook не
-  // нужен), крон опрашивает раз в 5 минут. Смещение сохраняется до обработки:
-  // команда не выполнится дважды, даже если выгрузка упадёт.
+  // Webhook is the primary path. Poll only when Telegram has no webhook;
+  // support messages must go through this same consumer, never a second offset.
   async pollErrorCommands() {
     if (!this.env.BOT_TOKEN || !this.env.CHAT_ID) return { ok: false, reason: 'not configured' };
     try {
+      const infoResponse = await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/getWebhookInfo`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      const info = await infoResponse.json().catch(() => null);
+      if (!infoResponse.ok || !info?.ok) return { ok: false, status: infoResponse.status };
+      if (info.result?.url) return { ok: true, webhook: true };
       const offset = (await this.state.storage.get('tg:offset')) || 0;
       const response = await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/getUpdates`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
@@ -162,8 +182,10 @@ export class TelegramQueue {
       if (!response.ok || !result?.ok || !Array.isArray(result.result)) return { ok: false, status: response.status };
       let handled = 0;
       for (const update of result.result) {
+        if (await this.handleExportUpdate(update)) handled++;
+        else await processTelegramMessageUpdate(update.message, this.env);
+        // A failed export leaves the offset unchanged so the command can retry.
         await this.state.storage.put('tg:offset', update.update_id + 1);
-        if (await this.handleErrorCommand(update.message)) handled++;
       }
       return { ok: true, updates: result.result.length, handled };
     } catch (error) {
@@ -171,9 +193,17 @@ export class TelegramQueue {
       return { ok: false, reason: 'poll failed' };
     }
   }
+  async handleExportUpdate(update) {
+    if (!Number.isSafeInteger(update?.update_id) || update.update_id < 0) return false;
+    const completed = await this.state.storage.get('export:completed') || [];
+    if (completed.includes(update.update_id)) return true;
+    const handled = await this.handleErrorCommand(update.message);
+    if (handled) await this.state.storage.put('export:completed', [...completed.slice(-127), update.update_id]);
+    return handled;
+  }
   async handleErrorCommand(message) {
     const mode = parseExportCommand(message?.text);
-    if (!mode || String(message.chat?.id) !== telegramChatId(this.env)) return false;
+    if (!mode || message.from?.is_bot || String(message.chat?.id) !== telegramChatId(this.env)) return false;
     const now = Date.now();
     if (now - Number(message.date || 0) * 1000 > EXPORT_COMMAND_MAX_AGE_MS) return false;
     const errorsThread = await getTopicThreadId(this.env, 'errors');
@@ -214,10 +244,12 @@ export class TelegramQueue {
   async sendBotMessage(threadId, text) {
     const payload = { chat_id: telegramChatId(this.env), text, disable_web_page_preview: true };
     if (threadId) payload.message_thread_id = Number(threadId);
-    await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/sendMessage`, {
+    const response = await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/sendMessage`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload), signal: AbortSignal.timeout(10000),
     });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result?.ok) throw new Error('error export message failed');
   }
   async sendBotDocument(threadId, fileName, csv, caption) {
     const body = new FormData();
@@ -228,7 +260,8 @@ export class TelegramQueue {
     const response = await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/sendDocument`, {
       method: 'POST', body, signal: AbortSignal.timeout(30000),
     });
-    if (!response.ok) console.error('Error export upload failed', response.status);
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result?.ok) throw new Error('error export upload failed');
   }
   alarm() {
     return this.serial(async () => {

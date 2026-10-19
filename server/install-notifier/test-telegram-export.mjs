@@ -68,3 +68,158 @@ test('CSV сохраняет детали неудачной оплаты, вк�
   assert.ok(csv.includes(`${orderId};${txId};threeMonths;290;sbp;web;status;503`));
   assert.match(csv, /нет \(повтор, свёрнуто\)/);
 });
+
+import { TelegramQueue } from './telegram_queue.js';
+import { handleTelegramWebhook, handleSupportGetMessages } from './support_chat.js';
+import { telegramWebhookSecret } from './telegram_auth.js';
+
+class ExportStorage {
+  data = new Map();
+  async get(key, options) {
+    const value = this.data.get(key);
+    return options?.type === 'json' && typeof value === 'string' ? JSON.parse(value) : structuredClone(value);
+  }
+  async put(key, value) { this.data.set(key, structuredClone(value)); }
+  async delete(key) { this.data.delete(key); }
+  async list({ prefix = '', start = '', limit = Infinity } = {}) {
+    return new Map([...this.data].filter(([key]) => key.startsWith(prefix) && key >= start).sort().slice(0, limit));
+  }
+}
+function exportSetup() {
+  const storage = new ExportStorage();
+  const env = { BOT_TOKEN: 'test', CHAT_ID: '-100123', SESSION_SECRET: crypto.randomUUID(),
+    TELEGRAM_TOPIC_ERRORS: '7', INSTALLS: new ExportStorage() };
+  const queue = new TelegramQueue({ storage }, env);
+  env.TELEGRAM = { idFromName: name => name, get: () => ({ fetch: (url, options) => queue.fetch(new Request(url, options)) }) };
+  return { storage, env, queue };
+}
+const exportUpdate = (id = 42, text = '/export_day') => ({ update_id: id, message: {
+  message_id: id, text, date: Math.floor(Date.now() / 1000),
+  chat: { id: -100123 }, message_thread_id: 7, from: { id: 123 },
+} });
+async function webhookRequest(env, update, verified = true) {
+  return new Request('https://test/api/telegram/webhook', { method: 'POST',
+    headers: { 'content-type': 'application/json', ...(verified ? { 'x-telegram-bot-api-secret-token': await telegramWebhookSecret(env) } : {}) },
+    body: JSON.stringify(update) });
+}
+
+test('verified webhook exports CSV from the log-owning DO immediately and deduplicates redelivery', async () => {
+  const { env, queue } = exportSetup(), original = globalThis.fetch, calls = [];
+  await queue.logIncident({ id: 'incident-1', category: 'app', operation: 'startup.premium', code: 'timeout' }, true, Date.now());
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, body: options.body });
+    return Response.json({ ok: true });
+  };
+  try {
+    for (let i = 0; i < 2; i++) {
+      assert.equal((await handleTelegramWebhook(await webhookRequest(env, exportUpdate()), env)).status, 200);
+    }
+    assert.equal(calls.length, 1);
+    assert.match(calls[0].url, /sendDocument$/);
+    const form = calls[0].body;
+    assert.equal(form.get('chat_id'), env.CHAT_ID);
+    assert.equal(form.get('message_thread_id'), '7');
+    assert.match(form.get('caption'), /записей 1/);
+    assert.match(await form.get('document').text(), /startup\.premium;timeout/);
+  } finally { globalThis.fetch = original; }
+});
+
+test('unsigned, stale, wrong-chat and bot-authored commands never export the log', async () => {
+  const { env } = exportSetup(), original = globalThis.fetch;
+  let sends = 0;
+  globalThis.fetch = async () => { sends++; return Response.json({ ok: true }); };
+  try {
+    await handleTelegramWebhook(await webhookRequest(env, exportUpdate(), false), env);
+    const stale = exportUpdate(); stale.message.date -= 601;
+    const wrongChat = exportUpdate(); wrongChat.message.chat.id = -100999;
+    const bot = exportUpdate(); bot.message.from.is_bot = true;
+    for (const update of [stale, wrongChat, bot]) await handleTelegramWebhook(await webhookRequest(env, update), env);
+    assert.equal(sends, 0);
+  } finally { globalThis.fetch = original; }
+});
+
+test('failed export is not acknowledged and the same webhook can retry successfully', async () => {
+  const { env, queue, storage } = exportSetup(), original = globalThis.fetch;
+  await queue.logIncident({ id: 'retry', operation: 'iap.products', code: 'sdk_error' }, true, Date.now());
+  let sends = 0;
+  globalThis.fetch = async () => ++sends === 1 ? Response.json({ ok: false }, { status: 429 }) : Response.json({ ok: true });
+  try {
+    await assert.rejects(handleTelegramWebhook(await webhookRequest(env, exportUpdate()), env), /export upload failed/);
+    assert.equal(await storage.get('export:completed'), undefined);
+    assert.equal((await handleTelegramWebhook(await webhookRequest(env, exportUpdate()), env)).status, 200);
+    assert.deepEqual(await storage.get('export:completed'), [42]);
+    assert.equal(sends, 2);
+  } finally { globalThis.fetch = original; }
+});
+
+test('cron detects active webhook and does not call the incompatible getUpdates API', async () => {
+  const { queue } = exportSetup(), original = globalThis.fetch, calls = [];
+  globalThis.fetch = async url => {
+    calls.push(url);
+    return Response.json({ ok: true, result: { url: 'https://test/api/telegram/webhook' } });
+  };
+  try {
+    assert.deepEqual(await queue.pollErrorCommands(), { ok: true, webhook: true });
+    assert.equal(calls.length, 1);
+    assert.match(calls[0], /getWebhookInfo$/);
+  } finally { globalThis.fetch = original; }
+});
+
+test('without webhook one durable poll handles both exports and support replies', async () => {
+  const { queue, env, storage } = exportSetup(), original = globalThis.fetch;
+  await env.INSTALLS.put('support:thread:22', 'client-1');
+  const support = exportUpdate(43, 'Ответ оператора'); support.message.message_thread_id = 22;
+  const updates = [exportUpdate(), support];
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push(url);
+    if (url.endsWith('/getWebhookInfo')) return Response.json({ ok: true, result: { url: '' } });
+    if (url.endsWith('/getUpdates')) return Response.json({ ok: true, result: updates });
+    assert.match(url, /sendMessage$/); // Empty log explanation.
+    return Response.json({ ok: true });
+  };
+  try {
+    assert.deepEqual(await queue.pollErrorCommands(), { ok: true, updates: 2, handled: 1 });
+    assert.equal(await storage.get('tg:offset'), 44);
+    const messages = JSON.parse(await env.INSTALLS.get('support:messages:client-1'));
+    assert.equal(messages[0].text, 'Ответ оператора');
+    // The app fallback uses the same DO poll, rather than a competing offset.
+    const count = calls.length;
+    await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=client-1'), env);
+    assert.ok(calls.slice(count).some(url => url.endsWith('/getWebhookInfo')));
+    assert.equal(await env.INSTALLS.get('tg:support_offset'), undefined);
+  } finally { globalThis.fetch = original; }
+});
+
+test('polling leaves the cursor unchanged when Telegram rejects an export', async () => {
+  const { queue, storage } = exportSetup(), original = globalThis.fetch;
+  globalThis.fetch = async url => {
+    if (url.endsWith('/getWebhookInfo')) return Response.json({ ok: true, result: { url: '' } });
+    if (url.endsWith('/getUpdates')) return Response.json({ ok: true, result: [exportUpdate()] });
+    return Response.json({ ok: false }, { status: 503 });
+  };
+  try {
+    assert.deepEqual(await queue.pollErrorCommands(), { ok: false, reason: 'poll failed' });
+    assert.equal(await storage.get('tg:offset'), undefined);
+    assert.equal(await storage.get('export:completed'), undefined);
+  } finally { globalThis.fetch = original; }
+});
+
+
+test('migrated Telegram group still exports from the original log storage identity', async () => {
+  const { env, queue } = exportSetup(), original = globalThis.fetch;
+  env.CHAT_ID = '-5556420560';
+  const names = [];
+  env.TELEGRAM.idFromName = name => { names.push(name); return name; };
+  await queue.logIncident({ id: 'migration', operation: 'iap.products' }, true, Date.now());
+  const update = exportUpdate(); update.message.chat.id = -1004472386966;
+  globalThis.fetch = async (_, options) => {
+    assert.equal(options.body.get('chat_id'), '-1004472386966');
+    assert.match(await options.body.get('document').text(), /iap.products/);
+    return Response.json({ ok: true });
+  };
+  try {
+    assert.equal((await handleTelegramWebhook(await webhookRequest(env, update), env)).status, 200);
+    assert.deepEqual(names, ['-5556420560']);
+  } finally { globalThis.fetch = original; }
+});

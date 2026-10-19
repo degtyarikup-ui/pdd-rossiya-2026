@@ -1,6 +1,6 @@
 // Чат техподдержки: создание отдельной ветки (Forum Topic) в Telegram на каждого
 // пользователя, отправка сообщений и приём ответов от команды через Webhook/Updates.
-import { telegramChatId } from './telegram_queue.js';
+import { telegramChatId, handleErrorExportUpdate, pollErrorCommands } from './telegram_queue.js';
 import { processTelegramAuthMessage, telegramWebhookVerified, telegramWebhookSecret } from './telegram_auth.js';
 
 const CORS_HEADERS = {
@@ -256,6 +256,12 @@ async function checkPendingTelegramUpdates(env) {
   const isWebhookActive = env.INSTALLS ? await env.INSTALLS.get('tg:webhook_active') : null;
   if (isWebhookActive === '1') return;
 
+  if (env.TELEGRAM) {
+    // One durable consumer dispatches both exports and support replies.
+    await pollErrorCommands(env);
+    return;
+  }
+
   try {
     const offset = (env.INSTALLS ? Number(await env.INSTALLS.get('tg:support_offset')) : 0) || 0;
     const resp = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/getUpdates`, {
@@ -469,7 +475,9 @@ export async function handleTelegramWebhook(request, env) {
   }
 
   if (update?.message) {
-    const handledAuth = await processTelegramAuthMessage(update.message, env, await telegramWebhookVerified(request, env));
+    const verified = await telegramWebhookVerified(request, env);
+    if (verified && await handleErrorExportUpdate(env, update)) return jsonResponse({ ok: true });
+    const handledAuth = await processTelegramAuthMessage(update.message, env, verified);
     if (!handledAuth) {
       await processTelegramMessageUpdate(update.message, env);
     }
