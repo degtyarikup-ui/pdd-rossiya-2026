@@ -1,3 +1,4 @@
+import { isBackupRequest, handleBackupExport } from './durable_backup.js';
 import { buildUserRegistrationMessage } from './worker.js';
 import { awardGameScore, gameDailySummary, validGameRunId } from './game_scoring.js';
 
@@ -18,6 +19,7 @@ export class TrafficState {
 
   fetch(request) {
     return this.serial(async () => {
+      if (isBackupRequest(request)) return handleBackupExport(request, { state: this.state, env: this.env, className: 'TrafficState' });
       const body = await request.json();
       const { key, action } = body;
       if (!/^(counter(?::(?:by|rs|registered_users))?|game_lb:\d{4}-W\d{2})$/.test(key || '')) {

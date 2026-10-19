@@ -1,3 +1,4 @@
+import { isBackupRequest, handleBackupExport } from './durable_backup.js';
 // Analytics are accepted into durable storage before batching into KV.
 // A persisted write plan makes partial KV failures safe to retry: counters
 // are replaced with the same totals, rather than incremented a second time.
@@ -21,6 +22,7 @@ export class StatsBuffer {
   }
   fetch(request) {
     return this.serial(async () => {
+      if (isBackupRequest(request)) return handleBackupExport(request, { state: this.state, env: this.env, className: 'StatsBuffer' });
       const url = new URL(request.url);
       if (request.method !== 'POST') return new Response('not found', { status: 404 });
       if (url.pathname === '/enqueue') {

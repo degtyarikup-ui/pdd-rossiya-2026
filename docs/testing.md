@@ -16,6 +16,7 @@ flutter test                        # все тесты Flutter
 | Вход / Премиум / оплату | список из `docs/premium/README.md` + `npm run test:security` в `server/install-notifier` |
 | Экономику админки | `npm run test:economy`, `npm run test:economy:ui` из `server/install-notifier/` (Playwright + Chrome, см. `docs/admin/README.md`) |
 | Воркер | `cd server/install-notifier && npm test` и нужные `npm run test:*` |
+| Экспорт аккаунтов / восстановление | Команды и ограничения стенда в `docs/ops/account-backup-rehearsal.md`; unit, реальные обработчики и Miniflare/SQLite |
 | Игру (`game_godot/`) | тесты Godot из `game_godot/tests/`, см. `docs/game/README.md`; мини-игры (`assets/game/`) — `tools/game_tests/*.cjs` |
 | Общие студийные записи Flutter/Godot | `python3 -m unittest tools/godot_export/test_question_audio.py`, `python3 tools/godot_export/export_question_audio.py --check` |
 | Правила экзамена | `flutter test test/exam_flow_test.dart` |

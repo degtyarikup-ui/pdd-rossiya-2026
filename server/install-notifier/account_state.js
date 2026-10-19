@@ -1,3 +1,4 @@
+import { isBackupRequest, handleBackupExport } from './durable_backup.js';
 // The account Durable Object is the authority for profile, progress, purchase
 // ledger and deletion/session generation. KV is a retryable read projection.
 // Every existing account writer runs inside one globally addressed DO request;
@@ -80,7 +81,7 @@ export async function routeAccountRequest(request, env, { readSession, verifyAdm
 export class AccountState {
   constructor(state, env) { this.state = state; this.env = env; this.tail = Promise.resolve(); }
   serial(fn) { const result = this.tail.then(fn); this.tail = result.catch(() => {}); return result; }
-  fetch(request) { return this.serial(() => this.handle(request)); }
+  fetch(request) { return this.serial(() => { if (isBackupRequest(request)) return handleBackupExport(request, { state: this.state, env: this.env, className: 'AccountState' }); return this.handle(request); }); }
   alarm() { return this.serial(async () => { await this.expireRecords(); await this.flush(); }); }
   async scheduleExpiry(at) {
     const current = await this.state.storage.getAlarm?.();
