@@ -1,4 +1,6 @@
-// Reproduce the crops of Figma node 739:2533 without shipping source PNGs.
+// Reproduce the legacy portrait crops of Figma node 739:2533.
+// Current square covers are regenerated with ImageGen; this script exports
+// legacy references separately so it cannot replace them by accident.
 // NODE_PATH=<directory containing sharp> node tools/game_content/prepare_hub_covers.cjs \
 //   --source-dir <downloaded Figma PNG directory> [--output-dir <directory>]
 const fs = require('node:fs/promises');
@@ -34,7 +36,7 @@ async function main() {
     throw new Error('Usage: node tools/game_content/prepare_hub_covers.cjs --source-dir <PNG directory> [--output-dir <directory>]');
   }
   const sourceDir = path.resolve(source);
-  const outputDir = path.resolve(option(args, '--output-dir', 'assets/images/games'));
+  const outputDir = path.resolve(option(args, '--output-dir', 'output/games-hub/legacy-figma'));
   await fs.mkdir(outputDir, { recursive: true });
   let total = 0;
   for (const cover of covers) {

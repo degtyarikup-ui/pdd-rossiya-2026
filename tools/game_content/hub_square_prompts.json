@@ -1,0 +1,102 @@
+{
+  "generated_on": "2026-10-19",
+  "tool": "built-in image_gen.imagegen",
+  "intent": "Regenerate existing mini-game covers as square compositions using their original artwork as edit references.",
+  "final_dimensions": [
+    640,
+    640
+  ],
+  "postprocess": "Lanczos resize and WebP encoding only; no painting or semantic image editing outside ImageGen.",
+  "assets": [
+    {
+      "path": "assets/images/games/hub_signs.webp",
+      "stages": [
+        {
+          "reference": {
+            "git_revision": "3f260851",
+            "path": "assets/images/games/hub_signs.webp"
+          },
+          "prompt": "Use case: precise-object-edit / stylized-concept.\nAsset type: final square cover art for an existing Russian driving theory mini-game, full-bleed square 1024x1024.\nInput image 1 is the existing EDIT TARGET. Recompose this artwork into a SQUARE rather than cropping it. Preserve the same recognizable low-poly 3D style, sunny warm palette, clean modern Russian apartment parking lot, faceted green trees, parked small cars, bright blue sky. Preserve its focal concept: a beautiful thick red octagonal STOP road sign with exact white uppercase text \"STOP\", with a chunky red left-pointing arrow and a chunky bright green right-pointing arrow beneath it.\nComposition: ALL of the complete red octagon including outer rim must fit between x=24%-76% and y=16%-52%. Keep both complete arrows between x=15%-85% and y=50%-66%, leaving a small gap below the sign. Zoom the camera OUT and show more environment around these subjects. The sign and both arrows must be fully visible with ample space at their sides. Bottom 25% of the image must be natural uncluttered asphalt with subtle lighting for later UI overlay. These percentages describe an invisible safe area, do NOT draw a box, guide, frame or UI. The lower asphalt should continue naturally from the scene. \nMaterials: crisp physically plausible smooth low-poly render, light beveled edges, high quality shadows, charming game art.\nConstraints: true 1:1 image. Recreate rather than crop. Do not change the STOP text. No human figures. No captions, no extra text, no score, no interface elements, no gradients, no baked dark vignette, no rounded corners, no border, no watermark. Preserve the original scene's visual identity, do not add more signs."
+        }
+      ],
+      "webp_quality": 84
+    },
+    {
+      "path": "assets/images/games/hub_regulator.webp",
+      "stages": [
+        {
+          "reference": {
+            "git_revision": "3f260851",
+            "path": "assets/images/games/hub_regulator.webp"
+          },
+          "prompt": "Use case: identity-preserve\nAsset type: square mobile mini-game card cover, final composition 1:1, 1024 x 1024\nPrimary request: Recompose the attached existing portrait cover into a carefully designed square image for the same Russian driving game. Regenerate the scene based closely on the reference, preserving its recognizable character, warm color palette and polished low-poly 3D look.\nInput images: Image 1 is the edit target and exact visual/style reference.\nScene/backdrop: the same clean modern Russian city avenue, warm cream and orange buildings, faceted green trees, clear blue sky, softly lit by warm sunlight, road and a small orange car in distance.\nSubject: the same traffic officer in dark navy uniform and peaked cap with small silver badge, black sunglasses, white gloves and neon yellow reflective vest. He faces the viewer, raising his right arm straight up (on viewer's left), holding the same black and white striped traffic baton. Preserve that pose, uniform and sunglasses.\nComposition/framing: Pull the camera substantially back so the officer is a smaller, well framed central midshot. The COMPLETE raised arm, hand AND ENTIRE baton must be visible, with generous empty blue sky above it. Put the whole important subject inside a centered safe area from x=12% to 88% and y=16% to 68%. Baton tip around y=16%, officer's cap around y=35%, vest centered around y=51%, belt around y=68%. No subject touches any image edge. Reserve the lower 25% as calm uncluttered asphalt for app title and score; do not paint text or interface there. Composition must still read clearly if a little height is cropped from top or bottom.\nLighting/mood: welcoming warm afternoon sunlight, natural soft shadows.\nStyle/medium: polished stylized low-poly 3D illustration EXACTLY matching the reference, faceted trees and simplified handsome human character.\nConstraints: preserve the reference character and pose; keep uniform and vest colors; 1:1 square; no baked gradient, no vignette, no caption, no UI, no frame, no badge, no logo, no watermark. Do not crop the baton, hand, head or torso."
+        }
+      ],
+      "webp_quality": 85
+    },
+    {
+      "path": "assets/images/games/hub_crossroads.webp",
+      "stages": [
+        {
+          "reference": {
+            "git_revision": "3f260851",
+            "path": "assets/images/games/hub_crossroads.webp"
+          },
+          "prompt": "Use case: precise-object-edit\nAsset type: square mobile mini-game card cover, final composition 1:1, 1024 x 1024\nPrimary request: Recompose the attached existing portrait cover into a carefully designed square image for the same Russian driving game. Regenerate the scene based closely on the reference, preserving the recognizable two road signs, warm palette and polished low-poly 3D look.\nInput images: Image 1 is the edit target and exact visual/style reference.\nScene/backdrop: the same clean modern Russian intersection with warm cream and orange buildings, faceted green trees, blue sky with small clouds, a small yellow car toward the left and a green car farther back. Asphalt road through the lower part of image.\nSubject: one metal pole with the Russian 2.1 Priority Road sign above the 8.13 Direction of Main Road supplementary plate. Preserve the reference road sign designs exactly: the top sign is a yellow diamond with a thin black outline, broad white diamond border, dark outer metal edge; under it is a white horizontal rectangular plate with softly rounded corners and thin black border. Its black diagram has a THICK route rising from bottom center then curving to the RIGHT edge, and THIN branch lines from upper center and left center. Do not change the diagram into a crossroads with straight thick route.\nComposition/framing: Pull the camera back and center the COMPLETE diamond and supplementary plate. Both signs including every edge must be fully visible and fit together within a safe rectangle x=18% to 82%, y=16% to 68%. Diamond top at y=16%, diamond bottom near y=45%, plate below from about y=47% to 67%. Keep both signs separated by a small gap on the same straight pole, front facing with slight natural perspective. Sign shapes are crisp, balanced, not touching image edges. Reserve bottom 25% as simple calm road and pavement for app title and record; no cars or prominent features there.\nStyle/medium: polished stylized low-poly 3D illustration EXACTLY matching the original, faceted trees, clean simplified buildings. Warm afternoon sunlight and soft shadows.\nConstraints: 1:1 square; retain the exact reference sign designs and route direction; no cut off sign corners, no lettering, no numbers, no UI, no captions, no gradient, no vignette, no frame, no badge, no logo, no watermark."
+        },
+        {
+          "reference": "previous stage",
+          "prompt": "Use case: precise-object-edit\nAsset type: 1:1 square mobile game card cover\nPrimary request: Make ONE targeted composition correction to the attached square cover: make the two road signs smaller and give them much more sky above. Keep the city, intersection, lighting, color palette, vehicles and polished low-poly 3D style closely matching this reference.\nInput image: Image 1 is the edit target. Preserve its original design.\nExact composition correction: reduce the priority diamond and supplementary plate as a complete group by approximately 15–20%. Reposition them so ALL of the signs fit safely within horizontal x30–70% and vertical y18–60% of the square image. The TOP tip of the diamond must be at y18% (almost one fifth of the image height is clear sky above the sign). Its bottom tip around y43%; plate top around y44% and plate bottom around y60%. Keep the pole straight, continuing down naturally. Both signs completely visible and centered near x50%; maintain a small gap between them. There must be substantially more blue sky above the diamond compared with this input.\nSign invariants: top is Russian 2.1 Priority Road, yellow diamond, thin black outline, broad white diamond border and dark outer edge. The white 8.13 supplementary plate has thin black border and black diagram with a THICK route rising from bottom center then curving RIGHT, plus THIN upper and left branches. Preserve that exact direction and design. No numbers or lettering.\nLower composition: lower 30% simple uncluttered asphalt/pavement for UI text, no extra objects.\nConstraints: output 1:1 square. Do not crop any sign edges. No added text, no caption, no badge, no frame, no logo, no gradient or vignette."
+        },
+        {
+          "reference": "previous stage",
+          "prompt": "Use case: precise-object-edit\nAsset type: square 1:1 mobile game cover.\nPrimary request: In the attached square image, enlarge ONLY the two road signs together by approximately 1.4 times. Keep the city background, intersection, trees, cars, sky, camera, perspective and lighting unchanged. This is a local sign-group size adjustment; do not zoom the whole scene.\nInput image: Image 1 is the edit target.\nExact final placement specification, measured in percentages of the image width and height: the yellow priority diamond's upper corner at (50%,18%), right corner at (63%,30.5%), lower corner at (50%,43%), left corner at (37%,30.5%). Its diagonal width is 26% of the image, vertical height is 25%. The white supplementary plate below must cover approximately x41%–59%, y44%–61%. Leave a tiny gap between diamond and plate. Both road signs on the same centered metal pole. These are layout instructions only: DO NOT draw any coordinate numbers, markers or annotations.\nSign design invariants: Russian 2.1 yellow Priority Road diamond, thin black outline, wide white diamond border, dark metal outer edge. Lower white 8.13 plate with black border and EXACT black route diagram as reference: THICK route rises from bottom center then curves RIGHT; THIN branches extend from top center and left center. Preserve all colors, borders, shapes and diagram direction.\nConstraints: important signs span overall x37%–63%, y18%–61%, clearly larger than the input image. All four diamond corners and the entire lower plate visible. Background and camera stay identical. Polished warm low-poly 3D look unchanged. No new text, captions, logos, interface, frame, vignette, gradients, numbers or watermark."
+        }
+      ],
+      "webp_quality": 85
+    },
+    {
+      "path": "assets/images/games/hub_road_signs.webp",
+      "stages": [
+        {
+          "reference": {
+            "git_revision": "3f260851",
+            "path": "assets/images/games/hub_road_signs.webp"
+          },
+          "prompt": "Use case: precise-object-edit / stylized-concept.\nAsset type: square full-bleed mini-game cover art 1024x1024, final production illustration.\nInput image 1 is the existing EDIT TARGET. Recompose it into an exact SQUARE image. Maintain the original recognizable sunny low-poly 3D Russian city street with blue sky, clean pastel orange/cream apartment buildings, faceted bright green trees and bushes, small cars on the road, warm inviting sunlight and crisp polished beveled road signs.\nRetain exactly THREE Russian road signs and their original forms and symbols: top triangular red-border warning sign with a black exclamation mark, below left circular red no-entry sign with a wide horizontal white bar, below right circular blue straight-ahead mandatory sign with a white upward arrow. Arrange the three complete signs as a compact recognizable triangular cluster on slender gray metal poles. All signs must be complete and spatially separated, with nothing touching the frame. Signs must follow clean conventional Russian road-sign design, no decorative signs.\nComposition: Pull the camera back and expand city scenery to achieve square framing, not a tight crop. Every sign FACE, including the complete triangular upper tip and all circular rims, lies inside invisible safe area x=22%-78%, y=17%-64%. The upper warning triangle spans roughly x35%-65%, y17%-40%; the two circles below span x22%-48% and x52%-78%, y39%-64%. Keep uncluttered natural road asphalt in bottom 25% for later UI text. Poles may extend down to an island curb around y74%, but sign faces must finish above y64%. Let the city and trees frame them at either side. Percentages describe layout only; do not render guides.\nConstraints: preserve reference visual style and concept, exact 1:1 image, fully framed sign cluster with ample margin. No people, no extra signs, no captions, no interface, no scores, no title, no gradient overlays, no dark vignette, no border, no rounded corners, no watermark."
+        }
+      ],
+      "webp_quality": 84
+    },
+    {
+      "path": "assets/images/games/hub_violator.webp",
+      "stages": [
+        {
+          "reference": {
+            "git_revision": "3f260851",
+            "path": "assets/images/games/hub_violator.webp"
+          },
+          "prompt": "Use case: style-transfer\nAsset type: square mini-game cover for an existing Russian driving rules mobile app, 1024 x 1024, full bleed.\nPrimary request: Recompose the attached old portrait \"traffic violator\" game cover into a polished SQUARE 1:1 illustration. Image 1 is the edit target and style reference. Preserve the same low-poly 3D red modern hatchback, red paint, black trim, angular headlights, same inviting clean contemporary Russian city street with ochre apartment blocks, faceted green trees, blue sky and sunny daylight.\nSubject: A single recognizable modern red hatchback with all bumpers and wheels visible, front three-quarter angle, driving diagonally across ONE continuous solid white lane line, clear enough to read the traffic-rule violation. Secondary distant parked/driving cars may remain tiny in background.\nComposition/framing: Pull the virtual camera back and lift the car in the square composition. The ENTIRE red hatchback must be strictly inside x20–80%, y23–63%; car should occupy about 60% width, neither large nor cropped. Keep the red car around the upper-middle, solid white line visibly crossing beneath it. Reserve the bottom 25% as uncluttered asphalt with the continuing white line and natural light only, for UI title/status to be overlaid later. Keep clean headroom and side margins so a tall crop still contains the full car. Attractive visual hierarchy with readable red focal subject, coherent road perspective.\nLighting/mood: warm sunny daylight, lively and friendly driving-game aesthetic, no dramatic danger scene.\nConstraints: no baked gradient/vignette, no typography, text, captions, labels, scores, badges, UI, borders, logos or watermark. No extra humans or police. No collision/damage. Preserve the exact existing low-poly scene style. This is a square recomposition, not a simple crop."
+        }
+      ],
+      "webp_quality": 84
+    },
+    {
+      "path": "assets/images/games/hub_parking.webp",
+      "stages": [
+        {
+          "reference": {
+            "git_revision": "3f260851",
+            "path": "assets/images/games/hub_parking.webp"
+          },
+          "prompt": "Use case: style-transfer\nAsset type: square mini-game cover for an existing Russian driving rules mobile app, 1024 x 1024, full bleed.\nPrimary request: Recompose the attached old portrait parking cover into a polished SQUARE 1:1 illustration. Image 1 is the edit target and style reference. Preserve its visual identity: entirely grayscale, low-poly 3D angular gray hatchbacks, angled overhead view of clean asphalt parking spaces, thin white parking bay markings and one broad curved gray turn arrow indicating a parking maneuver.\nScene and subject: Show one gray hatchback in the center moving toward an empty marked parking space, with a second parked gray hatchback behind it and a single curved maneuver arrow clearly visible. Keep this unmistakably the same family as the old illustration.\nComposition/framing: Pull the virtual camera back and recompose for square. ALL important elements and the full cars including wheels and bumpers must fit within x12–88%, y16–65% of the square. The cars should feel substantial and readable at small size. Reserve the bottom 25% as quieter clean asphalt with only natural faint surface texture, to support a UI title and status added later. Keep clear margins around every important object. Natural perspective; well-spaced elements; no chopped cars at any edge.\nLighting/mood: soft directional daylight and simple low-poly shadows.\nColor palette: monochrome grayscale only, retaining original disabled/coming-soon look; clean mid-gray road, cars slightly lighter for contrast.\nConstraints: no text, letters, numbers, badges, scores, typography, logos, UI, frames or watermark. No baked dark gradient or vignette. No people or police. Do not add more than two cars. Do not merely crop the old image; recreate/recompose it into a real square scene."
+        },
+        {
+          "reference": "previous stage",
+          "prompt": "Use case: precise-object-edit\nAsset type: square game cover, 1024 x 1024 full bleed.\nInput image: the current square grayscale parking cover is the edit target.\nChange ONLY the scale and placement of the two-car parking scene so it has safer edges for responsive game cards. Zoom out about 20%, shift the two cars together slightly right and slightly up, preserving the exact grayscale low-poly 3D hatchback style, overhead angle, parking markings, curved maneuver arrow, road texture, lighting and monochrome palette.\nThe ENTIRE moving foreground hatchback including bumpers and wheels must be inside x22–72%, y29–61% of the square. The entire parked background hatchback must be inside x28–65%, y13–34%. The curved arrow should remain clear in x50–78%, y30–48%. Keep all important objects at least 20% away from the left/right edges. The bottom 25% remains quiet empty asphalt for UI text added later. No dark gradient, vignette, text, numbers, score, badge, UI, frames, logos, watermark, people or police. Two cars only. Keep square aspect ratio and preserve the current scene identity."
+        }
+      ],
+      "webp_quality": 84
+    }
+  ]
+}

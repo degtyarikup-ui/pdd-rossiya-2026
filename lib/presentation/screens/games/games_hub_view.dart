@@ -267,7 +267,9 @@ class _MiniGamesCatalogue extends StatelessWidget {
           : 2;
       final rows = (6 / columns).ceil();
       final rowHeight = math.max(
-        columns == 1 ? 110 + scaledTitle * 3 : 118.0,
+        columns == 1
+            ? math.max(110 + scaledTitle * 3, box.maxWidth * .9)
+            : 118.0,
         (box.maxHeight - gap * (rows - 1)) / rows,
       );
       final titleSize = columns > 1 && box.maxWidth < 320 ? 15.0 : 18.0;
@@ -550,17 +552,17 @@ class _HubCover extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
       final wide = id == 'city';
-      final nativeWidth = wide ? 1072 : 516;
-      final aspect = wide ? 1072 / 560 : 516 / 652;
+      final nativeWidth = wide ? 1072 : 640;
+      final aspect = wide ? 1072 / 560 : 1.0;
       final pixels =
           math.max(box.maxWidth, box.maxHeight * aspect) *
           MediaQuery.devicePixelRatioOf(context);
       final decodeWidth = math.min(
         nativeWidth,
-        pixels <= 258
-            ? 258
-            : pixels <= 516
-            ? 516
+        pixels <= 320
+            ? 320
+            : pixels <= 640
+            ? 640
             : 1072,
       );
       return Image.asset(
