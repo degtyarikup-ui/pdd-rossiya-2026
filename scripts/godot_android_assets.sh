@@ -27,8 +27,7 @@ STAGE="$TMP/project"
 PACKAGE="$TMP/package"
 mkdir -p "$STAGE/tools/godot_export" "$STAGE/assets/audio" "$PACKAGE"
 # Import and preset changes belong to this private snapshot, never the editor's
-# working files. Canonical pictures/audio are read without rewriting their cache.
-rsync -a --exclude='.godot' --exclude='network/preview' --exclude='network/history' game_godot "$STAGE/"
+rsync -a --exclude='network/preview' --exclude='network/history' game_godot "$STAGE/"
 cp tools/godot_export/export_{ui,question_images,question_audio}.py "$STAGE/tools/godot_export/"
 ln -s "$PWD/assets/countries" "$STAGE/assets/countries"
 ln -s "$PWD/assets/audio/feed" "$STAGE/assets/audio/feed"
