@@ -62,12 +62,33 @@ export async function collectRealObjects({ endpoint, brokerName, accountSubdomai
         try { response = await fetch(endpoint, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(45000),
           headers: { 'content-type': 'application/json', 'x-backup-signature': signature }, body: raw }); }
         catch { if (attempt === 4) fail(); await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); continue; }
-        if (response.status !== 200) { const status = response.status; await response.body?.cancel(); if ([404, 429, 500, 502, 503, 504].includes(status) && attempt < 4) { await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); continue; } fail(); }
+        if (response.status !== 200) {
+          const status = response.status, contentType = response.headers.get('content-type');
+          await response.body?.cancel();
+          onProgress({ phase: 'export-retry', className: object.className, httpStatus: status,
+            jsonErrorResponse: Boolean(contentType?.startsWith('application/json')), attempt: attempt + 1 });
+          if ([404, 429, 500, 502, 503, 504].includes(status) && attempt < 4) { await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); continue; }
+          fail();
+        }
         if (response.url !== endpoint || response.headers.get('content-type') !== 'application/jose') fail();
         const ciphertext = await boundedCiphertext(response);
         if (!await verifyBackupHmac(credentials.hmacSecret, 'response\n' + body.nonce + '\n' + ciphertext, response.headers.get('x-backup-response-signature'))) fail();
         const { plaintext, protectedHeader } = await compactDecrypt(ciphertext, privateKey,
           { keyManagementAlgorithms: ['RSA-OAEP-256'], contentEncryptionAlgorithms: ['A256GCM'] });
+        if (protectedHeader.typ === 'pdd-durable-backup-diagnostic+jwe') {
+          const diagnostic = JSON.parse(decode(plaintext));
+          const reasons = ['storage_transaction','storage_api','storage_list','storage_page','key_validation','key_order',
+            'value_encoding','value_byte_limit','entry_encoding','snapshot_limit','storage_alarm','metadata_validation','snapshot_hash','snapshot_validation'];
+          if (diagnostic?.format !== 'pdd-durable-backup-diagnostic' || diagnostic.schema !== 1
+            || Object.keys(diagnostic).sort().join(',') !== 'encodedBytes,entryCount,errorKind,format,pageCount,reason,schema'
+            || !reasons.includes(diagnostic.reason) || !['Error','TypeError','RangeError','DataCloneError','QuotaExceededError',
+              'InvalidStateError','OperationError','AbortError','UnknownError'].includes(diagnostic.errorKind)
+            || ['entryCount','pageCount','encodedBytes'].some(key => !Number.isSafeInteger(diagnostic[key]) || diagnostic[key] < 0)) fail();
+          const diagnosticFile = join(outputDir, 'diagnostic-' + createHash('sha256').update(identity(object)).digest('hex') + '-' + body.nonce + '.pddjwe');
+          await writePrivateNew(diagnosticFile, await encryptRunEvidence(diagnostic, credentials));
+          throw new Error('Authenticated backup diagnostic: ' + diagnostic.reason + ' / ' + diagnostic.errorKind
+            + ', entries=' + diagnostic.entryCount + ', pages=' + diagnostic.pageCount + ', encodedBytes=' + diagnostic.encodedBytes);
+        }
         if (protectedHeader.typ !== 'pdd-durable-backup+jwe') fail();
         snapshot = JSON.parse(decode(plaintext)); success = true; break;
       }
