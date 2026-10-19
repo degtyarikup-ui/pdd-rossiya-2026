@@ -38,6 +38,7 @@ var ground_root: Node3D
 var markings_root: Node3D
 var closed_root: Node3D
 var decor_root: Node3D
+var officer_node: Node3D = null
 
 var closed_side := ""
 var walker_crowds: Array[MultiMesh] = []
@@ -141,6 +142,8 @@ func configure_scenario(scenario: Dictionary) -> void:
 		add_approach_signs(approaches[side], side)
 	for light: Dictionary in scenario.get("trafficLights", []):
 		add_traffic_light(light)
+	if scenario.has("officer"):
+		_setup_officer()
 
 
 func clear_props() -> void:
@@ -156,6 +159,38 @@ func clear_props() -> void:
 	for c in rails_root.get_children():
 		rails_root.remove_child(c)
 		c.queue_free()
+	if officer_node != null and is_instance_valid(officer_node):
+		if officer_node.get_parent() != null:
+			officer_node.get_parent().remove_child(officer_node)
+		officer_node.queue_free()
+		officer_node = null
+
+
+func _setup_officer() -> void:
+	var off_data: Dictionary = _scenario.get("officer", {})
+	if off_data.is_empty(): return
+	var officer := RegulatorOfficer.new()
+	officer.name = "TrafficOfficer"
+	var gesture_str: String = str(off_data.get("gesture", "hands_sides")).to_lower()
+	var gesture: RegulatorRules.Gesture = RegulatorRules.Gesture.HANDS_SIDES
+	match gesture_str:
+		"hands_down": gesture = RegulatorRules.Gesture.HANDS_DOWN
+		"hands_sides": gesture = RegulatorRules.Gesture.HANDS_SIDES
+		"right_arm_forward": gesture = RegulatorRules.Gesture.RIGHT_ARM_FORWARD
+		"arm_up": gesture = RegulatorRules.Gesture.ARM_UP
+	var approach_str: String = str(off_data.get("approach", "front")).to_lower()
+	var approach: RegulatorRules.Approach = RegulatorRules.Approach.FRONT
+	match approach_str:
+		"front": approach = RegulatorRules.Approach.FRONT
+		"back": approach = RegulatorRules.Approach.BACK
+		"left": approach = RegulatorRules.Approach.LEFT
+		"right": approach = RegulatorRules.Approach.RIGHT
+	officer.set_pose(gesture, false)
+	officer.set_approach(approach, false)
+	officer.rotation.y = float(off_data.get("yaw", 0.0))
+	officer.position = Vector3(0, 0.02, 0)
+	officer_node = officer
+	decor_root.add_child(officer)
 
 
 func build_tram_rails(axis: String) -> void:
@@ -254,6 +289,10 @@ func _rebuild_scenery_decor() -> void:
 	_finish_pools()
 
 
+func _is_roundabout() -> bool:
+	return str(_scenario.get("junctionType", "")) == "roundabout" or str(_scenario.get("category", "")) == "roundabout"
+
+
 func _is_rural_junction() -> bool:
 	var env := str(_scenario.get("environment", "")).to_lower()
 	if env in ["rural", "village", "countryside"]:
@@ -325,6 +364,9 @@ func _build_junction_surfaces() -> void:
 	center.position = Vector3.ZERO
 	ground_root.add_child(center)
 
+	if _is_roundabout():
+		_build_roundabout_island()
+
 	var arm_len := ROAD_EXTENT - HALF_ROAD
 	var arms := ["south", "north", "east", "west"]
 
@@ -335,6 +377,32 @@ func _build_junction_surfaces() -> void:
 			_build_open_arm_surface(arm, arm_len)
 
 	_build_quadrant_sidewalks()
+
+
+func _build_roundabout_island() -> void:
+	var island := MeshInstance3D.new()
+	island.name = "RoundaboutIsland"
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 5.6
+	cyl.bottom_radius = 5.6
+	cyl.height = SIDEWALK_Y
+	cyl.radial_segments = 32
+	island.mesh = cyl
+	island.material_override = grass_mat
+	island.position = Vector3(0, SIDEWALK_Y * 0.5, 0)
+	ground_root.add_child(island)
+
+	var curb_ring := MeshInstance3D.new()
+	curb_ring.name = "RoundaboutCurbRing"
+	var ring_cyl := CylinderMesh.new()
+	ring_cyl.top_radius = 5.75
+	ring_cyl.bottom_radius = 5.8
+	ring_cyl.height = SIDEWALK_Y * 0.95
+	ring_cyl.radial_segments = 32
+	curb_ring.mesh = ring_cyl
+	curb_ring.material_override = curb_mat
+	curb_ring.position = Vector3(0, SIDEWALK_Y * 0.48, 0)
+	ground_root.add_child(curb_ring)
 
 
 func _build_open_arm_surface(arm: String, arm_len: float) -> void:
@@ -870,11 +938,27 @@ func _add_curb_segment(a: Vector3, b: Vector3) -> void:
 
 
 func _build_markings() -> void:
+	if _is_roundabout():
+		_build_roundabout_markings()
 	var arms := ["south", "north", "east", "west"]
 	for arm in arms:
 		if arm == closed_side and not _has_crossing(arm):
 			continue
 		_build_arm_markings(arm)
+
+
+func _build_roundabout_markings() -> void:
+	var ring_root := Node3D.new()
+	ring_root.name = "RoundaboutMarkings"
+	markings_root.add_child(ring_root)
+	var radius := 9.6
+	var count := 24
+	for i in count:
+		var angle := float(i) * TAU / float(count)
+		var dash := _quad(Vector2(0.18, 1.2), marking_mat)
+		dash.position = Vector3(sin(angle) * radius, 0.025, cos(angle) * radius)
+		dash.rotation.y = angle + PI * 0.5
+		ring_root.add_child(dash)
 
 
 func _build_arm_markings(arm: String) -> void:
@@ -918,7 +1002,7 @@ func _build_arm_markings(arm: String) -> void:
 			yield_line.name = "YieldLine"
 			arm_root.add_child(yield_line)
 
-		var line_start := ZEBRA_END + 0.25 if _has_crossing(arm) else HALF_ROAD + 0.8
+		var line_start := 11.5 if _is_roundabout() else (ZEBRA_END + 0.25 if _has_crossing(arm) else HALF_ROAD + 0.8)
 		var line_len := ROAD_EXTENT - line_start
 
 		if _is_rural_junction():
@@ -1859,7 +1943,8 @@ func _sized_sign(code: String, width: float, plate := "", main_roads: Array = []
 static func _sign_order(code: String) -> int:
 	if code == "2.2": return 0
 	if code.begins_with("2."): return 1
-	return 2
+	if code == "4.3": return 2
+	return 3
 
 
 func _create_sign_mesh(code: String, side_name: String, table8_13: String) -> Node3D:

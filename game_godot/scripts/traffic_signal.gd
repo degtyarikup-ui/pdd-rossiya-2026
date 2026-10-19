@@ -19,7 +19,9 @@ static func supports(config: Dictionary) -> bool:
 
 static func kind(config: Dictionary) -> String:
 	if config.get("tram"): return "tram"
-	return str(config.arrow) if config.get("arrow") else "standard"
+	var a := str(config.get("arrow", ""))
+	if a != "" and a != "none": return a
+	return "standard"
 
 static func make(config: Dictionary) -> Node3D:
 	var variant:=kind(config)

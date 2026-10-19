@@ -2031,6 +2031,30 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameCrossroadsCatHard => 'Күрделі жағдайлар';
 
   @override
+  String get gameCrossroadsCatRoundabout => 'Айналмалы қозғалыс';
+
+  @override
+  String get gameCrossroadsCatRegulator => 'Реттеуші';
+
+  @override
+  String get gameCrossroadsCatBicycles => 'Велосипедшілер';
+
+  @override
+  String get gameCrossroadsModeBlitz => 'Блиц';
+
+  @override
+  String get gameCrossroadsModePractice => 'Жаттығу';
+
+  @override
+  String get gameCrossroadsTopics => 'Тақырыптар';
+
+  @override
+  String get gameCrossroadsSolved => 'Шешілді';
+
+  @override
+  String get gameCrossroadsTryAgain => 'Қайта көру';
+
+  @override
   String get crossroadsHardSituationBadge => '⚡ Күрделі жағдай • 3× ұпай';
 
   @override

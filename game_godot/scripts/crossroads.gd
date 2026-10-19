@@ -34,6 +34,12 @@ var scenario_order: Array[int] = []
 var cur_scenario_idx := 0
 var cur_step := 1
 
+var game_mode := "blitz"  # "blitz" or "practice"
+var practice_category := "prioritySigns"
+var practice_index := 0
+var practice_solved := {}
+const PRACTICE_SAVE_PATH := "user://crossroads_practice.json"
+
 # Game state
 var _suspended := false
 var _exiting := false
@@ -149,6 +155,15 @@ func _setup_args() -> void:
 			shot_path = arg.trim_prefix("--shot=")
 		elif arg.begins_with("--scenario="):
 			_preview_scenario = arg.trim_prefix("--scenario=")
+		elif arg.begins_with("--mode="):
+			var m: String = arg.trim_prefix("--mode=")
+			if m in ["practice", "training"]:
+				game_mode = "practice"
+			elif m in ["blitz", "arcade"]:
+				game_mode = "blitz"
+		elif arg.begins_with("--category="):
+			practice_category = arg.trim_prefix("--category=")
+			game_mode = "practice"
 
 
 func _setup_environment() -> void:
@@ -237,10 +252,14 @@ func _setup_ui() -> void:
 	ui.name = "CrossroadsUI"
 	ui.close_pressed.connect(_on_close_pressed)
 	ui.next_scenario_pressed.connect(_on_next_scenario)
+	ui.prev_scenario_pressed.connect(_on_prev_scenario)
 	ui.reset_camera_pressed.connect(_reset_camera)
 	ui.retry_pressed.connect(_on_retry_pressed)
 	ui.restart_pressed.connect(_start_game)
 	ui.exit_pressed.connect(_on_exit_pressed)
+	ui.mode_changed.connect(_on_mode_changed)
+	ui.category_selected.connect(_on_category_selected)
+	ui.topics_requested.connect(_on_topics_requested)
 	add_child(ui)
 
 
@@ -291,6 +310,9 @@ func _create_balanced_arcade_order() -> void:
 	# Smart Weighted Arcade Deck: Diversify drop chances across distinct categories
 	var lights: Array[int] = []
 	var hard: Array[int] = []
+	var roundabouts: Array[int] = []
+	var regulators: Array[int] = []
+	var bikes: Array[int] = []
 	var rural_signs: Array[int] = []
 	var highway_signs: Array[int] = []
 	var table_813_signs: Array[int] = []
@@ -299,9 +321,16 @@ func _create_balanced_arcade_order() -> void:
 
 	for idx in filtered_indices:
 		var sc: Dictionary = all_scenarios[idx]
+		var cat := str(sc.get("category", ""))
 		if sc.get("isHard", false):
 			hard.append(idx)
-		elif sc.get("category", "") == "trafficLights":
+		elif cat == "roundabout":
+			roundabouts.append(idx)
+		elif cat == "regulator":
+			regulators.append(idx)
+		elif cat == "bicycles":
+			bikes.append(idx)
+		elif cat == "trafficLights":
 			lights.append(idx)
 		else:
 			var env := str(sc.get("environment", "")).to_lower()
@@ -328,6 +357,9 @@ func _create_balanced_arcade_order() -> void:
 
 	lights.shuffle()
 	hard.shuffle()
+	roundabouts.shuffle()
+	regulators.shuffle()
+	bikes.shuffle()
 	rural_signs.shuffle()
 	highway_signs.shuffle()
 	table_813_signs.shuffle()
@@ -355,6 +387,9 @@ func _create_balanced_arcade_order() -> void:
 		{"pool": highway_signs, "type": "highway", "weight": 1.8},
 		{"pool": lights, "type": "light", "weight": 2.5},
 		{"pool": hard, "type": "hard", "weight": 2.0},
+		{"pool": roundabouts, "type": "roundabout", "weight": 2.0},
+		{"pool": regulators, "type": "regulator", "weight": 1.8},
+		{"pool": bikes, "type": "bicycles", "weight": 2.0},
 		{"pool": table_813_signs, "type": "table_813", "weight": 1.8},
 		{"pool": special_signs, "type": "special", "weight": 1.8},
 		{"pool": regular_signs, "type": "regular", "weight": 2.0},
@@ -397,9 +432,130 @@ func _create_balanced_arcade_order() -> void:
 		last_type = chosen.type
 
 
-# --- Game Lifecycle ---
+# --- Game Lifecycle & Practice Mode ---
+
+func _start_practice() -> void:
+	sound.suspended = false
+	if _result_camera_mask != 0:
+		camera.cull_mask = _result_camera_mask
+		_result_camera_mask = 0
+	if _exiting: return
+
+	is_game_over = false
+	is_resolving = false
+	_rewarded_hard.clear()
+
+	ready_for_play = true
+	_set_suspended(false)
+	_update_gameplay_processing()
+	ui.hide_results()
+	ui.hide_collision_modal()
+	ui.hide_topics_sheet()
+	ui.set_mode("practice")
+
+	_load_practice_progress()
+	_rebuild_practice_deck()
+	_load_current_scenario()
+
+
+func _rebuild_practice_deck() -> void:
+	scenario_order = _get_category_indices(practice_category)
+	cur_scenario_idx = clampi(practice_index, 0, maxi(0, scenario_order.size() - 1))
+
+
+func _get_category_indices(cat_id: String) -> Array[int]:
+	var indices: Array[int] = []
+	for i in all_scenarios.size():
+		var sc: Dictionary = all_scenarios[i]
+		var c: String = str(sc.get("category", ""))
+		if c == cat_id:
+			indices.append(i)
+		elif cat_id == "prioritySigns" and (c == "" or c == "prioritySigns"):
+			indices.append(i)
+	return indices
+
+
+func _category_title(cat_id: String) -> String:
+	match cat_id:
+		"prioritySigns": return Ui.t("gameCrossroadsCatSigns")
+		"trafficLights": return Ui.t("gameCrossroadsCatTrafficLights")
+		"hardSituations": return Ui.t("gameCrossroadsCatHard")
+		"roundabout": return Ui.t("gameCrossroadsCatRoundabout")
+		"regulator": return Ui.t("gameCrossroadsCatRegulator")
+		"bicycles": return Ui.t("gameCrossroadsCatBicycles")
+		_: return Ui.t("gameCrossroadsCatSigns")
+
+
+func _get_category_stats() -> Dictionary:
+	var stats := {}
+	for cat_id in ["prioritySigns", "trafficLights", "roundabout", "regulator", "bicycles", "hardSituations"]:
+		var indices := _get_category_indices(cat_id)
+		var solved := 0
+		for idx in indices:
+			if practice_solved.has(str(all_scenarios[idx].get("id", ""))):
+				solved += 1
+		stats[cat_id] = {"solved": solved, "total": indices.size()}
+	return stats
+
+
+func _load_practice_progress() -> void:
+	if FileAccess.file_exists(PRACTICE_SAVE_PATH):
+		var raw := FileAccess.get_file_as_string(PRACTICE_SAVE_PATH)
+		var data = JSON.parse_string(raw)
+		if data is Dictionary and data.has("solved"):
+			for sc_id in data["solved"]:
+				practice_solved[str(sc_id)] = true
+
+
+func _save_practice_progress() -> void:
+	var f := FileAccess.open(PRACTICE_SAVE_PATH, FileAccess.WRITE)
+	if f != null:
+		var data := {"solved": practice_solved.keys()}
+		f.store_string(JSON.stringify(data))
+		f.close()
+
+
+func _on_mode_changed(new_mode: String) -> void:
+	if _exiting: return
+	if new_mode in ["practice", "training"]:
+		if game_mode != "practice":
+			game_mode = "practice"
+			_start_practice()
+	else:
+		if game_mode != "blitz":
+			game_mode = "blitz"
+			_start_game()
+
+
+func _on_category_selected(cat_id: String) -> void:
+	if _exiting: return
+	practice_category = cat_id
+	practice_index = 0
+	if game_mode != "practice":
+		game_mode = "practice"
+		ui.set_mode("practice")
+	_rebuild_practice_deck()
+	_load_current_scenario()
+
+
+func _on_topics_requested() -> void:
+	if _exiting: return
+	ui.show_topics_sheet(practice_category, _get_category_stats())
+
+
+func _on_prev_scenario() -> void:
+	if _exiting or scenario_order.is_empty(): return
+	if cur_scenario_idx > 0:
+		cur_scenario_idx -= 1
+		practice_index = cur_scenario_idx
+		_load_current_scenario()
+
 
 func _start_game() -> void:
+	if game_mode == "practice":
+		_start_practice()
+		return
+	ui.set_mode("blitz")
 	sound.suspended = false
 	if _result_camera_mask != 0:
 		camera.cull_mask = _result_camera_mask
@@ -489,6 +645,16 @@ func _load_current_scenario() -> void:
 
 	ui.update_hud(score, ceili(seconds_left), lives, combo)
 	ui.update_caption(sc_title, sc_sub, cur_step, active_actors.size(), is_hard)
+	if game_mode == "practice":
+		var is_cur_solved: bool = practice_solved.has(str(sc.get("id", "")))
+		var indices := _get_category_indices(practice_category)
+		var solved_count_cat := 0
+		for idx in indices:
+			if practice_solved.has(str(all_scenarios[idx].get("id", ""))):
+				solved_count_cat += 1
+		var can_prev := cur_scenario_idx > 0
+		var can_next := cur_scenario_idx < scenario_order.size() - 1
+		ui.update_practice_status(_category_title(practice_category), solved_count_cat, scenario_order.size(), can_prev, can_next, is_cur_solved)
 	fit_camera_to_scenario()
 	_fit_scenario_after_layout(scene_sequence)
 
@@ -679,8 +845,9 @@ func _handle_actor_selection(chosen: CrossroadsActor) -> void:
 	var side_name: String = chosen.data.get("side", "")
 	var tl = _find_traffic_light(sc, side_name)
 
+	var has_officer: bool = sc.has("officer") or str(sc.get("category", "")) == "regulator"
 	var is_illegal_red := false
-	if tl != null and tl.get("state", "") == "red" and not chosen.has_siren:
+	if not has_officer and tl != null and tl.get("state", "") == "red" and not chosen.has_siren:
 		var has_matching_arrow: bool = tl.get("arrowActive", false) and tl.get("arrow", "") == chosen.data.get("maneuver", "")
 		if not has_matching_arrow:
 			is_illegal_red = true
@@ -744,12 +911,28 @@ func _check_junction_completed() -> void:
 
 
 func _on_crossroad_completed() -> void:
+	var sc_idx := scenario_order[cur_scenario_idx % scenario_order.size()]
+	var sc: Dictionary = all_scenarios[sc_idx]
+
+	if game_mode == "practice":
+		var sc_id: String = str(sc.get("id", ""))
+		practice_solved[sc_id] = true
+		_save_practice_progress()
+		sound.play("correct")
+		GameSound.buzz(45)
+		var sequence := scene_sequence
+		await _gameplay_delay(0.85, sequence)
+		if not _sequence_active(sequence): return
+		if cur_scenario_idx < scenario_order.size() - 1:
+			cur_scenario_idx += 1
+			practice_index = cur_scenario_idx
+		_load_current_scenario()
+		return
+
 	solved_count += 1
 	combo += 1
 	max_combo = maxi(max_combo, combo)
 
-	var sc_idx := scenario_order[cur_scenario_idx % scenario_order.size()]
-	var sc: Dictionary = all_scenarios[sc_idx]
 	var is_hard: bool = sc.get("isHard", false)
 
 	# Scoring from GameEconomy
@@ -797,10 +980,11 @@ func _contact_footprint(actor: CrossroadsActor) -> Dictionary:
 func _crash_on_contact(sent: CrossroadsActor, struck: CrossroadsActor) -> void:
 	var sequence := scene_sequence
 	is_resolving = true
-	wrong_count += 1
-	combo = 0
-	lives -= 1
-	ui.update_hud(score, ceili(seconds_left), lives, combo)
+	if game_mode == "blitz":
+		wrong_count += 1
+		combo = 0
+		lives -= 1
+		ui.update_hud(score, ceili(seconds_left), lives, combo)
 	var impact := (sent.position + struck.position) * 0.5
 	impact.y = 0.0
 	sound.play("crash")
@@ -853,11 +1037,11 @@ func _conflict_samples(actor: CrossroadsActor) -> Array[Dictionary]:
 func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reason: String, article: String) -> void:
 	var sequence := scene_sequence
 	is_resolving = true
-	wrong_count += 1
-	combo = 0
-	lives -= 1
-
-	ui.update_hud(score, ceili(seconds_left), lives, combo)
+	if game_mode == "blitz":
+		wrong_count += 1
+		combo = 0
+		lives -= 1
+		ui.update_hud(score, ceili(seconds_left), lives, combo)
 
 	# Hide trajectory ribbons and arrows immediately
 	if chosen.trajectory_guide != null:
@@ -1066,6 +1250,18 @@ var last_mistake := {}
 
 func _after_crash(sequence: int, crashed: bool, reason: String, article: String) -> void:
 	last_mistake = {"crashed": crashed, "reason": reason, "article": article}
+	if game_mode == "practice":
+		var sc_idx := scenario_order[cur_scenario_idx % scenario_order.size()]
+		var sc: Dictionary = all_scenarios[sc_idx]
+		var priority_name: String = ""
+		for a in active_actors:
+			if a.state == "crashed":
+				if a != active_actors[0]:
+					priority_name = a.data.get("name", "")
+		if priority_name == "":
+			priority_name = active_actors[0].data.get("name", "") if not active_actors.is_empty() else ""
+		ui.show_collision_modal(priority_name, reason, article, false, true)
+		return
 	ui.show_crash_notice(crashed)
 	await _gameplay_delay(1.4, sequence)
 	if not _sequence_active(sequence) or _exiting: return
@@ -1077,7 +1273,7 @@ func _on_retry_pressed() -> void:
 	if _exiting: return
 	_set_suspended(false)
 	ui.hide_collision_modal()
-	if lives <= 0:
+	if game_mode == "blitz" and lives <= 0:
 		_end_game()
 	else:
 		_load_current_scenario()
@@ -1091,7 +1287,10 @@ func _on_next_scenario() -> void:
 	cur_scenario_idx += 1
 	if cur_scenario_idx >= scenario_order.size():
 		cur_scenario_idx = 0
-		_rebuild_scenario_order()
+		if game_mode == "blitz":
+			_rebuild_scenario_order()
+	if game_mode == "practice":
+		practice_index = cur_scenario_idx
 	_load_current_scenario()
 
 
@@ -1109,7 +1308,7 @@ func _process(delta: float) -> void:
 		_check_driving_contacts()
 	if not is_game_over and not is_resolving:
 		_check_junction_completed()
-	if ready_for_play and not _suspended and not is_game_over and not is_resolving and not _round_completing and not _is_any_actor_driving():
+	if game_mode == "blitz" and ready_for_play and not _suspended and not is_game_over and not is_resolving and not _round_completing and not _is_any_actor_driving():
 		seconds_left -= delta
 		ui.update_hud(score, ceili(seconds_left), lives, combo)
 		if seconds_left <= 0:

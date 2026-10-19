@@ -2029,6 +2029,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameCrossroadsCatHard => 'Hard situations';
 
   @override
+  String get gameCrossroadsCatRoundabout => 'Roundabouts';
+
+  @override
+  String get gameCrossroadsCatRegulator => 'Traffic officer';
+
+  @override
+  String get gameCrossroadsCatBicycles => 'Cyclists';
+
+  @override
+  String get gameCrossroadsModeBlitz => 'Blitz';
+
+  @override
+  String get gameCrossroadsModePractice => 'Practice';
+
+  @override
+  String get gameCrossroadsTopics => 'Topics';
+
+  @override
+  String get gameCrossroadsSolved => 'Solved';
+
+  @override
+  String get gameCrossroadsTryAgain => 'Try again';
+
+  @override
   String get crossroadsHardSituationBadge => '⚡ Hard situation • 3× points';
 
   @override

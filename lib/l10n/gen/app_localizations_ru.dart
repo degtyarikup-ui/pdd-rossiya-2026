@@ -2049,6 +2049,30 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameCrossroadsCatHard => 'Сложные ситуации';
 
   @override
+  String get gameCrossroadsCatRoundabout => 'Круговое движение';
+
+  @override
+  String get gameCrossroadsCatRegulator => 'Регулировщик';
+
+  @override
+  String get gameCrossroadsCatBicycles => 'Велосипедисты';
+
+  @override
+  String get gameCrossroadsModeBlitz => 'Блиц';
+
+  @override
+  String get gameCrossroadsModePractice => 'Тренировка';
+
+  @override
+  String get gameCrossroadsTopics => 'Темы';
+
+  @override
+  String get gameCrossroadsSolved => 'Решено';
+
+  @override
+  String get gameCrossroadsTryAgain => 'Попробовать снова';
+
+  @override
   String get crossroadsHardSituationBadge => '⚡ Сложная ситуация • 3× очков';
 
   @override

@@ -3532,6 +3532,54 @@ abstract class AppLocalizations {
   /// **'Сложные ситуации'**
   String get gameCrossroadsCatHard;
 
+  /// No description provided for @gameCrossroadsCatRoundabout.
+  ///
+  /// In ru, this message translates to:
+  /// **'Круговое движение'**
+  String get gameCrossroadsCatRoundabout;
+
+  /// No description provided for @gameCrossroadsCatRegulator.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регулировщик'**
+  String get gameCrossroadsCatRegulator;
+
+  /// No description provided for @gameCrossroadsCatBicycles.
+  ///
+  /// In ru, this message translates to:
+  /// **'Велосипедисты'**
+  String get gameCrossroadsCatBicycles;
+
+  /// No description provided for @gameCrossroadsModeBlitz.
+  ///
+  /// In ru, this message translates to:
+  /// **'Блиц'**
+  String get gameCrossroadsModeBlitz;
+
+  /// No description provided for @gameCrossroadsModePractice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тренировка'**
+  String get gameCrossroadsModePractice;
+
+  /// No description provided for @gameCrossroadsTopics.
+  ///
+  /// In ru, this message translates to:
+  /// **'Темы'**
+  String get gameCrossroadsTopics;
+
+  /// No description provided for @gameCrossroadsSolved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Решено'**
+  String get gameCrossroadsSolved;
+
+  /// No description provided for @gameCrossroadsTryAgain.
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробовать снова'**
+  String get gameCrossroadsTryAgain;
+
   /// No description provided for @crossroadsHardSituationBadge.
   ///
   /// In ru, this message translates to:

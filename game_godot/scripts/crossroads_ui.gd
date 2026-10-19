@@ -6,10 +6,15 @@ extends Control
 
 signal close_pressed()
 signal next_scenario_pressed()
+signal prev_scenario_pressed()
 signal reset_camera_pressed()
 signal retry_pressed()
 signal restart_pressed()
 signal exit_pressed()
+signal mode_changed(mode: String)
+signal mode_toggled(mode: String)
+signal category_selected(cat_id: String)
+signal topics_requested()
 
 const SCREEN_PAD := 16.0
 const CHROME := 44.0
@@ -24,12 +29,26 @@ const ICON_TIMER := 0xf023c
 const ICON_CAMERA := 0xf627
 const ICON_WARNING := 0xf02a0
 
+var current_mode := "blitz"
+
 var _top_bar: VBoxContainer
+var _mode_row: HBoxContainer
+var _mode_pill: PanelContainer
+var _blitz_tab: Button
+var _practice_tab: Button
+
 var _hud_row: HBoxContainer
 var _close_btn: Button
 var _hud: PanelContainer
 var _hud_line1: HBoxContainer
 var _hud_line2: HBoxContainer
+var _practice_row: HBoxContainer
+var _topic_btn: Button
+var _prev_btn: Button
+var _solved_chip: PanelContainer
+var _solved_chip_label: Label
+var _next_btn: Button
+
 var _score_group: HBoxContainer
 var _timer_group: HBoxContainer
 var _score_spacer: Control
@@ -65,8 +84,14 @@ var _collision_should_go: Label
 var _collision_reason: Label
 var _collision_article: Label
 var _collision_btn_row: BoxContainer
+var _collision_retry_btn: Button
 var _collision_next_btn: Button
 var _collision_game_over_btn: Button
+
+var _topics_backdrop: ColorRect
+var _topics_card: PanelContainer
+var _topics_content: VBoxContainer
+var _topics_list: VBoxContainer
 
 var _results: MiniGameResults
 var _modal_open := false
@@ -83,6 +108,7 @@ func _init() -> void:
 	_build_notice()
 	_build_reset_camera_btn()
 	_build_collision_modal()
+	_build_topics_sheet()
 	_build_result_dialog()
 
 
@@ -114,13 +140,16 @@ func _layout() -> void:
 	_reset_cam_btn.position = Vector2(size.x - right - CHROME, size.y - bottom - CHROME - 12.0)
 	_notice.size = _notice.get_combined_minimum_size()
 	_notice.position = Vector2((size.x - _notice.size.x) * 0.5, _top_bar.position.y + _top_bar.size.y + 10.0)
-	for overlay in [_collision_backdrop, _results]:
-		overlay.size = size
+	for overlay in [_collision_backdrop, _results, _topics_backdrop]:
+		if overlay != null:
+			overlay.size = size
 	var card_width := minf(420.0, available_width)
 	var modal_top := top + 16.0
 	var modal_height := maxf(100.0, size.y - modal_top - bottom - 16.0)
 	var inner_width := card_width - 40.0
 	_fit_modal(_collision_card, _collision_content, card_width, modal_height, modal_top, left, available_width)
+	if _topics_card != null and _topics_content != null and _topics_backdrop != null and _topics_backdrop.visible:
+		_fit_modal(_topics_card, _topics_content, card_width, modal_height, modal_top, left, available_width)
 	var result_left := float(safe["left"]) / u + 20.0
 	var result_right := float(safe["right"]) / u + 20.0
 	_results.layout(Rect2(result_left, top + 16.0, maxf(160.0, size.x - result_left - result_right), maxf(100.0, size.y - top - bottom - 32.0)))
@@ -190,6 +219,39 @@ func _build_top_bar() -> void:
 	_top_bar.add_theme_constant_override("separation", 8)
 	_top_bar.minimum_size_changed.connect(_queue_layout)
 	add_child(_top_bar)
+
+	_mode_row = HBoxContainer.new()
+	_mode_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_top_bar.add_child(_mode_row)
+
+	_mode_pill = PanelContainer.new()
+	_mode_pill.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 10, 3, 3))
+	_mode_row.add_child(_mode_pill)
+
+	var mode_tabs := HBoxContainer.new()
+	mode_tabs.add_theme_constant_override("separation", 2)
+	_mode_pill.add_child(mode_tabs)
+
+	_blitz_tab = Button.new()
+	_blitz_tab.text = Ui.t("gameCrossroadsModeBlitz")
+	_style_tab(_blitz_tab, true)
+	_blitz_tab.pressed.connect(func():
+		if current_mode != "blitz":
+			set_mode("blitz")
+			mode_changed.emit("blitz")
+			mode_toggled.emit("blitz"))
+	mode_tabs.add_child(_blitz_tab)
+
+	_practice_tab = Button.new()
+	_practice_tab.text = Ui.t("gameCrossroadsModePractice")
+	_style_tab(_practice_tab, false)
+	_practice_tab.pressed.connect(func():
+		if current_mode != "practice":
+			set_mode("practice")
+			mode_changed.emit("practice")
+			mode_toggled.emit("practice"))
+	mode_tabs.add_child(_practice_tab)
+
 	_hud_row = HBoxContainer.new()
 	_hud_row.add_theme_constant_override("separation", 8)
 	_top_bar.add_child(_hud_row)
@@ -212,6 +274,48 @@ func _build_top_bar() -> void:
 	_hud_line2.add_theme_constant_override("separation", 8)
 	_hud_line2.visible = false
 	lines.add_child(_hud_line2)
+
+	_practice_row = HBoxContainer.new()
+	_practice_row.add_theme_constant_override("separation", 6)
+	_practice_row.size_flags_horizontal = SIZE_EXPAND_FILL
+	_practice_row.visible = false
+	lines.add_child(_practice_row)
+
+	_topic_btn = Button.new()
+	_topic_btn.size_flags_horizontal = SIZE_EXPAND_FILL
+	_topic_btn.custom_minimum_size = Vector2(60, 28)
+	_topic_btn.text = Ui.t("gameCrossroadsCatSigns") + " ▾"
+	_topic_btn.clip_text = true
+	_topic_btn.add_theme_font_override("font", Ui.font(600))
+	_topic_btn.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
+	_style_button(_topic_btn, Ui.c("field"), Ui.c("text"), 10, 4)
+	_topic_btn.pressed.connect(func(): topics_requested.emit())
+	_practice_row.add_child(_topic_btn)
+
+	_prev_btn = Button.new()
+	_prev_btn.text = "◀"
+	_prev_btn.custom_minimum_size = Vector2(32, 28)
+	_prev_btn.add_theme_font_override("font", Ui.font(700))
+	_prev_btn.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
+	_style_button(_prev_btn, Ui.c("field"), Ui.c("text"), 4, 4)
+	_prev_btn.pressed.connect(func(): prev_scenario_pressed.emit())
+	_practice_row.add_child(_prev_btn)
+
+	_solved_chip = PanelContainer.new()
+	_solved_chip.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 8, 8, 4))
+	_solved_chip_label = Ui.scaled_label("1 / 22", 12, 700, Ui.c("secondary"))
+	_solved_chip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_solved_chip.add_child(_solved_chip_label)
+	_practice_row.add_child(_solved_chip)
+
+	_next_btn = Button.new()
+	_next_btn.text = "▶"
+	_next_btn.custom_minimum_size = Vector2(32, 28)
+	_next_btn.add_theme_font_override("font", Ui.font(700))
+	_next_btn.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
+	_style_button(_next_btn, Ui.c("field"), Ui.c("text"), 4, 4)
+	_next_btn.pressed.connect(func(): next_scenario_pressed.emit())
+	_practice_row.add_child(_next_btn)
 
 	_score_group = HBoxContainer.new()
 	_score_group.add_theme_constant_override("separation", 4)
@@ -272,7 +376,60 @@ func _build_top_bar() -> void:
 	_caption_content.add_child(_hard_badge)
 
 
+func _style_tab(button: Button, active: bool) -> void:
+	var bg := Ui.c("accent") if active else Color.TRANSPARENT
+	var fg := Color.WHITE if active else Ui.c("secondary")
+	button.add_theme_color_override("font_color", fg)
+	button.add_theme_color_override("font_hover_color", fg)
+	button.add_theme_color_override("font_pressed_color", fg)
+	button.add_theme_color_override("font_focus_color", fg)
+	button.add_theme_font_override("font", Ui.font(700 if active else 600))
+	button.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
+	var style := _padded(bg, 8, 12, 5)
+	button.add_theme_stylebox_override("normal", style)
+	button.add_theme_stylebox_override("hover", style)
+	button.add_theme_stylebox_override("pressed", style)
+	var focus := Ui.box(Color.TRANSPARENT, 8)
+	button.add_theme_stylebox_override("focus", focus)
+
+
+func set_mode(mode: String) -> void:
+	if mode in ["practice", "training"]:
+		current_mode = "practice"
+	else:
+		current_mode = "blitz"
+
+	var is_practice := current_mode == "practice"
+	_style_tab(_blitz_tab, not is_practice)
+	_style_tab(_practice_tab, is_practice)
+
+	_hud_line1.visible = not is_practice
+	_hud_line2.visible = false
+	_practice_row.visible = is_practice
+
+	_queue_layout()
+
+
+func update_practice_status(topic_name: String, solved_in_cat: int, total_in_cat: int, can_prev: bool, can_next: bool, is_cur_solved: bool = false) -> void:
+	_topic_btn.text = topic_name + " ▾"
+	_prev_btn.disabled = not can_prev
+	_prev_btn.modulate.a = 1.0 if can_prev else 0.4
+	_next_btn.disabled = not can_next
+	_next_btn.modulate.a = 1.0 if can_next else 0.4
+	if is_cur_solved:
+		_solved_chip_label.text = "✓ %d / %d" % [solved_in_cat, total_in_cat]
+		_solved_chip_label.add_theme_color_override("font_color", Ui.c("green"))
+	else:
+		_solved_chip_label.text = "%d / %d" % [solved_in_cat, total_in_cat]
+		_solved_chip_label.add_theme_color_override("font_color", Ui.c("secondary"))
+	if is_inside_tree():
+		call_deferred("_layout")
+
+
 func _fit_hud(width: float) -> void:
+	if current_mode == "practice":
+		_hud_line2.visible = false
+		return
 	var available := maxf(100.0, width - 24.0)
 	var font_size := roundi(17.0 * Ui.text_scale())
 	var combo_width := _combo_chip.get_combined_minimum_size().x + 4.0 if _combo_chip.visible else 0.0
@@ -441,6 +598,11 @@ func _build_collision_modal() -> void:
 	_collision_btn_row.vertical = true
 	_collision_btn_row.add_theme_constant_override("separation", 8)
 	_collision_content.add_child(_collision_btn_row)
+	_collision_retry_btn = _action_button(Ui.t("gameCrossroadsTryAgain"), false, func():
+		hide_collision_modal()
+		retry_pressed.emit())
+	_collision_retry_btn.visible = false
+	_collision_btn_row.add_child(_collision_retry_btn)
 	_collision_next_btn = _action_button(Ui.t("continueButton"), true, func():
 		hide_collision_modal()
 		next_scenario_pressed.emit())
@@ -452,25 +614,126 @@ func _build_collision_modal() -> void:
 	_collision_content.add_child(_collision_game_over_btn)
 
 
-func show_collision_modal(priority_name: String, reason: String, article: String, out_of_lives: bool) -> void:
+func show_collision_modal(priority_name: String, reason: String, article: String, out_of_lives: bool = false, is_practice: bool = false) -> void:
 	_collision_backdrop.visible = true
 	_collision_card.visible = true
 	_collision_should_go.text = Ui.t("gameCrossroadsShouldGo", {"name": priority_name})
 	_collision_reason.text = reason
 	_collision_article.text = article
 	_collision_article.visible = article != ""
-	_collision_btn_row.visible = not out_of_lives
-	_collision_game_over_btn.visible = out_of_lives
+	if is_practice:
+		_collision_retry_btn.visible = true
+		_collision_next_btn.visible = true
+		_collision_game_over_btn.visible = false
+		_collision_btn_row.visible = true
+	else:
+		_collision_retry_btn.visible = false
+		_collision_next_btn.visible = not out_of_lives
+		_collision_game_over_btn.visible = out_of_lives
+		_collision_btn_row.visible = not out_of_lives
 	_refresh_modal_visibility()
 	_layout()
 	if is_inside_tree():
 		call_deferred("_layout")
-		(_collision_game_over_btn if out_of_lives else _collision_next_btn).grab_focus()
+		if is_practice:
+			_collision_retry_btn.grab_focus()
+		elif out_of_lives:
+			_collision_game_over_btn.grab_focus()
+		else:
+			_collision_next_btn.grab_focus()
 
 
 func hide_collision_modal() -> void:
 	_collision_backdrop.visible = false
 	_collision_card.visible = false
+	_refresh_modal_visibility()
+
+
+func _build_topics_sheet() -> void:
+	_topics_backdrop = _backdrop()
+	var modal := _modal(_topics_backdrop)
+	_topics_card = modal[0]
+	_topics_content = modal[1]
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 10)
+	var title := Ui.scaled_label(Ui.t("gameCrossroadsTopics"), 20, 800, Ui.c("text"))
+	title.size_flags_horizontal = SIZE_EXPAND_FILL
+	header.add_child(title)
+	var close_topics_btn := _chrome_btn(ICON_CLOSE, Ui.t("close"))
+	close_topics_btn.pressed.connect(hide_topics_sheet)
+	header.add_child(close_topics_btn)
+	_topics_content.add_child(header)
+	_topics_content.add_child(_divider())
+
+	_topics_list = VBoxContainer.new()
+	_topics_list.add_theme_constant_override("separation", 8)
+	_topics_content.add_child(_topics_list)
+
+
+func show_topics_sheet(current_cat: String, cat_stats: Dictionary) -> void:
+	_topics_backdrop.visible = true
+	_topics_card.visible = true
+	for c in _topics_list.get_children():
+		_topics_list.remove_child(c)
+		c.queue_free()
+
+	var categories := [
+		{"id": "prioritySigns", "title": Ui.t("gameCrossroadsCatSigns")},
+		{"id": "trafficLights", "title": Ui.t("gameCrossroadsCatTrafficLights")},
+		{"id": "roundabout", "title": Ui.t("gameCrossroadsCatRoundabout")},
+		{"id": "regulator", "title": Ui.t("gameCrossroadsCatRegulator")},
+		{"id": "bicycles", "title": Ui.t("gameCrossroadsCatBicycles")},
+		{"id": "hardSituations", "title": Ui.t("gameCrossroadsCatHard")},
+	]
+
+	for cat in categories:
+		var cat_id: String = cat.id
+		var cat_title: String = cat.title
+		var is_active := cat_id == current_cat
+		var stat: Dictionary = cat_stats.get(cat_id, {"solved": 0, "total": 0})
+		var solved: int = stat.get("solved", 0)
+		var total: int = stat.get("total", 0)
+		var all_done := total > 0 and solved >= total
+
+		var btn := Button.new()
+		btn.size_flags_horizontal = SIZE_EXPAND_FILL
+		btn.custom_minimum_size.y = 44
+		var bg := Ui.c("accent_light") if is_active else Ui.c("field")
+		var fg := Ui.c("accent") if is_active else Ui.c("text")
+		_style_button(btn, bg, fg, 14, 8)
+
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = SIZE_EXPAND_FILL
+		row.mouse_filter = MOUSE_FILTER_IGNORE
+		btn.add_child(row)
+
+		var lbl := Ui.scaled_label(cat_title, 14, 700 if is_active else 600, fg)
+		lbl.size_flags_horizontal = SIZE_EXPAND_FILL
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(lbl)
+
+		var badge_str := "%s%d / %d" % ["✓ " if all_done else "", solved, total]
+		var badge_color := Ui.c("green") if all_done else (Ui.c("accent") if is_active else Ui.c("secondary"))
+		var badge := Ui.scaled_label(badge_str, 13, 700, badge_color)
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(badge)
+
+		btn.pressed.connect(func():
+			hide_topics_sheet()
+			category_selected.emit(cat_id))
+		_topics_list.add_child(btn)
+
+	_refresh_modal_visibility()
+	_layout()
+	if is_inside_tree(): call_deferred("_layout")
+
+
+func hide_topics_sheet() -> void:
+	if _topics_backdrop != null:
+		_topics_backdrop.visible = false
+	if _topics_card != null:
+		_topics_card.visible = false
 	_refresh_modal_visibility()
 
 
@@ -486,6 +749,7 @@ func _build_result_dialog() -> void:
 
 func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, prev_best: int, time_up := false) -> void:
 	hide_collision_modal()
+	hide_topics_sheet()
 	_results.show_results(score, solved, wrong, max_combo, is_record, prev_best, time_up)
 	_refresh_modal_visibility()
 	_layout()
@@ -499,7 +763,7 @@ func hide_results() -> void:
 
 func _refresh_modal_visibility() -> void:
 	# Called while constructing too: a later overlay may not yet have been allocated.
-	_modal_open = (_collision_backdrop != null and _collision_backdrop.visible) or (_results != null and _results.visible)
+	_modal_open = (_collision_backdrop != null and _collision_backdrop.visible) or (_results != null and _results.visible) or (_topics_backdrop != null and _topics_backdrop.visible)
 	_top_bar.visible = not _modal_open
 	_reset_cam_btn.visible = not _modal_open
 	if _modal_open:

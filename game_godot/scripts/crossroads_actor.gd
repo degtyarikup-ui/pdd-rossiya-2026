@@ -88,6 +88,9 @@ func _init(actor_data: Dictionary) -> void:
 	elif type_str == "motorcycle":
 		hw = 0.45
 		hl = 1.1
+	elif type_str in ["bicycle", "cyclist"]:
+		hw = 0.35
+		hl = 0.95
 	elif type_str == "suv":
 		hw = 1.0
 		hl = 2.3
@@ -133,6 +136,8 @@ func _build_model() -> void:
 		model_node = NpcVehicle.make("tram", paint)
 	elif type_str == "motorcycle":
 		model_node = NpcVehicle.make("motorcycle", paint)
+	elif type_str in ["bicycle", "cyclist"]:
+		model_node = NpcVehicle.make("cyclist", paint)
 	else:
 		# car or suv
 		var car_model := model_str if model_str != "" else ("suv" if type_str == "suv" else "sedan")
@@ -169,8 +174,12 @@ func _measure_model() -> void:
 
 
 func _lane_offset() -> float:
+	if data.has("lane_offset"):
+		return float(data.get("lane_offset"))
 	if is_tram or str(data.get("maneuver", "straight")) in ["left", "uTurn"]:
 		return LANE_OFFSET
+	if str(data.get("type", "")) in ["bicycle", "cyclist"]:
+		return OUTER_LANE + 1.4
 	return OUTER_LANE
 
 
@@ -182,7 +191,15 @@ func _place_at_start() -> void:
 	var side_name: String = data.get("side", "south")
 	var lane_x := _lane_offset()
 	# The complete front bumper stays behind 1.12, including a long tram/bus.
-	var stop_d := STOP_DIST + hl + 0.75
+	if data.has("waypoints") and (data["waypoints"] as Array).size() >= 2:
+		var wp: Array = data["waypoints"]
+		position = Vector3(float(wp[0][0]), 0, float(wp[0][1]))
+		var next_pt := Vector3(float(wp[1][0]), 0, float(wp[1][1]))
+		var direction := next_pt - position
+		if direction.length_squared() > 0.0001:
+			var yaw := atan2(direction.x, direction.z)
+			rotation.y = PI if is_equal_approx(absf(yaw), PI) else yaw
+		return
 
 	if is_pedestrian:
 		var p_start := _pedestrian_start(side_name)
@@ -194,6 +211,7 @@ func _place_at_start() -> void:
 			"west": rotation.y = 0.0
 		return
 
+	var stop_d := STOP_DIST + hl + 0.75
 	match side_name:
 		"south":
 			position = Vector3(lane_x, 0, stop_d)
@@ -307,6 +325,28 @@ func _build_trajectory() -> void:
 	path_curve.bake_interval = 0.15
 	var side_name: String = data.get("side", "south")
 	var maneuver: String = data.get("maneuver", "straight")
+	if data.has("waypoints") and (data["waypoints"] as Array).size() >= 2:
+		var wp: Array = data["waypoints"]
+		for pt in wp:
+			path_curve.add_point(Vector3(float(pt[0]), 0, float(pt[1])))
+		var n: int = wp.size()
+		var p_prev := Vector3(float(wp[n-2][0]), 0, float(wp[n-2][1]))
+		var p_last := Vector3(float(wp[n-1][0]), 0, float(wp[n-1][1]))
+		var exit_dir := (p_last - p_prev).normalized()
+		var exit_end := Vector3.ZERO
+		if absf(exit_dir.z) > absf(exit_dir.x):
+			exit_end = Vector3(5.4, 0, -EXIT_DIST) if exit_dir.z < 0.0 else Vector3(-5.4, 0, EXIT_DIST)
+		else:
+			exit_end = Vector3(EXIT_DIST, 0, 5.4) if exit_dir.x > 0.0 else Vector3(-EXIT_DIST, 0, -5.4)
+		if exit_end != Vector3.ZERO and p_last.distance_to(exit_end) > 1.0:
+			path_curve.add_point(exit_end)
+		path_length = path_curve.get_baked_length()
+		_turn_end_distance = minf(35.0, path_length * 0.35)
+		var is_bike := str(data.get("type", "")) in ["bicycle", "cyclist"]
+		var speed_mps: float = 16.0 if is_bike else 24.0
+		drive_speed = speed_mps / maxf(path_length, 1.0)
+		return
+
 	if is_pedestrian:
 		var p_end := _pedestrian_end(side_name)
 		path_curve.add_point(position)
@@ -421,6 +461,8 @@ func has_cleared_junction() -> bool:
 	if state != "driving" or drive_progress <= 0.0: return false
 	if is_pedestrian:
 		return position.distance_to(_pedestrian_end(str(data.get("side", "south")))) <= 1.6 - hw
+	if data.has("waypoints"):
+		return drive_progress * path_length >= 18.0 and position.length() > (STOP_DIST + hl + 0.6)
 	var p := position.rotated(Vector3.UP, -_side_angle())
 	var clearance := STOP_DIST + hl + 0.6
 	match str(data.get("maneuver", "straight")):

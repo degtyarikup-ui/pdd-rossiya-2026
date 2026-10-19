@@ -438,7 +438,7 @@ void main() {
 
   group('Godot Crossroads Scenarios Source of Truth Integrity Tests', () {
     test(
-      'game_godot/data/crossroads_scenarios.json contains all 33 scenarios with full ru/en/kk translations',
+      'game_godot/data/crossroads_scenarios.json contains all 50 scenarios with full ru/en/kk translations',
       () {
         final file = File('game_godot/data/crossroads_scenarios.json');
         expect(file.existsSync(), isTrue,
@@ -447,8 +447,8 @@ void main() {
         final raw = file.readAsStringSync();
         final List<dynamic> scenarios = jsonDecode(raw) as List<dynamic>;
 
-        expect(scenarios.length, equals(33),
-            reason: 'Must contain all 33 authored scenarios');
+        expect(scenarios.length, equals(50),
+            reason: 'Must contain all 50 authored scenarios');
 
         final ids = <String>{};
         for (final item in scenarios) {

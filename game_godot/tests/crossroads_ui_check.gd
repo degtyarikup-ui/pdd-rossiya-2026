@@ -31,7 +31,11 @@ func _settle(ui: CrossroadsUi) -> void:
 func _run() -> void:
 	var ui := CrossroadsUi.new()
 	root.add_child(ui)
-	_check("One game has no training switch", not ui.has_signal("mode_toggled") and not ui.has_method("set_mode"))
+	_check("Dual game modes supported (blitz and practice)", ui.has_signal("mode_changed") and ui.has_method("set_mode"))
+	ui.set_mode("practice")
+	_check("Practice mode activates", ui.current_mode == "practice")
+	ui.set_mode("blitz")
+	_check("Blitz mode activates", ui.current_mode == "blitz")
 	_check("Top control exits directly without pause or resume UI", not ui.has_method("show_pause") and not ui.has_signal("resume_pressed") and ui._close_btn.text == char(CrossroadsUi.ICON_CLOSE) and ui._close_btn.tooltip_text == Ui.t("gameExit"))
 	for viewport_size in [Vector2i(280, 640), Vector2i(390, 844), Vector2i(844, 390), Vector2i(1024, 768)]:
 		# Respect the project's canvas stretch: tests need to change both sizes.

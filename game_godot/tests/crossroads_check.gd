@@ -29,7 +29,7 @@ func _initialize() -> void:
 	var raw := FileAccess.get_file_as_string(path)
 	var scenarios = JSON.parse_string(raw)
 	_check("Scenarios JSON parsed as Array", scenarios is Array)
-	_check("Exactly 33 authored scenarios loaded", scenarios.size() == 33)
+	_check("Exactly 50 authored scenarios loaded", scenarios.size() == 50)
 
 	# 2. Priority order integrity in every scenario
 	var all_valid_orders := true
@@ -53,7 +53,7 @@ func _initialize() -> void:
 	for sc in scenarios:
 		for a in sc.get("actors", []):
 			found_types[a.get("type", "")] = true
-	for t in ["car", "suv", "truck", "bus", "tram", "motorcycle", "police", "emergency", "pedestrian"]:
+	for t in ["car", "suv", "truck", "bus", "tram", "motorcycle", "police", "emergency", "pedestrian", "bicycle"]:
 		_check("Vehicle type represented: " + t, found_types.has(t))
 
 	# 4. Localization in ru, en, kk
@@ -190,7 +190,11 @@ func _initialize() -> void:
 	var ui = CrossroadsUiScript.new()
 	_check("CrossroadsUi instantiates", ui != null)
 	_check("One timed game HUD is visible", ui._hud.visible)
-	_check("Training mode and category controls are removed", not ui.has_method("set_mode") and not ui.has_signal("mode_toggled") and not ui.has_signal("category_selected"))
+	_check("Dual game modes supported with set_mode and signals", ui.has_method("set_mode") and ui.has_signal("mode_changed") and ui.has_signal("category_selected"))
+	ui.set_mode("practice")
+	_check("Practice mode activates", ui.current_mode == "practice")
+	ui.set_mode("blitz")
+	_check("Blitz mode activates", ui.current_mode == "blitz")
 	_check("One game exits directly without a pause dialog", not ui.has_method("show_pause") and not ui.has_method("hide_pause") and not ui.has_signal("resume_pressed"))
 	ui.update_hud(120, 45, 4, 3)
 	_check("Score label updates to 120", ui._score_label.text == "120")

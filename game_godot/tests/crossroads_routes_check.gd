@@ -62,13 +62,23 @@ func _check_route(actor: CrossroadsActor, label: String) -> void:
 	_check(label + " has a baked route", actor.path_length > 10.0)
 	var p := actor.position.rotated(Vector3.UP, -actor._side_angle())
 	if not actor.is_pedestrian:
-		_check(label + " front bumper is behind 1.12", p.z - actor.hl > ActorScript.STOP_DIST + 0.4)
-		var target_lane := ActorScript.LANE_OFFSET if actor.is_tram or str(actor.data.maneuver) in ["left", "uTurn"] else ActorScript.OUTER_LANE
-		_check(label + " starts in the proper lane", is_equal_approx(p.x, target_lane))
-		_check(label + " does not straddle the lane divider", absf(p.x - ActorScript.LANE_WIDTH) > actor.hw)
-		_check_footprint(actor, label)
+		if actor.data.has("waypoints"):
+			# Roundabout circulating route or custom waypoints
+			_check_footprint(actor, label, true)
+		elif str(actor.data.get("type", "")) in ["bicycle", "cyclist"]:
+			_check(label + " front bumper is behind 1.12", p.z - actor.hl > ActorScript.STOP_DIST + 0.4)
+			var bike_lane := float(actor.data.get("lane_offset", ActorScript.OUTER_LANE + 1.4))
+			_check(label + " starts in the proper lane", is_equal_approx(p.x, bike_lane))
+			_check(label + " does not straddle the lane divider", absf(p.x - ActorScript.LANE_WIDTH) > actor.hw)
+			_check_footprint(actor, label)
+		else:
+			_check(label + " front bumper is behind 1.12", p.z - actor.hl > ActorScript.STOP_DIST + 0.4)
+			var target_lane := ActorScript.LANE_OFFSET if actor.is_tram or str(actor.data.get("maneuver", "straight")) in ["left", "uTurn"] else ActorScript.OUTER_LANE
+			_check(label + " starts in the proper lane", is_equal_approx(p.x, target_lane))
+			_check(label + " does not straddle the lane divider", absf(p.x - ActorScript.LANE_WIDTH) > actor.hw)
+			_check_footprint(actor, label)
 	else:
-		_check(label + " crosses along the zebra centre", is_equal_approx(absf(actor.position.x) if str(actor.data.side) in ["east", "west"] else absf(actor.position.z), 10.0))
+		_check(label + " crosses along the zebra centre", is_equal_approx(absf(actor.position.x) if str(actor.data.get("side", "")) in ["east", "west"] else absf(actor.position.z), 10.0))
 		_check(label + " crosses briskly at 7.0 m/s", is_equal_approx(actor.drive_speed * actor.path_length, 7.0))
 		_check(label + " feet follow the asphalt", actor.path_curve.sample_baked(actor.path_length * 0.5).y < 0.03)
 	var guide := actor.trajectory_guide
@@ -96,7 +106,7 @@ func _check_route(actor: CrossroadsActor, label: String) -> void:
 	actor._process_drive(100.0)
 	_check(label + " emits completion once at the full exit", actor.state == "done" and done_events[0] == 1 and clear_events[0] == 1)
 
-func _check_footprint(actor: CrossroadsActor, label: String) -> void:
+func _check_footprint(actor: CrossroadsActor, label: String, is_roundabout := false) -> void:
 	for i in FOOTPRINT_SAMPLES:
 		var offset := actor.path_length * float(i) / FOOTPRINT_SAMPLES
 		var p := actor.path_curve.sample_baked(offset)
@@ -107,13 +117,16 @@ func _check_footprint(actor: CrossroadsActor, label: String) -> void:
 		for lateral in [-1.0, 0.0, 1.0]:
 			for longitudinal in [-1.0, 0.0, 1.0]:
 				var corner: Vector3 = p + direction * actor.hl * longitudinal + side * actor.hw * lateral
-				if not _on_carriageway(corner):
+				if not _on_carriageway(corner, is_roundabout):
 					_check("%s whole body stays on the asphalt (offset %.2f, %s)" % [label, offset, corner], false)
 					return
 	_check(label + " whole body stays on the asphalt", true)
 
-func _on_carriageway(point: Vector3) -> bool:
+func _on_carriageway(point: Vector3, is_roundabout := false) -> bool:
 	var p := Vector2(absf(point.x), absf(point.z))
+	if is_roundabout:
+		var r := Vector2(point.x, point.z).length()
+		if r >= 5.5 and r <= 15.5: return true
 	var half_road := JunctionScript.HALF_ROAD
 	var tolerance := 0.1
 	if minf(p.x, p.y) <= half_road + tolerance: return true

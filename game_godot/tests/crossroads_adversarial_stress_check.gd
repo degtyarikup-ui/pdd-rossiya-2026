@@ -127,7 +127,7 @@ func _test_actor_bounding_extents_and_spawns() -> void:
 	var scenarios_file: FileAccess = FileAccess.open("res://data/crossroads_scenarios.json", FileAccess.READ)
 	check(scenarios_file != null, "crossroads_scenarios.json loaded successfully")
 	var scenarios: Array = JSON.parse_string(scenarios_file.get_as_text())
-	check(scenarios.size() == 33, "Exactly 33 scenarios present in JSON")
+	check(scenarios.size() == 50, "Exactly 50 scenarios present in JSON")
 
 	for s_idx: int in scenarios.size():
 		var sc: Dictionary = scenarios[s_idx]
