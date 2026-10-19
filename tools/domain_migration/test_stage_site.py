@@ -159,6 +159,90 @@ class StageSiteTests(unittest.TestCase):
             self.prepare()
         self.assertFalse(self.output.exists())
 
+    def test_account_login_requires_exact_origin_preserves_identity_api_and_ru_payments(self):
+        with self.assertRaisesRegex(ValueError, "exact"):
+            stage.stage_site(self.source, self.output, self.origin, enable_account_login=True)
+        self.origin = "https://pdd-drive.app"
+        self.write("app/index.html", '<html><head><base href="/app/"><script src="https://accounts.google.com/gsi/client"></script></head><body><script src="flutter_bootstrap.js"></script></body></html>')
+        self.write("index.html", '<html><head></head><body><a href="https://pdd-drive.ru/tarify/">Pay</a><a href="https://pdd-drive.ru/blog/">Blog</a><script>fetch("https://api.pdd-drive.app/api/track")</script></body></html>')
+        before = stage.inventory(self.source)
+        manifest = stage.stage_site(self.source, self.output, self.origin, enable_account_login=True)
+        self.assertEqual(before, stage.inventory(self.source))
+        self.assertEqual(manifest["mode"], "account-login")
+        self.assertEqual(manifest["required_headers"], stage.ACCOUNT_HEADERS)
+        compiled = (self.output / "app/main.dart.js").read_text()
+        self.assertIn('api="https://api.pdd-drive.app"', compiled)
+        self.assertIn('old="https://pdd-install-notifier.sergei-pdd.workers.dev"', compiled)
+        self.assertIn('oauth="https://oauth.yandex.ru/authorize"', compiled)
+        self.assertIn('tariffs="https://pdd-drive.ru/tarify/"', compiled)
+        page = (self.output / "app/index.html").read_text()
+        self.assertIn('src="https://accounts.google.com/gsi/client"', page)
+        self.assertIn("noindex,nofollow,noarchive,nosnippet", page)
+        self.assertNotIn("Sign-in, payments and cloud sync are disabled", page)
+        self.assertIn("Payments remain on pdd-drive.ru", page)
+        landing = (self.output / "index.html").read_text()
+        self.assertIn('href="https://pdd-drive.ru/tarify/"', landing)
+        self.assertIn('href="https://pdd-drive.app/blog/"', landing)
+        self.assertNotIn('/api/track', landing)
+        policy = manifest["required_headers"]
+        self.assertEqual(policy["Cross-Origin-Opener-Policy"], "same-origin-allow-popups")
+        self.assertEqual(policy["Cross-Origin-Embedder-Policy"], "unsafe-none")
+        self.assertNotIn("https://*.google.com", policy["Content-Security-Policy"])
+        self.assertIn("https://accounts.google.com/gsi/", policy["Content-Security-Policy"])
+
+    @unittest.skipUnless(shutil.which("node"), "Node is needed for exercising browser transport guards")
+    def test_account_transport_guard_preserves_login_and_cloud_progress_but_blocks_checkout(self):
+        harness = r'''
+const vm=require('node:vm');const sent=[];const events={};
+class XHR{open(method,url){sent.push(['xhr',method,url]);}}
+const context={URL,DOMException,location:{origin:'https://pdd-drive.app'},document:{baseURI:'https://pdd-drive.app/app/',addEventListener:(name,fn)=>events[name]=fn},navigator:{sendBeacon:()=>{throw Error('beacon');}},XMLHttpRequest:XHR};
+context.window=context;context.fetch=(input,options)=>{sent.push(['fetch',input,options?.method || 'GET']);return Promise.resolve('ok');};
+context.open=(...args)=>{sent.push(['open',...args]);return 'opened';};
+vm.runInNewContext(GUARD,context);
+(async()=>{
+ const allowed=[
+  ['https://api.pdd-drive.app/api/auth/session',{method:'POST'}],
+  ['https://pdd-install-notifier.sergei-pdd.workers.dev/api/auth/logout',{method:'POST'}],
+  ['https://api.pdd-drive.app/api/user/status',{}],
+  ['https://api.pdd-drive.app/api/user/sync',{method:'POST'}],
+  ['https://api.pdd-drive.app/api/user/progress',{}],
+  ['https://api.pdd-drive.app/api/user/progress/sync',{method:'POST'}],
+  ['https://accounts.google.com/gsi/client',{}],['/app/canvaskit/canvaskit.wasm',{}],
+ ];
+ for(const args of allowed)await context.fetch(...args);
+ const blocked=[
+  ['https://api.pdd-drive.app/api/user/pay-intent',{method:'POST'}],
+  ['https://api.pdd-drive.app/api/user/pay-check',{method:'POST'}],
+  ['https://api.pdd-drive.app/api/user/delete',{method:'POST'}],
+  ['https://api.pdd-drive.app/api/user/sync',{}],
+  ['https://api.pdd-drive.app/api/admin/users',{}],
+  ['https://api.pdd-drive.app/api/track',{method:'POST'}],
+  ['https://api.pdd-drive.app.evil.test/api/user/status',{}],
+  ['https://evil.test/api/user/status',{}], ['/api/user/status',{}],
+  ['/app/%2561pi/status',{}], ['https://api.pdd-drive.app/%255capi/user/status',{}],
+  ['http://api.pdd-drive.app/api/user/status',{}],
+ ];let denied=0;
+ for(const args of blocked)try{await context.fetch(...args);}catch(_){denied++;}
+ new XHR().open('POST','https://api.pdd-drive.app/api/user/progress/sync');
+ try{new XHR().open('POST','https://api.pdd-drive.app/api/user/pay-intent');}catch(_){denied++;}
+ for(const url of ['about:blank','https://accounts.google.com/o/oauth2/auth','https://oauth.yandex.ru/authorize','https://appleid.apple.com/auth/authorize','https://pdd-drive.ru/tarify/','https://pdd-drive.ru/privacy.html','https://pdd-drive.ru/terms.html'])if(context.open(url)!=='opened')throw Error('navigation');
+ for(const url of ['https://pay.example/','https://api.pdd-drive.app/api/user/pay-intent','https://pdd-drive.ru.evil.test/tarify/','https://pdd-drive.app/tarify/']){
+   const expected=url==='https://pdd-drive.app/tarify/'?'opened':null;
+   if(context.open(url)!==expected)throw Error('unexpected popup');
+ }
+ let prevented=0;events.click({target:{closest:()=>({href:'https://pay.example/'})},preventDefault(){prevented++;},stopImmediatePropagation(){}});
+ events.submit({preventDefault(){prevented++;},stopImmediatePropagation(){}});
+ if(context.navigator.sendBeacon('https://api.pdd-drive.app/api/track')!==false)throw Error('beacon');
+ process.stdout.write(JSON.stringify({denied,sent,prevented,mode:context.__PDD_ACCOUNT_LOGIN_PREVIEW__}));
+})();
+'''
+        result = subprocess.run([shutil.which("node"), "-e", "const GUARD=" + json.dumps(stage.ACCOUNT_ISOLATION_JS) + ";\n" + harness], text=True, capture_output=True, check=True)
+        data = json.loads(result.stdout)
+        self.assertEqual(data["denied"], 13)
+        self.assertEqual(len(data["sent"]), 17)
+        self.assertEqual(data["prevented"], 2)
+        self.assertTrue(data["mode"])
+
     @unittest.skipUnless(shutil.which("node"), "Node is needed for exercising browser transport guards")
     def test_runtime_guards_allow_assets_but_block_all_production_transports(self):
         harness = r'''

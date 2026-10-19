@@ -3,7 +3,19 @@
 // State/nonce are checked by the originating tab; /api/auth/session verifies
 // Apple's signature/audience and issues the actual application session.
 export const APPLE_WEB_CALLBACK_PATH = '/auth/apple/callback';
-export async function handleAppleWebCallback(request) {
+const APPLE_WEB_RETURN_URLS = Object.freeze({
+  'https://pdd-drive.ru': 'https://pdd-drive.ru/app/?oauth=2',
+  'https://pdd-drive.app': 'https://pdd-drive.app/app/?oauth=2',
+});
+
+// The hosting Worker chooses one fixed origin. Never derive it from the
+// provider form, Referer, Host, or a return URL supplied by the browser.
+// The default keeps existing production callbacks on their original domain.
+export async function handleAppleWebCallback(request, returnOrigin = 'https://pdd-drive.ru') {
+  const returnUrl = typeof returnOrigin === 'string' && Object.hasOwn(APPLE_WEB_RETURN_URLS, returnOrigin)
+    ? APPLE_WEB_RETURN_URLS[returnOrigin]
+    : null;
+  if (!returnUrl) return new Response('Invalid return origin', { status: 400 });
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST' } });
   if (!request.headers.get('content-type')?.startsWith('application/x-www-form-urlencoded')) return new Response('Invalid content type', { status: 415 });
   const reader = request.body?.getReader();
@@ -42,7 +54,7 @@ export async function handleAppleWebCallback(request) {
     }
   }
   return new Response(null, { status: 303, headers: {
-    Location: 'https://pdd-drive.ru/app/?oauth=2#pdd-oauth=' + encodeURIComponent(params.toString()),
+    Location: returnUrl + '#pdd-oauth=' + encodeURIComponent(params.toString()),
     'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
   } });
 }

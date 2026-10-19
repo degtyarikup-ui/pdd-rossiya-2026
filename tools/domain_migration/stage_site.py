@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Derive an isolated guest preview from an archived, deployed static site.
+"""Derive a preview from an archived, deployed static site without deployment.
 
 This does not build Flutter, deploy anything, migrate browser storage, contact an
 API, or change the input archive. Serve ONLY with the accompanying HTTP headers
 and a host that rejects API paths and non-GET/HEAD requests. The production build
-is retained for comparison; network isolation deliberately disables account,
-payment, analytics and cloud progress functionality.
+is retained for comparison. Guest mode disables account/payment/cloud features.
+The explicit --enable-account-login mode preserves the same account API and
+provider identities on pdd-drive.app while keeping checkout on pdd-drive.ru.
 """
 
 from __future__ import annotations
@@ -67,6 +68,34 @@ BACKEND_HOSTS = (
     "mc.yandex.ru", "mc.yandex.com", "www.google-analytics.com",
     "www.googletagmanager.com",
 )
+ACCOUNT_API_ORIGINS = (
+    "https://pdd-install-notifier.sergei-pdd.workers.dev", "https://api.pdd-drive.app",
+)
+ACCOUNT_OAUTH_HOSTS = {"accounts.google.com", "appleid.apple.com", "oauth.yandex.ru", "login.yandex.ru"}
+ACCOUNT_HEADERS = {
+    **HEADERS,
+    "Content-Security-Policy": CSP.replace(
+        "connect-src 'self'", "connect-src 'self' " + " ".join(ACCOUNT_API_ORIGINS) + " https://accounts.google.com/gsi/"
+    ).replace(
+        "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'", "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://accounts.google.com/gsi/"
+    ).replace(
+        "style-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/"
+    ).replace(
+        "frame-src 'self' blob:", "frame-src 'self' blob: https://accounts.google.com/"
+    ).replace(
+        "img-src 'self' data: blob:", "img-src 'self' data: blob: https://lh3.googleusercontent.com https://avatars.yandex.net"
+    ),
+    # Google OAuth popup must retain its opener; local CanvasKit does not need
+    # cross-origin isolation. No shared-memory game is enabled by this mode.
+    "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    "Cross-Origin-Embedder-Policy": "unsafe-none",
+}
+ACCOUNT_WARNING = """<aside id="staging-warning" aria-label="Тест / Test / Сынақ"><details>
+<summary>Тестовая копия · Test copy · Сынақ көшірмесі</summary>
+<p lang="ru">Проверка нового адреса. Вход использует ваш прежний аккаунт, Премиум и облачный прогресс. Локальный прогресс с .ru ещё не перенесён. Оплата остаётся на pdd-drive.ru.</p>
+<p lang="en">New address test. Sign-in uses your existing account, Premium and cloud progress. Local progress from .ru has not been transferred yet. Payments remain on pdd-drive.ru.</p>
+<p lang="kk">Жаңа мекенжайды тексеру. Кіру бұрынғы аккаунтыңызды, Премиумды және бұлттағы прогресті пайдаланады. .ru сайтындағы жергілікті прогресс әлі көшірілмеген. Төлем pdd-drive.ru сайтында қалады.</p>
+</details></aside>"""
 WARNING = """<aside id="staging-warning" aria-label="Тест / Test / Сынақ"><details>
 <summary>Тестовая копия · Test copy · Сынақ көшірмесі</summary>
 <p lang="ru">Тестовая копия. Вход, оплата и облачная синхронизация отключены. Прогресс сохраняется только в этом браузере и не перенесён с рабочего сайта. Не вводите личные данные.</p>
@@ -115,6 +144,76 @@ ISOLATION_JS = r"""// Isolated staging only. This never reads or deletes browser
 })();
 """
 
+ACCOUNT_ISOLATION_JS = r"""// Explicit account-login preview. Same account backend; no checkout or analytics.
+(() => {
+  'use strict';
+  const apiOrigins = new Set(['https://pdd-install-notifier.sergei-pdd.workers.dev', 'https://api.pdd-drive.app']);
+  const apiMethods = new Map([
+    ['/api/auth/session', 'POST'], ['/api/auth/logout', 'POST'],
+    ['/api/user/status', 'GET'], ['/api/user/sync', 'POST'],
+    ['/api/user/progress', 'GET'], ['/api/user/progress/sync', 'POST'],
+  ]);
+  const oauthHosts = new Set(['accounts.google.com', 'appleid.apple.com', 'oauth.yandex.ru', 'login.yandex.ru']);
+  const parse = value => {
+    const url = new URL(value, document.baseURI);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw Error('url');
+    let path = url.pathname;
+    for (let n=0;n<8;n++) {const next=decodeURIComponent(path); if(next===path)break; path=next;}
+    if (/[%\\\x00-\x1f\x7f]/.test(path) || path.split('/').some(part=>part==='.' || part==='..')) throw Error('path');
+    return {url, path};
+  };
+  const permitsTransport = (value, method) => {
+    try {
+      const {url,path} = parse(value);
+      if (url.origin === location.origin) return ['GET','HEAD'].includes(method) &&
+        !path.split('/').some(part=>part.toLowerCase()==='api' || part.toLowerCase().startsWith('__staging_disabled__'));
+      if (url.protocol!=='https:') return false;
+      if (apiOrigins.has(url.origin)) return apiMethods.get(path)===method;
+      return url.origin==='https://accounts.google.com' && path.startsWith('/gsi/') && ['GET','POST'].includes(method);
+    } catch (_) {return false;}
+  };
+  const permitsNavigation = value => {
+    try {
+      const {url,path}=parse(value);
+      if(url.origin===location.origin)return permitsTransport(value,'GET');
+      if(url.protocol!=='https:')return false;
+      if(oauthHosts.has(url.hostname) && url.port==='')return true;
+      return url.origin==='https://pdd-drive.ru' && (
+        /^\/(?:tarify|pay-done)(?:\/|$)/.test(path) || ['/privacy.html','/terms.html'].includes(path)
+      );
+    } catch (_) {return false;}
+  };
+  const deny=()=>new DOMException('Disabled in account-login preview','SecurityError');
+  const realFetch=window.fetch.bind(window);
+  window.fetch=(input,options)=> {
+    const method=String(options?.method || input?.method || 'GET').toUpperCase();
+    return permitsTransport(input?.url || input,method) ? realFetch(input,options) : Promise.reject(deny());
+  };
+  const realOpen=XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open=function(method,url,...rest){
+    if(!permitsTransport(url,String(method).toUpperCase()))throw deny();
+    return realOpen.call(this,method,url,...rest);
+  };
+  Object.defineProperty(navigator,'sendBeacon',{value:()=>false});
+  window.WebSocket=class {constructor(){throw deny();}};
+  window.EventSource=class {constructor(){throw deny();}};
+  const realWindowOpen=window.open.bind(window);
+  // GIS can open an empty placeholder synchronously before navigating its
+  // popup to accounts.google.com. about:blank itself performs no request.
+  window.open=(url,...rest)=>(url==='about:blank' || permitsNavigation(url)) ? realWindowOpen(url,...rest) : null;
+  document.addEventListener('click',event=>{
+    const link=event.target.closest?.('a,area');
+    if(link && !permitsNavigation(link.href)){event.preventDefault();event.stopImmediatePropagation();}
+  },true);
+  document.addEventListener('submit',event=>{event.preventDefault();event.stopImmediatePropagation();},true);
+  if(navigator.serviceWorker){
+    navigator.serviceWorker.getRegistrations().then(items=>items.forEach(item=>item.unregister()));
+    navigator.serviceWorker.register=()=>Promise.reject(deny());
+  }
+  window.__PDD_ACCOUNT_LOGIN_PREVIEW__=true;
+})();
+"""
+
 
 def digest(path: Path) -> str:
     h = hashlib.sha256()
@@ -150,20 +249,29 @@ def source_tree_hash(entries: dict) -> str:
     return hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def isolate_urls(text: str, origin: str) -> str:
+def isolate_urls(text: str, origin: str, enable_account_login: bool = False, app_asset: bool = False) -> str:
     # Keep these paths on the preview. Never use the new apex as the API host.
-    text = re.sub(r"https?://(?:www\.)?pdd-drive\.ru(?=[:/\s\"'<>?#]|$)", origin, text, flags=re.I)
+    # Existing app bundle .ru URLs include the approved payment website: do not
+    # rewrite any of those in account mode. The app's OAuth redirects use its
+    # current browser origin, not a blind replacement in compiled JavaScript.
+    if not (enable_account_login and app_asset):
+        protected = r"/(?:tarify|pay-done)(?:/|[?#\s\"'<>]|$)" if enable_account_login else r"(?!)"
+        text = re.sub(r"https?://(?:www\.)?pdd-drive\.ru(?!" + protected + r")(?=[:/\s\"'<>?#]|$)", origin, text, flags=re.I)
     text = re.sub(r"https?://app\.pdd-drive\.ru(?=[:/\s\"'<>?#]|$)", origin + "/app", text, flags=re.I)
     for host in BACKEND_HOSTS:
+        if enable_account_login and ("https://" + host in ACCOUNT_API_ORIGINS or host in ACCOUNT_OAUTH_HOSTS):
+            continue
         text = re.sub(r"(?:https?:)?//" + re.escape(host) + r"(?=[:/\s\"'<>?#]|$)", DISABLED, text, flags=re.I)
     return text
 
 
 class SafeHTML(HTMLParser):
-    def __init__(self, path: str, origin: str):
+    def __init__(self, path: str, origin: str, enable_account_login: bool = False):
         super().__init__(convert_charrefs=False)
         self.path = path
         self.origin = origin
+        self.enable_account_login = enable_account_login
+        self.headers = ACCOUNT_HEADERS if enable_account_login else HEADERS
         self.output: list[str] = []
         self.drop_script = False
         self.in_head = False
@@ -175,7 +283,7 @@ class SafeHTML(HTMLParser):
             return
         self.injected = True
         # frame-ancestors is header-only. The host MUST also send HEADERS.
-        meta_csp = CSP.replace("; frame-ancestors 'self'", "")
+        meta_csp = self.headers["Content-Security-Policy"].replace("; frame-ancestors 'self'", "")
         self.output.append('<meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet">'
                            '<meta http-equiv="Content-Security-Policy" content="' + html.escape(meta_csp, quote=True) + '">'
                            '<script src="/__staging/isolation.js"></script>'
@@ -190,7 +298,9 @@ class SafeHTML(HTMLParser):
             resolved = urlsplit(urljoin(self.origin + "/" + self.path, src))
             # Landing inline JS includes lead collection and analytics. Keep only
             # the audited cosmetic script; Flutter/Godot need their own scripts.
-            allowed = (self.path.startswith("app/") and (not src or resolved.netloc == urlsplit(self.origin).netloc)) or resolved.path == "/assets/site.js"
+            allowed = (self.path.startswith("app/") and (not src or resolved.netloc == urlsplit(self.origin).netloc or (
+                self.enable_account_login and resolved.scheme == "https" and resolved.netloc == "accounts.google.com" and resolved.path.startswith("/gsi/")
+            ))) or resolved.path == "/assets/site.js"
             self.drop_script = not allowed
             if self.drop_script:
                 return
@@ -204,11 +314,15 @@ class SafeHTML(HTMLParser):
             if key.lower().startswith("on") or key.lower() in {"ping", "formaction"}:
                 continue
             if value is not None:
-                value = isolate_urls(value, self.origin)
+                value = isolate_urls(value, self.origin, self.enable_account_login, self.path.startswith("app/"))
                 if key in {"href", "src", "action", "poster", "data"}:
                     resolved = urlsplit(urljoin(self.origin + "/" + self.path, value))
+                    allowed_external = self.enable_account_login and resolved.scheme == "https" and (
+                        (tag in {"a", "area"} and resolved.netloc == "pdd-drive.ru" and (re.match(r"^/(?:tarify|pay-done)(?:/|$)", resolved.path) or resolved.path in {"/privacy.html", "/terms.html"}))
+                        or (tag == "script" and resolved.netloc == "accounts.google.com" and resolved.path.startswith("/gsi/"))
+                    )
                     if (resolved.scheme not in {"http", "https"} or resolved.netloc != urlsplit(self.origin).netloc
-                            or unquote(resolved.path).startswith(("/api/", DISABLED))):
+                            or unquote(resolved.path).startswith(("/api/", DISABLED))) and not allowed_external:
                         if tag in {"a", "area"}:
                             value = "#staging-warning"
                         elif tag == "form":
@@ -226,7 +340,7 @@ class SafeHTML(HTMLParser):
             self.inject()
         if tag == "body":
             self.body_seen = True
-            self.output.append(WARNING)
+            self.output.append(ACCOUNT_WARNING if self.enable_account_login else WARNING)
 
     def handle_starttag(self, tag, attrs):
         self.start(tag, attrs)
@@ -243,7 +357,7 @@ class SafeHTML(HTMLParser):
 
     def handle_data(self, data):
         if not self.drop_script:
-            self.output.append(isolate_urls(data, self.origin))
+            self.output.append(isolate_urls(data, self.origin, self.enable_account_login, self.path.startswith("app/")))
 
     def handle_entityref(self, name):
         if not self.drop_script:
@@ -266,7 +380,7 @@ class SafeHTML(HTMLParser):
         return "".join(self.output)
 
 
-def stage_site(source: Path, destination: Path, origin: str, source_revision: str = "") -> dict:
+def stage_site(source: Path, destination: Path, origin: str, source_revision: str = "", *, enable_account_login: bool = False) -> dict:
     parsed_origin = urlsplit(origin)
     hostname = (parsed_origin.hostname or "").rstrip(".")
     if (parsed_origin.scheme != "https" or not parsed_origin.hostname or parsed_origin.username
@@ -277,6 +391,9 @@ def stage_site(source: Path, destination: Path, origin: str, source_revision: st
             or hostname == "pdd-drive.ru" or hostname.endswith(".pdd-drive.ru")
             or hostname in BACKEND_HOSTS):
         raise ValueError("Preview origin must be a separate HTTPS origin without a path or credentials")
+    if enable_account_login and origin != "https://pdd-drive.app":
+        raise ValueError("Account login is allowed only on the exact https://pdd-drive.app origin")
+    headers = ACCOUNT_HEADERS if enable_account_login else HEADERS
     if source.is_symlink() or destination.is_symlink():
         raise ValueError("Source/destination cannot be a symlink")
     source = source.resolve(strict=True)
@@ -307,9 +424,9 @@ def stage_site(source: Path, destination: Path, origin: str, source_revision: st
             dst.parent.mkdir(parents=True, exist_ok=True)
             if src.suffix.lower() in TEXT_SUFFIXES:
                 original = src.read_text(encoding="utf-8")
-                text = isolate_urls(original, origin)
+                text = isolate_urls(original, origin, enable_account_login, rel.startswith("app/"))
                 if src.suffix.lower() in {".html", ".htm"}:
-                    parser = SafeHTML(rel, origin)
+                    parser = SafeHTML(rel, origin, enable_account_login)
                     parser.feed(text)
                     parser.close()
                     text = parser.result()
@@ -327,16 +444,17 @@ def stage_site(source: Path, destination: Path, origin: str, source_revision: st
                 shutil.copyfile(src, dst)
             dst.chmod(0o644)
         (destination / "__staging").mkdir(exist_ok=True)
-        (destination / "__staging/isolation.js").write_text(ISOLATION_JS, encoding="utf-8")
+        (destination / "__staging/isolation.js").write_text(ACCOUNT_ISOLATION_JS if enable_account_login else ISOLATION_JS, encoding="utf-8")
         (destination / "__staging/warning.css").write_text(WARNING_CSS, encoding="utf-8")
         (destination / "robots.txt").write_text("User-agent: *\nDisallow: /\n", encoding="utf-8")
-        (destination / "_headers").write_text("/*\n" + "".join(f"  {key}: {value}\n" for key, value in HEADERS.items()), encoding="utf-8")
+        (destination / "_headers").write_text("/*\n" + "".join(f"  {key}: {value}\n" for key, value in headers.items()), encoding="utf-8")
         after = inventory(source)
         if after != before:
             raise ValueError("Source changed during preparation; discard preview and recapture archive")
         output_hashes = inventory(destination)
         manifest = {
             "format": 1,
+            "mode": "account-login" if enable_account_login else "guest",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "origin": origin,
             "source_revision": source_revision,
@@ -345,9 +463,9 @@ def stage_site(source: Path, destination: Path, origin: str, source_revision: st
             "staged_files": output_hashes,
             "changed_files": changed,
             "omitted_files": omitted,
-            "required_headers": HEADERS,
-            "host_requirements": ["Reject non-GET/HEAD requests", "Return 403 for /api, /api/* and /__staging_disabled__*", "Never proxy missing files to production"],
-            "limits": ["Isolated guest preview, not a data migration", "No sign-in, payments, analytics or cloud sync", "Existing browser progress is neither read nor imported", "Some games or remote fallback glyphs may require a fresh isolated build", "HTTP headers and host path/method enforcement are mandatory"],
+            "required_headers": headers,
+            "host_requirements": ["Reject non-GET/HEAD requests except the fixed Apple callback in account-login mode", "Return 403 for /api, /api/* and /__staging_disabled__*", "Never proxy missing files to production"],
+            "limits": (["Explicit account-login preview using existing production API", "Login/profile/Premium/cloud progress allowed; checkout, deletion, analytics and unrelated writes blocked", "Payments remain on the existing .ru website"] if enable_account_login else ["Isolated guest preview, not a data migration", "No sign-in, payments, analytics or cloud sync"]) + ["Existing browser progress is neither read nor imported", "Some games or remote fallback glyphs may require a fresh isolated build", "HTTP headers and host path/method enforcement are mandatory"],
         }
         (destination / "staging-provenance.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         return manifest
@@ -364,9 +482,10 @@ def main():
     parser.add_argument("--destination", required=True, type=Path)
     parser.add_argument("--origin", required=True)
     parser.add_argument("--source-revision", default="")
+    parser.add_argument("--enable-account-login", action="store_true", help="Explicitly allow existing accounts/cloud sync on https://pdd-drive.app; preserve .ru payments")
     args = parser.parse_args()
     try:
-        manifest = stage_site(args.source, args.destination, args.origin, args.source_revision)
+        manifest = stage_site(args.source, args.destination, args.origin, args.source_revision, enable_account_login=args.enable_account_login)
     except (OSError, ValueError, UnicodeError) as error:
         parser.exit(1, f"Staging preparation refused: {error}\n")
     print(json.dumps({"destination": str(args.destination.resolve()), "files": len(manifest["staged_files"]), "source_tree_sha256": manifest["source_tree_sha256"]}))

@@ -37,3 +37,50 @@ test('provider cancellation preserves the state and never forwards arbitrary err
     assert.equal(params.get('error'),error === 'private provider error' ? 'provider_rejected' : 'access_denied');
   }
 });
+test('app host callback returns to the fixed app origin without changing the OAuth state', async () => {
+  const response = await handleAppleWebCallback(request({
+    state, code: 'single-use-code', id_token: 'signed-token',
+    redirect_uri: 'https://evil.test', return_origin: 'https://evil.test',
+  }), 'https://pdd-drive.app');
+  assert.equal(response.status, 303);
+  const destination = new URL(response.headers.get('location'));
+  assert.equal(destination.origin, 'https://pdd-drive.app');
+  assert.equal(destination.pathname, '/app/');
+  assert.equal(destination.search, '?oauth=2');
+  const params = new URLSearchParams(decodeURIComponent(destination.hash.slice('#pdd-oauth='.length)));
+  assert.equal(params.get('state'), state);
+  assert.equal(params.get('id_token'), 'signed-token');
+  assert.equal(params.get('code'), 'single-use-code');
+  assert.equal(params.has('redirect_uri'), false);
+  assert.equal(params.has('return_origin'), false);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
+  assert.equal(response.headers.get('set-cookie'), null);
+});
+test('return origin is an exact server-side allowlist and cannot become an open redirect', async () => {
+  for (const returnOrigin of [
+    'https://evil.test', 'https://pdd-drive.app.evil.test',
+    'https://pdd-drive.app@evil.test', 'http://pdd-drive.app',
+    'https://pdd-drive.app/', 'https://pdd-drive.app/app/',
+    '//pdd-drive.app', '__proto__', 'constructor', {}, null,
+  ]) {
+    const response = await handleAppleWebCallback(request({ state, code: 'x', id_token: 'y' }), returnOrigin);
+    assert.equal(response.status, 400);
+    assert.equal(response.headers.get('location'), null);
+  }
+});
+test('both callback origins reject state routing markers and preserve safe cancellation', async () => {
+  for (const returnOrigin of ['https://pdd-drive.ru', 'https://pdd-drive.app']) {
+    for (const invalidState of ['app.' + state, 'ru.' + state, 'https://evil.test/' + state, state.toUpperCase(), state.slice(1)]) {
+      const response = await handleAppleWebCallback(request({ state: invalidState, code: 'x', id_token: 'y' }), returnOrigin);
+      assert.equal(response.status, 400);
+      assert.equal(response.headers.get('location'), null);
+    }
+    const response = await handleAppleWebCallback(request({ state, error: 'private provider error' }), returnOrigin);
+    assert.equal(response.status, 303);
+    const destination = new URL(response.headers.get('location'));
+    assert.equal(destination.origin, returnOrigin);
+    const params = new URLSearchParams(decodeURIComponent(destination.hash.slice('#pdd-oauth='.length)));
+    assert.deepEqual(Object.fromEntries(params), { provider: 'apple', state, error: 'provider_rejected' });
+  }
+});

@@ -2,6 +2,44 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/services/web_oauth_state.dart';
 
 void main() {
+  const notifierUrl = 'https://pdd-install-notifier.sergei-pdd.workers.dev';
+  test('Apple on the app origin returns to its fixed same-origin callback', () {
+    for (final url in [
+      'https://pdd-drive.app/app/',
+      'https://pdd-drive.app:443/app/?return_to=https://example.com/#test',
+      'https://pdd-drive.app/other/path',
+    ]) {
+      expect(
+        appleWebOAuthCallback(Uri.parse(url), notifierUrl: notifierUrl),
+        Uri.parse('https://pdd-drive.app/auth/apple/callback'),
+      );
+    }
+  });
+  test('other origins retain the existing Apple callback', () {
+    for (final url in [
+      'https://pdd-drive.ru/app/',
+      'https://pdd-drive.app.evil.example/app/',
+      'https://evil.example/?origin=https://pdd-drive.app',
+      'https://preview.pdd-drive.app/app/',
+      'https://pdd-drive.app:8443/app/',
+      'https://user@pdd-drive.app/app/',
+      'http://pdd-drive.app/app/',
+      'http://localhost:8000/app/',
+      '/app/',
+    ]) {
+      expect(
+        appleWebOAuthCallback(Uri.parse(url), notifierUrl: notifierUrl),
+        Uri.parse('$notifierUrl/auth/apple/callback'),
+      );
+    }
+    expect(
+      appleWebOAuthCallback(
+        Uri.parse('https://pdd-drive.ru/app/'),
+        notifierUrl: 'https://test-worker.example',
+      ),
+      Uri.parse('https://test-worker.example/auth/apple/callback'),
+    );
+  });
   test(
     'Safari guidance appears on iOS embedded browsers, not Safari or Android',
     () {
