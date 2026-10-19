@@ -59,6 +59,9 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
       AuthFailure.credential => appL10n.authErrorCredential,
       AuthFailure.server => appL10n.authErrorServer,
       AuthFailure.response => appL10n.authErrorResponse,
+      AuthFailure.webExpired => appL10n.authErrorWebExpired,
+      AuthFailure.webState => appL10n.authErrorWebState,
+      AuthFailure.webNonce => appL10n.authErrorWebNonce,
       null => appL10n.authFailed,
     };
     final id = auth.lastDiagnosticId;

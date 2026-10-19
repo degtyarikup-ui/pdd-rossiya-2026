@@ -1282,6 +1282,18 @@ class AppLocalizationsKk extends AppLocalizations {
       'Кіру аяқталмады. Қолданбаны қайта іске қосып, қайталап көріңіз. Көмектеспесе, телефондағы күн мен уақытты тексеріңіз.';
 
   @override
+  String get authErrorWebExpired =>
+      'Кіру сұрауының мерзімі өтті. Кіру түймесін қайта басып, осы қойындыда кіруді аяқтаңыз.';
+
+  @override
+  String get authErrorWebState =>
+      'Кіру сұрауын растау мүмкін болмады. Осы қойындыда кіруді қайта бастап, қолданбаға оралғанша күтіңіз.';
+
+  @override
+  String get authErrorWebNonce =>
+      'Apple жауабын тексеру мүмкін болмады. Осы қойындыда кіруді қайта бастаңыз.';
+
+  @override
   String get paySuccessActivated => 'Премиум қосылды. Рақмет!';
 
   @override

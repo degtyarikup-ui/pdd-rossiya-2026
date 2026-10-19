@@ -1282,6 +1282,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign-in didn\'t finish. Restart the app and try again. If that doesn\'t help, check the date and time on your phone.';
 
   @override
+  String get authErrorWebExpired =>
+      'The sign-in request has expired. Press the sign-in button again and finish in this same tab.';
+
+  @override
+  String get authErrorWebState =>
+      'The sign-in request could not be confirmed. Start again in this tab and wait to return to the app.';
+
+  @override
+  String get authErrorWebNonce =>
+      'The Apple response could not be verified. Start sign-in again in this same tab.';
+
+  @override
   String get paySuccessActivated => 'Premium is on. Thank you!';
 
   @override

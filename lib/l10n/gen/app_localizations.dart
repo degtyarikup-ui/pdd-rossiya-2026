@@ -2272,6 +2272,24 @@ abstract class AppLocalizations {
   /// **'Вход не завершился. Перезапустите приложение и попробуйте ещё раз. Если не помогло — проверьте дату и время на телефоне.'**
   String get authErrorResponse;
 
+  /// No description provided for @authErrorWebExpired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Время для входа истекло. Нажмите кнопку входа ещё раз и завершите вход в этой же вкладке.'**
+  String get authErrorWebExpired;
+
+  /// No description provided for @authErrorWebState.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось подтвердить запрос на вход. Начните вход заново в этой вкладке и дождитесь возврата в приложение.'**
+  String get authErrorWebState;
+
+  /// No description provided for @authErrorWebNonce.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось проверить ответ Apple. Начните вход заново в этой же вкладке.'**
+  String get authErrorWebNonce;
+
   /// No description provided for @paySuccessActivated.
   ///
   /// In ru, this message translates to:

@@ -33,6 +33,9 @@ enum AuthFailure {
   credential,
   server,
   response,
+  webExpired,
+  webState,
+  webNonce,
 }
 
 class AuthService extends ChangeNotifier {
@@ -477,7 +480,9 @@ class AuthService extends ChangeNotifier {
         lastFailure = params['error'] == 'access_denied'
             ? AuthFailure.cancelled
             : params['error'] == 'invalid_state'
-            ? AuthFailure.response
+            ? params['return_issue'] == 'expired'
+                  ? AuthFailure.webExpired
+                  : AuthFailure.webState
             : AuthFailure.provider;
         return false;
       }
@@ -487,7 +492,7 @@ class AuthService extends ChangeNotifier {
         if (nonce == null ||
             nonce.isEmpty ||
             jwtClaim(token, 'nonce') != nonce) {
-          lastFailure = AuthFailure.response;
+          lastFailure = AuthFailure.webNonce;
           return false;
         }
         return await _completeAppleSignIn(

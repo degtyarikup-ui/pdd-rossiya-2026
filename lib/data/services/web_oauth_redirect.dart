@@ -45,6 +45,10 @@ Map<String, String>? takeWebOAuthReturn() {
     );
     return validateWebOAuthReturn(params, pending, DateTime.now());
   } catch (_) {
-    return {'provider': 'unknown', 'error': 'invalid_state'};
+    return {
+      'provider': 'unknown',
+      'error': 'invalid_state',
+      'return_issue': 'malformed',
+    };
   }
 }

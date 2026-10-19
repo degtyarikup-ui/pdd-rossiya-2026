@@ -1303,6 +1303,18 @@ class AppLocalizationsRu extends AppLocalizations {
       'Вход не завершился. Перезапустите приложение и попробуйте ещё раз. Если не помогло — проверьте дату и время на телефоне.';
 
   @override
+  String get authErrorWebExpired =>
+      'Время для входа истекло. Нажмите кнопку входа ещё раз и завершите вход в этой же вкладке.';
+
+  @override
+  String get authErrorWebState =>
+      'Не удалось подтвердить запрос на вход. Начните вход заново в этой вкладке и дождитесь возврата в приложение.';
+
+  @override
+  String get authErrorWebNonce =>
+      'Не удалось проверить ответ Apple. Начните вход заново в этой же вкладке.';
+
+  @override
   String get paySuccessActivated => 'Премиум включён. Спасибо!';
 
   @override

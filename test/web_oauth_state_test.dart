@@ -119,6 +119,68 @@ void main() {
       'expected-nonce',
     );
   });
+  test('invalid returns expose only a fixed reason, never credentials', () {
+    final params = {
+      'provider': 'apple',
+      'state': state,
+      'id_token': 'private-credential',
+      'code': 'private-code',
+    };
+    final cases = <String, Map<String, dynamic>?>{
+      'missing': null,
+      'mismatch': {...pending('apple'), 'state': newWebOAuthState()},
+      'expired': {
+        ...pending('apple'),
+        'startedAt': now
+            .subtract(const Duration(minutes: 10, milliseconds: 1))
+            .millisecondsSinceEpoch,
+      },
+      'future': {
+        ...pending('apple'),
+        'startedAt': now
+            .add(const Duration(milliseconds: 1))
+            .millisecondsSinceEpoch,
+      },
+      'malformed': {...pending('apple'), 'startedAt': 'not-a-time'},
+    };
+    for (final entry in cases.entries) {
+      expect(validateWebOAuthReturn(params, entry.value, now), {
+        'provider': 'unknown',
+        'error': 'invalid_state',
+        'return_issue': entry.key,
+      });
+    }
+  });
+  test('the ten-minute limit and matching request remain required', () {
+    final params = {
+      'provider': 'apple',
+      'state': state,
+      'id_token': 'credential',
+    };
+    final boundary = {
+      ...pending('apple'),
+      'startedAt': now
+          .subtract(const Duration(minutes: 10))
+          .millisecondsSinceEpoch,
+    };
+    expect(validateWebOAuthReturn(params, boundary, now)['error'], isNull);
+    expect(
+      validateWebOAuthReturn({...params, 'state': 'other'}, boundary, now),
+      {
+        'provider': 'unknown',
+        'error': 'invalid_state',
+        'return_issue': 'mismatch',
+      },
+    );
+    expect(
+      validateWebOAuthReturn(
+        {...params, 'return_issue': 'expired'},
+        boundary,
+        now,
+      ).containsKey('return_issue'),
+      isFalse,
+    );
+  });
   test(
     'cancellation retains state validation and missing state cannot log in',
     () {

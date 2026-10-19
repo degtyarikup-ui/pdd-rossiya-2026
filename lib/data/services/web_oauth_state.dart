@@ -38,21 +38,35 @@ Map<String, String> validateWebOAuthReturn(
   Map<String, dynamic>? pending,
   DateTime now,
 ) {
-  final provider = pending?['provider'];
-  final started = pending?['startedAt'];
+  Map<String, String> invalid(String issue) => {
+    'provider': 'unknown',
+    'error': 'invalid_state',
+    'return_issue': issue,
+  };
+  if (pending == null) return invalid('missing');
+  final provider = pending['provider'];
+  final started = pending['startedAt'];
   if (!['apple', 'yandex'].contains(provider) ||
-      params['provider'] != provider ||
-      pending?['state'] is! String ||
-      (pending!['state'] as String).length != 64 ||
-      params['state'] != pending['state'] ||
+      pending['state'] is! String ||
+      (pending['state'] as String).length != 64 ||
       started is! int ||
-      now.millisecondsSinceEpoch - started < 0 ||
-      now.millisecondsSinceEpoch - started >
-          const Duration(minutes: 10).inMilliseconds) {
-    return {'provider': 'unknown', 'error': 'invalid_state'};
+      (provider == 'apple' &&
+          pending['nonce'] != null &&
+          pending['nonce'] is! String)) {
+    return invalid('malformed');
   }
+  if (params['provider'] != provider || params['state'] != pending['state']) {
+    return invalid('mismatch');
+  }
+  final age = now.millisecondsSinceEpoch - started;
+  if (age < 0) return invalid('future');
+  if (age > const Duration(minutes: 10).inMilliseconds) {
+    return invalid('expired');
+  }
+  // A reason is assigned only by validation, never by provider parameters.
+  final validated = {...params}..remove('return_issue');
   return {
-    ...params,
+    ...validated,
     if (provider == 'apple')
       'expected_nonce': pending['nonce'] as String? ?? '',
   };

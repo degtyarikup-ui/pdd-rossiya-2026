@@ -15,6 +15,9 @@ void main() {
     'authErrorCredential',
     'authErrorServer',
     'authErrorResponse',
+    'authErrorWebExpired',
+    'authErrorWebState',
+    'authErrorWebNonce',
     'authFailed',
     'purchaseVerificationPending',
     'webPayFailed',
@@ -65,7 +68,7 @@ void main() {
   test('английские сообщения без кириллицы, казахские без английских слов', () {
     final cyrillic = RegExp('[А-Яа-яЁё]');
     // Названия магазинов и сети — единственные допустимые латинские слова.
-    final allowed = RegExp(r'Wi‑Fi|Google Play|App Store|\{store\}');
+    final allowed = RegExp(r'Wi‑Fi|Google Play|App Store|Apple|\{store\}');
     final latin = RegExp('[A-Za-z]');
     for (final key in keys) {
       final english = en[key] as String;
