@@ -176,6 +176,8 @@ func _measure_model() -> void:
 func _lane_offset() -> float:
 	if data.has("lane_offset"):
 		return float(data.get("lane_offset"))
+	if data.get("isDirt", false):
+		return 1.0
 	if is_tram or str(data.get("maneuver", "straight")) in ["left", "uTurn"]:
 		return LANE_OFFSET
 	if str(data.get("type", "")) in ["bicycle", "cyclist"]:
@@ -373,19 +375,21 @@ func _build_trajectory() -> void:
 			var tangent := 9.2
 			var radius := tangent - lane
 			var k := radius * 0.55228475
+			var exit_lane_r := 5.4 if data.get("isDirt", false) else lane
 			_add_route_point(Vector3(lane, 0, tangent), angle, Vector3.ZERO, Vector3(0, 0, -k))
-			_add_route_point(Vector3(tangent, 0, lane), angle, Vector3(-k, 0, 0))
+			_add_route_point(Vector3(tangent, 0, exit_lane_r), angle, Vector3(-k, 0, 0))
 			_turn_end_distance = path_curve.get_baked_length()
-			_add_route_point(Vector3(EXIT_DIST, 0, lane), angle)
+			_add_route_point(Vector3(EXIT_DIST, 0, exit_lane_r), angle)
 		"left":
 			# Begin in the leftmost lane and leave entirely on the right half of the exit.
 			var tangent := 5.4
 			var radius := tangent + lane
 			var k := radius * 0.55228475
+			var exit_lane_l := 1.8 if data.get("isDirt", false) else lane
 			_add_route_point(Vector3(lane, 0, tangent), angle, Vector3.ZERO, Vector3(0, 0, -k))
-			_add_route_point(Vector3(-tangent, 0, -lane), angle, Vector3(k, 0, 0))
+			_add_route_point(Vector3(-tangent, 0, -exit_lane_l), angle, Vector3(k, 0, 0))
 			_turn_end_distance = path_curve.get_baked_length()
-			_add_route_point(Vector3(-EXIT_DIST, 0, -lane), angle)
+			_add_route_point(Vector3(-EXIT_DIST, 0, -exit_lane_l), angle)
 		"uTurn":
 			# Two quarter circles finish the U-turn inside the intersection; the long
 			# exit is a straight segment, rather than a 100 m stretched Bezier loop.

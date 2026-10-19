@@ -630,6 +630,12 @@ func _load_current_scenario() -> void:
 			if sign_data.get("side", "") == a_dict.get("side", "") and sign_data.get("code", "") == "2.5":
 				a_dict["stopSign"] = tl == null or tl.get("state", "") in ["off", "flashing_yellow"]
 
+		var arm_side: String = str(a_dict.get("side", ""))
+		var dirt_arms: Variant = sc.get("dirtArms", null)
+		var single_dirt: Variant = sc.get("dirtArm", null)
+		if (dirt_arms is Array and dirt_arms.has(arm_side)) or (single_dirt is Array and single_dirt.has(arm_side)) or (single_dirt is String and single_dirt == arm_side):
+			a_dict["isDirt"] = true
+
 		var actor := CrossroadsActorScript.new(a_dict)
 		actor.drive_completed.connect(_on_actor_drive_completed)
 		actors_root.add_child(actor)
@@ -647,14 +653,9 @@ func _load_current_scenario() -> void:
 	ui.update_caption(sc_title, sc_sub, cur_step, active_actors.size(), is_hard)
 	if game_mode == "practice":
 		var is_cur_solved: bool = practice_solved.has(str(sc.get("id", "")))
-		var indices := _get_category_indices(practice_category)
-		var solved_count_cat := 0
-		for idx in indices:
-			if practice_solved.has(str(all_scenarios[idx].get("id", ""))):
-				solved_count_cat += 1
 		var can_prev := cur_scenario_idx > 0
 		var can_next := cur_scenario_idx < scenario_order.size() - 1
-		ui.update_practice_status(_category_title(practice_category), solved_count_cat, scenario_order.size(), can_prev, can_next, is_cur_solved)
+		ui.update_practice_status(_category_title(practice_category), cur_scenario_idx + 1, scenario_order.size(), can_prev, can_next, is_cur_solved)
 	fit_camera_to_scenario()
 	_fit_scenario_after_layout(scene_sequence)
 

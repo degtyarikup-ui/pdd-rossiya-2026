@@ -28,6 +28,8 @@ const ICON_HEART_EMPTY := 0xf737
 const ICON_TIMER := 0xf023c
 const ICON_CAMERA := 0xf627
 const ICON_WARNING := 0xf02a0
+const ICON_BOLT := 0xf5ca
+const ICON_PRACTICE := 0xf012e
 
 var current_mode := "blitz"
 
@@ -225,7 +227,7 @@ func _build_top_bar() -> void:
 	_top_bar.add_child(_mode_row)
 
 	_mode_pill = PanelContainer.new()
-	_mode_pill.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 10, 3, 3))
+	_mode_pill.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 6, 3, 3))
 	_mode_row.add_child(_mode_pill)
 
 	var mode_tabs := HBoxContainer.new()
@@ -233,7 +235,9 @@ func _build_top_bar() -> void:
 	_mode_pill.add_child(mode_tabs)
 
 	_blitz_tab = Button.new()
-	_blitz_tab.text = Ui.t("gameCrossroadsModeBlitz")
+	_blitz_tab.text = char(ICON_BOLT)
+	_blitz_tab.tooltip_text = Ui.t("gameCrossroadsModeBlitz")
+	_blitz_tab.custom_minimum_size = Vector2(36, 28)
 	_style_tab(_blitz_tab, true)
 	_blitz_tab.pressed.connect(func():
 		if current_mode != "blitz":
@@ -243,7 +247,9 @@ func _build_top_bar() -> void:
 	mode_tabs.add_child(_blitz_tab)
 
 	_practice_tab = Button.new()
-	_practice_tab.text = Ui.t("gameCrossroadsModePractice")
+	_practice_tab.text = char(ICON_PRACTICE)
+	_practice_tab.tooltip_text = Ui.t("gameCrossroadsModePractice")
+	_practice_tab.custom_minimum_size = Vector2(36, 28)
 	_style_tab(_practice_tab, false)
 	_practice_tab.pressed.connect(func():
 		if current_mode != "practice":
@@ -383,9 +389,11 @@ func _style_tab(button: Button, active: bool) -> void:
 	button.add_theme_color_override("font_hover_color", fg)
 	button.add_theme_color_override("font_pressed_color", fg)
 	button.add_theme_color_override("font_focus_color", fg)
-	button.add_theme_font_override("font", Ui.font(700 if active else 600))
-	button.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
-	var style := _padded(bg, 8, 12, 5)
+	if Ui._icon_font == null:
+		Ui._icon_font = load(Ui.ICON_FONT)
+	button.add_theme_font_override("font", Ui._icon_font)
+	button.add_theme_font_size_override("font_size", 18)
+	var style := _padded(bg, 8, 8, 4)
 	button.add_theme_stylebox_override("normal", style)
 	button.add_theme_stylebox_override("hover", style)
 	button.add_theme_stylebox_override("pressed", style)
@@ -410,17 +418,17 @@ func set_mode(mode: String) -> void:
 	_queue_layout()
 
 
-func update_practice_status(topic_name: String, solved_in_cat: int, total_in_cat: int, can_prev: bool, can_next: bool, is_cur_solved: bool = false) -> void:
+func update_practice_status(topic_name: String, current_num: int, total_num: int, can_prev: bool, can_next: bool, is_cur_solved: bool = false) -> void:
 	_topic_btn.text = topic_name + " ▾"
 	_prev_btn.disabled = not can_prev
 	_prev_btn.modulate.a = 1.0 if can_prev else 0.4
 	_next_btn.disabled = not can_next
 	_next_btn.modulate.a = 1.0 if can_next else 0.4
 	if is_cur_solved:
-		_solved_chip_label.text = "✓ %d / %d" % [solved_in_cat, total_in_cat]
+		_solved_chip_label.text = "✓ %d / %d" % [current_num, total_num]
 		_solved_chip_label.add_theme_color_override("font_color", Ui.c("green"))
 	else:
-		_solved_chip_label.text = "%d / %d" % [solved_in_cat, total_in_cat]
+		_solved_chip_label.text = "%d / %d" % [current_num, total_num]
 		_solved_chip_label.add_theme_color_override("font_color", Ui.c("secondary"))
 	if is_inside_tree():
 		call_deferred("_layout")
@@ -704,19 +712,23 @@ func show_topics_sheet(current_cat: String, cat_stats: Dictionary) -> void:
 		_style_button(btn, bg, fg, 14, 8)
 
 		var row := HBoxContainer.new()
-		row.size_flags_horizontal = SIZE_EXPAND_FILL
+		row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		row.offset_left = 16
+		row.offset_right = -16
 		row.mouse_filter = MOUSE_FILTER_IGNORE
 		btn.add_child(row)
 
 		var lbl := Ui.scaled_label(cat_title, 14, 700 if is_active else 600, fg)
 		lbl.size_flags_horizontal = SIZE_EXPAND_FILL
 		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		row.add_child(lbl)
 
 		var badge_str := "%s%d / %d" % ["✓ " if all_done else "", solved, total]
 		var badge_color := Ui.c("green") if all_done else (Ui.c("accent") if is_active else Ui.c("secondary"))
 		var badge := Ui.scaled_label(badge_str, 13, 700, badge_color)
 		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		row.add_child(badge)
 
 		btn.pressed.connect(func():

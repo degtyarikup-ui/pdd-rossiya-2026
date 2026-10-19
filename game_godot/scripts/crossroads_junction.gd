@@ -6,6 +6,8 @@ extends Node3D
 
 const ROAD_WIDTH := 14.4        # 4 lanes of 3.6 m (2 in each direction)
 const HALF_ROAD := ROAD_WIDTH * 0.5
+const DIRT_ROAD_WIDTH := 4.2       # single-car rural dirt road
+const HALF_DIRT_ROAD := 2.1
 const DIRT_BLEND := 1.5        # metres of asphalt-to-dirt transition: the dirt reaches the asphalt road
 const BLEND_Y := 0.03          # clearly above both road quads, even on a phone depth buffer
 const ROAD_EXTENT := 345.0
@@ -360,12 +362,12 @@ func _rebuild_surfaces_and_markings() -> void:
 
 
 func _build_junction_surfaces() -> void:
-	var center := _quad(Vector2(ROAD_WIDTH, ROAD_WIDTH), asphalt_mat)
-	center.position = Vector3.ZERO
-	ground_root.add_child(center)
-
 	if _is_roundabout():
-		_build_roundabout_island()
+		_build_roundabout_surfaces()
+	else:
+		var center := _quad(Vector2(ROAD_WIDTH, ROAD_WIDTH), asphalt_mat)
+		center.position = Vector3.ZERO
+		ground_root.add_child(center)
 
 	var arm_len := ROAD_EXTENT - HALF_ROAD
 	var arms := ["south", "north", "east", "west"]
@@ -379,14 +381,30 @@ func _build_junction_surfaces() -> void:
 	_build_quadrant_sidewalks()
 
 
+func _build_roundabout_surfaces() -> void:
+	var ring_mesh := CylinderMesh.new()
+	ring_mesh.top_radius = 12.5
+	ring_mesh.bottom_radius = 12.5
+	ring_mesh.height = 0.01
+	ring_mesh.radial_segments = 48
+	var ring_inst := MeshInstance3D.new()
+	ring_inst.name = "RoundaboutRingAsphalt"
+	ring_inst.mesh = ring_mesh
+	ring_inst.material_override = asphalt_mat
+	ring_inst.position = Vector3(0, 0.005, 0)
+	ground_root.add_child(ring_inst)
+
+	_build_roundabout_island()
+
+
 func _build_roundabout_island() -> void:
 	var island := MeshInstance3D.new()
 	island.name = "RoundaboutIsland"
 	var cyl := CylinderMesh.new()
-	cyl.top_radius = 5.6
-	cyl.bottom_radius = 5.6
+	cyl.top_radius = 4.0
+	cyl.bottom_radius = 4.0
 	cyl.height = SIDEWALK_Y
-	cyl.radial_segments = 32
+	cyl.radial_segments = 36
 	island.mesh = cyl
 	island.material_override = grass_mat
 	island.position = Vector3(0, SIDEWALK_Y * 0.5, 0)
@@ -395,20 +413,24 @@ func _build_roundabout_island() -> void:
 	var curb_ring := MeshInstance3D.new()
 	curb_ring.name = "RoundaboutCurbRing"
 	var ring_cyl := CylinderMesh.new()
-	ring_cyl.top_radius = 5.75
-	ring_cyl.bottom_radius = 5.8
+	ring_cyl.top_radius = 4.18
+	ring_cyl.bottom_radius = 4.2
 	ring_cyl.height = SIDEWALK_Y * 0.95
-	ring_cyl.radial_segments = 32
+	ring_cyl.radial_segments = 36
 	curb_ring.mesh = ring_cyl
 	curb_ring.material_override = curb_mat
 	curb_ring.position = Vector3(0, SIDEWALK_Y * 0.48, 0)
 	ground_root.add_child(curb_ring)
 
+	var birch_color: Color = sc.color("birch")
+	_put_prop("trees/birch_0", Vector3(0, SIDEWALK_Y, 0), 0.5, Vector3.ONE * 0.9, birch_color, true)
+
 
 func _build_open_arm_surface(arm: String, arm_len: float) -> void:
-	var is_dirt := _is_dirt_arm(arm)
-	var mat := dirt_mat if is_dirt else asphalt_mat
-	var road := _quad(Vector2(ROAD_WIDTH, arm_len), mat)
+	if _is_dirt_arm(arm):
+		_build_dirt_arm_surface(arm, arm_len)
+		return
+	var road := _quad(Vector2(ROAD_WIDTH, arm_len), asphalt_mat)
 	var mid := HALF_ROAD + arm_len * 0.5
 	match arm:
 		"south":
@@ -423,8 +445,43 @@ func _build_open_arm_surface(arm: String, arm_len: float) -> void:
 			road.rotation.y = PI * 0.5
 	ground_root.add_child(road)
 
-	if is_dirt:
-		ground_root.add_child(_dirt_blend(arm))
+
+func _build_dirt_arm_surface(arm: String, arm_len: float) -> void:
+	var mid := HALF_ROAD + arm_len * 0.5
+	var track := _quad(Vector2(DIRT_ROAD_WIDTH, arm_len), dirt_mat)
+	var flank_w := HALF_ROAD - HALF_DIRT_ROAD
+	var flank_off := (HALF_DIRT_ROAD + HALF_ROAD) * 0.5
+	var flank_l := _quad(Vector2(flank_w, arm_len), grass_mat)
+	var flank_r := _quad(Vector2(flank_w, arm_len), grass_mat)
+
+	match arm:
+		"south":
+			track.position = Vector3(0, 0, mid)
+			flank_l.position = Vector3(-flank_off, 0.001, mid)
+			flank_r.position = Vector3(flank_off, 0.001, mid)
+		"north":
+			track.position = Vector3(0, 0, -mid)
+			flank_l.position = Vector3(-flank_off, 0.001, -mid)
+			flank_r.position = Vector3(flank_off, 0.001, -mid)
+		"east":
+			track.position = Vector3(mid, 0, 0)
+			track.rotation.y = PI * 0.5
+			flank_l.position = Vector3(mid, 0.001, flank_off)
+			flank_l.rotation.y = PI * 0.5
+			flank_r.position = Vector3(mid, 0.001, -flank_off)
+			flank_r.rotation.y = PI * 0.5
+		"west":
+			track.position = Vector3(-mid, 0, 0)
+			track.rotation.y = PI * 0.5
+			flank_l.position = Vector3(-mid, 0.001, flank_off)
+			flank_l.rotation.y = PI * 0.5
+			flank_r.position = Vector3(-mid, 0.001, -flank_off)
+			flank_r.rotation.y = PI * 0.5
+
+	ground_root.add_child(track)
+	ground_root.add_child(flank_l)
+	ground_root.add_child(flank_r)
+	ground_root.add_child(_dirt_blend(arm))
 
 
 ## --- Soft rural ground ------------------------------------------------------
@@ -452,10 +509,12 @@ func _ground_shares(p: Vector2) -> Vector3:
 	var far := ROAD_EXTENT + 10.0
 	var paved := _rect_distance(p, Vector2(-HALF_ROAD, -HALF_ROAD), Vector2(HALF_ROAD, HALF_ROAD))
 	var unpaved := INF
-	var arms := {"south": [Vector2(-HALF_ROAD, HALF_ROAD), Vector2(HALF_ROAD, far)],
-		"north": [Vector2(-HALF_ROAD, -far), Vector2(HALF_ROAD, -HALF_ROAD)],
-		"east": [Vector2(HALF_ROAD, -HALF_ROAD), Vector2(far, HALF_ROAD)],
-		"west": [Vector2(-far, -HALF_ROAD), Vector2(-HALF_ROAD, HALF_ROAD)]}
+	var arms := {
+		"south": [Vector2(-HALF_DIRT_ROAD if _is_dirt_arm("south") else -HALF_ROAD, HALF_ROAD), Vector2(HALF_DIRT_ROAD if _is_dirt_arm("south") else HALF_ROAD, far)],
+		"north": [Vector2(-HALF_DIRT_ROAD if _is_dirt_arm("north") else -HALF_ROAD, -far), Vector2(HALF_DIRT_ROAD if _is_dirt_arm("north") else HALF_ROAD, -HALF_ROAD)],
+		"east": [Vector2(HALF_ROAD, -HALF_DIRT_ROAD if _is_dirt_arm("east") else -HALF_ROAD), Vector2(far, HALF_DIRT_ROAD if _is_dirt_arm("east") else HALF_ROAD)],
+		"west": [Vector2(-far, -HALF_DIRT_ROAD if _is_dirt_arm("west") else -HALF_ROAD), Vector2(-HALF_ROAD, HALF_DIRT_ROAD if _is_dirt_arm("west") else HALF_ROAD)]
+	}
 	for arm in arms:
 		if not _arm_open(arm): continue
 		var d := _rect_distance(p, arms[arm][0], arms[arm][1])
@@ -523,12 +582,13 @@ func _dirt_blend(arm: String) -> MeshInstance3D:
 	# Starts a little inside the asphalt square: the overlap hides the seam between the two.
 	var near := HALF_ROAD - 0.4
 	var end := HALF_ROAD + DIRT_BLEND + 1.0
+	var h_blend := HALF_DIRT_ROAD + 0.8
 	var mi: MeshInstance3D
 	match arm:
-		"south": mi = _field_mesh(-HALF_ROAD, HALF_ROAD, near, end, BLEND_Y)
-		"north": mi = _field_mesh(-HALF_ROAD, HALF_ROAD, -end, -near, BLEND_Y)
-		"east": mi = _field_mesh(near, end, -HALF_ROAD, HALF_ROAD, BLEND_Y)
-		_: mi = _field_mesh(-end, -near, -HALF_ROAD, HALF_ROAD, BLEND_Y)
+		"south": mi = _field_mesh(-h_blend, h_blend, near, end, BLEND_Y)
+		"north": mi = _field_mesh(-h_blend, h_blend, -end, -near, BLEND_Y)
+		"east": mi = _field_mesh(near, end, -h_blend, h_blend, BLEND_Y)
+		_: mi = _field_mesh(-end, -near, -h_blend, h_blend, BLEND_Y)
 	mi.name = "DirtBlend_" + arm
 	return mi
 
@@ -764,6 +824,42 @@ func _build_quadrant_sidewalks() -> void:
 			ground_root.add_child(lawn)
 			continue
 
+		if _is_roundabout():
+			var rb_r := 12.0
+			var rb_tangent_z := 9.6
+			var rb_tangent_x := 9.6
+			var theta_start := atan2(HALF_ROAD, rb_tangent_x)
+			var theta_end := atan2(rb_tangent_z, HALF_ROAD)
+			var boundary := PackedVector2Array()
+			var segments := 12
+			for i in (segments + 1):
+				var th := lerpf(theta_start, theta_end, float(i) / float(segments))
+				boundary.append(Vector2(cos(th) * rb_r, sin(th) * rb_r))
+			boundary.append(Vector2(HALF_ROAD, outer))
+			boundary.append(Vector2(outer, outer))
+			boundary.append(Vector2(outer, HALF_ROAD))
+			_add_sidewalk_patch(boundary, corner)
+
+			for i in segments:
+				var th1 := lerpf(theta_start, theta_end, float(i) / float(segments))
+				var th2 := lerpf(theta_start, theta_end, float(i + 1) / float(segments))
+				var a := Vector2(cos(th1) * rb_r, sin(th1) * rb_r)
+				var b := Vector2(cos(th2) * rb_r, sin(th2) * rb_r)
+				_add_curb_segment(Vector3(sx * a.x, 0, sz * a.y), Vector3(sx * b.x, 0, sz * b.y))
+
+			# Long sidewalk strips
+			_add_sidewalk_patch(PackedVector2Array([Vector2(HALF_ROAD, outer), Vector2(outer, outer), Vector2(outer, ROAD_EXTENT), Vector2(HALF_ROAD, ROAD_EXTENT)]), corner)
+			_add_sidewalk_patch(PackedVector2Array([Vector2(outer, HALF_ROAD), Vector2(ROAD_EXTENT, HALF_ROAD), Vector2(ROAD_EXTENT, outer), Vector2(outer, outer)]), corner)
+
+			# Straight curbs from tangent to ROAD_EXTENT
+			_add_straight_curbs(Vector3(sx * HALF_ROAD, 0, sz * rb_tangent_z), Vector3(sx * HALF_ROAD, 0, sz * ROAD_EXTENT), true)
+			_add_straight_curbs(Vector3(sx * rb_tangent_x, 0, sz * HALF_ROAD), Vector3(sx * ROAD_EXTENT, 0, sz * HALF_ROAD), false)
+
+			var lawn := _quad(Vector2(extent, extent), grass_mat)
+			lawn.position = Vector3(sx * (outer + extent * 0.5), 0.15, sz * (outer + extent * 0.5))
+			ground_root.add_child(lawn)
+			continue
+
 		# --- Standard Urban / Suburban: Elevated concrete sidewalks and curbs ---
 		var boundary := PackedVector2Array()
 		if rounded:
@@ -951,11 +1047,11 @@ func _build_roundabout_markings() -> void:
 	var ring_root := Node3D.new()
 	ring_root.name = "RoundaboutMarkings"
 	markings_root.add_child(ring_root)
-	var radius := 9.6
+	var radius := 8.1
 	var count := 24
 	for i in count:
 		var angle := float(i) * TAU / float(count)
-		var dash := _quad(Vector2(0.18, 1.2), marking_mat)
+		var dash := _quad(Vector2(0.15, 1.0), marking_mat)
 		dash.position = Vector3(sin(angle) * radius, 0.025, cos(angle) * radius)
 		dash.rotation.y = angle + PI * 0.5
 		ring_root.add_child(dash)
@@ -993,16 +1089,18 @@ func _build_arm_markings(arm: String) -> void:
 			# beyond the pedestrian crossing; it must not resemble a stop line.
 			var vertices := PackedVector3Array()
 			var indices := PackedInt32Array()
+			var z_base := 10.0 if _is_roundabout() else (HALF_ROAD + 0.15)
+			var z_apex := 10.4 if _is_roundabout() else (HALF_ROAD + 0.55)
 			for i in 11:
 				var x := 0.45 + float(i) * 0.6
 				var start := vertices.size()
-				vertices.append_array(PackedVector3Array([Vector3(x - 0.2, 0.025, HALF_ROAD + 0.15), Vector3(x + 0.2, 0.025, HALF_ROAD + 0.15), Vector3(x, 0.025, HALF_ROAD + 0.55)]))
+				vertices.append_array(PackedVector3Array([Vector3(x - 0.2, 0.025, z_base), Vector3(x + 0.2, 0.025, z_base), Vector3(x, 0.025, z_apex)]))
 				indices.append_array(PackedInt32Array([start, start + 1, start + 2]))
 			var yield_line := _surface(vertices, indices, marking_mat)
 			yield_line.name = "YieldLine"
 			arm_root.add_child(yield_line)
 
-		var line_start := 11.5 if _is_roundabout() else (ZEBRA_END + 0.25 if _has_crossing(arm) else HALF_ROAD + 0.8)
+		var line_start := 10.0 if _is_roundabout() else (ZEBRA_END + 0.25 if _has_crossing(arm) else HALF_ROAD + 0.8)
 		var line_len := ROAD_EXTENT - line_start
 
 		if _is_rural_junction():
@@ -1423,8 +1521,8 @@ func _build_rural_scenery_decor() -> void:
 		if not _is_dirt_arm(ns_side) and ns_side != closed_side:
 			_put_prop("street/fence_14", Vector3(c.x * fence_offset, 0.02, c.y * 22.0), 0.0, Vector3.ONE * 0.95, Color.WHITE, false)
 			_put_prop("street/fence_14", Vector3(c.x * fence_offset, 0.02, c.y * 34.0), 0.0, Vector3.ONE * 0.95, Color.WHITE, false)
-		# Along dirt / side road (EW)
-		if ew_side != closed_side:
+		# Along side road (EW)
+		if not _is_dirt_arm(ew_side) and ew_side != closed_side:
 			_put_prop("street/fence_14", Vector3(c.x * 22.0, 0.02, c.y * fence_offset), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, false)
 			_put_prop("street/fence_14", Vector3(c.x * 34.0, 0.02, c.y * fence_offset), PI * 0.5, Vector3.ONE * 0.95, Color.WHITE, false)
 
@@ -1764,12 +1862,12 @@ func _build_urban_scenery_decor() -> void:
 	for c in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
 		# Fences along NS road (length along Z, yaw = 0.0)
 		var ns_side := "south" if c.y > 0 else "north"
-		if ns_side != closed_side:
+		if not _is_dirt_arm(ns_side) and ns_side != closed_side:
 			_put_prop("street/fence_12", Vector3(c.x * fence_curb_off, 0.16, c.y * 24.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
 			_put_prop("street/fence_12", Vector3(c.x * fence_curb_off, 0.16, c.y * 36.0), 0.0, Vector3.ONE * 0.9, Color.WHITE, false)
 		# Fences along EW road (length along X, yaw = PI * 0.5)
 		var ew_side := "east" if c.x > 0 else "west"
-		if ew_side != closed_side:
+		if not _is_dirt_arm(ew_side) and ew_side != closed_side:
 			_put_prop("street/fence_12", Vector3(c.x * 24.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
 			_put_prop("street/fence_12", Vector3(c.x * 36.0, 0.16, c.y * fence_curb_off), PI * 0.5, Vector3.ONE * 0.9, Color.WHITE, false)
 
