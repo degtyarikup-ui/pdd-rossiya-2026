@@ -19,6 +19,10 @@ Telegram использует прежнего бота `pdda_bot`, две су�
 `/api/auth/telegram/request` и `/api/auth/telegram/check` и одноразовую ссылку;
 нового бота/вебхука на `.app` не создаём.
 
+Яндекс читает профиль только через прежний GET
+`https://login.yandex.ru/info?format=json`; в режиме входа разрешён этот точный
+адрес и метод, без дополнительных параметров.
+
 Google остаётся GIS TokenClient с прежними scopes. Яндекс вычисляет callback
 относительно текущей вкладки. Apple выбирает новый фиксированный callback только
 на точном HTTPS origin `pdd-drive.app`; остальные сборки сохраняют старый URL.

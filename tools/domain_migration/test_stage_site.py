@@ -189,6 +189,9 @@ class StageSiteTests(unittest.TestCase):
         self.assertEqual(policy["Cross-Origin-Embedder-Policy"], "unsafe-none")
         self.assertNotIn("https://*.google.com", policy["Content-Security-Policy"])
         self.assertIn("https://accounts.google.com/gsi/", policy["Content-Security-Policy"])
+        connect_policy = next(value for value in policy["Content-Security-Policy"].split("; ") if value.startswith("connect-src "))
+        self.assertIn("https://login.yandex.ru/info", connect_policy.split())
+        self.assertNotIn("https://login.yandex.ru", connect_policy.split())
 
     @unittest.skipUnless(shutil.which("node"), "Node is needed for exercising browser transport guards")
     def test_account_transport_guard_preserves_login_and_cloud_progress_but_blocks_checkout(self):
@@ -281,6 +284,59 @@ vm.runInNewContext(GUARD,context);
         self.assertEqual(len(data["sent"]), 4)
 
     @unittest.skipUnless(shutil.which("node"), "Node is needed for exercising browser transport guards")
+    def test_account_yandex_profile_guard_allows_only_exact_existing_get(self):
+        harness = r'''
+const vm=require('node:vm');const sent=[];
+class XHR{open(method,url){sent.push(['xhr',method,url]);}}
+const context={URL,DOMException,location:{origin:'https://pdd-drive.app'},document:{baseURI:'https://pdd-drive.app/app/',addEventListener(){}},navigator:{},XMLHttpRequest:XHR};
+context.window=context;context.fetch=(...args)=>{sent.push(['fetch',...args]);return Promise.resolve('synthetic');};context.open=()=>{};
+vm.runInNewContext(GUARD,context);
+(async()=>{
+ const profile='https://login.yandex.ru/info?format=json';
+ const authorization={Authorization:'OAuth synthetic-never-a-real-token'};
+ await context.fetch(profile,{headers:authorization});
+ await context.fetch({url:profile,method:'GET'},{headers:authorization});
+ new XHR().open('GET',profile);
+ let denied=0;
+ for(const method of ['POST','PUT','PATCH','DELETE','HEAD','OPTIONS']){
+  try{await context.fetch(profile,{method,headers:authorization});}catch(_){denied++;}
+  try{new XHR().open(method,profile);}catch(_){denied++;}
+ }
+ const badUrls=[
+  'http://login.yandex.ru/info?format=json',
+  'https://login.yandex.ru:443/info?format=json',
+  'https://login.yandex.ru:8443/info?format=json',
+  'https://user@login.yandex.ru/info?format=json',
+  'https://user:password@login.yandex.ru/info?format=json',
+  'https://login.yandex.ru.evil.test/info?format=json',
+  'https://evil.login.yandex.ru/info?format=json',
+  'https://evil.test/info?format=json',
+  'https://login.yandex.ru/info/?format=json',
+  'https://login.yandex.ru/info/extra?format=json',
+  'https://login.yandex.ru/%69nfo?format=json',
+  'https://login.yandex.ru/other?path=/info&format=json',
+  'https://login.yandex.ru/info',
+  'https://login.yandex.ru/info?format=xml',
+  'https://login.yandex.ru/info?format=json&extra=1',
+  'https://login.yandex.ru/info?format=json&format=json',
+  'https://login.yandex.ru/info?format=json#fragment',
+  'https://login.yandex.ru/info?format=json#',
+  'https://login.yandex.ru/info?%66ormat=json',
+  'https://login.yandex.ru/info?format=%6ason',
+ ];
+ for(const url of badUrls){
+  try{await context.fetch(url,{headers:authorization});}catch(_){denied++;}
+  try{new XHR().open('GET',url);}catch(_){denied++;}
+ }
+ process.stdout.write(JSON.stringify({denied,sent}));
+})();
+'''
+        result = subprocess.run([shutil.which("node"), "-e", "const GUARD=" + json.dumps(stage.ACCOUNT_ISOLATION_JS) + ";\n" + harness], text=True, capture_output=True, check=True)
+        data = json.loads(result.stdout)
+        self.assertEqual(data["denied"], 52)
+        self.assertEqual(len(data["sent"]), 3)
+
+    @unittest.skipUnless(shutil.which("node"), "Node is needed for exercising browser transport guards")
     def test_account_telegram_guard_allows_only_existing_post_endpoints_and_exact_bot_links(self):
         harness = r'''
 const vm=require('node:vm');const sent=[];const events={};
@@ -358,6 +414,7 @@ vm.runInNewContext(GUARD,context);
    ['https://pdd-install-notifier.sergei-pdd.workers.dev/api/track',{method:'POST'}],
    ['https://api.pdd-drive.app/api/auth/telegram/request',{method:'POST'}],
    ['https://pdd-install-notifier.sergei-pdd.workers.dev/api/auth/telegram/check',{method:'POST'}],
+   ['https://login.yandex.ru/info?format=json',{}],
    ['/api/pay/lead',{}], ['/api',{}], ['/%61pi/user/status',{}],
    ['/__staging_disabled__/api/auth/yandex/start',{}],
    ['/assets/config.json',{method:'POST'}],
@@ -381,7 +438,7 @@ vm.runInNewContext(GUARD,context);
         program = "const GUARD=" + json.dumps(stage.ISOLATION_JS) + ";\n" + harness
         result = subprocess.run([shutil.which("node"), "-e", program], text=True, capture_output=True, check=True)
         data = json.loads(result.stdout)
-        self.assertEqual(data["denied"], 13)
+        self.assertEqual(data["denied"], 14)
         self.assertEqual(data["prevented"], 2)
         self.assertEqual(data["sent"], [["fetch", "/app/canvaskit/canvaskit.wasm", "GET"]])
 

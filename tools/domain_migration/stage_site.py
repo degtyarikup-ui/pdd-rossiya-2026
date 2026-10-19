@@ -75,7 +75,7 @@ ACCOUNT_OAUTH_HOSTS = {"accounts.google.com", "appleid.apple.com", "oauth.yandex
 ACCOUNT_HEADERS = {
     **HEADERS,
     "Content-Security-Policy": CSP.replace(
-        "connect-src 'self'", "connect-src 'self' " + " ".join(ACCOUNT_API_ORIGINS) + " https://accounts.google.com/gsi/"
+        "connect-src 'self'", "connect-src 'self' " + " ".join(ACCOUNT_API_ORIGINS) + " https://accounts.google.com/gsi/ https://login.yandex.ru/info"
     ).replace(
         "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'", "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://accounts.google.com/gsi/"
     ).replace(
@@ -171,6 +171,10 @@ ACCOUNT_ISOLATION_JS = r"""// Explicit account-login preview. Same account backe
         !path.split('/').some(part=>part.toLowerCase()==='api' || part.toLowerCase().startsWith('__staging_disabled__'));
       if (url.protocol!=='https:') return false;
       if (apiOrigins.has(url.origin)) return apiMethods.get(path)===method;
+      // The existing Yandex UI constructs its profile with this one provider
+      // request before the server independently verifies the OAuth token.
+      if (url.origin==='https://login.yandex.ru') return method==='GET' &&
+        String(value)==='https://login.yandex.ru/info?format=json';
       return url.origin==='https://accounts.google.com' && path.startsWith('/gsi/') && ['GET','POST'].includes(method);
     } catch (_) {return false;}
   };
