@@ -416,132 +416,171 @@ class _HubCard extends StatelessWidget {
             '$title, $semanticStatus${semanticDetails.isEmpty ? '' : ', $semanticDetails'}',
         excludeSemantics: true,
         onTap: onTap,
-        child: ClipRRect(
-          borderRadius: radius,
-          child: Stack(
-            alignment: Alignment.bottomLeft,
-            fit: featured ? StackFit.loose : StackFit.expand,
-            children: [
-              Positioned.fill(child: _HubCover(id: id)),
-              if (!enabled)
+        child: _HubAvailabilityColors(
+          enabled: enabled,
+          child: ClipRRect(
+            borderRadius: radius,
+            child: Stack(
+              alignment: Alignment.bottomLeft,
+              fit: featured ? StackFit.loose : StackFit.expand,
+              children: [
+                Positioned.fill(child: _HubCover(id: id)),
+                if (!enabled)
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color: colors.background.withValues(alpha: .30),
+                    ),
+                  ),
                 Positioned.fill(
-                  child: ColoredBox(
-                    color: colors.background.withValues(alpha: .30),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        stops: const [0, .4, 1],
+                        colors: [
+                          Colors.transparent,
+                          featured
+                              ? const Color(0x66000A15)
+                              : const Color(0x14000A15),
+                          const Color(0xF0000A15),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: const [0, .4, 1],
-                      colors: [
-                        Colors.transparent,
-                        featured
-                            ? const Color(0x66000A15)
-                            : const Color(0x14000A15),
-                        const Color(0xF0000A15),
+                if (enabled)
+                  Positioned.fill(
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        onTap: onTap,
+                        excludeFromSemantics: true,
+                        splashColor: Colors.white24,
+                        highlightColor: Colors.white10,
+                      ),
+                    ),
+                  ),
+                IgnorePointer(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: featured
+                          ? AppDimensions.spacingL
+                          : titleSize < 18
+                          ? AppDimensions.spacingS
+                          : AppDimensions.spacingM,
+                      vertical: compact
+                          ? AppDimensions.spacingS
+                          : featured
+                          ? AppDimensions.spacingL
+                          : AppDimensions.spacingM,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: featured
+                          ? MainAxisSize.min
+                          : MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ExcludeSemantics(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: featured
+                                      ? (compact ? 20 : 24)
+                                      : titleSize,
+                                  height: 1.15,
+                                  fontWeight: FontWeight.w700,
+                                  color: foreground,
+                                ),
+                              ),
+                              ...[
+                                const SizedBox(height: AppDimensions.spacingXS),
+                                Row(
+                                  children: [
+                                    if (record && caption == null) ...[
+                                      Icon(
+                                        Icons.emoji_events_rounded,
+                                        size: 14,
+                                        color: colors.gold,
+                                      ),
+                                      const SizedBox(
+                                        width: AppDimensions.spacingXS,
+                                      ),
+                                    ],
+                                    Flexible(
+                                      child: Text(
+                                        status,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          height: 1.25,
+                                          fontWeight: FontWeight.w600,
+                                          color:
+                                              waiting ||
+                                                  (record && caption == null)
+                                              ? colors.gold
+                                              : foreground,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        if (!compact) ?footer,
                       ],
                     ),
                   ),
                 ),
-              ),
-              if (enabled)
-                Positioned.fill(
-                  child: Material(
-                    type: MaterialType.transparency,
-                    child: InkWell(
-                      onTap: onTap,
-                      excludeFromSemantics: true,
-                      splashColor: Colors.white24,
-                      highlightColor: Colors.white10,
-                    ),
-                  ),
-                ),
-              IgnorePointer(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: featured
-                        ? AppDimensions.spacingL
-                        : titleSize < 18
-                        ? AppDimensions.spacingS
-                        : AppDimensions.spacingM,
-                    vertical: compact
-                        ? AppDimensions.spacingS
-                        : featured
-                        ? AppDimensions.spacingL
-                        : AppDimensions.spacingM,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: featured
-                        ? MainAxisSize.min
-                        : MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ExcludeSemantics(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              title,
-                              style: TextStyle(
-                                fontSize: featured
-                                    ? (compact ? 20 : 24)
-                                    : titleSize,
-                                height: 1.15,
-                                fontWeight: FontWeight.w700,
-                                color: foreground,
-                              ),
-                            ),
-                            ...[
-                              const SizedBox(height: AppDimensions.spacingXS),
-                              Row(
-                                children: [
-                                  if (record && caption == null) ...[
-                                    Icon(
-                                      Icons.emoji_events_rounded,
-                                      size: 14,
-                                      color: colors.gold,
-                                    ),
-                                    const SizedBox(
-                                      width: AppDimensions.spacingXS,
-                                    ),
-                                  ],
-                                  Flexible(
-                                    child: Text(
-                                      status,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        height: 1.25,
-                                        fontWeight: FontWeight.w600,
-                                        color:
-                                            waiting ||
-                                                (record && caption == null)
-                                            ? colors.gold
-                                            : foreground,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      if (!compact) ?footer,
-                    ],
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Desaturate every visual layer of unavailable games, including the gradient.
+class _HubAvailabilityColors extends StatelessWidget {
+  const _HubAvailabilityColors({required this.enabled, required this.child});
+  final bool enabled;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => enabled
+      ? child
+      : ColorFiltered(
+          colorFilter: const ColorFilter.matrix([
+            .2126,
+            .7152,
+            .0722,
+            0,
+            0,
+            .2126,
+            .7152,
+            .0722,
+            0,
+            0,
+            .2126,
+            .7152,
+            .0722,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+          ]),
+          child: child,
+        );
 }
 
 class _HubCover extends StatelessWidget {
