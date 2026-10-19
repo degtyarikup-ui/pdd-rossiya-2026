@@ -123,6 +123,27 @@ class PreviewHostPreparationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             host.prepare_preview_host(linked, self.output)
 
+    def test_account_login_needs_explicit_matching_stage_and_remains_assets_only(self):
+        with self.assertRaisesRegex(ValueError, "provenance"):
+            host.prepare_preview_host(self.staged, self.output, enable_account_login=True)
+        account_staged = self.root / "account-stage"
+        stage.stage_site(self.archive, account_staged, "https://pdd-drive.app", enable_account_login=True)
+        with self.assertRaisesRegex(ValueError, "provenance"):
+            host.prepare_preview_host(account_staged, self.output)
+        before = stage.inventory(account_staged)
+        report = host.prepare_preview_host(account_staged, self.output, max_asset_bytes=8192, enable_account_login=True)
+        self.assertEqual(before, stage.inventory(account_staged))
+        self.assertEqual(report["mode"], "account-login")
+        self.assertEqual(report["headers"], stage.ACCOUNT_HEADERS)
+        config = json.loads((self.output / "wrangler.json").read_text())
+        self.assertFalse(config["workers_dev"])
+        self.assertFalse(set(config) & {"routes", "kv_namespaces", "durable_objects", "services", "triggers", "vars", "d1_databases", "r2_buckets"})
+        self.assertEqual((self.output / "apple_web_callback.mjs").read_bytes(), host.APPLE_CALLBACK_SOURCE.read_bytes())
+        worker = (self.output / "worker.mjs").read_text()
+        self.assertIn("accountLogin: true", worker)
+        self.assertIn("handleAppleWebCallback(request, 'https://pdd-drive.app')", worker)
+        self.assertEqual(report["production_bindings"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

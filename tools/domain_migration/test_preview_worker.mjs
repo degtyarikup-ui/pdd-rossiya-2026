@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {gzipSync, gunzipSync} from 'node:zlib';
 import test from 'node:test';
 import {createPreviewWorker} from './preview_worker.mjs';
+import {handleAppleWebCallback} from '../../server/install-notifier/apple_web_callback.js';
 
 const policy = {
   'Content-Security-Policy': "default-src 'self'; connect-src 'self'; form-action 'none'",
@@ -141,4 +142,63 @@ test('gzip mapping cannot point at a backend, and compressed-source mismatch fai
   const response = await worker.fetch(request('/file.wasm'), {ASSETS: {fetch: async () => new Response('encoded twice', {headers: {'Content-Encoding': 'br'}})}});
   assert.equal(response.status, 502);
   checkPolicy(response);
+});
+
+test('explicit account mode exposes only local Apple POST callback and fixed app return without storage or network', async () => {
+  let calls = 0;
+  const worker = createPreviewWorker(policy, {}, {accountLogin: true, appleCallback: request => {
+    calls++;
+    return handleAppleWebCallback(request, 'https://pdd-drive.app');
+  }});
+  const env = {ASSETS: {fetch: () => {throw Error('callback must not access assets');}}};
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = () => {throw Error('callback must not access network');};
+  try {
+    const response = await worker.fetch(request('/auth/apple/callback', {
+      method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({state: 'a'.repeat(64), id_token: 'synthetic.id.token', code: 'synthetic-code'}),
+    }), env);
+    assert.equal(response.status, 303);
+    checkPolicy(response);
+    assert.equal(response.headers.get('Set-Cookie'), null);
+    const url = new URL(response.headers.get('Location'));
+    assert.equal(url.origin, 'https://pdd-drive.app');
+    assert.equal(url.pathname, '/app/');
+    assert.equal(url.search, '?oauth=2');
+    assert.equal(url.searchParams.has('id_token'), false);
+    assert.match(url.hash, /^#pdd-oauth=/);
+    assert.equal(calls, 1);
+    const invalid = await worker.fetch(request('/auth/apple/callback', {
+      method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'state=bad&error=access_denied',
+    }), env);
+    assert.equal(invalid.status, 400);
+    checkPolicy(invalid);
+    assert.equal(invalid.headers.get('Location'), null);
+    for (const path of ['/auth/apple/callback', '/auth/apple/callback?return=https://evil.test', '/auth/apple/%63allback']) {
+      const refused = await worker.fetch(request(path), env);
+      assert.equal(refused.status, 405, path);
+      assert.equal(refused.headers.get('Allow'), 'POST');
+    }
+    for (const host of ['http://pdd-drive.app', 'https://pdd-domain-migration-preview.sergei-pdd.workers.dev', 'https://localhost:8787', 'https://pdd-drive.app:8443']) {
+      assert.equal((await worker.fetch(new Request(host + '/auth/apple/callback', {method: 'POST'}), env)).status, 403, host);
+    }
+    assert.equal((await worker.fetch(request('/api/auth/session', {method: 'POST'}), env)).status, 405);
+    assert.equal((await worker.fetch(request('/api/user/status'), env)).status, 403);
+    assert.equal(calls, 2);
+  } finally {globalThis.fetch = originalFetch;}
+});
+
+test('guest mode never invokes callback and account mode requires safe explicit configuration', async () => {
+  let invoked = false;
+  const callback = () => {invoked = true; return Response.redirect('https://evil.test');};
+  const guest = createPreviewWorker(policy, {}, {appleCallback: callback});
+  assert.equal((await guest.fetch(request('/auth/apple/callback', {method: 'POST'}), {})).status, 405);
+  assert.equal(invoked, false);
+  assert.throws(() => createPreviewWorker(policy, {}, {accountLogin: 'true', appleCallback: callback}));
+  assert.throws(() => createPreviewWorker(policy, {}, {accountLogin: true}));
+  const account = createPreviewWorker(policy, {}, {accountLogin: true, appleCallback: callback});
+  const result = await account.fetch(request('/auth/apple/callback', {method: 'POST'}), {});
+  assert.equal(result.status, 502);
+  assert.equal(result.headers.get('Location'), null);
+  checkPolicy(result);
 });

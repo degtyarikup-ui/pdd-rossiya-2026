@@ -44,6 +44,7 @@ Apple — разные аккаунты.
 | `docs/premium/account-state-rollout.md` | DO миграция, контракты безопасности и порядок выпуска |
 | `docs/ops/account-backup-rehearsal.md` | Защищённые копии DO/KV и закрытая репетиция восстановления перед сменой домена |
 | `docs/premium/web-auth.md` | Веб-вход |
+| `docs/premium/domain-login.md` | Подготовка входа на `.app` с прежними аккаунтами |
 | `docs/premium/api-fallback.md` | Запасной адрес сервера и повторы входа |
 | `docs/premium/error-messages.md` | Тексты ошибок для пользователя и сообщения в Telegram |
 | `docs/premium/subscription-fix-2026-10-02.md` | История исправления подписок |

@@ -349,7 +349,10 @@ class AuthService extends ChangeNotifier {
           'apple',
           Uri.https('appleid.apple.com', '/auth/authorize', {
             'client_id': 'ru.pdd.pddapp.auth',
-            'redirect_uri': '${BackendConfig.notifierUrl}/auth/apple/callback',
+            'redirect_uri': appleWebOAuthCallback(
+              Uri.base,
+              notifierUrl: BackendConfig.notifierUrl,
+            ).toString(),
             'response_type': 'code id_token',
             'response_mode': 'form_post',
             'scope': 'name email',
