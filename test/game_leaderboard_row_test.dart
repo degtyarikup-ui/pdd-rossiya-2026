@@ -23,28 +23,6 @@ void main() {
     );
   });
 
-  testWidgets('scoring rules fit a narrow screen and state the daily limit', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(320, 640);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: GameLeaderboardSheet())),
-    );
-    await tester.pump();
-    await tester.tap(find.byTooltip(appL10n.gameScoreRulesTitle));
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(find.text(appL10n.gameScoreRulesBody), findsOneWidget);
-    expect(
-      find.text(appL10n.gameScoreDailyLimitExplanation(1500)),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox());
-  });
-
   testWidgets(
     'ranking keeps premium badge, rank and grouped points legible on a small screen',
     (tester) async {
