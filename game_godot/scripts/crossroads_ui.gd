@@ -34,7 +34,6 @@ const ICON_PRACTICE := 0xf012e
 var current_mode := "blitz"
 
 var _top_bar: VBoxContainer
-var _mode_row: HBoxContainer
 var _mode_pill: PanelContainer
 var _blitz_tab: Button
 var _practice_tab: Button
@@ -137,7 +136,8 @@ func _layout() -> void:
 	var top_width := minf(MAX_TOP_WIDTH, available_width)
 	_top_bar.position = Vector2(left + (available_width - top_width) * 0.5, top + 8.0)
 	_fit_caption(top_width)
-	_fit_hud(top_width - CHROME - 8.0)
+	var mode_w := _mode_pill.get_combined_minimum_size().x if _mode_pill != null else 0.0
+	_fit_hud(top_width - CHROME - mode_w - 12.0)
 	_top_bar.size = Vector2(top_width, _top_bar.get_combined_minimum_size().y)
 	_reset_cam_btn.position = Vector2(size.x - right - CHROME, size.y - bottom - CHROME - 12.0)
 	_notice.size = _notice.get_combined_minimum_size()
@@ -222,22 +222,35 @@ func _build_top_bar() -> void:
 	_top_bar.minimum_size_changed.connect(_queue_layout)
 	add_child(_top_bar)
 
-	_mode_row = HBoxContainer.new()
-	_mode_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_top_bar.add_child(_mode_row)
+	_hud_row = HBoxContainer.new()
+	_hud_row.add_theme_constant_override("separation", 6)
+	_top_bar.add_child(_hud_row)
+
+	_close_btn = _chrome_btn(ICON_CLOSE, Ui.t("gameExit"))
+	_close_btn.pressed.connect(func(): close_pressed.emit())
+	_hud_row.add_child(_close_btn)
+
+	_hud = PanelContainer.new()
+	_hud.custom_minimum_size.y = CHROME
+	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
+	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 8, 8, 6))
+	_hud_row.add_child(_hud)
 
 	_mode_pill = PanelContainer.new()
-	_mode_pill.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 6, 3, 3))
-	_mode_row.add_child(_mode_pill)
+	_mode_pill.custom_minimum_size.y = CHROME
+	_mode_pill.size_flags_vertical = SIZE_SHRINK_BEGIN
+	_mode_pill.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 3, 3, 4))
+	_hud_row.add_child(_mode_pill)
 
 	var mode_tabs := HBoxContainer.new()
 	mode_tabs.add_theme_constant_override("separation", 2)
+	mode_tabs.size_flags_vertical = SIZE_SHRINK_CENTER
 	_mode_pill.add_child(mode_tabs)
 
 	_blitz_tab = Button.new()
 	_blitz_tab.text = char(ICON_BOLT)
 	_blitz_tab.tooltip_text = Ui.t("gameCrossroadsModeBlitz")
-	_blitz_tab.custom_minimum_size = Vector2(36, 28)
+	_blitz_tab.custom_minimum_size = Vector2(28, 32)
 	_style_tab(_blitz_tab, true)
 	_blitz_tab.pressed.connect(func():
 		if current_mode != "blitz":
@@ -249,7 +262,7 @@ func _build_top_bar() -> void:
 	_practice_tab = Button.new()
 	_practice_tab.text = char(ICON_PRACTICE)
 	_practice_tab.tooltip_text = Ui.t("gameCrossroadsModePractice")
-	_practice_tab.custom_minimum_size = Vector2(36, 28)
+	_practice_tab.custom_minimum_size = Vector2(28, 32)
 	_style_tab(_practice_tab, false)
 	_practice_tab.pressed.connect(func():
 		if current_mode != "practice":
@@ -257,50 +270,37 @@ func _build_top_bar() -> void:
 			mode_changed.emit("practice")
 			mode_toggled.emit("practice"))
 	mode_tabs.add_child(_practice_tab)
-
-	_hud_row = HBoxContainer.new()
-	_hud_row.add_theme_constant_override("separation", 8)
-	_top_bar.add_child(_hud_row)
-	_close_btn = _chrome_btn(ICON_CLOSE, Ui.t("gameExit"))
-	_close_btn.pressed.connect(func(): close_pressed.emit())
-	_hud_row.add_child(_close_btn)
-
-	_hud = PanelContainer.new()
-	_hud.custom_minimum_size.y = CHROME
-	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
-	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 12, 12, 8))
-	_hud_row.add_child(_hud)
 	var lines := VBoxContainer.new()
 	lines.add_theme_constant_override("separation", 6)
 	_hud.add_child(lines)
 	_hud_line1 = HBoxContainer.new()
-	_hud_line1.add_theme_constant_override("separation", 10)
+	_hud_line1.add_theme_constant_override("separation", 6)
 	lines.add_child(_hud_line1)
 	_hud_line2 = HBoxContainer.new()
-	_hud_line2.add_theme_constant_override("separation", 8)
+	_hud_line2.add_theme_constant_override("separation", 6)
 	_hud_line2.visible = false
 	lines.add_child(_hud_line2)
 
 	_practice_row = HBoxContainer.new()
-	_practice_row.add_theme_constant_override("separation", 6)
+	_practice_row.add_theme_constant_override("separation", 4)
 	_practice_row.size_flags_horizontal = SIZE_EXPAND_FILL
 	_practice_row.visible = false
 	lines.add_child(_practice_row)
 
 	_topic_btn = Button.new()
 	_topic_btn.size_flags_horizontal = SIZE_EXPAND_FILL
-	_topic_btn.custom_minimum_size = Vector2(60, 28)
+	_topic_btn.custom_minimum_size = Vector2(50, 28)
 	_topic_btn.text = Ui.t("gameCrossroadsCatSigns") + " ▾"
 	_topic_btn.clip_text = true
 	_topic_btn.add_theme_font_override("font", Ui.font(600))
 	_topic_btn.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
-	_style_button(_topic_btn, Ui.c("field"), Ui.c("text"), 10, 4)
+	_style_button(_topic_btn, Ui.c("field"), Ui.c("text"), 8, 4)
 	_topic_btn.pressed.connect(func(): topics_requested.emit())
 	_practice_row.add_child(_topic_btn)
 
 	_prev_btn = Button.new()
 	_prev_btn.text = "◀"
-	_prev_btn.custom_minimum_size = Vector2(32, 28)
+	_prev_btn.custom_minimum_size = Vector2(26, 28)
 	_prev_btn.add_theme_font_override("font", Ui.font(700))
 	_prev_btn.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
 	_style_button(_prev_btn, Ui.c("field"), Ui.c("text"), 4, 4)
@@ -308,7 +308,7 @@ func _build_top_bar() -> void:
 	_practice_row.add_child(_prev_btn)
 
 	_solved_chip = PanelContainer.new()
-	_solved_chip.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 8, 8, 4))
+	_solved_chip.add_theme_stylebox_override("panel", _padded(Ui.c("field"), 6, 6, 4))
 	_solved_chip_label = Ui.scaled_label("1 / 22", 12, 700, Ui.c("secondary"))
 	_solved_chip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_solved_chip.add_child(_solved_chip_label)
@@ -316,7 +316,7 @@ func _build_top_bar() -> void:
 
 	_next_btn = Button.new()
 	_next_btn.text = "▶"
-	_next_btn.custom_minimum_size = Vector2(32, 28)
+	_next_btn.custom_minimum_size = Vector2(26, 28)
 	_next_btn.add_theme_font_override("font", Ui.font(700))
 	_next_btn.add_theme_font_size_override("font_size", roundi(13.0 * Ui.text_scale()))
 	_style_button(_next_btn, Ui.c("field"), Ui.c("text"), 4, 4)
@@ -324,12 +324,12 @@ func _build_top_bar() -> void:
 	_practice_row.add_child(_next_btn)
 
 	_score_group = HBoxContainer.new()
-	_score_group.add_theme_constant_override("separation", 4)
-	_score_group.add_child(Ui.icon(ICON_STAR, 20, Ui.c("gold")))
-	_score_label = Ui.scaled_label("0", 17, 800, Ui.c("text"))
+	_score_group.add_theme_constant_override("separation", 3)
+	_score_group.add_child(Ui.icon(ICON_STAR, 18, Ui.c("gold")))
+	_score_label = Ui.scaled_label("0", 16, 800, Ui.c("text"))
 	_score_group.add_child(_score_label)
 	_combo_chip = PanelContainer.new()
-	_combo_chip.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 6, 5, 2))
+	_combo_chip.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 5, 4, 2))
 	_combo_label = Ui.scaled_label("", 11, 700, Ui.c("gold"))
 	_combo_chip.add_child(_combo_label)
 	_combo_chip.visible = false
@@ -338,18 +338,18 @@ func _build_top_bar() -> void:
 	_score_spacer = _spacer()
 	_hud_line1.add_child(_score_spacer)
 	_timer_group = HBoxContainer.new()
-	_timer_group.add_theme_constant_override("separation", 4)
-	_timer_icon = Ui.icon(ICON_TIMER, 18, Ui.c("secondary"))
+	_timer_group.add_theme_constant_override("separation", 3)
+	_timer_icon = Ui.icon(ICON_TIMER, 16, Ui.c("secondary"))
 	_timer_group.add_child(_timer_icon)
-	_timer_label = Ui.scaled_label("60", 15, 700, Ui.c("text"))
+	_timer_label = Ui.scaled_label("60", 14, 700, Ui.c("text"))
 	_timer_group.add_child(_timer_label)
 	_hud_line1.add_child(_timer_group)
 	_timer_spacer = _spacer()
 	_hud_line1.add_child(_timer_spacer)
 	_lives_container = HBoxContainer.new()
-	_lives_container.add_theme_constant_override("separation", 2)
+	_lives_container.add_theme_constant_override("separation", 1)
 	for i in LIVES:
-		var heart := Ui.icon(ICON_HEART, 15, Ui.c("red"))
+		var heart := Ui.icon(ICON_HEART, 13, Ui.c("red"))
 		_hearts.append(heart)
 		_lives_container.add_child(heart)
 	_hud_line1.add_child(_lives_container)
@@ -392,8 +392,8 @@ func _style_tab(button: Button, active: bool) -> void:
 	if Ui._icon_font == null:
 		Ui._icon_font = load(Ui.ICON_FONT)
 	button.add_theme_font_override("font", Ui._icon_font)
-	button.add_theme_font_size_override("font_size", 18)
-	var style := _padded(bg, 8, 8, 4)
+	button.add_theme_font_size_override("font_size", 17)
+	var style := _padded(bg, 5, 5, 3)
 	button.add_theme_stylebox_override("normal", style)
 	button.add_theme_stylebox_override("hover", style)
 	button.add_theme_stylebox_override("pressed", style)
@@ -438,19 +438,19 @@ func _fit_hud(width: float) -> void:
 	if current_mode == "practice":
 		_hud_line2.visible = false
 		return
-	var available := maxf(100.0, width - 24.0)
-	var font_size := roundi(17.0 * Ui.text_scale())
+	var available := maxf(70.0, width - 16.0)
+	var font_size := roundi(16.0 * Ui.text_scale())
 	var combo_width := _combo_chip.get_combined_minimum_size().x + 4.0 if _combo_chip.visible else 0.0
-	var score_room := maxf(30.0, available - combo_width - 24.0)
+	var score_room := maxf(24.0, available - combo_width - 20.0)
 	var measured := _score_label.get_theme_font("font").get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 	if measured > score_room:
-		font_size = maxi(12, floori(font_size * score_room / measured))
+		font_size = maxi(11, floori(font_size * score_room / measured))
 	_score_label.add_theme_font_size_override("font_size", font_size)
 	var score_width := _score_group.get_combined_minimum_size().x
 	var timer_width := _timer_group.get_combined_minimum_size().x
-	var needed := score_width + timer_width + _lives_container.get_combined_minimum_size().x + 40.0
+	var needed := score_width + timer_width + _lives_container.get_combined_minimum_size().x + 24.0
 	var one_line := needed <= available
-	var timer_wrap := score_width + timer_width + 20.0 > available
+	var timer_wrap := score_width + timer_width + 12.0 > available
 	var timer_parent := _hud_line2 if timer_wrap else _hud_line1
 	if _timer_group.get_parent() != timer_parent:
 		_timer_group.reparent(timer_parent, false)
