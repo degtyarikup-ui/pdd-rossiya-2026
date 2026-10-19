@@ -22,38 +22,30 @@ void main() {
   Widget buildBannerBox({
     required double width,
     double textScale = 1.0,
+    TargetPlatform platform = TargetPlatform.android,
     required AppNotice notice,
     required VoidCallback onTap,
     required VoidCallback onDismiss,
     Widget? imageFallback,
   }) {
     return MaterialApp(
+      theme: ThemeData(platform: platform),
       home: MediaQuery(
         data: MediaQueryData(
           size: Size(width, 800),
           textScaler: TextScaler.linear(textScale),
         ),
         child: Scaffold(
-          body: SizedBox(
-            width: width,
-            child: Stack(
-              children: [
-                const Visibility(
-                  visible: false,
-                  maintainSize: true,
-                  maintainAnimation: true,
-                  maintainState: true,
-                  child: ProgressPanelCard(stats: emptyStats),
-                ),
-                Positioned.fill(
-                  child: AppNoticeBanner(
-                    notice: notice,
-                    onTap: onTap,
-                    onDismiss: onDismiss,
-                    imageFallback: imageFallback,
-                  ),
-                ),
-              ],
+          body: SingleChildScrollView(
+            child: SizedBox(
+              width: width,
+              child: AppNoticeBannerSlot(
+                notice: notice,
+                statistics:
+                    imageFallback ?? const ProgressPanelCard(stats: emptyStats),
+                onTap: onTap,
+                onDismiss: onDismiss,
+              ),
             ),
           ),
         ),
@@ -89,45 +81,92 @@ void main() {
     },
   );
 
-  testWidgets('image banner shows the full image across the statistics slot', (
+  testWidgets(
+    'image keeps its proportions across platforms, widths and fonts',
+    (tester) async {
+      final notice = AppNotice(
+        id: 'c069e042-5b7b-40a0-b15e-b80c4444ce1d',
+        title: '',
+        body: '',
+        expiresAt: DateTime.now().add(const Duration(days: 1)),
+        kind: 'banner',
+        layout: 'image',
+        imageUrl: 'https://x.test/banner.png',
+      );
+
+      await mockBannerImage(tester);
+      for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+        for (final textScale in [1.0, 1.6, 2.0]) {
+          for (final width in [320.0, 350.0, 374.0, 390.0, 600.0]) {
+            await tester.pumpWidget(
+              buildBannerBox(
+                width: width,
+                textScale: textScale,
+                platform: platform,
+                notice: notice,
+                onTap: () {},
+                onDismiss: () {},
+              ),
+            );
+            await waitForBannerImage(tester);
+
+            final image = tester.widget<Image>(find.byType(Image));
+            final bannerRect = tester.getRect(find.byType(AppNoticeBanner));
+            final imageRect = tester.getRect(find.byType(Image));
+            expect(image.image, isA<NetworkImage>());
+            expect((image.image as NetworkImage).url, notice.imageUrl);
+            expect(image.fit, BoxFit.contain);
+            expect(imageRect.width, bannerRect.width);
+            expect(imageRect.left, bannerRect.left);
+            expect(bannerRect.width, width);
+            expect(bannerRect.height, closeTo(width * 734 / 1920, 0.001));
+            expect(tester.getRect(find.byType(RawImage)), bannerRect);
+            expect(find.byType(ProgressPanelCard), findsNothing);
+            expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+            expect(tester.takeException(), isNull);
+          }
+        }
+      }
+    },
+  );
+
+  testWidgets('other image proportions also determine the slot height', (
     tester,
   ) async {
-    final notice = AppNotice(
-      id: 'c069e042-5b7b-40a0-b15e-b80c4444ce1d',
-      title: '',
-      body: '',
-      expiresAt: DateTime.now().add(const Duration(days: 1)),
-      kind: 'banner',
-      layout: 'image',
-      imageUrl: 'https://x.test/banner.png',
-    );
-
-    for (final width in [320.0, 600.0]) {
+    for (final size in [const Size(1600, 900), const Size(800, 800)]) {
+      await mockBannerImage(
+        tester,
+        width: size.width.toInt(),
+        height: size.height.toInt(),
+      );
+      final notice = AppNotice(
+        id: 'other-proportions',
+        title: '',
+        body: '',
+        expiresAt: DateTime.now().add(const Duration(days: 1)),
+        kind: 'banner',
+        layout: 'image',
+        imageUrl: 'https://x.test/banner-${size.width}.png',
+      );
       await tester.pumpWidget(
         buildBannerBox(
-          width: width,
-          textScale: 1.6,
+          width: 350,
           notice: notice,
           onTap: () {},
           onDismiss: () {},
         ),
       );
-      await tester.pumpAndSettle();
-
-      final image = tester.widget<Image>(find.byType(Image));
-      final bannerRect = tester.getRect(find.byType(AppNoticeBanner));
-      final imageRect = tester.getRect(find.byType(Image));
-      expect(image.image, isA<NetworkImage>());
-      expect((image.image as NetworkImage).url, notice.imageUrl);
-      expect(image.fit, BoxFit.contain);
-      expect(imageRect.width, bannerRect.width);
-      expect(imageRect.left, bannerRect.left);
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      await waitForBannerImage(tester);
+      expect(
+        tester.getSize(find.byType(AppNoticeBanner)),
+        Size(350, 350 / size.aspectRatio),
+      );
       expect(tester.takeException(), isNull);
     }
   });
 
   testWidgets('image tap and close have separate actions', (tester) async {
+    await mockBannerImage(tester);
     var opened = 0;
     var dismissed = 0;
     final notice = AppNotice(
@@ -149,7 +188,7 @@ void main() {
         onDismiss: () => dismissed++,
       ),
     );
-    await tester.pumpAndSettle();
+    await waitForBannerImage(tester);
 
     await tester.tap(find.byType(Image));
     expect(opened, 1);
@@ -168,7 +207,7 @@ void main() {
       final recorder = ui.PictureRecorder();
       Canvas(recorder).drawColor(Colors.blue, BlendMode.src);
       final picture = recorder.endRecording();
-      final image = await picture.toImage(400, 100);
+      final image = await picture.toImage(1920, 734);
       final data = await image.toByteData(format: ui.ImageByteFormat.png);
       image.dispose();
       picture.dispose();
@@ -219,8 +258,8 @@ void main() {
 
     expect(find.text('Statistics fallback'), findsNothing);
     final image = tester.widget<RawImage>(find.byType(RawImage));
-    expect(image.image?.width, 400);
-    expect(image.image?.height, 100);
+    expect(image.image?.width, 1920);
+    expect(image.image?.height, 734);
     expect(image.fit, BoxFit.contain);
     expect(
       tester.getSize(find.byType(RawImage)).width,
@@ -264,6 +303,7 @@ void main() {
   });
 
   testWidgets('image without an action is still dismissible', (tester) async {
+    await mockBannerImage(tester);
     var opened = 0;
     var dismissed = 0;
     final notice = AppNotice(
@@ -283,7 +323,7 @@ void main() {
         onDismiss: () => dismissed++,
       ),
     );
-    await tester.pumpAndSettle();
+    await waitForBannerImage(tester);
 
     await tester.tap(find.byType(Image));
     expect(opened, 0);
@@ -409,4 +449,40 @@ class _BannerHttpResponse extends Fake implements HttpClientResponse {
     onDone: onDone,
     cancelOnError: cancelOnError,
   );
+}
+
+Future<void> mockBannerImage(
+  WidgetTester tester, {
+  int width = 1920,
+  int height = 734,
+}) async {
+  final bytes = await tester.runAsync(() async {
+    final recorder = ui.PictureRecorder();
+    Canvas(recorder).drawColor(Colors.orange, BlendMode.src);
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(width, height);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    picture.dispose();
+    return data!.buffer.asUint8List();
+  });
+  debugNetworkImageHttpClientProvider = () =>
+      _BannerHttpClient(Future.value(_BannerHttpResponse(bytes!)));
+  addTearDown(() {
+    debugNetworkImageHttpClientProvider = null;
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+  });
+}
+
+Future<void> waitForBannerImage(WidgetTester tester) async {
+  for (var i = 0; i < 30 && find.byType(RawImage).evaluate().isEmpty; i++) {
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
+  }
+  await tester.pumpAndSettle();
+  expect(find.byType(RawImage), findsOneWidget);
+  debugNetworkImageHttpClientProvider = null;
 }

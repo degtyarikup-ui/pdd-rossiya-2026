@@ -589,29 +589,15 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   );
                   if (banners.isEmpty) return progressCard;
                   final banner = banners.first;
-                  return Stack(
-                    children: [
-                      Visibility(
-                        visible: false,
-                        maintainSize: true,
-                        maintainAnimation: true,
-                        maintainState: true,
-                        child: progressCard,
-                      ),
-                      Positioned.fill(
-                        child: AppNoticeBanner(
-                          key: ValueKey(banner.id),
-                          notice: banner,
-                          imageFallback: progressCard,
-                          onDismiss: () => RemoteNotificationsService.instance
-                              .dismissBanner(banner.id),
-                          onTap: () {
-                            final tap = banner.tap;
-                            if (tap != null) widget.onNoticeTap(tap);
-                          },
-                        ),
-                      ),
-                    ],
+                  return AppNoticeBannerSlot(
+                    notice: banner,
+                    statistics: progressCard,
+                    onDismiss: () => RemoteNotificationsService.instance
+                        .dismissBanner(banner.id),
+                    onTap: () {
+                      final tap = banner.tap;
+                      if (tap != null) widget.onNoticeTap(tap);
+                    },
                   );
                 },
               ),

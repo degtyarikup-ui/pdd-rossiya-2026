@@ -234,6 +234,46 @@ extension on AppNoticeDialog {
   }
 }
 
+/// Home slot: text notices retain the statistics height; image notices size
+/// themselves from their source aspect ratio, independently of text scaling.
+class AppNoticeBannerSlot extends StatelessWidget {
+  const AppNoticeBannerSlot({
+    super.key,
+    required this.notice,
+    required this.statistics,
+    required this.onTap,
+    required this.onDismiss,
+  });
+
+  final AppNotice notice;
+  final Widget statistics;
+  final VoidCallback onTap, onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final banner = AppNoticeBanner(
+      key: ValueKey(notice.id),
+      notice: notice,
+      imageFallback: statistics,
+      onTap: onTap,
+      onDismiss: onDismiss,
+    );
+    if (notice.isImageBanner) return banner;
+    return Stack(
+      children: [
+        Visibility(
+          visible: false,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: statistics,
+        ),
+        Positioned.fill(child: banner),
+      ],
+    );
+  }
+}
+
 /// Non-blocking card shown in place of the statistics block on the home screen.
 class AppNoticeBanner extends StatelessWidget {
   final AppNotice notice;
@@ -256,7 +296,7 @@ class AppNoticeBanner extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       clipBehavior: Clip.antiAlias,
       child: Stack(
-        fit: StackFit.expand,
+        fit: image ? StackFit.loose : StackFit.expand,
         children: [
           content,
           Positioned.fill(
@@ -293,7 +333,8 @@ class AppNoticeBanner extends StatelessWidget {
       return Image.network(
         notice.imageUrl,
         width: double.infinity,
-        height: double.infinity,
+        // A fixed statistics height creates letterboxing on other screen widths.
+        // Let the decoded image determine its height from the available width.
         fit: BoxFit.contain,
         semanticLabel: notice.title.isNotEmpty
             ? notice.title
@@ -304,7 +345,11 @@ class AppNoticeBanner extends StatelessWidget {
             : _surface(context, child, image: true),
         errorBuilder: (context, _, _) =>
             imageFallback ??
-            _surface(context, const SizedBox.expand(), image: true),
+            _surface(
+              context,
+              const AspectRatio(aspectRatio: 1920 / 734),
+              image: true,
+            ),
       );
     }
     return _surface(
