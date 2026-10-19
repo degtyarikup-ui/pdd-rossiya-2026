@@ -6645,6 +6645,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не сейчас'**
   String get notificationPromptLater;
+
+  /// No description provided for @signSwiperIncorrect.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ошибка · −1 жизнь'**
+  String get signSwiperIncorrect;
+
+  /// No description provided for @signSwiperCorrectAnswer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правильный ответ: {answer}'**
+  String signSwiperCorrectAnswer(String answer);
 }
 
 class _AppLocalizationsDelegate

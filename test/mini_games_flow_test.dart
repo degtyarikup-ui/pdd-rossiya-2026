@@ -138,7 +138,9 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 260));
+    await tester.pump(const Duration(milliseconds: 160));
+    await tester.pump(Duration(milliseconds: correct ? 410 : 960));
+    await tester.pump(const Duration(milliseconds: 330));
     await tester.pump();
   }
 
@@ -406,6 +408,55 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('Last lost life shows its answer before the results cover it', (
+    tester,
+  ) async {
+    await open(tester, const SignSwiperScreen());
+    for (var i = 0; i < 4; i++) {
+      await answerSign(tester, correct: false);
+    }
+    final view = tester.widget<SwipeCardView>(find.byType(SwipeCardView));
+    if (view.card.isCorrect) {
+      view.controller!.swipeLeft();
+    } else {
+      view.controller!.swipeRight();
+    }
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 160));
+    expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 0);
+    expect(find.text(appL10n.signSwiperIncorrect), findsOneWidget);
+    expect(find.byType(GameResultOverlay), findsNothing);
+    await tester.pump(const Duration(milliseconds: 960));
+    await tester.pump(const Duration(milliseconds: 330));
+    expect(find.byType(GameResultOverlay), findsOneWidget);
+    expect(progress.getSignSwiperProgress().totalSwiped, 5);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Clock reaching zero lets the accepted answer finish once', (
+    tester,
+  ) async {
+    await open(tester, const SignSwiperScreen());
+    await tester.pump(const Duration(seconds: 59));
+    final view = tester.widget<SwipeCardView>(find.byType(SwipeCardView));
+    if (view.card.isCorrect) {
+      view.controller!.swipeLeft();
+    } else {
+      view.controller!.swipeRight();
+    }
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 160));
+    await tester.pump(const Duration(milliseconds: 850));
+    expect(tester.widget<GameTimeBar>(find.byType(GameTimeBar)).secondsLeft, 0);
+    expect(find.byType(GameResultOverlay), findsNothing);
+    expect(find.text(appL10n.signSwiperIncorrect), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump(const Duration(milliseconds: 330));
+    expect(find.byType(GameResultOverlay), findsOneWidget);
+    expect(progress.getSignSwiperProgress().totalSwiped, 1);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('Empty signs show a retry state without starting a round', (
     tester,
   ) async {
@@ -450,12 +501,15 @@ void main() {
     (tester) async {
       await open(tester, const SignSwiperScreen());
       final startedAt = tester.binding.clock.now();
-      for (var i = 0; i < 120; i++) {
+      for (var i = 0; i < 50; i++) {
         await answerSign(tester, correct: true);
       }
       expect(
         tester.widget<GameScoreLabel>(find.byType(GameScoreLabel)).score,
-        GameEconomy.maxRunScore,
+        List.generate(
+          50,
+          (i) => GameEconomy.signs(i + 1),
+        ).reduce((a, b) => a + b),
       );
       expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 5);
       final elapsed = tester.binding.clock.now().difference(startedAt);
@@ -464,9 +518,9 @@ void main() {
       expect(find.text(appL10n.gameTimeUp), findsOneWidget);
       expect(
         progress.getSignSwiperProgress().bestScore,
-        GameEconomy.maxRunScore,
+        lessThanOrEqualTo(GameEconomy.maxRunScore),
       );
-      expect(progress.getSignSwiperProgress().totalSwiped, 120);
+      expect(progress.getSignSwiperProgress().totalSwiped, 50);
       await tester.pumpWidget(const SizedBox());
     },
   );
@@ -514,7 +568,7 @@ void main() {
 
     await open(tester, view(), disableAnimations: true);
     controller.swipeLeft();
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(swipes, [true, false]);
     expect(tester.hasRunningAnimations, isFalse);
     expect(tester.takeException(), isNull);

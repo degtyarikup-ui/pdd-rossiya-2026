@@ -3985,4 +3985,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationPromptLater => 'Not now';
+
+  @override
+  String get signSwiperIncorrect => 'Incorrect · −1 life';
+
+  @override
+  String signSwiperCorrectAnswer(String answer) {
+    return 'Correct answer: $answer';
+  }
 }

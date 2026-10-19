@@ -3977,4 +3977,12 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get notificationPromptLater => 'Қазір емес';
+
+  @override
+  String get signSwiperIncorrect => 'Қате · −1 өмір';
+
+  @override
+  String signSwiperCorrectAnswer(String answer) {
+    return 'Дұрыс жауап: $answer';
+  }
 }

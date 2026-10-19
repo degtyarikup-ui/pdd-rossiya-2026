@@ -1338,5 +1338,14 @@
   "notificationPromptTitle": "Маңыздысын өткізіп алмаңыз",
   "notificationPromptBody": "Серияңыз үзілмеуі үшін сабақтар туралы еске саламыз және қолданбаның жаңа мүмкіндіктері туралы айтамыз. Баптауларда өшіруге болады.",
   "notificationPromptEnable": "Хабарландыруларды қосу",
-  "notificationPromptLater": "Қазір емес"
+  "notificationPromptLater": "Қазір емес",
+  "signSwiperIncorrect": "Қате · −1 өмір",
+  "signSwiperCorrectAnswer": "Дұрыс жауап: {answer}",
+  "@signSwiperCorrectAnswer": {
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
+  }
 }

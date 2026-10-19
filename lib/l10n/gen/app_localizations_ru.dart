@@ -3998,4 +3998,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notificationPromptLater => 'Не сейчас';
+
+  @override
+  String get signSwiperIncorrect => 'Ошибка · −1 жизнь';
+
+  @override
+  String signSwiperCorrectAnswer(String answer) {
+    return 'Правильный ответ: $answer';
+  }
 }

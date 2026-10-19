@@ -1338,5 +1338,14 @@
   "notificationPromptTitle": "Don't miss what matters",
   "notificationPromptBody": "We'll remind you to practise so your streak keeps going and tell you about new app features. You can turn this off in Settings.",
   "notificationPromptEnable": "Turn on notifications",
-  "notificationPromptLater": "Not now"
+  "notificationPromptLater": "Not now",
+  "signSwiperIncorrect": "Incorrect · −1 life",
+  "signSwiperCorrectAnswer": "Correct answer: {answer}",
+  "@signSwiperCorrectAnswer": {
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
+  }
 }

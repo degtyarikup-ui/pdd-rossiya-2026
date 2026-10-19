@@ -1900,5 +1900,14 @@
   "notificationPromptTitle": "Не пропускайте важное",
   "notificationPromptBody": "Напомним о занятиях, чтобы не прерывать серию, и расскажем о новых функциях приложения. Отключить можно в настройках.",
   "notificationPromptEnable": "Включить уведомления",
-  "notificationPromptLater": "Не сейчас"
+  "notificationPromptLater": "Не сейчас",
+  "signSwiperIncorrect": "Ошибка · −1 жизнь",
+  "signSwiperCorrectAnswer": "Правильный ответ: {answer}",
+  "@signSwiperCorrectAnswer": {
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
+  }
 }

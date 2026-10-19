@@ -115,7 +115,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       }
       if (_secondsLeft == 0) {
         _timeUp = true;
-        _endGame();
+        if (!_isProcessingSwipe) _endGame();
       }
     });
   }
@@ -151,11 +151,11 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     });
   }
 
-  void _onCardSwiped(bool userRightSwipe) {
+  void _onCardAnswered(bool userRightSwipe) {
     if (_currentIndex >= _deck.length || _isGameOver || _isProcessingSwipe) {
       return;
     }
-    _isProcessingSwipe = true;
+    setState(() => _isProcessingSwipe = true);
 
     final card = _deck[_currentIndex];
     final isCorrect = userRightSwipe == card.isCorrect;
@@ -180,20 +180,22 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       }
     } else {
       SoundEffectsService.instance.playIncorrect(volume: 0.30);
-      HapticFeedbackHelper.warning();
+      HapticFeedbackHelper.answerIncorrect();
 
       _combo = 0;
       _lives--;
       _mistakes.add(card);
-
-      if (_lives <= 0 || _secondsLeft <= 0) {
-        _timeUp = _secondsLeft <= 0;
-        _endGame();
-        return;
-      }
     }
+  }
 
-    _advanceToNextCard();
+  void _onCardSwiped(bool _) {
+    if (_isGameOver) return;
+    if (_lives <= 0 || _secondsLeft <= 0) {
+      _timeUp = _secondsLeft <= 0;
+      _endGame();
+    } else {
+      _advanceToNextCard();
+    }
   }
 
   void _advanceToNextCard() {
@@ -337,12 +339,32 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Следующая карточка: край колоды, без содержимого.
             Positioned.fill(
               child: Transform.translate(
-                offset: const Offset(0, 18),
+                offset: const Offset(0, 27),
                 child: Transform.scale(
-                  scale: 0.97,
+                  scale: 0.92,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Color.lerp(
+                        colors.cardBackground,
+                        colors.accent,
+                        0.16,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusExtraLarge,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Next card shows the physical edge of the deck.
+            Positioned.fill(
+              child: Transform.translate(
+                offset: const Offset(0, 15),
+                child: Transform.scale(
+                  scale: 0.96,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: Color.lerp(
@@ -362,9 +384,11 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
               ),
             ),
             SwipeCardView(
-              key: ValueKey(topCard.id),
+              key: ValueKey('$_currentIndex:${topCard.id}'),
               controller: _cardController,
               card: topCard,
+              enabled: !_isGameOver,
+              onAnswered: _onCardAnswered,
               onSwiped: _onCardSwiped,
             ),
           ],
@@ -382,27 +406,30 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
         AppDimensions.screenPadding,
         AppDimensions.spacingXL,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GameRoundButton(
-            icon: Icons.close_rounded,
-            label: card?.leftActionLabel ?? appL10n.gameSignNo,
-            color: colors.red,
-            surface: colors.red,
-            iconColor: Colors.white,
-            onTap: _cardController.swipeLeft,
-          ),
-          GameRoundButton(
-            icon: Icons.check_rounded,
-            label: card?.rightActionLabel ?? appL10n.gameSignYes,
-            color: const Color(0xFF168A55),
-            surface: const Color(0xFF168A55),
-            iconColor: Colors.white,
-            onTap: _cardController.swipeRight,
-          ),
-        ],
+      child: IgnorePointer(
+        ignoring: _isProcessingSwipe || _isGameOver,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GameRoundButton(
+              icon: Icons.close_rounded,
+              label: card?.leftActionLabel ?? appL10n.gameSignNo,
+              color: colors.red,
+              surface: colors.red,
+              iconColor: Colors.white,
+              onTap: _cardController.swipeLeft,
+            ),
+            GameRoundButton(
+              icon: Icons.check_rounded,
+              label: card?.rightActionLabel ?? appL10n.gameSignYes,
+              color: const Color(0xFF168A55),
+              surface: const Color(0xFF168A55),
+              iconColor: Colors.white,
+              onTap: _cardController.swipeRight,
+            ),
+          ],
+        ),
       ),
     );
   }

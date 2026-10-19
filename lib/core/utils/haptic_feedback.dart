@@ -61,6 +61,15 @@ class HapticFeedbackHelper {
     );
   }
 
+  /// A distinct, short double pulse for an incorrect quiz answer.
+  static void answerIncorrect() {
+    if (!_enabled) return;
+    HapticFeedback.mediumImpact();
+    Future<void>.delayed(const Duration(milliseconds: 105), () {
+      if (_enabled) HapticFeedback.lightImpact();
+    });
+  }
+
   static void warning() {
     if (!_enabled) return;
     HapticFeedback.mediumImpact();
