@@ -18,6 +18,14 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 
+## Answer time: one reading-speed rule for every language, 15-45 s.
+func _answer_time_checks() -> void:
+	check(Ui.answer_seconds(60) == 15.0, "Short question keeps the 15 s minimum")
+	check(Ui.answer_seconds(200) == 28.0, "200 characters give 28 s to read and choose")
+	check(Ui.answer_seconds(300) == 38.0, "300 characters give 38 s")
+	check(Ui.answer_seconds(900) == 45.0, "Answer time is capped at 45 s")
+
+
 func _recordings() -> void:
 	var index: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(QuestionVoice.AUDIO_INDEX))
 	var junctions: Array = JSON.parse_string(FileAccess.get_file_as_string("res://situations/index.json"))
@@ -205,6 +213,7 @@ func _world_checks() -> void:
 
 
 func _run() -> void:
+	_answer_time_checks()
 	_recordings()
 	await _player_checks()
 	await _world_checks()

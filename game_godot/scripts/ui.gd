@@ -100,8 +100,11 @@ static func box(color: Color, radius := 8, top_only := false) -> StyleBoxFlat:
 
 
 ## answerSeconds (game_controller.dart): 15 s, +1 per 16 characters beyond 160, 15..30.
+## Time to read a question and answer it, the same for every language: 8 s to take in
+## the junction plus 1 s per 10 characters of the source question and answers (about phone
+## reading speed), 15-45 s. A playing narration may still extend it (world.gd).
 static func answer_seconds(source_length: int) -> float:
-	return clampf(15.0 + ceil((source_length - 160) / 16.0), 15.0, 30.0)
+	return clampf(8.0 + ceil(source_length / 10.0), 15.0, 45.0)
 
 
 ## The home indicator, in points: the long bar under every phone screen that has no home button.
