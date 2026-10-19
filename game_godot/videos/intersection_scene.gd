@@ -30,6 +30,7 @@ var _hero_from := 0.0
 var _hero_to := 0.0
 var _blinkers: Array[MeshInstance3D] = []
 var _cam: Camera3D
+var _officer: RegulatorOfficer
 var _label: Label
 
 
@@ -108,8 +109,16 @@ func _slab(poly: PackedVector2Array, h: float, c: Color) -> void:
 
 func _build_environment() -> void:
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.96, 0.84, 0.68)
+	# Soft autumn sky: pale blue overhead, warm haze at the horizon.
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color(0.45, 0.62, 0.86)
+	sky_mat.sky_horizon_color = Color(0.98, 0.82, 0.64)
+	sky_mat.ground_horizon_color = Color(0.9, 0.78, 0.64)
+	sky_mat.sky_energy_multiplier = 0.85
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.9, 0.82, 0.74)
 	env.ambient_light_energy = 1.0
@@ -308,6 +317,7 @@ func _build_actors() -> void:
 	officer.scale = Vector3.ONE * 1.7
 	add_child(officer)
 	officer.rotation.y = 0
+	_officer = officer
 
 	var lane_c := MEDIAN * 0.5 + LANE * 0.5  # left lane centre
 	var lane_r := MEDIAN * 0.5 + LANE * 1.5  # right lane centre
