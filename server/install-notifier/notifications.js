@@ -1,3 +1,4 @@
+import { isBackupRequest, handleBackupExport } from './durable_backup.js';
 import { updateKey, validateRelease } from './app_updates.js';
 import { reportIncident, errorCode } from './diagnostics.js';
 import { importPKCS8, SignJWT } from 'jose';
@@ -180,7 +181,7 @@ export async function sendPush(env, campaign, fetcher = fetch) {
 export class NotificationsState {
   constructor(state, env) { this.state = state; this.env = env; this.tail = Promise.resolve(); }
   serial(fn) { const result = this.tail.then(fn); this.tail = result.catch(() => {}); return result; }
-  fetch(request) { return this.serial(() => this.handle(request)); }
+  fetch(request) { return this.serial(() => { if (isBackupRequest(request)) return handleBackupExport(request, { state: this.state, env: this.env, className: 'NotificationsState' }); return this.handle(request); }); }
   async scheduleNext() {
     const records = await this.state.storage.list({ prefix: 'message:' });
     const queued = [...records.values()].filter(x => x.kind === 'push' && x.status === 'queued' && x.enabled);

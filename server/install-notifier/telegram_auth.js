@@ -1,3 +1,4 @@
+import { isBackupRequest, handleBackupExport } from './durable_backup.js';
 import { accountRead } from './account_state.js';
 // Авторизация через Telegram-бота (@pdda_bot): генерация одноразовой ссылки,
 // приём команды /start через Webhook и подтверждение сессии для мобильного приложения.
@@ -38,8 +39,9 @@ const SESSION_SECONDS = 30 * 86400;
 // «в конечном счёте» — подтверждение из вебхука доходило до опроса минутами.
 // Без привязки TG_AUTH (тесты) используется KV.
 export class TelegramAuthState {
-  constructor(state) { this.state = state; }
+  constructor(state, env) { this.state = state; this.env = env; }
   async fetch(request) {
+    if (isBackupRequest(request)) return handleBackupExport(request, { state: this.state, env: this.env, className: 'TelegramAuthState' });
     const { op, entry } = await request.json();
     const cur = await this.state.storage.get('e');
     const alive = cur && cur.expiresAt > Date.now() ? cur : null;

@@ -1,3 +1,4 @@
+import { isBackupRequest, handleBackupExport } from './durable_backup.js';
 import { readSession, tokenHash } from './user_auth.js';
 import { accountRead, accountStateRequired } from './account_state.js';
 import { applyEntitlements } from './entitlements.js';
@@ -33,8 +34,9 @@ export async function aiQuota(request, env, body = {}, reserve = true) {
   return response.ok ? { quota } : { response: reply(quota, response.status) };
 }
 export class AiQuotaState {
-  constructor(state) { this.state = state; }
+  constructor(state, env) { this.state = state; this.env = env; }
   async fetch(request) {
+    if (isBackupRequest(request)) return handleBackupExport(request, { state: this.state, env: this.env, className: 'AiQuotaState' });
     const body = await request.json();
     if (!/^[a-f0-9]{64}$/.test(body.id || '') || !/^[a-f0-9]{64}$/.test(body.ip || '')) return reply({ error: 'invalid quota identity' }, 400);
     const now = Date.now(), day = new Date(now).toISOString().slice(0, 10), minute = Math.floor(now / 60000);
