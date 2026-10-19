@@ -12,7 +12,7 @@ const WALK := 3.2  # pavement width
 const CURB := 0.25
 const STOP_BACK := 2.0  # stop line distance from the crossing edge
 
-const C_ASPHALT := Color(0.3, 0.3, 0.32)
+const C_ASPHALT := Color(0.25, 0.25, 0.27)
 const C_PAINT := Color(0.95, 0.95, 0.95)
 const C_CURB := Color(0.82, 0.8, 0.76)
 const C_WALK := Color(0.8, 0.74, 0.66)
@@ -97,17 +97,17 @@ func _slab(poly: PackedVector2Array, h: float, c: Color) -> void:
 func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.98, 0.8, 0.58)
+	env.background_color = Color(1.0, 0.78, 0.52)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.78, 0.74, 0.8)
-	env.ambient_light_energy = 0.6
+	env.ambient_light_color = Color(0.72, 0.74, 0.84)
+	env.ambient_light_energy = 0.75
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 0.95
 	env.glow_enabled = true
 	env.glow_intensity = 0.35
 	env.glow_bloom = 0.05
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.15
+	env.adjustment_saturation = 1.2
 	env.adjustment_contrast = 1.05
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -266,6 +266,11 @@ func _build_scenery() -> void:
 				for pos in [Vector3(sx * lawn_in, 0.18, sz * d), Vector3(sx * d, 0.18, sz * lawn_in)]:
 					_tree(pos, rng)
 				d += 11.0
+			# Corner trees inside the rounded lawn.
+			var k := HW + CURB + WALK + 3.0
+			_tree(Vector3(sx * k, 0.18, sz * k), rng)
+			_tree(Vector3(sx * (k + 3.5), 0.18, sz * (k + 0.5)), rng)
+			_tree(Vector3(sx * (k + 0.5), 0.18, sz * (k + 3.5)), rng)
 			# Lamps on the kerb line.
 			d = HW + R + 11.5
 			while d < EXTENT - 5:
@@ -287,7 +292,7 @@ func _build_scenery() -> void:
 func _build_actors() -> void:
 	var officer := RegulatorOfficer.new()
 	officer.position = Vector3(0, 0, 0)
-	officer.scale = Vector3.ONE * 1.15
+	officer.scale = Vector3.ONE * 1.7
 	add_child(officer)
 	officer.rotation.y = 0
 
@@ -308,8 +313,8 @@ func _build_actors() -> void:
 
 func _build_camera() -> void:
 	var cam := Camera3D.new()
-	cam.fov = 44.0
-	cam.position = Vector3(0, 44, 40)
+	cam.fov = 42.0
+	cam.position = Vector3(0, 33, 38)
 	add_child(cam)
-	cam.look_at(Vector3(0, 0, 3), Vector3.UP)
+	cam.look_at(Vector3(0, 0, 1.5), Vector3.UP)
 	cam.current = true
