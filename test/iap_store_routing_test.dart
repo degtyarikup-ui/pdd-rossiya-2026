@@ -82,7 +82,7 @@ void main() {
     } else {
       expect(store.streamReads, 1);
       expect(store.availabilityChecks, 1);
-      expect(store.productQueries, 2);
+      expect(store.productQueries, 1);
       expect(iap.isAvailable, isTrue);
       expect(iap.products, isNotEmpty);
     }

@@ -1,3 +1,4 @@
+import { serverErrorContext } from './diagnostic_context.js';
 import { reportQuestionDetails } from './report_questions.js';
 import { mergeProgress } from './progress_merge.js';
 import { gameProfile } from './game_profile.js';
@@ -4322,14 +4323,14 @@ export default {
   async fetch(request, env, ctx) {
     const path = new URL(request.url).pathname;
     const operation = /^\/api\/[a-z/-]{1,100}$/.test(path) ? path.slice(1).replaceAll('/', '.') : 'worker.request';
-    const notify = async (status, code) => {
+    const notify = async (status, code, context = {}) => {
       if (path === '/api/diagnostics') return;
       let session = null;
       try { session = await readSession(request, env); } catch (_) {}
       if (status < 500 && !session) return;
       const diagnosticId = crypto.randomUUID();
       const category = /purchase|pay-|platega/.test(path) ? 'purchase' : 'infrastructure';
-      return deferIncident(ctx, env, { category, operation, status, code, userId: session?.user?.id, user: session?.user, diagnosticId });
+      return deferIncident(ctx, env, { category, operation, status, code, userId: session?.user?.id, user: session?.user, diagnosticId, context });
     };
     try {
       const response = await routeAccountRequest(request, env, { readSession, verifyAdminAuth }) || await workerHandlers.fetch(request, env, ctx);
@@ -4345,12 +4346,12 @@ export default {
       return response;
     } catch (error) {
       console.error('Worker request failed', operation, errorCode(error));
-      await notify(500, errorCode(error));
+      await notify(500, errorCode(error), serverErrorContext(error));
       return jsonResponse({ error: 'server unavailable' }, 500);
     }
   },
   async scheduled(event, env, ctx) {
-    const notify = error => deferIncident(ctx, env, { category: 'infrastructure', operation: 'cron.' + (event.cron === HOURLY_CRON ? 'maintenance' : event.cron === WEEKLY_CRON ? 'game_week' : 'daily_report'), code: errorCode(error) });
+    const notify = error => deferIncident(ctx, env, { category: 'infrastructure', operation: 'cron.' + (event.cron === HOURLY_CRON ? 'maintenance' : event.cron === WEEKLY_CRON ? 'game_week' : 'daily_report'), code: errorCode(error), context: serverErrorContext(error) });
     const guardedContext = { waitUntil: task => ctx.waitUntil(Promise.resolve(task).catch(notify)) };
     // Команды выгрузки журнала ошибок из Telegram (/export_day, /export_all).
     ctx.waitUntil(pollErrorCommands(env)

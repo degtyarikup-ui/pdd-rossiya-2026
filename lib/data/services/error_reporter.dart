@@ -1,3 +1,5 @@
+import 'package:pdd_app/data/services/diagnostic_context.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -99,12 +101,18 @@ class ErrorReporter {
     String? code,
     Object? error,
     String? provider,
+    Map<String, dynamic>? context,
+    StackTrace? stack,
   }) => unawaited(
     instance.record(
       category,
       operation,
       code: code ?? (error == null ? 'operation_failed' : codeFor(error)),
       provider: provider,
+      context: {
+        ...?context,
+        if (stack != null) 'frames': DiagnosticContext.frames(stack),
+      },
     ),
   );
 
@@ -113,9 +121,12 @@ class ErrorReporter {
     String operation, {
     required String code,
     String? provider,
+    Map<String, dynamic>? context,
   }) {
+    final details = DiagnosticContext.sanitize(context);
     final now = DateTime.now();
-    final key = '${category.name}|$operation|$code|$provider';
+    final key =
+        '${category.name}|$operation|$code|$provider|${details['phase']}|${details['stage']}|${details['sdkCodeHash']}|${(details['frames'] as List?)?.firstOrNull}';
     if (now.difference(_last[key] ?? DateTime(2000)) <
         const Duration(minutes: 10)) {
       return flush();
@@ -134,6 +145,7 @@ class ErrorReporter {
       'code': code,
       'provider': ?provider,
       'userId': ?_userId(),
+      if (details.isNotEmpty) 'context': details,
     });
   }
 
@@ -171,6 +183,24 @@ class ErrorReporter {
         try {
           metadata = await _metadata().timeout(const Duration(seconds: 3));
         } catch (_) {}
+        for (final e in events) {
+          for (final pair in {
+            'appVersion': 'version',
+            'device': 'device',
+            'os': 'os',
+          }.entries) {
+            if (!e.containsKey(pair.key) && metadata[pair.value] is String) {
+              e[pair.key] = (metadata[pair.value] as String).substring(
+                0,
+                min(
+                  pair.key == 'appVersion' ? 32 : 100,
+                  (metadata[pair.value] as String).length,
+                ),
+              );
+            }
+          }
+        }
+        await prefs.setString(queueKey, jsonEncode(events));
         final installId = await InstallReporter.installationId();
         while (events.isNotEmpty) {
           final batch = events
@@ -184,19 +214,21 @@ class ErrorReporter {
                   if (!kIsWeb &&
                       defaultTargetPlatform == TargetPlatform.android)
                     'store': StoreConfig.current.name,
-                  if (metadata['version'] is String)
-                    'appVersion': (metadata['version'] as String).substring(
-                      0,
-                      min(32, (metadata['version'] as String).length),
-                    ),
-                  if (metadata['device'] is String)
-                    'device': (metadata['device'] as String).substring(
-                      0,
-                      min(100, (metadata['device'] as String).length),
-                    ),
+                  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS)
+                    'store': 'appStore',
                 },
               )
               .toList();
+          // Rich contexts must still fit the server's 16 KiB request limit.
+          while (batch.length > 1 &&
+              utf8
+                      .encode(
+                        jsonEncode({'installId': installId, 'events': batch}),
+                      )
+                      .length >
+                  14000) {
+            batch.removeLast();
+          }
           // Отчёты идут туда же, куда и вход: если основной адрес недоступен,
           // пробуем запасной — иначе о таких сбоях мы бы не узнали никогда.
           http.Response? response;

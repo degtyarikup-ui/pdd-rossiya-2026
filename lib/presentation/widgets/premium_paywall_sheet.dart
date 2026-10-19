@@ -47,7 +47,9 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   void initState() {
     super.initState();
     IapService.instance.addListener(_onIapChanged);
-    if (!kIsWeb) IapService.instance.loadProducts();
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      IapService.instance.loadProducts(phase: ProductLoadPhase.paywall);
+    }
     if (kIsWeb) {
       _loadSbpAvailability();
     } else if (defaultTargetPlatform == TargetPlatform.android) {
@@ -69,6 +71,9 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
       _androidMode = modes.first;
     });
     if (modes.contains(PaymentMode.sbp)) _loadSbpAvailability();
+    if (_androidMode == PaymentMode.storeBilling) {
+      IapService.instance.loadProducts(phase: ProductLoadPhase.paywall);
+    }
   }
 
   void _loadSbpAvailability() {
@@ -627,6 +632,11 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                 : () {
                     HapticFeedbackHelper.tap();
                     setState(() => _androidMode = mode);
+                    if (mode == PaymentMode.storeBilling) {
+                      IapService.instance.loadProducts(
+                        phase: ProductLoadPhase.paywall,
+                      );
+                    }
                   },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),

@@ -1,4 +1,5 @@
 import 'package:pdd_app/data/services/usage_reporter.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -50,11 +51,19 @@ void main() async {
       ErrorCategory.app,
       'flutter.framework',
       error: details.exception,
+      stack: details.stack,
+      context: {'stage': 'framework'},
     );
   };
   final previousPlatformError = PlatformDispatcher.instance.onError;
   PlatformDispatcher.instance.onError = (error, stack) {
-    ErrorReporter.report(ErrorCategory.app, 'dart.unhandled', error: error);
+    ErrorReporter.report(
+      ErrorCategory.app,
+      'dart.unhandled',
+      error: error,
+      stack: stack,
+      context: {'stage': 'unhandled'},
+    );
     return previousPlatformError?.call(error, stack) ?? false;
   };
 

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:pdd_app/data/services/diagnostic_context.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
@@ -234,5 +236,129 @@ void main() {
       ),
       'sdk_error',
     );
+  });
+  test(
+    'context preserves safe stages and app frames, strips raw diagnostic data',
+    () {
+      final frames = DiagnosticContext.frames(
+        StackTrace.fromString(
+          '#0 callback (package:pdd_app/screens/home.dart:12:8)\n'
+          '#1 secret (https://host.test/user?token=TOP_SECRET)\n'
+          '#2 native (/Users/private/user.dart:12:8)',
+        ),
+      );
+      expect(frames, ['package:pdd_app/screens/home.dart:12:8']);
+      final context = DiagnosticContext.sanitize({
+        'phase': 'paywall',
+        'stage': 'query',
+        'attempt': 3,
+        'requestedCount': 27,
+        'returnedCount': 0,
+        'missingIds': ['ru.pdd.pddapp.sub.week', 'user@example.com'],
+        'sdkCodeHash': '0123456789abcdef',
+        'message': 'TOP_SECRET',
+        'frames': [...frames, 'https://host.test/TOP_SECRET'],
+      });
+      expect(context['phase'], 'paywall');
+      expect(context['frames'], frames);
+      expect(context['missingIds'], ['ru.pdd.pddapp.sub.week']);
+      expect(jsonEncode(context), isNot(contains('TOP_SECRET')));
+      expect(jsonEncode(context), isNot(contains('user@example.com')));
+    },
+  );
+
+  test(
+    'foreground failure is not suppressed by background prefetch and offline metadata keeps original version',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      var version = '2.2.4+65';
+      var online = false;
+      final sent = <Map>[];
+      final reporter = ErrorReporter(
+        endpoint: 'https://test',
+        secret: 'test',
+        metadata: () async => {
+          'version': version,
+          'os': 'iOS 26.5',
+          'device': 'iPhone',
+        },
+        headers: () => {},
+        userId: () => null,
+        client: MockClient((request) async {
+          sent.add(jsonDecode(request.body));
+          return http.Response('{}', online ? 200 : 503);
+        }),
+      );
+      await reporter.record(
+        ErrorCategory.purchase,
+        'iap.products',
+        code: 'sdk_error',
+        context: {'phase': 'background', 'stage': 'query'},
+      );
+      version = '2.2.5+66';
+      await reporter.record(
+        ErrorCategory.purchase,
+        'iap.products',
+        code: 'sdk_error',
+        context: {'phase': 'paywall', 'stage': 'query'},
+      );
+      online = true;
+      await reporter.flush();
+      final events = sent.last['events'] as List;
+      expect(events, hasLength(2));
+      expect(events[0]['context']['phase'], 'background');
+      expect(events[0]['appVersion'], '2.2.4+65');
+      expect(events[1]['appVersion'], '2.2.5+66');
+      expect(events[0]['os'], 'iOS 26.5');
+      expect(events[0]['store'], 'appStore');
+    },
+  );
+  test('rich outbox batches stay below the server byte limit', () async {
+    final longName = 'a' * 100;
+    final context = DiagnosticContext.sanitize({
+      'phase': 'paywall',
+      'stage': 'query',
+      'attempt': 3,
+      'requestedCount': 27,
+      'missingIds': DiagnosticContext.productIds.toList(),
+      'frames': List.generate(
+        6,
+        (i) => 'package:pdd_app/services/$longName$i.dart:12345:123',
+      ),
+    });
+    final now = DateTime.now().millisecondsSinceEpoch;
+    SharedPreferences.setMockInitialValues({
+      ErrorReporter.queueKey: jsonEncode(
+        List.generate(
+          10,
+          (i) => {
+            'id': i.toRadixString(16).padLeft(32, '0'),
+            'ts': now,
+            'category': 'app',
+            'operation': 'flutter.framework',
+            'code': 'exception_StateError',
+            'context': context,
+          },
+        ),
+      ),
+    });
+    var requests = 0, events = 0;
+    final reporter = ErrorReporter(
+      endpoint: 'https://test',
+      secret: 'test',
+      metadata: () async => {'device': 'Ж' * 100, 'version': '2.2.4+65'},
+      headers: () => {},
+      userId: () => null,
+      client: MockClient((request) async {
+        requests++;
+        expect(utf8.encode(request.body).length, lessThanOrEqualTo(14000));
+        events += (jsonDecode(request.body)['events'] as List).length;
+        return http.Response('{}', 200);
+      }),
+    );
+    await reporter.flush();
+    expect(events, 10);
+    expect(requests, greaterThan(1));
   });
 }

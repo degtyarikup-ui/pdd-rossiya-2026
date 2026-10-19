@@ -40,7 +40,7 @@ test('CSV: BOM, разделитель «;», кавычки для спецси
   assert.ok(csv.startsWith('﻿'));
   const [header, row] = csv.slice(1).trim().split('\r\n');
   assert.match(header, /^Время \(МСК\);Срочность;Ушло в чат;/);
-  assert.equal(header.split(';').length, 26);
+  assert.equal(header.split(';').length, 39);
   assert.match(row, /^11\.10\.2026 09:57:04;Важно;да;приложение;auth;auth\.provider;timeout;Google;Android;2\.2\.3\+59;realme RMX5303;;RU;/);
   assert.ok(row.includes('"\'=HYPERLINK(""https://x"",""k"")"'), 'формула экранирована и кавычки удвоены');
   assert.ok(row.includes('"a;b""c@mail.ru"'), 'точка с запятой внутри ячейки заключена в кавычки');

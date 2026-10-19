@@ -256,6 +256,8 @@ export function incidentGuide(event) {
   let level = 'high';
   if (operation === 'auth.recovered') level = 'info';
   else if (CRITICAL_OPERATIONS.has(operation)) level = 'critical';
+  else if (operation === 'iap.products' && event.context?.phase === 'background') level = 'low';
+  else if (operation === 'startup.premium' && baseCode === 'timeout') level = 'low';
   else if (event.category === 'infrastructure' && /^cron\.game_week$/.test(operation)) level = 'high';
   else if (LOW_OPERATIONS.test(operation)) level = 'low';
   else if (event.category === 'app' && !/^(flutter|dart)\./.test(operation) && !/^(startup\.(premium|auth)|auth\.dialog)$/.test(operation)) level = 'low';
@@ -300,5 +302,5 @@ export const platformLabel = value => {
   const key = String(value ?? '').toLowerCase();
   return Object.hasOwn(PLATFORMS, key) ? PLATFORMS[key] : 'Не определена';
 };
-const STORES = { googlePlay: 'Google Play', rustore: 'RuStore' };
+const STORES = { googlePlay: 'Google Play', rustore: 'RuStore', appStore: 'App Store' };
 export const storeLabel = value => Object.hasOwn(STORES, value) ? STORES[value] : 'Не определён';

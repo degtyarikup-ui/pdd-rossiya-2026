@@ -1,3 +1,4 @@
+import { sanitizeDiagnosticContext, diagnosticOs } from './diagnostic_context.js';
 import { readSession, tokenHash } from './user_auth.js';
 import { incidentCopy, incidentGuide, providerLabel, platformLabel, storeLabel } from './incident_copy.js';
 
@@ -63,6 +64,13 @@ export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
     event.platform ? '📱 ' + platformLabel(event.platform) + (event.appVersion ? ' v' + escape(event.appVersion) : '') : null,
     event.store ? '🏪 ' + storeLabel(event.store) : null,
     event.device ? '📟 ' + escape(event.device) : null,
+    event.context?.errorType ? 'Исключение: ' + escape(event.context.errorType) : null,
+    event.os ? 'ОС: ' + escape(event.os) : null,
+    event.context?.phase ? 'Загрузка: ' + ({ background: 'в фоне', paywall: 'экран оплаты', purchase: 'попытка покупки' })[event.context.phase] : null,
+    event.context?.stage ? 'Этап: ' + escape(event.context.stage) + (event.context.attempt ? ' · попытка ' + event.context.attempt : '') : null,
+    Number.isInteger(event.context?.returnedCount) ? `Товары: запрошено ${event.context.requestedCount ?? '—'}, получено ${event.context.returnedCount}, не найдено ${event.context.missingCount ?? '—'}` : null,
+    event.context?.sdkCodeHash ? 'Код SDK (отпечаток): ' + escape(event.context.sdkCodeHash) : null,
+    event.context?.frames?.length ? 'Место: <code>' + escape(event.context.frames[0]) + '</code>' : null,
     event.country ? '🌍 ' + escape(event.country) : null,
     '',
     (event.origin === 'client' ? 'Приложение' : 'Сервер') + ': <code>' + escape(event.operation) + '</code>',
@@ -102,6 +110,8 @@ export async function reportIncident(env, incident) {
       store: tag(incident.store, null),
       appVersion: typeof (incident.appVersion || user?.appVersion) === 'string' && /^[\d.+-]{1,32}$/.test(incident.appVersion || user?.appVersion) ? incident.appVersion || user.appVersion : null,
       device: text(incident.device || user?.device, 100),
+      os: diagnosticOs(incident.os),
+      context: sanitizeDiagnosticContext(incident.context),
       userId,
       userName: text(user?.name, 120), userEmail: text(user?.email, 160),
       country: /^[A-Z]{2}$/.test(String(user?.ipCountry ?? '')) ? user.ipCountry : null,
@@ -113,7 +123,9 @@ export async function reportIncident(env, incident) {
     };
     if (event.diagnosticId) console.log(JSON.stringify({ event: 'incident', diagnosticId: event.diagnosticId, operation: event.operation, code: event.code, status: event.status }));
     // Group the same failure across accounts to keep a widespread outage readable.
-    const fingerprint = await tokenHash([event.origin, event.category, event.operation, event.code, event.provider, event.platform, event.appVersion].join('|'));
+    const contextKey = [event.context.phase || '', event.context.stage || '', event.context.sdkCodeHash || '', event.context.frames?.[0] || ''];
+    // Preserve existing durable groups for clients that have no new context.
+    const fingerprint = await tokenHash([event.origin, event.category, event.operation, event.code, event.provider, event.platform, event.appVersion, ...(contextKey.some(Boolean) ? contextKey : [])].join('|'));
     const response = await env.TELEGRAM.get(env.TELEGRAM.idFromName(String(env.CHAT_ID))).fetch('https://telegram/incident', {
       method: 'POST', body: JSON.stringify({ incident: event, fingerprint }),
     });

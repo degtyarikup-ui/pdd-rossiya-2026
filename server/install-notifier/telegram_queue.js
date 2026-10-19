@@ -1,3 +1,4 @@
+import { diagnosticNotificationPolicy } from './diagnostic_context.js';
 import { processTelegramMessageUpdate } from './support_chat.js';
 import { isReportPhotoUrl } from './report_questions.js';
 import { buildIncidentMessage } from './diagnostics.js';
@@ -121,6 +122,7 @@ export class TelegramQueue {
     if (!this.env.BOT_TOKEN || !this.env.CHAT_ID) return new Response('not configured', { status: 503 });
     const threadId = await getTopicThreadId(this.env, 'errors');
     const now = Date.now(), windowMs = 10 * 60000;
+    const policy = diagnosticNotificationPolicy(incident);
     const stored = await this.state.storage.get('errors:state') || { recent: [], groups: {}, window: now, count: 0, overflow: 0 };
     stored.recent = stored.recent.filter(item => now - item.at < 86400000);
     if (stored.recent.some(item => item.id === incident.id)) return Response.json({ ok: true, duplicate: true });
@@ -130,8 +132,10 @@ export class TelegramQueue {
     const group = stored.groups[fingerprint];
     if (now - stored.window >= windowMs) { stored.window = now; stored.count = 0; }
     let text = null;
-    if (group && now - group.at < windowMs) group.repeats++;
-    else if (stored.count >= 20) stored.overflow++;
+    let reason = 'sent';
+    if (!policy.notify) { reason = 'info_only'; }
+    else if (group && now - group.at < policy.windowMs) { group.repeats++; reason = 'grouped'; }
+    else if (stored.count >= 20) { stored.overflow++; reason = 'burst_limit'; }
     else {
       stored.count++;
       stored.groups[fingerprint] = { at: now, repeats: 0 };
@@ -147,15 +151,15 @@ export class TelegramQueue {
         await txn.put('sequence', sequence);
       }
     });
-    await this.logIncident(incident, Boolean(text), now);
+    await this.logIncident(incident, Boolean(text), now, reason);
     return Response.json({ ok: true, suppressed: !text });
   }
   // Журнал для выгрузки. Запись после очереди и в отдельном try: сбой журнала
   // не должен терять уведомление или менять ответ.
-  async logIncident(incident, sent, now) {
+  async logIncident(incident, sent, now, reason = sent ? 'sent' : 'grouped') {
     try {
       const ts = Number.isFinite(incident.ts) ? incident.ts : now;
-      const record = errorLogRecord(incident, { ts, sent, level: errorLevelLabel(incident) });
+      const record = errorLogRecord(incident, { ts, sent, level: errorLevelLabel(incident), reason });
       await this.state.storage.put(errorLogKey(ts, record.id || now), record);
     } catch (error) {
       console.error('Error log write failed', error?.name || 'unknown');

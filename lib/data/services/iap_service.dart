@@ -1,5 +1,8 @@
+import 'package:pdd_app/data/services/diagnostic_context.dart';
+
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/core/config/store_config.dart';
@@ -7,12 +10,15 @@ import 'package:crypto/crypto.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:pdd_app/data/services/notifier_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+enum ProductLoadPhase { background, paywall, purchase }
 
 enum PurchaseResult {
   success,
@@ -40,9 +46,12 @@ enum PurchaseFailure {
 
 class IapService extends ChangeNotifier {
   static final IapService instance = IapService._internal();
-  IapService._internal();
+  IapService._internal() : _onProductDiagnostic = null;
   @visibleForTesting
-  IapService.forTesting();
+  IapService.forTesting({
+    void Function(String, Map<String, dynamic>)? onProductDiagnostic,
+  }) : _onProductDiagnostic = onProductDiagnostic;
+  final void Function(String, Map<String, dynamic>)? _onProductDiagnostic;
 
   // RuStore distributes the app with SBP payments only. Keep the guard at the
   // store boundary: startup, paywall and restore can all call this service.
@@ -163,14 +172,21 @@ class IapService extends ChangeNotifier {
   PurchaseFailure _lastFailure = PurchaseFailure.other;
   PurchaseFailure get lastFailure => _lastFailure;
 
-  void _report(String operation, {String? code, Object? error}) =>
-      ErrorReporter.report(
-        ErrorCategory.purchase,
-        operation,
-        code: code,
-        error: error,
-        provider: _store,
-      );
+  void _report(
+    String operation, {
+    String? code,
+    Object? error,
+    Map<String, dynamic>? context,
+    StackTrace? stack,
+  }) => ErrorReporter.report(
+    ErrorCategory.purchase,
+    operation,
+    code: code,
+    error: error,
+    provider: _store,
+    context: context,
+    stack: stack,
+  );
 
   Completer<PurchaseResult>? _currentPurchaseCompleter;
   String? _currentPurchaseOwner;
@@ -206,7 +222,7 @@ class IapService extends ChangeNotifier {
 
       _isAvailable = await _iap.isAvailable();
       if (!_isAvailable) return;
-      await loadProducts();
+      // Observe pending payments at startup; query prices only when needed.
     } catch (e) {
       debugPrint('IapService: init exception: $e');
       _report('iap.init', error: e);
@@ -280,42 +296,76 @@ class IapService extends ChangeNotifier {
   static Duration productRetryUnit = const Duration(seconds: 2);
 
   Future<void>? _loadingProducts;
+  ProductLoadPhase _loadPhase = ProductLoadPhase.background;
+  Map<String, dynamic> _productContext = {};
+  @visibleForTesting
+  static Duration productQueryTimeout = const Duration(seconds: 10);
 
-  /// Параллельные вызовы (экран Premium, покупка, старт) ждут одну загрузку.
-  Future<void> loadProducts() =>
-      _loadingProducts ??= _loadProducts().whenComplete(() {
-        _loadingProducts = null;
-      });
+  Future<void> loadProducts({
+    ProductLoadPhase phase = ProductLoadPhase.background,
+  }) {
+    if (_loadingProducts == null || phase.index > _loadPhase.index) {
+      _loadPhase = phase;
+    }
+    return _loadingProducts ??= _loadProducts().whenComplete(() {
+      _loadingProducts = null;
+      _loadPhase = ProductLoadPhase.background;
+    });
+  }
+
+  void _reportProducts(String code, {StackTrace? stack}) {
+    final context = DiagnosticContext.sanitize({
+      ..._productContext,
+      'phase': _loadPhase.name,
+    });
+    _onProductDiagnostic?.call(code, context);
+    _report('iap.products', code: code, stack: stack, context: context);
+  }
 
   Future<void> _loadProducts() async {
     if (!supportsStoreBilling) return;
+    _productContext = {'stage': 'availability'};
     try {
       if (!_isAvailable) {
-        _isAvailable = await _iap.isAvailable();
-        if (!_isAvailable) return;
+        _isAvailable = await _iap.isAvailable().timeout(productQueryTimeout);
+        if (!_isAvailable) {
+          _reportProducts('store_unavailable');
+          return;
+        }
       }
-    } catch (e) {
-      debugPrint('IapService: loadProducts error: $e');
-      _report('iap.products', error: e);
+    } catch (e, stack) {
       _lastErrorMessage = e.toString();
+      _reportProducts(ErrorReporter.codeFor(e), stack: stack);
       return;
     }
-    // Магазин иногда ошибается на одном запросе и отвечает на следующем.
     for (var attempt = 1; ; attempt++) {
+      _productContext = {
+        'stage': 'query',
+        'attempt': attempt,
+        'requestedCount': _productIds.length,
+      };
       final failure = await _queryProducts();
       if (failure == null) return;
       if (attempt == _productAttempts) {
-        _report('iap.products', code: failure);
+        _reportProducts(failure);
         return;
       }
       await Future<void>.delayed(productRetryUnit * attempt);
     }
   }
 
-  /// Один запрос тарифов. Возвращает код сбоя или null, если тарифы получены.
   Future<String?> _queryProducts() async {
     try {
-      final response = await _iap.queryProductDetails(_productIds);
+      final response = await _iap
+          .queryProductDetails(_productIds)
+          .timeout(productQueryTimeout);
+      _productContext.addAll({
+        'returnedCount': response.productDetails.length,
+        'missingCount': response.notFoundIDs.length,
+        'missingIds': response.notFoundIDs
+            .where(DiagnosticContext.productIds.contains)
+            .toList(),
+      });
       if (response.productDetails.isNotEmpty) {
         for (final product in response.productDetails) {
           _products[product.id] = product;
@@ -324,17 +374,27 @@ class IapService extends ChangeNotifier {
       }
       final error = response.error;
       if (error != null) {
-        debugPrint('IapService: query error: $error');
         _lastErrorMessage = error.message;
+        _productContext.addAll({
+          'sdkSource': error.source,
+          'sdkCodeHash': sha256
+              .convert(utf8.encode(error.code))
+              .toString()
+              .substring(0, 16),
+        });
         return ErrorReporter.sdkCode(error.code);
       }
-      // Магазин ответил без ошибки, но без нашего тарифа: чаще всего он не
-      // «Готов к продаже» или идентификатор не совпадает.
       if (response.productDetails.isEmpty) return 'products_not_found';
       return null;
-    } catch (e) {
-      debugPrint('IapService: loadProducts error: $e');
+    } catch (e, stack) {
       _lastErrorMessage = e.toString();
+      _productContext['frames'] = DiagnosticContext.frames(stack);
+      if (e is PlatformException) {
+        _productContext['sdkCodeHash'] = sha256
+            .convert(utf8.encode(e.code))
+            .toString()
+            .substring(0, 16);
+      }
       return ErrorReporter.codeFor(e);
     }
   }
@@ -450,7 +510,7 @@ class IapService extends ChangeNotifier {
 
     var product = _findProductForTier(tier);
     if (product == null) {
-      await loadProducts();
+      await loadProducts(phase: ProductLoadPhase.purchase);
       product = _findProductForTier(tier);
     }
 

@@ -1,3 +1,4 @@
+import { sanitizeDiagnosticContext, diagnosticOs } from './diagnostic_context.js';
 // Журнал ошибок и выгрузка по команде из подчата «Ошибки и падения».
 // Одна запись = один инцидент (то, что ушло или было свёрнуто в Telegram).
 // Модуль без обращения к хранилищу и сети: разбор команд, ключи и CSV.
@@ -28,12 +29,13 @@ export function exportStart(mode, now) {
   return mode === 'day' ? Math.max(0, now - DAY_MS) : 0;
 }
 
-export function errorLogRecord(incident, { ts, sent, level }) {
+export function errorLogRecord(incident, { ts, sent, level, reason }) {
   return {
     ts,
     id: String(incident.id || ''),
     level: level || '',
     sent: Boolean(sent),
+    notificationReason: ['sent', 'grouped', 'burst_limit', 'info_only'].includes(reason) ? reason : '',
     origin: incident.origin || '',
     category: incident.category || '',
     operation: incident.operation || '',
@@ -50,6 +52,9 @@ export function errorLogRecord(incident, { ts, sent, level }) {
     userEmail: incident.userEmail || '',
     status: Number.isInteger(incident.status) ? incident.status : '',
     diagnosticId: incident.diagnosticId || '',
+    installation: /^[a-f0-9]{16}$/.test(incident.installation || '') ? incident.installation : '',
+    os: diagnosticOs(incident.os) || '',
+    context: sanitizeDiagnosticContext(incident.context),
     paymentOrderId: incident.payment?.orderId || '',
     paymentTxId: incident.payment?.txId || '',
     paymentTier: incident.payment?.tier || '',
@@ -82,13 +87,16 @@ const HEADER = [
   'Провайдер входа', 'Платформа', 'Версия приложения', 'Устройство', 'Магазин', 'Страна по IP',
   'ID пользователя', 'Имя', 'Почта', 'HTTP-статус', 'ID диагностики',
   'Заказ оплаты', 'Транзакция Platega', 'Тариф', 'Сумма (RUB)', 'Метод оплаты', 'Клиент оплаты', 'Запрос Platega', 'HTTP Platega',
+  'ID установки (обезличенный)', 'ОС', 'Контекст загрузки', 'Этап', 'Попытка',
+  'Товаров запрошено', 'Товаров получено', 'Товаров не найдено', 'Не найденные ID товаров',
+  'Источник SDK', 'Отпечаток кода SDK', 'Кадры приложения', 'Тип исключения',
 ];
 
 function rowOf(record) {
   return [
     mskStamp(record.ts),
     record.level,
-    record.sent ? 'да' : 'нет (повтор, свёрнуто)',
+    record.sent ? 'да' : record.notificationReason === 'info_only' ? 'нет (для сведения)' : record.notificationReason === 'burst_limit' ? 'нет (ограничение потока)' : 'нет (повтор, свёрнуто)',
     record.origin === 'client' ? 'приложение' : record.origin === 'server' ? 'сервер' : '',
     record.category,
     record.operation,
@@ -112,6 +120,9 @@ function rowOf(record) {
     record.paymentClient,
     record.paymentProviderOperation,
     record.paymentProviderStatus,
+    record.installation, record.os, record.context?.phase, record.context?.stage, record.context?.attempt,
+    record.context?.requestedCount, record.context?.returnedCount, record.context?.missingCount,
+    record.context?.missingIds?.join(', '), record.context?.sdkSource, record.context?.sdkCodeHash, record.context?.frames?.join('\n'), record.context?.errorType,
   ];
 }
 
