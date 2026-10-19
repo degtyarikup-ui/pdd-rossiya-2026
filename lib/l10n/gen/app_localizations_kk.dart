@@ -3265,6 +3265,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamesPlay => 'Ойнау';
 
   @override
+  String get gamesWeeklyScoreLabel => 'Осы аптада';
+
+  @override
   String gamesWeeklyScore(int score) {
     return 'Апталық ұпай: $score';
   }

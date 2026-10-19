@@ -5458,6 +5458,12 @@ abstract class AppLocalizations {
   /// **'Играть'**
   String get gamesPlay;
 
+  /// No description provided for @gamesWeeklyScoreLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'За неделю'**
+  String get gamesWeeklyScoreLabel;
+
   /// Accessible label for the games hub leaderboard button.
   ///
   /// In ru, this message translates to:

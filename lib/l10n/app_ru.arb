@@ -1465,6 +1465,7 @@
   "gamesSignsTitle": "Это знак",
   "gamesCrossroadsTitle": "Перекрёсток",
   "gamesPlay": "Играть",
+  "gamesWeeklyScoreLabel": "За неделю",
   "gamesWeeklyScore": "Очки за неделю: {score}",
   "@gamesWeeklyScore": {
     "description": "Accessible label for the games hub leaderboard button.",

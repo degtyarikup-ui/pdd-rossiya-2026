@@ -3276,6 +3276,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gamesPlay => 'Играть';
 
   @override
+  String get gamesWeeklyScoreLabel => 'За неделю';
+
+  @override
   String gamesWeeklyScore(int score) {
     return 'Очки за неделю: $score';
   }

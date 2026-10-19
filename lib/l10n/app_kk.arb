@@ -1001,6 +1001,7 @@
   "gamesSignsTitle": "Бұл — белгі",
   "gamesCrossroadsTitle": "Қиылыс",
   "gamesPlay": "Ойнау",
+  "gamesWeeklyScoreLabel": "Осы аптада",
   "gamesWeeklyScore": "Апталық ұпай: {score}",
   "gamesRecordScore": "Рекорд: {score}",
   "gamesRunsFraction": "{max, plural, one{{count}/{max} жарыс} other{{count}/{max} жарыс}}",

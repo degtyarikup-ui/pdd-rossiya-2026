@@ -645,11 +645,15 @@ void main() {
     for (final titleAndRecord in [
       (
         appL10n.gameTrafficControllerTitle,
-        NumberFormat.decimalPattern('ru').format(123456789),
+        appL10n.gamesRecordScore(
+          NumberFormat.decimalPattern('ru').format(123456789),
+        ),
       ),
       (
         appL10n.gamesSignsTitle,
-        NumberFormat.decimalPattern('ru').format(987654321),
+        appL10n.gamesRecordScore(
+          NumberFormat.decimalPattern('ru').format(987654321),
+        ),
       ),
     ]) {
       await tester.scrollUntilVisible(find.text(titleAndRecord.$1), 200);

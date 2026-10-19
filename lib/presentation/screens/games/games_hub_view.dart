@@ -101,16 +101,52 @@ class GamesHubView extends StatelessWidget {
                                 Icons.emoji_events_outlined,
                                 size: 22,
                               ),
-                              label: Text(
-                                _number(context, weekScore),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.white,
-                                ),
-                              ),
+                              label: MediaQuery.sizeOf(context).height < 400
+                                  ? Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: _number(context, weekScore),
+                                          ),
+                                          TextSpan(
+                                            text:
+                                                ' · ${appL10n.gamesWeeklyScoreLabel}',
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    )
+                                  : Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          appL10n.gamesWeeklyScoreLabel,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 10),
+                                        ),
+                                        Text(
+                                          _number(context, weekScore),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                             ),
                           ),
                         ),
@@ -402,10 +438,11 @@ class _HubCard extends StatelessWidget {
     final foreground = AppColors.white.withValues(alpha: enabled ? 1 : .6);
     final record = bestScore != null && bestScore! > 0;
     final status =
-        caption ?? (record ? _number(context, bestScore!) : appL10n.gamesPlay);
-    final semanticStatus = record && caption == null
-        ? appL10n.gamesRecordScore(status)
-        : status;
+        caption ??
+        (record
+            ? appL10n.gamesRecordScore(_number(context, bestScore!))
+            : appL10n.gamesPlay);
+    final semanticStatus = status;
     final radius = BorderRadius.circular(AppDimensions.cardRadius);
     return RepaintBoundary(
       child: Semantics(
@@ -642,7 +679,7 @@ class _RunsFooter extends StatelessWidget {
             if (bestScore > 0)
               _RunMetric(
                 icon: Icons.emoji_events_rounded,
-                text: _number(context, bestScore),
+                text: appL10n.gamesRecordScore(_number(context, bestScore)),
               ),
             if (runs > 0)
               _RunMetric(

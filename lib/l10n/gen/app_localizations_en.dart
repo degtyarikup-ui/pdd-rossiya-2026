@@ -3262,6 +3262,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamesPlay => 'Play';
 
   @override
+  String get gamesWeeklyScoreLabel => 'This week';
+
+  @override
   String gamesWeeklyScore(int score) {
     return 'Weekly points: $score';
   }

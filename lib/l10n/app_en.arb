@@ -1001,6 +1001,7 @@
   "gamesSignsTitle": "Sign quiz",
   "gamesCrossroadsTitle": "Crossroads",
   "gamesPlay": "Play",
+  "gamesWeeklyScoreLabel": "This week",
   "gamesWeeklyScore": "Weekly points: {score}",
   "gamesRecordScore": "Best: {score}",
   "gamesRunsFraction": "{max, plural, one{{count}/{max} run} other{{count}/{max} runs}}",

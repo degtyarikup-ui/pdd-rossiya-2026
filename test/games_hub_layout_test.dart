@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -448,6 +449,42 @@ void main() {
     }
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets(
+    'Weekly rating and all-time round records have visible distinct labels',
+    (tester) async {
+      for (final locale in [
+        const Locale('ru'),
+        const Locale('en'),
+        const Locale('kk'),
+      ]) {
+        var leaderboardOpens = 0;
+        await open(
+          tester,
+          locale: locale,
+          weekScore: 978,
+          cityBest: 4387,
+          trafficBest: 4050,
+          signsBest: 1500,
+          crossroadsBest: 702,
+          onLeaderboard: () => leaderboardOpens++,
+        );
+        expect(find.text(appL10n.gamesWeeklyScoreLabel), findsOneWidget);
+        expect(find.text('978'), findsOneWidget);
+        final number = NumberFormat.decimalPattern(locale.languageCode);
+        for (final score in [1500, 4050, 702, 4387]) {
+          expect(
+            find.text(appL10n.gamesRecordScore(number.format(score))),
+            findsOneWidget,
+          );
+        }
+        await tester.tap(find.byKey(const ValueKey('games-leaderboard')));
+        expect(leaderboardOpens, 1);
+        expect(tester.takeException(), isNull);
+      }
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   testWidgets('A new player sees play prompts rather than zero records', (
     tester,
