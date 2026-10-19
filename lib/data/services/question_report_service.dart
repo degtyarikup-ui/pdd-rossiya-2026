@@ -44,6 +44,7 @@ class QuestionReportService {
       questionText: title is String ? title : null,
       ticketNumber: ref == null ? null : int.parse(ref.group(1)!),
       mode: 'city',
+      source: 'game',
       auth: auth,
     );
   }
@@ -61,6 +62,7 @@ class QuestionReportService {
     String? category,
     String? topic,
     String? mode,
+    String source = 'training',
     AuthService? auth,
   }) async {
     if (!BackendConfig.hasNotifier) return false;
@@ -72,6 +74,7 @@ class QuestionReportService {
       final payload = <String, dynamic>{
         ...await InstallReporter.clientMetadata(),
         'kind': 'report',
+        'source': source,
         'message': text.length > maxMessageLength
             ? text.substring(0, maxMessageLength)
             : text,

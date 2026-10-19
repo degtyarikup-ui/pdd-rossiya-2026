@@ -1,5 +1,5 @@
 import { serverErrorContext } from './diagnostic_context.js';
-import { reportQuestionDetails } from './report_questions.js';
+import { reportSourceLabel, reportQuestionDetails } from './report_questions.js';
 import { mergeProgress } from './progress_merge.js';
 import { gameProfile } from './game_profile.js';
 import { awardGameScore, gameDailySummary, validGameRunId } from './game_scoring.js';
@@ -699,11 +699,12 @@ export function buildReportMessage(b, user = null) {
   const meta = [];
   if (b.ticket) meta.push(`билет ${esc(b.ticket)}`);
   if (b.topic) meta.push(esc(b.topic));
-  if (b.mode) meta.push(esc(b.mode));
+  if (b.mode && b.mode !== 'city') meta.push(esc(b.mode));
 
   const lines = [
     '🚩🚩🚩🚩🚩🚩🚩🚩',
     `🚩 ${flag} <b>Жалоба на вопрос</b>`,
+    reportSourceLabel(b),
     '',
     esc(String(b.message || '').slice(0, 1500)),
     '',

@@ -35,3 +35,14 @@ export function reportQuestionDetails(body) {
 export function isReportPhotoUrl(value) {
   return typeof value === 'string' && /^https:\/\/pdd-drive\.ru\/app\/assets\/assets\/countries\/ru\/images\/questions_(?:ab|cd)\/[a-zA-Z0-9_-]+\.webp$/.test(value);
 }
+
+// Old game builds already send mode=city; never infer origin from a ticket ID,
+// since the same ticket question can appear in training and in the game.
+export function reportSourceLabel(body) {
+  if (body.mode === 'city') return '🎮 <b>Источник:</b> Игра «Живой город»';
+  if (body.source === 'game') return '🎮 <b>Источник:</b> Игра';
+  if (body.source === 'training' || (typeof body.mode === 'string' && body.mode.trim())) {
+    return '📚 <b>Источник:</b> Обычное обучение';
+  }
+  return '• <b>Источник:</b> Не указан';
+}

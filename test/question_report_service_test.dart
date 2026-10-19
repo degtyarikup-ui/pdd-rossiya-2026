@@ -90,6 +90,7 @@ void main() {
     );
     final payload = jsonDecode(sent!.body) as Map<String, dynamic>;
     expect(payload['kind'], 'report');
+    expect(payload['source'], 'training');
     expect(payload['message'], 'Ошибка в вопросе');
     expect(payload['question_id'], 'question-21-3');
     expect(payload['category'], 'cd');
@@ -169,6 +170,7 @@ void main() {
           expect(body['ticket'], 8);
           expect(body['question_text'], 'Кому уступить дорогу?');
           expect(body['mode'], 'city');
+          expect(body['source'], 'game');
           expect(body['message'], 'Машина едет неверно');
           expect(body['device'], 'iPhone16,1');
           expect(body['os'], 'iOS 18.0');

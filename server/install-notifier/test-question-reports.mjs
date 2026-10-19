@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { reportQuestionDetails } from './report_questions.js';
+import { reportQuestionDetails, reportSourceLabel } from './report_questions.js';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import worker, { sendTelegram } from './worker.js';
+import worker, { sendTelegram, buildReportMessage } from './worker.js';
 import { signSession, revokeUserSessions } from './user_auth.js';
 import { TelegramQueue } from './telegram_queue.js';
 
@@ -76,7 +76,7 @@ test('game complaints log verified email, device, OS, scene and question text', 
   }, token), env);
   assert.equal(response.status, 200);
   const [item] = await queued(state);
-  for (const field of ['driver@example.com', 'Google Pixel 9', 'Android 16', 'ticket_8_15', 'билет 8', 'city', 'Кому уступить дорогу?', '2.3.0+59']) {
+  for (const field of ['driver@example.com', 'Google Pixel 9', 'Android 16', 'ticket_8_15', 'билет 8', 'Игра «Живой город»', 'Кому уступить дорогу?', '2.3.0+59']) {
     assert.ok(item.text.includes(field), field);
   }
   assert.doesNotMatch(item.text, /forged@example.com/);
@@ -331,4 +331,24 @@ test('direct report fallback sends text and picture to the same topic', async ()
     assert.equal(calls[0].body.message_thread_id, 42);
     assert.equal(calls[1].body.message_thread_id, 42);
   } finally { globalThis.fetch = original; }
+});
+
+
+test('report origin distinguishes legacy game, training and missing context without guessing from IDs',()=>{
+ assert.match(reportSourceLabel({mode:'city',question_id:'ticket_3_6'}),/Игра «Живой город»/);
+ assert.match(reportSourceLabel({source:'training',mode:'Работа над ошибками'}),/Обычное обучение/);
+ assert.match(reportSourceLabel({mode:'Билет 3'}),/Обычное обучение/);
+ assert.match(reportSourceLabel({source:'game'}),/Источник:<\/b> Игра$/);
+ for(const body of [{question_id:'ticket_3_6'},{source:'<script>'},{}])
+  assert.match(reportSourceLabel(body),/Не указан/);
+});
+
+
+test('report messages put origin near the heading and keep training mode separate',()=>{
+ const game=buildReportMessage({mode:'city',question_id:'ticket_3_6',message:'Ошибка'});
+ assert.match(game,/Жалоба на вопрос<\/b>\n🎮 <b>Источник:<\/b> Игра «Живой город»/);
+ assert.doesNotMatch(game,/ • city|^- city/m);
+ const training=buildReportMessage({source:'training',mode:'Работа над ошибками',message:'Ошибка'});
+ assert.match(training,/📚 <b>Источник:<\/b> Обычное обучение/);
+ assert.match(training,/- Работа над ошибками/);
 });
