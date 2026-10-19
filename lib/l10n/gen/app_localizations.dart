@@ -5440,6 +5440,42 @@ abstract class AppLocalizations {
   /// **'Парковка'**
   String get gamesParkingTitle;
 
+  /// No description provided for @gameParkingTouch.
+  ///
+  /// In ru, this message translates to:
+  /// **'Касание!'**
+  String get gameParkingTouch;
+
+  /// No description provided for @gameParkingParked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Припарковано'**
+  String get gameParkingParked;
+
+  /// No description provided for @gameParkingFindSpot.
+  ///
+  /// In ru, this message translates to:
+  /// **'Найдите место, где можно встать'**
+  String get gameParkingFindSpot;
+
+  /// No description provided for @gameParkingBusStop.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ближе 15 м к остановке нельзя'**
+  String get gameParkingBusStop;
+
+  /// No description provided for @gameParkingNoStopping.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак 3.27: остановка запрещена'**
+  String get gameParkingNoStopping;
+
+  /// No description provided for @gameParkingJunction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ближе 5 м к перекрёстку нельзя'**
+  String get gameParkingJunction;
+
   /// No description provided for @gamesSignsTitle.
   ///
   /// In ru, this message translates to:

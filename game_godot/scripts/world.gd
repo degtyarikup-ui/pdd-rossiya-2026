@@ -202,6 +202,10 @@ func _ready() -> void:
 		process_mode = Node.PROCESS_MODE_DISABLED
 		get_tree().change_scene_to_file.call_deferred("res://crossroads.tscn")
 		return
+	if _has_arg("--parking") or _has_arg("--mode=parking"):
+		process_mode = Node.PROCESS_MODE_DISABLED
+		get_tree().change_scene_to_file.call_deferred("res://parking.tscn")
+		return
 	_setup_language()
 	ride_options.texts = {"runs": Ui.t("gameGarage"), "record": Ui.t("gameLobbyRecord"), "colour": Ui.t("gameLobbyColour"), "start": Ui.t("gameLobbyNewRun")}
 	loader = Loader.attach(self)

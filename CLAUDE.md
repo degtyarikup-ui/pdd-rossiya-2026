@@ -221,7 +221,8 @@ flutter test                           # все тесты
 через `tools/godot_export/export_ui.py` (ru/en/kk сразу). Проверки — `game_godot/tests/*.gd` (список в
 `docs/game/README.md`). Старая WebView-игра и её стенд/ролики удалены, последний коммит с ними — тег
 `game-webview-final`. «Регулировщик» (`game_godot/regulator.tscn`, `--regulator`)
-и «Разрули перекрёсток» (`game_godot/crossroads.tscn`, `--crossroads`) — также Godot;
+и «Разрули перекрёсток» (`game_godot/crossroads.tscn`, `--crossroads`), «Парковка»
+(`game_godot/parking.tscn`, `--parking`, см. `docs/game/README.md`) — также Godot;
 старый WebView-формат удалён.
 
 ## Два формата коротких видео

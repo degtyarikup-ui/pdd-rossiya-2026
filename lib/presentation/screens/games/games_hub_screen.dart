@@ -184,6 +184,22 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
     await _refreshRating();
   }
 
+  /// The Godot «Парковка» mini-game, the same availability rule as the crossroads.
+  Future<void> _openParking() async {
+    if (!await GodotGame.available()) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(appL10n.gameUnavailable)));
+      }
+      return;
+    }
+    if (!mounted) return;
+    HapticFeedbackHelper.tap();
+    await GodotGame.playParking(context, ref);
+    await _refreshRating();
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(progressImportsProvider, (_, next) {
@@ -198,12 +214,14 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
     final traffic = ref.watch(trafficControllerProgressProvider);
     final signs = ref.watch(signSwiperProgressProvider);
     final crossroads = ref.watch(crossroadsPriorityProgressProvider);
+    final parking = ref.watch(parkingProgressProvider);
     return GamesHubView(
       weekScore: _weekScore,
       cityBest: _cityBest,
       trafficBest: traffic.bestScore,
       signsBest: signs.bestScore,
       crossroadsBest: crossroads.bestScore,
+      parkingBest: parking.bestScore,
       premium: ref.watch(isPremiumProvider),
       runsLoaded: _runsLoaded,
       hasPendingRun: _hasPendingRun,
@@ -213,6 +231,7 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
       onTrafficController: _openTrafficController,
       onSigns: () => _open(context, const SignSwiperScreen()),
       onCrossroads: _openCrossroads,
+      onParking: _openParking,
       onLeaderboard: () async {
         await GameLeaderboardSheet.show(context);
         await _refreshRating();

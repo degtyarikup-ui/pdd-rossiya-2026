@@ -11,6 +11,7 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
+import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
 import 'package:pdd_app/data/models/game_situation.dart';
 import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
@@ -289,12 +290,54 @@ class GodotGame {
 
   /// Plays the 3D Crossroads Priority mini-game on Godot.
   static Future<void> playCrossroads(BuildContext context, WidgetRef ref) =>
-      _withRun(context, (_) => _playCrossroads(context, ref));
+      _withRun(
+        context,
+        (_) => _playCrossroads(
+          context,
+          ref,
+          flag: '--crossroads',
+          progressProvider: crossroadsPriorityProgressProvider,
+          feature: UsageFeature.crossroads,
+          economy: {
+            'seconds': GameEconomy.miniGameSeconds,
+            'lives': GameEconomy.miniGameLives,
+            'maxScore': GameEconomy.maxRunScore,
+            'base': GameEconomy.crossroads(1),
+            'step': GameEconomy.crossroads(2) - GameEconomy.crossroads(1),
+            'bonusCap': 5,
+          },
+        ),
+      );
+
+  /// Plays the 3D «Парковка» mini-game on Godot (same flow as the crossroads).
+  static Future<void> playParking(BuildContext context, WidgetRef ref) =>
+      _withRun(
+        context,
+        (_) => _playCrossroads(
+          context,
+          ref,
+          flag: '--parking',
+          progressProvider: parkingProgressProvider,
+          feature: UsageFeature.parking,
+          economy: {
+            'lives': GameEconomy.miniGameLives,
+            'maxScore': GameEconomy.maxRunScore,
+          },
+        ),
+      );
 
   static Future<void> _playCrossroads(
     BuildContext context,
-    WidgetRef ref,
-  ) async {
+    WidgetRef ref, {
+    required String flag,
+    required StateNotifierProvider<
+      CrossroadsPriorityProgressController,
+      CrossroadsPriorityProgress
+    >
+    progressProvider,
+    required UsageFeature feature,
+    required Map<String, Object> economy,
+  }) async {
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
     final prefs = await _prepare(context, _prefs);
@@ -309,11 +352,11 @@ class GodotGame {
     String? json;
     try {
       json = await _start(context, [
-        '--crossroads',
+        flag,
         '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
-        '--best-score=${ref.read(crossroadsPriorityProgressProvider).bestScore}',
+        '--best-score=${ref.read(progressProvider).bestScore}',
         '--session-id=${GameLeaderboardService.newRunId()}',
-        '--economy=${jsonEncode({'seconds': GameEconomy.miniGameSeconds, 'lives': GameEconomy.miniGameLives, 'maxScore': GameEconomy.maxRunScore, 'base': GameEconomy.crossroads(1), 'step': GameEconomy.crossroads(2) - GameEconomy.crossroads(1), 'bonusCap': 5})}',
+        '--economy=${jsonEncode(economy)}',
         if (!HapticFeedbackHelper.enabled) '--no-haptics',
         '--lang=$lang',
         Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',
@@ -336,7 +379,7 @@ class GodotGame {
     try {
       await WidgetsBinding.instance.endOfFrame;
       if (!context.mounted) return;
-      final progress = ref.read(crossroadsPriorityProgressProvider.notifier);
+      final progress = ref.read(progressProvider.notifier);
       final runs = map['runs'] is List ? map['runs'] as List : [map];
       final seen = <String>{};
       final rankingSubmissions = <Future<int?>>[];
@@ -347,7 +390,7 @@ class GodotGame {
         final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         if (solved + wrong == 0) continue;
-        UsageReporter.track(UsageFeature.crossroads);
+        UsageReporter.track(feature);
         final score = GameEconomy.rankedScore(
           (run['score'] as num?)?.toInt() ?? 0,
           correct: solved,

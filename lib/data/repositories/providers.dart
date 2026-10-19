@@ -645,14 +645,39 @@ final crossroadsPriorityProgressProvider =
       return controller;
     });
 
+final parkingProgressProvider =
+    StateNotifierProvider<
+      CrossroadsPriorityProgressController,
+      CrossroadsPriorityProgress
+    >((ref) {
+      final ds = ref.watch(progressDataSourceProvider);
+      final controller = CrossroadsPriorityProgressController(
+        ds,
+        load: ds.getParkingProgress,
+        store: ds.saveParkingProgress,
+      );
+      ref.listen(progressImportsProvider, (_, next) {
+        if (next.hasValue) controller.reload();
+      });
+      return controller;
+    });
+
+/// Progress of a mini-game with a record, a best streak and a solved count:
+/// «Перекрёсток» by default, «Парковка» with its own [load]/[store].
 class CrossroadsPriorityProgressController
     extends StateNotifier<CrossroadsPriorityProgress> {
-  CrossroadsPriorityProgressController(this._dataSource)
-    : super(_dataSource.getCrossroadsPriorityProgress());
+  CrossroadsPriorityProgressController(
+    ProgressDataSource dataSource, {
+    CrossroadsPriorityProgress Function()? load,
+    Future<void> Function(CrossroadsPriorityProgress)? store,
+  }) : _load = load ?? dataSource.getCrossroadsPriorityProgress,
+       _store = store ?? dataSource.saveCrossroadsPriorityProgress,
+       super((load ?? dataSource.getCrossroadsPriorityProgress)());
 
-  final ProgressDataSource _dataSource;
+  final CrossroadsPriorityProgress Function() _load;
+  final Future<void> Function(CrossroadsPriorityProgress) _store;
 
-  void reload() => state = _dataSource.getCrossroadsPriorityProgress();
+  void reload() => state = _load();
 
   Future<void> recordGameResult({
     required int score,
@@ -667,11 +692,11 @@ class CrossroadsPriorityProgressController
       maxCombo: newCombo,
       totalSolved: newSolved,
     );
-    await _dataSource.saveCrossroadsPriorityProgress(state);
+    await _store(state);
   }
 
   Future<void> incrementTraining() async {
     state = state.copyWith(trainingCount: state.trainingCount + 1);
-    await _dataSource.saveCrossroadsPriorityProgress(state);
+    await _store(state);
   }
 }

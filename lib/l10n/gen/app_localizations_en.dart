@@ -3253,6 +3253,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamesParkingTitle => 'Parking';
 
   @override
+  String get gameParkingTouch => 'Bump!';
+
+  @override
+  String get gameParkingParked => 'Parked';
+
+  @override
+  String get gameParkingFindSpot => 'Find a space where parking is allowed';
+
+  @override
+  String get gameParkingBusStop => 'Not within 15 m of a bus stop';
+
+  @override
+  String get gameParkingNoStopping => 'Sign 3.27: no stopping';
+
+  @override
+  String get gameParkingJunction => 'Not within 5 m of a junction';
+
+  @override
   String get gamesSignsTitle => 'Sign quiz';
 
   @override

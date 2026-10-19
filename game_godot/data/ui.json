@@ -171,7 +171,13 @@
   "gameAnswerWrong": "Неверно",
   "gameCrossroadsSolvedCount": "Разрулено: {count}",
   "gameCrossroadsExplanationTitle": "Разбор ситуации по ПДД РФ",
-  "gameCrossroadsCompleteTitle": "Перекресток разрулен!"
+  "gameCrossroadsCompleteTitle": "Перекресток разрулен!",
+  "gameParkingTouch": "Касание!",
+  "gameParkingParked": "Припарковано",
+  "gameParkingFindSpot": "Найдите место, где можно встать",
+  "gameParkingBusStop": "Ближе 15 м к остановке нельзя",
+  "gameParkingNoStopping": "Знак 3.27: остановка запрещена",
+  "gameParkingJunction": "Ближе 5 м к перекрёстку нельзя"
  },
  "en": {
   "close": "Close",
@@ -345,7 +351,13 @@
   "gameAnswerWrong": "Incorrect",
   "gameCrossroadsSolvedCount": "Cleared: {count}",
   "gameCrossroadsExplanationTitle": "Analysis of the situation according to the Russian Federation traffic rules",
-  "gameCrossroadsCompleteTitle": "The intersection has been cleared!"
+  "gameCrossroadsCompleteTitle": "The intersection has been cleared!",
+  "gameParkingTouch": "Bump!",
+  "gameParkingParked": "Parked",
+  "gameParkingFindSpot": "Find a space where parking is allowed",
+  "gameParkingBusStop": "Not within 15 m of a bus stop",
+  "gameParkingNoStopping": "Sign 3.27: no stopping",
+  "gameParkingJunction": "Not within 5 m of a junction"
  },
  "kk": {
   "close": "Жабу",
@@ -519,6 +531,12 @@
   "gameAnswerWrong": "Дұрыс емес",
   "gameCrossroadsSolvedCount": "Шешілген: {count}",
   "gameCrossroadsExplanationTitle": "Ресей Федерациясының жол қозғалысы ережелеріне сәйкес жағдайды талдау",
-  "gameCrossroadsCompleteTitle": "Қиылыс тазартылды!"
+  "gameCrossroadsCompleteTitle": "Қиылыс тазартылды!",
+  "gameParkingTouch": "Соқтығыс!",
+  "gameParkingParked": "Тұраққа қойылды",
+  "gameParkingFindSpot": "Тұруға болатын орынды табыңыз",
+  "gameParkingBusStop": "Аялдамаға 15 м-ден жақын болмайды",
+  "gameParkingNoStopping": "3.27 белгісі: тоқтауға тыйым салынған",
+  "gameParkingJunction": "Қиылысқа 5 м-ден жақын болмайды"
  }
 }

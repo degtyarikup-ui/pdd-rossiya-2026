@@ -20,6 +20,7 @@ class GamesHubView extends StatelessWidget {
     required this.trafficBest,
     required this.signsBest,
     required this.crossroadsBest,
+    required this.parkingBest,
     required this.premium,
     required this.runsLoaded,
     required this.hasPendingRun,
@@ -29,14 +30,17 @@ class GamesHubView extends StatelessWidget {
     required this.onTrafficController,
     required this.onSigns,
     required this.onCrossroads,
+    required this.onParking,
     required this.onLeaderboard,
     this.onRefilled,
   });
 
   final int weekScore, cityBest, trafficBest, signsBest, crossroadsBest, runs;
+  final int parkingBest;
   final bool premium, runsLoaded, hasPendingRun;
   final DateTime? refillAt;
   final VoidCallback onCity, onTrafficController, onSigns, onCrossroads;
+  final VoidCallback onParking;
   final VoidCallback onLeaderboard;
   final VoidCallback? onRefilled;
 
@@ -225,9 +229,11 @@ class GamesHubView extends StatelessWidget {
                           trafficBest: trafficBest,
                           signsBest: signsBest,
                           crossroadsBest: crossroadsBest,
+                          parkingBest: parkingBest,
                           onTrafficController: onTrafficController,
                           onSigns: onSigns,
                           onCrossroads: onCrossroads,
+                          onParking: onParking,
                         );
                         if (wide) {
                           return Row(
@@ -284,13 +290,15 @@ class _MiniGamesCatalogue extends StatelessWidget {
     required this.trafficBest,
     required this.signsBest,
     required this.crossroadsBest,
+    required this.parkingBest,
     required this.onTrafficController,
     required this.onSigns,
     required this.onCrossroads,
+    required this.onParking,
   });
   final double gap;
-  final int trafficBest, signsBest, crossroadsBest;
-  final VoidCallback onTrafficController, onSigns, onCrossroads;
+  final int trafficBest, signsBest, crossroadsBest, parkingBest;
+  final VoidCallback onTrafficController, onSigns, onCrossroads, onParking;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -346,8 +354,9 @@ class _MiniGamesCatalogue extends StatelessWidget {
         _HubCard(
           id: 'parking',
           title: appL10n.gamesParkingTitle,
-          caption: appL10n.gameSoonBadge,
+          bestScore: parkingBest,
           titleSize: titleSize,
+          onTap: onParking,
         ),
       ];
       return _CatalogueScroll(

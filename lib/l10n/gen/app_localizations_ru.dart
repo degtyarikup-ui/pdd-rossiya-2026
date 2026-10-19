@@ -3267,6 +3267,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gamesParkingTitle => 'Парковка';
 
   @override
+  String get gameParkingTouch => 'Касание!';
+
+  @override
+  String get gameParkingParked => 'Припарковано';
+
+  @override
+  String get gameParkingFindSpot => 'Найдите место, где можно встать';
+
+  @override
+  String get gameParkingBusStop => 'Ближе 15 м к остановке нельзя';
+
+  @override
+  String get gameParkingNoStopping => 'Знак 3.27: остановка запрещена';
+
+  @override
+  String get gameParkingJunction => 'Ближе 5 м к перекрёстку нельзя';
+
+  @override
   String get gamesSignsTitle => 'Это знак';
 
   @override

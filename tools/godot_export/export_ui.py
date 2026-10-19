@@ -47,6 +47,7 @@ KEYS = [
     'crossroadsHardSituationBadge', 'crossroadsHardBonusBadge', 'crossroadsTimeBonus10s', 'crossroadsPedestrian',
     'crossroadsReasonPedestrianViolation', 'crossroadsArticlePedestrian', 'crossroadsReasonEarlyExit', 'crossroadsArticleEarlyExit', 'gameCrossroadsCrash', 'gameAnswerWrong',
     'gameCrossroadsSolvedCount', 'gameCrossroadsExplanationTitle', 'gameCrossroadsCompleteTitle',
+    'gameParkingTouch', 'gameParkingParked', 'gameParkingFindSpot', 'gameParkingBusStop', 'gameParkingNoStopping', 'gameParkingJunction',
 ]
 out = {}
 for lang in ('ru', 'en', 'kk'):

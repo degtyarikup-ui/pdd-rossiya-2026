@@ -3256,6 +3256,24 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamesParkingTitle => 'Тұрақ';
 
   @override
+  String get gameParkingTouch => 'Соқтығыс!';
+
+  @override
+  String get gameParkingParked => 'Тұраққа қойылды';
+
+  @override
+  String get gameParkingFindSpot => 'Тұруға болатын орынды табыңыз';
+
+  @override
+  String get gameParkingBusStop => 'Аялдамаға 15 м-ден жақын болмайды';
+
+  @override
+  String get gameParkingNoStopping => '3.27 белгісі: тоқтауға тыйым салынған';
+
+  @override
+  String get gameParkingJunction => 'Қиылысқа 5 м-ден жақын болмайды';
+
+  @override
   String get gamesSignsTitle => 'Бұл — белгі';
 
   @override

@@ -694,7 +694,7 @@ void main() {
     expect(find.byType(GamesHubScreen), findsOneWidget);
     await tester.scrollUntilVisible(find.text(appL10n.gamesParkingTitle), 200);
     await tester.pumpAndSettle();
-    expect(find.text(appL10n.gameSoonBadge), findsNWidgets(3));
+    expect(find.text(appL10n.gameSoonBadge), findsNWidgets(2));
     await tester.tapAt(tester.getCenter(find.text(appL10n.gamesParkingTitle)));
     await tester.pumpAndSettle();
     expect(find.byType(GamesHubScreen), findsOneWidget);

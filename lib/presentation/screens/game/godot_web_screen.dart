@@ -62,13 +62,16 @@ class _GodotWebScreenState extends State<GodotWebScreen> {
   Widget build(BuildContext context) {
     final isMiniGame =
         widget.args.contains('--regulator') ||
-        widget.args.contains('--crossroads');
+        widget.args.contains('--crossroads') ||
+        widget.args.contains('--parking');
     return PopScope<String>(
       canPop: _closing || !isMiniGame,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
           final gameId = widget.args.contains('--crossroads')
               ? 'crossroads'
+              : widget.args.contains('--parking')
+              ? 'parking'
               : 'regulator';
           _exit(_summary ?? '{"game":"$gameId","runs":[]}');
         }

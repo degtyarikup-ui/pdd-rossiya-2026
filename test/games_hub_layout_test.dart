@@ -56,6 +56,7 @@ void main() {
     int trafficBest = 1200,
     int signsBest = 150,
     int crossroadsBest = 150,
+    int parkingBest = 0,
     bool premium = false,
     bool runsLoaded = true,
     bool pending = false,
@@ -65,6 +66,7 @@ void main() {
     VoidCallback? onTrafficController,
     VoidCallback? onSigns,
     VoidCallback? onCrossroads,
+    VoidCallback? onParking,
     VoidCallback? onLeaderboard,
     VoidCallback? onRefilled,
   }) async {
@@ -100,6 +102,7 @@ void main() {
               trafficBest: trafficBest,
               signsBest: signsBest,
               crossroadsBest: crossroadsBest,
+              parkingBest: parkingBest,
               premium: premium,
               runsLoaded: runsLoaded,
               hasPendingRun: pending,
@@ -109,6 +112,7 @@ void main() {
               onTrafficController: onTrafficController ?? () {},
               onSigns: onSigns ?? () {},
               onCrossroads: onCrossroads ?? () {},
+              onParking: onParking ?? () {},
               onLeaderboard: onLeaderboard ?? () {},
               onRefilled: onRefilled,
             ),
@@ -411,7 +415,12 @@ void main() {
             appL10n.gameCityTitle,
             runs == 0 ? appL10n.gamesUnlimitedAction : appL10n.gamesPlay,
           ]) {
-            final rect = tester.getRect(find.text(text));
+            final rect = tester.getRect(
+              find.descendant(
+                of: find.byKey(const ValueKey('games-card-city')),
+                matching: find.text(text),
+              ),
+            );
             expect(card.contains(rect.topLeft), isTrue);
             expect(card.contains(rect.bottomRight), isTrue);
           }
@@ -500,7 +509,7 @@ void main() {
     );
     expect(find.text(appL10n.gamesPlay), findsWidgets);
     expect(find.bySemanticsLabel(appL10n.gamesRecordScore('0')), findsNothing);
-    expect(find.text(appL10n.gameSoonBadge), findsNWidgets(3));
+    expect(find.text(appL10n.gameSoonBadge), findsNWidgets(2));
     semantics.dispose();
     await tester.pumpWidget(const SizedBox());
   });
@@ -518,7 +527,6 @@ void main() {
       for (final entry in [
         ('road_signs', appL10n.gamesRoadSignsTitle),
         ('violator', appL10n.gamesViolatorTitle),
-        ('parking', appL10n.gamesParkingTitle),
       ]) {
         final finder = find.byKey(ValueKey('games-card-${entry.$1}'));
         final card = tester.widget<Semantics>(finder);
@@ -646,6 +654,7 @@ void main() {
       onTrafficController: () => called.add('regulator'),
       onSigns: () => called.add('signs'),
       onCrossroads: () => called.add('crossroads'),
+      onParking: () => called.add('parking'),
       onLeaderboard: () => called.add('leaderboard'),
     );
     for (final key in _cardKeys) {
@@ -653,7 +662,14 @@ void main() {
       await tester.pump();
     }
     await tester.tap(find.byKey(const ValueKey('games-leaderboard')));
-    expect(called, ['signs', 'regulator', 'crossroads', 'city', 'leaderboard']);
+    expect(called, [
+      'signs',
+      'regulator',
+      'crossroads',
+      'parking',
+      'city',
+      'leaderboard',
+    ]);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });

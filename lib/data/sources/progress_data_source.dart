@@ -18,6 +18,7 @@ class ProgressDataSource {
   static const String _keyTrafficController = 'traffic_controller_progress';
   static const String _keySignSwiper = 'sign_swiper_progress';
   static const String _keyCrossroadsPriority = 'crossroads_priority_progress';
+  static const String _keyParking = 'parking_progress';
   static const String _legacyProgress = 'question_progress';
   static const String _legacyTicketProgress = 'ticket_progress';
   static const String _legacyFavorites = 'favorites';
@@ -675,6 +676,7 @@ class ProgressDataSource {
         'regulator': getTrafficControllerProgress().toJson(),
         'signs': getSignSwiperProgress().toJson(),
         'crossroads': getCrossroadsPriorityProgress().toJson(),
+        'parking': getParkingProgress().toJson(),
       },
       'resetAt': _prefs.getInt(_keyResetAt) ?? 0,
       'favoriteStatesAb': _loadMap(_keyFavoriteStatesAb),
@@ -775,6 +777,24 @@ class ProgressDataSource {
       _keyCrossroadsPriority,
       jsonEncode(progress.toJson()),
     );
+    ProgressSyncService.instance.scheduleSync();
+  }
+
+  /// «Парковка» хранит те же поля, что и «Перекрёсток»: рекорд, серия, решено.
+  CrossroadsPriorityProgress getParkingProgress() {
+    final raw = _prefs.getString(_keyParking);
+    if (raw == null || raw.isEmpty) return const CrossroadsPriorityProgress();
+    try {
+      return CrossroadsPriorityProgress.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return const CrossroadsPriorityProgress();
+    }
+  }
+
+  Future<void> saveParkingProgress(CrossroadsPriorityProgress progress) async {
+    await _prefs.setString(_keyParking, jsonEncode(progress.toJson()));
     ProgressSyncService.instance.scheduleSync();
   }
 
@@ -884,6 +904,9 @@ class ProgressDataSource {
       _keyCrossroadsPriority,
       Map<String, dynamic>.from(games['crossroads'] as Map),
     );
+    if (games['parking'] is Map) {
+      _saveMap(_keyParking, Map<String, dynamic>.from(games['parking'] as Map));
+    }
     _saveMap(
       _keyFavoriteStatesAb,
       Map<String, dynamic>.from(data['favoriteStatesAb'] as Map),
