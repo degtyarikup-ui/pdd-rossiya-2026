@@ -16,9 +16,21 @@ const C_ASPHALT := Color(0.25, 0.25, 0.27)
 const C_PAINT := Color(0.95, 0.95, 0.95)
 const C_CURB := Color(0.82, 0.8, 0.76)
 const C_WALK := Color(0.8, 0.74, 0.66)
-const C_LAWN := Color(0.5, 0.72, 0.28)
+const C_LAWN := Color(0.56, 0.6, 0.3)
 
 var _mats := {}
+
+## Video mode: the red car rolls up to the stop line with the right indicator on,
+## the camera eases in and the question caption appears.
+@export var animate := false
+@export var caption := ""
+var _t := 0.0
+var _hero: Node3D
+var _hero_from := 0.0
+var _hero_to := 0.0
+var _blinkers: Array[MeshInstance3D] = []
+var _cam: Camera3D
+var _label: Label
 
 
 func _ready() -> void:
@@ -97,30 +109,31 @@ func _slab(poly: PackedVector2Array, h: float, c: Color) -> void:
 func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(1.0, 0.78, 0.52)
+	env.background_color = Color(0.96, 0.84, 0.68)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.72, 0.74, 0.84)
-	env.ambient_light_energy = 0.75
+	env.ambient_light_color = Color(0.9, 0.82, 0.74)
+	env.ambient_light_energy = 1.0
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 0.95
 	env.glow_enabled = true
-	env.glow_intensity = 0.35
-	env.glow_bloom = 0.05
+	env.glow_intensity = 0.25
+	env.glow_bloom = 0.04
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.2
-	env.adjustment_contrast = 1.05
+	env.adjustment_saturation = 1.08
+	env.adjustment_contrast = 0.97
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 
+	# Soft autumn afternoon: higher sun, weak light, translucent blurred shadows.
 	var sun := DirectionalLight3D.new()
-	sun.light_color = Color(1.0, 0.8, 0.58)
-	sun.light_energy = 1.9
+	sun.light_color = Color(1.0, 0.86, 0.68)
+	sun.light_energy = 1.15
 	sun.shadow_enabled = true
+	sun.shadow_opacity = 0.5
+	sun.shadow_blur = 6.0
 	sun.directional_shadow_max_distance = 140.0
-	sun.shadow_blur = 1.5
-	# Low evening sun from the far right: long shadows fall towards the camera-left.
-	sun.rotation_degrees = Vector3(-24, 140, 0)
+	sun.rotation_degrees = Vector3(-42, 145, 0)
 	add_child(sun)
 
 
@@ -225,7 +238,7 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 	trunk.material_override = _mat(Color(0.42, 0.28, 0.17))
 	t.add_child(trunk)
 	var leaf := StandardMaterial3D.new()
-	leaf.albedo_color = Color(0.36, 0.62, 0.2).lerp(Color(0.5, 0.7, 0.22), rng.randf())
+	leaf.albedo_color = [Color(0.93, 0.6, 0.16), Color(0.95, 0.76, 0.22), Color(0.84, 0.36, 0.14), Color(0.62, 0.62, 0.22)][rng.randi() % 4]
 	leaf.roughness = 0.9
 	leaf.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
 	for i in rng.randi_range(2, 3):
@@ -309,6 +322,27 @@ func _build_actors() -> void:
 		car.position = c[2]
 		car.rotation.y = c[3]
 		add_child(car)
+		if _hero == null:
+			_hero = car
+	_hero_to = _hero.position.z
+	_hero_from = _hero_to + (14.0 if animate else 0.0)
+	_hero.position.z = _hero_from
+	# Right indicators (model faces +Z, so its right side is -X).
+	var amber := StandardMaterial3D.new()
+	amber.albedo_color = Color(1.0, 0.55, 0.05)
+	amber.emission_enabled = true
+	amber.emission = Color(1.0, 0.5, 0.0)
+	amber.emission_energy_multiplier = 4.0
+	for z in [1.78, -2.02]:
+		var lamp := MeshInstance3D.new()
+		var b := BoxMesh.new()
+		b.size = Vector3(0.18, 0.12, 0.12)
+		lamp.mesh = b
+		lamp.material_override = amber
+		lamp.position = Vector3(-0.78, 0.72, z)
+		lamp.visible = false
+		_hero.add_child(lamp)
+		_blinkers.append(lamp)
 
 
 func _build_camera() -> void:
@@ -318,3 +352,40 @@ func _build_camera() -> void:
 	add_child(cam)
 	cam.look_at(Vector3(0, 0, 3.0), Vector3.UP)
 	cam.current = true
+	_cam = cam
+	if caption != "":
+		var layer := CanvasLayer.new()
+		add_child(layer)
+		_label = Label.new()
+		_label.text = caption
+		_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		_label.position = Vector2(80, 170)
+		_label.size = Vector2(920, 300)
+		_label.add_theme_font_override("font", load("res://fonts/Onest-ExtraBold.ttf"))
+		_label.add_theme_font_size_override("font_size", 84)
+		_label.add_theme_color_override("font_color", Color.WHITE)
+		_label.add_theme_color_override("font_outline_color", Color(0.1, 0.12, 0.2))
+		_label.add_theme_constant_override("outline_size", 22)
+		_label.modulate.a = 0.0
+		layer.add_child(_label)
+
+
+func _process(delta: float) -> void:
+	if animate and not has_meta("offline"):
+		set_time(_t + delta)
+
+
+## Puts every animated part at time t (s); render_video.gd calls it per frame.
+func set_time(t: float) -> void:
+	_t = t
+	var k := clampf(_t / 4.2, 0.0, 1.0)
+	var ease := 1.0 - pow(1.0 - k, 3.0)
+	_hero.position.z = lerpf(_hero_from, _hero_to, ease)
+	var on := fmod(_t, 0.7) < 0.35
+	for b in _blinkers:
+		b.visible = on
+	_cam.position = Vector3(0, 35, 41).lerp(Vector3(0, 31, 37), smoothstep(0.0, 5.0, _t))
+	_cam.look_at(Vector3(0, 0, 3.0), Vector3.UP)
+	if _label:
+		_label.modulate.a = smoothstep(0.2, 0.6, _t)
