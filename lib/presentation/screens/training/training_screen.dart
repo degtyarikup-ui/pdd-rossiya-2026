@@ -313,9 +313,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     final topics = question['topic'];
     await showReportQuestionDialog(
       context: context,
-      questionId: question['id'] as String? ?? '',
+      questionId: (question['variantId'] ?? question['id']) as String? ?? '',
       questionText: question['question'] as String?,
       ticketNumber: question['ticketNumber'] as int?,
+      category: ref.read(appSettingsProvider).ticketCategory.name,
       topic: topics is List && topics.isNotEmpty ? '${topics.first}' : null,
       mode: widget.title,
     );

@@ -1340,7 +1340,7 @@
               "correct": false
             }
           ],
-          "comment": "Recommendations on this issue vary. The simplest recommendation for drivers of passenger cars is to maintain a distance equal to at least half the speed of travel (approximately this distance is equal to the distance of the car in 2 seconds). It should be taken into account that during heavy traffic and at a greater distance, frequent “wedges” of other vehicles will occur. This will “stress” you. The most important thing is to understand what kind of “leader” you have ahead of you, what his behavior is. What is your braking distance? There may be a circumstance that can increase it compared to the usual one to which you are accustomed. Taking the right steps will help you avoid a “collision.”",
+          "comment": "When driving a passenger car on a dry road, the minimum necessary following distance behind the vehicle ahead is considered to be the distance the car can travel during the driver’s reaction time and the brake actuation time. The driver’s reaction time can range from 0.4 to 1.6 seconds, and the actuation time of a hydraulic braking system can range from 0.1 to 0.4 seconds. Therefore, the minimum necessary following distance for passenger cars can be considered to be the distance the car travels in at least 2 seconds. When driving conditions deteriorate (rain, snow or ice), this distance must be increased.",
           "pddPoints": [],
           "image": null,
           "topic": [

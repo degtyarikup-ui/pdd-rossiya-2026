@@ -1,5 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { reportQuestionDetails } from './report_questions.js';
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import worker, { sendTelegram } from './worker.js';
 import { signSession, revokeUserSessions } from './user_auth.js';
 import { TelegramQueue } from './telegram_queue.js';
@@ -201,5 +204,131 @@ test('an immediate partial-setup retry preserves newly created IDs despite the K
     assert.equal(limited, 1);
     assert.equal(creates, 5, 'no duplicate topics after the KV retry');
     assert.deepEqual(JSON.parse(await env.INSTALLS.get('telegram_topics')), { errors: 11, purchases: 13, registrations: 14, reports: 15 });
+  } finally { globalThis.fetch = original; }
+});
+
+
+test('report catalogue stays in sync with canonical ticket content', () => {
+  execFileSync('python3', ['../../tools/ru_content/export_report_questions.py', '--check'], { cwd: new URL('.', import.meta.url) });
+});
+
+test('the two-second answer and official explanation agree in tickets and topics in all languages', () => {
+  for (const language of ['', '_en', '_kk']) {
+    const load = name => JSON.parse(readFileSync(new URL(`../../assets/countries/ru/questions/${name}_ab${language}.json`, import.meta.url)));
+    const question = load('questions').tickets[25].questions[19];
+    const topicQuestion = load('topics').topics.flatMap(t => t.questions).find(q => q.id === question.id);
+    assert.equal(question.answers.findIndex(a => a.correct), 1);
+    assert.deepEqual(question, topicQuestion);
+    for (const value of language === '_en' ? ['0.4', '1.6', '0.1', '2 seconds'] : ['0,4', '1,6', '0,1', '2 секунд']) {
+      assert.ok(question.comment.includes(value), `${language}: ${value}`);
+    }
+    assert.doesNotMatch(question.comment, /вклиниван|напрягать/);
+  }
+});
+
+test('old clients get the trusted correct answer without an illustration for a text-only question', async () => {
+  const { env, state } = setup();
+  const response = await worker.fetch(request({ kind: 'report', message: 'Ты уверен', country: 'ru',
+    question_id: '4ccb8ce62e426d6ee62eb435bf9cdf91', ticket: 26,
+    correct_answer: '3 секунды', photoUrl: 'https://attacker.test/fake.png' }), env);
+  assert.equal(response.status, 200);
+  const items = await queued(state);
+  assert.equal(items.length, 1);
+  assert.match(items[0].text, /Верный ответ:<\/b> 2\. 2 секунды/);
+  assert.doesNotMatch(items[0].text, /3 секунды|attacker/);
+  assert.equal(items[0].photoUrl, undefined);
+});
+
+test('picture reports enqueue full text and the canonical image in the same complaint topic', async () => {
+  const { env, state } = setup();
+  await env.INSTALLS.put('telegram_topics', JSON.stringify({ reports: 42 }));
+  const response = await worker.fetch(request({ kind: 'report', message: 'Картинка неверная',
+    question_id: '050bbd8d2ba901e0b895141adadf7a60', ticket: 1, category: 'ab' }), env);
+  assert.equal(response.status, 200);
+  const [text, photo] = await queued(state);
+  assert.match(text.text, /Верный ответ:<\/b> 1\. Разрешен/);
+  assert.equal(text.threadId, 42);
+  assert.equal(photo.threadId, 42);
+  assert.equal(photo.photoUrl, 'https://pdd-drive.ru/app/assets/assets/countries/ru/images/questions_ab/eca08a0e2b5ffcd12bdd8ffee34afcc3.webp');
+});
+
+test('game IDs and variant IDs resolve their precise diagram and ambiguous legacy IDs never guess', () => {
+  for (const category of ['ab', 'cd']) {
+    const data = JSON.parse(readFileSync(new URL(`../../assets/countries/ru/questions/questions_${category}.json`, import.meta.url)));
+    for (const ticket of data.tickets) {
+      for (const [index, question] of ticket.questions.entries()) {
+        const scene = `ticket_${category === 'cd' ? 'cd_' : ''}${ticket.number}_${index + 1}`;
+        const details = reportQuestionDetails({ question_id: scene });
+        assert.equal(details.correctAnswer, question.answers.map((a, i) => a.correct ? `${i + 1}. ${a.text}` : null).filter(Boolean).join('\n'));
+        assert.equal(Boolean(details.photoUrl), Boolean(question.image));
+        if (question.image) assert.ok(details.photoUrl.endsWith(`/${question.image}.webp`));
+        if (question.variantId) {
+          const variant = reportQuestionDetails({ question_id: question.variantId, ticket: ticket.number, category });
+          assert.ok(variant.photoUrl.endsWith(`/${question.image}.webp`));
+        }
+      }
+    }
+  }
+  assert.equal(reportQuestionDetails({ question_id: '050bbd8d2ba901e0b895141adadf7a60', ticket: 1 }).photoUrl, null);
+  assert.equal(reportQuestionDetails({ question_id: '050bbd8d2ba901e0b895141adadf7a60', ticket: 1 }).correctAnswer, '1. Разрешен');
+  assert.equal(reportQuestionDetails({ question_id: 'ticket_1_2', ticket: 26 }), null);
+  assert.equal(reportQuestionDetails({ question_id: '__proto__' }), null);
+  assert.equal(reportQuestionDetails({ question_id: 'ticket_1_2', country: 'rs' }), null);
+});
+
+test('queue delivers picture after the report, retries rate limits and falls back to a link on rejected media', async () => {
+  const { env, state } = setup(), original = globalThis.fetch;
+  const queue = new TelegramQueue(state, env);
+  const photoUrl = reportQuestionDetails({ question_id: 'ticket_1_2' }).photoUrl;
+  await queue.enqueue({ topic: 'reports', threadId: 42, messages: [{ text: 'Full report' }, { text: 'Picture', photoUrl }] });
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, body: JSON.parse(options.body) });
+    if (calls.length === 2) return Response.json({ ok: false, parameters: { retry_after: 20 } }, { status: 429 });
+    if (calls.length === 3) return Response.json({ ok: false, description: 'wrong file' }, { status: 400 });
+    return Response.json({ ok: true });
+  };
+  try {
+    await queue.alarm();
+    await queue.alarm();
+    assert.ok((await queued(state))[0].photoUrl);
+    assert.ok(await state.storage.getAlarm() > Date.now() + 19000);
+    await queue.alarm();
+    assert.equal((await queued(state))[0].photoUrl, undefined);
+    await queue.alarm();
+    assert.equal((await queued(state)).length, 0);
+    assert.match(calls[0].url, /sendMessage$/);
+    assert.match(calls[1].url, /sendPhoto$/);
+    assert.equal(calls[1].body.photo, photoUrl);
+    assert.equal(calls[1].body.message_thread_id, 42);
+    assert.match(calls[3].url, /sendMessage$/);
+    assert.ok(calls[3].body.text.includes(photoUrl));
+  } finally { globalThis.fetch = original; }
+});
+
+test('queue rejects arbitrary image URLs and oversized photo captions', async () => {
+  const { env, state } = setup(), queue = new TelegramQueue(state, env);
+  for (const photoUrl of ['https://attacker.test/x.webp', 'http://pdd-drive.ru/app/assets/assets/countries/ru/images/questions_ab/x.webp', 'https://pdd-drive.ru/app/assets/assets/countries/ru/images/questions_ab/../secret.webp']) {
+    assert.equal((await queue.enqueue({ messages: [{ text: 'Photo', photoUrl }] })).status, 400);
+  }
+  const photoUrl = reportQuestionDetails({ question_id: 'ticket_1_2' }).photoUrl;
+  assert.equal((await queue.enqueue({ messages: [{ text: 'x'.repeat(1025), photoUrl }] })).status, 400);
+  assert.equal((await queued(state)).length, 0);
+});
+
+test('direct report fallback sends text and picture to the same topic', async () => {
+  const { env } = setup(), original = globalThis.fetch;
+  delete env.TELEGRAM;
+  await env.INSTALLS.put('telegram_topics', JSON.stringify({ reports: 42 }));
+  const calls = [];
+  globalThis.fetch = async (url, options) => { calls.push({ url, body: JSON.parse(options.body) }); return Response.json({ ok: true }); };
+  try {
+    const response = await worker.fetch(request({ kind: 'report', message: 'Ошибка', question_id: 'ticket_1_2' }), env);
+    assert.equal(response.status, 200);
+    assert.equal(calls.length, 2);
+    assert.match(calls[0].url, /sendMessage$/);
+    assert.match(calls[1].url, /sendPhoto$/);
+    assert.equal(calls[0].body.message_thread_id, 42);
+    assert.equal(calls[1].body.message_thread_id, 42);
   } finally { globalThis.fetch = original; }
 });

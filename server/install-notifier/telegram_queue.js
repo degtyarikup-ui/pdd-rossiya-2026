@@ -1,3 +1,4 @@
+import { isReportPhotoUrl } from './report_questions.js';
 import { buildIncidentMessage } from './diagnostics.js';
 import { setupTelegramTopics } from './telegram_topics.js';
 import { EXPORT_COMMAND_MAX_AGE_MS, buildErrorCsv, errorLevelLabel, errorLogKey, errorLogRecord, exportStart, mskStamp, parseExportCommand, ERROR_LOG_PREFIX } from './telegram_export.js';
@@ -76,7 +77,9 @@ export class TelegramQueue {
     const resolvedThreadId = explicitThreadId ? Number(explicitThreadId) : await getTopicThreadId(this.env, topic);
     const items = messages || [{ text, ...(photoBase64 ? { photoBase64 } : {}) }];
     if (!Array.isArray(items) || items.length < 1 || items.length > 2 || items.some(item =>
-      typeof item.text !== 'string' || !item.text || item.text.length > (item.photoBase64 ? 1024 : 4096) ||
+      typeof item.text !== 'string' || !item.text || item.text.length > (item.photoBase64 || item.photoUrl ? 1024 : 4096) ||
+      (item.photoUrl !== undefined && !isReportPhotoUrl(item.photoUrl)) ||
+      (item.photoUrl && item.photoBase64) ||
       (item.photoBase64 && (typeof item.photoBase64 !== 'string' || item.photoBase64.length > 100000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(item.photoBase64)))
     )) return new Response('invalid message', { status: 400 });
     if (!this.env.BOT_TOKEN || !this.env.CHAT_ID) return new Response('not configured', { status: 503 });
@@ -89,6 +92,7 @@ export class TelegramQueue {
         await txn.put('q:' + String(sequence+i).padStart(16, '0'), {
           text: items[i].text,
           ...(items[i].photoBase64 ? { photoBase64: items[i].photoBase64 } : {}),
+          ...(items[i].photoUrl ? { photoUrl: items[i].photoUrl } : {}),
           ...(itemThreadId ? { threadId: Number(itemThreadId) } : {})
         });
       }
@@ -244,6 +248,11 @@ export class TelegramQueue {
           body.set('caption', item.text);
           body.set('parse_mode', 'HTML');
           body.set('photo', new Blob([Uint8Array.from(atob(item.photoBase64), c => c.charCodeAt(0))], { type: 'image/png' }), 'pdd-daily.png');
+        } else if (item.photoUrl) {
+          method = 'sendPhoto';
+          headers = { 'content-type': 'application/json' };
+          body = JSON.stringify({ chat_id: chatId, photo: item.photoUrl, caption: item.text,
+            parse_mode: 'HTML', ...(threadId ? { message_thread_id: Number(threadId) } : {}) });
         } else {
           headers = { 'content-type': 'application/json' };
           const payload = { chat_id: chatId, text: item.text, parse_mode: 'HTML', disable_web_page_preview: true };
@@ -262,9 +271,9 @@ export class TelegramQueue {
           delete item.threadId;
           delete item.message_thread_id;
           await this.state.storage.put(key, item);
-        } else if (response.status === 400 && item.photoBase64) {
+        } else if (response.status === 400 && (item.photoBase64 || item.photoUrl)) {
           // Preserve the report even if Telegram rejects an image.
-          await this.state.storage.put(key, { text: item.text, ...(threadId ? { threadId: Number(threadId) } : {}) });
+          await this.state.storage.put(key, { text: item.photoUrl ? `${item.text}\n${item.photoUrl}` : item.text, ...(threadId ? { threadId: Number(threadId) } : {}) });
         } else if (response.status === 400) {
           // A malformed message must not block purchases/reports behind it.
           await this.state.storage.put('failed:' + key, { ...item, status: 400, at: Date.now() });

@@ -58,6 +58,7 @@ class QuestionReportService {
     required String questionId,
     String? questionText,
     int? ticketNumber,
+    String? category,
     String? topic,
     String? mode,
     AuthService? auth,
@@ -78,6 +79,7 @@ class QuestionReportService {
         if (questionText != null && questionText.isNotEmpty)
           'question_text': questionText,
         if (ticketNumber != null && ticketNumber > 0) 'ticket': ticketNumber,
+        if (category == 'ab' || category == 'cd') 'category': category,
         if (topic != null && topic.isNotEmpty) 'topic': topic,
         if (mode != null && mode.isNotEmpty) 'mode': mode,
         'country': CountryConfig.current.code,

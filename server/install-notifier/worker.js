@@ -1,3 +1,4 @@
+import { reportQuestionDetails } from './report_questions.js';
 import { mergeProgress } from './progress_merge.js';
 import { gameProfile } from './game_profile.js';
 import { awardGameScore, gameDailySummary, validGameRunId } from './game_scoring.js';
@@ -692,6 +693,7 @@ export function buildPremiumGrantMessage(user, grant) {
 // но почтовый клиент есть не у всех, и до отправки доходили единицы.
 
 export function buildReportMessage(b, user = null) {
+  const question = reportQuestionDetails(b);
   const flag = FLAGS[b.country] || '🌍';
   const meta = [];
   if (b.ticket) meta.push(`билет ${esc(b.ticket)}`);
@@ -712,7 +714,9 @@ export function buildReportMessage(b, user = null) {
     meta.length ? `- ${meta.join(' • ')}` : null,
     b.question_id ? `- <code>${esc(b.question_id)}</code>` : null,
     // Текст вопроса — чтобы найти его глазами, не лазая в JSON по id.
-    b.question_text ? `- «${esc(String(b.question_text).slice(0, 200))}»` : null,
+    b.question_text ? `- «${esc(String(b.question_text).slice(0, 600))}»` : null,
+    question ? `• <b>Верный ответ:</b> ${esc(question.correctAnswer.slice(0, 900))}`
+      : '• <b>Верный ответ:</b> не найден в серверной базе',
     b.version ? `- v${esc(b.version)} • ${esc(b.platform || '')}` : null,
     ...attributionLines(b, esc),
     b.install_id ? `• <b>Установка ID:</b> <code>${esc(String(b.install_id).slice(0, 64))}</code>` : null,
@@ -939,6 +943,10 @@ export async function sendTelegram(env, text, dedupKey = null, options = {}) {
         dedupKey: dedup,
         topic,
         threadId: explicitThreadId,
+        ...(opts.photoUrl ? { messages: [
+          { text },
+          { text: '🖼 Иллюстрация к жалобе на вопрос', photoUrl: opts.photoUrl },
+        ] } : {}),
       }),
     });
   }
@@ -951,12 +959,26 @@ export async function sendTelegram(env, text, dedupKey = null, options = {}) {
     disable_web_page_preview: true,
   };
   if (resolvedThread) payload.message_thread_id = resolvedThread;
-  return fetch(url, {
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(10000),
   });
+  if (response.ok && opts.photoUrl) {
+    // The report text is already delivered; a failed image must not make the
+    // client retry and duplicate the complaint. Normal delivery uses the queue.
+    try {
+      await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendPhoto`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, photo: opts.photoUrl,
+          caption: '🖼 Иллюстрация к жалобе на вопрос',
+          ...(resolvedThread ? { message_thread_id: resolvedThread } : {}) }),
+        signal: AbortSignal.timeout(10000),
+      });
+    } catch (_) { /* Preserve the successful text delivery. */ }
+  }
+  return response;
 }
 
 
@@ -4144,7 +4166,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
           if (stored?.id === reporter.id) reporter = { ...reporter, ...stored };
         }
       } catch (_) { /* Account lookup must not prevent sending a complaint. */ }
-      const tg = await sendTelegram(env, buildReportMessage(body, reporter), null, { topic: 'reports' });
+      const tg = await sendTelegram(env, buildReportMessage(body, reporter), null, { topic: 'reports', photoUrl: reportQuestionDetails(body)?.photoUrl });
       if (!tg.ok) {
         const detail = await tg.text();
         return jsonResponse({ error: 'telegram failed', detail }, 502);

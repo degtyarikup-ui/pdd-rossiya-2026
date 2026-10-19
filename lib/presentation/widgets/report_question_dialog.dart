@@ -15,6 +15,7 @@ Future<void> showReportQuestionDialog({
   required String questionId,
   String? questionText,
   int? ticketNumber,
+  String? category,
   String? topic,
   String? mode,
 }) {
@@ -24,6 +25,7 @@ Future<void> showReportQuestionDialog({
       questionId: questionId,
       questionText: questionText,
       ticketNumber: ticketNumber,
+      category: category,
       topic: topic,
       mode: mode,
     ),
@@ -35,6 +37,7 @@ class _ReportQuestionDialog extends StatefulWidget {
     required this.questionId,
     this.questionText,
     this.ticketNumber,
+    this.category,
     this.topic,
     this.mode,
   });
@@ -42,6 +45,7 @@ class _ReportQuestionDialog extends StatefulWidget {
   final String questionId;
   final String? questionText;
   final int? ticketNumber;
+  final String? category;
   final String? topic;
   final String? mode;
 
@@ -69,6 +73,7 @@ class _ReportQuestionDialogState extends State<_ReportQuestionDialog> {
       questionId: widget.questionId,
       questionText: widget.questionText,
       ticketNumber: widget.ticketNumber,
+      category: widget.category,
       topic: widget.topic,
       mode: widget.mode,
     );

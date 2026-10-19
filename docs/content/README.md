@@ -68,3 +68,16 @@ python3 tools/godot_export/export_question_images.py
 Поправка к сноске пункта 2.1.1 (постановление от 28.08.2026 №1088) внесена в
 `tools/ru_content/raw/pdd2.html`; точный текст, официальный URL и хеш PDF —
 `tools/ru_content/amendment_2026_1088.json`. Пересборка ПДД сохраняет эту поправку.
+
+## Данные вопросов в Telegram-жалобах
+
+`tools/ru_content/export_report_questions.py` собирает из русских билетных JSON
+каталог верных ответов и изображений для Worker:
+`server/install-notifier/report_questions_data.js`. После изменения вариантов,
+правильных ответов, ID или картинок пересобрать каталог; `--check` проверяет
+актуальность без записи. Проверка включена в `npm run test:reports`.
+
+Пояснение к A/B 26–20 сверено с официальным файлом комментариев ГИБДД
+`https://госавтоинспекция.рф/upload/site1000/folder/original/avtovladeltsam/fees/abm/26-komment-abm-2018.pdf`
+(пункт 20, редакция файла 2018 года). В ru — оригинал, в en/kk — его переводы;
+билетная и тематическая версии синхронны. Ответ: вариант 2, «2 секунды».

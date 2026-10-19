@@ -71,6 +71,7 @@ void main() {
         questionId: 'question-21-3',
         questionText: 'Продолжить буксировку можно?',
         ticketNumber: 21,
+        category: 'cd',
         auth: auth,
       ),
       () => MockClient((request) async {
@@ -91,6 +92,7 @@ void main() {
     expect(payload['kind'], 'report');
     expect(payload['message'], 'Ошибка в вопросе');
     expect(payload['question_id'], 'question-21-3');
+    expect(payload['category'], 'cd');
     expect(payload['install_id'], 'reporter-install');
     expect(payload['device'], 'iPhone16,1');
     expect(payload['os'], 'iOS 18.0');
