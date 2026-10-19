@@ -3019,20 +3019,8 @@
      -15.9
     ],
     [
-     -1.8,
-     -7.5
-    ],
-    [
-     -1.8,
-     4.7
-    ],
-    [
-     -1.8,
-     5.2
-    ],
-    [
-     -1.8,
-     24.7
+     -2,
+     8.5
     ]
    ],
    "exitYaw": 0
@@ -3203,7 +3191,8 @@
  },
  "trafficLights": {
   "state": "flashing_yellow",
-  "arrow": null
+  "arrow": null,
+  "tram": null
  },
  "crop": 90,
  "roadMask": {
@@ -3267,13 +3256,18 @@
  "lights": [
   {
    "pos": [
-    -5.4,
+    -4.446,
     0.0,
-    -8.5
+    -11.384
    ],
    "yaw": -3.142,
    "scale": 1.16,
-   "arrow": null
+   "arrow": null,
+   "tram": null,
+   "mountedSigns": [
+    "2.1"
+   ],
+   "mountedMainRoad": []
   }
  ],
  "actors": [
@@ -3311,7 +3305,8 @@
       -58.5,
       -45
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 3.585,
    "halfWidth": 0.84,
@@ -3359,13 +3354,16 @@
    ],
    "length": 121.838,
    "clearDistance": 19.085,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "hazards": false
   },
   {
    "id": "npc_truck",
@@ -3393,7 +3391,8 @@
       55.0,
       2.05
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -3431,21 +3430,26 @@
    ],
    "length": 65.0,
    "clearDistance": 18.415,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   0.044,
-   1.801
+   -0.657,
+   4.048
   ],
-  "height": 35.242
+  "height": 39.548
  },
  "officers": []
 }

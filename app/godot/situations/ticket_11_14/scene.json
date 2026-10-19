@@ -3190,9 +3190,23 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": null,
+   "way": "left",
+   "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
+ "questionView": {
+  "centre": [
+   1.434,
+   5.748
+  ],
+  "height": 28.747,
+  "yaw": -0.002,
+  "pitch": 0.637,
+  "elevation": 0
+ },
  "officers": []
 }

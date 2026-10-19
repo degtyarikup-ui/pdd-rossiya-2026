@@ -2933,16 +2933,8 @@
      -7.5
     ],
     [
-     -1.801,
-     4.7
-    ],
-    [
-     -1.801,
-     5.2
-    ],
-    [
-     -1.803,
-     24.7
+     -2,
+     12.5
     ]
    ],
    "exitYaw": 0
@@ -3196,8 +3188,8 @@
       -2.05
      ],
      [
-      -67,
-      -1.5
+      -69,
+      -3
      ],
      [
       -83,
@@ -3207,7 +3199,8 @@
       -63,
       -43.5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 3.585,
    "halfWidth": 0.84,
@@ -3238,9 +3231,9 @@
      -2.05
     ],
     [
-     -67,
+     -69,
      0.0,
-     -1.5
+     -3
     ],
     [
      -83,
@@ -3253,15 +3246,18 @@
      -43.5
     ]
    ],
-   "length": 132.486,
+   "length": 132.012,
    "clearDistance": 19.085,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": false
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "hazards": false
   },
   {
    "id": "npc_truck",
@@ -3286,22 +3282,11 @@
       1.75
      ],
      [
-      -7.5,
-      1.75
-     ],
-     [
-      7.5,
-      1.75
-     ],
-     [
-      8,
-      1.75
-     ],
-     [
       47.5,
       1.75
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -3332,21 +3317,6 @@
      1.75
     ],
     [
-     -7.5,
-     0.0,
-     1.75
-    ],
-    [
-     7.5,
-     0.0,
-     1.75
-    ],
-    [
-     8,
-     0.0,
-     1.75
-    ],
-    [
      47.5,
      0.0,
      1.75
@@ -3354,86 +3324,26 @@
    ],
    "length": 62.383,
    "clearDistance": 18.415,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": false
-  },
-  {
-   "id": "pedestrian_1",
-   "type": "pedestrian",
-   "name": "",
-   "config": {
-    "id": "pedestrian_1",
-    "type": "pedestrian",
-    "name": "",
-    "side": "crosswalk_right",
-    "targetAction": "straight",
-    "color": "#0574F8",
-    "position": [
-     -14.69,
-     0.0,
-     -9.234
-    ],
-    "rotationY": 1.047,
-    "route": [
-     [
-      -14.69,
-      -9.234
-     ],
-     [
-      -14.69,
-      -9.234
-     ]
-    ]
-   },
-   "halfLength": 0.229,
-   "halfWidth": 0.411,
-   "badge": {
-    "text": {
-     "ru": "Пешеход",
-     "en": "Pedestrian",
-     "kk": "Жаяу жүргінші"
-    },
-    "color": "#0574F8",
-    "height": 2.8
-   },
-   "pos": [
-    -14.69,
-    0.0,
-    -9.234
-   ],
-   "yaw": 1.047,
-   "scale": [
-    1,
-    1,
-    1
-   ],
-   "path": [
-    [
-     -14.69,
-     0.0,
-     -9.234
-    ],
-    [
-     -14.69,
-     0.0,
-     -9.234
-    ]
-   ],
-   "length": 0.0,
-   "clearDistance": 12.5,
-   "maxSpeed": 3.6,
-   "signalPlan": null,
-   "stopAtDistance": null,
-   "stopFor": null,
-   "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": true
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": null,
+   "way": "straight",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
+ "questionView": {
+  "centre": [
+   -2.541,
+   9.653
+  ],
+  "height": 56.521
+ },
  "officers": []
 }

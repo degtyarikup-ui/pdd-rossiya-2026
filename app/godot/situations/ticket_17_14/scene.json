@@ -5399,7 +5399,8 @@
       1.8,
       -56.0
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -5437,13 +5438,16 @@
    ],
    "length": 65.0,
    "clearDistance": 17.415,
-   "maxSpeed": 12,
+   "maxSpeed": 10,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": false
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "hazards": false
   },
   {
    "id": "npc_truck_right",
@@ -5473,7 +5477,8 @@
       55.0,
       2.05
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -5511,14 +5516,26 @@
    ],
    "length": 65.0,
    "clearDistance": 18.415,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": false
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
+ "questionView": {
+  "centre": [
+   -2.045,
+   11.018
+  ],
+  "height": 41.985
+ },
  "officers": []
 }

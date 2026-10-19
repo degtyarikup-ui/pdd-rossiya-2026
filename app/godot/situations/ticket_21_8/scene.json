@@ -2857,7 +2857,8 @@
       -25
      ]
     ],
-    "pathHeight": 0.18
+    "pathHeight": 0.18,
+    "hazard": false
    },
    "halfLength": 0.229,
    "halfWidth": 0.381,
@@ -2901,7 +2902,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "cyclist",
@@ -2915,22 +2920,23 @@
     "color": "#2BC280",
     "targetAction": "straight",
     "position": [
-     6.6,
+     6.5,
      0.0,
-     -11
+     -9
     ],
     "rotationY": 0,
     "route": [
      [
-      6.6,
-      -11
+      6.5,
+      -9
      ],
      [
       6.6,
       42
      ]
     ],
-    "pathHeight": 0.18
+    "pathHeight": 0.18,
+    "hazard": false
    },
    "halfLength": 1.01,
    "halfWidth": 0.28,
@@ -2944,9 +2950,9 @@
     "height": 2.7
    },
    "pos": [
-    6.6,
+    6.5,
     0.0,
-    -11
+    -9
    ],
    "yaw": 0,
    "scale": [
@@ -2956,9 +2962,9 @@
    ],
    "path": [
     [
-     6.6,
+     6.5,
      0.0,
-     -11
+     -9
     ],
     [
      6.6,
@@ -2966,7 +2972,7 @@
      42
     ]
    ],
-   "length": 53.0,
+   "length": 51.0,
    "clearDistance": 13.01,
    "maxSpeed": 7,
    "signalPlan": null,
@@ -2974,9 +2980,15 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    1.706,
@@ -2984,6 +2996,5 @@
   ],
   "height": 31.027
  },
- "officers": [],
- "playerPlacement": "street"
+ "officers": []
 }

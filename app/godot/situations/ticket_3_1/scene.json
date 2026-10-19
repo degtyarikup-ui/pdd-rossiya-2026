@@ -1,0 +1,478 @@
+{
+ "id": "ticket_3_1",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad_dirt_approach",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -24,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "right",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "left": {
+   "points": [
+    [
+     -1.8,
+     -24
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.709,
+     -3.101
+    ],
+    [
+     -1.431,
+     -1.745
+    ],
+    [
+     -0.955,
+     -0.624
+    ],
+    [
+     -0.274,
+     0.274
+    ],
+    [
+     0.624,
+     0.955
+    ],
+    [
+     1.745,
+     1.431
+    ],
+    [
+     3.101,
+     1.709
+    ],
+    [
+     4.7,
+     1.8
+    ],
+    [
+     5.2,
+     1.8
+    ],
+    [
+     24.7,
+     1.8
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  "right": {
+   "points": [
+    [
+     -1.8,
+     -24
+    ],
+    [
+     -3,
+     -4
+    ],
+    [
+     -10.5,
+     -2
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  "uturn": {
+   "points": [
+    [
+     -1.8,
+     -24
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.8,
+     -7.7
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "exitYaw": 3.142
+  }
+ },
+ "props": [
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -6.442,
+    0.0,
+    -69.657
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#65894d"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -8.931,
+    0.0,
+    -39.874
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -7.602,
+    0.0,
+    -9.6
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#507c48"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -21.358,
+    0.0,
+    8.865
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#65894d"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -62.112,
+    0.0,
+    -8.079
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -40.012,
+    0.0,
+    12.467
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#507c48"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -49.961,
+    0.0,
+    7.781
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#789652"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -70.961,
+    0.0,
+    7.781
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#789652"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    8.344,
+    0.0,
+    -59.568
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#65894d"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    6.653,
+    0.0,
+    -36.779
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    9.356,
+    0.0,
+    -9.935
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#507c48"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    34.719,
+    0.0,
+    8.175
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#65894d"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    52.695,
+    0.0,
+    -8.72
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    7.245,
+    0.0,
+    7.082
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#507c48"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    72.386,
+    0.0,
+    8.209
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#789652"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    84.686,
+    0.0,
+    -8.368
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#789652"
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 3 · Вопрос 1",
+   "title": "Выезжая с грунтовой дороги на перекресток, Вы попадаете:",
+   "options": [
+    "На главную дорогу",
+    "На равнозначную дорогу, поскольку отсутствуют знаки приоритета",
+    "На равнозначную дорогу, поскольку проезжая часть имеет твердое покрытие перед перекрестком"
+   ],
+   "explanation": "Главной является дорога с покрытием по отношению к грунтовой. Перекрёсток неравнозначный. Вы находитесь на второстепенной дороге, выезжать будете на главную.(Пункт 1.2 термин «Главная дорога»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 3 · Question 1",
+   "title": "When leaving the dirt road at the intersection, you find:",
+   "options": [
+    "To the main road",
+    "On an equivalent road because there are no priority signs",
+    "On an equivalent road, since the roadway has a hard surface in front of the intersection"
+   ],
+   "explanation": "The main one is the paved road in relation to the dirt road. The intersection is unequal. You are on a secondary road, you will exit onto the main road. (Clause 1.2, the term “Main Road”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "3-билет · 1-сұрақ",
+   "title": "Қиылыста қара жолдан шыққанда мынаны табасыз:",
+   "options": [
+    "Негізгі жолға",
+    "Баламалы жолда, себебі басымдық белгілері жоқ",
+    "Баламалы жолда, өйткені жол қиылысының алдында қатты жабын бар"
+   ],
+   "explanation": "Негізгі жол – топырақ жолға қарағанда қатты жамылғысы бар жол. Қиылысу тең емес. Сіз қосалқы жолда келесіз, негізгі жолға шығасыз. («Негізгі жол» термині, 1.2-тармақ)",
+   "pddRule": ""
+  }
+ },
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": true,
+ "sourceQuestionId": "0dddc0be36a1ea143d6fffd862ac405f",
+ "sourceCategory": "ab",
+ "sourceImage": "e72bbb0a6d603fa37ff31ffd3bd2d515",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "sourceTextLength": 225,
+ "playerPlacement": "street",
+ "questionView": {
+  "centre": [
+   -4.921,
+   -3.879
+  ],
+  "height": 41.835,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
+ }
+}

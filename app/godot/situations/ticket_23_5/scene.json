@@ -1,0 +1,576 @@
+{
+ "id": "ticket_23_5",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     90
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -14.297,
+    0.0,
+    -16.709
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ddd1bc"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -10.654,
+    0.0,
+    -44.618
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    -13.227,
+    0.0,
+    0.082
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ccd6d9"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -9.6,
+    0.0,
+    -30
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -13.868,
+    0.0,
+    19.762
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#e0d9ce"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -9.044,
+    0.0,
+    34.935
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    -16.888,
+    0.0,
+    42.752
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#d5dfd0"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -8.786,
+    0.0,
+    56.133
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -7.124,
+    0.0,
+    -61.546
+   ],
+   "yaw": -3.138,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -7.124,
+    0.0,
+    -27.546
+   ],
+   "yaw": -3.138,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -7.124,
+    0.0,
+    27.454
+   ],
+   "yaw": -3.138,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -7.124,
+    0.0,
+    61.454
+   ],
+   "yaw": -3.138,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -8.994,
+    0.0,
+    -59.047
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -10.0,
+    0.0,
+    43
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    14.222,
+    0.0,
+    -18.123
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ddd1bc"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    9.077,
+    0.0,
+    -61.705
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    16.41,
+    0.0,
+    2.936
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ccd6d9"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    9.6,
+    0.0,
+    -30
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    14.896,
+    0.0,
+    22.804
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#e0d9ce"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    9.059,
+    0.0,
+    35.713
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    15.783,
+    0.0,
+    49.834
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#d5dfd0"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    8.492,
+    0.0,
+    63.321
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    7.183,
+    0.0,
+    -80.379
+   ],
+   "yaw": -0.001,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    7.183,
+    0.0,
+    -46.379
+   ],
+   "yaw": -0.001,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    7.183,
+    0.0,
+    8.621
+   ],
+   "yaw": -0.001,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    7.183,
+    0.0,
+    42.621
+   ],
+   "yaw": -0.001,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    10.0,
+    0.0,
+    -49
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    9.816,
+    0.0,
+    48.064
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [
+  {
+   "letter": "",
+   "pos": [
+    -3.05,
+    0.8,
+    -0.5
+   ]
+  }
+ ],
+ "trajectories": [
+  {
+   "label": "",
+   "points": [
+    [
+     -1.8,
+     -11.0
+    ],
+    [
+     -3,
+     -6.5
+    ],
+    [
+     -3.05,
+     -0.5
+    ]
+   ],
+   "arrowhead": true
+  }
+ ],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 23 · Вопрос 5",
+   "title": "Разрешается ли Вам поставить автомобиль на стоянку в этом месте?",
+   "options": [
+    "Разрешается",
+    "Разрешается только с частичным заездом на тротуар",
+    "Запрещается"
+   ],
+   "explanation": "Жёлтая прерывистая линия разметки 1.10 горизонтальной разметки обозначает места, где запрещена стоянка. Применяется только самостоятельно (как в данной ситуации). Осуществлять стоянку в этом месте ЗАПРЕЩАЕТСЯ.(«Горизонтальная разметка»).",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 23 · Question 5",
+   "title": "Are you allowed to park your car in this place?",
+   "options": [
+    "Allowed",
+    "Allowed only with partial access to the sidewalk",
+    "Prohibited"
+   ],
+   "explanation": "The yellow broken line marking 1.10 horizontal markings indicates places where parking is prohibited. Can only be used independently (as in this situation). Parking in this place is PROHIBITED (“Horizontal markings”).",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "23-билет · 5-сұрақ",
+   "title": "Көлігіңізді осы жерге қоюға рұқсат етілген бе?",
+   "options": [
+    "Рұқсат етілген",
+    "Тротуарға жартылай кіруге ғана рұқсат етіледі",
+    "Тыйым салынған"
+   ],
+   "explanation": "1.10 көлденең таңбалары бар сары түсті үзік сызық тұраққа тыйым салынған жерлерді көрсетеді. Өз бетінше ғана қолдануға болады (осы жағдайдағыдай). Бұл жерде тұрақ қоюға тыйым салынады («Көлденең таңбалар»).",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 135,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "24720e946d8800902286987ee59d35b7",
+ "sourceCategory": "ab",
+ "sourceImage": "f0786637b0a0eded6f0b89858be4f026",
+ "questionPool": {
+  "sourceQuestionId": "24720e946d8800902286987ee59d35b7",
+  "category": "ab",
+  "ticket": 23,
+  "number": 5
+ },
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "playerPlacement": "street",
+ "questionView": {
+  "centre": [
+   -1.0,
+   1.5
+  ],
+  "height": 34.0,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
+ }
+}

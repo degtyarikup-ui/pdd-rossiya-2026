@@ -3272,7 +3272,8 @@
       -51,
       -1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.19,
    "halfWidth": 1.023,
@@ -3327,7 +3328,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "npc_moto",
@@ -3355,7 +3360,8 @@
       44.7,
       1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.075,
    "halfWidth": 0.348,
@@ -3399,16 +3405,24 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": "straight",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   -2.032,
-   5.933
+   -1.212,
+   7.145
   ],
-  "height": 30.943
+  "height": 35.207,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  },
- "officers": [],
- "playerPlacement": "street"
+ "officers": []
 }

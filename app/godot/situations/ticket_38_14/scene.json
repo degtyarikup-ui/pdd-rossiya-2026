@@ -3433,10 +3433,14 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": "#F08A24",
+   "way": "straight",
+   "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "showPlayerGuide": false,
  "questionView": {
   "centre": [
    3.789,

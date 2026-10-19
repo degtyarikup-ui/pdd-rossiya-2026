@@ -1,0 +1,285 @@
+{
+ "id": "ticket_29_16",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": 12.757,
+ "playerStartX": -6.792,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 24
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -6.792,
+     12.757
+    ],
+    [
+     -6.5,
+     18.5
+    ],
+    [
+     -3.5,
+     24
+    ],
+    [
+     -3.5,
+     31
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "config": {
+    "id": "car_1",
+    "type": "car",
+    "name": "Легковая",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -6.75,
+     0.0,
+     27.347
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -6.75,
+      27.347
+     ],
+     [
+      -6.5,
+      36.5
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -6.75,
+    0.0,
+    27.347
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -6.75,
+     0.0,
+     27.347
+    ],
+    [
+     -6.5,
+     0.0,
+     36.5
+    ]
+   ],
+   "length": 9.156,
+   "clearDistance": 24.151,
+   "maxSpeed": 5,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#B9C0C7",
+   "way": "straight",
+   "turnSignal": "auto",
+   "hazards": false
+  },
+  {
+   "id": "truck_1",
+   "type": "truck",
+   "name": "Грузовик",
+   "config": {
+    "id": "truck_1",
+    "type": "truck",
+    "name": "Грузовик",
+    "side": "cross_right",
+    "targetAction": "straight",
+    "color": "#FFA53C",
+    "position": [
+     -10.25,
+     0.0,
+     28.52
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -10.25,
+      28.52
+     ],
+     [
+      -10.5,
+      36
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.915,
+   "halfWidth": 1.046,
+   "badge": {
+    "text": {
+     "ru": "Грузовик",
+     "en": "Truck",
+     "kk": "Жүк көлігі"
+    },
+    "color": "#FFA53C",
+    "height": 3.4
+   },
+   "pos": [
+    -10.25,
+    0.0,
+    28.52
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -10.25,
+     0.0,
+     28.52
+    ],
+    [
+     -10.5,
+     0.0,
+     36
+    ]
+   ],
+   "length": 7.484,
+   "clearDistance": 18.415,
+   "maxSpeed": 12,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": false,
+   "paint": null,
+   "way": "straight",
+   "turnSignal": "auto",
+   "hazards": false
+  }
+ ],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 29 · Вопрос 16",
+   "title": "Можно ли Вам, управляя грузовым автомобилем, осуществить опережение в данной ситуации?",
+   "options": [
+    "Можно",
+    "Можно, если разрешенная максимальная масса автомобиля не более 2,5 т",
+    "Нельзя"
+   ],
+   "explanation": "На любых дорогах, имеющих для движения в данном направлении три полосы и более, занимать крайнюю левую полосу разрешается только при интенсивном движении, когда заняты другие полосы, а также для поворота налево или разворота, а грузовым автомобилям с р.м.м. более 2,5 т - только для поворота налево или разворота.Осуществить опережение можно, если р.м.м. грузового автомобиля не более 2,5 т.(Пункт 9.4 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 29 · Question 16",
+   "title": "Is it possible for you, while driving a truck, to get ahead in this situation?",
+   "options": [
+    "Can",
+    "It is possible if the permissible maximum weight of the vehicle is no more than 2.5 tons",
+    "It is forbidden"
+   ],
+   "explanation": "On any roads that have three or more lanes for traffic in a given direction, the leftmost lane is allowed to occupy only during heavy traffic, when other lanes are occupied, as well as for turning left or making a U-turn, and trucks with r.m.m. more than 2.5 tons - only for turning left or making a U-turn. You can advance if the r.m.m. truck no more than 2.5 tons (Clause 9.4 of traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "29-билет · 16-сұрақ",
+   "title": "Сіз жүк көлігін жүргізіп отырып, бұл жағдайда алға шығуға бола ма?",
+   "options": [
+    "Иә",
+    "Көлік құралының рұқсат етілген максималды салмағы 2,5 тоннадан аспайтын болса, рұқсат етіледі.",
+    "Ол тыйым салынған"
+   ],
+   "explanation": "Белгілі бір бағыттағы қозғалыс үшін үш және одан да көп жолақтары бар кез келген жолдарда ең сол жақ жолақ қозғалыстың қарқынды кезінде, басқа жолақтарда болған кезде, сондай-ақ солға бұрылу немесе кері бұрылу үшін және жүк көліктері үшін рұқсат етіледі. 2,5 тоннадан астам - тек солға бұрылу немесе кері бұрылу үшін. Жүк көлігінің рұқсат етілген ең жоғары массасы 2,5 тоннадан аспаса ғана басып озуға болады. (Жол қозғалысы ережелерінің 9.4-тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 165,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": true,
+ "sourceQuestionId": "10cb8c080b8864b0f54fe9a476a9b5d9",
+ "sourceCategory": "ab",
+ "sourceImage": "a5c3ed06da826a9d024036e2b40b7e43",
+ "playerPlacement": "free",
+ "questionView": {
+  "centre": [
+   -7.712,
+   27.337
+  ],
+  "height": 20.4,
+  "yaw": -0.035,
+  "pitch": 0.59,
+  "elevation": 0
+ }
+}

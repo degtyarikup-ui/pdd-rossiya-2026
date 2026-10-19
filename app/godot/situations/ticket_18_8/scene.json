@@ -3410,7 +3410,8 @@
      -12,
      -2.1
     ]
-   ]
+   ],
+   "arrowhead": true
   },
   {
    "label": "Б",
@@ -3435,7 +3436,8 @@
      -12,
      2.1
     ]
-   ]
+   ],
+   "arrowhead": true
   },
   {
    "label": "В",
@@ -3448,10 +3450,20 @@
      -0.9,
      9
     ]
-   ]
+   ],
+   "arrowhead": true
   }
  ],
  "lights": [],
  "actors": [],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
+ "questionView": {
+  "centre": [
+   -5.763,
+   2.243
+  ],
+  "height": 37.353
+ },
  "officers": []
 }

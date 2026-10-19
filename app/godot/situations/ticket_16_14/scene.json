@@ -3099,8 +3099,8 @@
      -14
     ],
     [
-     -7.5,
-     -11
+     -9,
+     -10.5
     ]
    ],
    "exitYaw": -1.571
@@ -3335,7 +3335,8 @@
       -63,
       -1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.454,
    "halfWidth": 1.09,
@@ -3393,13 +3394,17 @@
    ],
    "length": 77.551,
    "clearDistance": 47.265,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": false
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#1F3A5F",
+   "way": "straight",
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "ring_moto",
@@ -3444,7 +3449,8 @@
       -63,
       -5.25
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.075,
    "halfWidth": 0.949,
@@ -3497,21 +3503,30 @@
    ],
    "length": 78.474,
    "clearDistance": 58.439,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": null,
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": false
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#C0392B",
+   "way": "straight",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   -3.685,
-   7.092
+   -0.082,
+   1.959
   ],
-  "height": 55.163
+  "height": 50.251,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  },
  "officers": []
 }

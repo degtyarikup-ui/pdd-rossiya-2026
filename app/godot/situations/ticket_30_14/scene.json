@@ -3095,19 +3095,7 @@
     ],
     [
      -1.8,
-     -4.7
-    ],
-    [
-     -1.8,
-     4.7
-    ],
-    [
-     -1.8,
      5.2
-    ],
-    [
-     -1.8,
-     24.7
     ]
    ],
    "exitYaw": 0
@@ -3408,7 +3396,8 @@
       1.8,
       -56.0
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.84,
    "halfWidth": 0.983,
@@ -3452,7 +3441,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "npc_cart",
@@ -3480,7 +3473,8 @@
       55.257,
       19.374
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.865,
    "halfWidth": 0.85,
@@ -3524,9 +3518,14 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
  "officers": []
 }

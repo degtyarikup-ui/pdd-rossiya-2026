@@ -3160,7 +3160,7 @@
  "regulator": false,
  "centerZ": 0,
  "startZ": -26,
- "stopZ": -21,
+ "stopZ": -16,
  "playerStartX": -2.75,
  "playerStartRotY": 0.0,
  "leftLane": 1.8,
@@ -3186,7 +3186,7 @@
    "points": [
     [
      -2.75,
-     -21
+     -16
     ],
     [
      -2.75,
@@ -3211,7 +3211,7 @@
    "points": [
     [
      -2.75,
-     -21
+     -16
     ],
     [
      -2.75,
@@ -3264,7 +3264,7 @@
    "points": [
     [
      -2.75,
-     -21
+     -16
     ],
     [
      -2.75,
@@ -3317,7 +3317,7 @@
    "points": [
     [
      -2.75,
-     -21
+     -16
     ],
     [
      -2.75,
@@ -3373,7 +3373,8 @@
  },
  "trafficLights": {
   "state": "red",
-  "arrow": null
+  "arrow": null,
+  "tram": null
  },
  "crop": 90,
  "roadMask": {
@@ -3443,7 +3444,10 @@
    ],
    "yaw": 3.142,
    "scale": 1,
-   "arrow": null
+   "arrow": null,
+   "tram": null,
+   "mountedSigns": [],
+   "mountedMainRoad": []
   }
  ],
  "actors": [
@@ -3461,17 +3465,17 @@
     "position": [
      -6,
      0.0,
-     -23
+     -18.5
     ],
     "rotationY": 0,
     "route": [
      [
       -6,
-      -23
+      -18.5
      ],
      [
-      -7,
-      -4
+      -7.5,
+      -3.5
      ],
      [
       -23.5,
@@ -3481,7 +3485,8 @@
       -48.5,
       -1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -3497,7 +3502,7 @@
    "pos": [
     -6,
     0.0,
-    -23
+    -18.5
    ],
    "yaw": 0,
    "scale": [
@@ -3509,12 +3514,12 @@
     [
      -6,
      0.0,
-     -23
+     -18.5
     ],
     [
-     -7,
+     -7.5,
      0.0,
-     -4
+     -3.5
     ],
     [
      -23.5,
@@ -3527,7 +3532,7 @@
      -1.8
     ]
    ],
-   "length": 60.716,
+   "length": 56.201,
    "clearDistance": 18.415,
    "maxSpeed": 15,
    "signalPlan": null,
@@ -3535,8 +3540,24 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": false,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#317ED4",
+   "way": "right",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": false,
+ "questionView": {
+  "centre": [
+   -0.035,
+   5.221
+  ],
+  "height": 25.016,
+  "yaw": 0.002,
+  "pitch": 0.414,
+  "elevation": 0
+ },
  "officers": []
 }

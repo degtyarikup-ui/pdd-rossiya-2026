@@ -3406,7 +3406,8 @@
       1.8,
       -56.0
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.34,
    "halfWidth": 1.023,
@@ -3450,7 +3451,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "pedestrian",
@@ -3489,7 +3494,8 @@
       55.039,
       6.256
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.229,
    "halfWidth": 0.381,
@@ -3543,7 +3549,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "pedestrian_2",
@@ -3575,22 +3585,19 @@
       1.829
      ],
      [
-      12.269,
-      4.952
+      13.5,
+      4.5
      ],
      [
-      17.207,
-      5.632
+      25,
+      5
      ],
      [
-      23.196,
-      5.88
-     ],
-     [
-      52.155,
-      5.548
+      53,
+      5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.208,
    "halfWidth": 0.381,
@@ -3626,27 +3633,22 @@
      1.829
     ],
     [
-     12.269,
+     13.5,
      0.0,
-     4.952
+     4.5
     ],
     [
-     17.207,
+     25,
      0.0,
-     5.632
+     5
     ],
     [
-     23.196,
+     53,
      0.0,
-     5.88
-    ],
-    [
-     52.155,
-     0.0,
-     5.548
+     5
     ]
    ],
-   "length": 52.309,
+   "length": 52.181,
    "clearDistance": 12.5,
    "maxSpeed": 3.6,
    "signalPlan": null,
@@ -3654,8 +3656,24 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
+ "questionView": {
+  "centre": [
+   3.671,
+   7.208
+  ],
+  "height": 37.968,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
+ },
  "officers": []
 }

@@ -2818,7 +2818,7 @@
  "regulator": false,
  "centerZ": 0,
  "startZ": -26,
- "stopZ": -23.5,
+ "stopZ": -26.25,
  "playerStartX": -1.75,
  "playerStartRotY": 0.0,
  "leftLane": 1.8,
@@ -2851,28 +2851,8 @@
      -7.5
     ],
     [
-     -2.687,
-     7.222
-    ],
-    [
      -2.755,
      7.717
-    ],
-    [
-     -3.261,
-     11.426
-    ],
-    [
-     -4.083,
-     16.957
-    ],
-    [
-     -4.945,
-     22.297
-    ],
-    [
-     -5.765,
-     26.981
     ]
    ],
    "exitYaw": -0.125
@@ -2881,7 +2861,7 @@
    "points": [
     [
      -1.75,
-     -23.5
+     -26.25
     ],
     [
      -1.75,
@@ -2934,7 +2914,7 @@
    "points": [
     [
      -1.75,
-     -23.5
+     -26.25
     ],
     [
      -1.75,
@@ -2987,7 +2967,7 @@
    "points": [
     [
      -1.75,
-     -23.5
+     -26.25
     ],
     [
      -1.75,
@@ -3220,6 +3200,8 @@
    "waitsForPlayer": false,
    "staysPut": false,
    "paint": "#C0392B",
+   "way": "left",
+   "turnSignal": "auto",
    "hazards": false
   },
   {
@@ -3318,16 +3300,22 @@
    "waitsForPlayer": false,
    "staysPut": false,
    "paint": "#4D7768",
+   "way": "right",
+   "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   0.081,
-   -0.462
+   -3.245,
+   -2.027
   ],
-  "height": 42.555
+  "height": 22.219,
+  "yaw": 0.001,
+  "pitch": 0.568,
+  "elevation": 0
  },
  "officers": []
 }

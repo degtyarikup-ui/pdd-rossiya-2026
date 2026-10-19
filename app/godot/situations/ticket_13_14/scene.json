@@ -3330,7 +3330,8 @@
       -26,
       5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.229,
    "halfWidth": 0.411,
@@ -3384,7 +3385,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "pedestrian_2",
@@ -3420,7 +3425,8 @@
       -20,
       6
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.229,
    "halfWidth": 0.411,
@@ -3474,7 +3480,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "pedestrian_3",
@@ -3510,7 +3520,8 @@
       24.5,
       -5.5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.229,
    "halfWidth": 0.411,
@@ -3564,7 +3575,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "pedestrian_4",
@@ -3600,7 +3615,8 @@
       19,
       5.5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 0.229,
    "halfWidth": 0.411,
@@ -3654,7 +3670,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "truck_1",
@@ -3694,7 +3714,8 @@
       48.5,
       1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.915,
    "halfWidth": 1.046,
@@ -3753,9 +3774,15 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": "left",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    0.086,

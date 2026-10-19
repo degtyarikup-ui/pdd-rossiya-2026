@@ -3048,20 +3048,8 @@
      -12.5
     ],
     [
-     -1.75,
-     -7.5
-    ],
-    [
-     -1.75,
-     7.5
-    ],
-    [
-     -1.75,
-     8
-    ],
-    [
-     -1.75,
-     27.5
+     -2,
+     15
     ]
    ],
    "exitYaw": 0
@@ -3315,14 +3303,15 @@
       13
      ],
      [
-      -4.5,
-      -1
+      -4,
+      -0.5
      ],
      [
       -47.5,
       -1.75
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 3.585,
    "halfWidth": 0.84,
@@ -3353,9 +3342,9 @@
      13
     ],
     [
-     -4.5,
+     -4,
      0.0,
-     -1
+     -0.5
     ],
     [
      -47.5,
@@ -3363,9 +3352,9 @@
      -1.75
     ]
    ],
-   "length": 58.338,
+   "length": 58.191,
    "clearDistance": 26.522,
-   "maxSpeed": 12,
+   "maxSpeed": 15,
    "signalPlan": [
     {
      "from": 0,
@@ -3376,8 +3365,11 @@
    "stopAtDistance": null,
    "stopFor": null,
    "holdFor": null,
-   "waitsForPlayer": true,
-   "staysPut": false
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#F08A24",
+   "way": "left",
+   "hazards": false
   },
   {
    "id": "npc_car",
@@ -3403,7 +3395,7 @@
      ],
      [
       2,
-      -3
+      -2
      ],
      [
       -16.5,
@@ -3413,7 +3405,8 @@
       -35.5,
       -5
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.84,
    "halfWidth": 0.983,
@@ -3446,7 +3439,7 @@
     [
      2,
      0.0,
-     -3
+     -2
     ],
     [
      -16.5,
@@ -3459,9 +3452,9 @@
      -5
     ]
    ],
-   "length": 51.493,
+   "length": 50.657,
    "clearDistance": 25.214,
-   "maxSpeed": 12,
+   "maxSpeed": 5,
    "signalPlan": [
     {
      "from": 0,
@@ -3473,9 +3466,14 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#4D7768",
+   "way": null,
+   "hazards": false
   }
  ],
+ "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    -0.855,

@@ -1,0 +1,1278 @@
+{
+ "id": "ticket_24_6",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4,
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.8,
+     4.7
+    ],
+    [
+     -1.8,
+     5.2
+    ],
+    [
+     -1.8,
+     24.7
+    ]
+   ],
+   "exitYaw": 0
+  },
+  "left": {
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.709,
+     -3.101
+    ],
+    [
+     -1.431,
+     -1.745
+    ],
+    [
+     -0.955,
+     -0.624
+    ],
+    [
+     -0.274,
+     0.274
+    ],
+    [
+     0.624,
+     0.955
+    ],
+    [
+     1.745,
+     1.431
+    ],
+    [
+     3.101,
+     1.709
+    ],
+    [
+     4.7,
+     1.8
+    ],
+    [
+     5.2,
+     1.8
+    ],
+    [
+     24.7,
+     1.8
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  "right": {
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.841,
+     -3.987
+    ],
+    [
+     -1.965,
+     -3.382
+    ],
+    [
+     -2.177,
+     -2.881
+    ],
+    [
+     -2.481,
+     -2.481
+    ],
+    [
+     -2.881,
+     -2.177
+    ],
+    [
+     -3.382,
+     -1.965
+    ],
+    [
+     -3.987,
+     -1.841
+    ],
+    [
+     -4.7,
+     -1.8
+    ],
+    [
+     -5.2,
+     -1.8
+    ],
+    [
+     -24.7,
+     -1.8
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  "uturn": {
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.8,
+     -7.7
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "exitYaw": 3.142
+  }
+ },
+ "props": [
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -15.138,
+    0.0,
+    -38.986
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ddd1bc"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -13,
+    0.0,
+    -56
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    -16.225,
+    0.0,
+    -17.872
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ccd6d9"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -13,
+    0.0,
+    -30
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -16.903,
+    0.0,
+    18.813
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#e0d9ce"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -13,
+    0.0,
+    40
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    -33.576,
+    0.0,
+    17.979
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#d5dfd0"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -13,
+    0.0,
+    68
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -7.26,
+    0.0,
+    -71.322
+   ],
+   "yaw": 3.14,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -7.26,
+    0.0,
+    -37.322
+   ],
+   "yaw": 3.14,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -7.121,
+    0.0,
+    26.843
+   ],
+   "yaw": 3.14,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -7.121,
+    0.0,
+    60.843
+   ],
+   "yaw": 3.14,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -10.0,
+    0.0,
+    -49
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -10.0,
+    0.0,
+    43
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    17.485,
+    0.0,
+    -71.47
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ddd1bc"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    13,
+    0.0,
+    -56
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    17.581,
+    0.0,
+    -17.968
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#ccd6d9"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    13,
+    0.0,
+    -30
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    16.338,
+    0.0,
+    18.386
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#e0d9ce"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    24.736,
+    0.0,
+    13.084
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    49.567,
+    0.0,
+    16.182
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": "#d5dfd0"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -20.099,
+    0.0,
+    52.393
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.15,
+    1.15,
+    1.15
+   ],
+   "tint": "#5f8f3e"
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    7.013,
+    0.0,
+    -59.548
+   ],
+   "yaw": -0.001,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    7.013,
+    0.0,
+    -25.548
+   ],
+   "yaw": -0.001,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    7.241,
+    0.0,
+    41.222
+   ],
+   "yaw": -0.001,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    7.241,
+    0.0,
+    75.222
+   ],
+   "yaw": -0.001,
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    13.888,
+    0.0,
+    -47.905
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    32.493,
+    0.0,
+    17.656
+   ],
+   "yaw": 0.0,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    12.917,
+    0.0,
+    50.646
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    14.878,
+    0.0,
+    71.565
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    78.721,
+    0.0,
+    13.799
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    9.02,
+    0.0,
+    67.613
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    9.789,
+    0.0,
+    18.447
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    -10.131,
+    0.0,
+    -20.785
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    -10.051,
+    0.0,
+    -37.738
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -30.247,
+    0.0,
+    -39.562
+   ],
+   "yaw": 4.562,
+   "scale": [
+    1.144,
+    1.144,
+    1.144
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -70.747,
+    0.0,
+    -15.262
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -82.897,
+    0.0,
+    -15.262
+   ],
+   "yaw": 0.812,
+   "scale": [
+    1.067,
+    1.067,
+    1.067
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    -42.397,
+    0.0,
+    -15.262
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -30.247,
+    0.0,
+    -15.262
+   ],
+   "yaw": 2.256,
+   "scale": [
+    1.198,
+    1.198,
+    1.198
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -56.572,
+    0.0,
+    -19.987
+   ],
+   "yaw": 2.905,
+   "scale": [
+    1.088,
+    1.088,
+    1.088
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -56.572,
+    0.0,
+    -12.562
+   ],
+   "yaw": 2.289,
+   "scale": [
+    1.238,
+    1.238,
+    1.238
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    29.868,
+    0.0,
+    -39.662
+   ],
+   "yaw": 5.522,
+   "scale": [
+    1.013,
+    1.013,
+    1.013
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    42.018,
+    0.0,
+    -15.362
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    29.868,
+    0.0,
+    -15.362
+   ],
+   "yaw": 0.812,
+   "scale": [
+    1.067,
+    1.067,
+    1.067
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    70.368,
+    0.0,
+    -15.362
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    82.518,
+    0.0,
+    -15.362
+   ],
+   "yaw": 2.256,
+   "scale": [
+    1.198,
+    1.198,
+    1.198
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    56.193,
+    0.0,
+    -27.512
+   ],
+   "yaw": 1.733,
+   "scale": [
+    1.181,
+    1.181,
+    1.181
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    56.193,
+    0.0,
+    -20.087
+   ],
+   "yaw": 2.905,
+   "scale": [
+    1.088,
+    1.088,
+    1.088
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    56.193,
+    0.0,
+    -12.662
+   ],
+   "yaw": 2.289,
+   "scale": [
+    1.238,
+    1.238,
+    1.238
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    50.793,
+    0.0,
+    -27.512
+   ],
+   "yaw": 0,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    61.593,
+    0.0,
+    -27.512
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -12.053,
+    0.0,
+    47.555
+   ],
+   "yaw": 0.812,
+   "scale": [
+    1.255,
+    1.255,
+    1.255
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -12.843,
+    0.0,
+    52.465
+   ],
+   "yaw": 5.765,
+   "scale": [
+    1.418,
+    1.418,
+    1.418
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -18.358,
+    0.0,
+    42.024
+   ],
+   "yaw": 0.812,
+   "scale": [
+    1.255,
+    1.255,
+    1.255
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -19.148,
+    0.0,
+    46.935
+   ],
+   "yaw": 5.765,
+   "scale": [
+    1.418,
+    1.418,
+    1.418
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -14.674,
+    0.0,
+    62.49
+   ],
+   "yaw": 0.812,
+   "scale": [
+    1.255,
+    1.255,
+    1.255
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -25.814,
+    0.0,
+    65.971
+   ],
+   "yaw": 0.812,
+   "scale": [
+    1.255,
+    1.255,
+    1.255
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.604,
+    0.0,
+    70.881
+   ],
+   "yaw": 5.765,
+   "scale": [
+    1.418,
+    1.418,
+    1.418
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -11.756,
+    0.0,
+    78.79
+   ],
+   "yaw": 0.812,
+   "scale": [
+    1.255,
+    1.255,
+    1.255
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -12.546,
+    0.0,
+    83.7
+   ],
+   "yaw": 5.765,
+   "scale": [
+    1.418,
+    1.418,
+    1.418
+   ],
+   "tint": null
+  }
+ ],
+ "actors": [],
+ "lights": [
+  {
+   "pos": [
+    -4.524,
+    0.0,
+    -8.538
+   ],
+   "yaw": 3.141592653589793,
+   "scale": 1.3,
+   "arrow": null,
+   "tram": null,
+   "mountedSigns": [],
+   "mountedMainRoad": []
+  },
+  {
+   "pos": [
+    4.628,
+    0.0,
+    8.81
+   ],
+   "yaw": 0.0,
+   "scale": 1.3,
+   "arrow": null,
+   "tram": null,
+   "mountedSigns": [],
+   "mountedMainRoad": []
+  },
+  {
+   "pos": [
+    9.387,
+    0.0,
+    -4.538
+   ],
+   "yaw": 1.5707963267948966,
+   "scale": 1.3,
+   "arrow": null,
+   "tram": null,
+   "mountedSigns": [],
+   "mountedMainRoad": []
+  },
+  {
+   "pos": [
+    -9.092,
+    0.0,
+    4.49
+   ],
+   "yaw": -1.5707963267948966,
+   "scale": 1.3,
+   "arrow": null,
+   "tram": null,
+   "mountedSigns": [],
+   "mountedMainRoad": []
+  }
+ ],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": {
+  "state": "flashing_yellow",
+  "arrow": null,
+  "tram": null
+ },
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 24 · Вопрос 6",
+   "title": "Что означает мигание жёлтого сигнала светофора?",
+   "options": [
+    "Предупреждает о неисправности светофора",
+    "Разрешает движение и информирует о наличии нерегулируемого перекрёстка или пешеходного перехода",
+    "Запрещает дальнейшее движение"
+   ],
+   "explanation": "Жёлтый мигающий сигнал разрешает движение и информирует о наличии нерегулируемого перекрёстка или пешеходного перехода, предупреждает участников дорожного движения об опасности.(Пункт 6.2 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 24 · Question 6",
+   "title": "What does a flashing yellow traffic light mean?",
+   "options": [
+    "Warns of a malfunction of the traffic light",
+    "Allows movement and informs about the presence of an unregulated intersection or pedestrian crossing",
+    "Prohibits further movement"
+   ],
+   "explanation": "A yellow flashing signal allows movement and informs about the presence of an uncontrolled intersection or pedestrian crossing, warns road users about the danger. (Clause 6.2 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "24-билет · 6-сұрақ",
+   "title": "Сары бағдаршамның жыпылықтауы нені білдіреді?",
+   "options": [
+    "Бағдаршамның істен шығуын ескертеді",
+    "Қозғалысқа рұқсат береді және реттелмейтін қиылыс пен жаяу жүргіншілер өткелінің болуы туралы хабарлайды",
+    "Әрі қарай қозғалуға тыйым салады"
+   ],
+   "explanation": "Сары жыпылықтайтын сигнал қозғалысқа мүмкіндік береді және бақыланбайтын қиылыстың немесе жаяу жүргіншілер өткелінің болуы туралы хабарлайды, жол қозғалысына қатысушыларға қауіп туралы ескертеді. (Жол қозғалысы ережесінің 6.2 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 210,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "712bf5cf673e05d4113df3756f4d9809",
+ "sourceCategory": "ab",
+ "sourceImage": null,
+ "questionPool": {
+  "sourceQuestionId": "712bf5cf673e05d4113df3756f4d9809",
+  "category": "ab",
+  "ticket": 24,
+  "number": 6
+ },
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "playerPlacement": "street",
+ "questionView": {
+  "centre": [
+   -2.646,
+   -2.019
+  ],
+  "height": 15.593,
+  "yaw": -0.008,
+  "pitch": 0.48,
+  "elevation": 0
+ }
+}

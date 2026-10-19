@@ -2789,16 +2789,8 @@
      -8.5
     ],
     [
-     -2.75,
-     8.5
-    ],
-    [
-     -2.75,
-     9
-    ],
-    [
-     -2.75,
-     28.5
+     -2.5,
+     -3
     ]
    ],
    "exitYaw": 0
@@ -2977,6 +2969,7 @@
  "lights": [],
  "actors": [],
  "playerPlacement": "street",
+ "showPlayerGuide": false,
  "questionView": {
   "centre": [
    1.268,

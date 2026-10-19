@@ -3490,10 +3490,11 @@
      -3
     ],
     [
-     -10.5,
+     -13,
      -2
     ]
-   ]
+   ],
+   "arrowhead": true
   }
  ],
  "lights": [
@@ -3506,16 +3507,23 @@
    "yaw": -3.142,
    "scale": 1.16,
    "arrow": "right",
-   "tram": null
+   "tram": null,
+   "mountedSigns": [],
+   "mountedMainRoad": []
   }
  ],
  "actors": [],
+ "playerPlacement": "street",
+ "showPlayerGuide": false,
  "questionView": {
   "centre": [
-   -1.952,
-   0.097
+   -7.137,
+   11.609
   ],
-  "height": 29.184
+  "height": 24.377,
+  "yaw": -0.034,
+  "pitch": 0.387,
+  "elevation": 0
  },
  "officers": []
 }

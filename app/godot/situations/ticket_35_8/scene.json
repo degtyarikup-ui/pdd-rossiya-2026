@@ -2604,13 +2604,13 @@
     "position": [
      6,
      0.0,
-     -6.5
+     -7
     ],
     "rotationY": 0,
     "route": [
      [
       6,
-      -6.5
+      -7
      ],
      [
       6,
@@ -2633,7 +2633,7 @@
    "pos": [
     6,
     0.0,
-    -6.5
+    -7
    ],
    "yaw": 0,
    "scale": [
@@ -2645,7 +2645,7 @@
     [
      6,
      0.0,
-     -6.5
+     -7
     ],
     [
      6,
@@ -2653,7 +2653,7 @@
      17
     ]
    ],
-   "length": 23.5,
+   "length": 24.0,
    "clearDistance": 12.5,
    "maxSpeed": 3.6,
    "signalPlan": null,
@@ -2662,6 +2662,9 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
    "hazards": false
   },
   {
@@ -2736,10 +2739,14 @@
    "holdFor": null,
    "waitsForPlayer": false,
    "staysPut": false,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
    5.197,

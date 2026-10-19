@@ -3137,48 +3137,12 @@
      -13.1
     ],
     [
-     -1.8,
-     -4.7
+     -0.5,
+     0.5
     ],
     [
-     -1.709,
-     -3.101
-    ],
-    [
-     -1.431,
-     -1.745
-    ],
-    [
-     -0.955,
-     -0.624
-    ],
-    [
-     -0.274,
-     0.274
-    ],
-    [
-     0.624,
-     0.955
-    ],
-    [
-     1.745,
-     1.431
-    ],
-    [
-     3.101,
-     1.709
-    ],
-    [
-     4.7,
-     1.8
-    ],
-    [
-     5.2,
-     1.8
-    ],
-    [
-     24.7,
-     1.8
+     8.5,
+     2
     ]
    ],
    "exitYaw": 1.571
@@ -3379,10 +3343,19 @@
       1.8
      ],
      [
-      -9.64,
-      1.8
+      0,
+      0.5
+     ],
+     [
+      2,
+      -13
+     ],
+     [
+      1.8,
+      -44.7
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.19,
    "halfWidth": 1.023,
@@ -3413,12 +3386,22 @@
      1.8
     ],
     [
-     -9.64,
+     0,
      0.0,
-     1.8
+     0.5
+    ],
+    [
+     2,
+     0.0,
+     -13
+    ],
+    [
+     1.8,
+     0.0,
+     -44.7
     ]
    ],
-   "length": 0.0,
+   "length": 55.075,
    "clearDistance": 24.151,
    "maxSpeed": 15,
    "signalPlan": [
@@ -3432,7 +3415,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": false,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#B9C0C7",
+   "way": "left",
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "motorcycle_1",
@@ -3462,10 +3449,11 @@
       -1.8
      ],
      [
-      7.824,
+      -44.7,
       -1.8
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 1.075,
    "halfWidth": 0.949,
@@ -3496,12 +3484,12 @@
      -1.8
     ],
     [
-     7.824,
+     -44.7,
      0.0,
      -1.8
     ]
    ],
-   "length": 0.0,
+   "length": 52.524,
    "clearDistance": 58.439,
    "maxSpeed": 5,
    "signalPlan": null,
@@ -3509,7 +3497,11 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": null,
+   "way": "straight",
+   "turnSignal": "auto",
+   "hazards": false
   },
   {
    "id": "bus_1",
@@ -3535,9 +3527,10 @@
      ],
      [
       1.8,
-      9.417
+      -44.7
      ]
-    ]
+    ],
+    "hazard": false
    },
    "halfLength": 2.992,
    "halfWidth": 1.046,
@@ -3570,10 +3563,10 @@
     [
      1.8,
      0.0,
-     9.417
+     -44.7
     ]
    ],
-   "length": 0.0,
+   "length": 54.117,
    "clearDistance": 27.945,
    "maxSpeed": 12,
    "signalPlan": [
@@ -3587,16 +3580,24 @@
    "stopFor": null,
    "holdFor": null,
    "waitsForPlayer": true,
-   "staysPut": false
+   "staysPut": false,
+   "paint": "#E8C547",
+   "way": "straight",
+   "turnSignal": "auto",
+   "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   -0.652,
-   6.024
+   -1.1,
+   4.832
   ],
-  "height": 38.704
+  "height": 37.762,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  },
  "officers": []
 }

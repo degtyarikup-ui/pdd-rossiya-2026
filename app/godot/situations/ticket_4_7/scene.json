@@ -1,0 +1,594 @@
+{
+ "id": "ticket_4_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad_priority_turn",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "right",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "left": {
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.767,
+     -3.001
+    ],
+    [
+     -1.647,
+     -1.618
+    ],
+    [
+     -1.406,
+     -0.476
+    ],
+    [
+     -1.013,
+     0.5
+    ],
+    [
+     -0.434,
+     1.385
+    ],
+    [
+     0.362,
+     2.256
+    ],
+    [
+     1.41,
+     3.186
+    ],
+    [
+     2.741,
+     4.252
+    ],
+    [
+     3.135,
+     4.559
+    ],
+    [
+     3.844,
+     5.113
+    ],
+    [
+     6.281,
+     7.183
+    ],
+    [
+     8.725,
+     9.426
+    ],
+    [
+     11.174,
+     11.842
+    ],
+    [
+     13.628,
+     14.432
+    ],
+    [
+     16.087,
+     17.195
+    ],
+    [
+     16.973,
+     18.252
+    ]
+   ],
+   "exitYaw": 0.952
+  },
+  "right": {
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.841,
+     -3.987
+    ],
+    [
+     -1.965,
+     -3.382
+    ],
+    [
+     -2.177,
+     -2.881
+    ],
+    [
+     -2.481,
+     -2.481
+    ],
+    [
+     -2.881,
+     -2.177
+    ],
+    [
+     -3.382,
+     -1.965
+    ],
+    [
+     -3.987,
+     -1.841
+    ],
+    [
+     -4.7,
+     -1.8
+    ],
+    [
+     -5.2,
+     -1.8
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  "uturn": {
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.8,
+     -7.7
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "exitYaw": 3.142
+  }
+ },
+ "props": [
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    -13.007,
+    0.0,
+    -44.775
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#e8cfa8"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -14,
+    0.0,
+    -58
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f"
+  },
+  {
+   "prop": "buildings/home_1",
+   "pos": [
+    -13.729,
+    0.0,
+    -13.86
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#e9d5cc"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -14,
+    0.0,
+    -32
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f"
+  },
+  {
+   "prop": "buildings/home_2",
+   "pos": [
+    -7.249,
+    0.0,
+    14.365
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#c8d9c0"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -16.19,
+    0.0,
+    10.539
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f"
+  },
+  {
+   "prop": "buildings/home_3",
+   "pos": [
+    23.838,
+    0.0,
+    53.253
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#d5dce5"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    4.219,
+    0.0,
+    14.659
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -51.42,
+    0.0,
+    -9.794
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#64874c"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -34.986,
+    0.0,
+    11.648
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -75.42,
+    0.0,
+    -9.794
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#64874c"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -58.986,
+    0.0,
+    11.648
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e"
+  },
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    12.29,
+    0.0,
+    -69.136
+   ],
+   "yaw": 3.141592653589793,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#e8cfa8"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    14,
+    0.0,
+    -58
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f"
+  },
+  {
+   "prop": "buildings/home_1",
+   "pos": [
+    13.349,
+    0.0,
+    -6.859
+   ],
+   "yaw": 3.141592653589793,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#e9d5cc"
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    14,
+    0.0,
+    -32
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#6f914f"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    23.385,
+    0.0,
+    4.191
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#64874c"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    46,
+    0.0,
+    19
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    30.016,
+    0.0,
+    15.912
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#64874c"
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    61.019,
+    0.0,
+    65.823
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": "#76914e"
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 4 · Вопрос 7",
+   "title": "Вы намерены продолжить движение по главной дороге. Обязаны ли Вы при этом включить указатели правого поворота?",
+   "options": [
+    "Обязаны",
+    "Обязаны, только при наличии движущегося сзади транспортного средства",
+    "Не обязаны"
+   ],
+   "explanation": "Независимо от того, куда Вы будете поворачивать на перекрёстке, налево или направо по главной дороге, обязательно следует включить соответствующий указатель поворота. В данной ситуации - включите правый указатель поворота. Ответ «обязаны».(«Дорожные знаки», пункт 8.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 4 · Question 7",
+   "title": "You intend to continue driving along the main road. Are you required to turn on the right turn indicators?",
+   "options": [
+    "Required",
+    "Obligated only if there is a vehicle moving behind",
+    "Not required"
+   ],
+   "explanation": "Regardless of where you turn at an intersection, left or right on the main road, you should definitely turn on the appropriate turn signal. In this situation, turn on the right turn signal. The answer is “obligated.” (“Road signs”, paragraph 8.1 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "4-билет · 7-сұрақ",
+   "title": "Сіз негізгі жолдың бойымен жүруді жалғастырасыз. Оң жақ бұрылыс көрсеткіштерін қосу қажет пе?",
+   "options": [
+    "Міндетті",
+    "Міндетті, артта қозғалатын көлік құралы болған жағдайда ғана",
+    "Міндетті емес"
+   ],
+   "explanation": "Негізгі жолдың қиылысында қай жерде, солға немесе оңға бұрылсаңыз да, міндетті түрде тиісті бұрылыс сигналын қосу керек. Бұл жағдайда оң жақ бұрылыс сигналын қосыңыз. Жауап «міндетті». («Жол белгілері», Жол қозғалысы ережелерінің 8.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "90d2364cae6370fdeb912e5fd283b3b3",
+ "sourceCategory": "ab",
+ "sourceImage": "865e627f03d58132c556e30b336e946a",
+ "assistantReview": {
+  "author": "codex",
+  "batch": "2026-10-16-first-12",
+  "status": "pending"
+ },
+ "sourceTextLength": 195,
+ "playerPlacement": "street",
+ "questionView": {
+  "centre": [
+   0,
+   -3
+  ],
+  "height": 26.943,
+  "yaw": 0.104,
+  "pitch": 0.519,
+  "elevation": 0
+ }
+}
