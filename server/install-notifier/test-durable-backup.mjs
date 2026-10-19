@@ -268,3 +268,87 @@ test('storage exceptions return a generic failure without leaking account IDs or
   try { response = await call(f); } finally { console.error = originalError; console.log = originalLog; }
   assert.equal(response.status, 404); assert.deepEqual(await response.json(), { error: 'Backup unavailable' }); assert.deepEqual(logs, []);
 });
+
+test('optional diagnostics reveal only authenticated encrypted enum/counts, never exception text or stored data', async () => {
+  const f = fixture([['private:google_fixture', 'private-payment-value']]);
+  f.env.DURABLE_BACKUP_DIAGNOSTICS = 'true';
+  f.state.storage.list = async () => { throw new Error('secret google_fixture private-payment'); };
+  const body = requestPayload(), response = await call(f, body);
+  assert.equal(response.status, 200); assert.equal(response.headers.get('content-type'), 'application/jose');
+  const ciphertext = await response.text(); assert.equal(ciphertext.includes('google_fixture'), false);
+  assert.equal(await verifyBackupHmac(f.env.DURABLE_BACKUP_HMAC_SECRET, 'response\n' + body.nonce + '\n' + ciphertext,
+    response.headers.get('x-backup-response-signature')), true);
+  const decrypted = await compactDecrypt(ciphertext, recipient.privateKey,
+    { keyManagementAlgorithms: ['RSA-OAEP-256'], contentEncryptionAlgorithms: ['A256GCM'] });
+  assert.equal(decrypted.protectedHeader.typ, 'pdd-durable-backup-diagnostic+jwe');
+  assert.deepEqual(JSON.parse(new TextDecoder().decode(decrypted.plaintext)), {
+    format: 'pdd-durable-backup-diagnostic', schema: 1, reason: 'storage_list', errorKind: 'Error',
+    entryCount: 0, pageCount: 0, encodedBytes: 0,
+  });
+  assert.equal(f.calls.writes, 0);
+});
+
+test('diagnostic phases identify failed API, pagination, codec, key order, alarm and snapshot checks', async () => {
+  for (const [expectedReason, modify] of [
+    ['storage_transaction', f => { f.state.storage.transaction = async () => { throw new Error('never disclose this'); }; }],
+    ['storage_api', f => { f.state.storage.getAlarm = undefined; }],
+    ['storage_page', f => { f.state.storage.list = async () => []; }],
+    ['key_validation', f => { f.state.storage.list = async () => new Map([['', 1]]); }],
+    ['key_order', f => { f.state.storage.list = async () => new Map([['b', 1], ['a', 2]]); }],
+    ['value_encoding', f => { f.state.storage.list = async () => new Map([['fixture', new Set([1])]]); }],
+    ['value_byte_limit', f => { f.state.storage.list = async () => new Map([['fixture', 'x'.repeat(BACKUP_LIMITS.maxValueBytes)]]); }],
+    ['storage_alarm', f => { f.state.storage.getAlarm = async () => { const error = new Error('account data'); error.name = 'private customer text'; throw error; }; }],
+    ['snapshot_validation', f => { f.state.storage.list = async () => new Map([['chunk:orphan:0', 'eA==']]); }],
+  ]) {
+    const f = fixture(); f.env.DURABLE_BACKUP_DIAGNOSTICS = 'true'; modify(f);
+    const response = await call(f); assert.equal(response.status, 200);
+    const { plaintext, protectedHeader } = await compactDecrypt(await response.text(), recipient.privateKey,
+      { keyManagementAlgorithms: ['RSA-OAEP-256'], contentEncryptionAlgorithms: ['A256GCM'] });
+    assert.equal(protectedHeader.typ, 'pdd-durable-backup-diagnostic+jwe');
+    const diagnostic = JSON.parse(new TextDecoder().decode(plaintext));
+    assert.equal(diagnostic.reason, expectedReason);
+    assert.deepEqual(Object.keys(diagnostic).sort(), ['encodedBytes', 'entryCount', 'errorKind', 'format', 'pageCount', 'reason', 'schema']);
+    assert.ok(Number.isSafeInteger(diagnostic.entryCount)); assert.ok(Number.isSafeInteger(diagnostic.pageCount));
+    assert.ok(Number.isSafeInteger(diagnostic.encodedBytes));
+    if (expectedReason === 'storage_alarm') assert.equal(diagnostic.errorKind, 'UnknownError');
+    assert.equal(f.calls.writes, 0);
+  }
+});
+
+test('diagnostic counters retain successfully read pages and entries before a later page failure', async () => {
+  const f = fixture(Array.from({ length: 128 }, (_, i) => ['fixture:' + String(i).padStart(4, '0'), i]));
+  f.env.DURABLE_BACKUP_DIAGNOSTICS = 'true';
+  const originalList = f.state.storage.list.bind(f.state.storage);
+  f.state.storage.list = async options => { if (options.startAfter !== undefined) throw new TypeError('private page token'); return originalList(options); };
+  const response = await call(f), { plaintext } = await compactDecrypt(await response.text(), recipient.privateKey);
+  const diagnostic = JSON.parse(new TextDecoder().decode(plaintext));
+  assert.equal(diagnostic.reason, 'storage_list'); assert.equal(diagnostic.errorKind, 'TypeError');
+  assert.equal(diagnostic.entryCount, 128); assert.equal(diagnostic.pageCount, 1); assert.ok(diagnostic.encodedBytes > 0);
+});
+
+test('diagnostic flag never grants unauthenticated or invalid-recipient requests storage access or details', async () => {
+  const f = fixture(); f.env.DURABLE_BACKUP_DIAGNOSTICS = 'true';
+  for (const [body, options] of [[requestPayload(), { signature: 'A'.repeat(43) }],
+    [requestPayload({ recipientJwk: { ...recipientJwk, d: 'private-key-field' } }), {}]]) {
+    const response = await call(f, body, options);
+    assert.equal(response.status, 404); assert.deepEqual(await response.json(), { error: 'Backup unavailable' });
+  }
+  assert.equal(f.calls.transactions, 0); assert.equal(f.calls.writes, 0);
+});
+
+test('dense SQLite values whose lossless tags exceed 1 MiB preserve every array index and byte under the 8 MiB budget', async () => {
+  const value = { values: Array.from({ length: 45000 }, (_, index) => index % 10) };
+  assert.ok(Buffer.byteLength(JSON.stringify(value)) < 128 * 1024);
+  const encoded = encodeValue(value), encodedBytes = Buffer.byteLength(canonicalStringify(encoded));
+  assert.ok(encodedBytes > 1024 * 1024); assert.ok(encodedBytes < BACKUP_LIMITS.maxValueBytes);
+  assert.deepEqual(decodeValue(encoded), value);
+  const f = fixture([['dense:synthetic', value]]);
+  const snapshot = await snapshotStorage(f.state, { ...meta(), className: 'TrafficState' });
+  assert.equal(snapshot.entryCount, 1);
+  assert.equal(canonicalStringify(snapshot.entries[0].value), canonicalStringify(encoded));
+  assert.deepEqual(decodeValue(snapshot.entries[0].value), value);
+  assert.equal(BACKUP_LIMITS.maxValueBytes, 8 * 1024 * 1024);
+  assert.equal(BACKUP_LIMITS.maxBytes, 64 * 1024 * 1024);
+  assert.equal(BACKUP_LIMITS.maxEntries, 100000); assert.equal(BACKUP_LIMITS.maxRequestBytes, 16384);
+  assert.throws(() => encodeValue('x'.repeat(BACKUP_LIMITS.maxValueBytes)), /Invalid durable backup/);
+});

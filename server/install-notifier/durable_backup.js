@@ -6,7 +6,7 @@ import { CompactEncrypt, importJWK } from 'jose';
 export const BACKUP_PATH = '/_backup/v1/export';
 export const BACKUP_LIMITS = Object.freeze({
   pageSize: 128, maxEntries: 100000, maxBytes: 64 * 1024 * 1024,
-  maxValueBytes: 1024 * 1024, maxRequestBytes: 16384,
+  maxValueBytes: 8 * 1024 * 1024, maxRequestBytes: 16384,
   maxDepth: 64, maxNodes: 1000000, maxEnableWindowMs: 60 * 60 * 1000,
   maxClockSkewMs: 60000,
 });
@@ -17,6 +17,7 @@ const namespacePattern = /^[a-f0-9]{32}$/;
 const objectPattern = /^[a-f0-9]{64}$/;
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const fail = () => { throw new Error('Invalid durable backup'); };
+const valueByteFailures = new WeakSet();
 const own = (value, key) => value !== null && value !== undefined && Object.prototype.hasOwnProperty.call(value, key);
 const plain = value => value !== null && typeof value === 'object' && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
 const exact = (value, keys) => {
@@ -102,7 +103,9 @@ export function encodeValue(value) {
       : { t: 'object', nullPrototype: Object.getPrototypeOf(current) === null, v: properties };
   }
   const result = encode(value, 0);
-  if (utf8.encode(canonicalStringify(result)).length > BACKUP_LIMITS.maxValueBytes) fail();
+  if (utf8.encode(canonicalStringify(result)).length > BACKUP_LIMITS.maxValueBytes) {
+    const error = new Error('Invalid durable backup'); valueByteFailures.add(error); throw error;
+  }
   return result;
 }
 
@@ -235,36 +238,61 @@ export async function validateSnapshot(snapshot) {
   validateChunks(snapshot.entries, snapshot.metadata.className);
   return snapshot;
 }
+// Error details are held out of enumerable Error properties and never logged.
+// Only a fully authenticated recipient can receive the bounded enum/counts.
+const snapshotFailures = new WeakMap();
+const errorKinds = new Set(['Error', 'TypeError', 'RangeError', 'DataCloneError', 'QuotaExceededError', 'InvalidStateError', 'OperationError', 'AbortError']);
 export async function snapshotStorage(state, metadata) {
-  if (!state?.storage || typeof state.storage.transaction !== 'function' || state.id && state.id.toString() !== metadata.objectId) fail();
-  const snapshot = await state.storage.transaction(async txn => {
-    const alarmStorage = typeof txn.getAlarm === 'function' ? txn : state.storage;
-    if (typeof alarmStorage.getAlarm !== 'function') fail();
-    const entries = []; let previous = null, totalBytes = 0;
-    for (;;) {
-      const options = { limit: BACKUP_LIMITS.pageSize };
-      if (previous !== null) options.startAfter = previous;
-      const page = await txn.list(options);
-      if (!(page instanceof Map) || page.size > BACKUP_LIMITS.pageSize) fail();
-      for (const [key, value] of page) {
-        checkKey(key);
-        if (previous !== null && compareKeys(previous, key) >= 0) fail();
-        previous = key;
-        const entry = { key, value: encodeValue(value) };
-        totalBytes += utf8.encode(canonicalStringify(entry)).length;
-        if (entries.length >= BACKUP_LIMITS.maxEntries || totalBytes > BACKUP_LIMITS.maxBytes) fail();
-        entries.push(entry);
+  let reason = 'storage_transaction', entryCount = 0, pageCount = 0, encodedBytes = 0;
+  try {
+    if (!state?.storage || typeof state.storage.transaction !== 'function' || state.id && state.id.toString() !== metadata.objectId) fail();
+    const snapshot = await state.storage.transaction(async txn => {
+      reason = 'storage_api';
+      const alarmStorage = typeof txn.getAlarm === 'function' ? txn : state.storage;
+      if (typeof alarmStorage.getAlarm !== 'function' || typeof txn.list !== 'function') fail();
+      const entries = []; let previous = null;
+      for (;;) {
+        const options = { limit: BACKUP_LIMITS.pageSize };
+        if (previous !== null) options.startAfter = previous;
+        reason = 'storage_list';
+        const page = await txn.list(options);
+        pageCount++;
+        reason = 'storage_page';
+        if (!(page instanceof Map) || page.size > BACKUP_LIMITS.pageSize) fail();
+        for (const [key, value] of page) {
+          reason = 'key_validation'; checkKey(key);
+          reason = 'key_order';
+          if (previous !== null && compareKeys(previous, key) >= 0) fail();
+          previous = key;
+          reason = 'value_encoding';
+          const entry = { key, value: encodeValue(value) };
+          reason = 'entry_encoding';
+          encodedBytes += utf8.encode(canonicalStringify(entry)).length;
+          reason = 'snapshot_limit';
+          if (entries.length >= BACKUP_LIMITS.maxEntries || encodedBytes > BACKUP_LIMITS.maxBytes) fail();
+          entries.push(entry); entryCount = entries.length;
+        }
+        if (page.size < BACKUP_LIMITS.pageSize) break;
       }
-      if (page.size < BACKUP_LIMITS.pageSize) break;
-    }
-    // The SQLite transaction also covers direct storage operations. The
-    // deprecated transaction facade may omit getAlarm in some runtimes.
-    const alarm = await alarmStorage.getAlarm();
-    const payload = { format: 'pdd-durable-backup', schema: 1, metadata: { ...metadata, capturedAt: new Date().toISOString(), alarm: alarm ?? null }, entries, entryCount: entries.length };
-    checkMetadata(payload.metadata);
-    return { ...payload, sha256: await hash(payload) };
-  });
-  return validateSnapshot(snapshot);
+      // The SQLite transaction also covers direct storage operations. The
+      // deprecated transaction facade may omit getAlarm in some runtimes.
+      reason = 'storage_alarm';
+      const alarm = await alarmStorage.getAlarm();
+      const payload = { format: 'pdd-durable-backup', schema: 1, metadata: { ...metadata, capturedAt: new Date().toISOString(), alarm: alarm ?? null }, entries, entryCount: entries.length };
+      reason = 'metadata_validation'; checkMetadata(payload.metadata);
+      reason = 'snapshot_hash';
+      return { ...payload, sha256: await hash(payload) };
+    });
+    reason = 'snapshot_validation';
+    return await validateSnapshot(snapshot);
+  } catch (error) {
+    if (reason === 'value_encoding' && valueByteFailures.has(error)) reason = 'value_byte_limit';
+    let errorKind = 'UnknownError';
+    try { if (errorKinds.has(error?.name)) errorKind = error.name; } catch {}
+    const generic = new Error('Invalid durable backup');
+    snapshotFailures.set(generic, { reason, errorKind, entryCount, pageCount, encodedBytes });
+    throw generic;
+  }
 }
 
 export function isBackupRequest(request) {
@@ -331,12 +359,20 @@ export async function handleBackupExport(request, { state, env, className }) {
     if (!plain(namespaceIds) || !own(namespaceIds, className) || namespaceIds[className] !== body.namespaceId) fail();
     checkRecipient(body.recipientJwk);
     const recipient = await importJWK(body.recipientJwk, 'RSA-OAEP-256');
-    const snapshot = await snapshotStorage(state, {
-      className, namespaceId: body.namespaceId, objectId: body.objectId, runId: body.runId,
-      sourceVersion: env.DURABLE_BACKUP_SOURCE_VERSION, accountEpoch: String(env.ACCOUNT_STATE_EPOCH || '1'),
-    });
-    const ciphertext = await new CompactEncrypt(utf8.encode(canonicalStringify(snapshot)))
-      .setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A256GCM', typ: 'pdd-durable-backup+jwe' }).encrypt(recipient);
+    let payload, responseType = 'pdd-durable-backup+jwe';
+    try {
+      payload = await snapshotStorage(state, {
+        className, namespaceId: body.namespaceId, objectId: body.objectId, runId: body.runId,
+        sourceVersion: env.DURABLE_BACKUP_SOURCE_VERSION, accountEpoch: String(env.ACCOUNT_STATE_EPOCH || '1'),
+      });
+    } catch (error) {
+      const detail = snapshotFailures.get(error);
+      if (env.DURABLE_BACKUP_DIAGNOSTICS !== 'true' || !detail) throw error;
+      responseType = 'pdd-durable-backup-diagnostic+jwe';
+      payload = { format: 'pdd-durable-backup-diagnostic', schema: 1, ...detail };
+    }
+    const ciphertext = await new CompactEncrypt(utf8.encode(canonicalStringify(payload)))
+      .setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A256GCM', typ: responseType }).encrypt(recipient);
     const responseSignature = await backupHmac(env.DURABLE_BACKUP_HMAC_SECRET, 'response\n' + body.nonce + '\n' + ciphertext);
     return new Response(ciphertext, { status: 200, headers: { ...headers, 'Content-Type': 'application/jose', 'X-Backup-Response-Signature': responseSignature } });
   } catch {

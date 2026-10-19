@@ -30,6 +30,9 @@ const objects = new Map(), seeded = new Map();
 function rawEntries(className) {
   const entries = Array.from({ length: 300 }, (_, index) => ['fixture:' + index.toString().padStart(4, '0'), { index, optional: undefined, text: 'Қазақша русский 😀' }]);
   entries.push(['version:a', 0], ['version:b', 0]);
+  // A small native dense array expands beyond 1 MiB when each index/value is
+  // explicitly tagged. This is synthetic and fits the SQLite value budget.
+  if (className === 'TrafficState') entries.push(['fixture:dense-array', Array.from({ length: 45000 }, (_, index) => index % 10)]);
   if (className === 'AccountState') {
     const id = 'google_synthetic_runtime';
     entries.push(['account-id', id]);
@@ -116,6 +119,12 @@ test('real transaction pagination, alarm, HMAC/JWE round trip, encrypted archive
     assert.equal(snapshot.metadata.alarm, expectedAlarm(name));
     assert.ok(snapshot.entryCount > BACKUP_LIMITS.pageSize * 2);
     assert.deepEqual(snapshot.entries, seeded.get(name));
+    if (name === 'TrafficState') {
+      const dense = snapshot.entries.find(entry => entry.key === 'fixture:dense-array');
+      assert.ok(Buffer.byteLength(JSON.stringify(dense.value)) > 1024 * 1024);
+      assert.ok(Buffer.byteLength(JSON.stringify(dense.value)) < BACKUP_LIMITS.maxValueBytes);
+      assert.deepEqual(decodeValue(dense.value), Array.from({ length: 45000 }, (_, index) => index % 10));
+    }
     const restored = readClosedObject(target, object);
     assert.deepEqual([...restored.entries], snapshot.entries.map(({ key, value }) => [key, decodeValue(value)]));
     assert.equal(restored.scheduledAlarm, null);

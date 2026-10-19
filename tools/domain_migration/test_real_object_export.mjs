@@ -1,6 +1,6 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, writeFile, readFile, rm, symlink, chmod } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile, readFile, readdir, rm, symlink, chmod } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createHash, createPrivateKey, createPublicKey, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -127,6 +127,31 @@ test('real collector verifies request/response HMAC, retains only encrypted evid
   const saved = await readFile(cacheFile(dir), 'utf8'); assert.equal(saved.includes('google_synthetic_export'), false);
   assert.deepEqual(await decryptRunEvidence(saved, credentials), snapshot);
   await withFetch(() => { throw new Error('A verified cache must not use network'); }, async () => assert.deepEqual(await collectRealObjects(plan(dir)), [snapshot]));
+});
+
+test('authenticated diagnostic stays encrypted, reports only allowed enums and cannot become a snapshot', async () => {
+  const diagnostic = { format: 'pdd-durable-backup-diagnostic', schema: 1, reason: 'value_byte_limit',
+    errorKind: 'Error', entryCount: 832, pageCount: 7, encodedBytes: 305758 };
+  for (const payload of [diagnostic, { ...diagnostic, message: 'SYNTHETIC-PRIVATE-MUST-NOT-LOG' }]) {
+    const dir = await newDirectory();
+    await withFetch(async (_url, options) => {
+      const body = JSON.parse(options.body);
+      const ciphertext = await new CompactEncrypt(new TextEncoder().encode(canonicalStringify(payload)))
+        .setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A256GCM', typ: 'pdd-durable-backup-diagnostic+jwe' })
+        .encrypt(await importJWK(body.recipientJwk, 'RSA-OAEP-256'));
+      const response = new Response(ciphertext, { headers: { 'content-type': 'application/jose',
+        'x-backup-response-signature': await backupHmac(credentials.hmacSecret, 'response\n' + body.nonce + '\n' + ciphertext) } });
+      Object.defineProperty(response, 'url', { value: endpoint }); return response;
+    }, async () => {
+      await assert.rejects(collectRealObjects(plan(dir)), payload === diagnostic ? /Authenticated backup diagnostic: value_byte_limit/ : /Real object export failed/);
+    });
+    const files = await readdir(dir);
+    if (payload === diagnostic) {
+      assert.equal(files.length, 1); assert.ok(files[0].startsWith('diagnostic-'));
+      const bytes = await readFile(join(dir, files[0]), 'utf8'); assert.equal(bytes.includes('value_byte_limit'), false);
+      assert.deepEqual(await decryptRunEvidence(bytes, credentials), diagnostic);
+    } else assert.deepEqual(files, []);
+  }
 });
 
 test('upload retains opaque secrets, original configuration, module bytes and main entry', async () => {
