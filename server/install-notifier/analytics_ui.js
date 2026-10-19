@@ -70,6 +70,11 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 </style>
 <div class="an-period" id="an-period"></div>
 <div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов"></div>
+<div class="an-card" id="an-auth">
+ <div class="an-head"><div class="an-title">Способы авторизации</div><span class="an-caption" style="margin:0">За всё время</span></div>
+ <div class="an-table-wrap" id="an-auth-table"></div>
+ <div class="an-caption">Доля от всех сохранённых аккаунтов выбранного приложения. Гости и тестовые аккаунты не учитываются. Вход через разные сервисы создаёт отдельные аккаунты. Выбор периода на этот блок не влияет; проценты округлены.</div>
+</div>
 <details class="an-card an-updates" id="an-updates">
  <summary><span class="an-title">Обновления приложения</span><span id="an-updates-summary"></span><span class="an-updates-toggle">Версии <i aria-hidden="true"></i></span></summary>
  <div class="an-updates-body"><div class="an-table-wrap" id="an-versions"></div>
@@ -372,6 +377,18 @@ document.getElementById('an-usage-table').addEventListener('click',function(e){v
 document.getElementById('an-usage-feature').addEventListener('change',function(e){anUsageFeature=e.target.value;anRenderUsage(window.__anData);});
 document.getElementById('an-usage-details').addEventListener('toggle',function(){if(window.__anData)anRenderUsage(window.__anData);});
 
+function anRenderAuth(data) {
+ var users=data.users, counts=users&&users.authProviders;
+ var target=document.getElementById('an-auth-table');
+ if(!counts){target.innerHTML='<div class="an-empty">Данные о способах авторизации недоступны</div>';return;}
+ if(!users.registered){target.innerHTML='<div class="an-empty">Пока нет зарегистрированных аккаунтов</div>';return;}
+ var providers=[['yandex','Яндекс'],['google','Google'],['apple','Apple'],['telegram','Telegram']];
+ if(counts.unknown)providers.push(['unknown','Неизвестный способ']);
+ target.innerHTML=anTable(['Способ входа','Аккаунты','Доля'],providers.map(function(p){
+  var count=counts[p[0]]||0;
+  return '<tr><td><span class="an-table-name">'+anLogo({icon:p[0]})+p[1]+'</span></td>'+anCell(count)+'<td>'+anShare(count,users.registered)+'</td></tr>';
+ }));
+}
 function anRenderVersions(data) {
  var versions=data.users&&data.users.versions;
  document.getElementById('an-updates-summary').innerHTML='<span>Обновились за период</span><b>'+(versions?anNum(versions.updated):'—')+'</b>';
@@ -389,6 +406,7 @@ function renderDashboard(data) {
  anRenderActivity(data);
  anRenderUsage(data);
  anRenderVersions(data);
+ anRenderAuth(data);
  var src={};(data.sources||[]).forEach(function(r){if(!r.views&&!r.clicks)return;var k=anSourceKey(r.name);if(!src[k])src[k]={views:0,clicks:0};src[k].views+=r.views||0;src[k].clicks+=r.clicks||0;});
  var keys=Object.keys(src).sort(function(a,b){return src[b].views-src[a].views||src[b].clicks-src[a].clicks;});
  document.getElementById('an-sources').innerHTML=keys.length?anTable(['Источник','Просмотры','Переходы'],keys.map(function(k){return '<tr><td><div class="an-table-name">'+anLogo(AN_SOURCES[k])+anEsc(AN_SOURCES[k].name)+'</div></td>'+anCell(src[k].views)+anCell(src[k].clicks)+'</tr>';})):'<div class="an-empty">Нет событий сайта</div>';

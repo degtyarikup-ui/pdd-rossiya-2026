@@ -40,6 +40,7 @@ export function usersSnapshot(users, days, app, dayKey, now = Date.now()) {
   let previousRegistrations = 0;
   let active1 = 0, active7 = 0, active30 = 0, premium = 0;
   const premiumBySource = {};
+  const authProviders = { yandex: 0, google: 0, apple: 0, telegram: 0, unknown: 0 };
   // Когорта периода: кто зарегистрировался в период — вернулся ли через
   // сутки и купил ли Premium (оплата в магазине, не ручная выдача).
   let cohortReturned = 0, cohortPaid = 0, cohortActive7 = 0;
@@ -53,6 +54,8 @@ export function usersSnapshot(users, days, app, dayKey, now = Date.now()) {
   }
 
   for (const u of list) {
+    const provider = String(u.provider || '').trim().toLowerCase();
+    authProviders[Object.hasOwn(authProviders, provider) ? provider : 'unknown']++;
     const created = Date.parse(u.createdAt || '');
     if (Number.isFinite(created)) {
       const key = dayKey(new Date(created));
@@ -102,6 +105,7 @@ export function usersSnapshot(users, days, app, dayKey, now = Date.now()) {
     activity: activitySnapshot(list, periodKeys, now),
     versions: versionsSnapshot(list, periodKeys, dayKey),
     registered: list.length,
+    authProviders,
     registrations,
     previousRegistrations,
     registrationsByDay: perDay,

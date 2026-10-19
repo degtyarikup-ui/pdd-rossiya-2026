@@ -75,3 +75,22 @@ test('activity retains 90 days and never reconstructs past days from last seen',
  const result=usersSnapshot([{...old,app:'by'},{...old,provider:'guest'},{...old,suspect:true}],2,'ru',d=>d.toISOString().slice(0,10),Date.parse(old.lastSeenAt));
  assert.equal(result.activity.days[1].total,0);
 });
+
+
+test('auth provider shares use the same all-time account population as the headline',()=>{
+ const users=[
+  {...base,provider:'yandex',createdAt:'2020-01-01T00:00:00Z'},
+  {...base,provider:'google'}, {...base,provider:' GOOGLE '},
+  {...base,provider:'apple'}, {...base,provider:'telegram'},
+  {...base,provider:'future-provider'}, {...base,provider:'__proto__'},
+  {...base,provider:'guest'}, {...base,suspect:true}, {...base,pending:true},
+  {...base,app:'rs'}, {...base,provider:null},
+ ];
+ const result=usersSnapshot(users,1,'ru',day,now);
+ assert.equal(result.registered,7);
+ assert.deepEqual(result.authProviders,{yandex:1,google:2,apple:1,telegram:1,unknown:2});
+ assert.equal(Object.values(result.authProviders).reduce((a,b)=>a+b,0),result.registered);
+ assert.deepEqual(usersSnapshot(users,30,'ru',day,now).authProviders,result.authProviders);
+ assert.equal(usersSnapshot(users,1,'all',day,now).authProviders.google,3);
+ assert.deepEqual(usersSnapshot([],1,'ru',day,now).authProviders,{yandex:0,google:0,apple:0,telegram:0,unknown:0});
+});
