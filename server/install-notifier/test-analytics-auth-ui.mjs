@@ -20,7 +20,7 @@ test('auth shares render all providers, zero counts, missing data and narrow scr
   const rows=page.locator('#an-auth-table tbody tr');
   assert.equal(await rows.count(),4);
   assert.deepEqual(await rows.allTextContents(),['Яндекс120%','Google240%','Apple120%','Telegram120%']);
-  assert.match(await page.locator('#an-auth').innerText(),/За всё время/);
+  assert.match(await page.locator('#an-auth').innerText(),/Всё время/);
   for(const width of [1200,375]) {
    await page.setViewportSize({width,height:900});
    const bounds=await page.locator('#an-auth').evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth}));

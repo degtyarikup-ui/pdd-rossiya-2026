@@ -14,7 +14,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 <div id="analytics-view">
 <style>
 #analytics-view{--an-accent:#0574F8;--an-green:#22a875;--an-text:#17191E;--an-muted:#747B88;--an-gray:#F4F5F7;color:var(--an-text)}
-.an-card{background:#fff;border:0;border-radius:20px;padding:24px;min-width:0;margin-bottom:18px;box-shadow:none}
+.an-card{position:relative;background:#fff;border:0;border-radius:20px;padding:24px;min-width:0;margin-bottom:18px;box-shadow:none}
 .an-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}
 .an-title{font-size:16px;font-weight:650;color:var(--an-text);margin:0;letter-spacing:-.35px}
 .an-period{font-size:12px;color:var(--an-muted);line-height:1.6;margin-bottom:16px}.an-period b{color:var(--an-text);font-weight:500}
@@ -22,8 +22,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-kpi{margin:0;padding:24px}.an-big{font-size:38px;line-height:1.1;letter-spacing:-1.8px;font-weight:550;font-variant-numeric:tabular-nums;margin:16px 0 0}
 .an-kpi-top{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--an-muted)}.an-kpi-top .an-dot{display:none}.an-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .an-kpi.is-primary{background:var(--an-accent);color:white}.an-kpi.is-primary .an-kpi-top{color:#fff}
-.an-charts-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:18px;align-items:start}.an-charts-grid>.an-card{height:100%;margin:0}.an-charts-grid{margin-bottom:18px}
-.an-row2{display:grid;grid-template-columns:1fr .85fr 1.35fr;gap:18px;align-items:start}
+.an-charts-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:18px;align-items:stretch}.an-charts-grid>.an-card{margin:0}.an-charts-grid{margin-bottom:18px}
 .an-chart{width:100%;min-height:190px;overflow:hidden}.an-chart svg{display:block;max-width:100%}
 .an-legend{display:flex;gap:16px;align-items:center;font-size:11px;color:var(--an-muted);margin-bottom:8px}.an-legend span{display:flex;align-items:center;gap:6px}
 .an-caption{font-size:11px;line-height:1.6;color:var(--an-muted);margin-top:12px}.an-caption:empty{display:none}
@@ -45,7 +44,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-sort{font:inherit;letter-spacing:inherit;color:inherit;padding:0;border:0;background:none;cursor:pointer;text-transform:inherit;white-space:nowrap}.an-sort.is-sorted{color:var(--an-text)}
 .an-geo-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px;font-size:10px;color:var(--an-muted);min-height:30px}
 .an-pagination{display:flex;align-items:center;gap:8px;white-space:nowrap}.an-pagination button{border:0;background:#F4F5F7;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--an-text)}.an-pagination button:disabled{opacity:.3;cursor:default}
-.an-help{position:relative;font-size:12px;line-height:1.65;text-align:left;color:var(--an-muted);flex-shrink:0}.an-help summary{list-style:none;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:0;background:#F4F5F7;border-radius:50%;font-size:11px;color:var(--an-muted);font-weight:500}.an-help summary::-webkit-details-marker{display:none}.an-help[open] summary{color:white;background:var(--an-text)}.an-help>div{position:absolute;right:0;top:32px;width:280px;max-width:75vw;z-index:30;padding:16px 18px;background:var(--an-text);color:white;border:0;border-radius:16px;box-shadow:0 12px 40px #17191e25}
+.an-help{position:static;font-size:12px;line-height:1.65;text-align:left;color:var(--an-muted);flex-shrink:0}.an-help summary{list-style:none;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:0;background:#F4F5F7;border-radius:50%;font-size:11px;color:var(--an-muted);font-weight:500}.an-help summary::-webkit-details-marker{display:none}.an-help[open] summary{color:white;background:var(--an-text)}.an-help>div{position:absolute;right:20px;top:58px;width:280px;max-width:calc(100% - 40px);z-index:30;padding:16px 18px;background:var(--an-text);color:white;border:0;border-radius:16px;box-shadow:0 12px 40px #17191e25}
 .an-audience{display:flex;justify-content:space-between;gap:16px;padding:0 2px 12px;flex-wrap:wrap;font-size:11px;color:var(--an-muted)}.an-audience b{color:var(--an-text);margin-left:6px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
 .an-activity-summary{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:16px;align-items:end;margin:4px 0 24px}.an-activity-summary>span{display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--an-muted)}.an-activity-summary b{color:var(--an-text);font-size:21px;font-weight:550;line-height:1;letter-spacing:-.6px;font-variant-numeric:tabular-nums}.an-activity-summary>span:first-child b{font-size:40px;letter-spacing:-1.8px;color:var(--an-accent)}
 .an-act-label{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:6px;font-size:11px;color:var(--an-muted);line-height:1}.an-act-label svg{display:inline-block;vertical-align:middle;flex-shrink:0}
@@ -61,29 +60,25 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 @media(max-width:640px){.an-usage-heading{gap:8px}.an-usage .an-head{align-items:flex-start;gap:8px}.an-usage-total{font-size:10px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}.an-usage-total b{font-size:14px;margin:0}.an-usage .an-table th:nth-child(2){width:54px}.an-usage .an-table th:nth-child(3){width:78px}.an-usage .an-table th:nth-child(4){width:58px}.an-usage .an-table th+th,.an-usage .an-table td+td{padding-left:8px}.an-usage .an-table th{font-size:9px}.an-usage .an-table td{font-size:12px}.an-usage .an-table td:nth-child(2){font-size:13px}.an-usage-name{grid-template-columns:minmax(0,1fr) auto;gap:4px 6px;padding-right:0}.an-usage-track{grid-column:1 / -1;grid-row:2}.an-usage-share{grid-column:2;grid-row:1;font-size:9px}.an-usage-mode{line-height:1.3}.an-usage-controls{align-items:flex-start;gap:12px}.an-usage-controls select{width:112px;min-height:34px}.an-usage-controls .an-legend{font-size:10px;gap:7px}}
 @media(max-width:359px){.an-card.an-usage{padding:18px}.an-usage .an-table th:nth-child(2){width:50px}.an-usage .an-table th:nth-child(3){width:68px}.an-usage .an-table th:nth-child(4){width:56px}.an-usage-details>summary .an-caption{padding-left:8px}}
 #analytics-view button:focus-visible,#analytics-view summary:focus-visible,#analytics-view input:focus-visible,#analytics-view select:focus-visible{outline:2px solid var(--an-accent);outline-offset:3px}
-@media(max-width:1320px){.an-row2{grid-template-columns:1fr 1fr}.an-geo-card{grid-column:1 / -1}.an-geo-card .an-table-name{min-width:150px}}
 @media(max-width:1120px){.an-charts-grid{grid-template-columns:1fr}.an-chart-card .an-legend{margin:0 0 8px}.an-grid{gap:12px}.an-kpi{padding:20px}.an-big{font-size:34px}}
 @media(max-width:900px){.an-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now span{justify-content:flex-start}.an-now b{margin-left:auto}}
-@media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-row2{grid-template-columns:1fr}.an-geo-card{grid-column:auto}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-activity-summary{gap:14px 10px;grid-template-columns:1.1fr repeat(3,1fr)}.an-activity-summary b{font-size:18px}.an-activity-summary>span:first-child b{font-size:34px}.an-activity-summary>span{font-size:10px;line-height:1.4}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
-.an-updates{padding:18px 24px}.an-updates>summary{display:flex;align-items:center;gap:20px;cursor:pointer;list-style:none;min-height:30px}.an-updates>summary::-webkit-details-marker{display:none}.an-updates>summary .an-title{font-size:14px}.an-updates #an-updates-summary{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--an-muted)}.an-updates #an-updates-summary b{font-size:22px;color:var(--an-text);font-variant-numeric:tabular-nums}.an-updates-toggle{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--an-muted)}.an-updates-toggle i:after{content:'+';font-size:20px;font-style:normal}.an-updates[open] .an-updates-toggle i:after{content:'−'}.an-updates-body{padding-top:20px}.an-updates .an-table-wrap{max-height:300px;overflow:auto}.an-updates .an-table td{padding:10px 0}
-@media(max-width:640px){.an-updates{padding:16px 20px}.an-updates>summary{flex-wrap:wrap;gap:8px 16px}.an-updates>summary .an-title{flex:1 1 100%}.an-updates #an-updates-summary{font-size:11px}.an-updates .an-table{min-width:300px}}
+@media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-activity-summary{gap:14px 10px;grid-template-columns:1.1fr repeat(3,1fr)}.an-activity-summary b{font-size:18px}.an-activity-summary>span:first-child b{font-size:34px}.an-activity-summary>span{font-size:10px;line-height:1.4}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
+.an-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:30px 0 14px}.an-section-head:first-child{margin-top:0}.an-section-head h2{margin:0;font-size:13px;font-weight:600;color:var(--an-muted);letter-spacing:0}.an-section-head .an-period{margin:0;text-align:right}
+.an-scope{font-size:10px;font-weight:500;line-height:1.4;color:var(--an-muted);white-space:nowrap}.an-heading{display:flex;align-items:center;gap:8px;min-width:0}.an-subtitle{font-size:11px;color:var(--an-muted);margin-top:6px;line-height:1.5}
+.an-audience-grid,.an-acquisition-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}.an-audience-grid>.an-card,.an-acquisition-grid>.an-card{margin:0}
+.an-audience-grid .an-head{margin-bottom:16px}.an-auth-table .an-table td{padding:13px 0}.an-auth-table .an-table td:nth-child(2){color:var(--an-muted);font-weight:450}.an-auth-table .an-table td:last-child{font-size:16px;width:56px}.an-auth-table .an-table-name{display:grid;grid-template-columns:20px minmax(0,1fr);gap:5px 10px}.an-auth-track{grid-column:2;height:3px;background:#F0F2F5;border-radius:3px;overflow:hidden;max-width:240px}.an-auth-track i{display:block;height:100%;border-radius:3px;background:var(--an-provider-color)}
+.an-update-metric{display:flex;align-items:center;gap:14px;padding-bottom:18px;margin-bottom:16px;border-bottom:1px solid #F2F3F5}.an-update-metric b{font-size:32px;font-weight:550;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums}.an-update-metric span{font-size:11px;line-height:1.6;color:var(--an-muted)}.an-update-metric strong{font-weight:500;color:var(--an-text)}
+.an-version-label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;font-weight:500;margin-bottom:14px}.an-versions{max-height:202px;overflow:auto;scrollbar-width:thin}.an-versions .an-table th{position:sticky;top:0;background:white;z-index:1}.an-versions .an-table td{padding:11px 0}.an-version-name{display:flex;align-items:center;gap:8px}.an-version-name svg{width:14px;height:14px;flex-shrink:0}.an-versions .an-share{flex-direction:row;align-items:center;gap:8px}
+.an-geo-card .an-geo-tools{max-width:580px}.an-geo-card .an-table-name{min-width:120px}.an-geo-card .an-table{min-width:0}.an-geo-card .an-table td{padding:13px 0}
+@media(max-width:1000px){.an-audience-grid,.an-acquisition-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.an-section-head{margin-top:24px;gap:8px}.an-section-head h2{font-size:12px}.an-section-head .an-period{font-size:10px}.an-audience-grid,.an-acquisition-grid{gap:14px;margin-bottom:14px}.an-geo-card .an-table{min-width:360px}.an-scope{font-size:9px}.an-heading{gap:6px}.an-version-name{gap:5px}.an-versions .an-share-track{display:none}.an-help>div{width:250px}.an-update-metric b{font-size:30px}}
 </style>
-<div class="an-period" id="an-period"></div>
+<div class="an-section-head"><h2>Обзор</h2><span class="an-scope">Сейчас</span></div>
 <div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов"></div>
-<div class="an-card" id="an-auth">
- <div class="an-head"><div class="an-title">Способы авторизации</div><span class="an-caption" style="margin:0">За всё время</span></div>
- <div class="an-table-wrap" id="an-auth-table"></div>
- <div class="an-caption">Доля от всех сохранённых аккаунтов выбранного приложения. Гости и тестовые аккаунты не учитываются. Вход через разные сервисы создаёт отдельные аккаунты. Выбор периода на этот блок не влияет; проценты округлены.</div>
-</div>
-<details class="an-card an-updates" id="an-updates">
- <summary><span class="an-title">Обновления приложения</span><span id="an-updates-summary"></span><span class="an-updates-toggle">Версии <i aria-hidden="true"></i></span></summary>
- <div class="an-updates-body"><div class="an-table-wrap" id="an-versions"></div>
- <div class="an-caption">Обновились — зарегистрированные аккаунты, у которых сервер подтвердил переход на более новую версию Android или iOS за выбранный период. Один аккаунт считается один раз. Сбор истории с 19.10.2026: первый контакт задаёт исходную версию и не считается обновлением. В таблице — последняя известная версия каждого мобильного аккаунта за всё время; новые установки тоже входят. Гости не учитываются.</div>
- </div>
-</details>
+<div class="an-section-head"><h2>Активность и рост</h2><div class="an-period" id="an-period"></div></div>
 <div class="an-charts-grid">
  <div class="an-card an-activity-card">
-  <div class="an-head"><div class="an-title">Ежедневное использование</div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Уникальные зарегистрированные аккаунты, обращавшиеся к серверу за день по МСК. Повторные обращения не увеличивают число. Аккаунт с двумя платформами входит в обе группы, в общем числе учитывается один раз. Гости и использование без интернета сюда не входят. Сегодня — неполный день, среднее включает сегодня.</div></details></div>
+  <div class="an-head"><div><div class="an-title">Активность по дням</div><div class="an-subtitle">Аккаунты · без гостей</div></div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Аккаунты, обращавшиеся к серверу за день, без гостей. Две платформы одного аккаунта входят в обе группы; общий итог учитывает аккаунт один раз. Сегодня — неполный день.</div></details></div>
   <div class="an-activity-summary" id="an-activity-summary"></div>
   <div class="an-legend"><span style="display:inline-flex;align-items:center;gap:6px"><i class="an-dot" style="background:#0574F8"></i><svg viewBox="0 0 24 24" width="14" height="14" fill="#3DDC84" style="display:inline-block;vertical-align:middle"><path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-4.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48C13.72 2.24 12.88 2 12 2c-.88 0-1.72.24-2.64.63L7.88 1.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.3 1.3C6.75 4.3 5.5 6.01 5.2 8h13.6c-.3-1.99-1.55-3.7-3.27-4.84zM9 6c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>Android</span><span style="display:inline-flex;align-items:center;gap:6px"><i class="an-dot" style="background:#22a875"></i><svg viewBox="0 0 250 307" width="14" height="14" fill="currentColor" style="display:inline-block;vertical-align:middle"><path d="M208.209 162.951C208.36 151.207 211.48 139.691 217.277 129.477C223.075 119.262 231.362 110.68 241.367 104.528C235.011 95.4506 226.626 87.9799 216.877 82.7096C207.128 77.4394 196.285 74.5149 185.209 74.1684C161.581 71.6882 138.674 88.307 126.634 88.307C114.36 88.307 95.8222 74.4146 75.8596 74.8253C62.9473 75.2425 50.3632 78.9973 39.3335 85.7239C28.3038 92.4505 19.2046 101.92 12.9224 113.208C-14.2903 160.323 6.00794 229.566 32.0755 267.65C45.1176 286.298 60.3602 307.129 80.3047 306.391C99.8216 305.581 107.111 293.945 130.669 293.945C154.009 293.945 160.848 306.391 181.197 305.921C202.14 305.581 215.335 287.189 227.919 268.364C237.29 255.076 244.501 240.39 249.285 224.85C237.117 219.704 226.734 211.091 219.43 200.083C212.126 189.076 208.223 176.161 208.209 162.951Z"/><path d="M169.775 49.1155C181.194 35.4077 186.819 17.7887 185.457 0C168.012 1.8323 151.897 10.17 140.324 23.3519C134.666 29.7916 130.332 37.2833 127.571 45.3989C124.809 53.5145 123.675 62.0947 124.231 70.649C132.957 70.7389 141.59 68.8476 149.479 65.1176C157.368 61.3877 164.307 55.9163 169.775 49.1155Z"/></svg>iOS</span></div>
   <div class="an-chart" id="an-activity-chart"></div>
@@ -91,13 +86,13 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <details class="an-day-details"><summary>Данные по дням</summary><div class="an-table-wrap" id="an-activity-table"></div></details>
  </div>
  <div class="an-card an-chart-card">
-  <div class="an-head"><div class="an-title">Динамика</div><div class="an-tabs" id="an-chart-tabs"><button type="button" data-chart="app" class="active" aria-pressed="true">Приложение</button><button type="button" data-chart="site" aria-pressed="false">Сайт</button></div></div>
+  <div class="an-head"><div class="an-title">Рост аудитории</div><div class="an-tabs" id="an-chart-tabs"><button type="button" data-chart="app" class="active" aria-pressed="true">Приложение</button><button type="button" data-chart="site" aria-pressed="false">Сайт</button></div></div>
   <div class="an-dynamics-summary" id="an-dynamics-summary"></div>
   <div class="an-legend" id="an-chart-legend"></div><div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div>
  </div>
 </div>
 <div class="an-card an-usage" id="an-usage">
- <div class="an-head"><div class="an-usage-heading"><div class="an-title">Использование режимов</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуск — открытие билета, темы, экзамена или ленты, либо начало заезда в 3D-игре. Возврат в прерванную тренировку считается запуском. Активные установки — установки приложения, в которых запускали режим за выбранный период, включая гостей. Один человек на двух устройствах считается дважды. Частота — среднее число запусков на активную установку. Полоса и процент показывают долю запусков режима. Данные поступают из обновлённых приложений; офлайн-события отправляются позже. Для регулировщика и перекрёстка учитываются раунды с хотя бы одним ответом после выхода из игры. Их учёт добавлен в следующую сборку; прежние запуски восстановить нельзя. Круговое движение удалено из списка, исторические события сохранены. Парковка ещё не выпущена.</div></details></div><div class="an-usage-total" id="an-usage-total"></div></div>
+ <div class="an-head"><div class="an-usage-heading"><div class="an-title">Использование режимов</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуски режимов за выбранный период, включая гостей. Активные установки — устройства, на которых запускали режим; «На установку» — среднее число запусков. Доля показана от всех запусков.</div></details></div><div class="an-usage-total" id="an-usage-total"></div></div>
  <div id="an-usage-table"></div>
  <div class="an-usage-empty" id="an-usage-empty" hidden></div>
  <details class="an-usage-details" id="an-usage-details">
@@ -107,16 +102,30 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <details class="an-day-details"><summary>Таблица значений</summary><div class="an-table-wrap" id="an-usage-days"></div></details>
  </details>
 </div>
-<div class="an-row2">
-  <div class="an-card"><div class="an-head"><div class="an-title">Источники сайта</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры и нажатия на ссылки магазинов. Метка сайта не подтверждает источник установки.</div></details></div><div class="an-table-wrap" id="an-sources"></div></div>
-  <div class="an-card"><div class="an-head"><div class="an-title">Магазины</div><details class="an-help"><summary aria-label="Об установках">i</summary><div>Первые запуски приложения. Скачивания из консолей магазинов сюда не поступают.</div></details></div><div class="an-table-wrap" id="an-stores"></div></div>
+<div class="an-section-head"><h2>Состав аудитории</h2></div>
+<div class="an-audience-grid">
+ <div class="an-card" id="an-auth">
+  <div class="an-head"><div class="an-heading"><h3 class="an-title">Способы входа</h3><details class="an-help"><summary aria-label="О способах входа">i</summary><div>Доля от всех сохранённых аккаунтов, без гостей и тестовых записей. Разные сервисы входа создают отдельные аккаунты; проценты округлены.</div></details></div><span class="an-scope">Всё время</span></div>
+  <div class="an-table-wrap an-auth-table" id="an-auth-table"></div>
+ </div>
+ <div class="an-card" id="an-updates">
+  <div class="an-head"><div class="an-heading"><h3 class="an-title">Версии приложения</h3><details class="an-help"><summary aria-label="Об обновлениях и версиях">i</summary><div>Обновление — подтверждённый переход аккаунта на более новую версию, учёт с 19.10.2026. В таблице — последняя известная мобильная версия аккаунта; доля от мобильных аккаунтов с известной платформой.</div></details></div></div>
+  <div class="an-update-metric" id="an-updates-summary"></div>
+  <div class="an-version-label"><span>Версии аккаунтов</span><span class="an-scope">Всё время</span></div>
+  <div class="an-table-wrap an-versions" id="an-versions" tabindex="0" role="region" aria-label="Распределение версий приложения"></div>
+ </div>
+</div>
  <div class="an-card an-geo-card">
-  <div class="an-head"><div class="an-title">География</div><details class="an-help"><summary aria-label="О географии">i</summary><div>Новые аккаунты выбранного периода, по последнему сохранённому IP. VPN может менять географию. Активность и Premium показывают текущее состояние этих аккаунтов.</div></details></div>
+  <div class="an-head"><div><div class="an-title">География новых аккаунтов</div><div class="an-subtitle">За выбранный период</div></div><details class="an-help"><summary aria-label="О географии">i</summary><div>По последнему сохранённому IP, приблизительно. Активность и Premium — текущее состояние новых аккаунтов выбранного периода.</div></details></div>
   <div class="an-tabs" id="an-geo-tabs"><button type="button" data-geo="countries" class="active" aria-pressed="true">Страны</button><button type="button" data-geo="regions" aria-pressed="false">Регионы</button><button type="button" data-geo="cities" aria-pressed="false">Города</button></div>
   <div class="an-geo-tools"><input class="an-search" id="an-geo-search" placeholder="Поиск" aria-label="Поиск по географии"><select class="an-search" id="an-geo-country" aria-label="Страна географии"><option value="all">Все страны</option></select><button type="button" class="an-clear" id="an-geo-reset" title="Сбросить поиск и страну" aria-label="Сбросить фильтры">×</button></div>
   <div class="an-table-wrap" id="an-geo"></div>
   <div class="an-geo-footer"><span id="an-geo-coverage"></span><div class="an-pagination" id="an-geo-pages"></div></div>
  </div>
+<div class="an-section-head"><h2>Источники привлечения</h2><span class="an-scope">За выбранный период</span></div>
+<div class="an-acquisition-grid">
+  <div class="an-card"><div class="an-head"><div class="an-title">Источники сайта</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры и нажатия на ссылки магазинов. Метка сайта не подтверждает источник установки.</div></details></div><div class="an-table-wrap" id="an-sources"></div></div>
+  <div class="an-card"><div class="an-head"><div class="an-title">Первые запуски по магазинам</div><details class="an-help"><summary aria-label="Об установках">i</summary><div>Первые запуски приложения. Скачивания из консолей магазинов сюда не поступают.</div></details></div><div class="an-table-wrap" id="an-stores"></div></div>
 </div>
 <div class="an-tip" id="an-tip"></div>
 </div>
@@ -382,24 +391,24 @@ function anRenderAuth(data) {
  var target=document.getElementById('an-auth-table');
  if(!counts){target.innerHTML='<div class="an-empty">Данные о способах авторизации недоступны</div>';return;}
  if(!users.registered){target.innerHTML='<div class="an-empty">Пока нет зарегистрированных аккаунтов</div>';return;}
- var providers=[['yandex','Яндекс'],['google','Google'],['apple','Apple'],['telegram','Telegram']];
- if(counts.unknown)providers.push(['unknown','Неизвестный способ']);
+ var providers=[['yandex','Яндекс','#FC3F1D'],['google','Google','#4285F4'],['apple','Apple','#17191E'],['telegram','Telegram','#24A1DE']];
+ if(counts.unknown)providers.push(['unknown','Неизвестный способ','#9299A6']);
  target.innerHTML=anTable(['Способ входа','Аккаунты','Доля'],providers.map(function(p){
   var count=counts[p[0]]||0;
-  return '<tr><td><span class="an-table-name">'+anLogo({icon:p[0]})+p[1]+'</span></td>'+anCell(count)+'<td>'+anShare(count,users.registered)+'</td></tr>';
+  return '<tr style="--an-provider-color:'+p[2]+'"><td><span class="an-table-name">'+anLogo({icon:p[0]})+'<span>'+p[1]+'</span><span class="an-auth-track" aria-hidden="true"><i style="width:'+(count/users.registered*100)+'%"></i></span></span></td>'+anCell(count)+'<td>'+anPercent(count,users.registered)+'</td></tr>';
  }));
 }
 function anRenderVersions(data) {
  var versions=data.users&&data.users.versions;
- document.getElementById('an-updates-summary').innerHTML='<span>Обновились за период</span><b>'+(versions?anNum(versions.updated):'—')+'</b>';
+ document.getElementById('an-updates-summary').innerHTML='<b>'+(versions?anNum(versions.updated):'—')+'</b><span><strong>Обновились за период</strong><br>Аккаунты</span>';
  var rows=versions&&versions.rows||[], total=rows.reduce(function(n,r){return n+r.accounts;},0);
- document.getElementById('an-versions').innerHTML=rows.length?anTable(['Платформа','Версия','Аккаунты','Доля'],rows.map(function(r){return '<tr><td>'+(r.platform==='android'?'Android':'iOS')+'</td><td>'+anEsc(r.version)+'</td>'+anCell(r.accounts)+'<td>'+anShare(r.accounts,total)+'</td></tr>'; })): '<div class="an-empty">Нет данных о версиях мобильных аккаунтов</div>';
+ document.getElementById('an-versions').innerHTML=rows.length?anTable(['Версия','Аккаунты','Доля'],rows.map(function(r){return '<tr><td><span class="an-version-name" title="'+(r.platform==='android'?'Android':'iOS')+'">'+anSvgIcon(r.platform==='android'?'android':'apple')+'<span>'+(r.platform==='android'?'Android':'iOS')+' '+anEsc(r.version)+'</span></span></td>'+anCell(r.accounts)+'<td>'+anShare(r.accounts,total)+'</td></tr>'; })): '<div class="an-empty">Нет данных о версиях мобильных аккаунтов</div>';
 }
 function renderDashboard(data) {
  if(!document.getElementById('an-now'))return;
  window.__anData=data;
  var t=data.totals||{},u=data.users,tl=data.timeline||[];
- if(currentFeature==='analytics') document.getElementById('current-view-title').textContent='Аналитика';
+ if(currentFeature==='analytics') document.getElementById('current-view-title').textContent='Аналитика продукта';
  document.getElementById('an-period').innerHTML='<b>'+(tl.length?anDayLabel(tl[0].date)+' — '+anDayLabel(tl[tl.length-1].date):'Выбранный период')+'</b> · МСК';
  document.getElementById('an-period').title='Календарные дни. Сегодня — неполный день.';
  anPlot(data);
@@ -419,7 +428,7 @@ function renderDashboard(data) {
  if(Array.from(selector.options).some(function(o){return o.value===selected;}))selector.value=selected;
  anRenderGeo();
  document.getElementById('an-now').innerHTML=[
- ['Всего аккаунтов',u?u.registered:null,'Все сохранённые аккаунты выбранного приложения'],['Активные за 24 часа',u?u.active1:null,'Обращались к серверу за последние 24 часа'],['Активные за 7 дней',u?u.active7:null,'Обращались к серверу за последние 7 дней'],['Premium',u?u.premium:null,'Действующий Premium, включая ручную выдачу']
+ ['Всего аккаунтов',u?u.registered:null,'Все сохранённые аккаунты, без гостей и тестовых записей'],['Активные за 24 часа',u?u.active1:null,'Обращались к серверу за последние 24 часа'],['Активные за 7 дней',u?u.active7:null,'Обращались к серверу за последние 7 дней'],['Premium',u?u.premium:null,'Действующий Premium, включая ручную выдачу']
  ].map(function(m,i){return '<div class="an-card an-kpi'+(i===1?' is-primary':'')+'" title="'+m[2]+'"><div class="an-kpi-top">'+m[0]+'</div><div class="an-big">'+(m[1]==null?'—':anNum(m[1]))+'</div></div>';}).join('');
 }
 document.getElementById('an-chart-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-chart]');if(b){anChartMode=b.dataset.chart;if(window.__anData)anPlot(window.__anData);}});
