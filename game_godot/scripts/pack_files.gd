@@ -183,6 +183,12 @@ static func fetch(res_path: String, on_done: Callable) -> void:
 
 
 static func _request_url(res_path: String, url: String, try_cd: bool = false) -> void:
+	# GameSound starts shared audio fetches from _ready(), while the root is still
+	# attaching the scene. Both attachment and request must wait until that ends.
+	_start_request.call_deferred(res_path, url, try_cd)
+
+
+static func _start_request(res_path: String, url: String, try_cd: bool) -> void:
 	var req := HTTPRequest.new()
 	(Engine.get_main_loop() as SceneTree).root.add_child(req)
 	req.request_completed.connect(_on_fetched.bind(req, res_path, try_cd))
