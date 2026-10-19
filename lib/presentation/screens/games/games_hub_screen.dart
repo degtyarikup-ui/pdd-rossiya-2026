@@ -12,8 +12,6 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
 import 'package:pdd_app/presentation/screens/games/games_hub_view.dart';
-import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
-import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/sign_in_required_view.dart';
 
@@ -48,6 +46,7 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
   int _runs = 0;
   bool _runsLoaded = false;
   bool _hasPendingRun = false;
+  bool _openingCity = false;
   int _cityBest = 0;
   int _weekScore = 0;
   Timer? _timer;
@@ -118,28 +117,35 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
   /// The Godot game on its own screen (Android, iOS, the site). A platform without the
   /// game in its build says so: the old WebView game is gone.
   Future<void> _openCity() async {
-    await _refreshRuns();
-    if (!mounted) return;
-    if (!GameRunsService.canRide(
-      premium: ref.read(isPremiumProvider),
-      runs: _runs,
-    )) {
-      await _showRunsInfo();
-      return;
-    }
-    if (!await GodotGame.available()) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(appL10n.gameUnavailable)));
+    if (_openingCity) return;
+    _openingCity = true;
+    try {
+      await _refreshRuns();
+      if (!mounted) return;
+      if (!GameRunsService.canRide(
+        premium: ref.read(isPremiumProvider),
+        runs: _runs,
+      )) {
+        await PremiumPaywallSheet.show(context);
+        await _refreshRuns();
+        return;
       }
-      return;
+      if (!await GodotGame.available()) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(appL10n.gameUnavailable)));
+        }
+        return;
+      }
+      if (!mounted) return;
+      HapticFeedbackHelper.tap();
+      await GodotGame.play(context, ref);
+      await _refreshRuns();
+      await _refreshRating();
+    } finally {
+      _openingCity = false;
     }
-    if (!mounted) return;
-    HapticFeedbackHelper.tap();
-    await GodotGame.play(context, ref);
-    await _refreshRuns();
-    await _refreshRating();
   }
 
   /// The Godot Regulator game on its own screen (Android, iOS, the site).
@@ -178,25 +184,6 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
     await _refreshRating();
   }
 
-  Future<void> _openPremium() async {
-    await PremiumPaywallSheet.show(context);
-    await _refreshRuns();
-  }
-
-  Future<void> _showRunsInfo() async {
-    await showGameRunsSheet(
-      context,
-      maxRuns: GameRunsService.maxRuns,
-      questions: GameState.runQuestions,
-      refillMinutes: GameRunsService.refillInterval.inMinutes,
-      unlimited: ref.read(isPremiumProvider),
-      runs: () => GameRunsService.instance.refresh(),
-      nextRefillAt: () => GameRunsService.instance.nextRefillAt,
-      onBuyPremium: () => unawaited(_openPremium()),
-    );
-    await _refreshRuns();
-  }
-
   @override
   Widget build(BuildContext context) {
     ref.listen(progressImportsProvider, (_, next) {
@@ -230,8 +217,6 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
         await GameLeaderboardSheet.show(context);
         await _refreshRating();
       },
-      onRunsInfo: _showRunsInfo,
-      onPremium: _openPremium,
       onRefilled: () => unawaited(_refreshRuns()),
     );
   }

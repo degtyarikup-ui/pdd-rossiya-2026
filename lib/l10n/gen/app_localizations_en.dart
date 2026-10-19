@@ -3244,6 +3244,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'No. Only straight ahead is allowed from this lane. To turn, you need to take a suitable lane in advance.';
 
   @override
+  String get gamesRoadSignsTitle => 'Road signs';
+
+  @override
+  String get gamesViolatorTitle => 'Offender';
+
+  @override
   String get gamesParkingTitle => 'Parking';
 
   @override

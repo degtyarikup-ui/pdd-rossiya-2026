@@ -3247,6 +3247,12 @@ class AppLocalizationsKk extends AppLocalizations {
       'Жоқ. Бұл жолақтан тек алға жүруге рұқсат етіледі. Бұрылу үшін алдын ала қолайлы жолақты алу керек.';
 
   @override
+  String get gamesRoadSignsTitle => 'Белгілер';
+
+  @override
+  String get gamesViolatorTitle => 'Ереже бұзушы';
+
+  @override
   String get gamesParkingTitle => 'Тұрақ';
 
   @override

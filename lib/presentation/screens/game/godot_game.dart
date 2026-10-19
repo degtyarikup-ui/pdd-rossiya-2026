@@ -134,16 +134,7 @@ class GodotGame {
     if (!context.mounted || options == null) return;
     if (options['can_start'] != true) {
       _releaseRun(token);
-      await showGameRunsSheet(
-        context,
-        maxRuns: GameRunsService.maxRuns,
-        questions: _runQuestions,
-        refillMinutes: GameRunsService.refillInterval.inMinutes,
-        unlimited: false,
-        runs: () => GameRunsService.instance.refresh(),
-        nextRefillAt: () => GameRunsService.instance.nextRefillAt,
-        onBuyPremium: () => PremiumPaywallSheet.show(context),
-      );
+      await PremiumPaywallSheet.show(context);
       return;
     }
     final safe = _safeArea(context);

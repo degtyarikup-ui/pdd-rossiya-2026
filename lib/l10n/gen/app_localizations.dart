@@ -5422,6 +5422,18 @@ abstract class AppLocalizations {
   /// **'Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.'**
   String get gameSignScenario5_15_1_1Explanation;
 
+  /// No description provided for @gamesRoadSignsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знаки'**
+  String get gamesRoadSignsTitle;
+
+  /// No description provided for @gamesViolatorTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нарушитель'**
+  String get gamesViolatorTitle;
+
   /// No description provided for @gamesParkingTitle.
   ///
   /// In ru, this message translates to:

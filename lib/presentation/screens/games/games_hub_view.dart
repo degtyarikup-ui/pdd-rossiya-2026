@@ -10,8 +10,8 @@ import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 
 /// The hub's presentation, shared by the live screen and layout/state checks.
-/// Small phones use the available height; large text keeps its natural size
-/// and gets a scrollable, single-column layout.
+/// The city stays outside the scrolling mini-game catalogue, within thumb reach.
+/// Large text keeps its natural size and gets a single-column catalogue.
 class GamesHubView extends StatelessWidget {
   const GamesHubView({
     super.key,
@@ -30,8 +30,6 @@ class GamesHubView extends StatelessWidget {
     required this.onSigns,
     required this.onCrossroads,
     required this.onLeaderboard,
-    required this.onRunsInfo,
-    required this.onPremium,
     this.onRefilled,
   });
 
@@ -39,7 +37,7 @@ class GamesHubView extends StatelessWidget {
   final bool premium, runsLoaded, hasPendingRun;
   final DateTime? refillAt;
   final VoidCallback onCity, onTrafficController, onSigns, onCrossroads;
-  final VoidCallback onLeaderboard, onRunsInfo, onPremium;
+  final VoidCallback onLeaderboard;
   final VoidCallback? onRefilled;
 
   @override
@@ -127,170 +125,104 @@ class GamesHubView extends StatelessWidget {
                   Expanded(
                     child: LayoutBuilder(
                       builder: (context, box) {
-                        final compactHeight = box.maxHeight < 400;
-                        final gap = compactHeight
+                        final gap = box.maxHeight < 400
                             ? AppDimensions.spacingS
                             : AppDimensions.spacingM;
-                        final scaledTitle = MediaQuery.textScalerOf(
-                          context,
-                        ).scale(18);
-                        final singleColumn =
-                            scaledTitle > 24 || box.maxWidth < 280;
                         final wide =
-                            !singleColumn &&
-                            box.maxWidth >= 640 &&
+                            box.maxWidth >= 480 &&
                             box.maxWidth > box.maxHeight * 1.15;
-                        final showWait =
+                        final compactCity =
+                            wide &&
+                            box.maxHeight < 280 &&
+                            MediaQuery.textScalerOf(context).scale(24) > 28;
+                        final waiting =
                             !premium &&
                             runsLoaded &&
                             !GameRunsService.canRide(
                               premium: premium,
                               runs: runs,
                             );
-                        final minCity =
-                            (showWait
-                                ? compactHeight
-                                      ? 168.0
-                                      : 176.0
-                                : hasPendingRun
-                                ? 136.0
-                                : 120.0) +
-                            math.max(0.0, scaledTitle - 18) * 8;
-                        final available = box.maxHeight;
-                        final double rowHeight = singleColumn
-                            ? math.max(200.0, 110 + scaledTitle * 3)
-                            : wide
-                            ? math.max(94.0, (available - gap) / 2)
-                            : ((available - gap * 2) * .35)
-                                  .clamp(
-                                    compactHeight ? 90.0 : 94.0,
-                                    math.max(
-                                      compactHeight ? 90.0 : 94.0,
-                                      (available - gap * 2 - minCity) / 2,
-                                    ),
-                                  )
-                                  .toDouble();
-                        final cityHeight = wide
-                            ? rowHeight * 2 + gap
-                            : math.max(
-                                minCity,
-                                available - rowHeight * 2 - gap * 2,
-                              );
-                        final tiles = [
-                          _HubCard(
-                            id: 'parking',
-                            title: appL10n.gamesParkingTitle,
-                            caption: appL10n.gameSoonBadge,
-                          ),
-                          _HubCard(
-                            id: 'signs',
-                            title: appL10n.gamesSignsTitle,
-                            bestScore: signsBest,
-                            onTap: onSigns,
-                          ),
-                          _HubCard(
-                            id: 'regulator',
-                            title: appL10n.gameTrafficControllerTitle,
-                            bestScore: trafficBest,
-                            titleSize: box.maxWidth < 320 ? 15 : 18,
-                            onTap: onTrafficController,
-                          ),
-                          _HubCard(
-                            id: 'crossroads',
-                            title: appL10n.gamesCrossroadsTitle,
-                            titleSize: box.maxWidth < 320 ? 15 : 18,
-                            bestScore: crossroadsBest,
-                            onTap: onCrossroads,
-                          ),
-                        ];
-                        Widget row(int first) => SizedBox(
-                          height: rowHeight,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(child: tiles[first]),
-                              SizedBox(width: gap),
-                              Expanded(child: tiles[first + 1]),
-                            ],
-                          ),
-                        );
+                        final caption = waiting
+                            ? appL10n.gamesUnlimitedAction
+                            : hasPendingRun
+                            ? appL10n.gamesResumeRide
+                            : appL10n.gamesPlay;
                         final city = _HubCard(
                           id: 'city',
                           title: appL10n.gameCityTitle,
-                          bestScore: cityBest,
+                          caption: caption,
                           onTap: onCity,
                           featured: true,
-                          hideStatus: !premium && !hasPendingRun,
-                          caption: showWait
-                              ? appL10n.gameFuelEmptyTitle
-                              : hasPendingRun
-                              ? appL10n.gamesResumeRide
-                              : null,
-                          footer: !premium && runsLoaded
+                          compact: compactCity,
+                          waiting: waiting,
+                          semanticDetails: [
+                            if (waiting) appL10n.gameFuelEmptyTitle,
+                            if (cityBest > 0 && !hasPendingRun)
+                              appL10n.gamesRecordScore(
+                                _number(context, cityBest),
+                              ),
+                            if (!premium && runsLoaded && runs > 0)
+                              appL10n.gamesRunsFraction(
+                                runs,
+                                GameRunsService.maxRuns,
+                              ),
+                            if (!premium && runsLoaded && refillAt != null)
+                              appL10n.gamesRefillIn(
+                                gameFuelCountdown(refillAt),
+                              ),
+                          ].join(', '),
+                          footer:
+                              (!premium && runsLoaded) ||
+                                  (cityBest > 0 && !hasPendingRun)
                               ? _RunsFooter(
-                                  runs: runs,
+                                  runs: !premium && runsLoaded ? runs : 0,
                                   bestScore: hasPendingRun ? 0 : cityBest,
-                                  refillAt: refillAt,
-                                  waiting: showWait,
-                                  onInfo: onRunsInfo,
-                                  onPremium: onPremium,
+                                  refillAt: !premium && runsLoaded
+                                      ? refillAt
+                                      : null,
                                   onRefilled: onRefilled,
                                 )
                               : null,
                         );
-                        return SingleChildScrollView(
-                          key: const ValueKey('games-scroll'),
-                          child: singleColumn
-                              ? Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    for (final tile in tiles) ...[
-                                      SizedBox(height: rowHeight, child: tile),
-                                      SizedBox(height: gap),
-                                    ],
-                                    SizedBox(
-                                      height: math.max(
-                                        220 + scaledTitle * 5,
-                                        cityHeight,
-                                      ),
-                                      child: city,
-                                    ),
-                                  ],
-                                )
-                              : wide
-                              ? Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      flex: 6,
-                                      child: Column(
-                                        children: [
-                                          row(0),
-                                          SizedBox(height: gap),
-                                          row(2),
-                                        ],
-                                      ),
-                                    ),
-                                    SizedBox(width: gap),
-                                    Expanded(
-                                      flex: 5,
-                                      child: SizedBox(
-                                        height: cityHeight,
-                                        child: city,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
-                                  children: [
-                                    row(0),
-                                    SizedBox(height: gap),
-                                    row(2),
-                                    SizedBox(height: gap),
-                                    SizedBox(height: cityHeight, child: city),
-                                  ],
+                        Widget catalogue() => _MiniGamesCatalogue(
+                          gap: gap,
+                          trafficBest: trafficBest,
+                          signsBest: signsBest,
+                          crossroadsBest: crossroadsBest,
+                          onTrafficController: onTrafficController,
+                          onSigns: onSigns,
+                          onCrossroads: onCrossroads,
+                        );
+                        if (wide) {
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                flex: compactCity ? 4 : 6,
+                                child: catalogue(),
+                              ),
+                              SizedBox(width: gap),
+                              Expanded(flex: compactCity ? 7 : 5, child: city),
+                            ],
+                          );
+                        }
+                        // The card sizes itself to its text. Only the catalogue
+                        // scrolls, even when the device's font size is enlarged.
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(child: catalogue()),
+                            SizedBox(height: gap),
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: (box.maxHeight * .30).clamp(
+                                  156,
+                                  210,
                                 ),
+                              ),
+                              child: city,
+                            ),
+                          ],
                         );
                       },
                     ),
@@ -309,6 +241,134 @@ String _number(BuildContext context, int score) => NumberFormat.decimalPattern(
   Localizations.localeOf(context).toLanguageTag(),
 ).format(score);
 
+/// Available games come first; upcoming games never displace the city.
+class _MiniGamesCatalogue extends StatelessWidget {
+  const _MiniGamesCatalogue({
+    required this.gap,
+    required this.trafficBest,
+    required this.signsBest,
+    required this.crossroadsBest,
+    required this.onTrafficController,
+    required this.onSigns,
+    required this.onCrossroads,
+  });
+  final double gap;
+  final int trafficBest, signsBest, crossroadsBest;
+  final VoidCallback onTrafficController, onSigns, onCrossroads;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final scaledTitle = MediaQuery.textScalerOf(context).scale(18);
+      final columns = scaledTitle > 24 || box.maxWidth < 280
+          ? 1
+          : box.maxWidth >= 600
+          ? 3
+          : 2;
+      final rows = (6 / columns).ceil();
+      final rowHeight = math.max(
+        columns == 1 ? 110 + scaledTitle * 3 : 118.0,
+        (box.maxHeight - gap * (rows - 1)) / rows,
+      );
+      final titleSize = columns > 1 && box.maxWidth < 320 ? 15.0 : 18.0;
+      final tiles = [
+        _HubCard(
+          id: 'signs',
+          title: appL10n.gamesSignsTitle,
+          bestScore: signsBest,
+          titleSize: titleSize,
+          onTap: onSigns,
+        ),
+        _HubCard(
+          id: 'regulator',
+          title: appL10n.gameTrafficControllerTitle,
+          bestScore: trafficBest,
+          titleSize: titleSize,
+          onTap: onTrafficController,
+        ),
+        _HubCard(
+          id: 'crossroads',
+          title: appL10n.gamesCrossroadsTitle,
+          bestScore: crossroadsBest,
+          titleSize: titleSize,
+          onTap: onCrossroads,
+        ),
+        _HubCard(
+          id: 'road_signs',
+          title: appL10n.gamesRoadSignsTitle,
+          caption: appL10n.gameSoonBadge,
+          titleSize: titleSize,
+        ),
+        _HubCard(
+          id: 'violator',
+          title: appL10n.gamesViolatorTitle,
+          caption: appL10n.gameSoonBadge,
+          titleSize: titleSize,
+        ),
+        _HubCard(
+          id: 'parking',
+          title: appL10n.gamesParkingTitle,
+          caption: appL10n.gameSoonBadge,
+          titleSize: titleSize,
+        ),
+      ];
+      return _CatalogueScroll(
+        overflow: rowHeight * rows + gap * (rows - 1) > box.maxHeight + .5,
+        child: Column(
+          children: [
+            for (var row = 0; row < rows; row++) ...[
+              if (row > 0) SizedBox(height: gap),
+              SizedBox(
+                height: rowHeight,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var col = 0; col < columns; col++) ...[
+                      if (col > 0) SizedBox(width: gap),
+                      Expanded(child: tiles[row * columns + col]),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _CatalogueScroll extends StatefulWidget {
+  const _CatalogueScroll({required this.overflow, required this.child});
+  final bool overflow;
+  final Widget child;
+
+  @override
+  State<_CatalogueScroll> createState() => _CatalogueScrollState();
+}
+
+class _CatalogueScrollState extends State<_CatalogueScroll> {
+  final _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scrollbar(
+    controller: _controller,
+    thumbVisibility: widget.overflow,
+    thickness: 3,
+    child: SingleChildScrollView(
+      key: const ValueKey('games-scroll'),
+      controller: _controller,
+      child: widget.child,
+    ),
+  );
+}
+
 class _HubCard extends StatelessWidget {
   const _HubCard({
     required this.id,
@@ -317,7 +377,9 @@ class _HubCard extends StatelessWidget {
     this.caption,
     this.onTap,
     this.featured = false,
-    this.hideStatus = false,
+    this.waiting = false,
+    this.compact = false,
+    this.semanticDetails = '',
     this.titleSize = 18,
     this.footer,
   });
@@ -326,7 +388,8 @@ class _HubCard extends StatelessWidget {
   final int? bestScore;
   final String? caption;
   final VoidCallback? onTap;
-  final bool featured, hideStatus;
+  final bool featured, waiting, compact;
+  final String semanticDetails;
   final double titleSize;
   final Widget? footer;
 
@@ -347,62 +410,75 @@ class _HubCard extends StatelessWidget {
         key: ValueKey('games-card-$id'),
         button: true,
         enabled: enabled,
-        label: '$title, $semanticStatus',
+        label:
+            '$title, $semanticStatus${semanticDetails.isEmpty ? '' : ', $semanticDetails'}',
+        excludeSemantics: true,
         onTap: onTap,
-        // The image is decorative; footer actions retain their own semantics.
         child: ClipRRect(
           borderRadius: radius,
           child: Stack(
-            fit: StackFit.expand,
+            alignment: Alignment.bottomLeft,
+            fit: featured ? StackFit.loose : StackFit.expand,
             children: [
-              ExcludeSemantics(child: _HubCover(id: id)),
+              Positioned.fill(child: _HubCover(id: id)),
               if (!enabled)
-                ColoredBox(color: colors.background.withValues(alpha: .30)),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: const [0, .4, 1],
-                    colors: [
-                      Colors.transparent,
-                      featured
-                          ? const Color(0x66000A15)
-                          : const Color(0x14000A15),
-                      const Color(0xF0000A15),
-                    ],
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: colors.background.withValues(alpha: .30),
+                  ),
+                ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0, .4, 1],
+                      colors: [
+                        Colors.transparent,
+                        featured
+                            ? const Color(0x66000A15)
+                            : const Color(0x14000A15),
+                        const Color(0xF0000A15),
+                      ],
+                    ),
                   ),
                 ),
               ),
               if (enabled)
-                Material(
-                  type: MaterialType.transparency,
-                  child: InkWell(
-                    onTap: onTap,
-                    excludeFromSemantics: true,
-                    splashColor: Colors.white24,
-                    highlightColor: Colors.white10,
+                Positioned.fill(
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                      onTap: onTap,
+                      excludeFromSemantics: true,
+                      splashColor: Colors.white24,
+                      highlightColor: Colors.white10,
+                    ),
                   ),
                 ),
-              // Text passes taps through to the card; the footer has separate,
-              // comfortably sized targets for runs and the Premium action.
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: featured
-                      ? AppDimensions.spacingL
-                      : titleSize < 18
-                      ? AppDimensions.spacingS
-                      : AppDimensions.spacingM,
-                  vertical: featured
-                      ? AppDimensions.spacingL
-                      : AppDimensions.spacingM,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IgnorePointer(
-                      child: ExcludeSemantics(
+              IgnorePointer(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: featured
+                        ? AppDimensions.spacingL
+                        : titleSize < 18
+                        ? AppDimensions.spacingS
+                        : AppDimensions.spacingM,
+                    vertical: compact
+                        ? AppDimensions.spacingS
+                        : featured
+                        ? AppDimensions.spacingL
+                        : AppDimensions.spacingM,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: featured
+                        ? MainAxisSize.min
+                        : MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ExcludeSemantics(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
@@ -410,13 +486,15 @@ class _HubCard extends StatelessWidget {
                             Text(
                               title,
                               style: TextStyle(
-                                fontSize: featured ? 24 : titleSize,
+                                fontSize: featured
+                                    ? (compact ? 20 : 24)
+                                    : titleSize,
                                 height: 1.15,
                                 fontWeight: FontWeight.w700,
                                 color: foreground,
                               ),
                             ),
-                            if (!hideStatus) ...[
+                            ...[
                               const SizedBox(height: AppDimensions.spacingXS),
                               Row(
                                 children: [
@@ -437,7 +515,9 @@ class _HubCard extends StatelessWidget {
                                         fontSize: 13,
                                         height: 1.25,
                                         fontWeight: FontWeight.w600,
-                                        color: record && caption == null
+                                        color:
+                                            waiting ||
+                                                (record && caption == null)
                                             ? colors.gold
                                             : foreground,
                                       ),
@@ -449,9 +529,9 @@ class _HubCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ),
-                    ?footer,
-                  ],
+                      if (!compact) ?footer,
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -497,121 +577,76 @@ class _HubCover extends StatelessWidget {
 class _RunsFooter extends StatelessWidget {
   const _RunsFooter({
     required this.runs,
-    required this.bestScore,
     required this.refillAt,
-    required this.waiting,
-    required this.onInfo,
-    required this.onPremium,
+    required this.bestScore,
     this.onRefilled,
   });
   final int runs, bestScore;
   final DateTime? refillAt;
-  final bool waiting;
-  final VoidCallback onInfo, onPremium;
   final VoidCallback? onRefilled;
 
   @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget build(BuildContext context) => Padding(
+    key: const ValueKey('games-runs-status'),
+    padding: const EdgeInsets.only(top: AppDimensions.spacingS),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        TextButton(
-          key: const ValueKey('games-runs-info'),
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.white,
-            alignment: Alignment.centerLeft,
-            padding: EdgeInsets.zero,
-            // 44 pt (Apple HIG): the text's own air reads as the gap.
-            minimumSize: const Size(48, 44),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          onPressed: onInfo,
-          child: Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: AppDimensions.spacingM,
-            runSpacing: AppDimensions.spacingXS,
-            children: [
-              if (bestScore > 0)
-                Semantics(
-                  label: appL10n.gamesRecordScore(_number(context, bestScore)),
-                  excludeSemantics: true,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.emoji_events_rounded,
-                        size: 14,
-                        color: colors.gold,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        _number(context, bestScore),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: colors.gold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (runs > 0)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.local_gas_station_rounded,
-                      size: 16,
-                      color: colors.gold,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      appL10n.gamesRunsFraction(runs, GameRunsService.maxRuns),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              if (refillAt != null)
-                _RefillCountdown(at: refillAt!, onRefilled: onRefilled),
-            ],
-          ),
+        Wrap(
+          spacing: AppDimensions.spacingM,
+          runSpacing: AppDimensions.spacingXS,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (bestScore > 0)
+              _RunMetric(
+                icon: Icons.emoji_events_rounded,
+                text: _number(context, bestScore),
+              ),
+            if (runs > 0)
+              _RunMetric(
+                icon: Icons.local_gas_station_rounded,
+                text: appL10n.gamesRunsFraction(runs, GameRunsService.maxRuns),
+              ),
+          ],
         ),
-        if (waiting) ...[
-          FilledButton.icon(
-            key: const ValueKey('games-premium'),
-            onPressed: onPremium,
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.gold,
-              foregroundColor: AppColors.primaryText,
-              minimumSize: const Size.fromHeight(48),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-              ),
-            ),
-            icon: const Icon(Icons.all_inclusive_rounded, size: 20),
-            label: Text(
-              appL10n.gamesUnlimitedAction,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryText,
-              ),
-            ),
-          ),
+        if (refillAt != null) ...[
+          if (runs > 0 || bestScore > 0)
+            const SizedBox(height: AppDimensions.spacingXS),
+          _RefillCountdown(at: refillAt!, onRefilled: onRefilled),
         ],
       ],
-    );
-  }
+    ),
+  );
 }
 
-/// Only the small countdown repaints each second, not the five cover images.
+class _RunMetric extends StatelessWidget {
+  const _RunMetric({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 16, color: AppColors.of(context).gold),
+      const SizedBox(width: 5),
+      Flexible(
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.25,
+            fontWeight: FontWeight.w600,
+            color: AppColors.white,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+/// Only the small countdown repaints each second, not the cover images.
 class _RefillCountdown extends StatefulWidget {
   const _RefillCountdown({required this.at, this.onRefilled});
   final DateTime at;
