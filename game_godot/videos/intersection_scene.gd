@@ -1,16 +1,16 @@
 ## Low-poly crossroads for training videos: two 4-lane streets, GOST markings,
-## warm low sun. Sizes are in metres (lane 3.5 m, corner radius 8 m).
+## warm low sun. Sizes are in metres (lane 3.5 m, corner radius 6 m).
 extends Node3D
 
 const LANE := 3.5
 const LANES := 2  # per direction
 const MEDIAN := 0.3  # double solid 1.3: two 0.1 m lines with a 0.1 m gap
 const HW := LANE * LANES + MEDIAN * 0.5  # half road width
-const R := 8.0  # kerb corner radius
+const R := 6.0  # kerb corner radius
 const EXTENT := 90.0
 const WALK := 3.2  # pavement width
 const CURB := 0.25
-const STOP_BACK := 2.0  # stop line distance from the crossing edge
+const STOP_BACK := R + 1.35  # stop line: just past the kerb curve, full width to the kerb
 
 const C_ASPHALT := Color(0.25, 0.25, 0.27)
 const C_PAINT := Color(0.95, 0.95, 0.95)
@@ -134,7 +134,7 @@ func _build_road() -> void:
 
 
 func _build_markings() -> void:
-	var start := HW + R  # markings start where the kerb is straight again
+	var start := HW + STOP_BACK  # markings start at the stop line
 	var arm := EXTENT - start
 	# 1.3 double solid in both streets.
 	for off in [-0.1, 0.1]:
@@ -144,7 +144,7 @@ func _build_markings() -> void:
 	# 1.5 lane lines: 3 m dash, 9 m gap.
 	for lane_off in [-LANE - MEDIAN * 0.5, LANE + MEDIAN * 0.5]:
 		for s in [-1, 1]:
-			var d := start + STOP_BACK + 3.0
+			var d := start + 3.0
 			while d < EXTENT:
 				_paint(lane_off, s * (d + 1.5), 0.1, 3.0)
 				_paint(s * (d + 1.5), lane_off, 3.0, 0.1)
@@ -197,10 +197,10 @@ func _build_traffic_lights() -> void:
 	# Off lights on each corner, facing incoming traffic (regulator in charge).
 	var d := HW + CURB + 0.6
 	var spots := [
-		[Vector3(d, 0.15, HW + STOP_BACK + 0.5), 0.0],
-		[Vector3(-d, 0.15, -(HW + STOP_BACK + 0.5)), PI],
-		[Vector3(-(HW + STOP_BACK + 0.5), 0.15, d), -PI * 0.5],
-		[Vector3(HW + STOP_BACK + 0.5, 0.15, -d), PI * 0.5],
+		[Vector3(d, 0.15, HW + STOP_BACK - 0.9), 0.0],
+		[Vector3(-d, 0.15, -(HW + STOP_BACK - 0.9)), PI],
+		[Vector3(-(HW + STOP_BACK - 0.9), 0.15, d), -PI * 0.5],
+		[Vector3(HW + STOP_BACK - 0.9, 0.15, -d), PI * 0.5],
 	]
 	for s in spots:
 		var tl := _scene("res://models/street/traffic_light_standard.glb")
@@ -299,10 +299,10 @@ func _build_actors() -> void:
 	var lane_c := MEDIAN * 0.5 + LANE * 0.5  # left lane centre
 	var lane_r := MEDIAN * 0.5 + LANE * 1.5  # right lane centre
 	var cars := [
-		# [model, paint, position, yaw]  yaw 0 = heading -Z (north, away from camera)
-		["hatch", Color(0.86, 0.12, 0.06), Vector3(lane_r, 0, HW + STOP_BACK + 6.0), 0.0],
-		["sedan", Color(0.92, 0.92, 0.9), Vector3(-lane_c, 0, -(HW + STOP_BACK + 9.0)), PI],
-		["hatch", Color(0.92, 0.92, 0.9), Vector3(HW + STOP_BACK + 3.0, 0, -lane_r), PI * 0.5],
+		# [model, paint, position, yaw]  model faces +Z, so yaw PI = heading north
+		["hatch", Color(0.86, 0.12, 0.06), Vector3(lane_r, 0, HW + STOP_BACK + 3.0), PI],
+		["sedan", Color(0.92, 0.92, 0.9), Vector3(-lane_c, 0, -(HW + STOP_BACK + 6.0)), 0.0],
+		["hatch", Color(0.92, 0.92, 0.9), Vector3(HW + STOP_BACK + 1.0, 0, -lane_r), -PI * 0.5],
 	]
 	for c in cars:
 		var car := Models.player_car(c[0], c[1])
@@ -314,7 +314,7 @@ func _build_actors() -> void:
 func _build_camera() -> void:
 	var cam := Camera3D.new()
 	cam.fov = 42.0
-	cam.position = Vector3(0, 33, 38)
+	cam.position = Vector3(0, 35, 41)
 	add_child(cam)
-	cam.look_at(Vector3(0, 0, 1.5), Vector3.UP)
+	cam.look_at(Vector3(0, 0, 3.0), Vector3.UP)
 	cam.current = true
