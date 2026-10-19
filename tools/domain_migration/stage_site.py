@@ -153,6 +153,7 @@ ACCOUNT_ISOLATION_JS = r"""// Explicit account-login preview. Same account backe
     ['/api/auth/telegram/request', 'POST'], ['/api/auth/telegram/check', 'POST'],
     ['/api/user/status', 'GET'], ['/api/user/sync', 'POST'],
     ['/api/user/progress', 'GET'], ['/api/user/progress/sync', 'POST'],
+    ['/api/game/best', 'GET'],
   ]);
   const oauthHosts = new Set(['accounts.google.com', 'appleid.apple.com', 'oauth.yandex.ru', 'login.yandex.ru']);
   const parse = value => {

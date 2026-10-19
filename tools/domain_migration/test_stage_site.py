@@ -244,6 +244,43 @@ vm.runInNewContext(GUARD,context);
         self.assertTrue(data["mode"])
 
     @unittest.skipUnless(shutil.which("node"), "Node is needed for exercising browser transport guards")
+    def test_account_rank_guard_allows_only_existing_read_endpoint(self):
+        harness = r'''
+const vm=require('node:vm');const sent=[];
+class XHR{open(method,url){sent.push(['xhr',method,url]);}}
+const context={URL,DOMException,location:{origin:'https://pdd-drive.app'},document:{baseURI:'https://pdd-drive.app/app/',addEventListener(){}},navigator:{},XMLHttpRequest:XHR};
+context.window=context;context.fetch=(...args)=>{sent.push(['fetch',...args]);return Promise.resolve('synthetic');};context.open=()=>{};
+vm.runInNewContext(GUARD,context);
+(async()=>{
+ let denied=0;
+ for(const origin of ['https://api.pdd-drive.app','https://pdd-install-notifier.sergei-pdd.workers.dev']){
+  const url=origin+'/api/game/best?userId=google_synthetic';
+  await context.fetch(url);
+  new XHR().open('GET',url);
+  for(const method of ['POST','PUT','PATCH','DELETE','HEAD']){
+   try{await context.fetch(url,{method});}catch(_){denied++;}
+  }
+  for(const path of [
+   '/api/game/best/?userId=google_synthetic',
+   '/api/game/best/extra?userId=google_synthetic',
+   '/api/game/score?path=/api/game/best&userId=google_synthetic',
+   '/api/game/best/extra?path=/api/game/best&userId=google_synthetic',
+  ])try{await context.fetch(origin+path);}catch(_){denied++;}
+ }
+ for(const url of [
+  '/api/game/best?userId=google_synthetic',
+  'https://api.pdd-drive.app.evil.test/api/game/best?userId=google_synthetic',
+  'http://api.pdd-drive.app/api/game/best?userId=google_synthetic',
+ ])try{await context.fetch(url);}catch(_){denied++;}
+ process.stdout.write(JSON.stringify({denied,sent}));
+})();
+'''
+        result = subprocess.run([shutil.which("node"), "-e", "const GUARD=" + json.dumps(stage.ACCOUNT_ISOLATION_JS) + ";\n" + harness], text=True, capture_output=True, check=True)
+        data = json.loads(result.stdout)
+        self.assertEqual(data["denied"], 21)
+        self.assertEqual(len(data["sent"]), 4)
+
+    @unittest.skipUnless(shutil.which("node"), "Node is needed for exercising browser transport guards")
     def test_account_telegram_guard_allows_only_existing_post_endpoints_and_exact_bot_links(self):
         harness = r'''
 const vm=require('node:vm');const sent=[];const events={};
