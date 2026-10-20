@@ -40,7 +40,10 @@ func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	for i in picks:
 		scene.set_time(i/30.0)
-		await RenderingServer.frame_post_draw
+		# A hidden/occluded macOS window can stop automatic draws entirely.
+		# Flush scene transforms, then explicitly render the offscreen viewport.
+		await process_frame
+		RenderingServer.force_draw(false,1.0/30.0)
 		var img:=vp.get_texture().get_image()
 		img.save_png(output.path_join("%05d.png" % i))
 		if i%90==0:print("frame ",i," / ",frames)
