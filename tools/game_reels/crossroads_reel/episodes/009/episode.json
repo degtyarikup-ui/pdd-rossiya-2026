@@ -1,0 +1,127 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-009",
+  "status": "produced",
+  "title": "Разворот на главной",
+  "sourceScenario": "cross_uturn_on_main",
+  "rules": [
+    "13.9",
+    "8.5",
+    "8.11"
+  ],
+  "scene": "res://videos/crossroads_reel/uturn_main.gd",
+  "validator": "res://videos/crossroads_reel/validate_junction_episodes.gd",
+  "answerPhases": [
+    "red",
+    "blue",
+    "rule"
+  ],
+  "motionMinimums": {
+    "red": 11.2,
+    "blue": 5.5,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "uTurn",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1,
+      "blue": -0.1
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    },
+    {
+      "car": "blue",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-20",
+  "adaptation": "Main road north-south, two 4.2 m lanes per direction. Red hatch starts in the leftmost south approach lane, makes a continuous 4.2 m radius U-turn and exits into the southbound outer lane. Blue SUV from east travels straight west from secondary road. No pedestrians, tram, signals or prohibited U-turn conditions.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь проедет первым?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Первой красная! Она на главной. Синяя со второстепенной уступает, даже если красная разворачивается."
+    },
+    {
+      "key": "blue",
+      "text": "Теперь синяя. Красная уже освободила перекрёсток."
+    },
+    {
+      "key": "rule",
+      "text": "Разворот не отменяет приоритет главной дороги."
+    },
+    {
+      "key": "cta",
+      "text": "Разворот тебя запутал?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "проедет первым?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Первой красная!",
+      "Она на главной",
+      "Синяя со второстепенной",
+      "уступает",
+      "даже если",
+      "красная разворачивается"
+    ],
+    "blue": [
+      "Теперь синяя",
+      "Красная уже",
+      "освободила перекрёсток"
+    ],
+    "rule": [
+      "Разворот не отменяет",
+      "приоритет",
+      "главной дороги"
+    ],
+    "cta": [
+      "Разворот тебя",
+      "запутал?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "hatch",
+    "blue": "suv"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  },
+  "arrowPolicy": "exit-lane"
+}

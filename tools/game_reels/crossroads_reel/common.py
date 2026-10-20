@@ -29,6 +29,9 @@ def validate_episode_format(episode):
         if not kinds or any(shape not in ("hatch", "sedan", "coupe", "wagon", "suv", "pickup") for shape in shapes) or len(set(shapes)) != len(shapes):
             raise SystemExit("Episodes 008+ must declare participantTypes and distinct carModels for passenger cars")
 
+    if int(match[1]) >= 9 and episode.get("arrowPolicy") != "exit-lane":
+        raise SystemExit("Episodes 009+ must use exit-lane turn arrows and short straight hints")
+
 
 def output_dir():
     parser = argparse.ArgumentParser(add_help=False)

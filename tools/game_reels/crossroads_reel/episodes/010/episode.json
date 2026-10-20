@@ -1,0 +1,123 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-010",
+  "status": "in-production",
+  "title": "Пешеход без зебры",
+  "sourceScenario": "cross_pedestrian_without_zebra",
+  "rules": [
+    "13.1",
+    "4.3"
+  ],
+  "scene": "res://videos/crossroads_reel/pedestrian_turn.gd",
+  "validator": "res://videos/crossroads_reel/validate_junction_episodes.gd",
+  "answerPhases": [
+    "blue",
+    "red",
+    "rule"
+  ],
+  "motionMinimums": {
+    "blue": 8.3,
+    "red": 6.2,
+    "rule": 0
+  },
+  "motionDelays": {
+    "blue": 0.45,
+    "red": 0.65
+  },
+  "turns": {
+    "red": "right",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    },
+    {
+      "car": "red",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-20",
+  "adaptation": "Unsignalised junction with no marked pedestrian crossing. One red car turns right from south into the eastbound lane. Blue-jacket adult walks south across the east arm along the continuation of the north-south sidewalk at x=5.4. Red waits until the pedestrian reaches the south sidewalk, then turns right. No additional road users, priority signs or traffic signals.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь должен уступить?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Красная ждёт. При повороте уступаем пешеходу, даже если зебры нет."
+    },
+    {
+      "key": "red",
+      "text": "Пешеход прошёл. Теперь красная спокойно поворачивает."
+    },
+    {
+      "key": "rule",
+      "text": "На перекрёстке здесь переходят по линии тротуаров."
+    },
+    {
+      "key": "cta",
+      "text": "Ты бы пропустил?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "должен уступить?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Красная ждёт",
+      "При повороте",
+      "уступаем пешеходу",
+      "даже если",
+      "зебры нет"
+    ],
+    "red": [
+      "Пешеход прошёл",
+      "Теперь красная",
+      "спокойно поворачивает"
+    ],
+    "rule": [
+      "На перекрёстке",
+      "здесь переходят",
+      "по линии тротуаров"
+    ],
+    "cta": [
+      "Ты бы",
+      "пропустил?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "coupe"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "pedestrian"
+  },
+  "arrowPolicy": "exit-lane"
+}

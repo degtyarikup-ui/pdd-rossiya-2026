@@ -12,7 +12,7 @@ class QuestionFirstFormatTest(unittest.TestCase):
 
     def test_next_episode_accepts_one_question(self):
         validate_episode_format(self.recipe)
-        self.recipe.update(id='crossroads-108',participantTypes={'red':'car','blue':'car'},carModels={'red':'hatch','blue':'suv'})
+        self.recipe.update(id='crossroads-108',arrowPolicy='exit-lane',participantTypes={'red':'car','blue':'car'},carModels={'red':'hatch','blue':'suv'})
         validate_episode_format(self.recipe)
 
     def test_rejects_a_statement_before_the_question(self):
@@ -35,6 +35,12 @@ class QuestionFirstFormatTest(unittest.TestCase):
 
     def test_tram_is_not_a_second_passenger_car(self):
         self.recipe.update(id='crossroads-008',participantTypes={'red':'car','blue':'tram'},carModels={'red':'hatch'})
+        validate_episode_format(self.recipe)
+
+    def test_turn_arrow_policy_is_required_for_next_episodes(self):
+        self.recipe.update(id='crossroads-009',participantTypes={'red':'car'},carModels={'red':'hatch'})
+        with self.assertRaises(SystemExit):validate_episode_format(self.recipe)
+        self.recipe['arrowPolicy']='exit-lane'
         validate_episode_format(self.recipe)
 
     def test_archived_openings_remain_reproducible(self):

@@ -1,0 +1,94 @@
+{
+  "id": "crossroads-009",
+  "title": "Разворот на главной",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-20",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_009.mp4",
+  "deliveryDirectory": "Desktop",
+  "sha256": "5d088ae39dadcb3d9f7e51a8b7ff046a2817b2e25e110529412119598ea6d551",
+  "bytes": 32301627,
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "frames": 902,
+  "duration": 30.066666666666666,
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.9",
+    "8.5",
+    "8.11"
+  ],
+  "ruleSource": "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
+  "adaptation": "Main road north-south, two 4.2 m lanes per direction. Red hatch starts in the leftmost south approach lane, makes a continuous 4.2 m radius U-turn and exits into the southbound outer lane. Blue SUV from east travels straight west from secondary road. No pedestrians, tram, signals or prohibited U-turn conditions.",
+  "audio": {
+    "voice": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "integratedLufs": -14.05,
+    "truePeakDbtp": -1.89,
+    "music": false
+  },
+  "checks": {
+    "sceneValidation": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nVALIDATION_OK episode 9; 902.0 frames; full body footprints; correct exit-lane turn arrow; short straight hint; complete safe movements; readable conditions; no collisions or occlusion\n",
+    "captionClearanceFrames": 902,
+    "fullVideoDecode": "passed",
+    "automaticVoiceAudit": {
+      "heard_transcript": "Кто здесь проедет первым? Три секунды на ответ! Первой красная! Она на главной. Синяя со второстепенной уступает, даже если красная разворачивается. Теперь синяя. Красная уже освободила перекрёсток. Разворот не отменяет приоритет главной дороги. Разворот тебя запутал?",
+      "naturalness": 9,
+      "expressiveness": 9,
+      "clarity": 9,
+      "wrong_or_unclear_words": [],
+      "delivery_issues": []
+    },
+    "flutterAnalyze": "No issues",
+    "flutterTests": "680 passed, 3 skipped",
+    "formatTests": "8 passed",
+    "questionFirst": true,
+    "exitLaneArrow": true,
+    "shortStraightArrow": true,
+    "realCarSilhouettes": true,
+    "continuousForwardUTurnRadiusMetres": 4.2,
+    "visualReview": "All seconds, full-size initial composition and turn sequence, encoded QA and caption clearance inspected"
+  },
+  "sources": {
+    "game_godot/videos/crossroads_reel/scene.gd": "8860f558078cdc48ddf9341f300373f9a9a633dd8a77d107d0a81bc5c30d3c00",
+    "game_godot/videos/crossroads_reel/stage_geometry.gd": "90d69ad5145b8c9a92ac88352dd5c6eb158c4eaba80d2189cf9ccade48530c0d",
+    "game_godot/videos/crossroads_reel/render.gd": "1c54e6ad00a69588893fb1ef81d173d48fae88ca327a33ac1c2321a225d7196a",
+    "game_godot/videos/crossroads_reel/signal_episodes.gd": "740b3e800a70fa5c3d86e55de20a76134597c08d0b11a5f0b359f2b3565eb9e4",
+    "game_godot/videos/crossroads_reel/validate_signals.gd": "6aa90768c354bed790b4d810815cfe37e85682bfcb5a9f0528b9bcff806c0bbc",
+    "tools/game_reels/crossroads_reel/plan.py": "2bd4c9acc69f6cf5cc3cc4581d904f64b8bdd0f236df3f9c5f5420900b6e96e7",
+    "tools/game_reels/crossroads_reel/finish.py": "23e47a3eafa46bea4da37fa19d399e0adf30314b7ad061c5305a051675106429",
+    "tools/game_reels/crossroads_reel/review.py": "6578afa95785a613da252b0ae2dbb1446ba172a5eb5c5fcd2d5174f5454f729c",
+    "tools/game_reels/crossroads_reel/audit_voice.py": "7de2811713e79f995477ff3aa0236d1fa94d99740cbb0f8e7987f3b2ccd3f795",
+    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552",
+    "game_godot/videos/crossroads_reel/uturn_main.gd": "7c5e059c40adf22913bacb132ee3760e983e46888d4d5a41a86c86ec75008696",
+    "game_godot/videos/crossroads_reel/validate_junction_episodes.gd": "c5f387a06b10504005713fe90757e83bf52f3a8699fa843462081aff18561584",
+    "tools/game_reels/crossroads_reel/common.py": "041d172b55f76c6aa1b2f9131877b412889318065c2c838d0c0ee0cb61ff40d6",
+    "game_godot/videos/crossroads_reel/junction_episodes.gd": "50e08615fff314d013ffecedfd27e5b9ead698a249a079773bbca0184ad4c4ad",
+    "game_godot/videos/crossroads_reel/stop_vs_yield.gd": "1a8629b30269c23efac04ebafa5dc594a12323e7346add47a3188021acbbb9d7",
+    "game_godot/models/vehicles/hatch.glb": "5fa6153ecbd5047a7278bf214b198b111a20a7edbd41ce8910278e9e1ea7156d",
+    "game_godot/models/vehicles/suv.glb": "f058e6cca04ef95284c4552e3bdf9ab319332168b3e7d5f0be637790df17db2f",
+    "game_godot/signs/2.1.svg": "e9076dd4bbeec6f17a5771074e9ecdbb6171039543b45727a2b0e018c2cd751c",
+    "game_godot/signs/2.4.svg": "dff8540fef07134852b27e1fa6cffdd2b63e1075b0d6ce8419df784848e87987",
+    "assets/countries/ru/questions/pdd_sections.json": "8542b5de85458d03a5bfc1f6917a8c151f83a50783e593484c3f38caa3bea9e2"
+  },
+  "voiceClips": {
+    "hook": "1e307aecce05276e5ea9873a09669076dc09be9b0e3218363abd5ca8f86bd76b",
+    "challenge": "6e3b3f69b539fdc772c8759fca9641aebd6be145bd28dc8597ffd67a4ab0e5fb",
+    "red": "d7e7ed37a15c27a9a647cb1b3aa82eb77aebfe496580b62fb0b3218caf16bef4",
+    "blue": "04fbc9bbee826b1e2b0dfc4196787459327b4a7ced7cfa34a6a8581c990a4e2d",
+    "rule": "b4f21c914da585aeefc4c1eaf1ff3858abbf34ca283cac2c14cea0e3015d4e1c",
+    "cta": "015918f0902dc377feb0d2d3ae13eb7a83963bea67208a2a5e5c889f4a78c081"
+  },
+  "revision": 1,
+  "carModels": {
+    "red": "hatch",
+    "blue": "suv"
+  },
+  "arrowPolicy": "exit-lane",
+  "ruleSources": [
+    "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
+    "https://www.consultant.ru/document/cons_doc_LAW_2709/2fdfa8559de67744dab415a31c1f987bc016016b/"
+  ]
+}
