@@ -13,6 +13,7 @@ import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
 import 'package:pdd_app/data/services/push_topic_state.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
@@ -137,15 +138,19 @@ class AppNotice {
 /// not reappear offline. A failed request leaves existing local reminders alone.
 class RemoteNotificationsService {
   RemoteNotificationsService._()
-    : _client = http.Client(),
+    : _metricsSecret = BackendConfig.notifierSecret,
+      _client = http.Client(),
       _userProvider = (() => AuthService.instance.currentUser);
   @visibleForTesting
   RemoteNotificationsService.forTesting({
     required http.Client client,
     UserProfile? Function()? userProvider,
-  }) : _client = client,
+    String metricsSecret = BackendConfig.notifierSecret,
+  }) : _metricsSecret = metricsSecret,
+       _client = client,
        _userProvider = userProvider ?? (() => AuthService.instance.currentUser);
   final http.Client _client;
+  final String _metricsSecret;
   final UserProfile? Function() _userProvider;
   static final instance = RemoteNotificationsService._();
   static String get platform => kIsWeb
@@ -157,6 +162,7 @@ class RemoteNotificationsService {
   String get _prefix => 'notifications_${CountryConfig.current.code}_';
   SharedPreferences? _prefs;
   Future<void>? _refreshing;
+  Future<void> _metricsTail = Future.value();
   List<AppNotice> _messages = [];
   final Map<String, bool> _config = {
     'pushEnabled': false,
@@ -284,6 +290,7 @@ class RemoteNotificationsService {
   Future<void> _fetch() async {
     try {
       if (_prefs == null) await init();
+      unawaited(flushMetrics());
       final user = _userProvider();
       final revision = AuthService.instance.accountRevision;
       final query = {
@@ -342,6 +349,102 @@ class RemoteNotificationsService {
     } catch (_) {
       _messages = []; /* Keep offline training and cached policy usable. */
     }
+  }
+
+  /// Queue before sending; failed requests retry on the next foreground refresh.
+  Future<void> recordBannerEvent(String campaignId, String event) {
+    final account = _userProvider()?.id ?? '';
+    return _queueMetrics(campaignId, event, account);
+  }
+
+  Future<void> flushMetrics() => _queueMetrics(null, null, null);
+
+  Future<void> _queueMetrics(
+    String? campaignId,
+    String? event,
+    String? account,
+  ) {
+    _metricsTail = _metricsTail.then((_) async {
+      try {
+        if (_metricsSecret.isEmpty) return;
+        _prefs ??= await SharedPreferences.getInstance();
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final queueKey = '${_prefix}metrics_queue';
+        final seenKey = '${_prefix}metrics_seen';
+        final queue = (jsonDecode(_prefs!.getString(queueKey) ?? '[]') as List)
+            .cast<Map<String, dynamic>>()
+            .where(
+              (e) =>
+                  now - (e['ts'] as int) <
+                  const Duration(days: 30).inMilliseconds,
+            )
+            .toList();
+        final seen = _prefs!.getStringList(seenKey) ?? [];
+        final key = '$account|$campaignId|$event';
+        if (campaignId != null &&
+            const ['view', 'click'].contains(event) &&
+            !seen.contains(key)) {
+          queue.add({
+            'campaignId': campaignId,
+            'event': event,
+            'ts': now,
+            'account': account,
+          });
+          seen.add(key);
+        }
+        if (queue.length > 500) queue.removeRange(0, queue.length - 500);
+        await _prefs!.setString(queueKey, jsonEncode(queue));
+        await _prefs!.setStringList(
+          seenKey,
+          seen.length > 5000 ? seen.sublist(seen.length - 5000) : seen,
+        );
+        final currentAccount = _userProvider()?.id ?? '';
+        final batch = queue
+            .where((e) => e['account'] == currentAccount)
+            .take(50)
+            .toList();
+        if (batch.isEmpty) return;
+        final headers =
+            Map<String, String>.from(AuthService.instance.serverHeaders)
+              ..['content-type'] = 'application/json'
+              ..['x-install-secret'] = _metricsSecret;
+        final installId = await InstallReporter.installationId();
+        // Do not attribute a queued event to a different account during sign-in.
+        if ((_userProvider()?.id ?? '') != currentAccount) return;
+        final response = await sendWithRetry(
+          (host) => _client.post(
+            Uri.parse('$host/api/notifications/events'),
+            headers: headers,
+            body: jsonEncode({
+              'installId': installId,
+              'platform': platform,
+              'store': StoreConfig.current == AppStore.rustore
+                  ? 'rustore'
+                  : 'play',
+              'events': batch
+                  .map(
+                    (e) => {
+                      'campaignId': e['campaignId'],
+                      'event': e['event'],
+                      'ts': e['ts'],
+                    },
+                  )
+                  .toList(),
+            }),
+          ),
+          hosts: BackendConfig.notifierHosts,
+          attempts: const [Duration(seconds: 6), Duration(seconds: 6)],
+          pause: Duration.zero,
+        );
+        if (response.statusCode == 200) {
+          queue.removeWhere(batch.contains);
+          await _prefs!.setString(queueKey, jsonEncode(queue));
+        }
+      } catch (_) {
+        /* Keep durable events for a later refresh. */
+      }
+    });
+    return _metricsTail;
   }
 
   AppNotice? get nextNotice {

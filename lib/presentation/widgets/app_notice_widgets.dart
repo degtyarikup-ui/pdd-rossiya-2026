@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -243,11 +244,13 @@ class AppNoticeBannerSlot extends StatelessWidget {
     required this.statistics,
     required this.onTap,
     required this.onDismiss,
+    this.onViewed,
   });
 
   final AppNotice notice;
   final Widget statistics;
   final VoidCallback onTap, onDismiss;
+  final VoidCallback? onViewed;
 
   @override
   Widget build(BuildContext context) {
@@ -257,6 +260,7 @@ class AppNoticeBannerSlot extends StatelessWidget {
       imageFallback: statistics,
       onTap: onTap,
       onDismiss: onDismiss,
+      onViewed: onViewed,
     );
     if (notice.isImageBanner) return banner;
     return Stack(
@@ -278,6 +282,7 @@ class AppNoticeBannerSlot extends StatelessWidget {
 class AppNoticeBanner extends StatelessWidget {
   final AppNotice notice;
   final VoidCallback onTap, onDismiss;
+  final VoidCallback? onViewed;
 
   /// Keep statistics visible until an image is available, including load errors.
   final Widget? imageFallback;
@@ -286,40 +291,45 @@ class AppNoticeBanner extends StatelessWidget {
     required this.notice,
     required this.onTap,
     required this.onDismiss,
+    this.onViewed,
     this.imageFallback,
   });
 
   Widget _surface(BuildContext context, Widget content, {bool image = false}) {
     final colors = AppColors.of(context);
-    return Material(
-      color: colors.cardBackground,
-      borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: image ? StackFit.loose : StackFit.expand,
-        children: [
-          content,
-          Positioned.fill(
-            child: Material(
-              type: MaterialType.transparency,
-              child: InkWell(
-                onTap: notice.tap == null ? null : onTap,
-                child: notice.tap == null
-                    ? null
-                    : Semantics(
-                        label: notice.isImageBanner
-                            ? appL10n.noticeImageBanner
-                            : notice.title,
-                      ),
+    return NoticeViewObserver(
+      key: ValueKey(notice.id),
+      onViewed: onViewed,
+      child: Material(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: image ? StackFit.loose : StackFit.expand,
+          children: [
+            content,
+            Positioned.fill(
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: notice.tap == null ? null : onTap,
+                  child: notice.tap == null
+                      ? null
+                      : Semantics(
+                          label: notice.isImageBanner
+                              ? appL10n.noticeImageBanner
+                              : notice.title,
+                        ),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            top: 4,
-            right: 4,
-            child: _NoticeCloseButton(onPressed: onDismiss, overImage: image),
-          ),
-        ],
+            Positioned(
+              top: 4,
+              right: 4,
+              child: _NoticeCloseButton(onPressed: onDismiss, overImage: image),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -339,9 +349,8 @@ class AppNoticeBanner extends StatelessWidget {
         semanticLabel: notice.title.isNotEmpty
             ? notice.title
             : appL10n.noticeImageBanner,
-        frameBuilder: (context, child, frame, _) =>
-            frame == null && imageFallback != null
-            ? imageFallback!
+        frameBuilder: (context, child, frame, _) => frame == null
+            ? (imageFallback ?? const SizedBox.shrink())
             : _surface(context, child, image: true),
         errorBuilder: (context, _, _) =>
             imageFallback ??
@@ -499,4 +508,75 @@ class _NoticeCloseButton extends StatelessWidget {
       onPressed: onPressed,
     );
   }
+}
+
+/// A view requires half the rendered banner to stay visible for one second.
+/// Mounted off-screen tabs, covered routes and background apps do not count.
+class NoticeViewObserver extends StatefulWidget {
+  const NoticeViewObserver({super.key, required this.child, this.onViewed});
+  final Widget child;
+  final VoidCallback? onViewed;
+  @override
+  State<NoticeViewObserver> createState() => _NoticeViewObserverState();
+}
+
+class _NoticeViewObserverState extends State<NoticeViewObserver> {
+  Timer? _timer;
+  int _visibleTicks = 0;
+  bool _reported = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.onViewed != null) {
+      _timer = Timer.periodic(
+        const Duration(milliseconds: 250),
+        (_) => _check(),
+      );
+    }
+  }
+
+  void _check() {
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    final box = context.findRenderObject();
+    var visible =
+        mounted &&
+        TickerMode.valuesOf(context).enabled &&
+        (ModalRoute.of(context)?.isCurrent ?? true) &&
+        (lifecycle == null || lifecycle == AppLifecycleState.resumed);
+    if (visible &&
+        box is RenderBox &&
+        box.hasSize &&
+        box.size.width > 0 &&
+        box.size.height > 0) {
+      final rect = box.localToGlobal(Offset.zero) & box.size;
+      final screen = Offset.zero & MediaQuery.sizeOf(context);
+      final intersection = rect.intersect(screen);
+      visible =
+          !intersection.isEmpty &&
+          intersection.width * intersection.height >=
+              rect.width * rect.height / 2;
+    } else {
+      visible = false;
+    }
+    if (!visible) {
+      _visibleTicks = 0;
+      return;
+    }
+    _visibleTicks++;
+    if (!_reported && _visibleTicks >= 5) {
+      _reported = true;
+      _timer?.cancel();
+      widget.onViewed?.call();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

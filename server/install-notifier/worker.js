@@ -1,3 +1,4 @@
+import { acceptNoticeMetrics, noticeMetricsForAdmin } from './notice_metrics.js';
 import { serverErrorContext } from './diagnostic_context.js';
 import { reportSourceLabel, reportQuestionDetails } from './report_questions.js';
 import { mergeProgress } from './progress_merge.js';
@@ -2316,6 +2317,7 @@ export async function flushBufferedStats(env, items, persistBatch = null) {
   }
   const days = new Map();
   const slots = new Map();
+  const noticeMetrics = new Map();
   const viewsBySlug = new Map();
   const feed = [];
   const ai = { req: 0, prompt: 0, candidate: 0, cost: 0, todayReq: new Map() };
@@ -2340,6 +2342,10 @@ export async function flushBufferedStats(env, items, persistBatch = null) {
       }
       // Live Feed — только клики/установки/кампании (экономия KV).
       if (event.type !== 'registration' && !(event.type === 'install' && ['returning', 'unclassified'].includes(event.kind)) && (event.type !== 'view' || event.campaign)) feed.push(liveFeedEntry(event, now));
+    } else if (item.kind === 'notice' && /^[a-f0-9-]{36}$/.test(item.campaignId) && ['view', 'click'].includes(item.event)) {
+      const key = 'notice_metrics:' + item.campaignId;
+      const counts = await cachedKv(env, noticeMetrics, key, value => value || { view: 0, click: 0 });
+      counts[item.event]++;
     } else if (item.kind === 'usage') {
       applyUsage(await dayOf(now), item);
     } else if (item.kind === 'ai') {
@@ -2363,6 +2369,7 @@ export async function flushBufferedStats(env, items, persistBatch = null) {
   }
 
   const puts = [];
+  for (const [key, counts] of noticeMetrics) puts.push(env.INSTALLS.put(key, JSON.stringify(counts)));
   for (const [key, dayData] of days) puts.push(env.INSTALLS.put(key, JSON.stringify(dayData)));
   // Храним данные слота 7 дней
   for (const [key, slotData] of slots) {
@@ -3009,6 +3016,11 @@ const workerHandlers = {
       });
     }
 
+    if (url.pathname === '/api/notifications/events' && request.method === 'POST') {
+      if (!env.SHARED_SECRET || !safeEquals(request.headers.get('x-install-secret') || '', env.SHARED_SECRET)) return jsonResponse({ error: 'unauthorized' }, 401);
+      return acceptNoticeMetrics(request, env, { trackStats, notificationRequest, readSession });
+    }
+
     if (url.pathname === '/api/usage' && request.method === 'POST') {
       if (!env.SHARED_SECRET || !safeEquals(request.headers.get('x-install-secret') || '', env.SHARED_SECRET)) {
         return jsonResponse({ error: 'unauthorized' }, 401);
@@ -3294,7 +3306,7 @@ const workerHandlers = {
       const action = url.pathname.slice('/api/admin/notifications'.length);
       if (action === '/image' && request.method === 'POST') return uploadNotificationImage(request, env, url.origin);
       if ((action === '' && request.method === 'GET') || (['/config','/publish','/toggle','/delete'].includes(action) && request.method === 'POST')) {
-        if (request.method === 'GET') return notificationRequest(env, '/admin');
+        if (request.method === 'GET') return noticeMetricsForAdmin(env, await notificationRequest(env, '/admin'));
         let body;
         try { body = await request.json(); } catch { return jsonResponse({ error: 'invalid json' }, 400); }
         if (action === '/publish' && body.target) {

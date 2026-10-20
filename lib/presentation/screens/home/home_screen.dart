@@ -591,12 +591,26 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   final banner = banners.first;
                   return AppNoticeBannerSlot(
                     notice: banner,
+                    onViewed: () => unawaited(
+                      RemoteNotificationsService.instance.recordBannerEvent(
+                        banner.id,
+                        'view',
+                      ),
+                    ),
                     statistics: progressCard,
                     onDismiss: () => RemoteNotificationsService.instance
                         .dismissBanner(banner.id),
                     onTap: () {
                       final tap = banner.tap;
-                      if (tap != null) widget.onNoticeTap(tap);
+                      if (tap != null) {
+                        unawaited(
+                          RemoteNotificationsService.instance.recordBannerEvent(
+                            banner.id,
+                            'click',
+                          ),
+                        );
+                        widget.onNoticeTap(tap);
+                      }
                     },
                   );
                 },
