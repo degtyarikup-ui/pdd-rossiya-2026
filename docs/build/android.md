@@ -103,6 +103,17 @@ Flutter/Dart AOT и движок Godot остаются release, `debuggable=fal
 
 ## Значок приложения
 
+Общий источник иконки — `assets/images/app_icon.png`. Для замены во всех
+текущих форматах (iOS, Android, веб/лендинг, сторы, Godot и стандартная аватарка):
+
+```bash
+python3 tools/app_icons/generate.py --source /путь/к/новой-квадратной-иконке.jpg
+```
+
+Нужны Pillow, Flutter/Dart и `cwebp`. Без `--source` скрипт использует текущий
+источник. Рисунок не перерисовывается и не обрезается; размеры берутся из
+существующего каталога iOS и конфигурации Android.
+
 `assets/images/app_icon_foreground.png` содержит рисунок 512×512 по центру
 холста 768×768: внешние поля предназначены для маски адаптивного значка Android.
 В `flutter_launcher_icons-ru.yaml` и `pubspec.yaml` задан
