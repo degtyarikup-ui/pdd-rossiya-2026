@@ -1,0 +1,95 @@
+{
+  "id": "crossroads-008",
+  "title": "Даже трамвай может ждать",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-20",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_008.mp4",
+  "deliveryDirectory": "Desktop",
+  "sha256": "723efe520fe340101f9ee7fda2fafeaaba6103aad25b695c6a629d7ec3229e9a",
+  "bytes": 27280010,
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "frames": 875,
+  "duration": 29.166666666666668,
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.9"
+  ],
+  "ruleSource": "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
+  "adaptation": "Main road north-south with 2.1 signs. South red hatch turns left to west. Blue tram approaches from west on the secondary road with 2.4 and continues east on 1524 mm rails in its own lane. No traffic lights, other cars or pedestrians. Red clears the tram path before tram starts.",
+  "audio": {
+    "voice": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "integratedLufs": -13.97,
+    "truePeakDbtp": -2.53,
+    "music": false
+  },
+  "checks": {
+    "sceneValidation": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nVALIDATION_OK episode 008; 875.0 frames; main-road red left then secondary tram straight; 1524 mm gauge; full tram footprint; clear signs; no collisions, sidewalk intrusions or scenery occlusion; 12 vertical lamps\n",
+    "captionClearanceFrames": 875,
+    "fullVideoDecode": "passed",
+    "automaticVoiceAudit": {
+      "heard_transcript": "Кто здесь должен уступить? Три секунды на ответ! Сначала красная! Она на главной и поворачивает налево. Трамвай ждёт, у него второстепенная дорога. Здесь знак важнее. Трамвай уступает машине на главной, даже если она поворачивает. Трамвай тоже умеет ждать!",
+      "naturalness": 9,
+      "expressiveness": 8,
+      "clarity": 10,
+      "wrong_or_unclear_words": [],
+      "delivery_issues": []
+    },
+    "flutterAnalyze": "No issues",
+    "flutterTests": "680 passed, 3 skipped",
+    "formatTests": "7 passed",
+    "archiveSceneValidation": [
+      "001",
+      "002",
+      "003",
+      "007"
+    ],
+    "visualReview": "Full sequence sampled each second, encoded QA, all cuts and full-size overview/tram views inspected",
+    "questionFirst": true,
+    "tramWaitingPhraseStationary": true,
+    "fullTramGeometry": true,
+    "steelWheelsOn1524mmGauge": true,
+    "pantographContactWire": true
+  },
+  "sources": {
+    "game_godot/videos/crossroads_reel/scene.gd": "8860f558078cdc48ddf9341f300373f9a9a633dd8a77d107d0a81bc5c30d3c00",
+    "game_godot/videos/crossroads_reel/stage_geometry.gd": "90d69ad5145b8c9a92ac88352dd5c6eb158c4eaba80d2189cf9ccade48530c0d",
+    "game_godot/videos/crossroads_reel/render.gd": "1c54e6ad00a69588893fb1ef81d173d48fae88ca327a33ac1c2321a225d7196a",
+    "game_godot/videos/crossroads_reel/signal_episodes.gd": "740b3e800a70fa5c3d86e55de20a76134597c08d0b11a5f0b359f2b3565eb9e4",
+    "game_godot/videos/crossroads_reel/validate_signals.gd": "6aa90768c354bed790b4d810815cfe37e85682bfcb5a9f0528b9bcff806c0bbc",
+    "tools/game_reels/crossroads_reel/plan.py": "2bd4c9acc69f6cf5cc3cc4581d904f64b8bdd0f236df3f9c5f5420900b6e96e7",
+    "tools/game_reels/crossroads_reel/finish.py": "23e47a3eafa46bea4da37fa19d399e0adf30314b7ad061c5305a051675106429",
+    "tools/game_reels/crossroads_reel/review.py": "6578afa95785a613da252b0ae2dbb1446ba172a5eb5c5fcd2d5174f5454f729c",
+    "tools/game_reels/crossroads_reel/audit_voice.py": "7de2811713e79f995477ff3aa0236d1fa94d99740cbb0f8e7987f3b2ccd3f795",
+    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552",
+    "game_godot/videos/crossroads_reel/tram_secondary.gd": "b857479f5fe59c6df26c4eb3460e9d13fa534d1f2da09396e2a191b78a84d676",
+    "game_godot/videos/crossroads_reel/validate_tram_secondary.gd": "6382d48cad614a5430a3e8e7c23a2baedb665ebbc6a9b0cafd4da857ef4ad733",
+    "tools/game_reels/crossroads_reel/common.py": "66331db4a9d7c9684cf5964c1d35836aa2ff6fac1f5780ac3e341e0a596a9f18",
+    "game_godot/videos/crossroads_reel/stop_vs_yield.gd": "1a8629b30269c23efac04ebafa5dc594a12323e7346add47a3188021acbbb9d7",
+    "game_godot/models/road/tram.glb": "b9c65b08cfe3552ac198186466b988c37dc077d983c6d42600f2e44660085a31",
+    "game_godot/models/vehicles/hatch.glb": "5fa6153ecbd5047a7278bf214b198b111a20a7edbd41ce8910278e9e1ea7156d",
+    "game_godot/shaders/npc_vehicle.gdshader": "a4b1c91f335826f0143680f7caa21b99b5699f4a995f95077fc6c6797a009e5d",
+    "game_godot/signs/2.1.svg": "e9076dd4bbeec6f17a5771074e9ecdbb6171039543b45727a2b0e018c2cd751c",
+    "game_godot/signs/2.4.svg": "dff8540fef07134852b27e1fa6cffdd2b63e1075b0d6ce8419df784848e87987"
+  },
+  "voiceClips": {
+    "hook": "88955534c0c8efa99ae901390e3d5b12b3512a3b73b2830ee95a952b410e1dec",
+    "challenge": "a0d1fab83d51df287fb703ccfe8b43e1b1f224c7e5287becaa86ff9abc8ba717",
+    "red": "cbc7b442153e4896d7b1f03fe9b6a1cb448cc9c0ce23a32943cf89d8c9c4cff6",
+    "blue": "5c121d01da87a58c8fa9a63d75ec875b344fe2715c61e4bf6d3434c6c9e81eb3",
+    "rule": "7be500e826c2775bc50ca28ea354f64b611b4883bfeb80ff47c4b8a6d276fd37",
+    "cta": "c2591dff0284b9447b9eae6c891cb282a1a722a601cbf561e7998aee6dee061c"
+  },
+  "revision": 1,
+  "participantTypes": {
+    "red": "car",
+    "blue": "tram"
+  },
+  "carModels": {
+    "red": "hatch"
+  }
+}

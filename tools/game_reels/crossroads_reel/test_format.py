@@ -12,7 +12,7 @@ class QuestionFirstFormatTest(unittest.TestCase):
 
     def test_next_episode_accepts_one_question(self):
         validate_episode_format(self.recipe)
-        self.recipe['id']='crossroads-108'
+        self.recipe.update(id='crossroads-108',participantTypes={'red':'car','blue':'car'},carModels={'red':'hatch','blue':'suv'})
         validate_episode_format(self.recipe)
 
     def test_rejects_a_statement_before_the_question(self):
@@ -26,6 +26,16 @@ class QuestionFirstFormatTest(unittest.TestCase):
     def test_rejects_missing_direct_question_flag(self):
         self.recipe.pop('directQuestion')
         with self.assertRaises(SystemExit):validate_episode_format(self.recipe)
+
+    def test_distinct_shapes_required_for_new_multi_car_scenes(self):
+        self.recipe.update(id='crossroads-008',participantTypes={'red':'car','blue':'car'},carModels={'red':'hatch','blue':'hatch'})
+        with self.assertRaises(SystemExit):validate_episode_format(self.recipe)
+        self.recipe['carModels']['blue']='suv'
+        validate_episode_format(self.recipe)
+
+    def test_tram_is_not_a_second_passenger_car(self):
+        self.recipe.update(id='crossroads-008',participantTypes={'red':'car','blue':'tram'},carModels={'red':'hatch'})
+        validate_episode_format(self.recipe)
 
     def test_archived_openings_remain_reproducible(self):
         for number in range(1,7):

@@ -1,0 +1,125 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-008",
+  "status": "produced",
+  "title": "Даже трамвай может ждать",
+  "sourceScenario": "cross_tram_on_secondary",
+  "rules": [
+    "13.9"
+  ],
+  "scene": "res://videos/crossroads_reel/tram_secondary.gd",
+  "validator": "res://videos/crossroads_reel/validate_tram_secondary.gd",
+  "answerPhases": [
+    "red",
+    "blue",
+    "rule"
+  ],
+  "motionMinimums": {
+    "red": 6.7,
+    "blue": 6.6,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 1.3
+  },
+  "turns": {
+    "red": "left",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1,
+      "blue": -0.1
+    },
+    "indicator": false,
+    "setupCutAccents": [],
+    "engineKinds": {
+      "blue": "tram"
+    }
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    },
+    {
+      "car": "blue",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-20",
+  "adaptation": "Main road north-south with 2.1 signs. South red hatch turns left to west. Blue tram approaches from west on the secondary road with 2.4 and continues east on 1524 mm rails in its own lane. No traffic lights, other cars or pedestrians. Red clears the tram path before tram starts.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь должен уступить?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Сначала красная! Она на главной и поворачивает налево."
+    },
+    {
+      "key": "blue",
+      "text": "Трамвай ждёт: у него второстепенная дорога."
+    },
+    {
+      "key": "rule",
+      "text": "Здесь знак важнее. Трамвай уступает машине на главной, даже если она поворачивает."
+    },
+    {
+      "key": "cta",
+      "text": "Трамвай тоже умеет ждать!"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "должен уступить?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Сначала красная!",
+      "Она на главной",
+      "и поворачивает налево"
+    ],
+    "blue": [
+      "Трамвай ждёт",
+      "у него",
+      "второстепенная дорога"
+    ],
+    "rule": [
+      "Здесь знак важнее",
+      "Трамвай уступает",
+      "машине на главной",
+      "даже если",
+      "она поворачивает"
+    ],
+    "cta": [
+      "Трамвай тоже",
+      "умеет ждать!"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "hatch"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "tram"
+  }
+}

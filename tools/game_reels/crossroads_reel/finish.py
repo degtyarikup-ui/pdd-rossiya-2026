@@ -79,6 +79,10 @@ def mix_audio():
   speed=np.minimum(8.5,tt*3.6);rpm=63+speed*14
   phase=2*np.pi*np.cumsum(rpm)/sr
   engine=(np.sin(phase)+.32*np.sin(phase*2.03)+.17*np.sin(phase*3.02))
+  if EPISODE.get("audio",{}).get("engineKinds",{}).get(key)=="tram":
+   speed=np.minimum(5.0,tt*1.5)
+   phase=2*np.pi*np.cumsum(110+speed*9)/sr
+   engine=.65*np.sin(phase)+.18*np.sin(phase*2)+.10*rng.standard_normal(len(tt))
   amp=(1-np.exp(-tt*4))*np.exp(-np.maximum(tt-2.5,0)*.65)*.018
   add(go,engine*amp,pan)
  # Three tactile wooden ticks. The final answer has a soft, short two-note cue.

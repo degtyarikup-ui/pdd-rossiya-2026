@@ -21,6 +21,14 @@ def validate_episode_format(episode):
             or any(line.get("key") == "setup" for line in lines)):
         raise SystemExit("Episodes 007+ must start with one direct question, use directQuestion=true, and have no setup narration")
 
+    if int(match[1]) >= 8:
+        kinds = episode.get("participantTypes", {})
+        models = episode.get("carModels", {})
+        cars = [key for key, kind in kinds.items() if kind == "car"]
+        shapes = [models.get(key) for key in cars]
+        if not kinds or any(shape not in ("hatch", "sedan", "coupe", "wagon", "suv", "pickup") for shape in shapes) or len(set(shapes)) != len(shapes):
+            raise SystemExit("Episodes 008+ must declare participantTypes and distinct carModels for passenger cars")
+
 
 def output_dir():
     parser = argparse.ArgumentParser(add_help=False)

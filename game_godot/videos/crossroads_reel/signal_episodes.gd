@@ -16,6 +16,7 @@ func _ready() -> void:
 	episode = JSON.parse_string(FileAccess.get_file_as_string(data.path_join("episode.json")))
 	episode_number = int(str(episode.id).get_slice("-", 1))
 	turn_types = [str(episode.get("turns", {}).get("red", "none")), str(episode.get("turns", {}).get("blue", "none"))]
+	if episode.has("carModels"): set_meta("carModels",episode.carModels)
 	super._ready()
 
 func _build_actors() -> void:

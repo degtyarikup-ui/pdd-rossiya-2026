@@ -206,7 +206,11 @@ func _build_scenery() -> void:
 func _build_actors() -> void:
 	var models := ["sedan","coupe","hatch"]
 	for i in 3:
-		var car := Models.player_car(models[i],PAINTS[i])
+		var model: String = models[i]
+		if has_meta("carModels"):
+			model = str(get_meta("carModels").get(["red","blue","yellow"][i],model))
+		var car := Models.player_car(model,PAINTS[i])
+		car.set_meta("bodyModel",model)
 		cars.append(car);add_child(car)
 		for mi:MeshInstance3D in car.find_children("*","MeshInstance3D",true,false):
 			for surface in mi.mesh.get_surface_count():
