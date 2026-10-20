@@ -1,19 +1,11 @@
 [
   {
     "key": "hook",
-    "text": "Главная — у красной. А первой едет…",
+    "text": "Кто здесь может проехать?",
     "path": "audio/hook.wav",
-    "duration": 3.341,
-    "transcription": "Главное у красной, а первый едет.",
+    "duration": 1.378625,
+    "transcription": "Кто здесь может проехать?",
     "start": 0.12
-  },
-  {
-    "key": "setup",
-    "text": "Красной горит красный. Синей — зелёный. Обе едут прямо.",
-    "path": "audio/setup.wav",
-    "duration": 4.307791666666667,
-    "transcription": "Красный горит красный синий зелёный обе едут прямо",
-    "start": 3.6310000000000002
   },
   {
     "key": "challenge",
@@ -21,7 +13,8 @@
     "path": "audio/challenge.wav",
     "duration": 1.5117916666666666,
     "transcription": "3 секунды на ответ",
-    "start": 8.078791666666667
+    "start": 1.7121250000000012,
+    "retainedFromMixedMaster": true
   },
   {
     "key": "blue",
@@ -29,7 +22,8 @@
     "path": "audio/blue.wav",
     "duration": 3.5006666666666666,
     "transcription": "Синяя здесь очерёдность задаёт светофор",
-    "start": 12.830583333333335
+    "start": 6.463916666666669,
+    "retainedFromMixedMaster": true
   },
   {
     "key": "rule",
@@ -37,7 +31,8 @@
     "path": "audio/rule.wav",
     "duration": 2.4412083333333334,
     "transcription": "Знаки приоритета её сейчас не меняют.",
-    "start": 18.130583333333334
+    "start": 11.763916666666667,
+    "retainedFromMixedMaster": true
   },
   {
     "key": "wait",
@@ -45,7 +40,8 @@
     "path": "audio/wait.wav",
     "duration": 2.1921666666666666,
     "transcription": "Красная остаётся ждать",
-    "start": 21.630583333333334
+    "start": 15.263916666666667,
+    "retainedFromMixedMaster": true
   },
   {
     "key": "cta",
@@ -53,6 +49,7 @@
     "path": "audio/cta.wav",
     "duration": 2.4966666666666666,
     "transcription": "на знак посмотрел или на сигнал",
-    "start": 24.430583333333335
+    "start": 18.063916666666668,
+    "retainedFromMixedMaster": true
   }
 ]

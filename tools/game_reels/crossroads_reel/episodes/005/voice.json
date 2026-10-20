@@ -1,19 +1,11 @@
 [
   {
     "key": "hook",
-    "text": "Стрелка зелёная. Почему красная ждёт?",
+    "text": "Кто здесь проедет первым?",
     "path": "audio/hook.wav",
-    "duration": 3.0062083333333334,
-    "transcription": "Стрелка зелёная почему красная ждёт",
+    "duration": 1.6128333333333333,
+    "transcription": "Кто здесь проедет первым",
     "start": 0.12
-  },
-  {
-    "key": "setup",
-    "text": "Красная направо, синяя прямо. Посмотри на основной сигнал красной.",
-    "path": "audio/setup.wav",
-    "duration": 5.120041666666666,
-    "transcription": "Красное направо синее прямо. Посмотри на основной сигнал красный.",
-    "start": 3.2962083333333334
   },
   {
     "key": "challenge",
@@ -21,7 +13,8 @@
     "path": "audio/challenge.wav",
     "duration": 1.5117916666666666,
     "transcription": "три секунды на ответ",
-    "start": 8.55625
+    "start": 1.9562500000000007,
+    "retainedFromMixedMaster": true
   },
   {
     "key": "blue",
@@ -29,7 +22,8 @@
     "path": "audio/blue.wav",
     "duration": 1.4062083333333333,
     "transcription": "Сначала синяков",
-    "start": 13.308041666666668
+    "start": 6.708041666666668,
+    "retainedFromMixedMaster": true
   },
   {
     "key": "rule",
@@ -37,7 +31,8 @@
     "path": "audio/rule.wav",
     "duration": 5.219916666666666,
     "transcription": "Стрелка с основным красным разрешает поворот, но требует уступить с других направлений",
-    "start": 18.60804166666667
+    "start": 12.008041666666669,
+    "retainedFromMixedMaster": true
   },
   {
     "key": "red",
@@ -45,7 +40,8 @@
     "path": "audio/red.wav",
     "duration": 2.337833333333333,
     "transcription": "Теперь красная может повернуть",
-    "start": 24.077958333333335
+    "start": 17.477958333333333,
+    "retainedFromMixedMaster": true
   },
   {
     "key": "cta",
@@ -53,6 +49,7 @@
     "path": "audio/cta.wav",
     "duration": 2.0665833333333334,
     "transcription": "эту стрелку не переоценил",
-    "start": 29.077958333333335
+    "start": 22.477958333333333,
+    "retainedFromMixedMaster": true
   }
 ]

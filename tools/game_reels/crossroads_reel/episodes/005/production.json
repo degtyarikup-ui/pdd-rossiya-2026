@@ -7,13 +7,13 @@
   "styleReference": "crossroads-001 approved 2026-10-20",
   "videoFile": "game_005.mp4",
   "deliveryDirectory": "Desktop",
-  "sha256": "04b2dfa445bbedb1c385c0f75f54649798db89fdfe4637d041106910886ad899",
-  "bytes": 29377136,
+  "sha256": "8f653d173ac3380d9e6ca467469cfe22ac5c3d41ff2ee8c0e94ffb2562a1e0c1",
+  "bytes": 52478867,
   "width": 1080,
   "height": 1920,
   "fps": 30,
-  "frames": 959,
-  "duration": 31.966666666666665,
+  "frames": 761,
+  "duration": 25.366666666666667,
   "renderer": "Godot 4.7.2 / Forward+ / Metal",
   "rules": [
     "13.5"
@@ -23,44 +23,59 @@
   "audio": {
     "voice": "Algenib",
     "model": "gemini-3.1-flash-tts-preview",
-    "integratedLufs": -13.32,
-    "truePeakDbtp": -2.5,
+    "integratedLufs": -13.46,
+    "truePeakDbtp": -2.51,
     "music": false
   },
   "checks": {
-    "sceneValidation": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nVALIDATION_OK episode 5; 959.0 frames; fixed correct signals; two cars; no collisions or sidewalk intrusions; readable first frame; full focus framing; 12 vertical lamps\n",
-    "captionClearanceFrames": 959,
+    "sceneValidation": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nVALIDATION_OK episode 5; 959.0 frames; fixed correct signals; two cars; no collisions or sidewalk intrusions; readable first frame; full focus framing; 12 vertical lamps\nRETAINED_EDIT_OK 761 frames; source frames 198..958; exact PCM tail\n",
+    "captionClearanceFrames": 761,
     "fullVideoDecode": "passed",
     "automaticVoiceAudit": {
-      "heard_transcript": "Стрелка зелёная. Почему красная ждёт? Красная направо, синяя прямо. Посмотри на основной сигнал красной. 3 секунды на ответ! Сначала синяя. Стрелка с основным красным разрешает поворот, но требует уступить с других направлений. Теперь красная может повернуть. Эту стрелку не переоценил?",
-      "naturalness": 9,
-      "expressiveness": 9,
-      "clarity": 10,
+      "heard_transcript": "Кто здесь проедет первым? Три секунды на ответ! Сначала синяя. Стрелка с основным красным разрешает поворот, но требует уступить с других направлений. Теперь красная может повернуть. Эту стрелку не переоценил?",
+      "naturalness": 8,
+      "expressiveness": 8,
+      "clarity": 9,
       "wrong_or_unclear_words": [],
       "delivery_issues": []
     },
     "flutterAnalyze": "No issues",
-    "flutterTests": "passed; see build logs"
+    "flutterTests": "passed; see build logs",
+    "questionFirst": true,
+    "retainedPcmTailExact": true,
+    "retainedTailSsim": 0.996668
   },
   "sources": {
     "game_godot/videos/crossroads_reel/scene.gd": "13e8735d3d14882311740f8c121edc188e50b4d0538937a632e2256c7e6ef2e4",
     "game_godot/videos/crossroads_reel/stage_geometry.gd": "90d69ad5145b8c9a92ac88352dd5c6eb158c4eaba80d2189cf9ccade48530c0d",
-    "game_godot/videos/crossroads_reel/render.gd": "dcf89c6bce950344f08f95f281b99f95195c0e10fdc28fc241a255768280bf1f",
-    "game_godot/videos/crossroads_reel/signal_episodes.gd": "62a5e9b8b7638c04a73d941d438af5d564138bb6ff12cb4e85e299f7022be53d",
+    "game_godot/videos/crossroads_reel/render.gd": "1c54e6ad00a69588893fb1ef81d173d48fae88ca327a33ac1c2321a225d7196a",
+    "game_godot/videos/crossroads_reel/signal_episodes.gd": "cad11072aea74c49e1bf50fecfe53e750e9f0183e80121afd443e6d37c99da12",
     "game_godot/videos/crossroads_reel/validate_signals.gd": "6aa90768c354bed790b4d810815cfe37e85682bfcb5a9f0528b9bcff806c0bbc",
-    "tools/game_reels/crossroads_reel/plan.py": "330c8694a4fe5f065ac1503512d206f39f5fa70a65a8766e172cc15c8b4d9ea7",
+    "tools/game_reels/crossroads_reel/plan.py": "c4dcffb9d9995f025e069ea45900389873ef2f42893fd494b26951f1a109ea84",
     "tools/game_reels/crossroads_reel/finish.py": "c1bd47a6eac8695f280cfb35d4e6f22c32a8d2a270bb7a08d78db4bbbce8d9bd",
-    "tools/game_reels/crossroads_reel/review.py": "48a8dda169b6d60a2e06c8efdd1effac2889aee0e482f82d0a4a533d525c193f",
+    "tools/game_reels/crossroads_reel/review.py": "fbfa2f19b2c5169e76f87f3ee526c1e5f2bc86607a8959ed83343a3db4168313",
     "tools/game_reels/crossroads_reel/audit_voice.py": "7de2811713e79f995477ff3aa0236d1fa94d99740cbb0f8e7987f3b2ccd3f795",
-    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552"
+    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552",
+    "tools/game_reels/crossroads_reel/replace_question.py": "c3edba76d211a73a2b473d672b61ced0119869f1cb48e6e65dba0a1ad9b882b4"
   },
   "voiceClips": {
-    "hook": "51d0c9e15714ef12a59bb9ec4593c6c4aaa2cb7b0b44c6c17af4772b7b2eafac",
-    "setup": "644b3c26abe74a3864d13b8969f93ddc7dc5d4b1440c5cf1f301a19a3ca44b2d",
-    "challenge": "85ec187049d70e5f0470ffe6fae28a44520797103822b407e20ae0b7cbda788a",
-    "blue": "7053ca6b991e43773b81e55b5c53fe029ad701536c505779753edcc2fc14e610",
-    "rule": "e989945a379e0f2ccb9b0cf9278c92ba505c268725441356ee70c590c28b5db8",
-    "red": "9bb15dea4dd65be22124d0a679118113c6933dd0f50c503e452ed002f65e1a93",
-    "cta": "2bdfa4339142eae334044efe83ce564b93486a587c9eb3e5089d34fdad15a76b"
+    "hook": "772b5a84c48a9531e028de91251f15af1ea410d8dc70d71eb3ce7bfcfa0c33f1",
+    "challenge": "f4d30068e5b71c5db9c6dbbf7c072ef978d117c0d5e8d268a0e1680d7f6f8654",
+    "blue": "b6e9a052e32f2b3e8154e3d531492286103c1af7ef9b396d9ce28882fc5b3eb0",
+    "rule": "7a14440f67135e9f04f2bb1b328e2b389ae7ad1d79d9cddbbc9b3fc4cdfbd502",
+    "red": "336efc83ffa9e95c58162ef73096960d6ddfc5b417dfdfb9d2ad66b891fbcfb8",
+    "cta": "32b9ac4f4acd9932859bc2e93e43f9fbb40a31e97ccf80da713505df3d7abac0"
+  },
+  "revision": 2,
+  "previousRevisionSha256": "04b2dfa445bbedb1c385c0f75f54649798db89fdfe4637d041106910886ad899",
+  "questionEdit": {
+    "sourceSha256": "04b2dfa445bbedb1c385c0f75f54649798db89fdfe4637d041106910886ad899",
+    "sourceCutFrame": 256,
+    "introFrames": 58,
+    "deltaSeconds": -6.6,
+    "sourceFrameOffset": 6.6,
+    "retainedTailSsim": 0.996668,
+    "pcmTailExact": true,
+    "newQuestion": "Кто здесь проедет первым?"
   }
 }

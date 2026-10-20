@@ -10,8 +10,11 @@ by={x['key']:x for x in v}
 episode=json.loads((D/'episode.json').read_text())
 minimums=episode.get('motionMinimums',{'red':4.7,'blue':5.65,'yellow':4.15})
 starts={'hook':.12}
-starts['setup']=starts['hook']+by['hook']['duration']+.17
-starts['challenge']=starts['setup']+by['setup']['duration']+.14
+if episode.get('directQuestion',False):
+ starts['challenge']=math.ceil((starts['hook']+by['hook']['duration']+.17)*30)/30+episode.get('challengeFrameOffset',0)
+else:
+ starts['setup']=starts['hook']+by['hook']['duration']+.17
+ starts['challenge']=starts['setup']+by['setup']['duration']+.14
 count=starts['challenge']+by['challenge']['duration']+.18
 phases=episode.get('answerPhases',['red','blue','yellow'])
 cursor=count+3.0+.06

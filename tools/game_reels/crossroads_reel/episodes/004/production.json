@@ -7,13 +7,13 @@
   "styleReference": "crossroads-001 approved 2026-10-20",
   "videoFile": "game_004.mp4",
   "deliveryDirectory": "Desktop",
-  "sha256": "fb3abae8bbcce2bd7d00b3114175ef0780446dbbcdb854395bd32a41fb530152",
-  "bytes": 24876665,
+  "sha256": "5848f58f65accc30ee2d87064d5bd6afd38a81e3a6a33ad1f18ccc34205febb3",
+  "bytes": 37339440,
   "width": 1080,
   "height": 1920,
   "fps": 30,
-  "frames": 832,
-  "duration": 27.733333333333334,
+  "frames": 641,
+  "duration": 21.366666666666667,
   "renderer": "Godot 4.7.2 / Forward+ / Metal",
   "rules": [
     "6.15",
@@ -24,44 +24,59 @@
   "audio": {
     "voice": "Algenib",
     "model": "gemini-3.1-flash-tts-preview",
-    "integratedLufs": -13.93,
-    "truePeakDbtp": -2.79,
+    "integratedLufs": -14.31,
+    "truePeakDbtp": -3.54,
     "music": false
   },
   "checks": {
-    "sceneValidation": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nVALIDATION_OK episode 4; 832.0 frames; fixed correct signals; two cars; no collisions or sidewalk intrusions; readable first frame; full focus framing; 12 vertical lamps\n",
-    "captionClearanceFrames": 832,
+    "sceneValidation": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nVALIDATION_OK episode 4; 832.0 frames; fixed correct signals; two cars; no collisions or sidewalk intrusions; readable first frame; full focus framing; 12 vertical lamps\nRETAINED_EDIT_OK 641 frames; source frames 191..831; exact PCM tail\n",
+    "captionClearanceFrames": 641,
     "fullVideoDecode": "passed",
     "automaticVoiceAudit": {
-      "heard_transcript": "Главная — у красной. А первой едет... Красной горит красный. Синей — зелёный. Обе едут прямо. Три секунды на ответ! Синяя! Здесь очерёдность задаёт светофор. Знаки приоритета её сейчас не меняют. Красная остаётся ждать. На знак посмотрел или на сигнал?",
+      "heard_transcript": "Кто здесь может проехать? Три секунды на ответ! Синяя! Здесь очерёдность задаёт светофор. Знаки приоритета её сейчас не меняют. Красная остаётся ждать. На знак посмотрел или на сигнал?",
       "naturalness": 9,
       "expressiveness": 9,
-      "clarity": 10,
+      "clarity": 9,
       "wrong_or_unclear_words": [],
       "delivery_issues": []
     },
     "flutterAnalyze": "No issues",
-    "flutterTests": "passed; see build logs"
+    "flutterTests": "passed; see build logs",
+    "questionFirst": true,
+    "retainedPcmTailExact": true,
+    "retainedTailSsim": 0.997443
   },
   "sources": {
     "game_godot/videos/crossroads_reel/scene.gd": "13e8735d3d14882311740f8c121edc188e50b4d0538937a632e2256c7e6ef2e4",
     "game_godot/videos/crossroads_reel/stage_geometry.gd": "90d69ad5145b8c9a92ac88352dd5c6eb158c4eaba80d2189cf9ccade48530c0d",
-    "game_godot/videos/crossroads_reel/render.gd": "dcf89c6bce950344f08f95f281b99f95195c0e10fdc28fc241a255768280bf1f",
-    "game_godot/videos/crossroads_reel/signal_episodes.gd": "86ae7800845e46527f6af3a048c4c8b482270d71a4b0565d5881b1ea4ab9f483",
-    "game_godot/videos/crossroads_reel/validate_signals.gd": "cee1626931dad9b018306da24b6d9323808bf3d9bb1ca3bd9001d9effc72a35a",
-    "tools/game_reels/crossroads_reel/plan.py": "330c8694a4fe5f065ac1503512d206f39f5fa70a65a8766e172cc15c8b4d9ea7",
+    "game_godot/videos/crossroads_reel/render.gd": "1c54e6ad00a69588893fb1ef81d173d48fae88ca327a33ac1c2321a225d7196a",
+    "game_godot/videos/crossroads_reel/signal_episodes.gd": "cad11072aea74c49e1bf50fecfe53e750e9f0183e80121afd443e6d37c99da12",
+    "game_godot/videos/crossroads_reel/validate_signals.gd": "6aa90768c354bed790b4d810815cfe37e85682bfcb5a9f0528b9bcff806c0bbc",
+    "tools/game_reels/crossroads_reel/plan.py": "c4dcffb9d9995f025e069ea45900389873ef2f42893fd494b26951f1a109ea84",
     "tools/game_reels/crossroads_reel/finish.py": "c1bd47a6eac8695f280cfb35d4e6f22c32a8d2a270bb7a08d78db4bbbce8d9bd",
-    "tools/game_reels/crossroads_reel/review.py": "48a8dda169b6d60a2e06c8efdd1effac2889aee0e482f82d0a4a533d525c193f",
-    "tools/game_reels/crossroads_reel/audit_voice.py": "5234b75a3fed2b27b23c78d21fd7ef0e17e5417e4a5db16be11369877967e404",
-    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552"
+    "tools/game_reels/crossroads_reel/review.py": "fbfa2f19b2c5169e76f87f3ee526c1e5f2bc86607a8959ed83343a3db4168313",
+    "tools/game_reels/crossroads_reel/audit_voice.py": "7de2811713e79f995477ff3aa0236d1fa94d99740cbb0f8e7987f3b2ccd3f795",
+    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552",
+    "tools/game_reels/crossroads_reel/replace_question.py": "c3edba76d211a73a2b473d672b61ced0119869f1cb48e6e65dba0a1ad9b882b4"
   },
   "voiceClips": {
-    "hook": "2d0063b78546d8634d3b72fac1ef08dd2aa07a344d218afe632ab06cb0bc0818",
-    "setup": "476b1b573123be83ea42ef375ce95053d92cb79fe61ef6c72838ba421b9e834a",
-    "challenge": "85ec187049d70e5f0470ffe6fae28a44520797103822b407e20ae0b7cbda788a",
-    "blue": "10e1be6430287d75143d146a95c575cd08017c2d5a79e9a7ebe7f73ff02e67eb",
-    "rule": "88e09c64e4d8394cb4c518b26b6a3fb75143daa32a10cb843f10605f0c7cae6a",
-    "wait": "dbcc7c48bbda03bcc4897809a88922206efd2333af8b94467c86cced097605fa",
-    "cta": "388c676b521bf364ff37e41a1b2337a9f2e8aaf780075ddd79b4719deb989b81"
+    "hook": "4426ca3cbd89a032199e9018736994e622b60032e9b9ed6028b7d5a634225e10",
+    "challenge": "3a52e86e9c3719e7b54d712d0d8eb80bd8abf127cf61aacfc8f692315691aab8",
+    "blue": "9bc95ab14fd4d89474c9357af62eac78fe7fa4e203bba79340601d85c050500f",
+    "rule": "7081a17bba3bfa30f10ccbd244ab3e1586ce590d9c16560a16cf5cb5198aaffa",
+    "wait": "5393d5aa9b7da9b174720a4b8b02ac1468052d8ed08362b8489a892e00f0b9df",
+    "cta": "d57d3b05c2db071bcc49d076c9ddc6d7968f2b94f17d0da8ad8975b3b716b638"
+  },
+  "revision": 2,
+  "previousRevisionSha256": "fb3abae8bbcce2bd7d00b3114175ef0780446dbbcdb854395bd32a41fb530152",
+  "questionEdit": {
+    "sourceSha256": "fb3abae8bbcce2bd7d00b3114175ef0780446dbbcdb854395bd32a41fb530152",
+    "sourceCutFrame": 242,
+    "introFrames": 51,
+    "deltaSeconds": -6.366666666666666,
+    "sourceFrameOffset": 6.366666666666666,
+    "retainedTailSsim": 0.997443,
+    "pcmTailExact": true,
+    "newQuestion": "Кто здесь может проехать?"
   }
 }

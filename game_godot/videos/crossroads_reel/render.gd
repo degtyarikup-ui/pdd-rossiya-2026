@@ -39,7 +39,7 @@ func _initialize() -> void:
 	var output:String=args.get("out",data.path_join("frames"))
 	DirAccess.make_dir_recursive_absolute(output)
 	for i in picks:
-		scene.set_time(i/30.0)
+		scene.set_time(i/30.0+float(args.get("time-offset","0")))
 		# A hidden/occluded macOS window can stop automatic draws entirely.
 		# Flush scene transforms, then explicitly render the offscreen viewport.
 		await process_frame
