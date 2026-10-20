@@ -1,0 +1,125 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-012",
+  "status": "draft",
+  "title": "Т-образный: прямая не значит главная",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#012",
+  "rules": [
+    "13.11"
+  ],
+  "scene": "res://videos/crossroads_reel/t_junction.gd",
+  "validator": "res://videos/crossroads_reel/validate_t_junction.gd",
+  "answerPhases": [
+    "red",
+    "rule",
+    "blue"
+  ],
+  "motionMinimums": {
+    "red": 4.6,
+    "rule": 2.0,
+    "blue": 4.6
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "left",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1,
+      "blue": -0.15
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    },
+    {
+      "car": "blue",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Equal T-junction without signs or signals: through road west-east, full south street, no north arm (continuous north kerb). Red coupe from south turns left into the westbound lane; blue SUV from west goes straight east. Red is on blue's right and goes first; blue starts after red has completed the turn.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь проедет первым?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Красная! Для синей она справа."
+    },
+    {
+      "key": "rule",
+      "text": "То, что синяя едет по прямой части Т-образного перекрёстка, не делает её главной."
+    },
+    {
+      "key": "blue",
+      "text": "Красная повернула. Теперь синяя."
+    },
+    {
+      "key": "cta",
+      "text": "Прямая дорога тебя отвлекла?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "проедет первым?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Красная!",
+      "Для синей",
+      "она справа"
+    ],
+    "rule": [
+      "То, что синяя",
+      "едет по прямой",
+      "части Т-образного",
+      "перекрёстка",
+      "не делает её",
+      "главной"
+    ],
+    "blue": [
+      "Красная повернула",
+      "Теперь синяя"
+    ],
+    "cta": [
+      "Прямая дорога",
+      "тебя отвлекла?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "coupe",
+    "blue": "suv"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  },
+  "arrowPolicy": "exit-lane"
+}
