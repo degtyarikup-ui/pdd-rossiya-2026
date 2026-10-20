@@ -86,19 +86,128 @@ export const SOCIAL_VIEW_HTML = `
     .sc-retries { display:flex; gap:5px; margin-top:8px; }
     .sc-retries .btn-action { height:26px; padding:0 8px; font-size:11px; flex:1; justify-content:center; }
     .sc-empty { color:var(--text-muted); text-align:center; padding:34px; background:#F8F9FB; border-radius:14px; }
+
+    /* Компактная библиотека с читаемыми статусами каждой площадки. */
+    #social-view .card-head { margin-bottom:18px; flex-wrap:wrap; gap:12px; }
+    #social-view .sc-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    #social-view .sc-connections-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    #social-view .sc-connection { display:flex; align-items:center; gap:12px; background:var(--surface-gray); border-radius:12px; padding:14px 16px; min-width:0; }
+    .sc-connection-logo { width:32px; height:32px; display:grid; place-items:center; flex-shrink:0; }
+    .sc-connection-logo svg { width:25px; height:25px; }
+    .sc-connection strong { display:block; font-size:12.5px; font-weight:600; }
+    .sc-connection small { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted); margin-top:3px; }
+    .sc-connection small::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+    .sc-connection small.ok { color:var(--success); }
+    .sc-connection small.bad { color:var(--danger); }
+    #sc-check-result:empty { display:none; }
+    #sc-check-result:not(:empty) { margin-top:14px; }
+    #social-view .sc-schedule-fields { display:flex; align-items:flex-end; gap:24px; flex-wrap:wrap; }
+    #social-view .sc-targets { display:flex; gap:8px; flex-wrap:wrap; }
+    .sc-target { display:inline-flex; align-items:center; gap:8px; border:0; border-radius:10px; padding:10px 12px; background:var(--surface-gray); color:var(--text-muted); font-size:12px; font-weight:550; cursor:pointer; min-height:38px; }
+    .sc-target svg { width:16px; height:16px; }
+    .sc-target-check { width:16px; height:16px; border-radius:50%; background:#fff; color:transparent; font-size:10px; display:grid; place-items:center; }
+    .sc-target[aria-pressed="true"] { background:var(--primary-subtle); color:var(--primary); }
+    .sc-target[aria-pressed="true"] .sc-target-check { background:var(--primary); color:#fff; }
+    #social-view #sc-time { width:130px; min-height:38px; }
+    #social-view .sc-save-group { display:flex; align-items:center; gap:12px; margin-left:auto; }
+    #social-view .sc-schedule-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:18px; padding-top:14px; border-top:1px solid var(--admin-divider); }
+    .sc-switch { display:flex; align-items:center; gap:8px; cursor:pointer; }
+    .sc-switch input { position:absolute; opacity:0; width:1px; height:1px; }
+    .sc-switch>span { width:30px; height:18px; background:#D3D9E2; border-radius:12px; padding:3px; box-sizing:border-box; }
+    .sc-switch>span::before { content:''; display:block; width:12px; height:12px; background:#fff; border-radius:50%; transition:transform .15s; }
+    .sc-switch input:checked+span { background:var(--primary); }
+    .sc-switch input:checked+span::before { transform:translateX(12px); }
+    .sc-switch input:focus-visible+span { outline:2px solid var(--primary); outline-offset:3px; }
+    .sc-switch b { font-size:11px; font-weight:500; color:var(--text-muted); }
+    #social-view .sc-library-tools { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    #social-view #sc-search { width:260px; max-width:100%; }
+    #social-view .sc-tabs { flex-wrap:wrap; }
+    #social-view .sc-tabs span { opacity:.65; margin-left:5px; font-variant-numeric:tabular-nums; }
+    #social-view .sc-bulk { background:var(--surface-gray); padding:8px; margin-bottom:8px; }
+    #social-view .sc-count { background:transparent; color:var(--text); padding:0 6px; }
+    #social-view .sc-bulk [data-extra] { position:relative; margin-left:auto; }
+    .sc-menu { position:absolute; right:0; top:38px; z-index:5; min-width:190px; padding:6px; border-radius:12px; background:#fff; box-shadow:0 8px 32px #17223622; display:grid; gap:4px; }
+    .sc-menu .btn-action { justify-content:flex-start; }
+    #social-view .sc-video-list { display:grid; gap:2px; }
+    #social-view .sc-card { display:grid; grid-template-columns:24px 68px minmax(130px,1fr) minmax(180px,.65fr) 140px 34px; align-items:center; gap:18px; padding:14px 10px; border-radius:12px; background:transparent; }
+    #social-view .sc-card+.sc-card { border-top:1px solid var(--admin-divider)!important; }
+    #social-view .sc-card:hover { background:#F8F9FB; }
+    #social-view .sc-card.sel { background:var(--primary-subtle); }
+    #social-view .sc-card.sel .sc-poster { opacity:1; }
+    #social-view .sc-pick { position:static; width:17px; height:17px; margin:0; accent-color:var(--primary); }
+    #social-view .sc-poster { border:0; padding:0; width:68px; aspect-ratio:9/16; border-radius:8px; }
+    #social-view .sc-play { opacity:1; background:transparent; }
+    #social-view .sc-play span { width:25px; height:25px; background:#FFFFFFDA; }
+    #social-view .sc-body { padding:0; min-width:0; }
+    #social-view .sc-title { display:block; border:0; padding:0; background:transparent; color:var(--text); text-align:left; height:auto; font-size:13px; font-weight:600; cursor:pointer; }
+    #social-view .sc-file { margin-top:5px; font-size:11px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #social-view .sc-platforms { display:grid; gap:8px; justify-content:start; }
+    #social-view .sc-platform { display:flex; align-items:center; gap:7px; font-size:11px; color:var(--text-muted); }
+    #social-view .sc-platform svg { width:15px; height:15px; flex-shrink:0; }
+    #social-view .sc-platform span { min-width:62px; color:var(--text); }
+    #social-view .sc-platform small { font-size:10px; }
+    #social-view .sc-platform.off { opacity:.45; }
+    #social-view .sc-platform.ok small { color:var(--success); }
+    #social-view .sc-platform.bad small { color:var(--danger); }
+    #social-view .sc-date strong { display:block; font-size:12px; font-weight:550; }
+    #social-view .sc-date small { display:block; color:var(--text-muted); font-size:11px; margin-top:4px; }
+    #social-view .sc-edit { width:34px; height:34px; padding:0; justify-content:center; }
+    #social-view .sc-more { margin:18px auto 0; }
+    #social-view .sc-more[hidden] { display:none; }
+    .sc-modal textarea.sc-input { background:var(--surface-gray); border:0; border-radius:10px; padding:10px 12px; }
+    .sc-modal .sc-dialog-title { margin:0 0 18px; font-size:18px; font-weight:600; letter-spacing:-.3px; }
+    .sc-modal .sc-targets { display:flex; gap:8px; flex-wrap:wrap; }
+    .sc-modal .sc-dialog-error { color:var(--danger); font-size:12px; margin-top:12px; }
+    .sc-modal .sc-dialog-error:empty { display:none; }
+    .sc-modal .sc-preview-content { display:grid; grid-template-columns:210px minmax(0,1fr); gap:24px; }
+    @media(max-width:1100px) {
+      #social-view .sc-card { grid-template-columns:20px 60px minmax(100px,1fr) 175px 30px; gap:12px; }
+      #social-view .sc-poster { width:60px; grid-row:1/3; }
+      #social-view .sc-card>.sc-pick { grid-row:1/3; }
+      #social-view .sc-date { grid-column:3/5; grid-row:2; display:flex; align-items:center; gap:8px; }
+      #social-view .sc-date small { margin:0; }
+      #social-view .sc-edit { grid-column:5; grid-row:1/3; }
+    }
+    @media(max-width:760px) {
+      #social-view .sc-connections-grid { gap:6px; }
+      #social-view .sc-connection { padding:12px 8px; gap:7px; flex-direction:column; align-items:flex-start; }
+      #social-view .sc-connection-logo { width:24px; height:24px; }
+      #social-view .sc-connection strong { font-size:11px; }
+      #social-view .sc-connection small { font-size:9.5px; }
+      #social-view .sc-schedule-fields { gap:16px; }
+      #social-view .sc-save-group { margin-left:0; flex:1; justify-content:flex-end; }
+      #social-view .sc-destinations { flex-basis:100%; }
+      #social-view .sc-library-head { align-items:flex-start; }
+      #social-view .sc-card { grid-template-columns:18px 56px minmax(0,1fr) 30px; gap:10px; padding:14px 4px; }
+      #social-view .sc-poster { width:56px; grid-row:1/4; }
+      #social-view .sc-card>.sc-pick { grid-row:1/4; }
+      #social-view .sc-platforms { grid-column:3; grid-row:2; gap:4px; }
+      #social-view .sc-platform { font-size:10px; gap:5px; }
+      #social-view .sc-platform span { min-width:58px; }
+      #social-view .sc-date { grid-column:3; grid-row:3; display:block; }
+      #social-view .sc-date strong { font-size:11px; }
+      #social-view .sc-date small { font-size:10px; }
+      #social-view .sc-edit { grid-column:4; grid-row:1/4; }
+      #social-view .sc-title { font-size:12px; }
+      #social-view .sc-file { display:none; }
+      #social-view .sc-library-tools { align-items:flex-start; }
+      #social-view .sc-bulk { gap:6px; }
+      #social-view .sc-bulk .btn-action { font-size:11px; padding:0 8px; }
+      .sc-modal .sc-preview-content { grid-template-columns:minmax(0,1fr); }
+      .sc-modal .sc-preview-media { max-width:160px; margin:auto; }
+    }
   </style>
 
-  <div class="card">
-    <div class="card-head" style="margin-bottom:14px;">
-      <div class="card-title"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>Состояние</span></div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn-action" id="sc-check"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Проверить</button>
-        <button class="btn-action" id="sc-toggle-conn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v3a6 6 0 0 1-12 0V8z"/></svg>Подключение</button>
+  <div class="card sc-connections">
+    <div class="card-head">
+      <div class="card-title">Подключения</div>
+      <div class="sc-actions">
+        <button class="btn-action" id="sc-check">Проверить доступ</button>
+        <button class="btn-action" id="sc-toggle-conn" aria-expanded="false" aria-controls="sc-conn">Настроить</button>
       </div>
     </div>
-    <div id="sc-status" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-    <div id="sc-check-result" style="margin-top:12px;"></div>
-
+    <div id="sc-status" class="sc-connections-grid"></div>
+    <div id="sc-check-result" aria-live="polite"></div>
     <div id="sc-conn" style="display:none; margin-top:18px; padding-top:18px; border-top:1px solid #F1F2F6;">
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px;">
         <div class="form-group"><label class="form-label">Google Client ID</label>
@@ -114,44 +223,50 @@ export const SOCIAL_VIEW_HTML = `
       </div>
       <div style="display:flex; gap:8px; margin-top:12px; align-items:center;">
         <button class="btn-action btn-primary" id="sc-save-conn">Сохранить</button>
-        <span class="sc-hint">Пустые поля не меняются. Инструкция — SOCIAL_SETUP.md</span>
+        <span class="sc-hint">Пустые поля сохраняют текущие значения</span>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-head" style="margin-bottom:14px;">
-      <div class="card-title"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Расписание</span></div>
-      <button class="btn-action btn-primary" id="sc-plan"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Расставить по датам</button>
+  <div class="card sc-schedule">
+    <div class="card-head">
+      <div class="card-title">Автопубликация</div>
+      <label class="sc-switch"><input type="checkbox" id="sc-active"><span></span><b id="sc-active-label">Включена</b></label>
     </div>
-    <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-end;">
-      <div class="form-group"><label class="form-label">Время</label>
-        <input type="time" id="sc-time" class="sc-input" style="width:120px;"></div>
-      <div class="form-group"><label class="form-label">Раз в сколько дней</label>
-        <input type="number" id="sc-every" class="sc-input" min="1" max="30" value="1" style="width:90px;"></div>
-      <div class="form-group"><label class="form-label">Куда постим</label>
-        <div style="display:flex; gap:8px;">
-          <button class="sc-tab" id="sc-t-ig" data-on="0">Instagram</button>
-          <button class="sc-tab" id="sc-t-yt" data-on="0">YouTube</button>
-        </div></div>
-      <div style="flex:1; min-width:200px; text-align:right;" class="sc-hint" id="sc-next"></div>
+    <div class="sc-schedule-fields">
+      <div class="form-group sc-destinations"><label class="form-label">Соцсети · новые ролики и очередь</label>
+        <div class="sc-targets" role="group" aria-label="Соцсети очереди">
+          <button class="sc-target" id="sc-t-ig" data-on="0" aria-pressed="false">Instagram<span class="sc-target-check">✓</span></button>
+          <button class="sc-target" id="sc-t-yt" data-on="0" aria-pressed="false">YouTube<span class="sc-target-check">✓</span></button>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label" for="sc-time">Каждый день · МСК</label>
+        <input type="time" id="sc-time" class="sc-input" required></div>
+      <div class="sc-save-group">
+        <span id="sc-save-state" class="sc-hint" role="status"></span>
+        <button class="btn-action btn-primary" id="sc-save-schedule" disabled>Сохранить</button>
+      </div>
     </div>
+    <div class="sc-schedule-foot"><span class="sc-hint" id="sc-next"></span>
+      <button class="btn-action" id="sc-plan">Расставить даты…</button></div>
   </div>
 
-  <div class="card">
-    <div class="card-head" style="margin-bottom:14px;">
-      <div class="sc-tabs">
-        <button class="sc-tab active" data-filter="queued">В очереди <span id="sc-n-q">0</span></button>
-        <button class="sc-tab" data-filter="published">Выложено <span id="sc-n-p">0</span></button>
-        <button class="sc-tab" data-filter="failed">Ошибки <span id="sc-n-f">0</span></button>
+  <div class="card sc-library">
+    <div class="card-head sc-library-head">
+      <div class="sc-tabs" role="tablist" aria-label="Статус видео">
+        <button class="sc-tab active" role="tab" aria-selected="true" data-filter="queued">В очереди <span id="sc-n-q">0</span></button>
+        <button class="sc-tab" role="tab" aria-selected="false" data-filter="published">Опубликовано <span id="sc-n-p">0</span></button>
+        <button class="sc-tab" role="tab" aria-selected="false" data-filter="failed">Ошибки <span id="sc-n-f">0</span></button>
       </div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn-action" id="sc-refresh"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Обновить</button>
-        <button class="btn-action btn-primary" id="sc-sync"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Забрать с Диска</button>
+      <div class="sc-actions">
+        <button class="btn-action" id="sc-refresh" aria-label="Обновить видео">Обновить</button>
+        <button class="btn-action btn-primary" id="sc-sync">Забрать с Диска</button>
       </div>
     </div>
+    <div class="sc-library-tools"><input type="search" id="sc-search" class="sc-input" placeholder="Найти видео" aria-label="Найти видео"><span class="sc-hint" id="sc-found"></span></div>
     <div id="sc-bulk" style="display:none;" class="sc-bulk"></div>
-    <div id="sc-list" class="sc-grid"></div>
+    <div id="sc-list" class="sc-video-list"></div>
+    <button class="btn-action sc-more" id="sc-more" hidden>Показать ещё</button>
   </div>
 
   <details class="admin-disclosure">
@@ -171,6 +286,10 @@ var scState = { accounts: [], posts: [], settings: {}, log: [] };
 var scFilter = 'queued';
 var scSelected = {};
 var scBusy = {};
+var scScheduleDirty = false;
+var scLimit = 24;
+var scQuery = '';
+var scChecks = {};
 
 function scEsc(v) {
   return String(v == null ? '' : v)
@@ -227,18 +346,16 @@ function scRenderStatus() {
   var s = scState.settings || {};
   var a = scAccount();
   var posts = scState.posts || [];
-  var chips = [];
-  chips.push(s.hasGoogleRefreshToken
-    ? '<span class="sc-chip ok" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.google : '') + 'Google</span>'
-    : '<span class="sc-chip bad" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.google : '') + 'Google не подключён</span>');
-  chips.push(a && a.hasInstagramToken
-    ? '<span class="sc-chip ok" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.instagram : '') + 'Instagram</span>'
-    : '<span class="sc-chip" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.instagram : '') + 'Instagram не подключён</span>');
-  chips.push(s.youtubeReady
-    ? '<span class="sc-chip ok" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.youtube : '') + 'YouTube</span>'
-    : '<span class="sc-chip" style="display:inline-flex;align-items:center;gap:6px;">' + (typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS.youtube : '') + 'YouTube не подключён</span>');
-  chips.push('<span class="sc-chip">Роликов: ' + posts.length + '</span>');
-  document.getElementById('sc-status').innerHTML = chips.join('');
+  var configured = { drive: !!(a && a.driveFolderId && s.driveMode !== 'none'), instagram: !!(a && a.hasInstagramToken && a.instagramAccountId), youtube: !!(s.youtubeReady || (a && a.hasYoutubeRefreshToken)) };
+  var names = { drive: 'Google Диск', instagram: 'Instagram', youtube: 'YouTube' };
+  document.getElementById('sc-status').innerHTML = ['drive', 'instagram', 'youtube'].map(function (key) {
+    var check = scChecks[key];
+    var label = check ? (check.ok ? 'Доступ проверен' : 'Ошибка доступа') : (configured[key] ? 'Настроен' : 'Не подключён');
+    var cls = check ? (check.ok ? 'ok' : 'bad') : '';
+    var icon = typeof BRAND_SVGS !== 'undefined' ? BRAND_SVGS[key === 'drive' ? 'google' : key] : '';
+    if (!icon && key === 'instagram') icon = SC_ICONS.ig;
+    return '<div class="sc-connection"><span class="sc-connection-logo">' + (icon || '') + '</span><div><strong>' + names[key] + '</strong><small class="' + cls + '">' + label + '</small></div></div>';
+  }).join('');
 
   var conn = document.getElementById('sc-conn');
   var idEl = document.getElementById('sc-client-id');
@@ -253,26 +370,35 @@ function scRenderStatus() {
 function scRenderSchedule() {
   var a = scAccount();
   if (!a) return;
-  var t = document.getElementById('sc-time');
-  if (document.activeElement !== t) t.value = a.postTime || '19:00';
-  var tg = a.targets || [];
-  scSetToggle('sc-t-ig', tg.indexOf('instagram') !== -1);
-  scSetToggle('sc-t-yt', tg.indexOf('youtube') !== -1);
-
+  if (!scScheduleDirty) {
+    document.getElementById('sc-time').value = a.postTime || '19:00';
+    document.getElementById('sc-active').checked = a.active !== false;
+    scSetToggle('sc-t-ig', (a.targets || []).indexOf('instagram') !== -1);
+    scSetToggle('sc-t-yt', (a.targets || []).indexOf('youtube') !== -1);
+  }
+  document.getElementById('sc-active-label').textContent = document.getElementById('sc-active').checked ? 'Включена' : 'На паузе';
   var queued = (scState.posts || []).filter(function (p) { return p.status === 'queued'; });
-  var scheduled = queued.filter(function (p) { return p.scheduledAt; })
-    .sort(function (x, y) { return x.scheduledAt.localeCompare(y.scheduledAt); });
-  var next = scheduled[0];
-  document.getElementById('sc-next').innerHTML = next
-    ? ('Ближайшая: <b style="color:var(--text)">' + scMskShort(next.scheduledAt) + '</b> — '
-       + scEsc(next.title || scPrettyName(next.fileName)))
-    : (queued.length ? 'Без отдельных дат — публикация по расписанию канала в ' + scEsc(a.postTime || '19:00') : 'Очередь пуста');
+  var scheduled = queued.filter(function (p) { return p.scheduledAt; }).sort(function (x, y) { return x.scheduledAt.localeCompare(y.scheduledAt); });
+  document.getElementById('sc-next').textContent = a.active === false ? 'Автопубликация на паузе' : scheduled.length ? 'Ближайшая дата · ' + scMskShort(scheduled[0].scheduledAt) + ' МСК' : 'Без даты · ежедневно в ' + (a.postTime || '19:00') + ' МСК';
 }
 
 function scSetToggle(id, on) {
   var el = document.getElementById(id);
   el.dataset.on = on ? '1' : '0';
+  el.setAttribute('aria-pressed', on ? 'true' : 'false');
   el.classList.toggle('active', !!on);
+}
+
+function scTargetsOf(p) {
+  var a = (scState.accounts || []).find(function (a) { return a.id === p.accountId; }) || scAccount() || {};
+  return p.targets && p.targets.length ? p.targets : (a.targets || ['instagram', 'youtube']);
+}
+function scCanEditTargets(p) { return ['queued', 'failed'].indexOf(p.status) !== -1 && p.instagramStatus !== 'processing' && p.youtubeStatus !== 'processing'; }
+function scScheduleChanged() {
+  scScheduleDirty = true;
+  document.getElementById('sc-save-schedule').disabled = false;
+  document.getElementById('sc-save-state').textContent = 'Есть изменения';
+  scRenderSchedule();
 }
 
 function scPosts() {
@@ -280,6 +406,7 @@ function scPosts() {
   // и следят после нажатия «Опубликовать сейчас».
   var weight = { processing: 0, failed: 1, queued: 2, published: 3 };
   return (scState.posts || []).filter(function (p) {
+    if (scQuery && (String(p.title || '') + ' ' + String(p.fileName || '')).toLocaleLowerCase('ru').indexOf(scQuery) === -1) return false;
     if (scFilter === 'queued') return p.status === 'queued' || p.status === 'processing';
     if (scFilter === 'published') return p.status === 'published';
     return p.status === 'failed';
@@ -312,7 +439,7 @@ function scPrettyName(fileName) {
 // появится дубль.
 function scRetryButtons(p) {
   if (p.status === 'published' || p.status === 'processing') return '';
-  var targets = p.targets || [];
+  var targets = scTargetsOf(p);
   var out = [];
   if (targets.indexOf('instagram') !== -1 && p.instagramStatus !== 'published' && p.instagramStatus !== 'processing') {
     out.push('<button class="btn-action sc-retry" onclick="scRetry(event, \\'' + p.id + '\\', \\'instagram\\')">'
@@ -362,47 +489,40 @@ function scRenderList() {
 
   var list = scPosts();
   var box = document.getElementById('sc-list');
+  document.getElementById('sc-found').textContent = scQuery ? 'Найдено: ' + list.length : '';
+  document.getElementById('sc-more').hidden = list.length <= scLimit;
+  var visibleIds = list.map(function (p) { return p.id; });
+  Object.keys(scSelected).forEach(function (id) { if (visibleIds.indexOf(id) === -1) delete scSelected[id]; });
   if (!list.length) {
-    box.innerHTML = '<div class="sc-empty" style="grid-column:1/-1;">'
-      + (scFilter === 'queued' ? 'Очередь пуста — нажми «Забрать с Диска»' : 'Пусто') + '</div>';
+    box.innerHTML = '<div class="sc-empty">' + (scQuery ? 'Видео не найдены' : scFilter === 'queued' ? 'В очереди пока нет видео' : scFilter === 'failed' ? 'Все публикации без ошибок' : 'Опубликованных видео пока нет') + '</div>';
     scRenderBulk();
     return;
   }
-
-  box.innerHTML = list.map(function (p) {
-    var pills = (p.targets || []).map(function (t) {
+  box.innerHTML = list.slice(0, scLimit).map(function (p) {
+    var targets = scTargetsOf(p);
+    var platforms = ['instagram', 'youtube'].map(function (t) {
+      var chosen = targets.indexOf(t) !== -1;
       var st = t === 'instagram' ? p.instagramStatus : p.youtubeStatus;
-      var cls = st === 'published' ? ' ok' : (st === 'failed' ? ' bad' : '');
-      return '<span class="sc-pill' + cls + '">' + (t === 'instagram' ? SC_ICONS.ig : SC_ICONS.yt) + '</span>';
+      var text = !chosen ? 'Не выбрано' : st === 'published' ? 'Опубликовано' : st === 'failed' ? 'Ошибка' : st === 'processing' ? 'Публикуется' : 'В очереди';
+      var cls = !chosen ? ' off' : st === 'published' ? ' ok' : st === 'failed' ? ' bad' : '';
+      return '<div class="sc-platform' + cls + '">' + (t === 'instagram' ? SC_ICONS.ig : SC_ICONS.yt) + '<span>' + (t === 'instagram' ? 'Instagram' : 'YouTube') + '</span><small>' + text + '</small></div>';
     }).join('');
-
-    var badge;
-    if (p.status === 'published') {
-      badge = '<div class="sc-when">' + SC_ICONS.check + (p.publishedAt ? scMskShort(p.publishedAt) : 'выложено') + '</div>';
-    } else if (p.status === 'failed') {
-      badge = '<div class="sc-when" style="background:rgba(237,70,33,0.85);">' + SC_ICONS.alert + 'ошибка</div>';
-    } else if (p.status === 'processing') {
-      badge = '<div class="sc-when" style="background:rgba(180,83,9,0.85);">' + SC_ICONS.clock + 'публикуется…</div>';
-    } else if (p.scheduledAt) {
-      badge = '<div class="sc-when">' + SC_ICONS.clock + scMskShort(p.scheduledAt) + '</div>';
-    } else {
-      badge = '<div class="sc-when" style="background:rgba(10,12,18,0.5);">' + SC_ICONS.clock + 'без даты</div>';
-    }
-
-    return '<div class="sc-card' + (scSelected[p.id] ? ' sel' : '') + '">'
-      + '<input type="checkbox" class="sc-pick" data-pick="' + p.id + '"' + (scSelected[p.id] ? ' checked' : '') + '>'
-      + '<div class="sc-poster" onclick="scPreview(\\'' + p.id + '\\')">'
-      + '<img src="/s/t/' + p.streamToken + '" loading="lazy" alt=""'
-      + ' onerror="this.style.display=\\'none\\'; this.parentNode.insertAdjacentHTML(\\'afterbegin\\', SC_ICONS.film);">'
-      + '<div class="sc-play"><span>' + SC_ICONS.play + '</span></div>'
-      + badge + '</div>'
-      + '<div class="sc-body"><div class="sc-title" title="' + scEsc(p.fileName) + '">'
-      + scEsc(p.title || scPrettyName(p.fileName)) + '</div>'
-      + '<div class="sc-meta">' + pills + '</div>'
+    var a = (scState.accounts || []).find(function (a) { return a.id === p.accountId; }) || {};
+    var date = p.status === 'published' ? (p.publishedAt ? scMskShort(p.publishedAt) : 'Опубликовано') : p.status === 'processing' ? 'Публикуется…' : p.status === 'failed' ? 'Нужен повтор' : p.scheduledAt ? scMskShort(p.scheduledAt) : (a.postTime || '19:00') + ' · МСК';
+    var sub = p.status === 'published' ? 'Опубликовано · МСК' : p.scheduledAt ? 'По дате · МСК' : a.active === false ? 'Автопубликация на паузе' : 'По расписанию';
+    return '<article class="sc-card' + (scSelected[p.id] ? ' sel' : '') + '" data-post="' + scEsc(p.id) + '">'
+      + '<input type="checkbox" class="sc-pick" data-pick="' + scEsc(p.id) + '" aria-label="Выбрать ' + scEsc(p.title || scPrettyName(p.fileName)) + '"' + (scSelected[p.id] ? ' checked' : '') + '>'
+      + '<button class="sc-poster" data-preview="' + scEsc(p.id) + '" aria-label="Смотреть ' + scEsc(p.title || scPrettyName(p.fileName)) + '">'
+      + '<img src="/s/t/' + scEsc(p.streamToken) + '" loading="lazy" alt="" onerror="this.style.display=\\'none\\'">'
+      + '<div class="sc-play"><span>' + SC_ICONS.play + '</span></div></button>'
+      + '<div class="sc-body"><button class="sc-title" data-preview="' + scEsc(p.id) + '">' + scEsc(p.title || scPrettyName(p.fileName)) + '</button>'
+      + '<div class="sc-file" title="' + scEsc(p.fileName) + '">' + scEsc(p.fileName) + '</div>'
       + (p.error ? '<div class="sc-err" title="' + scEsc(p.error) + '">' + scEsc(p.error) + '</div>' : '')
-      + scRetryButtons(p)
-      + '</div></div>';
+      + scRetryButtons(p) + '</div><div class="sc-platforms">' + platforms + '</div>'
+      + '<div class="sc-date"><strong>' + scEsc(date) + '</strong><small>' + sub + '</small></div>'
+      + '<button class="btn-action sc-edit" data-preview="' + scEsc(p.id) + '" aria-label="Открыть настройки ' + scEsc(p.title || scPrettyName(p.fileName)) + '">↗</button></article>';
   }).join('');
+  box.querySelectorAll('[data-preview]').forEach(function (el) { el.onclick = function () { scPreview(el.dataset.preview); }; });
 
   box.querySelectorAll('[data-pick]').forEach(function (cb) {
     cb.onclick = function (e) { e.stopPropagation(); };
@@ -447,33 +567,26 @@ function scRenderBulk() {
 
   if (!ids.length) {
     bar.style.display = total ? 'flex' : 'none';
-    bar.style.background = '#F6F7F9';
-    bar.innerHTML = '<button class="btn-action" onclick="scSelectAll(true)">'
-      + scBtnIcon(SC_BTN.pick) + 'Выбрать все (' + total + ')</button>'
-      + '<span class="sc-hint">или отметь нужные галочкой на карточке</span>';
+    bar.innerHTML = '<button class="btn-action" onclick="scSelectAll(true)">' + scBtnIcon(SC_BTN.pick) + 'Выбрать все · ' + total + '</button>';
     return;
   }
-
   var published = scFilter === 'published';
   bar.style.display = 'flex';
-  bar.style.background = 'var(--primary-subtle)';
-  bar.innerHTML = '<span class="sc-count">Выбрано: ' + ids.length + '</span>'
-    + (published ? '' : '<button class="btn-action btn-primary" onclick="scPublishSelected()">'
-        + scBtnIcon(SC_BTN.send) + 'Опубликовать сейчас</button>')
-    + '<span class="sc-sep"></span>'
-    + '<button class="btn-action" onclick="scBulkDate()">' + scBtnIcon(SC_BTN.cal) + 'Дата и время</button>'
-    + '<button class="btn-action" onclick="scBulkCaption()">' + scBtnIcon(SC_BTN.text) + 'Описание</button>'
-    + (published
-        ? '<button class="btn-action" onclick="scBulk(\\'requeue\\')">' + scBtnIcon(SC_BTN.back) + 'Вернуть в очередь</button>'
-        : '<button class="btn-action" onclick="scBulk(\\'mark\\')">' + scBtnIcon(SC_BTN.done) + 'Уже выложено</button>'
-          + '<button class="btn-action" onclick="scBulk(\\'unschedule\\')">' + scBtnIcon(SC_BTN.clear) + 'Снять даты</button>')
-    + '<span class="sc-sep"></span>'
-    + '<button class="btn-action" onclick="scSelectAll(false)">Снять выбор</button>'
-    + '<button class="btn-action sc-danger" onclick="scBulk(\\'delete\\')">' + scBtnIcon(SC_BTN.trash) + 'Убрать</button>';
+  bar.innerHTML = '<span class="sc-count">Выбрано · ' + ids.length + '</span>'
+    + (published ? '' : '<button class="btn-action btn-primary" onclick="scPublishSelected()">' + scBtnIcon(SC_BTN.send) + 'Опубликовать</button>')
+    + (published ? '' : '<button class="btn-action" id="sc-bulk-targets">Соцсети</button><button class="btn-action" onclick="scBulkDate()">' + scBtnIcon(SC_BTN.cal) + 'Дата</button>')
+    + '<button class="btn-action" onclick="scBulkCaption()">Описание</button>'
+    + '<details data-extra><summary class="btn-action">Ещё…</summary><div class="sc-menu">'
+    + (published ? '<button class="btn-action" data-bulk="requeue">Вернуть в очередь</button>' : '<button class="btn-action" data-bulk="mark">Уже опубликовано</button><button class="btn-action" data-bulk="unschedule">Снять даты</button>')
+    + '<button class="btn-action sc-danger" data-bulk="delete">Убрать из списка</button></div></details>'
+    + '<button class="btn-action" onclick="scSelectAll(false)" aria-label="Снять выбор">×</button>';
+  if (!published) bar.querySelector('#sc-bulk-targets').onclick = function () { scEditTargets(ids); };
+  bar.querySelectorAll('[data-bulk]').forEach(function (el) { el.onclick = function () { scBulk(el.dataset.bulk); }; });
 }
 
 // Публикация выбранных без расписания — по очереди, пачками до пяти.
 window.scPublishSelected = async function () {
+  if (scScheduleDirty) { scToast('Сначала сохраните настройки соцсетей', true); document.getElementById('sc-save-schedule').focus(); return; }
   var ids = scPicked();
   if (!ids.length) return;
   if (!confirm(ids.length === 1
@@ -524,24 +637,66 @@ window.scSetDate = async function (input) {
 };
 
 function scModal(html, onOk) {
+  var previous = document.activeElement;
   var bg = document.createElement('div');
   bg.className = 'sc-modal-bg';
-  bg.innerHTML = '<div class="sc-modal">' + html
-    + '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">'
-    + '<button class="btn-action" data-x>Отмена</button>'
-    + '<button class="btn-action btn-primary" data-ok>Применить</button></div></div>';
+  bg.innerHTML = '<div class="sc-modal" role="dialog" aria-modal="true" tabindex="-1">' + html
+    + '<div class="sc-dialog-error" role="alert"></div><div style="display:flex;gap:8px;margin-top:20px;justify-content:flex-end;">'
+    + '<button class="btn-action" data-x>Закрыть</button><button class="btn-action btn-primary" data-ok>Сохранить</button></div></div>';
+  var modal = bg.querySelector('.sc-modal');
+  var title = modal.querySelector('.sc-dialog-title');
+  if (title) { title.id = 'sc-dialog-title'; modal.setAttribute('aria-labelledby', title.id); }
+  else modal.setAttribute('aria-label', 'Настройки видео');
   document.body.appendChild(bg);
-  bg.querySelector('[data-x]').onclick = function () {
-    var v = bg.querySelector('video');
-    if (v) v.pause();
-    bg.remove();
+  var close = function () { bg.querySelectorAll('video').forEach(function (v) { v.pause(); }); bg.remove(); if (previous && previous.isConnected) previous.focus(); };
+  bg.querySelector('[data-x]').onclick = close;
+  bg.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); close(); }
+    if (e.key !== 'Tab') return;
+    var nodes = Array.from(modal.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), a[href]')).filter(function (n) { return n.offsetParent !== null; });
+    if (!nodes.length) { e.preventDefault(); return; }
+    if (e.shiftKey && (document.activeElement === nodes[0] || document.activeElement === modal)) { e.preventDefault(); nodes[nodes.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === nodes[nodes.length - 1]) { e.preventDefault(); nodes[0].focus(); }
+  });
+  bg.querySelector('[data-ok]').onclick = async function () {
+    var btn = this;
+    btn.disabled = true;
+    try { if (await onOk(bg) !== false) close(); }
+    catch (e) { bg.querySelector('.sc-dialog-error').textContent = e.message; }
+    finally { btn.disabled = false; }
   };
-  bg.querySelector('[data-ok]').onclick = async function () { await onOk(bg); bg.remove(); };
+  modal.focus();
   return bg;
 }
 
-window.scBulkDate = function () {
-  var ids = scPicked();
+function scTargetFields(targets, disabled) {
+  return '<div class="sc-targets" role="group" aria-label="Соцсети ролика">' + ['instagram', 'youtube'].map(function (t) {
+    return '<button class="sc-target" type="button" data-target="' + t + '" aria-pressed="' + (targets.indexOf(t) !== -1 ? 'true' : 'false') + '"' + (disabled ? ' disabled' : '') + '>'
+      + (t === 'instagram' ? SC_ICONS.ig + 'Instagram' : SC_ICONS.yt + 'YouTube') + '<span class="sc-target-check">✓</span></button>';
+  }).join('') + '</div>';
+}
+function scBindTargets(bg) {
+  bg.querySelectorAll('[data-target]').forEach(function (el) { el.onclick = function () { el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); }; });
+}
+function scReadTargets(bg) {
+  return Array.from(bg.querySelectorAll('[data-target][aria-pressed="true"]')).map(function (el) { return el.dataset.target; });
+}
+window.scEditTargets = function (ids) {
+  var posts = (scState.posts || []).filter(function (p) { return ids.indexOf(p.id) !== -1 && scCanEditTargets(p); });
+  if (!posts.length) { scToast('Площадки уже публикуемых роликов изменить нельзя', true); return; }
+  var common = scTargetsOf(posts[0]);
+  var bg = scModal('<h3 class="sc-dialog-title">Соцсети · ' + posts.length + '</h3>' + scTargetFields(common, false), async function (box) {
+    var targets = scReadTargets(box);
+    if (!targets.length) throw new Error('Выберите хотя бы одну соцсеть');
+    var res = await scApi('posts/bulk', { ids: posts.map(function (p) { return p.id; }), action: 'targets', targets: targets });
+    scToast('Соцсети сохранены · ' + res.changed);
+    await loadSocial();
+  });
+  scBindTargets(bg);
+};
+
+window.scBulkDate = function (chosenIds) {
+  var ids = chosenIds || scPicked();
   var now = new Date(Date.now() + 3 * 3600000 + 86400000).toISOString().slice(0, 10);
   var time = (scAccount() || {}).postTime || '19:00';
   scModal(
@@ -555,7 +710,7 @@ window.scBulkDate = function () {
       var d = bg.querySelector('#sc-m-date').value;
       var t = bg.querySelector('#sc-m-time').value;
       var every = bg.querySelector('#sc-m-every').value;
-      if (!d || !t) return;
+      if (!d || !t) throw new Error('Укажите дату и время');
       var res = await scApi('posts/bulk', { ids: ids, action: 'schedule', startAt: d + 'T' + t, everyDays: every });
       scSelected = {};
       scToast('Расставлено: ' + (res.changed || 0));
@@ -594,53 +749,40 @@ window.scBulkCaption = function () {
 window.scPreview = function (id) {
   var p = (scState.posts || []).find(function (x) { return x.id === id; });
   if (!p) return;
+  var editable = scCanEditTargets(p);
   var when = p.scheduledAt ? scMsk(p.scheduledAt).replace(' ', 'T') : '';
   var links = '';
-  if (p.instagramPermalink) links += '<a href="' + scEsc(p.instagramPermalink) + '" target="_blank" rel="noopener" class="sc-pill ok" style="text-decoration:none;">' + SC_ICONS.ig + ' открыть</a> ';
-  if (p.youtubePermalink) links += '<a href="' + scEsc(p.youtubePermalink) + '" target="_blank" rel="noopener" class="sc-pill ok" style="text-decoration:none;">' + SC_ICONS.yt + ' открыть</a>';
-
-  var bg = scModal(
-    '<div style="display:flex;gap:20px;flex-wrap:wrap;">'
-    + '<div style="width:230px;flex-shrink:0;">'
-    +   '<video src="/s/v/' + p.streamToken + '" controls autoplay playsinline preload="metadata"'
-    +   ' style="width:100%;aspect-ratio:9/16;background:#11131A;border-radius:12px;object-fit:cover;"></video>'
-    +   (links ? '<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">' + links + '</div>' : '')
-    + '</div>'
-    + '<div style="flex:1;min-width:240px;">'
-    +   '<div style="font-size:15px;font-weight:700;margin-bottom:3px;">' + scEsc(p.title || scPrettyName(p.fileName)) + '</div>'
-    +   '<div class="sc-hint" style="margin-bottom:14px;">' + scEsc(p.fileName) + '</div>'
-    +   '<div class="form-group"><label class="form-label">Заголовок для YouTube</label>'
-    +   '<input type="text" id="sc-m-title" class="sc-input" value="' + scEsc(p.title || '') + '"></div>'
-    +   '<div class="form-group" style="margin-top:10px;"><label class="form-label">Подпись</label>'
-    +   '<textarea id="sc-m-cap2" class="sc-input" style="width:100%;min-height:120px;">' + scEsc(p.caption || '') + '</textarea></div>'
-    +   '<div class="form-group" style="margin-top:10px;"><label class="form-label">Публикация (МСК)</label>'
-    +   '<input type="datetime-local" id="sc-m-when" class="sc-input" value="' + when + '"></div>'
-    +   '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">'
-    +   (p.status === 'published' ? '' :
-          '<button class="btn-action btn-primary" onclick="scPublishNow(\\'' + p.id + '\\')">'
-          + (p.status === 'failed' ? 'Повторить всё' : 'Опубликовать сейчас') + '</button>')
-    +   ((p.targets || []).indexOf('instagram') !== -1 && p.instagramStatus !== 'published'
-          ? '<button class="btn-action" onclick="scRetry(event, \\'' + p.id + '\\', \\'instagram\\')">' + SC_ICONS.ig + ' в Instagram</button>' : '')
-    +   ((p.targets || []).indexOf('youtube') !== -1 && p.youtubeStatus !== 'published'
-          ? '<button class="btn-action" onclick="scRetry(event, \\'' + p.id + '\\', \\'youtube\\')">' + SC_ICONS.yt + ' на YouTube</button>' : '')
-    +   (p.status === 'published'
-        ? '<button class="btn-action" onclick="scOne(\\'' + p.id + '\\',\\'requeue\\')">Вернуть в очередь</button>'
-        : '<button class="btn-action" onclick="scOne(\\'' + p.id + '\\',\\'mark\\')">Выложено вручную</button>')
-    +   '</div>'
-    + '</div></div>',
-    async function (box) {
-      var w = box.querySelector('#sc-m-when').value;
-      await scApi('posts/update', {
-        id: id,
-        title: box.querySelector('#sc-m-title').value,
-        caption: box.querySelector('#sc-m-cap2').value,
-        scheduledAt: w ? new Date(new Date(w + ':00.000Z').getTime() - 3 * 3600000).toISOString() : null
-      });
-      scToast('Сохранено');
-      await loadSocial();
+  if (p.instagramPermalink && p.instagramPermalink.startsWith('https://')) links += '<a href="' + scEsc(p.instagramPermalink) + '" target="_blank" rel="noopener" class="sc-pill ok">Instagram ↗</a> ';
+  if (p.youtubePermalink && p.youtubePermalink.startsWith('https://')) links += '<a href="' + scEsc(p.youtubePermalink) + '" target="_blank" rel="noopener" class="sc-pill ok">YouTube ↗</a>';
+  var save = async function (box) {
+    var w = box.querySelector('#sc-m-when').value;
+    var patch = { id: id, title: box.querySelector('#sc-m-title').value, caption: box.querySelector('#sc-m-cap2').value };
+    if (editable) {
+      patch.targets = scReadTargets(box);
+      if (!patch.targets.length) throw new Error('Выберите хотя бы одну соцсеть');
+      patch.scheduledAt = w ? new Date(new Date(w + ':00.000Z').getTime() - 3 * 3600000).toISOString() : null;
     }
-  );
+    await scApi('posts/update', patch);
+    await loadSocial();
+  };
+  var bg = scModal('<div class="sc-preview-content"><div class="sc-preview-media">'
+    + '<video src="/s/v/' + scEsc(p.streamToken) + '" poster="/s/t/' + scEsc(p.streamToken) + '" controls playsinline preload="none" style="width:100%;aspect-ratio:9/16;background:#17191E;border-radius:12px;object-fit:cover;"></video>'
+    + '<div style="margin-top:10px">' + links + '</div></div><div>'
+    + '<h3 class="sc-dialog-title">' + scEsc(p.title || scPrettyName(p.fileName)) + '</h3>'
+    + '<div class="form-group"><label class="form-label">Соцсети</label>' + scTargetFields(scTargetsOf(p), !editable) + '</div>'
+    + '<div class="form-group" style="margin-top:16px"><label class="form-label" for="sc-m-title">Заголовок YouTube</label><input id="sc-m-title" class="sc-input" value="' + scEsc(p.title || '') + '"></div>'
+    + '<div class="form-group" style="margin-top:12px"><label class="form-label" for="sc-m-cap2">Описание</label><textarea id="sc-m-cap2" class="sc-input" style="width:100%;min-height:110px">' + scEsc(p.caption || '') + '</textarea></div>'
+    + '<div class="form-group" style="margin-top:12px"><label class="form-label" for="sc-m-when">Дата и время · МСК</label><input type="datetime-local" id="sc-m-when" class="sc-input" value="' + when + '"' + (!editable ? ' disabled' : '') + '></div>'
+    + (editable ? '<div style="margin-top:18px"><button class="btn-action btn-primary" id="sc-preview-publish">' + (p.status === 'failed' ? 'Повторить публикацию' : 'Опубликовать сейчас') + '</button></div>' : '')
+    + '</div></div>', async function (box) { await save(box); scToast('Сохранено'); });
   bg.querySelector('.sc-modal').classList.add('wide');
+  scBindTargets(bg);
+  if (editable) bg.querySelector('#sc-preview-publish').onclick = async function () {
+    this.disabled = true;
+    try { await save(bg); await scPublishNow(id); }
+    catch (e) { bg.querySelector('.sc-dialog-error').textContent = e.message; }
+    finally { this.disabled = false; }
+  };
 };
 
 window.scOne = async function (id, action) {
@@ -651,6 +793,7 @@ window.scOne = async function (id, action) {
 };
 
 window.scPublishNow = async function (id) {
+  if (scScheduleDirty) { scToast('Сначала сохраните настройки соцсетей', true); return; }
   if (!confirm('Опубликовать прямо сейчас?')) return;
   var key = 'publish:' + id;
   if (scBusy[key]) return;
@@ -692,6 +835,7 @@ function scRenderLog() {
 document.getElementById('sc-toggle-conn').onclick = function () {
   var c = document.getElementById('sc-conn');
   c.style.display = c.style.display === 'none' ? 'block' : 'none';
+  this.setAttribute('aria-expanded', c.style.display !== 'none' ? 'true' : 'false');
 };
 
 document.getElementById('sc-save-conn').onclick = async function () {
@@ -704,8 +848,8 @@ document.getElementById('sc-save-conn').onclick = async function () {
       googleRefreshToken: document.getElementById('sc-refresh-token').value
     });
     var a = scAccount();
-    if (a && (ig || folder)) {
-      await scApi('accounts', { account: { id: a.id, instagramToken: ig, driveFolderId: folder || a.driveFolderId } });
+    if (ig || folder) {
+      await scApi('accounts', { account: { id: a && a.id, instagramToken: ig, driveFolderId: folder || (a && a.driveFolderId) || '' } });
     }
     ['sc-client-secret', 'sc-refresh-token', 'sc-ig-token'].forEach(function (id) { document.getElementById(id).value = ''; });
     scToast('Сохранено');
@@ -714,43 +858,55 @@ document.getElementById('sc-save-conn').onclick = async function () {
 };
 
 document.getElementById('sc-check').onclick = async function () {
+  this.disabled = true;
   var box = document.getElementById('sc-check-result');
   box.innerHTML = '<span class="sc-hint">проверяю…</span>';
   try {
     var res = await scApi('check', {});
+    (res.checks || []).forEach(function (c) { var key = c.name.indexOf('Instagram') === 0 ? 'instagram' : c.name.indexOf('YouTube') === 0 ? 'youtube' : c.name.indexOf('Папка') === 0 ? 'drive' : null; if (key) scChecks[key] = c; });
+    scRenderStatus();
     box.innerHTML = (res.checks || []).map(function (c) {
       return '<div style="font-size:12.5px;padding:5px 0;color:' + (c.ok ? 'var(--success)' : 'var(--danger)') + ';">'
         + (c.ok ? '✓ ' : '✕ ') + scEsc(c.name) + ' — <span style="color:var(--text);">' + scEsc(c.message) + '</span></div>';
     }).join('');
   } catch (e) { box.innerHTML = '<span style="color:var(--danger)">' + scEsc(e.message) + '</span>'; }
+  finally { this.disabled = false; }
 };
 
-document.getElementById('sc-plan').onclick = async function () {
+document.getElementById('sc-save-schedule').onclick = async function () {
   var a = scAccount();
-  if (!a) { scToast('Сначала подключи аккаунт', true); return; }
+  if (!a) { scToast('Сначала подключите папку с видео', true); return; }
   var targets = [];
   if (document.getElementById('sc-t-ig').dataset.on === '1') targets.push('instagram');
   if (document.getElementById('sc-t-yt').dataset.on === '1') targets.push('youtube');
-  if (!targets.length) { scToast('Выбери хотя бы одну площадку', true); return; }
+  if (!targets.length) { scToast('Выберите хотя бы одну соцсеть', true); return; }
+  var time = document.getElementById('sc-time');
+  if (!time.reportValidity()) return;
+  this.disabled = true;
+  try {
+    await scApi('accounts', { account: { id: a.id, postTime: time.value, targets: targets, active: document.getElementById('sc-active').checked }, applyToQueued: true });
+    scScheduleDirty = false;
+    document.getElementById('sc-save-state').textContent = 'Сохранено';
+    scToast('Настройки и соцсети очереди сохранены');
+    await loadSocial();
+  } catch (e) { scToast('Не удалось сохранить: ' + e.message, true); this.disabled = false; }
+};
 
-  await scApi('accounts', { account: { id: a.id, postTime: document.getElementById('sc-time').value, targets: targets } });
+document.getElementById('sc-plan').onclick = function () {
   var ids = (scState.posts || []).filter(function (p) { return p.status === 'queued'; }).map(function (p) { return p.id; });
-  if (!ids.length) { scToast('Очередь пуста'); await loadSocial(); return; }
-
-  await scApi('posts/bulk', { ids: ids, action: 'targets', targets: targets });
-  var tomorrow = new Date(Date.now() + 3 * 3600000 + 86400000).toISOString().slice(0, 10);
-  var res = await scApi('posts/bulk', {
-    ids: ids, action: 'schedule',
-    startAt: tomorrow + 'T' + document.getElementById('sc-time').value,
-    everyDays: document.getElementById('sc-every').value
-  });
-  scToast('Расставлено роликов: ' + (res.changed || 0));
-  await loadSocial();
+  if (!ids.length) { scToast('Очередь пуста'); return; }
+  scBulkDate(ids);
 };
 
 ['sc-t-ig', 'sc-t-yt'].forEach(function (id) {
-  document.getElementById(id).onclick = function () { scSetToggle(id, this.dataset.on !== '1'); };
+  var el = document.getElementById(id);
+  el.insertAdjacentHTML('afterbegin', id === 'sc-t-ig' ? SC_ICONS.ig : SC_ICONS.yt);
+  el.onclick = function () { scSetToggle(id, this.dataset.on !== '1'); scScheduleChanged(); };
 });
+document.getElementById('sc-time').oninput = scScheduleChanged;
+document.getElementById('sc-active').onchange = scScheduleChanged;
+document.getElementById('sc-search').oninput = function () { scQuery = this.value.trim().toLocaleLowerCase('ru'); scLimit = 24; scRenderList(); };
+document.getElementById('sc-more').onclick = function () { scLimit += 24; scRenderList(); };
 
 document.getElementById('sc-sync').onclick = async function () {
   scToast('Смотрю папку…');
@@ -770,7 +926,9 @@ document.querySelectorAll('#social-view .sc-tabs .sc-tab').forEach(function (tab
   tab.onclick = function () {
     document.querySelectorAll('#social-view .sc-tabs .sc-tab').forEach(function (t) { t.classList.remove('active'); });
     tab.classList.add('active');
+    document.querySelectorAll('#social-view .sc-tabs .sc-tab').forEach(function (t) { t.setAttribute('aria-selected', t === tab ? 'true' : 'false'); });
     scFilter = tab.dataset.filter;
+    scLimit = 24;
     scSelected = {};
     scRenderList();
   };

@@ -961,7 +961,7 @@ async function runDiagnostics(env) {
       }
     }
 
-    if ((account.targets || []).includes('instagram')) {
+    if ((account.targets || []).includes('instagram') || account.instagramToken) {
       if (!account.instagramToken || !account.instagramAccountId) {
         checks.push({ name: `Instagram — ${account.name}`, ok: false, message: 'не заполнены Account ID или токен' });
       } else {
@@ -1087,6 +1087,17 @@ export async function handleVideoStream(env, request, streamToken) {
   }
 }
 
+// Площадки задаются явно: пустой список не должен превращаться в публикацию везде.
+function validTargets(value) {
+  if (!Array.isArray(value) || !value.length || value.some(t => !['instagram', 'youtube'].includes(t))) return null;
+  return [...new Set(value)];
+}
+
+function canChangeTargets(post) {
+  return ['queued', 'failed'].includes(post.status)
+    && post.instagramStatus !== 'processing' && post.youtubeStatus !== 'processing';
+}
+
 // ────────────────────────────── админ-API ──────────────────────────────
 
 /**
@@ -1136,6 +1147,9 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
   if (path === '/api/admin/social/accounts' && request.method === 'POST') {
     const accounts = await getAccounts(env);
     const incoming = body.account || {};
+    if (incoming.targets !== undefined && !validTargets(incoming.targets)) {
+      return jsonResponse({ error: 'Выберите Instagram или YouTube' }, 400);
+    }
     const idx = incoming.id ? accounts.findIndex((a) => a.id === incoming.id) : -1;
     const base = idx === -1 ? { ...DEFAULT_ACCOUNT, id: newId('acc') } : accounts[idx];
 
@@ -1143,7 +1157,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
       ...base,
       name: incoming.name != null ? String(incoming.name).trim() || base.name : base.name,
       active: incoming.active != null ? Boolean(incoming.active) : base.active,
-      targets: Array.isArray(incoming.targets) && incoming.targets.length ? incoming.targets : base.targets,
+      targets: incoming.targets !== undefined ? validTargets(incoming.targets) : base.targets,
       driveFolderId: incoming.driveFolderId != null ? String(incoming.driveFolderId).trim() : base.driveFolderId,
       captionTemplate: incoming.captionTemplate != null ? String(incoming.captionTemplate) : base.captionTemplate,
       titleTemplate: incoming.titleTemplate != null ? String(incoming.titleTemplate) : base.titleTemplate,
@@ -1187,8 +1201,20 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
 
     if (idx === -1) accounts.push(merged); else accounts[idx] = merged;
     await kvPut(env, KV_ACCOUNTS, accounts);
+    let updatedQueued = 0;
+    if (body.applyToQueued === true && incoming.targets !== undefined) {
+      const posts = await getPosts(env);
+      for (const post of posts) {
+        // Завершённые и частично опубликованные ролики сохраняют свою историю.
+        if (post.accountId !== merged.id || post.status !== 'queued' || !canChangeTargets(post)
+            || post.instagramStatus === 'published' || post.youtubeStatus === 'published') continue;
+        post.targets = [...merged.targets];
+        updatedQueued += 1;
+      }
+      if (updatedQueued) await kvPut(env, KV_POSTS, posts);
+    }
     await socialLog(env, 'info', `Аккаунт «${merged.name}» сохранён`);
-    return jsonResponse({ ok: true, account: publicAccount(merged), note: resolvedNote });
+    return jsonResponse({ ok: true, account: publicAccount(merged), note: resolvedNote, updatedQueued });
   }
 
   if (path === '/api/admin/social/accounts/delete' && request.method === 'POST') {
@@ -1223,7 +1249,13 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     ['title', 'caption'].forEach((key) => {
       if (typeof body[key] === 'string') patch[key] = body[key];
     });
-    if (Array.isArray(body.targets)) patch.targets = body.targets;
+    if (body.targets !== undefined) {
+      const targets = validTargets(body.targets);
+      if (!targets) return jsonResponse({ error: 'Выберите Instagram или YouTube' }, 400);
+      const post = (await getPosts(env)).find(p => p.id === body.id);
+      if (post && !canChangeTargets(post)) return jsonResponse({ error: 'Площадки этого ролика уже нельзя изменить' }, 409);
+      patch.targets = targets;
+    }
     if (body.scheduledAt !== undefined) patch.scheduledAt = body.scheduledAt || null;
     const updated = await patchPost(env, body.id, patch);
     return jsonResponse(updated ? { ok: true } : { error: 'not found' }, updated ? 200 : 404);
@@ -1306,6 +1338,9 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     const posts = await getPosts(env);
     const targetPosts = posts.filter((p) => ids.includes(p.id));
     let changed = 0;
+    if (body.action === 'targets' && !validTargets(body.targets)) {
+      return jsonResponse({ error: 'Выберите Instagram или YouTube' }, 400);
+    }
 
     if (body.action === 'schedule') {
       // Дата и время приходят по МСК, храним в UTC.
@@ -1337,8 +1372,9 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
             patch.title = body.titleTemplate.replace(/\{title\}/g, humanName);
           }
           posts[idx] = patch;
-        } else if (body.action === 'targets' && Array.isArray(body.targets)) {
-          posts[idx] = { ...posts[idx], targets: body.targets };
+        } else if (body.action === 'targets') {
+          if (!canChangeTargets(post)) return;
+          posts[idx] = { ...posts[idx], targets: validTargets(body.targets) };
         } else if (body.action === 'mark') {
           posts[idx] = { ...posts[idx], status: 'published', instagramStatus: 'published',
                          youtubeStatus: 'published', publishedAt: new Date().toISOString(),
