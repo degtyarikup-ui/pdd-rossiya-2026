@@ -77,6 +77,24 @@ if(process.argv.includes('--serve')) {
     try {
       await page.goto(preview.url+'/admin#publications/videos');
       const row=page.locator('[data-post="q"]');await row.waitFor();
+      // The legacy analytics view may render an Instagram icon before being hidden.
+      // Copies must not resolve their gradient against that invisible SVG.
+      await page.evaluate(()=>{
+        const hidden=document.createElement('div');hidden.hidden=true;hidden.id='hidden-brand-fixture';
+        hidden.innerHTML=window.BRAND_SVGS.instagram;document.body.prepend(hidden);
+      });
+      const {PNG}=createRequire(import.meta.url)('pngjs');
+      async function assertInstagramVisible(selector) {
+        const png=PNG.sync.read(await page.locator(selector).screenshot());let colored=0;
+        for(let i=0;i<png.data.length;i+=4) {
+          const [r,g,b,a]=png.data.subarray(i,i+4);
+          if(a>128&&Math.max(r,g,b)-Math.min(r,g,b)>60)colored++;
+        }
+        assert.ok(colored>8,`Instagram logo remains visible: ${selector}, colored pixels: ${colored}`);
+      }
+      await assertInstagramVisible('.sc-connection:nth-child(2) .sc-connection-logo');
+      await assertInstagramVisible('#sc-t-ig svg');
+      await assertInstagramVisible('[data-post="q"] .sc-platform:first-child svg');
       assert.match(await row.innerText(),/Instagram\s+Не выбрано/);
       assert.equal(await page.locator('#sc-t-ig').getAttribute('aria-pressed'),'false');
       await page.locator('#sc-t-ig').click();
