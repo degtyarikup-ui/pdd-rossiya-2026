@@ -225,10 +225,15 @@ flutter test                           # все тесты
 (`game_godot/parking.tscn`, `--parking`, см. `docs/game/README.md`) — также Godot;
 старый WebView-формат удалён.
 
-## Два формата коротких видео
+## Форматы коротких видео
 
 1. «Успей узнать знак» — `tools/signs_reel/README.md` (подробнее ниже).
 2. «Вопрос из билета» — `tools/signs_reel/QUESTION_REELS.md`.
+3. «Кто проедет первым?» — `docs/video/reels_3d.md`: утверждённый белый 3D-макет,
+   читаемые знаки сверху, короткие стрелки, живой голос, ровные субтитры. Сцена и
+   воспроизводимый пайплайн — `game_godot/videos/crossroads_reel/` и
+   `tools/game_reels/crossroads_reel/`. Перед новым выпуском читать этот стандарт;
+   десять следующих сценариев — `docs/video/intersection_reels_scenarios.md`.
 
 ## Ролики «Успей узнать знак» (Shorts/Reels/TikTok)
 

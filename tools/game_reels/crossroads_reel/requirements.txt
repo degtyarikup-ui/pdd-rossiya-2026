@@ -1,0 +1,4 @@
+numpy>=1.23
+Pillow>=10
+google-genai>=1
+google-auth>=2

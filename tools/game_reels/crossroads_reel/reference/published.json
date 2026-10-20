@@ -1,0 +1,49 @@
+{
+  "title": "Кто проедет первым?",
+  "format": "Instagram Reels",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "sourceScenario": "game_godot/data/crossroads_scenarios.json#cross_secondary_straight_waits",
+  "adaptation": "Same approaches and maneuvers; vehicles recoloured red, blue, yellow.",
+  "rules": [
+    "13.9",
+    "13.12"
+  ],
+  "ruleSource": "https://base.garant.ru/1305770/",
+  "visuals": "Deterministic Godot 3D; canonical road-sign faces; no generated imagery.",
+  "voice": "Gemini TTS / Algenib",
+  "gitSource": "aad8a8ea381a6e59cbb48053eccff20b008b6616",
+  "revision": 3,
+  "changes": [
+    "Bright white model base and pale sky; matte surfaces preserve soft shadows.",
+    "Sign glyphs cropped to their true alpha bounds, centred at one height and reduced to a shared 2.8 m maximum visible extent.",
+    "Straight manoeuvre hints end before the intersection and do not overlap the curved hint.",
+    "Imported lamp assets replaced by twelve vertical procedural poles with orthogonal road-facing consoles.",
+    "Existing narration, caption timing, baseline alignment and clean ending retained."
+  ],
+  "id": "crossroads-001",
+  "status": "published",
+  "approvedDate": "2026-10-20",
+  "publicationConfirmedBy": "owner",
+  "sha256": "9615120c3fb9a04297a7c36c8163473bdb4d32595a0548e107829f7fe2741909",
+  "bytes": 32834524,
+  "duration": 32.1,
+  "frames": 963,
+  "originalSceneSha256": "de5c53df62686ec38999c6f88f387a91cabb52623dfb19d574e24cac713bacfa",
+  "mediaRetained": false,
+  "preservationCheck": {
+    "date": "2026-10-20",
+    "renderer": "Godot 4.7.2 / Forward+ / Metal",
+    "pixelIdenticalRawFrames": [
+      0,
+      180,
+      444,
+      591,
+      807,
+      912
+    ],
+    "sceneFramesValidated": 963,
+    "mediaPolicy": "Published pilot and intermediate media removed at owner request; source, recipe, text and timings kept."
+  }
+}

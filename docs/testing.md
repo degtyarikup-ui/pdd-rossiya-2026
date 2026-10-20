@@ -22,3 +22,13 @@ flutter test                        # все тесты Flutter
 | Контент ПДД | `python3 tools/ru_content/parse_pdd.py` (падает при сбое нумерации) |
 
 Браузерным тестам нужны Playwright (`NODE_PATH`) и Google Chrome.
+
+## Рилсы на перекрёстках
+
+Сохранённый шаблон и команды — [стандарт](video/reels_3d.md). После изменения
+сцены выполнить `build.py init`, `validate`, `preview`; после изменения монтажа
+проверить полный `finish` и `check`. Исходники Python: `python3 -m compileall -q
+tools/game_reels/crossroads_reel`. Рендер должен работать через Forward+, даже
+если проект игры по умолчанию использует Compatibility. Временные результаты
+держать в `output/` или `scratch/`, после проверки опубликованного выпуска
+сохранять текстовый рецепт и удалять медиа по запросу владельца.

@@ -16,6 +16,7 @@
 | 3D-игра и мини-игры | [game/README.md](game/README.md) |
 | Релизы и сторы | [release/](release/) — аудиты, листинг Play, политика конфиденциальности, промпты обновления |
 | Эксплуатация | [ops/](ops/) — логирование ошибок, уведомления, аналитика, разбор сбоев |
+| Рилсы на перекрёстках | [Утверждённый формат](video/reels_3d.md), [10 сценариев](video/intersection_reels_scenarios.md) |
 | SEO и маркетинг | [seo/](seo/) — план, автоматизация, реестр фактов |
 | Продукт и UX | [product/ux-ui-roadmap.md](product/ux-ui-roadmap.md) |
 

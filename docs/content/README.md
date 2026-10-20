@@ -37,7 +37,9 @@
 Локальная админка — [инструкция](../admin/README.md).
 
 Видео: [знаки](../../tools/signs_reel/README.md),
-[вопросы из билетов](../../tools/signs_reel/QUESTION_REELS.md).
+[вопросы из билетов](../../tools/signs_reel/QUESTION_REELS.md),
+[перекрёстки в белом 3D-макете](../video/reels_3d.md)
+и [десять следующих сценариев](../video/intersection_reels_scenarios.md).
 `tools/signs_reel/state.json` — сохраняемый реестр выпусков, не кэш.
 Готовые видео и кэш пайплайна могут занимать много места; опубликованные выпуски
 не следует удалять без проверки, что сохранена нужная копия.
