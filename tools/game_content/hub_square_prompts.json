@@ -94,6 +94,14 @@
         {
           "reference": "previous stage",
           "prompt": "Use case: precise-object-edit\nAsset type: square game cover, 1024 x 1024 full bleed.\nInput image: the current square grayscale parking cover is the edit target.\nChange ONLY the scale and placement of the two-car parking scene so it has safer edges for responsive game cards. Zoom out about 20%, shift the two cars together slightly right and slightly up, preserving the exact grayscale low-poly 3D hatchback style, overhead angle, parking markings, curved maneuver arrow, road texture, lighting and monochrome palette.\nThe ENTIRE moving foreground hatchback including bumpers and wheels must be inside x22–72%, y29–61% of the square. The entire parked background hatchback must be inside x28–65%, y13–34%. The curved arrow should remain clear in x50–78%, y30–48%. Keep all important objects at least 20% away from the left/right edges. The bottom 25% remains quiet empty asphalt for UI text added later. No dark gradient, vignette, text, numbers, score, badge, UI, frames, logos, watermark, people or police. Two cars only. Keep square aspect ratio and preserve the current scene identity."
+        },
+        {
+          "generated_on": "2026-10-20",
+          "reference": {
+            "git_revision": "4f286249",
+            "path": "assets/images/games/hub_parking.webp"
+          },
+          "prompt": "Use case: precise-object-edit. Asset type: square game catalogue cover for the parking mini-game of a Russian driving theory app. Edit target: the supplied monochrome low-poly 3D parking illustration. Primary request: colorize this existing illustration. Preserve exactly the existing camera view, perspective, positions and shapes of the two cars, parking spaces, curb, road texture and broad empty bottom area for the UI title. Paint the foreground maneuvering car a rich medium blue, the parked upper car a warm orange-red. Keep tires dark, windows blue-gray, parking bay lines and curved arrow white, asphalt a natural slightly cool dark gray, sidewalk a warm light beige. Pleasant sunny light with subtle warm highlights, consistent polished low-poly 3D rendering. Change color only, keep composition and all objects unchanged. Do not add objects, trees, buildings, people, text, labels, logos or watermarks. Square output."
         }
       ],
       "webp_quality": 84

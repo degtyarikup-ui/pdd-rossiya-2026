@@ -198,7 +198,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('Available games precede upcoming games above the pinned city', (
+  testWidgets('Mini-games keep their catalogue order above the pinned city', (
     tester,
   ) async {
     await open(tester, size: const Size(320, 480));
@@ -468,7 +468,7 @@ void main() {
   });
 
   testWidgets(
-    'Weekly rating and all-time round records have visible distinct labels',
+    'Rating shows only the score and round records keep their labels',
     (tester) async {
       for (final locale in [
         const Locale('ru'),
@@ -486,7 +486,7 @@ void main() {
           crossroadsBest: 702,
           onLeaderboard: () => leaderboardOpens++,
         );
-        expect(find.text(appL10n.gamesWeeklyScoreLabel), findsOneWidget);
+        expect(find.text(appL10n.gamesWeeklyScoreLabel), findsNothing);
         expect(find.text('978'), findsOneWidget);
         final number = NumberFormat.decimalPattern(locale.languageCode);
         for (final score in [1500, 4050, 702, 4387]) {
@@ -533,7 +533,13 @@ void main() {
       const Locale('en'),
       const Locale('kk'),
     ]) {
-      await open(tester, locale: locale, roadSignsBest: 0, violatorBest: 0, parkingBest: 0);
+      await open(
+        tester,
+        locale: locale,
+        roadSignsBest: 0,
+        violatorBest: 0,
+        parkingBest: 0,
+      );
       for (final entry in [
         ('road_signs', appL10n.gamesRoadSignsTitle),
         ('violator', appL10n.gamesViolatorTitle),
