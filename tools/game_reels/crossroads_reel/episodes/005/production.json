@@ -1,0 +1,66 @@
+{
+  "id": "crossroads-005",
+  "title": "Зелёная стрелка без преимущества",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-20",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_005.mp4",
+  "deliveryDirectory": "Desktop",
+  "sha256": "04b2dfa445bbedb1c385c0f75f54649798db89fdfe4637d041106910886ad899",
+  "bytes": 29377136,
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "frames": 959,
+  "duration": 31.966666666666665,
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.5"
+  ],
+  "ruleSource": "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
+  "adaptation": "Red south to east right turn on extra green arrow with main red. Blue west to east straight on main green. Single eastbound exit lane. North/east red. Blue clears the merging area before red starts. All signals remain fixed.",
+  "audio": {
+    "voice": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "integratedLufs": -13.32,
+    "truePeakDbtp": -2.5,
+    "music": false
+  },
+  "checks": {
+    "sceneValidation": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nVALIDATION_OK episode 5; 959.0 frames; fixed correct signals; two cars; no collisions or sidewalk intrusions; readable first frame; full focus framing; 12 vertical lamps\n",
+    "captionClearanceFrames": 959,
+    "fullVideoDecode": "passed",
+    "automaticVoiceAudit": {
+      "heard_transcript": "Стрелка зелёная. Почему красная ждёт? Красная направо, синяя прямо. Посмотри на основной сигнал красной. 3 секунды на ответ! Сначала синяя. Стрелка с основным красным разрешает поворот, но требует уступить с других направлений. Теперь красная может повернуть. Эту стрелку не переоценил?",
+      "naturalness": 9,
+      "expressiveness": 9,
+      "clarity": 10,
+      "wrong_or_unclear_words": [],
+      "delivery_issues": []
+    },
+    "flutterAnalyze": "No issues",
+    "flutterTests": "passed; see build logs"
+  },
+  "sources": {
+    "game_godot/videos/crossroads_reel/scene.gd": "13e8735d3d14882311740f8c121edc188e50b4d0538937a632e2256c7e6ef2e4",
+    "game_godot/videos/crossroads_reel/stage_geometry.gd": "90d69ad5145b8c9a92ac88352dd5c6eb158c4eaba80d2189cf9ccade48530c0d",
+    "game_godot/videos/crossroads_reel/render.gd": "dcf89c6bce950344f08f95f281b99f95195c0e10fdc28fc241a255768280bf1f",
+    "game_godot/videos/crossroads_reel/signal_episodes.gd": "62a5e9b8b7638c04a73d941d438af5d564138bb6ff12cb4e85e299f7022be53d",
+    "game_godot/videos/crossroads_reel/validate_signals.gd": "6aa90768c354bed790b4d810815cfe37e85682bfcb5a9f0528b9bcff806c0bbc",
+    "tools/game_reels/crossroads_reel/plan.py": "330c8694a4fe5f065ac1503512d206f39f5fa70a65a8766e172cc15c8b4d9ea7",
+    "tools/game_reels/crossroads_reel/finish.py": "c1bd47a6eac8695f280cfb35d4e6f22c32a8d2a270bb7a08d78db4bbbce8d9bd",
+    "tools/game_reels/crossroads_reel/review.py": "48a8dda169b6d60a2e06c8efdd1effac2889aee0e482f82d0a4a533d525c193f",
+    "tools/game_reels/crossroads_reel/audit_voice.py": "7de2811713e79f995477ff3aa0236d1fa94d99740cbb0f8e7987f3b2ccd3f795",
+    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552"
+  },
+  "voiceClips": {
+    "hook": "51d0c9e15714ef12a59bb9ec4593c6c4aaa2cb7b0b44c6c17af4772b7b2eafac",
+    "setup": "644b3c26abe74a3864d13b8969f93ddc7dc5d4b1440c5cf1f301a19a3ca44b2d",
+    "challenge": "85ec187049d70e5f0470ffe6fae28a44520797103822b407e20ae0b7cbda788a",
+    "blue": "7053ca6b991e43773b81e55b5c53fe029ad701536c505779753edcc2fc14e610",
+    "rule": "e989945a379e0f2ccb9b0cf9278c92ba505c268725441356ee70c590c28b5db8",
+    "red": "9bb15dea4dd65be22124d0a679118113c6933dd0f50c503e452ed002f65e1a93",
+    "cta": "2bdfa4339142eae334044efe83ce564b93486a587c9eb3e5089d34fdad15a76b"
+  }
+}

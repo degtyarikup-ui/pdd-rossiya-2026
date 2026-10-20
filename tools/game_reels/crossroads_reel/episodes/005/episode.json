@@ -1,0 +1,121 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-005",
+  "status": "produced",
+  "title": "Зелёная стрелка без преимущества",
+  "sourceScenario": "cross_tl_arrow_vs_main_13_5",
+  "rules": [
+    "13.5"
+  ],
+  "scene": "res://videos/crossroads_reel/signal_episodes.gd",
+  "validator": "res://videos/crossroads_reel/validate_signals.gd",
+  "answerPhases": [
+    "blue",
+    "rule",
+    "red"
+  ],
+  "motionMinimums": {
+    "blue": 5.3,
+    "rule": 0,
+    "red": 5.0
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "right",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "blue": -0.25,
+      "red": 0.1
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    },
+    {
+      "car": "red",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-20",
+  "adaptation": "Red south to east right turn on extra green arrow with main red. Blue west to east straight on main green. Single eastbound exit lane. North/east red. Blue clears the merging area before red starts. All signals remain fixed.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Стрелка зелёная. Почему красная ждёт?"
+    },
+    {
+      "key": "setup",
+      "text": "Красная направо, синяя прямо. Посмотри на основной сигнал красной."
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Сначала синяя."
+    },
+    {
+      "key": "rule",
+      "text": "Стрелка с основным красным разрешает поворот, но требует уступить с других направлений."
+    },
+    {
+      "key": "red",
+      "text": "Теперь красная может повернуть."
+    },
+    {
+      "key": "cta",
+      "text": "Эту стрелку не переоценил?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Стрелка зелёная",
+      "Почему красная",
+      "ждёт?"
+    ],
+    "setup": [
+      "Красная направо",
+      "синяя прямо",
+      "Посмотри",
+      "на основной сигнал",
+      "красной"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Сначала синяя"
+    ],
+    "rule": [
+      "Стрелка",
+      "с основным красным",
+      "разрешает поворот",
+      "но требует уступить",
+      "с других направлений"
+    ],
+    "red": [
+      "Теперь красная",
+      "может повернуть"
+    ],
+    "cta": [
+      "Эту стрелку",
+      "не переоценил?"
+    ]
+  }
+}

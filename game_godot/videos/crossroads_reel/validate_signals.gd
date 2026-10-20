@@ -58,6 +58,49 @@ func drivable(p: Vector3) -> bool:
 	if x <= 3.6 or z <= 3.6: return true
 	return x <= 7.8 and z <= 7.8 and Vector2(x-7.8,z-7.8).length() >= 4.2-.025
 
+func hint_covered(camera: Camera3D, face: Sprite3D, route: Node3D) -> bool:
+	var rect := face_rect(camera,face)
+	var polygon := PackedVector2Array([rect.position,Vector2(rect.end.x,rect.position.y),rect.end,Vector2(rect.position.x,rect.end.y)])
+	var mesh: MeshInstance3D = route.get_child(0)
+	var vertices: PackedVector3Array = mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	for i in range(0,vertices.size(),3):
+		var triangle := PackedVector2Array()
+		for k in 3: triangle.append(camera.unproject_position(mesh.global_transform*vertices[i+k]))
+		if not Geometry2D.intersect_polygons(polygon,triangle).is_empty(): return true
+	return false
+
+func scenery_occluders(scene: Node3D) -> Array:
+	var result: Array = []
+	for node in scene.find_children("*","MeshInstance3D",true,false):
+		var actor := false
+		for car in scene.cars:
+			if car.is_ancestor_of(node): actor = true
+		if actor or node.mesh == null: continue
+		var bounds: AABB = node.global_transform*node.mesh.get_aabb()
+		if bounds.size.y<2 or maxf(bounds.size.x,bounds.size.z)<2: continue
+		result.append({"node":node,"inverse":node.global_transform.affine_inverse(),"bounds":node.mesh.get_aabb(),"faces":node.mesh.get_faces()})
+	return result
+
+func blocked_focus(camera: Camera3D, car: Node3D, occluders: Array) -> bool:
+	var blocked := 0
+	# Probe the hood, roof and trunk against the actual triangles of large
+	# scenery meshes. Thin street poles are excluded by the size filter.
+	for offset in [Vector3(0,1.1,-1.4),Vector3(0,1.4,0),Vector3(0,1.1,1.4)]:
+		var target: Vector3 = car.global_transform*offset
+		for item in occluders:
+			if not item.node.is_visible_in_tree(): continue
+			var origin: Vector3 = item.inverse*camera.global_position
+			var end: Vector3 = item.inverse*target
+			if item.bounds.intersects_segment(origin,end)==null: continue
+			var faces: PackedVector3Array = item.faces
+			var hit := false
+			for i in range(0,faces.size(),3):
+				if Geometry3D.segment_intersects_triangle(origin,end,faces[i],faces[i+1],faces[i+2])!=null:
+					hit = true; break
+			if hit:
+				blocked += 1; break
+	return blocked>0
+
 func _initialize() -> void:
 	var data := ""
 	for argument in OS.get_cmdline_user_args():
@@ -71,6 +114,7 @@ func _initialize() -> void:
 	root.add_child(viewport); viewport.add_child(scene)
 	await process_frame
 	var errors: Array = []; var framing: Array = []
+	var occluders := scenery_occluders(scene)
 	var number: int = scene.episode_number
 	if scene.cars.size()!=2 or scene.street_poles.size()!=12 or scene.signal_faces.size()!=4: errors.append("Missing actors, signals or lamps")
 	var expected := {"south":"red","north":"red","west":"green","east":"green"}
@@ -79,6 +123,7 @@ func _initialize() -> void:
 	for key in expected:
 		var signal_root: Node3D = scene.signal_roots[key]
 		if signal_root.get_meta("main") != expected[key] or signal_root.get_meta("rightArrow") != (number==5 and key=="south"): errors.append(["Wrong signal",key])
+		if signal_root.global_basis.y.normalized().dot(Vector3.UP)<.999999: errors.append(["Tilted traffic signal",key])
 		var image: Image = scene.signal_textures[key].get_image()
 		var red := image.get_pixel(56,56); var green := image.get_pixel(56,264)
 		if expected[key]=="red" and (red.r<.9 or green.g>.5): errors.append(["Red light texture wrong",key])
@@ -104,8 +149,8 @@ func _initialize() -> void:
 			var car: Node3D = scene.cars[i]
 			var rect := car_rect(scene._cam,car)
 			rectangles.append({"i":i,"visible":scene._cam.is_position_in_frustum(car.global_position),"rect":[rect.position.x,rect.position.y,rect.size.x,rect.size.y]})
-			for x in [-1.03,1.03]:
-				for z in [-2.28,2.28]:
+			for x in [-1.03,0.0,1.03]:
+				for z in [-2.28,0.0,2.28]:
 					if not drivable(car.transform*Vector3(x,0,z)): errors.append(["Car on sidewalk",frame,i])
 			if t<cfg.answer:
 				if not car.position.is_equal_approx(starts[i]) or not scene.routes[i].visible: errors.append(["Question changes",frame,i])
@@ -120,9 +165,13 @@ func _initialize() -> void:
 				if not face.visible or not Rect2(20,30,1040,1340).encloses(rect): errors.append(["Signal/sign clipped",frame,face.get_parent().name,rect])
 				for car in scene.cars:
 					if rect.intersects(car_rect(scene._cam,car)): errors.append(["Signal/sign covers car",frame,face.get_parent().name])
+				if frame%30==0:
+					for route in scene.routes:
+						if hint_covered(scene._cam,face,route): errors.append(["Signal/sign covers intent",frame,face.get_parent().name])
 		if t>=cfg.answer and t<cfg.cta and scene._cam.projection==Camera3D.PROJECTION_PERSPECTIVE:
 			var focus: int = 0 if (number==4 and t>=cfg.wait) or (number!=4 and t>=cfg.red) else 1
 			var rect := car_rect(scene._cam,scene.cars[focus])
+			if blocked_focus(scene._cam,scene.cars[focus],occluders): errors.append(["Scenery hides focus car",frame,focus])
 			if not Rect2(25,30,1030,1340).encloses(rect): errors.append(["Focus car clipped",frame,focus,rect])
 		if overlap(scene.cars[0].transform,scene.cars[1].transform): errors.append(["Car collision",frame])
 		framing.append({"frame":frame,"cars":rectangles,"signalInsert":scene.signal_insert})

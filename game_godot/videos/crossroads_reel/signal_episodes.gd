@@ -81,12 +81,27 @@ func _build_traffic_lights() -> void:
 			var side_box := BoxMesh.new(); side_box.size = Vector3(.64, .64, .25)
 			side.mesh = side_box; side.material_override = material; side.position = Vector3(-.64, 3.03, 0)
 			physical.add_child(side)
-		var face := SignFace.picture(texture, Vector3(-.32 if extra else 0, 3.65, -.135), Vector2(1.288 if extra else .644, 1.84))
-		physical.add_child(face)
+		if extra:
+			# A true alpha cutout: the upper half beside the main signal is
+			# empty air, not a white rectangular signboard.
+			var face := MeshInstance3D.new(); var quad := QuadMesh.new()
+			quad.size = Vector2(1.288,1.84); face.mesh = quad
+			face.position = Vector3(-.32,3.65,-.135); face.rotation.y = PI
+			var face_material := StandardMaterial3D.new()
+			face_material.albedo_texture = texture
+			face_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			face_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+			face_material.alpha_scissor_threshold = .1
+			face_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+			face.material_override = face_material; physical.add_child(face)
+		else:
+			physical.add_child(SignFace.picture(texture,Vector3(0,3.65,-.135),Vector2(.644,1.84)))
 		var readable := Sprite3D.new()
 		readable.texture = texture; readable.pixel_size = 5.4 / 320.0
 		readable.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		readable.position.y = 3.1; readable.shaded = false; readable.no_depth_test = true
+		# Keep the wider extra-section diagram clear of the turning intent.
+		if extra: readable.position.x = -1.7
 		readable.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		root_node.add_child(readable)
 		signal_faces.append(readable)
@@ -237,9 +252,7 @@ func set_time(t: float) -> void:
 		elif t < timings.red:
 			signal_insert = true; _south_insert()
 		elif t < timings.red+1.3: _overview(t)
-		else:
-			var p := cars[0].position
-			_camera(p+Vector3(9,7.8,3.8),p+Vector3(0,.65,0),55)
+		else: _follow_red()
 	else:
 		if t < timings.red: _follow_blue()
 		elif t < timings.red+1.3: _overview(t)
