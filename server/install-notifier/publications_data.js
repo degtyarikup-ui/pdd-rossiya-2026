@@ -170,8 +170,7 @@ export function normalizePublications(sources = {}, options = {}) {
     item.accountId = post.accountId == null ? null : String(post.accountId);
     item.accountName = account ? publicationText(account.name) || null : null;
     item.paused = !account || !account.active;
-    item.autoTime = account && /^\d{1,2}:\d{2}$/.test(String(account.postTime || '')) ? String(account.postTime) : '19:00';
-    item.scheduleMode = item.scheduledAt ? 'date' : 'automatic';
+    item.scheduleMode = item.scheduledAt ? 'date' : 'none';
     const token = publicationText(post.streamToken);
     if (/^[A-Za-z0-9_-]{1,128}$/.test(token)) {
       item.thumbnail = '/s/t/' + token;
@@ -242,7 +241,6 @@ export function summarizePublications(items, options = {}) {
     if (item.status === 'scheduled' && item.date >= today && item.date <= end) summary.next7Days += 1;
     if (item.status === 'failed' || item.overdue) summary.attention += 1;
     if (!item.date && !['published', 'dated'].includes(item.status)) summary.undated += 1;
-    if (item.scheduleMode === 'automatic' && !item.paused && ['queued', 'failed'].includes(item.status)) summary.automatic += 1;
   });
   return summary;
 }

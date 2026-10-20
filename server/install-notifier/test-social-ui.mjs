@@ -96,6 +96,9 @@ if(process.argv.includes('--serve')) {
       await assertInstagramVisible('#sc-t-ig svg');
       await assertInstagramVisible('[data-post="q"] .sc-platform:first-child svg');
       assert.match(await row.innerText(),/Instagram\s+Не выбрано/);
+      assert.match(await row.innerText(),/Без даты/);
+      assert.match(await row.innerText(),/Ожидает планирования/);
+      assert.doesNotMatch(await row.innerText(),/По расписанию/);
       assert.equal(await page.locator('#sc-t-ig').getAttribute('aria-pressed'),'false');
       await page.locator('#sc-t-ig').click();
       assert.equal(await page.locator('#sc-save-schedule').isEnabled(),true);

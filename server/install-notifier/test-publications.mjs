@@ -76,7 +76,7 @@ test('Threads legacy dates do not invent an executable schedule', () => {
   assert.equal(items[3].overdue, false);
 });
 
-test('undated videos remain automatic and partial failures preserve destination state', () => {
+test('undated videos await scheduling and partial failures preserve destination state', () => {
   const sources = { social: {
     accounts: [{ id: 'active', name: 'Россия', active: true, postTime: '19:00', targets: ['instagram', 'youtube'] },
       { id: 'paused', active: false, postTime: '14:00' }],
@@ -91,9 +91,9 @@ test('undated videos remain automatic and partial failures preserve destination 
   const items = normalizePublications(sources, { now });
   assert.deepEqual(sources, before, 'normalization must not change the publishing queues');
   assert.equal(items[0].status, 'queued');
-  assert.equal(items[0].scheduleMode, 'automatic');
+  assert.equal(items[0].scheduleMode, 'none');
   assert.equal(items[0].date, null);
-  assert.equal(items[0].autoTime, '19:00');
+  assert.equal(items[0].autoTime, null);
   assert.equal(items[0].thumbnail, '/s/t/safe_token');
   assert.equal(items[1].status, 'failed');
   assert.equal(items[1].partialPublished, true);

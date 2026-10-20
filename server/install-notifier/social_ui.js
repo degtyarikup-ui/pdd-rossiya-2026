@@ -240,7 +240,7 @@ export const SOCIAL_VIEW_HTML = `
           <button class="sc-target" id="sc-t-yt" data-on="0" aria-pressed="false">YouTube<span class="sc-target-check">✓</span></button>
         </div>
       </div>
-      <div class="form-group"><label class="form-label" for="sc-time">Каждый день · МСК</label>
+      <div class="form-group"><label class="form-label" for="sc-time">Время при назначении дат · МСК</label>
         <input type="time" id="sc-time" class="sc-input" required></div>
       <div class="sc-save-group">
         <span id="sc-save-state" class="sc-hint" role="status"></span>
@@ -379,7 +379,7 @@ function scRenderSchedule() {
   document.getElementById('sc-active-label').textContent = document.getElementById('sc-active').checked ? 'Включена' : 'На паузе';
   var queued = (scState.posts || []).filter(function (p) { return p.status === 'queued'; });
   var scheduled = queued.filter(function (p) { return p.scheduledAt; }).sort(function (x, y) { return x.scheduledAt.localeCompare(y.scheduledAt); });
-  document.getElementById('sc-next').textContent = a.active === false ? 'Автопубликация на паузе' : scheduled.length ? 'Ближайшая дата · ' + scMskShort(scheduled[0].scheduledAt) + ' МСК' : 'Без даты · ежедневно в ' + (a.postTime || '19:00') + ' МСК';
+  document.getElementById('sc-next').textContent = a.active === false ? 'Автопубликация на паузе' : scheduled.length ? 'Ближайшая дата · ' + scMskShort(scheduled[0].scheduledAt) + ' МСК' : 'Без даты · ожидают планирования';
 }
 
 function scSetToggle(id, on) {
@@ -508,8 +508,8 @@ function scRenderList() {
       return '<div class="sc-platform' + cls + '">' + (t === 'instagram' ? SC_ICONS.ig : SC_ICONS.yt) + '<span>' + (t === 'instagram' ? 'Instagram' : 'YouTube') + '</span><small>' + text + '</small></div>';
     }).join('');
     var a = (scState.accounts || []).find(function (a) { return a.id === p.accountId; }) || {};
-    var date = p.status === 'published' ? (p.publishedAt ? scMskShort(p.publishedAt) : 'Опубликовано') : p.status === 'processing' ? 'Публикуется…' : p.status === 'failed' ? 'Нужен повтор' : p.scheduledAt ? scMskShort(p.scheduledAt) : (a.postTime || '19:00') + ' · МСК';
-    var sub = p.status === 'published' ? 'Опубликовано · МСК' : p.scheduledAt ? 'По дате · МСК' : a.active === false ? 'Автопубликация на паузе' : 'По расписанию';
+    var date = p.status === 'published' ? (p.publishedAt ? scMskShort(p.publishedAt) : 'Опубликовано') : p.status === 'processing' ? 'Публикуется…' : p.status === 'failed' ? 'Нужен повтор' : p.scheduledAt ? scMskShort(p.scheduledAt) : 'Без даты';
+    var sub = p.status === 'published' ? 'Опубликовано · МСК' : p.scheduledAt ? 'По дате · МСК' : a.active === false ? 'Автопубликация на паузе' : 'Ожидает планирования';
     return '<article class="sc-card' + (scSelected[p.id] ? ' sel' : '') + '" data-post="' + scEsc(p.id) + '">'
       + '<input type="checkbox" class="sc-pick" data-pick="' + scEsc(p.id) + '" aria-label="Выбрать ' + scEsc(p.title || scPrettyName(p.fileName)) + '"' + (scSelected[p.id] ? ' checked' : '') + '>'
       + '<button class="sc-poster" data-preview="' + scEsc(p.id) + '" aria-label="Смотреть ' + scEsc(p.title || scPrettyName(p.fileName)) + '">'

@@ -853,9 +853,17 @@ async function recoverStalePosts(env) {
  * Поэтому каждые пять минут проверяем «зависшие» и продолжаем с того места,
  * где остановились — контейнер Instagram и уже залитое видео не потеряются.
  */
+function isScheduledPostDue(post, now = Date.now()) {
+  const scheduled = typeof post.scheduledAt === 'string' ? Date.parse(post.scheduledAt) : NaN;
+  return Number.isFinite(scheduled) && scheduled <= now;
+}
+
 async function resumeInFlight(env, origin, notify) {
   const posts = await getPosts(env);
-  const stuck = posts.filter((p) => p.status === 'processing');
+  // Только назначенные даты или явный ручной запуск. Старые задачи без даты
+  // не должны возобновлять автоматическую публикацию после обновления.
+  const stuck = posts.filter((p) => p.status === 'processing'
+    && (isScheduledPostDue(p) || p.publishMode === 'manual'));
 
   for (const post of stuck) {
     const startedAt = Date.parse(post.processingSince || '') || 0;
@@ -872,31 +880,24 @@ export async function runAutoPost(env, origin, notify = null) {
   await refreshInstagramTokens(env);
 
   const accounts = await getAccounts(env);
-  const minutesNow = mskMinutes();
   const results = [];
 
   for (const account of accounts) {
     if (!account.active) continue;
 
-    // Без дневного лимита: публикуем всё, что подошло по времени, сколько бы
-    // роликов это ни было. У роликов без даты остаётся слот постТайм — просто
-    // как момент, когда очередь начинает разбираться, а не как лимит «раз в
-    // сутки»: пока идёт крон (каждые 5 минут) внутри окна слота, уходит вся
-    // такая очередь целиком, а не один ролик в день.
-    const slot = parseTimeToMinutes(account.postTime);
-    const withinSlot = minutesNow >= slot && minutesNow <= slot + 180;
-
+    // Импорт только пополняет очередь. Разрешение на автоматический выпуск —
+    // явная дата ролика, назначенная администратором.
     try {
       await syncAccountVideos(env, account);
     } catch (e) {
       await socialLog(env, 'error', `Синхронизация «${account.name}»: ${e.message}`);
     }
 
-    const nowIso = new Date().toISOString();
+    const now = Date.now();
     const posts = await getPosts(env);
     const due = posts
       .filter((p) => p.accountId === account.id && (p.status === 'queued' || p.status === 'failed'))
-      .filter((p) => (p.scheduledAt ? p.scheduledAt <= nowIso : withinSlot))
+      .filter((p) => isScheduledPostDue(p, now))
       .sort((a, b) => {
         if (a.scheduledAt && b.scheduledAt) return a.scheduledAt.localeCompare(b.scheduledAt);
         if (a.scheduledAt) return -1;
@@ -912,7 +913,10 @@ export async function runAutoPost(env, origin, notify = null) {
     // Публикуем по очереди, не параллельно: Instagram кодирует каждый ролик
     // минуты, и параллельные заливки на один аккаунт площадки не любят.
     for (const post of due) {
-      await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString() });
+      // Пока предыдущий ролик кодировался, администратор мог снять или перенести дату.
+      const current = (await getPosts(env)).find(p => p.id === post.id);
+      if (!current || !['queued', 'failed'].includes(current.status) || !isScheduledPostDue(current)) continue;
+      await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString(), publishMode: 'scheduled' });
       const res = await publishPost(env, post.id, origin, notify);
       results.push({ account: account.name, file: post.fileName, ...res });
     }
@@ -1291,6 +1295,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
       status: 'processing',
       error: null,
       processingSince: new Date().toISOString(),
+      publishMode: 'manual',
       [platform === 'youtube' ? 'youtubeStatus' : 'instagramStatus']: 'queued',
     });
     ctx.waitUntil(publishPost(env, post.id, origin, notify, [platform]));
@@ -1311,7 +1316,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (!take.length) return jsonResponse({ ok: false, message: 'Нечего публиковать' });
 
     for (const post of take) {
-      await patchPost(env, post.id, { status: 'processing', error: null, scheduledAt: null, processingSince: new Date().toISOString() });
+      await patchPost(env, post.id, { status: 'processing', error: null, scheduledAt: null, processingSince: new Date().toISOString(), publishMode: 'manual' });
     }
 
     ctx.waitUntil((async () => {
@@ -1427,7 +1432,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (post.status === 'processing') {
       return jsonResponse({ ok: false, message: 'Этот ролик уже публикуется' });
     }
-    await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString() });
+    await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString(), publishMode: 'manual' });
     // Instagram кодирует видео минуты — ответ ждать нельзя, публикуем в фоне,
     // а панель подтягивает статус опросом.
     ctx.waitUntil(publishPost(env, post.id, origin, notify));
