@@ -1004,6 +1004,44 @@
   "gameParkingBusStop": "Not within 15 m of a bus stop",
   "gameParkingNoStopping": "Sign 3.27: no stopping",
   "gameParkingJunction": "Not within 5 m of a junction",
+  "gameParkingLevelForward": "Forward bay parking",
+  "gameParkingLevelReverse": "Reverse bay parking",
+  "gameParkingLevelAngled": "Angled parking",
+  "gameParkingLevelParallel": "Parallel parking",
+  "gameParkingLevelChoose": "Choose a space",
+  "gameParkingGuidanceStraight": "Keep the wheel straight",
+  "gameParkingGuidanceLeft": "Turn the wheel left",
+  "gameParkingGuidanceRight": "Turn the wheel right",
+  "gameParkingGuidanceBrake": "Come to a stop first",
+  "gameParkingGuidanceGear": "Select {gear}",
+  "@gameParkingGuidanceGear": {
+    "placeholders": {
+      "gear": {
+        "type": "String"
+      }
+    }
+  },
+  "gameParkingGuidancePark": "Stop gently in the space",
+  "gameParkingGuidanceChoose": "Choose a permitted space",
+  "gameParkingGuidanceStep": "Step {current}/{total}",
+  "@gameParkingGuidanceStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gameParkingGuidanceDistance": "{distance} m to go",
+  "@gameParkingGuidanceDistance": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "gamesSignsTitle": "Sign quiz",
   "gamesCrossroadsTitle": "Crossroads",
   "gamesPlay": "Play",

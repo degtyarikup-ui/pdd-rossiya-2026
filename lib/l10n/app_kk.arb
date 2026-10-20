@@ -1004,6 +1004,44 @@
   "gameParkingBusStop": "Аялдамаға 15 м-ден жақын болмайды",
   "gameParkingNoStopping": "3.27 белгісі: тоқтауға тыйым салынған",
   "gameParkingJunction": "Қиылысқа 5 м-ден жақын болмайды",
+  "gameParkingLevelForward": "Алға жүріп тұраққа қою",
+  "gameParkingLevelReverse": "Артқа жүріп тұраққа қою",
+  "gameParkingLevelAngled": "Қиғаш тұраққа қою",
+  "gameParkingLevelParallel": "Параллель тұраққа қою",
+  "gameParkingLevelChoose": "Орын таңдау",
+  "gameParkingGuidanceStraight": "Рульді түзу ұстаңыз",
+  "gameParkingGuidanceLeft": "Рульді солға бұрыңыз",
+  "gameParkingGuidanceRight": "Рульді оңға бұрыңыз",
+  "gameParkingGuidanceBrake": "Алдымен тоқтаңыз",
+  "gameParkingGuidanceGear": "{gear} берілісін қосыңыз",
+  "@gameParkingGuidanceGear": {
+    "placeholders": {
+      "gear": {
+        "type": "String"
+      }
+    }
+  },
+  "gameParkingGuidancePark": "Орынға баяу тоқтаңыз",
+  "gameParkingGuidanceChoose": "Рұқсат етілген орынды таңдаңыз",
+  "gameParkingGuidanceStep": "{current}/{total} қадам",
+  "@gameParkingGuidanceStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gameParkingGuidanceDistance": "Тағы {distance} м",
+  "@gameParkingGuidanceDistance": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "gamesSignsTitle": "Бұл — белгі",
   "gamesCrossroadsTitle": "Қиылыс",
   "gamesPlay": "Ойнау",

@@ -3274,6 +3274,54 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gameParkingJunction => 'Қиылысқа 5 м-ден жақын болмайды';
 
   @override
+  String get gameParkingLevelForward => 'Алға жүріп тұраққа қою';
+
+  @override
+  String get gameParkingLevelReverse => 'Артқа жүріп тұраққа қою';
+
+  @override
+  String get gameParkingLevelAngled => 'Қиғаш тұраққа қою';
+
+  @override
+  String get gameParkingLevelParallel => 'Параллель тұраққа қою';
+
+  @override
+  String get gameParkingLevelChoose => 'Орын таңдау';
+
+  @override
+  String get gameParkingGuidanceStraight => 'Рульді түзу ұстаңыз';
+
+  @override
+  String get gameParkingGuidanceLeft => 'Рульді солға бұрыңыз';
+
+  @override
+  String get gameParkingGuidanceRight => 'Рульді оңға бұрыңыз';
+
+  @override
+  String get gameParkingGuidanceBrake => 'Алдымен тоқтаңыз';
+
+  @override
+  String gameParkingGuidanceGear(String gear) {
+    return '$gear берілісін қосыңыз';
+  }
+
+  @override
+  String get gameParkingGuidancePark => 'Орынға баяу тоқтаңыз';
+
+  @override
+  String get gameParkingGuidanceChoose => 'Рұқсат етілген орынды таңдаңыз';
+
+  @override
+  String gameParkingGuidanceStep(int current, int total) {
+    return '$current/$total қадам';
+  }
+
+  @override
+  String gameParkingGuidanceDistance(String distance) {
+    return 'Тағы $distance м';
+  }
+
+  @override
   String get gamesSignsTitle => 'Бұл — белгі';
 
   @override

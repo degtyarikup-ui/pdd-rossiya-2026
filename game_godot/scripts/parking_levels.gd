@@ -84,7 +84,7 @@ static func drive_script(start: Vector3, script: Array, geo: Dictionary) -> Arra
 		for i in n:
 			p = step_pose(p, float(seg.g) * dist / n, float(seg.s) * MAX_STEER, geo.wheelbase)
 			poses.append(p)
-		out.append({"gear": int(seg.g), "steer": int(seg.s), "poses": poses})
+		out.append({"gear": int(seg.g), "steer": int(seg.s), "length": dist, "poses": poses})
 	return out
 
 
@@ -97,7 +97,7 @@ static func way_in(level: Dictionary, geo: Dictionary) -> Array:
 	for i in range(exit.size() - 1, -1, -1):
 		var poses: Array[Vector3] = (exit[i].poses as Array[Vector3]).duplicate()
 		poses.reverse()
-		path.append({"gear": -int(exit[i].gear), "steer": exit[i].steer, "poses": poses})
+		path.append({"gear": -int(exit[i].gear), "steer": exit[i].steer, "length": exit[i].length, "poses": poses})
 	return path
 
 

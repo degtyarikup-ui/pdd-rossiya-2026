@@ -1,13 +1,14 @@
 ## «Парковка» mini-game on Godot: five lots/streets (scripts/parking_levels.gd), the city's
 ## pedals and arrows (scripts/controls.gd) plus a D/R switch, the garage car, and the way into
-## the spot drawn on the asphalt: a band the width of the car, blue forwards and gold in reverse,
-## with a marker where the gear changes. The camera looks down and keeps the car and the spot
+## the spot drawn on the asphalt: paired rails, blue forwards and gold in reverse,
+## steering checkpoints and a short forecast of the current wheel angle. The camera looks down and keeps the car and the spot
 ## in frame. A touch costs a life; the last level asks to pick the only legal space (п. 12.4).
 class_name Parking
 extends Node3D
 
 const ControlsScript := preload("res://scripts/controls.gd")
 const ParkingUiScript := preload("res://scripts/parking_ui.gd")
+const ParkingGuideScript := preload("res://scripts/parking_guide.gd")
 
 const VMAX_D := 3.0
 const VMAX_R := 1.9
@@ -18,8 +19,6 @@ const STEER_RATE := 1.7          # rad/s of the front wheels while an arrow is h
 const CENTRE_RATE := 2.4         # back to straight once it is released
 const HOLD := 0.55               # standing still in the spot this long parks the car
 const HIT_SPEED := 0.2
-const BAND := Color("#0574F8")
-const BAND_REVERSE := Color("#FFA53C")
 const PITCH := deg_to_rad(58.0)
 const FOV := 50.0
 
@@ -72,15 +71,11 @@ var level_touches := 0
 var done_timer := -1.0           # counts down to the next level after parking
 var _exiting := false
 var _ready_for_play := false
-var _clock := 0.0
 var _auto_travel := 0.0
 
 var _spot_views: Array[Dictionary] = []   # {spot, fill, edges}
-var _bands: Array[MeshInstance3D] = []
-var _band_mats: Array[StandardMaterial3D] = []
-var _chevrons: MultiMeshInstance3D
-var _marker: Node3D
-var _marker_label: Label3D
+var guide: Node3D
+var _guide_index := 0
 var _cam_target := Vector3.ZERO
 var _cam_dist := 18.0
 var _mats := {}
@@ -197,6 +192,9 @@ func _load_level(index: int) -> void:
 	level = ParkingLevels.build(index)
 	way = ParkingLevels.way_in(level, geo)
 	segment = 0
+	_guide_index = 0
+	hit_cooldown = 0.0
+	shake = 0.0
 	if is_instance_valid(root3d):
 		Models.release_geometry(root3d)
 		root3d.queue_free()
@@ -216,9 +214,9 @@ func _load_level(index: int) -> void:
 	done_timer = -1.0
 	_auto_travel = 0.0
 	_place_car()
-	_frame_camera(true)
 	_refresh_hud()
-	if not level.show_path: ui.toast(Ui.t("gameParkingFindSpot"), "", 2.4)
+	_update_guidance(0.0)
+	_frame_camera(true)
 
 
 func _refresh_hud() -> void:
@@ -409,114 +407,57 @@ func _build_car() -> void:
 # --- The way in ---
 
 func _build_way() -> void:
-	_bands.clear()
-	_band_mats.clear()
-	for seg: Dictionary in way:
-		var reverse: bool = seg.gear < 0
-		var st := SurfaceTool.new()
-		st.begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
-		for p: Vector3 in seg.poses:
-			var c := Vector2(p.x, p.y) + ParkingLevels.forward(p.z) * float(geo.rear)
-			var f := ParkingLevels.forward(p.z)
-			var r := Vector2(f.y, -f.x) * float(geo.half_width) * 0.85
-			st.add_vertex(Vector3(c.x + r.x, 0.03, c.y + r.y))
-			st.add_vertex(Vector3(c.x - r.x, 0.03, c.y - r.y))
-		var band := MeshInstance3D.new()
-		band.mesh = st.commit()
-		var m := _glow_material(BAND_REVERSE if reverse else BAND, 0.3)
-		band.material_override = m
-		band.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		root3d.add_child(band)
-		_bands.append(band)
-		_band_mats.append(m)
-	# Chevrons that run along the current segment, pointing the way the car must move.
-	var tri := ArrayMesh.new()
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3(0, 0, 0.45), Vector3(0.5, 0, -0.15), Vector3(0, 0, 0.05),
-		Vector3(0, 0, 0.45), Vector3(0, 0, 0.05), Vector3(-0.5, 0, -0.15)])
-	tri.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = tri
-	mm.instance_count = 64
-	mm.visible_instance_count = 0
-	_chevrons = MultiMeshInstance3D.new()
-	_chevrons.multimesh = mm
-	var cm := _glow_material(Color.WHITE, 1.0)
-	cm.vertex_color_use_as_albedo = true
-	cm.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_chevrons.material_override = cm
-	_chevrons.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	root3d.add_child(_chevrons)
-	# Where the gear changes: a disc with the next gear.
-	_marker = Node3D.new()
-	var disc := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = 0.75
-	cyl.bottom_radius = 0.75
-	cyl.height = 0.02
-	disc.mesh = cyl
-	disc.material_override = _glow_material(Color.WHITE, 0.95)
-	_marker.add_child(disc)
-	_marker_label = Label3D.new()
-	_marker_label.font = Ui.font(800)
-	_marker_label.font_size = 96
-	_marker_label.pixel_size = 0.009
-	_marker_label.rotation.x = -PI / 2
-	_marker_label.position.y = 0.06
-	_marker_label.outline_size = 0
-	_marker_label.double_sided = true
-	_marker_label.render_priority = 3
-	_marker.add_child(_marker_label)
-	root3d.add_child(_marker)
-	_paint_way()
+	guide = ParkingGuideScript.new()
+	root3d.add_child(guide)
+	guide.setup(level, way, geo)
 
 
 func _paint_way() -> void:
-	var visible_way: bool = level.show_path and done_timer < 0.0
-	for i in _bands.size():
-		_bands[i].visible = visible_way and i >= segment
-		_band_mats[i].albedo_color.a = 0.42 if i == segment else 0.16
-	# The marker stands where the gear next changes.
-	var change := segment
-	while change < way.size() - 1 and int(way[change + 1].gear) == int(way[change].gear): change += 1
-	_marker.visible = visible_way and change < way.size() - 1
-	if _marker.visible:
-		var end: Vector3 = way[change].poses.back()
-		var c := Vector2(end.x, end.y) + ParkingLevels.forward(end.z) * float(geo.rear)
-		_marker.position = Vector3(c.x, 0.04, c.y)
-		var next_gear: int = way[change + 1].gear
-		_marker_label.text = "R" if next_gear < 0 else "D"
-		_marker_label.modulate = BAND_REVERSE if next_gear < 0 else BAND
-	_chevrons.visible = visible_way
+	if not is_instance_valid(guide): return
+	guide.update_state(pose, steer, gear, speed, segment, _guide_index,
+		level.show_path and done_timer < 0.0 and not is_game_over, 0.0)
 
 
-func _update_chevrons() -> void:
-	if not _chevrons.visible: return
+## Progress follows the rear axle used by the driving model, including manual corrections.
+## Segment samples have equal spacing, but their spacing is not exactly ParkingLevels.STEP.
+func _segment_progress() -> Dictionary:
+	var poses: Array = way[segment].poses
+	var nearest := 0
+	var distance := INF
+	var at := Vector2(pose.x, pose.y)
+	for i in poses.size():
+		var p: Vector3 = poses[i]
+		var d := at.distance_squared_to(Vector2(p.x, p.y))
+		if d < distance:
+			distance = d
+			nearest = i
+	var sample: Vector3 = poses[nearest]
+	var stride := Vector2(poses[0].x, poses[0].y).distance_to(Vector2(poses[1].x, poses[1].y))
+	return {"index": nearest, "distance": sqrt(distance), "lateral": sqrt(distance),
+		"remaining": (poses.size() - 1 - nearest) * stride,
+		"heading_error": absf(wrapf(pose.z - sample.z, -PI, PI))}
+
+
+func _update_guidance(delta: float) -> void:
+	var progress := _segment_progress()
+	_guide_index = progress.index
+	guide.update_state(pose, steer, gear, speed, segment, _guide_index,
+		level.show_path and done_timer < 0.0 and not is_game_over, delta)
 	var seg: Dictionary = way[segment]
-	var poses: Array = seg.poses
-	var mm := _chevrons.multimesh
-	var spacing := 1.4
-	var phase := fmod(_clock * 1.6, spacing)
-	var count := 0
-	var total := (poses.size() - 1) * ParkingLevels.STEP
-	var s := phase
-	var colour := Color(Color.WHITE, 0.9)
-	while s < total and count < mm.instance_count:
-		var k := clampi(int(s / ParkingLevels.STEP), 0, poses.size() - 1)
-		var p: Vector3 = poses[k]
-		var f := ParkingLevels.forward(p.z)
-		var c := Vector2(p.x, p.y) + f * float(geo.rear)
-		var dir := f * float(seg.gear)
-		var basis := Basis(Vector3.UP, atan2(dir.x, dir.y))
-		mm.set_instance_transform(count, Transform3D(basis, Vector3(c.x, 0.045, c.y)))
-		var fade := minf(1.0, minf(s / 0.8, (total - s) / 0.8))
-		mm.set_instance_color(count, Color(colour, 0.9 * fade))
-		count += 1
-		s += spacing
-	mm.visible_instance_count = count
+	var action := "straight" if seg.steer == 0 else ("left" if seg.steer > 0 else "right")
+	var distance: float = progress.remaining
+	if not level.show_path:
+		action = "choose"
+		distance = -1.0
+	elif gear != int(seg.gear):
+		action = "brake" if absf(speed) > 0.2 else "gear"
+		distance = -1.0
+	elif segment == way.size() - 1 and progress.remaining < 0.45 and absf(speed) < 0.08:
+		action = "park"
+		distance = -1.0
+	elif progress.remaining < maxf(0.75, speed * speed / (2.0 * BRAKE) + 0.45):
+		action = "brake"
+	ui.set_guidance(level.id, action, segment + 1, way.size() if level.show_path else 0, seg.gear, distance)
 
 
 # --- Driving ---
@@ -539,7 +480,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	_clock += delta
 	if _exiting: return
 	if not is_game_over and _ready_for_play:
 		if done_timer >= 0.0:
@@ -549,7 +489,7 @@ func _process(delta: float) -> void:
 		else:
 			for i in 4: _step(delta / 4.0)
 	_place_car()
-	_update_chevrons()
+	_update_guidance(delta)
 	_frame_camera(false, delta)
 	sound.speed = absf(speed) * 2.5
 	sound.player_kind = "suv" if vehicle_id in ["suv", "pickup", "cyber"] else "car"
@@ -614,12 +554,27 @@ func _touch() -> void:
 
 func _advance_segment() -> void:
 	if segment >= way.size() - 1: return
-	var end: Vector3 = way[segment].poses.back()
-	if Vector2(pose.x, pose.y).distance_to(Vector2(end.x, end.y)) < 0.9 and absf(speed) < 0.6:
-		segment += 1
-		_auto_travel = 0.0
-		_paint_way()
-		_refresh_hud()
+	var progress := _segment_progress()
+	_guide_index = progress.index
+	var poses: Array = way[segment].poses
+	var end: Vector3 = poses.back()
+	var offset := Vector2(pose.x - end.x, pose.y - end.y)
+	var end_heading := absf(wrapf(pose.z - end.z, -PI, PI))
+	# Being close to the marker from another direction must not skip a manoeuvre.
+	if progress.index < (poses.size() - 1) * 0.7 or end_heading > 0.30: return
+	var changes_gear: bool = int(way[segment + 1].gear) != int(way[segment].gear)
+	if changes_gear:
+		if offset.length() > 0.65 or absf(speed) > 0.25: return
+	else:
+		# A driver may continue through a steering checkpoint without stopping. The old
+		# speed gate left the straight segment active even after its bend was passed.
+		var passed := offset.dot(ParkingLevels.forward(end.z) * float(way[segment].gear)) >= 0.0
+		if offset.length() > (0.8 if passed else 0.28): return
+	segment += 1
+	_guide_index = 0
+	_auto_travel = 0.0
+	_paint_way()
+	_refresh_hud()
 
 
 func _check_spots(dt: float, still: bool) -> void:
@@ -652,7 +607,15 @@ func _wrong_spot(spot: Dictionary) -> void:
 	# After a mistake the way to the legal space is shown.
 	if not level.show_path:
 		level.show_path = true
-		segment = 0
+		# Reveal the closest part of the route, rather than replaying its distant start.
+		var closest := INF
+		for i in way.size():
+			for p: Vector3 in way[i].poses:
+				var distance := Vector2(pose.x - p.x, pose.y - p.y).length()
+				if distance < closest:
+					closest = distance
+					segment = i
+		_guide_index = _segment_progress().index
 		_paint_way()
 	_refresh_hud()
 	_checkpoint()
@@ -696,7 +659,7 @@ func _autopilot() -> void:
 		_auto = {"steer": 0.0, "gas": false, "brake": true, "vmax": 1.0}
 		if absf(speed) < 0.01: _toggle_gear()
 		return
-	var length: float = (seg.poses.size() - 1) * ParkingLevels.STEP
+	var length: float = seg.length
 	var left: float = length - _auto_travel
 	_auto = {"steer": float(seg.steer) * ParkingLevels.MAX_STEER, "gas": left > 0.05, "brake": left <= 0.05,
 		"vmax": clampf(left * 1.2, 0.25, 1.4)}
@@ -729,11 +692,12 @@ func _frame_camera(snap: bool, delta := 0.0) -> void:
 		pts.append(ahead + Vector2(4.0, 0))
 		pts.append(ahead - Vector2(4.0, 0))
 	if level.show_path and done_timer < 0.0:
-		var seg: Dictionary = way[segment]
-		var poses: Array = seg.poses
-		for k in range(0, poses.size(), 8):
-			var p: Vector3 = poses[k]
-			pts.append(Vector2(p.x, p.y))
+		# Include the rest of the manoeuvre so the camera does not jump at steering gates.
+		for i in range(segment, way.size()):
+			var poses: Array = way[i].poses
+			for k in range(0, poses.size(), 8):
+				var p: Vector3 = poses[k]
+				pts.append(Vector2(p.x, p.y))
 	var lo := pts[0]
 	var hi := pts[0]
 	for p in pts:
@@ -743,11 +707,13 @@ func _frame_camera(snap: bool, delta := 0.0) -> void:
 	var aspect := size.x / maxf(size.y, 1.0)
 	var vfov := deg_to_rad(FOV)
 	var hfov := 2.0 * atan(tan(vfov * 0.5) * aspect)
-	# The top bar and the pedals cover ~40% of the height: frame into the rest.
-	var usable := 0.58
-	var half := (hi - lo) * 0.5 + Vector2(3.5, 3.5)
-	var dist := maxf(half.x / tan(hfov * 0.5), half.y * sin(PITCH) / (tan(vfov * 0.5) * usable))
-	dist = clampf(dist, 13.0, 46.0)
+	# Fit the actual free rectangle between the guidance card and the pedals.
+	var play_area: Rect2 = ui.play_rect()
+	var usable := play_area.size / size
+	var half := (hi - lo) * 0.5 + Vector2(1.4, 1.8)
+	var dist := maxf(half.x / (tan(hfov * 0.5) * usable.x),
+		half.y * sin(PITCH) / (tan(vfov * 0.5) * usable.y)) + half.y * cos(PITCH)
+	dist = clampf(dist, 13.0, 62.0)
 	var centre := (lo + hi) * 0.5
 	var target := Vector3(centre.x, 0, centre.y)
 	var t := 1.0 if snap else 1.0 - exp(-2.2 * delta)
@@ -759,8 +725,10 @@ func _frame_camera(snap: bool, delta := 0.0) -> void:
 		shake = maxf(0.0, shake - delta)
 		jolt = Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)) * shake * 0.6
 	camera.look_at_from_position(_cam_target + back + jolt, _cam_target + jolt)
-	# Shift the optical centre up into the free part of the screen.
-	camera.v_offset = -tan(vfov * 0.5) * _cam_dist * 0.14
+	var optical_centre := play_area.get_center() / size - Vector2.ONE * 0.5
+	camera.v_offset = optical_centre.y * 2.0 * tan(vfov * 0.5) * _cam_dist
+	camera.h_offset = -optical_centre.x * 2.0 * tan(hfov * 0.5) * _cam_dist
+
 
 
 # --- End, summary, exit ---
@@ -771,6 +739,7 @@ func _end_run() -> void:
 	done_timer = -1.0
 	speed = 0.0
 	controls.set_active(false)
+	_paint_way()
 	sound.suspended = true
 	var record := score > 0 and score > previous_best
 	ui.show_results(score, parked_count, touches + wrong_spots, max_combo, record, previous_best, vehicle_id, vehicle_paint)

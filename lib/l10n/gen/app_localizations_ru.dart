@@ -3285,6 +3285,54 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameParkingJunction => 'Ближе 5 м к перекрёстку нельзя';
 
   @override
+  String get gameParkingLevelForward => 'Передом в карман';
+
+  @override
+  String get gameParkingLevelReverse => 'Задом в карман';
+
+  @override
+  String get gameParkingLevelAngled => 'Парковка «ёлочкой»';
+
+  @override
+  String get gameParkingLevelParallel => 'Параллельная парковка';
+
+  @override
+  String get gameParkingLevelChoose => 'Выбор места';
+
+  @override
+  String get gameParkingGuidanceStraight => 'Руль прямо';
+
+  @override
+  String get gameParkingGuidanceLeft => 'Руль влево';
+
+  @override
+  String get gameParkingGuidanceRight => 'Руль вправо';
+
+  @override
+  String get gameParkingGuidanceBrake => 'Сначала остановитесь';
+
+  @override
+  String gameParkingGuidanceGear(String gear) {
+    return 'Включите $gear';
+  }
+
+  @override
+  String get gameParkingGuidancePark => 'Плавно остановитесь в месте';
+
+  @override
+  String get gameParkingGuidanceChoose => 'Выберите разрешённое место';
+
+  @override
+  String gameParkingGuidanceStep(int current, int total) {
+    return 'Шаг $current/$total';
+  }
+
+  @override
+  String gameParkingGuidanceDistance(String distance) {
+    return 'Ещё $distance м';
+  }
+
+  @override
   String get gamesSignsTitle => 'Это знак';
 
   @override

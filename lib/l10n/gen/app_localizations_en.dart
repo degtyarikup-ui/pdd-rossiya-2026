@@ -3271,6 +3271,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameParkingJunction => 'Not within 5 m of a junction';
 
   @override
+  String get gameParkingLevelForward => 'Forward bay parking';
+
+  @override
+  String get gameParkingLevelReverse => 'Reverse bay parking';
+
+  @override
+  String get gameParkingLevelAngled => 'Angled parking';
+
+  @override
+  String get gameParkingLevelParallel => 'Parallel parking';
+
+  @override
+  String get gameParkingLevelChoose => 'Choose a space';
+
+  @override
+  String get gameParkingGuidanceStraight => 'Keep the wheel straight';
+
+  @override
+  String get gameParkingGuidanceLeft => 'Turn the wheel left';
+
+  @override
+  String get gameParkingGuidanceRight => 'Turn the wheel right';
+
+  @override
+  String get gameParkingGuidanceBrake => 'Come to a stop first';
+
+  @override
+  String gameParkingGuidanceGear(String gear) {
+    return 'Select $gear';
+  }
+
+  @override
+  String get gameParkingGuidancePark => 'Stop gently in the space';
+
+  @override
+  String get gameParkingGuidanceChoose => 'Choose a permitted space';
+
+  @override
+  String gameParkingGuidanceStep(int current, int total) {
+    return 'Step $current/$total';
+  }
+
+  @override
+  String gameParkingGuidanceDistance(String distance) {
+    return '$distance m to go';
+  }
+
+  @override
   String get gamesSignsTitle => 'Sign quiz';
 
   @override

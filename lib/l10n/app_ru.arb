@@ -1468,6 +1468,44 @@
   "gameParkingBusStop": "Ближе 15 м к остановке нельзя",
   "gameParkingNoStopping": "Знак 3.27: остановка запрещена",
   "gameParkingJunction": "Ближе 5 м к перекрёстку нельзя",
+  "gameParkingLevelForward": "Передом в карман",
+  "gameParkingLevelReverse": "Задом в карман",
+  "gameParkingLevelAngled": "Парковка «ёлочкой»",
+  "gameParkingLevelParallel": "Параллельная парковка",
+  "gameParkingLevelChoose": "Выбор места",
+  "gameParkingGuidanceStraight": "Руль прямо",
+  "gameParkingGuidanceLeft": "Руль влево",
+  "gameParkingGuidanceRight": "Руль вправо",
+  "gameParkingGuidanceBrake": "Сначала остановитесь",
+  "gameParkingGuidanceGear": "Включите {gear}",
+  "@gameParkingGuidanceGear": {
+    "placeholders": {
+      "gear": {
+        "type": "String"
+      }
+    }
+  },
+  "gameParkingGuidancePark": "Плавно остановитесь в месте",
+  "gameParkingGuidanceChoose": "Выберите разрешённое место",
+  "gameParkingGuidanceStep": "Шаг {current}/{total}",
+  "@gameParkingGuidanceStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gameParkingGuidanceDistance": "Ещё {distance} м",
+  "@gameParkingGuidanceDistance": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "gamesSignsTitle": "Это знак",
   "gamesCrossroadsTitle": "Перекрёсток",
   "gamesPlay": "Играть",

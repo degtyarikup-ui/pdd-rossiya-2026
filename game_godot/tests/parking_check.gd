@@ -94,7 +94,8 @@ func _check_scene() -> void:
 		parked = scene.parked_count
 		if OS.has_environment("PARKING_DEBUG") and frame % 120 == 0: print(frame, " L", scene.level_index, " seg ", scene.segment, " g ", scene.gear, " v ", snapped(scene.speed, 0.01), " pose ", scene.pose, " lives ", scene.lives, " ready ", scene._ready_for_play, " travel ", snapped(scene._auto_travel, 0.01))
 		if scene.is_game_over: break
-	_check("autopilot parks every path level (%d)" % parked, parked >= ParkingLevels.COUNT - 1)
+	_check("autopilot parks all five levels (%d)" % parked, parked == ParkingLevels.COUNT)
+	_check("autopilot follows the clear way without touching", scene.touches == 0)
 	var summary: Dictionary = scene.call("_session_summary")
 	_check("summary names the game", summary.game == "parking" and summary.runs.size() >= 1)
 	scene.queue_free()
