@@ -11,6 +11,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
+import 'package:pdd_app/presentation/screens/games/road_signs/road_signs_screen.dart';
 import 'package:pdd_app/presentation/screens/games/games_hub_view.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/sign_in_required_view.dart';
@@ -200,6 +201,26 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
     await _refreshRating();
   }
 
+  Future<void> _openRoadSigns() async {
+    await _open(context, const RoadSignsScreen());
+  }
+
+  Future<void> _openViolator() async {
+    final avail = await GodotGame.available();
+    if (!avail) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(appL10n.gameUnavailable)));
+      }
+      return;
+    }
+    if (!mounted) return;
+    HapticFeedbackHelper.tap();
+    await GodotGame.playViolator(context, ref);
+    await _refreshRating();
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(progressImportsProvider, (_, next) {
@@ -215,6 +236,8 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
     final signs = ref.watch(signSwiperProgressProvider);
     final crossroads = ref.watch(crossroadsPriorityProgressProvider);
     final parking = ref.watch(parkingProgressProvider);
+    final roadSigns = ref.watch(roadSignsProgressProvider);
+    final violator = ref.watch(violatorProgressProvider);
     return GamesHubView(
       weekScore: _weekScore,
       cityBest: _cityBest,
@@ -222,6 +245,8 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
       signsBest: signs.bestScore,
       crossroadsBest: crossroads.bestScore,
       parkingBest: parking.bestScore,
+      roadSignsBest: roadSigns.bestScore,
+      violatorBest: violator.bestScore,
       premium: ref.watch(isPremiumProvider),
       runsLoaded: _runsLoaded,
       hasPendingRun: _hasPendingRun,
@@ -232,6 +257,8 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
       onSigns: () => _open(context, const SignSwiperScreen()),
       onCrossroads: _openCrossroads,
       onParking: _openParking,
+      onRoadSigns: _openRoadSigns,
+      onViolator: _openViolator,
       onLeaderboard: () async {
         await GameLeaderboardSheet.show(context);
         await _refreshRating();

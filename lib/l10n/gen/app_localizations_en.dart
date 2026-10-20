@@ -4014,4 +4014,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String signSwiperCorrectAnswer(String answer) {
     return 'Correct answer: $answer';
   }
+
+  @override
+  String get gameAnswerDetails => 'Answer details';
+
+  @override
+  String get gameAnswerCorrectStatus => 'Your answer is correct';
+
+  @override
+  String get gameAnswerWrongStatus => 'Your answer is incorrect';
+
+  @override
+  String gameYourChoiceSign(String number) {
+    return 'Your choice: sign $number';
+  }
+
+  @override
+  String get gameCorrectAnswerSection => 'Correct answer:';
+
+  @override
+  String get gameChooseCorrectSignPrompt =>
+      'Which of these signs matches the description?';
+
+  @override
+  String get gameViolatorSelectTitle => 'What violation occurred?';
+
+  @override
+  String get gamePedestrianYieldViolation => 'Failed to yield to pedestrian';
+
+  @override
+  String get gameSolidLineViolation => 'Crossing a solid line';
+
+  @override
+  String get gameWrongLaneTurnViolation => 'Turning from the wrong lane';
+
+  @override
+  String get gamePrioritySignViolation => 'Failure to yield at priority sign';
+
+  @override
+  String get gameViolatorCaught => 'Violator identified!';
+
+  @override
+  String get gameViolatorFalseAlarm => 'False alarm! Car obeys rules';
+
+  @override
+  String get gameViolatorWrongQualification => 'Incorrect violation type';
+
+  @override
+  String get gameViolatorMissed => 'Violator missed!';
+
+  @override
+  String get gameViolatorTapHint => 'Tap a car that violates traffic rules';
+
+  @override
+  String get gameViolatorsCaughtStat => 'Violators identified';
 }

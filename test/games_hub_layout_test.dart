@@ -57,6 +57,8 @@ void main() {
     int signsBest = 150,
     int crossroadsBest = 150,
     int parkingBest = 0,
+    int roadSignsBest = 150,
+    int violatorBest = 150,
     bool premium = false,
     bool runsLoaded = true,
     bool pending = false,
@@ -67,6 +69,8 @@ void main() {
     VoidCallback? onSigns,
     VoidCallback? onCrossroads,
     VoidCallback? onParking,
+    VoidCallback? onRoadSigns,
+    VoidCallback? onViolator,
     VoidCallback? onLeaderboard,
     VoidCallback? onRefilled,
   }) async {
@@ -103,6 +107,8 @@ void main() {
               signsBest: signsBest,
               crossroadsBest: crossroadsBest,
               parkingBest: parkingBest,
+              roadSignsBest: roadSignsBest,
+              violatorBest: violatorBest,
               premium: premium,
               runsLoaded: runsLoaded,
               hasPendingRun: pending,
@@ -113,6 +119,8 @@ void main() {
               onSigns: onSigns ?? () {},
               onCrossroads: onCrossroads ?? () {},
               onParking: onParking ?? () {},
+              onRoadSigns: onRoadSigns ?? () {},
+              onViolator: onViolator ?? () {},
               onLeaderboard: onLeaderboard ?? () {},
               onRefilled: onRefilled,
             ),
@@ -506,15 +514,17 @@ void main() {
       trafficBest: 0,
       signsBest: 0,
       crossroadsBest: 0,
+      roadSignsBest: 0,
+      violatorBest: 0,
     );
     expect(find.text(appL10n.gamesPlay), findsWidgets);
     expect(find.bySemanticsLabel(appL10n.gamesRecordScore('0')), findsNothing);
-    expect(find.text(appL10n.gameSoonBadge), findsNWidgets(2));
+    expect(find.text(appL10n.gameSoonBadge), findsNothing);
     semantics.dispose();
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('Upcoming games have localized names and no launch action', (
+  testWidgets('All mini-games have localized names and active launch action', (
     tester,
   ) async {
     final handle = tester.ensureSemantics();
@@ -523,23 +533,24 @@ void main() {
       const Locale('en'),
       const Locale('kk'),
     ]) {
-      await open(tester, locale: locale);
+      await open(tester, locale: locale, roadSignsBest: 0, violatorBest: 0, parkingBest: 0);
       for (final entry in [
         ('road_signs', appL10n.gamesRoadSignsTitle),
         ('violator', appL10n.gamesViolatorTitle),
+        ('parking', appL10n.gamesParkingTitle),
       ]) {
         final finder = find.byKey(ValueKey('games-card-${entry.$1}'));
         final card = tester.widget<Semantics>(finder);
-        expect(card.properties.label, '${entry.$2}, ${appL10n.gameSoonBadge}');
-        expect(card.properties.enabled, isFalse);
-        expect(card.properties.onTap, isNull);
+        expect(card.properties.label, '${entry.$2}, ${appL10n.gamesPlay}');
+        expect(card.properties.enabled, isTrue);
+        expect(card.properties.onTap, isNotNull);
         expect(find.text(entry.$2), findsOneWidget);
         expect(
           tester
               .getSemantics(finder)
               .getSemanticsData()
               .hasAction(ui.SemanticsAction.tap),
-          isFalse,
+          isTrue,
         );
       }
       expect(tester.takeException(), isNull, reason: locale.languageCode);
@@ -654,6 +665,8 @@ void main() {
       onTrafficController: () => called.add('regulator'),
       onSigns: () => called.add('signs'),
       onCrossroads: () => called.add('crossroads'),
+      onRoadSigns: () => called.add('road_signs'),
+      onViolator: () => called.add('violator'),
       onParking: () => called.add('parking'),
       onLeaderboard: () => called.add('leaderboard'),
     );
@@ -666,6 +679,8 @@ void main() {
       'signs',
       'regulator',
       'crossroads',
+      'road_signs',
+      'violator',
       'parking',
       'city',
       'leaderboard',

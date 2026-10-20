@@ -1354,5 +1354,22 @@
         "type": "String"
       }
     }
-  }
+  },
+  "gameAnswerDetails": "Жауап мәліметтері",
+  "gameAnswerCorrectStatus": "Жауабыңыз дұрыс",
+  "gameAnswerWrongStatus": "Жауабыңыз қате",
+  "gameYourChoiceSign": "Сіздің таңдауыңыз: {number} белгісі",
+  "gameCorrectAnswerSection": "Дұрыс жауап:",
+  "gameChooseCorrectSignPrompt": "Осы белгілердің қайсысы сипаттамаға сәйкес келеді?",
+  "gameViolatorSelectTitle": "Қандай ереже бұзылды?",
+  "gamePedestrianYieldViolation": "Жаяу жүргіншіге жол бермеді",
+  "gameSolidLineViolation": "Тұтас таңба сызығын кесу",
+  "gameWrongLaneTurnViolation": "Шеткі емес жолақтан бұрылу",
+  "gamePrioritySignViolation": "Басымдық белгісі бойынша жол бермеді",
+  "gameViolatorCaught": "Ереже бұзушы анықталды!",
+  "gameViolatorFalseAlarm": "Жалған шақыру! Көлік ереже сақтауда",
+  "gameViolatorWrongQualification": "Ереже бұзу түрі қате таңдалды",
+  "gameViolatorMissed": "Ереже бұзушы жіберіп алынды!",
+  "gameViolatorTapHint": "Жол ережесін бұзған көлікті түртіңіз",
+  "gameViolatorsCaughtStat": "Анықталған бұзушылар"
 }

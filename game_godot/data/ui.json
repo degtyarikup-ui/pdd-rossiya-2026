@@ -177,7 +177,18 @@
   "gameParkingFindSpot": "Найдите место, где можно встать",
   "gameParkingBusStop": "Ближе 15 м к остановке нельзя",
   "gameParkingNoStopping": "Знак 3.27: остановка запрещена",
-  "gameParkingJunction": "Ближе 5 м к перекрёстку нельзя"
+  "gameParkingJunction": "Ближе 5 м к перекрёстку нельзя",
+  "gameViolatorSelectTitle": "Какое нарушение совершено?",
+  "gamePedestrianYieldViolation": "Не уступил дорогу пешеходу",
+  "gameSolidLineViolation": "Пересечение сплошной линии",
+  "gameWrongLaneTurnViolation": "Поворот не из своего ряда",
+  "gamePrioritySignViolation": "Не уступил дорогу по знаку приоритета",
+  "gameViolatorCaught": "Нарушитель зафиксирован!",
+  "gameViolatorFalseAlarm": "Ложный вызов! Машина едет по правилам",
+  "gameViolatorWrongQualification": "Неверная квалификация нарушения",
+  "gameViolatorMissed": "Нарушитель упущен!",
+  "gameViolatorTapHint": "Нажмите на автомобиль, нарушающий ПДД",
+  "gameViolatorsCaughtStat": "Выявлено нарушителей"
  },
  "en": {
   "close": "Close",
@@ -357,7 +368,18 @@
   "gameParkingFindSpot": "Find a space where parking is allowed",
   "gameParkingBusStop": "Not within 15 m of a bus stop",
   "gameParkingNoStopping": "Sign 3.27: no stopping",
-  "gameParkingJunction": "Not within 5 m of a junction"
+  "gameParkingJunction": "Not within 5 m of a junction",
+  "gameViolatorSelectTitle": "What violation occurred?",
+  "gamePedestrianYieldViolation": "Failed to yield to pedestrian",
+  "gameSolidLineViolation": "Crossing a solid line",
+  "gameWrongLaneTurnViolation": "Turning from the wrong lane",
+  "gamePrioritySignViolation": "Failure to yield at priority sign",
+  "gameViolatorCaught": "Violator identified!",
+  "gameViolatorFalseAlarm": "False alarm! Car obeys rules",
+  "gameViolatorWrongQualification": "Incorrect violation type",
+  "gameViolatorMissed": "Violator missed!",
+  "gameViolatorTapHint": "Tap a car that violates traffic rules",
+  "gameViolatorsCaughtStat": "Violators identified"
  },
  "kk": {
   "close": "Жабу",
@@ -537,6 +559,17 @@
   "gameParkingFindSpot": "Тұруға болатын орынды табыңыз",
   "gameParkingBusStop": "Аялдамаға 15 м-ден жақын болмайды",
   "gameParkingNoStopping": "3.27 белгісі: тоқтауға тыйым салынған",
-  "gameParkingJunction": "Қиылысқа 5 м-ден жақын болмайды"
+  "gameParkingJunction": "Қиылысқа 5 м-ден жақын болмайды",
+  "gameViolatorSelectTitle": "Қандай ереже бұзылды?",
+  "gamePedestrianYieldViolation": "Жаяу жүргіншіге жол бермеді",
+  "gameSolidLineViolation": "Тұтас таңба сызығын кесу",
+  "gameWrongLaneTurnViolation": "Шеткі емес жолақтан бұрылу",
+  "gamePrioritySignViolation": "Басымдық белгісі бойынша жол бермеді",
+  "gameViolatorCaught": "Ереже бұзушы анықталды!",
+  "gameViolatorFalseAlarm": "Жалған шақыру! Көлік ереже сақтауда",
+  "gameViolatorWrongQualification": "Ереже бұзу түрі қате таңдалды",
+  "gameViolatorMissed": "Ереже бұзушы жіберіп алынды!",
+  "gameViolatorTapHint": "Жол ережесін бұзған көлікті түртіңіз",
+  "gameViolatorsCaughtStat": "Анықталған бұзушылар"
  }
 }

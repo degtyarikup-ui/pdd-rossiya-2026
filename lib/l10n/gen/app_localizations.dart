@@ -6699,6 +6699,108 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Правильный ответ: {answer}'**
   String signSwiperCorrectAnswer(String answer);
+
+  /// No description provided for @gameAnswerDetails.
+  ///
+  /// In ru, this message translates to:
+  /// **'Детали ответа'**
+  String get gameAnswerDetails;
+
+  /// No description provided for @gameAnswerCorrectStatus.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш ответ верный'**
+  String get gameAnswerCorrectStatus;
+
+  /// No description provided for @gameAnswerWrongStatus.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш ответ неверный'**
+  String get gameAnswerWrongStatus;
+
+  /// No description provided for @gameYourChoiceSign.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш выбор: знак {number}'**
+  String gameYourChoiceSign(String number);
+
+  /// No description provided for @gameCorrectAnswerSection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правильный ответ:'**
+  String get gameCorrectAnswerSection;
+
+  /// No description provided for @gameChooseCorrectSignPrompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Какой из этих знаков соответствует описанию?'**
+  String get gameChooseCorrectSignPrompt;
+
+  /// No description provided for @gameViolatorSelectTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Какое нарушение совершено?'**
+  String get gameViolatorSelectTitle;
+
+  /// No description provided for @gamePedestrianYieldViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не уступил дорогу пешеходу'**
+  String get gamePedestrianYieldViolation;
+
+  /// No description provided for @gameSolidLineViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пересечение сплошной линии'**
+  String get gameSolidLineViolation;
+
+  /// No description provided for @gameWrongLaneTurnViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворот не из своего ряда'**
+  String get gameWrongLaneTurnViolation;
+
+  /// No description provided for @gamePrioritySignViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не уступил дорогу по знаку приоритета'**
+  String get gamePrioritySignViolation;
+
+  /// No description provided for @gameViolatorCaught.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нарушитель зафиксирован!'**
+  String get gameViolatorCaught;
+
+  /// No description provided for @gameViolatorFalseAlarm.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ложный вызов! Машина едет по правилам'**
+  String get gameViolatorFalseAlarm;
+
+  /// No description provided for @gameViolatorWrongQualification.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неверная квалификация нарушения'**
+  String get gameViolatorWrongQualification;
+
+  /// No description provided for @gameViolatorMissed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нарушитель упущен!'**
+  String get gameViolatorMissed;
+
+  /// No description provided for @gameViolatorTapHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нажмите на автомобиль, нарушающий ПДД'**
+  String get gameViolatorTapHint;
+
+  /// No description provided for @gameViolatorsCaughtStat.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выявлено нарушителей'**
+  String get gameViolatorsCaughtStat;
 }
 
 class _AppLocalizationsDelegate

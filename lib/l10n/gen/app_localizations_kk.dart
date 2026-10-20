@@ -4006,4 +4006,59 @@ class AppLocalizationsKk extends AppLocalizations {
   String signSwiperCorrectAnswer(String answer) {
     return 'Дұрыс жауап: $answer';
   }
+
+  @override
+  String get gameAnswerDetails => 'Жауап мәліметтері';
+
+  @override
+  String get gameAnswerCorrectStatus => 'Жауабыңыз дұрыс';
+
+  @override
+  String get gameAnswerWrongStatus => 'Жауабыңыз қате';
+
+  @override
+  String gameYourChoiceSign(String number) {
+    return 'Сіздің таңдауыңыз: $number белгісі';
+  }
+
+  @override
+  String get gameCorrectAnswerSection => 'Дұрыс жауап:';
+
+  @override
+  String get gameChooseCorrectSignPrompt =>
+      'Осы белгілердің қайсысы сипаттамаға сәйкес келеді?';
+
+  @override
+  String get gameViolatorSelectTitle => 'Қандай ереже бұзылды?';
+
+  @override
+  String get gamePedestrianYieldViolation => 'Жаяу жүргіншіге жол бермеді';
+
+  @override
+  String get gameSolidLineViolation => 'Тұтас таңба сызығын кесу';
+
+  @override
+  String get gameWrongLaneTurnViolation => 'Шеткі емес жолақтан бұрылу';
+
+  @override
+  String get gamePrioritySignViolation =>
+      'Басымдық белгісі бойынша жол бермеді';
+
+  @override
+  String get gameViolatorCaught => 'Ереже бұзушы анықталды!';
+
+  @override
+  String get gameViolatorFalseAlarm => 'Жалған шақыру! Көлік ереже сақтауда';
+
+  @override
+  String get gameViolatorWrongQualification => 'Ереже бұзу түрі қате таңдалды';
+
+  @override
+  String get gameViolatorMissed => 'Ереже бұзушы жіберіп алынды!';
+
+  @override
+  String get gameViolatorTapHint => 'Жол ережесін бұзған көлікті түртіңіз';
+
+  @override
+  String get gameViolatorsCaughtStat => 'Анықталған бұзушылар';
 }

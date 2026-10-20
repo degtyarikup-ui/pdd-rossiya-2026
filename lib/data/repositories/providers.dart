@@ -19,6 +19,8 @@ import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/data/models/traffic_controller_progress.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
+import 'package:pdd_app/data/models/road_signs_model.dart';
+import 'package:pdd_app/data/models/violator_progress.dart';
 import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -700,3 +702,86 @@ class CrossroadsPriorityProgressController
     await _store(state);
   }
 }
+
+final roadSignsProgressProvider =
+    StateNotifierProvider<
+      RoadSignsProgressController,
+      RoadSignsProgress
+    >((ref) {
+      final ds = ref.watch(progressDataSourceProvider);
+      final controller = RoadSignsProgressController(ds);
+      ref.listen(progressImportsProvider, (_, next) {
+        if (next.hasValue) controller.reload();
+      });
+      return controller;
+    });
+
+class RoadSignsProgressController extends StateNotifier<RoadSignsProgress> {
+  RoadSignsProgressController(this._dataSource)
+    : super(_dataSource.getRoadSignsProgress());
+
+  final ProgressDataSource _dataSource;
+
+  void reload() => state = _dataSource.getRoadSignsProgress();
+
+  Future<void> recordGameResult({
+    required int score,
+    required int combo,
+    required int totalAnswered,
+    required int totalCorrect,
+  }) async {
+    final newScore = score > state.bestScore ? score : state.bestScore;
+    final newCombo = combo > state.maxCombo ? combo : state.maxCombo;
+    final newAnswered = state.totalAnswered + totalAnswered;
+    final newCorrect = state.totalCorrect + totalCorrect;
+    state = state.copyWith(
+      bestScore: newScore,
+      maxCombo: newCombo,
+      totalAnswered: newAnswered,
+      totalCorrect: newCorrect,
+    );
+    await _dataSource.saveRoadSignsProgress(state);
+  }
+}
+
+final violatorProgressProvider =
+    StateNotifierProvider<
+      ViolatorProgressController,
+      ViolatorProgress
+    >((ref) {
+      final ds = ref.watch(progressDataSourceProvider);
+      final controller = ViolatorProgressController(ds);
+      ref.listen(progressImportsProvider, (_, next) {
+        if (next.hasValue) controller.reload();
+      });
+      return controller;
+    });
+
+class ViolatorProgressController extends StateNotifier<ViolatorProgress> {
+  ViolatorProgressController(this._dataSource)
+    : super(_dataSource.getViolatorProgress());
+
+  final ProgressDataSource _dataSource;
+
+  void reload() => state = _dataSource.getViolatorProgress();
+
+  Future<void> recordGameResult({
+    required int score,
+    required int combo,
+    required int solved,
+  }) async {
+    final newScore = score > state.bestScore ? score : state.bestScore;
+    final newCombo = combo > state.maxCombo ? combo : state.maxCombo;
+    final newSolved = state.totalSolved + solved;
+    final newCaught = state.totalViolatorsCaught + solved;
+    state = state.copyWith(
+      bestScore: newScore,
+      maxCombo: newCombo,
+      totalViolatorsCaught: newCaught,
+      totalSolved: newSolved,
+      gamesPlayed: state.gamesPlayed + 1,
+    );
+    await _dataSource.saveViolatorProgress(state);
+  }
+}
+

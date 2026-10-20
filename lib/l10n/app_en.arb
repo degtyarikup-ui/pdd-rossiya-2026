@@ -1354,5 +1354,22 @@
         "type": "String"
       }
     }
-  }
+  },
+  "gameAnswerDetails": "Answer details",
+  "gameAnswerCorrectStatus": "Your answer is correct",
+  "gameAnswerWrongStatus": "Your answer is incorrect",
+  "gameYourChoiceSign": "Your choice: sign {number}",
+  "gameCorrectAnswerSection": "Correct answer:",
+  "gameChooseCorrectSignPrompt": "Which of these signs matches the description?",
+  "gameViolatorSelectTitle": "What violation occurred?",
+  "gamePedestrianYieldViolation": "Failed to yield to pedestrian",
+  "gameSolidLineViolation": "Crossing a solid line",
+  "gameWrongLaneTurnViolation": "Turning from the wrong lane",
+  "gamePrioritySignViolation": "Failure to yield at priority sign",
+  "gameViolatorCaught": "Violator identified!",
+  "gameViolatorFalseAlarm": "False alarm! Car obeys rules",
+  "gameViolatorWrongQualification": "Incorrect violation type",
+  "gameViolatorMissed": "Violator missed!",
+  "gameViolatorTapHint": "Tap a car that violates traffic rules",
+  "gameViolatorsCaughtStat": "Violators identified"
 }

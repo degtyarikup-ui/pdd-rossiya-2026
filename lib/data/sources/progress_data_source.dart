@@ -11,6 +11,8 @@ import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/models/traffic_controller_progress.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/data/models/crossroads_priority_progress.dart';
+import 'package:pdd_app/data/models/road_signs_model.dart';
+import 'package:pdd_app/data/models/violator_progress.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Локальный кэш прогресса в [SharedPreferences].
@@ -19,6 +21,10 @@ class ProgressDataSource {
   static const String _keySignSwiper = 'sign_swiper_progress';
   static const String _keyCrossroadsPriority = 'crossroads_priority_progress';
   static const String _keyParking = 'parking_progress';
+  static const String _keyRoadSigns = 'road_signs_progress';
+  static const String _keyViolator = 'violator_progress';
+  static const String _keyRoadSignsBest = 'roadSignsBest';
+  static const String _keyViolatorBest = 'violatorBest';
   static const String _legacyProgress = 'question_progress';
   static const String _legacyTicketProgress = 'ticket_progress';
   static const String _legacyFavorites = 'favorites';
@@ -795,6 +801,120 @@ class ProgressDataSource {
 
   Future<void> saveParkingProgress(CrossroadsPriorityProgress progress) async {
     await _prefs.setString(_keyParking, jsonEncode(progress.toJson()));
+    ProgressSyncService.instance.scheduleSync();
+  }
+
+  RoadSignsProgress getRoadSignsProgress() {
+    final raw = _prefs.getString(_keyRoadSigns);
+    if (raw == null || raw.isEmpty) {
+      final directBest =
+          _prefs.getInt(_keyRoadSignsBest) ??
+          _prefs.getInt('road_signs_best') ??
+          0;
+      if (directBest > 0) {
+        return RoadSignsProgress(bestScore: directBest);
+      }
+      return const RoadSignsProgress();
+    }
+    try {
+      final progress = RoadSignsProgress.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+      final directBest =
+          _prefs.getInt(_keyRoadSignsBest) ??
+          _prefs.getInt('road_signs_best') ??
+          0;
+      if (directBest > progress.bestScore) {
+        return progress.copyWith(bestScore: directBest);
+      }
+      return progress;
+    } catch (_) {
+      return const RoadSignsProgress();
+    }
+  }
+
+  Future<void> saveRoadSignsProgress(RoadSignsProgress progress) async {
+    await _prefs.setString(
+      _keyRoadSigns,
+      jsonEncode(progress.toJson()),
+    );
+    await _prefs.setInt(_keyRoadSignsBest, progress.bestScore);
+    await _prefs.setInt('road_signs_best', progress.bestScore);
+    ProgressSyncService.instance.scheduleSync();
+  }
+
+  int getRoadSignsBest() =>
+      _prefs.getInt(_keyRoadSignsBest) ??
+      _prefs.getInt('road_signs_best') ??
+      getRoadSignsProgress().bestScore;
+
+  Future<void> saveRoadSignsBest(int score) async {
+    await _prefs.setInt(_keyRoadSignsBest, score);
+    await _prefs.setInt('road_signs_best', score);
+    final current = getRoadSignsProgress();
+    if (score > current.bestScore) {
+      await _prefs.setString(
+        _keyRoadSigns,
+        jsonEncode(current.copyWith(bestScore: score).toJson()),
+      );
+    }
+    ProgressSyncService.instance.scheduleSync();
+  }
+
+  ViolatorProgress getViolatorProgress() {
+    final raw = _prefs.getString(_keyViolator);
+    if (raw == null || raw.isEmpty) {
+      final directBest =
+          _prefs.getInt(_keyViolatorBest) ??
+          _prefs.getInt('violator_best') ??
+          0;
+      if (directBest > 0) {
+        return ViolatorProgress(bestScore: directBest);
+      }
+      return const ViolatorProgress();
+    }
+    try {
+      final progress = ViolatorProgress.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+      final directBest =
+          _prefs.getInt(_keyViolatorBest) ??
+          _prefs.getInt('violator_best') ??
+          0;
+      if (directBest > progress.bestScore) {
+        return progress.copyWith(bestScore: directBest);
+      }
+      return progress;
+    } catch (_) {
+      return const ViolatorProgress();
+    }
+  }
+
+  Future<void> saveViolatorProgress(ViolatorProgress progress) async {
+    await _prefs.setString(
+      _keyViolator,
+      jsonEncode(progress.toJson()),
+    );
+    await _prefs.setInt(_keyViolatorBest, progress.bestScore);
+    await _prefs.setInt('violator_best', progress.bestScore);
+    ProgressSyncService.instance.scheduleSync();
+  }
+
+  int getViolatorBest() =>
+      _prefs.getInt(_keyViolatorBest) ??
+      _prefs.getInt('violator_best') ??
+      getViolatorProgress().bestScore;
+
+  Future<void> saveViolatorBest(int score) async {
+    await _prefs.setInt(_keyViolatorBest, score);
+    await _prefs.setInt('violator_best', score);
+    final current = getViolatorProgress();
+    if (score > current.bestScore) {
+      await _prefs.setString(
+        _keyViolator,
+        jsonEncode(current.copyWith(bestScore: score).toJson()),
+      );
+    }
     ProgressSyncService.instance.scheduleSync();
   }
 

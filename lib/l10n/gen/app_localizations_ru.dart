@@ -4027,4 +4027,60 @@ class AppLocalizationsRu extends AppLocalizations {
   String signSwiperCorrectAnswer(String answer) {
     return 'Правильный ответ: $answer';
   }
+
+  @override
+  String get gameAnswerDetails => 'Детали ответа';
+
+  @override
+  String get gameAnswerCorrectStatus => 'Ваш ответ верный';
+
+  @override
+  String get gameAnswerWrongStatus => 'Ваш ответ неверный';
+
+  @override
+  String gameYourChoiceSign(String number) {
+    return 'Ваш выбор: знак $number';
+  }
+
+  @override
+  String get gameCorrectAnswerSection => 'Правильный ответ:';
+
+  @override
+  String get gameChooseCorrectSignPrompt =>
+      'Какой из этих знаков соответствует описанию?';
+
+  @override
+  String get gameViolatorSelectTitle => 'Какое нарушение совершено?';
+
+  @override
+  String get gamePedestrianYieldViolation => 'Не уступил дорогу пешеходу';
+
+  @override
+  String get gameSolidLineViolation => 'Пересечение сплошной линии';
+
+  @override
+  String get gameWrongLaneTurnViolation => 'Поворот не из своего ряда';
+
+  @override
+  String get gamePrioritySignViolation =>
+      'Не уступил дорогу по знаку приоритета';
+
+  @override
+  String get gameViolatorCaught => 'Нарушитель зафиксирован!';
+
+  @override
+  String get gameViolatorFalseAlarm => 'Ложный вызов! Машина едет по правилам';
+
+  @override
+  String get gameViolatorWrongQualification =>
+      'Неверная квалификация нарушения';
+
+  @override
+  String get gameViolatorMissed => 'Нарушитель упущен!';
+
+  @override
+  String get gameViolatorTapHint => 'Нажмите на автомобиль, нарушающий ПДД';
+
+  @override
+  String get gameViolatorsCaughtStat => 'Выявлено нарушителей';
 }

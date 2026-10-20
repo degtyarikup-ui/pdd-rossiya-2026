@@ -423,6 +423,98 @@ class GodotGame {
     }
   }
 
+  /// Plays the 3D Violator mini-game on Godot.
+  static Future<void> playViolator(BuildContext context, WidgetRef ref) =>
+      _withRun(context, (_) => _playViolator(context, ref));
+
+  static Future<void> _playViolator(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    HapticFeedbackHelper.tap();
+    final lang = Localizations.localeOf(context).languageCode;
+    final prefs = await _prepare(context, _prefs);
+    if (!context.mounted) return;
+    final vehicle = prefs?.getString(_vehicleKey) ?? 'sedan';
+    final paint = GameGarageService.normalizePaint(
+      prefs?.getString(_paintKey) ?? GameGarageService.starter.paint,
+    );
+    final paintHex = _hex(gamePaintColors[paint]!);
+    if (!context.mounted) return;
+    final safe = _safeArea(context);
+    String? json;
+    try {
+      json = await _start(context, [
+        '--violator',
+        '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
+        '--best-score=${ref.read(violatorProgressProvider).bestScore}',
+        '--session-id=${GameLeaderboardService.newRunId()}',
+        '--economy=${jsonEncode({'seconds': GameEconomy.miniGameSeconds, 'lives': GameEconomy.miniGameLives, 'maxScore': GameEconomy.maxRunScore, 'base': 50, 'step': 5, 'bonusCap': 5})}',
+        if (!HapticFeedbackHelper.enabled) '--no-haptics',
+        '--lang=$lang',
+        Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',
+        ...safe,
+        '--vehicle=$vehicle',
+        '--paint=$paintHex',
+        if (!SoundEffectsService.instance.isEnabled) '--mute',
+      ]);
+    } on PlatformException {
+      json = null;
+    }
+    if (json == null) return;
+    final decoded = jsonDecode(json);
+    if (decoded is! Map || !context.mounted) return;
+    final map = decoded.cast<String, dynamic>();
+    final loading = AppLoadingOverlay.show(
+      context,
+      label: appL10n.gameReturning,
+    );
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) return;
+      final progress = ref.read(violatorProgressProvider.notifier);
+      final runs = map['runs'] is List ? map['runs'] as List : [map];
+      final seen = <String>{};
+      final rankingSubmissions = <Future<int?>>[];
+      var changed = false;
+      for (final run in runs.whereType<Map>()) {
+        final id = run['id'] as String? ?? GameLeaderboardService.newRunId();
+        if (!seen.add(id)) continue;
+        final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
+        final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
+        if (solved + wrong == 0) continue;
+        final score = GameEconomy.rankedScore(
+          (run['score'] as num?)?.toInt() ?? 0,
+          correct: solved,
+          wrong: wrong,
+        );
+        final combo = ((run['combo'] as num?)?.toInt() ?? 0).clamp(0, solved);
+        final submission = GameLeaderboardService.instance.submitRun(
+          score,
+          runId: id,
+        );
+        if (map['result_action'] == 'ranking') {
+          rankingSubmissions.add(submission);
+        } else {
+          unawaited(submission);
+        }
+        await progress.recordGameResult(
+          score: score,
+          combo: combo,
+          solved: solved,
+        );
+        changed = true;
+      }
+      if (rankingSubmissions.isNotEmpty) await Future.wait(rankingSubmissions);
+      if (changed) unawaited(ProgressSyncService.instance.syncWithServer());
+    } finally {
+      loading.close();
+    }
+    if (context.mounted && map['result_action'] == 'ranking') {
+      await GameLeaderboardSheet.show(context);
+    }
+  }
+
   /// Opens the game and waits for its summary (JSON), null if it did not end
   /// with one. Android and iOS: the native screen; web: the game's route.
   /// The layout the app measures, in dp: the status and navigation bars (the engine does not report the

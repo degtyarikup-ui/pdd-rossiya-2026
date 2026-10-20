@@ -43,6 +43,7 @@
 /coverage/
 /output/
 /scratch/
+.agents/
 app.*.map.json
 app.*.symbols
 assets/videos/signs_reel/

@@ -1916,5 +1916,29 @@
         "type": "String"
       }
     }
-  }
+  },
+  "gameAnswerDetails": "Детали ответа",
+  "gameAnswerCorrectStatus": "Ваш ответ верный",
+  "gameAnswerWrongStatus": "Ваш ответ неверный",
+  "gameYourChoiceSign": "Ваш выбор: знак {number}",
+  "@gameYourChoiceSign": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "gameCorrectAnswerSection": "Правильный ответ:",
+  "gameChooseCorrectSignPrompt": "Какой из этих знаков соответствует описанию?",
+  "gameViolatorSelectTitle": "Какое нарушение совершено?",
+  "gamePedestrianYieldViolation": "Не уступил дорогу пешеходу",
+  "gameSolidLineViolation": "Пересечение сплошной линии",
+  "gameWrongLaneTurnViolation": "Поворот не из своего ряда",
+  "gamePrioritySignViolation": "Не уступил дорогу по знаку приоритета",
+  "gameViolatorCaught": "Нарушитель зафиксирован!",
+  "gameViolatorFalseAlarm": "Ложный вызов! Машина едет по правилам",
+  "gameViolatorWrongQualification": "Неверная квалификация нарушения",
+  "gameViolatorMissed": "Нарушитель упущен!",
+  "gameViolatorTapHint": "Нажмите на автомобиль, нарушающий ПДД",
+  "gameViolatorsCaughtStat": "Выявлено нарушителей"
 }

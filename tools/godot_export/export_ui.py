@@ -48,6 +48,10 @@ KEYS = [
     'crossroadsReasonPedestrianViolation', 'crossroadsArticlePedestrian', 'crossroadsReasonEarlyExit', 'crossroadsArticleEarlyExit', 'gameCrossroadsCrash', 'gameAnswerWrong',
     'gameCrossroadsSolvedCount', 'gameCrossroadsExplanationTitle', 'gameCrossroadsCompleteTitle',
     'gameParkingTouch', 'gameParkingParked', 'gameParkingFindSpot', 'gameParkingBusStop', 'gameParkingNoStopping', 'gameParkingJunction',
+    'gameViolatorSelectTitle', 'gamePedestrianYieldViolation', 'gameSolidLineViolation',
+    'gameWrongLaneTurnViolation', 'gamePrioritySignViolation', 'gameViolatorCaught',
+    'gameViolatorFalseAlarm', 'gameViolatorWrongQualification', 'gameViolatorMissed',
+    'gameViolatorTapHint', 'gameViolatorsCaughtStat',
 ]
 out = {}
 for lang in ('ru', 'en', 'kk'):
