@@ -1,5 +1,5 @@
 ## Guidance contracts: real steering in D/R, arrows along the path, hidden authored guidance
-## on the rules level, and manual progress across steering and gear changes.
+## on the rules level, manual progress, and a compact HUD without persistent instructions.
 ## godot --headless --path game_godot --script res://tests/parking_guidance_check.gd
 ## Also run with -- --text-scale=1.6 for the app's larger text setting.
 extends SceneTree
@@ -83,6 +83,20 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 			_check("segment %d gear %d: chevron %d follows body travel" % [segment, data.gear, i], direction.dot((b - a).normalized()) > 0.98)
 		var preview: Array = guide._preview_points
 		_check("segment %d: live forecast starts at the car" % segment, not preview.is_empty() and preview[0].distance_to(pose) < 0.00001)
+		for i in guide._segments.size():
+			var marker: Dictionary = guide._segments[i].marker
+			_check("segment %d: only the next action gate is shown" % segment, marker.root.is_visible_in_tree() == (i == segment and i < way.size() - 1))
+			for label: Label3D in marker.labels:
+				_check("floor markers use only the required gear letter", label.text in ["D", "R"])
+	# A second pair of straight lines adds no information when already on the route.
+	var start: Vector3 = way[0].poses[0]
+	var selected_gear: int = way[0].gear
+	guide.update_state(start, 0.0, selected_gear, 0.0, 0, 0, true, 0.1)
+	_check("preview: aligned straight path stays uncluttered", not guide._prediction.visible)
+	guide.update_state(start, ParkingLevels.MAX_STEER, selected_gear, 0.0, 0, 0, true, 0.1)
+	_check("preview: steering exposes the actual turning envelope", guide._prediction.visible)
+	guide.update_state(start, 0.0, -selected_gear, 0.0, 0, 0, true, 0.1)
+	_check("preview: the other gear exposes the actual direction", guide._prediction.visible)
 	# The rules level must not disclose the legal space through an authored route.
 	level = ParkingLevels.build(4)
 	way = ParkingLevels.way_in(level, geo)
@@ -175,27 +189,32 @@ func _check_ui() -> void:
 			var suffix := " %s %s" % [lang, viewport_size]
 			_check("UI: HUD stays inside viewport" + suffix, _contained(ui._top_bar.get_global_rect(), viewport_size))
 			_check("UI: HUD labels fit" + suffix, _labels_fit(ui._top_bar))
-			for action in ["straight", "left", "right", "brake", "gear", "park", "choose"]:
-				ui.set_guidance("parallel", action, 2, 3, -1, 4.5)
+			var area := ui.play_rect()
+			if not (area.size.x >= 16.0 and area.size.y >= 16.0 and _contained(area, viewport_size)):
+				print("PLAY_RECT_DIAGNOSTIC ", suffix, " rect=", area, " ui.size=", ui.size, " ui.scale=", ui.scale, " viewport=", root.get_visible_rect())
+			_check("UI: camera has a useful opening" + suffix, area.size.x >= 16.0 and area.size.y >= 16.0 and _contained(area, viewport_size))
+			_check("UI: driving view starts directly below the HUD" + suffix, area.position.y >= ui._top_bar.get_global_rect().end.y and area.position.y <= ui._top_bar.get_global_rect().end.y + 20.0)
+			for gear in [1, -1]:
+				for hint in [false, true]:
+					ui.set_gear(gear, hint)
+					await process_frame
+					await process_frame
+					var detail := "%s gear %d hint %s" % [suffix, gear, hint]
+					_check("UI: D/R control stays inside viewport" + detail, _contained(ui._gear.get_global_rect(), viewport_size))
+					_check("UI: D/R letters remain visible" + detail, _labels_fit(ui._gear) and ui._gear_label.text == "D" and ui._reverse_label.text == "R")
+					_check("UI: selected gear is highlighted" + detail, (ui._drive_style.bg_color.a > 0.0) == (gear > 0) and (ui._reverse_style.bg_color.a > 0.0) == (gear < 0))
+			ui.set_gear(1, false)
+			for key in ["gameParkingFindSpot", "gameParkingBusStop", "gameParkingNoStopping", "gameParkingJunction"]:
+				ui.toast(Ui.t(key), "" if key == "gameParkingFindSpot" else "bad", 0.1)
 				await process_frame
 				await process_frame
-				var detail: String = suffix + " " + action
-				_check("UI: driving command is localized" + detail, not ui._guidance_command.text.is_empty() and not ui._guidance_command.text.begins_with("gameParking"))
-				_check("UI: instruction labels fit" + detail, _labels_fit(ui._guidance))
-				_check("UI: instruction stays inside viewport" + detail, _contained(ui._guidance.get_global_rect(), viewport_size))
-				var area := ui.play_rect()
-				if not (area.size.x >= 16.0 and area.size.y >= 16.0 and _contained(area, viewport_size)):
-					print("PLAY_RECT_DIAGNOSTIC ", detail, " rect=", area, " ui.size=", ui.size, " ui.scale=", ui.scale, " viewport=", root.get_visible_rect())
-				_check("UI: camera has a useful opening" + detail, area.size.x >= 16.0 and area.size.y >= 16.0 and _contained(area, viewport_size))
-				_check("UI: choice hides the gear cue" + detail, ui._guidance_gear.visible == (action != "choose"))
-				_check("UI: distance is shown only while driving" + detail, ui._guidance_distance.visible == (action in ["straight", "left", "right"]))
-			for level_id in ["bay_forward", "bay_reverse", "angled", "parallel", "rules"]:
-				ui.set_guidance(level_id, "straight", 1, 3, 1)
-				_check("UI: level title is localized" + suffix + " " + level_id, not ui._guidance_title.text.is_empty() and not ui._guidance_title.text.begins_with("gameParking"))
+				_check("UI: feedback is localized" + suffix + " " + key, ui._toast_label.text == Ui.t(key) and ui._toast_label.text != key)
+				_check("UI: feedback fits the viewport" + suffix + " " + key, _contained(ui._toast.get_global_rect(), viewport_size) and _labels_fit(ui._toast))
+				_check("UI: feedback does not move the camera opening" + suffix + " " + key, ui.play_rect().is_equal_approx(area))
 	ui.show_results(500, 5, 0, 5, true, 400, "sedan", Color("#0574F8"))
-	_check("UI: results hide the driving instruction", ui.results.visible and not ui._guidance.visible and not ui._gear.visible)
+	_check("UI: results hide the driving HUD", ui.results.visible and not ui._top_bar.visible and not ui._gear.visible and is_zero_approx(ui._toast.modulate.a))
 	ui.hide_results()
-	_check("UI: restart restores the driving instruction", not ui.results.visible and ui._guidance.visible and ui._gear.visible)
+	_check("UI: restart restores the compact driving HUD", not ui.results.visible and ui._top_bar.visible and ui._gear.visible)
 	ui.queue_free()
 	Ui.lang = previous_lang
 	await process_frame

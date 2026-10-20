@@ -217,6 +217,7 @@ func _load_level(index: int) -> void:
 	_refresh_hud()
 	_update_guidance(0.0)
 	_frame_camera(true)
+	if not level.show_path: ui.toast(Ui.t("gameParkingFindSpot"), "", 2.4)
 
 
 func _refresh_hud() -> void:
@@ -443,21 +444,6 @@ func _update_guidance(delta: float) -> void:
 	_guide_index = progress.index
 	guide.update_state(pose, steer, gear, speed, segment, _guide_index,
 		level.show_path and done_timer < 0.0 and not is_game_over, delta)
-	var seg: Dictionary = way[segment]
-	var action := "straight" if seg.steer == 0 else ("left" if seg.steer > 0 else "right")
-	var distance: float = progress.remaining
-	if not level.show_path:
-		action = "choose"
-		distance = -1.0
-	elif gear != int(seg.gear):
-		action = "brake" if absf(speed) > 0.2 else "gear"
-		distance = -1.0
-	elif segment == way.size() - 1 and progress.remaining < 0.45 and absf(speed) < 0.08:
-		action = "park"
-		distance = -1.0
-	elif progress.remaining < maxf(0.75, speed * speed / (2.0 * BRAKE) + 0.45):
-		action = "brake"
-	ui.set_guidance(level.id, action, segment + 1, way.size() if level.show_path else 0, seg.gear, distance)
 
 
 # --- Driving ---
@@ -707,7 +693,7 @@ func _frame_camera(snap: bool, delta := 0.0) -> void:
 	var aspect := size.x / maxf(size.y, 1.0)
 	var vfov := deg_to_rad(FOV)
 	var hfov := 2.0 * atan(tan(vfov * 0.5) * aspect)
-	# Fit the actual free rectangle between the guidance card and the pedals.
+	# Fit the actual free rectangle between the shared HUD and the pedals.
 	var play_area: Rect2 = ui.play_rect()
 	var usable := play_area.size / size
 	var half := (hi - lo) * 0.5 + Vector2(1.4, 1.8)

@@ -8,7 +8,7 @@ extends Node3D
 const FORWARD := Color("#0574F8")
 const REVERSE := Color("#FFA53C")
 const FINISH := Color("#2BC280")
-const PREVIEW := Color("#E6F5FF")
+const PREVIEW := Color.WHITE
 const ROUTE_Y := 0.038
 const MARKER_Y := 0.058
 const PREVIEW_Y := 0.084
@@ -129,7 +129,7 @@ func update_state(pose: Vector3, steering: float, selected_gear: int, _speed: fl
 		for i in _segments.size():
 			var data: Dictionary = _segments[i]
 			(data.mesh as MeshInstance3D).visible = i >= current
-			(data.marker.root as Node3D).visible = i >= current
+			(data.marker.root as Node3D).visible = i == current and i < _segments.size() - 1
 			(data.material as ShaderMaterial).set_shader_parameter("emphasis", 1.0 if i == current else 0.58)
 			var colour: Color = REVERSE if int(data.gear) < 0 else FORWARD
 			(data.marker.material as StandardMaterial3D).albedo_color = Color(colour, 0.98 if i == current else 0.65)
@@ -151,6 +151,11 @@ func update_state(pose: Vector3, steering: float, selected_gear: int, _speed: fl
 			cutoff = lerpf(distances[k], distances[k + 1], t)
 	(active.material as ShaderMaterial).set_shader_parameter("cutoff", cutoff)
 	_update_chevrons(active, cutoff)
+	# Identical straight rails add no information. Reveal the forecast when the
+	# driver turns or deviates from the authored path, or selects the other gear.
+	var route_centre := body_centre(active.poses[k], _geo)
+	_prediction.visible = absf(steering) > 0.03 or selected_gear != int(active.gear) \
+		or body_centre(pose, _geo).distance_to(route_centre) > 0.45
 	if _preview_elapsed >= PREVIEW_INTERVAL:
 		_preview_elapsed = fmod(_preview_elapsed, PREVIEW_INTERVAL)
 		_update_prediction(pose, steering, selected_gear)
@@ -212,9 +217,6 @@ func _route_mesh(poses: Array, distances: PackedFloat32Array) -> MeshInstance3D:
 		var cb := body_centre(b, _geo)
 		var ra := Vector2(cos(a.z), -sin(a.z))
 		var rb := Vector2(cos(b.z), -sin(b.z))
-		# Deliberately little colour inside the envelope; the fine edges carry it.
-		_quad(st, ca + ra * half, ca - ra * half, cb - rb * half, cb + rb * half,
-			ROUTE_Y, 0.075, distances[i], distances[i + 1])
 		for side in [-1.0, 1.0]:
 			var inner := half - RAIL_WIDTH * 0.5
 			var outer := half + RAIL_WIDTH * 0.5
@@ -288,13 +290,6 @@ func _update_chevrons(data: Dictionary, cutoff: float) -> void:
 	mm.visible_instance_count = count
 
 
-func _disc(st: SurfaceTool, centre: Vector2, radius: float, y: float) -> void:
-	for i in 32:
-		_vertex(st, centre, y)
-		_vertex(st, centre + Vector2(cos(TAU * i / 32.0), sin(TAU * i / 32.0)) * radius, y)
-		_vertex(st, centre + Vector2(cos(TAU * (i + 1) / 32.0), sin(TAU * (i + 1) / 32.0)) * radius, y)
-
-
 func _ring(st: SurfaceTool, centre: Vector2, radius: float, width: float, y: float) -> void:
 	for i in 32:
 		var a := Vector2(cos(TAU * i / 32.0), sin(TAU * i / 32.0))
@@ -311,7 +306,7 @@ func _floor_label(text: String, point: Vector2, size: float, parent: Node3D) -> 
 	label.pixel_size = size / 96.0
 	label.position = Vector3(point.x, MARKER_Y + 0.02, point.y)
 	label.rotation.x = -PI / 2.0
-	label.modulate = Color.WHITE
+	label.modulate = REVERSE if text == "R" else FORWARD
 	label.outline_size = 0
 	label.double_sided = true
 	label.no_depth_test = false
@@ -383,25 +378,13 @@ func _build_gate(end: Vector3, stage: int, current_gear: int, next_gear: int, ne
 	for edge: float in [-1.0, 1.0]:
 		var at := centre + right * half * edge
 		_line(st, at - f * 0.19, at + f * 0.19, 0.07, MARKER_Y)
-	_ring(st, badge, 0.39, 0.055, MARKER_Y + 0.005)
 	if absi(next_steer) <= 1:
-		# Opposite the D/R badge, with a gap around both outlines.
-		_steering_symbol(st, badge + Vector2(0, -0.79), next_steer)
+		_steering_symbol(st, badge, next_steer)
 	var mat := _floor_material(REVERSE if current_gear < 0 else FORWARD, 0.95, 2)
 	_instance(st.commit(), mat, root)
-	var background := SurfaceTool.new()
-	background.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_disc(background, badge, 0.335, MARKER_Y + 0.004)
-	_instance(background.commit(), _floor_material(Color("#172A3F"), 0.96, 2), root)
-	var labels: Array[Label3D] = [_floor_label(str(stage), badge, 0.56, root)]
+	var labels: Array[Label3D] = []
 	if next_gear != current_gear:
-		# The new gear sits beside the stage number, with its own colour.
-		var gear_at := badge + Vector2(0, 0.79)
-		var gear_st := SurfaceTool.new()
-		gear_st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		_disc(gear_st, gear_at, 0.35, MARKER_Y + 0.006)
-		_instance(gear_st.commit(), _floor_material(REVERSE if next_gear < 0 else FORWARD, 0.97, 3), root)
-		labels.append(_floor_label("R" if next_gear < 0 else "D", gear_at, 0.5, root))
+		labels.append(_floor_label("R" if next_gear < 0 else "D", badge + Vector2(0, 0.8), 0.65, root))
 	return {"root": root, "material": mat, "labels": labels}
 
 
@@ -424,15 +407,6 @@ func _build_goal() -> void:
 			_line(st, corner, corner - r * across * 0.58, 0.105, MARKER_Y + 0.009)
 			_line(st, corner, corner - f * along * 0.68, 0.105, MARKER_Y + 0.009)
 	_instance(st.commit(), _floor_material(FINISH, 0.95, 3), _goal)
-	var outline := SurfaceTool.new()
-	outline.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var points := [centre + f * half_length + r * half_width, centre + f * half_length - r * half_width,
-		centre - f * half_length - r * half_width, centre - f * half_length + r * half_width]
-	for i in 4: _line(outline, points[i], points[(i + 1) % 4], 0.045, MARKER_Y + 0.003)
-	# Hood line and a clear nose arrow disambiguate forward/reverse bay parking.
-	_line(outline, centre + f * half_length * 0.40 - r * half_width * 0.8,
-		centre + f * half_length * 0.40 + r * half_width * 0.8, 0.04, MARKER_Y + 0.003)
-	_instance(outline.commit(), _floor_material(FINISH, 0.66, 3), _goal)
 	var arrow := SurfaceTool.new()
 	arrow.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var tip := centre + f * (half_length - 0.4)
