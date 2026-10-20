@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys,json,concurrent.futures,warnings,subprocess,os,difflib,argparse
 warnings.filterwarnings('ignore')
-from common import ROOT, output_dir
+from common import ROOT, output_dir, validate_episode_format
 sys.path.insert(0,str(ROOT))
 from tools.signs_reel import audio,verify
 D=output_dir()
@@ -16,6 +16,7 @@ def local_transcription(path,key):
  data=json.loads(prefix.with_suffix('.json').read_text())
  return ' '.join(x['text'].strip() for x in data['transcription'])
 EPISODE=json.loads((D/'episode.json').read_text())
+validate_episode_format(EPISODE)
 STYLE=EPISODE['voice']['style']
 LINES=[(x['key'],x['text']) for x in EPISODE['lines']]
 # This machine uses an active gcloud account rather than an ADC file.

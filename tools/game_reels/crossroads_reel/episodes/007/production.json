@@ -1,0 +1,80 @@
+{
+  "id": "crossroads-007",
+  "title": "Стоп не означает последним",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-20",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_007.mp4",
+  "deliveryDirectory": "Desktop",
+  "sha256": "9e35912c38ee8afc102142b342ef22060abf17640faa808300b115a4e8cf71f3",
+  "bytes": 28267408,
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "frames": 789,
+  "duration": 26.3,
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "2.5",
+    "13.9",
+    "13.12"
+  ],
+  "ruleSource": "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
+  "adaptation": "Empty main road west-east with 2.1 signs. South red is fully stopped before 1.12 at 2.5 and turns right to east. North blue has 2.4 and turns left to east. Both approaches are secondary. A single eastbound exit lane requires blue to yield to oncoming red. No signals or pedestrians.",
+  "audio": {
+    "voice": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "integratedLufs": -14.01,
+    "truePeakDbtp": -2.88,
+    "music": false
+  },
+  "checks": {
+    "sceneValidation": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nVALIDATION_OK episode 007; 789.0 frames; completed STOP before 1.12; secondary opposing approaches; red right then blue left; clear signs; no collisions, sidewalk intrusions or scenery occlusion; 12 vertical lamps\n",
+    "captionClearanceFrames": 789,
+    "fullVideoDecode": "passed",
+    "automaticVoiceAudit": {
+      "heard_transcript": "Кто здесь проедет первым? Три секунды на ответ! Первой — красная. Она уже остановилась перед стоп-линией. Синяя поворачивает налево и уступает встречной, которая едет направо. Оба подъезда второстепенные. Знак стоп не даёт синей преимущества. Знак стоп тебя запутал?",
+      "naturalness": 9,
+      "expressiveness": 9,
+      "clarity": 9,
+      "wrong_or_unclear_words": [],
+      "delivery_issues": []
+    },
+    "flutterAnalyze": "No issues",
+    "flutterTests": "680 passed, 3 skipped",
+    "directQuestionFormatTests": "5 passed; legacy episode timing unchanged",
+    "visualReview": "Encoded overview, completed STOP insert, both turn sequences and final order inspected"
+  },
+  "sources": {
+    "game_godot/videos/crossroads_reel/scene.gd": "13e8735d3d14882311740f8c121edc188e50b4d0538937a632e2256c7e6ef2e4",
+    "game_godot/videos/crossroads_reel/stage_geometry.gd": "90d69ad5145b8c9a92ac88352dd5c6eb158c4eaba80d2189cf9ccade48530c0d",
+    "game_godot/videos/crossroads_reel/render.gd": "1c54e6ad00a69588893fb1ef81d173d48fae88ca327a33ac1c2321a225d7196a",
+    "game_godot/videos/crossroads_reel/signal_episodes.gd": "cad11072aea74c49e1bf50fecfe53e750e9f0183e80121afd443e6d37c99da12",
+    "game_godot/videos/crossroads_reel/validate_signals.gd": "6aa90768c354bed790b4d810815cfe37e85682bfcb5a9f0528b9bcff806c0bbc",
+    "tools/game_reels/crossroads_reel/plan.py": "2bd4c9acc69f6cf5cc3cc4581d904f64b8bdd0f236df3f9c5f5420900b6e96e7",
+    "tools/game_reels/crossroads_reel/finish.py": "c1bd47a6eac8695f280cfb35d4e6f22c32a8d2a270bb7a08d78db4bbbce8d9bd",
+    "tools/game_reels/crossroads_reel/review.py": "6578afa95785a613da252b0ae2dbb1446ba172a5eb5c5fcd2d5174f5454f729c",
+    "tools/game_reels/crossroads_reel/audit_voice.py": "7de2811713e79f995477ff3aa0236d1fa94d99740cbb0f8e7987f3b2ccd3f795",
+    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552",
+    "game_godot/videos/crossroads_reel/stop_vs_yield.gd": "1a8629b30269c23efac04ebafa5dc594a12323e7346add47a3188021acbbb9d7",
+    "game_godot/videos/crossroads_reel/validate_stop_vs_yield.gd": "c08083575618cb9e0f652e24c0dfc43596103825c520605c075a65abf42a7561",
+    "tools/game_reels/crossroads_reel/common.py": "e5a7ae714e84ec9dc696c1aae0a73d7759f21f3e1c01e23657e7714f4bff58a8",
+    "game_godot/signs/2.1.svg": "e9076dd4bbeec6f17a5771074e9ecdbb6171039543b45727a2b0e018c2cd751c",
+    "game_godot/signs/2.4.svg": "dff8540fef07134852b27e1fa6cffdd2b63e1075b0d6ce8419df784848e87987",
+    "game_godot/signs/2.5.svg": "0bd6da474c35475bce5c7a2ef93767f32f0c9f9a8874835e155fbedbf230b8aa"
+  },
+  "voiceClips": {
+    "hook": "2b8bde27540f633ce911da31575fe3320e99519ab13ad454da9f217b2ed83ccc",
+    "challenge": "c0b77d9e72715ae9a9795fe3d9dda07a3dc1a8902111efc36b70247e80081eff",
+    "red": "3b1483aeff9e857e5df7cdfb1a20be1333029fce4e71a3db50c93917b3703611",
+    "blue": "f5cdcc54859496a8668035099b4c8b7c8e9fd422d008ecd10f518e353235d065",
+    "rule": "21829d1b7a67ca68621cd30695852113d0046b6611914c23634d757dbd17560d",
+    "cta": "4e1bb5bc78b79745c77b0379d69ecaede0fd5688791e53b4a668453337243ff8"
+  },
+  "revision": 1,
+  "ruleSources": [
+    "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
+    "https://www.consultant.ru/document/cons_doc_LAW_2709/f813c443e749db7b760a9fb7729a4e4ccdb2f3ea/"
+  ]
+}

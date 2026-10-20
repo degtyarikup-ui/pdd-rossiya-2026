@@ -1,13 +1,14 @@
 from pathlib import Path
 import json,sys,math
 import numpy as np
-from common import ROOT, output_dir
+from common import ROOT, output_dir, validate_episode_format
 sys.path.insert(0,str(ROOT))
 from tools.signs_reel import audio
 D=output_dir()
 v=json.loads((D/'voice.json').read_text())
 by={x['key']:x for x in v}
 episode=json.loads((D/'episode.json').read_text())
+validate_episode_format(episode)
 minimums=episode.get('motionMinimums',{'red':4.7,'blue':5.65,'yellow':4.15})
 starts={'hook':.12}
 if episode.get('directQuestion',False):

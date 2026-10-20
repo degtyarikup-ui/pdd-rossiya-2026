@@ -1,0 +1,38 @@
+"""The required question-first opening is enforced before paid production."""
+import copy
+import unittest
+from common import validate_episode_format
+
+
+class QuestionFirstFormatTest(unittest.TestCase):
+    def setUp(self):
+        self.recipe = {'id':'crossroads-007','directQuestion':True,'lines':[
+            {'key':'hook','text':'Who goes first?'},
+            {'key':'challenge','text':'Three seconds!'}]}
+
+    def test_next_episode_accepts_one_question(self):
+        validate_episode_format(self.recipe)
+        self.recipe['id']='crossroads-108'
+        validate_episode_format(self.recipe)
+
+    def test_rejects_a_statement_before_the_question(self):
+        self.recipe['lines'][0]['text']='Look at the signs. Who goes first?'
+        with self.assertRaises(SystemExit):validate_episode_format(self.recipe)
+
+    def test_rejects_an_explanation_before_countdown(self):
+        self.recipe['lines'].insert(1,{'key':'setup','text':'The red car turns right.'})
+        with self.assertRaises(SystemExit):validate_episode_format(self.recipe)
+
+    def test_rejects_missing_direct_question_flag(self):
+        self.recipe.pop('directQuestion')
+        with self.assertRaises(SystemExit):validate_episode_format(self.recipe)
+
+    def test_archived_openings_remain_reproducible(self):
+        for number in range(1,7):
+            recipe=copy.deepcopy(self.recipe)
+            recipe.update(id=f'crossroads-{number:03}',directQuestion=False)
+            recipe['lines'].insert(1,{'key':'setup','text':'Archived introduction.'})
+            validate_episode_format(recipe)
+
+
+if __name__=='__main__':unittest.main()

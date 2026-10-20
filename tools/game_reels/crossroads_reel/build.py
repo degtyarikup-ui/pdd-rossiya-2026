@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import sys
 
-from common import ROOT, REFERENCE, output_dir
+from common import ROOT, REFERENCE, output_dir, validate_episode_format
 
 TOOLS = Path(__file__).resolve().parent
 SCENE = "res://videos/crossroads_reel/"
@@ -17,7 +17,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("step", choices=["init", "voice", "plan", "align", "validate", "render", "preview", "finish", "check"])
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--episode", default="001", help="001-006: saved episode recipe")
+    parser.add_argument("--episode", default="001", help="001-007: saved episode recipe")
     parser.add_argument("--at", default="0,6,14.8,19.7,26.9,30.4")
     parser.add_argument("--model", type=Path, default=ROOT / "scratch/whisper/ggml-large-v3-turbo.bin")
     args = parser.parse_args()
@@ -28,6 +28,7 @@ def main():
         recipe = REFERENCE if args.episode == "001" else TOOLS / "episodes" / args.episode
         if not (recipe / "episode.json").is_file():
             raise SystemExit(f"Unknown episode: {args.episode}")
+        validate_episode_format(json.loads((recipe / "episode.json").read_text()))
         dest.mkdir(parents=True, exist_ok=True)
         # Never overwrite the timeline or reviewed captions of an existing run.
         for name in ["episode.json", "voice.json", "timeline.json", "subtitles.json"]:
@@ -40,6 +41,7 @@ def main():
         return
     if not (dest / "episode.json").is_file():
         raise SystemExit("Run init first")
+    validate_episode_format(json.loads((dest / "episode.json").read_text()))
     if args.step in ("voice", "plan", "finish", "check"):
         file = "check_export.py" if args.step == "check" else f"{args.step}.py"
         cmd = [sys.executable, str(TOOLS / file), "--out", str(dest)]

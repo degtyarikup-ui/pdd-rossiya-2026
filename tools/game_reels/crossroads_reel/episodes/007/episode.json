@@ -1,0 +1,118 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-007",
+  "status": "produced",
+  "title": "Стоп не означает последним",
+  "sourceScenario": "cross_stop_vs_yield_opposing_turns",
+  "rules": [
+    "2.5",
+    "13.9",
+    "13.12"
+  ],
+  "scene": "res://videos/crossroads_reel/stop_vs_yield.gd",
+  "validator": "res://videos/crossroads_reel/validate_stop_vs_yield.gd",
+  "answerPhases": [
+    "red",
+    "blue",
+    "rule"
+  ],
+  "motionMinimums": {
+    "red": 7.1,
+    "blue": 5.5,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 2.0,
+    "blue": 0.65
+  },
+  "turns": {
+    "red": "right",
+    "blue": "left"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1,
+      "blue": -0.1
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    },
+    {
+      "car": "blue",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-20",
+  "adaptation": "Empty main road west-east with 2.1 signs. South red is fully stopped before 1.12 at 2.5 and turns right to east. North blue has 2.4 and turns left to east. Both approaches are secondary. A single eastbound exit lane requires blue to yield to oncoming red. No signals or pedestrians.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь проедет первым?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Первой — красная. Она уже остановилась перед стоп-линией."
+    },
+    {
+      "key": "blue",
+      "text": "Синяя поворачивает налево и уступает встречной, которая едет направо."
+    },
+    {
+      "key": "rule",
+      "text": "Оба подъезда второстепенные. Знак стоп не даёт синей преимущества."
+    },
+    {
+      "key": "cta",
+      "text": "Знак стоп тебя запутал?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "проедет первым?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Первой — красная",
+      "Она уже остановилась",
+      "перед стоп-линией"
+    ],
+    "blue": [
+      "Синяя поворачивает",
+      "налево",
+      "и уступает встречной",
+      "которая едет направо"
+    ],
+    "rule": [
+      "Оба подъезда",
+      "второстепенные",
+      "Знак стоп",
+      "не даёт синей",
+      "преимущества"
+    ],
+    "cta": [
+      "Знак стоп",
+      "тебя запутал?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0
+}

@@ -35,6 +35,11 @@ for name in ['voice.json','timeline.json','subtitles.json']:shutil.copyfile(D/na
 E['status']='produced';(recipe/'episode.json').write_text(json.dumps(E,ensure_ascii=False,indent=2)+'\n')
 sources=['game_godot/videos/crossroads_reel/'+x for x in ['scene.gd','stage_geometry.gd','render.gd','signal_episodes.gd','validate_signals.gd']]+['tools/game_reels/crossroads_reel/'+x for x in ['plan.py','finish.py','review.py','audit_voice.py','deliver.py']]
 record={'id':E['id'],'title':E['title'],'status':'produced','published':False,'createdDate':E['createdDate'],'styleReference':'crossroads-001 approved 2026-10-20','videoFile':f'game_{n}.mp4','deliveryDirectory':'Desktop','sha256':X['sha256'],'bytes':X['bytes'],'width':1080,'height':1920,'fps':30,'frames':C['frames'],'duration':C['duration'],'renderer':'Godot 4.7.2 / Forward+ / Metal','rules':E['rules'],'ruleSource':'https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/','adaptation':E['adaptation'],'audio':{'voice':E['voice']['name'],'model':E['voice']['model'],'integratedLufs':float(loud['input_i']),'truePeakDbtp':float(loud['input_tp']),'music':False},'checks':{'sceneValidation':X['sceneValidation'],'captionClearanceFrames':len(F),'fullVideoDecode':'passed','automaticVoiceAudit':A,'flutterAnalyze':'No issues','flutterTests':'passed; see build logs'},'sources':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in sources},'voiceClips':{x['key']:hashlib.sha256((D/x['path']).read_bytes()).hexdigest() for x in json.loads((D/'voice.json').read_text())}}
+for key in ['scene','validator']:
+ if E.get(key,'').startswith('res://'):
+  source='game_godot/'+E[key][6:]
+  record['sources'][source]=hashlib.sha256((ROOT/source).read_bytes()).hexdigest()
+record['sources']['tools/game_reels/crossroads_reel/common.py']=hashlib.sha256((ROOT/'tools/game_reels/crossroads_reel/common.py').read_bytes()).hexdigest()
 record['revision']=E.get('revision',1)
 if (D/'question-edit.json').is_file():
  edit=json.loads((D/'question-edit.json').read_text())
