@@ -2,7 +2,7 @@
   "id": "crossroads-002",
   "title": "Знаков нет. Кто первый?",
   "status": "produced",
-  "published": false,
+  "published": true,
   "createdDate": "2026-10-20",
   "styleReference": "crossroads-001 revision 3, approved 2026-10-20",
   "sourceBase": "de860c4bbd9e2e764a71302465b09f427d711715",
@@ -76,5 +76,7 @@
     "yellow": "f13d3fdf68e452f8b7c9672ed3184e8c66ede74182c370502b8220f9cece6aa8",
     "cta": "8acc997381e9647d1c5812299c34eb3dca4aee2d3035bea4172f5a62e9682d49"
   },
-  "productionNote": "Blue interval extended to 5.9 s so the departing car clears the subtitle area before the next overview. Narration and layout retain the approved style."
+  "productionNote": "Blue interval extended to 5.9 s so the departing car clears the subtitle area before the next overview. Narration and layout retain the approved style.",
+  "publicationConfirmedDate": "2026-10-20",
+  "generatedMediaRemoved": true
 }

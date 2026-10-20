@@ -2,7 +2,7 @@
   "id": "crossroads-003",
   "title": "Главная поворачивает. Синяя уступает?",
   "status": "produced",
-  "published": false,
+  "published": true,
   "createdDate": "2026-10-20",
   "styleReference": "crossroads-001 revision 3, approved 2026-10-20",
   "sourceBase": "94365875158fb25fedc3883283309cb5ae53edca",
@@ -98,5 +98,7 @@
   "productionNote": "Revision 2: one central main-road diagram aligned with actual world roads; only 2.1/2.4 on roadsides. Diagram is visible during the question/countdown, a matching overhead insert and final recap, hidden during passages. The red intent hint is shortened before the diagram; actual car paths, timing, narration and audio master are unchanged.",
   "previousRevisionSha256": "ce8022c67d396adb42fc3ba2d58c0151db9f7c1f6d62d1350a9aa48238cbc273",
   "revision": 2,
-  "deliveryDirectory": "Desktop"
+  "deliveryDirectory": "Desktop",
+  "publicationConfirmedDate": "2026-10-20",
+  "generatedMediaRemoved": true
 }

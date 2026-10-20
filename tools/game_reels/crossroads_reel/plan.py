@@ -13,12 +13,16 @@ starts={'hook':.12}
 starts['setup']=starts['hook']+by['hook']['duration']+.17
 starts['challenge']=starts['setup']+by['setup']['duration']+.14
 count=starts['challenge']+by['challenge']['duration']+.18
-starts['red']=count+3.0+.06
-starts['blue']=starts['red']+max(by['red']['duration']+.3,minimums['red'])
-starts['yellow']=starts['blue']+max(by['blue']['duration']+.25,minimums['blue'])
-starts['cta']=starts['yellow']+max(by['yellow']['duration']+.25,minimums['yellow'])
+phases=episode.get('answerPhases',['red','blue','yellow'])
+cursor=count+3.0+.06
+answer=cursor
+for i,key in enumerate(phases):
+ starts[key]=cursor
+ cursor+=max(by[key]['duration']+(.3 if i==0 else .25),minimums.get(key,0))
+starts['cta']=cursor
 frames=math.ceil((starts['cta']+by['cta']['duration']+.8)*30)
 cfg={**starts,'count':count,'duration':frames/30,'frames':frames}
+if 'answerPhases' in episode:cfg['answer']=answer
 for x in v:x['start']=starts[x['key']]
 (D/'voice.json').write_text(json.dumps(v,ensure_ascii=False,indent=2))
 (D/'timeline.json').write_text(json.dumps(cfg,ensure_ascii=False,indent=2))

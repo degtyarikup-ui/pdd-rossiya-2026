@@ -88,14 +88,14 @@ def mix_audio():
   add(C['count']+i,click)
  tt=np.arange(round(.3*sr))/sr
  chime=(np.sin(2*np.pi*523.25*tt)+.45*np.sin(2*np.pi*783.99*tt))*np.exp(-tt/.075)*.07
- add(C['red'],chime)
+ add(C.get('answer',C.get('red',0)),chime)
  # Direction-indicator foley under the waiting shot, ending before the turn.
- for at in np.arange(2.4,7.1,.68):
+ for at in (np.arange(2.4,7.1,.68) if EPISODE.get('audio',{}).get('indicator',True) else []):
   tt=np.arange(round(.04*sr))/sr
   click=rng.standard_normal(len(tt))*np.exp(-tt/.006)*.022
   add(float(at),click,EPISODE.get('audio',{}).get('indicatorPan',.2))
  # Tiny cut accents, kept far below the voice.
- for at in [*EPISODE.get('audio',{}).get('setupCutAccents',[2,3.25,4.45,5.7,7.3]),C['red'],C['blue'],C['yellow']]:
+ for at in [*EPISODE.get('audio',{}).get('setupCutAccents',[2,3.25,4.45,5.7,7.3]),*[C[k] for k in EPISODE.get('answerPhases',['red','blue','yellow'])]]:
   tt=np.arange(round(.16*sr))/sr
   w=rng.standard_normal(len(tt));w=np.convolve(w,np.ones(5)/5,'same')
   add(max(0,at-.07),w*np.sin(np.pi*tt/.16)**2*.017)
@@ -144,11 +144,13 @@ def overlay(t,captions):
   f=ImageFont.truetype(str(FONT),74)
   d.text((x,y+1),str(remaining),font=f,fill='white',anchor='mm')
  if t>=C['cta']:
-  # Three clean numbered colour chips recap the answer without another paragraph.
-  for i,col in enumerate(['#ed4621','#136ce8','#f3bd28']):
-   x=410+i*110
+  # Numbered colour chips recap only the permitted participants.
+  chips=EPISODE.get('answerChips',[{'car':'red','number':1},{'car':'blue','number':2},{'car':'yellow','number':3}])
+  palette={'red':'#ed4621','blue':'#136ce8','yellow':'#f3bd28'}
+  for i,chip in enumerate(chips):
+   col=palette[chip['car']];x=520+(i-(len(chips)-1)/2)*110
    d.rounded_rectangle((x-42,1240,x+42,1324),radius=22,fill=col)
-   d.text((x,1284),str(i+1),font=ImageFont.truetype(str(FONT),48),fill=(255,255,255),stroke_width=2,stroke_fill=(0,0,0,80),anchor='mm')
+   d.text((x,1284),str(chip['number']),font=ImageFont.truetype(str(FONT),48),fill=(255,255,255),stroke_width=2,stroke_fill=(0,0,0,80),anchor='mm')
  return layer
 
 def compose(captions,encode=False,preview_dir="preview-frames"):

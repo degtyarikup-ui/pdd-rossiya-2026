@@ -17,7 +17,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("step", choices=["init", "voice", "plan", "align", "validate", "render", "preview", "finish", "check"])
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--episode", default="001", help="001 = pilot; 002 = equal roads; 003 = turning main road")
+    parser.add_argument("--episode", default="001", help="001-006: saved episode recipe")
     parser.add_argument("--at", default="0,6,14.8,19.7,26.9,30.4")
     parser.add_argument("--model", type=Path, default=ROOT / "scratch/whisper/ggml-large-v3-turbo.bin")
     args = parser.parse_args()
