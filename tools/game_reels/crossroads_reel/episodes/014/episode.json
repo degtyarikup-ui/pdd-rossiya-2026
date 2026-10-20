@@ -1,0 +1,116 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-014",
+  "status": "draft",
+  "title": "Два левых без очереди",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#014",
+  "rules": [
+    "8.1",
+    "8.6",
+    "13.12"
+  ],
+  "scene": "res://videos/crossroads_reel/two_lefts.gd",
+  "validator": "res://videos/crossroads_reel/validate_two_lefts.gd",
+  "answerPhases": [
+    "red",
+    "rule"
+  ],
+  "motionMinimums": {
+    "red": 3.4,
+    "rule": 4.5
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "left",
+    "blue": "left"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.0
+    },
+    "indicator": true,
+    "indicatorPan": 0.0,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    },
+    {
+      "car": "blue",
+      "number": 1
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Equal junction without signs or signals. Red coupe from south and blue SUV from north turn left simultaneously on 10 m radius arcs in front of the centre (left side to left side); blue path is the point reflection of red, closest centre distance about 3.2 m. Both finish in their exit lanes. Final chips: both 1.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Обязательна ли здесь очерёдность?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Нет, здесь можно одновременно."
+    },
+    {
+      "key": "rule",
+      "text": "Обе поворачивают налево, их пути свободны. Уступать друг другу в этой расстановке не требуется."
+    },
+    {
+      "key": "cta",
+      "text": "Или всё-таки искал первого?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Обязательна ли",
+      "здесь очерёдность?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Нет,",
+      "здесь можно",
+      "одновременно"
+    ],
+    "rule": [
+      "Обе поворачивают",
+      "налево",
+      "их пути свободны",
+      "Уступать друг другу",
+      "в этой расстановке",
+      "не требуется"
+    ],
+    "cta": [
+      "Или всё-таки",
+      "искал первого?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "coupe",
+    "blue": "suv"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  },
+  "arrowPolicy": "exit-lane"
+}

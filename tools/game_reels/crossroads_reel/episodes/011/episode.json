@@ -1,0 +1,118 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-011",
+  "status": "draft",
+  "title": "Зелёный есть, а ехать нельзя",
+  "sourceScenario": "docs/video/intersection_reels_scenarios.md#011",
+  "rules": [
+    "6.10",
+    "6.15"
+  ],
+  "scene": "res://videos/crossroads_reel/regulator_sides.gd",
+  "validator": "res://videos/crossroads_reel/validate_regulator_sides.gd",
+  "answerPhases": [
+    "blue",
+    "chest",
+    "rule"
+  ],
+  "motionMinimums": {
+    "blue": 4.4,
+    "chest": 2.2,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 0.0,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "none",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "blue": 0.15
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Main road north-south with signals: red sedan from south faces main green, blue hatch from east faces main red. Officer (game RegulatorOfficer model) stands in the centre, chest to the south, both arms down; orientation and gesture fixed for the whole episode, shown enlarged 3.6x on his spot during the question and final overview and at real size while blue passes. Blue goes straight west past his side; red waits. Only the blue answer chip is shown.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кому здесь можно ехать?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Синяя! Со стороны бока при опущенных руках можно прямо."
+    },
+    {
+      "key": "chest",
+      "text": "Со стороны груди — нельзя."
+    },
+    {
+      "key": "rule",
+      "text": "Сигнал регулировщика важнее светофора и знаков."
+    },
+    {
+      "key": "cta",
+      "text": "Зелёный чуть не отвлёк?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кому здесь",
+      "можно ехать?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Синяя!",
+      "Со стороны бока",
+      "при опущенных руках",
+      "можно прямо"
+    ],
+    "chest": [
+      "Со стороны",
+      "груди — нельзя"
+    ],
+    "rule": [
+      "Сигнал регулировщика",
+      "важнее светофора",
+      "и знаков"
+    ],
+    "cta": [
+      "Зелёный",
+      "чуть не отвлёк?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "sedan",
+    "blue": "hatch"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  },
+  "arrowPolicy": "exit-lane"
+}

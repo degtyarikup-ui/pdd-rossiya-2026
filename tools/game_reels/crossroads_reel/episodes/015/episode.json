@@ -1,0 +1,127 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-015",
+  "status": "draft",
+  "title": "Мигающий жёлтый и поворот главной",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#015",
+  "rules": [
+    "6.2",
+    "13.3",
+    "13.9"
+  ],
+  "scene": "res://videos/crossroads_reel/flashing_yellow.gd",
+  "validator": "res://videos/crossroads_reel/validate_flashing_yellow.gd",
+  "answerPhases": [
+    "red",
+    "rule",
+    "blue"
+  ],
+  "motionMinimums": {
+    "red": 5.0,
+    "rule": 2.0,
+    "blue": 4.6
+  },
+  "motionDelays": {
+    "red": 2.3,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "left",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1,
+      "blue": -0.1
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    },
+    {
+      "car": "blue",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Junction with all four signals flashing yellow at 1 Hz. Main road south-west (2.1 on south and west, 2.4 on north and east), one 8.13 plate in the south-west quarter inside the red left-turn arc. Red sedan from south turns left into the westbound lane along the main road; blue hatch from north goes straight south and yields. Short close-up of the flashing south signal before red moves.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь проедет первым?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Красная. Мигающий жёлтый предупреждает об опасности, но не задаёт очередь."
+    },
+    {
+      "key": "rule",
+      "text": "Смотрим на знаки: красная на главной."
+    },
+    {
+      "key": "blue",
+      "text": "Красная повернула. Теперь синяя."
+    },
+    {
+      "key": "cta",
+      "text": "Жёлтый сигнал не сбил?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "проедет первым?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Красная",
+      "Мигающий жёлтый",
+      "предупреждает",
+      "об опасности",
+      "но не задаёт",
+      "очередь"
+    ],
+    "rule": [
+      "Смотрим на знаки",
+      "красная",
+      "на главной"
+    ],
+    "blue": [
+      "Красная повернула",
+      "Теперь синяя"
+    ],
+    "cta": [
+      "Жёлтый сигнал",
+      "не сбил?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "sedan",
+    "blue": "hatch"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  },
+  "arrowPolicy": "exit-lane"
+}
