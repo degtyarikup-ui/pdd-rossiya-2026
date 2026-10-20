@@ -3035,7 +3035,7 @@ const workerHandlers = {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
       const socialResponse = await handleSocialAdmin(request, env, ctx, url, {
         jsonResponse,
-        notify: (text) => sendTelegram(env, text),
+        notify: (text) => sendTelegram(env, text, null, { topic: 'errors' }),
       });
       return socialResponse || jsonResponse({ error: 'not found' }, 404);
     }
@@ -4245,7 +4245,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         const settings = JSON.parse(await env.INSTALLS.get('social:settings'));
         if (settings && settings.workerOrigin) origin = settings.workerOrigin;
       } catch (_) {}
-      ctx.waitUntil(runAutoPost(env, origin, (text) => sendTelegram(env, text)));
+      ctx.waitUntil(runAutoPost(env, origin, (text) => sendTelegram(env, text, null, { topic: 'errors' })));
       ctx.waitUntil(runThreadsSchedule(env, (text) => sendTelegram(env, text)));
       if (env.NOTIFICATIONS) {
         ctx.waitUntil(

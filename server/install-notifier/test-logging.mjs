@@ -244,3 +244,35 @@ test('Telegram topics route errors, purchases and registrations to configured th
   }
 });
 
+
+
+test('video publication failures from cron and every admin launch route go to the errors topic', async () => {
+  const scenarios = [
+    { path: 'posts/publish', body: { id: 'video' } },
+    { path: 'posts/publish-now', body: { ids: ['video'] } },
+    { path: 'posts/publish-platform', body: { id: 'video', platform: 'youtube' } },
+    { path: 'run', body: {} },
+    { cron: true },
+  ];
+  for (const scenario of scenarios) {
+    const { env, state } = setup();
+    env.ADMIN_PASSWORD = 'fixture-password';
+    env.TELEGRAM_TOPIC_ERRORS = '7';
+    await env.INSTALLS.put('social:accounts', JSON.stringify([{ id: 'account', name: 'ПДД Россия', active: true, targets: ['youtube'], driveFolderId: '' }]));
+    await env.INSTALLS.put('social:posts', JSON.stringify([{ id: 'video', accountId: 'account', fileName: 'fixture.mp4', status: 'queued', targets: ['youtube'], scheduledAt: new Date(Date.now() - 60000).toISOString() }]));
+    // Missing OAuth fails locally; Telegram delivery is held in the isolated DO queue.
+    const pending = [], ctx = { waitUntil(promise) { pending.push(promise); } };
+    if (scenario.cron) await worker.scheduled({ cron: '*/5 * * * *' }, env, ctx);
+    else {
+      const response = await worker.fetch(new Request('https://w.test/api/admin/social/' + scenario.path, {
+        method: 'POST', headers: { authorization: 'Bearer fixture-password', 'content-type': 'application/json' }, body: JSON.stringify(scenario.body),
+      }), env, ctx);
+      assert.equal(response.status, 200, scenario.path);
+    }
+    while (pending.length) await Promise.all(pending.splice(0));
+    const queued = [...(await state.storage.list({ prefix: 'q:' })).values()];
+    assert.equal(queued.length, 1, scenario.path || 'cron');
+    assert.match(queued[0].text, /Автопостинг: ролик не опубликован/);
+    assert.equal(queued[0].threadId, 7, scenario.path || 'cron');
+  }
+});
