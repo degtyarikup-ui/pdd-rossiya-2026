@@ -1,0 +1,80 @@
+{
+  "id": "crossroads-002",
+  "title": "Знаков нет. Кто первый?",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-20",
+  "styleReference": "crossroads-001 revision 3, approved 2026-10-20",
+  "sourceBase": "de860c4bbd9e2e764a71302465b09f427d711715",
+  "sourceScenario": "cross_equal_3_cars",
+  "adaptation": "Red west→east straight; blue north→south straight; yellow east→south left. Equal road surface; no signs or traffic lights.",
+  "rules": [
+    "13.11",
+    "13.12"
+  ],
+  "ruleSource": "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
+  "videoFile": "reel.mp4",
+  "sha256": "93366384b67b9666003ea5e4be73bf52f8c6d70579ef2424a99c6bc8fff907d9",
+  "bytes": 32017551,
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "frames": 1012,
+  "duration": 33.733333333333334,
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "captions": "Onest ExtraBold; fixed baseline 1450 px; matching approved pilot; no text boxes or branding",
+  "audio": {
+    "voice": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "integratedLufs": -13.94,
+    "truePeakDbtp": -2.06,
+    "music": false
+  },
+  "checks": {
+    "sceneFrames": 1012,
+    "bodyCollisions": 0,
+    "visibleCarsStationaryDuringQuestion": true,
+    "closeShotsKeepCarsInsideFrame": true,
+    "verticalLamps": 12,
+    "prioritySigns": 0,
+    "completeLeftTurn": true,
+    "captionClearance": "Passed for all visible participants across 1012 frames",
+    "transcriptVerified": true,
+    "automaticVoiceAudit": {
+      "naturalness": 9,
+      "expressiveness": 9,
+      "clarity": 9,
+      "wrongWords": []
+    },
+    "fullVideoDecode": "passed",
+    "flutterAnalyze": "No issues",
+    "flutterTestsPassed": 678,
+    "flutterTestsSkipped": 3
+  },
+  "sources": {
+    "game_godot/videos/crossroads_reel/scene.gd": "13e8735d3d14882311740f8c121edc188e50b4d0538937a632e2256c7e6ef2e4",
+    "game_godot/videos/crossroads_reel/stage_geometry.gd": "90d69ad5145b8c9a92ac88352dd5c6eb158c4eaba80d2189cf9ccade48530c0d",
+    "game_godot/videos/crossroads_reel/render.gd": "6c2d20c5d581f123046efbdac02637b00b2787bf948141225707400d81831664",
+    "game_godot/videos/crossroads_reel/equal_priority.gd": "a2e91046367c18fc37164c38554aec0f69c4e41beb4f8df9945895e2d5bcb6ed",
+    "game_godot/videos/crossroads_reel/validate_equal_priority.gd": "4a8127c86acf3c37ca973d7a5ea9e2f7dd96fde30e16368eafd25cdad9fd6609",
+    "tools/game_reels/crossroads_reel/build.py": "cbd921a4b181d9e41c76933ca0d5307a63974e230209966ca1539c322b09733a",
+    "tools/game_reels/crossroads_reel/plan.py": "fb03ffac7c977ffc6a8265172fc6ce909651c58be71066dfe4d8b5d731fcf2ce",
+    "tools/game_reels/crossroads_reel/voice.py": "af770274ecff8e6b7f61b480ca57bcfd7534555766f47b328666c9ae95a51b92",
+    "tools/game_reels/crossroads_reel/finish.py": "8775d6437a988e3c86003029cd41d409a5a73d718cf300248cda818bcfafcfa8",
+    "tools/game_reels/crossroads_reel/check_export.py": "792d115518f3250e94c22fdf5a5e549ebc0643c10504f809feb5d4a7cfe615e4",
+    "tools/game_reels/crossroads_reel/episodes/002/episode.json": "f3eefcda9aae429fefbc375ca5bcea8556d4f47b34fd2e23852741e6d9df19d2",
+    "tools/game_reels/crossroads_reel/episodes/002/voice.json": "bc83e8e7f31c197ae1e9ee5d26fd863b4ef4ff1ede5935cdacc9269492590f03",
+    "tools/game_reels/crossroads_reel/episodes/002/timeline.json": "1f107e2803b829d428e1bfc4bf88ea039c68b7efa8e6e2594ca5cb79e463d893",
+    "tools/game_reels/crossroads_reel/episodes/002/subtitles.json": "bf4b4f82b4dd2db8f98b44f556474925209c77aeb50c01d8a37af0df85e2af0b"
+  },
+  "voiceClips": {
+    "hook": "24ddc07a7f37362ec11f9c31ae41e3e29fda94e02954a35ee13e80ec2bdb3a59",
+    "setup": "3ab4086edc7c73082e4bfbf984639e4f18fac82d302c8932df023a9160674f4e",
+    "challenge": "b7ea9291e8fcf624264f9b57d5c13215aef16fd690ba8f79fc4893784dc45d28",
+    "red": "b80265dc7b7e3dea8bf705be7b5e4549ca7d75b7d18b2b045fdf239239cb540b",
+    "blue": "5b9466f76673dfd9dc7fe22feaa2cb99572a31c27afeec1654c751982a82dd34",
+    "yellow": "f13d3fdf68e452f8b7c9672ed3184e8c66ede74182c370502b8220f9cece6aa8",
+    "cta": "8acc997381e9647d1c5812299c34eb3dca4aee2d3035bea4172f5a62e9682d49"
+  },
+  "productionNote": "Blue interval extended to 5.9 s so the departing car clears the subtitle area before the next overview. Narration and layout retain the approved style."
+}

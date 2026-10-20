@@ -12,7 +12,8 @@ W,H,FPS=1080,1920,30
 FONT=ROOT/'game_godot/fonts/Onest-ExtraBold.ttf'
 MEDIUM=ROOT/'game_godot/fonts/Onest-Medium.ttf'
 COLORS={'красн':'#ff7969','син':'#65bcff','жёлт':'#ffdb58','желт':'#ffdb58'}
-GROUPS=json.loads((D/'episode.json').read_text())['captionGroups']
+EPISODE=json.loads((D/'episode.json').read_text())
+GROUPS=EPISODE['captionGroups']
 def norm(s):
  s=re.sub(r'[^а-яА-ЯёЁ0-9]','',s).lower().replace('ё','е')
  return 'три' if s=='3' else s
@@ -72,8 +73,8 @@ def mix_audio():
  bed=np.fft.irfft(spec*np.exp(-(freq/1200)**2)*(1-np.exp(-(freq/110)**2)),n)
  bed=bed/max(np.std(bed),1e-9)*.0015
  mix+=bed[:,None]
- for key,pan in [('red',-.25),('blue',.2),('yellow',-.1)]:
-  go=C[key]+dict(red=.45,blue=.35,yellow=.5)[key]
+ for key,pan in EPISODE.get('audio',{}).get('enginePans',{'red':-.25,'blue':.2,'yellow':-.1}).items():
+  go=C[key]+EPISODE.get('motionDelays',dict(red=.45,blue=.35,yellow=.5))[key]
   length=min(C['duration']-go,5.7);tt=np.arange(round(length*sr))/sr
   speed=np.minimum(8.5,tt*3.6);rpm=63+speed*14
   phase=2*np.pi*np.cumsum(rpm)/sr
@@ -92,9 +93,9 @@ def mix_audio():
  for at in np.arange(2.4,7.1,.68):
   tt=np.arange(round(.04*sr))/sr
   click=rng.standard_normal(len(tt))*np.exp(-tt/.006)*.022
-  add(float(at),click,.2)
+  add(float(at),click,EPISODE.get('audio',{}).get('indicatorPan',.2))
  # Tiny cut accents, kept far below the voice.
- for at in [2,3.25,4.45,5.7,7.3,C['red'],C['blue'],C['yellow']]:
+ for at in [*EPISODE.get('audio',{}).get('setupCutAccents',[2,3.25,4.45,5.7,7.3]),C['red'],C['blue'],C['yellow']]:
   tt=np.arange(round(.16*sr))/sr
   w=rng.standard_normal(len(tt));w=np.convolve(w,np.ones(5)/5,'same')
   add(max(0,at-.07),w*np.sin(np.pi*tt/.16)**2*.017)

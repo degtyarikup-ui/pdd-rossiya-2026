@@ -20,7 +20,7 @@ func _initialize() -> void:
 	vp.msaa_3d=Viewport.MSAA_8X
 	root.add_child(vp)
 	RenderingServer.directional_shadow_atlas_set_size(4096,true)
-	var script=load(base.path_join("scene.gd"))
+	var script=load(str(args.get("scene",base.path_join("scene.gd"))))
 	if script==null:quit(1);return
 	var scene:=Node3D.new();scene.set_script(script)
 	if not scene.has_method("set_time"):quit(1);return
