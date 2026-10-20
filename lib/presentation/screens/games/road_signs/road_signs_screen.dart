@@ -352,6 +352,9 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
                     ),
                     child: Container(
                       width: double.infinity,
+                      constraints: const BoxConstraints(
+                        maxHeight: 120,
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppDimensions.spacingL,
                         vertical: AppDimensions.spacingM,
@@ -374,6 +377,8 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
                           height: 1.35,
                         ),
                         textAlign: TextAlign.center,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),

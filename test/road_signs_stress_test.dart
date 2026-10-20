@@ -96,6 +96,11 @@ void main() {
           expect(q.options[q.correctAnswerIndex], equals(q.correctSign));
           expect(q.options[q.correctAnswerIndex].number, equals(q.correctSign.number));
 
+          // Invariant 5b: Zero duplicate images among options
+          final images = q.options.map((o) => o.image.trim()).toSet();
+          expect(images.length, equals(4),
+              reason: 'Duplicate sign image in options: ${q.options.map((o) => o.image)}');
+
           // Invariant 6: officialRuleQuote accurately contains genuine PDD rule definitions
           expect(q.officialRuleQuote.trim(), isNotEmpty,
               reason: 'officialRuleQuote is empty for ${q.correctSign.number}');
@@ -108,12 +113,28 @@ void main() {
           expect(q.officialRuleQuote.contains('\r'), isFalse,
               reason: 'officialRuleQuote contains raw carriage returns for ${q.correctSign.number}');
 
-          // Prompt validity
+          // Invariant 7: Prompt validity, cleanliness and length constraints
           expect(q.prompt.trim(), isNotEmpty);
+          expect(q.prompt.length, lessThanOrEqualTo(160),
+              reason: 'Prompt excessively long (${q.prompt.length} chars) for ${q.correctSign.number}: ${q.prompt}');
+          expect(q.prompt.contains('Устанавливается в н'), isFalse,
+              reason: 'Prompt contains truncated installation phrase for ${q.correctSign.number}');
+          expect(q.prompt.contains('КоАП'), isFalse,
+              reason: 'Prompt contains KoAP for ${q.correctSign.number}');
+          expect(q.prompt.contains('штраф'), isFalse,
+              reason: 'Prompt contains fine for ${q.correctSign.number}');
+          expect(RegExp(r'\bзнак[а-я]*\s+\d', caseSensitive: false).hasMatch(q.prompt), isFalse,
+              reason: 'Leaked sign number in prompt: ${q.prompt}');
+
           if (q.type == RoadSignQuizType.titleMatch) {
             expect(q.prompt.contains(q.correctSign.title.trim()), isTrue);
           } else if (q.type == RoadSignQuizType.folkNameMatch) {
             expect(q.prompt.contains(q.correctSign.folkName!.trim()), isTrue);
+          } else if (q.type == RoadSignQuizType.meaningDefinition) {
+            expect(q.prompt.toLowerCase().contains(q.correctSign.title.toLowerCase()), isFalse,
+                reason: 'Meaning definition leaks sign title for ${q.correctSign.number}: ${q.prompt}');
+            expect(q.prompt.toLowerCase().contains('устанавл'), isFalse,
+                reason: 'Meaning definition contains installation jargon: ${q.prompt}');
           }
         }
       }
@@ -247,6 +268,51 @@ void main() {
         expect(quote.contains('\u00a0'), isFalse, reason: 'Contains non-breaking space for ${sign.number}');
         expect(quote.contains('\r'), isFalse, reason: 'Contains carriage return for ${sign.number}');
         expect(quote.length, lessThanOrEqualTo(1000), reason: 'Quote excessively long for ${sign.number}: ${quote.length}');
+      }
+    });
+
+    test('Regression: Group 8.2 signs (8.2.1-8.2.6) NEVER produce composite text prompts or duplicate images', () {
+      final group82 = allSigns.where((s) => s.number.startsWith('8.2.')).toList();
+      expect(group82.length, equals(6));
+
+      for (final sign in group82) {
+        for (int i = 0; i < 15; i++) {
+          final q = engine.buildQuestionForSign(sign);
+          expect(q, isNotNull);
+          // Must not be meaning definition with composite text
+          expect(q!.prompt.length, lessThanOrEqualTo(80),
+              reason: 'Prompt for ${sign.number} was too long: ${q.prompt}');
+          expect(q.prompt.contains('8.2.1 указывает протяженность'), isFalse);
+          expect(q.prompt.contains('8.2.2 указывает зону'), isFalse);
+          expect(q.prompt.contains('8.2.3 указывает конец'), isFalse);
+          // Images must be unique
+          final images = q.options.map((o) => o.image).toSet();
+          expect(images.length, equals(4));
+        }
+      }
+
+      // Official quote for 8.2.4 must be specific to 8.2.4
+      final quote824 = RoadSignsEngine.extractOfficialQuote(
+        allSigns.firstWhere((s) => s.number == '8.2.4').description,
+        'Зона действия',
+        signNumber: '8.2.4',
+      );
+      expect(quote824.contains('8.2.4 информирует'), isTrue);
+      expect(quote824.contains('8.2.1 указывает'), isFalse);
+    });
+
+    test('Regression: Signs with installation descriptions (1.5, 1.6, 1.7, 1.13, 1.14, 1.22) produce clean prompts', () {
+      final testNumbers = ['1.5', '1.6', '1.7', '1.13', '1.14', '1.22', '1.35', '2.4'];
+      for (final num in testNumbers) {
+        final sign = allSigns.firstWhere((s) => s.number == num);
+        for (int i = 0; i < 10; i++) {
+          final q = engine.buildQuestionForSign(sign);
+          expect(q, isNotNull);
+          expect(q!.prompt.contains('Устанавливается в н'), isFalse);
+          expect(q.prompt.length, lessThanOrEqualTo(120));
+          expect(q.prompt.contains('КоАП'), isFalse);
+          expect(q.prompt.contains('штраф'), isFalse);
+        }
       }
     });
   });
