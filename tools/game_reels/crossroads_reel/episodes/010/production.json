@@ -1,0 +1,95 @@
+{
+  "id": "crossroads-010",
+  "title": "Пешеход без зебры",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-20",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_010.mp4",
+  "deliveryDirectory": "Desktop",
+  "sha256": "271f8f0ec3a9c308cb4d8c85ffeeee20be349888b563402d2e8b41157796585e",
+  "bytes": 25815642,
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "frames": 820,
+  "duration": 27.333333333333332,
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.1",
+    "4.3"
+  ],
+  "ruleSource": "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
+  "adaptation": "Unsignalised junction with no marked pedestrian crossing. One red car turns right from south into the eastbound lane. Blue-jacket adult walks south across the east arm along the continuation of the north-south sidewalk at x=5.4. Red waits until the pedestrian reaches the south sidewalk, then turns right. No additional road users, priority signs or traffic signals.",
+  "audio": {
+    "voice": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "integratedLufs": -14.19,
+    "truePeakDbtp": -2.16,
+    "music": false
+  },
+  "checks": {
+    "sceneValidation": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nVALIDATION_OK episode 10; 820.0 frames; full body footprints; correct exit-lane turn arrow; short straight hint; complete safe movements; readable conditions; no collisions or occlusion\n",
+    "captionClearanceFrames": 820,
+    "fullVideoDecode": "passed",
+    "automaticVoiceAudit": {
+      "heard_transcript": "Кто здесь должен уступить? Три секунды на ответ! Красная ждёт. При повороте уступаем пешеходу, даже если зебры нет. Пешеход прошёл. Теперь красная спокойно поворачивает. На перекрёстке здесь переходят по линии тротуаров. Ты бы пропустил?",
+      "naturalness": 9,
+      "expressiveness": 9,
+      "clarity": 10,
+      "wrong_or_unclear_words": [],
+      "delivery_issues": []
+    },
+    "flutterAnalyze": "No issues",
+    "flutterTests": "680 passed, 3 skipped",
+    "formatTests": "8 passed",
+    "questionFirst": true,
+    "exitLaneArrow": true,
+    "pedestrianWaitAndContinuity": true,
+    "loweredCurbs": true,
+    "noMarkedCrossing": true,
+    "visualReview": "All seconds, full-size pedestrian and overview, encoded QA and caption clearance inspected"
+  },
+  "sources": {
+    "game_godot/videos/crossroads_reel/scene.gd": "8860f558078cdc48ddf9341f300373f9a9a633dd8a77d107d0a81bc5c30d3c00",
+    "game_godot/videos/crossroads_reel/stage_geometry.gd": "90d69ad5145b8c9a92ac88352dd5c6eb158c4eaba80d2189cf9ccade48530c0d",
+    "game_godot/videos/crossroads_reel/render.gd": "1c54e6ad00a69588893fb1ef81d173d48fae88ca327a33ac1c2321a225d7196a",
+    "game_godot/videos/crossroads_reel/signal_episodes.gd": "740b3e800a70fa5c3d86e55de20a76134597c08d0b11a5f0b359f2b3565eb9e4",
+    "game_godot/videos/crossroads_reel/validate_signals.gd": "6aa90768c354bed790b4d810815cfe37e85682bfcb5a9f0528b9bcff806c0bbc",
+    "tools/game_reels/crossroads_reel/plan.py": "2bd4c9acc69f6cf5cc3cc4581d904f64b8bdd0f236df3f9c5f5420900b6e96e7",
+    "tools/game_reels/crossroads_reel/finish.py": "23e47a3eafa46bea4da37fa19d399e0adf30314b7ad061c5305a051675106429",
+    "tools/game_reels/crossroads_reel/review.py": "6578afa95785a613da252b0ae2dbb1446ba172a5eb5c5fcd2d5174f5454f729c",
+    "tools/game_reels/crossroads_reel/audit_voice.py": "7de2811713e79f995477ff3aa0236d1fa94d99740cbb0f8e7987f3b2ccd3f795",
+    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552",
+    "game_godot/videos/crossroads_reel/pedestrian_turn.gd": "5d777d50cef622808bb1e9b2d5a49a9c44cba3eb2fab2fbdf243ef9b422a5b57",
+    "game_godot/videos/crossroads_reel/validate_junction_episodes.gd": "c5f387a06b10504005713fe90757e83bf52f3a8699fa843462081aff18561584",
+    "tools/game_reels/crossroads_reel/common.py": "041d172b55f76c6aa1b2f9131877b412889318065c2c838d0c0ee0cb61ff40d6",
+    "game_godot/videos/crossroads_reel/junction_episodes.gd": "50e08615fff314d013ffecedfd27e5b9ead698a249a079773bbca0184ad4c4ad",
+    "game_godot/videos/crossroads_reel/stop_vs_yield.gd": "1a8629b30269c23efac04ebafa5dc594a12323e7346add47a3188021acbbb9d7",
+    "game_godot/models/vehicles/coupe.glb": "632b3e3ad1bfbe4eeae7dd1f1eaf65737e603b9a15da69b5a5731a6429a1bc44",
+    "game_godot/models/walkers/walker_0.glb": "0088b60d010b7df968d34929cf5f1251506dabbd59c57d6b780d0ed7133b3940",
+    "game_godot/shaders/baked.gdshader": "b9b1a9b18dddc18a90310c2826126f65dcdb9d3dcda21fe10a5c69bef645fe5e",
+    "assets/countries/ru/questions/pdd_sections.json": "8542b5de85458d03a5bfc1f6917a8c151f83a50783e593484c3f38caa3bea9e2"
+  },
+  "voiceClips": {
+    "hook": "9b38579e9c383f5cfc7bffd3ded9e9f2c61d8faa0075212be5ab797cac3d6087",
+    "challenge": "e069a3083239310ccae32339d4335a6ae70f61bb9770159b7460d3fec76c33fb",
+    "blue": "aa6a14717530a1b6106575608d3a76f12c4ce06d9a8804c941e3c7d5eab66059",
+    "red": "cbc2dca6fb2c5b669ea4832083c933d0d2973af1716c8ec2ba89f009e36030be",
+    "rule": "20a39a2e43aadf0ad13c93a135734da7bb45b51eeef37cc113b61f181ab81fe1",
+    "cta": "809cdecc1b7e92e9a629da0e0ecad538eafdbce656613182e2bd3450ea960608"
+  },
+  "revision": 1,
+  "carModels": {
+    "red": "coupe"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "pedestrian"
+  },
+  "arrowPolicy": "exit-lane",
+  "ruleSources": [
+    "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
+    "https://www.consultant.ru/document/cons_doc_LAW_2709/1736bcf22f8e05f9d3db535f6d084651bad887a4/"
+  ]
+}
