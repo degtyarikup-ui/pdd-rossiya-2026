@@ -1,0 +1,127 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-013",
+  "status": "draft",
+  "title": "Обе на второстепенной",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#013",
+  "rules": [
+    "13.10",
+    "13.11"
+  ],
+  "scene": "res://videos/crossroads_reel/both_secondary.gd",
+  "validator": "res://videos/crossroads_reel/validate_both_secondary.gd",
+  "answerPhases": [
+    "red",
+    "rule",
+    "blue"
+  ],
+  "motionMinimums": {
+    "red": 2.4,
+    "rule": 3.6,
+    "blue": 6.2
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "none",
+    "blue": "left"
+  },
+  "audio": {
+    "enginePans": {
+      "red": -0.15,
+      "blue": 0.1
+    },
+    "indicator": true,
+    "indicatorPan": -0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    },
+    {
+      "car": "blue",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Main road south-east (2.1 on south and east, 2.4 on west and north), one 8.13 plate in the north-east quarter of the junction inside the left-turn arc so no hint crosses it. Red sedan from west straight east; blue SUV from north turns left into the same eastbound lane. Both on the secondary road: red is on blue's right, red goes first, blue turns once red has cleared the exit lane.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь должен уступить?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Синяя! Обе машины на второстепенной."
+    },
+    {
+      "key": "rule",
+      "text": "Между собой они разъезжаются как на равнозначном перекрёстке: красная для синей справа."
+    },
+    {
+      "key": "blue",
+      "text": "Красная проехала. Теперь синяя поворачивает налево."
+    },
+    {
+      "key": "cta",
+      "text": "Оба знака «Уступи» заметил?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "должен уступить?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Синяя!",
+      "Обе машины",
+      "на второстепенной"
+    ],
+    "rule": [
+      "Между собой они",
+      "разъезжаются",
+      "как на равнозначном",
+      "перекрёстке",
+      "красная для синей",
+      "справа"
+    ],
+    "blue": [
+      "Красная проехала",
+      "Теперь синяя",
+      "поворачивает налево"
+    ],
+    "cta": [
+      "Оба знака «Уступи»",
+      "заметил?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "sedan",
+    "blue": "suv"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  },
+  "arrowPolicy": "exit-lane"
+}
