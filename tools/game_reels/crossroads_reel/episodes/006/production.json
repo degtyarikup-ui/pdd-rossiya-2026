@@ -1,0 +1,70 @@
+{
+  "id": "crossroads-006",
+  "title": "Встречные повороты на зелёный",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-20",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_006.mp4",
+  "deliveryDirectory": "Desktop",
+  "sha256": "966ba02a62daa5cf13422f9a3ac16c88ab95d52089417f4ac2716e40b0f36773",
+  "bytes": 31767694,
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "frames": 930,
+  "duration": 31.0,
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.4"
+  ],
+  "ruleSource": "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
+  "adaptation": "Red south to west left turn. Blue north to west right turn. Both main signals green; west/east red; no extra sections or priority signs. Single westbound exit lane. Blue clears the merging area before red starts. All signals remain fixed.",
+  "audio": {
+    "voice": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "integratedLufs": -14.36,
+    "truePeakDbtp": -2.95,
+    "music": false
+  },
+  "checks": {
+    "sceneValidation": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nVALIDATION_OK episode 6; 930.0 frames; fixed correct signals; two cars; no collisions or sidewalk intrusions; readable first frame; full focus framing; 12 vertical lamps\n",
+    "captionClearanceFrames": 930,
+    "fullVideoDecode": "passed",
+    "automaticVoiceAudit": {
+      "heard_transcript": "Обеим зелёный. Но кому уступать? Красная налево, синяя направо. Выезжают на одну дорогу. 3 секунды на ответ. Сначала синяя. На левом повороте красная уступает встречной, которая едет направо. Зелёный разрешает движение, но эту обязанность не отменяет. На зелёный тоже уступаем. Помнил?",
+      "naturalness": 9,
+      "expressiveness": 9,
+      "clarity": 9,
+      "wrong_or_unclear_words": [],
+      "delivery_issues": []
+    },
+    "flutterAnalyze": "No issues",
+    "flutterTests": "passed; see build logs",
+    "desktopBatchVerified": true,
+    "earlierEpisodesPixelRegression": "Six control frames from 004 and 005 match the current scene exactly",
+    "flutterTestsPassed": 680,
+    "flutterTestsSkipped": 3
+  },
+  "sources": {
+    "game_godot/videos/crossroads_reel/scene.gd": "13e8735d3d14882311740f8c121edc188e50b4d0538937a632e2256c7e6ef2e4",
+    "game_godot/videos/crossroads_reel/stage_geometry.gd": "90d69ad5145b8c9a92ac88352dd5c6eb158c4eaba80d2189cf9ccade48530c0d",
+    "game_godot/videos/crossroads_reel/render.gd": "dcf89c6bce950344f08f95f281b99f95195c0e10fdc28fc241a255768280bf1f",
+    "game_godot/videos/crossroads_reel/signal_episodes.gd": "cad11072aea74c49e1bf50fecfe53e750e9f0183e80121afd443e6d37c99da12",
+    "game_godot/videos/crossroads_reel/validate_signals.gd": "6aa90768c354bed790b4d810815cfe37e85682bfcb5a9f0528b9bcff806c0bbc",
+    "tools/game_reels/crossroads_reel/plan.py": "330c8694a4fe5f065ac1503512d206f39f5fa70a65a8766e172cc15c8b4d9ea7",
+    "tools/game_reels/crossroads_reel/finish.py": "c1bd47a6eac8695f280cfb35d4e6f22c32a8d2a270bb7a08d78db4bbbce8d9bd",
+    "tools/game_reels/crossroads_reel/review.py": "48a8dda169b6d60a2e06c8efdd1effac2889aee0e482f82d0a4a533d525c193f",
+    "tools/game_reels/crossroads_reel/audit_voice.py": "7de2811713e79f995477ff3aa0236d1fa94d99740cbb0f8e7987f3b2ccd3f795",
+    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552"
+  },
+  "voiceClips": {
+    "hook": "64570b3fa4df6503fb0012a53cd2b61ba393acf4a8b0b532bc78aecce678f112",
+    "setup": "9a344b7a5e4d8b80ffcd604b766225372516435b38ed16d33bd9bc618623e188",
+    "challenge": "85ec187049d70e5f0470ffe6fae28a44520797103822b407e20ae0b7cbda788a",
+    "blue": "7053ca6b991e43773b81e55b5c53fe029ad701536c505779753edcc2fc14e610",
+    "red": "440eec381b2639bccc049403190e439fbbfc1c2364c47f502b19f69cb2897fb5",
+    "rule": "9a97617c7ce699053992e002c822c83df0a00e50ca3ce52b2e8ac2ad808173d4",
+    "cta": "466034971db4c032cb9adba8e05dc23c5105ccc1eac7b8d28daffd3562a8d2c7"
+  }
+}

@@ -220,7 +220,7 @@ func _follow_red() -> void:
 
 func _follow_blue() -> void:
 	var p := cars[1].position
-	_camera(p+Vector3(-9,7.8,-3.8) if episode_number == 6 else p+Vector3(8,7.8,-7),p+Vector3(0,.65,0),54)
+	_camera(p+Vector3(9,7.8,3.8) if episode_number == 6 else p+Vector3(8,7.8,-7),p+Vector3(0,.65,0),54)
 
 func set_time(t: float) -> void:
 	_t = t
@@ -256,7 +256,10 @@ func set_time(t: float) -> void:
 	else:
 		if t < timings.red: _follow_blue()
 		elif t < timings.red+1.3: _overview(t)
-		else: _follow_red()
+		elif t < timings.rule: _follow_red()
+		else:
+			var p := cars[0].position
+			_camera(p+Vector3(-8,12,-6),p+Vector3(0,.65,0),54)
 	if t >= timings.cta: signal_insert = false; _overview(t)
 	var overhead: bool = _cam.projection == Camera3D.PROJECTION_ORTHOGONAL
 	for i in signal_faces.size(): signal_faces[i].visible = overhead and (not signal_insert or i == 0)

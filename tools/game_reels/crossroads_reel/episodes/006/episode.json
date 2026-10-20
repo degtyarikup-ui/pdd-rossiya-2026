@@ -1,0 +1,121 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-006",
+  "status": "produced",
+  "title": "Встречные повороты на зелёный",
+  "sourceScenario": "cross_tl_left_yield_oncoming_right_13_4",
+  "rules": [
+    "13.4"
+  ],
+  "scene": "res://videos/crossroads_reel/signal_episodes.gd",
+  "validator": "res://videos/crossroads_reel/validate_signals.gd",
+  "answerPhases": [
+    "blue",
+    "red",
+    "rule"
+  ],
+  "motionMinimums": {
+    "blue": 5.0,
+    "red": 5.0,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "left",
+    "blue": "right"
+  },
+  "audio": {
+    "enginePans": {
+      "blue": -0.25,
+      "red": 0.1
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    },
+    {
+      "car": "red",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-20",
+  "adaptation": "Red south to west left turn. Blue north to west right turn. Both main signals green; west/east red; no extra sections or priority signs. Single westbound exit lane. Blue clears the merging area before red starts. All signals remain fixed.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Обеим зелёный. Но кому уступать?"
+    },
+    {
+      "key": "setup",
+      "text": "Красная налево, синяя направо. Выезжают на одну дорогу."
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Сначала синяя."
+    },
+    {
+      "key": "red",
+      "text": "На левом повороте красная уступает встречной, которая едет направо."
+    },
+    {
+      "key": "rule",
+      "text": "Зелёный разрешает движение, но эту обязанность не отменяет."
+    },
+    {
+      "key": "cta",
+      "text": "На зелёный тоже уступаем. Помнил?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Обеим зелёный",
+      "Но кому уступать?"
+    ],
+    "setup": [
+      "Красная налево",
+      "синяя направо",
+      "Выезжают",
+      "на одну дорогу"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Сначала синяя"
+    ],
+    "red": [
+      "На левом повороте",
+      "красная уступает",
+      "встречной",
+      "которая едет направо"
+    ],
+    "rule": [
+      "Зелёный разрешает",
+      "движение",
+      "но эту обязанность",
+      "не отменяет"
+    ],
+    "cta": [
+      "На зелёный",
+      "тоже уступаем",
+      "Помнил?"
+    ]
+  }
+}
