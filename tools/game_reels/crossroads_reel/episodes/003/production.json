@@ -5,18 +5,18 @@
   "published": false,
   "createdDate": "2026-10-20",
   "styleReference": "crossroads-001 revision 3, approved 2026-10-20",
-  "sourceBase": "4f2862496396a154a7f2da656959efd396ab31c9",
+  "sourceBase": "94365875158fb25fedc3883283309cb5ae53edca",
   "sourceScenario": "cross_main_turns_left",
-  "adaptation": "Main road connects south and west. Red south→west left on main; blue west→east straight leaving main; yellow north→south straight on secondary. Red is to blue’s right. 2.1/2.4 with driver-relative 8.13 on every approach.",
+  "adaptation": "Main road connects south and west. Red south→west left on main; blue west→east straight leaving main; yellow north→south straight on secondary. Red is to blue’s right. Only 2.1/2.4 on roadsides; one central 8.13 diagram aligned with the actual world roads. Diagram visible during the question, countdown, close insert and final recap; hidden during passages.",
   "rules": [
     "13.9",
     "13.10",
     "13.11"
   ],
   "ruleSource": "https://www.consultant.ru/document/Cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/",
-  "videoFile": "reel.mp4",
-  "sha256": "ce8022c67d396adb42fc3ba2d58c0151db9f7c1f6d62d1350a9aa48238cbc273",
-  "bytes": 30591998,
+  "videoFile": "game_003.mp4",
+  "sha256": "dd79fb81c4ce55522db46a399b7f7b972350c9b7e97c9d0d1c34c116157bf14c",
+  "bytes": 30822302,
   "width": 1080,
   "height": 1920,
   "fps": 30,
@@ -35,8 +35,6 @@
     "sceneFrames": 963,
     "bodyCollisions": 0,
     "visibleCarsStationaryDuringQuestion": true,
-    "readablePriorityPairs": 4,
-    "driverRelativeMainRoadPlatesVerified": true,
     "signsDoNotCoverCars": true,
     "closeShotsKeepCarsInsideFrame": true,
     "verticalLamps": 12,
@@ -54,24 +52,39 @@
     "fullVideoDecode": "passed",
     "flutterAnalyze": "No issues",
     "flutterTestsPassed": 680,
-    "flutterTestsSkipped": 3
+    "flutterTestsSkipped": 3,
+    "readablePrioritySigns": 4,
+    "roadsideDirectionPlates": 0,
+    "centralDiagram": {
+      "worldAligned": true,
+      "sizeMeters": 5.6,
+      "mainArms": [
+        "south",
+        "west"
+      ],
+      "hiddenWhileCrossing": true,
+      "noOverlapWithIntents": true
+    },
+    "unchangedVoiceAndAudioMaster": true,
+    "desktopDeliveryVerified": true
   },
   "sources": {
     "game_godot/videos/crossroads_reel/scene.gd": "13e8735d3d14882311740f8c121edc188e50b4d0538937a632e2256c7e6ef2e4",
     "game_godot/videos/crossroads_reel/stage_geometry.gd": "90d69ad5145b8c9a92ac88352dd5c6eb158c4eaba80d2189cf9ccade48530c0d",
     "game_godot/videos/crossroads_reel/render.gd": "dcf89c6bce950344f08f95f281b99f95195c0e10fdc28fc241a255768280bf1f",
-    "game_godot/videos/crossroads_reel/turning_main.gd": "4223b0aa0c2b8e6e4b2c0690d9d485ea367d7212e3ed1e089755c5f475026d92",
-    "game_godot/videos/crossroads_reel/validate_turning_main.gd": "9ac395260d776478f2fc03e482de3c3d155508d67f66f5690b66d44a4ed5c0b0",
-    "tools/game_reels/crossroads_reel/build.py": "ad75f5f5f0ad9ad8333bf51bd35ba5d7209f8ad646452c6563c30f8d32056c9c",
+    "game_godot/videos/crossroads_reel/turning_main.gd": "97c062b34dccf6b9df9348a9b1463f8f4dfeec9da356abef179868aec1d9ded2",
+    "game_godot/videos/crossroads_reel/validate_turning_main.gd": "e1c50bf667f18e6d86405c94d2638c7217fadc3b62fa8b6ed04a05865357d390",
+    "tools/game_reels/crossroads_reel/build.py": "3efa98a098342f5fe4a9ff4167b308510003b5ee46e71c79665718eb79cd7721",
     "tools/game_reels/crossroads_reel/plan.py": "fb03ffac7c977ffc6a8265172fc6ce909651c58be71066dfe4d8b5d731fcf2ce",
     "tools/game_reels/crossroads_reel/voice.py": "af770274ecff8e6b7f61b480ca57bcfd7534555766f47b328666c9ae95a51b92",
     "tools/game_reels/crossroads_reel/finish.py": "8775d6437a988e3c86003029cd41d409a5a73d718cf300248cda818bcfafcfa8",
     "tools/game_reels/crossroads_reel/check_export.py": "792d115518f3250e94c22fdf5a5e549ebc0643c10504f809feb5d4a7cfe615e4",
     "tools/game_reels/crossroads_reel/reference/dependencies.json": "64ee85449c1ba462505b447f277fef9e0f811f8d88f6b459ea5a9f501ea34729",
-    "tools/game_reels/crossroads_reel/episodes/003/episode.json": "ce22f74f45d59c94f9772791867aa98540d4e26acddeb1c9af588cdb5b499ed5",
+    "tools/game_reels/crossroads_reel/episodes/003/episode.json": "cc8ce1050f627d133c313039c05ba9312b7339982a5148febd59e3c0cc3694a3",
     "tools/game_reels/crossroads_reel/episodes/003/voice.json": "180dcef87e6b7e66a9309ab4cefda5f6cb98d2d88c9dac489ae74af6fe036ae2",
     "tools/game_reels/crossroads_reel/episodes/003/timeline.json": "f60619217c3c1c576ab5c8c80748db8f441c0a4452fa0513797ae1a27f36d5fc",
-    "tools/game_reels/crossroads_reel/episodes/003/subtitles.json": "6db104e2cf4ef29950a58d995ef841ff078d09a1dd9cf79d2eafc96c5ae0a853"
+    "tools/game_reels/crossroads_reel/episodes/003/subtitles.json": "6db104e2cf4ef29950a58d995ef841ff078d09a1dd9cf79d2eafc96c5ae0a853",
+    "tools/game_reels/crossroads_reel/deliver.py": "9758adebd04b9be6776927a921f776c98a6458070bbef5addb787e92120a1552"
   },
   "voiceClips": {
     "hook": "2259f5128f92a80dc841d360858078be2cafae683def19e5e660b29c78024efb",
@@ -82,5 +95,8 @@
     "yellow": "9b3726414558a1183ed739d730d4d15ac16ed5c5b256ca33adc221078dbee4d0",
     "cta": "317908831a4cc57de8d5bacbeb08e4f327367b838ba6f635f45d31d7849497d4"
   },
-  "productionNote": "Main south↔west. Red south→west left, blue west→east straight, yellow north→south straight. South approach has room above the final chips. Camera paths avoid houses and waiting cars; 8.13 remains complete and legible from the first frame. Offscreen frames are drawn explicitly to prevent a hidden macOS window from stalling export."
+  "productionNote": "Revision 2: one central main-road diagram aligned with actual world roads; only 2.1/2.4 on roadsides. Diagram is visible during the question/countdown, a matching overhead insert and final recap, hidden during passages. The red intent hint is shortened before the diagram; actual car paths, timing, narration and audio master are unchanged.",
+  "previousRevisionSha256": "ce8022c67d396adb42fc3ba2d58c0151db9f7c1f6d62d1350a9aa48238cbc273",
+  "revision": 2,
+  "deliveryDirectory": "Desktop"
 }

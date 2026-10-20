@@ -48,6 +48,8 @@ def main():
         if args.step == "finish":
             cmd += ["--audio", "--encode"]
         subprocess.run(cmd, check=True)
+        if args.step == "check":
+            subprocess.run([sys.executable, str(TOOLS / "deliver.py"), "--out", str(dest)], check=True)
     elif args.step == "align":
         if not args.model.is_file():
             raise SystemExit(f"Whisper model not found: {args.model}")
@@ -69,6 +71,8 @@ def main():
             (dest / "validation.log").write_text(result.stdout)
             print(result.stdout)
             result.check_returncode()
+            if "VALIDATION_OK" not in result.stdout:
+                raise SystemExit("Godot did not complete scene validation")
         else:
             subprocess.run(cmd, check=True)
         if args.step == "preview":

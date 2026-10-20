@@ -3,21 +3,20 @@ extends "res://videos/crossroads_reel/scene.gd"
 ## Episode 003. Main road south↔west; the blue car leaves it straight.
 const GO_DELAYS := [.6, .65, 1.3]
 const SIGN_SPECS := [
-	["west", "2.1", Vector3(-8.2, .17, 5.1), PI * .5, ["south", "east"]],
-	["east", "2.4", Vector3(9.2, .17, -5.1), -PI * .5, ["west", "north"]],
-	["north", "2.4", Vector3(-5.1, .17, -9.2), 0.0, ["north", "east"]],
-	["south", "2.1", Vector3(5.1, .17, 9.2), PI, ["south", "west"]]
+	["west", "2.1", Vector3(-8.2, .17, 5.1), PI * .5],
+	["east", "2.4", Vector3(9.2, .17, -5.1), -PI * .5],
+	["north", "2.4", Vector3(-5.1, .17, -9.2), 0.0],
+	["south", "2.1", Vector3(5.1, .17, 9.2), PI]
 ]
-var readable_plates: Array[Sprite3D] = []
+var main_road_diagram: MeshInstance3D
+const DIAGRAM_SIZE := 5.6
 
 func _build_traffic_lights() -> void:
 	for spec in SIGN_SPECS:
 		var sign_root := Node3D.new()
 		sign_root.name = "Priority_" + spec[0]
 		sign_root.set_meta("code", spec[1])
-		sign_root.set_meta("mainRoad", spec[4])
-		# 8.13 is driver-relative on both the physical board and readable face.
-		var physical := RoadBuild.sign_node(spec[1], "", "", spec[4], [], false)
+		var physical := RoadBuild.sign_node(spec[1], "", "", [], [], false)
 		physical.scale = Vector3.ONE * .45
 		physical.position.y = RoadBuild.SIGN_BOTTOM * (1.0 - .45)
 		sign_root.add_child(physical)
@@ -26,11 +25,6 @@ func _build_traffic_lights() -> void:
 		var cropped := image.get_region(image.get_used_rect())
 		cropped.generate_mipmaps()
 		_readable_face(sign_root, ImageTexture.create_from_image(cropped), 1.6)
-		# Offset within the billboard plane: world Y would compress the pair
-		# in the overhead view and make the two readable faces overlap.
-		var plate := _readable_face(sign_root, RoadBuild.main_road_plate(spec[4]), 1.6)
-		plate.offset.y = -float(plate.texture.get_height()) * 3.0 / 2.8
-		readable_plates.append(plate)
 		var pole := MeshInstance3D.new()
 		var cylinder := CylinderMesh.new()
 		cylinder.height = 3.0
@@ -49,6 +43,31 @@ func _build_traffic_lights() -> void:
 			sign_west = sign_root
 		if spec[0] == "north":
 			sign_north = sign_root
+	_build_main_road_diagram()
+
+func _build_main_road_diagram() -> void:
+	# One explanatory diagram, aligned with the world roads. It is not a
+	# physical sign on the carriageway and disappears before cars cross it.
+	var half := DIAGRAM_SIZE * .5
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var corners := [Vector3(-half, .075, -half), Vector3(-half, .075, half), Vector3(half, .075, half), Vector3(half, .075, -half)]
+	var uvs := [Vector2(0, 0), Vector2(0, 1), Vector2(1, 1), Vector2(1, 0)]
+	for i in [0, 1, 2, 0, 2, 3]:
+		surface.set_uv(uvs[i])
+		surface.set_normal(Vector3.UP)
+		surface.add_vertex(corners[i])
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = RoadBuild.main_road_plate(["south", "west"])
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	main_road_diagram = MeshInstance3D.new()
+	main_road_diagram.name = "MainRoadDiagram"
+	main_road_diagram.mesh = surface.commit()
+	main_road_diagram.material_override = material
+	main_road_diagram.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(main_road_diagram)
 
 func _readable_face(parent: Node3D, texture: Texture2D, height: float) -> Sprite3D:
 	var face := Sprite3D.new()
@@ -56,8 +75,7 @@ func _readable_face(parent: Node3D, texture: Texture2D, height: float) -> Sprite
 	face.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	face.pixel_size = 2.8 / float(maxi(texture.get_width(), texture.get_height()))
 	face.position = Vector3(0, height, 0)
-	# These are the overview's readable sign overlays. The lower plate must
-	# not be cut by the pavement or trees when its billboard extends down.
+	# Readable priority-sign overlays stay above the white maquette.
 	face.no_depth_test = true
 	face.shaded = false
 	face.double_sided = true
@@ -79,8 +97,17 @@ func _build_arrow(root_node: Node3D, i: int) -> void:
 	var points: Array[Vector3] = []
 	var count := 42 if turn else 18
 	for j in count:
-		var distance: float = 2.8 + j * .49 if turn else lerpf(2.8, 6.1, float(j) / float(count - 1))
-		points.append(_pose_car(i, distance).origin)
+		if turn:
+			# A short intent hint bends left before the central diagram. The
+			# car itself still follows the original full-radius turn path.
+			var u := float(j) / float(count - 1)
+			if u < .4:
+				points.append(Vector3(L, 0, lerpf(D - 2.8, 7.3, u / .4)))
+			else:
+				var angle := (u - .4) / .6 * PI * .5
+				points.append(Vector3(L - 2.4 + 2.4 * cos(angle), 0, 7.3 - 2.4 * sin(angle)))
+		else:
+			points.append(_pose_car(i, lerpf(2.8, 6.1, float(j) / float(count - 1))).origin)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = PAINTS[i].lightened(.2)
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -148,8 +175,9 @@ func set_time(t: float) -> void:
 	elif t < timings.blue + 1.3:
 		_overview(t)
 	elif is_sign_insert(t):
-		var board := sign_west.position + Vector3(0, 2.85, 0)
-		_camera(board + Vector3(-5.5, .15, 1.8), board, 38)
+		_camera(Vector3(0, 36, 21.333333), Vector3.ZERO, 48)
+		_cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+		_cam.size = 26.0
 	elif t < timings.yellow:
 		var position_now := cars[1].position
 		_camera(position_now + Vector3(8.0, 7.8, -7.0), position_now + Vector3(0, .65, 0), 54)
@@ -161,10 +189,12 @@ func set_time(t: float) -> void:
 	else:
 		_overview(t)
 
-	var overview_mode := _cam.projection == Camera3D.PROJECTION_ORTHOGONAL
+	var overview_mode := _cam.projection == Camera3D.PROJECTION_ORTHOGONAL and not is_sign_insert(t)
+	var physical_mode := _cam.projection == Camera3D.PROJECTION_PERSPECTIVE
+	main_road_diagram.visible = t < timings.red or is_sign_insert(t) or t >= timings.cta
 	for face in readable_signs:
 		face.visible = overview_mode
 	for face in physical_faces:
-		face.visible = not overview_mode
+		face.visible = physical_mode
 	for pole in sign_poles:
-		pole.visible = not overview_mode
+		pole.visible = physical_mode
