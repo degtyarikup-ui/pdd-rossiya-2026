@@ -157,7 +157,7 @@ class GamesHubView extends StatelessWidget {
                             ? appL10n.gamesUnlimitedAction
                             : hasPendingRun
                             ? appL10n.gamesResumeRide
-                            : appL10n.gamesPlay;
+                            : null;
                         final city = _HubCard(
                           id: 'city',
                           title: appL10n.gameCityTitle,
@@ -437,16 +437,18 @@ class _HubCard extends StatelessWidget {
         caption ??
         (record
             ? appL10n.gamesRecordScore(_number(context, bestScore!))
-            : appL10n.gamesPlay);
-    final semanticStatus = status;
+            : null);
     final radius = BorderRadius.circular(AppDimensions.cardRadius);
     return RepaintBoundary(
       child: Semantics(
         key: ValueKey('games-card-$id'),
         button: true,
         enabled: enabled,
-        label:
-            '$title, $semanticStatus${semanticDetails.isEmpty ? '' : ', $semanticDetails'}',
+        label: [
+          title,
+          ?status,
+          if (semanticDetails.isNotEmpty) semanticDetails,
+        ].join(', '),
         excludeSemantics: true,
         onTap: onTap,
         child: ClipRRect(
@@ -523,7 +525,7 @@ class _HubCard extends StatelessWidget {
                                 color: foreground,
                               ),
                             ),
-                            ...[
+                            if (status != null) ...[
                               const SizedBox(height: AppDimensions.spacingXS),
                               Row(
                                 children: [

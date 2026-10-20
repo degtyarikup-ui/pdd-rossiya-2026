@@ -421,7 +421,7 @@ void main() {
           );
           for (final text in [
             appL10n.gameCityTitle,
-            runs == 0 ? appL10n.gamesUnlimitedAction : appL10n.gamesPlay,
+            if (runs == 0) appL10n.gamesUnlimitedAction,
           ]) {
             final rect = tester.getRect(
               find.descendant(
@@ -503,7 +503,7 @@ void main() {
     },
   );
 
-  testWidgets('A new player sees play prompts rather than zero records', (
+  testWidgets('A new player sees neither play captions nor zero records', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
@@ -517,7 +517,7 @@ void main() {
       roadSignsBest: 0,
       violatorBest: 0,
     );
-    expect(find.text(appL10n.gamesPlay), findsWidgets);
+    expect(find.text(appL10n.gamesPlay), findsNothing);
     expect(find.bySemanticsLabel(appL10n.gamesRecordScore('0')), findsNothing);
     expect(find.text(appL10n.gameSoonBadge), findsNothing);
     semantics.dispose();
@@ -547,7 +547,7 @@ void main() {
       ]) {
         final finder = find.byKey(ValueKey('games-card-${entry.$1}'));
         final card = tester.widget<Semantics>(finder);
-        expect(card.properties.label, '${entry.$2}, ${appL10n.gamesPlay}');
+        expect(card.properties.label, entry.$2);
         expect(card.properties.enabled, isTrue);
         expect(card.properties.onTap, isNotNull);
         expect(find.text(entry.$2), findsOneWidget);
@@ -559,6 +559,7 @@ void main() {
           isTrue,
         );
       }
+      expect(find.text(appL10n.gamesPlay), findsNothing);
       expect(tester.takeException(), isNull, reason: locale.languageCode);
     }
     handle.dispose();
@@ -717,7 +718,10 @@ void main() {
     );
     for (final area in [
       find.text(appL10n.gameCityTitle),
-      find.text(appL10n.gamesPlay).last,
+      find.descendant(
+        of: card,
+        matching: find.textContaining(appL10n.gamesRecordScore('')),
+      ),
       status,
       find.text(appL10n.gamesRunsFraction(3, 3)),
       find.textContaining(appL10n.gamesRefillIn('')),
