@@ -102,6 +102,43 @@ func _run_checks() -> void:
 	_check("Pedestrian sign 5.19.1 exists", junction.find_child("Sign_5_19_1", true, false) != null)
 	_check("Ambient walker crowds exist", game.walker_crowds.size() > 0)
 	
+	# 7. Secondary Road Car Merge Geometry: stays on roadway, not off-road on sidewalk
+	var merge_car = game.spawn_specific_car("secondary_merge", 2, false, "")
+	merge_car.position.x = -1.0 # Approaching curve
+	for step in 80:
+		game._advance_car_behavior(merge_car, 0.033)
+	_check("Secondary merge car stays on asphalt road (|X| <= 2.2)", absf(merge_car.position.x) <= 2.2)
+	_check("Secondary merge car adopts southbound heading (~0.0)", absf(merge_car.rotation.y) < 0.2)
+
+	# 8. Left-Turning Car (main_left) stays inside secondary road corridor (Z in [2.5, 7.5])
+	var left_car = game.spawn_specific_car("main_left", 0, false, "")
+	left_car.position.z = 0.0
+	for step in 80:
+		game._advance_car_behavior(left_car, 0.033)
+	_check("Left-turning car stays inside secondary road corridor (Z in [2.5, 7.5])", left_car.position.z >= 2.5 and left_car.position.z <= 7.5)
+	_check("Left-turning car faces westbound (-PI/2)", is_equal_approx(left_car.rotation.y, -PI * 0.5))
+
+	# 9. Anti-Ramming Headway across lane changes (Violator solid line change into Lane 1)
+	var changer = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_SOLID_LINE)
+	changer.position = Vector3(1.8, 0.0, -10.0) # In Lane 1
+	changer.speed = 0.0
+
+	var follower = game.spawn_specific_car("main_straight", 1, false, "")
+	follower.position = Vector3(1.8, 0.0, -18.0)
+	follower.speed = 10.0
+
+	for step in 60:
+		game._advance_car_behavior(follower, 0.033)
+	var changer_gap = changer.position.z - follower.position.z
+	_check("Follower does not ram lane-changing violator (gap >= 4.5m)", changer_gap >= 4.5)
+	_check("Follower slows down behind lane-changing car (speed < 1.0)", follower.speed < 1.0)
+
+	# 10. Pedestrian Curb Elevation
+	game.ped_pos_x = 4.5
+	game.ped_wait_timer = 0.0
+	game._update_pedestrian(0.016)
+	_check("Pedestrian on sidewalk is elevated (Y >= 0.15)", game.pedestrian.position.y >= 0.15)
+
 	game.queue_free()
 	await process_frame
 	

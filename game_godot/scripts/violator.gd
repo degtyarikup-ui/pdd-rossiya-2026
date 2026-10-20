@@ -103,6 +103,7 @@ var pedestrian: Node3D
 var ped_pos_x: float = -4.5
 var ped_speed: float = 1.6
 var ped_dir: float = 1.0
+var ped_wait_timer: float = 0.0
 
 # Ambient sidewalk pedestrians
 var walker_crowds: Array[MultiMesh] = []
@@ -393,6 +394,28 @@ func _build_markings(white_mat: Material) -> void:
 	sec_stop.position = Vector3(-5.0, y, 5.0)
 	junction_node.add_child(sec_stop)
 
+	# Secondary street center dividing broken line 1.5 (separates eastbound and westbound traffic)
+	for x_pos in range(-36, -6, 4):
+		var broken_sec := _create_box(Vector3(2.0, 0.02, 0.16), white_mat)
+		broken_sec.position = Vector3(float(x_pos), y, 5.0)
+		junction_node.add_child(broken_sec)
+
+	# East road center dividing broken line 1.5
+	for x_pos in range(8, 38, 4):
+		var broken_east := _create_box(Vector3(2.0, 0.02, 0.16), white_mat)
+		broken_east.position = Vector3(float(x_pos), y, 5.0)
+		junction_node.add_child(broken_east)
+
+	# Secondary & East street edge lines (marking 1.2 along curbs)
+	for z_edge in [2.7, 7.3]:
+		var sec_edge := _create_box(Vector3(38.0, 0.02, 0.15), white_mat)
+		sec_edge.position = Vector3(-24.0, y, z_edge)
+		junction_node.add_child(sec_edge)
+
+		var east_edge := _create_box(Vector3(38.0, 0.02, 0.15), white_mat)
+		east_edge.position = Vector3(24.0, y, z_edge)
+		junction_node.add_child(east_edge)
+
 	# 1.18 Lane Direction Arrows on asphalt:
 	# Lane 0 (Left lane, X = -1.8, Z = -16.0): Straight and Left arrow
 	var arrow_l_stem := _create_box(Vector3(0.24, 0.02, 2.8), white_mat)
@@ -444,7 +467,7 @@ func _setup_signs(parent: Node3D) -> void:
 	sign_ped_r.texture = SignFace.texture("5.19.1")
 	if sign_ped_r.texture != null:
 		sign_ped_r.pixel_size = 0.85 / sign_ped_r.texture.get_width()
-	sign_ped_r.position = Vector3(4.3, 2.5, -7.75)
+	sign_ped_r.position = Vector3(4.3, 2.5, -9.0)
 	sign_ped_r.rotation_degrees = Vector3(0, 0, 0)
 	parent.add_child(sign_ped_r)
 
@@ -453,16 +476,16 @@ func _setup_signs(parent: Node3D) -> void:
 	sign_ped_l.texture = SignFace.texture("5.19.2")
 	if sign_ped_l.texture != null:
 		sign_ped_l.pixel_size = 0.85 / sign_ped_l.texture.get_width()
-	sign_ped_l.position = Vector3(-4.4, 2.5, -7.75)
-	sign_ped_l.rotation_degrees = Vector3(0, 180, 0)
+	sign_ped_l.position = Vector3(-4.4, 2.5, -6.5)
+	sign_ped_l.rotation_degrees = Vector3(0, 0, 0)
 	parent.add_child(sign_ped_l)
 
 	# Poles for all signs
 	var pole_coords := [
 		Vector3(4.3, 1.4, -15.0),
 		Vector3(-5.5, 1.3, 2.2),
-		Vector3(4.3, 1.25, -7.75),
-		Vector3(-4.4, 1.25, -7.75)
+		Vector3(4.3, 1.25, -9.0),
+		Vector3(-4.4, 1.25, -6.5)
 	]
 	for p_pos in pole_coords:
 		var pole := MeshInstance3D.new()
@@ -476,7 +499,15 @@ func _setup_signs(parent: Node3D) -> void:
 
 
 func _build_city_scenery() -> void:
-	# 1. Pedestrian Guardrail Fences along curbs protecting sidewalks
+	# 1. Pedestrian Guardrail Fences along curbs protecting sidewalks (ГОСТ Р 52289)
+	# Approaches to the crosswalk (North and South)
+	for z_fence in [-14.0, -20.0, -26.0]:
+		_put_prop("street/fence_14", Vector3(-4.6, 0.15, z_fence), 0.0)
+		_put_prop("street/fence_14", Vector3(4.6, 0.15, z_fence), 0.0)
+	_put_prop("street/fence_14", Vector3(-4.6, 0.15, -1.0), 0.0)
+	_put_prop("street/fence_14", Vector3(4.6, 0.15, -1.0), 0.0)
+
+	# Fences around junction street corners
 	_put_prop("street/fence_14", Vector3(-5.2, 0.15, 1.6), 0.0)
 	_put_prop("street/fence_14", Vector3(-5.2, 0.15, 8.4), 0.0)
 	_put_prop("street/fence_14", Vector3(5.2, 0.15, 1.6), 0.0)
@@ -679,18 +710,36 @@ func _update_traffic_lights(delta: float) -> void:
 
 
 func _update_pedestrian(delta: float) -> void:
-	if is_instance_valid(pedestrian):
-		ped_pos_x += ped_speed * ped_dir * delta
-		if ped_pos_x > 4.5:
-			ped_pos_x = 4.5
-			ped_dir = -1.0
-			pedestrian.rotation.y = -PI * 0.5  # Faces -X towards opposite sidewalk
-		elif ped_pos_x < -4.5:
-			ped_pos_x = -4.5
-			ped_dir = 1.0
-			pedestrian.rotation.y = PI * 0.5   # Faces +X towards opposite sidewalk
-		pedestrian.position = Vector3(ped_pos_x, 0.0, -7.75)
+	if not is_instance_valid(pedestrian):
+		return
+
+	if ped_wait_timer > 0.0:
+		ped_wait_timer -= delta
 		pedestrian._process(delta)
+		return
+
+	ped_pos_x += ped_speed * ped_dir * delta
+	if ped_pos_x >= 4.5:
+		ped_pos_x = 4.5
+		ped_dir = -1.0
+		ped_wait_timer = 1.0
+		pedestrian.rotation.y = -PI * 0.5  # Faces -X towards opposite sidewalk
+	elif ped_pos_x <= -4.5:
+		ped_pos_x = -4.5
+		ped_dir = 1.0
+		ped_wait_timer = 1.0
+		pedestrian.rotation.y = PI * 0.5   # Faces +X towards opposite sidewalk
+
+	# Sidewalk surface is at Y = 0.16m, Roadway surface is at Y = 0.0m
+	var ped_y := 0.0
+	var abs_x := absf(ped_pos_x)
+	if abs_x >= 4.0:
+		ped_y = 0.16
+	elif abs_x > 3.6:
+		ped_y = lerpf(0.0, 0.16, (abs_x - 3.6) / 0.4)
+
+	pedestrian.position = Vector3(ped_pos_x, ped_y, -7.75)
+	pedestrian._process(delta)
 
 
 func is_pedestrian_on_roadway() -> bool:
@@ -823,31 +872,64 @@ func _update_cars(delta: float) -> void:
 
 func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	var stop_required := false
+	car.target_speed = 11.0
 
-	# 1. Traffic signal stop on main road
-	if car.lane in [0, 1]:
-		if light_state in ["red", "yellow"] and car.position.z < -3.5 and car.position.z > -16.0:
+	# 1. Traffic signal stop on main road (Stop line is at Z = -3.5, target stop at Z = -4.2)
+	if car.lane in [0, 1] and absf(car.rotation.y) < 0.45:
+		if light_state in ["red", "yellow"]:
 			if not (car.is_violator and car.violation_type == VIOLATION_RED_LIGHT):
-				stop_required = true
+				const Z_STOP := -4.2
+				if car.position.z < Z_STOP and car.position.z > -22.0:
+					var dist_to_stop := Z_STOP - car.position.z
+					if dist_to_stop <= 0.4:
+						car.speed = 0.0
+						car.target_speed = 0.0
+						stop_required = true
+					else:
+						var safe_v := sqrt(2.0 * 5.5 * dist_to_stop)
+						car.target_speed = minf(car.target_speed, safe_v)
+						if car.target_speed < 0.6:
+							stop_required = true
 
-		# 2. Pedestrian yield stop
-		if is_pedestrian_on_roadway() and car.position.z < -8.5 and car.position.z > -18.0:
+		# 2. Pedestrian yield stop (Zebra at Z in [-9.0, -6.5], target stop at Z = -9.6)
+		if is_pedestrian_on_roadway():
 			if not (car.is_violator and car.violation_type == VIOLATION_PEDESTRIAN_YIELD):
-				stop_required = true
+				const Z_ZEBRA_STOP := -9.6
+				if car.position.z < Z_ZEBRA_STOP and car.position.z > -22.0:
+					var dist_to_zebra := Z_ZEBRA_STOP - car.position.z
+					if dist_to_zebra <= 0.4:
+						car.speed = 0.0
+						car.target_speed = 0.0
+						stop_required = true
+					else:
+						var safe_v := sqrt(2.0 * 5.5 * dist_to_zebra)
+						car.target_speed = minf(car.target_speed, safe_v)
+						if car.target_speed < 0.6:
+							stop_required = true
 
-	# 3. Priority sign stop on secondary street
-	if car.lane == 2 and car.position.x < -5.5 and car.position.x > -15.0:
+	# 3. Priority sign stop on secondary street (Yield line at X = -5.0, target stop at X = -5.6)
+	if car.lane == 2 and car.position.x < -5.0 and car.position.x > -18.0:
 		var main_traffic_present := false
 		for other in cars:
-			if other != car and is_instance_valid(other) and other.lane in [0, 1] and absf(other.position.x) < 3.5 and other.position.z > -18.0 and other.position.z < 8.0:
+			if other != car and is_instance_valid(other) and other.lane in [0, 1] and absf(other.position.x) < 3.5 and other.position.z > -20.0 and other.position.z < 8.0:
 				main_traffic_present = true
 				break
 		if main_traffic_present:
 			if not (car.is_violator and car.violation_type == VIOLATION_PRIORITY_SIGN):
-				stop_required = true
+				const X_PRIO_STOP := -5.6
+				var dist_to_stop := X_PRIO_STOP - car.position.x
+				if dist_to_stop <= 0.4:
+					car.speed = 0.0
+					car.target_speed = 0.0
+					stop_required = true
+				elif dist_to_stop > 0.0:
+					var safe_v := sqrt(2.0 * 5.5 * dist_to_stop)
+					car.target_speed = minf(car.target_speed, safe_v)
+					if car.target_speed < 0.6:
+						stop_required = true
 
 	# 4. Anti-Collision Headway Model (Car-Following Control)
-	# Checks for lead vehicles ahead along the car's path to prevent ramming/overlapping
+	# Checks for lead vehicles ahead along the car's current motion corridor
 	var lead_dist := 999.0
 	var lead_speed := 11.0
 
@@ -855,19 +937,29 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		if other == car or not is_instance_valid(other):
 			continue
 
-		if car.lane in [0, 1] and other.lane == car.lane:
-			if other.position.z > car.position.z and absf(other.position.x - car.position.x) < 2.0:
-				var dz := other.position.z - car.position.z
-				if dz < lead_dist:
-					lead_dist = dz
-					lead_speed = other.speed
+		# A) Both moving Southbound (+Z) along the main road corridor
+		if absf(car.rotation.y) < 0.5:
+			var dz := other.position.z - car.position.z
+			var dx := absf(other.position.x - car.position.x)
+			if dz > 0.0 and dz < lead_dist and dx < 2.2:
+				lead_dist = dz
+				lead_speed = other.speed
 
-		elif car.lane == 2 and other.lane == 2:
-			if other.position.x > car.position.x:
-				var dx := other.position.x - car.position.x
-				if dx < lead_dist:
-					lead_dist = dx
-					lead_speed = other.speed
+		# B) Both moving Eastbound (+X) along the secondary road
+		elif absf(car.rotation.y - PI * 0.5) < 0.5:
+			var dx := other.position.x - car.position.x
+			var dz := absf(other.position.z - car.position.z)
+			if dx > 0.0 and dx < lead_dist and dz < 2.2:
+				lead_dist = dx
+				lead_speed = other.speed
+
+		# C) Both moving Westbound (-X)
+		elif absf(car.rotation.y - (-PI * 0.5)) < 0.5:
+			var dx := car.position.x - other.position.x
+			var dz := absf(other.position.z - car.position.z)
+			if dx > 0.0 and dx < lead_dist and dz < 2.2:
+				lead_dist = dx
+				lead_speed = other.speed
 
 	const MIN_GAP := 5.0
 	var desired_gap := MIN_GAP + maxf(0.0, car.speed) * 0.45
@@ -878,14 +970,12 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			stop_required = true
 		else:
 			var ratio := (lead_dist - MIN_GAP) / (desired_gap - MIN_GAP)
-			car.target_speed = minf(11.0, maxf(0.0, lead_speed * ratio))
+			car.target_speed = minf(car.target_speed, maxf(0.0, lead_speed * ratio))
 			if car.target_speed < 0.6:
 				stop_required = true
-	else:
-		car.target_speed = 11.0
 
 	# Smooth braking and acceleration
-	if stop_required:
+	if stop_required or car.target_speed < 0.1:
 		car.speed = maxf(0.0, car.speed - 18.0 * delta)
 	else:
 		car.speed = move_toward(car.speed, car.target_speed, 9.5 * delta)
@@ -903,20 +993,31 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			car.position.z += dz
 			var steer := atan2(dx, dz) if dz > 0.0001 else 0.0
 			car.rotation.y = lerp_angle(car.rotation.y, steer, minf(1.0, 15.0 * delta))
+			if car.position.z >= -10.5:
+				car.lane = 1
 		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.position.z > -2.0:
-			# Turns RIGHT from left lane cutting across right lane
+			# Turns RIGHT from left lane cutting across right lane into East branch
 			car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.6 * delta)
 			car.rotation.y = car.turn_angle
-			car.position += Vector3(sin(car.turn_angle), 0, cos(car.turn_angle)) * car.speed * delta
+			if car.turn_angle < PI / 2.0:
+				car.position += Vector3(sin(car.turn_angle), 0, cos(car.turn_angle)) * car.speed * delta
+			else:
+				car.rotation.y = PI * 0.5
+				car.position.x += car.speed * delta
 		else:
 			# Normal left lane movement
-			if car.route == "main_left" and car.position.z > 0.0:
+			if car.route == "main_left" and car.position.z > -0.5:
 				car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.5 * delta)
 				car.rotation.y = -car.turn_angle
-				car.position += Vector3(-sin(car.turn_angle), 0, cos(car.turn_angle)) * car.speed * delta
+				if car.turn_angle < PI / 2.0:
+					car.position += Vector3(-sin(car.turn_angle), 0, cos(car.turn_angle)) * car.speed * delta
+				else:
+					car.rotation.y = -PI * 0.5
+					car.position.x -= car.speed * delta
+					car.position.z = 3.8
 			else:
 				car.position.z += car.speed * delta
-				car.rotation.y = 0.0
+				car.rotation.y = lerp_angle(car.rotation.y, 0.0, minf(1.0, 12.0 * delta))
 
 	elif car.lane == 1:
 		# Main Right Lane
@@ -930,25 +1031,43 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			car.position.z += dz
 			var steer := atan2(dx, dz) if dz > 0.0001 else 0.0
 			car.rotation.y = lerp_angle(car.rotation.y, steer, minf(1.0, 15.0 * delta))
+			if car.position.z >= -10.5:
+				car.lane = 0
 		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.position.z > -2.0:
-			# Turns LEFT from right lane cutting across left lane
+			# Turns LEFT from right lane cutting across left lane into West branch
 			car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.6 * delta)
 			car.rotation.y = -car.turn_angle
-			car.position += Vector3(-sin(car.turn_angle), 0, cos(car.turn_angle)) * car.speed * delta
+			if car.turn_angle < PI / 2.0:
+				car.position += Vector3(-sin(car.turn_angle), 0, cos(car.turn_angle)) * car.speed * delta
+			else:
+				car.rotation.y = -PI * 0.5
+				car.position.x -= car.speed * delta
 		else:
 			car.position.z += car.speed * delta
-			car.rotation.y = 0.0
+			car.rotation.y = lerp_angle(car.rotation.y, 0.0, minf(1.0, 12.0 * delta))
 
 	else:
-		# Secondary road entering from West
-		if car.position.x < 0.0:
-			car.position.x += car.speed * delta
-			car.rotation.y = PI * 0.5  # Heading East (+X)
+		# Secondary road entering from West (Lane 2)
+		if car.turn_angle <= 0.0:
+			if car.position.x < -2.5:
+				car.position.x += car.speed * delta
+				car.rotation.y = PI * 0.5  # Heading East (+X)
+			else:
+				# Initiate smooth right turn into southbound Lane 1 (center X = 1.8)
+				car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.5 * delta)
+				car.rotation.y = PI * 0.5 - car.turn_angle
+				car.position += Vector3(cos(car.turn_angle), 0, sin(car.turn_angle)) * car.speed * delta
 		else:
-			# Smooth forward curve merging into southbound lane
-			car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.6 * delta)
-			car.rotation.y = PI * 0.5 - car.turn_angle
-			car.position += Vector3(cos(car.turn_angle), 0, sin(car.turn_angle)) * car.speed * delta
+			if car.turn_angle < PI / 2.0:
+				car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.5 * delta)
+				car.rotation.y = PI * 0.5 - car.turn_angle
+				car.position += Vector3(cos(car.turn_angle), 0, sin(car.turn_angle)) * car.speed * delta
+			else:
+				# Turn complete: vehicle is now smoothly traveling down Lane 1
+				car.lane = 1
+				car.position.x = 1.8
+				car.rotation.y = 0.0
+				car.position.z += car.speed * delta
 
 
 func _check_car_violation_state(car: ViolatorCar) -> void:
@@ -1166,6 +1285,7 @@ func _start_game() -> void:
 	wrong_count = 0
 	game_clock = 0.0
 	spawn_timer = 0.5
+	ped_wait_timer = 0.0
 	run_sequence += 1
 
 	for car in cars:
