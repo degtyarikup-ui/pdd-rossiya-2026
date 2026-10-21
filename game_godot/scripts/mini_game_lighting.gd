@@ -3,6 +3,7 @@ class_name MiniGameLighting
 extends RefCounted
 
 const CLEAR_SKY := Color("#BDDCF3")
+const CROSSROADS_SKY := Color("#35465C")
 const HAZE_BEGIN := 75.0
 const HAZE_END := 185.0
 const HAZE_DENSITY := 1.0
@@ -17,10 +18,10 @@ static func apply(sun: DirectionalLight3D, environment: Environment, season_name
 	var season: Dictionary = seasons.get(season_name, seasons.summer)
 	sun.rotation_degrees = Vector3(-68, 30, 0)
 	sun.light_color = Color(season.sun)
-	sun.light_energy = float(season.sunIntensity) * 0.8
+	sun.light_energy = float(season.sunIntensity) * (1.05 if for_crossroads else 0.8)
 	sun.shadow_enabled = true
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.directional_shadow_max_distance = 56.0
+	sun.directional_shadow_max_distance = 140.0 if for_crossroads else 56.0
 	sun.directional_shadow_split_1 = 0.18
 	sun.directional_shadow_split_2 = 0.42
 	sun.directional_shadow_split_3 = 0.70
@@ -30,17 +31,17 @@ static func apply(sun: DirectionalLight3D, environment: Environment, season_name
 	sun.shadow_normal_bias = 1.0
 	sun.directional_shadow_fade_start = 0.85
 	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = CLEAR_SKY
+	environment.background_color = CROSSROADS_SKY if for_crossroads else CLEAR_SKY
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_sky_contribution = 0.0
 	environment.ambient_light_color = Color(season.get("ambientTint", "#ffffff"))
-	environment.ambient_light_energy = float(season.ambient) * 0.8
-	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	environment.ambient_light_energy = float(season.ambient) * (0.42 if for_crossroads else 0.8)
+	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC if for_crossroads else Environment.TONE_MAPPER_LINEAR
 	environment.fog_enabled = true
 	environment.fog_mode = Environment.FOG_MODE_DEPTH
 	# Godot resets density when fog_mode changes; set it afterwards.
 	environment.fog_density = CROSSROADS_FOG_DENSITY if for_crossroads else HAZE_DENSITY
-	environment.fog_light_color = CLEAR_SKY
+	environment.fog_light_color = CROSSROADS_SKY if for_crossroads else CLEAR_SKY
 	environment.fog_sun_scatter = 0.0
 	environment.fog_aerial_perspective = 0.0
 	environment.fog_depth_begin = CROSSROADS_FOG_BEGIN if for_crossroads else HAZE_BEGIN

@@ -50,6 +50,7 @@ var _light_clock := 0.0
 var _light_flash := true
 var _scenario: Dictionary = {}
 var _rail_segments := {}
+var _arrow_meshes := {}
 static var _question_signal_bodies := {}
 
 
@@ -249,7 +250,7 @@ func build_tram_path(curve: Curve3D) -> void:
 
 
 func _create_materials() -> void:
-	asphalt_mat = sc.surface_material("asphalt", Color("#2C2F36"))
+	asphalt_mat = sc.surface_material("asphalt", Color("#1C1E22"))
 	dirt_mat = sc.surface_material("dirt", Color("#8D7151"))
 	marking_mat = StandardMaterial3D.new()
 	marking_mat.albedo_color = Color("#F2F4F8")
@@ -265,15 +266,15 @@ func _update_asphalt_tint() -> void:
 	if asphalt_mat == null: return
 	if _is_highway_junction():
 		# Fresh dark asphalt on highway
-		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.16, 0.17, 0.19))
+		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.10, 0.11, 0.13))
 	elif _is_rural_junction():
 		# Weathered countryside asphalt
-		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.24, 0.25, 0.28))
+		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.18, 0.19, 0.21))
 	elif _is_suburban_junction():
-		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.21, 0.22, 0.25))
+		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.14, 0.15, 0.17))
 	else:
-		# Standard city asphalt
-		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.18, 0.19, 0.22))
+		# Standard city asphalt - deep dark graphite
+		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.12, 0.13, 0.15))
 
 
 func _update_crowd_visibility() -> void:
@@ -577,7 +578,7 @@ func _ground_shares(p: Vector2) -> Vector3:
 
 ## A ground mesh over [x0, x1] × [z0, z1] sampled from the field.
 func _field_mesh(x0: float, x1: float, z0: float, z1: float, y: float, max_long := FIELD_STEP) -> MeshInstance3D:
-	var colours := [Color("#2C2F36"), Color("#8D7151"), sc.color("ground")]
+	var colours := [Color("#1C1E22"), Color("#8D7151"), sc.color("ground")]
 	var layers := [sc.layer_of("asphalt"), sc.layer_of("dirt"), sc.layer_of("grass")]
 	var nx := maxi(1, ceili((x1 - x0) / (FIELD_STEP if x1 - x0 < 20.0 else max_long)))
 	var nz := maxi(1, ceili((z1 - z0) / (FIELD_STEP if z1 - z0 < 20.0 else max_long)))
@@ -1254,19 +1255,210 @@ func _build_arm_markings(arm: String) -> void:
 					arm_root.add_child(dash)
 					z += 6.0
 			else:
-				# Standard urban/suburban 4-lane street: 1.3 double solid center and 1.5 lane dividers
-				for offset in [-0.12, 0.12]:
-					var solid := _quad(Vector2(0.12, line_len), marking_mat)
-					solid.position = Vector3(offset, 0.022, line_start + line_len * 0.5)
-					arm_root.add_child(solid)
-				var z := line_start
-				while z + 2.0 < ROAD_EXTENT:
-					for x in [-LANE_W, LANE_W]:
-						var dash := _quad(Vector2(0.12, 2.0), marking_mat)
-						dash.position = Vector3(x, 0.022, z + 1.0)
-						arm_root.add_child(dash)
-					z += 6.0
+				# Standard urban/suburban 4-lane street: 1.16 splitter island, 1.18 lane arrows, 1.3 double solid, 1.1/1.5 dividers
+				var has_tram := _arm_has_tram(arm)
+				var island_len := 11.0
+				var island_end := line_start + island_len
+				if not has_tram:
+					# 1. Splitter island 1.16 on center median
+					_build_splitter_island(arm_root, line_start, island_end)
+					# Center double solid lines 1.3 continue beyond the splitter island
+					var solid_len := ROAD_EXTENT - island_end
+					for offset in [-0.12, 0.12]:
+						var solid := _quad(Vector2(0.12, solid_len), marking_mat)
+						solid.position = Vector3(offset, 0.022, island_end + solid_len * 0.5)
+						arm_root.add_child(solid)
+				else:
+					# Tram corridor down the center: full double solid centerline
+					for offset in [-0.12, 0.12]:
+						var solid := _quad(Vector2(0.12, line_len), marking_mat)
+						solid.position = Vector3(offset, 0.022, line_start + line_len * 0.5)
+						arm_root.add_child(solid)
+
+				# 2. Lane divider at x = LANE_W (incoming traffic):
+				# Solid 1.1 from line_start to 22.0m (prohibits lane changing before junction),
+				# then dashed 1.5 further upstream
+				var solid_divider_end := maxf(line_start + 8.0, 22.0)
+				var solid_div := _quad(Vector2(0.12, solid_divider_end - line_start), marking_mat)
+				solid_div.position = Vector3(LANE_W, 0.022, (line_start + solid_divider_end) * 0.5)
+				arm_root.add_child(solid_div)
+
+				var z_in := solid_divider_end + 1.0
+				while z_in + 2.0 < ROAD_EXTENT:
+					var dash := _quad(Vector2(0.12, 2.0), marking_mat)
+					dash.position = Vector3(LANE_W, 0.022, z_in + 1.0)
+					arm_root.add_child(dash)
+					z_in += 6.0
+
+				# Outgoing side lane divider (x = -LANE_W): dashed 1.5
+				var z_out := line_start
+				while z_out + 2.0 < ROAD_EXTENT:
+					var dash := _quad(Vector2(0.12, 2.0), marking_mat)
+					dash.position = Vector3(-LANE_W, 0.022, z_out + 1.0)
+					arm_root.add_child(dash)
+					z_out += 6.0
+
+				# 3. Painted lane directional arrows 1.18 on incoming lanes
+				_build_lane_arrows(arm_root, arm, line_start)
 	if _has_crossing(arm): _build_crossing(arm_root)
+
+
+func _arm_has_tram(arm: String) -> bool:
+	for actor in _scenario.get("actors", []):
+		if actor is Dictionary and str(actor.get("type", "")) == "tram":
+			var side: String = str(actor.get("side", ""))
+			if side == arm: return true
+			if arm in ["north", "south"] and side in ["north", "south"]: return true
+			if arm in ["east", "west"] and side in ["east", "west"]: return true
+	return false
+
+
+func _arm_relative_sides(arm: String) -> Dictionary:
+	match arm:
+		"south": return {"straight": "north", "left": "west", "right": "east"}
+		"north": return {"straight": "south", "left": "east", "right": "west"}
+		"east": return {"straight": "west", "left": "south", "right": "north"}
+		"west": return {"straight": "east", "left": "north", "right": "south"}
+	return {}
+
+
+func _build_splitter_island(arm_root: Node3D, z_near: float, z_far: float) -> void:
+	var hw_near := 0.45
+	var hw_far := 0.12
+	# Base border line at z_near
+	var base_w := hw_near * 2.0
+	var base_line := _quad(Vector2(base_w, 0.12), marking_mat)
+	base_line.position = Vector3(0.0, 0.023, z_near + 0.06)
+	arm_root.add_child(base_line)
+
+	# Diagonal side borders 1.1
+	var diag_len := Vector2(hw_near - hw_far, z_far - z_near).length()
+	var diag_ang := atan2(hw_near - hw_far, z_far - z_near)
+
+	var left_border := _quad(Vector2(0.12, diag_len), marking_mat)
+	left_border.position = Vector3(-(hw_near + hw_far) * 0.5, 0.023, (z_near + z_far) * 0.5)
+	left_border.rotation.y = diag_ang
+	arm_root.add_child(left_border)
+
+	var right_border := _quad(Vector2(0.12, diag_len), marking_mat)
+	right_border.position = Vector3((hw_near + hw_far) * 0.5, 0.023, (z_near + z_far) * 0.5)
+	right_border.rotation.y = -diag_ang
+	arm_root.add_child(right_border)
+
+	# 1.16.1 diagonal hatching stripes across the island at 45 degrees
+	var z := z_near + 1.4
+	while z < z_far - 0.8:
+		var t := (z - z_near) / (z_far - z_near)
+		var cur_hw := lerpf(hw_near, hw_far, t)
+		var stripe_len := cur_hw * 1.8
+		if stripe_len > 0.2:
+			var stripe := _quad(Vector2(0.12, stripe_len), marking_mat)
+			stripe.position = Vector3(0.0, 0.024, z)
+			stripe.rotation.y = PI * 0.25
+			arm_root.add_child(stripe)
+		z += 1.5
+
+
+func _build_lane_arrows(arm_root: Node3D, arm: String, line_start: float) -> void:
+	var rel := _arm_relative_sides(arm)
+	var can_straight: bool = rel.get("straight", "") != closed_side
+	var can_left: bool = rel.get("left", "") != closed_side
+	var can_right: bool = rel.get("right", "") != closed_side
+
+	var left_arrow := "straight_left"
+	if can_straight and can_left:
+		left_arrow = "straight_left"
+	elif can_left and not can_straight:
+		left_arrow = "left"
+	elif can_straight and not can_left:
+		left_arrow = "straight"
+
+	var right_arrow := "straight_right"
+	if can_straight and can_right:
+		right_arrow = "straight_right"
+	elif can_right and not can_straight:
+		right_arrow = "right"
+	elif can_straight and not can_right:
+		right_arrow = "straight"
+
+	var mesh_left := _get_arrow_mesh(left_arrow)
+	var mesh_right := _get_arrow_mesh(right_arrow)
+
+	var z1: float = maxf(line_start + 4.5, 17.5)
+	var z2: float = z1 + 9.0
+	for z_pos in [z1, z2]:
+		var inst_l := MeshInstance3D.new()
+		inst_l.name = "LaneArrow_Left"
+		inst_l.mesh = mesh_left
+		inst_l.material_override = marking_mat
+		inst_l.position = Vector3(1.8, 0.024, z_pos)
+		inst_l.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		arm_root.add_child(inst_l)
+
+		var inst_r := MeshInstance3D.new()
+		inst_r.name = "LaneArrow_Right"
+		inst_r.mesh = mesh_right
+		inst_r.material_override = marking_mat
+		inst_r.position = Vector3(5.4, 0.024, z_pos)
+		inst_r.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		arm_root.add_child(inst_r)
+
+
+func _get_arrow_mesh(type: String) -> ArrayMesh:
+	if _arrow_meshes.has(type):
+		return _arrow_meshes[type]
+	var m := _create_arrow_mesh(type)
+	_arrow_meshes[type] = m
+	return m
+
+
+static func _st_tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
+	st.set_normal(Vector3.UP)
+	st.add_vertex(a)
+	st.set_normal(Vector3.UP)
+	st.add_vertex(b)
+	st.set_normal(Vector3.UP)
+	st.add_vertex(c)
+
+
+static func _st_quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> void:
+	_st_tri(st, a, b, c)
+	_st_tri(st, a, c, d)
+
+
+func _create_arrow_mesh(type: String) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var has_straight := type in ["straight", "straight_left", "straight_right"]
+	var has_left := type in ["left", "straight_left"]
+	var has_right := type in ["right", "straight_right"]
+
+	if has_straight:
+		# Straight stem: width 0.18, z from 1.2 to -0.4
+		var hw := 0.09
+		_st_quad(st, Vector3(-hw, 0, 1.2), Vector3(hw, 0, 1.2), Vector3(hw, 0, -0.4), Vector3(-hw, 0, -0.4))
+		# Straight head: base at z = -0.4 (width 0.64), tip at (0, 0, -1.6)
+		_st_tri(st, Vector3(-0.32, 0, -0.4), Vector3(0.0, 0, -1.6), Vector3(0.32, 0, -0.4))
+
+	if has_left:
+		if not has_straight:
+			_st_quad(st, Vector3(-0.09, 0, 1.2), Vector3(0.09, 0, 1.2), Vector3(0.09, 0, 0.3), Vector3(-0.09, 0, 0.3))
+		# Curved branch towards -X
+		_st_quad(st, Vector3(0.0, 0, 0.45), Vector3(0.0, 0, 0.25), Vector3(-0.35, 0, 0.05), Vector3(-0.35, 0, 0.25))
+		_st_quad(st, Vector3(-0.35, 0, 0.25), Vector3(-0.35, 0, 0.05), Vector3(-0.65, 0, -0.05), Vector3(-0.65, 0, 0.15))
+		# Left arrowhead pointing to -X: base at x = -0.65 (z from -0.25 to 0.35), tip at (-1.35, 0, 0.05)
+		_st_tri(st, Vector3(-0.65, 0, -0.25), Vector3(-0.65, 0, 0.35), Vector3(-1.35, 0, 0.05))
+
+	if has_right:
+		if not has_straight:
+			_st_quad(st, Vector3(-0.09, 0, 1.2), Vector3(0.09, 0, 1.2), Vector3(0.09, 0, 0.3), Vector3(-0.09, 0, 0.3))
+		# Curved branch towards +X
+		_st_quad(st, Vector3(0.0, 0, 0.25), Vector3(0.0, 0, 0.45), Vector3(0.35, 0, 0.25), Vector3(0.35, 0, 0.05))
+		_st_quad(st, Vector3(0.35, 0, 0.05), Vector3(0.35, 0, 0.25), Vector3(0.65, 0, 0.15), Vector3(0.65, 0, -0.05))
+		# Right arrowhead pointing to +X: base at x = +0.65 (z from -0.25 to 0.35), tip at (1.35, 0, 0.05)
+		_st_tri(st, Vector3(0.65, 0, 0.35), Vector3(0.65, 0, -0.25), Vector3(1.35, 0, 0.05))
+
+	return st.commit()
 
 
 func _build_crossing(arm_root: Node3D) -> void:
