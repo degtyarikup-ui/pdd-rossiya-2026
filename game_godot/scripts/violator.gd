@@ -294,12 +294,12 @@ func _setup_environment() -> void:
 
 	# Clean sunny daylight environment without muddy gray tones
 	env.environment.background_mode = Environment.BG_COLOR
-	env.environment.background_color = Color("#46688A")
+	env.environment.background_color = Color("#5582AA")
 	env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.environment.ambient_light_color = Color("#6C849E")
-	env.environment.ambient_light_energy = 0.42
+	env.environment.ambient_light_color = Color("#7594B0")
+	env.environment.ambient_light_energy = 0.45
 	env.environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.environment.tonemap_exposure = 1.05
+	env.environment.tonemap_exposure = 1.10
 	env.environment.tonemap_white = 6.0
 
 	cam_pivot = Node3D.new()
@@ -308,8 +308,8 @@ func _setup_environment() -> void:
 
 	camera = Camera3D.new()
 	camera.fov = 48.0
-	camera.position = Vector3(11.0, 44.0, 30.0)
-	camera.look_at_from_position(camera.position, Vector3(0.0, 0.0, 3.5), Vector3.UP)
+	camera.position = Vector3(25.0, 64.0, 32.0)
+	camera.look_at_from_position(camera.position, Vector3(0.5, 0.0, 4.5), Vector3.UP)
 	cam_pivot.add_child(camera)
 
 
@@ -342,32 +342,32 @@ func _setup_road_geometry() -> void:
 
 	# Materials
 	asphalt_material = StandardMaterial3D.new()
-	asphalt_material.albedo_color = Color("#22252A")
+	asphalt_material.albedo_color = Color("#1A1D22")
 	asphalt_material.roughness = 0.88
 
 	var sidewalk_mat := StandardMaterial3D.new()
-	sidewalk_mat.albedo_color = Color("#A2AAB8") # Crisp light pedestrian tile
-	sidewalk_mat.roughness = 0.72
+	sidewalk_mat.albedo_color = Color("#CCD5E2") # Crisp light pedestrian paver tile
+	sidewalk_mat.roughness = 0.68
 
 	var curb_mat := StandardMaterial3D.new()
-	curb_mat.albedo_color = Color("#DCE0E8") # Clean contrasting concrete curb
-	curb_mat.roughness = 0.60
+	curb_mat.albedo_color = Color("#F5F8FC") # Clean bright contrasting concrete curb
+	curb_mat.roughness = 0.45
 
 	var lawn_grass_mat := StandardMaterial3D.new()
-	lawn_grass_mat.albedo_color = Color("#327824") # Rich vibrant Russian lawn green
+	lawn_grass_mat.albedo_color = Color("#2E8822") # Rich vibrant Russian lawn green
 	lawn_grass_mat.roughness = 0.88
 
 	var grass_mat := StandardMaterial3D.new()
-	grass_mat.albedo_color = Color("#2D5B22") # Surrounding ground
+	grass_mat.albedo_color = Color("#266B1D") # Surrounding ground
 	grass_mat.roughness = 0.95
 
 	var white_mat := StandardMaterial3D.new()
-	white_mat.albedo_color = Color("#F3F5F9")
-	white_mat.roughness = 0.55
+	white_mat.albedo_color = Color("#FFFFFF")
+	white_mat.roughness = 0.50
 
 	var yellow_mat := StandardMaterial3D.new()
 	yellow_mat.albedo_color = Color("#FFD600")
-	yellow_mat.roughness = 0.55
+	yellow_mat.roughness = 0.50
 
 	# 1. Main road surface (North-South, Z from -55 to +40, X from -4.2 to +4.2)
 	var main_road := MeshInstance3D.new()
@@ -444,41 +444,51 @@ func _build_sidewalks(sw_mat: Material, curb_mat: Material, lawn_mat: Material) 
 	junction_node.add_child(se_sw)
 
 	# Raised Green Lawns (Газоны) in all 4 quadrants
-	var nw_lawn := _create_box(Vector3(32.0, 0.18, 44.0), lawn_mat)
-	nw_lawn.position = Vector3(-27.0, 0.09, -28.0)
+	var nw_lawn := _create_box(Vector3(34.0, 0.18, 48.0), lawn_mat)
+	nw_lawn.position = Vector3(-28.0, 0.09, -30.0)
 	junction_node.add_child(nw_lawn)
 
-	var sw_lawn := _create_box(Vector3(32.0, 0.18, 22.0), lawn_mat)
-	sw_lawn.position = Vector3(-27.0, 0.09, 25.0)
+	var sw_lawn := _create_box(Vector3(34.0, 0.18, 24.0), lawn_mat)
+	sw_lawn.position = Vector3(-28.0, 0.09, 26.0)
 	junction_node.add_child(sw_lawn)
 
-	var ne_lawn := _create_box(Vector3(32.0, 0.18, 44.0), lawn_mat)
-	ne_lawn.position = Vector3(27.0, 0.09, -28.0)
+	var ne_lawn := _create_box(Vector3(34.0, 0.18, 48.0), lawn_mat)
+	ne_lawn.position = Vector3(28.0, 0.09, -30.0)
 	junction_node.add_child(ne_lawn)
 
-	var se_lawn := _create_box(Vector3(32.0, 0.18, 22.0), lawn_mat)
-	se_lawn.position = Vector3(27.0, 0.09, 25.0)
+	var se_lawn := _create_box(Vector3(34.0, 0.18, 24.0), lawn_mat)
+	se_lawn.position = Vector3(28.0, 0.09, 26.0)
 	junction_node.add_child(se_lawn)
 
 	# Main road curbs (North & South)
 	for curb_x in [-4.2, 4.2]:
-		var curb_north := _create_box(Vector3(0.2, 0.18, 55.8), curb_mat)
-		curb_north.position = Vector3(curb_x, 0.09, -27.1)
+		var curb_north := _create_box(Vector3(0.24, 0.20, 55.8), curb_mat)
+		curb_north.position = Vector3(curb_x, 0.10, -27.1)
 		junction_node.add_child(curb_north)
 
-		var curb_south := _create_box(Vector3(0.2, 0.18, 30.8), curb_mat)
-		curb_south.position = Vector3(curb_x, 0.09, 24.6)
+		var curb_south := _create_box(Vector3(0.24, 0.20, 30.8), curb_mat)
+		curb_south.position = Vector3(curb_x, 0.10, 24.6)
 		junction_node.add_child(curb_south)
 
 	# Cross street curbs (West & East along Z = 0.8 and Z = 9.2)
 	for curb_z in [0.8, 9.2]:
-		var curb_west := _create_box(Vector3(40.8, 0.18, 0.2), curb_mat)
-		curb_west.position = Vector3(-24.6, 0.09, curb_z)
+		var curb_west := _create_box(Vector3(40.8, 0.20, 0.24), curb_mat)
+		curb_west.position = Vector3(-24.6, 0.10, curb_z)
 		junction_node.add_child(curb_west)
 
-		var curb_east := _create_box(Vector3(40.8, 0.18, 0.2), curb_mat)
-		curb_east.position = Vector3(24.6, 0.09, curb_z)
+		var curb_east := _create_box(Vector3(40.8, 0.20, 0.24), curb_mat)
+		curb_east.position = Vector3(24.6, 0.10, curb_z)
 		junction_node.add_child(curb_east)
+
+	# Tree lawn pits along sidewalks (Газонные приствольные квадраты)
+	for z_pit in [-14.0, -22.0, -32.0, 18.0, 26.0]:
+		var pit_l := _create_box(Vector3(1.6, 0.015, 1.6), lawn_mat)
+		pit_l.position = Vector3(-6.8, 0.165, z_pit)
+		junction_node.add_child(pit_l)
+
+		var pit_r := _create_box(Vector3(1.6, 0.015, 1.6), lawn_mat)
+		pit_r.position = Vector3(6.8, 0.165, z_pit)
+		junction_node.add_child(pit_r)
 
 	# Tactile yellow accessibility tiles (Тактильная плитка 1.14) at crosswalk curb ramps
 	var tactile_mat := StandardMaterial3D.new()
@@ -692,29 +702,29 @@ func _build_city_scenery() -> void:
 	var birch_color: Color = sc.color("birch") if sc != null else Color("#4E8236")
 	var pine_colors: Array = sc.season.pine if sc != null else [Color("#2B4D28")]
 
-	# Trees and greenery along the sidewalks (North-South)
+	# Trees and greenery along the sidewalks (North-South) elevated on sidewalk/lawn (Y = 0.18)
 	for z in [-14.0, -22.0, -32.0, -42.0]:
-		_put_prop("trees/birch_0", Vector3(-6.8, 0.0, z), 0.25 * z, Vector3.ONE * 1.1, birch_color)
-		_put_prop("trees/round_0", Vector3(6.8, 0.0, z), -0.2 * z, Vector3.ONE * 1.15, Color(canopy_colors[abs(int(z)) % canopy_colors.size()]))
-		_put_prop("street/bush", Vector3(-6.8, 0.0, z + 3.0), 0.0, Vector3.ONE * 1.1, Color(canopy_colors[0]))
-		_put_prop("street/bush", Vector3(6.8, 0.0, z + 3.0), 0.0, Vector3.ONE * 1.1, Color(canopy_colors[0]))
+		_put_prop("trees/birch_0", Vector3(-6.8, 0.18, z), 0.25 * z, Vector3.ONE * 1.15, birch_color)
+		_put_prop("trees/round_0", Vector3(6.8, 0.18, z), -0.2 * z, Vector3.ONE * 1.2, Color(canopy_colors[abs(int(z)) % canopy_colors.size()]))
+		_put_prop("street/bush", Vector3(-6.8, 0.18, z + 3.0), 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
+		_put_prop("street/bush", Vector3(6.8, 0.18, z + 3.0), 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
 
 	for z in [18.0, 26.0, 34.0]:
-		_put_prop("trees/round_0", Vector3(-6.8, 0.0, z), 0.3 * z, Vector3.ONE * 1.1, Color(canopy_colors[int(z) % canopy_colors.size()]))
-		_put_prop("trees/pine_0", Vector3(6.8, 0.0, z), -0.15 * z, Vector3.ONE * 1.1, Color(pine_colors[int(z) % pine_colors.size()]))
-		_put_prop("street/bush", Vector3(-6.8, 0.0, z + 2.5), 0.0, Vector3.ONE * 1.1, Color(canopy_colors[0]))
-		_put_prop("street/bush", Vector3(6.8, 0.0, z + 2.5), 0.0, Vector3.ONE * 1.1, Color(canopy_colors[0]))
+		_put_prop("trees/round_0", Vector3(-6.8, 0.18, z), 0.3 * z, Vector3.ONE * 1.15, Color(canopy_colors[int(z) % canopy_colors.size()]))
+		_put_prop("trees/pine_0", Vector3(6.8, 0.18, z), -0.15 * z, Vector3.ONE * 1.15, Color(pine_colors[int(z) % pine_colors.size()]))
+		_put_prop("street/bush", Vector3(-6.8, 0.18, z + 2.5), 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
+		_put_prop("street/bush", Vector3(6.8, 0.18, z + 2.5), 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
 
-	# Trees and greenery along the two-lane cross streets (West & East)
+	# Trees and greenery along the two-lane cross streets (West & East) elevated on sidewalk/lawn (Y = 0.18)
 	for x in [-15.0, -23.0, -33.0]:
-		_put_prop("trees/birch_0", Vector3(x, 0.0, -2.6), 0.2 * x, Vector3.ONE * 1.05, birch_color)
-		_put_prop("trees/round_0", Vector3(x, 0.0, 12.6), -0.2 * x, Vector3.ONE * 1.1, Color(canopy_colors[abs(int(x)) % canopy_colors.size()]))
-		_put_prop("street/bush", Vector3(x + 3.0, 0.0, 12.6), 0.0, Vector3.ONE, Color(canopy_colors[0]))
+		_put_prop("trees/birch_0", Vector3(x, 0.18, -2.6), 0.2 * x, Vector3.ONE * 1.1, birch_color)
+		_put_prop("trees/round_0", Vector3(x, 0.18, 12.6), -0.2 * x, Vector3.ONE * 1.15, Color(canopy_colors[abs(int(x)) % canopy_colors.size()]))
+		_put_prop("street/bush", Vector3(x + 3.0, 0.18, 12.6), 0.0, Vector3.ONE * 1.1, Color(canopy_colors[0]))
 
 	for x in [15.0, 23.0, 33.0]:
-		_put_prop("trees/round_0", Vector3(x, 0.0, -2.6), 0.2 * x, Vector3.ONE * 1.05, Color(canopy_colors[int(x) % canopy_colors.size()]))
-		_put_prop("trees/birch_0", Vector3(x, 0.0, 12.6), -0.2 * x, Vector3.ONE * 1.1, birch_color)
-		_put_prop("street/bush", Vector3(x - 3.0, 0.0, 12.6), 0.0, Vector3.ONE, Color(canopy_colors[0]))
+		_put_prop("trees/round_0", Vector3(x, 0.18, -2.6), 0.2 * x, Vector3.ONE * 1.15, Color(canopy_colors[int(x) % canopy_colors.size()]))
+		_put_prop("trees/birch_0", Vector3(x, 0.18, 12.6), -0.2 * x, Vector3.ONE * 1.15, birch_color)
+		_put_prop("street/bush", Vector3(x - 3.0, 0.18, 12.6), 0.0, Vector3.ONE * 1.1, Color(canopy_colors[0]))
 
 
 	# City buildings
@@ -909,11 +919,11 @@ func _apply_weather_visuals(phase: String) -> void:
 
 	match phase:
 		"day":
-			sun.light_energy = 1.15
-			sun.light_color = Color("#FFF8ED")
-			env.environment.background_color = Color("#46688A")
-			env.environment.ambient_light_energy = 0.42
-			env.environment.ambient_light_color = Color("#6C849E")
+			sun.light_energy = 1.25
+			sun.light_color = Color("#FFF9ED")
+			env.environment.background_color = Color("#5582AA")
+			env.environment.ambient_light_energy = 0.45
+			env.environment.ambient_light_color = Color("#7594B0")
 			for lamp in street_lamps:
 				lamp.light_energy = 0.0
 			if is_instance_valid(asphalt_material):
@@ -1097,7 +1107,11 @@ func _spawn_procedural_car() -> void:
 		is_emerg = true
 
 	var car := spawn_specific_car(route, lane, is_violator, v_type)
-	if is_emerg:
+	if is_violator and v_type == VIOLATION_EMERGENCY_YIELD:
+		var chaser := spawn_specific_car(route, lane, false, "")
+		chaser.position = car.position - Vector3(0, 0, 14.0)
+		_setup_emergency_appearance(chaser)
+	elif is_emerg:
 		_setup_emergency_appearance(car)
 
 
@@ -1161,11 +1175,11 @@ func spawn_specific_car(route: String, lane: int, is_violator: bool, v_type: Str
 		car.rotation.y = 0.0
 		car.initial_x = 1.8
 	elif lane == 2:
-		car.position = Vector3(-32.0, 0.0, 5.0)
+		car.position = Vector3(-32.0, 0.0, 7.1)
 		car.rotation.y = PI * 0.5
 		car.initial_x = -32.0
 	elif lane == 3:
-		car.position = Vector3(34.0, 0.0, 3.8)
+		car.position = Vector3(34.0, 0.0, 4.2)
 		car.rotation.y = -PI * 0.5
 		car.initial_x = 34.0
 
@@ -1181,7 +1195,7 @@ func spawn_specific_car(route: String, lane: int, is_violator: bool, v_type: Str
 	area.name = "ClickArea"
 	var col_shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(2.4, 2.0, 4.8)
+	box.size = Vector3(3.0, 2.6, 5.2)
 	col_shape.shape = box
 	col_shape.position = Vector3(0, 0.9, 0)
 	area.add_child(col_shape)
@@ -1225,24 +1239,25 @@ func _attach_headlights(car: ViolatorCar) -> void:
 	var hl_root := Node3D.new()
 	hl_root.name = "Headlights"
 
-	# Powerful forward SpotLight3D with wide reach and soft attenuation
+	# 1. Powerful forward SpotLight3D with wide reach and soft attenuation
 	var hl := SpotLight3D.new()
 	hl.light_color = Color("#FFF8E2")
-	hl.light_energy = 6.5
-	hl.spot_range = 28.0
-	hl.spot_angle = 38.0
-	hl.spot_attenuation = 0.75
+	hl.light_energy = 8.5
+	hl.spot_range = 35.0
+	hl.spot_angle = 45.0
+	hl.spot_attenuation = 0.60
 	hl.position = Vector3(0, 0.65, 2.0)
 	hl.rotation.y = PI
+	hl.shadow_enabled = false
 	hl_root.add_child(hl)
 
-	# Physical emissive headlight lenses on vehicle front bumper
+	# 2. Physical emissive headlight lenses on vehicle front bumper
 	var lens_mat := StandardMaterial3D.new()
 	lens_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	lens_mat.albedo_color = Color("#FFFFFF")
 	lens_mat.emission_enabled = true
-	lens_mat.emission = Color("#FFFEE0")
-	lens_mat.emission_energy_multiplier = 4.0
+	lens_mat.emission = Color("#FFFEE4")
+	lens_mat.emission_energy_multiplier = 5.0
 
 	var lens_l := _create_box(Vector3(0.26, 0.12, 0.04), lens_mat)
 	lens_l.position = Vector3(-0.68, 0.55, 2.12)
@@ -1252,10 +1267,32 @@ func _attach_headlights(car: ViolatorCar) -> void:
 	lens_r.position = Vector3(0.68, 0.55, 2.12)
 	hl_root.add_child(lens_r)
 
-	# Forward road illumination quad (subtle bright beam on asphalt)
-	var beam := _create_box(Vector3(3.2, 0.01, 14.0), _make_unshaded_mat(Color(1.0, 0.98, 0.85, 0.18)))
-	beam.position = Vector3(0, 0.02, 9.0)
-	hl_root.add_child(beam)
+	# 3. Vivid additive forward ground illumination beams (never culled by light limits)
+	var beam_mat := StandardMaterial3D.new()
+	beam_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	beam_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	beam_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	beam_mat.albedo_color = Color(1.0, 0.96, 0.82, 0.38)
+
+	# Dual forward beam corridors
+	var beam_l := _create_box(Vector3(1.4, 0.01, 16.0), beam_mat)
+	beam_l.position = Vector3(-0.6, 0.025, 9.8)
+	hl_root.add_child(beam_l)
+
+	var beam_r := _create_box(Vector3(1.4, 0.01, 16.0), beam_mat)
+	beam_r.position = Vector3(0.6, 0.025, 9.8)
+	hl_root.add_child(beam_r)
+
+	# Broad forward ground light pool
+	var broad_mat := StandardMaterial3D.new()
+	broad_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	broad_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	broad_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	broad_mat.albedo_color = Color(1.0, 0.94, 0.78, 0.22)
+
+	var broad_beam := _create_box(Vector3(4.6, 0.01, 20.0), broad_mat)
+	broad_beam.position = Vector3(0.0, 0.024, 11.5)
+	hl_root.add_child(broad_beam)
 
 	car.add_child(hl_root)
 	car.headlight_node = hl_root
@@ -1421,9 +1458,9 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	var stop_required := false
 	car.target_speed = 11.0 + (1.5 if game_clock > 40.0 else 0.0)
 
-	const Z_STOP := -11.8       # Front bumper at -9.4 (safely before stop line and zebra crosswalk at -9.0)
-	const Z_ZEBRA_STOP := -11.8 # Front bumper at -9.4 (well before zebra crosswalk at -9.0)
-	const X_PRIO_STOP := -8.0   # Front bumper at -5.6 (safely before yield line at -5.0)
+	const Z_STOP := -3.5       # Stop line 1.12 at intersection entrance Z = -3.5
+	const Z_ZEBRA_STOP := -6.0 # Stop line before zebra crosswalk
+	const X_PRIO_STOP := -5.6   # Yield line at X = -5.0 (Sign 2.4)
 
 	# 1. Traffic signal stop on main road
 	if car.lane in [0, 1] and absf(car.rotation.y) < 0.45:
@@ -1509,7 +1546,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			car.skid_angle = sin(game_clock * 22.0) * 0.12
 			car.rotation.y = car.skid_angle
 
-	# 6. Anti-Collision Headway Model (Strict anti-ramming)
+	# 6. Anti-Collision Headway Model (Strict anti-ramming across all lanes and turns)
 	var lead_dist := 999.0
 	var lead_speed := 11.0
 	var lead_car: ViolatorCar = null
@@ -1518,41 +1555,41 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		if other == car or not is_instance_valid(other):
 			continue
 
-		# A) Both moving Southbound (+Z) along the main road corridor
+		# Corridor-specific headway checks
+		# A) Both in Southbound corridor (+Z) along main road
 		if absf(car.rotation.y) < 0.5 and car.lane in [0, 1] and not (car.route == "main_left" and car.position.z > -0.5):
-			if other.route == "main_left" and (other.turn_angle > 0.1 or other.position.z > 0.0):
+			if other.route == "main_left" and (other.turn_t > 0.0 or other.position.z > -0.5):
 				continue
 			var dz := other.position.z - car.position.z
 			var dx := absf(other.position.x - car.position.x)
-			if dz > 0.0 and dz < lead_dist and dx < 2.2:
+			if dz > 0.0 and dz < lead_dist and dx < 2.4:
 				lead_dist = dz
 				lead_speed = other.speed
 				lead_car = other
-			# Also detect secondary road merging car entering our lane ahead
-			elif other.lane == 2 and other.position.x > -1.5 and absf(other.position.x - car.position.x) < 2.4:
+			# Check secondary merging car entering our lane ahead
+			elif other.lane == 2 and other.position.x > 0.0 and absf(other.position.x - car.position.x) < 2.4:
 				if dz > 0.0 and dz < lead_dist:
 					lead_dist = dz
 					lead_speed = other.speed
 					lead_car = other
 
-		# B) Both moving Eastbound (+X) along the secondary road
-		elif absf(car.rotation.y - PI * 0.5) < 0.5 and car.lane == 2 and car.turn_angle <= 0.0:
+		# B) Both in Eastbound corridor (+X) along secondary road (Z = 7.1)
+		elif absf(car.rotation.y - PI * 0.5) < 0.5 and car.lane == 2 and car.turn_t <= 0.0:
 			var dx := other.position.x - car.position.x
 			var dz := absf(other.position.z - car.position.z)
-			if dx > 0.0 and dx < lead_dist and dz < 2.2:
+			if dx > 0.0 and dx < lead_dist and dz < 2.4:
 				lead_dist = dx
 				lead_speed = other.speed
 				lead_car = other
 
-		# C) Both moving Westbound (-X)
-		elif absf(car.rotation.y - (-PI * 0.5)) < 0.5:
+		# C) Both in Westbound corridor (-X) along cross street (Z = 4.2)
+		elif car.rotation.y < -1.0: # Westbound
 			var dx := car.position.x - other.position.x
 			var dz := absf(other.position.z - car.position.z)
-			if dx > 0.0 and dx < lead_dist and dz < 2.2:
+			if dx > 0.0 and dx < lead_dist and dz < 2.4:
 				lead_dist = dx
 				lead_speed = other.speed
 				lead_car = other
-
 
 	const MIN_GAP := 6.0
 	var desired_gap := MIN_GAP + maxf(0.0, car.speed) * 0.75
@@ -1576,29 +1613,28 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 
 	# Strict physical separation clamp: bumpers can NEVER overlap
 	if lead_car != null and lead_dist < 5.5:
-		if absf(car.rotation.y) < 0.5 and car.lane in [0, 1]:
+		car.speed = 0.0
+		car.target_speed = 0.0
+		if absf(car.rotation.y) < 0.5 and car.lane in [0, 1] and car.turn_t <= 0.0:
 			car.position.z = minf(car.position.z, lead_car.position.z - 5.5)
-			car.speed = 0.0
-		elif absf(car.rotation.y - PI * 0.5) < 0.5 and car.lane == 2:
+		elif absf(car.rotation.y - PI * 0.5) < 0.5 and car.lane == 2 and car.turn_t <= 0.0:
 			car.position.x = minf(car.position.x, lead_car.position.x - 5.5)
-			car.speed = 0.0
-		elif absf(car.rotation.y - (-PI * 0.5)) < 0.5:
+		elif car.rotation.y < -1.0:
 			car.position.x = maxf(car.position.x, lead_car.position.x + 5.5)
-			car.speed = 0.0
 
 	# Strict clamping for crosswalk and stop lines to completely prevent encroachment
-	# Never clamp backwards if car has already reached or crossed the stop threshold!
+	# CRITICAL: NEVER clamp backwards if a vehicle has already reached or passed the stop line!
 	if stop_required:
 		if car.lane in [0, 1] and absf(car.rotation.y) < 0.45:
 			if is_pedestrian_on_roadway() and not (car.is_violator and car.violation_type in [VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WEATHER_SPEED]):
-				if car.position.z < Z_ZEBRA_STOP and car.position.z > -22.0:
+				if car.position.z <= Z_ZEBRA_STOP and car.position.z > -22.0:
 					car.position.z = minf(car.position.z, Z_ZEBRA_STOP)
 			elif light_state in ["red", "yellow"] and not (car.is_emergency or (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD, VIOLATION_WEATHER_SPEED])):
-				if car.position.z < Z_STOP and car.position.z > -22.0:
+				if car.position.z <= Z_STOP and car.position.z > -22.0:
 					car.position.z = minf(car.position.z, Z_STOP)
-		elif car.lane == 2 and car.position.x < X_PRIO_STOP and car.position.x > -20.0:
+		elif car.lane == 2 and car.position.x <= X_PRIO_STOP and car.position.x > -20.0:
 			car.position.x = minf(car.position.x, X_PRIO_STOP)
-		elif car.lane == 3 and car.position.x > 5.0 and car.position.x < 20.0:
+		elif car.lane == 3 and car.position.x >= 5.0 and car.position.x < 20.0:
 			car.position.x = maxf(car.position.x, 5.0)
 
 	# 7. Smooth Turning Trajectories using Continuous Quadratic Bezier Curves
@@ -1620,28 +1656,34 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			car.turn_angle = car.turn_t * (PI / 2.0)
 			var t := car.turn_t
 			var p0 := Vector3(car.initial_x, 0.0, -2.0)
-			var p1 := Vector3(car.initial_x, 0.0, 4.5)
-			var p2 := Vector3(car.initial_x + 6.0, 0.0, 4.5)
+			var p1 := Vector3(car.initial_x, 0.0, 7.1)
+			var p2 := Vector3(6.0, 0.0, 7.1)
 			car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
 			var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
 			car.rotation.y = atan2(tang.x, tang.z)
 			if car.turn_t >= 1.0:
 				car.position.x += car.speed * delta
+				car.position.z = 7.1
+				car.rotation.y = PI * 0.5
 		else:
 			if car.route == "main_left" and (car.position.z > -0.5 or car.turn_t > 0.0):
 				if car.turn_t <= 0.0 and car.position.z > -0.5:
 					var frac := clampf((car.position.z - (-0.5)) / 4.7, 0.0, 1.0)
 					car.turn_t = 1.0 - sqrt(maxf(0.0, 1.0 - frac))
 				if car.turn_t < 1.0:
-					car.turn_t = minf(1.0, car.turn_t + (car.speed * delta) / 6.4)
-					car.turn_angle = car.turn_t * (PI / 2.0)
-					var t := car.turn_t
-					var p0 := Vector3(-1.8, 0.0, -0.5)
-					var p1 := Vector3(-1.8, 0.0, 4.2)
-					var p2 := Vector3(-6.0, 0.0, 4.2)
-					car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
-					var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
-					car.rotation.y = atan2(tang.x, tang.z)
+					if lead_car != null and lead_dist < 5.5:
+						car.speed = 0.0
+						car.target_speed = 0.0
+					else:
+						car.turn_t = minf(1.0, car.turn_t + (car.speed * delta) / 6.4)
+						car.turn_angle = car.turn_t * (PI / 2.0)
+						var t := car.turn_t
+						var p0 := Vector3(-1.8, 0.0, -0.5)
+						var p1 := Vector3(-1.8, 0.0, 4.2)
+						var p2 := Vector3(-6.0, 0.0, 4.2)
+						car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
+						var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
+						car.rotation.y = atan2(tang.x, tang.z)
 				else:
 					car.turn_angle = PI / 2.0
 					car.rotation.y = -PI * 0.5
@@ -1673,13 +1715,15 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			car.turn_angle = car.turn_t * (PI / 2.0)
 			var t := car.turn_t
 			var p0 := Vector3(1.8, 0.0, -2.0)
-			var p1 := Vector3(1.8, 0.0, 4.5)
-			var p2 := Vector3(-4.2, 0.0, 4.5)
+			var p1 := Vector3(1.8, 0.0, 4.2)
+			var p2 := Vector3(-6.0, 0.0, 4.2)
 			car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
 			var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
 			car.rotation.y = atan2(tang.x, tang.z)
 			if car.turn_t >= 1.0:
 				car.position.x -= car.speed * delta
+				car.position.z = 4.2
+				car.rotation.y = -PI * 0.5
 		else:
 			car.position.z += car.speed * delta
 			if not car.is_skidding:
@@ -1687,33 +1731,27 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 
 	elif car.lane == 2:
 		if car.position.x < -2.4 and car.turn_t <= 0.0:
-			# Check if Lane 1 is occupied at merge zone before proceeding
-			var merge_blocked := false
-			for other in cars:
-				if other != car and is_instance_valid(other) and other.lane == 1:
-					if other.position.z > 3.0 and other.position.z < 11.5:
-						merge_blocked = true
-						break
-			if merge_blocked and car.position.x >= -4.5:
-				car.speed = 0.0
-				car.target_speed = 0.0
-			else:
-				car.position.x += car.speed * delta
-				car.rotation.y = PI * 0.5
+			car.position.x += car.speed * delta
+			car.rotation.y = PI * 0.5
+			car.position.z = 7.1
 		else:
 			if car.turn_t <= 0.0 and car.position.x >= -2.4:
 				var frac := clampf((car.position.x - (-2.4)) / 4.2, 0.0, 1.0)
 				car.turn_t = 1.0 - sqrt(maxf(0.0, 1.0 - frac))
 			if car.turn_t < 1.0:
-				car.turn_t = minf(1.0, car.turn_t + (car.speed * delta) / 6.4)
-				car.turn_angle = car.turn_t * (PI / 2.0)
-				var t := car.turn_t
-				var p0 := Vector3(-2.4, 0.0, 5.0)
-				var p1 := Vector3(1.8, 0.0, 5.0)
-				var p2 := Vector3(1.8, 0.0, 9.2)
-				car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
-				var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
-				car.rotation.y = atan2(tang.x, tang.z)
+				if lead_car != null and lead_dist < 5.5:
+					car.speed = 0.0
+					car.target_speed = 0.0
+				else:
+					car.turn_t = minf(1.0, car.turn_t + (car.speed * delta) / 6.4)
+					car.turn_angle = car.turn_t * (PI / 2.0)
+					var t := car.turn_t
+					var p0 := Vector3(-2.4, 0.0, 7.1)
+					var p1 := Vector3(1.8, 0.0, 7.1)
+					var p2 := Vector3(1.8, 0.0, 11.5)
+					car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
+					var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
+					car.rotation.y = atan2(tang.x, tang.z)
 			else:
 				car.turn_angle = PI / 2.0
 				car.lane = 1
@@ -1725,7 +1763,8 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				car.position.z += car.speed * delta
 
 	elif car.lane == 3:
-		# Cross street East to West traffic
+		# Cross street East to West traffic on North lane (Z = 4.2)
+		car.position.z = 4.2
 		if lead_car != null and lead_dist < 5.5:
 			car.position.x = maxf(car.position.x, lead_car.position.x + 5.5)
 			car.speed = 0.0
