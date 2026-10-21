@@ -4,6 +4,12 @@
 shader_type spatial;
 render_mode diffuse_lambert, specular_disabled;
 
+// Model-space normal: the model faces +Z, so −Z skin is the back of the head.
+varying vec3 model_normal;
+void vertex() {
+	model_normal = NORMAL;
+}
+
 void fragment() {
 	vec3 base = COLOR.rgb;
 	bool is_vest = base.g > 0.75 && base.r > 0.55 && base.b < 0.35;
@@ -17,6 +23,9 @@ void fragment() {
 		ALBEDO = vec3(0.92);
 	} else if (is_red) {
 		ALBEDO = vec3(0.75, 0.04, 0.03);
+	} else if (is_skin && model_normal.z < -0.5) {
+		// Short dark hair on the back of the head, so “back” reads at a glance.
+		ALBEDO = vec3(0.07, 0.05, 0.035);
 	} else if (is_skin) {
 		ALBEDO = base * base;
 	} else {
