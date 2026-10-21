@@ -151,6 +151,79 @@ func _test_violation_boundaries_and_edges() -> void:
 	game._check_car_violation_state(prio_car)
 	_assert("PRIORITY_SIGN transitions to missed after passing junction (X > 3.0)", prio_car.violation_state == "missed")
 
+	# 1.6 ARROW_YIELD
+	var arrow_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_ARROW_YIELD)
+	arrow_car.position.z = -5.0
+	game.light_state = "green"
+	game._check_car_violation_state(arrow_car)
+	_assert("ARROW_YIELD does NOT activate on green light", arrow_car.violation_state == "pending")
+
+	game.light_state = "red"
+	arrow_car.position.z = -1.5
+	game._check_car_violation_state(arrow_car)
+	_assert("ARROW_YIELD activates past stop line on red light", arrow_car.violation_state == "active")
+
+	arrow_car.position.z = 8.5
+	game._check_car_violation_state(arrow_car)
+	_assert("ARROW_YIELD transitions to missed past junction (Z > 8.0)", arrow_car.violation_state == "missed")
+
+	# 1.7 WAFFLE_BLOCK
+	var waffle_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_WAFFLE_BLOCK)
+	waffle_car.position.z = 3.5
+	waffle_car.waffle_stop_timer = 0.2
+	game._check_car_violation_state(waffle_car)
+	_assert("WAFFLE_BLOCK does NOT activate before minimum stop duration", waffle_car.violation_state == "pending")
+
+	waffle_car.waffle_stop_timer = 0.8
+	game._check_car_violation_state(waffle_car)
+	_assert("WAFFLE_BLOCK activates after stopping on yellow grid marking", waffle_car.violation_state == "active")
+
+	waffle_car.position.z = 9.5
+	game._check_car_violation_state(waffle_car)
+	_assert("WAFFLE_BLOCK transitions to missed past waffle zone (Z > 9.0)", waffle_car.violation_state == "missed")
+
+	# 1.8 EMERGENCY_YIELD
+	var emerg_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_EMERGENCY_YIELD)
+	emerg_car.position.z = -15.0
+	game._check_car_violation_state(emerg_car)
+	_assert("EMERGENCY_YIELD does NOT activate before approach threshold (Z = -15.0)", emerg_car.violation_state == "pending")
+
+	emerg_car.position.z = -8.0
+	game._check_car_violation_state(emerg_car)
+	_assert("EMERGENCY_YIELD activates when blocking path of emergency vehicle", emerg_car.violation_state == "active")
+
+	emerg_car.position.z = 10.5
+	game._check_car_violation_state(emerg_car)
+	_assert("EMERGENCY_YIELD transitions to missed past threshold (Z > 10.0)", emerg_car.violation_state == "missed")
+
+	# 1.9 NO_LIGHTS
+	var nl_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_NO_LIGHTS)
+	nl_car.position.z = -25.0
+	game._check_car_violation_state(nl_car)
+	_assert("NO_LIGHTS does NOT activate at far distance (Z = -25.0)", nl_car.violation_state == "pending")
+
+	nl_car.position.z = -15.0
+	game._check_car_violation_state(nl_car)
+	_assert("NO_LIGHTS activates approaching intersection without lights", nl_car.violation_state == "active")
+
+	nl_car.position.z = 8.5
+	game._check_car_violation_state(nl_car)
+	_assert("NO_LIGHTS transitions to missed exiting intersection", nl_car.violation_state == "missed")
+
+	# 1.10 WEATHER_SPEED
+	var ws_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_WEATHER_SPEED)
+	ws_car.position.z = -6.0
+	game._check_car_violation_state(ws_car)
+	_assert("WEATHER_SPEED does NOT activate before skid zone (Z = -6.0)", ws_car.violation_state == "pending")
+
+	ws_car.position.z = -2.0
+	game._check_car_violation_state(ws_car)
+	_assert("WEATHER_SPEED activates when skidding past stop line (Z = -2.0)", ws_car.violation_state == "active")
+
+	ws_car.position.z = 6.5
+	game._check_car_violation_state(ws_car)
+	_assert("WEATHER_SPEED transitions to missed past skid recovery threshold", ws_car.violation_state == "missed")
+
 	game.queue_free()
 
 

@@ -20,9 +20,10 @@ func _run_checks() -> void:
 	_check_violation_catalog()
 	_check_scene_integrity()
 	_check_traffic_and_spawning()
-	_check_all_5_violation_triggers()
+	_check_all_violation_triggers()
 	_check_step1_tap_detection()
 	_check_step2_classification_mechanic()
+	_check_endless_patrol_mode()
 	_check_missed_violator_tracking()
 	await _check_camera_visibility_and_despawn()
 	_check_economy_and_game_over()
@@ -40,7 +41,7 @@ func _check(desc: String, condition: bool) -> void:
 
 
 func _check_violation_catalog() -> void:
-	_check("All 8 violation types defined", ViolatorScript.ALL_VIOLATIONS.size() == 8)
+	_check("All 10 violation types defined", ViolatorScript.ALL_VIOLATIONS.size() == 10)
 	for code in ViolatorScript.ALL_VIOLATIONS:
 		_check("Violation %s is in catalog" % code, ViolatorScript.ALL_VIOLATIONS.has(code))
 		var meta: Dictionary = ViolatorScript.VIOLATION_METADATA.get(code, {})
@@ -119,7 +120,7 @@ func _check_traffic_and_spawning() -> void:
 	game.queue_free()
 
 
-func _check_all_5_violation_triggers() -> void:
+func _check_all_violation_triggers() -> void:
 	var game = ViolatorScript.new()
 	root.add_child(game)
 	game._ready()
@@ -179,6 +180,18 @@ func _check_all_5_violation_triggers() -> void:
 	emerg_car.position.z = -5.0
 	game._check_car_violation_state(emerg_car)
 	_check("EMERGENCY_YIELD becomes active when failing to yield to special transport", emerg_car.violation_state == "active")
+
+	# 9. NO_LIGHTS
+	var lights_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_NO_LIGHTS)
+	lights_car.position.z = -5.0
+	game._check_car_violation_state(lights_car)
+	_check("NO_LIGHTS becomes active approaching junction without lights", lights_car.violation_state == "active")
+
+	# 10. WEATHER_SPEED
+	var speed_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_WEATHER_SPEED)
+	speed_car.position.z = -2.0
+	game._check_car_violation_state(speed_car)
+	_check("WEATHER_SPEED becomes active when skidding/sliding past stop line", speed_car.violation_state == "active")
 
 	game.queue_free()
 
@@ -292,6 +305,53 @@ func _check_step2_classification_mechanic() -> void:
 	game.ui._on_classification_timeout()
 	_check("Classification timeout penalizes life", game.lives == lives_prior - 1)
 	_check("Classification timeout restores time_scale to 1.0", is_equal_approx(Engine.time_scale, 1.0))
+
+	game.queue_free()
+
+
+func _check_endless_patrol_mode() -> void:
+	var game = ViolatorScript.new()
+	root.add_child(game)
+	game._ready()
+	game.ready_for_play = true
+	game._start_game()
+
+	_check("Default game mode is blitz", game.game_mode == "blitz")
+
+	# Toggle mode via UI button
+	game.ui._mode_btn.pressed.emit()
+	_check("Mode toggled to patrol via UI", game.game_mode == "patrol")
+	_check("Patrol elapsed time starts at 0.0", is_equal_approx(game.patrol_elapsed, 0.0))
+	_check("Initial weather phase is day", game.weather_phase == "day")
+
+	# Advance patrol time
+	game._process(1.5)
+	_check("Patrol elapsed time increases", game.patrol_elapsed >= 1.4)
+
+	# Test weather transitions
+	game._apply_weather_visuals("dusk")
+	_check("Weather phase dusk sets dusk lighting", game.weather_phase == "dusk")
+	game._apply_weather_visuals("night")
+	_check("Weather phase night turns street lamps on", game.weather_phase == "night" and game.street_lamps.size() > 0 and game.street_lamps[0].light_energy > 1.5)
+	game._apply_weather_visuals("rain")
+	_check("Weather phase rain sets wet asphalt roughness", game.weather_phase == "rain" and game.asphalt_material != null and is_equal_approx(game.asphalt_material.roughness, 0.22))
+
+	# Test combo 5x life recovery in Endless Patrol mode
+	game.lives = 3
+	game.combo = 4
+	var violator = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
+	game.light_state = "red"
+	violator.position.z = -1.0
+	game._check_car_violation_state(violator)
+	game.handle_car_tapped(violator, Vector2(100, 100))
+	game._on_classification_selected(ViolatorScript.VIOLATION_RED_LIGHT)
+
+	_check("Combo 5 reached in patrol mode", game.combo == 5)
+	_check("Combo 5 restores +1 life in patrol mode (3 -> 4)", game.lives == 4)
+
+	# Toggle back to blitz via UI button
+	game.ui._mode_btn.pressed.emit()
+	_check("Mode toggled back to blitz via UI", game.game_mode == "blitz")
 
 	game.queue_free()
 

@@ -12,6 +12,7 @@ extends Control
 signal exit_pressed()
 signal restart_pressed()
 signal classification_selected(code: String)
+signal mode_toggled(new_mode: String)
 
 const ICON_CLOSE := 0xf647
 const ICON_STAR := 0xf01d4
@@ -37,6 +38,14 @@ const STRINGS := {
 		"violatorArrowYield": "п. 13.5: Поворот по стрелке с красным",
 		"violatorWaffleBlock": "п. 13.2: Затор на вафельнице 1.26",
 		"violatorEmergencyYield": "п. 3.2: Не уступил дорогу спецтранспорту",
+		"violatorNoLights": "п. 19.1: Движение без фар ночью",
+		"violatorWeatherSpeed": "п. 10.1: Скорость без учёта погоды / занос",
+		"violatorLifeRestored": "Серия x5! Жизнь восстановлена (+1 ❤️)",
+		"violatorPhaseDusk": "Сумерки на перекрёстке",
+		"violatorPhaseNight": "Ночной патруль: включите внимание",
+		"violatorPhaseRain": "Ливень: скользкий асфальт",
+		"violatorModeBlitz": "Режим: Блиц 60 сек",
+		"violatorModePatrol": "Режим: Бесконечный патруль",
 		"violatorEmergencyExempt": "Ложный вызов! Спецтранспорт со спецсигналами имеет преимущество (-1 жизнь)",
 		"violatorFalseAlarm": "Ложный вызов! Автомобиль соблюдает ПДД (-1 жизнь)",
 		"violatorMissedWarning": "Внимание: нарушитель пропущен!",
@@ -57,6 +66,14 @@ const STRINGS := {
 		"violatorArrowYield": "Cl. 13.5: Failed to yield on arrow with red",
 		"violatorWaffleBlock": "Cl. 13.2: Gridlock on box junction 1.26",
 		"violatorEmergencyYield": "Cl. 3.2: Failed to yield to emergency vehicle",
+		"violatorNoLights": "Cl. 19.1: Driving without lights at night",
+		"violatorWeatherSpeed": "Cl. 10.1: Speed inappropriate for weather / skid",
+		"violatorLifeRestored": "Streak x5! Life restored (+1 ❤️)",
+		"violatorPhaseDusk": "Dusk at the intersection",
+		"violatorPhaseNight": "Night patrol: stay alert",
+		"violatorPhaseRain": "Heavy rain: slippery asphalt",
+		"violatorModeBlitz": "Mode: Blitz 60s",
+		"violatorModePatrol": "Mode: Endless Patrol",
 		"violatorEmergencyExempt": "False alarm! Emergency vehicle has right of way (-1 life)",
 		"violatorFalseAlarm": "False alarm! Vehicle complies with rules (-1 life)",
 		"violatorMissedWarning": "Warning: violator missed!",
@@ -77,6 +94,14 @@ const STRINGS := {
 		"violatorArrowYield": "13.5 т.: Қызылда бағыттауышпен жол бермеу",
 		"violatorWaffleBlock": "13.2 т.: 1.26 торлы таңбадағы кептеліс",
 		"violatorEmergencyYield": "3.2 т.: Арнайы көлікке жол бермеу",
+		"violatorNoLights": "19.1 т.: Түнде жарықсыз жүру",
+		"violatorWeatherSpeed": "10.1 т.: Ауа райына сай емес жылдамдық",
+		"violatorLifeRestored": "x5 сериясы! Өмір қалпына келтірілді (+1 ❤️)",
+		"violatorPhaseDusk": "Қиылыстағы іңір",
+		"violatorPhaseNight": "Түнгі патруль: мұқият болыңыз",
+		"violatorPhaseRain": "Нөсер: тайғақ асфальт",
+		"violatorModeBlitz": "Режим: Блиц 60 сек",
+		"violatorModePatrol": "Режим: Шексіз патруль",
 		"violatorEmergencyExempt": "Жалған шақыру! Арнайы көлікке басымдық берілген (-1 өмір)",
 		"violatorFalseAlarm": "Жалған шақыру! Көлік ережені бұзбаған (-1 өмір)",
 		"violatorMissedWarning": "Назар аударыңыз: ереже бұзушы жіберіп алынды!",
@@ -103,6 +128,9 @@ var _combo_chip: PanelContainer
 var _combo_label: Label
 var _timer_label: Label
 var _hearts: Array[Label] = []
+var _mode_btn: Button
+var _mode_icon: Label
+var current_mode: String = "blitz"
 
 # Overlay Drawing (reticles, ripples)
 var _overlay: Control
@@ -288,6 +316,41 @@ func _build_top_bar() -> void:
 		lives_box.add_child(heart)
 	hud_row.add_child(lives_box)
 
+	# Mode toggle button next to HUD
+	_mode_btn = Button.new()
+	_mode_btn.custom_minimum_size = Vector2(CHROME, CHROME)
+	_mode_btn.flat = true
+	var mode_style := Ui.box(Ui.c("card"), 10)
+	_mode_btn.add_theme_stylebox_override("normal", mode_style)
+	_mode_btn.add_theme_stylebox_override("hover", mode_style)
+	_mode_btn.add_theme_stylebox_override("pressed", mode_style)
+	_mode_icon = Ui.icon(ICON_TIMER, 18, Ui.c("accent"))
+	_mode_btn.add_child(_mode_icon)
+	_mode_btn.pressed.connect(_on_mode_button_pressed)
+	_top_bar.add_child(_mode_btn)
+
+
+func _on_mode_button_pressed() -> void:
+	if current_mode == "blitz":
+		set_mode("patrol")
+		show_toast(tr_v("violatorModePatrol"), false)
+		mode_toggled.emit("patrol")
+	else:
+		set_mode("blitz")
+		show_toast(tr_v("violatorModeBlitz"), false)
+		mode_toggled.emit("blitz")
+
+
+func set_mode(mode: String) -> void:
+	current_mode = mode
+	if is_instance_valid(_mode_icon):
+		if mode == "patrol":
+			_mode_icon.text = char(ICON_STAR)
+			_mode_icon.add_theme_color_override("font_color", Ui.c("gold"))
+		else:
+			_mode_icon.text = char(ICON_TIMER)
+			_mode_icon.add_theme_color_override("font_color", Ui.c("accent"))
+
 
 func _spacer_expand() -> Control:
 	var sp := Control.new()
@@ -295,7 +358,7 @@ func _spacer_expand() -> Control:
 	return sp
 
 
-func update_hud(score: int, combo: int, seconds_left: float, lives: int) -> void:
+func update_hud(score: int, combo: int, seconds_or_elapsed: float, lives: int) -> void:
 	if is_instance_valid(_score_label):
 		_score_label.text = str(maxi(0, score))
 	if is_instance_valid(_combo_chip):
@@ -305,7 +368,11 @@ func update_hud(score: int, combo: int, seconds_left: float, lives: int) -> void
 		else:
 			_combo_chip.visible = false
 	if is_instance_valid(_timer_label):
-		_timer_label.text = str(maxi(0, ceili(seconds_left)))
+		if current_mode == "patrol":
+			var elapsed := int(seconds_or_elapsed)
+			_timer_label.text = "%02d:%02d" % [elapsed / 60, elapsed % 60]
+		else:
+			_timer_label.text = str(maxi(0, ceili(seconds_or_elapsed)))
 	for i in _hearts.size():
 		if i < lives:
 			_hearts[i].add_theme_color_override("font_color", Ui.c("red"))
@@ -594,6 +661,8 @@ func _violation_l10n_key(code: String) -> String:
 		"arrow_yield": return "violatorArrowYield"
 		"waffle_block": return "violatorWaffleBlock"
 		"emergency_yield": return "violatorEmergencyYield"
+		"no_lights": return "violatorNoLights"
+		"weather_speed": return "violatorWeatherSpeed"
 	return "violatorRedLight"
 
 
