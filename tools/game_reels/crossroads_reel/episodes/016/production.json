@@ -1,0 +1,41 @@
+{
+  "id": "crossroads-016",
+  "title": "Трамвай и разрешённый поворот",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_016.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "a020e0c4482e73184afd5b539c5ba6e73144144f47ca8db1096eb02f3a2a7205",
+  "bytes": 21426153,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "23.100000",
+    "nb_read_frames": "693",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "23.100000"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "6.3",
+    "6.8",
+    "13.6"
+  ],
+  "adaptation": "Signalised junction, only the two used signals: south main green made as a right arrow (no extra section), west white Т-shaped tram signal with top-middle and bottom lamps (straight). Blue tram from west straight east on rails in the eastbound lane; red hatch from south turns right into the same lane after the tram has passed, at a calmer speed than the tram.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-016; 693.0 frames; green right arrow and tram straight signal; tram clears before red turns; no collisions or occlusion"
+  }
+}

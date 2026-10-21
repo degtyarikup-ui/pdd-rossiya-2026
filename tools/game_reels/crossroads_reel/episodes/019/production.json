@@ -1,0 +1,39 @@
+{
+  "id": "crossroads-019",
+  "title": "Зелёный и затор за перекрёстком",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_019.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "116b4654daef5ab7d8645f246fac38db2a762afd52489e1b30c698e508c4e327",
+  "bytes": 18652328,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "20.133333",
+    "nb_read_frames": "604",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "20.133333"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.2"
+  ],
+  "adaptation": "Signalised junction: south and north green, east and west red. Red sedan at the south stop line wants straight north. The northbound exit lane holds a standing queue: blue SUV right past the junction and yellow wagon behind it, no room for red beyond the junction. Nobody moves; red stays behind its stop line. No order chips.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-019; 604.0 frames; green for red but the exit queue leaves no room; red stays at the stop line; no collisions or occlusion"
+  }
+}

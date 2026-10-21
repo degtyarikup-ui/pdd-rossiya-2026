@@ -1,0 +1,39 @@
+{
+  "id": "crossroads-018",
+  "title": "Зелёный, но перекрёсток занят",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_018.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "f358cfa9d5665cbda61410e6baaf1d3b554af2f8ebb2544c4422a323274e179d",
+  "bytes": 18627216,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "20.266667",
+    "nb_read_frames": "608",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "20.266667"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.8"
+  ],
+  "adaptation": "Signalised junction: south and north red, east and west green. Red pickup is already inside the junction, 45% through its left turn south→west (entered earlier on its green). Blue hatch waits at the east stop line with a fresh green and goes straight west into the same lane only after red has finished the turn and cleared the junction.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-018; 608.0 frames; red finishing inside, blue's fresh green; blue waits until red has cleared; no collisions or occlusion"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "id": "crossroads-020",
+  "title": "Зелёный и погасшая секция",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_020.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "999e6ecddb6fdd6e6f0200782ce12ce25f6c2a6e921561cd7c8108af30b4ee22",
+  "bytes": 15487095,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "18.066667",
+    "nb_read_frames": "542",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "18.066667"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "6.3",
+    "6.4"
+  ],
+  "adaptation": "One red coupe at the south stop line with its right indicator on. South signal: main green with a dark contour arrow straight, additional right-turn section switched off (dark lamp with a dim contour arrow). No other participants or signals. Red keeps waiting; short close-up of the whole signal block after the answer.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-020; 542.0 frames; main green with straight contour, right section dark; red waits; no collisions or occlusion"
+  }
+}
