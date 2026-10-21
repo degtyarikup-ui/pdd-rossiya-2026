@@ -37,6 +37,11 @@ func _build_actors() -> void:
 	# FRONT = model facing +Z, i.e. chest towards the south approach.
 	officer.set_approach(RegulatorRules.Approach.FRONT,false)
 	officer.set_process(false)
+	# High-contrast reel material and a ground shadow so he reads on white/asphalt.
+	var material:=ShaderMaterial.new();material.shader=load("res://videos/crossroads_reel/officer_reel.gdshader")
+	for mesh:MeshInstance3D in officer.find_children("*","MeshInstance3D",true,false):mesh.material_override=material
+	var shadow:=MeshInstance3D.new();shadow.name="ContactShadow";shadow.mesh=Models.contact_mesh();shadow.material_override=Models.contact_material()
+	shadow.position.y=.025;shadow.scale=Vector3(.55,1,.45);shadow.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;officer.add_child(shadow)
 
 func _pose_car(i:int,distance:float) -> Transform3D:
 	if i==0:return Transform3D(Basis(Vector3.UP,PI),Vector3(L,0,D))
