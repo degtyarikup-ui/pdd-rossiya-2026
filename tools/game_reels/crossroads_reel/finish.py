@@ -85,6 +85,15 @@ def mix_audio():
    engine=.65*np.sin(phase)+.18*np.sin(phase*2)+.10*rng.standard_normal(len(tt))
   amp=(1-np.exp(-tt*4))*np.exp(-np.maximum(tt-2.5,0)*.65)*.018
   add(go,engine*amp,pan)
+ # Optional emergency siren (wail), audible from the first frame but kept
+ # well under the voice; it fades out after the vehicle has passed.
+ siren=EPISODE.get('audio',{}).get('siren')
+ if siren:
+  end=C[siren['until']]+float(siren.get('after',0));tt=np.arange(round(min(end,C['duration'])*sr))/sr
+  freq=780+260*np.sin(2*np.pi*tt/1.7);phase=2*np.pi*np.cumsum(freq)/sr
+  tone=np.sin(phase)+.35*np.sin(2*phase)+.12*np.sin(3*phase)
+  env=np.minimum(tt/.15,1)*np.minimum((end-tt)/1.2,1).clip(0,1)*float(siren.get('level',.012))
+  add(0,tone*env,float(siren.get('pan',.15)))
  # Three tactile wooden ticks. The final answer has a soft, short two-note cue.
  for i in range(3):
   tt=np.arange(round(.11*sr))/sr

@@ -1,0 +1,156 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-027",
+  "status": "draft",
+  "title": "Скорая поперёк зелёного",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#027",
+  "rules": [
+    "3.1",
+    "3.2"
+  ],
+  "scene": "res://videos/crossroads_reel/siren_ambulance.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "blue",
+    "red"
+  ],
+  "motionMinimums": {
+    "blue": 5.6,
+    "red": 5.2
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.8
+  },
+  "turns": {
+    "red": "none",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.0,
+      "blue": 0.15
+    },
+    "indicator": false,
+    "setupCutAccents": [],
+    "siren": {
+      "until": "red",
+      "after": 0.4,
+      "pan": 0.2,
+      "level": 0.013
+    }
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    },
+    {
+      "car": "red",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Signalised junction: south/north green, east/west red. Red sedan waits at the south stop line on green. White ambulance (game van, red stripes, two alternating blue beacons) from the east crosses straight west on its red with beacons and siren on; the siren is heard from the first frame, quietly under the voice. Red gives way, then proceeds on its green.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кого здесь нужно пропустить?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Сначала скорую. Синий маячок и сирена включены вместе — красная уступает."
+    },
+    {
+      "key": "red",
+      "text": "Скорая проехала. Теперь красная продолжает на свой зелёный."
+    },
+    {
+      "key": "cta",
+      "text": "На зелёном тоже пропускаем. Помнил?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кого здесь нужно",
+      "пропустить?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Сначала скорую",
+      "Синий маячок",
+      "и сирена",
+      "включены вместе",
+      "красная уступает"
+    ],
+    "red": [
+      "Скорая проехала",
+      "Теперь красная",
+      "продолжает",
+      "на свой зелёный"
+    ],
+    "cta": [
+      "На зелёном",
+      "тоже пропускаем",
+      "Помнил?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "sedan"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "ambulance"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 4,
+    "signs": 0,
+    "arrows": [],
+    "focus": [
+      [
+        "blue+1.2",
+        1
+      ],
+      [
+        "red+1.3",
+        0
+      ]
+    ],
+    "always": [
+      {
+        "expr": "t>=cfg.red+0.6 or scene.cars[0].transform.is_equal_approx(scene._pose_car(0,0))",
+        "msg": "Red moves before the ambulance has passed"
+      }
+    ],
+    "at": [
+      {
+        "time": "red+0.6",
+        "expr": "scene.cars[1].position.x<-10",
+        "msg": "Ambulance has not cleared"
+      },
+      {
+        "time": "0",
+        "expr": "scene.signal_roots['south'].get_meta('main')=='green' and scene.signal_roots['east'].get_meta('main')=='red'",
+        "msg": "Wrong signals"
+      }
+    ],
+    "summary": "beacon plus siren: red gives way on its green"
+  }
+}

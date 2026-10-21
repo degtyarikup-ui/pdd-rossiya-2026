@@ -1,0 +1,145 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-030",
+  "status": "draft",
+  "title": "Круг не всегда главный",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#030",
+  "rules": [
+    "13.9",
+    "13.11.1"
+  ],
+  "scene": "res://videos/crossroads_reel/roundabout_main.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "red",
+    "blue"
+  ],
+  "motionMinimums": {
+    "red": 5.4,
+    "blue": 5.0
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "none",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.0,
+      "blue": -0.15
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    },
+    {
+      "car": "blue",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Single-lane roundabout (ring radius 9.6 m, raised island 6.6 m) with 4.3 on the south entry. The south entry is the main road (2.1); ring traffic faces 2.4 on the island just before that entry. Blue SUV already on the ring approaches from the west and gives way; red hatch enters from the south, goes a quarter round and leaves east; blue then continues round behind it.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь должен уступить?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Синяя. На этом въезде главная у красной — это видно по знакам."
+    },
+    {
+      "key": "blue",
+      "text": "Преимущество на круге зависит не только от того, кто уже на нём."
+    },
+    {
+      "key": "cta",
+      "text": "Круг автоматически главным не сделал?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "должен уступить?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Синяя",
+      "На этом въезде",
+      "главная у красной",
+      "это видно по знакам"
+    ],
+    "blue": [
+      "Преимущество на круге",
+      "зависит не только",
+      "от того,",
+      "кто уже на нём"
+    ],
+    "cta": [
+      "Круг автоматически",
+      "главным не сделал?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "hatch",
+    "blue": "suv"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 3,
+    "arrows": [],
+    "focus": [
+      [
+        "blue+1.0",
+        1
+      ]
+    ],
+    "always": [
+      {
+        "expr": "t>=cfg.blue+0.6 or scene.cars[1].transform.is_equal_approx(scene._pose_car(1,0))",
+        "msg": "Blue moves before red"
+      }
+    ],
+    "at": [
+      {
+        "time": "blue+0.6",
+        "expr": "scene.cars[0].position.x>6.0",
+        "msg": "Red is not ahead on the ring when blue moves"
+      },
+      {
+        "time": "0",
+        "expr": "scene.readable_signs.size()==3",
+        "msg": "Signs"
+      }
+    ],
+    "summary": "main-road entry beats ring traffic facing 2.4"
+  }
+}

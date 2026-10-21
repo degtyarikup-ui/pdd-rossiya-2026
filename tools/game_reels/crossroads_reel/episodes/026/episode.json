@@ -1,0 +1,143 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-026",
+  "status": "draft",
+  "title": "Автобус отъезжает от остановки",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#026",
+  "rules": [
+    "18.3"
+  ],
+  "scene": "res://videos/crossroads_reel/bus_stop.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "red",
+    "blue"
+  ],
+  "motionMinimums": {
+    "red": 5.0,
+    "blue": 5.4
+  },
+  "motionDelays": {
+    "red": 0.4,
+    "blue": 1.6
+  },
+  "turns": {
+    "red": "none",
+    "blue": "left"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.0
+    },
+    "indicator": true,
+    "indicatorPan": 0.15,
+    "setupCutAccents": []
+  },
+  "answerChips": [],
+  "createdDate": "2026-10-21",
+  "adaptation": "South approach to a junction inside a built-up area: white 5.23.1 by the road, a bus bay cut into the east kerb with 1.17 yellow zigzag and 5.16. Blue bus (game bus model) in the bay with the left indicator flashing. Red sedan behind in the single northbound lane brakes to a stop behind the bay, lets the bus pull out gently, then follows it.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь должен подождать?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Красная. В населённом пункте выпускаем автобус с обозначенной остановки."
+    },
+    {
+      "key": "blue",
+      "text": "А водитель автобуса тоже убеждается, что его пропускают."
+    },
+    {
+      "key": "cta",
+      "text": "Автобус бы выпустил?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "должен подождать?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Красная",
+      "В населённом пункте",
+      "выпускаем автобус",
+      "с обозначенной",
+      "остановки"
+    ],
+    "blue": [
+      "А водитель автобуса",
+      "тоже убеждается,",
+      "что его пропускают"
+    ],
+    "cta": [
+      "Автобус бы",
+      "выпустил?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "sedan"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "bus"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 11,
+    "signals": 0,
+    "signs": 2,
+    "arrows": [],
+    "focus": [
+      [
+        "red+2.0",
+        1
+      ],
+      [
+        "blue+1.2",
+        -1
+      ]
+    ],
+    "always": [
+      {
+        "expr": "t<cfg.answer or t>=cfg.cta or scene.cars[0].position.z-2.2>scene.cars[1].position.z+3.6 or scene.cars[1].position.x>3.0",
+        "msg": "Red too close to the bus"
+      }
+    ],
+    "at": [
+      {
+        "time": "red+1.6",
+        "expr": "scene.red_distance(t)>0",
+        "msg": "Red must already be braking when the bus starts"
+      },
+      {
+        "time": "0",
+        "expr": "scene.readable_signs.size()==2",
+        "msg": "Signs 5.16 and 5.23.1"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[0].position.z<scene.cars[1].position.z+32",
+        "msg": "Red did not follow"
+      }
+    ],
+    "summary": "red lets the bus pull out of a marked stop in a built-up area"
+  }
+}

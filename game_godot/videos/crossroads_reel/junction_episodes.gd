@@ -86,3 +86,35 @@ func _sign_visibility() -> void:
 	var overhead:bool=_cam.projection==Camera3D.PROJECTION_ORTHOGONAL
 	for face in readable_signs:face.visible=overhead
 	for physical in physical_faces:physical.visible=not overhead
+
+func _plain_sign(approach:String,code:String,at:Vector3,yaw:float,height:=2.35,plate:=.7) -> Node3D:
+	# Any canonical sign straight from res://signs/<code>.svg: post, face and
+	# the readable overview copy, without the layout table of RoadBuild.
+	var root_node:=Node3D.new();root_node.position=at;root_node.rotation.y=yaw
+	root_node.set_meta("approach",approach);root_node.set_meta("code",code);add_child(root_node)
+	var image:=(load("res://signs/%s.svg"%code) as Texture2D).get_image();var cropped:=image.get_region(image.get_used_rect());cropped.generate_mipmaps()
+	var texture:=ImageTexture.create_from_image(cropped)
+	var physical:=Node3D.new();root_node.add_child(physical);physical_faces.append(physical)
+	var pole:=MeshInstance3D.new();var cylinder:=CylinderMesh.new();cylinder.height=height+.3;cylinder.top_radius=.045;cylinder.bottom_radius=.045
+	pole.mesh=cylinder;pole.material_override=_mat(Color("838b8e"),.6);pole.position.y=(height+.3)*.5;physical.add_child(pole)
+	var face:=MeshInstance3D.new();var quad:=QuadMesh.new();quad.size=Vector2(plate,plate*cropped.get_height()/float(cropped.get_width()));face.mesh=quad
+	face.position=Vector3(0,height,-.06);face.rotation.y=PI
+	var material:=StandardMaterial3D.new();material.albedo_texture=texture;material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	material.texture_filter=BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC;face.material_override=material;physical.add_child(face)
+	var readable:=Sprite3D.new();readable.texture=texture;readable.pixel_size=2.8/float(maxi(cropped.get_width(),cropped.get_height()))
+	readable.position.y=1.6;readable.billboard=BaseMaterial3D.BILLBOARD_ENABLED;readable.no_depth_test=true;readable.shaded=false
+	readable.texture_filter=BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	root_node.add_child(readable);readable_signs.append(readable)
+	return root_node
+
+func _van(name:String,paint:Color) -> Node3D:
+	# Game van model as a special vehicle; wheels are part of the mesh.
+	var van:=Node3D.new();van.name=name;van.set_meta("bodyModel","van")
+	var body:=MeshInstance3D.new();body.mesh=Models.mesh_of("res://models/road/van.glb")
+	var material:=Models.vehicle_material(paint);var linear:=paint.srgb_to_linear()
+	material.set_shader_parameter("paint_colour",Vector3(linear.r,linear.g,linear.b));material.set_shader_parameter("cab_colour",Vector3(linear.r,linear.g,linear.b))
+	material.set_shader_parameter("animate_wheels",false);body.material_override=material;van.add_child(body)
+	van.set_meta("bodyBounds",body.mesh.get_aabb().grow(.05))
+	var contact:=MeshInstance3D.new();contact.mesh=Models.contact_mesh();contact.material_override=Models.contact_material()
+	contact.position.y=.028;contact.scale=Vector3(1.4,1,3.0);contact.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;van.add_child(contact)
+	return van

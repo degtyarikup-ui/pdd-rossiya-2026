@@ -1,0 +1,164 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-029",
+  "status": "draft",
+  "title": "Пешеход заканчивает переход",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#029",
+  "rules": [
+    "13.8"
+  ],
+  "scene": "res://videos/crossroads_reel/pedestrian_finishing.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "blue",
+    "red"
+  ],
+  "motionMinimums": {
+    "blue": 3.4,
+    "red": 5.6
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.2
+  },
+  "turns": {
+    "red": "none",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.0
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    },
+    {
+      "car": "red",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Signalised junction: south/north green for vehicles, east/west red. Zebra across the north arm. Red sedan at the south stop line with its fresh green, straight north. A pedestrian in a blue jacket who started earlier is past the middle of the zebra, in red's northbound lane, finishing west to east. Red moves only after he has reached the east sidewalk.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Можно ли красной уже ехать?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Пока нет. Пешеход ещё заканчивает переход — сначала даём ему выйти с проезжей части."
+    },
+    {
+      "key": "red",
+      "text": "Даже если нам уже включился зелёный. Теперь красная едет."
+    },
+    {
+      "key": "cta",
+      "text": "Сразу на зелёный бы тронулся?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Можно ли красной",
+      "уже ехать?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Пока нет",
+      "Пешеход ещё",
+      "заканчивает переход",
+      "сначала даём ему",
+      "выйти",
+      "с проезжей части"
+    ],
+    "red": [
+      "Даже если нам",
+      "уже включился",
+      "зелёный",
+      "Теперь красная едет"
+    ],
+    "cta": [
+      "Сразу на зелёный",
+      "бы тронулся?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "sedan"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "pedestrian"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 4,
+    "signs": 0,
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          1.75,
+          1.85
+        ],
+        "tipZ": [
+          5,
+          8.5
+        ],
+        "dir": [
+          0,
+          -1
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "red+1.3",
+        0
+      ]
+    ],
+    "always": [
+      {
+        "expr": "t>=cfg.red+0.6 or scene.cars[0].transform.is_equal_approx(scene._pose_car(0,0))",
+        "msg": "Red moves while the pedestrian is on the carriageway"
+      },
+      {
+        "expr": "t>=cfg.answer or (scene.cars[1].position.x>0.0 and scene.cars[1].position.x<3.6)",
+        "msg": "Pedestrian must be past the middle, still on the carriageway"
+      }
+    ],
+    "at": [
+      {
+        "time": "red+0.6",
+        "expr": "scene.cars[1].position.x>3.9",
+        "msg": "Pedestrian has not left the carriageway"
+      },
+      {
+        "time": "0",
+        "expr": "scene.signal_roots['south'].get_meta('main')=='green'",
+        "msg": "Red must have green"
+      }
+    ],
+    "summary": "fresh green, but the pedestrian finishing the crossing goes first"
+  }
+}

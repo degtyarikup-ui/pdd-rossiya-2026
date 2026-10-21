@@ -1,0 +1,167 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-031",
+  "status": "draft",
+  "title": "Зелёный не разрешает поворот из любой полосы",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#031",
+  "rules": [
+    "8.5",
+    "Приложение 2, разметка 1.18"
+  ],
+  "scene": "res://videos/crossroads_reel/lane_arrows.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "blue",
+    "rule"
+  ],
+  "motionMinimums": {
+    "blue": 4.6,
+    "rule": 0
+  },
+  "motionDelays": {
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "right",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "blue": 0.1
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [],
+  "createdDate": "2026-10-21",
+  "adaptation": "Signalised junction on the wide street of episode 009 (two lanes per direction), south/north green. 1.18 lane arrows before the junction: inner lane straight or left, outer lane straight or right. Red pickup in the inner lane with the right indicator wants to turn right; its hint shows the intended (forbidden) manoeuvre and red never makes it. Blue coupe in the outer lane goes straight. The canonical 5.15.1 image in the content shows three lanes, so it is not used; the lane directions come from the 1.18 markings alone.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Красной можно повернуть направо из этой полосы?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Нет. Направо поворачивают из полосы со стрелкой направо, а красная заняла другую."
+    },
+    {
+      "key": "rule",
+      "text": "Зелёный разрешает движение, но не отменяет направления по полосам."
+    },
+    {
+      "key": "cta",
+      "text": "Свою полосу проверил?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Красной можно",
+      "повернуть направо",
+      "из этой полосы?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Нет",
+      "Направо поворачивают",
+      "из полосы",
+      "со стрелкой направо",
+      "а красная",
+      "заняла другую"
+    ],
+    "rule": [
+      "Зелёный",
+      "разрешает движение",
+      "но не отменяет",
+      "направления",
+      "по полосам"
+    ],
+    "cta": [
+      "Свою полосу",
+      "проверил?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "pickup",
+    "blue": "coupe"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 4,
+    "signs": 0,
+    "static": [
+      0
+    ],
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          9,
+          14
+        ],
+        "tipZ": [
+          1.75,
+          1.85
+        ],
+        "dir": [
+          1,
+          0
+        ]
+      },
+      {
+        "actor": 1,
+        "tipX": [
+          6.25,
+          6.35
+        ],
+        "tipZ": [
+          5,
+          9
+        ],
+        "dir": [
+          0,
+          -1
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "rule",
+        -1
+      ]
+    ],
+    "at": [
+      {
+        "time": "0",
+        "expr": "scene.signal_roots['south'].get_meta('main')=='green'",
+        "msg": "South must be green"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[1].position.z<-8",
+        "msg": "Blue straight run cut short"
+      }
+    ],
+    "summary": "green does not allow a right turn from the inner lane; red never makes it"
+  }
+}
