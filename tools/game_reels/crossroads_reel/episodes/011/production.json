@@ -1,0 +1,40 @@
+{
+  "id": "crossroads-011",
+  "title": "Зелёный есть, а ехать нельзя",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_011.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "f0b4268b050a2e67d42aaf68a04f70c112fecf5f370f94ebfbb0d4178a8928ef",
+  "bytes": 16604301,
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "6.10",
+    "6.15"
+  ],
+  "adaptation": "Main road north-south with signals: red sedan from south faces main green, blue hatch from east faces main red. Officer (game RegulatorOfficer model) stands in the centre, chest to the south, both arms down; orientation and gesture fixed for the whole episode, shown enlarged 3.6x on his spot during the question and final overview and at real size while blue passes. Blue goes straight west past his side; red waits. Only the blue answer chip is shown.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK episode 11; 603.0 frames; officer chest south, arms down, fixed; red waits on green; blue passes his side; no collisions or occlusion"
+  },
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "20.100000",
+    "nb_read_frames": "603",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "20.100000"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "crossroads-014",
+  "title": "Два левых без очереди",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_014.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "63180c9dfb4e4222caabe84817ca60fcf935f627b309d79f8f0482c0da70801b",
+  "bytes": 14644115,
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "8.1",
+    "8.6",
+    "13.12"
+  ],
+  "adaptation": "Equal junction without signs or signals. Red coupe from south and blue SUV from north turn left simultaneously on 10 m radius arcs in front of the centre (left side to left side); blue path is the point reflection of red, closest centre distance about 3.2 m. Both finish in their exit lanes. Final chips: both 1.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK episode 14; 585.0 frames; simultaneous left turns, closest centres 3.2 m; exit-lane arrows; no collisions or occlusion"
+  },
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "19.500000",
+    "nb_read_frames": "585",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "19.500000"
+  }
+}

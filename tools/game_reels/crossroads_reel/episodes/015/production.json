@@ -1,0 +1,41 @@
+{
+  "id": "crossroads-015",
+  "title": "Мигающий жёлтый и поворот главной",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_015.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "866ae54507e35468868f7b861f1459e71fc219261a259169a335b51693059059",
+  "bytes": 23026563,
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "6.2",
+    "13.3",
+    "13.9"
+  ],
+  "adaptation": "Junction with all four signals flashing yellow at 1 Hz. Main road south-west (2.1 on south and west, 2.4 on north and east), one 8.13 plate in the south-west quarter inside the red left-turn arc. Red sedan from south turns left into the westbound lane along the main road; blue hatch from north goes straight south and yields. Short close-up of the flashing south signal before red moves.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK episode 15; 697.0 frames; flashing yellow, signs 2.1/2.4, diagram clear of hints; exit-lane left arrow; short straight hint; red clears before blue; no collisions or occlusion"
+  },
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "23.233333",
+    "nb_read_frames": "697",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "23.233333"
+  }
+}
