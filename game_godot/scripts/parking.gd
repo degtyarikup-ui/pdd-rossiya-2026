@@ -39,7 +39,11 @@ var previous_best := 0
 var session_id := "parking"
 var run_sequence := 0
 var completed_runs: Array[Dictionary] = []
-var level_index := 0
+var level_index := 0             # the level being played (ParkingLevels.build id)
+var run_size := 5                # levels in one run, drawn at random from ParkingLevels.COUNT
+var run_levels: Array[int] = []  # this run's levels, in order of difficulty
+var run_pos := 0
+var _forced_level := -1          # --level=N: the run starts with that level (debugging, shots)
 
 var vehicle_id := "sedan"
 var vehicle_paint := Color("#0574F8")
@@ -143,7 +147,7 @@ func _setup_args() -> void:
 		elif arg.begins_with("--paint="): vehicle_paint = Color(arg.trim_prefix("--paint="))
 		elif arg.begins_with("--season="): season_name = arg.trim_prefix("--season=")
 		elif arg == "--auto": auto_drive = true
-		elif arg.begins_with("--level="): level_index = clampi(int(arg.trim_prefix("--level=")), 0, ParkingLevels.COUNT - 1)
+		elif arg.begins_with("--level="): _forced_level = clampi(int(arg.trim_prefix("--level=")), 0, ParkingLevels.COUNT - 1)
 		elif arg.begins_with("--economy="):
 			var config = JSON.parse_string(arg.trim_prefix("--economy="))
 			if config is Dictionary: economy.merge(config, true)
@@ -238,7 +242,22 @@ func _start_run() -> void:
 	sound.suspended = false
 	ui.hide_results()
 	controls.set_active(true)
-	_load_level(level_index)
+	run_levels = _draw_levels()
+	run_pos = 0
+	_load_level(run_levels[0])
+
+
+## run_size different levels at random, played from the easiest: the ids grow with difficulty,
+## so the rules level, when drawn, stays last.
+func _draw_levels() -> Array[int]:
+	var pool: Array[int] = []
+	for i in ParkingLevels.COUNT:
+		if i != _forced_level: pool.append(i)
+	pool.shuffle()
+	var picked: Array[int] = pool.slice(0, clampi(run_size, 1, ParkingLevels.COUNT) - (1 if _forced_level >= 0 else 0))
+	picked.sort()
+	if _forced_level >= 0: picked.insert(0, _forced_level)
+	return picked
 
 
 func _load_level(index: int) -> void:
@@ -279,7 +298,7 @@ func _load_level(index: int) -> void:
 
 
 func _refresh_hud() -> void:
-	ui.set_hud(score, level_index + 1, ParkingLevels.COUNT, lives)
+	ui.set_hud(score, run_pos + 1, run_levels.size(), lives)
 	ui.set_gear(gear)
 
 
@@ -806,10 +825,11 @@ func _parked(spot: Dictionary) -> void:
 
 
 func _next_level() -> void:
-	if level_index >= ParkingLevels.COUNT - 1:
+	run_pos += 1
+	if run_pos >= run_levels.size():
 		_end_run()
 		return
-	_load_level(level_index + 1)
+	_load_level(run_levels[run_pos])
 
 
 # Autopilot (tests and --auto): plays the way exactly, segment by segment.
@@ -904,10 +924,10 @@ func _end_run() -> void:
 	_paint_way()
 	sound.suspended = true
 	var record := score > 0 and score > previous_best
-	ui.show_results(score, parked_count, touches + wrong_spots, max_combo, record, previous_best, vehicle_id, vehicle_paint)
+	# «parked of the run's levels»: touches cost lives and points, they are not extra levels.
+	ui.show_results(score, parked_count, run_levels.size() - parked_count, max_combo, record, previous_best, vehicle_id, vehicle_paint)
 	completed_runs.append(_run_summary())
 	previous_best = maxi(previous_best, score)
-	level_index = 0
 	_checkpoint()
 
 

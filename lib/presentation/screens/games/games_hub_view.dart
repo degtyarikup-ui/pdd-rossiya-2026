@@ -12,6 +12,10 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart
 /// The hub's presentation, shared by the live screen and layout/state checks.
 /// The city stays outside the scrolling mini-game catalogue, within thumb reach.
 /// Large text keeps its natural size and gets a single-column catalogue.
+/// Mini games that are not ready for release: their cards are not shown. The screens,
+/// progress and leaderboards stay in the code; drop an id here to bring a game back.
+const hiddenGames = {'road_signs', 'violator'};
+
 class GamesHubView extends StatelessWidget {
   const GamesHubView({
     super.key,
@@ -294,58 +298,16 @@ class _MiniGamesCatalogue extends StatelessWidget {
           : box.maxWidth >= 600
           ? 3
           : 2;
-      final rows = (6 / columns).ceil();
+      final tiles = _tiles(
+        titleSize: columns > 1 && box.maxWidth < 320 ? 15.0 : 18.0,
+      ).where((tile) => !hiddenGames.contains(tile.id)).toList();
+      final rows = (tiles.length / columns).ceil();
       final rowHeight = math.max(
         columns == 1
             ? math.max(110 + scaledTitle * 3, box.maxWidth * .9)
             : 118.0,
         (box.maxHeight - gap * (rows - 1)) / rows,
       );
-      final titleSize = columns > 1 && box.maxWidth < 320 ? 15.0 : 18.0;
-      final tiles = [
-        _HubCard(
-          id: 'signs',
-          title: appL10n.gamesSignsTitle,
-          bestScore: signsBest,
-          titleSize: titleSize,
-          onTap: onSigns,
-        ),
-        _HubCard(
-          id: 'regulator',
-          title: appL10n.gameTrafficControllerTitle,
-          bestScore: trafficBest,
-          titleSize: titleSize,
-          onTap: onTrafficController,
-        ),
-        _HubCard(
-          id: 'crossroads',
-          title: appL10n.gamesCrossroadsTitle,
-          bestScore: crossroadsBest,
-          titleSize: titleSize,
-          onTap: onCrossroads,
-        ),
-        _HubCard(
-          id: 'road_signs',
-          title: appL10n.gamesRoadSignsTitle,
-          bestScore: roadSignsBest,
-          titleSize: titleSize,
-          onTap: onRoadSigns,
-        ),
-        _HubCard(
-          id: 'violator',
-          title: appL10n.gamesViolatorTitle,
-          bestScore: violatorBest,
-          titleSize: titleSize,
-          onTap: onViolator,
-        ),
-        _HubCard(
-          id: 'parking',
-          title: appL10n.gamesParkingTitle,
-          bestScore: parkingBest,
-          titleSize: titleSize,
-          onTap: onParking,
-        ),
-      ];
       return _CatalogueScroll(
         overflow: rowHeight * rows + gap * (rows - 1) > box.maxHeight + .5,
         child: Column(
@@ -359,7 +321,11 @@ class _MiniGamesCatalogue extends StatelessWidget {
                   children: [
                     for (var col = 0; col < columns; col++) ...[
                       if (col > 0) SizedBox(width: gap),
-                      Expanded(child: tiles[row * columns + col]),
+                      Expanded(
+                        child: row * columns + col < tiles.length
+                            ? tiles[row * columns + col]
+                            : const SizedBox(),
+                      ),
                     ],
                   ],
                 ),
@@ -370,6 +336,51 @@ class _MiniGamesCatalogue extends StatelessWidget {
       );
     },
   );
+
+  List<_HubCard> _tiles({required double titleSize}) => [
+    _HubCard(
+      id: 'signs',
+      title: appL10n.gamesSignsTitle,
+      bestScore: signsBest,
+      titleSize: titleSize,
+      onTap: onSigns,
+    ),
+    _HubCard(
+      id: 'regulator',
+      title: appL10n.gameTrafficControllerTitle,
+      bestScore: trafficBest,
+      titleSize: titleSize,
+      onTap: onTrafficController,
+    ),
+    _HubCard(
+      id: 'crossroads',
+      title: appL10n.gamesCrossroadsTitle,
+      bestScore: crossroadsBest,
+      titleSize: titleSize,
+      onTap: onCrossroads,
+    ),
+    _HubCard(
+      id: 'road_signs',
+      title: appL10n.gamesRoadSignsTitle,
+      bestScore: roadSignsBest,
+      titleSize: titleSize,
+      onTap: onRoadSigns,
+    ),
+    _HubCard(
+      id: 'violator',
+      title: appL10n.gamesViolatorTitle,
+      bestScore: violatorBest,
+      titleSize: titleSize,
+      onTap: onViolator,
+    ),
+    _HubCard(
+      id: 'parking',
+      title: appL10n.gamesParkingTitle,
+      bestScore: parkingBest,
+      titleSize: titleSize,
+      onTap: onParking,
+    ),
+  ];
 }
 
 class _CatalogueScroll extends StatefulWidget {

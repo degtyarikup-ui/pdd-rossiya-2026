@@ -107,6 +107,7 @@ func _check_rules_spots() -> void:
 func _check_scene() -> void:
 	var scene: Node = load("res://parking.tscn").instantiate()
 	scene.set("auto_drive", true)
+	scene.set("run_size", ParkingLevels.COUNT)   # the autopilot drives every level once
 	root.add_child(scene)
 	var parked := 0
 	for frame in 60 * 240:
@@ -116,6 +117,17 @@ func _check_scene() -> void:
 		if scene.is_game_over: break
 	_check("autopilot parks every level (%d)" % parked, parked == ParkingLevels.COUNT)
 	_check("autopilot follows the clear way without touching", scene.touches == 0)
+	_check("results count the run's levels, not touches", scene.ui.results._answered_total == ParkingLevels.COUNT)
+	# A normal run: five different levels drawn at random, easiest first, the rules level last.
+	scene.run_size = 5
+	for attempt in 30:
+		var drawn: Array[int] = scene._draw_levels()
+		var sorted := drawn.duplicate()
+		sorted.sort()
+		var distinct := {}
+		for i in drawn: distinct[i] = true
+		_check("a run draws 5 different levels in order", drawn.size() == 5 and distinct.size() == 5 and drawn == sorted)
+		if ParkingLevels.RULES in drawn: _check("the rules level comes last", drawn.back() == ParkingLevels.RULES)
 	var summary: Dictionary = scene.call("_session_summary")
 	_check("summary names the game", summary.game == "parking" and summary.runs.size() >= 1)
 	scene.queue_free()
