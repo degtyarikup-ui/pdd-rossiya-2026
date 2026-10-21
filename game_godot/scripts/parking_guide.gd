@@ -87,6 +87,7 @@ func setup(level: Dictionary, way: Array, geometry: Dictionary) -> void:
 	add_child(_route)
 	var shader := Shader.new()
 	shader.code = ROUTE_SHADER
+	var rail_ends := {}
 	for i in way.size():
 		var segment: Dictionary = way[i]
 		var poses: Array = segment.poses
@@ -100,7 +101,8 @@ func setup(level: Dictionary, way: Array, geometry: Dictionary) -> void:
 		mat.set_shader_parameter("route_colour", REVERSE if int(segment.gear) < 0 else FORWARD)
 		mat.set_shader_parameter("emphasis", 1.0 if i == 0 else 0.58)
 		mat.set_shader_parameter("cutoff", -1.0)
-		var path := _route_mesh(poses, distances)
+		var path := _route_mesh(poses, distances, int(segment.gear), int(segment.steer), rail_ends)
+		rail_ends = path.get_meta("ends")
 		path.material_override = mat
 		path.name = "Route%d" % (i + 1)
 		_route.add_child(path)
@@ -209,27 +211,58 @@ func _line(st: SurfaceTool, a: Vector2, b: Vector2, width: float, y: float, alph
 	_quad(st, a + n, a - n, b - n, b + n, y, alpha)
 
 
-func _route_mesh(poses: Array, distances: PackedFloat32Array) -> MeshInstance3D:
+## A point on one side of the body (side +1 along the car's right vector r, which is the
+## side a positive lock turns towards), `along` metres in front of the rear axle, just outside
+## the body so that the drawn line never covers the car.
+func _side_point(p: Vector3, side: float, along: float) -> Vector2:
+	var f := ParkingLevels.forward(p.z)
+	return Vector2(p.x, p.y) + f * along + Vector2(f.y, -f.x) * (float(_geo.half_width) + RAIL_WIDTH * 0.5 + 0.03) * side
+
+
+## The rails are the corridor the body sweeps, so a car on the route stays between them.
+## In a turn the outer rail follows the outer front corner and the inner rail the inner side at
+## the rear axle (the tightest point); on a straight the rails cover the whole body from the
+## trailing bumper at the start to the leading bumper at the end. Consecutive segments join
+## along the body side at their common pose. `ends`: the previous segment's last rail points.
+func _route_mesh(poses: Array, distances: PackedFloat32Array, gear: int, steer: int, ends: Dictionary) -> MeshInstance3D:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var half := float(_geo.half_width)
-	for i in range(poses.size() - 1):
-		var a: Vector3 = poses[i]
-		var b: Vector3 = poses[i + 1]
-		var ca := body_centre(a, _geo)
-		var cb := body_centre(b, _geo)
-		var ra := Vector2(cos(a.z), -sin(a.z))
-		var rb := Vector2(cos(b.z), -sin(b.z))
-		for side in [-1.0, 1.0]:
-			var inner := half - RAIL_WIDTH * 0.5
-			var outer := half + RAIL_WIDTH * 0.5
-			_quad(st, ca + ra * inner * side, ca + ra * outer * side,
-				cb + rb * outer * side, cb + rb * inner * side,
-				ROUTE_Y + 0.005, 0.95, distances[i], distances[i + 1])
+	var front := float(_geo.rear) + float(_geo.half_length)
+	var back := float(_geo.rear) - float(_geo.half_length)
+	var last := {}
+	for side: float in [-1.0, 1.0]:
+		var points: Array[Vector2] = []
+		var along: Array[float] = []
+		if steer == 0:
+			points.append(_side_point(poses[0], side, back if gear > 0 else front))
+			points.append(_side_point(poses.back(), side, front if gear > 0 else back))
+			along.append(distances[0])
+			along.append(distances[distances.size() - 1])
+		else:
+			var offset := 0.0 if side == signf(float(steer)) else front
+			for i in poses.size():
+				points.append(_side_point(poses[i], side, offset))
+				along.append(distances[i])
+		if ends.has(side):
+			points.insert(0, ends[side])
+			along.insert(0, distances[0])
+		for i in range(points.size() - 1):
+			_rail(st, points[i], points[i + 1], along[i], along[i + 1])
+		last[side] = points.back()
 	var node := MeshInstance3D.new()
 	node.mesh = st.commit()
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.set_meta("ends", last)
 	return node
+
+
+func _rail(st: SurfaceTool, a: Vector2, b: Vector2, start: float, end: float) -> void:
+	var d := b - a
+	if d.length_squared() < 0.000001: return
+	var n := Vector2(d.y, -d.x).normalized() * RAIL_WIDTH * 0.5
+	# A little past each end so that the joints between pieces stay closed.
+	var t := d.normalized() * RAIL_WIDTH * 0.5
+	_quad(st, a - t + n, a - t - n, b + t - n, b + t + n, ROUTE_Y + 0.005, 0.95, start, end)
 
 
 func _build_chevrons() -> void:
@@ -377,10 +410,12 @@ func _build_gate(end: Vector3, stage: int, current_gear: int, next_gear: int, ne
 	var badge := centre + right * side * (half + 0.5)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_line(st, centre - right * half, centre + right * half, 0.07, MARKER_Y)
-	for edge: float in [-1.0, 1.0]:
-		var at := centre + right * half * edge
-		_line(st, at - f * 0.19, at + f * 0.19, 0.07, MARKER_Y)
+	# The outline of the car where this action ends: stop the car in it, then act. The
+	# leading bumper's edge is bold, it is the line the driver watches.
+	var outline := ParkingLevels.corners(ParkingLevels.box(centre, half, float(_geo.half_length) + 0.1, end.z))
+	for k in 4:
+		var bold := (k == 0 and current_gear > 0) or (k == 2 and current_gear < 0)
+		_line(st, outline[k], outline[(k + 1) % 4], 0.12 if bold else 0.05, MARKER_Y)
 	if absi(next_steer) <= 1:
 		_steering_symbol(st, badge, next_steer)
 	var mat := _floor_material(REVERSE if current_gear < 0 else FORWARD, 0.95, 2)

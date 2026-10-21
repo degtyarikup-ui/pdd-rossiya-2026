@@ -12,18 +12,29 @@ const STEP := 0.1                   # metres between trajectory poses
 const COUNT := 5
 const PAINTS := ["#D9DCE3", "#8D94A3", "#2B2F36", "#E7E2D6", "#9A3B3B", "#3B4A63", "#B8C4D6", "#6E8E6A", "#C9A86A"]
 const PARKED_MODELS := ["hatch", "sedan", "coupe", "wagon", "suv", "pickup"]
-const BAY_W := 2.7
+const BAY_W := 2.7                 # the angled bays
+const LOT_BAY_W := 3.0             # the perpendicular bays: room to swing a long car in nose first
 const BAY_D := 5.3
 const CURB_X := 3.0                 # the right kerb of the street levels
-const KERB_CAR_X := 1.85            # a car standing at that kerb (0.25 m away)
+const KERB_CAR_X := 1.75            # a parked car at that kerb (its mirrors 0.2 m from it)
+const SPOT_X := 1.65                # the centre of a kerbside space 2.7 m wide
+const SPOT_HALF_W := 1.35
+const CENTRE_X := -2.25             # the street's centre line: 5.25 m lane with parking, 3.75 m oncoming
+const PARKED_HW := 1.07             # the widest parked model, mirrors included
+const PASS_GAP := 0.7               # driving school: pass the parked row 0.5–1 m away
+const PARALLEL_BACK := 0.6          # the S ends this far behind the space's centre
 const ROAD_BEYOND := 70.0           # the street goes on past its roadworks, out of the frame
 
 static var _metas := {}
+static var _geos := {}
 
 
-## Wheelbase and the rear axle's distance behind the body centre, measured on the model itself.
+## Wheelbase, the rear axle's distance behind the body centre and the size of the body as it
+## is drawn (mirrors and bumpers included), measured on the model itself: the shown way,
+## the footprints and the touches all use what the player sees.
 static func geometry(model: String) -> Dictionary:
-	var meta := model_meta(model)
+	if _geos.has(model): return _geos[model]
+	var meta := _index_meta(model)
 	var car: Node3D = (load("res://models/vehicles/%s.glb" % model) as PackedScene).instantiate()
 	var front := -INF
 	var rear := INF
@@ -31,11 +42,19 @@ static func geometry(model: String) -> Dictionary:
 		var z := _local_to(car, wheel).origin.z
 		front = maxf(front, z)
 		rear = minf(rear, z)
+	var half_width: float = meta.half_width
+	var half_length: float = meta.half_length
+	var body := car.find_child("body", true, false) as MeshInstance3D
+	if body != null and body.mesh != null:
+		var box := _local_to(car, body) * body.get_aabb()
+		half_width = maxf(absf(box.position.x), absf(box.end.x))
+		half_length = maxf(absf(box.position.z), absf(box.end.z))
 	car.free()
 	if not is_finite(front) or front - rear < 1.5:
-		front = meta.half_length * 0.62
-		rear = -meta.half_length * 0.62
-	return {"wheelbase": front - rear, "rear": -rear, "half_width": meta.half_width, "half_length": meta.half_length}
+		front = half_length * 0.62
+		rear = -half_length * 0.62
+	_geos[model] = {"wheelbase": front - rear, "rear": -rear, "half_width": half_width, "half_length": half_length}
+	return _geos[model]
 
 
 static func _local_to(root: Node3D, node: Node3D) -> Transform3D:
@@ -47,7 +66,13 @@ static func _local_to(root: Node3D, node: Node3D) -> Transform3D:
 	return t
 
 
+## The drawn size of a parked model: {half_width, half_length}.
 static func model_meta(model: String) -> Dictionary:
+	if not ResourceLoader.exists("res://models/vehicles/%s.glb" % model): model = "sedan"
+	return geometry(model)
+
+
+static func _index_meta(model: String) -> Dictionary:
 	if _metas.is_empty():
 		var index: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://models/index.json"))
 		for key: String in index:
@@ -80,6 +105,7 @@ static func drive_script(start: Vector3, script: Array, geo: Dictionary) -> Arra
 	var p := start
 	for seg: Dictionary in script:
 		var dist: float = seg.d if seg.has("d") else deg_to_rad(float(seg.a)) * turn_radius(geo)
+		if dist < 0.05: continue
 		var n := maxi(1, ceili(dist / STEP))
 		var poses: Array[Vector3] = [p]
 		for i in n:
@@ -93,7 +119,8 @@ static func drive_script(start: Vector3, script: Array, geo: Dictionary) -> Arra
 static func way_in(level: Dictionary, geo: Dictionary) -> Array:
 	var target: Dictionary = level.target
 	var final := rear_of(target.c, target.yaw, geo)
-	var exit := drive_script(final, level.exit, geo)
+	var script: Array = level.exit.call(geo) if level.exit is Callable else level.exit
+	var exit := drive_script(final, script, geo)
 	var path := []
 	for i in range(exit.size() - 1, -1, -1):
 		var poses: Array[Vector3] = (exit[i].poses as Array[Vector3]).duplicate()
@@ -144,6 +171,23 @@ static func overlaps(a: Dictionary, b: Dictionary) -> bool:
 	return true
 
 
+## Clearance between two boxes in metres (the widest separating gap; < 0 when they overlap).
+static func gap(a: Dictionary, b: Dictionary) -> float:
+	var ca := corners(a)
+	var cb := corners(b)
+	var best := -INF
+	for o: Dictionary in [a, b]:
+		var f := forward(o.yaw)
+		for axis: Vector2 in [f, Vector2(f.y, -f.x)]:
+			var a0 := INF; var a1 := -INF; var b0 := INF; var b1 := -INF
+			for p in ca:
+				a0 = minf(a0, p.dot(axis)); a1 = maxf(a1, p.dot(axis))
+			for p in cb:
+				b0 = minf(b0, p.dot(axis)); b1 = maxf(b1, p.dot(axis))
+			best = maxf(best, maxf(b0 - a1, a0 - b1))
+	return best
+
+
 ## Local coordinates of a ground point in a box: x across, y along.
 static func local(b: Dictionary, p: Vector2) -> Vector2:
 	var f := forward(b.yaw)
@@ -163,7 +207,7 @@ static func contains(outer: Dictionary, inner: Dictionary) -> bool:
 
 static func build(index: int) -> Dictionary:
 	match index:
-		0: return _lot(5, PI, [{"g": -1, "s": 0, "d": 3.6}, {"g": -1, "s": 1, "a": 90}, {"g": -1, "s": 0, "d": 6.0}], 11)
+		0: return _lot(5, PI, func(geo: Dictionary) -> Array: return forward_bay_exit(geo), 11)
 		1: return _lot(3, 0.0, [{"g": 1, "s": 0, "d": 2.4}, {"g": 1, "s": 1, "a": 90}, {"g": -1, "s": 0, "d": 7.5}], 23)
 		2: return _angled()
 		3: return _parallel()
@@ -192,28 +236,36 @@ static func _works(level: Dictionary, a: Vector2, b: Vector2, out: Vector2, sign
 
 
 ## Perpendicular bays both sides of a lane running along x; the target is bay `target` of the north row.
-static func _lot(target: int, yaw: float, exit: Array, seed: int) -> Dictionary:
+## Nose first into a bay: along the aisle at its far side, full lock when the bay opens up,
+## straight in. A longer car turns wider, so it starts its turn later and drives in less.
+static func forward_bay_exit(geo: Dictionary) -> Array:
+	var straight := clampf(8.6 - turn_radius(geo), 4.0, 5.0)
+	return [{"g": -1, "s": 0, "d": straight}, {"g": -1, "s": 1, "a": 90}, {"g": -1, "s": 0, "d": 6.0}]
+
+
+static func _lot(target: int, yaw: float, exit: Variant, seed: int) -> Dictionary:
 	var level := _level("bay_reverse" if yaw == 0.0 else "bay_forward")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var north0 := -11.5
-	var south1 := 7.1
-	var x0 := -4.5 * BAY_W
-	level.asphalt.append(rect(-13.5, -12.5, 13.5, 8.1))
-	for side in [rect(-15.5, -14.5, 15.5, -12.5), rect(-15.5, 8.1, 15.5, 10.1), rect(-15.5, -12.5, -13.5, 8.1), rect(13.5, -12.5, 15.5, 8.1)]:
+	var south1 := 8.1                 # a 9 m aisle between the rows
+	var x0 := -4.5 * LOT_BAY_W
+	var edge := -x0 + 1.0
+	level.asphalt.append(rect(-edge, -12.5, edge, south1 + 1.0))
+	for side in [rect(-edge - 2.0, -14.5, edge + 2.0, -12.5), rect(-edge - 2.0, south1 + 1.0, edge + 2.0, south1 + 3.0), rect(-edge - 2.0, -12.5, -edge, south1 + 1.0), rect(edge, -12.5, edge + 2.0, south1 + 1.0)]:
 		level.sidewalks.append(side)
 	level.grass.append(rect(-60, -60, 60, 60))
 	for i in 10:
-		var x := x0 + i * BAY_W
+		var x := x0 + i * LOT_BAY_W
 		_line(level, Vector2(x, north0), Vector2(x, north0 + BAY_D))
 		_line(level, Vector2(x, south1 - BAY_D), Vector2(x, south1))
 	_line(level, Vector2(x0, north0), Vector2(-x0, north0))
 	_line(level, Vector2(x0, south1), Vector2(-x0, south1))
 	var free_south := [2, 6]
 	for i in 9:
-		var cx := x0 + (i + 0.5) * BAY_W
+		var cx := x0 + (i + 0.5) * LOT_BAY_W
 		if i == target:
-			level.target = box(Vector2(cx, north0 + BAY_D * 0.5), BAY_W * 0.5 - 0.05, BAY_D * 0.5, yaw)
+			level.target = box(Vector2(cx, north0 + BAY_D * 0.5), LOT_BAY_W * 0.5 - 0.05, BAY_D * 0.5, yaw)
 		else:
 			_car(level, rng, Vector2(cx + rng.randf_range(-0.12, 0.12), north0 + BAY_D * 0.5 + rng.randf_range(-0.1, 0.2)), PI if rng.randf() < 0.6 else 0.0)
 		if i not in free_south:
@@ -221,13 +273,13 @@ static func _lot(target: int, yaw: float, exit: Array, seed: int) -> Dictionary:
 	level.exit = exit
 	for x in [-11.0, -3.0, 5.0, 13.0]:
 		level.trees.append(Vector2(x, -16.5))
-		level.trees.append(Vector2(x + 2.0, 12.0))
-	level.lamps.append(Vector2(-14.5, -2.7))
-	level.lamps.append(Vector2(14.5, -2.7))
+		level.trees.append(Vector2(x + 2.0, south1 + 4.9))
+	level.lamps.append(Vector2(-edge - 1.0, -2.7))
+	level.lamps.append(Vector2(edge + 1.0, -2.7))
 	level.buildings.append({"prop": "buildings/block_2", "pos": Vector2(-8, -28), "yaw": 0.0})
 	level.buildings.append({"prop": "buildings/block_5", "pos": Vector2(12, -30), "yaw": 0.0})
 	level.buildings.append({"prop": "buildings/home_1", "pos": Vector2(-4, 24), "yaw": PI})
-	level.bounds = Rect2(-13.5, -12.5, 27.0, 20.6)
+	level.bounds = Rect2(-edge, -12.5, edge * 2.0, south1 + 13.5)
 	level.spots.append({"box": level.target, "ok": true})
 	return level
 
@@ -258,7 +310,7 @@ static func _angled() -> Dictionary:
 		elif i != 7:
 			_car(level, rng, c + f * rng.randf_range(-0.1, 0.2), yaw)
 	level.signs.append({"code": "6.4", "pos": Vector2(10.4, z0 + 9 * step + 1.0), "yaw": PI})
-	level.exit = [{"g": -1, "s": 0, "d": 2.2}, {"g": -1, "s": -1, "a": 60}, {"g": -1, "s": 0, "d": 9.0}]
+	level.exit = [{"g": -1, "s": 0, "d": 3.5}, {"g": -1, "s": -1, "a": 60}, {"g": -1, "s": 0, "d": 9.0}]
 	for z in range(-74, 76, 10):
 		level.trees.append(Vector2(-5.2, z))
 		if absf(z + 4.0 - 25.5) > 3.0: level.trees.append(Vector2(10.8, z + 4.0))
@@ -291,7 +343,7 @@ static func _street(level: Dictionary, z0: float, z1: float, crossing := Vector2
 	for part: Vector2 in parts:
 		level.sidewalks.append(rect(CURB_X, part.x, CURB_X + 4.0, part.y))
 		level.sidewalks.append(rect(-10.0, part.x, -6.0, part.y))
-		_line(level, Vector2(-1.5, part.x + 1.0), Vector2(-1.5, part.y - 1.0), 0.12, "#F2F4F8", 3.0)
+		_line(level, Vector2(CENTRE_X, part.x + 1.0), Vector2(CENTRE_X, part.y - 1.0), 0.12, "#F2F4F8", 3.0)
 		var z := part.x + 4.0
 		while z < part.y - 2.0:
 			if absf(z - z0) > 3.0 and absf(z - z1) > 3.0: level.trees.append(Vector2(CURB_X + 3.0, z))
@@ -307,13 +359,26 @@ static func _parallel() -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	_street(level, -32.0, 32.0)
-	level.target = box(Vector2(KERB_CAR_X, 0.0), 1.15, 3.5, PI)
-	for z in [-18.0, -12.2, -6.3, 6.3, 12.2, 23.4]:
-		_car(level, rng, Vector2(KERB_CAR_X + rng.randf_range(-0.05, 0.08), z + rng.randf_range(-0.1, 0.1) * (0.0 if absf(z) < 6 else 1.0)), PI)
-	level.exit = [{"g": 1, "s": 1, "a": 45}, {"g": 1, "s": -1, "a": 45}, {"g": -1, "s": 0, "d": 14.0}]
+	level.target = box(Vector2(SPOT_X, 0.0), SPOT_HALF_W, 4.1, PI)
+	for z in [-18.8, -12.7, -6.6, 6.6, 12.7, 24.0]:
+		_car(level, rng, Vector2(KERB_CAR_X + rng.randf_range(-0.06, 0.04), z + rng.randf_range(-0.1, 0.1) * (0.0 if absf(z) < 7 else 1.0)), PI)
+	level.exit = func(geo: Dictionary) -> Array: return parallel_exit(geo, 13.0)
 	level.bounds = Rect2(-6.0, -32.0, 9.0, 64.0)
 	level.spots.append({"box": level.target, "ok": true})
 	return level
+
+
+## Parallel parking as taught for the exam, played backwards: pass the space 0.5–1 m from the
+## parked row, stop level with the car in front, reverse with full right lock to 45°, straight
+## back if the car's turning circle needs it, then full left lock until parallel, and a short
+## pull forward to centre in the space. The straight is sized by the car's turning radius so the
+## approach keeps PASS_GAP to the parked row for every garage car.
+static func parallel_exit(geo: Dictionary, approach: float) -> Array:
+	var r := turn_radius(geo)
+	var lateral := (SPOT_X - KERB_CAR_X) + PARKED_HW + PASS_GAP + float(geo.half_width)
+	var mid := maxf(0.0, (lateral - 2.0 * r * (1.0 - cos(PI / 4.0))) / sin(PI / 4.0))
+	return [{"g": -1, "s": 0, "d": PARALLEL_BACK}, {"g": 1, "s": 1, "a": 45}, {"g": 1, "s": 0, "d": mid},
+		{"g": 1, "s": -1, "a": 45}, {"g": -1, "s": 0, "d": approach}]
 
 
 ## «Где можно встать?»: four free kerb spaces, only one allowed (п. 12.4 ПДД, знаки 3.27, 6.4, 5.16).
@@ -324,7 +389,7 @@ static func _rules() -> Dictionary:
 	rng.seed = 71
 	_street(level, -52.0, 36.0, Vector2(-49.0, -41.0))
 	var spot := func(z0: float, z1: float, ok: bool, reason: String) -> Dictionary:
-		var s := {"box": box(Vector2(KERB_CAR_X, (z0 + z1) * 0.5), 1.15, (z1 - z0) * 0.5, PI), "ok": ok, "reason": reason}
+		var s := {"box": box(Vector2(SPOT_X, (z0 + z1) * 0.5), SPOT_HALF_W, (z1 - z0) * 0.5, PI), "ok": ok, "reason": reason}
 		level.spots.append(s)
 		return s
 	spot.call(6.0, 14.0, false, "gameParkingBusStop")
@@ -332,12 +397,12 @@ static func _rules() -> Dictionary:
 	spot.call(-26.4, -18.4, false, "gameParkingNoStopping")
 	spot.call(-38.4, -31.0, false, "gameParkingJunction")
 	for z in [24.6, 18.6, 3.7, -2.6, -16.0, -28.7]:
-		_car(level, rng, Vector2(KERB_CAR_X + rng.randf_range(-0.05, 0.08), z), PI)
+		_car(level, rng, Vector2(KERB_CAR_X + rng.randf_range(-0.06, 0.04), z), PI)
 	level.signs.append({"code": "5.16", "pos": Vector2(CURB_X + 0.9, 10.0), "yaw": PI})
 	level.signs.append({"code": "6.4", "pos": Vector2(CURB_X + 0.9, -4.8), "yaw": PI})
 	level.signs.append({"code": "3.27", "pos": Vector2(CURB_X + 0.9, -18.2), "yaw": PI})
 	level.zigzag.append({"x": CURB_X - 0.15, "z0": 2.0, "z1": 18.0})
-	_line(level, Vector2(-1.5, -40.6), Vector2(CURB_X, -40.6), 0.4)
-	level.exit = [{"g": 1, "s": 1, "a": 45}, {"g": 1, "s": -1, "a": 45}, {"g": -1, "s": 0, "d": 40.0}]
+	_line(level, Vector2(CENTRE_X, -40.6), Vector2(CURB_X, -40.6), 0.4)
+	level.exit = func(geo: Dictionary) -> Array: return parallel_exit(geo, 40.0)
 	level.bounds = Rect2(-6.0, -52.0, 9.0, 88.0)
 	return level

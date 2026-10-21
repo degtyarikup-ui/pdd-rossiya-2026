@@ -1,6 +1,6 @@
 ## The steering wheel of «Парковка», in place of the city's left/right arrows: a black game-style
 ## wheel (icons/parking_wheel.svg) with a blue mark at twelve o'clock and the «P» badge, turned as
-## a whole above its shadow. A finger turns it
+## a whole. A finger turns it
 ## around its centre like a real wheel (near the hub a sideways drag turns it too); it stays
 ## where it is left, so the front wheels keep their lock. Half a turn each way is full lock,
 ## a light click marks straight ahead and the lock, a double tap straightens the wheel.
@@ -125,13 +125,6 @@ func _process(delta: float) -> void:
 	value = move_toward(value, 0.0, CENTRE_RATE * delta)
 	if is_zero_approx(value): _centring = false
 	_refresh()
-
-
-func _draw() -> void:
-	# A soft shadow on the ground; it stays put while the wheel turns above it.
-	var r := size.x * 0.5
-	for k in 5:
-		draw_circle(size * 0.5 + Vector2(0, r * 0.06), r * (0.99 - k * 0.03), Color(0, 0, 0, 0.06), true, -1.0, true)
 
 
 func _refresh() -> void:

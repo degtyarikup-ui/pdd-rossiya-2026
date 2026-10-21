@@ -10,13 +10,14 @@ extends Node3D
 const ControlsScript := preload("res://scripts/controls.gd")
 const ParkingUiScript := preload("res://scripts/parking_ui.gd")
 const ParkingGuideScript := preload("res://scripts/parking_guide.gd")
+const FrameBudget := preload("res://scripts/frame_budget.gd")
 
 const VMAX_D := 3.0
 const VMAX_R := 1.9
 const ACCEL := 1.8
 const COAST := 1.5
 const BRAKE := 6.5
-const STEER_RATE := 2.6          # rad/s: the front wheels follow the steering wheel
+const STEER_RATE := 6.0          # rad/s: the front wheels follow the steering wheel without lag
 const KEY_TURN := 0.9            # steering wheel (full lock = 1) per second while A/D is held
 const HOLD := 0.55               # standing still in the spot this long parks the car
 const HIT_SPEED := 0.2
@@ -80,6 +81,12 @@ var _guide_index := 0
 var _cam_target := Vector3.ZERO
 var _cam_dist := 18.0
 var _mats := {}
+var _obstacles: Array[Dictionary] = []   # kerbs and parked cars as boxes, built per level
+var frame_budget = FrameBudget.new()
+var adaptive_quality := false
+var _display_hz := 60
+var _perf := {"time": 0.0, "frames": 0, "worst": 0.0}
+var _ground := {}                # material key -> SurfaceTool while a level is built
 
 
 func _ready() -> void:
@@ -150,6 +157,9 @@ func _setup_environment() -> void:
 	env.environment = Environment.new()
 	MiniGameLighting.apply(sun, env.environment, season_name)
 	sun.directional_shadow_max_distance = 70.0
+	# The camera looks down at a small area: two cascades are enough and halve the shadow pass.
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.directional_shadow_split_1 = 0.5
 	add_child(env)
 	camera = Camera3D.new()
 	camera.fov = FOV
@@ -163,11 +173,53 @@ func _setup_quality() -> void:
 	var tier := Quality.initial(RenderingServer.get_video_adapter_name(), mobile)
 	for arg: String in Host.user_args():
 		if arg.begins_with("--quality=") and arg.trim_prefix("--quality=") in Quality.PROFILES: tier = arg.trim_prefix("--quality=")
+	var fixed := false
+	for arg: String in Host.user_args():
+		if arg.begins_with("--quality="): fixed = true
 	var profile: Dictionary = Quality.PROFILES[tier]
 	get_viewport().scaling_3d_scale = profile.scale
 	get_viewport().msaa_3d = profile.msaa
 	Quality.set_sun_shadows(sun, env.environment, profile.shadows)
-	Engine.max_fps = 60 if mobile and profile.max_fps == 0 else int(profile.max_fps)
+	# A parking manoeuvre is slow, steady motion that shows every uneven frame: a 60 FPS cap on a
+	# 120 Hz screen shows frames for one and then three refreshes. A phone that can afford it runs
+	# at the display's own rate; the budget settles at an even 60 when it cannot (see below).
+	_display_hz = maxi(30, roundi(DisplayServer.screen_get_refresh_rate(DisplayServer.SCREEN_OF_MAIN_WINDOW)))
+	if DisplayServer.screen_get_refresh_rate() <= 0.0: _display_hz = 60
+	Engine.max_fps = int(profile.max_fps)
+	adaptive_quality = mobile and not fixed
+	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
+
+
+func _update_frame_budget(delta: float) -> void:
+	_log_performance(delta)
+	if not adaptive_quality: return
+	var eligible := _ready_for_play and not is_game_over and done_timer < 0.0
+	var target := Engine.max_fps if Engine.max_fps > 0 else _display_hz
+	var update: Dictionary = frame_budget.sample(delta, eligible, target)
+	if update.is_empty(): return
+	var viewport := get_viewport()
+	if Engine.max_fps == 0:
+		# The display rate is not sustained: an even 60 first, quality only after that.
+		Engine.max_fps = 60
+		frame_budget.reset(viewport.scaling_3d_scale, sun.shadow_enabled, viewport.msaa_3d != Viewport.MSAA_DISABLED)
+		return
+	viewport.scaling_3d_scale = update.scale
+	viewport.msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
+	Quality.set_sun_shadows(sun, env.environment, update.shadows)
+	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
+
+
+## One line in the log every 10 s of driving (logcat on Android): the real frame rate on a phone.
+func _log_performance(delta: float) -> void:
+	if not _ready_for_play or is_game_over: return
+	_perf.time += delta
+	_perf.frames += 1
+	_perf.worst = maxf(_perf.worst, delta)
+	if _perf.time < 10.0: return
+	print("parking perf: %.1f fps, worst %.1f ms, cap %d, display %d Hz, scale %.2f, msaa %s, shadows %s" % [
+		_perf.frames / _perf.time, _perf.worst * 1000.0, Engine.max_fps, _display_hz,
+		get_viewport().scaling_3d_scale, get_viewport().msaa_3d != Viewport.MSAA_DISABLED, sun.shadow_enabled])
+	_perf = {"time": 0.0, "frames": 0, "worst": 0.0}
 
 
 # --- Run and levels ---
@@ -202,8 +254,14 @@ func _load_level(index: int) -> void:
 		root3d.queue_free()
 	root3d = Node3D.new()
 	add_child(root3d)
+	_obstacles.clear()
+	_obstacles.append_array(level.sidewalks)
+	for parked: Dictionary in level.cars:
+		var m := ParkingLevels.model_meta(parked.model)
+		_obstacles.append(ParkingLevels.box(parked.c, m.half_width, m.half_length, parked.yaw))
 	_build_ground()
 	_build_works()
+	_flush_ground()
 	_build_props()
 	_build_spots()
 	_build_car()
@@ -259,17 +317,44 @@ func _flat(b: Dictionary, y: float, mat: Material) -> MeshInstance3D:
 	return node
 
 
-func _build_ground() -> void:
-	for b: Dictionary in level.grass: _flat(b, -0.03, _mat("grass"))
-	for b: Dictionary in level.asphalt: _flat(b, 0.0, _mat("asphalt"))
-	for b: Dictionary in level.sidewalks:
-		var mesh := BoxMesh.new()
-		mesh.size = Vector3(b.half.x * 2.0, 0.15, b.half.y * 2.0)
+## Static ground goes into one mesh per material (grass, asphalt, kerbs, each paint colour):
+## a street of dashes and bay lines is a handful of draw calls, not hundreds.
+func _ground_tool(key: String) -> SurfaceTool:
+	if not _ground.has(key):
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		_ground[key] = st
+	return _ground[key]
+
+
+func _ground_quad(b: Dictionary, y: float, key: String) -> void:
+	var st := _ground_tool(key)
+	var c := ParkingLevels.corners(b)
+	for i in [0, 1, 2, 0, 2, 3]:
+		st.set_normal(Vector3.UP)
+		st.add_vertex(Vector3(c[i].x, y, c[i].y))
+
+
+func _flush_ground() -> void:
+	for key: String in _ground:
 		var node := MeshInstance3D.new()
-		node.mesh = mesh
-		node.material_override = _mat("pavement")
-		node.position = Vector3(b.c.x, 0.075, b.c.y)
+		node.mesh = (_ground[key] as SurfaceTool).commit()
+		var mat := _mat(key)
+		if mat is StandardMaterial3D:
+			mat = mat.duplicate()
+			(mat as StandardMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
+		node.material_override = mat
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if key != "pavement" else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		root3d.add_child(node)
+	_ground.clear()
+
+
+func _build_ground() -> void:
+	_ground.clear()
+	for b: Dictionary in level.grass: _ground_quad(b, -0.03, "grass")
+	for b: Dictionary in level.asphalt: _ground_quad(b, 0.0, "asphalt")
+	for b: Dictionary in level.sidewalks:
+		_block(_ground_tool("pavement"), b.c, Vector2(1, 0), Vector3(b.half.x * 2.0, 0.15, b.half.y * 2.0), 0.0)
 	for line: Dictionary in level.lines: _paint_line(line.a, line.b, line.w, line.colour, line.dash)
 	for zig: Dictionary in level.zigzag:
 		var z: float = zig.z0
@@ -296,7 +381,7 @@ func _build_works() -> void:
 		var length := a.distance_to(b)
 		var dir := (b - a) / length
 		var yaw := atan2(out.x, out.y)
-		_flat(ParkingLevels.box((a + b) * 0.5 + out * (depth * 0.5 + 0.1), length * 0.5, depth * 0.5, yaw), 0.014, _mat("milled"))
+		_ground_quad(ParkingLevels.box((a + b) * 0.5 + out * (depth * 0.5 + 0.1), length * 0.5, depth * 0.5, yaw), 0.014, "milled")
 		var n := ceili(length / 1.2)
 		var piece := length / n
 		for i in n:
@@ -380,7 +465,7 @@ func _paint_line(a: Vector2, b: Vector2, width: float, colour: String, dash: flo
 		pieces.append(Vector2(0, length))
 	for p in pieces:
 		var c := a + dir * (p.x + p.y) * 0.5
-		_flat(ParkingLevels.box(c, width * 0.5, (p.y - p.x) * 0.5, yaw), 0.012, _mat(colour))
+		_ground_quad(ParkingLevels.box(c, width * 0.5, (p.y - p.x) * 0.5, yaw), 0.012, colour)
 
 
 func _build_props() -> void:
@@ -567,6 +652,7 @@ func _process(delta: float) -> void:
 	_place_car()
 	_update_guidance(delta)
 	_frame_camera(false, delta)
+	_update_frame_budget(delta)
 	sound.speed = absf(speed) * 2.5
 	sound.player_kind = "suv" if vehicle_id in ["suv", "pickup", "cyber"] else "car"
 
@@ -605,11 +691,8 @@ func _step(dt: float) -> void:
 func _blocked(b: Dictionary) -> bool:
 	for c in ParkingLevels.corners(b):
 		if not (level.bounds as Rect2).has_point(c): return true
-	for kerb: Dictionary in level.sidewalks:
-		if ParkingLevels.overlaps(b, kerb): return true
-	for parked: Dictionary in level.cars:
-		var m := ParkingLevels.model_meta(parked.model)
-		if ParkingLevels.overlaps(b, ParkingLevels.box(parked.c, m.half_width, m.half_length, parked.yaw)): return true
+	for obstacle in _obstacles:
+		if ParkingLevels.overlaps(b, obstacle): return true
 	return false
 
 
@@ -654,6 +737,7 @@ func _advance_segment() -> void:
 
 
 func _check_spots(dt: float, still: bool) -> void:
+	if done_timer >= 0.0: return
 	var body := ParkingLevels.car_box(pose, geo)
 	var inside := {}
 	for spot: Dictionary in level.spots:

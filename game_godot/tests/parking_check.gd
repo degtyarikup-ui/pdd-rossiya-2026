@@ -59,6 +59,18 @@ func _check_way(i: int, model: String, geo: Dictionary) -> void:
 				if ParkingLevels.overlaps(car, kerb): worst = "climbs the kerb at %s" % p
 			if worst != "": break
 		if worst != "": break
+	# The shown way keeps a comfortable margin: a driver following it never grazes anything.
+	var car_gap := INF
+	var kerb_gap := INF
+	for seg: Dictionary in way:
+		for p: Vector3 in seg.poses:
+			var body := ParkingLevels.car_box(p, geo)
+			for parked: Dictionary in level.cars:
+				var m := ParkingLevels.model_meta(parked.model)
+				car_gap = minf(car_gap, ParkingLevels.gap(body, ParkingLevels.box(parked.c, m.half_width, m.half_length, parked.yaw)))
+			for kerb: Dictionary in level.sidewalks: kerb_gap = minf(kerb_gap, ParkingLevels.gap(body, kerb))
+	_check("level %d %s: way passes parked cars ≥ 0.3 m away (%.2f)" % [i, model, car_gap], car_gap >= 0.3)
+	_check("level %d %s: way keeps ≥ 0.2 m from kerbs (%.2f)" % [i, model, kerb_gap], kerb_gap >= 0.195)
 	var last: Vector3 = way.back().poses.back()
 	_check("level %d (%s) %s: way in is clear%s" % [i, level.id, model, "" if worst == "" else " — " + worst], worst == "")
 	_check("level %d %s: way ends in the spot" % [i, model], ParkingLevels.contains(level.target, ParkingLevels.car_box(last, geo)))
