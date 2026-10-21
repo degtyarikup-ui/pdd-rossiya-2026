@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -10,6 +11,7 @@ import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
+import 'package:pdd_app/data/services/support_inbox.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Сервис взаимодействия с чатом техподдержки приложения.
@@ -57,7 +59,8 @@ class SupportChatService {
     // Генерируем уникальный случайный 16-байтный hex ID
     final rand = Random.secure();
     final bytes = List<int>.generate(16, (_) => rand.nextInt(256));
-    clientId = 'guest_${bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join()}';
+    clientId =
+        'guest_${bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join()}';
     await prefs.setString(_prefSupportClientId, clientId);
     _cachedClientId = clientId;
     return clientId;
@@ -138,10 +141,7 @@ class SupportChatService {
           },
         ),
         hosts: BackendConfig.notifierHosts,
-        attempts: const [
-          Duration(seconds: 4),
-          Duration(seconds: 6),
-        ],
+        attempts: const [Duration(seconds: 4), Duration(seconds: 6)],
       );
 
       if (response.statusCode != 200) return null;
@@ -190,6 +190,9 @@ class SupportChatService {
       'appVersion': appVersion,
       'isPremium': isPremium,
       'text': trimmed,
+      // Ответ оператора можно прислать пушем: сервер проверит по сессии, что
+      // переписка принадлежит этому аккаунту.
+      'replyPush': SupportInbox.instance.pushActive(),
     };
     if (userName != null) {
       payload['userName'] = userName;
@@ -203,18 +206,11 @@ class SupportChatService {
       final response = await sendWithRetry(
         (host) => http.post(
           Uri.parse('$host/api/support/send'),
-          headers: {
-            'content-type': 'application/json',
-            if (BackendConfig.notifierSecret.isNotEmpty)
-              'x-install-secret': BackendConfig.notifierSecret,
-          },
+          headers: AuthService.instance.serverHeaders,
           body: jsonEncode(payload),
         ),
         hosts: BackendConfig.notifierHosts,
-        attempts: const [
-          Duration(seconds: 8),
-          Duration(seconds: 12),
-        ],
+        attempts: const [Duration(seconds: 8), Duration(seconds: 12)],
       );
 
       if (response.statusCode != 200) {
@@ -235,6 +231,7 @@ class SupportChatService {
       }
 
       final parsed = SupportChatMessage.fromJson(msgJson);
+      unawaited(SupportInbox.instance.noteSent());
       if (localImagePath != null && parsed.localImagePath == null) {
         return parsed.copyWith(localImagePath: localImagePath);
       }

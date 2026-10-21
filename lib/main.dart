@@ -244,6 +244,12 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
         ),
       );
     };
+    // Ответы поддержки пушем: при открытом приложении — забрать сразу, а частый
+    // опрос по таймеру не нужен, пока пуши доходят.
+    SupportInbox.instance.pushActive = () =>
+        RemoteNotificationsService.instance.accountPushActive;
+    RemoteNotificationsService.instance.onSupportReply =
+        SupportInbox.instance.pollNow;
     SupportInbox.instance.start();
     final returned = widget.webAuthReturn;
     if (returned != null) {

@@ -19,6 +19,7 @@ import 'package:pdd_app/data/services/app_update_service.dart';
 import 'package:pdd_app/presentation/widgets/app_update_dialog.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/data/services/remote_notifications_service.dart';
+import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -292,6 +293,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         tab(2);
       case NoticeAction.settings:
         tab(3);
+      case NoticeAction.support:
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SupportChatScreen()),
+        );
       case NoticeAction.tickets || NoticeAction.topics:
         tab(0);
         await Navigator.push(

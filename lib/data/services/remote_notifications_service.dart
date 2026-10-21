@@ -19,7 +19,7 @@ import 'package:pdd_app/data/services/push_topic_state.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
 
 /// Where a notice button / push tap leads.
-enum NoticeAction { none, url, tickets, topics, game, feed, settings }
+enum NoticeAction { none, url, tickets, topics, game, feed, settings, support }
 
 /// A tap on a notice (popup button, banner, push) to be executed by the UI.
 class NoticeTap {
@@ -460,6 +460,13 @@ class RemoteNotificationsService {
     return null;
   }
 
+  /// Пуш об ответе поддержки пришёл, пока приложение открыто. Задаёт приложение.
+  void Function()? onSupportReply;
+
+  /// Личные пуши аккаунта (ответы поддержки) этому устройству доставляются.
+  bool get accountPushActive =>
+      _subscriptionState == true && _authorizedTopics.isNotEmpty;
+
   Future<void> markSeen(String id) async {
     if (_prefs == null) await init();
     final seen = _prefs!.getStringList('${_prefix}seen') ?? [];
@@ -531,6 +538,12 @@ class RemoteNotificationsService {
         );
       }
       _foregroundSub ??= FirebaseMessaging.onMessage.listen((message) {
+        // Ответ поддержки при открытом приложении: его покажет баннер чата,
+        // системное уведомление не нужно — только забрать ответ сразу.
+        if (message.data['kind'] == 'support_reply') {
+          onSupportReply?.call();
+          return;
+        }
         final note = message.notification;
         if (_pushOptIn && _config['pushEnabled'] == true && note != null) {
           unawaited(_showForeground(message));

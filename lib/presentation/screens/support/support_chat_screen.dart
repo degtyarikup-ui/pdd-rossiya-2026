@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -70,17 +69,28 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     // 2. Сразу запрашиваем актуальные сообщения с сервера
     await _refreshMessages();
 
-    // 3. Запускаем периодический опрос раз в 3.5 секунды
+    // 3. Пока чат открыт, спрашиваем раз в 3.5 секунды. Обращение закрыто
+    // (/close) — оператор не напишет, пока не напишет человек: раз в 30 секунд.
     _pollTimer = Timer.periodic(const Duration(milliseconds: 3500), (_) {
-      if (mounted) _refreshMessages(silent: true);
+      if (!mounted) return;
+      final closed = _messages.isNotEmpty && _messages.last.isClosedNotice;
+      if (closed &&
+          DateTime.now().difference(_lastRefresh) <
+              const Duration(seconds: 30)) {
+        return;
+      }
+      _refreshMessages(silent: true);
     });
   }
 
+  DateTime _lastRefresh = DateTime.now();
+
   Future<void> _refreshMessages({bool silent = false}) async {
+    _lastRefresh = DateTime.now();
     final lastTs = _messages.isNotEmpty
         ? _messages
-            .where((m) => m.status == SupportMessageStatus.sent)
-            .fold<int>(0, (max, m) => m.timestamp > max ? m.timestamp : max)
+              .where((m) => m.status == SupportMessageStatus.sent)
+              .fold<int>(0, (max, m) => m.timestamp > max ? m.timestamp : max)
         : 0;
 
     final incoming = await SupportChatService.instance.fetchMessages(
@@ -89,11 +99,12 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
     if (!mounted || incoming.isEmpty) return;
     // Shown here, so the banner over the app must not bring them up again.
-    unawaited(SupportInbox.instance
-        .markSeen(incoming.map((m) => m.timestamp).reduce(max)));
+    unawaited(SupportInbox.instance.markShown(incoming));
 
     final existingIds = _messages.map((m) => m.id).toSet();
-    final newItems = incoming.where((m) => !existingIds.contains(m.id)).toList();
+    final newItems = incoming
+        .where((m) => !existingIds.contains(m.id))
+        .toList();
 
     if (newItems.isNotEmpty) {
       setState(() {
@@ -143,7 +154,11 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                     color: colors.accent.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.camera_alt_rounded, color: colors.accent, size: 22),
+                  child: Icon(
+                    Icons.camera_alt_rounded,
+                    color: colors.accent,
+                    size: 22,
+                  ),
                 ),
                 title: Text(
                   appL10n.supportChatCamera,
@@ -166,7 +181,11 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                     color: colors.accent.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.photo_library_rounded, color: colors.accent, size: 22),
+                  child: Icon(
+                    Icons.photo_library_rounded,
+                    color: colors.accent,
+                    size: 22,
+                  ),
                 ),
                 title: Text(
                   appL10n.supportChatGallery,
@@ -218,7 +237,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     if (_pendingBytesMap.containsKey(msg.id)) {
       return MemoryImage(_pendingBytesMap[msg.id]!);
     }
-    if (!kIsWeb && msg.localImagePath != null && File(msg.localImagePath!).existsSync()) {
+    if (!kIsWeb &&
+        msg.localImagePath != null &&
+        File(msg.localImagePath!).existsSync()) {
       return FileImage(File(msg.localImagePath!));
     }
     if (msg.fullImageUrl != null) {
@@ -452,25 +473,22 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               child: _isLoading
                   ? const Center(child: AppLoadingIndicator())
                   : _messages.isEmpty
-                      ? _buildEmptyState(colors)
-                      : RefreshIndicator(
-                          color: colors.accent,
-                          onRefresh: () => _refreshMessages(silent: false),
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppDimensions.spacingM,
-                              vertical: AppDimensions.spacingM,
-                            ),
-                            itemCount: _messages.length,
-                            itemBuilder: (context, index) {
-                              return _buildMessageItem(
-                                _messages[index],
-                                colors,
-                              );
-                            },
-                          ),
+                  ? _buildEmptyState(colors)
+                  : RefreshIndicator(
+                      color: colors.accent,
+                      onRefresh: () => _refreshMessages(silent: false),
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppDimensions.spacingM,
+                          vertical: AppDimensions.spacingM,
                         ),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          return _buildMessageItem(_messages[index], colors);
+                        },
+                      ),
+                    ),
             ),
             _buildInputArea(colors),
           ],
@@ -562,8 +580,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
       child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
@@ -588,7 +607,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               ),
               padding: EdgeInsets.symmetric(
                 horizontal: imageProvider != null ? 8 : AppDimensions.spacingM,
-                vertical: imageProvider != null ? 8 : AppDimensions.spacingS + 2,
+                vertical: imageProvider != null
+                    ? 8
+                    : AppDimensions.spacingS + 2,
               ),
               decoration: BoxDecoration(
                 color: isUser ? colors.accent : colors.cardBackground,
@@ -606,8 +627,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                       ),
               ),
               child: Column(
-                crossAxisAlignment:
-                    isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: isUser
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
                   if (!isUser) ...[
                     Padding(
@@ -631,23 +653,22 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxHeight: 260,
-                          ),
+                          constraints: const BoxConstraints(maxHeight: 260),
                           child: Image(
                             image: imageProvider,
                             fit: BoxFit.cover,
                             width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              height: 120,
-                              color: colors.divider.withValues(alpha: 0.2),
-                              child: Center(
-                                child: Icon(
-                                  Icons.broken_image_rounded,
-                                  color: colors.secondaryText,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  height: 120,
+                                  color: colors.divider.withValues(alpha: 0.2),
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.broken_image_rounded,
+                                      color: colors.secondaryText,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
                           ),
                         ),
                       ),
@@ -876,10 +897,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                     minLines: 1,
                     maxLines: 4,
                     textCapitalization: TextCapitalization.sentences,
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      color: colors.primaryText,
-                    ),
+                    style: TextStyle(fontSize: 14.5, color: colors.primaryText),
                     decoration: InputDecoration(
                       hintText: appL10n.supportChatPlaceholder,
                       hintStyle: TextStyle(
@@ -900,7 +918,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _textController,
                 builder: (context, value, _) {
-                  final canSend = (value.text.trim().isNotEmpty ||
+                  final canSend =
+                      (value.text.trim().isNotEmpty ||
                           _selectedImageBytes != null) &&
                       !_isSending;
                   return GestureDetector(

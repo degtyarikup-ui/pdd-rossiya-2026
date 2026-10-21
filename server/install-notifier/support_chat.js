@@ -2,6 +2,9 @@
 // пользователя, отправка сообщений и приём ответов от команды через Webhook/Updates.
 import { telegramChatId, handleErrorExportUpdate, pollErrorCommands } from './telegram_queue.js';
 import { processTelegramAuthMessage, telegramWebhookVerified, telegramWebhookSecret } from './telegram_auth.js';
+import { readSession } from './user_auth.js';
+import { pushConfigured, sendFcmMessage } from './notifications.js';
+import { privatePushTopic } from './notification_identity.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -177,6 +180,32 @@ async function closeSupportTicket(env, clientId, messageId, threadId) {
 }
 
 /**
+ * Ответ оператора пушем на устройства аккаунта (личная тема FCM). Приложение
+ * при открытом экране само заберёт ответ, иначе покажет системное уведомление;
+ * нажатие открывает чат. Сбой пуша не мешает ответу: его заберёт опрос.
+ */
+export async function sendSupportReplyPush(env, clientId, msg, fetcher = fetch) {
+  if (!env.INSTALLS || !pushConfigured(env)) return false;
+  try {
+    const client = await env.INSTALLS.get('support:client:' + clientId, { type: 'json' });
+    if (!client?.replyPush) return false;
+    const preview = msg.text && msg.text !== '[Вложение]' ? msg.text : (msg.imageUrl ? '📷 Фото' : 'Новое сообщение');
+    const body = preview.length > 150 ? preview.slice(0, 147) + '…' : preview;
+    await sendFcmMessage(env, {
+      topic: await privatePushTopic(env, clientId),
+      notification: { title: '💬 Ответ поддержки', body },
+      data: { kind: 'support_reply', action: 'support', actionUrl: '' },
+      android: { ttl: '86400s', notification: { tag: 'support_reply', channel_id: 'admin_messages', icon: 'ic_notification' } },
+      apns: { headers: { 'apns-collapse-id': 'support_reply' }, payload: { aps: { sound: 'default' } } },
+    }, fetcher);
+    return true;
+  } catch (error) {
+    console.error('Support reply push failed', error?.name || 'unknown');
+    return false;
+  }
+}
+
+/**
  * Обработка входящего сообщения от Telegram (webhook или getUpdates).
  */
 export async function processTelegramMessageUpdate(msg, env) {
@@ -234,6 +263,7 @@ export async function processTelegramMessageUpdate(msg, env) {
   };
 
   await appendSupportMessage(env, clientId, replyMsg);
+  await sendSupportReplyPush(env, clientId, replyMsg);
 
   // Обновляем метку последней активности клиента
   const clientKey = 'support:client:' + clientId;
@@ -353,6 +383,11 @@ export async function handleSupportSendMessage(request, env) {
   const clientKey = 'support:client:' + clientId;
   let client = env.INSTALLS ? await env.INSTALLS.get(clientKey, { type: 'json' }) : null;
   let threadId = client?.threadId || null;
+  // Ответ пушем — только если переписка точно этого аккаунта (сессия входа),
+  // приложение умеет такие пуши и они у него включены.
+  let session = null;
+  try { session = await readSession(request, env); } catch (_) {}
+  const replyPush = body.replyPush === true && Boolean(session?.user?.id) && session.user.id === clientId;
 
   // Если у пользователя ещё нет топика в Telegram — создаём его
   if (!threadId && env.BOT_TOKEN && telegramChatId(env)) {
@@ -391,6 +426,7 @@ export async function handleSupportSendMessage(request, env) {
         isPremium,
         createdAt: Date.now(),
         lastMsgAt: Date.now(),
+        replyPush,
       };
       if (env.INSTALLS) {
         await env.INSTALLS.put(clientKey, JSON.stringify(client));
@@ -451,6 +487,7 @@ export async function handleSupportSendMessage(request, env) {
   await appendSupportMessage(env, clientId, newMsg);
   if (env.INSTALLS && client) {
     client.lastMsgAt = Date.now();
+    client.replyPush = replyPush;
     await env.INSTALLS.put(clientKey, JSON.stringify(client));
   }
 

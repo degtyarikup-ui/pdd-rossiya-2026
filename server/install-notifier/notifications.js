@@ -149,6 +149,10 @@ export function buildPushMessage(campaign, now = Date.now()) {
 }
 let accessCache;
 export async function sendPush(env, campaign, fetcher = fetch) {
+  return sendFcmMessage(env, buildPushMessage(campaign), fetcher);
+}
+// One FCM v1 message (campaigns, support replies): shared OAuth token cache.
+export async function sendFcmMessage(env, message, fetcher = fetch) {
   const account = JSON.parse(env.FCM_SERVICE_ACCOUNT);
   if (!accessCache || accessCache.project !== account.project_id || accessCache.expires < Date.now()) {
     const key = await importPKCS8(account.private_key, 'RS256');
@@ -164,7 +168,7 @@ export async function sendPush(env, campaign, fetcher = fetch) {
   try {
     response = await fetcher(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(account.project_id)}/messages:send`, {
       method: 'POST', headers: { Authorization: 'Bearer ' + accessCache.token, 'content-type': 'application/json' },
-      body: JSON.stringify({ message: buildPushMessage(campaign) }),
+      body: JSON.stringify({ message }),
       signal: AbortSignal.timeout(15000),
     });
   } catch { const error = new Error('Ответ Firebase не получен. Доставка неизвестна; автоматического повтора нет.'); error.unknown = true; throw error; }
