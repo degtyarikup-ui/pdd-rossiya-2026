@@ -74,12 +74,12 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 			var nearest := 0
 			var nearest_distance := INF
 			for k in data.poses.size():
-				var d: float = point.distance_squared_to(guide_script.body_centre(data.poses[k], geo))
+				var d: float = point.distance_squared_to(guide_script.lead_point(data.poses[k], data.gear, geo))
 				if d < nearest_distance:
 					nearest_distance = d
 					nearest = k
-			var a: Vector2 = guide_script.body_centre(data.poses[maxi(0, nearest - 1)], geo)
-			var b: Vector2 = guide_script.body_centre(data.poses[mini(data.poses.size() - 1, nearest + 1)], geo)
+			var a: Vector2 = guide_script.lead_point(data.poses[maxi(0, nearest - 1)], data.gear, geo)
+			var b: Vector2 = guide_script.lead_point(data.poses[mini(data.poses.size() - 1, nearest + 1)], data.gear, geo)
 			var direction := Vector2(at.basis.z.x, at.basis.z.z).normalized()
 			_check("segment %d gear %d: chevron %d follows body travel" % [segment, data.gear, i], direction.dot((b - a).normalized()) > 0.98)
 		var preview: Array = guide._preview_points
@@ -87,8 +87,13 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 		for i in guide._segments.size():
 			var marker: Dictionary = guide._segments[i].marker
 			_check("segment %d: only the next action gate is shown" % segment, marker.root.is_visible_in_tree() == (i == segment and i < way.size() - 1))
-			for label: Label3D in marker.labels:
-				_check("floor markers use only the required gear letter", label.text in ["D", "R"])
+			_check("segment %d: only the current step is drawn" % segment, guide._segments[i].mesh.is_visible_in_tree() == (i == segment) or (i == segment + 1 and guide._segments[segment].length < 1.6))
+		_check("segment %d: no steering pictograms or outlines, a stop bar only" % segment,
+			guide._segments[segment].marker.root.get_child_count() <= 1)
+		_check("segment %d: the gear letter shows only for the other gear" % segment, not guide._gear_label.visible)
+		guide.update_state(pose, 0.0, -int(data.gear), 0.0, segment, 0, true, 0.1)
+		_check("segment %d: the letter asks for the needed gear" % segment, guide._gear_label.visible
+			and guide._gear_label.text == ("R" if int(data.gear) < 0 else "D"))
 	# The driver's own forecast is always on while driving, also straight along the route.
 	var start: Vector3 = way[0].poses[0]
 	var selected_gear: int = way[0].gear
