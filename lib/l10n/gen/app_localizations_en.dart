@@ -4066,7 +4066,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameWaffleBlockViolation =>
-      'Stopping on yellow box junction 1.26 in gridlock';
+      'Stopping inside an intersection during gridlock (Cl. 13.2)';
 
   @override
   String get gameEmergencyYieldViolation =>

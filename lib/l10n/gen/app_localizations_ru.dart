@@ -4080,7 +4080,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameWaffleBlockViolation =>
-      'Остановка на вафельнице 1.26 в заторе';
+      'Остановка на перекрёстке в заторе (п. 13.2)';
 
   @override
   String get gameEmergencyYieldViolation => 'Не уступил дорогу спецтранспорту';

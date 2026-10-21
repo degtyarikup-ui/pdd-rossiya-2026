@@ -1948,7 +1948,7 @@
   "gameWrongLaneTurnViolation": "Поворот не из своего ряда",
   "gamePrioritySignViolation": "Не уступил дорогу по знаку приоритета",
   "gameArrowYieldViolation": "Поворот по стрелке с красным без преимущества",
-  "gameWaffleBlockViolation": "Остановка на вафельнице 1.26 в заторе",
+  "gameWaffleBlockViolation": "Остановка на перекрёстке в заторе (п. 13.2)",
   "gameEmergencyYieldViolation": "Не уступил дорогу спецтранспорту",
   "gameNoLightsViolation": "Движение без фар в тёмное время суток",
   "gameWeatherSpeedViolation": "Несоответствие скорости погодным условиям / занос",

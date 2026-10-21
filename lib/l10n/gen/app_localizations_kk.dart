@@ -4059,7 +4059,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameWaffleBlockViolation =>
-      'Кептелісте 1.26 торлы таңбасына тоқтау';
+      'Кептеліс кезінде қиылыста тоқтау (13.2-т.)';
 
   @override
   String get gameEmergencyYieldViolation => 'Арнайы көлікке жол бермеді';

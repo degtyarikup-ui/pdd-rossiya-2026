@@ -1379,7 +1379,7 @@
   "gameWrongLaneTurnViolation": "Шеткі емес жолақтан бұрылу",
   "gamePrioritySignViolation": "Басымдық белгісі бойынша жол бермеді",
   "gameArrowYieldViolation": "Қызыл жанғанда бағыттауыш бойынша жол бермей бұрылу",
-  "gameWaffleBlockViolation": "Кептелісте 1.26 торлы таңбасына тоқтау",
+  "gameWaffleBlockViolation": "Кептеліс кезінде қиылыста тоқтау (13.2-т.)",
   "gameEmergencyYieldViolation": "Арнайы көлікке жол бермеді",
   "gameNoLightsViolation": "Түнде жарықсыз жүру",
   "gameWeatherSpeedViolation": "Ауа райына сай емес жылдамдық / тайғанау",

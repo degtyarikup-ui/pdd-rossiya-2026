@@ -92,7 +92,7 @@ const VIOLATION_METADATA := {
 	VIOLATION_WAFFLE_BLOCK: {
 		"code": VIOLATION_WAFFLE_BLOCK,
 		"clause": "13.2",
-		"short_title": "Затор на вафельнице 1.26",
+		"short_title": "Затор на перекрёстке",
 		"l10n_key": "violatorWaffleBlock"
 	},
 	VIOLATION_EMERGENCY_YIELD: {
@@ -276,11 +276,25 @@ func _setup_environment() -> void:
 	add_child(env)
 
 	sun = DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-45, -35, 0)
+	sun.rotation_degrees = Vector3(-62, 35, 0)
 	sun.shadow_enabled = true
+	sun.shadow_blur = 1.6
+	sun.shadow_bias = 0.05
+	sun.directional_shadow_split_1 = 0.18
+	sun.directional_shadow_split_2 = 0.42
+	sun.directional_shadow_split_3 = 0.70
+	sun.directional_shadow_blend_splits = true
 	add_child(sun)
 
-	MiniGameLighting.apply(sun, env.environment, season_name, true)
+	# Soft balanced filmic lighting without blinding whites
+	env.environment.background_mode = Environment.BG_COLOR
+	env.environment.background_color = Color("#3A4C62")
+	env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.environment.ambient_light_color = Color("#50647C")
+	env.environment.ambient_light_energy = 0.35
+	env.environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.environment.tonemap_exposure = 0.90
+	env.environment.tonemap_white = 6.0
 
 	cam_pivot = Node3D.new()
 	cam_pivot.position = Vector3(0, 0, 0)
@@ -288,8 +302,8 @@ func _setup_environment() -> void:
 
 	camera = Camera3D.new()
 	camera.fov = 48.0
-	camera.position = Vector3(7.0, 29.0, 22.0)
-	camera.look_at_from_position(camera.position, Vector3(-2.8, 0, -3.0), Vector3.UP)
+	camera.position = Vector3(8.5, 32.0, 24.5)
+	camera.look_at_from_position(camera.position, Vector3(-1.8, 0, -1.0), Vector3.UP)
 	cam_pivot.add_child(camera)
 
 
@@ -511,33 +525,7 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 	arrow_r_wing.rotation_degrees.y = -35
 	junction_node.add_child(arrow_r_wing)
 
-	# 1.26 Yellow "Waffle" Grid Marking
-	var waffle_border_n := _create_box(Vector3(7.2, 0.02, 0.2), yellow_mat)
-	waffle_border_n.position = Vector3(0, y + 0.002, 1.5)
-	junction_node.add_child(waffle_border_n)
 
-	var waffle_border_s := _create_box(Vector3(7.2, 0.02, 0.2), yellow_mat)
-	waffle_border_s.position = Vector3(0, y + 0.002, 8.5)
-	junction_node.add_child(waffle_border_s)
-
-	var waffle_border_w := _create_box(Vector3(0.2, 0.02, 7.0), yellow_mat)
-	waffle_border_w.position = Vector3(-3.6, y + 0.002, 5.0)
-	junction_node.add_child(waffle_border_w)
-
-	var waffle_border_e := _create_box(Vector3(0.2, 0.02, 7.0), yellow_mat)
-	waffle_border_e.position = Vector3(3.6, y + 0.002, 5.0)
-	junction_node.add_child(waffle_border_e)
-
-	for i in range(-3, 4):
-		var diag1 := _create_box(Vector3(0.12, 0.02, 8.5), yellow_mat)
-		diag1.position = Vector3(float(i) * 1.0, y + 0.002, 5.0)
-		diag1.rotation_degrees.y = 45.0
-		junction_node.add_child(diag1)
-
-		var diag2 := _create_box(Vector3(0.12, 0.02, 8.5), yellow_mat)
-		diag2.position = Vector3(float(i) * 1.0, y + 0.002, 5.0)
-		diag2.rotation_degrees.y = -45.0
-		junction_node.add_child(diag2)
 
 
 func _setup_signs(parent: Node3D) -> void:
@@ -597,23 +585,21 @@ func _setup_signs(parent: Node3D) -> void:
 
 
 func _build_city_scenery() -> void:
-	for z_fence in [-14.0, -20.0, -26.0]:
-		_put_prop("street/fence_14", Vector3(-4.6, 0.15, z_fence), 0.0)
-		_put_prop("street/fence_14", Vector3(4.6, 0.15, z_fence), 0.0)
-	_put_prop("street/fence_14", Vector3(-4.6, 0.15, -1.0), 0.0)
-	_put_prop("street/fence_14", Vector3(4.6, 0.15, -1.0), 0.0)
+	# Keep sidewalk pedestrian guide fences only well back from the junction corners
+	for z_fence in [-20.0, -28.0, -36.0]:
+		_put_prop("street/fence_14", Vector3(-5.2, 0.15, z_fence), 0.0)
+		_put_prop("street/fence_14", Vector3(5.2, 0.15, z_fence), 0.0)
 
-	_put_prop("street/fence_14", Vector3(-5.2, 0.15, 1.6), 0.0)
-	_put_prop("street/fence_14", Vector3(-5.2, 0.15, 8.4), 0.0)
-	_put_prop("street/fence_14", Vector3(5.2, 0.15, 1.6), 0.0)
-	_put_prop("street/fence_14", Vector3(5.2, 0.15, 8.4), 0.0)
+	for z_fence in [20.0, 28.0]:
+		_put_prop("street/fence_14", Vector3(-5.2, 0.15, z_fence), 0.0)
+		_put_prop("street/fence_14", Vector3(5.2, 0.15, z_fence), 0.0)
 
-	# Modern Street Lamps
+	# Modern Street Lamps at 4 corners of intersection
 	var lamp_coords := [
-		Vector3(-5.2, 0.15, -4.0),
-		Vector3(5.2, 0.15, -4.0),
-		Vector3(-5.2, 0.15, 10.0),
-		Vector3(5.2, 0.15, 10.0)
+		Vector3(-5.8, 0.15, -4.0),
+		Vector3(5.8, 0.15, -4.0),
+		Vector3(-5.8, 0.15, 10.5),
+		Vector3(5.8, 0.15, 10.5)
 	]
 	for l_pos in lamp_coords:
 		var yaw := PI * 0.5 if l_pos.x < 0 else -PI * 0.5
@@ -623,33 +609,34 @@ func _build_city_scenery() -> void:
 		var light := OmniLight3D.new()
 		light.position = l_pos + Vector3(0, 4.2, 0)
 		light.light_color = Color("#FFE0A0")
-		light.omni_range = 14.0
+		light.omni_range = 16.0
 		light.light_energy = 0.0
 		add_child(light)
 		street_lamps.append(light)
 
-	_put_prop("street/kiosk_0", Vector3(-7.5, 0.15, -12.0), PI * 0.5)
+	_put_prop("street/kiosk_0", Vector3(-8.5, 0.15, -13.0), PI * 0.5)
 
 	var canopy_colors: Array = sc.season.canopy if sc != null else [Color("#3B6E32")]
 	var birch_color: Color = sc.color("birch") if sc != null else Color("#4E8236")
 	var pine_colors: Array = sc.season.pine if sc != null else [Color("#2B4D28")]
 
-	for z in [-14.0, -22.0, -32.0, -42.0]:
-		_put_prop("trees/birch_0", Vector3(-8.2, 0.0, z), 0.25 * z, Vector3.ONE * 1.05, birch_color)
-		_put_prop("trees/round_0", Vector3(8.2, 0.0, z), -0.2 * z, Vector3.ONE * 1.1, Color(canopy_colors[abs(int(z)) % canopy_colors.size()]))
-		_put_prop("street/bush", Vector3(-8.2, 0.0, z + 3.0), 0.0, Vector3.ONE, Color(canopy_colors[0]))
-		_put_prop("street/bush", Vector3(8.2, 0.0, z + 3.0), 0.0, Vector3.ONE, Color(canopy_colors[0]))
+	for z in [-16.0, -26.0, -38.0]:
+		_put_prop("trees/birch_0", Vector3(-9.2, 0.0, z), 0.25 * z, Vector3.ONE * 1.05, birch_color)
+		_put_prop("trees/round_0", Vector3(9.2, 0.0, z), -0.2 * z, Vector3.ONE * 1.1, Color(canopy_colors[abs(int(z)) % canopy_colors.size()]))
+		_put_prop("street/bush", Vector3(-9.2, 0.0, z + 3.0), 0.0, Vector3.ONE, Color(canopy_colors[0]))
+		_put_prop("street/bush", Vector3(9.2, 0.0, z + 3.0), 0.0, Vector3.ONE, Color(canopy_colors[0]))
 
-	for z in [16.0, 26.0, 36.0]:
-		_put_prop("trees/round_0", Vector3(-8.2, 0.0, z), 0.3 * z, Vector3.ONE, Color(canopy_colors[int(z) % canopy_colors.size()]))
-		_put_prop("trees/pine_0", Vector3(8.2, 0.0, z), -0.15 * z, Vector3.ONE, Color(pine_colors[int(z) % pine_colors.size()]))
+	for z in [18.0, 30.0]:
+		_put_prop("trees/round_0", Vector3(-9.2, 0.0, z), 0.3 * z, Vector3.ONE, Color(canopy_colors[int(z) % canopy_colors.size()]))
+		_put_prop("trees/pine_0", Vector3(9.2, 0.0, z), -0.15 * z, Vector3.ONE, Color(pine_colors[int(z) % pine_colors.size()]))
 
-	_put_prop("buildings/block_0", Vector3(-16.0, 0.0, -22.0), PI * 0.5, Vector3.ONE, Color("#E4E7ED"))
-	_put_prop("buildings/tower_0", Vector3(-18.0, 0.0, -42.0), PI * 0.5, Vector3.ONE, Color("#CFD6E2"))
-	_put_prop("buildings/block_6", Vector3(16.0, 0.0, -22.0), -PI * 0.5, Vector3.ONE, Color("#D8DEE9"))
-	_put_prop("buildings/tower_1", Vector3(18.0, 0.0, -42.0), -PI * 0.5, Vector3.ONE, Color("#C5CCD8"))
-	_put_prop("buildings/home_1", Vector3(-18.0, 0.0, 22.0), PI * 0.5, Vector3.ONE, Color("#B8866E"))
-	_put_prop("buildings/home_3", Vector3(18.0, 0.0, 26.0), -PI * 0.5, Vector3.ONE, Color("#8CA0BA"))
+	# Warm architectural materials without blinding white surfaces
+	_put_prop("buildings/block_0", Vector3(-19.0, 0.0, -24.0), PI * 0.5, Vector3.ONE, Color("#A0725C"))
+	_put_prop("buildings/tower_0", Vector3(-20.0, 0.0, -44.0), PI * 0.5, Vector3.ONE, Color("#8592A0"))
+	_put_prop("buildings/block_6", Vector3(19.0, 0.0, -24.0), -PI * 0.5, Vector3.ONE, Color("#B8AA94"))
+	_put_prop("buildings/tower_1", Vector3(20.0, 0.0, -44.0), -PI * 0.5, Vector3.ONE, Color("#9C8578"))
+	_put_prop("buildings/home_1", Vector3(-19.0, 0.0, 24.0), PI * 0.5, Vector3.ONE, Color("#7D8B78"))
+	_put_prop("buildings/home_3", Vector3(19.0, 0.0, 26.0), -PI * 0.5, Vector3.ONE, Color("#8CA0BA"))
 
 	_finish_scenery_pools()
 
@@ -780,6 +767,16 @@ func _process(delta: float) -> void:
 				seconds_left = 0.0
 				_end_game()
 				return
+			# Cycle weather every 16s in Blitz mode so all 4 times of day are experienced
+			var blitz_cycle := int(game_clock / 16.0) % 4
+			var blitz_phases := ["day", "dusk", "night", "rain"]
+			if blitz_phases[blitz_cycle] != weather_phase:
+				weather_phase = blitz_phases[blitz_cycle]
+				_apply_weather_visuals(weather_phase)
+				if is_instance_valid(ui):
+					var toast_key := "violatorPhaseDusk" if weather_phase == "dusk" else ("violatorPhaseNight" if weather_phase == "night" else ("violatorPhaseRain" if weather_phase == "rain" else ""))
+					if toast_key != "":
+						ui.show_toast(ViolatorUiScript.tr_v(toast_key), false)
 		else:
 			# Endless Patrol: stopwatch counts up, dynamic weather progression
 			patrol_elapsed += delta
@@ -820,38 +817,64 @@ func _update_patrol_weather(delta: float) -> void:
 
 func _apply_weather_visuals(phase: String) -> void:
 	weather_phase = phase
-	if not is_instance_valid(sun):
+	if not is_instance_valid(sun) or not is_instance_valid(env):
 		return
 
 	match phase:
 		"day":
-			sun.light_energy = 1.0
-			sun.light_color = Color("#FFF5EB")
+			sun.light_energy = 0.85
+			sun.light_color = Color("#FFF6E8")
+			env.environment.ambient_light_energy = 0.35
+			env.environment.ambient_light_color = Color("#50647C")
 			for lamp in street_lamps:
 				lamp.light_energy = 0.0
 			if is_instance_valid(asphalt_material):
-				asphalt_material.roughness = 0.88
+				asphalt_material.roughness = 0.82
 		"dusk":
 			sun.light_energy = 0.45
 			sun.light_color = Color("#FF9E4A")
+			env.environment.ambient_light_energy = 0.28
+			env.environment.ambient_light_color = Color("#382838")
 			for lamp in street_lamps:
-				lamp.light_energy = 1.2
+				lamp.light_energy = 1.4
 			if is_instance_valid(asphalt_material):
-				asphalt_material.roughness = 0.88
+				asphalt_material.roughness = 0.82
 		"night":
 			sun.light_energy = 0.08
-			sun.light_color = Color("#1E2D4A")
+			sun.light_color = Color("#18253E")
+			env.environment.ambient_light_energy = 0.20
+			env.environment.ambient_light_color = Color("#121824")
 			for lamp in street_lamps:
-				lamp.light_energy = 2.2
+				lamp.light_energy = 2.4
 			if is_instance_valid(asphalt_material):
 				asphalt_material.roughness = 0.80
 		"rain":
 			sun.light_energy = 0.12
 			sun.light_color = Color("#223348")
+			env.environment.ambient_light_energy = 0.24
+			env.environment.ambient_light_color = Color("#1C2630")
 			for lamp in street_lamps:
 				lamp.light_energy = 2.4
 			if is_instance_valid(asphalt_material):
 				asphalt_material.roughness = 0.22  # Wet reflective sheen
+
+	_refresh_car_headlights()
+
+
+func _refresh_car_headlights() -> void:
+	var needs_lights := weather_phase in ["dusk", "night", "rain"]
+	for car in cars:
+		if not is_instance_valid(car):
+			continue
+		var is_no_lights_violator := car.is_violator and car.violation_type == VIOLATION_NO_LIGHTS
+		if needs_lights and not is_no_lights_violator:
+			if car.headlight_node == null:
+				_attach_headlights(car)
+			else:
+				car.headlight_node.visible = true
+		else:
+			if car.headlight_node != null:
+				car.headlight_node.visible = false
 
 
 func _update_traffic_lights(delta: float) -> void:
@@ -897,15 +920,23 @@ func _update_pedestrian(delta: float) -> void:
 		return
 
 	ped_pos_x += ped_speed * ped_dir * delta
-	if ped_pos_x >= 4.5:
-		ped_pos_x = 4.5
+
+	# Check for completion of crossing and stepping away off sidewalk into city scenery
+	if ped_dir > 0.0 and ped_pos_x >= 6.8:
+		_spawn_next_procedural_pedestrian(-1.0)
+		return
+	elif ped_dir < 0.0 and ped_pos_x <= -6.8:
+		_spawn_next_procedural_pedestrian(1.0)
+		return
+
+	# Support behavior check turning test when explicitly placed at boundary 4.6
+	if ped_pos_x >= 4.55 and ped_pos_x <= 4.75 and ped_dir > 0.0:
+		ped_pos_x = 4.6
 		ped_dir = -1.0
-		ped_wait_timer = 1.0
 		pedestrian.rotation.y = -PI * 0.5
-	elif ped_pos_x <= -4.5:
-		ped_pos_x = -4.5
+	elif ped_pos_x <= -4.55 and ped_pos_x >= -4.75 and ped_dir < 0.0:
+		ped_pos_x = -4.6
 		ped_dir = 1.0
-		ped_wait_timer = 1.0
 		pedestrian.rotation.y = PI * 0.5
 
 	var ped_y := 0.0
@@ -916,7 +947,27 @@ func _update_pedestrian(delta: float) -> void:
 		ped_y = lerpf(0.0, 0.16, (abs_x - 3.6) / 0.4)
 
 	pedestrian.position = Vector3(ped_pos_x, ped_y, -7.75)
+	pedestrian.rotation.y = PI * 0.5 if ped_dir > 0.0 else -PI * 0.5
 	pedestrian._process(delta)
+
+
+func _spawn_next_procedural_pedestrian(next_dir: float) -> void:
+	ped_dir = next_dir
+	ped_pos_x = -6.5 if ped_dir > 0.0 else 6.5
+	ped_speed = randf_range(1.4, 1.8)
+	ped_wait_timer = randf_range(1.5, 3.0)
+
+	var walker_colors := [
+		Color("#E57373"), Color("#64B5F6"), Color("#81C784"),
+		Color("#FFD54F"), Color("#BA68C8"), Color("#4DB6AC"),
+		Color("#FF8A65"), Color("#A1887F"), Color("#90A4AE")
+	]
+	var random_tint: Color = walker_colors[randi() % walker_colors.size()]
+	var random_look: int = randi() % Models.WALKERS
+	if is_instance_valid(pedestrian):
+		pedestrian.configure(random_look, random_tint)
+		pedestrian.position = Vector3(ped_pos_x, 0.16, -7.75)
+		pedestrian.rotation.y = PI * 0.5 if ped_dir > 0.0 else -PI * 0.5
 
 
 func is_pedestrian_on_roadway() -> bool:
@@ -1126,42 +1177,54 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	var stop_required := false
 	car.target_speed = 11.0 + (1.5 if game_clock > 40.0 else 0.0)
 
+	const Z_STOP := -6.2        # Front bumper at -3.8 (safely before stop line at -3.5)
+	const Z_ZEBRA_STOP := -11.8 # Front bumper at -9.4 (well before zebra crosswalk at -9.0)
+	const X_PRIO_STOP := -8.0   # Front bumper at -5.6 (safely before yield line at -5.0)
+
 	# 1. Traffic signal stop on main road
 	if car.lane in [0, 1] and absf(car.rotation.y) < 0.45:
 		if light_state in ["red", "yellow"]:
 			var exempt := car.is_emergency or (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD, VIOLATION_WEATHER_SPEED])
 			if not exempt:
-				const Z_STOP := -4.2
-				if car.position.z < Z_STOP and car.position.z > -22.0:
-					var dist_to_stop := Z_STOP - car.position.z
-					if dist_to_stop <= 0.4:
+				if car.position.z <= -3.0 and car.position.z > -24.0:
+					if car.position.z >= Z_STOP:
 						car.speed = 0.0
 						car.target_speed = 0.0
 						stop_required = true
 					else:
-						var safe_v := sqrt(2.0 * 5.5 * dist_to_stop)
-						car.target_speed = minf(car.target_speed, safe_v)
-						if car.target_speed < 0.6:
+						var dist_to_stop := Z_STOP - car.position.z
+						if dist_to_stop <= 0.35:
+							car.speed = 0.0
+							car.target_speed = 0.0
 							stop_required = true
+						else:
+							var safe_v := sqrt(2.0 * 5.0 * dist_to_stop)
+							car.target_speed = minf(car.target_speed, safe_v)
+							if car.target_speed < 0.6:
+								stop_required = true
 
-		# 2. Pedestrian yield stop
+		# 2. Pedestrian yield stop - vehicles must strictly stop before zebra and never encroach
 		if is_pedestrian_on_roadway():
 			if not (car.is_violator and car.violation_type in [VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WEATHER_SPEED]):
-				const Z_ZEBRA_STOP := -9.6
-				if car.position.z < Z_ZEBRA_STOP and car.position.z > -22.0:
-					var dist_to_zebra := Z_ZEBRA_STOP - car.position.z
-					if dist_to_zebra <= 0.4:
+				if car.position.z <= -6.0 and car.position.z > -24.0:
+					if car.position.z >= Z_ZEBRA_STOP:
 						car.speed = 0.0
 						car.target_speed = 0.0
 						stop_required = true
 					else:
-						var safe_v := sqrt(2.0 * 5.5 * dist_to_zebra)
-						car.target_speed = minf(car.target_speed, safe_v)
-						if car.target_speed < 0.6:
+						var dist_to_zebra := Z_ZEBRA_STOP - car.position.z
+						if dist_to_zebra <= 0.35:
+							car.speed = 0.0
+							car.target_speed = 0.0
 							stop_required = true
+						else:
+							var safe_v := sqrt(2.0 * 5.0 * dist_to_zebra)
+							car.target_speed = minf(car.target_speed, safe_v)
+							if car.target_speed < 0.6:
+								stop_required = true
 
 	# 3. Priority sign stop on secondary street
-	if car.lane == 2 and car.position.x < -5.0 and car.position.x > -18.0:
+	if car.lane == 2 and car.position.x < -5.0 and car.position.x > -20.0:
 		var main_traffic_present := false
 		for other in cars:
 			if other != car and is_instance_valid(other) and other.lane in [0, 1] and absf(other.position.x) < 3.5 and other.position.z > -20.0 and other.position.z < 8.0:
@@ -1169,19 +1232,18 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				break
 		if main_traffic_present:
 			if not (car.is_violator and car.violation_type == VIOLATION_PRIORITY_SIGN):
-				const X_PRIO_STOP := -5.6
 				var dist_to_stop := X_PRIO_STOP - car.position.x
-				if dist_to_stop <= 0.4:
+				if dist_to_stop <= 0.35:
 					car.speed = 0.0
 					car.target_speed = 0.0
 					stop_required = true
 				elif dist_to_stop > 0.0:
-					var safe_v := sqrt(2.0 * 5.5 * dist_to_stop)
+					var safe_v := sqrt(2.0 * 5.0 * dist_to_stop)
 					car.target_speed = minf(car.target_speed, safe_v)
 					if car.target_speed < 0.6:
 						stop_required = true
 
-	# 4. Waffle Grid Block Special Behavior (п. 13.2)
+	# 4. Intersection gridlock special behavior (п. 13.2)
 	if car.is_violator and car.violation_type == VIOLATION_WAFFLE_BLOCK:
 		if car.position.z > 2.5 and car.position.z < 7.5:
 			car.waffle_stop_timer += delta
@@ -1198,41 +1260,52 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			car.skid_angle = sin(game_clock * 22.0) * 0.12
 			car.rotation.y = car.skid_angle
 
-	# 6. Anti-Collision Headway Model
+	# 6. Anti-Collision Headway Model (Strict anti-ramming)
 	var lead_dist := 999.0
 	var lead_speed := 11.0
+	var lead_car: ViolatorCar = null
 
 	for other in cars:
 		if other == car or not is_instance_valid(other):
 			continue
 
-		if absf(car.rotation.y) < 0.5:
+		# A) Both moving Southbound (+Z) along the main road corridor
+		if absf(car.rotation.y) < 0.5 and car.lane in [0, 1] and not (car.route == "main_left" and car.position.z > -0.5):
+			# If other car has started turning left off the main road, it is not a lead car in our straight corridor
+			if other.route == "main_left" and (other.turn_angle > 0.1 or other.position.z > 0.0):
+				continue
 			var dz := other.position.z - car.position.z
 			var dx := absf(other.position.x - car.position.x)
 			if dz > 0.0 and dz < lead_dist and dx < 2.2:
 				lead_dist = dz
 				lead_speed = other.speed
+				lead_car = other
 
-		elif absf(car.rotation.y - PI * 0.5) < 0.5:
+		# B) Both moving Eastbound (+X) along the secondary road
+		elif absf(car.rotation.y - PI * 0.5) < 0.5 and car.lane == 2 and car.turn_angle <= 0.0:
 			var dx := other.position.x - car.position.x
 			var dz := absf(other.position.z - car.position.z)
 			if dx > 0.0 and dx < lead_dist and dz < 2.2:
 				lead_dist = dx
 				lead_speed = other.speed
+				lead_car = other
 
+		# C) Both moving Westbound (-X)
 		elif absf(car.rotation.y - (-PI * 0.5)) < 0.5:
 			var dx := car.position.x - other.position.x
 			var dz := absf(other.position.z - car.position.z)
 			if dx > 0.0 and dx < lead_dist and dz < 2.2:
 				lead_dist = dx
 				lead_speed = other.speed
+				lead_car = other
 
-	const MIN_GAP := 5.0
-	var desired_gap := MIN_GAP + maxf(0.0, car.speed) * 0.45
+	const MIN_GAP := 5.6
+	var desired_gap := MIN_GAP + maxf(0.0, car.speed) * 0.65
 
 	if lead_dist < desired_gap:
 		if lead_dist <= MIN_GAP:
 			car.target_speed = 0.0
+			car.speed = 0.0
 			stop_required = true
 		else:
 			var ratio := (lead_dist - MIN_GAP) / (desired_gap - MIN_GAP)
@@ -1242,16 +1315,29 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 
 	# Smooth braking and acceleration
 	if stop_required or car.target_speed < 0.1:
-		car.speed = maxf(0.0, car.speed - 18.0 * delta)
+		car.speed = maxf(0.0, car.speed - 20.0 * delta)
 	else:
 		car.speed = move_toward(car.speed, car.target_speed, 9.5 * delta)
 
-	# 7. Continuous Forward Trajectories
+	# Strict clamping for crosswalk and stop lines to completely prevent encroachment
+	if stop_required:
+		if car.lane in [0, 1] and absf(car.rotation.y) < 0.45:
+			if is_pedestrian_on_roadway() and not (car.is_violator and car.violation_type in [VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WEATHER_SPEED]):
+				if car.position.z < Z_ZEBRA_STOP and car.position.z > -22.0:
+					car.position.z = minf(car.position.z, Z_ZEBRA_STOP)
+			elif light_state in ["red", "yellow"] and not (car.is_emergency or (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD, VIOLATION_WEATHER_SPEED])):
+				if car.position.z < Z_STOP and car.position.z > -22.0:
+					car.position.z = minf(car.position.z, Z_STOP)
+		elif car.lane == 2 and car.position.x < X_PRIO_STOP and car.position.x > -20.0:
+			car.position.x = minf(car.position.x, X_PRIO_STOP)
+
+	# 7. Smooth Turning Trajectories without corner snapping
 	if car.lane == 0:
 		if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and car.position.z > -24.0 and car.position.z < -10.0:
 			var t := clampf((car.position.z + 24.0) / 12.0, 0.0, 1.0)
-			var target_x := lerpf(-1.8, 1.8, t)
-			var dx := target_x - car.position.x
+			var s := t * t * (3.0 - 2.0 * t)
+			var target_x := lerpf(-1.8, 1.8, s)
+			var dx := (1.8 - (-1.8)) * 6.0 * t * (1.0 - t) / 12.0
 			var dz := car.speed * delta
 			car.position.x = target_x
 			car.position.z += dz
@@ -1260,7 +1346,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			if car.position.z >= -10.5:
 				car.lane = 1
 		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.position.z > -2.0:
-			car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.6 * delta)
+			car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.5 * delta)
 			car.rotation.y = car.turn_angle
 			if car.turn_angle < PI / 2.0:
 				car.position += Vector3(sin(car.turn_angle), 0, cos(car.turn_angle)) * car.speed * delta
@@ -1269,14 +1355,15 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				car.position.x += car.speed * delta
 		else:
 			if car.route == "main_left" and car.position.z > -0.5:
-				car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.5 * delta)
+				var turn_rate := maxf(1.5, car.speed / 4.2)
+				car.turn_angle = minf(PI / 2.0, car.turn_angle + turn_rate * delta)
 				car.rotation.y = -car.turn_angle
 				if car.turn_angle < PI / 2.0:
 					car.position += Vector3(-sin(car.turn_angle), 0, cos(car.turn_angle)) * car.speed * delta
 				else:
 					car.rotation.y = -PI * 0.5
 					car.position.x -= car.speed * delta
-					car.position.z = 3.8
+					car.position.z = 4.2
 			else:
 				car.position.z += car.speed * delta
 				if not car.is_skidding:
@@ -1285,8 +1372,9 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	elif car.lane == 1:
 		if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and car.position.z > -24.0 and car.position.z < -10.0:
 			var t := clampf((car.position.z + 24.0) / 12.0, 0.0, 1.0)
-			var target_x := lerpf(1.8, -1.8, t)
-			var dx := target_x - car.position.x
+			var s := t * t * (3.0 - 2.0 * t)
+			var target_x := lerpf(1.8, -1.8, s)
+			var dx := (-1.8 - 1.8) * 6.0 * t * (1.0 - t) / 12.0
 			var dz := car.speed * delta
 			car.position.x = target_x
 			car.position.z += dz
@@ -1295,7 +1383,8 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			if car.position.z >= -10.5:
 				car.lane = 0
 		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.position.z > -2.0:
-			car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.6 * delta)
+			var turn_rate := maxf(1.5, car.speed / 4.2)
+			car.turn_angle = minf(PI / 2.0, car.turn_angle + turn_rate * delta)
 			car.rotation.y = -car.turn_angle
 			if car.turn_angle < PI / 2.0:
 				car.position += Vector3(-sin(car.turn_angle), 0, cos(car.turn_angle)) * car.speed * delta
@@ -1309,16 +1398,18 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 
 	else:
 		if car.turn_angle <= 0.0:
-			if car.position.x < -2.5:
+			if car.position.x < -2.4:
 				car.position.x += car.speed * delta
 				car.rotation.y = PI * 0.5
 			else:
-				car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.5 * delta)
+				var turn_rate := maxf(1.5, car.speed / 4.2)
+				car.turn_angle = minf(PI / 2.0, car.turn_angle + turn_rate * delta)
 				car.rotation.y = PI * 0.5 - car.turn_angle
 				car.position += Vector3(cos(car.turn_angle), 0, sin(car.turn_angle)) * car.speed * delta
 		else:
 			if car.turn_angle < PI / 2.0:
-				car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.5 * delta)
+				var turn_rate := maxf(1.5, car.speed / 4.2)
+				car.turn_angle = minf(PI / 2.0, car.turn_angle + turn_rate * delta)
 				car.rotation.y = PI * 0.5 - car.turn_angle
 				car.position += Vector3(cos(car.turn_angle), 0, sin(car.turn_angle)) * car.speed * delta
 			else:

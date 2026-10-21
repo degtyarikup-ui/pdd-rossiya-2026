@@ -1379,7 +1379,7 @@
   "gameWrongLaneTurnViolation": "Turning from the wrong lane",
   "gamePrioritySignViolation": "Failure to yield at priority sign",
   "gameArrowYieldViolation": "Failing to yield when turning on arrow with red",
-  "gameWaffleBlockViolation": "Stopping on yellow box junction 1.26 in gridlock",
+  "gameWaffleBlockViolation": "Stopping inside an intersection during gridlock (Cl. 13.2)",
   "gameEmergencyYieldViolation": "Failed to yield to emergency vehicle",
   "gameNoLightsViolation": "Driving without lights at night",
   "gameWeatherSpeedViolation": "Speed inappropriate for weather / skid",

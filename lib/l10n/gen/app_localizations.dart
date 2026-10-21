@@ -6793,7 +6793,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameWaffleBlockViolation.
   ///
   /// In ru, this message translates to:
-  /// **'Остановка на вафельнице 1.26 в заторе'**
+  /// **'Остановка на перекрёстке в заторе (п. 13.2)'**
   String get gameWaffleBlockViolation;
 
   /// No description provided for @gameEmergencyYieldViolation.
