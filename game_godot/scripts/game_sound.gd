@@ -6,7 +6,7 @@ extends Node
 const RATE := 22050.0
 const DURATION := {
 	"click": 0.03, "crash": 0.32, "scrape": 0.25,
-	"bell": 1.3,
+	"bell": 1.3, "blinker_on": 0.024, "blinker_off": 0.020, "chirp": 0.14,
 }
 const EFFECT_VOLUMES := {"correct": 0.55, "incorrect": 0.45, "tick": 0.35, "streak": 0.70}
 # Original WebAudio engine ranges, including the electric tram motor.
@@ -221,6 +221,13 @@ func _one_shot(e: Dictionary) -> float:
 	match e.kind:
 		"click":
 			return sin(TAU * 1400.0 * t) * 0.25 * env
+		"blinker_on":
+			return sin(TAU * 1750.0 * t) * 0.16 * exp(-14.0 * u)
+		"blinker_off":
+			return sin(TAU * 1320.0 * t) * 0.12 * exp(-16.0 * u)
+		"chirp":
+			var friction := (randf() * 2.0 - 1.0) * 0.18 + sin(TAU * lerpf(920.0, 540.0, u) * t) * 0.22
+			return friction * (1.0 - u) * minf(1.0, t / 0.015)
 		"bell":
 			return _bell_sample(t) * float(e.get("gain", 1.0))
 		"crash":

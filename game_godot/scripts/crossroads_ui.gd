@@ -98,6 +98,7 @@ var _results: MiniGameResults
 var _modal_open := false
 var _notice: PanelContainer
 var _notice_tween: Tween
+var _combo_tween: Tween
 var _notice_label: Label
 
 
@@ -524,6 +525,18 @@ func update_hud(score: int, seconds: int, lives: int, combo: int) -> void:
 		_hearts[i].add_theme_color_override("font_color", Ui.c("red") if i < lives else Ui.c("secondary"))
 	if is_inside_tree() and (score_changed or combo_changed):
 		_layout()
+	if is_inside_tree() and combo > 1 and combo_changed:
+		pulse_combo()
+
+
+func pulse_combo() -> void:
+	if not is_inside_tree() or not _combo_chip.visible: return
+	if _combo_tween != null and _combo_tween.is_valid():
+		_combo_tween.kill()
+	_combo_chip.pivot_offset = _combo_chip.size * 0.5
+	_combo_tween = create_tween()
+	_combo_tween.tween_property(_combo_chip, "scale", Vector2(1.35, 1.35), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_combo_tween.tween_property(_combo_chip, "scale", Vector2(1.0, 1.0), 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func update_caption(title: String, _subtitle: String, step: int, total_steps: int, is_hard: bool = false) -> void:

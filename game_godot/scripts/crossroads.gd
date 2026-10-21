@@ -94,6 +94,8 @@ var _drag_start := Vector2.ZERO
 
 var auto_play := false
 var shot_path := ""
+var _blinker_timer := 0.0
+var _blinker_lit := false
 
 
 func _ready() -> void:
@@ -584,6 +586,9 @@ func _start_game() -> void:
 
 
 func _load_current_scenario() -> void:
+	Engine.time_scale = 1.0
+	_blinker_timer = 0.0
+	_blinker_lit = false
 	if scenario_order.is_empty():
 		return
 
@@ -866,6 +871,7 @@ func _handle_actor_selection(chosen: CrossroadsActor) -> void:
 		chosen.set_badge_solved(cur_step)
 		chosen.set_meta("dispatch", cur_step)
 		chosen.start_driving()
+		sound.play("chirp")
 		sound.play("correct")
 		GameSound.buzz(25)
 
@@ -942,7 +948,10 @@ func _on_crossroad_completed() -> void:
 	score = mini(int(economy.get("maxScore", 1500)), score + gained)
 
 	ui.update_hud(score, ceili(seconds_left), lives, combo)
-	sound.play("correct")
+	if combo > 1:
+		sound.play("streak")
+	else:
+		sound.play("correct")
 	GameSound.buzz(45)
 
 	# Advance to next crossroad after brief delay
@@ -978,6 +987,16 @@ func _contact_footprint(actor: CrossroadsActor) -> Dictionary:
 	return actor.footprint()
 
 
+func _apply_impact_slowmo(sequence: int) -> void:
+	Engine.time_scale = 0.35
+	cam_shake = 0.28
+	var restore_seq := sequence
+	get_tree().create_timer(0.24, true, false, true).timeout.connect(func():
+		if _sequence_active(restore_seq):
+			Engine.time_scale = 1.0
+	)
+
+
 func _crash_on_contact(sent: CrossroadsActor, struck: CrossroadsActor) -> void:
 	var sequence := scene_sequence
 	is_resolving = true
@@ -990,6 +1009,7 @@ func _crash_on_contact(sent: CrossroadsActor, struck: CrossroadsActor) -> void:
 	impact.y = 0.0
 	sound.play("crash")
 	GameSound.buzz(70)
+	_apply_impact_slowmo(sequence)
 	for actor in [sent, struck]:
 		actor.state = "crashed"
 		if not actor.is_pedestrian:
@@ -1147,7 +1167,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 
 	sound.play("crash")
 	GameSound.buzz(70)
-	cam_shake = 0.0
+	_apply_impact_slowmo(sequence)
 
 	# Deform slightly on impact while maintaining exact bumper contact (no backward gap recoil)
 	var tan_c := Vector3(sin(chosen.rotation.y), 0, cos(chosen.rotation.y))
@@ -1309,6 +1329,24 @@ func _process(delta: float) -> void:
 		_check_driving_contacts()
 	if not is_game_over and not is_resolving:
 		_check_junction_completed()
+
+	# Blinker audio tick-tock loop when turning actors are waiting
+	if not is_game_over and not is_resolving:
+		var has_turning_actor := false
+		for a in active_actors:
+			if a.state == "waiting" and a._signal_side != "":
+				has_turning_actor = true
+				break
+		if has_turning_actor:
+			_blinker_timer += delta
+			if _blinker_timer >= 0.333:
+				_blinker_timer -= 0.333
+				_blinker_lit = not _blinker_lit
+				sound.play("blinker_on" if _blinker_lit else "blinker_off")
+		else:
+			_blinker_timer = 0.0
+			_blinker_lit = false
+
 	if game_mode == "blitz" and ready_for_play and not _suspended and not is_game_over and not is_resolving and not _round_completing and not _is_any_actor_driving():
 		seconds_left -= delta
 		ui.update_hud(score, ceili(seconds_left), lives, combo)
@@ -1349,6 +1387,7 @@ func _process_auto_play() -> void:
 
 
 func _end_game() -> void:
+	Engine.time_scale = 1.0
 	if is_game_over:
 		return
 	is_game_over = true
@@ -1393,6 +1432,7 @@ func _on_close_pressed() -> void:
 
 
 func _on_exit_pressed() -> void:
+	Engine.time_scale = 1.0
 	if _exiting: return
 	_exiting = true
 	_clear_input()
@@ -1558,10 +1598,6 @@ func fit_camera_to_scenario() -> void:
 				hi = mid
 			else:
 				lo = mid
-
-	if is_regulator:
-		# Zoom in closer on crossroads with traffic controller (officer) so his gestures and baton are prominent
-		hi = maxf(32.0, hi * 0.74)
 
 	base_cam_dist = hi
 	_target_cam_yaw = cam_yaw

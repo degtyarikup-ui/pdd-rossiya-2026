@@ -149,6 +149,9 @@ func _build_model() -> void:
 		_signal_side = "L" if maneuver in ["left", "uTurn"] else ("R" if maneuver == "right" else "")
 		_signals = Fleet._signals(model_node)
 		_signals.set_side(_signal_side)
+		for side_key in _signals.glows:
+			for g: Node3D in _signals.glows[side_key]:
+				g.scale = Vector3.ONE * 1.5
 
 
 func _measure_model() -> void:
@@ -298,6 +301,9 @@ func set_badge_error() -> void:
 func set_badge_priority() -> void:
 	badge_pop = 0.0
 	badge_sprite.texture = _badge_texture("priority", 0)
+	var tw := create_tween()
+	tw.tween_property(badge_node, "scale", Vector3.ONE * 1.35, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(badge_node, "scale", Vector3.ONE, 0.22).set_trans(Tween.TRANS_SINE)
 
 
 func update_badge_orientation(cam: Camera3D) -> void:
@@ -449,7 +455,7 @@ func _build_trajectory_guide() -> void:
 	var begin_distance := hl + 0.75 if not is_pedestrian else 0.8
 	var finish_distance := minf(path_length - 0.8, begin_distance + 5.8)
 	var maneuver: String = data.get("maneuver", "straight")
-	if not is_pedestrian and maneuver in ["left", "right", "uTurn"]:
+	if not is_pedestrian and maneuver in ["left", "right", "uTurn"] and not data.has("waypoints"):
 		# Reveal the actual turn, then stop shortly after it instead of painting
 		# a percentage of the full 110 m departure along the avenue.
 		finish_distance = minf(path_length - 1.0, _turn_end_distance + 2.3)
@@ -498,6 +504,10 @@ func start_driving() -> void:
 		trajectory_guide.visible = false
 	if arrow_sprite != null:
 		arrow_sprite.visible = false
+	if model_node != null and not is_pedestrian:
+		var tw := create_tween()
+		tw.tween_property(model_node, "rotation:x", -0.05, 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(model_node, "rotation:x", 0.0, 0.20).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func _process(delta: float) -> void:
@@ -525,7 +535,8 @@ func _process_drive(delta: float) -> void:
 		move_delta = maxf(0.0, delta - _stop_pause_left)
 		_stop_pause_left = maxf(0.0, _stop_pause_left - delta)
 		if move_delta <= 0.0: return
-	var offset := minf(path_length, drive_progress * path_length + drive_speed * path_length * move_delta)
+	var accel := clampf(0.50 + drive_progress * 3.5, 0.50, 1.25)
+	var offset := minf(path_length, drive_progress * path_length + drive_speed * accel * path_length * move_delta)
 	if bool(data.get("stopSign", false)) and not _stop_done and not is_pedestrian:
 		# 2.5 requires a complete stop at its own line, after giving way at the
 		# crossing. This is separate from the initial pre-crosswalk selection pose.
