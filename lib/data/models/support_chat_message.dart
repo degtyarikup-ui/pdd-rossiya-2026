@@ -36,8 +36,7 @@ class SupportChatMessage {
   bool get isClosedNotice => kind == 'closed';
 
   /// Текст для показа: служебные сообщения — на языке приложения.
-  String get displayText =>
-      isClosedNotice ? appL10n.supportChatClosed : text;
+  String get displayText => isClosedNotice ? appL10n.supportChatClosed : text;
 
   bool get hasImage =>
       (imageUrl != null && imageUrl!.isNotEmpty) ||
@@ -75,7 +74,8 @@ class SupportChatMessage {
       sender: json['sender'] == 'support'
           ? SupportMessageSender.support
           : SupportMessageSender.user,
-      timestamp: (json['ts'] as num?)?.toInt() ??
+      timestamp:
+          (json['ts'] as num?)?.toInt() ??
           DateTime.now().millisecondsSinceEpoch,
       authorName: json['authorName'] as String?,
       status: SupportMessageStatus.values.firstWhere(

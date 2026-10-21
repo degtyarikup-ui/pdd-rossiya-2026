@@ -60,14 +60,7 @@ class GameGarageService {
     'white': 0xFFF2F3F5,
     'black': 0xFF2B2F36,
   };
-  static const paints = [
-    'red',
-    'blue',
-    'green',
-    'yellow',
-    'white',
-    'black',
-  ];
+  static const paints = ['red', 'blue', 'green', 'yellow', 'white', 'black'];
   static const legacyPaints = {
     'sand': 'yellow',
     'orange': 'red',
