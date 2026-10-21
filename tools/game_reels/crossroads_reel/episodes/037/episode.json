@@ -1,0 +1,178 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-037",
+  "status": "draft",
+  "title": "Регулировщик: руки в стороны, а ты со спины",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_032_041.md#037",
+  "rules": [
+    "6.10",
+    "6.15"
+  ],
+  "scene": "res://videos/crossroads_reel/regulator_back.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "blue",
+    "chest",
+    "rule"
+  ],
+  "motionMinimums": {
+    "blue": 4.4,
+    "chest": 2.2,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 0.0,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "none",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "blue": 0.15
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Junction without working signals. Officer in the centre (contrast reel material), both arms out to the sides, chest to the north, back to the south; pose fixed for the whole episode, enlarged 3.6x on his spot in the question and final overview. Red sedan from the south faces his back and waits; blue hatch from the east is at his side and goes straight west. Only the blue chip is shown.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Красной можно ехать?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Нет! При руках в стороны ехать можно только со стороны бока."
+    },
+    {
+      "key": "chest",
+      "text": "Со стороны груди и спины — стоп."
+    },
+    {
+      "key": "rule",
+      "text": "Сейчас едет синяя, а красная ждёт."
+    },
+    {
+      "key": "cta",
+      "text": "Со спины тоже думал — можно?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Красной",
+      "можно ехать?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Нет!",
+      "При руках в стороны",
+      "ехать можно",
+      "только со стороны бока"
+    ],
+    "chest": [
+      "Со стороны груди",
+      "и спины — стоп"
+    ],
+    "rule": [
+      "Сейчас едет синяя",
+      "а красная ждёт"
+    ],
+    "cta": [
+      "Со спины",
+      "тоже думал — можно?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "sedan",
+    "blue": "hatch"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 0,
+    "static": [
+      0
+    ],
+    "arrows": [
+      {
+        "actor": 1,
+        "tipX": [
+          5,
+          8.5
+        ],
+        "tipZ": [
+          -1.85,
+          -1.75
+        ],
+        "dir": [
+          -1,
+          0
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "blue",
+        1
+      ],
+      [
+        "chest",
+        -1
+      ],
+      [
+        "rule",
+        -1
+      ]
+    ],
+    "always": [
+      {
+        "expr": "scene.officer.cur_gesture==1 and scene.officer.body_root.global_basis.z.normalized().dot(Vector3(0,0,-1))>0.9999",
+        "msg": "Officer pose or orientation changed"
+      },
+      {
+        "expr": "t<cfg.answer+0.6 or t>=cfg.cta or not (scene.cars[1].transform*scene.cars[1].get_meta('bodyBounds')).intersects(AABB(Vector3(-1.1,0,-0.4),Vector3(2.2,1.9,0.8)))",
+        "msg": "Blue hits the officer"
+      }
+    ],
+    "at": [
+      {
+        "time": "chest+1.0",
+        "expr": "Rect2(100,100,880,1200).has_point(scene._cam.unproject_position(scene.officer.global_position+Vector3(0,1.4,0)))",
+        "msg": "Back shot misses the officer"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[1].position.x<-12",
+        "msg": "Blue straight run cut short"
+      }
+    ],
+    "summary": "arms out, back to red: only blue at his side may go"
+  }
+}

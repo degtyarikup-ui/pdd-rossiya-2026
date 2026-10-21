@@ -1,0 +1,225 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-041",
+  "status": "draft",
+  "title": "Три машины: кто вторым?",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_032_041.md#041",
+  "rules": [
+    "13.9",
+    "13.12"
+  ],
+  "scene": "res://videos/crossroads_reel/three_cars_main.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "blue",
+    "red",
+    "yellow"
+  ],
+  "motionMinimums": {
+    "blue": 3.6,
+    "red": 4.4,
+    "yellow": 4.8
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6,
+    "yellow": 0.6
+  },
+  "turns": {
+    "red": "left",
+    "blue": "none",
+    "yellow": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "blue": -0.1,
+      "red": 0.1,
+      "yellow": -0.15
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    },
+    {
+      "car": "red",
+      "number": 2
+    },
+    {
+      "car": "yellow",
+      "number": 3
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Main road north-south (2.1 south/north, 2.4 west/east). Blue SUV on the main road from the north straight; red coupe on the main road from the south turns left to the west and yields to the oncoming blue; yellow wagon from the secondary road (west) straight east goes last. Each starts after the previous one has cleared its conflict.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь едет вторым?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Вторая — красная! А первой синяя: она на главной и едет прямо."
+    },
+    {
+      "key": "red",
+      "text": "Красная тоже на главной, но налево — уступает встречной."
+    },
+    {
+      "key": "yellow",
+      "text": "Жёлтая со второстепенной — последняя."
+    },
+    {
+      "key": "cta",
+      "text": "Угадал всю очередь?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "едет вторым?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Вторая — красная!",
+      "А первой синяя",
+      "она на главной",
+      "и едет прямо"
+    ],
+    "red": [
+      "Красная тоже",
+      "на главной",
+      "но налево",
+      "уступает встречной"
+    ],
+    "yellow": [
+      "Жёлтая",
+      "со второстепенной",
+      "последняя"
+    ],
+    "cta": [
+      "Угадал",
+      "всю очередь?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "coupe",
+    "blue": "suv",
+    "yellow": "wagon"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 4,
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          -9,
+          -4.5
+        ],
+        "tipZ": [
+          -1.85,
+          -1.75
+        ],
+        "dir": [
+          -1,
+          0
+        ]
+      },
+      {
+        "actor": 1,
+        "tipX": [
+          -1.85,
+          -1.75
+        ],
+        "tipZ": [
+          -8.5,
+          -5
+        ],
+        "dir": [
+          0,
+          1
+        ]
+      },
+      {
+        "actor": 2,
+        "tipX": [
+          -8.5,
+          -5
+        ],
+        "tipZ": [
+          1.75,
+          1.85
+        ],
+        "dir": [
+          1,
+          0
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "red",
+        0
+      ],
+      [
+        "yellow",
+        2
+      ]
+    ],
+    "always": [
+      {
+        "expr": "t>=cfg.red+0.6 or scene.cars[0].transform.is_equal_approx(scene._pose_car(0,0))",
+        "msg": "Red moves before blue"
+      },
+      {
+        "expr": "t>=cfg.yellow+0.6 or scene.cars[2].transform.is_equal_approx(scene._pose_car(2,0))",
+        "msg": "Yellow moves too early"
+      }
+    ],
+    "at": [
+      {
+        "time": "red+0.6",
+        "expr": "scene.cars[1].position.z>9",
+        "msg": "Blue has not cleared before red"
+      },
+      {
+        "time": "yellow+0.6",
+        "expr": "scene.cars[0].basis.z.dot(Vector3(-1,0,0))>0.999 and scene.cars[0].position.x<-9",
+        "msg": "Red has not cleared before yellow"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[2].position.x>8",
+        "msg": "Yellow did not cross"
+      }
+    ],
+    "summary": "blue, then red turning left on the main road, then yellow from the secondary road"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car",
+    "yellow": "car"
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-039",
+  "status": "produced",
+  "title": "Обгон прямо на перекрёстке",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_032_041.md#039",
+  "rules": [
+    "11.4",
+    "11.1"
+  ],
+  "scene": "res://videos/crossroads_reel/overtake_main.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "red",
+    "rule"
+  ],
+  "motionMinimums": {
+    "red": 6.2,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 0.6
+  },
+  "turns": {
+    "red": "left"
+  },
+  "audio": {
+    "enginePans": {
+      "red": -0.1
+    },
+    "indicator": true,
+    "indicatorPan": -0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [],
+  "createdDate": "2026-10-21",
+  "adaptation": "Unsignalised junction, main road north-south (2.1 south/north, 2.4 west/east), dashed centre line, no oncoming traffic. Yellow truck (game truck model) in the northbound lane at 3 m/s. Red sedan behind it, already easing over the centre line with the left indicator, overtakes through the junction in the empty oncoming lane and returns to its lane beyond the junction well ahead of the truck. No order chips.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Можно ли красной обгонять здесь?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Можно! Обгон запрещён на регулируемых перекрёстках и когда едешь по второстепенной."
+    },
+    {
+      "key": "rule",
+      "text": "Красная на главной, светофора нет — значит, разрешено."
+    },
+    {
+      "key": "cta",
+      "text": "А тебя учили, что на перекрёстке обгонять нельзя никогда?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Можно ли красной",
+      "обгонять здесь?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Можно!",
+      "Обгон запрещён",
+      "на регулируемых",
+      "перекрёстках",
+      "и когда едешь",
+      "по второстепенной"
+    ],
+    "rule": [
+      "Красная на главной",
+      "светофора нет",
+      "значит, разрешено"
+    ],
+    "cta": [
+      "А тебя учили,",
+      "что на перекрёстке",
+      "обгонять нельзя",
+      "никогда?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "sedan"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 4,
+    "arrows": [],
+    "focus": [
+      [
+        "red+1.0",
+        0
+      ],
+      [
+        "rule",
+        -1
+      ]
+    ],
+    "always": [
+      {
+        "expr": "abs(scene.cars[0].position.z)>3.6 or scene.cars[0].position.x<-1.0",
+        "msg": "Red is not in the oncoming lane across the junction"
+      }
+    ],
+    "at": [
+      {
+        "time": "cta+-0.034",
+        "expr": "abs(scene.cars[0].position.x-1.8)<0.01 and scene.cars[0].position.z<scene.cars[1].position.z-12",
+        "msg": "Red did not return to its lane clear of the truck"
+      }
+    ],
+    "summary": "overtaking on the main road through an unsignalised junction is allowed"
+  },
+  "participantTypes": {
+    "red": "car",
+    "yellow": "truck"
+  }
+}

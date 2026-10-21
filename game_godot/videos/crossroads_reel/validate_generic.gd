@@ -66,7 +66,7 @@ func _initialize() -> void:
 			if t<cfg.answer or t>=cfg.cta:
 				if not Rect2(25,30,1030,1340).encloses(rect):errors.append(["Overview participant clipped",frame,i,rect])
 				if frame%15==0 and blocked_focus(scene._cam,actor,occluders):errors.append(["Scenery hides participant in overview",frame,i])
-			if t>=cfg.cta and rect.end.y>1232 and rect.position.y<1330 and rect.end.x>330 and rect.position.x<710:errors.append(["Final chip overlaps participant",frame,i,rect])
+			if t>=cfg.cta and not episode.get("answerChips",[]).is_empty() and rect.end.y>1232 and rect.position.y<1330 and rect.end.x>330 and rect.position.x<710:errors.append(["Final chip overlaps participant",frame,i,rect])
 			if frame>0 and t>cfg.answer and t<cfg.cta:
 				var delta:Vector3=actor.position-previous[i]
 				if delta.length()>.001:

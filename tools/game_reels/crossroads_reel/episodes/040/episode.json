@@ -1,0 +1,185 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-040",
+  "status": "draft",
+  "title": "Временный знак против постоянного",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_032_041.md#040",
+  "rules": [
+    "Приложение 1, общие положения",
+    "13.9"
+  ],
+  "scene": "res://videos/crossroads_reel/temporary_signs.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "red",
+    "blue"
+  ],
+  "motionMinimums": {
+    "red": 5.8,
+    "blue": 4.6
+  },
+  "motionDelays": {
+    "red": 2.4,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "none",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.0,
+      "blue": 0.15
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    },
+    {
+      "car": "blue",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Unsignalised junction with road works. South approach: permanent 2.4 and, nearer the car, a portable 2.1 on a yellow plate with a tripod and cones. East approach: permanent 2.1 and a portable 2.4 on a yellow plate with cones. Temporary signs prevail, so red wagon (south, straight) goes first and blue SUV (east, straight) after. Close-up of the south pair from red's seat after the answer.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь главный?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Красная! Знаки на жёлтом фоне — временные. Если они спорят с постоянными, слушаем временные."
+    },
+    {
+      "key": "blue",
+      "text": "Поэтому синяя уступает и едет второй."
+    },
+    {
+      "key": "cta",
+      "text": "Жёлтый фон заметил сразу?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "главный?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Красная!",
+      "Знаки на жёлтом фоне",
+      "временные",
+      "Если они спорят",
+      "с постоянными",
+      "слушаем временные"
+    ],
+    "blue": [
+      "Поэтому синяя",
+      "уступает",
+      "и едет второй"
+    ],
+    "cta": [
+      "Жёлтый фон",
+      "заметил сразу?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "wagon",
+    "blue": "suv"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 4,
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          1.75,
+          1.85
+        ],
+        "tipZ": [
+          9,
+          13
+        ],
+        "dir": [
+          0,
+          -1
+        ]
+      },
+      {
+        "actor": 1,
+        "tipX": [
+          9,
+          13
+        ],
+        "tipZ": [
+          -1.85,
+          -1.75
+        ],
+        "dir": [
+          -1,
+          0
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "red+2.4",
+        0
+      ],
+      [
+        "blue",
+        1
+      ]
+    ],
+    "always": [
+      {
+        "expr": "t>=cfg.blue+0.6 or scene.cars[1].transform.is_equal_approx(scene._pose_car(1,0))",
+        "msg": "Blue moves before red"
+      },
+      {
+        "expr": "t>=cfg.answer or not (scene.face_rect_of(0).intersects(scene.face_rect_of(2)) or scene.face_rect_of(1).intersects(scene.face_rect_of(3)))",
+        "msg": "Sign pair overlaps"
+      }
+    ],
+    "at": [
+      {
+        "time": "blue+0.6",
+        "expr": "scene.cars[0].position.z<-10",
+        "msg": "Red has not cleared before blue"
+      },
+      {
+        "time": "red+1.0",
+        "expr": "scene.signal_insert",
+        "msg": "Missing sign close-up"
+      }
+    ],
+    "summary": "temporary yellow-plate signs override the permanent ones"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  }
+}

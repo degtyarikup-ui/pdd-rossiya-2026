@@ -1,0 +1,165 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-038",
+  "status": "produced",
+  "title": "Мигающий зелёный",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_032_041.md#038",
+  "rules": [
+    "6.2"
+  ],
+  "scene": "res://videos/crossroads_reel/flashing_green.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "red",
+    "rule"
+  ],
+  "motionMinimums": {
+    "red": 6.0,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 2.0
+  },
+  "turns": {
+    "red": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.0
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Signalised junction: the south and north main greens flash at 1 Hz, east and west are red. One red coupe at the south stop line. After the answer a close-up of the flashing head from red's seat, then red goes straight north while the green still flashes; yellow comes on 4.6 s after red starts, when it has left the junction.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Можно ли красной въехать на перекрёсток?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Можно! Мигающий зелёный — это разрешающий сигнал."
+    },
+    {
+      "key": "rule",
+      "text": "Он лишь предупреждает, что скоро загорится жёлтый."
+    },
+    {
+      "key": "cta",
+      "text": "Ты бы тормознул на мигающем?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Можно ли красной",
+      "въехать на перекрёсток?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Можно!",
+      "Мигающий зелёный",
+      "это разрешающий",
+      "сигнал"
+    ],
+    "rule": [
+      "Он лишь",
+      "предупреждает,",
+      "что скоро",
+      "загорится жёлтый"
+    ],
+    "cta": [
+      "Ты бы тормознул",
+      "на мигающем?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "coupe"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 4,
+    "signs": 0,
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          1.75,
+          1.85
+        ],
+        "tipZ": [
+          5,
+          8.5
+        ],
+        "dir": [
+          0,
+          -1
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "red+2.0",
+        0
+      ]
+    ],
+    "always": [
+      {
+        "expr": "scene.cars[0].position.z-2.2<9 or scene.state('south',t)!='yellow'",
+        "msg": "Yellow before red crossed the stop line"
+      },
+      {
+        "expr": "t>=cfg.answer or scene.state('east',t)=='red'",
+        "msg": "Cross street must be red"
+      }
+    ],
+    "at": [
+      {
+        "time": "red+6.7",
+        "expr": "scene.state('south',t)=='yellow' and scene.cars[0].position.z<-6",
+        "msg": "Yellow must come on after red has left the junction"
+      },
+      {
+        "time": "0.2",
+        "expr": "scene.state('south',t)=='green'",
+        "msg": "Flash phase"
+      },
+      {
+        "time": "0.7",
+        "expr": "scene.state('south',t)=='off'",
+        "msg": "Flash phase off"
+      },
+      {
+        "time": "red+1.0",
+        "expr": "scene.signal_insert",
+        "msg": "Missing signal close-up"
+      }
+    ],
+    "summary": "flashing green permits entry; yellow only after red has crossed"
+  },
+  "participantTypes": {
+    "red": "car"
+  }
+}
