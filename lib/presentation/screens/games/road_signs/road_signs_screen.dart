@@ -17,6 +17,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_emblem.dart';
 import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_grid.dart';
 import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_modal.dart';
+import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_reverse_view.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
@@ -55,6 +56,10 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
   bool _timeUp = false;
   bool _isGameOver = false;
   bool _isProcessing = false;
+  int? _selectedOptionIndex;
+  bool? _answeredCorrectly;
+  String? _streakBanner;
+  Timer? _advanceTimer;
 
   final List<RoadSignAnswerResult> _mistakes = [];
 
@@ -116,6 +121,7 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
 
   void _startRound() {
     _timer?.cancel();
+    _advanceTimer?.cancel();
     _score = 0;
     _lives = widget.initialLives;
     _combo = 0;
@@ -128,6 +134,9 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
     _timeUp = false;
     _isGameOver = false;
     _isProcessing = false;
+    _selectedOptionIndex = null;
+    _answeredCorrectly = null;
+    _streakBanner = null;
     _mistakes.clear();
     _isNewRecord = false;
     _ratingRunId = GameLeaderboardService.newRunId();
@@ -161,22 +170,14 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
     });
   }
 
-  void _pauseTimer() {
-    _isTimerPaused = true;
-  }
 
-  void _resumeTimer() {
-    _isTimerPaused = false;
-  }
 
   void _onOptionSelected(int index) {
-    if (_isGameOver || _isProcessing || _isTimerPaused || _currentIndex >= _deck.length) {
+    if (_isGameOver || _isProcessing || _currentIndex >= _deck.length) {
       return;
     }
 
     _isProcessing = true;
-    _pauseTimer();
-
     final question = _deck[_currentIndex];
     final isCorrect = index == question.correctAnswerIndex;
     final result = RoadSignAnswerResult(
@@ -186,6 +187,8 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
     );
 
     setState(() {
+      _selectedOptionIndex = index;
+      _answeredCorrectly = isCorrect;
       _totalAnswered++;
       if (isCorrect) {
         SoundEffectsService.instance.playCorrect();
@@ -197,45 +200,51 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
         if (_combo > 2) {
           SoundEffectsService.instance.playStreak();
         }
-        _score += GameEconomy.signs(_combo);
+        final points = GameEconomy.signs(_combo);
+        _score += points;
         _correctAnswers++;
+        if (_combo >= 2) {
+          _streakBanner = '+ $points  •  ${appL10n.gameComboStreak(_combo)}';
+        }
       } else {
         SoundEffectsService.instance.playIncorrect();
         HapticFeedbackHelper.warning();
         _combo = 0;
         _lives--;
+        _streakBanner = null;
         _mistakes.add(result);
       }
     });
 
-    RoadSignsModal.show(
-      context,
-      result: result,
-      onContinue: _handleModalContinue,
-    );
-  }
+    final delay = isCorrect
+        ? const Duration(milliseconds: 450)
+        : const Duration(milliseconds: 800);
 
-  void _handleModalContinue() {
-    if (!mounted) return;
+    _advanceTimer?.cancel();
+    _advanceTimer = Timer(delay, () {
+      if (!mounted) return;
 
-    if (_lives <= 0 || _secondsLeft <= 0) {
-      _endGame();
-      return;
-    }
-
-    setState(() {
-      _isProcessing = false;
-      _currentIndex++;
-      if (_deck.length - _currentIndex < 5 && _engine != null) {
-        _deck.addAll(_engine!.generateDeck(count: 20));
+      if (_lives <= 0 || _secondsLeft <= 0) {
+        _endGame();
+        return;
       }
-      _resumeTimer();
+
+      setState(() {
+        _isProcessing = false;
+        _selectedOptionIndex = null;
+        _answeredCorrectly = null;
+        _currentIndex++;
+        if (_deck.length - _currentIndex < 5 && _engine != null) {
+          _deck.addAll(_engine!.generateDeck(count: 20));
+        }
+      });
     });
   }
 
   void _endGame() {
     if (_isGameOver) return;
     _timer?.cancel();
+    _advanceTimer?.cancel();
 
     final currentBest = _previousBest;
     final isRecord = _score > 0 && _score > currentBest;
@@ -282,6 +291,7 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _advanceTimer?.cancel();
     super.dispose();
   }
 
@@ -343,64 +353,88 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-                _buildHeader(colors),
-                const SizedBox(height: AppDimensions.spacingM),
-                if (currentQuestion != null) ...[
-                  Padding(
+            _buildHeader(colors),
+            const SizedBox(height: AppDimensions.spacingM),
+            if (currentQuestion != null) ...[
+              if (currentQuestion.type == RoadSignQuizType.reverseTitleMatch)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppDimensions.screenPadding,
+                      0,
+                      AppDimensions.screenPadding,
+                      AppDimensions.spacingXL,
+                    ),
+                    child: RoadSignsReverseView(
+                      question: currentQuestion,
+                      onSelectOption: _onOptionSelected,
+                      isEnabled: !_isProcessing && !_isGameOver,
+                      selectedIndex: _selectedOptionIndex,
+                      correctIndex: currentQuestion.correctAnswerIndex,
+                      isCorrect: _answeredCorrectly,
+                    ),
+                  ),
+                )
+              else ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.screenPadding,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(
+                      maxHeight: 120,
+                    ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPadding,
+                      horizontal: AppDimensions.spacingL,
+                      vertical: AppDimensions.spacingM,
                     ),
-                    child: Container(
-                      width: double.infinity,
-                      constraints: const BoxConstraints(
-                        maxHeight: 120,
+                    decoration: BoxDecoration(
+                      color: colors.cardBackground,
+                      borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+                      boxShadow: gameSoftShadow(colors),
+                      border: Border.all(
+                        color: colors.divider.withValues(alpha: 0.5),
+                        width: 1,
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.spacingL,
-                        vertical: AppDimensions.spacingM,
+                    ),
+                    child: Text(
+                      currentQuestion.prompt,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: colors.primaryText,
+                        height: 1.35,
                       ),
-                      decoration: BoxDecoration(
-                        color: colors.cardBackground,
-                        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-                        boxShadow: gameSoftShadow(colors),
-                        border: Border.all(
-                          color: colors.divider.withValues(alpha: 0.5),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        currentQuestion.prompt,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: colors.primaryText,
-                          height: 1.35,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: AppDimensions.spacingL),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppDimensions.screenPadding,
-                        0,
-                        AppDimensions.screenPadding,
-                        AppDimensions.spacingXL,
-                      ),
-                      child: RoadSignsGrid(
-                        options: currentQuestion.options,
-                        onSelectOption: _onOptionSelected,
-                        isEnabled: !_isProcessing && !_isGameOver && !_isTimerPaused,
-                      ),
+                ),
+                const SizedBox(height: AppDimensions.spacingL),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppDimensions.screenPadding,
+                      0,
+                      AppDimensions.screenPadding,
+                      AppDimensions.spacingXL,
+                    ),
+                    child: RoadSignsGrid(
+                      options: currentQuestion.options,
+                      onSelectOption: _onOptionSelected,
+                      isEnabled: !_isProcessing && !_isGameOver,
+                      selectedIndex: _selectedOptionIndex,
+                      correctIndex: currentQuestion.correctAnswerIndex,
+                      isCorrect: _answeredCorrectly,
                     ),
                   ),
-                ],
+                ),
               ],
-            ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -435,6 +469,30 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
             secondsLeft: _secondsLeft,
             totalSeconds: widget.initialSeconds,
           ),
+          if (_streakBanner != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppDimensions.spacingS),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colors.goldLightSurface,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusExtraLarge),
+                  border: Border.all(
+                    color: colors.gold.withValues(alpha: 0.6),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  _streakBanner!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: colors.gold,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

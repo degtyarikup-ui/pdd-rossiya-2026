@@ -10,12 +10,18 @@ class RoadSignsGrid extends StatelessWidget {
   final List<SignItem> options;
   final ValueChanged<int> onSelectOption;
   final bool isEnabled;
+  final int? selectedIndex;
+  final int? correctIndex;
+  final bool? isCorrect;
 
   const RoadSignsGrid({
     super.key,
     required this.options,
     required this.onSelectOption,
     this.isEnabled = true,
+    this.selectedIndex,
+    this.correctIndex,
+    this.isCorrect,
   }) : assert(options.length == 4, 'RoadSignsGrid requires exactly 4 options');
 
   @override
@@ -64,22 +70,48 @@ class RoadSignsGrid extends StatelessWidget {
 
   Widget _buildCard(int index, double side, AppThemeColors colors) {
     final sign = options[index];
+    final isSelected = selectedIndex == index;
+    final isTarget = correctIndex == index;
+
+    Color borderColor = colors.divider.withValues(alpha: 0.5);
+    Color backgroundColor = colors.cardBackground;
+    double borderWidth = 1.0;
+
+    if (selectedIndex != null) {
+      if (isSelected) {
+        if (isCorrect == true) {
+          borderColor = colors.green;
+          backgroundColor = colors.greenLight.withValues(alpha: 0.35);
+          borderWidth = 2.5;
+        } else {
+          borderColor = colors.red;
+          backgroundColor = colors.redLight.withValues(alpha: 0.35);
+          borderWidth = 2.5;
+        }
+      } else if (isCorrect == false && isTarget) {
+        borderColor = colors.green;
+        backgroundColor = colors.greenLight.withValues(alpha: 0.35);
+        borderWidth = 2.5;
+      }
+    }
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: isEnabled ? () => onSelectOption(index) : null,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        child: Ink(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
           width: side,
           height: side,
           decoration: BoxDecoration(
-            color: colors.cardBackground,
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
             boxShadow: gameSoftShadow(colors),
             border: Border.all(
-              color: colors.divider.withValues(alpha: 0.5),
-              width: 1,
+              color: borderColor,
+              width: borderWidth,
             ),
           ),
           child: Padding(

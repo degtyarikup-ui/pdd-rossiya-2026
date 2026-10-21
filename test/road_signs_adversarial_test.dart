@@ -184,10 +184,9 @@ void main() {
       await tester.tap(cards.at(3), warnIfMissed: false);
 
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // Exactly one modal should open
-      expect(find.byType(RoadSignsModal), findsOneWidget);
+      // In blitz mode, no blocking modal appears
+      expect(find.byType(RoadSignsModal), findsNothing);
 
       // Score should only reflect the first tap (correct, +12)
       expect(find.text('12'), findsOneWidget);
@@ -195,94 +194,16 @@ void main() {
       // Lives should still be 5 because the first tap was correct and subsequent taps were blocked
       final livesWidget = tester.widget<GameLives>(find.byType(GameLives));
       expect(livesWidget.lives, 5);
-    });
-  });
 
-  group('Adversarial Stress Test: Barrier Tap & Android Back Button Dismissal', () {
-    testWidgets('Barrier tap dismisses modal, triggers single continue, and resumes timer', (tester) async {
-      setupViewport(tester);
-      final q1 = makeQuestion('q1', 0);
-      final q2 = makeQuestion('q2', 1);
-
-      await tester.pumpWidget(
-        buildTestApp(
-          RoadSignsScreen(
-            initialDeck: [q1, q2],
-            initialSeconds: 30,
-          ),
-        ),
-      );
+      // After 450ms highlight, advances to question 2
+      await tester.pump(const Duration(milliseconds: 450));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Tap card 0
-      final cards = find.descendant(
-        of: find.byType(RoadSignsGrid),
-        matching: find.byType(InkWell),
-      );
-      await tester.tap(cards.at(0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byType(RoadSignsModal), findsOneWidget);
-
-      // Tap outside dialog at top-left edge (barrier tap)
-      await tester.tapAt(const Offset(5, 5));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Modal should be dismissed
-      expect(find.byType(RoadSignsModal), findsNothing);
-
-      // Should advance to question 2
       expect(find.text(q2.prompt), findsOneWidget);
-
-      // Advance 2 seconds to verify timer resumed
-      await tester.pump(const Duration(seconds: 2));
-      final timeBar = tester.widget<GameTimeBar>(find.byType(GameTimeBar));
-      expect(timeBar.secondsLeft, 28);
-    });
-
-    testWidgets('Barrier tap when 0 lives triggers GameResultOverlay, not next question', (tester) async {
-      setupViewport(tester);
-      final q1 = makeQuestion('q1', 0);
-      final q2 = makeQuestion('q2', 1);
-
-      await tester.pumpWidget(
-        buildTestApp(
-          RoadSignsScreen(
-            initialDeck: [q1, q2],
-            initialLives: 1, // Only 1 life!
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Tap wrong card (card 1)
-      final cards = find.descendant(
-        of: find.byType(RoadSignsGrid),
-        matching: find.byType(InkWell),
-      );
-      await tester.tap(cards.at(1));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byType(RoadSignsModal), findsOneWidget);
-
-      // Dismiss via barrier tap
-      await tester.tapAt(const Offset(5, 5));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-
-      // GameResultOverlay is shown
-      expect(find.byType(GameResultOverlay), findsOneWidget);
-      expect(find.byType(RoadSignsGrid), findsNothing);
     });
   });
 
-  group('Adversarial Stress Test: Complete 5-Life Depletion Sequence', () {
-    testWidgets('Losing all 5 lives in sequence shows modal each time, ends on 5th continue', (tester) async {
+  group('Adversarial Stress Test: Complete 5-Life Depletion Sequence in Blitz', () {
+    testWidgets('Losing all 5 lives in sequence ends on 5th error and allows full mistake review', (tester) async {
       setupViewport(tester);
       final deck = List.generate(6, (i) => makeQuestion('deck_$i', 0));
 
@@ -305,15 +226,10 @@ void main() {
         // Tap wrong card (index 1, correct is 0)
         await tester.tap(cards.at(1));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
-        // Modal should be open
-        expect(find.byType(RoadSignsModal), findsOneWidget);
-
-        // Tap Continue
-        await tester.tap(find.text('Продолжить'));
+        // Error highlight delay (800ms)
+        await tester.pump(const Duration(milliseconds: 800));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         if (step < 5) {
           // Still playing
@@ -334,11 +250,22 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text(appL10n.gameMistakesReview), findsOneWidget);
+
+      // Tapping a mistake opens RoadSignsModal with official rules details
+      final mistakeTile = find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(InkWell),
+      ).first;
+      await tester.tap(mistakeTile);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(RoadSignsModal), findsOneWidget);
     });
   });
 
-  group('Adversarial Stress Test: Timer Freezing and Resuming Rigor', () {
-    testWidgets('Timer stays perfectly frozen for 15 virtual seconds while modal is open', (tester) async {
+  group('Adversarial Stress Test: Continuous Blitz Timer', () {
+    testWidgets('Timer counts down continuously across questions in blitz mode', (tester) async {
       setupViewport(tester);
       final q1 = makeQuestion('q1', 0);
       final q2 = makeQuestion('q2', 1);
@@ -359,32 +286,22 @@ void main() {
       var timeBar = tester.widget<GameTimeBar>(find.byType(GameTimeBar));
       expect(timeBar.secondsLeft, 17);
 
-      // Open modal
+      // Tap card 0 (correct answer)
       final cards = find.descendant(
         of: find.byType(RoadSignsGrid),
         matching: find.byType(InkWell),
       );
       await tester.tap(cards.at(0));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // Advance 15 seconds! (If timer wasn't frozen, 17 - 15 = 2, almost time up)
-      await tester.pump(const Duration(seconds: 15));
-
-      // Modal is STILL open, no time up
-      expect(find.byType(RoadSignsModal), findsOneWidget);
-      expect(find.byType(GameResultOverlay), findsNothing);
-
-      // Dismiss modal
-      await tester.tap(find.text('Продолжить'));
+      // Advance 450ms highlight delay
+      await tester.pump(const Duration(milliseconds: 450));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // Check secondsLeft: must STILL be 17!
-      timeBar = tester.widget<GameTimeBar>(find.byType(GameTimeBar));
-      expect(timeBar.secondsLeft, 17);
+      // Advanced to question 2
+      expect(find.text(q2.prompt), findsOneWidget);
 
-      // Now advance 17 seconds to trigger legitimate time up
+      // Advance 17 seconds to trigger legitimate time up
       await tester.pump(const Duration(seconds: 17));
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -418,11 +335,10 @@ void main() {
       );
       await tester.tap(cards.at(1));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.text('Продолжить'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      // Wait 800ms error delay
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(GameResultOverlay), findsOneWidget);
 

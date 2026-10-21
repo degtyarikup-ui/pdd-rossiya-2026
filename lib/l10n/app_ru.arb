@@ -1460,6 +1460,16 @@
   "gameSignScenario5_15_1_1Prompt": "Из средней полосы стрелка только прямо. Можно повернуть налево?",
   "gameSignScenario5_15_1_1Explanation": "Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.",
   "gamesRoadSignsTitle": "Знаки",
+  "gameReverseSignPrompt": "Как называется этот знак?",
+  "gameComboStreak": "{count} подряд!",
+  "@gameComboStreak": {
+    "description": "Combo streak pop-up message in mini-games.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "gamesViolatorTitle": "Нарушитель",
   "gamesParkingTitle": "Парковка",
   "gameParkingTouch": "Касание!",
@@ -1931,6 +1941,8 @@
   "gameCorrectAnswerSection": "Правильный ответ:",
   "gameChooseCorrectSignPrompt": "Какой из этих знаков соответствует описанию?",
   "gameViolatorSelectTitle": "Какое нарушение совершено?",
+  "gameViolatorModeBlitz": "Блиц 60 сек",
+  "gameViolatorModePatrol": "Бесконечный патруль",
   "gamePedestrianYieldViolation": "Не уступил дорогу пешеходу",
   "gameSolidLineViolation": "Пересечение сплошной линии",
   "gameWrongLaneTurnViolation": "Поворот не из своего ряда",
@@ -1938,6 +1950,12 @@
   "gameArrowYieldViolation": "Поворот по стрелке с красным без преимущества",
   "gameWaffleBlockViolation": "Остановка на вафельнице 1.26 в заторе",
   "gameEmergencyYieldViolation": "Не уступил дорогу спецтранспорту",
+  "gameNoLightsViolation": "Движение без фар в тёмное время суток",
+  "gameWeatherSpeedViolation": "Несоответствие скорости погодным условиям / занос",
+  "gameViolatorLifeRestored": "Серия x5! Жизнь восстановлена (+1 ❤️)",
+  "gameViolatorPhaseDusk": "Сумерки на перекрёстке",
+  "gameViolatorPhaseNight": "Ночной патруль: включите внимание",
+  "gameViolatorPhaseRain": "Ливень: скользкий асфальт",
   "gameViolatorEmergencyExempt": "Ложный вызов! Спецтранспорт со спецсигналами имеет право проезда",
   "gameViolatorMissedLifeWarning": "Нарушитель упущен! (-1 жизнь)",
   "gameViolatorCaught": "Нарушитель зафиксирован!",

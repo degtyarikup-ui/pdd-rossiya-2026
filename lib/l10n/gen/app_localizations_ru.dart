@@ -1979,8 +1979,8 @@ class AppLocalizationsRu extends AppLocalizations {
       'Разрешена ли остановка под этот знак?';
 
   @override
-  String gameComboStreak(int combo) {
-    return 'КОМБО х$combo!';
+  String gameComboStreak(int count) {
+    return '$count подряд!';
   }
 
   @override
@@ -3261,6 +3261,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gamesRoadSignsTitle => 'Знаки';
 
   @override
+  String get gameReverseSignPrompt => 'Как называется этот знак?';
+
+  @override
   String get gamesViolatorTitle => 'Нарушитель';
 
   @override
@@ -4053,6 +4056,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gameViolatorSelectTitle => 'Какое нарушение совершено?';
 
   @override
+  String get gameViolatorModeBlitz => 'Блиц 60 сек';
+
+  @override
+  String get gameViolatorModePatrol => 'Бесконечный патруль';
+
+  @override
   String get gamePedestrianYieldViolation => 'Не уступил дорогу пешеходу';
 
   @override
@@ -4075,6 +4084,26 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameEmergencyYieldViolation => 'Не уступил дорогу спецтранспорту';
+
+  @override
+  String get gameNoLightsViolation => 'Движение без фар в тёмное время суток';
+
+  @override
+  String get gameWeatherSpeedViolation =>
+      'Несоответствие скорости погодным условиям / занос';
+
+  @override
+  String get gameViolatorLifeRestored =>
+      'Серия x5! Жизнь восстановлена (+1 ❤️)';
+
+  @override
+  String get gameViolatorPhaseDusk => 'Сумерки на перекрёстке';
+
+  @override
+  String get gameViolatorPhaseNight => 'Ночной патруль: включите внимание';
+
+  @override
+  String get gameViolatorPhaseRain => 'Ливень: скользкий асфальт';
 
   @override
   String get gameViolatorEmergencyExempt =>

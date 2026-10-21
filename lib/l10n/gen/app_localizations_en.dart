@@ -1959,8 +1959,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Is stopping under this sign allowed?';
 
   @override
-  String gameComboStreak(int combo) {
-    return 'COMBO x$combo!';
+  String gameComboStreak(int count) {
+    return '$count in a row!';
   }
 
   @override
@@ -3247,6 +3247,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamesRoadSignsTitle => 'Road signs';
 
   @override
+  String get gameReverseSignPrompt => 'What is this sign called?';
+
+  @override
   String get gamesViolatorTitle => 'Offender';
 
   @override
@@ -4040,6 +4043,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameViolatorSelectTitle => 'What violation occurred?';
 
   @override
+  String get gameViolatorModeBlitz => 'Blitz 60s';
+
+  @override
+  String get gameViolatorModePatrol => 'Endless Patrol';
+
+  @override
   String get gamePedestrianYieldViolation => 'Failed to yield to pedestrian';
 
   @override
@@ -4062,6 +4071,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get gameEmergencyYieldViolation =>
       'Failed to yield to emergency vehicle';
+
+  @override
+  String get gameNoLightsViolation => 'Driving without lights at night';
+
+  @override
+  String get gameWeatherSpeedViolation =>
+      'Speed inappropriate for weather / skid';
+
+  @override
+  String get gameViolatorLifeRestored => 'Streak x5! Life restored (+1 ❤️)';
+
+  @override
+  String get gameViolatorPhaseDusk => 'Dusk at the intersection';
+
+  @override
+  String get gameViolatorPhaseNight => 'Night patrol: stay alert';
+
+  @override
+  String get gameViolatorPhaseRain => 'Heavy rain: slippery asphalt';
 
   @override
   String get gameViolatorEmergencyExempt =>

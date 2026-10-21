@@ -3412,11 +3412,11 @@ abstract class AppLocalizations {
   /// **'Разрешена ли остановка под этот знак?'**
   String get gameQuestionProhibitsStopping;
 
-  /// No description provided for @gameComboStreak.
+  /// Combo streak pop-up message in mini-games.
   ///
   /// In ru, this message translates to:
-  /// **'КОМБО х{combo}!'**
-  String gameComboStreak(int combo);
+  /// **'{count} подряд!'**
+  String gameComboStreak(int count);
 
   /// No description provided for @gameSoonBadge.
   ///
@@ -5428,6 +5428,12 @@ abstract class AppLocalizations {
   /// **'Знаки'**
   String get gamesRoadSignsTitle;
 
+  /// No description provided for @gameReverseSignPrompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как называется этот знак?'**
+  String get gameReverseSignPrompt;
+
   /// No description provided for @gamesViolatorTitle.
   ///
   /// In ru, this message translates to:
@@ -6742,6 +6748,18 @@ abstract class AppLocalizations {
   /// **'Какое нарушение совершено?'**
   String get gameViolatorSelectTitle;
 
+  /// No description provided for @gameViolatorModeBlitz.
+  ///
+  /// In ru, this message translates to:
+  /// **'Блиц 60 сек'**
+  String get gameViolatorModeBlitz;
+
+  /// No description provided for @gameViolatorModePatrol.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бесконечный патруль'**
+  String get gameViolatorModePatrol;
+
   /// No description provided for @gamePedestrianYieldViolation.
   ///
   /// In ru, this message translates to:
@@ -6783,6 +6801,42 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не уступил дорогу спецтранспорту'**
   String get gameEmergencyYieldViolation;
+
+  /// No description provided for @gameNoLightsViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Движение без фар в тёмное время суток'**
+  String get gameNoLightsViolation;
+
+  /// No description provided for @gameWeatherSpeedViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Несоответствие скорости погодным условиям / занос'**
+  String get gameWeatherSpeedViolation;
+
+  /// No description provided for @gameViolatorLifeRestored.
+  ///
+  /// In ru, this message translates to:
+  /// **'Серия x5! Жизнь восстановлена (+1 ❤️)'**
+  String get gameViolatorLifeRestored;
+
+  /// No description provided for @gameViolatorPhaseDusk.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сумерки на перекрёстке'**
+  String get gameViolatorPhaseDusk;
+
+  /// No description provided for @gameViolatorPhaseNight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ночной патруль: включите внимание'**
+  String get gameViolatorPhaseNight;
+
+  /// No description provided for @gameViolatorPhaseRain.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ливень: скользкий асфальт'**
+  String get gameViolatorPhaseRain;
 
   /// No description provided for @gameViolatorEmergencyExempt.
   ///

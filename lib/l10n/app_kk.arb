@@ -996,6 +996,16 @@
   "gameSignScenario5_15_1_1Prompt": "Ортаңғы жолақтан жебе тек алға қарай. Солға бұрыла аламын ба?",
   "gameSignScenario5_15_1_1Explanation": "Жоқ. Бұл жолақтан тек алға жүруге рұқсат етіледі. Бұрылу үшін алдын ала қолайлы жолақты алу керек.",
   "gamesRoadSignsTitle": "Белгілер",
+  "gameReverseSignPrompt": "Бұл белгі қалай аталады?",
+  "gameComboStreak": "{count} қатарынан!",
+  "@gameComboStreak": {
+    "description": "Combo streak pop-up message in mini-games.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "gamesViolatorTitle": "Ереже бұзушы",
   "gamesParkingTitle": "Тұрақ",
   "gameParkingTouch": "Соқтығыс!",
@@ -1362,6 +1372,8 @@
   "gameCorrectAnswerSection": "Дұрыс жауап:",
   "gameChooseCorrectSignPrompt": "Осы белгілердің қайсысы сипаттамаға сәйкес келеді?",
   "gameViolatorSelectTitle": "Қандай ереже бұзылды?",
+  "gameViolatorModeBlitz": "Блиц 60 сек",
+  "gameViolatorModePatrol": "Шексіз патруль",
   "gamePedestrianYieldViolation": "Жаяу жүргіншіге жол бермеді",
   "gameSolidLineViolation": "Тұтас таңба сызығын кесу",
   "gameWrongLaneTurnViolation": "Шеткі емес жолақтан бұрылу",
@@ -1369,6 +1381,12 @@
   "gameArrowYieldViolation": "Қызыл жанғанда бағыттауыш бойынша жол бермей бұрылу",
   "gameWaffleBlockViolation": "Кептелісте 1.26 торлы таңбасына тоқтау",
   "gameEmergencyYieldViolation": "Арнайы көлікке жол бермеді",
+  "gameNoLightsViolation": "Түнде жарықсыз жүру",
+  "gameWeatherSpeedViolation": "Ауа райына сай емес жылдамдық / тайғанау",
+  "gameViolatorLifeRestored": "x5 сериясы! Өмір қалпына келтірілді (+1 ❤️)",
+  "gameViolatorPhaseDusk": "Қиылыстағы іңір",
+  "gameViolatorPhaseNight": "Түнгі патруль: мұқият болыңыз",
+  "gameViolatorPhaseRain": "Нөсер: тайғақ асфальт",
   "gameViolatorEmergencyExempt": "Жалған шақыру! Арнайы көлікке өтуге құқығы бар",
   "gameViolatorMissedLifeWarning": "Ереже бұзушы жіберіп алынды! (-1 өмір)",
   "gameViolatorCaught": "Ереже бұзушы анықталды!",

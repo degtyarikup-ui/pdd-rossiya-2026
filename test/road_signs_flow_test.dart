@@ -274,7 +274,7 @@ void main() {
       expect(find.byType(InkWell), findsWidgets);
     });
 
-    testWidgets('Correct answer flow pauses timer, updates score, advances on continue', (tester) async {
+    testWidgets('Correct answer blitz flow updates score and seamlessly advances after highlight', (tester) async {
       setupViewport(tester);
       await tester.pumpWidget(
         buildTestApp(
@@ -299,31 +299,22 @@ void main() {
 
       await tester.tap(gridCards.at(0));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // Modal is now open
-      expect(find.byType(RoadSignsModal), findsOneWidget);
-      expect(find.text('✓ Ваш ответ верный'), findsOneWidget);
-
-      // Verify timer is paused: wait 3 virtual seconds
-      await tester.pump(const Duration(seconds: 3));
-      // Modal should still be open
-      expect(find.byType(RoadSignsModal), findsOneWidget);
-
-      // Tap "Продолжить" to dismiss modal
-      await tester.tap(find.text('Продолжить'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Modal closed, advanced to question 2
+      // No blocking modal during blitz
       expect(find.byType(RoadSignsModal), findsNothing);
+
+      // Wait 450ms highlight delay
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump();
+
+      // Seamlessly advanced to question 2
       expect(find.text(testQuestion2.prompt), findsOneWidget);
 
       // Score increased by GameEconomy.signs(1) = 12
       expect(find.text('12'), findsOneWidget);
     });
 
-    testWidgets('Incorrect answer flow reduces lives, shows choice breakdown, and resets combo', (tester) async {
+    testWidgets('Incorrect answer blitz flow reduces lives, resets combo, and advances after highlight', (tester) async {
       setupViewport(tester);
       await tester.pumpWidget(
         buildTestApp(
@@ -343,24 +334,20 @@ void main() {
       );
       await tester.tap(gridCards.at(1));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // Modal is open with error status
-      expect(find.byType(RoadSignsModal), findsOneWidget);
-      expect(find.text('✕ Ваш ответ неверный'), findsOneWidget);
-      expect(find.text('✕ Ваш выбор: знак 2.4'), findsOneWidget);
+      // No blocking modal during blitz
+      expect(find.byType(RoadSignsModal), findsNothing);
 
-      // Dismiss modal
-      await tester.tap(find.text('Продолжить'));
+      // Wait 800ms error highlight delay
+      await tester.pump(const Duration(milliseconds: 800));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // Combo is 0, score remains 0
+      // Combo is 0, score remains 0, advanced to question 2
       expect(find.text('0'), findsOneWidget);
       expect(find.text(testQuestion2.prompt), findsOneWidget);
     });
 
-    testWidgets('Game ends when lives run out, showing GameResultOverlay', (tester) async {
+    testWidgets('Game ends when lives run out, showing GameResultOverlay with mistake review', (tester) async {
       setupViewport(tester);
       await tester.pumpWidget(
         buildTestApp(
@@ -380,15 +367,10 @@ void main() {
       );
       await tester.tap(gridCards.at(1));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // Modal opens
-      expect(find.byType(RoadSignsModal), findsOneWidget);
-
-      // Continue dismisses modal and triggers GameResultOverlay because lives == 0
-      await tester.tap(find.text('Продолжить'));
+      // Error highlight 800ms finishes and triggers GameResultOverlay because lives == 0
+      await tester.pump(const Duration(milliseconds: 800));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.byType(GameResultOverlay), findsOneWidget);
       expect(find.byType(RoadSignsGrid), findsNothing);
@@ -454,12 +436,10 @@ void main() {
       );
       await tester.tap(gridCards.at(0));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // Continue to question 2
-      await tester.tap(find.text('Продолжить'));
+      // Blitz delay advances to question 2
+      await tester.pump(const Duration(milliseconds: 450));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
       // Question 2: tap wrong answer (index 0 is sign24, correct is index 1 sign31) -> loses last life
       final gridCardsQ2 = find.descendant(
@@ -468,12 +448,10 @@ void main() {
       );
       await tester.tap(gridCardsQ2.at(0));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // Continue dismisses modal and ends the game because lives == 0
-      await tester.tap(find.text('Продолжить'));
+      // Error blitz delay completes and ends the game because lives == 0
+      await tester.pump(const Duration(milliseconds: 800));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
 
       // Verify GameResultOverlay is shown
       expect(find.byType(GameResultOverlay), findsOneWidget);
@@ -483,6 +461,51 @@ void main() {
       expect(updatedState.bestScore, greaterThan(0));
       expect(updatedState.totalCorrect, 1);
       expect(updatedState.totalAnswered, 2);
+    });
+
+    testWidgets('RoadSignsReverseView renders large sign and vertical option cards for reverse questions', (tester) async {
+      setupViewport(tester);
+      final reverseQuestion = RoadSignQuizQuestion(
+        id: 'rev_q1',
+        correctSign: sign21,
+        options: const [sign21, sign24, sign31, sign519],
+        correctAnswerIndex: 0,
+        prompt: 'Как называется этот знак?',
+        officialRuleQuote: 'Дорога, на которой предоставлено право преимущественного проезда.',
+        type: RoadSignQuizType.reverseTitleMatch,
+      );
+
+      await tester.pumpWidget(
+        buildTestApp(
+          RoadSignsScreen(
+            initialDeck: [reverseQuestion, testQuestion2],
+            initialSeconds: 60,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Reverse question prompt is displayed
+      expect(find.text('Как называется этот знак?'), findsOneWidget);
+
+      // 4 text options are present
+      expect(find.text(sign21.title), findsOneWidget);
+      expect(find.text(sign24.title), findsOneWidget);
+      expect(find.text(sign31.title), findsOneWidget);
+      expect(find.text(sign519.title), findsOneWidget);
+
+      // Tap correct text option (sign21)
+      await tester.tap(find.text(sign21.title));
+      await tester.pump();
+
+      // Advance after highlight
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump();
+
+      // Advances to question 2
+      expect(find.text(testQuestion2.prompt), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
     });
   });
 }

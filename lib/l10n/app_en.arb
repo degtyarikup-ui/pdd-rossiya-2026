@@ -996,6 +996,16 @@
   "gameSignScenario5_15_1_1Prompt": "From the middle lane, the arrow only goes straight. Can I turn left?",
   "gameSignScenario5_15_1_1Explanation": "No. Only straight ahead is allowed from this lane. To turn, you need to take a suitable lane in advance.",
   "gamesRoadSignsTitle": "Road signs",
+  "gameReverseSignPrompt": "What is this sign called?",
+  "gameComboStreak": "{count} in a row!",
+  "@gameComboStreak": {
+    "description": "Combo streak pop-up message in mini-games.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "gamesViolatorTitle": "Offender",
   "gamesParkingTitle": "Parking",
   "gameParkingTouch": "Bump!",
@@ -1362,6 +1372,8 @@
   "gameCorrectAnswerSection": "Correct answer:",
   "gameChooseCorrectSignPrompt": "Which of these signs matches the description?",
   "gameViolatorSelectTitle": "What violation occurred?",
+  "gameViolatorModeBlitz": "Blitz 60s",
+  "gameViolatorModePatrol": "Endless Patrol",
   "gamePedestrianYieldViolation": "Failed to yield to pedestrian",
   "gameSolidLineViolation": "Crossing a solid line",
   "gameWrongLaneTurnViolation": "Turning from the wrong lane",
@@ -1369,6 +1381,12 @@
   "gameArrowYieldViolation": "Failing to yield when turning on arrow with red",
   "gameWaffleBlockViolation": "Stopping on yellow box junction 1.26 in gridlock",
   "gameEmergencyYieldViolation": "Failed to yield to emergency vehicle",
+  "gameNoLightsViolation": "Driving without lights at night",
+  "gameWeatherSpeedViolation": "Speed inappropriate for weather / skid",
+  "gameViolatorLifeRestored": "Streak x5! Life restored (+1 ❤️)",
+  "gameViolatorPhaseDusk": "Dusk at the intersection",
+  "gameViolatorPhaseNight": "Night patrol: stay alert",
+  "gameViolatorPhaseRain": "Heavy rain: slippery asphalt",
   "gameViolatorEmergencyExempt": "False alarm! Emergency vehicle has the right of way",
   "gameViolatorMissedLifeWarning": "Violator missed! (-1 life)",
   "gameViolatorCaught": "Violator identified!",
