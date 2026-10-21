@@ -9,7 +9,8 @@ extends RefCounted
 
 const MAX_STEER := 0.6              # ≈34° of the front wheels at full lock
 const STEP := 0.1                   # metres between trajectory poses
-const COUNT := 5
+const COUNT := 7
+const RULES := COUNT - 1              # «Где можно встать?» is always the last level
 const PAINTS := ["#D9DCE3", "#8D94A3", "#2B2F36", "#E7E2D6", "#9A3B3B", "#3B4A63", "#B8C4D6", "#6E8E6A", "#C9A86A"]
 const PARKED_MODELS := ["hatch", "sedan", "coupe", "wagon", "suv", "pickup"]
 const BAY_W := 2.7                 # the angled bays
@@ -23,6 +24,16 @@ const CENTRE_X := -2.25             # the street's centre line: 5.25 m lane with
 const PARKED_HW := 1.07             # the widest parked model, mirrors included
 const PASS_GAP := 0.7               # driving school: pass the parked row 0.5–1 m away
 const PARALLEL_BACK := 0.6          # the S ends this far behind the space's centre
+const GARAGE_W := 3.2                # inside a garage box
+const GARAGE_WALL := 0.25
+const GARAGE_LANE := 7.5             # the driveway between the rows
+const GARAGE_OUT := 4.0
+const GARAGE_TURN := 1
+static var turn_street := 10.5        # kerb to kerb: two 5.25 m lanes
+const TURN_TARGET_Z := 0.0
+const TURN_END := 0.0
+const TURN_A2 := 20               # reverse, full right lock
+const TURN_A3 := 80               # last move forwards, full left lock (the first is 80° too)
 const ROAD_BEYOND := 70.0           # the street goes on past its roadworks, out of the frame
 
 static var _metas := {}
@@ -210,8 +221,22 @@ static func build(index: int) -> Dictionary:
 		0: return _lot(5, PI, func(geo: Dictionary) -> Array: return forward_bay_exit(geo), 11)
 		1: return _lot(3, 0.0, [{"g": 1, "s": 0, "d": 2.4}, {"g": 1, "s": 1, "a": 90}, {"g": -1, "s": 0, "d": 7.5}], 23)
 		2: return _angled()
-		3: return _parallel()
+		3: return _garage()
+		4: return _parallel()
+		5: return _three_point()
 		_: return _rules()
+
+
+## Everything a car may touch on a level: kerbs, walls and parked cars, as boxes.
+static func obstacles(level: Dictionary) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	out.append_array(level.sidewalks)
+	for w: Dictionary in level.walls:
+		if w.solid: out.append(w.box)
+	for parked: Dictionary in level.cars:
+		var m := model_meta(parked.model)
+		out.append(box(parked.c, m.half_width, m.half_length, parked.yaw))
+	return out
 
 
 static func _level(id: String) -> Dictionary:
@@ -379,6 +404,98 @@ static func parallel_exit(geo: Dictionary, approach: float) -> Array:
 	var mid := maxf(0.0, (lateral - 2.0 * r * (1.0 - cos(PI / 4.0))) / sin(PI / 4.0))
 	return [{"g": -1, "s": 0, "d": PARALLEL_BACK}, {"g": 1, "s": 1, "a": 45}, {"g": 1, "s": 0, "d": mid},
 		{"g": 1, "s": -1, "a": 45}, {"g": -1, "s": 0, "d": approach}]
+
+
+## A wall, a door or a roof: a box of the ground footprint `b` from height y0 to y0 + h.
+## Only `solid` walls stop the car (roofs hang above it).
+static func _wall(level: Dictionary, b: Dictionary, h: float, colour: String, y0 := 0.0, solid := true) -> void:
+	level.walls.append({"box": b, "h": h, "y0": y0, "colour": colour, "solid": solid})
+
+
+## «Задом в гараж»: a row of garage boxes with walls and a driveway between two rows,
+## fenced at both ends. One box stands open; reverse into it, as on the exam's «бокс».
+static func _garage() -> Dictionary:
+	var level := _level("garage")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 47
+	var pitch := GARAGE_W + GARAGE_WALL
+	var x0 := -4.0 * pitch
+	var depth := 6.5
+	var lane := GARAGE_LANE
+	var x1 := -x0 + 1.5
+	level.asphalt.append(rect(-x1, -depth - 0.4, x1, lane + depth + 0.4))
+	level.grass.append(rect(-80, -60, 80, 70))
+	var doors := ["#5F7D95", "#8A6F5A", "#6E7F69", "#9AA3AD", "#7B6E8C"]
+	for row in 2:
+		# Row 0 opens south onto the driveway at z = 0, row 1 north at z = lane.
+		var front := 0.0 if row == 0 else lane
+		var back := -depth if row == 0 else lane + depth
+		var out := 1.0 if row == 0 else -1.0
+		_wall(level, rect(x0 - GARAGE_WALL * 0.5, back - 0.25 * out, -x0 + GARAGE_WALL * 0.5, back), 2.6, "#D6CCBE")
+		for i in 9:
+			var x := x0 + i * pitch
+			_wall(level, rect(x - GARAGE_WALL * 0.5, minf(front, back), x + GARAGE_WALL * 0.5, maxf(front, back)), 2.6, "#D6CCBE")
+		for i in 8:
+			var cx := x0 + (i + 0.5) * pitch
+			if row == 0 and i == 4:
+				level.target = box(Vector2(cx, -depth * 0.5 + 0.1), GARAGE_W * 0.5 - 0.05, depth * 0.5 - 0.1, 0.0)
+				continue
+			var door := rect(cx - GARAGE_W * 0.5, front - 0.12 * out, cx + GARAGE_W * 0.5, front)
+			_wall(level, door, 2.3, doors[rng.randi() % doors.size()])
+			_wall(level, rect(cx - pitch * 0.5, minf(front, back), cx + pitch * 0.5, maxf(front, back)), 0.15, "#7E8794", 2.6, false)
+	# Fences close the driveway at both ends.
+	for side in [-1.0, 1.0]:
+		_wall(level, rect(side * x1 - 0.15, -depth - 0.4, side * x1 + 0.15, lane + depth + 0.4), 2.0, "#B8BEC6")
+	_car(level, rng, Vector2(x0 + 1.5 * pitch, lane - 1.35), -PI * 0.5)
+	level.exit = [{"g": 1, "s": 0, "d": GARAGE_OUT}, {"g": 1, "s": GARAGE_TURN, "a": 90}, {"g": -1, "s": 0, "d": 8.0}]
+	for x in range(-24, 28, 8):
+		level.trees.append(Vector2(x, -depth - 4.0))
+		level.trees.append(Vector2(x + 4.0, lane + depth + 4.0))
+	level.bounds = Rect2(-x1 + 0.15, -depth, (x1 - 0.15) * 2.0, lane + depth * 2.0)
+	level.spots.append({"box": level.target, "ok": true})
+	return level
+
+
+## «Разворот в три приёма»: a narrow two-lane street, no room for a U-turn in one go. Turn
+## to the far kerb with full left lock, reverse with full right lock, then forwards into the
+## opposite lane. The finish is a box in that lane facing back the way the car came.
+static func _three_point() -> Dictionary:
+	var level := _level("three_point")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 29
+	var half := turn_street * 0.5
+	var z0 := -26.0
+	var z1 := 26.0
+	level.asphalt.append(rect(-half, z0 - ROAD_BEYOND, half, z1 + ROAD_BEYOND))
+	level.grass.append(rect(-130, z0 - 110, 130, z1 + 110))
+	level.sidewalks.append(rect(half, z0 - ROAD_BEYOND, half + 3.5, z1 + ROAD_BEYOND))
+	level.sidewalks.append(rect(-half - 3.5, z0 - ROAD_BEYOND, -half, z1 + ROAD_BEYOND))
+	_line(level, Vector2(0, z0 - ROAD_BEYOND), Vector2(0, z1 + ROAD_BEYOND), 0.12, "#F2F4F8", 3.0)
+	_works(level, Vector2(-half, z0), Vector2(half, z0), Vector2(0, -1), Vector2(half + 0.9, z0 - 1.5))
+	_works(level, Vector2(-half, z1), Vector2(half, z1), Vector2(0, 1), Vector2(half + 0.9, z1 + 1.5))
+	# Finish: the opposite (left) lane, facing +z, i.e. back where the car came from.
+	level.target = box(Vector2(-half * 0.5, TURN_TARGET_Z), 1.5, 3.4, 0.0)
+	_car(level, rng, Vector2(-half + 1.15, TURN_TARGET_Z + 7.8), 0.0)
+	_car(level, rng, Vector2(half - 1.15, 20.5), PI)
+	level.exit = three_point_exit({})
+	var z := z0 - ROAD_BEYOND + 4.0
+	while z < z1 + ROAD_BEYOND:
+		if absf(z - z0) > 3.0 and absf(z - z1) > 3.0: level.trees.append(Vector2(half + 2.6, z))
+		level.trees.append(Vector2(-half - 2.6, z + 5.0))
+		z += 11.0
+	for zb in range(int(z0 - ROAD_BEYOND) + 6, int(z1 + ROAD_BEYOND), 24):
+		level.buildings.append({"prop": "buildings/home_%d" % (absi(zb) % 6), "pos": Vector2(half + 14, zb), "yaw": -PI * 0.5})
+		level.buildings.append({"prop": "buildings/block_%d" % (absi(zb) % 8), "pos": Vector2(-half - 16, zb + 10), "yaw": PI * 0.5})
+	level.bounds = Rect2(-half, z0, half * 2.0, z1 - z0)
+	level.spots.append({"box": level.target, "ok": true})
+	return level
+
+
+## The three-point turn played backwards (see _three_point). The same angles suit every garage
+## car on this street width (≥ 0.3 m from the kerbs, starting in the right lane).
+static func three_point_exit(_geo: Dictionary) -> Array:
+	return [{"g": -1, "s": 0, "d": TURN_END}, {"g": -1, "s": 1, "a": TURN_A3}, {"g": 1, "s": -1, "a": TURN_A2},
+		{"g": -1, "s": 1, "a": 180 - TURN_A2 - TURN_A3}, {"g": -1, "s": 0, "d": 9.0}]
 
 
 ## «Где можно встать?»: four free kerb spaces, only one allowed (п. 12.4 ПДД, знаки 3.27, 6.4, 5.16).

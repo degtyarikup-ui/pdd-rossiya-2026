@@ -254,11 +254,7 @@ func _load_level(index: int) -> void:
 		root3d.queue_free()
 	root3d = Node3D.new()
 	add_child(root3d)
-	_obstacles.clear()
-	_obstacles.append_array(level.sidewalks)
-	for parked: Dictionary in level.cars:
-		var m := ParkingLevels.model_meta(parked.model)
-		_obstacles.append(ParkingLevels.box(parked.c, m.half_width, m.half_length, parked.yaw))
+	_obstacles = ParkingLevels.obstacles(level)
 	_build_ground()
 	_build_works()
 	_flush_ground()
@@ -339,12 +335,14 @@ func _flush_ground() -> void:
 	for key: String in _ground:
 		var node := MeshInstance3D.new()
 		node.mesh = (_ground[key] as SurfaceTool).commit()
-		var mat := _mat(key)
+		# "solid:<colour>" are walls, doors and roofs: lit, casting shadows.
+		var solid := key.begins_with("solid:")
+		var mat := _mat(key.trim_prefix("solid:"))
 		if mat is StandardMaterial3D:
 			mat = mat.duplicate()
 			(mat as StandardMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
 		node.material_override = mat
-		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if key != "pavement" else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if solid or key == "pavement" else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root3d.add_child(node)
 	_ground.clear()
 
@@ -355,6 +353,10 @@ func _build_ground() -> void:
 	for b: Dictionary in level.asphalt: _ground_quad(b, 0.0, "asphalt")
 	for b: Dictionary in level.sidewalks:
 		_block(_ground_tool("pavement"), b.c, Vector2(1, 0), Vector3(b.half.x * 2.0, 0.15, b.half.y * 2.0), 0.0)
+	for w: Dictionary in level.walls:
+		var b: Dictionary = w.box
+		var f := ParkingLevels.forward(b.yaw)
+		_block(_ground_tool("solid:" + str(w.colour)), b.c, Vector2(f.y, -f.x), Vector3(b.half.x * 2.0, w.h, b.half.y * 2.0), w.y0)
 	for line: Dictionary in level.lines: _paint_line(line.a, line.b, line.w, line.colour, line.dash)
 	for zig: Dictionary in level.zigzag:
 		var z: float = zig.z0

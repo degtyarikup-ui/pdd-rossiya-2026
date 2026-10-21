@@ -106,7 +106,7 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 	_check("preview: dashes only, no arrow", guide._prediction_mesh.get_surface_count() == 1
 		and (guide._prediction_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() == 72)
 	# The rules level must not disclose the legal space through an authored route.
-	level = ParkingLevels.build(4)
+	level = ParkingLevels.build(ParkingLevels.RULES)
 	way = ParkingLevels.way_in(level, geo)
 	guide.setup(level, way, geo)
 	guide.update_state(way[0].poses[0], 0.0, 1, 0.0, 0, 0, false, 0.016)
@@ -148,7 +148,7 @@ func _check_manual_progress() -> void:
 	_check("manual: gear-change stage advances once stopped", scene.segment == 1)
 	# Follow two demanding routes through the same steering ramp and pedals as a human.
 	# Unlike --auto, the steering is prepared while stopped rather than snapped to its lock.
-	for index in [1, 3]:
+	for index in [1, 3, 4, 5]:
 		scene._load_level(index)
 		scene.sound.enabled = false
 		var initial_parked: int = scene.parked_count

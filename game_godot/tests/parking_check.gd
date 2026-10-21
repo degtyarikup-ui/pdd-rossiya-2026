@@ -55,8 +55,8 @@ func _check_way(i: int, model: String, geo: Dictionary) -> void:
 				var m := ParkingLevels.model_meta(parked.model)
 				if ParkingLevels.overlaps(car, ParkingLevels.box(parked.c, m.half_width, m.half_length, parked.yaw)):
 					worst = "touches a %s at %s (pose %s)" % [parked.model, parked.c, p]
-			for kerb: Dictionary in level.sidewalks:
-				if ParkingLevels.overlaps(car, kerb): worst = "climbs the kerb at %s" % p
+			for kerb: Dictionary in _fixed(level):
+				if ParkingLevels.overlaps(car, kerb): worst = "climbs a kerb or hits a wall at %s" % p
 			if worst != "": break
 		if worst != "": break
 	# The shown way keeps a comfortable margin: a driver following it never grazes anything.
@@ -68,9 +68,9 @@ func _check_way(i: int, model: String, geo: Dictionary) -> void:
 			for parked: Dictionary in level.cars:
 				var m := ParkingLevels.model_meta(parked.model)
 				car_gap = minf(car_gap, ParkingLevels.gap(body, ParkingLevels.box(parked.c, m.half_width, m.half_length, parked.yaw)))
-			for kerb: Dictionary in level.sidewalks: kerb_gap = minf(kerb_gap, ParkingLevels.gap(body, kerb))
+			for kerb: Dictionary in _fixed(level): kerb_gap = minf(kerb_gap, ParkingLevels.gap(body, kerb))
 	_check("level %d %s: way passes parked cars ≥ 0.3 m away (%.2f)" % [i, model, car_gap], car_gap >= 0.3)
-	_check("level %d %s: way keeps ≥ 0.2 m from kerbs (%.2f)" % [i, model, kerb_gap], kerb_gap >= 0.195)
+	_check("level %d %s: way keeps ≥ 0.2 m from kerbs and walls (%.2f)" % [i, model, kerb_gap], kerb_gap >= 0.195)
 	var last: Vector3 = way.back().poses.back()
 	_check("level %d (%s) %s: way in is clear%s" % [i, level.id, model, "" if worst == "" else " — " + worst], worst == "")
 	_check("level %d %s: way ends in the spot" % [i, model], ParkingLevels.contains(level.target, ParkingLevels.car_box(last, geo)))
@@ -82,8 +82,16 @@ func _check_way(i: int, model: String, geo: Dictionary) -> void:
 		print("level %d %s start %s, %d segments" % [i, level.id, start, way.size()])
 
 
+## Kerbs and solid walls (garage boxes, fences).
+func _fixed(level: Dictionary) -> Array:
+	var out: Array = level.sidewalks.duplicate()
+	for w: Dictionary in level.walls:
+		if w.solid: out.append(w.box)
+	return out
+
+
 func _check_rules_spots() -> void:
-	var level := ParkingLevels.build(4)
+	var level := ParkingLevels.build(ParkingLevels.RULES)
 	var ok := 0
 	for spot: Dictionary in level.spots:
 		if spot.ok: ok += 1
@@ -106,7 +114,7 @@ func _check_scene() -> void:
 		parked = scene.parked_count
 		if OS.has_environment("PARKING_DEBUG") and frame % 120 == 0: print(frame, " L", scene.level_index, " seg ", scene.segment, " g ", scene.gear, " v ", snapped(scene.speed, 0.01), " pose ", scene.pose, " lives ", scene.lives, " ready ", scene._ready_for_play, " travel ", snapped(scene._auto_travel, 0.01))
 		if scene.is_game_over: break
-	_check("autopilot parks all five levels (%d)" % parked, parked == ParkingLevels.COUNT)
+	_check("autopilot parks every level (%d)" % parked, parked == ParkingLevels.COUNT)
 	_check("autopilot follows the clear way without touching", scene.touches == 0)
 	var summary: Dictionary = scene.call("_session_summary")
 	_check("summary names the game", summary.game == "parking" and summary.runs.size() >= 1)
