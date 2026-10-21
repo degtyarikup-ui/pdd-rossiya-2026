@@ -1,0 +1,39 @@
+{
+  "id": "crossroads-032",
+  "title": "Четыре машины — никому не уступить",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_032.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "7b6803d7371c4f48c554d3a118cde4d6b563abcbd596aff8e4581f0f6ccc79dc",
+  "bytes": 27781298,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "32.066667",
+    "nb_read_frames": "962",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "32.066667"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.11"
+  ],
+  "adaptation": "Equal junction without signs or signals, four cars straight on: red sedan (south), blue SUV (east), yellow hatch (north), white wagon (west). Every car has someone on its right, so 13.11 gives no order. Red waives, blue crosses; then by the right-hand rule red, white (2.8 s after red) and yellow (5.0 s after red). No order chips: the first move comes from agreement, not from the rules.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-032; 962.0 frames; four-way deadlock, agreed release, then right-hand rule; no collisions or occlusion"
+  }
+}

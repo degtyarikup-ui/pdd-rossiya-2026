@@ -1,0 +1,39 @@
+{
+  "id": "crossroads-033",
+  "title": "Трамвай слева, но едет первым",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_033.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "b199378adb0f985c0259413b21f3db4b710cdd109f409edfd75c1362a0a25640",
+  "bytes": 20977361,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "24.066667",
+    "nb_read_frames": "722",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "24.066667"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.11"
+  ],
+  "adaptation": "Equal junction without signs or signals. One curved 1524 mm track from the west (eastbound lane) turning left to the north (northbound lane), radius 7 m. Blue tram turns left on it; red hatch from the south goes straight north into the same lane, calmer than the tram, after the whole wagon has cleared the junction.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-033; 722.0 frames; tram turns left on a curved track first; red, on its right, goes after; no collisions or occlusion"
+  }
+}

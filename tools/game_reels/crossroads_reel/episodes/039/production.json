@@ -1,0 +1,40 @@
+{
+  "id": "crossroads-039",
+  "title": "Обгон прямо на перекрёстке",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_039.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "442be01a12dd8f72737feb70341cda925f7a0bf24c6d5ec2baa9c3db3b951690",
+  "bytes": 23656971,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "22.200000",
+    "nb_read_frames": "666",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "22.200000"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "11.4",
+    "11.1"
+  ],
+  "adaptation": "Unsignalised junction, main road north-south (2.1 south/north, 2.4 west/east), dashed centre line, no oncoming traffic. Yellow truck (game truck model) in the northbound lane at 3 m/s. Red sedan behind it, already easing over the centre line with the left indicator, overtakes through the junction in the empty oncoming lane and returns to its lane beyond the junction well ahead of the truck. No order chips.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-039; 666.0 frames; overtaking on the main road through an unsignalised junction is allowed; no collisions or occlusion"
+  }
+}

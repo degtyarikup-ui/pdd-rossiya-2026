@@ -1,0 +1,41 @@
+{
+  "id": "crossroads-034",
+  "title": "Скорая с маячком, но без сирены",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_034.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "72d89cea8e475ef45d55ee1c0765e45cb47ff5ea268ed538f27897b594e7d6d3",
+  "bytes": 22749009,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "23.233333",
+    "nb_read_frames": "697",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "23.233333"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "3.1",
+    "3.2",
+    "13.9"
+  ],
+  "adaptation": "Main road north-south (2.1 south/north, 2.4 west/east). Red sedan on the main road from the south straight north. White ambulance (game van model, red side stripes, two alternating blue roof beacons at 2 Hz) on the secondary road from the east straight west. No siren anywhere in the mix; a muted-speaker icon above the ambulance only during the question. Short beacon close-up after the answer, then red goes first, the ambulance after.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-034; 697.0 frames; blue beacons without siren give no priority; red on the main road goes first; no collisions or occlusion"
+  }
+}

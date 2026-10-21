@@ -1,0 +1,41 @@
+{
+  "id": "crossroads-022",
+  "title": "Запрет разворота и левый поворот",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_022.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "373cac7f66bfc93e7f3ed1cddc68add28881d53577182eced3eb9556545c3d74",
+  "bytes": 19737180,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "20.533333",
+    "nb_read_frames": "616",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "20.533333"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "Приложение 1, знак 3.19",
+    "8.5",
+    "8.6"
+  ],
+  "adaptation": "Junction without signals or priority signs. Canonical 3.19 \"No U-turn\" (image from the app's signs content) on red's approach. Red hatch from the south, positioned for a left turn, turns left into the westbound lane after a close-up of the real sign. No other participants.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-022; 616.0 frames; 3.19 bans the U-turn only; the left turn is allowed; no collisions or occlusion"
+  }
+}

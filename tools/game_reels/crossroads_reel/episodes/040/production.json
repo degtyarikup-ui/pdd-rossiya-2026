@@ -1,0 +1,40 @@
+{
+  "id": "crossroads-040",
+  "title": "Временный знак против постоянного",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_040.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "696ba25ce0b8d011f77e02e19f61a7caf9ebb49aad936386118160f86087b175",
+  "bytes": 17995014,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "20.300000",
+    "nb_read_frames": "609",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "20.300000"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "Приложение 1, общие положения",
+    "13.9"
+  ],
+  "adaptation": "Unsignalised junction with road works. South approach: permanent 2.4 and, nearer the car, a portable 2.1 on a yellow plate with a tripod and cones. East approach: permanent 2.1 and a portable 2.4 on a yellow plate with cones. Temporary signs prevail, so red wagon (south, straight) goes first and blue SUV (east, straight) after. Close-up of the south pair from red's seat after the answer.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-040; 609.0 frames; temporary yellow-plate signs override the permanent ones; no collisions or occlusion"
+  }
+}

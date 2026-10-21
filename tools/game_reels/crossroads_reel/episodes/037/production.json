@@ -1,0 +1,40 @@
+{
+  "id": "crossroads-037",
+  "title": "Регулировщик: руки в стороны, а ты со спины",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_037.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "bd82b141b0cf5d245795016045e0f010db638886e92d1f703818ac5ca744d677",
+  "bytes": 17029501,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "20.966667",
+    "nb_read_frames": "629",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "20.966667"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "6.10",
+    "6.15"
+  ],
+  "adaptation": "Junction without working signals. Officer in the centre (contrast reel material), both arms out to the sides, chest to the north, back to the south; pose fixed for the whole episode, enlarged 3.6x on his spot in the question and final overview. Red sedan from the south faces his back and waits; blue hatch from the east is at his side and goes straight west. Only the blue chip is shown.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-037; 629.0 frames; arms out, back to red: only blue at his side may go; no collisions or occlusion"
+  }
+}

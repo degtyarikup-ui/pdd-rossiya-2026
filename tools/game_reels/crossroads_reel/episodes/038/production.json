@@ -1,0 +1,39 @@
+{
+  "id": "crossroads-038",
+  "title": "Мигающий зелёный",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_038.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "7b07ebb07125065cfd7c9e771b2a4be2a01ed0bb035694dfeeb7f0d77fc34178",
+  "bytes": 18018911,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "19.800000",
+    "nb_read_frames": "594",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "19.800000"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "6.2"
+  ],
+  "adaptation": "Signalised junction: the south and north main greens flash at 1 Hz, east and west are red. One red coupe at the south stop line. After the answer a close-up of the flashing head from red's seat, then red goes straight north while the green still flashes; yellow comes on 4.6 s after red starts, when it has left the junction.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-038; 594.0 frames; flashing green permits entry; yellow only after red has crossed; no collisions or occlusion"
+  }
+}

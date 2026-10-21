@@ -1,0 +1,39 @@
+{
+  "id": "crossroads-021",
+  "title": "Регулировщик: разрешено только одной",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_021.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "71e67bcc8cd8875de396b218fb63d698bbd9146210476c9a4d18f8c0ea2dac5b",
+  "bytes": 16279404,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "20.133333",
+    "nb_read_frames": "604",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "20.133333"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "6.10"
+  ],
+  "adaptation": "Junction without signals. Officer in the centre faces south, right arm stretched forward to the south, left arm down; pose fixed, enlarged 3.6x on his spot in the question and final overview. Blue hatch from the east is at his left side and goes straight west; red sedan from the west is at his right side and waits. Only the blue chip.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-021; 604.0 frames; right arm forward: left side (blue) may go, right side (red) waits; no collisions or occlusion"
+  }
+}

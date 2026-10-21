@@ -1,0 +1,39 @@
+{
+  "id": "crossroads-025",
+  "title": "Велосипедист на пути правого поворота",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_025.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "1063079924d86cc27137ab809b072f4c903fdd49570d6f157d608a9a5b929c65",
+  "bytes": 21939778,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "20.966667",
+    "nb_read_frames": "629",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "20.966667"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.1"
+  ],
+  "adaptation": "Junction without signs or signals. A coloured cycle track runs along the east sidewalk; across the east arm it is marked with 1.15 (two broken lines of squares), no zebra. Cyclist in blue (game cyclist model) rides north to south along the track at 4.6 m/s and crosses the east arm; red sedan from the south turns right into that arm only after the cyclist has passed.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-025; 629.0 frames; right-turning red gives way to the cyclist on the cycle crossing; no collisions or occlusion"
+  }
+}

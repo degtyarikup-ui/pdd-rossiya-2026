@@ -1,0 +1,40 @@
+{
+  "id": "crossroads-035",
+  "title": "Направо и налево в одну дорогу",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_035.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "515d47c54dd0731960fd4c70d4b8833eb2c76d59ff85a1b397bfe494950e338b",
+  "bytes": 25837880,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "21.166667",
+    "nb_read_frames": "635",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "21.166667"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.4",
+    "8.6"
+  ],
+  "adaptation": "Signalised junction: south and north green, east and west red. Red hatch from the south turns right into the eastbound lane; blue SUV from the north turns left into the same lane. Blue yields to the oncoming right-turner and starts after red has completed its turn and moved on.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-035; 635.0 frames; both green; the left-turner yields to the oncoming right-turner; no collisions or occlusion"
+  }
+}
