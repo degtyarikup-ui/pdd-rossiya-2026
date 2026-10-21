@@ -55,6 +55,10 @@ func officer_scale(t:float) -> float:
 	if t>=timings.cta:return OVERVIEW_SCALE
 	return lerpf(OVERVIEW_SCALE,1.0,smoothstep(float(timings.answer),float(timings.answer)+.6,t))
 
+func _chest_camera() -> void:
+	# From red's driving position: chest, face and both lowered arms.
+	_camera(Vector3(1.3,1.9,9.6),Vector3(0,1.35,0),36)
+
 func is_chest_shot(t:float) -> bool:return t>=timings.chest and t<timings.rule
 
 func set_time(t:float) -> void:
@@ -73,8 +77,7 @@ func set_time(t:float) -> void:
 		# Side-on pass along the north kerb line, with the officer's side in view.
 		var p:=cars[1].position;_camera(p+Vector3(2.0,12.0,-10.0),p+Vector3(-1.0,.7,0),56)
 	elif is_chest_shot(t):
-		# From red's driving position: chest, face and both lowered arms.
-		_camera(Vector3(1.3,1.9,9.6),Vector3(0,1.35,0),36)
+		_chest_camera()
 	else:_overview(t)
 	var overhead:bool=_cam.projection==Camera3D.PROJECTION_ORTHOGONAL
 	for face in signal_faces:face.visible=overhead

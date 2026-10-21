@@ -1,0 +1,151 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-022",
+  "status": "produced",
+  "title": "Запрет разворота и левый поворот",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#022",
+  "rules": [
+    "Приложение 1, знак 3.19",
+    "8.5",
+    "8.6"
+  ],
+  "scene": "res://videos/crossroads_reel/no_uturn_left.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "red",
+    "rule"
+  ],
+  "motionMinimums": {
+    "red": 6.0,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 2.2
+  },
+  "turns": {
+    "red": "left"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [],
+  "createdDate": "2026-10-21",
+  "adaptation": "Junction without signals or priority signs. Canonical 3.19 \"No U-turn\" (image from the app's signs content) on red's approach. Red hatch from the south, positioned for a left turn, turns left into the westbound lane after a close-up of the real sign. No other participants.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Этот знак запрещает поворот налево?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Нет. Он запрещает только разворот."
+    },
+    {
+      "key": "rule",
+      "text": "Повернуть налево здесь можно: отдельного запрета на этот манёвр нет."
+    },
+    {
+      "key": "cta",
+      "text": "Знак прочитал точно?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Этот знак запрещает",
+      "поворот налево?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Нет",
+      "Он запрещает",
+      "только разворот"
+    ],
+    "rule": [
+      "Повернуть налево",
+      "здесь можно",
+      "отдельного запрета",
+      "на этот манёвр нет"
+    ],
+    "cta": [
+      "Знак прочитал",
+      "точно?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "hatch"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 1,
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          -9,
+          -4.5
+        ],
+        "tipZ": [
+          -1.85,
+          -1.75
+        ],
+        "dir": [
+          -1,
+          0
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "red+3.4",
+        0
+      ],
+      [
+        "rule",
+        -1
+      ]
+    ],
+    "at": [
+      {
+        "time": "0",
+        "expr": "scene.readable_signs[0].get_parent().get_meta('code')=='3.19'",
+        "msg": "Sign must be 3.19"
+      },
+      {
+        "time": "red+1.0",
+        "expr": "scene.signal_insert",
+        "msg": "Missing sign close-up"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[0].basis.z.dot(Vector3(-1,0,0))>0.999",
+        "msg": "Left turn cut short"
+      }
+    ],
+    "summary": "3.19 bans the U-turn only; the left turn is allowed"
+  },
+  "participantTypes": {
+    "red": "car"
+  }
+}

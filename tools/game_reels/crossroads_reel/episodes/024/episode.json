@@ -1,0 +1,188 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-024",
+  "status": "draft",
+  "title": "Кусочек асфальта перед грунтовкой",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#024",
+  "rules": [
+    "1.2",
+    "13.9"
+  ],
+  "scene": "res://videos/crossroads_reel/dirt_patch.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "red",
+    "blue"
+  ],
+  "motionMinimums": {
+    "red": 6.4,
+    "blue": 5.4
+  },
+  "motionDelays": {
+    "red": 2.8,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "none",
+    "blue": "left"
+  },
+  "audio": {
+    "enginePans": {
+      "red": -0.1,
+      "blue": 0.1
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "red",
+      "number": 1
+    },
+    {
+      "car": "blue",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Junction without signs or signals. North-south road paved; the west road is packed earth with wheel ruts, only a 6 m asphalt patch before the junction. Red hatch on the paved road from the north goes straight south first; blue SUV from the dirt road (west) turns left to the north after red. After the answer the camera glides along the dirt approach before the moves.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь проедет первым?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Красная! Она на дороге с покрытием, а у синей — грунтовка."
+    },
+    {
+      "key": "blue",
+      "text": "Короткий кусок асфальта перед перекрёстком не делает её равнозначной."
+    },
+    {
+      "key": "cta",
+      "text": "Кусок асфальта не обманул?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "проедет первым?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Красная!",
+      "Она на дороге",
+      "с покрытием",
+      "а у синей — грунтовка"
+    ],
+    "blue": [
+      "Короткий кусок",
+      "асфальта",
+      "перед перекрёстком",
+      "не делает её",
+      "равнозначной"
+    ],
+    "cta": [
+      "Кусок асфальта",
+      "не обманул?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "hatch",
+    "blue": "suv"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 0,
+    "arrows": [
+      {
+        "actor": 1,
+        "tipX": [
+          1.75,
+          1.85
+        ],
+        "tipZ": [
+          -9,
+          -4.5
+        ],
+        "dir": [
+          0,
+          -1
+        ]
+      },
+      {
+        "actor": 0,
+        "tipX": [
+          -1.85,
+          -1.75
+        ],
+        "tipZ": [
+          -8.5,
+          -5
+        ],
+        "dir": [
+          0,
+          1
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "blue",
+        1
+      ]
+    ],
+    "always": [
+      {
+        "expr": "t>=cfg.blue+0.6 or scene.cars[1].transform.is_equal_approx(scene._pose_car(1,0))",
+        "msg": "Blue moves before red"
+      }
+    ],
+    "at": [
+      {
+        "time": "blue+0.6",
+        "expr": "scene.cars[0].position.z>10",
+        "msg": "Red has not cleared before blue"
+      },
+      {
+        "time": "0",
+        "expr": "scene.dirt.position.x+scene.dirt.mesh.size.x*0.5<-9 and scene.cars[1].position.x<-10",
+        "msg": "Blue must start on the dirt part"
+      },
+      {
+        "time": "red+1.5",
+        "expr": "scene.signal_insert",
+        "msg": "Missing dirt approach shot"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[1].basis.z.dot(Vector3(0,0,-1))>0.999",
+        "msg": "Blue left turn cut short"
+      }
+    ],
+    "summary": "paved road over an unpaved one with a short asphalt patch"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  }
+}

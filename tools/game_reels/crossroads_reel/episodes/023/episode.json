@@ -1,0 +1,159 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-023",
+  "status": "produced",
+  "title": "STOP без стоп-линии",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#023",
+  "rules": [
+    "Приложение 1, знак 2.5"
+  ],
+  "scene": "res://videos/crossroads_reel/stop_no_line.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "red",
+    "rule"
+  ],
+  "motionMinimums": {
+    "red": 8.4,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 0.6
+  },
+  "turns": {
+    "red": "right"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [],
+  "createdDate": "2026-10-21",
+  "adaptation": "Junction without stop line or signals; 2.5 STOP on red's approach, about 6 m before the edge of the crossed carriageway. Red coupe from the south brakes to a full stop with its front bumper at the carriageway edge (not at the sign), holds 1.6 s, then turns right into the eastbound lane. Side view from the west kerb shows the stopping point; no painted line is added.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Где здесь нужно остановиться?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Перед краем пересекаемой проезжей части. Стоп-линии нет — ориентируемся по краю дороги."
+    },
+    {
+      "key": "rule",
+      "text": "Полная остановка, и только потом поворот."
+    },
+    {
+      "key": "cta",
+      "text": "Сам знак за стоп-линию не принял?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Где здесь нужно",
+      "остановиться?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Перед краем",
+      "пересекаемой",
+      "проезжей части",
+      "Стоп-линии нет",
+      "ориентируемся",
+      "по краю дороги"
+    ],
+    "rule": [
+      "Полная остановка,",
+      "и только потом",
+      "поворот"
+    ],
+    "cta": [
+      "Сам знак",
+      "за стоп-линию",
+      "не принял?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "coupe"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 1,
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          7,
+          11
+        ],
+        "tipZ": [
+          1.75,
+          1.85
+        ],
+        "dir": [
+          1,
+          0
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "red+3.4",
+        0
+      ]
+    ],
+    "always": [
+      {
+        "expr": "scene.cars[0].position.z-scene.cars[0].get_meta('bodyBounds').end.z>3.55 or scene.travel(t)>scene.approach()",
+        "msg": "Front crosses the carriageway edge before the stop"
+      }
+    ],
+    "at": [
+      {
+        "time": "red+3.3",
+        "expr": "scene.stopped(t) and scene.cars[0].position.z-scene.cars[0].get_meta('bodyBounds').end.z<4.4",
+        "msg": "Not stopped at the carriageway edge"
+      },
+      {
+        "time": "red+4.7",
+        "expr": "scene.stopped(t)",
+        "msg": "Stop shorter than one second"
+      },
+      {
+        "time": "0",
+        "expr": "scene.readable_signs[0].get_parent().get_meta('code')=='2.5'",
+        "msg": "Sign must be 2.5"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[0].basis.z.dot(Vector3(1,0,0))>0.999",
+        "msg": "Right turn cut short"
+      }
+    ],
+    "summary": "full stop at the edge of the crossed carriageway, not at the sign; then the turn"
+  },
+  "participantTypes": {
+    "red": "car"
+  }
+}
