@@ -1,0 +1,168 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-016",
+  "status": "draft",
+  "title": "Трамвай и разрешённый поворот",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#016",
+  "rules": [
+    "6.3",
+    "6.8",
+    "13.6"
+  ],
+  "scene": "res://videos/crossroads_reel/tram_green_arrow.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "blue",
+    "red"
+  ],
+  "motionMinimums": {
+    "blue": 7.6,
+    "red": 6.2
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "right",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1,
+      "blue": -0.1
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": [],
+    "engineKinds": {
+      "blue": "tram"
+    }
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    },
+    {
+      "car": "red",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Signalised junction, only the two used signals: south main green made as a right arrow (no extra section), west white Т-shaped tram signal with top-middle and bottom lamps (straight). Blue tram from west straight east on rails in the eastbound lane; red hatch from south turns right into the same lane after the tram has passed, at a calmer speed than the tram.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь проедет первым?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Трамвай. Движение разрешено обоим, но в этой ситуации преимущество у трамвая."
+    },
+    {
+      "key": "red",
+      "text": "Красная поворачивает после него."
+    },
+    {
+      "key": "cta",
+      "text": "Зелёную стрелку не переоценил?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "проедет первым?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Трамвай",
+      "Движение",
+      "разрешено обоим",
+      "но в этой ситуации",
+      "преимущество",
+      "у трамвая"
+    ],
+    "red": [
+      "Красная поворачивает",
+      "после него"
+    ],
+    "cta": [
+      "Зелёную стрелку",
+      "не переоценил?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "hatch"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "tram"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 2,
+    "signs": 0,
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          8,
+          13
+        ],
+        "tipZ": [
+          1.75,
+          1.85
+        ],
+        "dir": [
+          1,
+          0
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "blue",
+        1
+      ],
+      [
+        "red",
+        0
+      ]
+    ],
+    "at": [
+      {
+        "time": "red+0.6",
+        "expr": "scene.cars[1].position.x-4.8>9.5",
+        "msg": "Red starts before the whole tram clears its turn"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[0].basis.z.dot(Vector3(1,0,0))>0.999 and scene.cars[0].position.x>10",
+        "msg": "Red right turn cut short"
+      },
+      {
+        "time": "0",
+        "expr": "scene.signal_roots['south'].get_meta('main')=='greenRight' and scene.signal_roots['west'].get_meta('main')=='tramStraight'",
+        "msg": "Wrong signals"
+      }
+    ],
+    "summary": "green right arrow and tram straight signal; tram clears before red turns"
+  }
+}

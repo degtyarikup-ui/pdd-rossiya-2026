@@ -1,0 +1,139 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-020",
+  "status": "draft",
+  "title": "Зелёный и погасшая секция",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#020",
+  "rules": [
+    "6.3",
+    "6.4"
+  ],
+  "scene": "res://videos/crossroads_reel/dark_section.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "red",
+    "rule"
+  ],
+  "motionMinimums": {
+    "red": 2.6,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 0.0
+  },
+  "turns": {
+    "red": "right"
+  },
+  "audio": {
+    "enginePans": {},
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [],
+  "createdDate": "2026-10-21",
+  "adaptation": "One red coupe at the south stop line with its right indicator on. South signal: main green with a dark contour arrow straight, additional right-turn section switched off (dark lamp with a dim contour arrow). No other participants or signals. Red keeps waiting; short close-up of the whole signal block after the answer.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Разрешён ли этот поворот?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Нет. Дополнительная секция направо не горит."
+    },
+    {
+      "key": "rule",
+      "text": "В её направлении ехать нельзя, даже когда основной сигнал зелёный."
+    },
+    {
+      "key": "cta",
+      "text": "Тёмную секцию заметил?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Разрешён ли",
+      "этот поворот?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Нет",
+      "Дополнительная секция",
+      "направо",
+      "не горит"
+    ],
+    "rule": [
+      "В её направлении",
+      "ехать нельзя",
+      "даже когда",
+      "основной сигнал",
+      "зелёный"
+    ],
+    "cta": [
+      "Тёмную секцию",
+      "заметил?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "coupe"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 1,
+    "signs": 0,
+    "static": [
+      0
+    ],
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          8,
+          12
+        ],
+        "tipZ": [
+          1.75,
+          1.85
+        ],
+        "dir": [
+          1,
+          0
+        ]
+      }
+    ],
+    "focus": [],
+    "at": [
+      {
+        "time": "red+1.2",
+        "expr": "scene.signal_insert and Rect2(80,80,920,1200).has_point(scene._cam.unproject_position(scene.signal_roots['south'].global_transform*Vector3(-0.64,3.03,0))) and Rect2(80,80,920,1200).has_point(scene._cam.unproject_position(scene.signal_roots['south'].global_transform*Vector3(0,4.5,0)))",
+        "msg": "Close-up does not frame the whole signal block"
+      },
+      {
+        "time": "0",
+        "expr": "scene.signal_roots['south'].get_meta('rightSection')=='off'",
+        "msg": "Right section must be off"
+      }
+    ],
+    "summary": "main green with straight contour, right section dark; red waits"
+  },
+  "participantTypes": {
+    "red": "car"
+  }
+}

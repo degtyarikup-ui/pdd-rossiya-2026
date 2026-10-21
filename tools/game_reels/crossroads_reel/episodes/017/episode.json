@@ -1,0 +1,171 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-017",
+  "status": "draft",
+  "title": "Выезд со двора",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#017",
+  "rules": [
+    "8.3"
+  ],
+  "scene": "res://videos/crossroads_reel/courtyard_exit.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "blue",
+    "red"
+  ],
+  "motionMinimums": {
+    "blue": 6.2,
+    "red": 5.6
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "right",
+    "blue": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1,
+      "blue": -0.15
+    },
+    "indicator": true,
+    "indicatorPan": 0.1,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    },
+    {
+      "car": "red",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Street west-east with no north arm. South of it a courtyard: one-lane driveway 3.6 m wide under a gateway arch in a maquette building, the street sidewalk continues across the driveway at a lowered height. Red wagon leaves the courtyard and turns right (5 m radius) into the eastbound lane; blue SUV drives east along the street and passes first. No signs, signals or pedestrians.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь должен уступить?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Красная. Это выезд со двора, а не равнозначный перекрёсток."
+    },
+    {
+      "key": "red",
+      "text": "Сначала пропускаем машину, которая уже едет по дороге."
+    },
+    {
+      "key": "cta",
+      "text": "Помеху справа здесь искал?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "должен уступить?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Красная",
+      "Это выезд",
+      "со двора",
+      "а не равнозначный",
+      "перекрёсток"
+    ],
+    "red": [
+      "Сначала пропускаем",
+      "машину, которая",
+      "уже едет",
+      "по дороге"
+    ],
+    "cta": [
+      "Помеху справа",
+      "здесь искал?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "wagon",
+    "blue": "suv"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 4,
+    "signals": 0,
+    "signs": 0,
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          8,
+          11
+        ],
+        "tipZ": [
+          1.75,
+          1.85
+        ],
+        "dir": [
+          1,
+          0
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "blue",
+        1
+      ],
+      [
+        "red",
+        0
+      ]
+    ],
+    "always": [
+      {
+        "expr": "t>=cfg.red+0.6 or scene.cars[0].transform.is_equal_approx(scene._pose_car(0,0))",
+        "msg": "Red leaves the courtyard early"
+      }
+    ],
+    "at": [
+      {
+        "time": "red+0.6",
+        "expr": "scene.cars[1].position.x>22",
+        "msg": "Blue is not clear of the exit when red starts"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[0].basis.z.dot(Vector3(1,0,0))>0.999 and scene.cars[0].position.x>9",
+        "msg": "Red right turn cut short"
+      },
+      {
+        "time": "0",
+        "expr": "scene.arch_parts.size()==3 and scene.get_node('ContinuousSidewalk')!=null",
+        "msg": "Courtyard arch or continuous sidewalk missing"
+      }
+    ],
+    "summary": "courtyard arch and continuous sidewalk; blue passes before red leaves"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  }
+}

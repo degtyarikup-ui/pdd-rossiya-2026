@@ -3,7 +3,7 @@ extends "res://videos/crossroads_reel/stop_vs_yield.gd"
 # New episodes share approved materials/rigs, with path hints ending in exit lanes.
 func _build_actors() -> void:
 	for i in actor_count():
-		var key:String=["red","blue"][i]
+		var key:String=["red","blue","yellow"][i]
 		var model:String=episode.carModels[key]
 		var car:=Models.player_car(model,PAINTS[i]);car.set_meta("bodyModel",model)
 		cars.append(car);add_child(car)
@@ -71,7 +71,7 @@ func _build_arrow(root_node:Node3D,i:int) -> void:
 func _rig(i:int,distance:float,turning:bool,angle:float) -> void:
 	for wheel in wheels[i]:wheel.node.rotation=wheel.rotation+Vector3(distance/.32,0,0)
 	for axle in axles[i]:axle.node.rotation=axle.rotation+Vector3(0,angle if turning else 0,0)
-	var key:String=["red","blue"][i]
+	var key:String=["red","blue","yellow"][i]
 	var blink:bool=episode.turns[key]!="none" and fmod(_t,.68)<.34 and distance<turn_finish(i)+2
 	for material in lamps[i]:material.albedo_color=Color("ffc13c") if blink else Color("724615")
 	cars[i].visible=maxf(absf(cars[i].position.x),absf(cars[i].position.z))<FAR-4

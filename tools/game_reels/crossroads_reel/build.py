@@ -17,7 +17,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("step", choices=["init", "voice", "plan", "align", "validate", "render", "preview", "finish", "check"])
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--episode", default="001", help="001-015: saved episode recipe")
+    parser.add_argument("--episode", default="001", help="001-020: saved episode recipe")
     parser.add_argument("--at", default="0,6,14.8,19.7,26.9,30.4")
     parser.add_argument("--model", type=Path, default=ROOT / "scratch/whisper/ggml-large-v3-turbo.bin")
     args = parser.parse_args()
@@ -58,7 +58,9 @@ def main():
         for line in json.loads((dest / "voice.json").read_text()):
             subprocess.run(["whisper-cli", "-m", str(args.model), "-f", str(dest / line["path"]),
                             "-l", "ru", "-ojf", "-of", str(dest / "audio" / f"{line['key']}-align"),
-                            "-ml", "1", "-sow", "-t", "4"], check=True)
+                            "-ml", "1", "-sow", "-t", "4",
+                            # Word-level decoding otherwise drifts to neuter "красное/синее".
+                            "--prompt", "Красная машина. Синяя машина."], check=True)
     elif args.step in ("validate", "render", "preview"):
         episode = json.loads((dest / "episode.json").read_text())
         script = episode.get("validator", SCENE + "validate.gd") if args.step == "validate" else SCENE + "render.gd"

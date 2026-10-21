@@ -1,0 +1,148 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-019",
+  "status": "draft",
+  "title": "Зелёный и затор за перекрёстком",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_012_031.md#019",
+  "rules": [
+    "13.2"
+  ],
+  "scene": "res://videos/crossroads_reel/blocked_exit.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "red",
+    "rule"
+  ],
+  "motionMinimums": {
+    "red": 5.2,
+    "rule": 0
+  },
+  "motionDelays": {
+    "red": 0.0,
+    "blue": 0.0,
+    "yellow": 0.0
+  },
+  "turns": {
+    "red": "none",
+    "blue": "none",
+    "yellow": "none"
+  },
+  "audio": {
+    "enginePans": {},
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [],
+  "createdDate": "2026-10-21",
+  "adaptation": "Signalised junction: south and north green, east and west red. Red sedan at the south stop line wants straight north. The northbound exit lane holds a standing queue: blue SUV right past the junction and yellow wagon behind it, no room for red beyond the junction. Nobody moves; red stays behind its stop line. No order chips.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Можно ли красной въехать на перекрёсток?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "red",
+      "text": "Нет. Впереди затор: красная останется посреди перекрёстка и перекроет поперечный проезд."
+    },
+    {
+      "key": "rule",
+      "text": "Зелёный не разрешает создавать такую пробку."
+    },
+    {
+      "key": "cta",
+      "text": "Ты бы остался за стоп-линией?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Можно ли красной",
+      "въехать на перекрёсток?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "red": [
+      "Нет",
+      "Впереди затор",
+      "красная останется",
+      "посреди перекрёстка",
+      "и перекроет",
+      "поперечный проезд"
+    ],
+    "rule": [
+      "Зелёный",
+      "не разрешает",
+      "создавать",
+      "такую пробку"
+    ],
+    "cta": [
+      "Ты бы остался",
+      "за стоп-линией?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "sedan",
+    "blue": "suv",
+    "yellow": "wagon"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 4,
+    "signs": 0,
+    "static": [
+      0,
+      1,
+      2
+    ],
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          1.75,
+          1.85
+        ],
+        "tipZ": [
+          5,
+          8.5
+        ],
+        "dir": [
+          0,
+          -1
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "answer",
+        0
+      ]
+    ],
+    "at": [
+      {
+        "time": "0",
+        "expr": "scene.cars[1].position.z+2.3>-3.6-4.6 and scene.signal_roots['south'].get_meta('main')=='green'",
+        "msg": "Exit lane has room for red or red's signal is not green"
+      }
+    ],
+    "summary": "green for red but the exit queue leaves no room; red stays at the stop line"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car",
+    "yellow": "car"
+  }
+}
