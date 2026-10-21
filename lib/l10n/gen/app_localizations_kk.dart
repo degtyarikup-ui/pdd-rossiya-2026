@@ -4045,6 +4045,25 @@ class AppLocalizationsKk extends AppLocalizations {
       'Басымдық белгісі бойынша жол бермеді';
 
   @override
+  String get gameArrowYieldViolation =>
+      'Қызыл жанғанда бағыттауыш бойынша жол бермей бұрылу';
+
+  @override
+  String get gameWaffleBlockViolation =>
+      'Кептелісте 1.26 торлы таңбасына тоқтау';
+
+  @override
+  String get gameEmergencyYieldViolation => 'Арнайы көлікке жол бермеді';
+
+  @override
+  String get gameViolatorEmergencyExempt =>
+      'Жалған шақыру! Арнайы көлікке өтуге құқығы бар';
+
+  @override
+  String get gameViolatorMissedLifeWarning =>
+      'Ереже бұзушы жіберіп алынды! (-1 өмір)';
+
+  @override
   String get gameViolatorCaught => 'Ереже бұзушы анықталды!';
 
   @override

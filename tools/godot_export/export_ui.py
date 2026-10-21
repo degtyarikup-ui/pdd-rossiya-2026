@@ -49,7 +49,10 @@ KEYS = [
     'gameCrossroadsSolvedCount', 'gameCrossroadsExplanationTitle', 'gameCrossroadsCompleteTitle',
     'gameParkingTouch', 'gameParkingParked', 'gameParkingFindSpot', 'gameParkingBusStop', 'gameParkingNoStopping', 'gameParkingJunction',
     'gameViolatorSelectTitle', 'gamePedestrianYieldViolation', 'gameSolidLineViolation',
-    'gameWrongLaneTurnViolation', 'gamePrioritySignViolation', 'gameViolatorCaught',
+    'gameWrongLaneTurnViolation', 'gamePrioritySignViolation',
+    'gameArrowYieldViolation', 'gameWaffleBlockViolation', 'gameEmergencyYieldViolation',
+    'gameViolatorEmergencyExempt', 'gameViolatorMissedLifeWarning',
+    'gameViolatorCaught',
     'gameViolatorFalseAlarm', 'gameViolatorWrongQualification', 'gameViolatorMissed',
     'gameViolatorTapHint', 'gameViolatorsCaughtStat',
 ]

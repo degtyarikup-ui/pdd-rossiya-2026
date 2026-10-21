@@ -40,8 +40,8 @@ func _check(desc: String, condition: bool) -> void:
 
 
 func _check_violation_catalog() -> void:
-	_check("All 5 violation types defined", ViolatorScript.ALL_VIOLATIONS.size() == 5)
-	for code in [ViolatorScript.VIOLATION_RED_LIGHT, ViolatorScript.VIOLATION_PEDESTRIAN_YIELD, ViolatorScript.VIOLATION_SOLID_LINE, ViolatorScript.VIOLATION_WRONG_LANE_TURN, ViolatorScript.VIOLATION_PRIORITY_SIGN]:
+	_check("All 8 violation types defined", ViolatorScript.ALL_VIOLATIONS.size() == 8)
+	for code in ViolatorScript.ALL_VIOLATIONS:
 		_check("Violation %s is in catalog" % code, ViolatorScript.ALL_VIOLATIONS.has(code))
 		var meta: Dictionary = ViolatorScript.VIOLATION_METADATA.get(code, {})
 		_check("Violation %s has valid clause" % code, meta.get("clause", "") != "")
@@ -58,11 +58,11 @@ func _check_violation_catalog() -> void:
 	# Options generator check
 	var dummy_game = ViolatorScript.new()
 	var opts: Array = dummy_game.get_classification_options(ViolatorScript.VIOLATION_RED_LIGHT)
-	_check("Options list contains exactly 4 choices", opts.size() == 4)
+	_check("Options list contains exactly 3 choices", opts.size() == 3)
 	_check("Options list contains correct answer", opts.has(ViolatorScript.VIOLATION_RED_LIGHT))
 	var unique_opts := {}
 	for o in opts: unique_opts[o] = true
-	_check("All options are unique (no duplicate distractors)", unique_opts.size() == 4)
+	_check("All options are unique (no duplicate distractors)", unique_opts.size() == 3)
 	dummy_game.free()
 
 
@@ -160,6 +160,26 @@ func _check_all_5_violation_triggers() -> void:
 	game._check_car_violation_state(prio_car)
 	_check("PRIORITY_SIGN becomes active when failing to yield at Sign 2.4", prio_car.violation_state == "active")
 
+	# 6. ARROW_YIELD
+	var arrow_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_ARROW_YIELD)
+	game.light_state = "red"
+	arrow_car.position.z = -1.0
+	game._check_car_violation_state(arrow_car)
+	_check("ARROW_YIELD becomes active when turning on arrow past stop line on red", arrow_car.violation_state == "active")
+
+	# 7. WAFFLE_BLOCK
+	var waffle_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_WAFFLE_BLOCK)
+	waffle_car.position.z = 3.5
+	waffle_car.waffle_stop_timer = 1.0
+	game._check_car_violation_state(waffle_car)
+	_check("WAFFLE_BLOCK becomes active when stopped on yellow waffle marking", waffle_car.violation_state == "active")
+
+	# 8. EMERGENCY_YIELD
+	var emerg_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_EMERGENCY_YIELD)
+	emerg_car.position.z = -5.0
+	game._check_car_violation_state(emerg_car)
+	_check("EMERGENCY_YIELD becomes active when failing to yield to special transport", emerg_car.violation_state == "active")
+
 	game.queue_free()
 
 
@@ -197,7 +217,7 @@ func _check_step1_tap_detection() -> void:
 
 	_check("Tapping active violator locks target car", game.locked_car == active_violator)
 	_check("Tapping active violator enters classification mode", game.is_classifying)
-	_check("Time scale dilates during classification", is_equal_approx(Engine.time_scale, 0.05))
+	_check("Time scale dilates during classification", is_equal_approx(Engine.time_scale, 0.35))
 
 	# Clean up time scale
 	Engine.time_scale = 1.0
@@ -254,11 +274,11 @@ func _check_step2_classification_mechanic() -> void:
 	game._check_car_violation_state(violator3)
 	game.handle_car_tapped(violator3, Vector2(195, 422))
 	_check("Classification modal is active after tap", game.ui._modal_active)
-	_check("Classification options contain buttons", game.ui._modal_buttons.size() == 4)
+	_check("Classification options contain buttons", game.ui._modal_buttons.size() == 3)
 
 	# Verify unscaled modal countdown in UI _process
 	var timer_before: float = game.ui._modal_timer
-	game.ui._process(0.05)  # 0.05 scaled delta at 0.05 time_scale represents 1.0 wall-clock second
+	game.ui._process(0.35)  # 0.35 scaled delta at 0.35 time_scale represents 1.0 wall-clock second
 	_check("Classification countdown uses unscaled time", is_equal_approx(timer_before - game.ui._modal_timer, 1.0))
 
 	# Click option button
@@ -283,6 +303,7 @@ func _check_missed_violator_tracking() -> void:
 	game.ready_for_play = true
 	game._start_game()
 	game.combo = 3  # Active combo streak
+	var lives_start: int = game.lives
 
 	var car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
 	game.light_state = "red"
@@ -296,6 +317,7 @@ func _check_missed_violator_tracking() -> void:
 
 	_check("Unapprehended violator state becomes missed", car.violation_state == "missed")
 	_check("Missed violator resets combo streak to 0", game.combo == 0)
+	_check("Missed violator decrements lives (-1 life)", game.lives == lives_start - 1)
 
 	game.queue_free()
 

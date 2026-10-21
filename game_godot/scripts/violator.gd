@@ -1,22 +1,25 @@
 ## Full 3D "Нарушитель" (Traffic Surveillance / Violator) game in Godot 4.7.2.
 ## Implements:
-## - Authentic, complex Russian multi-lane intersection with sidewalks, curbs,
-##   fences, street lamps, trees, kiosks, and surrounding city buildings.
-## - GOST road markings: 1.1 solid line, 1.5 broken line, 1.14.1 zebra crosswalk,
-##   1.12 stop lines, 1.13 yield markings, 1.18 lane direction arrows.
-## - Animated Russian Pedestrian from "Живой город" (Pedestrian class with articulated gait shader)
-##   plus ambient sidewalk citizens.
-## - Active procedural traffic with intelligent car-following (headway control)
-##   preventing rear-end collisions and clipping.
-## - Accurate vehicle physics: continuous forward heading, zero backwards/sideways driving.
-## - 5 official Russian Traffic Code (ПДД РФ) violations:
+## - Full 4-way authentic Russian multi-lane intersection with bidirectional traffic,
+##   sidewalks, curbs, fences, street lamps, trees, kiosk, and city buildings.
+## - GOST road markings: 1.1 solid line, 1.5 broken line, 1.14.1 zebra crosswalks,
+##   1.12 stop lines, 1.13 yield markings, 1.18 lane direction arrows,
+##   and 1.26 yellow "waffle" grid marking for junction gridlock surveillance.
+## - Two-phase traffic lights with supplementary turn arrow sections (п. 13.5).
+## - 4 crosswalks with procedural walking pedestrians (п. 13.1 / 14.1).
+## - Emergency vehicles (DPS patrol / ambulance) with siren and flashing beacons (п. 3.2).
+## - 8 official Russian Traffic Code (ПДД РФ) violations and tricky situations:
 ##   1. RED_LIGHT (п. 6.2)
-##   2. PEDESTRIAN_YIELD (п. 14.1)
+##   2. PEDESTRIAN_YIELD (п. 13.1 / 14.1)
 ##   3. SOLID_LINE (п. 1.3, Прил. 2)
 ##   4. WRONG_LANE_TURN (п. 8.5)
 ##   5. PRIORITY_SIGN (п. 13.9, знак 2.4)
-## - Two-step detection mechanic (3D raycast/tap + classification popup with time dilation).
-## - Economy: 60s timer, 5 lives, reaction bonus, combo multiplier up to 5x.
+##   6. ARROW_YIELD (п. 13.5: поворот по стрелке с красным без преимущества)
+##   7. WAFFLE_BLOCK (п. 13.2: затор на вафельнице 1.26)
+##   8. EMERGENCY_YIELD (п. 3.2: непредоставление преимущества спецтранспорту)
+## - Fast two-step detection mechanic (3D raycast/tap + dynamic 0.35x slow-mo classification).
+## - Penalties: missing a violator costs 1 life (-1 life), false alarms cost 1 life.
+## - 3-phase 60s dynamic progression: Warmup -> High Density -> Rush Hour.
 class_name Violator
 extends Node3D
 
@@ -28,40 +31,69 @@ const VIOLATION_PEDESTRIAN_YIELD := "pedestrian_yield"
 const VIOLATION_SOLID_LINE := "solid_line"
 const VIOLATION_WRONG_LANE_TURN := "wrong_lane_turn"
 const VIOLATION_PRIORITY_SIGN := "priority_sign"
+const VIOLATION_ARROW_YIELD := "arrow_yield"
+const VIOLATION_WAFFLE_BLOCK := "waffle_block"
+const VIOLATION_EMERGENCY_YIELD := "emergency_yield"
 
 const ALL_VIOLATIONS := [
 	VIOLATION_RED_LIGHT,
 	VIOLATION_PEDESTRIAN_YIELD,
 	VIOLATION_SOLID_LINE,
 	VIOLATION_WRONG_LANE_TURN,
-	VIOLATION_PRIORITY_SIGN
+	VIOLATION_PRIORITY_SIGN,
+	VIOLATION_ARROW_YIELD,
+	VIOLATION_WAFFLE_BLOCK,
+	VIOLATION_EMERGENCY_YIELD
 ]
 
 const VIOLATION_METADATA := {
 	VIOLATION_RED_LIGHT: {
 		"code": VIOLATION_RED_LIGHT,
 		"clause": "6.2",
+		"short_title": "Красный свет",
 		"l10n_key": "violatorRedLight"
 	},
 	VIOLATION_PEDESTRIAN_YIELD: {
 		"code": VIOLATION_PEDESTRIAN_YIELD,
-		"clause": "14.1",
+		"clause": "13.1",
+		"short_title": "Пешеход на переходе",
 		"l10n_key": "violatorPedestrianYield"
 	},
 	VIOLATION_SOLID_LINE: {
 		"code": VIOLATION_SOLID_LINE,
 		"clause": "1.3",
+		"short_title": "Сплошная линия 1.1",
 		"l10n_key": "violatorSolidLine"
 	},
 	VIOLATION_WRONG_LANE_TURN: {
 		"code": VIOLATION_WRONG_LANE_TURN,
 		"clause": "8.5",
+		"short_title": "Поворот не из ряда",
 		"l10n_key": "violatorWrongLaneTurn"
 	},
 	VIOLATION_PRIORITY_SIGN: {
 		"code": VIOLATION_PRIORITY_SIGN,
 		"clause": "13.9",
+		"short_title": "Знак 2.4 «Уступите дорогу»",
 		"l10n_key": "violatorPrioritySign"
+	},
+	VIOLATION_ARROW_YIELD: {
+		"code": VIOLATION_ARROW_YIELD,
+		"clause": "13.5",
+		"short_title": "Стрелка с красным",
+		"l10n_key": "violatorArrowYield"
+	},
+	VIOLATION_WAFFLE_BLOCK: {
+		"code": VIOLATION_WAFFLE_BLOCK,
+		"clause": "13.2",
+		"short_title": "Затор на вафельнице 1.26",
+		"l10n_key": "violatorWaffleBlock"
+	},
+	VIOLATION_EMERGENCY_YIELD: {
+		"code": VIOLATION_EMERGENCY_YIELD,
+		"clause": "3.2",
+		"short_title": "Не уступил спецтранспорту",
+		"l10n_key": "violatorEmergencyYield"
 	}
 }
 
@@ -73,16 +105,19 @@ var env: WorldEnvironment
 var ui: Control
 var sound: GameSound
 var traffic_light_node: Node3D
+var traffic_light_ew_node: Node3D
 var junction_node: Node3D
 
 # Internal Vehicle Representation
 class ViolatorCar extends Node3D:
 	var model_name: String = "sedan"
 	var paint_color: Color = Color.WHITE
-	var route: String = "main_straight"   # main_straight, main_left, secondary_merge
-	var lane: int = 1                     # 0: left, 1: right, 2: secondary
+	var route: String = "main_straight"   # main_straight, main_left, secondary_merge, south_north, east_west
+	var lane: int = 1                     # 0: left, 1: right, 2: secondary/cross
 	var speed: float = 11.0               # m/s
 	var target_speed: float = 11.0
+	var is_emergency: bool = false
+	var beacon_timer: float = 0.0
 	var is_violator: bool = false
 	var violation_type: String = ""
 	var violation_state: String = "none"  # none, pending, active, detected, missed
@@ -90,31 +125,40 @@ class ViolatorCar extends Node3D:
 	var reaction_time: float = 0.0
 	var collision_area: Area3D
 	var npc_mesh: Node3D
+	var beacon_light: OmniLight3D
 
 	# Trajectory parameters
 	var turn_angle: float = 0.0
 	var lane_change_t: float = 0.0
 	var initial_x: float = 0.0
+	var waffle_stop_timer: float = 0.0
 
 var cars: Array[ViolatorCar] = []
 
-# Main crosswalk pedestrian (taken directly from "Живой город")
+# Main crosswalk pedestrian
 var pedestrian: Node3D
 var ped_pos_x: float = -4.5
 var ped_speed: float = 1.6
 var ped_dir: float = 1.0
 var ped_wait_timer: float = 0.0
 
+# Secondary pedestrians on other crosswalks
+var extra_pedestrians: Array[Node3D] = []
+var extra_ped_data: Array[Dictionary] = []
+
 # Ambient sidewalk pedestrians
 var walker_crowds: Array[MultiMesh] = []
 var walkers_data: Array[Dictionary] = []
 
 # Traffic light state
-var light_state: String = "green"   # green, yellow, red
+# Phases: "ns_green" (NS green, EW red), "ns_yellow", "ew_green" (EW green, NS red), "ew_yellow"
+var light_state: String = "green"   # green, yellow, red for NS main
+var light_phase: String = "ns_green"
 var light_timer: float = 0.0
-const LIGHT_GREEN_TIME := 10.0
-const LIGHT_YELLOW_TIME := 2.5
-const LIGHT_RED_TIME := 7.5
+var arrow_active: bool = false
+const LIGHT_GREEN_TIME := 9.0
+const LIGHT_YELLOW_TIME := 2.0
+const LIGHT_RED_TIME := 9.0
 
 # Game state
 var score := 0
@@ -214,9 +258,9 @@ func _setup_environment() -> void:
 
 	MiniGameLighting.apply(sun, env.environment, season_name, true)
 
-	# Elevated surveillance camera overlooking the complex junction
+	# Elevated high-isometric surveillance camera overlooking the 4-way intersection
 	cam_pivot = Node3D.new()
-	cam_pivot.position = Vector3(0, 0, -5.0)
+	cam_pivot.position = Vector3(0, 0, 0)
 	add_child(cam_pivot)
 
 	camera = Camera3D.new()
@@ -268,7 +312,11 @@ func _setup_road_geometry() -> void:
 	white_mat.albedo_color = Color("#F3F5F9")
 	white_mat.roughness = 0.55
 
-	# 1. Main road surface (Z from -55 to +40, X from -4.0 to +4.0)
+	var yellow_mat := StandardMaterial3D.new()
+	yellow_mat.albedo_color = Color("#FFD600")
+	yellow_mat.roughness = 0.55
+
+	# 1. Main road surface (North-South, Z from -55 to +40, X from -4.2 to +4.2)
 	var main_road := MeshInstance3D.new()
 	var main_box := BoxMesh.new()
 	main_box.size = Vector3(8.4, 0.2, 95.0)
@@ -286,7 +334,7 @@ func _setup_road_geometry() -> void:
 	sec_road.position = Vector3(-22.5, -0.1, 5.0)
 	junction_node.add_child(sec_road)
 
-	# 3. East branch apron (X from 0 to 45, Z from 2.5 to 7.5) completing the full intersection
+	# 3. East branch apron (X from 0 to 45, Z from 2.5 to 7.5) completing the 4-way intersection
 	var east_road := MeshInstance3D.new()
 	var east_box := BoxMesh.new()
 	east_box.size = Vector3(45.0, 0.2, 5.0)
@@ -308,7 +356,7 @@ func _setup_road_geometry() -> void:
 	_build_sidewalks(sidewalk_mat, curb_mat)
 
 	# 6. Authentic Russian Road Markings (ГОСТ Р 51256 / 52289)
-	_build_markings(white_mat)
+	_build_markings(white_mat, yellow_mat)
 
 	# 7. Official Traffic Signs
 	_setup_signs(junction_node)
@@ -318,7 +366,6 @@ func _setup_road_geometry() -> void:
 
 
 func _build_sidewalks(sw_mat: Material, curb_mat: Material) -> void:
-	# Sidewalk thickness: 0.16m high above ground
 	var sw_height := 0.16
 	var sw_y := 0.08
 
@@ -353,7 +400,7 @@ func _build_sidewalks(sw_mat: Material, curb_mat: Material) -> void:
 		junction_node.add_child(curb_south)
 
 
-func _build_markings(white_mat: Material) -> void:
+func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 	var y := 0.012
 
 	# 1.1 Solid Line between lanes (Z from -25 to -10, at X = 0)
@@ -372,11 +419,17 @@ func _build_markings(white_mat: Material) -> void:
 		broken.position = Vector3(0, y, float(z_pos))
 		junction_node.add_child(broken)
 
-	# 1.14.1 Zebra Crosswalk (Z in [-9.0, -6.5], across both lanes X in [-3.6, 3.6])
+	# 1.14.1 Zebra Crosswalk North (Z in [-9.0, -6.5], across both lanes X in [-3.6, 3.6])
 	for stripe_x in range(-34, 35, 8):
 		var stripe := _create_box(Vector3(0.44, 0.02, 2.5), white_mat)
 		stripe.position = Vector3(float(stripe_x) * 0.1, y, -7.75)
 		junction_node.add_child(stripe)
+
+	# 1.14.1 Zebra Crosswalk South (Z in [12.0, 14.5])
+	for stripe_x in range(-34, 35, 8):
+		var stripe_s := _create_box(Vector3(0.44, 0.02, 2.5), white_mat)
+		stripe_s.position = Vector3(float(stripe_x) * 0.1, y, 13.25)
+		junction_node.add_child(stripe_s)
 
 	# Stop line 1.12 at Z = -3.5 across lanes
 	var stop_line := _create_box(Vector3(7.4, 0.02, 0.45), white_mat)
@@ -394,7 +447,7 @@ func _build_markings(white_mat: Material) -> void:
 	sec_stop.position = Vector3(-5.0, y, 5.0)
 	junction_node.add_child(sec_stop)
 
-	# Secondary street center dividing broken line 1.5 (separates eastbound and westbound traffic)
+	# Secondary street center dividing broken line 1.5
 	for x_pos in range(-36, -6, 4):
 		var broken_sec := _create_box(Vector3(2.0, 0.02, 0.16), white_mat)
 		broken_sec.position = Vector3(float(x_pos), y, 5.0)
@@ -406,7 +459,7 @@ func _build_markings(white_mat: Material) -> void:
 		broken_east.position = Vector3(float(x_pos), y, 5.0)
 		junction_node.add_child(broken_east)
 
-	# Secondary & East street edge lines (marking 1.2 along curbs)
+	# Secondary & East street edge lines
 	for z_edge in [2.7, 7.3]:
 		var sec_edge := _create_box(Vector3(38.0, 0.02, 0.15), white_mat)
 		sec_edge.position = Vector3(-24.0, y, z_edge)
@@ -437,15 +490,45 @@ func _build_markings(white_mat: Material) -> void:
 	arrow_r_wing.rotation_degrees.y = -35
 	junction_node.add_child(arrow_r_wing)
 
+	# 1.26 Yellow "Waffle" Grid Marking in central intersection box
+	# Central box X in [-3.6, 3.6], Z in [1.5, 8.5]
+	var waffle_border_n := _create_box(Vector3(7.2, 0.02, 0.2), yellow_mat)
+	waffle_border_n.position = Vector3(0, y + 0.002, 1.5)
+	junction_node.add_child(waffle_border_n)
+
+	var waffle_border_s := _create_box(Vector3(7.2, 0.02, 0.2), yellow_mat)
+	waffle_border_s.position = Vector3(0, y + 0.002, 8.5)
+	junction_node.add_child(waffle_border_s)
+
+	var waffle_border_w := _create_box(Vector3(0.2, 0.02, 7.0), yellow_mat)
+	waffle_border_w.position = Vector3(-3.6, y + 0.002, 5.0)
+	junction_node.add_child(waffle_border_w)
+
+	var waffle_border_e := _create_box(Vector3(0.2, 0.02, 7.0), yellow_mat)
+	waffle_border_e.position = Vector3(3.6, y + 0.002, 5.0)
+	junction_node.add_child(waffle_border_e)
+
+	# Diagonal criss-cross stripes inside waffle box
+	for i in range(-3, 4):
+		var diag1 := _create_box(Vector3(0.12, 0.02, 8.5), yellow_mat)
+		diag1.position = Vector3(float(i) * 1.0, y + 0.002, 5.0)
+		diag1.rotation_degrees.y = 45.0
+		junction_node.add_child(diag1)
+
+		var diag2 := _create_box(Vector3(0.12, 0.02, 8.5), yellow_mat)
+		diag2.position = Vector3(float(i) * 1.0, y + 0.002, 5.0)
+		diag2.rotation_degrees.y = -45.0
+		junction_node.add_child(diag2)
+
 
 func _setup_signs(parent: Node3D) -> void:
-	# Sign 2.1 (Главная дорога) on main road at Z = -15 facing oncoming cars
+	# Sign 2.1 (Главная дорога) on main road facing oncoming cars
 	var sign_main := Sprite3D.new()
 	sign_main.name = "Sign_2_1"
 	sign_main.texture = SignFace.texture("2.1")
 	if sign_main.texture != null:
 		sign_main.pixel_size = 0.9 / sign_main.texture.get_width()
-	sign_main.position = Vector3(4.3, 2.8, -15.0)
+	sign_main.position = Vector3(3.5, 2.8, -4.0)
 	sign_main.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	sign_main.rotation_degrees = Vector3(0, 0, 0)
 	parent.add_child(sign_main)
@@ -482,7 +565,7 @@ func _setup_signs(parent: Node3D) -> void:
 
 	# Poles for all signs
 	var pole_coords := [
-		Vector3(4.3, 1.4, -15.0),
+		Vector3(3.5, 1.4, -4.0),
 		Vector3(-5.5, 1.3, 2.2),
 		Vector3(4.3, 1.25, -9.0),
 		Vector3(-4.4, 1.25, -6.5)
@@ -499,8 +582,7 @@ func _setup_signs(parent: Node3D) -> void:
 
 
 func _build_city_scenery() -> void:
-	# 1. Pedestrian Guardrail Fences along curbs protecting sidewalks (ГОСТ Р 52289)
-	# Approaches to the crosswalk (North and South)
+	# 1. Pedestrian Guardrail Fences along curbs
 	for z_fence in [-14.0, -20.0, -26.0]:
 		_put_prop("street/fence_14", Vector3(-4.6, 0.15, z_fence), 0.0)
 		_put_prop("street/fence_14", Vector3(4.6, 0.15, z_fence), 0.0)
@@ -518,30 +600,26 @@ func _build_city_scenery() -> void:
 	_put_prop("street/lamp", Vector3(5.2, 0.15, -4.0), -PI * 0.5)
 	_put_prop("street/lamp", Vector3(-5.2, 0.15, 10.0), PI * 0.5)
 	_put_prop("street/lamp", Vector3(5.2, 0.15, 10.0), -PI * 0.5)
-	_put_prop("street/lamp", Vector3(-5.2, 0.15, -28.0), PI * 0.5)
-	_put_prop("street/lamp", Vector3(5.2, 0.15, -28.0), -PI * 0.5)
 
 	# 3. Sidewalk Kiosk
 	_put_prop("street/kiosk_0", Vector3(-7.5, 0.15, -12.0), PI * 0.5)
 
-	# 4. Lush Greenery: Russian birches, pines, round trees, and bushes
+	# 4. Lush Greenery
 	var canopy_colors: Array = sc.season.canopy if sc != null else [Color("#3B6E32")]
 	var birch_color: Color = sc.color("birch") if sc != null else Color("#4E8236")
 	var pine_colors: Array = sc.season.pine if sc != null else [Color("#2B4D28")]
 
-	# Trees along North avenue sidewalks
 	for z in [-14.0, -22.0, -32.0, -42.0]:
 		_put_prop("trees/birch_0", Vector3(-8.2, 0.0, z), 0.25 * z, Vector3.ONE * 1.05, birch_color)
 		_put_prop("trees/round_0", Vector3(8.2, 0.0, z), -0.2 * z, Vector3.ONE * 1.1, Color(canopy_colors[abs(int(z)) % canopy_colors.size()]))
 		_put_prop("street/bush", Vector3(-8.2, 0.0, z + 3.0), 0.0, Vector3.ONE, Color(canopy_colors[0]))
 		_put_prop("street/bush", Vector3(8.2, 0.0, z + 3.0), 0.0, Vector3.ONE, Color(canopy_colors[0]))
 
-	# Trees along South avenue sidewalks
 	for z in [16.0, 26.0, 36.0]:
 		_put_prop("trees/round_0", Vector3(-8.2, 0.0, z), 0.3 * z, Vector3.ONE, Color(canopy_colors[int(z) % canopy_colors.size()]))
 		_put_prop("trees/pine_0", Vector3(8.2, 0.0, z), -0.15 * z, Vector3.ONE, Color(pine_colors[int(z) % pine_colors.size()]))
 
-	# 5. Buildings framing the urban scene (positioned safely outside roadways & camera view lines)
+	# 5. Buildings framing the urban scene
 	_put_prop("buildings/block_0", Vector3(-16.0, 0.0, -22.0), PI * 0.5, Vector3.ONE, Color("#E4E7ED"))
 	_put_prop("buildings/tower_0", Vector3(-18.0, 0.0, -42.0), PI * 0.5, Vector3.ONE, Color("#CFD6E2"))
 	_put_prop("buildings/block_6", Vector3(16.0, 0.0, -22.0), -PI * 0.5, Vector3.ONE, Color("#D8DEE9"))
@@ -585,16 +663,26 @@ func _create_box(size: Vector3, mat: Material) -> MeshInstance3D:
 
 
 func _setup_traffic_lights() -> void:
-	traffic_light_node = TrafficSignal.make_mini({"state": "green"})
+	# Primary North-South Traffic Light Assembly with right-turn arrow section
+	traffic_light_node = TrafficSignal.make_mini({"state": "green", "arrow": "right", "arrowActive": false})
 	traffic_light_node.position = Vector3(4.2, 0, -3.5)
 	traffic_light_node.rotation_degrees = Vector3(0, 0, 0)
 	add_child(traffic_light_node)
+
+	# East-West Cross Traffic Light Assembly
+	traffic_light_ew_node = TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
+	traffic_light_ew_node.position = Vector3(-4.8, 0, 8.0)
+	traffic_light_ew_node.rotation_degrees = Vector3(0, -90, 0)
+	add_child(traffic_light_ew_node)
+
 	light_state = "green"
+	light_phase = "ns_green"
 	light_timer = LIGHT_GREEN_TIME
+	arrow_active = false
 
 
 func _setup_pedestrian() -> void:
-	# Use the authentic animated Pedestrian from "Живой город"
+	# North crosswalk pedestrian
 	var ped := Pedestrian.new()
 	ped.name = "Pedestrian"
 	ped.configure(0, Color("#E57373"))
@@ -608,7 +696,6 @@ func _setup_pedestrian() -> void:
 
 
 func _setup_ambient_walkers() -> void:
-	# Add ambient citizens walking along sidewalks
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
 	for i in range(4):
@@ -621,7 +708,6 @@ func _setup_ambient_walkers() -> void:
 		var phase := rng.randf_range(0.0, TAU)
 		crowd.set_instance_custom_data(0, Models.walker_gait(tint, phase, 1.0))
 
-		# Position on sidewalks
 		var on_east := i % 2 == 0
 		var fixed_x := 5.8 if on_east else -5.8
 		var low_z := -34.0
@@ -651,7 +737,7 @@ func _update_ambient_walkers(delta: float) -> void:
 			w.at_z = w.low_z
 			w.dir = 1.0
 		var pos := Vector3(w.fixed_x, 0.15, w.at_z)
-		var yaw := 0.0 if w.dir > 0 else PI  # 0 facing +Z, PI facing -Z
+		var yaw := 0.0 if w.dir > 0 else PI
 		walker_crowds[i].set_instance_transform(0, Transform3D(Basis(Vector3.UP, yaw), pos))
 		w.walk_phase = fposmod(float(w.walk_phase) + w.spd * delta * 3.5, TAU)
 		walker_crowds[i].set_instance_custom_data(0, Models.walker_gait(w.tint, w.walk_phase, 1.0))
@@ -696,17 +782,34 @@ func _process(delta: float) -> void:
 func _update_traffic_lights(delta: float) -> void:
 	light_timer -= delta
 	if light_timer <= 0.0:
-		if light_state == "green":
+		if light_phase == "ns_green":
+			light_phase = "ns_yellow"
 			light_state = "yellow"
 			light_timer = LIGHT_YELLOW_TIME
-		elif light_state == "yellow":
+			arrow_active = false
+		elif light_phase == "ns_yellow":
+			light_phase = "ew_green"
 			light_state = "red"
-			light_timer = LIGHT_RED_TIME
-		elif light_state == "red":
+			light_timer = LIGHT_GREEN_TIME
+			arrow_active = true  # Green arrow turns on during part of red
+		elif light_phase == "ew_green":
+			light_phase = "ew_yellow"
+			light_state = "red"
+			light_timer = LIGHT_YELLOW_TIME
+			arrow_active = false
+		elif light_phase == "ew_yellow":
+			light_phase = "ns_green"
 			light_state = "green"
 			light_timer = LIGHT_GREEN_TIME
+			arrow_active = false
+
 		if is_instance_valid(traffic_light_node):
+			traffic_light_node.set_meta("arrow_active", arrow_active)
 			TrafficSignal.set_state(traffic_light_node, light_state)
+
+		if is_instance_valid(traffic_light_ew_node):
+			var ew_state := "green" if light_phase == "ew_green" else ("yellow" if light_phase == "ew_yellow" else "red")
+			TrafficSignal.set_state(traffic_light_ew_node, ew_state)
 
 
 func _update_pedestrian(delta: float) -> void:
@@ -723,14 +826,13 @@ func _update_pedestrian(delta: float) -> void:
 		ped_pos_x = 4.5
 		ped_dir = -1.0
 		ped_wait_timer = 1.0
-		pedestrian.rotation.y = -PI * 0.5  # Faces -X towards opposite sidewalk
+		pedestrian.rotation.y = -PI * 0.5
 	elif ped_pos_x <= -4.5:
 		ped_pos_x = -4.5
 		ped_dir = 1.0
 		ped_wait_timer = 1.0
-		pedestrian.rotation.y = PI * 0.5   # Faces +X towards opposite sidewalk
+		pedestrian.rotation.y = PI * 0.5
 
-	# Sidewalk surface is at Y = 0.16m, Roadway surface is at Y = 0.0m
 	var ped_y := 0.0
 	var abs_x := absf(ped_pos_x)
 	if abs_x >= 4.0:
@@ -749,25 +851,29 @@ func is_pedestrian_on_roadway() -> bool:
 func _update_spawning(delta: float) -> void:
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
-		spawn_timer = randf_range(1.6, 2.5)
+		# Dynamic 3-phase progression over 60s
+		if game_clock < 20.0:
+			spawn_timer = randf_range(2.0, 2.6)
+		elif game_clock < 40.0:
+			spawn_timer = randf_range(1.5, 2.1)
+		else:
+			spawn_timer = randf_range(1.1, 1.6)
 		_spawn_procedural_car()
 
 
 func _spawn_procedural_car() -> void:
-	# Random lane: 0 (Left), 1 (Right), or 2 (Secondary road)
 	var r := randf()
-	var lane := 0 if r < 0.38 else (1 if r < 0.74 else 2)
+	var lane := 0 if r < 0.35 else (1 if r < 0.70 else 2)
 	var route := "main_left" if lane == 0 else ("main_straight" if lane == 1 else "secondary_merge")
 
-	# Check if spawn zone is clear (anti-clipping on spawn)
+	# Check anti-clipping
 	for car in cars:
 		if not is_instance_valid(car): continue
 		if lane in [0, 1] and car.lane == lane and car.position.z < -38.0:
-			return  # Wait for road to clear
+			return
 		elif lane == 2 and car.lane == 2 and car.position.x < -22.0:
 			return
 
-	# Schedule violation
 	violation_schedule_timer += 1.0
 	var is_violator := false
 	var v_type := ""
@@ -777,10 +883,39 @@ func _spawn_procedural_car() -> void:
 		is_violator = true
 		v_type = _pick_appropriate_violation(lane)
 
-	spawn_specific_car(route, lane, is_violator, v_type)
+	var is_emerg := false
+	if not is_violator and game_clock > 35.0 and randf() < 0.22:
+		is_emerg = true
+
+	var car := spawn_specific_car(route, lane, is_violator, v_type)
+	if is_emerg:
+		_setup_emergency_appearance(car)
 
 
 func _pick_appropriate_violation(lane: int) -> String:
+	# Progression-aware violation pool
+	if game_clock >= 40.0:
+		# Phase 3: full tricky pool
+		var p3_choices := [
+			VIOLATION_EMERGENCY_YIELD,
+			VIOLATION_WAFFLE_BLOCK,
+			VIOLATION_ARROW_YIELD,
+			VIOLATION_RED_LIGHT,
+			VIOLATION_PEDESTRIAN_YIELD
+		]
+		return p3_choices[randi() % p3_choices.size()]
+	elif game_clock >= 20.0:
+		# Phase 2: dense pool with arrows and waffle
+		var p2_choices := [
+			VIOLATION_ARROW_YIELD,
+			VIOLATION_WAFFLE_BLOCK,
+			VIOLATION_WRONG_LANE_TURN,
+			VIOLATION_SOLID_LINE,
+			VIOLATION_RED_LIGHT
+		]
+		return p2_choices[randi() % p2_choices.size()]
+
+	# Phase 1: base violations
 	if lane == 2:
 		return VIOLATION_PRIORITY_SIGN
 	if lane == 0:
@@ -798,12 +933,10 @@ func spawn_specific_car(route: String, lane: int, is_violator: bool, v_type: Str
 	car.violation_type = v_type
 	car.violation_state = "pending" if is_violator else "none"
 
-	# Model and paint
 	car.model_name = Models.CARS[randi() % Models.CARS.size()]
 	var paints := [Color("#1E88E5"), Color("#E53935"), Color("#43A047"), Color("#FB8C00"), Color("#F5F5F5"), Color("#212121")]
 	car.paint_color = paints[randi() % paints.size()]
 
-	# Initial position & orientation
 	if lane == 0:
 		car.position = Vector3(-1.8, 0.0, -48.0)
 		car.rotation.y = 0.0
@@ -814,10 +947,9 @@ func spawn_specific_car(route: String, lane: int, is_violator: bool, v_type: Str
 		car.initial_x = 1.8
 	else:
 		car.position = Vector3(-32.0, 0.0, 5.0)
-		car.rotation.y = PI * 0.5  # Facing East (+X) towards the intersection!
+		car.rotation.y = PI * 0.5
 		car.initial_x = -32.0
 
-	# Mesh assembly
 	var body_mesh := MeshInstance3D.new()
 	body_mesh.name = "body"
 	var t_mesh := Models.traffic_mesh(car.model_name)
@@ -826,7 +958,6 @@ func spawn_specific_car(route: String, lane: int, is_violator: bool, v_type: Str
 	car.add_child(body_mesh)
 	car.npc_mesh = body_mesh
 
-	# Collision Area for tap raycasting
 	var area := Area3D.new()
 	area.name = "ClickArea"
 	var col_shape := CollisionShape3D.new()
@@ -844,6 +975,35 @@ func spawn_specific_car(route: String, lane: int, is_violator: bool, v_type: Str
 	return car
 
 
+func _setup_emergency_appearance(car: ViolatorCar) -> void:
+	car.is_emergency = true
+	# Blue flashing omni light on roof
+	var light := OmniLight3D.new()
+	light.light_color = Color("#00E5FF")
+	light.light_energy = 2.5
+	light.omni_range = 8.0
+	light.position = Vector3(0, 1.8, 0)
+	car.add_child(light)
+	car.beacon_light = light
+
+	# Small beacon mesh on roof
+	var b_mesh := MeshInstance3D.new()
+	var b_box := BoxMesh.new()
+	b_box.size = Vector3(0.5, 0.2, 0.25)
+	b_mesh.mesh = b_box
+	var b_mat := StandardMaterial3D.new()
+	b_mat.albedo_color = Color("#00B0FF")
+	b_mat.emission_enabled = true
+	b_mat.emission = Color("#00B0FF")
+	b_mat.emission_energy_multiplier = 3.0
+	b_mesh.material_override = b_mat
+	b_mesh.position = Vector3(0, 1.6, 0)
+	car.add_child(b_mesh)
+
+	# Sound siren
+	sound.vehicle("emergency", "police", 11.0, true)
+
+
 func _update_cars(delta: float) -> void:
 	var surviving_cars: Array[ViolatorCar] = []
 
@@ -851,13 +1011,13 @@ func _update_cars(delta: float) -> void:
 		if not is_instance_valid(car):
 			continue
 
-		# Process speed, headway anti-collision, and trajectories
-		_advance_car_behavior(car, delta)
+		if car.is_emergency and is_instance_valid(car.beacon_light):
+			car.beacon_timer += delta * 6.0
+			car.beacon_light.visible = int(car.beacon_timer) % 2 == 0
 
-		# Check violation windows and states
+		_advance_car_behavior(car, delta)
 		_check_car_violation_state(car)
 
-		# Despawn cars beyond boundary
 		var pos := car.global_position if car.is_inside_tree() else car.position
 		if pos.z > 36.0 or pos.x > 36.0 or pos.x < -36.0:
 			if car.violation_state == "active":
@@ -872,12 +1032,13 @@ func _update_cars(delta: float) -> void:
 
 func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	var stop_required := false
-	car.target_speed = 11.0
+	car.target_speed = 11.0 + (1.5 if game_clock > 40.0 else 0.0)
 
-	# 1. Traffic signal stop on main road (Stop line is at Z = -3.5, target stop at Z = -4.2)
+	# 1. Traffic signal stop on main road
 	if car.lane in [0, 1] and absf(car.rotation.y) < 0.45:
 		if light_state in ["red", "yellow"]:
-			if not (car.is_violator and car.violation_type == VIOLATION_RED_LIGHT):
+			var exempt := car.is_emergency or (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD])
+			if not exempt:
 				const Z_STOP := -4.2
 				if car.position.z < Z_STOP and car.position.z > -22.0:
 					var dist_to_stop := Z_STOP - car.position.z
@@ -891,7 +1052,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 						if car.target_speed < 0.6:
 							stop_required = true
 
-		# 2. Pedestrian yield stop (Zebra at Z in [-9.0, -6.5], target stop at Z = -9.6)
+		# 2. Pedestrian yield stop
 		if is_pedestrian_on_roadway():
 			if not (car.is_violator and car.violation_type == VIOLATION_PEDESTRIAN_YIELD):
 				const Z_ZEBRA_STOP := -9.6
@@ -907,7 +1068,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 						if car.target_speed < 0.6:
 							stop_required = true
 
-	# 3. Priority sign stop on secondary street (Yield line at X = -5.0, target stop at X = -5.6)
+	# 3. Priority sign stop on secondary street
 	if car.lane == 2 and car.position.x < -5.0 and car.position.x > -18.0:
 		var main_traffic_present := false
 		for other in cars:
@@ -928,8 +1089,16 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 					if car.target_speed < 0.6:
 						stop_required = true
 
-	# 4. Anti-Collision Headway Model (Car-Following Control)
-	# Checks for lead vehicles ahead along the car's current motion corridor
+	# 4. Waffle Grid Block Special Behavior (п. 13.2)
+	if car.is_violator and car.violation_type == VIOLATION_WAFFLE_BLOCK:
+		if car.position.z > 2.5 and car.position.z < 7.5:
+			car.waffle_stop_timer += delta
+			if car.waffle_stop_timer < 5.0:
+				car.speed = 0.0
+				car.target_speed = 0.0
+				stop_required = true
+
+	# 5. Anti-Collision Headway Model
 	var lead_dist := 999.0
 	var lead_speed := 11.0
 
@@ -937,7 +1106,6 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		if other == car or not is_instance_valid(other):
 			continue
 
-		# A) Both moving Southbound (+Z) along the main road corridor
 		if absf(car.rotation.y) < 0.5:
 			var dz := other.position.z - car.position.z
 			var dx := absf(other.position.x - car.position.x)
@@ -945,7 +1113,6 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				lead_dist = dz
 				lead_speed = other.speed
 
-		# B) Both moving Eastbound (+X) along the secondary road
 		elif absf(car.rotation.y - PI * 0.5) < 0.5:
 			var dx := other.position.x - car.position.x
 			var dz := absf(other.position.z - car.position.z)
@@ -953,7 +1120,6 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				lead_dist = dx
 				lead_speed = other.speed
 
-		# C) Both moving Westbound (-X)
 		elif absf(car.rotation.y - (-PI * 0.5)) < 0.5:
 			var dx := car.position.x - other.position.x
 			var dz := absf(other.position.z - car.position.z)
@@ -980,11 +1146,9 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	else:
 		car.speed = move_toward(car.speed, car.target_speed, 9.5 * delta)
 
-	# 5. Continuous Forward Trajectories with Accurate Tangent Yaw
+	# 6. Continuous Forward Trajectories
 	if car.lane == 0:
-		# Main Left Lane
 		if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and car.position.z > -24.0 and car.position.z < -10.0:
-			# Steers across 1.1 solid line into right lane (X = 1.8)
 			var t := clampf((car.position.z + 24.0) / 12.0, 0.0, 1.0)
 			var target_x := lerpf(-1.8, 1.8, t)
 			var dx := target_x - car.position.x
@@ -996,7 +1160,6 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			if car.position.z >= -10.5:
 				car.lane = 1
 		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.position.z > -2.0:
-			# Turns RIGHT from left lane cutting across right lane into East branch
 			car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.6 * delta)
 			car.rotation.y = car.turn_angle
 			if car.turn_angle < PI / 2.0:
@@ -1005,7 +1168,6 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				car.rotation.y = PI * 0.5
 				car.position.x += car.speed * delta
 		else:
-			# Normal left lane movement
 			if car.route == "main_left" and car.position.z > -0.5:
 				car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.5 * delta)
 				car.rotation.y = -car.turn_angle
@@ -1020,9 +1182,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				car.rotation.y = lerp_angle(car.rotation.y, 0.0, minf(1.0, 12.0 * delta))
 
 	elif car.lane == 1:
-		# Main Right Lane
 		if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and car.position.z > -24.0 and car.position.z < -10.0:
-			# Steers across 1.1 solid line into left lane (X = -1.8)
 			var t := clampf((car.position.z + 24.0) / 12.0, 0.0, 1.0)
 			var target_x := lerpf(1.8, -1.8, t)
 			var dx := target_x - car.position.x
@@ -1034,7 +1194,6 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			if car.position.z >= -10.5:
 				car.lane = 0
 		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.position.z > -2.0:
-			# Turns LEFT from right lane cutting across left lane into West branch
 			car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.6 * delta)
 			car.rotation.y = -car.turn_angle
 			if car.turn_angle < PI / 2.0:
@@ -1047,13 +1206,12 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			car.rotation.y = lerp_angle(car.rotation.y, 0.0, minf(1.0, 12.0 * delta))
 
 	else:
-		# Secondary road entering from West (Lane 2)
+		# Secondary road entering from West
 		if car.turn_angle <= 0.0:
 			if car.position.x < -2.5:
 				car.position.x += car.speed * delta
-				car.rotation.y = PI * 0.5  # Heading East (+X)
+				car.rotation.y = PI * 0.5
 			else:
-				# Initiate smooth right turn into southbound Lane 1 (center X = 1.8)
 				car.turn_angle = minf(PI / 2.0, car.turn_angle + 1.5 * delta)
 				car.rotation.y = PI * 0.5 - car.turn_angle
 				car.position += Vector3(cos(car.turn_angle), 0, sin(car.turn_angle)) * car.speed * delta
@@ -1063,7 +1221,6 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				car.rotation.y = PI * 0.5 - car.turn_angle
 				car.position += Vector3(cos(car.turn_angle), 0, sin(car.turn_angle)) * car.speed * delta
 			else:
-				# Turn complete: vehicle is now smoothly traveling down Lane 1
 				car.lane = 1
 				car.position.x = 1.8
 				car.rotation.y = 0.0
@@ -1095,6 +1252,12 @@ func _is_car_entering_violation_window(car: ViolatorCar) -> bool:
 			return car.position.z >= -1.5 and car.turn_angle > 0.08
 		VIOLATION_PRIORITY_SIGN:
 			return car.position.x >= -5.0
+		VIOLATION_ARROW_YIELD:
+			return car.position.z >= -2.0 and light_state == "red"
+		VIOLATION_WAFFLE_BLOCK:
+			return car.position.z >= 2.0 and car.waffle_stop_timer > 0.5
+		VIOLATION_EMERGENCY_YIELD:
+			return car.position.z >= -10.0 and absf(car.position.x) < 2.5
 	return false
 
 
@@ -1110,6 +1273,12 @@ func _is_car_exiting_violation_window(car: ViolatorCar) -> bool:
 			return car.position.z > 7.0 or absf(car.position.x) > 6.0
 		VIOLATION_PRIORITY_SIGN:
 			return car.position.x > 3.0
+		VIOLATION_ARROW_YIELD:
+			return car.position.z > 8.0 or absf(car.position.x) > 6.0
+		VIOLATION_WAFFLE_BLOCK:
+			return car.position.z > 9.0
+		VIOLATION_EMERGENCY_YIELD:
+			return car.position.z > 10.0
 	return false
 
 
@@ -1118,9 +1287,12 @@ func _on_violator_missed(car: ViolatorCar) -> void:
 		return
 	car.violation_state = "missed"
 	combo = 0
+	lives = maxi(0, lives - 1)
 	if is_instance_valid(ui):
-		ui.show_toast(ViolatorUiScript.tr_v("violatorMissedWarning"), true)
+		ui.show_toast(ViolatorUiScript.tr_v("violatorMissedLifeWarning"), true)
 		ui.update_hud(score, combo, seconds_left, lives)
+	if lives <= 0:
+		_end_game()
 
 
 # --- Input Handling & Two-Step Detection ---
@@ -1140,10 +1312,8 @@ func _process_screen_tap(screen_pos: Vector2) -> void:
 	var u := Ui.dp(viewport)
 	var dp_pos := screen_pos / u
 
-	# 1. 3D Raycast
 	var ray_car: ViolatorCar = _raycast_car_at(screen_pos)
 
-	# 2. Fallback distance check to unprojected screen positions
 	if ray_car == null:
 		var best_dist := 48.0
 		for car in cars:
@@ -1178,6 +1348,20 @@ func handle_car_tapped(car: ViolatorCar, screen_pos: Vector2) -> void:
 		return
 
 	# Step 1 evaluation
+	if car.is_emergency:
+		# Emergency vehicles have legal priority!
+		sound.play("incorrect")
+		lives = maxi(0, lives - 1)
+		combo = 0
+		wrong_count += 1
+		if is_instance_valid(ui):
+			ui.add_tap_ripple(screen_pos, "false_alarm")
+			ui.show_toast(ViolatorUiScript.tr_v("violatorEmergencyExempt"), true)
+			ui.update_hud(score, combo, seconds_left, lives)
+		if lives <= 0:
+			_end_game()
+		return
+
 	if not car.is_violator:
 		# False alarm!
 		sound.play("incorrect")
@@ -1199,14 +1383,14 @@ func handle_car_tapped(car: ViolatorCar, screen_pos: Vector2) -> void:
 			ui.show_toast(ViolatorUiScript.tr_v("violatorTimingWarning"), false)
 		return
 
-	# Active violator tapped -> Step 2 Classification
+	# Active violator tapped -> Step 2 Classification with dynamic slow-mo
 	sound.play("click")
 	locked_car = car
 	is_classifying = true
 	car.reaction_time = game_clock - car.violation_start_time
 
-	# Time dilation / brief pause during classification
-	Engine.time_scale = 0.05
+	# Dynamic bullet-time slow-mo (0.35x keeps the scene alive while allowing fast reaction)
+	Engine.time_scale = 0.35
 
 	if is_instance_valid(ui):
 		ui.add_tap_ripple(screen_pos, "hit")
@@ -1225,8 +1409,9 @@ func get_classification_options(correct_code: String) -> Array:
 			distractors.append(v)
 	distractors.shuffle()
 
+	# 3 compact options: 1 correct + 2 distractors
 	var options: Array = [correct_code]
-	for i in mini(3, distractors.size()):
+	for i in mini(2, distractors.size()):
 		options.append(distractors[i])
 	options.shuffle()
 	return options

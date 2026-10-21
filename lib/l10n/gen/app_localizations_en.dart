@@ -4052,6 +4052,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamePrioritySignViolation => 'Failure to yield at priority sign';
 
   @override
+  String get gameArrowYieldViolation =>
+      'Failing to yield when turning on arrow with red';
+
+  @override
+  String get gameWaffleBlockViolation =>
+      'Stopping on yellow box junction 1.26 in gridlock';
+
+  @override
+  String get gameEmergencyYieldViolation =>
+      'Failed to yield to emergency vehicle';
+
+  @override
+  String get gameViolatorEmergencyExempt =>
+      'False alarm! Emergency vehicle has the right of way';
+
+  @override
+  String get gameViolatorMissedLifeWarning => 'Violator missed! (-1 life)';
+
+  @override
   String get gameViolatorCaught => 'Violator identified!';
 
   @override

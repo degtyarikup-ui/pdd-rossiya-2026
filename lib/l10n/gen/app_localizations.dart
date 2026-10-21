@@ -6766,6 +6766,36 @@ abstract class AppLocalizations {
   /// **'Не уступил дорогу по знаку приоритета'**
   String get gamePrioritySignViolation;
 
+  /// No description provided for @gameArrowYieldViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворот по стрелке с красным без преимущества'**
+  String get gameArrowYieldViolation;
+
+  /// No description provided for @gameWaffleBlockViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Остановка на вафельнице 1.26 в заторе'**
+  String get gameWaffleBlockViolation;
+
+  /// No description provided for @gameEmergencyYieldViolation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не уступил дорогу спецтранспорту'**
+  String get gameEmergencyYieldViolation;
+
+  /// No description provided for @gameViolatorEmergencyExempt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ложный вызов! Спецтранспорт со спецсигналами имеет право проезда'**
+  String get gameViolatorEmergencyExempt;
+
+  /// No description provided for @gameViolatorMissedLifeWarning.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нарушитель упущен! (-1 жизнь)'**
+  String get gameViolatorMissedLifeWarning;
+
   /// No description provided for @gameViolatorCaught.
   ///
   /// In ru, this message translates to:

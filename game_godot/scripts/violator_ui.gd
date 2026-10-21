@@ -28,14 +28,19 @@ const LIVES_COUNT := 5
 const STRINGS := {
 	"ru": {
 		"violatorClassificationTitle": "Квалификация нарушения",
-		"violatorClassificationHint": "Выберите нарушенное правило ПДД:",
-		"violatorRedLight": "Проезд на запрещающий сигнал светофора (п. 6.2 ПДД)",
-		"violatorPedestrianYield": "Не уступил дорогу пешеходу на переходе (п. 14.1 ПДД)",
-		"violatorSolidLine": "Пересечение сплошной линии 1.1 при перестроении",
-		"violatorWrongLaneTurn": "Поворот не из крайнего положения / нарушение полосы (п. 8.5)",
-		"violatorPrioritySign": "Не уступил дорогу со второстепенной (знак 2.4 «Уступите дорогу»)",
+		"violatorClassificationHint": "Выберите нарушенное правило ПДД РФ:",
+		"violatorRedLight": "п. 6.2: Проезд на красный сигнал",
+		"violatorPedestrianYield": "п. 13.1: Не уступил пешеходу на переходе",
+		"violatorSolidLine": "п. 1.3: Пересечение сплошной линии 1.1",
+		"violatorWrongLaneTurn": "п. 8.5: Поворот не из своего ряда",
+		"violatorPrioritySign": "п. 13.9: Знак 2.4 «Уступите дорогу»",
+		"violatorArrowYield": "п. 13.5: Поворот по стрелке с красным",
+		"violatorWaffleBlock": "п. 13.2: Затор на вафельнице 1.26",
+		"violatorEmergencyYield": "п. 3.2: Не уступил дорогу спецтранспорту",
+		"violatorEmergencyExempt": "Ложный вызов! Спецтранспорт со спецсигналами имеет преимущество (-1 жизнь)",
 		"violatorFalseAlarm": "Ложный вызов! Автомобиль соблюдает ПДД (-1 жизнь)",
 		"violatorMissedWarning": "Внимание: нарушитель пропущен!",
+		"violatorMissedLifeWarning": "Нарушитель упущен! (-1 жизнь)",
 		"violatorTimingWarning": "Нарушение ещё не совершено или уже завершено!",
 		"violatorTimeExpired": "Время на квалификацию истекло!",
 		"gameViolatorsDetected": "Выявлено",
@@ -44,13 +49,18 @@ const STRINGS := {
 	"en": {
 		"violatorClassificationTitle": "Violation Classification",
 		"violatorClassificationHint": "Select the violated traffic rule:",
-		"violatorRedLight": "Running a red light (clause 6.2)",
-		"violatorPedestrianYield": "Failure to yield to pedestrian on crossing (clause 14.1)",
-		"violatorSolidLine": "Crossing solid line 1.1 during lane change",
-		"violatorWrongLaneTurn": "Turn from wrong lane / lane direction violation (clause 8.5)",
-		"violatorPrioritySign": "Failure to yield from secondary road (Sign 2.4)",
+		"violatorRedLight": "Cl. 6.2: Running a red light",
+		"violatorPedestrianYield": "Cl. 13.1: Failed to yield to pedestrian",
+		"violatorSolidLine": "Cl. 1.3: Crossing solid line 1.1",
+		"violatorWrongLaneTurn": "Cl. 8.5: Turn from wrong lane",
+		"violatorPrioritySign": "Cl. 13.9: Sign 2.4 Yield violation",
+		"violatorArrowYield": "Cl. 13.5: Failed to yield on arrow with red",
+		"violatorWaffleBlock": "Cl. 13.2: Gridlock on box junction 1.26",
+		"violatorEmergencyYield": "Cl. 3.2: Failed to yield to emergency vehicle",
+		"violatorEmergencyExempt": "False alarm! Emergency vehicle has right of way (-1 life)",
 		"violatorFalseAlarm": "False alarm! Vehicle complies with rules (-1 life)",
 		"violatorMissedWarning": "Warning: violator missed!",
+		"violatorMissedLifeWarning": "Violator missed! (-1 life)",
 		"violatorTimingWarning": "Violation not yet started or already finished!",
 		"violatorTimeExpired": "Classification time expired!",
 		"gameViolatorsDetected": "Detected",
@@ -59,13 +69,18 @@ const STRINGS := {
 	"kk": {
 		"violatorClassificationTitle": "Құқық бұзушылықты саралау",
 		"violatorClassificationHint": "Бұзылған ЖҚЕ ережесін таңдаңыз:",
-		"violatorRedLight": "Бағдаршамның тыйым салатын сигналына өту (6.2 т.)",
-		"violatorPedestrianYield": "Өткелдегі жаяу жүргіншіге жол бермеу (14.1 т.)",
-		"violatorSolidLine": "Жолақ ауыстырғанда 1.1 тұтас сызықты кесіп өту",
-		"violatorWrongLaneTurn": "Тиісті жолақтан бұрылмау / жолақ бұзушылығы (8.5 т.)",
-		"violatorPrioritySign": "Қосалқы жолдан жол бермеу (2.4 белгісі)",
+		"violatorRedLight": "6.2 т.: Қызыл сигналға өту",
+		"violatorPedestrianYield": "13.1 т.: Жаяу жүргіншіге жол бермеу",
+		"violatorSolidLine": "1.3 т.: 1.1 тұтас сызықты кесу",
+		"violatorWrongLaneTurn": "8.5 т.: Тиісті емес жолақтан бұрылу",
+		"violatorPrioritySign": "13.9 т.: 2.4 «Жол беріңіз» белгісі",
+		"violatorArrowYield": "13.5 т.: Қызылда бағыттауышпен жол бермеу",
+		"violatorWaffleBlock": "13.2 т.: 1.26 торлы таңбадағы кептеліс",
+		"violatorEmergencyYield": "3.2 т.: Арнайы көлікке жол бермеу",
+		"violatorEmergencyExempt": "Жалған шақыру! Арнайы көлікке басымдық берілген (-1 өмір)",
 		"violatorFalseAlarm": "Жалған шақыру! Көлік ережені бұзбаған (-1 өмір)",
 		"violatorMissedWarning": "Назар аударыңыз: ереже бұзушы жіберіп алынды!",
+		"violatorMissedLifeWarning": "Ереже бұзушы жіберіп алынды! (-1 өмір)",
 		"violatorTimingWarning": "Бұзушылық әлі жасалмаған немесе аяқталған!",
 		"violatorTimeExpired": "Саралау уақыты аяқталды!",
 		"gameViolatorsDetected": "Анықталды",
@@ -109,7 +124,7 @@ var _modal_bar: ProgressBar
 var _modal_buttons_container: VBoxContainer
 var _modal_active := false
 var _modal_timer := 0.0
-const MODAL_DURATION := 4.5
+const MODAL_DURATION := 2.8
 var _modal_correct_code := ""
 var _modal_buttons: Array[Button] = []
 
@@ -477,12 +492,13 @@ func show_classification(correct_code: String, options: Array) -> void:
 
 	for opt_code in options:
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(0, 46)
+		btn.custom_minimum_size = Vector2(0, 44)
 		btn.text = tr_v(_violation_l10n_key(opt_code))
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		btn.add_theme_font_override("font", Ui.font(500))
+		btn.add_theme_font_override("font", Ui.font(600))
 		btn.add_theme_font_size_override("font_size", 13)
 		btn.add_theme_color_override("font_color", Ui.c("text"))
+		btn.set_meta("opt_code", opt_code)
 
 		var normal_box := Ui.box(Ui.c("field"), 10)
 		normal_box.content_margin_left = 12
@@ -542,7 +558,7 @@ func _on_option_button_pressed(btn: Button, code: String) -> void:
 
 		# Reveal correct option
 		for other_btn in _modal_buttons:
-			if other_btn.text == tr_v(_violation_l10n_key(_modal_correct_code)):
+			if other_btn.get_meta("opt_code") == _modal_correct_code:
 				var green_box := Ui.box(Ui.c("green_light"), 10)
 				green_box.border_color = Ui.c("green")
 				other_btn.add_theme_stylebox_override("normal", green_box)
@@ -575,6 +591,9 @@ func _violation_l10n_key(code: String) -> String:
 		"solid_line": return "violatorSolidLine"
 		"wrong_lane_turn": return "violatorWrongLaneTurn"
 		"priority_sign": return "violatorPrioritySign"
+		"arrow_yield": return "violatorArrowYield"
+		"waffle_block": return "violatorWaffleBlock"
+		"emergency_yield": return "violatorEmergencyYield"
 	return "violatorRedLight"
 
 

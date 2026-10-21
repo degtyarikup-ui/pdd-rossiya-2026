@@ -253,7 +253,7 @@ func _test_two_step_mutual_exclusion_and_time_dilation() -> void:
 	game.handle_car_tapped(violator_a, Vector2(200, 200))
 	_assert("Violator A is locked", game.locked_car == violator_a)
 	_assert("is_classifying is true", game.is_classifying)
-	_assert("Engine.time_scale is dilated to 0.05", is_equal_approx(Engine.time_scale, 0.05))
+	_assert("Engine.time_scale is dilated to 0.35", is_equal_approx(Engine.time_scale, 0.35))
 
 	# Attempt to tap violator_b while classifying violator_a
 	game.handle_car_tapped(violator_b, Vector2(100, 100))
@@ -269,7 +269,7 @@ func _test_two_step_mutual_exclusion_and_time_dilation() -> void:
 	# Now violator_b can be tapped
 	game.handle_car_tapped(violator_b, Vector2(100, 100))
 	_assert("Violator B can now be tapped and locked", game.locked_car == violator_b)
-	_assert("Engine.time_scale re-dilated to 0.05", is_equal_approx(Engine.time_scale, 0.05))
+	_assert("Engine.time_scale re-dilated to 0.35", is_equal_approx(Engine.time_scale, 0.35))
 
 	# Cancel/finish
 	game._on_classification_selected(ViolatorScript.VIOLATION_SOLID_LINE)
@@ -287,7 +287,7 @@ func _test_distractor_randomization_fuzzing() -> void:
 	for code in ViolatorScript.ALL_VIOLATIONS:
 		for iter in 40:
 			var opts: Array = game.get_classification_options(code)
-			if opts.size() != 4:
+			if opts.size() != 3:
 				all_valid = false
 				break
 			if not opts.has(code):
@@ -300,7 +300,7 @@ func _test_distractor_randomization_fuzzing() -> void:
 					break
 				seen[o] = true
 
-	_assert("200 randomized option sets: always size 4, unique, includes correct", all_valid)
+	_assert("200 randomized option sets: always size 3, unique, includes correct", all_valid)
 	game.free()
 
 

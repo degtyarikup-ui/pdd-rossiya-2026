@@ -4066,6 +4066,24 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не уступил дорогу по знаку приоритета';
 
   @override
+  String get gameArrowYieldViolation =>
+      'Поворот по стрелке с красным без преимущества';
+
+  @override
+  String get gameWaffleBlockViolation =>
+      'Остановка на вафельнице 1.26 в заторе';
+
+  @override
+  String get gameEmergencyYieldViolation => 'Не уступил дорогу спецтранспорту';
+
+  @override
+  String get gameViolatorEmergencyExempt =>
+      'Ложный вызов! Спецтранспорт со спецсигналами имеет право проезда';
+
+  @override
+  String get gameViolatorMissedLifeWarning => 'Нарушитель упущен! (-1 жизнь)';
+
+  @override
   String get gameViolatorCaught => 'Нарушитель зафиксирован!';
 
   @override
