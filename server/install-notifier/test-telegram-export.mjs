@@ -70,7 +70,7 @@ test('CSV сохраняет детали неудачной оплаты, вк�
 });
 
 import { TelegramQueue } from './telegram_queue.js';
-import { handleTelegramWebhook, handleSupportGetMessages } from './support_chat.js';
+import { handleTelegramWebhook, handleSupportGetMessages, resetSupportPollThrottle } from './support_chat.js';
 import { telegramWebhookSecret } from './telegram_auth.js';
 
 class ExportStorage {
@@ -185,10 +185,57 @@ test('without webhook one durable poll handles both exports and support replies'
     assert.equal(messages[0].text, 'Ответ оператора');
     // The app fallback uses the same DO poll, rather than a competing offset.
     const count = calls.length;
+    resetSupportPollThrottle();
     await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=client-1'), env);
     assert.ok(calls.slice(count).some(url => url.endsWith('/getWebhookInfo')));
     assert.equal(await env.INSTALLS.get('tg:support_offset'), undefined);
   } finally { globalThis.fetch = original; }
+});
+
+test('app polls remember a found webhook and stop asking the durable queue', async () => {
+  const { env } = exportSetup(), original = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async url => {
+    calls.push(url);
+    return Response.json({ ok: true, result: { url: 'https://test/api/telegram/webhook' } });
+  };
+  try {
+    resetSupportPollThrottle();
+    const first = await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=c1'), env);
+    assert.equal(first.status, 200);
+    assert.equal(await env.INSTALLS.get('tg:webhook_active'), '1');
+    resetSupportPollThrottle();
+    await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=c1'), env);
+    assert.equal(calls.length, 1);
+  } finally { globalThis.fetch = original; }
+});
+
+test('app polls ask the durable queue at most once per interval', async () => {
+  const { env } = exportSetup(), original = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async url => {
+    calls.push(url);
+    if (url.endsWith('/getWebhookInfo')) return Response.json({ ok: true, result: { url: '' } });
+    return Response.json({ ok: true, result: [] });
+  };
+  try {
+    resetSupportPollThrottle();
+    for (let i = 0; i < 3; i++) {
+      await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=c1'), env);
+    }
+    assert.equal(calls.filter(url => url.endsWith('/getWebhookInfo')).length, 1);
+  } finally { globalThis.fetch = original; }
+});
+
+test('a failing durable queue still returns stored support replies', async () => {
+  const { env } = exportSetup();
+  await env.INSTALLS.put('support:messages:c2', JSON.stringify([{ id: 'm1', text: 'Ответ', from: 'support', ts: 1 }]));
+  env.TELEGRAM.get = () => ({ fetch: async () => { throw new Error('Durable Object is overloaded'); } });
+  resetSupportPollThrottle();
+  const response = await handleSupportGetMessages(new Request('https://test/api/support/messages?clientId=c2'), env);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.messages[0].text, 'Ответ');
 });
 
 test('polling leaves the cursor unchanged when Telegram rejects an export', async () => {

@@ -4,6 +4,15 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 const appleKeys = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
+// Ключи Google и Apple иногда отдаются дольше обычного: один повтор вместо отказа во входе.
+async function verifyWithKeys(credential, keys, options) {
+  try {
+    return await jwtVerify(credential, keys, options);
+  } catch (error) {
+    if (error?.code !== 'ERR_JWKS_TIMEOUT') throw error;
+    return jwtVerify(credential, keys, options);
+  }
+}
 const GOOGLE_CLIENT = '513938972930-3lclc5epsnm12druv86ut2o89pj71cu9.apps.googleusercontent.com,513938972930-a7sh1di6odgf77ijltu31lvpuhijcis1.apps.googleusercontent.com';
 const YANDEX_CLIENT = '94aa539db4634e44bf0b209d9a2205d2';
 const SESSION_SECONDS = 30 * 86400;
@@ -51,12 +60,12 @@ export async function verifyIdentity(body, env) {
     claims = { sub: tok.sub, name: profile.name, email: tok.email || profile.email || '',
       email_verified: tok.email_verified === 'true' || profile.email_verified === true, picture: profile.picture };
   } else if (provider === 'google') {
-    ({ payload: claims } = await jwtVerify(credential, googleKeys, {
+    ({ payload: claims } = await verifyWithKeys(credential, googleKeys, {
       algorithms: ['RS256'], issuer: ['https://accounts.google.com', 'accounts.google.com'],
       audience: audiences(env.GOOGLE_CLIENT_IDS, GOOGLE_CLIENT), requiredClaims: ['sub', 'exp', 'iat'],
     }));
   } else if (provider === 'apple') {
-    ({ payload: claims } = await jwtVerify(credential, appleKeys, {
+    ({ payload: claims } = await verifyWithKeys(credential, appleKeys, {
       algorithms: ['RS256'], issuer: 'https://appleid.apple.com',
       audience: audiences(env.APPLE_CLIENT_IDS, 'ru.pdd.pddApp,ru.pdd.pddapp.auth'),
       requiredClaims: ['sub', 'exp', 'iat'],

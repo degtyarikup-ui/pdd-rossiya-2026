@@ -248,6 +248,14 @@ export async function processTelegramMessageUpdate(msg, env) {
   return true;
 }
 
+// Каждое открытое приложение спрашивает сообщения раз в несколько секунд, а
+// durable-опрос Telegram — одна последовательная очередь вместе с уведомлениями
+// об ошибках. Поэтому из одного экземпляра воркера спрашиваем её не чаще раза в
+// интервал, а найденный вебхук запоминаем на час.
+const DURABLE_POLL_INTERVAL_MS = 5000;
+let lastDurablePollAt = 0;
+export const resetSupportPollThrottle = () => { lastDurablePollAt = 0; };
+
 /**
  * Проверка накопившихся обновлений Telegram (getUpdates) при отсутствии Webhook
  */
@@ -257,8 +265,18 @@ async function checkPendingTelegramUpdates(env) {
   if (isWebhookActive === '1') return;
 
   if (env.TELEGRAM) {
-    // One durable consumer dispatches both exports and support replies.
-    await pollErrorCommands(env);
+    const now = Date.now();
+    if (now - lastDurablePollAt < DURABLE_POLL_INTERVAL_MS) return;
+    lastDurablePollAt = now;
+    try {
+      // One durable consumer dispatches both exports and support replies.
+      const result = await pollErrorCommands(env);
+      if (result?.webhook && env.INSTALLS) {
+        await env.INSTALLS.put('tg:webhook_active', '1', { expirationTtl: 3600 });
+      }
+    } catch (_) {
+      // Уже сохранённые сообщения отдаём как есть; Telegram спросим при следующем опросе.
+    }
     return;
   }
 
