@@ -1,0 +1,216 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-032",
+  "status": "draft",
+  "title": "Четыре машины — никому не уступить",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_032_041.md#032",
+  "rules": [
+    "13.11"
+  ],
+  "scene": "res://videos/crossroads_reel/four_way_deadlock.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "rule",
+    "blue",
+    "red"
+  ],
+  "motionMinimums": {
+    "rule": 0,
+    "blue": 4.4,
+    "red": 9.2
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "none",
+    "blue": "none",
+    "yellow": "none",
+    "white": "none"
+  },
+  "audio": {
+    "enginePans": {
+      "blue": 0.15,
+      "red": 0.0
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [],
+  "createdDate": "2026-10-21",
+  "adaptation": "Equal junction without signs or signals, four cars straight on: red sedan (south), blue SUV (east), yellow hatch (north), white wagon (west). Every car has someone on its right, so 13.11 gives no order. Red waives, blue crosses; then by the right-hand rule red, white (2.8 s after red) and yellow (5.0 s after red). No order chips: the first move comes from agreement, not from the rules.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь проедет первым?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "rule",
+      "text": "Никто по правилам! У каждой помеха справа — получился замкнутый круг."
+    },
+    {
+      "key": "blue",
+      "text": "ПДД очередь здесь не задают. Водители договариваются: красная уступает, синяя едет."
+    },
+    {
+      "key": "red",
+      "text": "Круг разорван. Дальше по правилу правой руки: красная, белая, жёлтая."
+    },
+    {
+      "key": "cta",
+      "text": "А ты бы уступил первым? Пиши в комментариях."
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "проедет первым?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "rule": [
+      "Никто",
+      "по правилам!",
+      "У каждой",
+      "помеха справа",
+      "получился",
+      "замкнутый круг"
+    ],
+    "blue": [
+      "ПДД очередь",
+      "здесь не задают",
+      "Водители",
+      "договариваются",
+      "красная уступает",
+      "синяя едет"
+    ],
+    "red": [
+      "Круг разорван",
+      "Дальше по правилу",
+      "правой руки",
+      "красная, белая,",
+      "жёлтая"
+    ],
+    "cta": [
+      "А ты бы",
+      "уступил первым?",
+      "Пиши",
+      "в комментариях"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "sedan",
+    "blue": "suv",
+    "yellow": "hatch",
+    "white": "wagon"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 0,
+    "arrows": [
+      {
+        "actor": 0,
+        "tipX": [
+          1.75,
+          1.85
+        ],
+        "tipZ": [
+          5,
+          8.5
+        ],
+        "dir": [
+          0,
+          -1
+        ]
+      },
+      {
+        "actor": 1,
+        "tipX": [
+          5,
+          8.5
+        ],
+        "tipZ": [
+          -1.85,
+          -1.75
+        ],
+        "dir": [
+          -1,
+          0
+        ]
+      },
+      {
+        "actor": 2,
+        "tipX": [
+          -1.85,
+          -1.75
+        ],
+        "tipZ": [
+          -8.5,
+          -5
+        ],
+        "dir": [
+          0,
+          1
+        ]
+      },
+      {
+        "actor": 3,
+        "tipX": [
+          -8.5,
+          -5
+        ],
+        "tipZ": [
+          1.75,
+          1.85
+        ],
+        "dir": [
+          1,
+          0
+        ]
+      }
+    ],
+    "focus": [],
+    "always": [
+      {
+        "expr": "t>=cfg.blue+0.6 or (scene.cars[0].transform.is_equal_approx(scene._pose_car(0,0)) and scene.cars[1].transform.is_equal_approx(scene._pose_car(1,0)) and scene.cars[2].transform.is_equal_approx(scene._pose_car(2,0)) and scene.cars[3].transform.is_equal_approx(scene._pose_car(3,0)))",
+        "msg": "Someone moves before the agreement"
+      }
+    ],
+    "at": [
+      {
+        "time": "red+0.6",
+        "expr": "scene.cars[1].position.x<-9",
+        "msg": "Blue has not cleared before red"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[2].position.z>4",
+        "msg": "Yellow did not finish"
+      }
+    ],
+    "summary": "four-way deadlock, agreed release, then right-hand rule"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car",
+    "yellow": "car",
+    "white": "car"
+  }
+}

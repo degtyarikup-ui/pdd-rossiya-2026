@@ -3,16 +3,16 @@ extends "res://videos/crossroads_reel/stop_vs_yield.gd"
 # New episodes share approved materials/rigs, with path hints ending in exit lanes.
 func _build_actors() -> void:
 	for i in actor_count():
-		var key:String=["red","blue","yellow"][i]
+		var key:String=["red","blue","yellow","white"][i]
 		var model:String=episode.carModels[key]
-		var car:=Models.player_car(model,PAINTS[i]);car.set_meta("bodyModel",model)
+		var car:=Models.player_car(model,paint(i));car.set_meta("bodyModel",model)
 		cars.append(car);add_child(car)
 		for mesh:MeshInstance3D in car.find_children("*","MeshInstance3D",true,false):
 			for surface in mesh.mesh.get_surface_count():
 				var original=mesh.mesh.surface_get_material(surface)
 				var material=mesh.get_surface_override_material(surface)
 				if material is ShaderMaterial and original.resource_name=="baked":
-					var linear:Color=PAINTS[i].srgb_to_linear()
+					var linear:Color=paint(i).srgb_to_linear()
 					material.set_shader_parameter("paint_colour",Vector3(linear.r,linear.g,linear.b))
 					material.set_shader_parameter("cab_colour",Vector3(linear.r,linear.g,linear.b))
 				if original is StandardMaterial3D and original.resource_name=="paint" and material is StandardMaterial3D:
@@ -40,6 +40,9 @@ func _build_actors() -> void:
 
 func actor_count() -> int:return 2
 
+# A fourth, neutral participant colour for four-car episodes.
+func paint(i:int) -> Color:return PAINTS[i] if i<PAINTS.size() else Color("e8eaec")
+
 func _priority(specs:Array) -> void:
 	for spec in specs:
 		var root_node:=Node3D.new();root_node.position=spec[2];root_node.rotation.y=spec[3]
@@ -64,14 +67,14 @@ func _build_arrow(root_node:Node3D,i:int) -> void:
 	var direction:Vector3=(points[-1]-points[-2]).normalized();var right:=Vector3(-direction.z,0,direction.x)*.42
 	var tip:Vector3=points[-1]+direction*.9
 	for vertex in [points[-1]-right,points[-1]+right,tip]:surface.add_vertex(vertex+Vector3.UP*.05)
-	var mesh:=MeshInstance3D.new();mesh.mesh=surface.commit();var material:=_mat(PAINTS[i].lightened(.2))
+	var mesh:=MeshInstance3D.new();mesh.mesh=surface.commit();var material:=_mat(paint(i).lightened(.2))
 	material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;mesh.material_override=material;mesh.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;root_node.add_child(mesh)
 	root_node.set_meta("tip",tip);root_node.set_meta("direction",direction);root_node.set_meta("centreline",points)
 
 func _rig(i:int,distance:float,turning:bool,angle:float) -> void:
 	for wheel in wheels[i]:wheel.node.rotation=wheel.rotation+Vector3(distance/.32,0,0)
 	for axle in axles[i]:axle.node.rotation=axle.rotation+Vector3(0,angle if turning else 0,0)
-	var key:String=["red","blue","yellow"][i]
+	var key:String=["red","blue","yellow","white"][i]
 	var blink:bool=episode.turns[key]!="none" and fmod(_t,.68)<.34 and distance<turn_finish(i)+2
 	for material in lamps[i]:material.albedo_color=Color("ffc13c") if blink else Color("724615")
 	cars[i].visible=maxf(absf(cars[i].position.x),absf(cars[i].position.z))<FAR-4

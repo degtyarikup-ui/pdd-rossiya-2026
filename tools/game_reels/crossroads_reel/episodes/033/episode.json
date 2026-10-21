@@ -1,0 +1,183 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-033",
+  "status": "draft",
+  "title": "Трамвай слева, но едет первым",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_032_041.md#033",
+  "rules": [
+    "13.11"
+  ],
+  "scene": "res://videos/crossroads_reel/tram_left_turn.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "blue",
+    "red"
+  ],
+  "motionMinimums": {
+    "blue": 8.4,
+    "red": 6.2
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "none",
+    "blue": "left"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1,
+      "blue": -0.1
+    },
+    "indicator": false,
+    "setupCutAccents": [],
+    "engineKinds": {
+      "blue": "tram"
+    }
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    },
+    {
+      "car": "red",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Equal junction without signs or signals. One curved 1524 mm track from the west (eastbound lane) turning left to the north (northbound lane), radius 7 m. Blue tram turns left on it; red hatch from the south goes straight north into the same lane, calmer than the tram, after the whole wagon has cleared the junction.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь проедет первым?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Трамвай! Красная для него справа, но на равнозначном перекрёстке у трамвая преимущество."
+    },
+    {
+      "key": "red",
+      "text": "Куда бы он ни поворачивал. Теперь красная."
+    },
+    {
+      "key": "cta",
+      "text": "Помеху справа вспомнил первым?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "проедет первым?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Трамвай!",
+      "Красная",
+      "для него справа",
+      "но на равнозначном",
+      "перекрёстке",
+      "у трамвая",
+      "преимущество"
+    ],
+    "red": [
+      "Куда бы он",
+      "ни поворачивал",
+      "Теперь красная"
+    ],
+    "cta": [
+      "Помеху справа",
+      "вспомнил первым?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "hatch"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "tram"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 0,
+    "arrows": [
+      {
+        "actor": 1,
+        "tipX": [
+          1.75,
+          1.85
+        ],
+        "tipZ": [
+          -9,
+          -5
+        ],
+        "dir": [
+          0,
+          -1
+        ]
+      },
+      {
+        "actor": 0,
+        "tipX": [
+          1.75,
+          1.85
+        ],
+        "tipZ": [
+          5,
+          8.5
+        ],
+        "dir": [
+          0,
+          -1
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "blue",
+        1
+      ],
+      [
+        "red",
+        0
+      ]
+    ],
+    "always": [
+      {
+        "expr": "t>=cfg.red+0.6 or scene.cars[0].transform.is_equal_approx(scene._pose_car(0,0))",
+        "msg": "Red moves before the tram"
+      }
+    ],
+    "at": [
+      {
+        "time": "red+0.6",
+        "expr": "scene.cars[1].position.z+4.9<-3.6",
+        "msg": "Tram has not cleared the junction when red starts"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[0].position.z<-4",
+        "msg": "Red did not cross"
+      }
+    ],
+    "summary": "tram turns left on a curved track first; red, on its right, goes after"
+  }
+}

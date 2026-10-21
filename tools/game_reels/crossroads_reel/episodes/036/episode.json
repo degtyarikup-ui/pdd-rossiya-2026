@@ -1,0 +1,182 @@
+{
+  "voice": {
+    "name": "Algenib",
+    "model": "gemini-3.1-flash-tts-preview",
+    "style": "Ты — живой русскоязычный ведущий коротких автомобильных видео, мужчина 28–35 лет. Тёплый, энергичный, уверенный голос с улыбкой. Обращаешься к одному зрителю как к другу. Нормальная разговорная русская речь, быстро, но разборчиво; без дикторской торжественности, без крика, без растянутых окончаний. В вопросах — любопытство и лёгкая провокация, при ответе — радость от разгадки. Смысловые ударения на цветах машин, словах «главной», «справа», «налево», «приоритет». Паузы короткие, интонация разнообразная и естественная. Прочитай ТОЧНО заданный текст на русском, не произноси инструкции, ничего не добавляй."
+  },
+  "id": "crossroads-036",
+  "status": "draft",
+  "title": "Разворот против встречного направо",
+  "sourceScenario": "docs/video/intersection_reels_scenarios_032_041.md#036",
+  "rules": [
+    "13.12",
+    "8.8"
+  ],
+  "scene": "res://videos/crossroads_reel/uturn_vs_right.gd",
+  "validator": "res://videos/crossroads_reel/validate_generic.gd",
+  "answerPhases": [
+    "blue",
+    "red"
+  ],
+  "motionMinimums": {
+    "blue": 4.8,
+    "red": 9.8
+  },
+  "motionDelays": {
+    "red": 0.6,
+    "blue": 0.6
+  },
+  "turns": {
+    "red": "uTurn",
+    "blue": "right"
+  },
+  "audio": {
+    "enginePans": {
+      "red": 0.1,
+      "blue": -0.1
+    },
+    "indicator": false,
+    "setupCutAccents": []
+  },
+  "answerChips": [
+    {
+      "car": "blue",
+      "number": 1
+    },
+    {
+      "car": "red",
+      "number": 2
+    }
+  ],
+  "createdDate": "2026-10-21",
+  "adaptation": "Equal junction without signs or signals on the wide north-south street of episode 009 (two 4.2 m lanes per direction). Red pickup in the inner south lane makes a 4.2 m U-turn into the outer southbound lane. Oncoming blue coupe from the north in the outer lane turns right (6 m radius) into the westbound lane and goes first; red starts after blue has left the junction.",
+  "lines": [
+    {
+      "key": "hook",
+      "text": "Кто здесь должен уступить?"
+    },
+    {
+      "key": "challenge",
+      "text": "Три секунды на ответ!"
+    },
+    {
+      "key": "blue",
+      "text": "Красная. При развороте уступаем встречным, которые едут прямо или направо."
+    },
+    {
+      "key": "red",
+      "text": "Синяя хоть и поворачивает, но она встречная. Теперь разворот."
+    },
+    {
+      "key": "cta",
+      "text": "А ты думал, правый поворот всегда уступает?"
+    }
+  ],
+  "captionGroups": {
+    "hook": [
+      "Кто здесь",
+      "должен уступить?"
+    ],
+    "challenge": [
+      "Три секунды",
+      "на ответ!"
+    ],
+    "blue": [
+      "Красная",
+      "При развороте",
+      "уступаем встречным",
+      "которые едут",
+      "прямо или направо"
+    ],
+    "red": [
+      "Синяя хоть",
+      "и поворачивает",
+      "но она встречная",
+      "Теперь разворот"
+    ],
+    "cta": [
+      "А ты думал,",
+      "правый поворот",
+      "всегда уступает?"
+    ]
+  },
+  "directQuestion": true,
+  "minimumDuration": 20,
+  "revision": 1,
+  "challengeFrameOffset": 0,
+  "carModels": {
+    "red": "pickup",
+    "blue": "coupe"
+  },
+  "arrowPolicy": "exit-lane",
+  "validation": {
+    "lamps": 12,
+    "signals": 0,
+    "signs": 0,
+    "arrows": [
+      {
+        "actor": 1,
+        "tipX": [
+          -16,
+          -12
+        ],
+        "tipZ": [
+          -1.85,
+          -1.75
+        ],
+        "dir": [
+          -1,
+          0
+        ]
+      },
+      {
+        "actor": 0,
+        "tipX": [
+          -6.35,
+          -6.25
+        ],
+        "tipZ": [
+          5,
+          40
+        ],
+        "dir": [
+          0,
+          1
+        ]
+      }
+    ],
+    "focus": [
+      [
+        "blue",
+        1
+      ],
+      [
+        "red",
+        0
+      ]
+    ],
+    "always": [
+      {
+        "expr": "t>=cfg.red+0.6 or scene.cars[0].transform.is_equal_approx(scene._pose_car(0,0))",
+        "msg": "Red U-turns before blue"
+      }
+    ],
+    "at": [
+      {
+        "time": "red+0.6",
+        "expr": "scene.cars[1].position.x<-14",
+        "msg": "Blue has not left the junction"
+      },
+      {
+        "time": "cta+-0.034",
+        "expr": "scene.cars[0].basis.z.dot(Vector3(0,0,1))>0.999",
+        "msg": "Red U-turn cut short"
+      }
+    ],
+    "summary": "U-turner yields to the oncoming right-turner"
+  },
+  "participantTypes": {
+    "red": "car",
+    "blue": "car"
+  }
+}

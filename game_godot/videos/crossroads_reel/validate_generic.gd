@@ -33,7 +33,9 @@ func _initialize() -> void:
 	var cfg:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(data.path_join("timeline.json")))
 	var episode:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(data.path_join("episode.json")))
 	var v:Dictionary=episode.validation
-	var scene:=Node3D.new();scene.set_script(load(episode.scene));scene.set_meta("timeline",data.path_join("timeline.json"))
+	var script:=load(episode.scene)
+	if script==null or not script.can_instantiate():push_error("Scene script failed to load: "+str(episode.scene));quit(1);return
+	var scene:=Node3D.new();scene.set_script(script);scene.set_meta("timeline",data.path_join("timeline.json"))
 	var viewport:=SubViewport.new();viewport.size=Vector2i(1080,1920);root.add_child(viewport);viewport.add_child(scene);await process_frame
 	var errors:Array=[];var framing:Array=[];var occluders:=scenery_occluders(scene)
 	var n:int=scene.cars.size()
