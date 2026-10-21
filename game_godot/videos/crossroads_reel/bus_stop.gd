@@ -68,9 +68,7 @@ func _build_actors() -> void:
 	var material:=Models.vehicle_material(PAINTS[1]);var linear:=PAINTS[1].srgb_to_linear()
 	material.set_shader_parameter("paint_colour",Vector3(linear.r,linear.g,linear.b));material.set_shader_parameter("cab_colour",Vector3(linear.r,linear.g,linear.b))
 	material.set_shader_parameter("animate_wheels",false);body.material_override=material;bus.add_child(body)
-	# The bus model's nose points to −Z; turn it to the reel's +Z forward.
-	body.rotation.y=PI
-	var box:AABB=Transform3D(Basis(Vector3.UP,PI),Vector3.ZERO)*body.mesh.get_aabb();bus.set_meta("bodyBounds",box.grow(.05))
+	var box:AABB=body.mesh.get_aabb();bus.set_meta("bodyBounds",box.grow(.05))
 	# Left indicators (front and rear corners); the model has no lamp nodes.
 	for z in [box.end.z-.05,box.position.z+.05]:
 		var lamp:=MeshInstance3D.new();var m:=BoxMesh.new();m.size=Vector3(.12,.16,.12);lamp.mesh=m
