@@ -16,6 +16,7 @@ const BAY_W := 2.7
 const BAY_D := 5.3
 const CURB_X := 3.0                 # the right kerb of the street levels
 const KERB_CAR_X := 1.85            # a car standing at that kerb (0.25 m away)
+const ROAD_BEYOND := 70.0           # the street goes on past its roadworks, out of the frame
 
 static var _metas := {}
 
@@ -171,7 +172,7 @@ static func build(index: int) -> Dictionary:
 
 static func _level(id: String) -> Dictionary:
 	return {"id": id, "show_path": true, "cars": [], "walls": [], "asphalt": [], "sidewalks": [], "grass": [],
-		"lines": [], "signs": [], "zigzag": [], "trees": [], "lamps": [], "buildings": [], "spots": []}
+		"lines": [], "signs": [], "zigzag": [], "trees": [], "lamps": [], "buildings": [], "spots": [], "works": []}
 
 
 static func _car(level: Dictionary, rng: RandomNumberGenerator, c: Vector2, yaw: float) -> void:
@@ -181,6 +182,13 @@ static func _car(level: Dictionary, rng: RandomNumberGenerator, c: Vector2, yaw:
 
 static func _line(level: Dictionary, a: Vector2, b: Vector2, width := 0.12, colour := "#F2F4F8", dash := 0.0) -> void:
 	level.lines.append({"a": a, "b": b, "w": width, "colour": colour, "dash": dash})
+
+
+## Roadworks closing the carriageway along a..b (an edge of `bounds`): a row of red and white
+## blocks just outside it, a milled patch with cones behind and the 1.25 sign at `sign`.
+static func _works(level: Dictionary, a: Vector2, b: Vector2, out: Vector2, sign := Vector2.INF) -> void:
+	level.works.append({"a": a, "b": b, "out": out, "depth": 7.0})
+	if sign != Vector2.INF: level.signs.append({"code": "1.25", "pos": sign, "yaw": PI})
 
 
 ## Perpendicular bays both sides of a lane running along x; the target is bay `target` of the north row.
@@ -233,10 +241,12 @@ static func _angled() -> Dictionary:
 	var f := forward(yaw)
 	var step := BAY_W / sin(PI / 3.0)
 	var z0 := -12.0
-	level.asphalt.append(rect(-3.5, -18.0, 9.5, 24.0))
-	level.sidewalks.append(rect(-6.5, -18.0, -3.5, 24.0))
-	level.sidewalks.append(rect(9.5, -18.0, 12.0, 24.0))
-	level.grass.append(rect(-60, -60, 60, 60))
+	level.asphalt.append(rect(-3.5, -18.0 - ROAD_BEYOND, 9.5, 24.0 + ROAD_BEYOND))
+	level.sidewalks.append(rect(-6.5, -18.0 - ROAD_BEYOND, -3.5, 24.0 + ROAD_BEYOND))
+	level.sidewalks.append(rect(9.5, -18.0 - ROAD_BEYOND, 12.0, 24.0 + ROAD_BEYOND))
+	level.grass.append(rect(-80, -130, 80, 130))
+	_works(level, Vector2(-3.5, -18.0), Vector2(9.5, -18.0), Vector2(0, -1), Vector2(10.4, -19.5))
+	_works(level, Vector2(-3.5, 24.0), Vector2(9.5, 24.0), Vector2(0, 1), Vector2(10.4, 25.5))
 	for i in 10:
 		var a := Vector2(CURB_X, z0 + i * step)
 		_line(level, a, a + f * BAY_D)
@@ -249,36 +259,45 @@ static func _angled() -> Dictionary:
 			_car(level, rng, c + f * rng.randf_range(-0.1, 0.2), yaw)
 	level.signs.append({"code": "6.4", "pos": Vector2(10.4, z0 + 9 * step + 1.0), "yaw": PI})
 	level.exit = [{"g": -1, "s": 0, "d": 2.2}, {"g": -1, "s": -1, "a": 60}, {"g": -1, "s": 0, "d": 9.0}]
-	for z in [-14.0, -4.0, 6.0, 16.0]:
+	for z in range(-74, 76, 10):
 		level.trees.append(Vector2(-5.2, z))
-		level.trees.append(Vector2(10.8, z + 4.0))
-	level.buildings.append({"prop": "buildings/block_1", "pos": Vector2(-18, 0), "yaw": PI * 0.5})
-	level.buildings.append({"prop": "buildings/tower_1", "pos": Vector2(24, 4), "yaw": -PI * 0.5})
+		if absf(z + 4.0 - 25.5) > 3.0: level.trees.append(Vector2(10.8, z + 4.0))
+	for z in range(-72, 80, 24):
+		level.buildings.append({"prop": "buildings/block_%d" % (absi(z) % 8), "pos": Vector2(-18, z), "yaw": PI * 0.5})
+		level.buildings.append({"prop": "buildings/tower_%d" % (absi(z) % 4), "pos": Vector2(24, z + 4), "yaw": -PI * 0.5})
 	level.bounds = Rect2(-3.5, -18.0, 13.0, 42.0)
 	level.spots.append({"box": level.target, "ok": true})
 	return level
 
 
-## A two-way street with the right kerb at CURB_X, northbound traffic on the right.
+## A two-way street with the right kerb at CURB_X, northbound traffic on the right. The drivable
+## stretch z0..z1 is closed by roadworks at both ends (and the side street at `crossing`), the
+## street itself goes on beyond them.
 static func _street(level: Dictionary, z0: float, z1: float, crossing := Vector2.ZERO) -> void:
-	level.asphalt.append(rect(-6.0, z0, CURB_X, z1))
-	level.grass.append(rect(-80, z0 - 40, 80, z1 + 40))
-	var parts := [Vector2(z0, z1)]
+	var far0 := z0 - ROAD_BEYOND
+	var far1 := z1 + ROAD_BEYOND
+	level.asphalt.append(rect(-6.0, far0, CURB_X, far1))
+	level.grass.append(rect(-130, far0 - 40, 130, far1 + 40))
+	var parts := [Vector2(far0, far1)]
+	_works(level, Vector2(-6.0, z0), Vector2(CURB_X, z0), Vector2(0, -1), Vector2(CURB_X + 0.9, z0 - 1.5))
+	_works(level, Vector2(-6.0, z1), Vector2(CURB_X, z1), Vector2(0, 1), Vector2(CURB_X + 0.9, z1 + 1.5))
 	if crossing != Vector2.ZERO:
-		level.asphalt.append(rect(-40.0, crossing.x, 40.0, crossing.y))
-		parts = [Vector2(z0, crossing.x), Vector2(crossing.y, z1)]
-		_line(level, Vector2(-40, (crossing.x + crossing.y) * 0.5), Vector2(-9, (crossing.x + crossing.y) * 0.5), 0.12, "#F2F4F8", 3.0)
-		_line(level, Vector2(7.5, (crossing.x + crossing.y) * 0.5), Vector2(40, (crossing.x + crossing.y) * 0.5), 0.12, "#F2F4F8", 3.0)
+		level.asphalt.append(rect(-120.0, crossing.x, 120.0, crossing.y))
+		parts = [Vector2(far0, crossing.x), Vector2(crossing.y, far1)]
+		_line(level, Vector2(-120, (crossing.x + crossing.y) * 0.5), Vector2(-9, (crossing.x + crossing.y) * 0.5), 0.12, "#F2F4F8", 3.0)
+		_line(level, Vector2(7.5, (crossing.x + crossing.y) * 0.5), Vector2(120, (crossing.x + crossing.y) * 0.5), 0.12, "#F2F4F8", 3.0)
+		_works(level, Vector2(CURB_X, crossing.x), Vector2(CURB_X, crossing.y), Vector2(1, 0))
+		_works(level, Vector2(-6.0, crossing.x), Vector2(-6.0, crossing.y), Vector2(-1, 0))
 	for part: Vector2 in parts:
 		level.sidewalks.append(rect(CURB_X, part.x, CURB_X + 4.0, part.y))
 		level.sidewalks.append(rect(-10.0, part.x, -6.0, part.y))
 		_line(level, Vector2(-1.5, part.x + 1.0), Vector2(-1.5, part.y - 1.0), 0.12, "#F2F4F8", 3.0)
 		var z := part.x + 4.0
 		while z < part.y - 2.0:
-			level.trees.append(Vector2(CURB_X + 3.0, z))
-			level.trees.append(Vector2(-9.0, z + 5.0))
+			if absf(z - z0) > 3.0 and absf(z - z1) > 3.0: level.trees.append(Vector2(CURB_X + 3.0, z))
+			if z + 5.0 < part.y - 1.0: level.trees.append(Vector2(-9.0, z + 5.0))
 			z += 11.0
-	for z in range(int(z0) + 6, int(z1), 24):
+	for z in range(int(far0) + 6, int(far1), 24):
 		level.buildings.append({"prop": "buildings/block_%d" % (absi(z) % 8), "pos": Vector2(19, z), "yaw": -PI * 0.5})
 		level.buildings.append({"prop": "buildings/home_%d" % (absi(z) % 6), "pos": Vector2(-22, z + 10), "yaw": PI * 0.5})
 

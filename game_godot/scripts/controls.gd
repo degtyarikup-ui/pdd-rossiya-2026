@@ -115,6 +115,13 @@ func _layout() -> void:
 	_buttons.brake.position = Vector2(right - _buttons.brake.size.x, _buttons.gas.position.y - PEDAL_GAP - _buttons.brake.size.y)
 
 
+## «Парковка» steers with its own wheel: the arrows are hidden and ignore touches, while
+## the keys still set `steer`.
+func show_arrows(on: bool) -> void:
+	for name in ["left", "right"]:
+		_buttons[name].visible = on
+
+
 ## Hidden and released while a question is on screen.
 func set_active(on: bool) -> void:
 	if on == active:
@@ -138,7 +145,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			for name in _buttons:
-				if _buttons[name].get_global_rect().grow(6).has_point(event.position):
+				if _buttons[name].visible and _buttons[name].get_global_rect().grow(6).has_point(event.position):
 					_fingers[event.index] = name
 					_press(name, true)
 					pressed.emit()

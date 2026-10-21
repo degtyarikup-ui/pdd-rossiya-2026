@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="rim" x1="0" y1="13" x2="0" y2="243" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4A4F59"/>
+      <stop offset="0.35" stop-color="#2A2D34"/>
+      <stop offset="1" stop-color="#121317"/>
+    </linearGradient>
+    <linearGradient id="spoke" x1="0" y1="110" x2="0" y2="165" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#40444D"/>
+      <stop offset="1" stop-color="#1D1F24"/>
+    </linearGradient>
+    <linearGradient id="spokeDown" x1="0" y1="150" x2="0" y2="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2E3138"/>
+      <stop offset="1" stop-color="#17191D"/>
+    </linearGradient>
+    <linearGradient id="hub" x1="0" y1="92" x2="0" y2="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3C4049"/>
+      <stop offset="1" stop-color="#18191E"/>
+    </linearGradient>
+    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2F4F7"/>
+      <stop offset="0.5" stop-color="#B9BEC7"/>
+      <stop offset="1" stop-color="#7D838D"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="12" x2="0" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4FA0FF"/>
+      <stop offset="1" stop-color="#0464D8"/>
+    </linearGradient>
+    <linearGradient id="badge" x1="0" y1="112" x2="0" y2="148" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B93FF"/>
+      <stop offset="1" stop-color="#0464D8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Spokes: left and right a little below the centre, one down. They run under the rim. -->
+  <path d="M96 108 C70 110 48 114 26 118 L26 150 C48 152 70 158 96 164 Z" fill="url(#spoke)"/>
+  <path d="M160 108 C186 110 208 114 230 118 L230 150 C208 152 186 158 160 164 Z" fill="url(#spoke)"/>
+  <path d="M110 150 L116 232 L140 232 L146 150 Z" fill="url(#spokeDown)"/>
+  <path d="M96 109 C70 111 48 115 26 119" fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="2"/>
+  <path d="M160 109 C186 111 208 115 230 119" fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="2"/>
+  <rect x="44" y="129" width="40" height="6" rx="3" fill="url(#chrome)"/>
+  <rect x="172" y="129" width="40" height="6" rx="3" fill="url(#chrome)"/>
+
+  <!-- Rim: leather with a soft edge, a gloss from above and stitched grips. -->
+  <circle cx="128" cy="128" r="101" fill="none" stroke="#08090B" stroke-opacity="0.45" stroke-width="34"/>
+  <circle cx="128" cy="128" r="101" fill="none" stroke="url(#rim)" stroke-width="30"/>
+  <circle cx="128" cy="128" r="87" fill="none" stroke="#000000" stroke-opacity="0.35" stroke-width="2.5"/>
+  <path d="M43.4 97.2 A90 90 0 0 1 212.6 97.2" fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="9" stroke-linecap="round"/>
+  <path d="M60 60 A96 96 0 0 1 196 60" fill="none" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32.8 152.9 A98 98 0 0 1 32.8 103.1" fill="none" stroke="#C9CED6" stroke-opacity="0.4" stroke-width="1.6" stroke-dasharray="3 3"/>
+  <path d="M223.2 103.1 A98 98 0 0 1 223.2 152.9" fill="none" stroke="#C9CED6" stroke-opacity="0.4" stroke-width="1.6" stroke-dasharray="3 3"/>
+
+  <!-- The centre mark at twelve o'clock. -->
+  <path d="M119.3 13.3 L136.7 13.3 L136.2 42.4 L119.8 42.4 Z" fill="url(#blue)"/>
+  <path d="M120 14.4 L136 14.4" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Hub with the airbag cover and the game's «P» badge. -->
+  <rect x="80" y="94" width="96" height="76" rx="28" fill="#0B0C0E" fill-opacity="0.45"/>
+  <rect x="82" y="92" width="92" height="72" rx="26" fill="url(#hub)"/>
+  <rect x="90" y="96" width="76" height="22" rx="11" fill="#FFFFFF" fill-opacity="0.09"/>
+  <rect x="82.5" y="92.5" width="91" height="71" rx="25.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="1"/>
+  <circle cx="128" cy="129" r="18" fill="url(#badge)" stroke="url(#chrome)" stroke-width="3"/>
+  <path fill-rule="evenodd" fill="#FFFFFF" d="M121 119 H130 A7.5 7.5 0 0 1 130 134 H126.6 V140 H121 Z M126.6 123.6 H129.6 A2.9 2.9 0 0 1 129.6 129.4 H126.6 Z"/>
+</svg>

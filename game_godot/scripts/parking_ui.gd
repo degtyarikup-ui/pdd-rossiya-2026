@@ -1,6 +1,7 @@
 ## Native UI of «Парковка»: the regulator's top bar (close, a HUD card with score, level and
-## lives), a short toast, the D/R switch above the city's steering controls
-## (scripts/controls.gd) and the shared result screen. Laid out in dp like RegulatorUi.
+## lives), a short toast, the steering wheel (scripts/parking_wheel.gd) in place of the city's
+## arrows with the D/R switch above it, and the shared result screen. The pedals stay the
+## city's (scripts/controls.gd). Laid out in dp like RegulatorUi.
 class_name ParkingUi
 extends Control
 
@@ -28,8 +29,7 @@ var _reverse_label: Label
 var _drive_style: StyleBoxFlat
 var _reverse_style: StyleBoxFlat
 var _selected_gear := 1
-var _gear_hint := false
-var _clock := 0.0
+var wheel: ParkingWheel
 var _compact := false
 var _controls_top := 0.0
 var _bar_width := 0.0
@@ -45,6 +45,8 @@ func _init() -> void:
 	_build_top_bar()
 	_build_toast()
 	_build_gear()
+	wheel = ParkingWheel.new()
+	add_child(wheel)
 	results = MiniGameResults.new()
 	results.restart_pressed.connect(func(): restart_pressed.emit())
 	results.exit_pressed.connect(func(): exit_pressed.emit())
@@ -74,11 +76,16 @@ func _layout() -> void:
 	var usable_h := size.y - top - bottom - 40.0
 	var fit := minf(1.0, minf((usable_w - 12.0 - 16.0) / 264.0, (usable_h - 14.0) / 208.0))
 	fit = maxf(0.2, fit)
+	# The wheel takes the arrows' width, the switch sits above it.
 	var arrows := 2.0 * 80.0 * fit + 12.0
 	var gear_h := 44.0 if _compact else GEAR_H
+	var wheel_d := arrows
+	if _compact: wheel_d = minf(arrows, size.y - top - bottom - 2.0 * SCREEN_PAD - CHROME - 12.0 - gear_h - 14.0)
+	wheel.size = Vector2(wheel_d, wheel_d)
+	wheel.position = Vector2(SCREEN_PAD + left + (arrows - wheel_d) * 0.5, size.y - SCREEN_PAD - bottom - wheel_d)
 	_gear.size = Vector2(arrows, gear_h)
-	_gear.position = Vector2(SCREEN_PAD + left, size.y - SCREEN_PAD - bottom - 80.0 * fit - 14.0 - gear_h)
-	_controls_top = size.y - SCREEN_PAD - bottom - 208.0 * fit - 14.0
+	_gear.position = Vector2(SCREEN_PAD + left, wheel.position.y - 14.0 - gear_h)
+	_controls_top = minf(size.y - SCREEN_PAD - bottom - 208.0 * fit - 14.0, _gear.position.y)
 	var scene_top := _top_bar.position.y + CHROME + 12.0
 	var scene_area := Rect2(SCREEN_PAD + left + 4.0, scene_top, usable_w - 8.0, maxf(1.0, _controls_top - 12.0 - scene_top))
 	_toast_bounds = Rect2(SCREEN_PAD + left, scene_top, usable_w, maxf(24.0, _controls_top - scene_top - 12.0))
@@ -196,19 +203,6 @@ func _build_gear() -> void:
 	add_child(_gear)
 
 
-func _process(delta: float) -> void:
-	if not _gear.visible: return
-	if not _gear_hint:
-		if _gear.scale != Vector2.ONE: _gear.scale = Vector2.ONE
-		return
-	_clock += delta
-	# The switch breathes while the shown way needs the other gear.
-	var k := 0.5 + 0.5 * sin(_clock * 6.0)
-	_gear.scale = Vector2.ONE * (1.0 + 0.025 * k)
-	_gear.pivot_offset = _gear.size * 0.5
-	_gear_style.border_color = (Ui.c("gold") if _selected_gear > 0 else Ui.c("accent")).lerp(Ui.c("card"), 0.35 * (1.0 - k))
-
-
 func set_hud(score: int, level: int, count: int, lives: int) -> void:
 	var changed := _score_label.text != str(score) or _level_label.text != "%d/%d" % [level, count]
 	if changed:
@@ -222,16 +216,15 @@ func set_hud(score: int, level: int, count: int, lives: int) -> void:
 			_hearts[i].add_theme_color_override("font_color", Ui.c("red") if i < lives else Ui.c("secondary"))
 
 
-func set_gear(gear: int, hint: bool) -> void:
-	if _selected_gear == gear and _gear_hint == hint: return
+## The selected letter sits on the accent, like a selected tab of the app; no border, no motion.
+func set_gear(gear: int) -> void:
+	if _selected_gear == gear: return
 	_selected_gear = gear
-	_gear_hint = hint
 	var reverse := gear < 0
 	_drive_style.bg_color = Color.TRANSPARENT if reverse else Ui.c("accent")
-	_reverse_style.bg_color = Ui.c("gold") if reverse else Color.TRANSPARENT
+	_reverse_style.bg_color = Ui.c("accent") if reverse else Color.TRANSPARENT
 	_gear_label.add_theme_color_override("font_color", Ui.c("secondary") if reverse else Ui.c("white"))
-	_reverse_label.add_theme_color_override("font_color", Ui.c("text") if reverse else Ui.c("secondary"))
-	_gear_style.set_border_width_all(2 if hint else 0)
+	_reverse_label.add_theme_color_override("font_color", Ui.c("white") if reverse else Ui.c("secondary"))
 
 
 ## kind: "good", "bad" or "" (neutral).
@@ -272,6 +265,8 @@ func _center_toast() -> void:
 func show_results(score: int, solved: int, wrong: int, combo: int, record: bool, best: int, model: String, paint: Color) -> void:
 	_top_bar.visible = false
 	_gear.visible = false
+	wheel.visible = false
+	wheel.release()
 	if is_instance_valid(_toast_tween): _toast_tween.kill()
 	_toast.modulate.a = 0.0
 	results.set_vehicle(model, paint)
@@ -284,6 +279,7 @@ func hide_results() -> void:
 	results.hide_results()
 	_top_bar.visible = true
 	_gear.visible = true
+	wheel.visible = true
 	_toast.modulate.a = 0.0
 
 

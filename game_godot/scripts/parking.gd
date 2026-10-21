@@ -1,5 +1,6 @@
 ## «Парковка» mini-game on Godot: five lots/streets (scripts/parking_levels.gd), the city's
-## pedals and arrows (scripts/controls.gd) plus a D/R switch, the garage car, and the way into
+## pedals (scripts/controls.gd), a steering wheel that keeps its lock (scripts/parking_wheel.gd)
+## and a D/R switch, the garage car, and the way into
 ## the spot drawn on the asphalt: paired rails, blue forwards and gold in reverse,
 ## steering checkpoints and a short forecast of the current wheel angle. The camera looks down and keeps the car and the spot
 ## in frame. A touch costs a life; the last level asks to pick the only legal space (п. 12.4).
@@ -15,8 +16,8 @@ const VMAX_R := 1.9
 const ACCEL := 1.8
 const COAST := 1.5
 const BRAKE := 6.5
-const STEER_RATE := 1.7          # rad/s of the front wheels while an arrow is held
-const CENTRE_RATE := 2.4         # back to straight once it is released
+const STEER_RATE := 2.6          # rad/s: the front wheels follow the steering wheel
+const KEY_TURN := 0.9            # steering wheel (full lock = 1) per second while A/D is held
 const HOLD := 0.55               # standing still in the spot this long parks the car
 const HIT_SPEED := 0.2
 const PITCH := deg_to_rad(58.0)
@@ -92,6 +93,7 @@ func _ready() -> void:
 	add_child(sound)
 	controls = ControlsScript.new()
 	add_child(controls)
+	controls.show_arrows(false)
 	var layer := CanvasLayer.new()
 	layer.layer = 11
 	add_child(layer)
@@ -201,6 +203,7 @@ func _load_level(index: int) -> void:
 	root3d = Node3D.new()
 	add_child(root3d)
 	_build_ground()
+	_build_works()
 	_build_props()
 	_build_spots()
 	_build_car()
@@ -208,6 +211,7 @@ func _load_level(index: int) -> void:
 	pose = way[0].poses[0]
 	speed = 0.0
 	steer = 0.0
+	ui.wheel.set_value(0.0)
 	gear = 1
 	hold = 0.0
 	level_touches = 0
@@ -222,8 +226,7 @@ func _load_level(index: int) -> void:
 
 func _refresh_hud() -> void:
 	ui.set_hud(score, level_index + 1, ParkingLevels.COUNT, lives)
-	var want: int = way[segment].gear if level.show_path else gear
-	ui.set_gear(gear, level.show_path and want != gear and not is_game_over)
+	ui.set_gear(gear)
 
 
 # --- Scenery ---
@@ -234,6 +237,7 @@ func _mat(key: String) -> Material:
 			"asphalt": _mats[key] = sc.surface_material("asphalt", Color("#3A3D44"))
 			"pavement": _mats[key] = sc.surface_material("pavement", sc.color("sidewalk"))
 			"grass": _mats[key] = sc.surface_material("grass", sc.color("ground"))
+			"milled": _mats[key] = sc.surface_material("asphalt", Color("#50535A"))
 			_:
 				var m := StandardMaterial3D.new()
 				m.albedo_color = Color(key)
@@ -274,6 +278,92 @@ func _build_ground() -> void:
 			_paint_line(Vector2(zig.x - (k % 2) * 0.9, z), Vector2(zig.x - ((k + 1) % 2) * 0.9, z + 1.0), 0.14, "#F5C400", 0.0)
 			z += 1.0
 			k += 1
+
+
+## Roadworks (ParkingLevels._works): the closure is the edge of the level, so touching its
+## blocks is a touch like any kerb. Blocks are batched per colour, cones are one MultiMesh.
+func _build_works() -> void:
+	if level.works.is_empty(): return
+	var red := SurfaceTool.new()
+	var white := SurfaceTool.new()
+	for st in [red, white]: st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var cones: Array[Transform3D] = []
+	for w: Dictionary in level.works:
+		var a: Vector2 = w.a
+		var b: Vector2 = w.b
+		var out: Vector2 = w.out
+		var depth: float = w.depth
+		var length := a.distance_to(b)
+		var dir := (b - a) / length
+		var yaw := atan2(out.x, out.y)
+		_flat(ParkingLevels.box((a + b) * 0.5 + out * (depth * 0.5 + 0.1), length * 0.5, depth * 0.5, yaw), 0.014, _mat("milled"))
+		var n := ceili(length / 1.2)
+		var piece := length / n
+		for i in n:
+			var c := a + dir * piece * (i + 0.5) + out * 0.32
+			var st: SurfaceTool = red if i % 2 == 0 else white
+			_block(st, c, dir, Vector3(piece - 0.05, 0.55, 0.5), 0.0)
+			_block(st, c, dir, Vector3(piece - 0.12, 0.3, 0.3), 0.55)
+		for row in 2:
+			var along := 1.0 + row * 1.1
+			while along < length - 0.6:
+				var at := a + dir * along + out * (1.7 + row * 2.6)
+				cones.append(Transform3D(Basis(Vector3.UP, along), Vector3(at.x, 0.0, at.y)))
+				along += 2.2
+	for pair in [[red, "#D43C36"], [white, "#F2F4F8"]]:
+		var node := MeshInstance3D.new()
+		node.mesh = (pair[0] as SurfaceTool).commit()
+		var paint := _mat(pair[1]).duplicate() as StandardMaterial3D
+		paint.cull_mode = BaseMaterial3D.CULL_DISABLED
+		node.material_override = paint
+		root3d.add_child(node)
+	# A cone: a dark foot, an orange body and a white band.
+	var parts := [[_cylinder(0.05, 0.17, 0.62), 0.31, "#FF6A1A"], [_cylinder(0.105, 0.125, 0.09), 0.36, "#F2F4F8"],
+		[_box_mesh(Vector3(0.42, 0.04, 0.42)), 0.02, "#2B2F36"]]
+	for part: Array in parts:
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = part[0]
+		mm.instance_count = cones.size()
+		for i in cones.size(): mm.set_instance_transform(i, cones[i].translated(Vector3(0, float(part[1]), 0)))
+		var node := MultiMeshInstance3D.new()
+		node.multimesh = mm
+		node.material_override = _mat(part[2])
+		root3d.add_child(node)
+
+
+func _cylinder(top: float, bottom: float, height: float) -> CylinderMesh:
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = top
+	mesh.bottom_radius = bottom
+	mesh.height = height
+	mesh.radial_segments = 12
+	mesh.rings = 1
+	return mesh
+
+
+func _box_mesh(size: Vector3) -> BoxMesh:
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	return mesh
+
+
+## A box standing at height y0 on the ground point c, its length (size.x) along `dir`.
+func _block(st: SurfaceTool, c: Vector2, dir: Vector2, size: Vector3, y0: float) -> void:
+	var x := Vector3(dir.x, 0, dir.y) * size.x * 0.5
+	var z := Vector3(-dir.y, 0, dir.x) * size.z * 0.5
+	var base := Vector3(c.x, y0, c.y)
+	var up := Vector3(0, size.y, 0)
+	var p := [base - x - z, base + x - z, base + x + z, base - x + z]
+	var faces := [[p[0] + up, p[1] + up, p[2] + up, p[3] + up, Vector3.UP]]
+	for i in 4:
+		var q0: Vector3 = p[i]
+		var q1: Vector3 = p[(i + 1) % 4]
+		faces.append([q0, q1, q1 + up, q0 + up, (q0 + q1 - base * 2.0).normalized()])
+	for f: Array in faces:
+		for k in [0, 1, 2, 0, 2, 3]:
+			st.set_normal(f[4])
+			st.add_vertex(f[k])
 
 
 func _paint_line(a: Vector2, b: Vector2, width: float, colour: String, dash: float) -> void:
@@ -415,8 +505,8 @@ func _build_way() -> void:
 
 func _paint_way() -> void:
 	if not is_instance_valid(guide): return
-	guide.update_state(pose, steer, gear, speed, segment, _guide_index,
-		level.show_path and done_timer < 0.0 and not is_game_over, 0.0)
+	var driving := done_timer < 0.0 and not is_game_over
+	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, 0.0, driving)
 
 
 ## Progress follows the rear axle used by the driving model, including manual corrections.
@@ -442,8 +532,8 @@ func _segment_progress() -> Dictionary:
 func _update_guidance(delta: float) -> void:
 	var progress := _segment_progress()
 	_guide_index = progress.index
-	guide.update_state(pose, steer, gear, speed, segment, _guide_index,
-		level.show_path and done_timer < 0.0 and not is_game_over, delta)
+	var driving := done_timer < 0.0 and not is_game_over
+	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, delta, driving)
 
 
 # --- Driving ---
@@ -482,18 +572,18 @@ func _process(delta: float) -> void:
 
 
 func _step(dt: float) -> void:
-	var want_steer: float = controls.steer * ParkingLevels.MAX_STEER
 	var gas: bool = controls.gas
 	var brake: bool = controls.brake
 	if auto_drive: _autopilot()
 	if auto_drive:
-		want_steer = _auto.steer
 		gas = _auto.gas
 		brake = _auto.brake
-		steer = want_steer
+		steer = _auto.steer
+		ui.wheel.set_value(steer / ParkingLevels.MAX_STEER)
 	else:
-		var rate := STEER_RATE if absf(want_steer) > absf(steer) or signf(want_steer) != signf(steer) else CENTRE_RATE
-		steer = move_toward(steer, want_steer, rate * dt)
+		# The wheel stays where the driver leaves it; the keys turn it while held.
+		ui.wheel.nudge(controls.steer * KEY_TURN * dt)
+		steer = move_toward(steer, ui.wheel.value * ParkingLevels.MAX_STEER, STEER_RATE * dt)
 	var vmax := VMAX_D if gear > 0 else VMAX_R
 	if auto_drive: vmax = _auto.vmax
 	if brake: speed = move_toward(speed, 0.0, BRAKE * dt)

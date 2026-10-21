@@ -17,6 +17,7 @@ func _init() -> void:
 	await _check_rendered_guidance(guide_script)
 	await _check_manual_progress()
 	await _check_ui()
+	await _check_wheel()
 	print("parking_guidance_check: %d passed, %d failed" % [passed, failed])
 	quit(1 if failed > 0 else 0)
 
@@ -88,15 +89,17 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 			_check("segment %d: only the next action gate is shown" % segment, marker.root.is_visible_in_tree() == (i == segment and i < way.size() - 1))
 			for label: Label3D in marker.labels:
 				_check("floor markers use only the required gear letter", label.text in ["D", "R"])
-	# A second pair of straight lines adds no information when already on the route.
+	# The driver's own forecast is always on while driving, also straight along the route.
 	var start: Vector3 = way[0].poses[0]
 	var selected_gear: int = way[0].gear
 	guide.update_state(start, 0.0, selected_gear, 0.0, 0, 0, true, 0.1)
-	_check("preview: aligned straight path stays uncluttered", not guide._prediction.visible)
+	_check("preview: shown on the straight route", guide._prediction.is_visible_in_tree())
 	guide.update_state(start, ParkingLevels.MAX_STEER, selected_gear, 0.0, 0, 0, true, 0.1)
-	_check("preview: steering exposes the actual turning envelope", guide._prediction.visible)
-	guide.update_state(start, 0.0, -selected_gear, 0.0, 0, 0, true, 0.1)
-	_check("preview: the other gear exposes the actual direction", guide._prediction.visible)
+	_check("preview: shown while steering", guide._prediction.is_visible_in_tree())
+	guide.update_state(start, 0.0, -selected_gear, 0.0, 0, 0, true, 0.1, false)
+	_check("preview: hidden once driving is over", not guide._prediction.is_visible_in_tree())
+	_check("preview: dashes only, no arrow", guide._prediction_mesh.get_surface_count() == 1
+		and (guide._prediction_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() == 72)
 	# The rules level must not disclose the legal space through an authored route.
 	level = ParkingLevels.build(4)
 	way = ParkingLevels.way_in(level, geo)
@@ -107,7 +110,7 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 		_check("rules: action marker is hidden before an incorrect choice", not data.marker.root.is_visible_in_tree())
 	_check("rules: route arrows are hidden", not guide._chevrons.is_visible_in_tree())
 	_check("rules: finishing footprint is hidden", not guide._goal.is_visible_in_tree())
-	_check("rules: steering prediction is hidden", not guide._prediction.is_visible_in_tree())
+	_check("rules: steering prediction is still shown", guide._prediction.is_visible_in_tree())
 	guide.queue_free()
 	await process_frame
 
@@ -150,7 +153,7 @@ func _check_manual_progress() -> void:
 			if scene.gear != int(leg.gear): scene._toggle_gear()
 			scene.controls.gas = false
 			scene.controls.brake = true
-			scene.controls.steer = float(leg.steer)
+			scene.ui.wheel.set_value(float(leg.steer))
 			for frame in 90: scene._step(dt)
 			var remaining: float = leg.length
 			for frame in 120 * 40:
@@ -195,15 +198,21 @@ func _check_ui() -> void:
 			_check("UI: camera has a useful opening" + suffix, area.size.x >= 16.0 and area.size.y >= 16.0 and _contained(area, viewport_size))
 			_check("UI: driving view starts directly below the HUD" + suffix, area.position.y >= ui._top_bar.get_global_rect().end.y and area.position.y <= ui._top_bar.get_global_rect().end.y + 20.0)
 			for gear in [1, -1]:
-				for hint in [false, true]:
-					ui.set_gear(gear, hint)
-					await process_frame
-					await process_frame
-					var detail := "%s gear %d hint %s" % [suffix, gear, hint]
-					_check("UI: D/R control stays inside viewport" + detail, _contained(ui._gear.get_global_rect(), viewport_size))
-					_check("UI: D/R letters remain visible" + detail, _labels_fit(ui._gear) and ui._gear_label.text == "D" and ui._reverse_label.text == "R")
-					_check("UI: selected gear is highlighted" + detail, (ui._drive_style.bg_color.a > 0.0) == (gear > 0) and (ui._reverse_style.bg_color.a > 0.0) == (gear < 0))
-			ui.set_gear(1, false)
+				ui.set_gear(gear)
+				await process_frame
+				await process_frame
+				var detail := "%s gear %d" % [suffix, gear]
+				_check("UI: D/R control stays inside viewport" + detail, _contained(ui._gear.get_global_rect(), viewport_size))
+				_check("UI: D/R letters remain visible" + detail, _labels_fit(ui._gear) and ui._gear_label.text == "D" and ui._reverse_label.text == "R")
+				_check("UI: selected gear is highlighted" + detail, (ui._drive_style.bg_color.a > 0.0) == (gear > 0) and (ui._reverse_style.bg_color.a > 0.0) == (gear < 0))
+				var selected := ui._reverse_style if gear < 0 else ui._drive_style
+				_check("UI: both gears use the accent, without a border" + detail, selected.bg_color == Ui.c("accent") and ui._gear_style.border_width_left == 0 and ui._gear.scale == Vector2.ONE)
+			ui.set_gear(1)
+			var wheel_rect := ui.wheel.get_global_rect()
+			_check("UI: steering wheel stays inside viewport" + suffix, _contained(wheel_rect, viewport_size))
+			_check("UI: steering wheel is a usable round control" + suffix, wheel_rect.size.x >= 120.0 and is_equal_approx(wheel_rect.size.x, wheel_rect.size.y))
+			_check("UI: switch sits above the wheel" + suffix, ui._gear.get_global_rect().end.y <= wheel_rect.position.y + 1.0)
+			_check("UI: camera opening clears the wheel" + suffix, not area.intersects(wheel_rect) and not area.intersects(ui._gear.get_global_rect()))
 			for key in ["gameParkingFindSpot", "gameParkingBusStop", "gameParkingNoStopping", "gameParkingJunction"]:
 				ui.toast(Ui.t(key), "" if key == "gameParkingFindSpot" else "bad", 0.1)
 				await process_frame
@@ -212,12 +221,88 @@ func _check_ui() -> void:
 				_check("UI: feedback fits the viewport" + suffix + " " + key, _contained(ui._toast.get_global_rect(), viewport_size) and _labels_fit(ui._toast))
 				_check("UI: feedback does not move the camera opening" + suffix + " " + key, ui.play_rect().is_equal_approx(area))
 	ui.show_results(500, 5, 0, 5, true, 400, "sedan", Color("#0574F8"))
-	_check("UI: results hide the driving HUD", ui.results.visible and not ui._top_bar.visible and not ui._gear.visible and is_zero_approx(ui._toast.modulate.a))
+	_check("UI: results hide the driving HUD", ui.results.visible and not ui._top_bar.visible and not ui._gear.visible and not ui.wheel.visible and is_zero_approx(ui._toast.modulate.a))
 	ui.hide_results()
 	_check("UI: restart restores the compact driving HUD", not ui.results.visible and ui._top_bar.visible and ui._gear.visible)
 	ui.queue_free()
 	Ui.lang = previous_lang
 	await process_frame
+
+
+## The wheel turns with a finger around it, keeps its position after release, straightens on
+## a double tap, and the car's front wheels follow it and keep the lock.
+func _check_wheel() -> void:
+	root.content_scale_size = Vector2i(390, 844)
+	root.size = Vector2i(390, 844)
+	var scene: Node = load("res://parking.tscn").instantiate()
+	root.add_child(scene)
+	for i in 4: await process_frame
+	scene._load_level(0)
+	scene.set_process(false)
+	var wheel: ParkingWheel = scene.ui.wheel
+	_check("wheel: replaces the steering arrows", not scene.controls._buttons.left.visible and not scene.controls._buttons.right.visible)
+	var c := wheel.get_global_rect().get_center()
+	var r := wheel.get_global_rect().size.x * 0.5
+	_touch(wheel, 0, c + Vector2(0, -r * 0.7), true)
+	# A quarter turn clockwise, from the top to the right of the rim: half the lock to the right.
+	for k in range(1, 11):
+		_drag(wheel, 0, c + Vector2.from_angle(-PI * 0.5 + PI * 0.5 * k / 10.0) * r * 0.7)
+	_check("wheel: a quarter turn clockwise is half the right lock (%.2f)" % wheel.value, absf(wheel.value + 0.5) < 0.02)
+	_touch(wheel, 0, c + Vector2(r * 0.7, 0), false)
+	_check("wheel: stays turned after release", absf(wheel.value + 0.5) < 0.02)
+	scene.controls.gas = false
+	scene.controls.brake = true
+	for i in 120: scene._step(1.0 / 60.0)
+	_check("wheel: front wheels keep the lock (%.2f)" % scene.steer, absf(scene.steer + 0.5 * ParkingLevels.MAX_STEER) < 0.01)
+	# Turning further past the lock is clamped, and turning back responds at once.
+	_touch(wheel, 0, c + Vector2(0, -r * 0.7), true)
+	for k in range(1, 31): _drag(wheel, 0, c + Vector2.from_angle(-PI * 0.5 + PI * 1.5 * k / 30.0) * r * 0.7)
+	_check("wheel: clamped at full lock", is_equal_approx(wheel.value, -1.0))
+	_drag(wheel, 0, c + Vector2.from_angle(PI - 0.4) * r * 0.7)
+	_check("wheel: turning back responds at once", wheel.value > -0.9)
+	_touch(wheel, 0, c + Vector2.from_angle(PI - 0.4) * r * 0.7, false)
+	# Near the hub a sideways drag turns the wheel too.
+	wheel.set_value(0.0)
+	_touch(wheel, 1, c, true)
+	_drag(wheel, 1, c + Vector2(-r * 0.2, 0))
+	_check("wheel: a sideways drag at the hub turns left", wheel.value > 0.05)
+	_touch(wheel, 1, c + Vector2(-r * 0.2, 0), false)
+	# Double tap straightens.
+	for tap in 2:
+		_touch(wheel, 2, c + Vector2(r * 0.4, r * 0.3), true)
+		_touch(wheel, 2, c + Vector2(r * 0.4, r * 0.3), false)
+	for i in 60:
+		wheel._process(1.0 / 60.0)
+	_check("wheel: a double tap straightens it", is_zero_approx(wheel.value))
+	# The keys turn the wheel while held and leave it there.
+	scene.controls.steer = 1.0
+	for i in 30: scene._step(1.0 / 60.0)
+	scene.controls.steer = 0.0
+	var kept := wheel.value
+	for i in 30: scene._step(1.0 / 60.0)
+	_check("wheel: keys turn it and leave it (%.2f)" % kept, kept > 0.3 and is_equal_approx(wheel.value, kept))
+	# A touch outside the wheel does not grab it.
+	wheel.set_value(0.0)
+	_touch(wheel, 3, c + Vector2(r * 1.5, -r * 1.5), true)
+	_check("wheel: ignores touches outside it", not wheel.held())
+	_touch(wheel, 3, c + Vector2(r * 1.5, -r * 1.5), false)
+	scene.queue_free()
+	await process_frame
+
+
+func _touch(wheel: ParkingWheel, index: int, at: Vector2, down: bool) -> void:
+	var e := InputEventScreenTouch.new()
+	e.index = index
+	e.position = at
+	e.pressed = down
+	wheel._input(e)
+
+
+func _drag(wheel: ParkingWheel, index: int, at: Vector2) -> void:
+	var e := InputEventScreenDrag.new()
+	e.index = index
+	e.position = at
+	wheel._input(e)
 
 
 func _contained(rect: Rect2, viewport_size: Vector2i) -> bool:

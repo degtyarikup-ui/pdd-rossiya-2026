@@ -2,6 +2,7 @@
 ## finishing footprint and a separate short prediction of the driver's current lock.
 ## Static geometry is built once. Progress clips the route in a shader, chevrons use
 ## measured arc length, and the small live prediction updates at most twenty times/s.
+## The prediction is shown on every level while driving, also where the route is hidden.
 class_name ParkingGuide
 extends Node3D
 
@@ -35,6 +36,7 @@ void fragment() {
 var _geo: Dictionary = {}
 var _level: Dictionary = {}
 var _segments: Array[Dictionary] = []
+var _route: Node3D               # the authored way: rails, gates, chevrons and the footprint
 var _chevrons: MultiMeshInstance3D
 var _goal: Node3D
 var _prediction: MeshInstance3D
@@ -80,6 +82,9 @@ func setup(level: Dictionary, way: Array, geometry: Dictionary) -> void:
 	_preview_elapsed = PREVIEW_INTERVAL
 	_last_segment = -1
 	_last_visible = false
+	_route = Node3D.new()
+	_route.name = "Route"
+	add_child(_route)
 	var shader := Shader.new()
 	shader.code = ROUTE_SHADER
 	for i in way.size():
@@ -98,7 +103,7 @@ func setup(level: Dictionary, way: Array, geometry: Dictionary) -> void:
 		var path := _route_mesh(poses, distances)
 		path.material_override = mat
 		path.name = "Route%d" % (i + 1)
-		add_child(path)
+		_route.add_child(path)
 		var next_gear: int = int(way[i + 1].gear) if i + 1 < way.size() else int(segment.gear)
 		var next_steer: int = int(way[i + 1].steer) if i + 1 < way.size() else 2
 		var gate := _build_gate(poses.back(), i + 1, int(segment.gear), next_gear, next_steer)
@@ -116,12 +121,18 @@ func setup(level: Dictionary, way: Array, geometry: Dictionary) -> void:
 	visible = false
 
 
+## `forecast`: the driver's own prediction, independent of the authored route.
 func update_state(pose: Vector3, steering: float, selected_gear: int, _speed: float,
-		segment: int, progress_index: int, visible_way: bool, delta: float) -> void:
+		segment: int, progress_index: int, visible_way: bool, delta: float, forecast := true) -> void:
 	_clock += maxf(0.0, delta)
 	_preview_elapsed += maxf(0.0, delta)
-	visible = visible_way and not _segments.is_empty()
-	if not visible:
+	_prediction.visible = forecast
+	if forecast and _preview_elapsed >= PREVIEW_INTERVAL:
+		_preview_elapsed = fmod(_preview_elapsed, PREVIEW_INTERVAL)
+		_update_prediction(pose, steering, selected_gear)
+	_route.visible = visible_way and not _segments.is_empty()
+	visible = forecast or _route.visible
+	if not _route.visible:
 		_last_visible = false
 		return
 	var current := clampi(segment, 0, _segments.size() - 1)
@@ -151,14 +162,6 @@ func update_state(pose: Vector3, steering: float, selected_gear: int, _speed: fl
 			cutoff = lerpf(distances[k], distances[k + 1], t)
 	(active.material as ShaderMaterial).set_shader_parameter("cutoff", cutoff)
 	_update_chevrons(active, cutoff)
-	# Identical straight rails add no information. Reveal the forecast when the
-	# driver turns or deviates from the authored path, or selects the other gear.
-	var route_centre := body_centre(active.poses[k], _geo)
-	_prediction.visible = absf(steering) > 0.03 or selected_gear != int(active.gear) \
-		or body_centre(pose, _geo).distance_to(route_centre) > 0.45
-	if _preview_elapsed >= PREVIEW_INTERVAL:
-		_preview_elapsed = fmod(_preview_elapsed, PREVIEW_INTERVAL)
-		_update_prediction(pose, steering, selected_gear)
 
 
 func _floor_material(colour: Color, alpha: float, priority := 2) -> StandardMaterial3D:
@@ -251,7 +254,7 @@ func _build_chevrons() -> void:
 	mat.vertex_color_use_as_albedo = true
 	_chevrons.material_override = mat
 	_chevrons.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(_chevrons)
+	_route.add_child(_chevrons)
 
 
 func _sample_pose(data: Dictionary, distance: float) -> Vector3:
@@ -365,7 +368,7 @@ func _steering_symbol(st: SurfaceTool, centre: Vector2, next_steer: int) -> void
 func _build_gate(end: Vector3, stage: int, current_gear: int, next_gear: int, next_steer := 2) -> Dictionary:
 	var root := Node3D.new()
 	root.name = "Stage%dGate" % stage
-	add_child(root)
+	_route.add_child(root)
 	var centre := body_centre(end, _geo)
 	var f := ParkingLevels.forward(end.z)
 	var right := Vector2(f.y, -f.x)
@@ -391,7 +394,7 @@ func _build_gate(end: Vector3, stage: int, current_gear: int, next_gear: int, ne
 func _build_goal() -> void:
 	_goal = Node3D.new()
 	_goal.name = "ExactParkingFootprint"
-	add_child(_goal)
+	_route.add_child(_goal)
 	if _segments.is_empty(): return
 	var last: Vector3 = _segments.back().poses.back()
 	var centre := body_centre(last, _geo)
@@ -448,7 +451,7 @@ func _update_prediction(pose: Vector3, steering: float, selected_gear: int) -> v
 	_prediction_mesh.clear_surfaces()
 	if _preview_points.size() < 2: return
 	_prediction_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
-	# Six paired dashes, at the actual leading corners of the body (72 vertices).
+	# Six paired dashes at the actual leading corners of the body (72 vertices), no arrow.
 	# They emerge from the bumper and describe its swept envelope with this lock.
 	for i in 6:
 		var start := 0.13 + float(i) * 0.57
@@ -456,15 +459,4 @@ func _update_prediction(pose: Vector3, steering: float, selected_gear: int) -> v
 		var b := _preview_at(minf(start + 0.31, PREVIEW_DISTANCE))
 		for side in [-1.0, 1.0]:
 			_preview_dash(_predicted_edge(a, side, selected_gear), _predicted_edge(b, side, selected_gear), 0.06)
-	# One hollow arrow at the leading edge: its direction follows displacement in R.
-	var end: Vector3 = _preview_points.back()
-	var before: Vector3 = _preview_points[_preview_points.size() - 2]
-	var f := ParkingLevels.forward(end.z)
-	var centre := body_centre(end, _geo) + f * float(_geo.half_length) * float(selected_gear)
-	var direction := (_predicted_edge(end, 0.0, selected_gear) - _predicted_edge(before, 0.0, selected_gear)).normalized()
-	var right := Vector2(direction.y, -direction.x)
-	var tip := centre + direction * 0.12
-	var notch := centre - direction * 0.1
-	var tail := centre - direction * 0.32
-	for point in [tip, tail + right * 0.26, notch, tip, notch, tail - right * 0.26]: _preview_vertex(point)
 	_prediction_mesh.surface_end()
