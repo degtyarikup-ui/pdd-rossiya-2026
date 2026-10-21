@@ -1,5 +1,6 @@
-// Раздел «ИИ»: отдельная разметка поверх существующего клиента и API.
-// Все управляющие ID и значения моделей сохранены из legacy admin HTML.
+import { AI_MODELS, AI_DEFAULT_MODEL } from './ai_models.js';
+
+// Раздел «ИИ»: разметка и клиент поверх исторической оболочки админки.
 export const AI_VIEW_HTML = String.raw`
 <div id="ai-view" style="display:none;">
 <style>
@@ -67,11 +68,9 @@ export const AI_VIEW_HTML = String.raw`
   <div class="ai-field">
    <label class="ai-field-label" for="ai-model-select">Модель для разбора вопросов</label>
    <select id="ai-model-select" class="ai-input">
-    <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
-    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+    ${Object.entries(AI_MODELS).map(([id, model]) => `<option value="${id}">${model.name}</option>`).join('\n    ')}
    </select>
+   <div class="ai-scope" id="ai-model-description" aria-live="polite">${AI_MODELS[AI_DEFAULT_MODEL].description}</div>
   </div>
   <div class="ai-model-actions"><button type="button" class="btn-action btn-primary" id="save-ai-model-btn">Применить модель</button></div>
   <details class="ai-scope admin-disclosure"><summary>Область применения</summary><p>Выбранная модель применяется сразу для всех пользователей приложения.</p></details>
@@ -80,10 +79,88 @@ export const AI_VIEW_HTML = String.raw`
   <div class="ai-card-head"><h2 class="ai-card-title" id="ai-test-title">Проверка ответа</h2></div>
   <div class="ai-test-inputs">
    <div class="ai-field"><label class="ai-field-label" for="ai-test-prompt">Вопрос</label><input type="text" id="ai-test-prompt" class="ai-input" placeholder="Вопрос по ПДД" value="Разрешен ли разворот на пешеходном переходе?"></div>
-   <button type="button" class="btn-action btn-primary" id="ai-test-send-btn">Отправить</button>
+   <button type="button" class="btn-action btn-primary" id="ai-test-send-btn">Проверить модель</button>
   </div>
-  <div id="ai-test-result-box" class="ai-response" role="status" aria-live="polite">Ответ появится здесь</div>
+  <div id="ai-test-result-box" class="ai-response" role="status" aria-live="polite">Проверка использует выбранную модель. Для всех пользователей она изменится после нажатия «Применить модель».</div>
  </section>
 </div>
 </div>
 `;
+
+export const AI_CLIENT_JS = String.raw`
+let aiAvailableModels = [];
+function updateAiModelDescription() {
+  const model = aiAvailableModels.find(m => m.id === document.getElementById('ai-model-select').value);
+  document.getElementById('ai-model-description').textContent = model
+    ? model.description + '. Вход: ' + model.inputPrice + ', выход (включая размышления): ' + model.outputPrice + ' токенов.' : '';
+}
+async function loadAiStats() {
+  try {
+    const res = await fetch('/api/admin/ai/stats');
+    if (res.status === 401) { checkAuthAndLoad(); return; }
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error('Не удалось загрузить настройки ИИ');
+    const s = data.stats;
+    document.getElementById('ai-m-total').innerText = (s.totalRequests || 0).toLocaleString();
+    document.getElementById('ai-m-today').innerText = (s.todayRequests || 0).toLocaleString();
+    document.getElementById('ai-m-cost-usd').innerText = '$' + (s.costUsd || 0).toFixed(5);
+    document.getElementById('ai-m-cost-rub').innerText = '~' + (s.costRub || 0) + ' ₽';
+    document.getElementById('ai-m-tokens-total').innerText = (s.totalTokens || 0).toLocaleString();
+    document.getElementById('ai-m-tokens-k').innerText = Math.round((s.totalTokens || 0) / 1000) + 'k';
+    document.getElementById('ai-m-tokens-prompt').innerText = (s.promptTokens || 0).toLocaleString();
+    document.getElementById('ai-m-tokens-cand').innerText = (s.candidateTokens || 0).toLocaleString();
+    document.getElementById('ai-m-model').innerText = s.activeModelName || s.activeModel;
+    aiAvailableModels = s.availableModels || [];
+    document.getElementById('ai-model-select').value = s.activeModel;
+    updateAiModelDescription();
+  } catch (err) { console.error('loadAiStats error:', err); }
+}
+document.getElementById('ai-model-select').addEventListener('change', updateAiModelDescription);
+document.getElementById('save-ai-model-btn').addEventListener('click', async function() {
+  this.disabled = true;
+  this.innerText = 'Сохранение...';
+  try {
+    const res = await fetch('/api/admin/ai/config', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ model: document.getElementById('ai-model-select').value })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Не удалось сохранить модель');
+    await loadAiStats();
+    this.innerText = 'Применено!';
+  } catch (error) {
+    alert('Ошибка сохранения: ' + error.message);
+  } finally {
+    this.disabled = false;
+    setTimeout(() => { this.innerText = 'Применить модель'; }, 2000);
+  }
+});
+document.getElementById('ai-test-send-btn').addEventListener('click', async function() {
+  const prompt = document.getElementById('ai-test-prompt').value.trim();
+  if (!prompt) return;
+  const model = document.getElementById('ai-model-select').value;
+  const name = aiAvailableModels.find(m => m.id === model)?.name || model;
+  const box = document.getElementById('ai-test-result-box');
+  this.disabled = true;
+  this.innerText = 'Думает...';
+  box.innerText = 'Проверяем ' + name + '…';
+  try {
+    const res = await fetch('/api/admin/ai/test', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt, model })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error === 'ai_unavailable'
+      ? 'Модель сейчас недоступна или не успела ответить. Попробуйте ещё раз.'
+      : data.error || 'Не удалось получить ответ');
+    box.innerText = name + '\n\n' + data.reply;
+  } catch (error) { box.innerText = 'Ошибка: ' + error.message; }
+  finally { this.disabled = false; this.innerText = 'Проверить модель'; }
+});
+`;
+
+export function enhanceAiClientJs(source) {
+  const start = source.indexOf('async function loadAiStats()');
+  if (start === -1) throw new Error('Legacy AI client boundary missing');
+  return source.slice(0, start) + AI_CLIENT_JS;
+}

@@ -56,7 +56,8 @@ import { THREADS_VIEW_HTML, THREADS_CLIENT_JS } from './threads_ui.js';
 import { BLOG_VIEW_HTML, BLOG_CLIENT_JS } from './blog_ui.js';
 import { PUBLICATIONS_VIEW_HTML, PUBLICATIONS_CLIENT_JS, enhancePublicationsHtml } from './publications_ui.js';
 import { ADMIN_THEME_HTML, ADMIN_THEME_CLIENT_JS } from './admin_theme.js';
-import { AI_VIEW_HTML } from './ai_ui.js';
+import { AI_VIEW_HTML, enhanceAiClientJs } from './ai_ui.js';
+import { AI_MODELS, getActiveAiModel, isSupportedAiModel, aiModelPricing, aiGenerationConfig, aiReply, aiUsage } from './ai_models.js';
 import { LINKS_VIEW_HTML, LINKS_CLIENT_JS } from './links_ui.js';
 import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './admin_ui.js';
 import { StatsBuffer } from './stats_buffer.js';
@@ -2349,7 +2350,7 @@ export async function flushBufferedStats(env, items, persistBatch = null) {
     } else if (item.kind === 'usage') {
       applyUsage(await dayOf(now), item);
     } else if (item.kind === 'ai') {
-      const pricing = GEMINI_PRICING[item.model] || GEMINI_PRICING['gemini-3.6-flash'];
+      const pricing = aiModelPricing(item.model, item.ts || Date.now());
       const pTokens = Number(item.promptTokens) || 0;
       const cTokens = Number(item.candidateTokens) || 0;
       const costUsd = ((pTokens * pricing.inputPerM) + (cTokens * pricing.outputPerM)) / 1000000;
@@ -2673,7 +2674,7 @@ function renderAdminPage() {
 
   // Вместе с разметкой убираем и обращения к ней из старого скрипта: без этого
   // он падает на первом же getElementById и не доходит до загрузки данных.
-  const clientJs = enhanceAdminClientJs(ADMIN_CLIENT_JS
+  const clientJs = enhanceAdminClientJs(enhanceAiClientJs(ADMIN_CLIENT_JS
     .replace("document.getElementById('refresh-threads-btn').addEventListener('click', loadThreadsQueue);", '')
     .replace("else if (currentFeature === 'threads') loadThreadsQueue();", '')
     // Аналитика должна узнавать площадки, которых не было в первой версии.
@@ -2684,7 +2685,7 @@ function renderAdminPage() {
     .replace(
       "telegram: { name: 'Telegram', color: '#229ed9', icon: BRAND_SVGS.telegram },",
       "telegram: { name: 'Telegram', color: '#229ed9', icon: BRAND_SVGS.telegram },\n  threads: { name: 'Threads', color: '#000000', icon: BRAND_SVGS.threads },\n  dzen: { name: 'Дзен', color: '#000000', icon: BRAND_SVGS.dzen },"
-    ));
+    )));
 
   // Раздел «Ссылки» — целиком из links_ui.js.
   const linksStart = withoutOldThreads.indexOf('<!-- 2. LINKS GENERATOR VIEW -->');
@@ -2733,24 +2734,6 @@ function renderAdminPage() {
 
 
 // ────────────────────── AI Model Pricing & Analytics ──────────────────────
-const GEMINI_PRICING = {
-  'gemini-3.6-flash': { inputPerM: 0.10, outputPerM: 0.40, name: 'Gemini 3.6 Flash (Хит, супер-быстрый)' },
-  'gemini-2.5-flash': { inputPerM: 0.10, outputPerM: 0.40, name: 'Gemini 2.5 Flash' },
-  'gemini-1.5-flash': { inputPerM: 0.075, outputPerM: 0.30, name: 'Gemini 1.5 Flash (Эконом)' },
-  'gemini-2.5-pro': { inputPerM: 1.25, outputPerM: 5.00, name: 'Gemini 2.5 Pro (Глубокое мышление)' },
-  'gemini-1.5-pro': { inputPerM: 1.25, outputPerM: 5.00, name: 'Gemini 1.5 Pro' }
-};
-
-async function getActiveAiModel(env) {
-  if (env.INSTALLS) {
-    try {
-      const customModel = (await env.INSTALLS.get('ai_config_model')) || (await env.INSTALLS.get('AI_MODEL'));
-      if (customModel && GEMINI_PRICING[customModel]) return customModel;
-    } catch (_) {}
-  }
-  return 'gemini-3.6-flash';
-}
-
 async function getAiAnalyticsStats(env) {
   const activeModel = await getActiveAiModel(env);
   let totalRequests = 0;
@@ -2776,13 +2759,12 @@ async function getAiAnalyticsStats(env) {
   const totalTokens = promptTokens + candidateTokens;
   const costRub = (costUsd * 92.5).toFixed(2);
 
-  const availableModels = Object.keys(GEMINI_PRICING).map(k => ({
-    id: k,
-    name: GEMINI_PRICING[k].name,
-    inputPrice: '$' + GEMINI_PRICING[k].inputPerM + ' / 1M',
-    outputPrice: '$' + GEMINI_PRICING[k].outputPerM + ' / 1M',
-    active: k === activeModel
-  }));
+  const availableModels = Object.entries(AI_MODELS).map(([id, model]) => {
+    const pricing = aiModelPricing(id);
+    return { id, name: model.name, description: model.description,
+      inputPrice: '$' + pricing.inputPerM + ' / 1M',
+      outputPrice: '$' + pricing.outputPerM + ' / 1M', active: id === activeModel };
+  });
 
   return {
     ok: true,
@@ -2795,7 +2777,7 @@ async function getAiAnalyticsStats(env) {
       costUsd: Number(costUsd.toFixed(5)),
       costRub: Number(costRub),
       activeModel,
-      activeModelName: GEMINI_PRICING[activeModel]?.name || activeModel,
+      activeModelName: AI_MODELS[activeModel]?.name || activeModel,
       availableModels
     }
   };
@@ -3881,31 +3863,24 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
             });
           }
 
-          const geminiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${geminiKey}`, {
+          const geminiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
             signal: AbortSignal.timeout(AI_PROVIDER_TIMEOUT_MS),
             body: JSON.stringify({
               systemInstruction: {
                 parts: [{ text: systemPrompt }]
               },
               contents,
-              generationConfig: {
-                temperature: 0.35,
-                maxOutputTokens: 2048
-              }
+              generationConfig: aiGenerationConfig(activeModel)
             })
           });
 
           const data = await geminiResp.json();
           if (geminiResp.ok) {
-            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              reply = text.trim();
-              const usage = data?.usageMetadata;
-              if (usage) {
-                await trackStats(env, ctx, { kind: 'ai', model: activeModel, promptTokens: usage.promptTokenCount || 200, candidateTokens: usage.candidatesTokenCount || usage.candidatesTokensDetails?.[0]?.tokenCount || 120 });
-              }
+            reply = aiReply(data);
+            if (data?.usageMetadata) {
+              await trackStats(env, ctx, { kind: 'ai', model: activeModel, ...aiUsage(data) });
             }
           } else {
             console.error('Gemini API error status:', geminiResp.status, JSON.stringify(data));
@@ -3954,7 +3929,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
       let body;
       try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
       const model = String(body.model || '').trim();
-      if (!model || !GEMINI_PRICING[model]) {
+      if (!model || !isSupportedAiModel(model)) {
         return jsonResponse({ error: 'unsupported model' }, 400);
       }
       if (env.INSTALLS) {
@@ -3967,29 +3942,32 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
       let body;
       try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'bad json' }, 400); }
-      const prompt = body.prompt || 'Объясни в 2 строках знак 3.20 Обгон запрещен';
+      if (!body || typeof body !== 'object' || Array.isArray(body) || (body.prompt != null && typeof body.prompt !== 'string')) return jsonResponse({ error: 'invalid prompt' }, 400);
+      const prompt = (body.prompt || 'Объясни в 2 строках знак 3.20 Обгон запрещен').slice(0, 4000);
+      if (body.model !== undefined && !isSupportedAiModel(body.model)) return jsonResponse({ error: 'unsupported model' }, 400);
+      const activeModel = body.model || await getActiveAiModel(env);
       const geminiKey = env.GEMINI_API_KEY || env.AI_API_KEY;
-      const activeModel = await getActiveAiModel(env);
       if (!geminiKey) return jsonResponse({ error: 'no gemini key configured in env' }, 400);
 
       try {
-        const geminiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${geminiKey}`, {
+        const geminiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
+          signal: AbortSignal.timeout(AI_PROVIDER_TIMEOUT_MS),
           body: JSON.stringify({
+            systemInstruction: { parts: [{ text: 'Ты преподаватель ПДД России. Объясни кратко, в 3–5 строках, без приветствия.' }] },
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 1000 }
+            generationConfig: aiGenerationConfig(activeModel)
           })
         });
         const data = await geminiResp.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (geminiResp.ok) {
-          const usage = data?.usageMetadata;
-          await trackStats(env, ctx, { kind: 'ai', model: activeModel, promptTokens: usage?.promptTokenCount || 100, candidateTokens: usage?.candidatesTokenCount || 50 });
-        }
-        return jsonResponse({ ok: true, model: activeModel, reply: text || JSON.stringify(data) });
-      } catch (err) {
-        return jsonResponse({ ok: false, error: String(err) }, 500);
+        if (!geminiResp.ok) return jsonResponse({ ok: false, model: activeModel, error: 'ai_unavailable' }, 503);
+        if (data?.usageMetadata) await trackStats(env, ctx, { kind: 'ai', model: activeModel, ...aiUsage(data) });
+        const reply = aiReply(data);
+        if (!reply) return jsonResponse({ ok: false, model: activeModel, error: 'ai_unavailable' }, 503);
+        return jsonResponse({ ok: true, model: activeModel, reply });
+      } catch (_) {
+        return jsonResponse({ ok: false, model: activeModel, error: 'ai_unavailable' }, 503);
       }
     }
 

@@ -11,7 +11,7 @@
 | Входная точка и маршруты | `worker.js`, `wrangler.toml` |
 | Вход и аккаунты | `account_state.js`, `account_maintenance.js`, `user_auth.js`, `user_store.js`, `telegram_auth.js`, `apple_web_callback.js`, `apple_account.js` |
 | Premium и оплата | `entitlements.js`, `payments.js`, `store_verification.js`, `purchase_claims.js`, `store_account.js`, `store_notifications.js` |
-| ИИ и квоты | `ai_request.js`, `ai_quota.js` |
+| ИИ и квоты | `ai_request.js`, `ai_quota.js`, `ai_models.js` |
 | Прогресс | `progress_merge.js` |
 | Игра и экономика | `game_profile.js`, `game_scoring.js`, `game_weeks.js`, `economy_admin.js` |
 | Буфер статистики | `stats_buffer.js` |
@@ -34,6 +34,22 @@
 проверки. Для безопасности — `npm run test:security`, для публикаций —
 `npm run test:publications`, для прогресса — `npm run test:progress`.
 Полный перечень актуальных команд — `package.json`, тесты — `test-*.mjs`.
+
+Модели разбора вопросов задаются в `ai_models.js`: основная — стабильная
+`gemini-3.8-flash`, экономичная — `gemini-3.5-flash-lite`. Удалённые из меню
+настройки (включая 1.5/2.5/3.6) автоматически используют основную модель.
+Админка и API берут список из одного каталога; «Проверить модель» использует
+выбор без сохранения для пользователей, «Применить модель» сохраняет его.
+Оба запроса используют `thinkingLevel: low`, общий таймаут 9 секунд и не
+передают устаревший `temperature`. При недоступности провайдера приложение
+сохраняет официальный комментарий как резервное объяснение.
+
+Цены — Standard text из [Google](https://ai.google.dev/gemini-api/docs/pricing),
+проверены 21.10.2026. Для 3.8 учтён переход с $0.75/$3.75 на $1.50/$7.50 за
+миллион входных/выходных токенов 01.01.2027 UTC; для Flash-Lite — $0.30/$2.50.
+Размышления входят в выходные токены. Буфер считает цену по времени события,
+накопленные расходы и тарифы уже поставленных в очередь старых событий сохраняются.
+Проверки моделей: `npm run test:ai` (также включены в `test:security`).
 
 `legacy/` — исторические одноразовые патчи, не рабочий способ редактирования.
 Деплой — отдельная операция через `deploy.sh` или Wrangler; изменение файла
