@@ -713,6 +713,11 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     required AppThemeColors colors,
   }) {
     final isSelected = _selectedTier == tier;
+    final priceStyle = TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w700,
+      color: colors.primaryText,
+    );
 
     return Semantics(
       selected: isSelected,
@@ -793,28 +798,24 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                       children: [...previous, ?current],
                     ),
                     child: price == null
-                        // Цена ещё в пути: спокойная плашка на её месте.
-                        ? Container(
+                        // Цена ещё в пути: спокойная плашка на её месте, ровно
+                        // по высоте строки цены — ничего не сдвигается.
+                        ? DecoratedBox(
                             key: const ValueKey('price-placeholder'),
-                            width: 58,
-                            height: 18,
-                            margin: const EdgeInsets.symmetric(vertical: 2),
                             decoration: BoxDecoration(
                               color: colors.secondaryText.withValues(
                                 alpha: 0.16,
                               ),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                          )
-                        : Text(
-                            price,
-                            key: ValueKey(price),
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                              color: colors.primaryText,
+                            child: Text(
+                              '000,00 ₽',
+                              style: priceStyle.copyWith(
+                                color: Colors.transparent,
+                              ),
                             ),
-                          ),
+                          )
+                        : Text(price, key: ValueKey(price), style: priceStyle),
                   ),
                   if (period != null)
                     Text(
