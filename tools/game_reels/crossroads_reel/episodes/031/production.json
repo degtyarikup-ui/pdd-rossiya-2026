@@ -1,0 +1,40 @@
+{
+  "id": "crossroads-031",
+  "title": "Зелёный не разрешает поворот из любой полосы",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_031.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "32916fd5882707871bfa0cccc4f26703d0ef89c3efdf4bd373ed86fdf25006b4",
+  "bytes": 21117800,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "20.500000",
+    "nb_read_frames": "615",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "20.500000"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "8.5",
+    "Приложение 2, разметка 1.18"
+  ],
+  "adaptation": "Signalised junction on the wide street of episode 009 (two lanes per direction), south/north green. 1.18 lane arrows before the junction: inner lane straight or left, outer lane straight or right. Red pickup in the inner lane with the right indicator wants to turn right; its hint shows the intended (forbidden) manoeuvre and red never makes it. Blue coupe in the outer lane goes straight. The canonical 5.15.1 image in the content shows three lanes, so it is not used; the lane directions come from the 1.18 markings alone.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-031; 615.0 frames; green does not allow a right turn from the inner lane; red never makes it; no collisions or occlusion"
+  }
+}

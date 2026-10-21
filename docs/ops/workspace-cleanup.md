@@ -105,3 +105,10 @@
 9 ГБ. Тайминги, субтитры, сведения о голосе и `production.json` (SHA-256,
 параметры экспорта, итог проверки сцены) перенесены в
 `tools/game_reels/crossroads_reel/episodes/NNN/`.
+
+## Очистка выпусков 026–031 — 2026-10-21
+
+Владелец сохранил `game_026`–`game_031`. Удалены рабочие папки
+`output/reels/crossroads-026/` … `crossroads-031/` и контрольные листы кадров:
+3973 файла, около 6,6 ГБ. Тайминги, субтитры, сведения о голосе и
+`production.json` перенесены в `tools/game_reels/crossroads_reel/episodes/NNN/`.

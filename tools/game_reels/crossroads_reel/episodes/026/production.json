@@ -1,0 +1,39 @@
+{
+  "id": "crossroads-026",
+  "title": "Автобус отъезжает от остановки",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_026.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "3404e4627ef98b10724c66921e0ecef136b0b9b815bdc8fc03773d202910b138",
+  "bytes": 15441857,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "19.233333",
+    "nb_read_frames": "577",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "19.233333"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "18.3"
+  ],
+  "adaptation": "South approach to a junction inside a built-up area: white 5.23.1 by the road, a bus bay cut into the east kerb with 1.17 yellow zigzag and 5.16. Blue bus (game bus model) in the bay with the left indicator flashing. Red sedan behind in the single northbound lane brakes to a stop behind the bay, lets the bus pull out gently, then follows it.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-026; 577.0 frames; red lets the bus pull out of a marked stop in a built-up area; no collisions or occlusion"
+  }
+}

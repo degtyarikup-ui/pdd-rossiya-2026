@@ -1,0 +1,40 @@
+{
+  "id": "crossroads-030",
+  "title": "Круг не всегда главный",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_030.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "1dff4b010d3f1d66be0284b177a62570346917b41c9481c27763955aba1923a0",
+  "bytes": 17509872,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "20.100000",
+    "nb_read_frames": "603",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "20.100000"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "13.9",
+    "13.11.1"
+  ],
+  "adaptation": "Single-lane roundabout (ring radius 9.6 m, raised island 6.6 m) with 4.3 on the south entry. The south entry is the main road (2.1); ring traffic faces 2.4 on the island just before that entry. Blue SUV already on the ring approaches from the west and gives way; red hatch enters from the south, goes a quarter round and leaves east; blue then continues round behind it.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-030; 603.0 frames; main-road entry beats ring traffic facing 2.4; no collisions or occlusion"
+  }
+}

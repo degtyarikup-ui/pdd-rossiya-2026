@@ -1,0 +1,40 @@
+{
+  "id": "crossroads-028",
+  "title": "Оранжевый маячок не даёт преимущества",
+  "status": "produced",
+  "published": false,
+  "createdDate": "2026-10-21",
+  "styleReference": "crossroads-001 approved 2026-10-20",
+  "videoFile": "game_028.mp4",
+  "deliveryDirectory": "Desktop",
+  "savedByOwner": "2026-10-21",
+  "sha256": "e9d5e9fa601c886433f822e85a01f14f115f7ac7fc16880c5b2279f175bf51b6",
+  "bytes": 19347622,
+  "video": {
+    "codec_name": "h264",
+    "width": 1080,
+    "height": 1920,
+    "r_frame_rate": "30/1",
+    "pix_fmt": "yuv420p",
+    "duration": "21.266667",
+    "nb_read_frames": "638",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "audio": {
+    "codec_name": "aac",
+    "channels": 2,
+    "sample_rate": "48000",
+    "duration": "21.266667"
+  },
+  "renderer": "Godot 4.7.2 / Forward+ / Metal",
+  "rules": [
+    "3.4",
+    "13.9"
+  ],
+  "adaptation": "Main road north-south (2.1), secondary west-east (2.4), no signals. Red hatch on the main road from the north goes straight south. A blue road-service van (game van model) with a flashing orange roof beacon, from the east (2.4), turns left into the same southbound lane after red; no siren, no blue beacon, no works or officer. Beacon close-up after the answer.",
+  "checks": {
+    "sceneValidation": "VALIDATION_OK crossroads-028; 638.0 frames; orange beacon gives no priority; main road first; no collisions or occlusion"
+  }
+}
