@@ -56,8 +56,10 @@ Apple — разные аккаунты.
 2. Веб-оплата начисляет срок **только** по статусу, перечитанному у Platega,
    никогда по параметрам возврата или колбэка.
 3. iOS — только IAP. В iOS-сборке не должно быть ссылок на оплату на сайте.
-4. Android, Google Play: СБП только для устройств в России (страна по
-   `DeviceRegion`), остальным — Play Billing. RuStore (`STORE=rustore`) — СБП для
+4. Android, Google Play: СБП только для России (страна устройства по
+   `DeviceRegion.countryCode` или страна аккаунта Play по
+   `DeviceRegion.playCountry`; решает `currentAndroidPaymentModes`),
+   остальным — Play Billing. RuStore (`STORE=rustore`) — СБП для
    всех, Play Billing не используется.
 5. Покупка сохраняет аккаунт того, кто её начал (`premium_owner_id`): вход
    другим аккаунтом не переносит Премиум.

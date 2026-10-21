@@ -9,6 +9,7 @@ import 'package:http/testing.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -188,6 +189,15 @@ void main() {
       expect(
         ErrorReporter.codeFor(StateError('TOP_SECRET')),
         'exception_StateError',
+      );
+      expect(
+        ErrorReporter.codeFor(
+          const SignInWithAppleAuthorizationException(
+            code: AuthorizationErrorCode.unknown,
+            message: 'TOP_SECRET',
+          ),
+        ),
+        'apple_unknown',
       );
     },
   );

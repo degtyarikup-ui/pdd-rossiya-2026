@@ -13,6 +13,7 @@ import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 enum ErrorCategory { auth, purchase, app }
 
@@ -59,6 +60,11 @@ class ErrorReporter {
       return code == 'sign_in_failed' && api != null
           ? '$code:${api.group(1)}'
           : code;
+    }
+    // Код Apple (failed, unknown, notHandled…) отличает сбой Apple ID на
+    // устройстве от ответа в неожиданном формате; текст ошибки не пишем.
+    if (error is SignInWithAppleAuthorizationException) {
+      return 'apple_${error.code.name}';
     }
     final type = 'exception_${error.runtimeType}'.replaceAll(
       RegExp('[^a-zA-Z0-9_]'),

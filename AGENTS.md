@@ -104,9 +104,11 @@ assets/countries/ru/images/     questions_ab/, questions_cd/, signs/, markup/
 - **Способ оплаты по сборке** (`payment_mode.dart`, `store_config.dart`):
   - Android, Google Play (`--dart-define=STORE=play`, по умолчанию): СБП
     только для устройств в России, остальные — Play Billing. Страна — по сети
-    оператора, SIM или локали (`pdd/device_region` в MainActivity), **не по
-    IP**: VPN не меняет устройство. Правило Google о Play Billing для России
-    действует с 02.08.2022 «на данный момент».
+    оператора, SIM или локали (`pdd/device_region` в MainActivity), а если
+    устройство не российское — ещё и страна платёжного аккаунта Google Play
+    (`DeviceRegion.playCountry`): российскому аккаунту Play Billing недоступен.
+    **Не по IP**: VPN не меняет ни устройство, ни аккаунт. Правило Google о Play
+    Billing для России действует с 02.08.2022 «на данный момент».
   - Android, RuStore (`STORE=rustore`): СБП для всех, без проверки страны
     (по уточнению владельца 10.10.2026). Google Play Billing в этой сборке
     не используется. Ограничение российским регионом действует только в Play.

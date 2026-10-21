@@ -74,6 +74,48 @@ void main() {
       }
     });
 
+    test('Google Play: аккаунт Play российский — СБП и Play, как в России', () {
+      for (final device in ['DE', 'US', null, '']) {
+        expect(
+          androidPaymentModes(
+            store: AppStore.googlePlay,
+            deviceCountry: device,
+            playCountry: 'ru',
+          ),
+          [PaymentMode.sbp, PaymentMode.storeBilling],
+          reason: '$device',
+        );
+        expect(
+          androidPaymentMode(
+            store: AppStore.googlePlay,
+            deviceCountry: device,
+            playCountry: 'RU',
+          ),
+          PaymentMode.sbp,
+          reason: '$device',
+        );
+      }
+    });
+
+    test('Google Play: аккаунт Play не российский — правило по устройству', () {
+      expect(
+        androidPaymentModes(
+          store: AppStore.googlePlay,
+          deviceCountry: 'DE',
+          playCountry: 'DE',
+        ),
+        [PaymentMode.storeBilling],
+      );
+      expect(
+        androidPaymentModes(
+          store: AppStore.googlePlay,
+          deviceCountry: 'RU',
+          playCountry: 'KZ',
+        ),
+        [PaymentMode.sbp, PaymentMode.storeBilling],
+      );
+    });
+
     test('RuStore: только СБП', () {
       expect(
         androidPaymentModes(store: AppStore.rustore, deviceCountry: 'DE'),

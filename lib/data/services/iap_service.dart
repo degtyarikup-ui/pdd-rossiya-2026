@@ -8,6 +8,7 @@ import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/core/config/store_config.dart';
 import 'package:crypto/crypto.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/device_region.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -222,6 +223,10 @@ class IapService extends ChangeNotifier {
 
       _isAvailable = await _iap.isAvailable();
       if (!_isAvailable) return;
+      // Страна аккаунта Play нужна пейволлу: узнаём заранее, чтобы он не ждал.
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        unawaited(DeviceRegion.playCountry());
+      }
       // Observe pending payments at startup; query prices only when needed.
     } catch (e) {
       debugPrint('IapService: init exception: $e');

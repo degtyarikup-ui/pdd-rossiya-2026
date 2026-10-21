@@ -2,12 +2,10 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/config/country_config.dart';
-import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
-import 'package:pdd_app/data/services/device_region.dart';
 import 'package:pdd_app/data/services/payment_mode.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
@@ -60,11 +58,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   /// Android: СБП для российских устройств в Google Play и для всех в
   /// RuStore; остальные покупают через Play (см. payment_mode.dart).
   Future<void> _resolveAndroidMode() async {
-    final store = StoreConfig.current;
-    final country = store == AppStore.rustore
-        ? null
-        : await DeviceRegion.countryCode();
-    final modes = androidPaymentModes(store: store, deviceCountry: country);
+    final modes = await currentAndroidPaymentModes();
     if (!mounted) return;
     setState(() {
       _androidModes = modes;

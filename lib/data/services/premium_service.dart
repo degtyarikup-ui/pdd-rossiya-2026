@@ -1,5 +1,3 @@
-import 'package:pdd_app/data/services/device_region.dart';
-import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/data/services/payment_mode.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
 import 'dart:async';
@@ -567,12 +565,7 @@ class PremiumService extends ChangeNotifier {
   }) async {
     if (!kIsWeb) {
       if (defaultTargetPlatform != TargetPlatform.android) return null;
-      final store = StoreConfig.current;
-      final country = store == AppStore.rustore
-          ? null
-          : await DeviceRegion.countryCode();
-      if (androidPaymentMode(store: store, deviceCountry: country) !=
-          PaymentMode.sbp) {
+      if (!(await currentAndroidPaymentModes()).contains(PaymentMode.sbp)) {
         return null;
       }
     }
