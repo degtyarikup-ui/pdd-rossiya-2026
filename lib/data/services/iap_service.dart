@@ -202,6 +202,7 @@ class IapService extends ChangeNotifier {
   Future<void> _init() async {
     try {
       if (!supportsStoreBilling) return;
+      await _loadPriceCache();
       await _loadOwners();
       if (!_observingAuth) {
         AuthService.instance.addListener(_onAuthChanged);
@@ -376,6 +377,7 @@ class IapService extends ChangeNotifier {
           _products[product.id] = product;
         }
         notifyListeners();
+        unawaited(_savePriceCache());
       }
       final error = response.error;
       if (error != null) {
@@ -442,6 +444,54 @@ class IapService extends ChangeNotifier {
 
     return null;
   }
+
+  static const _priceCacheKey = 'iap_store_prices';
+  final Map<String, String> _cachedPrices = {};
+
+  Future<void> _loadPriceCache() async {
+    try {
+      final raw = (await SharedPreferences.getInstance()).getString(
+        _priceCacheKey,
+      );
+      final data = raw == null ? null : jsonDecode(raw);
+      if (data is! Map) return;
+      for (final tier in PremiumTier.values) {
+        final price = data[tier.name];
+        if (price is String && price.isNotEmpty) {
+          _cachedPrices.putIfAbsent(tier.name, () => price);
+        }
+      }
+    } catch (_) {
+      // Без запомненных цен экран просто дождётся ответа магазина.
+    }
+  }
+
+  Future<void> _savePriceCache() async {
+    for (final tier in PremiumTier.values) {
+      final product = _findProductForTier(tier);
+      if (product != null) _cachedPrices[tier.name] = product.price;
+    }
+    try {
+      await (await SharedPreferences.getInstance()).setString(
+        _priceCacheKey,
+        jsonEncode(_cachedPrices),
+      );
+    } catch (_) {}
+  }
+
+  @visibleForTesting
+  void debugClearPriceCache() => _cachedPrices.clear();
+
+  /// Есть ли сейчас товары магазина, которые можно купить.
+  bool get hasStoreProducts => _products.isNotEmpty;
+
+  /// Цена тарифа для показа: из ответа магазина, а пока он не пришёл — та,
+  /// что этот же магазин называл на этом устройстве в прошлый раз (строка
+  /// магазина в валюте покупателя, не придуманная нами). null — магазин ещё
+  /// ни разу не ответил. Само окно оплаты магазина всегда показывает
+  /// актуальную цену.
+  String? storePrice(PremiumTier tier) =>
+      _findProductForTier(tier)?.price ?? _cachedPrices[tier.name];
 
   String getProductPrice(PremiumTier tier, String defaultPrice) {
     final product = _findProductForTier(tier);

@@ -1,4 +1,6 @@
 import 'package:pdd_app/l10n/l10n.dart';
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/config/country_config.dart';
@@ -46,7 +48,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     super.initState();
     IapService.instance.addListener(_onIapChanged);
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      IapService.instance.loadProducts(phase: ProductLoadPhase.paywall);
+      _loadStorePrices();
     }
     if (kIsWeb) {
       _loadSbpAvailability();
@@ -66,8 +68,30 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     });
     if (modes.contains(PaymentMode.sbp)) _loadSbpAvailability();
     if (_androidMode == PaymentMode.storeBilling) {
-      IapService.instance.loadProducts(phase: ProductLoadPhase.paywall);
+      _loadStorePrices();
     }
+  }
+
+  // Пока магазин не отдал тарифы, тихо спрашиваем снова, пока экран открыт:
+  // человек видит заглушку цены (или прошлую цену магазина), а не ошибку.
+  static const _priceRetryDelay = Duration(seconds: 20);
+  Timer? _priceRetry;
+
+  void _loadStorePrices() {
+    _priceRetry?.cancel();
+    _priceRetry = null;
+    IapService.instance
+        .loadProducts(phase: ProductLoadPhase.paywall)
+        .whenComplete(() {
+          if (!mounted || IapService.instance.hasStoreProducts) return;
+          final storeShown =
+              !kIsWeb &&
+              (defaultTargetPlatform == TargetPlatform.iOS ||
+                  _androidMode == PaymentMode.storeBilling);
+          if (storeShown) {
+            _priceRetry = Timer(_priceRetryDelay, _loadStorePrices);
+          }
+        });
   }
 
   void _loadSbpAvailability() {
@@ -91,6 +115,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
 
   @override
   void dispose() {
+    _priceRetry?.cancel();
     IapService.instance.removeListener(_onIapChanged);
     super.dispose();
   }
@@ -243,13 +268,13 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     }
   }
 
-  String _getPrice(PremiumTier tier) {
+  String? _getPrice(PremiumTier tier) {
     // Через СБП (сайт и Android) — рубли. В магазине — цена магазина
-    // (валюта покупателя); пока не загрузилась — прочерк.
+    // (валюта покупателя); пока её нет — заглушка на месте цены (null).
     if (kIsWeb || _androidSbp) {
       return tier == PremiumTier.threeMonths ? '290 ₽' : '99 ₽';
     }
-    return IapService.instance.getProductPrice(tier, '—');
+    return IapService.instance.storePrice(tier);
   }
 
   @override
@@ -627,9 +652,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
                     HapticFeedbackHelper.tap();
                     setState(() => _androidMode = mode);
                     if (mode == PaymentMode.storeBilling) {
-                      IapService.instance.loadProducts(
-                        phase: ProductLoadPhase.paywall,
-                      );
+                      _loadStorePrices();
                     }
                   },
             child: AnimatedContainer(
@@ -682,7 +705,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
   Widget _buildTierCard({
     required PremiumTier tier,
     required String title,
-    required String price,
+    required String? price,
     String? period,
     String? badge,
     required Color accentColor,
@@ -763,13 +786,35 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    price,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: colors.primaryText,
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    layoutBuilder: (current, previous) => Stack(
+                      alignment: Alignment.centerRight,
+                      children: [...previous, ?current],
                     ),
+                    child: price == null
+                        // Цена ещё в пути: спокойная плашка на её месте.
+                        ? Container(
+                            key: const ValueKey('price-placeholder'),
+                            width: 58,
+                            height: 18,
+                            margin: const EdgeInsets.symmetric(vertical: 2),
+                            decoration: BoxDecoration(
+                              color: colors.secondaryText.withValues(
+                                alpha: 0.16,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          )
+                        : Text(
+                            price,
+                            key: ValueKey(price),
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: colors.primaryText,
+                            ),
+                          ),
                   ),
                   if (period != null)
                     Text(

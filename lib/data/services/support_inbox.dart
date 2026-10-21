@@ -39,8 +39,15 @@ class SupportInbox {
   /// Sound for a new reply. Replaced in tests.
   void Function()? onSound;
 
+  /// Сразу после запуска и возврата в приложение проверяем всегда, а каждые
+  /// [interval] — только когда переписка уже есть или чат открыт: ответа
+  /// поддержки без своего сообщения не бывает, а такой опрос у всех подряд
+  /// нагружал сервер.
   void start() {
-    _timer ??= Timer.periodic(interval, (_) => unawaited(poll()));
+    _timer ??= Timer.periodic(
+      interval,
+      (_) => unawaited(poll(onlyActive: true)),
+    );
     unawaited(poll());
   }
 
@@ -57,13 +64,14 @@ class SupportInbox {
   }
 
   /// One poll. Public for tests; the timer calls it.
-  Future<void> poll() async {
+  Future<void> poll({bool onlyActive = false}) async {
     if (_polling) return;
     _polling = true;
     try {
       final key = _prefSeenPrefix + await clientId();
       final prefs = await SharedPreferences.getInstance();
       final seen = prefs.getInt(key);
+      if (onlyActive && !chatOpen && (seen ?? 0) <= 0) return;
       final list = await fetch(since: (seen ?? 0) > 0 ? seen : null);
       if (list == null) return; // Failed: retried next tick, nothing is marked.
 

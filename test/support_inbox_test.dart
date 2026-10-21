@@ -115,4 +115,38 @@ void main() {
     await inbox.poll();
     expect(replies, isEmpty);
   });
+
+  test('support inbox: without a conversation only launch and resume ask the server', () async {
+    final inbox = SupportInbox.instance;
+    var fetches = 0;
+    var next = <SupportChatMessage>[];
+    SharedPreferences.setMockInitialValues({});
+    inbox.clientId = () async => 'client_quiet';
+    inbox.fetch = ({int? since}) async {
+      fetches++;
+      final out = next;
+      next = [];
+      return out;
+    };
+    inbox.onReply = (_) {};
+    inbox.onSound = () {};
+    inbox.chatOpen = false;
+
+    await inbox.poll(); // Launch: always asks.
+    expect(fetches, 1);
+    await inbox.poll(onlyActive: true); // Timer tick: no conversation, no request.
+    await inbox.poll(onlyActive: true);
+    expect(fetches, 1);
+
+    inbox.chatOpen = true; // The chat is on screen: it polls.
+    await inbox.poll(onlyActive: true);
+    expect(fetches, 2);
+    inbox.chatOpen = false;
+
+    // The person wrote: from now on the timer keeps polling for the reply.
+    next = [_msg('u1', SupportMessageSender.user, 2000)];
+    await inbox.poll();
+    await inbox.poll(onlyActive: true);
+    expect(fetches, 4);
+  });
 }
