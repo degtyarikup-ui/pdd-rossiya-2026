@@ -2,7 +2,9 @@
 """Build a crossroads reel in the approved format; see docs/video/reels_3d.md."""
 from pathlib import Path
 import argparse
+import difflib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -56,11 +58,22 @@ def main():
         if not args.model.is_file():
             raise SystemExit(f"Whisper model not found: {args.model}")
         for line in json.loads((dest / "voice.json").read_text()):
-            subprocess.run(["whisper-cli", "-m", str(args.model), "-f", str(dest / line["path"]),
-                            "-l", "ru", "-ojf", "-of", str(dest / "audio" / f"{line['key']}-align"),
-                            "-ml", "1", "-sow", "-t", "4",
-                            # Word-level decoding otherwise drifts to neuter "красное/синее".
-                            "--prompt", "Красная машина. Синяя машина."], check=True)
+            prefix = dest / "audio" / f"{line['key']}-align"
+            want = [w for w in re.sub(r"[^а-яё0-9 ]", " ", line["text"].lower().replace("ё", "е")).split()]
+            best = None
+            # Plain word-level decoding may drift to neuter "красное/синее"; the
+            # colour prompt fixes that but can swallow a leading word. Keep
+            # whichever transcript matches the spoken text better.
+            for prompt in ([], ["--prompt", "Красная машина. Синяя машина."]):
+                subprocess.run(["whisper-cli", "-m", str(args.model), "-f", str(dest / line["path"]),
+                                "-l", "ru", "-ojf", "-of", str(prefix), "-ml", "1", "-sow", "-t", "4", *prompt],
+                               check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                data = prefix.with_suffix(".json").read_text()
+                got = [w for w in re.sub(r"[^а-яё0-9 ]", " ", " ".join(x["text"] for x in json.loads(data)["transcription"]).lower().replace("ё", "е")).split()]
+                score = difflib.SequenceMatcher(None, want, got).ratio()
+                if best is None or score > best[0]:
+                    best = (score, data)
+            prefix.with_suffix(".json").write_text(best[1])
     elif args.step in ("validate", "render", "preview"):
         episode = json.loads((dest / "episode.json").read_text())
         script = episode.get("validator", SCENE + "validate.gd") if args.step == "validate" else SCENE + "render.gd"
