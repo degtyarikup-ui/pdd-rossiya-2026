@@ -198,13 +198,13 @@ func _run_checks() -> void:
 			var yaw := wrapf(child.rotation.y, -PI, PI)
 			if absf(absf(yaw) - PI) < 0.05:
 				arrow_found_north = true
-			elif absf(yaw - PI * 0.5) < 0.05:
-				arrow_found_west = true
 			elif absf(yaw - (-PI * 0.5)) < 0.05:
+				arrow_found_west = true
+			elif absf(yaw - PI * 0.5) < 0.05:
 				arrow_found_east = true
 	_check("North approach arrows face South (+Z, yaw = PI)", arrow_found_north)
-	_check("West approach arrows face East (+X, yaw = PI * 0.5)", arrow_found_west)
-	_check("East approach arrows face West (-X, yaw = -PI * 0.5)", arrow_found_east)
+	_check("West approach arrows face East (+X, yaw = -PI * 0.5)", arrow_found_west)
+	_check("East approach arrows face West (-X, yaw = PI * 0.5)", arrow_found_east)
 
 	# 17. Zebra Crosswalk Encroachment Detection
 	var zebra_car = game.spawn_specific_car("main_straight", 0, false, "")
