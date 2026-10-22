@@ -477,6 +477,77 @@ async function resolveInstagramAccountId(token) {
   return { id: data.user_id ? String(data.user_id) : null, username: data.username || null };
 }
 
+function instagramPublicationUnconfirmed(reason) {
+  const error = new Error('Meta считает загрузку опубликованной, но доступность ролика не подтверждена. Нужна проверка перед новой публикацией.');
+  error.code = 'ERR_IG_PUBLICATION_UNCONFIRMED';
+  error.instagramReviewReason = reason;
+  return error;
+}
+
+function instagramPublicationCheckUnavailable(details = '') {
+  const error = new Error('Instagram временно не дал проверить доступность опубликованного ролика' + details);
+  error.code = 'ERR_IG_PUBLICATION_CHECK_UNAVAILABLE';
+  return error;
+}
+
+function isInstagramPermalink(value) {
+  if (typeof value !== 'string') return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && ['instagram.com', 'www.instagram.com'].includes(url.hostname)
+      && !url.username && !url.password && !url.port && !url.search && !url.hash
+      && /^\/(?:reel|p|tv)\/[A-Za-z0-9_-]+\/?$/.test(url.pathname);
+  } catch (_) {
+    return false;
+  }
+}
+
+async function verifyPublishedInstagramMedia(env, post, account, api, statusDetails) {
+  // The post can have changed while Meta processed the request. Verify only the
+  // freshly stored media identity and never derive a media ID from a container.
+  let raw;
+  try { raw = await env.INSTALLS.get(KV_POSTS); }
+  catch (_) { throw instagramPublicationCheckUnavailable(); }
+  let posts;
+  try { posts = JSON.parse(raw); }
+  catch (_) { throw instagramPublicationUnconfirmed('media_unconfirmed'); }
+  const current = Array.isArray(posts) ? posts.find(p => p.id === post.id) : null;
+  const mediaId = current?.instagramMediaId;
+  if (typeof mediaId !== 'string' || !/^[0-9]{1,32}$/.test(mediaId)) {
+    throw instagramPublicationUnconfirmed('media_unconfirmed');
+  }
+
+  let response;
+  try {
+    response = await fetch(`${api}/${mediaId}?fields=id,permalink&access_token=${encodeURIComponent(account.instagramToken)}`, {
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch (_) {
+    throw instagramPublicationCheckUnavailable();
+  }
+  let data = null;
+  let bodyError = null;
+  try { data = await response.json(); }
+  catch (error) { bodyError = error; }
+  if (response.status === 429 || response.status >= 500) {
+    throw instagramPublicationCheckUnavailable(statusDetails(response, data));
+  }
+  if (bodyError) {
+    if (['AbortError', 'TimeoutError', 'TypeError'].includes(bodyError.name)) {
+      throw instagramPublicationCheckUnavailable();
+    }
+    throw instagramPublicationUnconfirmed('media_unconfirmed');
+  }
+  if (!response.ok || data?.error) {
+    const missing = response.status === 400 && data?.error?.code === 100 && data?.error?.error_subcode === 33;
+    throw instagramPublicationUnconfirmed(missing ? 'media_unavailable' : 'media_unconfirmed');
+  }
+  if (data?.id !== mediaId || !isInstagramPermalink(data?.permalink)) {
+    throw instagramPublicationUnconfirmed('media_unconfirmed');
+  }
+  return { alreadyPublished: true };
+}
+
 async function publishToInstagram(env, post, account, origin) {
   if (!account.instagramToken || !account.instagramAccountId) {
     throw new Error('Не заполнены Instagram Account ID или токен доступа');
@@ -520,6 +591,15 @@ async function publishToInstagram(env, post, account, origin) {
 async function finishInstagram(env, post, account, containerId) {
   const api = `https://graph.instagram.com/${GRAPH_VERSION}`;
 
+  // Meta errors may contain the private video URL. Keep only bounded technical
+  // details in the post and social log, never the upstream error text.
+  const statusDetails = (response, data) => {
+    const parts = ['HTTP ' + response.status];
+    if (Number.isInteger(data?.error?.code)) parts.push('code ' + data.error.code);
+    if (Number.isInteger(data?.error?.error_subcode)) parts.push('subcode ' + data.error.error_subcode);
+    return ' (' + parts.join(', ') + ')';
+  };
+
   // Meta кодирует ролик у себя и параллельно скачивает его по нашей ссылке.
   let ready = false;
   for (let i = 0; i < IG_POLL_ATTEMPTS; i += 1) {
@@ -527,11 +607,26 @@ async function finishInstagram(env, post, account, containerId) {
     const statusRes = await fetch(
       `${api}/${containerId}?fields=status_code,status&access_token=${encodeURIComponent(account.instagramToken)}`
     );
-    const statusData = await statusRes.json().catch(() => ({}));
-    const code = statusData.status_code;
+    const statusData = await statusRes.json().catch(() => null);
+    if (!statusRes.ok || statusData?.error) {
+      throw new Error('Instagram не дал проверить статус видео' + statusDetails(statusRes, statusData));
+    }
+    const code = statusData?.status_code;
+    if (code === 'PUBLISHED') {
+      // PUBLISHED describes the container's history, not the current visibility
+      // of a deleted or inaccessible media object. Reconcile with read-only API
+      // checks; an unresolved identity must never trigger a replacement upload.
+      return await verifyPublishedInstagramMedia(env, post, account, api, statusDetails);
+    }
     if (code === 'FINISHED') { ready = true; break; }
     if (code === 'ERROR') {
-      throw new Error('Instagram не смог обработать видео: ' + limit(statusData.status || JSON.stringify(statusData), 300));
+      throw new Error('Instagram не смог обработать видео' + statusDetails(statusRes, statusData));
+    }
+    if (code === 'EXPIRED') {
+      throw new Error('Контейнер Instagram истёк и не может быть опубликован' + statusDetails(statusRes, statusData));
+    }
+    if (code !== 'IN_PROGRESS') {
+      throw new Error('Instagram вернул неизвестный статус видео' + statusDetails(statusRes, statusData));
     }
   }
   if (!ready) {
@@ -713,6 +808,7 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
   const posts = await getPosts(env);
   const post = posts.find((p) => p.id === postId);
   if (!post) return { status: 'error', message: 'Ролик не найден' };
+  if (post.instagramNeedsReview === true && only.includes('instagram')) return { status: 'error', message: post.error || 'Публикация Instagram требует проверки' };
 
   const accounts = await getAccounts(env);
   const account = accounts.find((a) => a.id === post.accountId);
@@ -737,13 +833,27 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
         : await publishToInstagram(env, post, account, origin);
       await patchPost(env, postId, {
         instagramStatus: 'published',
-        instagramMediaId: igResult.mediaId,
-        instagramPermalink: igResult.permalink,
+        instagramNeedsReview: false,
+        instagramReviewReason: null,
+        // A concurrent attempt can have saved newer metadata. Reconciliation
+        // changes only status; never overwrite those fields with an old snapshot.
+        ...(!igResult.alreadyPublished ? {
+          instagramMediaId: igResult.mediaId,
+          instagramPermalink: igResult.permalink,
+        } : {}),
       });
-      await socialLog(env, 'ok', `Instagram: опубликован ${post.fileName}`, { url: igResult.permalink });
+      await socialLog(env, 'ok', igResult.alreadyPublished
+        ? `Instagram: подтверждена прежняя публикация ${post.fileName}`
+        : `Instagram: опубликован ${post.fileName}`, igResult.alreadyPublished ? {} : { url: igResult.permalink });
     } catch (e) {
       errors.push('Instagram: ' + e.message);
-      await patchPost(env, postId, { instagramStatus: 'failed' });
+      await patchPost(env, postId, {
+        instagramStatus: 'failed',
+        ...(e.code === 'ERR_IG_PUBLICATION_UNCONFIRMED' ? {
+          instagramNeedsReview: true,
+          instagramReviewReason: e.instagramReviewReason,
+        } : {}),
+      });
       await socialLog(env, 'error', `Instagram: ${post.fileName} — ${e.message}`);
     }
   }
@@ -826,7 +936,7 @@ async function recoverStalePosts(env) {
   let changed = false;
 
   posts.forEach((post, i) => {
-    if (post.status !== 'processing') return;
+    if (post.status !== 'processing' || post.instagramNeedsReview === true) return;
     const startedAt = Date.parse(post.processingSince || post.createdAt || '') || 0;
     if (startedAt && startedAt > cutoff) return;
     posts[i] = {
@@ -862,7 +972,7 @@ async function resumeInFlight(env, origin, notify) {
   const posts = await getPosts(env);
   // Только назначенные даты или явный ручной запуск. Старые задачи без даты
   // не должны возобновлять автоматическую публикацию после обновления.
-  const stuck = posts.filter((p) => p.status === 'processing'
+  const stuck = posts.filter((p) => p.status === 'processing' && p.instagramNeedsReview !== true
     && (isScheduledPostDue(p) || p.publishMode === 'manual'));
 
   for (const post of stuck) {
@@ -897,6 +1007,7 @@ export async function runAutoPost(env, origin, notify = null) {
     const posts = await getPosts(env);
     const due = posts
       .filter((p) => p.accountId === account.id && (p.status === 'queued' || p.status === 'failed'))
+      .filter((p) => p.instagramNeedsReview !== true)
       .filter((p) => isScheduledPostDue(p, now))
       .sort((a, b) => {
         if (a.scheduledAt && b.scheduledAt) return a.scheduledAt.localeCompare(b.scheduledAt);
@@ -915,7 +1026,7 @@ export async function runAutoPost(env, origin, notify = null) {
     for (const post of due) {
       // Пока предыдущий ролик кодировался, администратор мог снять или перенести дату.
       const current = (await getPosts(env)).find(p => p.id === post.id);
-      if (!current || !['queued', 'failed'].includes(current.status) || !isScheduledPostDue(current)) continue;
+      if (!current || current.instagramNeedsReview === true || !['queued', 'failed'].includes(current.status) || !isScheduledPostDue(current)) continue;
       await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString(), publishMode: 'scheduled' });
       const res = await publishPost(env, post.id, origin, notify);
       results.push({ account: account.name, file: post.fileName, ...res });
@@ -1296,6 +1407,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
       error: null,
       processingSince: new Date().toISOString(),
       publishMode: 'manual',
+      ...(platform === 'instagram' ? { instagramNeedsReview: false, instagramReviewReason: null } : {}),
       [platform === 'youtube' ? 'youtubeStatus' : 'instagramStatus']: 'queued',
     });
     ctx.waitUntil(publishPost(env, post.id, origin, notify, [platform]));
@@ -1316,7 +1428,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (!take.length) return jsonResponse({ ok: false, message: 'Нечего публиковать' });
 
     for (const post of take) {
-      await patchPost(env, post.id, { status: 'processing', error: null, scheduledAt: null, processingSince: new Date().toISOString(), publishMode: 'manual' });
+      await patchPost(env, post.id, { status: 'processing', error: null, scheduledAt: null, processingSince: new Date().toISOString(), publishMode: 'manual', instagramNeedsReview: false, instagramReviewReason: null });
     }
 
     ctx.waitUntil((async () => {
@@ -1432,7 +1544,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (post.status === 'processing') {
       return jsonResponse({ ok: false, message: 'Этот ролик уже публикуется' });
     }
-    await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString(), publishMode: 'manual' });
+    await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString(), publishMode: 'manual', instagramNeedsReview: false, instagramReviewReason: null });
     // Instagram кодирует видео минуты — ответ ждать нельзя, публикуем в фоне,
     // а панель подтягивает статус опросом.
     ctx.waitUntil(publishPost(env, post.id, origin, notify));
