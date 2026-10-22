@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { incidentCopy, incidentGuide, platformLabel } from './incident_copy.js';
-import { buildIncidentMessage, reportIncident } from './diagnostics.js';
+import { buildIncidentMessage, errorCode, reportIncident } from './diagnostics.js';
 
 const base = { ts: Date.UTC(2026, 9, 10, 12), origin: 'client', category: 'auth', operation: 'auth.provider', code: 'timeout', userId: 'google_1', userName: 'Анна', userEmail: 'a@b.ru' };
 const guide = overrides => incidentGuide({ ...base, ...overrides });
@@ -79,6 +79,65 @@ test('пустой ответ магазина объясняется понят
   const copy = incidentCopy({ ...base, category: 'purchase', operation: 'iap.products', code: 'products_not_found' });
   assert.match(copy.reason, /не вернул наш тариф Premium/);
   assert.match(incidentCopy({ ...base, category: 'purchase', operation: 'iap.products', code: 'channel-error' }).reason, /Модуль покупок/);
+});
+
+test('частичный каталог отличают от полностью недоступного магазина', () => {
+  const partial = { ...base, category: 'purchase', operation: 'iap.products', code: 'products_incomplete', context: { phase: 'paywall', requestedCount: 2, returnedCount: 1, missingCount: 1 } };
+  const copy = incidentCopy(partial);
+  assert.equal(copy.title, 'Не все тарифы Premium загрузились');
+  assert.match(copy.reason, /только часть тарифов/);
+  assert.doesNotMatch(copy.reason, /ни одного|не вернул наш тариф|не определена/);
+  assert.equal(incidentGuide(partial).level, 'high');
+  assert.match(incidentGuide(partial).steps.join(' '), /базовый план Google Play/);
+  const message = buildIncidentMessage(partial);
+  assert.match(message, /запрошено 2, получено 1, не найдено 1/);
+  assert.match(message, /Не все тарифы Premium загрузились/);
+});
+
+test('ошибки Durable Object классифицируются по точному сообщению и булевым флагам', () => {
+  const timeout = 'Durable Object storage operation exceeded timeout which caused object to be reset.';
+  assert.equal(errorCode(new Error(timeout)), 'durable_storage_timeout');
+  assert.equal(errorCode({ message: timeout, retryable: true }), 'durable_storage_timeout');
+  // Overload must prevent retry guidance even if both platform flags are set.
+  assert.equal(errorCode({ message: timeout, retryable: true, overloaded: true }), 'durable_overloaded');
+  assert.equal(errorCode({ message: 'private provider response', retryable: true }), 'durable_retryable');
+  assert.equal(errorCode({ message: 'quota exceeded', overloaded: true }), 'durable_overloaded');
+  assert.equal(errorCode({ message: 'private response', retryable: 'true', overloaded: 1 }), 'operation_failed');
+  assert.equal(errorCode({ message: 'Durable Object storage timed out' }), 'operation_failed');
+  assert.equal(errorCode({ message: 'object reset because of a timeout' }), 'operation_failed');
+  assert.equal(errorCode(undefined), 'operation_failed');
+  // Existing generic timeout and KV classifications remain distinct.
+  assert.equal(errorCode({ name: 'TimeoutError' }), 'timeout');
+  assert.equal(errorCode(new Error('KV put 429')), 'storage_rate_limited');
+  assert.equal(errorCode(new Error('KV quota exceeded')), 'storage_quota');
+});
+
+test('диагностика Durable Object не называет сбой квотой KV и не предлагает повторно платить', () => {
+  for (const code of ['durable_storage_timeout', 'durable_overloaded', 'durable_retryable']) {
+    const incident = { ...base, origin: 'server', category: 'purchase', operation: 'api.user.purchase', code };
+    const copy = incidentCopy(incident);
+    assert.match(copy.reason, /Durable Object/);
+    assert.doesNotMatch(copy.reason, /квот|не определена/);
+    const advice = incidentGuide(incident);
+    assert.equal(advice.level, 'critical');
+    assert.match(advice.steps.join(' '), /повторно не платить/);
+    assert.match(advice.steps.join(' '), /Выдать Premium/);
+  }
+  assert.match(guide({ code: 'durable_overloaded' }).steps[0], /не повторяйте запрос немедленно/);
+  assert.match(guide({ code: 'durable_retryable' }).steps[0], /только для идемпотентной/);
+  assert.match(guide({ code: 'durable_storage_timeout' }).steps[0], /не дневная квота KV/);
+});
+
+test('классификация исключения не передаёт произвольное сообщение в инцидент', async () => {
+  const events = [];
+  const env = { BOT_TOKEN: 'test', CHAT_ID: 'test', TELEGRAM: { idFromName: value => value, get: () => ({ fetch: async (_, init) => {
+    events.push(JSON.parse(init.body).incident); return new Response('ok');
+  } }) } };
+  const error = Object.assign(new Error('private token https://private.test/credential'), { retryable: true });
+  assert.equal(await reportIncident(env, { category: 'infrastructure', operation: 'analytics.flush', code: errorCode(error) }), true);
+  assert.equal(events[0].code, 'durable_retryable');
+  assert.doesNotMatch(JSON.stringify(events[0]), /private|token|credential/);
+  assert.doesNotMatch(buildIncidentMessage(events[0]), /private|token|credential/);
 });
 
 test('ошибка СБП показывает сумму, тариф, заказ, этап и честное последствие', () => {

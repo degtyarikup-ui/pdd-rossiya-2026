@@ -1,4 +1,5 @@
 import 'package:pdd_app/l10n/l10n.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -83,7 +84,7 @@ class _PremiumPaywallSheetState extends State<PremiumPaywallSheet> {
     IapService.instance
         .loadProducts(phase: ProductLoadPhase.paywall)
         .whenComplete(() {
-          if (!mounted || IapService.instance.hasStoreProducts) return;
+          if (!mounted || IapService.instance.hasCompleteStoreProducts) return;
           final storeShown =
               !kIsWeb &&
               (defaultTargetPlatform == TargetPlatform.iOS ||

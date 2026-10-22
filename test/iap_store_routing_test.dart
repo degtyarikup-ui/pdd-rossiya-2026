@@ -42,6 +42,14 @@ class CountingBillingStore extends InAppPurchasePlatform {
           rawPrice: 99,
           currencyCode: 'RUB',
         ),
+        ProductDetails(
+          id: 'ru.pdd.pddapp.sub.3months',
+          title: 'Quarter',
+          description: 'Quarter',
+          price: '290 RUB',
+          rawPrice: 290,
+          currencyCode: 'RUB',
+        ),
       ],
       notFoundIDs: const [],
     );

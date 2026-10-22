@@ -54,6 +54,9 @@ const REASONS = {
   provider_timeout: 'Сервис входа не ответил вовремя.',
   storage_quota: 'Серверное хранилище отклонило операцию из-за превышения лимита.',
   storage_rate_limited: 'Слишком частые записи в серверное хранилище. Запись временно отклонена.',
+  durable_storage_timeout: 'Операция хранилища Durable Object превысила лимит времени, и Cloudflare перезапустила объект.',
+  durable_overloaded: 'Cloudflare отклонила запрос из-за перегрузки Durable Object.',
+  durable_retryable: 'Cloudflare пометила сбой Durable Object как допускающий повтор запроса.',
   storage_not_configured: 'На сервере не настроено хранилище.',
   session_secret_not_configured: 'На сервере не настроен ключ выдачи сессий входа.',
   session_creation_failed: 'Сервер не смог создать сессию входа.',
@@ -67,6 +70,7 @@ const REASONS = {
   no_message: 'Сервер принял сообщение без ответа: вероятно, на сервере не установлена новая версия чата.',
   bad_response: 'Сервер ответил в неожиданном формате.',
   products_not_found: 'Магазин ответил без ошибки, но не вернул наш тариф Premium.',
+  products_incomplete: 'Магазин вернул только часть тарифов Premium. Загрузка недостающих тарифов будет повторена.',
   storekit_no_response: 'App Store ответил без ошибки, но не вернул ни одного тарифа Premium.',
   storekit2_products_error: 'App Store не смог выдать тарифы: сбой StoreKit или связи с App Store.',
   apple_unknown: 'Apple не завершил вход: обычно на устройстве не выполнен вход в Apple ID или окно входа закрылось.',
@@ -112,11 +116,13 @@ const REASONS = {
 };
 const GROUPS = { auth: ['Не удалось войти в аккаунт', 'Операция входа завершилась ошибкой.'], purchase: ['Ошибка Premium или оплаты', 'Операция с Premium завершилась ошибкой.'], app: ['Ошибка приложения', 'Одна из операций приложения завершилась ошибкой.'], infrastructure: ['Сбой сервера', 'Сервер не смог завершить операцию.'] };
 export function incidentCopy(event) {
-  const action = Object.hasOwn(ACTIONS, event.operation) ? ACTIONS[event.operation] : null;
-  const [title, description] = action || (Object.hasOwn(GROUPS, event.category) ? GROUPS[event.category] : GROUPS.infrastructure);
-  const http = event.status || Number(event.code?.match(/^http_(\d{3})$/)?.[1]);
   // Код может нести метку через двоеточие (credential_rejected:<причина>) — текст берём по базовой части.
   const baseCode = String(event.code ?? '').split(':')[0];
+  const action = event.operation === 'iap.products' && baseCode === 'products_incomplete'
+    ? ['Не все тарифы Premium загрузились', 'Магазин вернул часть тарифов; доступный тариф можно купить после повторной проверки перед покупкой.']
+    : (Object.hasOwn(ACTIONS, event.operation) ? ACTIONS[event.operation] : null);
+  const [title, description] = action || (Object.hasOwn(GROUPS, event.category) ? GROUPS[event.category] : GROUPS.infrastructure);
+  const http = event.status || Number(event.code?.match(/^http_(\d{3})$/)?.[1]);
   const reason = (Object.hasOwn(REASONS, baseCode) ? REASONS[baseCode] : null)
     || (http === 429 ? 'Сервис временно ограничил частоту запросов.' : null)
     || (http === 401 ? 'Сессия входа не подтверждена или истекла.' : null)
@@ -163,8 +169,10 @@ const GOOGLE_SIGN_IN = {
 };
 
 const NETWORK_STEPS = ['Пользователю: проверить интернет, попробовать другую сеть (Wi‑Fi или мобильный интернет) или VPN.', 'Нам: если таких сообщений много от одной страны или оператора — до сервера не достаёт маршрут; сверьтесь с сообщениями «Вход удался не сразу» (fallback_ok).'];
+const DURABLE_CODES = new Set(['durable_storage_timeout', 'durable_overloaded', 'durable_retryable']);
 const GUIDE_BY_CODE = {
   timeout: NETWORK_STEPS,
+  products_incomplete: ['Пользователю: снова открыть экран Premium для загрузки тарифов. Приложение также повторит загрузку автоматически.', 'Нам: сверьте недостающие ID и доступность каждого тарифа по странам в App Store Connect / Google Play Console, включая активный базовый план Google Play. Частичный каталог не означает недоступность всего магазина.'],
   storekit_no_response: ['Пользователю: проверить вход в App Store (Настройки → Apple ID → Медиаматериалы и покупки) и снова открыть экран Premium.', 'Нам: если у многих — проверьте в App Store Connect доступность подписок по странам (Подписки → Доступность) и статус «Готово к продаже».'],
   apple_unknown: ['Пользователю: войти в Apple ID в настройках iPhone или выбрать другой способ входа.', 'Нам: единичные случаи — норма; если у многих — проверьте Sign in with Apple в App Store Connect.'],
   network: NETWORK_STEPS,
@@ -179,6 +187,9 @@ const GUIDE_BY_CODE = {
   storage_not_configured: ['Нам: к воркеру не подключено хранилище KV — проверьте wrangler.toml.'],
   storage_quota: ['Нам: исчерпан дневной лимит записи в хранилище KV (бесплатный план). Сброс в 00:00 UTC, либо перейти на платный план.'],
   storage_rate_limited: ['Нам: слишком частые записи в одно значение хранилища. Если повторяется — найдите, что пишет так часто (логи воркера).'],
+  durable_storage_timeout: ['Нам: проверьте длительные операции хранилища и логи Durable Object в Cloudflare. Это лимит времени операции, а не дневная квота KV.'],
+  durable_overloaded: ['Нам: не повторяйте запрос немедленно — это усилит перегрузку. Уменьшите работу на запрос и частоту обращений к этому Durable Object; проверьте очередь и логи Cloudflare.'],
+  durable_retryable: ['Нам: повтор допустим только для идемпотентной операции, с увеличивающейся паузой и новым Durable Object stub. Проверьте логи Cloudflare, если сбой повторяется.'],
   missing_credential: ['Пользователю: войти ещё раз или другим способом.', 'Нам: если у многих — провайдер перестал возвращать токен, проверьте версию плагина входа.'],
   page_load_failed: ['Пользователю: проверить интернет и повторить; можно войти другим способом.'],
   invalid_response: ['Пользователю: перезапустить приложение и войти ещё раз. Проверить дату и время на телефоне.', 'Нам: если у многих — сервер вернул ответ в новом формате, проверьте совместимость версий.'],
@@ -299,6 +310,10 @@ export function incidentGuide(event) {
     if (byCode) steps.push(...byCode);
     else if (/^storekit2?_/.test(baseCode)) steps.push(...STOREKIT_STEPS);
     else if (byOperation) steps.push(...byOperation);
+  }
+  if (DURABLE_CODES.has(baseCode) && event.category === 'purchase') {
+    steps.push('Если человек уже оплатил, повторно не платить. Сверьте существующую транзакцию в магазине или Platega и её привязку к аккаунту.');
+    if (CRITICAL_OPERATIONS.has(operation)) steps.push(GIVE_PREMIUM);
   }
   const [emoji, label, meaning] = LEVELS[level];
   return { level, emoji, label, meaning, what: what[0] || null, steps: steps.slice(0, 3) };

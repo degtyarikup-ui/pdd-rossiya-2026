@@ -1,5 +1,6 @@
 import { updateKey, validateRelease } from './app_updates.js';
 import { reportIncident, errorCode } from './diagnostics.js';
+import { durableRequest } from './durable_request.js';
 import { importPKCS8, SignJWT } from 'jose';
 
 export const DEFAULT_NOTIFICATION_CONFIG = Object.freeze({ pushEnabled: false, popupEnabled: true, streakEnabled: true, gameEnabled: true });
@@ -308,8 +309,11 @@ export class NotificationsState {
 }
 export async function notificationRequest(env, path, method = 'GET', body) {
   if (!env.NOTIFICATIONS) return reply({ error: 'Уведомления не подключены' }, 503);
-  const stub = env.NOTIFICATIONS.get(env.NOTIFICATIONS.idFromName('admin-notifications'));
-  return stub.fetch('https://notifications' + path, { method, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const retryableRead = method === 'GET' && ['/client', '/admin', '/updates', '/updates/admin']
+    .includes(new URL('https://notifications' + path).pathname);
+  return durableRequest(env.NOTIFICATIONS, env.NOTIFICATIONS.idFromName('admin-notifications'),
+    stub => stub.fetch('https://notifications' + path, { method, ...(body ? { body: JSON.stringify(body) } : {}) }),
+    { retryableRead });
 }
 
 // ── Images: uploaded from the admin, stored in KV, served publicly (FCM and

@@ -1,9 +1,16 @@
 import { retainAppleAuthorization } from './apple_account.js';
 import { accountRead, accountReadMany, accountWrite } from './account_state.js';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 
-const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
-const appleKeys = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
+// Keep jose's signature, key rotation and claim checks. Its fetch hook only
+// distinguishes an unavailable trusted key endpoint from a rejected credential.
+async function fetchProviderKeys(url, options) {
+  const response = await fetch(url, options);
+  if (response.status !== 200) throw providerHttpFailure('jwks_status_', response, true);
+  return response;
+}
+const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'), { [customFetch]: fetchProviderKeys });
+const appleKeys = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'), { [customFetch]: fetchProviderKeys });
 // Ключи Google и Apple иногда отдаются дольше обычного: один повтор вместо отказа во входе.
 async function verifyWithKeys(credential, keys, options) {
   try {
@@ -25,6 +32,17 @@ const reply = (body, status = 200) => Response.json(body, { status, headers: { '
 // Причина отказа для журнала: техническая метка (код ошибки библиотеки или
 // статус ответа провайдера), без текста ошибки, токенов и данных пользователя.
 const authFailure = (message, authReason) => Object.assign(new Error(message), { authReason });
+function providerHttpFailure(prefix, response, keyEndpoint = false) {
+  const error = authFailure('provider response rejected', prefix + response.status);
+  if (keyEndpoint || response.status === 429 || response.status >= 500) {
+    error.authTemporary = true;
+    const value = response.headers.get('retry-after');
+    const seconds = /^\d+$/.test(value || '') ? Number(value)
+      : value ? Math.ceil((Date.parse(value) - Date.now()) / 1000) : 1;
+    error.authRetryAfter = Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : 1;
+  }
+  return error;
+}
 export function credentialReason(error) {
   const raw = typeof error?.authReason === 'string'
     ? error.authReason
@@ -41,7 +59,7 @@ export async function verifyIdentity(body, env) {
     // Android and the custom web button use OAuth access tokens. Google
     // validates the token; the configured allowlist includes the web client.
     const info = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(credential), { signal: AbortSignal.timeout(6000) });
-    if (!info.ok) throw authFailure('invalid credential', 'google_tokeninfo_' + info.status);
+    if (!info.ok) throw providerHttpFailure('google_tokeninfo_', info);
     const tok = await info.json();
     const androidClients = audiences(env.GOOGLE_ANDROID_CLIENT_IDS, '');
     const allowed = [...androidClients, ...audiences(env.GOOGLE_CLIENT_IDS, GOOGLE_CLIENT)];
@@ -74,7 +92,7 @@ export async function verifyIdentity(body, env) {
     const response = await fetch('https://login.yandex.ru/info?format=json', {
       headers: { Authorization: `OAuth ${credential}` }, signal: AbortSignal.timeout(8000),
     });
-    if (!response.ok) throw authFailure('invalid credential', 'yandex_status_' + response.status);
+    if (!response.ok) throw providerHttpFailure('yandex_status_', response);
     const info = await response.json();
     if (info.client_id !== (env.YANDEX_CLIENT_ID || YANDEX_CLIENT) || !info.id) throw new Error('wrong client');
     claims = { sub: String(info.id), name: info.real_name || info.display_name,
@@ -197,7 +215,7 @@ export async function handleAuth(request, env, verify = verifyIdentity, onFailur
     const requestId = crypto.randomUUID();
     let provider = 'unknown';
     let metadata = {};
-    const finish = (body, status, outcome, reason = null) => {
+    const finish = (body, status, outcome, reason = null, retryAfter = null) => {
       // Never record credentials, headers, user IDs, names or provider errors.
       console.log(JSON.stringify({ event: 'auth_session', requestId, provider,
         status, outcome, durationMs: Date.now() - started, ...(reason ? { reason } : {}) }));
@@ -206,6 +224,7 @@ export async function handleAuth(request, env, verify = verifyIdentity, onFailur
       }
       const response = reply(body, status);
       response.headers.set('x-auth-diagnostic-id', requestId);
+      if (retryAfter !== null) response.headers.set('Retry-After', String(retryAfter));
       return response;
     };
     // No legacy or missing-secret bypass for issuing sessions.
@@ -217,11 +236,18 @@ export async function handleAuth(request, env, verify = verifyIdentity, onFailur
     if (!env.INSTALLS) return finish({ error: 'unavailable' }, 503, 'storage_not_configured');
     let user;
     try { user = await verify(body, env); } catch (error) {
+      const timeout = error?.code === 'ERR_JWKS_TIMEOUT' || error?.name === 'TimeoutError' || error?.name === 'AbortError';
+      const requestFailed = error?.name === 'TypeError' || error?.name === 'SyntaxError' || error?.code === 'ERR_JWKS_INVALID';
+      const temporary = timeout || requestFailed || error?.authTemporary === true;
       const outcome = error?.message === 'wrong client' ? 'oauth_client_rejected'
-        : error?.name === 'TimeoutError' || error?.name === 'AbortError' ? 'provider_timeout'
+        : timeout ? 'provider_timeout'
+        : requestFailed || error?.authTemporary === true ? 'provider_request_failed'
         : error?.code === 'ERR_JWT_EXPIRED' ? 'credential_expired'
-        : error?.name === 'TypeError' ? 'provider_request_failed'
         : 'credential_rejected';
+      // A network outage does not prove that the user's credential is invalid.
+      // Return a retryable service failure, while invalid signatures/audiences
+      // and expired credentials continue to fail closed with 401.
+      if (temporary) return finish({ error: 'provider unavailable' }, 503, outcome, credentialReason(error), error.authRetryAfter ?? 1);
       return finish({ error: 'invalid credentials' }, 401, outcome, credentialReason(error));
     }
     try { await retainAppleAuthorization(env, user, body); }

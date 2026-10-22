@@ -23,6 +23,15 @@ flutter test                        # все тесты Flutter
 
 Браузерным тестам нужны Playwright (`NODE_PATH`) и Google Chrome.
 
+Настоящий локальный Worker + SQLite Durable Objects (без production-секретов
+и удалённых записей): из `server/install-notifier/` выполнить
+`RUN_RUNTIME_SMOKE=1 npm run test:runtime`. Wrangler должен быть установлен;
+если его нет в PATH, передать `WRANGLER_BIN=/абсолютный/путь/к/wrangler`.
+Тест проверяет большой Unicode-прогресс, немедленную KV-проекцию, перезапуск,
+отзыв сессии, удаление аккаунта и одноразовую инициализацию поддержки.
+Fixture и логи сохраняются только в `scratch/reliability/runtime/`.
+Обычный `node --test test-*.mjs` пропускает этот opt-in тест.
+
 ## Рилсы на перекрёстках
 
 Сохранённый шаблон и команды — [стандарт](video/reels_3d.md). После изменения

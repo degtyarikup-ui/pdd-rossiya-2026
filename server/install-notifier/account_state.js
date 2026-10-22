@@ -2,6 +2,7 @@
 // ledger and deletion/session generation. KV is a retryable read projection.
 // Every existing account writer runs inside one globally addressed DO request;
 // all local documents commit in one storage transaction after the handler ends.
+import { durableRequest } from './durable_request.js';
 const ACCOUNT_PREFIXES = ['user:', 'user_progress:', 'user_admin:', 'pay_intent:', 'auth_generation:', 'account_deleted:', 'apple_auth:'];
 const scoped = (key, id) => ACCOUNT_PREFIXES.some(prefix => key === prefix + id) || key.startsWith('pay_order:') || key.startsWith('payment_ledger:') || key.startsWith('pay_tx:') || key.startsWith('notified_purch:') || key.startsWith('revoked_session:' + id + ':');
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -19,9 +20,10 @@ export async function accountRpc(env, id, path, body) {
     if (accountStateRequired(env)) throw new Error('account storage not configured');
     return null; // Isolated pre-migration fixtures only; production requires it.
   }
-  return env.ACCOUNTS.get(env.ACCOUNTS.idFromName(id)).fetch('https://account.internal' + path, {
+  const retryableRead = ['/_account/read', '/_account/read-many', '/_directory/find'].includes(path);
+  return durableRequest(env.ACCOUNTS, env.ACCOUNTS.idFromName(id), stub => stub.fetch('https://account.internal' + path, {
     method: 'POST', headers: { 'content-type': 'application/json', 'x-account-id': id }, body: JSON.stringify(body || {}),
-  });
+  }), { retryableRead });
 }
 export async function accountRead(env, id, key) {
   if (env.__ACCOUNT_ID === id || !env.ACCOUNTS) return env.INSTALLS?.get(key);
@@ -34,8 +36,16 @@ export async function accountRead(env, id, key) {
 export async function accountReadMany(env, id, keys) {
   if (env.__ACCOUNT_ID === id || !env.ACCOUNTS) return Promise.all(keys.map(key => env.INSTALLS?.get(key)));
   const response = await accountRpc(env, id, '/_account/read-many', { keys });
-  if (!response?.ok) throw new Error('account storage unavailable');
-  return (await response.json()).values;
+  const body = response?.ok ? await response.json() : null;
+  if (Array.isArray(body?.values) && body.values.length === keys.length
+      && body.values.every(value => value === null || typeof value === 'string')) return body.values;
+  // During a deployment, a new Worker may reach an older AccountState. The
+  // old HTTP router either returns 404 or treats this private POST as an ignored
+  // installation. Fall back only for those explicit legacy responses; malformed
+  // data and storage failures must never authorize a session as "not revoked".
+  if (response?.status === 404 || (body?.ok === true && body.ignored === true
+      && body.reason === 'not-a-store-install')) return Promise.all(keys.map(key => accountRead(env, id, key)));
+  throw new Error('account storage unavailable');
 }
 export async function accountWrite(env, id, key, value, options = {}) {
   if (env.__ACCOUNT_ID === id || !env.ACCOUNTS) return value == null ? env.INSTALLS.delete(key) : env.INSTALLS.put(key, value, options);
@@ -82,7 +92,12 @@ export async function routeAccountRequest(request, env, { sessionAccountId, veri
   if (typeof id !== 'string' || id.length > 220) return json({ error: 'invalid account' }, 400);
   const headers = new Headers(request.headers); headers.set('x-account-id', id);
   headers.delete('x-account-order'); if (callbackOrder) headers.set('x-account-order', callbackOrder);
-  return env.ACCOUNTS.get(env.ACCOUNTS.idFromName(id)).fetch(new Request(request, { headers }));
+  // Reads may recover from a reset. A write can already have committed before
+  // its response is lost, so never repeat it without a request-id contract.
+  const retryableRead = request.method === 'GET' && ['/api/user/status', '/api/user/progress',
+    '/api/user/store/status', '/api/user/store/account-token'].includes(path);
+  return durableRequest(env.ACCOUNTS, env.ACCOUNTS.idFromName(id),
+    stub => stub.fetch(new Request(request, { headers })), { retryableRead });
 }
 
 export class AccountState {

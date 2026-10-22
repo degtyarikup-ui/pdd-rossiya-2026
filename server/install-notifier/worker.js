@@ -95,6 +95,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'content-type, x-install-secret, authorization',
+  'Access-Control-Expose-Headers': 'Retry-After, x-auth-diagnostic-id',
   'Access-Control-Max-Age': '86400',
 };
 
@@ -2795,11 +2796,10 @@ function publicUser(user) {
 async function saveUserProfile(env, user) {
   if (!env.INSTALLS || !user || !user.id) return user;
   const kvKey = 'user:' + user.id;
-  let existing = null;
-  try {
-    const raw = await env.INSTALLS.get(kvKey);
-    if (raw) existing = JSON.parse(raw);
-  } catch (_) {}
+  // A failed/corrupt read must never replace paid entitlements with a new
+  // profile. Only a successful null read proves this is a new account.
+  const raw = await env.INSTALLS.get(kvKey);
+  let existing = raw ? JSON.parse(raw) : null;
 
   const deletion = JSON.parse(await env.INSTALLS.get('account_deleted:' + user.id) || 'null');
   if (deletion && Date.parse(user.createdAt || '') <= deletion.at) throw new Error('account deleted');
@@ -3400,11 +3400,10 @@ const workerHandlers = {
       if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
 
       const kvKey = 'user_progress:' + userId;
-      let existing = null;
-      try {
-        const raw = await env.INSTALLS.get(kvKey);
-        if (raw) existing = JSON.parse(raw);
-      } catch (_) {}
+      // An unavailable authoritative store is not an empty account. Propagate
+      // I/O failures instead of merging a snapshot over supposedly absent data.
+      const raw = await env.INSTALLS.get(kvKey);
+      const existing = raw ? JSON.parse(raw) : null;
 
       const merged = mergeProgress(existing, progress);
       if (appVersion) merged.appVersion = appVersion;
@@ -3446,11 +3445,8 @@ const workerHandlers = {
       if (!userId || !env.INSTALLS) return jsonResponse({ error: 'missing userId' }, 400);
 
       const kvKey = 'user_progress:' + userId;
-      let progress = null;
-      try {
-        const raw = await env.INSTALLS.get(kvKey);
-        if (raw) progress = JSON.parse(raw);
-      } catch (_) {}
+      const raw = await env.INSTALLS.get(kvKey);
+      const progress = raw ? JSON.parse(raw) : null;
 
       return jsonResponse({
         ok: true,
@@ -3599,11 +3595,8 @@ const workerHandlers = {
       if (!env.INSTALLS) return jsonResponse({ error: 'server error' }, 500);
 
       const kvKey = 'user:' + targetId;
-      let user = null;
-      try {
-        const raw = await env.INSTALLS.get(kvKey);
-        if (raw) user = JSON.parse(raw);
-      } catch (_) {}
+      const raw = await env.INSTALLS.get(kvKey);
+      let user = raw ? JSON.parse(raw) : null;
 
       if (!user) {
         user = {
@@ -3687,19 +3680,15 @@ const workerHandlers = {
       let raw = null;
       if (env.INSTALLS) raw = await env.INSTALLS.get('user:' + targetId);
       if (!raw) return jsonResponse({ ok: false, error: 'user not found', isPremium: false }, 404);
-      try {
-        const user = await refreshStoreEntitlement(env, JSON.parse(raw));
-        return jsonResponse({
-          ok: true,
-          user: publicUser(user),
-          isPremium: Boolean(user.isPremium) && (!user.premiumExpiresAt || Date.parse(user.premiumExpiresAt) > Date.now()),
-          premiumExpiresAt: user.premiumExpiresAt || null,
-          premiumSource: user.premiumSource || null,
-          grantNotice: user.grantNotice || null
-        });
-      } catch (_) {
-        return jsonResponse({ ok: false, error: 'parse error' }, 500);
-      }
+      const user = await refreshStoreEntitlement(env, JSON.parse(raw));
+      return jsonResponse({
+        ok: true,
+        user: publicUser(user),
+        isPremium: Boolean(user.isPremium) && (!user.premiumExpiresAt || Date.parse(user.premiumExpiresAt) > Date.now()),
+        premiumExpiresAt: user.premiumExpiresAt || null,
+        premiumSource: user.premiumSource || null,
+        grantNotice: user.grantNotice || null
+      });
     }
 
     if (url.pathname === '/api/pay/status' && request.method === 'GET') {
@@ -4347,9 +4336,12 @@ export default {
       }
       return response;
     } catch (error) {
-      console.error('Worker request failed', operation, errorCode(error));
-      await notify(500, errorCode(error), serverErrorContext(error));
-      return jsonResponse({ error: 'server unavailable' }, 500);
+      const code = errorCode(error), context = serverErrorContext(error);
+      const status = ['durable_storage_timeout', 'durable_overloaded', 'durable_retryable'].includes(code) ? 503 : 500;
+      console.error('Worker request failed', JSON.stringify({ operation, code, ...context }));
+      await notify(status, code, context);
+      return jsonResponse({ error: 'server unavailable' }, status,
+        request.method === 'GET' && status === 503 ? { 'Retry-After': code === 'durable_overloaded' ? '5' : '1' } : {});
     }
   },
   async scheduled(event, env, ctx) {

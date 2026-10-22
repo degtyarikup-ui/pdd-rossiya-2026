@@ -5,6 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 // ignore: depend_on_referenced_packages
 import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DiagnosticStore extends InAppPurchasePlatform {
@@ -74,7 +75,11 @@ void main() {
       expect(events.single['attempt'], 3);
       expect(events.single['returnedCount'], 0);
       expect(events.single['missingCount'], 2);
-      expect(events.single['missingIds'], ['ru.pdd.pddapp.sub.week']);
+      expect(events.single['requestedCount'], 2);
+      expect(events.single['missingIds'], [
+        'ru.pdd.pddapp.sub.week',
+        'ru.pdd.pddapp.sub.3months',
+      ]);
       expect(events.single.toString(), isNot(contains('TOP_SECRET')));
       expect(events.single.toString(), isNot(contains('secret@example.com')));
     },
@@ -98,6 +103,43 @@ void main() {
       await Future.wait([background, foreground]);
       expect(store.queries, 3);
       expect(events.single['phase'], 'purchase');
+    },
+  );
+  test(
+    'purchase joining an in-flight paywall query can buy its returned tier without waiting for the other',
+    () async {
+      store.pending = Completer<ProductDetailsResponse>();
+      final codes = <String>[];
+      final iap = IapService.forTesting(
+        onProductDiagnostic: (code, _) => codes.add(code),
+      );
+      addTearDown(iap.dispose);
+      final paywall = iap.loadProducts(phase: ProductLoadPhase.paywall);
+      await Future<void>.delayed(Duration.zero);
+      final purchase = iap.loadProducts(
+        phase: ProductLoadPhase.purchase,
+        purchaseTier: PremiumTier.weekly,
+      );
+      store.pending!.complete(
+        ProductDetailsResponse(
+          productDetails: [
+            ProductDetails(
+              id: 'ru.pdd.pddapp.sub.week',
+              title: 'Week',
+              description: 'Week',
+              price: '99 RUB',
+              rawPrice: 99,
+              currencyCode: 'RUB',
+            ),
+          ],
+          notFoundIDs: const [],
+        ),
+      );
+      await Future.wait([paywall, purchase]);
+      expect(store.queries, 1);
+      expect(codes, isEmpty);
+      expect(iap.storePrice(PremiumTier.weekly), '99 RUB');
+      expect(iap.hasCompleteStoreProducts, isFalse);
     },
   );
   test(

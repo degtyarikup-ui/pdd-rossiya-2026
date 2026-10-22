@@ -44,7 +44,17 @@ class FlakyProductStore extends InAppPurchasePlatform {
       );
     }
     return ProductDetailsResponse(
-      productDetails: [product],
+      productDetails: [
+        product,
+        ProductDetails(
+          id: 'ru.pdd.pddApp.sub.3months',
+          title: 'Quarter',
+          description: 'Quarter',
+          price: '290 ₽',
+          rawPrice: 290,
+          currencyCode: 'RUB',
+        ),
+      ],
       notFoundIDs: const [],
     );
   }
@@ -56,13 +66,14 @@ void useStore(InAppPurchasePlatform store) {
   debugDefaultTargetPlatformOverride = TargetPlatform.linux;
   InAppPurchase.instance;
   InAppPurchasePlatform.instance = store;
-  debugDefaultTargetPlatformOverride = null;
+  debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() => IapService.productRetryUnit = Duration.zero);
+  tearDown(() => debugDefaultTargetPlatformOverride = null);
 
   test('тарифы загружаются со второй попытки после сбоя магазина', () async {
     final store = FlakyProductStore(failures: 1);

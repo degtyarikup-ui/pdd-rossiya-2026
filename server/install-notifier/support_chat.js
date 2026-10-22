@@ -5,6 +5,7 @@ import { processTelegramAuthMessage, telegramWebhookVerified, telegramWebhookSec
 import { readSession } from './user_auth.js';
 import { pushConfigured, sendFcmMessage } from './notifications.js';
 import { privatePushTopic } from './notification_identity.js';
+import { durableRequest } from './durable_request.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -49,7 +50,8 @@ async function listSupportMessages(env, clientId, since) {
     return since > 0 ? msgs.filter((m) => m.ts > since) : msgs;
   }
   const read = async () => {
-    const response = await stub.fetch(`https://support.internal/list?since=${since}`);
+    const response = await durableRequest(env.SUPPORT, env.SUPPORT.idFromName(clientId),
+      fresh => fresh.fetch(`https://support.internal/list?since=${since}`), { retryableRead: true });
     if (!response.ok) throw new Error('support storage unavailable');
     return response.json();
   };
@@ -58,7 +60,7 @@ async function listSupportMessages(env, clientId, since) {
     // Empty incremental results are normal. Only an uninitialized thread needs
     // migration; persist an empty seed too, so idle polls never recheck old KV.
     const legacy = await env.INSTALLS.get('support:messages:' + clientId, { type: 'json' });
-    const seed = await stub.fetch('https://support.internal/seed', { method: 'POST', body: JSON.stringify(Array.isArray(legacy) ? legacy : []) });
+    const seed = await threadStub(env, clientId).fetch('https://support.internal/seed', { method: 'POST', body: JSON.stringify(Array.isArray(legacy) ? legacy : []) });
     if (!seed.ok) throw new Error('support migration unavailable');
     result = await read();
   }

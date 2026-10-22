@@ -647,6 +647,9 @@ class AuthService extends ChangeNotifier {
       hosts: BackendConfig.notifierHosts,
       stillWanted: () => revision == _accountRevision,
       stats: stats,
+      // Only session issuance is safe to retry. A temporary provider/JWKS
+      // outage must not be shown as rejected credentials after one HTTP reply.
+      retryStatusCodes: const {500, 502, 503, 504},
     );
     final diagnosticId = response.headers['x-auth-diagnostic-id'];
     if (diagnosticId != null &&

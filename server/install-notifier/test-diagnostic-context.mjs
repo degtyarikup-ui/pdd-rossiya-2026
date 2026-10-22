@@ -108,7 +108,10 @@ test('server error context contains type and module location without private URL
   const error = new TypeError('TOP_SECRET user@example.com');
   error.stack = 'TypeError: TOP_SECRET\n at query (/Users/private/project/worker.js:123:8)\n at token (https://private.test/path?TOP_SECRET)';
   assert.deepEqual(serverErrorContext(error), {stage:'server',errorType:'TypeError',frames:['worker.js:123:8']});
+  error.retryable = true; error.overloaded = false;
+  assert.deepEqual(serverErrorContext(error), {stage:'server',errorType:'TypeError',frames:['worker.js:123:8'],retryable:true,overloaded:false});
   const context = sanitizeDiagnosticContext({phase:'TOP_SECRET',stage:'bad',errorType:'TOP_SECRET',attempt:-1,returnedCount:1e20,frames:['https://a.test/private'],missingIds:['TOP_SECRET']});
   assert.deepEqual(context, {frames:[], missingIds:[]});
   assert.doesNotMatch(JSON.stringify(context), /TOP_SECRET|private/);
+  assert.deepEqual(sanitizeDiagnosticContext({ retryable: 'TOP_SECRET', overloaded: {} }), {});
 });

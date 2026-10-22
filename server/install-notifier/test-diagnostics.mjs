@@ -81,13 +81,32 @@ test('auth failures use stable outcomes and request ID, with credentials exclude
   let task;
   const r = await handleAuth(new Request('https://test/api/auth/session', { method: 'POST', headers: { 'x-install-secret': 'test' }, body: JSON.stringify({ provider: 'apple', credential: 'TOP_SECRET' }) }), env,
     async () => { throw new DOMException('TOP_SECRET', 'TimeoutError'); }, e => { task = reportIncident(env, e); });
-  assert.equal(r.status, 401);
+  assert.equal(r.status, 503);
+  assert.equal(r.headers.get('Retry-After'), '1');
   // onFailure schedules in the worker; this direct hook is asynchronous.
   await task;
   const text = (await messages(state))[0];
   assert.match(text, /provider_timeout/);
   assert.ok(text.includes(r.headers.get('x-auth-diagnostic-id')));
   assert.doesNotMatch(text, /TOP_SECRET/);
+});
+
+test('web auth exposes Retry-After and the diagnostic id without retrying a provider rate limit early', async () => {
+  const { env } = setup(), originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('{}', { status: 429, headers: { 'Retry-After': '30' } });
+  try {
+    const response = await worker.fetch(new Request('https://test/api/auth/session', {
+      method: 'POST', headers: { 'x-install-secret': 'test', 'content-type': 'application/json' },
+      body: JSON.stringify({ provider: 'google', credential: 'fixture-access-token' }),
+    }), env);
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get('Retry-After'), '30');
+    assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+    const exposed = response.headers.get('Access-Control-Expose-Headers').toLowerCase().split(',').map(s => s.trim());
+    assert.ok(exposed.includes('retry-after'));
+    assert.ok(exposed.includes('x-auth-diagnostic-id'));
+    assert.match(response.headers.get('x-auth-diagnostic-id'), /^[a-f0-9-]{36}$/);
+  } finally { globalThis.fetch = originalFetch; }
 });
 
 test('worker catches storage crashes, preserves CORS and never recursively reports diagnostics delivery', async () => {

@@ -130,37 +130,10 @@ class IapService extends ChangeNotifier {
       ? 'ru.pdd.pddApp.sub.3months'
       : 'ru.pdd.pddapp.sub.3months';
 
-  static const Set<String> _productIds = {
-    // Standard reverse-domain iOS & Android IDs
-    'ru.pdd.pddApp.premium.week',
-    'ru.pdd.pddApp.premium.3months',
-    'ru.pdd.pddApp.week',
-    'ru.pdd.pddApp.3months',
-    'ru.pdd.pddapp.week',
-    'ru.pdd.pddapp.3months',
-    'ru.pdd.pddApp.1week',
-    'ru.pdd.pddApp.3month',
-    'ru.pdd.pddApp.sub.week',
-    'ru.pdd.pddApp.sub.3months',
-    'u.pdd.pddApp.premium.week',
-    'ru.pdd.pddapp.sub.week',
-    'ru.pdd.pddapp.sub.3months',
-    'ru.pdd.premium.week',
-    'ru.pdd.premium.3months',
-    // Short / common StoreKit IDs
-    'pdd_premium_week',
-    'pdd_premium_3months',
-    'pdd_week',
-    'pdd_3months',
-    'premium_week',
-    'premium_3months',
-    'premium.week',
-    'premium.3months',
-    'week',
-    '3months',
-    'weekly',
-    'three_months',
-  };
+  // Query only the products sold by this storefront and accepted by our
+  // verification server. Guessing aliases can display an unpurchasable product.
+  // Restored transactions are handled independently from this sales catalogue.
+  static Set<String> get _productIds => {productIdWeek, productId3Months};
 
   final Map<String, ProductDetails> _products = {};
   bool _isAvailable = false;
@@ -302,6 +275,7 @@ class IapService extends ChangeNotifier {
   static Duration productRetryUnit = const Duration(seconds: 2);
 
   Future<void>? _loadingProducts;
+  String? _purchaseProductId;
   ProductLoadPhase _loadPhase = ProductLoadPhase.background;
   Map<String, dynamic> _productContext = {};
   @visibleForTesting
@@ -309,13 +283,18 @@ class IapService extends ChangeNotifier {
 
   Future<void> loadProducts({
     ProductLoadPhase phase = ProductLoadPhase.background,
+    PremiumTier? purchaseTier,
   }) {
     if (_loadingProducts == null || phase.index > _loadPhase.index) {
       _loadPhase = phase;
     }
+    if (phase == ProductLoadPhase.purchase && purchaseTier != null) {
+      _purchaseProductId = _productIdForTier(purchaseTier);
+    }
     return _loadingProducts ??= _loadProducts().whenComplete(() {
       _loadingProducts = null;
       _loadPhase = ProductLoadPhase.background;
+      _purchaseProductId = null;
     });
   }
 
@@ -361,24 +340,26 @@ class IapService extends ChangeNotifier {
   }
 
   Future<String?> _queryProducts() async {
+    // A previously loaded ProductDetails may contain an expired Google Play
+    // offer token. Keep display prices separately, never buy from old details.
+    final hadProducts = _products.isNotEmpty;
+    _products.clear();
+    if (hadProducts) notifyListeners();
     try {
       final response = await _iap
           .queryProductDetails(_productIds)
           .timeout(productQueryTimeout);
+      final products = response.productDetails
+          .where((product) => _productIds.contains(product.id))
+          .toList();
+      final missing = _productIds.difference(
+        products.map((product) => product.id).toSet(),
+      );
       _productContext.addAll({
-        'returnedCount': response.productDetails.length,
-        'missingCount': response.notFoundIDs.length,
-        'missingIds': response.notFoundIDs
-            .where(DiagnosticContext.productIds.contains)
-            .toList(),
+        'returnedCount': products.length,
+        'missingCount': missing.length,
+        'missingIds': missing.toList(),
       });
-      if (response.productDetails.isNotEmpty) {
-        for (final product in response.productDetails) {
-          _products[product.id] = product;
-        }
-        notifyListeners();
-        unawaited(_savePriceCache());
-      }
       final error = response.error;
       if (error != null) {
         _lastErrorMessage = error.message;
@@ -391,7 +372,19 @@ class IapService extends ChangeNotifier {
         });
         return ErrorReporter.sdkCode(error.code);
       }
-      if (response.productDetails.isEmpty) return 'products_not_found';
+      for (final product in products) {
+        _products[product.id] = product;
+      }
+      if (products.isNotEmpty) {
+        notifyListeners();
+        unawaited(_savePriceCache());
+      }
+      if (_purchaseProductId != null &&
+          _products.containsKey(_purchaseProductId)) {
+        return null;
+      }
+      if (products.isEmpty) return 'products_not_found';
+      if (missing.isNotEmpty) return 'products_incomplete';
       return null;
     } catch (e, stack) {
       _lastErrorMessage = e.toString();
@@ -407,43 +400,11 @@ class IapService extends ChangeNotifier {
   }
 
   ProductDetails? _findProductForTier(PremiumTier tier) {
-    if (_products.isEmpty) return null;
-
-    final primaryId = tier == PremiumTier.threeMonths
-        ? productId3Months
-        : productIdWeek;
-    if (_products.containsKey(primaryId)) {
-      return _products[primaryId];
-    }
-
-    if (tier == PremiumTier.threeMonths) {
-      for (final entry in _products.entries) {
-        final id = entry.key.toLowerCase();
-        if (id.contains('3month') ||
-            id.contains('3_month') ||
-            id.contains('quarter') ||
-            id.contains('3m') ||
-            id.contains('month_3') ||
-            id.contains('three_month') ||
-            id.contains('threemonth')) {
-          return entry.value;
-        }
-      }
-    } else {
-      for (final entry in _products.entries) {
-        final id = entry.key.toLowerCase();
-        if (id.contains('week') ||
-            id.contains('1w') ||
-            id.contains('7day') ||
-            id.contains('1_week') ||
-            id.contains('weekly')) {
-          return entry.value;
-        }
-      }
-    }
-
-    return null;
+    return _products[_productIdForTier(tier)];
   }
+
+  static String _productIdForTier(PremiumTier tier) =>
+      tier == PremiumTier.threeMonths ? productId3Months : productIdWeek;
 
   static const _priceCacheKey = 'iap_store_prices';
   final Map<String, String> _cachedPrices = {};
@@ -484,6 +445,9 @@ class IapService extends ChangeNotifier {
 
   /// Есть ли сейчас товары магазина, которые можно купить.
   bool get hasStoreProducts => _products.isNotEmpty;
+
+  /// A partial response must not stop the paywall retry for the missing tier.
+  bool get hasCompleteStoreProducts => _productIds.every(_products.containsKey);
 
   /// Цена тарифа для показа: из ответа магазина, а пока он не пришёл — та,
   /// что этот же магазин называл на этом устройстве в прошлый раз (строка
@@ -563,11 +527,8 @@ class IapService extends ChangeNotifier {
       }
     }
 
-    var product = _findProductForTier(tier);
-    if (product == null) {
-      await loadProducts(phase: ProductLoadPhase.purchase);
-      product = _findProductForTier(tier);
-    }
+    await loadProducts(phase: ProductLoadPhase.purchase, purchaseTier: tier);
+    final product = _findProductForTier(tier);
 
     if (product == null) {
       debugPrint('IapService: Product for tier $tier not found in Store');

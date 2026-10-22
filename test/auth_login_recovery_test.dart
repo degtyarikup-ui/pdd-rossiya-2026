@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
+import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -21,6 +22,7 @@ void main() {
     createdAt: DateTime(2026),
   );
   setUp(() {
+    NotifierRoute.reset();
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
   });
@@ -121,6 +123,46 @@ void main() {
         expect(auth.currentUser, isNull);
         expect(writes, 0);
       }
+    },
+  );
+
+  test(
+    'temporary session service outage retries and completes verified login once',
+    () async {
+      var calls = 0, writes = 0;
+      final auth = AuthService.forTesting(
+        writeSession: (_) async {
+          writes++;
+        },
+      );
+      final success = await http.runWithClient(
+        () => auth.completeSignInForTesting(user, 'provider-token'),
+        () => MockClient((request) async {
+          if (request.url.path != '/api/auth/session') {
+            return http.Response('{}', 200);
+          }
+          calls++;
+          if (calls == 1) {
+            return http.Response('{"error":"provider unavailable"}', 503);
+          }
+          return http.Response(
+            jsonEncode({
+              'user': user.toMap(),
+              'token': token,
+              'expiresAt': DateTime.now()
+                  .add(const Duration(days: 30))
+                  .toIso8601String(),
+            }),
+            200,
+          );
+        }),
+      );
+      expect(success, isTrue);
+      expect(calls, 2);
+      expect(writes, 1);
+      expect(auth.currentUser?.id, user.id);
+      expect(auth.hasServerSession, isTrue);
+      expect(auth.lastFailure, isNull);
     },
   );
   test(

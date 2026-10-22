@@ -27,8 +27,13 @@ function paymentContext(value) {
 }
 export function errorCode(error) {
   // Never forward exception messages: SDK errors can contain URLs and tokens.
-  if (/too many requests.*same key|(?:put|write).*429|(?:put|write).*rate.?limit/i.test(String(error?.message || ''))) return 'storage_rate_limited';
-  if (/quota|limit exceeded|too many writes/i.test(String(error?.message || ''))) return 'storage_quota';
+  // Overload takes precedence even when the platform also marks an error retryable.
+  if (error?.overloaded === true) return 'durable_overloaded';
+  const message = typeof error?.message === 'string' ? error.message : '';
+  if (message.includes('Durable Object storage operation exceeded timeout which caused object to be reset.')) return 'durable_storage_timeout';
+  if (error?.retryable === true) return 'durable_retryable';
+  if (/too many requests.*same key|(?:put|write).*429|(?:put|write).*rate.?limit/i.test(message)) return 'storage_rate_limited';
+  if (/quota|limit exceeded|too many writes/i.test(message)) return 'storage_quota';
   if (error?.name === 'TimeoutError' || error?.name === 'AbortError') return 'timeout';
   return 'operation_failed';
 }

@@ -16,7 +16,8 @@ class RetryStats {
 /// пропала на секунду или маршрут до сервера временно плохой: вторая попытка
 /// (на запасном адресе, если он есть) обычно проходит быстрее, чем человек
 /// успевает увидеть ошибку. Повторяются только таймаут и сетевая ошибка —
-/// ответ сервера (любой статус) возвращается как есть.
+/// ответы сервера возвращаются как есть, если безопасный вызывающий код явно
+/// не указал временные статусы в [retryStatusCodes].
 ///
 /// Адреса чередуются: основной, запасной, основной… Адрес, на котором
 /// запрос удался, пробуется первым в следующий раз ([preferred]).
@@ -34,26 +35,46 @@ Future<http.Response> sendWithRetry(
   Duration pause = const Duration(seconds: 1),
   bool Function()? stillWanted,
   RetryStats? stats,
+  Set<int> retryStatusCodes = const {},
 }) async {
   assert(hosts.isNotEmpty);
   final start = NotifierRoute.preferredIndex(hosts);
   Object? lastError;
+  var nextPause = pause;
   for (var i = 0; i < attempts.length; i++) {
     if (i > 0) {
       if (stillWanted != null && !stillWanted()) break;
-      await Future<void>.delayed(pause);
+      await Future<void>.delayed(nextPause);
+      if (stillWanted != null && !stillWanted()) break;
     }
     final host = hosts[(start + i) % hosts.length];
     stats?.attempts = i + 1;
     try {
       final response = await send(host).timeout(attempts[i]);
+      if (retryStatusCodes.contains(response.statusCode)) {
+        // Keep login bounded. A longer or date-based Retry-After is returned to
+        // the caller instead of retrying early or holding its UI indefinitely.
+        final retryAfter = response.headers['retry-after'];
+        final seconds = retryAfter == null ? 0 : int.tryParse(retryAfter);
+        if (i + 1 < attempts.length &&
+            seconds != null &&
+            seconds >= 0 &&
+            seconds <= 2) {
+          final requested = Duration(seconds: seconds);
+          nextPause = requested > pause ? requested : pause;
+          continue;
+        }
+        return response;
+      }
       stats?.host = host;
       NotifierRoute.remember(host);
       return response;
     } on TimeoutException catch (error) {
       lastError = error;
+      nextPause = pause;
     } on http.ClientException catch (error) {
       lastError = error;
+      nextPause = pause;
     }
   }
   throw lastError ?? TimeoutException('request not sent');

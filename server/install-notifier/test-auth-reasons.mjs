@@ -1,5 +1,5 @@
 // Причина отказа входа в журнале и в уведомлении: только техническая метка,
-// без токенов и текста ошибок; ответ клиенту не меняется.
+// без токенов и текста ошибок; временный сбой отделён от отклонённого credential.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { handleAuth, credentialReason } from './user_auth.js';
@@ -73,4 +73,65 @@ test('сообщения о сбоях связи и о входе «не сра
   assert.match(recovered.reason, /запасной адрес/);
   const retry = incidentCopy({ origin: 'client', category: 'auth', operation: 'auth.recovered', code: 'retry_ok:2x' });
   assert.match(retry.reason, /повтор/);
+});
+
+test('JWKS timeouts and provider network failures return retryable 503 without accepting credentials', async () => {
+  const logs = [], original = console.log;
+  console.log = text => logs.push(JSON.parse(text));
+  try {
+    for (const error of [
+      Object.assign(new Error('PRIVATE TOKEN MUST NOT LEAK'), { code: 'ERR_JWKS_TIMEOUT' }),
+      new DOMException('PRIVATE TOKEN MUST NOT LEAK', 'TimeoutError'),
+      new TypeError('PRIVATE TOKEN MUST NOT LEAK'),
+      new SyntaxError('PRIVATE TOKEN MUST NOT LEAK'),
+    ]) {
+      const response = await handleAuth(request({ provider: 'apple', credential: 'PRIVATE-TOKEN' }), env(), async () => { throw error; });
+      assert.equal(response.status, 503);
+      assert.equal(response.headers.get('Retry-After'), '1');
+      assert.deepEqual(await response.json(), { error: 'provider unavailable' });
+      assert.ok(['provider_timeout', 'provider_request_failed'].includes(logs.at(-1).outcome));
+    }
+    assert.equal(JSON.stringify(logs).includes('PRIVATE'), false);
+  } finally { console.log = original; }
+});
+
+test('OAuth provider outages are service failures; invalid tokens remain 401 and Retry-After is preserved', async () => {
+  const original = globalThis.fetch;
+  try {
+    for (const provider of ['google', 'yandex']) {
+      for (const status of [429, 500, 503]) {
+        globalThis.fetch = async () => new Response('{}', { status, headers: { 'Retry-After': '30' } });
+        const response = await handleAuth(request({ provider, credential: 'PRIVATE-TOKEN' }), env());
+        assert.equal(response.status, 503);
+        assert.equal(response.headers.get('Retry-After'), '30');
+        assert.deepEqual(await response.json(), { error: 'provider unavailable' });
+      }
+      for (const status of [400, 401, 403]) {
+        globalThis.fetch = async () => new Response('{}', { status });
+        const response = await handleAuth(request({ provider, credential: 'PRIVATE-TOKEN' }), env());
+        assert.equal(response.status, 401);
+        assert.equal(response.headers.has('Retry-After'), false);
+        assert.deepEqual(await response.json(), { error: 'invalid credentials' });
+      }
+    }
+  } finally { globalThis.fetch = original; }
+});
+
+test('a failing trusted JWKS endpoint is retryable and recovered keys still enforce audience', async () => {
+  const { generateKeyPair, exportJWK, SignJWT } = await import('jose');
+  const { privateKey, publicKey } = await generateKeyPair('RS256');
+  const jwk = { ...await exportJWK(publicKey), kid: 'auth-outage-fixture', alg: 'RS256', use: 'sig' };
+  const token = await new SignJWT({}).setProtectedHeader({ alg: 'RS256', kid: jwk.kid })
+    .setIssuer('https://appleid.apple.com').setAudience('foreign-app').setSubject('fixture')
+    .setIssuedAt().setExpirationTime('5m').sign(privateKey);
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async url => { assert.equal(String(url), 'https://appleid.apple.com/auth/keys'); return new Response('{}', { status: 503 }); };
+    const unavailable = await handleAuth(request({ provider: 'apple', credential: token }), env());
+    assert.equal(unavailable.status, 503);
+    globalThis.fetch = async () => Response.json({ keys: [jwk] });
+    const rejected = await handleAuth(request({ provider: 'apple', credential: token }), env());
+    assert.equal(rejected.status, 401);
+    assert.deepEqual(await rejected.json(), { error: 'invalid credentials' });
+  } finally { globalThis.fetch = original; }
 });
