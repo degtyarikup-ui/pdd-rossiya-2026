@@ -775,13 +775,13 @@ func _setup_signs(parent: Node3D) -> void:
 	create_pole.call(Vector3(4.4, 1.5, 18.5), 3.0)
 
 	# 2. Sign 2.4 (Уступите дорогу) on cross street secondary approaches:
-	# West arm: right side of approaching Eastbound traffic on SW sidewalk before stop line (X = -11.5, Z = 12.6):
-	create_sign.call("Sign_2_4", "2.4", Vector3(-11.5, 3.0, 12.6))
-	create_pole.call(Vector3(-11.5, 1.5, 12.6), 3.0)
+	# West arm: right side of approaching Eastbound traffic on SW sidewalk with comfortable 3.3m clearance from traffic light (X = -13.5, Z = 12.6):
+	create_sign.call("Sign_2_4", "2.4", Vector3(-13.5, 3.0, 12.6))
+	create_pole.call(Vector3(-13.5, 1.5, 12.6), 3.0)
 
-	# East arm: right side of approaching Westbound traffic on NE sidewalk before stop line (X = 11.5, Z = -2.6):
-	create_sign.call("Sign_2_4_East", "2.4", Vector3(11.5, 3.0, -2.6))
-	create_pole.call(Vector3(11.5, 1.5, -2.6), 3.0)
+	# East arm: right side of approaching Westbound traffic on NE sidewalk with comfortable 3.3m clearance from traffic light (X = 13.5, Z = -2.6):
+	create_sign.call("Sign_2_4_East", "2.4", Vector3(13.5, 3.0, -2.6))
+	create_pole.call(Vector3(13.5, 1.5, -2.6), 3.0)
 
 	# 3. Pedestrian crossing signs 5.19.1 / 5.19.2 (ГОСТ Р 52289 п. 5.6.24):
 	# North crosswalk (Z = -7.75, width [-9.0, -6.5]):
@@ -798,41 +798,64 @@ func _setup_signs(parent: Node3D) -> void:
 	create_sign.call("Sign_5_19_2_South", "5.19.2", Vector3(-4.4, 2.7, 16.5))
 	create_pole.call(Vector3(-4.4, 1.35, 16.5), 2.7)
 
-	# West crosswalk (X = -7.5, width [-8.75, -6.25]):
-	create_sign.call("Sign_5_19_1_West", "5.19.1", Vector3(-8.75, 2.7, 12.6))
-	create_pole.call(Vector3(-8.75, 1.35, 12.6), 2.7)
+	# West crosswalk (X = -7.5, width [-8.75, -6.25]) spaced 2.2m from traffic light:
+	create_sign.call("Sign_5_19_1_West", "5.19.1", Vector3(-8.0, 2.7, 12.6))
+	create_pole.call(Vector3(-8.0, 1.35, 12.6), 2.7)
 
 	create_sign.call("Sign_5_19_2_West", "5.19.2", Vector3(-6.25, 2.7, -2.6))
 	create_pole.call(Vector3(-6.25, 1.35, -2.6), 2.7)
 
-	# East crosswalk (X = 7.5, width [6.25, 8.75]):
-	create_sign.call("Sign_5_19_1_East", "5.19.1", Vector3(8.75, 2.7, -2.6))
-	create_pole.call(Vector3(8.75, 1.35, -2.6), 2.7)
+	# East crosswalk (X = 7.5, width [6.25, 8.75]) spaced 2.2m from traffic light:
+	create_sign.call("Sign_5_19_1_East", "5.19.1", Vector3(8.0, 2.7, -2.6))
+	create_pole.call(Vector3(8.0, 1.35, -2.6), 2.7)
 
 	create_sign.call("Sign_5_19_2_East", "5.19.2", Vector3(6.25, 2.7, 12.6))
 	create_pole.call(Vector3(6.25, 1.35, 12.6), 2.7)
 
 
 func _build_city_scenery() -> void:
-	# Fences along sidewalks with openings at pedestrian crossings (ГОСТ Р 52289)
-	# Both NW and NE fences set back to give wide open plazas around upper kiosks (Z = -13.0)
+	# Fences along sidewalks positioned precisely along lawn edges (ГОСТ Р 52289)
+	# Fences leave sidewalks wide and open with generous clearance to trees and paths
 	for z_fence in [-24.0, -36.0]:
-		_put_prop("street/fence_12", Vector3(-6.8, 0.15, z_fence), 0.0)
-		_put_prop("street/fence_12", Vector3(6.8, 0.15, z_fence), 0.0)
+		_put_prop("street/fence_12", Vector3(-10.9, 0.15, z_fence), 0.0)
+		_put_prop("street/fence_12", Vector3(10.9, 0.15, z_fence), 0.0)
 
 	for z_fence in [24.0, 36.0]:
-		_put_prop("street/fence_12", Vector3(-6.8, 0.15, z_fence), 0.0)
-		_put_prop("street/fence_12", Vector3(6.8, 0.15, z_fence), 0.0)
+		_put_prop("street/fence_12", Vector3(-10.9, 0.15, z_fence), 0.0)
+		_put_prop("street/fence_12", Vector3(10.9, 0.15, z_fence), 0.0)
 
 	for x_fence in [-18.0, -30.0, -42.0]:
-		_put_prop("street/fence_12", Vector3(x_fence, 0.15, -5.8), PI * 0.5)
-		_put_prop("street/fence_12", Vector3(x_fence, 0.15, 15.8), PI * 0.5)
+		_put_prop("street/fence_12", Vector3(x_fence, 0.15, -8.4), PI * 0.5)
+		_put_prop("street/fence_12", Vector3(x_fence, 0.15, 17.4), PI * 0.5)
 
 	for x_fence in [18.0, 30.0, 42.0]:
-		_put_prop("street/fence_12", Vector3(x_fence, 0.15, -5.8), PI * 0.5)
-		_put_prop("street/fence_12", Vector3(x_fence, 0.15, 15.8), PI * 0.5)
+		_put_prop("street/fence_12", Vector3(x_fence, 0.15, -8.4), PI * 0.5)
+		_put_prop("street/fence_12", Vector3(x_fence, 0.15, 17.4), PI * 0.5)
 
-	# Modern Street Lamps aligned along the green furniture zone
+	var fence_segments := [
+		{"x1": -48.0, "x2": -12.0, "z": 17.4},
+		{"x1": 12.0, "x2": 48.0, "z": 17.4},
+		{"x1": -48.0, "x2": -12.0, "z": -8.4},
+		{"x1": 12.0, "x2": 48.0, "z": -8.4},
+		{"z1": -42.0, "z2": -18.0, "x": -10.9},
+		{"z1": 18.0, "z2": 42.0, "x": -10.9},
+		{"z1": -42.0, "z2": -18.0, "x": 10.9},
+		{"z1": 18.0, "z2": 42.0, "x": 10.9}
+	]
+
+	var is_near_fence := func(pos: Vector3, min_dist := 1.6) -> bool:
+		for fs in fence_segments:
+			if fs.has("z"):
+				if pos.x >= fs.x1 - min_dist and pos.x <= fs.x2 + min_dist:
+					if absf(pos.z - fs.z) < min_dist:
+						return true
+			elif fs.has("x"):
+				if pos.z >= fs.z1 - min_dist and pos.z <= fs.z2 + min_dist:
+					if absf(pos.x - fs.x) < min_dist:
+						return true
+		return false
+
+	# Modern Street Lamps aligned along the furniture zone (spaced safely from fences)
 	var lamp_coords := [
 		Vector3(-6.8, 0.15, -4.0),
 		Vector3(6.8, 0.15, -5.2),
@@ -842,10 +865,10 @@ func _build_city_scenery() -> void:
 		Vector3(6.8, 0.15, -22.0),
 		Vector3(-6.8, 0.15, 26.0),
 		Vector3(6.8, 0.15, 26.0),
-		Vector3(-20.0, 0.15, -5.8),
-		Vector3(-20.0, 0.15, 15.8),
-		Vector3(20.0, 0.15, -5.8),
-		Vector3(20.0, 0.15, 15.8)
+		Vector3(-20.0, 0.15, -4.8),
+		Vector3(-20.0, 0.15, 14.8),
+		Vector3(20.0, 0.15, -4.8),
+		Vector3(20.0, 0.15, 14.8)
 	]
 	for l_pos in lamp_coords:
 		var yaw := PI * 0.5 if l_pos.x < 0 else -PI * 0.5
@@ -879,6 +902,50 @@ func _build_city_scenery() -> void:
 				return true
 		return false
 
+	# Multistory apartment buildings & residential architecture with explicit AABB footprints
+	var buildings_def := [
+		# NW quadrant
+		{"prop": "buildings/home_1", "pos": Vector3(-16.0, 0.0, -18.0), "yaw": PI * 0.5, "color": Color("#7D8B78"), "size": Vector3(7.9, 5.68, 7.9)},
+		{"prop": "buildings/block_0", "pos": Vector3(-29.0, 0.0, -18.0), "yaw": PI * 0.5, "color": Color("#A0725C"), "size": Vector3(10.9, 8.58, 8.9)},
+		{"prop": "buildings/home_0", "pos": Vector3(-13.0, 0.0, -32.0), "yaw": PI * 0.5, "color": Color("#C8B896"), "size": Vector3(6.9, 5.68, 6.9)},
+		{"prop": "buildings/block_3", "pos": Vector3(-28.0, 0.0, -31.0), "yaw": 0.0, "color": Color("#9E7B66"), "size": Vector3(11.9, 8.58, 8.9)},
+		{"prop": "buildings/tower_0", "pos": Vector3(-26.0, 0.0, -47.0), "yaw": PI * 0.5, "color": Color("#8592A0"), "size": Vector3(9.9, 14.5, 9.9)},
+		{"prop": "buildings/block_2", "pos": Vector3(-43.0, 0.0, -16.0), "yaw": 0.0, "color": Color("#95928C"), "size": Vector3(11.9, 8.58, 8.9)},
+
+		# NE quadrant
+		{"prop": "buildings/block_5", "pos": Vector3(14.5, 0.0, -18.0), "yaw": -PI * 0.5, "color": Color("#A89480"), "size": Vector3(10.9, 8.58, 8.9)},
+		{"prop": "buildings/block_6", "pos": Vector3(29.0, 0.0, -21.0), "yaw": -PI * 0.5, "color": Color("#B8AA94"), "size": Vector3(10.9, 8.58, 8.9)},
+		{"prop": "buildings/tower_1", "pos": Vector3(25.0, 0.0, -46.0), "yaw": -PI * 0.5, "color": Color("#9C8578"), "size": Vector3(9.9, 14.5, 9.9)},
+		{"prop": "buildings/block_1", "pos": Vector3(42.0, 0.0, -34.0), "yaw": 0.0, "color": Color("#8CA0BA"), "size": Vector3(11.9, 8.58, 8.9)},
+		{"prop": "buildings/home_2", "pos": Vector3(13.0, 0.0, -32.0), "yaw": -PI * 0.5, "color": Color("#7D8B78"), "size": Vector3(8.9, 5.68, 7.4)},
+		{"prop": "buildings/home_5", "pos": Vector3(42.0, 0.0, -15.0), "yaw": 0.0, "color": Color("#C0B29E"), "size": Vector3(8.9, 8.58, 7.4)},
+
+		# SW quadrant
+		{"prop": "buildings/home_1", "pos": Vector3(-32.0, 0.0, 18.0), "yaw": 0.0, "color": Color("#7D8B78"), "size": Vector3(7.9, 5.68, 7.9)},
+		{"prop": "buildings/home_0", "pos": Vector3(-34.0, 0.0, 32.0), "yaw": PI * 0.5, "color": Color("#C8B896"), "size": Vector3(6.9, 5.68, 6.9)},
+		{"prop": "buildings/home_3", "pos": Vector3(-22.0, 0.0, 42.0), "yaw": PI * 0.5, "color": Color("#C0B29E"), "size": Vector3(7.4, 8.58, 7.9)},
+
+		# SE quadrant
+		{"prop": "buildings/home_4", "pos": Vector3(38.0, 0.0, 32.0), "yaw": -PI * 0.5, "color": Color("#B87D6E"), "size": Vector3(8.4, 8.58, 7.9)},
+		{"prop": "buildings/home_2", "pos": Vector3(36.0, 0.0, 18.0), "yaw": 0.0, "color": Color("#7D8B78"), "size": Vector3(8.9, 5.68, 7.4)},
+		{"prop": "buildings/home_5", "pos": Vector3(38.0, 0.0, 44.0), "yaw": 0.0, "color": Color("#C0B29E"), "size": Vector3(8.9, 8.58, 7.4)}
+	]
+
+	for b in buildings_def:
+		_put_prop(str(b.prop), b.pos, float(b.yaw), Vector3.ONE, b.color)
+
+	# Strict building collision check: no trees or foliage within 3.5m clearance of any building wall
+	var is_near_building := func(pos: Vector3, clearance := 3.5) -> bool:
+		for b in buildings_def:
+			var b_pos: Vector3 = b.pos
+			var b_size: Vector3 = b.size
+			var is_90 := absf(sin(float(b.yaw))) > 0.7
+			var hx: float = ((b_size.z if is_90 else b_size.x) * 0.5) + clearance
+			var hz: float = ((b_size.x if is_90 else b_size.z) * 0.5) + clearance
+			if absf(pos.x - b_pos.x) < hx and absf(pos.z - b_pos.z) < hz:
+				return true
+		return false
+
 	var canopy_colors: Array = sc.season.canopy if sc != null else [Color("#3B6E32")]
 	var birch_color: Color = sc.color("birch") if sc != null else Color("#4E8236")
 	var pine_colors: Array = sc.season.pine if sc != null else [Color("#2B4D28")]
@@ -894,22 +961,22 @@ func _build_city_scenery() -> void:
 		pit.position = Vector3(pos.x, 0.165, pos.z)
 		junction_node.add_child(pit)
 
-	# Trees and dense bushes along sidewalks (North-South) - skipping kiosk clearances
+	# Trees and dense bushes along sidewalks (North-South) - skipping kiosk and building clearances
 	for z in [-14.0, -18.0, -22.0, -26.0, -30.0, -34.0, -38.0, -42.0]:
 		var pw := Vector3(-6.8, 0.18, z)
 		var pe := Vector3(6.8, 0.18, z)
 		var pwb := Vector3(-6.8, 0.18, z + 2.0)
 		var peb := Vector3(6.8, 0.18, z + 2.0)
-		if not is_near_kiosk.call(pw):
+		if not is_near_kiosk.call(pw) and not is_near_building.call(pw, 3.5) and not is_near_fence.call(pw, 1.6):
 			add_tree_pit.call(pw, true)
 			_put_prop("trees/birch_0", pw, 0.25 * z, Vector3.ONE * 1.15, birch_color)
-		if not is_near_kiosk.call(pe):
+		if not is_near_kiosk.call(pe) and not is_near_building.call(pe, 3.5) and not is_near_fence.call(pe, 1.6):
 			add_tree_pit.call(pe, true)
 			_put_prop("trees/round_0", pe, -0.2 * z, Vector3.ONE * 1.2, Color(canopy_colors[abs(int(z)) % canopy_colors.size()]))
-		if not is_near_kiosk.call(pwb):
+		if not is_near_kiosk.call(pwb) and not is_near_building.call(pwb, 3.0) and not is_near_fence.call(pwb, 1.4):
 			add_tree_pit.call(pwb, false)
 			_put_prop("street/bush", pwb, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
-		if not is_near_kiosk.call(peb):
+		if not is_near_kiosk.call(peb) and not is_near_building.call(peb, 3.0) and not is_near_fence.call(peb, 1.4):
 			add_tree_pit.call(peb, false)
 			_put_prop("street/bush", peb, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
 
@@ -918,130 +985,103 @@ func _build_city_scenery() -> void:
 		var pe := Vector3(6.8, 0.18, z)
 		var pwb := Vector3(-6.8, 0.18, z + 2.0)
 		var peb := Vector3(6.8, 0.18, z + 2.0)
-		if not is_near_kiosk.call(pw):
+		if not is_near_kiosk.call(pw) and not is_near_building.call(pw, 3.5) and not is_near_fence.call(pw, 1.6):
 			add_tree_pit.call(pw, true)
 			_put_prop("trees/round_0", pw, 0.3 * z, Vector3.ONE * 1.15, Color(canopy_colors[int(z) % canopy_colors.size()]))
-		if not is_near_kiosk.call(pe):
+		if not is_near_kiosk.call(pe) and not is_near_building.call(pe, 3.5) and not is_near_fence.call(pe, 1.6):
 			add_tree_pit.call(pe, true)
 			_put_prop("trees/pine_0", pe, -0.15 * z, Vector3.ONE * 1.15, Color(pine_colors[int(z) % pine_colors.size()]))
-		if not is_near_kiosk.call(pwb):
+		if not is_near_kiosk.call(pwb) and not is_near_building.call(pwb, 3.0) and not is_near_fence.call(pwb, 1.4):
 			add_tree_pit.call(pwb, false)
 			_put_prop("street/bush", pwb, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
-		if not is_near_kiosk.call(peb):
+		if not is_near_kiosk.call(peb) and not is_near_building.call(peb, 3.0) and not is_near_fence.call(peb, 1.4):
 			add_tree_pit.call(peb, false)
 			_put_prop("street/bush", peb, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
 
-	# Trees and greenery along the cross streets (placed at Z = -5.8 and 15.8 to leave pedestrian corridor completely open)
+	# Trees and greenery along the cross streets (placed at Z = -4.8 and 14.8 with 2.6m clearance to fences)
 	for x in [-14.0, -18.0, -22.0, -26.0, -30.0, -34.0, -38.0]:
-		var ptn := Vector3(x, 0.18, -5.8)
-		var pts := Vector3(x, 0.18, 15.8)
-		var pbn := Vector3(x + 2.0, 0.18, -5.8)
-		var pbs := Vector3(x + 2.0, 0.18, 15.8)
-		if not is_near_kiosk.call(ptn):
+		var ptn := Vector3(x, 0.18, -4.8)
+		var pts := Vector3(x, 0.18, 14.8)
+		var pbn := Vector3(x + 2.0, 0.18, -4.8)
+		var pbs := Vector3(x + 2.0, 0.18, 14.8)
+		if not is_near_kiosk.call(ptn) and not is_near_building.call(ptn, 3.5) and not is_near_fence.call(ptn, 1.6):
 			add_tree_pit.call(ptn, true)
 			_put_prop("trees/birch_0", ptn, 0.2 * x, Vector3.ONE * 1.15, birch_color)
-		if not is_near_kiosk.call(pts):
+		if not is_near_kiosk.call(pts) and not is_near_building.call(pts, 3.5) and not is_near_fence.call(pts, 1.6):
 			add_tree_pit.call(pts, true)
 			_put_prop("trees/round_0", pts, -0.2 * x, Vector3.ONE * 1.15, Color(canopy_colors[abs(int(x)) % canopy_colors.size()]))
-		if not is_near_kiosk.call(pbn):
+		if not is_near_kiosk.call(pbn) and not is_near_building.call(pbn, 3.0) and not is_near_fence.call(pbn, 1.4):
 			add_tree_pit.call(pbn, false)
 			_put_prop("street/bush", pbn, 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
-		if not is_near_kiosk.call(pbs):
+		if not is_near_kiosk.call(pbs) and not is_near_building.call(pbs, 3.0) and not is_near_fence.call(pbs, 1.4):
 			add_tree_pit.call(pbs, false)
 			_put_prop("street/bush", pbs, 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
 
 	for x in [14.0, 18.0, 22.0, 26.0, 30.0, 34.0, 38.0]:
-		var ptn := Vector3(x, 0.18, -5.8)
-		var pts := Vector3(x, 0.18, 15.8)
-		var pbn := Vector3(x - 2.0, 0.18, -5.8)
-		var pbs := Vector3(x - 2.0, 0.18, 15.8)
-		if not is_near_kiosk.call(ptn):
+		var ptn := Vector3(x, 0.18, -4.8)
+		var pts := Vector3(x, 0.18, 14.8)
+		var pbn := Vector3(x - 2.0, 0.18, -4.8)
+		var pbs := Vector3(x - 2.0, 0.18, 14.8)
+		if not is_near_kiosk.call(ptn) and not is_near_building.call(ptn, 3.5) and not is_near_fence.call(ptn, 1.6):
 			add_tree_pit.call(ptn, true)
 			_put_prop("trees/round_0", ptn, 0.2 * x, Vector3.ONE * 1.15, Color(canopy_colors[int(x) % canopy_colors.size()]))
-		if not is_near_kiosk.call(pts):
+		if not is_near_kiosk.call(pts) and not is_near_building.call(pts, 3.5) and not is_near_fence.call(pts, 1.6):
 			add_tree_pit.call(pts, true)
 			_put_prop("trees/birch_0", pts, -0.2 * x, Vector3.ONE * 1.15, birch_color)
-		if not is_near_kiosk.call(pbn):
+		if not is_near_kiosk.call(pbn) and not is_near_building.call(pbn, 3.0) and not is_near_fence.call(pbn, 1.4):
 			add_tree_pit.call(pbn, false)
 			_put_prop("street/bush", pbn, 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
-		if not is_near_kiosk.call(pbs):
+		if not is_near_kiosk.call(pbs) and not is_near_building.call(pbs, 3.0) and not is_near_fence.call(pbs, 1.4):
 			add_tree_pit.call(pbs, false)
 			_put_prop("street/bush", pbs, 0.0, Vector3.ONE * 1.15, Color(canopy_colors[0]))
 
-	# Dense courtyard and lawn groves in all 4 quadrants (maximally fills all empty green spaces, avoiding kiosks)
+	# Dense courtyard and lawn groves in all 4 quadrants (placed in open courtyards with strict building and fence collision avoidance)
 	var lawn_trees := [
-		# NW lawn grove
-		{"prop": "trees/round_0", "pos": Vector3(-14.0, 0.18, -18.0), "s": 1.25},
-		{"prop": "trees/birch_0", "pos": Vector3(-20.0, 0.18, -12.0), "s": 1.2},
-		{"prop": "trees/pine_0", "pos": Vector3(-26.0, 0.18, -18.0), "s": 1.3},
-		{"prop": "trees/round_0", "pos": Vector3(-14.0, 0.18, -12.0), "s": 1.2},
-		{"prop": "trees/birch_0", "pos": Vector3(-24.0, 0.18, -26.0), "s": 1.25},
-		# NE lawn grove
-		{"prop": "trees/birch_0", "pos": Vector3(14.0, 0.18, -18.0), "s": 1.25},
-		{"prop": "trees/round_0", "pos": Vector3(20.0, 0.18, -12.0), "s": 1.2},
-		{"prop": "trees/pine_0", "pos": Vector3(26.0, 0.18, -18.0), "s": 1.3},
-		{"prop": "trees/round_0", "pos": Vector3(16.0, 0.18, -12.0), "s": 1.2},
-		{"prop": "trees/birch_0", "pos": Vector3(24.0, 0.18, -26.0), "s": 1.25},
-		# SW lawn grove (densely packed visible foreground)
-		{"prop": "trees/round_0", "pos": Vector3(-14.0, 0.18, 22.0), "s": 1.3},
-		{"prop": "trees/birch_0", "pos": Vector3(-20.0, 0.18, 18.0), "s": 1.2},
-		{"prop": "trees/round_0", "pos": Vector3(-26.0, 0.18, 24.0), "s": 1.25},
-		{"prop": "trees/pine_0", "pos": Vector3(-14.0, 0.18, 26.0), "s": 1.2},
-		{"prop": "trees/birch_0", "pos": Vector3(-16.0, 0.18, 30.0), "s": 1.25},
-		{"prop": "trees/round_0", "pos": Vector3(-24.0, 0.18, 32.0), "s": 1.3},
-		# SE lawn grove (densely packed visible foreground)
-		{"prop": "trees/birch_0", "pos": Vector3(14.0, 0.18, 22.0), "s": 1.25},
-		{"prop": "trees/round_0", "pos": Vector3(20.0, 0.18, 18.0), "s": 1.2},
-		{"prop": "trees/pine_0", "pos": Vector3(26.0, 0.18, 24.0), "s": 1.3},
-		{"prop": "trees/round_0", "pos": Vector3(12.0, 0.18, 22.0), "s": 1.2},
-		{"prop": "trees/birch_0", "pos": Vector3(16.0, 0.18, 30.0), "s": 1.25},
-		{"prop": "trees/round_0", "pos": Vector3(24.0, 0.18, 32.0), "s": 1.3}
+		# NW lawn grove (open courtyards between buildings)
+		{"prop": "trees/round_0", "pos": Vector3(-20.0, 0.18, -25.0), "s": 1.25},
+		{"prop": "trees/birch_0", "pos": Vector3(-36.0, 0.18, -25.0), "s": 1.2},
+		{"prop": "trees/pine_0", "pos": Vector3(-22.0, 0.18, -38.0), "s": 1.3},
+		{"prop": "trees/round_0", "pos": Vector3(-14.0, 0.18, -40.0), "s": 1.2},
+		{"prop": "trees/birch_0", "pos": Vector3(-35.0, 0.18, -38.0), "s": 1.25},
+		# NE lawn grove (open courtyards between buildings, completely clear of block_5 at (14.5, -18.0))
+		{"prop": "trees/birch_0", "pos": Vector3(18.0, 0.18, -25.0), "s": 1.25},
+		{"prop": "trees/round_0", "pos": Vector3(22.0, 0.18, -12.0), "s": 1.2},
+		{"prop": "trees/pine_0", "pos": Vector3(35.0, 0.18, -20.0), "s": 1.3},
+		{"prop": "trees/round_0", "pos": Vector3(18.0, 0.18, -38.0), "s": 1.2},
+		{"prop": "trees/birch_0", "pos": Vector3(32.0, 0.18, -42.0), "s": 1.25},
+		# SW lawn grove (densely packed visible foreground, clear of fences and houses)
+		{"prop": "trees/round_0", "pos": Vector3(-15.0, 0.18, 24.0), "s": 1.3},
+		{"prop": "trees/birch_0", "pos": Vector3(-22.0, 0.18, 20.0), "s": 1.2},
+		{"prop": "trees/round_0", "pos": Vector3(-26.0, 0.18, 26.0), "s": 1.25},
+		{"prop": "trees/pine_0", "pos": Vector3(-16.0, 0.18, 32.0), "s": 1.2},
+		{"prop": "trees/birch_0", "pos": Vector3(-18.0, 0.18, 38.0), "s": 1.25},
+		{"prop": "trees/round_0", "pos": Vector3(-26.0, 0.18, 34.0), "s": 1.3},
+		# SE lawn grove (densely packed visible foreground, clear of fences and houses)
+		{"prop": "trees/birch_0", "pos": Vector3(15.0, 0.18, 24.0), "s": 1.25},
+		{"prop": "trees/round_0", "pos": Vector3(22.0, 0.18, 20.0), "s": 1.2},
+		{"prop": "trees/pine_0", "pos": Vector3(26.0, 0.18, 26.0), "s": 1.3},
+		{"prop": "trees/round_0", "pos": Vector3(14.0, 0.18, 32.0), "s": 1.2},
+		{"prop": "trees/birch_0", "pos": Vector3(18.0, 0.18, 38.0), "s": 1.25},
+		{"prop": "trees/round_0", "pos": Vector3(26.0, 0.18, 34.0), "s": 1.3}
 	]
 	for lt in lawn_trees:
-		if is_near_kiosk.call(lt.pos):
+		if is_near_kiosk.call(lt.pos) or is_near_building.call(lt.pos, 3.5) or is_near_fence.call(lt.pos, 1.6):
 			continue
 		var t_color := birch_color if "birch" in str(lt.prop) else (Color(pine_colors[0]) if "pine" in str(lt.prop) else Color(canopy_colors[0]))
 		_put_prop(str(lt.prop), lt.pos, randf() * TAU, Vector3.ONE * float(lt.s), t_color)
 		var b1_pos: Vector3 = lt.pos + Vector3(1.4, 0, 1.4)
 		var b2_pos: Vector3 = lt.pos + Vector3(-1.4, 0, -1.2)
-		if not is_near_kiosk.call(b1_pos):
+		if not is_near_kiosk.call(b1_pos) and not is_near_building.call(b1_pos, 3.0) and not is_near_fence.call(b1_pos, 1.4):
 			_put_prop("street/bush", b1_pos, 0.0, Vector3.ONE * 1.3, Color(canopy_colors[0]))
-		if not is_near_kiosk.call(b2_pos):
+		if not is_near_kiosk.call(b2_pos) and not is_near_building.call(b2_pos, 3.0) and not is_near_fence.call(b2_pos, 1.4):
 			_put_prop("street/bush", b2_pos, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
 		# Soil pits for plants that stand on the paved sidewalk surfaces:
 		if absf(lt.pos.x) < 11.5 or (lt.pos.z > -8.5 and lt.pos.z < 17.5):
 			add_tree_pit.call(lt.pos, true)
-		if (absf(b1_pos.x) < 11.5 or (b1_pos.z > -8.5 and b1_pos.z < 17.5)) and not is_near_kiosk.call(b1_pos):
+		if (absf(b1_pos.x) < 11.5 or (b1_pos.z > -8.5 and b1_pos.z < 17.5)) and not is_near_kiosk.call(b1_pos) and not is_near_building.call(b1_pos, 3.0):
 			add_tree_pit.call(b1_pos, false)
-		if (absf(b2_pos.x) < 11.5 or (b2_pos.z > -8.5 and b2_pos.z < 17.5)) and not is_near_kiosk.call(b2_pos):
+		if (absf(b2_pos.x) < 11.5 or (b2_pos.z > -8.5 and b2_pos.z < 17.5)) and not is_near_kiosk.call(b2_pos) and not is_near_building.call(b2_pos, 3.0):
 			add_tree_pit.call(b2_pos, false)
-
-	# Multistory apartment buildings & residential architecture completely filling the camera frame with zero overlaps (>2.8m separation)
-	# NW quadrant
-	_put_prop("buildings/home_1", Vector3(-16.0, 0.0, -18.0), PI * 0.5, Vector3.ONE, Color("#7D8B78"))
-	_put_prop("buildings/block_0", Vector3(-29.0, 0.0, -18.0), PI * 0.5, Vector3.ONE, Color("#A0725C"))
-	_put_prop("buildings/home_0", Vector3(-13.0, 0.0, -32.0), PI * 0.5, Vector3.ONE, Color("#C8B896"))
-	_put_prop("buildings/block_3", Vector3(-28.0, 0.0, -31.0), 0.0, Vector3.ONE, Color("#9E7B66"))
-	_put_prop("buildings/tower_0", Vector3(-26.0, 0.0, -47.0), PI * 0.5, Vector3.ONE, Color("#8592A0"))
-	_put_prop("buildings/block_2", Vector3(-43.0, 0.0, -16.0), 0.0, Vector3.ONE, Color("#95928C"))
-
-	# NE quadrant (generous clearance from kiosk at (8.5, 0.15, -13.0) and >2.8m between all buildings)
-	_put_prop("buildings/block_5", Vector3(14.5, 0.0, -18.0), -PI * 0.5, Vector3.ONE, Color("#A89480"))
-	_put_prop("buildings/block_6", Vector3(29.0, 0.0, -21.0), -PI * 0.5, Vector3.ONE, Color("#B8AA94"))
-	_put_prop("buildings/tower_1", Vector3(25.0, 0.0, -46.0), -PI * 0.5, Vector3.ONE, Color("#9C8578"))
-	_put_prop("buildings/block_1", Vector3(42.0, 0.0, -34.0), 0.0, Vector3.ONE, Color("#8CA0BA"))
-	_put_prop("buildings/home_2", Vector3(13.0, 0.0, -32.0), -PI * 0.5, Vector3.ONE, Color("#7D8B78"))
-	_put_prop("buildings/home_5", Vector3(42.0, 0.0, -15.0), 0.0, Vector3.ONE, Color("#C0B29E"))
-
-	# SW quadrant residential buildings set back from intersection
-	_put_prop("buildings/home_1", Vector3(-32.0, 0.0, 18.0), 0.0, Vector3.ONE, Color("#7D8B78"))
-	_put_prop("buildings/home_0", Vector3(-34.0, 0.0, 32.0), PI * 0.5, Vector3.ONE, Color("#C8B896"))
-	_put_prop("buildings/home_3", Vector3(-22.0, 0.0, 42.0), PI * 0.5, Vector3.ONE, Color("#C0B29E"))
-
-	# SE quadrant (camera foreground: kept clear of massive skyscrapers; set back behind park)
-	_put_prop("buildings/home_4", Vector3(38.0, 0.0, 32.0), -PI * 0.5, Vector3.ONE, Color("#B87D6E"))
-	_put_prop("buildings/home_2", Vector3(36.0, 0.0, 18.0), 0.0, Vector3.ONE, Color("#7D8B78"))
-	_put_prop("buildings/home_5", Vector3(38.0, 0.0, 44.0), 0.0, Vector3.ONE, Color("#C0B29E"))
 
 	# Authentic parked cars along curbs on cross street
 	_put_parked_car("sedan", Vector3(-18.0, 0.0, 11.2), PI * 0.5, Color("#1E88E5"))
@@ -1108,7 +1148,7 @@ func _setup_traffic_lights() -> void:
 
 	# - Duplicating signal far-left curb across intersection (ГОСТ Р 52289 п. 7.3.3):
 	var tl_north_dup_far := TrafficSignal.make_mini({"state": "green", "arrow": "right", "arrowActive": false})
-	tl_north_dup_far.position = Vector3(4.8, 0.16, 12.4)
+	tl_north_dup_far.position = Vector3(4.8, 0.16, 11.6)
 	tl_north_dup_far.rotation.y = PI
 	tl_north_dup_far.visible = true
 	junction_node.add_child(tl_north_dup_far)
@@ -1120,9 +1160,9 @@ func _setup_traffic_lights() -> void:
 	tl_south_primary.visible = true
 	junction_node.add_child(tl_south_primary)
 
-	# - South approach duplicating signal far-left curb across intersection (facing South):
+	# - South approach duplicating signal far-left curb across intersection (spaced 2.0m from Sign 5.19.2 at Z = -6.5):
 	var tl_south_dup := TrafficSignal.make_mini({"state": "green", "arrow": "right", "arrowActive": false})
-	tl_south_dup.position = Vector3(-4.8, 0.16, -6.5)
+	tl_south_dup.position = Vector3(-4.8, 0.16, -4.5)
 	tl_south_dup.rotation.y = 0.0
 	tl_south_dup.visible = true
 	junction_node.add_child(tl_south_dup)
@@ -1172,11 +1212,21 @@ func _setup_traffic_lights() -> void:
 func _setup_pedestrian() -> void:
 	var ped := Pedestrian.new()
 	ped.name = "Pedestrian"
-	ped.configure(0, Color("#E57373"))
-	ped.set_meta("look", 0)
-	ped.set_meta("tint", Color("#E57373"))
-	ped_pos_x = -4.6
+	var walker_colors := [
+		Color("#E57373"), Color("#64B5F6"), Color("#81C784"),
+		Color("#FFD54F"), Color("#BA68C8"), Color("#4DB6AC"),
+		Color("#FF8A65"), Color("#A1887F"), Color("#90A4AE"),
+		Color("#5C6BC0"), Color("#26A69A"), Color("#FFA726")
+	]
+	var initial_look: int = randi() % Models.WALKERS
+	var initial_tint: Color = walker_colors[randi() % walker_colors.size()]
+	ped.configure(initial_look, initial_tint)
+	ped.set_meta("look", initial_look)
+	ped.set_meta("tint", initial_tint)
+	ped_pos_x = -7.5
 	ped_dir = 1.0
+	ped_speed = 1.45
+	ped_wait_timer = 0.0
 	ped.position = Vector3(ped_pos_x, 0.16, -7.75)
 	ped.rotation.y = PI * 0.5
 	junction_node.add_child(ped)
@@ -1195,12 +1245,12 @@ func _setup_active_pedestrians() -> void:
 	]
 
 	var routes_def := [
-		# South crosswalk
-		{"type": "cross_x", "y": 0.0, "z": 15.25, "min_x": -4.6, "max_x": 4.6, "x": 1.2, "dir": -1.0, "spd": 1.4},
-		# West crosswalk (curbs at Z = -1.8 and Z = 11.8; walks onto sidewalks Z = -3.5 and Z = 13.5)
-		{"type": "cross_z", "y": 0.0, "x": -7.5, "min_z": -3.5, "max_z": 13.5, "z": 4.5, "dir": 1.0, "spd": 1.3},
-		# East crosswalk
-		{"type": "cross_z", "y": 0.0, "x": 7.5, "min_z": -3.5, "max_z": 13.5, "z": 8.5, "dir": -1.0, "spd": 1.35},
+		# South crosswalk (walks across and deep into sidewalks without turnaround)
+		{"type": "cross_x", "y": 0.0, "z": 15.25, "min_x": -14.0, "max_x": 14.0, "x": -8.0, "dir": 1.0, "spd": 1.4},
+		# West crosswalk (walks across and deep into sidewalks without turnaround)
+		{"type": "cross_z", "y": 0.0, "x": -7.5, "min_z": -14.0, "max_z": 24.0, "z": -8.0, "dir": 1.0, "spd": 1.3},
+		# East crosswalk (walks across and deep into sidewalks without turnaround)
+		{"type": "cross_z", "y": 0.0, "x": 7.5, "min_z": -14.0, "max_z": 24.0, "z": 18.0, "dir": -1.0, "spd": 1.35},
 		# NW sidewalk (walking north/south, lane separation: dir=1 at x=-5.1, dir=-1 at x=-5.9)
 		{"type": "sidewalk_z", "y": 0.16, "x": -5.1, "min_z": -36.0, "max_z": -11.0, "z": -16.0, "dir": 1.0, "spd": 1.3},
 		{"type": "sidewalk_z", "y": 0.16, "x": -5.9, "min_z": -36.0, "max_z": -11.0, "z": -28.0, "dir": -1.0, "spd": 1.25},
@@ -1271,6 +1321,8 @@ func _update_active_pedestrians(delta: float) -> void:
 		var wait_t: float = p.get("wait_timer", 0.0)
 		if wait_t > 0.0:
 			p["wait_timer"] = wait_t - delta
+			if p["wait_timer"] <= 0.0 and not node.visible:
+				node.visible = true
 			node._process(delta * 0.05)
 			continue
 
@@ -1279,8 +1331,8 @@ func _update_active_pedestrians(delta: float) -> void:
 
 		if p_type in ["cross_x", "sidewalk_x"]:
 			var x: float = p.get("x", 0.0) + dir * spd * delta
-			var min_x: float = p.get("min_x", -4.6)
-			var max_x: float = p.get("max_x", 4.6)
+			var min_x: float = p.get("min_x", -14.0 if p_type == "cross_x" else -4.6)
+			var max_x: float = p.get("max_x", 14.0 if p_type == "cross_x" else 4.6)
 			var reached := false
 			if dir > 0.0 and x >= max_x:
 				x = max_x
@@ -1297,21 +1349,32 @@ func _update_active_pedestrians(delta: float) -> void:
 			node.rotation.y = PI * 0.5 if dir > 0.0 else -PI * 0.5
 
 			if reached:
-				p["dir"] = -dir
-				p["wait_timer"] = randf_range(1.5, 3.0)
-				# Only switch look/tint when reaching the outer edge of the city (leaving/entering city)
-				if absf(x) >= 28.0:
+				if p_type == "cross_x":
+					node.visible = false
+					p["wait_timer"] = randf_range(2.5, 4.5)
+					p["dir"] = -dir
+					p["x"] = min_x if p["dir"] > 0.0 else max_x
 					var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
 					var new_tint: Color = walker_colors[randi() % walker_colors.size()]
 					var new_look: int = randi() % Models.WALKERS
 					p["tint"] = new_tint
 					p["look"] = new_look
 					node.configure(new_look, new_tint)
+				else:
+					p["dir"] = -dir
+					p["wait_timer"] = randf_range(1.5, 3.0)
+					if absf(x) >= 28.0:
+						var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
+						var new_tint: Color = walker_colors[randi() % walker_colors.size()]
+						var new_look: int = randi() % Models.WALKERS
+						p["tint"] = new_tint
+						p["look"] = new_look
+						node.configure(new_look, new_tint)
 
 		elif p_type in ["cross_z", "sidewalk_z"]:
 			var z: float = p.get("z", 0.0) + dir * spd * delta
-			var min_z: float = p.get("min_z", -20.0)
-			var max_z: float = p.get("max_z", 20.0)
+			var min_z: float = p.get("min_z", -14.0 if p_type == "cross_z" else -20.0)
+			var max_z: float = p.get("max_z", 24.0 if p_type == "cross_z" else 20.0)
 			var reached := false
 			if dir > 0.0 and z >= max_z:
 				z = max_z
@@ -1329,16 +1392,27 @@ func _update_active_pedestrians(delta: float) -> void:
 			node.rotation.y = 0.0 if dir > 0.0 else PI
 
 			if reached:
-				p["dir"] = -dir
-				p["wait_timer"] = randf_range(1.0, 2.5) if p_type == "cross_z" else 0.5
-				# Only switch look/tint when reaching the outer edge of the city
-				if absf(z) >= 30.0:
+				if p_type == "cross_z":
+					node.visible = false
+					p["wait_timer"] = randf_range(2.5, 4.5)
+					p["dir"] = -dir
+					p["z"] = min_z if p["dir"] > 0.0 else max_z
 					var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
 					var new_tint: Color = walker_colors[randi() % walker_colors.size()]
 					var new_look: int = randi() % Models.WALKERS
 					p["tint"] = new_tint
 					p["look"] = new_look
 					node.configure(new_look, new_tint)
+				else:
+					p["dir"] = -dir
+					p["wait_timer"] = 0.5
+					if absf(z) >= 30.0:
+						var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
+						var new_tint: Color = walker_colors[randi() % walker_colors.size()]
+						var new_look: int = randi() % Models.WALKERS
+						p["tint"] = new_tint
+						p["look"] = new_look
+						node.configure(new_look, new_tint)
 
 		node._process(delta)
 
@@ -1603,36 +1677,29 @@ func _update_pedestrian(delta: float) -> void:
 	if not is_instance_valid(pedestrian):
 		return
 
-	# 2. Main crosswalk pedestrian: stands visibly on sidewalk when waiting
+	# 2. Main crosswalk pedestrian lifecycle:
 	if ped_wait_timer > 0.0:
 		ped_wait_timer -= delta
-		pedestrian.visible = true
+		if not pedestrian.visible:
+			if ped_wait_timer <= 0.0:
+				_spawn_next_procedural_pedestrian(1.0 if randf() < 0.5 else -1.0)
+			return
+		# Waiting at curb
 		pedestrian.position = Vector3(ped_pos_x, 0.16, -7.75)
 		pedestrian.rotation.y = PI * 0.5 if ped_dir > 0.0 else -PI * 0.5
 		pedestrian._process(delta * 0.05)
 		return
 
-	pedestrian.visible = true
+	if not pedestrian.visible:
+		_spawn_next_procedural_pedestrian(1.0 if randf() < 0.5 else -1.0)
+		return
+
 	ped_pos_x += ped_speed * ped_dir * delta
 
-	# 3. Check for crossing completion: walker reaches sidewalk, turns around and waits for safe opportunity
-	if ped_dir > 0.0 and ped_pos_x >= 4.6:
-		ped_pos_x = 4.6
-		ped_dir = -1.0
-		ped_wait_timer = randf_range(2.0, 3.5)
-		ped_speed = randf_range(1.4, 1.8)
-		pedestrian.position = Vector3(ped_pos_x, 0.16, -7.75)
-		pedestrian.rotation.y = -PI * 0.5
-		pedestrian._process(delta)
-		return
-	elif ped_dir < 0.0 and ped_pos_x <= -4.6:
-		ped_pos_x = -4.6
-		ped_dir = 1.0
-		ped_wait_timer = randf_range(2.0, 3.5)
-		ped_speed = randf_range(1.4, 1.8)
-		pedestrian.position = Vector3(ped_pos_x, 0.16, -7.75)
-		pedestrian.rotation.y = PI * 0.5
-		pedestrian._process(delta)
+	# 3. Check for crossing completion: walker continues onto sidewalk, walks deep into city and despawns
+	if (ped_dir > 0.0 and ped_pos_x >= 14.0) or (ped_dir < 0.0 and ped_pos_x <= -14.0):
+		pedestrian.visible = false
+		ped_wait_timer = randf_range(2.5, 4.5)
 		return
 
 	var ped_y := 0.0
@@ -1649,9 +1716,9 @@ func _update_pedestrian(delta: float) -> void:
 
 func _spawn_next_procedural_pedestrian(next_dir: float) -> void:
 	ped_dir = next_dir
-	ped_pos_x = 4.6 if ped_dir < 0.0 else -4.6
-	ped_speed = randf_range(1.4, 1.8)
-	ped_wait_timer = randf_range(1.5, 2.5)
+	ped_pos_x = -14.0 if ped_dir > 0.0 else 14.0
+	ped_speed = randf_range(1.3, 1.7)
+	ped_wait_timer = 0.0
 
 	var walker_colors := [
 		Color("#E57373"), Color("#64B5F6"), Color("#81C784"),
@@ -1667,7 +1734,7 @@ func _spawn_next_procedural_pedestrian(next_dir: float) -> void:
 		pedestrian.configure(random_look, random_tint)
 		pedestrian.visible = true
 		pedestrian.position = Vector3(ped_pos_x, 0.16, -7.75)
-		pedestrian.rotation.y = -PI * 0.5 if ped_dir < 0.0 else PI * 0.5
+		pedestrian.rotation.y = PI * 0.5 if ped_dir > 0.0 else -PI * 0.5
 
 
 func is_pedestrian_on_roadway() -> bool:
@@ -1675,9 +1742,12 @@ func is_pedestrian_on_roadway() -> bool:
 
 
 func is_pedestrian_approaching() -> bool:
-	return is_instance_valid(pedestrian) and pedestrian.visible and (
-		is_pedestrian_on_roadway() or (absf(ped_pos_x) <= 4.6 and ped_wait_timer < 0.6)
-	)
+	if not is_instance_valid(pedestrian) or not pedestrian.visible:
+		return false
+	if is_pedestrian_on_roadway():
+		return true
+	var approaching_curb := (ped_dir > 0.0 and ped_pos_x < -3.5 and ped_pos_x >= -6.0) or (ped_dir < 0.0 and ped_pos_x > 3.5 and ped_pos_x <= 6.0)
+	return approaching_curb and ped_wait_timer < 0.6
 
 
 
@@ -2180,7 +2250,25 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		var must_stop_signal := light_state in ["red", "yellow"] and not (car.is_emergency or (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD, VIOLATION_WEATHER_SPEED]))
 		var must_stop_ped := (is_pedestrian_on_roadway() or is_pedestrian_approaching()) and not (car.is_violator and car.violation_type in [VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WEATHER_SPEED])
 
-		if must_stop_signal:
+		# 1c. Intersection gridlock prevention (Rule 13.2 ПДД РФ: do not enter junction if lane ahead is blocked or turning car hasn't cleared)
+		var must_stop_gridlock := false
+		if car.position.z <= Z_STOP and car.position.z > -18.0 and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD, VIOLATION_WEATHER_SPEED]):
+			for other in cars:
+				if other != car and is_instance_valid(other):
+					if other.position.z > -10.0 and other.position.z < 9.0:
+						var lane_block := false
+						if car.lane == 0 and (other.lane == 0 or other.route == "main_left") and absf(other.position.x - car.position.x) < 2.5:
+							lane_block = true
+						elif car.lane == 1:
+							if other.lane == 1 and absf(other.position.x - car.position.x) < 2.5:
+								lane_block = true
+							elif other.route == "main_left" and other.position.x > -4.0 and other.position.z < 6.0:
+								lane_block = true
+						if lane_block and (other.speed < 4.0 or (other.position.z - car.position.z) < 11.0):
+							must_stop_gridlock = true
+							break
+
+		if must_stop_signal or must_stop_gridlock:
 			if car.position.z <= Z_STOP:
 				target_stop_z = minf(target_stop_z, Z_STOP)
 			elif car.position.z < -6.5:
@@ -2218,7 +2306,14 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			if other != car and is_instance_valid(other) and other.lane in [0, 1] and absf(other.position.x) < 3.5 and other.position.z > -20.0 and other.position.z < 8.0:
 				main_traffic_present = true
 				break
-		if main_traffic_present and not car.is_emergency and not (car.is_violator and car.violation_type == VIOLATION_PRIORITY_SIGN):
+		var merge_blocked := false
+		if car.position.x <= X_PRIO_STOP and car.position.x > -18.0 and not car.is_emergency and not (car.is_violator and car.violation_type == VIOLATION_PRIORITY_SIGN):
+			for other in cars:
+				if other != car and is_instance_valid(other) and other.position.x > -9.0 and other.position.x < 3.0 and other.position.z > 2.0 and other.position.z < 9.0:
+					if other.speed < 4.0:
+						merge_blocked = true
+						break
+		if (main_traffic_present or merge_blocked) and not car.is_emergency and not (car.is_violator and car.violation_type == VIOLATION_PRIORITY_SIGN):
 			if car.position.x <= X_PRIO_STOP:
 				target_stop_x_west = minf(target_stop_x_west, X_PRIO_STOP)
 			elif car.position.x < -2.4:
@@ -2246,9 +2341,16 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			if other != car and is_instance_valid(other) and other.lane in [0, 1] and absf(other.position.x) < 3.5 and other.position.z > -20.0 and other.position.z < 8.0:
 				main_traffic_present = true
 				break
-		# Also stop if red light
+		# Also stop if red light or intersection blocked
 		var ew_red := (light_phase in ["ns_green", "ns_yellow"]) and (traffic_light_node != null and traffic_light_node.is_inside_tree())
-		if (main_traffic_present or ew_red) and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_PRIORITY_SIGN]):
+		var east_blocked := false
+		if car.position.x >= X_EAST_STOP and car.position.x < 18.0 and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_PRIORITY_SIGN]):
+			for other in cars:
+				if other != car and is_instance_valid(other) and other.position.x < 9.0 and other.position.x > -3.0 and other.position.z > 1.0 and other.position.z < 6.0:
+					if other.speed < 4.0:
+						east_blocked = true
+						break
+		if (main_traffic_present or ew_red or east_blocked) and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_PRIORITY_SIGN]):
 			if car.position.x >= X_EAST_STOP:
 				target_stop_x_east = maxf(target_stop_x_east, X_EAST_STOP)
 			elif car.position.x > 2.4:
@@ -2340,11 +2442,22 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		var to_other := other.position - car.position
 		var lon := to_other.dot(fwd)
 		var lat := absf(to_other.dot(right_vec))
-		if lon > 0.1 and lon < 9.0 and lat < 2.0:
+		if lon > 0.1 and lon < 12.0 and lat < 2.2:
 			if lon < lead_dist:
 				lead_dist = lon
 				lead_speed = other.speed
 				lead_car = other
+
+		# E) Omnidirectional Collision Avoidance Radius (strict avoidance of bunching / clipping on junction)
+		var d_xz := Vector2(car.position.x - other.position.x, car.position.z - other.position.z).length()
+		var is_parallel_lane := absf(car.rotation.y - other.rotation.y) < 0.25 and lat > 2.5
+		if d_xz < 7.2 and not is_parallel_lane:
+			var heading_dot := fwd.dot((other.position - car.position).normalized()) if d_xz > 0.01 else 1.0
+			if heading_dot > 0.1:
+				if d_xz < lead_dist:
+					lead_dist = d_xz
+					lead_speed = minf(lead_speed, other.speed)
+					lead_car = other
 
 	# 6b. Turn Conflict Clearance (п. 13.4 ПДД РФ: yielding to crossing traffic on left turn)
 	if car.route == "main_left" and car.turn_t < 0.8:
@@ -2374,8 +2487,8 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 					if car.target_speed < 0.6:
 						stop_required = true
 
-	const MIN_GAP := 7.0
-	var desired_gap := MIN_GAP + maxf(0.0, car.speed) * 0.85
+	const MIN_GAP := 8.5
+	var desired_gap := MIN_GAP + maxf(0.0, car.speed) * 1.1
 
 	if lead_dist < desired_gap:
 		if lead_dist <= MIN_GAP:

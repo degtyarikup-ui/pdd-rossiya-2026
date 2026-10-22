@@ -50,11 +50,16 @@ func _run_checks() -> void:
 	var phase_2 = ped_mat.get_shader_parameter("walk_phase")
 	_check("Pedestrian gait phase advances with travel distance", phase_2 > phase_1 or phase_2 < phase_1)
 	
-	# Turn around at boundary
+	# Pedestrian continues forward onto sidewalk without ping-pong turnaround
 	game.ped_pos_x = 4.6
 	game._update_pedestrian(0.016)
-	_check("Pedestrian turns around at boundary and faces -X with negative yaw", is_equal_approx(game.pedestrian.rotation.y, -PI * 0.5))
-	_check("Pedestrian direction reversed to -1.0", game.ped_dir == -1.0)
+	_check("Pedestrian continues walking forward onto sidewalk (+X)", is_equal_approx(game.pedestrian.rotation.y, PI * 0.5))
+	_check("Pedestrian direction remains +1.0 (no ping-pong turnaround)", game.ped_dir == 1.0)
+	# Walks deep into city and despawns
+	game.ped_pos_x = 14.5
+	game._update_pedestrian(0.016)
+	_check("Pedestrian despawns when walking into city (visible is false)", not game.pedestrian.visible)
+	_check("Pedestrian starts procedural respawn pause", game.ped_wait_timer > 0.0)
 	
 	# 3. Vehicle Car-Following (Anti-ramming)
 	# Spawn car 1 stopped at red light
