@@ -15,6 +15,7 @@ import { reportIncident, errorCode, markIncidentReported } from './diagnostics.j
 // клиента на сайт. Повторное подтверждение того же заказа ничего не
 // добавляет: заказ отмечается в user.webPayments.
 
+import { attributionLines, metadataFields } from './attribution.js';
 import { putUserRecord } from './user_store.js';
 import { entitlementsOf, extendEntitlement, setEntitlement } from './entitlements.js';
 
@@ -110,6 +111,44 @@ async function readJson(env, key) {
   try { return JSON.parse(raw); } catch (_) { return null; }
 }
 
+// Snapshot at checkout: account metadata can later change on another device.
+function paymentContext(body, user) {
+  const platform = ['android', 'web'].includes(body.client) ? body.client : null;
+  const supplied = body.platform === platform;
+  const fallback = user.platform === platform;
+  const metadata = supplied ? body : fallback ? user : {};
+  const version = supplied ? body.version || body.appVersion : metadata.appVersion;
+  return { ...metadataFields(metadata), platform,
+    appVersion: typeof version === 'string' ? version.slice(0, 40) : '',
+    metadataSource: supplied ? 'checkout' : fallback ? 'profile' : 'unknown' };
+}
+
+export function buildSbpPurchaseMessage(order, expiresAt, esc) {
+  const context = order.context || {};
+  const platform = order.context ? context.platform : order.client;
+  const origin = platform === 'android' ? '🤖 Android-приложение'
+    : platform === 'web' ? '🌐 Сайт / веб-приложение' : 'Не указан';
+  const date = value => value && Number.isFinite(Date.parse(value))
+    ? new Date(value).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' МСК' : 'Не указан';
+  return [
+    '⭐⭐⭐⭐⭐⭐⭐⭐', '⭐️ 🇷🇺 <b>Покупка Premium</b> (СБП)', '',
+    `• <b>Тариф:</b> ${esc(WEB_TARIFFS[order.tier]?.title || order.tier)} • <b>${esc(String(order.amount))} ₽</b>`,
+    `• <b>Пользователь:</b> ${esc(order.name || 'Без имени')}`,
+    `• <b>Email:</b> ${esc(order.accountEmail || 'Не указан')}`,
+    '• <b>Оплата:</b> СБП · Platega · разовая, без автопродления',
+    `• <b>Начата из:</b> ${origin}`,
+    ...attributionLines(context, esc),
+    context.appVersion ? `• <b>Версия приложения:</b> ${esc(context.appVersion)}` : null,
+    context.metadataSource === 'profile' ? '• <b>Данные устройства:</b> из последнего профиля на момент создания заказа' : null,
+    `• <b>ID аккаунта:</b> <code>${esc(order.userId)}</code>`,
+    `• <b>Действует до (СБП):</b> ${date(expiresAt)}`,
+    `• <b>Чек:</b> ${esc(order.email || 'Не указан')}`,
+    `• <b>Заказ:</b> <code>${esc(order.orderId)}</code>`,
+    `• <b>Транзакция:</b> <code>${esc(order.txId || 'Не указана')}</code>`,
+    '', `🕓 ${date(order.confirmedAt)}`,
+  ].filter(line => line !== null).join('\n');
+}
+
 /**
  * POST /api/user/pay-intent — выбор оплаты на сайте (сессия обязательна).
  * Всегда записывает выбор; при подключённой платёжке ещё и создаёт платёж:
@@ -127,6 +166,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
 
   // С какого клиента платят: от этого зависит, куда вернуть человека.
   const client = body.client === 'android' ? 'android' : 'web';
+  const context = paymentContext(body, user);
   const live = webPaymentsLive(env);
   const key = 'pay_intent:' + user.id;
   const previous = await readJson(env, key);
@@ -157,7 +197,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
   const tariff = WEB_TARIFFS[tier];
   const app = typeof body.app === 'string' ? body.app.slice(0, 4) : 'ru';
   const intent = {
-    userId: user.id, name: user.name || '', accountEmail: user.email || '', email, tier, method, app, client,
+    userId: user.id, name: user.name || '', accountEmail: user.email || '', email, tier, method, app, client, context,
     priceRub: tariff.priceRub, at: new Date(now).toISOString(),
     firstAt: previous?.firstAt || new Date(now).toISOString(), count: (previous?.count || 0) + 1,
   };
@@ -172,7 +212,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
     try {
       if (env.__ACCOUNT_CHECKPOINT) {
         order = { orderId, txId: null, userId: user.id, name: user.name || '', accountEmail: user.email || '', provider: user.provider || null,
-          email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB', method, app, client, status: 'creating', createdAt: new Date(now).toISOString() };
+          email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB', method, app, client, context, status: 'creating', createdAt: new Date(now).toISOString() };
         intent.lastOrder = { orderId, tier, client };
         await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
         await env.INSTALLS.put(key, JSON.stringify(intent));
@@ -195,7 +235,7 @@ export async function handlePayIntent(request, env, user, { jsonResponse, sendTe
       order = {
         orderId, txId: tx.transactionId, userId: user.id, name: user.name || '', accountEmail: user.email || '',
         provider: user.provider || null, email, tier, days: tariff.days, amount: tariff.priceRub, currency: 'RUB',
-        method, app, client, status: 'pending', url, createdAt: new Date(now).toISOString(),
+        method, app, client, context, status: 'pending', url, createdAt: new Date(now).toISOString(),
       };
       await env.INSTALLS.put('pay_order:' + orderId, JSON.stringify(order));
       await env.INSTALLS.put('pay_tx:' + tx.transactionId, orderId);
@@ -257,7 +297,7 @@ export async function settleOrder(env, order, deps) {
     if (!details || !(paidAmount >= order.amount && paidAmount <= order.amount * 1.15) || String(details.currency).toUpperCase() !== order.currency) {
       order.status = 'mismatch';
       await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
-      await notify(env, deps, `⚠️ <b>Оплата на сайте: сумма не совпала</b>\nЗаказ ${deps.esc(order.orderId)} · ожидали ${order.amount} ₽`, 'pay_mismatch:' + order.orderId);
+      await notify(env, deps, `⚠️ <b>Оплата СБП: сумма не совпала</b>\nЗаказ ${deps.esc(order.orderId)} · ожидали ${order.amount} ₽`, 'pay_mismatch:' + order.orderId);
       return order;
     }
     const deleted = await readJson(env, 'account_deleted:' + order.userId);
@@ -304,15 +344,9 @@ export async function settleOrder(env, order, deps) {
     order.confirmedAt = order.confirmedAt || new Date().toISOString();
     await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
     if (wasConfirmed) return order;
-    const tariff = WEB_TARIFFS[order.tier];
-    await notify(env, deps, [
-      '💰 <b>Оплата на сайте</b> (СБП)',
-      `👤 ${deps.esc(order.name || 'Без имени')} · ${deps.esc(order.accountEmail || order.userId)}`,
-      `📦 ${deps.esc(tariff?.title || order.tier)} — ${order.amount} ₽ · до ${deps.esc((user.entitlements?.web?.expiresAt || '').slice(0, 10))}`,
-      `📧 Чек: ${deps.esc(order.email)}`,
-    ].join('\n'), 'pay_paid:' + order.orderId);
+    await notify(env, deps, buildSbpPurchaseMessage(order, ledger.expiresAt, deps.esc), 'pay_paid:' + order.orderId);
     try {
-      await deps.trackStats?.(env, null, { id: 'pay_paid:' + order.orderId, kind: 'analytics', event: { type: 'purchase', purchaseSource: 'web', app: order.app || 'ru', platform: 'web' } });
+      await deps.trackStats?.(env, null, { id: 'pay_paid:' + order.orderId, kind: 'analytics', event: { type: 'purchase', purchaseSource: 'web', app: order.app || 'ru', platform: (order.context ? order.context.platform : order.client) || 'unknown' } });
     } catch (_) {}
   } else if (status === 'CHARGEBACKED' && order.status === 'confirmed') {
     const user = await loadUser(env, order);

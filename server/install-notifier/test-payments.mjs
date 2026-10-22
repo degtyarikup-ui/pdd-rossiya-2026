@@ -298,3 +298,44 @@ test('сбой сохранения после создания СБП не ра
     } finally { fake.restore(); }
   }
 });
+
+
+test('СБП: контекст Android сохраняется в заказе, HTML экранируется, старый клиент неизвестен', async () => {
+  const fake = fakePlatega();
+  try {
+    const env = baseEnv(); const token = await login(env);
+    const response = await worker.fetch(req('/api/user/pay-intent', {
+      email: 'receipt@example.com', tier: 'weekly', method: 'sbp', client: 'android',
+      platform: 'android', device: '<Pixel>', os: 'Android 16', locale: 'ru-RU',
+      installStore: 'RuStore', version: '2.2.4+63',
+    }, token), env);
+    const result = await response.json();
+    const order = JSON.parse(await env.INSTALLS.get('pay_order:' + result.order));
+    assert.equal(order.context.platform, 'android');
+    assert.equal(order.context.device, '<Pixel>');
+    assert.equal(order.context.appVersion, '2.2.4+63');
+    const { buildSbpPurchaseMessage } = await import('./payments.js');
+    const esc = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    const text = buildSbpPurchaseMessage({ ...order, confirmedAt: '2026-10-22T12:07:00Z' }, '2026-10-29T12:07:00Z', esc);
+    for (const fragment of ['Android-приложение', '&lt;Pixel&gt;', 'RuStore', '2.2.4+63', '29.10.2026, 15:07 МСК', 'receipt@example.com', order.txId]) assert.ok(text.includes(fragment), fragment);
+    assert.doesNotMatch(text, /Оплата на сайте/);
+    const { settleOrder } = await import('./payments.js');
+    const profile = { id: order.userId, name: order.name, email: order.accountEmail, platform: 'ios', device: 'iPhone' };
+    await env.INSTALLS.put('user:' + profile.id, JSON.stringify(profile));
+    fake.txs.get(order.txId).status = 'CONFIRMED';
+    env.BOT_TOKEN = 'test'; env.CHAT_ID = 'test';
+    const messages = [], events = [];
+    const deps = { esc, sendTelegram: async (_env, message) => messages.push(message),
+      trackStats: async (_env, _ctx, event) => events.push(event) };
+    await settleOrder(env, order, deps);
+    await settleOrder(env, order, deps);
+    assert.equal(messages.length, 1);
+    assert.ok(messages[0].includes('&lt;Pixel&gt;'));
+    assert.ok(!messages[0].includes('iPhone'));
+    assert.equal(events[0].event.platform, 'android');
+    assert.equal(events.length, 1);
+
+    assert.match(buildSbpPurchaseMessage({ ...order, client: undefined, context: undefined }, null, esc), /Начата из:<\/b> Не указан/);
+    assert.match(buildSbpPurchaseMessage({ ...order, client: 'web', context: { platform: 'web' } }, null, esc), /Сайт \/ веб-приложение/);
+  } finally { fake.restore(); }
+});

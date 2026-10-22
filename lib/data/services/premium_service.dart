@@ -574,11 +574,18 @@ class PremiumService extends ChangeNotifier {
     final owner = auth.currentUser!.id;
     final revision = auth.accountRevision;
     try {
+      // Diagnostics must not delay checkout if a platform plugin is unavailable.
+      final metadata = await InstallReporter.clientMetadata().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => <String, dynamic>{},
+      );
+      if (revision != auth.accountRevision) return null;
       final response = await NotifierApi.post(
         '/api/user/pay-intent',
         idempotent: false,
         headers: auth.serverHeaders,
         body: jsonEncode({
+          ...metadata,
           'tier': tier.name,
           'email': email.trim(),
           'method': method,
