@@ -1157,14 +1157,14 @@ func _setup_traffic_lights() -> void:
 
 	# 2. West approach (Cross street Eastbound traffic):
 	# - Primary signal on right-hand curb before stop line at X = -9.75:
-	traffic_light_ew_node = TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
+	traffic_light_ew_node = TrafficSignal.make_mini({"state": "red", "arrow": "none", "arrowActive": false})
 	traffic_light_ew_node.position = Vector3(-9.75, 0.16, 12.4)
 	traffic_light_ew_node.rotation.y = -PI * 0.5
 	traffic_light_ew_node.visible = true
 	junction_node.add_child(traffic_light_ew_node)
 
 	# - Duplicating signal across intersection on far-left curb (ГОСТ Р 52289 п. 7.3.3):
-	var tl_west_dup_left := TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
+	var tl_west_dup_left := TrafficSignal.make_mini({"state": "red", "arrow": "none", "arrowActive": false})
 	tl_west_dup_left.position = Vector3(4.8, 0.16, -2.4)
 	tl_west_dup_left.rotation.y = -PI * 0.5
 	tl_west_dup_left.visible = true
@@ -1174,15 +1174,15 @@ func _setup_traffic_lights() -> void:
 
 	# 3. East approach (Cross street Westbound traffic):
 	# - Primary signal on right-hand curb before stop line at X = 9.75:
-	traffic_light_east_node = TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
+	traffic_light_east_node = TrafficSignal.make_mini({"state": "red", "arrow": "none", "arrowActive": false})
 	traffic_light_east_node.position = Vector3(9.75, 0.16, -2.4)
 	traffic_light_east_node.rotation.y = PI * 0.5
 	traffic_light_east_node.visible = true
 	junction_node.add_child(traffic_light_east_node)
 
 	# - Duplicating signal across intersection on far-left curb (ГОСТ Р 52289 п. 7.3.3):
-	var tl_east_dup_left := TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
-	tl_east_dup_left.position = Vector3(-4.8, 0.16, -2.4)
+	var tl_east_dup_left := TrafficSignal.make_mini({"state": "red", "arrow": "none", "arrowActive": false})
+	tl_east_dup_left.position = Vector3(-4.8, 0.16, 12.4)
 	tl_east_dup_left.rotation.y = PI * 0.5
 	tl_east_dup_left.visible = true
 	junction_node.add_child(tl_east_dup_left)
@@ -1808,7 +1808,10 @@ func _spawn_procedural_car() -> void:
 		v_type = _pick_appropriate_violation(lane)
 
 	var route := "main_straight"
-	if lane == 0:
+	if is_violator and v_type == VIOLATION_ARROW_YIELD:
+		lane = 0
+		route = "main_left"
+	elif lane == 0:
 		if is_violator and v_type in [VIOLATION_WAFFLE_BLOCK, VIOLATION_PEDESTRIAN_YIELD, VIOLATION_RED_LIGHT, VIOLATION_SOLID_LINE, VIOLATION_WRONG_LANE_TURN]:
 			route = "main_straight"
 		else:
@@ -1835,7 +1838,7 @@ func _spawn_procedural_car() -> void:
 
 func _pick_appropriate_violation(lane: int) -> String:
 	# Check weather-specific violations first
-	if weather_phase == "night" and randf() < 0.40:
+	if (weather_phase in ["night", "dusk"]) and randf() < 0.40:
 		return VIOLATION_NO_LIGHTS
 	elif weather_phase == "rain" and randf() < 0.40 and lane in [0, 1]:
 		return VIOLATION_WEATHER_SPEED
@@ -1869,9 +1872,9 @@ func _pick_appropriate_violation(lane: int) -> String:
 		return p2_choices[randi() % p2_choices.size()]
 
 	if lane == 0:
-		var choices := [VIOLATION_WRONG_LANE_TURN, VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD, VIOLATION_RED_LIGHT]
+		var choices := [VIOLATION_WRONG_LANE_TURN, VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD, VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD]
 		return choices[randi() % choices.size()]
-	var r_choices := [VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WRONG_LANE_TURN, VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD]
+	var r_choices := [VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WRONG_LANE_TURN, VIOLATION_RED_LIGHT]
 	return r_choices[randi() % r_choices.size()]
 
 
@@ -2280,7 +2283,22 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 
 	# 1. Main road traffic stop: respected when light_state is red/yellow
 	if car.lane in [0, 1] and absf(car.rotation.y) < 0.45:
-		var must_stop_signal := light_state in ["red", "yellow"] and not (car.is_emergency or (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD, VIOLATION_WEATHER_SPEED]))
+		# 1a. Rule 13.5 ПДД РФ: Right turn under green arrow simultaneously with main red
+		var arrow_conflict := false
+		if arrow_active and car.lane == 0 and car.route == "main_left" and light_state in ["red", "yellow"]:
+			if not (car.is_violator and car.violation_type == VIOLATION_ARROW_YIELD):
+				for other in cars:
+					if other != car and is_instance_valid(other):
+						if other.lane in [2, 3] and other.position.x > -15.0 and other.position.x < 15.0 and other.speed > 0.5:
+							arrow_conflict = true
+							break
+
+		var must_stop_signal := false
+		if arrow_active and car.lane == 0 and car.route == "main_left":
+			must_stop_signal = arrow_conflict
+		else:
+			must_stop_signal = light_state in ["red", "yellow"] and not (car.is_emergency or (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD, VIOLATION_WEATHER_SPEED]))
+
 		var must_stop_ped := (is_pedestrian_on_roadway() or is_pedestrian_approaching()) and not (car.is_violator and car.violation_type in [VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WEATHER_SPEED])
 
 		# 1c. Intersection gridlock prevention (Rule 13.2 ПДД РФ: do not enter junction if lane ahead is blocked or turning car hasn't cleared)
@@ -2342,16 +2360,17 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				main_traffic_present = true
 				break
 		var merge_blocked := false
-		if car.position.x <= X_PRIO_STOP and car.position.x > -18.0 and not car.is_emergency and not (car.is_violator and car.violation_type == VIOLATION_PRIORITY_SIGN):
+		if car.position.x <= X_PRIO_STOP and car.position.x > -18.0 and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_PRIORITY_SIGN]):
 			for other in cars:
 				if other != car and is_instance_valid(other) and other.position.x > -9.0 and other.position.x < 3.0 and other.position.z > 2.0 and other.position.z < 9.0:
 					if other.speed < 4.0:
 						merge_blocked = true
 						break
-		if (main_traffic_present or merge_blocked) and not car.is_emergency and not (car.is_violator and car.violation_type == VIOLATION_PRIORITY_SIGN):
+		var ew_red := (light_phase in ["ns_green", "ns_green_flash", "ns_yellow", "all_red_1", "all_red_2", "ns_red_yellow"]) and (traffic_light_node != null and traffic_light_node.is_inside_tree())
+		if (main_traffic_present or ew_red or merge_blocked) and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_PRIORITY_SIGN]):
 			if car.position.x <= X_PRIO_STOP:
 				target_stop_x_west = minf(target_stop_x_west, X_PRIO_STOP)
-			elif car.position.x < -2.4:
+			elif car.position.x < -6.5 and main_traffic_present:
 				target_stop_x_west = minf(target_stop_x_west, car.position.x)
 				car.target_speed = 0.0
 				stop_required = true
@@ -2391,7 +2410,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		if (main_traffic_present or ew_red or east_blocked) and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_PRIORITY_SIGN]):
 			if car.position.x >= X_EAST_STOP:
 				target_stop_x_east = maxf(target_stop_x_east, X_EAST_STOP)
-			elif car.position.x > 2.4:
+			elif car.position.x > 6.5 and main_traffic_present:
 				target_stop_x_east = maxf(target_stop_x_east, car.position.x)
 				car.target_speed = 0.0
 				stop_required = true
@@ -2542,13 +2561,14 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				stop_required = true
 
 	# Smooth realistic braking and acceleration (S-curve / exponential deceleration)
+	var is_near_stop := (target_stop_z < 900.0 and target_stop_z - car.position.z < 0.5) or (target_stop_x_west < 900.0 and target_stop_x_west - car.position.x < 0.5) or (target_stop_x_east > -900.0 and car.position.x - target_stop_x_east < 0.5)
 	if stop_required or car.target_speed < 0.1:
-		var decel := 12.0 if (lead_dist < MIN_GAP or (target_stop_z < 900.0 and target_stop_z - car.position.z < 0.5)) else 6.5
+		var decel := 10.0 if (lead_dist < MIN_GAP or is_near_stop) else 5.5
 		car.speed = maxf(0.0, car.speed - decel * delta)
 	elif car.speed > car.target_speed:
-		car.speed = move_toward(car.speed, car.target_speed, 6.0 * delta)
+		car.speed = move_toward(car.speed, car.target_speed, 5.0 * delta)
 	else:
-		car.speed = move_toward(car.speed, car.target_speed, 8.5 * delta)
+		car.speed = move_toward(car.speed, car.target_speed, 5.2 * delta)
 
 	if car.speed < 0.04:
 		car.speed = 0.0
@@ -2736,6 +2756,12 @@ func _check_car_violation_state(car: ViolatorCar) -> void:
 func _is_car_entering_violation_window(car: ViolatorCar) -> bool:
 	match car.violation_type:
 		VIOLATION_RED_LIGHT:
+			if car.lane == 2:
+				var ew_red := light_phase in ["ns_green", "ns_green_flash", "ns_yellow", "all_red_1", "all_red_2", "ns_red_yellow"]
+				return car.position.x >= -5.0 and ew_red
+			elif car.lane == 3:
+				var ew_red := light_phase in ["ns_green", "ns_green_flash", "ns_yellow", "all_red_1", "all_red_2", "ns_red_yellow"]
+				return car.position.x <= 5.0 and ew_red
 			return car.position.z >= -3.5 and light_state in ["red", "yellow"]
 		VIOLATION_PEDESTRIAN_YIELD:
 			return car.position.z >= -11.0 and is_pedestrian_on_roadway()
@@ -2748,7 +2774,7 @@ func _is_car_entering_violation_window(car: ViolatorCar) -> bool:
 				return car.position.x <= 5.0
 			return car.position.x >= -5.0
 		VIOLATION_ARROW_YIELD:
-			return car.position.z >= -2.0 and light_state == "red"
+			return car.position.z >= -2.0 and light_state in ["red", "yellow"]
 		VIOLATION_WAFFLE_BLOCK:
 			return car.position.z >= 2.0 and car.waffle_stop_timer > 0.5
 		VIOLATION_EMERGENCY_YIELD:
@@ -2760,13 +2786,17 @@ func _is_car_entering_violation_window(car: ViolatorCar) -> bool:
 				return car.position.x <= 20.0
 			return car.position.z >= -20.0
 		VIOLATION_WEATHER_SPEED:
-			return car.position.z >= -3.5
+			return car.position.z >= -5.5
 	return false
 
 
 func _is_car_exiting_violation_window(car: ViolatorCar) -> bool:
 	match car.violation_type:
 		VIOLATION_RED_LIGHT:
+			if car.lane == 2:
+				return car.position.x > 8.0
+			elif car.lane == 3:
+				return car.position.x < -8.0
 			return car.position.z > 8.0
 		VIOLATION_PEDESTRIAN_YIELD:
 			return car.position.z > -4.5
