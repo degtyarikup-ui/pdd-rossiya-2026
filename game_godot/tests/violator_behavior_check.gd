@@ -60,6 +60,22 @@ func _run_checks() -> void:
 	game._update_pedestrian(0.016)
 	_check("Pedestrian despawns when walking into city (visible is false)", not game.pedestrian.visible)
 	_check("Pedestrian starts procedural respawn pause", game.ped_wait_timer > 0.0)
+
+	# Westbound pedestrian walks all the way off-screen (X <= -36.0)
+	game.pedestrian.visible = true
+	game.ped_wait_timer = 0.0
+	game.ped_pos_x = -4.6
+	game.ped_dir = -1.0
+	game._update_pedestrian(0.016)
+	_check("Westbound pedestrian continues walking forward onto sidewalk (-X)", is_equal_approx(game.pedestrian.rotation.y, -PI * 0.5))
+	_check("Westbound pedestrian direction remains -1.0 (no ping-pong turnaround)", game.ped_dir == -1.0)
+	game.ped_pos_x = -15.0
+	game._update_pedestrian(0.016)
+	_check("Westbound pedestrian remains visible at X=-15.0 (still on screen)", game.pedestrian.visible)
+	game.ped_pos_x = -36.5
+	game._update_pedestrian(0.016)
+	_check("Westbound pedestrian despawns off-screen at X <= -36.0", not game.pedestrian.visible)
+	_check("Westbound pedestrian starts procedural respawn pause", game.ped_wait_timer > 0.0)
 	
 	# 3. Vehicle Car-Following (Anti-ramming)
 	# Spawn car 1 stopped at red light
@@ -234,6 +250,25 @@ func _run_checks() -> void:
 	_check("Car stopped on zebra is converted to violator without false alarm life penalty", game.lives == initial_lives)
 	_check("Car on zebra violation type is pedestrian_yield", zebra_car.violation_type == ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
 	_check("Car on zebra violation state is active", zebra_car.violation_state == "active")
+
+	# 18. Intersection Flow & Anti-Deadlock Check (Left turn yielding to active traffic, not stopped secondary car)
+	for c in game.cars:
+		c.queue_free()
+	game.cars.clear()
+	var lead_turn = game.spawn_specific_car("main_left", 0, false, "")
+	lead_turn.position = Vector3(-1.8, 0.0, -0.5)
+	lead_turn.speed = 8.0
+	var follow_straight = game.spawn_specific_car("main_straight", 0, false, "")
+	follow_straight.position = Vector3(-1.8, 0.0, -6.0)
+	follow_straight.speed = 10.0
+	var sec_stopped = game.spawn_specific_car("east_west", 3, false, "")
+	sec_stopped.position = Vector3(12.0, 0.0, 3.2)
+	sec_stopped.speed = 0.0
+	sec_stopped.target_speed = 0.0
+	for step in 120:
+		game._update_cars(0.016)
+	_check("Left-turning car does not deadlock with stopped secondary car (moves past X < -5.0)", lead_turn.position.x < -5.0)
+	_check("Following straight car makes progress without getting trapped (moves past Z > 0.0)", follow_straight.position.z > 0.0)
 
 	game.queue_free()
 	await process_frame

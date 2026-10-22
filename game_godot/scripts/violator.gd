@@ -766,22 +766,18 @@ func _setup_signs(parent: Node3D) -> void:
 		return pole
 
 	# 1. Sign 2.1 (Главная дорога) on main road:
-	# Position on NE sidewalk (right-hand curb) next to traffic light before stop line (Z = -10.8):
-	create_sign.call("Sign_2_1", "2.1", Vector3(4.4, 3.2, -10.8))
-	create_pole.call(Vector3(4.4, 1.6, -10.8), 3.2)
-
-	# South approach departure Sign 2.1 on SE sidewalk:
-	create_sign.call("Sign_2_1_South", "2.1", Vector3(4.4, 3.0, 18.5))
-	create_pole.call(Vector3(4.4, 1.5, 18.5), 3.0)
+	# Position on NE sidewalk upstream before crosswalk and stop line (Z = -13.0):
+	create_sign.call("Sign_2_1", "2.1", Vector3(4.4, 3.2, -13.0))
+	create_pole.call(Vector3(4.4, 1.6, -13.0), 3.2)
 
 	# 2. Sign 2.4 (Уступите дорогу) on cross street secondary approaches:
-	# West arm: right side of approaching Eastbound traffic on SW sidewalk with comfortable 3.3m clearance from traffic light (X = -13.5, Z = 12.6):
-	create_sign.call("Sign_2_4", "2.4", Vector3(-13.5, 3.0, 12.6))
-	create_pole.call(Vector3(-13.5, 1.5, 12.6), 3.0)
+	# West arm: right side of approaching Eastbound traffic on SW sidewalk (X = -12.0, Z = 12.6):
+	create_sign.call("Sign_2_4", "2.4", Vector3(-12.0, 3.0, 12.6))
+	create_pole.call(Vector3(-12.0, 1.5, 12.6), 3.0)
 
-	# East arm: right side of approaching Westbound traffic on NE sidewalk with comfortable 3.3m clearance from traffic light (X = 13.5, Z = -2.6):
-	create_sign.call("Sign_2_4_East", "2.4", Vector3(13.5, 3.0, -2.6))
-	create_pole.call(Vector3(13.5, 1.5, -2.6), 3.0)
+	# East arm: right side of approaching Westbound traffic on NE sidewalk (X = 12.0, Z = -2.6):
+	create_sign.call("Sign_2_4_East", "2.4", Vector3(12.0, 3.0, -2.6))
+	create_pole.call(Vector3(12.0, 1.5, -2.6), 3.0)
 
 	# 3. Pedestrian crossing signs 5.19.1 / 5.19.2 (ГОСТ Р 52289 п. 5.6.24):
 	# North crosswalk (Z = -7.75, width [-9.0, -6.5]):
@@ -798,19 +794,19 @@ func _setup_signs(parent: Node3D) -> void:
 	create_sign.call("Sign_5_19_2_South", "5.19.2", Vector3(-4.4, 2.7, 16.5))
 	create_pole.call(Vector3(-4.4, 1.35, 16.5), 2.7)
 
-	# West crosswalk (X = -7.5, width [-8.75, -6.25]) spaced 2.2m from traffic light:
-	create_sign.call("Sign_5_19_1_West", "5.19.1", Vector3(-8.0, 2.7, 12.6))
-	create_pole.call(Vector3(-8.0, 1.35, 12.6), 2.7)
+	# West crosswalk (X = -7.5, width [-8.75, -6.25]):
+	create_sign.call("Sign_5_19_1_West", "5.19.1", Vector3(-6.25, 2.7, 12.6))
+	create_pole.call(Vector3(-6.25, 1.35, 12.6), 2.7)
 
 	create_sign.call("Sign_5_19_2_West", "5.19.2", Vector3(-6.25, 2.7, -2.6))
 	create_pole.call(Vector3(-6.25, 1.35, -2.6), 2.7)
 
-	# East crosswalk (X = 7.5, width [6.25, 8.75]) spaced 2.2m from traffic light:
-	create_sign.call("Sign_5_19_1_East", "5.19.1", Vector3(8.0, 2.7, -2.6))
-	create_pole.call(Vector3(8.0, 1.35, -2.6), 2.7)
+	# East crosswalk (X = 7.5, width [6.25, 8.75]):
+	create_sign.call("Sign_5_19_1_East", "5.19.1", Vector3(6.25, 2.7, -2.6))
+	create_pole.call(Vector3(6.25, 1.35, -2.6), 2.7)
 
-	create_sign.call("Sign_5_19_2_East", "5.19.2", Vector3(6.25, 2.7, 12.6))
-	create_pole.call(Vector3(6.25, 1.35, 12.6), 2.7)
+	create_sign.call("Sign_5_19_2_East", "5.19.2", Vector3(8.75, 2.7, 12.6))
+	create_pole.call(Vector3(8.75, 1.35, 12.6), 2.7)
 
 
 func _build_city_scenery() -> void:
@@ -843,7 +839,7 @@ func _build_city_scenery() -> void:
 		{"z1": 18.0, "z2": 42.0, "x": 10.9}
 	]
 
-	var is_near_fence := func(pos: Vector3, min_dist := 1.6) -> bool:
+	var is_near_fence := func(pos: Vector3, min_dist := 2.6) -> bool:
 		for fs in fence_segments:
 			if fs.has("z"):
 				if pos.x >= fs.x1 - min_dist and pos.x <= fs.x2 + min_dist:
@@ -902,40 +898,40 @@ func _build_city_scenery() -> void:
 				return true
 		return false
 
-	# Multistory apartment buildings & residential architecture with explicit AABB footprints
+	# Multistory apartment buildings & residential architecture with true mesh AABB footprints
 	var buildings_def := [
 		# NW quadrant
-		{"prop": "buildings/home_1", "pos": Vector3(-16.0, 0.0, -18.0), "yaw": PI * 0.5, "color": Color("#7D8B78"), "size": Vector3(7.9, 5.68, 7.9)},
-		{"prop": "buildings/block_0", "pos": Vector3(-29.0, 0.0, -18.0), "yaw": PI * 0.5, "color": Color("#A0725C"), "size": Vector3(10.9, 8.58, 8.9)},
-		{"prop": "buildings/home_0", "pos": Vector3(-13.0, 0.0, -32.0), "yaw": PI * 0.5, "color": Color("#C8B896"), "size": Vector3(6.9, 5.68, 6.9)},
-		{"prop": "buildings/block_3", "pos": Vector3(-28.0, 0.0, -31.0), "yaw": 0.0, "color": Color("#9E7B66"), "size": Vector3(11.9, 8.58, 8.9)},
-		{"prop": "buildings/tower_0", "pos": Vector3(-26.0, 0.0, -47.0), "yaw": PI * 0.5, "color": Color("#8592A0"), "size": Vector3(9.9, 14.5, 9.9)},
-		{"prop": "buildings/block_2", "pos": Vector3(-43.0, 0.0, -16.0), "yaw": 0.0, "color": Color("#95928C"), "size": Vector3(11.9, 8.58, 8.9)},
+		{"prop": "buildings/home_1", "pos": Vector3(-16.0, 0.0, -18.0), "yaw": PI * 0.5, "color": Color("#7D8B78"), "size": Vector3(8.5, 6.0, 8.5)},
+		{"prop": "buildings/block_0", "pos": Vector3(-29.0, 0.0, -18.0), "yaw": PI * 0.5, "color": Color("#A0725C"), "size": Vector3(11.0, 12.0, 9.0)},
+		{"prop": "buildings/home_0", "pos": Vector3(-13.0, 0.0, -32.0), "yaw": PI * 0.5, "color": Color("#C8B896"), "size": Vector3(7.5, 6.0, 7.5)},
+		{"prop": "buildings/block_3", "pos": Vector3(-28.0, 0.0, -31.0), "yaw": 0.0, "color": Color("#9E7B66"), "size": Vector3(14.0, 12.0, 10.0)},
+		{"prop": "buildings/tower_0", "pos": Vector3(-26.0, 0.0, -47.0), "yaw": PI * 0.5, "color": Color("#8592A0"), "size": Vector3(15.0, 30.0, 12.0)},
+		{"prop": "buildings/block_2", "pos": Vector3(-43.0, 0.0, -16.0), "yaw": 0.0, "color": Color("#95928C"), "size": Vector3(13.0, 18.0, 11.0)},
 
 		# NE quadrant
-		{"prop": "buildings/block_5", "pos": Vector3(14.5, 0.0, -18.0), "yaw": -PI * 0.5, "color": Color("#A89480"), "size": Vector3(10.9, 8.58, 8.9)},
-		{"prop": "buildings/block_6", "pos": Vector3(29.0, 0.0, -21.0), "yaw": -PI * 0.5, "color": Color("#B8AA94"), "size": Vector3(10.9, 8.58, 8.9)},
-		{"prop": "buildings/tower_1", "pos": Vector3(25.0, 0.0, -46.0), "yaw": -PI * 0.5, "color": Color("#9C8578"), "size": Vector3(9.9, 14.5, 9.9)},
-		{"prop": "buildings/block_1", "pos": Vector3(42.0, 0.0, -34.0), "yaw": 0.0, "color": Color("#8CA0BA"), "size": Vector3(11.9, 8.58, 8.9)},
-		{"prop": "buildings/home_2", "pos": Vector3(13.0, 0.0, -32.0), "yaw": -PI * 0.5, "color": Color("#7D8B78"), "size": Vector3(8.9, 5.68, 7.4)},
-		{"prop": "buildings/home_5", "pos": Vector3(42.0, 0.0, -15.0), "yaw": 0.0, "color": Color("#C0B29E"), "size": Vector3(8.9, 8.58, 7.4)},
+		{"prop": "buildings/block_5", "pos": Vector3(14.5, 0.0, -18.0), "yaw": -PI * 0.5, "color": Color("#A89480"), "size": Vector3(13.5, 15.0, 11.0)},
+		{"prop": "buildings/block_6", "pos": Vector3(29.0, 0.0, -21.0), "yaw": -PI * 0.5, "color": Color("#B8AA94"), "size": Vector3(12.5, 21.0, 12.0)},
+		{"prop": "buildings/tower_1", "pos": Vector3(25.0, 0.0, -46.0), "yaw": -PI * 0.5, "color": Color("#9C8578"), "size": Vector3(16.0, 36.0, 12.0)},
+		{"prop": "buildings/block_1", "pos": Vector3(42.0, 0.0, -34.0), "yaw": 0.0, "color": Color("#8CA0BA"), "size": Vector3(12.0, 15.0, 10.0)},
+		{"prop": "buildings/home_2", "pos": Vector3(13.0, 0.0, -32.0), "yaw": -PI * 0.5, "color": Color("#7D8B78"), "size": Vector3(9.5, 6.0, 8.0)},
+		{"prop": "buildings/home_5", "pos": Vector3(42.0, 0.0, -15.0), "yaw": 0.0, "color": Color("#C0B29E"), "size": Vector3(9.5, 9.0, 7.5)},
 
 		# SW quadrant
-		{"prop": "buildings/home_1", "pos": Vector3(-32.0, 0.0, 18.0), "yaw": 0.0, "color": Color("#7D8B78"), "size": Vector3(7.9, 5.68, 7.9)},
-		{"prop": "buildings/home_0", "pos": Vector3(-34.0, 0.0, 32.0), "yaw": PI * 0.5, "color": Color("#C8B896"), "size": Vector3(6.9, 5.68, 6.9)},
-		{"prop": "buildings/home_3", "pos": Vector3(-22.0, 0.0, 42.0), "yaw": PI * 0.5, "color": Color("#C0B29E"), "size": Vector3(7.4, 8.58, 7.9)},
+		{"prop": "buildings/home_1", "pos": Vector3(-32.0, 0.0, 18.0), "yaw": 0.0, "color": Color("#7D8B78"), "size": Vector3(8.5, 6.0, 8.5)},
+		{"prop": "buildings/home_0", "pos": Vector3(-34.0, 0.0, 32.0), "yaw": PI * 0.5, "color": Color("#C8B896"), "size": Vector3(7.5, 6.0, 7.5)},
+		{"prop": "buildings/home_3", "pos": Vector3(-22.0, 0.0, 42.0), "yaw": PI * 0.5, "color": Color("#C0B29E"), "size": Vector3(8.0, 9.0, 8.5)},
 
 		# SE quadrant
-		{"prop": "buildings/home_4", "pos": Vector3(38.0, 0.0, 32.0), "yaw": -PI * 0.5, "color": Color("#B87D6E"), "size": Vector3(8.4, 8.58, 7.9)},
-		{"prop": "buildings/home_2", "pos": Vector3(36.0, 0.0, 18.0), "yaw": 0.0, "color": Color("#7D8B78"), "size": Vector3(8.9, 5.68, 7.4)},
-		{"prop": "buildings/home_5", "pos": Vector3(38.0, 0.0, 44.0), "yaw": 0.0, "color": Color("#C0B29E"), "size": Vector3(8.9, 8.58, 7.4)}
+		{"prop": "buildings/home_4", "pos": Vector3(38.0, 0.0, 32.0), "yaw": -PI * 0.5, "color": Color("#B87D6E"), "size": Vector3(9.0, 9.0, 9.0)},
+		{"prop": "buildings/home_2", "pos": Vector3(36.0, 0.0, 18.0), "yaw": 0.0, "color": Color("#7D8B78"), "size": Vector3(9.5, 6.0, 8.0)},
+		{"prop": "buildings/home_5", "pos": Vector3(38.0, 0.0, 44.0), "yaw": 0.0, "color": Color("#C0B29E"), "size": Vector3(9.5, 9.0, 7.5)}
 	]
 
 	for b in buildings_def:
 		_put_prop(str(b.prop), b.pos, float(b.yaw), Vector3.ONE, b.color)
 
-	# Strict building collision check: no trees or foliage within 3.5m clearance of any building wall
-	var is_near_building := func(pos: Vector3, clearance := 3.5) -> bool:
+	# Strict building collision check: no trees or foliage within 4.0m clearance of any building wall
+	var is_near_building := func(pos: Vector3, clearance := 4.0) -> bool:
 		for b in buildings_def:
 			var b_pos: Vector3 = b.pos
 			var b_size: Vector3 = b.size
@@ -1037,50 +1033,50 @@ func _build_city_scenery() -> void:
 
 	# Dense courtyard and lawn groves in all 4 quadrants (placed in open courtyards with strict building and fence collision avoidance)
 	var lawn_trees := [
-		# NW lawn grove (open courtyards between buildings)
-		{"prop": "trees/round_0", "pos": Vector3(-20.0, 0.18, -25.0), "s": 1.25},
+		# NW lawn grove (open courtyards between buildings, completely clear of home_1 at (-16, -18))
+		{"prop": "trees/round_0", "pos": Vector3(-20.0, 0.18, -26.0), "s": 1.25},
 		{"prop": "trees/birch_0", "pos": Vector3(-36.0, 0.18, -25.0), "s": 1.2},
 		{"prop": "trees/pine_0", "pos": Vector3(-22.0, 0.18, -38.0), "s": 1.3},
-		{"prop": "trees/round_0", "pos": Vector3(-14.0, 0.18, -40.0), "s": 1.2},
+		{"prop": "trees/round_0", "pos": Vector3(-14.0, 0.18, -42.0), "s": 1.2},
 		{"prop": "trees/birch_0", "pos": Vector3(-35.0, 0.18, -38.0), "s": 1.25},
 		# NE lawn grove (open courtyards between buildings, completely clear of block_5 at (14.5, -18.0))
-		{"prop": "trees/birch_0", "pos": Vector3(18.0, 0.18, -25.0), "s": 1.25},
+		{"prop": "trees/birch_0", "pos": Vector3(20.0, 0.18, -26.0), "s": 1.25},
 		{"prop": "trees/round_0", "pos": Vector3(22.0, 0.18, -12.0), "s": 1.2},
-		{"prop": "trees/pine_0", "pos": Vector3(35.0, 0.18, -20.0), "s": 1.3},
-		{"prop": "trees/round_0", "pos": Vector3(18.0, 0.18, -38.0), "s": 1.2},
+		{"prop": "trees/pine_0", "pos": Vector3(35.0, 0.18, -22.0), "s": 1.3},
+		{"prop": "trees/round_0", "pos": Vector3(20.0, 0.18, -38.0), "s": 1.2},
 		{"prop": "trees/birch_0", "pos": Vector3(32.0, 0.18, -42.0), "s": 1.25},
-		# SW lawn grove (densely packed visible foreground, clear of fences and houses)
-		{"prop": "trees/round_0", "pos": Vector3(-15.0, 0.18, 24.0), "s": 1.3},
-		{"prop": "trees/birch_0", "pos": Vector3(-22.0, 0.18, 20.0), "s": 1.2},
+		# SW lawn grove (spacious foreground lawn with ample clearance from fences and houses)
+		{"prop": "trees/round_0", "pos": Vector3(-16.0, 0.18, 26.0), "s": 1.25},
+		{"prop": "trees/birch_0", "pos": Vector3(-22.0, 0.18, 24.0), "s": 1.2},
 		{"prop": "trees/round_0", "pos": Vector3(-26.0, 0.18, 26.0), "s": 1.25},
-		{"prop": "trees/pine_0", "pos": Vector3(-16.0, 0.18, 32.0), "s": 1.2},
-		{"prop": "trees/birch_0", "pos": Vector3(-18.0, 0.18, 38.0), "s": 1.25},
-		{"prop": "trees/round_0", "pos": Vector3(-26.0, 0.18, 34.0), "s": 1.3},
-		# SE lawn grove (densely packed visible foreground, clear of fences and houses)
-		{"prop": "trees/birch_0", "pos": Vector3(15.0, 0.18, 24.0), "s": 1.25},
-		{"prop": "trees/round_0", "pos": Vector3(22.0, 0.18, 20.0), "s": 1.2},
+		{"prop": "trees/pine_0", "pos": Vector3(-16.0, 0.18, 34.0), "s": 1.2},
+		{"prop": "trees/birch_0", "pos": Vector3(-20.0, 0.18, 40.0), "s": 1.25},
+		{"prop": "trees/round_0", "pos": Vector3(-28.0, 0.18, 36.0), "s": 1.3},
+		# SE lawn grove (spacious foreground lawn with ample clearance from fences and houses)
+		{"prop": "trees/birch_0", "pos": Vector3(16.0, 0.18, 26.0), "s": 1.25},
+		{"prop": "trees/round_0", "pos": Vector3(22.0, 0.18, 24.0), "s": 1.2},
 		{"prop": "trees/pine_0", "pos": Vector3(26.0, 0.18, 26.0), "s": 1.3},
-		{"prop": "trees/round_0", "pos": Vector3(14.0, 0.18, 32.0), "s": 1.2},
-		{"prop": "trees/birch_0", "pos": Vector3(18.0, 0.18, 38.0), "s": 1.25},
-		{"prop": "trees/round_0", "pos": Vector3(26.0, 0.18, 34.0), "s": 1.3}
+		{"prop": "trees/round_0", "pos": Vector3(16.0, 0.18, 34.0), "s": 1.2},
+		{"prop": "trees/birch_0", "pos": Vector3(20.0, 0.18, 40.0), "s": 1.25},
+		{"prop": "trees/round_0", "pos": Vector3(28.0, 0.18, 36.0), "s": 1.3}
 	]
 	for lt in lawn_trees:
-		if is_near_kiosk.call(lt.pos) or is_near_building.call(lt.pos, 3.5) or is_near_fence.call(lt.pos, 1.6):
+		if is_near_kiosk.call(lt.pos) or is_near_building.call(lt.pos, 4.0) or is_near_fence.call(lt.pos, 2.8):
 			continue
 		var t_color := birch_color if "birch" in str(lt.prop) else (Color(pine_colors[0]) if "pine" in str(lt.prop) else Color(canopy_colors[0]))
 		_put_prop(str(lt.prop), lt.pos, randf() * TAU, Vector3.ONE * float(lt.s), t_color)
 		var b1_pos: Vector3 = lt.pos + Vector3(1.4, 0, 1.4)
 		var b2_pos: Vector3 = lt.pos + Vector3(-1.4, 0, -1.2)
-		if not is_near_kiosk.call(b1_pos) and not is_near_building.call(b1_pos, 3.0) and not is_near_fence.call(b1_pos, 1.4):
+		if not is_near_kiosk.call(b1_pos) and not is_near_building.call(b1_pos, 3.2) and not is_near_fence.call(b1_pos, 2.0):
 			_put_prop("street/bush", b1_pos, 0.0, Vector3.ONE * 1.3, Color(canopy_colors[0]))
-		if not is_near_kiosk.call(b2_pos) and not is_near_building.call(b2_pos, 3.0) and not is_near_fence.call(b2_pos, 1.4):
+		if not is_near_kiosk.call(b2_pos) and not is_near_building.call(b2_pos, 3.2) and not is_near_fence.call(b2_pos, 2.0):
 			_put_prop("street/bush", b2_pos, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
 		# Soil pits for plants that stand on the paved sidewalk surfaces:
 		if absf(lt.pos.x) < 11.5 or (lt.pos.z > -8.5 and lt.pos.z < 17.5):
 			add_tree_pit.call(lt.pos, true)
-		if (absf(b1_pos.x) < 11.5 or (b1_pos.z > -8.5 and b1_pos.z < 17.5)) and not is_near_kiosk.call(b1_pos) and not is_near_building.call(b1_pos, 3.0):
+		if (absf(b1_pos.x) < 11.5 or (b1_pos.z > -8.5 and b1_pos.z < 17.5)) and not is_near_kiosk.call(b1_pos) and not is_near_building.call(b1_pos, 3.2):
 			add_tree_pit.call(b1_pos, false)
-		if (absf(b2_pos.x) < 11.5 or (b2_pos.z > -8.5 and b2_pos.z < 17.5)) and not is_near_kiosk.call(b2_pos) and not is_near_building.call(b2_pos, 3.0):
+		if (absf(b2_pos.x) < 11.5 or (b2_pos.z > -8.5 and b2_pos.z < 17.5)) and not is_near_kiosk.call(b2_pos) and not is_near_building.call(b2_pos, 3.2):
 			add_tree_pit.call(b2_pos, false)
 
 	# Authentic parked cars along curbs on cross street
@@ -1146,40 +1142,26 @@ func _setup_traffic_lights() -> void:
 	traffic_light_node.visible = true
 	junction_node.add_child(traffic_light_node)
 
-	# - Duplicating signal far-left curb across intersection (ГОСТ Р 52289 п. 7.3.3):
+	# - Duplicating signal across intersection on far curb (ГОСТ Р 52289 п. 7.3.3):
 	var tl_north_dup_far := TrafficSignal.make_mini({"state": "green", "arrow": "right", "arrowActive": false})
-	tl_north_dup_far.position = Vector3(4.8, 0.16, 11.6)
+	tl_north_dup_far.position = Vector3(-4.8, 0.16, 11.6)
 	tl_north_dup_far.rotation.y = PI
 	tl_north_dup_far.visible = true
 	junction_node.add_child(tl_north_dup_far)
 
-	# - South approach primary signal on right-hand curb before stop line at Z = 16.5 (facing South towards oncoming traffic):
-	var tl_south_primary := TrafficSignal.make_mini({"state": "green", "arrow": "right", "arrowActive": false})
-	tl_south_primary.position = Vector3(4.8, 0.16, 16.5)
-	tl_south_primary.rotation.y = 0.0
-	tl_south_primary.visible = true
-	junction_node.add_child(tl_south_primary)
-
-	# - South approach duplicating signal far-left curb across intersection (spaced 2.0m from Sign 5.19.2 at Z = -6.5):
-	var tl_south_dup := TrafficSignal.make_mini({"state": "green", "arrow": "right", "arrowActive": false})
-	tl_south_dup.position = Vector3(-4.8, 0.16, -4.5)
-	tl_south_dup.rotation.y = 0.0
-	tl_south_dup.visible = true
-	junction_node.add_child(tl_south_dup)
-
-	traffic_lights_ns = [traffic_light_node, tl_north_dup_far, tl_south_primary, tl_south_dup]
+	traffic_lights_ns = [traffic_light_node, tl_north_dup_far]
 
 	# 2. West approach (Cross street Eastbound traffic):
 	# - Primary signal on right-hand curb before stop line at X = -9.75:
 	traffic_light_ew_node = TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
-	traffic_light_ew_node.position = Vector3(-10.2, 0.16, 12.4)
+	traffic_light_ew_node.position = Vector3(-9.75, 0.16, 12.4)
 	traffic_light_ew_node.rotation.y = -PI * 0.5
 	traffic_light_ew_node.visible = true
 	junction_node.add_child(traffic_light_ew_node)
 
-	# - Duplicating signal far-left curb across intersection (ГОСТ Р 52289 п. 7.3.3):
+	# - Duplicating signal across intersection on far-left curb (ГОСТ Р 52289 п. 7.3.3):
 	var tl_west_dup_left := TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
-	tl_west_dup_left.position = Vector3(5.6, 0.16, -2.4)
+	tl_west_dup_left.position = Vector3(4.8, 0.16, -2.4)
 	tl_west_dup_left.rotation.y = -PI * 0.5
 	tl_west_dup_left.visible = true
 	junction_node.add_child(tl_west_dup_left)
@@ -1189,14 +1171,14 @@ func _setup_traffic_lights() -> void:
 	# 3. East approach (Cross street Westbound traffic):
 	# - Primary signal on right-hand curb before stop line at X = 9.75:
 	traffic_light_east_node = TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
-	traffic_light_east_node.position = Vector3(10.2, 0.16, -2.4)
+	traffic_light_east_node.position = Vector3(9.75, 0.16, -2.4)
 	traffic_light_east_node.rotation.y = PI * 0.5
 	traffic_light_east_node.visible = true
 	junction_node.add_child(traffic_light_east_node)
 
-	# - Duplicating signal far-left curb across intersection (ГОСТ Р 52289 п. 7.3.3):
+	# - Duplicating signal across intersection on far-left curb (ГОСТ Р 52289 п. 7.3.3):
 	var tl_east_dup_left := TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
-	tl_east_dup_left.position = Vector3(-5.6, 0.16, 12.4)
+	tl_east_dup_left.position = Vector3(-4.8, 0.16, -2.4)
 	tl_east_dup_left.rotation.y = PI * 0.5
 	tl_east_dup_left.visible = true
 	junction_node.add_child(tl_east_dup_left)
@@ -1246,11 +1228,11 @@ func _setup_active_pedestrians() -> void:
 
 	var routes_def := [
 		# South crosswalk (walks across and deep into sidewalks without turnaround)
-		{"type": "cross_x", "y": 0.0, "z": 15.25, "min_x": -14.0, "max_x": 14.0, "x": -8.0, "dir": 1.0, "spd": 1.4},
+		{"type": "cross_x", "y": 0.0, "z": 15.25, "min_x": -12.0, "max_x": 28.0, "x": -8.0, "dir": 1.0, "spd": 1.4},
 		# West crosswalk (walks across and deep into sidewalks without turnaround)
-		{"type": "cross_z", "y": 0.0, "x": -7.5, "min_z": -14.0, "max_z": 24.0, "z": -8.0, "dir": 1.0, "spd": 1.3},
+		{"type": "cross_z", "y": 0.0, "x": -7.5, "min_z": -32.0, "max_z": 20.0, "z": -8.0, "dir": 1.0, "spd": 1.3},
 		# East crosswalk (walks across and deep into sidewalks without turnaround)
-		{"type": "cross_z", "y": 0.0, "x": 7.5, "min_z": -14.0, "max_z": 24.0, "z": 18.0, "dir": -1.0, "spd": 1.35},
+		{"type": "cross_z", "y": 0.0, "x": 7.5, "min_z": -12.0, "max_z": 32.0, "z": 18.0, "dir": -1.0, "spd": 1.35},
 		# NW sidewalk (walking north/south, lane separation: dir=1 at x=-5.1, dir=-1 at x=-5.9)
 		{"type": "sidewalk_z", "y": 0.16, "x": -5.1, "min_z": -36.0, "max_z": -11.0, "z": -16.0, "dir": 1.0, "spd": 1.3},
 		{"type": "sidewalk_z", "y": 0.16, "x": -5.9, "min_z": -36.0, "max_z": -11.0, "z": -28.0, "dir": -1.0, "spd": 1.25},
@@ -1323,6 +1305,10 @@ func _update_active_pedestrians(delta: float) -> void:
 			p["wait_timer"] = wait_t - delta
 			if p["wait_timer"] <= 0.0 and not node.visible:
 				node.visible = true
+				var rx: float = p.get("x", 0.0)
+				var rz: float = p.get("z", 0.0)
+				var ry: float = p.get("y", 0.16)
+				node.position = Vector3(rx, ry, rz)
 			node._process(delta * 0.05)
 			continue
 
@@ -1331,8 +1317,8 @@ func _update_active_pedestrians(delta: float) -> void:
 
 		if p_type in ["cross_x", "sidewalk_x"]:
 			var x: float = p.get("x", 0.0) + dir * spd * delta
-			var min_x: float = p.get("min_x", -14.0 if p_type == "cross_x" else -4.6)
-			var max_x: float = p.get("max_x", 14.0 if p_type == "cross_x" else 4.6)
+			var min_x: float = p.get("min_x", -12.0 if p_type == "cross_x" else -4.6)
+			var max_x: float = p.get("max_x", 28.0 if p_type == "cross_x" else 4.6)
 			var reached := false
 			if dir > 0.0 and x >= max_x:
 				x = max_x
@@ -1352,8 +1338,8 @@ func _update_active_pedestrians(delta: float) -> void:
 				if p_type == "cross_x":
 					node.visible = false
 					p["wait_timer"] = randf_range(2.5, 4.5)
-					p["dir"] = -dir
-					p["x"] = min_x if p["dir"] > 0.0 else max_x
+					p["dir"] = 1.0 if randf() < 0.5 else -1.0
+					p["x"] = -8.0 if p["dir"] > 0.0 else 8.0
 					var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
 					var new_tint: Color = walker_colors[randi() % walker_colors.size()]
 					var new_look: int = randi() % Models.WALKERS
@@ -1373,8 +1359,8 @@ func _update_active_pedestrians(delta: float) -> void:
 
 		elif p_type in ["cross_z", "sidewalk_z"]:
 			var z: float = p.get("z", 0.0) + dir * spd * delta
-			var min_z: float = p.get("min_z", -14.0 if p_type == "cross_z" else -20.0)
-			var max_z: float = p.get("max_z", 24.0 if p_type == "cross_z" else 20.0)
+			var min_z: float = p.get("min_z", -32.0 if p_type == "cross_z" else -20.0)
+			var max_z: float = p.get("max_z", 28.0 if p_type == "cross_z" else 20.0)
 			var reached := false
 			if dir > 0.0 and z >= max_z:
 				z = max_z
@@ -1395,8 +1381,8 @@ func _update_active_pedestrians(delta: float) -> void:
 				if p_type == "cross_z":
 					node.visible = false
 					p["wait_timer"] = randf_range(2.5, 4.5)
-					p["dir"] = -dir
-					p["z"] = min_z if p["dir"] > 0.0 else max_z
+					p["dir"] = 1.0 if randf() < 0.5 else -1.0
+					p["z"] = -4.0 if p["dir"] > 0.0 else 16.0
 					var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
 					var new_tint: Color = walker_colors[randi() % walker_colors.size()]
 					var new_look: int = randi() % Models.WALKERS
@@ -1697,9 +1683,9 @@ func _update_pedestrian(delta: float) -> void:
 	ped_pos_x += ped_speed * ped_dir * delta
 
 	# 3. Check for crossing completion: walker continues onto sidewalk, walks deep into city and despawns
-	if (ped_dir > 0.0 and ped_pos_x >= 14.0) or (ped_dir < 0.0 and ped_pos_x <= -14.0):
+	if (ped_dir > 0.0 and ped_pos_x >= 14.0) or (ped_dir < 0.0 and ped_pos_x <= -36.0):
 		pedestrian.visible = false
-		ped_wait_timer = randf_range(2.5, 4.5)
+		ped_wait_timer = randf_range(2.5, 4.0)
 		return
 
 	var ped_y := 0.0
@@ -1716,7 +1702,7 @@ func _update_pedestrian(delta: float) -> void:
 
 func _spawn_next_procedural_pedestrian(next_dir: float) -> void:
 	ped_dir = next_dir
-	ped_pos_x = -14.0 if ped_dir > 0.0 else 14.0
+	ped_pos_x = randf_range(-9.5, -8.5) if ped_dir > 0.0 else randf_range(8.5, 9.5)
 	ped_speed = randf_range(1.3, 1.7)
 	ped_wait_timer = 0.0
 
@@ -2462,7 +2448,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	# 6b. Turn Conflict Clearance (п. 13.4 ПДД РФ: yielding to crossing traffic on left turn)
 	if car.route == "main_left" and car.turn_t < 0.8:
 		for other in cars:
-			if other != car and is_instance_valid(other) and other.lane == 3 and other.position.x > -6.0 and other.position.x < 14.0:
+			if other != car and is_instance_valid(other) and other.lane == 3 and other.position.x > -6.0 and other.position.x < 2.0 and other.speed > 0.5:
 				var dist_to_turn := maxf(0.0, -0.5 - car.position.z)
 				if dist_to_turn <= 0.4:
 					car.speed = 0.0
