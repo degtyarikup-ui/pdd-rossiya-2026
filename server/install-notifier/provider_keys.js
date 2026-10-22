@@ -56,7 +56,7 @@ function httpFailure(response) {
 
 export function createProviderKeyService({
   fetchImpl = (url, options) => fetch(url, options), now = () => Date.now(),
-  timeoutDuration = 2500, cacheTimeout = 500,
+  timeoutDuration = 2500, cacheTimeout = 500, refreshCacheTimeout = 5000,
 } = {}) {
   // Only JSON snapshots survive requests. Network promises/resolvers are local
   // to each invocation because Cloudflare I/O belongs to its creating request.
@@ -79,13 +79,13 @@ export function createProviderKeyService({
       return cached;
     } catch { return null; }
   }
-  async function persist(env, provider, value) {
+  async function persist(env, provider, value, budget = cacheTimeout) {
     const snapshot = freshSnapshot(value, now());
     if (!snapshot) return false;
     snapshots.set(provider, snapshot);
     try {
       if (typeof env.INSTALLS?.put !== 'function') return false;
-      await bounded(Promise.resolve().then(() => env.INSTALLS.put(keyFor(provider), JSON.stringify(snapshot))), cacheTimeout);
+      await bounded(Promise.resolve().then(() => env.INSTALLS.put(keyFor(provider), JSON.stringify(snapshot))), budget);
       return true;
     } catch { return false; }
   }
@@ -126,7 +126,7 @@ export function createProviderKeyService({
     return Object.fromEntries(await Promise.all(Object.keys(ENDPOINTS).map(async provider => {
       try {
         const jwks = await origin(provider, { signal: AbortSignal.timeout(timeoutDuration) });
-        const saved = await persist(env, provider, { uat: now(), jwks });
+        const saved = await persist(env, provider, { uat: now(), jwks }, refreshCacheTimeout);
         return [provider, { ok: saved, code: saved ? 'updated' : 'cache_write_failed' }];
       } catch (error) {
         const code = error?.name === 'TimeoutError' || error?.name === 'AbortError' ? 'jwks_timeout'

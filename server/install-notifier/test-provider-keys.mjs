@@ -156,3 +156,32 @@ test('refresh isolates providers, follows no redirects and returns only fixed ou
     ? new Response('private location', { status: 302, headers: { Location: 'https://untrusted.invalid' } }) : Response.json({ keys: [] }) });
   assert.deepEqual(await failed.refreshProviderKeyCaches(env), { apple: { ok: false, code: 'jwks_http' }, google: { ok: false, code: 'jwks_invalid' } });
 });
+
+test('background refresh waits for a KV commit beyond the login write budget', async () => {
+  const { env, data } = fixture();
+  const committed = new Set();
+  env.INSTALLS.put = async (key, value) => {
+    await new Promise(resolve => setTimeout(resolve, 35));
+    data.set(key, value);
+    committed.add(key);
+  };
+  const service = createProviderKeyService({ cacheTimeout: 5, refreshCacheTimeout: 150,
+    fetchImpl: async () => Response.json({ keys: [jwk] }) });
+  const result = await service.refreshProviderKeyCaches(env);
+  assert.deepEqual(result, { apple: { ok: true, code: 'updated' }, google: { ok: true, code: 'updated' } });
+  assert.deepEqual([...committed].sort(), ['auth_jwks:v1:apple', 'auth_jwks:v1:google']);
+  for (const key of committed) assert.deepEqual(JSON.parse(data.get(key)).jwks, { keys: [jwk] });
+});
+
+test('background refresh still reports failure within its separate deadline if KV never commits', async () => {
+  const { env, data } = fixture();
+  env.INSTALLS.put = async () => new Promise(() => {});
+  const service = createProviderKeyService({ cacheTimeout: 5, refreshCacheTimeout: 20,
+    fetchImpl: async () => Response.json({ keys: [jwk] }) });
+  const started = Date.now();
+  assert.deepEqual(await service.refreshProviderKeyCaches(env), {
+    apple: { ok: false, code: 'cache_write_failed' }, google: { ok: false, code: 'cache_write_failed' },
+  });
+  assert.ok(Date.now() - started < 500);
+  assert.equal(data.size, 0);
+});
