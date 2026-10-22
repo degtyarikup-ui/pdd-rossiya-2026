@@ -29,6 +29,7 @@ import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
 import 'package:pdd_app/presentation/widgets/question_number_chip.dart';
+import 'package:pdd_app/presentation/widgets/question_voice_toggle.dart';
 
 class ExamScreen extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>> allQuestions;
@@ -739,6 +740,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                             _additionalPhase
                                 ? appL10n.examAdditionalTitle
                                 : appL10n.exam,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -755,6 +758,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                                     _currentIndex + 1,
                                     _examQuestions.length,
                                   ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 12,
                               color: colors.secondaryText,
@@ -763,6 +768,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(width: AppDimensions.spacingM),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -798,6 +804,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                    const QuestionVoiceToggle(),
                   ],
                 ),
               ),

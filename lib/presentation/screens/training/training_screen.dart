@@ -19,6 +19,7 @@ import 'package:pdd_app/data/services/tts_service.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/question_image.dart';
 import 'package:pdd_app/presentation/widgets/question_number_chip.dart';
+import 'package:pdd_app/presentation/widgets/question_voice_toggle.dart';
 import 'package:pdd_app/presentation/widgets/ai_explanation_sheet.dart';
 import 'package:pdd_app/presentation/widgets/pdd_comment_text.dart';
 import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
@@ -587,6 +588,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               children: [
                 Text(
                   widget.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -603,6 +606,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               ],
             ),
           ),
+          const SizedBox(width: AppDimensions.spacingM),
+          const QuestionVoiceToggle(),
         ],
       ),
     );
