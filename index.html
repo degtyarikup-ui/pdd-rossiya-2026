@@ -62,7 +62,6 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
     "name": "ПДД Россия 2026",
     "url": "https://pdd-drive.ru/",
     "logo": "https://pdd-drive.ru/assets/icon-192.png",
-    "email": "degtyarik.up@gmail.com",
     "sameAs": [
       "https://play.google.com/store/apps/details?id=ru.pdd.pdd_app",
       "https://apps.apple.com/ru/app/id6792369533",
@@ -139,6 +138,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
     ]
   }
   </script>
+  <link rel="stylesheet" href="/assets/support-form.css">
 </head>
 <body>
 
@@ -363,7 +363,21 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
       <div class="faq-aside reveal">
         <p class="kicker">FAQ</p>
         <h2 class="section-title">Частые вопросы</h2>
-        <p class="section-lead">Не нашли ответ? Напишите нам: <a href="mailto:degtyarik.up@gmail.com">degtyarik.up@gmail.com</a></p>
+        <p class="section-lead">Не нашли ответ? Напишите нам через форму.</p>
+        <form class="support-form" id="support-form">
+          <label for="support-name">Ваше имя <span>(необязательно)</span></label>
+          <input id="support-name" name="name" autocomplete="name" maxlength="80" placeholder="Как к вам обращаться">
+          <label for="support-contact">Куда вам ответить</label>
+          <input id="support-contact" name="contact" required maxlength="160" placeholder="Email или @имя в Telegram" aria-describedby="support-contact-hint">
+          <p class="support-hint" id="support-contact-hint">Укажите контакт, по которому мы сможем с вами связаться.</p>
+          <label for="support-message">Сообщение</label>
+          <textarea id="support-message" name="message" required minlength="5" maxlength="3000" rows="4" placeholder="Расскажите, чем мы можем помочь"></textarea>
+          <div class="support-trap" aria-hidden="true"><label>Ваш сайт<input name="website" tabindex="-1" autocomplete="off"></label></div>
+          <p class="support-hint">Отправляя форму, вы соглашаетесь на обработку указанных данных для ответа на обращение. <a href="/privacy.html">Политика конфиденциальности</a>.</p>
+          <button class="btn btn-primary" type="submit">Отправить сообщение</button>
+          <p class="support-status" id="support-status" role="status" aria-live="polite"></p>
+          <noscript><p>Для отправки формы включите JavaScript в браузере.</p></noscript>
+        </form>
       </div>
       <div class="faq">
         <details>
@@ -432,7 +446,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
       <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
       <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">App Store</a>
       <a href="/app/">Веб-версия</a>
-      <a href="mailto:degtyarik.up@gmail.com">Поддержка</a>
+      <a href="#support-form">Поддержка</a>
     </nav>
     <div class="copy">
       <span class="age-badge">16+</span> © 2026 ПДД Россия 2026</div>
@@ -454,6 +468,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
     .then(function () { clearTimeout(t); }, function () { clearTimeout(t); degrade(); });
 })();
 </script>
+<script src="/assets/support-form.js" defer></script>
 <script src="/assets/site.js" defer></script>
 <script src="/assets/tracker.js" defer></script>
 <!-- Yandex.Metrika counter -->
