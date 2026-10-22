@@ -29,6 +29,14 @@ export async function accountRead(env, id, key) {
   if (!response?.ok) throw new Error('account storage unavailable');
   return (await response.json()).value;
 }
+// Session generation and individual revocation must be checked together, with
+// no cache window in which a logged-out or deleted account keeps access.
+export async function accountReadMany(env, id, keys) {
+  if (env.__ACCOUNT_ID === id || !env.ACCOUNTS) return Promise.all(keys.map(key => env.INSTALLS?.get(key)));
+  const response = await accountRpc(env, id, '/_account/read-many', { keys });
+  if (!response?.ok) throw new Error('account storage unavailable');
+  return (await response.json()).values;
+}
 export async function accountWrite(env, id, key, value, options = {}) {
   if (env.__ACCOUNT_ID === id || !env.ACCOUNTS) return value == null ? env.INSTALLS.delete(key) : env.INSTALLS.put(key, value, options);
   const response = await accountRpc(env, id, '/_account/write', { key, value, options });
@@ -45,14 +53,14 @@ export async function paymentOwner(env, orderId, txId) {
   const id = orderId || (txId ? await env.INSTALLS.get('pay_tx:' + txId) : null);
   return parse(id ? await env.INSTALLS.get('pay_order:' + id) : null)?.userId || null;
 }
-export async function routeAccountRequest(request, env, { readSession, verifyAdminAuth }) {
+export async function routeAccountRequest(request, env, { sessionAccountId, verifyAdminAuth }) {
   if (env.__ACCOUNT_ID || !env.ACCOUNTS) {
     if (!env.__ACCOUNT_ID && accountStateRequired(env) && !env.ACCOUNTS) return json({ error: 'account storage unavailable' }, 503);
     return null;
   }
   const url = new URL(request.url), path = url.pathname;
   let id = null, callbackOrder = null;
-  if (path.startsWith('/api/user/')) id = (await readSession(request, env))?.user?.id;
+  if (path.startsWith('/api/user/')) id = await sessionAccountId(request, env);
   else if (path.startsWith('/api/admin/users/') && await verifyAdminAuth(request, env)) {
     id = String((request.method === 'GET' ? url.searchParams.get('id') : (await request.clone().json().catch(() => null))?.userId) || '').trim();
   } else if (path === '/api/pay/platega/callback' && request.method === 'POST') {
@@ -212,7 +220,12 @@ export class AccountState {
     };
     const env = { ...this.env, INSTALLS: installs, __ACCOUNT_ID: id, __AFTER_ACCOUNT_COMMIT: effects, __DURABLE_EFFECTS: durableEffects, __ACCOUNT_CHECKPOINT: checkpoint };
     let response;
-    if (path === '/_account/read' || path === '/_account/write') {
+    if (path === '/_account/read-many') {
+      const { keys } = await request.json();
+      if (!Array.isArray(keys) || !keys.length || keys.length > 8
+          || keys.some(key => typeof key !== 'string' || !scoped(key, id))) return json({ error: 'invalid keys' }, 400);
+      response = json({ values: await Promise.all(keys.map(key => get(key))) });
+    } else if (path === '/_account/read' || path === '/_account/write') {
       const body = await request.json();
       if (!scoped(body.key || '', id)) return json({ error: 'invalid key' }, 400);
       if (path.endsWith('/write')) { if (body.value == null) await del(body.key); else await put(body.key, body.value, body.options || {}); }

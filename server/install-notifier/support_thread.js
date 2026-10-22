@@ -27,8 +27,8 @@ export class SupportThread {
       // One-time copy of the messages kept in KV before this object existed.
       const legacy = await request.json();
       await this.state.storage.transaction(async (txn) => {
-        const msgs = (await txn.get('messages')) || [];
-        if (msgs.length === 0 && Array.isArray(legacy)) {
+        const msgs = await txn.get('messages');
+        if (msgs == null && Array.isArray(legacy)) {
           await txn.put('messages', legacy.slice(-MAX_MESSAGES));
         }
       });
@@ -36,8 +36,9 @@ export class SupportThread {
     }
     if (request.method === 'GET' && url.pathname === '/list') {
       const since = Number(url.searchParams.get('since') || 0);
-      const msgs = (await this.state.storage.get('messages')) || [];
-      return Response.json({ ok: true, messages: since > 0 ? msgs.filter((m) => m.ts > since) : msgs });
+      const stored = await this.state.storage.get('messages');
+      const msgs = stored || [];
+      return Response.json({ ok: true, initialized: stored != null, messages: since > 0 ? msgs.filter((m) => m.ts > since) : msgs });
     }
     return new Response(null, { status: 404 });
   }

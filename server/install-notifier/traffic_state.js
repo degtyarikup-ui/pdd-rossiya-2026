@@ -39,7 +39,6 @@ export class TrafficState {
         const doc = stored ? null : await this.state.storage.get('value');
         return Response.json(gameDailySummary({ _ranking: stored || doc?.[userId]?._ranking }));
       }
-      if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + 60000);
       if (action === 'install') {
         const marker = 'id:' + String(body.installId || '');
         if (body.installId) {
@@ -52,6 +51,7 @@ export class TrafficState {
             return Response.json({ value: number, isNew: false });
           }
         }
+        if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + 60000);
         const nonNew = ['returning', 'unclassified'].includes(body.analytics?.kind);
         const value = await this.state.storage.transaction(async txn => {
           const next = nonNew ? null : (await txn.get('value')) + 1;
@@ -68,6 +68,7 @@ export class TrafficState {
         return Response.json({ value, isNew: true });
       }
       if (action === 'increment') {
+        if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + 60000);
         const value = await this.state.storage.transaction(async txn => {
           const next = (await txn.get('value')) + 1;
           await txn.put('value', next);
@@ -79,6 +80,7 @@ export class TrafficState {
         const doc = await this.state.storage.get('value');
         const userId = body.userId;
         if (!userId || ['__proto__', 'constructor', 'prototype'].includes(userId)) return new Response('invalid user', { status: 400 });
+        if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + 60000);
         if (action === 'delete') {
           delete doc[userId];
           await this.state.storage.delete('ranking:' + userId);

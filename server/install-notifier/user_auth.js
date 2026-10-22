@@ -1,5 +1,5 @@
 import { retainAppleAuthorization } from './apple_account.js';
-import { accountRead, accountWrite } from './account_state.js';
+import { accountRead, accountReadMany, accountWrite } from './account_state.js';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
@@ -148,10 +148,11 @@ export async function readSession(request, env) {
   if (raw.startsWith('v1.')) {
     const entry = await readSignedSession(env, raw);
     if (!entry?.user?.id || !Number.isFinite(entry.expiresAt) || entry.expiresAt <= Date.now()) return null;
-    const generation = await accountRead(env, entry.user.id, 'auth_generation:' + entry.user.id);
-    if ((generation || '') !== entry.generation) return null;
     const sessionTokenHash = await tokenHash(raw);
-    const revoked = await accountRead(env, entry.user.id, 'revoked_session:' + entry.user.id + ':' + sessionTokenHash);
+    const [generation, revoked] = await accountReadMany(env, entry.user.id, [
+      'auth_generation:' + entry.user.id, 'revoked_session:' + entry.user.id + ':' + sessionTokenHash,
+    ]);
+    if ((generation || '') !== entry.generation) return null;
     if (revoked && Number(revoked) > Date.now()) return null;
     return { ...entry, key: null, sessionTokenHash };
   }
@@ -161,12 +162,28 @@ export async function readSession(request, env) {
   let entry;
   try { entry = JSON.parse(await env.INSTALLS.get(key)); } catch { return null; }
   if (!entry?.user?.id || !Number.isFinite(entry.expiresAt) || entry.expiresAt <= Date.now()) return null;
-  const generation = await accountRead(env, entry.user.id, 'auth_generation:' + entry.user.id);
-  if ((generation || '') !== entry.generation) return null;
   const sessionTokenHash = await tokenHash(raw);
-  const revoked = await accountRead(env, entry.user.id, 'revoked_session:' + entry.user.id + ':' + sessionTokenHash);
+  const [generation, revoked] = await accountReadMany(env, entry.user.id, [
+    'auth_generation:' + entry.user.id, 'revoked_session:' + entry.user.id + ':' + sessionTokenHash,
+  ]);
+  if ((generation || '') !== entry.generation) return null;
   if (revoked && Number(revoked) > Date.now()) return null;
   return { ...entry, key, sessionTokenHash };
+}
+
+// Routing is not authorization. Verify the credential before choosing an object,
+// then let authorizeUserRequest check revocation INSIDE that same account request.
+// This avoids two extra DO invocations before every /api/user/* operation.
+export async function sessionAccountId(request, env) {
+  if (!env.INSTALLS) return null;
+  const raw = request.headers.get('authorization')?.match(/^Bearer (\S{1,4096})$/)?.[1];
+  if (!raw) return null;
+  let entry;
+  if (raw.startsWith('v1.')) entry = await readSignedSession(env, raw);
+  else if (/^[a-f0-9]{64}$/.test(raw)) {
+    try { entry = JSON.parse(await env.INSTALLS.get('auth_session:' + await tokenHash(raw))); } catch { return null; }
+  }
+  return entry?.user?.id && Number.isFinite(entry.expiresAt) && entry.expiresAt > Date.now() ? entry.user.id : null;
 }
 
 export async function revokeUserSessions(env, userId) {

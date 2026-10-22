@@ -48,17 +48,21 @@ async function listSupportMessages(env, clientId, since) {
     const msgs = env.INSTALLS ? ((await env.INSTALLS.get(key, { type: 'json' })) || []) : [];
     return since > 0 ? msgs.filter((m) => m.ts > since) : msgs;
   }
-  const read = async () => (await (await stub.fetch(`https://support.internal/list?since=${since}`)).json()).messages || [];
-  let messages = await read();
-  if (messages.length === 0 && env.INSTALLS) {
-    // Messages kept in KV before the thread existed: copy them once.
+  const read = async () => {
+    const response = await stub.fetch(`https://support.internal/list?since=${since}`);
+    if (!response.ok) throw new Error('support storage unavailable');
+    return response.json();
+  };
+  let result = await read();
+  if (result.initialized === false && env.INSTALLS) {
+    // Empty incremental results are normal. Only an uninitialized thread needs
+    // migration; persist an empty seed too, so idle polls never recheck old KV.
     const legacy = await env.INSTALLS.get('support:messages:' + clientId, { type: 'json' });
-    if (Array.isArray(legacy) && legacy.length) {
-      await stub.fetch('https://support.internal/seed', { method: 'POST', body: JSON.stringify(legacy) });
-      messages = await read();
-    }
+    const seed = await stub.fetch('https://support.internal/seed', { method: 'POST', body: JSON.stringify(Array.isArray(legacy) ? legacy : []) });
+    if (!seed.ok) throw new Error('support migration unavailable');
+    result = await read();
   }
-  return messages;
+  return result.messages || [];
 }
 
 function escapeHtml(s) {
@@ -284,15 +288,22 @@ export async function processTelegramMessageUpdate(msg, env) {
 // интервал, а найденный вебхук запоминаем на час.
 const DURABLE_POLL_INTERVAL_MS = 5000;
 let lastDurablePollAt = 0;
-export const resetSupportPollThrottle = () => { lastDurablePollAt = 0; };
+let webhookChecks = new WeakMap();
+export const resetSupportPollThrottle = () => { lastDurablePollAt = 0; webhookChecks = new WeakMap(); };
 
 /**
  * Проверка накопившихся обновлений Telegram (getUpdates) при отсутствии Webhook
  */
 async function checkPendingTelegramUpdates(env) {
   if (!env.BOT_TOKEN || !env.CHAT_ID) return;
+  // The installed webhook handles replies immediately. Its configuration flag
+  // need not cost a KV read for every idle client poll. Never cache messages.
+  if (env.INSTALLS && (webhookChecks.get(env.INSTALLS) || 0) > Date.now()) return;
   const isWebhookActive = env.INSTALLS ? await env.INSTALLS.get('tg:webhook_active') : null;
-  if (isWebhookActive === '1') return;
+  if (isWebhookActive === '1') {
+    webhookChecks.set(env.INSTALLS, Date.now() + 60000);
+    return;
+  }
 
   if (env.TELEGRAM) {
     const now = Date.now();

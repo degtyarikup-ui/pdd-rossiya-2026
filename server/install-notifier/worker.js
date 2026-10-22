@@ -36,7 +36,7 @@ import { setEntitlement } from './entitlements.js';
 import { accountTokenForUserId } from './store_account.js';
 import { deleteAccountDocuments, executeAppleRevocation } from './apple_account.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive, settleOrder } from './payments.js';
-import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession } from './user_auth.js';
+import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession, sessionAccountId } from './user_auth.js';
 import { readAiRequest, AiRequestError, AI_PROVIDER_TIMEOUT_MS } from './ai_request.js';
 import { routeAccountRequest, accountRead, accountWrite, accountRpc } from './account_state.js';
 export { AccountState } from './account_state.js';
@@ -62,7 +62,7 @@ import { LINKS_VIEW_HTML, LINKS_CLIENT_JS } from './links_ui.js';
 import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './admin_ui.js';
 import { StatsBuffer } from './stats_buffer.js';
 import { handleUsersAdmin } from './users_admin.js';
-import { putUserRecord, listUserSummaries } from './user_store.js';
+import { putUserRecord, putUserActivity, listUserSummaries } from './user_store.js';
 import { usersSnapshot } from './analytics_data.js';
 import { acceptUsage, applyUsage, usageSnapshot } from './usage_analytics.js';
 import { handleLinksAdmin } from './links_admin.js';
@@ -2857,7 +2857,8 @@ async function saveUserProfile(env, user) {
   await putUserRecord(env, merged);
 
   if (merged.email) {
-    await env.INSTALLS.put('user_email:' + merged.email.toLowerCase().trim(), merged.id);
+    const emailKey = 'user_email:' + merged.email.toLowerCase().trim();
+    if (await env.INSTALLS.get(emailKey) !== merged.id) await env.INSTALLS.put(emailKey, merged.id);
   }
 
   if (env.TRAFFIC && merged.provider && merged.provider !== 'guest' && !merged.suspect) {
@@ -3409,7 +3410,16 @@ const workerHandlers = {
       if (appVersion) merged.appVersion = appVersion;
       if (platform) merged.platform = platform;
       merged.lastSeenAt = new Date().toISOString();
-      await env.INSTALLS.put(kvKey, JSON.stringify(merged));
+      // A retry or unchanged snapshot must not rewrite KV just to bump timestamps.
+      const content = ({ updatedAt, lastSeenAt, ...value }) => JSON.stringify(value);
+      if (!existing || content(existing) !== content(merged)) {
+        await env.INSTALLS.put(kvKey, JSON.stringify(merged));
+      } else {
+        merged.updatedAt = existing.updatedAt;
+        if (Date.parse(merged.lastSeenAt) - Date.parse(existing.lastSeenAt || '') >= 5 * 60000
+            || !existing.lastSeenAt) await env.INSTALLS.put(kvKey, JSON.stringify(merged));
+        else merged.lastSeenAt = existing.lastSeenAt;
+      }
 
       // Also update user profile with appVersion, platform, and lastSeenAt
       if (env.INSTALLS) {
@@ -3417,11 +3427,9 @@ const workerHandlers = {
           const userKey = 'user:' + userId;
           const rawUser = await env.INSTALLS.get(userKey);
           if (rawUser) {
-            const userObj = JSON.parse(rawUser);
-            if (appVersion) userObj.appVersion = appVersion;
-            if (platform) userObj.platform = platform;
-            userObj.lastSeenAt = merged.lastSeenAt;
-            await putUserRecord(env, userObj);
+            await putUserActivity(env, JSON.parse(rawUser), {
+              appVersion, platform, lastSeenAt: new Date().toISOString(),
+            });
           }
         } catch (_) {}
       }
@@ -4327,7 +4335,7 @@ export default {
       return deferIncident(ctx, env, { category, operation, status, code, userId: session?.user?.id, user: session?.user, diagnosticId, context });
     };
     try {
-      const response = await routeAccountRequest(request, env, { readSession, verifyAdminAuth }) || await workerHandlers.fetch(request, env, ctx);
+      const response = await routeAccountRequest(request, env, { sessionAccountId, verifyAdminAuth }) || await workerHandlers.fetch(request, env, ctx);
       if (!isIncidentReported(response) && path !== '/api/auth/session' && (response.status >= 500 || (path === '/api/user/purchase' && [400, 403, 409, 422].includes(response.status)))) {
         let code = 'http_' + response.status;
         try {

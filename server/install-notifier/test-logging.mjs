@@ -51,7 +51,7 @@ test('landing link used by user preserves Threads through clicks into stores',()
   const context={URL,URLSearchParams,window:{location:{search:'?ref=threads',pathname:'/links/',hostname:'pdd-drive.ru'}},document:{referrer:'',readyState:'loading',addEventListener:(n,f)=>{listeners[n]=f;}},navigator:{userAgent:'Android',sendBeacon:(u,b)=>events.push(JSON.parse(b))},sessionStorage:{getItem:()=>null,setItem:()=>{}},localStorage:{getItem:()=>true},setTimeout};
   vm.runInNewContext(readFileSync(new URL('../../web_landing/ru/assets/tracker.js', import.meta.url),'utf8'),context);
   assert.equal(events[0].source,'threads');
-  const anchor={tagName:'A',href:'https://play.google.com/store/apps/details?id=ru.pdd.pdd_app'};
+  const anchor={tagName:'A',href:'https://play.google.com/store/apps/details?id=ru.pdd.pdd_app',getAttribute:()=>null};
   listeners.click({target:anchor});
   assert.equal(events.at(-1).source,'threads');assert.equal(events.at(-1).type,'click');
   assert.equal(new URLSearchParams(new URL(anchor.href).searchParams.get('referrer')).get('utm_source'),'threads');

@@ -56,6 +56,22 @@ export async function putUserRecord(env, user, options = {}) {
   await env.INSTALLS.put('user:' + user.id, JSON.stringify(user), { ...options, metadata: userSummary(user) });
 }
 
+// Progress is saved after individual answers. A profile heartbeat does not need
+// another KV projection for every answer; changed versions/platforms and daily
+// activity still become visible immediately. Purchases use putUserRecord directly.
+export async function putUserActivity(env, user, { appVersion, platform, lastSeenAt }) {
+  const next = structuredClone(user);
+  if (appVersion) next.appVersion = appVersion;
+  if (platform) next.platform = platform;
+  next.lastSeenAt = lastSeenAt;
+  recordActivity(next);
+  recordVersion(next);
+  const withoutHeartbeat = ({ lastSeenAt, ...value }) => JSON.stringify(value);
+  if (withoutHeartbeat(next) === withoutHeartbeat(user)
+      && Date.parse(lastSeenAt) - Date.parse(user.lastSeenAt || '') < 5 * 60000) return;
+  await putUserRecord(env, next);
+}
+
 // Сколько старых записей без сводки дописывать за один заход в админку:
 // каждая — это get и put, а бесплатный KV даёт 1000 записей в сутки.
 const BACKFILL_PER_CALL = 150;

@@ -62,6 +62,18 @@ function setup() {
 async function alarm(record) { record.state.storage.alarm = null; return record.object.alarm(); }
 const queued = async (record, prefix = 'q:') => record.state.storage.list({ prefix });
 
+test('duplicate installation checks do not schedule unchanged KV counter snapshots', async () => {
+  const env = setup();
+  const body = { installId: 'same-client', legacyKey: 'id:same-client' };
+  await trafficRequest(env, 'counter', 'install', body);
+  const record = env.TRAFFIC.objects.get('counter');
+  await alarm(record);
+  const writes = env.INSTALLS.writes.length;
+  for (let i = 0; i < 100; i++) assert.equal((await trafficRequest(env, 'counter', 'install', body)).isNew, false);
+  assert.equal(await record.state.storage.getAlarm(), null);
+  assert.equal(env.INSTALLS.writes.length, writes);
+});
+
 test('store labels survive sanitation; arbitrary unsafe sources remain rejected', () => {
   for (const source of ['App Store', 'Google Play']) assert.equal(sanitizeAnalyticsEvent({ source }).source, source);
   assert.equal(sanitizeAnalyticsEvent({ source: '__proto__' }).source, 'direct');
