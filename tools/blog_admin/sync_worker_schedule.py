@@ -83,7 +83,11 @@ def main():
         if args.schedule_json:
             payload = json.loads(args.schedule_json.read_text(encoding="utf-8"))
         else:
-            request = Request(SCHEDULE_URL, headers={"Accept": "application/json", "Cache-Control": "no-cache"})
+            request = Request(SCHEDULE_URL, headers={
+                "Accept": "application/json", "Cache-Control": "no-cache",
+                # Cloudflare отклоняет стандартную сигнатуру Python-urllib (1010).
+                "User-Agent": "PDDDriveBlogPublisher/1.0 (+https://pdd-drive.ru/about/)",
+            })
             with urlopen(request, timeout=20) as response:
                 if response.status != 200:
                     raise ValueError("Schedule endpoint did not return HTTP 200")
