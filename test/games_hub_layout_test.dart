@@ -15,6 +15,8 @@ const _cardKeys = [
   'games-card-signs',
   'games-card-regulator',
   'games-card-crossroads',
+  'games-card-road_signs',
+  'games-card-violator',
   'games-card-parking',
   'games-card-city',
 ];
@@ -215,13 +217,18 @@ void main() {
     final crossroads = tester.getRect(
       find.byKey(const ValueKey('games-card-crossroads')),
     );
+    final roadSigns = tester.getRect(
+      find.byKey(const ValueKey('games-card-road_signs')),
+    );
+    final violator = tester.getRect(
+      find.byKey(const ValueKey('games-card-violator')),
+    );
     final city = tester.getRect(find.byKey(const ValueKey('games-card-city')));
     expect(signs.top, closeTo(regulator.top, 0.1));
     expect(crossroads.top, greaterThanOrEqualTo(signs.bottom));
-    expect(parking.top, closeTo(crossroads.top, 0.1));
-    // Not ready for release: no cards for «Знаки» and «Нарушитель».
-    expect(find.byKey(const ValueKey('games-card-road_signs')), findsNothing);
-    expect(find.byKey(const ValueKey('games-card-violator')), findsNothing);
+    expect(roadSigns.top, closeTo(crossroads.top, 0.1));
+    expect(violator.top, greaterThanOrEqualTo(crossroads.bottom));
+    expect(parking.top, closeTo(violator.top, 0.1));
     expect(city.left, closeTo(signs.left, 0.1));
     expect(city.right, closeTo(regulator.right, 0.1));
     expect(city.top, greaterThanOrEqualTo(parking.bottom));
@@ -254,9 +261,7 @@ void main() {
             find.byKey(const ValueKey('games-card-city')),
           );
           final scroll = catalogueScroll(tester).position;
-          if (size == const Size(320, 480)) {
-            expect(scroll.maxScrollExtent, greaterThan(0));
-          }
+          if (size.width == 320) expect(scroll.maxScrollExtent, greaterThan(0));
           scroll.jumpTo(scroll.maxScrollExtent);
           await tester.pump();
           expect(
@@ -531,13 +536,13 @@ void main() {
       await open(
         tester,
         locale: locale,
-        signsBest: 0,
-        crossroadsBest: 0,
+        roadSignsBest: 0,
+        violatorBest: 0,
         parkingBest: 0,
       );
       for (final entry in [
-        ('signs', appL10n.gamesSignsTitle),
-        ('crossroads', appL10n.gamesCrossroadsTitle),
+        ('road_signs', appL10n.gamesRoadSignsTitle),
+        ('violator', appL10n.gamesViolatorTitle),
         ('parking', appL10n.gamesParkingTitle),
       ]) {
         final finder = find.byKey(ValueKey('games-card-${entry.$1}'));
@@ -681,6 +686,8 @@ void main() {
       'signs',
       'regulator',
       'crossroads',
+      'road_signs',
+      'violator',
       'parking',
       'city',
       'leaderboard',

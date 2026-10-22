@@ -9,13 +9,13 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
 
+/// Mini games that are not ready for release: their cards are not shown. The screens,
+/// progress and leaderboards stay in the code; add a card id here to hide a game.
+const hiddenGames = <String>{};
+
 /// The hub's presentation, shared by the live screen and layout/state checks.
 /// The city stays outside the scrolling mini-game catalogue, within thumb reach.
 /// Large text keeps its natural size and gets a single-column catalogue.
-/// Mini games that are not ready for release: their cards are not shown. The screens,
-/// progress and leaderboards stay in the code; drop an id here to bring a game back.
-const hiddenGames = {'road_signs', 'violator'};
-
 class GamesHubView extends StatelessWidget {
   const GamesHubView({
     super.key,

@@ -20,6 +20,7 @@ import 'package:pdd_app/domain/services/sign_swiper_engine.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/games_hub_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/sign_swiper_screen.dart';
+import 'package:pdd_app/presentation/screens/games/road_signs/road_signs_screen.dart';
 import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/swipe_card_view.dart';
 import 'package:pdd_app/presentation/screens/game/godot_game.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
@@ -700,9 +701,22 @@ void main() {
     expect(find.byType(GamesHubScreen), findsOneWidget);
     expect(find.byType(SignSwiperScreen), findsNothing);
     expect(tester.takeException(), isNull);
-    // «Нарушитель» and «Знаки» are not ready for release: no cards in the hub.
-    expect(find.text(appL10n.gamesViolatorTitle), findsNothing);
-    expect(find.text(appL10n.gamesRoadSignsTitle), findsNothing);
+    // Violator game checks Godot availability
+    await tester.scrollUntilVisible(find.text(appL10n.gamesViolatorTitle), 200);
+    await tester.tapAt(tester.getCenter(find.text(appL10n.gamesViolatorTitle)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text(appL10n.gameUnavailable), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byType(GamesHubScreen), findsOneWidget);
+    // Road signs game opens RoadSignsScreen
+    await tester.scrollUntilVisible(find.text(appL10n.gamesRoadSignsTitle), -200);
+    await tester.tapAt(tester.getCenter(find.text(appL10n.gamesRoadSignsTitle)));
+    await tester.pumpAndSettle();
+    expect(find.byType(RoadSignsScreen), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.pumpAndSettle();
+    expect(find.byType(GamesHubScreen), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text(appL10n.gameTrafficControllerTitle),
       -200,
