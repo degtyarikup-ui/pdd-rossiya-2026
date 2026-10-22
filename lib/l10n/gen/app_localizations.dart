@@ -3097,7 +3097,7 @@ abstract class AppLocalizations {
   /// No description provided for @paywallTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Готовьтесь без ограничений'**
+  /// **'Готовьтесь\nбез ограничений'**
   String get paywallTitle;
 
   /// No description provided for @paywallFreeNote.
@@ -6885,6 +6885,90 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Выявлено нарушителей'**
   String get gameViolatorsCaughtStat;
+
+  /// No description provided for @premiumBannerSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сдайте экзамен с первого раза с нашим приложением'**
+  String get premiumBannerSubtitle;
+
+  /// No description provided for @premiumPlansTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите свой Премиум'**
+  String get premiumPlansTitle;
+
+  /// No description provided for @premiumRatingValue.
+  ///
+  /// In ru, this message translates to:
+  /// **'4,7'**
+  String get premiumRatingValue;
+
+  /// No description provided for @premiumRatingLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'средний рейтинг'**
+  String get premiumRatingLabel;
+
+  /// No description provided for @premiumPassRateValue.
+  ///
+  /// In ru, this message translates to:
+  /// **'96,8%'**
+  String get premiumPassRateValue;
+
+  /// No description provided for @premiumPassRateLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'сдали экзамен'**
+  String get premiumPassRateLabel;
+
+  /// No description provided for @premiumBenefitGamesTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Безлимитные заезды'**
+  String get premiumBenefitGamesTitle;
+
+  /// No description provided for @premiumBenefitGamesDetail.
+  ///
+  /// In ru, this message translates to:
+  /// **'в «Живом городе»'**
+  String get premiumBenefitGamesDetail;
+
+  /// No description provided for @premiumBenefitAiTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'ИИ-инструктор'**
+  String get premiumBenefitAiTitle;
+
+  /// No description provided for @premiumBenefitAiDetail.
+  ///
+  /// In ru, this message translates to:
+  /// **'До 200 разборов в сутки'**
+  String get premiumBenefitAiDetail;
+
+  /// No description provided for @premiumBenefitVoiceTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Студийная озвучка'**
+  String get premiumBenefitVoiceTitle;
+
+  /// No description provided for @premiumBenefitVoiceDetail.
+  ///
+  /// In ru, this message translates to:
+  /// **'на русском языке'**
+  String get premiumBenefitVoiceDetail;
+
+  /// No description provided for @premiumBenefitFeedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лента вопросов'**
+  String get premiumBenefitFeedTitle;
+
+  /// No description provided for @premiumBenefitFeedDetail.
+  ///
+  /// In ru, this message translates to:
+  /// **'без ограничений'**
+  String get premiumBenefitFeedDetail;
 }
 
 class _AppLocalizationsDelegate

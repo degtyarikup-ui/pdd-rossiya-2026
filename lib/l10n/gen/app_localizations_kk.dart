@@ -1786,7 +1786,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get paywallStoreApple => 'Apple ID параметрлері';
 
   @override
-  String get paywallTitle => 'Шектеусіз дайындалыңыз';
+  String get paywallTitle => 'Шектеусіз\nдайындалыңыз';
 
   @override
   String get paywallFreeNote =>
@@ -4109,4 +4109,47 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameViolatorsCaughtStat => 'Анықталған бұзушылар';
+
+  @override
+  String get premiumBannerSubtitle =>
+      'Біздің қосымшамен емтиханды бірінші реттен тапсырыңыз';
+
+  @override
+  String get premiumPlansTitle => 'Премиум тарифін таңдаңыз';
+
+  @override
+  String get premiumRatingValue => '4,7';
+
+  @override
+  String get premiumRatingLabel => 'орташа рейтинг';
+
+  @override
+  String get premiumPassRateValue => '96,8%';
+
+  @override
+  String get premiumPassRateLabel => 'емтиханнан өтті';
+
+  @override
+  String get premiumBenefitGamesTitle => 'Шексіз сапарлар';
+
+  @override
+  String get premiumBenefitGamesDetail => '«Жанды қалада»';
+
+  @override
+  String get premiumBenefitAiTitle => 'ЖИ нұсқаушысы';
+
+  @override
+  String get premiumBenefitAiDetail => 'Күніне 200 талдауға дейін';
+
+  @override
+  String get premiumBenefitVoiceTitle => 'Студиялық дыбыстау';
+
+  @override
+  String get premiumBenefitVoiceDetail => 'орыс тілінде';
+
+  @override
+  String get premiumBenefitFeedTitle => 'Сұрақтар лентасы';
+
+  @override
+  String get premiumBenefitFeedDetail => 'шектеусіз';
 }

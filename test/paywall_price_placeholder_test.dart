@@ -8,7 +8,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 // ignore: depend_on_referenced_packages
 import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
-import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// App Store, который сначала не отдаёт тарифы, а потом начинает.
@@ -64,7 +64,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(800, 1600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: PremiumPaywallSheet())),
+      const MaterialApp(home: Scaffold(body: PremiumPlansSheet())),
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
@@ -99,22 +99,21 @@ void main() {
     },
   );
 
-  testWidgets(
-    'iOS: прошлая цена магазина видна сразу, пока он не ответил',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({
-        'iap_store_prices': jsonEncode({'threeMonths': '2 990 ₸'}),
-      });
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-      await IapService.instance.init();
-      await openPaywall(tester);
+  testWidgets('iOS: прошлая цена магазина видна сразу, пока он не ответил', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'iap_store_prices': jsonEncode({'threeMonths': '2 990 ₸'}),
+    });
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    await IapService.instance.init();
+    await openPaywall(tester);
 
-      expect(find.text('2 990 ₸'), findsOneWidget);
-      // Недельной цены магазин ещё не называл — на её месте заглушка.
-      expect(placeholder, findsOneWidget);
+    expect(find.text('2 990 ₸'), findsOneWidget);
+    // Недельной цены магазин ещё не называл — на её месте заглушка.
+    expect(placeholder, findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      debugDefaultTargetPlatformOverride = null;
-    },
-  );
+    await tester.pumpWidget(const SizedBox());
+    debugDefaultTargetPlatformOverride = null;
+  });
 }

@@ -95,6 +95,7 @@ flutter:
     - assets/images/tips/
     - assets/images/achievements/
     - assets/images/games/
+    - assets/images/premium/
     - assets/icons/auth/
     - assets/icons/game/
     - assets/audio/

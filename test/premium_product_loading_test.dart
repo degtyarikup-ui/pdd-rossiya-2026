@@ -6,7 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 // ignore: depend_on_referenced_packages
 import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart';
 import 'package:pdd_app/l10n/l10n.dart';
-import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PriceStore extends InAppPurchasePlatform {
@@ -74,7 +74,7 @@ void main() {
           await tester.binding.setSurfaceSize(const Size(800, 1600));
           addTearDown(() => tester.binding.setSurfaceSize(null));
           await tester.pumpWidget(
-            const MaterialApp(home: Scaffold(body: PremiumPaywallSheet())),
+            const MaterialApp(home: Scaffold(body: PremiumPlansSheet())),
           );
           await tester.pumpAndSettle();
           expect(store.queries, 0);

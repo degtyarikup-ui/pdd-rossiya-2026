@@ -33,7 +33,7 @@ Apple — разные аккаунты.
 | `lib/data/services/pending_payment.dart` | Незавершённая СБП-оплата на Android |
 | `lib/data/services/device_region.dart` | Страна устройства (сеть/SIM/локаль, **не IP**) |
 | `lib/core/config/store_config.dart` | `--dart-define=STORE=play|rustore` |
-| `lib/presentation/widgets/premium_paywall_sheet.dart`, `web_payment_dialog.dart`, `web_payment_return.dart`, `subscription_management_sheet.dart`, `premium_granted_dialog.dart` | Пейвол и экраны оплаты |
+| `lib/presentation/widgets/premium_paywall_sheet.dart`, `premium_benefits_screen.dart`, `premium_plans_sheet.dart`, `web_payment_dialog.dart`, `web_payment_return.dart`, `subscription_management_sheet.dart`, `premium_granted_dialog.dart` | Экран преимуществ, выбор тарифа и экраны оплаты |
 | `lib/presentation/widgets/auth_modal_sheet.dart`, `auth_provider_button.dart`, `yandex_*`, `google_web_sign_in_button*` | Экраны входа |
 | `web_landing/ru/tarify/`, `pay-done/` | Тарифы на сайте и возврат после оплаты |
 | `server/install-notifier/account_state.js`, `account_maintenance.js` | Авторитетное хранилище аккаунта, атомарный журнал, сверка |
@@ -78,6 +78,26 @@ Apple — разные аккаунты.
     не выдаётся клиенту, при удалении отзывается либо явно требуется ручной отзыв.
 
 ## Как проверить
+
+Вход в Премиум сохраняет контракт `PremiumPaywallSheet.show → Future<bool?>`:
+сначала открываются преимущества, по кнопке — отдельный лист тарифов.
+Закрытие листа без результата возвращает к преимуществам; успешная покупка
+или восстановление (`true`) и открытие СБП в Android-браузере (`false`)
+закрывают весь экран. В профиле только два состояния карточки: синий без
+Премиума и салатовый с Премиумом; активная карточка открывает управление
+подпиской. Дневной остаток карточек на её оформление не влияет.
+
+Графика — локальные ассеты Figma в `assets/images/premium/`. Растровые лучи
+сохраняют blur исходных SVG; вращается только отдельный декоративный слой
+(80 секунд на оборот), при уменьшении анимации и скрытии экрана он остановлен.
+Рейтинг 4,7 и доля сдавших 96,8% подтверждены владельцем 23.10.2026.
+Преимущества описывают действующие лимиты: до 200 ИИ-разборов в сутки,
+безлимитные заезды «Живого города», русская студийная озвучка и лента.
+
+UI-регрессии: `premium_redesign_test.dart`, `premium_banner_redesign_test.dart`,
+`premium_banner_locale_test.dart`, `paywall_price_placeholder_test.dart`,
+`premium_product_loading_test.dart`, `premium_plans_busy_test.dart`,
+`games_hub_city_entry_test.dart`.
 
 ```bash
 flutter test test/premium_service_test.dart test/premium_offline_session_test.dart \

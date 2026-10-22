@@ -28,6 +28,10 @@ void main() {
             locale: selected,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            ),
             home: const Scaffold(body: PremiumBannerCard()),
           ),
         ),
@@ -42,7 +46,7 @@ void main() {
       locale.value = Locale(language);
       await tester.pumpAndSettle();
       expect(find.text(appL10n.premiumAccessTitle), findsOneWidget);
-      expect(find.text(appL10n.premiumBannerCardsLeft(5, 5)), findsOneWidget);
+      expect(find.text(appL10n.premiumBannerSubtitle), findsOneWidget);
       expect(find.text(previousTitle), findsNothing);
     }
     await tester.pumpWidget(const SizedBox.shrink());

@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/subscription_management_sheet.dart';
 
-/// Карточка статуса Premium с тремя состояниями светофора:
-/// 1. Желтый (#FFA53C): есть бесплатные карточки (1..10)
-/// 2. Красный (#ED4621): бесплатные карточки закончились (0 из 10)
-/// 3. Зеленый (#2BC280): премиум активен (бейдж «АКТИВЕН» + зеленый светофор)
-///
-/// Полностью соблюдает единый стиль приложения: плоский дизайн без теней и свечений,
-/// стандартные размеры шрифтов Onest и скругления AppDimensions.cardRadius.
+/// The profile entry has two states, independent of the daily free allowance.
 class PremiumBannerCard extends ConsumerWidget {
   const PremiumBannerCard({super.key});
 
@@ -22,113 +17,202 @@ class PremiumBannerCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final isPremium = ref.watch(isPremiumProvider);
-    final remaining = ref.watch(dailyCardsRemainingProvider);
-    final limit = ref.watch(dailyFreeLimitProvider);
+    final foreground = isPremium ? AppColors.primaryText : AppColors.white;
 
-    final Color cardColor;
-    final String svgAsset;
-    final String subtitleText;
-
-    if (isPremium) {
-      cardColor = const Color(0xFF2BC280);
-      svgAsset = 'assets/images/traffic_light_green.svg';
-      subtitleText = l10n.premiumBannerSubtitleUnlimited;
-    } else if (remaining > 0) {
-      cardColor = const Color(0xFFFFA53C);
-      svgAsset = 'assets/images/traffic_light_yellow.svg';
-      subtitleText = l10n.premiumBannerCardsLeft(remaining, limit);
-    } else {
-      cardColor = const Color(0xFFED4621);
-      svgAsset = 'assets/images/traffic_light_red.svg';
-      subtitleText = l10n.premiumBannerCardsLeft(0, limit);
+    void openPremium() {
+      HapticFeedbackHelper.tap();
+      if (isPremium) {
+        SubscriptionManagementSheet.show(context);
+      } else {
+        PremiumPaywallSheet.show(context);
+      }
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      ),
+    return Semantics(
+      button: true,
+      value: isPremium ? l10n.premiumBannerActive : null,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
         child: Material(
-          color: Colors.transparent,
+          key: ValueKey(
+            isPremium ? 'premium-banner-active' : 'premium-banner-free',
+          ),
+          color: isPremium ? AppColors.premiumLime : AppColors.accent,
           child: InkWell(
-            onTap: () {
-              HapticFeedbackHelper.tap();
-              if (isPremium) {
-                SubscriptionManagementSheet.show(context);
-              } else {
-                PremiumPaywallSheet.show(context);
-              }
-            },
-            splashColor: Colors.white.withValues(alpha: 0.15),
-            highlightColor: Colors.white.withValues(alpha: 0.08),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                children: [
-                  // Левая колонка: Заголовок и статус (типографика в едином стиле приложения)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              l10n.premiumAccessTitle,
-                              style: TextStyle(
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                height: 1.2,
+            onTap: openPremium,
+            splashColor: foreground.withValues(alpha: 0.12),
+            highlightColor: foreground.withValues(alpha: 0.06),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final expandedText =
+                    MediaQuery.textScalerOf(context).scale(16) > 21;
+                final titleSize = width >= 480 ? 24.0 : 19.0;
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ExcludeSemantics(
+                        child: IgnorePointer(
+                          child: _PremiumBannerArtwork(isPremium: isPremium),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        18,
+                        18,
+                        expandedText ? 18 : width * 0.39,
+                        18,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: SizedBox(
+                                  width: 19,
+                                  height: 19,
+                                  child: FittedBox(
+                                    child: SvgPicture.asset(
+                                      'assets/images/premium/verified_${isPremium ? 'lime' : 'blue'}.svg',
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                            if (isPremium) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
+                              const SizedBox(width: 7),
+                              Expanded(
                                 child: Text(
-                                  l10n.premiumBannerActive,
+                                  l10n.premiumAccessTitle,
                                   style: TextStyle(
-                                    color: Color(0xFF121212),
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w800,
-                                    height: 1.1,
+                                    fontSize: titleSize,
+                                    fontWeight: FontWeight.w700,
+                                    color: foreground,
+                                    height: 1.12,
                                   ),
                                 ),
                               ),
                             ],
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          subtitleText,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.white.withValues(alpha: 0.95),
-                            height: 1.25,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.premiumBannerSubtitle,
+                            style: TextStyle(
+                              fontSize: width >= 480 ? 15 : 12.5,
+                              fontWeight: FontWeight.w400,
+                              color: foreground.withValues(alpha: 0.8),
+                              height: 1.3,
+                            ),
+                          ),
+                          if (expandedText) const SizedBox(height: 88),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Правая колонка: Плоский компактный светофор
-                  SvgPicture.asset(svgAsset, width: 36, height: 48),
-                ],
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumBannerArtwork extends StatelessWidget {
+  const _PremiumBannerArtwork({required this.isPremium});
+
+  final bool isPremium;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final artWidth = (width * 0.64).clamp(190.0, 360.0);
+        final raySize = artWidth * 1.45;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              right: artWidth * -0.13,
+              bottom: artWidth * -0.42,
+              width: raySize,
+              height: raySize,
+              child: _RotatingPremiumRays(isPremium: isPremium),
+            ),
+            Positioned(
+              right: artWidth * -0.28,
+              bottom: artWidth * -0.11,
+              width: artWidth,
+              child: Image.asset(
+                'assets/images/premium/car.png',
+                fit: BoxFit.contain,
+                cacheWidth: 768,
+                filterQuality: FilterQuality.medium,
               ),
             ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Only this decorative layer repaints while the rest of the profile is still.
+class _RotatingPremiumRays extends StatefulWidget {
+  const _RotatingPremiumRays({required this.isPremium});
+
+  final bool isPremium;
+
+  @override
+  State<_RotatingPremiumRays> createState() => _RotatingPremiumRaysState();
+}
+
+class _RotatingPremiumRaysState extends State<_RotatingPremiumRays>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _rotation = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 80),
+  );
+  late final Animation<double> _turns = Tween<double>(
+    begin: 105 / 360,
+    end: 465 / 360,
+  ).animate(_rotation);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) ||
+        !TickerMode.valuesOf(context).enabled) {
+      _rotation.stop();
+    } else if (!_rotation.isAnimating) {
+      _rotation.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _rotation.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: RotationTransition(
+        key: const ValueKey('premium-banner-rays'),
+        turns: _turns,
+        child: Opacity(
+          opacity: 0.6,
+          child: Image.asset(
+            // Rasterized from the original SVGs to preserve their blur filters.
+            'assets/images/premium/rays_${widget.isPremium ? 'lime' : 'blue'}.png',
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.low,
           ),
         ),
       ),

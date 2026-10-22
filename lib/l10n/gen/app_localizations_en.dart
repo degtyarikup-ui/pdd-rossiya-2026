@@ -1786,7 +1786,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallStoreApple => 'Apple ID settings';
 
   @override
-  String get paywallTitle => 'Get ready without restrictions';
+  String get paywallTitle => 'Prepare\nwithout limits';
 
   @override
   String get paywallFreeNote => 'Tickets, exam and traffic rules remain free';
@@ -4115,4 +4115,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameViolatorsCaughtStat => 'Violators identified';
+
+  @override
+  String get premiumBannerSubtitle =>
+      'Pass your exam the first time with our app';
+
+  @override
+  String get premiumPlansTitle => 'Choose your Premium plan';
+
+  @override
+  String get premiumRatingValue => '4.7';
+
+  @override
+  String get premiumRatingLabel => 'average rating';
+
+  @override
+  String get premiumPassRateValue => '96.8%';
+
+  @override
+  String get premiumPassRateLabel => 'passed the exam';
+
+  @override
+  String get premiumBenefitGamesTitle => 'Unlimited drives';
+
+  @override
+  String get premiumBenefitGamesDetail => 'in Living City';
+
+  @override
+  String get premiumBenefitAiTitle => 'AI instructor';
+
+  @override
+  String get premiumBenefitAiDetail => 'Up to 200 explanations a day';
+
+  @override
+  String get premiumBenefitVoiceTitle => 'Studio voice-over';
+
+  @override
+  String get premiumBenefitVoiceDetail => 'in Russian';
+
+  @override
+  String get premiumBenefitFeedTitle => 'Question feed';
+
+  @override
+  String get premiumBenefitFeedDetail => 'without limits';
 }

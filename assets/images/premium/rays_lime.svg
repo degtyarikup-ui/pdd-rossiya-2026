@@ -1,0 +1,30 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="412.058" height="426.981" viewBox="0 0 412.058 426.981" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Mask group" style="mix-blend-mode:hard-light" filter="url(#filter0_f_0_13)">
+<mask id="mask0_0_13" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="1" y="20" width="391" height="392">
+<circle id="Ellipse 2" cx="196.355" cy="215.703" r="195.303" fill="url(#paint0_radial_0_13)"/>
+</mask>
+<g mask="url(#mask0_0_13)">
+<g id="Group 1">
+<path id="Rectangle 1" d="M208.982 211.277H226.23L239.165 406.581H196.046L208.982 211.277Z" fill="white"/>
+<path id="Rectangle 2" d="M216.972 218.633L216.972 201.385L414.177 188.45L414.177 231.569L216.972 218.633Z" fill="white"/>
+<path id="Rectangle 3" d="M210.869 215.193L223.227 202.836L372.517 333.589L341.622 364.484L210.869 215.193Z" fill="white"/>
+<path id="Rectangle 4" d="M222.725 216.924L210.367 204.566L340.99 55.4065L371.885 86.3014L222.725 216.924Z" fill="white"/>
+<path id="Rectangle 5" d="M223.388 203.501L211.03 215.859L62.9355 86.3016L93.8304 55.4067L223.388 203.501Z" fill="white"/>
+<path id="Rectangle 6" d="M226.039 210.643H208.537L195.412 12.8038H239.165L226.039 210.643Z" fill="white"/>
+<path id="Rectangle 7" d="M210.723 204.097L223.081 216.454L93.898 364.175L63.0031 333.28L210.723 204.097Z" fill="white"/>
+<path id="Rectangle 8" d="M216.971 201.385L216.971 218.633L20.4 231.569L20.4 188.45L216.971 201.385Z" fill="white"/>
+</g>
+</g>
+</g>
+<defs>
+<filter id="filter0_f_0_13" x="0" y="-6.11326e-08" width="412.058" height="426.981" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="10.2" result="effect1_foregroundBlur_0_13"/>
+</filter>
+<radialGradient id="paint0_radial_0_13" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(196.355 215.703) rotate(90) scale(195.303)">
+<stop offset="0.25" stop-color="#D9D9D9"/>
+<stop offset="1" stop-color="#737373" stop-opacity="0"/>
+</radialGradient>
+</defs>
+</svg>

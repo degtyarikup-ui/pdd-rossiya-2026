@@ -1807,7 +1807,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get paywallStoreApple => 'настройках Apple ID';
 
   @override
-  String get paywallTitle => 'Готовьтесь без ограничений';
+  String get paywallTitle => 'Готовьтесь\nбез ограничений';
 
   @override
   String get paywallFreeNote => 'Билеты, экзамен и ПДД остаются бесплатными';
@@ -4130,4 +4130,47 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameViolatorsCaughtStat => 'Выявлено нарушителей';
+
+  @override
+  String get premiumBannerSubtitle =>
+      'Сдайте экзамен с первого раза с нашим приложением';
+
+  @override
+  String get premiumPlansTitle => 'Выберите свой Премиум';
+
+  @override
+  String get premiumRatingValue => '4,7';
+
+  @override
+  String get premiumRatingLabel => 'средний рейтинг';
+
+  @override
+  String get premiumPassRateValue => '96,8%';
+
+  @override
+  String get premiumPassRateLabel => 'сдали экзамен';
+
+  @override
+  String get premiumBenefitGamesTitle => 'Безлимитные заезды';
+
+  @override
+  String get premiumBenefitGamesDetail => 'в «Живом городе»';
+
+  @override
+  String get premiumBenefitAiTitle => 'ИИ-инструктор';
+
+  @override
+  String get premiumBenefitAiDetail => 'До 200 разборов в сутки';
+
+  @override
+  String get premiumBenefitVoiceTitle => 'Студийная озвучка';
+
+  @override
+  String get premiumBenefitVoiceDetail => 'на русском языке';
+
+  @override
+  String get premiumBenefitFeedTitle => 'Лента вопросов';
+
+  @override
+  String get premiumBenefitFeedDetail => 'без ограничений';
 }
