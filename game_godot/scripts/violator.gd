@@ -488,16 +488,6 @@ func _build_sidewalks(sw_mat: Material, curb_mat: Material, lawn_mat: Material) 
 		curb_east.position = Vector3(29.6, 0.10, curb_z)
 		junction_node.add_child(curb_east)
 
-	# Tree lawn pits along sidewalks (Газонные приствольные квадраты)
-	for z_pit in [-14.0, -22.0, -32.0, 18.0, 26.0]:
-		var pit_l := _create_box(Vector3(1.6, 0.015, 1.6), lawn_mat)
-		pit_l.position = Vector3(-6.8, 0.165, z_pit)
-		junction_node.add_child(pit_l)
-
-		var pit_r := _create_box(Vector3(1.6, 0.015, 1.6), lawn_mat)
-		pit_r.position = Vector3(6.8, 0.165, z_pit)
-		junction_node.add_child(pit_r)
-
 	# Tactile yellow accessibility tiles (Тактильная плитка 1.14) at crosswalk curb ramps
 	var tactile_mat := StandardMaterial3D.new()
 	tactile_mat.albedo_color = Color("#C8961E")
@@ -727,9 +717,17 @@ func _create_arrow_mesh(type: String) -> ArrayMesh:
 
 
 func _build_lane_arrow(pos: Vector3, arrow_type: String, mat: Material, yaw: float) -> void:
+	var mesh_type := arrow_type
+	# When rotated by 180 deg (PI) for southbound travel, X is mirrored, so invert branch sides
+	if absf(wrapf(yaw, -PI, PI) - PI) < 0.1 or absf(wrapf(yaw, -PI, PI) + PI) < 0.1:
+		match arrow_type:
+			"straight_left": mesh_type = "straight_right"
+			"straight_right": mesh_type = "straight_left"
+			"left": mesh_type = "right"
+			"right": mesh_type = "left"
 	var inst := MeshInstance3D.new()
 	inst.name = "LaneArrow_" + arrow_type
-	inst.mesh = _get_arrow_mesh(arrow_type)
+	inst.mesh = _get_arrow_mesh(mesh_type)
 	inst.material_override = mat
 	inst.position = pos
 	inst.rotation.y = yaw
@@ -773,9 +771,9 @@ func _setup_signs(parent: Node3D) -> void:
 		return pole
 
 	# 1. Sign 2.1 (Главная дорога) on main road:
-	# Advance position on NW sidewalk (right-hand curb) before crosswalk & stop line (Z = -11.5):
-	create_sign.call("Sign_2_1", "2.1", Vector3(-4.8, 3.0, -11.5))
-	create_pole.call(Vector3(-4.8, 1.5, -11.5), 3.0)
+	# Position on NE sidewalk (right-hand curb) next to traffic light before stop line (Z = -10.8):
+	create_sign.call("Sign_2_1", "2.1", Vector3(4.8, 3.2, -10.8))
+	create_pole.call(Vector3(4.8, 1.6, -10.8), 3.2)
 
 	# South approach departure Sign 2.1 on SE sidewalk:
 	create_sign.call("Sign_2_1_South", "2.1", Vector3(4.8, 3.0, 18.5))
@@ -790,20 +788,20 @@ func _setup_signs(parent: Node3D) -> void:
 	create_sign.call("Sign_2_4_East", "2.4", Vector3(11.5, 3.0, -2.6))
 	create_pole.call(Vector3(11.5, 1.5, -2.6), 3.0)
 
-	# 3. Pedestrian crossing signs 5.19.1 / 5.19.2:
+	# 3. Pedestrian crossing signs 5.19.1 / 5.19.2 (ГОСТ Р 52289 п. 5.6.24):
 	# North crosswalk (Z = -7.75, width [-9.0, -6.5]):
-	create_sign.call("Sign_5_19_1", "5.19.1", Vector3(-4.8, 2.7, -9.0))
-	create_pole.call(Vector3(-4.8, 1.35, -9.0), 2.7)
+	create_sign.call("Sign_5_19_1", "5.19.1", Vector3(4.8, 2.7, -9.0))
+	create_pole.call(Vector3(4.8, 1.35, -9.0), 2.7)
 
-	create_sign.call("Sign_5_19_2", "5.19.2", Vector3(4.8, 2.7, -6.5))
-	create_pole.call(Vector3(4.8, 1.35, -6.5), 2.7)
+	create_sign.call("Sign_5_19_2", "5.19.2", Vector3(-4.8, 2.7, -6.5))
+	create_pole.call(Vector3(-4.8, 1.35, -6.5), 2.7)
 
 	# South crosswalk (Z = 15.25, width [14.0, 16.5]):
-	create_sign.call("Sign_5_19_1_South", "5.19.1", Vector3(-4.8, 2.7, 14.0))
-	create_pole.call(Vector3(-4.8, 1.35, 14.0), 2.7)
+	create_sign.call("Sign_5_19_1_South", "5.19.1", Vector3(4.8, 2.7, 14.0))
+	create_pole.call(Vector3(4.8, 1.35, 14.0), 2.7)
 
-	create_sign.call("Sign_5_19_2_South", "5.19.2", Vector3(4.8, 2.7, 16.5))
-	create_pole.call(Vector3(4.8, 1.35, 16.5), 2.7)
+	create_sign.call("Sign_5_19_2_South", "5.19.2", Vector3(-4.8, 2.7, 16.5))
+	create_pole.call(Vector3(-4.8, 1.35, 16.5), 2.7)
 
 	# West crosswalk (X = -7.5, width [-8.75, -6.25]):
 	create_sign.call("Sign_5_19_1_West", "5.19.1", Vector3(-8.75, 2.7, 12.6))
@@ -962,8 +960,17 @@ func _build_city_scenery() -> void:
 	for lt in lawn_trees:
 		var t_color := birch_color if "birch" in str(lt.prop) else (Color(pine_colors[0]) if "pine" in str(lt.prop) else Color(canopy_colors[0]))
 		_put_prop(str(lt.prop), lt.pos, randf() * TAU, Vector3.ONE * float(lt.s), t_color)
-		_put_prop("street/bush", lt.pos + Vector3(1.4, 0, 1.4), 0.0, Vector3.ONE * 1.3, Color(canopy_colors[0]))
-		_put_prop("street/bush", lt.pos + Vector3(-1.4, 0, -1.2), 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
+		var b1_pos: Vector3 = lt.pos + Vector3(1.4, 0, 1.4)
+		var b2_pos: Vector3 = lt.pos + Vector3(-1.4, 0, -1.2)
+		_put_prop("street/bush", b1_pos, 0.0, Vector3.ONE * 1.3, Color(canopy_colors[0]))
+		_put_prop("street/bush", b2_pos, 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
+		# Soil pits for plants that stand on the paved sidewalk surfaces:
+		if absf(lt.pos.x) < 11.5 or (lt.pos.z > -8.5 and lt.pos.z < 17.5):
+			add_tree_pit.call(lt.pos, true)
+		if absf(b1_pos.x) < 11.5 or (b1_pos.z > -8.5 and b1_pos.z < 17.5):
+			add_tree_pit.call(b1_pos, false)
+		if absf(b2_pos.x) < 11.5 or (b2_pos.z > -8.5 and b2_pos.z < 17.5):
+			add_tree_pit.call(b2_pos, false)
 
 	# Multistory apartment buildings & residential architecture completely filling the camera frame
 	# NW quadrant
@@ -972,15 +979,15 @@ func _build_city_scenery() -> void:
 	_put_prop("buildings/block_2", Vector3(-30.0, 0.0, -14.0), 0.0, Vector3.ONE, Color("#95928C"))
 	_put_prop("buildings/home_0", Vector3(-12.0, 0.0, -28.0), PI * 0.5, Vector3.ONE, Color("#C8B896"))
 	_put_prop("buildings/block_3", Vector3(-26.0, 0.0, -26.0), 0.0, Vector3.ONE, Color("#9E7B66"))
-	_put_prop("buildings/home_1", Vector3(-14.0, 0.0, -18.0), PI * 0.5, Vector3.ONE, Color("#7D8B78"))
+	_put_prop("buildings/home_1", Vector3(-14.5, 0.0, -18.0), PI * 0.5, Vector3.ONE, Color("#7D8B78"))
 
-	# NE quadrant
-	_put_prop("buildings/block_6", Vector3(18.0, 0.0, -20.0), -PI * 0.5, Vector3.ONE, Color("#B8AA94"))
+	# NE quadrant (generous clearance from kiosk at (8.5, 0.15, -13.0))
+	_put_prop("buildings/block_6", Vector3(22.0, 0.0, -22.0), -PI * 0.5, Vector3.ONE, Color("#B8AA94"))
 	_put_prop("buildings/tower_1", Vector3(21.0, 0.0, -38.0), -PI * 0.5, Vector3.ONE, Color("#9C8578"))
 	_put_prop("buildings/block_1", Vector3(30.0, 0.0, -14.0), 0.0, Vector3.ONE, Color("#8CA0BA"))
 	_put_prop("buildings/home_2", Vector3(12.0, 0.0, -28.0), -PI * 0.5, Vector3.ONE, Color("#7D8B78"))
 	_put_prop("buildings/home_5", Vector3(26.0, 0.0, -26.0), 0.0, Vector3.ONE, Color("#C0B29E"))
-	_put_prop("buildings/block_5", Vector3(16.0, 0.0, -20.0), -PI * 0.5, Vector3.ONE, Color("#A89480"))
+	_put_prop("buildings/block_5", Vector3(14.5, 0.0, -18.0), -PI * 0.5, Vector3.ONE, Color("#A89480"))
 
 	# SW quadrant residential buildings set back from intersection
 	_put_prop("buildings/home_1", Vector3(-32.0, 0.0, 18.0), 0.0, Vector3.ONE, Color("#7D8B78"))
@@ -2125,25 +2132,25 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 
 	# 1. Main road traffic stop: respected when light_state is red/yellow
 	if car.lane in [0, 1] and absf(car.rotation.y) < 0.45:
-		if light_state in ["red", "yellow"]:
-			var exempt := car.is_emergency or (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD, VIOLATION_WEATHER_SPEED])
-			if not exempt:
-				if car.position.z < Z_STOP and car.position.z > -28.0:
-					target_stop_z = minf(target_stop_z, Z_STOP)
-				elif car.position.z < 0.0 and (car.speed <= 0.2 or stop_required):
-					target_stop_z = minf(target_stop_z, car.position.z)
-					car.speed = 0.0
-					car.target_speed = 0.0
-					stop_required = true
-		if is_pedestrian_on_roadway():
-			if not (car.is_violator and car.violation_type in [VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WEATHER_SPEED]):
-				if car.position.z < Z_ZEBRA_STOP and car.position.z > -28.0:
-					target_stop_z = minf(target_stop_z, Z_ZEBRA_STOP)
-				elif car.position.z < -6.5 and (car.speed <= 0.2 or stop_required):
-					target_stop_z = minf(target_stop_z, car.position.z)
-					car.speed = 0.0
-					car.target_speed = 0.0
-					stop_required = true
+		var must_stop_signal := light_state in ["red", "yellow"] and not (car.is_emergency or (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD, VIOLATION_WEATHER_SPEED]))
+		var must_stop_ped := is_pedestrian_on_roadway() and not (car.is_violator and car.violation_type in [VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WEATHER_SPEED])
+
+		if must_stop_signal:
+			if car.position.z <= Z_STOP:
+				target_stop_z = minf(target_stop_z, Z_STOP)
+			elif car.position.z < -6.5:
+				target_stop_z = minf(target_stop_z, car.position.z)
+				car.speed = 0.0
+				car.target_speed = 0.0
+				stop_required = true
+		if must_stop_ped:
+			if car.position.z <= Z_ZEBRA_STOP:
+				target_stop_z = minf(target_stop_z, Z_ZEBRA_STOP)
+			elif car.position.z < -6.5:
+				target_stop_z = minf(target_stop_z, car.position.z)
+				car.speed = 0.0
+				car.target_speed = 0.0
+				stop_required = true
 
 		if target_stop_z < 900.0:
 			var dist_to_stop := target_stop_z - car.position.z
@@ -2158,17 +2165,16 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 					stop_required = true
 
 	# 3. Priority sign stop on secondary street (West arm: Sign 2.4 Yield)
-	if car.lane == 2 and car.position.x < -2.4 and car.position.x > -25.0:
+	if car.lane == 2 and car.position.x < -2.4:
 		var main_traffic_present := false
 		for other in cars:
 			if other != car and is_instance_valid(other) and other.lane in [0, 1] and absf(other.position.x) < 3.5 and other.position.z > -20.0 and other.position.z < 8.0:
 				main_traffic_present = true
 				break
-		var ew_red := (light_phase in ["ns_green", "ns_yellow"]) and (traffic_light_ew_node != null and traffic_light_ew_node.is_inside_tree())
-		if (main_traffic_present or ew_red) and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_PRIORITY_SIGN]):
-			if car.position.x < X_PRIO_STOP:
+		if main_traffic_present and not car.is_emergency and not (car.is_violator and car.violation_type == VIOLATION_PRIORITY_SIGN):
+			if car.position.x <= X_PRIO_STOP:
 				target_stop_x_west = minf(target_stop_x_west, X_PRIO_STOP)
-			elif car.position.x < -2.4 and (car.speed <= 0.2 or stop_required):
+			elif car.position.x < -2.4:
 				target_stop_x_west = minf(target_stop_x_west, car.position.x)
 				car.speed = 0.0
 				car.target_speed = 0.0
@@ -2187,7 +2193,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 					stop_required = true
 
 	# 3b. Priority yield stop on East arm (lane 3: yield to main road traffic per un-signalized rules)
-	if car.lane == 3 and car.position.x > 2.4 and car.position.x < 25.0:
+	if car.lane == 3 and car.position.x > 2.4:
 		var main_traffic_present := false
 		for other in cars:
 			if other != car and is_instance_valid(other) and other.lane in [0, 1] and absf(other.position.x) < 3.5 and other.position.z > -20.0 and other.position.z < 8.0:
@@ -2196,9 +2202,9 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		# Also stop if red light
 		var ew_red := (light_phase in ["ns_green", "ns_yellow"]) and (traffic_light_node != null and traffic_light_node.is_inside_tree())
 		if (main_traffic_present or ew_red) and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_PRIORITY_SIGN]):
-			if car.position.x > X_EAST_STOP:
+			if car.position.x >= X_EAST_STOP:
 				target_stop_x_east = maxf(target_stop_x_east, X_EAST_STOP)
-			elif car.position.x > 2.4 and (car.speed <= 0.2 or stop_required):
+			elif car.position.x > 2.4:
 				target_stop_x_east = maxf(target_stop_x_east, car.position.x)
 				car.speed = 0.0
 				car.target_speed = 0.0
@@ -2330,41 +2336,39 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	# 7. Smooth Trajectories & Turning Curves with Analytical Heading
 	if car.lane == 0:
 		if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and car.lane_change_t < 1.0 and car.position.z > -24.0:
-			var t := clampf((car.position.z + 24.0) / 14.0, 0.0, 1.0)
+			car.lane_change_t = minf(1.0, (car.position.z + 24.0) / 14.0)
+			var t := car.lane_change_t
 			var s := t * t * (3.0 - 2.0 * t)
 			var dx_dz := (1.8 - (-1.8)) * 6.0 * t * (1.0 - t) / 14.0
 			car.position.x = lerpf(-1.8, 1.8, s)
 			car.position.z += step_dist
 			car.rotation.y = atan2(dx_dz, 1.0)
-			if t >= 1.0 or car.position.z >= -10.0:
-				car.lane_change_t = 1.0
+			if t >= 1.0:
 				car.lane = 1
 				car.route = "main_straight"
 				car.position.x = 1.8
 				car.rotation.y = 0.0
-		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and (car.position.x >= 5.0 or car.turn_t >= 1.0):
+		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.turn_t >= 1.0:
 			car.turn_angle = PI / 2.0
 			car.rotation.y = PI * 0.5
 			car.position.x += step_dist
 			car.position.z = 6.8
 		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.position.z > -2.0:
-			if car.turn_t < 1.0:
-				car.turn_t = minf(1.0, car.turn_t + step_dist / 6.4)
-				car.turn_angle = car.turn_t * (PI / 2.0)
-				var t := car.turn_t
-				var p0 := Vector3(car.initial_x, 0.0, -2.0)
-				var p1 := Vector3(car.initial_x, 0.0, 6.8)
-				var p2 := Vector3(6.0, 0.0, 6.8)
-				car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
-				var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
-				car.rotation.y = atan2(tang.x, tang.z)
-			else:
+			car.turn_t = minf(1.0, car.turn_t + step_dist / 6.4)
+			car.turn_angle = car.turn_t * (PI / 2.0)
+			var t := car.turn_t
+			var p0 := Vector3(car.initial_x, 0.0, -2.0)
+			var p1 := Vector3(car.initial_x, 0.0, 6.8)
+			var p2 := Vector3(6.0, 0.0, 6.8)
+			car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
+			var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
+			car.rotation.y = atan2(tang.x, tang.z)
+			if car.turn_t >= 1.0:
 				car.turn_angle = PI / 2.0
 				car.rotation.y = PI * 0.5
-				car.position.x += step_dist
-				car.position.z = 6.8
+				car.position = p2
 		else:
-			if car.route == "main_left" and car.turn_t >= 1.0:
+			if car.route == "main_left" and (car.turn_t >= 1.0 or car.position.x <= -5.5):
 				car.turn_angle = PI / 2.0
 				car.rotation.y = -PI * 0.5
 				car.position.x -= step_dist
@@ -2373,60 +2377,56 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				if car.turn_t <= 0.0 and car.position.z > -0.5:
 					var frac := clampf((car.position.z - (-0.5)) / 3.7, 0.0, 1.0)
 					car.turn_t = 1.0 - sqrt(maxf(0.0, 1.0 - frac))
-				if car.turn_t < 1.0:
-					car.turn_t = minf(1.0, car.turn_t + step_dist / 6.4)
-					car.turn_angle = car.turn_t * (PI / 2.0)
-					var t := car.turn_t
-					var p0 := Vector3(-1.8, 0.0, -0.5)
-					var p1 := Vector3(-1.8, 0.0, 3.2)
-					var p2 := Vector3(-6.0, 0.0, 3.2)
-					car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
-					var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
-					car.rotation.y = atan2(tang.x, tang.z)
-				else:
+				car.turn_t = minf(1.0, car.turn_t + step_dist / 6.4)
+				car.turn_angle = car.turn_t * (PI / 2.0)
+				var t := car.turn_t
+				var p0 := Vector3(-1.8, 0.0, -0.5)
+				var p1 := Vector3(-1.8, 0.0, 3.2)
+				var p2 := Vector3(-6.0, 0.0, 3.2)
+				car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
+				var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
+				car.rotation.y = atan2(tang.x, tang.z)
+				if car.turn_t >= 1.0:
 					car.turn_angle = PI / 2.0
 					car.rotation.y = -PI * 0.5
-					car.position.x -= step_dist
-					car.position.z = 3.2
+					car.position = p2
 			else:
 				car.position.z += step_dist
 				car.rotation.y = 0.0
 
 	elif car.lane == 1:
 		if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and car.lane_change_t < 1.0 and car.position.z > -24.0:
-			var t := clampf((car.position.z + 24.0) / 14.0, 0.0, 1.0)
+			car.lane_change_t = minf(1.0, (car.position.z + 24.0) / 14.0)
+			var t := car.lane_change_t
 			var s := t * t * (3.0 - 2.0 * t)
 			var dx_dz := (-1.8 - 1.8) * 6.0 * t * (1.0 - t) / 14.0
 			car.position.x = lerpf(1.8, -1.8, s)
 			car.position.z += step_dist
 			car.rotation.y = atan2(dx_dz, 1.0)
-			if t >= 1.0 or car.position.z >= -10.0:
-				car.lane_change_t = 1.0
+			if t >= 1.0:
 				car.lane = 0
 				car.route = "main_straight"
 				car.position.x = -1.8
 				car.rotation.y = 0.0
-		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and (car.position.x <= -5.0 or car.turn_t >= 1.0):
+		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.turn_t >= 1.0:
 			car.turn_angle = PI / 2.0
 			car.rotation.y = -PI * 0.5
 			car.position.x -= step_dist
 			car.position.z = 3.2
 		elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.position.z > -2.0:
-			if car.turn_t < 1.0:
-				car.turn_t = minf(1.0, car.turn_t + step_dist / 6.4)
-				car.turn_angle = car.turn_t * (PI / 2.0)
-				var t := car.turn_t
-				var p0 := Vector3(1.8, 0.0, -2.0)
-				var p1 := Vector3(1.8, 0.0, 3.2)
-				var p2 := Vector3(-6.0, 0.0, 3.2)
-				car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
-				var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
-				car.rotation.y = atan2(tang.x, tang.z)
-			else:
+			car.turn_t = minf(1.0, car.turn_t + step_dist / 6.4)
+			car.turn_angle = car.turn_t * (PI / 2.0)
+			var t := car.turn_t
+			var p0 := Vector3(1.8, 0.0, -2.0)
+			var p1 := Vector3(1.8, 0.0, 3.2)
+			var p2 := Vector3(-6.0, 0.0, 3.2)
+			car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
+			var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
+			car.rotation.y = atan2(tang.x, tang.z)
+			if car.turn_t >= 1.0:
 				car.turn_angle = PI / 2.0
 				car.rotation.y = -PI * 0.5
-				car.position.x -= step_dist
-				car.position.z = 3.2
+				car.position = p2
 		else:
 			car.position.z += step_dist
 			car.rotation.y = 0.0
@@ -2448,22 +2448,20 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			if car.turn_t <= 0.0 and car.position.x >= -2.4:
 				var frac := clampf((car.position.x - (-2.4)) / 4.2, 0.0, 1.0)
 				car.turn_t = 1.0 - sqrt(maxf(0.0, 1.0 - frac))
-			if car.turn_t < 1.0:
-				car.turn_t = minf(1.0, car.turn_t + step_dist / 6.4)
-				car.turn_angle = car.turn_t * (PI / 2.0)
-				var t := car.turn_t
-				var p0 := Vector3(-2.4, 0.0, 6.8)
-				var p1 := Vector3(1.8, 0.0, 6.8)
-				var p2 := Vector3(1.8, 0.0, 11.5)
-				car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
-				var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
-				car.rotation.y = atan2(tang.x, tang.z)
-			else:
+			car.turn_t = minf(1.0, car.turn_t + step_dist / 6.4)
+			car.turn_angle = car.turn_t * (PI / 2.0)
+			var t := car.turn_t
+			var p0 := Vector3(-2.4, 0.0, 6.8)
+			var p1 := Vector3(1.8, 0.0, 6.8)
+			var p2 := Vector3(1.8, 0.0, 11.5)
+			car.position = (1.0 - t) * (1.0 - t) * p0 + 2.0 * (1.0 - t) * t * p1 + t * t * p2
+			var tang := 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
+			car.rotation.y = atan2(tang.x, tang.z)
+			if car.turn_t >= 1.0:
 				car.turn_angle = PI / 2.0
 				car.lane = 1
-				car.position.x = 1.8
+				car.position = p2
 				car.rotation.y = 0.0
-				car.position.z += step_dist
 
 	elif car.lane == 3:
 		# Westbound traffic along 4-lane cross street (Z = 3.2, centered in inner Westbound lane)
