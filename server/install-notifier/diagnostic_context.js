@@ -33,7 +33,8 @@ export function diagnosticNotificationPolicy(event) {
   // Old clients cannot tell prefetch from paywall. Keep their first warning,
   // but group repetition for an hour. Foreground reports keep a 10 min window.
   const productPrefetch = event.operation === 'iap.products' && !['paywall', 'purchase'].includes(event.context?.phase);
-  return { notify: true, windowMs: expectedSlowStartup || productPrefetch ? 3600000 : 600000 };
+  const urgentPayment = event.category === 'purchase' && !expectedSlowStartup && !productPrefetch;
+  return { notify: true, windowMs: urgentPayment ? 600000 : 3600000 };
 }
 
 // Strip server stack locations down to module basename and line/column only.

@@ -239,6 +239,30 @@ test('Drive import preserves an edit made while a caption was being downloaded',
   } finally { f.restore(); }
 });
 
+test('Drive import skips identical bytes under different IDs or names, but keeps distinct content', async () => {
+  const f = await schedulerFixture([], [
+    {id:'one',name:'001.mp4',mimeType:'video/mp4',md5Checksum:'a'.repeat(32)},
+    {id:'copy',name:'002.mp4',mimeType:'video/mp4',md5Checksum:'a'.repeat(32)},
+    {id:'different',name:'003.mp4',mimeType:'video/mp4',md5Checksum:'b'.repeat(32)},
+  ]);
+  try {
+    await runAutoPostForTest(f);
+    assert.deepEqual(f.read('posts').map(p=>p.driveFileId),['one','different']);
+    await runAutoPostForTest(f);
+    assert.equal(f.read('posts').length,2);
+  } finally { f.restore(); }
+});
+
+test('Drive checksum dedup recognizes old records without altering their publication history', async () => {
+  const existing={id:'old',accountId:'a',driveFileId:'old-file',status:'published',youtubeStatus:'published',youtubeVideoId:'old-video'};
+  const f=await schedulerFixture([existing],[
+    {id:'old-file',name:'old.mp4',mimeType:'video/mp4',md5Checksum:'a'.repeat(32)},
+    {id:'copy',name:'copy.mp4',mimeType:'video/mp4',md5Checksum:'a'.repeat(32)},
+  ]);
+  try { await runAutoPostForTest(f); assert.deepEqual(f.read('posts'),[existing]); }
+  finally { f.restore(); }
+});
+
 for (const bulk of [false, true]) {
   test(`${bulk ? 'bulk' : 'individual'} requeue preserves successful platform status and identity`, async () => {
     const f = setup(), before = f.read('posts').find(p => p.id === 'partial');

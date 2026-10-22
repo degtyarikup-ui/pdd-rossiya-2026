@@ -14,6 +14,14 @@
 // памяти воркера только на время заливки (отсюда лимит MAX_UPLOAD_BYTES).
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { beginSocialWrite, completeSocialWrite, abandonSocialWrite, withSocialPublicationLease } from './social_guard.js';
+
+async function notifySocialFailure(notify, accountId, reason, text) {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(accountId + '|' + reason));
+  const fingerprint = [...new Uint8Array(hash)].map(v => v.toString(16).padStart(2, '0')).join('');
+  return notify(text, { errorGroupKey: 'social:' + fingerprint });
+}
+
 const KV_SETTINGS = 'social:settings';
 const KV_ACCOUNTS = 'social:accounts';
 const KV_POSTS = 'social:posts';
@@ -336,7 +344,7 @@ async function driveListFolder(env, folderId) {
   const auth = await driveAuth(env);
   const params = new URLSearchParams({
     q: `'${folderId}' in parents and trashed = false`,
-    fields: 'files(id, name, mimeType, size)',
+    fields: 'files(id, name, mimeType, size, md5Checksum)',
     pageSize: '200',
     orderBy: 'name_natural',
   });
@@ -432,10 +440,18 @@ export async function syncAccountVideos(env, account) {
   const posts = await getPosts(env);
   const excluded = await getExcludedVideos(env, account.id);
   const known = new Set(posts.filter((p) => p.accountId === account.id).map((p) => p.driveFileId));
+  const checksum = value => /^[a-f0-9]{32}$/.test(value || '') ? value : null;
+  const fileHashes = new Map(videos.map(f => [f.id, checksum(f.md5Checksum)]));
+  const knownHashes = new Set(posts.filter(p => p.accountId === account.id)
+    .map(p => checksum(p.contentMd5) || fileHashes.get(p.driveFileId)).filter(Boolean));
+  const stagedIds = new Set();
 
   let added = 0;
   for (const file of videos) {
-    if (known.has(file.id) || excluded.has(file.id)) continue;
+    const contentMd5 = checksum(file.md5Checksum);
+    if (known.has(file.id) || stagedIds.has(file.id) || excluded.has(file.id) || (contentMd5 && knownHashes.has(contentMd5))) continue;
+    stagedIds.add(file.id);
+    if (contentMd5) knownHashes.add(contentMd5);
 
     const name = baseName(file.name);
     let caption = '';
@@ -455,6 +471,7 @@ export async function syncAccountVideos(env, account) {
       driveFileId: file.id,
       fileName: file.name,
       sizeBytes: file.size ? parseInt(file.size, 10) : null,
+      ...(contentMd5 ? { contentMd5 } : {}),
       title,
       caption,
       streamToken: randomToken(),
@@ -480,8 +497,11 @@ export async function syncAccountVideos(env, account) {
     const latest = await getPosts(env);
     const latestExcluded = await getExcludedVideos(env, account.id);
     const latestKnown = new Set(latest.filter(p => p.accountId === account.id).map(p => p.driveFileId));
+    const latestHashes = new Set(latest.filter(p => p.accountId === account.id)
+      .map(p => checksum(p.contentMd5) || fileHashes.get(p.driveFileId)).filter(Boolean));
     const imported = posts.filter(p => p.accountId === account.id && !known.has(p.driveFileId)
-      && !latestKnown.has(p.driveFileId) && !latestExcluded.has(p.driveFileId));
+      && !latestKnown.has(p.driveFileId) && !latestExcluded.has(p.driveFileId)
+      && !(p.contentMd5 && latestHashes.has(p.contentMd5)));
     added = imported.length;
     if (added) await kvPut(env, KV_POSTS, [...latest, ...imported]);
     await socialLog(env, 'info', `Синхронизация «${account.name}»: добавлено роликов — ${added}`);
@@ -683,14 +703,28 @@ async function publishToInstagram(env, post, account, origin) {
 
   // The configured ID is resolved from the token's user_id. A failed or
   // ambiguous write is not replayed against a second endpoint.
-  const created = await igRequest(`${api}/${account.instagramAccountId}/media`, form);
+  const write = await beginSocialWrite(env, post, 'instagram');
+  if (write.result?.state === 'done') {
+    await patchPost(env, post.id, { instagramContainerId: write.result.id });
+    return finishInstagram(env, post, account, write.result.id);
+  }
+  let created;
+  try { created = await igRequest(`${api}/${account.instagramAccountId}/media`, form); }
+  catch (error) {
+    // An explicit rate-limit rejection has no accepted upload. A network error
+    // or 5xx is ambiguous and must retain the durable intent.
+    if (error.code === 'ERR_IG_RATE_LIMITED') await abandonSocialWrite(env, post, write);
+    throw error;
+  }
   if (!created.ok || !created.data.id) {
+    if (created.status >= 400 && created.status < 500 && created.status !== 408) await abandonSocialWrite(env, post, write);
     throw instagramFailure(
       'Instagram не принял видео (HTTP ' + created.status + ')'
     );
   }
 
   const containerId = created.data.id;
+  await completeSocialWrite(env, post, write, containerId);
   // Cloudflare может оборвать фоновую задачу в любой момент — тогда контейнер
   // уже создан, и повтор обязан продолжить с него, а не залить второй раз.
   await patchPost(env, post.id, { instagramContainerId: containerId });
@@ -841,11 +875,11 @@ async function prepareInstagramReplacement(env, postId, origin, notify) {
   if (!(media.response.status === 400 && media.data?.error?.code === 100 && media.data.error.error_subcode === 33)) {
     throw instagramReplacementError('Instagram не подтвердил отсутствие прежнего ролика. Новая загрузка не начата');
   }
-  const attempt = { id: crypto.randomUUID(), stage: 'create_started', startedAt: new Date().toISOString() };
+  const attempt = { id: crypto.randomUUID(), sourceContainerId: post.instagramContainerId, stage: 'create_started', startedAt: new Date().toISOString() };
   await patchPost(env, postId, { status: 'processing', instagramStatus: 'processing', instagramNeedsReview: true,
     instagramReviewReason: 'replacement_in_progress', instagramReplacementAttempt: attempt,
     processingSince: attempt.startedAt, publishMode: 'manual', error: null });
-  const run = async () => {
+  const run = () => withSocialPublicationLease(env, post.accountId, async env => {
     try {
       const claimed = (await getPosts(env)).find(p => p.id === postId);
       if (!claimed || claimed.instagramReplacementAttempt?.id !== attempt.id) return;
@@ -854,13 +888,16 @@ async function prepareInstagramReplacement(env, postId, origin, notify) {
         throw instagramReplacementError('Ролик изменился или исключён из очереди. Новая загрузка остановлена');
       }
       // One create request, no /me fallback or blind retry after a lost response.
-      const created = await igRequest(`${api}/${account.instagramAccountId}/media`, {
+      const replacementPost = { ...post, instagramReplacementAttempt: attempt };
+      const write = await beginSocialWrite(env, replacementPost, 'instagram');
+      const created = write.result?.state === 'done' ? { ok: true, data: { id: write.result.id } } : await igRequest(`${api}/${account.instagramAccountId}/media`, {
         media_type: 'REELS', video_url: `${origin}/s/v/${post.streamToken}`,
         caption: post.caption || '', share_to_feed: 'true', access_token: account.instagramToken,
       });
       if (!created.ok || !/^[0-9]{1,32}$/.test(created.data?.id || '')) {
         throw instagramReplacementError('Instagram не подтвердил новую загрузку. Повтор остановлен до проверки результата');
       }
+      if (write.result?.state !== 'done') await completeSocialWrite(env, replacementPost, write, created.data.id);
       const current = (await getPosts(env)).find(p => p.id === postId);
       if (!current || current.instagramReplacementAttempt?.id !== attempt.id) return;
       const previous = { containerId: post.instagramContainerId, mediaId: post.instagramMediaId,
@@ -879,9 +916,9 @@ async function prepareInstagramReplacement(env, postId, origin, notify) {
       await patchPost(env, postId, { status: 'failed', instagramStatus: 'failed', instagramNeedsReview: true,
         instagramReviewReason: 'replacement_unconfirmed', error: message });
       await socialLog(env, 'error', message);
-      if (notify) { try { await notify('⚠️ Новая публикация Instagram не подтверждена. Проверьте сохранённую попытку в админке.'); } catch (_) {} }
+      if (notify) { try { await notifySocialFailure(notify, post.accountId, 'instagram.replacement_unconfirmed', '⚠️ Новая публикация Instagram не подтверждена. Проверьте сохранённую попытку в админке.'); } catch (_) {} }
     }
-  };
+  });
   return { response: { ok: true, message: 'Создаю новую публикацию только в Instagram' }, run };
 }
 
@@ -949,6 +986,17 @@ function buildYoutubeTitle(post) {
 }
 
 async function publishToYouTube(env, post, account) {
+  // Check the durable outcome before downloading/uploading anything.
+  // Reserve immediately before sending bytes; session initialization is safe.
+  const saved = await beginSocialWrite(env, post, 'youtube', false);
+  if (saved.result?.state === 'done') return {
+    videoId: saved.result.id, permalink: 'https://youtube.com/shorts/' + saved.result.id,
+  };
+  if (post.youtubeNeedsReview) {
+    const error = new Error('Предыдущая загрузка YouTube требует проверки. Повторная отправка остановлена');
+    error.code = 'ERR_YT_PUBLICATION_UNCONFIRMED';
+    throw error;
+  }
   const accessToken = await googleAccessToken(env, account.youtubeRefreshToken || null);
 
   const videoRes = await driveDownloadResponse(env, post.driveFileId);
@@ -1004,6 +1052,12 @@ async function publishToYouTube(env, post, account) {
     throw new Error('YouTube не вернул адрес загрузки');
   }
 
+  const write = await beginSocialWrite(env, post, 'youtube');
+  if (write.result?.state === 'done') return {
+    videoId: write.result.id, permalink: 'https://youtube.com/shorts/' + write.result.id,
+  };
+  await patchPost(env, post.id, { youtubeNeedsReview: true });
+
   // Заливку не повторяем: если YouTube принял ролик, а ответ потерялся,
   // повтор создал бы дубль на канале.
   const uploadRes = await fetch(uploadUrl, {
@@ -1019,6 +1073,8 @@ async function publishToYouTube(env, post, account) {
       limit(uploadData?.error?.message || JSON.stringify(uploadData), 300)
     );
   }
+
+  await completeSocialWrite(env, post, write, uploadData.id);
 
   return {
     videoId: uploadData.id,
@@ -1039,6 +1095,13 @@ async function publishToYouTube(env, post, account) {
  *                        Пустой список = все, куда ролик ещё не ушёл.
  */
 export async function publishPost(env, postId, origin, notify = null, only = ['instagram', 'youtube']) {
+  const post = (await getPosts(env)).find(p => p.id === postId);
+  if (!post) return { status: 'error', message: 'Ролик не найден' };
+  return withSocialPublicationLease(env, post.accountId,
+    ownedEnv => publishPostWithLease(ownedEnv, postId, origin, notify, only));
+}
+
+async function publishPostWithLease(env, postId, origin, notify, only) {
   const posts = await getPosts(env);
   const post = posts.find((p) => p.id === postId);
   if (!post) return { status: 'error', message: 'Ролик не найден' };
@@ -1121,6 +1184,7 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
       ytResult = await publishToYouTube(env, post, account);
       await patchPost(env, postId, {
         youtubeStatus: 'published',
+        youtubeNeedsReview: false,
         youtubeVideoId: ytResult.videoId,
         youtubePermalink: ytResult.permalink,
       });
@@ -1128,7 +1192,8 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
     } catch (e) {
       notifyFailure = true;
       errors.push('YouTube: ' + e.message);
-      await patchPost(env, postId, { youtubeStatus: 'failed' });
+      await patchPost(env, postId, { youtubeStatus: 'failed',
+        ...(e.code === 'ERR_YT_PUBLICATION_UNCONFIRMED' ? { youtubeNeedsReview: true } : {}) });
       await socialLog(env, 'error', `YouTube: ${post.fileName} — ${e.message}`);
     }
   }
@@ -1165,7 +1230,7 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
   // Об упавшей автопубликации иначе можно узнать, только открыв админку.
   if (notify && notifyFailure) {
     try {
-      await notify(
+      await notifySocialFailure(notify, account.id, summary,
         '⚠️ <b>Автопостинг: ролик не опубликован</b>\n' +
         `Аккаунт: ${account.name}\nФайл: ${post.fileName}\nПричина: ${limit(summary, 300)}`
       );

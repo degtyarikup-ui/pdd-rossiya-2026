@@ -65,7 +65,7 @@ test('durable cooldown survives restarts, counts repeats and limits error storms
   assert.equal((await messages(state)).length, 1);
   const stored = await state.storage.get('errors:state');
   assert.equal(Object.values(stored.groups)[0].repeats, 2);
-  Object.values(stored.groups)[0].at -= 600001;
+  Object.values(stored.groups)[0].at -= 3600001;
   await state.storage.put('errors:state', stored);
   await reportIncident(env, event({ id: 'e'.repeat(32) }));
   assert.match((await messages(state))[1], /Повторов с прошлого сообщения: 2/);

@@ -14,6 +14,7 @@ invocation_logs = false
 
 [vars]
 ACCOUNT_STATE_REQUIRED = "true"
+SOCIAL_PUBLISHER_REQUIRED = "true"
 AI_GLOBAL_DAILY_LIMIT = "5000"
 AI_LEGACY_EXPLANATIONS = "true"
 AI_LEGACY_UNTIL = "2026-11-18T00:00:00Z"
@@ -51,7 +52,7 @@ crons = ["0 19 * * *", "*/5 * * * *", "5 21 * * SUN"]
 # Аналитика (stats_buffer.js): durable-очередь, пачки раз в 5 минут.
 # TrafficState сериализует счётчики и рейтинг; TelegramQueue повторяет доставку.
 [durable_objects]
-bindings = [{ name = "ACCOUNTS", class_name = "AccountState" }, { name = "AI_QUOTAS", class_name = "AiQuotaState" }, { name = "STATS", class_name = "StatsBuffer" }, { name = "PURCHASE_CLAIMS", class_name = "PurchaseClaims" }, { name = "TRAFFIC", class_name = "TrafficState" }, { name = "TELEGRAM", class_name = "TelegramQueue" }, { name = "NOTIFICATIONS", class_name = "NotificationsState" }, { name = "SUPPORT", class_name = "SupportThread" }, { name = "TG_AUTH", class_name = "TelegramAuthState" }]
+bindings = [{ name = "ACCOUNTS", class_name = "AccountState" }, { name = "AI_QUOTAS", class_name = "AiQuotaState" }, { name = "STATS", class_name = "StatsBuffer" }, { name = "PURCHASE_CLAIMS", class_name = "PurchaseClaims" }, { name = "TRAFFIC", class_name = "TrafficState" }, { name = "TELEGRAM", class_name = "TelegramQueue" }, { name = "NOTIFICATIONS", class_name = "NotificationsState" }, { name = "SUPPORT", class_name = "SupportThread" }, { name = "TG_AUTH", class_name = "TelegramAuthState" }, { name = "SOCIAL_PUBLISHER", class_name = "SocialPublisher" }]
 
 [[migrations]]
 tag = "v1"
@@ -80,3 +81,7 @@ new_sqlite_classes = ["TelegramAuthState"]
 [[migrations]]
 tag = "v7-accounts-and-ai-quotas"
 new_sqlite_classes = ["AccountState", "AiQuotaState"]
+
+[[migrations]]
+tag = "v8-social-publisher"
+new_sqlite_classes = ["SocialPublisher"]

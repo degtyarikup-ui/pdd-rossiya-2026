@@ -22,7 +22,7 @@
 | Аналитика | `analytics_*.js`, `usage_analytics.js`, `premium_analytics.js`, `attribution.js` |
 | Обновления и уведомления | `app_updates.js`, `notifications.js`, `notification_identity.js` |
 | Telegram и диагностика | `diagnostics.js`, `incident_copy.js`, `telegram_queue.js`, `telegram_topics.js`, `telegram_export.js` |
-| Публикации | `publications_data.js`, `social.js`, `threads.js` |
+| Публикации | `publications_data.js`, `social.js`, `social_guard.js` (`SocialPublisher`), `threads.js` |
 | Поддержка и задачи | `support_*.js`, `tasks_admin.js` |
 | Панель управления | [карта админок](../admin/README.md) |
 
@@ -42,6 +42,20 @@
 повторяем немедленно. Проверки отказов — `npm run test:support`.
 
 ## Проверки
+
+Одинаковые диагностические инциденты группируются в Telegram на час; первое
+сообщение новой группы отправляется сразу, полный журнал CSV сохраняется.
+Для ошибок покупки и foreground-каталога окно остаётся 10 минут. Служебный
+успех восстановления входа остаётся только в журнале. У автопостинга отдельная
+часовая группировка по аккаунту и причине; регистрации, покупки и поддержка
+через неё не проходят.
+
+`SOCIAL_PUBLISHER_REQUIRED=true` требует binding `SOCIAL_PUBLISHER` и миграцию
+`v8-social-publisher`. При недоступности координатора новая загрузка не
+начинается. Lease живёт 15 минут; незавершённые намерения отправки остаются
+после его истечения и не разрешают повторную загрузку. Подтверждённые ID
+хранятся постоянно. Обновление сервера не переотправляет ролики с успешным
+статусом. Проверки — `test-social-guard.mjs`.
 
 Команды запускать из `server/install-notifier/`: `npm test`, затем нужные
 `npm run test:*` из `package.json`. Базовый `npm test` не запускает все модульные

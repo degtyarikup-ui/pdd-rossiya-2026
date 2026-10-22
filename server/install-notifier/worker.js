@@ -17,6 +17,7 @@ import { renderDailyChart, pngBase64 } from './daily_chart.js';
 import { getAdsConfig, filterAdsForClient } from './ads_config.js';
 export { TrafficState } from './traffic_state.js';
 export { TelegramQueue, resolveTopicThreadId, getTopicThreadId, telegramChatId } from './telegram_queue.js';
+export { SocialPublisher } from './social_guard.js';
 import { pollErrorCommands, getTopicThreadId, telegramChatId } from './telegram_queue.js';
 import { readTelegramTopics, setupTelegramTopics } from './telegram_topics.js';
 import {
@@ -949,6 +950,7 @@ export async function sendTelegram(env, text, dedupKey = null, options = {}) {
         text,
         dedupKey: dedup,
         topic,
+        ...(opts.errorGroupKey ? { errorGroupKey: opts.errorGroupKey } : {}),
         threadId: explicitThreadId,
         ...(opts.photoUrl ? { messages: [
           { text },
@@ -3032,7 +3034,7 @@ const workerHandlers = {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
       const socialResponse = await handleSocialAdmin(request, env, ctx, url, {
         jsonResponse,
-        notify: (text) => sendTelegram(env, text, null, { topic: 'errors' }),
+        notify: (text, options = {}) => sendTelegram(env, text, null, { ...options, topic: 'errors' }),
       });
       return socialResponse || jsonResponse({ error: 'not found' }, 404);
     }
@@ -4243,7 +4245,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         const settings = JSON.parse(await env.INSTALLS.get('social:settings'));
         if (settings && settings.workerOrigin) origin = settings.workerOrigin;
       } catch (_) {}
-      ctx.waitUntil(runAutoPost(env, origin, (text) => sendTelegram(env, text, null, { topic: 'errors' })));
+      ctx.waitUntil(runAutoPost(env, origin, (text, options = {}) => sendTelegram(env, text, null, { ...options, topic: 'errors' })));
       ctx.waitUntil(runThreadsSchedule(env, (text) => sendTelegram(env, text)));
       if (env.NOTIFICATIONS) {
         ctx.waitUntil(

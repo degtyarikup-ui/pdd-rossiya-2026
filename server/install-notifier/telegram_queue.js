@@ -100,6 +100,25 @@ export class TelegramQueue {
     )) return new Response('invalid message', { status: 400 });
     if (!this.env.BOT_TOKEN || !this.env.CHAT_ID) return new Response('not configured', { status: 503 });
     if (dedupKey && await this.state.storage.get('seen:' + dedupKey)) return Response.json({ ok: true, duplicate: true });
+    // Social errors used to bypass incident grouping entirely. Keep the first
+    // notification immediate and retain repeat counts across queue restarts.
+    let errorGroups = null, repeated = 0;
+    if (body.errorGroupKey !== undefined) {
+      if (!/^social:[a-f0-9]{64}$/.test(body.errorGroupKey) || items.length !== 1 || photoBase64 || messages) return new Response('invalid group', { status: 400 });
+      const now = Date.now();
+      errorGroups = await this.state.storage.get('social:error_groups') || {};
+      for (const [key, value] of Object.entries(errorGroups)) if (now - value.at >= 86400000) delete errorGroups[key];
+      const previous = errorGroups[body.errorGroupKey];
+      if (previous && now - previous.at < 3600000) {
+        previous.repeats++;
+        await this.state.storage.put('social:error_groups', errorGroups);
+        return Response.json({ ok: true, suppressed: true, repeats: previous.repeats });
+      }
+      repeated = previous?.repeats || 0;
+      if (Object.keys(errorGroups).length >= 128) delete errorGroups[Object.keys(errorGroups).sort((a,b) => errorGroups[a].at - errorGroups[b].at)[0]];
+      errorGroups[body.errorGroupKey] = { at: now, repeats: 0 };
+      if (repeated) items[0] = { ...items[0], text: items[0].text.slice(0, 3900) + '\nПовторов с прошлого сообщения: ' + repeated };
+    }
     if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + 1000);
     const sequence = (await this.state.storage.get('sequence') || 0) + 1;
     await this.state.storage.transaction(async txn => {
@@ -114,6 +133,7 @@ export class TelegramQueue {
       }
       await txn.put('sequence', sequence+items.length-1);
       if (dedupKey) await txn.put('seen:' + dedupKey, Date.now());
+      if (errorGroups) await txn.put('social:error_groups', errorGroups);
     });
     return Response.json({ ok: true, queued: true });
   }
