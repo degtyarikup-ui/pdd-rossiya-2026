@@ -9,7 +9,7 @@
     "test:traffic": "node --test test-traffic.mjs",
     "test:logging": "node --test test-logging.mjs test-diagnostic-context.mjs test-telegram-export.mjs",
     "test:usage": "node --test test-usage.mjs test-analytics.mjs test-analytics-versions.mjs test-traffic.mjs",
-    "test:security": "node --test test-release-security.mjs test-users-admin.mjs test-apple-purchases.mjs test-entitlements.mjs test-payments.mjs test-auth-reasons.mjs test-apple-web-callback.mjs test-google-web-auth.mjs test-incident-guide.mjs test-telegram-export.mjs test-diagnostic-context.mjs test-question-reports.mjs test-ai-request.mjs test-ai-models.mjs test-account-state.mjs test-release-fixes.mjs test-release-handoff.mjs test-support-push.mjs test-storage-costs.mjs test-account-compatibility.mjs test-durable-request.mjs test-durable-integration.mjs",
+    "test:security": "node --test test-release-security.mjs test-users-admin.mjs test-apple-purchases.mjs test-entitlements.mjs test-payments.mjs test-auth-reasons.mjs test-provider-keys.mjs test-apple-web-callback.mjs test-google-web-auth.mjs test-incident-guide.mjs test-telegram-export.mjs test-diagnostic-context.mjs test-question-reports.mjs test-ai-request.mjs test-ai-models.mjs test-account-state.mjs test-release-fixes.mjs test-release-handoff.mjs test-support-push.mjs test-storage-costs.mjs test-account-compatibility.mjs test-durable-request.mjs test-durable-integration.mjs",
     "test:publications": "node --test test-publications.mjs test-blog-ui.mjs test-blog-schedule.mjs test-social.mjs",
     "test:social:ui": "node --test test-social-ui.mjs",
     "test:progress": "node --test test-progress.mjs",

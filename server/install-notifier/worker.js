@@ -37,6 +37,7 @@ import { accountTokenForUserId } from './store_account.js';
 import { deleteAccountDocuments, executeAppleRevocation } from './apple_account.js';
 import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, listPayIntents, webPaymentsLive, settleOrder } from './payments.js';
 import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession, sessionAccountId } from './user_auth.js';
+import { refreshProviderKeyCaches } from './provider_keys.js';
 import { readAiRequest, AiRequestError, AI_PROVIDER_TIMEOUT_MS } from './ai_request.js';
 import { routeAccountRequest, accountRead, accountWrite, accountRpc } from './account_state.js';
 export { AccountState } from './account_state.js';
@@ -4229,6 +4230,13 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
     // Триггер автопостинга: проверяет расписание и продолжает оборвавшиеся
     // публикации (у Instagram уходит несколько минут только на кодирование).
     if (event.cron === HOURLY_CRON) {
+      // Keep fresh public signing keys available across isolates before login.
+      ctx.waitUntil(refreshProviderKeyCaches(env).then(results => {
+        for (const [provider, result] of Object.entries(results)) {
+          console.log(JSON.stringify({ event: 'auth_keys_refresh', provider,
+            ok: result.ok, ...(result.code ? { code: result.code } : {}) }));
+        }
+      }));
       ctx.waitUntil(reconcileAccounts(env));
       let origin = DEFAULT_WORKER_ORIGIN;
       try {
