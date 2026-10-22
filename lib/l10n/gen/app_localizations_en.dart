@@ -3720,6 +3720,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportChatPhoto => 'Photo';
 
   @override
+  String get supportChatImageLoadFailed => 'Could not load the photo';
+
+  @override
   String get supportChatClosed =>
       'Your request is closed. If you have more questions, just write here.';
 

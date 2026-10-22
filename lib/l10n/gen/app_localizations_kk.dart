@@ -3713,6 +3713,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get supportChatPhoto => 'Фотосурет';
 
   @override
+  String get supportChatImageLoadFailed => 'Фотосуретті жүктеу мүмкін болмады';
+
+  @override
   String get supportChatClosed =>
       'Өтініш аяқталды. Сұрақтарыңыз болса, осында жаза беріңіз.';
 

@@ -6190,6 +6190,12 @@ abstract class AppLocalizations {
   /// **'Фотография'**
   String get supportChatPhoto;
 
+  /// No description provided for @supportChatImageLoadFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить фото'**
+  String get supportChatImageLoadFailed;
+
   /// No description provided for @supportChatClosed.
   ///
   /// In ru, this message translates to:

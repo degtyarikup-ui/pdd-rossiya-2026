@@ -14,10 +14,13 @@ import 'package:pdd_app/data/services/support_inbox.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
+import 'package:pdd_app/presentation/widgets/support_chat_image.dart';
 
 /// Экран интерактивного чата техподдержки приложения.
 class SupportChatScreen extends StatefulWidget {
-  const SupportChatScreen({super.key});
+  const SupportChatScreen({super.key, this.service});
+
+  final SupportChatService? service;
 
   @override
   State<SupportChatScreen> createState() => _SupportChatScreenState();
@@ -31,7 +34,11 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   List<SupportChatMessage> _messages = [];
   bool _isLoading = true;
   bool _isSending = false;
+  bool _isRefreshing = false;
   Timer? _pollTimer;
+
+  SupportChatService get _service =>
+      widget.service ?? SupportChatService.instance;
 
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
@@ -57,7 +64,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
   Future<void> _initChat() async {
     // 1. Мгновенно отображаем локально сохранённую историю
-    final cached = await SupportChatService.instance.loadCachedMessages();
+    final cached = await _service.loadCachedMessages();
+    if (!mounted) return;
     if (mounted) {
       setState(() {
         _messages = cached;
@@ -68,6 +76,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
     // 2. Сразу запрашиваем актуальные сообщения с сервера
     await _refreshMessages();
+    if (!mounted) return;
 
     // 3. Пока чат открыт, спрашиваем раз в 3.5 секунды. Обращение закрыто
     // (/close) — оператор не напишет, пока не напишет человек: раз в 30 секунд.
@@ -86,6 +95,18 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   DateTime _lastRefresh = DateTime.now();
 
   Future<void> _refreshMessages({bool silent = false}) async {
+    // Фото может грузиться дольше интервала polling. Не запускаем повторную
+    // загрузку и не даём следующему ответу обогнать сообщение с фото.
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    try {
+      await _fetchAndPrepareMessages(silent: silent);
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  Future<void> _fetchAndPrepareMessages({required bool silent}) async {
     _lastRefresh = DateTime.now();
     final lastTs = _messages.isNotEmpty
         ? _messages
@@ -93,11 +114,26 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               .fold<int>(0, (max, m) => m.timestamp > max ? m.timestamp : max)
         : 0;
 
-    final incoming = await SupportChatService.instance.fetchMessages(
+    final incoming = await _service.fetchMessages(
       since: lastTs > 0 ? lastTs : null,
     );
 
     if (!mounted || incoming.isEmpty) return;
+
+    final displayedIds = _messages.map((m) => m.id).toSet();
+    final images = incoming
+        .where((m) => !displayedIds.contains(m.id))
+        .map(_resolveImageProvider)
+        .whereType<ImageProvider>()
+        .toSet();
+    // Публикуем новое сообщение с уже декодированным фото. Если сеть
+    // медленная, через 8 с показываем карточку с индикатором, а не скрываем
+    // ответ бесконечно. SupportChatImage использует тот же ImageCache.
+    await Future.wait<void>(
+      images.map((image) => precacheImage(image, context, onError: (_, _) {})),
+    ).timeout(const Duration(seconds: 8), onTimeout: () => []);
+    if (!mounted) return;
+
     // Shown here, so the banner over the app must not bring them up again.
     unawaited(SupportInbox.instance.markShown(incoming));
 
@@ -111,7 +147,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         _messages.addAll(newItems);
         _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       });
-      await SupportChatService.instance.saveCachedMessages(_messages);
+      await _service.saveCachedMessages(_messages);
       _scrollToBottom();
       if (newItems.any((m) => m.isSupport)) {
         SoundEffectsService.instance.playMessage();
@@ -308,7 +344,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     });
     _scrollToBottom();
 
-    final result = await SupportChatService.instance.sendMessage(
+    final result = await _service.sendMessage(
       text,
       imageBytes: imageBytes,
       imageMimeType: image?.mimeType ?? 'image/jpeg',
@@ -335,7 +371,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       }
     });
 
-    await SupportChatService.instance.saveCachedMessages(_messages);
+    await _service.saveCachedMessages(_messages);
     _scrollToBottom();
   }
 
@@ -360,7 +396,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       } catch (_) {}
     }
 
-    final result = await SupportChatService.instance.sendMessage(
+    final result = await _service.sendMessage(
       failedMsg.text,
       imageBytes: retryBytes,
       localImagePath: failedMsg.localImagePath,
@@ -384,7 +420,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       }
     });
 
-    await SupportChatService.instance.saveCachedMessages(_messages);
+    await _service.saveCachedMessages(_messages);
   }
 
   @override
@@ -648,30 +684,10 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                     ),
                   ],
                   if (imageProvider != null) ...[
-                    GestureDetector(
+                    SupportChatImage(
+                      key: ValueKey(msg.id),
+                      image: imageProvider,
                       onTap: () => _openImageViewer(context, imageProvider),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 260),
-                          child: Image(
-                            image: imageProvider,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                                  height: 120,
-                                  color: colors.divider.withValues(alpha: 0.2),
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.broken_image_rounded,
-                                      color: colors.secondaryText,
-                                    ),
-                                  ),
-                                ),
-                          ),
-                        ),
-                      ),
                     ),
                     if (msg.displayText.isNotEmpty) const SizedBox(height: 6),
                   ],

@@ -3732,6 +3732,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get supportChatPhoto => 'Фотография';
 
   @override
+  String get supportChatImageLoadFailed => 'Не удалось загрузить фото';
+
+  @override
   String get supportChatClosed =>
       'Обращение завершено. Если появятся вопросы — просто напишите сюда.';
 
