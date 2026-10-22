@@ -376,37 +376,37 @@ func _setup_road_geometry() -> void:
 	yellow_mat.albedo_color = Color("#D9A328") # Authentic matte road marking yellow
 	yellow_mat.roughness = 0.82
 
-	# 1. Main road surface (North-South, Z from -55 to +40, X from -4.2 to +4.2)
+	# 1. Main road surface (North-South, Z from -57.5 to +57.5, X from -4.2 to +4.2)
 	var main_road := MeshInstance3D.new()
 	var main_box := BoxMesh.new()
-	main_box.size = Vector3(8.4, 0.2, 95.0)
+	main_box.size = Vector3(8.4, 0.2, 115.0)
 	main_road.mesh = main_box
 	main_road.material_override = asphalt_material
-	main_road.position = Vector3(0, -0.1, -7.5)
+	main_road.position = Vector3(0, -0.1, 0.0)
 	junction_node.add_child(main_road)
 
-	# 2. Secondary street arm (Westbound 4-lane cross street, X from -45 to 0, Z from -1.8 to 11.8)
+	# 2. Secondary street arm (Westbound 4-lane cross street, X from -55 to 0, Z from -1.8 to 11.8)
 	var sec_road := MeshInstance3D.new()
 	var sec_box := BoxMesh.new()
-	sec_box.size = Vector3(45.0, 0.2, 13.6)
+	sec_box.size = Vector3(55.0, 0.2, 13.6)
 	sec_road.mesh = sec_box
 	sec_road.material_override = asphalt_material
-	sec_road.position = Vector3(-22.5, -0.1, 5.0)
+	sec_road.position = Vector3(-27.5, -0.1, 5.0)
 	junction_node.add_child(sec_road)
 
-	# 3. East branch apron (4-lane cross street, X from 0 to 45, Z from -1.8 to 11.8) completing the 4-way intersection
+	# 3. East branch apron (4-lane cross street, X from 0 to 55, Z from -1.8 to 11.8) completing the 4-way intersection
 	var east_road := MeshInstance3D.new()
 	var east_box := BoxMesh.new()
-	east_box.size = Vector3(45.0, 0.2, 13.6)
+	east_box.size = Vector3(55.0, 0.2, 13.6)
 	east_road.mesh = east_box
 	east_road.material_override = asphalt_material
-	east_road.position = Vector3(22.5, -0.1, 5.0)
+	east_road.position = Vector3(27.5, -0.1, 5.0)
 	junction_node.add_child(east_road)
 
 	# 4. Large surrounding terrain grass
 	var grass := MeshInstance3D.new()
 	var grass_box := BoxMesh.new()
-	grass_box.size = Vector3(140.0, 0.18, 140.0)
+	grass_box.size = Vector3(160.0, 0.18, 160.0)
 	grass.mesh = grass_box
 	grass.material_override = grass_mat
 	grass.position = Vector3(0, -0.2, 0)
@@ -430,41 +430,41 @@ func _build_sidewalks(sw_mat: Material, curb_mat: Material, lawn_mat: Material) 
 	var sw_y := 0.08
 
 	# Sidewalk slabs (4 quadrants around the 13.6m 4-lane cross street at Z in [-1.8, 11.8])
-	# NW: X in [-45, -4.2], Z in [-55, -1.8] (length 53.2, center -28.4)
-	var nw_sw := _create_box(Vector3(40.8, sw_height, 53.2), sw_mat)
-	nw_sw.position = Vector3(-24.6, sw_y, -28.4)
+	# NW: X in [-55, -4.2], Z in [-55, -1.8] (length 53.2, center -28.4)
+	var nw_sw := _create_box(Vector3(50.8, sw_height, 53.2), sw_mat)
+	nw_sw.position = Vector3(-29.6, sw_y, -28.4)
 	junction_node.add_child(nw_sw)
 
-	# SW: X in [-45, -4.2], Z in [11.8, 40] (length 28.2, center 25.9)
-	var sw_sw := _create_box(Vector3(40.8, sw_height, 28.2), sw_mat)
-	sw_sw.position = Vector3(-24.6, sw_y, 25.9)
+	# SW: X in [-55, -4.2], Z in [11.8, 55] (length 43.2, center 33.4)
+	var sw_sw := _create_box(Vector3(50.8, sw_height, 43.2), sw_mat)
+	sw_sw.position = Vector3(-29.6, sw_y, 33.4)
 	junction_node.add_child(sw_sw)
 
-	# NE: X in [4.2, 45], Z in [-55, -1.8] (length 53.2, center -28.4)
-	var ne_sw := _create_box(Vector3(40.8, sw_height, 53.2), sw_mat)
-	ne_sw.position = Vector3(24.6, sw_y, -28.4)
+	# NE: X in [4.2, 55], Z in [-55, -1.8] (length 53.2, center -28.4)
+	var ne_sw := _create_box(Vector3(50.8, sw_height, 53.2), sw_mat)
+	ne_sw.position = Vector3(29.6, sw_y, -28.4)
 	junction_node.add_child(ne_sw)
 
-	# SE: X in [4.2, 45], Z in [11.8, 40] (length 28.2, center 25.9)
-	var se_sw := _create_box(Vector3(40.8, sw_height, 28.2), sw_mat)
-	se_sw.position = Vector3(24.6, sw_y, 25.9)
+	# SE: X in [4.2, 55], Z in [11.8, 55] (length 43.2, center 33.4)
+	var se_sw := _create_box(Vector3(50.8, sw_height, 43.2), sw_mat)
+	se_sw.position = Vector3(29.6, sw_y, 33.4)
 	junction_node.add_child(se_sw)
 
 	# Raised Green Lawns (Газоны) in all 4 quadrants
-	var nw_lawn := _create_box(Vector3(34.0, 0.18, 45.0), lawn_mat)
-	nw_lawn.position = Vector3(-28.0, 0.09, -31.0)
+	var nw_lawn := _create_box(Vector3(44.0, 0.18, 45.0), lawn_mat)
+	nw_lawn.position = Vector3(-33.0, 0.09, -31.0)
 	junction_node.add_child(nw_lawn)
 
-	var sw_lawn := _create_box(Vector3(34.0, 0.18, 22.0), lawn_mat)
-	sw_lawn.position = Vector3(-28.0, 0.09, 27.5)
+	var sw_lawn := _create_box(Vector3(44.0, 0.18, 35.0), lawn_mat)
+	sw_lawn.position = Vector3(-33.0, 0.09, 35.0)
 	junction_node.add_child(sw_lawn)
 
-	var ne_lawn := _create_box(Vector3(34.0, 0.18, 45.0), lawn_mat)
-	ne_lawn.position = Vector3(28.0, 0.09, -31.0)
+	var ne_lawn := _create_box(Vector3(44.0, 0.18, 45.0), lawn_mat)
+	ne_lawn.position = Vector3(33.0, 0.09, -31.0)
 	junction_node.add_child(ne_lawn)
 
-	var se_lawn := _create_box(Vector3(34.0, 0.18, 22.0), lawn_mat)
-	se_lawn.position = Vector3(28.0, 0.09, 27.5)
+	var se_lawn := _create_box(Vector3(44.0, 0.18, 35.0), lawn_mat)
+	se_lawn.position = Vector3(33.0, 0.09, 35.0)
 	junction_node.add_child(se_lawn)
 
 	# Main road curbs (North & South)
@@ -473,18 +473,18 @@ func _build_sidewalks(sw_mat: Material, curb_mat: Material, lawn_mat: Material) 
 		curb_north.position = Vector3(curb_x, 0.10, -28.4)
 		junction_node.add_child(curb_north)
 
-		var curb_south := _create_box(Vector3(0.24, 0.20, 28.2), curb_mat)
-		curb_south.position = Vector3(curb_x, 0.10, 25.9)
+		var curb_south := _create_box(Vector3(0.24, 0.20, 43.2), curb_mat)
+		curb_south.position = Vector3(curb_x, 0.10, 33.4)
 		junction_node.add_child(curb_south)
 
 	# Cross street curbs (West & East along Z = -1.8 and Z = 11.8)
 	for curb_z in [-1.8, 11.8]:
-		var curb_west := _create_box(Vector3(40.8, 0.20, 0.24), curb_mat)
-		curb_west.position = Vector3(-24.6, 0.10, curb_z)
+		var curb_west := _create_box(Vector3(50.8, 0.20, 0.24), curb_mat)
+		curb_west.position = Vector3(-29.6, 0.10, curb_z)
 		junction_node.add_child(curb_west)
 
-		var curb_east := _create_box(Vector3(40.8, 0.20, 0.24), curb_mat)
-		curb_east.position = Vector3(24.6, 0.10, curb_z)
+		var curb_east := _create_box(Vector3(50.8, 0.20, 0.24), curb_mat)
+		curb_east.position = Vector3(29.6, 0.10, curb_z)
 		junction_node.add_child(curb_east)
 
 	# Tree lawn pits along sidewalks (Газонные приствольные квадраты)
@@ -533,15 +533,10 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 		stripe.position = Vector3(float(stripe_x) * 0.1, y, -7.75)
 		junction_node.add_child(stripe)
 
-	# Solid line 1.1 between zebra and entrance stop line: Z from -6.5 to -3.5
-	var solid_post_zebra := _create_box(Vector3(0.18, 0.02, 3.0), white_mat)
-	solid_post_zebra.position = Vector3(0, y, -5.0)
+	# Solid line 1.1 between zebra and intersection entrance: Z from -6.5 to -1.8
+	var solid_post_zebra := _create_box(Vector3(0.18, 0.02, 4.7), white_mat)
+	solid_post_zebra.position = Vector3(0, y, -4.15)
 	junction_node.add_child(solid_post_zebra)
-
-	# Stop line 1.12 at intersection entrance Z = -3.5 across approaching lanes
-	var stop_line := _create_box(Vector3(7.4, 0.02, 0.45), white_mat)
-	stop_line.position = Vector3(0, y, -3.5)
-	junction_node.add_child(stop_line)
 
 	# 1.14.1 Zebra Crosswalk South (Z in [14.0, 16.5], center 15.25)
 	for stripe_x in range(-34, 35, 8):
@@ -549,8 +544,13 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 		stripe_s.position = Vector3(float(stripe_x) * 0.1, y, 15.25)
 		junction_node.add_child(stripe_s)
 
+	# Solid line 1.1 between intersection exit and South zebra: Z from 11.8 to 14.0
+	var solid_pre_south_zebra := _create_box(Vector3(0.18, 0.02, 2.2), white_mat)
+	solid_pre_south_zebra.position = Vector3(0, y, 12.9)
+	junction_node.add_child(solid_pre_south_zebra)
+
 	# 1.5 Broken Lines on main road South departing
-	for z_pos in range(18, 40, 4):
+	for z_pos in range(18, 55, 4):
 		var broken_s := _create_box(Vector3(0.16, 0.02, 2.0), white_mat)
 		broken_s.position = Vector3(0, y, float(z_pos))
 		junction_node.add_child(broken_s)
@@ -569,59 +569,59 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 		stripe_e.position = Vector3(7.5, y, float(stripe_z) * 0.1)
 		junction_node.add_child(stripe_e)
 
-	# Stop / Yield lines 1.12 across approaching lanes on cross street:
-	# West arm: across Eastbound lanes (Z in [5.0, 11.8]) at X = -4.8:
+	# Stop lines 1.12 placed before zebra crosswalks on cross street:
+	# West arm: across Eastbound lanes (Z in [5.0, 11.8]) before zebra at X = -9.75:
 	var sec_stop := _create_box(Vector3(0.45, 0.02, 6.6), white_mat)
-	sec_stop.position = Vector3(-4.8, y, 8.4)
+	sec_stop.position = Vector3(-9.75, y, 8.4)
 	junction_node.add_child(sec_stop)
 
-	# East arm: across Westbound lanes (Z in [-1.8, 5.0]) at X = 4.8:
+	# East arm: across Westbound lanes (Z in [-1.8, 5.0]) before zebra at X = 9.75:
 	var east_stop := _create_box(Vector3(0.45, 0.02, 6.6), white_mat)
-	east_stop.position = Vector3(4.8, y, 1.6)
+	east_stop.position = Vector3(9.75, y, 1.6)
 	junction_node.add_child(east_stop)
 
 	# Center Double Solid Line 1.3 along Z = 5.0 (separating 2 lanes in each direction):
 	# Breaks across zebra crosswalks (X in [-8.75, -6.25] and X in [6.25, 8.75])
 	for offset_z in [-0.12, 0.12]:
-		# West arm outer (from X = -45.0 to -8.75, length 36.25, center -26.875):
-		var west_solid_outer := _create_box(Vector3(36.25, 0.02, 0.12), white_mat)
-		west_solid_outer.position = Vector3(-26.875, y, 5.0 + offset_z)
+		# West arm outer (from X = -55.0 to -8.75, length 46.25, center -31.875):
+		var west_solid_outer := _create_box(Vector3(46.25, 0.02, 0.12), white_mat)
+		west_solid_outer.position = Vector3(-31.875, y, 5.0 + offset_z)
 		junction_node.add_child(west_solid_outer)
 
-		# West arm inner (from X = -6.25 to -4.8, length 1.45, center -5.525):
-		var west_solid_inner := _create_box(Vector3(1.45, 0.02, 0.12), white_mat)
-		west_solid_inner.position = Vector3(-5.525, y, 5.0 + offset_z)
+		# West arm inner (from X = -6.25 to -4.2, length 2.05, center -5.225):
+		var west_solid_inner := _create_box(Vector3(2.05, 0.02, 0.12), white_mat)
+		west_solid_inner.position = Vector3(-5.225, y, 5.0 + offset_z)
 		junction_node.add_child(west_solid_inner)
 
-		# East arm inner (from X = 4.8 to 6.25, length 1.45, center 5.525):
-		var east_solid_inner := _create_box(Vector3(1.45, 0.02, 0.12), white_mat)
-		east_solid_inner.position = Vector3(5.525, y, 5.0 + offset_z)
+		# East arm inner (from X = 4.2 to 6.25, length 2.05, center 5.225):
+		var east_solid_inner := _create_box(Vector3(2.05, 0.02, 0.12), white_mat)
+		east_solid_inner.position = Vector3(5.225, y, 5.0 + offset_z)
 		junction_node.add_child(east_solid_inner)
 
-		# East arm outer (from X = 8.75 to 45.0, length 36.25, center 26.875):
-		var east_solid_outer := _create_box(Vector3(36.25, 0.02, 0.12), white_mat)
-		east_solid_outer.position = Vector3(26.875, y, 5.0 + offset_z)
+		# East arm outer (from X = 8.75 to 55.0, length 46.25, center 31.875):
+		var east_solid_outer := _create_box(Vector3(46.25, 0.02, 0.12), white_mat)
+		east_solid_outer.position = Vector3(31.875, y, 5.0 + offset_z)
 		junction_node.add_child(east_solid_outer)
 
 	# Lane Dividers between lanes of the same direction:
 	# West arm Eastbound (approaching, Z in [5.0, 11.8], divider at Z = 8.4):
-	# Solid line 1.1: from X = -14.0 to -8.75 (length 5.25, center -11.375) and from -6.25 to -4.8 (length 1.45, center -5.525):
+	# Solid line 1.1: from X = -14.0 to -8.75 (length 5.25, center -11.375) and from -6.25 to -4.2 (length 2.05, center -5.225):
 	var west_eb_solid_out := _create_box(Vector3(5.25, 0.02, 0.14), white_mat)
 	west_eb_solid_out.position = Vector3(-11.375, y, 8.4)
 	junction_node.add_child(west_eb_solid_out)
 
-	var west_eb_solid_in := _create_box(Vector3(1.45, 0.02, 0.14), white_mat)
-	west_eb_solid_in.position = Vector3(-5.525, y, 8.4)
+	var west_eb_solid_in := _create_box(Vector3(2.05, 0.02, 0.14), white_mat)
+	west_eb_solid_in.position = Vector3(-5.225, y, 8.4)
 	junction_node.add_child(west_eb_solid_in)
 
-	# Broken lines 1.5 further back (from X = -45 to -14):
-	for x_pos in range(-44, -14, 4):
+	# Broken lines 1.5 further back (from X = -55 to -14):
+	for x_pos in range(-52, -14, 4):
 		var b_w := _create_box(Vector3(2.0, 0.02, 0.14), white_mat)
 		b_w.position = Vector3(float(x_pos), y, 8.4)
 		junction_node.add_child(b_w)
 
 	# West arm Westbound (departing, Z in [-1.8, 5.0], divider at Z = 1.6):
-	for x_pos in range(-44, -4, 4):
+	for x_pos in range(-52, -4, 4):
 		if x_pos >= -9 and x_pos <= -6:
 			continue
 		var b_wd := _create_box(Vector3(2.0, 0.02, 0.14), white_mat)
@@ -629,108 +629,28 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 		junction_node.add_child(b_wd)
 
 	# East arm Westbound (approaching, Z in [-1.8, 5.0], divider at Z = 1.6):
-	# Solid line 1.1: from X = 4.8 to 6.25 (length 1.45, center 5.525) and from 8.75 to 14.0 (length 5.25, center 11.375):
-	var east_wb_solid_in := _create_box(Vector3(1.45, 0.02, 0.14), white_mat)
-	east_wb_solid_in.position = Vector3(5.525, y, 1.6)
+	# Solid line 1.1: from X = 4.2 to 6.25 (length 2.05, center 5.225) and from 8.75 to 14.0 (length 5.25, center 11.375):
+	var east_wb_solid_in := _create_box(Vector3(2.05, 0.02, 0.14), white_mat)
+	east_wb_solid_in.position = Vector3(5.225, y, 1.6)
 	junction_node.add_child(east_wb_solid_in)
 
 	var east_wb_solid_out := _create_box(Vector3(5.25, 0.02, 0.14), white_mat)
 	east_wb_solid_out.position = Vector3(11.375, y, 1.6)
 	junction_node.add_child(east_wb_solid_out)
 
-	# Broken lines 1.5 further back (from X = 16 to 45):
-	for x_pos in range(16, 45, 4):
+	# Broken lines 1.5 further back (from X = 16 to 55):
+	for x_pos in range(16, 55, 4):
 		var b_e := _create_box(Vector3(2.0, 0.02, 0.14), white_mat)
 		b_e.position = Vector3(float(x_pos), y, 1.6)
 		junction_node.add_child(b_e)
 
 	# East arm Eastbound (departing, Z in [5.0, 11.8], divider at Z = 8.4):
-	for x_pos in range(6, 45, 4):
+	for x_pos in range(6, 55, 4):
 		if x_pos >= 6 and x_pos <= 9:
 			continue
 		var b_ed := _create_box(Vector3(2.0, 0.02, 0.14), white_mat)
 		b_ed.position = Vector3(float(x_pos), y, 8.4)
 		junction_node.add_child(b_ed)
-
-	# 3. Authentic Yellow Waffle Box Marking 1.26 (Вафельница) in intersection box:
-	# Bounding box: X in [-3.8, 3.8], Z in [-1.5, 11.5]
-	var w_north := _create_box(Vector3(7.6, 0.02, 0.16), yellow_mat)
-	w_north.position = Vector3(0, y, -1.5)
-	junction_node.add_child(w_north)
-
-	var w_south := _create_box(Vector3(7.6, 0.02, 0.16), yellow_mat)
-	w_south.position = Vector3(0, y, 11.5)
-	junction_node.add_child(w_south)
-
-	var w_west := _create_box(Vector3(0.16, 0.02, 13.0), yellow_mat)
-	w_west.position = Vector3(-3.8, y, 5.0)
-	junction_node.add_child(w_west)
-
-	var w_east := _create_box(Vector3(0.16, 0.02, 13.0), yellow_mat)
-	w_east.position = Vector3(3.8, y, 5.0)
-	junction_node.add_child(w_east)
-
-	# Exact boundary-clipped diagonal criss-cross lattice:
-	var w_xmin := -3.8
-	var w_xmax := 3.8
-	var w_zmin := -1.5
-	var w_zmax := 11.5
-
-	# 45-degree diagonal lines: z - x = c
-	for step_i in range(-4, 12):
-		var c := float(step_i) * 1.5
-		var pts: Array[Vector2] = []
-		var z_at_xmin := w_xmin + c
-		if z_at_xmin >= w_zmin and z_at_xmin <= w_zmax:
-			pts.append(Vector2(w_xmin, z_at_xmin))
-		var z_at_xmax := w_xmax + c
-		if z_at_xmax >= w_zmin and z_at_xmax <= w_zmax:
-			pts.append(Vector2(w_xmax, z_at_xmax))
-		var x_at_zmin := w_zmin - c
-		if x_at_zmin > w_xmin and x_at_zmin < w_xmax:
-			pts.append(Vector2(x_at_zmin, w_zmin))
-		var x_at_zmax := w_zmax - c
-		if x_at_zmax > w_xmin and x_at_zmax < w_xmax:
-			pts.append(Vector2(x_at_zmax, w_zmax))
-
-		if pts.size() >= 2:
-			var p1 := pts[0]
-			var p2 := pts[1]
-			var mid := (p1 + p2) * 0.5
-			var seg_len := p1.distance_to(p2)
-			if seg_len > 0.4:
-				var diag1 := _create_box(Vector3(0.12, 0.02, seg_len), yellow_mat)
-				diag1.position = Vector3(mid.x, y, mid.y)
-				diag1.rotation_degrees.y = 45
-				junction_node.add_child(diag1)
-
-	# -45-degree diagonal lines: z + x = c
-	for step_i in range(-4, 12):
-		var c := float(step_i) * 1.5
-		var pts: Array[Vector2] = []
-		var z_at_xmin := c - w_xmin
-		if z_at_xmin >= w_zmin and z_at_xmin <= w_zmax:
-			pts.append(Vector2(w_xmin, z_at_xmin))
-		var z_at_xmax := c - w_xmax
-		if z_at_xmax >= w_zmin and z_at_xmax <= w_zmax:
-			pts.append(Vector2(w_xmax, z_at_xmax))
-		var x_at_zmin := c - w_zmin
-		if x_at_zmin > w_xmin and x_at_zmin < w_xmax:
-			pts.append(Vector2(x_at_zmin, w_zmin))
-		var x_at_zmax := c - w_zmax
-		if x_at_zmax > w_xmin and x_at_zmax < w_xmax:
-			pts.append(Vector2(x_at_zmax, w_zmax))
-
-		if pts.size() >= 2:
-			var p1 := pts[0]
-			var p2 := pts[1]
-			var mid := (p1 + p2) * 0.5
-			var seg_len := p1.distance_to(p2)
-			if seg_len > 0.4:
-				var diag2 := _create_box(Vector3(0.12, 0.02, seg_len), yellow_mat)
-				diag2.position = Vector3(mid.x, y, mid.y)
-				diag2.rotation_degrees.y = -45
-				junction_node.add_child(diag2)
 
 	# 4. 1.18 Lane Direction Arrows:
 	# Main road Southbound approach (Z = -16.0):
@@ -809,7 +729,7 @@ func _build_arrow_1_18(pos: Vector3, arrow_type: String, mat: Material, yaw: flo
 
 
 func _setup_signs(parent: Node3D) -> void:
-	var sign_scale := 2.2
+	var sign_scale := 1.4
 
 	var create_sign := func(s_name: String, sign_id: String, pos: Vector3) -> Sprite3D:
 		var sprite := Sprite3D.new()
@@ -826,8 +746,8 @@ func _setup_signs(parent: Node3D) -> void:
 	var create_pole := func(pos: Vector3, h: float) -> MeshInstance3D:
 		var pole := MeshInstance3D.new()
 		var c_mesh := CylinderMesh.new()
-		c_mesh.top_radius = 0.045
-		c_mesh.bottom_radius = 0.045
+		c_mesh.top_radius = 0.04
+		c_mesh.bottom_radius = 0.04
 		c_mesh.height = h
 		pole.mesh = c_mesh
 		var pole_mat := StandardMaterial3D.new()
@@ -839,53 +759,52 @@ func _setup_signs(parent: Node3D) -> void:
 		parent.add_child(pole)
 		return pole
 
-	# 1. Sign 2.1 (Главная дорога) on main road NE sidewalk (behind curb X = 4.2):
-	create_sign.call("Sign_2_1", "2.1", Vector3(4.8, 3.2, -3.5))
-	create_pole.call(Vector3(4.8, 1.6, -3.5), 3.2)
+	# 1. Sign 2.1 (Главная дорога) on main road:
+	# Advance position on NW sidewalk (right-hand curb) before crosswalk & stop line (Z = -11.5):
+	create_sign.call("Sign_2_1", "2.1", Vector3(-4.8, 3.0, -11.5))
+	create_pole.call(Vector3(-4.8, 1.5, -11.5), 3.0)
 
-	# Duplicate Sign 2.1 on South approach SW sidewalk (behind curb X = -4.2):
-	create_sign.call("Sign_2_1_South", "2.1", Vector3(-4.8, 3.2, 13.5))
-	create_pole.call(Vector3(-4.8, 1.6, 13.5), 3.2)
+	# South approach departure Sign 2.1 on SE sidewalk:
+	create_sign.call("Sign_2_1_South", "2.1", Vector3(4.8, 3.0, 18.5))
+	create_pole.call(Vector3(4.8, 1.5, 18.5), 3.0)
 
-	# 2. Sign 2.4 (Уступите дорогу) on cross street SW sidewalk (behind curb Z = 11.8):
-	create_sign.call("Sign_2_4", "2.4", Vector3(-5.2, 3.2, 12.6))
-	create_pole.call(Vector3(-5.2, 1.6, 12.6), 3.2)
+	# 2. Sign 2.4 (Уступите дорогу) on cross street secondary approaches:
+	# West arm: right side of approaching Eastbound traffic on SW sidewalk before stop line (X = -11.5, Z = 12.6):
+	create_sign.call("Sign_2_4", "2.4", Vector3(-11.5, 3.0, 12.6))
+	create_pole.call(Vector3(-11.5, 1.5, 12.6), 3.0)
 
-	# Duplicate Sign 2.4 on West arm NW sidewalk (behind curb Z = -1.8):
-	create_sign.call("Sign_2_4_NW", "2.4", Vector3(-5.2, 3.2, -2.6))
-	create_pole.call(Vector3(-5.2, 1.6, -2.6), 3.2)
+	# East arm: right side of approaching Westbound traffic on NE sidewalk before stop line (X = 11.5, Z = -2.6):
+	create_sign.call("Sign_2_4_East", "2.4", Vector3(11.5, 3.0, -2.6))
+	create_pole.call(Vector3(11.5, 1.5, -2.6), 3.0)
 
-	# Duplicate Sign 2.4 on East arm NE sidewalk (behind curb Z = -1.8):
-	create_sign.call("Sign_2_4_East", "2.4", Vector3(5.2, 3.2, -2.6))
-	create_pole.call(Vector3(5.2, 1.6, -2.6), 3.2)
+	# 3. Pedestrian crossing signs 5.19.1 / 5.19.2:
+	# North crosswalk (Z = -7.75, width [-9.0, -6.5]):
+	create_sign.call("Sign_5_19_1", "5.19.1", Vector3(-4.8, 2.7, -9.0))
+	create_pole.call(Vector3(-4.8, 1.35, -9.0), 2.7)
 
-	# 3. Pedestrian crossing signs 5.19.1 / 5.19.2 (North crosswalk):
-	create_sign.call("Sign_5_19_1", "5.19.1", Vector3(4.8, 3.0, -8.2))
-	create_pole.call(Vector3(4.8, 1.5, -8.2), 3.0)
+	create_sign.call("Sign_5_19_2", "5.19.2", Vector3(4.8, 2.7, -6.5))
+	create_pole.call(Vector3(4.8, 1.35, -6.5), 2.7)
 
-	create_sign.call("Sign_5_19_2", "5.19.2", Vector3(-4.8, 3.0, -7.3))
-	create_pole.call(Vector3(-4.8, 1.5, -7.3), 3.0)
+	# South crosswalk (Z = 15.25, width [14.0, 16.5]):
+	create_sign.call("Sign_5_19_1_South", "5.19.1", Vector3(-4.8, 2.7, 14.0))
+	create_pole.call(Vector3(-4.8, 1.35, 14.0), 2.7)
 
-	# South crosswalk signs:
-	create_sign.call("Sign_5_19_1_South", "5.19.1", Vector3(4.8, 3.0, 14.8))
-	create_pole.call(Vector3(4.8, 1.5, 14.8), 3.0)
+	create_sign.call("Sign_5_19_2_South", "5.19.2", Vector3(4.8, 2.7, 16.5))
+	create_pole.call(Vector3(4.8, 1.35, 16.5), 2.7)
 
-	create_sign.call("Sign_5_19_2_South", "5.19.2", Vector3(-4.8, 3.0, 15.7))
-	create_pole.call(Vector3(-4.8, 1.5, 15.7), 3.0)
+	# West crosswalk (X = -7.5, width [-8.75, -6.25]):
+	create_sign.call("Sign_5_19_1_West", "5.19.1", Vector3(-8.75, 2.7, 12.6))
+	create_pole.call(Vector3(-8.75, 1.35, 12.6), 2.7)
 
-	# West crosswalk signs (X = -7.5, curbs at Z = -1.8 and Z = 11.8):
-	create_sign.call("Sign_5_19_1_West", "5.19.1", Vector3(-8.0, 3.0, 12.6))
-	create_pole.call(Vector3(-8.0, 1.5, 12.6), 3.0)
+	create_sign.call("Sign_5_19_2_West", "5.19.2", Vector3(-6.25, 2.7, -2.6))
+	create_pole.call(Vector3(-6.25, 1.35, -2.6), 2.7)
 
-	create_sign.call("Sign_5_19_2_West", "5.19.2", Vector3(-7.0, 3.0, -2.6))
-	create_pole.call(Vector3(-7.0, 1.5, -2.6), 3.0)
+	# East crosswalk (X = 7.5, width [6.25, 8.75]):
+	create_sign.call("Sign_5_19_1_East", "5.19.1", Vector3(8.75, 2.7, -2.6))
+	create_pole.call(Vector3(8.75, 1.35, -2.6), 2.7)
 
-	# East crosswalk signs (X = 7.5, curbs at Z = -1.8 and Z = 11.8):
-	create_sign.call("Sign_5_19_1_East", "5.19.1", Vector3(8.0, 3.0, -2.6))
-	create_pole.call(Vector3(8.0, 1.5, -2.6), 3.0)
-
-	create_sign.call("Sign_5_19_2_East", "5.19.2", Vector3(7.0, 3.0, 12.6))
-	create_pole.call(Vector3(7.0, 1.5, 12.6), 3.0)
+	create_sign.call("Sign_5_19_2_East", "5.19.2", Vector3(6.25, 2.7, 12.6))
+	create_pole.call(Vector3(6.25, 1.35, 12.6), 2.7)
 
 
 func _build_city_scenery() -> void:
@@ -909,7 +828,7 @@ func _build_city_scenery() -> void:
 	# Modern Street Lamps at corners and along sidewalk avenues
 	var lamp_coords := [
 		Vector3(-5.8, 0.15, -4.0),
-		Vector3(5.8, 0.15, -4.0),
+		Vector3(5.8, 0.15, -5.2),
 		Vector3(-5.8, 0.15, 13.5),
 		Vector3(5.8, 0.15, 13.5),
 		Vector3(-5.8, 0.15, -22.0),
@@ -1022,21 +941,15 @@ func _build_city_scenery() -> void:
 	_put_prop("buildings/home_5", Vector3(26.0, 0.0, -26.0), 0.0, Vector3.ONE, Color("#C0B29E"))
 	_put_prop("buildings/block_5", Vector3(12.0, 0.0, -16.0), -PI * 0.5, Vector3.ONE, Color("#A89480"))
 
-	# SW quadrant (completely fills bottom-left empty screen area)
-	_put_prop("buildings/block_4", Vector3(-18.0, 0.0, 18.0), PI * 0.5, Vector3.ONE, Color("#987654"))
-	_put_prop("buildings/tower_2", Vector3(-21.0, 0.0, 32.0), PI * 0.5, Vector3.ONE, Color("#7A8B9C"))
-	_put_prop("buildings/home_1", Vector3(-28.0, 0.0, 16.0), 0.0, Vector3.ONE, Color("#7D8B78"))
-	_put_prop("buildings/block_5", Vector3(-12.0, 0.0, 26.0), PI * 0.5, Vector3.ONE, Color("#A89480"))
-	_put_prop("buildings/block_2", Vector3(-20.0, 0.0, 38.0), PI * 0.5, Vector3.ONE, Color("#95928C"))
-	_put_prop("buildings/home_0", Vector3(-12.0, 0.0, 38.0), PI * 0.5, Vector3.ONE, Color("#C8B896"))
+	# SW quadrant residential buildings set back from intersection
+	_put_prop("buildings/home_1", Vector3(-32.0, 0.0, 18.0), 0.0, Vector3.ONE, Color("#7D8B78"))
+	_put_prop("buildings/home_0", Vector3(-32.0, 0.0, 32.0), PI * 0.5, Vector3.ONE, Color("#C8B896"))
+	_put_prop("buildings/home_3", Vector3(-24.0, 0.0, 38.0), PI * 0.5, Vector3.ONE, Color("#C0B29E"))
 
-	# SE quadrant (completely fills bottom-right empty screen area)
-	_put_prop("buildings/block_7", Vector3(18.0, 0.0, 18.0), -PI * 0.5, Vector3.ONE, Color("#8CA0BA"))
-	_put_prop("buildings/tower_3", Vector3(21.0, 0.0, 32.0), -PI * 0.5, Vector3.ONE, Color("#9C8578"))
-	_put_prop("buildings/home_3", Vector3(28.0, 0.0, 16.0), 0.0, Vector3.ONE, Color("#C0B29E"))
-	_put_prop("buildings/home_4", Vector3(12.0, 0.0, 26.0), -PI * 0.5, Vector3.ONE, Color("#B87D6E"))
-	_put_prop("buildings/block_6", Vector3(20.0, 0.0, 38.0), -PI * 0.5, Vector3.ONE, Color("#B8AA94"))
-	_put_prop("buildings/block_1", Vector3(12.0, 0.0, 38.0), -PI * 0.5, Vector3.ONE, Color("#8CA0BA"))
+	# SE quadrant (camera foreground: kept clear of massive skyscrapers; set back behind park)
+	_put_prop("buildings/home_4", Vector3(38.0, 0.0, 32.0), -PI * 0.5, Vector3.ONE, Color("#B87D6E"))
+	_put_prop("buildings/home_2", Vector3(36.0, 0.0, 18.0), 0.0, Vector3.ONE, Color("#7D8B78"))
+	_put_prop("buildings/home_5", Vector3(38.0, 0.0, 44.0), 0.0, Vector3.ONE, Color("#C0B29E"))
 
 	# Authentic parked cars along sidewalks / parking bays in all 4 directions
 	_put_parked_car("sedan", Vector3(-18.0, 0.0, 11.2), PI * 0.5, Color("#1E88E5"))
@@ -2145,10 +2058,10 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	var stop_required := false
 	car.target_speed = 11.0 + (1.5 if game_clock > 40.0 else 0.0)
 
-	const Z_STOP := -3.5       # Stop line 1.12 at intersection entrance Z = -3.5
+	const Z_STOP := -10.0      # Stop line 1.12 before zebra crosswalk at Z = -10.0
 	const Z_ZEBRA_STOP := -10.5 # Stop line before zebra crosswalk (stop line at Z = -10.0, zebra at Z = -7.75)
-	const X_PRIO_STOP := -5.6   # Yield line at X = -5.0 (Sign 2.4 West)
-	const X_EAST_STOP := 5.6    # Yield line at X = 5.0 (Sign 2.4 East)
+	const X_PRIO_STOP := -10.2  # Stop line 1.12 before zebra crosswalk at X = -9.75
+	const X_EAST_STOP := 10.2   # Stop line 1.12 before zebra crosswalk at X = 9.75
 
 	# 1. Main road traffic stop: respected when light_state is red/yellow
 	if car.lane in [0, 1] and absf(car.rotation.y) < 0.45:
@@ -2183,7 +2096,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 							stop_required = true
 
 	# 3. Priority sign stop on secondary street (West arm: Sign 2.4 Yield)
-	if car.lane == 2 and car.position.x < -5.0 and car.position.x > -20.0:
+	if car.lane == 2 and car.position.x < -9.5 and car.position.x > -25.0:
 		var main_traffic_present := false
 		for other in cars:
 			if other != car and is_instance_valid(other) and other.lane in [0, 1] and absf(other.position.x) < 3.5 and other.position.z > -20.0 and other.position.z < 8.0:
@@ -2203,7 +2116,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 						stop_required = true
 
 	# 3b. Priority yield stop on East arm (lane 3: yield to main road traffic per un-signalized rules)
-	if car.lane == 3 and car.position.x > 5.0 and car.position.x < 20.0:
+	if car.lane == 3 and car.position.x > 9.5 and car.position.x < 25.0:
 		var main_traffic_present := false
 		for other in cars:
 			if other != car and is_instance_valid(other) and other.lane in [0, 1] and absf(other.position.x) < 3.5 and other.position.z > -20.0 and other.position.z < 8.0:
@@ -2328,9 +2241,9 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			elif light_state in ["red", "yellow"] and not (car.is_emergency or (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD, VIOLATION_WEATHER_SPEED])):
 				if car.position.z <= Z_STOP and car.position.z > -22.0:
 					car.position.z = minf(car.position.z, Z_STOP)
-		elif car.lane == 2 and car.position.x <= X_PRIO_STOP and car.position.x > -20.0:
+		elif car.lane == 2 and car.position.x >= X_PRIO_STOP - 0.5 and car.position.x < -4.0:
 			car.position.x = minf(car.position.x, X_PRIO_STOP)
-		elif car.lane == 3 and car.position.x >= X_EAST_STOP and car.position.x < 20.0:
+		elif car.lane == 3 and car.position.x <= X_EAST_STOP + 0.5 and car.position.x > 4.0:
 			car.position.x = maxf(car.position.x, X_EAST_STOP)
 
 	# 7. Smooth Trajectories & Turning Curves with Analytical Heading
