@@ -639,19 +639,19 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 		_build_lane_arrow(Vector3(-1.8, 0.024, z_pos), "straight_right", white_mat, PI)
 		_build_lane_arrow(Vector3(1.8, 0.024, z_pos), "straight_left", white_mat, PI)
 
-	# Cross street West arm Eastbound approach (yaw = -PI * 0.5):
+	# Cross street West arm Eastbound approach (approaching towards +X, yaw = PI * 0.5):
 	# Inner lane (lane 2 at z = 6.8): straight_left
 	# Outer lane (z = 10.0): right
 	for x_pos in [-15.0, -24.0]:
-		_build_lane_arrow(Vector3(x_pos, 0.024, 6.8), "straight_left", white_mat, -PI * 0.5)
-		_build_lane_arrow(Vector3(x_pos, 0.024, 10.0), "right", white_mat, -PI * 0.5)
+		_build_lane_arrow(Vector3(x_pos, 0.024, 6.8), "straight_left", white_mat, PI * 0.5)
+		_build_lane_arrow(Vector3(x_pos, 0.024, 10.0), "right", white_mat, PI * 0.5)
 
-	# Cross street East arm Westbound approach (yaw = PI * 0.5):
+	# Cross street East arm Westbound approach (approaching towards -X, yaw = -PI * 0.5):
 	# Inner lane (lane 3 at z = 3.2): straight_left
 	# Outer lane (z = 0.0): right
 	for x_pos in [15.0, 24.0]:
-		_build_lane_arrow(Vector3(x_pos, 0.024, 3.2), "straight_left", white_mat, PI * 0.5)
-		_build_lane_arrow(Vector3(x_pos, 0.024, 0.0), "right", white_mat, PI * 0.5)
+		_build_lane_arrow(Vector3(x_pos, 0.024, 3.2), "straight_left", white_mat, -PI * 0.5)
+		_build_lane_arrow(Vector3(x_pos, 0.024, 0.0), "right", white_mat, -PI * 0.5)
 
 
 var _arrow_meshes := {}
@@ -716,6 +716,7 @@ func _create_arrow_mesh(type: String) -> ArrayMesh:
 func _build_lane_arrow(pos: Vector3, arrow_type: String, mat: Material, yaw: float) -> void:
 	var inst := MeshInstance3D.new()
 	inst.name = "LaneArrow_" + arrow_type
+	inst.set_meta("lane_arrow", true)
 	inst.mesh = _get_arrow_mesh(arrow_type)
 	inst.material_override = mat
 	inst.position = pos
@@ -1051,13 +1052,6 @@ func _setup_traffic_lights() -> void:
 	traffic_light_node.visible = true
 	junction_node.add_child(traffic_light_node)
 
-	# - Duplicating signal near-left curb:
-	var tl_north_dup_near := TrafficSignal.make_mini({"state": "green", "arrow": "right", "arrowActive": false})
-	tl_north_dup_near.position = Vector3(4.8, 0.16, -10.2)
-	tl_north_dup_near.rotation.y = PI
-	tl_north_dup_near.visible = true
-	junction_node.add_child(tl_north_dup_near)
-
 	# - Duplicating signal far-left curb across intersection (ГОСТ Р 52289 п. 7.3.3):
 	var tl_north_dup_far := TrafficSignal.make_mini({"state": "green", "arrow": "right", "arrowActive": false})
 	tl_north_dup_far.position = Vector3(4.8, 0.16, 12.4)
@@ -1065,7 +1059,7 @@ func _setup_traffic_lights() -> void:
 	tl_north_dup_far.visible = true
 	junction_node.add_child(tl_north_dup_far)
 
-	traffic_lights_ns = [traffic_light_node, tl_north_dup_near, tl_north_dup_far]
+	traffic_lights_ns = [traffic_light_node, tl_north_dup_far]
 
 	# 2. West approach (Cross street Eastbound traffic):
 	# - Primary signal on right-hand curb before stop line at X = -9.75:
@@ -1075,21 +1069,14 @@ func _setup_traffic_lights() -> void:
 	traffic_light_ew_node.visible = true
 	junction_node.add_child(traffic_light_ew_node)
 
-	# - Duplicating signal far-left across intersection:
+	# - Duplicating signal far-left curb across intersection (ГОСТ Р 52289 п. 7.3.3):
 	var tl_west_dup_left := TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
-	tl_west_dup_left.position = Vector3(10.2, 0.16, -2.4)
+	tl_west_dup_left.position = Vector3(5.6, 0.16, -2.4)
 	tl_west_dup_left.rotation.y = -PI * 0.5
 	tl_west_dup_left.visible = true
 	junction_node.add_child(tl_west_dup_left)
 
-	# - Duplicating signal far-right across intersection:
-	var tl_west_dup_right := TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
-	tl_west_dup_right.position = Vector3(10.2, 0.16, 12.4)
-	tl_west_dup_right.rotation.y = -PI * 0.5
-	tl_west_dup_right.visible = true
-	junction_node.add_child(tl_west_dup_right)
-
-	traffic_lights_west = [traffic_light_ew_node, tl_west_dup_left, tl_west_dup_right]
+	traffic_lights_west = [traffic_light_ew_node, tl_west_dup_left]
 
 	# 3. East approach (Cross street Westbound traffic):
 	# - Primary signal on right-hand curb before stop line at X = 9.75:
@@ -1099,21 +1086,14 @@ func _setup_traffic_lights() -> void:
 	traffic_light_east_node.visible = true
 	junction_node.add_child(traffic_light_east_node)
 
-	# - Duplicating signal far-left across intersection:
+	# - Duplicating signal far-left curb across intersection (ГОСТ Р 52289 п. 7.3.3):
 	var tl_east_dup_left := TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
-	tl_east_dup_left.position = Vector3(-10.2, 0.16, 12.4)
+	tl_east_dup_left.position = Vector3(-5.6, 0.16, 12.4)
 	tl_east_dup_left.rotation.y = PI * 0.5
 	tl_east_dup_left.visible = true
 	junction_node.add_child(tl_east_dup_left)
 
-	# - Duplicating signal far-right across intersection:
-	var tl_east_dup_right := TrafficSignal.make_mini({"state": "red", "arrow": "right", "arrowActive": false})
-	tl_east_dup_right.position = Vector3(-10.2, 0.16, -2.4)
-	tl_east_dup_right.rotation.y = PI * 0.5
-	tl_east_dup_right.visible = true
-	junction_node.add_child(tl_east_dup_right)
-
-	traffic_lights_east = [traffic_light_east_node, tl_east_dup_left, tl_east_dup_right]
+	traffic_lights_east = [traffic_light_east_node, tl_east_dup_left]
 
 	light_state = "green"
 	light_phase = "ns_green"
@@ -1421,10 +1401,10 @@ func _get_weather_preset(idx: int) -> Dictionary:
 	match idx:
 		0: # Day - natural filmic sunlight matching Crossroads & Living City
 			return {
-				"sun_energy": 0.63,
-				"sun_color": Color("#FFF9EE"),
+				"sun_energy": 0.56,
+				"sun_color": Color("#FFE3B8"),
 				"sky_color": Color("#35465C"),
-				"amb_energy": 0.47,
+				"amb_energy": 0.40,
 				"amb_color": Color("#FFF1DE"),
 				"lamp_energy": 0.0,
 				"asphalt_rough": 0.88
@@ -1708,7 +1688,7 @@ func _spawn_procedural_car() -> void:
 			return
 		elif lane == 2 and car.lane == 2 and car.position.x < -20.0:
 			return
-		elif lane == 3 and car.lane == 3 and car.position.x > 20.0:
+		elif lane == 3 and car.lane == 3 and car.position.x > 22.0:
 			return
 
 	violation_schedule_timer += 1.0
@@ -1734,18 +1714,13 @@ func _spawn_procedural_car() -> void:
 		route = "east_west"
 
 	var is_emerg := false
-	if not is_violator and (game_clock > 6.0 or patrol_elapsed > 8.0) and randf() < 0.18:
+	if not is_violator and (game_clock > 6.0 or patrol_elapsed > 8.0) and randf() < 0.18 and lane in [0, 1]:
 		is_emerg = true
 
 	var car := spawn_specific_car(route, lane, is_violator, v_type)
 	if is_violator and v_type == VIOLATION_EMERGENCY_YIELD:
 		var chaser := spawn_specific_car(route, lane, false, "")
-		if lane == 3:
-			chaser.position = car.position + Vector3(14.0, 0, 0)
-		elif lane == 2:
-			chaser.position = car.position - Vector3(14.0, 0, 0)
-		else:
-			chaser.position = car.position - Vector3(0, 0, 14.0)
+		chaser.position = car.position - Vector3(0, 0, 14.0)
 		_setup_emergency_appearance(chaser)
 	elif is_emerg:
 		_setup_emergency_appearance(car)
@@ -2200,11 +2175,13 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		if must_stop_ped:
 			if car.position.z <= Z_ZEBRA_STOP:
 				target_stop_z = minf(target_stop_z, Z_ZEBRA_STOP)
-			elif car.position.z < -10.5:
-				target_stop_z = minf(target_stop_z, Z_ZEBRA_STOP)
-				car.speed = 0.0
-				car.target_speed = 0.0
-				stop_required = true
+			elif car.position.z < -6.5:
+				var ped_danger := absf(ped_pos_x - car.position.x) < 2.2
+				if ped_danger:
+					target_stop_z = minf(target_stop_z, car.position.z)
+					car.speed = 0.0
+					car.target_speed = 0.0
+					stop_required = true
 
 		if target_stop_z < 900.0:
 			var dist_to_stop := target_stop_z - car.position.z
@@ -2336,33 +2313,13 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			if (other.lane == 3 or (other.rotation.y < -1.0 and other.position.x <= -4.5)) and other.position.x < car.position.x:
 				var dx := car.position.x - other.position.x
 				var dz := absf(other.position.z - car.position.z)
-				if dx > 0.0 and dx < lead_dist and dz < 2.4:
+				if dx > 0.0 and dx < lead_dist and (dz < 3.8 or (car.lane == 3 and other.lane == 3)):
 					lead_dist = dx
 					lead_speed = other.speed
 					lead_car = other
 
-	# Emergency vehicle yielding logic on East road (lane 3)
-	if car.lane == 3 and not car.is_emergency:
-		var has_emerg := false
-		for other in cars:
-			if other != car and is_instance_valid(other) and other.is_emergency and other.lane == 3:
-				var dist_behind := other.position.x - car.position.x
-				if dist_behind > 0.0 and dist_behind < 24.0:
-					has_emerg = true
-					var current_z: float = car.get_meta("yielding_z", 3.2)
-					var new_z := move_toward(current_z, 0.8, 3.5 * delta)
-					car.set_meta("yielding_z", new_z)
-					break
-		if not has_emerg and car.has_meta("yielding_z"):
-			var current_z: float = car.get_meta("yielding_z")
-			var new_z := move_toward(current_z, 3.2, 2.5 * delta)
-			if is_equal_approx(new_z, 3.2):
-				car.remove_meta("yielding_z")
-			else:
-				car.set_meta("yielding_z", new_z)
-
-	const MIN_GAP := 5.2
-	var desired_gap := MIN_GAP + maxf(0.0, car.speed) * 0.75
+	const MIN_GAP := 7.0
+	var desired_gap := MIN_GAP + maxf(0.0, car.speed) * 0.85
 
 	if lead_dist < desired_gap:
 		if lead_dist <= MIN_GAP:
@@ -2538,11 +2495,8 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				car.rotation.y = 0.0
 
 	elif car.lane == 3:
-		# Westbound traffic along 4-lane cross street (Z ~ 3.2, unless yielding to emergency vehicle)
-		if not car.has_meta("yielding_z"):
-			car.position.z = 3.2
-		else:
-			car.position.z = car.get_meta("yielding_z")
+		# Westbound traffic along 4-lane cross street (Z = 3.2, centered in inner Westbound lane)
+		car.position.z = 3.2
 		car.position.x -= step_dist
 		car.rotation.y = -PI * 0.5
 
@@ -2708,9 +2662,11 @@ func handle_car_tapped(car: ViolatorCar, screen_pos: Vector2) -> void:
 		return
 
 	if not car.is_violator:
-		# If car is encroaching/stopped on zebra crosswalk with pedestrian on the roadway:
-		# Objective violation of ПДД (п. 12.4 / 14.1 / 6.13)
-		if is_pedestrian_on_roadway() and car.position.z > -11.5 and car.position.z < -5.5 and car.speed < 2.5:
+		# If car is encroaching/stopped on zebra crosswalk or past stop line while pedestrian is crossing or approaching:
+		# Objective violation of ПДД (п. 14.1 / 12.4)
+		var ped_present := is_pedestrian_on_roadway() or is_pedestrian_approaching()
+		var on_zebra_zone := car.position.z > -12.5 and car.position.z < -4.5 and car.speed < 4.0
+		if ped_present and on_zebra_zone:
 			car.is_violator = true
 			car.violation_type = VIOLATION_PEDESTRIAN_YIELD
 			car.violation_state = "active"

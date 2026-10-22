@@ -164,6 +164,60 @@ func _run_checks() -> void:
 	lane3_lights.position.x = -8.5
 	_check("Lane 3 NO_LIGHTS at X=-8.5 exits window", game._is_car_exiting_violation_window(lane3_lights))
 
+	# 14. Lane 3 Anti-Ramming Headway Check
+	var lane3_lead = game.spawn_specific_car("east_west", 3, false, "")
+	lane3_lead.position.x = 12.4
+	lane3_lead.speed = 0.0
+	lane3_lead.target_speed = 0.0
+
+	var lane3_follower = game.spawn_specific_car("east_west", 3, false, "")
+	lane3_follower.position.x = 22.0
+	lane3_follower.speed = 10.0
+
+	for step in 75:
+		game._advance_car_behavior(lane3_follower, 0.033)
+
+	var lane3_gap = lane3_follower.position.x - lane3_lead.position.x
+	_check("Lane 3 follower does NOT ram into lead car (gap >= 6.0m)", lane3_gap >= 6.0)
+	_check("Lane 3 follower slows down / stops behind lead car (speed < 1.0)", lane3_follower.speed < 1.0)
+
+	# 15. Duplicating Traffic Signals
+	_check("North duplicating traffic light exists", game.traffic_lights_ns.size() >= 2)
+	_check("West duplicating traffic light exists", game.traffic_lights_west.size() >= 2)
+	_check("East duplicating traffic light exists", game.traffic_lights_east.size() >= 2)
+	_check("North duplicate and primary have distinct positions", game.traffic_lights_ns[0].position.distance_to(game.traffic_lights_ns[1].position) > 2.0)
+	_check("West duplicate and primary have distinct positions", game.traffic_lights_west[0].position.distance_to(game.traffic_lights_west[1].position) > 2.0)
+	_check("East duplicate and primary have distinct positions", game.traffic_lights_east[0].position.distance_to(game.traffic_lights_east[1].position) > 2.0)
+
+	# 16. Arrow Markings Direction Verification
+	var arrow_found_north := false
+	var arrow_found_west := false
+	var arrow_found_east := false
+	for child in game.junction_node.get_children():
+		if child is MeshInstance3D and child.has_meta("lane_arrow"):
+			var yaw := wrapf(child.rotation.y, -PI, PI)
+			if absf(absf(yaw) - PI) < 0.05:
+				arrow_found_north = true
+			elif absf(yaw - PI * 0.5) < 0.05:
+				arrow_found_west = true
+			elif absf(yaw - (-PI * 0.5)) < 0.05:
+				arrow_found_east = true
+	_check("North approach arrows face South (+Z, yaw = PI)", arrow_found_north)
+	_check("West approach arrows face East (+X, yaw = PI * 0.5)", arrow_found_west)
+	_check("East approach arrows face West (-X, yaw = -PI * 0.5)", arrow_found_east)
+
+	# 17. Zebra Crosswalk Encroachment Detection
+	var zebra_car = game.spawn_specific_car("main_straight", 0, false, "")
+	zebra_car.position.z = -11.0 # Encroaching past stop line into crosswalk
+	zebra_car.speed = 0.0
+	game.ped_pos_x = 0.0 # Pedestrian on zebra
+	game.ped_wait_timer = 0.0
+	var initial_lives = game.lives
+	game.handle_car_tapped(zebra_car, Vector2(200, 200))
+	_check("Car stopped on zebra is converted to violator without false alarm life penalty", game.lives == initial_lives)
+	_check("Car on zebra violation type is pedestrian_yield", zebra_car.violation_type == ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
+	_check("Car on zebra violation state is active", zebra_car.violation_state == "active")
+
 	game.queue_free()
 	await process_frame
 	
