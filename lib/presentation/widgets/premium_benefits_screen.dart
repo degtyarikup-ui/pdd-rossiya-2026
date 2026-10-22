@@ -64,7 +64,7 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen> {
                                   Padding(
                                     padding: const EdgeInsets.fromLTRB(
                                       AppDimensions.screenPadding,
-                                      36,
+                                      46,
                                       AppDimensions.screenPadding,
                                       24,
                                     ),
@@ -73,6 +73,7 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen> {
                                         _Benefit(
                                           asset: 'feature_games.svg',
                                           title: l10n.premiumBenefitGamesTitle,
+                                          inlineDetail: true,
                                           detail:
                                               l10n.premiumBenefitGamesDetail,
                                         ),
@@ -89,12 +90,14 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen> {
                                           detail:
                                               l10n.premiumBenefitVoiceDetail,
                                           voiceIcon: true,
+                                          emphasizeDetail: true,
                                         ),
                                         const SizedBox(height: 24),
                                         _Benefit(
                                           asset: 'feature_feed.svg',
                                           title: l10n.premiumBenefitFeedTitle,
                                           detail: l10n.premiumBenefitFeedDetail,
+                                          emphasizeDetail: true,
                                         ),
                                       ],
                                     ),
@@ -119,49 +122,34 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen> {
                             AppDimensions.screenPadding,
                             12,
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              ElevatedButton(
-                                key: const ValueKey('premium-show-plans'),
-                                onPressed: _showingPlans ? null : _showPlans,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.white,
-                                  foregroundColor: AppColors.accent,
-                                  disabledBackgroundColor: AppColors.white,
-                                  disabledForegroundColor: AppColors.accent,
-                                  minimumSize: const Size.fromHeight(56),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 16,
-                                  ),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      AppDimensions.buttonRadius,
-                                    ),
-                                  ),
-                                ),
-                                child: Text(
-                                  l10n.paywallSubscribe,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                          child: ElevatedButton(
+                            key: const ValueKey('premium-show-plans'),
+                            onPressed: _showingPlans ? null : _showPlans,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.white,
+                              foregroundColor: AppColors.accent,
+                              disabledBackgroundColor: AppColors.white,
+                              disabledForegroundColor: AppColors.accent,
+                              minimumSize: const Size(double.infinity, 56),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.buttonRadius,
                                 ),
                               ),
-                              const SizedBox(height: 10),
-                              Text(
-                                l10n.paywallFreeNote,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  height: 1.3,
-                                  color: AppColors.white.withValues(alpha: .85),
-                                ),
+                            ),
+                            child: Text(
+                              l10n.paywallSubscribe,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -395,7 +383,7 @@ class _ProofPoint extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         height: 1.2,
-                        color: AppColors.white.withValues(alpha: .8),
+                        color: AppColors.white.withValues(alpha: .6),
                       ),
                     ),
                   ],
@@ -421,15 +409,31 @@ class _Benefit extends StatelessWidget {
     required this.title,
     required this.detail,
     this.voiceIcon = false,
+    this.inlineDetail = false,
+    this.emphasizeDetail = false,
   });
 
   final String asset;
   final String title;
   final String detail;
   final bool voiceIcon;
+  final bool inlineDetail;
+  final bool emphasizeDetail;
 
   @override
   Widget build(BuildContext context) {
+    const textStyle = TextStyle(
+      fontSize: 19,
+      fontWeight: FontWeight.w700,
+      height: 1.1,
+    );
+    final mutedColor = AppColors.white.withValues(alpha: .4);
+    final titleStyle = textStyle.copyWith(
+      color: emphasizeDetail ? mutedColor : AppColors.white,
+    );
+    final detailStyle = textStyle.copyWith(
+      color: emphasizeDetail ? AppColors.white : mutedColor,
+    );
     final icon = SvgPicture.asset(
       'assets/images/premium/$asset',
       excludeFromSemantics: true,
@@ -446,36 +450,34 @@ class _Benefit extends StatelessWidget {
                       AppDimensions.cardRadius,
                     ),
                   ),
-                  child: Center(child: icon),
+                  child: Center(
+                    child: SizedBox.square(
+                      dimension: 56 * 24 / 80,
+                      child: FittedBox(child: icon),
+                    ),
+                  ),
                 )
               : icon,
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.white,
-                  height: 1.15,
+          child: inlineDetail
+              ? Text.rich(
+                  TextSpan(
+                    style: textStyle,
+                    children: [
+                      TextSpan(text: '$title ', style: titleStyle),
+                      TextSpan(text: detail, style: detailStyle),
+                    ],
+                  ),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: titleStyle),
+                    Text(detail, style: detailStyle),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                detail,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.white.withValues(alpha: .8),
-                  height: 1.2,
-                ),
-              ),
-            ],
-          ),
         ),
       ],
     );

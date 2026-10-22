@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -32,6 +33,67 @@ void _testPremium(String description, WidgetTesterCallback callback) {
       debugDefaultTargetPlatformOverride = null;
     }
   });
+}
+
+void _expectBenefitEmphasis(WidgetTester tester) {
+  final muted = AppColors.white.withValues(alpha: .4);
+  final games = find.byWidgetPredicate(
+    (widget) =>
+        widget is RichText &&
+        widget.text.toPlainText().contains(appL10n.premiumBenefitGamesTitle) &&
+        widget.text.toPlainText().contains(appL10n.premiumBenefitGamesDetail),
+  );
+  expect(games, findsOneWidget);
+  final paragraph = tester.renderObject<RenderParagraph>(games);
+  final runs = <(String, TextStyle)>[];
+  void collect(InlineSpan span, TextStyle inherited) {
+    final effective = inherited.merge(span.style);
+    if (span is TextSpan) {
+      if (span.text case final String text when text.trim().isNotEmpty) {
+        runs.add((text.trim(), effective));
+      }
+      for (final child in span.children ?? const <InlineSpan>[]) {
+        collect(child, effective);
+      }
+    }
+  }
+
+  collect(paragraph.text, const TextStyle());
+  expect(runs, hasLength(2));
+  expect(runs[0].$1, appL10n.premiumBenefitGamesTitle);
+  expect(runs[0].$2.color, AppColors.white);
+  expect(runs[1].$1, appL10n.premiumBenefitGamesDetail);
+  expect(runs[1].$2.color, muted);
+  expect(runs[0].$2.fontSize, runs[1].$2.fontSize);
+  expect(runs[0].$2.fontWeight, runs[1].$2.fontWeight);
+
+  for (final benefit in [
+    (
+      title: appL10n.premiumBenefitAiTitle,
+      detail: appL10n.premiumBenefitAiDetail,
+      titleColor: AppColors.white,
+      detailColor: muted,
+    ),
+    (
+      title: appL10n.premiumBenefitVoiceTitle,
+      detail: appL10n.premiumBenefitVoiceDetail,
+      titleColor: muted,
+      detailColor: AppColors.white,
+    ),
+    (
+      title: appL10n.premiumBenefitFeedTitle,
+      detail: appL10n.premiumBenefitFeedDetail,
+      titleColor: muted,
+      detailColor: AppColors.white,
+    ),
+  ]) {
+    final title = tester.widget<Text>(find.text(benefit.title));
+    final detail = tester.widget<Text>(find.text(benefit.detail));
+    expect(title.style?.color, benefit.titleColor);
+    expect(detail.style?.color, benefit.detailColor);
+    expect(title.style?.fontSize, detail.style?.fontSize);
+    expect(title.style?.fontWeight, detail.style?.fontWeight);
+  }
 }
 
 void main() {
@@ -212,6 +274,8 @@ void main() {
             );
           }
           expect(find.byType(PremiumPlansSheet), findsNothing);
+          expect(find.text(appL10n.paywallFreeNote), findsNothing);
+          _expectBenefitEmphasis(tester);
           expect(find.text('290,00 ₽'), findsNothing);
           expect(find.byKey(_showPlans).hitTestable(), findsOneWidget);
           expect(tester.takeException(), isNull);
@@ -224,13 +288,17 @@ void main() {
           // The last benefit remains reachable even when text doubles or the
           // viewport becomes landscape; the fixed CTA stays in the safe area.
           await tester.ensureVisible(
-            find.text(appL10n.premiumBenefitFeedTitle),
+            find.text(appL10n.premiumBenefitFeedDetail),
           );
           await tester.pumpAndSettle();
           final lastBenefit = tester.getRect(
-            find.text(appL10n.premiumBenefitFeedTitle),
+            find.text(appL10n.premiumBenefitFeedDetail),
           );
           final cta = tester.getRect(find.byKey(_showPlans));
+          expect(
+            cta.width,
+            closeTo(configuration.size.width.clamp(0, 600) - 40, 1),
+          );
           expect(lastBenefit.top, greaterThanOrEqualTo(0));
           expect(lastBenefit.bottom, lessThanOrEqualTo(cta.top));
           expect(find.byKey(_showPlans).hitTestable(), findsOneWidget);
@@ -240,6 +308,7 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byType(PremiumPlansSheet), findsOneWidget);
           expect(find.text(appL10n.premiumPlansTitle), findsOneWidget);
+          expect(find.text(appL10n.paywallFreeNote), findsOneWidget);
           expect(find.text('290,00 ₽'), findsOneWidget);
           expect(find.text('99,00 ₽'), findsOneWidget);
           expect(tester.takeException(), isNull);

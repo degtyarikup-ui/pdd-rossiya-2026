@@ -1969,13 +1969,13 @@
   "premiumRatingValue": "4,7",
   "premiumRatingLabel": "средний рейтинг",
   "premiumPassRateValue": "96,8%",
-  "premiumPassRateLabel": "сдали экзамен",
-  "premiumBenefitGamesTitle": "Безлимитные заезды",
-  "premiumBenefitGamesDetail": "в «Живом городе»",
+  "premiumPassRateLabel": "процент сдавших",
+  "premiumBenefitGamesTitle": "Безлимитный",
+  "premiumBenefitGamesDetail": "доступ\nко всем играм",
   "premiumBenefitAiTitle": "ИИ-инструктор",
-  "premiumBenefitAiDetail": "До 200 разборов в сутки",
-  "premiumBenefitVoiceTitle": "Студийная озвучка",
-  "premiumBenefitVoiceDetail": "на русском языке",
-  "premiumBenefitFeedTitle": "Лента вопросов",
-  "premiumBenefitFeedDetail": "без ограничений"
+  "premiumBenefitAiDetail": "для разбора вопросов",
+  "premiumBenefitVoiceTitle": "Качественная",
+  "premiumBenefitVoiceDetail": "озвучка на русском",
+  "premiumBenefitFeedTitle": "Безлимитная",
+  "premiumBenefitFeedDetail": "лента вопросов"
 }

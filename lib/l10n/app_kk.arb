@@ -1400,13 +1400,13 @@
   "premiumRatingValue": "4,7",
   "premiumRatingLabel": "орташа рейтинг",
   "premiumPassRateValue": "96,8%",
-  "premiumPassRateLabel": "емтиханнан өтті",
-  "premiumBenefitGamesTitle": "Шексіз сапарлар",
-  "premiumBenefitGamesDetail": "«Жанды қалада»",
+  "premiumPassRateLabel": "емтихан тапсырғандар",
+  "premiumBenefitGamesTitle": "Шектеусіз",
+  "premiumBenefitGamesDetail": "қолжетімділік\nбарлық ойындарға",
   "premiumBenefitAiTitle": "ЖИ нұсқаушысы",
-  "premiumBenefitAiDetail": "Күніне 200 талдауға дейін",
-  "premiumBenefitVoiceTitle": "Студиялық дыбыстау",
-  "premiumBenefitVoiceDetail": "орыс тілінде",
-  "premiumBenefitFeedTitle": "Сұрақтар лентасы",
-  "premiumBenefitFeedDetail": "шектеусіз"
+  "premiumBenefitAiDetail": "сұрақтарды талдау үшін",
+  "premiumBenefitVoiceTitle": "Сапалы",
+  "premiumBenefitVoiceDetail": "орысша дыбыстау",
+  "premiumBenefitFeedTitle": "Шектеусіз",
+  "premiumBenefitFeedDetail": "сұрақтар лентасы"
 }

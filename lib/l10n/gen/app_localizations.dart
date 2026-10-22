@@ -6919,19 +6919,19 @@ abstract class AppLocalizations {
   /// No description provided for @premiumPassRateLabel.
   ///
   /// In ru, this message translates to:
-  /// **'сдали экзамен'**
+  /// **'процент сдавших'**
   String get premiumPassRateLabel;
 
   /// No description provided for @premiumBenefitGamesTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Безлимитные заезды'**
+  /// **'Безлимитный'**
   String get premiumBenefitGamesTitle;
 
   /// No description provided for @premiumBenefitGamesDetail.
   ///
   /// In ru, this message translates to:
-  /// **'в «Живом городе»'**
+  /// **'доступ\nко всем играм'**
   String get premiumBenefitGamesDetail;
 
   /// No description provided for @premiumBenefitAiTitle.
@@ -6943,31 +6943,31 @@ abstract class AppLocalizations {
   /// No description provided for @premiumBenefitAiDetail.
   ///
   /// In ru, this message translates to:
-  /// **'До 200 разборов в сутки'**
+  /// **'для разбора вопросов'**
   String get premiumBenefitAiDetail;
 
   /// No description provided for @premiumBenefitVoiceTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Студийная озвучка'**
+  /// **'Качественная'**
   String get premiumBenefitVoiceTitle;
 
   /// No description provided for @premiumBenefitVoiceDetail.
   ///
   /// In ru, this message translates to:
-  /// **'на русском языке'**
+  /// **'озвучка на русском'**
   String get premiumBenefitVoiceDetail;
 
   /// No description provided for @premiumBenefitFeedTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Лента вопросов'**
+  /// **'Безлимитная'**
   String get premiumBenefitFeedTitle;
 
   /// No description provided for @premiumBenefitFeedDetail.
   ///
   /// In ru, this message translates to:
-  /// **'без ограничений'**
+  /// **'лента вопросов'**
   String get premiumBenefitFeedDetail;
 }
 

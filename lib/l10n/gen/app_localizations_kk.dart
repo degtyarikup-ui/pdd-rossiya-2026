@@ -4127,29 +4127,29 @@ class AppLocalizationsKk extends AppLocalizations {
   String get premiumPassRateValue => '96,8%';
 
   @override
-  String get premiumPassRateLabel => 'емтиханнан өтті';
+  String get premiumPassRateLabel => 'емтихан тапсырғандар';
 
   @override
-  String get premiumBenefitGamesTitle => 'Шексіз сапарлар';
+  String get premiumBenefitGamesTitle => 'Шектеусіз';
 
   @override
-  String get premiumBenefitGamesDetail => '«Жанды қалада»';
+  String get premiumBenefitGamesDetail => 'қолжетімділік\nбарлық ойындарға';
 
   @override
   String get premiumBenefitAiTitle => 'ЖИ нұсқаушысы';
 
   @override
-  String get premiumBenefitAiDetail => 'Күніне 200 талдауға дейін';
+  String get premiumBenefitAiDetail => 'сұрақтарды талдау үшін';
 
   @override
-  String get premiumBenefitVoiceTitle => 'Студиялық дыбыстау';
+  String get premiumBenefitVoiceTitle => 'Сапалы';
 
   @override
-  String get premiumBenefitVoiceDetail => 'орыс тілінде';
+  String get premiumBenefitVoiceDetail => 'орысша дыбыстау';
 
   @override
-  String get premiumBenefitFeedTitle => 'Сұрақтар лентасы';
+  String get premiumBenefitFeedTitle => 'Шектеусіз';
 
   @override
-  String get premiumBenefitFeedDetail => 'шектеусіз';
+  String get premiumBenefitFeedDetail => 'сұрақтар лентасы';
 }

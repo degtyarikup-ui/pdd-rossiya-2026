@@ -4148,29 +4148,29 @@ class AppLocalizationsRu extends AppLocalizations {
   String get premiumPassRateValue => '96,8%';
 
   @override
-  String get premiumPassRateLabel => 'сдали экзамен';
+  String get premiumPassRateLabel => 'процент сдавших';
 
   @override
-  String get premiumBenefitGamesTitle => 'Безлимитные заезды';
+  String get premiumBenefitGamesTitle => 'Безлимитный';
 
   @override
-  String get premiumBenefitGamesDetail => 'в «Живом городе»';
+  String get premiumBenefitGamesDetail => 'доступ\nко всем играм';
 
   @override
   String get premiumBenefitAiTitle => 'ИИ-инструктор';
 
   @override
-  String get premiumBenefitAiDetail => 'До 200 разборов в сутки';
+  String get premiumBenefitAiDetail => 'для разбора вопросов';
 
   @override
-  String get premiumBenefitVoiceTitle => 'Студийная озвучка';
+  String get premiumBenefitVoiceTitle => 'Качественная';
 
   @override
-  String get premiumBenefitVoiceDetail => 'на русском языке';
+  String get premiumBenefitVoiceDetail => 'озвучка на русском';
 
   @override
-  String get premiumBenefitFeedTitle => 'Лента вопросов';
+  String get premiumBenefitFeedTitle => 'Безлимитная';
 
   @override
-  String get premiumBenefitFeedDetail => 'без ограничений';
+  String get premiumBenefitFeedDetail => 'лента вопросов';
 }

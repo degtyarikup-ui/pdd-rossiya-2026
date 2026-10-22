@@ -1400,13 +1400,13 @@
   "premiumRatingValue": "4.7",
   "premiumRatingLabel": "average rating",
   "premiumPassRateValue": "96.8%",
-  "premiumPassRateLabel": "passed the exam",
-  "premiumBenefitGamesTitle": "Unlimited drives",
-  "premiumBenefitGamesDetail": "in Living City",
+  "premiumPassRateLabel": "exam pass rate",
+  "premiumBenefitGamesTitle": "Unlimited",
+  "premiumBenefitGamesDetail": "access\nto all games",
   "premiumBenefitAiTitle": "AI instructor",
-  "premiumBenefitAiDetail": "Up to 200 explanations a day",
-  "premiumBenefitVoiceTitle": "Studio voice-over",
-  "premiumBenefitVoiceDetail": "in Russian",
-  "premiumBenefitFeedTitle": "Question feed",
-  "premiumBenefitFeedDetail": "without limits"
+  "premiumBenefitAiDetail": "for question explanations",
+  "premiumBenefitVoiceTitle": "High-quality",
+  "premiumBenefitVoiceDetail": "Russian voice-over",
+  "premiumBenefitFeedTitle": "Unlimited",
+  "premiumBenefitFeedDetail": "question feed"
 }
