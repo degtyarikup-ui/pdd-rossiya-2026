@@ -527,6 +527,11 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 	solid_pre_south_zebra.position = Vector3(0, y, 12.9)
 	junction_node.add_child(solid_pre_south_zebra)
 
+	# Stop line 1.12 before South zebra across main road at Z = 16.8
+	var stop_line_south := _create_box(Vector3(7.4, 0.02, 0.45), white_mat)
+	stop_line_south.position = Vector3(0, y, 16.8)
+	junction_node.add_child(stop_line_south)
+
 	# 1.5 Broken Lines on main road South departing
 	for z_pos in range(18, 55, 4):
 		var broken_s := _create_box(Vector3(0.16, 0.02, 2.0), white_mat)
@@ -762,12 +767,12 @@ func _setup_signs(parent: Node3D) -> void:
 
 	# 1. Sign 2.1 (Главная дорога) on main road:
 	# Position on NE sidewalk (right-hand curb) next to traffic light before stop line (Z = -10.8):
-	create_sign.call("Sign_2_1", "2.1", Vector3(4.8, 3.2, -10.8))
-	create_pole.call(Vector3(4.8, 1.6, -10.8), 3.2)
+	create_sign.call("Sign_2_1", "2.1", Vector3(4.4, 3.2, -10.8))
+	create_pole.call(Vector3(4.4, 1.6, -10.8), 3.2)
 
 	# South approach departure Sign 2.1 on SE sidewalk:
-	create_sign.call("Sign_2_1_South", "2.1", Vector3(4.8, 3.0, 18.5))
-	create_pole.call(Vector3(4.8, 1.5, 18.5), 3.0)
+	create_sign.call("Sign_2_1_South", "2.1", Vector3(4.4, 3.0, 18.5))
+	create_pole.call(Vector3(4.4, 1.5, 18.5), 3.0)
 
 	# 2. Sign 2.4 (Уступите дорогу) on cross street secondary approaches:
 	# West arm: right side of approaching Eastbound traffic on SW sidewalk before stop line (X = -11.5, Z = 12.6):
@@ -780,18 +785,18 @@ func _setup_signs(parent: Node3D) -> void:
 
 	# 3. Pedestrian crossing signs 5.19.1 / 5.19.2 (ГОСТ Р 52289 п. 5.6.24):
 	# North crosswalk (Z = -7.75, width [-9.0, -6.5]):
-	create_sign.call("Sign_5_19_1", "5.19.1", Vector3(4.8, 2.7, -9.0))
-	create_pole.call(Vector3(4.8, 1.35, -9.0), 2.7)
+	create_sign.call("Sign_5_19_1", "5.19.1", Vector3(4.4, 2.7, -9.0))
+	create_pole.call(Vector3(4.4, 1.35, -9.0), 2.7)
 
-	create_sign.call("Sign_5_19_2", "5.19.2", Vector3(-4.8, 2.7, -6.5))
-	create_pole.call(Vector3(-4.8, 1.35, -6.5), 2.7)
+	create_sign.call("Sign_5_19_2", "5.19.2", Vector3(-4.4, 2.7, -6.5))
+	create_pole.call(Vector3(-4.4, 1.35, -6.5), 2.7)
 
 	# South crosswalk (Z = 15.25, width [14.0, 16.5]):
-	create_sign.call("Sign_5_19_1_South", "5.19.1", Vector3(4.8, 2.7, 14.0))
-	create_pole.call(Vector3(4.8, 1.35, 14.0), 2.7)
+	create_sign.call("Sign_5_19_1_South", "5.19.1", Vector3(4.4, 2.7, 14.0))
+	create_pole.call(Vector3(4.4, 1.35, 14.0), 2.7)
 
-	create_sign.call("Sign_5_19_2_South", "5.19.2", Vector3(-4.8, 2.7, 16.5))
-	create_pole.call(Vector3(-4.8, 1.35, 16.5), 2.7)
+	create_sign.call("Sign_5_19_2_South", "5.19.2", Vector3(-4.4, 2.7, 16.5))
+	create_pole.call(Vector3(-4.4, 1.35, 16.5), 2.7)
 
 	# West crosswalk (X = -7.5, width [-8.75, -6.25]):
 	create_sign.call("Sign_5_19_1_West", "5.19.1", Vector3(-8.75, 2.7, 12.6))
@@ -810,40 +815,37 @@ func _setup_signs(parent: Node3D) -> void:
 
 func _build_city_scenery() -> void:
 	# Fences along sidewalks with openings at pedestrian crossings (ГОСТ Р 52289)
-	# Crosswalks: North Z in [-9.0, -6.5], South Z in [14.0, 16.5], West X in [-8.75, -6.25], East X in [6.25, 8.75]
-	for z_fence in [-18.0, -30.0, -42.0]:
-		_put_prop("street/fence_12", Vector3(-6.2, 0.15, z_fence), 0.0)
-
-	# NE fence pushed back from upper kiosk at (8.5, 0.15, -13.0) to give clean open plaza
-	for z_fence in [-23.0, -35.0]:
-		_put_prop("street/fence_12", Vector3(6.2, 0.15, z_fence), 0.0)
+	# Both NW and NE fences set back to give wide open plazas around upper kiosks (Z = -13.0)
+	for z_fence in [-24.0, -36.0]:
+		_put_prop("street/fence_12", Vector3(-6.8, 0.15, z_fence), 0.0)
+		_put_prop("street/fence_12", Vector3(6.8, 0.15, z_fence), 0.0)
 
 	for z_fence in [24.0, 36.0]:
-		_put_prop("street/fence_12", Vector3(-6.2, 0.15, z_fence), 0.0)
-		_put_prop("street/fence_12", Vector3(6.2, 0.15, z_fence), 0.0)
+		_put_prop("street/fence_12", Vector3(-6.8, 0.15, z_fence), 0.0)
+		_put_prop("street/fence_12", Vector3(6.8, 0.15, z_fence), 0.0)
 
 	for x_fence in [-18.0, -30.0, -42.0]:
-		_put_prop("street/fence_12", Vector3(x_fence, 0.15, -3.2), PI * 0.5)
-		_put_prop("street/fence_12", Vector3(x_fence, 0.15, 13.2), PI * 0.5)
+		_put_prop("street/fence_12", Vector3(x_fence, 0.15, -5.8), PI * 0.5)
+		_put_prop("street/fence_12", Vector3(x_fence, 0.15, 15.8), PI * 0.5)
 
 	for x_fence in [18.0, 30.0, 42.0]:
-		_put_prop("street/fence_12", Vector3(x_fence, 0.15, -3.2), PI * 0.5)
-		_put_prop("street/fence_12", Vector3(x_fence, 0.15, 13.2), PI * 0.5)
+		_put_prop("street/fence_12", Vector3(x_fence, 0.15, -5.8), PI * 0.5)
+		_put_prop("street/fence_12", Vector3(x_fence, 0.15, 15.8), PI * 0.5)
 
-	# Modern Street Lamps at corners and along sidewalk avenues
+	# Modern Street Lamps aligned along the green furniture zone
 	var lamp_coords := [
-		Vector3(-5.8, 0.15, -4.0),
-		Vector3(5.8, 0.15, -5.2),
-		Vector3(-5.8, 0.15, 13.5),
-		Vector3(5.8, 0.15, 13.5),
-		Vector3(-5.8, 0.15, -22.0),
-		Vector3(5.8, 0.15, -22.0),
-		Vector3(-5.8, 0.15, 26.0),
-		Vector3(5.8, 0.15, 26.0),
-		Vector3(-20.0, 0.15, -3.2),
-		Vector3(-20.0, 0.15, 13.2),
-		Vector3(20.0, 0.15, -3.2),
-		Vector3(20.0, 0.15, 13.2)
+		Vector3(-6.8, 0.15, -4.0),
+		Vector3(6.8, 0.15, -5.2),
+		Vector3(-6.8, 0.15, 13.5),
+		Vector3(6.8, 0.15, 13.5),
+		Vector3(-6.8, 0.15, -22.0),
+		Vector3(6.8, 0.15, -22.0),
+		Vector3(-6.8, 0.15, 26.0),
+		Vector3(6.8, 0.15, 26.0),
+		Vector3(-20.0, 0.15, -5.8),
+		Vector3(-20.0, 0.15, 15.8),
+		Vector3(20.0, 0.15, -5.8),
+		Vector3(20.0, 0.15, 15.8)
 	]
 	for l_pos in lamp_coords:
 		var yaw := PI * 0.5 if l_pos.x < 0 else -PI * 0.5
@@ -870,7 +872,7 @@ func _build_city_scenery() -> void:
 	_put_prop("street/kiosk_1", kiosk_positions[2], PI * 0.5)
 	_put_prop("street/kiosk_2", kiosk_positions[3], -PI * 0.5)
 
-	var is_near_kiosk := func(pos: Vector3, min_dist := 4.2) -> bool:
+	var is_near_kiosk := func(pos: Vector3, min_dist := 5.5) -> bool:
 		for kp in kiosk_positions:
 			var d_xz := Vector2(pos.x - kp.x, pos.z - kp.z).length()
 			if d_xz < min_dist:
@@ -1199,29 +1201,29 @@ func _setup_active_pedestrians() -> void:
 		{"type": "cross_z", "y": 0.0, "x": -7.5, "min_z": -3.5, "max_z": 13.5, "z": 4.5, "dir": 1.0, "spd": 1.3},
 		# East crosswalk
 		{"type": "cross_z", "y": 0.0, "x": 7.5, "min_z": -3.5, "max_z": 13.5, "z": 8.5, "dir": -1.0, "spd": 1.35},
-		# NW sidewalk (walking north/south, lane separation: dir=1 at x=-6.2, dir=-1 at x=-7.4)
-		{"type": "sidewalk_z", "y": 0.16, "x": -6.2, "min_z": -36.0, "max_z": -4.5, "z": -16.0, "dir": 1.0, "spd": 1.3},
-		{"type": "sidewalk_z", "y": 0.16, "x": -7.4, "min_z": -36.0, "max_z": -4.5, "z": -28.0, "dir": -1.0, "spd": 1.25},
-		# NW sidewalk (walking east/west, lane separation: dir=1 at z=-3.2, dir=-1 at z=-4.2)
-		{"type": "sidewalk_x", "y": 0.16, "z": -3.2, "min_x": -32.0, "max_x": -8.0, "x": -18.0, "dir": 1.0, "spd": 1.25},
-		# NE sidewalk (walking north/south, lane separation: dir=1 at x=6.2, dir=-1 at x=7.4)
-		{"type": "sidewalk_z", "y": 0.16, "x": 6.2, "min_z": -36.0, "max_z": -4.5, "z": -12.0, "dir": -1.0, "spd": 1.4},
-		{"type": "sidewalk_z", "y": 0.16, "x": 7.4, "min_z": -36.0, "max_z": -4.5, "z": -24.0, "dir": 1.0, "spd": 1.2},
-		# NE sidewalk (walking east/west, lane separation: dir=1 at z=-3.2, dir=-1 at z=-4.2)
-		{"type": "sidewalk_x", "y": 0.16, "z": -4.2, "min_x": 8.0, "max_x": 32.0, "x": 18.0, "dir": -1.0, "spd": 1.3},
-		# SW sidewalk (walking north/south, lane separation: dir=1 at x=-6.2, dir=-1 at x=-7.4)
-		{"type": "sidewalk_z", "y": 0.16, "x": -6.2, "min_z": 14.0, "max_z": 36.0, "z": 20.0, "dir": 1.0, "spd": 1.3},
-		# SW sidewalk (walking east/west, lane separation: dir=1 at z=13.0, dir=-1 at z=14.2)
-		{"type": "sidewalk_x", "y": 0.16, "z": 13.0, "min_x": -32.0, "max_x": -8.0, "x": -22.0, "dir": -1.0, "spd": 1.35},
-		# SE sidewalk (walking north/south, lane separation: dir=1 at x=6.2, dir=-1 at x=7.4)
-		{"type": "sidewalk_z", "y": 0.16, "x": 6.2, "min_z": 14.0, "max_z": 36.0, "z": 22.0, "dir": -1.0, "spd": 1.35},
-		# SE sidewalk (walking east/west, lane separation: dir=1 at z=13.0, dir=-1 at z=14.2)
-		{"type": "sidewalk_x", "y": 0.16, "z": 14.2, "min_x": 8.0, "max_x": 32.0, "x": 20.0, "dir": 1.0, "spd": 1.25},
+		# NW sidewalk (walking north/south, lane separation: dir=1 at x=-5.1, dir=-1 at x=-5.9)
+		{"type": "sidewalk_z", "y": 0.16, "x": -5.1, "min_z": -36.0, "max_z": -11.0, "z": -16.0, "dir": 1.0, "spd": 1.3},
+		{"type": "sidewalk_z", "y": 0.16, "x": -5.9, "min_z": -36.0, "max_z": -11.0, "z": -28.0, "dir": -1.0, "spd": 1.25},
+		# NW sidewalk (walking east/west, lane separation: dir=1 at z=-2.8, dir=-1 at z=-3.8)
+		{"type": "sidewalk_x", "y": 0.16, "z": -2.8, "min_x": -32.0, "max_x": -8.5, "x": -18.0, "dir": 1.0, "spd": 1.25},
+		# NE sidewalk (walking north/south, lane separation: dir=1 at x=5.1, dir=-1 at x=5.9)
+		{"type": "sidewalk_z", "y": 0.16, "x": 5.1, "min_z": -36.0, "max_z": -11.0, "z": -12.0, "dir": -1.0, "spd": 1.4},
+		{"type": "sidewalk_z", "y": 0.16, "x": 5.9, "min_z": -36.0, "max_z": -11.0, "z": -24.0, "dir": 1.0, "spd": 1.2},
+		# NE sidewalk (walking east/west, lane separation: dir=1 at z=-2.8, dir=-1 at z=-3.8)
+		{"type": "sidewalk_x", "y": 0.16, "z": -3.8, "min_x": 8.5, "max_x": 32.0, "x": 18.0, "dir": -1.0, "spd": 1.3},
+		# SW sidewalk (walking north/south, lane separation: dir=1 at x=-5.1, dir=-1 at x=-5.9)
+		{"type": "sidewalk_z", "y": 0.16, "x": -5.1, "min_z": 18.0, "max_z": 36.0, "z": 22.0, "dir": 1.0, "spd": 1.3},
+		# SW sidewalk (walking east/west, lane separation: dir=1 at z=12.8, dir=-1 at z=13.8)
+		{"type": "sidewalk_x", "y": 0.16, "z": 12.8, "min_x": -32.0, "max_x": -8.5, "x": -22.0, "dir": -1.0, "spd": 1.35},
+		# SE sidewalk (walking north/south, lane separation: dir=1 at x=5.1, dir=-1 at x=5.9)
+		{"type": "sidewalk_z", "y": 0.16, "x": 5.1, "min_z": 18.0, "max_z": 36.0, "z": 22.0, "dir": -1.0, "spd": 1.35},
+		# SE sidewalk (walking east/west, lane separation: dir=1 at z=12.8, dir=-1 at z=13.8)
+		{"type": "sidewalk_x", "y": 0.16, "z": 13.8, "min_x": 8.5, "max_x": 32.0, "x": 20.0, "dir": 1.0, "spd": 1.25},
 		# Kiosk customers (idle / slow stroll standing in front of kiosk counter)
-		{"type": "idle", "y": 0.16, "x": -8.5, "z": -11.6, "yaw": 0.0},
-		{"type": "idle", "y": 0.16, "x": -8.5, "z": 14.6, "yaw": 0.0},
-		{"type": "idle", "y": 0.16, "x": 8.5, "z": -11.6, "yaw": PI},
-		{"type": "idle", "y": 0.16, "x": 8.5, "z": 14.6, "yaw": PI}
+		{"type": "idle", "y": 0.16, "x": -8.5, "z": -10.8, "yaw": 0.0},
+		{"type": "idle", "y": 0.16, "x": -8.5, "z": 14.2, "yaw": 0.0},
+		{"type": "idle", "y": 0.16, "x": 8.5, "z": -10.8, "yaw": PI},
+		{"type": "idle", "y": 0.16, "x": 8.5, "z": 14.2, "yaw": PI}
 	]
 
 	for i in routes_def.size():
@@ -1298,7 +1300,7 @@ func _update_active_pedestrians(delta: float) -> void:
 				p["dir"] = -dir
 				p["wait_timer"] = randf_range(1.5, 3.0)
 				# Only switch look/tint when reaching the outer edge of the city (leaving/entering city)
-				if absf(x) >= 28.0 or p_type == "cross_x":
+				if absf(x) >= 28.0:
 					var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
 					var new_tint: Color = walker_colors[randi() % walker_colors.size()]
 					var new_look: int = randi() % Models.WALKERS
@@ -1355,9 +1357,9 @@ func _setup_ambient_walkers() -> void:
 		crowd.set_instance_custom_data(0, Models.walker_gait(tint, phase, 1.0))
 
 		var on_east := i % 2 == 0
-		var fixed_x := (6.2 if i == 0 else 7.4) if on_east else (-6.2 if i == 1 else -7.4)
-		var low_z := -34.0
-		var high_z := -12.0
+		var fixed_x := (5.1 if i == 0 else 5.9) if on_east else (-5.1 if i == 1 else -5.9)
+		var low_z := -56.0
+		var high_z := -38.0
 		var direction := 1.0 if i < 2 else -1.0
 		walkers_data.append({
 			"fixed_x": fixed_x,
@@ -1379,11 +1381,9 @@ func _update_ambient_walkers(delta: float) -> void:
 		if w.at_z >= w.high_z:
 			w.at_z = w.high_z
 			w.dir = -1.0
-			w.tint = sc.color("canopy", randi() % Models.WALKERS).lerp(Color("#506880"), 0.5) if sc != null else Color("#456789")
 		elif w.at_z <= w.low_z:
 			w.at_z = w.low_z
 			w.dir = 1.0
-			w.tint = sc.color("canopy", randi() % Models.WALKERS).lerp(Color("#506880"), 0.5) if sc != null else Color("#456789")
 		var pos := Vector3(w.fixed_x, 0.15, w.at_z)
 		var yaw := 0.0 if w.dir > 0 else PI
 		walker_crowds[i].set_instance_transform(0, Transform3D(Basis(Vector3.UP, yaw), pos))
@@ -1596,35 +1596,14 @@ func _update_traffic_lights(delta: float) -> void:
 				TrafficSignal.set_state(tl, ew_state)
 
 
-var departing_walkers: Array[Dictionary] = []
-
-
 func _update_pedestrian(delta: float) -> void:
-	# 1. Update any ambient walkers departing along the sidewalk into the city
-	var remaining_departing: Array[Dictionary] = []
-	for dw in departing_walkers:
-		var node: Pedestrian = dw.get("node")
-		if not is_instance_valid(node):
-			continue
-		var dir: float = dw.get("dir", 1.0)
-		var spd: float = dw.get("speed", 1.5)
-		var x: float = dw.get("pos_x", 0.0) + dir * spd * delta
-		dw["pos_x"] = x
-		node.position = Vector3(x, 0.16, -7.75)
-		node._process(delta)
-		if absf(x) > 16.0:
-			node.queue_free()
-		else:
-			remaining_departing.append(dw)
-	departing_walkers = remaining_departing
-
-	# 2. Update active multi-pedestrian crowd system across sidewalks & crosswalks
+	# 1. Update active multi-pedestrian crowd system across sidewalks & crosswalks
 	_update_active_pedestrians(delta)
 
 	if not is_instance_valid(pedestrian):
 		return
 
-	# 3. Main crosswalk pedestrian: stands visibly on sidewalk when waiting
+	# 2. Main crosswalk pedestrian: stands visibly on sidewalk when waiting
 	if ped_wait_timer > 0.0:
 		ped_wait_timer -= delta
 		pedestrian.visible = true
@@ -1636,21 +1615,12 @@ func _update_pedestrian(delta: float) -> void:
 	pedestrian.visible = true
 	ped_pos_x += ped_speed * ped_dir * delta
 
-	# 4. Check for crossing completion: walker reaches sidewalk, turns around with fresh look
+	# 3. Check for crossing completion: walker reaches sidewalk, turns around and waits for safe opportunity
 	if ped_dir > 0.0 and ped_pos_x >= 4.6:
 		ped_pos_x = 4.6
 		ped_dir = -1.0
-		ped_wait_timer = randf_range(1.5, 2.5)
+		ped_wait_timer = randf_range(2.0, 3.5)
 		ped_speed = randf_range(1.4, 1.8)
-		var cur_look: int = int(pedestrian.get_meta("look", 0))
-		var cur_tint: Color = pedestrian.get_meta("tint", Color("#E57373"))
-		_spawn_departing_walker(4.6, 1.0, cur_look, cur_tint)
-		var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
-		var new_tint: Color = walker_colors[randi() % walker_colors.size()]
-		var new_look: int = randi() % Models.WALKERS
-		pedestrian.set_meta("look", new_look)
-		pedestrian.set_meta("tint", new_tint)
-		pedestrian.configure(new_look, new_tint)
 		pedestrian.position = Vector3(ped_pos_x, 0.16, -7.75)
 		pedestrian.rotation.y = -PI * 0.5
 		pedestrian._process(delta)
@@ -1658,17 +1628,8 @@ func _update_pedestrian(delta: float) -> void:
 	elif ped_dir < 0.0 and ped_pos_x <= -4.6:
 		ped_pos_x = -4.6
 		ped_dir = 1.0
-		ped_wait_timer = randf_range(1.5, 2.5)
+		ped_wait_timer = randf_range(2.0, 3.5)
 		ped_speed = randf_range(1.4, 1.8)
-		var cur_look: int = int(pedestrian.get_meta("look", 0))
-		var cur_tint: Color = pedestrian.get_meta("tint", Color("#E57373"))
-		_spawn_departing_walker(-4.6, -1.0, cur_look, cur_tint)
-		var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
-		var new_tint: Color = walker_colors[randi() % walker_colors.size()]
-		var new_look: int = randi() % Models.WALKERS
-		pedestrian.set_meta("look", new_look)
-		pedestrian.set_meta("tint", new_tint)
-		pedestrian.configure(new_look, new_tint)
 		pedestrian.position = Vector3(ped_pos_x, 0.16, -7.75)
 		pedestrian.rotation.y = PI * 0.5
 		pedestrian._process(delta)
@@ -1684,23 +1645,6 @@ func _update_pedestrian(delta: float) -> void:
 	pedestrian.position = Vector3(ped_pos_x, ped_y, -7.75)
 	pedestrian.rotation.y = PI * 0.5 if ped_dir > 0.0 else -PI * 0.5
 	pedestrian._process(delta)
-
-
-func _spawn_departing_walker(from_x: float, dir: float, look: int, tint: Color) -> void:
-	if not is_instance_valid(junction_node):
-		return
-	var dep := Pedestrian.new()
-	dep.configure(look, tint)
-	dep.position = Vector3(from_x, 0.16, -7.75)
-	dep.rotation.y = PI * 0.5 if dir > 0.0 else -PI * 0.5
-	junction_node.add_child(dep)
-	dep.set_process(false)
-	departing_walkers.append({
-		"node": dep,
-		"dir": dir,
-		"pos_x": from_x,
-		"speed": randf_range(1.4, 1.7)
-	})
 
 
 func _spawn_next_procedural_pedestrian(next_dir: float) -> void:
@@ -2356,7 +2300,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		# Corridor-specific headway checks
 		# A) Both in Southbound corridor (+Z) along main road
 		if absf(car.rotation.y) < 0.5 and car.lane in [0, 1] and not (car.route == "main_left" and car.position.z > -0.5):
-			if other.route == "main_left" and (other.turn_t > 0.0 or other.position.z > -0.5):
+			if other.route == "main_left" and other.position.x < -3.5:
 				continue
 			var dz := other.position.z - car.position.z
 			var dx := absf(other.position.x - car.position.x)
@@ -2390,6 +2334,18 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 					lead_speed = other.speed
 					lead_car = other
 
+		# D) Universal Forward-Cone Headway (covers all curves, turning arcs, and merge paths)
+		var fwd := Vector3(sin(car.rotation.y), 0.0, cos(car.rotation.y))
+		var right_vec := Vector3(fwd.z, 0.0, -fwd.x)
+		var to_other := other.position - car.position
+		var lon := to_other.dot(fwd)
+		var lat := absf(to_other.dot(right_vec))
+		if lon > 0.1 and lon < 9.0 and lat < 2.0:
+			if lon < lead_dist:
+				lead_dist = lon
+				lead_speed = other.speed
+				lead_car = other
+
 	# 6b. Turn Conflict Clearance (п. 13.4 ПДД РФ: yielding to crossing traffic on left turn)
 	if car.route == "main_left" and car.turn_t < 0.8:
 		for other in cars:
@@ -2401,6 +2357,20 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 					stop_required = true
 				else:
 					car.target_speed = minf(car.target_speed, sqrt(2.0 * 5.0 * dist_to_turn))
+					if car.target_speed < 0.6:
+						stop_required = true
+
+	# 6c. Secondary Merge Yielding (Lane 2 merging into Lane 1 traffic)
+	if car.lane == 2 and car.turn_t > 0.0 and car.turn_t < 0.95:
+		for other in cars:
+			if other != car and is_instance_valid(other) and other.lane == 1 and other.position.z > -2.0 and other.position.z < 12.0:
+				var dist_to_merge := maxf(0.0, 1.8 - car.position.x)
+				if dist_to_merge <= 1.0:
+					car.speed = 0.0
+					car.target_speed = 0.0
+					stop_required = true
+				else:
+					car.target_speed = minf(car.target_speed, sqrt(2.0 * 5.0 * dist_to_merge))
 					if car.target_speed < 0.6:
 						stop_required = true
 
@@ -2877,12 +2847,6 @@ func _start_game() -> void:
 			car.queue_free()
 	cars.clear()
 
-	for dw in departing_walkers:
-		var node: Node = dw.get("node")
-		if is_instance_valid(node):
-			node.queue_free()
-	departing_walkers.clear()
-
 	if is_instance_valid(ui):
 		ui.hide_game_results()
 		ui.set_mode(game_mode)
@@ -2953,11 +2917,6 @@ func _exit_tree() -> void:
 		if is_instance_valid(car):
 			Models.release_geometry(car)
 	cars.clear()
-	for dw in departing_walkers:
-		var node: Node = dw.get("node")
-		if is_instance_valid(node):
-			node.queue_free()
-	departing_walkers.clear()
 	for p in active_pedestrians:
 		var node: Node = p.get("node")
 		if is_instance_valid(node):

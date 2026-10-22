@@ -75,6 +75,10 @@ func _run_checks() -> void:
 	var gap = car1.position.z - car2.position.z
 	_check("Following car does NOT ram into lead car (gap >= 4.5m)", gap >= 4.5)
 	_check("Following car slows down / stops behind lead car (speed < 1.0)", car2.speed < 1.0)
+	car1.queue_free()
+	car2.queue_free()
+	game.cars.erase(car1)
+	game.cars.erase(car2)
 	
 	# 4. Vehicle Yaw & Heading: No backwards driving
 	var sec_car = game.spawn_specific_car("secondary_merge", 2, false, "")
@@ -84,6 +88,8 @@ func _run_checks() -> void:
 	_check("Secondary road car advances forward towards East (X increases)", sec_car.position.x > start_x)
 	var fwd = Vector3(sin(sec_car.rotation.y), 0, cos(sec_car.rotation.y))
 	_check("Heading vector points forward along +X", fwd.x > 0.8)
+	sec_car.queue_free()
+	game.cars.erase(sec_car)
 	
 	# 5. Turning Vehicles: Tangent yaw matches velocity
 	var turn_car = game.spawn_specific_car("main_left", 0, false, "")
@@ -93,6 +99,8 @@ func _run_checks() -> void:
 	var delta_pos = turn_car.position - prev_pos
 	var heading = Vector3(sin(turn_car.rotation.y), 0, cos(turn_car.rotation.y))
 	_check("Turning vehicle moves in direction of its heading (dot product > 0.95)", delta_pos.normalized().dot(heading) > 0.95)
+	turn_car.queue_free()
+	game.cars.erase(turn_car)
 	
 	# 6. Junction Props and Scenery
 	var junction = game.junction_node
@@ -109,6 +117,8 @@ func _run_checks() -> void:
 		game._advance_car_behavior(merge_car, 0.033)
 	_check("Secondary merge car stays on asphalt road (|X| <= 2.2)", absf(merge_car.position.x) <= 2.2)
 	_check("Secondary merge car adopts southbound heading (~0.0)", absf(merge_car.rotation.y) < 0.2)
+	merge_car.queue_free()
+	game.cars.erase(merge_car)
 
 	# 8. Left-Turning Car (main_left) stays inside secondary road corridor (Z in [2.5, 7.5])
 	var left_car = game.spawn_specific_car("main_left", 0, false, "")
@@ -117,6 +127,8 @@ func _run_checks() -> void:
 		game._advance_car_behavior(left_car, 0.033)
 	_check("Left-turning car stays inside secondary road corridor (Z in [2.5, 7.5])", left_car.position.z >= 2.5 and left_car.position.z <= 7.5)
 	_check("Left-turning car faces westbound (-PI/2)", is_equal_approx(left_car.rotation.y, -PI * 0.5))
+	left_car.queue_free()
+	game.cars.erase(left_car)
 
 	# 9. Anti-Ramming Headway across lane changes (Violator solid line change into Lane 1)
 	var changer = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_SOLID_LINE)
