@@ -9,11 +9,13 @@ export function sanitizeDiagnosticContext(value) {
     stage: ['availability', 'query', 'framework', 'unhandled', 'server'],
     sdkSource: ['app_store', 'google_play'],
     errorType: ['Error', 'TypeError', 'RangeError', 'ReferenceError', 'SyntaxError'],
+    supportStage: ['list', 'seed'],
   })) if (allowed.includes(input[key])) result[key] = input[key];
   for (const key of ['attempt', 'requestedCount', 'returnedCount', 'missingCount']) {
     if (Number.isInteger(input[key]) && input[key] >= 0 && input[key] <= 100) result[key] = input[key];
   }
   for (const key of ['retryable', 'overloaded']) if (typeof input[key] === 'boolean') result[key] = input[key];
+  if (Number.isInteger(input.upstreamStatus) && input.upstreamStatus >= 400 && input.upstreamStatus <= 599) result.upstreamStatus = input.upstreamStatus;
   if (typeof input.sdkCodeHash === 'string' && /^[a-f0-9]{16}$/.test(input.sdkCodeHash)) result.sdkCodeHash = input.sdkCodeHash;
   if (Array.isArray(input.missingIds)) result.missingIds = [...new Set(input.missingIds.filter(v => products.has(v)))].slice(0, 4);
   if (Array.isArray(input.frames)) result.frames = input.frames.filter(v => typeof v === 'string' && v.length <= 160 && /^(?:package:pdd_app\/(?:[a-zA-Z0-9_]+\/)*[a-zA-Z0-9_]+\.dart(?::\d{1,6}(?::\d{1,5})?)?|[a-z_]{1,48}\.js:\d{1,6}:\d{1,5})$/.test(v)).slice(0, 6);
@@ -38,5 +40,6 @@ export function diagnosticNotificationPolicy(event) {
 export function serverErrorContext(error) {
   const frames = [...String(error?.stack || '').matchAll(/(?:^|[\s(/])([a-z_]{1,48}\.js:\d{1,6}:\d{1,5})(?=[)\s]|$)/g)].map(match => match[1]);
   return sanitizeDiagnosticContext({ stage: 'server', errorType: error?.name, frames,
-    retryable: error?.retryable, overloaded: error?.overloaded });
+    retryable: error?.retryable, overloaded: error?.overloaded,
+    supportStage: error?.supportStage, upstreamStatus: error?.upstreamStatus });
 }

@@ -6,6 +6,7 @@ import { readSession } from './user_auth.js';
 import { pushConfigured, sendFcmMessage } from './notifications.js';
 import { privatePushTopic } from './notification_identity.js';
 import { durableRequest } from './durable_request.js';
+import { errorCode } from './diagnostics.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +26,37 @@ function jsonResponse(data, status = 200, extraHeaders = {}) {
 // Without the binding they fall back to KV (eventually consistent, slower to show replies).
 function threadStub(env, clientId) {
   return env.SUPPORT ? env.SUPPORT.get(env.SUPPORT.idFromName(clientId)) : null;
+}
+
+function supportReadUnavailable(stage, response) {
+  const error = Object.assign(new Error('Support messages unavailable'), {
+    code: 'ERR_SUPPORT_READ_UNAVAILABLE', supportStage: stage,
+  });
+  if (Number.isInteger(response?.status) && response.status >= 400 && response.status <= 599) error.upstreamStatus = response.status;
+  return error;
+}
+
+async function supportReadResponse(response, stage) {
+  if (!response?.ok) throw supportReadUnavailable(stage, response);
+  let result;
+  try { result = await response.json(); } catch { throw supportReadUnavailable(stage, response); }
+  if (!result || typeof result !== 'object' || Array.isArray(result)
+      || (stage === 'seed' ? result.ok !== true
+        : !Array.isArray(result.messages) || (result.ok !== undefined && result.ok !== true)
+          || result.messages.some(message => !message || typeof message !== 'object' || Array.isArray(message))
+          || (result.initialized !== undefined && typeof result.initialized !== 'boolean'))) {
+    throw supportReadUnavailable(stage, response);
+  }
+  return result;
+}
+
+async function supportReadRpc(stage, send) {
+  try { return await send(); }
+  catch (error) {
+    // Preserve Cloudflare's error identity and overload/retryable flags.
+    try { if (error && typeof error === 'object') error.supportStage = stage; } catch {}
+    throw error;
+  }
 }
 
 async function appendSupportMessage(env, clientId, msg) {
@@ -50,21 +82,32 @@ async function listSupportMessages(env, clientId, since) {
     return since > 0 ? msgs.filter((m) => m.ts > since) : msgs;
   }
   const read = async () => {
-    const response = await durableRequest(env.SUPPORT, env.SUPPORT.idFromName(clientId),
-      fresh => fresh.fetch(`https://support.internal/list?since=${since}`), { retryableRead: true });
-    if (!response.ok) throw new Error('support storage unavailable');
-    return response.json();
+    const response = await supportReadRpc('list', () => durableRequest(env.SUPPORT, env.SUPPORT.idFromName(clientId),
+      fresh => fresh.fetch(`https://support.internal/list?since=${since}`), { retryableRead: true }));
+    return supportReadResponse(response, 'list');
   };
   let result = await read();
   if (result.initialized === false && env.INSTALLS) {
     // Empty incremental results are normal. Only an uninitialized thread needs
     // migration; persist an empty seed too, so idle polls never recheck old KV.
-    const legacy = await env.INSTALLS.get('support:messages:' + clientId, { type: 'json' });
-    const seed = await threadStub(env, clientId).fetch('https://support.internal/seed', { method: 'POST', body: JSON.stringify(Array.isArray(legacy) ? legacy : []) });
-    if (!seed.ok) throw new Error('support migration unavailable');
+    let legacy;
+    try { legacy = await supportReadRpc('seed', () => env.INSTALLS.get('support:messages:' + clientId, { type: 'json' })); }
+    catch (error) {
+      // A JSON decoding failure proves corruption, not an empty old history.
+      if (error instanceof SyntaxError) {
+        try { error.code = 'ERR_SUPPORT_READ_UNAVAILABLE'; } catch {}
+      }
+      throw error;
+    }
+    if (legacy != null && (!Array.isArray(legacy)
+        || legacy.some(message => !message || typeof message !== 'object' || Array.isArray(message)))) {
+      throw supportReadUnavailable('seed');
+    }
+    const seed = await supportReadRpc('seed', () => threadStub(env, clientId).fetch('https://support.internal/seed', { method: 'POST', body: JSON.stringify(legacy ?? []) }));
+    await supportReadResponse(seed, 'seed');
     result = await read();
   }
-  return result.messages || [];
+  return result.messages;
 }
 
 function escapeHtml(s) {
@@ -301,7 +344,14 @@ async function checkPendingTelegramUpdates(env) {
   // The installed webhook handles replies immediately. Its configuration flag
   // need not cost a KV read for every idle client poll. Never cache messages.
   if (env.INSTALLS && (webhookChecks.get(env.INSTALLS) || 0) > Date.now()) return;
-  const isWebhookActive = env.INSTALLS ? await env.INSTALLS.get('tg:webhook_active') : null;
+  let isWebhookActive;
+  try { isWebhookActive = env.INSTALLS ? await env.INSTALLS.get('tg:webhook_active') : null; }
+  catch (error) {
+    const flags = {};
+    for (const key of ['retryable', 'overloaded']) if (typeof error?.[key] === 'boolean') flags[key] = error[key];
+    console.warn(JSON.stringify({ event: 'support_optional_poll_unavailable', stage: 'webhook_flag', code: errorCode(error), ...flags }));
+    return;
+  }
   if (isWebhookActive === '1') {
     webhookChecks.set(env.INSTALLS, Date.now() + 60000);
     return;

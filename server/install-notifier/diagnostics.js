@@ -35,9 +35,11 @@ export function errorCode(error) {
   if (/too many requests.*same key|(?:put|write).*429|(?:put|write).*rate.?limit/i.test(message)) return 'storage_rate_limited';
   if (/quota|limit exceeded|too many writes/i.test(message)) return 'storage_quota';
   if (error?.name === 'TimeoutError' || error?.name === 'AbortError') return 'timeout';
+  if (error?.code === 'ERR_SUPPORT_READ_UNAVAILABLE') return 'support_read_unavailable';
   return 'operation_failed';
 }
 export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
+  event = { ...event, context: sanitizeDiagnosticContext(event.context) };
   const copy = incidentCopy(event);
   const guide = incidentGuide(event);
   const account = event.userName || (event.userId ? 'Имя не получено' : 'Аккаунт ещё не определён');
@@ -73,6 +75,10 @@ export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
     event.os ? 'ОС: ' + escape(event.os) : null,
     event.context?.phase ? 'Загрузка: ' + ({ background: 'в фоне', paywall: 'экран оплаты', purchase: 'попытка покупки' })[event.context.phase] : null,
     event.context?.stage ? 'Этап: ' + escape(event.context.stage) + (event.context.attempt ? ' · попытка ' + event.context.attempt : '') : null,
+    event.context?.supportStage ? 'Этап чтения поддержки: ' + event.context.supportStage : null,
+    event.context?.upstreamStatus ? 'HTTP хранилища поддержки: ' + event.context.upstreamStatus : null,
+    typeof event.context?.retryable === 'boolean' || typeof event.context?.overloaded === 'boolean'
+      ? 'Флаги хранилища: ' + ['retryable', 'overloaded'].filter(key => typeof event.context[key] === 'boolean').map(key => key + '=' + event.context[key]).join(' · ') : null,
     Number.isInteger(event.context?.returnedCount) ? `Товары: запрошено ${event.context.requestedCount ?? '—'}, получено ${event.context.returnedCount}, не найдено ${event.context.missingCount ?? '—'}` : null,
     event.context?.sdkCodeHash ? 'Код SDK (отпечаток): ' + escape(event.context.sdkCodeHash) : null,
     event.context?.frames?.length ? 'Место: <code>' + escape(event.context.frames[0]) + '</code>' : null,

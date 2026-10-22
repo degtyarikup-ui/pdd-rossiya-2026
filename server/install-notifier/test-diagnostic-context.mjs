@@ -115,3 +115,23 @@ test('server error context contains type and module location without private URL
   assert.doesNotMatch(JSON.stringify(context), /TOP_SECRET|private/);
   assert.deepEqual(sanitizeDiagnosticContext({ retryable: 'TOP_SECRET', overloaded: {} }), {});
 });
+
+test('support context accepts only fixed stages and integer error statuses, excluding private properties', () => {
+  for (const supportStage of ['list', 'seed']) for (const upstreamStatus of [400, 503, 599]) {
+    const context = sanitizeDiagnosticContext({ supportStage, upstreamStatus, message: 'TOP_SECRET',
+      url: 'https://private.test/?token=TOP_SECRET', body: 'TOP_SECRET', userId: 'private-user', request: {} });
+    assert.deepEqual(context, { supportStage, upstreamStatus });
+    const error = Object.assign(new Error('TOP_SECRET'), { supportStage, upstreamStatus,
+      body: 'TOP_SECRET', url: 'https://private.test', userId: 'private-user', retryable: false });
+    error.stack = 'Error: TOP_SECRET\n at read (https://private.test/?token=TOP_SECRET)';
+    assert.deepEqual(serverErrorContext(error), { stage: 'server', errorType: 'Error',
+      supportStage, retryable: false, upstreamStatus, frames: [] });
+    assert.doesNotMatch(JSON.stringify(context), /TOP_SECRET|private/);
+  }
+  for (const supportStage of ['append', 'list?token=TOP_SECRET', 1, {}, null]) {
+    assert.deepEqual(sanitizeDiagnosticContext({ supportStage }), {});
+  }
+  for (const upstreamStatus of [0, 200, 399, 600, 1000, 503.1, '503', NaN, Infinity, null]) {
+    assert.deepEqual(sanitizeDiagnosticContext({ upstreamStatus }), {});
+  }
+});

@@ -90,9 +90,11 @@ const HEADER = [
   'ID установки (обезличенный)', 'ОС', 'Контекст загрузки', 'Этап', 'Попытка',
   'Товаров запрошено', 'Товаров получено', 'Товаров не найдено', 'Не найденные ID товаров',
   'Источник SDK', 'Отпечаток кода SDK', 'Кадры приложения', 'Тип исключения',
+  'Этап чтения поддержки', 'HTTP хранилища поддержки', 'Повторяемый сбой (retryable)', 'Перегрузка (overloaded)',
 ];
 
 function rowOf(record) {
+  record = { ...record, context: sanitizeDiagnosticContext(record.context) };
   return [
     mskStamp(record.ts),
     record.level,
@@ -123,6 +125,7 @@ function rowOf(record) {
     record.installation, record.os, record.context?.phase, record.context?.stage, record.context?.attempt,
     record.context?.requestedCount, record.context?.returnedCount, record.context?.missingCount,
     record.context?.missingIds?.join(', '), record.context?.sdkSource, record.context?.sdkCodeHash, record.context?.frames?.join('\n'), record.context?.errorType,
+    record.context?.supportStage, record.context?.upstreamStatus, record.context?.retryable, record.context?.overloaded,
   ];
 }
 

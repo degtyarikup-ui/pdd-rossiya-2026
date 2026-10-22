@@ -4345,7 +4345,7 @@ export default {
       return response;
     } catch (error) {
       const code = errorCode(error), context = serverErrorContext(error);
-      const status = ['durable_storage_timeout', 'durable_overloaded', 'durable_retryable'].includes(code) ? 503 : 500;
+      const status = ['durable_storage_timeout', 'durable_overloaded', 'durable_retryable', 'support_read_unavailable'].includes(code) ? 503 : 500;
       console.error('Worker request failed', JSON.stringify({ operation, code, ...context }));
       await notify(status, code, context);
       return jsonResponse({ error: 'server unavailable' }, status,

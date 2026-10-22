@@ -131,6 +131,68 @@ test('classification never includes raw exception messages', () => {
   assert.equal(errorCode(new Error('https://provider/?token=TOP_SECRET')), 'operation_failed');
 });
 
+test('support read classification preserves platform overload, reset and timeout priority', () => {
+  const support = { code: 'ERR_SUPPORT_READ_UNAVAILABLE', message: 'private provider response' };
+  assert.equal(errorCode(support), 'support_read_unavailable');
+  assert.equal(errorCode({ ...support, overloaded: true, retryable: true }), 'durable_overloaded');
+  assert.equal(errorCode({ ...support, message: 'Durable Object storage operation exceeded timeout which caused object to be reset.', retryable: true }), 'durable_storage_timeout');
+  assert.equal(errorCode({ ...support, retryable: true }), 'durable_retryable');
+  assert.equal(errorCode({ ...support, name: 'TimeoutError' }), 'timeout');
+  assert.equal(errorCode({ ...support, name: 'AbortError' }), 'timeout');
+  assert.equal(errorCode({ ...support, overloaded: 'true', retryable: 1 }), 'support_read_unavailable');
+  assert.equal(errorCode({ code: 'ERR_SUPPORT_READ_UNAVAILABLE_PRIVATE', message: 'private response' }), 'operation_failed');
+});
+
+test('support read protocol failures return retryable 503 with safe stage and upstream diagnostics', async t => {
+  const logged = [];
+  t.mock.method(console, 'error', (...args) => logged.push(args));
+  for (const supportStage of ['list', 'seed']) {
+    const { env, state } = setup();
+    // Avoid Telegram polling; the test only exercises the support storage and
+    // diagnostic queue. No external request or provider credential is needed.
+    await env.INSTALLS.put('tg:webhook_active', '1');
+    const upstreamStatus = supportStage === 'list' ? 503 : 502;
+    env.SUPPORT = { idFromName: value => value, get: () => ({ fetch: async input => {
+      const path = new URL(typeof input === 'string' ? input : input.url).pathname;
+      if (supportStage === 'seed' && path === '/list') return Response.json({ ok: true, initialized: false, messages: [] });
+      return new Response('TOP_SECRET raw provider response', { status: upstreamStatus });
+    } }) };
+    const response = await worker.fetch(new Request('https://test/api/support/messages?clientId=TOP_SECRET'), env);
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get('Retry-After'), '1');
+    assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+    assert.deepEqual(await response.json(), { error: 'server unavailable' });
+    const records = [...(await state.storage.list({ prefix: 'log:' })).values()];
+    assert.equal(records.length, 1);
+    assert.equal(records[0].code, 'support_read_unavailable');
+    assert.equal(records[0].context.supportStage, supportStage);
+    assert.equal(records[0].context.upstreamStatus, upstreamStatus);
+    const text = (await messages(state))[0];
+    assert.match(text, /Не удалось загрузить сообщения поддержки/);
+    assert.match(text, /Хранилище сообщений поддержки вернуло ошибку или некорректный ответ/);
+    assert.match(text, /проверить этап чтения и HTTP-статус хранилища по ID диагностики/);
+    assert.ok(text.includes('Этап чтения поддержки: ' + supportStage));
+    assert.ok(text.includes('HTTP хранилища поддержки: ' + upstreamStatus));
+    assert.doesNotMatch(text, /Точная причина пока не определена|перегрузк/);
+    assert.doesNotMatch(JSON.stringify({ logged, records, text }), /TOP_SECRET|raw provider response|clientId=/);
+  }
+});
+
+test('Telegram exposes sanitized support stages, HTTP statuses and explicit false platform flags', () => {
+  const base = event({ origin: 'server', category: 'infrastructure', operation: 'api.support.messages', code: 'support_read_unavailable' });
+  const text = buildIncidentMessage({ ...base, context: { supportStage: 'list', upstreamStatus: 503,
+    retryable: false, overloaded: true, message: 'TOP_SECRET', url: 'https://private.test' } });
+  assert.match(text, /Этап чтения поддержки: list/);
+  assert.match(text, /HTTP хранилища поддержки: 503/);
+  assert.match(text, /retryable=false · overloaded=true/);
+  assert.doesNotMatch(text, /TOP_SECRET|private\.test/);
+  const legacy = buildIncidentMessage(base);
+  assert.doesNotMatch(legacy, /Этап чтения поддержки:|HTTP хранилища поддержки:|Флаги хранилища:/);
+  const injected = buildIncidentMessage({ ...base, context: { supportStage: 'seed TOP_SECRET', upstreamStatus: 600,
+    retryable: 'TOP_SECRET', overloaded: {}, errorType: 'TOP_SECRET', frames: ['https://private.test'], userId: 'private-user' } });
+  assert.doesNotMatch(injected, /TOP_SECRET|private\.test|private-user|Этап чтения поддержки:|HTTP хранилища поддержки:|Флаги хранилища:/);
+});
+
 test('rejected authenticated purchase is reported but unauthorized traffic is quiet', async () => {
   const { env, state } = setup();
   const call = token => worker.fetch(new Request('https://test/api/user/purchase', { method: 'POST', headers: { 'x-install-secret': 'test', authorization: 'Bearer ' + token }, body: JSON.stringify({ store: 'googleplay', country: 'ru', productId: 'fake', purchaseToken: 'TOP_SECRET' }) }), env);
