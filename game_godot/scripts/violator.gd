@@ -187,11 +187,15 @@ var active_pedestrians: Array[Dictionary] = []
 # Traffic light state
 var light_state: String = "green"   # green, yellow, red for NS main
 var light_phase: String = "ns_green"
+var light_visual_ns: String = "green"
+var light_visual_ew: String = "red"
 var light_timer: float = 0.0
 var arrow_active: bool = false
-const LIGHT_GREEN_TIME := 9.0
+const LIGHT_GREEN_TIME := 7.0
+const LIGHT_FLASHING_GREEN_TIME := 3.0
 const LIGHT_YELLOW_TIME := 2.0
-const LIGHT_RED_TIME := 9.0
+const LIGHT_CLEARANCE_TIME := 1.5
+const LIGHT_RED_YELLOW_TIME := 1.5
 
 # Game modes and weather
 var game_mode: String = "blitz"     # "blitz" (60s countdown) or "patrol" (endless)
@@ -1187,6 +1191,8 @@ func _setup_traffic_lights() -> void:
 
 	light_state = "green"
 	light_phase = "ns_green"
+	light_visual_ns = "green"
+	light_visual_ew = "red"
 	light_timer = LIGHT_GREEN_TIME
 	arrow_active = false
 
@@ -1335,27 +1341,16 @@ func _update_active_pedestrians(delta: float) -> void:
 			node.rotation.y = PI * 0.5 if dir > 0.0 else -PI * 0.5
 
 			if reached:
-				if p_type == "cross_x":
-					node.visible = false
-					p["wait_timer"] = randf_range(2.5, 4.5)
-					p["dir"] = 1.0 if randf() < 0.5 else -1.0
-					p["x"] = -8.0 if p["dir"] > 0.0 else 8.0
-					var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
-					var new_tint: Color = walker_colors[randi() % walker_colors.size()]
-					var new_look: int = randi() % Models.WALKERS
-					p["tint"] = new_tint
-					p["look"] = new_look
-					node.configure(new_look, new_tint)
-				else:
-					p["dir"] = -dir
-					p["wait_timer"] = randf_range(1.5, 3.0)
-					if absf(x) >= 28.0:
-						var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
-						var new_tint: Color = walker_colors[randi() % walker_colors.size()]
-						var new_look: int = randi() % Models.WALKERS
-						p["tint"] = new_tint
-						p["look"] = new_look
-						node.configure(new_look, new_tint)
+				node.visible = false
+				p["wait_timer"] = randf_range(2.0, 4.0)
+				p["dir"] = 1.0 if randf() < 0.5 else -1.0
+				p["x"] = min_x if p["dir"] > 0.0 else max_x
+				var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
+				var new_tint: Color = walker_colors[randi() % walker_colors.size()]
+				var new_look: int = randi() % Models.WALKERS
+				p["tint"] = new_tint
+				p["look"] = new_look
+				node.configure(new_look, new_tint)
 
 		elif p_type in ["cross_z", "sidewalk_z"]:
 			var z: float = p.get("z", 0.0) + dir * spd * delta
@@ -1378,27 +1373,16 @@ func _update_active_pedestrians(delta: float) -> void:
 			node.rotation.y = 0.0 if dir > 0.0 else PI
 
 			if reached:
-				if p_type == "cross_z":
-					node.visible = false
-					p["wait_timer"] = randf_range(2.5, 4.5)
-					p["dir"] = 1.0 if randf() < 0.5 else -1.0
-					p["z"] = -4.0 if p["dir"] > 0.0 else 16.0
-					var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
-					var new_tint: Color = walker_colors[randi() % walker_colors.size()]
-					var new_look: int = randi() % Models.WALKERS
-					p["tint"] = new_tint
-					p["look"] = new_look
-					node.configure(new_look, new_tint)
-				else:
-					p["dir"] = -dir
-					p["wait_timer"] = 0.5
-					if absf(z) >= 30.0:
-						var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
-						var new_tint: Color = walker_colors[randi() % walker_colors.size()]
-						var new_look: int = randi() % Models.WALKERS
-						p["tint"] = new_tint
-						p["look"] = new_look
-						node.configure(new_look, new_tint)
+				node.visible = false
+				p["wait_timer"] = randf_range(2.0, 4.0)
+				p["dir"] = 1.0 if randf() < 0.5 else -1.0
+				p["z"] = min_z if p["dir"] > 0.0 else max_z
+				var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
+				var new_tint: Color = walker_colors[randi() % walker_colors.size()]
+				var new_look: int = randi() % Models.WALKERS
+				p["tint"] = new_tint
+				p["look"] = new_look
+				node.configure(new_look, new_tint)
 
 		node._process(delta)
 
@@ -1620,40 +1604,91 @@ func _update_traffic_lights(delta: float) -> void:
 		return
 	light_timer -= delta
 	if light_timer <= 0.0:
-		if light_phase == "ns_green":
-			light_phase = "ns_yellow"
-			light_state = "yellow"
-			light_timer = LIGHT_YELLOW_TIME
-			arrow_active = false
-		elif light_phase == "ns_yellow":
-			light_phase = "ew_green"
-			light_state = "red"
-			light_timer = LIGHT_GREEN_TIME
-			arrow_active = true
-		elif light_phase == "ew_green":
-			light_phase = "ew_yellow"
-			light_state = "red"
-			light_timer = LIGHT_YELLOW_TIME
-			arrow_active = false
-		elif light_phase == "ew_yellow":
-			light_phase = "ns_green"
-			light_state = "green"
-			light_timer = LIGHT_GREEN_TIME
-			arrow_active = false
+		match light_phase:
+			"ns_green":
+				light_phase = "ns_green_flash"
+				light_state = "green"
+				light_visual_ns = "flashing_green"
+				light_visual_ew = "red"
+				light_timer = LIGHT_FLASHING_GREEN_TIME
+				arrow_active = false
+			"ns_green_flash":
+				light_phase = "ns_yellow"
+				light_state = "yellow"
+				light_visual_ns = "yellow"
+				light_visual_ew = "red"
+				light_timer = LIGHT_YELLOW_TIME
+				arrow_active = false
+			"ns_yellow":
+				light_phase = "all_red_1"
+				light_state = "red"
+				light_visual_ns = "red"
+				light_visual_ew = "red"
+				light_timer = LIGHT_CLEARANCE_TIME
+				arrow_active = false
+			"all_red_1":
+				light_phase = "ew_red_yellow"
+				light_state = "red"
+				light_visual_ns = "red"
+				light_visual_ew = "red_yellow"
+				light_timer = LIGHT_RED_YELLOW_TIME
+				arrow_active = false
+			"ew_red_yellow":
+				light_phase = "ew_green"
+				light_state = "red"
+				light_visual_ns = "red"
+				light_visual_ew = "green"
+				light_timer = LIGHT_GREEN_TIME
+				arrow_active = true
+			"ew_green":
+				light_phase = "ew_green_flash"
+				light_state = "red"
+				light_visual_ns = "red"
+				light_visual_ew = "flashing_green"
+				light_timer = LIGHT_FLASHING_GREEN_TIME
+				arrow_active = true
+			"ew_green_flash":
+				light_phase = "ew_yellow"
+				light_state = "red"
+				light_visual_ns = "red"
+				light_visual_ew = "yellow"
+				light_timer = LIGHT_YELLOW_TIME
+				arrow_active = false
+			"ew_yellow":
+				light_phase = "all_red_2"
+				light_state = "red"
+				light_visual_ns = "red"
+				light_visual_ew = "red"
+				light_timer = LIGHT_CLEARANCE_TIME
+				arrow_active = false
+			"all_red_2":
+				light_phase = "ns_red_yellow"
+				light_state = "red"
+				light_visual_ns = "red_yellow"
+				light_visual_ew = "red"
+				light_timer = LIGHT_RED_YELLOW_TIME
+				arrow_active = false
+			"ns_red_yellow", _:
+				light_phase = "ns_green"
+				light_state = "green"
+				light_visual_ns = "green"
+				light_visual_ew = "red"
+				light_timer = LIGHT_GREEN_TIME
+				arrow_active = false
 
-		for tl in traffic_lights_ns:
-			if is_instance_valid(tl) and tl.is_inside_tree():
-				tl.set_meta("arrow_active", arrow_active)
-				TrafficSignal.set_state(tl, light_state)
+	var flash_on := fmod(game_clock, 0.6) < 0.35
+	for tl in traffic_lights_ns:
+		if is_instance_valid(tl) and tl.is_inside_tree():
+			tl.set_meta("arrow_active", arrow_active)
+			TrafficSignal.set_state(tl, light_visual_ns, "straight", flash_on)
 
-		var ew_state := "green" if light_phase == "ew_green" else ("yellow" if light_phase == "ew_yellow" else "red")
-		for tl in traffic_lights_west:
-			if is_instance_valid(tl) and tl.is_inside_tree():
-				TrafficSignal.set_state(tl, ew_state)
+	for tl in traffic_lights_west:
+		if is_instance_valid(tl) and tl.is_inside_tree():
+			TrafficSignal.set_state(tl, light_visual_ew, "straight", flash_on)
 
-		for tl in traffic_lights_east:
-			if is_instance_valid(tl) and tl.is_inside_tree():
-				TrafficSignal.set_state(tl, ew_state)
+	for tl in traffic_lights_east:
+		if is_instance_valid(tl) and tl.is_inside_tree():
+			TrafficSignal.set_state(tl, light_visual_ew, "straight", flash_on)
 
 
 func _update_pedestrian(delta: float) -> void:
@@ -1817,7 +1852,9 @@ func _pick_appropriate_violation(lane: int) -> String:
 			VIOLATION_WAFFLE_BLOCK,
 			VIOLATION_PEDESTRIAN_YIELD,
 			VIOLATION_RED_LIGHT,
-			VIOLATION_WRONG_LANE_TURN
+			VIOLATION_WRONG_LANE_TURN,
+			VIOLATION_ARROW_YIELD,
+			VIOLATION_SOLID_LINE
 		]
 		return p3_choices[randi() % p3_choices.size()]
 	elif effective_time >= 20.0:
@@ -1825,14 +1862,16 @@ func _pick_appropriate_violation(lane: int) -> String:
 			VIOLATION_WAFFLE_BLOCK,
 			VIOLATION_WRONG_LANE_TURN,
 			VIOLATION_SOLID_LINE,
-			VIOLATION_PEDESTRIAN_YIELD
+			VIOLATION_PEDESTRIAN_YIELD,
+			VIOLATION_RED_LIGHT,
+			VIOLATION_ARROW_YIELD
 		]
 		return p2_choices[randi() % p2_choices.size()]
 
 	if lane == 0:
-		var choices := [VIOLATION_WRONG_LANE_TURN, VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD]
+		var choices := [VIOLATION_WRONG_LANE_TURN, VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD, VIOLATION_RED_LIGHT]
 		return choices[randi() % choices.size()]
-	var r_choices := [VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WRONG_LANE_TURN]
+	var r_choices := [VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WRONG_LANE_TURN, VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD]
 	return r_choices[randi() % r_choices.size()]
 
 
@@ -2220,6 +2259,14 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	var stop_required := false
 	car.target_speed = 11.0 + (1.5 if game_clock > 40.0 else 0.0)
 
+	# Realistic cornering deceleration: slow down to ~5.5-6.5 m/s when entering and taking corners
+	if car.route == "main_left" and car.position.z > -4.0 and car.turn_t < 1.0:
+		car.target_speed = minf(car.target_speed, 6.0)
+	elif car.lane == 2 and car.position.x > -4.5 and car.turn_t < 1.0:
+		car.target_speed = minf(car.target_speed, 5.8)
+	elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.position.z > -4.0 and car.turn_t < 1.0:
+		car.target_speed = minf(car.target_speed, 6.0)
+
 	# Stop positions: vehicle origin is at center, front bumper is ~2.35m ahead.
 	# To stop with bumper ~0.3m before stop line 1.12 (and >1.2m before zebra 1.14.1):
 	const Z_STOP := -12.65      # Car center when front bumper stops before stop line at Z = -10.0
@@ -2259,7 +2306,6 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				target_stop_z = minf(target_stop_z, Z_STOP)
 			elif car.position.z < -6.5:
 				target_stop_z = minf(target_stop_z, car.position.z)
-				car.speed = 0.0
 				car.target_speed = 0.0
 				stop_required = true
 		if must_stop_ped:
@@ -2269,21 +2315,24 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				var ped_danger := absf(ped_pos_x - car.position.x) < 2.2
 				if ped_danger:
 					target_stop_z = minf(target_stop_z, car.position.z)
-					car.speed = 0.0
 					car.target_speed = 0.0
 					stop_required = true
 
 		if target_stop_z < 900.0:
 			var dist_to_stop := target_stop_z - car.position.z
-			if dist_to_stop <= 0.2:
+			if dist_to_stop <= 0.1 and car.speed < 0.4:
 				car.speed = 0.0
 				car.target_speed = 0.0
 				stop_required = true
 			elif dist_to_stop > 0.0:
-				var safe_v := sqrt(2.0 * 5.0 * dist_to_stop)
+				var safe_v := sqrt(2.0 * 3.6 * dist_to_stop) if dist_to_stop > 0.8 else (2.4 * pow(maxf(0.01, dist_to_stop) / 0.8, 1.4))
 				car.target_speed = minf(car.target_speed, safe_v)
-				if car.target_speed < 0.6:
+				if car.target_speed < 0.35:
 					stop_required = true
+			elif dist_to_stop <= 0.0:
+				car.speed = 0.0
+				car.target_speed = 0.0
+				stop_required = true
 
 	# 3. Priority sign stop on secondary street (West arm: Sign 2.4 Yield)
 	if car.lane == 2 and car.position.x < -2.4:
@@ -2304,21 +2353,24 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				target_stop_x_west = minf(target_stop_x_west, X_PRIO_STOP)
 			elif car.position.x < -2.4:
 				target_stop_x_west = minf(target_stop_x_west, car.position.x)
-				car.speed = 0.0
 				car.target_speed = 0.0
 				stop_required = true
 
 		if target_stop_x_west < 900.0:
 			var dist_to_stop := target_stop_x_west - car.position.x
-			if dist_to_stop <= 0.2:
+			if dist_to_stop <= 0.1 and car.speed < 0.4:
 				car.speed = 0.0
 				car.target_speed = 0.0
 				stop_required = true
 			elif dist_to_stop > 0.0:
-				var safe_v := sqrt(2.0 * 5.0 * dist_to_stop)
+				var safe_v := sqrt(2.0 * 3.6 * dist_to_stop) if dist_to_stop > 0.8 else (2.4 * pow(maxf(0.01, dist_to_stop) / 0.8, 1.4))
 				car.target_speed = minf(car.target_speed, safe_v)
-				if car.target_speed < 0.6:
+				if car.target_speed < 0.35:
 					stop_required = true
+			elif dist_to_stop <= 0.0:
+				car.speed = 0.0
+				car.target_speed = 0.0
+				stop_required = true
 
 	# 3b. Priority yield stop on East arm (lane 3: yield to main road traffic per un-signalized rules)
 	if car.lane == 3 and car.position.x > 2.4:
@@ -2328,7 +2380,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				main_traffic_present = true
 				break
 		# Also stop if red light or intersection blocked
-		var ew_red := (light_phase in ["ns_green", "ns_yellow"]) and (traffic_light_node != null and traffic_light_node.is_inside_tree())
+		var ew_red := (light_phase in ["ns_green", "ns_green_flash", "ns_yellow", "all_red_1", "all_red_2", "ns_red_yellow"]) and (traffic_light_node != null and traffic_light_node.is_inside_tree())
 		var east_blocked := false
 		if car.position.x >= X_EAST_STOP and car.position.x < 18.0 and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_PRIORITY_SIGN]):
 			for other in cars:
@@ -2341,21 +2393,24 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				target_stop_x_east = maxf(target_stop_x_east, X_EAST_STOP)
 			elif car.position.x > 2.4:
 				target_stop_x_east = maxf(target_stop_x_east, car.position.x)
-				car.speed = 0.0
 				car.target_speed = 0.0
 				stop_required = true
 
 		if target_stop_x_east > -900.0:
 			var dist_to_stop := car.position.x - target_stop_x_east
-			if dist_to_stop <= 0.2:
+			if dist_to_stop <= 0.1 and car.speed < 0.4:
 				car.speed = 0.0
 				car.target_speed = 0.0
 				stop_required = true
 			elif dist_to_stop > 0.0:
-				var safe_v := sqrt(2.0 * 5.0 * dist_to_stop)
+				var safe_v := sqrt(2.0 * 3.6 * dist_to_stop) if dist_to_stop > 0.8 else (2.4 * pow(maxf(0.01, dist_to_stop) / 0.8, 1.4))
 				car.target_speed = minf(car.target_speed, safe_v)
-				if car.target_speed < 0.6:
+				if car.target_speed < 0.35:
 					stop_required = true
+			elif dist_to_stop <= 0.0:
+				car.speed = 0.0
+				car.target_speed = 0.0
+				stop_required = true
 
 	# 4. Intersection gridlock special behavior (п. 13.2)
 	if car.is_violator and car.violation_type == VIOLATION_WAFFLE_BLOCK:
@@ -2473,50 +2528,55 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 					if car.target_speed < 0.6:
 						stop_required = true
 
-	const MIN_GAP := 8.5
-	var desired_gap := MIN_GAP + maxf(0.0, car.speed) * 1.1
+	const MIN_GAP := 7.5
+	var desired_gap := MIN_GAP + maxf(0.0, car.speed) * 1.15
 
 	if lead_dist < desired_gap:
 		if lead_dist <= MIN_GAP:
 			car.target_speed = 0.0
-			car.speed = 0.0
 			stop_required = true
 		else:
-			var ratio := (lead_dist - MIN_GAP) / (desired_gap - MIN_GAP)
+			var ratio := clampf((lead_dist - MIN_GAP) / (desired_gap - MIN_GAP), 0.0, 1.0)
 			car.target_speed = minf(car.target_speed, maxf(0.0, lead_speed * ratio))
-			if car.target_speed < 0.6:
+			if car.target_speed < 0.35:
 				stop_required = true
 
-	# Smooth braking and acceleration
+	# Smooth realistic braking and acceleration (S-curve / exponential deceleration)
 	if stop_required or car.target_speed < 0.1:
-		car.speed = maxf(0.0, car.speed - 24.0 * delta)
+		var decel := 12.0 if (lead_dist < MIN_GAP or (target_stop_z < 900.0 and target_stop_z - car.position.z < 0.5)) else 6.5
+		car.speed = maxf(0.0, car.speed - decel * delta)
+	elif car.speed > car.target_speed:
+		car.speed = move_toward(car.speed, car.target_speed, 6.0 * delta)
 	else:
-		car.speed = move_toward(car.speed, car.target_speed, 9.5 * delta)
+		car.speed = move_toward(car.speed, car.target_speed, 8.5 * delta)
+
+	if car.speed < 0.04:
+		car.speed = 0.0
 
 	# Compute maximum advance distance without sudden snapping or teleportation
 	var step_dist := car.speed * delta
 	if lead_car != null and lead_dist < desired_gap:
 		var max_lead_step := maxf(0.0, lead_dist - MIN_GAP)
 		step_dist = minf(step_dist, max_lead_step)
-		if step_dist <= 0.001:
+		if step_dist <= 0.001 and (stop_required or car.target_speed < 0.2):
 			car.speed = 0.0
 
 	if target_stop_z < 900.0:
 		var max_stop_step := maxf(0.0, target_stop_z - car.position.z)
 		step_dist = minf(step_dist, max_stop_step)
-		if step_dist <= 0.001:
+		if step_dist <= 0.001 and (stop_required or car.target_speed < 0.2):
 			car.speed = 0.0
 
 	if target_stop_x_west < 900.0:
 		var max_stop_step := maxf(0.0, target_stop_x_west - car.position.x)
 		step_dist = minf(step_dist, max_stop_step)
-		if step_dist <= 0.001:
+		if step_dist <= 0.001 and (stop_required or car.target_speed < 0.2):
 			car.speed = 0.0
 
 	if target_stop_x_east > -900.0:
 		var max_stop_step := maxf(0.0, car.position.x - target_stop_x_east)
 		step_dist = minf(step_dist, max_stop_step)
-		if step_dist <= 0.001:
+		if step_dist <= 0.001 and (stop_required or car.target_speed < 0.2):
 			car.speed = 0.0
 
 	# 7. Smooth Trajectories & Turning Curves with Analytical Heading

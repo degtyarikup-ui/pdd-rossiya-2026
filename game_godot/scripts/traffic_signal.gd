@@ -111,8 +111,18 @@ static func set_state(node: Node3D,state: String,tram: String="straight",flash_o
 			var role:=name.trim_prefix("tram_")
 			on=(role in ["bottom","mid"] if tram=="straight" else role in ["bottom","left"] if tram=="left" else role in ["bottom","right"] if tram=="right" else role!="bottom" if tram=="stop" else tram=="all")
 		else:
-			on=bool(node.get_meta("arrow_active",true)) if name=="arrow" else state==name or (name=="yellow" and state=="flashing_yellow")
-			if state=="flashing_yellow" and name=="yellow": on=flash_on
+			if name == "arrow":
+				on = bool(node.get_meta("arrow_active", true))
+			elif state == name:
+				on = true
+			elif state == "flashing_yellow" and name == "yellow":
+				on = flash_on
+			elif state == "flashing_green" and name == "green":
+				on = flash_on
+			elif state == "red_yellow" and (name == "red" or name == "yellow"):
+				on = true
+			else:
+				on = false
 		for aperture: MeshInstance3D in lamp.find_children("aperture_*","MeshInstance3D",true,false):
 			aperture.material_override=lens_material(name,on)
 			aperture.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
