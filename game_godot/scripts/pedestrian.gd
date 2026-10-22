@@ -10,16 +10,17 @@ var _phase := 0.0
 var _amount := 0.0
 
 func configure(look: int, paint: Color) -> void:
-	_model = MeshInstance3D.new()
-	_model.name = "model"
+	if _model == null or not is_instance_valid(_model):
+		_model = MeshInstance3D.new()
+		_model.name = "model"
+		_material = Models.walker_material().duplicate()
+		_material.set_shader_parameter("manual_walk", true)
+		_model.material_override = _material
+		add_child(_model)
 	_model.mesh = Models.mesh_of("res://models/walkers/walker_%d.glb" % posmod(look, Models.WALKERS))
-	_material = Models.walker_material().duplicate()
-	_material.set_shader_parameter("manual_walk", true)
 	_material.set_shader_parameter("walker_paint", Vector3(paint.r, paint.g, paint.b))
 	_material.set_shader_parameter("walk_phase", 0.0)
 	_material.set_shader_parameter("walk_amount", 0.0)
-	_model.material_override = _material
-	add_child(_model)
 
 func _ready() -> void:
 	# Duplicated actors bind their own material, keeping the independent phase.

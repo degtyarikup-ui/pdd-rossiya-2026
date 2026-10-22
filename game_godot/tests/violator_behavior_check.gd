@@ -139,6 +139,31 @@ func _run_checks() -> void:
 	game._update_pedestrian(0.016)
 	_check("Pedestrian on sidewalk is elevated (Y >= 0.15)", game.pedestrian.position.y >= 0.15)
 
+	# 11. Cross street pedestrian signs
+	_check("West crosswalk sign 5.19.1 exists", game.find_child("Sign_5_19_1_West", true, false) != null)
+	_check("East crosswalk sign 5.19.1 exists", game.find_child("Sign_5_19_1_East", true, false) != null)
+
+	# 12. Lane 3 (Westbound) Priority Sign Violation Window
+	var lane3_prio = game.spawn_specific_car("east_west", 3, true, ViolatorScript.VIOLATION_PRIORITY_SIGN)
+	lane3_prio.position.x = 34.0
+	_check("Lane 3 PRIORITY_SIGN at spawn (X=34) does NOT trigger violation window prematurely", not game._is_car_entering_violation_window(lane3_prio))
+	_check("Lane 3 PRIORITY_SIGN at spawn (X=34) does NOT trigger exit window prematurely", not game._is_car_exiting_violation_window(lane3_prio))
+	lane3_prio.position.x = 5.0
+	_check("Lane 3 PRIORITY_SIGN at X=5.0 enters violation window", game._is_car_entering_violation_window(lane3_prio))
+	_check("Lane 3 PRIORITY_SIGN at X=5.0 does not exit violation window", not game._is_car_exiting_violation_window(lane3_prio))
+	lane3_prio.position.x = -3.5
+	_check("Lane 3 PRIORITY_SIGN at X=-3.5 exits violation window", game._is_car_exiting_violation_window(lane3_prio))
+
+	# 13. Lane 3 (Westbound) No Lights Violation Window
+	var lane3_lights = game.spawn_specific_car("east_west", 3, true, ViolatorScript.VIOLATION_NO_LIGHTS)
+	lane3_lights.position.x = 34.0
+	_check("Lane 3 NO_LIGHTS at spawn (X=34) does NOT enter window prematurely", not game._is_car_entering_violation_window(lane3_lights))
+	lane3_lights.position.x = 20.0
+	_check("Lane 3 NO_LIGHTS at X=20.0 enters window", game._is_car_entering_violation_window(lane3_lights))
+	_check("Lane 3 NO_LIGHTS at X=20.0 does not exit window", not game._is_car_exiting_violation_window(lane3_lights))
+	lane3_lights.position.x = -8.5
+	_check("Lane 3 NO_LIGHTS at X=-8.5 exits window", game._is_car_exiting_violation_window(lane3_lights))
+
 	game.queue_free()
 	await process_frame
 	
