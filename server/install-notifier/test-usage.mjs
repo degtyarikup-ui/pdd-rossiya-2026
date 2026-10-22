@@ -52,6 +52,29 @@ test('usage acceptance is durable, repeated delivery counts once and uses only d
   assert.equal((await state.storage.list({ prefix: 'q:' })).size, 0);
 });
 
+test('current Flutter iOS payload is accepted and stored with canonical platform', async () => {
+  const { post, body, state, writes } = setup();
+  const response = await post({ ...body, platform: 'iOS' });
+  assert.equal(response.status, 200);
+  const queued = [...(await state.storage.list({ prefix: 'q:' })).values()];
+  assert.equal(queued.length, 1);
+  assert.equal(queued[0].platform, 'ios');
+  assert.equal(queued[0].feature, body.events[0].feature);
+  assert.equal(writes.length, 0);
+});
+
+test('platform compatibility does not accept unknown names or write rejected batches', async () => {
+  const { post, body, state, writes } = setup();
+  for (const platform of ['IOS', 'macOS', 'Android', 'unknown', '', null]) {
+    const response = await post({ ...body, platform });
+    assert.equal(response.status, 400, String(platform));
+    assert.equal((await response.json()).error, 'bad usage batch');
+  }
+  assert.equal((await state.storage.list({ prefix: 'q:' })).size, 0);
+  assert.equal(state.storage.data.size, 0);
+  assert.equal(writes.length, 0);
+});
+
 test('usage API rejects invalid, future, stale and unsigned batches before accepting any event', async () => {
   const { post, body, state } = setup();
   assert.equal((await post(body, '')).status, 401);

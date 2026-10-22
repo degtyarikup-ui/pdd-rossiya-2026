@@ -7,9 +7,11 @@ export async function acceptUsage(request, env, { jsonResponse, trackStats }, no
   if (!env.INSTALLS || !env.STATS) return jsonResponse({ error: 'storage unavailable' }, 503);
   let body;
   try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'bad json' }, 400); }
+  // Existing Flutter clients send TargetPlatform.iOS.name as "iOS".
+  const platform = body?.platform === 'iOS' ? 'ios' : body?.platform;
   if (!/^[a-f0-9]{32}$/.test(body?.installId || '') || !Array.isArray(body?.events)
     || !body.events.length || body.events.length > 50
-    || !['android', 'ios', 'web'].includes(body.platform)) return jsonResponse({ error: 'bad usage batch' }, 400);
+    || !['android', 'ios', 'web'].includes(platform)) return jsonResponse({ error: 'bad usage batch' }, 400);
   if (body.events.some(e => !e || !/^[a-f0-9]{32}$/.test(e.id || '') || !USAGE_FEATURES.includes(e.feature)
     || !Number.isSafeInteger(e.ts) || e.ts < now - 90 * DAY || e.ts > now + 5 * 60000
     || new Date(e.ts + 3 * 3600000).toISOString().slice(0, 10) < USAGE_FROM)) {
@@ -20,7 +22,7 @@ export async function acceptUsage(request, env, { jsonResponse, trackStats }, no
   // Await durable acceptance. A partially accepted batch is safe to resend.
   for (const event of body.events) await trackStats(env, null, {
     id: 'usage:' + installation + ':' + event.id, kind: 'usage', ts: event.ts,
-    feature: event.feature, installation, platform: body.platform,
+    feature: event.feature, installation, platform,
   });
   return jsonResponse({ ok: true });
 }
