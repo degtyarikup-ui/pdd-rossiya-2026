@@ -3247,9 +3247,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamesRoadSignsTitle => 'Road signs';
 
   @override
-  String get gameReverseSignPrompt => 'What is this sign called?';
-
-  @override
   String get gamesViolatorTitle => 'Offender';
 
   @override

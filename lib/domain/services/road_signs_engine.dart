@@ -81,7 +81,7 @@ class RoadSignsEngine {
   }
 
   /// Создание вопроса для конкретного целевого знака [target].
-  RoadSignQuizQuestion? buildQuestionForSign(SignItem target, {bool? forceReverse}) {
+  RoadSignQuizQuestion? buildQuestionForSign(SignItem target) {
     // 1. Подбор 3 дистракторов без совпадения названий, номеров и народных названий.
     final distractors = selectDistractors(target, count: 3);
     if (distractors.length < 3) return null;
@@ -97,22 +97,16 @@ class RoadSignsEngine {
     final coreDef = extractCoreDefinition(target.description, target: target);
     final hasMeaning = coreDef.isNotEmpty;
 
-    final isReverse = forceReverse ?? _rnd.nextBool();
-    if (isReverse) {
-      type = RoadSignQuizType.reverseTitleMatch;
-      prompt = 'Как называется этот знак?';
+    final roll = _rnd.nextDouble();
+    if (hasFolk && roll < 0.30) {
+      type = RoadSignQuizType.folkNameMatch;
+      prompt = 'Какой знак в народе называют «${target.folkName!.trim()}»?';
+    } else if (hasMeaning && roll < 0.70) {
+      type = RoadSignQuizType.meaningDefinition;
+      prompt = formatMeaningPrompt(coreDef);
     } else {
-      final roll = _rnd.nextDouble();
-      if (hasFolk && roll < 0.30) {
-        type = RoadSignQuizType.folkNameMatch;
-        prompt = 'Какой знак в народе называют «${target.folkName!.trim()}»?';
-      } else if (hasMeaning && roll < 0.70) {
-        type = RoadSignQuizType.meaningDefinition;
-        prompt = formatMeaningPrompt(coreDef);
-      } else {
-        type = RoadSignQuizType.titleMatch;
-        prompt = 'Какой из этих знаков — «${target.title.trim()}»?';
-      }
+      type = RoadSignQuizType.titleMatch;
+      prompt = 'Какой из этих знаков — «${target.title.trim()}»?';
     }
 
     final officialQuote = extractOfficialQuote(

@@ -3250,9 +3250,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamesRoadSignsTitle => 'Белгілер';
 
   @override
-  String get gameReverseSignPrompt => 'Бұл белгі қалай аталады?';
-
-  @override
   String get gamesViolatorTitle => 'Ереже бұзушы';
 
   @override

@@ -996,7 +996,6 @@
   "gameSignScenario5_15_1_1Prompt": "Ортаңғы жолақтан жебе тек алға қарай. Солға бұрыла аламын ба?",
   "gameSignScenario5_15_1_1Explanation": "Жоқ. Бұл жолақтан тек алға жүруге рұқсат етіледі. Бұрылу үшін алдын ала қолайлы жолақты алу керек.",
   "gamesRoadSignsTitle": "Белгілер",
-  "gameReverseSignPrompt": "Бұл белгі қалай аталады?",
   "gameComboStreak": "{count} қатарынан!",
   "@gameComboStreak": {
     "description": "Combo streak pop-up message in mini-games.",

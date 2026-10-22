@@ -462,50 +462,5 @@ void main() {
       expect(updatedState.totalCorrect, 1);
       expect(updatedState.totalAnswered, 2);
     });
-
-    testWidgets('RoadSignsReverseView renders large sign and vertical option cards for reverse questions', (tester) async {
-      setupViewport(tester);
-      final reverseQuestion = RoadSignQuizQuestion(
-        id: 'rev_q1',
-        correctSign: sign21,
-        options: const [sign21, sign24, sign31, sign519],
-        correctAnswerIndex: 0,
-        prompt: 'Как называется этот знак?',
-        officialRuleQuote: 'Дорога, на которой предоставлено право преимущественного проезда.',
-        type: RoadSignQuizType.reverseTitleMatch,
-      );
-
-      await tester.pumpWidget(
-        buildTestApp(
-          RoadSignsScreen(
-            initialDeck: [reverseQuestion, testQuestion2],
-            initialSeconds: 60,
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Reverse question prompt is displayed
-      expect(find.text('Как называется этот знак?'), findsOneWidget);
-
-      // 4 text options are present
-      expect(find.text(sign21.title), findsOneWidget);
-      expect(find.text(sign24.title), findsOneWidget);
-      expect(find.text(sign31.title), findsOneWidget);
-      expect(find.text(sign519.title), findsOneWidget);
-
-      // Tap correct text option (sign21)
-      await tester.tap(find.text(sign21.title));
-      await tester.pump();
-
-      // Advance after highlight
-      await tester.pump(const Duration(milliseconds: 450));
-      await tester.pump();
-
-      // Advances to question 2
-      expect(find.text(testQuestion2.prompt), findsOneWidget);
-      expect(find.text('12'), findsOneWidget);
-    });
   });
 }

@@ -5428,12 +5428,6 @@ abstract class AppLocalizations {
   /// **'Знаки'**
   String get gamesRoadSignsTitle;
 
-  /// No description provided for @gameReverseSignPrompt.
-  ///
-  /// In ru, this message translates to:
-  /// **'Как называется этот знак?'**
-  String get gameReverseSignPrompt;
-
   /// No description provided for @gamesViolatorTitle.
   ///
   /// In ru, this message translates to:

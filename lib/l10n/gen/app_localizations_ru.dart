@@ -3261,9 +3261,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gamesRoadSignsTitle => 'Знаки';
 
   @override
-  String get gameReverseSignPrompt => 'Как называется этот знак?';
-
-  @override
   String get gamesViolatorTitle => 'Нарушитель';
 
   @override

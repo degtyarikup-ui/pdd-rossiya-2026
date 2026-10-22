@@ -17,7 +17,6 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_emblem.dart';
 import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_grid.dart';
 import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_modal.dart';
-import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_reverse_view.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
@@ -356,82 +355,61 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
             _buildHeader(colors),
             const SizedBox(height: AppDimensions.spacingM),
             if (currentQuestion != null) ...[
-              if (currentQuestion.type == RoadSignQuizType.reverseTitleMatch)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppDimensions.screenPadding,
-                      0,
-                      AppDimensions.screenPadding,
-                      AppDimensions.spacingXL,
-                    ),
-                    child: RoadSignsReverseView(
-                      question: currentQuestion,
-                      onSelectOption: _onOptionSelected,
-                      isEnabled: !_isProcessing && !_isGameOver,
-                      selectedIndex: _selectedOptionIndex,
-                      correctIndex: currentQuestion.correctAnswerIndex,
-                      isCorrect: _answeredCorrectly,
-                    ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.screenPadding,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  constraints: const BoxConstraints(
+                    maxHeight: 120,
                   ),
-                )
-              else ...[
-                Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.screenPadding,
+                    horizontal: AppDimensions.spacingL,
+                    vertical: AppDimensions.spacingM,
                   ),
-                  child: Container(
-                    width: double.infinity,
-                    constraints: const BoxConstraints(
-                      maxHeight: 120,
+                  decoration: BoxDecoration(
+                    color: colors.cardBackground,
+                    borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+                    boxShadow: gameSoftShadow(colors),
+                    border: Border.all(
+                      color: colors.divider.withValues(alpha: 0.5),
+                      width: 1,
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.spacingL,
-                      vertical: AppDimensions.spacingM,
+                  ),
+                  child: Text(
+                    currentQuestion.prompt,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: colors.primaryText,
+                      height: 1.35,
                     ),
-                    decoration: BoxDecoration(
-                      color: colors.cardBackground,
-                      borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-                      boxShadow: gameSoftShadow(colors),
-                      border: Border.all(
-                        color: colors.divider.withValues(alpha: 0.5),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      currentQuestion.prompt,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: colors.primaryText,
-                        height: 1.35,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: AppDimensions.spacingL),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppDimensions.screenPadding,
-                      0,
-                      AppDimensions.screenPadding,
-                      AppDimensions.spacingXL,
-                    ),
-                    child: RoadSignsGrid(
-                      options: currentQuestion.options,
-                      onSelectOption: _onOptionSelected,
-                      isEnabled: !_isProcessing && !_isGameOver,
-                      selectedIndex: _selectedOptionIndex,
-                      correctIndex: currentQuestion.correctAnswerIndex,
-                      isCorrect: _answeredCorrectly,
-                    ),
+              ),
+              const SizedBox(height: AppDimensions.spacingL),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.screenPadding,
+                    0,
+                    AppDimensions.screenPadding,
+                    AppDimensions.spacingXL,
+                  ),
+                  child: RoadSignsGrid(
+                    options: currentQuestion.options,
+                    onSelectOption: _onOptionSelected,
+                    isEnabled: !_isProcessing && !_isGameOver,
+                    selectedIndex: _selectedOptionIndex,
+                    correctIndex: currentQuestion.correctAnswerIndex,
+                    isCorrect: _answeredCorrectly,
                   ),
                 ),
-              ],
+              ),
             ],
           ],
         ),
