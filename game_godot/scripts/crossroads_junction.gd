@@ -250,7 +250,7 @@ func build_tram_path(curve: Curve3D) -> void:
 
 
 func _create_materials() -> void:
-	asphalt_mat = sc.surface_material("asphalt", Color("#1C1E22"))
+	asphalt_mat = sc.surface_material("asphalt", Color("#2C2F36"))
 	dirt_mat = sc.surface_material("dirt", Color("#8D7151"))
 	marking_mat = StandardMaterial3D.new()
 	marking_mat.albedo_color = Color("#F2F4F8")
@@ -264,17 +264,18 @@ func _create_materials() -> void:
 
 func _update_asphalt_tint() -> void:
 	if asphalt_mat == null: return
+	var tint_col: Color
 	if _is_highway_junction():
-		# Fresh dark asphalt on highway
-		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.10, 0.11, 0.13))
+		tint_col = Color("#24272D")
 	elif _is_rural_junction():
-		# Weathered countryside asphalt
-		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.18, 0.19, 0.21))
+		tint_col = Color("#3A3D44")
 	elif _is_suburban_junction():
-		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.14, 0.15, 0.17))
+		tint_col = Color("#30333A")
 	else:
-		# Standard city asphalt - deep dark graphite
-		asphalt_mat.set_shader_parameter("plain_tint", Vector3(0.12, 0.13, 0.15))
+		# Standard city asphalt matching "Живой город"
+		tint_col = Color("#2C2F36")
+	asphalt_mat.set_shader_parameter("surface_colour", Vector3(tint_col.r, tint_col.g, tint_col.b))
+	asphalt_mat.set_shader_parameter("plain_tint", Vector3(tint_col.r, tint_col.g, tint_col.b))
 
 
 func _update_crowd_visibility() -> void:
@@ -578,7 +579,7 @@ func _ground_shares(p: Vector2) -> Vector3:
 
 ## A ground mesh over [x0, x1] × [z0, z1] sampled from the field.
 func _field_mesh(x0: float, x1: float, z0: float, z1: float, y: float, max_long := FIELD_STEP) -> MeshInstance3D:
-	var colours := [Color("#1C1E22"), Color("#8D7151"), sc.color("ground")]
+	var colours := [Color("#2C2F36"), Color("#8D7151"), sc.color("ground")]
 	var layers := [sc.layer_of("asphalt"), sc.layer_of("dirt"), sc.layer_of("grass")]
 	var nx := maxi(1, ceili((x1 - x0) / (FIELD_STEP if x1 - x0 < 20.0 else max_long)))
 	var nz := maxi(1, ceili((z1 - z0) / (FIELD_STEP if z1 - z0 < 20.0 else max_long)))
