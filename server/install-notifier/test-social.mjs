@@ -171,3 +171,85 @@ test('clearing the next date during a batch prevents a stale queue snapshot from
     assert.equal(next.status,'queued');assert.equal(next.scheduledAt,null);
   } finally {fixture.restore();}
 });
+
+for (const bulk of [false, true]) {
+  test(`${bulk ? 'bulk' : 'individual'} deletion excludes the Drive file from later imports`, async () => {
+    const f = await schedulerFixture([{ id: 'removed', accountId: 'a', driveFileId: 'video', fileName: 'video.mp4', status: 'failed' }],
+      [{ id: 'video', name: 'video.mp4', mimeType: 'video/mp4' }, { id: 'new-video', name: 'new.mp4', mimeType: 'video/mp4' }]);
+    try {
+      const response = await f.call(bulk ? 'posts/bulk' : 'posts/delete', bulk
+        ? { ids: ['removed'], action: 'delete' } : { id: 'removed' });
+      assert.equal(response.status, 200);
+      assert.deepEqual(JSON.parse(await f.env.INSTALLS.get('social:excluded:a')), ['video']);
+      await runAutoPostForTest(f);
+      await runAutoPostForTest(f);
+      assert.deepEqual(f.read('posts').map(p => p.driveFileId), ['new-video']);
+      assert.ok(f.requests.every(url => url.includes('/drive/v3/files?')));
+    } finally { f.restore(); }
+  });
+}
+
+async function runAutoPostForTest(f) {
+  const { runAutoPost } = await import('./social.js');
+  return runAutoPost(f.env, 'https://w.test');
+}
+
+test('a failed exclusion write does not remove a record without remembering the deletion', async () => {
+  const f = setup(), before = f.read('posts'), put = f.env.INSTALLS.put;
+  f.env.INSTALLS.put = async (key, value) => {
+    if (key.startsWith('social:excluded:')) throw new Error('fixture storage unavailable');
+    return put(key, value);
+  };
+  await assert.rejects(f.call('posts/delete', { id: 'partial' }));
+  assert.deepEqual(f.read('posts'), before);
+});
+
+test('deletion keeps an in-flight publication visible until its outcome is known', async () => {
+  const f = setup(), before = f.read('posts');
+  assert.equal((await f.call('posts/delete', { id: 'busy' })).status, 409);
+  assert.equal((await f.call('posts/bulk', { ids: ['busy', 'partial'], action: 'delete' })).status, 409);
+  assert.deepEqual(f.read('posts'), before);
+});
+
+test('an invalid exclusion record stops import without recreating removed videos', async () => {
+  const f = await schedulerFixture([], [{ id: 'video', name: 'video.mp4', mimeType: 'video/mp4' }]);
+  try {
+    await f.env.INSTALLS.put('social:excluded:a', '{broken');
+    await runAutoPostForTest(f);
+    assert.deepEqual(f.read('posts'), []);
+    assert.ok(f.read('log').some(entry => /Импорт остановлен/.test(entry.message)));
+  } finally { f.restore(); }
+});
+
+test('Drive import preserves an edit made while a caption was being downloaded', async () => {
+  const f = await schedulerFixture([{ id: 'existing', accountId: 'a', driveFileId: 'old', status: 'queued', caption: 'before' }],
+    [{ id: 'video', name: 'video.mp4', mimeType: 'video/mp4' }, { id: 'caption', name: 'video.txt', mimeType: 'text/plain' }]);
+  const fetch = globalThis.fetch;
+  globalThis.fetch = async url => {
+    if (String(url).includes('/files/caption?')) {
+      await f.env.INSTALLS.put('social:posts', JSON.stringify([{ ...f.read('posts')[0], caption: 'concurrent edit' }]));
+      return new Response('new caption');
+    }
+    return fetch(url);
+  };
+  try {
+    await runAutoPostForTest(f);
+    assert.equal(f.read('posts')[0].caption, 'concurrent edit');
+    assert.equal(f.read('posts')[1].caption, 'new caption');
+  } finally { f.restore(); }
+});
+
+for (const bulk of [false, true]) {
+  test(`${bulk ? 'bulk' : 'individual'} requeue preserves successful platform status and identity`, async () => {
+    const f = setup(), before = f.read('posts').find(p => p.id === 'partial');
+    const response = await f.call(bulk ? 'posts/bulk' : 'posts/mark', bulk
+      ? { ids: ['partial', 'done', 'busy'], action: 'requeue' } : { id: 'partial', status: 'queued' });
+    assert.equal(response.status, 200);
+    const after = f.read('posts').find(p => p.id === 'partial');
+    assert.equal(after.youtubeStatus, 'published');
+    assert.equal(after.youtubePermalink, before.youtubePermalink);
+    assert.equal(after.instagramStatus, 'queued');
+    assert.equal(f.read('posts').find(p => p.id === 'done').status, 'published');
+    assert.equal(f.read('posts').find(p => p.id === 'busy').status, 'processing');
+  });
+}

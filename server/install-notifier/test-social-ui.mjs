@@ -34,7 +34,7 @@ async function startPreview() {
   await env.INSTALLS.put('social:posts', JSON.stringify([
     {id:'q',accountId:'a',title:'Pilot 01 v3',fileName:'001_pilot.mp4',status:'queued',targets:['youtube'],instagramStatus:'queued',youtubeStatus:'queued',streamToken:'fixture'},
     {id:'done',accountId:'a',title:'Успей узнать знак',fileName:'002_znak.mp4',status:'published',targets:['instagram','youtube'],instagramStatus:'published',youtubeStatus:'published',streamToken:'fixture'},
-    {id:'fail',accountId:'a',title:'Разворот на перекрёстке',fileName:'003_turn.mp4',status:'failed',targets:['instagram','youtube'],instagramStatus:'failed',youtubeStatus:'published',error:'Instagram: временная ошибка',streamToken:'fixture'}
+    {id:'fail',accountId:'a',title:'Разворот на перекрёстке',fileName:'003_turn.mp4',status:'failed',targets:['instagram','youtube'],instagramStatus:'failed',instagramNeedsReview:true,youtubeStatus:'published',error:'Instagram: прежняя публикация недоступна',streamToken:'fixture'}
   ]));
   const requests = [];
   const server = createServer(async (incoming,outgoing)=>{
@@ -132,6 +132,12 @@ if(process.argv.includes('--serve')) {
       await page.locator('#sc-search').clear();
       await page.locator('[data-filter="failed"]').click();await page.locator('[data-post="fail"]').waitFor();
       assert.match(await page.locator('[data-post="fail"]').innerText(),/YouTube\s+Опубликовано/);
+      const beforeReplacement=await read('posts');
+      let replacementDialog=false;
+      page.once('dialog',async dialog=>{replacementDialog=true;assert.match(dialog.message(),/Создать новую запись Instagram/);assert.match(dialog.message(),/YouTube повторно публиковаться не будет/);await dialog.dismiss();});
+      await page.locator('[data-post="fail"]').getByRole('button',{name:'Новая публикация'}).click();
+      assert.equal(replacementDialog,true);
+      assert.deepEqual(await read('posts'),beforeReplacement,'cancelling replacement does not change the queue');
       await screenshot('partial-error');
       await page.locator('[data-filter="queued"]').click();
       await page.locator('#sc-active').uncheck();await page.locator('#sc-save-schedule').click();

@@ -105,9 +105,9 @@ test('published media verification has a ten-second deadline and timeout remains
   const f = fixture(t, [{ status_code: 'PUBLISHED' }]);
   const timeout = AbortSignal.abort(new DOMException('private timeout details', 'TimeoutError'));
   const budgets = [];
-  t.mock.method(AbortSignal, 'timeout', budget => { budgets.push(budget); return timeout; });
+  t.mock.method(AbortSignal, 'timeout', budget => { budgets.push(budget); return budgets.length === 1 ? new AbortController().signal : timeout; });
   assert.equal((await publishWithClock(t, f)).status, 'error');
-  assert.deepEqual(budgets, [10000]);
+  assert.deepEqual(budgets, [10000, 10000]);
   assert.equal(f.calls[1].signal, timeout);
   assert.notEqual(f.current().instagramNeedsReview, true);
   assert.match(f.current().error, /временно не дал проверить/);
@@ -216,7 +216,7 @@ for (const transient of [
   });
 }
 
-test('an explicit manual retry rechecks the same container without reuploading YouTube', async t => {
+test('ordinary manual retry cannot clear a review flag or replay the old publication', async t => {
   const f = fixture(t, [{ status_code: 'PUBLISHED' }], { status: 'failed', instagramStatus: 'failed', instagramNeedsReview: true });
   const request = new Request('https://fixture.invalid/api/admin/social/posts/publish-platform', {
     method: 'POST', headers: { 'content-type': 'application/json' },
@@ -226,13 +226,14 @@ test('an explicit manual retry rechecks the same container without reuploading Y
   await publishWithClock(t, f, async () => {
     const response = await handleSocialAdmin(request, f.env, { waitUntil: task => tasks.push(task) }, new URL(request.url), { jsonResponse: (body, status = 200) => Response.json(body, { status }) });
     assert.equal(response.status, 200);
+    assert.equal((await response.json()).code, 'instagram_review_required');
     await Promise.all(tasks);
   });
-  assert.equal(f.current().status, 'published');
-  assert.equal(f.current().instagramNeedsReview, false);
+  assert.equal(f.current().status, 'failed');
+  assert.equal(f.current().instagramNeedsReview, true);
   assert.equal(f.current().instagramContainerId, f.post.instagramContainerId);
   assert.equal(f.current().youtubeVideoId, f.post.youtubeVideoId);
-  assert.ok(f.calls.every(call => call.method === 'GET'));
+  assert.equal(f.calls.length, 0);
 });
 
 for (const http of [401, 429, 500]) {
@@ -436,7 +437,7 @@ test('optional permalink rate limit preserves the successfully published media I
 });
 
 test('cooldown keeps YouTube independent and changes a paused Instagram processing status to queued without erasing history', async t => {
-  const f = fixture(t, [], { status: 'failed', instagramStatus: 'processing', youtubeStatus: 'queued', driveFileId: 'fixture-video',
+  const f = fixture(t, [], { status: 'failed', instagramStatus: 'processing', youtubeStatus: 'queued', youtubeVideoId: null, youtubePermalink: null, driveFileId: 'fixture-video',
     instagramPreviousAttempts: [{ containerId: 'old-fixture-container', mediaId: 'old-fixture-media' }] });
   f.set(cooldownKey, { reason: 'rate_limit', until: Date.now() + 3600000 });
   f.set('social:settings', { workerOrigin: 'https://fixture.invalid', googleClientId: 'fixture', googleClientSecret: 'fixture', googleRefreshToken: 'fixture-refresh' });
@@ -524,5 +525,162 @@ test('manual publish and a mixed batch leave held Instagram posts untouched whil
   assert.equal(batch.started, 1); assert.equal(batch.held, 1);
   await Promise.all(tasks);
   assert.deepEqual(f.current(), before);
+  assert.equal(f.calls.length, 0);
+});
+
+function replacementFixture(t) {
+  const ids = { old: '17890000000000011', next: '17890000000000012', media: '17890000000000013' };
+  const f = fixture(t, [], { status: 'failed', instagramStatus: 'failed', instagramNeedsReview: true,
+    instagramReviewReason: 'media_unavailable', instagramContainerId: ids.old, streamToken: 'fixture-stream' });
+  const controls = { create: null, verify: null, containerStatus: 'PUBLISHED', owner: 'fixture-account', onOldMedia: null };
+  f.controls.other = async (url, options) => {
+    if (url.pathname.endsWith('/me')) return Response.json({ user_id: controls.owner, username: 'fixture' });
+    if (url.pathname.endsWith('/' + ids.old)) return Response.json({ status_code: controls.containerStatus });
+    if (url.pathname.endsWith('/' + f.post.instagramMediaId)) {
+      if (controls.onOldMedia) controls.onOldMedia();
+      return controls.verify ? controls.verify() : Response.json({ error: { code: 100, error_subcode: 33 } }, { status: 400 });
+    }
+    if (url.pathname.endsWith('/media')) return controls.create ? controls.create() : Response.json({ id: ids.next });
+    if (url.pathname.endsWith('/' + ids.next)) return Response.json({ status_code: 'FINISHED' });
+    if (url.pathname.endsWith('/media_publish')) return Response.json({ id: ids.media });
+    if (url.pathname.endsWith('/' + ids.media)) {
+      assert.equal(f.current().instagramMediaId, ids.media, 'publish response is saved before permalink GET');
+      return Response.json({ id: ids.media, permalink: 'https://www.instagram.com/reel/replacement/' });
+    }
+    return null;
+  };
+  const tasks = [];
+  const call = async (body = { id: f.post.id, confirmReplacement: true }, path = 'replace-instagram') => {
+    const request = new Request('https://fixture.invalid/api/admin/social/posts/' + path, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const response = await handleSocialAdmin(request, f.env, { waitUntil: task => tasks.push(task) }, new URL(request.url), {
+      jsonResponse: (payload, status = 200) => Response.json(payload, { status }),
+    });
+    return { status: response.status, body: await response.json() };
+  };
+  return { ...f, ids, replacement: controls, tasks, call };
+}
+
+test('replacement requires explicit confirmation and respects cooldown before all Meta calls', async t => {
+  const f = replacementFixture(t);
+  assert.equal((await f.call({ id: f.post.id })).status, 400);
+  assert.equal(f.calls.length, 0);
+  f.set(cooldownKey, { reason: 'rate_limit', until: Date.now() + 3600000 });
+  const before = f.current();
+  assert.equal((await f.call()).body.code, 'instagram_rate_limited');
+  assert.equal(f.tasks.length, 0);
+  assert.deepEqual(f.current(), before);
+  assert.equal(f.calls.length, 0);
+});
+
+test('replacement archives the unavailable attempt, creates and publishes once, preserving YouTube and content', async t => {
+  const f = replacementFixture(t), before = f.current();
+  await publishWithClock(t, f, async () => {
+    assert.equal((await f.call()).body.ok, true);
+    await Promise.all(f.tasks);
+  });
+  assert.equal(f.current().status, 'published');
+  assert.equal(f.current().instagramReplacementAttempt.stage, 'published');
+  assert.equal(f.current().instagramContainerId, f.ids.next);
+  assert.equal(f.current().instagramMediaId, f.ids.media);
+  assert.equal(f.current().instagramPreviousAttempts[0].containerId, before.instagramContainerId);
+  assert.equal(f.current().instagramPreviousAttempts[0].mediaId, before.instagramMediaId);
+  assert.equal(f.current().instagramPreviousAttempts[0].permalink, before.instagramPermalink);
+  for (const key of ['youtubeStatus', 'youtubeVideoId', 'youtubePermalink', 'caption', 'scheduledAt', 'streamToken']) assert.equal(f.current()[key], before[key]);
+  assert.deepEqual(f.calls.filter(c => c.method === 'POST').map(c => c.path), ['/v21.0/fixture-account/media', '/v21.0/fixture-account/media_publish']);
+  assert.ok(f.calls.every(c => c.path.startsWith('/v21.0/')));
+});
+
+test('a currently available old media object is reconciled without a replacement or any POST', async t => {
+  const f = replacementFixture(t);
+  f.replacement.verify = () => Response.json({ id: f.post.instagramMediaId, permalink: f.post.instagramPermalink });
+  assert.equal((await f.call()).body.ok, true);
+  assert.equal(f.tasks.length, 0);
+  assert.equal(f.current().status, 'published');
+  assert.equal(f.current().instagramNeedsReview, false);
+  assert.ok(f.calls.every(c => c.method === 'GET'));
+  assert.equal(f.current().instagramContainerId, f.ids.old);
+});
+
+for (const kind of ['owner', 'not-published', 'quota', 'unavailable', 'changed', 'caption']) {
+  test(`replacement ${kind} preflight stops before create and retains old identities`, async t => {
+    const f = replacementFixture(t);
+    if (kind === 'owner') f.replacement.owner = 'another-account';
+    if (kind === 'not-published') f.replacement.containerStatus = 'IN_PROGRESS';
+    if (kind === 'quota') f.replacement.verify = () => quota();
+    if (kind === 'unavailable') f.replacement.verify = () => Response.json({}, { status: 503 });
+    if (kind === 'changed') f.replacement.onOldMedia = () => f.update({ instagramMediaId: '17890000000000999' });
+    if (kind === 'caption') f.replacement.onOldMedia = () => f.update({ caption: 'concurrent caption' });
+    assert.equal((await f.call()).body.ok, false);
+    assert.equal(f.tasks.length, 0);
+    assert.equal(f.calls.some(c => c.method === 'POST'), false);
+    assert.equal(f.current().instagramContainerId, f.ids.old);
+    assert.equal(f.current().youtubeVideoId, f.post.youtubeVideoId);
+    if (kind === 'quota') assert.equal(f.get(cooldownKey).reason, 'rate_limit');
+  });
+}
+
+test('an ambiguous replacement create is never replayed, never clears old IDs, and blocks a second attempt', async t => {
+  const f = replacementFixture(t);
+  f.replacement.create = () => { throw new TypeError('private token and video URL'); };
+  assert.equal((await f.call()).body.ok, true);
+  await Promise.all(f.tasks);
+  const after = f.current();
+  assert.equal(after.status, 'failed');
+  assert.equal(after.instagramNeedsReview, true);
+  assert.equal(after.instagramContainerId, f.ids.old);
+  assert.equal(after.instagramMediaId, f.post.instagramMediaId);
+  assert.equal(after.instagramReplacementAttempt.stage, 'create_started');
+  assert.doesNotMatch(after.error, /private|token|URL/);
+  const calls = f.calls.length;
+  assert.equal((await f.call()).body.ok, false);
+  assert.equal(f.calls.length, calls);
+  assert.equal(f.calls.filter(c => c.method === 'POST').length, 1);
+});
+
+test('deletion during processing prevents media_publish and never resurrects a queue record', async t => {
+  const f = fixture(t, [{ status_code: 'FINISHED' }]);
+  f.controls.onStatus = () => f.set('social:posts', []);
+  assert.equal((await publishWithClock(t, f)).status, 'error');
+  assert.equal(f.calls.some(c => c.method === 'POST'), false);
+  assert.deepEqual(f.get('social:posts'), []);
+});
+
+test('a reset YouTube status with an existing identity cannot trigger a duplicate upload', async t => {
+  const f = fixture(t, [], { status: 'queued', instagramStatus: 'published', youtubeStatus: 'queued' });
+  const before = f.current();
+  assert.equal((await publishPost(f.env, f.post.id, 'https://fixture.invalid', null, ['youtube'])).status, 'error');
+  assert.equal(f.calls.length, 0);
+  assert.equal(f.current().youtubeNeedsReview, true);
+  assert.equal(f.current().youtubeVideoId, before.youtubeVideoId);
+  assert.equal(f.current().youtubePermalink, before.youtubePermalink);
+});
+
+test('lost publish response retains the new container and does not create a second attempt', async t => {
+  const f = replacementFixture(t), original = f.controls.other;
+  f.controls.other = (url, options) => {
+    if (url.pathname.endsWith('/media_publish')) throw new TypeError('private token and URL');
+    return original(url, options);
+  };
+  await publishWithClock(t, f, async () => { await f.call(); await Promise.all(f.tasks); });
+  assert.equal(f.current().instagramContainerId, f.ids.next);
+  assert.equal(f.current().instagramReplacementAttempt.stage, 'container_saved');
+  assert.equal(f.current().instagramPreviousAttempts[0].containerId, f.ids.old);
+  assert.equal(f.calls.filter(c => c.method === 'POST').length, 2, 'one create and one publish, no fallback');
+  assert.doesNotMatch(f.current().error, /private|token|URL/);
+  f.update({ instagramNeedsReview: true });
+  const calls = f.calls.length;
+  assert.equal((await f.call()).body.ok, false);
+  assert.equal(f.calls.length, calls);
+});
+
+test('a terminated replacement before create response becomes a visible review failure without another upload', async t => {
+  const f = fixture(t, [], { status: 'processing', instagramNeedsReview: true,
+    instagramReplacementAttempt: { id: 'pending', stage: 'create_started', startedAt: new Date(Date.now() - 120000).toISOString() } });
+  assert.deepEqual(await runAutoPost(f.env, 'https://fixture.invalid'), []);
+  assert.equal(f.current().status, 'failed');
+  assert.equal(f.current().instagramReviewReason, 'replacement_unconfirmed');
+  assert.equal(f.current().instagramContainerId, f.post.instagramContainerId);
   assert.equal(f.calls.length, 0);
 });

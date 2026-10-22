@@ -442,11 +442,14 @@ function scRetryButtons(p) {
   var targets = scTargetsOf(p);
   var out = [];
   if (targets.indexOf('instagram') !== -1 && p.instagramStatus !== 'published' && p.instagramStatus !== 'processing') {
-    out.push('<button class="btn-action sc-retry" onclick="scRetry(event, \\'' + p.id + '\\', \\'instagram\\')">'
-      + SC_ICONS.ig + 'Повторить</button>');
+    var uncertain = p.instagramNeedsReview && p.instagramReplacementAttempt && p.instagramReplacementAttempt.stage !== 'published';
+    out.push('<button class="btn-action sc-retry" ' + (uncertain ? 'disabled' : 'onclick="scRetry(event, \\'' + p.id + '\\', \\'instagram\\')"') + '>'
+      + SC_ICONS.ig + (uncertain ? 'Нужна проверка попытки' : p.instagramNeedsReview ? 'Новая публикация' : 'Повторить') + '</button>');
   }
   if (targets.indexOf('youtube') !== -1 && p.youtubeStatus !== 'published' && p.youtubeStatus !== 'processing') {
-    out.push('<button class="btn-action sc-retry" onclick="scRetry(event, \\'' + p.id + '\\', \\'youtube\\')">'
+    if (p.youtubeNeedsReview && p.youtubePermalink && /^https:\\/\\/(www\\.)?youtube\\.com\\/shorts\\/[A-Za-z0-9_-]+\\/?$/.test(p.youtubePermalink)) {
+      out.push('<a class="btn-action sc-retry" href="' + scEsc(p.youtubePermalink) + '" target="_blank" rel="noopener">' + SC_ICONS.yt + 'Проверить публикацию</a>');
+    } else out.push('<button class="btn-action sc-retry" onclick="scRetry(event, \\'' + p.id + '\\', \\'youtube\\')">'
       + SC_ICONS.yt + 'Повторить</button>');
   }
   // Пока ролик просто ждёт очереди, кнопки повтора не нужны — только при сбое.
@@ -458,10 +461,14 @@ window.scRetry = async function (ev, id, platform) {
   ev.stopPropagation();
   var key = id + ':' + platform;
   if (scBusy[key]) return;
+  var post = (scState.posts || []).find(function (p) { return p.id === id; });
+  var replacement = platform === 'instagram' && post && post.instagramNeedsReview === true;
+  if (replacement && !confirm('Создать новую запись Instagram для «' + post.fileName + '»? Сервер сначала проверит, что прежний ролик недоступен. YouTube повторно публиковаться не будет.')) return;
   scBusy[key] = true;
   if (ev.currentTarget) ev.currentTarget.disabled = true;
   try {
-    var res = await scApi('posts/publish-platform', { id: id, platform: platform });
+    var res = await scApi(replacement ? 'posts/replace-instagram' : 'posts/publish-platform', replacement
+      ? { id: id, confirmReplacement: true } : { id: id, platform: platform });
     if (res.ok === false) throw new Error(res.message || res.error || 'не получилось');
     scToast(res.message || 'Запустил');
     await loadSocial();

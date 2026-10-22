@@ -20,6 +20,7 @@ const KV_POSTS = 'social:posts';
 const KV_LOG = 'social:log';
 const KV_GOOGLE_TOKEN = 'social:google_token';
 const KV_INSTAGRAM_COOLDOWN = 'social:instagram_cooldown';
+const KV_EXCLUDED_PREFIX = 'social:excluded:';
 const IG_COOLDOWN_MS = 60 * 60 * 1000;
 const IG_MAX_COOLDOWN_MS = 24 * IG_COOLDOWN_MS;
 const instagramCooldownMemory = new WeakMap();
@@ -218,6 +219,36 @@ async function getPosts(env) {
   return await kvJson(env, KV_POSTS, []);
 }
 
+async function getExcludedVideos(env, accountId) {
+  const raw = await env.INSTALLS.get(KV_EXCLUDED_PREFIX + accountId);
+  if (raw === null || raw === undefined) return new Set();
+  let ids;
+  try { ids = JSON.parse(raw); } catch (_) {}
+  if (!Array.isArray(ids) || ids.some(id => typeof id !== 'string' || !id)) {
+    throw new Error('Не удалось проверить исключённые видео. Импорт остановлен.');
+  }
+  return new Set(ids);
+}
+
+async function excludeVideos(env, posts) {
+  for (const accountId of new Set(posts.map(p => p.accountId))) {
+    const ids = await getExcludedVideos(env, accountId);
+    for (const post of posts) if (post.accountId === accountId && post.driveFileId) ids.add(post.driveFileId);
+    await kvPut(env, KV_EXCLUDED_PREFIX + accountId, [...ids]);
+  }
+}
+
+function requeuePost(post) {
+  const next = { ...post, error: post.instagramNeedsReview ? post.error : null, markedManually: false };
+  // Queueing is a retry of missing destinations, never permission to duplicate
+  // an already successful publication or erase its identity.
+  next.instagramStatus = post.instagramStatus === 'published' ? 'published' : 'queued';
+  next.youtubeStatus = post.youtubeStatus === 'published' ? 'published' : 'queued';
+  const targets = post.targets || ['instagram', 'youtube'];
+  next.status = targets.every(t => next[t + 'Status'] === 'published') ? 'published' : 'queued';
+  return next;
+}
+
 /** Точечное обновление ролика: очередь лежит одним значением в KV, поэтому
  *  всегда перечитываем её перед записью, чтобы не затереть соседние правки. */
 async function patchPost(env, postId, patch) {
@@ -399,11 +430,12 @@ export async function syncAccountVideos(env, account) {
   videos.sort((a, b) => String(a.name).localeCompare(String(b.name), 'ru', { numeric: true }));
 
   const posts = await getPosts(env);
+  const excluded = await getExcludedVideos(env, account.id);
   const known = new Set(posts.filter((p) => p.accountId === account.id).map((p) => p.driveFileId));
 
   let added = 0;
   for (const file of videos) {
-    if (known.has(file.id)) continue;
+    if (known.has(file.id) || excluded.has(file.id)) continue;
 
     const name = baseName(file.name);
     let caption = '';
@@ -443,7 +475,15 @@ export async function syncAccountVideos(env, account) {
   }
 
   if (added) {
-    await kvPut(env, KV_POSTS, posts);
+    // Downloads can take time. Merge into fresh state and recheck exclusions so
+    // an import cannot restore a just-deleted post or overwrite another edit.
+    const latest = await getPosts(env);
+    const latestExcluded = await getExcludedVideos(env, account.id);
+    const latestKnown = new Set(latest.filter(p => p.accountId === account.id).map(p => p.driveFileId));
+    const imported = posts.filter(p => p.accountId === account.id && !known.has(p.driveFileId)
+      && !latestKnown.has(p.driveFileId) && !latestExcluded.has(p.driveFileId));
+    added = imported.length;
+    if (added) await kvPut(env, KV_POSTS, [...latest, ...imported]);
     await socialLog(env, 'info', `Синхронизация «${account.name}»: добавлено роликов — ${added}`);
   }
 
@@ -512,12 +552,22 @@ function instagramCooldownResult(cooldown) {
       : 'Instagram ограничил запросы. Публикация временно на паузе; попробуйте позже.' };
 }
 
+function instagramFailure(message) {
+  const error = new Error(message);
+  error.instagramSafeMessage = true;
+  return error;
+}
+
 async function igRequest(url, form) {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(form),
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(form),
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch (_) { throw instagramFailure('Instagram не подтвердил ответ на запись. Необходимо проверить сохранённую попытку'); }
   const data = await res.json().catch(() => ({}));
   const rateLimit = instagramRateLimitError(res, data);
   if (rateLimit) throw rateLimit;
@@ -538,7 +588,7 @@ async function resolveInstagramAccountId(token) {
   );
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(limit(data?.error?.message || 'Instagram не принял токен (HTTP ' + res.status + ')', 200));
+    throw instagramFailure(limit(data?.error?.message || 'Instagram не принял токен (HTTP ' + res.status + ')', 200));
   }
   return { id: data.user_id ? String(data.user_id) : null, username: data.username || null };
 }
@@ -618,7 +668,7 @@ async function verifyPublishedInstagramMedia(env, post, account, api, statusDeta
 
 async function publishToInstagram(env, post, account, origin) {
   if (!account.instagramToken || !account.instagramAccountId) {
-    throw new Error('Не заполнены Instagram Account ID или токен доступа');
+    throw instagramFailure('Не заполнены Instagram Account ID или токен доступа');
   }
 
   const api = `https://graph.instagram.com/${GRAPH_VERSION}`;
@@ -631,16 +681,12 @@ async function publishToInstagram(env, post, account, origin) {
     access_token: account.instagramToken,
   };
 
-  // Основной путь — /<account_id>/media; на некоторых типах токенов работает
-  // только /me/media, поэтому он остаётся запасным (как в Meerno).
-  let created = await igRequest(`${api}/${account.instagramAccountId}/media`, form);
-  if (!created.ok) {
-    created = await igRequest(`${api}/me/media`, form);
-  }
+  // The configured ID is resolved from the token's user_id. A failed or
+  // ambiguous write is not replayed against a second endpoint.
+  const created = await igRequest(`${api}/${account.instagramAccountId}/media`, form);
   if (!created.ok || !created.data.id) {
-    throw new Error(
-      'Instagram не принял видео (HTTP ' + created.status + '): ' +
-      limit(created.data?.error?.message || JSON.stringify(created.data), 300)
+    throw instagramFailure(
+      'Instagram не принял видео (HTTP ' + created.status + ')'
     );
   }
 
@@ -672,14 +718,16 @@ async function finishInstagram(env, post, account, containerId) {
   let ready = false;
   for (let i = 0; i < IG_POLL_ATTEMPTS; i += 1) {
     await sleep(IG_POLL_INTERVAL_MS);
-    const statusRes = await fetch(
-      `${api}/${containerId}?fields=status_code,status&access_token=${encodeURIComponent(account.instagramToken)}`
-    );
+    let statusRes;
+    try {
+      statusRes = await fetch(`${api}/${containerId}?fields=status_code,status&access_token=${encodeURIComponent(account.instagramToken)}`,
+        { signal: AbortSignal.timeout(10000) });
+    } catch (_) { throw instagramPublicationCheckUnavailable(); }
     const statusData = await statusRes.json().catch(() => null);
     const rateLimit = instagramRateLimitError(statusRes, statusData);
     if (rateLimit) throw rateLimit;
     if (!statusRes.ok || statusData?.error) {
-      throw new Error('Instagram не дал проверить статус видео' + statusDetails(statusRes, statusData));
+      throw instagramFailure('Instagram не дал проверить статус видео' + statusDetails(statusRes, statusData));
     }
     const code = statusData?.status_code;
     if (code === 'PUBLISHED') {
@@ -690,32 +738,36 @@ async function finishInstagram(env, post, account, containerId) {
     }
     if (code === 'FINISHED') { ready = true; break; }
     if (code === 'ERROR') {
-      throw new Error('Instagram не смог обработать видео' + statusDetails(statusRes, statusData));
+      throw instagramFailure('Instagram не смог обработать видео' + statusDetails(statusRes, statusData));
     }
     if (code === 'EXPIRED') {
-      throw new Error('Контейнер Instagram истёк и не может быть опубликован' + statusDetails(statusRes, statusData));
+      throw instagramFailure('Контейнер Instagram истёк и не может быть опубликован' + statusDetails(statusRes, statusData));
     }
     if (code !== 'IN_PROGRESS') {
-      throw new Error('Instagram вернул неизвестный статус видео' + statusDetails(statusRes, statusData));
+      throw instagramFailure('Instagram вернул неизвестный статус видео' + statusDetails(statusRes, statusData));
     }
   }
   if (!ready) {
-    throw new Error('Instagram обрабатывал видео дольше ' + (IG_POLL_ATTEMPTS * IG_POLL_INTERVAL_MS / 1000) + ' секунд и не ответил');
+    throw instagramFailure('Instagram обрабатывал видео дольше ' + (IG_POLL_ATTEMPTS * IG_POLL_INTERVAL_MS / 1000) + ' секунд и не ответил');
   }
 
   const publishForm = { creation_id: containerId, access_token: account.instagramToken };
-  let published = await igRequest(`${api}/${account.instagramAccountId}/media_publish`, publishForm);
-  if (!published.ok) {
-    published = await igRequest(`${api}/me/media_publish`, publishForm);
+  const current = (await getPosts(env)).find(p => p.id === post.id);
+  if (!current || current.instagramContainerId !== containerId
+    || (current.driveFileId && (await getExcludedVideos(env, current.accountId)).has(current.driveFileId))) {
+    throw instagramFailure('Публикация отменена или изменена в очереди');
   }
+  const published = await igRequest(`${api}/${account.instagramAccountId}/media_publish`, publishForm);
   if (!published.ok || !published.data.id) {
-    throw new Error(
-      'Ошибка публикации в Instagram (HTTP ' + published.status + '): ' +
-      limit(published.data?.error?.message || JSON.stringify(published.data), 300)
+    throw instagramFailure(
+      'Ошибка публикации в Instagram (HTTP ' + published.status + ')'
     );
   }
 
   const mediaId = published.data.id;
+  // Save the successful publish response before another network request. A
+  // resumed PUBLISHED container can then verify its media even after a reset.
+  await patchPost(env, post.id, { instagramMediaId: mediaId });
   let permalink = null;
   try {
     const details = await fetch(
@@ -724,10 +776,113 @@ async function finishInstagram(env, post, account, containerId) {
     const detailsData = await details.json().catch(() => ({}));
     const rateLimit = instagramRateLimitError(details, detailsData);
     if (rateLimit) await startInstagramCooldown(env, rateLimit);
-    else permalink = detailsData.permalink || null;
+    else permalink = isInstagramPermalink(detailsData?.permalink) ? detailsData.permalink : null;
   } catch (_) { /* ссылка не обязательна */ }
 
   return { mediaId, permalink };
+}
+
+function instagramReplacementError(message) {
+  const error = new Error(message);
+  error.code = 'ERR_IG_REPLACEMENT_CHECK';
+  return error;
+}
+
+/** An explicit replacement is separate from retrying the same container. */
+async function prepareInstagramReplacement(env, postId, origin, notify) {
+  const post = (await getPosts(env)).find(p => p.id === postId);
+  if (!post || post.status === 'processing' || post.instagramNeedsReview !== true) {
+    throw instagramReplacementError('Сначала обновите состояние ролика: новая публикация сейчас не разрешена');
+  }
+  if (post.driveFileId && (await getExcludedVideos(env, post.accountId)).has(post.driveFileId)) throw instagramReplacementError('Ролик исключён из очереди');
+  if (post.instagramPreviousAttempts != null && !Array.isArray(post.instagramPreviousAttempts)) throw instagramReplacementError('История попыток повреждена. Новая загрузка остановлена');
+  if (post.instagramReplacementAttempt && post.instagramReplacementAttempt.stage !== 'published') {
+    throw instagramReplacementError('Новая попытка уже сохранена. Повторная загрузка остановлена до проверки её результата');
+  }
+  if (!/^[0-9]{1,32}$/.test(post.instagramContainerId || '') || !/^[0-9]{1,32}$/.test(post.instagramMediaId || '')) {
+    throw instagramReplacementError('Не сохранены данные прежней публикации. Нужна проверка Instagram перед новой загрузкой');
+  }
+  const account = (await getAccounts(env)).find(a => a.id === post.accountId);
+  const targets = post.targets || account?.targets || [];
+  if (!account?.instagramToken || !account.instagramAccountId || !targets.includes('instagram')) {
+    throw instagramReplacementError('Instagram не настроен для этого ролика');
+  }
+  const api = `https://graph.instagram.com/${GRAPH_VERSION}`;
+  const read = async path => {
+    let response, data;
+    try {
+      response = await fetch(`${api}/${path}`, { headers: { authorization: 'Bearer ' + account.instagramToken }, signal: AbortSignal.timeout(10000) });
+      data = await response.json();
+    } catch (_) { throw instagramReplacementError('Instagram временно не дал проверить прежнюю публикацию. Новая загрузка не начата'); }
+    const rateLimit = instagramRateLimitError(response, data);
+    if (rateLimit) throw rateLimit;
+    return { response, data };
+  };
+  const identity = await read('me?fields=user_id,username');
+  if (!identity.response.ok || identity.data?.error || String(identity.data?.user_id) !== String(account.instagramAccountId)) {
+    throw instagramReplacementError('Не удалось подтвердить аккаунт Instagram. Новая загрузка не начата');
+  }
+  const container = await read(post.instagramContainerId + '?fields=status_code');
+  if (!container.response.ok || container.data?.error || container.data?.status_code !== 'PUBLISHED') {
+    throw instagramReplacementError('Прежняя загрузка ещё не подтверждена как опубликованная. Новая загрузка не начата');
+  }
+  const media = await read(post.instagramMediaId + '?fields=id,permalink');
+  const fresh = (await getPosts(env)).find(p => p.id === postId);
+  const binding = p => JSON.stringify(['accountId', 'driveFileId', 'streamToken', 'caption', 'targets',
+    'instagramContainerId', 'instagramMediaId', 'instagramPermalink', 'instagramReplacementAttempt', 'instagramPreviousAttempts'].map(k => p[k] ?? null));
+  if (!fresh || fresh.status === 'processing' || fresh.instagramNeedsReview !== true || binding(fresh) !== binding(post)) {
+    throw instagramReplacementError('Ролик изменился во время проверки. Обновите очередь');
+  }
+  if (media.response.ok && !media.data?.error && media.data?.id === post.instagramMediaId && isInstagramPermalink(media.data?.permalink)) {
+    await patchPost(env, postId, { instagramStatus: 'published', instagramNeedsReview: false, instagramReviewReason: null,
+      ...(fresh.youtubeStatus === 'published' || !targets.includes('youtube') ? { status: 'published', error: null } : {}) });
+    return { response: { ok: true, message: 'Прежняя публикация доступна. Новую запись не создавал' } };
+  }
+  if (!(media.response.status === 400 && media.data?.error?.code === 100 && media.data.error.error_subcode === 33)) {
+    throw instagramReplacementError('Instagram не подтвердил отсутствие прежнего ролика. Новая загрузка не начата');
+  }
+  const attempt = { id: crypto.randomUUID(), stage: 'create_started', startedAt: new Date().toISOString() };
+  await patchPost(env, postId, { status: 'processing', instagramStatus: 'processing', instagramNeedsReview: true,
+    instagramReviewReason: 'replacement_in_progress', instagramReplacementAttempt: attempt,
+    processingSince: attempt.startedAt, publishMode: 'manual', error: null });
+  const run = async () => {
+    try {
+      const claimed = (await getPosts(env)).find(p => p.id === postId);
+      if (!claimed || claimed.instagramReplacementAttempt?.id !== attempt.id) return;
+      if (claimed.caption !== post.caption || claimed.streamToken !== post.streamToken || claimed.accountId !== post.accountId
+        || (claimed.driveFileId && (await getExcludedVideos(env, claimed.accountId)).has(claimed.driveFileId))) {
+        throw instagramReplacementError('Ролик изменился или исключён из очереди. Новая загрузка остановлена');
+      }
+      // One create request, no /me fallback or blind retry after a lost response.
+      const created = await igRequest(`${api}/${account.instagramAccountId}/media`, {
+        media_type: 'REELS', video_url: `${origin}/s/v/${post.streamToken}`,
+        caption: post.caption || '', share_to_feed: 'true', access_token: account.instagramToken,
+      });
+      if (!created.ok || !/^[0-9]{1,32}$/.test(created.data?.id || '')) {
+        throw instagramReplacementError('Instagram не подтвердил новую загрузку. Повтор остановлен до проверки результата');
+      }
+      const current = (await getPosts(env)).find(p => p.id === postId);
+      if (!current || current.instagramReplacementAttempt?.id !== attempt.id) return;
+      const previous = { containerId: post.instagramContainerId, mediaId: post.instagramMediaId,
+        permalink: post.instagramPermalink || null, recordedAt: attempt.startedAt, reason: 'media_unavailable' };
+      await patchPost(env, postId, { instagramContainerId: created.data.id, instagramMediaId: null, instagramPermalink: null,
+        instagramPreviousAttempts: [...(Array.isArray(current.instagramPreviousAttempts) ? current.instagramPreviousAttempts : []), previous],
+        instagramReplacementAttempt: { ...attempt, stage: 'container_saved' }, instagramNeedsReview: false, instagramReviewReason: null });
+      // Only Instagram; a successful YouTube publication is never replayed.
+      await publishPost(env, postId, origin, notify, ['instagram']);
+    } catch (error) {
+      if (error.code === 'ERR_IG_RATE_LIMITED') await startInstagramCooldown(env, error);
+      const current = (await getPosts(env)).find(p => p.id === postId);
+      if (!current || current.instagramReplacementAttempt?.id !== attempt.id) return;
+      const message = error.code === 'ERR_IG_RATE_LIMITED' ? error.message
+        : 'Новая публикация Instagram не подтверждена. Сохранённая попытка требует проверки; повторная загрузка остановлена';
+      await patchPost(env, postId, { status: 'failed', instagramStatus: 'failed', instagramNeedsReview: true,
+        instagramReviewReason: 'replacement_unconfirmed', error: message });
+      await socialLog(env, 'error', message);
+      if (notify) { try { await notify('⚠️ Новая публикация Instagram не подтверждена. Проверьте сохранённую попытку в админке.'); } catch (_) {} }
+    }
+  };
+  return { response: { ok: true, message: 'Создаю новую публикацию только в Instagram' }, run };
 }
 
 /**
@@ -887,6 +1042,7 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
   const posts = await getPosts(env);
   const post = posts.find((p) => p.id === postId);
   if (!post) return { status: 'error', message: 'Ролик не найден' };
+  if (post.driveFileId && (await getExcludedVideos(env, post.accountId)).has(post.driveFileId)) return { status: 'error', message: 'Ролик исключён из очереди' };
   if (post.instagramNeedsReview === true && only.includes('instagram')) return { status: 'error', message: post.error || 'Публикация Instagram требует проверки' };
 
   const accounts = await getAccounts(env);
@@ -915,6 +1071,7 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
     notifyFailure = false;
   } else if (igPending) {
     try {
+      if (post.instagramMediaId && !post.instagramContainerId) throw instagramPublicationUnconfirmed('media_unconfirmed');
       await patchPost(env, postId, { instagramStatus: 'processing' });
       igResult = post.instagramContainerId
         ? await finishInstagram(env, post, account, post.instagramContainerId)
@@ -923,6 +1080,9 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
         instagramStatus: 'published',
         instagramNeedsReview: false,
         instagramReviewReason: null,
+        ...(post.instagramReplacementAttempt ? {
+          instagramReplacementAttempt: { ...post.instagramReplacementAttempt, stage: 'published' },
+        } : {}),
         // A concurrent attempt can have saved newer metadata. Reconciliation
         // changes only status; never overwrite those fields with an old snapshot.
         ...(!igResult.alreadyPublished ? {
@@ -935,7 +1095,10 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
         : `Instagram: опубликован ${post.fileName}`, igResult.alreadyPublished ? {} : { url: igResult.permalink });
     } catch (e) {
       if (e.code === 'ERR_IG_RATE_LIMITED') notifyFailure = (await startInstagramCooldown(env, e)).first;
-      errors.push('Instagram: ' + e.message);
+      const safeMessage = e.instagramSafeMessage === true || ['ERR_IG_RATE_LIMITED', 'ERR_IG_PUBLICATION_UNCONFIRMED',
+        'ERR_IG_PUBLICATION_CHECK_UNAVAILABLE', 'ERR_IG_REPLACEMENT_CHECK'].includes(e.code)
+        ? e.message : 'Не удалось завершить публикацию Instagram. Сохранённую попытку необходимо проверить';
+      errors.push('Instagram: ' + safeMessage);
       await patchPost(env, postId, {
         instagramStatus: 'failed',
         ...(e.code === 'ERR_IG_PUBLICATION_UNCONFIRMED' ? {
@@ -943,12 +1106,17 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
           instagramReviewReason: e.instagramReviewReason,
         } : {}),
       });
-      await socialLog(env, 'error', `Instagram: ${post.fileName} — ${e.message}`);
+      await socialLog(env, 'error', `Instagram: ${post.fileName} — ${safeMessage}`);
     }
   }
 
   if (only.includes('youtube') && targets.includes('youtube') && post.youtubeStatus !== 'published') {
     try {
+      if (!(await getPosts(env)).some(p => p.id === postId)) throw new Error('Ролик удалён из очереди');
+      if (post.youtubeVideoId) {
+        await patchPost(env, postId, { youtubeNeedsReview: true });
+        throw new Error('Уже сохранена прежняя публикация YouTube. Проверьте ссылку и статус площадки перед повтором');
+      }
       await patchPost(env, postId, { youtubeStatus: 'processing' });
       ytResult = await publishToYouTube(env, post, account);
       await patchPost(env, postId, {
@@ -1029,6 +1197,14 @@ async function recoverStalePosts(env, cooldown = null) {
   let changed = false;
 
   posts.forEach((post, i) => {
+    if (post.status === 'processing' && post.instagramNeedsReview === true
+      && post.instagramReplacementAttempt?.stage === 'create_started'
+      && Date.parse(post.instagramReplacementAttempt.startedAt) < Date.now() - 60000) {
+      posts[i] = { ...post, status: 'failed', instagramStatus: 'failed', instagramReviewReason: 'replacement_unconfirmed',
+        error: 'Новая загрузка Instagram прервалась. Повтор остановлен до проверки сохранённой попытки' };
+      changed = true;
+      return;
+    }
     if (post.status !== 'processing' || post.instagramNeedsReview === true || (cooldown && onlyInstagramPending(post))) return;
     const startedAt = Date.parse(post.processingSince || post.createdAt || '') || 0;
     if (startedAt && startedAt > cutoff) return;
@@ -1492,6 +1668,26 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     return jsonResponse(updated ? { ok: true } : { error: 'not found' }, updated ? 200 : 404);
   }
 
+  // An explicitly confirmed replacement never replays the unavailable old
+  // container. Preflight checks are reads; only the returned job creates media.
+  if (path === '/api/admin/social/posts/replace-instagram' && request.method === 'POST') {
+    const cooldown = await getInstagramCooldown(env);
+    if (cooldown) return jsonResponse(instagramCooldownResult(cooldown));
+    if (body.confirmReplacement !== true) return jsonResponse({ ok: false, message: 'Нужно подтвердить создание новой записи Instagram' }, 400);
+    try {
+      const replacement = await prepareInstagramReplacement(env, body.id, origin, notify);
+      if (replacement.run) ctx.waitUntil(replacement.run());
+      return jsonResponse(replacement.response);
+    } catch (error) {
+      if (error.code === 'ERR_IG_RATE_LIMITED') {
+        const pause = await startInstagramCooldown(env, error);
+        return jsonResponse(instagramCooldownResult(pause));
+      }
+      return jsonResponse({ ok: false, message: error.code === 'ERR_IG_REPLACEMENT_CHECK' ? error.message
+        : 'Не удалось проверить или сохранить попытку Instagram. Новая загрузка не запущена' });
+    }
+  }
+
   // Повторить публикацию только в одну площадку — вторую не трогаем.
   if (path === '/api/admin/social/posts/publish-platform' && request.method === 'POST') {
     const posts = await getPosts(env);
@@ -1501,6 +1697,8 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (platform === 'instagram') {
       const cooldown = await getInstagramCooldown(env);
       if (cooldown) return jsonResponse(instagramCooldownResult(cooldown));
+      if (post.instagramNeedsReview === true) return jsonResponse({ ok: false, code: 'instagram_review_required',
+        message: 'Для недоступной прежней записи используйте «Новая публикация»; обычный повтор её не заменяет' });
     }
 
     await patchPost(env, post.id, {
@@ -1525,10 +1723,12 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     const posts = await getPosts(env);
     const ready = posts.filter((p) => ids.includes(p.id) && p.status !== 'processing');
     const cooldown = await getInstagramCooldown(env);
-    const held = cooldown ? ready.filter(p => onlyInstagramPending(p)) : [];
+    const held = ready.filter(p => p.instagramNeedsReview === true || (cooldown && onlyInstagramPending(p)));
     const take = ready.filter(p => !held.includes(p)).slice(0, MAX_MANUAL_BATCH);
 
-    if (!take.length) return jsonResponse(held.length ? { ...instagramCooldownResult(cooldown), held: held.length } : { ok: false, message: 'Нечего публиковать' });
+    if (!take.length) return jsonResponse(held.length ? cooldown ? { ...instagramCooldownResult(cooldown), held: held.length }
+      : { ok: false, held: held.length, message: 'Прежние публикации требуют проверки. Используйте действие в карточке Instagram' }
+      : { ok: false, message: 'Нечего публиковать' });
 
     for (const post of take) {
       await patchPost(env, post.id, { status: 'processing', error: null, scheduledAt: null, processingSince: new Date().toISOString(), publishMode: 'manual', instagramNeedsReview: false, instagramReviewReason: null });
@@ -1558,6 +1758,9 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     const ids = Array.isArray(body.ids) ? body.ids : [];
     const posts = await getPosts(env);
     const targetPosts = posts.filter((p) => ids.includes(p.id));
+    if (body.action === 'delete' && targetPosts.some(p => p.status === 'processing')) {
+      return jsonResponse({ ok: false, message: 'Дождитесь завершения текущей публикации перед удалением ролика' }, 409);
+    }
     let changed = 0;
     if (body.action === 'targets' && !validTargets(body.targets)) {
       return jsonResponse({ error: 'Выберите Instagram или YouTube' }, 400);
@@ -1601,8 +1804,8 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
                          youtubeStatus: 'published', publishedAt: new Date().toISOString(),
                          error: null, markedManually: true };
         } else if (body.action === 'requeue') {
-          posts[idx] = { ...posts[idx], status: 'queued', instagramStatus: 'queued',
-                         youtubeStatus: 'queued', publishedAt: null, error: null, markedManually: false };
+          if (post.status === 'processing') return;
+          posts[idx] = requeuePost(posts[idx]);
         } else if (body.action === 'unschedule') {
           posts[idx] = { ...posts[idx], scheduledAt: null };
         }
@@ -1610,13 +1813,17 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
       });
     }
 
-    const kept = body.action === 'delete' ? posts.filter((p) => !ids.includes(p.id)) : posts;
+    if (body.action === 'delete') await excludeVideos(env, targetPosts);
+    const kept = body.action === 'delete' ? (await getPosts(env)).filter((p) => !ids.includes(p.id)) : posts;
     await kvPut(env, KV_POSTS, kept);
     return jsonResponse({ ok: true, changed: body.action === 'delete' ? ids.length : changed });
   }
 
   if (path === '/api/admin/social/posts/mark' && request.method === 'POST') {
     const asPublished = body.status !== 'queued';
+    const post = (await getPosts(env)).find(p => p.id === body.id);
+    if (!post) return jsonResponse({ error: 'not found' }, 404);
+    if (!asPublished && post.status === 'processing') return jsonResponse({ ok: false, message: 'Ролик ещё публикуется' }, 409);
     const updated = await patchPost(env, body.id, asPublished ? {
       status: 'published',
       instagramStatus: 'published',
@@ -1624,20 +1831,17 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
       publishedAt: new Date().toISOString(),
       error: null,
       markedManually: true,
-    } : {
-      status: 'queued',
-      instagramStatus: 'queued',
-      youtubeStatus: 'queued',
-      publishedAt: null,
-      error: null,
-      markedManually: false,
-    });
+    } : requeuePost(post));
     return jsonResponse(updated ? { ok: true } : { error: 'not found' }, updated ? 200 : 404);
   }
 
   if (path === '/api/admin/social/posts/delete' && request.method === 'POST') {
-    const posts = (await getPosts(env)).filter((p) => p.id !== body.id);
-    await kvPut(env, KV_POSTS, posts);
+    const posts = await getPosts(env);
+    if (posts.some(p => p.id === body.id && p.status === 'processing')) {
+      return jsonResponse({ ok: false, message: 'Дождитесь завершения текущей публикации перед удалением ролика' }, 409);
+    }
+    await excludeVideos(env, posts.filter(p => p.id === body.id));
+    await kvPut(env, KV_POSTS, (await getPosts(env)).filter(p => p.id !== body.id));
     return jsonResponse({ ok: true });
   }
 
@@ -1648,6 +1852,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (post.status === 'processing') {
       return jsonResponse({ ok: false, message: 'Этот ролик уже публикуется' });
     }
+    if (post.instagramNeedsReview === true) return jsonResponse({ ok: false, message: 'Прежняя запись Instagram требует проверки. Используйте действие в карточке Instagram' });
     const cooldown = onlyInstagramPending(post) ? await getInstagramCooldown(env) : null;
     if (cooldown) return jsonResponse(instagramCooldownResult(cooldown));
     await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString(), publishMode: 'manual', instagramNeedsReview: false, instagramReviewReason: null });
