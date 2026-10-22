@@ -29,6 +29,22 @@ class WorkerCatalogTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_catalog(existing=[{"slug": "duplicate"}, {"slug": "duplicate"}])
 
+    def test_explicit_cover_refresh_preserves_admin_date_and_unrelated_records(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for slug in ("illustrated", "unchanged"):
+                path = root / slug
+                path.mkdir()
+                (path / "source.json").write_text(json.dumps({
+                    "slug": slug, "cover": "cover.jpg", "coverAlt": "New illustration",
+                    "datePublished": "2026-11-30", "published": True,
+                }))
+            old = [{"slug": slug, "datePublished": "2026-12-07", "cover": None, "custom": "keep"}
+                   for slug in ("illustrated", "unchanged")]
+            result = build_catalog(root, old, refresh_media=["illustrated"])
+            self.assertEqual(result[0], {**old[0], "cover": "cover.jpg", "coverAlt": "New illustration"})
+            self.assertEqual(result[1], old[1])
+
 
 if __name__ == "__main__":
     unittest.main()

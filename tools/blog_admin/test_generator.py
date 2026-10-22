@@ -85,21 +85,36 @@ class PublicationTests(unittest.TestCase):
         self.assertIn('href="/app/" data-cta="article-practice" data-context="tomorrow"', content)
         self.assertIn('datetime="2026-10-22"', content)
 
-    def test_clean_public_copy_removes_unreleased_assets_and_editor_sources(self):
+    def test_scheduled_cover_is_public_without_releasing_article_or_exercises(self):
         self.article("today")
-        self.article("tomorrow", "2026-10-23")
-        self.article("draft", published=False)
+        self.article("tomorrow", "2026-10-23", cover="cover.jpg")
+        self.article("draft", published=False, cover="cover.jpg")
+        self.article("no-cover", "2026-10-23")
+        (self.blog / "tomorrow/question.webp").write_bytes(b"exercise")
         import shutil
         destination = self.root / "deployment"
         shutil.copytree(self.site, destination)
         generator.clean_public_copy(str(destination))
-        self.assertFalse((destination / "blog/tomorrow").exists())
+        self.assertEqual([p.name for p in (destination / "blog/tomorrow").iterdir()], ["cover.jpg"])
         self.assertFalse((destination / "blog/draft").exists())
+        self.assertFalse((destination / "blog/no-cover").exists())
         self.assertTrue((destination / "blog/today/cover.jpg").exists())
         self.assertEqual(list(destination.rglob("source.json")), [])
         self.assertTrue((self.blog / "today/source.json").exists())
         with self.assertRaises(ValueError):
             generator.clean_public_copy(str(self.site))
+
+    def test_scheduled_cover_must_be_a_local_file_and_date_must_be_valid(self):
+        self.article("bad-cover", "2026-10-23", cover="../today/cover.jpg")
+        self.article("bad-date", "2026-99-99", cover="cover.jpg")
+        self.article("html-cover", "2026-10-23", cover="index.html")
+        import shutil
+        destination = self.root / "deployment"
+        shutil.copytree(self.site, destination)
+        generator.clean_public_copy(str(destination))
+        self.assertFalse((destination / "blog/bad-cover").exists())
+        self.assertFalse((destination / "blog/bad-date").exists())
+        self.assertFalse((destination / "blog/html-cover").exists())
 
     def test_related_links_never_include_unpublished_articles(self):
         self.article("today", relatedSlugs=["tomorrow", "past"])

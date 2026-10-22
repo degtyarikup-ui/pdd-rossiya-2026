@@ -978,7 +978,7 @@ def regen_all(today=None):
 
 
 def clean_public_copy(destination, today=None):
-    """Удалить редакционные исходники и будущие материалы из копии для деплоя."""
+    """Будущим статьям оставить только обложку для календаря, без текста/HTML."""
     destination = os.path.realpath(destination)
     if destination == os.path.realpath(SITE):
         raise ValueError("Нельзя очищать исходный каталог сайта")
@@ -988,7 +988,29 @@ def clean_public_copy(destination, today=None):
         if not is_article_public(article, today):
             path = os.path.join(destination, "blog", article["slug"])
             if os.path.isdir(path):
-                shutil.rmtree(path)
+                cover = article.get("cover")
+                day = article.get("datePublished", "")
+                try:
+                    valid_day = datetime.date.fromisoformat(day).isoformat() == day
+                except (TypeError, ValueError):
+                    valid_day = False
+                scheduled_cover = (article.get("published") and valid_day
+                                   and day > (today or publication_day())
+                                   and isinstance(cover, str) and cover
+                                   and os.path.basename(cover) == cover
+                                   and os.path.splitext(cover)[1].lower() in {".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif"}
+                                   and os.path.isfile(os.path.join(path, cover)))
+                if not scheduled_cover:
+                    shutil.rmtree(path)
+                    continue
+                for name in os.listdir(path):
+                    if name == cover:
+                        continue
+                    entry = os.path.join(path, name)
+                    if os.path.isdir(entry):
+                        shutil.rmtree(entry)
+                    else:
+                        os.remove(entry)
     # Удаляем и ранее выложенные исходники: rsync exclude сам их не удалит.
     blog_copy = os.path.join(destination, "blog")
     if os.path.isdir(blog_copy):

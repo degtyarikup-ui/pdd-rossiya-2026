@@ -61,8 +61,8 @@ export const DEFAULT_BLOG_ARTICLES = [
     "dateModified": "2026-11-06",
     "readingMinutes": 5,
     "cluster": "prep",
-    "cover": null,
-    "coverAlt": null,
+    "cover": "cover.jpg",
+    "coverAlt": "Легковой автомобиль и учебный грузовик на современной площадке автошколы",
     "published": true
   },
   {
@@ -74,8 +74,8 @@ export const DEFAULT_BLOG_ARTICLES = [
     "dateModified": "2026-10-23",
     "readingMinutes": 5,
     "cluster": "prep",
-    "cover": null,
-    "coverAlt": null,
+    "cover": "cover.jpg",
+    "coverAlt": "Будущий водитель выбирает способ подготовки к теории ПДД за столом с ноутбуком и учебными записями",
     "published": true
   },
   {
@@ -113,8 +113,8 @@ export const DEFAULT_BLOG_ARTICLES = [
     "dateModified": "2026-11-04",
     "readingMinutes": 5,
     "cluster": "prep",
-    "cover": null,
-    "coverAlt": null,
+    "cover": "cover.jpg",
+    "coverAlt": "Кандидат в водители спокойно продолжает теоретическое тестирование за компьютером",
     "published": true
   },
   {
@@ -204,8 +204,8 @@ export const DEFAULT_BLOG_ARTICLES = [
     "dateModified": "2026-11-09",
     "readingMinutes": 5,
     "cluster": "prep",
-    "cover": null,
-    "coverAlt": null,
+    "cover": "cover.jpg",
+    "coverAlt": "Будущая водительница завершает самопроверку перед теоретическим экзаменом ПДД",
     "published": true
   },
   {
@@ -230,8 +230,8 @@ export const DEFAULT_BLOG_ARTICLES = [
     "dateModified": "2026-10-28",
     "readingMinutes": 5,
     "cluster": "prep",
-    "cover": null,
-    "coverAlt": null,
+    "cover": "cover.jpg",
+    "coverAlt": "Ученик внимательно рассматривает иллюстрацию учебного задания по ПДД на планшете",
     "published": true
   },
   {
@@ -256,8 +256,8 @@ export const DEFAULT_BLOG_ARTICLES = [
     "dateModified": "2026-11-11",
     "readingMinutes": 5,
     "cluster": "prep",
-    "cover": null,
-    "coverAlt": null,
+    "cover": "cover.jpg",
+    "coverAlt": "Ученик сверяет учебные материалы ПДД на ноутбуке и смартфоне перед подготовкой",
     "published": true
   },
   {
@@ -269,8 +269,8 @@ export const DEFAULT_BLOG_ARTICLES = [
     "dateModified": "2026-10-26",
     "readingMinutes": 5,
     "cluster": "prep",
-    "cover": null,
-    "coverAlt": null,
+    "cover": "cover.jpg",
+    "coverAlt": "Ученица разбирает ошибки в учебных заданиях ПДД и делает пометки в тетради",
     "published": true
   },
   {
@@ -282,8 +282,8 @@ export const DEFAULT_BLOG_ARTICLES = [
     "dateModified": "2026-11-02",
     "readingMinutes": 5,
     "cluster": "prep",
-    "cover": null,
-    "coverAlt": null,
+    "cover": "cover.jpg",
+    "coverAlt": "Современный городской перекрёсток как иллюстрация к разбору задач ПДД",
     "published": true
   },
   {
@@ -365,6 +365,19 @@ export const DEFAULT_BLOG_ARTICLES = [
     "published": true
   },
   {
+    "slug": "nedostatochnaya-i-ogranichennaya-vidimost-pdd",
+    "title": "Недостаточная и ограниченная видимость: как различать их в билетах ПДД",
+    "shortTitle": "Недостаточная и ограниченная видимость в ПДД",
+    "description": "Туман или здание у поворота — разные условия ПДД. Разбираем определения на трёх вопросах A/B и проверяем, когда противотуманные фары дополняют основной свет.",
+    "datePublished": "2026-12-04",
+    "dateModified": "2026-12-04",
+    "readingMinutes": 5,
+    "cluster": "prep",
+    "cover": "cover.jpg",
+    "coverAlt": "Дорога в лёгком тумане видна через лобовое стекло автомобиля",
+    "published": true
+  },
+  {
     "slug": "neispravnosti-dopusk-ekspluatatsii",
     "title": "Неисправности автомобиля: с чем нельзя ехать",
     "shortTitle": "С какими неисправностями нельзя ехать",
@@ -375,6 +388,19 @@ export const DEFAULT_BLOG_ARTICLES = [
     "cluster": "reference",
     "cover": "cover.jpg",
     "coverAlt": "Осмотр двигателя автомобиля перед поездкой",
+    "published": true
+  },
+  {
+    "slug": "obezd-prepyatstviya-ili-obgon-pdd",
+    "title": "Объезд препятствия или обгон: как различить манёвры в билетах ПДД",
+    "shortTitle": "Объезд препятствия и обгон: три разбора",
+    "description": "Неподвижный объект, поворачивающий грузовик и очередь перед переездом: три задания A/B. Учимся проверять причину остановки, траекторию и ограничения манёвра.",
+    "datePublished": "2026-12-07",
+    "dateModified": "2026-12-07",
+    "readingMinutes": 5,
+    "cluster": "prep",
+    "cover": "cover.jpg",
+    "coverAlt": "Неисправный автомобиль с открытым капотом стоит у края спокойной дороги",
     "published": true
   },
   {
@@ -430,6 +456,19 @@ export const DEFAULT_BLOG_ARTICLES = [
     "published": true
   },
   {
+    "slug": "ostanovka-pyat-minut-posadka-vysadka-pdd",
+    "title": "Остановка дольше пяти минут: посадка, высадка и три задачи ПДД",
+    "shortTitle": "Остановка дольше пяти минут: посадка, высадка и три задачи ПДД",
+    "description": "Когда остановка больше пяти минут остаётся остановкой и почему посадка пассажира не отменяет запреты. Три вопроса A/B со знаками, остановкой автобуса и тоннелем.",
+    "datePublished": "2026-11-18",
+    "dateModified": "2026-11-18",
+    "readingMinutes": 5,
+    "cluster": "prep",
+    "cover": "cover.jpg",
+    "coverAlt": "Пассажир садится в остановившийся автомобиль у тротуара",
+    "published": true
+  },
+  {
     "slug": "otvetstvennost-voditelya-pdd",
     "title": "Ответственность водителя: административная и уголовная",
     "shortTitle": "Административная и уголовная ответственность водителя",
@@ -451,8 +490,21 @@ export const DEFAULT_BLOG_ARTICLES = [
     "dateModified": "2026-11-13",
     "readingMinutes": 5,
     "cluster": "prep",
-    "cover": null,
-    "coverAlt": null,
+    "cover": "cover.jpg",
+    "coverAlt": "Пассажир электрички занимается ПДД на смартфоне во время поездки",
+    "published": true
+  },
+  {
+    "slug": "perekrestok-ili-vyezd-so-dvora-pdd",
+    "title": "Перекрёсток или выезд со двора: как отличить в билете ПДД",
+    "shortTitle": "Перекрёсток или выезд со двора: как отличить в билете ПДД",
+    "description": "Три вопроса A/B о прилегающей территории: как отличить двор от перекрёстка, кому уступать при выезде и почему ограничение после двора может продолжаться.",
+    "datePublished": "2026-11-20",
+    "dateModified": "2026-11-20",
+    "readingMinutes": 5,
+    "cluster": "prep",
+    "cover": "cover.jpg",
+    "coverAlt": "Водитель смотрит на дорогу перед выездом из современного жилого двора",
     "published": true
   },
   {
@@ -516,8 +568,8 @@ export const DEFAULT_BLOG_ARTICLES = [
     "dateModified": "2026-10-30",
     "readingMinutes": 5,
     "cluster": "prep",
-    "cover": null,
-    "coverAlt": null,
+    "cover": "cover.jpg",
+    "coverAlt": "Инструктор помогает ученице сравнить похожие дорожные знаки на занятии по ПДД",
     "published": true
   },
   {
@@ -544,6 +596,19 @@ export const DEFAULT_BLOG_ARTICLES = [
     "cluster": "reference",
     "cover": "cover.jpg",
     "coverAlt": "Траектории поворота налево и разворота на перекрестке по ПДД",
+    "published": true
+  },
+  {
+    "slug": "povorotnik-ne-daet-preimushchestva-pdd",
+    "title": "Почему поворотник не даёт преимущества: три задачи ПДД",
+    "shortTitle": "Почему поворотник не даёт преимущества: три задачи ПДД",
+    "description": "Как отделить сигнал поворота от преимущества в движении. Три вопроса A/B: общая норма, окончание полосы и остановка сразу за перекрёстком.",
+    "datePublished": "2026-11-25",
+    "dateModified": "2026-11-25",
+    "readingMinutes": 5,
+    "cluster": "prep",
+    "cover": "cover.jpg",
+    "coverAlt": "Крупный план включённого янтарного указателя поворота автомобиля",
     "published": true
   },
   {
@@ -622,6 +687,32 @@ export const DEFAULT_BLOG_ARTICLES = [
     "cluster": "reference",
     "cover": "cover.jpg",
     "coverAlt": "Вид сверху на перекрёсток с разметкой полос движения",
+    "published": true
+  },
+  {
+    "slug": "rasstoyaniya-v-biletah-pdd-perehod-ostanovka",
+    "title": "5 и 15 метров в билетах ПДД: где остановиться у перехода и остановки",
+    "shortTitle": "5 и 15 метров: переход и автобусная остановка",
+    "description": "Три вопроса A/B об остановке: пять метров перед переходом, пятнадцать у автобусной остановки и исключение для высадки пассажиров. Разбор размерных линий.",
+    "datePublished": "2026-12-02",
+    "dateModified": "2026-12-02",
+    "readingMinutes": 5,
+    "cluster": "prep",
+    "cover": "cover.jpg",
+    "coverAlt": "Автобус у современного остановочного павильона на чистой городской улице",
+    "published": true
+  },
+  {
+    "slug": "razreshennaya-i-fakticheskaya-massa-pdd",
+    "title": "Разрешённая и фактическая масса в ПДД: как выбрать нужное число",
+    "shortTitle": "Разрешённая и фактическая масса в ПДД: как выбрать нужное число",
+    "description": "Чем разрешённая максимальная масса отличается от фактической. Три задания A/B и C/D: определение, знак с 10 т и автопоезд 8 + 5 т перед мостом.",
+    "datePublished": "2026-11-16",
+    "dateModified": "2026-11-16",
+    "readingMinutes": 5,
+    "cluster": "prep",
+    "cover": "cover.jpg",
+    "coverAlt": "Грузовой автомобиль с грузом на автомобильных весах",
     "published": true
   },
   {
@@ -781,6 +872,19 @@ export const DEFAULT_BLOG_ARTICLES = [
     "published": true
   },
   {
+    "slug": "tormoznoy-i-ostanovochnyy-put-v-biletah",
+    "title": "Тормозной и остановочный путь в билетах ПДД: три вопроса без путаницы",
+    "shortTitle": "Тормозной и остановочный путь: разбор билетов",
+    "description": "Чем остановочный путь отличается от тормозного, откуда берутся 25 метров за секунду и почему удвоение скорости меняет тормозной путь в четыре раза.",
+    "datePublished": "2026-11-30",
+    "dateModified": "2026-11-30",
+    "readingMinutes": 5,
+    "cluster": "prep",
+    "cover": "cover.jpg",
+    "coverAlt": "Водитель держит руки на руле, впереди виден свободный участок дороги",
+    "published": true
+  },
+  {
     "slug": "tramvay-i-avtomobil-kogda-tramvay-ustupaet",
     "title": "Трамвай и автомобиль по ПДД 2026: 3 ситуации, когда трамвай уступает дорогу",
     "shortTitle": "Трамвай и автомобиль: когда трамвай уступает",
@@ -820,6 +924,19 @@ export const DEFAULT_BLOG_ARTICLES = [
     "published": true
   },
   {
+    "slug": "voprosy-pdd-so-slovom-ne",
+    "title": "Вопросы ПДД со словом «не»: как прочитать условие и выбрать нужный ответ",
+    "shortTitle": "Вопросы ПДД со словом «не»: три разбора",
+    "description": "Три вопроса A/B с отрицанием: перевозка груза, трамвай и остановка. Учимся отличать «не нарушил», «не обязан» и «не более», не теряя условия задачи.",
+    "datePublished": "2026-11-27",
+    "dateModified": "2026-11-27",
+    "readingMinutes": 5,
+    "cluster": "prep",
+    "cover": "cover.jpg",
+    "coverAlt": "Ученица внимательно перечитывает вопрос во время подготовки к ПДД",
+    "published": true
+  },
+  {
     "slug": "zheleznodorozhnye-perezdy-pdd",
     "title": "Железнодорожные переезды: сигналы и правила проезда",
     "shortTitle": "Ж/д переезды: сигналы и правила",
@@ -830,6 +947,19 @@ export const DEFAULT_BLOG_ARTICLES = [
     "cluster": "reference",
     "cover": "cover.jpg",
     "coverAlt": "Опущенный шлагбаум железнодорожного переезда с сигнальными огнями",
+    "published": true
+  },
+  {
+    "slug": "znaki-i-razmetka-chto-glavnee-v-biletah",
+    "title": "Знаки или разметка: что главнее при противоречии в билетах ПДД",
+    "shortTitle": "Знаки или разметка: что главнее при противоречии в билетах ПДД",
+    "description": "Три вопроса A/B о знаках и разметке: противоречие требований, белая и оранжевая линии, объезд препятствия. Таблица и проверка рассуждения.",
+    "datePublished": "2026-11-23",
+    "dateModified": "2026-11-23",
+    "readingMinutes": 5,
+    "cluster": "prep",
+    "cover": "cover.jpg",
+    "coverAlt": "Дорожный рабочий устанавливает временную стойку на чистом городском участке ремонта",
     "published": true
   }
 ];

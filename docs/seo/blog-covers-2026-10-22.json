@@ -1,0 +1,404 @@
+[
+  {
+    "slug": "bilety-temy-ili-ekzamen-pdd",
+    "alt": "Будущий водитель выбирает способ подготовки к теории ПДД за столом с ноутбуком и учебными записями",
+    "prompt": "Use case: photorealistic-natural. Asset type: editorial cover photo for a Russian driving theory study article about choosing between topic practice, tickets and mock exams. Create ONE realistic candid photograph in a strictly horizontal 16:9 frame, 2048x1152 or equivalent 16:9, composed for final 1200x675. A pleasant Slavic-looking young adult man studies at a tidy desk in a clean modern Russian apartment. An open laptop, smartphone and simple notebook naturally show different study tools, with the screens angled away or softly out of focus so no words or invented app interface can be read. He is thoughtfully comparing his notes with the screen, not looking at the camera. Contemporary calm interior, muted blue and warm neutral details, soft daylight, natural skin and fabric texture, authentic editorial documentary photography, not a glossy advertisement. Medium-wide eye-level composition with clear human subject and uncluttered background. No text, no letters, no visible logos, no branding, no watermarks, no collage. Anatomically correct hands. Avoid visible road signs, road-rule diagrams and legible printed text. This cover is illustrative photography, not an instructional traffic diagram.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162dc-7f2b-7451-91fc-392979001e7e/exec-bdfc1396-aba4-4c2a-8a31-d457c451f926.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/bilety-temy-ili-ekzamen-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted: natural editorial study scene, correct anatomy, no visible branding or legible text. Native near-16:9 image resized directly to exact 16:9 without retouching.",
+    "finalSha256": "de0b9460677d6b2c5bfcc06473bd0d40b602100a608a84e4a747d308334f8015",
+    "finalBytes": 140451
+  },
+  {
+    "slug": "kak-razbirat-oshibki-v-biletah-pdd",
+    "alt": "Ученица разбирает ошибки в учебных заданиях ПДД и делает пометки в тетради",
+    "prompt": "Use case: photorealistic-natural. Asset type: a single editorial cover photograph for a Russian driving theory learning article. Strict horizontal 16:9, 2048x1152 or equivalent 16:9, composed for final 1200x675. Modern clean aesthetic Russian setting, pleasant Slavic-looking adults where people appear. Candid realistic documentary photography with natural skin texture and credible anatomy, not glossy stock advertising. No text, captions, letters, brand names, logos or watermarks. No collage. No invented app interfaces or readable screens, no complex traffic diagram. Road signs/markings, if any, must be accurate Russian GOST; prefer keeping them outside the frame or out of focus. Article subject: learning from mistakes in driving-theory practice. A young woman in her late twenties at a tidy light wood desk, viewed from a natural three-quarter side angle. She thoughtfully compares an open study workbook with a tablet propped on the desk, and makes a careful correction using a pencil. Workbook pages and tablet screen are softly out of focus with no readable words or recognisable diagrams. A modest eraser, a glass of water and neat notes create a believable study process. Clean contemporary room, early evening warm window light, muted green and cream colors, authentic concentration, no performance for camera. Show anatomically correct hands and one pencil, no red crosses or visual text overlays.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162dc-7f2b-7451-91fc-392979001e7e/exec-4193d5c3-5677-410f-aa11-0874fac48ef2.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/kak-razbirat-oshibki-v-biletah-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: natural editorial scene, credible human anatomy, no legible text, logos or instructional traffic details. Resize/conversion only.",
+    "finalSha256": "07b6b5d9acdf77865460e5cd61f1fcd1bd47921e4263fcbbe4d6bac36bf79ffe",
+    "finalBytes": 165724
+  },
+  {
+    "slug": "kak-chitat-risunok-v-bilete-pdd",
+    "alt": "Ученик внимательно рассматривает иллюстрацию учебного задания по ПДД на планшете",
+    "prompt": "Use case: photorealistic-natural. Asset type: a single editorial cover photograph for a Russian driving theory learning article. Strict horizontal 16:9, 2048x1152 or equivalent 16:9, composed for final 1200x675. Modern clean aesthetic Russian setting, pleasant Slavic-looking adults where people appear. Candid realistic documentary photography with natural skin texture and credible anatomy, not glossy stock advertising. No text, captions, letters, brand names, logos or watermarks. No collage. No invented app interfaces or readable screens, no complex traffic diagram. Road signs/markings, if any, must be accurate Russian GOST; prefer keeping them outside the frame or out of focus. Article subject: carefully reading the visual details of a driving-theory question. Close over-the-shoulder editorial photograph of a young adult man at a bright modern driving-school classroom desk. He leans forward slightly to examine an illustrated driving-theory practice sheet on a tablet, with one fingertip naturally indicating a small detail. The tablet is oblique and sufficiently out of focus that no road-rule diagram or words can be read; the scene is about close observation rather than displaying an invented exam question. The man's profile, hand and tablet edge are the meaningful visual focus. Clean bright Russian classroom, simple pale furniture, soft daylight, a blurred empty chair in background, believable human proportions, restrained blue-gray palette.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162dc-7f2b-7451-91fc-392979001e7e/exec-1105cff6-648c-4e2d-af96-6b1d2db52e8f.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/kak-chitat-risunok-v-bilete-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: natural editorial scene, credible human anatomy, no legible text, logos or instructional traffic details. Resize/conversion only.",
+    "finalSha256": "50e755f009d192bed93321a1ec0fc30495b102a2da18e7b5e95de0e5aa2e5407",
+    "finalBytes": 145899
+  },
+  {
+    "slug": "pohozhie-dorozhnye-znaki-kak-ne-putat",
+    "alt": "Инструктор помогает ученице сравнить похожие дорожные знаки на занятии по ПДД",
+    "prompt": "Use case: photorealistic-natural. Asset type: a single editorial cover photograph for a Russian driving theory learning article. Strict horizontal 16:9, 2048x1152 or equivalent 16:9, composed for final 1200x675. Modern clean aesthetic Russian setting, pleasant Slavic-looking adults where people appear. Candid realistic documentary photography with natural skin texture and credible anatomy, not glossy stock advertising. No text, captions, letters, brand names, logos or watermarks. No collage. No invented app interfaces or readable screens, no complex traffic diagram. Road signs/markings, if any, must be accurate Russian GOST; prefer keeping them outside the frame or out of focus. Article subject: comparing similar road signs during driving-theory study. A pleasant Slavic-looking female learner and a calm male instructor in their twenties and forties sit together in a clean contemporary driving-school classroom. Natural candid interaction: the learner points at a pair of visual examples on an open handbook while the instructor explains with a restrained hand gesture. The handbook is angled away and deliberately softly out of focus so its small road signs and print are not readable or interpretable. Keep any wall graphics outside frame; no visible detailed traffic symbols. Medium-wide photograph, relaxed attentive expressions, window daylight, modern white and warm oak interior, a small neutral-blue notebook. Educational collaboration, not a promotional posed portrait.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162dc-7f2b-7451-91fc-392979001e7e/exec-688d64c0-d2e5-4601-aa9a-f3ebd028c690.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/pohozhie-dorozhnye-znaki-kak-ne-putat/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: natural editorial scene, credible human anatomy, no legible text, logos or instructional traffic details. Resize/conversion only.",
+    "finalSha256": "5fd040d7a7105895d3f78db58ad93d8cad8407e92ee4d3a3998e6ecfee6b07f3",
+    "finalBytes": 160006
+  },
+  {
+    "slug": "kak-reshat-perekrestki-v-biletah-pdd",
+    "alt": "Современный городской перекрёсток как иллюстрация к разбору задач ПДД",
+    "prompt": "Use case: photorealistic-natural. Asset type: a single editorial cover photograph for a Russian driving theory learning article. Strict horizontal 16:9, 2048x1152 or equivalent 16:9, composed for final 1200x675. Modern clean aesthetic Russian setting, pleasant Slavic-looking adults where people appear. Candid realistic documentary photography with natural skin texture and credible anatomy, not glossy stock advertising. No text, captions, letters, brand names, logos or watermarks. No collage. No invented app interfaces or readable screens, no complex traffic diagram. Road signs/markings, if any, must be accurate Russian GOST; prefer keeping them outside the frame or out of focus. Article subject: understanding intersections. Realistic elevated editorial city photograph looking diagonally along a modest clean four-way junction in a contemporary Russian neighborhood. Wide 16:9 composition, ordinary low-rise modern buildings and green trees, clean dry asphalt, a few naturally spaced everyday cars in legal right-hand traffic. Camera from a second-floor window, morning natural light, quiet everyday atmosphere. Keep it simple: no visible traffic signs, no traffic lights, no zebra crossing or lane arrows, no close-up number plates, no complex crossing paths, no staged accident. This is an illustrative environment photo only, never an instructional right-of-way diagram. Use authentic street perspective and believable cars, restrained colors, no luxury advertising polish.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162dc-7f2b-7451-91fc-392979001e7e/exec-344e0aa1-86c6-4165-8af9-60d686a0f31e.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/kak-reshat-perekrestki-v-biletah-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: credible clean editorial scene, realistic vehicles or person, no readable text or logos. Intersection cover is illustrative only, with no instructional priority diagram. Resize/conversion only.",
+    "finalSha256": "f57db84ca8c9289fa70c794d4c226983bae5825cc435b7b88f0913cfa38c376b",
+    "finalBytes": 332196
+  },
+  {
+    "slug": "dopolnitelnye-voprosy-na-ekzamene-pdd",
+    "alt": "Кандидат в водители спокойно продолжает теоретическое тестирование за компьютером",
+    "prompt": "Use case: photorealistic-natural. Asset type: a single editorial cover photograph for a Russian driving theory learning article. Strict horizontal 16:9, 2048x1152 or equivalent 16:9, composed for final 1200x675. Modern clean aesthetic Russian setting, pleasant Slavic-looking adults where people appear. Candid realistic documentary photography with natural skin texture and credible anatomy, not glossy stock advertising. No text, captions, letters, brand names, logos or watermarks. No collage. No invented app interfaces or readable screens, no complex traffic diagram. Road signs/markings, if any, must be accurate Russian GOST; prefer keeping them outside the frame or out of focus. Article subject: calmly continuing a theory test after a mistake and handling additional questions. Natural medium-wide side-profile photograph of a young Slavic-looking man taking a computer-based test at a simple individual desk in a clean modern Russian examination classroom. He is focused and composed, one hand on a mouse, sitting properly; the monitor faces away from camera, no visible interface or readable text. A second empty workstation softly recedes into background. No uniformed officials, no visible logos, no score display or countdown. Soft neutral daylight, clean white/gray classroom with a subtle blue accent, believable office furniture and human anatomy. The tone is practical calm concentration rather than stress or celebration.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162dc-7f2b-7451-91fc-392979001e7e/exec-c8e5868f-2073-459a-bc22-f6f347440a75.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/dopolnitelnye-voprosy-na-ekzamene-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: credible clean editorial scene, realistic vehicles or person, no readable text or logos. Intersection cover is illustrative only, with no instructional priority diagram. Resize/conversion only.",
+    "finalSha256": "b3577c606aee2bd652d00d9d0c70d1c72dff5577d6e158620afd61f66ae1b8fa",
+    "finalBytes": 122608
+  },
+  {
+    "slug": "bilety-pdd-ab-i-cd-otlichiya",
+    "alt": "Легковой автомобиль и учебный грузовик на современной площадке автошколы",
+    "prompt": "Use case: photorealistic-natural. Asset type: a single editorial cover photograph for a Russian driving theory learning article. Strict horizontal 16:9, 2048x1152 or equivalent 16:9, composed for final 1200x675. Modern clean aesthetic Russian setting, pleasant Slavic-looking adults where people appear. Candid realistic documentary photography with natural skin texture and credible anatomy, not glossy stock advertising. No text, captions, letters, brand names, logos or watermarks. No collage. No invented app interfaces or readable screens, no complex traffic diagram. Road signs/markings, if any, must be accurate Russian GOST; prefer keeping them outside the frame or out of focus. Article subject: choosing the correct driving-theory question bank for car categories A/B versus heavy vehicle categories C/D. One realistic documentary photograph of a small clean modern driving-school yard in Russia: a plain compact passenger car and a medium rigid box truck parked safely side by side with generous spacing. Both have their engines off and face the same direction. Clearly different vehicle sizes and forms, no bus needed. No people required. Three-quarter wide view in soft daylight, clean asphalt and contemporary neutral low buildings, uncluttered honest setting. No brand badges, visible license text, training labels or any logos; no road markings or signs in frame. Do not invent special training symbols. Natural proportions, not a luxury dealership scene.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162dc-7f2b-7451-91fc-392979001e7e/exec-27118be8-3b98-4162-b074-5ef77f95f8e0.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/bilety-pdd-ab-i-cd-otlichiya/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: credible clean editorial scene, realistic vehicles or person, no readable text or logos. Intersection cover is illustrative only, with no instructional priority diagram. Resize/conversion only.",
+    "finalSha256": "57c7ab3a4caad87a77db9e55d97d9632b81439f850660ee05b42b0a220e9dc3d",
+    "finalBytes": 182137
+  },
+  {
+    "slug": "gotov-li-k-ekzamenu-pdd",
+    "alt": "Будущая водительница завершает самопроверку перед теоретическим экзаменом ПДД",
+    "prompt": "Use case: photorealistic-natural. Asset type: a single editorial cover photograph for a Russian driving theory learning article. Strict horizontal 16:9, 2048x1152 or equivalent 16:9, composed for final 1200x675. Modern clean aesthetic Russian setting, pleasant Slavic-looking adults where people appear. Candid realistic documentary photography with natural skin texture and credible anatomy, not glossy stock advertising. No text, captions, letters, brand names, logos or watermarks. No collage. No invented app interfaces or readable screens, no complex traffic diagram. Road signs/markings, if any, must be accurate Russian GOST; prefer keeping them outside the frame or out of focus. Article subject: a calm self-check before the driving-theory exam. Candid photograph of a young adult Slavic-looking woman at a tidy kitchen table in a clean modern apartment in Russia. She has just finished a practice session and is closing a plain notebook beside her open laptop, looking quietly reassured, without looking at camera. The laptop screen points away and no words appear anywhere. A simple pen and a glass of water, no extra props. Medium shot with gentle morning light, authentic everyday clothing, natural small smile, soft cream and pale-blue accents, realistic hands and posture. Avoid celebration gestures, trophies, certificates, text lists, checkmarks or staged glossy advertising.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162dc-7f2b-7451-91fc-392979001e7e/exec-92407251-0ff4-4a42-91a5-2285dad2168a.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/gotov-li-k-ekzamenu-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: natural clean editorial scene, credible anatomy, no readable words or logos, passenger safely seated where applicable. Resize/conversion only.",
+    "finalSha256": "70938333a1db4c5a13a75f16618bacf21085fe6c43d98a1e713ec3588c88b344",
+    "finalBytes": 156671
+  },
+  {
+    "slug": "kak-proverit-aktualnost-biletov-pdd",
+    "alt": "Ученик сверяет учебные материалы ПДД на ноутбуке и смартфоне перед подготовкой",
+    "prompt": "Use case: photorealistic-natural. Asset type: a single editorial cover photograph for a Russian driving theory learning article. Strict horizontal 16:9, 2048x1152 or equivalent 16:9, composed for final 1200x675. Modern clean aesthetic Russian setting, pleasant Slavic-looking adults where people appear. Candid realistic documentary photography with natural skin texture and credible anatomy, not glossy stock advertising. No text, captions, letters, brand names, logos or watermarks. No collage. No invented app interfaces or readable screens, no complex traffic diagram. Road signs/markings, if any, must be accurate Russian GOST; prefer keeping them outside the frame or out of focus. Article subject: checking that driving-theory learning materials are current before starting study. Realistic candid editorial photograph of an adult Slavic-looking man in his early thirties in a tidy modern home workspace, comparing a laptop with a smartphone held in one hand. He looks attentive and analytical, with a simple closed driving-study book on the desk but no readable cover. Screen contents angle away and remain soft and indistinct; no fake dates, app store badges, update symbols or readable UI. Three-quarter close-medium composition, soft afternoon light, navy and warm neutral palette, clean contemporary Russian apartment background. Correct natural grip and hands, no stock-advertisement smile.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162dc-7f2b-7451-91fc-392979001e7e/exec-d0ebc1bf-8b21-418e-81e5-9559654375fa.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/kak-proverit-aktualnost-biletov-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: natural clean editorial scene, credible anatomy, no readable words or logos, passenger safely seated where applicable. Resize/conversion only.",
+    "finalSha256": "f82ce9ade177138c8be5470299ac67fe78f82d2ec609f6022820d295ba5d30bf",
+    "finalBytes": 128807
+  },
+  {
+    "slug": "pdd-offlayn-bez-registratsii",
+    "alt": "Пассажир электрички занимается ПДД на смартфоне во время поездки",
+    "prompt": "Use case: photorealistic-natural. Asset type: a single editorial cover photograph for a Russian driving theory learning article. Strict horizontal 16:9, 2048x1152 or equivalent 16:9, composed for final 1200x675. Modern clean aesthetic Russian setting, pleasant Slavic-looking adults where people appear. Candid realistic documentary photography with natural skin texture and credible anatomy, not glossy stock advertising. No text, captions, letters, brand names, logos or watermarks. No collage. No invented app interfaces or readable screens, no complex traffic diagram. Road signs/markings, if any, must be accurate Russian GOST; prefer keeping them outside the frame or out of focus. Article subject: studying driving theory offline while travelling without a network connection. A young adult Slavic-looking woman passenger sits comfortably by the large window of a clean contemporary Russian commuter train in daylight, using her smartphone for a quiet study session. She is a passenger only, not operating any vehicle. Camera from the opposite seat, natural candid medium-wide view, soft landscape through the window and a small closed notebook on her lap. Smartphone is held naturally at a slight angle so the display has no readable text or identifiable interface. Modern blue-gray train interior, clean upholstery, no brand logos, no travel text. Warm realistic human expression and textures, unposed everyday feeling, no cinematic excess or glossy advertising.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162dc-7f2b-7451-91fc-392979001e7e/exec-c90e3180-9cbc-4e2a-bcb4-057415bdaf4d.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/pdd-offlayn-bez-registratsii/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: natural clean editorial scene, credible anatomy, no readable words or logos, passenger safely seated where applicable. Resize/conversion only.",
+    "finalSha256": "64038f98933d1a0bf7e9afa3c25de684eac768ea3c95b263ec9f8a40d321d439",
+    "finalBytes": 174683
+  },
+  {
+    "slug": "razreshennaya-i-fakticheskaya-massa-pdd",
+    "alt": "Грузовой автомобиль с грузом на автомобильных весах",
+    "prompt": "Use case: photorealistic-natural. Asset type: editorial cover photograph for a Russian driving-theory study article about maximum authorised mass versus actual vehicle mass. Generate ONE wide landscape photograph, exact 16:9 composition, intended final 1200x675. Scene: a clean contemporary logistics inspection area in Russia in natural overcast daylight. A modest blue medium box truck stands completely stationary on a flush vehicle weighbridge; its loading door is open and a worker with a clipboard checks a few neatly secured plain cardboard boxes. Camera at a believable three-quarter angle, truck wheels and weighbridge visible, ordinary human scale, realistic engineering. The single adult male worker has pleasant Slavic appearance and natural posture. The visual contrast is the vehicle's size and its actual load, not an educational diagram. Modern maintained surroundings, clean asphalt, gentle blue-grey palette, candid documentary photography, honest fabric and skin textures, no glossy advertising staging. No readable text, no numbers, no logos, no watermarks, no fake UI, no collages, no added arrows, no traffic signs or invented road markings. Do not show a truck being driven or anyone operating a phone. Return a photorealistic image only.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162db-7145-70b3-9658-c2d5c8f73639/exec-c2c5a35d-36d7-4496-a1c8-18373ba8fa68.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/razreshennaya-i-fakticheskaya-massa-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: realistic editorial scene, no instructional road diagram. Resize and JPEG conversion only.",
+    "finalSha256": "12206a4a30113dc84c24dad5156451ebe64bc0562fd31c1d071b7d348a4ad738",
+    "finalBytes": 194777
+  },
+  {
+    "slug": "ostanovka-pyat-minut-posadka-vysadka-pdd",
+    "alt": "Пассажир садится в остановившийся автомобиль у тротуара",
+    "prompt": "Use case: photorealistic-natural. Asset type: Russian driving-theory blog cover. Primary request: ONE distinct wide landscape photograph, exact 16:9 composition for a final 1200x675 cover. Scene: A silver compact car is fully stationary parallel to the curb of a quiet well-maintained Russian residential street. An adult woman passenger with a pleasant Slavic appearance is getting into the rear passenger seat from the pavement side; her small travel bag is already inside. The driver remains seated, street side doors are closed. Natural candid moment, no rush, no active traffic in frame. Three-quarter view from the pavement, afternoon soft daylight, modern clean buildings. Do not show a bus stop, crossing, road signs or marked parking symbols. Style: living candid editorial photography, believable real surfaces and subtle imperfections, clean modern aesthetic, no glossy stock-photo polish, no AI artefacts. Constraints: all depicted people have pleasant Slavic appearance; Russia context; any road elements must be accurate Russian standards, preferably omit signs rather than invent them. No legible writing, no letters or numbers, no watermarks, no logos, no decorative arrows, no collages, no fabricated app screens. Do not demonstrate a legal rule with an invented diagram. Keep all important content within a wide landscape frame.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162db-7145-70b3-9658-c2d5c8f73639/exec-bea0c38c-30c8-4c9e-bad4-bdae3a2ca6ac.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/ostanovka-pyat-minut-posadka-vysadka-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: realistic editorial scene, no instructional road diagram. Resize and JPEG conversion only.",
+    "finalSha256": "f56d2f78d1396c93e886b9f926b5676024d0246ad371b7835de9ffd754ed0310",
+    "finalBytes": 236495
+  },
+  {
+    "slug": "perekrestok-ili-vyezd-so-dvora-pdd",
+    "alt": "Водитель смотрит на дорогу перед выездом из современного жилого двора",
+    "prompt": "Use case: photorealistic-natural. Asset type: Russian driving-theory blog cover. Primary request: ONE distinct wide landscape photograph, exact 16:9 composition for a final 1200x675 cover. Scene: View from the rear passenger seat of a completely stationary car waiting at a driveway exit from a modern Russian apartment courtyard. A young adult male learner with pleasant Slavic appearance looks to the left to check the street before moving. Both hands naturally near the wheel, no phone. Through the windscreen see the sidewalk continuing across the driveway and a quiet ordinary street beyond. Modern maintained apartment blocks and green landscaping. No intersection, no traffic signs, no text. Honest natural documentary framing. Style: living candid editorial photography, believable real surfaces and subtle imperfections, clean modern aesthetic, no glossy stock-photo polish, no AI artefacts. Constraints: all depicted people have pleasant Slavic appearance; Russia context; any road elements must be accurate Russian standards, preferably omit signs rather than invent them. No legible writing, no letters or numbers, no watermarks, no logos, no decorative arrows, no collages, no fabricated app screens. Do not demonstrate a legal rule with an invented diagram. Keep all important content within a wide landscape frame.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162db-7145-70b3-9658-c2d5c8f73639/exec-95c2e2ae-2d8f-4af5-80c7-4763102ab290.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/perekrestok-ili-vyezd-so-dvora-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: realistic editorial scene, no instructional road diagram. Resize and JPEG conversion only.",
+    "finalSha256": "a6167877e2826efbb7854e823ff3ffd606d8f635adf608009daef2aef6d06f2f",
+    "finalBytes": 177137
+  },
+  {
+    "slug": "znaki-i-razmetka-chto-glavnee-v-biletah",
+    "alt": "Дорожный рабочий устанавливает временную стойку на чистом городском участке ремонта",
+    "prompt": "Use case: photorealistic-natural. Asset type: Russian driving-theory blog cover. Primary request: ONE distinct wide landscape photograph, exact 16:9 composition for a final 1200x675 cover. Scene: A road maintenance worker with pleasant Slavic appearance in a clean orange safety vest sets up a temporary sign stand at the EDGE of a closed clean Russian urban roadworks area. Camera sees only the grey BACK of the sign, never its front; a few ordinary orange cones, tidy maintenance equipment, fresh asphalt. No active traffic, no invented painted lines, no readable signs or text. Bright soft morning light, contemporary city setting. The photograph suggests temporary traffic organisation without teaching a specific priority rule. Style: living candid editorial photography, believable real surfaces and subtle imperfections, clean modern aesthetic, no glossy stock-photo polish, no AI artefacts. Constraints: all depicted people have pleasant Slavic appearance; Russia context; any road elements must be accurate Russian standards, preferably omit signs rather than invent them. No legible writing, no letters or numbers, no watermarks, no logos, no decorative arrows, no collages, no fabricated app screens. Do not demonstrate a legal rule with an invented diagram. Keep all important content within a wide landscape frame.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162db-7145-70b3-9658-c2d5c8f73639/exec-4ada93ce-2e80-41c9-825c-baed25307ca7.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/znaki-i-razmetka-chto-glavnee-v-biletah/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: realistic editorial scene, no instructional road diagram. Resize and JPEG conversion only.",
+    "finalSha256": "51c289dda85c0bcc8d558f77b1b6bae8f85964d4d5218b792a72def7e58a3720",
+    "finalBytes": 225134
+  },
+  {
+    "slug": "povorotnik-ne-daet-preimushchestva-pdd",
+    "alt": "Крупный план включённого янтарного указателя поворота автомобиля",
+    "prompt": "Use case: photorealistic-natural. Asset type: Russian driving-theory blog cover. Primary request: ONE distinct wide landscape photograph, exact 16:9 composition for a final 1200x675 cover. Scene: Natural close-up photograph of the rear corner of a generic unbranded modern compact car, fully parked at a quiet curb. Its amber turn indicator is lit clearly, the red brake light is off. Background is a clean soft-focus contemporary Russian street. Frame includes the realistic lamp housing and a section of silver bodywork, no number plate, no car badge, no hands or other vehicles. Soft neutral afternoon daylight, realistic optical lens and paint details, documentary rather than advertising. Style: living candid editorial photography, believable real surfaces and subtle imperfections, clean modern aesthetic, no glossy stock-photo polish, no AI artefacts. Constraints: all depicted people have pleasant Slavic appearance; Russia context; any road elements must be accurate Russian standards, preferably omit signs rather than invent them. No legible writing, no letters or numbers, no watermarks, no logos, no decorative arrows, no collages, no fabricated app screens. Do not demonstrate a legal rule with an invented diagram. Keep all important content within a wide landscape frame.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162db-7145-70b3-9658-c2d5c8f73639/exec-7e1b438c-3b6f-45ce-a103-77ebe2ad988f.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/povorotnik-ne-daet-preimushchestva-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: realistic editorial scene, no instructional road diagram. Resize and JPEG conversion only.",
+    "finalSha256": "4082b82f7f4dfd7f462ab000c7736de97e142cf05bd59f4100a3f29298b22fc5",
+    "finalBytes": 173621
+  },
+  {
+    "slug": "voprosy-pdd-so-slovom-ne",
+    "alt": "Ученица внимательно перечитывает вопрос во время подготовки к ПДД",
+    "prompt": "Use case: photorealistic-natural. Asset type: Russian driving-theory blog cover. Primary request: ONE distinct wide landscape photograph, exact 16:9 composition for a final 1200x675 cover. Scene: Candid over-the-shoulder photograph of a young adult woman with pleasant Slavic appearance carefully rereading a study question at a modest modern home desk. Her index finger follows a line on a printed study sheet, a closed blue notebook nearby and laptop off to the side. Paper text is genuinely out of focus and not readable; no invented road diagrams, no fake application interface. Calm concentration, natural window daylight, realistic fingers, skin and simple clothing. Tight personal educational editorial framing, not a posed stock portrait. Style: living candid editorial photography, believable real surfaces and subtle imperfections, clean modern aesthetic, no glossy stock-photo polish, no AI artefacts. Constraints: all depicted people have pleasant Slavic appearance; Russia context; any road elements must be accurate Russian standards, preferably omit signs rather than invent them. No legible writing, no letters or numbers, no watermarks, no logos, no decorative arrows, no collages, no fabricated app screens. Do not demonstrate a legal rule with an invented diagram. Keep all important content within a wide landscape frame.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162db-7145-70b3-9658-c2d5c8f73639/exec-a19ad910-78c4-4a66-aa81-b6cdacd8ae56.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/voprosy-pdd-so-slovom-ne/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: realistic editorial scene, no instructional road diagram. Resize and JPEG conversion only.",
+    "finalSha256": "ae26e0d069d1467bdd6e74e487bd14eb1c58e7ed6953f7bfd3599823e8aeedcb",
+    "finalBytes": 172345
+  },
+  {
+    "slug": "tormoznoy-i-ostanovochnyy-put-v-biletah",
+    "alt": "Водитель держит руки на руле, впереди виден свободный участок дороги",
+    "prompt": "Use case: photorealistic-natural. Asset type: Russian driving-theory blog cover. Primary request: ONE distinct wide landscape photograph, exact 16:9 composition for a final 1200x675 cover. Scene: Documentary view inside a generic modern stationary training car on a clean closed driving practice ground. Foreground shows an adult driver's natural hands at the 9-and-3 position on the wheel; the straight empty training lane extends clearly through the windscreen. Steering wheel centre badge is out of frame, instruments are out of focus. Soft overcast daylight, no cones on a braking trajectory, no skid marks, no numerical distance graphics, no signs. A quiet scene illustrating attentive control and available stopping space rather than a dangerous sudden stop. Style: living candid editorial photography, believable real surfaces and subtle imperfections, clean modern aesthetic, no glossy stock-photo polish, no AI artefacts. Constraints: all depicted people have pleasant Slavic appearance; Russia context; any road elements must be accurate Russian standards, preferably omit signs rather than invent them. No legible writing, no letters or numbers, no watermarks, no logos, no decorative arrows, no collages, no fabricated app screens. Do not demonstrate a legal rule with an invented diagram. Keep all important content within a wide landscape frame.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162db-7145-70b3-9658-c2d5c8f73639/exec-2a118bf1-0ec6-4aff-9a89-1f6ee1318955.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/tormoznoy-i-ostanovochnyy-put-v-biletah/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: realistic editorial scene, no instructional road diagram. Resize and JPEG conversion only.",
+    "finalSha256": "4e7b8ecd7d81ae153ea6269b890e94387d367b512c1cbec57d85ed855f3a962f",
+    "finalBytes": 143139
+  },
+  {
+    "slug": "rasstoyaniya-v-biletah-pdd-perehod-ostanovka",
+    "alt": "Автобус у современного остановочного павильона на чистой городской улице",
+    "prompt": "Use case: photorealistic-natural. Asset type: Russian driving-theory blog cover. Primary request: ONE distinct wide landscape photograph, exact 16:9 composition for a final 1200x675 cover. Scene: Wide editorial photograph of a plain unbranded modern city bus completely stationary alongside a simple contemporary bus shelter in a clean Russian city. Camera views from the sidewalk, the bus passenger doors are open onto the sidewalk and a few adult Slavic-appearance passengers wait calmly at the shelter. No private cars stopped nearby. Do not show pedestrian-crossing paint or road signs or written advertising, route numbers or logos; frame or naturally blur any real-life text areas. Soft clear daylight, ordinary maintained street, realistic human scale. Style: living candid editorial photography, believable real surfaces and subtle imperfections, clean modern aesthetic, no glossy stock-photo polish, no AI artefacts. Constraints: all depicted people have pleasant Slavic appearance; Russia context; any road elements must be accurate Russian standards, preferably omit signs rather than invent them. No legible writing, no letters or numbers, no watermarks, no logos, no decorative arrows, no collages, no fabricated app screens. Do not demonstrate a legal rule with an invented diagram. Keep all important content within a wide landscape frame.",
+    "editPrompt": "Edit this editorial photograph only by turning OFF the bus destination / route displays and removing all lettering in and on the bus. The orange destination display behind the side window and the front destination panel must become completely dark blank screens with no writing or numbers. Preserve the same bus, people, poses, clean Russian streetscape, geometry, camera and 16:9 wide composition. Do not add logos or text. Photorealistic natural texture; no other changes.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162db-7145-70b3-9658-c2d5c8f73639/exec-0a7cd816-63c5-4af1-9700-48c14272c901.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/rasstoyaniya-v-biletah-pdd-perehod-ostanovka/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: realistic editorial scene, no instructional road diagram. Resize and JPEG conversion only.",
+    "finalSha256": "11444105d970adf1b09e331dc152b13b1f9170c51b8c0253cc796bbab1b29400",
+    "finalBytes": 241006
+  },
+  {
+    "slug": "nedostatochnaya-i-ogranichennaya-vidimost-pdd",
+    "alt": "Дорога в лёгком тумане видна через лобовое стекло автомобиля",
+    "prompt": "Use case: photorealistic-natural. Asset type: Russian driving-theory blog cover. Primary request: ONE distinct wide landscape photograph, exact 16:9 composition for a final 1200x675 cover. Scene: Natural editorial photograph from the passenger position inside a stationary modern car at a safe turnout, looking down a clean gently curving Russian country road in light morning fog. The bend and a tidy row of trees gradually obscure the road ahead; simple white edge lines only, no signs, no other traffic, no numbers. A small section of windscreen frame and dashboard in foreground, no instrument text or brand. Contemporary maintained road and calm atmospheric daylight, no dereliction, no dramatic near-collision. This is illustrative scenery, not a legal visibility-distance diagram. Style: living candid editorial photography, believable real surfaces and subtle imperfections, clean modern aesthetic, no glossy stock-photo polish, no AI artefacts. Constraints: all depicted people have pleasant Slavic appearance; Russia context; any road elements must be accurate Russian standards, preferably omit signs rather than invent them. No legible writing, no letters or numbers, no watermarks, no logos, no decorative arrows, no collages, no fabricated app screens. Do not demonstrate a legal rule with an invented diagram. Keep all important content within a wide landscape frame.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162db-7145-70b3-9658-c2d5c8f73639/exec-a1541875-4065-4c5e-9a76-c32efb62d4d3.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/nedostatochnaya-i-ogranichennaya-vidimost-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: realistic editorial scene, no instructional road diagram. Resize and JPEG conversion only.",
+    "finalSha256": "5ebe8da0a703e3e2541c85e86cded64e0bf4e5d5bb114be541bb18d5bfcc8fd8",
+    "finalBytes": 162700
+  },
+  {
+    "slug": "obezd-prepyatstviya-ili-obgon-pdd",
+    "alt": "Неисправный автомобиль с открытым капотом стоит у края спокойной дороги",
+    "prompt": "Use case: photorealistic-natural. Asset type: Russian driving-theory blog cover. Primary request: ONE distinct wide landscape photograph, exact 16:9 composition for a final 1200x675 cover. Scene: Wide photorealistic editorial photograph of a generic blue hatchback fully stationary at the edge of a clean quiet Russian suburban road with its bonnet raised, suggesting a breakdown. An adult driver with pleasant Slavic appearance stands safely on the wide paved verge beside the passenger side, wearing a reflective vest. No vehicle overtaking, no movement, no crossing a solid line. No readable text, vehicle logos, number plates or road signs. Camera from the verge, soft daylight, maintained modern roadside, realistic car proportions. Do not depict emergency rescue, injury or a collision. Style: living candid editorial photography, believable real surfaces and subtle imperfections, clean modern aesthetic, no glossy stock-photo polish, no AI artefacts. Constraints: all depicted people have pleasant Slavic appearance; Russia context; any road elements must be accurate Russian standards, preferably omit signs rather than invent them. No legible writing, no letters or numbers, no watermarks, no logos, no decorative arrows, no collages, no fabricated app screens. Do not demonstrate a legal rule with an invented diagram. Keep all important content within a wide landscape frame.",
+    "editPrompt": "Edit this editorial photograph by removing the woman entirely from the image, realistically reconstructing the visible car and quiet roadside behind her. Also remove the small blue sticker inside the windscreen. Preserve the blue stationary car, open bonnet, wide paved verge, single white road edge line, road, daylight and natural wide 16:9 framing. No people anywhere, no letters or logos, no plate numbers, no collision or dramatic action. Keep everything else unchanged and photorealistic.",
+    "tool": "image_gen__imagegen",
+    "nativePath": "/Users/sergei/.codex/generated_images/01a162db-7145-70b3-9658-c2d5c8f73639/exec-a9974b97-d4e0-494d-92fc-771df5992833.png",
+    "nativeFormat": "PNG",
+    "nativeDimensions": [
+      1672,
+      941
+    ],
+    "finalPath": "/Users/sergei/MY_PROJECTS/PDD/PDD Russia/web_landing/ru/blog/obezd-prepyatstviya-ili-obgon-pdd/cover.jpg",
+    "finalDimensions": [
+      1200,
+      675
+    ],
+    "inspection": "Accepted after visual review: realistic editorial scene, no instructional road diagram. Resize and JPEG conversion only.",
+    "finalSha256": "c0718f68d4a278734f27211dee472cca458f1944f03164c56fc1cc609c522187",
+    "finalBytes": 258576
+  }
+]
