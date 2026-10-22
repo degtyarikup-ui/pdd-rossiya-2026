@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 /// for an animation before carrying out their existing action.
 abstract final class PremiumMotion {
   static const entrance = Duration(milliseconds: 680);
+  static const statistics = Duration(milliseconds: 1100);
   static const carArrival = Duration(milliseconds: 760);
   static const press = Duration(milliseconds: 90);
   static const release = Duration(milliseconds: 180);

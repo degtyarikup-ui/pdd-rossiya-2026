@@ -244,6 +244,7 @@ class AppColors {
   // --- Static fallback & constant tokens (unified brand palette) ---
   static const Color accent = Color(0xFF0574F8);
   static const Color premiumLime = Color(0xFFDFFF12);
+  static const Color premiumRatingStar = Color(0xFFFFEA00);
   static const Color lightAccent = Color(0xFFE8F2FE);
   static const Color primaryText = Color(0xFF121212);
   static const Color secondaryText = Color(0xFFA1A6B7);

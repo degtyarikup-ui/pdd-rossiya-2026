@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_motion.dart';
 
@@ -22,9 +23,21 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
     with SingleTickerProviderStateMixin {
   bool _showingPlans = false;
   bool _entranceStarted = false;
-  late final AnimationController _entrance = AnimationController(
+  late final AnimationController _timeline = AnimationController(
     vsync: this,
-    duration: PremiumMotion.entrance,
+    duration: PremiumMotion.statistics,
+  );
+  late final Animation<double> _entrance = _timeline.drive(
+    CurveTween(
+      curve: Interval(
+        0,
+        PremiumMotion.entrance.inMilliseconds /
+            PremiumMotion.statistics.inMilliseconds,
+      ),
+    ),
+  );
+  late final Animation<double> _statistics = _timeline.drive(
+    CurveTween(curve: const Interval(.08, 1, curve: Curves.easeOutCubic)),
   );
 
   @override
@@ -32,16 +45,16 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
     super.didChangeDependencies();
     if (MediaQuery.disableAnimationsOf(context)) {
       _entranceStarted = true;
-      _entrance.value = 1;
+      _timeline.value = 1;
     } else if (!_entranceStarted) {
       _entranceStarted = true;
-      _entrance.forward();
+      _timeline.forward();
     }
   }
 
   @override
   void dispose() {
-    _entrance.dispose();
+    _timeline.dispose();
     super.dispose();
   }
 
@@ -86,6 +99,7 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
                                   _BenefitsHeader(
                                     width: width,
                                     entrance: _entrance,
+                                    statistics: _statistics,
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.fromLTRB(
@@ -237,25 +251,16 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
                 ),
                 child: PremiumPressFeedback(
                   pressedScale: .94,
-                  child: IconButton(
-                    key: const ValueKey('premium-close-benefits'),
-                    tooltip: MaterialLocalizations.of(
+                  child: Tooltip(
+                    message: MaterialLocalizations.of(
                       context,
                     ).closeButtonTooltip,
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: IconButton.styleFrom(
+                    child: AppChromeIconButton(
+                      key: const ValueKey('premium-close-benefits'),
+                      icon: Icons.close_rounded,
+                      onTap: () => Navigator.of(context).pop(),
                       backgroundColor: AppColors.primaryText,
-                      foregroundColor: AppColors.white,
-                      minimumSize: const Size.square(48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.buttonRadius,
-                        ),
-                      ),
-                    ),
-                    icon: SvgPicture.asset(
-                      'assets/images/premium/close.svg',
-                      excludeFromSemantics: true,
+                      iconColor: AppColors.white,
                     ),
                   ),
                 ),
@@ -269,10 +274,15 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
 }
 
 class _BenefitsHeader extends StatelessWidget {
-  const _BenefitsHeader({required this.width, required this.entrance});
+  const _BenefitsHeader({
+    required this.width,
+    required this.entrance,
+    required this.statistics,
+  });
 
   final double width;
   final Animation<double> entrance;
+  final Animation<double> statistics;
 
   @override
   Widget build(BuildContext context) {
@@ -313,6 +323,7 @@ class _BenefitsHeader extends StatelessWidget {
         : headlineStyle.fontSize!;
     final rating = _ProofPoint(
       value: l10n.premiumRatingValue,
+      progress: statistics,
       label: l10n.premiumRatingLabel,
       leftAsset: 'laurel_left.svg',
       rightAsset: 'laurel_right.svg',
@@ -320,6 +331,7 @@ class _BenefitsHeader extends StatelessWidget {
     );
     final passRate = _ProofPoint(
       value: l10n.premiumPassRateValue,
+      progress: statistics,
       label: l10n.premiumPassRateLabel,
       leftAsset: 'laurel_pass_left.svg',
       rightAsset: 'laurel_pass_right.svg',
@@ -424,6 +436,7 @@ class _BenefitsHeader extends StatelessWidget {
 class _ProofPoint extends StatelessWidget {
   const _ProofPoint({
     required this.value,
+    required this.progress,
     required this.label,
     required this.leftAsset,
     required this.rightAsset,
@@ -431,6 +444,7 @@ class _ProofPoint extends StatelessWidget {
   });
 
   final String value;
+  final Animation<double> progress;
   final String label;
   final String leftAsset;
   final String rightAsset;
@@ -466,15 +480,21 @@ class _ProofPoint extends StatelessWidget {
                       spacing: 4,
                       children: [
                         if (star)
-                          SvgPicture.asset('assets/images/premium/star.svg'),
-                        Text(
-                          value,
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.white,
-                            height: 1.1,
+                          SvgPicture.asset(
+                            'assets/images/premium/star.svg',
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.premiumRatingStar,
+                              BlendMode.srcIn,
+                            ),
                           ),
+                        _CountingProofValue(
+                          key: ValueKey(
+                            star
+                                ? 'premium-rating-value'
+                                : 'premium-pass-value',
+                          ),
+                          value: value,
+                          progress: progress,
                         ),
                       ],
                     ),
@@ -498,6 +518,61 @@ class _ProofPoint extends StatelessWidget {
                   child: SvgPicture.asset('assets/images/premium/$rightAsset'),
                 ),
             ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Keeps localized punctuation and the final width throughout the count-up.
+/// The enclosing proof point announces only the final statistic to readers.
+class _CountingProofValue extends StatelessWidget {
+  const _CountingProofValue({
+    super.key,
+    required this.value,
+    required this.progress,
+  });
+
+  final String value;
+  final Animation<double> progress;
+
+  @override
+  Widget build(BuildContext context) {
+    const style = TextStyle(
+      fontSize: 26,
+      fontWeight: FontWeight.w700,
+      color: AppColors.white,
+      height: 1.1,
+      fontFeatures: [FontFeature.tabularFigures()],
+    );
+    final number = RegExp(r'\d+[.,]\d+').firstMatch(value);
+    if (number == null) return Text(value, style: style);
+    final localizedNumber = number.group(0)!;
+    final target = double.parse(localizedNumber.replaceAll(',', '.'));
+    final separator = localizedNumber.contains(',') ? ',' : '.';
+    final painter = TextPainter(
+      text: TextSpan(
+        text: value,
+        style: DefaultTextStyle.of(context).style.merge(style),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final size = painter.size;
+    painter.dispose();
+    return SizedBox.fromSize(
+      size: size,
+      child: AnimatedBuilder(
+        animation: progress,
+        builder: (context, _) {
+          final current = (1 + (target - 1) * progress.value)
+              .toStringAsFixed(1)
+              .replaceAll('.', separator);
+          return Text(
+            value.replaceRange(number.start, number.end, current),
+            textAlign: TextAlign.center,
+            style: style,
           );
         },
       ),

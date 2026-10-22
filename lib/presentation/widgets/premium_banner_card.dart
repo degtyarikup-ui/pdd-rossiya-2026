@@ -173,8 +173,8 @@ class _PremiumBannerArtworkState extends State<_PremiumBannerArtwork>
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              right: artWidth * -0.13,
-              bottom: artWidth * -0.52,
+              right: artWidth * -0.21,
+              bottom: artWidth * -0.60,
               width: raySize,
               height: raySize,
               child: _RotatingPremiumRays(isPremium: widget.isPremium),

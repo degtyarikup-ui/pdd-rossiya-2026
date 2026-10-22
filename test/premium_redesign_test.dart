@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/premium_benefits_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
@@ -392,6 +394,95 @@ void main() {
     ]) {
       expect(revealOpacity(tester, name), 1);
     }
+    expect(find.text(appL10n.premiumRatingValue), findsOneWidget);
+    expect(find.text(appL10n.premiumPassRateValue), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  for (final language in ['ru', 'en', 'kk']) {
+    _testPremium('statistics count up without shifting in $language', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await mount(
+          tester,
+          language: language,
+          reducedMotion: false,
+          settle: false,
+        );
+        await tester.pump(const Duration(milliseconds: 16));
+        final rating = find.byKey(const ValueKey('premium-rating-value'));
+        final passRate = find.byKey(const ValueKey('premium-pass-value'));
+        String displayed(Finder parent) => tester
+            .widget<Text>(
+              find.descendant(of: parent, matching: find.byType(Text)),
+            )
+            .data!;
+        double number(Finder parent) => double.parse(
+          displayed(parent).replaceAll('%', '').replaceAll(',', '.'),
+        );
+
+        expect(number(rating), 1);
+        expect(number(passRate), 1);
+        final ratingWidth = tester.getSize(rating).width;
+        final passWidth = tester.getSize(passRate).width;
+        final ratingX = tester.getTopLeft(rating).dx;
+        final passX = tester.getTopLeft(passRate).dx;
+        await tester.pump(const Duration(milliseconds: 250));
+        final intermediateRating = number(rating);
+        final intermediatePass = number(passRate);
+        expect(intermediateRating, inExclusiveRange(1, 4.7));
+        expect(intermediatePass, inExclusiveRange(1, 96.8));
+        expect(
+          displayed(rating).contains(language == 'en' ? '.' : ','),
+          isTrue,
+        );
+        expect(
+          find.bySemanticsLabel(
+            '${appL10n.premiumRatingValue}, ${appL10n.premiumRatingLabel}',
+          ),
+          findsOneWidget,
+        );
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(number(rating), greaterThan(intermediateRating));
+        expect(number(passRate), greaterThan(intermediatePass));
+        await tester.pumpAndSettle();
+        expect(displayed(rating), appL10n.premiumRatingValue);
+        expect(displayed(passRate), appL10n.premiumPassRateValue);
+        expect(tester.getSize(rating).width, ratingWidth);
+        expect(tester.getSize(passRate).width, passWidth);
+        expect(tester.getTopLeft(rating).dx, ratingX);
+        expect(tester.getTopLeft(passRate).dx, passX);
+        await tester.tap(find.byKey(_showPlans));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(_closePlans));
+        await tester.pumpAndSettle();
+        expect(displayed(rating), appL10n.premiumRatingValue);
+        expect(displayed(passRate), appL10n.premiumPassRateValue);
+        await tester.pumpWidget(const SizedBox.shrink());
+      } finally {
+        semantics.dispose();
+      }
+    });
+  }
+
+  _testPremium('benefits use the common close control and yellow rating star', (
+    tester,
+  ) async {
+    await mount(tester);
+    final close = find.byKey(const ValueKey('premium-close-benefits'));
+    expect(tester.widget(close), isA<AppChromeIconButton>());
+    expect(tester.getSize(close), const Size.square(40));
+    final star = tester.widget<SvgPicture>(
+      find.byWidgetPredicate(
+        (widget) => widget is SvgPicture && widget.colorFilter != null,
+      ),
+    );
+    expect(
+      star.colorFilter,
+      const ColorFilter.mode(Color(0xFFFFEA00), BlendMode.srcIn),
+    );
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
