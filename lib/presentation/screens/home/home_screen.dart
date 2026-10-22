@@ -530,11 +530,20 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
         final totalH = constraints.maxHeight;
         final double topInset = MediaQuery.paddingOf(context).top;
         const double topPadding = 12.0;
-        const double bottomPadding = AppDimensions.screenPadding; // 16.0
+        const double bottomPadding = 12.0;
         const double gap = 12.0;
 
-        // Top progress panel height is ~168.0
-        const double topPanelHeight = 168.0;
+        // Gauge, padding, divider and the two scaled statistic labels.
+        final textScaler = MediaQuery.textScalerOf(context);
+        final double topPanelHeight =
+            64 +
+            32 +
+            16 +
+            1 +
+            12 +
+            textScaler.scale(15) * 1.1 +
+            3 +
+            textScaler.scale(10) * 1.1;
         final double continueCardH = hasContinueCard ? 56.0 : 0.0;
         final double totalGaps = gap * (hasContinueCard ? 4 : 3);
 
@@ -552,7 +561,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
 
         if (availableH > 260) {
           examHeight = (availableH * 0.40).clamp(130.0, 220.0);
-          final double remainingForButtons = availableH - examHeight - gap;
+          final double remainingForButtons = availableH - examHeight;
           buttonHeight = math.max(100.0, remainingForButtons / 2);
         } else {
           examHeight = 140.0;
