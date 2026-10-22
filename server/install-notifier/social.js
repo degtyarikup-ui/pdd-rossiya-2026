@@ -19,6 +19,10 @@ const KV_ACCOUNTS = 'social:accounts';
 const KV_POSTS = 'social:posts';
 const KV_LOG = 'social:log';
 const KV_GOOGLE_TOKEN = 'social:google_token';
+const KV_INSTAGRAM_COOLDOWN = 'social:instagram_cooldown';
+const IG_COOLDOWN_MS = 60 * 60 * 1000;
+const IG_MAX_COOLDOWN_MS = 24 * IG_COOLDOWN_MS;
+const instagramCooldownMemory = new WeakMap();
 
 const VIDEO_EXT = ['mp4', 'mov', 'm4v'];
 const LOG_LIMIT = 120;
@@ -448,6 +452,66 @@ export async function syncAccountVideos(env, account) {
 
 // ────────────────────────────── Instagram ──────────────────────────────
 
+function validInstagramCooldown(value, now = Date.now()) {
+  return value?.reason === 'rate_limit' && Number.isSafeInteger(value.until)
+    && value.until > now && value.until <= now + IG_MAX_COOLDOWN_MS ? value : null;
+}
+
+async function getInstagramCooldown(env) {
+  const memory = validInstagramCooldown(instagramCooldownMemory.get(env.INSTALLS));
+  let stored = null;
+  try {
+    const raw = await env.INSTALLS.get(KV_INSTAGRAM_COOLDOWN);
+    try { stored = validInstagramCooldown(JSON.parse(raw)); } catch (_) {}
+  } catch (_) {
+    return memory || { until: Date.now() + 60000, reason: 'read_unavailable' };
+  }
+  const current = stored && (!memory || stored.until >= memory.until) ? stored : memory;
+  if (current) instagramCooldownMemory.set(env.INSTALLS, current);
+  return current;
+}
+
+function instagramRateLimitError(response, data) {
+  if (response.status !== 429 && data?.error?.code !== 4) return null;
+  const parts = ['HTTP ' + response.status];
+  if (Number.isInteger(data?.error?.code)) parts.push('code ' + data.error.code);
+  if (Number.isInteger(data?.error?.error_subcode)) parts.push('subcode ' + data.error.error_subcode);
+  const error = new Error('Instagram временно ограничил запросы (' + parts.join(', ') + ')');
+  error.code = 'ERR_IG_RATE_LIMITED';
+  const retryAfter = response.headers?.get('retry-after')?.trim();
+  let retryMs = 0;
+  if (retryAfter && /^[0-9]+$/.test(retryAfter)) retryMs = Number(retryAfter) * 1000;
+  else if (retryAfter && new Date(retryAfter).toUTCString() === retryAfter) retryMs = Date.parse(retryAfter) - Date.now();
+  error.instagramCooldownMs = Number.isFinite(retryMs) && retryMs > 0
+    ? Math.max(IG_COOLDOWN_MS, Math.min(retryMs, IG_MAX_COOLDOWN_MS)) : IG_COOLDOWN_MS;
+  return error;
+}
+
+async function startInstagramCooldown(env, error) {
+  const existing = await getInstagramCooldown(env);
+  const current = { until: Math.max(existing?.until || 0, Date.now() + error.instagramCooldownMs), reason: 'rate_limit' };
+  // Keep a bounded local fallback if KV is temporarily unavailable. Only public
+  // rate-limit timing is held in memory; no request or credential is retained.
+  instagramCooldownMemory.set(env.INSTALLS, current);
+  try { await kvPut(env, KV_INSTAGRAM_COOLDOWN, current); }
+  catch (_) { console.warn(JSON.stringify({ event: 'instagram_cooldown_unavailable', code: 'cache_write_failed' })); }
+  return { ...current, first: !existing };
+}
+
+function onlyInstagramPending(post, defaultTargets = ['instagram', 'youtube']) {
+  const targets = Array.isArray(post.targets) && post.targets.length ? post.targets : defaultTargets;
+  return targets.includes('instagram') && post.instagramStatus !== 'published'
+    && (!targets.includes('youtube') || post.youtubeStatus === 'published');
+}
+
+function instagramCooldownResult(cooldown) {
+  return { ok: false, status: 'pending', code: 'instagram_rate_limited',
+    retryAt: new Date(cooldown.until).toISOString(),
+    message: cooldown.reason === 'read_unavailable'
+      ? 'Instagram временно недоступен для проверки. Попробуйте позже.'
+      : 'Instagram ограничил запросы. Публикация временно на паузе; попробуйте позже.' };
+}
+
 async function igRequest(url, form) {
   const res = await fetch(url, {
     method: 'POST',
@@ -455,6 +519,8 @@ async function igRequest(url, form) {
     body: new URLSearchParams(form),
   });
   const data = await res.json().catch(() => ({}));
+  const rateLimit = instagramRateLimitError(res, data);
+  if (rateLimit) throw rateLimit;
   return { ok: res.ok, status: res.status, data };
 }
 
@@ -529,6 +595,8 @@ async function verifyPublishedInstagramMedia(env, post, account, api, statusDeta
   let bodyError = null;
   try { data = await response.json(); }
   catch (error) { bodyError = error; }
+  const rateLimit = instagramRateLimitError(response, data);
+  if (rateLimit) throw rateLimit;
   if (response.status === 429 || response.status >= 500) {
     throw instagramPublicationCheckUnavailable(statusDetails(response, data));
   }
@@ -608,6 +676,8 @@ async function finishInstagram(env, post, account, containerId) {
       `${api}/${containerId}?fields=status_code,status&access_token=${encodeURIComponent(account.instagramToken)}`
     );
     const statusData = await statusRes.json().catch(() => null);
+    const rateLimit = instagramRateLimitError(statusRes, statusData);
+    if (rateLimit) throw rateLimit;
     if (!statusRes.ok || statusData?.error) {
       throw new Error('Instagram не дал проверить статус видео' + statusDetails(statusRes, statusData));
     }
@@ -652,7 +722,9 @@ async function finishInstagram(env, post, account, containerId) {
       `${api}/${mediaId}?fields=permalink&access_token=${encodeURIComponent(account.instagramToken)}`
     );
     const detailsData = await details.json().catch(() => ({}));
-    permalink = detailsData.permalink || null;
+    const rateLimit = instagramRateLimitError(details, detailsData);
+    if (rateLimit) await startInstagramCooldown(env, rateLimit);
+    else permalink = detailsData.permalink || null;
   } catch (_) { /* ссылка не обязательна */ }
 
   return { mediaId, permalink };
@@ -667,6 +739,7 @@ async function finishInstagram(env, post, account, containerId) {
  * суток, а запас в месяц переживает любые паузы в работе крона.
  */
 export async function refreshInstagramTokens(env) {
+  if (await getInstagramCooldown(env)) return;
   const accounts = await getAccounts(env);
   const monthAgo = Date.now() - 30 * 24 * 3600 * 1000;
   let changed = false;
@@ -685,6 +758,12 @@ export async function refreshInstagramTokens(env) {
         encodeURIComponent(account.instagramToken)
       );
       const data = await res.json().catch(() => ({}));
+      const rateLimit = instagramRateLimitError(res, data);
+      if (rateLimit) {
+        const cooldown = await startInstagramCooldown(env, rateLimit);
+        if (cooldown.first) await socialLog(env, 'error', rateLimit.message);
+        break;
+      }
       if (res.ok && data.access_token) {
         accounts[i] = {
           ...account,
@@ -822,10 +901,19 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
     : (account.targets || ['instagram', 'youtube']);
 
   const errors = [];
+  let notifyFailure = true;
   let igResult = null;
   let ytResult = null;
+  const igPending = only.includes('instagram') && targets.includes('instagram') && post.instagramStatus !== 'published';
+  const cooldown = igPending ? await getInstagramCooldown(env) : null;
+  if (cooldown && (!only.includes('youtube') || !targets.includes('youtube') || post.youtubeStatus === 'published')) {
+    return instagramCooldownResult(cooldown);
+  }
 
-  if (only.includes('instagram') && targets.includes('instagram') && post.instagramStatus !== 'published') {
+  if (cooldown) {
+    errors.push('Instagram: действует временный перерыв после ограничения запросов');
+    notifyFailure = false;
+  } else if (igPending) {
     try {
       await patchPost(env, postId, { instagramStatus: 'processing' });
       igResult = post.instagramContainerId
@@ -846,6 +934,7 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
         ? `Instagram: подтверждена прежняя публикация ${post.fileName}`
         : `Instagram: опубликован ${post.fileName}`, igResult.alreadyPublished ? {} : { url: igResult.permalink });
     } catch (e) {
+      if (e.code === 'ERR_IG_RATE_LIMITED') notifyFailure = (await startInstagramCooldown(env, e)).first;
       errors.push('Instagram: ' + e.message);
       await patchPost(env, postId, {
         instagramStatus: 'failed',
@@ -869,6 +958,7 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
       });
       await socialLog(env, 'ok', `YouTube: опубликован ${post.fileName}`, { url: ytResult.permalink });
     } catch (e) {
+      notifyFailure = true;
       errors.push('YouTube: ' + e.message);
       await patchPost(env, postId, { youtubeStatus: 'failed' });
       await socialLog(env, 'error', `YouTube: ${post.fileName} — ${e.message}`);
@@ -899,10 +989,13 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
   }
 
   const summary = errors.join('; ') || 'Публикация не завершилась';
-  await patchPost(env, postId, { status: 'failed', error: limit(summary, 500) });
+  await patchPost(env, postId, {
+    status: 'failed', error: limit(summary, 500),
+    ...(cooldown && fresh.instagramStatus === 'processing' ? { instagramStatus: 'queued' } : {}),
+  });
 
   // Об упавшей автопубликации иначе можно узнать, только открыв админку.
-  if (notify) {
+  if (notify && notifyFailure) {
     try {
       await notify(
         '⚠️ <b>Автопостинг: ролик не опубликован</b>\n' +
@@ -930,13 +1023,13 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
  * очередь встанет молча. Через полчаса считаем, что публикация не состоялась,
  * и возвращаем ролик в работу — площадку, куда он уже ушёл, повтор пропустит.
  */
-async function recoverStalePosts(env) {
+async function recoverStalePosts(env, cooldown = null) {
   const posts = await getPosts(env);
   const cutoff = Date.now() - STALE_PROCESSING_MS;
   let changed = false;
 
   posts.forEach((post, i) => {
-    if (post.status !== 'processing' || post.instagramNeedsReview === true) return;
+    if (post.status !== 'processing' || post.instagramNeedsReview === true || (cooldown && onlyInstagramPending(post))) return;
     const startedAt = Date.parse(post.processingSince || post.createdAt || '') || 0;
     if (startedAt && startedAt > cutoff) return;
     posts[i] = {
@@ -968,11 +1061,12 @@ function isScheduledPostDue(post, now = Date.now()) {
   return Number.isFinite(scheduled) && scheduled <= now;
 }
 
-async function resumeInFlight(env, origin, notify) {
+async function resumeInFlight(env, origin, notify, cooldown = null) {
   const posts = await getPosts(env);
   // Только назначенные даты или явный ручной запуск. Старые задачи без даты
   // не должны возобновлять автоматическую публикацию после обновления.
   const stuck = posts.filter((p) => p.status === 'processing' && p.instagramNeedsReview !== true
+    && !(cooldown && onlyInstagramPending(p))
     && (isScheduledPostDue(p) || p.publishMode === 'manual'));
 
   for (const post of stuck) {
@@ -985,9 +1079,10 @@ async function resumeInFlight(env, origin, notify) {
 }
 
 export async function runAutoPost(env, origin, notify = null) {
-  await resumeInFlight(env, origin, notify);
-  await recoverStalePosts(env);
-  await refreshInstagramTokens(env);
+  const cooldown = await getInstagramCooldown(env);
+  await resumeInFlight(env, origin, notify, cooldown);
+  await recoverStalePosts(env, cooldown);
+  if (!(await getInstagramCooldown(env))) await refreshInstagramTokens(env);
 
   const accounts = await getAccounts(env);
   const results = [];
@@ -1008,6 +1103,7 @@ export async function runAutoPost(env, origin, notify = null) {
     const due = posts
       .filter((p) => p.accountId === account.id && (p.status === 'queued' || p.status === 'failed'))
       .filter((p) => p.instagramNeedsReview !== true)
+      .filter((p) => !(cooldown && onlyInstagramPending(p, account.targets)))
       .filter((p) => isScheduledPostDue(p, now))
       .sort((a, b) => {
         if (a.scheduledAt && b.scheduledAt) return a.scheduledAt.localeCompare(b.scheduledAt);
@@ -1027,6 +1123,7 @@ export async function runAutoPost(env, origin, notify = null) {
       // Пока предыдущий ролик кодировался, администратор мог снять или перенести дату.
       const current = (await getPosts(env)).find(p => p.id === post.id);
       if (!current || current.instagramNeedsReview === true || !['queued', 'failed'].includes(current.status) || !isScheduledPostDue(current)) continue;
+      if (onlyInstagramPending(current, account.targets) && await getInstagramCooldown(env)) continue;
       await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString(), publishMode: 'scheduled' });
       const res = await publishPost(env, post.id, origin, notify);
       results.push({ account: account.name, file: post.fileName, ...res });
@@ -1401,6 +1498,10 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     const post = posts.find((p) => p.id === body.id);
     const platform = body.platform === 'youtube' ? 'youtube' : 'instagram';
     if (!post) return jsonResponse({ error: 'not found' }, 404);
+    if (platform === 'instagram') {
+      const cooldown = await getInstagramCooldown(env);
+      if (cooldown) return jsonResponse(instagramCooldownResult(cooldown));
+    }
 
     await patchPost(env, post.id, {
       status: 'processing',
@@ -1423,9 +1524,11 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     const ids = Array.isArray(body.ids) ? body.ids : [];
     const posts = await getPosts(env);
     const ready = posts.filter((p) => ids.includes(p.id) && p.status !== 'processing');
-    const take = ready.slice(0, MAX_MANUAL_BATCH);
+    const cooldown = await getInstagramCooldown(env);
+    const held = cooldown ? ready.filter(p => onlyInstagramPending(p)) : [];
+    const take = ready.filter(p => !held.includes(p)).slice(0, MAX_MANUAL_BATCH);
 
-    if (!take.length) return jsonResponse({ ok: false, message: 'Нечего публиковать' });
+    if (!take.length) return jsonResponse(held.length ? { ...instagramCooldownResult(cooldown), held: held.length } : { ok: false, message: 'Нечего публиковать' });
 
     for (const post of take) {
       await patchPost(env, post.id, { status: 'processing', error: null, scheduledAt: null, processingSince: new Date().toISOString(), publishMode: 'manual', instagramNeedsReview: false, instagramReviewReason: null });
@@ -1441,6 +1544,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
       ok: true,
       started: take.length,
       skipped: ready.length - take.length,
+      held: held.length,
       message: take.length === 1
         ? 'Публикую ролик'
         : `Публикую ${take.length} роликов по очереди`,
@@ -1544,6 +1648,8 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (post.status === 'processing') {
       return jsonResponse({ ok: false, message: 'Этот ролик уже публикуется' });
     }
+    const cooldown = onlyInstagramPending(post) ? await getInstagramCooldown(env) : null;
+    if (cooldown) return jsonResponse(instagramCooldownResult(cooldown));
     await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString(), publishMode: 'manual', instagramNeedsReview: false, instagramReviewReason: null });
     // Instagram кодирует видео минуты — ответ ждать нельзя, публикуем в фоне,
     // а панель подтягивает статус опросом.

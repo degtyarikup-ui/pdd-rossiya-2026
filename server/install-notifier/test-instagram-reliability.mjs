@@ -24,18 +24,23 @@ function fixture(t, statuses, overrides = {}) {
     ['social:accounts', JSON.stringify([account])],
     ['social:settings', JSON.stringify({ workerOrigin: 'https://fixture.invalid' })],
   ]);
+  const writes = [];
   const env = { INSTALLS: {
     get: async key => data.get(key) ?? null,
-    put: async (key, value) => { data.set(key, value); },
+    put: async (key, value) => { writes.push(key); data.set(key, value); },
   } };
   const calls = [];
-  const controls = { onStatus: null, mediaResponses: [] };
+  const controls = { onStatus: null, mediaResponses: [], other: null };
   const responses = statuses.slice();
   t.mock.method(globalThis, 'fetch', async (input, options = {}) => {
     const url = new URL(input);
     const method = options.method || 'GET';
     calls.push({ method, path: url.pathname, signal: options.signal, form: options.body ? new URLSearchParams(options.body) : null });
     if (options.signal?.aborted) throw options.signal.reason;
+    if (controls.other) {
+      const response = await controls.other(url, options);
+      if (response) return response;
+    }
     if (method === 'GET' && url.pathname.endsWith('/fixture-container')) {
       if (controls.onStatus) await controls.onStatus();
       const response = responses.length > 1 ? responses.shift() : responses[0];
@@ -51,7 +56,9 @@ function fixture(t, statuses, overrides = {}) {
     throw new Error('Unexpected fixture request');
   });
   return {
-    post, env, calls, controls,
+    post, env, calls, controls, writes,
+    set: (key, value) => data.set(key, JSON.stringify(value)),
+    get: key => JSON.parse(data.get(key) || 'null'),
     current: () => JSON.parse(data.get('social:posts'))[0],
     update: patch => { data.set('social:posts', JSON.stringify([{ ...JSON.parse(data.get('social:posts'))[0], ...patch }])); },
     log: () => JSON.parse(data.get('social:log') || '[]'),
@@ -194,11 +201,14 @@ for (const transient of [
 ]) {
   test(`PUBLISHED media check ${transient[0]} stays retryable and can recover with read-only verification`, async t => {
     const f = fixture(t, [{ status_code: 'PUBLISHED' }]);
+    let now = Date.now();
+    t.mock.method(Date, 'now', () => now);
     f.controls.mediaResponses = [transient[1], () => Response.json({ id: f.post.instagramMediaId, permalink: f.post.instagramPermalink })];
     await publishWithClock(t, f, async () => {
       assert.equal((await publishPost(f.env, f.post.id, 'https://fixture.invalid')).status, 'error');
       assert.notEqual(f.current().instagramNeedsReview, true);
       assert.doesNotMatch(f.current().error, /200 секунд|private/);
+      if (transient[0] === 'HTTP 429') now += 3600001;
       assert.equal((await publishPost(f.env, f.post.id, 'https://fixture.invalid')).status, 'ok');
     });
     assert.equal(f.current().status, 'published');
@@ -293,3 +303,226 @@ for (const status of ['ERROR', 'EXPIRED']) {
     assert.equal(f.current().youtubeStatus, 'published');
   });
 }
+
+const cooldownKey = 'social:instagram_cooldown';
+const quota = (status = 403, retryAfter) => Response.json({ error: {
+  code: 4, error_subcode: 1349210, message: 'private upstream quota text',
+} }, { status, headers: retryAfter ? { 'retry-after': retryAfter } : {} });
+
+for (const stage of ['create', 'status', 'publish', 'verify']) {
+  test(`code 4 in ${stage} starts one global cooldown, prevents fallback/repeated calls and notifies once`, async t => {
+    const f = fixture(t, [stage === 'status' ? () => quota() : { status_code: stage === 'verify' ? 'PUBLISHED' : 'FINISHED' }],
+      stage === 'create' ? { instagramContainerId: null, instagramMediaId: null } : {});
+    if (stage === 'verify') f.controls.mediaResponses = [() => quota()];
+    if (stage === 'create' || stage === 'publish') f.controls.other = url =>
+      url.pathname.endsWith(stage === 'create' ? '/media' : '/media_publish') ? quota() : null;
+    let notifications = 0;
+    const notify = async () => { notifications++; };
+    await publishWithClock(t, f, async () => {
+      assert.equal((await publishPost(f.env, f.post.id, 'https://fixture.invalid', notify)).status, 'error');
+      const cooldown = f.get(cooldownKey);
+      assert.equal(cooldown.reason, 'rate_limit');
+      assert.ok(cooldown.until >= Date.now() + 3599000 && cooldown.until <= Date.now() + 3600000);
+      assert.notEqual(f.current().instagramNeedsReview, true);
+      assert.equal(f.current().instagramContainerId, f.post.instagramContainerId);
+      assert.equal(f.current().instagramMediaId, f.post.instagramMediaId);
+      assert.equal(f.current().instagramPermalink, f.post.instagramPermalink);
+      assert.equal(f.current().youtubeVideoId, f.post.youtubeVideoId);
+      const calls = f.calls.length, postWrites = f.writes.filter(key => key === 'social:posts').length;
+      assert.equal((await publishPost(f.env, f.post.id, 'https://fixture.invalid', notify)).status, 'pending');
+      assert.deepEqual(await runAutoPost(f.env, 'https://fixture.invalid', notify), []);
+      assert.equal(f.calls.length, calls);
+      assert.equal(f.writes.filter(key => key === 'social:posts').length, postWrites);
+      assert.equal(notifications, 1);
+      assert.equal(f.writes.filter(key => key === cooldownKey).length, 1);
+      assert.doesNotMatch(f.current().error, /private/);
+    });
+    assert.ok(f.calls.every(call => !call.path.includes('/me/')));
+    assert.equal(f.calls.filter(call => call.method === 'POST').length, ['create', 'publish'].includes(stage) ? 1 : 0);
+  });
+}
+
+for (const [header, expectedHours] of [['7200', 2], ['999999999', 24], ['invalid', 1], ['-2', 1]]) {
+  test(`Retry-After ${header} is bounded to ${expectedHours} hours`, async t => {
+    const now = Date.now();
+    t.mock.method(Date, 'now', () => now);
+    const f = fixture(t, [() => quota(429, header)]);
+    await publishWithClock(t, f);
+    assert.equal(f.get(cooldownKey).until, now + expectedHours * 3600000);
+  });
+}
+
+test('HTTP-date Retry-After can extend the default one-hour cooldown', async t => {
+  const now = Math.floor(Date.now() / 1000) * 1000;
+  t.mock.method(Date, 'now', () => now);
+  const f = fixture(t, [() => quota(429, new Date(now + 3 * 3600000).toUTCString())]);
+  await publishWithClock(t, f);
+  assert.equal(f.get(cooldownKey).until, now + 3 * 3600000);
+});
+
+test('HTTP 429 without an API code activates the default cooldown', async t => {
+  const f = fixture(t, [() => Response.json({}, { status: 429 })]);
+  await publishWithClock(t, f);
+  assert.equal(f.get(cooldownKey).reason, 'rate_limit');
+  assert.notEqual(f.current().instagramNeedsReview, true);
+});
+
+for (const kind of ['expired', 'too-far-future', 'string', 'wrong-reason', 'malformed']) {
+  test(`${kind} cooldown cannot block Instagram forever`, async t => {
+    const f = fixture(t, [{ status_code: 'PUBLISHED' }]);
+    f.set(cooldownKey, { reason: kind === 'wrong-reason' ? 'unknown' : 'rate_limit',
+      until: kind === 'expired' ? Date.now() - 1 : kind === 'too-far-future' ? Date.now() + 25 * 3600000
+        : kind === 'string' ? String(Date.now() + 3600000) : kind === 'malformed' ? null : Date.now() + 3600000 });
+    assert.equal((await publishWithClock(t, f)).status, 'ok');
+    assert.equal(f.calls.length, 2);
+  });
+}
+
+test('ordinary code 190/403 is not mistaken for the app rate limit', async t => {
+  const f = fixture(t, [() => Response.json({ error: { code: 190 } }, { status: 403 })]);
+  await publishWithClock(t, f);
+  assert.equal(f.get(cooldownKey), null);
+  assert.notEqual(f.current().instagramNeedsReview, true);
+});
+
+test('manual Instagram retry reports the cooldown without changing quarantine or scheduling background work', async t => {
+  const f = fixture(t, [], { status: 'failed', instagramStatus: 'failed', instagramNeedsReview: true });
+  f.set(cooldownKey, { reason: 'rate_limit', until: Date.now() + 3600000 });
+  const before = f.current(), tasks = [];
+  const request = new Request('https://fixture.invalid/api/admin/social/posts/publish-platform', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: f.post.id, platform: 'instagram' }),
+  });
+  const response = await handleSocialAdmin(request, f.env, { waitUntil: task => tasks.push(task) }, new URL(request.url), {
+    jsonResponse: (body, status = 200) => Response.json(body, { status }),
+  });
+  const body = await response.json();
+  assert.equal(body.ok, false); assert.equal(body.status, 'pending'); assert.ok(body.retryAt);
+  assert.match(body.message, /паузе/);
+  assert.deepEqual(f.current(), before);
+  assert.equal(tasks.length, 0); assert.equal(f.writes.length, 0); assert.equal(f.calls.length, 0);
+});
+
+test('cooldown blocks stale processing/resume, due work, and old-token refresh without post writes', async t => {
+  const f = fixture(t, [], { status: 'processing', processingSince: '2026-10-20T16:00:00.000Z' });
+  f.set(cooldownKey, { reason: 'rate_limit', until: Date.now() + 3600000 });
+  f.set('social:accounts', [{ ...f.get('social:accounts')[0], instagramTokenUpdatedAt: '2020-01-01T00:00:00.000Z' }]);
+  const before = f.current();
+  assert.deepEqual(await runAutoPost(f.env, 'https://fixture.invalid'), []);
+  assert.deepEqual(f.current(), before);
+  assert.equal(f.calls.length, 0);
+  assert.equal(f.writes.filter(key => key === 'social:posts').length, 0);
+});
+
+test('a cold refresh rate limit stops later accounts and due Instagram publication in the same cron', async t => {
+  const f = fixture(t, [], { status: 'failed' });
+  const account = { ...f.get('social:accounts')[0], instagramTokenUpdatedAt: '2020-01-01T00:00:00.000Z' };
+  f.set('social:accounts', [account, { ...account, id: 'second-account' }]);
+  f.controls.other = url => url.pathname === '/refresh_access_token' ? quota() : null;
+  await runAutoPost(f.env, 'https://fixture.invalid');
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.get(cooldownKey).reason, 'rate_limit');
+  assert.notEqual(f.current().instagramNeedsReview, true);
+});
+
+test('optional permalink rate limit preserves the successfully published media ID', async t => {
+  const f = fixture(t, [{ status_code: 'FINISHED' }]);
+  f.controls.other = url => url.pathname.endsWith('/new-media') ? quota() : null;
+  assert.equal((await publishWithClock(t, f)).status, 'ok');
+  assert.equal(f.current().instagramMediaId, 'new-media');
+  assert.equal(f.current().instagramStatus, 'published');
+  assert.equal(f.current().instagramPermalink, null);
+  assert.equal(f.get(cooldownKey).reason, 'rate_limit');
+  assert.equal(f.calls.filter(call => call.method === 'POST').length, 1);
+});
+
+test('cooldown keeps YouTube independent and changes a paused Instagram processing status to queued without erasing history', async t => {
+  const f = fixture(t, [], { status: 'failed', instagramStatus: 'processing', youtubeStatus: 'queued', driveFileId: 'fixture-video',
+    instagramPreviousAttempts: [{ containerId: 'old-fixture-container', mediaId: 'old-fixture-media' }] });
+  f.set(cooldownKey, { reason: 'rate_limit', until: Date.now() + 3600000 });
+  f.set('social:settings', { workerOrigin: 'https://fixture.invalid', googleClientId: 'fixture', googleClientSecret: 'fixture', googleRefreshToken: 'fixture-refresh' });
+  f.controls.other = (url, options) => {
+    if (url.hostname === 'oauth2.googleapis.com') return Response.json({ access_token: crypto.randomUUID(), expires_in: 3600 });
+    if (url.pathname.includes('/drive/v3/files/')) return new Response(new Uint8Array(2000), { headers: { 'content-type': 'video/mp4' } });
+    if (url.pathname.includes('/upload/youtube/')) return new Response('', { headers: { location: 'https://upload.fixture.invalid/video' } });
+    if (url.hostname === 'upload.fixture.invalid' && options.method === 'PUT') return Response.json({ id: 'new-youtube' });
+    return null;
+  };
+  let notifications = 0;
+  const result = await publishPost(f.env, f.post.id, 'https://fixture.invalid', async () => { notifications++; });
+  assert.equal(result.status, 'error');
+  assert.equal(f.current().youtubeStatus, 'published');
+  assert.equal(f.current().youtubeVideoId, 'new-youtube');
+  assert.equal(f.current().instagramStatus, 'queued');
+  for (const key of ['instagramContainerId', 'instagramMediaId', 'instagramPermalink', 'instagramPreviousAttempts']) {
+    assert.deepEqual(f.current()[key], f.post[key]);
+  }
+  assert.equal(f.calls.some(call => call.path.includes('/v21.0/')), false);
+  assert.equal(notifications, 0);
+});
+
+test('real YouTube failures still notify while Instagram is cooling down', async t => {
+  const f = fixture(t, [], { youtubeStatus: 'queued' });
+  f.set(cooldownKey, { reason: 'rate_limit', until: Date.now() + 3600000 });
+  let notifications = 0;
+  await publishPost(f.env, f.post.id, 'https://fixture.invalid', async () => { notifications++; });
+  assert.equal(notifications, 1);
+  assert.equal(f.calls.length, 0);
+  assert.match(f.current().error, /YouTube/);
+});
+
+test('cooldown KV write failures keep a local bounded hold without failing publication handling', async t => {
+  const f = fixture(t, [() => quota()]);
+  const originalPut = f.env.INSTALLS.put;
+  f.env.INSTALLS.put = async (key, value) => {
+    if (key === cooldownKey) throw new Error('private storage details');
+    return originalPut(key, value);
+  };
+  t.mock.method(console, 'warn', () => {});
+  await publishWithClock(t, f, async () => {
+    assert.equal((await publishPost(f.env, f.post.id, 'https://fixture.invalid')).status, 'error');
+    const calls = f.calls.length;
+    assert.equal((await publishPost(f.env, f.post.id, 'https://fixture.invalid')).status, 'pending');
+    assert.equal(f.calls.length, calls);
+    assert.equal(f.current().youtubeStatus, 'published');
+    assert.notEqual(f.current().instagramNeedsReview, true);
+  });
+});
+
+test('an unavailable cooldown read holds Instagram safely and still attempts independent YouTube work', async t => {
+  const f = fixture(t, [], { youtubeStatus: 'queued' });
+  const originalGet = f.env.INSTALLS.get;
+  f.env.INSTALLS.get = async key => {
+    if (key === cooldownKey) throw new Error('private storage details');
+    return originalGet(key);
+  };
+  let notifications = 0;
+  assert.equal((await publishPost(f.env, f.post.id, 'https://fixture.invalid', async () => { notifications++; })).status, 'error');
+  assert.equal(f.calls.length, 0);
+  assert.equal(f.current().youtubeStatus, 'failed', 'the independent YouTube branch ran and reported its absent fixture credentials');
+  assert.equal(notifications, 1);
+  assert.notEqual(f.current().instagramNeedsReview, true);
+});
+
+test('manual publish and a mixed batch leave held Instagram posts untouched while allowing other work', async t => {
+  const f = fixture(t, [], { status: 'failed' });
+  const youtube = { ...f.current(), id: 'youtube-only', targets: ['youtube'], youtubeStatus: 'queued' };
+  f.set('social:posts', [f.current(), youtube]);
+  f.set(cooldownKey, { reason: 'rate_limit', until: Date.now() + 3600000 });
+  const before = f.current(), tasks = [];
+  const call = async (path, body) => {
+    const request = new Request('https://fixture.invalid/api/admin/social/posts/' + path, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+    });
+    return handleSocialAdmin(request, f.env, { waitUntil: task => tasks.push(task) }, new URL(request.url), {
+      jsonResponse: (payload, status = 200) => Response.json(payload, { status }),
+    });
+  };
+  assert.equal((await (await call('publish', { id: f.post.id })).json()).status, 'pending');
+  assert.equal(tasks.length, 0);
+  assert.deepEqual(f.current(), before);
+  const batch = await (await call('publish-now', { ids: [f.post.id, youtube.id] })).json();
+  assert.equal(batch.started, 1); assert.equal(batch.held, 1);
+  await Promise.all(tasks);
+  assert.deepEqual(f.current(), before);
+  assert.equal(f.calls.length, 0);
+});
