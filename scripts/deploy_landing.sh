@@ -25,6 +25,12 @@ esac
 SRC="$ROOT/web_landing/$COUNTRY"
 [ -d "$SRC" ] || { echo "нет исходников лендинга: $SRC"; exit 1; }
 
+# Календарь серверной админки — источник дат и разрешения на публикацию.
+# Недоступный/некорректный календарь прерывает деплой до пересборки и push.
+python3 "$ROOT/tools/blog_admin/sync_worker_schedule.py"
+# Пересборка удаляет локальные preview-HTML будущих статей/черновиков.
+python3 "$ROOT/tools/blog_admin/generator.py" regen
+
 # SEO-регресс-аудит: битые ссылки/якоря, невалидный JSON-LD, дубли title,
 # рассинхрон sitemap, картинки без alt. Ошибки блокируют деплой —
 # такие поломки не видны глазом, но стоят трафика.
@@ -47,7 +53,8 @@ echo "Previous deployment (rollback): $PREVIOUS"
 # /app/ — копия веб-приложения (сборка с --base-href /app/), в исходниках её нет:
 # не даём --delete её стереть. Обновить: WEB_BASE_HREF=/app/ ./scripts/build.sh ru web,
 # затем APP_BUILD=build/web ./scripts/deploy_landing.sh ru
-rsync -rc --delete --exclude=.git --exclude=/app/ "$SRC/" "$WORKTREE/"
+rsync -rc --delete --exclude=.git --exclude=/app/ --exclude=source.json "$SRC/" "$WORKTREE/"
+python3 "$ROOT/tools/blog_admin/generator.py" clean-public "$WORKTREE"
 if [ -n "${APP_BUILD:-}" ]; then
   grep -q '<base href="/app/"' "$APP_BUILD/index.html" || { echo "APP_BUILD собран не с --base-href /app/"; exit 1; }
   rsync -rc --delete "$APP_BUILD/" "$WORKTREE/app/"

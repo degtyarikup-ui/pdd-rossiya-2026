@@ -270,6 +270,10 @@ def check_robots_and_llms(rep, page_urls):
         with open(p, encoding="utf-8") as f:
             text = f.read()
         for url in set(re.findall(re.escape(BASE) + r"(/[^\s\)]*)", text)):
+            # /app/ сопровождается отдельным Flutter-деплоем и намеренно
+            # отсутствует в исходниках лендинга; landing deploy его сохраняет.
+            if url.startswith("/app/"):
+                continue
             if url.endswith("/") and url not in page_urls:
                 rep.error(name, "ссылка на несуществующую страницу: %s" % url)
 

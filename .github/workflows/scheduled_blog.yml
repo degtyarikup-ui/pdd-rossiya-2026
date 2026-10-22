@@ -27,8 +27,15 @@ jobs:
         run: |
           pip install Pillow
 
+      - name: Synchronize authoritative publication calendar
+        run: |
+          python3 tools/blog_admin/sync_worker_schedule.py
+
       - name: Regenerate blog static files
         run: |
+          python3 -m unittest tools.blog_admin.test_generator tools.seo.test_audit
+          python3 -m unittest tools.blog_admin.test_worker_catalog tools.blog_admin.test_worker_schedule
+          node --test tools/blog_admin/test_tracker.cjs
           python3 tools/blog_admin/generator.py regen
 
       - name: Run SEO audit

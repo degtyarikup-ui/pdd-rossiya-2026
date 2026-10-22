@@ -527,6 +527,13 @@ section[id] { scroll-margin-top: 76px; }
   border: none !important; margin: 0 !important; display: block !important; object-fit: cover !important;
 }
 .article-app-cta-title { font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: #fff; line-height: 1.25; }
+.prose .article-app-cta-copy { color: #fff; font-size: 17px; }
+.article-sources li { overflow-wrap: anywhere; }
+.hero-actions { scroll-margin-top: 120px; }
+.sign-comparison { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 24px; margin: 28px 0; }
+.sign-comparison figure { margin: 0; text-align: center; }
+.prose .sign-comparison img { display: block; width: 112px; height: 112px; max-width: 100%; object-fit: contain; border-radius: 0; margin: 0 auto 14px; }
+.sign-comparison figcaption { font-size: 15px; line-height: 1.5; color: var(--muted); }
 .article-app-cta-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
 .article-app-cta-btn {
   display: inline-flex; align-items: center; gap: 10px;

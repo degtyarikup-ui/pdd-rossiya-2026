@@ -155,6 +155,11 @@ class Handler(BaseHTTPRequestHandler):
         return full
 
     def _static(self, urlpath):
+        # Локальный предпросмотр должен открывать будущую статью и после regen,
+        # который намеренно удаляет её публичный HTML.
+        article = re.fullmatch(r"/blog/([a-z0-9-]+)/(?:index\.html)?", urlpath)
+        if article and os.path.isfile(os.path.join(BLOG, article.group(1), "source.json")):
+            generator.render_article(article.group(1))
         full = self._safe_path(urlpath)
         if not full or not os.path.isfile(full):
             return self._send(404, "404 Not Found", "text/plain; charset=utf-8")
@@ -210,9 +215,9 @@ class Handler(BaseHTTPRequestHandler):
             warnings.append("description %d симв. (желательно 140–160)" % sd)
 
         generator.regen_all()
-        # Черновик regen_all не рендерит (он идёт только по опубликованным) —
-        # но страница нужна для предпросмотра, поэтому собираем её отдельно.
-        if not a.get("published"):
+        # Черновики и будущие статьи доступны в локальном предпросмотре.
+        # Деплой повторяет regen и исключает их каталоги из публичной копии.
+        if not generator.is_article_public(a):
             generator.render_article(slug)
         return self._json(200, {"ok": True, "slug": slug, "warnings": warnings})
 

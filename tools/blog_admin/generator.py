@@ -18,14 +18,20 @@ CLI:
       "cover": "cover.png" | null, "coverAlt": "..." | null,
       "bodyHtml": "<h2>...</h2><p>...</p>",   # без h1/крошек/FAQ
       "faq": [{"q": "...", "aHtml": "..."}],
+      "reviewedAt": "YYYY-MM-DD", "sources": [{"title": "...", "url": "https://..."}],
+      "cta": {"title": "...", "text": "...", "label": "...", "href": "/app/"},
+      "relatedSlugs": ["..."],
       "published": true
     }
 """
 import html
+import datetime
 import json
 import os
 import re
+import shutil
 import sys
+from urllib.parse import urlsplit
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -33,6 +39,7 @@ SITE = os.path.join(REPO, "web_landing", "ru")
 BLOG = os.path.join(SITE, "blog")
 BASE = "https://pdd-drive.ru"
 PREAMBLE_PATH = os.path.join(HERE, "llms_preamble.md")
+MOSCOW_TZ = datetime.timezone(datetime.timedelta(hours=3))
 
 RU_MONTHS = [
     "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -157,8 +164,24 @@ def _fmt_date(iso):
     return "%d %s %s" % (int(d), RU_MONTHS[int(m) - 1], y)
 
 
-def load_articles(include_drafts=False):
-    """Все статьи из blog/*/source.json, отсортированы по дате убыв."""
+def publication_day(now=None):
+    """Дата выхода в плане — календарный день по МСК, независимо от TZ CI."""
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    return now.astimezone(MOSCOW_TZ).date().isoformat()
+
+
+def is_article_public(article, today=None):
+    """published разрешает выпуск, datePublished определяет день выхода."""
+    day = article.get("datePublished", "")
+    try:
+        datetime.date.fromisoformat(day)
+    except (TypeError, ValueError):
+        return False
+    return bool(article.get("published")) and day <= (today or publication_day())
+
+
+def load_articles(include_drafts=False, today=None):
+    """Публичные статьи; редактор запрашивает также черновики и будущий план."""
     arts = []
     if not os.path.isdir(BLOG):
         return arts
@@ -169,7 +192,7 @@ def load_articles(include_drafts=False):
         with open(p, encoding="utf-8") as f:
             a = json.load(f)
         a.setdefault("slug", slug)
-        if a.get("published") or include_drafts:
+        if include_drafts or is_article_public(a, today):
             arts.append(a)
     arts.sort(key=lambda a: a.get("datePublished", ""), reverse=True)
     return arts
@@ -193,6 +216,57 @@ def _jsonld(obj):
             + "\n  </script>")
 
 
+def _article_sources(article):
+    """Проверяемые источники, одинаковые для читателя и citation в JSON-LD."""
+    sources = []
+    for source in article.get("sources") or []:
+        if not isinstance(source, dict):
+            continue
+        url = str(source.get("url") or "")
+        parts = urlsplit(url)
+        if parts.scheme not in ("http", "https") or not parts.netloc:
+            continue
+        sources.append({"title": str(source.get("title") or url), "url": url})
+    return sources
+
+
+def _editorial_html(article):
+    reviewed = article.get("reviewedAt")
+    review_html = ""
+    if reviewed:
+        review_html = ('<p class="post-meta">Проверено <time datetime="%s">%s</time>. '
+                       '<a href="/about/#redaktsiya">Как мы готовим материалы</a></p>'
+                       % (html.escape(reviewed), _fmt_date(reviewed)))
+    sources = _article_sources(article)
+    if not sources:
+        return review_html
+    links = "\n".join('        <li><a href="%s" rel="noopener">%s</a></li>'
+                      % (html.escape(s["url"], quote=True), html.escape(s["title"]))
+                      for s in sources)
+    return (review_html + '\n      <section class="article-sources" aria-labelledby="sources-title">'
+            '\n      <h2 id="sources-title">Источники и проверка</h2>\n      <ul>\n'
+            + links + '\n      </ul>\n      </section>')
+
+
+def _article_cta(article):
+    cta = article.get("cta") or {}
+    title = cta.get("title") or "Закрепите правило на вопросах из билетов"
+    text = cta.get("text") or "Откройте ПДД Россия 2026, выберите нужную тему и разберите ошибки. Билеты, темы и режим экзамена доступны бесплатно."
+    label = cta.get("label") or "Перейти к тренировке"
+    href = cta.get("href") or "/app/"
+    # Только существующие входы: приложение не поддерживает deep links к темам.
+    if href not in ("/app/", "/proverit-znaniya/", "/#download"):
+        href = "/app/"
+    content = ('<p class="article-app-cta-copy">%s</p>\n'
+               '  <p><a class="btn btn-primary" href="%s" data-cta="article-practice" '
+               'data-context="%s">%s</a></p>\n'
+               '  <div class="article-app-cta-buttons">'
+               % (html.escape(text), html.escape(href),
+                  html.escape(article["slug"], quote=True), html.escape(label)))
+    return APP_CTA_BOX_HTML.replace("Тренируйте билеты ПДД 2026 бесплатно", html.escape(title)).replace(
+        '<div class="article-app-cta-buttons">', content, 1)
+
+
 def render_article(slug, all_published=None):
     with open(os.path.join(BLOG, slug, "source.json"), encoding="utf-8") as f:
         a = json.load(f)
@@ -212,7 +286,7 @@ def render_article(slug, all_published=None):
         "description": desc,
         "datePublished": a["datePublished"],
         "dateModified": a.get("dateModified", a["datePublished"]),
-        "author": {"@type": "Organization", "name": "ПДД Россия 2026"},
+        "author": {"@type": "Organization", "name": "Команда ПДД Россия 2026", "url": BASE + "/about/#redaktsiya"},
         "publisher": {
             "@type": "Organization",
             "name": "ПДД Россия 2026",
@@ -222,6 +296,9 @@ def render_article(slug, all_published=None):
         "mainEntityOfPage": {"@type": "WebPage", "@id": url},
         "inLanguage": "ru-RU",
     }
+    sources = _article_sources(a)
+    if sources:
+        blogposting["citation"] = [s["url"] for s in sources]
     if a.get("cluster") in CLUSTER_META:
         blogposting["articleSection"] = CLUSTER_META[a["cluster"]][1]
     breadcrumb = {
@@ -252,7 +329,7 @@ def render_article(slug, all_published=None):
         ld_blocks.append(_jsonld(faqpage))
 
     # HowTo-разметка для пошаговых статей: source.json → "howtoSteps": [{name, text}]
-    # (даёт rich-результат «инструкция» в поиске). Опционально.
+    # Семантическая разметка; Google больше не показывает HowTo rich results.
     steps = a.get("howtoSteps") or []
     if steps:
         howto = {
@@ -278,6 +355,7 @@ def render_article(slug, all_published=None):
   <meta charset="UTF-8">
 {https}
   <meta name="viewport" content="width=device-width, initial-scale=1">
+{robots}
   <title>{title}</title>
   <meta name="description" content="{desc}">
   <link rel="canonical" href="{url}">
@@ -301,6 +379,7 @@ def render_article(slug, all_published=None):
 {ld}
 </head>""".format(
         https=HTTPS_ENFORCE_SNIPPET,
+        robots=('  <meta name="robots" content="noindex">' if not is_article_public(a) else ''),
         title=html.escape(short),
         desc=html.escape(desc),
         url=url,
@@ -315,7 +394,7 @@ def render_article(slug, all_published=None):
     cover_html = ""
     if a.get("cover"):
         cover_html = ('\n      <img class="post-cover" src="/blog/%s/%s" alt="%s" '
-                      'width="1200" height="630" loading="lazy">\n'
+                      'width="1200" height="630" loading="eager" fetchpriority="high">\n'
                       % (slug, a["cover"], html.escape(a.get("coverAlt") or a["title"])))
 
     faq_html = ""
@@ -337,6 +416,8 @@ def render_article(slug, all_published=None):
     # Две стабильные сортировки: внутри групп — свежие первыми, свой кластер — впереди
     others.sort(key=lambda x: x.get("datePublished", ""), reverse=True)
     others.sort(key=lambda x: 0 if cluster and x.get("cluster") == cluster else 1)
+    preferred = {s: i for i, s in enumerate(a.get("relatedSlugs") or [])}
+    others.sort(key=lambda x: preferred.get(x["slug"], len(preferred)))
     related_html = ""
     if others:
         related_html = ('\n      <h2>Читайте также</h2>\n'
@@ -359,12 +440,13 @@ def render_article(slug, all_published=None):
       <header>
         <h1>{h1}</h1>
         <p class="post-meta">
-          <time datetime="{iso}">{date}</time> · Команда ПДД Россия 2026 · ~{mins} мин чтения
+          <time datetime="{iso}">{date}</time> · <a href="/about/#redaktsiya">Команда ПДД Россия 2026</a> · ~{mins} мин чтения
           <span class="post-views" data-slug="{slug}" hidden>· {eye} <span class="views-count"></span></span>
         </p>
       </header>
 {cover}
 {content}
+{editorial}
 {cta}
 {faq}{related}
     </article>
@@ -389,7 +471,8 @@ def render_article(slug, all_published=None):
         eye=EYE_ICON_SVG,
         cover=cover_html,
         content=re.sub(r'<div class="note">\s*(?:Уверенность|Тренируйте|Готовьтесь|Изучайте|Решайте|Закрепляйте|Сдавайте|Повторяйте).*?</div>', '', a["bodyHtml"], flags=re.S).strip("\n"),
-        cta=APP_CTA_BOX_HTML,
+        editorial=_editorial_html(a),
+        cta=_article_cta(a),
         faq=faq_html,
         related=related_html,
         footer=FOOTER,
@@ -718,7 +801,7 @@ def render_sitemap(arts=None):
     for c in CLUSTER_META:
         if c in by_cluster:
             rows.append((_cluster_url(c), latest, "weekly", "0.75"))
-    rows.append(("%s/about/" % BASE, "2026-10-07", "monthly", "0.5"))
+    rows.append(("%s/about/" % BASE, "2026-10-22", "monthly", "0.5"))
     rows.append(("%s/links/" % BASE, "2026-08-15", "monthly", "0.4"))
     if os.path.isdir(GLOSSARY_DIR):
         rows.append((GLOSSARY_URL, "2026-07-22", "monthly", "0.6"))
@@ -873,8 +956,15 @@ def render_llms(arts=None):
 
 # --- Полный ре-генератор -----------------------------------------------------
 
-def regen_all():
-    arts = load_articles()
+def regen_all(today=None):
+    arts = load_articles(today=today)
+    public_slugs = {a["slug"] for a in arts}
+    # Старые HTML будущих статей нельзя оставить доступными по прямому URL.
+    for article in load_articles(include_drafts=True):
+        if article["slug"] not in public_slugs:
+            stale = os.path.join(BLOG, article["slug"], "index.html")
+            if os.path.isfile(stale):
+                os.remove(stale)
     for a in arts:
         render_article(a["slug"], all_published=arts)
     render_blog_index(arts)
@@ -885,6 +975,26 @@ def regen_all():
     render_rss(arts)
     render_llms(arts)
     return [a["slug"] for a in arts]
+
+
+def clean_public_copy(destination, today=None):
+    """Удалить редакционные исходники и будущие материалы из копии для деплоя."""
+    destination = os.path.realpath(destination)
+    if destination == os.path.realpath(SITE):
+        raise ValueError("Нельзя очищать исходный каталог сайта")
+    if not os.path.isfile(os.path.join(destination, "index.html")):
+        raise ValueError("Ожидается копия сайта с index.html")
+    for article in load_articles(include_drafts=True):
+        if not is_article_public(article, today):
+            path = os.path.join(destination, "blog", article["slug"])
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+    # Удаляем и ранее выложенные исходники: rsync exclude сам их не удалит.
+    blog_copy = os.path.join(destination, "blog")
+    if os.path.isdir(blog_copy):
+        for root, _, files in os.walk(blog_copy):
+            if "source.json" in files:
+                os.remove(os.path.join(root, "source.json"))
 
 
 # --- Утилиты -----------------------------------------------------------------
@@ -923,6 +1033,7 @@ def _html_to_md(body):
     s = re.sub(r"<p[^>]*>(.*?)</p>", lambda m: "\n" + _strip_tags(m.group(1)) + "\n", s, flags=re.S)
     s = _TAG_RE.sub("", s)
     s = html.unescape(s)
+    s = "\n".join(line.rstrip() for line in s.splitlines())
     s = re.sub(r"\n{3,}", "\n\n", s)
     return s.strip()
 
@@ -1156,6 +1267,8 @@ if __name__ == "__main__":
     elif cmd == "migrate":
         out = migrate(sys.argv[2])
         print("migrate → %s" % out)
+    elif cmd == "clean-public" and len(sys.argv) == 3:
+        clean_public_copy(sys.argv[2])
     else:
-        print("usage: generator.py [regen|migrate <slug>]")
+        print("usage: generator.py [regen|migrate <slug>|clean-public <copy-directory>]")
         sys.exit(1)
