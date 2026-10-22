@@ -782,7 +782,9 @@ async function finishInstagram(env, post, account, containerId) {
     }
   }
   if (!ready) {
-    throw instagramFailure('Instagram обрабатывал видео дольше ' + (IG_POLL_ATTEMPTS * IG_POLL_INTERVAL_MS / 1000) + ' секунд и не ответил');
+    const pending = new Error('Instagram продолжает обработку видео');
+    pending.code = 'ERR_IG_PROCESSING';
+    throw pending;
   }
 
   const publishForm = { creation_id: containerId, access_token: account.instagramToken };
@@ -1123,6 +1125,7 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
   let notifyFailure = true;
   let igResult = null;
   let ytResult = null;
+  let instagramProcessing = false;
   const igPending = only.includes('instagram') && targets.includes('instagram') && post.instagramStatus !== 'published';
   const cooldown = igPending ? await getInstagramCooldown(env) : null;
   if (cooldown && (!only.includes('youtube') || !targets.includes('youtube') || post.youtubeStatus === 'published')) {
@@ -1157,19 +1160,25 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
         ? `Instagram: подтверждена прежняя публикация ${post.fileName}`
         : `Instagram: опубликован ${post.fileName}`, igResult.alreadyPublished ? {} : { url: igResult.permalink });
     } catch (e) {
-      if (e.code === 'ERR_IG_RATE_LIMITED') notifyFailure = (await startInstagramCooldown(env, e)).first;
-      const safeMessage = e.instagramSafeMessage === true || ['ERR_IG_RATE_LIMITED', 'ERR_IG_PUBLICATION_UNCONFIRMED',
-        'ERR_IG_PUBLICATION_CHECK_UNAVAILABLE', 'ERR_IG_REPLACEMENT_CHECK'].includes(e.code)
-        ? e.message : 'Не удалось завершить публикацию Instagram. Сохранённую попытку необходимо проверить';
-      errors.push('Instagram: ' + safeMessage);
-      await patchPost(env, postId, {
-        instagramStatus: 'failed',
-        ...(e.code === 'ERR_IG_PUBLICATION_UNCONFIRMED' ? {
-          instagramNeedsReview: true,
-          instagramReviewReason: e.instagramReviewReason,
-        } : {}),
-      });
-      await socialLog(env, 'error', `Instagram: ${post.fileName} — ${safeMessage}`);
+      if (e.code === 'ERR_IG_PROCESSING') {
+        instagramProcessing = true;
+        notifyFailure = false;
+        await patchPost(env, postId, { instagramStatus: 'processing' });
+      } else {
+        if (e.code === 'ERR_IG_RATE_LIMITED') notifyFailure = (await startInstagramCooldown(env, e)).first;
+        const safeMessage = e.instagramSafeMessage === true || ['ERR_IG_RATE_LIMITED', 'ERR_IG_PUBLICATION_UNCONFIRMED',
+          'ERR_IG_PUBLICATION_CHECK_UNAVAILABLE', 'ERR_IG_REPLACEMENT_CHECK'].includes(e.code)
+          ? e.message : 'Не удалось завершить публикацию Instagram. Сохранённую попытку необходимо проверить';
+        errors.push('Instagram: ' + safeMessage);
+        await patchPost(env, postId, {
+          instagramStatus: 'failed',
+          ...(e.code === 'ERR_IG_PUBLICATION_UNCONFIRMED' ? {
+            instagramNeedsReview: true,
+            instagramReviewReason: e.instagramReviewReason,
+          } : {}),
+        });
+        await socialLog(env, 'error', `Instagram: ${post.fileName} — ${safeMessage}`);
+      }
     }
   }
 
@@ -1219,6 +1228,12 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
       await kvPut(env, KV_ACCOUNTS, accountsNow);
     }
     return { status: 'ok', instagram: igResult, youtube: ytResult };
+  }
+
+  if (instagramProcessing && !errors.length) {
+    await patchPost(env, postId, { status: 'processing', error: null, processingSince: new Date().toISOString() });
+    await socialLog(env, 'info', `Instagram: обработка ${post.fileName} продолжается, загрузка сохранена`);
+    return { status: 'processing', message: 'Instagram продолжает обработку видео' };
   }
 
   const summary = errors.join('; ') || 'Публикация не завершилась';

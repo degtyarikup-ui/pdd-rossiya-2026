@@ -284,13 +284,27 @@ test('IN_PROGRESS followed by FINISHED publishes the existing container exactly 
   assert.equal(f.current().status, 'published');
 });
 
-test('genuine IN_PROGRESS retains the existing bounded polling timeout', async t => {
+test('long IN_PROGRESS remains pending without a false alert and the next cron finishes the same upload', async t => {
   const f = fixture(t, [{ status_code: 'IN_PROGRESS' }]);
-  assert.equal((await publishWithClock(t, f)).status, 'error');
+  const notices=[];
+  assert.equal((await publishWithClock(t, f,()=>publishPost(f.env,f.post.id,'https://fixture.invalid',text=>notices.push(text)))).status, 'processing');
   assert.equal(f.calls.length, 40);
   assert.ok(f.calls.every(call => call.method === 'GET'));
-  assert.match(f.current().error, /200 секунд/);
+  assert.equal(f.current().error,null);
+  assert.equal(f.current().status,'processing');
+  assert.equal(f.current().instagramStatus,'processing');
   assert.equal(f.current().instagramContainerId, f.post.instagramContainerId);
+  assert.deepEqual(notices,[]);
+  assert.ok(f.log().every(entry=>entry.level!=='error'));
+  t.mock.timers.reset();
+  f.update({processingSince:new Date(Date.now()-4*60000).toISOString()});
+  f.controls.other=async url=>url.pathname.endsWith('/fixture-container')?Response.json({status_code:'FINISHED'}):null;
+  await publishWithClock(t,f,()=>runAutoPost(f.env,'https://fixture.invalid',text=>notices.push(text)));
+  assert.equal(f.current().status,'published');
+  assert.equal(f.current().youtubeVideoId,f.post.youtubeVideoId);
+  assert.equal(f.calls.filter(c=>c.method==='POST').length,1);
+  assert.ok(f.calls.filter(c=>c.method==='POST')[0].path.endsWith('/media_publish'));
+  assert.deepEqual(notices,[]);
 });
 
 for (const status of ['ERROR', 'EXPIRED']) {
