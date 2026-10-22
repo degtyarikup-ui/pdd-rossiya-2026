@@ -529,8 +529,8 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
       builder: (context, constraints) {
         final totalH = constraints.maxHeight;
         final double topInset = MediaQuery.paddingOf(context).top;
-        const double topPadding = 12.0;
-        const double bottomPadding = 12.0;
+        const double topPadding = AppDimensions.screenPadding;
+        const double bottomPadding = AppDimensions.screenPadding;
         const double gap = 12.0;
 
         // Gauge, padding, divider and the two scaled statistic labels.
