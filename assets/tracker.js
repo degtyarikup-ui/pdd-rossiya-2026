@@ -28,14 +28,22 @@
     if (!refUrl) return 'direct';
     try {
       var host = new URL(refUrl).hostname.toLowerCase();
+      var isHost = function (domain) { return host === domain || host.endsWith('.' + domain); };
+      // Gemini должен проверяться до общего google.*, Copilot — до bing.com.
+      if (isHost('chatgpt.com') || host === 'chat.openai.com') return 'chatgpt';
+      if (isHost('perplexity.ai')) return 'perplexity';
+      if (host === 'copilot.microsoft.com') return 'copilot';
+      if (host === 'gemini.google.com') return 'gemini';
+      if (isHost('claude.ai')) return 'claude';
+      if (isHost('bing.com')) return 'bing';
       if (host === 'threads.net' || host.endsWith('.threads.net') || host === 'threads.com' || host.endsWith('.threads.com')) return 'threads';
-      if (host.indexOf('youtube.com') !== -1 || host.indexOf('youtu.be') !== -1) return 'youtube';
-      if (host.indexOf('tiktok.com') !== -1) return 'tiktok';
-      if (host.indexOf('instagram.com') !== -1) return 'instagram';
-      if (host.indexOf('t.me') !== -1 || host.indexOf('telegram.org') !== -1) return 'telegram';
-      if (host.indexOf('vk.com') !== -1 || host.indexOf('vk.ru') !== -1) return 'vk';
-      if (host.indexOf('yandex.') !== -1 || host.indexOf('ya.ru') !== -1) return 'yandex';
-      if (host.indexOf('google.') !== -1) return 'google';
+      if (isHost('youtube.com') || isHost('youtu.be')) return 'youtube';
+      if (isHost('tiktok.com')) return 'tiktok';
+      if (isHost('instagram.com')) return 'instagram';
+      if (isHost('t.me') || isHost('telegram.org')) return 'telegram';
+      if (isHost('vk.com') || isHost('vk.ru')) return 'vk';
+      if (/^(?:[a-z0-9-]+\.)?yandex\.(?:ru|com|by|kz|uz|com\.tr)$/.test(host) || isHost('ya.ru')) return 'yandex';
+      if (/^(?:[a-z0-9-]+\.)?google\.(?:com|ru|by|kz|co\.uk|de|fr)$/.test(host)) return 'google';
       if (host === window.location.hostname) return null; // внутренний переход
       return 'other';
     } catch (_) {
@@ -52,6 +60,8 @@
     if (s === 'ig' || s === 'insta' || s === 'instagram') return 'instagram';
     if (s === 'tg' || s === 'telegram') return 'telegram';
     if (s === 'vk' || s === 'vkontakte') return 'vk';
+    if (s === 'chatgpt.com' || s === 'chat.openai.com') return 'chatgpt';
+    if (s === 'perplexity.ai') return 'perplexity';
     return s;
   }
 
@@ -76,6 +86,8 @@
       if (refSource && refSource !== 'direct') {
         source = refSource;
         if (!campaign) campaign = 'referrer';
+        if (!medium) medium = ['chatgpt', 'perplexity', 'copilot', 'gemini', 'claude'].indexOf(source) !== -1
+          ? 'ai' : ['google', 'yandex', 'bing'].indexOf(source) !== -1 ? 'organic' : 'referral';
       }
     }
 
@@ -160,12 +172,22 @@
       }
       if (!target || !target.href) return;
 
+      // Конверсия конкретной статьи видна в Метрике отдельно от переходов в сторы.
+      // Это клик по тренировке, а не подтверждённое начало экзамена в приложении.
+      var cta = target.getAttribute('data-cta');
+      if (cta && typeof window.ym === 'function') {
+        window.ym(111960332, 'reachGoal', cta === 'article-practice' ? 'article_practice_click' : 'knowledge_test_click', {
+          article: target.getAttribute('data-context') || window.location.pathname,
+          source: attribution.source
+        });
+      }
+
       var storeTarget = identifyTarget(target.href);
       if (storeTarget) {
         // Preserve campaign in the store URL; do not match people by IP.
         if (attribution.source !== 'direct' && /^[a-z0-9-]{1,32}$/.test(attribution.source)) {
           var destination = new URL(target.href);
-          var tags = new URLSearchParams({ utm_source: attribution.source, utm_medium: attribution.medium || 'social' });
+          var tags = new URLSearchParams({ utm_source: attribution.source, utm_medium: attribution.medium || 'referral' });
           if (attribution.campaign !== 'none' && /^[A-Za-z0-9._-]{1,64}$/.test(attribution.campaign)) tags.set('utm_campaign', attribution.campaign);
           if (destination.hostname === 'play.google.com') destination.searchParams.set('referrer', tags.toString());
           if (destination.hostname === 'apps.apple.com') destination.searchParams.set('ct', tags.get('utm_campaign') || attribution.source);

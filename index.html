@@ -124,7 +124,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
         "name": "Чем режим экзамена отличается от настоящего в ГИБДД?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Регламент тот же: 20 вопросов, 20 минут, не более 2 ошибок, каждая ошибка добавляет 5 вопросов и 5 минут, а в дополнительных вопросах ошибаться нельзя. Разница в том, что тренироваться можно сколько угодно раз."
+          "text": "Регламент тот же: 20 вопросов за 20 минут, не более двух ошибок только в разных тематических блоках. За каждую ошибку — ещё 5 вопросов и 5 минут. Две ошибки в одном блоке или ошибка в дополнительных вопросах означают «не сдал». В приложении можно повторять тренировку сколько угодно раз."
         }
       },
       {
@@ -167,7 +167,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
         <span class="eyebrow"><i></i>Билеты обновлены на 2026 год</span>
         <h1>ПДД Россия 2026: <em>от билетов к пониманию дорожных ситуаций</em></h1>
         <p class="subtitle">Готовьтесь к теории: решайте вопросы, читайте пояснения и повторяйте сложные темы.</p>
-        <div class="hero-actions">
+        <div class="hero-actions" id="download">
           <a class="btn btn-primary btn-lg" href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">Скачать для iPhone</a>
           <a class="btn btn-ghost btn-lg" href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Скачать для Android</a>
         </div>
@@ -184,7 +184,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
       <div class="hero-stage">
         <div class="hero-chip c1" aria-hidden="true">
           <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
-          <span><b>18 из 20</b><small>экзамен сдан</small></span>
+          <span><b>20 из 20</b><small>без ошибок</small></span>
         </div>
         <div class="hero-chip c2" aria-hidden="true">
           <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span>
@@ -257,13 +257,13 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
         <div>
           <p class="kicker">Режим экзамена</p>
           <h2>Экзамен — как в ГИБДД</h2>
-          <p>Тот же регламент, что в экзаменационном классе: ошибка добавляет 5 вопросов и 5 минут, а в дополнительных ошибаться нельзя.</p>
+          <p>20 вопросов за 20 минут. Допустимы не более двух ошибок только в разных тематических блоках. За каждую — ещё 5 вопросов и 5 минут; в дополнительных вопросах ошибаться нельзя.</p>
           <a class="btn btn-primary btn-lg" href="/app/">Сдать пробный экзамен <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
         <div class="exam-grid">
           <div class="exam-cell hot"><b>20</b><span>вопросов</span></div>
           <div class="exam-cell"><b>20</b><span>минут</span></div>
-          <div class="exam-cell"><b>2</b><span>ошибки максимум</span></div>
+          <div class="exam-cell"><b>2</b><span>ошибки — в разных блоках</span></div>
           <div class="exam-cell warn"><b>+5</b><span>вопросов за ошибку</span></div>
         </div>
       </div>
@@ -328,29 +328,29 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
         <a class="btn btn-ghost" href="/blog/">Все статьи</a>
       </div>
       <div class="post-grid">
-        <a class="post-card" href="/blog/vydelennaya-polosa-dlya-avtobusov-pdd/">
-          <img class="post-card-cover" src="/blog/vydelennaya-polosa-dlya-avtobusov-pdd/cover.jpg" alt="Выделенная полоса для общественного транспорта с буквой А на асфальте" width="1200" height="630" loading="lazy">
+        <a class="post-card" href="/blog/reversivnoe-dvizhenie-polosa-pdd/">
+          <img class="post-card-cover" src="/blog/reversivnoe-dvizhenie-polosa-pdd/cover.jpg" alt="Полоса реверсивного движения с реверсивным светофором на проспекте" width="1200" height="630" loading="lazy">
           <div class="post-card-meta">
-            <time datetime="2026-08-26">26 августа 2026</time>
-            <span class="post-card-views" data-slug="vydelennaya-polosa-dlya-avtobusov-pdd" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+            <time datetime="2026-10-21">21 октября 2026</time>
+            <span class="post-card-views" data-slug="reversivnoe-dvizhenie-polosa-pdd" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
           </div>
-          <h3>Выделенная полоса для автобусов в 2026 году: когда можно ехать и штрафы</h3>
+          <h3>Реверсивное движение в 2026 году: знак 5.8, светофоры и правила въезда</h3>
         </a>
-        <a class="post-card" href="/blog/ustupit-dorogu-peshehodu-na-zebre-pdd/">
-          <img class="post-card-cover" src="/blog/ustupit-dorogu-peshehodu-na-zebre-pdd/cover.jpg" alt="Пешеход переходит многополосную дорогу по нерегулируемому пешеходному переходу" width="1200" height="630" loading="lazy">
+        <a class="post-card" href="/blog/dvizhenie-po-tramvaynym-putyam-pdd/">
+          <img class="post-card-cover" src="/blog/dvizhenie-po-tramvaynym-putyam-pdd/cover.jpg" alt="Автомобили на проезжей части с трамвайными путями попутного направления" width="1200" height="630" loading="lazy">
           <div class="post-card-meta">
-            <time datetime="2026-08-25">25 августа 2026</time>
-            <span class="post-card-views" data-slug="ustupit-dorogu-peshehodu-na-zebre-pdd" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+            <time datetime="2026-10-19">19 октября 2026</time>
+            <span class="post-card-views" data-slug="dvizhenie-po-tramvaynym-putyam-pdd" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
           </div>
-          <h3>Пешеход на зебре в 2026 году: пункт 14.1 ПДД и штрафы с камер</h3>
+          <h3>Движение по трамвайным путям в 2026 году: когда можно и когда штраф</h3>
         </a>
-        <a class="post-card" href="/blog/otkaz-ot-medosvidestvovaniya-nakazanie-2026/">
-          <img class="post-card-cover" src="/blog/otkaz-ot-medosvidestvovaniya-nakazanie-2026/cover.jpg" alt="Инспектор ДПС оформляет протокол освидетельствования на состояние опьянения" width="1200" height="630" loading="lazy">
+        <a class="post-card" href="/blog/signaly-regulirovshchika-prostymi-slovami-stih/">
+          <img class="post-card-cover" src="/blog/signaly-regulirovshchika-prostymi-slovami-stih/cover.jpg" alt="Сотрудник ДПС регулирует движение на перекрестке с помощью жезла" width="1200" height="630" loading="lazy">
           <div class="post-card-meta">
-            <time datetime="2026-08-24">24 августа 2026</time>
-            <span class="post-card-views" data-slug="otkaz-ot-medosvidestvovaniya-nakazanie-2026" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+            <time datetime="2026-10-16">16 октября 2026</time>
+            <span class="post-card-views" data-slug="signaly-regulirovshchika-prostymi-slovami-stih" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
           </div>
-          <h3>Отказ от медосвидетельствования в 2026 году: чем грозит и статья 12.26 КоАП</h3>
+          <h3>Сигналы регулировщика простыми словами в 2026 году: стихи и схемы</h3>
         </a>
       </div>
     </div>
@@ -398,7 +398,7 @@ if (location.hash.indexOf('#/') === 0) { location.replace('/app/' + location.has
         </details>
         <details>
           <summary>Чем режим экзамена отличается от настоящего в ГИБДД?</summary>
-          <p>Регламент тот же: 20 вопросов, 20 минут, не более 2 ошибок, каждая ошибка добавляет 5 вопросов и 5 минут, а в дополнительных вопросах ошибаться нельзя. Разница в том, что тренироваться можно сколько угодно раз.</p>
+          <p>Регламент тот же: 20 вопросов за 20 минут, не более двух ошибок только в разных тематических блоках. За каждую ошибку — ещё 5 вопросов и 5 минут. Две ошибки в одном блоке или ошибка в дополнительных вопросах означают «не сдал». В приложении можно повторять тренировку сколько угодно раз.</p>
         </details>
         <details>
           <summary>На каких устройствах доступно?</summary>
