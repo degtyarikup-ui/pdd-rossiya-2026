@@ -4118,7 +4118,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumBannerSubtitle =>
-      'Pass your exam the first time with our app';
+      'Pass your exam the first time with our app';
 
   @override
   String get premiumPlansTitle => 'Choose your Premium plan';

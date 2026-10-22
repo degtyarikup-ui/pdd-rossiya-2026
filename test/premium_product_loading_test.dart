@@ -78,6 +78,11 @@ void main() {
           );
           await tester.pumpAndSettle();
           expect(store.queries, 0);
+          expect(find.text(appL10n.paywallMethodSbp), findsOneWidget);
+          expect(find.text(appL10n.webPayButton), findsOneWidget);
+          expect(find.text('290 ₽'), findsOneWidget);
+          expect(find.text('99 ₽'), findsOneWidget);
+          expect(find.text(appL10n.paywallFreeNote), findsNothing);
           final play = find.text(appL10n.paywallStoreGoogle);
           await tester.ensureVisible(play);
           await tester.tap(play);

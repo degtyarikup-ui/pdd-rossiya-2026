@@ -15,6 +15,7 @@ import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/web_payment_dialog.dart';
+import 'package:pdd_app/presentation/widgets/premium_motion.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PremiumPlansSheet extends StatefulWidget {
@@ -25,6 +26,12 @@ class PremiumPlansSheet extends StatefulWidget {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      sheetAnimationStyle: MediaQuery.disableAnimationsOf(context)
+          ? AnimationStyle.noAnimation
+          : const AnimationStyle(
+              duration: PremiumMotion.sheetOpen,
+              reverseDuration: PremiumMotion.sheetClose,
+            ),
       useSafeArea: true,
       // Native drag dismissal calls Navigator.pop directly and bypasses
       // PopScope. The handle below permits dismissal only while idle.
@@ -339,13 +346,17 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
         ),
       ),
     );
-    final closeButton = IconButton(
-      key: const ValueKey('premium-plans-close'),
-      tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-      onPressed: _isLoading ? null : () => Navigator.of(context).maybePop(),
-      color: colors.primaryText,
-      icon: const Icon(Icons.close_rounded),
-      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+    final closeButton = PremiumPressFeedback(
+      enabled: !_isLoading,
+      pressedScale: .94,
+      child: IconButton(
+        key: const ValueKey('premium-plans-close'),
+        tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+        onPressed: _isLoading ? null : () => Navigator.of(context).maybePop(),
+        color: colors.primaryText,
+        icon: const Icon(Icons.close_rounded),
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      ),
     );
 
     return PopScope<bool>(
@@ -414,15 +425,6 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                         closeButton,
                       ],
                     ),
-                  const SizedBox(height: AppDimensions.spacingS),
-                  Text(
-                    appL10n.paywallFreeNote,
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.45,
-                      color: detailColor,
-                    ),
-                  ),
                   const SizedBox(height: AppDimensions.spacingXXL),
                   if (_androidModes.length > 1) ...[
                     _buildMethodSelector(colors),
@@ -455,51 +457,58 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
                     ),
                   ],
                   const SizedBox(height: AppDimensions.spacingXXL),
-                  ElevatedButton(
-                    key: const ValueKey('premium-plans-purchase'),
-                    onPressed:
-                        _isLoading ||
-                            _androidUnresolved ||
-                            _androidMode == PaymentMode.unavailable ||
-                            (kIsWeb && !sbpPay)
-                        ? null
-                        : sbpPay
-                        ? _handleSbpPayment
-                        : _handlePurchase,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.accent,
-                      foregroundColor: AppColors.white,
-                      elevation: 0,
-                      minimumSize: const Size.fromHeight(56),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.spacingL,
-                        vertical: AppDimensions.spacingL,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.buttonRadius,
+                  PremiumPressFeedback(
+                    enabled:
+                        !_isLoading &&
+                        !_androidUnresolved &&
+                        _androidMode != PaymentMode.unavailable &&
+                        !(kIsWeb && !sbpPay),
+                    child: ElevatedButton(
+                      key: const ValueKey('premium-plans-purchase'),
+                      onPressed:
+                          _isLoading ||
+                              _androidUnresolved ||
+                              _androidMode == PaymentMode.unavailable ||
+                              (kIsWeb && !sbpPay)
+                          ? null
+                          : sbpPay
+                          ? _handleSbpPayment
+                          : _handlePurchase,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.accent,
+                        foregroundColor: AppColors.white,
+                        elevation: 0,
+                        minimumSize: const Size.fromHeight(56),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppDimensions.spacingL,
+                          vertical: AppDimensions.spacingL,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.buttonRadius,
+                          ),
                         ),
                       ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.white,
+                              ),
+                            )
+                          : Text(
+                              buttonLabel,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontFamily: 'Onest',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                height: 1.25,
+                              ),
+                            ),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.white,
-                            ),
-                          )
-                        : Text(
-                            buttonLabel,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontFamily: 'Onest',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                            ),
-                          ),
                   ),
                   const SizedBox(height: AppDimensions.spacingL),
                   // Renewal or a one-off payment is visible alongside the CTA.
@@ -560,15 +569,18 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
       launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 
   Widget _buildLink(String label, VoidCallback onTap, AppThemeColors colors) {
-    return TextButton(
-      onPressed: _isLoading ? null : onTap,
-      style: TextButton.styleFrom(
-        foregroundColor: colors.primaryText.withValues(alpha: 0.7),
-        minimumSize: const Size(48, 48),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        textStyle: const TextStyle(fontFamily: 'Onest', fontSize: 13),
+    return PremiumPressFeedback(
+      enabled: !_isLoading,
+      child: TextButton(
+        onPressed: _isLoading ? null : onTap,
+        style: TextButton.styleFrom(
+          foregroundColor: colors.primaryText.withValues(alpha: 0.7),
+          minimumSize: const Size(48, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          textStyle: const TextStyle(fontFamily: 'Onest', fontSize: 13),
+        ),
+        child: Text(label, textAlign: TextAlign.center),
       ),
-      child: Text(label, textAlign: TextAlign.center),
     );
   }
 
@@ -587,44 +599,47 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
               Expanded(
                 child: Semantics(
                   selected: _androidMode == mode,
-                  child: TextButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                            HapticFeedbackHelper.tap();
-                            setState(() => _androidMode = mode);
-                            if (mode == PaymentMode.storeBilling) {
-                              _loadStorePrices();
-                            }
-                          },
-                    style: TextButton.styleFrom(
-                      foregroundColor: _androidMode == mode
-                          ? colors.accent
-                          : colors.primaryText.withValues(alpha: 0.7),
-                      backgroundColor: _androidMode == mode
-                          ? colors.cardBackground
-                          : Colors.transparent,
-                      minimumSize: const Size.fromHeight(48),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.buttonRadius,
+                  child: PremiumPressFeedback(
+                    enabled: !_isLoading,
+                    child: TextButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              HapticFeedbackHelper.tap();
+                              setState(() => _androidMode = mode);
+                              if (mode == PaymentMode.storeBilling) {
+                                _loadStorePrices();
+                              }
+                            },
+                      style: TextButton.styleFrom(
+                        foregroundColor: _androidMode == mode
+                            ? colors.accent
+                            : colors.primaryText.withValues(alpha: 0.7),
+                        backgroundColor: _androidMode == mode
+                            ? colors.cardBackground
+                            : Colors.transparent,
+                        minimumSize: const Size.fromHeight(48),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.buttonRadius,
+                          ),
+                        ),
+                        textStyle: const TextStyle(
+                          fontFamily: 'Onest',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      textStyle: const TextStyle(
-                        fontFamily: 'Onest',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      child: Text(
+                        mode == PaymentMode.sbp
+                            ? appL10n.paywallMethodSbp
+                            : appL10n.paywallStoreGoogle,
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    child: Text(
-                      mode == PaymentMode.sbp
-                          ? appL10n.paywallMethodSbp
-                          : appL10n.paywallStoreGoogle,
-                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
@@ -737,76 +752,84 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
 
     return Semantics(
       selected: selected,
-      child: AnimatedContainer(
-        key: ValueKey('premium-plan-${tier.name}'),
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: selected ? colors.lightAccent : colors.cardBackground,
-          borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-          border: Border.all(
-            color: selected ? colors.accent : colors.divider,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
+      child: PremiumPressFeedback(
+        enabled: !_isLoading,
+        pressedScale: .992,
+        child: AnimatedContainer(
+          key: ValueKey('premium-plan-${tier.name}'),
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            color: selected ? colors.lightAccent : colors.cardBackground,
             borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-            onTap: _isLoading
-                ? null
-                : () {
-                    HapticFeedbackHelper.tap();
-                    setState(() => _selectedTier = tier);
-                  },
-            child: Padding(
-              padding: const EdgeInsets.all(AppDimensions.spacingL),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final stacked =
-                      constraints.maxWidth < 300 ||
-                      MediaQuery.textScalerOf(context).scale(16) > 20;
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        selected
-                            ? Icons.radio_button_checked_rounded
-                            : Icons.radio_button_off_rounded,
-                        color: selected ? colors.accent : colors.secondaryText,
-                        size: 22,
-                      ),
-                      const SizedBox(width: AppDimensions.spacingM),
-                      Expanded(
-                        child: stacked
-                            ? Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  details(),
-                                  const SizedBox(
-                                    height: AppDimensions.spacingS,
-                                  ),
-                                  priceLabel(stacked: true),
-                                ],
-                              )
-                            : Row(
-                                children: [
-                                  Expanded(child: details()),
-                                  const SizedBox(width: AppDimensions.spacingM),
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: constraints.maxWidth * 0.45,
+            border: Border.all(
+              color: selected ? colors.accent : colors.divider,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+              onTap: _isLoading
+                  ? null
+                  : () {
+                      HapticFeedbackHelper.tap();
+                      setState(() => _selectedTier = tier);
+                    },
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimensions.spacingL),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final stacked =
+                        constraints.maxWidth < 300 ||
+                        MediaQuery.textScalerOf(context).scale(16) > 20;
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          selected
+                              ? Icons.radio_button_checked_rounded
+                              : Icons.radio_button_off_rounded,
+                          color: selected
+                              ? colors.accent
+                              : colors.secondaryText,
+                          size: 22,
+                        ),
+                        const SizedBox(width: AppDimensions.spacingM),
+                        Expanded(
+                          child: stacked
+                              ? Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    details(),
+                                    const SizedBox(
+                                      height: AppDimensions.spacingS,
                                     ),
-                                    child: priceLabel(stacked: false),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    ],
-                  );
-                },
+                                    priceLabel(stacked: true),
+                                  ],
+                                )
+                              : Row(
+                                  children: [
+                                    Expanded(child: details()),
+                                    const SizedBox(
+                                      width: AppDimensions.spacingM,
+                                    ),
+                                    ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: constraints.maxWidth * 0.45,
+                                      ),
+                                      child: priceLabel(stacked: false),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ),

@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
-import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+import 'package:pdd_app/presentation/widgets/premium_motion.dart';
 import 'package:pdd_app/presentation/widgets/subscription_management_sheet.dart';
 
 /// The profile entry has two states, independent of the daily free allowance.
@@ -20,7 +20,6 @@ class PremiumBannerCard extends ConsumerWidget {
     final foreground = isPremium ? AppColors.primaryText : AppColors.white;
 
     void openPremium() {
-      HapticFeedbackHelper.tap();
       if (isPremium) {
         SubscriptionManagementSheet.show(context);
       } else {
@@ -31,89 +30,92 @@ class PremiumBannerCard extends ConsumerWidget {
     return Semantics(
       button: true,
       value: isPremium ? l10n.premiumBannerActive : null,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        child: Material(
-          key: ValueKey(
-            isPremium ? 'premium-banner-active' : 'premium-banner-free',
-          ),
-          color: isPremium ? AppColors.premiumLime : AppColors.accent,
-          child: InkWell(
-            onTap: openPremium,
-            splashColor: foreground.withValues(alpha: 0.12),
-            highlightColor: foreground.withValues(alpha: 0.06),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth;
-                final expandedText =
-                    MediaQuery.textScalerOf(context).scale(16) > 21;
-                final titleSize = width >= 480 ? 24.0 : 19.0;
-                return Stack(
-                  children: [
-                    Positioned.fill(
-                      child: ExcludeSemantics(
-                        child: IgnorePointer(
-                          child: _PremiumBannerArtwork(isPremium: isPremium),
+      child: PremiumPressFeedback(
+        pressedScale: .99,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+          child: Material(
+            key: ValueKey(
+              isPremium ? 'premium-banner-active' : 'premium-banner-free',
+            ),
+            color: isPremium ? AppColors.premiumLime : AppColors.accent,
+            child: InkWell(
+              onTap: openPremium,
+              splashColor: foreground.withValues(alpha: 0.12),
+              highlightColor: foreground.withValues(alpha: 0.06),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final expandedText =
+                      MediaQuery.textScalerOf(context).scale(16) > 21;
+                  final titleSize = width >= 480 ? 24.0 : 19.0;
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                        child: ExcludeSemantics(
+                          child: IgnorePointer(
+                            child: _PremiumBannerArtwork(isPremium: isPremium),
+                          ),
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        18,
-                        18,
-                        expandedText ? 18 : width * 0.39,
-                        18,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: SizedBox(
-                                  width: 19,
-                                  height: 19,
-                                  child: FittedBox(
-                                    child: SvgPicture.asset(
-                                      'assets/images/premium/verified_${isPremium ? 'lime' : 'blue'}.svg',
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          18,
+                          18,
+                          expandedText ? 18 : width * 0.39,
+                          18,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: SizedBox(
+                                    width: 19,
+                                    height: 19,
+                                    child: FittedBox(
+                                      child: SvgPicture.asset(
+                                        'assets/images/premium/verified_${isPremium ? 'lime' : 'blue'}.svg',
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 7),
-                              Expanded(
-                                child: Text(
-                                  l10n.premiumAccessTitle,
-                                  style: TextStyle(
-                                    fontSize: titleSize,
-                                    fontWeight: FontWeight.w700,
-                                    color: foreground,
-                                    height: 1.12,
+                                const SizedBox(width: 7),
+                                Expanded(
+                                  child: Text(
+                                    l10n.premiumAccessTitle,
+                                    style: TextStyle(
+                                      fontSize: titleSize,
+                                      fontWeight: FontWeight.w700,
+                                      color: foreground,
+                                      height: 1.12,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            l10n.premiumBannerSubtitle,
-                            style: TextStyle(
-                              fontSize: width >= 480 ? 15 : 12.5,
-                              fontWeight: FontWeight.w400,
-                              color: foreground.withValues(alpha: 0.8),
-                              height: 1.3,
+                              ],
                             ),
-                          ),
-                          if (expandedText) const SizedBox(height: 88),
-                        ],
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.premiumBannerSubtitle,
+                              style: TextStyle(
+                                fontSize: width >= 480 ? 15 : 12.5,
+                                fontWeight: FontWeight.w400,
+                                color: foreground.withValues(alpha: 0.8),
+                                height: 1.3,
+                              ),
+                            ),
+                            if (expandedText) const SizedBox(height: 88),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -122,10 +124,43 @@ class PremiumBannerCard extends ConsumerWidget {
   }
 }
 
-class _PremiumBannerArtwork extends StatelessWidget {
+class _PremiumBannerArtwork extends StatefulWidget {
   const _PremiumBannerArtwork({required this.isPremium});
 
   final bool isPremium;
+
+  @override
+  State<_PremiumBannerArtwork> createState() => _PremiumBannerArtworkState();
+}
+
+class _PremiumBannerArtworkState extends State<_PremiumBannerArtwork>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _arrival = AnimationController(
+    vsync: this,
+    duration: PremiumMotion.carArrival,
+  );
+  late final Animation<double> _driveIn = _arrival.drive(
+    CurveTween(curve: Curves.easeOutQuint),
+  );
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _started = true;
+      _arrival.value = 1;
+    } else if (!_started && TickerMode.valuesOf(context).enabled) {
+      _started = true;
+      _arrival.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _arrival.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,20 +174,33 @@ class _PremiumBannerArtwork extends StatelessWidget {
           children: [
             Positioned(
               right: artWidth * -0.13,
-              bottom: artWidth * -0.42,
+              bottom: artWidth * -0.52,
               width: raySize,
               height: raySize,
-              child: _RotatingPremiumRays(isPremium: isPremium),
+              child: _RotatingPremiumRays(isPremium: widget.isPremium),
             ),
             Positioned(
               right: artWidth * -0.28,
               bottom: artWidth * -0.11,
               width: artWidth,
-              child: Image.asset(
-                'assets/images/premium/car.png',
-                fit: BoxFit.contain,
-                cacheWidth: 768,
-                filterQuality: FilterQuality.medium,
+              child: AnimatedBuilder(
+                animation: _driveIn,
+                child: RepaintBoundary(
+                  child: Image.asset(
+                    'assets/images/premium/car.png',
+                    fit: BoxFit.contain,
+                    cacheWidth: 768,
+                    filterQuality: FilterQuality.medium,
+                  ),
+                ),
+                builder: (context, child) => Transform.translate(
+                  key: const ValueKey('premium-car-arrival'),
+                  offset: Offset(artWidth * .16 * (1 - _driveIn.value), 0),
+                  child: Opacity(
+                    opacity: (_arrival.value / .4).clamp(0, 1),
+                    child: child,
+                  ),
+                ),
               ),
             ),
           ],
@@ -207,7 +255,7 @@ class _RotatingPremiumRaysState extends State<_RotatingPremiumRays>
         key: const ValueKey('premium-banner-rays'),
         turns: _turns,
         child: Opacity(
-          opacity: 0.6,
+          opacity: 0.78,
           child: Image.asset(
             // Rasterized from the original SVGs to preserve their blur filters.
             'assets/images/premium/rays_${widget.isPremium ? 'lime' : 'blue'}.png',

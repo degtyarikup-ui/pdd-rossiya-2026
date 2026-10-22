@@ -15,6 +15,8 @@ class PremiumPaywallSheet extends StatelessWidget {
     return Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
         fullscreenDialog: true,
+        // Keep the staggered content live during the native route transition.
+        allowSnapshotting: false,
         builder: (_) => const PremiumPaywallSheet(),
       ),
     );

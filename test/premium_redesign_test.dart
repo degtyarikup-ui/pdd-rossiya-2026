@@ -155,6 +155,8 @@ void main() {
     Size size = const Size(390, 844),
     double textScale = 1,
     bool dark = false,
+    bool reducedMotion = true,
+    bool settle = true,
     ValueChanged<bool?>? onResult,
   }) async {
     tester.view.devicePixelRatio = 1;
@@ -176,7 +178,7 @@ void main() {
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(
               textScaler: TextScaler.linear(textScale),
-              disableAnimations: true,
+              disableAnimations: reducedMotion,
               padding: const EdgeInsets.only(top: 24, bottom: 24),
             ),
             child: child!,
@@ -199,7 +201,11 @@ void main() {
       ),
     );
     await tester.tap(find.byKey(_openKey));
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+    }
   }
 
   Future<void> capture(WidgetTester tester, String name) async {
@@ -308,7 +314,7 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byType(PremiumPlansSheet), findsOneWidget);
           expect(find.text(appL10n.premiumPlansTitle), findsOneWidget);
-          expect(find.text(appL10n.paywallFreeNote), findsOneWidget);
+          expect(find.text(appL10n.paywallFreeNote), findsNothing);
           expect(find.text('290,00 ₽'), findsOneWidget);
           expect(find.text('99,00 ₽'), findsOneWidget);
           expect(tester.takeException(), isNull);
@@ -332,6 +338,62 @@ void main() {
       );
     }
   }
+
+  double revealOpacity(WidgetTester tester, String name) => tester
+      .widget<FadeTransition>(
+        find.descendant(
+          of: find.byKey(ValueKey('premium-reveal-$name')),
+          matching: find.byType(FadeTransition),
+        ),
+      )
+      .opacity
+      .value;
+
+  _testPremium(
+    'benefits enter in order and stay revealed after closing plans',
+    (tester) async {
+      await mount(tester, reducedMotion: false, settle: false);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(revealOpacity(tester, 'title'), greaterThan(0));
+      expect(revealOpacity(tester, 'ai'), 0);
+      expect(revealOpacity(tester, 'feed'), 0);
+      expect(find.byKey(_showPlans).hitTestable(), findsNothing);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(revealOpacity(tester, 'ai'), greaterThan(0));
+      expect(revealOpacity(tester, 'feed'), 0);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(revealOpacity(tester, 'feed'), 1);
+      expect(find.byKey(_showPlans).hitTestable(), findsOneWidget);
+      await tester.tap(find.byKey(_showPlans));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(_closePlans));
+      await tester.pumpAndSettle();
+      expect(revealOpacity(tester, 'title'), 1);
+      expect(revealOpacity(tester, 'feed'), 1);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  _testPremium('reduced motion shows benefits immediately', (tester) async {
+    await mount(tester, settle: false);
+    // Leave the native route's initial offstage frame, without waiting for
+    // the content entrance animation.
+    await tester.pump(const Duration(milliseconds: 16));
+    for (final name in [
+      'hero',
+      'title',
+      'stats',
+      'games',
+      'ai',
+      'voice',
+      'feed',
+      'cta',
+    ]) {
+      expect(revealOpacity(tester, name), 1);
+    }
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   _testPremium('closing or backing out of plans preserves the benefits route', (
     tester,

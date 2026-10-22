@@ -4112,7 +4112,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get premiumBannerSubtitle =>
-      'Біздің қосымшамен емтиханды бірінші реттен тапсырыңыз';
+      'Біздің қосымшамен емтиханды бірінші реттен тапсырыңыз';
 
   @override
   String get premiumPlansTitle => 'Премиум тарифін таңдаңыз';

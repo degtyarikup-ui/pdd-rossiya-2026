@@ -89,6 +89,27 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('car arrives from the right once and settles without overshoot', (
+    tester,
+  ) async {
+    await showBanner(tester, disableAnimations: false);
+    final car = find.byKey(const ValueKey('premium-car-arrival'));
+    double x() => tester.widget<Transform>(car).transform.storage[12];
+    final start = x();
+    expect(start, greaterThan(0));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(x(), inExclusiveRange(0, start));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(x(), closeTo(0, .001));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(x(), closeTo(0, .001));
+    await showBanner(tester);
+    await tester.pumpAndSettle();
+    expect(x(), 0);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('narrow banner allows large text without overflow', (
     tester,
   ) async {

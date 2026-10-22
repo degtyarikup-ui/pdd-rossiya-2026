@@ -6889,7 +6889,7 @@ abstract class AppLocalizations {
   /// No description provided for @premiumBannerSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Сдайте экзамен с первого раза с нашим приложением'**
+  /// **'Сдайте экзамен с первого раза с нашим приложением'**
   String get premiumBannerSubtitle;
 
   /// No description provided for @premiumPlansTitle.

@@ -4133,7 +4133,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get premiumBannerSubtitle =>
-      'Сдайте экзамен с первого раза с нашим приложением';
+      'Сдайте экзамен с первого раза с нашим приложением';
 
   @override
   String get premiumPlansTitle => 'Выберите свой Премиум';
