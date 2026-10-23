@@ -115,6 +115,13 @@ test('client route clones immutable Durable Object response headers before addin
  const r=await worker.fetch(new Request('https://test/api/notifications?app=ru&platform=ios'),env);
  assert.equal(r.status,302);assert.equal(r.headers.get('Access-Control-Allow-Origin'),'*');
 });
+test('client feed sends each CORS header once so browsers accept it',async()=>{
+ const env={NOTIFICATIONS:{idFromName:()=> 'state',get:()=>({fetch:async()=>Response.json({messages:[]},{headers:{'cache-control':'no-store'}})})}};
+ const r=await worker.fetch(new Request('https://test/api/notifications?app=ru&platform=web'),env);
+ assert.equal(r.status,200);assert.equal(r.headers.get('Access-Control-Allow-Origin'),'*');
+ assert.equal(r.headers.get('Access-Control-Allow-Methods'),'GET, POST, OPTIONS');assert.equal(r.headers.get('cache-control'),'no-store');
+ assert.deepEqual((await r.json()).messages,[]);
+});
 import { buildPushMessage, clientMessage, userTopic } from './notifications.js';
 test('customization: banner limits, https-only images/links, accent format, scheduling',()=>{
   for(const bad of [{kind:'banner',body:'x'.repeat(201)},{imageUrl:'http://x.test/a.png'},{accent:'red'},{action:'url'},{action:'hack'},{layout:'x'},{startAt:Date.now()+40*86400000}])assert.throws(()=>validateCampaign(sample(bad)));

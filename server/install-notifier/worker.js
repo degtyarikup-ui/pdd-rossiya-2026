@@ -3332,7 +3332,11 @@ const workerHandlers = {
       if (!response.ok) return new Response(response.body, { status: response.status, headers });
       const feed = await response.json();
       feed.pushTopics = noticeSession ? [await privatePushTopic(env, noticeSession.user.id)] : [];
-      return jsonResponse(feed, response.status, Object.fromEntries(headers));
+      // jsonResponse adds CORS itself; Headers keys are lowercase, so passing
+      // them again would duplicate the values ("*, *") and browsers reject it.
+      const extraHeaders = Object.fromEntries([...headers].filter(([key]) =>
+        !key.startsWith('access-control-') && key !== 'content-type' && key !== 'content-length'));
+      return jsonResponse(feed, response.status, extraHeaders);
     }
 
     // ────────────────────── Ads API Endpoints ──────────────────────
