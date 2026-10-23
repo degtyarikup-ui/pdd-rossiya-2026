@@ -63,6 +63,7 @@ var _question: Label
 var move_buttons := {}
 
 var _results: MiniGameResults
+var _result_input_delay := 0.0
 
 var hint_open := false
 var awaiting := false
@@ -76,6 +77,14 @@ func _init() -> void:
 	_build_top_bar()
 	_build_bottom()
 	_build_result()
+	set_process(false)
+
+
+func _process(delta: float) -> void:
+	_result_input_delay = maxf(0.0, _result_input_delay - delta)
+	if _result_input_delay == 0.0:
+		_results.restart_button.disabled = false
+		set_process(false)
 
 
 func _ready() -> void:
@@ -384,6 +393,11 @@ func reset_buttons_visuals() -> void:
 
 
 func show_game_over(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, time_up := false, best := 0) -> void:
+	# Answers fire on press. Allow the final tap (and a quick second tap) to
+	# finish before the overlapping restart button can accept a new gesture.
+	_results.restart_button.disabled = true
+	_result_input_delay = 0.5
+	set_process(true)
 	_top_bar.visible = false
 	_bottom.visible = false
 	_results.show_results(score, solved, wrong, max_combo, is_record, best, time_up)
@@ -393,6 +407,8 @@ func show_game_over(score: int, solved: int, wrong: int, max_combo: int, is_reco
 
 
 func hide_game_over() -> void:
+	set_process(false)
+	_result_input_delay = 0.0
 	_results.hide_results()
 	_top_bar.visible = true
 	_bottom.visible = true
@@ -441,6 +457,8 @@ func _tap(action: Callable) -> Control:
 
 func _on_tap_input(event: InputEvent, action: Callable) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# Consume before the action can hide this control and show a new screen.
+		get_viewport().set_input_as_handled()
 		action.call()
 
 

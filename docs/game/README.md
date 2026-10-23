@@ -194,6 +194,7 @@ godot --path game_godot -- --situation=ticket_10_13 --auto --near   # один �
 
 ```bash
 godot --headless --path game_godot --script res://tests/regulator_check.gd # регулировщик: правила, экономика, UI, рестарты
+godot --headless --path game_godot --script res://tests/regulator_result_input_check.gd # последний ответ: удержание и быстрый повторный тап не запускают новый раунд
 godot --headless --path game_godot --script res://tests/regulator_performance_check.gd # регулировщик: профили телефона, адаптация, разрешение UI и повторный вход
 godot --headless --path game_godot --script res://tests/regulator_atmosphere_check.gd # регулировщик: стабильная погода без лишних обновлений рендера и переходы
 godot --headless --path game_godot --script res://tests/crossroads_check.gd # разъезд на перекрёстках: 50 сценариев (6 категорий), режимы Блиц и Тренировка, ПДД, траектории, UI
