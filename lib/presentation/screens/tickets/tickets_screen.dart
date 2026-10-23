@@ -8,6 +8,7 @@ import 'package:pdd_app/core/constants/app_strings.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/safe_user_message.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
@@ -244,7 +245,7 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
           MaterialPageRoute(
             builder: (_) => TrainingScreen(
               questions: questions,
-              title: '${AppStrings.ticket} $number',
+              title: appL10n.ticketNumber(number),
               isExam: false,
               usageFeature: UsageFeature.tickets,
             ),
