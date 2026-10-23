@@ -56,7 +56,7 @@ func run() -> void:
 		var other:=RoadBuild.sign_node(code)
 		check(face.mesh==(other.get_node("sign_board/face_top") as MeshInstance3D).mesh and face.material_override==(other.get_node("sign_board/face_top") as MeshInstance3D).material_override,code+" immutable mesh/material reused")
 		other.free();sign.free()
-	check(count==67,"all available signs covered")
+	check(count==70,"all available signs covered")
 	check(texture_bytes<32*1024*1024,"all 67 decoded RGBA textures including mipmaps stay below 32 MiB")
 	print("All sign textures with mipmaps: ",texture_bytes," bytes")
 	var barrier:=RoadBuild.roadworks_barrier(3)
