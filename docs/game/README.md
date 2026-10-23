@@ -271,8 +271,10 @@ godot --path game_godot --resolution 448x970 --script res://tests/popin_ride_che
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
 godot --headless --path game_godot --script res://tests/staging_cancellation_check.gd # отмена воркера при закрытии/удалении владельца и выходе хоста
+godot --headless --path game_godot --script res://tests/props_cancellation_check.gd # отмена вложенной сборки декораций, отсутствие новых экземпляров и удержанных текстур; также native
 godot --headless --path game_godot --script res://tests/staging_retirement_check.gd # удаление предыдущей локации между этапами подготовки следующей; также native
 godot --headless --path game_godot --script res://tests/embedded_io_check.gd # iOS: повторные запуски основной игры и переходы после мини-игр
+godot --headless --path game_godot --script res://tests/mode_dispatch_check.gd # оба аргумента перекрёстков переключают сцену без сборки ненужного города; также native
 godot --headless --path game_godot --script res://tests/ambient_budget_check.gd # low: только декоративные люди, безопасная смена качества и неизменные участники задач
 godot --headless --path game_godot --script res://tests/walking_budget_check.gd # точность тротуаров, ограниченный кеш и бюджет поиска пути пешеходов
 godot --headless --path game_godot --script res://tests/walker_spacing_check.gd # свободное место при появлении, обход встречных и выход из наложения; native — снимки настоящего тротуара

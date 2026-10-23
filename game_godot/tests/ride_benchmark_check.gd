@@ -16,6 +16,15 @@ class UiFixture extends RefCounted:
 	var left := 15.0
 	func remaining_seconds() -> float: return left
 
+class NativeHostFixture extends RefCounted:
+	var directory := ""
+	func has_java_method(name: String) -> bool: return name == "performanceLogDirectory"
+	func performanceLogDirectory() -> String: return directory
+
+class AndroidDriver extends "res://scripts/ride_benchmark.gd":
+	var plugin: Object
+	func _android_host() -> Object: return plugin
+
 class WorldFixture extends Node:
 	signal event(data: Dictionary)
 	var benchmark := true
@@ -70,13 +79,13 @@ func expect(ok: bool, message: String) -> void:
 		print("FAIL ", message)
 
 
-func fixture(enabled := true, args := {}) -> Array:
+func fixture(enabled := true, args := {}, supplied_driver: Node = null) -> Array:
 	result = {}
 	var world := WorldFixture.new()
 	world.benchmark = enabled
 	world.args = args
 	root.add_child(world)
-	var driver := Benchmark.new()
+	var driver: Node = supplied_driver if supplied_driver != null else Benchmark.new()
 	driver.close_on_finish = false
 	driver.completed.connect(func(summary): result = summary)
 	world.add_child(driver)
@@ -109,6 +118,10 @@ func run_check() -> void:
 	var pair := fixture()
 	var world: WorldFixture = pair[0]
 	var driver: Node = pair[1]
+	var progress_path := exchange.path_join(Benchmark.PROGRESS_FILE)
+	var progress = JSON.parse_string(FileAccess.get_file_as_string(progress_path))
+	expect(progress.status == "running" and progress.reason == "started" and progress.visited.is_empty(), "fresh bounded progress exists before the first scene")
+	expect(not FileAccess.file_exists(exchange.path_join(Benchmark.RESULT_FILE)), "starting a new attempt removes an obsolete final result")
 	expect(world.only_id == Benchmark.ROUTE[0], "first prestage is deterministic")
 	expect(not world.auto_answer and not world.follow, "benchmark owns paced controls instead of normal debug timers")
 	expect(not world.run_started, "benchmark cannot book a user run")
@@ -118,6 +131,9 @@ func run_check() -> void:
 	for index in Benchmark.ROUTE.size():
 		scene(world, Benchmark.ROUTE[index])
 		driver._process(1.0)
+		progress = JSON.parse_string(FileAccess.get_file_as_string(progress_path))
+		expect(progress.scene == Benchmark.ROUTE[index] and progress.visited.size() == index + 1,
+			"scene activation is durable before the next frame " + str(index + 1))
 		expect(world.controls.gas, "normal driving uses gas on scene " + str(index+1))
 		if index + 1 < Benchmark.ROUTE.size():
 			expect(world.only_id == Benchmark.ROUTE[index+1], "next prestage preserves captured order " + str(index+1))
@@ -125,6 +141,8 @@ func run_check() -> void:
 		driver._process(5.0)
 		expect(world.answers.size() == index, "card remains visible before pacing target " + str(index+1))
 		driver._process(12.0)
+		progress = JSON.parse_string(FileAccess.get_file_as_string(progress_path))
+		expect(progress.answered == index + 1 and progress.reason == "answer_received", "accepted answer is saved before a process exit " + str(index + 1))
 		expect(world.answers.size() == index+1 and world.answers[-1] == 2, "one correct answer after pacing " + str(index+1))
 		world.current.junction.resolution = {"yielding": [{"cleared": false}]}
 		driver._process(0.1)
@@ -142,7 +160,44 @@ func run_check() -> void:
 	expect(result.visited == Benchmark.ROUTE, "result records actual observed scene sequence")
 	var saved = JSON.parse_string(FileAccess.get_file_as_string(exchange.path_join("benchmark-result.json")))
 	expect(saved == JSON.parse_string(JSON.stringify(result)), "atomic benchmark result is retrievable after completion")
+	progress = JSON.parse_string(FileAccess.get_file_as_string(progress_path))
+	expect(progress == saved and not FileAccess.file_exists(progress_path + ".tmp"), "terminal progress and result agree without a partial temporary file")
+	expect(FileAccess.get_file_as_string(progress_path).to_utf8_buffer().size() < Benchmark.SNAPSHOT_LIMIT,
+		"a full ride writes a bounded snapshot instead of accumulating events")
+	var before_snapshot := FileAccess.get_file_as_string(progress_path)
+	expect(not driver._write_snapshot(Benchmark.PROGRESS_FILE, {"oversize": "x".repeat(Benchmark.SNAPSHOT_LIMIT)}),
+		"oversize diagnostics are refused")
+	expect(FileAccess.get_file_as_string(progress_path) == before_snapshot, "refusing an oversize snapshot preserves the preceding valid record")
 	world.free()
+
+	# A manually closed game reports an interruption, never a stale successful ride.
+	pair = fixture(); world = pair[0]; driver = pair[1]
+	expect(not FileAccess.file_exists(exchange.path_join(Benchmark.RESULT_FILE)), "a preceding pass is removed when the next attempt starts")
+	scene(world, Benchmark.ROUTE[0]); driver._process(0.1)
+	world.free()
+	saved = JSON.parse_string(FileAccess.get_file_as_string(exchange.path_join(Benchmark.RESULT_FILE)))
+	expect(saved.status == "interrupted" and not saved.finished and saved.reason == "owner_removed_before_completion",
+		"orderly early removal leaves a durable incomplete result")
+	Host.io = ""
+	var native_host := NativeHostFixture.new()
+	native_host.directory = exchange.path_join("external")
+	DirAccess.make_dir_recursive_absolute(native_host.directory)
+	var native_driver := AndroidDriver.new()
+	native_driver.plugin = native_host
+	pair = fixture(true, {}, native_driver); world = pair[0]; driver = pair[1]
+	expect(FileAccess.file_exists(native_host.directory.path_join(Benchmark.PROGRESS_FILE)), "Android stores progress in its adb-readable external directory")
+	driver._finish(false, "test_stop")
+	saved = JSON.parse_string(FileAccess.get_file_as_string(native_host.directory.path_join(Benchmark.RESULT_FILE)))
+	expect(saved.status == "failed" and saved.reason == "test_stop", "Android final result uses the same external directory as progress")
+	world.free()
+	Host.io = exchange
+	Host.io_args = ["--benchmark-keep-open"]
+	# Test the opt-in flag before fixture() sets its independent no-exit guard.
+	world = WorldFixture.new(); root.add_child(world)
+	driver = Benchmark.new(); world.add_child(driver); driver.set_process(false)
+	expect(not driver.close_on_finish, "explicit keep-open flag leaves native results available for visual inspection")
+	world.free()
+	Host.io_args = []
 
 	# Waiting for an actor that yields to us must not deadlock the driver.
 	pair = fixture(); world = pair[0]; driver = pair[1]
@@ -191,10 +246,14 @@ func run_check() -> void:
 	world.phase = "question"; world.ui.left = 1.0; driver._process(0.1)
 	expect(world.answers.size() == 1, "short question deadline takes precedence over pacing")
 	world.free()
+	var preceding_progress := FileAccess.get_file_as_string(progress_path)
+	var preceding_result := FileAccess.get_file_as_string(exchange.path_join(Benchmark.RESULT_FILE))
 	pair = fixture(false); world = pair[0]; driver = pair[1]
 	driver._process(1000.0)
 	expect(world.only_id == "normal" and world.auto_answer and world.run_started and result.is_empty(), "helper is inert without explicit benchmark flag")
 	world.free()
+	expect(FileAccess.get_file_as_string(progress_path) == preceding_progress and FileAccess.get_file_as_string(exchange.path_join(Benchmark.RESULT_FILE)) == preceding_result,
+		"normal gameplay never creates, clears or updates benchmark evidence")
 
 	var account_events := 0
 	for line in FileAccess.get_file_as_string(exchange.path_join("events.jsonl")).split("\n", false):

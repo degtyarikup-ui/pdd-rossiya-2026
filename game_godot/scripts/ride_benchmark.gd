@@ -6,6 +6,9 @@ extends Node
 signal completed(summary: Dictionary)
 
 const ROUTE_ID := "ride-10-2026-10-17-v3"
+const PROGRESS_FILE := "benchmark-progress.json"
+const RESULT_FILE := "benchmark-result.json"
+const SNAPSHOT_LIMIT := 16 * 1024
 # v3: a ride is 10 questions; the first half of the v2 route.
 # v2 replaces captured ticket_20_13 with approved ticket_12_13 after 4410da90 revoked its review.
 const ROUTE := [
@@ -30,6 +33,7 @@ var _last_distance := 0.0
 var _enabled := false
 var _finished := false
 var _failure := ""
+var _diagnostic_directory := ""
 
 
 func _init() -> void:
@@ -47,6 +51,7 @@ func _ready() -> void:
 		set_process(false)
 		return
 	_enabled = true
+	if "--benchmark-keep-open" in Host.user_args(): close_on_finish = false
 	# A native benchmark invocation has no ride-options and no Flutter progress callback.
 	# Reset only this isolated world's transient Run; do not alter persistent account data.
 	world.run = Run.new()
@@ -64,6 +69,10 @@ func _ready() -> void:
 	scene_pace_seconds = _number_arg("--benchmark-pace-seconds", scene_pace_seconds, 0.0, 60.0)
 	scene_timeout_seconds = _number_arg("--benchmark-scene-timeout-seconds", scene_timeout_seconds, 15.0, 300.0)
 	timeout_seconds = _number_arg("--benchmark-timeout-seconds", timeout_seconds, 30.0, 3600.0)
+	_diagnostic_directory = _log_directory()
+	# A preceding pass must never be mistaken for this attempt after a crash.
+	DirAccess.remove_absolute(_diagnostic_directory.path_join(RESULT_FILE))
+	_write_snapshot(PROGRESS_FILE, _summary("running", "started"))
 	Host.send({"event": "benchmark_start", "benchmark": true, "test": true,
 		"route_id": ROUTE_ID, "route": ROUTE, "question_hold_s": question_hold_seconds,
 		"scene_pace_s": scene_pace_seconds})
@@ -104,6 +113,7 @@ func _process(delta: float) -> void:
 				world.playable_ids = []
 			Host.send({"event": "benchmark_scene", "benchmark": true, "test": true,
 				"index": _visited.size(), "scene": id, "elapsed_s": snappedf(_runtime, 0.1)})
+			_write_snapshot(PROGRESS_FILE, _summary("running", "scene_started"))
 		_scene_elapsed += delta
 		if _scene_elapsed > scene_timeout_seconds: _finish(false, "scene_timeout"); return
 	# Observe activation even under the loader: World begins prefetching before that overlay fades.
@@ -158,6 +168,53 @@ func _on_world_event(data: Dictionary) -> void:
 	record["benchmark"] = true
 	record["test"] = true
 	Host.send(record)
+	if data.get("event") == "answer":
+		_write_snapshot(PROGRESS_FILE, _summary("running", "answer_received"))
+
+
+func _android_host() -> Object:
+	return Engine.get_singleton("PddHost") if Engine.has_singleton("PddHost") else null
+
+
+func _log_directory() -> String:
+	if Host.io != "": return Host.io
+	var host := _android_host()
+	if host != null and host.has_java_method("performanceLogDirectory"):
+		var directory := str(host.performanceLogDirectory())
+		if directory != "": return directory
+	return "user://"
+
+
+## Replace bounded snapshots; never append a second unbounded per-frame log.
+func _write_snapshot(name: String, data: Dictionary) -> bool:
+	if _diagnostic_directory == "": return false
+	var content := JSON.stringify(data)
+	if content.to_utf8_buffer().size() > SNAPSHOT_LIMIT: return false
+	var path := _diagnostic_directory.path_join(name)
+	var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
+	if file == null: return false
+	file.store_string(content)
+	file.close()
+	return DirAccess.rename_absolute(path + ".tmp", path) == OK
+
+
+func _summary(status: String, reason: String) -> Dictionary:
+	return {"benchmark": true, "test": true, "run_started": false, "finished": status == "passed",
+		"status": status, "reason": reason, "route_id": ROUTE_ID,
+		"route": ROUTE, "visited": _visited.duplicate(), "answered": world.run.answered,
+		"correct": world.run.correct, "violations": world.run.violations, "score": 0, "elapsed_s": snappedf(_runtime, 0.1),
+		"scene": _scene_id, "phase": world.phase, "scene_elapsed_s": snappedf(_scene_elapsed, 0.1),
+		"distance_m": int(world.drive.distance_traveled), "speed_mps": snappedf(world.drive.speed, 0.1),
+		"position": [world.drive.pos.x, world.drive.pos.y, world.drive.pos.z]}
+
+
+func _exit_tree() -> void:
+	if not _enabled or _finished or not is_instance_valid(world): return
+	_finished = true
+	var reason := "host_exit_before_completion" if Host.is_exiting(get_tree()) else "owner_removed_before_completion"
+	var summary := _summary("interrupted", reason)
+	_write_snapshot(PROGRESS_FILE, summary)
+	_write_snapshot(RESULT_FILE, summary)
 
 
 func _finish(passed: bool, reason: String) -> void:
@@ -167,19 +224,9 @@ func _finish(passed: bool, reason: String) -> void:
 	world.controls.gas = false
 	world.controls.brake = false
 	world.controls.steer = 0.0
-	var summary := {"benchmark": true, "test": true, "run_started": false, "finished": passed,
-		"status": "passed" if passed else "failed", "reason": reason, "route_id": ROUTE_ID,
-		"route": ROUTE, "visited": _visited.duplicate(), "answered": world.run.answered,
-		"correct": world.run.correct, "violations": world.run.violations, "score": 0, "elapsed_s": snappedf(_runtime, 0.1),
-		"scene": _scene_id, "phase": world.phase, "scene_elapsed_s": snappedf(_scene_elapsed, 0.1),
-		"distance_m": int(world.drive.distance_traveled), "speed_mps": snappedf(world.drive.speed, 0.1),
-		"position": [world.drive.pos.x, world.drive.pos.y, world.drive.pos.z]}
-	var path := Host.io.path_join("benchmark-result.json") if Host.io != "" else "user://benchmark-result.json"
-	var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
-	if file != null:
-		file.store_string(JSON.stringify(summary))
-		file.close()
-		DirAccess.rename_absolute(path + ".tmp", path)
+	var summary := _summary("passed" if passed else "failed", reason)
+	_write_snapshot(PROGRESS_FILE, summary)
+	_write_snapshot(RESULT_FILE, summary)
 	Host.send({"event": "benchmark_result", "benchmark": true, "test": true, "summary": summary})
 	print("[ride-benchmark] ", JSON.stringify(summary))
 	completed.emit(summary)

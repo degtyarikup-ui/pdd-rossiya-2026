@@ -201,6 +201,7 @@ func _ready() -> void:
 	if _has_arg("--crossroads") or _has_arg("--mode=crossroads"):
 		process_mode = Node.PROCESS_MODE_DISABLED
 		get_tree().change_scene_to_file.call_deferred("res://crossroads.tscn")
+		return
 	if _has_arg("--parking") or _has_arg("--mode=parking"):
 		process_mode = Node.PROCESS_MODE_DISABLED
 		get_tree().change_scene_to_file.call_deferred("res://parking.tscn")

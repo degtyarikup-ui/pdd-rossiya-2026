@@ -596,7 +596,11 @@ func _place_props(scenery: Scenery, frames: SceneTree = null) -> void:
 		groups[p.prop].append(p)
 	var winter: bool = scenery.season.precipitation == "snow"
 	for prop in groups:
-		if frames: await frames.process_frame
+		if frames:
+			await frames.process_frame
+			# The host's exit fade may finish before all prop groups are built.
+			# Unwind here so no rendering instances or captured scenery outlive it.
+			if not is_instance_valid(self) or staging_cancelled() or Host.is_exiting(frames): return
 		var list: Array = groups[prop]
 		var parked: bool = prop == "parked"
 		var multi := MultiMesh.new()
