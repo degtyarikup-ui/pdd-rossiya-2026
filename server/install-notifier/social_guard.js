@@ -14,7 +14,7 @@ export class SocialPublisher {
     const now = Date.now();
     if (path === '/claim') {
       const lease = await this.state.storage.get('lease');
-      if (lease?.until > now) return Response.json({ busy: true });
+      if (lease?.until > now) return Response.json({ busy: true, until: lease.until });
       const owner = crypto.randomUUID();
       await this.state.storage.put('lease', { owner, until: now + 15 * 60000 });
       return Response.json({ owner });

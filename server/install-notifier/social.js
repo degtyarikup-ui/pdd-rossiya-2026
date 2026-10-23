@@ -14,7 +14,7 @@
 // памяти воркера только на время заливки (отсюда лимит MAX_UPLOAD_BYTES).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { beginSocialWrite, completeSocialWrite, abandonSocialWrite, withSocialPublicationLease } from './social_guard.js';
+import { socialGuard, beginSocialWrite, completeSocialWrite, abandonSocialWrite, withSocialPublicationLease } from './social_guard.js';
 
 async function notifySocialFailure(notify, accountId, reason, text) {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(accountId + '|' + reason));
@@ -1828,7 +1828,18 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     if (body.confirmReplacement !== true) return jsonResponse({ ok: false, message: 'Подтвердите новую публикацию YouTube' }, 400);
     const post = (await getPosts(env)).find(p => p.id === body.id);
     if (!post || post.status === 'processing') return jsonResponse({ ok: false, message: 'Обновите состояние ролика' }, 409);
-    ctx.waitUntil(replaceYoutube(env, post.id, origin, notify));
+    const lease = await socialGuard(env, post.accountId, '/claim');
+    if (lease?.busy) return jsonResponse({ ok: false, retryAt: new Date(lease.until).toISOString(),
+      message: 'Аккаунт занят предыдущей публикацией. Повторите после ' + new Date(lease.until).toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow' }) + ' МСК' }, 409);
+    ctx.waitUntil((async () => {
+      try { await replaceYoutube(lease ? { ...env, __SOCIAL_OWNER: lease.owner } : env, post.id, origin, notify); }
+      finally {
+        if (lease) {
+          try { await socialGuard(env, post.accountId, '/release', { owner: lease.owner }); }
+          catch (_) { console.warn('YouTube replacement lease release deferred'); }
+        }
+      }
+    })());
     return jsonResponse({ ok: true, message: 'Проверяю прежний ролик YouTube; если он недоступен, создам новую публикацию' });
   }
 

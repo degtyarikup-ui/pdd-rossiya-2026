@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SocialPublisher, socialGuard, beginSocialWrite, completeSocialWrite, withSocialPublicationLease } from './social_guard.js';
-import { publishPost } from './social.js';
+import { publishPost, handleSocialAdmin } from './social.js';
 import { TelegramQueue } from './telegram_queue.js';
 import { sendTelegram } from './worker.js';
 
@@ -181,4 +181,17 @@ test('YouTube replacement has an independent durable outcome and never replays a
   await withSocialPublicationLease(f.env,'a',async env=>{
     await assert.rejects(beginSocialWrite(env,{...post,youtubeReplacementAttempt:{sourceVideoId:'oldVideo123'}},'youtube'),/не подтверждён/);
   });
+});
+
+
+test('YouTube replacement reports an occupied lease instead of claiming a background upload started', async () => {
+  const f=guardFixture();
+  const lease=await socialGuard(f.env,'a','/claim');
+  const data=new Map([['social:posts',JSON.stringify([{id:'p',accountId:'a',status:'failed'}])]]);
+  f.env.INSTALLS={get:async k=>data.get(k)||null,put:async(k,v)=>data.set(k,v)};
+  let tasks=0;
+  const req=new Request('https://w.test/api/admin/social/posts/replace-youtube',{method:'POST',body:JSON.stringify({id:'p',confirmReplacement:true})});
+  const res=await handleSocialAdmin(req,f.env,{waitUntil(){tasks++;}},new URL(req.url),{jsonResponse:(body,status=200)=>Response.json(body,{status})});
+  assert.equal(res.status,409);const body=await res.json();assert.equal(body.ok,false);assert.ok(Date.parse(body.retryAt)>Date.now());assert.equal(tasks,0);
+  await socialGuard(f.env,'a','/release',lease);
 });
