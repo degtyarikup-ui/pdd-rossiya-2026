@@ -17,15 +17,15 @@ signal category_selected(cat_id: String)
 signal topics_requested()
 
 const SCREEN_PAD := 16.0
-const CHROME := 44.0
-const LIVES := 5
+const CHROME := MiniGameHud.CHROME
+const LIVES := MiniGameHud.LIVES
 const MAX_TOP_WIDTH := 640.0
 
-const ICON_CLOSE := 0xf647
-const ICON_STAR := 0xf01d4
-const ICON_HEART := 0xf738
-const ICON_HEART_EMPTY := 0xf737
-const ICON_TIMER := 0xf023c
+const ICON_CLOSE := MiniGameHud.ICON_CLOSE
+const ICON_STAR := MiniGameHud.ICON_STAR
+const ICON_HEART := MiniGameHud.ICON_HEART
+const ICON_HEART_EMPTY := MiniGameHud.ICON_HEART_EMPTY
+const ICON_TIMER := MiniGameHud.ICON_TIMER
 const ICON_CAMERA := 0xf627
 const ICON_WARNING := 0xf02a0
 const ICON_BOLT := 0xf5ca
@@ -100,6 +100,7 @@ var _notice: PanelContainer
 var _notice_tween: Tween
 var _combo_tween: Tween
 var _notice_label: Label
+var _hud_state := []
 
 
 func _init() -> void:
@@ -134,13 +135,18 @@ func _layout() -> void:
 	var left := float(safe["left"]) / u + SCREEN_PAD
 	var right := float(safe["right"]) / u + SCREEN_PAD
 	var available_width := maxf(160.0, size.x - left - right)
-	var top_width := minf(MAX_TOP_WIDTH, available_width)
-	_top_bar.position = Vector2(left + (available_width - top_width) * 0.5, top + 8.0)
+	# The top bar keeps the same side margins as every other mini-game.
+	var bar_left := float(safe["left"]) / u + MiniGameHud.SCREEN_PAD
+	var bar_right := float(safe["right"]) / u + MiniGameHud.SCREEN_PAD
+	var bar_available := maxf(160.0, size.x - bar_left - bar_right)
+	var top_width := minf(MAX_TOP_WIDTH, bar_available)
+	_top_bar.position = Vector2(bar_left + (bar_available - top_width) * 0.5, top + 8.0)
 	_fit_caption(top_width)
-	var mode_w := _mode_pill.get_combined_minimum_size().x if _mode_pill != null else 0.0
-	_fit_hud(top_width - CHROME - mode_w - 12.0)
+	_fit_hud(top_width - CHROME - 8.0)
 	_top_bar.size = Vector2(top_width, _top_bar.get_combined_minimum_size().y)
-	_reset_cam_btn.position = Vector2(size.x - right - CHROME, size.y - bottom - CHROME - 12.0)
+	_reset_cam_btn.position = Vector2(size.x - bar_right - CHROME, size.y - bottom - CHROME - 12.0)
+	_mode_pill.size = _mode_pill.get_combined_minimum_size()
+	_mode_pill.position = Vector2(bar_left, size.y - bottom - _mode_pill.size.y - 12.0)
 	_notice.size = _notice.get_combined_minimum_size()
 	_notice.position = Vector2((size.x - _notice.size.x) * 0.5, _top_bar.position.y + _top_bar.size.y + 10.0)
 	for overlay in [_collision_backdrop, _results, _topics_backdrop]:
@@ -200,7 +206,7 @@ func scene_rect() -> Rect2:
 	var left := float(safe["left"]) / u + SCREEN_PAD
 	var right := float(safe["right"]) / u + SCREEN_PAD
 	var top := _top_bar.position.y + _top_bar.size.y + 12.0
-	var bottom := _reset_cam_btn.position.y - 12.0
+	var bottom := minf(_reset_cam_btn.position.y, _mode_pill.position.y) - 12.0
 	return Rect2(Vector2(left, top) * u, Vector2(maxf(100.0, size.x - left - right), maxf(100.0, bottom - top)) * u)
 
 
@@ -224,7 +230,7 @@ func _build_top_bar() -> void:
 	add_child(_top_bar)
 
 	_hud_row = HBoxContainer.new()
-	_hud_row.add_theme_constant_override("separation", 6)
+	_hud_row.add_theme_constant_override("separation", 8)
 	_top_bar.add_child(_hud_row)
 
 	_close_btn = _chrome_btn(ICON_CLOSE, Ui.t("gameExit"))
@@ -234,24 +240,25 @@ func _build_top_bar() -> void:
 	_hud = PanelContainer.new()
 	_hud.custom_minimum_size.y = CHROME
 	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
-	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 10, 10, 5))
+	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), MiniGameHud.RADIUS, MiniGameHud.HUD_PAD, 4))
 	_hud_row.add_child(_hud)
 
+	# Blitz / practice: a compact segmented card in the free bottom-left corner,
+	# the counterpart of the camera button, so the top bar matches the other games.
 	_mode_pill = PanelContainer.new()
 	_mode_pill.custom_minimum_size.y = CHROME
-	_mode_pill.size_flags_vertical = SIZE_SHRINK_BEGIN
-	_mode_pill.add_theme_stylebox_override("panel", _padded(Color.TRANSPARENT, 0, 0, 0))
-	_hud_row.add_child(_mode_pill)
+	_mode_pill.add_theme_stylebox_override("panel", _padded(Ui.c("card"), MiniGameHud.RADIUS, 4, 4))
+	add_child(_mode_pill)
 
 	var mode_tabs := HBoxContainer.new()
-	mode_tabs.add_theme_constant_override("separation", 4)
+	mode_tabs.add_theme_constant_override("separation", 2)
 	mode_tabs.size_flags_vertical = SIZE_SHRINK_CENTER
 	_mode_pill.add_child(mode_tabs)
 
 	_blitz_tab = Button.new()
 	_blitz_tab.text = char(ICON_BOLT)
 	_blitz_tab.tooltip_text = Ui.t("gameCrossroadsModeBlitz")
-	_blitz_tab.custom_minimum_size = Vector2(28, 32)
+	_blitz_tab.custom_minimum_size = Vector2(40, 32)
 	_style_tab(_blitz_tab, true, Ui.c("gold"))
 	_blitz_tab.pressed.connect(func():
 		if current_mode != "blitz":
@@ -263,7 +270,7 @@ func _build_top_bar() -> void:
 	_practice_tab = Button.new()
 	_practice_tab.text = char(ICON_PRACTICE)
 	_practice_tab.tooltip_text = Ui.t("gameCrossroadsModePractice")
-	_practice_tab.custom_minimum_size = Vector2(28, 32)
+	_practice_tab.custom_minimum_size = Vector2(40, 32)
 	_style_tab(_practice_tab, false, Ui.c("accent"))
 	_practice_tab.pressed.connect(func():
 		if current_mode != "practice":
@@ -340,18 +347,19 @@ func _build_top_bar() -> void:
 	stepper.add_child(_next_btn)
 
 	_score_group = HBoxContainer.new()
-	_score_group.add_theme_constant_override("separation", 3)
+	_score_group.add_theme_constant_override("separation", 4)
 	_score_group.size_flags_horizontal = SIZE_EXPAND_FILL
 	_score_group.alignment = BoxContainer.ALIGNMENT_BEGIN
-	var star := Ui.icon(ICON_STAR, 16, Ui.c("gold"))
+	var star := Ui.icon(ICON_STAR, MiniGameHud.STAR_SIZE, Ui.c("gold"))
 	star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_score_group.add_child(star)
-	_score_label = Ui.scaled_label("0", 15, 800, Ui.c("text"))
+	_score_label = Ui.scaled_label("0", MiniGameHud.SCORE_SIZE, 800, Ui.c("text"))
 	_score_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_score_group.add_child(_score_label)
 	_combo_chip = PanelContainer.new()
-	_combo_chip.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 5, 4, 2))
-	_combo_label = Ui.scaled_label("", 11, 700, Ui.c("gold"))
+	_combo_chip.size_flags_vertical = SIZE_SHRINK_CENTER
+	_combo_chip.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 6, 6, 2))
+	_combo_label = Ui.scaled_label("", 12, 800, Ui.c("gold"))
 	_combo_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_combo_chip.add_child(_combo_label)
 	_combo_chip.visible = false
@@ -359,23 +367,23 @@ func _build_top_bar() -> void:
 	_hud_line1.add_child(_score_group)
 
 	_timer_group = HBoxContainer.new()
-	_timer_group.add_theme_constant_override("separation", 3)
+	_timer_group.add_theme_constant_override("separation", 4)
 	_timer_group.size_flags_horizontal = SIZE_EXPAND_FILL
 	_timer_group.alignment = BoxContainer.ALIGNMENT_CENTER
-	_timer_icon = Ui.icon(ICON_TIMER, 15, Ui.c("secondary"))
+	_timer_icon = Ui.icon(ICON_TIMER, MiniGameHud.TIMER_ICON_SIZE, Ui.c("secondary"))
 	_timer_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_timer_group.add_child(_timer_icon)
-	_timer_label = Ui.scaled_label("60", 14, 700, Ui.c("text"))
+	_timer_label = Ui.scaled_label(Ui.t("gameSecondsLeft", {"seconds": 60}), MiniGameHud.TIMER_SIZE, 600, Ui.c("text"))
 	_timer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_timer_group.add_child(_timer_label)
 	_hud_line1.add_child(_timer_group)
 
 	_lives_container = HBoxContainer.new()
-	_lives_container.add_theme_constant_override("separation", 2)
+	_lives_container.add_theme_constant_override("separation", MiniGameHud.HEART_GAP)
 	_lives_container.size_flags_horizontal = SIZE_EXPAND_FILL
 	_lives_container.alignment = BoxContainer.ALIGNMENT_END
 	for i in LIVES:
-		var heart := Ui.icon(ICON_HEART, 13, Ui.c("red"))
+		var heart := Ui.icon(ICON_HEART, MiniGameHud.HEART_SIZE, Ui.c("red"))
 		heart.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_hearts.append(heart)
 		_lives_container.add_child(heart)
@@ -419,10 +427,14 @@ func _style_tab(button: Button, active: bool, active_color: Color) -> void:
 		Ui._icon_font = load(Ui.ICON_FONT)
 	button.add_theme_font_override("font", Ui._icon_font)
 	button.add_theme_font_size_override("font_size", 20)
-	var style := _padded(Color.TRANSPARENT, 3, 3, 2)
+	# The selected mode gets the app's soft tinted chip; the other stays flat.
+	var tint := Ui.c("gold_surface") if active_color == Ui.c("gold") else Ui.c("accent_light")
+	var style := _padded(tint if active else Color.TRANSPARENT, 8, 3, 2)
 	button.add_theme_stylebox_override("normal", style)
 	button.add_theme_stylebox_override("hover", style)
 	button.add_theme_stylebox_override("pressed", style)
+	button.add_theme_stylebox_override("hover_pressed", style)
+	button.add_theme_stylebox_override("disabled", style)
 	var focus := Ui.box(Color.TRANSPARENT, 0)
 	button.add_theme_stylebox_override("focus", focus)
 
@@ -474,7 +486,7 @@ func _fit_hud(width: float) -> void:
 		_hud_line2.visible = false
 		return
 	var available := maxf(60.0, width - 16.0)
-	var font_size := roundi(15.0 * Ui.text_scale())
+	var font_size := roundi(MiniGameHud.SCORE_SIZE * Ui.text_scale())
 	var combo_width := _combo_chip.get_combined_minimum_size().x + 4.0 if _combo_chip.visible else 0.0
 	var score_room := maxf(20.0, available * 0.35 - combo_width - 18.0)
 	var font: Font = _score_label.get_theme_font("font")
@@ -510,19 +522,22 @@ func _fit_hud(width: float) -> void:
 
 
 func update_hud(score: int, seconds: int, lives: int, combo: int) -> void:
+	# Called every frame by the countdown: repaint only when a value actually changes,
+	# theme overrides re-layout their labels on every call.
+	var state := [score, seconds, lives, combo, Ui.lang]
+	if state == _hud_state: return
+	_hud_state = state
 	var score_changed := _score_label.text != str(score)
-	var combo_changed := _combo_chip.visible != (combo > 1) or _combo_label.text != "×%d" % combo
+	var combo_changed := _combo_chip.visible != (combo > 1) or _combo_label.text != MiniGameHud.combo_text(combo)
+	var timer_changed := _timer_label.text != Ui.t("gameSecondsLeft", {"seconds": maxi(0, seconds)})
 	_score_label.text = str(score)
 	_combo_chip.visible = combo > 1
-	_combo_label.text = "×%d" % combo
-	_timer_label.text = str(maxi(0, seconds))
-	var urgent := seconds <= 10
-	var timer_color := Ui.c("red") if urgent else Ui.c("text")
-	_timer_icon.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("secondary"))
-	_timer_label.add_theme_color_override("font_color", timer_color)
-	for i in LIVES:
-		_hearts[i].text = char(ICON_HEART if i < lives else ICON_HEART_EMPTY)
-		_hearts[i].add_theme_color_override("font_color", Ui.c("red") if i < lives else Ui.c("secondary"))
+	_combo_label.text = MiniGameHud.combo_text(combo)
+	MiniGameHud.paint_timer(_timer_icon, _timer_label, seconds)
+	MiniGameHud.paint_hearts(_hearts, lives)
+	if is_inside_tree() and timer_changed and not (score_changed or combo_changed):
+		# «9 с» is narrower than «10 с»: refit only when the text actually changed.
+		_fit_hud(_top_bar.size.x - CHROME - 8.0)
 	if is_inside_tree() and (score_changed or combo_changed):
 		_layout()
 	if is_inside_tree() and combo > 1 and combo_changed:
@@ -833,6 +848,7 @@ func _refresh_modal_visibility() -> void:
 	_modal_open = (_collision_backdrop != null and _collision_backdrop.visible) or (_results != null and _results.visible) or (_topics_backdrop != null and _topics_backdrop.visible)
 	_top_bar.visible = not _modal_open
 	_reset_cam_btn.visible = not _modal_open
+	if _mode_pill != null: _mode_pill.visible = not _modal_open
 	if _modal_open:
 		_hide_hard_bonus()
 
@@ -873,7 +889,7 @@ func _chrome_btn(icon: int, tooltip: String) -> Button:
 	if Ui._icon_font == null:
 		Ui._icon_font = load(Ui.ICON_FONT)
 	button.add_theme_font_override("font", Ui._icon_font)
-	button.add_theme_font_size_override("font_size", 22)
+	button.add_theme_font_size_override("font_size", MiniGameHud.CLOSE_ICON_SIZE)
 	_style_button(button, Ui.c("card"), Ui.c("text"))
 	return button
 

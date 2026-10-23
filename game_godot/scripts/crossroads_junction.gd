@@ -24,6 +24,7 @@ const PRIORITY_SIGN_WIDTH := 1.9
 const CROSSING_SIGN_WIDTH := 1.1
 const QUESTION_SIGNAL_SCALE := 1.25
 const LIGHT_DIST := 8.5       # The stop line is 4.7 m before the roadside signal.
+const OFFICER_SCALE := 2.2
 
 var sc: Scenery
 var asphalt_mat: ShaderMaterial
@@ -46,6 +47,7 @@ var officer_node: Node3D = null
 var closed_side := ""
 var walker_crowds: Array[MultiMesh] = []
 var walkers_data: Array[Dictionary] = []
+var walker_budget := -1
 var _light_clock := 0.0
 var _light_flash := true
 var _scenario: Dictionary = {}
@@ -193,6 +195,9 @@ func _setup_officer() -> void:
 	officer.set_approach(approach, false)
 	officer.rotation.y = float(off_data.get("yaw", 0.0))
 	officer.position = Vector3(0, 0.02, 0)
+	# Seen from 60 m the arms must still read: the officer is drawn larger than life,
+	# as key characters are in top-down games. Routes keep clear of him (avoidRadius).
+	officer.scale = Vector3.ONE * OFFICER_SCALE
 	officer_node = officer
 	decor_root.add_child(officer)
 
@@ -2266,8 +2271,15 @@ func _process(delta: float) -> void:
 	_update_walkers(delta)
 
 
+## Weak phones keep only a few decorative walkers: the rest are not drawn or animated.
+func set_walker_budget(count: int) -> void:
+	walker_budget = count
+	for i in walker_crowds.size():
+		walker_crowds[i].visible_instance_count = -1 if count < 0 or i < count else 0
+
+
 func _update_walkers(delta: float) -> void:
-	for i in walkers_data.size():
+	for i in walkers_data.size() if walker_budget < 0 else mini(walker_budget, walkers_data.size()):
 		var w: Dictionary = walkers_data[i]
 		w.at += w.spd * w.dir * delta
 		if w.at >= w.high:

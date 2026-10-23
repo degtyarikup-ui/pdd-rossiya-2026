@@ -65,10 +65,13 @@ func run() -> void:
 		"rain enables the headlight")
 	expect(is_equal_approx(float(junction.asphalt_mat.get_shader_parameter("wetness")), 1.0),
 		"rain still wets the road")
-	var drop_y := atmosphere.positions[0].y
+	var rain_clock := atmosphere.rain_clock
 	atmosphere._process(1.0 / 60.0)
-	expect(not is_equal_approx(atmosphere.positions[0].y, drop_y),
+	expect(not is_equal_approx(atmosphere.rain_clock, rain_clock)
+		and is_equal_approx(float(atmosphere.rain_material.get_shader_parameter("clock")), atmosphere.rain_clock),
 		"rain keeps moving after environment updates stop")
+	expect(atmosphere.drops.multimesh.use_custom_data and atmosphere.drops.multimesh.get_instance_transform(0) == Transform3D.IDENTITY,
+		"rain streaks fall on the GPU: no per-frame transform uploads")
 	_check_stable(atmosphere, sun, environment, junction, "rain")
 	_clear_transition(atmosphere, sun, environment, junction, "rain")
 

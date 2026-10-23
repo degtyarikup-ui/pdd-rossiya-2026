@@ -15,11 +15,11 @@ signal exit_pressed()
 const COVER := "res://art/traffic_controller_cover.webp"
 
 # Codepoints of Icons.*_rounded in the Flutter app (the same icon font).
-const ICON_CLOSE := 0xf647
-const ICON_STAR := 0xf01d4
-const ICON_HEART := 0xf738
-const ICON_HEART_EMPTY := 0xf737
-const ICON_TIMER := 0xf44a
+const ICON_CLOSE := MiniGameHud.ICON_CLOSE
+const ICON_STAR := MiniGameHud.ICON_STAR
+const ICON_HEART := MiniGameHud.ICON_HEART
+const ICON_HEART_EMPTY := MiniGameHud.ICON_HEART_EMPTY
+const ICON_TIMER := MiniGameHud.ICON_TIMER
 const ICON_BULB := 0xf855
 const ICON_BULB_OUTLINE := 0xf854
 const ICON_TROPHY := 0xf707
@@ -29,12 +29,12 @@ const ICON_TURN_RIGHT := 0xf03a3
 const ICON_U_TURN := 0xf03a8
 const ICON_HAND := 0xf0328
 
-const SCREEN_PAD := 20.0
-const CHROME := 40.0
+const SCREEN_PAD := MiniGameHud.SCREEN_PAD
+const CHROME := MiniGameHud.CHROME
 const ANSWER_H := 56.0
 const DIRECTIONAL_H := 80.0
-const LIVES := 5
-const HUD_PAD := 12.0
+const LIVES := MiniGameHud.LIVES
+const HUD_PAD := MiniGameHud.HUD_PAD
 
 var _top_bar: HBoxContainer
 var _hud: PanelContainer
@@ -129,7 +129,7 @@ func _build_top_bar() -> void:
 	_hud = PanelContainer.new()
 	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
 	_hud.custom_minimum_size = Vector2(0, CHROME)
-	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 12, HUD_PAD, 8.0))
+	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), MiniGameHud.RADIUS, HUD_PAD, 8.0))
 	_top_bar.add_child(_hud)
 
 	var lines := VBoxContainer.new()
@@ -149,8 +149,8 @@ func _build_top_bar() -> void:
 	var score_value := HBoxContainer.new()
 	score_value.add_theme_constant_override("separation", 4)
 	_score_group.add_child(score_value)
-	score_value.add_child(Ui.icon(ICON_STAR, 22, Ui.c("gold")))
-	_score_label = _label("0", 18, 800, Ui.c("text"))
+	score_value.add_child(Ui.icon(ICON_STAR, MiniGameHud.STAR_SIZE, Ui.c("gold")))
+	_score_label = _label("0", MiniGameHud.SCORE_SIZE, 800, Ui.c("text"))
 	_score_font_size = _score_label.get_theme_font_size("font_size")
 	score_value.add_child(_score_label)
 	_combo_chip = PanelContainer.new()
@@ -166,18 +166,18 @@ func _build_top_bar() -> void:
 	_timer_group = HBoxContainer.new()
 	_timer_group.add_theme_constant_override("separation", 4)
 	_line1.add_child(_timer_group)
-	_timer_icon = Ui.icon(ICON_TIMER, 18, Ui.c("secondary"))
+	_timer_icon = Ui.icon(ICON_TIMER, MiniGameHud.TIMER_ICON_SIZE, Ui.c("secondary"))
 	_timer_group.add_child(_timer_icon)
-	_timer_label = _label("", 14, 600, Ui.c("text"))
+	_timer_label = _label("", MiniGameHud.TIMER_SIZE, 600, Ui.c("text"))
 	_timer_group.add_child(_timer_label)
 
 	# Lives sit on the first line when the HUD has room, on the second when it does not (the app's Wrap).
 	_spacer_after_timer = _spacer_expand()
 	_line1.add_child(_spacer_after_timer)
 	_lives = HBoxContainer.new()
-	_lives.add_theme_constant_override("separation", 3)
+	_lives.add_theme_constant_override("separation", MiniGameHud.HEART_GAP)
 	for i in LIVES:
-		var heart := Ui.icon(ICON_HEART, 15, Ui.c("red"))
+		var heart := Ui.icon(ICON_HEART, MiniGameHud.HEART_SIZE, Ui.c("red"))
 		_hearts.append(heart)
 		_lives.add_child(heart)
 	_line1.add_child(_lives)
@@ -349,20 +349,9 @@ func _build_result() -> void:
 func update_hud(score: int, combo: int, seconds_left: int, lives: int) -> void:
 	_score_label.text = str(score)
 	_combo_chip.visible = combo > 1
-	_combo_label.text = Ui.t("gameCurrentCombo", { "count": combo })
-
-	var urgent := seconds_left <= 10
-	_timer_label.text = Ui.t("gameSecondsLeft", { "seconds": seconds_left })
-	_timer_label.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("text"))
-	_timer_icon.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("secondary"))
-
-	for i in _hearts.size():
-		var alive := i < lives
-		var heart := _hearts[i]
-		heart.text = char(ICON_HEART if alive else ICON_HEART_EMPTY)
-		heart.add_theme_color_override("font_color", Ui.c("red") if alive else Ui.c("secondary"))
-		heart.pivot_offset = heart.size / 2.0
-		heart.scale = Vector2.ONE if alive else Vector2(0.85, 0.85)
+	_combo_label.text = MiniGameHud.combo_text(combo)
+	MiniGameHud.paint_timer(_timer_icon, _timer_label, seconds_left)
+	MiniGameHud.paint_hearts(_hearts, lives)
 	_fit_hud()
 
 
@@ -437,8 +426,8 @@ func _chrome_button(icon_code: int, action: Callable) -> PanelContainer:
 	var box := PanelContainer.new()
 	box.custom_minimum_size = Vector2(CHROME, CHROME)
 	box.size_flags_vertical = SIZE_SHRINK_BEGIN
-	box.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
-	box.add_child(_centered(Ui.icon(icon_code, 18, Ui.c("text"))))
+	box.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), MiniGameHud.RADIUS))
+	box.add_child(_centered(Ui.icon(icon_code, MiniGameHud.CLOSE_ICON_SIZE, Ui.c("text"))))
 	if action.is_valid():
 		box.add_child(_tap(action))
 	return box

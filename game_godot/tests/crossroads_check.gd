@@ -198,7 +198,7 @@ func _initialize() -> void:
 	_check("One game exits directly without a pause dialog", not ui.has_method("show_pause") and not ui.has_method("hide_pause") and not ui.has_signal("resume_pressed"))
 	ui.update_hud(120, 45, 4, 3)
 	_check("Score label updates to 120", ui._score_label.text == "120")
-	_check("Timer label updates to 45", ui._timer_label.text == "45")
+	_check("Timer label updates to 45", ui._timer_label.text == Ui.t("gameSecondsLeft", {"seconds": 45}))
 	ui.show_collision_modal("Синий седан", "Нарушение очередности", "Пункт 13.9 ПДД РФ", false)
 	_check("Collision modal opens", ui._collision_card.visible)
 	ui.hide_collision_modal()

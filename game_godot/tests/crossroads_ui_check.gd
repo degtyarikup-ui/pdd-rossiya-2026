@@ -49,7 +49,7 @@ func _run() -> void:
 		_check("HUD minimum fits its allocated width" + suffix, ui._hud.get_combined_minimum_size().x <= ui._hud.size.x + 1.0)
 		_check("All visible game labels have enough room" + suffix, _labels_fit(ui._top_bar))
 		_check("Game question does not reveal the solution" + suffix, ui._caption_subtitle.text == "Знаки приоритета")
-		_check("Combo is visible" + suffix, ui._combo_chip.visible and ui._combo_label.text == "×12")
+		_check("Combo is visible" + suffix, ui._combo_chip.visible and ui._combo_label.text == MiniGameHud.combo_text(12))
 		_check("Urgent timer uses app error colour" + suffix, ui._timer_label.get_theme_color("font_color") == Ui.c("red"))
 		var scene := ui.scene_rect()
 		_check("Camera rect avoids the task card and bottom control" + suffix, scene.position.y >= ui._top_bar.get_global_rect().end.y and scene.end.y <= ui._reset_cam_btn.get_global_rect().position.y)

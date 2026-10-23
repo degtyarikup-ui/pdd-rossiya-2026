@@ -1,5 +1,6 @@
 ## Seasonal daylight, long clear spells and brief rain, with
-## optional fog for previews. One rain draw call covers every zoom level.
+## optional fog for previews. One rain draw call covers every zoom level; the streaks
+## fall on the GPU (shaders/rain.gdshader), the CPU only moves one clock and the area.
 class_name RegulatorAtmosphere
 extends Node3D
 
@@ -13,7 +14,8 @@ var rain := 0.0
 var fog := 0.0
 var auto_timer := randf_range(240.0, 420.0)
 var drops: MultiMeshInstance3D
-var positions: Array[Vector3] = []
+var rain_material: ShaderMaterial
+var rain_clock := 0.0
 var headlight: SpotLight3D
 var dry_road: Color
 var dry_walk: Color
@@ -26,6 +28,7 @@ var _applied_rain := -1.0
 var _applied_fog := -1.0
 
 const WEATHER_EPSILON := 0.001
+const DROPS := 600
 
 
 func _init(cam: Camera3D, env: Environment, light: DirectionalLight3D,
@@ -50,17 +53,21 @@ func _ready() -> void:
 	drops.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(0.025, 0.7, 0.025)
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(0.7, 0.82, 0.95, 0.5)
-	mesh.material = mat
+	rain_material = ShaderMaterial.new()
+	rain_material.shader = preload("res://shaders/rain.gdshader")
+	mesh.material = rain_material
 	drops.multimesh = MultiMesh.new()
 	drops.multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	drops.multimesh.use_custom_data = true
 	drops.multimesh.mesh = mesh
-	drops.multimesh.instance_count = 600
-	for i in 600:
-		positions.append(Vector3(randf_range(-1, 1), randf_range(0, 18), randf_range(-1, 1)))
+	drops.multimesh.instance_count = DROPS
+	# Placed by the shader anywhere in the visible street; never culled by its own box.
+	drops.multimesh.custom_aabb = AABB(Vector3(-400, -1, -400), Vector3(800, 25, 800))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 6113
+	for i in DROPS:
+		drops.multimesh.set_instance_transform(i, Transform3D.IDENTITY)
+		drops.multimesh.set_instance_custom_data(i, Color(rng.randf(), rng.randf(), rng.randf(), 0.0))
 	add_child(drops)
 	headlight = SpotLight3D.new()
 	headlight.position = Vector3(0, 0.8, 2)
@@ -100,14 +107,11 @@ func _process(delta: float) -> void:
 	_apply_weather()
 	if not drops.visible: return
 	# Cover the visible street, including the distant north avenue at max zoom.
+	rain_clock = fposmod(rain_clock + delta, 3600.0)
 	var bounds := rain_bounds()
-	for i in positions.size():
-		var p := positions[i]
-		p.y = fposmod(p.y - delta * 14.0, 18.0)
-		positions[i] = p
-		var pos := Vector3(lerpf(bounds.position.x, bounds.end.x, (p.x + 1.0) * 0.5), p.y,
-			lerpf(bounds.position.y, bounds.end.y, (p.z + 1.0) * 0.5))
-		drops.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ONE * rain), pos))
+	rain_material.set_shader_parameter("clock", rain_clock)
+	rain_material.set_shader_parameter("amount", rain)
+	rain_material.set_shader_parameter("area", Vector4(bounds.position.x, bounds.position.y, bounds.end.x, bounds.end.y))
 
 
 ## Clear weather is the normal whole-round state. Do not resend unchanged

@@ -298,6 +298,7 @@ func _check_arcade() -> void:
 	_check("Mistake retains earned score and resets combo", game.score == 38 and game.combo == 0 and game.lives == 4)
 	game._process(1.1)
 	_check("Wrong answer advances after 1100 ms", not game.awaiting_next)
+	_check("Feedback time is not taken from the countdown", game.seconds_left == 60)
 	game.cur_gesture = RegulatorRules.Gesture.RIGHT_ARM_FORWARD
 	game.cur_approach = RegulatorRules.Approach.LEFT
 	game._on_move_selected(RegulatorRules.Move.LEFT)
@@ -323,6 +324,7 @@ func _check_arcade() -> void:
 		game._on_move_selected(RegulatorRules.Move.NONE)
 	_check("Perfect play capped at 1500", game.score == 1500 and game.solved_count == 80)
 	_check("Exit keeps completed and unfinished rounds", game._session_summary().runs.size() == 2)
+	game._process(60.0) # finishes the last answer's feedback: the clock waits for it
 	game._process(60.0)
 	_check("Time expires at zero, even after long frame", game.is_game_over and game.seconds_left == 0)
 	_check("Restarted rounds have different ids", game.completed_runs[0].id != game.completed_runs[1].id)

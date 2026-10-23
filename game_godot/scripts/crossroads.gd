@@ -79,6 +79,9 @@ const ZOOM_MIN := 0.65
 const ZOOM_MAX := 1.02
 const HALF_ROAD := CrossroadsJunction.HALF_ROAD
 const BASE_CAM_DIST := 58.0
+const OFFICER_CLEARANCE := 2.0
+const OFFICER_TRAM_CLEARANCE := 2.4
+const BADGE_GAP_DP := 6.0
 var base_cam_dist := BASE_CAM_DIST
 var cam_shake := 0.0
 
@@ -211,6 +214,9 @@ func _setup_quality() -> void:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if tier == "high" else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	Engine.max_fps = 60 if mobile and profile.max_fps == 0 else int(profile.max_fps)
 	if leaves != null: leaves.multimesh.visible_instance_count = 24 if tier == "low" else -1
+	var walkers := junction.walker_crowds.size()
+	var walker_count := Quality.ambient_walkers(tier, walkers, Engine.max_fps)
+	junction.set_walker_budget(-1 if walker_count >= walkers else walker_count)
 	adaptive_quality = mobile and not override in Quality.PROFILES
 	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
 
@@ -233,6 +239,7 @@ func _setup_scene_nodes() -> void:
 		if prop.begins_with("buildings/"):
 			junction.sc.register_building_pool(junction.pools[prop].node)
 
+	CrossroadsActor.prewarm_badges()
 	actors_root = Node3D.new()
 	actors_root.name = "ActorsRoot"
 	add_child(actors_root)
@@ -529,6 +536,16 @@ func _on_mode_changed(new_mode: String) -> void:
 			_start_game()
 
 
+## The next task of the topic still to solve, searching forward and then from the start.
+func _next_unsolved_practice() -> int:
+	var count := scenario_order.size()
+	for step in range(1, count + 1):
+		var index := (cur_scenario_idx + step) % count
+		if not practice_solved.has(str(all_scenarios[scenario_order[index]].get("id", ""))):
+			return index
+	return -1
+
+
 func _on_category_selected(cat_id: String) -> void:
 	if _exiting: return
 	practice_category = cat_id
@@ -647,6 +664,8 @@ func _load_current_scenario() -> void:
 		active_actors.append(actor)
 		if actor.is_tram:
 			junction.build_tram_path(actor.path_curve)
+	if junction.officer_node != null:
+		_place_officer()
 
 	# A difficult junction has triple points; the countdown never gains time.
 	var is_hard: bool = sc.get("isHard", false)
@@ -662,7 +681,37 @@ func _load_current_scenario() -> void:
 		var can_next := cur_scenario_idx < scenario_order.size() - 1
 		ui.update_practice_status(_category_title(practice_category), cur_scenario_idx + 1, scenario_order.size(), can_prev, can_next, is_cur_solved)
 	fit_camera_to_scenario()
+	# Buildings in front of the new junction are see-through from its first frame.
+	_update_occlusion(1.0)
 	_fit_scenario_after_layout(scene_sequence)
+
+
+## The officer stands near the middle but never on a tram's rails; every other vehicle's
+## route then bends around the spot he actually occupies.
+func _place_officer() -> void:
+	var rails: Array[Vector3] = []
+	for actor in active_actors:
+		if not actor.is_tram: continue
+		for i in ceili(actor.path_length / 0.5) + 1:
+			var p := actor.path_curve.sample_baked(minf(actor.path_length, i * 0.5))
+			if maxf(absf(p.x), absf(p.z)) < HALF_ROAD + 2.0: rails.append(p)
+	var spot := Vector3.ZERO
+	if not rails.is_empty():
+		var best := -1.0
+		for ring: float in [0.0, 1.5, 3.0, 4.2]:
+			for k in (1 if ring == 0.0 else 12):
+				var candidate: Vector3 = Vector3(cos(TAU * k / 12.0), 0, sin(TAU * k / 12.0)) * ring
+				var clearance := INF
+				for p in rails:
+					clearance = minf(clearance, Vector2(p.x - candidate.x, p.z - candidate.z).length())
+				# A clear spot near the centre beats a slightly clearer one farther out.
+				var score: float = minf(clearance, OFFICER_TRAM_CLEARANCE) - ring * 0.05
+				if score > best:
+					best = score
+					spot = candidate
+	junction.officer_node.position = Vector3(spot.x, junction.officer_node.position.y, spot.z)
+	for actor in active_actors:
+		actor.bend_around(spot, OFFICER_CLEARANCE)
 
 
 func _is_any_actor_in_motion() -> bool:
@@ -930,9 +979,14 @@ func _on_crossroad_completed() -> void:
 		var sequence := scene_sequence
 		await _gameplay_delay(0.85, sequence)
 		if not _sequence_active(sequence): return
-		if cur_scenario_idx < scenario_order.size() - 1:
-			cur_scenario_idx += 1
-			practice_index = cur_scenario_idx
+		var next := _next_unsolved_practice()
+		if next < 0:
+			# The whole topic is solved: offer the topics instead of replaying the last task.
+			_load_current_scenario()
+			ui.show_topics_sheet(practice_category, _get_category_stats())
+			return
+		cur_scenario_idx = next
+		practice_index = cur_scenario_idx
 		_load_current_scenario()
 		return
 
@@ -1020,7 +1074,8 @@ func _crash_on_contact(sent: CrossroadsActor, struck: CrossroadsActor) -> void:
 	struck.set_badge_priority()
 	await _gameplay_delay(0.5, sequence)
 	if not _sequence_active(sequence): return
-	_after_crash(sequence, true, Ui.t("crossroadsReasonEarlyExit"), Ui.t("crossroadsArticleEarlyExit"))
+	# Sent too early: the one already crossing had to clear the junction first.
+	_after_crash(sequence, true, Ui.t("crossroadsReasonEarlyExit"), Ui.t("crossroadsArticleEarlyExit"), struck)
 
 
 func _trajectory_min_distance(a: CrossroadsActor, b: CrossroadsActor) -> float:
@@ -1097,7 +1152,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		if priority != chosen: priority.set_badge_priority()
 		sound.play("incorrect")
 		GameSound.buzz(70)
-		_after_crash(sequence, false, reason, article)
+		_after_crash(sequence, false, reason, article, priority)
 		return
 
 	# Smoothly drive both actors along their curves towards collision
@@ -1158,7 +1213,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		chosen.set_badge_error()
 		priority.set_badge_priority()
 		sound.play("incorrect")
-		_after_crash(sequence, false, reason, article)
+		_after_crash(sequence, false, reason, article, priority)
 		return
 
 	# Impact handling & FX — fires instantaneously upon physical contact!
@@ -1194,7 +1249,7 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 	await _gameplay_delay(0.5, sequence)
 	if not _sequence_active(sequence): return
 
-	_after_crash(sequence, true, reason, article)
+	_after_crash(sequence, true, reason, article, priority)
 
 
 func _create_skid_marks(at: Vector3, dir: Vector3 = Vector3.FORWARD) -> void:
@@ -1269,18 +1324,12 @@ func _create_crash_smoke(at: Vector3) -> void:
 ## Why the last mistake was one (the rule and its clause), kept for checks and reports.
 var last_mistake := {}
 
-func _after_crash(sequence: int, crashed: bool, reason: String, article: String) -> void:
+func _after_crash(sequence: int, crashed: bool, reason: String, article: String, priority: CrossroadsActor = null) -> void:
 	last_mistake = {"crashed": crashed, "reason": reason, "article": article}
 	if game_mode == "practice":
-		var sc_idx := scenario_order[cur_scenario_idx % scenario_order.size()]
-		var sc: Dictionary = all_scenarios[sc_idx]
-		var priority_name: String = ""
-		for a in active_actors:
-			if a.state == "crashed":
-				if a != active_actors[0]:
-					priority_name = a.data.get("name", "")
-		if priority_name == "":
-			priority_name = active_actors[0].data.get("name", "") if not active_actors.is_empty() else ""
+		# Name the participant who actually had the right of way, not whoever crashed last.
+		var priority_name := str(priority.data.get("name", "")) if priority != null else ""
+		last_mistake["priority"] = priority_name
 		ui.show_collision_modal(priority_name, reason, article, false, true)
 		return
 	ui.show_crash_notice(crashed)
@@ -1373,6 +1422,7 @@ func _process(delta: float) -> void:
 
 	if cam_changed:
 		_update_camera()
+	_separate_badges(delta)
 	_update_occlusion(delta)
 
 	if auto_play and not _suspended and not _round_completing and not _is_any_actor_driving() and not is_resolving and not is_game_over and not active_actors.is_empty():
@@ -1556,16 +1606,12 @@ func fit_camera_to_scenario() -> void:
 		Vector3(-HALF_ROAD, 0, HALF_ROAD),
 		Vector3(HALF_ROAD, 0, -HALF_ROAD)
 	]
-	var badge_points: Array[Vector3] = []
-
 	for a in active_actors:
 		var p: Vector3 = a.global_position
 		probe_pts.append(p)
 		for x in [-a.hw * 0.85, a.hw * 0.85]:
 			for z in [-a.hl * 0.85, a.hl * 0.85]:
 				probe_pts.append(a.global_transform * Vector3(x, 0.0, z))
-		if a.badge_sprite != null:
-			badge_points.append(a.badge_sprite.global_position)
 
 	var fits := func(dist: float) -> bool:
 		cam_pivot.rotation = Vector3(cam_pitch, cam_yaw, 0)
@@ -1574,8 +1620,11 @@ func fit_camera_to_scenario() -> void:
 			var scr := camera.unproject_position(pt)
 			if scr.x < left_margin or scr.x > right_margin or scr.y < top_margin or scr.y > bottom_margin:
 				return false
-		for point in badge_points:
-			var screen := camera.unproject_position(point)
+		# Separated buttons rise above each other; the lifted ones must stay on screen too.
+		_separate_badges(0.0, true)
+		for a in active_actors:
+			if a.badge_sprite == null: continue
+			var screen := camera.unproject_position(a.badge_anchor() + Vector3.UP * a.badge_lift)
 			if screen.x < left_margin + badge_margin or screen.x > right_margin - badge_margin or screen.y < top_margin + badge_margin or screen.y > bottom_margin - badge_margin:
 				return false
 		return true
@@ -1604,6 +1653,7 @@ func fit_camera_to_scenario() -> void:
 	_target_cam_pitch = cam_pitch
 	_target_cam_zoom = cam_zoom
 	_update_camera()
+	_separate_badges(0.0, true)
 
 
 func _update_camera() -> void:
@@ -1615,6 +1665,46 @@ func _update_camera() -> void:
 		camera.position += Vector3(randf_range(-cam_shake, cam_shake), randf_range(-cam_shake, cam_shake), 0)
 	for actor in active_actors:
 		actor.update_badge_orientation(camera)
+
+
+## Two maneuver buttons never cover each other. Like map labels in strategy games, the
+## button nearest the camera keeps its place and a farther one rises straight above it,
+## so it still stands over its own vehicle. Taps hit the drawn button, lifted or not.
+func _separate_badges(delta: float, snap := false) -> void:
+	if camera == null: return
+	var viewport := get_viewport()
+	if viewport == null: return
+	var width := CrossroadsActor.BADGE_CARD_SCREEN_DP * Ui.dp(viewport)
+	var height := width * 178.0 / 194.0
+	var gap := BADGE_GAP_DP * Ui.dp(viewport)
+	var waiting: Array[Dictionary] = []
+	for actor in active_actors:
+		if actor.state != "waiting" or actor.badge_sprite == null:
+			actor.badge_lift = 0.0 if snap else lerpf(actor.badge_lift, 0.0, minf(1.0, delta * 10.0))
+			continue
+		var anchor := actor.badge_anchor()
+		if camera.is_position_behind(anchor): continue
+		var base := camera.unproject_position(anchor)
+		var metre := base.distance_to(camera.unproject_position(anchor + Vector3.UP))
+		waiting.append({"actor": actor, "base": base, "metre": maxf(metre, 0.001)})
+	# Nearest to the viewer (lowest on screen) first.
+	waiting.sort_custom(func(a, b): return a.base.y > b.base.y)
+	var placed: Array[Rect2] = []
+	for entry in waiting:
+		var base: Vector2 = entry.base
+		var lift := 0.0
+		for attempt in waiting.size():
+			var rect := Rect2(base.x - width * 0.5, base.y - lift - height * 0.5, width, height)
+			var moved := false
+			for other in placed:
+				if rect.grow(gap * 0.5).intersects(other.grow(gap * 0.5)):
+					lift = maxf(lift, base.y - (other.position.y - gap - height * 0.5))
+					moved = true
+			if not moved: break
+		placed.append(Rect2(base.x - width * 0.5, base.y - lift - height * 0.5, width, height))
+		var actor: CrossroadsActor = entry.actor
+		var target := lift / float(entry.metre)
+		actor.badge_lift = target if snap else lerpf(actor.badge_lift, target, minf(1.0, delta * 10.0))
 
 
 func _update_occlusion(delta: float) -> void:

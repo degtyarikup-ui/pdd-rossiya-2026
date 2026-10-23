@@ -20,6 +20,7 @@ var grass_mat: ShaderMaterial
 
 var walker_crowds: Array[MultiMesh] = []
 var walkers_data: Array[Dictionary] = []
+var walker_budget := -1
 
 var sc: Scenery
 var pools := {}
@@ -322,8 +323,15 @@ func _process(delta: float) -> void:
 	_update_walkers(delta)
 
 
+## Weak phones keep only a few decorative walkers: the rest are not drawn or animated.
+func set_walker_budget(count: int) -> void:
+	walker_budget = count
+	for i in walker_crowds.size():
+		walker_crowds[i].visible_instance_count = -1 if count < 0 or i < count else 0
+
+
 func _update_walkers(delta: float) -> void:
-	for i in walkers_data.size():
+	for i in walkers_data.size() if walker_budget < 0 else mini(walker_budget, walkers_data.size()):
 		var w: Dictionary = walkers_data[i]
 		w.at += w.spd * w.dir * delta
 		if w.at >= w.high:

@@ -10,7 +10,7 @@
 shader_type spatial;
 // cull_disabled: the game draws many road polygons double-sided (their
 // winding is arbitrary); a one-sided material made patches of asphalt vanish.
-render_mode diffuse_lambert, specular_disabled, cull_disabled;
+render_mode diffuse_lambert, specular_disabled, cull_back, depth_draw_always;
 
 uniform sampler2DArray detail : repeat_enable, filter_linear_mipmap;
 uniform float macro[24];

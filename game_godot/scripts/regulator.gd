@@ -58,9 +58,15 @@ var is_new_record := false
 var round_timer := 0.0
 var next_delay := 0.0
 
-# Camera framing
-var cam_base_pos := Vector3(5.6, 4.0, 26.8)
-var cam_base_look := Vector3(1.4, 1.25, 0.0)
+# Camera framing: an over-the-car view. A longer lens from a little farther back keeps
+# the whole car in frame and makes the officer, whose arms are the whole question, about
+# three times larger on screen than the old wide view.
+const CAM_FOV := 30.0
+var cam_base_pos := Vector3(3.3, 4.2, 30.0)
+var cam_base_look := Vector3(0.9, 1.3, 0.0)
+const CAM_NEAR_POS := Vector3(3.0, 3.2, 25.5)
+const CAM_NEAR_LOOK := Vector3(0.6, 1.5, 0.0)
+const CAM_FAR_POS := Vector3(0.0, 40.0, 60.0)
 
 
 
@@ -241,6 +247,10 @@ func _apply_tier(next: String, automatic := false) -> void:
 	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
 	if leaves:
 		leaves.multimesh.visible_instance_count = 6 if tier == "low" else -1
+	if junction:
+		var walkers := junction.walker_crowds.size()
+		junction.set_walker_budget(-1 if Quality.ambient_walkers(tier, walkers, Engine.max_fps) >= walkers
+			else Quality.ambient_walkers(tier, walkers, Engine.max_fps))
 	if hud: hud.tier = tier
 
 
@@ -397,6 +407,15 @@ func _process(delta: float) -> void:
 	if is_game_over or not ready_for_play:
 		return
 
+	# The answer's feedback and the car's maneuver are not the player's time: the clock
+	# waits for the next signal, as Перекрёсток's waits for its moving participants.
+	if awaiting_next:
+		if next_delay > 0.0:
+			next_delay -= delta
+			if next_delay <= 0.0 and not is_game_over:
+				_pick_next_situation()
+		return
+
 	# Blitz countdown timer (1s ticks)
 	round_timer += delta
 	while round_timer >= 1.0:
@@ -408,13 +427,6 @@ func _process(delta: float) -> void:
 		if seconds_left <= 0:
 			_end_game()
 			return
-
-	# Handle next situation delay
-	if awaiting_next and next_delay > 0.0:
-		next_delay -= delta
-		if next_delay <= 0.0 and not is_game_over:
-			_pick_next_situation()
-
 
 
 ## Pinch zoom: the fingers apart bring the camera closer, together move it away; a trackpad's magnify
@@ -461,12 +473,12 @@ func _update_camera(delta: float) -> void:
 	var want_look: Vector3
 	if zoom < 1.0:
 		var close := smoothstep(0.4, 1.0, zoom)
-		want_pos = Vector3(4.8 + 0.8 * close, 3.2 + 0.8 * close, 22.8 + 4.0 * close)
-		want_look = Vector3(0.8 + 0.6 * close, 1.25, 0)
+		want_pos = CAM_NEAR_POS.lerp(cam_base_pos, close)
+		want_look = CAM_NEAR_LOOK.lerp(cam_base_look, close)
 	else:
 		var far := (zoom - 1.0) / 1.6
-		want_pos = Vector3(5.6 * (1.0 - far), 4.0 + 27.0 * far, 26.8 + 21.0 * far)
-		want_look = Vector3(1.4 * (1.0 - far), 1.25 * (1.0 - far), 0)
+		want_pos = cam_base_pos.lerp(CAM_FAR_POS, far)
+		want_look = cam_base_look.lerp(Vector3.ZERO, far)
 
 
 	camera.look_at_from_position(camera.position.lerp(want_pos, 1.0 - exp(-7.0 * delta)), want_look)
@@ -475,7 +487,7 @@ func _update_camera(delta: float) -> void:
 		var height := get_viewport().get_visible_rect().size.y
 		var panel := ui._panel.size.y * ui.scale.y
 		var inset := clampf(panel / maxf(height, 1.0), 0, 0.8)
-		var full_height := 2.0 * camera.near * tan(deg_to_rad(45.0) * 0.5) / (1.0 - inset)
+		var full_height := 2.0 * camera.near * tan(deg_to_rad(CAM_FOV) * 0.5) / (1.0 - inset)
 		camera.keep_aspect = Camera3D.KEEP_HEIGHT
 		camera.set_frustum(full_height, Vector2(0, -full_height * inset * 0.5), camera.near, 300.0)
 

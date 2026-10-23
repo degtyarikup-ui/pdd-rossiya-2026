@@ -43,6 +43,8 @@ var badge_pop := 1.0
 var _completed_emitted := false
 var _cleared_emitted := false
 var _badge_height := 4.8
+## Extra height that keeps this button clear of a nearer one (set by the game each frame).
+var badge_lift := 0.0
 var _badge_screen_scale := 1.0
 var _badge_camera: Camera3D
 var _model_height := 1.65
@@ -279,6 +281,20 @@ func _build_badge() -> void:
 	badge_node.add_child(badge_sprite)
 
 
+## Where the button sits without any lift: the separation pass measures from here.
+func badge_anchor() -> Vector3:
+	return global_position + Vector3.UP * _badge_height
+
+
+## Pre-renders the statuses that appear the moment a player taps, so the first correct
+## answer or crash never stalls a weak phone on CPU rasterising (the colour is not drawn).
+static func prewarm_badges() -> void:
+	for step in range(1, 6):
+		_generate_badge_texture("solved", "", "#000000", step, false, null)
+	_generate_badge_texture("error", "", "#000000", 0, false, null)
+	_generate_badge_texture("priority", "", "#000000", 0, false, null)
+
+
 func guide_color() -> Color:
 	var fallback: int = posmod(str(data.get("id", "actor")).hash(), GUIDE_LABELS.size())
 	return Situation.letter_colour(str(data.get("guideLabel", GUIDE_LABELS[fallback])))
@@ -441,6 +457,41 @@ func _build_trajectory() -> void:
 	drive_speed = speed_mps * 2.0 / maxf(path_length, 1.0)
 
 
+## A traffic officer stands in the junction. A tight left turn passes within half a metre
+## of the centre, so a car would drive through him. The route keeps its lanes and only
+## bulges smoothly around him: d -> d + R(1 - d/2R)^2 is continuous, keeps its slope at 2R
+## and never brings a point closer than R. Speed, timing and the drawn arrow follow.
+func bend_around(centre: Vector3, radius: float) -> void:
+	if radius <= 0.0 or is_pedestrian or is_tram or path_curve == null: return
+	var reach := radius * 2.0
+	var length := path_curve.get_baked_length()
+	var bent := false
+	var points: Array[Vector3] = []
+	for i in ceili(length / 0.5) + 1:
+		var p := path_curve.sample_baked(minf(length, i * 0.5))
+		var flat := Vector2(p.x - centre.x, p.z - centre.z)
+		var d := flat.length()
+		if d < reach and d > 0.001:
+			var pushed := flat * ((d + radius * pow(1.0 - d / reach, 2.0)) / d)
+			p = Vector3(centre.x + pushed.x, p.y, centre.z + pushed.y)
+			bent = true
+		points.append(p)
+	if not bent: return
+	path_curve.clear_points()
+	for p in points:
+		if path_curve.point_count == 0 or path_curve.get_point_position(path_curve.point_count - 1).distance_to(p) > 0.05:
+			path_curve.add_point(p)
+	var new_length := path_curve.get_baked_length()
+	# Same road speed in metres per second on the slightly longer route.
+	drive_speed *= path_length / maxf(new_length, 0.001)
+	_turn_end_distance *= new_length / maxf(path_length, 0.001)
+	path_length = new_length
+	if trajectory_guide != null:
+		remove_child(trajectory_guide)
+		trajectory_guide.queue_free()
+	_build_trajectory_guide()
+
+
 func _add_route_point(point: Vector3, angle: float, in_handle := Vector3.ZERO, out_handle := Vector3.ZERO) -> void:
 	path_curve.add_point(point.rotated(Vector3.UP, angle), in_handle.rotated(Vector3.UP, angle), out_handle.rotated(Vector3.UP, angle))
 
@@ -586,14 +637,16 @@ func _process_crashed(_delta: float) -> void:
 
 func _process_waiting(_delta: float) -> void:
 	# A stable button stays easy to tap; only feedback briefly changes its scale.
-	badge_node.position.y = _badge_height
+	badge_node.position.y = _badge_height + badge_lift
 	_apply_badge_scale()
 
 
 # --- Cached rounded button texture ---
 
 static func _generate_badge_texture(status: String, maneuver: String, color_hex: String, step_num: int, has_siren: bool, traffic_light, arrow_angle: float = 0.0) -> ImageTexture:
-	var cache_key := "%s/%s/%s/%d/%s/%s/%s" % [status, maneuver, color_hex, step_num, has_siren, traffic_light, Ui.dark]
+	# Status cards draw only their glyph: the maneuver, colour and signal never reach them.
+	var cache_key := "%s/%s/%s/%d/%s/%s/%s" % [status, maneuver, color_hex, step_num, has_siren, traffic_light, Ui.dark] if status == "normal" \
+		else "%s/%d/%s" % [status, step_num, Ui.dark]
 	if _badge_cache.has(cache_key): return _badge_cache[cache_key]
 	var img := Image.create(256, 208, false, Image.FORMAT_RGBA8)
 	img.fill(Color.TRANSPARENT)
