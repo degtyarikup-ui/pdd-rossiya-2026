@@ -140,6 +140,10 @@ var _combo_label: Label
 var _timer_icon: Label
 var _timer_label: Label
 var _hearts: Array[Label] = []
+var _lives_count: Label
+var _lives_value := LIVES_COUNT
+var _combo_value := 0
+var compact_lives := false
 var current_mode: String = "blitz"
 
 # Overlay Drawing (reticles, ripples)
@@ -316,24 +320,38 @@ func _build_top_bar() -> void:
 		var heart := Ui.icon(ICON_HEART, 15, Ui.c("red"))
 		_hearts.append(heart)
 		_lives.add_child(heart)
+	_lives_count = MiniGameHud.lives_count(Ui.text_scale())
+	_lives.add_child(_lives_count)
 	_line1.add_child(_lives)
 
 
-## Keeps the HUD on one line when it fits; otherwise the timer and lives wrap like the Regulator's.
+## One line like the Regulator's: five hearts become «❤ N», then the combo «×N», then the
+## score font shrinks; only an extreme text size wraps the timer and lives.
 func _fit_hud() -> void:
 	if _hud == null or _lives == null:
 		return
-	var available := maxf(120, size.x - 2.0 * HUD_SCREEN_PAD - CHROME - 12.0 - 2.0 * HUD_PAD)
-	var score_font := _score_label.get_theme_font("font")
+	# Close button, a 4 dp spacer and two 8 dp gaps sit before the HUD card.
+	var available := maxf(120, size.x - 2.0 * HUD_SCREEN_PAD - CHROME - 20.0 - 2.0 * HUD_PAD)
+	_combo_label.text = MiniGameHud.combo_text(_combo_value)
+	# Four 12 dp gaps between score, spacer, timer, spacer and lives on the first line.
+	var gaps := 4.0 * 12.0
 	var font_size := _score_font_size
 	_score_label.add_theme_font_size_override("font_size", font_size)
-	var score_room: float = available - (_combo_chip.get_combined_minimum_size().x + 6 if _combo_chip.visible else 0) - 26
-	var measured := score_font.get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-	if measured > score_room:
-		_score_label.add_theme_font_size_override("font_size", maxi(12, floori(font_size * score_room / measured)))
 	var score_width := _score_group.get_combined_minimum_size().x
 	var timer_width := _timer_group.get_combined_minimum_size().x
-	var needed := score_width + timer_width + _lives.get_combined_minimum_size().x + 24.0
+	compact_lives = score_width + timer_width + MiniGameHud.lives_width(_hearts, _lives_count, false) + gaps > available
+	var lives_width := MiniGameHud.lives_width(_hearts, _lives_count, compact_lives)
+	if compact_lives and _combo_chip.visible and score_width + timer_width + lives_width + gaps > available:
+		_combo_label.text = MiniGameHud.combo_text(_combo_value, true)
+		score_width = _score_group.get_combined_minimum_size().x
+	var score_font := _score_label.get_theme_font("font")
+	var measured := score_font.get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var score_room := available - timer_width - lives_width - gaps - (score_width - measured)
+	if measured > score_room:
+		_score_label.add_theme_font_size_override("font_size", maxi(12, floori(font_size * maxf(score_room, 20.0) / measured)))
+		score_width = _score_group.get_combined_minimum_size().x
+	MiniGameHud.paint_lives(_hearts, _lives_count, _lives_value, compact_lives)
+	var needed := score_width + timer_width + lives_width + gaps
 	var one_line := needed <= available
 	var wrap_timer := score_width + timer_width + 12.0 > available
 	var timer_parent := _line2 if wrap_timer else _line1
@@ -365,7 +383,8 @@ func update_hud(score: int, combo: int, seconds_or_elapsed: float, lives: int) -
 		return
 	_score_label.text = str(maxi(0, score))
 	_combo_chip.visible = combo > 1
-	_combo_label.text = Ui.t("gameCurrentCombo", { "count": combo })
+	_combo_value = combo
+	_lives_value = lives
 	var urgent := false
 	if current_mode == "patrol":
 		var elapsed := int(seconds_or_elapsed)
@@ -376,13 +395,6 @@ func update_hud(score: int, combo: int, seconds_or_elapsed: float, lives: int) -
 		_timer_label.text = Ui.t("gameSecondsLeft", { "seconds": left })
 	_timer_label.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("text"))
 	_timer_icon.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("secondary"))
-	for i in _hearts.size():
-		var alive := i < lives
-		var heart := _hearts[i]
-		heart.text = char(ICON_HEART if alive else ICON_HEART_EMPTY)
-		heart.add_theme_color_override("font_color", Ui.c("red") if alive else Ui.c("secondary"))
-		heart.pivot_offset = heart.size / 2.0
-		heart.scale = Vector2.ONE if alive else Vector2(0.85, 0.85)
 	_fit_hud()
 
 

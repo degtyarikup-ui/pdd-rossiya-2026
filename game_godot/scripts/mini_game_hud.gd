@@ -44,5 +44,39 @@ static func paint_hearts(hearts: Array[Label], lives: int) -> void:
 		heart.scale = Vector2.ONE if alive else Vector2(0.85, 0.85)
 
 
-static func combo_text(combo: int) -> String:
-	return Ui.t("gameCurrentCombo", {"count": combo})
+static func combo_text(combo: int, short := false) -> String:
+	return "×%d" % combo if short else Ui.t("gameCurrentCombo", {"count": combo})
+
+
+## The number next to the single heart of the compact lives («❤ 5»).
+static func lives_count(text_scale := 1.0) -> Label:
+	var label := Ui.label("5", roundi(SCORE_SIZE * 0.8 * text_scale), 800, Ui.c("text"))
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.visible = false
+	return label
+
+
+## Full row of five hearts, or — when the bar is too narrow — one heart and the count,
+## so the lives never wrap onto a second line on a small phone or with large text.
+static func paint_lives(hearts: Array[Label], count: Label, lives: int, compact: bool) -> void:
+	if not compact:
+		for heart in hearts: heart.visible = true
+		count.visible = false
+		paint_hearts(hearts, lives)
+		return
+	for i in hearts.size():
+		hearts[i].visible = i == 0
+	paint_hearts(hearts.slice(0, 1), mini(lives, 1))
+	count.visible = true
+	count.text = str(maxi(lives, 0))
+	count.add_theme_color_override("font_color", Ui.c("text") if lives > 0 else Ui.c("secondary"))
+
+
+## Widths for choosing the layout before anything is hidden or shown.
+static func lives_width(hearts: Array[Label], count: Label, compact: bool) -> float:
+	var heart := hearts[0].get_combined_minimum_size().x
+	if not compact:
+		return heart * hearts.size() + HEART_GAP * (hearts.size() - 1)
+	var font := count.get_theme_font("font")
+	var digit := font.get_string_size("5", HORIZONTAL_ALIGNMENT_LEFT, -1, count.get_theme_font_size("font_size")).x
+	return heart + HEART_GAP + digit

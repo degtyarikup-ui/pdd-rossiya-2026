@@ -52,6 +52,10 @@ var _combo_label: Label
 var _timer_icon: Label
 var _timer_label: Label
 var _hearts: Array[Label] = []
+var _lives_count: Label
+var _lives_value := LIVES
+var _combo_value := 0
+var compact_lives := false
 
 var _bottom: VBoxContainer
 var _hint_row: MarginContainer
@@ -180,26 +184,40 @@ func _build_top_bar() -> void:
 		var heart := Ui.icon(ICON_HEART, MiniGameHud.HEART_SIZE, Ui.c("red"))
 		_hearts.append(heart)
 		_lives.add_child(heart)
+	_lives_count = MiniGameHud.lives_count(Ui.text_scale())
+	_lives.add_child(_lives_count)
 	_line1.add_child(_lives)
 
 
-## Keeps the HUD on one line when it fits, like the app's Wrap with spaceBetween; otherwise the lives
-## wrap to a second line, left-aligned.
+## Keeps the HUD on one line, like the app's Wrap with spaceBetween. When five hearts do not
+## fit (a small phone, large text, a four-digit score with combo), the lives become one heart
+## and their count, then the combo shortens to «×N»; only an extreme case wraps the timer.
 func _fit_hud() -> void:
 	if _hud == null or _lives == null:
 		return
-	var available := maxf(120, size.x - 2.0 * SCREEN_PAD - CHROME - 12.0 - 2.0 * HUD_PAD)
-	# A four-digit score still fits next to the combo at the largest phone font.
-	var score_font := _score_label.get_theme_font("font")
+	# Close button, a 4 dp spacer and two 8 dp gaps sit before the HUD card.
+	var available := maxf(120, size.x - 2.0 * SCREEN_PAD - CHROME - 20.0 - 2.0 * HUD_PAD)
+	_combo_label.text = MiniGameHud.combo_text(_combo_value)
+	# Four 12 dp gaps between score, spacer, timer, spacer and lives on the first line.
+	var gaps := 4.0 * 12.0
 	var font_size := _score_font_size
 	_score_label.add_theme_font_size_override("font_size", font_size)
-	var score_room: float = available - (_combo_chip.get_combined_minimum_size().x + 6 if _combo_chip.visible else 0) - 26
-	var measured := score_font.get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-	if measured > score_room:
-		_score_label.add_theme_font_size_override("font_size", maxi(12, floori(font_size * score_room / measured)))
 	var score_width := _score_group.get_combined_minimum_size().x
 	var timer_width := _timer_group.get_combined_minimum_size().x
-	var needed := score_width + timer_width + _lives.get_combined_minimum_size().x + 24.0
+	compact_lives = score_width + timer_width + MiniGameHud.lives_width(_hearts, _lives_count, false) + gaps > available
+	var lives_width := MiniGameHud.lives_width(_hearts, _lives_count, compact_lives)
+	if compact_lives and _combo_chip.visible and score_width + timer_width + lives_width + gaps > available:
+		_combo_label.text = MiniGameHud.combo_text(_combo_value, true)
+		score_width = _score_group.get_combined_minimum_size().x
+	# A four-digit score still fits next to the combo at the largest phone font.
+	var score_font := _score_label.get_theme_font("font")
+	var measured := score_font.get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var score_room := available - timer_width - lives_width - gaps - (score_width - measured)
+	if measured > score_room:
+		_score_label.add_theme_font_size_override("font_size", maxi(12, floori(font_size * maxf(score_room, 20.0) / measured)))
+		score_width = _score_group.get_combined_minimum_size().x
+	MiniGameHud.paint_lives(_hearts, _lives_count, _lives_value, compact_lives)
+	var needed := score_width + timer_width + lives_width + gaps
 	var one_line := needed <= available
 	var wrap_timer := score_width + timer_width + 12.0 > available
 	var timer_parent := _line2 if wrap_timer else _line1
@@ -349,9 +367,9 @@ func _build_result() -> void:
 func update_hud(score: int, combo: int, seconds_left: int, lives: int) -> void:
 	_score_label.text = str(score)
 	_combo_chip.visible = combo > 1
-	_combo_label.text = MiniGameHud.combo_text(combo)
+	_combo_value = combo
+	_lives_value = lives
 	MiniGameHud.paint_timer(_timer_icon, _timer_label, seconds_left)
-	MiniGameHud.paint_hearts(_hearts, lives)
 	_fit_hud()
 
 
@@ -480,8 +498,4 @@ func _spacer_expand() -> Control:
 
 ## Honour the app's text setting; icons keep their Flutter sizes.
 func _label(text: String, pixels: int, weight: int, color: Color, wrap := false) -> Label:
-	var text_scale := 1.0
-	for arg in Host.user_args():
-		if arg.begins_with("--text-scale="):
-			text_scale = clampf(float(arg.trim_prefix("--text-scale=")), 0.5, 3.0)
-	return Ui.label(text, roundi(pixels * text_scale), weight, color, wrap)
+	return Ui.scaled_label(text, pixels, weight, color, wrap)

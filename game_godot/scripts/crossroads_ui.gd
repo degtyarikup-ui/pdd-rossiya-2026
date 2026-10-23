@@ -61,6 +61,10 @@ var _timer_label: Label
 var _timer_icon: Label
 var _lives_container: HBoxContainer
 var _hearts: Array[Label] = []
+var _lives_count: Label
+var _lives_value := LIVES
+var _combo_value := 0
+var compact_lives := false
 
 var _caption_card: PanelContainer
 var _caption_content: VBoxContainer
@@ -387,6 +391,8 @@ func _build_top_bar() -> void:
 		heart.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_hearts.append(heart)
 		_lives_container.add_child(heart)
+	_lives_count = MiniGameHud.lives_count(Ui.text_scale())
+	_lives_container.add_child(_lives_count)
 	_hud_line1.add_child(_lives_container)
 
 	_caption_card = PanelContainer.new()
@@ -485,20 +491,27 @@ func _fit_hud(width: float) -> void:
 	if current_mode == "practice":
 		_hud_line2.visible = false
 		return
-	var available := maxf(60.0, width - 16.0)
+	# One line, as in Регулировщик: five hearts become «❤ N», then the combo «×N»,
+	# then the score font shrinks; only an extreme text size wraps to a second line.
+	var available := maxf(60.0, width - 2.0 * MiniGameHud.HUD_PAD)
+	_combo_label.text = MiniGameHud.combo_text(_combo_value)
 	var font_size := roundi(MiniGameHud.SCORE_SIZE * Ui.text_scale())
-	var combo_width := _combo_chip.get_combined_minimum_size().x + 4.0 if _combo_chip.visible else 0.0
-	var score_room := maxf(20.0, available * 0.35 - combo_width - 18.0)
+	_score_label.add_theme_font_size_override("font_size", font_size)
+	var timer_w := _timer_group.get_combined_minimum_size().x
+	var score_w := _score_group.get_combined_minimum_size().x
+	compact_lives = score_w + timer_w + MiniGameHud.lives_width(_hearts, _lives_count, false) + 16.0 > available
+	var lives_w := MiniGameHud.lives_width(_hearts, _lives_count, compact_lives)
+	if compact_lives and _combo_chip.visible and score_w + timer_w + lives_w + 16.0 > available:
+		_combo_label.text = MiniGameHud.combo_text(_combo_value, true)
+		score_w = _score_group.get_combined_minimum_size().x
 	var font: Font = _score_label.get_theme_font("font")
+	var score_room := available - timer_w - lives_w - 16.0 - (score_w - (font.get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x if font != null else 0.0))
 	if font != null:
 		var measured := font.get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 		if measured > score_room:
-			font_size = maxi(10, floori(font_size * score_room / measured))
-	_score_label.add_theme_font_size_override("font_size", font_size)
-
-	var score_w := _score_group.get_combined_minimum_size().x
-	var timer_w := _timer_group.get_combined_minimum_size().x
-	var lives_w := _lives_container.get_combined_minimum_size().x
+			_score_label.add_theme_font_size_override("font_size", maxi(12, floori(font_size * maxf(score_room, 20.0) / measured)))
+			score_w = _score_group.get_combined_minimum_size().x
+	MiniGameHud.paint_lives(_hearts, _lives_count, _lives_value, compact_lives)
 	var needed := score_w + timer_w + lives_w + 16.0
 	var one_line := needed <= available
 
@@ -528,14 +541,16 @@ func update_hud(score: int, seconds: int, lives: int, combo: int) -> void:
 	if state == _hud_state: return
 	_hud_state = state
 	var score_changed := _score_label.text != str(score)
-	var combo_changed := _combo_chip.visible != (combo > 1) or _combo_label.text != MiniGameHud.combo_text(combo)
+	var combo_changed := _combo_chip.visible != (combo > 1) or _combo_value != combo
 	var timer_changed := _timer_label.text != Ui.t("gameSecondsLeft", {"seconds": maxi(0, seconds)})
+	var lives_changed := _lives_value != lives
 	_score_label.text = str(score)
 	_combo_chip.visible = combo > 1
-	_combo_label.text = MiniGameHud.combo_text(combo)
+	_combo_value = combo
+	_lives_value = lives
 	MiniGameHud.paint_timer(_timer_icon, _timer_label, seconds)
-	MiniGameHud.paint_hearts(_hearts, lives)
-	if is_inside_tree() and timer_changed and not (score_changed or combo_changed):
+	MiniGameHud.paint_lives(_hearts, _lives_count, lives, compact_lives)
+	if is_inside_tree() and (timer_changed or lives_changed) and not (score_changed or combo_changed):
 		# «9 с» is narrower than «10 с»: refit only when the text actually changed.
 		_fit_hud(_top_bar.size.x - CHROME - 8.0)
 	if is_inside_tree() and (score_changed or combo_changed):
