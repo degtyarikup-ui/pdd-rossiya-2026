@@ -1084,6 +1084,59 @@ async function publishToYouTube(env, post, account) {
   };
 }
 
+/** Explicitly replace an unavailable YouTube video, retaining the old identity. */
+async function replaceYoutube(env, postId, origin, notify) {
+  return withSocialPublicationLease(env, (await getPosts(env)).find(p => p.id === postId)?.accountId, async env => {
+    const post = (await getPosts(env)).find(p => p.id === postId);
+    if (!post || post.status === 'processing') return;
+    const account = (await getAccounts(env)).find(a => a.id === post.accountId);
+    const fail = message => { const error = new Error(message); error.youtubeSafeMessage = true; throw error; };
+    try {
+      if (!account || !(post.targets || account.targets || []).includes('youtube')) fail('YouTube не настроен для этого ролика');
+      if (!/^[A-Za-z0-9_-]{11}$/.test(post.youtubeVideoId || '')) fail('Не сохранён ID прежнего ролика YouTube. Нужна ручная проверка');
+      if (post.youtubeReplacementAttempt && post.youtubeReplacementAttempt.stage !== 'published') fail('Новая попытка YouTube уже сохранена. Сначала проверьте её результат');
+      if (post.youtubePreviousAttempts != null && !Array.isArray(post.youtubePreviousAttempts)) fail('История YouTube повреждена');
+      if (post.driveFileId && (await getExcludedVideos(env, post.accountId)).has(post.driveFileId)) fail('Ролик исключён из очереди');
+      const token = await googleAccessToken(env, account.youtubeRefreshToken || null);
+      const read = async path => {
+        const res = await fetch('https://www.googleapis.com/youtube/v3/' + path, {
+          headers: { authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(10000),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error || !Array.isArray(data.items)) fail('YouTube не дал проверить прежнюю публикацию. Новая загрузка не начата');
+        return data.items;
+      };
+      const channels = await read('channels?part=id&mine=true');
+      if (channels.length !== 1 || !channels[0].id) fail('Не удалось подтвердить канал YouTube');
+      const videos = await read('videos?part=status,snippet&id=' + encodeURIComponent(post.youtubeVideoId));
+      const fresh = (await getPosts(env)).find(p => p.id === postId);
+      if (!fresh || JSON.stringify(fresh) !== JSON.stringify(post)) fail('Ролик изменился во время проверки. Обновите очередь');
+      if (videos.length) {
+        const video = videos[0];
+        if (video.id !== post.youtubeVideoId || video.snippet?.channelId !== channels[0].id) fail('Не удалось подтвердить владельца прежнего ролика');
+        if (video.status?.uploadStatus !== 'processed' || !['public', 'unlisted'].includes(video.status?.privacyStatus)) fail('Прежний ролик существует, но недоступен для просмотра. Проверьте его в YouTube Studio');
+        await patchPost(env, postId, { youtubeStatus: 'published', youtubeNeedsReview: false,
+          ...(!((post.targets || account.targets || []).includes('instagram')) || post.instagramStatus === 'published'
+            ? { status: 'published', error: null } : {}) });
+        return;
+      }
+      // A successful authenticated read returned no video. Only this explicit
+      // action may start a new generation; ordinary retries retain durable IDs.
+      const attempt = { id: crypto.randomUUID(), sourceVideoId: post.youtubeVideoId, stage: 'started', startedAt: new Date().toISOString() };
+      await patchPost(env, postId, { youtubePreviousAttempts: [...(post.youtubePreviousAttempts || []), {
+        videoId: post.youtubeVideoId, permalink: post.youtubePermalink || null, recordedAt: attempt.startedAt,
+      }], youtubeReplacementAttempt: attempt, youtubeVideoId: null, youtubePermalink: null,
+        youtubeNeedsReview: false, youtubeStatus: 'queued', status: 'processing', error: null,
+        processingSince: attempt.startedAt, publishMode: 'manual' });
+      await publishPost(env, postId, origin, notify, ['youtube']);
+    } catch (error) {
+      // Do not expose OAuth or upstream responses in the admin log.
+      await patchPost(env, postId, { status: 'failed', youtubeNeedsReview: true,
+        error: error.youtubeSafeMessage ? 'YouTube: ' + error.message : 'YouTube: не удалось подтвердить или заменить прежнюю публикацию. Проверьте доступ и состояние ролика; новая попытка автоматически не повторяется' });
+    }
+  });
+}
+
 // ────────────────────────────── публикация ──────────────────────────────
 
 /**
@@ -1194,6 +1247,7 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
       await patchPost(env, postId, {
         youtubeStatus: 'published',
         youtubeNeedsReview: false,
+        ...(post.youtubeReplacementAttempt ? { youtubeReplacementAttempt: { ...post.youtubeReplacementAttempt, stage: 'published' } } : {}),
         youtubeVideoId: ytResult.videoId,
         youtubePermalink: ytResult.permalink,
       });
@@ -1768,12 +1822,22 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     }
   }
 
+  if (path === '/api/admin/social/posts/replace-youtube' && request.method === 'POST') {
+    if (body.confirmReplacement !== true) return jsonResponse({ ok: false, message: 'Подтвердите новую публикацию YouTube' }, 400);
+    const post = (await getPosts(env)).find(p => p.id === body.id);
+    if (!post || post.status === 'processing') return jsonResponse({ ok: false, message: 'Обновите состояние ролика' }, 409);
+    ctx.waitUntil(replaceYoutube(env, post.id, origin, notify));
+    return jsonResponse({ ok: true, message: 'Проверяю прежний ролик YouTube; если он недоступен, создам новую публикацию' });
+  }
+
   // Повторить публикацию только в одну площадку — вторую не трогаем.
   if (path === '/api/admin/social/posts/publish-platform' && request.method === 'POST') {
     const posts = await getPosts(env);
     const post = posts.find((p) => p.id === body.id);
     const platform = body.platform === 'youtube' ? 'youtube' : 'instagram';
     if (!post) return jsonResponse({ error: 'not found' }, 404);
+    if (post[platform + 'Status'] === 'published') return jsonResponse({ ok: true, message: 'Ролик уже опубликован на этой площадке' });
+    if (post.status === 'processing') return jsonResponse({ ok: false, message: 'Ролик уже публикуется' }, 409);
     if (platform === 'instagram') {
       const cooldown = await getInstagramCooldown(env);
       if (cooldown) return jsonResponse(instagramCooldownResult(cooldown));

@@ -166,3 +166,19 @@ test('social notices group concurrent duplicates for an hour, survive restart, k
   await sendTelegram(env,'Still failing',null,opts);
   assert.match([...await storage.list({prefix:'q:'})].at(-1)[1].text,/Повторов с прошлого сообщения: 12/);
 });
+
+test('YouTube replacement has an independent durable outcome and never replays an uncertain generation', async () => {
+  const f=guardFixture(),post={id:'p',accountId:'a',driveFileId:'drive'};
+  await withSocialPublicationLease(f.env,'a',async env=>{
+    const first=await beginSocialWrite(env,post,'youtube');
+    await completeSocialWrite(env,post,first,'oldVideo123');
+    const replacement={...post,youtubeReplacementAttempt:{sourceVideoId:'oldVideo123',id:'generation'}};
+    assert.equal((await beginSocialWrite(env,replacement,'youtube')).result.state,'new');
+    await assert.rejects(beginSocialWrite(env,replacement,'youtube'),/не подтверждён/);
+    assert.equal((await beginSocialWrite(env,post,'youtube',false)).result.id,'oldVideo123');
+  });
+  f.restart();
+  await withSocialPublicationLease(f.env,'a',async env=>{
+    await assert.rejects(beginSocialWrite(env,{...post,youtubeReplacementAttempt:{sourceVideoId:'oldVideo123'}},'youtube'),/не подтверждён/);
+  });
+});

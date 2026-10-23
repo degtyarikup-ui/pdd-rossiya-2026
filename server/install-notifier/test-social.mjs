@@ -277,3 +277,53 @@ for (const bulk of [false, true]) {
     assert.equal(f.read('posts').find(p => p.id === 'busy').status, 'processing');
   });
 }
+
+test('manual platform retry preserves an already published destination and refuses concurrent publication', async () => {
+  const {call,read}=setup();
+  const before=read('posts');
+  assert.equal((await (await call('posts/publish-platform',{id:'partial',platform:'youtube'})).json()).ok,true);
+  assert.deepEqual(read('posts'),before);
+  assert.equal((await call('posts/publish-platform',{id:'busy',platform:'youtube'})).status,409);
+});
+
+for (const mode of ['missing','available','private','api-error','changed','lost-upload']) {
+  test(`explicit YouTube replacement: ${mode}`,async t=>{
+    const data=new Map();
+    const post={id:'p',accountId:'a',driveFileId:'drive',fileName:'game_005.mp4',status:'failed',targets:['youtube'],youtubeStatus:'failed',youtubeNeedsReview:true,youtubeVideoId:'R7sWTbIi7c8',youtubePermalink:'https://youtube.com/shorts/R7sWTbIi7c8',instagramStatus:'published'};
+    data.set('social:posts',JSON.stringify([post]));
+    data.set('social:accounts',JSON.stringify([{id:'a',targets:['youtube']}]));
+    data.set('social:settings',JSON.stringify({googleClientId:'fixture',googleClientSecret:'fixture',googleRefreshToken:'fixture-refresh'}));
+    data.set('social:google_token:fixture-refresh'.replace('fixture-refresh','fixture-refresh'.slice(-12)),JSON.stringify({token:'fixture',exp:Date.now()+3600000}));
+    const env={INSTALLS:{get:async k=>data.get(k)||null,put:async(k,v)=>data.set(k,v)}};
+    let uploads=0;const tasks=[];
+    const current=()=>JSON.parse(data.get('social:posts'))[0];
+    t.mock.method(globalThis,'fetch',async url=>{
+      const u=String(url);
+      if(u.includes('/channels?'))return Response.json({items:[{id:'channel'}]});
+      if(u.includes('/videos?') && !u.includes('/upload/')){
+        if(mode==='api-error')return Response.json({error:{}},{status:503});
+        if(mode==='changed')data.set('social:posts',JSON.stringify([{...post,title:'changed'}]));
+        return Response.json({items:['available','private'].includes(mode)?[{id:post.youtubeVideoId,snippet:{channelId:'channel'},status:{uploadStatus:'processed',privacyStatus:mode==='private'?'private':'public'}}]:[]});
+      }
+      if(u.includes('/drive/v3/files/'))return new Response(new Uint8Array(2000));
+      if(u.includes('/upload/youtube/'))return new Response('',{headers:{location:'https://upload.fixture/session'}});
+      if(u==='https://upload.fixture/session'){uploads++;if(mode==='lost-upload')throw new Error('lost');return Response.json({id:'newVideo123'});}
+      throw new Error('Unexpected fixture call');
+    });
+    const call=async confirmReplacement=>{
+      const req=new Request('https://w.test/api/admin/social/posts/replace-youtube',{method:'POST',body:JSON.stringify({id:'p',confirmReplacement})});
+      return handleSocialAdmin(req,env,{waitUntil:p=>tasks.push(p)},new URL(req.url),{jsonResponse:(b,s=200)=>Response.json(b,{status:s})});
+    };
+    assert.equal((await call(false)).status,400);
+    await call(true);await Promise.all(tasks);
+    assert.equal(uploads,['missing','lost-upload'].includes(mode)?1:0, JSON.stringify(current()));
+    assert.equal(current().instagramStatus,'published');
+    if(mode==='missing'){
+      assert.equal(current().youtubeVideoId,'newVideo123');assert.equal(current().youtubeStatus,'published');
+      assert.equal(current().youtubePreviousAttempts[0].videoId,post.youtubeVideoId);
+      assert.equal(current().youtubeReplacementAttempt.stage,'published');
+    } else if(mode==='available')assert.equal(current().youtubeStatus,'published');
+    else if(mode!=='lost-upload')assert.equal(current().youtubeVideoId,post.youtubeVideoId);
+    if(mode==='lost-upload'){await call(true);await Promise.all(tasks);assert.equal(uploads,1);assert.equal(current().youtubeNeedsReview,true);}
+  });
+}

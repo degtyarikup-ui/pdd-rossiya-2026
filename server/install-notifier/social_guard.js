@@ -64,7 +64,7 @@ export async function socialGuard(env, accountId, path, body = {}) {
 
 export async function beginSocialWrite(env, post, platform, reserve = true) {
   const key = platform + ':' + (post.contentMd5 || post.driveFileId || post.id) + ':'
-    + (platform === 'instagram' ? post.instagramReplacementAttempt?.sourceContainerId || post.instagramReplacementAttempt?.id || 'initial' : 'initial');
+    + (platform === 'instagram' ? post.instagramReplacementAttempt?.sourceContainerId || post.instagramReplacementAttempt?.id || 'initial' : post.youtubeReplacementAttempt?.sourceVideoId || post.youtubeReplacementAttempt?.id || 'initial');
   const result = await socialGuard(env, post.accountId, reserve ? '/begin' : '/read', { key, owner: env.__SOCIAL_OWNER });
   if (result?.state === 'pending') {
     const error = new Error('Результат предыдущей загрузки ' + (platform === 'instagram' ? 'Instagram' : 'YouTube') + ' не подтверждён. Повтор остановлен до проверки');
