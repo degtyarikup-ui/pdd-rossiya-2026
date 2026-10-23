@@ -58,14 +58,14 @@ var is_new_record := false
 var round_timer := 0.0
 var next_delay := 0.0
 
-# Camera framing: an over-the-car view. A longer lens from a little farther back keeps
+# Camera framing: an over-the-car view (the car waits RegulatorCar.APPROACH m before the stop line). A longer lens from a little farther back keeps
 # the whole car in frame and makes the officer, whose arms are the whole question, about
 # three times larger on screen than the old wide view.
-const CAM_FOV := 30.0
-var cam_base_pos := Vector3(3.3, 4.2, 30.0)
-var cam_base_look := Vector3(0.9, 1.3, 0.0)
-const CAM_NEAR_POS := Vector3(3.0, 3.2, 25.5)
-const CAM_NEAR_LOOK := Vector3(0.6, 1.5, 0.0)
+const CAM_FOV := 27.0
+var cam_base_pos := Vector3(3.4, 6.5, 40.0)
+var cam_base_look := Vector3(1.2, -0.6, 8.0)
+const CAM_NEAR_POS := Vector3(3.1, 5.2, 35.5)
+const CAM_NEAR_LOOK := Vector3(1.0, -0.2, 8.0)
 const CAM_FAR_POS := Vector3(0.0, 40.0, 60.0)
 
 

@@ -8,6 +8,11 @@ signal maneuver_finished(move: RegulatorRules.Move)
 
 const START_POS := Vector3(5.4, 0.0, 20.5)
 const START_YAW := PI                       # Facing North (-Z) into the intersection
+## The car waits this far behind the stop line, where the lane line is still broken:
+## after the answer it has room to move to the lane its manoeuvre needs (п. 8.5).
+const APPROACH := 8.5
+## Extra driving time for the approach, so the speed through the junction is unchanged.
+const APPROACH_SECONDS := 0.6
 
 var car_root: Node3D
 var blink_l: Node3D
@@ -30,6 +35,7 @@ var authored_yaw := START_YAW
 var authored_paths := {}
 var authored_lengths := {}
 var authored_center := Vector3.ZERO
+var authored_stop := START_POS
 
 
 func _init(id: String = "sedan", paint: Color = Color("#0574F8"), scene: Dictionary = {}) -> void:
@@ -58,8 +64,50 @@ func _init(id: String = "sedan", paint: Color = Color("#0574F8"), scene: Diction
 					for i in range(1, points.size()):
 						lengths.append(lengths.back() + points[i - 1].distance_to(points[i]))
 					authored_lengths[move] = lengths
+		_add_lane_approach(scene)
 	_load_model()
 	reset_to_start()
+
+
+## Lanes by the answer (п. 8.5): left turns, U-turns and straight on keep the inner lane
+## the car waits in; a right turn first moves over the broken line to the outer lane and
+## turns from it along the saved outer-lane route. Every path starts APPROACH metres back.
+func _add_lane_approach(scene: Dictionary) -> void:
+	if authored_paths.is_empty(): return
+	var forward := Vector3(sin(authored_yaw), 0, cos(authored_yaw))
+	var right := Vector3(-forward.z, 0, forward.x)
+	authored_stop = authored_start
+	var wait := authored_stop - forward * APPROACH
+	for move in authored_paths:
+		var points: Array[Vector3] = [wait]
+		points.append_array(authored_paths[move])
+		authored_paths[move] = points
+	var outer: Array[Vector3] = []
+	for route in scene.get("routes", []):
+		if route.get("kind") != "manoeuvre" or route.get("exit") != "right": continue
+		for p in route.points:
+			var point := Vector3(-float(p[0]), 0, -float(p[1]))
+			# The saved route from the outer lane, from the stop line on.
+			if outer.is_empty() and (point - authored_stop).dot(forward) < 0.5: continue
+			outer.append(point)
+	var lateral := (outer[0] - authored_stop).dot(right) if not outer.is_empty() else 0.0
+	if authored_paths.has(RegulatorRules.Move.RIGHT) and lateral > 1.5:
+		var path: Array[Vector3] = []
+		# S-shaped lane change with no sideways jump at either end.
+		for i in 25:
+			var t := float(i) / 24.0
+			var bend := t * t * (3.0 - 2.0 * t)
+			path.append(wait.lerp(authored_stop, t) + right * lateral * bend)
+		for point in outer:
+			if point.distance_to(path.back()) > 0.01: path.append(point)
+		authored_paths[RegulatorRules.Move.RIGHT] = path
+	authored_start = wait
+	for move in authored_paths:
+		var points: Array = authored_paths[move]
+		var lengths: Array[float] = [0.0]
+		for i in range(1, points.size()):
+			lengths.append(lengths.back() + points[i - 1].distance_to(points[i]))
+		authored_lengths[move] = lengths
 
 
 ## Moving the stop in the editor can replace only the first route point, leaving
@@ -162,6 +210,8 @@ func start_maneuver(move: RegulatorRules.Move) -> void:
 		RegulatorRules.Move.STRAIGHT:
 			active_blinker = ""
 			move_duration = 1.8
+	if authored_stop != authored_start:
+		move_duration += APPROACH_SECONDS
 
 	is_moving = true
 	move_progress = 0.0
