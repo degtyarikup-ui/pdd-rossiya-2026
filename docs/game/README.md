@@ -220,6 +220,7 @@ godot --headless --path game_godot --script res://tests/environment_models_check
 godot --headless --path game_godot --script res://tests/collision_check.gd  # столкновения
 godot --headless --path game_godot --script res://tests/sign_mount_check.gd # общая стойка и консоль знаков
 godot --headless --path game_godot --script res://tests/signals_models_check.gd # знаки/светофоры: формы, состояния, крепления, кеши и бюджет
+godot --headless --path game_godot --script res://tests/traffic_signal_config_check.gd # все сохранённые светофоры, null без допсекции, выбор модели и мини-игры; также native
 godot --path game_godot --script res://tests/signals_render_check.gd # реальный фронт/тыл и отдельные трамвайные апертуры
 godot --headless --path game_godot --script res://tests/lane_sign_check.gd # конструктор направлений по полосам
 godot --headless --path game_godot --script res://tests/free_player_check.gd # 76 проверок свободной позы, 12 углов и подъезда по кольцу
@@ -270,6 +271,7 @@ godot --path game_godot --resolution 448x970 --script res://tests/popin_ride_che
 godot --headless --path game_godot --script res://tests/streaming_check.gd # выбор «В игре», подготовка и пауза
 godot --headless --path game_godot --script res://tests/exit_loading_check.gd # выход во время фоновой сборки без потерянных узлов
 godot --headless --path game_godot --script res://tests/staging_cancellation_check.gd # отмена воркера при закрытии/удалении владельца и выходе хоста
+godot --headless --path game_godot --script res://tests/staging_retirement_check.gd # удаление предыдущей локации между этапами подготовки следующей; также native
 godot --headless --path game_godot --script res://tests/embedded_io_check.gd # iOS: повторные запуски основной игры и переходы после мини-игр
 godot --headless --path game_godot --script res://tests/ambient_budget_check.gd # low: только декоративные люди, безопасная смена качества и неизменные участники задач
 godot --headless --path game_godot --script res://tests/walking_budget_check.gd # точность тротуаров, ограниченный кеш и бюджет поиска пути пешеходов
@@ -575,6 +577,7 @@ iOS и веб используют загрузчик приложения до 
 - `transition-performance-2026-10-15.md` — пакетная перестройка улиц, обрезка геометрии, неблокирующие замеры Android и остановленный фоновый транспорт
 - `road-retirement-2026-10-15.md` — исчезновение дороги под машиной после лимита хранения и защита от застревания на траве
 - `participant-lifetime-2026-10-15.md` — нативный вылет после удаления сбитого участника и регрессионная проверка
+- `city-crashes-2026-10-23.md` — повторные вылеты на Pixel: расшифрованный стек, null у светофоров, проверка release и удаление предыдущей локации
 - `ride-completion-2026-10-15.md` — два штатных заезда, неверная нумерация HUD и оставшийся доступ к удалённому участнику
 - `background-pause-2026-10-15.md` — исчезнувшее управление после сворачивания, безопасный показ паузы и продолжение
 - `infinite-road-2026-10-15.md` — бесконечная прямая при поздней подготовке вопроса и наклонном выезде после ответа

@@ -1545,12 +1545,16 @@ func _build_staged(id: String) -> void:
 			if current and current.sit.network:
 				var previous: Situation=current.sit
 				for out in SceneStitch.departure_ports(previous.network.connections).values():
+					# Driving continues while seam meshes are prepared. The previous
+					# junction may retire between slices, independently of this owner.
+					if not is_instance_valid(previous) or previous.is_queued_for_deletion(): break
 					if SceneStitch.needs_lane_transition(out,entry): continue
 					var profile:=SceneStitch.joint_profile(out,entry)
 					var candidate:=Situation.bindings_with([],entry,float(profile.width),profile)
 					if not bases.has(candidate): bases.append(candidate)
 					await previous.warm_bindings(Situation.bindings_with(previous.network.stitch_bindings,out,float(out.width)),scenery,get_tree())
 					if _exiting or _restarting or not is_inside_tree(): return
+					if not is_instance_valid(previous) or previous.is_queued_for_deletion(): break
 					await previous.warm_bindings(Situation.bindings_with(previous.network.stitch_bindings,out,float(profile.width),profile),scenery,get_tree())
 					if _exiting or _restarting or not is_inside_tree(): return
 			for base in bases:

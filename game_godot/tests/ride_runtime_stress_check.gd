@@ -217,14 +217,36 @@ func record(world: MeasuredWorld, index: int, id: String) -> void:
 		expect(sample.resources <= first.resources + 96, "matched warm resource bound q=" + str(index + 1))
 		expect(sample.static_mb <= first.static_mb + 16.0, "matched warm static memory bound q=" + str(index + 1))
 
+func expect_answer_progress(world: MeasuredWorld, ordinal: int, correct: int, label: String) -> void:
+	if world.phase != "over":
+		expect(int(world.ui._run_big.text) == ordinal, label + " HUD answer count")
+		return
+	# A correct final answer switches directly to the opaque result. The stopped
+	# world's hidden driving HUD is no longer the visible progress indicator.
+	if not await wait_for(func(): return is_instance_valid(world.ui.results) and world.ui.results.visible,
+		3.0, label + " terminal result shown"): return
+	var result: MiniGameResults = world.ui.results
+	if not await wait_for(func(): return result._count_progress >= 1.0, 3.0, label + " result counter settled"): return
+	expect(result.stat_values[0].text == "%d/%d" % [correct, ordinal], label + " visible result answer count")
+	expect(world.camera.cull_mask == 0 and not world.controls.active, label + " completed world stays covered and stopped")
+
 func exercise(world: MeasuredWorld, control: SequenceControl, ids: Array[String]) -> void:
 	var expected_correct := 0
+	var world_cull_mask := world.camera.cull_mask
 	for index in ids.size():
 		if index > 0 and index % Run.QUESTIONS == 0:
 			# Deliberately extend a completed transient Run inside the same engine for the next stress cycle.
 			world.run = Run.new()
 			expected_correct = 0
 			world.ui.hide_cards()
+			# Production replay replaces the scene. This fixture deliberately keeps
+			# its retained geometry, so restore the same visible state explicitly.
+			if is_instance_valid(world.ui.results):
+				world.ui.results.hide()
+				world.ui.results.queue_free()
+				world.ui.results = null
+			world.camera.cull_mask = world_cull_mask
+			world.sound.suspended = false
 			world.phase = "driving"
 			world.controls.set_active(true)
 		control.allow_spawn = true
@@ -242,6 +264,8 @@ func exercise(world: MeasuredWorld, control: SequenceControl, ids: Array[String]
 		await process_frame
 		var ordinal := (index % Run.QUESTIONS) + 1
 		expect(int(world.ui._run_big.text) == ordinal - 1, "open question HUD answer count q=" + str(index + 1))
+		expect(not is_instance_valid(world.ui.results) or not world.ui.results.visible, "active question has no old result overlay q=" + str(index + 1))
+		expect(world_cull_mask != 0 and world.camera.cull_mask == world_cull_mask, "active question renders the world q=" + str(index + 1))
 		await capture_last_question(index, "open")
 		var answer_kind := index % 3 if mixed_answers else 0
 		var right := int(sit.data.correctAnswerIndex)
@@ -264,7 +288,7 @@ func exercise(world: MeasuredWorld, control: SequenceControl, ids: Array[String]
 		var terminal := ordinal == Run.QUESTIONS
 		await process_frame
 		await process_frame
-		expect(int(world.ui._run_big.text) == ordinal, "answer feedback HUD ordinal q=" + str(index + 1))
+		await expect_answer_progress(world, ordinal, expected_correct, "answer feedback q=" + str(index + 1))
 		if answer_kind != 0:
 			if not await wait_for(func(): return is_instance_valid(world.ui._sheet), 3.0, "normal explanation q=" + str(index + 1)): return
 			expect(int(world.ui._run_big.text) == ordinal, "explanation HUD ordinal q=" + str(index + 1))
@@ -275,7 +299,7 @@ func exercise(world: MeasuredWorld, control: SequenceControl, ids: Array[String]
 		if not await wait_for(func(): return world.phase == ("over" if terminal else "resolving"), 5.0, "normal answer feedback q=" + str(index + 1)): return
 		await process_frame
 		await process_frame
-		expect(int(world.ui._run_big.text) == ordinal, "resolving HUD ordinal q=" + str(index + 1))
+		await expect_answer_progress(world, ordinal, expected_correct, "answer settled q=" + str(index + 1))
 		await capture_last_question(index, "resolving")
 		await active_dwell(world, maxf(0.0, dwell_seconds - world.frame_seconds))
 		if (index + 1) % 5 == 0 and not terminal: await pause_check(world)

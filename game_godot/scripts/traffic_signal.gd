@@ -15,12 +15,21 @@ const VEHICLE := {
 const TRAM := ["bottom","mid","left","right"]
 
 static func supports(config: Dictionary) -> bool:
-	return str(config.get("arrow", "") if config.get("arrow") != null else "") in ["","left","right","straight"]
+	return _arrow(config) in ["", "left", "right", "straight"]
+
+## Saved JSON uses null when there is no supplementary section. Stringifying it
+## produces "<null>", which is not a model variant. Share normalization with the
+## capability check so a supported scene always selects an existing model.
+static func _arrow(config: Dictionary) -> String:
+	var value: Variant = config.get("arrow")
+	if value == null: return ""
+	var arrow := str(value)
+	return "" if arrow == "none" else arrow
 
 static func kind(config: Dictionary) -> String:
 	if config.get("tram"): return "tram"
-	var a := str(config.get("arrow", ""))
-	if a != "" and a != "none": return a
+	var a := _arrow(config)
+	if a != "": return a
 	return "standard"
 
 static func make(config: Dictionary) -> Node3D:
