@@ -288,7 +288,7 @@ test('long IN_PROGRESS remains pending without a false alert and the next cron f
   const f = fixture(t, [{ status_code: 'IN_PROGRESS' }]);
   const notices=[];
   assert.equal((await publishWithClock(t, f,()=>publishPost(f.env,f.post.id,'https://fixture.invalid',text=>notices.push(text)))).status, 'processing');
-  assert.equal(f.calls.length, 40);
+  assert.equal(f.calls.length, 2);
   assert.ok(f.calls.every(call => call.method === 'GET'));
   assert.equal(f.current().error,null);
   assert.equal(f.current().status,'processing');

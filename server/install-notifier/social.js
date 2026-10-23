@@ -50,7 +50,9 @@ const MAX_MANUAL_BATCH = 5;
 // видео максимум за несколько минут, YouTube — быстрее.
 const STALE_PROCESSING_MS = 30 * 60 * 1000;
 
-const IG_POLL_ATTEMPTS = 40;
+// Leave time to persist the publish response and release the lease before
+// Cloudflare ends the 30-second waitUntil window. The cron resumes this container.
+const IG_POLL_ATTEMPTS = 2;
 const IG_POLL_INTERVAL_MS = 5000;
 
 const GRAPH_VERSION = 'v21.0';
@@ -751,7 +753,7 @@ async function finishInstagram(env, post, account, containerId) {
   // Meta кодирует ролик у себя и параллельно скачивает его по нашей ссылке.
   let ready = false;
   for (let i = 0; i < IG_POLL_ATTEMPTS; i += 1) {
-    await sleep(IG_POLL_INTERVAL_MS);
+    if (i > 0) await sleep(IG_POLL_INTERVAL_MS);
     let statusRes;
     try {
       statusRes = await fetch(`${api}/${containerId}?fields=status_code,status&access_token=${encodeURIComponent(account.instagramToken)}`,
