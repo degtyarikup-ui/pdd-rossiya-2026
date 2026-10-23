@@ -80,23 +80,35 @@ func _test_violation_boundaries_and_edges() -> void:
 	game._check_car_violation_state(rl_car2)
 	_assert("RED_LIGHT transitions to missed at Z > 8.0", rl_car2.violation_state == "missed")
 
-	# 1.2 PEDESTRIAN_YIELD
-	var ped_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
-	# Sub-case: Walker on sidewalk (X = -4.0)
-	game.ped_pos_x = -4.0
-	ped_car.position.z = -9.0
+	# 1.2 PEDESTRIAN_YIELD: a right-turning car crossing the west crosswalk while its walkers have green
+	var ped_car = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
+	var walker: Dictionary = {}
+	for c in game.crossers:
+		if c.cw == "west":
+			walker = c
+			break
+	for c in game.crossers:
+		c.state = "hidden"
+		c.timer = 999.0
+	ped_car.position = Vector3(-2.4, 0, 1.5)
+	ped_car.turn_t = 0.4
+	# Sub-case: walker still on the sidewalk (z = -2.3)
+	walker.state = "wait"
+	walker.s = -2.3
 	game._check_car_violation_state(ped_car)
 	_assert("PEDESTRIAN_YIELD does NOT activate when walker is on sidewalk", ped_car.violation_state == "pending")
 
-	# Sub-case: Walker steps onto roadway (X = -2.0)
-	game.ped_pos_x = -2.0
+	# Sub-case: walker on the carriageway in the car's lanes
+	walker.state = "cross"
+	walker.s = 1.0
 	game._check_car_violation_state(ped_car)
 	_assert("PEDESTRIAN_YIELD activates when walker is on roadway", ped_car.violation_state == "active")
 
-	# Sub-case: Boundary exit past zebra (Z = -4.4)
-	ped_car.position.z = -4.4
+	# Sub-case: car has passed the crosswalk
+	ped_car.position = Vector3(-11.5, 0, 3.2)
 	game._check_car_violation_state(ped_car)
-	_assert("PEDESTRIAN_YIELD transitions to missed past zebra (Z > -4.5)", ped_car.violation_state == "missed")
+	_assert("PEDESTRIAN_YIELD transitions to missed past the crosswalk (X < -11)", ped_car.violation_state == "missed")
+	walker.state = "hidden"
 
 	# 1.3 SOLID_LINE
 	var sl_car = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_SOLID_LINE)
@@ -404,12 +416,12 @@ func _test_combo_economy_and_cap() -> void:
 	_assert("Max combo recorded correctly as 5", game.max_combo == 5)
 
 	# Break combo with an incorrect answer
-	var v_err = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
-	game.ped_pos_x = 0.0
-	v_err.position.z = -8.0
+	var v_err = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
+	game.light_state = "red"
+	v_err.position.z = -2.0
 	game._check_car_violation_state(v_err)
 	game.handle_car_tapped(v_err, Vector2(100, 100))
-	game._on_classification_selected(ViolatorScript.VIOLATION_RED_LIGHT) # Wrong!
+	game._on_classification_selected(ViolatorScript.VIOLATION_SOLID_LINE) # Wrong!
 
 	_assert("Incorrect answer resets combo from 5 to 0", game.combo == 0)
 	_assert("Incorrect answer preserves max_combo as 5", game.max_combo == 5)

@@ -12,16 +12,18 @@ extends Control
 signal exit_pressed()
 signal restart_pressed()
 signal classification_selected(code: String)
-signal mode_toggled(new_mode: String)
 
 const ICON_CLOSE := 0xf647
 const ICON_STAR := 0xf01d4
 const ICON_HEART := 0xf738
+const ICON_HEART_EMPTY := 0xf737
 const ICON_TIMER := 0xf44a
 const ICON_WARNING := 0xf0029
 const ICON_CHECK := 0xf633
 
 const SCREEN_PAD := 16.0
+const HUD_SCREEN_PAD := 20.0
+const HUD_PAD := 12.0
 const CHROME := 40.0
 const LIVES_COUNT := 5
 
@@ -120,16 +122,24 @@ static func tr_v(key: String) -> String:
 	var def := Ui.t(key)
 	return def if def != key else STRINGS["ru"].get(key, key)
 
-# Top Bar Nodes
+# Top Bar Nodes (same structure as RegulatorUi)
 var _top_bar: HBoxContainer
+var _close_btn: PanelContainer
 var _hud: PanelContainer
+var _line1: HBoxContainer
+var _line2: HBoxContainer
+var _score_group: HBoxContainer
+var _timer_group: HBoxContainer
+var _lives: HBoxContainer
+var _spacer_after_score: Control
+var _spacer_after_timer: Control
 var _score_label: Label
+var _score_font_size := 18
 var _combo_chip: PanelContainer
 var _combo_label: Label
+var _timer_icon: Label
 var _timer_label: Label
 var _hearts: Array[Label] = []
-var _mode_btn: Button
-var _mode_icon: Label
 var current_mode: String = "blitz"
 
 # Overlay Drawing (reticles, ripples)
@@ -216,6 +226,7 @@ func _layout() -> void:
 	if is_instance_valid(_top_bar):
 		_top_bar.offset_top = top + 8.0
 		_top_bar.offset_bottom = _top_bar.offset_top + CHROME
+	_fit_hud()
 
 	if is_instance_valid(_overlay):
 		_overlay.size = size
@@ -237,119 +248,182 @@ func _layout() -> void:
 		_results.layout(Rect2(left, top + 16.0, maxf(160.0, size.x - left - right), maxf(100.0, size.y - top - bottom - 32.0)))
 
 
-# --- Top Bar & HUD ---
+# --- Top Bar & HUD (the Regulator's layout: close button, then one card with score, timer, lives) ---
 
 func _build_top_bar() -> void:
 	_top_bar = HBoxContainer.new()
 	_top_bar.set_anchors_preset(PRESET_TOP_WIDE)
-	_top_bar.offset_left = SCREEN_PAD
-	_top_bar.offset_right = -SCREEN_PAD
+	_top_bar.offset_left = HUD_SCREEN_PAD
+	_top_bar.offset_right = -HUD_SCREEN_PAD
 	_top_bar.add_theme_constant_override("separation", 8)
 	add_child(_top_bar)
 
-	# Close / Exit button
-	var close_btn := Button.new()
-	close_btn.custom_minimum_size = Vector2(CHROME, CHROME)
-	close_btn.flat = true
-	var close_style := Ui.box(Ui.c("card"), 10)
-	close_btn.add_theme_stylebox_override("normal", close_style)
-	close_btn.add_theme_stylebox_override("hover", close_style)
-	close_btn.add_theme_stylebox_override("pressed", close_style)
-	close_btn.add_child(Ui.icon(ICON_CLOSE, 18, Ui.c("text")))
-	close_btn.pressed.connect(func(): exit_pressed.emit())
-	_top_bar.add_child(close_btn)
+	_close_btn = _chrome_button(ICON_CLOSE, func(): exit_pressed.emit())
+	_top_bar.add_child(_close_btn)
+	_top_bar.add_child(_spacer(4.0, 0.0))
 
-	# HUD card
 	_hud = PanelContainer.new()
 	_hud.size_flags_horizontal = SIZE_EXPAND_FILL
 	_hud.custom_minimum_size = Vector2(0, CHROME)
-	var hud_box := Ui.box(Ui.c("card"), 12)
-	hud_box.content_margin_left = 12
-	hud_box.content_margin_right = 12
-	hud_box.content_margin_top = 4
-	hud_box.content_margin_bottom = 4
-	_hud.add_theme_stylebox_override("panel", hud_box)
+	_hud.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 12, HUD_PAD, 8.0))
 	_top_bar.add_child(_hud)
 
-	var hud_row := HBoxContainer.new()
-	hud_row.add_theme_constant_override("separation", 10)
-	hud_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_hud.add_child(hud_row)
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", 8)
+	_hud.add_child(lines)
+	_line1 = HBoxContainer.new()
+	_line1.add_theme_constant_override("separation", 12)
+	lines.add_child(_line1)
+	_line2 = HBoxContainer.new()
+	_line2.add_theme_constant_override("separation", 12)
+	_line2.visible = false
+	lines.add_child(_line2)
 
-	# Score + Combo
-	var score_box := HBoxContainer.new()
-	score_box.add_theme_constant_override("separation", 4)
-	score_box.add_child(Ui.icon(ICON_STAR, 18, Ui.c("gold")))
-	_score_label = Ui.label("0", 16, 700, Ui.c("text"))
-	score_box.add_child(_score_label)
+	_score_group = HBoxContainer.new()
+	_score_group.add_theme_constant_override("separation", 6)
+	_line1.add_child(_score_group)
+	var score_value := HBoxContainer.new()
+	score_value.add_theme_constant_override("separation", 4)
+	_score_group.add_child(score_value)
+	score_value.add_child(Ui.icon(ICON_STAR, 22, Ui.c("gold")))
+	_score_label = _label("0", 18, 800, Ui.c("text"))
+	_score_font_size = _score_label.get_theme_font_size("font_size")
+	score_value.add_child(_score_label)
 	_combo_chip = PanelContainer.new()
-	var chip_box := Ui.box(Ui.c("gold_surface"), 6)
-	chip_box.content_margin_left = 5
-	chip_box.content_margin_right = 5
-	chip_box.content_margin_top = 1
-	chip_box.content_margin_bottom = 1
-	_combo_chip.add_theme_stylebox_override("panel", chip_box)
-	_combo_label = Ui.label("", 11, 700, Ui.c("gold"))
+	_combo_chip.add_theme_stylebox_override("panel", _padded(Ui.c("gold_surface"), 6, 6.0, 2.0))
+	_combo_label = _label("", 12, 800, Ui.c("gold"))
 	_combo_chip.add_child(_combo_label)
 	_combo_chip.visible = false
-	score_box.add_child(_combo_chip)
-	hud_row.add_child(score_box)
+	_score_group.add_child(_combo_chip)
 
-	hud_row.add_child(_spacer_expand())
+	_spacer_after_score = _spacer_expand()
+	_line1.add_child(_spacer_after_score)
 
-	# Timer
-	var timer_box := HBoxContainer.new()
-	timer_box.add_theme_constant_override("separation", 4)
-	timer_box.add_child(Ui.icon(ICON_TIMER, 16, Ui.c("secondary")))
-	_timer_label = Ui.label("60", 15, 600, Ui.c("text"))
-	timer_box.add_child(_timer_label)
-	hud_row.add_child(timer_box)
+	_timer_group = HBoxContainer.new()
+	_timer_group.add_theme_constant_override("separation", 4)
+	_line1.add_child(_timer_group)
+	_timer_icon = Ui.icon(ICON_TIMER, 18, Ui.c("secondary"))
+	_timer_group.add_child(_timer_icon)
+	_timer_label = _label("", 14, 600, Ui.c("text"))
+	_timer_group.add_child(_timer_label)
 
-	hud_row.add_child(_spacer_expand())
-
-	# Lives (Hearts)
-	var lives_box := HBoxContainer.new()
-	lives_box.add_theme_constant_override("separation", 2)
+	# Lives sit on the first line when the HUD has room, on the second when it does not.
+	_spacer_after_timer = _spacer_expand()
+	_line1.add_child(_spacer_after_timer)
+	_lives = HBoxContainer.new()
+	_lives.add_theme_constant_override("separation", 3)
 	for i in LIVES_COUNT:
-		var heart := Ui.icon(ICON_HEART, 14, Ui.c("red"))
+		var heart := Ui.icon(ICON_HEART, 15, Ui.c("red"))
 		_hearts.append(heart)
-		lives_box.add_child(heart)
-	hud_row.add_child(lives_box)
-
-	# Mode toggle button next to HUD
-	_mode_btn = Button.new()
-	_mode_btn.custom_minimum_size = Vector2(CHROME, CHROME)
-	_mode_btn.flat = true
-	var mode_style := Ui.box(Ui.c("card"), 10)
-	_mode_btn.add_theme_stylebox_override("normal", mode_style)
-	_mode_btn.add_theme_stylebox_override("hover", mode_style)
-	_mode_btn.add_theme_stylebox_override("pressed", mode_style)
-	_mode_icon = Ui.icon(ICON_TIMER, 18, Ui.c("accent"))
-	_mode_btn.add_child(_mode_icon)
-	_mode_btn.pressed.connect(_on_mode_button_pressed)
-	_top_bar.add_child(_mode_btn)
+		_lives.add_child(heart)
+	_line1.add_child(_lives)
 
 
-func _on_mode_button_pressed() -> void:
-	if current_mode == "blitz":
-		set_mode("patrol")
-		show_toast(tr_v("violatorModePatrol"), false)
-		mode_toggled.emit("patrol")
-	else:
-		set_mode("blitz")
-		show_toast(tr_v("violatorModeBlitz"), false)
-		mode_toggled.emit("blitz")
+## Keeps the HUD on one line when it fits; otherwise the timer and lives wrap like the Regulator's.
+func _fit_hud() -> void:
+	if _hud == null or _lives == null:
+		return
+	var available := maxf(120, size.x - 2.0 * HUD_SCREEN_PAD - CHROME - 12.0 - 2.0 * HUD_PAD)
+	var score_font := _score_label.get_theme_font("font")
+	var font_size := _score_font_size
+	_score_label.add_theme_font_size_override("font_size", font_size)
+	var score_room: float = available - (_combo_chip.get_combined_minimum_size().x + 6 if _combo_chip.visible else 0) - 26
+	var measured := score_font.get_string_size(_score_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	if measured > score_room:
+		_score_label.add_theme_font_size_override("font_size", maxi(12, floori(font_size * score_room / measured)))
+	var score_width := _score_group.get_combined_minimum_size().x
+	var timer_width := _timer_group.get_combined_minimum_size().x
+	var needed := score_width + timer_width + _lives.get_combined_minimum_size().x + 24.0
+	var one_line := needed <= available
+	var wrap_timer := score_width + timer_width + 12.0 > available
+	var timer_parent := _line2 if wrap_timer else _line1
+	if _timer_group.get_parent() != timer_parent:
+		_timer_group.reparent(timer_parent, false)
+	if timer_parent == _line1:
+		var spacer_index := _spacer_after_timer.get_index()
+		var target := spacer_index - 1 if _timer_group.get_index() < spacer_index else spacer_index
+		if _timer_group.get_index() != target:
+			_line1.move_child(_timer_group, target)
+	elif _timer_group.get_index() != 0:
+		_line2.move_child(_timer_group, 0)
+	var lives_parent := _line1 if one_line else _line2
+	if _lives.get_parent() != lives_parent:
+		_lives.reparent(lives_parent, false)
+	_line2.visible = not one_line
+	_spacer_after_score.visible = not wrap_timer
+	_spacer_after_timer.visible = one_line
 
 
+## Patrol (endless) mode is chosen at launch (--mode=patrol); the HUD itself has no mode button,
+## exactly like the Regulator's.
 func set_mode(mode: String) -> void:
 	current_mode = mode
-	if is_instance_valid(_mode_icon):
-		if mode == "patrol":
-			_mode_icon.text = char(ICON_STAR)
-			_mode_icon.add_theme_color_override("font_color", Ui.c("gold"))
-		else:
-			_mode_icon.text = char(ICON_TIMER)
-			_mode_icon.add_theme_color_override("font_color", Ui.c("accent"))
+
+
+func update_hud(score: int, combo: int, seconds_or_elapsed: float, lives: int) -> void:
+	if not is_instance_valid(_score_label):
+		return
+	_score_label.text = str(maxi(0, score))
+	_combo_chip.visible = combo > 1
+	_combo_label.text = Ui.t("gameCurrentCombo", { "count": combo })
+	var urgent := false
+	if current_mode == "patrol":
+		var elapsed := int(seconds_or_elapsed)
+		_timer_label.text = "%02d:%02d" % [elapsed / 60, elapsed % 60]
+	else:
+		var left := maxi(0, ceili(seconds_or_elapsed))
+		urgent = left <= 10
+		_timer_label.text = Ui.t("gameSecondsLeft", { "seconds": left })
+	_timer_label.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("text"))
+	_timer_icon.add_theme_color_override("font_color", Ui.c("red") if urgent else Ui.c("secondary"))
+	for i in _hearts.size():
+		var alive := i < lives
+		var heart := _hearts[i]
+		heart.text = char(ICON_HEART if alive else ICON_HEART_EMPTY)
+		heart.add_theme_color_override("font_color", Ui.c("red") if alive else Ui.c("secondary"))
+		heart.pivot_offset = heart.size / 2.0
+		heart.scale = Vector2.ONE if alive else Vector2(0.85, 0.85)
+	_fit_hud()
+
+
+func _chrome_button(icon_code: int, action: Callable) -> PanelContainer:
+	var box := PanelContainer.new()
+	box.custom_minimum_size = Vector2(CHROME, CHROME)
+	box.size_flags_vertical = SIZE_SHRINK_BEGIN
+	box.add_theme_stylebox_override("panel", Ui.box(Ui.c("card"), 12))
+	var center := CenterContainer.new()
+	center.add_child(Ui.icon(icon_code, 18, Ui.c("text")))
+	box.add_child(center)
+	if action.is_valid():
+		var layer := Control.new()
+		layer.set_anchors_preset(PRESET_FULL_RECT)
+		layer.mouse_filter = MOUSE_FILTER_STOP
+		layer.gui_input.connect(_on_tap_input.bind(action))
+		box.add_child(layer)
+	return box
+
+
+## The action runs on the press, as in the Regulator: a release that came from the app's own button
+## must not trigger it.
+func _on_tap_input(event: InputEvent, action: Callable) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		get_viewport().set_input_as_handled()
+		action.call()
+
+
+func _padded(color: Color, radius: int, pad_x: float, pad_y: float) -> StyleBoxFlat:
+	var box := Ui.box(color, radius)
+	box.content_margin_left = pad_x
+	box.content_margin_right = pad_x
+	box.content_margin_top = pad_y
+	box.content_margin_bottom = pad_y
+	return box
+
+
+func _spacer(width: float, height: float) -> Control:
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(width, height)
+	return gap
 
 
 func _spacer_expand() -> Control:
@@ -358,26 +432,13 @@ func _spacer_expand() -> Control:
 	return sp
 
 
-func update_hud(score: int, combo: int, seconds_or_elapsed: float, lives: int) -> void:
-	if is_instance_valid(_score_label):
-		_score_label.text = str(maxi(0, score))
-	if is_instance_valid(_combo_chip):
-		if combo > 1:
-			_combo_chip.visible = true
-			_combo_label.text = "×%d" % combo
-		else:
-			_combo_chip.visible = false
-	if is_instance_valid(_timer_label):
-		if current_mode == "patrol":
-			var elapsed := int(seconds_or_elapsed)
-			_timer_label.text = "%02d:%02d" % [elapsed / 60, elapsed % 60]
-		else:
-			_timer_label.text = str(maxi(0, ceili(seconds_or_elapsed)))
-	for i in _hearts.size():
-		if i < lives:
-			_hearts[i].add_theme_color_override("font_color", Ui.c("red"))
-		else:
-			_hearts[i].add_theme_color_override("font_color", Ui.c("gray"))
+## Honour the app's text setting; icons keep their Flutter sizes.
+func _label(text: String, pixels: int, weight: int, color: Color, wrap := false) -> Label:
+	var text_scale := 1.0
+	for arg in Host.user_args():
+		if arg.begins_with("--text-scale="):
+			text_scale = clampf(float(arg.trim_prefix("--text-scale=")), 0.5, 3.0)
+	return Ui.label(text, roundi(pixels * text_scale), weight, color, wrap)
 
 
 # --- Reticle Overlay & Ripples ---

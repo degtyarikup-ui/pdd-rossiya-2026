@@ -13,6 +13,23 @@ var failed := 0
 func _init() -> void:
 	_run_checks.call_deferred()
 
+func _crosser(game, cw_id: String, index := 0) -> Dictionary:
+	var k := 0
+	for c in game.crossers:
+		if c.cw == cw_id:
+			if k == index:
+				return c
+			k += 1
+	return {}
+
+
+func _clear_walkers(game) -> void:
+	for c in game.crossers:
+		c.state = "hidden"
+		c.timer = 999.0
+		c.node.visible = false
+
+
 func _check(desc: String, condition: bool) -> void:
 	if condition:
 		passed += 1
@@ -32,61 +49,85 @@ func _run_checks() -> void:
 	game._start_game()
 	await process_frame
 	
-	# 1. Check Pedestrian is from Living City (Pedestrian class)
-	_check("Pedestrian is instance of Pedestrian class", game.pedestrian is Pedestrian)
-	var ped_model = game.pedestrian.get_node_or_null("model") as MeshInstance3D
-	_check("Pedestrian has valid model child", ped_model != null)
+	# 1. Crosswalk walkers are Living City pedestrians with the walker gait shader
+	var west: Dictionary = _crosser(game, "west")
+	var ped: Pedestrian = west.node
+	_check("Crosswalk walker is a Pedestrian", ped is Pedestrian)
+	var ped_model = ped.get_node_or_null("model") as MeshInstance3D
+	_check("Walker has valid model child", ped_model != null)
 	var ped_mat = ped_model.material_override as ShaderMaterial
-	_check("Pedestrian has walker ShaderMaterial", ped_mat != null)
-	
-	# 2. Check Pedestrian orientation and gait
-	game.ped_pos_x = -2.0
-	game.ped_dir = 1.0
-	game._update_pedestrian(0.1)
-	_check("Pedestrian facing +X has positive yaw (facing direction of movement)", is_equal_approx(game.pedestrian.rotation.y, PI * 0.5))
-	
-	var phase_1 = ped_mat.get_shader_parameter("walk_phase")
-	game._update_pedestrian(0.5)
-	var phase_2 = ped_mat.get_shader_parameter("walk_phase")
-	_check("Pedestrian gait phase advances with travel distance", phase_2 > phase_1 or phase_2 < phase_1)
-	
-	# Pedestrian continues forward onto sidewalk without ping-pong turnaround
-	game.ped_pos_x = 4.6
-	game._update_pedestrian(0.016)
-	_check("Pedestrian continues walking forward onto sidewalk (+X)", is_equal_approx(game.pedestrian.rotation.y, PI * 0.5))
-	_check("Pedestrian direction remains +1.0 (no ping-pong turnaround)", game.ped_dir == 1.0)
-	# Walks deep into city and despawns
-	game.ped_pos_x = 14.5
-	game._update_pedestrian(0.016)
-	_check("Pedestrian despawns when walking into city (visible is false)", not game.pedestrian.visible)
-	_check("Pedestrian starts procedural respawn pause", game.ped_wait_timer > 0.0)
+	_check("Walker has walker ShaderMaterial", ped_mat != null)
 
-	# Westbound pedestrian walks all the way off-screen (X <= -36.0)
-	game.pedestrian.visible = true
-	game.ped_wait_timer = 0.0
-	game.ped_pos_x = -4.6
-	game.ped_dir = -1.0
-	game._update_pedestrian(0.016)
-	_check("Westbound pedestrian continues walking forward onto sidewalk (-X)", is_equal_approx(game.pedestrian.rotation.y, -PI * 0.5))
-	_check("Westbound pedestrian direction remains -1.0 (no ping-pong turnaround)", game.ped_dir == -1.0)
-	game.ped_pos_x = -15.0
-	game._update_pedestrian(0.016)
-	_check("Westbound pedestrian remains visible at X=-15.0 (still on screen)", game.pedestrian.visible)
-	game.ped_pos_x = -36.5
-	game._update_pedestrian(0.016)
-	_check("Westbound pedestrian despawns off-screen at X <= -36.0", not game.pedestrian.visible)
-	_check("Westbound pedestrian starts procedural respawn pause", game.ped_wait_timer > 0.0)
-	
+	# 2. Pedestrian signals: walkers wait on red and cross on green
+	for c in game.cars:
+		c.queue_free()
+	game.cars.clear()
+	game.light_phase = "ew_green"   # cross street green: west/east crosswalks red
+	game.light_timer = 6.0
+	game.spawn_crosser(west, 1.0, true)
+	game._update_crosser(west, 0.1)
+	_check("West crosswalk light is red while the cross street has green", game.ped_light("cross") == "red")
+	_check("Walker waits at the curb on red", west.state == "wait")
+	_check("Waiting walker stands on the raised sidewalk", ped.position.y >= 0.15)
+	game.light_phase = "ns_green"
+	game.light_timer = 6.0
+	west.spd = 1.5
+	game._update_crosser(west, 0.1)
+	_check("Walker starts crossing on green", west.state == "cross")
+	_check("Walker facing +Z has zero yaw", is_equal_approx(ped.rotation.y, 0.0))
+	var phase_1 = ped_mat.get_shader_parameter("walk_phase")
+	for i in 20:
+		game._update_crosser(west, 0.05)
+	var phase_2 = ped_mat.get_shader_parameter("walk_phase")
+	_check("Walker gait phase advances while crossing", phase_2 != phase_1)
+	_check("Walker on the carriageway walks at road level", ped.position.y < 0.05)
+	game.light_phase = "ns_green_flash"
+	var other_west: Dictionary = _crosser(game, "west", 1)
+	game.spawn_crosser(other_west, -1.0, true)
+	game._update_crosser(other_west, 0.1)
+	_check("Nobody starts on the blinking green", other_west.state == "wait")
+	game.light_phase = "ns_green"
+	game.light_timer = 0.5
+	game._update_crosser(other_west, 0.1)
+	_check("Nobody starts when the green ends before they could reach the far curb", other_west.state == "wait")
+	game.light_timer = 6.0
+
+	# A car about to cross the zebra keeps the walker on the curb
+	var turner = game.spawn_specific_car("main_left", 0, false, "")
+	turner.position = Vector3(-4.2, 0, 3.2)
+	turner.rotation.y = -PI * 0.5
+	turner.speed = 6.0
+	game._update_crosser(other_west, 0.1)
+	_check("Walker does not step in front of an approaching car", other_west.state == "wait")
+	# A walker already crossing pauses when a car is right on them
+	west.s = 3.2
+	west.state = "cross"
+	var s_before: float = west.s
+	game._update_crosser(west, 0.1)
+	_check("Crossing walker pauses instead of walking into a car", is_equal_approx(west.s, s_before))
+	turner.queue_free()
+	game.cars.clear()
+
+	# Walker finishes, keeps walking away and despawns
+	west.s = 12.5
+	west.state = "cross"
+	for i in 200:
+		game._update_crosser(west, 0.05)
+		if west.state == "hidden":
+			break
+	_check("Walker leaves the crosswalk and despawns on the far sidewalk", west.state == "hidden" and not ped.visible)
+	_clear_walkers(game)
+
 	# 3. Vehicle Car-Following (Anti-ramming)
 	# Spawn car 1 stopped at red light
 	game.light_state = "red"
 	var car1 = game.spawn_specific_car("main_straight", 1, false, "")
-	car1.position.z = -3.5 # Stopped at stop line
+	car1.position.z = -12.65 # Stopped at the stop line (a car already past it clears the junction, п. 6.14)
 	car1.speed = 0.0
 	
 	# Spawn car 2 behind car 1 in the same lane
 	var car2 = game.spawn_specific_car("main_straight", 1, false, "")
-	car2.position.z = -12.0
+	car2.position.z = -21.0
 	car2.speed = 10.0
 	
 	# Advance simulation for 2.0 seconds
@@ -166,12 +207,6 @@ func _run_checks() -> void:
 	_check("Follower does not ram lane-changing violator (gap >= 4.5m)", changer_gap >= 4.5)
 	_check("Follower slows down behind lane-changing car (speed < 1.0)", follower.speed < 1.0)
 
-	# 10. Pedestrian Curb Elevation
-	game.ped_pos_x = 4.5
-	game.ped_wait_timer = 0.0
-	game._update_pedestrian(0.016)
-	_check("Pedestrian on sidewalk is elevated (Y >= 0.15)", game.pedestrian.position.y >= 0.15)
-
 	# 11. Cross street pedestrian signs
 	_check("West crosswalk sign 5.19.1 exists", game.find_child("Sign_5_19_1_West", true, false) != null)
 	_check("East crosswalk sign 5.19.1 exists", game.find_child("Sign_5_19_1_East", true, false) != null)
@@ -214,13 +249,60 @@ func _run_checks() -> void:
 	_check("Lane 3 follower does NOT ram into lead car (gap >= 6.0m)", lane3_gap >= 6.0)
 	_check("Lane 3 follower slows down / stops behind lead car (speed < 1.0)", lane3_follower.speed < 1.0)
 
-	# 15. Duplicating Traffic Signals
-	_check("North duplicating traffic light exists", game.traffic_lights_ns.size() >= 2)
-	_check("West duplicating traffic light exists", game.traffic_lights_west.size() >= 2)
-	_check("East duplicating traffic light exists", game.traffic_lights_east.size() >= 2)
-	_check("North duplicate and primary have distinct positions", game.traffic_lights_ns[0].position.distance_to(game.traffic_lights_ns[1].position) > 2.0)
-	_check("West duplicate and primary have distinct positions", game.traffic_lights_west[0].position.distance_to(game.traffic_lights_west[1].position) > 2.0)
-	_check("East duplicate and primary have distinct positions", game.traffic_lights_east[0].position.distance_to(game.traffic_lights_east[1].position) > 2.0)
+	# 15. One signal per approach, each with a camera-facing badge; pedestrian signals on every crosswalk
+	_check("Each approach has its own vehicle signal", game.traffic_lights_ns.size() == 1 and game.traffic_lights_west.size() == 1 and game.traffic_lights_east.size() == 1)
+	_check("Every approach signal has a badge above it", game.signal_badges.size() == 3)
+	for approach in game.signal_badges:
+		var badge: Sprite3D = game.signal_badges[approach]
+		_check("Badge %s faces the camera and draws over buildings" % approach, badge.billboard == BaseMaterial3D.BILLBOARD_ENABLED and badge.no_depth_test)
+	_check("Every crosswalk has two pedestrian signals and a badge", game.ped_badges.size() == 4 and game.ped_signal_heads.values().all(func(h): return h.size() == 2))
+	game.light_phase = "ns_green"
+	game.light_visual_ns = "green"
+	game.light_visual_ew = "red"
+	game._refresh_signal_badges(true)
+	var north_green: Texture2D = game.signal_badges["north"].texture
+	var west_ped_green: Texture2D = game.ped_badges["west"].texture
+	game.light_phase = "ew_green"
+	game.light_visual_ns = "red"
+	game.light_visual_ew = "green"
+	game._refresh_signal_badges()
+	_check("North badge changes with its signal", game.signal_badges["north"].texture != north_green)
+	_check("West pedestrian badge changes with its phase", game.ped_badges["west"].texture != west_ped_green)
+	_check("Main road crosswalks get green with the cross street", game.ped_light("main") == "green" and game.ped_light("cross") == "red")
+	var all_posts: Array = game.VEHICLE_SIGNAL_POS.values()
+	for cw in game.CROSSWALKS.values():
+		all_posts.append_array(cw.signals)
+	var posts_apart := true
+	for i in all_posts.size():
+		for j in range(i + 1, all_posts.size()):
+			if Vector2(all_posts[i].x, all_posts[i].z).distance_to(Vector2(all_posts[j].x, all_posts[j].z)) < 1.2:
+				posts_apart = false
+	_check("Signal posts do not stand on top of each other", posts_apart)
+
+	# 15b. Greenery keeps clear of every post; buildings stay behind the sidewalk fences
+	var swallowed := 0
+	for g in game.greenery_points:
+		for pp in game.pole_points:
+			if g.distance_to(pp) < 2.5:
+				swallowed += 1
+	_check("No tree or bush stands on a lamp, sign or signal post (%d found)" % swallowed, swallowed == 0)
+	var on_fence := 0
+	var overlaps := func(a0: float, a1: float, b0: float, b1: float) -> bool: return a0 < b1 and b0 < a1
+	for b in game.building_footprints:
+		var is_90 := absf(sin(float(b.yaw))) > 0.7
+		var hx: float = (b.size.z if is_90 else b.size.x) * 0.5
+		var hz: float = (b.size.x if is_90 else b.size.z) * 0.5
+		var x0: float = b.center.x - hx
+		var x1: float = b.center.x + hx
+		var z0: float = b.center.z - hz
+		var z1: float = b.center.z + hz
+		for fx in [-10.9, 10.9]:   # fences along the main road
+			if overlaps.call(x0, x1, fx - 1.5, fx + 1.5) and (overlaps.call(z0, z1, -42.0, -18.0) or overlaps.call(z0, z1, 18.0, 42.0)):
+				on_fence += 1
+		for fz in [-8.4, 17.4]:    # fences along the cross street
+			if overlaps.call(z0, z1, fz - 1.5, fz + 1.5) and (overlaps.call(x0, x1, -48.0, -12.0) or overlaps.call(x0, x1, 12.0, 48.0)):
+				on_fence += 1
+	_check("Buildings stay at least 1.5 m behind the sidewalk fences (%d overlap)" % on_fence, on_fence == 0)
 
 	# 16. Arrow Markings Direction Verification
 	var arrow_found_north := false
@@ -240,16 +322,95 @@ func _run_checks() -> void:
 	_check("East approach arrows face West (-X, yaw = PI * 0.5)", arrow_found_east)
 
 	# 17. Zebra Crosswalk Encroachment Detection
+	for c in game.cars:
+		c.queue_free()
+	game.cars.clear()
 	var zebra_car = game.spawn_specific_car("main_straight", 0, false, "")
-	zebra_car.position.z = -11.0 # Encroaching past stop line into crosswalk
+	zebra_car.position.z = -10.5 # Front bumper on the north zebra
 	zebra_car.speed = 0.0
-	game.ped_pos_x = 0.0 # Pedestrian on zebra
-	game.ped_wait_timer = 0.0
+	var north_walker: Dictionary = _crosser(game, "north")
+	north_walker.state = "cross"
+	north_walker.s = -1.0
+	north_walker.dir = 1.0
 	var initial_lives = game.lives
 	game.handle_car_tapped(zebra_car, Vector2(200, 200))
 	_check("Car stopped on zebra is converted to violator without false alarm life penalty", game.lives == initial_lives)
 	_check("Car on zebra violation type is pedestrian_yield", zebra_car.violation_type == ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
 	_check("Car on zebra violation state is active", zebra_car.violation_state == "active")
+	north_walker.state = "hidden"
+	zebra_car.queue_free()
+	game.cars.clear()
+
+	# 17b. Cars give way before the zebra, not on it
+	game.light_phase = "ew_green"
+	var south_walker: Dictionary = _crosser(game, "south")
+	south_walker.state = "cross"
+	south_walker.s = 2.0
+	south_walker.dir = -1.0
+	var through = game.spawn_specific_car("main_straight", 1, false, "")
+	through.position = Vector3(1.8, 0, 2.0)
+	through.speed = 9.0
+	for step in 90:
+		game._advance_car_behavior(through, 0.033)
+	_check("Car stops before a walker's crosswalk (front bumper before z=14)", through.position.z + game.CAR_FRONT <= 14.0)
+	_check("Car stopped for the walker", through.speed < 0.5)
+	south_walker.state = "hidden"
+	through.queue_free()
+	game.cars.clear()
+
+	game.light_phase = "ns_green"
+	var stuck = game.spawn_specific_car("main_straight", 1, false, "")
+	stuck.position = Vector3(1.8, 0, -2.0)   # stopped right after the north zebra
+	stuck.speed = 0.0
+	stuck.target_speed = 0.0
+	stuck.waffle_stop_timer = 0.0
+	var queued = game.spawn_specific_car("main_straight", 1, false, "")
+	queued.position = Vector3(1.8, 0, -24.0)
+	queued.speed = 10.0
+	for step in 150:
+		stuck.speed = 0.0
+		game._advance_car_behavior(queued, 0.033)
+	var q_front: float = queued.position.z + game.CAR_FRONT
+	var q_rear: float = queued.position.z - game.CAR_FRONT
+	_check("Queued car does not stop on the north zebra (front %.2f, rear %.2f)" % [q_front, q_rear], q_front <= -9.0 or q_rear >= -6.5)
+	stuck.queue_free()
+	queued.queue_free()
+	game.cars.clear()
+
+	# 17c. Emergency vehicle: cars ahead pull over, it passes along the centre, cross traffic holds
+	game.light_phase = "ns_green"
+	var slow_a = game.spawn_specific_car("main_straight", 0, false, "")
+	slow_a.position = Vector3(-1.8, 0, -24.0)
+	slow_a.speed = 6.0
+	var slow_b = game.spawn_specific_car("main_straight", 1, false, "")
+	slow_b.position = Vector3(1.8, 0, -26.0)
+	slow_b.speed = 6.0
+	var ambulance = game.spawn_specific_car("main_straight", 1, false, "")
+	ambulance.position = Vector3(1.8, 0, -46.0)
+	ambulance.speed = 12.0
+	game._setup_emergency_appearance(ambulance, "ambulance")
+	var cross_car = game.spawn_specific_car("secondary_merge", 2, false, "")
+	cross_car.position = Vector3(-20.0, 0, 6.8)
+	cross_car.speed = 8.0
+	var min_gap := 99.0
+	var passed_both := false
+	for step in 220:
+		game._update_cars(0.033)
+		for other in [slow_a, slow_b]:
+			if is_instance_valid(other) and is_instance_valid(ambulance):
+				var d := Vector2(other.position.x - ambulance.position.x, other.position.z - ambulance.position.z)
+				# Bodies overlap only when both lateral and longitudinal distances are small.
+				if absf(d.x) < 1.9:
+					min_gap = minf(min_gap, absf(d.y))
+		if is_instance_valid(ambulance) and is_instance_valid(slow_a) and is_instance_valid(slow_b):
+			if ambulance.position.z > slow_a.position.z + 5.0 and ambulance.position.z > slow_b.position.z + 5.0:
+				passed_both = true
+	_check("Cars ahead let the emergency vehicle through", passed_both)
+	_check("Emergency vehicle never drives through a car (min same-line gap %.2f m)" % min_gap, min_gap >= 4.6)
+	_check("Cross traffic held at its stop line for the emergency vehicle", not is_instance_valid(cross_car) or cross_car.position.x <= -12.0 or cross_car.turn_t > 0.0 and cross_car.position.z > 11.8)
+	for c in game.cars:
+		c.queue_free()
+	game.cars.clear()
 
 	# 18. Intersection Flow & Anti-Deadlock Check (Left turn yielding to active traffic, not stopped secondary car)
 	for c in game.cars:

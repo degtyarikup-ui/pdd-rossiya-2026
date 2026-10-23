@@ -31,6 +31,16 @@ func _run_checks() -> void:
 	_report_results()
 
 
+func _walker_on(game, cw_id: String, s_val: float) -> void:
+	for c in game.crossers:
+		if c.cw == cw_id:
+			c.state = "cross"
+			c.s = s_val
+			c.dir = 1.0
+			c.node.visible = true
+			return
+
+
 func _check(desc: String, condition: bool) -> void:
 	if condition:
 		passed += 1
@@ -87,7 +97,8 @@ func _check_scene_integrity() -> void:
 	_check("Sign 2.4 (Уступите дорогу) exists", sign_2_4 != null)
 
 	_check("Traffic light assembly exists", is_instance_valid(game.traffic_light_node))
-	_check("Pedestrian node exists", is_instance_valid(game.pedestrian))
+	_check("Every crosswalk has its walkers", game.crossers.size() >= game.CROSSWALKS.size() * game.CROSSERS_PER_CROSSWALK)
+	_check("Crosswalk walkers are Pedestrian nodes", game.crossers.all(func(c): return c.node is Pedestrian))
 	_check("ViolatorUi node exists", is_instance_valid(game.ui))
 
 	game.queue_free()
@@ -135,11 +146,12 @@ func _check_all_violation_triggers() -> void:
 	_check("RED_LIGHT becomes active past stop line on red signal", red_car.violation_state == "active")
 
 	# 2. PEDESTRIAN_YIELD
-	var ped_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
-	game.ped_pos_x = 0.0  # Center of roadway
-	ped_car.position.z = -9.0
+	var ped_car = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
+	_walker_on(game, "west", 2.0)
+	ped_car.position = Vector3(-2.4, 0, 1.5)
+	ped_car.turn_t = 0.4
 	game._check_car_violation_state(ped_car)
-	_check("PEDESTRIAN_YIELD becomes active near crosswalk when walker on road", ped_car.violation_state == "active")
+	_check("PEDESTRIAN_YIELD becomes active when a turning car meets a walker on the west crosswalk", ped_car.violation_state == "active")
 
 	# 3. SOLID_LINE
 	var line_car = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_SOLID_LINE)
@@ -264,9 +276,10 @@ func _check_step2_classification_mechanic() -> void:
 	_check("Correct classification builds combo streak (x1)", game.combo == 1)
 
 	# 2. Wrong selection
-	var violator2 = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
-	game.ped_pos_x = 0.0
-	violator2.position.z = -8.0
+	var violator2 = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
+	_walker_on(game, "west", 2.0)
+	violator2.position = Vector3(-2.4, 0, 1.5)
+	violator2.turn_t = 0.4
 	game._check_car_violation_state(violator2)
 	game.handle_car_tapped(violator2, Vector2(195, 422))
 
@@ -318,9 +331,9 @@ func _check_endless_patrol_mode() -> void:
 
 	_check("Default game mode is blitz", game.game_mode == "blitz")
 
-	# Toggle mode via UI button
-	game.ui._mode_btn.pressed.emit()
-	_check("Mode toggled to patrol via UI", game.game_mode == "patrol")
+	# Patrol is chosen at launch; the HUD has no mode button, like the Regulator's.
+	game._on_mode_toggled("patrol")
+	_check("Mode switched to patrol", game.game_mode == "patrol" and game.ui.current_mode == "patrol")
 	_check("Patrol elapsed time starts at 0.0", is_equal_approx(game.patrol_elapsed, 0.0))
 	_check("Initial weather phase is day", game.weather_phase == "day")
 
@@ -349,9 +362,8 @@ func _check_endless_patrol_mode() -> void:
 	_check("Combo 5 reached in patrol mode", game.combo == 5)
 	_check("Combo 5 restores +1 life in patrol mode (3 -> 4)", game.lives == 4)
 
-	# Toggle back to blitz via UI button
-	game.ui._mode_btn.pressed.emit()
-	_check("Mode toggled back to blitz via UI", game.game_mode == "blitz")
+	game._on_mode_toggled("blitz")
+	_check("Mode switched back to blitz", game.game_mode == "blitz")
 
 	game.queue_free()
 
