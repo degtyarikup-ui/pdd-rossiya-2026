@@ -14,6 +14,7 @@
 | Состояние Riverpod | `lib/data/repositories/providers.dart` |
 | Модели и локальные данные | `lib/data/models/`, `lib/data/sources/` |
 | Запросы и интеграции | `lib/data/services/` |
+| Марафон | `screens/training/marathon_entry.dart`, `training_screen.dart`, `models/marathon_progress.dart` |
 | Нативные отзывы | `review_prompt_service.dart`, `widgets/completion_review_prompt.dart`; правила ниже |
 | Правила страны | `lib/core/config/country_config.dart` |
 | Дизайн | `lib/core/constants/`, `lib/core/theme/` |
@@ -91,6 +92,51 @@ ru/en/kk; источник и HTML-экспорт — [каталог разме
 [testing.md](../testing.md). Сборки — `scripts/build.sh`; dev-установка —
 `scripts/install_dev.sh`. Секрет сборки берётся из локального `secrets/`.
 `build/` и кэш `.dart_tool/flutter_build/` восстанавливаются при сборке.
+
+## Марафон и кнопка оценки на главной
+
+Третья строка главной: «Оцените нас» слева, «Марафон» справа. Все шесть
+карточек используют общий `_buildModeCard`; высота учитывает три строки
+и масштаб шрифта, маленькие экраны прокручиваются.
+
+Марафон использует обычный `TrainingScreen` с `marathonCategory` и
+`MarathonProgress`: все 800 позиций выбранной категории упорядочены по номеру
+билета и вопроса. Иллюстрационные варианты сохраняют отдельные ID. Можно
+вернуться к отвеченным вопросам; перейти вперёд через неотвеченный нельзя.
+Ответы учитываются в общей статистике, ошибках и серии дней обычным способом.
+
+Отдельные локальные ключи `marathon_v1_ab/cd` содержат выбранные ответы по ID
+и текущий вопрос. Снимок записывается после ответа/перехода; записи упорядочены,
+выход ждёт сохранения. При возвращении диалог показывает число пройденных
+вопросов: синяя «Продолжить», второстепенная «Сбросить и начать сначала».
+Закрытие диалога ничего не меняет; сброс начинает только этот марафон заново.
+Завершённый марафон остаётся доступным для просмотра результата либо нового
+прохождения. Повторный просмотр итога не считается новым завершением для SDK
+отзывов. Текущая позиция марафона локальная (как незаконченная тренировка),
+общая статистика ответов синхронизируется прежним способом. Общий сброс
+прогресса, включая полученный из облака, очищает оба марафона.
+
+Кнопка «Оцените нас» открывает `StoreReviewLink`, независимо от квот SDK.
+ID опубликованного приложения находятся в `CountryConfig`, поэтому `.dev`
+тоже открывает правильную страницу. iOS: App Store с `action=write-review`.
+Google Play: документированная HTTPS-ссылка на карточку приложения. RuStore: официальный deep link карточки, при отсутствии
+магазина — HTTPS. Веб использует HTTPS. Ошибка открытия видна пользователю.
+
+Проверено по официальной документации 24.10.2026: добровольный переход по
+нейтральной кнопке допустим; никаких наград, фильтрации по ожидаемой оценке
+или блокировки возможностей приложения. Источники:
+[Google Play](https://developer.android.com/guide/playcore/in-app-review),
+[Apple — ручной запрос](https://developer.apple.com/documentation/StoreKit/requesting-app-store-reviews),
+[RuStore — §7](https://www.rustore.ru/help/developers/publishing-and-verifying-apps/requirement-apps),
+[RuStore — deep links](https://www.rustore.ru/help/sdk/rustore-deeplinks).
+
+Проверки: `test/marathon_test.dart` (реальные 800 позиций обеих категорий,
+перезапуск, порядок, отмена диалога, сброс и итог),
+`test/home_marathon_layout_test.dart` (ru/en/kk, маленький экран, крупный шрифт,
+горизонтальный экран и тёмная тема), `test/store_review_link_test.dart`
+(маршруты магазинов, dev ID, ошибки открытия и fallback).
+Предпросмотры: `flutter test test/home_marathon_layout_test.dart
+--dart-define=PDD_CAPTURE_MARATHON=true` → `output/marathon-preview/`.
 
 ## Нативный запрос отзыва
 

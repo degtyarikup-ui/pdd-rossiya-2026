@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:pdd_app/data/models/marathon_progress.dart';
 import 'package:pdd_app/data/models/progress_snapshot.dart';
 import 'package:pdd_app/data/models/question_identity.dart';
 
@@ -54,6 +55,8 @@ class ProgressDataSource {
 
   /// Незаконченная тренировка: куда вернуться одним нажатием с главной.
   static const String _keyUnfinishedSession = 'unfinished_session';
+  static String _marathonKey(TicketCategory category) =>
+      'marathon_v1_${category.name}';
 
   /// Максимум хранимых дней активности в локальном кэше.
   static const int _maxStoredActiveDays = 30;
@@ -363,6 +366,9 @@ class ProgressDataSource {
     // Незаконченная тренировка тоже часть прогресса: после сброса
     // возвращать человека в старую сессию было бы странно.
     await _prefs.remove(_keyUnfinishedSession);
+    for (final category in TicketCategory.values) {
+      await _prefs.remove(_marathonKey(category));
+    }
     // Стрик — часть прогресса, чистим вместе со всем.
     await _prefs.remove(_keyStreakCurrent);
     await _prefs.remove(_keyStreakLongest);
@@ -600,6 +606,27 @@ class ProgressDataSource {
 
   Future<void> clearUnfinishedSession() async {
     await _prefs.remove(_keyUnfinishedSession);
+  }
+
+  MarathonProgress? loadMarathon(TicketCategory category) {
+    final raw = _prefs.getString(_marathonKey(category));
+    if (raw == null) return null;
+    try {
+      return MarathonProgress.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveMarathon(
+    TicketCategory category,
+    MarathonProgress progress,
+  ) async {
+    final saved = await _prefs.setString(
+      _marathonKey(category),
+      jsonEncode(progress.toJson()),
+    );
+    if (!saved) throw StateError('Could not save marathon');
   }
 
   Future<bool> consumePendingStreakCelebration() async {
@@ -1003,6 +1030,9 @@ class ProgressDataSource {
     if (reset > previousReset) {
       _prefs.setInt(_keyResetAt, reset);
       _prefs.remove(_keyUnfinishedSession);
+      for (final category in TicketCategory.values) {
+        await _prefs.remove(_marathonKey(category));
+      }
       for (final key in [
         _keyStreakCurrent,
         _keyStreakLongest,

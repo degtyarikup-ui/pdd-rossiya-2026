@@ -29,7 +29,7 @@ class QuestionNumberChip extends StatelessWidget {
   /// true — нейтральный/предстоящий чип (серая цифра); false — белая.
   final bool muted;
 
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

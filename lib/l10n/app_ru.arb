@@ -2012,5 +2012,25 @@
     }
   },
   "roadSignsWrongFeedback": "Неверно · −1 жизнь",
-  "gameLifeLost": "Потеряна одна жизнь"
+  "gameLifeLost": "Потеряна одна жизнь",
+  "rateUs": "Оцените нас",
+  "rateUsOpenFailed": "Не удалось открыть магазин. Попробуйте ещё раз.",
+  "marathon": "Марафон",
+  "marathonResumeTitle": "Продолжить марафон?",
+  "marathonProgress": "Пройдено {answered} из {total} вопросов",
+  "marathonRestart": "Сбросить и начать сначала",
+  "marathonCompleted": "Марафон пройден!",
+  "marathonViewResults": "Посмотреть результат",
+  "marathonOpenFailed": "Не удалось открыть марафон. Попробуйте ещё раз.",
+  "marathonSaveFailed": "Не удалось сохранить марафон. Попробуйте ещё раз перед выходом.",
+  "@marathonProgress": {
+    "placeholders": {
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
 }

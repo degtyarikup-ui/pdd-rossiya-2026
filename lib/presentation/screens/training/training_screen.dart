@@ -1,6 +1,7 @@
 import 'package:pdd_app/data/services/usage_reporter.dart';
 
 import 'dart:async';
+import 'package:pdd_app/data/models/marathon_progress.dart';
 
 import 'package:flutter/material.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -29,6 +30,8 @@ class TrainingScreen extends ConsumerStatefulWidget {
   final String title;
   final bool isExam;
   final UsageFeature? usageFeature;
+  final TicketCategory? marathonCategory;
+  final MarathonProgress? marathonProgress;
 
   /// С какого вопроса открыть. Используется при возврате к незаконченной
   /// тренировке с главного экрана.
@@ -41,7 +44,9 @@ class TrainingScreen extends ConsumerStatefulWidget {
     this.isExam = false,
     this.usageFeature,
     this.startIndex = 0,
-  });
+    this.marathonCategory,
+    this.marathonProgress,
+  }) : assert(marathonProgress == null || marathonCategory != null);
 
   @override
   ConsumerState<TrainingScreen> createState() => _TrainingScreenState();
@@ -57,6 +62,18 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   final List<int> _wrongIndices = [];
   bool _showHint = false;
   bool _finishing = false;
+  bool _leaving = false;
+  Future<void> _marathonWrite = Future.value();
+  bool _marathonSaveFailed = false;
+  bool get _isMarathon => widget.marathonCategory != null;
+  TicketCategory get _category =>
+      widget.marathonCategory ?? ref.read(appSettingsProvider).ticketCategory;
+  int get _unlockedCount {
+    if (!_isMarathon) return widget.questions.length;
+    final first = _savedChoices.indexOf(null);
+    return first < 0 ? widget.questions.length : first + 1;
+  }
+
   String? _lastSpokenQuestionId;
   int _voiceScheduleGen = 0;
   late final PageController _pageController;
@@ -68,10 +85,25 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     super.initState();
     _ttsService = ref.read(ttsServiceProvider);
     if (widget.usageFeature != null) UsageReporter.track(widget.usageFeature!);
-    _savedChoices = List<int?>.filled(widget.questions.length, null);
-    _currentIndex = widget.questions.isEmpty
-        ? 0
-        : widget.startIndex.clamp(0, widget.questions.length - 1);
+    _savedChoices =
+        widget.marathonProgress?.restoreChoices(widget.questions) ??
+        List<int?>.filled(widget.questions.length, null);
+    _currentIndex =
+        widget.marathonProgress?.resumeIndex(widget.questions) ??
+        (widget.questions.isEmpty
+            ? 0
+            : widget.startIndex.clamp(0, widget.questions.length - 1));
+    for (var i = 0; i < _savedChoices.length; i++) {
+      final choice = _savedChoices[i];
+      if (choice == null) continue;
+      final correct =
+          (widget.questions[i]['answers'] as List)[choice]['correct'] == true;
+      (correct ? _correctIndices : _wrongIndices).add(i);
+    }
+    _selectedAnswerIndex = _savedChoices.isEmpty
+        ? null
+        : _savedChoices[_currentIndex];
+    _isAnswerSubmitted = _selectedAnswerIndex != null;
     _pageController = PageController(initialPage: _currentIndex);
     _checkFavorite();
     _rememberPosition();
@@ -85,6 +117,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   /// предложить «Продолжить». Экзамен не запоминаем: там своя логика с
   /// таймером, и вернуться в середину экзамена нельзя.
   void _rememberPosition() {
+    if (_isMarathon) {
+      _saveMarathon();
+      return;
+    }
     if (widget.isExam || _isAllAnswered) return;
     final ids = widget.questions
         .map((q) => q['id'] as String? ?? '')
@@ -106,8 +142,34 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     );
   }
 
+  void _saveMarathon() {
+    if (!_isMarathon || widget.questions.isEmpty) return;
+    final source = ref.read(progressDataSourceProvider);
+    final snapshot = MarathonProgress(
+      answers: {
+        for (var i = 0; i < _savedChoices.length; i++)
+          if (_savedChoices[i] != null)
+            widget.questions[i]['id'] as String: _savedChoices[i]!,
+      },
+      currentQuestionId: widget.questions[_currentIndex]['id'] as String,
+    );
+    _marathonWrite = _marathonWrite.then((_) async {
+      try {
+        await source.saveMarathon(widget.marathonCategory!, snapshot);
+        _marathonSaveFailed = false;
+      } catch (_) {
+        _marathonSaveFailed = true;
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(appL10n.marathonSaveFailed)));
+        }
+      }
+    });
+  }
+
   void _onQuestionPageChanged(int i) {
-    if (i < 0 || i >= widget.questions.length) return;
+    if (i < 0 || i >= _unlockedCount) return;
     _invalidateVoicePlayback();
     setState(() {
       _currentIndex = i;
@@ -130,17 +192,13 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     final index = _currentIndex;
     final question = widget.questions[index];
     final dataSource = ref.read(progressDataSourceProvider);
-    final TicketCategory category = ref
-        .read(appSettingsProvider)
-        .ticketCategory;
+    final TicketCategory category = _category;
     final favorite = await dataSource.isFavorite(
       question['id'] as String,
       category,
     );
 
-    if (mounted &&
-        _currentIndex == index &&
-        ref.read(appSettingsProvider).ticketCategory == category) {
+    if (mounted && _currentIndex == index && _category == category) {
       setState(() => _isFavorite = favorite);
     }
   }
@@ -169,13 +227,12 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   }
 
   void _submitAnswer(int index) {
+    if (_leaving || _finishing || _isAnswerSubmitted) return;
     final question = widget.questions[_currentIndex];
     final answers = question['answers'] as List;
     final isCorrect = answers[index]['correct'] as bool;
     final dataSource = ref.read(progressDataSourceProvider);
-    final TicketCategory category = ref
-        .read(appSettingsProvider)
-        .ticketCategory;
+    final TicketCategory category = _category;
 
     setState(() {
       _selectedAnswerIndex = index;
@@ -190,6 +247,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       category: category,
     );
     ref.read(appDataRefreshProvider.notifier).state++;
+    _saveMarathon();
 
     if (isCorrect) {
       setState(() => _correctIndices.add(_currentIndex));
@@ -209,6 +267,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   /// убираем карточку «Продолжить» с главной, чтобы она не звала обратно
   /// в уже пройденный набор.
   void _clearSessionIfComplete() {
+    if (_isMarathon) return;
     if (widget.isExam) return;
     if (_savedChoices.any((c) => c == null)) return;
     unawaited(ref.read(progressDataSourceProvider).clearUnfinishedSession());
@@ -239,7 +298,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   }
 
   void _goToQuestion(int index) {
-    if (index < 0 || index >= widget.questions.length) return;
+    if (_leaving || _finishing) return;
+    if (index < 0 || index >= _unlockedCount) return;
     if (index == _currentIndex) return;
     HapticFeedbackHelper.tap();
     _invalidateVoicePlayback();
@@ -255,9 +315,18 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   /// Экран результата — только для набора из нескольких вопросов. Разбор
   /// одной ошибки из «Работы над ошибками» — это один вопрос, и подводить
   /// по нему итог было бы издевательством.
-  void _finishSession() {
-    if (_finishing || !_isAllAnswered) return;
+  void _finishSession() async {
+    if (_leaving || _finishing || !_isAllAnswered) return;
     _finishing = true;
+    if (_isMarathon) {
+      _saveMarathon();
+      await _marathonWrite;
+      if (!mounted) return;
+      if (_marathonSaveFailed) {
+        _finishing = false;
+        return;
+      }
+    }
     _voiceScheduleGen++;
     // Озвучку останавливаем, но НЕ ждём: это обращение к плагину, и если он
     // не ответит, человек останется на последнем вопросе с нажатой кнопкой.
@@ -298,12 +367,11 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     final index = _currentIndex;
     final question = widget.questions[index];
     final dataSource = ref.read(progressDataSourceProvider);
-    final category = ref.read(appSettingsProvider).ticketCategory;
+    final category = _category;
     await dataSource.toggleFavorite(question['id'] as String, category);
     if (!mounted) return;
     ref.read(appDataRefreshProvider.notifier).state++;
-    if (_currentIndex == index &&
-        ref.read(appSettingsProvider).ticketCategory == category) {
+    if (_currentIndex == index && _category == category) {
       await _checkFavorite();
     }
   }
@@ -317,7 +385,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       questionId: (question['variantId'] ?? question['id']) as String? ?? '',
       questionText: question['question'] as String?,
       ticketNumber: question['ticketNumber'] as int?,
-      category: ref.read(appSettingsProvider).ticketCategory.name,
+      category: _category.name,
       topic: topics is List && topics.isNotEmpty ? '${topics.first}' : null,
       mode: widget.title,
     );
@@ -333,8 +401,18 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     unawaited(_ttsService.stop());
   }
 
-  void _stopVoiceAndPop([Object? result]) {
+  void _stopVoiceAndPop([Object? result]) async {
+    if (_leaving || _finishing) return;
+    _leaving = true;
     _voiceScheduleGen++;
+    if (_isMarathon) {
+      _saveMarathon();
+      await _marathonWrite;
+      if (_marathonSaveFailed) {
+        _leaving = false;
+        return;
+      }
+    }
     // Navigation must finish even if the native audio plugin stops replying.
     unawaited(_ttsService.stop());
     if (!mounted) return;
@@ -446,7 +524,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                   children: [
                     PageView.builder(
                       controller: _pageController,
-                      itemCount: widget.questions.length,
+                      itemCount: _unlockedCount,
                       onPageChanged: _onQuestionPageChanged,
                       itemBuilder: (context, pageIndex) {
                         return _buildTrainingQuestionPage(
@@ -641,7 +719,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           number: index + 1,
           backgroundColor: backgroundColor,
           muted: !isCurrent && !isCorrect && !isWrong,
-          onTap: () => _goToQuestion(index),
+          onTap: index < _unlockedCount ? () => _goToQuestion(index) : null,
         );
       },
     );

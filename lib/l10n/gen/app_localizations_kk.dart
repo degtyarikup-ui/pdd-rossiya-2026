@@ -4180,4 +4180,38 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameLifeLost => 'Бір өмір жоғалды';
+
+  @override
+  String get rateUs => 'Бізді бағалаңыз';
+
+  @override
+  String get rateUsOpenFailed => 'Дүкенді ашу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get marathon => 'Марафон';
+
+  @override
+  String get marathonResumeTitle => 'Марафонды жалғастырасыз ба?';
+
+  @override
+  String marathonProgress(int answered, int total) {
+    return '$total сұрақтың $answered сұрағына жауап берілді';
+  }
+
+  @override
+  String get marathonRestart => 'Бастапқы күйге қайтарып, қайта бастау';
+
+  @override
+  String get marathonCompleted => 'Марафон аяқталды!';
+
+  @override
+  String get marathonViewResults => 'Нәтижені көру';
+
+  @override
+  String get marathonOpenFailed =>
+      'Марафонды ашу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get marathonSaveFailed =>
+      'Марафонды сақтау мүмкін болмады. Шығудан бұрын қайта көріңіз.';
 }

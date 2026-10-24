@@ -4202,4 +4202,39 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameLifeLost => 'Потеряна одна жизнь';
+
+  @override
+  String get rateUs => 'Оцените нас';
+
+  @override
+  String get rateUsOpenFailed =>
+      'Не удалось открыть магазин. Попробуйте ещё раз.';
+
+  @override
+  String get marathon => 'Марафон';
+
+  @override
+  String get marathonResumeTitle => 'Продолжить марафон?';
+
+  @override
+  String marathonProgress(int answered, int total) {
+    return 'Пройдено $answered из $total вопросов';
+  }
+
+  @override
+  String get marathonRestart => 'Сбросить и начать сначала';
+
+  @override
+  String get marathonCompleted => 'Марафон пройден!';
+
+  @override
+  String get marathonViewResults => 'Посмотреть результат';
+
+  @override
+  String get marathonOpenFailed =>
+      'Не удалось открыть марафон. Попробуйте ещё раз.';
+
+  @override
+  String get marathonSaveFailed =>
+      'Не удалось сохранить марафон. Попробуйте ещё раз перед выходом.';
 }

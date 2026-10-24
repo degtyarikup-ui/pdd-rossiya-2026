@@ -4187,4 +4187,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameLifeLost => 'One life lost';
+
+  @override
+  String get rateUs => 'Rate us';
+
+  @override
+  String get rateUsOpenFailed => 'Could not open the store. Please try again.';
+
+  @override
+  String get marathon => 'Marathon';
+
+  @override
+  String get marathonResumeTitle => 'Continue the marathon?';
+
+  @override
+  String marathonProgress(int answered, int total) {
+    return '$answered of $total questions answered';
+  }
+
+  @override
+  String get marathonRestart => 'Reset and start again';
+
+  @override
+  String get marathonCompleted => 'Marathon complete!';
+
+  @override
+  String get marathonViewResults => 'View results';
+
+  @override
+  String get marathonOpenFailed =>
+      'Could not open the marathon. Please try again.';
+
+  @override
+  String get marathonSaveFailed =>
+      'Could not save the marathon. Please try again before leaving.';
 }

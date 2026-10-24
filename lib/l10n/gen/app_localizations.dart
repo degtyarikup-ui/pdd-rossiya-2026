@@ -7011,6 +7011,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Потеряна одна жизнь'**
   String get gameLifeLost;
+
+  /// No description provided for @rateUs.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оцените нас'**
+  String get rateUs;
+
+  /// No description provided for @rateUsOpenFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть магазин. Попробуйте ещё раз.'**
+  String get rateUsOpenFailed;
+
+  /// No description provided for @marathon.
+  ///
+  /// In ru, this message translates to:
+  /// **'Марафон'**
+  String get marathon;
+
+  /// No description provided for @marathonResumeTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить марафон?'**
+  String get marathonResumeTitle;
+
+  /// No description provided for @marathonProgress.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пройдено {answered} из {total} вопросов'**
+  String marathonProgress(int answered, int total);
+
+  /// No description provided for @marathonRestart.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сбросить и начать сначала'**
+  String get marathonRestart;
+
+  /// No description provided for @marathonCompleted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Марафон пройден!'**
+  String get marathonCompleted;
+
+  /// No description provided for @marathonViewResults.
+  ///
+  /// In ru, this message translates to:
+  /// **'Посмотреть результат'**
+  String get marathonViewResults;
+
+  /// No description provided for @marathonOpenFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть марафон. Попробуйте ещё раз.'**
+  String get marathonOpenFailed;
+
+  /// No description provided for @marathonSaveFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сохранить марафон. Попробуйте ещё раз перед выходом.'**
+  String get marathonSaveFailed;
 }
 
 class _AppLocalizationsDelegate

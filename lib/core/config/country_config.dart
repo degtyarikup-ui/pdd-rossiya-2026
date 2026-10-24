@@ -89,6 +89,10 @@ class CountryConfig {
   /// Публичный веб-адрес приложения страны (для шеринга результата и т.п.).
   final String webUrl;
 
+  /// Published store identities; dev builds must also link to these listings.
+  final String androidPackageName;
+  final String appStoreId;
+
   /// Страница политики конфиденциальности. App Store (Guideline 5.1.1(i))
   /// требует ссылку И в метаданных, И внутри приложения; Google Play — тоже.
   /// Пусто → пункт в настройках скрыт.
@@ -123,6 +127,8 @@ class CountryConfig {
     required this.hasCdCategory,
     required this.examRules,
     required this.webUrl,
+    this.androidPackageName = '',
+    this.appStoreId = '',
     this.privacyUrl = '',
     this.termsUrl = '',
     this.tariffsUrl = '',
@@ -212,6 +218,8 @@ class CountryConfig {
     assetsRoot: 'assets/countries/ru',
     hasCdCategory: true,
     webUrl: 'https://pdd-drive.ru',
+    androidPackageName: 'ru.pdd.pdd_app',
+    appStoreId: '6792369533',
     privacyUrl: 'https://pdd-drive.ru/privacy.html',
     termsUrl: 'https://pdd-drive.ru/terms.html',
     tariffsUrl: 'https://pdd-drive.ru/tarify/',

@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:pdd_app/core/config/store_config.dart';
+import 'package:pdd_app/data/services/store_review_link.dart';
+import 'package:pdd_app/presentation/screens/training/marathon_entry.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -465,6 +468,45 @@ class _HomeTab extends ConsumerStatefulWidget {
 
 class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
   bool _routeSubscribed = false;
+  bool _openingMarathon = false;
+  bool _openingStore = false;
+
+  Future<void> _openMarathon() async {
+    if (_openingMarathon) return;
+    HapticFeedbackHelper.tap();
+    setState(() => _openingMarathon = true);
+    try {
+      await openMarathon(context, ref);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(appL10n.marathonOpenFailed)));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _openingMarathon = false);
+        ref.read(appDataRefreshProvider.notifier).state++;
+      }
+    }
+  }
+
+  Future<void> _rateApp() async {
+    if (_openingStore) return;
+    HapticFeedbackHelper.tap();
+    _openingStore = true;
+    final opened = await StoreReviewLink(
+      platform: defaultTargetPlatform,
+      store: StoreConfig.current,
+      isWeb: kIsWeb,
+    ).open();
+    _openingStore = false;
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(appL10n.rateUsOpenFailed)));
+    }
+  }
 
   @override
   void initState() {
@@ -545,7 +587,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
             3 +
             textScaler.scale(10) * 1.1;
         final double continueCardH = hasContinueCard ? 56.0 : 0.0;
-        final double totalGaps = gap * (hasContinueCard ? 4 : 3);
+        final double totalGaps = gap * (hasContinueCard ? 5 : 4);
 
         final double availableH =
             totalH -
@@ -556,16 +598,23 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
             continueCardH -
             totalGaps;
 
+        final minButtonHeight = math.max(
+          AppDimensions.topicButtonHeight,
+          AppDimensions.spacingL * 2 +
+              AppDimensions.iconSize +
+              12 +
+              textScaler.scale(_homeNavLabelFontSize) * 1.1,
+        );
         final double examHeight;
         final double buttonHeight;
 
-        if (availableH > 260) {
-          examHeight = (availableH * 0.40).clamp(130.0, 220.0);
+        if (availableH > 430) {
+          examHeight = (availableH * 0.32).clamp(130.0, 220.0);
           final double remainingForButtons = availableH - examHeight;
-          buttonHeight = math.max(100.0, remainingForButtons / 2);
+          buttonHeight = math.max(minButtonHeight, remainingForButtons / 3);
         } else {
           examHeight = 140.0;
-          buttonHeight = AppDimensions.topicButtonHeight;
+          buttonHeight = minButtonHeight;
         }
 
         return SingleChildScrollView(
@@ -721,6 +770,31 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   ),
                 ],
               ),
+              const SizedBox(height: gap),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildModeCard(
+                      context: context,
+                      icon: Icons.rate_review_outlined,
+                      label: appL10n.rateUs,
+                      height: buttonHeight,
+                      onTap: _rateApp,
+                    ),
+                  ),
+                  const SizedBox(width: gap),
+                  Expanded(
+                    child: _buildModeCard(
+                      context: context,
+                      icon: Icons.route_outlined,
+                      label: appL10n.marathon,
+                      height: buttonHeight,
+                      loading: _openingMarathon,
+                      onTap: _openMarathon,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         );
@@ -786,7 +860,9 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
 
   Widget _buildModeCard({
     required BuildContext context,
-    required String iconAsset,
+    String? iconAsset,
+    IconData? icon,
+    bool loading = false,
     required String label,
     required double height,
     required VoidCallback onTap,
@@ -807,14 +883,26 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset(
-                iconAsset,
-                width: AppDimensions.iconSize,
-                height: AppDimensions.iconSize,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-                gaplessPlayback: true,
-              ),
+              if (loading)
+                SizedBox(
+                  width: AppDimensions.iconSize,
+                  height: AppDimensions.iconSize,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.accent,
+                  ),
+                )
+              else if (icon != null)
+                Icon(icon, color: colors.accent, size: AppDimensions.iconSize)
+              else
+                Image.asset(
+                  iconAsset!,
+                  width: AppDimensions.iconSize,
+                  height: AppDimensions.iconSize,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  gaplessPlayback: true,
+                ),
               const Spacer(),
               FittedBox(
                 fit: BoxFit.scaleDown,

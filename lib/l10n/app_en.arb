@@ -1443,5 +1443,25 @@
     }
   },
   "roadSignsWrongFeedback": "Incorrect · −1 life",
-  "gameLifeLost": "One life lost"
+  "gameLifeLost": "One life lost",
+  "rateUs": "Rate us",
+  "rateUsOpenFailed": "Could not open the store. Please try again.",
+  "marathon": "Marathon",
+  "marathonResumeTitle": "Continue the marathon?",
+  "marathonProgress": "{answered} of {total} questions answered",
+  "marathonRestart": "Reset and start again",
+  "marathonCompleted": "Marathon complete!",
+  "marathonViewResults": "View results",
+  "marathonOpenFailed": "Could not open the marathon. Please try again.",
+  "marathonSaveFailed": "Could not save the marathon. Please try again before leaving.",
+  "@marathonProgress": {
+    "placeholders": {
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
 }
