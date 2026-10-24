@@ -14,6 +14,11 @@
   const button = (act, label, icon, cls = "") => `<button class="btn ${cls}" data-act="${act}">${icon ? ic(icon) : ""}<span>${esc(label)}</span></button>`;
   const slider = (name, label, value, min, max, step, shown) => `<div class="slider-row"><div class="slider-h"><span>${esc(label)}</span><em data-shown="${name}">${esc(shown)}</em></div>
     <input type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-slider="${name}"></div>`;
+  const stopStyles = [{ value: "solid", title: "Сплошная", icon: "stopline" }, { value: "yield", title: "Треугольники", icon: "yieldline" }];
+  const setStopStyle = (item, value) => {
+    if (value === "yield") item.stopStyle = "yield";
+    else delete item.stopStyle;
+  };
 
   function compactHelp(p) {
     p.querySelectorAll(".info-help, p.muted").forEach(text => text.remove());
@@ -690,8 +695,9 @@
       ${st.kind !== "yard" && !st.manualMarks ? card("Разметка вручную", button("marks-own", "Сделать линии редактируемыми", "marking", "ghost wide")) : ""}
       ${st.bend ? card("Геометрия",button("straighten", "Выпрямить", "road", "ghost wide")) : ""}
       ${ends.length ? card("У перекрёстка", ends.map((e, i) => `<div class="end-row"><span>${ends.length > 1 ? `Конец ${i + 1}` : "Въезд"}</span>
-          <button class="pick ${e.set.stop ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="stop">${ic("stopline")}Стоп-линия</button>
+          <button class="pick ${e.set.stop ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="stop">${ic(e.set.stopStyle === "yield" ? "yieldline" : "stopline")}${e.set.stopStyle === "yield" ? "Треугольники" : "Стоп-линия"}</button>
           <button class="pick ${e.set.zebra ? "on" : ""}" data-act="end" data-end="${e.end}" data-what="zebra">${ic("zebra")}Зебра</button></div>
+          ${e.set.stop ? `<label>Вид линии</label>${chips(`stop-style-${e.end}`, stopStyles, e.set.stopStyle || "solid")}` : ""}
           ${e.kind === "junction" ? (() => {
             const value = Layout.endOffset(L, st, e.nid, crop), limits = Layout.endOffsetLimits(L, st, e.nid, crop);
             return slider(`approach-${e.end}`, Number(st.median) ? "Островок и стоп-линия" : "Положение стоп-линии", value, limits.min, limits.max, 0.1, offsetText(value))
@@ -733,6 +739,14 @@
         st.ends[d.end] = { ...(st.ends[d.end] || {}) };
         st.ends[d.end][d.what] = !st.ends[d.end][d.what];
       }),
+      ...Object.fromEntries(ends.map(e => [`chip:stop-style-${e.end}`, v => {
+        if (!stopStyles.some(style => style.value === v)) return;
+        edit(() => {
+          st.ends = st.ends || {};
+          st.ends[e.end] = { ...(st.ends[e.end] || {}), stop: true };
+          setStopStyle(st.ends[e.end], v);
+        });
+      }])),
       "approach-reset": d => edit(sc => Layout.setEndOffset(sc, st.id, d.nid, 0)),
       ...Object.fromEntries(ends.filter(e => e.kind === "junction").flatMap(e => [
         [`slider:approach-${e.end}`, live((sc, v) => { if (!App.isLocked(ref)) Layout.setEndOffset(sc, st.id, e.nid, v); }, v => {
@@ -937,6 +951,8 @@
     const paint = m.type === "paint";
     p.innerHTML = `${head(`<span class="ibadge">${ic("marking")}</span>`, App.nameOf(ref), paint ? "снята с картинки билета" : "")}
       ${paint ? "" : card("Вид", chips("type", Object.entries(Catalog.MARKS).map(([k, v]) => ({ value: k, html: `<span class="mark-pic m-${k}"></span>`, tip: v.title })), m.type, { cls: "tiles" }))}
+      ${m.type === "stop" ? card("Вид линии", chips("stop-style", stopStyles, m.stopStyle || "solid")
+        + (m.stopStyle === "yield" ? button("yield-flip", "Развернуть треугольники", "rotr", "ghost wide") : "")) : ""}
       ${card("Цвет", chips("colour", [{ value: "white", html: `<span class="paint w"></span>`, title: "Белая" }, { value: "yellow", html: `<span class="paint y"></span>`, title: "Жёлтая" }], m.colour || "white"))}
       ${m.type === "solid" || m.type === "dashed" ? card("Вторая линия рядом", chips("double", [{ value: "", title: "Нет" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" }, { value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }], m.double || "", { cls: "tiles" })
         + (m.double ? button("flip", "На другую сторону", "rotr", "ghost wide") : "")
@@ -950,7 +966,12 @@
         if ((v === "stop" || v === "zebra") && m.points) m.points = m.points.slice(0, 2);
         if (v === "zebra") m.length = m.length || 4; else delete m.length;
         if (v === "stop") m.width = 0.4; else delete m.width;
+        if (v !== "stop") delete m.stopStyle;
       }),
+      "chip:stop-style": v => {
+        if (!App.isLocked(ref) && stopStyles.some(style => style.value === v)) App.edit(() => setStopStyle(m, v));
+      },
+      "yield-flip": () => { if (!App.isLocked(ref)) App.edit(() => { m.points.reverse(); }); },
       "chip:colour": (v) => App.edit(() => { m.colour = v; }),
       "chip:double": (v) => App.edit(() => { if (v) { m.double = v; m.side = m.side || 1; } else { delete m.double; delete m.side; } }),
       flip: () => App.edit(() => { m.side = -(m.side || 1); }),

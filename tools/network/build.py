@@ -28,6 +28,8 @@ Markings (`markings`): each item is one of
     solid    polyline `points`, `width` (default 0.13);
     dashed   polyline `points`, `width`, dash 2 m with a 3 m gap (game.js corridorDashes);
     stop     bar from points[0] to points[1] across the lane, `width` (default 0.4);
+             `stopStyle: "yield"` replaces the bar with separate yield triangles. Points run
+             from the centre line toward the driver's right; tips face approaching traffic;
     zebra    points[0] -> points[1] is the crossing's centre line across the road: bars
              of `length` (default 4 m) along the traffic, 0.7 m wide, 0.7 m apart;
 and the `colour` is "white" (default) or "yellow". Markings are drawn at MARK_Y, cut to the
@@ -65,6 +67,7 @@ MARK_COLOURS = {"white": "#f2f4f8", "yellow": "#f5b025", "rail": "#9ea6ae"}   # 
 MARK_WIDTH = {"solid": 0.13, "dashed": 0.13, "stop": 0.4}
 DASH, GAP = 2.0, 3.0                 # game.js corridorDashes: 2 m line, 3 m gap
 ZEBRA_LENGTH, ZEBRA_STRIPE = 4.0, 0.7
+YIELD_BASE, YIELD_DEPTH, YIELD_GAP = 0.5, 0.6, 0.3
 
 
 def crop_box(scene: dict) -> Polygon:
@@ -439,6 +442,28 @@ def single_marking(m: dict):
         parts = [polygon_of(p) for p in m.get("polygons", [])]
         return unary_union(parts) if parts else Polygon()
     pts = [tuple(p) for p in m.get("points", [])]
+    if kind == "stop" and m.get("stopStyle") == "yield":
+        if len(pts) < 2:
+            return Polygon()
+        (ax, az), (bx, bz) = pts[:2]
+        dx, dz = bx - ax, bz - az
+        length = math.hypot(dx, dz)
+        if length < YIELD_BASE:
+            return Polygon()
+        ux, uz = dx / length, dz / length
+        nx, nz = -uz, ux  # From centre line to the driver's right: tips point toward the driver.
+        count = max(1, math.floor((length + YIELD_GAP + 1e-9) / (YIELD_BASE + YIELD_GAP)))
+        inset = (length - (count * YIELD_BASE + (count - 1) * YIELD_GAP)) / 2
+        triangles = []
+        for i in range(count):
+            at = inset + i * (YIELD_BASE + YIELD_GAP)
+            triangles.append(Polygon([
+                (ax + ux * at, az + uz * at),
+                (ax + ux * (at + YIELD_BASE), az + uz * (at + YIELD_BASE)),
+                (ax + ux * (at + YIELD_BASE / 2) + nx * YIELD_DEPTH,
+                 az + uz * (at + YIELD_BASE / 2) + nz * YIELD_DEPTH),
+            ]))
+        return unary_union(triangles)
     if kind in ("solid", "stop"):
         if len(pts) < 2:
             return Polygon()

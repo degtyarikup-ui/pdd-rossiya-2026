@@ -395,7 +395,8 @@ const Layout = (() => {
         const tin = mul(along(from, 1).t, -1);              // driving toward the node
         if (end.stop) {
           const s = along(from, stopDistance(L, st, nid, crop)).p;
-          mark({ type: "stop", width: 0.4, points: [P(s), P(add(s, mul(right(tin), w / 2)))] });
+          mark({ type: "stop", width: 0.4, ...(end.stopStyle === "yield" ? { stopStyle: "yield" } : {}),
+            points: [P(s), P(add(s, mul(right(tin), w / 2)))] });
         }
         if (end.zebra) {
           const at = kind === "ring" ? gapAt(L, st, nid, crop) + ZEBRA_LEN / 2 : Math.max(gapAt(L, st, nid, crop), 4) + 0.5 + ZEBRA_LEN / 2 + endOffset(L, st, nid, crop);
