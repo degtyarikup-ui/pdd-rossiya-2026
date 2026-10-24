@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/data/models/marathon_progress.dart';
 import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
@@ -39,9 +40,10 @@ Future<void> openMarathon(BuildContext context, WidgetRef ref) async {
   }
   final source = ref.read(progressDataSourceProvider);
   var progress = source.loadMarathon(category);
-  if (progress != null) {
-    final choices = progress.restoreChoices(questions);
-    final answered = choices.whereType<int>().length;
+  final choices = progress?.restoreChoices(questions);
+  final answered = choices?.whereType<int>().length ?? 0;
+  if (answered == 0) progress = null;
+  if (progress != null && choices != null) {
     final resume = await showDialog<bool>(
       context: context,
       builder: (_) =>
@@ -127,12 +129,7 @@ class MarathonResumeDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.accent,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(52),
-              ),
+            ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               child: Text(
                 complete ? appL10n.marathonViewResults : appL10n.continueButton,
@@ -142,6 +139,11 @@ class MarathonResumeDialog extends StatelessWidget {
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: colors.secondaryText,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.buttonRadius,
+                  ),
+                ),
               ),
               onPressed: () => Navigator.of(context).pop(false),
               child: Text(appL10n.marathonRestart, textAlign: TextAlign.center),

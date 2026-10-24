@@ -240,7 +240,7 @@ void main() {
       await pumpEntry(tester, data: fresh);
       await tap(tester, 'Открыть');
       expect(find.text('Пройдено 1 из 3 вопросов'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Продолжить'), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, 'Продолжить'), findsOneWidget);
       Navigator.of(tester.element(find.byType(MarathonResumeDialog))).pop();
       await tester.pumpAndSettle();
       expect(find.byType(TrainingScreen), findsNothing);
@@ -270,6 +270,25 @@ void main() {
             .correct,
         2,
       );
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'an empty saved marathon opens directly after leaving and restarting',
+    (tester) async {
+      await pumpEntry(tester);
+      await tap(tester, 'Открыть');
+      await close(tester);
+      expect(source.loadMarathon(TicketCategory.ab)!.answers, isEmpty);
+
+      await tester.pumpWidget(const SizedBox());
+      final fresh = ProgressDataSource();
+      await fresh.init();
+      await pumpEntry(tester, data: fresh);
+      await tap(tester, 'Открыть');
+      expect(find.byType(MarathonResumeDialog), findsNothing);
+      expect(find.text('Вопрос 1 из 3'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     },
   );

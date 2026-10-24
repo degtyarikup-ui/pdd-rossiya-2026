@@ -172,15 +172,14 @@ void main() {
         builder: (_) => const MarathonResumeDialog(answered: 137, total: 800),
       );
       await tester.pumpAndSettle();
-      final primary = find.widgetWithText(FilledButton, l10n.continueButton);
+      final primary = find.widgetWithText(ElevatedButton, l10n.continueButton);
       await tester.ensureVisible(primary);
       await tester.pumpAndSettle();
       expect(primary.hitTestable(), findsOneWidget);
-      final button = tester.widget<FilledButton>(primary);
-      expect(
-        button.style!.backgroundColor!.resolve({}),
-        AppColors.of(context).accent,
-      );
+      final style = Theme.of(
+        tester.element(primary),
+      ).elevatedButtonTheme.style!;
+      expect(style.backgroundColor!.resolve({}), AppColors.of(context).accent);
       await screenshot(tester, key, 'resume-${config.name}');
       await tester.ensureVisible(find.text(l10n.marathonRestart));
       await tester.pumpAndSettle();
