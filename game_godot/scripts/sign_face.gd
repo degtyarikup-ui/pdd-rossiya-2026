@@ -1,5 +1,5 @@
-## Official SVGs include padding, and four catalogue images include several examples.
-## Keep their original layout slots; render the first complete individual panel without stretching.
+## App catalogue SVGs retain their vector padding; sheet panels are selected by the exporter.
+## Fit each visible face without stretching its silhouette.
 class_name SignFace
 extends RefCounted
 
@@ -40,6 +40,11 @@ static func legacy_height(code: String,width: float) -> float:
 static func fit(tex: Texture2D,slot: Vector2) -> Vector2:
 	var size: Vector2=tex.get_meta("canvas_size",Vector2(tex.get_width(),tex.get_height()))
 	return size*minf(slot.x/size.x,slot.y/size.y)
+
+static func visible_size(tex: Texture2D, slot: Vector2) -> Vector2:
+	var code: String = tex.get_meta("sign_code", "")
+	var outline: Array = _layout.get(code, {}).get("outline", [0, 0, 1, 1])
+	return fit(tex, slot) * Vector2(outline[2], outline[3])
 
 static func white() -> ImageTexture:
 	if _white==null:
@@ -95,8 +100,10 @@ static func outline_shape(code: String,dynamic: bool=false) -> int:
 	if code in ["2.1","2.2"]:return 2
 	if code=="2.4":return 5
 	if code=="2.5":return 6
+	if code=="2.6":return 1
+	if code=="1.35" or code.begins_with("4.8."):return 0
 	if code.begins_with("3.") or code.begins_with("4."):return 1
 	if code.begins_with("1.3."):return 0 # Saint Andrew's crosses have their own silhouette.
-	if code.begins_with("1.4.") or code=="1.34.3":return 3
+	if code.begins_with("1.4.") or code.begins_with("1.34."):return 3
 	if code.begins_with("1.") or code.begins_with("2.3."):return 4
 	return 3

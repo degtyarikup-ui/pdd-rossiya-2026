@@ -97,6 +97,7 @@ const Catalog = (() => {
   };
   SIGN_NAMES["8.13"] = "Направление главной дороги";
   const signName = (code) => SIGN_NAMES[code] || `Знак ${code}`;
+  const setSignCatalog = info => { for (const [code, sign] of Object.entries(info || {})) SIGN_NAMES[code] = sign.title; };
 
-  return { signName, PROP_TINTS, PROP_GROUPS, propName, groupOf, ACTORS, ACTOR_ORDER, SPEEDS, speedOf, TINTS, EXITS, LETTERS, LETTER_COLOUR, LIGHTS, MARKS };
+  return { signName, setSignCatalog, PROP_TINTS, PROP_GROUPS, propName, groupOf, ACTORS, ACTOR_ORDER, SPEEDS, speedOf, TINTS, EXITS, LETTERS, LETTER_COLOUR, LIGHTS, MARKS };
 })();

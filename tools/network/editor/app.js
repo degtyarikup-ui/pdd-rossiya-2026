@@ -776,6 +776,7 @@ const App = (() => {
     addEventListener("beforeunload", (e) => { if (state.dirty || Textures.dirtyKinds().length) { e.preventDefault(); e.returnValue = ""; } });
     try {
       [state.catalog] = await Promise.all([api("/api/catalog"), Textures.load(), loadList()]);
+      Catalog.setSignCatalog(state.catalog.signInfo);
     } catch (e) {
       toast("Сервер редактора не отвечает: " + e.message, "bad");
       return;

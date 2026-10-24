@@ -650,9 +650,11 @@ const Scene3D = (() => {
     if (['2.1', '2.2'].includes(code)) return 2;
     if (code === '2.4') return 5;
     if (code === '2.5') return 6;
+    if (code === '2.6') return 1;
+    if (code === '1.35' || code.startsWith('4.8.')) return 0;
     if (code.startsWith('3.') || code.startsWith('4.')) return 1;
     if (code.startsWith('1.3.')) return 0;
-    if (code.startsWith('1.4.') || code === '1.34.3') return 3;
+    if (code.startsWith('1.4.') || code.startsWith('1.34.')) return 3;
     if (code.startsWith('1.') || code.startsWith('2.3.')) return 4;
     return 3;
   }
@@ -779,17 +781,31 @@ const Scene3D = (() => {
       fit();
     };
     const faces = SignMount.faces(o);
+    const imageSize = (code, width) => {
+      const spec = App.state.catalog?.signLayouts?.[code], source = spec?.sourceSize || [1, 1];
+      const outline = spec?.outline || [0, 0, 1, 1];
+      return [width * outline[2], width * source[1] / source[0] * outline[3]];
+    };
+    const faceSize = (face, width) => {
+      if (face.laneDirections?.length) { const size = LaneSign.dimensions(face.laneDirections); return [size.width, size.height]; }
+      return face.code === '8.13' ? [width * .75, width * .75] : imageSize(face.code, width);
+    };
     for (let i = faces.length - 1; i >= 0; i--) {
       const face = faces[i], gap = i ? 0.16 : 0.05;
-      const width = face.code.startsWith('1.4.') ? SIGN_W * 0.25 : face.laneDirections?.length ? LaneSign.dimensions(face.laneDirections).width : SIGN_W;
+      let width = face.code.startsWith('1.4.') ? SIGN_W * 0.25 : face.laneDirections?.length ? LaneSign.dimensions(face.laneDirections).width : SIGN_W;
+      if (i > 0 && face.code.startsWith('8.')) {
+        const above = faces[i - 1], aboveWidth = above.laneDirections?.length ? LaneSign.dimensions(above.laneDirections).width : SIGN_W;
+        width = SignMount.plateWidth(faceSize(above, aboveWidth), faceSize(face, 1));
+      }
       if (face.plate) {
         const c = document.createElement('canvas'); c.width = 512; c.height = 120;
         const ctx = c.getContext('2d'); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 512, 120);
         ctx.fillStyle = '#151515'; ctx.font = 'bold 60px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(face.plate, 256, 82, 490);
         add(new THREE.CanvasTexture(c), width * 0.8, 0.28 * SIGN_W / 0.8);
       }
-      if (face.plateSign) imagePart(face.plateSign, face.plateSign.startsWith('1.4.') ? SIGN_W * 0.25 : width * 0.8, 0.05);
-      if (face.code === '8.13') { add(mainRoadTexture(face.mainRoad || [], face.roads), SIGN_W * 0.75, SIGN_W * 0.75, gap); if (!i) topFaceHeight = SIGN_W * 0.75; }
+      if (face.plateSign) imagePart(face.plateSign, face.plateSign.startsWith('1.4.') ? SIGN_W * 0.25
+        : SignMount.plateWidth(faceSize(face, width), imageSize(face.plateSign, 1)), 0.05);
+      if (face.code === '8.13') { add(mainRoadTexture(face.mainRoad || [], face.roads), width * 0.75, width * 0.75, gap); if (!i) topFaceHeight = width * 0.75; }
       else {
         if (face.mainRoad?.length) add(mainRoadTexture(face.mainRoad, face.roads), SIGN_W * 0.6, SIGN_W * 0.6);
         if (face.laneDirections?.length) {

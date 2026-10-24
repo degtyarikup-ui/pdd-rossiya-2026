@@ -592,6 +592,7 @@ class Handler(BaseHTTPRequestHandler):
             elif (SIT / "ticket_13_13" / "parts" / "light_0.glb").exists():
                 light_models["tram"] = "ticket_13_13/light_0.glb"
         return {"props": [{"id": k, "size": v.get("size")} for k, v in index["props"].items()], "signs": signs,
+                "signInfo": json.loads((GAME / "signs" / "catalog.json").read_text(encoding="utf-8")),
                 "actorTypes": {t: v[0] for t, v in models.items()},
                 "lightAsset": light_models.get("", "ticket_11_15/light_0.glb"),
                 "lightTramAsset": light_models.get("tram", "ticket_6_13/light_0.glb"),

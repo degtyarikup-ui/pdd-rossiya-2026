@@ -23,6 +23,7 @@ const SignMount = (() => {
       postHeight: overhead ? bottom + boardHeight + 0.3 : bottom + boardHeight - topFaceHeight * 0.5,
       armLength: reach + 1.7 };
   }
-  return { layout, faces, faceCopy, replaceFace, swapFaces };
+  const plateWidth = (main, plate) => Math.min(main[0] * .8 / plate[0], main[1] * .95 / plate[1]);
+  return { layout, plateWidth, faces, faceCopy, replaceFace, swapFaces };
 })();
 if (typeof module !== 'undefined') module.exports = SignMount;

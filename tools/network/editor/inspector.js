@@ -27,7 +27,7 @@
     });
   }
 
-  let handlers = {};
+  let handlers = {}, signSearch = "";
   function bind(h) {
     handlers = h;
   }
@@ -46,6 +46,15 @@
     if (tx && handlers["text:" + tx.dataset.text]) return handlers["text:" + tx.dataset.text](tx.value);
   });
   pane().addEventListener("input", (e) => {
+    const search = e.target.closest("[data-sign-search]");
+    if (search) {
+      signSearch = search.value;
+      const query = signSearch.trim().toLowerCase();
+      pane().querySelectorAll("[data-sign-option]").forEach(option => {
+        option.hidden = !option.dataset.signOption.toLowerCase().includes(query);
+      });
+      return;
+    }
     const sl = e.target.closest("[data-slider]");
     if (sl && handlers["slider:" + sl.dataset.slider]) handlers["slider:" + sl.dataset.slider](Number(sl.value), false);
   });
@@ -543,7 +552,8 @@
     p.innerHTML = `${head(picture(face), custom ? "Направления по полосам" : Catalog.signName(face.code), o.secondSign ? (slot ? "нижний знак на общей стойке" : "верхний знак на общей стойке") : `знак ${face.code}`)}
       ${card("На одной стойке", `<div class="insp-actions">${faceTabs}</div>${o.secondSign ? `<div class="insp-actions">${button("swap-signs", "Поменять местами", "rotr", "ghost")}${button("remove-second-sign", "Убрать нижний", "trash", "danger ghost")}</div>` : button("add-second-sign", "Добавить второй знак", "plus", "ghost wide")}`)}
       ${card("Щит", `${chips("signMode", [{value:"standard",title:"Готовый знак"},{value:"lanes",title:"Конструктор полос"}], custom ? "lanes" : "standard")}
-        ${custom ? `<div style="margin:12px auto;max-width:240px">${lanePicture(lanes)}</div><div class="sub-h">Число полос</div>${chips("laneCount", [1,2,3,4,5,6].map(n => ({value:n,title:String(n)})), lanes.length)}${laneControls}<p class="muted">Полосы идут слева направо при взгляде на знак. На каждой можно включить несколько направлений.</p>` : `<div class="sign-grid">${codes.map((c) => `<button class="${c === face.code ? "on" : ""}" data-chip="code" data-value="${c}" data-tip="${esc(Catalog.signName(c))}"><img src="/asset/sign/${c}.svg" alt=""></button>`).join("")}</div>`}`)}
+        ${custom ? `<div style="margin:12px auto;max-width:240px">${lanePicture(lanes)}</div><div class="sub-h">Число полос</div>${chips("laneCount", [1,2,3,4,5,6].map(n => ({value:n,title:String(n)})), lanes.length)}${laneControls}<p class="muted">Полосы идут слева направо при взгляде на знак. На каждой можно включить несколько направлений.</p>` : `<input type="search" data-sign-search aria-label="Найти знак по номеру или названию" placeholder="Номер или название знака" value="${esc(signSearch)}"><div class="sign-grid">${codes.map((c) => { const name = `${c} · ${Catalog.signName(c)}`; return `<button class="${c === face.code ? "on" : ""}" data-chip="code" data-value="${c}" data-sign-option="${esc(name)}" aria-label="${esc(name)}" data-tip="${esc(name)}" ${!name.toLowerCase().includes(signSearch.trim().toLowerCase()) ? "hidden" : ""}><img src="/asset/sign/${c}.svg" alt="" loading="lazy"></button>`; }).join("")}</div>`}`)}
+      ${card("Табличка под знаком", `<select data-text="plateSign" aria-label="Табличка под выбранным знаком"><option value="">Нет</option>${codes.filter(c => c.startsWith("8.") || c.startsWith("1.4.")).map(c => `<option value="${c}" ${face.plateSign === c ? "selected" : ""}>${esc(c + " · " + Catalog.signName(c))}</option>`).join("")}</select>${face.plateSign ? `<img class="sign-big" src="/asset/sign/${face.plateSign}.svg" alt="${esc(Catalog.signName(face.plateSign))}">` : ""}`)}
       ${card("Крепление", `${chips("mount", [{value:"pole",title:"На стойке"},{value:"cantilever",title:"Над дорогой"}], o.mount || "pole")}
         ${o.mount === "cantilever" ? `${slider("reach", "Вылет от опоры", o.reach ?? 4.5, 0.5, 15, 0.25, `${o.reach ?? 4.5} м`)}
           ${chips("armSide", [{value:"left",title:"Влево от опоры"},{value:"right",title:"Вправо от опоры"}], o.armSide || "left")}
@@ -578,6 +588,10 @@
         face.roads = [...set];
       }),
       "text:plate": (v) => App.edit(() => { if (v.trim()) face.plate = v.trim(); else delete face.plate; }),
+      "text:plateSign": v => {
+        if (App.isLocked(ref) || (v && !codes.includes(v))) return;
+        App.edit(() => { if (v) face.plateSign = v; else delete face.plateSign; });
+      },
       rotl: () => App.rotate(-15), rotr: () => App.rotate(15), rot90: () => App.rotate(90),
     });
     bindDial(p, o);

@@ -336,8 +336,8 @@
     const sections = [];
     const vehicles = Catalog.ACTOR_ORDER.filter((t) => cat.actorTypes[t] && hit(Catalog.ACTORS[t].name));
     if (inCategory("traffic") && vehicles.length) sections.push(`<h4>${ic("car")}Машины и люди</h4><div class="lib-grid">${vehicles.map((t) => tile({ kind: "actor", id: t }, Catalog.ACTORS[t].name, Thumbs.img("actor", t), Tools.current() === "actor" && Tools.opts.actorType === t)).join("")}</div>`);
-    const signs = (cat.signs || []).filter((c) => hit(Catalog.signName(c)) || c.startsWith(q));
-    if (inCategory("signs") && signs.length) sections.push(`<h4>${ic("flag")}Знаки</h4><div class="lib-grid signs">${signs.map((c) => tile({ kind: "sign", id: c }, Catalog.signName(c), `<img class="thumb sign-pic" src="/asset/sign/${c}.svg" alt="">`, Tools.current() === "sign" && Tools.opts.sign === c)).join("")}</div>`);
+    const signs = (cat.signs || []).filter((c) => hit(`${c} ${Catalog.signName(c)} ${cat.signInfo?.[c]?.folkName || ""} ${cat.signInfo?.[c]?.group || ""}`));
+    if (inCategory("signs") && signs.length) sections.push(`<h4>${ic("flag")}Знаки · ${signs.length}</h4><div class="lib-grid signs">${signs.map((c) => tile({ kind: "sign", id: c }, `${c} · ${Catalog.signName(c)}`, `<img class="thumb sign-pic" src="/asset/sign/${c}.svg" alt="" loading="lazy">`, Tools.current() === "sign" && Tools.opts.sign === c)).join("")}</div>`);
     if (inCategory("traffic") && hit("регулировщик")) sections.push(`<h4>${ic("person")}Регулировщик</h4><div class="lib-grid">${tile({ kind: "officer", id: "officer" }, "Регулировщик", `<span class="lib-icon">${ic("person")}</span>`, Tools.current() === "officer")}</div>`);
     if (inCategory("traffic") && cat.lightAsset && hit("светофор")) {
       sections.push(`<h4>${ic("light")}Светофоры</h4><div class="lib-grid">

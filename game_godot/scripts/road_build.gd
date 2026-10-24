@@ -67,7 +67,13 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 	var top_face_height := 0.0
 	# Faces are saved top to bottom; build the bottom one first, then its upper neighbour.
 	for i in range(faces.size() - 1, -1, -1):
-		var parts := _sign_parts(faces[i])
+		var above := Vector2.ZERO
+		if i > 0 and str(faces[i].code).begins_with("8."):
+			var upper := _sign_parts(faces[i - 1])
+			if not upper.is_empty():
+				var upper_face: Array = upper.back()
+				above = SignFace.visible_size(upper_face[1], Vector2(upper_face[2], upper_face[3]))
+		var parts := _sign_parts(faces[i], above)
 		if parts.is_empty():
 			root.free()
 			return null
@@ -113,7 +119,7 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 
 
 ## Independent face settings. Legacy signs and plates keep their existing proportions.
-static func _sign_parts(face: Dictionary) -> Array:
+static func _sign_parts(face: Dictionary, above := Vector2.ZERO) -> Array:
 	var code := str(face.get("code", ""))
 	var lanes: Array = face.get("laneDirections", [])
 	var tex: Texture2D
@@ -129,6 +135,13 @@ static func _sign_parts(face: Dictionary) -> Array:
 	if tex == null:
 		push_warning("no picture for road sign %s" % code)
 		return []
+	if above != Vector2.ZERO:
+		var unit_slot := Vector2(1, .75) if code == "8.13" else SignFace.legacy_size(code, 1)
+		var unit_visible := SignFace.visible_size(tex, unit_slot)
+		width = minf(above.x * .8 / unit_visible.x, above.y * .95 / unit_visible.y)
+	var primary_height := LaneSign.height(lanes) if not lanes.is_empty() else width * .75 if code == "8.13" else SignFace.legacy_height(code, width)
+	var primary_slot := Vector2(width, primary_height)
+	var primary_visible := SignFace.visible_size(tex, primary_slot)
 	var parts: Array = []
 	var plate := str(face.get("plate", ""))
 	if not plate.is_empty():
@@ -138,6 +151,9 @@ static func _sign_parts(face: Dictionary) -> Array:
 		var ptex := SignFace.texture(plate_code)
 		if ptex != null:
 			var pw := face_width(plate_code) if plate_code.begins_with("1.4.") else width * 0.8
+			if plate_code.begins_with("8."):
+				var unit := SignFace.visible_size(ptex, SignFace.legacy_size(plate_code, 1))
+				pw = minf(primary_visible.x * .8 / unit.x, primary_visible.y * .95 / unit.y)
 			var slot:=SignFace.legacy_size(plate_code,pw)
 			var fitted:=SignFace.fit(ptex,slot)
 			parts.append(["pic",ptex,fitted.x,fitted.y,SignFace.legacy_height(plate_code,pw)])
@@ -147,10 +163,8 @@ static func _sign_parts(face: Dictionary) -> Array:
 		# 8.13 is square. Keep the old height/centre, reduce its width to that height.
 		var main_height:=SIGN_WIDTH*.8*.75
 		parts.append(["pic",mt,main_height,main_height])
-	var slot_height:=LaneSign.height(lanes) if not lanes.is_empty() else width*.75 if code=="8.13" else SignFace.legacy_height(code,width)
-	var slot:=Vector2(width,slot_height)
-	var fitted:=SignFace.fit(tex,slot)
-	parts.append(["pic",tex,fitted.x,fitted.y,slot_height])
+	var fitted:=SignFace.fit(tex,primary_slot)
+	parts.append(["pic",tex,fitted.x,fitted.y,primary_height])
 	return parts
 
 

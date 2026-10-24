@@ -30,3 +30,9 @@ assert.ok(Math.abs(stack.postHeight-5.96)<1e-9); // The shared support reaches t
 assert.deepEqual(SignMount.faces(JSON.parse(JSON.stringify(saved))).map(SignMount.faceCopy),
   SignMount.faces(before).map(SignMount.faceCopy));
 console.log('Single/shared roadside pole, overhead geometry and persisted settings: PASS');
+for (const plate of [[1,2],[2,1],[1,1],[.5,3]]) {
+  const width = SignMount.plateWidth([1,1],plate);
+  assert.ok(plate[0]*width <= .8 + 1e-9);
+  assert.ok(plate[1]*width <= .95 + 1e-9);
+}
+assert.ok(Math.abs(SignMount.plateWidth([1,1],[1,2]) - .475)<1e-9,'portrait distance plate is about half the main sign width');

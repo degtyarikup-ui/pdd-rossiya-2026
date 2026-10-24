@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const source = name => fs.readFileSync(path.resolve(__dirname, '../editor', name), 'utf8');
 const storage = new Map();
-function mount() {
+function mount(fullSigns = false) {
   const listeners = {}, bodyListeners = {};
   const element = () => ({ innerHTML: '', hidden: true, addEventListener(type, callback) { (bodyListeners[type] ??= []).push(callback); }, querySelector() { return null; }, querySelectorAll() { return []; } });
   const elements = Object.fromEntries(['#left-body', '#home-screen'].map(key => [key, element()]));
@@ -22,6 +22,11 @@ function mount() {
   const context = vm.createContext({ App, document, QuestionReview, URLSearchParams, location: { search: '' }, localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
     Thumbs: { fillAll() {}, img: (kind, id) => `<img class="thumb" data-thumb="${kind}|${id}" alt="">` }, Tools: { renderBar() {}, current: () => 'select', opts: {} }, Layout: { nodeKind: () => 'junction' } });
   vm.runInContext(source('catalog.js') + '\nglobalThis.Catalog = Catalog;', context);
+  if (fullSigns) {
+    state.catalog.signInfo = JSON.parse(fs.readFileSync(path.join(__dirname,'../../../game_godot/signs/catalog.json'),'utf8'));
+    state.catalog.signs = Object.keys(state.catalog.signInfo);
+    context.Catalog.setSignCatalog(state.catalog.signInfo);
+  }
   vm.runInContext(source('panels.js'), context);
   function target(attribute, value, extra = {}) { return { closest: selector => selector === `[${attribute}]` ? { dataset: { [attribute.slice(5).replace(/-([a-z])/g, (_match, letter) => letter.toUpperCase())]: value }, ...extra } : null }; }
   function click(attribute, value, { body = false, shiftKey = false, disabled = false } = {}) {
@@ -88,4 +93,11 @@ assert.deepEqual(Array.from(ui.state.sel, item => item.id), ['pine-a', 'pine-b',
 ui.state.locked.add('decor');
 ui.click('data-select-prop', 'trees/pine_0', { body: true });
 assert.equal(ui.state.sel.length, 0, 'locked prop groups cannot be selected');
-console.log('Sidebar UX: compact persistent filters, visual library categories, clean question rows and bulk layer selection PASS');
+ui = mount(true); ui.App.setLibraryCategory('signs');
+assert.match(ui.html(),/Знаки · 312/,'all official sign numbers are available');
+ui.input('lib-q','3.28');
+assert.match(ui.html(),/3.28 · Стоянка запрещена/);
+assert.doesNotMatch(ui.html(),/data-lib=.*id.*2.4/,'number search removes unrelated signs');
+ui.input('lib-q','8.2.2'); assert.match(ui.html(),/8.2.2 · Зона действия/);
+ui.input('lib-q','таблички'); assert.match(ui.html(),/8.2.2 · Зона действия/,'category names are searchable');
+console.log('Sidebar UX: compact persistent filters, full searchable sign catalogue, clean question rows and bulk layer selection PASS');

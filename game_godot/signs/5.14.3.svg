@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="700"
+   height="700"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="5.14.1.svg">
+  <title
+     id="title3002">5.14.1 Конец полосы для маршрутных транспортных средств</title>
+
+
+
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-352.36218)">
+    <rect
+       ry="45"
+       rx="45"
+       style="color:#000000;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;opacity:1"
+       id="rect7667"
+       width="700"
+       height="700"
+       x="0"
+       y="352.36218" />
+    <path
+       style="color:#000000;fill:#0d69e1;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:3.54299998;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       d="M 45 20 C 31.15 20 20 31.15 20 45 L 20 655 C 20 668.85 31.15 680 45 680 L 655 680 C 668.85 680 680 668.85 680 655 L 680 45 C 680 31.15 668.85 20 655 20 L 45 20 z M 350 70 L 443.34375 233.34375 L 385 233.34375 L 385 350 L 315 350 L 315 233.34375 L 256.65625 233.34375 L 350 70 z M 280 373.34375 L 420 373.34375 C 439.39 373.34375 455 388.95375 455 408.34375 L 455 571.65625 C 455 578.11958 449.8071 583.34375 443.34375 583.34375 L 256.65625 583.34375 C 250.19291 583.34375 245 578.11958 245 571.65625 L 245 408.34375 C 245 388.95375 260.61 373.34375 280 373.34375 z M 273 388.5 C 266.53667 388.5 261.34375 393.69292 261.34375 400.15625 L 261.34375 455 C 261.34375 461.46333 266.53667 466.65625 273 466.65625 L 429.34375 466.65625 C 435.80708 466.65625 441 461.46333 441 455 L 441 400.15625 C 441 393.69292 435.80708 388.5 429.34375 388.5 L 273 388.5 z M 254.34375 595 L 282.34375 595 L 282.34375 616 C 282.34375 623.73199 276.07574 630 268.34375 630 C 260.61177 630 254.34375 623.73199 254.34375 616 L 254.34375 595 z M 417.65625 595 L 445.65625 595 L 445.65625 616 C 445.65625 623.73199 439.38824 630 431.65625 630 C 423.92426 630 417.65625 623.73199 417.65625 616 L 417.65625 595 z "
+       transform="translate(0,352.36218)"
+       id="rect8228" />
+    <rect
+       y="353.36218"
+       x="1"
+       height="698"
+       width="698"
+       id="rect7101"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;opacity:1"
+       rx="44"
+       ry="44" />
+    <path
+       style="opacity:1;color:#000000;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:3.54299997999999980;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       d="M 625.5625 20 L 20 625.5625 L 20 655 C 20 668.85 31.15 680 45 680 L 74.4375 680 L 680 74.4375 L 680 45 C 680 31.15 668.85 20 655 20 L 625.5625 20 z "
+       transform="translate(0,352.36218)"
+       id="rect8086" />
+  </g>
+</svg>
