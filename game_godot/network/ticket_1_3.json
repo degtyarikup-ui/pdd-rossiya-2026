@@ -8,27 +8,27 @@
    "auto": true,
    "outer": [
     [
-     7,
+     4.2,
      -91
     ],
     [
-     7,
+     4.2,
      -90
     ],
     [
-     7,
+     4.2,
      0
     ],
     [
-     -7,
+     -4.2,
      0
     ],
     [
-     -7,
+     -4.2,
      -90
     ],
     [
-     -7,
+     -4.2,
      -91
     ]
    ],
@@ -42,27 +42,27 @@
    "auto": true,
    "outer": [
     [
-     7,
+     4.2,
      0
     ],
     [
-     7,
+     4.2,
      90
     ],
     [
-     7,
+     4.2,
      91
     ],
     [
-     -7,
+     -4.2,
      91
     ],
     [
-     -7,
+     -4.2,
      90
     ],
     [
-     -7,
+     -4.2,
      0
     ]
    ],
@@ -76,164 +76,164 @@
    "auto": true,
    "outer": [
     [
-     7,
+     4.2,
      0
     ],
     [
-     6.914,
-     1.095
+     4.148,
+     0.657
     ],
     [
-     6.657,
-     2.163
+     3.994,
+     1.298
     ],
     [
-     6.237,
-     3.178
+     3.742,
+     1.907
     ],
     [
-     5.663,
-     4.114
+     3.398,
+     2.469
     ],
     [
-     4.95,
-     4.95
+     2.97,
+     2.97
     ],
     [
-     4.114,
-     5.663
+     2.469,
+     3.398
     ],
     [
-     3.178,
-     6.237
+     1.907,
+     3.742
     ],
     [
-     2.163,
-     6.657
+     1.298,
+     3.994
     ],
     [
-     1.095,
-     6.914
+     0.657,
+     4.148
     ],
     [
      0,
-     7
+     4.2
     ],
     [
-     -1.095,
-     6.914
+     -0.657,
+     4.148
     ],
     [
-     -2.163,
-     6.657
+     -1.298,
+     3.994
     ],
     [
-     -3.178,
-     6.237
+     -1.907,
+     3.742
     ],
     [
-     -4.114,
-     5.663
+     -2.469,
+     3.398
     ],
     [
-     -4.95,
-     4.95
+     -2.97,
+     2.97
     ],
     [
-     -5.663,
-     4.114
+     -3.398,
+     2.469
     ],
     [
-     -6.237,
-     3.178
+     -3.742,
+     1.907
     ],
     [
-     -6.657,
-     2.163
+     -3.994,
+     1.298
     ],
     [
-     -6.914,
-     1.095
+     -4.148,
+     0.657
     ],
     [
-     -7,
+     -4.2,
      0
     ],
     [
-     -6.914,
-     -1.095
+     -4.148,
+     -0.657
     ],
     [
-     -6.657,
-     -2.163
+     -3.994,
+     -1.298
     ],
     [
-     -6.237,
-     -3.178
+     -3.742,
+     -1.907
     ],
     [
-     -5.663,
-     -4.114
+     -3.398,
+     -2.469
     ],
     [
-     -4.95,
-     -4.95
+     -2.97,
+     -2.97
     ],
     [
-     -4.114,
-     -5.663
+     -2.469,
+     -3.398
     ],
     [
-     -3.178,
-     -6.237
+     -1.907,
+     -3.742
     ],
     [
-     -2.163,
-     -6.657
+     -1.298,
+     -3.994
     ],
     [
-     -1.095,
-     -6.914
+     -0.657,
+     -4.148
     ],
     [
      0,
-     -7
+     -4.2
     ],
     [
-     1.095,
-     -6.914
+     0.657,
+     -4.148
     ],
     [
-     2.163,
-     -6.657
+     1.298,
+     -3.994
     ],
     [
-     3.178,
-     -6.237
+     1.907,
+     -3.742
     ],
     [
-     4.114,
-     -5.663
+     2.469,
+     -3.398
     ],
     [
-     4.95,
-     -4.95
+     2.97,
+     -2.97
     ],
     [
-     5.663,
-     -4.114
+     3.398,
+     -2.469
     ],
     [
-     6.237,
-     -3.178
+     3.742,
+     -1.907
     ],
     [
-     6.657,
-     -2.163
+     3.994,
+     -1.298
     ],
     [
-     6.914,
-     -1.095
+     4.148,
+     -0.657
     ]
    ],
    "holes": []
@@ -245,7 +245,7 @@
    "auto": true,
    "colour": "white",
    "street": "s1",
-   "type": "solid",
+   "type": "dashed",
    "points": [
     [
      0,
@@ -261,42 +261,8 @@
    "id": "auto_mark_2",
    "auto": true,
    "colour": "white",
-   "street": "s1",
-   "type": "dashed",
-   "points": [
-    [
-     -3.5,
-     -91
-    ],
-    [
-     -3.5,
-     0
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_3",
-   "auto": true,
-   "colour": "white",
-   "street": "s1",
-   "type": "dashed",
-   "points": [
-    [
-     3.5,
-     -91
-    ],
-    [
-     3.5,
-     0
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_4",
-   "auto": true,
-   "colour": "white",
    "street": "s2",
-   "type": "solid",
+   "type": "dashed",
    "points": [
     [
      0,
@@ -304,40 +270,6 @@
     ],
     [
      0,
-     91
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_5",
-   "auto": true,
-   "colour": "white",
-   "street": "s2",
-   "type": "dashed",
-   "points": [
-    [
-     -3.5,
-     0
-    ],
-    [
-     -3.5,
-     91
-    ]
-   ]
-  },
-  {
-   "id": "auto_mark_6",
-   "auto": true,
-   "colour": "white",
-   "street": "s2",
-   "type": "dashed",
-   "points": [
-    [
-     3.5,
-     0
-    ],
-    [
-     3.5,
      91
     ]
    ]
@@ -351,11 +283,11 @@
    "manual": false,
    "points": [
     [
-     -1.75,
+     -1.8,
      -91
     ],
     [
-     -1.75,
+     -1.8,
      -13.1
     ]
    ]
@@ -367,26 +299,71 @@
    "exit": "straight",
    "points": [
     [
-     -1.75,
+     -1.8,
      -13.1
     ],
     [
-     -1.75,
+     -1.8,
      0
     ],
     [
-     -1.75,
+     -1.8,
      90
     ],
     [
-     -1.75,
+     -1.8,
      91
     ]
    ],
    "exitYaw": 0
+  },
+  {
+   "id": "player_guide",
+   "kind": "guide",
+   "manual": true,
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -3.5,
+     -5.5
+    ],
+    [
+     -3.5,
+     0.5
+    ]
+   ]
   }
  ],
- "actors": [],
+ "actors": [
+  {
+   "id": "pedestrian_1",
+   "type": "pedestrian",
+   "name": "Пешеход",
+   "asset": "ticket_12_13/actor_0.glb",
+   "route": null,
+   "pos": [
+    -4.743,
+    4.484
+   ],
+   "yaw": 2.618,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "maxSpeed": 3.6,
+   "clearDistance": 12.5,
+   "halfLength": 0.229,
+   "halfWidth": 0.411,
+   "behaviour": {
+    "staysPut": true,
+    "waitsForPlayer": true
+   }
+  }
+ ],
  "lights": [],
  "decor": [],
  "question": {
@@ -428,7 +405,6 @@
   "correct": 0,
   "maneuver": "straight",
   "yieldTo": [],
-  "showPlayerGuide": false,
   "sourceQuestionId": "7d6121c8ec64a113baa6047a457e9c10",
   "sourceCategory": "ab",
   "sourceImage": "5fa33b65fe52f38ad87c4b5226c5d3ba"
@@ -456,53 +432,95 @@
     "id": "s1",
     "a": "s",
     "b": "c",
-    "kind": "avenue",
+    "kind": "street",
     "ends": {},
     "edge": false,
-    "centre": "solid"
+    "centre": "dashed"
    },
    {
     "id": "s2",
     "a": "c",
     "b": "n",
-    "kind": "avenue",
+    "kind": "street",
     "ends": {},
     "edge": false,
-    "centre": "solid"
+    "centre": "dashed"
    }
   ],
   "player": {
    "street": "s1",
-   "toward": "c"
+   "toward": "c",
+   "questionAt": 13.1,
+   "lane": 0
+  },
+  "paths": {
+   "straight": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     0
+    ],
+    [
+     -7,
+     78.5
+    ],
+    [
+     -1.8,
+     91
+    ]
+   ]
   }
  },
  "stop": {
-  "x": -1.75,
+  "x": -1.8,
   "z": -13.1,
   "yaw": 0
  },
  "exitWidths": {
-  "straight": 14
+  "straight": 8.4
  },
- "approachWidth": 14,
+ "approachWidth": 8.4,
  "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
  "geometry": null,
  "type": "crossroad",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
- "signs": [],
+ "signs": [
+  {
+   "id": "sign_1",
+   "code": "3.28",
+   "pos": [
+    -6.324,
+    -0.365
+   ],
+   "yaw": 3.142,
+   "secondSign": {
+    "code": "8.2.2"
+   }
+  }
+ ],
  "officers": [],
  "tracks": [],
  "questionCamera": [],
  "compliance": {
   "status": "unverified"
  },
- "questionPool": {
-  "sourceQuestionId": "7d6121c8ec64a113baa6047a457e9c10",
-  "category": "ab",
-  "ticket": 1,
-  "number": 3
+ "spec": {
+  "maneuver": "straight"
+ },
+ "questionView": {
+  "centre": [
+   -4.002,
+   18.381
+  ],
+  "height": 30.403,
+  "yaw": -0.115,
+  "pitch": 0.321,
+  "elevation": 0
  }
 }

@@ -1,0 +1,96 @@
+{
+ "id": "ticket_1_5",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -14.25,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "left",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 5",
+   "title": "Вы намерены повернуть налево. Где следует остановиться, чтобы уступить дорогу легковому автомобилю?",
+   "options": [
+    "Перед знаком",
+    "Перед перекрестком у линии разметки",
+    "На перекрестке перед прерывистой линией разметки",
+    "В любом месте по усмотрению водителя"
+   ],
+   "explanation": "Согласно знаку 2.4 «Уступите дорогу» водители должны пропускать транспорт, движущийся по пересекаемой дороге. Разметка 1.13 в виде треугольников указывает место, где при необходимости следует остановиться. У Вас такая необходимость есть, так как при повороте налево Вы уступаете дорогу легковому автомобилю.(«Дорожные знаки», «Горизонтальная разметка»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 5",
+   "title": "You intend to turn left. Where should you stop to give way to a car?",
+   "options": [
+    "In front of the sign",
+    "Before the intersection at the marking line",
+    "At an intersection before a broken line",
+    "Anywhere at the driver's discretion"
+   ],
+   "explanation": "According to sign 2.4 “Give way”, drivers must give way to vehicles moving along the road being crossed. Marking 1.13 in the form of triangles indicates the place where you should stop if necessary. You have such a need, because when turning left you give way to a passenger car. (“Road signs”, “Horizontal markings”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 5-сұрақ",
+   "title": "Сіз солға бұрылғыңыз келеді. Жеңіл автомобильге жол беру үшін қайда тоқтау керек?",
+   "options": [
+    "Белгінің алдында",
+    "Таңбалау сызығында қиылысу алдында",
+    "Сынық сызықтың алдындағы қиылыста",
+    "Кез келген жерде жүргізушінің қалауы бойынша"
+   ],
+   "explanation": "2.4 «Жол беріңіз» белгісіне сәйкес жүргізушілер кесіп өтетін жол бойымен қозғалатын көліктерге жол беруге міндетті. Үшбұрыш түріндегі 1.13 таңбалау қажет болған жағдайда тоқтау керек жерді көрсетеді. Сізде осындай қажеттілік бар, өйткені солға бұрылғанда сіз жеңіл автомобильге жол бересіз. («Жол белгілері», «Көлденең таңбалар»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 230,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "7c97d4c309cb475c0f1309aba4c40e71",
+ "sourceCategory": "ab",
+ "sourceImage": "92730be6f1618ab24232b6c3092607b5"
+}

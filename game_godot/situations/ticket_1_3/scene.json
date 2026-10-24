@@ -9,15 +9,15 @@
  "centerZ": 0,
  "startZ": -90.0,
  "stopZ": -13.1,
- "playerStartX": -1.75,
+ "playerStartX": -1.8,
  "playerStartRotY": 0,
  "leftLane": 1.75,
  "rightLane": 1.75,
  "kerbZ": 7,
  "kerbX": 7,
- "approachW": 14,
+ "approachW": 8.4,
  "exitWidths": {
-  "straight": 14
+  "straight": 8.4
  },
  "segmentLength": 0,
  "roadMask": {
@@ -37,19 +37,19 @@
   "straight": {
    "points": [
     [
-     -1.75,
+     -1.8,
      -13.1
     ],
     [
-     -1.75,
+     -1.8,
      0
     ],
     [
-     -1.75,
+     -1.8,
      90
     ],
     [
-     -1.75,
+     -1.8,
      91
     ]
    ],
@@ -57,7 +57,85 @@
   }
  },
  "props": [],
- "actors": [],
+ "actors": [
+  {
+   "id": "pedestrian_1",
+   "type": "pedestrian",
+   "name": "Пешеход",
+   "config": {
+    "id": "pedestrian_1",
+    "type": "pedestrian",
+    "name": "Пешеход",
+    "side": "crosswalk_right",
+    "targetAction": "straight",
+    "color": "#0574F8",
+    "position": [
+     -4.743,
+     0.0,
+     4.484
+    ],
+    "rotationY": 2.618,
+    "route": [
+     [
+      -4.743,
+      4.484
+     ],
+     [
+      -4.743,
+      4.484
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 0.229,
+   "halfWidth": 0.411,
+   "badge": {
+    "text": {
+     "ru": "Пешеход",
+     "en": "Pedestrian",
+     "kk": "Жаяу жүргінші"
+    },
+    "color": "#0574F8",
+    "height": 2.8
+   },
+   "pos": [
+    -4.743,
+    0.0,
+    4.484
+   ],
+   "yaw": 2.618,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -4.743,
+     0.0,
+     4.484
+    ],
+    [
+     -4.743,
+     0.0,
+     4.484
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 12.5,
+   "maxSpeed": 3.6,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "paint": null,
+   "way": null,
+   "turnSignal": "auto",
+   "hazards": false
+  }
+ ],
  "lights": [],
  "officers": [],
  "labels": [],
@@ -105,9 +183,33 @@
   }
  },
  "correctAnswerIndex": 0,
- "showPlayerGuide": false,
+ "showPlayerGuide": true,
  "sourceQuestionId": "7d6121c8ec64a113baa6047a457e9c10",
  "sourceCategory": "ab",
  "sourceImage": "5fa33b65fe52f38ad87c4b5226c5d3ba",
- "playerPlacement": "street"
+ "playerPlacement": "street",
+ "playerGuidePoints": [
+  [
+   -1.8,
+   -13.1
+  ],
+  [
+   -3.5,
+   -5.5
+  ],
+  [
+   -3.5,
+   0.5
+  ]
+ ],
+ "questionView": {
+  "centre": [
+   -4.002,
+   18.381
+  ],
+  "height": 30.403,
+  "yaw": -0.115,
+  "pitch": 0.321,
+  "elevation": 0
+ }
 }

@@ -1,0 +1,766 @@
+{
+ "schema": 1,
+ "id": "ticket_1_5",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s3",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -4.2
+    ],
+    [
+     90,
+     -4.2
+    ],
+    [
+     91,
+     -4.2
+    ],
+    [
+     91,
+     4.2
+    ],
+    [
+     90,
+     4.2
+    ],
+    [
+     0,
+     4.2
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s4",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     4.2
+    ],
+    [
+     -90,
+     4.2
+    ],
+    [
+     -91,
+     4.2
+    ],
+    [
+     -91,
+     -4.2
+    ],
+    [
+     -90,
+     -4.2
+    ],
+    [
+     0,
+     -4.2
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     -4.7
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "stop",
+   "width": 0.4,
+   "stopStyle": "yield",
+   "points": [
+    [
+     0,
+     -6
+    ],
+    [
+     -4.2,
+     -6
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s3",
+   "type": "dashed",
+   "points": [
+    [
+     4.4,
+     0
+    ],
+    [
+     91,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s4",
+   "type": "dashed",
+   "points": [
+    [
+     -4.4,
+     0
+    ],
+    [
+     -91,
+     0
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -17
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_left",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "left",
+   "points": [
+    [
+     -1.8,
+     -17
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.709,
+     -3.101
+    ],
+    [
+     -1.431,
+     -1.745
+    ],
+    [
+     -0.955,
+     -0.624
+    ],
+    [
+     -0.274,
+     0.274
+    ],
+    [
+     0.624,
+     0.955
+    ],
+    [
+     1.745,
+     1.431
+    ],
+    [
+     3.101,
+     1.709
+    ],
+    [
+     4.7,
+     1.8
+    ],
+    [
+     5.2,
+     1.8
+    ],
+    [
+     24.7,
+     1.8
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  {
+   "id": "manoeuvre_right",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "right",
+   "points": [
+    [
+     -1.8,
+     -17
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.841,
+     -3.987
+    ],
+    [
+     -1.965,
+     -3.382
+    ],
+    [
+     -2.177,
+     -2.881
+    ],
+    [
+     -2.481,
+     -2.481
+    ],
+    [
+     -2.881,
+     -2.177
+    ],
+    [
+     -3.382,
+     -1.965
+    ],
+    [
+     -3.987,
+     -1.841
+    ],
+    [
+     -4.7,
+     -1.8
+    ],
+    [
+     -5.2,
+     -1.8
+    ],
+    [
+     -24.7,
+     -1.8
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  {
+   "id": "manoeuvre_uturn",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "uturn",
+   "points": [
+    [
+     -1.8,
+     -17
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.8,
+     -7.7
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "exitYaw": 3.142
+  },
+  {
+   "id": "actor_car_1",
+   "kind": "actor",
+   "auto": true,
+   "points": [
+    [
+     -11.951,
+     1.8
+    ],
+    [
+     -4.7,
+     1.8
+    ],
+    [
+     4.7,
+     1.8
+    ],
+    [
+     5.2,
+     1.8
+    ],
+    [
+     44.7,
+     1.8
+    ]
+   ]
+  }
+ ],
+ "actors": [
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "asset": "ticket_10_15/actor_0.glb",
+   "route": "actor_car_1",
+   "pos": [
+    -11.951,
+    1.8
+   ],
+   "yaw": 1.571,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "maxSpeed": 12,
+   "clearDistance": 24.151,
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "behaviour": {
+    "staysPut": false,
+    "waitsForPlayer": true
+   },
+   "way": "straight"
+  }
+ ],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 1 · Вопрос 5",
+    "title": "Вы намерены повернуть налево. Где следует остановиться, чтобы уступить дорогу легковому автомобилю?",
+    "options": [
+     "Перед знаком",
+     "Перед перекрестком у линии разметки",
+     "На перекрестке перед прерывистой линией разметки",
+     "В любом месте по усмотрению водителя"
+    ],
+    "explanation": "Согласно знаку 2.4 «Уступите дорогу» водители должны пропускать транспорт, движущийся по пересекаемой дороге. Разметка 1.13 в виде треугольников указывает место, где при необходимости следует остановиться. У Вас такая необходимость есть, так как при повороте налево Вы уступаете дорогу легковому автомобилю.(«Дорожные знаки», «Горизонтальная разметка»)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 1 · Question 5",
+    "title": "You intend to turn left. Where should you stop to give way to a car?",
+    "options": [
+     "In front of the sign",
+     "Before the intersection at the marking line",
+     "At an intersection before a broken line",
+     "Anywhere at the driver's discretion"
+    ],
+    "explanation": "According to sign 2.4 “Give way”, drivers must give way to vehicles moving along the road being crossed. Marking 1.13 in the form of triangles indicates the place where you should stop if necessary. You have such a need, because when turning left you give way to a passenger car. (“Road signs”, “Horizontal markings”)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "1-билет · 5-сұрақ",
+    "title": "Сіз солға бұрылғыңыз келеді. Жеңіл автомобильге жол беру үшін қайда тоқтау керек?",
+    "options": [
+     "Белгінің алдында",
+     "Таңбалау сызығында қиылысу алдында",
+     "Сынық сызықтың алдындағы қиылыста",
+     "Кез келген жерде жүргізушінің қалауы бойынша"
+    ],
+    "explanation": "2.4 «Жол беріңіз» белгісіне сәйкес жүргізушілер кесіп өтетін жол бойымен қозғалатын көліктерге жол беруге міндетті. Үшбұрыш түріндегі 1.13 таңбалау қажет болған жағдайда тоқтау керек жерді көрсетеді. Сізде осындай қажеттілік бар, өйткені солға бұрылғанда сіз жеңіл автомобильге жол бересіз. («Жол белгілері», «Көлденең таңбалар»)",
+    "pddRule": ""
+   }
+  },
+  "correct": 1,
+  "maneuver": "left",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "7c97d4c309cb475c0f1309aba4c40e71",
+  "sourceCategory": "ab",
+  "sourceImage": "92730be6f1618ab24232b6c3092607b5"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "e",
+    "x": 90,
+    "z": 0
+   },
+   {
+    "id": "w",
+    "x": -90,
+    "z": 0
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {
+     "b": {
+      "stop": true,
+      "approachOffset": -4.7,
+      "stopStyle": "yield"
+     }
+    },
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s3",
+    "a": "c",
+    "b": "e",
+    "kind": "street",
+    "ends": {
+     "a": {
+      "approachOffset": -5
+     }
+    },
+    "edge": false,
+    "centre": "dashed"
+   },
+   {
+    "id": "s4",
+    "a": "c",
+    "b": "w",
+    "kind": "street",
+    "ends": {
+     "a": {
+      "approachOffset": -5
+     }
+    },
+    "edge": false,
+    "centre": "dashed"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "questionAt": 17,
+   "lane": 0
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -17,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [
+  {
+   "id": "sign_1",
+   "code": "2.4",
+   "pos": [
+    -4.468,
+    -9.955
+   ],
+   "yaw": 3.142
+  }
+ ],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionView": {
+  "centre": [
+   -3.808,
+   9.968
+  ],
+  "height": 35.555,
+  "yaw": 0.004,
+  "pitch": 0.491,
+  "elevation": 0
+ }
+}
