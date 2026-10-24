@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none">
   <!-- Matches the existing home icons: #0574F8, 6 px outline on a 96 px canvas. -->
   <g stroke="#0574F8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M30 74 14 86V28a14 14 0 0 1 14-14h40a14 14 0 0 1 14 14v32a14 14 0 0 1-14 14H30Z"/>
-    <path d="M32 35h32M32 51h24"/>
+    <path d="M30 42H16a4 4 0 0 0-4 4v34a4 4 0 0 0 4 4h14V42Z"/>
+    <path d="m30 42 14-20 3-10a6 6 0 0 1 11 0c3 7 1 16-1 26h17a10 10 0 0 1 10 12l-6 26a10 10 0 0 1-10 8H40l-10-4"/>
   </g>
 </svg>

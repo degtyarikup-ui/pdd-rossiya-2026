@@ -780,7 +780,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                       context: context,
                       iconAsset: 'assets/images/home_icon_rate.svg',
                       foregroundColor: colors.gold,
-                      surfaceColor: colors.goldLightSurface,
+                      surfaceColor: colors.gold.withValues(alpha: 0.2),
                       label: appL10n.rateUs,
                       height: buttonHeight,
                       onTap: _rateApp,
