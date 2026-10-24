@@ -329,124 +329,124 @@
   "images": {
     "1.1": {
       "source": "assets/countries/ru/images/markup/2c49fc36554ac1230451d3dcfa2eed8a.svg",
-      "sha256": "62e4db4e109c13a15bdc2a112dc36a18076ed3644603f72e274d8a480405c772"
+      "sha256": "53349ac815ec0c37dccaa54c40f9910508be30734069721528c2312eaf5db42b"
     },
     "1.2": {
       "source": "assets/countries/ru/images/markup/b09787ac2a9708e85c0f45bb31255023.svg",
-      "sha256": "8c63b03a44b6a2245647fca7f53d2bb34abf95c8e8b368633c8a0712aa921d50"
+      "sha256": "1cecb242fc7385cafe2168cb6fb77136c606fc6781c0c44843ccf8693d6715aa"
     },
     "1.3": {
       "source": "assets/countries/ru/images/markup/d32121834d8239fd05dd8a587bdf241a.svg",
-      "sha256": "77f04b393bd42b0993cbbfccc8e409bf19aef95dc33043eb5dc4239b742b77e9"
+      "sha256": "279c5e67bb06c884850583f573540e1f2f6294166f393b7d18e7b71faabad5cb"
     },
     "1.4": {
       "source": "assets/countries/ru/images/markup/5d046f63f8522b2428f9c1d916ef9b30.svg",
-      "sha256": "6300c0071d516b744f4656a865c486d908c3a73f099c82f2b3bed81fd9e75a2b"
+      "sha256": "df039fa3baa50bbee7cd310745a2e01324d79561819168817640e0536702b9e6"
     },
     "1.5": {
       "source": "assets/countries/ru/images/markup/a55788ee9af2066f2602498f03982a64.svg",
-      "sha256": "943a8e2e1f2320e1f5e3e9e680deedecc393c124caa06e8ad99cdbb2d3221878"
+      "sha256": "fc127862d9b80a7ea29c00b43bf917f24903311e9f3d998a6840f66b3c8d3226"
     },
     "1.6": {
       "source": "assets/countries/ru/images/markup/6312748b760235946e84f786e1ad761b.svg",
-      "sha256": "b12b047477747e51f18c4eeb3ae212b10120571ba439cc2906d3aed575423c14"
+      "sha256": "b0bb971c432b541c4743abefe6d6a67bb626cad94bbc41ccdeab13609ef98ed3"
     },
     "1.7": {
       "source": "assets/countries/ru/images/markup/052393eeb65c015e755e6edbfd248279.svg",
-      "sha256": "475e4c3d95a58b696ee52b6705585da3cf47bbeafb9be78458bf0fe53f799642"
+      "sha256": "0d8d902b5cad2d7ce3f3708a4e262df7c3215db87753201f3e8355198fd1339b"
     },
     "1.8": {
       "source": "assets/countries/ru/images/markup/66cddf91050d001ecc2518339bbb6b2f.svg",
-      "sha256": "13623ecf3d15b8b8409be92568e6ec01acce6a3e82d20a5863d3a58916d1bf5a"
+      "sha256": "0616846d3fc39bf8432141c09a2ba24752d0823944142d267287843d45e9d5ff"
     },
     "1.9": {
       "source": "assets/countries/ru/images/markup/b50709f7adac8283648b7a5a8c89da6a.svg",
-      "sha256": "03fdf564d633f24572424c10942366c23712821583ec423acdec9dae33db1ca6"
+      "sha256": "57e734a0461348e9452776fdef7e404c8922faa1efaae60741bc33c1b1885cbf"
     },
     "1.10": {
       "source": "assets/countries/ru/images/markup/09a69c0276d8162a0239be409b737108.svg",
-      "sha256": "70326c967b98fcbd493ec7eb2db8f3f68bba0905d607aeab3429b5601d4b282e"
+      "sha256": "d39d9d0c34ea9aee0dee538ee5c27bbb32ee8de1b366273670db137bc2d4781c"
     },
     "1.11": {
       "source": "assets/countries/ru/images/markup/389954cb614be0a7eed3b02dfb24c8ae.svg",
-      "sha256": "f817d1d9d1c14b8a6557251aa2107141f6c3a3e5f468c391a16e309cd64c081e"
+      "sha256": "d5a889f8e47ba524cf3478ca9aa21a60f06bd2be5d0197a86cacb886de95e5da"
     },
     "1.12": {
       "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
       "method": "Native vector transcription of the stop-line diagram.",
-      "sha256": "e7f3fc4c790f32fd4b40cd70fa4383cf076d184069be8e254fa9009ae169e2ce"
+      "sha256": "d530f9921e9834ed44cf9e65ac339ceded35f7c08f2cdecfd0920d149a270d87"
     },
     "1.13": {
       "source": "assets/countries/ru/images/markup/6fddedd13bad53946f25df4cd5ed22e8.svg",
-      "sha256": "ff44aee2c8c0a1b5ccc9b245f4fc11b618e1aede42c351656318a137fd5d5dfd"
+      "sha256": "8eb942e0978508415a531f781886a3723e9d28b0176a2cf2607f7f1266e881f2"
     },
     "1.17.1": {
       "source": "assets/countries/ru/images/markup/8e36e197ce8a6b3f19bfc56b065881ac.svg",
-      "sha256": "087e9773088eaba5edb5af60bb0475b7487ebd7cfec9a2a06e75777c0ffc09cf"
+      "sha256": "b326d7ef54bc6a8f9dbc9c2574ea583e8eab6ad880866dd6647ad960c932cdbc"
     },
     "1.18": {
       "source": "assets/countries/ru/images/markup/7d7c920210faef52e87e6aad54f525b6.svg",
-      "sha256": "023cd32d753c2103b04735a1a9def244699364de2781a0a548bc8bde781e9ce2"
+      "sha256": "9b0f48931599b0e28a83178c098510459e873d50989180fa78da016ae2643d04"
     },
     "1.19": {
       "source": "assets/countries/ru/images/markup/409962f0efc35a3802b07f464607c55e.svg",
-      "sha256": "a002178c8cc38be78f25bf97e925e35786441207d9e5d44791427cdaea4189bc"
+      "sha256": "d73098a414cfbdfd7fbb432f2320ecea3f09141964cfdf821828643f4c0404f8"
     },
     "1.20": {
       "source": "assets/countries/ru/images/markup/1c7674cb91486b02ec7693c77673018b.svg",
-      "sha256": "9a6529731a88d66ba062ba120b9b8022d5edd4cd25fd97a65e916fb17609e72d"
+      "sha256": "500d62620ee6b82aa8cd092c1cf52d8a41cc9f47f418c23c135e8e5cabf6a7bf"
     },
     "1.21": {
       "source": "assets/countries/ru/images/markup/807ef2c828847b676f7dfbf2cbe5c28c.svg",
-      "sha256": "171848cc279774c9d0bfe8a0bdf48b981e229d170440e9d2b627ef187b4be266"
+      "sha256": "cda106806305c673a804d08b7f9cd6662fbd8f519d50fb3af34d0bc3d1e36a0f"
     },
     "1.22": {
       "source": "assets/countries/ru/images/markup/5b08f148beebfd94f47fb80d33ffc539.svg",
-      "sha256": "94c9df1eeb48d37aa7c44068277ba6b16cad4db9c9749d254efef92860df0410"
+      "sha256": "db68be2e035616c4f54b3316af7bd4a55b598e8b99a9b14fca30f4991f9ebd57"
     },
     "1.23.1": {
       "source": "assets/countries/ru/images/markup/75e1061ef45dd6b1e289f14659cf86ac.svg",
-      "sha256": "9ba28ab07c881514726861aa1eb19077aec94a2e360bef62c397ac65e03fda1f"
+      "sha256": "2ab6c5b6260e0e2d25079234532d610e96e03716623dfa18720180ca9eba5731"
     },
     "1.23.2": {
       "source": "assets/countries/ru/images/markup/8cae82e35cea744fa4c960a86ba78b33.svg",
-      "sha256": "98b87603615097f731897480a24d94de1eeb14f18b8e74290f001bcfb8a0ba97"
+      "sha256": "b75a5325d064e36c37dd484c39e51c18be17cc52368c0548aba27e1f30a149d0"
     },
     "1.23.3": {
       "source": "assets/countries/ru/images/markup/ab29a5836564e6a857d1fd9ff085d15b.svg",
-      "sha256": "2f31ab42882152549ba8da79ce32ac9e1744ebe62648f0a24bcb014d5cb201aa"
+      "sha256": "45744ed17b4d155e168e037c9821f0f2c91c05f4af90de3f2b941114dda0fb2b"
     },
     "1.24.4": {
       "source": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
       "verifiedAgainst": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
       "method": "Native vector transcription of the statutory road-marking symbol, using existing application vector paths where applicable.",
-      "sha256": "26cdc7017c675c822cc31800ac0115345eb96f05a32220616b8a546da44f9421"
+      "sha256": "b629b51d570841efb556f1c6eb7f99e889d8f11d691c2532d36bb2f65ae372ca"
     },
     "1.24.5": {
       "source": "assets/countries/ru/images/signs/869f5d177692243ed6703d663eb88f25.svg",
       "verifiedAgainst": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
       "method": "Native vector transcription of the statutory road-marking symbol, using existing application vector paths where applicable.",
-      "sha256": "fe0e17f4a73b97aed034610840866d005b74fd5f10bcf4a1755026c9bda5f760"
+      "sha256": "845c75422f1826fe3446e8d592d4b92e037192e69e54dafd4a0ea2107e982389"
     },
     "1.24.6": {
       "source": "assets/countries/ru/images/signs/d3160697c5cd4c697e7b68e4cbad44e3.svg",
       "verifiedAgainst": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
       "method": "Native vector transcription of the statutory road-marking symbol, using existing application vector paths where applicable.",
-      "sha256": "aabb9b6f10771b31e32afdf48d603a2f2ec01985ee45d7b2b30bdc17a3da33a6"
+      "sha256": "4c9e65a5c7d9c65a0822d006f46259ca9868021cb6fd15598cdf658dfddb1507"
     },
     "1.24.7": {
       "source": "assets/countries/ru/images/signs/ed2b51311057d631c048eb2b81f41f63.svg",
       "verifiedAgainst": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
       "method": "Native vector transcription of the statutory road-marking symbol, using existing application vector paths where applicable.",
-      "sha256": "6bf1be14be203b733342cb33f78a715818a257d77aa4e0f6ef5063c99c67a9d4"
+      "sha256": "24eab22e1f98e15fb3c08a02ec8765bd9c2818fc9026d37d0ac68620ae2abd17"
     },
     "1.25": {
       "source": "assets/countries/ru/images/markup/4190c457b85177161acd946d7d60f16e.svg",
-      "sha256": "87136b0929422f99c9e90820267241455352ea3eb893c164bbdbeee591599ed1"
+      "sha256": "92c8be6bc7c316acace2c453e8938476589e626de69e28e9301688e091443ed8"
     },
     "1.26": {
       "source": "assets/countries/ru/images/markup/9b7cfc3853479237ebfbc14a72e9f4c1.svg",
-      "sha256": "e41f83dc929b44b5991fefb4dd54a31de3bf94be32db0e557e2aafc3d9ef6559"
+      "sha256": "da5bcbc0417403569688ff6f3931e31c9dfa610c36a1c851a7ebb05444ec52f0"
     },
     "2.2": {
       "source": "assets/countries/ru/images/markup/213ba4235f49540edacfc48fd7b79f13.svg",
@@ -480,7 +480,7 @@
         95,
         125
       ],
-      "sha256": "d612ec1e339d2d420e8b9c3d344f0582d9ed54a869bbb57f0fe7d0eeda5d3f61"
+      "sha256": "dad6ceee9dea6a1960524452c7f2eb1c77c2f8f27d88a042cc8771e6d2889486"
     },
     "1.14.2": {
       "source": "assets/countries/ru/images/markup/7f06ee3a1911311349146326625f8940.svg",
@@ -490,7 +490,7 @@
         150,
         125
       ],
-      "sha256": "4164fbffefef5332502f02ee77aec1dba420cd1d42e729c4661928cbcd35e87a"
+      "sha256": "4b39152dca00b20aae736359202f7d79a6aba1dbf8a5c447875616f53ed86966"
     },
     "1.24.1": {
       "source": "assets/countries/ru/images/markup/b667fef6296b6b37af0baeddc11bd1a9.svg",
@@ -500,7 +500,7 @@
         86,
         54
       ],
-      "sha256": "91386daef4394c7b2fbf81c3fcedae273d4c67c89ee50f9df7126e42ac664d21"
+      "sha256": "e593e923069805eb393ee441cb8ee8550388a434f12a2ac3b787148c7d1d0d3d"
     },
     "1.24.2": {
       "source": "assets/countries/ru/images/markup/b667fef6296b6b37af0baeddc11bd1a9.svg",
@@ -510,7 +510,7 @@
         86,
         54
       ],
-      "sha256": "947bf3d5c60973cd921651de59da7e7b5bdef9f89cdae0bf0671852a26326ca5"
+      "sha256": "c6f4071a608f2c6a0f3956198d483b3d2d4f858d5e979e2e89b456906a2cddbd"
     },
     "1.24.3": {
       "source": "assets/countries/ru/images/markup/b667fef6296b6b37af0baeddc11bd1a9.svg",
@@ -520,7 +520,7 @@
         85,
         54
       ],
-      "sha256": "238ea18c3ee886ff7d6ac9bbe24487b4e0d325a7e69d23cb13325260063ce34d"
+      "sha256": "5f3962aa34fd2b3cda6d0bce96f326f27d894b7cc2d810c7c3adac2f0702928e"
     },
     "2.1.1": {
       "source": "assets/countries/ru/images/markup/11115b65ace8dd9993eb21404d283d95.svg",
@@ -555,37 +555,41 @@
     "1.14.3": {
       "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
       "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
-      "sha256": "ad7a4e5c208c4dbdca9ea1e8ab6aa3881c8e28104634f26c5ce82417e013d039"
+      "sha256": "88e2f949d7217e3020d177fb66b25dbd0ff70ac04513322c0e43a798c9136d36"
     },
     "1.15": {
       "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
       "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
-      "sha256": "3f83f082e74af7de540e31987f68e67423d72002e6256fe72dfd4c94e5aaa04e"
+      "sha256": "6cf017feaee9e75e8b814540c62ff063ea1e80ad5d2972ad3af91543c4794229"
     },
     "1.16.1": {
       "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
       "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
-      "sha256": "9e74b8d6510e370d61e2461bc5ae381e8ebd5a016b924579df41ef79bef5e74c"
+      "sha256": "7d40ca0a27f28470563c912dd8519172da0fdd83556d5f095748302ad17c2f14"
     },
     "1.16.2": {
       "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
       "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
-      "sha256": "30b9c3a16a2e3af31c439fd6f902979eb9ee358af448fc0c4c837356ff59124c"
+      "sha256": "f6a20d3ca9b3a5f0b69f89aef98fdcc57b64cba78b20b5cc9f3779b80dc994de"
     },
     "1.16.3": {
       "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
       "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
-      "sha256": "88229000697cb49f87ba0d293435951bb1b47658bbc16844825e4c33f54ed7fd"
+      "sha256": "ae34a51ca7e99b96c2df863dff4d3b0c00ee3df2bfe9dac0aa4076eee8972f6d"
     },
     "1.17.2": {
       "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
       "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
-      "sha256": "7a44df524314566f8a3ea45c8c9d681253867fcdd56c250b6bf77e08ac3c7ce4"
+      "sha256": "14aa8f185c86435c9c9bea6b8fce583cf298c9d7ade7743156f28bba0d441697"
     }
   },
   "gostGraphics": {
     "url": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
     "page": 24,
     "standard": "ГОСТ Р 51256-2018, изменение № 1, таблица А.1"
+  },
+  "presentation": {
+    "asphaltFill": "#3F4449",
+    "note": "Dark neutral asphalt background is a presentation choice; statutory marking colors and geometry are preserved."
   }
 }
