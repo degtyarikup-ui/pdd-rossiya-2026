@@ -19,7 +19,7 @@ class QuestionAudioTests(unittest.TestCase):
         (ROOT / "scratch").mkdir(exist_ok=True)
         self.temp = tempfile.TemporaryDirectory(dir=ROOT / "scratch")
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         self.question = {"id": QUESTION_ID, "image": IMAGE_ID, "question": "Вопрос?",
                          "answers": [{"text": "Ответ один"}, {"text": "Ответ два"}]}
         self.scene = {"text": {"ru": {"title": "Вопрос?", "options": ["Ответ один", "Ответ два"]}}}

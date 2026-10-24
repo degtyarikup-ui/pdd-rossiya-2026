@@ -130,5 +130,9 @@ func _check_scene() -> void:
 		if ParkingLevels.RULES in drawn: _check("the rules level comes last", drawn.back() == ParkingLevels.RULES)
 	var summary: Dictionary = scene.call("_session_summary")
 	_check("summary names the game", summary.game == "parking" and summary.runs.size() >= 1)
-	scene.queue_free()
+	# Detach live geometry before destroying its materials during test teardown.
+	scene._exiting = true
+	Models.release_geometry(scene)
 	await process_frame
+	scene.queue_free()
+	await create_timer(0.16).timeout
