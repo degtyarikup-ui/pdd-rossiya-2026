@@ -103,12 +103,13 @@ function youtubeFixture(t,mode) {
   }};
   t.mock.method(globalThis,'fetch',async(url,options={})=>{
     if(String(url).includes('/drive/v3/files/'))return new Response(new Uint8Array(2000),{headers:{'content-type':'video/mp4'}});
-    if(String(url).includes('/upload/youtube/')){
+    if(String(url).includes('/upload/youtube/') && options.method==='POST'){
       initCalls++;
       if(mode==='init-fails'&&initCalls===1)return new Response('{}',{status:503});
-      return new Response('',{headers:{location:'https://upload.fixture/session'}});
+      return new Response('',{headers:{location:'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=fixture'}});
     }
-    if(String(url)==='https://upload.fixture/session'){
+    if(String(url)==='https://www.googleapis.com/upload/youtube/v3/videos?upload_id=fixture'){
+      if(options.headers?.['content-range']?.startsWith('bytes */'))return Response.json({id:'video123'});
       putCalls++;
       if(mode==='lost-response')throw new TypeError('response lost after acceptance');
       return Response.json({id:'video123'});
@@ -117,13 +118,14 @@ function youtubeFixture(t,mode) {
   });
   return {...f,post,current:()=>JSON.parse(data.get('social:posts'))[0],counts:()=>({putCalls,initCalls})};
 }
-test('YouTube lost upload response cannot upload again, even after restart',async t=>{
+test('YouTube lost upload response is recovered by a probe after restart without another upload',async t=>{
   const f=youtubeFixture(t,'lost-response');
-  assert.equal((await publishPost(f.env,'p','https://fixture')).status,'error');
+  assert.equal((await publishPost(f.env,'p','https://fixture')).status,'processing');
   f.restart();
-  assert.equal((await publishPost(f.env,'p','https://fixture')).status,'error');
-  assert.equal(f.counts().putCalls,1);
-  assert.equal(f.current().youtubeNeedsReview,true);
+  assert.equal((await publishPost(f.env,'p','https://fixture')).status,'ok');
+  assert.deepEqual(f.counts(),{putCalls:1,initCalls:1});
+  assert.equal(f.current().youtubeNeedsReview,false);
+  assert.equal(f.current().youtubeVideoId,'video123');
 });
 test('YouTube successful upload with failed KV save recovers without new upload',async t=>{
   const f=youtubeFixture(t,'save-fails');

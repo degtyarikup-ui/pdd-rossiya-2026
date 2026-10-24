@@ -1,7 +1,14 @@
 // Serialize publication of one account and retain write outcomes independently
 // of the eventually-consistent admin KV list. An uncertain write is never replayed.
+import { SocialQueueStore } from './social_queue.js';
+
 export class SocialPublisher {
-  constructor(state) { this.state = state; this.tail = Promise.resolve(); }
+  constructor(state, env) { this.state = state; this.tail = Promise.resolve(); this.queue = new SocialQueueStore(state, env); }
+  alarm() {
+    const result = this.tail.then(() => this.queue.alarm());
+    this.tail = result.then(() => {}, () => {});
+    return result;
+  }
   fetch(request) {
     const result = this.tail.then(() => this.handle(request));
     this.tail = result.then(() => {}, () => {});
@@ -11,6 +18,7 @@ export class SocialPublisher {
     if (request.method !== 'POST') return new Response('method', { status: 405 });
     const body = await request.json();
     const path = new URL(request.url).pathname;
+    if (path.startsWith('/queue/')) return this.queue.handle(path, body);
     const now = Date.now();
     if (path === '/claim') {
       const lease = await this.state.storage.get('lease');
@@ -38,6 +46,17 @@ export class SocialPublisher {
       await this.state.storage.put(key, { state: 'pending', at: now });
       return Response.json({ state: 'new' });
     }
+    if (path === '/session' && previous?.state === 'pending' && body.key.startsWith('youtube:')) {
+      const session = body.session;
+      let url;
+      try { url = new URL(session?.url); } catch (_) {}
+      if (!url || url.protocol !== 'https:' || url.hostname !== 'www.googleapis.com' || url.port || url.username || url.password
+        || !url.pathname.startsWith('/upload/youtube/') || !Number.isSafeInteger(session.total) || session.total < 1000
+        || session.total > 90 * 1024 * 1024 || !/^[a-f0-9]{64}$/.test(session.sha256 || '')) return new Response('session', { status: 400 });
+      if (previous.session && JSON.stringify(previous.session) !== JSON.stringify(session)) return new Response('state', { status: 409 });
+      await this.state.storage.put(key, { ...previous, session });
+      return Response.json({ ok: true });
+    }
     if (path === '/complete' && previous?.state === 'pending') {
       const value = body.value;
       if (!value || typeof value.id !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(value.id)) return new Response('value', { status: 400 });
@@ -62,11 +81,11 @@ export async function socialGuard(env, accountId, path, body = {}) {
   return response.json();
 }
 
-export async function beginSocialWrite(env, post, platform, reserve = true) {
+export async function beginSocialWrite(env, post, platform, reserve = true, allowPending = false) {
   const key = platform + ':' + (post.contentMd5 || post.driveFileId || post.id) + ':'
     + (platform === 'instagram' ? post.instagramReplacementAttempt?.sourceContainerId || post.instagramReplacementAttempt?.id || 'initial' : post.youtubeReplacementAttempt?.sourceVideoId || post.youtubeReplacementAttempt?.id || 'initial');
   const result = await socialGuard(env, post.accountId, reserve ? '/begin' : '/read', { key, owner: env.__SOCIAL_OWNER });
-  if (result?.state === 'pending') {
+  if (result?.state === 'pending' && !allowPending) {
     const error = new Error('Результат предыдущей загрузки ' + (platform === 'instagram' ? 'Instagram' : 'YouTube') + ' не подтверждён. Повтор остановлен до проверки');
     error.code = platform === 'instagram' ? 'ERR_IG_PUBLICATION_UNCONFIRMED' : 'ERR_YT_PUBLICATION_UNCONFIRMED';
     error.instagramReviewReason = 'upload_unconfirmed';

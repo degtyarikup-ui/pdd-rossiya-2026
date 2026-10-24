@@ -15,6 +15,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { socialGuard, beginSocialWrite, completeSocialWrite, abandonSocialWrite, withSocialPublicationLease } from './social_guard.js';
+import { readSocialPosts, saveSocialPosts } from './social_queue.js';
+import { resumableYoutubeUpload } from './youtube_upload.js';
 
 async function notifySocialFailure(notify, accountId, reason, text) {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(accountId + '|' + reason));
@@ -24,7 +26,6 @@ async function notifySocialFailure(notify, accountId, reason, text) {
 
 const KV_SETTINGS = 'social:settings';
 const KV_ACCOUNTS = 'social:accounts';
-const KV_POSTS = 'social:posts';
 const KV_LOG = 'social:log';
 const KV_GOOGLE_TOKEN = 'social:google_token';
 const KV_INSTAGRAM_COOLDOWN = 'social:instagram_cooldown';
@@ -134,14 +135,18 @@ function limit(str, max) {
 // ────────────────────────────── лог ──────────────────────────────
 
 export async function socialLog(env, level, message, extra = {}) {
-  const entries = await kvJson(env, KV_LOG, []);
-  entries.unshift({
+  const entry = {
     ts: new Date().toISOString(),
     level,
     message: limit(message, 500),
     ...extra,
-  });
-  await kvPut(env, KV_LOG, entries.slice(0, LOG_LIMIT));
+  };
+  console.log(JSON.stringify({ event: 'social_publication', ...entry }));
+  try {
+    const entries = await kvJson(env, KV_LOG, []);
+    entries.unshift(entry);
+    await kvPut(env, KV_LOG, entries.slice(0, LOG_LIMIT));
+  } catch (_) { console.warn('Social log projection deferred'); }
 }
 
 // ────────────────────────────── настройки и аккаунты ──────────────────────────────
@@ -222,11 +227,13 @@ const DEFAULT_ACCOUNT = {
 };
 
 async function getAccounts(env) {
-  return await kvJson(env, KV_ACCOUNTS, []);
+  const accounts = JSON.parse((await env.INSTALLS.get(KV_ACCOUNTS)) ?? '[]');
+  if (!Array.isArray(accounts)) throw new Error('Social accounts unavailable');
+  return accounts;
 }
 
 async function getPosts(env) {
-  return await kvJson(env, KV_POSTS, []);
+  return readSocialPosts(env);
 }
 
 async function getExcludedVideos(env, accountId) {
@@ -266,7 +273,7 @@ async function patchPost(env, postId, patch) {
   const idx = posts.findIndex((p) => p.id === postId);
   if (idx === -1) return null;
   posts[idx] = { ...posts[idx], ...patch };
-  await kvPut(env, KV_POSTS, posts);
+  await saveSocialPosts(env, posts);
   return posts[idx];
 }
 
@@ -505,7 +512,7 @@ export async function syncAccountVideos(env, account) {
       && !latestKnown.has(p.driveFileId) && !latestExcluded.has(p.driveFileId)
       && !(p.contentMd5 && latestHashes.has(p.contentMd5)));
     added = imported.length;
-    if (added) await kvPut(env, KV_POSTS, [...latest, ...imported]);
+    if (added) await saveSocialPosts(env, latest, [...latest, ...imported]);
     await socialLog(env, 'info', `Синхронизация «${account.name}»: добавлено роликов — ${added}`);
   }
 
@@ -643,12 +650,9 @@ function isInstagramPermalink(value) {
 async function verifyPublishedInstagramMedia(env, post, account, api, statusDetails) {
   // The post can have changed while Meta processed the request. Verify only the
   // freshly stored media identity and never derive a media ID from a container.
-  let raw;
-  try { raw = await env.INSTALLS.get(KV_POSTS); }
-  catch (_) { throw instagramPublicationCheckUnavailable(); }
   let posts;
-  try { posts = JSON.parse(raw); }
-  catch (_) { throw instagramPublicationUnconfirmed('media_unconfirmed'); }
+  try { posts = await getPosts(env); }
+  catch (_) { throw instagramPublicationCheckUnavailable(); }
   const current = Array.isArray(posts) ? posts.find(p => p.id === post.id) : null;
   const mediaId = current?.instagramMediaId;
   if (typeof mediaId !== 'string' || !/^[0-9]{1,32}$/.test(mediaId)) {
@@ -740,6 +744,9 @@ async function publishToInstagram(env, post, account, origin) {
  */
 async function finishInstagram(env, post, account, containerId) {
   const api = `https://graph.instagram.com/${GRAPH_VERSION}`;
+  const receipt = { key: 'instagram:publish:' + containerId };
+  const saved = await socialGuard(env, post.accountId, '/read', { key: receipt.key, owner: env.__SOCIAL_OWNER });
+  if (saved?.state === 'done') await patchPost(env, post.id, { instagramMediaId: saved.id });
 
   // Meta errors may contain the private video URL. Keep only bounded technical
   // details in the post and social log, never the upstream error text.
@@ -766,7 +773,7 @@ async function finishInstagram(env, post, account, containerId) {
       throw instagramFailure('Instagram не дал проверить статус видео' + statusDetails(statusRes, statusData));
     }
     const code = statusData?.status_code;
-    if (code === 'PUBLISHED') {
+    if (code === 'PUBLISHED' || saved?.state === 'done') {
       // PUBLISHED describes the container's history, not the current visibility
       // of a deleted or inaccessible media object. Reconcile with read-only API
       // checks; an unresolved identity must never trigger a replacement upload.
@@ -795,14 +802,23 @@ async function finishInstagram(env, post, account, containerId) {
     || (current.driveFileId && (await getExcludedVideos(env, current.accountId)).has(current.driveFileId))) {
     throw instagramFailure('Публикация отменена или изменена в очереди');
   }
-  const published = await igRequest(`${api}/${account.instagramAccountId}/media_publish`, publishForm);
+  const intent = await socialGuard(env, post.accountId, '/begin', { key: receipt.key, owner: env.__SOCIAL_OWNER });
+  if (intent?.state === 'pending') throw instagramPublicationUnconfirmed('publish_unconfirmed');
+  let published;
+  try { published = await igRequest(`${api}/${account.instagramAccountId}/media_publish`, publishForm); }
+  catch (error) {
+    if (error.code === 'ERR_IG_RATE_LIMITED') await abandonSocialWrite(env, post, receipt);
+    throw error;
+  }
   if (!published.ok || !published.data.id) {
+    if (published.status >= 400 && published.status < 500 && published.status !== 408) await abandonSocialWrite(env, post, receipt);
     throw instagramFailure(
       'Ошибка публикации в Instagram (HTTP ' + published.status + ')'
     );
   }
 
   const mediaId = published.data.id;
+  await completeSocialWrite(env, post, receipt, mediaId);
   // Save the successful publish response before another network request. A
   // resumed PUBLISHED container can then verify its media even after a reset.
   await patchPost(env, post.id, { instagramMediaId: mediaId });
@@ -990,100 +1006,31 @@ function buildYoutubeTitle(post) {
 }
 
 async function publishToYouTube(env, post, account) {
-  // Check the durable outcome before downloading/uploading anything.
-  // Reserve immediately before sending bytes; session initialization is safe.
-  const saved = await beginSocialWrite(env, post, 'youtube', false);
-  if (saved.result?.state === 'done') return {
-    videoId: saved.result.id, permalink: 'https://youtube.com/shorts/' + saved.result.id,
-  };
-  if (post.youtubeNeedsReview) {
-    const error = new Error('Предыдущая загрузка YouTube требует проверки. Повторная отправка остановлена');
-    error.code = 'ERR_YT_PUBLICATION_UNCONFIRMED';
-    throw error;
-  }
-  const accessToken = await googleAccessToken(env, account.youtubeRefreshToken || null);
-
-  const videoRes = await driveDownloadResponse(env, post.driveFileId);
-  if (!videoRes.ok) {
-    throw new Error('Не удалось скачать ролик с Google Диска (HTTP ' + videoRes.status + ')');
-  }
-  const bytes = await videoRes.arrayBuffer();
-  if (bytes.byteLength < 1000) {
-    throw new Error('С Google Диска пришёл пустой файл');
-  }
-  if (bytes.byteLength > MAX_UPLOAD_BYTES) {
-    throw new Error(
-      'Ролик весит ' + Math.round(bytes.byteLength / 1048576) + ' МБ — больше лимита заливки ' +
-      Math.round(MAX_UPLOAD_BYTES / 1048576) + ' МБ. Сожми видео и положи на Диск заново.'
-    );
-  }
-
-  const tags = String(account.youtubeTags || '')
-    .split(',').map((t) => t.trim()).filter(Boolean);
-
-  const initRes = await fetch(
-    'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
-    {
-      method: 'POST',
-      headers: {
-        authorization: 'Bearer ' + accessToken,
-        'content-type': 'application/json; charset=UTF-8',
-        'x-upload-content-length': String(bytes.byteLength),
-        'x-upload-content-type': 'video/mp4',
-      },
-      body: JSON.stringify({
-        snippet: {
-          title: buildYoutubeTitle(post),
-          description: limit(post.caption || '', 4900),
-          tags,
-          categoryId: account.youtubeCategoryId || '27',
-        },
-        status: {
-          privacyStatus: account.youtubePrivacy || 'public',
-          selfDeclaredMadeForKids: false,
-        },
-      }),
-    }
-  );
-
-  if (!initRes.ok) {
-    const body = await initRes.text();
-    throw new Error('YouTube не открыл загрузку (HTTP ' + initRes.status + '): ' + limit(body, 300));
-  }
-
-  const uploadUrl = initRes.headers.get('location');
-  if (!uploadUrl) {
-    throw new Error('YouTube не вернул адрес загрузки');
-  }
-
-  const write = await beginSocialWrite(env, post, 'youtube');
-  if (write.result?.state === 'done') return {
-    videoId: write.result.id, permalink: 'https://youtube.com/shorts/' + write.result.id,
-  };
-  await patchPost(env, post.id, { youtubeNeedsReview: true });
-
-  // Заливку не повторяем: если YouTube принял ролик, а ответ потерялся,
-  // повтор создал бы дубль на канале.
-  const uploadRes = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'content-type': 'video/mp4' },
-    body: bytes,
-  });
-
-  const uploadData = await uploadRes.json().catch(() => ({}));
-  if (!uploadRes.ok || !uploadData.id) {
-    throw new Error(
-      'YouTube не принял файл (HTTP ' + uploadRes.status + '): ' +
-      limit(uploadData?.error?.message || JSON.stringify(uploadData), 300)
-    );
-  }
-
-  await completeSocialWrite(env, post, write, uploadData.id);
-
-  return {
-    videoId: uploadData.id,
-    permalink: 'https://youtube.com/shorts/' + uploadData.id,
-  };
+  return resumableYoutubeUpload(env, post,
+    () => googleAccessToken(env, account.youtubeRefreshToken || null),
+    async () => {
+      const videoRes = await driveDownloadResponse(env, post.driveFileId);
+      if (!videoRes.ok) throw new Error('Не удалось скачать ролик с Google Диска (HTTP ' + videoRes.status + ')');
+      const bytes = await videoRes.arrayBuffer();
+      if (bytes.byteLength < 1000 || bytes.byteLength > MAX_UPLOAD_BYTES) throw new Error('Размер ролика вне допустимых пределов загрузки');
+      return bytes;
+    },
+    async (accessToken, length) => {
+      const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
+        method: 'POST', signal: AbortSignal.timeout(10000),
+        headers: { authorization: 'Bearer ' + accessToken, 'content-type': 'application/json; charset=UTF-8',
+          'x-upload-content-length': String(length), 'x-upload-content-type': 'video/mp4' },
+        body: JSON.stringify({
+          snippet: { title: buildYoutubeTitle(post), description: limit(post.caption || '', 4900),
+            tags: String(account.youtubeTags || '').split(',').map(t => t.trim()).filter(Boolean), categoryId: account.youtubeCategoryId || '27' },
+          status: { privacyStatus: account.youtubePrivacy || 'public', selfDeclaredMadeForKids: false },
+        }),
+      });
+      if (!initRes.ok) throw new Error('YouTube не открыл загрузку (HTTP ' + initRes.status + ')');
+      const uploadUrl = initRes.headers.get('location');
+      if (!uploadUrl) throw new Error('YouTube не вернул адрес загрузки');
+      return uploadUrl;
+    });
 }
 
 /** Explicitly replace an unavailable YouTube video, retaining the old identity. */
@@ -1139,6 +1086,111 @@ async function replaceYoutube(env, postId, origin, notify) {
   });
 }
 
+// A scheduled, explicitly requeued record may contain an unavailable old ID.
+// Only a due schedule authorizes replacing it, and only after an authenticated
+// provider check. Successful, unscheduled and ambiguous attempts are preserved.
+function canReplaceScheduled(post, platform) {
+  return post.publishMode === 'scheduled' && isScheduledPostDue(post) && !post.publishedAt
+    && post[platform + 'Status'] !== 'published'
+    && (!post[platform + 'ReplacementAttempt'] || post[platform + 'ReplacementAttempt'].stage === 'published');
+}
+
+function reviewBlocksInstagram(post) {
+  return post.instagramNeedsReview === true
+    && !(post.instagramReviewReason === 'media_unavailable' && isScheduledPostDue(post) && !post.publishedAt
+      && (!post.instagramReplacementAttempt || post.instagramReplacementAttempt.stage === 'published'));
+}
+
+function automaticPlatforms(post, fallback = ['instagram', 'youtube']) {
+  return (post.targets || fallback).filter(platform => post[platform + 'Status'] !== 'published'
+    && (platform === 'instagram' ? !reviewBlocksInstagram(post)
+      : !(post.youtubeNeedsReview && !post.youtubeVideoId)));
+}
+
+async function archiveScheduledPublication(env, post, platform) {
+  const current = (await getPosts(env)).find(p => p.id === post.id);
+  const fields = ['accountId', 'driveFileId', 'caption', 'targets', 'scheduledAt', 'publishedAt',
+    platform + 'MediaId', platform + 'VideoId', platform + 'ContainerId', platform + 'ReplacementAttempt', platform + 'PreviousAttempts'];
+  if (!current || !canReplaceScheduled(current, platform)
+    || fields.some(key => JSON.stringify(current[key]) !== JSON.stringify(post[key]))
+    || (current.driveFileId && (await getExcludedVideos(env, current.accountId)).has(current.driveFileId))) {
+    throw new Error('Очередь изменилась во время проверки прежней публикации');
+  }
+  const history = current[platform + 'PreviousAttempts'] || [];
+  if (!Array.isArray(history)) throw new Error('История публикаций повреждена');
+  const startedAt = new Date().toISOString();
+  const instagram = platform === 'instagram';
+  const attempt = { id: crypto.randomUUID(), stage: 'prepared', startedAt,
+    ...(instagram ? { sourceContainerId: post.instagramContainerId } : { sourceVideoId: post.youtubeVideoId }) };
+  const previous = { recordedAt: startedAt, reason: 'scheduled_previous_media_unavailable',
+    ...(instagram ? { containerId: post.instagramContainerId, mediaId: post.instagramMediaId, permalink: post.instagramPermalink }
+      : { videoId: post.youtubeVideoId, permalink: post.youtubePermalink }) };
+  return patchPost(env, post.id, {
+    [platform + 'PreviousAttempts']: [...history, previous], [platform + 'ReplacementAttempt']: attempt,
+    [platform + 'NeedsReview']: false, [platform + 'Status']: 'queued',
+    ...(instagram ? { instagramContainerId: null, instagramMediaId: null, instagramPermalink: null, instagramReviewReason: null }
+      : { youtubeVideoId: null, youtubePermalink: null }),
+  });
+}
+
+async function reconcileInstagram(env, post, account) {
+  const api = `https://graph.instagram.com/${GRAPH_VERSION}`;
+  try { return await verifyPublishedInstagramMedia(env, post, account, api, () => ''); }
+  catch (error) {
+    if (error.instagramReviewReason !== 'media_unavailable' || !canReplaceScheduled(post, 'instagram')) throw error;
+    // Confirm the token's identity and the old container's successful history.
+    for (const [path, validate] of [
+      ['me?fields=user_id', data => String(data.user_id) === String(account.instagramAccountId)],
+      [post.instagramContainerId + '?fields=status_code', data => data.status_code === 'PUBLISHED'],
+      [account.instagramAccountId + '/media?fields=id&limit=1', data => Array.isArray(data.data)],
+    ]) {
+      let response, data;
+      try {
+        response = await fetch(api + '/' + path, { headers: { authorization: 'Bearer ' + account.instagramToken }, signal: AbortSignal.timeout(10000) });
+        data = await response.json();
+      } catch (_) { throw instagramPublicationCheckUnavailable(); }
+      const rate = instagramRateLimitError(response, data);
+      if (rate) throw rate;
+      if (!response.ok || data.error || !validate(data)) throw instagramPublicationCheckUnavailable();
+    }
+    await archiveScheduledPublication(env, post, 'instagram');
+    await socialLog(env, 'info', `Instagram: недоступная прежняя запись ${post.fileName} сохранена в истории; выполняю назначенную публикацию`);
+    return null;
+  }
+}
+
+async function reconcileYoutube(env, post, account) {
+  const token = await googleAccessToken(env, account.youtubeRefreshToken || null);
+  const fail = (message, code = 'ERR_YT_PUBLICATION_CHECK_UNAVAILABLE') => { throw Object.assign(new Error(message), { code }); };
+  const read = async path => {
+    let response, data;
+    try {
+      response = await fetch('https://www.googleapis.com/youtube/v3/' + path, {
+        headers: { authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(10000),
+      });
+      data = await response.json();
+    } catch (_) { fail('YouTube временно не дал проверить прежнюю публикацию'); }
+    if (!response.ok || data.error || !Array.isArray(data.items)) fail('YouTube временно не дал проверить прежнюю публикацию');
+    return data.items;
+  };
+  const channels = await read('channels?part=id&mine=true');
+  if (channels.length !== 1 || !channels[0].id) fail('Не удалось подтвердить канал YouTube');
+  const videos = await read('videos?part=status,snippet&id=' + encodeURIComponent(post.youtubeVideoId));
+  if (!videos.length) {
+    if (!canReplaceScheduled(post, 'youtube')) fail('Прежний ролик YouTube недоступен. Нужна новая публикация', 'ERR_YT_PUBLICATION_UNCONFIRMED');
+    await archiveScheduledPublication(env, post, 'youtube');
+    await socialLog(env, 'info', `YouTube: недоступная прежняя запись ${post.fileName} сохранена в истории; выполняю назначенную публикацию`);
+    return null;
+  }
+  const video = videos[0];
+  if (video.id !== post.youtubeVideoId || video.snippet?.channelId !== channels[0].id) fail('Не удалось подтвердить владельца ролика YouTube');
+  if (video.status?.uploadStatus === 'uploaded') fail('YouTube обрабатывает загруженный ролик', 'ERR_YT_PROCESSING');
+  if (video.status?.uploadStatus !== 'processed' || !['public', 'unlisted'].includes(video.status?.privacyStatus)) {
+    fail('Ролик YouTube существует, но недоступен для просмотра. Проверьте YouTube Studio', 'ERR_YT_PUBLICATION_UNCONFIRMED');
+  }
+  return { videoId: video.id, permalink: 'https://youtube.com/shorts/' + video.id, alreadyPublished: true };
+}
+
 // ────────────────────────────── публикация ──────────────────────────────
 
 /**
@@ -1160,10 +1212,9 @@ export async function publishPost(env, postId, origin, notify = null, only = ['i
 
 async function publishPostWithLease(env, postId, origin, notify, only) {
   const posts = await getPosts(env);
-  const post = posts.find((p) => p.id === postId);
+  let post = posts.find((p) => p.id === postId);
   if (!post) return { status: 'error', message: 'Ролик не найден' };
   if (post.driveFileId && (await getExcludedVideos(env, post.accountId)).has(post.driveFileId)) return { status: 'error', message: 'Ролик исключён из очереди' };
-  if (post.instagramNeedsReview === true && only.includes('instagram')) return { status: 'error', message: post.error || 'Публикация Instagram требует проверки' };
 
   const accounts = await getAccounts(env);
   const account = accounts.find((a) => a.id === post.accountId);
@@ -1181,6 +1232,7 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
   let igResult = null;
   let ytResult = null;
   let instagramProcessing = false;
+  let youtubeProcessing = false;
   const igPending = only.includes('instagram') && targets.includes('instagram') && post.instagramStatus !== 'published';
   const cooldown = igPending ? await getInstagramCooldown(env) : null;
   if (cooldown && (!only.includes('youtube') || !targets.includes('youtube') || post.youtubeStatus === 'published')) {
@@ -1192,11 +1244,14 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
     notifyFailure = false;
   } else if (igPending) {
     try {
-      if (post.instagramMediaId && !post.instagramContainerId) throw instagramPublicationUnconfirmed('media_unconfirmed');
+      if (reviewBlocksInstagram(post)) throw instagramPublicationUnconfirmed(post.instagramReviewReason || 'media_unconfirmed');
+      if (post.instagramMediaId && canReplaceScheduled(post, 'instagram')) igResult = await reconcileInstagram(env, post, account);
+      else if (post.instagramMediaId && !post.instagramContainerId) throw instagramPublicationUnconfirmed('media_unconfirmed');
+      post = (await getPosts(env)).find(p => p.id === postId);
       await patchPost(env, postId, { instagramStatus: 'processing' });
-      igResult = post.instagramContainerId
+      igResult = igResult || (post.instagramContainerId
         ? await finishInstagram(env, post, account, post.instagramContainerId)
-        : await publishToInstagram(env, post, account, origin);
+        : await publishToInstagram(env, post, account, origin));
       await patchPost(env, postId, {
         instagramStatus: 'published',
         instagramNeedsReview: false,
@@ -1239,13 +1294,15 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
 
   if (only.includes('youtube') && targets.includes('youtube') && post.youtubeStatus !== 'published') {
     try {
-      if (!(await getPosts(env)).some(p => p.id === postId)) throw new Error('Ролик удалён из очереди');
+      post = (await getPosts(env)).find(p => p.id === postId);
+      if (!post) throw new Error('Ролик удалён из очереди');
       if (post.youtubeVideoId) {
         await patchPost(env, postId, { youtubeNeedsReview: true });
-        throw new Error('Уже сохранена прежняя публикация YouTube. Проверьте ссылку и статус площадки перед повтором');
+        ytResult = await reconcileYoutube(env, post, account);
       }
+      post = (await getPosts(env)).find(p => p.id === postId);
       await patchPost(env, postId, { youtubeStatus: 'processing' });
-      ytResult = await publishToYouTube(env, post, account);
+      ytResult = ytResult || await publishToYouTube(env, post, account);
       await patchPost(env, postId, {
         youtubeStatus: 'published',
         youtubeNeedsReview: false,
@@ -1255,11 +1312,16 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
       });
       await socialLog(env, 'ok', `YouTube: опубликован ${post.fileName}`, { url: ytResult.permalink });
     } catch (e) {
+      if (e.code === 'ERR_YT_PROCESSING') {
+        youtubeProcessing = true;
+        await patchPost(env, postId, { youtubeStatus: 'processing', youtubeNeedsReview: false });
+      } else {
       notifyFailure = true;
       errors.push('YouTube: ' + e.message);
       await patchPost(env, postId, { youtubeStatus: 'failed',
         ...(e.code === 'ERR_YT_PUBLICATION_UNCONFIRMED' ? { youtubeNeedsReview: true } : {}) });
       await socialLog(env, 'error', `YouTube: ${post.fileName} — ${e.message}`);
+      }
     }
   }
 
@@ -1286,10 +1348,11 @@ async function publishPostWithLease(env, postId, origin, notify, only) {
     return { status: 'ok', instagram: igResult, youtube: ytResult };
   }
 
-  if (instagramProcessing && !errors.length) {
+  if ((instagramProcessing || youtubeProcessing) && !errors.length) {
     await patchPost(env, postId, { status: 'processing', error: null, processingSince: new Date().toISOString() });
-    await socialLog(env, 'info', `Instagram: обработка ${post.fileName} продолжается, загрузка сохранена`);
-    return { status: 'processing', message: 'Instagram продолжает обработку видео' };
+    const platform = youtubeProcessing ? 'YouTube' : 'Instagram';
+    await socialLog(env, 'info', `${platform}: обработка ${post.fileName} продолжается, загрузка сохранена`);
+    return { status: 'processing', message: platform + ' продолжает обработку видео' };
   }
 
   const summary = errors.join('; ') || 'Публикация не завершилась';
@@ -1355,7 +1418,7 @@ async function recoverStalePosts(env, cooldown = null) {
   });
 
   if (changed) {
-    await kvPut(env, KV_POSTS, posts);
+    await saveSocialPosts(env, posts);
     await socialLog(env, 'error', 'Зависшие публикации возвращены в работу');
   }
 }
@@ -1377,7 +1440,7 @@ async function resumeInFlight(env, origin, notify, cooldown = null) {
   const posts = await getPosts(env);
   // Только назначенные даты или явный ручной запуск. Старые задачи без даты
   // не должны возобновлять автоматическую публикацию после обновления.
-  const stuck = posts.filter((p) => p.status === 'processing' && p.instagramNeedsReview !== true
+  const stuck = posts.filter((p) => p.status === 'processing' && automaticPlatforms(p).length
     && !(cooldown && onlyInstagramPending(p))
     && (isScheduledPostDue(p) || p.publishMode === 'manual'));
 
@@ -1386,7 +1449,7 @@ async function resumeInFlight(env, origin, notify, cooldown = null) {
     // Совсем свежие не трогаем: скорее всего публикация прямо сейчас идёт.
     if (startedAt && Date.now() - startedAt < 3 * 60 * 1000) continue;
     await socialLog(env, 'info', `Продолжаю публикацию: ${post.fileName}`);
-    await publishPost(env, post.id, origin, notify);
+    await publishPost(env, post.id, origin, notify, automaticPlatforms(post));
   }
 }
 
@@ -1414,7 +1477,7 @@ export async function runAutoPost(env, origin, notify = null) {
     const posts = await getPosts(env);
     const due = posts
       .filter((p) => p.accountId === account.id && (p.status === 'queued' || p.status === 'failed'))
-      .filter((p) => p.instagramNeedsReview !== true)
+      .filter((p) => automaticPlatforms(p, account.targets).length)
       .filter((p) => !(cooldown && onlyInstagramPending(p, account.targets)))
       .filter((p) => isScheduledPostDue(p, now))
       .sort((a, b) => {
@@ -1424,20 +1487,17 @@ export async function runAutoPost(env, origin, notify = null) {
         return String(a.fileName).localeCompare(String(b.fileName), 'ru', { numeric: true });
       });
 
-    if (!due.length) {
-      await socialLog(env, 'info', `«${account.name}»: публиковать нечего`);
-      continue;
-    }
+    if (!due.length) continue;
 
     // Публикуем по очереди, не параллельно: Instagram кодирует каждый ролик
     // минуты, и параллельные заливки на один аккаунт площадки не любят.
     for (const post of due) {
       // Пока предыдущий ролик кодировался, администратор мог снять или перенести дату.
       const current = (await getPosts(env)).find(p => p.id === post.id);
-      if (!current || current.instagramNeedsReview === true || !['queued', 'failed'].includes(current.status) || !isScheduledPostDue(current)) continue;
+      if (!current || !automaticPlatforms(current, account.targets).length || !['queued', 'failed'].includes(current.status) || !isScheduledPostDue(current)) continue;
       if (onlyInstagramPending(current, account.targets) && await getInstagramCooldown(env)) continue;
       await patchPost(env, post.id, { status: 'processing', error: null, processingSince: new Date().toISOString(), publishMode: 'scheduled' });
-      const res = await publishPost(env, post.id, origin, notify);
+      const res = await publishPost(env, post.id, origin, notify, automaticPlatforms(current, account.targets));
       results.push({ account: account.name, file: post.fileName, ...res });
     }
   }
@@ -1735,7 +1795,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
         post.targets = [...merged.targets];
         updatedQueued += 1;
       }
-      if (updatedQueued) await kvPut(env, KV_POSTS, posts);
+      if (updatedQueued) await saveSocialPosts(env, posts);
     }
     await socialLog(env, 'info', `Аккаунт «${merged.name}» сохранён`);
     return jsonResponse({ ok: true, account: publicAccount(merged), note: resolvedNote, updatedQueued });
@@ -1743,9 +1803,9 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
 
   if (path === '/api/admin/social/accounts/delete' && request.method === 'POST') {
     const accounts = (await getAccounts(env)).filter((a) => a.id !== body.id);
-    const posts = (await getPosts(env)).filter((p) => p.accountId !== body.id);
+    const posts = await getPosts(env);
     await kvPut(env, KV_ACCOUNTS, accounts);
-    await kvPut(env, KV_POSTS, posts);
+    await saveSocialPosts(env, posts, posts.filter(p => p.accountId !== body.id));
     return jsonResponse({ ok: true });
   }
 
@@ -1971,8 +2031,8 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
     }
 
     if (body.action === 'delete') await excludeVideos(env, targetPosts);
-    const kept = body.action === 'delete' ? (await getPosts(env)).filter((p) => !ids.includes(p.id)) : posts;
-    await kvPut(env, KV_POSTS, kept);
+    const kept = body.action === 'delete' ? posts.filter((p) => !ids.includes(p.id)) : posts;
+    await saveSocialPosts(env, posts, kept);
     return jsonResponse({ ok: true, changed: body.action === 'delete' ? ids.length : changed });
   }
 
@@ -1998,7 +2058,7 @@ export async function handleSocialAdmin(request, env, ctx, url, helpers) {
       return jsonResponse({ ok: false, message: 'Дождитесь завершения текущей публикации перед удалением ролика' }, 409);
     }
     await excludeVideos(env, posts.filter(p => p.id === body.id));
-    await kvPut(env, KV_POSTS, (await getPosts(env)).filter(p => p.id !== body.id));
+    await saveSocialPosts(env, posts, posts.filter(p => p.id !== body.id));
     return jsonResponse({ ok: true });
   }
 
