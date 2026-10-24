@@ -101,6 +101,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     _timeUp = false;
     _mistakes.clear();
     _deck = _engine?.generateDeck(count: 30) ?? [];
+    if (_deck.isNotEmpty) unawaited(_awardService.startActivity());
   }
 
   void _startRound() {

@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/models/streak.dart';
@@ -7,6 +8,8 @@ import 'package:pdd_app/presentation/widgets/streak_widgets.dart';
 /// Серия дней: блок профиля и поздравление.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => SoundEffectsService.instance.setEnabled(false));
+  tearDown(() => SoundEffectsService.instance.setEnabled(true));
 
   // Четверг: неделя Пн–Вс вокруг него.
   final today = DateTime(2026, 10, 8);

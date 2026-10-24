@@ -276,7 +276,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get streakStartHint =>
-      'Answer the question today - the light will light up';
+      'Start a training session or game today to light your flame';
 
   @override
   String streakDaysWord(num count) {
@@ -306,7 +306,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get streakTodayPending =>
-      'No practice yet today — answer a question to keep your streak';
+      'No activity yet today — start a training session or game to keep your streak';
 
   @override
   String get streakNewRecord => 'New record';

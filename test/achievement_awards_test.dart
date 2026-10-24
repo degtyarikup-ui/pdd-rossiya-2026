@@ -1,3 +1,5 @@
+import 'package:pdd_app/data/services/sound_effects_service.dart';
+import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'dart:ui' as ui;
@@ -11,6 +13,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/models/achievement.dart';
+import 'package:pdd_app/data/models/streak.dart';
+import 'package:pdd_app/presentation/widgets/celebration_screen.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/achievement_award_service.dart';
@@ -69,8 +73,20 @@ List<Map<String, dynamic>> questions() => List.generate(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
+    SoundEffectsService.instance.setEnabled(false);
+    TestWidgetsFlutterBinding
+        .instance
+        .platformDispatcher
+        .accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+      disableAnimations: true,
+    );
     SharedPreferences.setMockInitialValues({});
     updateAppLocale(const Locale('ru'));
+  });
+  tearDown(() {
+    SoundEffectsService.instance.setEnabled(true);
+    TestWidgetsFlutterBinding.instance.platformDispatcher
+        .clearAccessibilityFeaturesTestValue();
   });
   setUpAll(() async {
     final fonts = FontLoader(AppTheme.fontFamily);
@@ -228,6 +244,11 @@ void main() {
             await tester.pumpAndSettle();
           }
         }
+        expect(find.byType(StreakCelebrationView), findsOneWidget);
+        expect(find.byType(AchievementAwardScreen), findsNothing);
+        expect(requests, 0);
+        await tester.tap(find.text('Продолжить'));
+        await tester.pumpAndSettle();
         expect(find.byType(AchievementAwardScreen), findsOneWidget);
         expect(find.text('Неутомимый'), findsOneWidget);
         expect(requests, 0);
@@ -366,63 +387,117 @@ void main() {
       dark: true,
     ),
   ]) {
-    testWidgets('award layout and accessible actions ${config.name}', (
-      tester,
-    ) async {
-      updateAppLocale(Locale(config.lang));
-      addTearDown(() => updateAppLocale(const Locale('ru')));
-      tester.view.physicalSize = config.size;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final key = GlobalKey();
-      var continued = 0, closed = 0;
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: config.dark ? AppTheme.darkTheme : AppTheme.lightTheme,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(config.scale),
-              disableAnimations: true,
+    for (final flame in [false, true]) {
+      testWidgets(
+        '${flame ? 'streak' : 'award'} layout and accessible actions ${config.name}',
+        (tester) async {
+          updateAppLocale(Locale(config.lang));
+          addTearDown(() => updateAppLocale(const Locale('ru')));
+          tester.view.physicalSize = config.size;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final key = GlobalKey();
+          var continued = 0, closed = 0;
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: config.dark ? AppTheme.darkTheme : AppTheme.lightTheme,
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(config.scale),
+                  disableAnimations: true,
+                ),
+                child: RepaintBoundary(key: key, child: child!),
+              ),
+              home: flame
+                  ? StreakCelebrationView(
+                      streak: Streak(
+                        current: 7,
+                        longest: 7,
+                        lastActiveDate: DateTime.now(),
+                        startDate: DateTime.now(),
+                        activeDays: const {},
+                      ),
+                      onContinue: () => continued++,
+                      onClose: () => closed++,
+                      position: 1,
+                      total: 3,
+                    )
+                  : AchievementAwardScreen(
+                      achievement: badge(AchievementId.streak, 30),
+                      onContinue: () => continued++,
+                      onClose: () => closed++,
+                      position: 1,
+                      total: 2,
+                    ),
             ),
-            child: RepaintBoundary(key: key, child: child!),
-          ),
-          home: AchievementAwardScreen(
-            achievement: badge(AchievementId.streak, 30),
-            onContinue: () => continued++,
-            onClose: () => closed++,
-            position: 1,
-            total: 2,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      final next = find.text(appL10n.continueButton);
-      expect(next.hitTestable(), findsOneWidget);
-      await tester.tap(next);
-      await tester.tap(find.byTooltip(appL10n.close));
-      expect(continued, 1);
-      expect(closed, 1);
-      expect(tester.takeException(), isNull);
-      if (const bool.fromEnvironment('PDD_CAPTURE_ACHIEVEMENTS')) {
-        await tester.runAsync(() async {
-          await precacheImage(
-            tester.widget<Image>(find.byType(Image).first).image,
-            tester.element(find.byType(AchievementAwardScreen)),
           );
-        });
-        await tester.pumpAndSettle();
-        await tester.runAsync(() async {
-          final boundary =
-              key.currentContext!.findRenderObject() as RenderRepaintBoundary;
-          final pixels = await boundary.toImage(pixelRatio: 2);
-          final bytes = await pixels.toByteData(format: ui.ImageByteFormat.png);
-          final file = File('output/achievement-awards/${config.name}.png');
-          file.parent.createSync(recursive: true);
-          file.writeAsBytesSync(bytes!.buffer.asUint8List());
-          pixels.dispose();
-        });
-      }
-    });
+          await tester.pumpAndSettle();
+          final next = find.text(appL10n.continueButton);
+          expect(next.hitTestable(), findsOneWidget);
+          await tester.tap(next);
+          await tester.tap(find.byTooltip(appL10n.close));
+          expect(continued, 1);
+          expect(closed, 1);
+          expect(tester.takeException(), isNull);
+          if (const bool.fromEnvironment('PDD_CAPTURE_ACHIEVEMENTS')) {
+            if (!flame) {
+              await tester.runAsync(() async {
+                await precacheImage(
+                  tester.widget<Image>(find.byType(Image).first).image,
+                  tester.element(find.byType(AchievementAwardScreen)),
+                );
+              });
+            }
+            await tester.pumpAndSettle();
+            await tester.runAsync(() async {
+              final boundary =
+                  key.currentContext!.findRenderObject()
+                      as RenderRepaintBoundary;
+              final pixels = await boundary.toImage(pixelRatio: 2);
+              final bytes = await pixels.toByteData(
+                format: ui.ImageByteFormat.png,
+              );
+              final file = File(
+                'output/achievement-awards/${flame ? 'streak-' : ''}${config.name}.png',
+              );
+              file.parent.createSync(recursive: true);
+              file.writeAsBytesSync(bytes!.buffer.asUint8List());
+              pixels.dispose();
+            });
+          }
+        },
+      );
+    }
   }
+
+  testWidgets('rays keep moving and stop when reduced motion is enabled', (
+    tester,
+  ) async {
+    var reduced = false;
+    Widget screen() => MaterialApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: reduced),
+        child: child!,
+      ),
+      home: CelebrationScreen(
+        heading: 'Heading',
+        title: 'Award',
+        description: 'Description',
+        label: '1 / 4',
+        heroBuilder: (size) => SizedBox.square(dimension: size),
+        onContinue: () {},
+        onClose: () {},
+      ),
+    );
+    await tester.pumpWidget(screen());
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.binding.hasScheduledFrame, isTrue);
+    reduced = true;
+    await tester.pumpWidget(screen());
+    await tester.pumpAndSettle();
+    expect(tester.binding.hasScheduledFrame, isFalse);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

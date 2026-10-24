@@ -127,6 +127,7 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
   }
 
   void _startRound() {
+    unawaited(_awardService.startActivity());
     _timer?.cancel();
     _advanceTimer?.cancel();
     _score = 0;

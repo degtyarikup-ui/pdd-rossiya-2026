@@ -79,3 +79,6 @@ game_godot/network/history/
 
 # Shared achievement badges, exported from assets/ for the Godot package.
 game_godot/icons/achievements/
+
+game_godot/icons/streak_flame.svg
+game_godot/icons/streak_flame.svg.import

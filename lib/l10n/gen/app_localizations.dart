@@ -541,7 +541,7 @@ abstract class AppLocalizations {
   /// No description provided for @streakStartHint.
   ///
   /// In ru, this message translates to:
-  /// **'Ответьте на вопрос сегодня — зажжётся огонёк'**
+  /// **'Начните тренировку или игру сегодня — зажжётся огонёк'**
   String get streakStartHint;
 
   /// No description provided for @streakDaysWord.
@@ -583,7 +583,7 @@ abstract class AppLocalizations {
   /// No description provided for @streakTodayPending.
   ///
   /// In ru, this message translates to:
-  /// **'Сегодня ещё не занимались — ответьте на вопрос, чтобы продлить серию'**
+  /// **'Сегодня ещё не занимались — начните тренировку или игру, чтобы продлить серию'**
   String get streakTodayPending;
 
   /// No description provided for @streakNewRecord.

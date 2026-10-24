@@ -283,7 +283,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get streakStart => 'Начните серию';
 
   @override
-  String get streakStartHint => 'Ответьте на вопрос сегодня — зажжётся огонёк';
+  String get streakStartHint =>
+      'Начните тренировку или игру сегодня — зажжётся огонёк';
 
   @override
   String streakDaysWord(num count) {
@@ -315,7 +316,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get streakTodayPending =>
-      'Сегодня ещё не занимались — ответьте на вопрос, чтобы продлить серию';
+      'Сегодня ещё не занимались — начните тренировку или игру, чтобы продлить серию';
 
   @override
   String get streakNewRecord => 'Новый рекорд';

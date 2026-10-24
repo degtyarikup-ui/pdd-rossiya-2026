@@ -46,6 +46,31 @@ var _review: PanelContainer
 var _actions: GridContainer
 var _footer: VBoxContainer
 var _award: AchievementAwards
+var _celebration_audio: AudioStreamPlayer
+var _celebration_generation := 0
+
+func play_celebration(streak: bool) -> void:
+	_celebration_generation += 1
+	if is_instance_valid(_celebration_audio): _celebration_audio.stop()
+	if DisplayServer.get_name() == "headless" or Host.user_args().has("--mute") or not Host.celebration_sound: return
+	var scene := get_tree().current_scene
+	var sound: Variant = scene.get("sound") if scene != null else null
+	if sound is GameSound and not sound.enabled: return
+	if not is_instance_valid(_celebration_audio):
+		_celebration_audio = AudioStreamPlayer.new()
+		_celebration_audio.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
+		add_child(_celebration_audio)
+	var path := "res://answer_audio/%s.wav" % ("streak" if streak else "correct")
+	PackFiles.fetch(path, MiniGameResults._celebration_loaded.bind(weakref(self), _celebration_generation, path, 0.60 if streak else 0.50))
+
+static func _celebration_loaded(ok: bool, holder: WeakRef, generation: int, path: String, volume: float) -> void:
+	var owner: MiniGameResults = holder.get_ref()
+	if not ok or owner == null or not owner.is_inside_tree() or generation != owner._celebration_generation: return
+	var bytes := PackFiles.bytes(path)
+	if bytes.is_empty(): return
+	owner._celebration_audio.stream = AudioStreamWAV.load_from_buffer(bytes)
+	owner._celebration_audio.volume_db = linear_to_db(volume)
+	owner._celebration_audio.play()
 
 func _init(_legacy_cover := "") -> void:
 	visible = false
@@ -393,6 +418,8 @@ func _visibility_changed() -> void:
 	_rays.set_process(active and not is_instance_valid(_review))
 
 func hide_results() -> void:
+	_celebration_generation += 1
+	if is_instance_valid(_celebration_audio): _celebration_audio.stop()
 	if is_instance_valid(_award):
 		_award.queue_free()
 		_award = null

@@ -556,6 +556,7 @@ class GodotGame {
     List<String> args,
   ) async {
     final overlay = AppLoadingOverlay.show(context, label: appL10n.gameLoading);
+    final started = DateTime.now();
     try {
       final awards = ref.read(achievementAwardServiceProvider);
       await awards.prepare();
@@ -574,6 +575,8 @@ class GodotGame {
         return null;
       }
       final awardData = {
+        'streak': await awards.nativeStreak(started),
+        'sound': SoundEffectsService.instance.isEnabled,
         'session': GameLeaderboardService.newRunId(),
         'game': args.contains('--regulator')
             ? 'trafficController'
@@ -598,6 +601,10 @@ class GodotGame {
             },
         ],
       };
+      if (!context.mounted) {
+        overlay.close();
+        return null;
+      }
       args = [
         ...args,
         '--achievement-awards=${jsonEncode(awardData)}',
@@ -649,6 +656,9 @@ class GodotGame {
       if (result != null) {
         try {
           final summary = jsonDecode(result);
+          if (summary is Map && summary.isNotEmpty) {
+            await awards.recordNativeActivity(summary, started);
+          }
           final shown = summary is Map ? summary['achievement_awards'] : null;
           if (shown is Map) {
             for (final id in AchievementId.values) {

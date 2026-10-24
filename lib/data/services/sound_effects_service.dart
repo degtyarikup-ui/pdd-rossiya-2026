@@ -137,6 +137,23 @@ class SoundEffectsService {
     }
   }
 
+  /// A daily fanfare or achievement chime, without overlapping the last card.
+  Future<void> playCelebration({required bool streak}) async {
+    if (!_enabled) return;
+    try {
+      // Keep successive cards from layering their chimes over one another.
+      if (streak) {
+        await _correctPlayer?.stop();
+        await playStreak(volume: 0.60);
+      } else {
+        await _streakPlayer?.stop();
+        await playCorrect(volume: 0.50);
+      }
+    } catch (e) {
+      debugPrint('SoundEffectsService: celebration error: $e');
+    }
+  }
+
   /// Plays a golden, triumphant celebration fanfare for streak ignition.
   Future<void> playStreak({double volume = 0.70}) async {
     if (!_enabled) return;

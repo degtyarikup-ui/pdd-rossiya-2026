@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 /// Снимок состояния серии (стрика) пользователя.
 ///
 /// Серия — количество последовательных календарных дней, в которые
-/// пользователь ответил хотя бы на один вопрос. Локальное время устройства.
+/// пользователь запустил тренировку или игру. Локальные календарные дни.
 @immutable
 class Streak {
   /// Текущая длина серии (в днях). 0 — серии нет.
@@ -17,7 +17,7 @@ class Streak {
 
   /// Дата (без времени) старта текущей серии. null — серии нет / никогда
   /// не тренировался. Если серия прервалась — равно дате нового начала
-  /// после ответа.
+  /// после запуска занятия.
   final DateTime? startDate;
 
   /// Набор дат (без времени) с активностью за последние ~30 дней.
@@ -46,6 +46,32 @@ class Streak {
     return activeDays.contains(d);
   }
 
+  static DateTime day(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+  static DateTime shiftDay(DateTime date, int count) =>
+      DateTime(date.year, date.month, date.day + count);
+  static int dayDistance(DateTime a, DateTime b) => DateTime.utc(
+    b.year,
+    b.month,
+    b.day,
+  ).difference(DateTime.utc(a.year, a.month, a.day)).inDays;
+
+  /// Pure projection used by the embedded engine before its launch is confirmed.
+  Streak withActivity(DateTime date) {
+    final today = day(date);
+    final last = lastActiveDate;
+    if (last != null && !today.isAfter(last)) return this;
+    final consecutive = last != null && dayDistance(last, today) == 1;
+    final next = consecutive ? current + 1 : 1;
+    return Streak(
+      current: next,
+      longest: next > longest ? next : longest,
+      lastActiveDate: today,
+      startDate: consecutive ? startDate : today,
+      activeDays: {...activeDays, today},
+    );
+  }
+
   /// 7 дней, начиная с дня старта серии (или продолжения за пределами
   /// первой недели — окно сдвигается по 7 дней).
   ///
@@ -56,15 +82,15 @@ class Streak {
     final start = startDate;
     if (start == null) {
       // Серии нет — показываем календарную неделю (Пн–Вс) текущей недели.
-      final monday = base.subtract(Duration(days: base.weekday - 1));
-      return List.generate(7, (i) => monday.add(Duration(days: i)));
+      final monday = shiftDay(base, 1 - base.weekday);
+      return List.generate(7, (i) => shiftDay(monday, i));
     }
 
     // Сколько дней прошло с начала серии (включая сегодня = 1).
-    final daysFromStart = base.difference(start).inDays;
+    final daysFromStart = dayDistance(start, base);
     // Какая по счёту 7-дневная «неделя» серии: 0 = первая, 1 = вторая, и т.д.
     final weekIndex = daysFromStart >= 0 ? daysFromStart ~/ 7 : 0;
-    final weekStart = start.add(Duration(days: weekIndex * 7));
-    return List.generate(7, (i) => weekStart.add(Duration(days: i)));
+    final weekStart = shiftDay(start, weekIndex * 7);
+    return List.generate(7, (i) => shiftDay(weekStart, i));
   }
 }

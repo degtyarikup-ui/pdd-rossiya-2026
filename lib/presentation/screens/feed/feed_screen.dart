@@ -1,4 +1,5 @@
 import 'package:pdd_app/data/services/usage_reporter.dart';
+import 'package:pdd_app/data/services/achievement_award_service.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -97,6 +98,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         lang: lang,
       );
       debugPrint('FEED_DEBUG: _initFeed generated ${initial.length} items');
+      if (mounted && initial.isNotEmpty) {
+        await ref.read(achievementAwardServiceProvider).startActivity();
+      }
       if (mounted) {
         setState(() {
           _items.clear();

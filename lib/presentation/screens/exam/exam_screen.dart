@@ -100,10 +100,10 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   @override
   void initState() {
     super.initState();
-    unawaited(_awardService.prepare());
     UsageReporter.track(UsageFeature.exam);
     _ttsService = ref.read(ttsServiceProvider);
     _prepareExam();
+    if (_examQuestions.isNotEmpty) unawaited(_awardService.startActivity());
     if (_examQuestions.isNotEmpty) {
       // initialPage обязателен: при возврате к прерванному экзамену индекс
       // уже восстановлен, а PageView без него открылся бы на первом вопросе

@@ -24,6 +24,22 @@ static var _exit_generation := 0
 static var award_receipts: Dictionary = {}
 static var _award_checkpoint: Dictionary = {}
 static var _award_session := ""
+static var activity_days: Array = []
+static var streak_celebrated_day := ""
+static var celebration_sound := true
+
+static func record_activity_day() -> void:
+	if activity_days.is_empty(): return
+	var today := Time.get_date_string_from_system()
+	if not activity_days.has(today): activity_days.append(today)
+
+static func _celebration_summary(summary: Dictionary) -> Dictionary:
+	var copy := summary.duplicate(true)
+	copy["achievement_awards"] = award_receipts.duplicate()
+	if not activity_days.is_empty():
+		copy["activity_days"] = activity_days.duplicate()
+		copy["streak_celebrated_day"] = streak_celebrated_day
+	return copy
 
 static func configure_awards(args: Array) -> void:
 	for arg in args:
@@ -34,17 +50,32 @@ static func configure_awards(args: Array) -> void:
 		if session == _award_session: return
 		_award_session = session
 		award_receipts = data.get("shown", {}).duplicate(true)
+		celebration_sound = bool(data.get("sound", true))
+		activity_days = []
+		streak_celebrated_day = ""
+		var streak: Variant = data.get("streak")
+		if streak is Dictionary and not str(streak.get("day", "")).is_empty():
+			activity_days.append(str(streak.day))
 		_award_checkpoint = {}
 		return
 	_award_session = ""
 	award_receipts = {}
+	celebration_sound = true
+	activity_days = []
+	streak_celebrated_day = ""
 	_award_checkpoint = {}
 
 static func acknowledge_award(id: String, level: int) -> void:
 	award_receipts[id] = maxi(level, int(award_receipts.get(id, 0)))
+	_update_celebration_checkpoint()
+
+static func acknowledge_streak(day: String) -> void:
+	streak_celebrated_day = day
+	_update_celebration_checkpoint()
+
+static func _update_celebration_checkpoint() -> void:
 	if _award_checkpoint.is_empty(): return
-	var summary := _award_checkpoint.duplicate(true)
-	summary["achievement_awards"] = award_receipts.duplicate()
+	var summary := _celebration_summary(_award_checkpoint)
 	send({"event": "run_finished", "summary": summary})
 	if io != "": _write({"event": "run_finished", "summary": summary})
 
@@ -89,8 +120,9 @@ static func parse_query(search: String) -> Array:
 ## go to `events.jsonl` (one JSON object per line), the summary stays in `summary.json`.
 static func send(data: Dictionary) -> void:
 	if data.get("event") == "run_finished" and data.get("summary") is Dictionary:
+		record_activity_day()
 		data = data.duplicate(true)
-		data.summary["achievement_awards"] = award_receipts.duplicate()
+		data.summary = _celebration_summary(data.summary)
 		_award_checkpoint = data.summary.duplicate(true)
 	if embedded():
 		Engine.get_singleton("PddHost").send(JSON.stringify(data))
@@ -126,8 +158,8 @@ static func begin_events() -> void:
 static func exit(summary: Dictionary, tree: SceneTree) -> void:
 	if is_exiting(tree):
 		return
-	summary = summary.duplicate(true)
-	summary["achievement_awards"] = award_receipts.duplicate()
+	record_activity_day()
+	summary = _celebration_summary(summary)
 	# Keep the final camera and participants still, even during native engine teardown.
 	# A paused tree alone does not stop process_frame continuations or ALWAYS nodes.
 	_exit_generation += 1
@@ -227,9 +259,9 @@ static func _append(data: Dictionary) -> void:
 
 ## Written whole under a temporary name and renamed: the app never reads half a file.
 static func _write(data: Dictionary) -> void:
-	if data.get("summary") is Dictionary and not award_receipts.is_empty():
+	if data.get("summary") is Dictionary:
 		data = data.duplicate(true)
-		data.summary["achievement_awards"] = award_receipts.duplicate()
+		data.summary = _celebration_summary(data.summary)
 	var path := io.path_join("summary.json")
 	var tmp := path + ".tmp"
 	var file := FileAccess.open(tmp, FileAccess.WRITE)

@@ -78,3 +78,8 @@ if badges.is_dir():
     target.mkdir(parents=True, exist_ok=True)
     for badge in badges.glob('*.png'):
         shutil.copy2(badge, target / badge.name)
+
+flame = ROOT / 'assets/images/fire.svg'
+if flame.is_file():
+    (ROOT / 'game_godot/icons').mkdir(parents=True, exist_ok=True)
+    (ROOT / 'game_godot/icons/streak_flame.svg').write_text(flame.read_text().replace('<svg ', '<svg fill="#FFFFFF" ', 1))

@@ -401,18 +401,22 @@ class ProgressDataSource {
   /// - Иначе — серия начинается заново (1).
   /// - Обновляем longest, сегодняшний день добавляем в список активных,
   ///   ставим флаг pendingCelebration, чтобы UI смог показать поздравление.
-  void _markStreakActivityToday() {
-    final today = _dateOnly(DateTime.now());
+  void _markStreakActivityToday() => unawaited(recordActivity());
+
+  /// Any successfully started learning/game activity counts, even before an
+  /// answer. The receipt is consumed only by a completed activity's queue.
+  Future<void> recordActivity({DateTime? date}) async {
+    final today = _dateOnly(date ?? DateTime.now());
     final lastIso = _prefs.getString(_keyStreakLastActive);
     final last = lastIso != null ? DateTime.tryParse(lastIso) : null;
     final lastDay = last != null ? _dateOnly(last) : null;
 
-    if (lastDay != null && lastDay.isAtSameMomentAs(today)) {
+    if (lastDay != null && !today.isAfter(lastDay)) {
       // День уже зачтён — стрик и так растёт корректно.
       return;
     }
 
-    final yesterday = today.subtract(const Duration(days: 1));
+    final yesterday = Streak.shiftDay(today, -1);
     final stored = _prefs.getInt(_keyStreakCurrent) ?? 0;
     final isConsecutive =
         lastDay != null && lastDay.isAtSameMomentAs(yesterday);
@@ -437,11 +441,14 @@ class ProgressDataSource {
       activeSorted.removeRange(0, activeSorted.length - _maxStoredActiveDays);
     }
 
-    _prefs.setInt(_keyStreakCurrent, nextCurrent);
-    _prefs.setInt(_keyStreakLongest, nextLongest);
-    _prefs.setString(_keyStreakLastActive, _isoDate(today));
-    _prefs.setStringList(_keyStreakActiveDays, activeSorted);
-    _prefs.setBool(_keyStreakCelebrationPending, true);
+    await Future.wait([
+      _prefs.setInt(_keyStreakCurrent, nextCurrent),
+      _prefs.setInt(_keyStreakLongest, nextLongest),
+      _prefs.setString(_keyStreakLastActive, _isoDate(today)),
+      _prefs.setStringList(_keyStreakActiveDays, activeSorted),
+      _prefs.setBool(_keyStreakCelebrationPending, true),
+    ]);
+    ProgressSyncService.instance.scheduleSync();
   }
 
   /// Прочитать текущее состояние серии.
@@ -453,7 +460,7 @@ class ProgressDataSource {
   ///
   /// Если счётчик разошёлся со списком дней (синхронизация с другим
   /// устройством), он исправляется по списку и сохраняется.
-  Future<Streak> loadStreak() async {
+  Future<Streak> loadStreak({DateTime? now}) async {
     final storedCurrent = _prefs.getInt(_keyStreakCurrent) ?? 0;
     final storedLongest = _prefs.getInt(_keyStreakLongest) ?? 0;
     final lastIso = _prefs.getString(_keyStreakLastActive);
@@ -463,14 +470,14 @@ class ProgressDataSource {
     final start = startIso != null ? DateTime.tryParse(startIso) : null;
     final startDay = start != null ? _dateOnly(start) : null;
 
-    final today = _dateOnly(DateTime.now());
+    final today = _dateOnly(now ?? DateTime.now());
     int actualCurrent = storedCurrent;
     DateTime? effectiveStart = startDay;
     if (lastDay == null) {
       actualCurrent = 0;
       effectiveStart = null;
     } else {
-      final diff = today.difference(lastDay).inDays;
+      final diff = Streak.dayDistance(lastDay, today);
       if (diff > 1) {
         // Серия прервана — стартовая дата уже не актуальна.
         actualCurrent = 0;
@@ -496,15 +503,15 @@ class ProgressDataSource {
       var d = lastDay;
       while (activeDays.contains(d)) {
         run++;
-        d = d.subtract(const Duration(days: 1));
+        d = Streak.shiftDay(d, -1);
       }
       final oldest = activeDays.reduce((a, b) => a.isBefore(b) ? a : b);
       final reachesWindowEdge =
-          !d.isAfter(oldest.subtract(const Duration(days: 1))) &&
+          !d.isAfter(Streak.shiftDay(oldest, -1)) &&
           activeDays.length >= _maxStoredActiveDays;
       if (!reachesWindowEdge && run != actualCurrent) {
         actualCurrent = run;
-        effectiveStart = lastDay.subtract(Duration(days: run - 1));
+        effectiveStart = Streak.shiftDay(lastDay, 1 - run);
         await _prefs.setInt(_keyStreakCurrent, run);
         await _prefs.setString(_keyStreakStartDate, _isoDate(effectiveStart));
       }
@@ -635,6 +642,18 @@ class ProgressDataSource {
       await _prefs.setBool(_keyStreakCelebrationPending, false);
     }
     return pending;
+  }
+
+  Future<Streak?> pendingStreakCelebration() async {
+    if (!(_prefs.getBool(_keyStreakCelebrationPending) ?? false)) return null;
+    final streak = await loadStreak();
+    return streak.current > 0 ? streak : null;
+  }
+
+  Future<void> acknowledgeStreakCelebration(DateTime day) async {
+    if (_prefs.getString(_keyStreakLastActive) == _isoDate(day)) {
+      await _prefs.setBool(_keyStreakCelebrationPending, false);
+    }
   }
 
   Future<void> saveExamResult({
@@ -861,10 +880,7 @@ class ProgressDataSource {
   }
 
   Future<void> saveRoadSignsProgress(RoadSignsProgress progress) async {
-    await _prefs.setString(
-      _keyRoadSigns,
-      jsonEncode(progress.toJson()),
-    );
+    await _prefs.setString(_keyRoadSigns, jsonEncode(progress.toJson()));
     await _prefs.setInt(_keyRoadSignsBest, progress.bestScore);
     await _prefs.setInt('road_signs_best', progress.bestScore);
     ProgressSyncService.instance.scheduleSync();
@@ -918,10 +934,7 @@ class ProgressDataSource {
   }
 
   Future<void> saveViolatorProgress(ViolatorProgress progress) async {
-    await _prefs.setString(
-      _keyViolator,
-      jsonEncode(progress.toJson()),
-    );
+    await _prefs.setString(_keyViolator, jsonEncode(progress.toJson()));
     await _prefs.setInt(_keyViolatorBest, progress.bestScore);
     await _prefs.setInt('violator_best', progress.bestScore);
     ProgressSyncService.instance.scheduleSync();

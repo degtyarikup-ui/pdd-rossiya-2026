@@ -9,11 +9,18 @@ static var _session := ""
 static var _items: Array = []
 static var _game := ""
 static var _earned: Dictionary = {}
+static var _streak: Dictionary = {}
 
 var _queue: Array = []
 var _index := 0
 var _card: Control
 var _head: HBoxContainer
+var _heading: Label
+var _controls: MiniGameResults
+var _rotation := 0.0
+var _reveal: Tween
+var _breath: Tween
+var _count: Tween
 var _next: Button
 var _art: TextureRect
 var _title: Label
@@ -38,10 +45,31 @@ static func pending(score: int) -> Array:
 		_items = data.get("items", []).duplicate(true)
 		_game = str(data.get("game", ""))
 		_earned = {}
+		var streak: Variant = data.get("streak")
+		_streak = streak.duplicate(true) if streak is Dictionary else {}
 	var out: Array = []
+	if not _streak.is_empty():
+		var today := Time.get_date_string_from_system()
+		if today != str(_streak.day):
+			var previous := Time.get_unix_time_from_datetime_string(str(_streak.day) + "T12:00:00")
+			var current := Time.get_unix_time_from_datetime_string(today + "T12:00:00")
+			_streak.current = int(_streak.current) + 1 if current - previous == 86400 else 1
+			_streak.longest = maxi(int(_streak.longest), int(_streak.current))
+			_streak.day = today
+			_streak.pending = true
+		if bool(_streak.get("pending", false)) and Host.streak_celebrated_day != today:
+			var current := int(_streak.current)
+			var plural := "1" if current == 1 else "11"
+			if Ui.lang == "ru":
+				plural = "1" if current % 10 == 1 and current % 100 != 11 else "2" if current % 10 in [2, 3, 4] and current % 100 not in [12, 13, 14] else "5"
+			out.append({"kind": "streak", "day": today, "current": current,
+				"title": str(current), "heading": _streak.heading,
+				"description": _streak.get("day_words", {}).get(plural, ""),
+				"label": _streak.record if current > 1 and current >= int(_streak.longest) else _streak.today})
 	for item: Dictionary in _items:
 		var id := str(item.get("id", ""))
 		var value := maxi(int(item.get("value", 0)), int(_earned.get(id, 0)))
+		if id == "streak" and not _streak.is_empty(): value = maxi(value, int(_streak.longest))
 		if id == _game: value = maxi(value, score)
 		_earned[id] = value
 		var level := 0
@@ -56,6 +84,7 @@ static func pending(score: int) -> Array:
 
 func _init(awards: Array, controls: MiniGameResults) -> void:
 	_queue = awards
+	_controls = controls
 	mouse_filter = MOUSE_FILTER_STOP
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	var background := ColorRect.new()
@@ -71,6 +100,7 @@ shader_type canvas_item;
 uniform vec2 canvas_size = vec2(390.0, 844.0);
 uniform vec2 glow_center = vec2(195.0, 330.0);
 uniform float badge_size = 160.0;
+uniform float ray_rotation = 0.0;
 void fragment() {
 	vec2 offset = UV * canvas_size - glow_center;
 	float distance = length(offset);
@@ -78,7 +108,7 @@ void fragment() {
 	float glow_distance = length(offset * vec2(1.0, 1.4));
 	float glow = 0.92 * exp(-pow(glow_distance / (badge_size * 0.8), 2.0));
 	glow *= 1.0 - smoothstep(0.8, 1.0, glow_distance / glow_radius);
-	float angle = atan(offset.y, offset.x);
+	float angle = atan(offset.y, offset.x) - ray_rotation;
 	float ray = pow(max(cos(angle * 12.0), 0.0), 5.0);
 	float progress = distance / (badge_size * 2.45);
 	float rays = 0.18 * ray * smoothstep(0.0, 0.18, progress);
@@ -98,6 +128,7 @@ void fragment() {
 	balance.custom_minimum_size.x = 48
 	head.add_child(balance)
 	var heading := Ui.scaled_label(Ui.t("achievementAwardTitle"), 20, 700, Color.WHITE, true)
+	_heading = heading
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	head.add_child(heading)
@@ -171,6 +202,7 @@ func layout(bounds: Rect2) -> void:
 	_scroll.position = Vector2(0, header_height + 16)
 	_scroll.size = Vector2(width, maxf(0, _counter.position.y - header_height - 32))
 	_art.custom_minimum_size.y = clampf(bounds.size.y * 0.28, 128, 160)
+	_art.pivot_offset = _art.size * 0.5
 	var center := get_global_transform().affine_inverse() * _art.get_global_rect().get_center()
 	_radiance_material.set_shader_parameter("canvas_size", size)
 	_radiance_material.set_shader_parameter("glow_center", center)
@@ -179,32 +211,53 @@ func layout(bounds: Rect2) -> void:
 func _ready() -> void:
 	_show_award()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	# Wrapping can settle a frame after a locale or text-scale change.
 	if _bounds.size.x > 0: layout(_bounds)
+	if is_visible_in_tree() and not Host.user_args().has("--reduce-motion"):
+		_rotation = fposmod(_rotation + delta * TAU / 60.0, TAU)
+		_radiance_material.set_shader_parameter("ray_rotation", _rotation)
 
 func _show_award() -> void:
 	var award: Dictionary = _queue[_index]
-	var level := int(award.level)
-	var path := "res://icons/achievements/%s_%d.png" % [award.id, level]
+	var streak: bool = award.get("kind") == "streak"
+	var level := int(award.get("level", 0))
+	var path := "res://icons/streak_flame.svg" if streak else "res://icons/achievements/%s_%d.png" % [award.id, level]
+	for tween in [_reveal, _breath, _count]:
+		if is_instance_valid(tween): tween.kill()
+	_art.scale = Vector2.ONE
+	_art.modulate = Ui.c("gold") if streak else Color.WHITE
 	if ResourceLoader.exists(path): _art.texture = load(path)
+	_heading.text = str(award.heading) if streak else Ui.t("achievementAwardTitle")
+	_title.add_theme_font_size_override("font_size", roundi((64 if streak else 30) * Ui.text_scale()))
 	_title.text = str(award.title)
 	_description.text = str(award.description)
 	var labels: Array = award.get("labels", [])
-	_level.text = str(labels[level - 1]) if level <= labels.size() else ""
+	_level.text = str(award.label) if streak else str(labels[level - 1]) if level > 0 and level <= labels.size() else ""
 	_counter.visible = _queue.size() > 1
 	_counter.text = Ui.t("achievementAwardPosition", {"position": _index + 1, "total": _queue.size()})
 	_scroll.scroll_vertical = 0
 	GameSound.buzz(20)
+	_controls.play_celebration(streak)
 	if not is_inside_tree() or Host.user_args().has("--reduce-motion"): return
 	_art.modulate.a = 0
-	var reveal := create_tween()
-	reveal.tween_property(_art, "modulate:a", 1.0, 0.45)
+	_art.scale = Vector2.ONE * 0.82
+	_reveal = create_tween().set_parallel(true)
+	_reveal.tween_property(_art, "modulate:a", 1.0, 0.45)
+	_reveal.tween_property(_art, "scale", Vector2.ONE, 0.65).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if streak:
+		_count = create_tween()
+		_count.tween_method(func(value: float): _title.text = str(roundi(value)), float(maxi(0, int(award.current) - 1)), float(award.current), 0.65).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		_breath = create_tween().set_loops()
+		_breath.tween_interval(0.65)
+		_breath.tween_property(_art, "scale", Vector2.ONE * 1.035, 1.8).set_trans(Tween.TRANS_SINE)
+		_breath.tween_property(_art, "scale", Vector2.ONE, 1.8).set_trans(Tween.TRANS_SINE)
 
 func advance(close := false) -> void:
 	if _index >= _queue.size(): return
 	var award: Dictionary = _queue[_index]
-	Host.acknowledge_award(str(award.id), int(award.level))
+	if award.get("kind") == "streak": Host.acknowledge_streak(str(award.day))
+	else: Host.acknowledge_award(str(award.id), int(award.level))
 	_index += 1
 	if close or _index >= _queue.size():
 		completed.emit()

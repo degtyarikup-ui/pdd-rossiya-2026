@@ -41,7 +41,6 @@ import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/web_payment_return.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pdd_app/presentation/widgets/sign_in_required_view.dart';
-import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
 import 'package:pdd_app/presentation/widgets/continue_session_card.dart';
 import 'package:pdd_app/presentation/widgets/exam_hero_card.dart';
 import 'package:pdd_app/presentation/widgets/progress_panel_card.dart';
@@ -510,16 +509,6 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
   }
 
   @override
-  void initState() {
-    super.initState();
-    // Случай «пользователь закрыл приложение сразу после ответа, не дождавшись
-    // поздравления» — проверим флаг при первом фрейме после монтирования.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _maybeShowStreakCelebration();
-    });
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_routeSubscribed) return;
@@ -538,27 +527,11 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     super.dispose();
   }
 
-  /// Когда пользователь возвращается с тренировки (любой экран pop'ается
-  /// поверх HomeScreen) — это надёжный момент для показа поздравления.
-  /// Не зависит от того, какой именно экран был сверху.
+  /// Возврат обновляет карточку серии, в том числе после прерванного занятия.
+  /// Поздравления открываются только перед итогами завершённого занятия.
   @override
   void didPopNext() {
     ref.read(appDataRefreshProvider.notifier).state++;
-    _maybeShowStreakCelebration();
-  }
-
-  /// Проверяет флаг pending celebration и показывает диалог, если он стоит.
-  /// Идемпотентно: сбрасывает флаг сразу после прочтения.
-  Future<void> _maybeShowStreakCelebration() async {
-    if (!mounted) return;
-    final dataSource = ref.read(progressDataSourceProvider);
-    final hasPending = await dataSource.consumePendingStreakCelebration();
-    if (!hasPending || !mounted) return;
-    // Принудительно обновим streakProvider, чтобы получить актуальные данные.
-    ref.invalidate(streakProvider);
-    final streak = await ref.read(streakProvider.future);
-    if (!mounted || streak.current == 0) return;
-    await showStreakCelebrationDialog(context: context, streak: streak);
   }
 
   @override

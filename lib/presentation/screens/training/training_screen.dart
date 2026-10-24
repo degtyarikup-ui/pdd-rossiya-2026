@@ -87,7 +87,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   @override
   void initState() {
     super.initState();
-    unawaited(_awardService.prepare());
+    if (widget.questions.isNotEmpty) unawaited(_awardService.startActivity());
     _ttsService = ref.read(ttsServiceProvider);
     if (widget.usageFeature != null) UsageReporter.track(widget.usageFeature!);
     _savedChoices =
@@ -340,6 +340,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     unawaited(_ttsService.stop());
 
     if (widget.questions.length < 2) {
+      await showCompletionAchievementAwards(context, _awardService);
+      if (!mounted) return;
       Navigator.of(context).pop();
       return;
     }
