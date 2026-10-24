@@ -271,7 +271,7 @@ void main() {
       expect(quote.contains('\u00a0'), isFalse);
     });
 
-    test('Works with full real signs.json dataset (298 signs, 33 duplicate titles)', () {
+    test('Works with full real signs.json dataset (312 signs, 36 duplicate titles)', () {
       final file = File('assets/countries/ru/questions/signs.json');
       if (!file.existsSync()) {
         return; // Skip if run in context without full assets

@@ -20,8 +20,8 @@ void main() {
       engine = RoadSignsEngine(allSigns: allSigns);
     });
 
-    test('Dataset completeness: all 298 signs loaded across 8 categories', () {
-      expect(allSigns.length, equals(298), reason: 'Expected full 298 Russian road signs dataset');
+    test('Dataset completeness: all 312 signs loaded across 8 categories', () {
+      expect(allSigns.length, equals(312), reason: 'Expected full 312 Russian road signs dataset');
       expect(engine.availableCategories.length, equals(8), reason: 'Expected 8 sign categories');
 
       for (final sign in allSigns) {
@@ -147,7 +147,7 @@ void main() {
       expect(typeCounts[RoadSignQuizType.folkNameMatch]!, greaterThan(0));
     });
 
-    test('Adversarial Test: 100% of all 298 signs can serve as valid target signs with 3 unique distractors', () {
+    test('Adversarial Test: 100% of all 312 signs can serve as valid target signs with 3 unique distractors', () {
       final rnd = Random(999);
       final stressEngine = RoadSignsEngine(allSigns: allSigns, random: rnd);
 
@@ -172,14 +172,14 @@ void main() {
       }
     });
 
-    test('Adversarial Test: Explicit stress testing on all 33 duplicate-title collision groups', () {
+    test('Adversarial Test: Explicit stress testing on all 36 duplicate-title collision groups', () {
       // Find all signs that share a title with at least one other sign in the dataset
       final titleMap = <String, List<SignItem>>{};
       for (final s in allSigns) {
         titleMap.putIfAbsent(s.title.trim().toLowerCase(), () => []).add(s);
       }
       final duplicateGroups = titleMap.entries.where((e) => e.value.length > 1).toList();
-      expect(duplicateGroups.length, equals(33), reason: 'Expected exactly 33 duplicate title groups in signs.json');
+      expect(duplicateGroups.length, equals(36), reason: 'Expected exactly 36 duplicate title groups in signs.json');
 
       final rnd = Random(777);
       final stressEngine = RoadSignsEngine(allSigns: allSigns, random: rnd);
@@ -259,7 +259,7 @@ void main() {
       }
     });
 
-    test('Official Quote Integrity: all 298 signs produce clean, genuine PDD definitions', () {
+    test('Official Quote Integrity: all 312 signs produce clean, genuine PDD definitions', () {
       for (final sign in allSigns) {
         final quote = RoadSignsEngine.extractOfficialQuote(sign.description, sign.title);
         expect(quote.trim(), isNotEmpty, reason: 'Empty quote for ${sign.number}');

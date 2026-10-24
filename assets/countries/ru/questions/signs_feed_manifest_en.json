@@ -1,6 +1,6 @@
 [
   {
-    "id": "sign_1_1",
+    "id": "sign_1_1_catalog2026",
     "category": "Warning sign",
     "number": "1.1",
     "title": "Railway crossing with barrier",
@@ -8,16 +8,16 @@
     "image": "c6a558e6fbb120c93d55d8fd967dbe12.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Road narrows.",
+      "Road narrows",
       "Railway crossing without barrier",
       "Railway crossing with barrier",
       "Gravel release"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_1_1.mp3"
+    "audioFileName": "sign_1_1_catalog2026.mp3"
   },
   {
-    "id": "sign_1_2",
+    "id": "sign_1_2_catalog2026",
     "category": "Warning sign",
     "number": "1.2",
     "title": "Railway crossing without barrier",
@@ -26,12 +26,12 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Other hazards",
-      "Dangerous turns (with the first left turn)",
+      "Dangerous bends",
       "Railway crossing without barrier",
-      "Dangerous turns (with the first right turn)"
+      "Railway crossing with barrier"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_1_2.mp3"
+    "audioFileName": "sign_1_2_catalog2026.mp3"
   },
   {
     "id": "sign_1_3_1",
@@ -68,12 +68,12 @@
     "audioFileName": "sign_1_3_2.mp3"
   },
   {
-    "id": "sign_1_4",
+    "id": "sign_1_4_1_catalog2026",
     "category": "Warning sign",
-    "number": "1.4",
+    "number": "1.4.1",
     "title": "Approaching a railway crossing",
-    "description": "Additional warning about approaching a railway crossing outside of populated areas. Installed outside at a distance of 150-300 meters, while the distance between the signs is proportional. Signs 1.4.1-1.4.3 are installed on the right side of the road. and signs 1.4.4-1.4.6 are on the left. ",
-    "image": "4a81d6b210c719d3169aaa0dca0c6236.svg",
+    "description": "Additional warning of an approaching railway crossing outside a built-up area.",
+    "image": "official_1_4_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Intersection with tram line",
@@ -82,7 +82,92 @@
       "Wild animals"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_1_4.mp3"
+    "audioFileName": "sign_1_4_1_catalog2026.mp3"
+  },
+  {
+    "id": "sign_1_4_2_catalog2026",
+    "category": "Warning sign",
+    "number": "1.4.2",
+    "title": "Approaching a railway crossing",
+    "description": "Additional warning of an approaching railway crossing outside a built-up area.",
+    "image": "official_1_4_2.svg",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Intersection with tram line",
+      "Approaching a railway crossing",
+      "Congestion",
+      "Wild animals"
+    ],
+    "correctAnswerIndex": 1,
+    "audioFileName": "sign_1_4_2_catalog2026.mp3"
+  },
+  {
+    "id": "sign_1_4_3_catalog2026",
+    "category": "Warning sign",
+    "number": "1.4.3",
+    "title": "Approaching a railway crossing",
+    "description": "Additional warning of an approaching railway crossing outside a built-up area.",
+    "image": "official_1_4_3.svg",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Intersection with tram line",
+      "Approaching a railway crossing",
+      "Congestion",
+      "Wild animals"
+    ],
+    "correctAnswerIndex": 1,
+    "audioFileName": "sign_1_4_3_catalog2026.mp3"
+  },
+  {
+    "id": "sign_1_4_4_catalog2026",
+    "category": "Warning sign",
+    "number": "1.4.4",
+    "title": "Approaching a railway crossing",
+    "description": "Additional warning of an approaching railway crossing outside a built-up area.",
+    "image": "official_1_4_4.svg",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Intersection with tram line",
+      "Approaching a railway crossing",
+      "Congestion",
+      "Wild animals"
+    ],
+    "correctAnswerIndex": 1,
+    "audioFileName": "sign_1_4_4_catalog2026.mp3"
+  },
+  {
+    "id": "sign_1_4_5_catalog2026",
+    "category": "Warning sign",
+    "number": "1.4.5",
+    "title": "Approaching a railway crossing",
+    "description": "Additional warning of an approaching railway crossing outside a built-up area.",
+    "image": "official_1_4_5.svg",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Intersection with tram line",
+      "Approaching a railway crossing",
+      "Congestion",
+      "Wild animals"
+    ],
+    "correctAnswerIndex": 1,
+    "audioFileName": "sign_1_4_5_catalog2026.mp3"
+  },
+  {
+    "id": "sign_1_4_6_catalog2026",
+    "category": "Warning sign",
+    "number": "1.4.6",
+    "title": "Approaching a railway crossing",
+    "description": "Additional warning of an approaching railway crossing outside a built-up area.",
+    "image": "official_1_4_6.svg",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Intersection with tram line",
+      "Approaching a railway crossing",
+      "Congestion",
+      "Wild animals"
+    ],
+    "correctAnswerIndex": 1,
+    "audioFileName": "sign_1_4_6_catalog2026.mp3"
   },
   {
     "id": "sign_1_5",
@@ -187,72 +272,72 @@
     "audioFileName": "sign_1_10.mp3"
   },
   {
-    "id": "sign_1_11_1",
+    "id": "sign_1_11_1_catalog2026",
     "category": "Warning sign",
     "number": "1.11.1",
-    "title": "Dangerous turn (right)",
+    "title": "Dangerous bend",
     "description": "Rounding a road with a small radius or with limited visibility. Installed in a populated area 50-100 m ahead, outside a populated area - 150-300 m ahead, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The difference is in the direction of turn (right, left). The sign only informs about the direction of the first turn after the sign.",
     "image": "7db7847fc21327e2a75716ee03ec23d5.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Crossroads section",
       "Turning direction",
-      "Dangerous turn (right)",
-      "Dangerous turns (with the first right turn)"
+      "Dangerous bend",
+      "Dangerous bends"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_1_11_1.mp3"
+    "audioFileName": "sign_1_11_1_catalog2026.mp3"
   },
   {
-    "id": "sign_1_11_2",
+    "id": "sign_1_11_2_catalog2026",
     "category": "Warning sign",
     "number": "1.11.2",
-    "title": "Dangerous turn (left)",
+    "title": "Dangerous bend",
     "description": "Rounding a road with a small radius or with limited visibility. Installed in a populated area 50-100 m ahead, outside a populated area - 150-300 m ahead, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The difference is in the direction of turn (right, left). The sign only informs about the direction of the first turn after the sign.",
     "image": "da41b8446c2150dd42e805bf2416b2f6.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Dangerous turn (left)",
+      "Dangerous bend",
       "Children",
-      "Dangerous turns (with the first right turn)",
+      "Dangerous bends",
       "Turning direction"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_1_11_2.mp3"
+    "audioFileName": "sign_1_11_2_catalog2026.mp3"
   },
   {
-    "id": "sign_1_12_1",
+    "id": "sign_1_12_1_catalog2026",
     "category": "Warning sign",
     "number": "1.12.1",
-    "title": "Dangerous turns (with the first right turn)",
+    "title": "Dangerous bends",
     "description": "A section of road with dangerous turns. Installed in a populated area 50-100 m ahead, outside a populated area - 150-300 m ahead, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign informs that there is a series (or several) turns ahead, while sign 1.12.1 indicates that the first turn after the sign is to the right.",
     "image": "41c00d307234f7446b98e8e45df02687.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Dangerous turns (with the first right turn)",
+      "Dangerous bends",
       "Pedestrian crossing",
       "Road narrows",
       "Gravel release"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_1_12_1.mp3"
+    "audioFileName": "sign_1_12_1_catalog2026.mp3"
   },
   {
-    "id": "sign_1_12_2",
+    "id": "sign_1_12_2_catalog2026",
     "category": "Warning sign",
     "number": "1.12.2",
-    "title": "Dangerous turns (with the first left turn)",
+    "title": "Dangerous bends",
     "description": "A section of road with dangerous turns. Installed in a populated area 50-100 m ahead, outside a populated area - 150-300 m ahead, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign informs you that there are a number (or several) turns ahead.  Sign 1.12.2 indicates that the first turn after the sign is to the left. ",
     "image": "d0c989fcc0302d8851bfa531de49537b.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Dangerous turns (with the first left turn)",
+      "Dangerous bends",
       "Artificial hump",
       "Railway crossing without barrier",
       "Intersection with a bike lane or bicycle path"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_1_12_2.mp3"
+    "audioFileName": "sign_1_12_2_catalog2026.mp3"
   },
   {
     "id": "sign_1_13",
@@ -272,7 +357,7 @@
     "audioFileName": "sign_1_13.mp3"
   },
   {
-    "id": "sign_1_14",
+    "id": "sign_1_14_catalog2026",
     "category": "Warning sign",
     "number": "1.14",
     "title": "Steep climb",
@@ -286,7 +371,7 @@
       "Approaching a railway crossing"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_1_14.mp3"
+    "audioFileName": "sign_1_14_catalog2026.mp3"
   },
   {
     "id": "sign_1_15",
@@ -357,7 +442,7 @@
     "audioFileName": "sign_1_18.mp3"
   },
   {
-    "id": "sign_1_19",
+    "id": "sign_1_19_catalog2026",
     "category": "Warning sign",
     "number": "1.19",
     "title": "Dangerous roadside",
@@ -367,28 +452,28 @@
     "answers": [
       "Dangerous roadside",
       "Railway crossing with barrier",
-      "Dangerous turns (with the first left turn)",
+      "Dangerous bends",
       "Tunnel"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_1_19.mp3"
+    "audioFileName": "sign_1_19_catalog2026.mp3"
   },
   {
-    "id": "sign_1_20_1",
+    "id": "sign_1_20_1_catalog2026",
     "category": "Warning sign",
     "number": "1.20.1",
-    "title": "Road narrows.",
+    "title": "Road narrows",
     "description": "Road narrowing is carried out on both sides. Installed in a populated area 50-100 m ahead, outside a populated area - 150-300 m ahead, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs.",
     "image": "b3ade4e8a06ca1f7f773b215d32a2315.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Road narrows.",
+      "Road narrows",
       "Artificial hump",
       "Dangerous roadside",
       "Tunnel"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_1_20_1.mp3"
+    "audioFileName": "sign_1_20_1_catalog2026.mp3"
   },
   {
     "id": "sign_1_20_2",
@@ -442,7 +527,7 @@
     "audioFileName": "sign_1_21.mp3"
   },
   {
-    "id": "sign_1_22",
+    "id": "sign_1_22_catalog2026",
     "category": "Warning sign",
     "number": "1.22",
     "title": "Pedestrian crossing",
@@ -451,15 +536,15 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Road narrows",
-      "Dangerous turns (with the first left turn)",
+      "Dangerous bends",
       "Slippery road",
       "Pedestrian crossing"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_1_22.mp3"
+    "audioFileName": "sign_1_22_catalog2026.mp3"
   },
   {
-    "id": "sign_1_23",
+    "id": "sign_1_23_catalog2026",
     "category": "Warning sign",
     "number": "1.23",
     "title": "Children",
@@ -469,11 +554,11 @@
     "answers": [
       "Artificial hump",
       "Turning direction",
-      "Dangerous turn (left)",
+      "Dangerous bend",
       "Children"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_1_23.mp3"
+    "audioFileName": "sign_1_23_catalog2026.mp3"
   },
   {
     "id": "sign_1_24",
@@ -578,7 +663,7 @@
     "audioFileName": "sign_1_29.mp3"
   },
   {
-    "id": "sign_1_30",
+    "id": "sign_1_30_catalog2026",
     "category": "Warning sign",
     "number": "1.30",
     "title": "Low flying aircraft",
@@ -587,15 +672,15 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Traffic light regulation",
-      "Dangerous turns (with the first right turn)",
+      "Dangerous bends",
       "Low flying aircraft",
       "Intersection with a bike lane or bicycle path"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_1_30.mp3"
+    "audioFileName": "sign_1_30_catalog2026.mp3"
   },
   {
-    "id": "sign_1_31",
+    "id": "sign_1_31_catalog2026",
     "category": "Warning sign",
     "number": "1.31",
     "title": "Tunnel",
@@ -603,13 +688,13 @@
     "image": "a80f78b51626464d56817f3630ae9f02.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Dangerous turns (with the first right turn)",
+      "Dangerous bends",
       "Gravel release",
       "Dangerous roadside",
       "Tunnel"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_1_31.mp3"
+    "audioFileName": "sign_1_31_catalog2026.mp3"
   },
   {
     "id": "sign_1_32",
@@ -714,7 +799,7 @@
     "audioFileName": "sign_1_35.mp3"
   },
   {
-    "id": "sign_2_1",
+    "id": "sign_2_1_catalog2026",
     "category": "Priority signs",
     "number": "2.1",
     "title": "Main road",
@@ -725,10 +810,10 @@
       "Give way",
       "Junction of secondary road",
       "Main road",
-      "Junction of secondary road"
+      "End of the main road"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_2_1.mp3"
+    "audioFileName": "sign_2_1_catalog2026.mp3"
   },
   {
     "id": "sign_2_2",
@@ -748,7 +833,7 @@
     "audioFileName": "sign_2_2.mp3"
   },
   {
-    "id": "sign_2_3_1",
+    "id": "sign_2_3_1_catalog2026",
     "category": "Priority signs",
     "number": "2.3.1",
     "title": "Intersection with a secondary road",
@@ -759,10 +844,10 @@
       "Give way",
       "Junction of secondary road",
       "Intersection with a secondary road",
-      "Junction of secondary road"
+      "Main road"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_2_3_1.mp3"
+    "audioFileName": "sign_2_3_1_catalog2026.mp3"
   },
   {
     "id": "sign_2_3_2",
@@ -901,7 +986,7 @@
     "audioFileName": "sign_2_5.mp3"
   },
   {
-    "id": "sign_2_6",
+    "id": "sign_2_6_catalog2026",
     "category": "Priority signs",
     "number": "2.6",
     "title": "Advantage of oncoming traffic",
@@ -910,15 +995,15 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Junction of secondary road",
-      "Junction of secondary road",
-      "Junction of secondary road",
+      "Main road",
+      "End of the main road",
       "Advantage of oncoming traffic"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_2_6.mp3"
+    "audioFileName": "sign_2_6_catalog2026.mp3"
   },
   {
-    "id": "sign_2_7",
+    "id": "sign_2_7_catalog2026",
     "category": "Priority signs",
     "number": "2.7",
     "title": "Advantage over oncoming traffic",
@@ -929,10 +1014,10 @@
       "Advantage over oncoming traffic",
       "Advantage of oncoming traffic",
       "Junction of secondary road",
-      "Junction of secondary road"
+      "Main road"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_2_7.mp3"
+    "audioFileName": "sign_2_7_catalog2026.mp3"
   },
   {
     "id": "sign_3_1",
@@ -1105,7 +1190,7 @@
     "audioFileName": "sign_3_10.mp3"
   },
   {
-    "id": "sign_3_11",
+    "id": "sign_3_11_catalog2026",
     "category": "Prohibition signs",
     "number": "3.11",
     "title": "Weight limitation",
@@ -1113,13 +1198,13 @@
     "image": "068747edfecce150c32c884f33993fe5.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Overtaking by a truck is prohibited",
+      "Overtaking prohibited for goods vehicles",
       "Driving with a trailer is prohibited",
       "Customs",
       "Weight limitation"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_3_11.mp3"
+    "audioFileName": "sign_3_11_catalog2026.mp3"
   },
   {
     "id": "sign_3_12",
@@ -1343,10 +1428,10 @@
     "audioFileName": "sign_3_21.mp3"
   },
   {
-    "id": "sign_3_22",
+    "id": "sign_3_22_catalog2026",
     "category": "Prohibition signs",
     "number": "3.22",
-    "title": "Overtaking by a truck is prohibited",
+    "title": "Overtaking prohibited for goods vehicles",
     "description": "It is prohibited for trucks with a permissible maximum weight of more than 3.5 tons to overtake all vehicles without exception. The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The sign's coverage area can be reduced by installing signs 3.21, 3.23, 3.25 at the end of their coverage area, respectively, or by using plate 8.2.1. (Changes took effect: March 1, 2023). A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary. (Changes entered into force: March 1, 2023.) In cases where the meanings of temporary road signs and permanent road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months.",
     "image": "218ffabddb61261300f3a99b19a0ea77.svg",
     "questionText": "What does this road sign mean?",
@@ -1354,10 +1439,10 @@
       "Stopping is prohibited",
       "Movement Prohibition",
       "Danger",
-      "Overtaking by a truck is prohibited"
+      "Overtaking prohibited for goods vehicles"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_3_22.mp3"
+    "audioFileName": "sign_3_22_catalog2026.mp3"
   },
   {
     "id": "sign_3_23",
@@ -1666,7 +1751,7 @@
     "audioFileName": "sign_4_1_5.mp3"
   },
   {
-    "id": "sign_4_1_6",
+    "id": "sign_4_1_6_catalog2026",
     "category": "Prescriptive signs",
     "number": "4.1.6",
     "title": "Moving right or left",
@@ -1676,11 +1761,11 @@
     "answers": [
       "Moving right or left",
       "Movement to the right",
-      "Direction of movement of vehicles with dangerous goods",
+      "Direction of movement for vehicles carrying dangerous goods",
       "Movement straight or to the left"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_4_1_6.mp3"
+    "audioFileName": "sign_4_1_6_catalog2026.mp3"
   },
   {
     "id": "sign_4_2_1",
@@ -1700,7 +1785,7 @@
     "audioFileName": "sign_4_2_1.mp3"
   },
   {
-    "id": "sign_4_2_2",
+    "id": "sign_4_2_2_catalog2026",
     "category": "Prescriptive signs",
     "number": "4.2.2",
     "title": "Avoiding obstacles on the left",
@@ -1714,7 +1799,7 @@
       "Avoiding obstacles on the left"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_4_2_2.mp3"
+    "audioFileName": "sign_4_2_2_catalog2026.mp3"
   },
   {
     "id": "sign_4_2_3",
@@ -1870,7 +1955,7 @@
     "audioFileName": "sign_4_5_5.mp3"
   },
   {
-    "id": "sign_4_5_6",
+    "id": "sign_4_5_6_catalog2026",
     "category": "Prescriptive signs",
     "number": "4.5.6",
     "title": "End of a segregated pedestrian and cycle path (end of a segregated cycle/pedestrian path)",
@@ -1884,10 +1969,10 @@
       "Avoiding obstacles on the left"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_4_5_6.mp3"
+    "audioFileName": "sign_4_5_6_catalog2026.mp3"
   },
   {
-    "id": "sign_4_5_7",
+    "id": "sign_4_5_7_catalog2026",
     "category": "Prescriptive signs",
     "number": "4.5.7",
     "title": "End of a segregated pedestrian and cycle path (end of a segregated cycle/pedestrian path)",
@@ -1901,7 +1986,7 @@
       "Movement straight or to the left"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_4_5_7.mp3"
+    "audioFileName": "sign_4_5_7_catalog2026.mp3"
   },
   {
     "id": "sign_4_6",
@@ -1938,21 +2023,55 @@
     "audioFileName": "sign_4_7.mp3"
   },
   {
-    "id": "sign_4_8_1",
+    "id": "sign_4_8_1_catalog2026",
     "category": "Prescriptive signs",
     "number": "4.8.1",
-    "title": "Direction of movement of vehicles with dangerous goods",
+    "title": "Direction of movement for vehicles carrying dangerous goods",
     "description": "The movement of vehicles equipped with identification signs (information plates) “Dangerous Goods” is permitted only in the direction indicated on the sign: 4.8.1 - straight, 4.8.2 - right, 4.8.3 - left. These mandatory signs must be installed immediately before crossing roadways in places where prohibitory signs are installed: 3.32 “Movement of vehicles with dangerous goods is prohibited”, 3.33 “Movement of vehicles with explosive, flammable goods",
-    "image": "a3c739d9396fba61a07febb646118b39.svg",
+    "image": "official_4_8_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Go straight",
       "Movement straight or to the right",
       "End of a segregated pedestrian and cycle path (end of a segregated cycle/pedestrian path)",
-      "Direction of movement of vehicles with dangerous goods"
+      "Direction of movement for vehicles carrying dangerous goods"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_4_8_1.mp3"
+    "audioFileName": "sign_4_8_1_catalog2026.mp3"
+  },
+  {
+    "id": "sign_4_8_2_catalog2026",
+    "category": "Prescriptive signs",
+    "number": "4.8.2",
+    "title": "Direction of movement for vehicles carrying dangerous goods",
+    "description": "Vehicles displaying dangerous goods identification signs may proceed only in the indicated direction: 4.8.1 — straight ahead, 4.8.2 — right, 4.8.3 — left.",
+    "image": "official_4_8_2.svg",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Go straight",
+      "Movement straight or to the right",
+      "End of a segregated pedestrian and cycle path (end of a segregated cycle/pedestrian path)",
+      "Direction of movement for vehicles carrying dangerous goods"
+    ],
+    "correctAnswerIndex": 3,
+    "audioFileName": "sign_4_8_2_catalog2026.mp3"
+  },
+  {
+    "id": "sign_4_8_3_catalog2026",
+    "category": "Prescriptive signs",
+    "number": "4.8.3",
+    "title": "Direction of movement for vehicles carrying dangerous goods",
+    "description": "Vehicles displaying dangerous goods identification signs may proceed only in the indicated direction: 4.8.1 — straight ahead, 4.8.2 — right, 4.8.3 — left.",
+    "image": "official_4_8_3.svg",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Go straight",
+      "Movement straight or to the right",
+      "End of a segregated pedestrian and cycle path (end of a segregated cycle/pedestrian path)",
+      "Direction of movement for vehicles carrying dangerous goods"
+    ],
+    "correctAnswerIndex": 3,
+    "audioFileName": "sign_4_8_3_catalog2026.mp3"
   },
   {
     "id": "sign_5_1",
@@ -1972,7 +2091,7 @@
     "audioFileName": "sign_5_1.mp3"
   },
   {
-    "id": "sign_5_2",
+    "id": "sign_5_2_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.2",
     "title": "End of the motorway",
@@ -1982,14 +2101,14 @@
     "answers": [
       "End of the motorway",
       "Tram stop location",
-      "End of the bike lane",
-      "Lane directions"
+      "End of lane for cyclists",
+      "Directions of movement along a lane"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_5_2.mp3"
+    "audioFileName": "sign_5_2_catalog2026.mp3"
   },
   {
-    "id": "sign_5_3",
+    "id": "sign_5_3_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.3",
     "title": "Road for cars",
@@ -2000,13 +2119,13 @@
       "Artificial hump",
       "Road for cars",
       "One way road",
-      "Lane directions"
+      "Directions of movement along a lane"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_5_3.mp3"
+    "audioFileName": "sign_5_3_catalog2026.mp3"
   },
   {
-    "id": "sign_5_4",
+    "id": "sign_5_4_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.4",
     "title": "End of the road for cars",
@@ -2015,12 +2134,12 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "End of a settlement",
-      "End of a settlement",
+      "Motorway",
       "End of speed limit zone",
       "End of the road for cars"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_5_4.mp3"
+    "audioFileName": "sign_5_4_catalog2026.mp3"
   },
   {
     "id": "sign_5_5",
@@ -2057,38 +2176,38 @@
     "audioFileName": "sign_5_6.mp3"
   },
   {
-    "id": "sign_5_7_1",
+    "id": "sign_5_7_1_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.7.1",
-    "title": "Entering a one-way road.",
+    "title": "Exit onto a one-way road",
     "description": "Entering a one-way road or carriageway. Installed in front of all side exits on one-way roads. 1. The arrow indicates the direction of travel on a one-way road.2. Crossing a one-way road is not prohibited.3. At an intersection in front of which sign 5.7.1 is installed, turning left is prohibited. U-turn is not prohibited.4. At an intersection in front of which sign 5.7.2 is installed, turning right is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months. Code of Administrative Offenses of the Russian Federation 12.15 Part 5 Repeated commission of an administrative offense under Part 4 of Art. 12.15 of the Code of Administrative Offenses of the Russian Federation - deprivation of the right to drive a vehicle for a period of 1 year, and in the case of recording an administrative offense using special technical means operating in automatic mode, having the functions of photography, filming, video recording, or means of photography, filming, video recording - imposition of an administrative fine in the amount of 5,000 rubles. ",
-    "image": "eaa67e0f15d830945fbd285b1a198768.svg",
+    "image": "official_5_7_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "End of the zone with restrictions on the environmental class of motor vehicles",
       "Entering a road with reverse traffic",
       "End of a settlement",
-      "Entering a one-way road."
+      "Exit onto a one-way road"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_5_7_1.mp3"
+    "audioFileName": "sign_5_7_1_catalog2026.mp3"
   },
   {
-    "id": "sign_5_7_2",
+    "id": "sign_5_7_2_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.7.2",
-    "title": "Entering a one-way road.",
+    "title": "Exit onto a one-way road",
     "description": "Entering a one-way road or carriageway. Installed in front of all side exits on one-way roads. 1. The arrow indicates the direction of travel on a one-way road.2. Crossing a one-way road is not prohibited.3. At an intersection in front of which sign 5.7.1 is installed, turning left is prohibited. U-turn is not prohibited.4. At an intersection in front of which sign 5.7.2 is installed, turning right is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months. Code of Administrative Offenses of the Russian Federation 12.15 Part 5 Repeated commission of an administrative offense under Part 4 of Art. 12.15 of the Code of Administrative Offenses of the Russian Federation - deprivation of the right to drive a vehicle for a period of 1 year, and in the case of recording an administrative offense using special technical means operating in automatic mode, having the functions of photography, filming, video recording, or means of photography, filming, video recording - imposition of an administrative fine in the amount of 5,000 rubles. ",
-    "image": "eaa67e0f15d830945fbd285b1a198768.svg",
+    "image": "official_5_7_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Tram stop location",
       "Maximum speed zone",
       "Artificial hump",
-      "Entering a one-way road."
+      "Exit onto a one-way road"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_5_7_2.mp3"
+    "audioFileName": "sign_5_7_2_catalog2026.mp3"
   },
   {
     "id": "sign_5_8",
@@ -2163,7 +2282,7 @@
     "category": "Signs of special regulations",
     "number": "5.11.2",
     "title": "Road with lane for cyclists",
-    "description": "",
+    "description": "A road on which cyclists, persons using personal mobility devices and moped riders travel along a dedicated lane against the general flow of traffic.",
     "image": "3417cb06252d5348b568b87a0547e3b6.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -2176,7 +2295,7 @@
     "audioFileName": "sign_5_11_2.mp3"
   },
   {
-    "id": "sign_5_12_1",
+    "id": "sign_5_12_1_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.12.1",
     "title": "End of the road with a lane for route vehicles",
@@ -2184,16 +2303,16 @@
     "image": "49010e49177332307b04aac8146c94d7.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Lane directions",
+      "Directions of movement along a lane",
       "End of a settlement",
       "End of the road with a lane for route vehicles",
       "Road for cars"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_5_12_1.mp3"
+    "audioFileName": "sign_5_12_1_catalog2026.mp3"
   },
   {
-    "id": "sign_5_12_2",
+    "id": "sign_5_12_2_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.12.2",
     "title": "End of the road with a lane for cyclists",
@@ -2204,10 +2323,10 @@
       "End of the road with a lane for cyclists",
       "End of a settlement",
       "Beginning of a populated area",
-      "Beginning of a populated area"
+      "Motorway"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_5_12_2.mp3"
+    "audioFileName": "sign_5_12_2_catalog2026.mp3"
   },
   {
     "id": "sign_5_13_1",
@@ -2215,7 +2334,7 @@
     "number": "5.13.1",
     "title": "Entering a road with a lane for route vehicles",
     "description": "Entering a road with a lane for route vehicles (sign 5.11.1), the movement of which is carried out along a specially designated lane towards the general flow of vehicles. At an intersection in front of which sign 5.13.1 is installed, turning left is prohibited. A U-turn is not prohibited. At an intersection in front of which sign 5.13.2 is installed, a right turn is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.17 parts 1.1 and 1.2 Movement of vehicles in the lane for route vehicles or stopping on the specified lane in violation of the Traffic Rules - a fine of 1,500 rubles. (for Moscow and St. Petersburg - 3000 rubles)",
-    "image": "6f250c306d6911bf975744127dcfa861.svg",
+    "image": "official_5_13_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "End of the bike zone",
@@ -2227,28 +2346,28 @@
     "audioFileName": "sign_5_13_1.mp3"
   },
   {
-    "id": "sign_5_13_2",
+    "id": "sign_5_13_2_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.13.2",
     "title": "Entering a road with a lane for route vehicles",
     "description": "Entering a road with a lane for route vehicles (sign 5.11.1), the movement of which is carried out along a specially designated lane towards the general flow of vehicles. At an intersection in front of which sign 5.13.1 is installed, turning left is prohibited. A U-turn is not prohibited. At an intersection in front of which sign 5.13.2 is installed, a right turn is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.17 parts 1.1 and 1.2 Movement of vehicles in the lane for route vehicles or stopping on the specified lane in violation of the Traffic Rules - a fine of 1,500 rubles. (for Moscow and St. Petersburg - 3000 rubles)",
-    "image": "6f250c306d6911bf975744127dcfa861.svg",
+    "image": "official_5_13_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "End of the road for cars",
-      "Lane directions",
+      "Directions of movement along a lane",
       "Lane direction",
       "Entering a road with a lane for route vehicles"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_5_13_2.mp3"
+    "audioFileName": "sign_5_13_2_catalog2026.mp3"
   },
   {
     "id": "sign_5_13_3",
     "category": "Signs of special regulations",
     "number": "5.13.3",
     "title": "Entering a road with a lane for cyclists",
-    "description": "",
+    "description": "Entering a road with a lane for cyclists.",
     "image": "040dd5b89c58d745f260470b69f95c65.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -2261,38 +2380,89 @@
     "audioFileName": "sign_5_13_3.mp3"
   },
   {
-    "id": "sign_5_13_4",
+    "id": "sign_5_13_4_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.13.4",
     "title": "Entering a road with a lane for cyclists",
-    "description": "",
+    "description": "Entering a road with a lane for cyclists.",
     "image": "5564935ee2b1ae22a68ff3efb49d60bd.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Entering a road with a lane for cyclists",
-      "Lane directions",
+      "Directions of movement along a lane",
       "End of the bike zone",
       "Beginning of a populated area"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_5_13_4.mp3"
+    "audioFileName": "sign_5_13_4_catalog2026.mp3"
   },
   {
-    "id": "sign_5_14",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Lane for route vehicles",
+      "Motorway",
+      "End of the motorway",
+      "Road for cars"
+    ],
+    "correctAnswerIndex": 0,
     "category": "Signs of special regulations",
-    "number": "5.14",
-    "title": "End of the bike lane",
-    "description": "  The effect of the sign extends to the strip above which they are located. The effect of signs installed to the right of the road extends to the right lane.",
+    "number": "5.14.1",
+    "title": "Lane for route vehicles",
+    "description": "A dedicated lane along which vehicles permitted to use lanes for route vehicles travel in the same direction as the general traffic flow.",
+    "image": "official_5_14_1.svg",
+    "id": "sign_5_14_1_catalog2026",
+    "audioFileName": "sign_5_14_1_catalog2026.mp3"
+  },
+  {
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Lane for cyclists",
+      "Motorway",
+      "End of the motorway",
+      "Road for cars"
+    ],
+    "correctAnswerIndex": 0,
+    "category": "Signs of special regulations",
+    "number": "5.14.2",
+    "title": "Lane for cyclists",
+    "description": "Lane for cyclists. The sign applies to the lane above which it is installed. When installed on the right of the road, it applies to the right-hand lane.",
+    "image": "official_5_14_2.svg",
+    "id": "sign_5_14_2_catalog2026",
+    "audioFileName": "sign_5_14_2_catalog2026.mp3"
+  },
+  {
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "End of lane for route vehicles",
+      "Motorway",
+      "End of the motorway",
+      "Road for cars"
+    ],
+    "correctAnswerIndex": 0,
+    "category": "Signs of special regulations",
+    "number": "5.14.3",
+    "title": "End of lane for route vehicles",
+    "description": "End of lane for route vehicles.",
+    "image": "official_5_14_3.svg",
+    "id": "sign_5_14_3_catalog2026",
+    "audioFileName": "sign_5_14_3_catalog2026.mp3"
+  },
+  {
+    "id": "sign_5_14_4_catalog2026",
+    "category": "Signs of special regulations",
+    "number": "5.14.4",
+    "title": "End of lane for cyclists",
+    "description": "End of lane for cyclists.",
     "image": "8af3051b4e6b17af2f625c0b55db66fb.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "End of speed limit zone",
       "End of the road for cars",
-      "End of the bike lane",
+      "End of lane for cyclists",
       "End of regulated parking zone"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_5_14.mp3"
+    "audioFileName": "sign_5_14_4_catalog2026.mp3"
   },
   {
     "id": "sign_5_15_1",
@@ -2312,10 +2482,10 @@
     "audioFileName": "sign_5_15_1.mp3"
   },
   {
-    "id": "sign_5_15_2",
+    "id": "sign_5_15_2_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.15.2",
-    "title": "Lane directions",
+    "title": "Directions of movement along a lane",
     "description": "Permitted lane directions.  Signs 5.15.1 and 5.15.2, which permit turning left from the extreme left lane, also permit a U-turn from this lane. Signs 5.15.1 and 5.15.2 do not apply to route vehicles. Signs 5.15.1 and 5.15.2 installed in front of the intersection apply to the entire intersection, if other signs 5.15.1 and 5.15.2 installed on it do not provide any other instructions.",
     "image": "beef79c1d2b2eb4a94ff9e1ab2c8022b.svg",
     "questionText": "What does this road sign mean?",
@@ -2323,10 +2493,10 @@
       "Entering a road with reverse traffic",
       "End of the zone with restrictions on environmental class by type of vehicle",
       "Entering a road with a lane for cyclists",
-      "Lane directions"
+      "Directions of movement along a lane"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_5_15_2.mp3"
+    "audioFileName": "sign_5_15_2_catalog2026.mp3"
   },
   {
     "id": "sign_5_15_3",
@@ -2346,7 +2516,7 @@
     "audioFileName": "sign_5_15_3.mp3"
   },
   {
-    "id": "sign_5_15_4",
+    "id": "sign_5_15_4_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.15.4",
     "title": "Start of the strip",
@@ -2354,16 +2524,16 @@
     "image": "ee0170555608e2a99a2329403621ebb9.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Entering a one-way road.",
+      "Exit onto a one-way road",
       "Road with lane for cyclists",
       "Start of the strip",
       "End of the zone with restrictions on environmental class by type of vehicle"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_5_15_4.mp3"
+    "audioFileName": "sign_5_15_4_catalog2026.mp3"
   },
   {
-    "id": "sign_5_15_5",
+    "id": "sign_5_15_5_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.15.5",
     "title": "End of the strip",
@@ -2373,31 +2543,31 @@
     "answers": [
       "End of speed limit zone",
       "Reverse movement",
-      "End of the bike lane",
+      "End of lane for cyclists",
       "End of the strip"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_5_15_5.mp3"
+    "audioFileName": "sign_5_15_5_catalog2026.mp3"
   },
   {
-    "id": "sign_5_15",
+    "id": "sign_5_15_6_catalog2026",
     "category": "Signs of special regulations",
-    "number": "5.15",
-    "title": "End of the strip",
+    "number": "5.15.6",
+    "title": "End of lane",
     "description": "The end of a section of the median on a three-lane road intended for traffic in a given direction. Cancels the effect of sign 5.15.4 “Start of lane”.",
     "image": "7741be01f08c2b9cbc335ca3ca36b272.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Beginning of a populated area",
       "One way road",
-      "End of the strip",
+      "End of lane",
       "Start of the strip"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_5_15.mp3"
+    "audioFileName": "sign_5_15_6_catalog2026.mp3"
   },
   {
-    "id": "sign_5_15_7",
+    "id": "sign_5_15_7_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.15.7",
     "title": "Lane direction",
@@ -2405,16 +2575,16 @@
     "image": "21cfe9835811be4037063248f7f71722.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Lane directions",
+      "Directions of movement along a lane",
       "End of a settlement",
       "Start of the strip",
       "Lane direction"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_5_15_7.mp3"
+    "audioFileName": "sign_5_15_7_catalog2026.mp3"
   },
   {
-    "id": "sign_5_15_8",
+    "id": "sign_5_15_8_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.15.8",
     "title": "Number of lanes",
@@ -2423,12 +2593,12 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Number of lanes",
-      "End of the strip",
+      "End of lane",
       "Entering a road with a lane for cyclists",
       "Entering a road with reverse traffic"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_5_15_8.mp3"
+    "audioFileName": "sign_5_15_8_catalog2026.mp3"
   },
   {
     "id": "sign_5_16",
@@ -2448,7 +2618,7 @@
     "audioFileName": "sign_5_16.mp3"
   },
   {
-    "id": "sign_5_17",
+    "id": "sign_5_17_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.17",
     "title": "Tram stop location",
@@ -2457,29 +2627,29 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Beginning of a populated area",
-      "Entering a one-way road.",
+      "Exit onto a one-way road",
       "End of a settlement",
       "Tram stop location"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_5_17.mp3"
+    "audioFileName": "sign_5_17_catalog2026.mp3"
   },
   {
-    "id": "sign_5_18",
+    "id": "sign_5_18_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.18",
     "title": "Taxi parking area",
-    "description": "",
+    "description": "Taxi parking area.",
     "image": "e6b05e014f5c98ca11e53c44113ba47a.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Taxi parking area",
       "One way road",
       "Start of the strip",
-      "Lane directions"
+      "Directions of movement along a lane"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_5_18.mp3"
+    "audioFileName": "sign_5_18_catalog2026.mp3"
   },
   {
     "id": "sign_5_19_1",
@@ -2487,7 +2657,7 @@
     "number": "5.19.1",
     "title": "Pedestrian crossing",
     "description": "If there are no markings 1.14.1 or 1.14.2 at the crossing, sign 5.19.1 is installed to the right of the road on the near border of the crossing relative to approaching vehicles, and sign 5.19.2 is installed to the left of the road on the far border of the crossing. If there are signs, the size of the pedestrian crossing is limited from sign 5.19.2 to sign 5.19.1. In the absence of signs, the size of the pedestrian crossing is determined by the width of the marking lines. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.18 Failure to comply with the requirement of the Traffic Rules to give way to pedestrians, cyclists or other road users (with the exception of vehicle drivers) enjoying priority in traffic - a fine of 1500 - 2500 rubles.  ",
-    "image": "5e5e79df8b8d44ac07e95737a9071eb1.svg",
+    "image": "official_5_19_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "End of the zone with restrictions on the environmental class of motor vehicles",
@@ -2499,21 +2669,21 @@
     "audioFileName": "sign_5_19_1.mp3"
   },
   {
-    "id": "sign_5_19_2",
+    "id": "sign_5_19_2_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.19.2",
     "title": "Pedestrian crossing",
     "description": "If there are no markings 1.14.1 or 1.14.2 at the crossing, sign 5.19.1 is installed to the right of the road on the near border of the crossing relative to approaching vehicles, and sign 5.19.2 is installed to the left of the road on the far border of the crossing. If there are signs, the size of the pedestrian crossing is limited from sign 5.19.2 to sign 5.19.1. In the absence of signs, the size of the pedestrian crossing is determined by the width of the marking lines. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.18 Failure to comply with the requirement of the Traffic Rules to give way to pedestrians, cyclists or other road users (with the exception of vehicle drivers) enjoying priority in traffic - a fine of 1500 - 2500 rubles.  ",
-    "image": "5e5e79df8b8d44ac07e95737a9071eb1.svg",
+    "image": "official_5_19_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Entering a road with a lane for route vehicles",
       "Lane direction",
-      "Lane directions",
+      "Directions of movement along a lane",
       "Pedestrian crossing"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_5_19_2.mp3"
+    "audioFileName": "sign_5_19_2_catalog2026.mp3"
   },
   {
     "id": "sign_5_20",
@@ -2572,7 +2742,7 @@
     "number": "5.23.1",
     "title": "Beginning of a populated area",
     "description": "The beginning of a populated area in which the requirements of the Road Traffic Rules of the Russian Federation are in force, establishing the procedure for traffic in populated areas. First of all, such requirements include limiting the speed to 60 km/h and prohibiting the sound signal except in cases where it is necessary to prevent a traffic accident.",
-    "image": "d70f1a70a8a13c3ddc2aff857af62cc3.svg",
+    "image": "official_5_23_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Maximum speed zone",
@@ -2589,7 +2759,7 @@
     "number": "5.23.2",
     "title": "Beginning of a populated area",
     "description": "The beginning of a populated area in which the requirements of the Road Traffic Rules of the Russian Federation are in force, establishing the procedure for traffic in populated areas. First of all, such requirements include limiting the speed to 60 km/h and prohibiting the sound signal except in cases where it is necessary to prevent a traffic accident.",
-    "image": "d70f1a70a8a13c3ddc2aff857af62cc3.svg",
+    "image": "official_5_23_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Pedestrian zone",
@@ -2606,7 +2776,7 @@
     "number": "5.24.1",
     "title": "End of a settlement",
     "description": "The place from which on a given road the requirements of the Road Traffic Rules of the Russian Federation, establishing the procedure for traffic in populated areas, cease to apply.",
-    "image": "96dca5136d8e68a65997314f1cfc8057.svg",
+    "image": "official_5_24_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "End of the road with a lane for cyclists",
@@ -2618,24 +2788,24 @@
     "audioFileName": "sign_5_24_1.mp3"
   },
   {
-    "id": "sign_5_24_2",
+    "id": "sign_5_24_2_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.24.2",
     "title": "End of a settlement",
     "description": "The place from which on a given road the requirements of the Road Traffic Rules of the Russian Federation, establishing the procedure for traffic in populated areas, cease to apply.",
-    "image": "96dca5136d8e68a65997314f1cfc8057.svg",
+    "image": "official_5_24_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Zone with restrictions on the environmental class of motor vehicles",
       "End of a settlement",
-      "End of the bike lane",
+      "End of lane for cyclists",
       "End of regulated parking zone"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_5_24_2.mp3"
+    "audioFileName": "sign_5_24_2_catalog2026.mp3"
   },
   {
-    "id": "sign_5_25",
+    "id": "sign_5_25_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.25",
     "title": "Beginning of a populated area",
@@ -2644,12 +2814,12 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Beginning of a populated area",
-      "Entering a one-way road.",
+      "Exit onto a one-way road",
       "Number of lanes",
       "Tram stop location"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_5_25.mp3"
+    "audioFileName": "sign_5_25_catalog2026.mp3"
   },
   {
     "id": "sign_5_26",
@@ -2703,7 +2873,7 @@
     "audioFileName": "sign_5_28.mp3"
   },
   {
-    "id": "sign_5_29",
+    "id": "sign_5_29_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.29",
     "title": "Regulated parking area",
@@ -2713,11 +2883,11 @@
     "answers": [
       "Regulated parking area",
       "Pedestrian zone",
-      "Entering a one-way road.",
+      "Exit onto a one-way road",
       "End of a settlement"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_5_29.mp3"
+    "audioFileName": "sign_5_29_catalog2026.mp3"
   },
   {
     "id": "sign_5_30",
@@ -2771,7 +2941,7 @@
     "audioFileName": "sign_5_32.mp3"
   },
   {
-    "id": "sign_5_33",
+    "id": "sign_5_33_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.33",
     "title": "Pedestrian zone",
@@ -2779,13 +2949,13 @@
     "image": "d52366ac63d7e334fd5be1b120360481.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "End of the strip",
-      "Lane directions",
+      "End of lane",
+      "Directions of movement along a lane",
       "Motorway",
       "Pedestrian zone"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_5_33.mp3"
+    "audioFileName": "sign_5_33_catalog2026.mp3"
   },
   {
     "id": "sign_5_34",
@@ -2822,7 +2992,7 @@
     "audioFileName": "sign_5_35.mp3"
   },
   {
-    "id": "sign_5_36",
+    "id": "sign_5_36_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.36",
     "title": "End of the zone with restrictions on the environmental class of motor vehicles",
@@ -2831,15 +3001,15 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Reverse movement",
-      "Lane directions",
+      "Directions of movement along a lane",
       "End of the zone with restrictions on the environmental class of motor vehicles",
       "Taxi parking area"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_5_36.mp3"
+    "audioFileName": "sign_5_36_catalog2026.mp3"
   },
   {
-    "id": "sign_5_37",
+    "id": "sign_5_37_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.37",
     "title": "Zone with limited environmental class by type of vehicle",
@@ -2848,12 +3018,12 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Zone with limited environmental class by type of vehicle",
-      "End of the strip",
+      "End of lane",
       "Beginning of a populated area",
-      "Lane directions"
+      "Directions of movement along a lane"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_5_37.mp3"
+    "audioFileName": "sign_5_37_catalog2026.mp3"
   },
   {
     "id": "sign_5_38",
@@ -2873,7 +3043,7 @@
     "audioFileName": "sign_5_38.mp3"
   },
   {
-    "id": "sign_5_39",
+    "id": "sign_5_39_catalog2026",
     "category": "Signs of special regulations",
     "number": "5.39",
     "title": "Bicycle zone",
@@ -2883,18 +3053,18 @@
     "answers": [
       "Bicycle zone",
       "Restricted parking zone",
-      "End of the bike lane",
+      "End of lane for cyclists",
       "Road with lane for cyclists"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_5_39.mp3"
+    "audioFileName": "sign_5_39_catalog2026.mp3"
   },
   {
     "id": "sign_5_40",
     "category": "Signs of special regulations",
     "number": "5.40",
     "title": "End of the bike zone",
-    "description": "",
+    "description": "End of the bike zone.",
     "image": "eeab078b65f048a6679d8c387c9706b8.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -2907,7 +3077,7 @@
     "audioFileName": "sign_5_40.mp3"
   },
   {
-    "id": "sign_6_1",
+    "id": "sign_6_1_catalog2026",
     "category": "Information signs",
     "number": "6.1",
     "title": "General maximum speed limits",
@@ -2915,13 +3085,13 @@
     "image": "545aeb9ed09a63b6ba8c1d582309c18f.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Directions indicator",
+      "Direction sign",
       "U-turn place",
       "General maximum speed limits",
       "Object name"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_6_1.mp3"
+    "audioFileName": "sign_6_1_catalog2026.mp3"
   },
   {
     "id": "sign_6_2",
@@ -2958,7 +3128,7 @@
     "audioFileName": "sign_6_3_1.mp3"
   },
   {
-    "id": "sign_6_3_2",
+    "id": "sign_6_3_2_catalog2026",
     "category": "Information signs",
     "number": "6.3.2",
     "title": "U-turn area",
@@ -2968,18 +3138,18 @@
     "answers": [
       "Photo and video recording",
       "Dead end",
-      "Dead end",
+      "General maximum speed limits",
       "U-turn area"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_6_3_2.mp3"
+    "audioFileName": "sign_6_3_2_catalog2026.mp3"
   },
   {
     "id": "sign_6_4",
     "category": "Information signs",
     "number": "6.4",
     "title": "Parking (parking space)",
-    "description": "",
+    "description": "A paid services symbol on the sign indicates paid parking. A disabled persons symbol on the sign indicates parking only for vehicles displaying the Disabled identification sign. A sign designating parking at the edge of the carriageway next to or on the pavement applies up to the nearest junction or is limited by plate 8.2.1.",
     "image": "9c264561036f4345cb397727afe03cb4.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -2992,7 +3162,7 @@
     "audioFileName": "sign_6_4.mp3"
   },
   {
-    "id": "sign_6_5",
+    "id": "sign_6_5_catalog2026",
     "category": "Information signs",
     "number": "6.5",
     "title": "Emergency stop lane",
@@ -3003,10 +3173,10 @@
       "Stop line",
       "Emergency stop lane",
       "Driving direction for trucks",
-      "Directions indicator"
+      "Direction sign"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_6_5.mp3"
+    "audioFileName": "sign_6_5_catalog2026.mp3"
   },
   {
     "id": "sign_6_6",
@@ -3043,7 +3213,7 @@
     "audioFileName": "sign_6_7.mp3"
   },
   {
-    "id": "sign_6_8_1",
+    "id": "sign_6_8_1_catalog2026",
     "category": "Information signs",
     "number": "6.8.1",
     "title": "Dead end",
@@ -3051,16 +3221,16 @@
     "image": "6698506a4dfde9bdd505a9416cf99ad1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Direction of movement to the emergency exit",
+      "Direction to an emergency exit",
       "Route number",
       "Dead end",
       "Subway (underpass)"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_6_8_1.mp3"
+    "audioFileName": "sign_6_8_1_catalog2026.mp3"
   },
   {
-    "id": "sign_6_8_2",
+    "id": "sign_6_8_2_catalog2026",
     "category": "Information signs",
     "number": "6.8.2",
     "title": "Dead end",
@@ -3068,13 +3238,13 @@
     "image": "bc53ce5cc147dc114b979ce607ee2046.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Directions indicator",
+      "Direction sign",
       "Detour direction",
       "Dead end",
       "Preliminary sign of rebuilding to another roadway"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_6_8_2.mp3"
+    "audioFileName": "sign_6_8_2_catalog2026.mp3"
   },
   {
     "id": "sign_6_8_3",
@@ -3094,7 +3264,7 @@
     "audioFileName": "sign_6_8_3.mp3"
   },
   {
-    "id": "sign_6_9_1",
+    "id": "sign_6_9_1_catalog2026",
     "category": "Information signs",
     "number": "6.9.1",
     "title": "Preliminary index of directions",
@@ -3108,7 +3278,7 @@
       "pre-directional sign"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_6_9_1.mp3"
+    "audioFileName": "sign_6_9_1_catalog2026.mp3"
   },
   {
     "id": "sign_6_9_2",
@@ -3162,10 +3332,10 @@
     "audioFileName": "sign_6_10_1.mp3"
   },
   {
-    "id": "sign_6_10_2",
+    "id": "sign_6_10_2_catalog2026",
     "category": "Information signs",
     "number": "6.10.2",
-    "title": "Directions indicator",
+    "title": "Direction sign",
     "description": "Indicate directions of movement to route points. Signs may indicate the distance to the objects indicated on it (km), and include symbols of a highway, airport, sports and other pictograms (meaningful images).  On a sign installed outside a populated area, a green or blue background means that traffic to the specified populated area or object will be carried out along a motorway or other road, respectively.  On a sign installed in a populated area, inserts with a green or blue background mean that movement to the specified populated area or object after leaving this populated area will be carried out respectively along a motorway or other road; The white background of the sign means that the specified object is located in this locality. Brown background indicates a tourist site. ",
     "image": "13b861438d0ef9fd4f9c7b07fae66f50.svg",
     "questionText": "What does this road sign mean?",
@@ -3173,10 +3343,10 @@
       "Dead end",
       "Driving direction for trucks",
       "Object name",
-      "Directions indicator"
+      "Direction sign"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_6_10_2.mp3"
+    "audioFileName": "sign_6_10_2_catalog2026.mp3"
   },
   {
     "id": "sign_6_11",
@@ -3196,7 +3366,7 @@
     "audioFileName": "sign_6_11.mp3"
   },
   {
-    "id": "sign_6_12",
+    "id": "sign_6_12_catalog2026",
     "category": "Information signs",
     "number": "6.12",
     "title": "Distance indicator",
@@ -3206,14 +3376,14 @@
     "answers": [
       "Distance indicator",
       "Detour direction",
-      "Detour direction",
+      "General maximum speed limits",
       "Photo and video recording"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_6_12.mp3"
+    "audioFileName": "sign_6_12_catalog2026.mp3"
   },
   {
-    "id": "sign_6_13",
+    "id": "sign_6_13_catalog2026",
     "category": "Information signs",
     "number": "6.13",
     "title": "Kilometer sign",
@@ -3224,13 +3394,13 @@
       "Kilometer sign",
       "Photo and video recording",
       "U-turn area",
-      "Directions indicator"
+      "Direction sign"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_6_13.mp3"
+    "audioFileName": "sign_6_13_catalog2026.mp3"
   },
   {
-    "id": "sign_6_14_1",
+    "id": "sign_6_14_1_catalog2026",
     "category": "Information signs",
     "number": "6.14.1",
     "title": "Route number",
@@ -3238,16 +3408,16 @@
     "image": "43ee93f9beef73510d34a41e5f2e67d8.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Directions indicator",
+      "Direction sign",
       "General maximum speed limits",
       "Dead end",
       "Route number"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_6_14_1.mp3"
+    "audioFileName": "sign_6_14_1_catalog2026.mp3"
   },
   {
-    "id": "sign_6_14_2",
+    "id": "sign_6_14_2_catalog2026",
     "category": "Information signs",
     "number": "6.14.2",
     "title": "Route number",
@@ -3258,10 +3428,10 @@
       "Traffic pattern",
       "Route number",
       "General maximum speed limits",
-      "Directions indicator"
+      "Direction sign"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_6_14_2.mp3"
+    "audioFileName": "sign_6_14_2_catalog2026.mp3"
   },
   {
     "id": "sign_6_15_1",
@@ -3298,7 +3468,7 @@
     "audioFileName": "sign_6_15_2.mp3"
   },
   {
-    "id": "sign_6_15_3",
+    "id": "sign_6_15_3_catalog2026",
     "category": "Information signs",
     "number": "6.15.3",
     "title": "Driving direction for trucks",
@@ -3308,11 +3478,11 @@
     "answers": [
       "Emergency exit",
       "Driving direction for trucks",
-      "Direction of movement to the emergency exit",
+      "Direction to an emergency exit",
       "Dead end"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_6_15_3.mp3"
+    "audioFileName": "sign_6_15_3_catalog2026.mp3"
   },
   {
     "id": "sign_6_16",
@@ -3366,7 +3536,7 @@
     "audioFileName": "sign_6_18_1.mp3"
   },
   {
-    "id": "sign_6_18_2",
+    "id": "sign_6_18_2_catalog2026",
     "category": "Information signs",
     "number": "6.18.2",
     "title": "Detour direction",
@@ -3374,16 +3544,16 @@
     "image": "66ee62828d0a1d953852d4d66daf99f6.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Directions indicator",
+      "Direction sign",
       "Emergency stop lane",
       "Dead end",
       "Detour direction"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_6_18_2.mp3"
+    "audioFileName": "sign_6_18_2_catalog2026.mp3"
   },
   {
-    "id": "sign_6_18_3",
+    "id": "sign_6_18_3_catalog2026",
     "category": "Information signs",
     "number": "6.18.3",
     "title": "Detour direction",
@@ -3393,11 +3563,11 @@
     "answers": [
       "Route number",
       "Driving direction for trucks",
-      "Driving direction for trucks",
+      "General maximum speed limits",
       "Detour direction"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_6_18_3.mp3"
+    "audioFileName": "sign_6_18_3_catalog2026.mp3"
   },
   {
     "id": "sign_6_19_1",
@@ -3405,7 +3575,7 @@
     "number": "6.19.1",
     "title": "Preliminary sign of rebuilding to another roadway",
     "description": "The direction to bypass a section of the roadway closed to traffic on a road with a dividing strip or the direction of movement to return to the right roadway. The yellow background of the sign indicates that the detour is temporary.",
-    "image": "8795fafca3aed200ee782fa766df1416.svg",
+    "image": "official_6_19_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Recommended speed",
@@ -3422,7 +3592,7 @@
     "number": "6.19.2",
     "title": "Preliminary sign of rebuilding to another roadway",
     "description": "The direction to bypass a section of the roadway closed to traffic on a road with a dividing strip or the direction of movement to return to the right roadway. The yellow background of the sign indicates that the detour is temporary.",
-    "image": "8795fafca3aed200ee782fa766df1416.svg",
+    "image": "official_6_19_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Route number",
@@ -3439,7 +3609,7 @@
     "number": "6.20.1",
     "title": "Emergency exit",
     "description": "Indicates the place in the tunnel where the emergency exit is located.",
-    "image": "7d41716ad000606623f15a20c5ab9e0d.svg",
+    "image": "official_6_20_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Driving direction for trucks",
@@ -3456,7 +3626,7 @@
     "number": "6.20.2",
     "title": "Emergency exit",
     "description": "Indicates the place in the tunnel where the emergency exit is located.",
-    "image": "7d41716ad000606623f15a20c5ab9e0d.svg",
+    "image": "official_6_20_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Stop line",
@@ -3468,24 +3638,41 @@
     "audioFileName": "sign_6_20_2.mp3"
   },
   {
-    "id": "sign_6_21",
+    "id": "sign_6_21_1_catalog2026",
     "category": "Information signs",
-    "number": "6.21",
-    "title": "Direction of movement to the emergency exit",
-    "description": "Indicates the direction to the emergency exit and the distance to it.",
-    "image": "e957b683cdca0245291f7322a8388e14.svg",
+    "number": "6.21.1",
+    "title": "Direction to an emergency exit",
+    "description": "Indicates the direction to an emergency exit and the distance to it.",
+    "image": "official_6_21_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Driving direction for trucks",
-      "Direction of movement to the emergency exit",
-      "Driving direction for trucks",
+      "Direction to an emergency exit",
+      "General maximum speed limits",
       "Emergency exit"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_6_21.mp3"
+    "audioFileName": "sign_6_21_1_catalog2026.mp3"
   },
   {
-    "id": "sign_6_22",
+    "id": "sign_6_21_2_catalog2026",
+    "category": "Information signs",
+    "number": "6.21.2",
+    "title": "Direction to an emergency exit",
+    "description": "Indicates the direction to an emergency exit and the distance to it.",
+    "image": "official_6_21_2.svg",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Driving direction for trucks",
+      "Direction to an emergency exit",
+      "General maximum speed limits",
+      "Emergency exit"
+    ],
+    "correctAnswerIndex": 1,
+    "audioFileName": "sign_6_21_2_catalog2026.mp3"
+  },
+  {
+    "id": "sign_6_22_catalog2026",
     "category": "Information signs",
     "number": "6.22",
     "title": "Photo and video recording",
@@ -3493,20 +3680,20 @@
     "image": "8228a3dcddaa013dc8fd8e816cc22cc9.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Direction of movement to the emergency exit",
+      "Direction to an emergency exit",
       "Object name",
       "Photo and video recording",
       "Traffic pattern"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_6_22.mp3"
+    "audioFileName": "sign_6_22_catalog2026.mp3"
   },
   {
     "id": "sign_7_1",
     "category": "Service marks",
     "number": "7.1",
     "title": "Medical aid station",
-    "description": "",
+    "description": "Medical aid station.",
     "image": "aeefa11a7668b0f779cbbf50c0dbf748.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3523,7 +3710,7 @@
     "category": "Service marks",
     "number": "7.2",
     "title": "Hospital",
-    "description": "",
+    "description": "Hospital.",
     "image": "8bc512242cc8d3e084ad1f59eda9a863.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3536,11 +3723,11 @@
     "audioFileName": "sign_7_2.mp3"
   },
   {
-    "id": "sign_7_3",
+    "id": "sign_7_3_catalog2026",
     "category": "Service marks",
     "number": "7.3",
     "title": "Gas station",
-    "description": "",
+    "description": "Gas station.",
     "image": "f33fe3ea91d17dd2e1471bb7403430c9.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3550,14 +3737,14 @@
       "Gas station"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_7_3.mp3"
+    "audioFileName": "sign_7_3_catalog2026.mp3"
   },
   {
     "id": "sign_7_4",
     "category": "Service marks",
     "number": "7.4",
     "title": "Car maintenance",
-    "description": "",
+    "description": "Car maintenance.",
     "image": "b1b835da7a2ff04a831c0d5321e853da.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3574,7 +3761,7 @@
     "category": "Service marks",
     "number": "7.5",
     "title": "Car wash",
-    "description": "",
+    "description": "Car wash.",
     "image": "9fdf2e19bc009ba511d778fadbd5aeb7.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3587,11 +3774,11 @@
     "audioFileName": "sign_7_5.mp3"
   },
   {
-    "id": "sign_7_6",
+    "id": "sign_7_6_catalog2026",
     "category": "Service marks",
     "number": "7.6",
     "title": "Telephone",
-    "description": "",
+    "description": "Telephone.",
     "image": "2eac94f432d3ee50afdeac2fb4c463b5.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3601,14 +3788,14 @@
       "Telephone"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_7_6.mp3"
+    "audioFileName": "sign_7_6_catalog2026.mp3"
   },
   {
     "id": "sign_7_7",
     "category": "Service marks",
     "number": "7.7",
     "title": "Food point",
-    "description": "",
+    "description": "Food point.",
     "image": "cdf562fd51c6bd678899ab95a68250a5.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3625,7 +3812,7 @@
     "category": "Service marks",
     "number": "7.8",
     "title": "Potable water",
-    "description": "",
+    "description": "Potable water.",
     "image": "d0adc92b61f004c713c26d08e9114eb8.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3642,7 +3829,7 @@
     "category": "Service marks",
     "number": "7.9",
     "title": "Hotel or motel",
-    "description": "",
+    "description": "Hotel or motel.",
     "image": "50f03ffa7c33a8dcb7df429e0837cfbb.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3659,7 +3846,7 @@
     "category": "Service marks",
     "number": "7.10",
     "title": "Camping",
-    "description": "",
+    "description": "Camping.",
     "image": "f1373aa9762a336d2752c7ed8cbf9850.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3676,7 +3863,7 @@
     "category": "Service marks",
     "number": "7.11",
     "title": "Rest place",
-    "description": "",
+    "description": "Rest place.",
     "image": "f05ee79d3126e8f4ec8307e9bfe0baf2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3693,7 +3880,7 @@
     "category": "Service marks",
     "number": "7.12",
     "title": "Road patrol post",
-    "description": "",
+    "description": "Road patrol post.",
     "image": "f6fe79ec307f75faa8347a470586532b.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3710,7 +3897,7 @@
     "category": "Service marks",
     "number": "7.13",
     "title": "The Police",
-    "description": "",
+    "description": "The Police.",
     "image": "0c3947bf4d54a57c386e151b17fd02b2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3723,11 +3910,28 @@
     "audioFileName": "sign_7_13.mp3"
   },
   {
-    "id": "sign_7_14",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Customs control point",
+      "Medical aid station",
+      "Hospital",
+      "Gas station"
+    ],
+    "correctAnswerIndex": 0,
     "category": "Service marks",
-    "number": "7.14",
+    "number": "7.14.1",
+    "title": "Customs control point",
+    "description": "Customs control point.",
+    "image": "official_7_14_1.svg",
+    "id": "sign_7_14_1_catalog2026",
+    "audioFileName": "sign_7_14_1_catalog2026.mp3"
+  },
+  {
+    "id": "sign_7_14_2_catalog2026",
+    "category": "Service marks",
+    "number": "7.14.2",
     "title": "Transport control point",
-    "description": "(Changes took effect: March 1, 2023.)",
+    "description": "Transport control point.",
     "image": "3476127cc3910b6859d3cc1ae0d1807d.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3737,7 +3941,7 @@
       "Telephone"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_7_14.mp3"
+    "audioFileName": "sign_7_14_2_catalog2026.mp3"
   },
   {
     "id": "sign_7_15",
@@ -3778,7 +3982,7 @@
     "category": "Service marks",
     "number": "7.17",
     "title": "Pool or beach",
-    "description": "",
+    "description": "Pool or beach.",
     "image": "bd4b37d28532d055639fb030d3956ab1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3795,7 +3999,7 @@
     "category": "Service marks",
     "number": "7.18",
     "title": "Toilet",
-    "description": "",
+    "description": "Toilet.",
     "image": "78a6ed148fc072db020201c9f125ca0a.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3846,7 +4050,7 @@
     "category": "Service marks",
     "number": "7.21",
     "title": "Gas station with electric vehicle charging capabilities",
-    "description": " ",
+    "description": "Gas station with electric vehicle charging capabilities.",
     "image": "c12f75d4384149c8aec3a074d67cda52.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -3859,7 +4063,7 @@
     "audioFileName": "sign_7_21.mp3"
   },
   {
-    "id": "sign_8_1_1",
+    "id": "sign_8_1_1_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.1.1",
     "title": "Distance to object",
@@ -3868,15 +4072,15 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Method of parking a vehicle",
-      "Method of parking a vehicle",
+      "Coverage area",
       "Distance to object",
-      "Except for the type of vehicle"
+      "Except for type of vehicle"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_1_1.mp3"
+    "audioFileName": "sign_8_1_1_catalog2026.mp3"
   },
   {
-    "id": "sign_8_1_2",
+    "id": "sign_8_1_2_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.1.2",
     "title": "Distance to object",
@@ -3885,15 +4089,15 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Type of vehicle",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Method of parking a vehicle",
       "Distance to object"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_1_2.mp3"
+    "audioFileName": "sign_8_1_2_catalog2026.mp3"
   },
   {
-    "id": "sign_8_1_3",
+    "id": "sign_8_1_3_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.1.3",
     "title": "Distance to object",
@@ -3907,7 +4111,7 @@
       "Coverage area"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_1_3.mp3"
+    "audioFileName": "sign_8_1_3_catalog2026.mp3"
   },
   {
     "id": "sign_8_1_4",
@@ -3932,7 +4136,7 @@
     "number": "8.2.1",
     "title": "Coverage area",
     "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc.",
-    "image": "7e13e8cc1965fba71029290ef8ec3162.svg",
+    "image": "official_8_2_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Method of parking a vehicle",
@@ -3944,12 +4148,12 @@
     "audioFileName": "sign_8_2_1.mp3"
   },
   {
-    "id": "sign_8_2_2",
+    "id": "sign_8_2_2_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.2.2",
     "title": "Coverage area",
     "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc.",
-    "image": "7e13e8cc1965fba71029290ef8ec3162.svg",
+    "image": "official_8_2_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Obstruction",
@@ -3958,15 +4162,15 @@
       "Coverage area"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_2_2.mp3"
+    "audioFileName": "sign_8_2_2_catalog2026.mp3"
   },
   {
-    "id": "sign_8_2_3",
+    "id": "sign_8_2_3_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.2.3",
     "title": "Coverage area",
     "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc.",
-    "image": "7e13e8cc1965fba71029290ef8ec3162.svg",
+    "image": "official_8_2_3.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Method of parking a vehicle",
@@ -3975,32 +4179,32 @@
       "Type of vehicle"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_2_3.mp3"
+    "audioFileName": "sign_8_2_3_catalog2026.mp3"
   },
   {
-    "id": "sign_8_2_4",
+    "id": "sign_8_2_4_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.2.4",
     "title": "Coverage area",
     "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc.",
-    "image": "7e13e8cc1965fba71029290ef8ec3162.svg",
+    "image": "official_8_2_4.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Coverage area",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Action time",
       "Type of vehicle"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_2_4.mp3"
+    "audioFileName": "sign_8_2_4_catalog2026.mp3"
   },
   {
-    "id": "sign_8_2_5",
+    "id": "sign_8_2_5_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.2.5",
     "title": "Coverage area",
     "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc.",
-    "image": "7e13e8cc1965fba71029290ef8ec3162.svg",
+    "image": "official_8_2_5.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Wet coating",
@@ -4009,15 +4213,15 @@
       "Coverage area"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_2_5.mp3"
+    "audioFileName": "sign_8_2_5_catalog2026.mp3"
   },
   {
-    "id": "sign_8_2_6",
+    "id": "sign_8_2_6_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.2.6",
     "title": "Coverage area",
     "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc.",
-    "image": "7e13e8cc1965fba71029290ef8ec3162.svg",
+    "image": "official_8_2_6.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Action time",
@@ -4026,65 +4230,65 @@
       "Coverage area"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_2_6.mp3"
+    "audioFileName": "sign_8_2_6_catalog2026.mp3"
   },
   {
-    "id": "sign_8_3_1",
+    "id": "sign_8_3_1_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.3.1",
-    "title": "Direction of action",
+    "title": "Directions of application",
     "description": "Indicate the direction of action of signs installed in front of the intersection, or the direction of movement to designated objects located directly next to the road.",
-    "image": "4e4d0a4d9887563082fb91884fccc52f.svg",
+    "image": "official_8_3_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Direction of action",
+      "Directions of application",
       "Type of vehicle",
       "Obstruction",
       "Vehicle bogie type"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_3_1.mp3"
+    "audioFileName": "sign_8_3_1_catalog2026.mp3"
   },
   {
-    "id": "sign_8_3_2",
+    "id": "sign_8_3_2_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.3.2",
-    "title": "Direction of action",
+    "title": "Directions of application",
     "description": "Indicate the direction of action of signs installed in front of the intersection, or the direction of movement to designated objects located directly next to the road.",
-    "image": "4e4d0a4d9887563082fb91884fccc52f.svg",
+    "image": "official_8_3_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Type of route vehicle",
-      "Direction of action",
+      "Directions of application",
       "Method of parking a vehicle",
       "Action time"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_3_2.mp3"
+    "audioFileName": "sign_8_3_2_catalog2026.mp3"
   },
   {
-    "id": "sign_8_3_3",
+    "id": "sign_8_3_3_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.3.3",
-    "title": "Direction of action",
+    "title": "Directions of application",
     "description": "Indicate the direction of action of signs installed in front of the intersection, or the direction of movement to designated objects located directly next to the road.",
-    "image": "4e4d0a4d9887563082fb91884fccc52f.svg",
+    "image": "official_8_3_3.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Type of vehicle",
       "Action time",
       "A tow truck is working",
-      "Direction of action"
+      "Directions of application"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_3_3.mp3"
+    "audioFileName": "sign_8_3_3_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_1",
+    "id": "sign_8_4_1_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.1",
     "title": "Type of vehicle",
-    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
+    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3.2  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7.1 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
     "image": "bfded6a56e241d9d1309c110f51eb6c0.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -4094,65 +4298,65 @@
       "Method of parking a vehicle"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_4_1.mp3"
+    "audioFileName": "sign_8_4_1_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_2",
+    "id": "sign_8_4_2_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.2",
     "title": "Type of vehicle",
-    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
+    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3.2  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7.1 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
     "image": "41aa6b941291fc410b79604aca819bd2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Type of route vehicle",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Type of vehicle",
       "Main road direction"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_4_2.mp3"
+    "audioFileName": "sign_8_4_2_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_3",
-    "category": "Additional information signs (plates)",
-    "number": "8.4.3",
-    "title": "Type of vehicle",
-    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
-    "image": "9a0b442b18f0b4d4a8a0ad08c8177ad3.svg",
-    "questionText": "What does this road sign mean?",
-    "answers": [
-      "Except for the type of vehicle",
-      "Type of vehicle",
-      "Type of route vehicle",
-      "Action time"
-    ],
-    "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_4_3.mp3"
-  },
-  {
-    "id": "sign_8_4_3_1",
+    "id": "sign_8_4_3_1_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.3.1",
     "title": "Type of vehicle",
-    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
+    "description": "Applies the sign to electric vehicles and hybrid vehicles that can be charged from an external power source.",
     "image": "a6d331b029b8729439c175a74fbbd0f0.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Direction of action",
+      "Directions of application",
       "Action time",
       "Days of the week",
       "Type of vehicle"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_4_3_1.mp3"
+    "audioFileName": "sign_8_4_3_1_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_4",
+    "id": "sign_8_4_3_2_catalog2026",
+    "category": "Additional information signs (plates)",
+    "number": "8.4.3.2",
+    "title": "Type of vehicle",
+    "description": "Applies the sign to passenger cars and goods vehicles with a maximum authorised mass of up to 3.5 tonnes.",
+    "image": "9a0b442b18f0b4d4a8a0ad08c8177ad3.svg",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Except for type of vehicle",
+      "Type of vehicle",
+      "Type of route vehicle",
+      "Action time"
+    ],
+    "correctAnswerIndex": 1,
+    "audioFileName": "sign_8_4_3_2_catalog2026.mp3"
+  },
+  {
+    "id": "sign_8_4_4_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.4",
     "title": "Type of vehicle",
-    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
+    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3.2  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7.1 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
     "image": "f941577f48cb9142943a5b10c1b03157.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -4162,14 +4366,14 @@
       "Type of vehicle"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_4_4.mp3"
+    "audioFileName": "sign_8_4_4_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_5",
+    "id": "sign_8_4_5_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.5",
     "title": "Type of vehicle",
-    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
+    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3.2  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7.1 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
     "image": "af02a7b65ddacef604a24f87cfb421dd.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -4179,31 +4383,31 @@
       "Method of parking a vehicle"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_4_5.mp3"
+    "audioFileName": "sign_8_4_5_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_6",
+    "id": "sign_8_4_6_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.6",
     "title": "Type of vehicle",
-    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
+    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3.2  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7.1 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
     "image": "6a92d5265766393c3acc42e438c5fdbe.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Coverage area",
-      "Coverage area",
+      "Distance to object",
       "Type of vehicle",
       "Type of route vehicle"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_4_6.mp3"
+    "audioFileName": "sign_8_4_6_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_7",
+    "id": "sign_8_4_7_1_catalog2026",
     "category": "Additional information signs (plates)",
-    "number": "8.4.7",
+    "number": "8.4.7.1",
     "title": "Type of vehicle",
-    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
+    "description": "Applies the sign to cyclists.",
     "image": "4403f3136d0776b99d069e8d4d9453c6.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
@@ -4213,15 +4417,15 @@
       "Parking for diplomatic vehicles only"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_4_7.mp3"
+    "audioFileName": "sign_8_4_7_1_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_7_2",
+    "id": "sign_8_4_7_2_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.7.2",
     "title": "Type of vehicle",
-    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
-    "image": "df7e4a3347190dcd89bde0518c60d86b.svg",
+    "description": "Applies the sign to persons using personal mobility devices.",
+    "image": "9288fdc7e63e8aa1db5b2e44281908b2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Type of vehicle",
@@ -4230,15 +4434,15 @@
       "A tow truck is working"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_4_7_2.mp3"
+    "audioFileName": "sign_8_4_7_2_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_8",
+    "id": "sign_8_4_8_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.8",
     "title": "Type of vehicle",
-    "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”.",
-    "image": "9288fdc7e63e8aa1db5b2e44281908b2.svg",
+    "description": "Applies the sign to vehicles displaying dangerous goods identification signs.",
+    "image": "df7e4a3347190dcd89bde0518c60d86b.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Type of route vehicle",
@@ -4247,143 +4451,143 @@
       "Type of vehicle"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_4_8.mp3"
+    "audioFileName": "sign_8_4_8_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_9",
+    "id": "sign_8_4_9_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.9",
-    "title": "Except for the type of vehicle",
+    "title": "Except for type of vehicle",
     "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). ",
     "image": "db658fa5edbdeb63250095a45d4fe3ba.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Type of vehicle",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Method of parking a vehicle",
-      "Type of vehicle"
+      "Distance to object"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_4_9.mp3"
+    "audioFileName": "sign_8_4_9_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_10",
+    "id": "sign_8_4_10_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.10",
-    "title": "Except for the type of vehicle",
+    "title": "Except for type of vehicle",
     "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). ",
     "image": "9438bd2e073474a00a4779739a4e4c0e.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Type of vehicle",
-      "Direction of action",
-      "Except for the type of vehicle",
-      "Direction of action"
+      "Directions of application",
+      "Except for type of vehicle",
+      "Distance to object"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_4_10.mp3"
+    "audioFileName": "sign_8_4_10_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_11",
+    "id": "sign_8_4_11_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.11",
-    "title": "Except for the type of vehicle",
+    "title": "Except for type of vehicle",
     "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). ",
     "image": "fbbb2df3c38cc24d9bdfcbe883096ac4.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Dangerous roadside",
       "Method of parking a vehicle",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Saturday, Sunday and holidays"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_4_11.mp3"
+    "audioFileName": "sign_8_4_11_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_12",
+    "id": "sign_8_4_12_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.12",
-    "title": "Except for the type of vehicle",
+    "title": "Except for type of vehicle",
     "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). ",
     "image": "dea5a38cd13c55156954e4d83eed8341.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Except for the type of vehicle",
-      "Direction of action",
+      "Except for type of vehicle",
+      "Directions of application",
       "Type of vehicle",
       "Except for disabled people"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_4_12.mp3"
+    "audioFileName": "sign_8_4_12_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_13",
+    "id": "sign_8_4_13_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.13",
-    "title": "Except for the type of vehicle",
+    "title": "Except for type of vehicle",
     "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). ",
     "image": "5e3f73a8c6ba3052d50835df4902caa9.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Parking for diplomatic vehicles only",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Type of vehicle",
       "Action time"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_4_13.mp3"
+    "audioFileName": "sign_8_4_13_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_14",
+    "id": "sign_8_4_14_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.14",
-    "title": "Except for the type of vehicle",
+    "title": "Except for type of vehicle",
     "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). ",
     "image": "da594e28441885b37f74cfc3d4e3da57.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Obstruction",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Method of parking a vehicle",
       "Blind pedestrians"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_4_14.mp3"
+    "audioFileName": "sign_8_4_14_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_15",
+    "id": "sign_8_4_15_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.15",
-    "title": "Except for the type of vehicle",
+    "title": "Except for type of vehicle",
     "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). ",
     "image": "277f97229af969ed8a32f2e24309f43d.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Method of parking a vehicle",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "A tow truck is working",
       "Dangerous goods class"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_4_15.mp3"
+    "audioFileName": "sign_8_4_15_catalog2026.mp3"
   },
   {
-    "id": "sign_8_4_16",
+    "id": "sign_8_4_16_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.4.16",
-    "title": "Except for the type of vehicle",
+    "title": "Except for type of vehicle",
     "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). ",
     "image": "5d9c53edfc609c14dcbd3d6f8d7df175.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Coverage area",
-      "Except for the type of vehicle",
-      "Direction of action",
+      "Except for type of vehicle",
+      "Directions of application",
       "Type of vehicle"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_4_16.mp3"
+    "audioFileName": "sign_8_4_16_catalog2026.mp3"
   },
   {
     "id": "sign_8_5_1",
@@ -4403,7 +4607,7 @@
     "audioFileName": "sign_8_5_1.mp3"
   },
   {
-    "id": "sign_8_5_2",
+    "id": "sign_8_5_2_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.5.2",
     "title": "Working days",
@@ -4417,7 +4621,7 @@
       "Action time"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_5_2.mp3"
+    "audioFileName": "sign_8_5_2_catalog2026.mp3"
   },
   {
     "id": "sign_8_5_3",
@@ -4437,7 +4641,7 @@
     "audioFileName": "sign_8_5_3.mp3"
   },
   {
-    "id": "sign_8_5_4",
+    "id": "sign_8_5_4_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.5.4",
     "title": "Action time",
@@ -4445,16 +4649,16 @@
     "image": "64111687123fee7f3328f3842ed6961b.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Action time",
       "Method of parking a vehicle",
-      "Except for the type of vehicle"
+      "Distance to object"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_5_4.mp3"
+    "audioFileName": "sign_8_5_4_catalog2026.mp3"
   },
   {
-    "id": "sign_8_5_5",
+    "id": "sign_8_5_5_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.5.5",
     "title": "Action time",
@@ -4464,11 +4668,11 @@
     "answers": [
       "Saturday, Sunday and holidays",
       "Distance to object",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Action time"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_5_5.mp3"
+    "audioFileName": "sign_8_5_5_catalog2026.mp3"
   },
   {
     "id": "sign_8_5_6",
@@ -4488,7 +4692,7 @@
     "audioFileName": "sign_8_5_6.mp3"
   },
   {
-    "id": "sign_8_5_7",
+    "id": "sign_8_5_7_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.5.7",
     "title": "Action time",
@@ -4497,12 +4701,12 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Action time",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Type of vehicle",
-      "Type of vehicle"
+      "Distance to object"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_5_7.mp3"
+    "audioFileName": "sign_8_5_7_catalog2026.mp3"
   },
   {
     "id": "sign_8_6_1",
@@ -4539,7 +4743,7 @@
     "audioFileName": "sign_8_6_2.mp3"
   },
   {
-    "id": "sign_8_6_3",
+    "id": "sign_8_6_3_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.6.3",
     "title": "Method of parking a vehicle",
@@ -4553,10 +4757,10 @@
       "Method of parking a vehicle"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_6_3.mp3"
+    "audioFileName": "sign_8_6_3_catalog2026.mp3"
   },
   {
-    "id": "sign_8_6_4",
+    "id": "sign_8_6_4_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.6.4",
     "title": "Method of parking a vehicle",
@@ -4567,13 +4771,13 @@
       "Method of parking a vehicle",
       "Traffic lane",
       "Action time",
-      "Except for the type of vehicle"
+      "Except for type of vehicle"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_6_4.mp3"
+    "audioFileName": "sign_8_6_4_catalog2026.mp3"
   },
   {
-    "id": "sign_8_6_5",
+    "id": "sign_8_6_5_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.6.5",
     "title": "Method of parking a vehicle",
@@ -4581,13 +4785,13 @@
     "image": "2d042dd714da92588515052467069500.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Method of parking a vehicle",
       "Working days",
       "Except for disabled people"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_6_5.mp3"
+    "audioFileName": "sign_8_6_5_catalog2026.mp3"
   },
   {
     "id": "sign_8_6_6",
@@ -4607,7 +4811,7 @@
     "audioFileName": "sign_8_6_6.mp3"
   },
   {
-    "id": "sign_8_6_7",
+    "id": "sign_8_6_7_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.6.7",
     "title": "Method of parking a vehicle",
@@ -4621,10 +4825,10 @@
       "Method of parking a vehicle"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_6_7.mp3"
+    "audioFileName": "sign_8_6_7_catalog2026.mp3"
   },
   {
-    "id": "sign_8_6_8",
+    "id": "sign_8_6_8_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.6.8",
     "title": "Method of parking a vehicle",
@@ -4635,13 +4839,13 @@
       "Method of parking a vehicle",
       "Type of vehicle",
       "Ecological class of the vehicle",
-      "Except for the type of vehicle"
+      "Except for type of vehicle"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_6_8.mp3"
+    "audioFileName": "sign_8_6_8_catalog2026.mp3"
   },
   {
-    "id": "sign_8_6_9",
+    "id": "sign_8_6_9_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.6.9",
     "title": "Method of parking a vehicle",
@@ -4649,16 +4853,16 @@
     "image": "a5c2c6750c60332d0ef500f7455f9dd3.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Direction of action",
+      "Directions of application",
       "Type of vehicle",
-      "Direction of action",
+      "Distance to object",
       "Method of parking a vehicle"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_6_9.mp3"
+    "audioFileName": "sign_8_6_9_catalog2026.mp3"
   },
   {
-    "id": "sign_8_7",
+    "id": "sign_8_7_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.7",
     "title": "Parking with the engine not running",
@@ -4667,12 +4871,12 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Vehicle inspection area",
-      "Direction of action",
+      "Directions of application",
       "Parking with the engine not running",
       "Coverage area"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_7.mp3"
+    "audioFileName": "sign_8_7_catalog2026.mp3"
   },
   {
     "id": "sign_8_8",
@@ -4692,9 +4896,43 @@
     "audioFileName": "sign_8_8.mp3"
   },
   {
-    "id": "sign_8_9",
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Limited parking duration",
+      "Distance to object",
+      "Coverage area",
+      "Directions of application"
+    ],
+    "correctAnswerIndex": 0,
     "category": "Additional information signs (plates)",
-    "number": "8.9",
+    "number": "8.9.1",
+    "title": "Limited parking duration",
+    "description": "Indicates the maximum permitted parking duration at a parking area designated by sign 6.4.",
+    "image": "official_8_9_1.svg",
+    "id": "sign_8_9_1_catalog2026",
+    "audioFileName": "sign_8_9_1_catalog2026.mp3"
+  },
+  {
+    "questionText": "What does this road sign mean?",
+    "answers": [
+      "Parking for permit holders only",
+      "Distance to object",
+      "Coverage area",
+      "Directions of application"
+    ],
+    "correctAnswerIndex": 0,
+    "category": "Additional information signs (plates)",
+    "number": "8.9.2",
+    "title": "Parking for permit holders only",
+    "description": "At a parking area designated by sign 6.4, only vehicles whose owners hold a parking permit issued in accordance with the procedure established by the relevant executive or local authority may be parked within the territory and validity period specified in that permit.",
+    "image": "official_8_9_2.svg",
+    "id": "sign_8_9_2_catalog2026",
+    "audioFileName": "sign_8_9_2_catalog2026.mp3"
+  },
+  {
+    "id": "sign_8_9_3_catalog2026",
+    "category": "Additional information signs (plates)",
+    "number": "8.9.3",
     "title": "Parking for diplomatic vehicles only",
     "description": "Indicates that only vehicles of accredited diplomatic missions, consular offices, international (interstate) organizations and representative offices of such organizations that have state registration plates used to designate such vehicles can be placed in a parking lot (parking space) marked with sign 6.4.  ",
     "image": "ed2b51311057d631c048eb2b81f41f63.svg",
@@ -4703,10 +4941,10 @@
       "Method of parking a vehicle",
       "Main road direction",
       "Parking for diplomatic vehicles only",
-      "Method of parking a vehicle"
+      "Distance to object"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_9.mp3"
+    "audioFileName": "sign_8_9_3_catalog2026.mp3"
   },
   {
     "id": "sign_8_10",
@@ -4726,7 +4964,7 @@
     "audioFileName": "sign_8_10.mp3"
   },
   {
-    "id": "sign_8_11",
+    "id": "sign_8_11_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.11",
     "title": "Maximum weight limit",
@@ -4740,7 +4978,7 @@
       "Obstruction"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_11.mp3"
+    "audioFileName": "sign_8_11_catalog2026.mp3"
   },
   {
     "id": "sign_8_12",
@@ -4777,7 +5015,7 @@
     "audioFileName": "sign_8_13.mp3"
   },
   {
-    "id": "sign_8_14",
+    "id": "sign_8_14_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.14",
     "title": "Traffic lane",
@@ -4788,10 +5026,10 @@
       "Method of parking a vehicle",
       "Traffic lane",
       "Type of vehicle",
-      "Except for the type of vehicle"
+      "Except for type of vehicle"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_14.mp3"
+    "audioFileName": "sign_8_14_catalog2026.mp3"
   },
   {
     "id": "sign_8_15",
@@ -4811,7 +5049,7 @@
     "audioFileName": "sign_8_15.mp3"
   },
   {
-    "id": "sign_8_16",
+    "id": "sign_8_16_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.16",
     "title": "Wet coating",
@@ -4819,13 +5057,13 @@
     "image": "d87c82fab2e99c528afa159e23cdbbfb.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Method of parking a vehicle",
       "Type of route vehicle",
       "Wet coating"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_16.mp3"
+    "audioFileName": "sign_8_16_catalog2026.mp3"
   },
   {
     "id": "sign_8_17",
@@ -4845,7 +5083,7 @@
     "audioFileName": "sign_8_17.mp3"
   },
   {
-    "id": "sign_8_18",
+    "id": "sign_8_18_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.18",
     "title": "Except for disabled people",
@@ -4856,13 +5094,13 @@
       "Except for disabled people",
       "Wet coating",
       "Obstruction",
-      "Except for the type of vehicle"
+      "Except for type of vehicle"
     ],
     "correctAnswerIndex": 0,
-    "audioFileName": "sign_8_18.mp3"
+    "audioFileName": "sign_8_18_catalog2026.mp3"
   },
   {
-    "id": "sign_8_19",
+    "id": "sign_8_19_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.19",
     "title": "Dangerous goods class",
@@ -4876,10 +5114,10 @@
       "Charging electric vehicles"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_19.mp3"
+    "audioFileName": "sign_8_19_catalog2026.mp3"
   },
   {
-    "id": "sign_8_20_1",
+    "id": "sign_8_20_1_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.20.1",
     "title": "Vehicle bogie type",
@@ -4887,16 +5125,16 @@
     "image": "dc4b2b2243c4b3ed51eb412e81774e2c.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Except for the type of vehicle",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
+      "Distance to object",
       "Parking with the engine not running",
       "Vehicle bogie type"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_20_1.mp3"
+    "audioFileName": "sign_8_20_1_catalog2026.mp3"
   },
   {
-    "id": "sign_8_20_2",
+    "id": "sign_8_20_2_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.20.2",
     "title": "Vehicle bogie type",
@@ -4905,12 +5143,12 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Coverage area",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Method of parking a vehicle",
       "Vehicle bogie type"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_20_2.mp3"
+    "audioFileName": "sign_8_20_2_catalog2026.mp3"
   },
   {
     "id": "sign_8_21_1",
@@ -4930,7 +5168,7 @@
     "audioFileName": "sign_8_21_1.mp3"
   },
   {
-    "id": "sign_8_21_2",
+    "id": "sign_8_21_2_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.21.2",
     "title": "Type of route vehicle",
@@ -4940,14 +5178,14 @@
     "answers": [
       "Saturday, Sunday and holidays",
       "A tow truck is working",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Type of route vehicle"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_21_2.mp3"
+    "audioFileName": "sign_8_21_2_catalog2026.mp3"
   },
   {
-    "id": "sign_8_21_3",
+    "id": "sign_8_21_3_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.21.3",
     "title": "Type of route vehicle",
@@ -4955,30 +5193,30 @@
     "image": "03b9940c1b4e5b9f38839dbb1b293da1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Obstruction",
       "Type of route vehicle",
       "Action time"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_21_3.mp3"
+    "audioFileName": "sign_8_21_3_catalog2026.mp3"
   },
   {
-    "id": "sign_8_22_1",
+    "id": "sign_8_22_1_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.22.1",
     "title": "Obstruction",
     "description": "They indicate the obstacle and the direction to avoid it. Used with signs 4.2.1, 4.2.2 and 4.2.3.",
-    "image": "f4ce65cda3ff52f3ef02e3fca21567a2.svg",
+    "image": "official_8_22_1.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Days of the week",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Obstruction",
       "Coverage area"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_22_1.mp3"
+    "audioFileName": "sign_8_22_1_catalog2026.mp3"
   },
   {
     "id": "sign_8_22_2",
@@ -4986,7 +5224,7 @@
     "number": "8.22.2",
     "title": "Obstruction",
     "description": "They indicate the obstacle and the direction to avoid it. Used with signs 4.2.1, 4.2.2 and 4.2.3.",
-    "image": "f4ce65cda3ff52f3ef02e3fca21567a2.svg",
+    "image": "official_8_22_2.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Action time",
@@ -4998,24 +5236,24 @@
     "audioFileName": "sign_8_22_2.mp3"
   },
   {
-    "id": "sign_8_22_3",
+    "id": "sign_8_22_3_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.22.3",
     "title": "Obstruction",
     "description": "They indicate the obstacle and the direction to avoid it. Used with signs 4.2.1, 4.2.2 and 4.2.3.",
-    "image": "f4ce65cda3ff52f3ef02e3fca21567a2.svg",
+    "image": "official_8_22_3.svg",
     "questionText": "What does this road sign mean?",
     "answers": [
       "Type of vehicle",
       "Obstruction",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Dangerous roadside"
     ],
     "correctAnswerIndex": 1,
-    "audioFileName": "sign_8_22_3.mp3"
+    "audioFileName": "sign_8_22_3_catalog2026.mp3"
   },
   {
-    "id": "sign_8_24",
+    "id": "sign_8_24_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.24",
     "title": "A tow truck is working",
@@ -5026,10 +5264,10 @@
       "Action time",
       "Blind pedestrians",
       "A tow truck is working",
-      "Direction of action"
+      "Directions of application"
     ],
     "correctAnswerIndex": 2,
-    "audioFileName": "sign_8_24.mp3"
+    "audioFileName": "sign_8_24_catalog2026.mp3"
   },
   {
     "id": "sign_8_25",
@@ -5049,7 +5287,7 @@
     "audioFileName": "sign_8_25.mp3"
   },
   {
-    "id": "sign_8_26",
+    "id": "sign_8_26_catalog2026",
     "category": "Additional information signs (plates)",
     "number": "8.26",
     "title": "Charging electric vehicles",
@@ -5058,11 +5296,11 @@
     "questionText": "What does this road sign mean?",
     "answers": [
       "Type of vehicle",
-      "Except for the type of vehicle",
+      "Except for type of vehicle",
       "Disabled people",
       "Charging electric vehicles"
     ],
     "correctAnswerIndex": 3,
-    "audioFileName": "sign_8_26.mp3"
+    "audioFileName": "sign_8_26_catalog2026.mp3"
   }
 ]

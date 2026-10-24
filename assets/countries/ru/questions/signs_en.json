@@ -24,11 +24,41 @@
       "image": "./images/signs/87348b472014495db6c032af23df8d3a.svg",
       "description": "Installed immediately before the railway crossing. Installed when there are two or more tracks (3, 4, 5, etc.). If there are no barriers at the railway crossing, signs 1.3.1 and 1.3.2 determine the size of the crossing. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.10 Part 1 Crossing a railway track outside a railway crossing, entering a railway crossing with a closed or closing barrier or with a prohibitory signal from a traffic light or the person on duty at the crossing, stopping or parking at a railway crossing or driving through an unregulated railway crossing, If a train (locomotive, handcar) approaches a crossing within sight, a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 3 to 6 months; Code of Administrative Offenses of the Russian Federation 12.10 Part 2 Violation of the rules for passing through railway crossings, except for the cases provided for in Part 1 of this article - a fine of 5,000 rubles. Code of Administrative Offenses of the Russian Federation 12.10 Part 3 Repeated commission of an administrative offense provided for in Part 1 of this article - deprivation of the right to drive a vehicle for a period of 1 year  "
     },
-    "1.4": {
-      "number": "1.4",
+    "1.4.1": {
+      "number": "1.4.1",
       "title": "Approaching a railway crossing",
-      "image": "./images/signs/4a81d6b210c719d3169aaa0dca0c6236.svg",
-      "description": "Additional warning about approaching a railway crossing outside of populated areas. Installed outside at a distance of 150-300 meters, while the distance between the signs is proportional. Signs 1.4.1-1.4.3 are installed on the right side of the road. and signs 1.4.4-1.4.6 are on the left. "
+      "image": "./images/signs/official_1_4_1.svg",
+      "description": "Additional warning of an approaching railway crossing outside a built-up area."
+    },
+    "1.4.2": {
+      "number": "1.4.2",
+      "title": "Approaching a railway crossing",
+      "image": "./images/signs/official_1_4_2.svg",
+      "description": "Additional warning of an approaching railway crossing outside a built-up area."
+    },
+    "1.4.3": {
+      "number": "1.4.3",
+      "title": "Approaching a railway crossing",
+      "image": "./images/signs/official_1_4_3.svg",
+      "description": "Additional warning of an approaching railway crossing outside a built-up area."
+    },
+    "1.4.4": {
+      "number": "1.4.4",
+      "title": "Approaching a railway crossing",
+      "image": "./images/signs/official_1_4_4.svg",
+      "description": "Additional warning of an approaching railway crossing outside a built-up area."
+    },
+    "1.4.5": {
+      "number": "1.4.5",
+      "title": "Approaching a railway crossing",
+      "image": "./images/signs/official_1_4_5.svg",
+      "description": "Additional warning of an approaching railway crossing outside a built-up area."
+    },
+    "1.4.6": {
+      "number": "1.4.6",
+      "title": "Approaching a railway crossing",
+      "image": "./images/signs/official_1_4_6.svg",
+      "description": "Additional warning of an approaching railway crossing outside a built-up area."
     },
     "1.5": {
       "number": "1.5",
@@ -68,25 +98,25 @@
     },
     "1.11.1": {
       "number": "1.11.1",
-      "title": "Dangerous turn (right)",
+      "title": "Dangerous bend",
       "image": "./images/signs/7db7847fc21327e2a75716ee03ec23d5.svg",
       "description": "Rounding a road with a small radius or with limited visibility. Installed in a populated area 50-100 m ahead, outside a populated area - 150-300 m ahead, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The difference is in the direction of turn (right, left). The sign only informs about the direction of the first turn after the sign."
     },
     "1.11.2": {
       "number": "1.11.2",
-      "title": "Dangerous turn (left)",
+      "title": "Dangerous bend",
       "image": "./images/signs/da41b8446c2150dd42e805bf2416b2f6.svg",
       "description": "Rounding a road with a small radius or with limited visibility. Installed in a populated area 50-100 m ahead, outside a populated area - 150-300 m ahead, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The difference is in the direction of turn (right, left). The sign only informs about the direction of the first turn after the sign."
     },
     "1.12.1": {
       "number": "1.12.1",
-      "title": "Dangerous turns (with the first right turn)",
+      "title": "Dangerous bends",
       "image": "./images/signs/41c00d307234f7446b98e8e45df02687.svg",
       "description": "A section of road with dangerous turns. Installed in a populated area 50-100 m ahead, outside a populated area - 150-300 m ahead, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign informs that there is a series (or several) turns ahead, while sign 1.12.1 indicates that the first turn after the sign is to the right."
     },
     "1.12.2": {
       "number": "1.12.2",
-      "title": "Dangerous turns (with the first left turn)",
+      "title": "Dangerous bends",
       "image": "./images/signs/d0c989fcc0302d8851bfa531de49537b.svg",
       "description": "A section of road with dangerous turns. Installed in a populated area 50-100 m ahead, outside a populated area - 150-300 m ahead, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. The sign informs you that there are a number (or several) turns ahead.  Sign 1.12.2 indicates that the first turn after the sign is to the left. "
     },
@@ -135,7 +165,7 @@
     },
     "1.20.1": {
       "number": "1.20.1",
-      "title": "Road narrows.",
+      "title": "Road narrows",
       "image": "./images/signs/b3ade4e8a06ca1f7f773b215d32a2315.svg",
       "description": "Road narrowing is carried out on both sides. Installed in a populated area 50-100 m ahead, outside a populated area - 150-300 m ahead, the sign can be installed at a different distance, but the distance is specified in Table 8.1.1 “Distance to the object”. A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary.   In cases where the meanings of temporary road signs and stationary road signs contradict each other, drivers must be guided by the temporary signs."
     },
@@ -486,7 +516,7 @@
     },
     "3.22": {
       "number": "3.22",
-      "title": "Overtaking by a truck is prohibited",
+      "title": "Overtaking prohibited for goods vehicles",
       "image": "./images/signs/218ffabddb61261300f3a99b19a0ea77.svg",
       "description": "It is prohibited for trucks with a permissible maximum weight of more than 3.5 tons to overtake all vehicles without exception. The coverage area extends from the place where the sign is installed to the nearest intersection behind it, and in populated areas, in the absence of an intersection, to the end of the populated area. The effect of the signs is not interrupted at exit points from territories adjacent to the road and at intersections (junctions) with field, forest and other secondary roads, in front of which the corresponding signs are not installed. The sign's coverage area can be reduced by installing signs 3.21, 3.23, 3.25 at the end of their coverage area, respectively, or by using plate 8.2.1. (Changes took effect: March 1, 2023). A yellow background means the sign is temporary. In addition, signs installed on portable supports are considered temporary. (Changes entered into force: March 1, 2023.) In cases where the meanings of temporary road signs and permanent road signs contradict each other, drivers must be guided by the temporary signs. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months."
     },
@@ -700,9 +730,21 @@
     },
     "4.8.1": {
       "number": "4.8.1",
-      "title": "Direction of movement of vehicles with dangerous goods",
-      "image": "./images/signs/a3c739d9396fba61a07febb646118b39.svg",
+      "title": "Direction of movement for vehicles carrying dangerous goods",
+      "image": "./images/signs/official_4_8_1.svg",
       "description": "The movement of vehicles equipped with identification signs (information plates) “Dangerous Goods” is permitted only in the direction indicated on the sign: 4.8.1 - straight, 4.8.2 - right, 4.8.3 - left. These mandatory signs must be installed immediately before crossing roadways in places where prohibitory signs are installed: 3.32 “Movement of vehicles with dangerous goods is prohibited”, 3.33 “Movement of vehicles with explosive, flammable goods"
+    },
+    "4.8.2": {
+      "number": "4.8.2",
+      "title": "Direction of movement for vehicles carrying dangerous goods",
+      "image": "./images/signs/official_4_8_2.svg",
+      "description": "Vehicles displaying dangerous goods identification signs may proceed only in the indicated direction: 4.8.1 — straight ahead, 4.8.2 — right, 4.8.3 — left."
+    },
+    "4.8.3": {
+      "number": "4.8.3",
+      "title": "Direction of movement for vehicles carrying dangerous goods",
+      "image": "./images/signs/official_4_8_3.svg",
+      "description": "Vehicles displaying dangerous goods identification signs may proceed only in the indicated direction: 4.8.1 — straight ahead, 4.8.2 — right, 4.8.3 — left."
     }
   },
   "Signs of special regulations": {
@@ -744,14 +786,14 @@
     },
     "5.7.1": {
       "number": "5.7.1",
-      "title": "Entering a one-way road.",
-      "image": "./images/signs/eaa67e0f15d830945fbd285b1a198768.svg",
+      "title": "Exit onto a one-way road",
+      "image": "./images/signs/official_5_7_1.svg",
       "description": "Entering a one-way road or carriageway. Installed in front of all side exits on one-way roads. 1. The arrow indicates the direction of travel on a one-way road.2. Crossing a one-way road is not prohibited.3. At an intersection in front of which sign 5.7.1 is installed, turning left is prohibited. U-turn is not prohibited.4. At an intersection in front of which sign 5.7.2 is installed, turning right is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months. Code of Administrative Offenses of the Russian Federation 12.15 Part 5 Repeated commission of an administrative offense under Part 4 of Art. 12.15 of the Code of Administrative Offenses of the Russian Federation - deprivation of the right to drive a vehicle for a period of 1 year, and in the case of recording an administrative offense using special technical means operating in automatic mode, having the functions of photography, filming, video recording, or means of photography, filming, video recording - imposition of an administrative fine in the amount of 5,000 rubles. "
     },
     "5.7.2": {
       "number": "5.7.2",
-      "title": "Entering a one-way road.",
-      "image": "./images/signs/eaa67e0f15d830945fbd285b1a198768.svg",
+      "title": "Exit onto a one-way road",
+      "image": "./images/signs/official_5_7_2.svg",
       "description": "Entering a one-way road or carriageway. Installed in front of all side exits on one-way roads. 1. The arrow indicates the direction of travel on a one-way road.2. Crossing a one-way road is not prohibited.3. At an intersection in front of which sign 5.7.1 is installed, turning left is prohibited. U-turn is not prohibited.4. At an intersection in front of which sign 5.7.2 is installed, turning right is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.15 Part 4 Driving in violation of traffic rules onto a lane intended for oncoming traffic, or onto tram tracks in the opposite direction, except for the cases provided for in Part 3 of this article - a fine of 5,000 rubles. or deprivation of the right to drive a vehicle for a period of 4 to 6 months. Code of Administrative Offenses of the Russian Federation 12.15 Part 5 Repeated commission of an administrative offense under Part 4 of Art. 12.15 of the Code of Administrative Offenses of the Russian Federation - deprivation of the right to drive a vehicle for a period of 1 year, and in the case of recording an administrative offense using special technical means operating in automatic mode, having the functions of photography, filming, video recording, or means of photography, filming, video recording - imposition of an administrative fine in the amount of 5,000 rubles. "
     },
     "5.8": {
@@ -782,7 +824,7 @@
       "number": "5.11.2",
       "title": "Road with lane for cyclists",
       "image": "./images/signs/3417cb06252d5348b568b87a0547e3b6.svg",
-      "description": ""
+      "description": "A road on which cyclists, persons using personal mobility devices and moped riders travel along a dedicated lane against the general flow of traffic."
     },
     "5.12.1": {
       "number": "5.12.1",
@@ -799,32 +841,50 @@
     "5.13.1": {
       "number": "5.13.1",
       "title": "Entering a road with a lane for route vehicles",
-      "image": "./images/signs/6f250c306d6911bf975744127dcfa861.svg",
+      "image": "./images/signs/official_5_13_1.svg",
       "description": "Entering a road with a lane for route vehicles (sign 5.11.1), the movement of which is carried out along a specially designated lane towards the general flow of vehicles. At an intersection in front of which sign 5.13.1 is installed, turning left is prohibited. A U-turn is not prohibited. At an intersection in front of which sign 5.13.2 is installed, a right turn is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.17 parts 1.1 and 1.2 Movement of vehicles in the lane for route vehicles or stopping on the specified lane in violation of the Traffic Rules - a fine of 1,500 rubles. (for Moscow and St. Petersburg - 3000 rubles)"
     },
     "5.13.2": {
       "number": "5.13.2",
       "title": "Entering a road with a lane for route vehicles",
-      "image": "./images/signs/6f250c306d6911bf975744127dcfa861.svg",
+      "image": "./images/signs/official_5_13_2.svg",
       "description": "Entering a road with a lane for route vehicles (sign 5.11.1), the movement of which is carried out along a specially designated lane towards the general flow of vehicles. At an intersection in front of which sign 5.13.1 is installed, turning left is prohibited. A U-turn is not prohibited. At an intersection in front of which sign 5.13.2 is installed, a right turn is prohibited. U-turn is not prohibited. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.17 parts 1.1 and 1.2 Movement of vehicles in the lane for route vehicles or stopping on the specified lane in violation of the Traffic Rules - a fine of 1,500 rubles. (for Moscow and St. Petersburg - 3000 rubles)"
     },
     "5.13.3": {
       "number": "5.13.3",
       "title": "Entering a road with a lane for cyclists",
       "image": "./images/signs/040dd5b89c58d745f260470b69f95c65.svg",
-      "description": ""
+      "description": "Entering a road with a lane for cyclists."
     },
     "5.13.4": {
       "number": "5.13.4",
       "title": "Entering a road with a lane for cyclists",
       "image": "./images/signs/5564935ee2b1ae22a68ff3efb49d60bd.svg",
-      "description": ""
+      "description": "Entering a road with a lane for cyclists."
     },
-    "5.14": {
-      "number": "5.14",
-      "title": "End of the bike lane",
+    "5.14.1": {
+      "number": "5.14.1",
+      "title": "Lane for route vehicles",
+      "image": "./images/signs/official_5_14_1.svg",
+      "description": "A dedicated lane along which vehicles permitted to use lanes for route vehicles travel in the same direction as the general traffic flow."
+    },
+    "5.14.2": {
+      "number": "5.14.2",
+      "title": "Lane for cyclists",
+      "image": "./images/signs/official_5_14_2.svg",
+      "description": "Lane for cyclists. The sign applies to the lane above which it is installed. When installed on the right of the road, it applies to the right-hand lane."
+    },
+    "5.14.3": {
+      "number": "5.14.3",
+      "title": "End of lane for route vehicles",
+      "image": "./images/signs/official_5_14_3.svg",
+      "description": "End of lane for route vehicles."
+    },
+    "5.14.4": {
+      "number": "5.14.4",
+      "title": "End of lane for cyclists",
       "image": "./images/signs/8af3051b4e6b17af2f625c0b55db66fb.svg",
-      "description": "  The effect of the sign extends to the strip above which they are located. The effect of signs installed to the right of the road extends to the right lane."
+      "description": "End of lane for cyclists."
     },
     "5.15.1": {
       "number": "5.15.1",
@@ -834,7 +894,7 @@
     },
     "5.15.2": {
       "number": "5.15.2",
-      "title": "Lane directions",
+      "title": "Directions of movement along a lane",
       "image": "./images/signs/beef79c1d2b2eb4a94ff9e1ab2c8022b.svg",
       "description": "Permitted lane directions.  Signs 5.15.1 and 5.15.2, which permit turning left from the extreme left lane, also permit a U-turn from this lane. Signs 5.15.1 and 5.15.2 do not apply to route vehicles. Signs 5.15.1 and 5.15.2 installed in front of the intersection apply to the entire intersection, if other signs 5.15.1 and 5.15.2 installed on it do not provide any other instructions."
     },
@@ -856,9 +916,9 @@
       "image": "./images/signs/a366fbccc0d7e20f9d8ddf7c07f96a94.svg",
       "description": "The end of an additional uphill lane or acceleration lane. Cancels the effect of sign 5.15.3 “Start of lane”."
     },
-    "5.15": {
-      "number": "5.15",
-      "title": "End of the strip",
+    "5.15.6": {
+      "number": "5.15.6",
+      "title": "End of lane",
       "image": "./images/signs/7741be01f08c2b9cbc335ca3ca36b272.svg",
       "description": "The end of a section of the median on a three-lane road intended for traffic in a given direction. Cancels the effect of sign 5.15.4 “Start of lane”."
     },
@@ -890,19 +950,19 @@
       "number": "5.18",
       "title": "Taxi parking area",
       "image": "./images/signs/e6b05e014f5c98ca11e53c44113ba47a.svg",
-      "description": ""
+      "description": "Taxi parking area."
     },
     "5.19.1": {
       "number": "5.19.1",
       "title": "Pedestrian crossing",
-      "image": "./images/signs/5e5e79df8b8d44ac07e95737a9071eb1.svg",
+      "image": "./images/signs/official_5_19_1.svg",
       "description": "If there are no markings 1.14.1 or 1.14.2 at the crossing, sign 5.19.1 is installed to the right of the road on the near border of the crossing relative to approaching vehicles, and sign 5.19.2 is installed to the left of the road on the far border of the crossing. If there are signs, the size of the pedestrian crossing is limited from sign 5.19.2 to sign 5.19.1. In the absence of signs, the size of the pedestrian crossing is determined by the width of the marking lines. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.18 Failure to comply with the requirement of the Traffic Rules to give way to pedestrians, cyclists or other road users (with the exception of vehicle drivers) enjoying priority in traffic - a fine of 1500 - 2500 rubles.  ",
       "folkName": "zebra"
     },
     "5.19.2": {
       "number": "5.19.2",
       "title": "Pedestrian crossing",
-      "image": "./images/signs/5e5e79df8b8d44ac07e95737a9071eb1.svg",
+      "image": "./images/signs/official_5_19_2.svg",
       "description": "If there are no markings 1.14.1 or 1.14.2 at the crossing, sign 5.19.1 is installed to the right of the road on the near border of the crossing relative to approaching vehicles, and sign 5.19.2 is installed to the left of the road on the far border of the crossing. If there are signs, the size of the pedestrian crossing is limited from sign 5.19.2 to sign 5.19.1. In the absence of signs, the size of the pedestrian crossing is determined by the width of the marking lines. Punishment for violating the requirements of the sign: Code of Administrative Offenses of the Russian Federation 12.18 Failure to comply with the requirement of the Traffic Rules to give way to pedestrians, cyclists or other road users (with the exception of vehicle drivers) enjoying priority in traffic - a fine of 1500 - 2500 rubles.  ",
       "folkName": "zebra"
     },
@@ -927,25 +987,25 @@
     "5.23.1": {
       "number": "5.23.1",
       "title": "Beginning of a populated area",
-      "image": "./images/signs/d70f1a70a8a13c3ddc2aff857af62cc3.svg",
+      "image": "./images/signs/official_5_23_1.svg",
       "description": "The beginning of a populated area in which the requirements of the Road Traffic Rules of the Russian Federation are in force, establishing the procedure for traffic in populated areas. First of all, such requirements include limiting the speed to 60 km/h and prohibiting the sound signal except in cases where it is necessary to prevent a traffic accident."
     },
     "5.23.2": {
       "number": "5.23.2",
       "title": "Beginning of a populated area",
-      "image": "./images/signs/d70f1a70a8a13c3ddc2aff857af62cc3.svg",
+      "image": "./images/signs/official_5_23_2.svg",
       "description": "The beginning of a populated area in which the requirements of the Road Traffic Rules of the Russian Federation are in force, establishing the procedure for traffic in populated areas. First of all, such requirements include limiting the speed to 60 km/h and prohibiting the sound signal except in cases where it is necessary to prevent a traffic accident."
     },
     "5.24.1": {
       "number": "5.24.1",
       "title": "End of a settlement",
-      "image": "./images/signs/96dca5136d8e68a65997314f1cfc8057.svg",
+      "image": "./images/signs/official_5_24_1.svg",
       "description": "The place from which on a given road the requirements of the Road Traffic Rules of the Russian Federation, establishing the procedure for traffic in populated areas, cease to apply."
     },
     "5.24.2": {
       "number": "5.24.2",
       "title": "End of a settlement",
-      "image": "./images/signs/96dca5136d8e68a65997314f1cfc8057.svg",
+      "image": "./images/signs/official_5_24_2.svg",
       "description": "The place from which on a given road the requirements of the Road Traffic Rules of the Russian Federation, establishing the procedure for traffic in populated areas, cease to apply."
     },
     "5.25": {
@@ -1042,7 +1102,7 @@
       "number": "5.40",
       "title": "End of the bike zone",
       "image": "./images/signs/eeab078b65f048a6679d8c387c9706b8.svg",
-      "description": ""
+      "description": "End of the bike zone."
     }
   },
   "Information signs": {
@@ -1074,7 +1134,7 @@
       "number": "6.4",
       "title": "Parking (parking space)",
       "image": "./images/signs/9c264561036f4345cb397727afe03cb4.svg",
-      "description": ""
+      "description": "A paid services symbol on the sign indicates paid parking. A disabled persons symbol on the sign indicates parking only for vehicles displaying the Disabled identification sign. A sign designating parking at the edge of the carriageway next to or on the pavement applies up to the nearest junction or is limited by plate 8.2.1."
     },
     "6.5": {
       "number": "6.5",
@@ -1138,7 +1198,7 @@
     },
     "6.10.2": {
       "number": "6.10.2",
-      "title": "Directions indicator",
+      "title": "Direction sign",
       "image": "./images/signs/13b861438d0ef9fd4f9c7b07fae66f50.svg",
       "description": "Indicate directions of movement to route points. Signs may indicate the distance to the objects indicated on it (km), and include symbols of a highway, airport, sports and other pictograms (meaningful images).  On a sign installed outside a populated area, a green or blue background means that traffic to the specified populated area or object will be carried out along a motorway or other road, respectively.  On a sign installed in a populated area, inserts with a green or blue background mean that movement to the specified populated area or object after leaving this populated area will be carried out respectively along a motorway or other road; The white background of the sign means that the specified object is located in this locality. Brown background indicates a tourist site. "
     },
@@ -1223,32 +1283,38 @@
     "6.19.1": {
       "number": "6.19.1",
       "title": "Preliminary sign of rebuilding to another roadway",
-      "image": "./images/signs/8795fafca3aed200ee782fa766df1416.svg",
+      "image": "./images/signs/official_6_19_1.svg",
       "description": "The direction to bypass a section of the roadway closed to traffic on a road with a dividing strip or the direction of movement to return to the right roadway. The yellow background of the sign indicates that the detour is temporary."
     },
     "6.19.2": {
       "number": "6.19.2",
       "title": "Preliminary sign of rebuilding to another roadway",
-      "image": "./images/signs/8795fafca3aed200ee782fa766df1416.svg",
+      "image": "./images/signs/official_6_19_2.svg",
       "description": "The direction to bypass a section of the roadway closed to traffic on a road with a dividing strip or the direction of movement to return to the right roadway. The yellow background of the sign indicates that the detour is temporary."
     },
     "6.20.1": {
       "number": "6.20.1",
       "title": "Emergency exit",
-      "image": "./images/signs/7d41716ad000606623f15a20c5ab9e0d.svg",
+      "image": "./images/signs/official_6_20_1.svg",
       "description": "Indicates the place in the tunnel where the emergency exit is located."
     },
     "6.20.2": {
       "number": "6.20.2",
       "title": "Emergency exit",
-      "image": "./images/signs/7d41716ad000606623f15a20c5ab9e0d.svg",
+      "image": "./images/signs/official_6_20_2.svg",
       "description": "Indicates the place in the tunnel where the emergency exit is located."
     },
-    "6.21": {
-      "number": "6.21",
-      "title": "Direction of movement to the emergency exit",
-      "image": "./images/signs/e957b683cdca0245291f7322a8388e14.svg",
-      "description": "Indicates the direction to the emergency exit and the distance to it."
+    "6.21.1": {
+      "number": "6.21.1",
+      "title": "Direction to an emergency exit",
+      "image": "./images/signs/official_6_21_1.svg",
+      "description": "Indicates the direction to an emergency exit and the distance to it."
+    },
+    "6.21.2": {
+      "number": "6.21.2",
+      "title": "Direction to an emergency exit",
+      "image": "./images/signs/official_6_21_2.svg",
+      "description": "Indicates the direction to an emergency exit and the distance to it."
     },
     "6.22": {
       "number": "6.22",
@@ -1262,85 +1328,91 @@
       "number": "7.1",
       "title": "Medical aid station",
       "image": "./images/signs/aeefa11a7668b0f779cbbf50c0dbf748.svg",
-      "description": ""
+      "description": "Medical aid station."
     },
     "7.2": {
       "number": "7.2",
       "title": "Hospital",
       "image": "./images/signs/8bc512242cc8d3e084ad1f59eda9a863.svg",
-      "description": ""
+      "description": "Hospital."
     },
     "7.3": {
       "number": "7.3",
       "title": "Gas station",
       "image": "./images/signs/f33fe3ea91d17dd2e1471bb7403430c9.svg",
-      "description": ""
+      "description": "Gas station."
     },
     "7.4": {
       "number": "7.4",
       "title": "Car maintenance",
       "image": "./images/signs/b1b835da7a2ff04a831c0d5321e853da.svg",
-      "description": ""
+      "description": "Car maintenance."
     },
     "7.5": {
       "number": "7.5",
       "title": "Car wash",
       "image": "./images/signs/9fdf2e19bc009ba511d778fadbd5aeb7.svg",
-      "description": ""
+      "description": "Car wash."
     },
     "7.6": {
       "number": "7.6",
       "title": "Telephone",
       "image": "./images/signs/2eac94f432d3ee50afdeac2fb4c463b5.svg",
-      "description": ""
+      "description": "Telephone."
     },
     "7.7": {
       "number": "7.7",
       "title": "Food point",
       "image": "./images/signs/cdf562fd51c6bd678899ab95a68250a5.svg",
-      "description": ""
+      "description": "Food point."
     },
     "7.8": {
       "number": "7.8",
       "title": "Potable water",
       "image": "./images/signs/d0adc92b61f004c713c26d08e9114eb8.svg",
-      "description": ""
+      "description": "Potable water."
     },
     "7.9": {
       "number": "7.9",
       "title": "Hotel or motel",
       "image": "./images/signs/50f03ffa7c33a8dcb7df429e0837cfbb.svg",
-      "description": ""
+      "description": "Hotel or motel."
     },
     "7.10": {
       "number": "7.10",
       "title": "Camping",
       "image": "./images/signs/f1373aa9762a336d2752c7ed8cbf9850.svg",
-      "description": ""
+      "description": "Camping."
     },
     "7.11": {
       "number": "7.11",
       "title": "Rest place",
       "image": "./images/signs/f05ee79d3126e8f4ec8307e9bfe0baf2.svg",
-      "description": ""
+      "description": "Rest place."
     },
     "7.12": {
       "number": "7.12",
       "title": "Road patrol post",
       "image": "./images/signs/f6fe79ec307f75faa8347a470586532b.svg",
-      "description": ""
+      "description": "Road patrol post."
     },
     "7.13": {
       "number": "7.13",
       "title": "The Police",
       "image": "./images/signs/0c3947bf4d54a57c386e151b17fd02b2.svg",
-      "description": ""
+      "description": "The Police."
     },
-    "7.14": {
-      "number": "7.14",
+    "7.14.1": {
+      "number": "7.14.1",
+      "title": "Customs control point",
+      "image": "./images/signs/official_7_14_1.svg",
+      "description": "Customs control point."
+    },
+    "7.14.2": {
+      "number": "7.14.2",
       "title": "Transport control point",
       "image": "./images/signs/3476127cc3910b6859d3cc1ae0d1807d.svg",
-      "description": "(Changes took effect: March 1, 2023.)"
+      "description": "Transport control point."
     },
     "7.15": {
       "number": "7.15",
@@ -1358,13 +1430,13 @@
       "number": "7.17",
       "title": "Pool or beach",
       "image": "./images/signs/bd4b37d28532d055639fb030d3956ab1.svg",
-      "description": ""
+      "description": "Pool or beach."
     },
     "7.18": {
       "number": "7.18",
       "title": "Toilet",
       "image": "./images/signs/78a6ed148fc072db020201c9f125ca0a.svg",
-      "description": ""
+      "description": "Toilet."
     },
     "7.19": {
       "number": "7.19",
@@ -1382,7 +1454,7 @@
       "number": "7.21",
       "title": "Gas station with electric vehicle charging capabilities",
       "image": "./images/signs/c12f75d4384149c8aec3a074d67cda52.svg",
-      "description": " "
+      "description": "Gas station with electric vehicle charging capabilities."
     }
   },
   "Additional information signs (plates)": {
@@ -1413,162 +1485,162 @@
     "8.2.1": {
       "number": "8.2.1",
       "title": "Coverage area",
-      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "image": "./images/signs/official_8_2_1.svg",
       "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
     },
     "8.2.2": {
       "number": "8.2.2",
       "title": "Coverage area",
-      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "image": "./images/signs/official_8_2_2.svg",
       "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
     },
     "8.2.3": {
       "number": "8.2.3",
       "title": "Coverage area",
-      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "image": "./images/signs/official_8_2_3.svg",
       "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
     },
     "8.2.4": {
       "number": "8.2.4",
       "title": "Coverage area",
-      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "image": "./images/signs/official_8_2_4.svg",
       "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
     },
     "8.2.5": {
       "number": "8.2.5",
       "title": "Coverage area",
-      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "image": "./images/signs/official_8_2_5.svg",
       "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
     },
     "8.2.6": {
       "number": "8.2.6",
       "title": "Coverage area",
-      "image": "./images/signs/7e13e8cc1965fba71029290ef8ec3162.svg",
+      "image": "./images/signs/official_8_2_6.svg",
       "description": "Sign 8.2.1 indicates the length of the dangerous section of the road indicated by warning signs, or the coverage area of prohibitory signs, as well as signs 5.16, 6.2 and 6.4. Sign 8.2.2 indicates the coverage area of prohibitory signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.3 indicates the end of the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.4 informs drivers that they are in the coverage area of signs 3.27, 3.28, 3.29 and 3.30. Sign 8.2.5 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc. Sign 8.2.6 indicates the direction and coverage area of signs 3.27, 3.28, 3.29 and 3.30; when stopping or parking is prohibited along one side of the square, the facade of a building, etc."
     },
     "8.3.1": {
       "number": "8.3.1",
-      "title": "Direction of action",
-      "image": "./images/signs/4e4d0a4d9887563082fb91884fccc52f.svg",
+      "title": "Directions of application",
+      "image": "./images/signs/official_8_3_1.svg",
       "description": "Indicate the direction of action of signs installed in front of the intersection, or the direction of movement to designated objects located directly next to the road."
     },
     "8.3.2": {
       "number": "8.3.2",
-      "title": "Direction of action",
-      "image": "./images/signs/4e4d0a4d9887563082fb91884fccc52f.svg",
+      "title": "Directions of application",
+      "image": "./images/signs/official_8_3_2.svg",
       "description": "Indicate the direction of action of signs installed in front of the intersection, or the direction of movement to designated objects located directly next to the road."
     },
     "8.3.3": {
       "number": "8.3.3",
-      "title": "Direction of action",
-      "image": "./images/signs/4e4d0a4d9887563082fb91884fccc52f.svg",
+      "title": "Directions of application",
+      "image": "./images/signs/official_8_3_3.svg",
       "description": "Indicate the direction of action of signs installed in front of the intersection, or the direction of movement to designated objects located directly next to the road."
     },
     "8.4.1": {
       "number": "8.4.1",
       "title": "Type of vehicle",
       "image": "./images/signs/bfded6a56e241d9d1309c110f51eb6c0.svg",
-      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3.2  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7.1 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
     },
     "8.4.2": {
       "number": "8.4.2",
       "title": "Type of vehicle",
       "image": "./images/signs/41aa6b941291fc410b79604aca819bd2.svg",
-      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
-    },
-    "8.4.3": {
-      "number": "8.4.3",
-      "title": "Type of vehicle",
-      "image": "./images/signs/9a0b442b18f0b4d4a8a0ad08c8177ad3.svg",
-      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3.2  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7.1 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
     },
     "8.4.3.1": {
       "number": "8.4.3.1",
       "title": "Type of vehicle",
       "image": "./images/signs/a6d331b029b8729439c175a74fbbd0f0.svg",
-      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+      "description": "Applies the sign to electric vehicles and hybrid vehicles that can be charged from an external power source."
+    },
+    "8.4.3.2": {
+      "number": "8.4.3.2",
+      "title": "Type of vehicle",
+      "image": "./images/signs/9a0b442b18f0b4d4a8a0ad08c8177ad3.svg",
+      "description": "Applies the sign to passenger cars and goods vehicles with a maximum authorised mass of up to 3.5 tonnes."
     },
     "8.4.4": {
       "number": "8.4.4",
       "title": "Type of vehicle",
       "image": "./images/signs/f941577f48cb9142943a5b10c1b03157.svg",
-      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3.2  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7.1 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
     },
     "8.4.5": {
       "number": "8.4.5",
       "title": "Type of vehicle",
       "image": "./images/signs/af02a7b65ddacef604a24f87cfb421dd.svg",
-      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3.2  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7.1 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
     },
     "8.4.6": {
       "number": "8.4.6",
       "title": "Type of vehicle",
       "image": "./images/signs/6a92d5265766393c3acc42e438c5fdbe.svg",
-      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3.2  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7.1 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
     },
-    "8.4.7": {
-      "number": "8.4.7",
+    "8.4.7.1": {
+      "number": "8.4.7.1",
       "title": "Type of vehicle",
       "image": "./images/signs/4403f3136d0776b99d069e8d4d9453c6.svg",
-      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+      "description": "Applies the sign to cyclists."
     },
     "8.4.7.2": {
       "number": "8.4.7.2",
       "title": "Type of vehicle",
-      "image": "./images/signs/df7e4a3347190dcd89bde0518c60d86b.svg",
-      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+      "image": "./images/signs/9288fdc7e63e8aa1db5b2e44281908b2.svg",
+      "description": "Applies the sign to persons using personal mobility devices."
     },
     "8.4.8": {
       "number": "8.4.8",
       "title": "Type of vehicle",
-      "image": "./images/signs/9288fdc7e63e8aa1db5b2e44281908b2.svg",
-      "description": "Indicate the type of vehicle to which the sign applies. Sign 8.4.1 applies to: Trucks, including those with a trailer, with a permissible maximum weight of more than 3.5 tons. Sign 8.4.2 applies to: Trucks with a trailer and semi-trailer;\tTractors with trailers and semi-trailers Sign 8.4.3  applies to: Passenger cars;\tTrucks with a permissible maximum weight of up to 3.5 tons Sign 8.4.3.1 applies to: Electric vehicles and hybrid vehicles that can be charged from an external source Sign 8.4.4 applies to: Route vehicles; Sign 8.4.5 applies to: Tractors and self-propelled machines; Sign 8.4.6 applies to: Motorcycles and sidecars; Sign 8.4.7 applies to: Bicycles;\tElectric bicycles and hybrid bicycles. Sign 8.4.7.2 applies to: Sign 8.4.8 applies the sign to vehicles equipped with identification signs (information plates) “Dangerous goods”."
+      "image": "./images/signs/df7e4a3347190dcd89bde0518c60d86b.svg",
+      "description": "Applies the sign to vehicles displaying dangerous goods identification signs."
     },
     "8.4.9": {
       "number": "8.4.9",
-      "title": "Except for the type of vehicle",
+      "title": "Except for type of vehicle",
       "image": "./images/signs/db658fa5edbdeb63250095a45d4fe3ba.svg",
       "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
     },
     "8.4.10": {
       "number": "8.4.10",
-      "title": "Except for the type of vehicle",
+      "title": "Except for type of vehicle",
       "image": "./images/signs/9438bd2e073474a00a4779739a4e4c0e.svg",
       "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
     },
     "8.4.11": {
       "number": "8.4.11",
-      "title": "Except for the type of vehicle",
+      "title": "Except for type of vehicle",
       "image": "./images/signs/fbbb2df3c38cc24d9bdfcbe883096ac4.svg",
       "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
     },
     "8.4.12": {
       "number": "8.4.12",
-      "title": "Except for the type of vehicle",
+      "title": "Except for type of vehicle",
       "image": "./images/signs/dea5a38cd13c55156954e4d83eed8341.svg",
       "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
     },
     "8.4.13": {
       "number": "8.4.13",
-      "title": "Except for the type of vehicle",
+      "title": "Except for type of vehicle",
       "image": "./images/signs/5e3f73a8c6ba3052d50835df4902caa9.svg",
       "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
     },
     "8.4.14": {
       "number": "8.4.14",
-      "title": "Except for the type of vehicle",
+      "title": "Except for type of vehicle",
       "image": "./images/signs/da594e28441885b37f74cfc3d4e3da57.svg",
       "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
     },
     "8.4.15": {
       "number": "8.4.15",
-      "title": "Except for the type of vehicle",
+      "title": "Except for type of vehicle",
       "image": "./images/signs/277f97229af969ed8a32f2e24309f43d.svg",
       "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
     },
     "8.4.16": {
       "number": "8.4.16",
-      "title": "Except for the type of vehicle",
+      "title": "Except for type of vehicle",
       "image": "./images/signs/5d9c53edfc609c14dcbd3d6f8d7df175.svg",
       "description": "Indicate the type of vehicle that is not covered by the sign. Plate 8.4.14 does not apply the sign to vehicles used as passenger taxis. Table 8.4.16 does not extend the effect of the sign to persons using personal mobility devices for movement. (Changes took effect: March 1, 2023). "
     },
@@ -1680,8 +1752,20 @@
       "image": "./images/signs/ba9d09c26ae6d0773e2c70e0b84237c4.svg",
       "description": "Indicates that services are provided for a fee only."
     },
-    "8.9": {
-      "number": "8.9",
+    "8.9.1": {
+      "number": "8.9.1",
+      "title": "Limited parking duration",
+      "image": "./images/signs/official_8_9_1.svg",
+      "description": "Indicates the maximum permitted parking duration at a parking area designated by sign 6.4."
+    },
+    "8.9.2": {
+      "number": "8.9.2",
+      "title": "Parking for permit holders only",
+      "image": "./images/signs/official_8_9_2.svg",
+      "description": "At a parking area designated by sign 6.4, only vehicles whose owners hold a parking permit issued in accordance with the procedure established by the relevant executive or local authority may be parked within the territory and validity period specified in that permit."
+    },
+    "8.9.3": {
+      "number": "8.9.3",
       "title": "Parking for diplomatic vehicles only",
       "image": "./images/signs/ed2b51311057d631c048eb2b81f41f63.svg",
       "description": "Indicates that only vehicles of accredited diplomatic missions, consular offices, international (interstate) organizations and representative offices of such organizations that have state registration plates used to designate such vehicles can be placed in a parking lot (parking space) marked with sign 6.4.  "
@@ -1779,19 +1863,19 @@
     "8.22.1": {
       "number": "8.22.1",
       "title": "Obstruction",
-      "image": "./images/signs/f4ce65cda3ff52f3ef02e3fca21567a2.svg",
+      "image": "./images/signs/official_8_22_1.svg",
       "description": "They indicate the obstacle and the direction to avoid it. Used with signs 4.2.1, 4.2.2 and 4.2.3."
     },
     "8.22.2": {
       "number": "8.22.2",
       "title": "Obstruction",
-      "image": "./images/signs/f4ce65cda3ff52f3ef02e3fca21567a2.svg",
+      "image": "./images/signs/official_8_22_2.svg",
       "description": "They indicate the obstacle and the direction to avoid it. Used with signs 4.2.1, 4.2.2 and 4.2.3."
     },
     "8.22.3": {
       "number": "8.22.3",
       "title": "Obstruction",
-      "image": "./images/signs/f4ce65cda3ff52f3ef02e3fca21567a2.svg",
+      "image": "./images/signs/official_8_22_3.svg",
       "description": "They indicate the obstacle and the direction to avoid it. Used with signs 4.2.1, 4.2.2 and 4.2.3."
     },
     "8.24": {
