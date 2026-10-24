@@ -223,6 +223,11 @@ def sync(sid: str) -> dict:
     # Only an explicit editor false hides the visual hint. Always overwrite
     # the archived value so clearing the option restores its default.
     out["showPlayerGuide"] = q.get("showPlayerGuide") is not False
+    guide = next((r for r in net.get("routes", []) if r["kind"] == "guide"), None)
+    if guide and len(guide.get("points", [])) >= 2:
+        out["playerGuidePoints"] = guide["points"]
+    else:
+        out.pop("playerGuidePoints", None)
     for k in ("speedLimit", "requiredStop", "redWait"):
         if k in q:
             out[k] = q[k]

@@ -3924,7 +3924,10 @@ func _question_framing() -> Dictionary:
 			pts.append(Vector2(q[0], q[1]))
 	var man = d.spec.maneuver if d.spec.maneuver != null else "straight"
 	var ex = d.exits.get(man)
-	if d.get("showPlayerGuide", true) != false and ex is Dictionary:
+	if d.get("showPlayerGuide", true) != false and d.get("playerGuidePoints", []).size() >= 2:
+		for q in d.playerGuidePoints:
+			pts.append(Vector2(q[0], q[1]))
+	elif d.get("showPlayerGuide", true) != false and ex is Dictionary:
 		for q in ex.points:
 			pts.append(Vector2(q[0], q[q.size() - 1]))
 	for ac in d.actors:

@@ -97,6 +97,7 @@ const App = (() => {
       case "sign": return Catalog.signName(o.code);
       case "track": return o.depot ? "Рельсы в депо" : "Рельсы";
       case "route":
+        if (o.kind === "guide") return "Синяя стрелка игрока";
         if (o.kind === "manoeuvre") return `Манёвр: ${Catalog.EXITS[o.exit]?.title.toLowerCase() || o.exit}`;
         if (o.kind === "choice") return `Ответ ${o.label}`;
         if (o.kind === "approach") return "Подъезд игрока";
@@ -407,6 +408,7 @@ const App = (() => {
       s.stop.x = r3(s.stop.x + dx); s.stop.z = r3(s.stop.z + dz);
       const ap = s.routes.find((r) => r.id === "approach");
       if (ap && ap.points) ap.points.forEach(shift);
+      for (const guide of s.routes.filter(r => r.kind === "guide")) guide.points.forEach(shift);
       if (s.id === "mini_regulator") for (const r of s.routes.filter(r => r.kind === "manoeuvre")) r.points[0] = [s.stop.x, s.stop.z];
     } else if (ref.t === "node") {
       Layout.moveNode(s, ref.id, [o.x + dx, o.z + dz]);
@@ -414,7 +416,7 @@ const App = (() => {
       if (o.auto) return;
       if (s.id === "mini_regulator" && ["approach", "manoeuvre"].includes(o.kind)) return;
       Layout.editPlayerRoute(s, o);
-      o.points.forEach(shift);
+      o.points.forEach((p, i) => { if (o.kind !== "guide" || i > 0) shift(p); });
       if (o.labelPosition) shift(o.labelPosition);
     } else if (ref.t === "track") {
       o.points.forEach(shift);
@@ -529,20 +531,34 @@ const App = (() => {
   // The blue arrow is a question visual, independent of its driving route and
   // the editor's local layer visibility. Hide/show is an ordinary undoable edit.
   function selectPlayerPath() {
-    const route = state.S?.routes.find(r => r.kind === "manoeuvre" && r.exit === (state.S.question?.maneuver || "straight"));
-    if (route) select({t:"route", id:route.id});
+    if (!state.S || state.S.id === "mini_regulator" || state.locked.has("routes")) return;
+    let route = state.S.routes.find(r => r.kind === "guide");
+    if (!route) {
+      edit(sc => Layout.resetPlayerGuide(sc), {rebuild:false});
+      route = state.S.routes.find(r => r.kind === "guide");
+    }
+    if (route) select({t:"route", id:route.id, v:route.points.length - 1});
+  }
+
+  function resetPlayerGuide() {
+    if (!state.S || state.S.id === "mini_regulator" || state.locked.has("routes")) return;
+    edit(sc => Layout.resetPlayerGuide(sc), {rebuild:false});
+    selectPlayerPath();
   }
 
   function setPlayerGuideVisible(visible) {
-    if (!state.S || state.S.id === "mini_regulator" || state.id === "mini_regulator") return;
+    if (!state.S || state.S.id === "mini_regulator" || state.id === "mini_regulator" || state.locked.has("routes")) return;
     select(state.sel.map(ref => {
-      if (ref.t !== "route" || objectOf(ref)?.kind !== "manoeuvre") return ref;
+      if (ref.t !== "route" || !["manoeuvre", "guide"].includes(objectOf(ref)?.kind)) return ref;
       const {v, point, ...route} = ref;
       return route;
     }));
     edit(sc => {
       sc.question = sc.question || {};
-      if (visible) delete sc.question.showPlayerGuide;
+      if (visible) {
+        delete sc.question.showPlayerGuide;
+        if (!sc.routes.some(r => r.kind === "guide")) Layout.resetPlayerGuide(sc);
+      }
       else sc.question.showPlayerGuide = false;
     }, {rebuild:false});
     // Manoeuvres are drawn in the editor only while selected. Make restoring
@@ -559,7 +575,7 @@ const App = (() => {
       const least = ref.t === "route" || (ref.t === "marking") ? 2 : 3;
       if (!pts || pts.length <= least) return toast("Меньше точек нельзя", "warn");
       const o = objectOf(ref);
-      if (ref.t === "route" && o?.kind === "manoeuvre" && ref.v === 0) return toast("Эта точка закреплена у автомобиля игрока", "warn");
+      if (ref.t === "route" && ["manoeuvre", "guide"].includes(o?.kind) && ref.v === 0) return toast("Эта точка закреплена у автомобиля игрока", "warn");
       if (ref.t === "route" && state.S.id === "mini_regulator" && ((o?.kind === "manoeuvre" && ref.v === 0) || (o?.kind === "approach" && ref.v === pts.length - 1))) return toast("Эта точка закреплена у автомобиля игрока", "warn");
       if (ref.t === "route" && o?.kind === "approach" && state.S.layout && (!o.manual || ref.v === 0 || ref.v === pts.length - 1)) return toast("Начало подъезда закреплено у въезда, конец — у игрока", "warn");
       edit(() => {
@@ -570,8 +586,8 @@ const App = (() => {
       });
       return select({ ...ref, v: undefined });
     }
-    const hidesPlayerGuide = state.S.id !== "mini_regulator" && list.some(r => r.t === "route" && objectOf(r)?.kind === "manoeuvre");
-    const removable = list.filter((r) => r.t !== "stop" && !(r.t === "route" && (objectOf(r)?.auto || ["approach", "manoeuvre"].includes(objectOf(r)?.kind))) && !(r.t === "marking" && objectOf(r)?.auto));
+    const hidesPlayerGuide = state.S.id !== "mini_regulator" && list.some(r => r.t === "route" && ["manoeuvre", "guide"].includes(objectOf(r)?.kind));
+    const removable = list.filter((r) => r.t !== "stop" && !(r.t === "route" && (objectOf(r)?.auto || ["approach", "manoeuvre", "guide"].includes(objectOf(r)?.kind))) && !(r.t === "marking" && objectOf(r)?.auto));
     if (!removable.length && hidesPlayerGuide) return setPlayerGuideVisible(false);
     if (!removable.length) return toast("Это строится само по дорогам", "warn");
     if (hidesPlayerGuide) select([]);
@@ -779,7 +795,7 @@ const App = (() => {
   return {
     state, planScene, api, toast, confirm: confirmBox, esc, ic, r3, objectOf, pointsOfRef, isPaint, layerOf, catalogSize, sameRef, nameOf,
     edit, beginDrag, dragMove, endDrag, cancelDrag, undo, redo, changed, openScene, sceneTitle, save, setPlayable, runInGame,
-    select, toggle, pickable, isLocked, moveRef, nudge, rotate, copy, paste, duplicate, remove, setPlayerGuideVisible, selectPlayerPath, uniqueId, toggleHidden, toggleLocked,
+    select, toggle, pickable, isLocked, moveRef, nudge, rotate, copy, paste, duplicate, remove, setPlayerGuideVisible, selectPlayerPath, resetPlayerGuide, uniqueId, toggleHidden, toggleLocked,
     renderTop, showHome, setView, plural, thumbRev, boot, loadList,
     get S() { return state.S; },
   };

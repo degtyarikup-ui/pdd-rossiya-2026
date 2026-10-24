@@ -555,6 +555,22 @@ const Layout = (() => {
   }
   // Explicit route edits are distinct from regenerated copies. Free-mode paths have their own
   // authored source, so moving the question never overwrites the street-mode author's route.
+  function resetPlayerGuide(scene) {
+    const pose = playerPose(scene), start = [pose.x, pose.z];
+    const direction = [Math.sin(pose.yaw), Math.cos(pose.yaw)];
+    const crop = Number(scene.crop || 90) - 0.2;
+    let reach = 8;
+    direction.forEach((v, axis) => {
+      if (Math.abs(v) > 1e-6) reach = Math.min(reach, Math.max(0.1, (Math.sign(v) * crop - start[axis]) / v));
+    });
+    const existing = scene.routes.find(r => r.kind === "guide");
+    const route = existing || {id:"player_guide", kind:"guide", manual:true};
+    route.points = [0, reach / 2, reach].map(d => P(add(start, mul(direction, d))));
+    if (!existing) scene.routes.push(route);
+    scene.question = scene.question || {};
+    delete scene.question.showPlayerGuide;
+    return route;
+  }
   function editPlayerRoute(scene, route) {
     if (!route) return;
     route.manual = true;
@@ -723,7 +739,7 @@ const Layout = (() => {
   }
 
   function compactPlayerRoute(scene, route) {
-    if (!route || !["approach", "manoeuvre"].includes(route.kind)) return false;
+    if (!route || !["approach", "manoeuvre", "guide"].includes(route.kind)) return false;
     const before = route.points;
     route.points = compactRoutePoints(before);
     editPlayerRoute(scene, route);
@@ -1064,6 +1080,10 @@ const Layout = (() => {
     const userRoutes = (scene.routes || []).filter((x) => !(x.auto || x.kind === "approach" || x.kind === "manoeuvre"));
     scene.routes = [...r.routes, ...userRoutes];
     if (r.stop) scene.stop = r.stop;
+    for (const guide of scene.routes.filter(x => x.kind === "guide" && x.points?.length)) {
+      const delta = sub([scene.stop.x, scene.stop.z], guide.points[0]);
+      guide.points = guide.points.map(p => P(add(p, delta)));
+    }
     if (r.errors?.length) scene.playerRouteErrors = r.errors; else delete scene.playerRouteErrors;
     scene.exitWidths = r.exitWidths;
     scene.approachWidth = r.approachWidth;
@@ -1412,7 +1432,7 @@ const Layout = (() => {
     medianOf, onMedian, KINDS, TEMPLATES, generate, generateRoutes, apply, template, svg, centreline, nodeKind, widthOf, streetProfile, highwayPort, setHighwayPort,
     applyActors, nearestLane, waysFrom, pathFrom, zebraPath, stopDistance, endOffset, endOffsetLimits, setEndOffset, pavedEnd, setPavedEnd, PAVED_MAX, snapPoint, addStreet, removeStreet, removeNode, moveNode, mergeNodes,
     splitStreet, streetsAt, nodeOf, streetOf, playerPlan, lineFrom, along, polyLen, offsetRight, heading, laneOffsets,
-    isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, editPlayerRoute, setPlayerRouteManual,
+    isFreePlayer, playerPose, setPlayerMode, movePlayer, rotatePlayer, freePlayerSupported, resetPlayerGuide, editPlayerRoute, setPlayerRouteManual,
     compactRoutePoints, compactPlayerRoute, refreshPlayerRoutes,
   };
 })();

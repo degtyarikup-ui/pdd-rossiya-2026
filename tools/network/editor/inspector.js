@@ -87,11 +87,12 @@
     const hidden = question?.showPlayerGuide === false;
     return card("Синяя стрелка игрока", `<p${hidden ? ' class="ok-line"' : ""}>${hidden ? "Скрыта в этой сцене" : "Включена в этой сцене"}</p>
       ${button("player-guide", hidden ? "Вернуть синюю стрелку" : "Убрать синюю стрелку", hidden ? "eye" : "trash", "ghost wide")}
-      ${!hidden ? button("player-path", "Править путь игрока", "route", "ghost wide") : ""}
-      <p class="muted">Машина проедет тем же путём после ответа.</p>`);
+      ${!hidden ? button("player-path", "Редактировать стрелку", "route", "ghost wide") : ""}
+      ${!hidden ? button("player-guide-short", "Короткая стрелка перед машиной", "restart", "ghost wide") : ""}
+      <p class="muted">Форма стрелки сохраняется отдельно от маршрута движения машины.</p>`);
   }
   const togglePlayerGuide = () => App.setPlayerGuideVisible(state.S.question?.showPlayerGuide === false);
-  const playerGuideHandlers = {"player-guide": togglePlayerGuide, "player-path": () => App.selectPlayerPath()};
+  const playerGuideHandlers = {"player-guide": togglePlayerGuide, "player-path": () => App.selectPlayerPath(), "player-guide-short": () => App.resetPlayerGuide()};
 
   // ---- the scene ----------------------------------------------------------------------------
   function regulatorInspector(p) {
@@ -816,13 +817,13 @@
     // Traced scenes predate the manual flag: any non-generated player route
     // is already authored and must remain editable without a mode switch.
     const manual = !!route.manual || !route.auto;
-    const anchored = route.kind === "manoeuvre" ? index === 0
+    const anchored = ["manoeuvre", "guide"].includes(route.kind) ? index === 0
       : !!state.S.layout && (index === 0 || index === count - 1);
     const current = sc => sc.routes.find(r => r.id === route.id);
     const editing = manual && point ? `<label class="route-field">Точка<input type="number" min="1" max="${count}" step="1" data-text="routeIndex" value="${index + 1}"></label>
       <label class="route-field">X, м<input type="number" step="0.1" data-text="routeX" value="${r3(point[0])}" ${anchored ? "disabled" : ""}></label>
       <label class="route-field">Z, м<input type="number" step="0.1" data-text="routeZ" value="${r3(point[1])}" ${anchored ? "disabled" : ""}></label>
-      ${anchored ? `<p class="muted">${route.kind === "manoeuvre" || index === count - 1 ? "Эта точка закреплена у машины игрока. Чтобы изменить её, переместите машину." : "Эта точка закреплена у въезда на дорогу."}</p>` : count > 2 ? button("route-delete-point", "Удалить точку", "trash", "ghost wide") : ""}
+      ${anchored ? `<p class="muted">${["manoeuvre", "guide"].includes(route.kind) || index === count - 1 ? "Эта точка закреплена у машины игрока. Чтобы изменить её, переместите машину." : "Эта точка закреплена у въезда на дорогу."}</p>` : count > 2 ? button("route-delete-point", "Удалить точку", "trash", "ghost wide") : ""}
       ${index < count - 1 ? button("route-add-point", "Добавить точку после выбранной", "points", "ghost wide") : ""}
       ${count > 3 ? button("route-compact", "Упростить точки", "points", "ghost wide") + `<p class="muted">Убирает лишние точки, сохраняя форму пути. Изменение можно отменить.</p>` : ""}` : `<p class="muted">Опорные точки строятся по дорогам. Для изменения включите ручной путь.</p>`;
     return {
@@ -874,6 +875,14 @@
 
   function routeInspector(p, ref, r) {
     const s = state.S;
+    if (r.kind === "guide") {
+      const points = playerRoutePointTools(ref, r);
+      p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, "Синяя стрелка игрока", "подсказка в вопросе")}
+        ${playerGuideCard(s.question)}
+        ${s.question?.showPlayerGuide === false ? "" : points.html + card("Редактирование", "<p>Тяните точки на виде или задайте координаты. Двойной клик добавляет точку. Стрелка задаётся отдельно от маршрута движения машины.</p>")}`;
+      bind({...points.handlers, ...playerGuideHandlers});
+      return;
+    }
     if (state.id === "mini_regulator" && ["approach", "manoeuvre"].includes(r.kind)) return regulatorRouteInspector(p, ref, r);
     if (r.kind === "approach") {
       const points = playerRoutePointTools(ref, r);
@@ -1007,6 +1016,7 @@
     const ap = (sc.routes || []).find((r) => r.id === "approach");
     if (ap && ap.points) ap.points = ap.points.map((p) => [r3(p[0] + dx), r3(p[1] + dz)]);
     for (const r of sc.routes || []) {
+      if (r.kind === "guide") r.points = r.points.map(p => [r3(p[0] + dx), r3(p[1] + dz)]);
       if (r.kind === "manoeuvre" && r.points && r.points.length) {
         r.points[0] = [sc.stop.x, sc.stop.z];
       }

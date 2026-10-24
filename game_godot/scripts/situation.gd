@@ -704,7 +704,8 @@ const TOKEN_BLUE := Color("#0574F8")
 
 func _build_evidence(dir: String) -> void:
 	# The question's route lines come from the network's trajectories (what the editor shows);
-	var has_traj: bool = (data.trajectories is Array and not data.trajectories.is_empty()) or (data.get("showPlayerGuide", true) != false and data.get("spec") is Dictionary and data.get("exits") is Dictionary and data.spec.get("maneuver", "") != "" and data.exits.has(data.spec.get("maneuver", "")))
+	var has_custom_guide: bool = data.get("showPlayerGuide", true) != false and data.get("playerGuidePoints", []).size() >= 2
+	var has_traj: bool = has_custom_guide or (data.trajectories is Array and not data.trajectories.is_empty()) or (data.get("showPlayerGuide", true) != false and data.get("spec") is Dictionary and data.get("exits") is Dictionary and data.spec.get("maneuver", "") != "" and data.exits.has(data.spec.get("maneuver", "")))
 	if has_traj:
 		_guide = _trajectory_guide()
 		add_child(_guide)
@@ -745,6 +746,8 @@ func _trajectory_guide() -> Node3D:
 	var traj_list: Array = []
 	if data.trajectories is Array and not data.trajectories.is_empty():
 		traj_list = data.trajectories
+	elif data.get("showPlayerGuide", true) != false and data.get("playerGuidePoints", []).size() >= 2:
+		traj_list = [{"label": "", "points": data.playerGuidePoints}]
 	elif data.get("showPlayerGuide", true) != false and data.get("spec") is Dictionary and data.get("exits") is Dictionary:
 		var man: String = str(data.spec.get("maneuver", ""))
 		if man != "" and data.exits.has(man) and data.exits[man].has("points"):

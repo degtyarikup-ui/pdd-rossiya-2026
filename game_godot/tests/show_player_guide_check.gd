@@ -132,6 +132,10 @@ func check_camera_bounds() -> void:
 	world.current = {"sit": sit}
 	world.cam_covered = 300.0
 	var shown: Dictionary = world._question_framing()
+	sit.data.playerGuidePoints = [[-1.8, -10.0], [-1.8, -6.0], [-1.8, -2.0]]
+	var short_hint: Dictionary = world._question_framing()
+	check(short_hint.size < shown.size, "A short independent guide frames the nearby question instead of the full drive path")
+	sit.data.erase("playerGuidePoints")
 	sit.data.showPlayerGuide = false
 	var hidden: Dictionary = world._question_framing()
 	check(hidden.size < shown.size, "A hidden long blue route no longer expands the actual question camera bounds")
@@ -139,6 +143,31 @@ func check_camera_bounds() -> void:
 	var choices: Dictionary = world._question_framing()
 	check(choices.size > hidden.size, "Answer choice routes still expand the actual camera bounds while the blue hint is hidden")
 	world.free()
+	sit.free()
+
+
+func check_short_guide() -> void:
+	var fixture := "res://../scratch/short-guide-check/fixture.json"
+	check(FileAccess.file_exists(fixture), "Generate independent guide fixture with short_player_guide_check.py")
+	if not FileAccess.file_exists(fixture): return
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(fixture))
+	var sit := Situation.new()
+	sit.data = data.exported
+	root.add_child(sit)
+	var before := JSON.stringify(sit.data.exits)
+	sit._build_evidence("res://nonexistent-guide-fixture/")
+	var start: Array = sit.data.playerGuidePoints[0]
+	var nearby := true
+	var shown := geometry(sit._guide)
+	for vertices in shown:
+		for v in vertices:
+			if Vector2(v.x - start[0], v.z - start[1]).length() > 9.0: nearby = false
+	check(shown.size() == 1 and nearby, "Native game draws the independent eight-metre guide close to the player")
+	check(JSON.stringify(sit.data.exits) == before, "Short guide construction leaves every gameplay exit unchanged")
+	sit.data.showPlayerGuide = false
+	var hidden := sit._trajectory_guide()
+	check(hidden.get_child_count() == 0, "Hidden short guide produces no native geometry")
+	hidden.free()
 	sit.free()
 
 
@@ -154,6 +183,7 @@ func run() -> void:
 	check_legacy_guides()
 	check_actual_drive(data)
 	check_camera_bounds()
+	check_short_guide()
 	check(FileAccess.get_file_as_string(fixture) == bytes, "All visibility and drive checks preserve the source fixture")
 	print("Player guide: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)

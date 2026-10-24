@@ -132,4 +132,20 @@ preview.question.showPlayerGuide = false; test.redraw();
 assert.ok(!colours(test.group('routes')).includes(0x0574f8),'phone respects the hidden player guide');
 test.frame(false);
 
+const short = fixture();
+short.routes = short.routes.filter(r => r.kind !== 'choice');
+short.routes.push({id:'player_guide',kind:'guide',manual:true,points:[[20,-20],[20,-16],[20,-12]]});
+test.configure(short); app.select({t:'route',id:'player_guide',v:2});
+assert.equal(pick(20,-14)?.id,'player_guide','the short arrow is pickable instead of the underlying full drive route');
+assert.equal(pick(20,10),null,'the invisible long driving route cannot intercept guide edits');
+let bounds = new THREE.Box3().setFromObject(test.group('routes'));
+assert.ok(bounds.max.z < -10,'editor draws only the nearby custom guide');
+test.frame(true);
+bounds = new THREE.Box3().setFromObject(test.group('routes'));
+assert.ok(bounds.max.z < -10,'phone preview uses the short guide instead of the complete drive path');
+short.question.showPlayerGuide = false; test.redraw();
+assert.ok(!colours(test.group('routes')).includes(0x0574f8),'hidden short guide is not drawn in preview');
+assert.equal(test.group('selection').children.length,0,'hidden short guide has no editable handles');
+test.frame(false);
+
 console.log('Player guide editor: actual render/picking, hidden selection/hover/supports, choices, layer restore and regulator PASS');

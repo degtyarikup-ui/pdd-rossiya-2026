@@ -339,13 +339,14 @@ const Scene3D = (() => {
   }
 
   function routeStyle(r) {
+    if (r.kind === "guide") return { colour: EXIT_COLOUR, px: 4 };
     if (r.kind === "manoeuvre") return { colour: EXIT_COLOUR, px: r.exit === model?.question?.maneuver ? 4 : 2.5 };
     if (r.kind === "choice") return { colour: LETTER_COLOUR[r.label] || EXIT_COLOUR, px: 3.5 };
     if (r.kind === "approach") return { colour: APPROACH_COLOUR, px: 3 };
     return { colour: ACTOR_COLOUR, px: 2, dashed: true };
   }
   function playerGuideHidden(route) {
-    return model?.id !== "mini_regulator" && model?.question?.showPlayerGuide === false && route?.kind === "manoeuvre";
+    return model?.id !== "mini_regulator" && model?.question?.showPlayerGuide === false && ["manoeuvre", "guide"].includes(route?.kind);
   }
   const hiddenPlayerGuideRef = ref => ref?.t === "route" && playerGuideHidden(model?.routes.find(r => r.id === ref.id));
   const isSel = (r) => sel.some((s) => keyOf(s) === keyOf(r));
@@ -358,8 +359,9 @@ const Scene3D = (() => {
     const focusId = sel.find((s) => s.t === "route")?.id || actorRouteId || (hover && hover.t === "route" ? hover.id : null);
     const focusRoute = hiddenPlayerGuideRef({ t: "route", id: focusId }) ? null : focusId;
     const phoneManoeuvre = phone && !model.routes.some(r => r.kind === "choice" && r.points.length >= 2) ? model.question?.maneuver : null;
+    const ownGuide = model.routes.find(r => r.kind === "guide" && r.points.length >= 2);
     for (const r of model.routes) {
-      const phoneGuide = phoneManoeuvre && r.kind === "manoeuvre" && r.exit === phoneManoeuvre;
+      const phoneGuide = phoneManoeuvre && (ownGuide ? r === ownGuide : r.kind === "manoeuvre" && r.exit === phoneManoeuvre);
       if (phone && r.kind !== "choice" && !phoneGuide) continue;
       if (playerGuideHidden(r)) continue;
       if (r.points.length < 2) continue;
@@ -369,10 +371,11 @@ const Scene3D = (() => {
       // The exits are where the game continues the street after each way out (and its autopilot's path):
       // not something the player is told to drive. Drawn only when one is picked.
       if (r.kind === "manoeuvre" && !phoneGuide && focusRoute !== r.id) continue;
+      if (r.kind === "guide" && model.routes.some(x => x.kind === "choice") && !phoneGuide && focusRoute !== r.id) continue;
       // The question's way and the answers always show; the other exits only on focus or in the test.
       const st = routeStyle(r);
       const focused = focusRoute === r.id;
-      const main = r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
+      const main = r.kind === "guide" || r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
       if (!main && !focused && !simMode) continue;
       const dim = focusRoute ? !focused : !main;
       const opacity = dim ? 0.28 : 1;
@@ -1505,7 +1508,10 @@ const Scene3D = (() => {
     if (!hidden.has("routes")) {
       for (const r of model.routes) {
         if (playerGuideHidden(r)) continue;
-        const isMain = r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
+        const selected = sel.some(s => s.t === "route" && s.id === r.id);
+        if (r.kind === "manoeuvre" && model.routes.some(x => x.kind === "guide") && !selected) continue;
+        if (r.kind === "guide" && model.routes.some(x => x.kind === "choice") && !selected) continue;
+        const isMain = r.kind === "guide" || r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
         if (!isMain && !simMode && !sel.some((s) => s.t === "route" && s.id === r.id)) continue;
         const ref = { t: "route", id: r.id };
         if (!skip(ref) && lineHit(smooth(r.points), wpp * 8)) return ref;

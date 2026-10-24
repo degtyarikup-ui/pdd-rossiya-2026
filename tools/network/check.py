@@ -19,7 +19,7 @@ from shapely.ops import unary_union
 
 ROOT = Path(__file__).resolve().parents[2]
 NET = ROOT / "game_godot" / "network"
-DRIVEN_KINDS = ("manoeuvre", "approach", "choice")
+DRIVEN_KINDS = ("manoeuvre", "approach", "choice", "guide")
 MANOEUVRES = ("left", "right", "straight", "uturn")
 DRIVEN_TYPES = ("car", "truck", "bus", "motorcycle", "tram", "van", "special", "tanker")
 
@@ -149,7 +149,7 @@ def check_scene(scene: dict) -> list:
             line = LineString(pts)
             outside = line.difference(area.buffer(0.15))
             if not outside.is_empty and outside.length > 0.3:
-                finding(out, "error" if r["kind"] != "choice" else "warn", "route-off-road",
+                finding(out, "warn" if r["kind"] in ("choice", "guide") else "error", "route-off-road",
                         f"{r['id']}: {outside.length:.1f} м маршрута идёт вне дороги", {"type": "route", "id": r["id"]})
     if "approach" not in routes:
         finding(out, "error", "no-approach", "нет подъезда к стоп-линии", {"type": "stop"})

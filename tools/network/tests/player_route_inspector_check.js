@@ -9,7 +9,7 @@ const clone = value => JSON.parse(JSON.stringify(value));
 const deepEqual = (actual,expected,label) => assert.deepEqual(clone(actual),clone(expected),label);
 const listeners = {};
 const pane = {innerHTML:'', addEventListener:(kind,fn) => {listeners[kind] = fn;}, querySelector:() => null, querySelectorAll:() => []};
-let state, removeCalls = 0, compactSelection;
+let state, removeCalls = 0, compactSelection, shortGuideFixture;
 const wrappedLayout = {...Layout, compactPlayerRoute:(scene,route) => {
   compactSelection = clone(state.sel[0]);
   return Layout.compactPlayerRoute(scene,route);
@@ -176,7 +176,7 @@ for (const mode of ['auto','manual','traced','А/Б']) {
   const selection=clone(state.sel);
   App.remove();
   assert.equal(state.S.question.showPlayerGuide,false,`${mode}: whole-route Delete hides its visual`);
-  deepEqual(state.S.routes,before,`${mode}: Delete preserves every route and point`);
+  deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),before,`${mode}: Delete preserves every route and point`);
   assert.ok(state.dirty,`${mode}: hide marks an unsaved change`);
   assert.equal(state.undo.length,1,`${mode}: hide is one undo step`);
   assert.match(pane.innerHTML,/Скрыта в этой сцене/);
@@ -185,13 +185,13 @@ for (const mode of ['auto','manual','traced','А/Б']) {
   assert.doesNotMatch(pane.innerHTML,/data-act="own-path"/);
   App.undo();
   assert.equal(Object.hasOwn(state.S.question,'showPlayerGuide'),false);
-  deepEqual(state.S.routes,before);
+  deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),before);
   assert.equal(state.dirty,false,'undo restores the saved scene');
   App.redo();
   assert.equal(state.S.question.showPlayerGuide,false);
   click('player-guide');
   assert.equal(Object.hasOwn(state.S.question,'showPlayerGuide'),false,'restore deletes the false-only flag');
-  deepEqual(state.S.routes,before);
+  deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),before);
   // Direct hide with an individual vertex selected clears its old index first.
   App.select({...selection[0],v:1});
   App.setPlayerGuideVisible(false);
@@ -205,7 +205,7 @@ for (const mode of ['auto','manual','traced','А/Б']) {
   assert.match(pane.innerHTML,/Вернуть синюю стрелку/);
   click('player-guide');
   assert.equal(Object.hasOwn(state.S.question,'showPlayerGuide'),false);
-  deepEqual(state.S.routes,before);
+  deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),before);
   if (mode === 'manual') {
     resetHistory();
     App.select({t:'route',id:route().id,v:1});
@@ -214,7 +214,7 @@ for (const mode of ['auto','manual','traced','А/Б']) {
     assert.equal(route().points.length,n-1,'Delete on a point still removes one point');
     assert.equal(Object.hasOwn(state.S.question,'showPlayerGuide'),false,'point Delete does not hide the guide');
     App.undo();
-    deepEqual(state.S.routes,before,'point Delete remains undoable');
+    deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),before,'point Delete remains undoable');
   }
 }
 // The car is the natural entry point when a newly imported question hides its
@@ -238,8 +238,8 @@ for (const mode of ['street','free','traced']) {
   assert.doesNotMatch(pane.innerHTML,/data-act="player-path"/,`${mode}: hidden guide has no path-edit shortcut`);
   click('player-guide');
   assert.equal(Object.hasOwn(state.S.question,'showPlayerGuide'),false,`${mode}: player inspector restores the guide`);
-  deepEqual(state.S.routes,paths,`${mode}: restoring preserves all driving and answer paths`);
-  deepEqual(state.sel,[{t:'route',id:main.id}],`${mode}: restoring selects the current manoeuvre for immediate drawing`);
+  deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),paths,`${mode}: restoring preserves all driving and answer paths`);
+  deepEqual(state.sel,[{t:'route',id:'player_guide',v:2}],`${mode}: restoring selects the editable short arrow endpoint`);
   assert.ok(state.dirty,`${mode}: restoring is an unsaved scene edit`);
   assert.equal(state.undo.length,1,`${mode}: restoring is one undo step`);
   App.undo();
@@ -256,9 +256,9 @@ for (const mode of ['street','free','traced']) {
   for (const selection of [{t:'stop'},[],{t:'route',id:other.id}]) {
     App.select(selection);
     assert.match(pane.innerHTML,/data-act="player-path"/,`${mode}: enabled guide exposes its edit shortcut`);
-    assert.match(pane.innerHTML,/Править путь игрока/);
+    assert.match(pane.innerHTML,/Редактировать стрелку/);
     click('player-path');
-    deepEqual(state.sel,[{t:'route',id:main.id}],`${mode}: shortcut selects the question's current manoeuvre`);
+    deepEqual(state.sel,[{t:'route',id:'player_guide',v:2}],`${mode}: shortcut selects the editable arrow`);
     deepEqual(state.S,visible,`${mode}: opening the path never changes scene data`);
     assert.equal(state.dirty,false,`${mode}: opening the path keeps the saved state`);
     assert.equal(state.undo.length,0,`${mode}: opening the path creates no undo step`);
@@ -267,7 +267,7 @@ for (const mode of ['street','free','traced']) {
   assert.match(pane.innerHTML,/Убрать синюю стрелку/,`${mode}: player inspector can hide an enabled guide`);
   click('player-guide');
   assert.equal(state.S.question.showPlayerGuide,false,`${mode}: player inspector hides the guide`);
-  deepEqual(state.S.routes,paths,`${mode}: hiding preserves every route`);
+  deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),paths,`${mode}: hiding preserves every route`);
   assert.ok(state.dirty,`${mode}: hiding marks an unsaved scene edit`);
   assert.equal(state.undo.length,1,`${mode}: hiding is one undo step`);
   assert.match(pane.innerHTML,/Вернуть синюю стрелку/);
@@ -284,9 +284,61 @@ for (const mode of ['street','free','traced']) {
   const paths=clone(state.S.routes);
   const straight=state.S.routes.find(r => r.kind === 'manoeuvre' && r.exit === 'straight');
   click('player-guide');
-  deepEqual(state.sel,[{t:'route',id:straight.id}],'missing question manoeuvre defaults to the straight path');
-  deepEqual(state.S.routes,paths,'default path selection preserves all authored routes');
+  deepEqual(state.sel,[{t:'route',id:'player_guide',v:2}],'missing question manoeuvre still creates the short forward arrow');
+  deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),paths,'default path selection preserves all authored routes');
   assert.equal(Object.hasOwn(state.S.question,'maneuver'),false,'default path selection never writes a question manoeuvre');
+}
+{
+  setup('manoeuvre');
+  state.S.layout = Layout.template('straight',90);
+  state.S.layout.player.questionAt = 130;
+  Layout.apply(state.S);
+  state.S.question.showPlayerGuide = false;
+  resetHistory(); App.select({t:'stop'});
+  const driving = clone(state.S.routes);
+  const guide = () => state.S.routes.find(r => r.kind === 'guide');
+  click('player-guide');
+  assert.equal(state.undo.length,1,'creating a short guide is one undo step');
+  assert.equal(guide().points.length,3,'short arrow starts with three editable supports');
+  assert.ok(Math.abs(Layout.polyLen(guide().points) - 8) < .001,'newly enabled arrow is eight metres long');
+  assert.ok(guide().manual && !guide().auto);
+  assert.match(pane.innerHTML,/data-text="routeX"(?![^>]*disabled)/,'endpoint is immediately editable');
+  const first = clone(guide().points[0]), end = clone(guide().points.at(-1));
+  change('routeX',end[0] + 1);
+  assert.equal(guide().points.at(-1)[0],end[0] + 1,'straight-road regeneration does not discard the edit');
+  App.undo(); deepEqual(guide().points.at(-1),end);
+  App.redo(); assert.equal(guide().points.at(-1)[0],end[0]+1);
+  selectedIndex(0); change('routeX',1234);
+  deepEqual(guide().points[0],first,'the arrow starts at the player');
+  click('route-add-point'); assert.equal(guide().points.length,4);
+  click('route-delete-point'); assert.equal(guide().points.length,3);
+  const beforeDrag = clone(guide().points);
+  App.beginDrag(); App.dragMove(sc => {sc.routes.find(r => r.kind === 'guide').points[1][0] += .5;}); App.endDrag();
+  assert.equal(guide().points[1][0],beforeDrag[1][0]+.5,'point dragging survives layout rebuild');
+  const saved = clone(state.S); Layout.apply(saved);
+  deepEqual(saved.routes,state.S.routes,'guide controls survive save/reload');
+  deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),driving,'all gameplay routes remain unchanged');
+  const edited = clone(guide().points);
+  App.setPlayerGuideVisible(false); App.setPlayerGuideVisible(true);
+  deepEqual(guide().points,edited,'hide/show preserves an edited guide');
+  click('player-guide-short');
+  assert.ok(Math.abs(Layout.polyLen(guide().points)-8)<.001,'reset repairs an existing long arrow');
+  App.undo(); deepEqual(guide().points,edited,'reset is undoable');
+  App.redo();
+  state.locked.add('routes');
+  const locked = clone(state.S);
+  App.resetPlayerGuide(); App.setPlayerGuideVisible(false);
+  deepEqual(state.S,locked,'locked routes protect guide controls');
+  state.locked.clear();
+  shortGuideFixture = clone(state.S);
+  App.select({t:'route',id:guide().id});
+  App.remove(); assert.equal(state.S.question.showPlayerGuide,false,'whole-guide Delete hides it');
+  deepEqual(guide().points,shortGuideFixture.routes.find(r => r.kind === 'guide').points,'Delete retains the edited arrow');
+  for (const yaw of [0,Math.PI/2,Math.PI,-Math.PI/2]) {
+    const s = {crop:90,stop:{x:88,z:88,yaw},routes:[],question:{}};
+    const r = Layout.resetPlayerGuide(s);
+    assert.ok(r.points.every(p => p.every(v => Math.abs(v) <= 90)),'default arrow stays inside the map');
+  }
 }
 {
   const route=setup('manoeuvre');
@@ -297,10 +349,10 @@ for (const mode of ['street','free','traced']) {
   state.sel=[{t:'route',id:route().id},{t:'route',id:'choice_А'}];
   App.remove();
   assert.equal(state.S.question.showPlayerGuide,false);
-  deepEqual(state.S.routes,before.filter(r => r.id !== 'choice_А'));
+  deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),before.filter(r => r.id !== 'choice_А'));
   assert.equal(state.undo.length,1,'mixed Delete is one edit');
   App.undo();
-  deepEqual(state.S.routes,before);
+  deepEqual(state.S.routes.filter(r => r.kind !== 'guide'),before);
   assert.equal(Object.hasOwn(state.S.question,'showPlayerGuide'),false);
 }
 {
@@ -321,4 +373,5 @@ for (const mode of ['street','free','traced']) {
   assert.doesNotMatch(pane.innerHTML,/data-act="player-guide"/,'mini-game player inspector has no city-only toggle');
   assert.doesNotMatch(pane.innerHTML,/data-act="player-path"/,'mini-game player inspector has no city-only path shortcut');
 }
-console.log('Player route inspector: generated/legacy/manual, anchors, point edits, compact, guide visibility, player restore/path shortcuts, actual Delete/undo/dirty and mini-game protection PASS');
+if (process.argv[2]) fs.writeFileSync(process.argv[2],JSON.stringify(shortGuideFixture));
+console.log('Player route inspector: generated/legacy/manual, short independent guide, anchors, point edits, compact, guide visibility, player restore/path shortcuts, actual Delete/undo/dirty and mini-game protection PASS');

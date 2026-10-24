@@ -169,7 +169,7 @@ const Tools = (() => {
     App.edit((sc) => {
       sc.layout = Layout.template(kind, sc.crop || 90);
       sc.roads = []; sc.markings = []; sc.lawns = [];
-      sc.routes = sc.routes.filter((r) => r.kind === "choice" || r.kind === "actor");
+      sc.routes = sc.routes.filter((r) => ["choice", "actor", "guide"].includes(r.kind));
     });
     App.select([]);
     set("select");
@@ -315,7 +315,7 @@ const Tools = (() => {
         const ref = drag.ref;
         return App.dragMove(() => {
           const o = App.objectOf(ref);
-          if (ref.t === "route" && o?.kind === "manoeuvre" && ref.v === 0) return;
+          if (ref.t === "route" && ["manoeuvre", "guide"].includes(o?.kind) && ref.v === 0) return;
           if (ref.t === "route" && S().id === "mini_regulator" && ((o?.kind === "manoeuvre" && ref.v === 0) || (o?.kind === "approach" && ref.v === o.points.length - 1))) return;
           if (ref.t === "route" && o?.kind === "approach" && S().layout && (!o.manual || ref.v === 0 || ref.v === o.points.length - 1)) return;
           if (ref.t === "route" && o) {
@@ -491,7 +491,7 @@ const Tools = (() => {
           // A traced scene starts its plan from nothing: its old road copy is replaced.
           sc.roads = sc.roads.filter((r) => r.auto);
           sc.markings = (sc.markings || []).filter((m) => m.type !== "paint");
-          sc.routes = sc.routes.filter((r) => r.kind === "choice" || r.kind === "actor");
+          sc.routes = sc.routes.filter((r) => ["choice", "actor", "guide"].includes(r.kind));
         }
         Layout.addStreet(sc, a, b, opts.roadKind);
       });
