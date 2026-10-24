@@ -372,6 +372,7 @@ class _MiniGamesCatalogue extends StatelessWidget {
       bestScore: violatorBest,
       titleSize: titleSize,
       onTap: onViolator,
+      comingSoon: true,
     ),
     _HubCard(
       id: 'parking',
@@ -423,6 +424,7 @@ class _HubCard extends StatelessWidget {
     this.onTap,
     this.featured = false,
     this.waiting = false,
+    this.comingSoon = false,
     this.compact = false,
     this.semanticDetails = '',
     this.titleSize = 18,
@@ -433,7 +435,7 @@ class _HubCard extends StatelessWidget {
   final int? bestScore;
   final String? caption;
   final VoidCallback? onTap;
-  final bool featured, waiting, compact;
+  final bool featured, waiting, comingSoon, compact;
   final String semanticDetails;
   final double titleSize;
   final Widget? footer;
@@ -441,14 +443,16 @@ class _HubCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final enabled = onTap != null;
+    final launch = comingSoon ? null : onTap;
+    final enabled = launch != null;
     const foreground = AppColors.white;
-    final record = bestScore != null && bestScore! > 0;
-    final status =
-        caption ??
-        (record
-            ? appL10n.gamesRecordScore(_number(context, bestScore!))
-            : null);
+    final record = !comingSoon && bestScore != null && bestScore! > 0;
+    final status = comingSoon
+        ? appL10n.gameSoonBadge
+        : caption ??
+              (record
+                  ? appL10n.gamesRecordScore(_number(context, bestScore!))
+                  : null);
     final radius = BorderRadius.circular(AppDimensions.cardRadius);
     return RepaintBoundary(
       child: Semantics(
@@ -461,14 +465,45 @@ class _HubCard extends StatelessWidget {
           if (semanticDetails.isNotEmpty) semanticDetails,
         ].join(', '),
         excludeSemantics: true,
-        onTap: onTap,
+        onTap: launch,
         child: ClipRRect(
           borderRadius: radius,
           child: Stack(
             alignment: Alignment.bottomLeft,
             fit: featured ? StackFit.loose : StackFit.expand,
             children: [
-              Positioned.fill(child: _HubCover(id: id)),
+              Positioned.fill(
+                child: comingSoon
+                    ? Opacity(
+                        opacity: .5,
+                        child: ColorFiltered(
+                          colorFilter: const ColorFilter.matrix([
+                            .2126,
+                            .7152,
+                            .0722,
+                            0,
+                            0,
+                            .2126,
+                            .7152,
+                            .0722,
+                            0,
+                            0,
+                            .2126,
+                            .7152,
+                            .0722,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            1,
+                            0,
+                          ]),
+                          child: _HubCover(id: id),
+                        ),
+                      )
+                    : _HubCover(id: id),
+              ),
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -492,7 +527,7 @@ class _HubCard extends StatelessWidget {
                   child: Material(
                     type: MaterialType.transparency,
                     child: InkWell(
-                      onTap: onTap,
+                      onTap: launch,
                       excludeFromSemantics: true,
                       splashColor: Colors.white24,
                       highlightColor: Colors.white10,

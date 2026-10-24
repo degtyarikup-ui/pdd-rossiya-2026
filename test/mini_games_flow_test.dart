@@ -705,19 +705,28 @@ void main() {
     expect(find.byType(GamesHubScreen), findsOneWidget);
     await tester.scrollUntilVisible(find.text(appL10n.gamesParkingTitle), 200);
     await tester.pumpAndSettle();
-    expect(find.text(appL10n.gameSoonBadge), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('games-card-parking')),
+        matching: find.text(appL10n.gameSoonBadge),
+      ),
+      findsNothing,
+    );
     await tester.tapAt(tester.getCenter(find.text(appL10n.gamesParkingTitle)));
     await tester.pumpAndSettle();
     expect(find.byType(GamesHubScreen), findsOneWidget);
     expect(find.byType(SignSwiperScreen), findsNothing);
     expect(tester.takeException(), isNull);
-    // Violator game checks Godot availability
+    // The unreleased Violator game remains a non-interactive preview.
     await tester.scrollUntilVisible(find.text(appL10n.gamesViolatorTitle), 200);
-    await tester.tapAt(tester.getCenter(find.text(appL10n.gamesViolatorTitle)));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text(appL10n.gameUnavailable), findsOneWidget);
+    ScaffoldMessenger.of(
+      tester.element(find.byType(GamesHubScreen)),
+    ).clearSnackBars();
     await tester.pumpAndSettle();
+    expect(find.text(appL10n.gameSoonBadge), findsOneWidget);
+    await tester.tapAt(tester.getCenter(find.text(appL10n.gamesViolatorTitle)));
+    await tester.pumpAndSettle();
+    expect(find.text(appL10n.gameUnavailable), findsNothing);
     expect(find.byType(GamesHubScreen), findsOneWidget);
     // Road signs game opens RoadSignsScreen
     await tester.scrollUntilVisible(

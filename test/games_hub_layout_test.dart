@@ -519,12 +519,12 @@ void main() {
     );
     expect(find.text(appL10n.gamesPlay), findsNothing);
     expect(find.bySemanticsLabel(appL10n.gamesRecordScore('0')), findsNothing);
-    expect(find.text(appL10n.gameSoonBadge), findsNothing);
+    expect(find.text(appL10n.gameSoonBadge), findsOneWidget);
     semantics.dispose();
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('All mini-games have localized names and active launch action', (
+  testWidgets('Mini-games use localized names and release availability', (
     tester,
   ) async {
     final handle = tester.ensureSemantics();
@@ -537,12 +537,11 @@ void main() {
         tester,
         locale: locale,
         roadSignsBest: 0,
-        violatorBest: 0,
+        violatorBest: 69,
         parkingBest: 0,
       );
       for (final entry in [
         ('road_signs', appL10n.gamesRoadSignsTitle),
-        ('violator', appL10n.gamesViolatorTitle),
         ('parking', appL10n.gamesParkingTitle),
       ]) {
         final finder = find.byKey(ValueKey('games-card-${entry.$1}'));
@@ -559,6 +558,36 @@ void main() {
           isTrue,
         );
       }
+      final violator = find.byKey(const ValueKey('games-card-violator'));
+      final card = tester.widget<Semantics>(violator);
+      expect(
+        card.properties.label,
+        '${appL10n.gamesViolatorTitle}, ${appL10n.gameSoonBadge}',
+      );
+      expect(card.properties.enabled, isFalse);
+      expect(card.properties.onTap, isNull);
+      expect(
+        tester
+            .getSemantics(violator)
+            .getSemanticsData()
+            .hasAction(ui.SemanticsAction.tap),
+        isFalse,
+      );
+      expect(find.text(appL10n.gamesViolatorTitle), findsOneWidget);
+      expect(
+        find.descendant(
+          of: violator,
+          matching: find.text(appL10n.gameSoonBadge),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: violator,
+          matching: find.textContaining(appL10n.gamesRecordScore('')),
+        ),
+        findsNothing,
+      );
       expect(find.text(appL10n.gamesPlay), findsNothing);
       expect(tester.takeException(), isNull, reason: locale.languageCode);
     }
@@ -687,7 +716,6 @@ void main() {
       'regulator',
       'crossroads',
       'road_signs',
-      'violator',
       'parking',
       'city',
       'leaderboard',
