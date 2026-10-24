@@ -131,6 +131,45 @@ test('classification never includes raw exception messages', () => {
   assert.equal(errorCode(new Error('https://provider/?token=TOP_SECRET')), 'operation_failed');
 });
 
+test('platform internal errors return 503 without waiting for blocked diagnostic identity lookup', async t => {
+  t.mock.method(console, 'error', () => {});
+  const { env, state } = setup();
+  const token = await signSession(env, { user: { id: 'google_real' }, expiresAt: Date.now() + 60000, generation: '' });
+  const failure = new Error('internal error; reference = 185s62c9h07iotqpjb2ek3ep');
+  const waits = [];
+  let release, entered, reads = 0;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const started = new Promise(resolve => { entered = resolve; });
+  env.ACCOUNTS = { idFromName: x => x, get: () => ({ fetch: async input => {
+    if (new URL(input.url || input).pathname === '/_account/read-many') {
+      reads++; entered(); await blocked; return Response.json({ values: [null, null] });
+    }
+    throw failure;
+  } }) };
+  try {
+    const pending = worker.fetch(new Request('https://test/api/user/progress', {
+      headers: { authorization: 'Bearer ' + token },
+    }), env, { waitUntil: task => waits.push(task) });
+    const response = await Promise.race([pending, new Promise((_, reject) => {
+      const timer = setTimeout(() => reject(new Error('API response blocked by diagnostics')), 1000);
+      timer.unref();
+    })]);
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get('Retry-After'), '5');
+    await started;
+    assert.equal(reads, 1);
+    assert.ok(waits.length > 0);
+    assert.equal((await messages(state)).length, 0);
+  } finally { release(); }
+  await Promise.all(waits);
+  const text = (await messages(state))[0];
+  assert.match(text, /Cloudflare вернула внутренний инфраструктурный сбой/);
+  assert.doesNotMatch(text, /185s62c9|Точная причина пока не определена/);
+  assert.equal(errorCode(failure), 'cloudflare_internal_error');
+  assert.equal(errorCode(Object.assign(new Error(failure.message), { overloaded: true })), 'durable_overloaded');
+  assert.equal(errorCode(new Error('application internal error; reference = 185s62c9h07iotqpjb2ek3ep')), 'operation_failed');
+});
+
 test('support read classification preserves platform overload, reset and timeout priority', () => {
   const support = { code: 'ERR_SUPPORT_READ_UNAVAILABLE', message: 'private provider response' };
   assert.equal(errorCode(support), 'support_read_unavailable');

@@ -4352,6 +4352,13 @@ export default {
       const category = /purchase|pay-|platega/.test(path) ? 'purchase' : 'infrastructure';
       return deferIncident(ctx, env, { category, operation, status, code, userId: session?.user?.id, user: session?.user, diagnosticId, context });
     };
+    // Identity lookup and Telegram delivery can hit the same failed storage.
+    // Keep the entire reporting chain alive without delaying the API response.
+    const reportFailure = (status, code, context) => {
+      const task = notify(status, code, context);
+      if (ctx?.waitUntil) { ctx.waitUntil(task); return; }
+      return task;
+    };
     try {
       const response = await routeAccountRequest(request, env, { sessionAccountId, verifyAdminAuth }) || await workerHandlers.fetch(request, env, ctx);
       if (!isIncidentReported(response) && path !== '/api/auth/session' && (response.status >= 500 || (path === '/api/user/purchase' && [400, 403, 409, 422].includes(response.status)))) {
@@ -4361,16 +4368,16 @@ export default {
           const allowed = ['store verification unavailable', 'store verification not configured', 'purchase ownership not configured', 'purchase ownership unavailable', 'purchase belongs to another account', 'unknown product', 'wrong product', 'wrong transaction', 'wrong subscription', 'invalid transaction', 'missing purchase token', 'payment provider unavailable', 'payment provider error'];
           if (allowed.includes(reason)) code = reason.replaceAll(' ', '_');
         } catch (_) {}
-        await notify(response.status, code);
+        await reportFailure(response.status, code);
       }
       return response;
     } catch (error) {
       const code = errorCode(error), context = serverErrorContext(error);
-      const status = ['durable_storage_timeout', 'durable_overloaded', 'durable_retryable', 'durable_memory_exhausted', 'support_read_unavailable'].includes(code) ? 503 : 500;
+      const status = ['durable_storage_timeout', 'durable_overloaded', 'durable_retryable', 'durable_memory_exhausted', 'cloudflare_internal_error', 'support_read_unavailable'].includes(code) ? 503 : 500;
       console.error('Worker request failed', JSON.stringify({ operation, code, ...context }));
-      await notify(status, code, context);
+      await reportFailure(status, code, context);
       return jsonResponse({ error: 'server unavailable' }, status,
-        request.method === 'GET' && status === 503 ? { 'Retry-After': ['durable_overloaded', 'durable_memory_exhausted'].includes(code) ? '5' : '1' } : {});
+        request.method === 'GET' && status === 503 ? { 'Retry-After': ['durable_overloaded', 'durable_memory_exhausted', 'cloudflare_internal_error'].includes(code) ? '5' : '1' } : {});
     }
   },
   async scheduled(event, env, ctx) {

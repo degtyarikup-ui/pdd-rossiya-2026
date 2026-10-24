@@ -59,6 +59,7 @@ const REASONS = {
   durable_memory_exhausted: 'SQLite-хранилище Cloudflare не смогло выделить память (SQLITE_NOMEM). Это не сообщение о потере данных или неверном входе.',
   durable_overloaded: 'Cloudflare отклонила запрос из-за перегрузки Durable Object.',
   durable_retryable: 'Cloudflare пометила сбой Durable Object как допускающий повтор запроса.',
+  cloudflare_internal_error: 'Cloudflare вернула внутренний инфраструктурный сбой. Запрос временно не выполнен; это не ошибка пароля и не сообщение о потере данных.',
   support_read_unavailable: 'Хранилище сообщений поддержки вернуло ошибку или некорректный ответ.',
   storage_not_configured: 'На сервере не настроено хранилище.',
   session_secret_not_configured: 'На сервере не настроен ключ выдачи сессий входа.',
@@ -172,7 +173,7 @@ const GOOGLE_SIGN_IN = {
 };
 
 const NETWORK_STEPS = ['Пользователю: проверить интернет, попробовать другую сеть (Wi‑Fi или мобильный интернет) или VPN.', 'Нам: если таких сообщений много от одной страны или оператора — до сервера не достаёт маршрут; сверьтесь с сообщениями «Вход удался не сразу» (fallback_ok).'];
-const DURABLE_CODES = new Set(['durable_storage_timeout', 'durable_overloaded', 'durable_retryable', 'durable_memory_exhausted']);
+const DURABLE_CODES = new Set(['durable_storage_timeout', 'durable_overloaded', 'durable_retryable', 'durable_memory_exhausted', 'cloudflare_internal_error']);
 const GUIDE_BY_CODE = {
   timeout: NETWORK_STEPS,
   support_read_unavailable: ['Нам: проверить этап чтения и HTTP-статус хранилища по ID диагностики.'],
@@ -195,6 +196,7 @@ const GUIDE_BY_CODE = {
   durable_memory_exhausted: ['Нам: проверить логи SQLite и объём работы с хранилищем. Не повторять оплату или запись прогресса вслепую; прежние данные должны сохраняться.'],
   durable_overloaded: ['Нам: не повторяйте запрос немедленно — это усилит перегрузку. Уменьшите работу на запрос и частоту обращений к этому Durable Object; проверьте очередь и логи Cloudflare.'],
   durable_retryable: ['Нам: повтор допустим только для идемпотентной операции, с увеличивающейся паузой и новым Durable Object stub. Проверьте логи Cloudflare, если сбой повторяется.'],
+  cloudflare_internal_error: ['Нам: сопоставить ID диагностики с reference в Cloudflare. Безопасное чтение можно повторить ограниченно; запись прогресса и оплату вслепую не повторять.'],
   missing_credential: ['Пользователю: войти ещё раз или другим способом.', 'Нам: если у многих — провайдер перестал возвращать токен, проверьте версию плагина входа.'],
   page_load_failed: ['Пользователю: проверить интернет и повторить; можно войти другим способом.'],
   invalid_response: ['Пользователю: перезапустить приложение и войти ещё раз. Проверить дату и время на телефоне.', 'Нам: если у многих — сервер вернул ответ в новом формате, проверьте совместимость версий.'],

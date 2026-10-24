@@ -1,6 +1,11 @@
 const MAX_ATTEMPTS = 3;
 const sleepFor = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
+// Exact platform signature observed at the DO boundary. Do not treat arbitrary
+// application errors containing "internal error" as transient infrastructure.
+export const isCloudflareInternalError = error => typeof error?.message === 'string'
+  && /^internal error; reference = [a-z0-9]{16,64}$/.test(error.message);
+
 // Callers must explicitly identify a safe, idempotent read. The callback creates
 // its request afresh: a Request whose body was consumed cannot be sent again.
 // Cloudflare can leave a failed stub unusable, so acquire a new one each time.
@@ -15,7 +20,9 @@ export async function durableRequest(namespace, id, send, {
     try {
       return await send(namespace.get(id));
     } catch (error) {
-      if (attempt === attempts || error?.retryable !== true || error?.overloaded) throw error;
+      const transient = error?.retryable === true || (isCloudflareInternalError(error)
+        && error?.retryable === undefined && error?.remote !== true);
+      if (attempt === attempts || !transient || error?.overloaded) throw error;
       await sleep(25 * 2 ** (attempt - 1));
     }
   }

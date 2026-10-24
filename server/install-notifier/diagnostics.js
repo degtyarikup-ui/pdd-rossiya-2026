@@ -1,6 +1,7 @@
 import { sanitizeDiagnosticContext, diagnosticOs } from './diagnostic_context.js';
 import { readSession, tokenHash } from './user_auth.js';
 import { incidentCopy, incidentGuide, providerLabel, platformLabel, storeLabel } from './incident_copy.js';
+import { isCloudflareInternalError } from './durable_request.js';
 
 const escape = value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 const tag = (value, fallback = 'unknown') => typeof value === 'string' && /^[a-zA-Z0-9_.:-]{1,80}$/.test(value) ? value : fallback;
@@ -33,6 +34,7 @@ export function errorCode(error) {
   if (/\bSQLITE_NOMEM\b/.test(message)) return 'durable_memory_exhausted';
   if (message.includes('Durable Object storage operation exceeded timeout which caused object to be reset.')) return 'durable_storage_timeout';
   if (error?.retryable === true) return 'durable_retryable';
+  if (isCloudflareInternalError(error)) return 'cloudflare_internal_error';
   if (/too many requests.*same key|(?:put|write).*429|(?:put|write).*rate.?limit/i.test(message)) return 'storage_rate_limited';
   if (/quota|limit exceeded|too many writes/i.test(message)) return 'storage_quota';
   if (error?.name === 'TimeoutError' || error?.name === 'AbortError') return 'timeout';

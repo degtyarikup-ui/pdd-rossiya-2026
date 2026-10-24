@@ -117,3 +117,33 @@ test('the attempt budget may be reduced but cannot exceed three', async () => {
     assert.equal(calls.length, 0);
   }
 });
+
+test('unflagged platform internal errors recover only for explicit reads; terminal flags and writes stay terminal', async () => {
+  const internal = flags => Object.assign(new Error('internal error; reference = 185s62c9h07iotqpjb2ek3ep'), flags);
+  const response = Response.json({ value: 'preserved' });
+  const recovered = binding([{ error: internal() }, { response }]);
+  const delays = [];
+  assert.equal(await durableRequest(recovered.namespace, 'account', stub => stub.fetch('https://account/read'), {
+    retryableRead: true, sleep: async n => delays.push(n),
+  }), response);
+  assert.equal(recovered.stubs.length, 2);
+  assert.deepEqual(delays, [25]);
+  for (const flags of [{ retryable: false }, { remote: true }, { overloaded: true }, { retryable: 'true' }]) {
+    const error = internal(flags), f = binding([{ error }]);
+    await assert.rejects(durableRequest(f.namespace, 'account', stub => stub.fetch('https://account/read'), {
+      retryableRead: true, sleep: async () => assert.fail('terminal error must not wait'),
+    }), e => e === error);
+    assert.equal(f.calls.length, 1);
+  }
+  for (const retryableRead of [false, undefined]) {
+    const error = internal(), f = binding([{ error }]);
+    await assert.rejects(durableRequest(f.namespace, 'account', stub => stub.fetch('https://account/write'), { retryableRead }), e => e === error);
+    assert.equal(f.calls.length, 1);
+  }
+  for (const message of ['internal error', 'internal error; reference = private?token=secret',
+    'application internal error; reference = 185s62c9h07iotqpjb2ek3ep']) {
+    const error = new Error(message), f = binding([{ error }]);
+    await assert.rejects(durableRequest(f.namespace, 'account', stub => stub.fetch('https://account/read'), { retryableRead: true }), e => e === error);
+    assert.equal(f.calls.length, 1);
+  }
+});
