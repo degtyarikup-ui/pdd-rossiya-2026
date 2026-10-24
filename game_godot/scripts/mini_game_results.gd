@@ -45,6 +45,7 @@ const ARRIVAL_DURATION := 0.82
 var _review: PanelContainer
 var _actions: GridContainer
 var _footer: VBoxContainer
+var _award: AchievementAwards
 
 func _init(_legacy_cover := "") -> void:
 	visible = false
@@ -231,6 +232,7 @@ func set_subject(kind: String) -> void:
 
 func layout(bounds: Rect2) -> void:
 	_bounds = bounds
+	if is_instance_valid(_award): _award.layout(bounds)
 	var width := minf(520, bounds.size.x)
 	_fit_score(width)
 	card.position = Vector2(bounds.position.x + (bounds.size.x - width) / 2, bounds.position.y)
@@ -286,6 +288,22 @@ func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record
 	_arrival.tween_callback(func(): _preview.render_target_update_mode = SubViewport.UPDATE_ONCE)
 	_rays.rotation = -0.12
 	_visibility_changed()
+	var awards := AchievementAwards.pending(score)
+	if not awards.is_empty():
+		_award = AchievementAwards.new(awards, self)
+		add_child(_award)
+		_award.layout(_bounds)
+		card.visible = false
+		_rays.visible = false
+		_award.completed.connect(func():
+			card.visible = true
+			_rays.visible = true
+			_award = null
+			_update_count(0.0)
+			if is_instance_valid(_numbers): _numbers.kill()
+			_numbers = create_tween()
+			_numbers.tween_method(_update_count, 0.0, 1.0, COUNT_DURATION).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		)
 
 func _fit_score(width: float) -> void:
 	var digits := str(_score_total).length()
@@ -375,6 +393,11 @@ func _visibility_changed() -> void:
 	_rays.set_process(active and not is_instance_valid(_review))
 
 func hide_results() -> void:
+	if is_instance_valid(_award):
+		_award.queue_free()
+		_award = null
+	card.visible = true
+	_rays.visible = true
 	dismiss_review()
 	if is_instance_valid(_numbers): _numbers.kill()
 	_update_count(1.0)
@@ -502,6 +525,9 @@ class Rays extends Node2D:
 			draw_polygon(points, PackedColorArray([Color(1, 1, 1, 0.045), Color(1, 1, 1, 0), Color(1, 1, 1, 0)]))
 
 func dismiss_review() -> bool:
+	if is_instance_valid(_award):
+		_award.advance(true)
+		return true
 	if not is_instance_valid(_review): return false
 	_review.queue_free()
 	_review = null

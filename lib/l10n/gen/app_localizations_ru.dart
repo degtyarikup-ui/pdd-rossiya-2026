@@ -1705,6 +1705,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get signInCardSubtitle => 'Сохранить прогресс и премиум';
 
   @override
+  String get achievementAwardTitle => 'Новое достижение';
+
+  @override
+  String achievementAwardPosition(int position, int total) {
+    return '$position из $total';
+  }
+
+  @override
   String get achievements => 'Достижения';
 
   @override

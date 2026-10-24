@@ -911,6 +911,18 @@
   "profile": "Профиль",
   "signInCardTitle": "Войти в аккаунт",
   "signInCardSubtitle": "Сохранить прогресс и премиум",
+  "achievementAwardTitle": "Новое достижение",
+  "achievementAwardPosition": "{position} из {total}",
+  "@achievementAwardPosition": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "achievements": "Достижения",
   "achievementsEarnedCount": "{count} из {total}",
   "@achievementsEarnedCount": {

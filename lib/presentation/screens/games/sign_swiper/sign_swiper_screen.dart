@@ -1,3 +1,5 @@
+import 'package:pdd_app/data/services/achievement_award_service.dart';
+import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 
@@ -54,6 +56,14 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   final List<SignCardQuestion> _mistakes = [];
 
   // A small bounded streak bonus, independent of the fixed round timer.
+
+  late final _awardService = ref.read(achievementAwardServiceProvider);
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_awardService.prepare());
+  }
 
   @override
   void dispose() {
@@ -413,23 +423,27 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
   }
 
   Widget _buildResult(AppThemeColors colors) {
-    return GameResultOverlay(
-      emblem: const SignSwiperEmblem(),
-      title: _timeUp ? appL10n.gameTimeUp : appL10n.gameOverTitle,
-      score: _score,
-      bestScore: _previousBest,
-      isNewRecord: _isNewRecord,
-      stats: [
-        GameResultStat(
-          appL10n.gameCorrectAnswers,
-          '$_correctAnswers/$_totalSwipedInRound',
-        ),
-        GameResultStat(appL10n.gameComboLabel, 'x$_maxCombo'),
-      ],
-      mistakesCount: _mistakes.length,
-      onMistakes: _showMistakes,
-      onRestart: _startRound,
-      onExit: () => Navigator.of(context).pop(),
+    return CompletionAchievementAwards(
+      key: ValueKey(_ratingRunId),
+      service: _awardService,
+      resultBuilder: (_) => GameResultOverlay(
+        emblem: const SignSwiperEmblem(),
+        title: _timeUp ? appL10n.gameTimeUp : appL10n.gameOverTitle,
+        score: _score,
+        bestScore: _previousBest,
+        isNewRecord: _isNewRecord,
+        stats: [
+          GameResultStat(
+            appL10n.gameCorrectAnswers,
+            '$_correctAnswers/$_totalSwipedInRound',
+          ),
+          GameResultStat(appL10n.gameComboLabel, 'x$_maxCombo'),
+        ],
+        mistakesCount: _mistakes.length,
+        onMistakes: _showMistakes,
+        onRestart: _startRound,
+        onExit: () => Navigator.of(context).pop(),
+      ),
     );
   }
 

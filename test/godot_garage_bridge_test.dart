@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -76,6 +77,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noAchievementAwards,
           progressDataSourceProvider.overrideWithValue(progress),
           isPremiumProvider.overrideWithValue(premium),
           if (review != null)

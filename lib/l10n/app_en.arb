@@ -570,6 +570,18 @@
   "profile": "Profile",
   "signInCardTitle": "Login to your account",
   "signInCardSubtitle": "Save progress and premium",
+  "achievementAwardTitle": "New achievement",
+  "achievementAwardPosition": "{position} of {total}",
+  "@achievementAwardPosition": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "achievements": "Achievements",
   "achievementsEarnedCount": "{count} from {total}",
   "achievementLevelFormat": "Lv. {level} from {total}",

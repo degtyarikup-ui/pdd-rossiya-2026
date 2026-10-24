@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -78,6 +79,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            noAchievementAwards,
             progressDataSourceProvider.overrideWithValue(progressSource),
             ttsServiceProvider.overrideWithValue(_MockTts()),
           ],

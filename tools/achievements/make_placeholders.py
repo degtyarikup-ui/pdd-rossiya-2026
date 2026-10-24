@@ -12,6 +12,7 @@ BADGES и перезапустите скрипт.
 """
 
 import math
+import argparse
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -32,9 +33,9 @@ BADGES = {
     "flawless": ("rosette", "star", [("1", "БЕЗ ОШИБОК"), ("3", "БЕЗ ОШИБОК"), ("5", "БЕЗ ОШИБОК"), ("10", "БЕЗ ОШИБОК")]),
     "mistakes": ("square", "check", [("10", "ИСПРАВЛЕНО"), ("50", "ИСПРАВЛЕНО"), ("100", "ИСПРАВЛЕНО"), ("200", "ИСПРАВЛЕНО")]),
     "rank": ("decagon", "trophy", [("100", "ТОП"), ("10", "ТОП"), ("3", "ТОП"), ("1", "МЕСТО")]),
-    "trafficController": ("shield", "baton", [("1000", "ОЧКОВ"), ("2500", "ОЧКОВ"), ("5000", "ОЧКОВ"), ("7500", "ОЧКОВ")]),
-    "signSwiper": ("square", "sign", [("1000", "ОЧКОВ"), ("2500", "ОЧКОВ"), ("5000", "ОЧКОВ"), ("7500", "ОЧКОВ")]),
-    "game": ("pentagon", "wheel", [("1000", "ОЧКОВ"), ("2500", "ОЧКОВ"), ("5000", "ОЧКОВ"), ("7500", "ОЧКОВ")]),
+    "trafficController": ("shield", "baton", [("150", "ОЧКОВ"), ("300", "ОЧКОВ"), ("600", "ОЧКОВ"), ("900", "ОЧКОВ")]),
+    "signSwiper": ("square", "sign", [("100", "ОЧКОВ"), ("200", "ОЧКОВ"), ("300", "ОЧКОВ"), ("450", "ОЧКОВ")]),
+    "game": ("pentagon", "wheel", [("100", "ОЧКОВ"), ("200", "ОЧКОВ"), ("300", "ОЧКОВ"), ("450", "ОЧКОВ")]),
 }
 
 # Металл уровня: (светлый, тёмный). 1 бронза, 2 серебро, 3 золото, 4 платина.
@@ -191,11 +192,16 @@ def badge(shape: str, kind: str, level: int, number: str, word: str) -> Image.Im
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--only", nargs="+", choices=list(BADGES), default=list(BADGES))
+    selected = parser.parse_args().only
     OUT.mkdir(parents=True, exist_ok=True)
     for key, (shape, kind, levels) in BADGES.items():
+        if key not in selected:
+            continue
         for i, (number, word) in enumerate(levels, start=1):
             badge(shape, kind, i, number, word).save(OUT / f"{key}_{i}.png", optimize=True)
-    print(f"{sum(len(v[2]) for v in BADGES.values())} заглушек → {OUT.relative_to(ROOT)}")
+    print(f"{sum(len(BADGES[k][2]) for k in selected)} значков → {OUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

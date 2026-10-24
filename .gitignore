@@ -76,3 +76,6 @@ game_godot/network/history/
 
 # Temporary links to canonical answer sounds for standalone Godot exports.
 /game_godot/answer_audio/
+
+# Shared achievement badges, exported from assets/ for the Godot package.
+game_godot/icons/achievements/

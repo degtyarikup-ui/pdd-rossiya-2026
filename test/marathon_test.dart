@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -165,6 +166,7 @@ void main() {
       ProviderScope(
         key: UniqueKey(),
         overrides: [
+          noAchievementAwards,
           progressDataSourceProvider.overrideWithValue(data ?? source),
           ttsServiceProvider.overrideWithValue(_SilentTts()),
           ticketsProvider.overrideWith(

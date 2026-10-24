@@ -1,5 +1,7 @@
 {
  "ru": {
+  "achievementAwardTitle": "Новое достижение",
+  "achievementAwardPosition": "{position} из {total}",
   "close": "Закрыть",
   "gameLeaderboard": "Таблица лидеров",
   "gameRatingLoading": "Загружаем рейтинг…",
@@ -204,6 +206,8 @@
   "gameViolatorsCaughtStat": "Выявлено нарушителей"
  },
  "en": {
+  "achievementAwardTitle": "New achievement",
+  "achievementAwardPosition": "{position} of {total}",
   "close": "Close",
   "gameLeaderboard": "Leaderboard",
   "gameRatingLoading": "Loading rankings…",
@@ -408,6 +412,8 @@
   "gameViolatorsCaughtStat": "Violators identified"
  },
  "kk": {
+  "achievementAwardTitle": "Жаңа жетістік",
+  "achievementAwardPosition": "{total} ішінен {position}",
   "close": "Жабу",
   "gameLeaderboard": "Көшбасшылар тақтасы",
   "gameRatingLoading": "Рейтинг жүктелуде…",

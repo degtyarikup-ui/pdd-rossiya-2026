@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -72,6 +73,7 @@ void main() {
   }) {
     updateAppLocale(Locale(locale));
     return ProviderScope(
+      overrides: [noAchievementAwards],
       child: MaterialApp(
         theme: dark ? AppTheme.darkTheme : AppTheme.lightTheme,
         locale: Locale(locale),
@@ -229,6 +231,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byType(RoadSignsGrid), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
     expect(find.byType(GameResultOverlay), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });

@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -107,6 +108,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noAchievementAwards,
           isAuthenticatedProvider.overrideWithValue(true),
           isPremiumProvider.overrideWith((ref) => ref.watch(premium)),
           progressDataSourceProvider.overrideWithValue(progress),

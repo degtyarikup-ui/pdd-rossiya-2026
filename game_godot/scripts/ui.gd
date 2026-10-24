@@ -30,6 +30,7 @@ const DARK := {
 ## Recompute for every run: iOS keeps this static state between game screens.
 static func configure_theme(args: Array) -> void:
 	dark = resolve_dark(args, DisplayServer.is_dark_mode())
+	Host.configure_awards(args)
 
 
 static func resolve_dark(args: Array, system_dark: bool) -> bool:

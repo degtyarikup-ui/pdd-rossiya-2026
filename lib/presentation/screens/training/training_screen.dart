@@ -1,3 +1,5 @@
+import 'package:pdd_app/data/services/achievement_award_service.dart';
+import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 
 import 'dart:async';
@@ -80,9 +82,12 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   late final TtsService _ttsService;
   final ScrollController _questionStripController = ScrollController();
 
+  late final _awardService = ref.read(achievementAwardServiceProvider);
+
   @override
   void initState() {
     super.initState();
+    unawaited(_awardService.prepare());
     _ttsService = ref.read(ttsServiceProvider);
     if (widget.usageFeature != null) UsageReporter.track(widget.usageFeature!);
     _savedChoices =
@@ -345,12 +350,15 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     // незачем — «назад» должно вести к списку билетов или тем.
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => CompletionReviewPrompt(
-          child: TrainingResultScreen(
-            title: widget.title,
-            total: widget.questions.length,
-            correct: _correctIndices.length,
-            wrongQuestions: wrongQuestions,
+        builder: (_) => CompletionAchievementAwards(
+          service: _awardService,
+          resultBuilder: (_) => CompletionReviewPrompt(
+            child: TrainingResultScreen(
+              title: widget.title,
+              total: widget.questions.length,
+              correct: _correctIndices.length,
+              wrongQuestions: wrongQuestions,
+            ),
           ),
         ),
       ),

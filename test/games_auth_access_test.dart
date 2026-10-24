@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,6 +68,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noAchievementAwards,
           isAuthenticatedProvider.overrideWith((ref) => ref.watch(signedIn)),
           isPremiumProvider.overrideWithValue(false),
           progressDataSourceProvider.overrideWithValue(progress),

@@ -1,3 +1,5 @@
+import 'package:pdd_app/data/services/achievement_award_service.dart';
+import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -69,9 +71,12 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
   bool _isNewRecord = false;
   String _ratingRunId = '';
 
+  late final _awardService = ref.read(achievementAwardServiceProvider);
+
   @override
   void initState() {
     super.initState();
+    unawaited(_awardService.prepare());
     _lives = widget.initialLives;
     _secondsLeft = widget.initialSeconds;
     _ratingRunId = GameLeaderboardService.newRunId();
@@ -534,23 +539,27 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
   }
 
   Widget _buildResultOverlay(AppThemeColors colors) {
-    return GameResultOverlay(
-      emblem: const RoadSignsEmblem(),
-      title: _timeUp ? appL10n.gameTimeUp : appL10n.gameOverTitle,
-      score: _score,
-      bestScore: _previousBest,
-      isNewRecord: _isNewRecord,
-      stats: [
-        GameResultStat(
-          appL10n.gameCorrectAnswers,
-          '$_correctAnswers/$_totalAnswered',
-        ),
-        GameResultStat(appL10n.gameComboLabel, 'x$_maxCombo'),
-      ],
-      mistakesCount: _mistakes.length,
-      onMistakes: _mistakes.isNotEmpty ? _showMistakes : null,
-      onRestart: () => setState(_startRound),
-      onExit: () => Navigator.of(context).pop(),
+    return CompletionAchievementAwards(
+      key: ValueKey(_ratingRunId),
+      service: _awardService,
+      resultBuilder: (_) => GameResultOverlay(
+        emblem: const RoadSignsEmblem(),
+        title: _timeUp ? appL10n.gameTimeUp : appL10n.gameOverTitle,
+        score: _score,
+        bestScore: _previousBest,
+        isNewRecord: _isNewRecord,
+        stats: [
+          GameResultStat(
+            appL10n.gameCorrectAnswers,
+            '$_correctAnswers/$_totalAnswered',
+          ),
+          GameResultStat(appL10n.gameComboLabel, 'x$_maxCombo'),
+        ],
+        mistakesCount: _mistakes.length,
+        onMistakes: _mistakes.isNotEmpty ? _showMistakes : null,
+        onRestart: () => setState(_startRound),
+        onExit: () => Navigator.of(context).pop(),
+      ),
     );
   }
 

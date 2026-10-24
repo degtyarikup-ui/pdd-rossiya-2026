@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -71,6 +72,7 @@ void main() {
 
   Widget buildTestApp(Widget child) {
     return ProviderScope(
+      overrides: [noAchievementAwards],
       child: MaterialApp(
         theme: AppTheme.lightTheme,
         locale: const Locale('ru'),
@@ -225,6 +227,7 @@ void main() {
               expect(lives.lives, 5 - step);
             } else {
               // Step 5: Game Over!
+              await tester.pump();
               expect(find.byType(GameResultOverlay), findsOneWidget);
               expect(find.byType(RoadSignsGrid), findsNothing);
             }
@@ -295,6 +298,7 @@ void main() {
         await tester.pump(const Duration(seconds: 17));
         await tester.pump(const Duration(milliseconds: 500));
 
+        await tester.pump();
         expect(find.byType(GameResultOverlay), findsOneWidget);
         expect(find.text(appL10n.gameTimeUp), findsOneWidget);
       },
@@ -333,6 +337,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 800));
         await tester.pump(const Duration(milliseconds: 300));
 
+        await tester.pump();
         expect(find.byType(GameResultOverlay), findsOneWidget);
 
         // Tap restart button in overlay

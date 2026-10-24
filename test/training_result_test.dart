@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,6 +86,7 @@ void main() {
       ProviderScope(
         key: UniqueKey(),
         overrides: [
+          noAchievementAwards,
           progressDataSourceProvider.overrideWithValue(data),
           ttsServiceProvider.overrideWithValue(_SilentTts()),
           if (review != null)
@@ -299,6 +301,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noAchievementAwards,
           progressDataSourceProvider.overrideWithValue(data),
           ttsServiceProvider.overrideWithValue(tts),
         ],

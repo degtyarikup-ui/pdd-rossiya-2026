@@ -1,3 +1,7 @@
+import 'package:pdd_app/data/models/achievement.dart';
+import 'package:pdd_app/data/services/achievement_award_service.dart';
+import 'package:pdd_app/presentation/widgets/achievement_labels.dart';
+import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -141,7 +145,7 @@ class GodotGame {
     final safe = _safeArea(context);
     String? json;
     try {
-      json = await _start(context, [
+      json = await _start(context, ref, [
         '--lang=$lang',
         '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
         Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',
@@ -214,7 +218,7 @@ class GodotGame {
     final safe = _safeArea(context);
     String? json;
     try {
-      json = await _start(context, [
+      json = await _start(context, ref, [
         '--regulator',
         '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
         '--best-score=${ref.read(trafficControllerProgressProvider).bestScore}',
@@ -351,7 +355,7 @@ class GodotGame {
     final safe = _safeArea(context);
     String? json;
     try {
-      json = await _start(context, [
+      json = await _start(context, ref, [
         flag,
         '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
         '--best-score=${ref.read(progressProvider).bestScore}',
@@ -427,10 +431,7 @@ class GodotGame {
   static Future<void> playViolator(BuildContext context, WidgetRef ref) =>
       _withRun(context, (_) => _playViolator(context, ref));
 
-  static Future<void> _playViolator(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  static Future<void> _playViolator(BuildContext context, WidgetRef ref) async {
     HapticFeedbackHelper.tap();
     final lang = Localizations.localeOf(context).languageCode;
     final prefs = await _prepare(context, _prefs);
@@ -444,7 +445,7 @@ class GodotGame {
     final safe = _safeArea(context);
     String? json;
     try {
-      json = await _start(context, [
+      json = await _start(context, ref, [
         '--violator',
         '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
         '--best-score=${ref.read(violatorProgressProvider).bestScore}',
@@ -549,40 +550,86 @@ class GodotGame {
     }
   }
 
-  static Future<String?> _start(BuildContext context, List<String> args) async {
+  static Future<String?> _start(
+    BuildContext context,
+    WidgetRef ref,
+    List<String> args,
+  ) async {
     final overlay = AppLoadingOverlay.show(context, label: appL10n.gameLoading);
-    args = [
-      ...args,
-      '--loading-label=${appL10n.gameLoading}',
-      '--returning-label=${appL10n.gameReturning}',
-      if (MediaQuery.disableAnimationsOf(context)) '--reduce-motion',
-      if (const bool.fromEnvironment('GAME_DEBUG')) '--loader-profile',
-    ];
-    if (!kIsWeb) {
-      _channel.setMethodCallHandler((call) async {
-        if (call.method == 'reportQuestion' && call.arguments is String) {
-          try {
-            final report = jsonDecode(call.arguments as String);
-            if (report is Map<String, dynamic>) {
-              return await QuestionReportService.sendGameReport(report);
-            }
-          } catch (_) {}
-          return false;
-        }
-        if (call.method != 'loading' || call.arguments is! Map) return null;
-        final data = call.arguments as Map;
-        overlay.setVisible(
-          data['visible'] == true,
-          label: data['phase'] == 'returning'
-              ? appL10n.gameReturning
-              : appL10n.gameLoading,
-        );
-        // UIKit can reveal/hide its window only after this Flutter frame.
-        await WidgetsBinding.instance.endOfFrame;
-        return null;
-      });
-    }
     try {
+      final awards = ref.read(achievementAwardServiceProvider);
+      await awards.prepare();
+      if (!context.mounted) {
+        overlay.close();
+        return null;
+      }
+      List<AchievementProgress> snapshots = const [];
+      Map<String, int> receipts = const {};
+      try {
+        snapshots = await awards.load();
+        receipts = await awards.receipts();
+      } catch (_) {}
+      if (!context.mounted) {
+        overlay.close();
+        return null;
+      }
+      final awardData = {
+        'session': GameLeaderboardService.newRunId(),
+        'game': args.contains('--regulator')
+            ? 'trafficController'
+            : args.any(
+                (a) => ['--crossroads', '--parking', '--violator'].contains(a),
+              )
+            ? ''
+            : 'game',
+        'shown': receipts,
+        'items': [
+          for (final a in snapshots)
+            {
+              'id': a.id.name,
+              'value': a.value,
+              'levels': a.levels,
+              'title': achievementTitle(a.id),
+              'description': achievementDescription(a.id),
+              'labels': [
+                for (var level = 1; level <= a.levels.length; level++)
+                  appL10n.achievementLevelFormat(level, a.levels.length),
+              ],
+            },
+        ],
+      };
+      args = [
+        ...args,
+        '--achievement-awards=${jsonEncode(awardData)}',
+        '--loading-label=${appL10n.gameLoading}',
+        '--returning-label=${appL10n.gameReturning}',
+        if (MediaQuery.disableAnimationsOf(context)) '--reduce-motion',
+        if (const bool.fromEnvironment('GAME_DEBUG')) '--loader-profile',
+      ];
+      if (!kIsWeb) {
+        _channel.setMethodCallHandler((call) async {
+          if (call.method == 'reportQuestion' && call.arguments is String) {
+            try {
+              final report = jsonDecode(call.arguments as String);
+              if (report is Map<String, dynamic>) {
+                return await QuestionReportService.sendGameReport(report);
+              }
+            } catch (_) {}
+            return false;
+          }
+          if (call.method != 'loading' || call.arguments is! Map) return null;
+          final data = call.arguments as Map;
+          overlay.setVisible(
+            data['visible'] == true,
+            label: data['phase'] == 'returning'
+                ? appL10n.gameReturning
+                : appL10n.gameLoading,
+          );
+          // UIKit can reveal/hide its window only after this Flutter frame.
+          await WidgetsBinding.instance.endOfFrame;
+          return null;
+        });
+      }
       await WidgetsBinding.instance.endOfFrame;
       if (!context.mounted) return null;
       final String? result;
@@ -598,6 +645,20 @@ class GodotGame {
       if (context.mounted) {
         overlay.setVisible(true, label: appL10n.gameReturning);
         await WidgetsBinding.instance.endOfFrame;
+      }
+      if (result != null) {
+        try {
+          final summary = jsonDecode(result);
+          final shown = summary is Map ? summary['achievement_awards'] : null;
+          if (shown is Map) {
+            for (final id in AchievementId.values) {
+              final level = shown[id.name];
+              if (level is num) {
+                await awards.acknowledge(id, level.toInt().clamp(0, 4));
+              }
+            }
+          }
+        } catch (_) {}
       }
       return result;
     } finally {
@@ -873,6 +934,13 @@ class GodotGame {
       // Left before the last question: the run waits for «Продолжить».
       if (!finished) return;
       if (!context.mounted) return;
+      if (summary['native_result'] != true) {
+        await showCompletionAchievementAwards(
+          context,
+          ref.read(achievementAwardServiceProvider),
+        );
+        if (!context.mounted) return;
+      }
       // Progress, rewards and pending-run cleanup are already durable. Keep the
       // launch guard until the optional request finishes, so a second game
       // cannot start while we are preparing this ride's results.

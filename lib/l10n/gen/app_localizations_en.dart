@@ -1681,6 +1681,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInCardSubtitle => 'Save progress and premium';
 
   @override
+  String get achievementAwardTitle => 'New achievement';
+
+  @override
+  String achievementAwardPosition(int position, int total) {
+    return '$position of $total';
+  }
+
+  @override
   String get achievements => 'Achievements';
 
   @override

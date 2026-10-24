@@ -1681,6 +1681,14 @@ class AppLocalizationsKk extends AppLocalizations {
   String get signInCardSubtitle => 'Прогресс пен премиумды сақтаңыз';
 
   @override
+  String get achievementAwardTitle => 'Жаңа жетістік';
+
+  @override
+  String achievementAwardPosition(int position, int total) {
+    return '$total ішінен $position';
+  }
+
+  @override
   String get achievements => 'Жетістіктер';
 
   @override

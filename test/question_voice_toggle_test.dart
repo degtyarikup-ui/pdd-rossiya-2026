@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -100,6 +101,7 @@ void main() {
     final tts = _RecordingTts();
     final container = ProviderContainer(
       overrides: [
+        noAchievementAwards,
         progressDataSourceProvider.overrideWithValue(source),
         ttsServiceProvider.overrideWithValue(tts),
       ],
@@ -214,7 +216,10 @@ void main() {
     await tester.tap(find.byType(QuestionVoiceToggle));
     await tester.pumpAndSettle();
     final reloaded = ProviderContainer(
-      overrides: [progressDataSourceProvider.overrideWithValue(source)],
+      overrides: [
+        noAchievementAwards,
+        progressDataSourceProvider.overrideWithValue(source),
+      ],
     );
     addTearDown(reloaded.dispose);
     await reloaded.read(appSettingsProvider.notifier).ready;

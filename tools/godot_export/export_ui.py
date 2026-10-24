@@ -3,10 +3,12 @@
 python3 tools/godot_export/export_ui.py  ->  game_godot/data/ui.json
 Placeholders {name} are kept; Godot substitutes them in ui.gd."""
 import json
+import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 KEYS = [
+    "achievementAwardTitle", "achievementAwardPosition",
     "close", "gameLeaderboard", "gameRatingLoading", "gameRatingReload", "gameRatingPendingRun", "gameRatingEmpty", "gameRatingUnavailable", "gameRatingStaleAt", "gameRatingYou",
     "gameResultNoRuns", "gameResultRanking", "gameRunMistakesButton", "gameDistance", "gameMistakesReview",
     'reportQuestionTooltip', 'reportQuestionBody', 'reportQuestionHint',
@@ -68,3 +70,11 @@ for lang in ('ru', 'en', 'kk'):
         print(lang, 'missing', missing)
 (ROOT / 'game_godot/data/ui.json').write_text(json.dumps(out, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
 print('ok', {k: len(v) for k, v in out.items()})
+
+# Both renderers use the same badge artwork. Keep the originals in assets/.
+badges = ROOT / 'assets/images/achievements'
+if badges.is_dir():
+    target = ROOT / 'game_godot/icons/achievements'
+    target.mkdir(parents=True, exist_ok=True)
+    for badge in badges.glob('*.png'):
+        shutil.copy2(badge, target / badge.name)

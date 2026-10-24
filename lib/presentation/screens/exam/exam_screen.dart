@@ -1,3 +1,5 @@
+import 'package:pdd_app/data/services/achievement_award_service.dart';
+import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 
 import 'dart:async';
@@ -93,9 +95,12 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   /// а озвучку там нужно останавливать.
   late final TtsService _ttsService;
 
+  late final _awardService = ref.read(achievementAwardServiceProvider);
+
   @override
   void initState() {
     super.initState();
+    unawaited(_awardService.prepare());
     UsageReporter.track(UsageFeature.exam);
     _ttsService = ref.read(ttsServiceProvider);
     _prepareExam();
@@ -683,7 +688,10 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       final result = _buildResultsScreen();
       // A timeout with no answers is not a completed ticket.
       return _savedAnswers.any((answer) => answer != null)
-          ? CompletionReviewPrompt(child: result)
+          ? CompletionAchievementAwards(
+              service: _awardService,
+              resultBuilder: (_) => CompletionReviewPrompt(child: result),
+            )
           : result;
     }
 

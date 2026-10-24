@@ -21,6 +21,32 @@ const EXIT_META := &"pdd_game_exiting"
 const EXIT_LAYER := "GameExitTransition"
 const EXIT_FADE := 0.14
 static var _exit_generation := 0
+static var award_receipts: Dictionary = {}
+static var _award_checkpoint: Dictionary = {}
+static var _award_session := ""
+
+static func configure_awards(args: Array) -> void:
+	for arg in args:
+		if not str(arg).begins_with("--achievement-awards="): continue
+		var data: Variant = JSON.parse_string(str(arg).trim_prefix("--achievement-awards="))
+		if data is not Dictionary: continue
+		var session := str(data.get("session", ""))
+		if session == _award_session: return
+		_award_session = session
+		award_receipts = data.get("shown", {}).duplicate(true)
+		_award_checkpoint = {}
+		return
+	_award_session = ""
+	award_receipts = {}
+	_award_checkpoint = {}
+
+static func acknowledge_award(id: String, level: int) -> void:
+	award_receipts[id] = maxi(level, int(award_receipts.get(id, 0)))
+	if _award_checkpoint.is_empty(): return
+	var summary := _award_checkpoint.duplicate(true)
+	summary["achievement_awards"] = award_receipts.duplicate()
+	send({"event": "run_finished", "summary": summary})
+	if io != "": _write({"event": "run_finished", "summary": summary})
 
 
 static func embedded() -> bool:
@@ -62,6 +88,10 @@ static func parse_query(search: String) -> Array:
 ## carries the final summary. Android and the web get it at once; on iOS the events of a run
 ## go to `events.jsonl` (one JSON object per line), the summary stays in `summary.json`.
 static func send(data: Dictionary) -> void:
+	if data.get("event") == "run_finished" and data.get("summary") is Dictionary:
+		data = data.duplicate(true)
+		data.summary["achievement_awards"] = award_receipts.duplicate()
+		_award_checkpoint = data.summary.duplicate(true)
 	if embedded():
 		Engine.get_singleton("PddHost").send(JSON.stringify(data))
 	elif io != "":
@@ -96,6 +126,8 @@ static func begin_events() -> void:
 static func exit(summary: Dictionary, tree: SceneTree) -> void:
 	if is_exiting(tree):
 		return
+	summary = summary.duplicate(true)
+	summary["achievement_awards"] = award_receipts.duplicate()
 	# Keep the final camera and participants still, even during native engine teardown.
 	# A paused tree alone does not stop process_frame continuations or ALWAYS nodes.
 	_exit_generation += 1
@@ -195,6 +227,9 @@ static func _append(data: Dictionary) -> void:
 
 ## Written whole under a temporary name and renamed: the app never reads half a file.
 static func _write(data: Dictionary) -> void:
+	if data.get("summary") is Dictionary and not award_receipts.is_empty():
+		data = data.duplicate(true)
+		data.summary["achievement_awards"] = award_receipts.duplicate()
 	var path := io.path_join("summary.json")
 	var tmp := path + ".tmp"
 	var file := FileAccess.open(tmp, FileAccess.WRITE)

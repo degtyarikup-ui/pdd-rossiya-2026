@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -75,6 +76,7 @@ Future<ProgressDataSource> pumpExam(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        noAchievementAwards,
         progressDataSourceProvider.overrideWithValue(dataSource),
         ttsServiceProvider.overrideWithValue(_SilentTts()),
         if (review != null)

@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 import 'dart:convert';
 
@@ -99,6 +100,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noAchievementAwards,
           isAuthenticatedProvider.overrideWithValue(true),
           progressDataSourceProvider.overrideWithValue(progress),
           signsProvider.overrideWith((ref) async => signData ?? signs),
@@ -357,7 +359,9 @@ void main() {
       59,
     );
     await tester.pump(const Duration(seconds: 59));
+    await tester.pump();
     expect(find.text(appL10n.gameTimeUp), findsOneWidget);
+    await tester.pump();
     expect(find.byType(GameResultOverlay), findsOneWidget);
     expect(tester.widget<GameTimeBar>(find.byType(GameTimeBar)).secondsLeft, 0);
 
@@ -397,6 +401,7 @@ void main() {
         12,
       );
     }
+    await tester.pump();
     expect(find.byType(GameResultOverlay), findsOneWidget);
     expect(progress.getSignSwiperProgress().bestScore, 12);
     expect(progress.getSignSwiperProgress().totalSwiped, 6);
@@ -430,6 +435,7 @@ void main() {
     expect(find.byType(GameResultOverlay), findsNothing);
     await tester.pump(const Duration(milliseconds: 960));
     await tester.pump(const Duration(milliseconds: 330));
+    await tester.pump();
     expect(find.byType(GameResultOverlay), findsOneWidget);
     expect(progress.getSignSwiperProgress().totalSwiped, 5);
     await tester.pumpWidget(const SizedBox());
@@ -454,6 +460,7 @@ void main() {
     expect(find.byType(GameLifeLossBadge), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 120));
     await tester.pump(const Duration(milliseconds: 330));
+    await tester.pump();
     expect(find.byType(GameResultOverlay), findsOneWidget);
     expect(progress.getSignSwiperProgress().totalSwiped, 1);
     await tester.pumpWidget(const SizedBox());
@@ -516,7 +523,9 @@ void main() {
       expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 5);
       final elapsed = tester.binding.clock.now().difference(startedAt);
       await tester.pump(const Duration(seconds: 60) - elapsed);
+      await tester.pump();
       expect(find.byType(GameResultOverlay), findsOneWidget);
+      await tester.pump();
       expect(find.text(appL10n.gameTimeUp), findsOneWidget);
       expect(
         progress.getSignSwiperProgress().bestScore,

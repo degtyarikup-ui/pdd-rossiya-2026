@@ -570,6 +570,18 @@
   "profile": "Профиль",
   "signInCardTitle": "Есептік жазбаға кіріңіз",
   "signInCardSubtitle": "Прогресс пен премиумды сақтаңыз",
+  "achievementAwardTitle": "Жаңа жетістік",
+  "achievementAwardPosition": "{total} ішінен {position}",
+  "@achievementAwardPosition": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "achievements": "Жетістіктер",
   "achievementsEarnedCount": "{count} / {total}",
   "achievementLevelFormat": "Дең. {level} / {total}",

@@ -1,3 +1,4 @@
+import 'helpers/achievement_awards.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,6 +84,7 @@ void main() {
 
   Widget buildTestApp(Widget child) {
     return ProviderScope(
+      overrides: [noAchievementAwards],
       child: MaterialApp(
         theme: AppTheme.lightTheme,
         locale: const Locale('ru'),
@@ -231,6 +233,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [noAchievementAwards],
           child: MaterialApp(
             theme: AppTheme.lightTheme,
             locale: const Locale('en'),
@@ -383,6 +386,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 800));
         await tester.pump();
 
+        await tester.pump();
         expect(find.byType(GameResultOverlay), findsOneWidget);
         expect(find.byType(RoadSignsGrid), findsNothing);
       },
@@ -407,6 +411,7 @@ void main() {
         await tester.pump(const Duration(seconds: 3));
         await tester.pump(const Duration(milliseconds: 500));
 
+        await tester.pump();
         expect(find.byType(GameResultOverlay), findsOneWidget);
       },
     );
@@ -418,7 +423,10 @@ void main() {
         final progress = ProgressDataSource();
         await progress.init();
         final container = ProviderContainer(
-          overrides: [progressDataSourceProvider.overrideWithValue(progress)],
+          overrides: [
+            noAchievementAwards,
+            progressDataSourceProvider.overrideWithValue(progress),
+          ],
         );
         addTearDown(container.dispose);
 
@@ -469,6 +477,7 @@ void main() {
         await tester.pump();
 
         // Verify GameResultOverlay is shown
+        await tester.pump();
         expect(find.byType(GameResultOverlay), findsOneWidget);
 
         // Verify roadSignsProgressProvider updated

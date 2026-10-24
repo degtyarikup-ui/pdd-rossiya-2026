@@ -33,6 +33,8 @@ ln -s "$PWD/assets/audio/feed" "$STAGE/assets/audio/feed"
 # rebuilding source assets while preparing this separate iOS engine package.
 ln -s "$PWD/assets/audio/game_questions" "$STAGE/assets/audio/game_questions"
 ln -s "$PWD/lib" "$STAGE/lib"
+mkdir -p "$STAGE/assets/images"
+ln -s "$PWD/assets/images/achievements" "$STAGE/assets/images/achievements"
 python3 "$STAGE/tools/godot_export/export_ui.py"
 python3 "$STAGE/tools/godot_export/export_question_images.py"
 if ! python3 "$STAGE/tools/godot_export/export_question_audio.py" --check; then

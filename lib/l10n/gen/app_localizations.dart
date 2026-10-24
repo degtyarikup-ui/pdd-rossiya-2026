@@ -2914,6 +2914,18 @@ abstract class AppLocalizations {
   /// **'Сохранить прогресс и премиум'**
   String get signInCardSubtitle;
 
+  /// No description provided for @achievementAwardTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новое достижение'**
+  String get achievementAwardTitle;
+
+  /// No description provided for @achievementAwardPosition.
+  ///
+  /// In ru, this message translates to:
+  /// **'{position} из {total}'**
+  String achievementAwardPosition(int position, int total);
+
   /// No description provided for @achievements.
   ///
   /// In ru, this message translates to:

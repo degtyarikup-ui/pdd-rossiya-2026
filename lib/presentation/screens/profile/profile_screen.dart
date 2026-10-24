@@ -11,6 +11,7 @@ import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/user_avatar.dart';
+import 'package:pdd_app/presentation/widgets/achievement_labels.dart';
 import 'package:pdd_app/presentation/screens/profile/widgets/achievement_badge.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
@@ -20,33 +21,6 @@ import 'package:pdd_app/presentation/widgets/premium_banner_card.dart';
 import 'package:pdd_app/presentation/widgets/profile_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/streak_widgets.dart';
 
-String _getAchievementTitle(AchievementId id) {
-  switch (id) {
-    case AchievementId.streak:
-      return appL10n.achievementTitleStreak;
-    case AchievementId.coverage:
-      return appL10n.achievementTitleCoverage;
-    case AchievementId.tickets:
-      return appL10n.achievementTitleTickets;
-    case AchievementId.attempts:
-      return appL10n.achievementTitleAttempts;
-    case AchievementId.exams:
-      return appL10n.achievementTitleExams;
-    case AchievementId.flawless:
-      return appL10n.achievementTitleFlawless;
-    case AchievementId.mistakes:
-      return appL10n.achievementTitleMistakes;
-    case AchievementId.game:
-      return appL10n.achievementTitleGame;
-    case AchievementId.rank:
-      return appL10n.achievementTitleRank;
-    case AchievementId.trafficController:
-      return appL10n.achievementTitleTrafficController;
-    case AchievementId.signSwiper:
-      return appL10n.achievementTitleSignSwiper;
-  }
-}
-
 /// Подпись уровня «Покорителя рейтинга»: топ-100 / топ-10 / топ-3 / 1 место.
 String _rankLevelLabel(int levelIndex) => switch (levelIndex) {
   0 => appL10n.achievementRankTop(100),
@@ -54,33 +28,6 @@ String _rankLevelLabel(int levelIndex) => switch (levelIndex) {
   2 => appL10n.achievementRankTop(3),
   _ => appL10n.achievementRankFirst,
 };
-
-String _getAchievementDescription(AchievementId id) {
-  switch (id) {
-    case AchievementId.streak:
-      return appL10n.achievementDescStreak;
-    case AchievementId.coverage:
-      return appL10n.achievementDescCoverage;
-    case AchievementId.tickets:
-      return appL10n.achievementDescTickets;
-    case AchievementId.attempts:
-      return appL10n.achievementDescAttempts;
-    case AchievementId.exams:
-      return appL10n.achievementDescExams;
-    case AchievementId.flawless:
-      return appL10n.achievementDescFlawless;
-    case AchievementId.mistakes:
-      return appL10n.achievementDescMistakes;
-    case AchievementId.game:
-      return appL10n.achievementDescGame;
-    case AchievementId.rank:
-      return appL10n.achievementDescRank;
-    case AchievementId.trafficController:
-      return appL10n.achievementDescTrafficController;
-    case AchievementId.signSwiper:
-      return appL10n.achievementDescSignSwiper;
-  }
-}
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -90,8 +37,8 @@ class ProfileScreen extends ConsumerWidget {
     AchievementProgress achievement,
   ) {
     final colors = AppColors.of(context);
-    final title = _getAchievementTitle(achievement.id);
-    final description = _getAchievementDescription(achievement.id);
+    final title = achievementTitle(achievement.id);
+    final description = achievementDescription(achievement.id);
 
     showModalBottomSheet<void>(
       context: context,
@@ -492,7 +439,7 @@ class _AchievementGridCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final title = _getAchievementTitle(achievement.id);
+    final title = achievementTitle(achievement.id);
     final semanticsLabel = appL10n.achievementSemanticsLabel(
       title,
       achievement.level,
