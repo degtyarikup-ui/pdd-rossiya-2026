@@ -35,7 +35,7 @@ export function errorLogRecord(incident, { ts, sent, level, reason }) {
     id: String(incident.id || ''),
     level: level || '',
     sent: Boolean(sent),
-    notificationReason: ['sent', 'grouped', 'burst_limit', 'info_only'].includes(reason) ? reason : '',
+    notificationReason: ['sent', 'coalesced', 'grouped', 'burst_limit', 'info_only'].includes(reason) ? reason : '',
     origin: incident.origin || '',
     category: incident.category || '',
     operation: incident.operation || '',

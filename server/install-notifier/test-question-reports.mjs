@@ -276,8 +276,9 @@ test('game IDs and variant IDs resolve their precise diagram and ambiguous legac
   assert.equal(reportQuestionDetails({ question_id: 'ticket_1_2', country: 'rs' }), null);
 });
 
-test('queue delivers picture after the report, retries rate limits and falls back to a link on rejected media', async () => {
+test('queue delivers picture after the report, retries rate limits and falls back to a link on rejected media', async t => {
   const { env, state } = setup(), original = globalThis.fetch;
+  let now = Date.now(); t.mock.method(Date, 'now', () => now);
   const queue = new TelegramQueue(state, env);
   const photoUrl = reportQuestionDetails({ question_id: 'ticket_1_2' }).photoUrl;
   await queue.enqueue({ topic: 'reports', threadId: 42, messages: [{ text: 'Full report' }, { text: 'Picture', photoUrl }] });
@@ -293,6 +294,7 @@ test('queue delivers picture after the report, retries rate limits and falls bac
     await queue.alarm();
     assert.ok((await queued(state))[0].photoUrl);
     assert.ok(await state.storage.getAlarm() > Date.now() + 19000);
+    now = await state.storage.getAlarm();
     await queue.alarm();
     assert.equal((await queued(state))[0].photoUrl, undefined);
     await queue.alarm();

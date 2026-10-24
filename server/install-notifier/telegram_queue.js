@@ -1,7 +1,7 @@
 import { diagnosticNotificationPolicy } from './diagnostic_context.js';
 import { processTelegramMessageUpdate } from './support_chat.js';
 import { isReportPhotoUrl } from './report_questions.js';
-import { buildIncidentMessage } from './diagnostics.js';
+import { buildIncidentBatchMessage, incidentBatchIdentity, INCIDENT_BATCH_WINDOW_MS, INCIDENT_BATCH_MAX } from './incident_batch.js';
 import { setupTelegramTopics } from './telegram_topics.js';
 import { EXPORT_COMMAND_MAX_AGE_MS, buildErrorCsv, errorLevelLabel, errorLogKey, errorLogRecord, exportStart, mskStamp, parseExportCommand, ERROR_LOG_PREFIX } from './telegram_export.js';
 
@@ -149,27 +149,51 @@ export class TelegramQueue {
     stored.recent.push({ id: incident.id, at: now });
     stored.recent = stored.recent.slice(-2000);
     for (const [key, group] of Object.entries(stored.groups)) if (now - group.at >= 86400000) delete stored.groups[key];
+    stored.pendingBatches ||= {};
+    for (const [key, pending] of Object.entries(stored.pendingBatches)) if (pending.until <= now) delete stored.pendingBatches[key];
     const group = stored.groups[fingerprint];
+    const identity = incidentBatchIdentity(incident);
+    const mayNotify = policy.notify && !(group && now - group.at < policy.windowMs);
+    const pending = mayNotify && identity ? stored.pendingBatches[identity] : null;
+    const previousItem = pending ? await this.state.storage.get(pending.key) : null;
+    const entry = { incident, repeats: group?.repeats || 0, overflow: stored.overflow };
+    const entries = previousItem?.incidentBatch?.entries;
+    const combined = entries && entries.length < INCIDENT_BATCH_MAX
+      ? buildIncidentBatchMessage([...entries, entry]) : null;
+    const merge = combined && combined.length <= 4096;
     if (now - stored.window >= windowMs) { stored.window = now; stored.count = 0; }
     let text = null;
     let reason = 'sent';
     if (!policy.notify) { reason = 'info_only'; }
     else if (group && now - group.at < policy.windowMs) { group.repeats++; reason = 'grouped'; }
-    else if (stored.count >= 20) { stored.overflow++; reason = 'burst_limit'; }
+    else if (!merge && stored.count >= 20) { stored.overflow++; reason = 'burst_limit'; }
     else {
-      stored.count++;
+      if (!merge) stored.count++;
       stored.groups[fingerprint] = { at: now, repeats: 0 };
-      text = buildIncidentMessage(incident, group?.repeats || 0, stored.overflow);
+      text = merge ? combined : buildIncidentBatchMessage([entry]);
+      if (merge) reason = 'coalesced';
       stored.overflow = 0;
     }
     if (text && !(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(now + 1000);
     await this.state.storage.transaction(async txn => {
-      await txn.put('errors:state', stored);
       if (text) {
-        const sequence = (await txn.get('sequence') || 0) + 1;
-        await txn.put('q:' + String(sequence).padStart(16, '0'), { text, ...(threadId ? { threadId: Number(threadId) } : {}) });
-        await txn.put('sequence', sequence);
+        if (merge) {
+          await txn.put(pending.key, { ...previousItem, text, incidentBatch: {
+            ...previousItem.incidentBatch, entries: [...entries, entry],
+          } });
+        } else {
+          const sequence = (await txn.get('sequence') || 0) + 1;
+          const key = 'q:' + String(sequence).padStart(16, '0');
+          const until = now + INCIDENT_BATCH_WINDOW_MS;
+          await txn.put(key, { text, ...(threadId ? { threadId: Number(threadId) } : {}),
+            ...(identity ? { notBefore: until, incidentBatch: { entries: [entry] } } : {}) });
+          await txn.put('sequence', sequence);
+          if (identity) {
+            stored.pendingBatches[identity] = { key, until };
+          }
+        }
       }
+      await txn.put('errors:state', stored);
     });
     await this.logIncident(incident, Boolean(text), now, reason);
     return Response.json({ ok: true, suppressed: !text });
@@ -292,6 +316,8 @@ export class TelegramQueue {
       const entries = await this.state.storage.list({ prefix: 'q:', limit: 1 });
       if (!entries.size) return;
       const [key, item] = entries.entries().next().value;
+      const readyAt = Math.max(item.notBefore || 0, await this.state.storage.get('telegram:retry_at') || 0);
+      if (readyAt > Date.now()) { await this.state.storage.setAlarm(readyAt); return; }
       let delay = 3100;
       try {
         let body, headers = {}, method = 'sendMessage';
@@ -322,7 +348,10 @@ export class TelegramQueue {
         });
         const result = await response.json();
         if (response.ok && result.ok) await this.state.storage.delete(key);
-        else if (response.status === 429) delay = Math.max(delay, (Number(result.parameters?.retry_after) || 60) * 1000 + 1000);
+        else if (response.status === 429) {
+          delay = Math.max(delay, (Number(result.parameters?.retry_after) || 60) * 1000 + 1000);
+          await this.state.storage.put('telegram:retry_at', Date.now() + delay);
+        }
         else if (response.status === 400 && threadId && (result.description?.includes('thread') || result.description?.includes('topic'))) {
           // If the topic was deleted or threadId is invalid in Telegram, retry once without topic so notification is never lost!
           delete item.threadId;

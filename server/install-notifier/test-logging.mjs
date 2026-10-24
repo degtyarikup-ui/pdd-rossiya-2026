@@ -104,8 +104,9 @@ test('daily report waits for stats backlog and retries without a duplicate summa
   const count=(await state.storage.list({prefix:'q:'})).size;assert.ok(count>0);
   await finishPendingDailyReport(env);assert.equal((await state.storage.list({prefix:'q:'})).size,count);
 });
-test('photo delivery retains durable bytes and retries Telegram rate limits after restart',async()=>{
+test('photo delivery retains durable bytes and retries Telegram rate limits after restart',async t=>{
   const {env,state,queue}=setup(),original=globalThis.fetch;
+  let clock=Date.now();t.mock.method(Date,'now',()=>clock);
   try{
     const png=await renderDailyChart(Array.from({length:7},()=>({date:'2026-10-03',available:false})));
     await queue.fetch(new Request('https://queue/enqueue',{method:'POST',body:JSON.stringify({text:'Report',photoBase64:pngBase64(png)})}));
@@ -113,6 +114,7 @@ test('photo delivery retains durable bytes and retries Telegram rate limits afte
     const before=Date.now();await queue.alarm();assert.ok(state.storage.alarm>=before+120000);
     const restarted=new TelegramQueue(state,env);
     globalThis.fetch=async(_,opts)=>{assert.equal((await opts.body.get('photo').arrayBuffer()).byteLength,png.length);return Response.json({ok:true});};
+    clock=state.storage.alarm;
     await restarted.alarm();assert.equal((await state.storage.list({prefix:'q:'})).size,0);
   }finally{globalThis.fetch=original;}
 });

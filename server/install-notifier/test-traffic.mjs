@@ -165,8 +165,9 @@ test('partial KV failure + worker restart replay the persisted totals exactly on
   assert.equal(day.sources['Google Play'].installs, 1);
 });
 
-test('Telegram 429 and temporary network failure preserve ordered messages and retry_after', async () => {
+test('Telegram 429 and temporary network failure preserve ordered messages and retry_after', async t => {
   const e = setup(), stub = e.TELEGRAM.get(e.CHAT_ID);
+  let now = Date.now(); t.mock.method(Date, 'now', () => now);
   for (const text of ['first', 'second']) assert.equal((await stub.fetch('https://telegram/enqueue', { method: 'POST', body: JSON.stringify({ text }) })).status, 200);
   const r = e.TELEGRAM.objects.get(e.CHAT_ID), original = globalThis.fetch, sent = [];
   try {
@@ -175,9 +176,11 @@ test('Telegram 429 and temporary network failure preserve ordered messages and r
     assert.equal((await queued(r)).size, 2);
     assert.ok(r.state.storage.alarm >= before + 90000);
     globalThis.fetch = async () => { throw new Error('network unavailable'); };
+    now = r.state.storage.alarm;
     await alarm(r); assert.equal((await queued(r)).size, 2);
     r.object = new TelegramQueue(r.state, e);
     globalThis.fetch = async (_, opts) => { sent.push(JSON.parse(opts.body).text); return Response.json({ ok: true }); };
+    now = r.state.storage.alarm;
     await alarm(r); await alarm(r);
     assert.deepEqual(sent, ['first', 'second']);
     assert.equal((await queued(r)).size, 0);

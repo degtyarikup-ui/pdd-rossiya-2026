@@ -41,7 +41,7 @@ export function errorCode(error) {
   if (error?.code === 'ERR_SUPPORT_READ_UNAVAILABLE') return 'support_read_unavailable';
   return 'operation_failed';
 }
-export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
+export function buildIncidentMessage(event, repeats = 0, overflow = 0, { headings, relatedEvents } = {}) {
   event = { ...event, context: sanitizeDiagnosticContext(event.context) };
   const copy = incidentCopy(event);
   const guide = incidentGuide(event);
@@ -50,11 +50,11 @@ export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
   const ids = [
     event.userId ? 'ID аккаунта: <code>' + escape(event.userId) + '</code>' : null,
     event.installation ? 'Установка: <code>' + escape(event.installation) + '</code>' : null,
-    event.diagnosticId ? 'Диагностика: <code>' + escape(event.diagnosticId) + '</code>' : null,
+    event.diagnosticId && !relatedEvents ? 'Диагностика: <code>' + escape(event.diagnosticId) + '</code>' : null,
   ];
   return [
-    guide.emoji + ' <b>' + copy.title + '</b>',
-    '<b>Причина:</b> ' + copy.reason + (guide.what ? ' ' + guide.what : ''),
+    ...(headings || [guide.emoji + ' <b>' + copy.title + '</b>']),
+    '<b>Причина:</b> ' + copy.reason + (!relatedEvents && guide.what ? ' ' + guide.what : ''),
     guide.steps[0] ? '→ ' + guide.steps[0] : null,
     event.payment ? (event.operation === 'api.user.pay-intent'
       ? 'Форма оплаты не выдана: человек не смог начать оплату.'
@@ -78,16 +78,26 @@ export function buildIncidentMessage(event, repeats = 0, overflow = 0) {
     event.os ? 'ОС: ' + escape(event.os) : null,
     event.context?.phase ? 'Загрузка: ' + ({ background: 'в фоне', paywall: 'экран оплаты', purchase: 'попытка покупки' })[event.context.phase] : null,
     event.context?.stage ? 'Этап: ' + escape(event.context.stage) + (event.context.attempt ? ' · попытка ' + event.context.attempt : '') : null,
-    event.context?.supportStage ? 'Этап чтения поддержки: ' + event.context.supportStage : null,
-    event.context?.upstreamStatus ? 'HTTP хранилища поддержки: ' + event.context.upstreamStatus : null,
+    event.context?.supportStage && !relatedEvents ? 'Этап чтения поддержки: ' + event.context.supportStage : null,
+    event.context?.upstreamStatus && !relatedEvents ? 'HTTP хранилища поддержки: ' + event.context.upstreamStatus : null,
     typeof event.context?.retryable === 'boolean' || typeof event.context?.overloaded === 'boolean'
       ? 'Флаги хранилища: ' + ['retryable', 'overloaded'].filter(key => typeof event.context[key] === 'boolean').map(key => key + '=' + event.context[key]).join(' · ') : null,
     Number.isInteger(event.context?.returnedCount) ? `Товары: запрошено ${event.context.requestedCount ?? '—'}, получено ${event.context.returnedCount}, не найдено ${event.context.missingCount ?? '—'}` : null,
     event.context?.sdkCodeHash ? 'Код SDK (отпечаток): ' + escape(event.context.sdkCodeHash) : null,
-    event.context?.frames?.length ? 'Место: <code>' + escape(event.context.frames[0]) + '</code>' : null,
+    event.context?.frames?.length && !relatedEvents ? 'Место: <code>' + escape(event.context.frames[0]) + '</code>' : null,
     event.country ? '🌍 ' + escape(event.country) : null,
     '',
-    (event.origin === 'client' ? 'Приложение' : 'Сервер') + ': <code>' + escape(event.operation) + '</code>',
+    ...(!relatedEvents ? [(event.origin === 'client' ? 'Приложение' : 'Сервер') + ': <code>' + escape(event.operation) + '</code>'] :
+      relatedEvents.flatMap(related => {
+        const context = sanitizeDiagnosticContext(related.context);
+        return [
+          'Сервер: <code>' + escape(related.operation) + '</code>' + (related.status ? ' · HTTP ' + related.status : ''),
+          context.frames?.length ? 'Место: <code>' + escape(context.frames[0]) + '</code>' : null,
+          context.supportStage ? 'Этап чтения поддержки: ' + context.supportStage : null,
+          context.upstreamStatus ? 'HTTP хранилища поддержки: ' + context.upstreamStatus : null,
+          related.diagnosticId ? 'Диагностика: <code>' + escape(related.diagnosticId) + '</code>' : null,
+        ];
+      })),
     'Код: <code>' + escape(event.code) + '</code>' + (event.status ? ' · HTTP ' + event.status : ''),
     repeats ? '🔁 Повторов с прошлого сообщения: ' + repeats : null,
     overflow ? 'Других сообщений ограничено: ' + overflow : null,
