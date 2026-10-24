@@ -90,7 +90,7 @@ func _test_violation_boundaries_and_edges() -> void:
 	for c in game.crossers:
 		c.state = "hidden"
 		c.timer = 999.0
-	ped_car.position = Vector3(-2.4, 0, 1.5)
+	ped_car.position = Vector3(-2.3, 0, -1.4)
 	ped_car.turn_t = 0.4
 	# Sub-case: walker still on the sidewalk (z = -2.3)
 	walker.state = "wait"
@@ -100,7 +100,7 @@ func _test_violation_boundaries_and_edges() -> void:
 
 	# Sub-case: walker on the carriageway in the car's lanes
 	walker.state = "cross"
-	walker.s = 1.0
+	walker.s = 0.4
 	game._check_car_violation_state(ped_car)
 	_assert("PEDESTRIAN_YIELD activates when walker is on roadway", ped_car.violation_state == "active")
 
@@ -123,10 +123,15 @@ func _test_violation_boundaries_and_edges() -> void:
 	game._check_car_violation_state(sl_car)
 	_assert("SOLID_LINE activates when straddling center solid line (|X| < 1.0)", sl_car.violation_state == "active")
 
-	# Sub-case: Exit boundary past solid line zone (Z = -10.9)
+	# Sub-case: still mid-swerve past the old boundary — not over yet
 	sl_car.position.z = -10.9
 	game._check_car_violation_state(sl_car)
-	_assert("SOLID_LINE transitions to missed at end of solid line zone (Z > -11.0)", sl_car.violation_state == "missed")
+	_assert("SOLID_LINE stays active while the car is still crossing", sl_car.violation_state == "active")
+	# Sub-case: lane change finished and the car has moved on
+	sl_car.lane_change_t = 1.0
+	sl_car.position.z = -5.0
+	game._check_car_violation_state(sl_car)
+	_assert("SOLID_LINE transitions to missed once the swerve is complete (Z > -6.0)", sl_car.violation_state == "missed")
 
 	# 1.4 WRONG_LANE_TURN
 	var turn_car = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_WRONG_LANE_TURN)
@@ -190,9 +195,9 @@ func _test_violation_boundaries_and_edges() -> void:
 	game._check_car_violation_state(waffle_car)
 	_assert("WAFFLE_BLOCK activates after stopping on yellow grid marking", waffle_car.violation_state == "active")
 
-	waffle_car.position.z = 9.5
+	waffle_car.position.z = 13.5
 	game._check_car_violation_state(waffle_car)
-	_assert("WAFFLE_BLOCK transitions to missed past waffle zone (Z > 9.0)", waffle_car.violation_state == "missed")
+	_assert("WAFFLE_BLOCK transitions to missed once it has left the junction (Z > 13.0)", waffle_car.violation_state == "missed")
 
 	# 1.8 EMERGENCY_YIELD
 	var emerg_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_EMERGENCY_YIELD)

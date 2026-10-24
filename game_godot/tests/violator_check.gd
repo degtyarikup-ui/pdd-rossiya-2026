@@ -147,8 +147,8 @@ func _check_all_violation_triggers() -> void:
 
 	# 2. PEDESTRIAN_YIELD
 	var ped_car = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
-	_walker_on(game, "west", 2.0)
-	ped_car.position = Vector3(-2.4, 0, 1.5)
+	_walker_on(game, "west", 0.4)
+	ped_car.position = Vector3(-2.3, 0, -1.4)
 	ped_car.turn_t = 0.4
 	game._check_car_violation_state(ped_car)
 	_check("PEDESTRIAN_YIELD becomes active when a turning car meets a walker on the west crosswalk", ped_car.violation_state == "active")
@@ -277,8 +277,8 @@ func _check_step2_classification_mechanic() -> void:
 
 	# 2. Wrong selection
 	var violator2 = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
-	_walker_on(game, "west", 2.0)
-	violator2.position = Vector3(-2.4, 0, 1.5)
+	_walker_on(game, "west", 0.4)
+	violator2.position = Vector3(-2.3, 0, -1.4)
 	violator2.turn_t = 0.4
 	game._check_car_violation_state(violator2)
 	game.handle_car_tapped(violator2, Vector2(195, 422))

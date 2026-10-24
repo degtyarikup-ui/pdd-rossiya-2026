@@ -45,6 +45,8 @@ const STRINGS := {
 		"violatorLifeRestored": "Серия x5! Жизнь восстановлена (+1 ❤️)",
 		"violatorPhaseDusk": "Сумерки на перекрёстке",
 		"violatorPhaseNight": "Ночной патруль: включите внимание",
+		"violatorSignalsFlashing": "Светофоры переведены в режим мигающего жёлтого: действуют знаки приоритета",
+		"violatorSignalsNormal": "Светофоры снова работают в обычном режиме",
 		"violatorPhaseRain": "Ливень: скользкий асфальт",
 		"violatorModeBlitz": "Режим: Блиц 60 сек",
 		"violatorModePatrol": "Режим: Бесконечный патруль",
@@ -73,6 +75,8 @@ const STRINGS := {
 		"violatorLifeRestored": "Streak x5! Life restored (+1 ❤️)",
 		"violatorPhaseDusk": "Dusk at the intersection",
 		"violatorPhaseNight": "Night patrol: stay alert",
+		"violatorSignalsFlashing": "Signals switched to flashing yellow: priority signs apply",
+		"violatorSignalsNormal": "Signals are back to normal operation",
 		"violatorPhaseRain": "Heavy rain: slippery asphalt",
 		"violatorModeBlitz": "Mode: Blitz 60s",
 		"violatorModePatrol": "Mode: Endless Patrol",
@@ -101,6 +105,8 @@ const STRINGS := {
 		"violatorLifeRestored": "x5 сериясы! Өмір қалпына келтірілді (+1 ❤️)",
 		"violatorPhaseDusk": "Қиылыстағы іңір",
 		"violatorPhaseNight": "Түнгі патруль: мұқият болыңыз",
+		"violatorSignalsFlashing": "Бағдаршамдар жыпылықтайтын сары режимге ауысты: басымдық белгілері әрекет етеді",
+		"violatorSignalsNormal": "Бағдаршамдар қайтадан қалыпты режимде жұмыс істейді",
 		"violatorPhaseRain": "Нөсер: тайғақ асфальт",
 		"violatorModeBlitz": "Режим: Блиц 60 сек",
 		"violatorModePatrol": "Режим: Шексіз патруль",
@@ -207,6 +213,7 @@ func _process(delta: float) -> void:
 		_overlay.queue_redraw()
 
 	if _modal_active:
+		_place_modal()
 		_modal_timer -= real_delta
 		if is_instance_valid(_modal_bar):
 			_modal_bar.value = maxf(0.0, _modal_timer / MODAL_DURATION)
@@ -238,7 +245,8 @@ func _layout() -> void:
 	if is_instance_valid(_modal):
 		var modal_w := minf(360.0, size.x - 32.0)
 		_modal.size = Vector2(modal_w, 0)
-		_modal.position = Vector2((size.x - modal_w) / 2.0, maxf(top + CHROME + 16.0, (size.y - _modal.size.y) / 2.0))
+		_modal.position.x = (size.x - modal_w) / 2.0
+		_place_modal.call_deferred()
 
 	if is_instance_valid(_toast):
 		var toast_w := minf(340.0, size.x - 32.0)
@@ -632,11 +640,11 @@ func show_classification(correct_code: String, options: Array) -> void:
 
 	for opt_code in options:
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(0, 44)
+		btn.custom_minimum_size = Vector2(0, 48)
 		btn.text = tr_v(_violation_l10n_key(opt_code))
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		btn.add_theme_font_override("font", Ui.font(600))
-		btn.add_theme_font_size_override("font_size", 13)
+		btn.add_theme_font_size_override("font_size", 15)
 		btn.add_theme_color_override("font_color", Ui.c("text"))
 		btn.set_meta("opt_code", opt_code)
 
@@ -661,6 +669,21 @@ func show_classification(correct_code: String, options: Array) -> void:
 
 	_modal.visible = true
 	_layout()
+	# The old buttons leave at the end of the frame; place the sheet again with the new height.
+	_layout.call_deferred()
+
+
+## A bottom sheet over the home indicator: the junction and the locked car stay visible above it.
+## Runs after the container has laid its wrapped text out at the sheet's width.
+func _place_modal() -> void:
+	if not is_instance_valid(_modal):
+		return
+	var u := Ui.dp(get_viewport())
+	var safe := Ui.insets(get_viewport())
+	var top := float(safe["top"]) / u
+	var bottom := float(safe["bottom"]) / u
+	_modal.size.y = 0.0
+	_modal.position.y = maxf(top + CHROME + 16.0, size.y - bottom - 16.0 - _modal.size.y)
 
 
 func hide_classification() -> void:

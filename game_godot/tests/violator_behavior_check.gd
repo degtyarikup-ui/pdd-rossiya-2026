@@ -155,7 +155,7 @@ func _run_checks() -> void:
 	
 	# 5. Turning Vehicles: Tangent yaw matches velocity
 	var turn_car = game.spawn_specific_car("main_left", 0, false, "")
-	turn_car.position.z = 2.0
+	turn_car.position.z = -2.0
 	var prev_pos = turn_car.position
 	game._advance_car_behavior(turn_car, 0.1)
 	var delta_pos = turn_car.position - prev_pos
@@ -174,20 +174,20 @@ func _run_checks() -> void:
 	
 	# 7. Secondary Road Car Merge Geometry: stays on roadway, not off-road on sidewalk
 	var merge_car = game.spawn_specific_car("secondary_merge", 2, false, "")
-	merge_car.position.x = -1.0 # Approaching curve
+	merge_car.position.x = -7.0 # Approaching curve
 	for step in 80:
 		game._advance_car_behavior(merge_car, 0.033)
-	_check("Secondary merge car stays on asphalt road (|X| <= 2.2)", absf(merge_car.position.x) <= 2.2)
+	_check("Secondary merge car turns into the near southbound lane (X ~ -1.8, п. 8.6)", absf(merge_car.position.x + 1.8) <= 0.3)
 	_check("Secondary merge car adopts southbound heading (~0.0)", absf(merge_car.rotation.y) < 0.2)
 	merge_car.queue_free()
 	game.cars.erase(merge_car)
 
 	# 8. Left-Turning Car (main_left) stays inside secondary road corridor (Z in [2.5, 7.5])
 	var left_car = game.spawn_specific_car("main_left", 0, false, "")
-	left_car.position.z = 0.0
+	left_car.position.z = -4.0
 	for step in 80:
 		game._advance_car_behavior(left_car, 0.033)
-	_check("Left-turning car stays inside secondary road corridor (Z in [2.5, 7.5])", left_car.position.z >= 2.5 and left_car.position.z <= 7.5)
+	_check("Right-turning car ends in the near (outer) westbound lane (Z in [-1.0, 1.0], п. 8.6)", left_car.position.z >= -1.0 and left_car.position.z <= 1.0)
 	_check("Left-turning car faces westbound (-PI/2)", is_equal_approx(left_car.rotation.y, -PI * 0.5))
 	left_car.queue_free()
 	game.cars.erase(left_car)
@@ -217,7 +217,13 @@ func _run_checks() -> void:
 	_check("Lane 3 PRIORITY_SIGN at spawn (X=34) does NOT trigger violation window prematurely", not game._is_car_entering_violation_window(lane3_prio))
 	_check("Lane 3 PRIORITY_SIGN at spawn (X=34) does NOT trigger exit window prematurely", not game._is_car_exiting_violation_window(lane3_prio))
 	lane3_prio.position.x = 5.0
-	_check("Lane 3 PRIORITY_SIGN at X=5.0 enters violation window", game._is_car_entering_violation_window(lane3_prio))
+	_check("Entering without anyone to give way to is no 2.4 offence", not game._is_car_entering_violation_window(lane3_prio))
+	var main_car = game.spawn_specific_car("main_straight", 1, false, "")
+	main_car.position.z = -12.0
+	main_car.speed = 8.0
+	_check("Lane 3 PRIORITY_SIGN at X=5.0 enters violation window while a main-road car approaches", game._is_car_entering_violation_window(lane3_prio))
+	main_car.queue_free()
+	game.cars.erase(main_car)
 	_check("Lane 3 PRIORITY_SIGN at X=5.0 does not exit violation window", not game._is_car_exiting_violation_window(lane3_prio))
 	lane3_prio.position.x = -3.5
 	_check("Lane 3 PRIORITY_SIGN at X=-3.5 exits violation window", game._is_car_exiting_violation_window(lane3_prio))
@@ -320,6 +326,24 @@ func _run_checks() -> void:
 	_check("North approach arrows face South (+Z, yaw = PI)", arrow_found_north)
 	_check("West approach arrows face East (+X, yaw = -PI * 0.5)", arrow_found_west)
 	_check("East approach arrows face West (-X, yaw = PI * 0.5)", arrow_found_east)
+
+	# 16b. Sidewalk walkers never walk through a post or a kiosk
+	var kiosks := [Vector2(-8.5, -13.0), Vector2(8.5, -13.0), Vector2(-8.5, 16.0), Vector2(8.5, 16.0)]
+	var clashes := []
+	for r in game.active_pedestrians:
+		var kind: String = r.get("type", "idle")
+		if kind == "idle":
+			continue
+		for k in 41:
+			var f := float(k) / 40.0
+			var q := Vector2(r.x, lerpf(r.min_z, r.max_z, f)) if kind == "sidewalk_z" else Vector2(lerpf(r.min_x, r.max_x, f), r.z)
+			for pp in game.pole_points:
+				if q.distance_to(pp) < 0.6:
+					clashes.append([q, pp])
+			for kp in kiosks:
+				if absf(q.x - kp.x) < 1.8 and absf(q.y - kp.y) < 1.8:
+					clashes.append([q, kp])
+	_check("Sidewalk walkers keep clear of posts and kiosks (%d clashes %s)" % [clashes.size(), str(clashes.slice(0, 3))], clashes.is_empty())
 
 	# 17. Zebra Crosswalk Encroachment Detection
 	for c in game.cars:
@@ -426,7 +450,7 @@ func _run_checks() -> void:
 	sec_stopped.position = Vector3(12.0, 0.0, 3.2)
 	sec_stopped.speed = 0.0
 	sec_stopped.target_speed = 0.0
-	for step in 120:
+	for step in 240:
 		game._update_cars(0.016)
 	_check("Left-turning car does not deadlock with stopped secondary car (moves past X < -5.0)", lead_turn.position.x < -5.0)
 	_check("Following straight car makes progress without getting trapped (moves past Z > 0.0)", follow_straight.position.z > 0.0)
