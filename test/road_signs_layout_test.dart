@@ -1,7 +1,10 @@
+import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,7 +20,23 @@ import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 
 void main() {
   late RoadSignQuizQuestion question;
-  setUpAll(() {
+  setUpAll(() async {
+    if (const bool.fromEnvironment('PDD_CAPTURE_HUD')) {
+      final fonts = FontLoader(AppTheme.fontFamily);
+      for (final weight in [
+        'Regular',
+        'Medium',
+        'SemiBold',
+        'Bold',
+        'ExtraBold',
+      ]) {
+        fonts.addFont(rootBundle.load('assets/fonts/Onest-$weight.ttf'));
+      }
+      await fonts.load();
+      await (FontLoader(
+        'MaterialIcons',
+      )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
+    }
     final signs = RoadSignsEngine.parseSignsJson(
       jsonDecode(
             File('assets/countries/ru/questions/signs.json').readAsStringSync(),
@@ -65,7 +84,10 @@ void main() {
           ),
           child: child!,
         ),
-        home: child,
+        home: RepaintBoundary(
+          key: const ValueKey('screen-preview'),
+          child: child,
+        ),
       ),
     );
   }
@@ -75,6 +97,22 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+  }
+
+  Future<void> capture(WidgetTester tester, String name) async {
+    if (!const bool.fromEnvironment('PDD_CAPTURE_HUD')) return;
+    await tester.runAsync(() async {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(const ValueKey('screen-preview')),
+      );
+      final image = await boundary.toImage(pixelRatio: 2);
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      await Directory('output/hud-update').create(recursive: true);
+      await File(
+        'output/hud-update/$name.png',
+      ).writeAsBytes(data!.buffer.asUint8List());
+      image.dispose();
+    });
   }
 
   final first = find.byKey(const ValueKey('road-sign-option-0'));
@@ -131,6 +169,10 @@ void main() {
       app(RoadSignsScreen(initialDeck: List.filled(5, question))),
     );
     await tester.pump();
+    expect(find.text(appL10n.roadSignsChooseHint), findsNothing);
+    expect(find.text(appL10n.roadSignsQuestionNumber(1)), findsNothing);
+    expect(find.byType(MiniGameHud), findsOneWidget);
+    await capture(tester, 'road-signs-new');
     final initial = tester.getRect(first);
     for (var i = 0; i < 3; i++) {
       await tester.tap(first);
@@ -144,7 +186,8 @@ void main() {
     expect(tester.getRect(first), initial);
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     expect(find.byIcon(Icons.close_rounded), findsNWidgets(2));
-    expect(find.text(appL10n.roadSignsWrongFeedback), findsOneWidget);
+    expect(find.byType(GameLifeLossBadge), findsOneWidget);
+    await capture(tester, 'road-signs-error');
     await tester.pumpWidget(const SizedBox.shrink());
   });
 

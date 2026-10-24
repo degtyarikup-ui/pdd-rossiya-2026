@@ -547,6 +547,8 @@ func update_hud(score: int, seconds: int, lives: int, combo: int) -> void:
 	_score_label.text = str(score)
 	_combo_chip.visible = combo > 1
 	_combo_value = combo
+	if lives < _lives_value:
+		MiniGameHud.show_life_loss(self, _top_bar, _lives_value - lives)
 	_lives_value = lives
 	MiniGameHud.paint_timer(_timer_icon, _timer_label, seconds)
 	MiniGameHud.paint_lives(_hearts, _lives_count, lives, compact_lives)
@@ -845,6 +847,8 @@ func _build_result_dialog() -> void:
 
 
 func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, prev_best: int, time_up := false) -> void:
+	if not await MiniGameHud.finish_life_loss(self): return
+	MiniGameHud.clear_life_loss(self)
 	hide_collision_modal()
 	hide_topics_sheet()
 	_results.show_results(score, solved, wrong, max_combo, is_record, prev_best, time_up)
@@ -854,6 +858,7 @@ func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record
 
 
 func hide_results() -> void:
+	MiniGameHud.clear_life_loss(self)
 	_results.hide_results()
 	_refresh_modal_visibility()
 

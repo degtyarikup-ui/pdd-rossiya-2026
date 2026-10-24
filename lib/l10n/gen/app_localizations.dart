@@ -6847,7 +6847,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameViolatorMissedLifeWarning.
   ///
   /// In ru, this message translates to:
-  /// **'Нарушитель упущен! (-1 жизнь)'**
+  /// **'Нарушитель упущен!'**
   String get gameViolatorMissedLifeWarning;
 
   /// No description provided for @gameViolatorCaught.
@@ -7005,6 +7005,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Неверно · −1 жизнь'**
   String get roadSignsWrongFeedback;
+
+  /// No description provided for @gameLifeLost.
+  ///
+  /// In ru, this message translates to:
+  /// **'Потеряна одна жизнь'**
+  String get gameLifeLost;
 }
 
 class _AppLocalizationsDelegate

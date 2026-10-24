@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -19,6 +20,7 @@ import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs
 import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_grid.dart';
 import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_modal.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
+import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 /// Главный экран игровой сессии «Знаки» (Road Signs Quiz).
@@ -394,14 +396,6 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
                         children: [
                           const SizedBox(height: 16),
                           Text(
-                            appL10n.roadSignsQuestionNumber(_currentIndex + 1),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colors.secondaryText,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
                             question.prompt,
                             style: TextStyle(
                               fontSize: 20,
@@ -426,7 +420,7 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
           );
         }
         final compact = constraints.maxHeight < 520;
-        final questionHeight = (compact ? 124.0 : 156.0) * scale;
+        final questionHeight = (compact ? 96.0 : 124.0) * scale;
         final feedbackHeight = 64.0 * scale;
         // Preserve usable sign targets on short screens; scroll the group when
         // large accessibility text needs more room than the viewport allows.
@@ -453,15 +447,6 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          appL10n.roadSignsQuestionNumber(_currentIndex + 1),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: colors.secondaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
                         Text(
                           question.prompt,
                           style: TextStyle(
@@ -500,11 +485,13 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
   Widget _buildFeedback(AppThemeColors colors) {
     final correct = _answeredCorrectly == true;
     final answered = _answeredCorrectly != null;
-    final text = !answered
-        ? appL10n.roadSignsChooseHint
-        : correct
-        ? appL10n.roadSignsCorrectPoints(_lastPoints)
-        : appL10n.roadSignsWrongFeedback;
+    if (!answered) return const SizedBox.shrink();
+    if (!correct) {
+      return Center(
+        child: GameLifeLossBadge(key: ValueKey('life-loss-$_currentIndex')),
+      );
+    }
+    final text = appL10n.roadSignsCorrectPoints(_lastPoints);
     return Semantics(
       liveRegion: answered,
       child: Row(
@@ -535,91 +522,14 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
   }
 
   Widget _buildHeader(AppThemeColors colors) {
-    final compact = MediaQuery.sizeOf(context).height < 500;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            IconButton(
-              tooltip: appL10n.gameExit,
-              style: IconButton.styleFrom(
-                backgroundColor: colors.cardBackground,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.buttonRadius,
-                  ),
-                ),
-                minimumSize: const Size.square(48),
-              ),
-              icon: const Icon(Icons.close_rounded, size: 20),
-              color: colors.primaryText,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            Expanded(
-              child: Text(
-                appL10n.gamesRoadSignsTitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: colors.primaryText,
-                ),
-              ),
-            ),
-            if (compact) ...[
-              GameLives(lives: _lives, total: widget.initialLives),
-              const SizedBox(width: 20),
-              GameScoreLabel(score: _score),
-            ] else
-              const SizedBox(width: 48),
-          ],
-        ),
-        if (!compact) ...[
-          const SizedBox(height: 20),
-          SizedBox(
-            height: math.max(
-              32,
-              MediaQuery.textScalerOf(context).scale(12) * 2.5,
-            ),
-            child: Row(
-              children: [
-                Semantics(
-                  label: appL10n.gameLives,
-                  value: '$_lives',
-                  child: ExcludeSemantics(
-                    child: GameLives(lives: _lives, total: widget.initialLives),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _combo > 1 ? appL10n.gameComboStreak(_combo) : '',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: colors.accent,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Semantics(
-                  label: appL10n.gameScore,
-                  child: GameScoreLabel(score: _score),
-                ),
-              ],
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        GameTimeBar(
-          secondsLeft: _secondsLeft,
-          totalSeconds: widget.initialSeconds,
-        ),
-        const SizedBox(height: 4),
-      ],
+    return MiniGameHud(
+      score: _score,
+      combo: _combo,
+      secondsLeft: _secondsLeft,
+      totalSeconds: widget.initialSeconds,
+      lives: _lives,
+      totalLives: widget.initialLives,
+      onExit: () => Navigator.of(context).pop(),
     );
   }
 

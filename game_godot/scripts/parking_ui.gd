@@ -18,6 +18,7 @@ var _top_bar: HBoxContainer
 var _score_label: Label
 var _level_label: Label
 var _hearts: Array[Label] = []
+var _lives_value := 5
 var _toast: Panel
 var _toast_style: StyleBoxFlat
 var _toast_label: Label
@@ -204,6 +205,9 @@ func _build_gear() -> void:
 
 
 func set_hud(score: int, level: int, count: int, lives: int) -> void:
+	if lives < _lives_value:
+		MiniGameHud.show_life_loss(self, _top_bar, _lives_value - lives)
+	_lives_value = lives
 	var changed := _score_label.text != str(score) or _level_label.text != "%d/%d" % [level, count]
 	if changed:
 		_score_label.text = str(score)
@@ -263,6 +267,8 @@ func _center_toast() -> void:
 
 
 func show_results(score: int, solved: int, wrong: int, combo: int, record: bool, best: int, model: String, paint: Color) -> void:
+	if not await MiniGameHud.finish_life_loss(self): return
+	MiniGameHud.clear_life_loss(self)
 	_top_bar.visible = false
 	_gear.visible = false
 	wheel.visible = false
@@ -276,6 +282,7 @@ func show_results(score: int, solved: int, wrong: int, combo: int, record: bool,
 
 
 func hide_results() -> void:
+	MiniGameHud.clear_life_loss(self)
 	results.hide_results()
 	_top_bar.visible = true
 	_gear.visible = true

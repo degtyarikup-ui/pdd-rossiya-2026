@@ -368,6 +368,8 @@ func update_hud(score: int, combo: int, seconds_left: int, lives: int) -> void:
 	_score_label.text = str(score)
 	_combo_chip.visible = combo > 1
 	_combo_value = combo
+	if lives < _lives_value:
+		MiniGameHud.show_life_loss(self, _top_bar, _lives_value - lives)
 	_lives_value = lives
 	MiniGameHud.paint_timer(_timer_icon, _timer_label, seconds_left)
 	_fit_hud()
@@ -400,6 +402,8 @@ func reset_buttons_visuals() -> void:
 
 
 func show_game_over(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, time_up := false, best := 0) -> void:
+	if not await MiniGameHud.finish_life_loss(self): return
+	MiniGameHud.clear_life_loss(self)
 	# Answers fire on press. Allow the final tap (and a quick second tap) to
 	# finish before the overlapping restart button can accept a new gesture.
 	_results.restart_button.disabled = true
@@ -414,6 +418,7 @@ func show_game_over(score: int, solved: int, wrong: int, max_combo: int, is_reco
 
 
 func hide_game_over() -> void:
+	MiniGameHud.clear_life_loss(self)
 	set_process(false)
 	_result_input_delay = 0.0
 	_results.hide_results()

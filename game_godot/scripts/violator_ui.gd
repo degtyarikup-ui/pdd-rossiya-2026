@@ -50,12 +50,12 @@ const STRINGS := {
 		"violatorPhaseRain": "Ливень: скользкий асфальт",
 		"violatorModeBlitz": "Режим: Блиц 60 сек",
 		"violatorModePatrol": "Режим: Бесконечный патруль",
-		"violatorEmergencyExempt": "Ложный вызов! Спецтранспорт со спецсигналами имеет преимущество (-1 жизнь)",
-		"violatorFalseAlarm": "Ложный вызов! Автомобиль соблюдает ПДД (-1 жизнь)",
+		"violatorEmergencyExempt": "Ложный вызов! Спецтранспорт со спецсигналами имеет преимущество",
+		"violatorFalseAlarm": "Ложный вызов! Автомобиль соблюдает ПДД",
 		"violatorMissedWarning": "Внимание: нарушитель пропущен!",
-		"violatorMissedLifeWarning": "Нарушитель упущен! (-1 жизнь)",
+		"violatorMissedLifeWarning": "Нарушитель упущен!",
 		"violatorMissedTag": "Упущен нарушитель",
-		"violatorWrongAnswer": "Неверно. Правильно — %s (-1 жизнь)",
+		"violatorWrongAnswer": "Неверно. Правильно — %s",
 		"violatorTimingWarning": "Нарушение ещё не совершено или уже завершено!",
 		"violatorTimeExpired": "Время на квалификацию истекло!",
 		"gameViolatorsDetected": "Выявлено",
@@ -82,12 +82,12 @@ const STRINGS := {
 		"violatorPhaseRain": "Heavy rain: slippery asphalt",
 		"violatorModeBlitz": "Mode: Blitz 60s",
 		"violatorModePatrol": "Mode: Endless Patrol",
-		"violatorEmergencyExempt": "False alarm! Emergency vehicle has right of way (-1 life)",
-		"violatorFalseAlarm": "False alarm! Vehicle complies with rules (-1 life)",
+		"violatorEmergencyExempt": "False alarm! Emergency vehicle has right of way",
+		"violatorFalseAlarm": "False alarm! Vehicle complies with rules",
 		"violatorMissedWarning": "Warning: violator missed!",
-		"violatorMissedLifeWarning": "Violator missed! (-1 life)",
+		"violatorMissedLifeWarning": "Violator missed!",
 		"violatorMissedTag": "Violator missed",
-		"violatorWrongAnswer": "Wrong. Correct: %s (-1 life)",
+		"violatorWrongAnswer": "Wrong. Correct: %s",
 		"violatorTimingWarning": "Violation not yet started or already finished!",
 		"violatorTimeExpired": "Classification time expired!",
 		"gameViolatorsDetected": "Detected",
@@ -114,12 +114,12 @@ const STRINGS := {
 		"violatorPhaseRain": "Нөсер: тайғақ асфальт",
 		"violatorModeBlitz": "Режим: Блиц 60 сек",
 		"violatorModePatrol": "Режим: Шексіз патруль",
-		"violatorEmergencyExempt": "Жалған шақыру! Арнайы көлікке басымдық берілген (-1 өмір)",
-		"violatorFalseAlarm": "Жалған шақыру! Көлік ережені бұзбаған (-1 өмір)",
+		"violatorEmergencyExempt": "Жалған шақыру! Арнайы көлікке басымдық берілген",
+		"violatorFalseAlarm": "Жалған шақыру! Көлік ережені бұзбаған",
 		"violatorMissedWarning": "Назар аударыңыз: ереже бұзушы жіберіп алынды!",
-		"violatorMissedLifeWarning": "Ереже бұзушы жіберіп алынды! (-1 өмір)",
+		"violatorMissedLifeWarning": "Ереже бұзушы жіберіп алынды!",
 		"violatorMissedTag": "Ереже бұзушы жіберіп алынды",
-		"violatorWrongAnswer": "Қате. Дұрысы — %s (-1 өмір)",
+		"violatorWrongAnswer": "Қате. Дұрысы — %s",
 		"violatorTimingWarning": "Бұзушылық әлі жасалмаған немесе аяқталған!",
 		"violatorTimeExpired": "Саралау уақыты аяқталды!",
 		"gameViolatorsDetected": "Анықталды",
@@ -173,6 +173,7 @@ var _toast: PanelContainer
 var _toast_label: Label
 var _toast_icon: Label
 var _toast_tween: Tween
+var _toast_is_error := false
 
 # Classification Modal Nodes
 var _modal: PanelContainer
@@ -180,6 +181,7 @@ var _modal_title: Label
 var _modal_bar: ProgressBar
 var _modal_buttons_container: VBoxContainer
 var _modal_active := false
+var _interaction_generation := 0
 var _modal_timer := 0.0
 const MODAL_DURATION := 7.0   # enough to read all three answers
 var _modal_correct_code := ""
@@ -187,6 +189,7 @@ var _modal_buttons: Array[Button] = []
 
 # Results
 var _results: MiniGameResults
+var _round_finished := false
 
 
 func _init() -> void:
@@ -260,7 +263,7 @@ func _layout() -> void:
 	if is_instance_valid(_toast):
 		var toast_w := minf(340.0, size.x - 32.0)
 		_toast.size = Vector2(toast_w, 0)
-		_toast.position = Vector2((size.x - toast_w) / 2.0, top + CHROME + 16.0)
+		_toast.position = Vector2((size.x - toast_w) / 2.0, top + CHROME + 16.0 + (56.0 if _toast_is_error else 0.0))
 
 	if is_instance_valid(_results):
 		_results.size = size
@@ -401,6 +404,8 @@ func update_hud(score: int, combo: int, seconds_or_elapsed: float, lives: int) -
 	_score_label.text = str(maxi(0, score))
 	_combo_chip.visible = combo > 1
 	_combo_value = combo
+	if lives < _lives_value:
+		MiniGameHud.show_life_loss(self, _top_bar, _lives_value - lives)
 	_lives_value = lives
 	var urgent := false
 	if current_mode == "patrol":
@@ -586,10 +591,13 @@ func _build_toast() -> void:
 
 
 func show_toast(text: String, is_error: bool = false) -> void:
+	if _round_finished: return
 	if is_instance_valid(_toast_tween):
 		_toast_tween.kill()
 
+	_toast_is_error = is_error
 	_toast_label.text = text
+	_layout()
 	if is_error:
 		_toast_icon.text = char(ICON_WARNING)
 		_toast_icon.add_theme_color_override("font_color", Ui.c("red"))
@@ -654,6 +662,8 @@ func _build_classification_modal() -> void:
 
 
 func show_classification(correct_code: String, options: Array) -> void:
+	if _round_finished: return
+	_interaction_generation += 1
 	_modal_correct_code = correct_code
 	_modal_active = true
 	_modal_timer = MODAL_DURATION
@@ -712,6 +722,7 @@ func _place_modal() -> void:
 
 
 func hide_classification() -> void:
+	_interaction_generation += 1
 	_modal_active = false
 	_modal.visible = false
 	clear_target()
@@ -752,11 +763,13 @@ func _on_option_button_pressed(btn: Button, code: String) -> void:
 				other_btn.add_theme_stylebox_override("normal", green_box)
 				other_btn.add_theme_color_override("font_color", Ui.c("green"))
 
-	# Short feedback delay then emit signal
+	# Short feedback delay then emit signal, only for this round and this sheet.
+	var generation := _interaction_generation
 	var tree := get_tree()
 	if tree != null:
 		var t := tree.create_timer(0.35, true, false, true)
 		t.timeout.connect(func():
+			if generation != _interaction_generation or _results.visible: return
 			hide_classification()
 			classification_selected.emit(code)
 		)
@@ -775,6 +788,7 @@ func _on_classification_timeout() -> void:
 ## Marks for violators that got away: [{id, pos (dp), code, alpha, edge}]. Each shows red brackets
 ## on the car and a pill naming the offence, so the player sees who it was and what was broken.
 func set_missed_marks(marks: Array) -> void:
+	if _round_finished: marks = []
 	var keep := {}
 	for m in marks:
 		var id: int = m.id
@@ -817,6 +831,7 @@ func set_missed_marks(marks: Array) -> void:
 		if not keep.has(id):
 			_missed.erase(id)
 			if _missed_pills.has(id):
+				_missed_pills[id].hide()
 				_missed_pills[id].queue_free()
 				_missed_pills.erase(id)
 	_overlay.queue_redraw()
@@ -851,10 +866,11 @@ func _build_results() -> void:
 
 
 func show_game_results(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, prev_best: int) -> void:
+	_round_finished = true
+	_clear_round_feedback(true)
+	if not await MiniGameHud.finish_life_loss(self): return
+	_clear_round_feedback()
 	_top_bar.visible = false
-	_modal.visible = false
-	_toast.visible = false
-	clear_target()
 
 	_results.visible = true
 	_results.stat_values[0].text = "%d" % solved
@@ -865,5 +881,19 @@ func show_game_results(score: int, solved: int, wrong: int, max_combo: int, is_r
 
 
 func hide_game_results() -> void:
-	_results.visible = false
+	_round_finished = false
+	_clear_round_feedback()
+	_results.hide_results()
 	_top_bar.visible = true
+
+
+func _clear_round_feedback(keep_penalty := false) -> void:
+	if not keep_penalty: MiniGameHud.clear_life_loss(self)
+	hide_classification()
+	Engine.time_scale = 1.0
+	if is_instance_valid(_toast_tween): _toast_tween.kill()
+	_toast.hide()
+	_toast.modulate.a = 0.0
+	_ripples.clear()
+	set_missed_marks([])
+	_overlay.queue_redraw()

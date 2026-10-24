@@ -24,6 +24,8 @@ func _settle(ui: CrossroadsUi) -> void:
 	for i in 4:
 		await process_frame
 	ui._layout()
+	if ui.has_meta("life_loss_feedback") and ui.get_meta("life_loss_feedback").visible:
+		await create_timer(1.0).timeout
 	if ui._results.visible and ui._results._numbers != null and ui._results._numbers.is_running():
 		await ui._results._numbers.finished
 

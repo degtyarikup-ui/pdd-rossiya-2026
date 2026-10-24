@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -21,10 +22,16 @@ List<BoxShadow> gameSoftShadow(AppThemeColors colors) => colors.isDark
 
 /// Жизни сердцами: оставшиеся красные, потерянные приглушены.
 class GameLives extends StatelessWidget {
-  const GameLives({super.key, required this.lives, this.total = 3});
+  const GameLives({
+    super.key,
+    required this.lives,
+    this.total = 3,
+    this.compact = false,
+  });
 
   final int lives;
   final int total;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -32,21 +39,47 @@ class GameLives extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (var i = 0; i < total; i++)
+        for (var i = 0; i < (compact ? 1 : total); i++)
           Padding(
             padding: EdgeInsets.only(left: i == 0 ? 0 : 3),
             child: AnimatedScale(
-              duration: const Duration(milliseconds: 220),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 220),
               scale: i < lives ? 1 : 0.85,
-              child: Icon(
-                i < lives
-                    ? Icons.favorite_rounded
-                    : Icons.favorite_border_rounded,
-                size: total > 3 ? 15 : 22,
-                color: i < lives ? colors.red : colors.secondaryText,
+              child: AnimatedSwitcher(
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 350),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 1.5, end: 1).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: Icon(
+                  i < lives
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  key: ValueKey(i < lives),
+                  size: total > 3 ? 15 : 22,
+                  color: i < lives ? colors.red : colors.secondaryText,
+                ),
               ),
             ),
           ),
+        if (compact) ...[
+          const SizedBox(width: 4),
+          Text(
+            '$lives',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: colors.primaryText,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -54,10 +87,16 @@ class GameLives extends StatelessWidget {
 
 /// Счёт блица: число и множитель серии, если он есть.
 class GameScoreLabel extends StatelessWidget {
-  const GameScoreLabel({super.key, required this.score, this.streak = 0});
+  const GameScoreLabel({
+    super.key,
+    required this.score,
+    this.streak = 0,
+    this.shortCombo = false,
+  });
 
   final int score;
   final int streak;
+  final bool shortCombo;
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +124,7 @@ class GameScoreLabel extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              appL10n.gameCurrentCombo(streak),
+              shortCombo ? '×$streak' : appL10n.gameCurrentCombo(streak),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -105,16 +144,39 @@ class GameTimeBar extends StatelessWidget {
     super.key,
     required this.secondsLeft,
     required this.totalSeconds,
+    this.inline = false,
   });
 
   final int secondsLeft;
   final int totalSeconds;
+  final bool inline;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final fraction = (secondsLeft / totalSeconds).clamp(0.0, 1.0);
     final urgent = secondsLeft <= 10;
+    if (inline) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.timer_rounded,
+            size: 18,
+            color: urgent ? colors.red : colors.secondaryText,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            appL10n.gameSecondsLeft(secondsLeft),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: urgent ? colors.red : colors.primaryText,
+            ),
+          ),
+        ],
+      );
+    }
     return Row(
       children: [
         Expanded(

@@ -1660,6 +1660,7 @@ func _process(delta: float) -> void:
 	_update_ambient_walkers(delta)
 	_update_spawning(delta)
 	_update_cars(delta)
+	if is_game_over: return
 
 	if is_instance_valid(ui):
 		var time_metric := seconds_left if game_mode == "blitz" else patrol_elapsed
@@ -4096,9 +4097,10 @@ func _is_car_exiting_violation_window(car: ViolatorCar) -> bool:
 
 
 func _on_violator_missed(car: ViolatorCar) -> void:
-	if car.violation_state != "active":
+	if is_game_over or car.violation_state != "active":
 		return
 	car.violation_state = "missed"
+	wrong_count += 1
 	combo = 0
 	lives = maxi(0, lives - 1)
 	# Point the car out: who it was and what it broke.
@@ -4251,6 +4253,7 @@ func get_classification_options(correct_code: String) -> Array:
 
 
 func _on_classification_selected(chosen_code: String) -> void:
+	if is_game_over or _exiting: return
 	Engine.time_scale = 1.0
 	is_classifying = false
 
@@ -4268,7 +4271,7 @@ func _on_classification_selected(chosen_code: String) -> void:
 			max_combo = combo
 
 		# Life restoration on 5x streak in Endless Patrol mode
-		if combo == 5 and lives < int(economy.get("lives", 5)):
+		if game_mode == "patrol" and combo == 5 and lives < int(economy.get("lives", 5)):
 			lives += 1
 			if is_instance_valid(ui):
 				ui.show_toast(ViolatorUiScript.tr_v("violatorLifeRestored"), false)
@@ -4286,6 +4289,8 @@ func _on_classification_selected(chosen_code: String) -> void:
 			ui.show_toast(ViolatorUiScript.tr_v("violatorWrongAnswer") % ViolatorUiScript.tr_v(ui._violation_l10n_key(locked_car.violation_type)), true)
 		lives = maxi(0, lives - 1)
 		combo = 0
+		if is_instance_valid(ui):
+			ui.update_hud(score, combo, seconds_left if game_mode == "blitz" else patrol_elapsed, lives)
 		if lives <= 0:
 			_end_game()
 
@@ -4300,6 +4305,8 @@ func _on_classification_selected(chosen_code: String) -> void:
 func _start_game() -> void:
 	is_game_over = false
 	is_classifying = false
+	locked_car = null
+	Engine.time_scale = 1.0
 	score = 0
 	combo = 0
 	max_combo = 0
@@ -4338,6 +4345,9 @@ func _end_game() -> void:
 	if is_game_over:
 		return
 	is_game_over = true
+	is_classifying = false
+	locked_car = null
+	missed_marks.clear()
 	Engine.time_scale = 1.0
 
 	var is_rec := score > previous_best

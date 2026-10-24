@@ -1388,7 +1388,7 @@
   "gameViolatorPhaseNight": "Night patrol: stay alert",
   "gameViolatorPhaseRain": "Heavy rain: slippery asphalt",
   "gameViolatorEmergencyExempt": "False alarm! Emergency vehicle has the right of way",
-  "gameViolatorMissedLifeWarning": "Violator missed! (-1 life)",
+  "gameViolatorMissedLifeWarning": "Violator missed!",
   "gameViolatorCaught": "Violator identified!",
   "gameViolatorFalseAlarm": "False alarm! Car obeys rules",
   "gameViolatorWrongQualification": "Incorrect violation type",
@@ -1442,5 +1442,6 @@
       }
     }
   },
-  "roadSignsWrongFeedback": "Incorrect · −1 life"
+  "roadSignsWrongFeedback": "Incorrect · −1 life",
+  "gameLifeLost": "One life lost"
 }

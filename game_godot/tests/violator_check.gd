@@ -364,6 +364,13 @@ func _check_endless_patrol_mode() -> void:
 
 	game._on_mode_toggled("blitz")
 	_check("Mode switched back to blitz", game.game_mode == "blitz")
+	game.lives = 3
+	game.combo = 4
+	var blitz_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
+	blitz_car.violation_state = "active"
+	game.locked_car = blitz_car
+	game._on_classification_selected(ViolatorScript.VIOLATION_RED_LIGHT)
+	_check("Blitz streak does not restore patrol-only lives", game.lives == 3)
 
 	game.queue_free()
 
@@ -389,6 +396,7 @@ func _check_missed_violator_tracking() -> void:
 
 	_check("Unapprehended violator state becomes missed", car.violation_state == "missed")
 	_check("Missed violator resets combo streak to 0", game.combo == 0)
+	_check("Missed violator is counted in results", game.wrong_count == 1)
 	_check("Missed violator decrements lives (-1 life)", game.lives == lives_start - 1)
 
 	game.queue_free()

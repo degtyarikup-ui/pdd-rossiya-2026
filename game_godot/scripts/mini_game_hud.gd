@@ -80,3 +80,31 @@ static func lives_width(hearts: Array[Label], count: Label, compact: bool) -> fl
 	var font := count.get_theme_font("font")
 	var digit := font.get_string_size("5", HORIZONTAL_ALIGNMENT_LEFT, -1, count.get_theme_font_size("font_size")).x
 	return heart + HEART_GAP + digit
+
+
+## Place a penalty directly below the shared HUD without intercepting gameplay input.
+static func show_life_loss(owner: Control, top_bar: Control, amount := 1) -> void:
+	if not owner.is_inside_tree() or not top_bar.is_visible_in_tree(): return
+	var feedback = owner.get_meta("life_loss_feedback") if owner.has_meta("life_loss_feedback") else null
+	if not is_instance_valid(feedback):
+		feedback = preload("res://scripts/life_loss_feedback.gd").new()
+		owner.add_child(feedback)
+		owner.set_meta("life_loss_feedback", feedback)
+	var at := Vector2(owner.size.x * 0.5, top_bar.position.y + top_bar.size.y + 12)
+	feedback.play(amount, at, OS.get_cmdline_user_args().has("--reduce-motion"))
+
+
+static func clear_life_loss(owner: Control) -> void:
+	var feedback = owner.get_meta("life_loss_feedback") if owner.has_meta("life_loss_feedback") else null
+	if is_instance_valid(feedback): feedback.clear()
+
+
+## Keep the last penalty readable; a restart/exit invalidates this pending result.
+static func finish_life_loss(owner: Control) -> bool:
+	var feedback = owner.get_meta("life_loss_feedback") if owner.has_meta("life_loss_feedback") else null
+	if not is_instance_valid(feedback) or not feedback.visible: return true
+	var generation: int = feedback.play_id
+	var remaining := maxf(0.0, (feedback.expires_at - Time.get_ticks_msec()) / 1000.0)
+	if remaining > 0.0:
+		await owner.get_tree().create_timer(remaining, true, false, true).timeout
+	return is_instance_valid(owner) and is_instance_valid(feedback) and feedback.play_id == generation

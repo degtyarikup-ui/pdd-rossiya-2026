@@ -1388,7 +1388,7 @@
   "gameViolatorPhaseNight": "Түнгі патруль: мұқият болыңыз",
   "gameViolatorPhaseRain": "Нөсер: тайғақ асфальт",
   "gameViolatorEmergencyExempt": "Жалған шақыру! Арнайы көлікке өтуге құқығы бар",
-  "gameViolatorMissedLifeWarning": "Ереже бұзушы жіберіп алынды! (-1 өмір)",
+  "gameViolatorMissedLifeWarning": "Ереже бұзушы жіберіп алынды!",
   "gameViolatorCaught": "Ереже бұзушы анықталды!",
   "gameViolatorFalseAlarm": "Жалған шақыру! Көлік ереже сақтауда",
   "gameViolatorWrongQualification": "Ереже бұзу түрі қате таңдалды",
@@ -1442,5 +1442,6 @@
       }
     }
   },
-  "roadSignsWrongFeedback": "Қате · −1 өмір"
+  "roadSignsWrongFeedback": "Қате · −1 өмір",
+  "gameLifeLost": "Бір өмір жоғалды"
 }

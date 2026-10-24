@@ -4089,8 +4089,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Жалған шақыру! Арнайы көлікке өтуге құқығы бар';
 
   @override
-  String get gameViolatorMissedLifeWarning =>
-      'Ереже бұзушы жіберіп алынды! (-1 өмір)';
+  String get gameViolatorMissedLifeWarning => 'Ереже бұзушы жіберіп алынды!';
 
   @override
   String get gameViolatorCaught => 'Ереже бұзушы анықталды!';
@@ -4178,4 +4177,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get roadSignsWrongFeedback => 'Қате · −1 өмір';
+
+  @override
+  String get gameLifeLost => 'Бір өмір жоғалды';
 }

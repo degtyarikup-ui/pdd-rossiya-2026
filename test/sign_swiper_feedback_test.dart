@@ -1,3 +1,4 @@
+import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -136,7 +137,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 180));
       expect(answered, [true]);
       expect(swiped, isEmpty);
-      expect(find.text(appL10n.signSwiperIncorrect), findsOneWidget);
+      expect(find.byType(GameLifeLossBadge), findsOneWidget);
       expect(
         find.text(appL10n.signSwiperCorrectAnswer(question.leftActionLabel)),
         findsOneWidget,
@@ -170,7 +171,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 160));
     expect(find.text(appL10n.gameCorrect), findsOneWidget);
-    expect(find.text(appL10n.signSwiperIncorrect), findsNothing);
+    expect(find.byType(GameLifeLossBadge), findsNothing);
     await capture(tester, 'correct');
     await tester.pumpAndSettle();
   });

@@ -4110,7 +4110,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Ложный вызов! Спецтранспорт со спецсигналами имеет право проезда';
 
   @override
-  String get gameViolatorMissedLifeWarning => 'Нарушитель упущен! (-1 жизнь)';
+  String get gameViolatorMissedLifeWarning => 'Нарушитель упущен!';
 
   @override
   String get gameViolatorCaught => 'Нарушитель зафиксирован!';
@@ -4199,4 +4199,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get roadSignsWrongFeedback => 'Неверно · −1 жизнь';
+
+  @override
+  String get gameLifeLost => 'Потеряна одна жизнь';
 }

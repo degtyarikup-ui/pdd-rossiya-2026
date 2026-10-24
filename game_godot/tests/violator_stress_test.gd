@@ -18,6 +18,10 @@ var failed := 0
 
 
 func _init() -> void:
+	_run.call_deferred()
+
+
+func _run() -> void:
 	print("=== EMPIRICAL CHALLENGER: VIOLATOR STRESS TEST ===")
 	_test_violation_boundaries_and_edges()
 	_test_innocent_car_penalties()
@@ -28,6 +32,7 @@ func _init() -> void:
 	_test_classification_timeout()
 	_test_screen_tap_fallback_and_miss()
 	_test_despawn_unapprehended_cleanup()
+	await process_frame
 	_report()
 
 
@@ -49,6 +54,8 @@ func _test_violation_boundaries_and_edges() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	# This fixture inspects ten independent violations; depletion is tested below.
+	game.lives = 20
 
 	# 1.1 RED_LIGHT
 	var rl_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)

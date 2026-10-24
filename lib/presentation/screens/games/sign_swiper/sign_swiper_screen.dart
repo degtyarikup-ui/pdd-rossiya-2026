@@ -1,5 +1,6 @@
 import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -18,7 +19,7 @@ import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/sign_expl
 import 'package:pdd_app/presentation/screens/games/sign_swiper/widgets/swipe_card_view.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_art.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
-import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 class SignSwiperScreen extends ConsumerStatefulWidget {
@@ -284,44 +285,21 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
 
   Widget _buildHeader(AppThemeColors colors) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppDimensions.screenPadding,
-        AppDimensions.spacingM,
-        AppDimensions.screenPadding,
-        AppDimensions.spacingL,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.screenPadding,
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              AppChromeIconButton(
-                icon: Icons.close_rounded,
-                onTap: () {
-                  HapticFeedbackHelper.tap();
-                  if (_totalSwipedInRound > 0) _endGame();
-                  Navigator.of(context).pop();
-                },
-              ),
-              Expanded(
-                child: Center(
-                  child: GameScoreLabel(score: _score, streak: _combo),
-                ),
-              ),
-              SizedBox(
-                width: 90,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: GameLives(
-                    lives: _lives,
-                    total: GameEconomy.miniGameLives,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.spacingM),
-          GameTimeBar(secondsLeft: _secondsLeft, totalSeconds: 60),
-        ],
+      child: MiniGameHud(
+        score: _score,
+        combo: _combo,
+        secondsLeft: _secondsLeft,
+        totalSeconds: GameEconomy.miniGameSeconds,
+        lives: _lives,
+        totalLives: GameEconomy.miniGameLives,
+        onExit: () {
+          HapticFeedbackHelper.tap();
+          if (_totalSwipedInRound > 0) _endGame();
+          Navigator.of(context).pop();
+        },
       ),
     );
   }

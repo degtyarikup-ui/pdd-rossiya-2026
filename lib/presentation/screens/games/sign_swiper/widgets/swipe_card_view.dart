@@ -8,6 +8,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/sign_swiper_model.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
+import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 
 /// Контроллер для программного свайпа карточки (кнопки внизу).
 class SwipeCardController {
@@ -469,10 +470,10 @@ class SwipeCardViewState extends State<SwipeCardView>
         math.max(
           textHeight(appL10n.gameSignQuestionScope, scopeStyle),
           math.max(
-                22.0,
+                24.0,
                 textHeight(
-                  appL10n.signSwiperIncorrect,
-                  const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                  '−1',
+                  const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                   width: math.max(1.0, constraints.maxWidth - 44),
                 ),
               ) +
@@ -576,34 +577,37 @@ class SwipeCardViewState extends State<SwipeCardView>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _correct
-                                    ? Icons.check_circle_rounded
-                                    : Icons.cancel_rounded,
-                                color: _correct ? colors.green : colors.red,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
+                          if (!_correct)
+                            const GameLifeLossBadge()
+                          else
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
                                   _correct
-                                      ? appL10n.gameCorrect
-                                      : appL10n.signSwiperIncorrect,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                    color: _correct
-                                        ? colors.primaryText
-                                        : colors.red,
+                                      ? Icons.check_circle_rounded
+                                      : Icons.cancel_rounded,
+                                  color: _correct ? colors.green : colors.red,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    _correct
+                                        ? appL10n.gameCorrect
+                                        : appL10n.signSwiperIncorrect,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      color: _correct
+                                          ? colors.primaryText
+                                          : colors.red,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
                           if (!_correct) ...[
                             const SizedBox(height: 4),
                             Text(

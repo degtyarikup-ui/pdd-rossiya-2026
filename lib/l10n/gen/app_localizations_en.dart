@@ -4096,7 +4096,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'False alarm! Emergency vehicle has the right of way';
 
   @override
-  String get gameViolatorMissedLifeWarning => 'Violator missed! (-1 life)';
+  String get gameViolatorMissedLifeWarning => 'Violator missed!';
 
   @override
   String get gameViolatorCaught => 'Violator identified!';
@@ -4184,4 +4184,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roadSignsWrongFeedback => 'Incorrect · −1 life';
+
+  @override
+  String get gameLifeLost => 'One life lost';
 }

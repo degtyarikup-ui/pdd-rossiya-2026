@@ -1,3 +1,4 @@
+import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -425,7 +426,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 160));
     expect(tester.widget<GameLives>(find.byType(GameLives)).lives, 0);
-    expect(find.text(appL10n.signSwiperIncorrect), findsOneWidget);
+    expect(find.byType(GameLifeLossBadge), findsOneWidget);
     expect(find.byType(GameResultOverlay), findsNothing);
     await tester.pump(const Duration(milliseconds: 960));
     await tester.pump(const Duration(milliseconds: 330));
@@ -450,7 +451,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 850));
     expect(tester.widget<GameTimeBar>(find.byType(GameTimeBar)).secondsLeft, 0);
     expect(find.byType(GameResultOverlay), findsNothing);
-    expect(find.text(appL10n.signSwiperIncorrect), findsOneWidget);
+    expect(find.byType(GameLifeLossBadge), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 120));
     await tester.pump(const Duration(milliseconds: 330));
     expect(find.byType(GameResultOverlay), findsOneWidget);
@@ -710,8 +711,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(GamesHubScreen), findsOneWidget);
     // Road signs game opens RoadSignsScreen
-    await tester.scrollUntilVisible(find.text(appL10n.gamesRoadSignsTitle), -200);
-    await tester.tapAt(tester.getCenter(find.text(appL10n.gamesRoadSignsTitle)));
+    await tester.scrollUntilVisible(
+      find.text(appL10n.gamesRoadSignsTitle),
+      -200,
+    );
+    await tester.tapAt(
+      tester.getCenter(find.text(appL10n.gamesRoadSignsTitle)),
+    );
     await tester.pumpAndSettle();
     expect(find.byType(RoadSignsScreen), findsOneWidget);
     await tester.tap(find.byIcon(Icons.close_rounded));

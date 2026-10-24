@@ -1957,7 +1957,7 @@
   "gameViolatorPhaseNight": "Ночной патруль: включите внимание",
   "gameViolatorPhaseRain": "Ливень: скользкий асфальт",
   "gameViolatorEmergencyExempt": "Ложный вызов! Спецтранспорт со спецсигналами имеет право проезда",
-  "gameViolatorMissedLifeWarning": "Нарушитель упущен! (-1 жизнь)",
+  "gameViolatorMissedLifeWarning": "Нарушитель упущен!",
   "gameViolatorCaught": "Нарушитель зафиксирован!",
   "gameViolatorFalseAlarm": "Ложный вызов! Машина едет по правилам",
   "gameViolatorWrongQualification": "Неверная квалификация нарушения",
@@ -2011,5 +2011,6 @@
       }
     }
   },
-  "roadSignsWrongFeedback": "Неверно · −1 жизнь"
+  "roadSignsWrongFeedback": "Неверно · −1 жизнь",
+  "gameLifeLost": "Потеряна одна жизнь"
 }
