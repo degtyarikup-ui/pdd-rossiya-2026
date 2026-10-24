@@ -150,7 +150,7 @@ export async function readSession(request, env) {
     const sessionTokenHash = await tokenHash(raw);
     const [generation, revoked] = await accountReadMany(env, entry.user.id, [
       'auth_generation:' + entry.user.id, 'revoked_session:' + entry.user.id + ':' + sessionTokenHash,
-    ]);
+    ], { sessionExpiresAt: entry.expiresAt });
     if ((generation || '') !== entry.generation) return null;
     if (revoked && Number(revoked) > Date.now()) return null;
     return { ...entry, key: null, sessionTokenHash };
@@ -164,7 +164,7 @@ export async function readSession(request, env) {
   const sessionTokenHash = await tokenHash(raw);
   const [generation, revoked] = await accountReadMany(env, entry.user.id, [
     'auth_generation:' + entry.user.id, 'revoked_session:' + entry.user.id + ':' + sessionTokenHash,
-  ]);
+  ], { sessionExpiresAt: entry.expiresAt });
   if ((generation || '') !== entry.generation) return null;
   if (revoked && Number(revoked) > Date.now()) return null;
   return { ...entry, key, sessionTokenHash };

@@ -2876,7 +2876,9 @@ async function saveUserProfile(env, user) {
 
   if (merged.email) {
     const emailKey = 'user_email:' + merged.email.toLowerCase().trim();
-    if (await env.INSTALLS.get(emailKey) !== merged.id) await env.INSTALLS.put(emailKey, merged.id);
+    // The email lookup is an admin projection, never part of account authority.
+    // AccountState queues and coalesces it with the primary commit.
+    if (env.__ACCOUNT_ID || await env.INSTALLS.get(emailKey) !== merged.id) await env.INSTALLS.put(emailKey, merged.id);
   }
 
   if (env.TRAFFIC && merged.provider && merged.provider !== 'guest' && !merged.suspect) {
@@ -4302,7 +4304,11 @@ export async function executeAccountEffect(effect, env) {
 
 // Only invoked over the private Durable Object binding after account routing.
 export async function handleAccountHttp(request, env) {
-  return workerHandlers.fetch(request, env, { waitUntil: task => env.__AFTER_ACCOUNT_COMMIT.push(() => task) });
+  return workerHandlers.fetch(request, env, { waitUntil: () => {
+    // Account effects must be persisted in the primary transaction. Starting a
+    // storage repair in this event (even via waitUntil) can break its output gate.
+    throw new Error('account background work requires durable outbox');
+  } });
 }
 export async function handleAccountMaintenance(path, request, env) {
   if (path === '/_account/iap-event') {

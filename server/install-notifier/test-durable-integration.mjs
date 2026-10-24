@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPair, exportPKCS8, SignJWT } from 'jose';
-import { accountRpc, routeAccountRequest } from './account_state.js';
+import { accountRead, accountRpc, routeAccountRequest } from './account_state.js';
 import { notificationRequest } from './notifications.js';
 import { handleSupportGetMessages } from './support_chat.js';
 import { accountTokenForUserId } from './store_account.js';
@@ -198,7 +198,7 @@ test('status GET replay after a committed refresh preserves exact expiry and oth
     assert.equal(response.status, 200);
     assert.equal(attempts, 2);
     assert.equal(storeReads, 2, 'only the first committed attempt queries transaction and subscription');
-    const user = JSON.parse(await env.INSTALLS.get('user:google_123'));
+    const user = JSON.parse(await accountRead(env, 'google_123', 'user:google_123'));
     assert.equal(user.entitlements.appstore.expiresAt, expiry);
     assert.equal(user.entitlements.admin_grant.expiresAt, grantExpiry);
     assert.equal(user.premiumExpiresAt, grantExpiry);
@@ -267,7 +267,7 @@ test('status refresh recovers a retryable primary commit failure and corrupt JSO
     assert.equal(response.status, 200);
     assert.equal(attempts, 2);
     assert.equal(profileCommits, 2);
-    const user = JSON.parse(await env.INSTALLS.get('user:google_123'));
+    const user = JSON.parse(await accountRead(env, 'google_123', 'user:google_123'));
     assert.equal(user.entitlements.appstore.expiresAt, expiry);
     assert.equal(user.entitlements.admin_grant.expiresAt, grantExpiry);
     assert.equal(user.premiumExpiresAt, grantExpiry);

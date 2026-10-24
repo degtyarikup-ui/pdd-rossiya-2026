@@ -34,9 +34,10 @@ export async function accountRead(env, id, key) {
 }
 // Session generation and individual revocation must be checked together, with
 // no cache window in which a logged-out or deleted account keeps access.
-export async function accountReadMany(env, id, keys) {
-  if (env.__ACCOUNT_ID === id || !env.ACCOUNTS) return Promise.all(keys.map(key => env.INSTALLS?.get(key)));
-  const response = await accountRpc(env, id, '/_account/read-many', { keys });
+export async function accountReadMany(env, id, keys, options = {}) {
+  if (env.__ACCOUNT_ID === id) return Promise.all(keys.map(key => env.INSTALLS?.get(key, options)));
+  if (!env.ACCOUNTS) return Promise.all(keys.map(key => env.INSTALLS?.get(key)));
+  const response = await accountRpc(env, id, '/_account/read-many', { keys, options });
   const body = response?.ok ? await response.json() : null;
   if (Array.isArray(body?.values) && body.values.length === keys.length
       && body.values.every(value => value === null || typeof value === 'string')) return body.values;
@@ -107,28 +108,49 @@ export class AccountState {
   // progress Response. The caller still receives the original result/error.
   serial(fn) { const result = this.tail.then(fn); this.tail = result.then(() => {}, () => {}); return result; }
   fetch(request) { return this.serial(() => this.handle(request)); }
-  alarm() { return this.serial(async () => { await this.expireRecords(); await this.flush(); }); }
+  alarm() { return this.serial(async () => {
+    // Alarms have a finite automatic retry budget. Save another wake-up before
+    // touching any maintenance data, including list(), so a quiet account can
+    // recover even after a long downstream outage or an object restart.
+    await this.state.storage.setAlarm(Date.now() + 65000);
+    const expiry = await this.expireRecords();
+    const pending = await this.flush();
+    const next = Math.min(expiry, pending ? Date.now() + 65000 : Infinity);
+    if (Number.isFinite(next)) await this.state.storage.setAlarm(next);
+    else await this.state.storage.deleteAlarm();
+  }); }
   async scheduleExpiry(at) {
     const current = await this.state.storage.getAlarm?.();
-    if (!current || current <= Date.now() || at < current) await this.state.storage.setAlarm(at);
+    // Never postpone an already due alarm: a steady stream of account writes
+    // must not keep pushing its pending projection into the future.
+    if (!current || at < current) await this.state.storage.setAlarm(at);
   }
   async expireRecords() {
     let next = Infinity;
     let start;
     for (;;) {
       const records = await this.state.storage.list({ prefix: 'doc:', limit: MAINTENANCE_PAGE, ...(start ? { start } : {}) });
-      for (const record of records.values()) if (record.expiresAt && !stale(this.env, record)) {
-        if (record.expiresAt <= Date.now()) {
+      for (const record of records.values()) if (!stale(this.env, record)) {
+        const revocation = record.key.startsWith('revoked_session:');
+        const expiry = record.expiresAt || (revocation && record.value !== null ? Number(record.value) : 0);
+        const legacyNegative = revocation && record.value === null && !expiry;
+        if (legacyNegative || (expiry && expiry <= Date.now())) {
           await this.state.storage.transaction(async txn => {
-            await this.persistRecord(txn, { key: record.key, value: null, options: {} });
-            if (!noProjection(record.key)) await txn.put('projection:' + record.key, { key: record.key });
+            // Expired revocations need no permanent tombstone: the original
+            // credential has already expired. Other account/financial deletion
+            // markers remain authoritative and must never be removed here.
+            if (revocation) await txn.delete('doc:' + record.key);
+            else await this.persistRecord(txn, { key: record.key, value: null, options: {} });
+            if (!noProjection(record.key)) await txn.put('projection:' + record.key, {
+              key: record.key, ...(revocation ? { deleted: true, epoch: accountEpoch(this.env) } : {}),
+            });
           });
-        } else next = Math.min(next, record.expiresAt);
+        } else if (expiry) next = Math.min(next, expiry);
       }
       if (records.size < MAINTENANCE_PAGE) break;
       start = [...records.keys()].at(-1) + '\u0000';
     }
-    if (Number.isFinite(next)) await this.scheduleExpiry(next);
+    return next;
   }
   async loadRecord(key) {
     const record = await this.state.storage.get('doc:' + key);
@@ -158,16 +180,19 @@ export class AccountState {
     } else await txn.put('doc:' + record.key, record);
     for (let i = chunks; i < (previous?.chunks || 0); i++) await txn.delete('chunk:' + record.key + ':' + i);
   }
-  async flush() {
+  async flushIndexes() {
     const indexes = await this.state.storage.list({ prefix: 'index:', limit: MAINTENANCE_PAGE });
     for (const [key, order] of indexes) {
       try {
         const response = await accountRpc(this.env, 'payment-directory', '/_directory/register', order);
         if (!response?.ok) throw new Error('payment directory unavailable');
         await this.state.storage.delete(key);
-      } catch { await this.state.storage.setAlarm(Date.now() + 65000); return; }
+      } catch { return false; }
     }
-    if (indexes.size === MAINTENANCE_PAGE) await this.scheduleExpiry(Date.now() + 65000);
+    return indexes.size < MAINTENANCE_PAGE;
+  }
+  async flush() {
+    let pendingWork = !await this.flushIndexes();
     const outbox = await this.state.storage.list({ prefix: 'effect:', limit: 25 });
     let retryEffects = false;
     for (const [key, effect] of outbox) {
@@ -177,18 +202,31 @@ export class AccountState {
         await this.state.storage.delete(key);
       } catch { retryEffects = true; }
     }
-    if (retryEffects || outbox.size === 25) await this.scheduleExpiry(Date.now() + 65000);
+    if (retryEffects || outbox.size === 25) pendingWork = true;
     const pending = await this.state.storage.list({ prefix: 'projection:', limit: MAINTENANCE_PAGE });
     for (const [key, pendingRecord] of pending) {
       try {
+        if (pendingRecord.projectionOnly) {
+          if (String(pendingRecord.epoch) === accountEpoch(this.env)) {
+            const current = await this.env.INSTALLS.get(pendingRecord.key);
+            if (pendingRecord.value !== null) {
+              if (current !== pendingRecord.value) await this.env.INSTALLS.put(pendingRecord.key, pendingRecord.value);
+            } else if (current === pendingRecord.ownerId) await this.env.INSTALLS.delete(pendingRecord.key);
+          }
+          await this.state.storage.delete(key); continue;
+        }
+        if (pendingRecord.deleted) {
+          if (String(pendingRecord.epoch) === accountEpoch(this.env)) await this.env.INSTALLS.delete(pendingRecord.key);
+          await this.state.storage.delete(key); continue;
+        }
         const record = await this.loadRecord(pendingRecord.key);
         if (!record || stale(this.env, record)) { await this.state.storage.delete(key); continue; }
         if (record.value == null) await this.env.INSTALLS.delete(record.key);
         else await this.env.INSTALLS.put(record.key, record.value, record.options);
         await this.state.storage.delete(key);
-      } catch { await this.state.storage.setAlarm(Date.now() + 65000); return; }
+      } catch { pendingWork = true; break; }
     }
-    if (pending.size === MAINTENANCE_PAGE) await this.scheduleExpiry(Date.now() + 65000);
+    return pendingWork || pending.size === MAINTENANCE_PAGE;
   }
   async handle(request) {
     const path = new URL(request.url).pathname;
@@ -198,35 +236,67 @@ export class AccountState {
     const owner = await this.state.storage.get('account-id');
     if (owner && owner !== id) return json({ error: 'wrong account' }, 403);
     if (!owner) await this.state.storage.put('account-id', id);
-    const writes = new Map(), effects = [], durableEffects = [];
+    const writes = new Map(), projections = new Map(), durableEffects = [];
     const get = async (key, options) => {
       if (!scoped(key, id)) return this.env.INSTALLS.get(key, options);
+      const revocation = key.startsWith('revoked_session:' + id + ':');
       let record = writes.get(key) || await this.loadRecord(key);
       if (!writes.has(key) && stale(this.env, record)) record = null;
       if (!record) {
         let value = null;
         if (!noProjection(key)) value = await this.env.INSTALLS.get(key);
         record = { key, value, options: {} };
+        if (revocation) {
+          const expiry = value === null ? options?.sessionExpiresAt : Number(value);
+          // Hintless legacy/private reads must not create another permanent
+          // negative entry. Positive revocations still remain authoritative.
+          if (value === null && (!Number.isFinite(expiry) || expiry <= 0)) return null;
+          if (Number.isFinite(expiry) && expiry > 0) {
+            record.expiresAt = expiry;
+            await this.scheduleExpiry(expiry);
+          }
+        }
         await this.state.storage.transaction(txn => this.persistRecord(txn, record));
+      }
+      if (revocation && !writes.has(key)) {
+        // Only readSession supplies this hint, after validating the signed or
+        // legacy credential. It bounds negative cache entries without adding a
+        // KV read to every authenticated request. A logout still overwrites the
+        // same authoritative document immediately.
+        const expiry = record.value === null ? options?.sessionExpiresAt : Number(record.value);
+        if (Number.isFinite(expiry) && expiry > 0 && record.expiresAt !== expiry) {
+          record = { ...record, expiresAt: expiry };
+          await this.scheduleExpiry(expiry);
+          await this.state.storage.transaction(txn => this.persistRecord(txn, record));
+        }
       }
       if (record.expiresAt && record.expiresAt <= Date.now()) return null;
       return options === 'json' || options?.type === 'json' ? parse(record.value) : record.value;
     };
     const put = async (key, value, options = {}) => {
+      if (key.startsWith('user_email:')) {
+        projections.set(key, { key, value: String(value), projectionOnly: true, ownerId: id, epoch: accountEpoch(this.env) }); return;
+      }
       if (!scoped(key, id)) return this.env.INSTALLS.put(key, value, options);
       const expiresAt = options.expiration ? options.expiration * 1000 : options.expirationTtl ? Date.now() + options.expirationTtl * 1000 : undefined;
       writes.set(key, { key, value: String(value), options, expiresAt });
     };
     const del = async key => {
+      if (key.startsWith('user_email:')) {
+        projections.set(key, { key, value: null, projectionOnly: true, ownerId: id, epoch: accountEpoch(this.env) }); return;
+      }
       if (!scoped(key, id)) return this.env.INSTALLS.delete(key);
       writes.set(key, { key, value: null, options: {} });
     };
     const installs = new Proxy(this.env.INSTALLS, { get: (target, key) => key === 'get' ? get : key === 'put' ? put : key === 'delete' ? del : typeof target[key] === 'function' ? target[key].bind(target) : target[key] });
     const commit = async () => {
+      if (!writes.size && !projections.size && !durableEffects.length) return;
       // Persist recovery before the primary commit. A process death immediately
       // after commit must not strand a quiet account's outbox without an alarm.
       // A failed transaction can leave a harmless no-op alarm behind.
-      if (writes.size || durableEffects.length) await this.scheduleExpiry(Date.now() + 65000);
+      const expiry = Math.min(Date.now() + 65000,
+        ...[...writes.values()].map(record => record.expiresAt || Infinity));
+      await this.scheduleExpiry(expiry);
       await this.state.storage.transaction(async txn => {
         for (const record of writes.values()) {
           await this.persistRecord(txn, record);
@@ -234,22 +304,25 @@ export class AccountState {
           if (record.key.startsWith('pay_order:') && record.value) await txn.put('index:' + record.key, parse(record.value));
         }
         for (const effect of durableEffects) await txn.put('effect:' + crypto.randomUUID(), effect);
+        for (const projection of projections.values()) await txn.put('projection:' + projection.key, projection);
       });
       durableEffects.length = 0;
-      for (const record of writes.values()) if (record.expiresAt) await this.scheduleExpiry(record.expiresAt);
       writes.clear();
+      projections.clear();
     };
     const checkpoint = async () => {
-      await commit(); await this.flush();
-      if ((await this.state.storage.list({ prefix: 'index:', limit: 1 })).size) throw new Error('payment directory unavailable');
+      await commit();
+      // Payment creation requires the ownership directory, but never unrelated
+      // KV projections, Telegram or analytics. An uncertain POST is not retried.
+      if (!await this.flushIndexes()) throw new Error('payment directory unavailable');
     };
-    const env = { ...this.env, INSTALLS: installs, __ACCOUNT_ID: id, __AFTER_ACCOUNT_COMMIT: effects, __DURABLE_EFFECTS: durableEffects, __ACCOUNT_CHECKPOINT: checkpoint };
+    const env = { ...this.env, INSTALLS: installs, __ACCOUNT_ID: id, __DURABLE_EFFECTS: durableEffects, __ACCOUNT_CHECKPOINT: checkpoint };
     let response;
     if (path === '/_account/read-many') {
-      const { keys } = await request.json();
+      const { keys, options } = await request.json();
       if (!Array.isArray(keys) || !keys.length || keys.length > 8
           || keys.some(key => typeof key !== 'string' || !scoped(key, id))) return json({ error: 'invalid keys' }, 400);
-      response = json({ values: await Promise.all(keys.map(key => get(key))) });
+      response = json({ values: await Promise.all(keys.map(key => get(key, options))) });
     } else if (path === '/_account/read' || path === '/_account/write') {
       const body = await request.json();
       if (!scoped(body.key || '', id)) return json({ error: 'invalid key' }, 400);
@@ -276,10 +349,9 @@ export class AccountState {
     }
     if (response.status < 500) {
       await commit();
-      // The durable index outbox also retries failures after a restart.
-      for (const effect of effects) { try { await effect(); } catch { console.error('Committed account effect deferred'); } }
-      await this.flush();
-      if ((await this.state.storage.list({ prefix: 'projection:', limit: 1 })).size) await this.state.storage.setAlarm(Date.now() + 65000);
+      // No storage or repair work after commit: even a caught native storage
+      // failure can invalidate the HTTP response through the DO output gate.
+      // Durable effects and KV projections run in the separate alarm event.
     }
     return response;
   }

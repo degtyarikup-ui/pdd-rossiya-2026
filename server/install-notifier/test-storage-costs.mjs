@@ -30,8 +30,8 @@ function countStorage(env) {
   return { writes, calls };
 }
 
-test('100 changed answers save all progress immediately, but only one profile and one DO request per sync', async () => clocked(async (setTime, start) => {
-  const { env, restart } = fixture();
+test('100 changed answers commit immediately with one DO request per sync and batched KV projections', async () => clocked(async (setTime, start) => {
+  const { env, restart, objects, states } = fixture();
   await env.INSTALLS.put('user:google_123', JSON.stringify(identity()));
   const token = await session(env), { writes, calls } = countStorage(env);
   const progress = { questionProgressAb: {} };
@@ -42,19 +42,23 @@ test('100 changed answers save all progress immediately, but only one profile an
       userId: 'google_123', progress, appVersion: '2.2.4+90', platform: 'android',
     }, token), env);
     assert.equal(response.status, 200);
-    // KV remains a complete up-to-date backup, even before an alarm fires.
-    assert.equal(Object.keys(JSON.parse(await env.INSTALLS.get('user_progress:google_123')).questionProgressAb).length, i + 1);
+    // The acknowledged primary snapshot is complete before any projection runs.
+    assert.equal(Object.keys((await response.json()).progress.questionProgressAb).length, i + 1);
+    if (await states.get('google_123').getAlarm() <= Date.now()) await objects.get('google_123').alarm();
   }
-  assert.equal(writes.filter(key => key === 'user_progress:google_123').length, 100);
+  assert.equal(writes.filter(key => key === 'user_progress:google_123').length, 1);
   assert.equal(writes.filter(key => key === 'user:google_123').length, 1);
   assert.equal(calls.length, 100);
   restart('google_123');
   const response = await worker.fetch(request('/api/user/progress?userId=google_123', undefined, token), env);
   assert.equal(Object.keys((await response.json()).progress.questionProgressAb).length, 100);
+  await objects.get('google_123').alarm();
+  assert.equal(Object.keys(JSON.parse(await env.INSTALLS.get('user_progress:google_123')).questionProgressAb).length, 100);
+  assert.equal(writes.filter(key => key === 'user_progress:google_123').length, 2);
 }));
 
 test('unchanged retries do no KV writes; heartbeat and changed platform/version remain visible', async () => clocked(async (setTime, start) => {
-  const { env } = fixture();
+  const { env, objects } = fixture();
   await env.INSTALLS.put('user:google_123', JSON.stringify(identity()));
   const token = await session(env), { writes } = countStorage(env);
   const body = { userId: 'google_123', progress: {}, appVersion: '2.2.4+90', platform: 'android' };
@@ -62,13 +66,13 @@ test('unchanged retries do no KV writes; heartbeat and changed platform/version 
     const response = await worker.fetch(request('/api/user/progress/sync', body, token), env);
     assert.equal(response.status, 200); return response.json();
   };
-  const initial = await sync(); writes.length = 0;
+  const initial = await sync(); await objects.get('google_123').alarm(); writes.length = 0;
   for (let i = 1; i <= 100; i++) {
     setTime(start + i * 1000);
     assert.equal((await sync()).serverUpdatedAt, initial.serverUpdatedAt);
   }
   assert.equal(writes.length, 0);
-  setTime(start + 5 * 60000); await sync();
+  setTime(start + 5 * 60000); await sync(); await objects.get('google_123').alarm();
   assert.deepEqual(writes.sort(), ['user:google_123', 'user_progress:google_123']);
   writes.length = 0; setTime(start + 5 * 60000 + 1000);
   body.platform = 'ios'; body.appVersion = '2.3.0+100'; await sync();
@@ -76,6 +80,7 @@ test('unchanged retries do no KV writes; heartbeat and changed platform/version 
   assert.equal(user.platform, 'ios'); assert.equal(user.appVersion, '2.3.0+100');
   assert.equal(user.activity.ios, '1');
   assert.equal(user.versionObservations.ios.version, '2.3.0+100');
+  await objects.get('google_123').alarm();
   assert.ok(writes.includes('user:google_123'));
 }));
 
@@ -146,15 +151,19 @@ test('idle support polls read the active webhook flag once per minute, never cac
   resetSupportPollThrottle();
 }));
 
-test('profile sync does not rewrite an unchanged email index and still repairs a missing mapping', async () => {
-  const { env } = fixture(), token = await session(env), { writes } = countStorage(env);
+test('profile sync defers email index repair and does not rewrite an unchanged mapping', async () => {
+  const { env, objects } = fixture(), token = await session(env), { writes } = countStorage(env);
   const sync = () => worker.fetch(request('/api/user/sync', { id: 'google_123' }, token), env);
   assert.equal((await sync()).status, 200);
   const emailKey = 'user_email:fixture@example.invalid';
+  assert.equal(writes.filter(key => key === emailKey).length, 0);
+  await objects.get('google_123').alarm();
   assert.equal(writes.filter(key => key === emailKey).length, 1);
   assert.equal((await sync()).status, 200);
+  await objects.get('google_123').alarm();
   assert.equal(writes.filter(key => key === emailKey).length, 1);
   await env.INSTALLS.delete(emailKey);
   assert.equal((await sync()).status, 200);
+  await objects.get('google_123').alarm();
   assert.equal(await env.INSTALLS.get(emailKey), 'google_123');
 });

@@ -100,6 +100,8 @@ test('financial commit includes a durable notification outbox; queue outage and 
  env.TELEGRAM={idFromName:id=>id,get:()=>({fetch:async(_url,options)=>{queued.push(JSON.parse(options.body));return Response.json({ok:available},{status:available?200:503});}})};
  env.STATS={idFromName:id=>id,get:()=>({fetch:async()=>Response.json({ok:true})})};
  await env.INSTALLS.put('user:google_123',JSON.stringify(identity()));const order=await seedOrder(env);assert.equal((await callback(env,order)).status,200);
+ assert.equal(JSON.parse(await accountRead(env,'google_123','user:google_123')).isPremium,true);assert.equal(JSON.parse(await env.INSTALLS.get('user:google_123')).isPremium,undefined);
+ await objects.get('google_123').alarm();
  assert.equal(JSON.parse(await env.INSTALLS.get('user:google_123')).isPremium,true);assert.equal([...states.get('google_123').data.keys()].filter(k=>k.startsWith('effect:')).length,1);
  restart('google_123');available=true;await accountRead(env,'google_123','user:google_123');await objects.get('google_123').alarm();
  assert.equal([...states.get('google_123').data.keys()].filter(k=>k.startsWith('effect:')).length,0);assert.ok(queued.length>=2);assert.ok(queued.every(item=>item.dedupKey==='pay_paid:'+order.orderId));
@@ -119,7 +121,7 @@ test('admin user IDs normalize before DO routing and never escape canonical acco
 test('alarm is durable before primary commit so a crash before first flush cannot strand outbox',async()=>{
  const{env,objects,states,restart}=fixture();await env.INSTALLS.put('user:google_123',JSON.stringify(identity()));await accountRead(env,'google_123','user:google_123');
  const object=objects.get('google_123');object.flush=async()=>{throw new Error('fixture death immediately after primary commit');};
- const response=await worker.fetch(request('/api/admin/users/grant-premium',{userId:'google_123',days:7,notify:false},null,{authorization:'Bearer fixture-admin'}),env);assert.equal(response.status,500);
+ const response=await worker.fetch(request('/api/admin/users/grant-premium',{userId:'google_123',days:7,notify:false},null,{authorization:'Bearer fixture-admin'}),env);assert.equal(response.status,200);
  assert.equal(JSON.parse(await env.INSTALLS.get('user:google_123')).isPremium,undefined);assert.ok((await states.get('google_123').list({prefix:'projection:'})).size>0);assert.ok(await states.get('google_123').getAlarm());
  restart('google_123');assert.equal(JSON.parse(await accountRead(env,'google_123','user:google_123')).isPremium,true);await objects.get('google_123').alarm();assert.equal(JSON.parse(await env.INSTALLS.get('user:google_123')).isPremium,true);assert.equal((await states.get('google_123').list({prefix:'projection:'})).size,0);
 });

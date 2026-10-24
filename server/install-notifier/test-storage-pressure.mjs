@@ -98,7 +98,7 @@ test('expiry scans pages and projection drains in bounded batches without losing
   storage.list=async options=>{if(['doc:','projection:','index:'].includes(options?.prefix)){assert.ok(options.limit<=25);limits.push(options);}return original(options);};
   await obj.expireRecords();
   assert.ok(limits.filter(v=>v.prefix==='doc:').length>=3);
-  for(const key of expired)assert.equal((await storage.get('doc:'+key)).value,null);
+  for(const key of expired)assert.equal(await storage.get('doc:'+key),undefined);
   await obj.flush();assert.equal([...storage.data.keys()].filter(k=>k.startsWith('projection:')).length,36);
   await obj.flush();await obj.flush();
   assert.equal([...storage.data.keys()].filter(k=>k.startsWith('projection:')).length,0);
