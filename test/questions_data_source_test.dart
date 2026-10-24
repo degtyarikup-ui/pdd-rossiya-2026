@@ -212,7 +212,12 @@ void main() {
     () async {
       assets[config.markupJson()] = jsonEncode({
         'Горизонтальная': [
-          {'title': '1.1', 'description': 'Линия'},
+          {
+            'number': '1.1',
+            'title': 'Линия',
+            'image': './images/markup/solid.svg',
+            'description': 'Линия',
+          },
           {'title': '1.2'},
           false,
         ],
@@ -225,8 +230,13 @@ void main() {
       ]);
       expect(await source.loadMarkup('kk'), {
         'Горизонтальная': [
-          {'title': '1.1', 'description': 'Линия'},
-          {'title': '1.2', 'description': ''},
+          {
+            'number': '1.1',
+            'title': 'Линия',
+            'image': './images/markup/solid.svg',
+            'description': 'Линия',
+          },
+          {'number': '', 'title': '1.2', 'image': '', 'description': ''},
         ],
         'Не список': <Map<String, String>>[],
       });

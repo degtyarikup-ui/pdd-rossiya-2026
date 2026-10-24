@@ -149,7 +149,9 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
                       markupEntries: entries
                           .map(
                             (e) => MarkupEntry(
+                              number: e['number'] ?? '',
                               title: e['title'] ?? '',
+                              image: e['image'] ?? '',
                               description: e['description'] ?? '',
                             ),
                           )
@@ -168,11 +170,13 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
               } else {
                 filteredCategories = [];
                 for (final cat in categories) {
-                  final catTitleMatches =
-                      _normalize(cat.title).contains(normalizedQuery);
+                  final catTitleMatches = _normalize(
+                    cat.title,
+                  ).contains(normalizedQuery);
                   if (cat.markupEntries != null) {
                     final matchingEntries = cat.markupEntries!.where((e) {
                       return catTitleMatches ||
+                          _normalize(e.number).contains(normalizedQuery) ||
                           _normalize(e.title).contains(normalizedQuery) ||
                           _normalize(e.description).contains(normalizedQuery);
                     }).toList();
@@ -199,10 +203,12 @@ class _SignsScreenState extends ConsumerState<SignsScreen> {
                               val['name'] as String? ??
                               '',
                         );
-                        final desc =
-                            _normalize(val['description'] as String? ?? '');
-                        final folk =
-                            _normalize(val['folkName'] as String? ?? '');
+                        final desc = _normalize(
+                          val['description'] as String? ?? '',
+                        );
+                        final folk = _normalize(
+                          val['folkName'] as String? ?? '',
+                        );
                         final num = _normalize(key);
                         if (title.contains(normalizedQuery) ||
                             desc.contains(normalizedQuery) ||

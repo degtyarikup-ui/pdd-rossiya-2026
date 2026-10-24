@@ -1,0 +1,591 @@
+{
+  "reviewedAt": "2026-10-24",
+  "document": "Постановление Правительства РФ от 23.10.1993 № 1090, приложение 2, редакция от 28.08.2026",
+  "sources": [
+    {
+      "url": "https://www.consultant.ru/document/cons_doc_LAW_2709/8b4d779e30a40c4f48df8edd7c7d2e1a12e91d77/",
+      "graphicsUrl": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
+      "graphicsSha256": "9c7bbdde871cabe2f84903f72b926d74aefc46b71fda508d330fff78bf192e96"
+    },
+    {
+      "url": "https://www.consultant.ru/document/cons_doc_LAW_2709/438c1121182de8bf8439dec90f602392ec7e9bf8/",
+      "graphicsUrl": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_5/",
+      "graphicsSha256": "0d3e7e6dcbdd78eefc0401432f637a9809c9ddca92c96a54891f3e92e0827cbd"
+    }
+  ],
+  "generalRules": [
+    "В случаях если значения дорожных знаков, в том числе временных, и линий горизонтальной разметки противоречат друг другу либо разметка недостаточно различима, водители должны руководствоваться дорожными знаками. В случаях если линии временной разметки и линии постоянной разметки противоречат друг другу, водители должны руководствоваться линиями временной разметки."
+  ],
+  "entries": {
+    "1.1": {
+      "definition": "разделяет транспортные потоки противоположных направлений и обозначает границы полос движения в опасных местах на дорогах; обозначает границы стояночных мест транспортных средств;",
+      "rules": [
+        "Линии 1.1, 1.2 и 1.3 пересекать запрещается."
+      ],
+      "title": "Сплошная линия",
+      "image": "2c49fc36554ac1230451d3dcfa2eed8a.svg"
+    },
+    "1.2": {
+      "definition": "обозначает край проезжей части или границы участков проезжей части, на которые въезд запрещен;",
+      "rules": [
+        "Линии 1.1, 1.2 и 1.3 пересекать запрещается.",
+        "Линию 1.2 допускается пересекать для остановки транспортного средства на обочине и при выезде с нее в местах, где разрешена остановка или стоянка."
+      ],
+      "title": "Край проезжей части",
+      "image": "b09787ac2a9708e85c0f45bb31255023.svg"
+    },
+    "1.3": {
+      "definition": "разделяет транспортные потоки противоположных направлений на дорогах с четырьмя и более полосами для движения в обоих направлениях, с двумя или тремя полосами - при ширине полос более 3,75 м;",
+      "rules": [
+        "Линии 1.1, 1.2 и 1.3 пересекать запрещается."
+      ],
+      "title": "Двойная сплошная линия",
+      "image": "d32121834d8239fd05dd8a587bdf241a.svg"
+    },
+    "1.4": {
+      "definition": "обозначает места, где запрещена остановка транспортных средств;",
+      "rules": [],
+      "title": "Запрет остановки",
+      "image": "5d046f63f8522b2428f9c1d916ef9b30.svg"
+    },
+    "1.5": {
+      "definition": "разделяет транспортные потоки противоположных направлений на дорогах, имеющих две или три полосы; обозначает границы полос движения при наличии двух и более полос, предназначенных для движения в одном направлении;",
+      "rules": [
+        "Линии 1.5 - 1.8 пересекать разрешается с любой стороны."
+      ],
+      "title": "Прерывистая линия",
+      "image": "a55788ee9af2066f2602498f03982a64.svg"
+    },
+    "1.6": {
+      "definition": "предупреждает о приближении к разметке 1.1 или 1.11, которая разделяет транспортные потоки противоположных или попутных направлений;",
+      "rules": [
+        "Линии 1.5 - 1.8 пересекать разрешается с любой стороны."
+      ],
+      "title": "Линия приближения",
+      "image": "6312748b760235946e84f786e1ad761b.svg"
+    },
+    "1.7": {
+      "definition": "обозначает полосы движения в пределах перекрестка или зону парковки. Разметка синего цвета обозначает, что зона парковки используется на платной основе;",
+      "rules": [
+        "Линии 1.5 - 1.8 пересекать разрешается с любой стороны."
+      ],
+      "title": "Полосы на перекрёстке и зона парковки",
+      "image": "052393eeb65c015e755e6edbfd248279.svg"
+    },
+    "1.8": {
+      "definition": "обозначает границу между полосой разгона или торможения и основной полосой проезжей части;",
+      "rules": [
+        "Линии 1.5 - 1.8 пересекать разрешается с любой стороны."
+      ],
+      "title": "Граница полосы разгона или торможения",
+      "image": "66cddf91050d001ecc2518339bbb6b2f.svg"
+    },
+    "1.9": {
+      "definition": "обозначает границы полос движения, на которых осуществляется реверсивное регулирование; разделяет транспортные потоки противоположных направлений (при выключенных реверсивных светофорах) на дорогах, где осуществляется реверсивное регулирование;",
+      "rules": [
+        "Линию 1.9 при отсутствии реверсивных светофоров или когда они отключены разрешается пересекать, если она расположена справа от водителя; при включенных реверсивных светофорах - с любой стороны, если она разделяет полосы, по которым движение разрешено в одном направлении. При отключении реверсивных светофоров водитель должен немедленно перестроиться вправо за линию разметки 1.9.",
+        "Линию 1.9, разделяющую транспортные потоки противоположных направлений, при выключенных реверсивных светофорах пересекать запрещается."
+      ],
+      "title": "Реверсивная полоса",
+      "image": "b50709f7adac8283648b7a5a8c89da6a.svg"
+    },
+    "1.10": {
+      "definition": "обозначает места, где запрещена стоянка транспортных средств;",
+      "rules": [],
+      "title": "Запрет стоянки",
+      "image": "09a69c0276d8162a0239be409b737108.svg"
+    },
+    "1.11": {
+      "definition": "разделяет транспортные потоки противоположных или попутных направлений на участках дорог, где перестроение разрешено только из одной полосы; обозначает места, где необходимо разрешить движение только со стороны прерывистой линии (в местах разворота, въезда и выезда с прилегающей территории);",
+      "rules": [
+        "Линию 1.11 разрешается пересекать со стороны прерывистой линии, а также и со стороны сплошной линии, но только при завершении обгона или объезда."
+      ],
+      "title": "Сплошная и прерывистая линии",
+      "image": "389954cb614be0a7eed3b02dfb24c8ae.svg"
+    },
+    "1.12": {
+      "definition": "указывает место, где водитель должен остановиться при наличии знака 2.5 или при запрещающем сигнале светофора (регулировщика);",
+      "rules": [],
+      "title": "Стоп-линия",
+      "image": "official_1_12.svg"
+    },
+    "1.13": {
+      "definition": "указывает место, где водитель должен при необходимости остановиться, уступая дорогу транспортным средствам, движущимся по пересекаемой дороге;",
+      "rules": [],
+      "title": "Линия уступки дороги",
+      "image": "6fddedd13bad53946f25df4cd5ed22e8.svg"
+    },
+    "1.14.1": {
+      "definition": "обозначает пешеходный переход; стрелы разметки 1.14.2 указывают направление движения пешеходов;",
+      "rules": [],
+      "title": "Пешеходный переход",
+      "image": "official_1_14_1.svg"
+    },
+    "1.14.2": {
+      "definition": "обозначает пешеходный переход; стрелы разметки 1.14.2 указывают направление движения пешеходов;",
+      "rules": [],
+      "title": "Пешеходный переход со стрелами",
+      "image": "official_1_14_2.svg"
+    },
+    "1.14.3": {
+      "definition": "обозначает диагональный пешеходный переход;",
+      "rules": [],
+      "title": "Диагональный пешеходный переход",
+      "image": "official_1_14_3.svg"
+    },
+    "1.15": {
+      "definition": "обозначает место, где велосипедная дорожка пересекает проезжую часть;",
+      "rules": [],
+      "title": "Пересечение велосипедной дорожки",
+      "image": "official_1_15.svg"
+    },
+    "1.16.1": {
+      "definition": "обозначает островки, которые разделяют либо транспортные потоки противоположных направлений, либо места для стоянки транспортных средств (парковки) от велосипедных полос;",
+      "rules": [],
+      "title": "Островок разделения встречных потоков",
+      "image": "official_1_16_1.svg"
+    },
+    "1.16.2": {
+      "definition": "обозначает островки, разделяющие транспортные потоки одного направления;",
+      "rules": [],
+      "title": "Островок разделения попутных потоков",
+      "image": "official_1_16_2.svg"
+    },
+    "1.16.3": {
+      "definition": "обозначает островки в местах слияния транспортных потоков;",
+      "rules": [],
+      "title": "Островок слияния потоков",
+      "image": "official_1_16_3.svg"
+    },
+    "1.17.1": {
+      "definition": "обозначает места остановок маршрутных транспортных средств и стоянок транспортных средств, используемых в качестве легковых такси;",
+      "rules": [],
+      "title": "Остановка маршрутного транспорта и стоянка такси",
+      "image": "8e36e197ce8a6b3f19bfc56b065881ac.svg"
+    },
+    "1.17.2": {
+      "definition": "обозначает места остановок трамваев, если посадка и высадка производятся с проезжей части или с посадочной площадки, расположенной на ней;",
+      "rules": [],
+      "title": "Место остановки трамвая",
+      "image": "official_1_17_2.svg"
+    },
+    "1.18": {
+      "definition": "указывает разрешенные на перекрестке направления движения по полосам. Разметка с изображением тупика наносится для указания того, что поворот на ближайшую проезжую часть запрещен; разметка, разрешающая поворот налево из крайней левой полосы, разрешает и разворот;",
+      "rules": [],
+      "title": "Направления движения по полосам",
+      "image": "7d7c920210faef52e87e6aad54f525b6.svg"
+    },
+    "1.19": {
+      "definition": "предупреждает о приближении к сужению проезжей части (участку, где уменьшается число полос движения в данном направлении) или к линиям разметки 1.1 или 1.11, разделяющим транспортные потоки противоположных направлений;",
+      "rules": [],
+      "title": "Приближение к сужению или сплошной линии",
+      "image": "409962f0efc35a3802b07f464607c55e.svg"
+    },
+    "1.20": {
+      "definition": "предупреждает о приближении к разметке 1.13;",
+      "rules": [],
+      "title": "Приближение к линии уступки дороги",
+      "image": "1c7674cb91486b02ec7693c77673018b.svg"
+    },
+    "1.21": {
+      "definition": "предупреждает о приближении к разметке 1.12, когда она применяется в сочетании со знаком 2.5;",
+      "rules": [],
+      "title": "Приближение к стоп-линии",
+      "image": "807ef2c828847b676f7dfbf2cbe5c28c.svg"
+    },
+    "1.22": {
+      "definition": "обозначает номер дороги;",
+      "rules": [],
+      "title": "Номер дороги",
+      "image": "5b08f148beebfd94f47fb80d33ffc539.svg"
+    },
+    "1.23.1": {
+      "definition": "обозначает специальную полосу для маршрутных транспортных средств;",
+      "rules": [],
+      "title": "Полоса маршрутного транспорта",
+      "image": "75e1061ef45dd6b1e289f14659cf86ac.svg"
+    },
+    "1.23.2": {
+      "definition": "обозначение пешеходной дорожки или пешеходной части дорожки, предназначенной для совместного движения пешеходов, лиц, использующих для передвижения средства индивидуальной мобильности, и велосипедистов;",
+      "rules": [],
+      "title": "Пешеходная дорожка",
+      "image": "8cae82e35cea744fa4c960a86ba78b33.svg"
+    },
+    "1.23.3": {
+      "definition": "обозначение велосипедной дорожки (части дорожки) или полосы;",
+      "rules": [],
+      "title": "Велосипедная дорожка или полоса",
+      "image": "ab29a5836564e6a857d1fd9ff085d15b.svg"
+    },
+    "1.24.1": {
+      "definition": "дублирование предупреждающих дорожных знаков;",
+      "rules": [],
+      "title": "Дублирование предупреждающих знаков",
+      "image": "official_1_24_1.svg"
+    },
+    "1.24.2": {
+      "definition": "дублирование запрещающих дорожных знаков;",
+      "rules": [],
+      "title": "Дублирование запрещающих знаков",
+      "image": "official_1_24_2.svg"
+    },
+    "1.24.3": {
+      "definition": "дублирование дорожного знака \"Инвалиды\";",
+      "rules": [],
+      "title": "Место для транспортных средств с обозначением «Инвалид»",
+      "image": "official_1_24_3.svg"
+    },
+    "1.24.4": {
+      "definition": "дублирование дорожного знака \"Фотовидеофиксация\" и (или) обозначение участков дороги, на которых может осуществляться фотовидеофиксация; разметка 1.24.4 может применяться самостоятельно;",
+      "rules": [],
+      "title": "Фотовидеофиксация",
+      "image": "official_1_24_4.svg"
+    },
+    "1.24.5": {
+      "definition": "дублирование таблички 8.4.3.1; разметка 1.24.5 может применяться самостоятельно;",
+      "rules": [],
+      "title": "Место для электромобилей",
+      "image": "official_1_24_5.svg"
+    },
+    "1.24.6": {
+      "definition": "дублирование дорожного знака 5.33.1 \"Велосипедная зона\";",
+      "rules": [],
+      "title": "Велосипедная зона",
+      "image": "official_1_24_6.svg"
+    },
+    "1.24.7": {
+      "definition": "дублирование дорожного знака 8.9.3 \"Стоянка только транспортных средств дипломатического корпуса\";",
+      "rules": [],
+      "title": "Стоянка дипломатических транспортных средств",
+      "image": "official_1_24_7.svg"
+    },
+    "1.25": {
+      "definition": "обозначение искусственных неровностей по ГОСТу Р 52605-2006;",
+      "rules": [],
+      "title": "Искусственная неровность",
+      "image": "4190c457b85177161acd946d7d60f16e.svg"
+    },
+    "1.26": {
+      "definition": "обозначает участок перекрестка, на который запрещается выезжать, если впереди по пути следования образовался затор, который вынудит водителя остановиться, создав препятствие для движения транспортных средств в поперечном направлении, за исключением поворота направо или налево в случаях, установленных настоящими Правилами. Разметка может применяться самостоятельно либо совместно с дорожным знаком 1.35.",
+      "rules": [],
+      "title": "Участок перекрёстка",
+      "image": "9b7cfc3853479237ebfbc14a72e9f4c1.svg"
+    },
+    "2.1.1": {
+      "definition": "обозначают элементы дорожных сооружений (опор мостов, путепроводов, торцовых частей парапетов и тому подобного), когда эти элементы представляют опасность для движущихся транспортных средств;",
+      "rules": [],
+      "title": "Опасный элемент сооружения: наклон вправо",
+      "image": "official_2_1_1.svg"
+    },
+    "2.1.2": {
+      "definition": "обозначают элементы дорожных сооружений (опор мостов, путепроводов, торцовых частей парапетов и тому подобного), когда эти элементы представляют опасность для движущихся транспортных средств;",
+      "rules": [],
+      "title": "Опасный элемент сооружения: шевроны",
+      "image": "official_2_1_2.svg"
+    },
+    "2.1.3": {
+      "definition": "обозначают элементы дорожных сооружений (опор мостов, путепроводов, торцовых частей парапетов и тому подобного), когда эти элементы представляют опасность для движущихся транспортных средств;",
+      "rules": [],
+      "title": "Опасный элемент сооружения: наклон влево",
+      "image": "official_2_1_3.svg"
+    },
+    "2.2": {
+      "definition": "обозначает нижний край пролетного строения тоннелей, мостов и путепроводов;",
+      "rules": [],
+      "title": "Нижний край сооружения",
+      "image": "213ba4235f49540edacfc48fd7b79f13.svg"
+    },
+    "2.3": {
+      "definition": "обозначает круглые тумбы, установленные на разделительных полосах или островках безопасности;",
+      "rules": [],
+      "title": "Круглая тумба",
+      "image": "eccc2f5451b9762c0b46f54dedea2fc7.svg"
+    },
+    "2.4": {
+      "definition": "обозначает направляющие столбики, надолбы, опоры ограждений и тому подобное;",
+      "rules": [],
+      "title": "Направляющий столбик",
+      "image": "1294c06b21213d1606c8d26f70d5dd08.svg"
+    },
+    "2.5": {
+      "definition": "обозначает боковые поверхности ограждений дорог на закруглениях малого радиуса, крутых спусках, других опасных участках;",
+      "rules": [],
+      "title": "Ограждение на опасном участке",
+      "image": "c109a29d9afd084d6d845a4913561b96.svg"
+    },
+    "2.6": {
+      "definition": "обозначает боковые поверхности ограждений дорог на других участках;",
+      "rules": [],
+      "title": "Ограждение на другом участке",
+      "image": "c148a900e357e731b60840ef75a353ac.svg"
+    },
+    "2.7": {
+      "definition": "обозначает бордюры на опасных участках и возвышающиеся островки безопасности.",
+      "rules": [],
+      "title": "Бордюр или островок безопасности",
+      "image": "2c0c9d84d25acff893288d5db9767c66.svg"
+    }
+  },
+  "images": {
+    "1.1": {
+      "source": "assets/countries/ru/images/markup/2c49fc36554ac1230451d3dcfa2eed8a.svg",
+      "sha256": "62e4db4e109c13a15bdc2a112dc36a18076ed3644603f72e274d8a480405c772"
+    },
+    "1.2": {
+      "source": "assets/countries/ru/images/markup/b09787ac2a9708e85c0f45bb31255023.svg",
+      "sha256": "8c63b03a44b6a2245647fca7f53d2bb34abf95c8e8b368633c8a0712aa921d50"
+    },
+    "1.3": {
+      "source": "assets/countries/ru/images/markup/d32121834d8239fd05dd8a587bdf241a.svg",
+      "sha256": "77f04b393bd42b0993cbbfccc8e409bf19aef95dc33043eb5dc4239b742b77e9"
+    },
+    "1.4": {
+      "source": "assets/countries/ru/images/markup/5d046f63f8522b2428f9c1d916ef9b30.svg",
+      "sha256": "6300c0071d516b744f4656a865c486d908c3a73f099c82f2b3bed81fd9e75a2b"
+    },
+    "1.5": {
+      "source": "assets/countries/ru/images/markup/a55788ee9af2066f2602498f03982a64.svg",
+      "sha256": "943a8e2e1f2320e1f5e3e9e680deedecc393c124caa06e8ad99cdbb2d3221878"
+    },
+    "1.6": {
+      "source": "assets/countries/ru/images/markup/6312748b760235946e84f786e1ad761b.svg",
+      "sha256": "b12b047477747e51f18c4eeb3ae212b10120571ba439cc2906d3aed575423c14"
+    },
+    "1.7": {
+      "source": "assets/countries/ru/images/markup/052393eeb65c015e755e6edbfd248279.svg",
+      "sha256": "475e4c3d95a58b696ee52b6705585da3cf47bbeafb9be78458bf0fe53f799642"
+    },
+    "1.8": {
+      "source": "assets/countries/ru/images/markup/66cddf91050d001ecc2518339bbb6b2f.svg",
+      "sha256": "13623ecf3d15b8b8409be92568e6ec01acce6a3e82d20a5863d3a58916d1bf5a"
+    },
+    "1.9": {
+      "source": "assets/countries/ru/images/markup/b50709f7adac8283648b7a5a8c89da6a.svg",
+      "sha256": "03fdf564d633f24572424c10942366c23712821583ec423acdec9dae33db1ca6"
+    },
+    "1.10": {
+      "source": "assets/countries/ru/images/markup/09a69c0276d8162a0239be409b737108.svg",
+      "sha256": "70326c967b98fcbd493ec7eb2db8f3f68bba0905d607aeab3429b5601d4b282e"
+    },
+    "1.11": {
+      "source": "assets/countries/ru/images/markup/389954cb614be0a7eed3b02dfb24c8ae.svg",
+      "sha256": "f817d1d9d1c14b8a6557251aa2107141f6c3a3e5f468c391a16e309cd64c081e"
+    },
+    "1.12": {
+      "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
+      "method": "Native vector transcription of the stop-line diagram.",
+      "sha256": "e7f3fc4c790f32fd4b40cd70fa4383cf076d184069be8e254fa9009ae169e2ce"
+    },
+    "1.13": {
+      "source": "assets/countries/ru/images/markup/6fddedd13bad53946f25df4cd5ed22e8.svg",
+      "sha256": "ff44aee2c8c0a1b5ccc9b245f4fc11b618e1aede42c351656318a137fd5d5dfd"
+    },
+    "1.17.1": {
+      "source": "assets/countries/ru/images/markup/8e36e197ce8a6b3f19bfc56b065881ac.svg",
+      "sha256": "087e9773088eaba5edb5af60bb0475b7487ebd7cfec9a2a06e75777c0ffc09cf"
+    },
+    "1.18": {
+      "source": "assets/countries/ru/images/markup/7d7c920210faef52e87e6aad54f525b6.svg",
+      "sha256": "023cd32d753c2103b04735a1a9def244699364de2781a0a548bc8bde781e9ce2"
+    },
+    "1.19": {
+      "source": "assets/countries/ru/images/markup/409962f0efc35a3802b07f464607c55e.svg",
+      "sha256": "a002178c8cc38be78f25bf97e925e35786441207d9e5d44791427cdaea4189bc"
+    },
+    "1.20": {
+      "source": "assets/countries/ru/images/markup/1c7674cb91486b02ec7693c77673018b.svg",
+      "sha256": "9a6529731a88d66ba062ba120b9b8022d5edd4cd25fd97a65e916fb17609e72d"
+    },
+    "1.21": {
+      "source": "assets/countries/ru/images/markup/807ef2c828847b676f7dfbf2cbe5c28c.svg",
+      "sha256": "171848cc279774c9d0bfe8a0bdf48b981e229d170440e9d2b627ef187b4be266"
+    },
+    "1.22": {
+      "source": "assets/countries/ru/images/markup/5b08f148beebfd94f47fb80d33ffc539.svg",
+      "sha256": "94c9df1eeb48d37aa7c44068277ba6b16cad4db9c9749d254efef92860df0410"
+    },
+    "1.23.1": {
+      "source": "assets/countries/ru/images/markup/75e1061ef45dd6b1e289f14659cf86ac.svg",
+      "sha256": "9ba28ab07c881514726861aa1eb19077aec94a2e360bef62c397ac65e03fda1f"
+    },
+    "1.23.2": {
+      "source": "assets/countries/ru/images/markup/8cae82e35cea744fa4c960a86ba78b33.svg",
+      "sha256": "98b87603615097f731897480a24d94de1eeb14f18b8e74290f001bcfb8a0ba97"
+    },
+    "1.23.3": {
+      "source": "assets/countries/ru/images/markup/ab29a5836564e6a857d1fd9ff085d15b.svg",
+      "sha256": "2f31ab42882152549ba8da79ce32ac9e1744ebe62648f0a24bcb014d5cb201aa"
+    },
+    "1.24.4": {
+      "source": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
+      "verifiedAgainst": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
+      "method": "Native vector transcription of the statutory road-marking symbol, using existing application vector paths where applicable.",
+      "sha256": "26cdc7017c675c822cc31800ac0115345eb96f05a32220616b8a546da44f9421"
+    },
+    "1.24.5": {
+      "source": "assets/countries/ru/images/signs/869f5d177692243ed6703d663eb88f25.svg",
+      "verifiedAgainst": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
+      "method": "Native vector transcription of the statutory road-marking symbol, using existing application vector paths where applicable.",
+      "sha256": "fe0e17f4a73b97aed034610840866d005b74fd5f10bcf4a1755026c9bda5f760"
+    },
+    "1.24.6": {
+      "source": "assets/countries/ru/images/signs/d3160697c5cd4c697e7b68e4cbad44e3.svg",
+      "verifiedAgainst": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
+      "method": "Native vector transcription of the statutory road-marking symbol, using existing application vector paths where applicable.",
+      "sha256": "aabb9b6f10771b31e32afdf48d603a2f2ec01985ee45d7b2b30bdc17a3da33a6"
+    },
+    "1.24.7": {
+      "source": "assets/countries/ru/images/signs/ed2b51311057d631c048eb2b81f41f63.svg",
+      "verifiedAgainst": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
+      "method": "Native vector transcription of the statutory road-marking symbol, using existing application vector paths where applicable.",
+      "sha256": "6bf1be14be203b733342cb33f78a715818a257d77aa4e0f6ef5063c99c67a9d4"
+    },
+    "1.25": {
+      "source": "assets/countries/ru/images/markup/4190c457b85177161acd946d7d60f16e.svg",
+      "sha256": "87136b0929422f99c9e90820267241455352ea3eb893c164bbdbeee591599ed1"
+    },
+    "1.26": {
+      "source": "assets/countries/ru/images/markup/9b7cfc3853479237ebfbc14a72e9f4c1.svg",
+      "sha256": "e41f83dc929b44b5991fefb4dd54a31de3bf94be32db0e557e2aafc3d9ef6559"
+    },
+    "2.2": {
+      "source": "assets/countries/ru/images/markup/213ba4235f49540edacfc48fd7b79f13.svg",
+      "sha256": "77aa636a20049067b2423a32c04b9173f4fdb58d453b7024b81908c298efb099"
+    },
+    "2.3": {
+      "source": "assets/countries/ru/images/markup/eccc2f5451b9762c0b46f54dedea2fc7.svg",
+      "sha256": "7c86123015451a74e64b8f12567a2c645d26f341137778ddcc7b66bf14ac0888"
+    },
+    "2.4": {
+      "source": "assets/countries/ru/images/markup/1294c06b21213d1606c8d26f70d5dd08.svg",
+      "sha256": "3e78f272c9798292355ea3090f69ecc95a842e01a1578be8baa5fe503f49a127"
+    },
+    "2.5": {
+      "source": "assets/countries/ru/images/markup/c109a29d9afd084d6d845a4913561b96.svg",
+      "sha256": "0348c85589b1438e55479b7348fc03a7e945ee139d01fb4841fa2732bd0ab4f1"
+    },
+    "2.6": {
+      "source": "assets/countries/ru/images/markup/c148a900e357e731b60840ef75a353ac.svg",
+      "sha256": "6a93056aef97debffce97f892afd158b8e3882017f19ff54ad3bcac10257e024"
+    },
+    "2.7": {
+      "source": "assets/countries/ru/images/markup/2c0c9d84d25acff893288d5db9767c66.svg",
+      "sha256": "a19161993cd9e0174fccab5298e23725153f1f6c5affa99b22de542edfe0b12c"
+    },
+    "1.14.1": {
+      "source": "assets/countries/ru/images/markup/7f06ee3a1911311349146326625f8940.svg",
+      "viewBox": [
+        0,
+        0,
+        95,
+        125
+      ],
+      "sha256": "d612ec1e339d2d420e8b9c3d344f0582d9ed54a869bbb57f0fe7d0eeda5d3f61"
+    },
+    "1.14.2": {
+      "source": "assets/countries/ru/images/markup/7f06ee3a1911311349146326625f8940.svg",
+      "viewBox": [
+        110,
+        0,
+        150,
+        125
+      ],
+      "sha256": "4164fbffefef5332502f02ee77aec1dba420cd1d42e729c4661928cbcd35e87a"
+    },
+    "1.24.1": {
+      "source": "assets/countries/ru/images/markup/b667fef6296b6b37af0baeddc11bd1a9.svg",
+      "viewBox": [
+        0,
+        0,
+        86,
+        54
+      ],
+      "sha256": "91386daef4394c7b2fbf81c3fcedae273d4c67c89ee50f9df7126e42ac664d21"
+    },
+    "1.24.2": {
+      "source": "assets/countries/ru/images/markup/b667fef6296b6b37af0baeddc11bd1a9.svg",
+      "viewBox": [
+        87,
+        0,
+        86,
+        54
+      ],
+      "sha256": "947bf3d5c60973cd921651de59da7e7b5bdef9f89cdae0bf0671852a26326ca5"
+    },
+    "1.24.3": {
+      "source": "assets/countries/ru/images/markup/b667fef6296b6b37af0baeddc11bd1a9.svg",
+      "viewBox": [
+        174,
+        0,
+        85,
+        54
+      ],
+      "sha256": "238ea18c3ee886ff7d6ac9bbe24487b4e0d325a7e69d23cb13325260063ce34d"
+    },
+    "2.1.1": {
+      "source": "assets/countries/ru/images/markup/11115b65ace8dd9993eb21404d283d95.svg",
+      "viewBox": [
+        0,
+        0,
+        80,
+        95
+      ],
+      "sha256": "d8a5af02de79e4d5c8f844a7d1fe0ad7dec259620ec638c927c6987cc2866af2"
+    },
+    "2.1.2": {
+      "source": "assets/countries/ru/images/markup/11115b65ace8dd9993eb21404d283d95.svg",
+      "viewBox": [
+        80,
+        0,
+        80,
+        95
+      ],
+      "sha256": "35da0b16e67d7084935e377d501c77e01bfd4479eb56e00f427581ed4c369143"
+    },
+    "2.1.3": {
+      "source": "assets/countries/ru/images/markup/11115b65ace8dd9993eb21404d283d95.svg",
+      "viewBox": [
+        160,
+        0,
+        81,
+        95
+      ],
+      "sha256": "a1a1d51c99912427b4ace7b4923cafc500d6d216fb0edcd0c7edc2292c5dfb03"
+    },
+    "1.14.3": {
+      "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
+      "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
+      "sha256": "ad7a4e5c208c4dbdca9ea1e8ab6aa3881c8e28104634f26c5ce82417e013d039"
+    },
+    "1.15": {
+      "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
+      "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
+      "sha256": "3f83f082e74af7de540e31987f68e67423d72002e6256fe72dfd4c94e5aaa04e"
+    },
+    "1.16.1": {
+      "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
+      "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
+      "sha256": "9e74b8d6510e370d61e2461bc5ae381e8ebd5a016b924579df41ef79bef5e74c"
+    },
+    "1.16.2": {
+      "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
+      "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
+      "sha256": "30b9c3a16a2e3af31c439fd6f902979eb9ee358af448fc0c4c837356ff59124c"
+    },
+    "1.16.3": {
+      "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
+      "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
+      "sha256": "88229000697cb49f87ba0d293435951bb1b47658bbc16844825e4c33f54ed7fd"
+    },
+    "1.17.2": {
+      "source": "https://www.consultant.ru/document/cons_doc_LAW_2709/attach_LAW_428459_4/",
+      "method": "Native vector transcription of the corresponding Appendix 2 diagram.",
+      "sha256": "7a44df524314566f8a3ea45c8c9d681253867fcdd56c250b6bf77e08ac3c7ce4"
+    }
+  },
+  "gostGraphics": {
+    "url": "https://www.mos.ru/upload/documents/files/1106/GOSTR51256-2018TehnicheskiesredstvaorganizaciidorojnogodvijeniyaR_.pdf",
+    "page": 24,
+    "standard": "ГОСТ Р 51256-2018, изменение № 1, таблица А.1"
+  }
+}

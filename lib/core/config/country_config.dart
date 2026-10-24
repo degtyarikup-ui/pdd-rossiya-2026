@@ -201,6 +201,9 @@ class CountryConfig {
   /// Каталог изображений знаков.
   String get signImagesDir => '$assetsRoot/images/signs';
 
+  /// Каталог изображений дорожной разметки.
+  String get markupImagesDir => '$assetsRoot/images/markup';
+
   static const CountryConfig russia = CountryConfig(
     code: 'ru',
     appTitle: 'ПДД Россия 2026',

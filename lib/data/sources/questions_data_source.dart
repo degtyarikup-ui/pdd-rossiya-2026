@@ -107,8 +107,8 @@ class QuestionsDataSource {
     }
   }
 
-  /// Дорожная разметка по группам: { «Горизонтальная разметка»: [{title,
-  /// description}, …], «Вертикальная разметка»: […] }. Страно-зависимая.
+  /// Дорожная разметка по группам: [{number, title, image, description}, …].
+  /// Страно-зависимая.
   Future<Map<String, List<Map<String, String>>>> loadMarkup([
     String? lang,
   ]) async {
@@ -198,7 +198,9 @@ Map<String, List<Map<String, String>>> _parseMarkup(String content) {
         .whereType<Map>()
         .map(
           (entry) => {
+            'number': (entry['number'] as String?) ?? '',
             'title': (entry['title'] as String?) ?? '',
+            'image': (entry['image'] as String?) ?? '',
             'description': (entry['description'] as String?) ?? '',
           },
         )
