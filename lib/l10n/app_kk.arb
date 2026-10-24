@@ -1408,5 +1408,39 @@
   "premiumBenefitVoiceTitle": "Сапалы",
   "premiumBenefitVoiceDetail": "орысша дыбыстау",
   "premiumBenefitFeedTitle": "Шектеусіз",
-  "premiumBenefitFeedDetail": "сұрақтар лентасы"
+  "premiumBenefitFeedDetail": "сұрақтар лентасы",
+  "roadSignsQuestionNumber": "{number}-сұрақ",
+  "@roadSignsQuestionNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "roadSignsOption": "{number}-нұсқа",
+  "@roadSignsOption": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "roadSignsSignNumber": "{number} белгісі",
+  "@roadSignsSignNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "roadSignsChooseHint": "Сәйкес белгіні басыңыз",
+  "roadSignsCorrectPoints": "Дұрыс! +{points}",
+  "@roadSignsCorrectPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "roadSignsWrongFeedback": "Қате · −1 өмір"
 }

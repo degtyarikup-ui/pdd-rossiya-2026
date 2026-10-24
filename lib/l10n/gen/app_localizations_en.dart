@@ -4158,4 +4158,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumBenefitFeedDetail => 'question feed';
+
+  @override
+  String roadSignsQuestionNumber(int number) {
+    return 'Question $number';
+  }
+
+  @override
+  String roadSignsOption(int number) {
+    return 'Option $number';
+  }
+
+  @override
+  String roadSignsSignNumber(String number) {
+    return 'Sign $number';
+  }
+
+  @override
+  String get roadSignsChooseHint => 'Tap the matching sign';
+
+  @override
+  String roadSignsCorrectPoints(int points) {
+    return 'Correct! +$points';
+  }
+
+  @override
+  String get roadSignsWrongFeedback => 'Incorrect · −1 life';
 }

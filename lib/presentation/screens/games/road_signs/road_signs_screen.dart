@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -57,7 +58,7 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
   bool _isProcessing = false;
   int? _selectedOptionIndex;
   bool? _answeredCorrectly;
-  String? _streakBanner;
+  int _lastPoints = 0;
   Timer? _advanceTimer;
 
   final List<RoadSignAnswerResult> _mistakes = [];
@@ -135,12 +136,13 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
     _isProcessing = false;
     _selectedOptionIndex = null;
     _answeredCorrectly = null;
-    _streakBanner = null;
+    _lastPoints = 0;
     _mistakes.clear();
     _isNewRecord = false;
     _ratingRunId = GameLeaderboardService.newRunId();
 
-    if (_engine != null && (widget.initialDeck == null || widget.initialDeck!.isEmpty)) {
+    if (_engine != null &&
+        (widget.initialDeck == null || widget.initialDeck!.isEmpty)) {
       _deck = _engine!.generateDeck(count: 25);
     }
 
@@ -163,13 +165,11 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
         }
         if (_secondsLeft <= 0) {
           _timeUp = true;
-          _endGame();
+          if (!_isProcessing) _endGame();
         }
       }
     });
   }
-
-
 
   void _onOptionSelected(int index) {
     if (_isGameOver || _isProcessing || _currentIndex >= _deck.length) {
@@ -202,15 +202,13 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
         final points = GameEconomy.signs(_combo);
         _score += points;
         _correctAnswers++;
-        if (_combo >= 2) {
-          _streakBanner = '+ $points  •  ${appL10n.gameComboStreak(_combo)}';
-        }
+        _lastPoints = points;
       } else {
         SoundEffectsService.instance.playIncorrect();
         HapticFeedbackHelper.warning();
         _combo = 0;
         _lives--;
-        _streakBanner = null;
+        _lastPoints = 0;
         _mistakes.add(result);
       }
     });
@@ -251,12 +249,14 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
     // Сохранение рекорда и прогресса в провайдер и хранилище
     unawaited(() async {
       try {
-        await ref.read(roadSignsProgressProvider.notifier).recordGameResult(
-          score: _score,
-          combo: _maxCombo,
-          totalAnswered: _totalAnswered,
-          totalCorrect: _correctAnswers,
-        );
+        await ref
+            .read(roadSignsProgressProvider.notifier)
+            .recordGameResult(
+              score: _score,
+              combo: _maxCombo,
+              totalAnswered: _totalAnswered,
+              totalCorrect: _correctAnswers,
+            );
         final prefs = await SharedPreferences.getInstance();
         if (isRecord) {
           await prefs.setInt('roadSignsBest', _score);
@@ -313,7 +313,7 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
         backgroundColor: colors.background,
         body: Center(
           child: Text(
-            'Ошибка загрузки данных знаков',
+            appL10n.gameSignsLoadError,
             style: TextStyle(color: colors.primaryText),
           ),
         ),
@@ -325,7 +325,7 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
             backgroundColor: colors.background,
             body: Center(
               child: Text(
-                'Недостаточно знаков для викторины',
+                appL10n.gameSignsLoadError,
                 style: TextStyle(color: colors.primaryText),
               ),
             ),
@@ -350,129 +350,276 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
     return Scaffold(
       backgroundColor: colors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(colors),
-            const SizedBox(height: AppDimensions.spacingM),
-            if (currentQuestion != null) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.screenPadding,
-                ),
-                child: Container(
-                  width: double.infinity,
-                  constraints: const BoxConstraints(
-                    maxHeight: 120,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.spacingL,
-                    vertical: AppDimensions.spacingM,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.cardBackground,
-                    borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-                    boxShadow: gameSoftShadow(colors),
-                    border: Border.all(
-                      color: colors.divider.withValues(alpha: 0.5),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    currentQuestion.prompt,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: colors.primaryText,
-                      height: 1.35,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.screenPadding,
               ),
-              const SizedBox(height: AppDimensions.spacingL),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppDimensions.screenPadding,
-                    0,
-                    AppDimensions.screenPadding,
-                    AppDimensions.spacingXL,
-                  ),
-                  child: RoadSignsGrid(
-                    options: currentQuestion.options,
-                    onSelectOption: _onOptionSelected,
-                    isEnabled: !_isProcessing && !_isGameOver,
-                    selectedIndex: _selectedOptionIndex,
-                    correctIndex: currentQuestion.correctAnswerIndex,
-                    isCorrect: _answeredCorrectly,
-                  ),
-                ),
+              child: Column(
+                children: [
+                  _buildHeader(colors),
+                  if (currentQuestion != null)
+                    Expanded(child: _buildQuestion(currentQuestion, colors)),
+                ],
               ),
-            ],
-          ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(AppThemeColors colors) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppDimensions.screenPadding,
-        AppDimensions.spacingM,
-        AppDimensions.screenPadding,
-        0,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.close_rounded),
-                color: colors.secondaryText,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                onPressed: () => Navigator.of(context).pop(),
+  Widget _buildQuestion(RoadSignQuizQuestion question, AppThemeColors colors) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.5);
+        if (constraints.maxWidth >= 480 && constraints.maxHeight < 400) {
+          final side = math.min(
+            (constraints.maxWidth - 24) / 2,
+            math.max(212.0, constraints.maxHeight - 16),
+          );
+          return SingleChildScrollView(
+            child: SizedBox(
+              height: math.max(side + 16, constraints.maxHeight),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      key: ValueKey('road-signs-prompt-$_currentIndex'),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          Text(
+                            appL10n.roadSignsQuestionNumber(_currentIndex + 1),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colors.secondaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            question.prompt,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                              color: colors.primaryText,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 64 * scale,
+                            child: _buildFeedback(colors),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  SizedBox.square(dimension: side, child: _buildGrid(question)),
+                ],
               ),
-              GameLives(lives: _lives, total: widget.initialLives),
-              GameScoreLabel(score: _score, streak: _combo),
-            ],
+            ),
+          );
+        }
+        final compact = constraints.maxHeight < 520;
+        final questionHeight = (compact ? 124.0 : 156.0) * scale;
+        final feedbackHeight = 64.0 * scale;
+        // Preserve usable sign targets on short screens; scroll the group when
+        // large accessibility text needs more room than the viewport allows.
+        final gridSide = math.min(
+          math.min(constraints.maxWidth, 420.0),
+          math.max(
+            240.0,
+            constraints.maxHeight - questionHeight - feedbackHeight - 32,
           ),
-          const SizedBox(height: AppDimensions.spacingM),
-          GameTimeBar(
-            secondsLeft: _secondsLeft,
-            totalSeconds: widget.initialSeconds,
-          ),
-          if (_streakBanner != null)
-            Padding(
-              padding: const EdgeInsets.only(top: AppDimensions.spacingS),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colors.goldLightSurface,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusExtraLarge),
-                  border: Border.all(
-                    color: colors.gold.withValues(alpha: 0.6),
-                    width: 1,
+        );
+        return SingleChildScrollView(
+          key: const ValueKey('road-signs-question-scroll'),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: questionHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appL10n.roadSignsQuestionNumber(_currentIndex + 1),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: colors.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          question.prompt,
+                          style: TextStyle(
+                            fontSize: compact ? 20 : 22,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                            color: colors.primaryText,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                child: Text(
-                  _streakBanner!,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: colors.gold,
+                SizedBox(height: gridSide, child: _buildGrid(question)),
+                SizedBox(height: feedbackHeight, child: _buildFeedback(colors)),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGrid(RoadSignQuizQuestion question) {
+    return RoadSignsGrid(
+      options: question.options,
+      onSelectOption: _onOptionSelected,
+      isEnabled: !_isProcessing && !_isGameOver,
+      selectedIndex: _selectedOptionIndex,
+      correctIndex: question.correctAnswerIndex,
+      isCorrect: _answeredCorrectly,
+    );
+  }
+
+  Widget _buildFeedback(AppThemeColors colors) {
+    final correct = _answeredCorrectly == true;
+    final answered = _answeredCorrectly != null;
+    final text = !answered
+        ? appL10n.roadSignsChooseHint
+        : correct
+        ? appL10n.roadSignsCorrectPoints(_lastPoints)
+        : appL10n.roadSignsWrongFeedback;
+    return Semantics(
+      liveRegion: answered,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (answered) ...[
+            Icon(
+              correct ? Icons.check_circle_rounded : Icons.cancel_rounded,
+              size: 18,
+              color: correct ? colors.green : colors.red,
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: answered ? FontWeight.w600 : FontWeight.w400,
+                color: answered ? colors.primaryText : colors.secondaryText,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(AppThemeColors colors) {
+    final compact = MediaQuery.sizeOf(context).height < 500;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            IconButton(
+              tooltip: appL10n.gameExit,
+              style: IconButton.styleFrom(
+                backgroundColor: colors.cardBackground,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.buttonRadius,
                   ),
+                ),
+                minimumSize: const Size.square(48),
+              ),
+              icon: const Icon(Icons.close_rounded, size: 20),
+              color: colors.primaryText,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            Expanded(
+              child: Text(
+                appL10n.gamesRoadSignsTitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: colors.primaryText,
                 ),
               ),
             ),
+            if (compact) ...[
+              GameLives(lives: _lives, total: widget.initialLives),
+              const SizedBox(width: 20),
+              GameScoreLabel(score: _score),
+            ] else
+              const SizedBox(width: 48),
+          ],
+        ),
+        if (!compact) ...[
+          const SizedBox(height: 20),
+          SizedBox(
+            height: math.max(
+              32,
+              MediaQuery.textScalerOf(context).scale(12) * 2.5,
+            ),
+            child: Row(
+              children: [
+                Semantics(
+                  label: appL10n.gameLives,
+                  value: '$_lives',
+                  child: ExcludeSemantics(
+                    child: GameLives(lives: _lives, total: widget.initialLives),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _combo > 1 ? appL10n.gameComboStreak(_combo) : '',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: colors.accent,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Semantics(
+                  label: appL10n.gameScore,
+                  child: GameScoreLabel(score: _score),
+                ),
+              ],
+            ),
+          ),
         ],
-      ),
+        const SizedBox(height: 12),
+        GameTimeBar(
+          secondsLeft: _secondsLeft,
+          totalSeconds: widget.initialSeconds,
+        ),
+        const SizedBox(height: 4),
+      ],
     );
   }
 
@@ -596,7 +743,7 @@ class _RoadSignsMistakesSheet extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Знак ${sign.number}',
+                                  appL10n.roadSignsSignNumber(sign.number),
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,

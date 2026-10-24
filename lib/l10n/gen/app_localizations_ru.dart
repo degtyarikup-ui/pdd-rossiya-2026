@@ -4173,4 +4173,30 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get premiumBenefitFeedDetail => 'лента вопросов';
+
+  @override
+  String roadSignsQuestionNumber(int number) {
+    return 'Вопрос $number';
+  }
+
+  @override
+  String roadSignsOption(int number) {
+    return 'Вариант $number';
+  }
+
+  @override
+  String roadSignsSignNumber(String number) {
+    return 'Знак $number';
+  }
+
+  @override
+  String get roadSignsChooseHint => 'Нажмите на подходящий знак';
+
+  @override
+  String roadSignsCorrectPoints(int points) {
+    return 'Верно! +$points';
+  }
+
+  @override
+  String get roadSignsWrongFeedback => 'Неверно · −1 жизнь';
 }

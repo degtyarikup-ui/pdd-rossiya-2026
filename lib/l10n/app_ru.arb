@@ -1977,5 +1977,39 @@
   "premiumBenefitVoiceTitle": "Качественная",
   "premiumBenefitVoiceDetail": "озвучка на русском",
   "premiumBenefitFeedTitle": "Безлимитная",
-  "premiumBenefitFeedDetail": "лента вопросов"
+  "premiumBenefitFeedDetail": "лента вопросов",
+  "roadSignsQuestionNumber": "Вопрос {number}",
+  "@roadSignsQuestionNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "roadSignsOption": "Вариант {number}",
+  "@roadSignsOption": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "roadSignsSignNumber": "Знак {number}",
+  "@roadSignsSignNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "roadSignsChooseHint": "Нажмите на подходящий знак",
+  "roadSignsCorrectPoints": "Верно! +{points}",
+  "@roadSignsCorrectPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "roadSignsWrongFeedback": "Неверно · −1 жизнь"
 }

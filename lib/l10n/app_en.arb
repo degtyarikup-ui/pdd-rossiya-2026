@@ -1408,5 +1408,39 @@
   "premiumBenefitVoiceTitle": "High-quality",
   "premiumBenefitVoiceDetail": "Russian voice-over",
   "premiumBenefitFeedTitle": "Unlimited",
-  "premiumBenefitFeedDetail": "question feed"
+  "premiumBenefitFeedDetail": "question feed",
+  "roadSignsQuestionNumber": "Question {number}",
+  "@roadSignsQuestionNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "roadSignsOption": "Option {number}",
+  "@roadSignsOption": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "roadSignsSignNumber": "Sign {number}",
+  "@roadSignsSignNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "roadSignsChooseHint": "Tap the matching sign",
+  "roadSignsCorrectPoints": "Correct! +{points}",
+  "@roadSignsCorrectPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "roadSignsWrongFeedback": "Incorrect · −1 life"
 }

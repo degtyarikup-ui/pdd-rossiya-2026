@@ -88,11 +88,13 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  group('Adversarial Stress Test: Modal Dialog Border and Styling Integrity', () {
+  group('Adversarial Stress Test: Modal answer feedback for every choice', () {
     for (int correctIdx = 0; correctIdx < 4; correctIdx++) {
       for (int chosenIdx = 0; chosenIdx < 4; chosenIdx++) {
         final isCorrect = correctIdx == chosenIdx;
-        testWidgets('Permutation: correct=$correctIdx, chosen=$chosenIdx', (tester) async {
+        testWidgets('Permutation: correct=$correctIdx, chosen=$chosenIdx', (
+          tester,
+        ) async {
           setupViewport(tester);
           final q = makeQuestion('perm_${correctIdx}_$chosenIdx', correctIdx);
           final res = RoadSignAnswerResult(
@@ -104,50 +106,38 @@ void main() {
           await tester.pumpWidget(
             buildTestApp(
               Scaffold(
-                body: RoadSignsModal(
-                  result: res,
-                  onContinue: () {},
-                ),
+                body: RoadSignsModal(result: res, onContinue: () {}),
               ),
             ),
           );
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          // Find the 4 mini cards inside the Row of options
-          // In RoadSignsModal, the Row of options has 4 Expanded widgets
-          final miniCardContainers = tester.widgetList<Container>(
-            find.descendant(
-              of: find.byType(Row),
-              matching: find.byType(Container),
-            ),
-          ).where((c) {
-            // Mini card has height 60
-            return (c.constraints?.maxHeight == 60 || c.constraints?.minHeight == 60) ||
-                   (c.decoration is BoxDecoration && (c.decoration as BoxDecoration).borderRadius == BorderRadius.circular(10));
-          }).toList();
-
-          expect(miniCardContainers.length, 4, reason: 'Must have exactly 4 mini-sign option cards');
-
-          for (int i = 0; i < 4; i++) {
-            final boxDec = miniCardContainers[i].decoration as BoxDecoration;
-            final border = boxDec.border!;
-            if (i == correctIdx) {
-              expect(border.top.color, AppThemeColors.light.green,
-                  reason: 'Option $i (correct) must have green border');
-              expect(border.top.width, 2.0);
-              expect(boxDec.color, AppThemeColors.light.greenLight);
-            } else if (!isCorrect && i == chosenIdx) {
-              expect(border.top.color, AppThemeColors.light.red,
-                  reason: 'Option $i (chosen wrong) must have red border');
-              expect(border.top.width, 2.0);
-              expect(boxDec.color, AppThemeColors.light.redLight);
-            } else {
-              expect(border.top.color, AppThemeColors.light.divider.withValues(alpha: 0.4),
-                  reason: 'Neutral option $i must have subtle divider border');
-              expect(border.top.width, 1.0);
-              expect(boxDec.color, AppThemeColors.light.gray);
-            }
+          for (var i = 0; i < 4; i++) {
+            final card = tester.widget<Container>(
+              find.byKey(ValueKey('road-sign-review-$i')),
+            );
+            final decoration = card.decoration as BoxDecoration;
+            expect(decoration.border, isNull);
+            expect(decoration.boxShadow, isNull);
+            expect(
+              decoration.color,
+              i == correctIdx
+                  ? AppThemeColors.light.greenLight
+                  : !isCorrect && i == chosenIdx
+                  ? AppThemeColors.light.redLight
+                  : AppThemeColors.light.background,
+            );
+            final icons = find.descendant(
+              of: find.byKey(ValueKey('road-sign-review-$i')),
+              matching: find.byType(Icon),
+            );
+            expect(
+              icons,
+              i == correctIdx || (!isCorrect && i == chosenIdx)
+                  ? findsOneWidget
+                  : findsNothing,
+            );
           }
         });
       }
@@ -155,213 +145,221 @@ void main() {
   });
 
   group('Adversarial Stress Test: Re-entrancy, Rapid Multi-Tap & Concurrency', () {
-    testWidgets('Spam-tapping multiple cards in rapid succession triggers only 1 answer', (tester) async {
-      setupViewport(tester);
-      final q1 = makeQuestion('q1', 0);
-      final q2 = makeQuestion('q2', 1);
+    testWidgets(
+      'Spam-tapping multiple cards in rapid succession triggers only 1 answer',
+      (tester) async {
+        setupViewport(tester);
+        final q1 = makeQuestion('q1', 0);
+        final q2 = makeQuestion('q2', 1);
 
-      await tester.pumpWidget(
-        buildTestApp(
-          RoadSignsScreen(
-            initialDeck: [q1, q2],
-            initialLives: 5,
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpWidget(
+          buildTestApp(RoadSignsScreen(initialDeck: [q1, q2], initialLives: 5)),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      final cards = find.descendant(
-        of: find.byType(RoadSignsGrid),
-        matching: find.byType(InkWell),
-      );
-      expect(cards, findsNWidgets(4));
-
-      // Rapidly tap all 4 cards without pumping in between
-      await tester.tap(cards.at(0), warnIfMissed: false);
-      await tester.tap(cards.at(1), warnIfMissed: false);
-      await tester.tap(cards.at(2), warnIfMissed: false);
-      await tester.tap(cards.at(3), warnIfMissed: false);
-
-      await tester.pump();
-
-      // In blitz mode, no blocking modal appears
-      expect(find.byType(RoadSignsModal), findsNothing);
-
-      // Score should only reflect the first tap (correct, +12)
-      expect(find.text('12'), findsOneWidget);
-
-      // Lives should still be 5 because the first tap was correct and subsequent taps were blocked
-      final livesWidget = tester.widget<GameLives>(find.byType(GameLives));
-      expect(livesWidget.lives, 5);
-
-      // After 450ms highlight, advances to question 2
-      await tester.pump(const Duration(milliseconds: 450));
-      await tester.pump();
-      expect(find.text(q2.prompt), findsOneWidget);
-    });
-  });
-
-  group('Adversarial Stress Test: Complete 5-Life Depletion Sequence in Blitz', () {
-    testWidgets('Losing all 5 lives in sequence ends on 5th error and allows full mistake review', (tester) async {
-      setupViewport(tester);
-      final deck = List.generate(6, (i) => makeQuestion('deck_$i', 0));
-
-      await tester.pumpWidget(
-        buildTestApp(
-          RoadSignsScreen(
-            initialDeck: deck,
-            initialLives: 5,
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      for (int step = 1; step <= 5; step++) {
         final cards = find.descendant(
           of: find.byType(RoadSignsGrid),
           matching: find.byType(InkWell),
         );
-        // Tap wrong card (index 1, correct is 0)
-        await tester.tap(cards.at(1));
+        expect(cards, findsNWidgets(4));
+
+        // Rapidly tap all 4 cards without pumping in between
+        await tester.tap(cards.at(0), warnIfMissed: false);
+        await tester.tap(cards.at(1), warnIfMissed: false);
+        await tester.tap(cards.at(2), warnIfMissed: false);
+        await tester.tap(cards.at(3), warnIfMissed: false);
+
         await tester.pump();
 
-        // Error highlight delay (800ms)
-        await tester.pump(const Duration(milliseconds: 800));
+        // In blitz mode, no blocking modal appears
+        expect(find.byType(RoadSignsModal), findsNothing);
+
+        // Score should only reflect the first tap (correct, +12)
+        expect(find.text('12'), findsOneWidget);
+
+        // Lives should still be 5 because the first tap was correct and subsequent taps were blocked
+        final livesWidget = tester.widget<GameLives>(find.byType(GameLives));
+        expect(livesWidget.lives, 5);
+
+        // After 450ms highlight, advances to question 2
+        await tester.pump(const Duration(milliseconds: 450));
         await tester.pump();
-
-        if (step < 5) {
-          // Still playing
-          expect(find.byType(RoadSignsGrid), findsOneWidget);
-          final lives = tester.widget<GameLives>(find.byType(GameLives));
-          expect(lives.lives, 5 - step);
-        } else {
-          // Step 5: Game Over!
-          expect(find.byType(GameResultOverlay), findsOneWidget);
-          expect(find.byType(RoadSignsGrid), findsNothing);
-        }
-      }
-
-      // Verify mistake button opens mistake sheet with 5 mistakes
-      expect(find.textContaining('5'), findsWidgets);
-      await tester.tap(find.text(appL10n.gameRunMistakesButton(5)));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.text(appL10n.gameMistakesReview), findsOneWidget);
-
-      // Tapping a mistake opens RoadSignsModal with official rules details
-      final mistakeTile = find.descendant(
-        of: find.byType(ListView),
-        matching: find.byType(InkWell),
-      ).first;
-      await tester.tap(mistakeTile);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byType(RoadSignsModal), findsOneWidget);
-    });
+        expect(find.text(q2.prompt), findsOneWidget);
+      },
+    );
   });
 
+  group(
+    'Adversarial Stress Test: Complete 5-Life Depletion Sequence in Blitz',
+    () {
+      testWidgets(
+        'Losing all 5 lives in sequence ends on 5th error and allows full mistake review',
+        (tester) async {
+          setupViewport(tester);
+          final deck = List.generate(6, (i) => makeQuestion('deck_$i', 0));
+
+          await tester.pumpWidget(
+            buildTestApp(RoadSignsScreen(initialDeck: deck, initialLives: 5)),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          for (int step = 1; step <= 5; step++) {
+            final cards = find.descendant(
+              of: find.byType(RoadSignsGrid),
+              matching: find.byType(InkWell),
+            );
+            // Tap wrong card (index 1, correct is 0)
+            await tester.tap(cards.at(1));
+            await tester.pump();
+
+            // Error highlight delay (800ms)
+            await tester.pump(const Duration(milliseconds: 800));
+            await tester.pump();
+
+            if (step < 5) {
+              // Still playing
+              expect(find.byType(RoadSignsGrid), findsOneWidget);
+              final lives = tester.widget<GameLives>(find.byType(GameLives));
+              expect(lives.lives, 5 - step);
+            } else {
+              // Step 5: Game Over!
+              expect(find.byType(GameResultOverlay), findsOneWidget);
+              expect(find.byType(RoadSignsGrid), findsNothing);
+            }
+          }
+
+          // Verify mistake button opens mistake sheet with 5 mistakes
+          expect(find.textContaining('5'), findsWidgets);
+          await tester.tap(find.text(appL10n.gameRunMistakesButton(5)));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(find.text(appL10n.gameMistakesReview), findsOneWidget);
+
+          // Tapping a mistake opens RoadSignsModal with official rules details
+          final mistakeTile = find
+              .descendant(
+                of: find.byType(ListView),
+                matching: find.byType(InkWell),
+              )
+              .first;
+          await tester.tap(mistakeTile);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(find.byType(RoadSignsModal), findsOneWidget);
+        },
+      );
+    },
+  );
+
   group('Adversarial Stress Test: Continuous Blitz Timer', () {
-    testWidgets('Timer counts down continuously across questions in blitz mode', (tester) async {
-      setupViewport(tester);
-      final q1 = makeQuestion('q1', 0);
-      final q2 = makeQuestion('q2', 1);
+    testWidgets(
+      'Timer counts down continuously across questions in blitz mode',
+      (tester) async {
+        setupViewport(tester);
+        final q1 = makeQuestion('q1', 0);
+        final q2 = makeQuestion('q2', 1);
 
-      await tester.pumpWidget(
-        buildTestApp(
-          RoadSignsScreen(
-            initialDeck: [q1, q2],
-            initialSeconds: 20,
+        await tester.pumpWidget(
+          buildTestApp(
+            RoadSignsScreen(initialDeck: [q1, q2], initialSeconds: 20),
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // Let 3 seconds pass in game
-      await tester.pump(const Duration(seconds: 3));
-      var timeBar = tester.widget<GameTimeBar>(find.byType(GameTimeBar));
-      expect(timeBar.secondsLeft, 17);
+        // Let 3 seconds pass in game
+        await tester.pump(const Duration(seconds: 3));
+        var timeBar = tester.widget<GameTimeBar>(find.byType(GameTimeBar));
+        expect(timeBar.secondsLeft, 17);
 
-      // Tap card 0 (correct answer)
-      final cards = find.descendant(
-        of: find.byType(RoadSignsGrid),
-        matching: find.byType(InkWell),
-      );
-      await tester.tap(cards.at(0));
-      await tester.pump();
+        // Tap card 0 (correct answer)
+        final cards = find.descendant(
+          of: find.byType(RoadSignsGrid),
+          matching: find.byType(InkWell),
+        );
+        await tester.tap(cards.at(0));
+        await tester.pump();
 
-      // Advance 450ms highlight delay
-      await tester.pump(const Duration(milliseconds: 450));
-      await tester.pump();
+        // Advance 450ms highlight delay
+        await tester.pump(const Duration(milliseconds: 450));
+        await tester.pump();
 
-      // Advanced to question 2
-      expect(find.text(q2.prompt), findsOneWidget);
+        // Advanced to question 2
+        expect(find.text(q2.prompt), findsOneWidget);
 
-      // Advance 17 seconds to trigger legitimate time up
-      await tester.pump(const Duration(seconds: 17));
-      await tester.pump(const Duration(milliseconds: 500));
+        // Advance 17 seconds to trigger legitimate time up
+        await tester.pump(const Duration(seconds: 17));
+        await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byType(GameResultOverlay), findsOneWidget);
-      expect(find.text(appL10n.gameTimeUp), findsOneWidget);
-    });
+        expect(find.byType(GameResultOverlay), findsOneWidget);
+        expect(find.text(appL10n.gameTimeUp), findsOneWidget);
+      },
+    );
   });
 
   group('Adversarial Stress Test: Round Restart & State Reset', () {
-    testWidgets('Restarting round from GameResultOverlay resets timer, lives, score, and combo', (tester) async {
-      setupViewport(tester);
-      final q1 = makeQuestion('q1', 0);
-      final q2 = makeQuestion('q2', 1);
+    testWidgets(
+      'Restarting round from GameResultOverlay resets timer, lives, score, and combo',
+      (tester) async {
+        setupViewport(tester);
+        final q1 = makeQuestion('q1', 0);
+        final q2 = makeQuestion('q2', 1);
 
-      await tester.pumpWidget(
-        buildTestApp(
-          RoadSignsScreen(
-            initialDeck: [q1, q2],
-            initialSeconds: 5,
-            initialLives: 1,
+        await tester.pumpWidget(
+          buildTestApp(
+            RoadSignsScreen(
+              initialDeck: [q1, q2],
+              initialSeconds: 5,
+              initialLives: 1,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // Answer wrong to lose life
-      final cards = find.descendant(
-        of: find.byType(RoadSignsGrid),
-        matching: find.byType(InkWell),
-      );
-      await tester.tap(cards.at(1));
-      await tester.pump();
+        // Answer wrong to lose life
+        final cards = find.descendant(
+          of: find.byType(RoadSignsGrid),
+          matching: find.byType(InkWell),
+        );
+        await tester.tap(cards.at(1));
+        await tester.pump();
 
-      // Wait 800ms error delay
-      await tester.pump(const Duration(milliseconds: 800));
-      await tester.pump(const Duration(milliseconds: 300));
+        // Wait 800ms error delay
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(GameResultOverlay), findsOneWidget);
+        expect(find.byType(GameResultOverlay), findsOneWidget);
 
-      // Tap restart button in overlay
-      await tester.tap(find.text(appL10n.gameRestart));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        // Tap restart button in overlay
+        await tester.tap(find.text(appL10n.gameRestart));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // Should be back to game screen immediately without waiting 1 full second for timer tick
-      expect(find.byType(GameResultOverlay), findsNothing,
-          reason: 'GameResultOverlay must be dismissed immediately on restart without a 1-second lag');
-      expect(find.byType(RoadSignsGrid), findsOneWidget);
+        // Should be back to game screen immediately without waiting 1 full second for timer tick
+        expect(
+          find.byType(GameResultOverlay),
+          findsNothing,
+          reason:
+              'GameResultOverlay must be dismissed immediately on restart without a 1-second lag',
+        );
+        expect(find.byType(RoadSignsGrid), findsOneWidget);
 
-      // Lives reset to initialLives (1)
-      final lives = tester.widget<GameLives>(find.byType(GameLives));
-      expect(lives.lives, 1);
+        // Lives reset to initialLives (1)
+        final lives = tester.widget<GameLives>(find.byType(GameLives));
+        expect(lives.lives, 1);
 
-      // Score reset to 0
-      expect(find.text('0'), findsOneWidget);
+        // Score reset to 0
+        expect(find.text('0'), findsOneWidget);
 
-      // Time reset to 5
-      final timeBar = tester.widget<GameTimeBar>(find.byType(GameTimeBar));
-      expect(timeBar.secondsLeft, 5);
-    });
+        // Time reset to 5
+        final timeBar = tester.widget<GameTimeBar>(find.byType(GameTimeBar));
+        expect(timeBar.secondsLeft, 5);
+      },
+    );
   });
 }

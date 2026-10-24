@@ -139,9 +139,10 @@ class GameTimeBar extends StatelessWidget {
         ),
         const SizedBox(width: AppDimensions.spacingS),
         SizedBox(
-          width: 40,
+          width: MediaQuery.textScalerOf(context).scale(48),
           child: Text(
             appL10n.gameSecondsLeft(secondsLeft),
+            maxLines: 1,
             textAlign: TextAlign.right,
             style: TextStyle(
               fontSize: 13,

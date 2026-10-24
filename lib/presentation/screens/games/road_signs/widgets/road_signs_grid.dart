@@ -1,11 +1,12 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/data/models/road_signs_model.dart';
-import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
+import 'package:pdd_app/l10n/l10n.dart';
 
-/// Сетка из 4 карточек дорожных знаков (2x2) для выбора ответа.
+/// Four equal targets. Feedback never changes their size or position.
 class RoadSignsGrid extends StatelessWidget {
   final List<SignItem> options;
   final ValueChanged<int> onSelectOption;
@@ -27,39 +28,33 @@ class RoadSignsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 160);
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableWidth = constraints.maxWidth;
-        final availableHeight = constraints.maxHeight;
-
-        // Определяем размер карточки, чтобы 2x2 идеально помещались
-        const gap = AppDimensions.spacingM; // 12px
-        final itemWidth = (availableWidth - gap) / 2;
-        final itemHeight = (availableHeight - gap) / 2;
-        final side = itemWidth < itemHeight ? itemWidth : itemHeight;
-
+        const gap = AppDimensions.spacingM;
+        final side = math.max(
+          0.0,
+          (math.min(constraints.maxWidth, constraints.maxHeight) - gap) / 2,
+        );
         return Center(
-          child: SizedBox(
-            width: side * 2 + gap,
-            height: side * 2 + gap,
+          child: SizedBox.square(
+            dimension: side * 2 + gap,
             child: Column(
               children: [
-                Row(
-                  children: [
-                    _buildCard(0, side, colors),
-                    const SizedBox(width: gap),
-                    _buildCard(1, side, colors),
-                  ],
-                ),
-                const SizedBox(height: gap),
-                Row(
-                  children: [
-                    _buildCard(2, side, colors),
-                    const SizedBox(width: gap),
-                    _buildCard(3, side, colors),
-                  ],
-                ),
+                for (var row = 0; row < 2; row++) ...[
+                  if (row > 0) const SizedBox(height: gap),
+                  Row(
+                    children: [
+                      for (var column = 0; column < 2; column++) ...[
+                        if (column > 0) const SizedBox(width: gap),
+                        _card(row * 2 + column, side, colors, duration),
+                      ],
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -68,58 +63,106 @@ class RoadSignsGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildCard(int index, double side, AppThemeColors colors) {
-    final sign = options[index];
-    final isSelected = selectedIndex == index;
-    final isTarget = correctIndex == index;
+  Widget _card(
+    int index,
+    double side,
+    AppThemeColors colors,
+    Duration duration,
+  ) {
+    final answered = selectedIndex != null;
+    final selected = selectedIndex == index;
+    final correct = answered && correctIndex == index;
+    final wrong = selected && isCorrect == false;
+    final status = correct
+        ? appL10n.gameCorrectAnswer
+        : wrong
+        ? appL10n.gameAnswerWrong
+        : null;
+    final surface = correct
+        ? colors.greenLight
+        : wrong
+        ? colors.redLight
+        : colors.cardBackground;
+    final radius = BorderRadius.circular(AppDimensions.cardRadius);
 
-    Color borderColor = colors.divider.withValues(alpha: 0.5);
-    Color backgroundColor = colors.cardBackground;
-    double borderWidth = 1.0;
-
-    if (selectedIndex != null) {
-      if (isSelected) {
-        if (isCorrect == true) {
-          borderColor = colors.green;
-          backgroundColor = colors.greenLight.withValues(alpha: 0.35);
-          borderWidth = 2.5;
-        } else {
-          borderColor = colors.red;
-          backgroundColor = colors.redLight.withValues(alpha: 0.35);
-          borderWidth = 2.5;
-        }
-      } else if (isCorrect == false && isTarget) {
-        borderColor = colors.green;
-        backgroundColor = colors.greenLight.withValues(alpha: 0.35);
-        borderWidth = 2.5;
-      }
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: isEnabled ? () => onSelectOption(index) : null,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          width: side,
-          height: side,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-            boxShadow: gameSoftShadow(colors),
-            border: Border.all(
-              color: borderColor,
-              width: borderWidth,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.spacingL),
-            child: Center(
-              child: SvgPicture.asset(
-                sign.assetPath,
-                fit: BoxFit.contain,
+    return Semantics(
+      key: ValueKey('road-sign-option-$index'),
+      button: true,
+      onTap: isEnabled ? () => onSelectOption(index) : null,
+      enabled: isEnabled,
+      selected: selected,
+      // Describe the choice without giving away its name before answering.
+      label: appL10n.roadSignsOption(index + 1),
+      value: status,
+      child: SizedBox.square(
+        dimension: side,
+        child: Material(
+          color: surface,
+          animationDuration: duration,
+          borderRadius: radius,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: isEnabled ? () => onSelectOption(index) : null,
+            excludeFromSemantics: true,
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: WidgetStateProperty.resolveWith((states) {
+              if (isEnabled &&
+                  (states.contains(WidgetState.focused) ||
+                      states.contains(WidgetState.hovered))) {
+                return colors.accent.withValues(alpha: 0.08);
+              }
+              return Colors.transparent;
+            }),
+            child: ExcludeSemantics(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: AnimatedOpacity(
+                      opacity: answered && !selected && !correct ? 0.45 : 1,
+                      duration: duration,
+                      child: Padding(
+                        padding: EdgeInsets.all(side * 0.20),
+                        child: SvgPicture.asset(
+                          options[index].assetPath,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 12,
+                    left: 14,
+                    child: Text(
+                      '${index + 1}',
+                      // Like the corner icon, this decorative index must not
+                      // grow over the sign; its accessible label is above.
+                      textScaler: TextScaler.noScaling,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: colors.secondaryText,
+                      ),
+                    ),
+                  ),
+                  if (correct || wrong)
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: correct ? colors.green : colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          correct ? Icons.check_rounded : Icons.close_rounded,
+                          size: 18,
+                          color: colors.white,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),

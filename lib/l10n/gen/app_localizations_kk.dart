@@ -4152,4 +4152,30 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get premiumBenefitFeedDetail => 'сұрақтар лентасы';
+
+  @override
+  String roadSignsQuestionNumber(int number) {
+    return '$number-сұрақ';
+  }
+
+  @override
+  String roadSignsOption(int number) {
+    return '$number-нұсқа';
+  }
+
+  @override
+  String roadSignsSignNumber(String number) {
+    return '$number белгісі';
+  }
+
+  @override
+  String get roadSignsChooseHint => 'Сәйкес белгіні басыңыз';
+
+  @override
+  String roadSignsCorrectPoints(int points) {
+    return 'Дұрыс! +$points';
+  }
+
+  @override
+  String get roadSignsWrongFeedback => 'Қате · −1 өмір';
 }

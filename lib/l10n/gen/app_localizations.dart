@@ -6969,6 +6969,42 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'лента вопросов'**
   String get premiumBenefitFeedDetail;
+
+  /// No description provided for @roadSignsQuestionNumber.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вопрос {number}'**
+  String roadSignsQuestionNumber(int number);
+
+  /// No description provided for @roadSignsOption.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вариант {number}'**
+  String roadSignsOption(int number);
+
+  /// No description provided for @roadSignsSignNumber.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак {number}'**
+  String roadSignsSignNumber(String number);
+
+  /// No description provided for @roadSignsChooseHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нажмите на подходящий знак'**
+  String get roadSignsChooseHint;
+
+  /// No description provided for @roadSignsCorrectPoints.
+  ///
+  /// In ru, this message translates to:
+  /// **'Верно! +{points}'**
+  String roadSignsCorrectPoints(int points);
+
+  /// No description provided for @roadSignsWrongFeedback.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неверно · −1 жизнь'**
+  String get roadSignsWrongFeedback;
 }
 
 class _AppLocalizationsDelegate
