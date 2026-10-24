@@ -124,7 +124,9 @@ func _run() -> void:
 	check(result._award._queue.size() == 3, "flame, two achievements, then the result")
 	check(result._award._queue[0].kind == "streak", "daily flame is always first")
 	check(result._award._title.text == "3" and result._award._description.text == "дня", "daily count uses canonical plural copy")
-	check(result._award._art.texture != null, "canonical vector flame is available")
+	check(result._award._flame.visible and result._award._art.texture == null, "daily flame uses vector fire instead of a scaled bitmap")
+	check(result._award._background.color == Ui.c("gold"), "daily screen has the app's orange background")
+	check(not result._award._flame.is_processing(), "reduced motion freezes burning as well as rays")
 	if DisplayServer.get_name() != "headless":
 		check(is_instance_valid(result._celebration_audio) and result._celebration_audio.playing, "daily fanfare plays in the real renderer")
 		check(is_equal_approx(db_to_linear(result._celebration_audio.volume_db), 0.60), "daily fanfare uses a gentle volume")
@@ -134,13 +136,27 @@ func _run() -> void:
 		root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../output/achievement-awards/godot-streak.png"))
 	var angle := result._award._rotation
 	Host.io_args.erase("--reduce-motion")
+	result._award._flame._motion_changed()
+	if DisplayServer.get_name() != "headless":
+		# Render the entire contour cycle: catches invalid triangulation at any tip pose.
+		for frame in 48:
+			result._award._flame.phase = frame / 48.0
+			result._award._flame.queue_redraw()
+			await process_frame
+		angle = result._award._rotation
+	var fire_phase := result._award._flame.phase
+	result._award._flame._process(0.1)
+	check(result._award._flame.phase != fire_phase, "fire independently animates its contour")
 	result._award._process(1.0)
 	check(is_equal_approx(result._award._rotation - angle, TAU / 60.0), "rays rotate once per minute")
 	Host.io_args.append("--reduce-motion")
+	result._award._flame._motion_changed()
 	angle = result._award._rotation
 	result._award._process(1.0)
 	check(is_equal_approx(result._award._rotation, angle), "reduced motion freezes the rays")
 	result._award.advance()
+	check(not result._award._flame.visible and not result._award._flame.is_processing(), "fire stops after switching to a badge")
+	check(result._award._background.color == Color(Ui.LIGHT.accent), "achievement following the flame returns to its blue background")
 	for frame in 3: await process_frame
 	if DisplayServer.get_name() != "headless":
 		check(result._celebration_audio.playing and is_equal_approx(db_to_linear(result._celebration_audio.volume_db), 0.50), "achievement replaces daily fanfare with the shared chime")

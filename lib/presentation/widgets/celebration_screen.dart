@@ -99,14 +99,15 @@ class _CelebrationScreenState extends State<CelebrationScreen>
   @override
   Widget build(BuildContext context) {
     final reduced = MediaQuery.disableAnimationsOf(context);
+    final background = widget.isStreak ? AppColors.gold : AppColors.accent;
     _syncGlowPosition();
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: AppColors.accent,
+        systemNavigationBarColor: background,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.accent,
+        backgroundColor: background,
         body: Stack(
           key: _backdropKey,
           fit: StackFit.expand,
@@ -117,6 +118,7 @@ class _CelebrationScreenState extends State<CelebrationScreen>
                   center: _glowCenter,
                   badgeSize: _glowBadgeSize,
                   rotation: _spin,
+                  glowStrength: widget.isStreak ? .32 : 1,
                 ),
               ),
             ),
@@ -273,7 +275,9 @@ class _CelebrationScreenState extends State<CelebrationScreen>
                         FilledButton(
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.white,
-                            foregroundColor: AppColors.accent,
+                            foregroundColor: widget.isStreak
+                                ? AppColors.primaryText
+                                : AppColors.accent,
                             minimumSize: const Size.fromHeight(56),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -311,11 +315,13 @@ class _AwardGlow extends CustomPainter {
     required this.center,
     required this.badgeSize,
     required this.rotation,
+    required this.glowStrength,
   }) : super(repaint: rotation);
 
   final Animation<double> rotation;
   final Offset? center;
   final double badgeSize;
+  final double glowStrength;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -359,10 +365,10 @@ class _AwardGlow extends CustomPainter {
         ..shader =
             RadialGradient(
               colors: [
-                AppColors.white.withValues(alpha: .92),
-                AppColors.white.withValues(alpha: .84),
-                AppColors.white.withValues(alpha: .46),
-                AppColors.white.withValues(alpha: .1),
+                AppColors.white.withValues(alpha: .92 * glowStrength),
+                AppColors.white.withValues(alpha: .84 * glowStrength),
+                AppColors.white.withValues(alpha: .46 * glowStrength),
+                AppColors.white.withValues(alpha: .1 * glowStrength),
                 AppColors.white.withValues(alpha: 0),
               ],
               stops: const [0, .18, .42, .7, 1],
@@ -375,5 +381,7 @@ class _AwardGlow extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AwardGlow oldDelegate) =>
-      center != oldDelegate.center || badgeSize != oldDelegate.badgeSize;
+      center != oldDelegate.center ||
+      badgeSize != oldDelegate.badgeSize ||
+      glowStrength != oldDelegate.glowStrength;
 }

@@ -19,7 +19,6 @@ var _heading: Label
 var _controls: MiniGameResults
 var _rotation := 0.0
 var _reveal: Tween
-var _breath: Tween
 var _count: Tween
 var _next: Button
 var _art: TextureRect
@@ -31,6 +30,8 @@ var _scroll: ScrollContainer
 var _bounds := Rect2()
 var _radiance: ColorRect
 var _radiance_material: ShaderMaterial
+var _background: ColorRect
+var _flame: BurningFlame
 
 static func pending(score: int) -> Array:
 	var data: Dictionary = {}
@@ -88,6 +89,7 @@ func _init(awards: Array, controls: MiniGameResults) -> void:
 	mouse_filter = MOUSE_FILTER_STOP
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	var background := ColorRect.new()
+	_background = background
 	background.color = Color(Ui.LIGHT.accent)
 	background.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	add_child(background)
@@ -101,12 +103,13 @@ uniform vec2 canvas_size = vec2(390.0, 844.0);
 uniform vec2 glow_center = vec2(195.0, 330.0);
 uniform float badge_size = 160.0;
 uniform float ray_rotation = 0.0;
+uniform float glow_strength = 1.0;
 void fragment() {
 	vec2 offset = UV * canvas_size - glow_center;
 	float distance = length(offset);
 	float glow_radius = badge_size * 1.55;
 	float glow_distance = length(offset * vec2(1.0, 1.4));
-	float glow = 0.92 * exp(-pow(glow_distance / (badge_size * 0.8), 2.0));
+	float glow = 0.92 * glow_strength * exp(-pow(glow_distance / (badge_size * 0.8), 2.0));
 	glow *= 1.0 - smoothstep(0.8, 1.0, glow_distance / glow_radius);
 	float angle = atan(offset.y, offset.x) - ray_rotation;
 	float ray = pow(max(cos(angle * 12.0), 0.0), 5.0);
@@ -152,6 +155,9 @@ void fragment() {
 	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_art.custom_minimum_size.y = 160
+	_flame = BurningFlame.new()
+	_flame.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_art.add_child(_flame)
 	content.add_child(_art)
 	_title = Ui.scaled_label("", 30, 800, Color.WHITE, true)
 	_description = Ui.scaled_label("", 16, 400, Color(1, 1, 1, 0.8), true)
@@ -222,12 +228,20 @@ func _show_award() -> void:
 	var award: Dictionary = _queue[_index]
 	var streak: bool = award.get("kind") == "streak"
 	var level := int(award.get("level", 0))
-	var path := "res://icons/streak_flame.svg" if streak else "res://icons/achievements/%s_%d.png" % [award.id, level]
-	for tween in [_reveal, _breath, _count]:
+	var path := "res://icons/achievements/%s_%d.png" % [award.get("id", ""), level]
+	for tween in [_reveal, _count]:
 		if is_instance_valid(tween): tween.kill()
 	_art.scale = Vector2.ONE
-	_art.modulate = Ui.c("gold") if streak else Color.WHITE
-	if ResourceLoader.exists(path): _art.texture = load(path)
+	_art.modulate = Color.WHITE
+	_art.texture = null
+	if not streak and ResourceLoader.exists(path): _art.texture = load(path)
+	_flame.visible = streak
+	_flame.phase = 0.0
+	_flame._motion_changed()
+	_background.color = Ui.c("gold") if streak else Color(Ui.LIGHT.accent)
+	_radiance_material.set_shader_parameter("glow_strength", 0.32 if streak else 1.0)
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		_next.add_theme_color_override(state, Color(Ui.LIGHT.text) if streak else Color(Ui.LIGHT.accent))
 	_heading.text = str(award.heading) if streak else Ui.t("achievementAwardTitle")
 	_title.add_theme_font_size_override("font_size", roundi((64 if streak else 30) * Ui.text_scale()))
 	_title.text = str(award.title)
@@ -248,10 +262,6 @@ func _show_award() -> void:
 	if streak:
 		_count = create_tween()
 		_count.tween_method(func(value: float): _title.text = str(roundi(value)), float(maxi(0, int(award.current) - 1)), float(award.current), 0.65).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		_breath = create_tween().set_loops()
-		_breath.tween_interval(0.65)
-		_breath.tween_property(_art, "scale", Vector2.ONE * 1.035, 1.8).set_trans(Tween.TRANS_SINE)
-		_breath.tween_property(_art, "scale", Vector2.ONE, 1.8).set_trans(Tween.TRANS_SINE)
 
 func advance(close := false) -> void:
 	if _index >= _queue.size(): return

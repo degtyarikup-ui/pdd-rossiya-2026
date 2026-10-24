@@ -189,15 +189,18 @@ Google Play: документированная HTTPS-ссылка на карт
 
 Графика общая с профилем; `tools/godot_export/export_ui.py` копирует её из
 `assets/images/achievements/` в генерируемую `game_godot/icons/achievements/`.
-Огонёк берётся из общего векторного `assets/images/fire.svg`. Оба экрана
-используют единое оформление `CelebrationScreen`: сияние, плавно затухающие
-лучи с оборотом за 60 секунд, появление значка и счётчик дней. При уменьшении
-движения вращение и пульсация отключены. Звуки `streak.wav` / `correct.wav`
+Оба экрана используют единое оформление `CelebrationScreen`: сияние, плавно
+затухающие лучи с оборотом за 60 секунд, появление значка и счётчик дней.
+У серии оранжевый фон `AppColors.gold` и белое векторное пламя `BurningFlame`;
+язычки, внутренняя часть и искры движутся, основание остаётся неподвижным.
+Геометрия совпадает во Flutter (`burning_flame.dart`) и Godot
+(`burning_flame.gd`), растровых кадров нет. При уменьшении движения горение
+и вращение отключены. Звуки `streak.wav` / `correct.wav`
 учитывают общую настройку звука и не накладываются при переходе между экранами.
 Все три скрипта упаковки Godot предоставляют эти источники. Числа игровых
 значков совпадают с текущими порогами `AchievementThresholds`.
 
-Проверки: `test/completion_activity_test.dart`, `test/achievement_awards_test.dart`,
+Проверки: `test/burning_flame_test.dart`, `test/completion_activity_test.dart`, `test/achievement_awards_test.dart`,
 `game_godot/tests/achievement_awards_check.gd`, существующие проверки итогов.
 Предпросмотр Flutter: `flutter test test/achievement_awards_test.dart
 --dart-define=PDD_CAPTURE_ACHIEVEMENTS=true` → `output/achievement-awards/`.

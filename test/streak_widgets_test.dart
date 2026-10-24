@@ -2,6 +2,8 @@ import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/models/streak.dart';
+import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/presentation/widgets/burning_flame.dart';
 import 'package:pdd_app/presentation/widgets/streak_celebration_dialog.dart';
 import 'package:pdd_app/presentation/widgets/streak_widgets.dart';
 
@@ -103,11 +105,16 @@ void main() {
         home: StreakCelebrationView(streak: streakOf(7, 7), today: today),
       ),
     );
-    // Огонёк спокойно «дышит» без конца — ждём конца появления, не покоя.
+    // Горение продолжается бесконечно — ждём конца появления, не покоя.
     await tester.pump(const Duration(seconds: 2));
     expect(find.text('7'), findsOneWidget);
     expect(find.text('Новый рекорд'), findsOneWidget);
     expect(find.text('Продолжить'), findsOneWidget);
+    expect(
+      tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+      AppColors.gold,
+    );
+    expect(find.byType(BurningFlame), findsOneWidget);
     // Ни одной обводки: состояние передаёт только цвет.
     final borders = tester
         .widgetList<Container>(find.byType(Container))

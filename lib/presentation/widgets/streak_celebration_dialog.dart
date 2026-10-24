@@ -3,7 +3,7 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/celebration_screen.dart';
-import 'package:pdd_app/presentation/widgets/flame_icon.dart';
+import 'package:pdd_app/presentation/widgets/burning_flame.dart';
 
 Future<void> showStreakCelebrationDialog({
   required BuildContext context,
@@ -58,51 +58,11 @@ class StreakCelebrationView extends StatelessWidget {
     label: streak.current > 1 && streak.current >= streak.longest
         ? appL10n.streakNewRecord
         : appL10n.streakToday,
-    heroBuilder: (size) => _BreathingFlame(size: size),
+    heroBuilder: (size) => BurningFlame(size: size),
     onContinue: onContinue ?? () => Navigator.of(context).pop(),
     onClose: onClose ?? () => Navigator.of(context).pop(),
     position: position,
     total: total,
     isStreak: true,
-  );
-}
-
-class _BreathingFlame extends StatefulWidget {
-  const _BreathingFlame({required this.size});
-  final double size;
-  @override
-  State<_BreathingFlame> createState() => _BreathingFlameState();
-}
-
-class _BreathingFlameState extends State<_BreathingFlame>
-    with SingleTickerProviderStateMixin {
-  late final _breath = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1800),
-  );
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _breath.stop();
-    } else if (!_breath.isAnimating) {
-      _breath.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _breath.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _breath,
-    builder: (context, child) => Transform.scale(
-      scale: 1 + .035 * Curves.easeInOut.transform(_breath.value),
-      child: child,
-    ),
-    child: FlameIcon(size: widget.size, color: AppColors.gold),
   );
 }
