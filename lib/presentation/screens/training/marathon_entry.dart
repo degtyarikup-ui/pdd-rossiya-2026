@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/data/models/marathon_progress.dart';
@@ -97,7 +98,11 @@ class MarathonResumeDialog extends StatelessWidget {
     return AlertDialog(
       scrollable: true,
       backgroundColor: colors.cardBackground,
-      icon: Icon(Icons.route_outlined, color: colors.accent, size: 36),
+      icon: SvgPicture.asset(
+        'assets/images/home_icon_marathon.svg',
+        width: 36,
+        height: 36,
+      ),
       title: Text(
         complete ? appL10n.marathonCompleted : appL10n.marathonResumeTitle,
       ),

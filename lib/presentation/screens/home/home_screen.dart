@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/data/services/store_review_link.dart';
 import 'package:pdd_app/presentation/screens/training/marathon_entry.dart';
@@ -562,6 +563,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final statsAsync = ref.watch(statsProvider);
     final unfinishedSession = ref.watch(unfinishedSessionProvider);
     final sessionData = unfinishedSession.valueOrNull;
@@ -776,7 +778,9 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   Expanded(
                     child: _buildModeCard(
                       context: context,
-                      icon: Icons.rate_review_outlined,
+                      iconAsset: 'assets/images/home_icon_rate.svg',
+                      foregroundColor: colors.gold,
+                      surfaceColor: colors.goldLightSurface,
                       label: appL10n.rateUs,
                       height: buttonHeight,
                       onTap: _rateApp,
@@ -786,7 +790,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   Expanded(
                     child: _buildModeCard(
                       context: context,
-                      icon: Icons.route_outlined,
+                      iconAsset: 'assets/images/home_icon_marathon.svg',
                       label: appL10n.marathon,
                       height: buttonHeight,
                       loading: _openingMarathon,
@@ -860,14 +864,16 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
 
   Widget _buildModeCard({
     required BuildContext context,
-    String? iconAsset,
-    IconData? icon,
+    required String iconAsset,
     bool loading = false,
+    Color? foregroundColor,
+    Color? surfaceColor,
     required String label,
     required double height,
     required VoidCallback onTap,
   }) {
     final colors = AppColors.of(context);
+    final foreground = foregroundColor ?? colors.accent;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -877,7 +883,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
           height: height,
           padding: const EdgeInsets.all(AppDimensions.spacingL),
           decoration: BoxDecoration(
-            color: colors.accentSurface10,
+            color: surfaceColor ?? colors.accentSurface10,
             borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
           ),
           child: Column(
@@ -889,14 +895,21 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   height: AppDimensions.iconSize,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: colors.accent,
+                    color: foreground,
                   ),
                 )
-              else if (icon != null)
-                Icon(icon, color: colors.accent, size: AppDimensions.iconSize)
+              else if (iconAsset.endsWith('.svg'))
+                SvgPicture.asset(
+                  iconAsset,
+                  colorFilter: foregroundColor == null
+                      ? null
+                      : ColorFilter.mode(foregroundColor, BlendMode.srcIn),
+                  width: AppDimensions.iconSize,
+                  height: AppDimensions.iconSize,
+                )
               else
                 Image.asset(
-                  iconAsset!,
+                  iconAsset,
                   width: AppDimensions.iconSize,
                   height: AppDimensions.iconSize,
                   fit: BoxFit.contain,
@@ -914,7 +927,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                     fontSize: _homeNavLabelFontSize,
                     fontWeight: FontWeight.w600,
                     height: 1.1,
-                    color: colors.accent,
+                    color: foreground,
                   ),
                 ),
               ),
