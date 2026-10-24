@@ -24,6 +24,7 @@ func _run() -> void:
 	var counts: Array[int] = []
 	var firsts: Array[float] = []
 	var kinds := {}
+	var by_kind := {}
 	for sd in [1, 2, 3, 4, 5, 6]:
 		seed(sd)
 		var game = ViolatorScript.new()
@@ -40,6 +41,7 @@ func _run() -> void:
 				if is_instance_valid(c) and c.is_violator and c.violation_state != "pending" and not happened.has(c.get_instance_id()):
 					happened[c.get_instance_id()] = true
 					kinds[c.violation_type] = true
+					by_kind[c.violation_type] = int(by_kind.get(c.violation_type, 0)) + 1
 					first = minf(first, game.game_clock)
 		counts.append(happened.size())
 		firsts.append(first)
@@ -52,6 +54,10 @@ func _run() -> void:
 	_check("Every round has at least 6 offences (%s)" % str(counts), counts.min() >= 6)
 	_check("On average at least 7.5 offences a round (%.1f)" % (float(total) / counts.size()), float(total) / counts.size() >= 7.5)
 	_check("The first offence comes within 10 s (%s)" % str(firsts), firsts.max() <= 10.0)
+	var top := 0
+	for k in by_kind:
+		top = maxi(top, by_kind[k])
+	_check("No single kind dominates the round (top %d of %d, %s)" % [top, total, str(by_kind)], float(top) <= 0.35 * float(total))
 	_check("Several kinds of offence show up (%s)" % str(kinds.keys()), kinds.size() >= 4)
 	print("Violator density: %s" % ("PASS" if failed == 0 else "FAIL (%d)" % failed))
 	quit(0 if failed == 0 else 1)

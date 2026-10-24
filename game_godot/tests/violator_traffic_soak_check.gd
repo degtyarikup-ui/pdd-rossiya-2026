@@ -85,7 +85,7 @@ func _run() -> void:
 			var id: int = a.get_instance_id()
 			still_time[id] = still_time.get(id, 0.0) + DT if a.speed < 0.05 else 0.0
 			if still_time[id] > 60.0:
-				var dl = a.get_meta("debug_lead", null)
+				var dl = (a.get_meta("debug_lead") if a.has_meta("debug_lead") else null)
 				if is_instance_valid(dl):
 					print("   lead: lane=%d %s (%.1f,%.1f) v%.1f" % [dl.lane, dl.route, dl.position.x, dl.position.z, dl.speed])
 				print("   zebra limit: ", a.get_meta("debug_zebra", 0))
@@ -93,7 +93,7 @@ func _run() -> void:
 				if stuck_cars == 0:
 					for o in cars:
 						print("   car lane=%d route=%s pos=(%.1f,%.1f) yaw=%.2f v=%.1f turn=%.2f viol=%s/%s emerg=%s yld=%s" % [o.lane, o.route, o.position.x, o.position.z, o.rotation.y, o.speed, o.turn_t, o.violation_type, o.violation_state, o.is_emergency, o.yielding])
-						var ol = o.get_meta("debug_lead", null)
+						var ol = (o.get_meta("debug_lead") if o.has_meta("debug_lead") else null)
 						print("      lead=", "(%.1f,%.1f)" % [ol.position.x, ol.position.z] if is_instance_valid(ol) else "-", " zl=%.1f tgt=%.1f" % [o.get_meta("debug_zebra", 999.0), o.target_speed])
 					for c in game.crossers:
 						if c.state != "hidden":
@@ -104,16 +104,16 @@ func _run() -> void:
 			var on_zebra := false
 			# Violators that ignore the stop line or the signs may end up stuck on a zebra: that is
 			# their offence. Everyone else must never stand on one.
-			var reckless: bool = a.is_violator and a.violation_type in [game.VIOLATION_WAFFLE_BLOCK, game.VIOLATION_RED_LIGHT, game.VIOLATION_PRIORITY_SIGN, game.VIOLATION_PEDESTRIAN_YIELD, game.VIOLATION_ARROW_YIELD]
+			var reckless: bool = a.is_violator and a.violation_type in [game.VIOLATION_WAFFLE_BLOCK, game.VIOLATION_RED_LIGHT, game.VIOLATION_PRIORITY_SIGN, game.VIOLATION_PEDESTRIAN_YIELD, game.VIOLATION_ARROW_YIELD, game.VIOLATION_SOLID_LINE, game.VIOLATION_WRONG_LANE_TURN]
 			# Following an emergency vehicle that braked hard inside the junction is a real-life case.
-			var behind_siren: bool = is_instance_valid(a.get_meta("debug_lead", null)) and a.get_meta("debug_lead").is_emergency
+			var behind_siren: bool = is_instance_valid((a.get_meta("debug_lead") if a.has_meta("debug_lead") else null)) and a.get_meta("debug_lead").is_emergency
 			if a.speed < 0.05 and not reckless and not behind_siren:
 				for cw in game.CROSSWALKS.values():
 					if _body_on_rect(a, cw.rect):
 						on_zebra = true
 			zebra_time[id] = zebra_time.get(id, 0.0) + DT if on_zebra else 0.0
 			if zebra_time[id] > 1.0:
-				var zl = a.get_meta("debug_lead", null)
+				var zl = (a.get_meta("debug_lead") if a.has_meta("debug_lead") else null)
 				if is_instance_valid(zl):
 					print("   zlead: lane=%d %s (%.1f,%.1f) v%.1f" % [zl.lane, zl.route, zl.position.x, zl.position.z, zl.speed])
 				print("zebra t=%.0f lane=%d route=%s pos=(%.1f,%.1f) viol=%s" % [f * DT, a.lane, a.route, a.position.x, a.position.z, a.violation_type])
