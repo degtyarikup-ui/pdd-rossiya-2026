@@ -22,7 +22,8 @@ var _level: Label
 var _counter: Label
 var _scroll: ScrollContainer
 var _bounds := Rect2()
-var _rays: Node2D
+var _radiance: ColorRect
+var _radiance_material: ShaderMaterial
 
 static func pending(score: int) -> Array:
 	var data: Dictionary = {}
@@ -61,9 +62,34 @@ func _init(awards: Array, controls: MiniGameResults) -> void:
 	background.color = Color(Ui.LIGHT.accent)
 	background.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	add_child(background)
-	_rays = MiniGameResults.Rays.new()
-	_rays.set_process(false)
-	add_child(_rays)
+	_radiance = ColorRect.new()
+	_radiance.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_radiance.mouse_filter = MOUSE_FILTER_IGNORE
+	var radiance_shader := Shader.new()
+	radiance_shader.code = """
+shader_type canvas_item;
+uniform vec2 canvas_size = vec2(390.0, 844.0);
+uniform vec2 glow_center = vec2(195.0, 330.0);
+uniform float badge_size = 160.0;
+void fragment() {
+	vec2 offset = UV * canvas_size - glow_center;
+	float distance = length(offset);
+	float glow_radius = badge_size * 1.55;
+	float glow_distance = length(offset * vec2(1.0, 1.4));
+	float glow = 0.92 * exp(-pow(glow_distance / (badge_size * 0.8), 2.0));
+	glow *= 1.0 - smoothstep(0.8, 1.0, glow_distance / glow_radius);
+	float angle = atan(offset.y, offset.x);
+	float ray = pow(max(cos(angle * 12.0), 0.0), 5.0);
+	float progress = distance / (badge_size * 2.45);
+	float rays = 0.18 * ray * smoothstep(0.0, 0.18, progress);
+	rays *= 1.0 - smoothstep(0.18, 1.0, progress);
+	COLOR *= vec4(1.0, 1.0, 1.0, 1.0 - (1.0 - glow) * (1.0 - rays));
+}
+"""
+	_radiance_material = ShaderMaterial.new()
+	_radiance_material.shader = radiance_shader
+	_radiance.material = _radiance_material
+	add_child(_radiance)
 	_card = Control.new()
 	add_child(_card)
 	var head := HBoxContainer.new()
@@ -93,18 +119,9 @@ func _init(awards: Array, controls: MiniGameResults) -> void:
 	_art = TextureRect.new()
 	_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_art.custom_minimum_size.y = 220
+	_art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_art.custom_minimum_size.y = 160
 	content.add_child(_art)
-	var glow := ColorRect.new()
-	glow.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	glow.mouse_filter = MOUSE_FILTER_IGNORE
-	glow.show_behind_parent = true
-	var shader := Shader.new()
-	shader.code = "shader_type canvas_item; void fragment() { vec2 p = (UV - vec2(0.5)) * vec2(2.2, 2.5); COLOR = vec4(1.0, 1.0, 1.0, exp(-dot(p, p) * 3.0) * 0.25); }"
-	var material := ShaderMaterial.new()
-	material.shader = shader
-	glow.material = material
-	_art.add_child(glow)
 	_title = Ui.scaled_label("", 30, 800, Color.WHITE, true)
 	_description = Ui.scaled_label("", 16, 400, Color(1, 1, 1, 0.8), true)
 	_level = Ui.scaled_label("", 13, 600, Color.WHITE)
@@ -153,9 +170,11 @@ func layout(bounds: Rect2) -> void:
 	_counter.size.y = counter_height
 	_scroll.position = Vector2(0, header_height + 16)
 	_scroll.size = Vector2(width, maxf(0, _counter.position.y - header_height - 32))
-	_art.custom_minimum_size.y = clampf(bounds.size.y * 0.43, 140, 240)
-	_rays.position = get_global_transform().affine_inverse() * _art.get_global_rect().get_center()
-	_rays.set_radius(minf(340, bounds.size.y * 0.5))
+	_art.custom_minimum_size.y = clampf(bounds.size.y * 0.28, 128, 160)
+	var center := get_global_transform().affine_inverse() * _art.get_global_rect().get_center()
+	_radiance_material.set_shader_parameter("canvas_size", size)
+	_radiance_material.set_shader_parameter("glow_center", center)
+	_radiance_material.set_shader_parameter("badge_size", _art.size.y)
 
 func _ready() -> void:
 	_show_award()

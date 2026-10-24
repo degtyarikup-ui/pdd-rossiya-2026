@@ -21,6 +21,7 @@ class AchievementBadge extends StatelessWidget {
   final int imageLevel;
   final bool unlocked;
   final double size;
+  final bool highQuality;
 
   const AchievementBadge({
     super.key,
@@ -28,6 +29,7 @@ class AchievementBadge extends StatelessWidget {
     required this.imageLevel,
     required this.unlocked,
     required this.size,
+    this.highQuality = false,
   });
 
   @override
@@ -42,11 +44,15 @@ class AchievementBadge extends StatelessWidget {
       width: size,
       height: size,
       fit: BoxFit.contain,
-      cacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(
-        96,
-        512,
-      ),
-      filterQuality: FilterQuality.low,
+      // The award hero keeps the original artwork through its reveal and
+      // high-density captures. Small profile cells retain their compact cache.
+      cacheWidth: highQuality
+          ? 512
+          : (size * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(
+              96,
+              512,
+            ),
+      filterQuality: highQuality ? FilterQuality.high : FilterQuality.low,
       excludeFromSemantics: true,
       errorBuilder: (context, error, stackTrace) {
         return Container(

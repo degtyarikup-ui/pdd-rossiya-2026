@@ -135,16 +135,52 @@ class AchievementAwardScreen extends StatefulWidget {
 }
 
 class _AchievementAwardScreenState extends State<AchievementAwardScreen> {
+  final _backdropKey = GlobalKey();
+  final _badgeKey = GlobalKey();
+  final _scrollController = ScrollController();
+  Offset? _glowCenter;
+  double _glowBadgeSize = 160;
+  bool _positionScheduled = false;
+
   @override
   void initState() {
     super.initState();
     HapticFeedbackHelper.success();
+    _scrollController.addListener(_syncGlowPosition);
+  }
+
+  void _syncGlowPosition() {
+    if (_positionScheduled) return;
+    _positionScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _positionScheduled = false;
+      if (!mounted) return;
+      final badge = _badgeKey.currentContext?.findRenderObject();
+      final backdrop = _backdropKey.currentContext?.findRenderObject();
+      if (badge is! RenderBox || backdrop is! RenderBox) return;
+      final center = badge.localToGlobal(
+        badge.size.center(Offset.zero),
+        ancestor: backdrop,
+      );
+      if (_glowCenter == center && _glowBadgeSize == badge.size.width) return;
+      setState(() {
+        _glowCenter = center;
+        _glowBadgeSize = badge.size.width;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final award = widget.achievement;
     final reduced = MediaQuery.disableAnimationsOf(context);
+    _syncGlowPosition();
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
@@ -152,185 +188,201 @@ class _AchievementAwardScreenState extends State<AchievementAwardScreen> {
       ),
       child: Scaffold(
         backgroundColor: AppColors.accent,
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Padding(
-                padding: const EdgeInsets.all(AppDimensions.screenPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
+        body: Stack(
+          key: _backdropKey,
+          fit: StackFit.expand,
+          children: [
+            IgnorePointer(
+              child: CustomPaint(
+                painter: _AwardGlow(
+                  center: _glowCenter,
+                  badgeSize: _glowBadgeSize,
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(width: 48),
-                        Expanded(
-                          child: Text(
-                            appL10n.achievementAwardTitle,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.white,
+                        Row(
+                          children: [
+                            const SizedBox(width: 48),
+                            Expanded(
+                              child: Text(
+                                appL10n.achievementAwardTitle,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.white,
+                                ),
+                              ),
                             ),
+                            IconButton.filled(
+                              tooltip: appL10n.close,
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.white,
+                                foregroundColor: AppColors.primaryText,
+                                minimumSize: const Size(48, 48),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.buttonRadius,
+                                  ),
+                                ),
+                              ),
+                              onPressed: widget.onClose,
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                          ],
+                        ),
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final badgeSize = math.min(
+                                160.0,
+                                math.max(128.0, constraints.maxHeight * .28),
+                              );
+                              return SingleChildScrollView(
+                                controller: _scrollController,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      TweenAnimationBuilder<double>(
+                                        tween: Tween(
+                                          begin: reduced ? 1 : .82,
+                                          end: 1,
+                                        ),
+                                        duration: Duration(
+                                          milliseconds: reduced ? 0 : 650,
+                                        ),
+                                        curve: Curves.easeOutBack,
+                                        builder: (context, scale, child) =>
+                                            Transform.scale(
+                                              scale: scale,
+                                              child: child,
+                                            ),
+                                        child: AchievementBadge(
+                                          key: _badgeKey,
+                                          id: award.id,
+                                          imageLevel: award.level,
+                                          unlocked: true,
+                                          size: badgeSize,
+                                          highQuality: true,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 32),
+                                      Semantics(
+                                        liveRegion: true,
+                                        child: Text(
+                                          achievementTitle(award.id),
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            fontSize: 30,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.white,
+                                            height: 1.15,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        achievementDescription(award.id),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          height: 1.45,
+                                          color: AppColors.white.withValues(
+                                            alpha: .8,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 7,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.white.withValues(
+                                            alpha: .16,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            40,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          appL10n.achievementLevelFormat(
+                                            award.level,
+                                            award.levels.length,
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.white,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                        IconButton.filled(
-                          tooltip: appL10n.close,
-                          style: IconButton.styleFrom(
+                        if (widget.total > 1) ...[
+                          Text(
+                            appL10n.achievementAwardPosition(
+                              widget.position,
+                              widget.total,
+                            ),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppColors.white,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        FilledButton(
+                          style: FilledButton.styleFrom(
                             backgroundColor: AppColors.white,
-                            foregroundColor: AppColors.primaryText,
-                            minimumSize: const Size(48, 48),
+                            foregroundColor: AppColors.accent,
+                            minimumSize: const Size.fromHeight(56),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 16,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
                                 AppDimensions.buttonRadius,
                               ),
                             ),
+                            textStyle: const TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          onPressed: widget.onClose,
-                          icon: const Icon(Icons.close_rounded),
+                          onPressed: widget.onContinue,
+                          child: Text(appL10n.continueButton),
                         ),
                       ],
                     ),
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final badgeSize = math.min(
-                            240.0,
-                            math.max(140.0, constraints.maxHeight * .43),
-                          );
-                          return SingleChildScrollView(
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: constraints.maxHeight,
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  TweenAnimationBuilder<double>(
-                                    tween: Tween(
-                                      begin: reduced ? 1 : .82,
-                                      end: 1,
-                                    ),
-                                    duration: Duration(
-                                      milliseconds: reduced ? 0 : 650,
-                                    ),
-                                    curve: Curves.easeOutBack,
-                                    builder: (context, scale, child) =>
-                                        Transform.scale(
-                                          scale: scale,
-                                          child: child,
-                                        ),
-                                    child: CustomPaint(
-                                      painter: _AwardGlow(),
-                                      child: AchievementBadge(
-                                        id: award.id,
-                                        imageLevel: award.level,
-                                        unlocked: true,
-                                        size: badgeSize,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 32),
-                                  Semantics(
-                                    liveRegion: true,
-                                    child: Text(
-                                      achievementTitle(award.id),
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontSize: 30,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.white,
-                                        height: 1.15,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    achievementDescription(award.id),
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      height: 1.45,
-                                      color: AppColors.white.withValues(
-                                        alpha: .8,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 7,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.white.withValues(
-                                        alpha: .16,
-                                      ),
-                                      borderRadius: BorderRadius.circular(40),
-                                    ),
-                                    child: Text(
-                                      appL10n.achievementLevelFormat(
-                                        award.level,
-                                        award.levels.length,
-                                      ),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    if (widget.total > 1) ...[
-                      Text(
-                        appL10n.achievementAwardPosition(
-                          widget.position,
-                          widget.total,
-                        ),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.white,
-                        foregroundColor: AppColors.accent,
-                        minimumSize: const Size.fromHeight(56),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.buttonRadius,
-                          ),
-                        ),
-                        textStyle: const TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      onPressed: widget.onContinue,
-                      child: Text(appL10n.continueButton),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -338,42 +390,68 @@ class _AchievementAwardScreenState extends State<AchievementAwardScreen> {
 }
 
 class _AwardGlow extends CustomPainter {
+  const _AwardGlow({required this.center, required this.badgeSize});
+
+  final Offset? center;
+  final double badgeSize;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = size.width * .83;
-    final bounds = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            AppColors.white.withValues(alpha: .25),
-            AppColors.white.withValues(alpha: 0),
-          ],
-        ).createShader(bounds),
-    );
+    final origin = center ?? Offset(size.width / 2, size.height * .4);
+    final rayRadius = badgeSize * 2.45;
+    final rayPaint = Paint()
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3)
+      ..shader = RadialGradient(
+        colors: [
+          AppColors.white.withValues(alpha: 0),
+          AppColors.white.withValues(alpha: .18),
+          AppColors.white.withValues(alpha: .12),
+          AppColors.white.withValues(alpha: .035),
+          AppColors.white.withValues(alpha: 0),
+        ],
+        stops: const [0, .18, .4, .72, 1],
+      ).createShader(Rect.fromCircle(center: origin, radius: rayRadius));
     for (var i = 0; i < 12; i++) {
-      final a = i * math.pi / 6;
+      final a = i * math.pi / 6 - math.pi / 2;
       final path = Path()
-        ..moveTo(center.dx, center.dy)
+        ..moveTo(origin.dx, origin.dy)
         ..lineTo(
-          center.dx + math.cos(a - .07) * radius,
-          center.dy + math.sin(a - .07) * radius,
+          origin.dx + math.cos(a - .095) * rayRadius,
+          origin.dy + math.sin(a - .095) * rayRadius,
         )
         ..lineTo(
-          center.dx + math.cos(a + .07) * radius,
-          center.dy + math.sin(a + .07) * radius,
+          origin.dx + math.cos(a + .095) * rayRadius,
+          origin.dy + math.sin(a + .095) * rayRadius,
         )
         ..close();
-      canvas.drawPath(
-        path,
-        Paint()..color = AppColors.white.withValues(alpha: .035),
-      );
+      canvas.drawPath(path, rayPaint);
     }
+    final glowRadius = badgeSize * 1.55;
+    canvas.save();
+    canvas.translate(origin.dx, origin.dy);
+    canvas.scale(1, 1 / 1.4);
+    canvas.drawCircle(
+      Offset.zero,
+      glowRadius,
+      Paint()
+        ..shader =
+            RadialGradient(
+              colors: [
+                AppColors.white.withValues(alpha: .92),
+                AppColors.white.withValues(alpha: .84),
+                AppColors.white.withValues(alpha: .46),
+                AppColors.white.withValues(alpha: .1),
+                AppColors.white.withValues(alpha: 0),
+              ],
+              stops: const [0, .18, .42, .7, 1],
+            ).createShader(
+              Rect.fromCircle(center: Offset.zero, radius: glowRadius),
+            ),
+    );
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _AwardGlow oldDelegate) =>
+      center != oldDelegate.center || badgeSize != oldDelegate.badgeSize;
 }
