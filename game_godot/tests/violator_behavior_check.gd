@@ -70,7 +70,7 @@ func _run_checks() -> void:
 	_check("Walker waits at the curb on red", west.state == "wait")
 	_check("Waiting walker stands on the raised sidewalk", ped.position.y >= 0.15)
 	game.light_phase = "ns_green"
-	game.light_timer = 6.0
+	game.light_timer = 10.0
 	west.spd = 1.5
 	game._update_crosser(west, 0.1)
 	_check("Walker starts crossing on green", west.state == "cross")
@@ -90,7 +90,7 @@ func _run_checks() -> void:
 	game.light_timer = 0.5
 	game._update_crosser(other_west, 0.1)
 	_check("Nobody starts when the green ends before they could reach the far curb", other_west.state == "wait")
-	game.light_timer = 6.0
+	game.light_timer = 10.0
 
 	# A car about to cross the zebra keeps the walker on the curb
 	var turner = game.spawn_specific_car("main_left", 0, false, "")
@@ -399,6 +399,25 @@ func _run_checks() -> void:
 	_check("Queued car does not stop on the north zebra (front %.2f, rear %.2f)" % [q_front, q_rear], q_front <= -9.0 or q_rear >= -6.5)
 	stuck.queue_free()
 	queued.queue_free()
+	game.cars.clear()
+
+	# 17b2. A standing car never slides sideways (it can only steer over while rolling)
+	var parked = game.spawn_specific_car("main_straight", 1, false, "")
+	parked.position = Vector3(1.8, 0, -30.0)
+	parked.speed = 0.0
+	parked.target_speed = 0.0
+	var siren = game.spawn_specific_car("main_straight", 1, false, "")
+	siren.position = Vector3(1.8, 0, -45.0)
+	siren.speed = 0.0
+	game._setup_emergency_appearance(siren, "police")
+	game.light_phase = "ew_green"
+	game.light_state = "red"
+	for step in 30:
+		parked.speed = 0.0
+		game._advance_car_behavior(parked, 0.033)
+	_check("A car standing still does not drift sideways (x %.2f)" % parked.position.x, absf(parked.position.x - 1.8) < 0.01)
+	parked.queue_free()
+	siren.queue_free()
 	game.cars.clear()
 
 	# 17c. Emergency vehicle: cars ahead pull over, it passes along the centre, cross traffic holds

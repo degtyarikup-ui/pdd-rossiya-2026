@@ -248,7 +248,8 @@ var arrow_active: bool = false
 # "normal" or "flashing": at night the signals blink yellow, the junction becomes unregulated and the
 # priority signs 2.1 / 2.4 apply (п. 6.2, 13.9); with working signals they do not (п. 6.15, 13.3).
 var signal_mode := "normal"
-const LIGHT_GREEN_TIME := 7.0
+const LIGHT_GREEN_TIME := 11.0      # main road: the longer green, as on a real arterial
+const LIGHT_GREEN_TIME_EW := 6.0    # cross street
 const LIGHT_FLASHING_GREEN_TIME := 3.0
 const LIGHT_YELLOW_TIME := 2.0
 const LIGHT_CLEARANCE_TIME := 1.5
@@ -278,6 +279,8 @@ var locked_car: ViolatorCar = null
 var spawn_timer := 0.0
 var next_spawn_interval := 2.0
 var violation_schedule_timer := 0.0
+var next_emergency_at := 20.0
+const VIOLATION_EVERY := 1.4   # about 70 % of the cars break a rule; the rest are the traps
 
 # Economy and session config
 var session_id := "violator"
@@ -1860,7 +1863,7 @@ func _update_traffic_lights(delta: float) -> void:
 				light_state = "red"
 				light_visual_ns = "red"
 				light_visual_ew = "green"
-				light_timer = LIGHT_GREEN_TIME
+				light_timer = LIGHT_GREEN_TIME_EW
 				arrow_active = true
 			"ew_green":
 				light_phase = "ew_green_flash"
@@ -2032,7 +2035,8 @@ func can_start_crossing(c: Dictionary) -> bool:
 		return false
 	# People step off in a wave at the start of their green; later arrivals wait for the next
 	# one, which leaves turning cars a gap in every cycle.
-	if light_timer < LIGHT_GREEN_TIME - PED_START_WINDOW:
+	var phase_green := LIGHT_GREEN_TIME_EW if light_phase == "ew_green" else LIGHT_GREEN_TIME
+	if light_timer < phase_green - PED_START_WINDOW:
 		return false
 	return not _car_threatens_crosswalk(str(c.cw)) and not _car_kept_waiting(str(c.cw))
 
@@ -2046,7 +2050,8 @@ func _car_threatens_crosswalk(cw_id: String) -> bool:
 			var hit_e := _ray_rect_hit(car, rect, 45.0)
 			if hit_e.x < 45.0:
 				return true
-		if rect.grow(1.4).has_point(Vector2(car.position.x, car.position.z)):
+		var nose := Vector2(car.position.x, car.position.z) + Vector2(sin(car.rotation.y), cos(car.rotation.y)) * CAR_FRONT
+		if rect.grow(1.4).has_point(Vector2(car.position.x, car.position.z)) or rect.grow(1.4).has_point(nose):
 			return true
 		if car.speed > 0.6:
 			# Along the car's real path, so a car in mid-turn counts too.
@@ -2144,10 +2149,10 @@ func is_pedestrian_on_roadway() -> bool:
 func _update_spawning(delta: float) -> void:
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
-		var night_factor := 1.7 if signal_mode == "flashing" else 1.0   # lighter traffic at night
+		var night_factor := 2.4 if signal_mode == "flashing" else 1.0   # lighter traffic at night
 		var effective_time := game_clock if game_mode == "blitz" else (patrol_elapsed * 0.5)
 		if effective_time < 20.0:
-			spawn_timer = randf_range(2.0, 2.6)
+			spawn_timer = randf_range(1.7, 2.2)
 		elif effective_time < 40.0:
 			spawn_timer = randf_range(1.5, 2.1)
 		else:
@@ -2164,8 +2169,8 @@ func _spawn_procedural_car() -> void:
 	var is_violator := false
 	var v_type := ""
 
-	if violation_schedule_timer >= 2.5:
-		violation_schedule_timer = 0.0
+	if violation_schedule_timer >= VIOLATION_EVERY:
+		violation_schedule_timer -= VIOLATION_EVERY
 		v_type = _pick_appropriate_violation(lane)
 		if v_type == "":
 			# Hand the offence to a main-road car instead.
@@ -2202,8 +2207,17 @@ func _spawn_procedural_car() -> void:
 	if is_violator and v_type == VIOLATION_EMERGENCY_YIELD and emergency_on_scene:
 		v_type = VIOLATION_RED_LIGHT
 	var is_emerg := false
-	if not emergency_on_scene and not is_violator and (game_clock > 6.0 or patrol_elapsed > 8.0) and randf() < 0.18 and lane in [0, 1]:
+	if not emergency_on_scene and not is_violator and (game_clock > 6.0 or patrol_elapsed > 8.0) and randf() < 0.32 and lane in [0, 1]:
 		is_emerg = true
+	# Besides, an emergency vehicle comes along every 30-50 s, whoever else is on the road.
+	var clock_now := game_clock if game_mode == "blitz" else patrol_elapsed
+	if not emergency_on_scene and lane in [0, 1] and clock_now >= next_emergency_at and not (is_violator and v_type == VIOLATION_EMERGENCY_YIELD):
+		is_emerg = true
+		is_violator = false
+		v_type = ""
+		violation_schedule_timer = schedule_before
+	if is_emerg:
+		next_emergency_at = clock_now + randf_range(30.0, 50.0)
 
 	# Emergency vehicles (and the car that blocks one) drive straight through: a siren car
 	# squeezing past others along the centre line cannot also take the right turn.
@@ -2261,8 +2275,9 @@ func _pick_appropriate_violation(lane: int) -> String:
 	if lane == 2 or lane == 3:
 		if signal_mode == "flashing":
 			return VIOLATION_PRIORITY_SIGN
-		# Keep the mix varied: a cross-street red-light runner only now and then.
-		if randf() < 0.45:
+		# A cross-street red-light runner when its red will still be on as it arrives (~3 s).
+		var ew_red_long := light_phase in ["ns_green", "ns_green_flash"] and _green_left() > 3.0
+		if ew_red_long and randf() < 0.35:
 			return VIOLATION_RED_LIGHT
 		return ""
 	if signal_mode == "flashing":
@@ -2271,35 +2286,64 @@ func _pick_appropriate_violation(lane: int) -> String:
 			night_choices.append(VIOLATION_EMERGENCY_YIELD)
 		return night_choices[randi() % night_choices.size()]
 
-	var effective_time := game_clock if game_mode == "blitz" else (patrol_elapsed * 0.5)
+	# Pick an offence that fits the signal the car will meet in ~4 s, so it really happens in
+	# front of the player instead of the driver dawdling for a whole cycle.
+	var effective_time := effective_time_for_choice()
+	var green_ahead := light_state == "green" and _green_left() > 4.5
+	# (A car joining a standing queue cannot run the red: it is not at the front.)
+	var red_ahead := _red_left() > 5.5 and not _queue_in_lane(lane)
+	var choices: Array = []
+	if green_ahead:
+		choices = [VIOLATION_WRONG_LANE_TURN, VIOLATION_SOLID_LINE, VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD]
+		if effective_time >= 10.0:
+			choices.append(VIOLATION_WAFFLE_BLOCK)
+			choices.append(VIOLATION_WAFFLE_BLOCK)
+		if effective_time >= 20.0:
+			choices.append(VIOLATION_EMERGENCY_YIELD)
+	else:
+		# The wrong-lane turn happens whatever the signal shows; the red-light and arrow offences only
+		# while enough red is left for the car to meet it.
+		# (No solid-line swerve here: both lanes slow down for the red and leave no gap.)
+		choices = [VIOLATION_WRONG_LANE_TURN]
+		if red_ahead:
+			choices.append(VIOLATION_RED_LIGHT)
+			choices.append(VIOLATION_RED_LIGHT)
+			if lane == 0:
+				choices.append(VIOLATION_ARROW_YIELD)
+				choices.append(VIOLATION_ARROW_YIELD)
+	return choices[randi() % choices.size()]
 
-	if effective_time >= 40.0:
-		var p3_choices := [
-			VIOLATION_EMERGENCY_YIELD,
-			VIOLATION_WAFFLE_BLOCK,
-			VIOLATION_PEDESTRIAN_YIELD,
-			VIOLATION_RED_LIGHT,
-			VIOLATION_WRONG_LANE_TURN,
-			VIOLATION_ARROW_YIELD,
-			VIOLATION_SOLID_LINE
-		]
-		return p3_choices[randi() % p3_choices.size()]
-	elif effective_time >= 20.0:
-		var p2_choices := [
-			VIOLATION_WAFFLE_BLOCK,
-			VIOLATION_WRONG_LANE_TURN,
-			VIOLATION_SOLID_LINE,
-			VIOLATION_PEDESTRIAN_YIELD,
-			VIOLATION_RED_LIGHT,
-			VIOLATION_ARROW_YIELD
-		]
-		return p2_choices[randi() % p2_choices.size()]
 
-	if lane == 0:
-		var choices := [VIOLATION_WRONG_LANE_TURN, VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD, VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD]
-		return choices[randi() % choices.size()]
-	var r_choices := [VIOLATION_SOLID_LINE, VIOLATION_PEDESTRIAN_YIELD, VIOLATION_WRONG_LANE_TURN, VIOLATION_RED_LIGHT]
-	return r_choices[randi() % r_choices.size()]
+func _queue_in_lane(lane: int) -> bool:
+	var x := -1.8 if lane == 0 else 1.8
+	for other in cars:
+		if is_instance_valid(other) and absf(other.position.x - x) < 1.2 and other.position.z < -11.0 and other.position.z > -40.0 and other.speed < 1.0:
+			return true
+	return false
+
+
+## Seconds of main-road red (or yellow) still to come before its next green.
+func _red_left() -> float:
+	var order := ["ns_yellow", "all_red_1", "ew_red_yellow", "ew_green", "ew_green_flash", "ew_yellow", "all_red_2", "ns_red_yellow"]
+	var lengths := {"ns_yellow": LIGHT_YELLOW_TIME, "all_red_1": LIGHT_CLEARANCE_TIME, "ew_red_yellow": LIGHT_RED_YELLOW_TIME,
+		"ew_green": LIGHT_GREEN_TIME_EW, "ew_green_flash": LIGHT_FLASHING_GREEN_TIME, "ew_yellow": LIGHT_YELLOW_TIME,
+		"all_red_2": LIGHT_CLEARANCE_TIME, "ns_red_yellow": LIGHT_RED_YELLOW_TIME}
+	var i := order.find(light_phase)
+	if i < 0:
+		return 0.0
+	var left := light_timer
+	for k in range(i + 1, order.size()):
+		left += float(lengths[order[k]])
+	return left
+
+
+## Seconds of main-road green still to come (steady plus blinking).
+func _green_left() -> float:
+	if light_phase == "ns_green":
+		return light_timer + LIGHT_FLASHING_GREEN_TIME
+	if light_phase == "ns_green_flash":
+		return light_timer
+	return 0.0
 
 
 func spawn_specific_car(route: String, lane: int, is_violator: bool, v_type: String) -> ViolatorCar:
@@ -2856,6 +2900,16 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	elif car.is_violator and car.violation_type == VIOLATION_WRONG_LANE_TURN and car.position.z > -4.0 and car.turn_t < 1.0:
 		car.target_speed = minf(car.target_speed, 6.0)
 
+	# The solid-line violator lines itself up with a gap in the next lane before the line starts:
+	# it eases off to drop in behind the car alongside.
+	if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and not car.has_meta("lc_start") and car.position.z < -24.0 and car.position.z > -50.0:
+		var tx := 1.8 if car.lane == 0 else -1.8
+		for other in cars:
+			if other != car and is_instance_valid(other) and absf(other.position.x - tx) < 2.4:
+				var dz := other.position.z - car.position.z
+				if dz > -5.0 and dz < 6.0:
+					car.target_speed = minf(car.target_speed, maxf(4.0, other.speed - 3.0))
+
 	# Red-light runners (and arrow violators) that would reach the junction on their own green dawdle
 	# on the approach; when it turns yellow / red they press on through it.
 	if car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_ARROW_YIELD] and car.violation_state == "pending" and signal_mode == "normal":
@@ -2986,16 +3040,19 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 						behind = gap
 						coming = other.speed > 1.0
 			# Never stop on the crosswalk or in the junction: past the stop line keep going at the curb.
-			var hold := behind < 28.0 and coming and car.position.z < Z_STOP
+			# Stop only once at the curb; until then roll on slowly, steering over to it.
+			var at_curb := absf(absf(car.yield_offset) - 1.3) < 0.05
+			var hold := behind < 28.0 and coming and car.position.z < Z_STOP and at_curb
 			car.target_speed = minf(car.target_speed, 0.0 if hold else 3.0)
 			if hold:
 				stop_required = true
 
 		if car.has_meta("jam_at"):
 			target_stop_z = minf(target_stop_z, float(car.get_meta("jam_at")))
-		# A car still at the curb (let an emergency vehicle by) starts its right turn only from its lane.
-		if car.route == "main_left" and car.turn_t <= 0.0 and absf(car.yield_offset) > 0.05 and car.position.z < CURVE_RIGHT_N[0].y:
-			target_stop_z = minf(target_stop_z, CURVE_RIGHT_N[0].y - 0.3)
+		# A car still off its lane line (let an emergency vehicle by) rolls slowly towards the turn,
+		# steering back on the way; it cannot straighten up standing still.
+		if car.route == "main_left" and car.turn_t <= 0.0 and absf(car.yield_offset) > 0.05 and car.position.z < CURVE_RIGHT_N[0].y and car.position.z > CURVE_RIGHT_N[0].y - 8.0:
+			car.target_speed = minf(car.target_speed, 2.0)
 		if target_stop_z < 900.0:
 			var dist_to_stop := target_stop_z - car.position.z
 			if dist_to_stop <= 0.1 and car.speed < 0.4:
@@ -3054,7 +3111,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	# 3b. Priority yield stop on East arm (lane 3: yield to main road traffic per un-signalized rules)
 	if car.lane == 3 and car.position.x > 2.4:
 		# Crossing both lanes of the main road.
-		var main_traffic_present := _main_gap_too_short(car, [0, 1], 3.2, 4.5)
+		var main_traffic_present := _main_gap_too_short(car, [0, 1], 3.2, 4.0)
 		# Also stop if red light or intersection blocked
 		var ew_red := (light_phase in ["ns_green", "ns_green_flash", "ns_yellow", "all_red_1", "all_red_2", "ns_red_yellow"]) and (traffic_light_node != null and traffic_light_node.is_inside_tree())
 		var east_blocked := false
@@ -3324,7 +3381,10 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		offset_target = -1.3 if car.lane == 0 else 1.3
 	elif car.overtaking:
 		offset_target = 1.8 if car.lane == 0 else -1.8
-	var next_offset := move_toward(car.yield_offset, offset_target, 2.2 * delta)
+	# A car can only move sideways while it rolls forward (it steers, it does not slide): the
+	# sideways rate is tied to its speed, so a standing car stays where it is.
+	var lateral_rate := minf(1.4, 0.22 * car.speed)
+	var next_offset := move_toward(car.yield_offset, offset_target, lateral_rate * delta)
 	# Slide sideways only into free space: back into the lane after an emergency vehicle has
 	# passed, but not into a car that is still alongside.
 	if car.lane in [0, 1] and car.turn_t <= 0.0 and car.lane_change_t <= 0.0 and absf(next_offset - offset_target) < absf(car.yield_offset - offset_target):
@@ -3351,6 +3411,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			if blocked:
 				next_offset = car.yield_offset
 				break
+	car.set_meta("lat_v", (next_offset - car.yield_offset) / maxf(delta, 0.0001))
 	car.yield_offset = next_offset
 
 	# 7. Smooth Trajectories & Turning Curves with Analytical Heading
@@ -3358,17 +3419,12 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	# A postponed one is dropped once there is no room left before the zebra.
 	var lane_change_ok := car.has_meta("lc_start") or (car.position.z < -14.0 and not _emergency_near(car, 45.0) and _target_lane_free(car))
 	if car.lane == 0:
-		if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and car.lane_change_t < 1.0 and car.position.z > -24.0 and lane_change_ok:
+		if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and car.lane_change_t < 1.0 and car.position.z > -26.5 and lane_change_ok and not car.has_meta("lc_abandoned"):
 			# A postponed manoeuvre starts where the car is, never with a sideways jump.
 			if not car.has_meta("lc_start"):
-				car.set_meta("lc_start", maxf(-24.0, car.position.z))
-			car.lane_change_t = minf(1.0, (car.position.z - float(car.get_meta("lc_start"))) / LANE_CHANGE_LEN)
+				car.set_meta("lc_start", maxf(-26.5, car.position.z))
+			_advance_lane_change(car, -1.8, 1.8, step_dist)
 			var t := car.lane_change_t
-			var s := t * t * (3.0 - 2.0 * t)
-			var dx_dz := (1.8 - (-1.8)) * 6.0 * t * (1.0 - t) / LANE_CHANGE_LEN
-			car.position.x = lerpf(-1.8, 1.8, s)
-			car.position.z += step_dist
-			car.rotation.y = atan2(dx_dz, 1.0)
 			if t >= 1.0:
 				car.lane = 1
 				car.route = "main_straight"
@@ -3386,20 +3442,15 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 			else:
 				car.position.z += step_dist
 				car.position.x = -1.8 + car.yield_offset
-				car.rotation.y = 0.0
+				car.rotation.y = _drift_yaw(car)
 
 	elif car.lane == 1:
-		if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and car.lane_change_t < 1.0 and car.position.z > -24.0 and lane_change_ok:
+		if car.is_violator and car.violation_type == VIOLATION_SOLID_LINE and car.lane_change_t < 1.0 and car.position.z > -26.5 and lane_change_ok and not car.has_meta("lc_abandoned"):
 			# A postponed manoeuvre starts where the car is, never with a sideways jump.
 			if not car.has_meta("lc_start"):
-				car.set_meta("lc_start", maxf(-24.0, car.position.z))
-			car.lane_change_t = minf(1.0, (car.position.z - float(car.get_meta("lc_start"))) / LANE_CHANGE_LEN)
+				car.set_meta("lc_start", maxf(-26.5, car.position.z))
+			_advance_lane_change(car, 1.8, -1.8, step_dist)
 			var t := car.lane_change_t
-			var s := t * t * (3.0 - 2.0 * t)
-			var dx_dz := (-1.8 - 1.8) * 6.0 * t * (1.0 - t) / LANE_CHANGE_LEN
-			car.position.x = lerpf(1.8, -1.8, s)
-			car.position.z += step_dist
-			car.rotation.y = atan2(dx_dz, 1.0)
 			if t >= 1.0:
 				car.lane = 0
 				car.route = "main_straight"
@@ -3412,7 +3463,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		else:
 			car.position.z += step_dist
 			car.position.x = 1.8 + car.yield_offset
-			car.rotation.y = 0.0
+			car.rotation.y = _drift_yaw(car)
 
 	elif car.lane == 2:
 		# Eastbound in the outer (right) lane, turning right into the near southbound lane (п. 8.5, 8.6).
@@ -3438,6 +3489,16 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 	# 8. Weather Skidding perturbation
 	if car.is_skidding:
 		car.rotation.y += car.skid_angle
+
+
+## Body heading of a car drifting sideways in its lane (pulling over, returning): it points along
+## its actual motion instead of sliding.
+func _drift_yaw(car: ViolatorCar) -> float:
+	var lat_v: float = car.get_meta("lat_v", 0.0)
+	if car.speed < 0.3 or absf(lat_v) < 0.01:
+		return 0.0
+	# A gentle steer: at most ~6°, so the corners stay inside the lane strip.
+	return clampf(atan2(lat_v, car.speed), -0.1, 0.1)
 
 
 ## Moves a car along a turning curve at its own speed (the parameter advances by arc length).
@@ -3492,11 +3553,39 @@ func _drive_exit(car: ViolatorCar, curve: Array, step: float) -> void:
 		car.position.x = p2.x
 
 
+## The solid-line swerve: the sideways progress follows the distance driven, but it pauses (the car
+## drives straight on, straddling the line) while a car alongside in the target lane would be hit.
+func _advance_lane_change(car: ViolatorCar, from_x: float, to_x: float, step: float) -> void:
+	var blocked := false
+	for other in cars:
+		if other == car or not is_instance_valid(other):
+			continue
+		var dz := other.position.z - car.position.z
+		if absf(dz) < CAR_LEN + 0.4 and absf(other.position.x - to_x) < 1.4:
+			blocked = true
+			break
+	if not blocked:
+		car.lane_change_t = minf(1.0, car.lane_change_t + step / LANE_CHANGE_LEN)
+	elif car.position.z > -13.0:
+		# No room before the stop line: back into its own lane rather than straddle into the junction.
+		car.lane_change_t = maxf(0.0, car.lane_change_t - step / LANE_CHANGE_LEN)
+		if car.lane_change_t <= 0.0:
+			car.set_meta("lc_abandoned", true)
+	var t := car.lane_change_t
+	var s := t * t * (3.0 - 2.0 * t)
+	var dx_dz := (to_x - from_x) * 6.0 * t * (1.0 - t) / LANE_CHANGE_LEN
+	car.position.x = lerpf(from_x, to_x, s)
+	car.position.z += step
+	car.rotation.y = 0.0 if blocked else atan2(dx_dz, 1.0)
+
+
 ## Room in the other lane for the solid-line violator to swerve into (and nobody swerving at once).
 func _target_lane_free(car: ViolatorCar) -> bool:
 	var target_x := 1.8 if car.lane == 0 else -1.8
 	for other in cars:
-		if other == car or not is_instance_valid(other) or absf(other.position.z - car.position.z) > 7.0:
+		# A cut-in: room just beside it (cars further back in that lane brake for it).
+		var dz := other.position.z - car.position.z
+		if dz > 7.0 or dz < -7.5:
 			continue
 		if absf(other.position.x - target_x) < 2.4 or other.has_meta("lc_start"):
 			return false
@@ -3581,6 +3670,10 @@ func _zebra_clear_distance(car: ViolatorCar) -> float:
 ## is not in the way. The other body is taken by its centre and four corners: a car standing beside
 ## the path can still poke its nose into it. Cars in parallel or opposite lanes never count.
 func _distance_in_path(car: ViolatorCar, other: ViolatorCar, path_pts: Array[Vector2], body_only := false) -> float:
+	# Halfway across into the next lane the swerving car only minds what is ahead of it there;
+	# the car alongside or behind lets it in.
+	if car.lane_change_t > 0.0 and car.lane_change_t < 1.0 and other.position.z < car.position.z:
+		return -1.0   # (it pauses its sideways move for those instead, see _advance_lane_change)
 	var oc := Vector2(other.position.x, other.position.z)
 	var cc := Vector2(car.position.x, car.position.z)
 	# Look further ahead the faster the car goes, so it can still brake in time.
@@ -4060,6 +4153,8 @@ func _start_game() -> void:
 	wrong_count = 0
 	game_clock = 0.0
 	spawn_timer = 0.5
+	violation_schedule_timer = VIOLATION_EVERY - 1.0   # the very first car breaks the rules
+	next_emergency_at = randf_range(18.0, 30.0)
 	weather_phase = "day"
 	set_signal_mode("normal")
 	_apply_weather_visuals("day")
