@@ -48,6 +48,18 @@
         "tools/network/server.py"
       ],
       "port": 8950
+    },
+    {
+      "name": "nt-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8977",
+        "--directory",
+        "output/nt"
+      ],
+      "port": 8977
     }
   ]
 }

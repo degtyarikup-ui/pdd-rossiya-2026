@@ -1,0 +1,2185 @@
+{
+ "schema": 1,
+ "id": "ticket_1_1",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     0
+    ],
+    [
+     -1.8,
+     90
+    ],
+    [
+     -1.8,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [
+  {
+   "id": "decor_1",
+   "prop": "buildings/block_0",
+   "pos": [
+    -30.203,
+    8.147
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_2",
+   "prop": "trees/pine_0",
+   "pos": [
+    -46.267,
+    65.279
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_3",
+   "prop": "buildings/block_1",
+   "pos": [
+    -16.267,
+    65.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_4",
+   "prop": "trees/birch_0",
+   "pos": [
+    -8.471,
+    59.542
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_5",
+   "prop": "buildings/block_2",
+   "pos": [
+    -37.267,
+    83.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_6",
+   "prop": "trees/pine_0",
+   "pos": [
+    -46.267,
+    83.279
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_7",
+   "prop": "buildings/block_3",
+   "pos": [
+    -16.267,
+    83.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_8",
+   "prop": "trees/round_0",
+   "pos": [
+    -8.471,
+    77.542
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_9",
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.767,
+    63.279
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_10",
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.767,
+    68.779
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_11",
+   "prop": "trees/pine_0",
+   "pos": [
+    -26.767,
+    74.279
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_12",
+   "prop": "trees/round_0",
+   "pos": [
+    -26.767,
+    79.779
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_13",
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.767,
+    85.279
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_14",
+   "prop": "street/lamp",
+   "pos": [
+    -30.767,
+    74.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_15",
+   "prop": "street/lamp",
+   "pos": [
+    -22.767,
+    74.279
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_16",
+   "prop": "street/bush",
+   "pos": [
+    -31.267,
+    57.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_17",
+   "prop": "buildings/block_0",
+   "pos": [
+    -20.832,
+    33.067
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_18",
+   "prop": "trees/pine_0",
+   "pos": [
+    -29.832,
+    33.067
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_19",
+   "prop": "buildings/block_2",
+   "pos": [
+    -20.832,
+    51.067
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_20",
+   "prop": "trees/pine_0",
+   "pos": [
+    -29.832,
+    51.067
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_21",
+   "prop": "trees/birch_0",
+   "pos": [
+    -10.332,
+    31.067
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_22",
+   "prop": "trees/birch_0",
+   "pos": [
+    -10.332,
+    36.567
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_23",
+   "prop": "trees/pine_0",
+   "pos": [
+    -10.332,
+    42.067
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_24",
+   "prop": "trees/round_0",
+   "pos": [
+    -10.332,
+    47.567
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_25",
+   "prop": "trees/birch_0",
+   "pos": [
+    -10.332,
+    53.067
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_27",
+   "prop": "street/lamp",
+   "pos": [
+    -7.072,
+    43.501
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_28",
+   "prop": "street/bush",
+   "pos": [
+    -14.832,
+    25.067
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_29",
+   "prop": "buildings/block_0",
+   "pos": [
+    -18.056,
+    0.44
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_30",
+   "prop": "trees/pine_0",
+   "pos": [
+    -27.056,
+    0.44
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_31",
+   "prop": "buildings/block_2",
+   "pos": [
+    -18.056,
+    18.44
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_32",
+   "prop": "trees/pine_0",
+   "pos": [
+    -27.056,
+    18.44
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_33",
+   "prop": "trees/birch_0",
+   "pos": [
+    -8.18,
+    -3.242
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_34",
+   "prop": "trees/birch_0",
+   "pos": [
+    -8.18,
+    2.258
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_35",
+   "prop": "trees/pine_0",
+   "pos": [
+    -8.18,
+    7.758
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_36",
+   "prop": "trees/round_0",
+   "pos": [
+    -8.18,
+    13.258
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_37",
+   "prop": "trees/birch_0",
+   "pos": [
+    -8.18,
+    18.758
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_38",
+   "prop": "street/lamp",
+   "pos": [
+    -7.066,
+    -7.925
+   ],
+   "yaw": -3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_39",
+   "prop": "street/bush",
+   "pos": [
+    -12.056,
+    -7.56
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_40",
+   "prop": "buildings/block_0",
+   "pos": [
+    -37.493,
+    -34.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_42",
+   "prop": "buildings/block_1",
+   "pos": [
+    -16.493,
+    -34.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_43",
+   "prop": "trees/birch_0",
+   "pos": [
+    -8.117,
+    -35.813
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_44",
+   "prop": "buildings/block_2",
+   "pos": [
+    -37.493,
+    -16.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_46",
+   "prop": "buildings/block_3",
+   "pos": [
+    -16.493,
+    -16.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_47",
+   "prop": "trees/round_0",
+   "pos": [
+    -8.117,
+    -17.813
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_48",
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.993,
+    -36.131
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_49",
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.993,
+    -30.631
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_50",
+   "prop": "trees/pine_0",
+   "pos": [
+    -26.993,
+    -25.131
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_51",
+   "prop": "trees/round_0",
+   "pos": [
+    -26.993,
+    -19.631
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_52",
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.993,
+    -14.131
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_53",
+   "prop": "street/lamp",
+   "pos": [
+    -30.993,
+    -25.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_54",
+   "prop": "street/lamp",
+   "pos": [
+    -22.993,
+    -25.131
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_55",
+   "prop": "street/bush",
+   "pos": [
+    -31.493,
+    -42.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_56",
+   "prop": "street/bush",
+   "pos": [
+    -22.493,
+    -8.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_57",
+   "prop": "buildings/block_0",
+   "pos": [
+    -19.64,
+    -78.544
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_58",
+   "prop": "trees/pine_0",
+   "pos": [
+    -28.64,
+    -78.544
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_59",
+   "prop": "buildings/block_2",
+   "pos": [
+    -19.64,
+    -60.544
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_60",
+   "prop": "trees/pine_0",
+   "pos": [
+    -28.64,
+    -60.544
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_61",
+   "prop": "trees/birch_0",
+   "pos": [
+    -9.14,
+    -80.544
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_62",
+   "prop": "trees/birch_0",
+   "pos": [
+    -9.14,
+    -75.044
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_63",
+   "prop": "trees/pine_0",
+   "pos": [
+    -9.14,
+    -69.544
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_64",
+   "prop": "trees/round_0",
+   "pos": [
+    -9.14,
+    -64.044
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_65",
+   "prop": "trees/birch_0",
+   "pos": [
+    -9.14,
+    -58.544
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_66",
+   "prop": "street/lamp",
+   "pos": [
+    -13.14,
+    -69.544
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_67",
+   "prop": "street/bush",
+   "pos": [
+    -13.64,
+    -86.544
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_68",
+   "prop": "buildings/block_0",
+   "pos": [
+    16.904,
+    -85.014
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_69",
+   "prop": "trees/pine_0",
+   "pos": [
+    9.71,
+    -80.979
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_72",
+   "prop": "buildings/block_2",
+   "pos": [
+    16.904,
+    -67.014
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_73",
+   "prop": "trees/pine_0",
+   "pos": [
+    10.653,
+    -56.783
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_74",
+   "prop": "buildings/block_3",
+   "pos": [
+    37.904,
+    -67.014
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_75",
+   "prop": "trees/round_0",
+   "pos": [
+    46.904,
+    -67.014
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_76",
+   "prop": "trees/birch_0",
+   "pos": [
+    27.404,
+    -87.014
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_77",
+   "prop": "trees/birch_0",
+   "pos": [
+    27.404,
+    -81.514
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_78",
+   "prop": "trees/pine_0",
+   "pos": [
+    27.404,
+    -76.014
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_79",
+   "prop": "trees/round_0",
+   "pos": [
+    27.404,
+    -70.514
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_80",
+   "prop": "trees/birch_0",
+   "pos": [
+    27.404,
+    -65.014
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_83",
+   "prop": "street/bush",
+   "pos": [
+    31.904,
+    -59.014
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_84",
+   "prop": "buildings/block_1",
+   "pos": [
+    21.554,
+    -42.359
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_85",
+   "prop": "trees/birch_0",
+   "pos": [
+    30.554,
+    -42.359
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_86",
+   "prop": "buildings/block_3",
+   "pos": [
+    21.554,
+    -24.359
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_87",
+   "prop": "trees/round_0",
+   "pos": [
+    30.554,
+    -24.359
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_88",
+   "prop": "trees/birch_0",
+   "pos": [
+    11.054,
+    -44.359
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_89",
+   "prop": "trees/birch_0",
+   "pos": [
+    11.054,
+    -38.859
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_90",
+   "prop": "trees/pine_0",
+   "pos": [
+    11.054,
+    -33.359
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_91",
+   "prop": "trees/round_0",
+   "pos": [
+    11.054,
+    -27.859
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_92",
+   "prop": "trees/birch_0",
+   "pos": [
+    11.054,
+    -22.359
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_93",
+   "prop": "street/lamp",
+   "pos": [
+    7.054,
+    -33.359
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_95",
+   "prop": "street/bush",
+   "pos": [
+    28.675,
+    -51.72
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_96",
+   "prop": "street/bush",
+   "pos": [
+    15.554,
+    -16.359
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_97",
+   "prop": "buildings/block_1",
+   "pos": [
+    14.633,
+    -10.291
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_98",
+   "prop": "trees/birch_0",
+   "pos": [
+    23.633,
+    -10.291
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_99",
+   "prop": "buildings/block_3",
+   "pos": [
+    14.633,
+    7.709
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_100",
+   "prop": "trees/round_0",
+   "pos": [
+    23.633,
+    7.709
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_101",
+   "prop": "street/lamp",
+   "pos": [
+    7.174,
+    -3.575
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_102",
+   "prop": "street/bush",
+   "pos": [
+    8.633,
+    15.709
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_103",
+   "prop": "buildings/block_0",
+   "pos": [
+    17.165,
+    25.127
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_104",
+   "prop": "trees/pine_0",
+   "pos": [
+    8.165,
+    25.127
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_107",
+   "prop": "buildings/block_2",
+   "pos": [
+    17.165,
+    43.127
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_108",
+   "prop": "trees/pine_0",
+   "pos": [
+    9.769,
+    31.19
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_109",
+   "prop": "buildings/block_3",
+   "pos": [
+    37.616,
+    34.956
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_110",
+   "prop": "trees/round_0",
+   "pos": [
+    47.165,
+    43.127
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_111",
+   "prop": "trees/birch_0",
+   "pos": [
+    27.665,
+    23.127
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_112",
+   "prop": "trees/birch_0",
+   "pos": [
+    27.665,
+    28.627
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_113",
+   "prop": "trees/pine_0",
+   "pos": [
+    27.665,
+    34.127
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_114",
+   "prop": "trees/round_0",
+   "pos": [
+    27.665,
+    39.627
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_115",
+   "prop": "trees/birch_0",
+   "pos": [
+    27.665,
+    45.127
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_118",
+   "prop": "street/bush",
+   "pos": [
+    23.165,
+    17.127
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_119",
+   "prop": "street/bush",
+   "pos": [
+    32.165,
+    51.127
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_120",
+   "prop": "buildings/block_1",
+   "pos": [
+    17.148,
+    61.454
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_121",
+   "prop": "trees/birch_0",
+   "pos": [
+    28.433,
+    63.501
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_122",
+   "prop": "buildings/block_3",
+   "pos": [
+    18.201,
+    80.64
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_123",
+   "prop": "trees/round_0",
+   "pos": [
+    28.433,
+    81.501
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_124",
+   "prop": "trees/birch_0",
+   "pos": [
+    8.933,
+    61.501
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_125",
+   "prop": "trees/birch_0",
+   "pos": [
+    8.933,
+    67.001
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_126",
+   "prop": "trees/pine_0",
+   "pos": [
+    10.049,
+    72.785
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_127",
+   "prop": "trees/round_0",
+   "pos": [
+    8.933,
+    78.001
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_128",
+   "prop": "trees/birch_0",
+   "pos": [
+    8.933,
+    83.501
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  }
+ ],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 1 · Вопрос 1",
+    "title": "В каком случае водитель совершит вынужденную остановку?",
+    "options": [
+     "Остановившись непосредственно перед пешеходным переходом, чтобы уступить дорогу пешеходу",
+     "Остановившись на проезжей части из-за технической неисправности транспортного средства",
+     "В обоих перечисленных случаях"
+    ],
+    "explanation": "«Вынужденная остановка» - прекращение движения транспортного средства, связанное с его технической неисправностью, опасностью, создаваемой перевозимым грузом, состоянием водителя (пассажира) или появления препятствия на дороге.(Пункт 1.2 ПДД, термин «Вынужденная остановка»)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 1 · Question 1",
+    "title": "In what case will the driver make a forced stop?",
+    "options": [
+     "Stopping just before a crosswalk to give way to a pedestrian",
+     "Stopped on the roadway due to a technical malfunction of the vehicle",
+     "In both of the above cases"
+    ],
+    "explanation": "“Forced stop” is the cessation of movement of a vehicle due to its technical malfunction, the danger created by the cargo being transported, the condition of the driver (passenger) or the appearance of an obstacle on the road. (Clause 1.2 of the Traffic Regulations, the term “Forced stop”)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "1-билет · 1-сұрақ",
+    "title": "Қандай жағдайда жүргізуші мәжбүрлі тоқтайды?",
+    "options": [
+     "Жаяу жүргіншіге жол беру үшін жаяу жүргінші өткелінің алдында тоқтау",
+     "Көліктің техникалық ақауына байланысты автомобиль жолында тоқтау",
+     "Жоғарыда аталған екі жағдайда да"
+    ],
+    "explanation": "«Мәжбүрлеп тоқтату» - көлік құралының техникалық ақауы, тасымалданатын жүктің туындау қаупі, жүргізушінің (жолаушының) жағдайының немесе жолда кедергінің пайда болуына байланысты қозғалысының тоқтатылуы. (Жол қозғалысы ережесінің 1.2 тармағы, «Мәжбүрлеп тоқтату» термині)",
+    "pddRule": ""
+   }
+  },
+  "correct": 1,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "ffd0c95b28a89bd4faff45a8874c4fb3",
+  "sourceCategory": "ab",
+  "sourceImage": null
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "dashed"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "dashed"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c"
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionView": {
+  "centre": [
+   0,
+   4.576
+  ],
+  "height": 24.633,
+  "yaw": -0.007,
+  "pitch": 0.418,
+  "elevation": 0
+ }
+}

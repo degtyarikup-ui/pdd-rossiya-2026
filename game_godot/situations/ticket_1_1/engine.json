@@ -1,0 +1,91 @@
+{
+ "id": "ticket_1_1",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 1",
+   "title": "В каком случае водитель совершит вынужденную остановку?",
+   "options": [
+    "Остановившись непосредственно перед пешеходным переходом, чтобы уступить дорогу пешеходу",
+    "Остановившись на проезжей части из-за технической неисправности транспортного средства",
+    "В обоих перечисленных случаях"
+   ],
+   "explanation": "«Вынужденная остановка» - прекращение движения транспортного средства, связанное с его технической неисправностью, опасностью, создаваемой перевозимым грузом, состоянием водителя (пассажира) или появления препятствия на дороге.(Пункт 1.2 ПДД, термин «Вынужденная остановка»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 1",
+   "title": "In what case will the driver make a forced stop?",
+   "options": [
+    "Stopping just before a crosswalk to give way to a pedestrian",
+    "Stopped on the roadway due to a technical malfunction of the vehicle",
+    "In both of the above cases"
+   ],
+   "explanation": "“Forced stop” is the cessation of movement of a vehicle due to its technical malfunction, the danger created by the cargo being transported, the condition of the driver (passenger) or the appearance of an obstacle on the road. (Clause 1.2 of the Traffic Regulations, the term “Forced stop”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 1-сұрақ",
+   "title": "Қандай жағдайда жүргізуші мәжбүрлі тоқтайды?",
+   "options": [
+    "Жаяу жүргіншіге жол беру үшін жаяу жүргінші өткелінің алдында тоқтау",
+    "Көліктің техникалық ақауына байланысты автомобиль жолында тоқтау",
+    "Жоғарыда аталған екі жағдайда да"
+   ],
+   "explanation": "«Мәжбүрлеп тоқтату» - көлік құралының техникалық ақауы, тасымалданатын жүктің туындау қаупі, жүргізушінің (жолаушының) жағдайының немесе жолда кедергінің пайда болуына байланысты қозғалысының тоқтатылуы. (Жол қозғалысы ережесінің 1.2 тармағы, «Мәжбүрлеп тоқтату» термині)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 258,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "ffd0c95b28a89bd4faff45a8874c4fb3",
+ "sourceCategory": "ab",
+ "sourceImage": null
+}
