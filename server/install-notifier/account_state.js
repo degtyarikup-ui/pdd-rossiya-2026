@@ -24,7 +24,7 @@ export async function accountRpc(env, id, path, body) {
   const retryableRead = ['/_account/read', '/_account/read-many', '/_directory/find'].includes(path);
   return durableRequest(env.ACCOUNTS, env.ACCOUNTS.idFromName(id), stub => stub.fetch('https://account.internal' + path, {
     method: 'POST', headers: { 'content-type': 'application/json', 'x-account-id': id }, body: JSON.stringify(body || {}),
-  }), { retryableRead });
+  }), { retryableRead, operation: path.slice(2).replaceAll('/', '.') });
 }
 export async function accountRead(env, id, key) {
   if (env.__ACCOUNT_ID === id || !env.ACCOUNTS) return env.INSTALLS?.get(key);
@@ -99,7 +99,9 @@ export async function routeAccountRequest(request, env, { sessionAccountId, veri
   const retryableRead = request.method === 'GET' && ['/api/user/status', '/api/user/progress',
     '/api/user/store/status', '/api/user/store/account-token'].includes(path);
   return durableRequest(env.ACCOUNTS, env.ACCOUNTS.idFromName(id),
-    stub => stub.fetch(new Request(request, { headers })), { retryableRead });
+    stub => stub.fetch(new Request(request, { headers })), {
+      retryableRead, operation: retryableRead ? path.slice(1).replaceAll('/', '.') : 'account.request',
+    });
 }
 
 export class AccountState {

@@ -82,6 +82,12 @@ export class AccountState extends ProductionAccountState {
         return Response.json(this.runtimeRepair);
       });
       if(path==='/_runtime/repair-state')return this.serial(()=>Response.json(this.runtimeRepair));
+      if(path==='/_runtime/schedule-repair')return this.serial(async()=>{
+        const scheduledAt=Date.now()+50;
+        await this.state.storage.setAlarm(scheduledAt);
+        return Response.json({scheduledAt});
+      });
+      if(path==='/_runtime/alarm-state')return this.serial(async()=>Response.json({alarm:await this.state.storage.getAlarm()}));
       if(path==='/_runtime/alarm')return this.alarm().then(()=>Response.json({ok:true}));
     }
     if (new URL(request.url).pathname === '/_runtime/pressure' && request.headers.get('x-runtime-fixture') === this.env.SHARED_SECRET) {
@@ -114,7 +120,8 @@ export default {
         return env.ACCOUNTS.get(env.ACCOUNTS.idFromName('google_runtime_fixture')).fetch('https://account.internal/_runtime/pressure', {
           headers:{'x-account-id':'google_runtime_fixture','x-runtime-fixture':env.SHARED_SECRET}});
       }
-      if (['/__runtime_fixture/repair-mode','/__runtime_fixture/repair-state','/__runtime_fixture/alarm'].includes(url.pathname)) {
+      if (['/__runtime_fixture/repair-mode','/__runtime_fixture/repair-state','/__runtime_fixture/schedule-repair',
+        '/__runtime_fixture/alarm-state','/__runtime_fixture/alarm'].includes(url.pathname)) {
         return env.ACCOUNTS.get(env.ACCOUNTS.idFromName('google_runtime_fixture')).fetch('https://account.internal/_runtime/'+url.pathname.split('/').at(-1), {
           method:request.method,
           headers:{'x-account-id':'google_runtime_fixture','x-runtime-fixture':env.SHARED_SECRET},
@@ -217,6 +224,29 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
     await repairMode(false);
     await api('/__runtime_fixture/alarm',{fixture:true});
   };
+  const automaticRepair=async(key,accept)=>{
+    await repairMode(false);
+    const scheduled=await api('/__runtime_fixture/schedule-repair',{fixture:true,body:{}});
+    assert.ok(scheduled.scheduledAt>Date.now()-1000);
+    // This path deliberately never invokes the alarm method. workerd must
+    // dispatch the inherited production alarm from its persisted schedule.
+    const deadline=Date.now()+12000;
+    let projected;
+    do {
+      projected=(await api('/__runtime_fixture/kv?key='+encodeURIComponent(key),{fixture:true})).value;
+      if(projected!==null&&accept(JSON.parse(projected)))break;
+      await pause(100);
+    } while(Date.now()<deadline);
+    assert.ok(projected!==null&&accept(JSON.parse(projected)),'scheduled workerd alarm did not converge '+key);
+    const repaired=await repairState();
+    assert.equal(repaired.blocked,false);
+    assert.ok(repaired.flushCalls>0,'workerd must invoke the actual inherited alarm');
+    assert.ok(repaired.listCalls>0);
+    const {alarm}=await api('/__runtime_fixture/alarm-state',{fixture:true});
+    assert.ok(alarm===null||alarm>Date.now()+10*60000,
+      'successful automatic repair must cancel its short recovery wake-up or retain only a future expiry');
+    return JSON.parse(projected);
+  };
   const identity = { id: userId, provider: 'google', name: 'Runtime fixture',
     email: 'runtime@example.invalid', createdAt: new Date().toISOString() };
   const token = await signSession({ SESSION_SECRET: signingSecret }, {
@@ -236,10 +266,9 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
     assert.equal((await api('/api/user/status', { token })).user.id, userId);
     assert.deepEqual(await repairState(),{blocked:true,flushCalls:0,listCalls:0});
     assert.equal((await api('/__runtime_fixture/kv?key=user:' + userId, { fixture: true })).value,null);
-    await drainRepair();
-    assert.ok((await api('/__runtime_fixture/kv?key=user:' + userId, { fixture: true })).value);
+    await automaticRepair('user:'+userId,value=>value.id===userId);
     await api('/api/user/progress?userId=google_somebody_else', { token, expected: 403 });
-    t.diagnostic('profile acknowledged and immediately readable with repair unavailable; separate alarm projected KV; cross-account access denied');
+    t.diagnostic('profile acknowledged with repair unavailable; workerd automatically fired its persisted alarm and converged KV; cross-account access denied');
 
     const stamp = Date.now();
     const progress = { questionProgressAb: { runtime_q: { answeredAt: stamp, correct: true, attemptsCount: 1 } },
@@ -271,13 +300,12 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
     assert.equal(premiumAfterRestart.isPremium,true);
     assert.equal(premiumAfterRestart.premiumExpiresAt,premium.premiumExpiresAt);
     assert.deepEqual(await repairState(),{blocked:true,flushCalls:0,listCalls:0});
-    await drainRepair();
-    const projected = await api('/__runtime_fixture/kv?key=user_progress:' + userId, { fixture: true });
-    assert.deepEqual(JSON.parse(projected.value), written.progress);
+    const projected=await automaticRepair('user_progress:'+userId,value=>value.questionProgressAb?.runtime_q?.answeredAt===stamp);
+    assert.deepEqual(projected,written.progress);
     const projectedUser=JSON.parse((await api('/__runtime_fixture/kv?key=user:'+userId,{fixture:true})).value);
     assert.equal(projectedUser.isPremium,true);
     assert.equal(projectedUser.premiumExpiresAt,premium.premiumExpiresAt);
-    t.diagnostic('Unicode progress >128KiB and Premium survive process death before repair; separate alarm converges KV; duplicate progress unchanged');
+    t.diagnostic('Unicode progress >128KiB and Premium survive process death before repair; automatically dispatched alarm converges KV and clears recovery wake-up; duplicate progress unchanged');
 
     const pressure=await api('/__runtime_fixture/pressure',{fixture:true});
     assert.deepEqual(pressure,{pendingBefore:61,pendingAfter:0,progressUnchanged:true});
