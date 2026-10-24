@@ -36,6 +36,7 @@ void main() {
         GameEconomy.cityMistake,
       ], everyElement(0));
       expect(GameEconomy.miniGameSeconds, 60);
+      expect(GameEconomy.violatorSeconds, 120);
       expect(GameEconomy.miniGameLives, 5);
       expect(GameEconomy.dailyRatingLimit * 7, 10500);
       final perfectCity = List.generate(

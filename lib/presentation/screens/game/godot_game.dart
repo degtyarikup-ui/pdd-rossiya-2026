@@ -449,7 +449,7 @@ class GodotGame {
         '--text-scale=${MediaQuery.textScalerOf(context).scale(14) / 14}',
         '--best-score=${ref.read(violatorProgressProvider).bestScore}',
         '--session-id=${GameLeaderboardService.newRunId()}',
-        '--economy=${jsonEncode({'seconds': GameEconomy.miniGameSeconds, 'lives': GameEconomy.miniGameLives, 'maxScore': GameEconomy.maxRunScore, 'base': 50, 'step': 5, 'bonusCap': 5})}',
+        '--economy=${jsonEncode({'seconds': GameEconomy.violatorSeconds, 'lives': GameEconomy.miniGameLives, 'maxScore': GameEconomy.maxRunScore, 'base': 50, 'step': 5, 'bonusCap': 5})}',
         if (!HapticFeedbackHelper.enabled) '--no-haptics',
         '--lang=$lang',
         Theme.of(context).brightness == Brightness.dark ? '--dark' : '--light',

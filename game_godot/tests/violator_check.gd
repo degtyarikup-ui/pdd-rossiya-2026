@@ -451,7 +451,7 @@ func _check_economy_and_game_over() -> void:
 	game._start_game()
 
 	_check("Game starts with 5 lives", game.lives == 5)
-	_check("Game starts with 60 seconds", is_equal_approx(game.seconds_left, 60.0))
+	_check("Game starts with a 120-second round", is_equal_approx(game.seconds_left, 120.0))
 	_check("Game starts with 0 score", game.score == 0)
 
 	# Simulate 5 false alarms to deplete lives
@@ -468,7 +468,7 @@ func _check_economy_and_game_over() -> void:
 	var old_best: int = game.previous_best
 	game._on_restart_pressed()
 	_check("Restart resets lives to 5", game.lives == 5)
-	_check("Restart resets seconds to 60", is_equal_approx(game.seconds_left, 60.0))
+	_check("Restart resets the round to 120 seconds", is_equal_approx(game.seconds_left, 120.0))
 	_check("Restart resets score to 0", game.score == 0)
 	_check("Restart resets is_game_over to false", not game.is_game_over)
 

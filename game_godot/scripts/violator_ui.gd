@@ -54,6 +54,8 @@ const STRINGS := {
 		"violatorFalseAlarm": "Ложный вызов! Автомобиль соблюдает ПДД (-1 жизнь)",
 		"violatorMissedWarning": "Внимание: нарушитель пропущен!",
 		"violatorMissedLifeWarning": "Нарушитель упущен! (-1 жизнь)",
+		"violatorMissedTag": "Упущен нарушитель",
+		"violatorWrongAnswer": "Неверно. Правильно — %s (-1 жизнь)",
 		"violatorTimingWarning": "Нарушение ещё не совершено или уже завершено!",
 		"violatorTimeExpired": "Время на квалификацию истекло!",
 		"gameViolatorsDetected": "Выявлено",
@@ -84,6 +86,8 @@ const STRINGS := {
 		"violatorFalseAlarm": "False alarm! Vehicle complies with rules (-1 life)",
 		"violatorMissedWarning": "Warning: violator missed!",
 		"violatorMissedLifeWarning": "Violator missed! (-1 life)",
+		"violatorMissedTag": "Violator missed",
+		"violatorWrongAnswer": "Wrong. Correct: %s (-1 life)",
 		"violatorTimingWarning": "Violation not yet started or already finished!",
 		"violatorTimeExpired": "Classification time expired!",
 		"gameViolatorsDetected": "Detected",
@@ -114,6 +118,8 @@ const STRINGS := {
 		"violatorFalseAlarm": "Жалған шақыру! Көлік ережені бұзбаған (-1 өмір)",
 		"violatorMissedWarning": "Назар аударыңыз: ереже бұзушы жіберіп алынды!",
 		"violatorMissedLifeWarning": "Ереже бұзушы жіберіп алынды! (-1 өмір)",
+		"violatorMissedTag": "Ереже бұзушы жіберіп алынды",
+		"violatorWrongAnswer": "Қате. Дұрысы — %s (-1 өмір)",
 		"violatorTimingWarning": "Бұзушылық әлі жасалмаған немесе аяқталған!",
 		"violatorTimeExpired": "Саралау уақыты аяқталды!",
 		"gameViolatorsDetected": "Анықталды",
@@ -158,6 +164,9 @@ var target_screen_pos: Vector2 = Vector2(-1000, -1000)
 var has_target := false
 var _target_anim_time := 0.0
 var _ripples: Array[Dictionary] = []
+# Missed violators: id -> {pos (dp), text, alpha, edge}; one red pill label each.
+var _missed: Dictionary = {}
+var _missed_pills: Dictionary = {}
 
 # Toast Nodes
 var _toast: PanelContainer
@@ -172,7 +181,7 @@ var _modal_bar: ProgressBar
 var _modal_buttons_container: VBoxContainer
 var _modal_active := false
 var _modal_timer := 0.0
-const MODAL_DURATION := 2.8
+const MODAL_DURATION := 7.0   # enough to read all three answers
 var _modal_correct_code := ""
 var _modal_buttons: Array[Button] = []
 
@@ -199,7 +208,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	var real_delta: float = delta / Engine.time_scale if Engine.time_scale > 0.001 else delta
 
-	if has_target:
+	if has_target or not _missed.is_empty():
 		_target_anim_time += real_delta
 		_overlay.queue_redraw()
 
@@ -471,6 +480,22 @@ func _build_overlay() -> void:
 
 
 func _on_overlay_draw() -> void:
+	# 0. Missed violators: pulsing red brackets on the car that got away
+	for id in _missed:
+		var m: Dictionary = _missed[id]
+		if bool(m.edge):
+			continue
+		var c: Vector2 = m.pos
+		var a: float = m.alpha
+		var sz := 30.0 + sin(_target_anim_time * 8.0) * 4.0
+		var col := Color(1.0, 0.23, 0.19, a)
+		var arm := 10.0
+		for sx in [-1.0, 1.0]:
+			for sy in [-1.0, 1.0]:
+				var corner := c + Vector2(sx * sz, sy * sz)
+				_overlay.draw_line(corner, corner + Vector2(-sx * arm, 0), col, 3.0)
+				_overlay.draw_line(corner, corner + Vector2(0, -sy * arm), col, 3.0)
+		_overlay.draw_arc(c, sz + 6.0, 0.0, TAU, 40, Color(1.0, 0.23, 0.19, a * 0.45), 2.0)
 	# 1. Target brackets if vehicle target is locked
 	if has_target and target_screen_pos.x > -500:
 		var center := target_screen_pos
@@ -745,6 +770,56 @@ func _on_classification_timeout() -> void:
 	show_toast(tr_v("violatorTimeExpired"), true)
 	hide_classification()
 	classification_selected.emit("timeout")
+
+
+## Marks for violators that got away: [{id, pos (dp), code, alpha, edge}]. Each shows red brackets
+## on the car and a pill naming the offence, so the player sees who it was and what was broken.
+func set_missed_marks(marks: Array) -> void:
+	var keep := {}
+	for m in marks:
+		var id: int = m.id
+		keep[id] = true
+		_missed[id] = {"pos": m.pos, "alpha": m.alpha, "edge": m.edge}
+		var pill: PanelContainer = _missed_pills.get(id)
+		if pill == null:
+			pill = PanelContainer.new()
+			pill.mouse_filter = MOUSE_FILTER_IGNORE
+			var box := Ui.box(Color(0.86, 0.16, 0.14, 0.94), 10)
+			box.content_margin_left = 10
+			box.content_margin_right = 10
+			box.content_margin_top = 5
+			box.content_margin_bottom = 6
+			pill.add_theme_stylebox_override("panel", box)
+			var col := VBoxContainer.new()
+			col.add_theme_constant_override("separation", 1)
+			col.mouse_filter = MOUSE_FILTER_IGNORE
+			var head := Ui.label(tr_v("violatorMissedTag"), 12, 800, Color.WHITE)
+			head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			col.add_child(head)
+			var rule := Ui.label(tr_v(_violation_l10n_key(str(m.code))), 12, 600, Color.WHITE)
+			rule.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			col.add_child(rule)
+			pill.add_child(col)
+			add_child(pill)
+			_missed_pills[id] = pill
+		pill.modulate.a = float(m.alpha)
+		pill.size = Vector2.ZERO
+		var psize := pill.get_combined_minimum_size()
+		var p: Vector2 = m.pos
+		var at := Vector2(p.x - psize.x * 0.5, p.y - 44.0 - psize.y)
+		if bool(m.edge):
+			at = Vector2(p.x - psize.x * 0.5, p.y - psize.y * 0.5)
+		# Keep it on screen, below the HUD.
+		at.x = clampf(at.x, 8.0, size.x - psize.x - 8.0)
+		at.y = clampf(at.y, CHROME + 70.0, size.y - psize.y - 12.0)
+		pill.position = at
+	for id in _missed.keys():
+		if not keep.has(id):
+			_missed.erase(id)
+			if _missed_pills.has(id):
+				_missed_pills[id].queue_free()
+				_missed_pills.erase(id)
+	_overlay.queue_redraw()
 
 
 func _violation_l10n_key(code: String) -> String:

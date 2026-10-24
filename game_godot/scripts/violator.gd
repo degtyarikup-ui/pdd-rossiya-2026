@@ -266,7 +266,7 @@ var score := 0
 var combo := 0
 var max_combo := 0
 var lives := 5
-var seconds_left := 60.0
+var seconds_left := 120.0
 var solved_count := 0
 var wrong_count := 0
 var is_game_over := false
@@ -276,6 +276,8 @@ var ready_for_play := false
 var _exiting := false
 
 var locked_car: ViolatorCar = null
+var missed_marks: Array[Dictionary] = []
+const MISSED_MARK_TIME := 4.0
 var spawn_timer := 0.0
 var next_spawn_interval := 2.0
 var violation_schedule_timer := 0.0
@@ -289,7 +291,7 @@ var completed_runs: Array[Dictionary] = []
 var previous_best := 0
 var result_action := ""
 var season_name := "summer"
-var economy := { "seconds": 60, "lives": 5, "maxScore": 1500, "base": 50, "step": 5, "bonusCap": 5 }
+var economy := { "seconds": 120, "lives": 5, "maxScore": 1500, "base": 50, "step": 5, "bonusCap": 5 }
 
 # Scenery pools
 var sc: Scenery
@@ -329,7 +331,7 @@ func _setup_args() -> void:
 			var parsed = JSON.parse_string(arg.trim_prefix("--economy="))
 			if parsed is Dictionary:
 				economy.merge(parsed, true)
-				seconds_left = float(economy.get("seconds", 60.0))
+				seconds_left = float(economy.get("seconds", 120.0))
 				lives = int(economy.get("lives", 5))
 		elif arg.begins_with("--mode="):
 			game_mode = "patrol" if arg.trim_prefix("--mode=") == "patrol" else "blitz"
@@ -1660,11 +1662,37 @@ func _process(delta: float) -> void:
 	if is_instance_valid(ui):
 		var time_metric := seconds_left if game_mode == "blitz" else patrol_elapsed
 		ui.update_hud(score, combo, time_metric, lives)
+	_update_missed_marks()
+
+
+## Follows each missed violator on screen while its mark lasts (or its last spot, once it has left).
+func _update_missed_marks() -> void:
+	if not is_instance_valid(ui) or not is_instance_valid(camera) or not camera.is_inside_tree():
+		return
+	var u := Ui.dp(get_viewport())
+	var screen: Vector2 = ui.size
+	var out: Array = []
+	var alive: Array[Dictionary] = []
+	for m in missed_marks:
+		if game_clock > float(m.until):
+			continue
+		alive.append(m)
+		var car = m.car
+		if is_instance_valid(car) and car.is_inside_tree():
+			m.pos = car.global_position + Vector3(0, 1.0, 0)
+		var behind := camera.is_position_behind(m.pos)
+		var p: Vector2 = camera.unproject_position(m.pos) / u
+		var edge := behind or p.x < 0.0 or p.y < 0.0 or p.x > screen.x or p.y > screen.y
+		p = Vector2(clampf(p.x, 24.0, screen.x - 24.0), clampf(p.y, 120.0, screen.y - 40.0))
+		var left := float(m.until) - game_clock
+		out.append({"id": m.id, "pos": p, "code": m.code, "alpha": clampf(left / 0.6, 0.0, 1.0), "edge": edge})
+	missed_marks = alive
+	ui.set_missed_marks(out)
 
 
 func _update_continuous_weather(elapsed: float, delta: float) -> void:
-	const PHASE_LEN := 90.0
-	const CYCLE_LEN := 360.0
+	const PHASE_LEN := 60.0
+	const CYCLE_LEN := 240.0
 	var cycle_time := fposmod(elapsed, CYCLE_LEN)
 	var phase_idx := int(cycle_time / PHASE_LEN)
 	var phase_progress := fposmod(cycle_time, PHASE_LEN) / PHASE_LEN
@@ -1680,12 +1708,11 @@ func _update_continuous_weather(elapsed: float, delta: float) -> void:
 				ui.show_toast(ViolatorUiScript.tr_v(toast_key), false)
 		_refresh_car_headlights()
 
-	# Smooth continuous interpolation across phase boundaries (blend window over final 20% of phase)
+	# Light drifts smoothly into the next time of day over the last 40 % of each phase (~24 s).
 	var next_idx := (phase_idx + 1) % 4
 	var blend_weight := 0.0
-	if phase_progress > 0.75:
-		blend_weight = (phase_progress - 0.75) / 0.25
-		blend_weight = smoothstep(0.0, 1.0, blend_weight)
+	if phase_progress > 0.6:
+		blend_weight = smoothstep(0.0, 1.0, (phase_progress - 0.6) / 0.4)
 
 	var p_cur := _get_weather_preset(phase_idx)
 	var p_next := _get_weather_preset(next_idx)
@@ -3949,6 +3976,9 @@ func _on_violator_missed(car: ViolatorCar) -> void:
 	car.violation_state = "missed"
 	combo = 0
 	lives = maxi(0, lives - 1)
+	# Point the car out: who it was and what it broke.
+	missed_marks.append({"car": car, "id": car.get_instance_id(), "code": car.violation_type,
+		"pos": car.global_position if car.is_inside_tree() else car.position, "until": game_clock + MISSED_MARK_TIME})
 	if is_instance_valid(ui):
 		ui.show_toast(ViolatorUiScript.tr_v("violatorMissedLifeWarning"), true)
 		var time_metric := seconds_left if game_mode == "blitz" else patrol_elapsed
@@ -4127,6 +4157,8 @@ func _on_classification_selected(chosen_code: String) -> void:
 		sound.play("incorrect")
 		locked_car.violation_state = "missed"
 		wrong_count += 1
+		if is_instance_valid(ui):
+			ui.show_toast(ViolatorUiScript.tr_v("violatorWrongAnswer") % ViolatorUiScript.tr_v(ui._violation_l10n_key(locked_car.violation_type)), true)
 		lives = maxi(0, lives - 1)
 		combo = 0
 		if lives <= 0:
@@ -4147,7 +4179,7 @@ func _start_game() -> void:
 	combo = 0
 	max_combo = 0
 	lives = int(economy.get("lives", 5))
-	seconds_left = float(economy.get("seconds", 60.0))
+	seconds_left = float(economy.get("seconds", 120.0))
 	patrol_elapsed = 0.0
 	solved_count = 0
 	wrong_count = 0
@@ -4165,8 +4197,10 @@ func _start_game() -> void:
 			Models.release_geometry(car)
 			car.queue_free()
 	cars.clear()
+	missed_marks.clear()
 
 	if is_instance_valid(ui):
+		ui.set_missed_marks([])
 		ui.hide_game_results()
 		ui.set_mode(game_mode)
 		var time_metric := seconds_left if game_mode == "blitz" else patrol_elapsed

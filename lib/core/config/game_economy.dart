@@ -1,6 +1,9 @@
 /// Small, predictable rewards: learning preserves earned progress.
 abstract final class GameEconomy {
   static const miniGameSeconds = 60;
+
+  /// «Нарушитель» needs a longer round: offences unfold over whole signal cycles.
+  static const violatorSeconds = 120;
   static const miniGameLives = 5;
   static const maxRunScore = 1500;
   static const dailyRatingLimit = 1500;
