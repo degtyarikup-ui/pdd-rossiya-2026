@@ -19,7 +19,7 @@
     "test:reports": "node --test test-question-reports.mjs",
     "test:support": "node --test test-support-thread.mjs test-support-close.mjs test-support-reliability.mjs",
     "test:accounts": "node --test test-account-state.mjs test-release-fixes.mjs test-release-handoff.mjs test-support-push.mjs test-account-compatibility.mjs test-durable-request.mjs test-durable-integration.mjs",
-    "test:storage": "node --test test-storage-costs.mjs",
+    "test:storage": "node --test test-storage-costs.mjs test-storage-pressure.mjs",
     "test:runtime": "node --test test-runtime-smoke.mjs"
   },
   "dependencies": {

@@ -4,7 +4,7 @@ export class SocialPublisher {
   constructor(state) { this.state = state; this.tail = Promise.resolve(); }
   fetch(request) {
     const result = this.tail.then(() => this.handle(request));
-    this.tail = result.catch(() => {});
+    this.tail = result.then(() => {}, () => {});
     return result;
   }
   async handle(request) {

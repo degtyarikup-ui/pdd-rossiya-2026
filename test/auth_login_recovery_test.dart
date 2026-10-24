@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -161,6 +162,46 @@ void main() {
       expect(calls, 2);
       expect(writes, 1);
       expect(auth.currentUser?.id, user.id);
+      expect(auth.hasServerSession, isTrue);
+      expect(auth.lastFailure, isNull);
+    },
+  );
+  test(
+    'TLS interruption during session issuance recovers on the alternate host',
+    () async {
+      var writes = 0;
+      final hosts = <String>[];
+      final auth = AuthService.forTesting(
+        writeSession: (_) async {
+          writes++;
+        },
+      );
+      final success = await http.runWithClient(
+        () => auth.completeSignInForTesting(user, 'provider-token'),
+        () => MockClient((request) async {
+          if (request.url.path != '/api/auth/session') {
+            return http.Response('{}', 200);
+          }
+          hosts.add(request.url.host);
+          if (hosts.length == 1) {
+            throw const HandshakeException('connection interrupted');
+          }
+          return http.Response(
+            jsonEncode({
+              'user': user.toMap(),
+              'token': token,
+              'expiresAt': DateTime.now()
+                  .add(const Duration(days: 30))
+                  .toIso8601String(),
+            }),
+            200,
+          );
+        }),
+      );
+      expect(success, isTrue);
+      expect(hosts, hasLength(2));
+      expect(hosts[0], isNot(hosts[1]));
+      expect(writes, 1);
       expect(auth.hasServerSession, isTrue);
       expect(auth.lastFailure, isNull);
     },

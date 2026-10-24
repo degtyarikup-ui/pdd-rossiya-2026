@@ -75,7 +75,7 @@ class AuthService extends ChangeNotifier {
     }
     lastFailure = error is TimeoutException
         ? AuthFailure.timeout
-        : error is http.ClientException
+        : isRetryableNetworkError(error)
         ? AuthFailure.network
         : error is FormatException || error is TypeError
         ? AuthFailure.response
@@ -83,14 +83,13 @@ class AuthService extends ChangeNotifier {
     // Для сбоев связи в код добавляется число попыток (timeout:3x): так в
     // уведомлении видно, что повторы и запасной адрес не помогли.
     final tries = _lastRetryStats?.attempts ?? 0;
-    final networkLike =
-        error is TimeoutException || error is http.ClientException;
+    final networkLike = isRetryableNetworkError(error);
     ErrorReporter.report(
       ErrorCategory.auth,
-      'auth.provider',
+      tries > 0 ? 'auth.session' : 'auth.provider',
       error: error,
       code: networkLike && tries > 0
-          ? '${ErrorReporter.codeFor(error)}:${tries}x'
+          ? '${error is TimeoutException ? 'timeout' : 'network'}:${tries}x'
           : null,
       provider: _signInProvider,
     );

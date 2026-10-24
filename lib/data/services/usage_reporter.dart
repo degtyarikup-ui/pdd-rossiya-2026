@@ -33,14 +33,28 @@ class UsageReporter {
     this.endpoint = BackendConfig.notifierUrl,
     this.secret = BackendConfig.notifierSecret,
     http.Client? client,
-  }) : _client = client ?? http.Client();
+    DateTime Function()? now,
+  }) : _client = client ?? http.Client(),
+       _now = now ?? DateTime.now;
 
   static final instance = UsageReporter();
   static const queueKey = 'usage_events_v1';
   final String endpoint;
   final String secret;
   final http.Client _client;
+  final DateTime Function() _now;
+  DateTime? _nextAttemptAt;
+  int _failures = 0;
   Future<void> _tail = Future.value();
+
+  void _defer([http.Response? response]) {
+    final delay = min(300, 30 * (1 << min(_failures, 4)));
+    final requested = int.tryParse(response?.headers['retry-after'] ?? '') ?? 0;
+    _nextAttemptAt = _now().add(
+      Duration(seconds: max(delay, requested.clamp(0, 86400))),
+    );
+    _failures++;
+  }
 
   static void track(UsageFeature feature) =>
       unawaited(instance.record(feature));
@@ -53,7 +67,7 @@ class UsageReporter {
       if (!endpoint.startsWith('https://') || secret.isEmpty) return;
       try {
         final prefs = await SharedPreferences.getInstance();
-        final now = DateTime.now().millisecondsSinceEpoch;
+        final now = _now().millisecondsSinceEpoch;
         final events = (jsonDecode(prefs.getString(queueKey) ?? '[]') as List)
             .cast<Map<String, dynamic>>()
             .where(
@@ -78,6 +92,7 @@ class UsageReporter {
         if (events.length > 500) events.removeRange(0, events.length - 500);
         await prefs.setString(queueKey, jsonEncode(events));
         if (events.isEmpty) return;
+        if (_nextAttemptAt != null && _now().isBefore(_nextAttemptAt!)) return;
         final installId = await InstallReporter.installationId();
         while (events.isNotEmpty) {
           final batch = events.take(50).toList();
@@ -95,11 +110,17 @@ class UsageReporter {
                 }),
               )
               .timeout(const Duration(seconds: 10));
-          if (response.statusCode != 200) return;
+          if (response.statusCode != 200) {
+            _defer(response);
+            return;
+          }
+          _failures = 0;
+          _nextAttemptAt = null;
           events.removeRange(0, batch.length);
           await prefs.setString(queueKey, jsonEncode(events));
         }
       } catch (_) {
+        _defer();
         // The saved outbox retries on another start or foreground launch.
       }
     });

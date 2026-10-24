@@ -2150,6 +2150,21 @@ async function trackStats(env, ctx, item) {
   await flushBufferedStats(env, [item]);
 }
 
+async function trackStatsBatch(env, items) {
+  // Usage IDs make a lost acceptance response safe to resend. One request per
+  // client batch avoids up to 50 queued DO invocations for a single API call.
+  const response = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://stats/enqueue-batch', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(items),
+  });
+  // During rollout a new Worker can still reach the previous StatsBuffer.
+  // Only an explicit 404 permits the legacy path; never retry an ambiguous batch.
+  if (response.status === 404) {
+    for (const item of items) await trackStats(env, null, item);
+    return;
+  }
+  if (!response.ok) throw new Error('analytics batch enqueue failed');
+}
+
 // Сбрасывает накопленный буфер в KV перед отчётом, чтобы в нём были все события.
 async function flushStatsBuffer(env) {
   if (!env.STATS) return true;
@@ -3012,7 +3027,7 @@ const workerHandlers = {
       if (!env.SHARED_SECRET || !safeEquals(request.headers.get('x-install-secret') || '', env.SHARED_SECRET)) {
         return jsonResponse({ error: 'unauthorized' }, 401);
       }
-      return acceptUsage(request, env, { jsonResponse, trackStats });
+      return acceptUsage(request, env, { jsonResponse, trackStatsBatch });
     }
 
     if (url.pathname === '/api/admin/stats' && request.method === 'GET') {
@@ -4351,11 +4366,11 @@ export default {
       return response;
     } catch (error) {
       const code = errorCode(error), context = serverErrorContext(error);
-      const status = ['durable_storage_timeout', 'durable_overloaded', 'durable_retryable', 'support_read_unavailable'].includes(code) ? 503 : 500;
+      const status = ['durable_storage_timeout', 'durable_overloaded', 'durable_retryable', 'durable_memory_exhausted', 'support_read_unavailable'].includes(code) ? 503 : 500;
       console.error('Worker request failed', JSON.stringify({ operation, code, ...context }));
       await notify(status, code, context);
       return jsonResponse({ error: 'server unavailable' }, status,
-        request.method === 'GET' && status === 503 ? { 'Retry-After': code === 'durable_overloaded' ? '5' : '1' } : {});
+        request.method === 'GET' && status === 503 ? { 'Retry-After': ['durable_overloaded', 'durable_memory_exhausted'].includes(code) ? '5' : '1' } : {});
     }
   },
   async scheduled(event, env, ctx) {

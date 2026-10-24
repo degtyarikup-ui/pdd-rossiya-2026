@@ -43,8 +43,28 @@ test('real workerd persists accounts, immediate progress, revocation and support
   // This entry exists only inside the ignored fixture directory. All normal
   // routes execute the real production handler, with the real exported DOs.
   // Fixture-only routes expose initialization and KV projection for assertions.
-  await writeFile(entry, `import app from ${JSON.stringify(worker)};
-export { ${classes.join(', ')} } from ${JSON.stringify(worker)};
+  await writeFile(entry, `import app, {AccountState as ProductionAccountState} from ${JSON.stringify(worker)};
+export { ${classes.filter(name=>name!=='AccountState').join(', ')} } from ${JSON.stringify(worker)};
+export class AccountState extends ProductionAccountState {
+  fetch(request) {
+    if (new URL(request.url).pathname === '/_runtime/pressure' && request.headers.get('x-runtime-fixture') === this.env.SHARED_SECRET) {
+      return this.serial(async () => {
+        const id=request.headers.get('x-account-id');
+        const before=await this.loadRecord('user_progress:'+id);
+        for(let i=0;i<61;i++) {
+          const key='revoked_session:'+id+':'+i.toString(16).padStart(64,'0');
+          await this.state.storage.put('doc:'+key,{key,value:'1',options:{},expiresAt:Date.now()-1000,epoch:'1'});
+        }
+        await this.expireRecords();
+        const pendingBefore=(await this.state.storage.list({prefix:'projection:'})).size;
+        for(let i=0;i<3;i++)await this.flush();
+        return Response.json({pendingBefore,pendingAfter:(await this.state.storage.list({prefix:'projection:'})).size,
+          progressUnchanged:before.value===(await this.loadRecord('user_progress:'+id)).value});
+      });
+    }
+    return super.fetch(request);
+  }
+}
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -52,6 +72,14 @@ export default {
       if (request.headers.get('x-runtime-fixture') !== env.SHARED_SECRET) return new Response(null, {status: 404});
       if (url.pathname === '/__runtime_fixture/support-state') {
         return env.SUPPORT.get(env.SUPPORT.idFromName(url.searchParams.get('clientId'))).fetch('https://support.internal/list');
+      }
+      if (url.pathname === '/__runtime_fixture/pressure') {
+        return env.ACCOUNTS.get(env.ACCOUNTS.idFromName('google_runtime_fixture')).fetch('https://account.internal/_runtime/pressure', {
+          headers:{'x-account-id':'google_runtime_fixture','x-runtime-fixture':env.SHARED_SECRET}});
+      }
+      if (url.pathname === '/__runtime_fixture/flush-stats') {
+        const response=await env.STATS.get(env.STATS.idFromName('main')).fetch('https://stats/flush',{method:'POST'});
+        return Response.json({status:response.status});
       }
       if (url.pathname === '/__runtime_fixture/kv') {
         const key = url.searchParams.get('key');
@@ -172,6 +200,17 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
     const projected = await api('/__runtime_fixture/kv?key=user_progress:' + userId, { fixture: true });
     assert.deepEqual(JSON.parse(projected.value), written.progress);
     t.diagnostic('Unicode progress >128KiB committed, read immediately, projected to KV and duplicate unchanged');
+
+    const pressure=await api('/__runtime_fixture/pressure',{fixture:true});
+    assert.deepEqual(pressure,{pendingBefore:61,pendingAfter:0,progressUnchanged:true});
+    const usage={installId:'a'.repeat(32),platform:'ios',events:Array.from({length:50},(_,i)=>({id:i.toString(16).padStart(32,'0'),feature:'tickets',ts:Date.now()}))};
+    await api('/api/usage',{body:usage});
+    await api('/api/usage',{body:usage});
+    assert.equal((await api('/__runtime_fixture/flush-stats',{fixture:true})).status,200);
+    const day=new Date(Date.now()+3*3600000).toISOString().slice(0,10);
+    const counters=JSON.parse((await api('/__runtime_fixture/kv?key=day:'+day,{fixture:true})).value);
+    assert.equal(counters.usage.tickets.starts,50);
+    t.diagnostic('real SQLite paginated 61 expirations and bounded projections; 50 usage events deduplicated atomically');
 
     const client = 'runtime-empty-support';
     const statePath = '/__runtime_fixture/support-state?clientId=' + client;

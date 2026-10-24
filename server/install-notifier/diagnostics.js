@@ -30,6 +30,7 @@ export function errorCode(error) {
   // Overload takes precedence even when the platform also marks an error retryable.
   if (error?.overloaded === true) return 'durable_overloaded';
   const message = typeof error?.message === 'string' ? error.message : '';
+  if (/\bSQLITE_NOMEM\b/.test(message)) return 'durable_memory_exhausted';
   if (message.includes('Durable Object storage operation exceeded timeout which caused object to be reset.')) return 'durable_storage_timeout';
   if (error?.retryable === true) return 'durable_retryable';
   if (/too many requests.*same key|(?:put|write).*429|(?:put|write).*rate.?limit/i.test(message)) return 'storage_rate_limited';

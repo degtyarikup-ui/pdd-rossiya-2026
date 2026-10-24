@@ -1,6 +1,12 @@
 import 'dart:async';
 
 import 'package:http/http.dart' as http;
+import 'network_errors_stub.dart' if (dart.library.io) 'network_errors_io.dart';
+
+bool isRetryableNetworkError(Object error) =>
+    error is TimeoutException ||
+    error is http.ClientException ||
+    isPlatformNetworkError(error);
 
 /// Что произошло во время [sendWithRetry]: сколько попыток сделано и на
 /// каком адресе запрос удался. Нужно для отчётов о сбоях входа.
@@ -73,6 +79,10 @@ Future<http.Response> sendWithRetry(
       lastError = error;
       nextPause = pause;
     } on http.ClientException catch (error) {
+      lastError = error;
+      nextPause = pause;
+    } catch (error) {
+      if (!isPlatformNetworkError(error)) rethrow;
       lastError = error;
       nextPause = pause;
     }

@@ -73,7 +73,7 @@ export class TelegramQueue {
   }
   serial(fn) {
     const result = this.tail.then(fn);
-    this.tail = result.catch(() => {});
+    this.tail = result.then(() => {}, () => {});
     return result;
   }
   fetch(request) {

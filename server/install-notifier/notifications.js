@@ -184,7 +184,7 @@ export async function sendFcmMessage(env, message, fetcher = fetch) {
 // persistent push queue. No KV user-profile scans or per-recipient writes.
 export class NotificationsState {
   constructor(state, env) { this.state = state; this.env = env; this.tail = Promise.resolve(); }
-  serial(fn) { const result = this.tail.then(fn); this.tail = result.catch(() => {}); return result; }
+  serial(fn) { const result = this.tail.then(fn); this.tail = result.then(() => {}, () => {}); return result; }
   fetch(request) { return this.serial(() => this.handle(request)); }
   async scheduleNext() {
     const records = await this.state.storage.list({ prefix: 'message:' });

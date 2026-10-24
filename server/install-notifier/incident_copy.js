@@ -56,6 +56,7 @@ const REASONS = {
   storage_quota: 'Серверное хранилище отклонило операцию из-за превышения лимита.',
   storage_rate_limited: 'Слишком частые записи в серверное хранилище. Запись временно отклонена.',
   durable_storage_timeout: 'Операция хранилища Durable Object превысила лимит времени, и Cloudflare перезапустила объект.',
+  durable_memory_exhausted: 'SQLite-хранилище Cloudflare не смогло выделить память (SQLITE_NOMEM). Это не сообщение о потере данных или неверном входе.',
   durable_overloaded: 'Cloudflare отклонила запрос из-за перегрузки Durable Object.',
   durable_retryable: 'Cloudflare пометила сбой Durable Object как допускающий повтор запроса.',
   support_read_unavailable: 'Хранилище сообщений поддержки вернуло ошибку или некорректный ответ.',
@@ -171,7 +172,7 @@ const GOOGLE_SIGN_IN = {
 };
 
 const NETWORK_STEPS = ['Пользователю: проверить интернет, попробовать другую сеть (Wi‑Fi или мобильный интернет) или VPN.', 'Нам: если таких сообщений много от одной страны или оператора — до сервера не достаёт маршрут; сверьтесь с сообщениями «Вход удался не сразу» (fallback_ok).'];
-const DURABLE_CODES = new Set(['durable_storage_timeout', 'durable_overloaded', 'durable_retryable']);
+const DURABLE_CODES = new Set(['durable_storage_timeout', 'durable_overloaded', 'durable_retryable', 'durable_memory_exhausted']);
 const GUIDE_BY_CODE = {
   timeout: NETWORK_STEPS,
   support_read_unavailable: ['Нам: проверить этап чтения и HTTP-статус хранилища по ID диагностики.'],
@@ -191,6 +192,7 @@ const GUIDE_BY_CODE = {
   storage_quota: ['Нам: исчерпан дневной лимит записи в хранилище KV (бесплатный план). Сброс в 00:00 UTC, либо перейти на платный план.'],
   storage_rate_limited: ['Нам: слишком частые записи в одно значение хранилища. Если повторяется — найдите, что пишет так часто (логи воркера).'],
   durable_storage_timeout: ['Нам: проверьте длительные операции хранилища и логи Durable Object в Cloudflare. Это лимит времени операции, а не дневная квота KV.'],
+  durable_memory_exhausted: ['Нам: проверить логи SQLite и объём работы с хранилищем. Не повторять оплату или запись прогресса вслепую; прежние данные должны сохраняться.'],
   durable_overloaded: ['Нам: не повторяйте запрос немедленно — это усилит перегрузку. Уменьшите работу на запрос и частоту обращений к этому Durable Object; проверьте очередь и логи Cloudflare.'],
   durable_retryable: ['Нам: повтор допустим только для идемпотентной операции, с увеличивающейся паузой и новым Durable Object stub. Проверьте логи Cloudflare, если сбой повторяется.'],
   missing_credential: ['Пользователю: войти ещё раз или другим способом.', 'Нам: если у многих — провайдер перестал возвращать токен, проверьте версию плагина входа.'],

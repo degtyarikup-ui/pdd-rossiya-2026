@@ -3,7 +3,7 @@ export const USAGE_FROM = '2026-10-08';
 export const USAGE_FEATURES = ['tickets', 'topics', 'exam', 'feed', 'game', 'sign_swiper', 'traffic_controller', 'roundabout', 'crossroads', 'parking'];
 const DAY = 86400000;
 
-export async function acceptUsage(request, env, { jsonResponse, trackStats }, now = Date.now()) {
+export async function acceptUsage(request, env, { jsonResponse, trackStatsBatch }, now = Date.now()) {
   if (!env.INSTALLS || !env.STATS) return jsonResponse({ error: 'storage unavailable' }, 503);
   let body;
   try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'bad json' }, 400); }
@@ -20,10 +20,10 @@ export async function acceptUsage(request, env, { jsonResponse, trackStats }, no
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('usage:' + body.installId));
   const installation = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
   // Await durable acceptance. A partially accepted batch is safe to resend.
-  for (const event of body.events) await trackStats(env, null, {
+  await trackStatsBatch(env, body.events.map(event => ({
     id: 'usage:' + installation + ':' + event.id, kind: 'usage', ts: event.ts,
     feature: event.feature, installation, platform,
-  });
+  })));
   return jsonResponse({ ok: true });
 }
 

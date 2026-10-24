@@ -21,10 +21,12 @@ void main() {
     'offline events retry with original IDs and times; concurrent starts survive',
     () async {
       var online = false;
+      var now = DateTime.now();
       final bodies = <Map<String, dynamic>>[];
       final reporter = UsageReporter(
         endpoint: 'https://test',
         secret: 'test',
+        now: () => now,
         client: MockClient((r) async {
           expect(r.url.path, '/api/usage');
           expect(r.headers['x-install-secret'], 'test');
@@ -41,9 +43,46 @@ void main() {
       expect(saved, hasLength(2));
       expect(saved[0]['id'], bodies.first['events'][0]['id']);
       online = true;
+      expect(bodies, hasLength(1));
+      now = now.add(const Duration(seconds: 31));
       await reporter.flush();
       expect(bodies.last['events'], saved);
       expect(bodies.last['installId'], bodies.first['installId']);
+      expect(jsonDecode(prefs.getString(UsageReporter.queueKey)!), isEmpty);
+    },
+  );
+
+  test(
+    '503 backoff retains new events and respects server Retry-After',
+    () async {
+      var now = DateTime.now();
+      var calls = 0;
+      final reporter = UsageReporter(
+        endpoint: 'https://test',
+        secret: 'test',
+        now: () => now,
+        client: MockClient((r) async {
+          calls++;
+          return calls == 1
+              ? http.Response('{}', 503, headers: {'retry-after': '120'})
+              : http.Response('{}', 200);
+        }),
+      );
+      await reporter.record(UsageFeature.exam);
+      for (var i = 0; i < 10; i++) {
+        await reporter.record(UsageFeature.game);
+      }
+      now = now.add(const Duration(seconds: 31));
+      await reporter.flush();
+      expect(calls, 1);
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        jsonDecode(prefs.getString(UsageReporter.queueKey)!),
+        hasLength(11),
+      );
+      now = now.add(const Duration(seconds: 90));
+      await reporter.flush();
+      expect(calls, 2);
       expect(jsonDecode(prefs.getString(UsageReporter.queueKey)!), isEmpty);
     },
   );

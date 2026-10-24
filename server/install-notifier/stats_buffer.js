@@ -6,7 +6,7 @@ import { reportIncident, errorCode } from './diagnostics.js';
 
 const FLUSH_MS = 5 * 60 * 1000;
 const RETRY_MS = 65 * 1000; // KV permits only one write/second/key.
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 200;
 
 export class StatsBuffer {
   constructor(state, env) {
@@ -16,26 +16,39 @@ export class StatsBuffer {
   }
   serial(fn) {
     const result = this.tail.then(fn);
-    this.tail = result.catch(() => {});
+    this.tail = result.then(() => {}, () => {});
     return result;
   }
   fetch(request) {
     return this.serial(async () => {
       const url = new URL(request.url);
       if (request.method !== 'POST') return new Response('not found', { status: 404 });
-      if (url.pathname === '/enqueue') {
-        let item;
-        try { item = await request.json(); } catch (_) { return new Response('bad json', { status: 400 }); }
-        if (item.id && await this.state.storage.get('seen:' + item.id)) return new Response('duplicate');
+      if (url.pathname === '/enqueue' || url.pathname === '/enqueue-batch') {
+        let body;
+        try { body = await request.json(); } catch (_) { return new Response('bad json', { status: 400 }); }
+        const batch = url.pathname === '/enqueue-batch';
+        if (batch && (!Array.isArray(body) || !body.length || body.length > 50
+          || body.some(item => item?.kind !== 'usage' || typeof item.id !== 'string' || item.id.length > 200))) {
+          return new Response('bad batch', { status: 400 });
+        }
+        const items = [], seen = new Set();
+        for (const item of batch ? body : [body]) {
+          if (item.id && (seen.has(item.id) || await this.state.storage.get('seen:' + item.id))) continue;
+          if (item.id) seen.add(item.id);
+          items.push(item);
+        }
+        if (!items.length) return new Response('duplicate');
         const alarmAt = await this.state.storage.getAlarm();
         // Old deployments flushed hourly; shorten their persisted alarm too.
         if (alarmAt === null || alarmAt > Date.now() + FLUSH_MS) {
           await this.state.storage.setAlarm(Date.now() + FLUSH_MS);
         }
-        const key = `q:${String(item.ts || Date.now()).padStart(13, '0')}:${crypto.randomUUID()}`;
         await this.state.storage.transaction(async txn => {
-          await txn.put(key, item);
-          if (item.id) await txn.put('seen:' + item.id, true);
+          for (const item of items) {
+            const key = `q:${String(item.ts || Date.now()).padStart(13, '0')}:${crypto.randomUUID()}`;
+            await txn.put(key, item);
+            if (item.id) await txn.put('seen:' + item.id, true);
+          }
         });
         return new Response('ok');
       }

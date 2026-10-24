@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -14,6 +15,59 @@ void main() {
   const hosts = ['https://main', 'https://backup'];
 
   setUp(NotifierRoute.reset);
+
+  test(
+    'TLS handshake and socket errors retry another host with normal TLS',
+    () async {
+      for (final failure in [
+        const HandshakeException('transport interrupted'),
+        const SocketException('connection reset'),
+        const HttpException('connection closed'),
+      ]) {
+        NotifierRoute.reset();
+        final tried = <String>[];
+        final result = await sendWithRetry(
+          (host) async {
+            tried.add(host);
+            if (tried.length == 1) throw failure;
+            return http.Response('ok', 200);
+          },
+          hosts: hosts,
+          attempts: short,
+          pause: Duration.zero,
+        );
+        expect(result.statusCode, 200);
+        expect(tried, hosts);
+        expect(isRetryableNetworkError(failure), isTrue);
+      }
+    },
+  );
+
+  test(
+    'local filesystem and programming failures do not retry as network',
+    () async {
+      for (final failure in [
+        const FileSystemException('local storage'),
+        StateError('bug'),
+      ]) {
+        var calls = 0;
+        await expectLater(
+          sendWithRetry(
+            (_) async {
+              calls++;
+              throw failure;
+            },
+            hosts: hosts,
+            attempts: short,
+            pause: Duration.zero,
+          ),
+          throwsA(same(failure)),
+        );
+        expect(calls, 1);
+        expect(isRetryableNetworkError(failure), isFalse);
+      }
+    },
+  );
 
   Future<http.Response> run(
     Future<http.Response> Function(String host) send, {

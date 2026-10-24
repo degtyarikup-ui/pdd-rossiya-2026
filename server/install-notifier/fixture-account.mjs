@@ -8,14 +8,15 @@ export class MemoryStorage {
   constructor() { this.data = new Map(); this.tail = Promise.resolve(); this.alarm = null; this.failCommit = false; }
   async get(key) { return structuredClone(this.data.get(key)); }
   async put(key, value) { this.data.set(key, structuredClone(value)); }
-  async delete(key) { return this.data.delete(key); }
-  async list({ prefix = '', limit = 1000 } = {}) { return new Map([...this.data].filter(([key]) => key.startsWith(prefix)).sort().slice(0, limit).map(([k,v])=>[k,structuredClone(v)])); }
+  async delete(key) { for (const item of Array.isArray(key) ? key : [key]) this.data.delete(item); }
+  async list({ prefix = '', limit = 1000, start } = {}) { return new Map([...this.data].filter(([key]) => key.startsWith(prefix) && (!start || key >= start)).sort().slice(0, limit).map(([k,v])=>[k,structuredClone(v)])); }
   async setAlarm(value) { this.alarm = value; }
   async getAlarm() { return this.alarm; }
+  async deleteAlarm() { this.alarm = null; }
   async transaction(fn) {
     const result = this.tail.then(async () => {
       const copy = new Map([...this.data].map(([k,v]) => [k,structuredClone(v)]));
-      const txn = { get: async key => structuredClone(copy.get(key)), put: async (key,value) => copy.set(key,structuredClone(value)), delete: async key => copy.delete(key) };
+      const txn = { get: async key => structuredClone(copy.get(key)), put: async (key,value) => copy.set(key,structuredClone(value)), delete: async key => { for (const item of Array.isArray(key) ? key : [key]) copy.delete(item); } };
       const value = await fn(txn);
       if (this.failCommit) { this.failCommit = false; throw new Error('fixture transaction commit failure'); }
       this.data = copy; return value;

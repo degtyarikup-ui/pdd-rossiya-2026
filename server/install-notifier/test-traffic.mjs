@@ -80,7 +80,7 @@ test('store labels survive sanitation; arbitrary unsafe sources remain rejected'
   assert.equal(sanitizeAnalyticsEvent({ source: '<script>' }).source, 'direct');
 });
 
-test('1000 simultaneous store installations preserve unique numbers and all analytics, including retries', async () => {
+test('1000 simultaneous store installations preserve unique numbers and all analytics, including retries', async t => {
   const e = setup();
   await e.INSTALLS.put('counter', '200');
   await e.INSTALLS.put('id:old', '17');
@@ -101,6 +101,10 @@ test('1000 simultaneous store installations preserve unique numbers and all anal
   const stats = e.STATS.objects.get('main');
   assert.equal((await queued(stats)).size, 1000);
   await alarm(stats);
+  assert.equal((await queued(stats)).size,800);
+  let clock=Date.now();
+  t.mock.method(Date,'now',()=>clock);
+  while((await queued(stats)).size){clock+=66000;await alarm(stats);}
   const dayKey = [...e.INSTALLS.data.keys()].find(k => k.startsWith('day:'));
   const data = JSON.parse(e.INSTALLS.data.get(dayKey));
   assert.equal(data.installs, 1000);

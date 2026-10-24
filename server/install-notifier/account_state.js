@@ -8,6 +8,7 @@ const scoped = (key, id) => ACCOUNT_PREFIXES.some(prefix => key === prefix + id)
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 const parse = raw => { try { return raw ? JSON.parse(raw) : null; } catch { return null; } };
 const noProjection = key => key.startsWith('apple_auth:');
+const MAINTENANCE_PAGE = 25;
 // After a rollback to the KV-only Worker, KV holds newer writes than this DO.
 // Raising ACCOUNT_STATE_EPOCH makes older projected documents re-import from KV
 // instead of overwriting it. Private DO-only documents keep their value.
@@ -102,7 +103,9 @@ export async function routeAccountRequest(request, env, { sessionAccountId, veri
 
 export class AccountState {
   constructor(state, env) { this.state = state; this.env = env; this.tail = Promise.resolve(); }
-  serial(fn) { const result = this.tail.then(fn); this.tail = result.catch(() => {}); return result; }
+  // Keep only completion in the long-lived queue, never the last profile or
+  // progress Response. The caller still receives the original result/error.
+  serial(fn) { const result = this.tail.then(fn); this.tail = result.then(() => {}, () => {}); return result; }
   fetch(request) { return this.serial(() => this.handle(request)); }
   alarm() { return this.serial(async () => { await this.expireRecords(); await this.flush(); }); }
   async scheduleExpiry(at) {
@@ -110,15 +113,20 @@ export class AccountState {
     if (!current || current <= Date.now() || at < current) await this.state.storage.setAlarm(at);
   }
   async expireRecords() {
-    const records = await this.state.storage.list({ prefix: 'doc:' });
     let next = Infinity;
-    for (const record of records.values()) if (record.expiresAt && !stale(this.env, record)) {
-      if (record.expiresAt <= Date.now()) {
-        await this.state.storage.transaction(async txn => {
-          await this.persistRecord(txn, { key: record.key, value: null, options: {} });
-          if (!noProjection(record.key)) await txn.put('projection:' + record.key, { key: record.key });
-        });
-      } else next = Math.min(next, record.expiresAt);
+    let start;
+    for (;;) {
+      const records = await this.state.storage.list({ prefix: 'doc:', limit: MAINTENANCE_PAGE, ...(start ? { start } : {}) });
+      for (const record of records.values()) if (record.expiresAt && !stale(this.env, record)) {
+        if (record.expiresAt <= Date.now()) {
+          await this.state.storage.transaction(async txn => {
+            await this.persistRecord(txn, { key: record.key, value: null, options: {} });
+            if (!noProjection(record.key)) await txn.put('projection:' + record.key, { key: record.key });
+          });
+        } else next = Math.min(next, record.expiresAt);
+      }
+      if (records.size < MAINTENANCE_PAGE) break;
+      start = [...records.keys()].at(-1) + '\u0000';
     }
     if (Number.isFinite(next)) await this.scheduleExpiry(next);
   }
@@ -151,7 +159,7 @@ export class AccountState {
     for (let i = chunks; i < (previous?.chunks || 0); i++) await txn.delete('chunk:' + record.key + ':' + i);
   }
   async flush() {
-    const indexes = await this.state.storage.list({ prefix: 'index:' });
+    const indexes = await this.state.storage.list({ prefix: 'index:', limit: MAINTENANCE_PAGE });
     for (const [key, order] of indexes) {
       try {
         const response = await accountRpc(this.env, 'payment-directory', '/_directory/register', order);
@@ -159,6 +167,7 @@ export class AccountState {
         await this.state.storage.delete(key);
       } catch { await this.state.storage.setAlarm(Date.now() + 65000); return; }
     }
+    if (indexes.size === MAINTENANCE_PAGE) await this.scheduleExpiry(Date.now() + 65000);
     const outbox = await this.state.storage.list({ prefix: 'effect:', limit: 25 });
     let retryEffects = false;
     for (const [key, effect] of outbox) {
@@ -169,7 +178,7 @@ export class AccountState {
       } catch { retryEffects = true; }
     }
     if (retryEffects || outbox.size === 25) await this.scheduleExpiry(Date.now() + 65000);
-    const pending = await this.state.storage.list({ prefix: 'projection:' });
+    const pending = await this.state.storage.list({ prefix: 'projection:', limit: MAINTENANCE_PAGE });
     for (const [key, pendingRecord] of pending) {
       try {
         const record = await this.loadRecord(pendingRecord.key);
@@ -179,6 +188,7 @@ export class AccountState {
         await this.state.storage.delete(key);
       } catch { await this.state.storage.setAlarm(Date.now() + 65000); return; }
     }
+    if (pending.size === MAINTENANCE_PAGE) await this.scheduleExpiry(Date.now() + 65000);
   }
   async handle(request) {
     const path = new URL(request.url).pathname;
