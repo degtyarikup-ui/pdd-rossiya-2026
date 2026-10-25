@@ -528,7 +528,7 @@ func _test_despawn_unapprehended_cleanup() -> void:
 	_assert("Car A is active violator", car_a.violation_state == "active")
 
 	# Advance car A to despawn threshold (Z > 36.0)
-	car_a.position.z = 37.0
+	car_a.position.z = game.DESPAWN_DIST + 1.0   # beyond the frame
 	game._update_cars(0.1)
 
 	_assert("Despawned car is removed from cars array", not game.cars.has(car_a))

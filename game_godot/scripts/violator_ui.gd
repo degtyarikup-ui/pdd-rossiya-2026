@@ -227,6 +227,8 @@ func _process(delta: float) -> void:
 		_ripples = surviving
 		_overlay.queue_redraw()
 
+	if is_instance_valid(_toast) and _toast.visible:
+		_toast.size.y = 0.0   # shrink to the wrapped text once laid out (see _fit_toast)
 	if _modal_active:
 		_place_modal()
 		_modal_timer -= real_delta
@@ -590,6 +592,10 @@ func _build_toast() -> void:
 	row.add_child(_toast_icon)
 
 	_toast_label = Ui.label("", 13, 600, Ui.c("text"), true)
+	# Takes the row's free width; without it a wrapping label is measured at zero width and the
+	# toast grows into a tall empty slab, one letter per line.
+	_toast_label.size_flags_horizontal = SIZE_EXPAND_FILL
+	row.size_flags_horizontal = SIZE_EXPAND_FILL
 	row.add_child(_toast_label)
 
 
@@ -601,6 +607,7 @@ func show_toast(text: String, is_error: bool = false) -> void:
 	_toast_is_error = is_error
 	_toast_label.text = text
 	_layout()
+	_fit_toast.call_deferred()
 	if is_error:
 		_toast_icon.text = char(ICON_WARNING)
 		_toast_icon.add_theme_color_override("font_color", Ui.c("red"))
@@ -616,6 +623,12 @@ func show_toast(text: String, is_error: bool = false) -> void:
 	_toast_tween.tween_interval(2.0)
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.3)
 	_toast_tween.tween_callback(func(): _toast.visible = false)
+
+
+## Shrinks the toast to its text once the wrapped label has been laid out at the toast's width.
+func _fit_toast() -> void:
+	if is_instance_valid(_toast):
+		_toast.size.y = 0.0
 
 
 # --- Step 2: Classification Modal ---
@@ -828,7 +841,7 @@ func set_missed_marks(marks: Array) -> void:
 			at = Vector2(p.x - psize.x * 0.5, p.y - psize.y * 0.5)
 		# Keep it on screen, below the HUD.
 		at.x = clampf(at.x, 8.0, size.x - psize.x - 8.0)
-		at.y = clampf(at.y, CHROME + 70.0, size.y - psize.y - 12.0)
+		at.y = clampf(at.y, CHROME + 130.0, size.y - psize.y - 12.0)   # below the HUD and the error toast
 		pill.position = at
 	for id in _missed.keys():
 		if not keep.has(id):

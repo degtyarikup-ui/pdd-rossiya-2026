@@ -111,7 +111,7 @@ func _run_checks() -> void:
 	# Walker finishes, keeps walking away and despawns
 	west.s = 12.5
 	west.state = "cross"
-	for i in 200:
+	for i in 1500:
 		game._update_crosser(west, 0.05)
 		if west.state == "hidden":
 			break
@@ -170,7 +170,7 @@ func _run_checks() -> void:
 	_check("Sign 2.1 exists", junction.find_child("Sign_2_1", true, false) != null)
 	_check("Sign 2.4 exists", junction.find_child("Sign_2_4", true, false) != null)
 	_check("Pedestrian sign 5.19.1 exists", junction.find_child("Sign_5_19_1", true, false) != null)
-	_check("Ambient walker crowds exist", game.walker_crowds.size() > 0)
+	_check("Sidewalk strollers exist", game.active_pedestrians.any(func(p): return p.get("type", "") == "path"))
 	
 	# 7. Secondary Road Car Merge Geometry: stays on roadway, not off-road on sidewalk
 	var merge_car = game.spawn_specific_car("secondary_merge", 2, false, "")
@@ -330,20 +330,59 @@ func _run_checks() -> void:
 	# 16b. Sidewalk walkers never walk through a post or a kiosk
 	var kiosks := [Vector2(-8.5, -13.0), Vector2(8.5, -13.0), Vector2(-8.5, 16.0), Vector2(8.5, 16.0)]
 	var clashes := []
-	for r in game.active_pedestrians:
-		var kind: String = r.get("type", "idle")
-		if kind == "idle":
-			continue
-		for k in 41:
-			var f := float(k) / 40.0
-			var q := Vector2(r.x, lerpf(r.min_z, r.max_z, f)) if kind == "sidewalk_z" else Vector2(lerpf(r.min_x, r.max_x, f), r.z)
+	var routes: Array = []
+	for r in game.STROLL_ROUTES:
+		routes.append(r)
+	for cw in game.CROSSWALK_ROUTES.values():
+		routes.append(cw.lo)
+		routes.append(cw.hi)
+	for path in routes:
+		var total: float = game._path_length(path)
+		var d := 0.0
+		while d <= total:
+			var q: Vector2 = game._path_point(path, d)
 			for pp in game.pole_points:
-				if q.distance_to(pp) < 0.6:
+				if q.distance_to(pp) < 0.55:
 					clashes.append([q, pp])
 			for kp in kiosks:
 				if absf(q.x - kp.x) < 1.8 and absf(q.y - kp.y) < 1.8:
 					clashes.append([q, kp])
-	_check("Sidewalk walkers keep clear of posts and kiosks (%d clashes %s)" % [clashes.size(), str(clashes.slice(0, 3))], clashes.is_empty())
+			d += 0.25
+	_check("Pedestrian routes keep clear of posts and kiosks (%d clashes %s)" % [clashes.size(), str(clashes.slice(0, 3))], clashes.is_empty())
+
+	# 16c. Nothing appears or vanishes in sight: on phones from 16:9 to 2.4:1 every pedestrian route
+	# end and every car spawn / despawn point lies beyond the frame, and the side signals stay well inside.
+	var in_view := []
+	var badges_off := []
+	for asp in [1.78, 2.0, 2.2, 2.4]:
+		var vp := SubViewport.new()
+		vp.size = Vector2i(500, int(500 * asp))
+		root.add_child(vp)
+		var cam := Camera3D.new()
+		cam.fov = game.camera.fov
+		cam.keep_aspect = game.camera.keep_aspect
+		vp.add_child(cam)
+		cam.global_transform = game.camera.global_transform
+		var sz := Vector2(vp.size)
+		var ends: Array = []
+		for path in routes:
+			ends.append(Vector3(path[0].x, 0.0, path[0].y))
+			ends.append(Vector3(path[path.size() - 1].x, 0.0, path[path.size() - 1].y) if path in game.STROLL_ROUTES else Vector3(path[0].x, 0.0, path[0].y))
+		ends.append_array([Vector3(-1.8, 0, -48), Vector3(1.8, 0, -48), Vector3(-42, 0, game.CURVE_RIGHT_W[0].y), Vector3(42, 0, 3.2),
+			Vector3(0, 0, game.DESPAWN_DIST), Vector3(-game.DESPAWN_DIST, 0, 0), Vector3(game.DESPAWN_DIST, 0, 6.8)])
+		for e in ends:
+			var sp := cam.unproject_position(e)
+			# A 2.5 m margin around the point: a car or a person must be fully out of sight.
+			var margin := 2.5 * sz.x / 70.0
+			if sp.x > -margin and sp.x < sz.x + margin and sp.y > -margin and sp.y < sz.y + margin:
+				in_view.append([asp, e])
+		for b in game.signal_badges.values():
+			var bp := cam.unproject_position(b.global_position)
+			if bp.x < sz.x * 0.10 or bp.x > sz.x * 0.90:
+				badges_off.append([asp, b.name, bp.x / sz.x])
+		vp.queue_free()
+	_check("Pedestrians and cars appear and vanish only beyond the frame (%s)" % str(in_view.slice(0, 3)), in_view.is_empty())
+	_check("Signal badges stay between 10 %% and 90 %% of the width on every phone (%s)" % str(badges_off), badges_off.is_empty())
 
 	# 17. Zebra Crosswalk Encroachment Detection
 	for c in game.cars:

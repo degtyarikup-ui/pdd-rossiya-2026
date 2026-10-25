@@ -221,6 +221,24 @@ const MIN_GAP_HINT := 0.5   # extra room kept before a merge point
 var emergency_alert := false   # an emergency vehicle is approaching or crossing the junction
 var emergency_front_z := -999.0  # rear bumper of the leading such vehicle (what the cross street still has to wait for)
 
+# Where crosswalk walkers come from and go to: sidewalk paths from beyond the frame (on every phone)
+# to the curb at each end ("lo" end: s = lo - 0.5, "hi" end: s = hi + 0.5), routed around posts,
+# signs, signals, lamps and kiosks. Leaving uses the other end's path backwards.
+const CROSSWALK_ROUTES := {
+	"north": {"lo": [Vector2(-5.5, -50.0), Vector2(-5.5, -8.8), Vector2(-4.7, -7.75)],
+		"hi": [Vector2(5.5, -36.0), Vector2(5.5, -8.8), Vector2(4.7, -7.75)]},
+	"south": {"lo": [Vector2(-5.5, 36.0), Vector2(-5.5, 16.4), Vector2(-4.7, 15.25)],
+		"hi": [Vector2(5.5, 46.0), Vector2(5.5, 16.4), Vector2(4.7, 15.25)]},
+	"west": {"lo": [Vector2(-5.5, -50.0), Vector2(-5.5, -6.8), Vector2(-7.5, -5.6), Vector2(-7.5, -2.3)],
+		"hi": [Vector2(-40.0, 13.45), Vector2(-8.2, 13.3), Vector2(-7.5, 12.3)]},
+	"east": {"lo": [Vector2(36.0, -3.3), Vector2(9.0, -3.3), Vector2(7.5, -2.3)],
+		"hi": [Vector2(48.0, 13.4), Vector2(7.5, 13.4), Vector2(7.5, 12.3)]},
+}
+# Sidewalk strollers that only pass the corner: from beyond the frame to beyond the frame.
+const STROLL_ROUTES := [
+	[Vector2(5.5, -36.0), Vector2(5.5, -5.0), Vector2(9.0, -3.3), Vector2(36.0, -3.3)],
+]
+
 # Pedestrians on the four crosswalks. Each entry: node, cw (crosswalk id), dir, s (position along the
 # crosswalk axis), spd, state (hidden, approach, wait, cross, leave), timer, forced.
 var crossers: Array[Dictionary] = []
@@ -234,8 +252,6 @@ const WALKER_COLORS := [
 ]
 
 # Ambient sidewalk pedestrians
-var walker_crowds: Array[MultiMesh] = []
-var walkers_data: Array[Dictionary] = []
 var active_pedestrians: Array[Dictionary] = []
 
 # Traffic light state
@@ -303,6 +319,9 @@ var sc: Scenery
 var scenery_pools := {}
 
 # Camera controls
+const CAMERA_HFOV := 31.0
+const DESPAWN_DIST := 46.0
+const CAMERA_TARGET := Vector3(-0.4, 0.0, 4.5)
 const ZOOM_MIN := 0.7
 const ZOOM_MAX := 1.4
 var cur_zoom := 1.0
@@ -316,7 +335,6 @@ func _ready() -> void:
 	_setup_road_geometry()
 	_setup_traffic_lights()
 	_setup_pedestrian()
-	_setup_ambient_walkers()
 	_setup_ui()
 	_dismiss_loader(loader)
 
@@ -374,9 +392,12 @@ func _setup_environment() -> void:
 	add_child(cam_pivot)
 
 	camera = Camera3D.new()
-	camera.fov = 48.0
+	# A fixed horizontal field of view: every phone shows the whole junction with both side signals
+	# well inside the frame; a taller screen simply sees more road above and below.
+	camera.keep_aspect = Camera3D.KEEP_WIDTH
+	camera.fov = CAMERA_HFOV
 	camera.position = Vector3(25.0, 64.0, 32.0)
-	camera.look_at_from_position(camera.position, Vector3(0.5, 0.0, 4.5), Vector3.UP)
+	camera.look_at_from_position(camera.position, CAMERA_TARGET, Vector3.UP)
 	cam_pivot.add_child(camera)
 
 
@@ -1423,10 +1444,17 @@ func _setup_pedestrian() -> void:
 			ped.set_process(false)
 			ped.visible = false
 			junction_node.add_child(ped)
-			crossers.append({
+			var c := {
 				"node": ped, "cw": cw_id, "dir": 1.0, "s": 0.0, "spd": 1.4,
-				"state": "hidden", "timer": 0.4 + float(k) * 3.5 + randf() * 1.5, "forced": false
-			})
+				"state": "hidden", "timer": 0.4 + float(k) * 3.5 + randf() * 1.5, "forced": false,
+				"path": [], "pd": 0.0
+			}
+			crossers.append(c)
+			# Some are already on their way at the start, part-way along their sidewalk.
+			if k < 2:
+				spawn_crosser(c, 1.0 if (i + k) % 2 == 0 else -1.0)
+				c.pd = randf_range(0.35, 0.9) * _path_length(c.path)
+				_place_crosser(c)
 			i += 1
 	_setup_active_pedestrians()
 
@@ -1440,24 +1468,10 @@ func _setup_active_pedestrians() -> void:
 	]
 
 	var routes_def := [
-		# NW sidewalk (walking north/south, lane separation: dir=1 at x=-5.1, dir=-1 at x=-5.9)
-		{"type": "sidewalk_z", "y": 0.16, "x": -5.1, "min_z": -36.0, "max_z": -12.2, "z": -16.0, "dir": 1.0, "spd": 1.3},
-		{"type": "sidewalk_z", "y": 0.16, "x": -5.9, "min_z": -36.0, "max_z": -12.2, "z": -28.0, "dir": -1.0, "spd": 1.25},
-		# NW sidewalk (walking east/west, lane separation: dir=1 at z=-2.8, dir=-1 at z=-3.8)
-		{"type": "sidewalk_x", "y": 0.16, "z": -2.8, "min_x": -32.0, "max_x": -10.0, "x": -18.0, "dir": 1.0, "spd": 1.25},
-		# NE sidewalk (walking north/south, lane separation: dir=1 at x=5.1, dir=-1 at x=5.9)
-		{"type": "sidewalk_z", "y": 0.16, "x": 5.1, "min_z": -36.0, "max_z": -12.2, "z": -12.0, "dir": -1.0, "spd": 1.4},
-		{"type": "sidewalk_z", "y": 0.16, "x": 5.9, "min_z": -36.0, "max_z": -12.2, "z": -24.0, "dir": 1.0, "spd": 1.2},
-		# NE sidewalk (walking east/west, lane separation: dir=1 at z=-2.8, dir=-1 at z=-3.8)
-		{"type": "sidewalk_x", "y": 0.16, "z": -3.8, "min_x": 8.5, "max_x": 32.0, "x": 18.0, "dir": -1.0, "spd": 1.3},
-		# SW sidewalk (walking north/south, lane separation: dir=1 at x=-5.1, dir=-1 at x=-5.9)
-		{"type": "sidewalk_z", "y": 0.16, "x": -5.1, "min_z": 18.0, "max_z": 36.0, "z": 22.0, "dir": 1.0, "spd": 1.3},
-		# SW sidewalk (walking east/west, lane separation: dir=1 at z=12.8, dir=-1 at z=13.8)
-		{"type": "sidewalk_x", "y": 0.16, "z": 13.6, "min_x": -32.0, "max_x": -10.5, "x": -22.0, "dir": -1.0, "spd": 1.35},
-		# SE sidewalk (walking north/south, lane separation: dir=1 at x=5.1, dir=-1 at x=5.9)
-		{"type": "sidewalk_z", "y": 0.16, "x": 5.1, "min_z": 18.0, "max_z": 36.0, "z": 22.0, "dir": -1.0, "spd": 1.35},
-		# SE sidewalk (walking east/west, lane separation: dir=1 at z=12.8, dir=-1 at z=13.8)
-		{"type": "sidewalk_x", "y": 0.16, "z": 13.8, "min_x": 10.0, "max_x": 32.0, "x": 20.0, "dir": 1.0, "spd": 1.25},
+		# Strollers past the north-east corner, both ways (see STROLL_ROUTES).
+		{"type": "path", "route": 0, "dir": 1.0, "pd": 6.0, "spd": 1.3},
+		{"type": "path", "route": 0, "dir": -1.0, "pd": 20.0, "spd": 1.25},
+		{"type": "path", "route": 0, "dir": 1.0, "pd": 38.0, "spd": 1.4},
 		# Kiosk customers (idle / slow stroll standing in front of kiosk counter)
 		{"type": "idle", "y": 0.16, "x": -8.5, "z": -10.8, "yaw": 0.0},
 		{"type": "idle", "y": 0.16, "x": -8.5, "z": 14.2, "yaw": 0.0},
@@ -1487,6 +1501,10 @@ func _setup_active_pedestrians() -> void:
 			ped.rotation.y = 0.0 if dir > 0.0 else PI
 		elif r_type == "idle":
 			ped.rotation.y = float(r.get("yaw", 0.0))
+		elif r_type == "path":
+			var path0: Array = _stroll_path(r)
+			var at0 := _path_point(path0, float(r.get("pd", 0.0)))
+			ped.position = Vector3(at0.x, 0.16, at0.y)
 
 		junction_node.add_child(ped)
 		r["node"] = ped
@@ -1501,139 +1519,39 @@ func _update_active_pedestrians(delta: float) -> void:
 		var node: Pedestrian = p.get("node")
 		if not is_instance_valid(node):
 			continue
-
-		var p_type: String = p.get("type", "idle")
-		if p_type == "idle":
-			node._process(delta)
+		if p.get("type", "idle") != "path":
+			node._process(delta)   # kiosk customers stand and idle
 			continue
-
+		var path: Array = _stroll_path(p)
 		var wait_t: float = p.get("wait_timer", 0.0)
 		if wait_t > 0.0:
+			# Out of sight beyond the frame until the next walk.
 			p["wait_timer"] = wait_t - delta
-			if p["wait_timer"] <= 0.0 and not node.visible:
+			if p["wait_timer"] <= 0.0:
+				p["dir"] = 1.0 if randf() < 0.5 else -1.0
+				p["pd"] = 0.0
+				node.configure(randi() % Models.WALKERS, WALKER_COLORS[randi() % WALKER_COLORS.size()])
 				node.visible = true
-				var rx: float = p.get("x", 0.0)
-				var rz: float = p.get("z", 0.0)
-				var ry: float = p.get("y", 0.16)
-				node.position = Vector3(rx, ry, rz)
-			node._process(delta * 0.05)
 			continue
-
-		var dir: float = p.get("dir", 1.0)
-		var spd: float = p.get("spd", 1.3)
-
-		if p_type in ["cross_x", "sidewalk_x"]:
-			var x: float = p.get("x", 0.0) + dir * spd * delta
-			var min_x: float = p.get("min_x", -12.0 if p_type == "cross_x" else -4.6)
-			var max_x: float = p.get("max_x", 28.0 if p_type == "cross_x" else 4.6)
-			var reached := false
-			if dir > 0.0 and x >= max_x:
-				x = max_x
-				reached = true
-			elif dir < 0.0 and x <= min_x:
-				x = min_x
-				reached = true
-
-			var y: float = 0.16
-			if p_type == "cross_x":
-				y = 0.16 if absf(x) >= 4.0 else 0.0
-			p["x"] = x
-			node.position = Vector3(x, y, p.get("z", 0.0))
-			node.rotation.y = PI * 0.5 if dir > 0.0 else -PI * 0.5
-
-			if reached:
-				node.visible = false
-				p["wait_timer"] = randf_range(2.0, 4.0)
-				p["dir"] = 1.0 if randf() < 0.5 else -1.0
-				p["x"] = min_x if p["dir"] > 0.0 else max_x
-				var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
-				var new_tint: Color = walker_colors[randi() % walker_colors.size()]
-				var new_look: int = randi() % Models.WALKERS
-				p["tint"] = new_tint
-				p["look"] = new_look
-				node.configure(new_look, new_tint)
-
-		elif p_type in ["cross_z", "sidewalk_z"]:
-			var z: float = p.get("z", 0.0) + dir * spd * delta
-			var min_z: float = p.get("min_z", -32.0 if p_type == "cross_z" else -20.0)
-			var max_z: float = p.get("max_z", 28.0 if p_type == "cross_z" else 20.0)
-			var reached := false
-			if dir > 0.0 and z >= max_z:
-				z = max_z
-				reached = true
-			elif dir < 0.0 and z <= min_z:
-				z = min_z
-				reached = true
-
-			var y: float = p.get("y", 0.16)
-			if p_type == "cross_z":
-				y = 0.16 if (z < -1.8 or z > 11.8) else 0.0
-
-			p["z"] = z
-			node.position = Vector3(p.get("x", 0.0), y, z)
-			node.rotation.y = 0.0 if dir > 0.0 else PI
-
-			if reached:
-				node.visible = false
-				p["wait_timer"] = randf_range(2.0, 4.0)
-				p["dir"] = 1.0 if randf() < 0.5 else -1.0
-				p["z"] = min_z if p["dir"] > 0.0 else max_z
-				var walker_colors: Array = [Color("#E57373"), Color("#64B5F6"), Color("#81C784"), Color("#FFD54F"), Color("#BA68C8"), Color("#FFA726")]
-				var new_tint: Color = walker_colors[randi() % walker_colors.size()]
-				var new_look: int = randi() % Models.WALKERS
-				p["tint"] = new_tint
-				p["look"] = new_look
-				node.configure(new_look, new_tint)
-
+		p["pd"] = float(p.get("pd", 0.0)) + float(p.get("spd", 1.3)) * delta
+		path = _stroll_path(p)
+		if float(p.pd) >= _path_length(path):
+			node.visible = false
+			p["wait_timer"] = randf_range(2.0, 6.0) * (2.5 if signal_mode == "flashing" else 1.0)
+			continue
+		var at := _path_point(path, float(p.pd))
+		node.position = Vector3(at.x, 0.16, at.y)
+		var ahead := _path_point(path, float(p.pd) + 0.3) - at
+		if ahead.length() > 0.01:
+			node.rotation.y = atan2(ahead.x, ahead.y)
 		node._process(delta)
 
 
-func _setup_ambient_walkers() -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 42
-	for i in range(4):
-		var look: int = i % Models.WALKERS
-		var crowd := Models.crowd(junction_node, "res://models/walkers/walker_%d.glb" % look, 1)
-		walker_crowds.append(crowd)
-		var tint: Color = Color("#456789")
-		if sc != null:
-			tint = sc.color("canopy", look).lerp(Color("#506880"), 0.5)
-		var phase := rng.randf_range(0.0, TAU)
-		crowd.set_instance_custom_data(0, Models.walker_gait(tint, phase, 1.0))
-
-		var on_east := i % 2 == 0
-		var fixed_x := (5.1 if i == 0 else 5.9) if on_east else (-5.1 if i == 1 else -5.9)
-		var low_z := -56.0
-		var high_z := -38.0
-		var direction := 1.0 if i < 2 else -1.0
-		walkers_data.append({
-			"fixed_x": fixed_x,
-			"low_z": low_z,
-			"high_z": high_z,
-			"at_z": rng.randf_range(low_z, high_z),
-			"dir": direction,
-			"spd": rng.randf_range(1.1, 1.5),
-			"tint": tint,
-			"walk_phase": phase
-		})
-	_update_ambient_walkers(0.0)
-
-
-func _update_ambient_walkers(delta: float) -> void:
-	for i in walkers_data.size():
-		var w: Dictionary = walkers_data[i]
-		w.at_z += w.spd * w.dir * delta
-		if w.at_z >= w.high_z:
-			w.at_z = w.high_z
-			w.dir = -1.0
-		elif w.at_z <= w.low_z:
-			w.at_z = w.low_z
-			w.dir = 1.0
-		var pos := Vector3(w.fixed_x, 0.15, w.at_z)
-		var yaw := 0.0 if w.dir > 0 else PI
-		walker_crowds[i].set_instance_transform(0, Transform3D(Basis(Vector3.UP, yaw), pos))
-		w.walk_phase = fposmod(float(w.walk_phase) + w.spd * delta * 3.5, TAU)
-		walker_crowds[i].set_instance_custom_data(0, Models.walker_gait(w.tint, w.walk_phase, 1.0))
+func _stroll_path(p: Dictionary) -> Array:
+	var path: Array = STROLL_ROUTES[int(p.get("route", 0))].duplicate()
+	if float(p.get("dir", 1.0)) < 0.0:
+		path.reverse()
+	return path
 
 
 # --- Game Loop & Traffic Simulation ---
@@ -1660,7 +1578,6 @@ func _process(delta: float) -> void:
 
 	_update_traffic_lights(delta)
 	_update_pedestrian(delta)
-	_update_ambient_walkers(delta)
 	_update_spawning(delta)
 	_update_cars(delta)
 	if is_game_over: return
@@ -1976,6 +1893,13 @@ func _place_crosser(c: Dictionary) -> void:
 	var node: Pedestrian = c.node
 	if not is_instance_valid(node):
 		return
+	if str(c.state) in ["approach", "leave"] and not (c.path as Array).is_empty():
+		var at := _path_point(c.path, float(c.pd))
+		node.position = Vector3(at.x, 0.16, at.y)
+		var ahead := _path_point(c.path, float(c.pd) + 0.3) - at
+		if ahead.length() > 0.01:
+			node.rotation.y = atan2(ahead.x, ahead.y)
+		return
 	node.position = _crosser_pos(c)
 	var dir: float = c.dir
 	if CROSSWALKS[c.cw].axis == "x":
@@ -1989,12 +1913,14 @@ func spawn_crosser(c: Dictionary, dir: float, at_curb := false) -> void:
 	c.dir = dir
 	c.spd = randf_range(1.3, 1.65)
 	c.forced = false
+	c.s = cw.lo - 0.5 if dir > 0.0 else cw.hi + 0.5
 	if at_curb:
-		c.s = cw.lo - 0.5 if dir > 0.0 else cw.hi + 0.5
 		c.state = "wait"
 	else:
-		c.s = cw.far_lo if dir > 0.0 else cw.far_hi
+		# Walks in from beyond the frame along its sidewalk.
 		c.state = "approach"
+		c.path = CROSSWALK_ROUTES[c.cw]["lo" if dir > 0.0 else "hi"]
+		c.pd = 0.0
 	var node: Pedestrian = c.node
 	if is_instance_valid(node):
 		node.configure(randi() % Models.WALKERS, WALKER_COLORS[randi() % WALKER_COLORS.size()])
@@ -2010,7 +1936,6 @@ func _update_crosser(c: Dictionary, delta: float) -> void:
 	var dir: float = c.dir
 	var curb: float = cw.lo - 0.5 if dir > 0.0 else cw.hi + 0.5
 	var far_curb: float = cw.hi + 0.5 if dir > 0.0 else cw.lo - 0.5
-	var end_s: float = cw.far_hi if dir > 0.0 else cw.far_lo
 	var step: float = dir * float(c.spd) * delta
 	match str(c.state):
 		"hidden":
@@ -2019,8 +1944,8 @@ func _update_crosser(c: Dictionary, delta: float) -> void:
 				spawn_crosser(c, 1.0 if randf() < 0.5 else -1.0)
 			return
 		"approach":
-			c.s = float(c.s) + step
-			if (dir > 0.0 and c.s >= curb) or (dir < 0.0 and c.s <= curb):
+			c.pd = float(c.pd) + float(c.spd) * delta
+			if c.pd >= _path_length(c.path):
 				c.s = curb
 				c.state = "wait"
 		"wait":
@@ -2041,9 +1966,13 @@ func _update_crosser(c: Dictionary, delta: float) -> void:
 			if (dir > 0.0 and c.s >= far_curb) or (dir < 0.0 and c.s <= far_curb):
 				c.state = "leave"
 				c.forced = false
+				var back: Array = CROSSWALK_ROUTES[c.cw]["hi" if dir > 0.0 else "lo"].duplicate()
+				back.reverse()
+				c.path = back
+				c.pd = 0.0
 		"leave":
-			c.s = float(c.s) + step
-			if (dir > 0.0 and c.s >= end_s) or (dir < 0.0 and c.s <= end_s):
+			c.pd = float(c.pd) + float(c.spd) * delta
+			if c.pd >= _path_length(c.path):
 				node.visible = false
 				c.state = "hidden"
 				# Far fewer people about at night (signals blinking yellow).
@@ -2051,6 +1980,27 @@ func _update_crosser(c: Dictionary, delta: float) -> void:
 				return
 	_place_crosser(c)
 	node._process(delta)
+
+
+static func _path_length(path: Array) -> float:
+	var total := 0.0
+	for i in range(1, path.size()):
+		total += (path[i] as Vector2).distance_to(path[i - 1])
+	return total
+
+
+static func _path_point(path: Array, d: float) -> Vector2:
+	if path.is_empty():
+		return Vector2.ZERO
+	var along := 0.0
+	for i in range(1, path.size()):
+		var a: Vector2 = path[i - 1]
+		var b: Vector2 = path[i]
+		var seg := a.distance_to(b)
+		if along + seg >= d:
+			return a.lerp(b, clampf((d - along) / maxf(seg, 0.001), 0.0, 1.0))
+		along += seg
+	return path[path.size() - 1]
 
 
 ## A waiting walker starts on a steady green only, when the rest of the green and the blinking green is
@@ -2460,13 +2410,13 @@ func spawn_specific_car(route: String, lane: int, is_violator: bool, v_type: Str
 		car.rotation.y = 0.0
 		car.initial_x = 1.8
 	elif lane == 2:
-		car.position = Vector3(-32.0, 0.0, CURVE_RIGHT_W[0].y)
+		car.position = Vector3(-42.0, 0.0, CURVE_RIGHT_W[0].y)
 		car.rotation.y = PI * 0.5
-		car.initial_x = -32.0
+		car.initial_x = -42.0
 	elif lane == 3:
-		car.position = Vector3(34.0, 0.0, 3.2)
+		car.position = Vector3(42.0, 0.0, 3.2)
 		car.rotation.y = -PI * 0.5
-		car.initial_x = 34.0
+		car.initial_x = 42.0
 
 	var body_mesh := MeshInstance3D.new()
 	body_mesh.name = "body"
@@ -2918,9 +2868,12 @@ func _force_pedestrian_for(car: ViolatorCar) -> void:
 		return
 	if ped_light("cross") not in ["green", "off"] or not crossers_on_road("west", -1.8, 5.0).is_empty():
 		return
+	# Someone already waiting at the curb, or about to get there, steps off now.
 	for c in crossers:
-		if c.cw == "west" and c.state in ["hidden", "approach", "wait"]:
-			spawn_crosser(c, 1.0, true)
+		if c.cw != "west":
+			continue
+		var close: bool = c.state == "wait" or (c.state == "approach" and _path_length(c.path) - float(c.pd) < 6.0)
+		if close:
 			c.forced = true
 			car.set_meta("ped_forced", true)
 			return
@@ -2978,7 +2931,8 @@ func _update_cars(delta: float) -> void:
 		_check_car_violation_state(car)
 
 		var pos := car.global_position if car.is_inside_tree() else car.position
-		if pos.z > 36.0 or pos.x > 36.0 or pos.x < -36.0:
+		# Well beyond the frame on every phone, so nobody vanishes in sight.
+		if pos.z > DESPAWN_DIST or pos.x > DESPAWN_DIST or pos.x < -DESPAWN_DIST:
 			if car.violation_state == "active":
 				_on_violator_missed(car)
 			Models.release_geometry(car)
@@ -4475,8 +4429,6 @@ func _exit_tree() -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 	active_pedestrians.clear()
-	walker_crowds.clear()
-	walkers_data.clear()
 
 
 # --- Test & Automation Inspection Hooks ---

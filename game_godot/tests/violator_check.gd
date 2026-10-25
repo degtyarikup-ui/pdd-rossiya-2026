@@ -103,7 +103,7 @@ func _check_scene_integrity() -> void:
 	game._ready()
 
 	_check("Camera3D exists in scene", is_instance_valid(game.camera))
-	_check("Camera has elevated perspective FOV", is_equal_approx(game.camera.fov, 48.0))
+	_check("Camera keeps a fixed horizontal field of view on every phone", game.camera.keep_aspect == Camera3D.KEEP_WIDTH and is_equal_approx(game.camera.fov, game.CAMERA_HFOV))
 	_check("DirectionalLight3D sun exists", is_instance_valid(game.sun))
 	_check("WorldEnvironment exists", is_instance_valid(game.env))
 
@@ -452,9 +452,9 @@ func _check_camera_visibility_and_despawn() -> void:
 
 	# 1. Despawn at negative X (< -36.0) for left-turning cars
 	var car_left = game.spawn_specific_car("main_left", 0, false, "")
-	car_left.position = Vector3(-37.0, 0.0, 7.0)
+	car_left.position = Vector3(-47.0, 0.0, 7.0)
 	game._update_cars(0.1)
-	_check("Left-turning car despawns cleanly at X < -36.0", not game.cars.has(car_left))
+	_check("A car despawns once it is well beyond the frame (X < -46)", not game.cars.has(car_left))
 
 	# 2. Left-turned car off main road does not deadlock secondary street
 	var departed_car = game.spawn_specific_car("main_left", 0, false, "")
