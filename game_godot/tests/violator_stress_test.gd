@@ -54,6 +54,7 @@ func _test_violation_boundaries_and_edges() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 	# This fixture inspects ten independent violations; depletion is tested below.
 	game.lives = 20
 
@@ -259,6 +260,7 @@ func _test_innocent_car_penalties() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 	game.combo = 4
 
 	var innocent = game.spawn_specific_car("main_straight", 1, false, "")
@@ -297,6 +299,7 @@ func _test_untimely_tap_rejections() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 	game.combo = 2
 
 	# 3.1 Pending violator
@@ -305,9 +308,13 @@ func _test_untimely_tap_rejections() -> void:
 	var lives_before: int = game.lives
 	var combo_before: int = game.combo
 	game.handle_car_tapped(car_pending, Vector2(150, 150))
-	_assert("Pending violator tap: lives untouched", game.lives == lives_before)
-	_assert("Pending violator tap: combo untouched", game.combo == combo_before)
+	# Before its offence it is just a law-abiding car: a false alarm, not a free hint.
+	_assert("Pending violator tap costs a life like any false alarm", game.lives == lives_before - 1)
+	_assert("Pending violator tap resets the combo", game.combo == 0)
 	_assert("Pending violator tap: classification not opened", not game.is_classifying)
+	lives_before = game.lives
+	game.combo = 2
+	combo_before = game.combo
 
 	# 3.2 Missed violator
 	var car_missed = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
@@ -336,6 +343,7 @@ func _test_two_step_mutual_exclusion_and_time_dilation() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 
 	var violator_a = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
 	var violator_b = game.spawn_specific_car("main_left", 0, true, ViolatorScript.VIOLATION_SOLID_LINE)
@@ -409,6 +417,7 @@ func _test_combo_economy_and_cap() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 
 	var expected_combo := 0
 	var prev_score := 0
@@ -437,7 +446,7 @@ func _test_combo_economy_and_cap() -> void:
 
 	_assert("Incorrect answer resets combo from 5 to 0", game.combo == 0)
 	_assert("Incorrect answer preserves max_combo as 5", game.max_combo == 5)
-	_assert("Incorrect answer decrements lives to 4", game.lives == 4)
+	_assert("Incorrect clause costs no life (the offender was spotted)", game.lives == 5)
 
 	game.queue_free()
 
@@ -450,6 +459,7 @@ func _test_classification_timeout() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 
 	var v = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
 	game.light_state = "red"
@@ -461,7 +471,7 @@ func _test_classification_timeout() -> void:
 	# Trigger timeout signal
 	game._on_classification_selected("timeout")
 
-	_assert("Timeout decrements lives (-1)", game.lives == lives_init - 1)
+	_assert("Timeout costs no life, like a wrong clause", game.lives == lives_init)
 	_assert("Timeout marks car as missed", v.violation_state == "missed")
 	_assert("Timeout increments wrong_count (1)", game.wrong_count == 1)
 	_assert("Timeout restores time_scale to 1.0", is_equal_approx(Engine.time_scale, 1.0))
@@ -479,6 +489,7 @@ func _test_screen_tap_fallback_and_miss() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 
 	var car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
 	game.light_state = "red"
@@ -507,6 +518,7 @@ func _test_despawn_unapprehended_cleanup() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 	game.combo = 3
 
 	var car_a = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)

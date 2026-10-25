@@ -264,9 +264,10 @@ var last_weather_toast: String = ""
 # Game state
 var score := 0
 var combo := 0
+var streak := 0   # correct catches in a row (combo is capped at 5, this is not)
 var max_combo := 0
 var lives := 5
-var seconds_left := 120.0
+var seconds_left := 180.0
 var solved_count := 0
 var wrong_count := 0
 var is_game_over := false
@@ -278,10 +279,12 @@ var _exiting := false
 var locked_car: ViolatorCar = null
 var missed_marks: Array[Dictionary] = []
 const MISSED_MARK_TIME := 4.0
+var min_catch_window := 4.5   # seconds an offender stays catchable after its offence
 var spawn_timer := 0.0
 var next_spawn_interval := 2.0
 var violation_schedule_timer := 0.0
 var next_emergency_at := 20.0
+var next_violation_at := 0.0
 var offence_counts := {}   # offences handed out this round, by type (keeps the mix varied)
 var last_offence := ""
 const VIOLATION_EVERY := 1.4   # about 70 % of the cars break a rule; the rest are the traps
@@ -293,7 +296,7 @@ var completed_runs: Array[Dictionary] = []
 var previous_best := 0
 var result_action := ""
 var season_name := "summer"
-var economy := { "seconds": 120, "lives": 5, "maxScore": 1500, "base": 50, "step": 5, "bonusCap": 5 }
+var economy := { "seconds": 180, "lives": 5, "maxScore": 1500, "base": 50, "step": 5, "bonusCap": 5 }
 
 # Scenery pools
 var sc: Scenery
@@ -333,7 +336,7 @@ func _setup_args() -> void:
 			var parsed = JSON.parse_string(arg.trim_prefix("--economy="))
 			if parsed is Dictionary:
 				economy.merge(parsed, true)
-				seconds_left = float(economy.get("seconds", 120.0))
+				seconds_left = float(economy.get("seconds", 180.0))
 				lives = int(economy.get("lives", 5))
 		elif arg.begins_with("--mode="):
 			game_mode = "patrol" if arg.trim_prefix("--mode=") == "patrol" else "blitz"
@@ -2185,9 +2188,9 @@ func _update_spawning(delta: float) -> void:
 		if effective_time < 20.0:
 			spawn_timer = randf_range(1.7, 2.2)
 		elif effective_time < 40.0:
-			spawn_timer = randf_range(1.5, 2.1)
+			spawn_timer = randf_range(1.7, 2.2)
 		else:
-			spawn_timer = randf_range(1.1, 1.6)
+			spawn_timer = randf_range(1.5, 2.0)
 		spawn_timer *= night_factor
 		_spawn_procedural_car()
 
@@ -2200,7 +2203,12 @@ func _spawn_procedural_car() -> void:
 	var is_violator := false
 	var v_type := ""
 
-	if violation_schedule_timer >= VIOLATION_EVERY:
+	# Pacing: a new offence only after a breathing gap (8 s at the start of a round, 4.5 s at its end)
+	# and with at most one (later two) offenders on the road at a time, so the player can follow them.
+	var pace_ok := _clock_now() >= next_violation_at and _unresolved_violators() < _max_concurrent_violators()
+	if violation_schedule_timer >= VIOLATION_EVERY and not pace_ok:
+		violation_schedule_timer = VIOLATION_EVERY - 0.01   # stays due; this car is an innocent one
+	elif violation_schedule_timer >= VIOLATION_EVERY:
 		violation_schedule_timer -= VIOLATION_EVERY
 		v_type = _pick_appropriate_violation(lane)
 		if v_type == "":
@@ -2259,6 +2267,8 @@ func _spawn_procedural_car() -> void:
 		violation_schedule_timer = schedule_before
 		return
 	var car := spawn_specific_car(route, lane, is_violator, v_type)
+	if is_violator:
+		next_violation_at = _clock_now() + _violation_gap()   # (only once one really took the road)
 	if is_violator and v_type == VIOLATION_EMERGENCY_YIELD:
 		var chaser := spawn_specific_car(route, lane, false, "")
 		chaser.position = car.position - Vector3(0, 0, 14.0)
@@ -2273,6 +2283,34 @@ func _car_ahead_in_lane(lane: int, from_z: float, to_z: float) -> bool:
 		if is_instance_valid(other) and absf(other.position.x - x) < 1.0 and other.position.z > from_z and other.position.z < to_z:
 			return true
 	return false
+
+
+func _clock_now() -> float:
+	return game_clock if game_mode == "blitz" else patrol_elapsed
+
+
+## Seconds between offences: 8 at the start of a round, easing to 4.5 by its end (patrol: by 3 min).
+func _violation_gap() -> float:
+	var span := float(economy.get("seconds", 180.0)) if game_mode == "blitz" else 180.0
+	return lerpf(8.0, 4.5, clampf(_clock_now() / maxf(span, 1.0), 0.0, 1.0))
+
+
+func _max_concurrent_violators() -> int:
+	return 1 if _clock_now() < 20.0 else 2
+
+
+## Offenders still to deal with: those not yet committed and those whose offence is under way.
+func _unresolved_violators() -> int:
+	var n := 0
+	for c in cars:
+		if not is_instance_valid(c) or not c.is_violator:
+			continue
+		# Committing now, or close enough to the junction to do it within seconds (one still far
+		# back in a queue does not count yet).
+		var near := absf(c.position.x) < 20.0 and c.position.z > -20.0 and c.position.z < 20.0
+		if c.violation_state == "active" or (c.violation_state == "pending" and near):
+			n += 1
+	return n
 
 
 ## Nobody near the spawn point of a lane (shifted back by `back` metres for a following car). An
@@ -3994,7 +4032,7 @@ func _zebra_limit(car: ViolatorCar, lead_car: ViolatorCar, lead_dist: float, min
 				if absf(ds) < 1.5:
 					limit = minf(limit, hit.x - margin)
 					break
-			elif absf(ds) < 3.2 or (ds * float(c.dir) > 0.0 and absf(ds) < 6.5 and hit.x - margin > 0.6):
+			elif (absf(ds) < 3.2 and (hit.x - margin > 0.3 or absf(ds) < 1.6)) or (ds * float(c.dir) > 0.0 and absf(ds) < 6.5 and hit.x - margin > 0.6):
 				# (A walker still several metres off the path is passed if the car can no longer
 				# stop short of the zebra comfortably; one close to the path is always waited for.)
 				limit = minf(limit, hit.x - margin)
@@ -4018,7 +4056,9 @@ func _check_car_violation_state(car: ViolatorCar) -> void:
 			car.violation_state = "active"
 			car.violation_start_time = game_clock
 	elif car.violation_state == "active":
-		if _is_car_exiting_violation_window(car):
+		# Catchable for at least min_catch_window after the offence, even once the manoeuvre is
+		# over: a person needs a few seconds to notice it and tap a moving car.
+		if _is_car_exiting_violation_window(car) and game_clock - car.violation_start_time >= min_catch_window:
 			_on_violator_missed(car)
 
 
@@ -4102,6 +4142,7 @@ func _on_violator_missed(car: ViolatorCar) -> void:
 	car.violation_state = "missed"
 	wrong_count += 1
 	combo = 0
+	streak = 0
 	lives = maxi(0, lives - 1)
 	# Point the car out: who it was and what it broke.
 	missed_marks.append({"car": car, "id": car.get_instance_id(), "code": car.violation_type,
@@ -4171,6 +4212,7 @@ func handle_car_tapped(car: ViolatorCar, screen_pos: Vector2) -> void:
 		sound.play("incorrect")
 		lives = maxi(0, lives - 1)
 		combo = 0
+		streak = 0
 		wrong_count += 1
 		if is_instance_valid(ui):
 			ui.add_tap_ripple(screen_pos, "false_alarm")
@@ -4192,6 +4234,7 @@ func handle_car_tapped(car: ViolatorCar, screen_pos: Vector2) -> void:
 			sound.play("incorrect")
 			lives = maxi(0, lives - 1)
 			combo = 0
+			streak = 0
 			wrong_count += 1
 			if is_instance_valid(ui):
 				ui.add_tap_ripple(screen_pos, "false_alarm")
@@ -4202,10 +4245,27 @@ func handle_car_tapped(car: ViolatorCar, screen_pos: Vector2) -> void:
 				_end_game()
 			return
 
+	if car.violation_state == "pending":
+		# Not broken anything yet: from the outside it is just a car keeping to the rules, so it
+		# costs a life like any false alarm (otherwise a free tap would reveal who the offender is).
+		sound.play("incorrect")
+		lives = maxi(0, lives - 1)
+		combo = 0
+		streak = 0
+		wrong_count += 1
+		if is_instance_valid(ui):
+			ui.add_tap_ripple(screen_pos, "false_alarm")
+			ui.show_toast(ViolatorUiScript.tr_v("violatorFalseAlarm"), true)
+			var time_metric := seconds_left if game_mode == "blitz" else patrol_elapsed
+			ui.update_hud(score, combo, time_metric, lives)
+		if lives <= 0:
+			_end_game()
+		return
 	if car.violation_state != "active":
+		# Already caught or already counted as missed: nothing more to gain or lose.
 		if is_instance_valid(ui):
 			ui.add_tap_ripple(screen_pos, "timing")
-			ui.show_toast(ViolatorUiScript.tr_v("violatorTimingWarning"), false)
+			ui.show_toast(ViolatorUiScript.tr_v("violatorAlreadyCounted"), false)
 		return
 
 	sound.play("click")
@@ -4267,11 +4327,12 @@ func _on_classification_selected(chosen_code: String) -> void:
 
 		var bonus := maxi(0, roundi(25.0 - locked_car.reaction_time * 8.0))
 		combo = mini(5, combo + 1)
+		streak += 1
 		if combo > max_combo:
 			max_combo = combo
 
-		# Life restoration on 5x streak in Endless Patrol mode
-		if game_mode == "patrol" and combo == 5 and lives < int(economy.get("lives", 5)):
+		# Every 5 correct catches in a row give a life back (up to the start count).
+		if streak % 5 == 0 and lives < int(economy.get("lives", 5)):
 			lives += 1
 			if is_instance_valid(ui):
 				ui.show_toast(ViolatorUiScript.tr_v("violatorLifeRestored"), false)
@@ -4285,14 +4346,14 @@ func _on_classification_selected(chosen_code: String) -> void:
 		sound.play("incorrect")
 		locked_car.violation_state = "missed"
 		wrong_count += 1
+		# The offender was spotted, only the clause was wrong: no points and the streak is gone, and
+		# the right clause is shown — but no life lost (lives go for missed offenders and false alarms).
 		if is_instance_valid(ui):
 			ui.show_toast(ViolatorUiScript.tr_v("violatorWrongAnswer") % ViolatorUiScript.tr_v(ui._violation_l10n_key(locked_car.violation_type)), true)
-		lives = maxi(0, lives - 1)
 		combo = 0
+		streak = 0
 		if is_instance_valid(ui):
 			ui.update_hud(score, combo, seconds_left if game_mode == "blitz" else patrol_elapsed, lives)
-		if lives <= 0:
-			_end_game()
 
 	locked_car = null
 	if is_instance_valid(ui):
@@ -4309,9 +4370,10 @@ func _start_game() -> void:
 	Engine.time_scale = 1.0
 	score = 0
 	combo = 0
+	streak = 0
 	max_combo = 0
 	lives = int(economy.get("lives", 5))
-	seconds_left = float(economy.get("seconds", 120.0))
+	seconds_left = float(economy.get("seconds", 180.0))
 	patrol_elapsed = 0.0
 	solved_count = 0
 	wrong_count = 0
@@ -4321,6 +4383,7 @@ func _start_game() -> void:
 	next_emergency_at = randf_range(18.0, 30.0)
 	offence_counts.clear()
 	last_offence = ""
+	next_violation_at = 0.0
 	weather_phase = "day"
 	set_signal_mode("normal")
 	_apply_weather_visuals("day")

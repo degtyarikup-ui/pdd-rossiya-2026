@@ -24,6 +24,7 @@ func _run_checks() -> void:
 	_check_step1_tap_detection()
 	_check_step2_classification_mechanic()
 	_check_endless_patrol_mode()
+	_check_catch_window()
 	_check_missed_violator_tracking()
 	await _check_camera_visibility_and_despawn()
 	_check_economy_and_game_over()
@@ -39,6 +40,25 @@ func _walker_on(game, cw_id: String, s_val: float) -> void:
 			c.dir = 1.0
 			c.node.visible = true
 			return
+
+
+func _check_catch_window() -> void:
+	var game = ViolatorScript.new()
+	root.add_child(game)
+	game._ready()
+	game.ready_for_play = true
+	game._start_game()
+	var car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
+	game.light_state = "red"
+	car.position.z = -3.0
+	game._check_car_violation_state(car)
+	car.position.z = 9.0   # past the junction already
+	game._check_car_violation_state(car)
+	_check("An offender stays catchable for a few seconds after its manoeuvre", car.violation_state == "active")
+	game.game_clock += game.min_catch_window + 0.1
+	game._check_car_violation_state(car)
+	_check("...and counts as missed once that time is over", car.violation_state == "missed")
+	game.queue_free()
 
 
 func _check(desc: String, condition: bool) -> void:
@@ -110,6 +130,7 @@ func _check_traffic_and_spawning() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 
 	var car_left = game.spawn_specific_car("main_left", 0, false, "")
 	var car_right = game.spawn_specific_car("main_straight", 1, false, "")
@@ -137,6 +158,7 @@ func _check_all_violation_triggers() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 
 	# 1. RED_LIGHT
 	var red_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
@@ -214,6 +236,7 @@ func _check_step1_tap_detection() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 
 	var innocent_car = game.spawn_specific_car("main_straight", 1, false, "")
 	innocent_car.position.z = -10.0
@@ -230,7 +253,7 @@ func _check_step1_tap_detection() -> void:
 	pending_violator.position.z = -40.0
 	var lives_before: int = game.lives
 	game.handle_car_tapped(pending_violator, Vector2(195, 422))
-	_check("Tapping pending violator outside window does not penalize lives", game.lives == lives_before)
+	_check("Tapping a violator before its offence is a false alarm (-1 life)", game.lives == lives_before - 1)
 	_check("Tapping pending violator does not enter classification mode", not game.is_classifying)
 
 	# Tap active violator
@@ -255,6 +278,7 @@ func _check_step2_classification_mechanic() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 
 	# 1. Correct selection
 	var violator1 = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
@@ -288,7 +312,7 @@ func _check_step2_classification_mechanic() -> void:
 	# Classify incorrectly
 	game._on_classification_selected(ViolatorScript.VIOLATION_SOLID_LINE)
 
-	_check("Wrong classification decrements lives (-1 life)", game.lives == lives_before - 1)
+	_check("Wrong clause costs no life (the offender was spotted)", game.lives == lives_before)
 	_check("Wrong classification increments wrong_count", game.wrong_count == wrong_before + 1)
 	_check("Wrong classification resets combo to 0", game.combo == 0)
 	_check("Wrong classification marks car as missed", violator2.violation_state == "missed")
@@ -316,7 +340,7 @@ func _check_step2_classification_mechanic() -> void:
 	game.handle_car_tapped(violator3, Vector2(195, 422))
 	var lives_prior: int = game.lives
 	game.ui._on_classification_timeout()
-	_check("Classification timeout penalizes life", game.lives == lives_prior - 1)
+	_check("Classification timeout costs no life, like a wrong clause", game.lives == lives_prior)
 	_check("Classification timeout restores time_scale to 1.0", is_equal_approx(Engine.time_scale, 1.0))
 
 	game.queue_free()
@@ -328,6 +352,7 @@ func _check_endless_patrol_mode() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 
 	_check("Default game mode is blitz", game.game_mode == "blitz")
 
@@ -352,6 +377,7 @@ func _check_endless_patrol_mode() -> void:
 	# Test combo 5x life recovery in Endless Patrol mode
 	game.lives = 3
 	game.combo = 4
+	game.streak = 4
 	var violator = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
 	game.light_state = "red"
 	violator.position.z = -1.0
@@ -360,7 +386,14 @@ func _check_endless_patrol_mode() -> void:
 	game._on_classification_selected(ViolatorScript.VIOLATION_RED_LIGHT)
 
 	_check("Combo 5 reached in patrol mode", game.combo == 5)
-	_check("Combo 5 restores +1 life in patrol mode (3 -> 4)", game.lives == 4)
+	_check("Five correct catches in a row restore +1 life (3 -> 4)", game.lives == 4)
+	var v6 = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
+	game.light_state = "red"
+	v6.position.z = -1.0
+	game._check_car_violation_state(v6)
+	game.handle_car_tapped(v6, Vector2(100, 100))
+	game._on_classification_selected(ViolatorScript.VIOLATION_RED_LIGHT)
+	_check("The sixth catch in a row does not give another life", game.lives == 4)
 
 	game._on_mode_toggled("blitz")
 	_check("Mode switched back to blitz", game.game_mode == "blitz")
@@ -381,6 +414,7 @@ func _check_missed_violator_tracking() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 	game.combo = 3  # Active combo streak
 	var lives_start: int = game.lives
 
@@ -413,6 +447,7 @@ func _check_camera_visibility_and_despawn() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 	await process_frame
 
 	# 1. Despawn at negative X (< -36.0) for left-turning cars
@@ -457,9 +492,10 @@ func _check_economy_and_game_over() -> void:
 	game._ready()
 	game.ready_for_play = true
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 
 	_check("Game starts with 5 lives", game.lives == 5)
-	_check("Game starts with a 120-second round", is_equal_approx(game.seconds_left, 120.0))
+	_check("Game starts with a 180-second round", is_equal_approx(game.seconds_left, 180.0))
 	_check("Game starts with 0 score", game.score == 0)
 
 	# Simulate 5 false alarms to deplete lives
@@ -476,7 +512,7 @@ func _check_economy_and_game_over() -> void:
 	var old_best: int = game.previous_best
 	game._on_restart_pressed()
 	_check("Restart resets lives to 5", game.lives == 5)
-	_check("Restart resets the round to 120 seconds", is_equal_approx(game.seconds_left, 120.0))
+	_check("Restart resets the round to 180 seconds", is_equal_approx(game.seconds_left, 180.0))
 	_check("Restart resets score to 0", game.score == 0)
 	_check("Restart resets is_game_over to false", not game.is_game_over)
 
@@ -495,6 +531,7 @@ func _check_session_summary_contract() -> void:
 	game.ready_for_play = true
 	game.session_id = "test-session-42"
 	game._start_game()
+	game.min_catch_window = 0.0   # boundary checks move cars instantly
 	game.score = 250
 	game.solved_count = 3
 	game.wrong_count = 1

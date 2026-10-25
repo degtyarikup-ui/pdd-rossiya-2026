@@ -1,4 +1,5 @@
-## «Нарушитель» is a game about spotting offences: a 60-second round must actually contain them.
+## «Нарушитель» is a game about spotting offences: a 180-second round must contain enough of them,
+## but at a pace a player can follow (gaps, rarely two at once).
 ## Plays idle rounds on several seeds and checks how many offences happen and how soon the first one.
 extends SceneTree
 
@@ -34,7 +35,7 @@ func _run() -> void:
 		game._start_game()
 		var happened := {}
 		var first := 99.0
-		for f in int(60.0 / DT):
+		for f in int(180.0 / DT):
 			game.lives = 99
 			game._process(DT)
 			for c in game.cars:
@@ -51,13 +52,14 @@ func _run() -> void:
 	var total := 0
 	for n in counts:
 		total += n
-	_check("Every round has at least 6 offences (%s)" % str(counts), counts.min() >= 6)
-	_check("On average at least 7.5 offences a round (%.1f)" % (float(total) / counts.size()), float(total) / counts.size() >= 7.5)
+	_check("Every round has at least 7 offences (%s)" % str(counts), counts.min() >= 7)
+	var avg := float(total) / counts.size()
+	_check("On average 9-18 offences a round: enough to play, not a flood (%.1f)" % avg, avg >= 9.0 and avg <= 18.0)
 	_check("The first offence comes within 10 s (%s)" % str(firsts), firsts.max() <= 10.0)
 	var top := 0
 	for k in by_kind:
 		top = maxi(top, by_kind[k])
 	_check("No single kind dominates the round (top %d of %d, %s)" % [top, total, str(by_kind)], float(top) <= 0.35 * float(total))
-	_check("Several kinds of offence show up (%s)" % str(kinds.keys()), kinds.size() >= 4)
+	_check("Several kinds of offence show up (%s)" % str(kinds.keys()), kinds.size() >= 6)
 	print("Violator density: %s" % ("PASS" if failed == 0 else "FAIL (%d)" % failed))
 	quit(0 if failed == 0 else 1)
