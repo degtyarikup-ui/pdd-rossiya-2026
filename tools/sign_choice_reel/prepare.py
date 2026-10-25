@@ -7,6 +7,7 @@ import difflib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -24,6 +25,26 @@ STYLE = (
     "ПДД произноси по буквам: пэ дэ дэ. Без смеха, вздохов, музыки и звуков. "
     "Произноси только заданный текст, ничего не добавляй."
 )
+
+
+def spoken_decimal_segments(segments, expected):
+    """Keep the number's value while aligning ASR '3,5' to 'трёх с половиной'."""
+    if not re.search(r"тр[её]х\s+с\s+половиной", expected.lower()):
+        return segments, False
+    result, changed = [], False
+    for segment in segments:
+        if not re.fullmatch(r"3[,.]5[.!?]?", segment["text"].strip()):
+            result.append(segment)
+            continue
+        start, end = segment["offsets"]["from"], segment["offsets"]["to"]
+        offset = 0
+        for text, weight in [("трёх", 4), ("с", 1), ("половиной", 9)]:
+            a = round(start + (end - start) * offset / 14)
+            offset += weight
+            b = round(start + (end - start) * offset / 14)
+            result.append({"text": text, "offsets": {"from": a, "to": b}})
+        changed = True
+    return result, changed
 
 
 def configure_google():
@@ -97,12 +118,16 @@ def main():
                 ], check=True, stdout=handle, stderr=subprocess.STDOUT)
             raw = json.loads(prefix.with_suffix(".json").read_text())
             segments = raw["transcription"]
+            original_transcription = " ".join(s["text"].strip() for s in segments)
+            segments, number_spelling = spoken_decimal_segments(segments, line["text"])
             heard = " ".join(s["text"].strip() for s in segments)
             want_tokens = verify.normalize(line["text"])
             got_tokens = verify.normalize(heard)
             score = difflib.SequenceMatcher(None, want_tokens, got_tokens).ratio()
             spacing_only = "".join(want_tokens) == "".join(got_tokens)
-            if spacing_only or (score >= 0.85 and len(want_tokens) == len(got_tokens)):
+            decimal_required = bool(re.search(r"тр[её]х\s+с\s+половиной", line["text"].lower()))
+            value_matches = not decimal_required or "трехсполовиной" in "".join(got_tokens)
+            if value_matches and (spacing_only or (score >= 0.85 and len(want_tokens) == len(got_tokens))):
                 break
             if take == 2:
                 raise RuntimeError(f"Narration mismatch for {line['key']}: {heard} ({score:.2f})")
@@ -117,6 +142,9 @@ def main():
                 continue
             words.append({"text": s["text"].strip(), "start": s["offsets"]["from"] / 1000,
                           "end": s["offsets"]["to"] / 1000})
+        if number_spelling:
+            line["transcription_raw"] = original_transcription
+            line["alignment_note"] = "ASR decimal 3,5 aligned to the equivalent spoken phrase; value unchanged."
         if spacing_only and len(words) != len(want_tokens):
             # E.g. ASR writes "почетным" for the identically sounding "по чётным".
             # Accept only an exact normalized character match. Keep all ordinary

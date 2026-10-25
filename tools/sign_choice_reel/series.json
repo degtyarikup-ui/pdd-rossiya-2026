@@ -112,6 +112,66 @@
       "duration": 20.2,
       "recipe": "episodes/006.json",
       "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "007",
+      "candidate_id": "S06",
+      "file": "sign_007.mp4",
+      "title": "Односторонняя дорога и движение прямо",
+      "status": "delivered",
+      "target": "sign:5.5",
+      "sha256": "d3fc5824322570aa2bddd97a5e83a120d5615fddd0e3b32d52df7bc4bfe1ffb0",
+      "duration": 19.766666666666666,
+      "recipe": "episodes/007.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "008",
+      "candidate_id": "S07",
+      "file": "sign_008.mp4",
+      "title": "Направление потока и обязательный поворот",
+      "status": "delivered",
+      "target": "sign:5.7.1",
+      "sha256": "306957d378803d4dbe90637b19565aad106f4a4f8624ed5770735c470bd866a7",
+      "duration": 21.733333333333334,
+      "recipe": "episodes/008.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "009",
+      "candidate_id": "S08",
+      "file": "sign_009.mp4",
+      "title": "Синяя стрелка налево разрешает и разворот",
+      "status": "delivered",
+      "target": "sign:4.1.3",
+      "sha256": "c1548464913b26cdffdefdd6de55c394e36ab5d505437d6a437b78b20f8ece15",
+      "duration": 22.633333333333333,
+      "recipe": "episodes/009.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "010",
+      "candidate_id": "S09",
+      "file": "sign_010.mp4",
+      "title": "Масса автомобиля и нагрузка на ось",
+      "status": "delivered",
+      "target": "sign:3.11",
+      "sha256": "e5866d1981b9a6e1f6018b889264e8b5e7f72c126813f2453f5e311258cbb009",
+      "duration": 21.266666666666666,
+      "recipe": "episodes/010.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "011",
+      "candidate_id": "S10",
+      "file": "sign_011.mp4",
+      "title": "Кому запрещает обгон знак с грузовиком",
+      "status": "delivered",
+      "target": "sign:3.22",
+      "sha256": "0fc1039311dc4a6759f5021a951dd2158fe965700a496adfc084d774345ebdd4",
+      "duration": 23.1,
+      "recipe": "episodes/011.json",
+      "reviewed_at": "2026-10-25"
     }
   ]
 }
