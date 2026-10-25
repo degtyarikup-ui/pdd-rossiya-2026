@@ -23,7 +23,9 @@ func _check(desc: String, condition: bool) -> void:
 
 
 func _run() -> void:
-	seed(20261023)
+	# VIOLATOR_LEVEL=easy|medium soaks the other junctions (default: hard).
+	ViolatorScript.forced_difficulty = OS.get_environment("VIOLATOR_LEVEL") if OS.get_environment("VIOLATOR_LEVEL") != "" else "hard"
+	seed(int(OS.get_environment("VIOLATOR_SEED")) if OS.get_environment("VIOLATOR_SEED") != "" else 20261023)
 	var game = ViolatorScript.new()
 	root.add_child(game)
 	await process_frame
@@ -108,7 +110,7 @@ func _run() -> void:
 			# Following an emergency vehicle that braked hard inside the junction is a real-life case.
 			var behind_siren: bool = is_instance_valid((a.get_meta("debug_lead") if a.has_meta("debug_lead") else null)) and a.get_meta("debug_lead").is_emergency
 			if a.speed < 0.05 and not reckless and not behind_siren:
-				for cw in game.CROSSWALKS.values():
+				for cw in game.crosswalks.values():
 					if _body_on_rect(a, cw.rect):
 						on_zebra = true
 			zebra_time[id] = zebra_time.get(id, 0.0) + DT if on_zebra else 0.0
@@ -128,12 +130,13 @@ func _run() -> void:
 			var c: Dictionary = game.crossers[k]
 			var before: String = prev_state.get(k, "")
 			if before == "wait" and c.state == "cross":
-				if not bool(c.get("forced", false)) and game.ped_light(game.CROSSWALKS[c.cw].group) not in ["green", "off"]:
+				if not bool(c.get("forced", false)) and game.ped_light(game.crosswalks[c.cw].group) not in ["green", "off"]:
 					walker_red_starts += 1
 			if before == "cross" and c.state == "leave":
 				walkers_crossed += 1
 			prev_state[k] = c.state
 
+	print("level: ", game.difficulty)
 	print("soak: %d s, emergencies %d, walkers crossed %d" % [int(SECONDS), emergencies, walkers_crossed])
 	var by_type := {}
 	for id in viol_seen:
@@ -146,7 +149,7 @@ func _run() -> void:
 	print("violators scheduled / happened: ", by_type)
 	_check("Scheduled violators mostly commit their offence (%d of %d)" % [viol_active.size(), viol_seen.size()], viol_seen.size() > 0 and float(viol_active.size()) / float(viol_seen.size()) >= 0.5)
 	_check("Emergency vehicles appeared in the run (%d)" % emergencies, emergencies > 0)
-	_check("Walkers actually crossed (%d)" % walkers_crossed, walkers_crossed > 20)
+	_check("Walkers actually crossed (%d)" % walkers_crossed, walkers_crossed > 5 * game.crosswalks.size())
 	_check("No car drives through another car (%d overlapping frames)" % car_overlaps, car_overlaps == 0)
 	_check("No car drives through a walker (%d frames)" % walker_hits, walker_hits == 0)
 	_check("Walkers start only on their green (%d red starts)" % walker_red_starts, walker_red_starts == 0)

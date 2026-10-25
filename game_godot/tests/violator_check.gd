@@ -15,6 +15,7 @@ func _init() -> void:
 
 
 func _run_checks() -> void:
+	ViolatorScript.forced_difficulty = "hard"
 	print("--- Violator Check: Godot 4.7.2 3D Game ---")
 	await process_frame
 	_check_violation_catalog()
@@ -531,6 +532,16 @@ func _check_economy_and_game_over() -> void:
 		gaps[level] = game._violation_gap()
 		if level == "easy":
 			_check("Easy gives more time to catch and answer", game.min_catch_window == 8.0 and game.ui.answer_time == 12.0)
+			_check("Easy is a T-junction: no east arm, signal or arrow section", not game.has_east_arm and not game.has_arrow and game.traffic_lights_east.is_empty() and not game.signal_badges.has("east"))
+			_check("Easy has the north and west crosswalks only", game.crosswalks.keys() == ["north", "west"] and game.crossers.all(func(c): return c.cw in ["north", "west"]))
+			_check("Easy has no east-arm signs", game.junction_node.find_child("Sign_2_4_East", true, false) == null)
+			for k in 60:
+				game._spawn_procedural_car()
+			_check("Easy never sends cars from the east", game.cars.all(func(c): return not is_instance_valid(c) or c.lane != 3))
+			for c in game.cars:
+				if is_instance_valid(c):
+					c.queue_free()
+			game.cars.clear()
 			_check("Easy keeps one violator at a time", game._max_concurrent_violators() == 1)
 			var all_codes := {}
 			for code in game.VIOLATION_METADATA:
@@ -539,7 +550,10 @@ func _check_economy_and_game_over() -> void:
 			for i in 300:
 				picked[game._deck_pick(all_codes)] = true
 			_check("Easy never deals the hardest offences", not picked.has(game.VIOLATION_ARROW_YIELD) and not picked.has(game.VIOLATION_WAFFLE_BLOCK))
+		if level == "medium":
+			_check("Medium is a crossroads without the arrow section and the south crosswalk", game.has_east_arm and not game.has_arrow and not game.crosswalks.has("south") and game.crosswalks.size() == 3)
 		if level == "hard":
+			_check("Hard keeps the full junction", game.has_east_arm and game.has_arrow and game.crosswalks.size() == 4 and game.signal_badges.size() == 3)
 			_check("Hard keeps the old tuning", game.min_catch_window == 4.5 and game.ui.answer_time == 7.0)
 	_check("Offences come rarer on easier levels", gaps.easy > gaps.medium and gaps.medium > gaps.hard)
 	game.set_difficulty("nonsense")

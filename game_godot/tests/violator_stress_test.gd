@@ -22,6 +22,7 @@ func _init() -> void:
 
 
 func _run() -> void:
+	ViolatorScript.forced_difficulty = "hard"
 	print("=== EMPIRICAL CHALLENGER: VIOLATOR STRESS TEST ===")
 	_test_violation_boundaries_and_edges()
 	_test_innocent_car_penalties()

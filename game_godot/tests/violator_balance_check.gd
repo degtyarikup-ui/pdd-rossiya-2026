@@ -56,6 +56,7 @@ func _play(sd: int, notice: float, correct: float) -> Array:
 
 
 func _run() -> void:
+	ViolatorScript.forced_difficulty = "hard"
 	var results := {}
 	for prof in [["perfect", 1.0, 1.0], ["good", 0.85, 0.85], ["novice", 0.5, 0.6]]:
 		var rows := []

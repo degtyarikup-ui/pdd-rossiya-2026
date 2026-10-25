@@ -154,6 +154,8 @@ const CROSSWALKS := {
 	"east": {"axis": "z", "line": 7.5, "lo": -1.8, "hi": 11.8, "far_lo": -4.6, "far_hi": 14.2, "group": "cross",
 		"rect": Rect2(6.25, -1.8, 2.5, 13.6), "signals": [Vector3(5.9, 0.16, 12.3), Vector3(9.1, 0.16, -2.3)]},
 }
+# Crosswalks of the level being played (a subset of CROSSWALKS, see DIFFICULTIES).
+var crosswalks: Dictionary = CROSSWALKS
 var asphalt_material: StandardMaterial3D
 var street_lamps: Array[OmniLight3D] = []
 var pole_points: Array[Vector2] = []
@@ -303,12 +305,21 @@ var next_emergency_at := 20.0
 var next_violation_at := 0.0
 # Difficulty: "hard" is the original tuning; the easier levels space offences out, keep one at a
 # time, give more time to catch and to answer, leave out the trickiest kinds and score less.
+# Each level also has its own junction: easy is a T-junction (no east arm) with two crosswalks and no
+# arrow section, medium a crossroads with three crosswalks and no arrow section, hard the full one.
 const DIFFICULTIES := {
 	"easy": {"gap_start": 15.0, "gap_end": 10.0, "two_after": 9999.0, "catch": 8.0, "answer": 12.0, "points": 0.5,
-		"skip": ["arrow_yield", "waffle_block", "emergency_yield", "weather_speed"]},
-	"medium": {"gap_start": 11.0, "gap_end": 7.0, "two_after": 60.0, "catch": 6.0, "answer": 9.0, "points": 0.75, "skip": []},
-	"hard": {"gap_start": 8.0, "gap_end": 4.5, "two_after": 20.0, "catch": 4.5, "answer": 7.0, "points": 1.0, "skip": []},
+		"skip": ["arrow_yield", "waffle_block", "emergency_yield", "weather_speed"],
+		"east_arm": false, "arrow": false, "crosswalks": ["north", "west"]},
+	"medium": {"gap_start": 11.0, "gap_end": 7.0, "two_after": 60.0, "catch": 6.0, "answer": 9.0, "points": 0.75,
+		"skip": ["arrow_yield"], "east_arm": true, "arrow": false, "crosswalks": ["north", "west", "east"]},
+	"hard": {"gap_start": 8.0, "gap_end": 4.5, "two_after": 20.0, "catch": 4.5, "answer": 7.0, "points": 1.0,
+		"skip": [], "east_arm": true, "arrow": true, "crosswalks": ["north", "south", "west", "east"]},
 }
+static var forced_difficulty := ""   # tests pin the level before _ready builds the junction
+var built_layout := ""
+var has_east_arm := true
+var has_arrow := true
 const SETTINGS_PATH := "user://violator.cfg"
 var difficulty := "hard"
 var difficulty_from_args := false
@@ -343,9 +354,14 @@ func _ready() -> void:
 	var loader := Loader.attach(self)
 	_setup_environment()
 	_setup_audio()
-	_setup_road_geometry()
-	_setup_traffic_lights()
-	_setup_pedestrian()
+	if forced_difficulty != "":
+		difficulty = forced_difficulty
+		difficulty_from_args = true
+	elif not difficulty_from_args:
+		difficulty = _saved_difficulty()
+	if not DIFFICULTIES.has(difficulty):
+		difficulty = "hard"
+	_build_level()
 	_setup_ui()
 	_dismiss_loader(loader)
 
@@ -382,7 +398,7 @@ func _dismiss_loader(loader: Loader) -> void:
 	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
 	if _exiting or is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
-	set_difficulty(difficulty if difficulty_from_args else _saved_difficulty())
+	set_difficulty(difficulty)
 	_ask_difficulty()
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
@@ -434,6 +450,41 @@ func _setup_ui() -> void:
 func _on_mode_toggled(new_mode: String) -> void:
 	game_mode = new_mode
 	_start_game()
+
+
+## (Re)builds the junction for the current difficulty: roads, signals, signs, scenery and walkers.
+func _build_level() -> void:
+	var d: Dictionary = DIFFICULTIES[difficulty]
+	built_layout = difficulty
+	has_east_arm = bool(d.east_arm)
+	has_arrow = bool(d.arrow)
+	crosswalks = {}
+	for cw_id in CROSSWALKS:
+		if cw_id in d.crosswalks:
+			crosswalks[cw_id] = CROSSWALKS[cw_id]
+	if is_instance_valid(junction_node):
+		remove_child(junction_node)
+		junction_node.queue_free()
+	for lamp in street_lamps:
+		if is_instance_valid(lamp):
+			lamp.queue_free()
+	street_lamps.clear()
+	pole_points.clear()
+	greenery_points.clear()
+	building_footprints = []
+	scenery_pools.clear()
+	crossers.clear()
+	active_pedestrians.clear()
+	signal_badges.clear()
+	ped_badges.clear()
+	ped_signal_heads.clear()
+	traffic_lights_ns.clear()
+	traffic_lights_west.clear()
+	traffic_lights_east.clear()
+	traffic_light_east_node = null
+	_setup_road_geometry()
+	_setup_traffic_lights()
+	_setup_pedestrian()
 
 
 func _setup_road_geometry() -> void:
@@ -491,13 +542,14 @@ func _setup_road_geometry() -> void:
 	junction_node.add_child(sec_road)
 
 	# 3. East branch apron (4-lane cross street, X from 0 to 55, Z from -1.8 to 11.8) completing the 4-way intersection
-	var east_road := MeshInstance3D.new()
-	var east_box := BoxMesh.new()
-	east_box.size = Vector3(55.0, 0.2, 13.6)
-	east_road.mesh = east_box
-	east_road.material_override = asphalt_material
-	east_road.position = Vector3(27.5, -0.1, 5.0)
-	junction_node.add_child(east_road)
+	if has_east_arm:
+		var east_road := MeshInstance3D.new()
+		var east_box := BoxMesh.new()
+		east_box.size = Vector3(55.0, 0.2, 13.6)
+		east_road.mesh = east_box
+		east_road.material_override = asphalt_material
+		east_road.position = Vector3(27.5, -0.1, 5.0)
+		junction_node.add_child(east_road)
 
 	# 4. Large surrounding terrain grass
 	var grass := MeshInstance3D.new()
@@ -536,15 +588,24 @@ func _build_sidewalks(sw_mat: Material, curb_mat: Material, lawn_mat: Material) 
 	sw_sw.position = Vector3(-29.6, sw_y, 33.4)
 	junction_node.add_child(sw_sw)
 
-	# NE: X in [4.2, 55], Z in [-55, -1.8] (length 53.2, center -28.4)
-	var ne_sw := _create_box(Vector3(50.8, sw_height, 53.2), sw_mat)
-	ne_sw.position = Vector3(29.6, sw_y, -28.4)
-	junction_node.add_child(ne_sw)
+	if has_east_arm:
+		# NE: X in [4.2, 55], Z in [-55, -1.8] (length 53.2, center -28.4)
+		var ne_sw := _create_box(Vector3(50.8, sw_height, 53.2), sw_mat)
+		ne_sw.position = Vector3(29.6, sw_y, -28.4)
+		junction_node.add_child(ne_sw)
 
-	# SE: X in [4.2, 55], Z in [11.8, 55] (length 43.2, center 33.4)
-	var se_sw := _create_box(Vector3(50.8, sw_height, 43.2), sw_mat)
-	se_sw.position = Vector3(29.6, sw_y, 33.4)
-	junction_node.add_child(se_sw)
+		# SE: X in [4.2, 55], Z in [11.8, 55] (length 43.2, center 33.4)
+		var se_sw := _create_box(Vector3(50.8, sw_height, 43.2), sw_mat)
+		se_sw.position = Vector3(29.6, sw_y, 33.4)
+		junction_node.add_child(se_sw)
+	else:
+		# T-junction: the whole east side is one sidewalk with a lawn where the east arm would be.
+		var e_sw := _create_box(Vector3(50.8, sw_height, 110.0), sw_mat)
+		e_sw.position = Vector3(29.6, sw_y, 0.0)
+		junction_node.add_child(e_sw)
+		var mid_lawn := _create_box(Vector3(44.0, 0.18, 15.5), lawn_mat)
+		mid_lawn.position = Vector3(33.0, 0.09, 7.25)
+		junction_node.add_child(mid_lawn)
 
 	# Raised Green Lawns (Газоны) in all 4 quadrants
 	var nw_lawn := _create_box(Vector3(44.0, 0.18, 45.0), lawn_mat)
@@ -563,6 +624,10 @@ func _build_sidewalks(sw_mat: Material, curb_mat: Material, lawn_mat: Material) 
 	se_lawn.position = Vector3(33.0, 0.09, 35.0)
 	junction_node.add_child(se_lawn)
 
+	if not has_east_arm:
+		var curb_mid := _create_box(Vector3(0.24, 0.20, 13.6), curb_mat)
+		curb_mid.position = Vector3(4.2, 0.10, 5.0)
+		junction_node.add_child(curb_mid)
 	# Main road curbs (North & South)
 	for curb_x in [-4.2, 4.2]:
 		var curb_north := _create_box(Vector3(0.24, 0.20, 53.2), curb_mat)
@@ -579,9 +644,10 @@ func _build_sidewalks(sw_mat: Material, curb_mat: Material, lawn_mat: Material) 
 		curb_west.position = Vector3(-29.6, 0.10, curb_z)
 		junction_node.add_child(curb_west)
 
-		var curb_east := _create_box(Vector3(50.8, 0.20, 0.24), curb_mat)
-		curb_east.position = Vector3(29.6, 0.10, curb_z)
-		junction_node.add_child(curb_east)
+		if has_east_arm:
+			var curb_east := _create_box(Vector3(50.8, 0.20, 0.24), curb_mat)
+			curb_east.position = Vector3(29.6, 0.10, curb_z)
+			junction_node.add_child(curb_east)
 
 	# Tactile yellow accessibility tiles (Тактильная плитка 1.14) at crosswalk curb ramps
 	var tactile_mat := StandardMaterial3D.new()
@@ -625,7 +691,7 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 	junction_node.add_child(solid_post_zebra)
 
 	# 1.14.1 Zebra Crosswalk South (Z in [14.0, 16.5], center 15.25)
-	for stripe_x in range(-34, 35, 8):
+	for stripe_x in (range(-34, 35, 8) if crosswalks.has("south") else []):
 		var stripe_s := _create_box(Vector3(0.44, 0.02, 2.5), white_mat)
 		stripe_s.position = Vector3(float(stripe_x) * 0.1, y, 15.25)
 		junction_node.add_child(stripe_s)
@@ -652,7 +718,7 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 		junction_node.add_child(stripe_w)
 
 	# East arm Zebra (X in [6.25, 8.75], center 7.5):
-	for stripe_z in range(-12, 115, 8):
+	for stripe_z in (range(-12, 115, 8) if crosswalks.has("east") else []):
 		var stripe_e := _create_box(Vector3(2.5, 0.02, 0.44), white_mat)
 		stripe_e.position = Vector3(7.5, y, float(stripe_z) * 0.1)
 		junction_node.add_child(stripe_e)
@@ -664,9 +730,10 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 	junction_node.add_child(sec_stop)
 
 	# East arm: across Westbound lanes (Z in [-1.8, 5.0]) before zebra at X = 9.75:
-	var east_stop := _create_box(Vector3(0.45, 0.02, 6.6), white_mat)
-	east_stop.position = Vector3(9.75, y, 1.6)
-	junction_node.add_child(east_stop)
+	if has_east_arm:
+		var east_stop := _create_box(Vector3(0.45, 0.02, 6.6), white_mat)
+		east_stop.position = Vector3(9.75, y, 1.6)
+		junction_node.add_child(east_stop)
 
 	# Center Double Solid Line 1.3 along Z = 5.0 (separating 2 lanes in each direction):
 	# Breaks across zebra crosswalks (X in [-8.75, -6.25] and X in [6.25, 8.75])
@@ -681,6 +748,8 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 		west_solid_inner.position = Vector3(-5.225, y, 5.0 + offset_z)
 		junction_node.add_child(west_solid_inner)
 
+		if not has_east_arm:
+			continue
 		# East arm inner (from X = 4.2 to 6.25, length 2.05, center 5.225):
 		var east_solid_inner := _create_box(Vector3(2.05, 0.02, 0.12), white_mat)
 		east_solid_inner.position = Vector3(5.225, y, 5.0 + offset_z)
@@ -716,6 +785,9 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 		b_wd.position = Vector3(float(x_pos), y, 1.6)
 		junction_node.add_child(b_wd)
 
+	if not has_east_arm:
+		_build_main_arrows(white_mat)
+		return
 	# East arm Westbound (approaching, Z in [-1.8, 5.0], divider at Z = 1.6):
 	# Solid line 1.1: from X = 4.2 to 6.25 (length 2.05, center 5.225) and from 8.75 to 14.0 (length 5.25, center 11.375):
 	var east_wb_solid_in := _create_box(Vector3(2.05, 0.02, 0.14), white_mat)
@@ -740,14 +812,25 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 		b_ed.position = Vector3(float(x_pos), y, 8.4)
 		junction_node.add_child(b_ed)
 
+	_build_main_arrows(white_mat)
+	# Cross street East arm Westbound approach (approaching towards -X, yaw = PI * 0.5):
+	# Inner lane (lane 3 at z = 3.2): straight_left
+	# Outer lane (z = 0.0): straight_right
+	for x_pos in [15.0, 24.0]:
+		_build_lane_arrow(Vector3(x_pos, 0.024, 3.2), "straight_left", white_mat, PI * 0.5)
+		_build_lane_arrow(Vector3(x_pos, 0.024, 0.0), "straight_right", white_mat, PI * 0.5)
+
+
+func _build_main_arrows(white_mat: Material) -> void:
 	# 4. 1.18 Lane Direction Arrows (SurfaceTool GOST 1.18, matching Crossroads):
 	# Double set of arrows (spaced 9m apart) matching GOST 52289 & Crossroads:
 	# Main road Southbound approach (yaw = PI):
 	# Lane 0 (x = -1.8): right turn / straight -> "straight_right"
 	# Lane 1 (x = 1.8): left turn / straight -> "straight_left"
+	# On the T-junction there is nowhere to turn left: the left lane goes straight only.
 	for z_pos in [-14.0, -23.0]:
 		_build_lane_arrow(Vector3(-1.8, 0.024, z_pos), "straight_right", white_mat, PI)
-		_build_lane_arrow(Vector3(1.8, 0.024, z_pos), "straight_left", white_mat, PI)
+		_build_lane_arrow(Vector3(1.8, 0.024, z_pos), "straight_left" if has_east_arm else "straight", white_mat, PI)
 
 	# Cross street West arm Eastbound approach (approaching towards +X, yaw = -PI * 0.5):
 	# Inner lane (lane 2 at z = 6.8): straight_left
@@ -755,13 +838,6 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 	for x_pos in [-15.0, -24.0]:
 		_build_lane_arrow(Vector3(x_pos, 0.024, 6.8), "straight_left", white_mat, -PI * 0.5)
 		_build_lane_arrow(Vector3(x_pos, 0.024, 10.0), "straight_right", white_mat, -PI * 0.5)
-
-	# Cross street East arm Westbound approach (approaching towards -X, yaw = PI * 0.5):
-	# Inner lane (lane 3 at z = 3.2): straight_left
-	# Outer lane (z = 0.0): straight_right
-	for x_pos in [15.0, 24.0]:
-		_build_lane_arrow(Vector3(x_pos, 0.024, 3.2), "straight_left", white_mat, PI * 0.5)
-		_build_lane_arrow(Vector3(x_pos, 0.024, 0.0), "straight_right", white_mat, PI * 0.5)
 
 
 var _arrow_meshes := {}
@@ -884,10 +960,11 @@ func _setup_signs(parent: Node3D) -> void:
 	create_sign.call("Sign_5_7_1_West", "5.7.1", Vector3(-12.0, 2.15, 12.6))
 
 	# East arm: right side of approaching Westbound traffic on NE sidewalk (X = 12.0, Z = -2.6):
-	create_sign.call("Sign_2_4_East", "2.4", Vector3(12.0, 3.4, -2.6))
-	create_pole.call(Vector3(12.0, 1.7, -2.6), 3.4)
-	# 5.7.2: from the east arm the one-way main road leads to the left (south).
-	create_sign.call("Sign_5_7_2_East", "5.7.2", Vector3(12.0, 2.15, -2.6))
+	if has_east_arm:
+		create_sign.call("Sign_2_4_East", "2.4", Vector3(12.0, 3.4, -2.6))
+		create_pole.call(Vector3(12.0, 1.7, -2.6), 3.4)
+		# 5.7.2: from the east arm the one-way main road leads to the left (south).
+		create_sign.call("Sign_5_7_2_East", "5.7.2", Vector3(12.0, 2.15, -2.6))
 
 	# 5.5 "Дорога с односторонним движением" on the main road's approach.
 	create_sign.call("Sign_5_5", "5.5", Vector3(-4.4, 2.7, -30.0))
@@ -902,11 +979,12 @@ func _setup_signs(parent: Node3D) -> void:
 	create_pole.call(Vector3(-4.4, 1.35, -6.5), 2.7)
 
 	# South crosswalk (Z = 15.25, width [14.0, 16.5]):
-	create_sign.call("Sign_5_19_1_South", "5.19.1", Vector3(4.4, 2.7, 14.0))
-	create_pole.call(Vector3(4.4, 1.35, 14.0), 2.7)
+	if crosswalks.has("south"):
+		create_sign.call("Sign_5_19_1_South", "5.19.1", Vector3(4.4, 2.7, 14.0))
+		create_pole.call(Vector3(4.4, 1.35, 14.0), 2.7)
 
-	create_sign.call("Sign_5_19_2_South", "5.19.2", Vector3(-4.4, 2.7, 16.5))
-	create_pole.call(Vector3(-4.4, 1.35, 16.5), 2.7)
+		create_sign.call("Sign_5_19_2_South", "5.19.2", Vector3(-4.4, 2.7, 16.5))
+		create_pole.call(Vector3(-4.4, 1.35, 16.5), 2.7)
 
 	# West crosswalk (X = -7.5, width [-8.75, -6.25]):
 	create_sign.call("Sign_5_19_1_West", "5.19.1", Vector3(-6.25, 2.7, 12.6))
@@ -916,11 +994,12 @@ func _setup_signs(parent: Node3D) -> void:
 	create_pole.call(Vector3(-6.25, 1.35, -2.6), 2.7)
 
 	# East crosswalk (X = 7.5, width [6.25, 8.75]):
-	create_sign.call("Sign_5_19_1_East", "5.19.1", Vector3(6.25, 2.7, -2.6))
-	create_pole.call(Vector3(6.25, 1.35, -2.6), 2.7)
+	if crosswalks.has("east"):
+		create_sign.call("Sign_5_19_1_East", "5.19.1", Vector3(6.25, 2.7, -2.6))
+		create_pole.call(Vector3(6.25, 1.35, -2.6), 2.7)
 
-	create_sign.call("Sign_5_19_2_East", "5.19.2", Vector3(8.75, 2.7, 12.6))
-	create_pole.call(Vector3(8.75, 1.35, 12.6), 2.7)
+		create_sign.call("Sign_5_19_2_East", "5.19.2", Vector3(8.75, 2.7, 12.6))
+		create_pole.call(Vector3(8.75, 1.35, 12.6), 2.7)
 
 
 func _build_city_scenery() -> void:
@@ -980,9 +1059,10 @@ func _build_city_scenery() -> void:
 		Vector3(20.0, 0.15, -4.8),
 		Vector3(20.0, 0.15, 14.8)
 	]
-	for p_pos in VEHICLE_SIGNAL_POS.values():
+	for approach in _signal_approaches():
+		var p_pos: Vector3 = VEHICLE_SIGNAL_POS[approach]
 		pole_points.append(Vector2(p_pos.x, p_pos.z))
-	for cw in CROSSWALKS.values():
+	for cw in crosswalks.values():
 		for p_pos in cw.signals:
 			pole_points.append(Vector2(p_pos.x, p_pos.z))
 	for l_pos in lamp_coords:
@@ -1215,6 +1295,13 @@ func _build_city_scenery() -> void:
 	# Authentic parked cars along curbs on cross street
 	# Parked along both curbs of the east arm, well over 5 m from the crosswalk (п. 12.4); the west
 	# arm's right lane stays free for the cars turning right from it.
+	if not has_east_arm:
+		# T-junction: a small grove on the lawn where the east arm would be.
+		for g in [Vector3(16.0, 0.18, 5.0), Vector3(24.0, 0.18, 3.0), Vector3(31.0, 0.18, 7.0), Vector3(38.0, 0.18, 4.0)]:
+			_put_prop("trees/round_0", g, randf() * TAU, Vector3.ONE * 1.2, Color(canopy_colors[0]))
+			_put_prop("street/bush", g + Vector3(1.6, 0, 2.4), 0.0, Vector3.ONE * 1.2, Color(canopy_colors[0]))
+		_finish_scenery_pools()
+		return
 	_put_parked_car("sedan", Vector3(18.0, 0.0, 10.9), PI * 0.5, Color("#1E88E5"))
 	_put_parked_car("suv", Vector3(24.0, 0.0, 10.9), PI * 0.5, Color("#757575"))
 	_put_parked_car("hatch", Vector3(30.0, 0.0, 10.9), PI * 0.5, Color("#E53935"))
@@ -1273,7 +1360,7 @@ func _setup_traffic_lights() -> void:
 	# One signal per approach on the right-hand curb just before its stop line (ГОСТ Р 52289-2019).
 	# Each 3D head carries a billboard badge above it that repeats its lit sections for the camera.
 	# 1. North approach (main road, southbound): the head also has the right-turn arrow section.
-	traffic_light_node = TrafficSignal.make_mini({"state": "green", "arrow": "right", "arrowActive": false})
+	traffic_light_node = TrafficSignal.make_mini({"state": "green", "arrow": "right" if has_arrow else "none", "arrowActive": false})
 	traffic_light_node.position = VEHICLE_SIGNAL_POS["north"]
 	traffic_light_node.rotation.y = PI
 	junction_node.add_child(traffic_light_node)
@@ -1287,14 +1374,15 @@ func _setup_traffic_lights() -> void:
 	traffic_lights_west = [traffic_light_ew_node]
 
 	# 3. East approach (cross street, westbound).
-	traffic_light_east_node = TrafficSignal.make_mini({"state": "red", "arrow": "none", "arrowActive": false})
-	traffic_light_east_node.position = VEHICLE_SIGNAL_POS["east"]
-	traffic_light_east_node.rotation.y = PI * 0.5
-	junction_node.add_child(traffic_light_east_node)
-	traffic_lights_east = [traffic_light_east_node]
+	if has_east_arm:
+		traffic_light_east_node = TrafficSignal.make_mini({"state": "red", "arrow": "none", "arrowActive": false})
+		traffic_light_east_node.position = VEHICLE_SIGNAL_POS["east"]
+		traffic_light_east_node.rotation.y = PI * 0.5
+		junction_node.add_child(traffic_light_east_node)
+		traffic_lights_east = [traffic_light_east_node]
 
-	for approach in VEHICLE_SIGNAL_POS:
-		var badge := SignalBadge.sprite(SignalBadge.vehicle("red", approach == "north", false), 2.7)
+	for approach in _signal_approaches():
+		var badge := SignalBadge.sprite(SignalBadge.vehicle("red", approach == "north" and has_arrow, false), 2.7)
 		badge.name = "SignalBadge_" + approach
 		badge.position = VEHICLE_SIGNAL_POS[approach] + Vector3(0, 6.4, 0)
 		junction_node.add_child(badge)
@@ -1302,8 +1390,8 @@ func _setup_traffic_lights() -> void:
 
 	# 4. Pedestrian signals at both ends of every crosswalk; one badge per crosswalk is enough
 	# for the camera, the heads at both ends show the same state.
-	for cw_id in CROSSWALKS:
-		var cw: Dictionary = CROSSWALKS[cw_id]
+	for cw_id in crosswalks:
+		var cw: Dictionary = crosswalks[cw_id]
 		var heads: Array[Node3D] = []
 		for i in cw.signals.size():
 			var head := _make_pedestrian_signal(cw.signals[i], cw.axis)
@@ -1324,6 +1412,10 @@ func _setup_traffic_lights() -> void:
 	light_timer = LIGHT_GREEN_TIME
 	arrow_active = false
 	_refresh_signal_badges(true)
+
+
+func _signal_approaches() -> Array:
+	return ["north", "west", "east"] if has_east_arm else ["north", "west"]
 
 
 func _make_pedestrian_signal(pos: Vector3, axis: String) -> Node3D:
@@ -1401,7 +1493,7 @@ func _refresh_signal_badges(force := false) -> void:
 			var vkey := "flash:%s" % blink
 			if is_instance_valid(vb) and (force or vb.get_meta("state_key", "") != vkey):
 				vb.set_meta("state_key", vkey)
-				vb.texture = SignalBadge.vehicle("yellow" if blink else "off", approach == "north", false)
+				vb.texture = SignalBadge.vehicle("yellow" if blink else "off", approach == "north" and has_arrow, false)
 		for cw_id in ped_badges:
 			var pb: Sprite3D = ped_badges[cw_id]
 			if is_instance_valid(pb) and (force or pb.get_meta("state_key", "") != "off"):
@@ -1424,9 +1516,9 @@ func _refresh_signal_badges(force := false) -> void:
 		var key := "%s:%s" % [st, arrow_active]
 		if force or badge.get_meta("state_key", "") != key:
 			badge.set_meta("state_key", key)
-			badge.texture = SignalBadge.vehicle(st, approach == "north", arrow_active)
+			badge.texture = SignalBadge.vehicle(st, approach == "north" and has_arrow, arrow_active)
 	for cw_id in ped_badges:
-		var group: String = CROSSWALKS[cw_id].group
+		var group: String = crosswalks[cw_id].group
 		var ped := ped_light(group)
 		var st := "red" if ped == "red" else ("green" if ped == "green" or flash_on else "green_off")
 		var badge: Sprite3D = ped_badges[cw_id]
@@ -1451,7 +1543,7 @@ func _set_ped_lenses(cw_id: String, st: String) -> void:
 
 func _setup_pedestrian() -> void:
 	var i := 0
-	for cw_id in CROSSWALKS:
+	for cw_id in crosswalks:
 		for k in CROSSERS_PER_CROSSWALK:
 			var ped := Pedestrian.new()
 			ped.name = "Crosser_%s_%d" % [cw_id, k]
@@ -1866,6 +1958,8 @@ func _update_traffic_lights(delta: float) -> void:
 				light_timer = LIGHT_GREEN_TIME
 				arrow_active = false
 
+	if not has_arrow:
+		arrow_active = false
 	var flash_on := fmod(game_clock, 0.6) < 0.35
 	for tl in traffic_lights_ns:
 		if is_instance_valid(tl) and tl.is_inside_tree():
@@ -1889,7 +1983,7 @@ func _update_pedestrian(delta: float) -> void:
 
 
 func _crosser_pos(c: Dictionary) -> Vector3:
-	var cw: Dictionary = CROSSWALKS[c.cw]
+	var cw: Dictionary = crosswalks[c.cw]
 	var s_val: float = c.s
 	var lo: float = cw.lo
 	var hi: float = cw.hi
@@ -1917,14 +2011,14 @@ func _place_crosser(c: Dictionary) -> void:
 		return
 	node.position = _crosser_pos(c)
 	var dir: float = c.dir
-	if CROSSWALKS[c.cw].axis == "x":
+	if crosswalks[c.cw].axis == "x":
 		node.rotation.y = PI * 0.5 if dir > 0.0 else -PI * 0.5
 	else:
 		node.rotation.y = 0.0 if dir > 0.0 else PI
 
 
 func spawn_crosser(c: Dictionary, dir: float, at_curb := false) -> void:
-	var cw: Dictionary = CROSSWALKS[c.cw]
+	var cw: Dictionary = crosswalks[c.cw]
 	c.dir = dir
 	c.spd = randf_range(1.3, 1.65)
 	c.forced = false
@@ -1947,7 +2041,7 @@ func _update_crosser(c: Dictionary, delta: float) -> void:
 	var node: Pedestrian = c.node
 	if not is_instance_valid(node):
 		return
-	var cw: Dictionary = CROSSWALKS[c.cw]
+	var cw: Dictionary = crosswalks[c.cw]
 	var dir: float = c.dir
 	var curb: float = cw.lo - 0.5 if dir > 0.0 else cw.hi + 0.5
 	var far_curb: float = cw.hi + 0.5 if dir > 0.0 else cw.lo - 0.5
@@ -2023,7 +2117,7 @@ static func _path_point(path: Array, d: float) -> Vector2:
 func can_start_crossing(c: Dictionary) -> bool:
 	if bool(c.get("forced", false)):
 		return true
-	var cw: Dictionary = CROSSWALKS[c.cw]
+	var cw: Dictionary = crosswalks[c.cw]
 	if ped_light(cw.group) == "off":
 		# Unregulated zebra: step off when no car is about to cross it (п. 4.5).
 		return not _car_threatens_crosswalk(str(c.cw))
@@ -2041,7 +2135,7 @@ func can_start_crossing(c: Dictionary) -> bool:
 
 
 func _car_threatens_crosswalk(cw_id: String) -> bool:
-	var rect: Rect2 = CROSSWALKS[cw_id].rect
+	var rect: Rect2 = crosswalks[cw_id].rect
 	for car in cars:
 		if not is_instance_valid(car):
 			continue
@@ -2063,7 +2157,7 @@ func _car_threatens_crosswalk(cw_id: String) -> bool:
 ## A car that has stood right before this zebra for more than 5 s on its own go signal: the next
 ## wave of walkers lets it through first, so a stream of people never starves the turners.
 func _car_kept_waiting(cw_id: String) -> bool:
-	var rect: Rect2 = CROSSWALKS[cw_id].rect
+	var rect: Rect2 = crosswalks[cw_id].rect
 	for car in cars:
 		if not is_instance_valid(car) or float(car.get_meta("waited", 0.0)) < 5.0 or not _signal_allows(car):
 			continue
@@ -2128,7 +2222,9 @@ func _ray_rect_hit(car: ViolatorCar, rect: Rect2, max_dist: float) -> Vector2:
 ## Walkers on the carriageway part of a crosswalk (optionally only within [band_lo, band_hi] along it).
 func crossers_on_road(cw_id: String, band_lo := -INF, band_hi := INF) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var cw: Dictionary = CROSSWALKS[cw_id]
+	if not crosswalks.has(cw_id):
+		return result   # this level has no such crosswalk
+	var cw: Dictionary = crosswalks[cw_id]
 	for c in crossers:
 		if c.cw != cw_id or c.state != "cross":
 			continue
@@ -2139,7 +2235,7 @@ func crossers_on_road(cw_id: String, band_lo := -INF, band_hi := INF) -> Array[D
 
 
 func is_pedestrian_on_roadway() -> bool:
-	for cw_id in CROSSWALKS:
+	for cw_id in crosswalks:
 		if not crossers_on_road(cw_id).is_empty():
 			return true
 	return false
@@ -2161,7 +2257,7 @@ func _update_spawning(delta: float) -> void:
 
 
 func _spawn_procedural_car() -> void:
-	var r := randf()
+	var r := randf() * (1.0 if has_east_arm else 0.84)   # no east arm on the T-junction
 	var lane := 0 if r < 0.32 else (1 if r < 0.64 else (2 if r < 0.84 else 3))
 	var schedule_before := violation_schedule_timer
 	violation_schedule_timer += 1.0
@@ -2185,6 +2281,9 @@ func _spawn_procedural_car() -> void:
 			v_type = VIOLATION_RED_LIGHT if signal_mode == "normal" else VIOLATION_WRONG_LANE_TURN
 		is_violator = v_type != ""
 
+	# On the T-junction the only wrong-lane turn is to the right from the left lane.
+	if is_violator and v_type == VIOLATION_WRONG_LANE_TURN and not has_east_arm:
+		lane = 1
 	var route := "main_straight"
 	if is_violator and v_type in [VIOLATION_ARROW_YIELD, VIOLATION_PEDESTRIAN_YIELD]:
 		# A pedestrian conflict at a signalised junction is a turning car crossing the west
@@ -3744,7 +3843,7 @@ func _zebra_clear_distance(car: ViolatorCar) -> float:
 	var c := Vector2(car.position.x, car.position.z)
 	var rear := c - fwd * CAR_FRONT
 	var front := c + fwd * CAR_FRONT
-	for cw in CROSSWALKS.values():
+	for cw in crosswalks.values():
 		var rect: Rect2 = cw.rect
 		if not (rect.has_point(rear) or rect.has_point(c) or rect.has_point(front)):
 			continue
@@ -3985,8 +4084,8 @@ func _zebra_limit(car: ViolatorCar, lead_car: ViolatorCar, lead_dist: float, min
 	var line := _drive_line(car)
 	# On a curve the bumper swings ahead of the centre line: keep more room before the zebra.
 	var margin := 0.9 if line.size() <= 2 else 2.2
-	for cw_id in CROSSWALKS:
-		var cw: Dictionary = CROSSWALKS[cw_id]
+	for cw_id in crosswalks:
+		var cw: Dictionary = crosswalks[cw_id]
 		var hit_c := _polyline_rect_hit(line, cw.rect)
 		if hit_c.x > 99.0:
 			continue
@@ -4260,8 +4359,8 @@ func handle_car_tapped(car: ViolatorCar, screen_pos: Vector2) -> void:
 
 func _car_on_zebra_with_walker(car: ViolatorCar) -> bool:
 	var p := Vector2(car.position.x, car.position.z)
-	for cw_id in CROSSWALKS:
-		var cw: Dictionary = CROSSWALKS[cw_id]
+	for cw_id in crosswalks:
+		var cw: Dictionary = crosswalks[cw_id]
 		if not (cw.rect as Rect2).grow(CAR_FRONT).has_point(p):
 			continue
 		var along: float = p.x if cw.axis == "x" else p.y
@@ -4338,6 +4437,8 @@ func _on_classification_selected(chosen_code: String) -> void:
 
 func set_difficulty(level: String) -> void:
 	difficulty = level if DIFFICULTIES.has(level) else "hard"
+	if built_layout != "" and built_layout != difficulty:
+		_build_level()
 	min_catch_window = float(DIFFICULTIES[difficulty].catch)
 	if is_instance_valid(ui):
 		ui.answer_time = float(DIFFICULTIES[difficulty].answer)

@@ -39,6 +39,7 @@ func _check(desc: String, condition: bool) -> void:
 		push_error("FAIL: %s" % desc)
 
 func _run_checks() -> void:
+	ViolatorScript.forced_difficulty = "hard"
 	print("--- Violator Behavior & Motion Check ---")
 	await process_frame
 	

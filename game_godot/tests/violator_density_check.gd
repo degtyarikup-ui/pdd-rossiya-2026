@@ -22,6 +22,7 @@ func _check(desc: String, condition: bool) -> void:
 
 
 func _run() -> void:
+	ViolatorScript.forced_difficulty = "hard"
 	var counts: Array[int] = []
 	var firsts: Array[float] = []
 	var kinds := {}
