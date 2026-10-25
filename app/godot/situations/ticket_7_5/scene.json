@@ -1866,14 +1866,6 @@
     [
      7.126,
      2.921
-    ],
-    [
-     7.62,
-     3
-    ],
-    [
-     26.872,
-     6.102
     ]
    ],
    "exitYaw": 1.411
@@ -1999,12 +1991,16 @@
  "lights": [],
  "actors": [],
  "playerPlacement": "street",
+ "showPlayerGuide": false,
  "questionView": {
   "centre": [
-   5.805,
-   10.075
+   5.18,
+   8.418
   ],
-  "height": 43.527
+  "height": 45.183,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
  },
  "officers": []
 }

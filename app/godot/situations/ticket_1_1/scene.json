@@ -1,0 +1,1865 @@
+{
+ "id": "ticket_1_1",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     0
+    ],
+    [
+     -1.8,
+     90
+    ],
+    [
+     -1.8,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -30.203,
+    0.0,
+    8.147
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -46.267,
+    0.0,
+    65.279
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    -16.267,
+    0.0,
+    65.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -8.471,
+    0.0,
+    59.542
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -37.267,
+    0.0,
+    83.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -46.267,
+    0.0,
+    83.279
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    -16.267,
+    0.0,
+    83.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -8.471,
+    0.0,
+    77.542
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.767,
+    0.0,
+    63.279
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.767,
+    0.0,
+    68.779
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -26.767,
+    0.0,
+    74.279
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -26.767,
+    0.0,
+    79.779
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.767,
+    0.0,
+    85.279
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -30.767,
+    0.0,
+    74.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -22.767,
+    0.0,
+    74.279
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -31.267,
+    0.0,
+    57.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -20.832,
+    0.0,
+    33.067
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -29.832,
+    0.0,
+    33.067
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -20.832,
+    0.0,
+    51.067
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -29.832,
+    0.0,
+    51.067
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -10.332,
+    0.0,
+    31.067
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -10.332,
+    0.0,
+    36.567
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -10.332,
+    0.0,
+    42.067
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -10.332,
+    0.0,
+    47.567
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -10.332,
+    0.0,
+    53.067
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -7.072,
+    0.0,
+    43.501
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -14.832,
+    0.0,
+    25.067
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -18.056,
+    0.0,
+    0.44
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -27.056,
+    0.0,
+    0.44
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -18.056,
+    0.0,
+    18.44
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -27.056,
+    0.0,
+    18.44
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -8.18,
+    0.0,
+    -3.242
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -8.18,
+    0.0,
+    2.258
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -8.18,
+    0.0,
+    7.758
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -8.18,
+    0.0,
+    13.258
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -8.18,
+    0.0,
+    18.758
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -7.066,
+    0.0,
+    -7.925
+   ],
+   "yaw": -3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -12.056,
+    0.0,
+    -7.56
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -37.493,
+    0.0,
+    -34.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    -16.493,
+    0.0,
+    -34.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -8.117,
+    0.0,
+    -35.813
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -37.493,
+    0.0,
+    -16.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    -16.493,
+    0.0,
+    -16.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -8.117,
+    0.0,
+    -17.813
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.993,
+    0.0,
+    -36.131
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.993,
+    0.0,
+    -30.631
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -26.993,
+    0.0,
+    -25.131
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -26.993,
+    0.0,
+    -19.631
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -26.993,
+    0.0,
+    -14.131
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -30.993,
+    0.0,
+    -25.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -22.993,
+    0.0,
+    -25.131
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -31.493,
+    0.0,
+    -42.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -22.493,
+    0.0,
+    -8.131
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    -19.64,
+    0.0,
+    -78.544
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -28.64,
+    0.0,
+    -78.544
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    -19.64,
+    0.0,
+    -60.544
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -28.64,
+    0.0,
+    -60.544
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -9.14,
+    0.0,
+    -80.544
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -9.14,
+    0.0,
+    -75.044
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -9.14,
+    0.0,
+    -69.544
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -9.14,
+    0.0,
+    -64.044
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -9.14,
+    0.0,
+    -58.544
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    -13.14,
+    0.0,
+    -69.544
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -13.64,
+    0.0,
+    -86.544
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    16.904,
+    0.0,
+    -85.014
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    9.71,
+    0.0,
+    -80.979
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    16.904,
+    0.0,
+    -67.014
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    10.653,
+    0.0,
+    -56.783
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    37.904,
+    0.0,
+    -67.014
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    46.904,
+    0.0,
+    -67.014
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    27.404,
+    0.0,
+    -87.014
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    27.404,
+    0.0,
+    -81.514
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    27.404,
+    0.0,
+    -76.014
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    27.404,
+    0.0,
+    -70.514
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    27.404,
+    0.0,
+    -65.014
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    31.904,
+    0.0,
+    -59.014
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    21.554,
+    0.0,
+    -42.359
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    30.554,
+    0.0,
+    -42.359
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    21.554,
+    0.0,
+    -24.359
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    30.554,
+    0.0,
+    -24.359
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    11.054,
+    0.0,
+    -44.359
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    11.054,
+    0.0,
+    -38.859
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    11.054,
+    0.0,
+    -33.359
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    11.054,
+    0.0,
+    -27.859
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    11.054,
+    0.0,
+    -22.359
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    7.054,
+    0.0,
+    -33.359
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    28.675,
+    0.0,
+    -51.72
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    15.554,
+    0.0,
+    -16.359
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    14.633,
+    0.0,
+    -10.291
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    23.633,
+    0.0,
+    -10.291
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    14.633,
+    0.0,
+    7.709
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    23.633,
+    0.0,
+    7.709
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/lamp",
+   "pos": [
+    7.174,
+    0.0,
+    -3.575
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    8.633,
+    0.0,
+    15.709
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_0",
+   "pos": [
+    17.165,
+    0.0,
+    25.127
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    8.165,
+    0.0,
+    25.127
+   ],
+   "yaw": 5.522,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_2",
+   "pos": [
+    17.165,
+    0.0,
+    43.127
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    9.769,
+    0.0,
+    31.19
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    37.616,
+    0.0,
+    34.956
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    47.165,
+    0.0,
+    43.127
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    27.665,
+    0.0,
+    23.127
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    27.665,
+    0.0,
+    28.627
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    27.665,
+    0.0,
+    34.127
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    27.665,
+    0.0,
+    39.627
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    27.665,
+    0.0,
+    45.127
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    23.165,
+    0.0,
+    17.127
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    32.165,
+    0.0,
+    51.127
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_1",
+   "pos": [
+    17.148,
+    0.0,
+    61.454
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    28.433,
+    0.0,
+    63.501
+   ],
+   "yaw": 4.562,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/block_3",
+   "pos": [
+    18.201,
+    0.0,
+    80.64
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    28.433,
+    0.0,
+    81.501
+   ],
+   "yaw": 2.256,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    8.933,
+    0.0,
+    61.501
+   ],
+   "yaw": 5.36,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    8.933,
+    0.0,
+    67.001
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    10.049,
+    0.0,
+    72.785
+   ],
+   "yaw": 1.733,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    8.933,
+    0.0,
+    78.001
+   ],
+   "yaw": 2.905,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    8.933,
+    0.0,
+    83.501
+   ],
+   "yaw": 2.289,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 1",
+   "title": "В каком случае водитель совершит вынужденную остановку?",
+   "options": [
+    "Остановившись непосредственно перед пешеходным переходом, чтобы уступить дорогу пешеходу",
+    "Остановившись на проезжей части из-за технической неисправности транспортного средства",
+    "В обоих перечисленных случаях"
+   ],
+   "explanation": "«Вынужденная остановка» - прекращение движения транспортного средства, связанное с его технической неисправностью, опасностью, создаваемой перевозимым грузом, состоянием водителя (пассажира) или появления препятствия на дороге.(Пункт 1.2 ПДД, термин «Вынужденная остановка»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 1",
+   "title": "In what case will the driver make a forced stop?",
+   "options": [
+    "Stopping just before a crosswalk to give way to a pedestrian",
+    "Stopped on the roadway due to a technical malfunction of the vehicle",
+    "In both of the above cases"
+   ],
+   "explanation": "“Forced stop” is the cessation of movement of a vehicle due to its technical malfunction, the danger created by the cargo being transported, the condition of the driver (passenger) or the appearance of an obstacle on the road. (Clause 1.2 of the Traffic Regulations, the term “Forced stop”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 1-сұрақ",
+   "title": "Қандай жағдайда жүргізуші мәжбүрлі тоқтайды?",
+   "options": [
+    "Жаяу жүргіншіге жол беру үшін жаяу жүргінші өткелінің алдында тоқтау",
+    "Көліктің техникалық ақауына байланысты автомобиль жолында тоқтау",
+    "Жоғарыда аталған екі жағдайда да"
+   ],
+   "explanation": "«Мәжбүрлеп тоқтату» - көлік құралының техникалық ақауы, тасымалданатын жүктің туындау қаупі, жүргізушінің (жолаушының) жағдайының немесе жолда кедергінің пайда болуына байланысты қозғалысының тоқтатылуы. (Жол қозғалысы ережесінің 1.2 тармағы, «Мәжбүрлеп тоқтату» термині)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 258,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "ffd0c95b28a89bd4faff45a8874c4fb3",
+ "sourceCategory": "ab",
+ "sourceImage": null,
+ "playerPlacement": "street",
+ "questionView": {
+  "centre": [
+   0,
+   4.576
+  ],
+  "height": 24.633,
+  "yaw": -0.007,
+  "pitch": 0.418,
+  "elevation": 0
+ }
+}

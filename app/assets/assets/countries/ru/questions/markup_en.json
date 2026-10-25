@@ -1,58 +1,294 @@
 {
   "Horizontal marking": [
     {
-      "title": "Solid lines",
-      "description": "They separate flows of opposite directions, mark the edge of the roadway and limit the intersection."
+      "number": "1.1",
+      "title": "Solid line",
+      "image": "./images/markup/2c49fc36554ac1230451d3dcfa2eed8a.svg",
+      "description": "Separates opposing traffic flows and marks lane boundaries at dangerous locations on roads; marks the boundaries of vehicle parking spaces.\n\nCrossing lines 1.1, 1.2 and 1.3 is prohibited."
     },
     {
-      "title": "Intermittent lines",
-      "description": "They allow you to change lanes and help you navigate traffic lanes."
+      "number": "1.2",
+      "title": "Edge of the carriageway",
+      "image": "./images/markup/b09787ac2a9708e85c0f45bb31255023.svg",
+      "description": "Marks the edge of the carriageway or the boundaries of areas of the carriageway into which entry is prohibited.\n\nCrossing lines 1.1, 1.2 and 1.3 is prohibited.\n\nLine 1.2 may be crossed to stop on the shoulder and to re-enter the carriageway where stopping or parking is permitted."
     },
     {
-      "title": "Yellow markings",
-      "description": "Used for areas where stopping or parking is prohibited."
+      "number": "1.3",
+      "title": "Double solid line",
+      "image": "./images/markup/d32121834d8239fd05dd8a587bdf241a.svg",
+      "description": "Separates opposing traffic flows on roads with four or more lanes in both directions, and on roads with two or three lanes where the lane width exceeds 3.75 m.\n\nCrossing lines 1.1, 1.2 and 1.3 is prohibited."
     },
     {
-      "title": "Combined lines",
-      "description": "Crossing rules depend on the side from which the driver approaches the line."
+      "number": "1.4",
+      "title": "No stopping",
+      "image": "./images/markup/5d046f63f8522b2428f9c1d916ef9b30.svg",
+      "description": "Marks places where stopping is prohibited."
     },
     {
-      "title": "Pedestrian Crossings",
-      "description": "They highlight the crossing point and increase the driver’s attention when approaching pedestrians."
+      "number": "1.5",
+      "title": "Broken line",
+      "image": "./images/markup/a55788ee9af2066f2602498f03982a64.svg",
+      "description": "Separates opposing traffic flows on roads with two or three lanes; marks lane boundaries where two or more lanes are provided for traffic in the same direction.\n\nLines 1.5–1.8 may be crossed from either side."
     },
     {
-      "title": "Stop lines",
-      "description": "Shows the mandatory stopping point before the intersection, traffic light or stop sign."
+      "number": "1.6",
+      "title": "Approach line",
+      "image": "./images/markup/6312748b760235946e84f786e1ad761b.svg",
+      "description": "Warns of an approach to marking 1.1 or 1.11 separating traffic flows in opposite or the same directions.\n\nLines 1.5–1.8 may be crossed from either side."
     },
     {
-      "title": "Directions by lane",
-      "description": "Arrows and inscriptions indicate in which direction traffic is allowed from each lane."
+      "number": "1.7",
+      "title": "Junction lanes and parking area",
+      "image": "./images/markup/052393eeb65c015e755e6edbfd248279.svg",
+      "description": "Marks traffic lanes within a junction or a parking area. Blue markings indicate that the parking area is subject to payment.\n\nLines 1.5–1.8 may be crossed from either side."
     },
     {
-      "title": "Special lanes and stops",
-      "description": "Designate lanes for route transport, cyclists and public transport stops."
+      "number": "1.8",
+      "title": "Acceleration or deceleration lane boundary",
+      "image": "./images/markup/66cddf91050d001ecc2518339bbb6b2f.svg",
+      "description": "Marks the boundary between an acceleration or deceleration lane and the main carriageway lane.\n\nLines 1.5–1.8 may be crossed from either side."
+    },
+    {
+      "number": "1.9",
+      "title": "Reversible lane",
+      "image": "./images/markup/b50709f7adac8283648b7a5a8c89da6a.svg",
+      "description": "Marks the boundaries of lanes with reversible traffic control; separates opposing traffic flows, when reversible traffic signals are switched off, on roads with reversible traffic control.\n\nWhen reversible traffic signals are absent or switched off, line 1.9 may be crossed if it is on the driver’s right. When reversible traffic signals are operating, it may be crossed from either side if it separates lanes in which traffic is permitted in the same direction. When reversible traffic signals are switched off, the driver must immediately move to the right beyond marking 1.9.\n\nCrossing line 1.9 separating opposing traffic flows is prohibited when reversible traffic signals are switched off."
+    },
+    {
+      "number": "1.10",
+      "title": "No parking",
+      "image": "./images/markup/09a69c0276d8162a0239be409b737108.svg",
+      "description": "Marks places where parking is prohibited."
+    },
+    {
+      "number": "1.11",
+      "title": "Solid and broken lines",
+      "image": "./images/markup/389954cb614be0a7eed3b02dfb24c8ae.svg",
+      "description": "Separates traffic flows in opposite or the same directions on road sections where lane changes are permitted from one lane only; marks places where movement must be permitted only from the broken-line side, such as U-turn locations and entrances to or exits from adjoining areas.\n\nLine 1.11 may be crossed from the broken-line side, and also from the solid-line side, but only when completing an overtaking manoeuvre or passing an obstruction."
+    },
+    {
+      "number": "1.12",
+      "title": "Stop line",
+      "image": "./images/markup/official_1_12.svg",
+      "description": "Indicates where a driver must stop when sign 2.5 is present or when a traffic signal or traffic controller prohibits movement."
+    },
+    {
+      "number": "1.13",
+      "title": "Give-way line",
+      "image": "./images/markup/6fddedd13bad53946f25df4cd5ed22e8.svg",
+      "description": "Indicates where a driver must stop if necessary to give way to vehicles travelling on the intersecting road."
+    },
+    {
+      "number": "1.14.1",
+      "title": "Pedestrian crossing",
+      "image": "./images/markup/official_1_14_1.svg",
+      "description": "Marks a pedestrian crossing; the arrows of marking 1.14.2 indicate the direction of pedestrian movement."
+    },
+    {
+      "number": "1.14.2",
+      "title": "Pedestrian crossing with arrows",
+      "image": "./images/markup/official_1_14_2.svg",
+      "description": "Marks a pedestrian crossing; the arrows of marking 1.14.2 indicate the direction of pedestrian movement."
+    },
+    {
+      "number": "1.14.3",
+      "title": "Diagonal pedestrian crossing",
+      "image": "./images/markup/official_1_14_3.svg",
+      "description": "Marks a diagonal pedestrian crossing."
+    },
+    {
+      "number": "1.15",
+      "title": "Cycle track crossing",
+      "image": "./images/markup/official_1_15.svg",
+      "description": "Marks where a cycle track crosses the carriageway."
+    },
+    {
+      "number": "1.16.1",
+      "title": "Island separating opposing traffic flows",
+      "image": "./images/markup/official_1_16_1.svg",
+      "description": "Marks islands separating either opposing traffic flows or vehicle parking spaces from cycle lanes."
+    },
+    {
+      "number": "1.16.2",
+      "title": "Island separating traffic in the same direction",
+      "image": "./images/markup/official_1_16_2.svg",
+      "description": "Marks islands separating traffic flows travelling in the same direction."
+    },
+    {
+      "number": "1.16.3",
+      "title": "Traffic merging island",
+      "image": "./images/markup/official_1_16_3.svg",
+      "description": "Marks islands where traffic flows merge."
+    },
+    {
+      "number": "1.17.1",
+      "title": "Route vehicle stop and taxi rank",
+      "image": "./images/markup/8e36e197ce8a6b3f19bfc56b065881ac.svg",
+      "description": "Marks stopping places for route vehicles and parking places for vehicles used as passenger taxis."
+    },
+    {
+      "number": "1.17.2",
+      "title": "Tram stop",
+      "image": "./images/markup/official_1_17_2.svg",
+      "description": "Marks tram stopping places where passengers board or alight from the carriageway or from a boarding island situated on it."
+    },
+    {
+      "number": "1.18",
+      "title": "Directions of movement by lane",
+      "image": "./images/markup/7d7c920210faef52e87e6aad54f525b6.svg",
+      "description": "Indicates permitted directions of movement by lane at a junction. A marking with a dead-end symbol indicates that turning onto the nearest carriageway is prohibited; a marking permitting a left turn from the leftmost lane also permits a U-turn."
+    },
+    {
+      "number": "1.19",
+      "title": "Approach to narrowing or a solid line",
+      "image": "./images/markup/409962f0efc35a3802b07f464607c55e.svg",
+      "description": "Warns of an approach to a narrowing of the carriageway, where the number of lanes in the direction of travel is reduced, or to marking 1.1 or 1.11 separating opposing traffic flows."
+    },
+    {
+      "number": "1.20",
+      "title": "Approach to the give-way line",
+      "image": "./images/markup/1c7674cb91486b02ec7693c77673018b.svg",
+      "description": "Warns of an approach to marking 1.13."
+    },
+    {
+      "number": "1.21",
+      "title": "Approach to the stop line",
+      "image": "./images/markup/807ef2c828847b676f7dfbf2cbe5c28c.svg",
+      "description": "Warns of an approach to marking 1.12 where it is used in combination with sign 2.5."
+    },
+    {
+      "number": "1.22",
+      "title": "Road number",
+      "image": "./images/markup/5b08f148beebfd94f47fb80d33ffc539.svg",
+      "description": "Indicates the road number."
+    },
+    {
+      "number": "1.23.1",
+      "title": "Lane for route vehicles",
+      "image": "./images/markup/75e1061ef45dd6b1e289f14659cf86ac.svg",
+      "description": "Indicates a dedicated lane for route vehicles."
+    },
+    {
+      "number": "1.23.2",
+      "title": "Pedestrian path",
+      "image": "./images/markup/8cae82e35cea744fa4c960a86ba78b33.svg",
+      "description": "Indicates a pedestrian path or the pedestrian part of a path intended for shared movement by pedestrians, persons using personal mobility devices and cyclists."
+    },
+    {
+      "number": "1.23.3",
+      "title": "Cycle track or lane",
+      "image": "./images/markup/ab29a5836564e6a857d1fd9ff085d15b.svg",
+      "description": "Indicates a cycle track, part of a track, or a cycle lane."
+    },
+    {
+      "number": "1.24.1",
+      "title": "Repetition of warning signs",
+      "image": "./images/markup/official_1_24_1.svg",
+      "description": "Repeats warning road signs."
+    },
+    {
+      "number": "1.24.2",
+      "title": "Repetition of prohibitory signs",
+      "image": "./images/markup/official_1_24_2.svg",
+      "description": "Repeats prohibitory road signs."
+    },
+    {
+      "number": "1.24.3",
+      "title": "Space for vehicles displaying the Disabled sign",
+      "image": "./images/markup/official_1_24_3.svg",
+      "description": "Repeats the Disabled road sign."
+    },
+    {
+      "number": "1.24.4",
+      "title": "Photo and video enforcement",
+      "image": "./images/markup/official_1_24_4.svg",
+      "description": "Repeats the Photo and video enforcement road sign and/or marks road sections where photo and video enforcement may be carried out; marking 1.24.4 may be used independently."
+    },
+    {
+      "number": "1.24.5",
+      "title": "Space for electric vehicles",
+      "image": "./images/markup/official_1_24_5.svg",
+      "description": "Repeats plate 8.4.3.1; marking 1.24.5 may be used independently."
+    },
+    {
+      "number": "1.24.6",
+      "title": "Cycle zone",
+      "image": "./images/markup/official_1_24_6.svg",
+      "description": "Repeats road sign 5.33.1, Cycle zone."
+    },
+    {
+      "number": "1.24.7",
+      "title": "Parking for diplomatic vehicles",
+      "image": "./images/markup/official_1_24_7.svg",
+      "description": "Repeats road sign 8.9.3, Parking for diplomatic vehicles only."
+    },
+    {
+      "number": "1.25",
+      "title": "Speed hump",
+      "image": "./images/markup/4190c457b85177161acd946d7d60f16e.svg",
+      "description": "Indicates artificial road humps in accordance with GOST R 52605-2006."
+    },
+    {
+      "number": "1.26",
+      "title": "Junction area",
+      "image": "./images/markup/9b7cfc3853479237ebfbc14a72e9f4c1.svg",
+      "description": "Marks an area of a junction that must not be entered if a queue ahead would force the driver to stop and obstruct vehicles travelling in the transverse direction, except for right or left turns in cases permitted by the Rules. The marking may be used independently or together with road sign 1.35."
     }
   ],
   "Vertical marking": [
     {
-      "title": "Supports and protruding elements",
-      "description": "They help to notice in advance the supports of bridges, overpasses and other massive obstacles along the road."
+      "number": "2.1.1",
+      "title": "Dangerous structure element: rightward slope",
+      "image": "./images/markup/official_2_1_1.svg",
+      "description": "Marks elements of road structures, such as bridge supports, overpasses and end sections of parapets, where these elements pose a danger to moving vehicles."
     },
     {
-      "title": "Lower dimensions of structures",
-      "description": "Emphasize the lower edge of tunnels, bridges and overpasses, where it is important to control the height of transport."
+      "number": "2.1.2",
+      "title": "Dangerous structure element: chevrons",
+      "image": "./images/markup/official_2_1_2.svg",
+      "description": "Marks elements of road structures, such as bridge supports, overpasses and end sections of parapets, where these elements pose a danger to moving vehicles."
     },
     {
-      "title": "Fencing in hazardous areas",
-      "description": "Used on curves, steep slopes and in places where visual orientation is especially important."
+      "number": "2.1.3",
+      "title": "Dangerous structure element: leftward slope",
+      "image": "./images/markup/official_2_1_3.svg",
+      "description": "Marks elements of road structures, such as bridge supports, overpasses and end sections of parapets, where these elements pose a danger to moving vehicles."
     },
     {
-      "title": "Fencing in regular areas",
-      "description": "The side surfaces of road barriers are highlighted where additional visibility is required."
+      "number": "2.2",
+      "title": "Lower edge of a structure",
+      "image": "./images/markup/213ba4235f49540edacfc48fd7b79f13.svg",
+      "description": "Marks the lower edge of the span of a tunnel, bridge or overpass."
     },
     {
-      "title": "Curbs and guide elements",
-      "description": "The contour of safety islands, curbs and guide structures is prompted at night."
+      "number": "2.3",
+      "title": "Round bollard",
+      "image": "./images/markup/eccc2f5451b9762c0b46f54dedea2fc7.svg",
+      "description": "Marks round bollards installed on central reservations or traffic islands."
+    },
+    {
+      "number": "2.4",
+      "title": "Guide post",
+      "image": "./images/markup/1294c06b21213d1606c8d26f70d5dd08.svg",
+      "description": "Marks guide posts, bollards, barrier supports and similar objects."
+    },
+    {
+      "number": "2.5",
+      "title": "Barrier on a dangerous section",
+      "image": "./images/markup/c109a29d9afd084d6d845a4913561b96.svg",
+      "description": "Marks the side surfaces of road barriers on tight bends, steep descents and other dangerous sections."
+    },
+    {
+      "number": "2.6",
+      "title": "Barrier on other sections",
+      "image": "./images/markup/c148a900e357e731b60840ef75a353ac.svg",
+      "description": "Marks the side surfaces of road barriers on other sections."
+    },
+    {
+      "number": "2.7",
+      "title": "Kerb or traffic island",
+      "image": "./images/markup/2c0c9d84d25acff893288d5db9767c66.svg",
+      "description": "Marks kerbs on dangerous sections and raised traffic islands."
     }
   ]
 }
