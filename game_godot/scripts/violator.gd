@@ -301,6 +301,17 @@ var next_spawn_interval := 2.0
 var violation_schedule_timer := 0.0
 var next_emergency_at := 20.0
 var next_violation_at := 0.0
+# Difficulty: "hard" is the original tuning; the easier levels space offences out, keep one at a
+# time, give more time to catch and to answer, leave out the trickiest kinds and score less.
+const DIFFICULTIES := {
+	"easy": {"gap_start": 15.0, "gap_end": 10.0, "two_after": 9999.0, "catch": 8.0, "answer": 12.0, "points": 0.5,
+		"skip": ["arrow_yield", "waffle_block", "emergency_yield", "weather_speed"]},
+	"medium": {"gap_start": 11.0, "gap_end": 7.0, "two_after": 60.0, "catch": 6.0, "answer": 9.0, "points": 0.75, "skip": []},
+	"hard": {"gap_start": 8.0, "gap_end": 4.5, "two_after": 20.0, "catch": 4.5, "answer": 7.0, "points": 1.0, "skip": []},
+}
+const SETTINGS_PATH := "user://violator.cfg"
+var difficulty := "hard"
+var difficulty_from_args := false
 var offence_counts := {}   # offences handed out this round, by type (keeps the mix varied)
 var last_offence := ""
 const VIOLATION_EVERY := 1.4   # about 70 % of the cars break a rule; the rest are the traps
@@ -356,6 +367,9 @@ func _setup_args() -> void:
 				economy.merge(parsed, true)
 				seconds_left = float(economy.get("seconds", 180.0))
 				lives = int(economy.get("lives", 5))
+		elif arg.begins_with("--difficulty="):
+			difficulty = arg.trim_prefix("--difficulty=")
+			difficulty_from_args = true
 		elif arg.begins_with("--mode="):
 			game_mode = "patrol" if arg.trim_prefix("--mode=") == "patrol" else "blitz"
 		elif arg.begins_with("--lang="):
@@ -368,8 +382,8 @@ func _dismiss_loader(loader: Loader) -> void:
 	if _exiting or is_queued_for_deletion() or not is_inside_tree(): return
 	await get_tree().process_frame
 	if _exiting or is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
-	ready_for_play = true
-	_start_game()
+	set_difficulty(difficulty if difficulty_from_args else _saved_difficulty())
+	_ask_difficulty()
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		if _exiting or is_queued_for_deletion() or not is_inside_tree() or not is_instance_valid(loader): return
@@ -412,6 +426,7 @@ func _setup_ui() -> void:
 	ui.exit_pressed.connect(_on_exit_pressed)
 	ui.restart_pressed.connect(_on_restart_pressed)
 	ui.classification_selected.connect(_on_classification_selected)
+	ui.difficulty_chosen.connect(_on_difficulty_chosen)
 	add_child(ui)
 	ui.update_hud(score, combo, seconds_left, lives)
 
@@ -2242,11 +2257,12 @@ func _clock_now() -> float:
 ## Seconds between offences: 8 at the start of a round, easing to 4.5 by its end (patrol: by 3 min).
 func _violation_gap() -> float:
 	var span := float(economy.get("seconds", 180.0)) if game_mode == "blitz" else 180.0
-	return lerpf(8.0, 4.5, clampf(_clock_now() / maxf(span, 1.0), 0.0, 1.0))
+	var d: Dictionary = DIFFICULTIES[difficulty]
+	return lerpf(float(d.gap_start), float(d.gap_end), clampf(_clock_now() / maxf(span, 1.0), 0.0, 1.0))
 
 
 func _max_concurrent_violators() -> int:
-	return 1 if _clock_now() < 20.0 else 2
+	return 1 if _clock_now() < float(DIFFICULTIES[difficulty].two_after) else 2
 
 
 ## Offenders still to deal with: those not yet committed and those whose offence is under way.
@@ -2332,7 +2348,10 @@ func _deck_pick(cands: Dictionary) -> String:
 	var hard_factor := 0.5 if t < 20.0 else (1.0 if t < 60.0 else 1.4)
 	var total := 0.0
 	var weights := {}
+	var skip: Array = DIFFICULTIES[difficulty].skip
 	for code in cands:
+		if code in skip:
+			continue
 		var w: float = cands[code]
 		if code not in EASY_OFFENCES:
 			w *= hard_factor
@@ -4291,7 +4310,7 @@ func _on_classification_selected(chosen_code: String) -> void:
 			if is_instance_valid(ui):
 				ui.show_toast(ViolatorUiScript.tr_v("violatorLifeRestored"), false)
 
-		var points := (50 + bonus) * combo
+		var points := roundi(float((50 + bonus) * combo) * float(DIFFICULTIES[difficulty].points))
 		score += points
 
 		if is_instance_valid(ui):
@@ -4316,6 +4335,43 @@ func _on_classification_selected(chosen_code: String) -> void:
 
 
 # --- Game Lifecycle & Results ---
+
+func set_difficulty(level: String) -> void:
+	difficulty = level if DIFFICULTIES.has(level) else "hard"
+	min_catch_window = float(DIFFICULTIES[difficulty].catch)
+	if is_instance_valid(ui):
+		ui.answer_time = float(DIFFICULTIES[difficulty].answer)
+
+
+func _saved_difficulty() -> String:
+	var cfg := ConfigFile.new()
+	if cfg.load(SETTINGS_PATH) == OK:
+		return str(cfg.get_value("violator", "difficulty", "medium"))
+	return "medium"
+
+
+func _save_difficulty() -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(SETTINGS_PATH)
+	cfg.set_value("violator", "difficulty", difficulty)
+	cfg.save(SETTINGS_PATH)
+
+
+## Before each round the player picks the level (the last one is preselected).
+func _ask_difficulty() -> void:
+	ready_for_play = false
+	if is_instance_valid(ui):
+		ui.show_difficulty_picker(difficulty)
+	else:
+		_on_difficulty_chosen(difficulty)
+
+
+func _on_difficulty_chosen(level: String) -> void:
+	set_difficulty(level)
+	_save_difficulty()
+	ready_for_play = true
+	_start_game()
+
 
 func _start_game() -> void:
 	is_game_over = false
@@ -4375,6 +4431,7 @@ func _end_game() -> void:
 		"id": "%s-%d" % [session_id, run_sequence],
 		"game": "violator",
 		"mode": game_mode,
+		"difficulty": difficulty,
 		"score": score,
 		"solved": solved_count,
 		"wrong": wrong_count,
@@ -4404,13 +4461,16 @@ func _session_summary() -> Dictionary:
 	return {
 		"game": "violator",
 		"mode": game_mode,
+		"difficulty": difficulty,
 		"result_action": result_action,
 		"runs": runs
 	}
 
 
 func _on_restart_pressed() -> void:
-	_start_game()
+	if is_instance_valid(ui):
+		ui.hide_game_results()
+	_ask_difficulty()
 
 
 func _on_exit_pressed() -> void:

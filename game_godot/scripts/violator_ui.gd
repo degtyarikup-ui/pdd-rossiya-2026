@@ -12,6 +12,7 @@ extends Control
 signal exit_pressed()
 signal restart_pressed()
 signal classification_selected(code: String)
+signal difficulty_chosen(level: String)
 
 const ICON_CLOSE := 0xf647
 const ICON_STAR := 0xf01d4
@@ -31,6 +32,13 @@ const LIVES_COUNT := 5
 const STRINGS := {
 	"ru": {
 		"violatorClassificationTitle": "Квалификация нарушения",
+		"violatorDifficultyTitle": "Выберите сложность",
+		"violatorEasy": "Лёгкий",
+		"violatorEasyHint": "Нарушения редко и по одному, много времени на поимку и ответ, очки ×0,5",
+		"violatorMedium": "Средний",
+		"violatorMediumHint": "Нарушения чаще, позже — по два сразу, очки ×0,75",
+		"violatorHard": "Сложный",
+		"violatorHardHint": "Плотный поток, по два нарушения сразу, мало времени, полные очки",
 		"violatorClassificationHint": "Выберите нарушенное правило ПДД РФ:",
 		"violatorRedLight": "п. 6.2: Проезд на красный сигнал",
 		"violatorPedestrianYield": "п. 13.1: Не уступил пешеходу на переходе",
@@ -64,6 +72,13 @@ const STRINGS := {
 	},
 	"en": {
 		"violatorClassificationTitle": "Violation Classification",
+		"violatorDifficultyTitle": "Choose difficulty",
+		"violatorEasy": "Easy",
+		"violatorEasyHint": "Rare offences one at a time, plenty of time to catch and answer, points ×0.5",
+		"violatorMedium": "Medium",
+		"violatorMediumHint": "More offences, later two at once, points ×0.75",
+		"violatorHard": "Hard",
+		"violatorHardHint": "Dense traffic, two offences at once, little time, full points",
 		"violatorClassificationHint": "Select the violated traffic rule:",
 		"violatorRedLight": "Cl. 6.2: Running a red light",
 		"violatorPedestrianYield": "Cl. 13.1: Failed to yield to pedestrian",
@@ -97,6 +112,13 @@ const STRINGS := {
 	},
 	"kk": {
 		"violatorClassificationTitle": "Құқық бұзушылықты саралау",
+		"violatorDifficultyTitle": "Қиындықты таңдаңыз",
+		"violatorEasy": "Жеңіл",
+		"violatorEasyHint": "Бұзушылық сирек әрі бір-бірден, ұстауға және жауапқа уақыт көп, ұпай ×0,5",
+		"violatorMedium": "Орташа",
+		"violatorMediumHint": "Бұзушылық жиірек, кейін екеуі қатар, ұпай ×0,75",
+		"violatorHard": "Қиын",
+		"violatorHardHint": "Тығыз ағын, екі бұзушылық қатар, уақыт аз, толық ұпай",
 		"violatorClassificationHint": "Бұзылған ЖҚЕ ережесін таңдаңыз:",
 		"violatorRedLight": "6.2 т.: Қызыл сигналға өту",
 		"violatorPedestrianYield": "13.1 т.: Жаяу жүргіншіге жол бермеу",
@@ -186,7 +208,7 @@ var _modal_buttons_container: VBoxContainer
 var _modal_active := false
 var _interaction_generation := 0
 var _modal_timer := 0.0
-const MODAL_DURATION := 7.0   # enough to read all three answers
+var answer_time := 7.0   # seconds to pick the clause (set by the difficulty)
 var _modal_correct_code := ""
 var _modal_buttons: Array[Button] = []
 
@@ -227,13 +249,15 @@ func _process(delta: float) -> void:
 		_ripples = surviving
 		_overlay.queue_redraw()
 
+	if is_instance_valid(_picker):
+		_place_picker()
 	if is_instance_valid(_toast) and _toast.visible:
 		_toast.size.y = 0.0   # shrink to the wrapped text once laid out (see _fit_toast)
 	if _modal_active:
 		_place_modal()
 		_modal_timer -= real_delta
 		if is_instance_valid(_modal_bar):
-			_modal_bar.value = maxf(0.0, _modal_timer / MODAL_DURATION)
+			_modal_bar.value = maxf(0.0, _modal_timer / answer_time)
 		if _modal_timer <= 0.0:
 			_modal_active = false
 			_on_classification_timeout()
@@ -682,7 +706,7 @@ func show_classification(correct_code: String, options: Array) -> void:
 	_interaction_generation += 1
 	_modal_correct_code = correct_code
 	_modal_active = true
-	_modal_timer = MODAL_DURATION
+	_modal_timer = answer_time
 	_modal_buttons.clear()
 
 	# Rebuild option buttons
@@ -866,6 +890,79 @@ func _violation_l10n_key(code: String) -> String:
 		"no_lights": return "violatorNoLights"
 		"weather_speed": return "violatorWeatherSpeed"
 	return "violatorRedLight"
+
+
+# --- Difficulty picker (before each round) ---
+
+var _picker: PanelContainer
+
+
+func show_difficulty_picker(current: String) -> void:
+	if is_instance_valid(_picker):
+		_picker.queue_free()
+	_picker = PanelContainer.new()
+	_picker.mouse_filter = MOUSE_FILTER_STOP
+	var box := Ui.box(Ui.c("card"), 16)
+	box.content_margin_left = 16
+	box.content_margin_right = 16
+	box.content_margin_top = 18
+	box.content_margin_bottom = 16
+	_picker.add_theme_stylebox_override("panel", box)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	_picker.add_child(col)
+	var title := Ui.label(tr_v("violatorDifficultyTitle"), 18, 800, Ui.c("text"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(title)
+	for level in ["easy", "medium", "hard"]:
+		var key: String = {"easy": "violatorEasy", "medium": "violatorMedium", "hard": "violatorHard"}[level]
+		var option := PanelContainer.new()
+		option.name = "Difficulty_" + level
+		option.custom_minimum_size = Vector2(0, 64)
+		var ob := Ui.box(Ui.c("accent") if level == current else Ui.c("field"), 12)
+		ob.content_margin_left = 14
+		ob.content_margin_right = 14
+		ob.content_margin_top = 10
+		ob.content_margin_bottom = 10
+		option.add_theme_stylebox_override("panel", ob)
+		var lines := VBoxContainer.new()
+		lines.add_theme_constant_override("separation", 2)
+		lines.mouse_filter = MOUSE_FILTER_IGNORE
+		var head := Ui.label(tr_v(key), 16, 800, Color.WHITE if level == current else Ui.c("text"))
+		head.mouse_filter = MOUSE_FILTER_IGNORE
+		lines.add_child(head)
+		var hint := Ui.label(tr_v(key + "Hint"), 12, 500, Color(1, 1, 1, 0.85) if level == current else Ui.c("secondary"), true)
+		hint.size_flags_horizontal = SIZE_EXPAND_FILL
+		hint.mouse_filter = MOUSE_FILTER_IGNORE
+		lines.add_child(hint)
+		option.add_child(lines)
+		var tap := Control.new()
+		tap.set_anchors_preset(PRESET_FULL_RECT)
+		tap.mouse_filter = MOUSE_FILTER_STOP
+		tap.gui_input.connect(_on_tap_input.bind(_pick_difficulty.bind(level)))
+		option.add_child(tap)
+		col.add_child(option)
+	add_child(_picker)
+	_place_picker.call_deferred()
+
+
+func _pick_difficulty(level: String) -> void:
+	if is_instance_valid(_picker):
+		_picker.queue_free()
+		_picker = null
+	difficulty_chosen.emit(level)
+
+
+func _place_picker() -> void:
+	if not is_instance_valid(_picker):
+		return
+	var w := minf(360.0, size.x - 32.0)
+	_picker.size = Vector2(w, 0)
+	_picker.position = Vector2((size.x - w) / 2.0, maxf(CHROME + 40.0, (size.y - _picker.size.y) / 2.0))
+
+
+func is_picking_difficulty() -> bool:
+	return is_instance_valid(_picker)
 
 
 # --- Results Overlay ---

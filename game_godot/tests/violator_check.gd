@@ -511,6 +511,9 @@ func _check_economy_and_game_over() -> void:
 	# Test restart
 	var old_best: int = game.previous_best
 	game._on_restart_pressed()
+	_check("Restart asks for the difficulty first", game.ui.is_picking_difficulty() and not game.ready_for_play)
+	game.ui._pick_difficulty("hard")
+	_check("Picking a level starts the round", not game.ui.is_picking_difficulty() and game.ready_for_play and game.difficulty == "hard")
 	_check("Restart resets lives to 5", game.lives == 5)
 	_check("Restart resets the round to 180 seconds", is_equal_approx(game.seconds_left, 180.0))
 	_check("Restart resets score to 0", game.score == 0)
@@ -520,6 +523,27 @@ func _check_economy_and_game_over() -> void:
 	game.seconds_left = 0.5
 	game._process(0.6)
 	_check("Seconds reaching 0 triggers game over", game.is_game_over and is_equal_approx(game.seconds_left, 0.0))
+
+	# Difficulty levels: hard is the full tuning, easy and medium are gentler.
+	var gaps := {}
+	for level in ["easy", "medium", "hard"]:
+		game.set_difficulty(level)
+		gaps[level] = game._violation_gap()
+		if level == "easy":
+			_check("Easy gives more time to catch and answer", game.min_catch_window == 8.0 and game.ui.answer_time == 12.0)
+			_check("Easy keeps one violator at a time", game._max_concurrent_violators() == 1)
+			var all_codes := {}
+			for code in game.VIOLATION_METADATA:
+				all_codes[code] = 1.0
+			var picked := {}
+			for i in 300:
+				picked[game._deck_pick(all_codes)] = true
+			_check("Easy never deals the hardest offences", not picked.has(game.VIOLATION_ARROW_YIELD) and not picked.has(game.VIOLATION_WAFFLE_BLOCK))
+		if level == "hard":
+			_check("Hard keeps the old tuning", game.min_catch_window == 4.5 and game.ui.answer_time == 7.0)
+	_check("Offences come rarer on easier levels", gaps.easy > gaps.medium and gaps.medium > gaps.hard)
+	game.set_difficulty("nonsense")
+	_check("Unknown level falls back to hard", game.difficulty == "hard")
 
 	game.queue_free()
 

@@ -61,5 +61,38 @@ func _run() -> void:
 		top = maxi(top, by_kind[k])
 	_check("No single kind dominates the round (top %d of %d, %s)" % [top, total, str(by_kind)], float(top) <= 0.35 * float(total))
 	_check("Several kinds of offence show up (%s)" % str(kinds.keys()), kinds.size() >= 6)
+	# Easier levels: fewer offences, still enough to play.
+	var level_avg := {"hard": avg}
+	for level in ["medium", "easy"]:
+		var sum := 0
+		var low := 999
+		for sd in [1, 2, 3]:
+			var n := await _idle_round(sd, level)
+			sum += n
+			low = mini(low, n)
+		level_avg[level] = float(sum) / 3.0
+		print("%s: avg %.1f, min %d" % [level, level_avg[level], low])
+		_check("%s round still has offences to catch (min %d)" % [level, low], low >= 5)
+	_check("Easier levels have fewer offences (%s)" % str(level_avg), level_avg.easy < level_avg.medium and level_avg.medium < level_avg.hard)
 	print("Violator density: %s" % ("PASS" if failed == 0 else "FAIL (%d)" % failed))
 	quit(0 if failed == 0 else 1)
+
+
+func _idle_round(sd: int, level: String) -> int:
+	seed(sd)
+	var game = ViolatorScript.new()
+	root.add_child(game)
+	await process_frame
+	game.ready_for_play = true
+	game.set_difficulty(level)
+	game._start_game()
+	var happened := {}
+	for f in int(180.0 / DT):
+		game.lives = 99
+		game._process(DT)
+		for c in game.cars:
+			if is_instance_valid(c) and c.is_violator and c.violation_state != "pending":
+				happened[c.get_instance_id()] = true
+	game.queue_free()
+	await process_frame
+	return happened.size()
