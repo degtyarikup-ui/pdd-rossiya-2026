@@ -172,6 +172,126 @@
       "duration": 23.1,
       "recipe": "episodes/011.json",
       "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "012",
+      "candidate_id": "S11",
+      "file": "sign_012.mp4",
+      "title": "Въезд запрещён и движение запрещено",
+      "status": "delivered",
+      "target": "sign:3.1",
+      "sha256": "ed9ba2bcb88e7e19448eb6915b1e05048e35d500091a49b7f55f1fb15600e850",
+      "duration": 21.066666666666666,
+      "recipe": "episodes/012.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "013",
+      "candidate_id": "S12",
+      "file": "sign_013.mp4",
+      "title": "Запрет велосипедам и запрет СИМ",
+      "status": "delivered",
+      "target": "sign:3.35",
+      "sha256": "d9fcb2b6b81b6e48624c7e9490028d46427450dad5108915c3e71f32e8f197b6",
+      "duration": 21.466666666666665,
+      "recipe": "episodes/013.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "014",
+      "candidate_id": "S13",
+      "file": "sign_014.mp4",
+      "title": "Общая и разделённая велопешеходная дорожка",
+      "status": "delivered",
+      "target": "sign:4.5.2",
+      "sha256": "8624ce16827d093db3c682a04b2837577f735645892bb544192c55a7149075a2",
+      "duration": 22.966666666666665,
+      "recipe": "episodes/014.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "015",
+      "candidate_id": "S14",
+      "file": "sign_015.mp4",
+      "title": "Велосипедная зона и велосипедная дорожка",
+      "status": "delivered",
+      "target": "sign:5.39",
+      "sha256": "6b4b5edc0d211a435ce2184320182e965f5a58e8ca2c32783bdaeeeaf5a8aacf",
+      "duration": 22.033333333333335,
+      "recipe": "episodes/015.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "016",
+      "candidate_id": "S15",
+      "file": "sign_016.mp4",
+      "title": "Попутная автобусная полоса и встречная",
+      "status": "delivered",
+      "target": "sign:5.14.1",
+      "sha256": "0851c53dadb2fa6f948d7c4531fd57205d1c66271d4767e3868c37161b84d9fd",
+      "duration": 22.0,
+      "recipe": "episodes/016.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "017",
+      "candidate_id": "S16",
+      "file": "sign_017.mp4",
+      "title": "Переход впереди и место перехода",
+      "status": "delivered",
+      "target": "sign:5.19.1",
+      "sha256": "ea0a7be0824201400fa034d85e7b29720b4d46884e6213db3812b5b7a5262eac",
+      "duration": 20.1,
+      "recipe": "episodes/017.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "018",
+      "candidate_id": "S17",
+      "file": "sign_018.mp4",
+      "title": "Неровность впереди и сама неровность",
+      "status": "delivered",
+      "target": "sign:5.20",
+      "sha256": "7b2f0c5d7c1a18abb6614b58c42b48357b088ef7929991d2bf170c6f3c6f595d",
+      "duration": 20.4,
+      "recipe": "episodes/018.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "019",
+      "candidate_id": "S18",
+      "file": "sign_019.mp4",
+      "title": "Населённый пункт на синем и белом фоне",
+      "status": "delivered",
+      "target": "sign:5.25",
+      "sha256": "acf1318f6eef51b7c6c7f8d255817aaee7dee1a9b815b0fd245f6d33164340a0",
+      "duration": 23.266666666666666,
+      "recipe": "episodes/019.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "020",
+      "candidate_id": "S19",
+      "file": "sign_020.mp4",
+      "title": "Зона максимальной скорости и обычное ограничение",
+      "status": "delivered",
+      "target": "sign:5.31",
+      "sha256": "503968b1e287983fe9cba42871c23b95b2c0f33439d001ade15a92754b8a4cb1",
+      "duration": 21.733333333333334,
+      "recipe": "episodes/020.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "021",
+      "candidate_id": "S20",
+      "file": "sign_021.mp4",
+      "title": "Зональный запрет стоянки и обычный знак",
+      "status": "delivered",
+      "target": "sign:5.27",
+      "sha256": "34029ed4ac0e9cbc74d4443dafa81d3be940398f793864b593421b77fed6a2d9",
+      "duration": 21.333333333333332,
+      "recipe": "episodes/021.json",
+      "reviewed_at": "2026-10-25"
     }
   ]
 }
