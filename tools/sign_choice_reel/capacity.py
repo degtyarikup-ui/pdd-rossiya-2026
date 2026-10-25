@@ -81,6 +81,22 @@ def summarize(rows):
         "total_candidates": len(bank["candidates"]),
         "note": "Catalog IDs and image uniqueness checked; question ambiguity and editorial quality require review.",
     }
+    registry_path = Path(__file__).with_name("series.json")
+    if registry_path.is_file():
+        registry = json.loads(registry_path.read_text())
+        produced = registry["episodes"]
+        covered = {episode["target"] for episode in produced}
+        delivered_core = {episode["candidate_id"] for episode in produced if episode.get("candidate_id")}
+        planned = set(registry["planned_core_ids"])
+        summary["totals"].update(
+            approved_episodes=sum(episode["status"] == "approved" for episode in produced),
+            produced_episodes=len(produced), covered_catalog_entries=len(covered),
+            remaining_one_per_catalog_entry=len(rows) - len(covered),
+        )
+        summary["editorial_selection"].update(
+            planned_core_candidates=len(planned), delivered_core_candidates=len(delivered_core & planned),
+            remaining_core_candidates=len(planned - delivered_core),
+        )
     return summary
 
 

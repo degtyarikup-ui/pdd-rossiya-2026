@@ -1,4 +1,4 @@
-"""Render the narrated 1080x1920 sign-choice pilot, using canonical sign assets."""
+"""Render narrated 1080x1920 sign-choice episodes using the approved visual format."""
 from __future__ import annotations
 
 import argparse
@@ -53,7 +53,7 @@ def word_positions(lines, size, center_x, top, leading):
 
 def word_timings(line):
     """Map the expected written words to independently recognized word boundaries."""
-    want = line["text"].split()
+    want = [word for word in line["text"].split() if any(char.isalnum() for char in word)]
     got = line["words"]
     if len(want) != len(got):
         raise ValueError(f"Word count differs for {line['key']}: {len(want)} != {len(got)}")
@@ -66,7 +66,7 @@ def aligned_groups(line, groups):
     timings = word_timings(line)
     result, offset = [], 0
     for text in groups:
-        count = len(text.split())
+        count = sum(any(char.isalnum() for char in word) for word in text.split())
         chunk = timings[offset:offset + count]
         if not chunk:
             raise ValueError(f"Missing words for caption: {text}")
@@ -84,6 +84,16 @@ class Renderer:
     def __init__(self, dest, screenshot):
         self.dest = dest
         self.recipe = json.loads((dest / "episode.json").read_text())
+        self.correct_index = self.recipe["correct_position"] - 1
+        self.comparison_index = self.recipe["comparison_position"] - 1
+        if len(self.recipe["options"]) != 4 or len(set(self.recipe["options"])) != 4:
+            raise ValueError("Exactly four different options required")
+        if not 0 <= self.correct_index < 4 or not 0 <= self.comparison_index < 4:
+            raise ValueError("Invalid answer/comparison position")
+        if self.correct_index == self.comparison_index:
+            raise ValueError("Comparison must use a different option")
+        if self.recipe["countdown_seconds"] != 4:
+            raise ValueError("The approved format requires four seconds")
         self.voice = {x["key"]: x for x in json.loads((dest / "voice.json").read_text())}
         self.timeline = {}
         def schedule(key, start):
@@ -106,17 +116,21 @@ class Renderer:
                              comparison=self.compare, outro=self.outro,
                              duration=self.duration, fps=FPS, frames=self.frames)
         self.question_words = word_timings(self.voice["question"])
-        self.question_rows = [
+        self.question_rows = self.recipe.get("question_lines", [
             "Какой знак запрещает", "разворот, но не запрещает", "поворот налево?"
-        ]
+        ])
         self.question_positions = word_positions(self.question_rows, 66, W / 2, 247, 83)
         if len(self.question_positions) != len(self.question_words):
             raise ValueError("Question layout does not match narration")
-        self.captions = aligned_groups(self.voice["answer"], [
+        groups = self.recipe.get("caption_groups", {})
+        self.captions = aligned_groups(self.voice["answer"], groups.get("answer", [
             "Третий", "Этот знак запрещает", "разворот", "но не запрещает", "поворот налево"
-        ]) + aligned_groups(self.voice["compare"], [
+        ])) + aligned_groups(self.voice["compare"], groups.get("compare", [
             "А первый запрещает", "поворот налево", "но не разворот"
-        ])
+        ]))
+        self.comparison_labels = self.recipe.get("comparison_labels", {
+            "1": ["Налево запрещено"], "3": ["Разворот запрещён"]
+        })
         self.background = Image.new("RGB", (W, H), BLUE)
         self.signs = []
         raw = json.loads((ROOT / "assets/countries/ru/questions/signs.json").read_text())
@@ -128,12 +142,31 @@ class Renderer:
         self.phone = self.make_phone()
         self.outro_background = self.make_outro_background()
         self.card_cache = {}
+        self.validate_layout()
         (dest / "timeline.json").write_text(json.dumps(self.timeline, indent=2) + "\n")
         (dest / "subtitles.json").write_text(json.dumps({
             "question": [{**word, "start": word["start"] + self.voice["question"]["start"],
                            "end": word["end"] + self.voice["question"]["start"]}
                          for word in self.question_words], "explanation": self.captions,
         }, ensure_ascii=False, indent=2) + "\n")
+
+    def validate_layout(self):
+        measure = ImageDraw.Draw(Image.new("RGB", (1, 1)))
+        if " ".join(self.question_rows) != self.voice["question"]["text"]:
+            raise ValueError("Question layout changes the spoken question")
+        if not 1 <= len(self.question_rows) <= 3:
+            raise ValueError("Question must fit at most three lines")
+        for text in self.question_rows:
+            if measure.textlength(text, font=font(66, True)) > 920:
+                raise ValueError(f"Question line too wide: {text}")
+        for cap in self.captions:
+            if measure.textlength(cap["text"], font=font(51, True)) > 900:
+                raise ValueError(f"Caption too wide: {cap['text']}")
+        for lines in self.comparison_labels.values():
+            if isinstance(lines, str):
+                lines = [lines]
+            if len(lines) > 2 or any(measure.textlength(x, font=font(30)) > 390 for x in lines):
+                raise ValueError(f"Card label does not fit: {lines}")
 
     def make_outro_background(self):
         yy, xx = np.mgrid[:H, :W]
@@ -186,9 +219,13 @@ class Renderer:
         sign = self.signs[index]
         center_y = 207 if state != "compare" else 196
         card.alpha_composite(sign, ((size - sign.width) // 2, center_y - sign.height // 2))
-        if state == "compare" and index in (0, 2):
-            label = "Налево запрещено" if index == 0 else "Разворот запрещён"
-            draw.text((size // 2, 365), label, font=font(30), fill=(30, 49, 54), anchor="mm")
+        if state == "compare" and str(index + 1) in self.comparison_labels:
+            lines = self.comparison_labels[str(index + 1)]
+            if isinstance(lines, str):
+                lines = [lines]
+            for row, label in enumerate(lines):
+                cy = 365 if len(lines) == 1 else 355 + row * 34
+                draw.text((size // 2, cy), label, font=font(30), fill=(30, 49, 54), anchor="mm")
         if selected:
             # A real rounded vector check, not a font glyph or emoji.
             pts = [(30, 45), (44, 59), (70, 29)]
@@ -209,7 +246,7 @@ class Renderer:
             opacity = 1.0
             if t >= self.reveal:
                 settle = ease((t - self.reveal) / 0.24)
-                dim = 1 if index == 2 or (state == "compare" and index == 0) else 0.44
+                dim = 1 if index == self.correct_index or (state == "compare" and index == self.comparison_index) else 0.44
                 opacity = 1 + (dim - 1) * settle
             if entry < 1 or opacity < 1:
                 card = card.copy()
@@ -328,7 +365,10 @@ class Renderer:
                 process.stdin.close()
             if process.wait() != 0:
                 raise RuntimeError("Encoding failed; see encode.log")
-        out = self.dest / "sign_choice_001_test.mp4"
+        file_name = self.recipe.get("output_name", "sign_choice_001_test.mp4")
+        if Path(file_name).name != file_name or not file_name.endswith(".mp4"):
+            raise ValueError("Output must be an MP4 basename")
+        out = self.dest / file_name
         subprocess.run([
             "ffmpeg", "-y", "-v", "error", "-i", str(self.dest / "silent.mp4"),
             "-i", str(self.dest / "audio/final.wav"), "-map", "0:v:0", "-map", "1:a:0",
@@ -345,7 +385,8 @@ class Renderer:
         assert video["width"] == W and video["height"] == H
         report = dict(self.timeline, video_duration=float(video["duration"]),
                       audio_duration=float(sound["duration"]),
-                      screenshot_sha256=hashlib.sha256(self.screen.tobytes()).hexdigest())
+                      screenshot_sha256=hashlib.sha256(self.screen.tobytes()).hexdigest(),
+                      file_name=file_name, sha256=hashlib.sha256(out.read_bytes()).hexdigest())
         (self.dest / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
         print(f"EXPORT_OK {out} ({self.duration:.2f}s)", flush=True)
 
