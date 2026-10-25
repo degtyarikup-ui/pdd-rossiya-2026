@@ -272,6 +272,8 @@ const LIGHT_FLASHING_GREEN_TIME := 3.0
 const LIGHT_YELLOW_TIME := 2.0
 const LIGHT_CLEARANCE_TIME := 1.5
 const LIGHT_RED_YELLOW_TIME := 1.5
+# Phases when the cross street must not start: its red and its red+yellow.
+const EW_STOP_PHASES := ["ns_green", "ns_green_flash", "ns_yellow", "all_red_1", "ew_red_yellow", "all_red_2", "ns_red_yellow"]
 
 # Game modes and weather
 var game_mode: String = "blitz"     # "blitz" (60s countdown) or "patrol" (endless)
@@ -697,14 +699,15 @@ func _build_markings(white_mat: Material, yellow_mat: Material) -> void:
 		junction_node.add_child(stripe_s)
 
 	# Solid line 1.1 between intersection exit and South zebra: Z from 11.8 to 14.0
-	var solid_pre_south_zebra := _create_box(Vector3(0.18, 0.02, 2.2), white_mat)
-	solid_pre_south_zebra.position = Vector3(0, y, 12.9)
-	junction_node.add_child(solid_pre_south_zebra)
+	if crosswalks.has("south"):
+		var solid_pre_south_zebra := _create_box(Vector3(0.18, 0.02, 2.2), white_mat)
+		solid_pre_south_zebra.position = Vector3(0, y, 12.9)
+		junction_node.add_child(solid_pre_south_zebra)
 
 	# (No stop line after the south zebra: the main road is one-way southbound, nobody approaches from there.)
 
-	# 1.5 Broken Lines on main road South departing
-	for z_pos in range(18, 55, 4):
+	# 1.5 Broken Lines on main road South departing (right from the junction when there is no south zebra)
+	for z_pos in range(18 if crosswalks.has("south") else 14, 55, 4):
 		var broken_s := _create_box(Vector3(0.16, 0.02, 2.0), white_mat)
 		broken_s.position = Vector3(0, y, float(z_pos))
 		junction_node.add_child(broken_s)
@@ -3269,7 +3272,9 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 					if other.speed < 4.0:
 						merge_blocked = true
 						break
-		var ew_red := (light_phase in ["ns_green", "ns_green_flash", "ns_yellow", "all_red_1", "all_red_2", "ns_red_yellow"]) and (traffic_light_node != null and traffic_light_node.is_inside_tree())
+		# Red, red+yellow (п. 6.2: still no go) and a yellow it can stop for (п. 6.14).
+		var ew_red := (light_phase in EW_STOP_PHASES or (light_phase == "ew_yellow" and X_PRIO_STOP - car.position.x > car.speed * car.speed / 7.2)) \
+				and (traffic_light_node != null and traffic_light_node.is_inside_tree())
 		# Right-turners wait at the stop line for walkers on the south crosswalk and for emergency vehicles.
 		if car.position.x <= X_PRIO_STOP + 0.1 and ((emergency_alert and emergency_front_z < 13.6) or not crossers_on_road("south", -4.2, 0.8).is_empty()):
 			merge_blocked = true
@@ -3277,7 +3282,8 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				or car.has_meta("hold_for_junction"):
 			if car.position.x <= X_PRIO_STOP:
 				target_stop_x_west = minf(target_stop_x_west, X_PRIO_STOP)
-			elif car.position.x < X_PRIO_STOP + 1.2 and car.speed < 3.0 and main_traffic_present:
+			elif car.position.x < X_PRIO_STOP + 1.2 and car.speed < 3.0 and (main_traffic_present or ew_red):
+				# Crept a little over the line while standing: still waits for its green (п. 6.2).
 				target_stop_x_west = minf(target_stop_x_west, car.position.x)
 				car.target_speed = 0.0
 				stop_required = true
@@ -3303,7 +3309,8 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 		# Crossing both lanes of the main road.
 		var main_traffic_present := _main_gap_too_short(car, [0, 1], 3.2, 4.0)
 		# Also stop if red light or intersection blocked
-		var ew_red := (light_phase in ["ns_green", "ns_green_flash", "ns_yellow", "all_red_1", "all_red_2", "ns_red_yellow"]) and (traffic_light_node != null and traffic_light_node.is_inside_tree())
+		var ew_red := (light_phase in EW_STOP_PHASES or (light_phase == "ew_yellow" and car.position.x - X_EAST_STOP > car.speed * car.speed / 7.2)) \
+				and (traffic_light_node != null and traffic_light_node.is_inside_tree())
 		var east_blocked := false
 		if car.position.x >= X_EAST_STOP and car.position.x < 18.0 and not car.is_emergency and not (car.is_violator and car.violation_type in [VIOLATION_RED_LIGHT, VIOLATION_PRIORITY_SIGN]):
 			for other in cars:
@@ -3317,7 +3324,7 @@ func _advance_car_behavior(car: ViolatorCar, delta: float) -> void:
 				or car.has_meta("hold_for_junction"):
 			if car.position.x >= X_EAST_STOP:
 				target_stop_x_east = maxf(target_stop_x_east, X_EAST_STOP)
-			elif car.position.x > X_EAST_STOP - 1.2 and car.speed < 3.0 and main_traffic_present:
+			elif car.position.x > X_EAST_STOP - 1.2 and car.speed < 3.0 and (main_traffic_present or ew_red):
 				target_stop_x_east = maxf(target_stop_x_east, car.position.x)
 				car.target_speed = 0.0
 				stop_required = true
@@ -4138,10 +4145,10 @@ func _is_car_entering_violation_window(car: ViolatorCar) -> bool:
 	match car.violation_type:
 		VIOLATION_RED_LIGHT:
 			if car.lane == 2:
-				var ew_red := light_phase in ["ns_green", "ns_green_flash", "ns_yellow", "all_red_1", "all_red_2", "ns_red_yellow"]
+				var ew_red := light_phase in EW_STOP_PHASES
 				return car.position.x >= -5.0 and ew_red
 			elif car.lane == 3:
-				var ew_red := light_phase in ["ns_green", "ns_green_flash", "ns_yellow", "all_red_1", "all_red_2", "ns_red_yellow"]
+				var ew_red := light_phase in EW_STOP_PHASES
 				return car.position.x <= 5.0 and ew_red
 			return car.position.z >= -3.5 and light_state in ["red", "yellow"]
 		VIOLATION_PEDESTRIAN_YIELD:

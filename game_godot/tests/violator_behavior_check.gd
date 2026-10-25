@@ -514,6 +514,56 @@ func _run_checks() -> void:
 	_check("Left-turning car does not deadlock with stopped secondary car (moves past X < -5.0)", lead_turn.position.x < -5.0)
 	_check("Following straight car makes progress without getting trapped (moves past Z > 0.0)", follow_straight.position.z > 0.0)
 
+	# Red+yellow still means stop (п. 6.2): cross-street cars at the stop line start only on green.
+	for c in game.cars:
+		c.queue_free()
+	game.cars.clear()
+	for cr in game.crossers:
+		cr.state = "hidden"
+	game.light_phase = "all_red_1"
+	game.light_timer = 0.01
+	var west_wait = game.spawn_specific_car("secondary_merge", 2, false, "")
+	west_wait.position = Vector3(-12.4, 0.0, 10.0)
+	west_wait.speed = 0.0
+	var east_wait = game.spawn_specific_car("east_west", 3, false, "")
+	east_wait.position = Vector3(12.4, 0.0, 3.2)
+	east_wait.speed = 0.0
+	var moved_early := false
+	var started_on_green := false
+	for step in 300:
+		game._update_traffic_lights(0.016)
+		game._update_cars(0.016)
+		var gone: bool = west_wait.position.x > -12.0 or east_wait.position.x < 12.0
+		if game.light_phase in ["all_red_1", "ew_red_yellow"] and gone:
+			moved_early = true
+		if game.light_phase == "ew_green" and west_wait.position.x > -12.0 and east_wait.position.x < 12.0:
+			started_on_green = true
+	_check("Cross-street cars do not start on red+yellow", not moved_early)
+	_check("Cross-street cars start once their green comes on", started_on_green)
+	for c in game.cars:
+		c.queue_free()
+	game.cars.clear()
+	game.light_phase = "ew_yellow"
+	game.light_timer = 0.01
+	var main_wait := []
+	for lane in [0, 1]:
+		var mc = game.spawn_specific_car("main_straight", lane, false, "")
+		mc.position = Vector3(-1.8 if lane == 0 else 1.8, 0.0, -12.65)
+		mc.speed = 0.0
+		main_wait.append(mc)
+	var main_early := false
+	var main_go := false
+	for step in 420:
+		game._update_traffic_lights(0.016)
+		game._update_cars(0.016)
+		var moved: bool = main_wait.any(func(mc): return mc.position.z > -12.3)
+		if game.light_phase in ["ew_yellow", "all_red_2", "ns_red_yellow"] and moved:
+			main_early = true
+		if game.light_phase == "ns_green" and main_wait.all(func(mc): return mc.position.z > -12.3):
+			main_go = true
+	_check("Main-road cars do not start on red+yellow", not main_early)
+	_check("Main-road cars start on their green", main_go)
+
 	game.queue_free()
 	await process_frame
 	
