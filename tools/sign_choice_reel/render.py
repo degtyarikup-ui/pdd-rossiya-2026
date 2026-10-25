@@ -9,6 +9,7 @@ import math
 from pathlib import Path
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -29,6 +30,23 @@ BOLD = ROOT / "assets/fonts/Onest-SemiBold.ttf"
 @lru_cache(maxsize=32)
 def font(size, bold=False):
     return ImageFont.truetype(str(BOLD if bold else FONT), size)
+
+
+def choice_image(source):
+    """Respect a cropped SVG's viewport before trimming its transparent margins."""
+    picture = raster.rasterize(source, 720)
+    svg = ET.parse(source).getroot()
+    viewport = svg.get("viewBox", "").replace(",", " ").split()
+    if len(viewport) == 4:
+        x, y, width, height = map(float, viewport)
+        # Catalog cutouts retain neighbouring shapes outside their viewBox.
+        # A square raster viewport can otherwise expose them in its letterbox.
+        if (x or y) and width > 0 and height > 0:
+            scale = min(picture.width / width, picture.height / height)
+            w, h = round(width * scale), round(height * scale)
+            left, top = (picture.width - w) // 2, (picture.height - h) // 2
+            picture = picture.crop((left, top, left + w, top + h))
+    return raster.fit(picture, 292)
 
 
 def ease(t):
@@ -133,11 +151,20 @@ class Renderer:
         })
         self.background = Image.new("RGB", (W, H), BLUE)
         self.signs = []
-        raw = json.loads((ROOT / "assets/countries/ru/questions/signs.json").read_text())
-        signs = {k: v for group in raw.values() for k, v in group.items()}
-        for number in self.recipe["options"]:
-            source = ROOT / "assets/countries/ru" / signs[number]["image"]
-            self.signs.append(raster.fit(raster.rasterize(source, 720), 292))
+        catalog = {}
+        for kind, filename in (("sign", "signs"), ("mark", "markup")):
+            raw = json.loads((ROOT / f"assets/countries/ru/questions/{filename}.json").read_text())
+            for group in raw.values():
+                entries = group.values() if isinstance(group, dict) else group
+                for entry in entries:
+                    catalog[f"{kind}:{entry['number']}"] = entry
+        option_keys = [option if ":" in option else f"sign:{option}"
+                       for option in self.recipe["options"]]
+        if len(set(option_keys)) != 4:
+            raise ValueError("Exactly four different catalog entries required")
+        for key in option_keys:
+            source = ROOT / "assets/countries/ru" / catalog[key]["image"]
+            self.signs.append(choice_image(source))
         self.screen = Image.open(screenshot).convert("RGB")
         self.phone = self.make_phone()
         self.outro_background = self.make_outro_background()

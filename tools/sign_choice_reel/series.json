@@ -292,6 +292,126 @@
       "duration": 21.333333333333332,
       "recipe": "episodes/021.json",
       "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "022",
+      "candidate_id": "S21",
+      "file": "sign_022.mp4",
+      "title": "Остановиться недостаточно: знак «Опасность»",
+      "status": "delivered",
+      "target": "sign:3.17.2",
+      "sha256": "dfd46a772906a5fb4509f1f2e837801ff796d4bf6b24430833e84d1f59f8c730",
+      "duration": 20.533333333333335,
+      "recipe": "episodes/022.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "023",
+      "candidate_id": "S22",
+      "file": "sign_023.mp4",
+      "title": "Реверсивное движение и встречный поток",
+      "status": "delivered",
+      "target": "sign:5.8",
+      "sha256": "34165fbe314f0fa21b331af9c00a05ebe910b045e7f34f6161b3d06314037962",
+      "duration": 23.233333333333334,
+      "recipe": "episodes/023.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "024",
+      "candidate_id": "P01",
+      "file": "sign_024.mp4",
+      "title": "Расстояние до опасного участка и его длина",
+      "status": "delivered",
+      "target": "sign:8.2.1",
+      "sha256": "bcec53b7d413721a19d2fb06422128c065cb6df7e64f1b62d12f3a0f1597e5a5",
+      "duration": 21.633333333333333,
+      "recipe": "episodes/024.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "025",
+      "candidate_id": "P02",
+      "file": "sign_025.mp4",
+      "title": "Конец запрета стоянки и нахождение внутри зоны",
+      "status": "delivered",
+      "target": "sign:8.2.3",
+      "sha256": "86ae09a5bea0beb060697e6099fcc9738b612c4a5e6f2ffa610be85d2a1826e5",
+      "duration": 22.033333333333335,
+      "recipe": "episodes/025.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "026",
+      "candidate_id": "P03",
+      "file": "sign_026.mp4",
+      "title": "Направление действия и расстояние до объекта сбоку",
+      "status": "delivered",
+      "target": "sign:8.1.3",
+      "sha256": "45d8070c255b279aeb66f910ac1d938ee87590bd12f460955e4f2c9a41feed23",
+      "duration": 21.6,
+      "recipe": "episodes/026.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "027",
+      "candidate_id": "P04",
+      "file": "sign_027.mp4",
+      "title": "Вид транспорта и слово «кроме»",
+      "status": "delivered",
+      "target": "sign:8.4.10",
+      "sha256": "3dc34a76ca6346b9431da2bbb52461c66d48c3dbe0a90b06a09a3584d424455c",
+      "duration": 22.433333333333334,
+      "recipe": "episodes/027.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "028",
+      "candidate_id": "P05",
+      "file": "sign_028.mp4",
+      "title": "Инвалиды и исключение из действия знака",
+      "status": "delivered",
+      "target": "sign:8.18",
+      "sha256": "6838f6ed21b44bfa8b88a0ef5d574922745413d788462ceec1b31c425b1dd59c",
+      "duration": 23.066666666666666,
+      "recipe": "episodes/028.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "029",
+      "candidate_id": "P06",
+      "file": "sign_029.mp4",
+      "title": "Молоточки: рабочие дни, а не ремонт",
+      "status": "delivered",
+      "target": "sign:8.5.2",
+      "sha256": "b7557d0f4a4ca435e9f701e04ee020222bcd65e38901e8025be6e565df36a33f",
+      "duration": 22.333333333333332,
+      "recipe": "episodes/029.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "030",
+      "candidate_id": "P07",
+      "file": "sign_030.mp4",
+      "title": "Какая парковочная табличка подходит грузовику",
+      "status": "delivered",
+      "target": "sign:8.6.1",
+      "sha256": "c760b61fff9824855484d6358979246871096f61526f6c95721de2aeb52e3fe6",
+      "duration": 21.766666666666666,
+      "recipe": "episodes/030.json",
+      "reviewed_at": "2026-10-25"
+    },
+    {
+      "episode": "031",
+      "candidate_id": "P08",
+      "file": "sign_031.mp4",
+      "title": "Вид электрического транспорта и место зарядки",
+      "status": "delivered",
+      "target": "sign:8.26",
+      "sha256": "22f58f591a007f0691671f3bc139f16d65b64d3a34f62da73741dbdade18a392",
+      "duration": 21.133333333333333,
+      "recipe": "episodes/031.json",
+      "reviewed_at": "2026-10-25"
     }
   ]
 }
