@@ -60,6 +60,92 @@ if(process.argv.includes('--serve')) {
   const preview=await startPreview();console.log(`Isolated social preview: ${preview.url}/admin#publications/videos`);
   for(const signal of ['SIGINT','SIGTERM'])process.on(signal,async()=>{await preview.close();process.exit(0);});
 } else {
+  test('Drive folder filters scope bulk dates, include hidden rows and descendants, and retain an empty selection', {timeout:90000},async()=>{
+    const {chromium}=createRequire(import.meta.url)('playwright');
+    const preview=await startPreview();
+    const root={id:'root',name:''}, first={id:'folder-1',name:'PDD_1'}, second={id:'folder-2',name:'PDD_2'};
+    const posts=Array.from({length:28},(_,i)=>({id:'first-'+i,accountId:'a',title:'Видео',fileName:'game_'+String(i+1).padStart(3,'0')+'.mp4',
+      driveFolders:[root,first,...(i===27?[{id:'nested',name:'Подпапка'}]:[])],status:'queued',scheduledAt:null,targets:['youtube'],streamToken:'fixture'}));
+    posts.push(
+      {id:'second',accountId:'a',title:'Видео',fileName:'game_001.mp4',driveFolders:[root,second],status:'queued',scheduledAt:'2026-12-30T16:00:00Z',targets:['youtube'],streamToken:'fixture'},
+      {id:'done',accountId:'a',fileName:'done.mp4',driveFolders:[root,first],status:'published',youtubeStatus:'published',youtubeVideoId:'keep',targets:['youtube'],streamToken:'fixture'},
+      {id:'busy',accountId:'a',fileName:'busy.mp4',driveFolders:[root,first],status:'processing',scheduledAt:'2026-12-30T16:00:00Z',targets:['youtube'],streamToken:'fixture'},
+      {id:'legacy',accountId:'a',fileName:'legacy.mp4',status:'queued',scheduledAt:null,targets:['youtube'],streamToken:'fixture'},
+      {id:'same-name',accountId:'a',fileName:'other.mp4',driveFolders:[root,{id:'another-id',name:'PDD_1'}],status:'queued',scheduledAt:null,targets:['youtube'],streamToken:'fixture'},
+      {id:'root-video',accountId:'a',fileName:'root.mp4',driveFolders:[root],status:'queued',scheduledAt:null,targets:['youtube'],streamToken:'fixture'}
+    );
+    await preview.env.INSTALLS.put('social:posts',JSON.stringify(posts));
+    const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+    const context=await browser.newContext({viewport:{width:1440,height:1100},reducedMotion:'reduce'});
+    await context.route('**/*',route=>new URL(route.request().url()).origin===preview.url?route.continue():route.abort());
+    const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+    const read=async()=>JSON.parse(await preview.env.INSTALLS.get('social:posts'));
+    try {
+      await page.goto(preview.url+'/admin#publications/videos');
+      const folder=page.getByRole('combobox',{name:'Папка на Диске'});
+      await page.locator('[data-post="first-0"]').waitFor();
+      await folder.selectOption('folder-1');
+      assert.equal(await page.locator('#sc-list [data-post]').count(),24);
+      assert.equal(await page.locator('#sc-n-q').innerText(),'29');
+      assert.equal(await page.locator('#sc-n-p').innerText(),'1');
+      assert.match(await page.locator('#sc-plan').innerText(),/28/);
+      await page.getByRole('button',{name:'Выбрать все · 29',exact:true}).click();
+      assert.match(await page.locator('#sc-bulk .sc-count').innerText(),/29/,'all rows, including hidden ones, are selected');
+      await folder.selectOption('folder-2');
+      assert.equal(await page.locator('[data-pick]:checked').count(),0,'changing folders clears previous selections');
+      assert.equal(await page.locator('#sc-list [data-post]').count(),1);
+      assert.equal(await page.locator('[data-post="second"]').count(),1,'same filenames in another folder are isolated');
+      await folder.selectOption('nested');
+      assert.equal(await page.locator('[data-post="first-27"]').count(),1);
+      assert.match(await page.locator('#sc-plan').innerText(),/1/);
+      await folder.selectOption('folder-1');
+      await page.getByRole('searchbox',{name:'Найти видео'}).fill('game_00');
+      assert.equal(await page.locator('#sc-list [data-post]').count(),9);
+      assert.match(await page.locator('#sc-plan').innerText(),/9/,'folder and search both scope scheduling');
+      await page.getByRole('searchbox',{name:'Найти видео'}).clear();
+      await page.locator('#sc-plan').click();
+      const modal=page.getByRole('dialog');
+      assert.match(await modal.innerText(),/Расставить 28 роликов/);
+      assert.match(await modal.innerText(),/Папка: PDD_1/);
+      await modal.locator('#sc-m-date').fill('2026-12-10');
+      await modal.locator('#sc-m-time').fill('12:30');
+      await modal.locator('#sc-m-every').fill('2');
+      await modal.locator('[data-ok]').click();await modal.waitFor({state:'hidden'});
+      const afterFirst=await read();
+      for(let i=0;i<28;i++)assert.equal(afterFirst.find(p=>p.id==='first-'+i).scheduledAt,new Date(Date.UTC(2026,11,10+2*i,9,30)).toISOString());
+      assert.deepEqual(afterFirst.filter(p=>!p.id.startsWith('first-')),posts.filter(p=>!p.id.startsWith('first-')),'other folders, published and in-flight posts keep all fields');
+      await folder.selectOption('folder-2');
+      await page.getByRole('button',{name:'Выбрать все · 1',exact:true}).click();
+      await page.locator('#sc-bulk').getByRole('button',{name:'Дата',exact:true}).click();
+      await modal.locator('#sc-m-date').fill('2026-12-11');await modal.locator('#sc-m-time').fill('19:00');
+      await modal.locator('#sc-m-every').fill('2');await modal.locator('[data-ok]').click();await modal.waitFor({state:'hidden'});
+      const afterSecond=await read();
+      assert.equal(afterSecond.find(p=>p.id==='second').scheduledAt,'2026-12-11T16:00:00.000Z');
+      assert.deepEqual(afterSecond.filter(p=>p.id!=='second'),afterFirst.filter(p=>p.id!=='second'));
+      await preview.env.INSTALLS.put('social:posts',JSON.stringify(afterSecond.filter(p=>p.id!=='second')));
+      await page.locator('#sc-refresh').click();
+      await page.waitForFunction(()=>document.querySelector('#sc-plan').disabled);
+      assert.equal(await folder.inputValue(),'folder-2','disappearing folder must never silently select the entire queue');
+      assert.match(await page.locator('#sc-list').innerText(),/не найдены/);
+      await folder.selectOption('__unknown');
+      assert.equal(await page.locator('[data-post="legacy"]').count(),1);
+      assert.equal(await page.locator('#sc-folder-note').isVisible(),true);
+      await folder.selectOption('folder-1');
+      for(const width of [390,760]) {
+        await page.setViewportSize({width,height:1000});
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`folder filter fits ${width}px`);
+      }
+      if(process.env.SOCIAL_UI_SCREENSHOTS) {
+        const dir=fileURLToPath(new URL('../../output/social-ui/',import.meta.url));await mkdir(dir,{recursive:true});
+        await page.screenshot({path:dir+'folder-filter-mobile.png',fullPage:true});
+        await page.setViewportSize({width:1440,height:1100});
+        await page.screenshot({path:dir+'folder-filter-desktop.png',fullPage:true});
+      }
+      assert.deepEqual(errors,[]);
+      assert.equal(preview.requests.some(r=>r.path.includes('publish')),false,'assigning dates never triggers an immediate publication');
+    } finally {await browser.close();await preview.close();}
+  });
+
   test('video workspace saves both destinations, retains drafts, edits individual targets, and fits mobile', {timeout:90000},async()=>{
     const {chromium}=createRequire(import.meta.url)('playwright');
     const preview=await startPreview();

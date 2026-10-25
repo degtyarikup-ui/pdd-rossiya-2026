@@ -417,16 +417,17 @@ async function driveReadText(env, fileId) {
  * нормальный сценарий. Глубина ограничена, чтобы случайно указанный «Мой диск»
  * не превратился в обход всего хранилища.
  */
-async function driveCollectVideos(env, folderId, depth = 0, prefix = '') {
+async function driveCollectVideos(env, folderId, depth = 0, prefix = '', driveFolders = [{ id: folderId, name: '' }]) {
   const entries = await driveListFolder(env, folderId);
   let result = entries
     .filter((f) => f.mimeType !== 'application/vnd.google-apps.folder')
-    .map((f) => ({ ...f, folderPath: prefix }));
+    .map((f) => ({ ...f, folderPath: prefix, driveFolders }));
 
   if (depth < 2) {
     const subfolders = entries.filter((f) => f.mimeType === 'application/vnd.google-apps.folder');
     for (const sub of subfolders) {
-      result = result.concat(await driveCollectVideos(env, sub.id, depth + 1, prefix + sub.name + '/'));
+      result = result.concat(await driveCollectVideos(env, sub.id, depth + 1, prefix + sub.name + '/',
+        [...driveFolders, { id: sub.id, name: sub.name }]));
     }
   }
   return result;
@@ -478,6 +479,7 @@ export async function syncAccountVideos(env, account) {
       id: newId('sp'),
       accountId: account.id,
       driveFileId: file.id,
+      driveFolders: file.driveFolders,
       fileName: file.name,
       sizeBytes: file.size ? parseInt(file.size, 10) : null,
       ...(contentMd5 ? { contentMd5 } : {}),
@@ -500,23 +502,34 @@ export async function syncAccountVideos(env, account) {
     added += 1;
   }
 
+  // Downloads can take time. Merge into fresh state and recheck exclusions so
+  // an import cannot restore a just-deleted post or overwrite another edit.
+  const latest = await getPosts(env);
+  const latestExcluded = await getExcludedVideos(env, account.id);
+  const latestKnown = new Set(latest.filter(p => p.accountId === account.id).map(p => p.driveFileId));
+  const latestHashes = new Set(latest.filter(p => p.accountId === account.id)
+    .map(p => checksum(p.contentMd5) || fileHashes.get(p.driveFileId)).filter(Boolean));
+  const imported = posts.filter(p => p.accountId === account.id && !known.has(p.driveFileId)
+    && !latestKnown.has(p.driveFileId) && !latestExcluded.has(p.driveFileId)
+    && !(p.contentMd5 && latestHashes.has(p.contentMd5)));
+  added = imported.length;
+
+  // Backfill existing imports by file ID and follow moves/renames on Drive.
+  // Only folder metadata changes; current dates and publication results survive.
+  const byFileId = new Map(videos.map(file => [file.id, file]));
+  let updatedFolders = 0;
+  const refreshed = latest.map(post => {
+    const file = post.accountId === account.id && byFileId.get(post.driveFileId);
+    if (!file || JSON.stringify(post.driveFolders) === JSON.stringify(file.driveFolders)) return post;
+    updatedFolders += 1;
+    return { ...post, driveFolders: file.driveFolders };
+  });
+  if (added || updatedFolders) await saveSocialPosts(env, latest, [...refreshed, ...imported]);
   if (added) {
-    // Downloads can take time. Merge into fresh state and recheck exclusions so
-    // an import cannot restore a just-deleted post or overwrite another edit.
-    const latest = await getPosts(env);
-    const latestExcluded = await getExcludedVideos(env, account.id);
-    const latestKnown = new Set(latest.filter(p => p.accountId === account.id).map(p => p.driveFileId));
-    const latestHashes = new Set(latest.filter(p => p.accountId === account.id)
-      .map(p => checksum(p.contentMd5) || fileHashes.get(p.driveFileId)).filter(Boolean));
-    const imported = posts.filter(p => p.accountId === account.id && !known.has(p.driveFileId)
-      && !latestKnown.has(p.driveFileId) && !latestExcluded.has(p.driveFileId)
-      && !(p.contentMd5 && latestHashes.has(p.contentMd5)));
-    added = imported.length;
-    if (added) await saveSocialPosts(env, latest, [...latest, ...imported]);
     await socialLog(env, 'info', `Синхронизация «${account.name}»: добавлено роликов — ${added}`);
   }
 
-  return { status: 'ok', added, seen: videos.length };
+  return { status: 'ok', added, updatedFolders, seen: videos.length };
 }
 
 // ────────────────────────────── Instagram ──────────────────────────────

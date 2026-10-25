@@ -119,8 +119,10 @@ export const SOCIAL_VIEW_HTML = `
     .sc-switch input:checked+span::before { transform:translateX(12px); }
     .sc-switch input:focus-visible+span { outline:2px solid var(--primary); outline-offset:3px; }
     .sc-switch b { font-size:11px; font-weight:500; color:var(--text-muted); }
-    #social-view .sc-library-tools { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    #social-view .sc-library-tools { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px; }
     #social-view #sc-search { width:260px; max-width:100%; }
+    #social-view #sc-folder-filter { width:260px; max-width:100%; }
+    #social-view #sc-folder-note { margin:-4px 0 14px; }
     #social-view .sc-tabs { flex-wrap:wrap; }
     #social-view .sc-tabs span { opacity:.65; margin-left:5px; font-variant-numeric:tabular-nums; }
     #social-view .sc-bulk { background:var(--surface-gray); padding:8px; margin-bottom:8px; }
@@ -263,7 +265,8 @@ export const SOCIAL_VIEW_HTML = `
         <button class="btn-action btn-primary" id="sc-sync">Забрать с Диска</button>
       </div>
     </div>
-    <div class="sc-library-tools"><input type="search" id="sc-search" class="sc-input" placeholder="Найти видео" aria-label="Найти видео"><span class="sc-hint" id="sc-found"></span></div>
+    <div class="sc-library-tools"><input type="search" id="sc-search" class="sc-input" placeholder="Найти видео" aria-label="Найти видео"><select id="sc-folder-filter" class="sc-input" aria-label="Папка на Диске"><option value="">Все папки</option></select><span class="sc-hint" id="sc-found" role="status"></span></div>
+    <div class="sc-hint" id="sc-folder-note" hidden>Чтобы обновить папки роликов, нажмите «Забрать с Диска».</div>
     <div id="sc-bulk" style="display:none;" class="sc-bulk"></div>
     <div id="sc-list" class="sc-video-list"></div>
     <button class="btn-action sc-more" id="sc-more" hidden>Показать ещё</button>
@@ -289,6 +292,8 @@ var scBusy = {};
 var scScheduleDirty = false;
 var scLimit = 24;
 var scQuery = '';
+var scFolderFilter = '';
+var scFolderLabel = '';
 var scChecks = {};
 
 function scEsc(v) {
@@ -401,12 +406,49 @@ function scScheduleChanged() {
   scRenderSchedule();
 }
 
+function scMatchesFolder(p) {
+  var folders = p.driveFolders || [];
+  if (scFolderFilter === '__unknown') return !folders.length;
+  return !scFolderFilter || folders.some(function (folder) { return folder.id === scFolderFilter; });
+}
+function scMatchesSearch(p) {
+  return !scQuery || (String(p.title || '') + ' ' + String(p.fileName || '')).toLocaleLowerCase('ru').indexOf(scQuery) !== -1;
+}
+function scPlanPosts() {
+  return (scState.posts || []).filter(function (p) { return p.status === 'queued' && scMatchesFolder(p) && scMatchesSearch(p); });
+}
+function scRenderFolders() {
+  var options = new Map(), unknown = 0;
+  (scState.posts || []).forEach(function (p) {
+    var folders = p.driveFolders || [];
+    if (!folders.length) { unknown += 1; return; }
+    folders.forEach(function (folder, i) {
+      var label = i === 0 ? 'Основная папка' : folders.slice(1, i + 1).map(function (f) { return f.name; }).join(' / ');
+      var option = options.get(folder.id) || { label: label, count: 0 };
+      option.count += 1;
+      options.set(folder.id, option);
+    });
+  });
+  if (unknown) options.set('__unknown', { label: 'Папка не определена', count: unknown });
+  // Keep an empty selected folder scoped after deletions or a Drive refresh.
+  if (scFolderFilter && !options.has(scFolderFilter)) options.set(scFolderFilter, { label: scFolderLabel, count: 0 });
+  var select = document.getElementById('sc-folder-filter');
+  select.innerHTML = '<option value="">Все папки</option>' + Array.from(options.entries()).sort(function (a, b) {
+    return a[1].label.localeCompare(b[1].label, 'ru', { numeric: true });
+  }).map(function (entry) {
+    return '<option value="' + scEsc(entry[0]) + '" data-label="' + scEsc(entry[1].label) + '">' + scEsc(entry[1].label) + ' · ' + entry[1].count + '</option>';
+  }).join('');
+  select.value = scFolderFilter;
+  if (scFolderFilter) scFolderLabel = options.get(scFolderFilter).label;
+  document.getElementById('sc-folder-note').hidden = !unknown;
+}
+
 function scPosts() {
   // Наверх — то, что прямо сейчас публикуется, следом неудачи: именно за ними
   // и следят после нажатия «Опубликовать сейчас».
   var weight = { processing: 0, failed: 1, queued: 2, published: 3 };
   return (scState.posts || []).filter(function (p) {
-    if (scQuery && (String(p.title || '') + ' ' + String(p.fileName || '')).toLocaleLowerCase('ru').indexOf(scQuery) === -1) return false;
+    if (!scMatchesFolder(p) || !scMatchesSearch(p)) return false;
     if (scFilter === 'queued') return p.status === 'queued' || p.status === 'processing';
     if (scFilter === 'published') return p.status === 'published';
     return p.status === 'failed';
@@ -492,19 +534,23 @@ window.scRetry = async function (ev, id, platform) {
 };
 
 function scRenderList() {
-  var all = scState.posts || [];
+  scRenderFolders();
+  var all = (scState.posts || []).filter(scMatchesFolder);
   document.getElementById('sc-n-q').textContent = all.filter(function (p) { return p.status === 'queued' || p.status === 'processing'; }).length;
   document.getElementById('sc-n-p').textContent = all.filter(function (p) { return p.status === 'published'; }).length;
   document.getElementById('sc-n-f').textContent = all.filter(function (p) { return p.status === 'failed'; }).length;
 
   var list = scPosts();
   var box = document.getElementById('sc-list');
-  document.getElementById('sc-found').textContent = scQuery ? 'Найдено: ' + list.length : '';
+  document.getElementById('sc-found').textContent = scQuery || scFolderFilter ? 'Найдено: ' + list.length : '';
+  var plan = document.getElementById('sc-plan'), planned = scPlanPosts();
+  plan.textContent = 'Расставить даты · ' + planned.length + '…';
+  plan.disabled = !planned.length;
   document.getElementById('sc-more').hidden = list.length <= scLimit;
   var visibleIds = list.map(function (p) { return p.id; });
   Object.keys(scSelected).forEach(function (id) { if (visibleIds.indexOf(id) === -1) delete scSelected[id]; });
   if (!list.length) {
-    box.innerHTML = '<div class="sc-empty">' + (scQuery ? 'Видео не найдены' : scFilter === 'queued' ? 'В очереди пока нет видео' : scFilter === 'failed' ? 'Все публикации без ошибок' : 'Опубликованных видео пока нет') + '</div>';
+    box.innerHTML = '<div class="sc-empty">' + (scQuery || scFolderFilter ? 'Видео не найдены' : scFilter === 'queued' ? 'В очереди пока нет видео' : scFilter === 'failed' ? 'Все публикации без ошибок' : 'Опубликованных видео пока нет') + '</div>';
     scRenderBulk();
     return;
   }
@@ -711,6 +757,7 @@ window.scBulkDate = function (chosenIds) {
   var time = (scAccount() || {}).postTime || '19:00';
   scModal(
     '<div style="font-size:15px;font-weight:700;margin-bottom:14px;">Расставить ' + ids.length + ' роликов</div>'
+    + (scFolderFilter ? '<div class="sc-hint" style="margin-bottom:14px;">Папка: ' + scEsc(scFolderLabel) + '</div>' : '')
     + '<div style="display:flex;gap:12px;flex-wrap:wrap;">'
     + '<div class="form-group"><label class="form-label">С какого дня</label><input type="date" id="sc-m-date" class="sc-input" value="' + now + '"></div>'
     + '<div class="form-group"><label class="form-label">Во сколько (МСК)</label><input type="time" id="sc-m-time" class="sc-input" value="' + time + '"></div>'
@@ -903,7 +950,7 @@ document.getElementById('sc-save-schedule').onclick = async function () {
 };
 
 document.getElementById('sc-plan').onclick = function () {
-  var ids = (scState.posts || []).filter(function (p) { return p.status === 'queued'; }).map(function (p) { return p.id; });
+  var ids = scPlanPosts().map(function (p) { return p.id; });
   if (!ids.length) { scToast('Очередь пуста'); return; }
   scBulkDate(ids);
 };
@@ -916,6 +963,13 @@ document.getElementById('sc-plan').onclick = function () {
 document.getElementById('sc-time').oninput = scScheduleChanged;
 document.getElementById('sc-active').onchange = scScheduleChanged;
 document.getElementById('sc-search').oninput = function () { scQuery = this.value.trim().toLocaleLowerCase('ru'); scLimit = 24; scRenderList(); };
+document.getElementById('sc-folder-filter').onchange = function () {
+  scFolderFilter = this.value;
+  scFolderLabel = this.selectedOptions[0].dataset.label || '';
+  scSelected = {};
+  scLimit = 24;
+  scRenderList();
+};
 document.getElementById('sc-more').onclick = function () { scLimit += 24; scRenderList(); };
 
 document.getElementById('sc-sync').onclick = async function () {
@@ -923,9 +977,10 @@ document.getElementById('sc-sync').onclick = async function () {
   try {
     var res = await scApi('sync', {});
     var added = (res.results || []).reduce(function (s, r) { return s + (r.added || 0); }, 0);
+    var updatedFolders = (res.results || []).reduce(function (s, r) { return s + (r.updatedFolders || 0); }, 0);
     var bad = (res.results || []).filter(function (r) { return r.status === 'error'; });
     if (bad.length) scToast(bad[0].message, true);
-    else scToast(added ? ('Добавлено: ' + added) : 'Новых роликов нет');
+    else scToast(added ? ('Добавлено: ' + added) : updatedFolders ? 'Папки роликов обновлены' : 'Новых роликов нет');
     await loadSocial();
   } catch (e) { scToast('Ошибка: ' + e.message, true); }
 };

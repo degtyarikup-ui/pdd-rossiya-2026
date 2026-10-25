@@ -259,8 +259,73 @@ test('Drive checksum dedup recognizes old records without altering their publica
     {id:'old-file',name:'old.mp4',mimeType:'video/mp4',md5Checksum:'a'.repeat(32)},
     {id:'copy',name:'copy.mp4',mimeType:'video/mp4',md5Checksum:'a'.repeat(32)},
   ]);
-  try { await runAutoPostForTest(f); assert.deepEqual(f.read('posts'),[existing]); }
+  try { await runAutoPostForTest(f); assert.deepEqual(f.read('posts'),[{...existing,driveFolders:[{id:'fixture-folder',name:''}]}]); }
   finally { f.restore(); }
+});
+
+test('Drive folder sync backfills old videos, follows moves, and preserves dates and publication history', async () => {
+  const existing = {id:'old',accountId:'a',driveFileId:'old-file',fileName:'same.mp4',status:'published',
+    scheduledAt:'2026-12-01T16:00:00Z',youtubeStatus:'published',youtubeVideoId:'keep-id',caption:'keep caption'};
+  const other = {...existing,id:'other',accountId:'b'};
+  const f = await schedulerFixture([existing,other]);
+  const root = {id:'fixture-folder',name:''}, first = {id:'folder-1',name:'PDD_1'}, second = {id:'folder-2',name:'PDD_2'};
+  const tree = new Map([
+    [root.id,[{id:first.id,name:first.name,mimeType:'application/vnd.google-apps.folder'},
+      {id:second.id,name:second.name,mimeType:'application/vnd.google-apps.folder'},
+      {id:'root-video',name:'root.mp4',mimeType:'video/mp4'}]],
+    [first.id,[{id:'old-file',name:'same.mp4',mimeType:'video/mp4'},
+      {id:'nested',name:'Подпапка',mimeType:'application/vnd.google-apps.folder'}]],
+    ['nested',[{id:'nested-video',name:'nested.mp4',mimeType:'video/mp4'}]],
+    [second.id,[{id:'new-file',name:'same.mp4',mimeType:'video/mp4'}]],
+  ]);
+  globalThis.fetch = async url => {
+    const parsed = new URL(url);
+    assert.equal(parsed.pathname,'/drive/v3/files');
+    const folderId = parsed.searchParams.get('q').match(/^'([^']+)'/)[1];
+    return Response.json({files:tree.get(folderId) || []});
+  };
+  try {
+    const response = await f.call('sync',{});
+    assert.equal(response.status,200);
+    assert.equal((await response.json()).results[0].updatedFolders,1);
+    assert.deepEqual(f.read('posts').find(p=>p.id==='old'),{...existing,driveFolders:[root,first]});
+    assert.deepEqual(f.read('posts').find(p=>p.id==='other'),other,'another account is untouched');
+    assert.deepEqual(f.read('posts').find(p=>p.driveFileId==='new-file').driveFolders,[root,second]);
+    assert.deepEqual(f.read('posts').find(p=>p.driveFileId==='nested-video').driveFolders,[root,first,{id:'nested',name:'Подпапка'}]);
+    assert.deepEqual(f.read('posts').find(p=>p.driveFileId==='root-video').driveFolders,[root]);
+    const before = f.read('posts');
+    const noChange = (await (await f.call('sync',{})).json()).results[0];
+    assert.equal(noChange.added,0);assert.equal(noChange.updatedFolders,0);
+    assert.deepEqual(f.read('posts'),before,'repeat sync preserves the entire queue');
+    tree.get(first.id).shift();tree.get(second.id).push({id:'old-file',name:'same.mp4',mimeType:'video/mp4'});
+    tree.get(root.id).find(folder=>folder.id===second.id).name='PDD_2 renamed';
+    await f.call('sync',{});
+    assert.deepEqual(f.read('posts').find(p=>p.id==='old'),{...existing,driveFolders:[root,{...second,name:'PDD_2 renamed'}]});
+  } finally {f.restore();}
+});
+
+test('folder backfill merges into a fresh snapshot after concurrent scheduling and never recreates a removed video', async () => {
+  const original = {id:'old',accountId:'a',driveFileId:'old-file',status:'queued',scheduledAt:null};
+  const f = await schedulerFixture([original,{...original,id:'removed',driveFileId:'removed-file'}],[
+    {id:'old-file',name:'old.mp4',mimeType:'video/mp4'},
+    {id:'removed-file',name:'removed.mp4',mimeType:'video/mp4'},
+    {id:'new-file',name:'new.mp4',mimeType:'video/mp4'},
+    {id:'new-caption',name:'new.txt',mimeType:'text/plain'},
+  ]);
+  const fetch = globalThis.fetch, scheduledAt = '2026-12-20T12:00:00Z';
+  globalThis.fetch = async url => {
+    if (String(url).includes('/files/new-caption?')) {
+      await f.call('posts/update',{id:'old',scheduledAt});
+      await f.call('posts/delete',{id:'removed'});
+      return new Response('new caption');
+    }
+    return fetch(url);
+  };
+  try {
+    await f.call('sync',{});
+    assert.deepEqual(f.read('posts').find(p=>p.id==='old'),{...original,scheduledAt,driveFolders:[{id:'fixture-folder',name:''}]});
+    assert.equal(f.read('posts').some(p=>p.driveFileId==='removed-file'),false);
+  } finally {f.restore();}
 });
 
 for (const bulk of [false, true]) {
