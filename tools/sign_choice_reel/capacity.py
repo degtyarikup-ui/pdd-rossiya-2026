@@ -57,6 +57,30 @@ def summarize(rows):
         "approved_episodes": 1,
         "remaining_one_per_catalog_entry": len(rows) - 1,
     }
+    bank = json.loads(Path(__file__).with_name("interesting_candidates.json").read_text())
+    lookup = {(('sign' if row['kind'] == 'signs' else 'mark') + ':' + row['number']): row
+              for row in rows}
+    seen = set()
+    for item in bank["candidates"]:
+        if item["id"] in seen:
+            raise ValueError(f"Repeated candidate ID: {item['id']}")
+        seen.add(item["id"])
+        if item["tier"] not in ("core", "reserve"):
+            raise ValueError(f"Unknown candidate tier: {item['tier']}")
+        if len(item["options"]) != 4 or len(set(item["options"])) != 4:
+            raise ValueError(f"Candidate must have four different options: {item['id']}")
+        hashes = [lookup[key]["image_sha256"] for key in item["options"]]
+        if len(set(hashes)) != 4:
+            raise ValueError(f"Identical image files in candidate: {item['id']}")
+    summary["editorial_selection"] = {
+        "status": bank["status"], "excludes_approved_episode": bank["excludes_approved_episode"],
+        "core_candidates": sum(item["tier"] == "core" for item in bank["candidates"]),
+        "reserve_candidates": sum(item["tier"] == "reserve" for item in bank["candidates"]),
+        "core_by_group": dict(collections.Counter(
+            item["group"] for item in bank["candidates"] if item["tier"] == "core")),
+        "total_candidates": len(bank["candidates"]),
+        "note": "Catalog IDs and image uniqueness checked; question ambiguity and editorial quality require review.",
+    }
     return summary
 
 
