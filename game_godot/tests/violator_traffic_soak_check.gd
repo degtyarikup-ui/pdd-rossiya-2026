@@ -148,7 +148,7 @@ func _run() -> void:
 			by_type[ty][1] += 1
 	print("violators scheduled / happened: ", by_type)
 	_check("Scheduled violators mostly commit their offence (%d of %d)" % [viol_active.size(), viol_seen.size()], viol_seen.size() > 0 and float(viol_active.size()) / float(viol_seen.size()) >= 0.5)
-	_check("Emergency vehicles appeared in the run (%d)" % emergencies, emergencies > 0)
+	_check("Emergency vehicles appeared in the run (%d)" % emergencies, emergencies > 0 or game.two_way)   # none on the easy level
 	_check("Walkers actually crossed (%d)" % walkers_crossed, walkers_crossed > 5 * game.crosswalks.size())
 	_check("No car drives through another car (%d overlapping frames)" % car_overlaps, car_overlaps == 0)
 	_check("No car drives through a walker (%d frames)" % walker_hits, walker_hits == 0)

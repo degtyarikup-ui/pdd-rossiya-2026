@@ -564,6 +564,32 @@ func _run_checks() -> void:
 	_check("Main-road cars do not start on red+yellow", not main_early)
 	_check("Main-road cars start on their green", main_go)
 
+	# Easy level: the northbound lane stops at its own line on red and goes on green.
+	game.set_difficulty("easy")
+	for c in game.cars:
+		c.queue_free()
+	game.cars.clear()
+	game.light_phase = "ew_green"
+	game.light_state = "red"
+	game.light_timer = 1.0
+	var nb = game.spawn_specific_car("south_north", game.LANE_NORTH, false, "")
+	nb.position.z = 30.0
+	nb.speed = 10.0
+	var nb_crossed_red := false
+	var nb_went := false
+	for step in 900:
+		game._update_traffic_lights(0.016)
+		game._update_cars(0.016)
+		if not is_instance_valid(nb):
+			break
+		if game.light_state != "green" and nb.position.z < game.STOP_LINE_NORTHBOUND - 0.5 and game.light_phase in ["ew_green", "ew_green_flash", "ew_yellow", "all_red_2", "ns_red_yellow"]:
+			nb_crossed_red = true
+		if game.light_state == "green" and nb.position.z < 0.0:
+			nb_went = true
+	_check("Northbound car waits at its stop line on red", not nb_crossed_red)
+	_check("Northbound car drives through on green", nb_went)
+	game.set_difficulty("hard")
+
 	game.queue_free()
 	await process_frame
 	

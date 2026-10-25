@@ -538,6 +538,10 @@ func _check_economy_and_game_over() -> void:
 			for k in 60:
 				game._spawn_procedural_car()
 			_check("Easy never sends cars from the east", game.cars.all(func(c): return not is_instance_valid(c) or c.lane != 3))
+			_check("Easy roads are two-way, one lane each way", game.two_way and game.cars.any(func(c): return is_instance_valid(c) and c.lane == game.LANE_NORTH) \
+				and game.cars.all(func(c): return not is_instance_valid(c) or c.lane != 1))
+			_check("Easy has a signal for the northbound approach", game.traffic_lights_south.size() == 1 and game.signal_badges.has("south"))
+			_check("Easy west crosswalk spans the narrow arm", is_equal_approx(game.crosswalks.west.lo, game.ARM_2WAY_LO) and is_equal_approx(game.crosswalks.west.hi, game.ARM_2WAY_HI))
 			for c in game.cars:
 				if is_instance_valid(c):
 					c.queue_free()
