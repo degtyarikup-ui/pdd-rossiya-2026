@@ -372,7 +372,8 @@ class _MiniGamesCatalogue extends StatelessWidget {
       bestScore: violatorBest,
       titleSize: titleSize,
       onTap: onViolator,
-      comingSoon: true,
+      // Still "coming soon" for the stores; dev builds (GAME_DEBUG) can play it.
+      comingSoon: !const bool.fromEnvironment('GAME_DEBUG'),
     ),
     _HubCard(
       id: 'parking',
