@@ -25,7 +25,7 @@ test('old v2 summaries retain counts while geographic enrichment is bounded',asy
 test('metadata stays under Cloudflare byte limit with multilingual fields',()=>{
  const meta=userSummary({...base,id:'apple_'+'.'.repeat(80),name:'Я'.repeat(60),email:'я'.repeat(80),avatarUrl:'https://example.com/'+'.'.repeat(270),ipRegion:'Ш'.repeat(60),ipCity:'Ш'.repeat(60)});
  assert.ok(new TextEncoder().encode(JSON.stringify(meta)).length<=1024);
- assert.equal(meta.v,4);
+ assert.equal(meta.v,5);
 });
 test('analytics client compiles and avoids false conversion presentation',()=>{
  assert.doesNotThrow(()=>new Function(ANALYTICS_CLIENT_JS));

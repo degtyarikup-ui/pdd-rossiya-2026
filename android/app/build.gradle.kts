@@ -142,6 +142,7 @@ if (godotEngine.exists()) {
 dependencies {
     implementation("com.google.android.play:app-update:2.1.0")
     implementation("com.android.installreferrer:installreferrer:2.2")
+    implementation("ru.rustore.sdk:installreferrer:10.6.1")
     // Core library desugaring для flutter_local_notifications.
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

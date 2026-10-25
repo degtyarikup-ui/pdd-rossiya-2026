@@ -66,11 +66,13 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:30px 0 14px}.an-section-head:first-child{margin-top:0}.an-section-head h2{margin:0;font-size:13px;font-weight:600;color:var(--an-muted);letter-spacing:0}.an-section-head .an-period{margin:0;text-align:right}
 .an-scope{font-size:10px;font-weight:500;line-height:1.4;color:var(--an-muted);white-space:nowrap}.an-heading{display:flex;align-items:center;gap:8px;min-width:0}.an-subtitle{font-size:11px;color:var(--an-muted);margin-top:6px;line-height:1.5}
 .an-audience-grid,.an-acquisition-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}.an-audience-grid>.an-card,.an-acquisition-grid>.an-card{margin:0}
+.an-acquisition-card .an-table{min-width:440px}.an-acquisition-card .an-table td:first-child{max-width:360px;overflow-wrap:anywhere}.an-acquisition-card .an-tabs{margin-bottom:18px}.an-acquisition-card .an-table-name{align-items:flex-start}.an-acquisition-card .an-logo{margin-top:1px}.an-acquisition-card .an-source-detail{display:block;font-size:10px;color:var(--an-muted);font-weight:450;margin-top:3px}.an-acquisition-card .an-subtitle{margin-bottom:16px}.an-acquisition-card details.an-day-details>summary{line-height:1.5}
 .an-audience-grid .an-head{margin-bottom:16px}.an-auth-table .an-table td{padding:13px 0}.an-auth-table .an-table td:nth-child(2){color:var(--an-muted);font-weight:450}.an-auth-table .an-table td:last-child{font-size:16px;width:56px}.an-auth-table .an-table-name{display:grid;grid-template-columns:20px minmax(0,1fr);gap:5px 10px}.an-auth-track{grid-column:2;height:3px;background:#F0F2F5;border-radius:3px;overflow:hidden;max-width:240px}.an-auth-track i{display:block;height:100%;border-radius:3px;background:var(--an-provider-color)}
 .an-update-metric{display:flex;align-items:center;gap:14px;padding-bottom:18px;margin-bottom:16px;border-bottom:1px solid #F2F3F5}.an-update-metric b{font-size:32px;font-weight:550;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums}.an-update-metric span{font-size:11px;line-height:1.6;color:var(--an-muted)}.an-update-metric strong{font-weight:500;color:var(--an-text)}
 .an-version-label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;font-weight:500;margin-bottom:14px}.an-versions{max-height:202px;overflow:auto;scrollbar-width:thin}.an-versions .an-table th{position:sticky;top:0;background:white;z-index:1}.an-versions .an-table td{padding:11px 0}.an-version-name{display:flex;align-items:center;gap:8px}.an-version-name svg{width:14px;height:14px;flex-shrink:0}.an-versions .an-share{flex-direction:row;align-items:center;gap:8px}
 .an-geo-card .an-geo-tools{max-width:580px}.an-geo-card .an-table-name{min-width:120px}.an-geo-card .an-table{min-width:0}.an-geo-card .an-table td{padding:13px 0}
 @media(max-width:1000px){.an-audience-grid,.an-acquisition-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.an-acquisition-card .an-table{min-width:0;table-layout:fixed;font-size:11px}.an-acquisition-card .an-table th{white-space:normal;font-size:9px;overflow-wrap:anywhere}.an-acquisition-card .an-table th:first-child{width:42%}.an-acquisition-card .an-table th:nth-child(2),.an-acquisition-card .an-table th:nth-child(3){width:18%}.an-acquisition-card .an-table th:last-child{width:22%}.an-acquisition-card .an-table td+td,.an-acquisition-card .an-table th+th{padding-left:6px}.an-acquisition-card .an-table-name{gap:6px}.an-acquisition-card .an-table-name>span{min-width:0}.an-acquisition-card .an-logo{width:16px;height:16px}.an-acquisition-card .an-logo svg{width:16px;height:16px}.an-acquisition-card .an-source-detail{font-size:9px}}
 @media(max-width:640px){.an-section-head{margin-top:24px;gap:8px}.an-section-head h2{font-size:12px}.an-section-head .an-period{font-size:10px}.an-audience-grid,.an-acquisition-grid{gap:14px;margin-bottom:14px}.an-geo-card .an-table{min-width:360px}.an-scope{font-size:9px}.an-heading{gap:6px}.an-version-name{gap:5px}.an-versions .an-share-track{display:none}.an-help>div{width:250px}.an-update-metric b{font-size:30px}}
 </style>
 <div class="an-section-head"><h2>Обзор</h2><span class="an-scope">Сейчас</span></div>
@@ -123,8 +125,18 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <div class="an-geo-footer"><span id="an-geo-coverage"></span><div class="an-pagination" id="an-geo-pages"></div></div>
  </div>
 <div class="an-section-head"><h2>Источники привлечения</h2><span class="an-scope">За выбранный период</span></div>
+<div class="an-card an-acquisition-card" id="an-acquisition">
+  <div class="an-head"><div class="an-title">Источники аккаунтов и покупки Premium</div><details class="an-help"><summary aria-label="Об источниках аккаунтов">i</summary><div>Первый сохранённый источник аккаунта. Период выбирает дату регистрации. Покупатели — аккаунты с подтверждением платной операции в сохранённых данных; один аккаунт считается один раз. Ручная выдача, известные тестовые, бесплатные и возвращённые покупки исключены. История магазинов может быть неполной: старые записи и неизвестный статус возврата отмечены отдельно. Статус возврата соответствует последней проверке магазина.</div></details></div>
+  <div class="an-tabs" id="an-acquisition-tabs"><button type="button" data-acquisition="cohort" class="active" aria-pressed="true">Регистрации за период</button><button type="button" data-acquisition="allTime" aria-pressed="false">Всё время</button></div>
+  <div class="an-subtitle" id="an-acquisition-scope"></div>
+  <div class="an-table-wrap" id="an-acquisition-table" tabindex="0" role="region" aria-label="Источники аккаунтов и конверсия в покупку"></div>
+  <div class="an-caption" id="an-acquisition-coverage"></div>
+  <details class="an-day-details"><summary>Кампании</summary><div class="an-table-wrap" id="an-acquisition-campaigns"></div></details>
+  <details class="an-day-details"><summary>Статьи, с которых пришли аккаунты</summary><div class="an-table-wrap" id="an-acquisition-articles"></div></details>
+  <div class="an-caption">Магазин установки и источник привлечения учитываются отдельно. Поиск и рекомендации внутри App Store и RuStore доступны в сводных отчётах магазинов; связать их с отдельным аккаунтом нельзя. Google Play отмечается как органика только при явном подтверждении Install Referrer, без разделения поиска и рекомендаций.</div>
+</div>
 <div class="an-acquisition-grid">
-  <div class="an-card"><div class="an-head"><div class="an-title">Источники сайта</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры и нажатия на ссылки магазинов. Метка сайта не подтверждает источник установки.</div></details></div><div class="an-table-wrap" id="an-sources"></div></div>
+  <div class="an-card"><div class="an-head"><div class="an-title">Источники сайта</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры страниц и нажатия на ссылки магазинов или веб-приложения. Это события, а не уникальные люди. Метка сайта не подтверждает источник установки.</div></details></div><div class="an-table-wrap" id="an-sources"></div></div>
   <div class="an-card"><div class="an-head"><div class="an-title">Первые запуски по магазинам</div><details class="an-help"><summary aria-label="Об установках">i</summary><div>Первые запуски приложения. Скачивания из консолей магазинов сюда не поступают.</div></details></div><div class="an-table-wrap" id="an-stores"></div></div>
 </div>
 <div class="an-tip" id="an-tip"></div>
@@ -146,6 +158,14 @@ var AN_STORES = {
 var AN_SOURCES = {
   yandex: { name: 'Яндекс', icon: 'yandex' },
   google: { name: 'Google', icon: 'google' },
+  bing: { name: 'Bing', glyph: 'globe' },
+  chatgpt: { name: 'ChatGPT', glyph: 'globe' },
+  perplexity: { name: 'Perplexity', glyph: 'globe' },
+  copilot: { name: 'Copilot', glyph: 'globe' },
+  gemini: { name: 'Gemini', glyph: 'globe' },
+  claude: { name: 'Claude', glyph: 'globe' },
+  duckduckgo: { name: 'DuckDuckGo', glyph: 'globe' },
+  google_play_organic: { name: 'Google Play · органика', icon: 'gplay' },
   instagram: { name: 'Instagram', icon: 'instagram' },
   youtube: { name: 'YouTube', icon: 'youtube' },
   tiktok: { name: 'TikTok', icon: 'tiktok' },
@@ -153,7 +173,8 @@ var AN_SOURCES = {
   vk: { name: 'ВКонтакте', icon: 'vk' },
   threads: { name: 'Threads', icon: 'threads' },
   dzen: { name: 'Дзен', icon: 'dzen' },
-  direct: { name: 'Прямые / без метки', icon: 'direct' },
+  direct: { name: 'Прямой переход', icon: 'direct' },
+  unknown: { name: 'Источник не определён', glyph: 'globe' },
   other: { name: 'Другие сайты', icon: 'other' }
 };
 var AN_ICON_COLORS = { gplay: '#01875F', googleplay: '#01875F', appstore: '#000000', instagram: '#FF0069', youtube: '#FF0000', telegram: '#26A5E4', vk: '#0077FF', tiktok: '#000000', threads: '#000000', google: '#4285F4', rustore: '#0077FF', yandex: '#FC3F1D', dzen: '#000000' };
@@ -181,6 +202,11 @@ function anLogo(conf) {
 }
 function anSourceKey(raw) {
   var s = String(raw || '').toLowerCase();
+  if (['chatgpt','perplexity','copilot','gemini','claude'].includes(s)) return s;
+  if (s === 'unknown') return 'unknown';
+  if (s === 'google_play_organic') return 'google_play_organic';
+  if (s === 'bing' || s.indexOf('bing.com') !== -1) return 'bing';
+  if (s === 'duckduckgo' || s.indexOf('duckduckgo.com') !== -1) return 'duckduckgo';
   if (!s || s === 'direct' || s === 'none' || s === '(direct)') return 'direct';
   if (s.indexOf('yandex') !== -1 || s === 'ya' || s.indexOf('ya.ru') !== -1) return 'yandex';
   if (s === 'ig' || s.indexOf('instagram') !== -1) return 'instagram';
@@ -404,6 +430,29 @@ function anRenderVersions(data) {
  var rows=versions&&versions.rows||[], total=rows.reduce(function(n,r){return n+r.accounts;},0);
  document.getElementById('an-versions').innerHTML=rows.length?anTable(['Версия','Аккаунты','Доля'],rows.map(function(r){return '<tr><td><span class="an-version-name" title="'+(r.platform==='android'?'Android':'iOS')+'">'+anSvgIcon(r.platform==='android'?'android':'apple')+'<span>'+(r.platform==='android'?'Android':'iOS')+' '+anEsc(r.version)+'</span></span></td>'+anCell(r.accounts)+'<td>'+anShare(r.accounts,total)+'</td></tr>'; })): '<div class="an-empty">Нет данных о версиях мобильных аккаунтов</div>';
 }
+var anAcquisitionScope='cohort';
+function anAcquisitionSource(row) {
+ var conf=AN_SOURCES[row.source]||AN_SOURCES.unknown;
+ var medium=({organic:'Органический трафик',social:'Соцсети',referral:'Переход с сайта',ai_referral:'Переход из ИИ',cpc:'Реклама',paid:'Реклама',email:'Рассылка',none:'Прямой переход'})[row.medium]||row.medium||'';
+ return '<div class="an-table-name">'+anLogo(conf)+'<span>'+anEsc(conf.name)+(medium?'<span class="an-source-detail">'+anEsc(medium)+'</span>':'')+'</span></div>';
+}
+function anAcquisitionCounts(row) {
+ return anCell(row.accounts)+anCell(row.buyers)+'<td title="Подтверждённые покупатели / все аккаунты этой строки">'+(row.accounts?(row.purchaseUnknown?'≥ ':'')+(row.buyers/row.accounts*100).toLocaleString('ru-RU',{maximumFractionDigits:1})+'%':'—')+(row.purchaseUnknown?'<span class="an-source-detail" title="Для части аккаунтов не хватает старых данных о платеже">данные неполные</span>':'')+'</td>';
+}
+function anRenderAcquisition(data) {
+ var box=document.getElementById('an-acquisition-table');if(!box)return;
+ var report=data.users&&data.users.acquisition,section=report&&report[anAcquisitionScope];
+ document.querySelectorAll('#an-acquisition-tabs [data-acquisition]').forEach(function(b){var selected=b.dataset.acquisition===anAcquisitionScope;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});
+ document.getElementById('an-acquisition-scope').textContent=anAcquisitionScope==='allTime'?'Все зарегистрированные аккаунты · подтверждения оплаты в сохранённых данных':'Аккаунты, зарегистрированные за выбранный период · подтверждения оплаты в сохранённых данных';
+ var headers=['Источник','Аккаунты','Купили','Конверсия'];
+ box.innerHTML=!section?'<div class="an-empty">Данные об источниках аккаунтов недоступны</div>':!section.accounts?'<div class="an-empty">Нет зарегистрированных аккаунтов за этот период</div>':anTable(headers,section.rows.map(function(r){return '<tr><td>'+anAcquisitionSource(r)+'</td>'+anAcquisitionCounts(r)+'</tr>';}));
+ document.getElementById('an-acquisition-coverage').textContent=section?'Источник известен у '+anNum(section.knownSources)+' из '+anNum(section.accounts)+' аккаунтов. Подтверждённых покупателей: '+anNum(section.buyers)+'.'+(section.purchaseUnknown?' У '+anNum(section.purchaseUnknown)+' аккаунтов недостаточно данных о старых покупках; конверсия показывает только подтверждённую долю.':'')+(section.sourcesOmitted?' Показаны 100 крупнейших сочетаний источника и канала.':''):'';
+ [['campaigns','Кампания'],['articles','Первая статья']].forEach(function(pair){
+  var rows=section&&section[pair[0]]||[],target=document.getElementById('an-acquisition-'+pair[0]);
+  target.innerHTML=rows.length?anTable([pair[1],'Аккаунты','Купили','Конверсия'],rows.map(function(r){var label=pair[0]==='articles'?anEsc(r.landingPage):anEsc(r.campaign)+'<span class="an-source-detail">'+anEsc((AN_SOURCES[r.source]||AN_SOURCES.unknown).name)+(r.medium?' · '+anEsc(r.medium):'')+'</span>';return '<tr><td>'+label+'</td>'+anAcquisitionCounts(r)+'</tr>';})):'<div class="an-empty">'+(pair[0]==='articles'?'Нет аккаунтов с известной первой статьёй':'Нет аккаунтов с меткой кампании')+'</div>';
+  if(section&&section[pair[0]+'Omitted'])target.innerHTML+='<div class="an-caption">Показаны 50 крупнейших строк.</div>';
+ });
+}
 function renderDashboard(data) {
  if(!document.getElementById('an-now'))return;
  window.__anData=data;
@@ -416,6 +465,7 @@ function renderDashboard(data) {
  anRenderUsage(data);
  anRenderVersions(data);
  anRenderAuth(data);
+ anRenderAcquisition(data);
  var src={};(data.sources||[]).forEach(function(r){if(!r.views&&!r.clicks)return;var k=anSourceKey(r.name);if(!src[k])src[k]={views:0,clicks:0};src[k].views+=r.views||0;src[k].clicks+=r.clicks||0;});
  var keys=Object.keys(src).sort(function(a,b){return src[b].views-src[a].views||src[b].clicks-src[a].clicks;});
  document.getElementById('an-sources').innerHTML=keys.length?anTable(['Источник','Просмотры','Переходы'],keys.map(function(k){return '<tr><td><div class="an-table-name">'+anLogo(AN_SOURCES[k])+anEsc(AN_SOURCES[k].name)+'</div></td>'+anCell(src[k].views)+anCell(src[k].clicks)+'</tr>';})):'<div class="an-empty">Нет событий сайта</div>';
@@ -432,6 +482,7 @@ function renderDashboard(data) {
  ].map(function(m,i){return '<div class="an-card an-kpi'+(i===1?' is-primary':'')+'" title="'+m[2]+'"><div class="an-kpi-top">'+m[0]+'</div><div class="an-big">'+(m[1]==null?'—':anNum(m[1]))+'</div></div>';}).join('');
 }
 document.getElementById('an-chart-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-chart]');if(b){anChartMode=b.dataset.chart;if(window.__anData)anPlot(window.__anData);}});
+document.getElementById('an-acquisition-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-acquisition]');if(b){anAcquisitionScope=b.dataset.acquisition;if(window.__anData)anRenderAcquisition(window.__anData);}});
 document.getElementById('an-geo-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-geo]');if(b){anGeoMode=b.dataset.geo;anGeoPage=0;anRenderGeo();}});
 document.getElementById('an-geo-search').addEventListener('input',function(){anGeoPage=0;anRenderGeo();});
 document.getElementById('an-geo-country').addEventListener('change',function(){anGeoPage=0;anRenderGeo();});

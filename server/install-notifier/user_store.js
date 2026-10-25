@@ -1,6 +1,8 @@
 import { accountRpc } from './account_state.js';
 import { recordVersion } from './analytics_versions.js';
 import { recordActivity } from './analytics_activity.js';
+import { acquisitionFields } from './attribution.js';
+import { acquisitionPurchaseEvidence } from './acquisition_analytics.js';
 
 // Запись профиля пользователя `user:<id>` вместе с краткой сводкой в
 // метаданных ключа KV. Список пользователей в админке читает только
@@ -39,13 +41,18 @@ export function userSummary(user) {
     ipRegion: cut(user.ipRegion, 60),
     ipCity: cut(user.ipCity, 60),
     activity: user.activity || null,
-    v: 4,
+    ...acquisitionFields(user),
+    installStore: cut(user.installStore, 20),
+    ...acquisitionPurchaseEvidence(user),
+    v: 5,
   };
+  // Omit empty optional fields before sacrificing useful geographic/entry data.
+  for (const key of Object.keys(meta)) if (meta[key] == null || meta[key] === '') delete meta[key];
   if (new TextEncoder().encode(JSON.stringify(meta)).length > META_LIMIT) meta.avatarUrl = null;
   // Keep optional geographic fields bounded even for multibyte names.
-  for (const key of ['ipCity', 'ipRegion', 'name', 'email']) {
+  for (const key of ['avatarUrl', 'marketingContent', 'referrerHost', 'ipCity', 'name', 'email', 'ipRegion', 'marketingCampaign', 'landingPage', 'versionObservations', 'activity']) {
     if (new TextEncoder().encode(JSON.stringify(meta)).length <= META_LIMIT) break;
-    meta[key] = null;
+    delete meta[key];
   }
   return meta;
 }
@@ -85,9 +92,9 @@ export async function listUserSummaries(env) {
   do {
     const page = await env.INSTALLS.list({ prefix: 'user:', cursor });
     for (const key of page.keys || []) {
-      if (key.metadata && [2, 3, 4].includes(key.metadata.v)) {
+      if (key.metadata && [2, 3, 4, 5].includes(key.metadata.v)) {
         users.push(key.metadata);
-        if (key.metadata.v < 4) enrich.push(key.name);
+        if (key.metadata.v < 5) enrich.push(key.name);
       }
       else missing.push(key.name);
     }
@@ -111,6 +118,14 @@ export async function listUserSummaries(env) {
         if (env.ACCOUNTS) {
           const response = await accountRpc(env, user.id, '/_account/metadata');
           if (!response.ok) continue;
+          const result = await response.json();
+          // The DO may be newer than its KV projection. Display its own
+          // summary, and never synthesize current attribution from stale KV.
+          if (!result.summary) continue;
+          const oldIndex = users.findIndex(u => u.id === user.id);
+          if (oldIndex >= 0) users[oldIndex] = result.summary;
+          else users.push(result.summary);
+          continue;
         } else await putUserRecord(env, user);
         const oldIndex = users.findIndex(u => u.id === user.id);
         if (oldIndex >= 0) users[oldIndex] = userSummary(user);

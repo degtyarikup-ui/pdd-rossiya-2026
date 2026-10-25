@@ -1,5 +1,6 @@
 import { versionsSnapshot } from './analytics_versions.js';
 import { activitySnapshot } from './analytics_activity.js';
+import { acquisitionSnapshot, acquisitionPurchaseEvidence } from './acquisition_analytics.js';
 
 // Показатели аналитики, которые берутся из профилей пользователей, а не из
 // счётчиков событий: регистрации по дням, активные, Premium. Профили — это
@@ -13,7 +14,7 @@ function isRegistered(u) {
 }
 
 function isPaid(u) {
-  return Boolean(u.purchasedAt) || (Boolean(u.premiumSource) && u.premiumSource !== 'admin_grant');
+  return acquisitionPurchaseEvidence(u).hasPaidPurchase;
 }
 
 function premiumActive(u, now) {
@@ -97,6 +98,7 @@ export function usersSnapshot(users, days, app, dayKey, now = Date.now()) {
   }
 
   return {
+    acquisition: acquisitionSnapshot(list, periodKeys, dayKey, now),
     geography: { ...geo,
       countries: Object.values(geo.countries).sort((a, b) => b.accounts - a.accounts),
       regions: Object.values(geo.regions).sort((a, b) => b.accounts - a.accounts),

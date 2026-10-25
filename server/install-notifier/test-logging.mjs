@@ -32,7 +32,7 @@ test('marketing attribution is distinct from store, sanitized and HTML-escaped',
   assert.doesNotMatch(msg,/Новая регистрация|<b>Имя:<\/b>/);
   assert.match(msg,/Источник:<\/b> Threads · release_48/);assert.match(msg,/Установка:<\/b> Google Play/);
   assert.match(msg,/&lt;device&gt;/);assert.doesNotMatch(msg,/<device>|<name>|<city>/);
-  assert.doesNotMatch(buildUserRegistrationMessage({platform:'ios'},1),/Источник:/);
+  assert.match(buildUserRegistrationMessage({platform:'ios'},1),/Источник:<\/b> Не определён/);
   assert.equal(metadataFields({marketingSource:'__proto__',marketingCampaign:'<script>',device:'x'.repeat(400)}).marketingSource,'unknown');
   assert.equal(metadataFields({device:'x'.repeat(400)}).device.length,100);
   assert.ok(buildPremiumPurchaseMessage({...u,tierName:'<b>fake</b>'}).startsWith('⭐⭐⭐⭐⭐⭐⭐⭐\n'));

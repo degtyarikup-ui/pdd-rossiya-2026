@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:pdd_app/data/services/acquisition_fields.dart';
 import 'package:web/web.dart' as web;
 
 /// Браузер/платформа напрямую из `navigator` — БЕЗ device_info_plus.
@@ -28,58 +31,32 @@ String _browserNameFromUserAgent(String ua) {
 }
 
 Map<String, String> browserAcquisitionFields() {
-  final query = Uri.base.queryParameters;
-  final ref = query['ref']?.split('_');
-  var source = (query['utm_source'] ?? ref?.first ?? '').toLowerCase();
-  var method = 'web_utm';
-  if (source.isEmpty && web.document.referrer.isNotEmpty) {
-    final host = Uri.tryParse(web.document.referrer)?.host ?? '';
-    for (final entry in const {
-      'threads.net': 'threads',
-      'threads.com': 'threads',
-      'instagram.com': 'instagram',
-      'youtube.com': 'youtube',
-      't.me': 'telegram',
-      'vk.com': 'vk',
-    }.entries) {
-      if (host == entry.key || host.endsWith('.${entry.key}')) {
-        source = entry.value;
+  // The landing and app share this first touch on pdd-drive.ru. Reading it
+  // before the current URL preserves an article/search visit through OAuth
+  // redirects, page reloads, and later direct visits.
+  final stores = [
+    () => web.window.localStorage,
+    () => web.window.sessionStorage,
+  ];
+  for (final store in stores) {
+    try {
+      final saved = store().getItem(AcquisitionFields.storageKey);
+      if (saved != null) {
+        final decoded = jsonDecode(saved);
+        if (decoded is Map) {
+          final first = AcquisitionFields.sanitize(decoded);
+          if (first.isNotEmpty) return first;
+        }
       }
-    }
-    method = 'web_referrer';
+    } catch (_) {}
   }
-  source =
-      const {
-        'th': 'threads',
-        'ig': 'instagram',
-        'yt': 'youtube',
-        'tt': 'tiktok',
-        'tg': 'telegram',
-      }[source] ??
-      source;
-  if (!const {
-    'threads',
-    'instagram',
-    'youtube',
-    'tiktok',
-    'telegram',
-    'vk',
-    'google',
-    'yandex',
-    'direct',
-    'other',
-  }.contains(source)) {
-    return {};
+  final first = AcquisitionFields.fromBrowser(Uri.base, web.document.referrer);
+  for (final store in stores) {
+    try {
+      store().setItem(AcquisitionFields.storageKey, jsonEncode(first));
+    } catch (_) {}
   }
-  final campaign =
-      query['utm_campaign'] ??
-      (ref != null && ref.length > 1 ? ref.skip(1).join('_') : '');
-  return {
-    'marketingSource': source,
-    'attributionMethod': method,
-    if (RegExp(r'^[A-Za-z0-9._-]{1,64}$').hasMatch(campaign))
-      'marketingCampaign': campaign,
-  };
+  return first;
 }
 
 /// Возврат с формы оплаты на сайте: `?pay=done|failed&order=<id>`.

@@ -12,6 +12,7 @@ import 'package:pdd_app/core/navigation/route_observer.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/acquisition_service.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:pdd_app/data/services/support_inbox.dart';
@@ -95,6 +96,9 @@ Future<Widget> _initializeApplication(
   // До инициализации сервисов: они пишут в настройки, и свежая установка
   // иначе выглядит как обновление.
   await InstallReporter.captureLaunchState();
+  // Snapshot acquisition before OAuth can replace the current URL. Keep this
+  // after the install/update classification snapshot and off the startup path.
+  unawaited(AcquisitionService.fields());
 
   final progressDataSource = ProgressDataSource();
   try {

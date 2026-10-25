@@ -62,8 +62,20 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
     });
     const account = data.externalAccountIdentifiers?.obfuscatedExternalAccountId;
     if (account && account !== await tokenHash(userId)) throw new StoreError('purchase belongs to another account', 403);
+    const line = data.lineItems?.filter(item => item.productId === productId)
+      .sort((a, b) => Date.parse(b.expiryTime) - Date.parse(a.expiryTime))[0];
+    const isTest = data.testPurchase != null;
+    const free = Boolean(line?.offerPhase?.freeTrial || line?.signupPromotion);
+    // A successful order and an explicit paid phase are needed. An active
+    // entitlement on its own also includes free trials and test purchases.
+    const paid = isTest || free ? false : line?.latestSuccessfulOrderId
+      && (line.offerPhase?.basePrice || line.offerPhase?.introductoryPrice) ? true : null;
     return { ...googleEntitlement(data, productId), key: `googleplay:${country}:${await tokenHash(token)}`,
-      reference: { store, country, productId, purchaseToken: token } };
+      reference: { store, country, productId, purchaseToken: token,
+        evidenceVersion: 1, environment: isTest ? 'Sandbox' : 'Production', isTest, paid,
+        // Expiry alone cannot distinguish a normal lapse from revocation.
+        // Leave that evidence incomplete instead of claiming no refund.
+        refunded: activeStates.has(data.subscriptionState) ? false : null } };
   }
   if (!env.APPLE_IAP_PRIVATE_KEY || !env.APPLE_IAP_KEY_ID || !env.APPLE_IAP_ISSUER_ID) throw new StoreError('store verification not configured');
   const transactionId = body.transactionId;
@@ -134,7 +146,9 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
   }
   return { active, autoRenewEnabled, accountToken: data.appAccountToken || null, expiresAt: new Date(expiresDate).toISOString(),
     orderId: String(data.transactionId), key: `appstore:${data.originalTransactionId}`,
-    reference: { store, country, productId: data.productId, transactionId: String(data.transactionId) } };
+    reference: { store, country, productId: data.productId, transactionId: String(data.transactionId),
+      evidenceVersion: 1, environment: data.environment, isTest: data.environment !== 'Production',
+      paid: data.price == null ? null : Number(data.price) > 0, refunded: Boolean(data.revocationDate) } };
 }
 
 export function legacyAppleClaimsOpen(env, now = Date.now()) {

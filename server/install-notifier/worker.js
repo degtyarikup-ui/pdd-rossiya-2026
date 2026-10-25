@@ -12,7 +12,7 @@ import { TASKS_NAV_HTML, TASKS_VIEW_HTML, TASKS_CLIENT_JS } from './tasks_ui.js'
 import { handleTasksAdmin } from './tasks_admin.js';
 import { ECONOMY_NAV_HTML, ECONOMY_VIEW_HTML, ECONOMY_CLIENT_JS } from './economy_ui.js';
 import { handleEconomyAdmin } from './economy_admin.js';
-import { metadataFields, attributionLines, attributedDestination, marketingSource } from './attribution.js';
+import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, attributedDestination, marketingSource } from './attribution.js';
 import { renderDailyChart, pngBase64 } from './daily_chart.js';
 import { getAdsConfig, filterAdsForClient } from './ads_config.js';
 export { TrafficState } from './traffic_state.js';
@@ -2111,7 +2111,9 @@ export function sanitizeAnalyticsEvent(event) {
     source: ['App Store', 'Google Play', 'RuStore', 'Web'].includes(e.source)
       ? e.source : analyticsToken(e.source, 'direct').toLowerCase(),
     campaign: analyticsToken(e.campaign, ''),
-    marketingSource: metadataFields(e).marketingSource,
+    ...acquisitionFields(e),
+    medium: analyticsToken(e.medium, ''),
+    content: analyticsToken(e.content, ''),
     target: analyticsToken(e.target, ''),
     platform: analyticsToken(e.platform, 'unknown').toLowerCase(),
     country: /^[A-Za-z]{2}$/.test(String(e.country || '')) ? String(e.country).toUpperCase() : '',
@@ -2846,11 +2848,8 @@ async function saveUserProfile(env, user) {
     activity: existing?.activity || null,
     versionObservations: existing?.versionObservations || null,
     lastSeenAt: new Date().toISOString(),
-    ...metadataFields({ ...existing, ...user,
-      marketingSource: existing?.marketingSource && existing.marketingSource !== 'unknown' ? existing.marketingSource : user.marketingSource,
-      marketingCampaign: existing?.marketingSource && existing.marketingSource !== 'unknown' ? existing.marketingCampaign : user.marketingCampaign,
-      attributionMethod: existing?.marketingSource && existing.marketingSource !== 'unknown' ? existing.attributionMethod : user.attributionMethod,
-    }),
+    ...metadataFields({ ...existing, ...user }),
+    ...mergeAcquisition(existing, user),
     isPremium,
     premiumExpiresAt,
     premiumSource,
@@ -4010,7 +4009,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         by: 'https://play.google.com/store/apps/details?id=by.pdd.pdd_app',
         appstore: 'https://apps.apple.com/ru/app/id6792369533',
         apple: 'https://apps.apple.com/ru/app/id6792369533',
-        web: 'https://app.pdd-drive.ru/',
+        web: 'https://pdd-drive.ru/app/',
         'by-web': 'https://pdd-drive.online/',
         'rs-web': 'https://rs.pdd-drive.online/'
       };
@@ -4018,10 +4017,12 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         ? 'https://rs.pdd-drive.online/'
         : isBelarus ? 'https://pdd-drive.online/' : 'https://pdd-drive.ru/links/');
 
-      const rawRef = url.searchParams.get('ref') || url.searchParams.get('utm_source') || '';
+      const rawRef = url.searchParams.get('ref') || '';
       let source = 'direct';
       let campaign = url.searchParams.get('utm_campaign') || '';
-      if (rawRef) {
+      if (url.searchParams.has('utm_source') && !rawRef) {
+        source = marketingSource(url.searchParams.get('utm_source'));
+      } else if (rawRef) {
         const parts = rawRef.split('_');
         const code = parts[0].toLowerCase();
         if (code === 'yt' || code === 'youtube') source = 'youtube';
@@ -4029,7 +4030,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         else if (code === 'ig' || code === 'instagram') source = 'instagram';
         else if (code === 'tg' || code === 'telegram') source = 'telegram';
         else if (code === 'vk') source = 'vk';
-        else source = code;
+        else source = marketingSource(code);
         if (parts.length > 1 && !campaign) campaign = parts.slice(1).join('_');
       }
 
@@ -4049,13 +4050,22 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
           app,
           source,
           campaign,
+          medium: url.searchParams.get('utm_medium'),
+          content: url.searchParams.get('utm_content'),
+          landingPage: url.searchParams.get('landing_page'),
+          referrerHost: url.searchParams.get('referrer_host'),
           target: targetName,
           platform,
           country
         } });
       }
 
-      return Response.redirect(attributedDestination(destination, source, campaign), 302);
+      return Response.redirect(attributedDestination(destination, source, campaign, {
+        marketingMedium: url.searchParams.get('utm_medium'),
+        marketingContent: url.searchParams.get('utm_content'),
+        landingPage: url.searchParams.get('landing_page'),
+        referrerHost: url.searchParams.get('referrer_host'),
+      }), 302);
     }
 
     // ────────────────────── Landing Analytics API (/api/track) ──────────────────────
@@ -4213,7 +4223,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
 
     const installEvent = sanitizeAnalyticsEvent({
       type: 'install', kind: installKind(body), app: appCode, source: store,
-      marketingSource: body.marketingSource, campaign: body.marketingCampaign,
+      ...acquisitionFields(body), campaign: body.marketingCampaign,
       platform: body.platform || 'android', country: body.country || appCode,
     });
     const number = await assignNumber(env, body.install_id, appCode, installEvent);
@@ -4230,6 +4240,8 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         kind: installKind(body),
         app: appCode,
         source: store,
+        ...acquisitionFields(body),
+        campaign: body.marketingCampaign,
         platform: body.platform || 'android',
         country: body.country || appCode,
       } });

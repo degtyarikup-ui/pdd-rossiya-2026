@@ -18,6 +18,18 @@ test('production Apple payment verifies and preserves exact expiry', async () =>
     assert.equal(result.active, true); assert.equal(result.expiresAt, new Date(data.expiresDate).toISOString()); assert.equal(result.key, 'appstore:100');
   });
 });
+test('buyer evidence uses the verified store response rather than client price or environment', async () => {
+  for (const [patch, paid, refunded] of [[{ price: 99000 }, true, false], [{ price: 0 }, false, false], [{}, null, false], [{ price: 99000, revocationDate: Date.now() }, true, true]]) {
+    const data = transaction(patch);
+    await withApple(async url => new URL(url).pathname.includes('/subscriptions/') ? statusResponse(data, 5) : Response.json({ signedTransactionInfo: await signed(data) }), async () => {
+      const result = await verifyStorePurchase({ ...body, price: 1, environment: 'Sandbox', paid: false }, env, 'apple_test');
+      assert.equal(result.reference.paid, paid);
+      assert.equal(result.reference.refunded, refunded);
+      assert.equal(result.reference.environment, 'Production');
+      assert.equal(result.reference.evidenceVersion, 1);
+    });
+  }
+});
 test('production not found falls back to sandbox', async () => {
   const hosts = [];
   await withApple(async url => { hosts.push(new URL(url).hostname); if (hosts.length === 1) return Response.json({ errorCode: 4040010 }, { status: 404 }); return Response.json({ signedTransactionInfo: await signed(transaction({ environment: 'Sandbox' })) }); }, async () => assert.equal((await verifyStorePurchase(body, env, 'apple_test')).active, true));

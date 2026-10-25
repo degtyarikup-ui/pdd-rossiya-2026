@@ -338,11 +338,13 @@ export class AccountState {
       response = json({ ok: true });
     } else if (path === '/_account/metadata') {
       const user = parse(await get('user:' + id));
+      let summary = null;
       if (user) {
         const { userSummary } = await import('./user_store.js');
-        await put('user:' + id, JSON.stringify(user), { metadata: userSummary(user) });
+        summary = userSummary(user);
+        await put('user:' + id, JSON.stringify(user), { metadata: summary });
       }
-      response = json({ ok: true });
+      response = json({ ok: true, summary });
     } else {
       const handlers = await import('./worker.js');
       response = path === '/_account/reconcile' || path === '/_account/refresh' || path === '/_account/iap-event'

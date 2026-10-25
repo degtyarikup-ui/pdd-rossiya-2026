@@ -21,7 +21,9 @@
     "test:support": "node --test test-support-thread.mjs test-support-close.mjs test-support-reliability.mjs",
     "test:accounts": "node --test test-account-state.mjs test-account-background.mjs test-account-session-expiry.mjs test-release-fixes.mjs test-release-handoff.mjs test-support-push.mjs test-account-compatibility.mjs test-durable-request.mjs test-durable-integration.mjs",
     "test:storage": "node --test test-storage-costs.mjs test-storage-pressure.mjs",
-    "test:runtime": "node --test test-runtime-smoke.mjs"
+    "test:runtime": "node --test test-runtime-smoke.mjs",
+    "test:attribution": "node --test test-attribution.mjs test-acquisition-analytics.mjs ../../tools/blog_admin/test_tracker.cjs",
+    "test:attribution:ui": "node --test test-acquisition-ui.mjs"
   },
   "dependencies": {
     "jose": "^6.2.12"

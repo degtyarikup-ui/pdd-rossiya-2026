@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:pdd_app/data/services/browser_info_web.dart';
 import 'package:web/web.dart' as web;
 import 'package:pdd_app/data/services/web_oauth_state.dart';
 
@@ -10,6 +11,9 @@ bool get appleWebNeedsSafariHint => needsAppleSafariHint(
 );
 
 Future<Never> startWebOAuth(String provider, Uri authorizationUrl) {
+  // Capture first-touch tags while this page still has them. An existing
+  // guest may have already reported installation and skip metadata collection.
+  browserAcquisitionFields();
   // Only state/nonce are stored, never provider tokens or account information.
   web.window.sessionStorage.setItem(
     webOAuthStorageKey,

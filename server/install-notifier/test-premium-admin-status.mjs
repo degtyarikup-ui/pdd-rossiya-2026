@@ -21,7 +21,7 @@ test('older metadata is enriched with verified renewal without querying stores',
   } };
   const result = await listUserSummaries(env);
   assert.equal(result[0].autoRenewEnabled, false);
-  assert.equal(saved.v, 4);
+  assert.equal(saved.v, 5);
   assert.equal(userSummary(record).storeVerifiedAt, 123);
 });
 test('admin client parses; labels distinguish source and unknown renewal', () => {
