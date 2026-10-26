@@ -8,6 +8,7 @@ const QUESTIONS := 10
 var answered := 0
 var correct := 0
 var mistakes: Array[String] = []   # situation ids answered wrong
+var answer_log: Array[Dictionary] = [] # canonical scene, result, original answer time
 var streak := 0
 var score := 0
 var violations := 0
@@ -20,6 +21,9 @@ static func points_for(streak_count: int) -> int:
 
 
 func answer(situation_id: String, is_correct: bool) -> void:
+	var stamp := int(Time.get_unix_time_from_system() * 1000.0)
+	if not answer_log.is_empty(): stamp = maxi(stamp, int(answer_log.back().answeredAt) + 1)
+	answer_log.append({"situation": situation_id, "correct": is_correct, "answeredAt": stamp})
 	answered += 1
 	if is_correct:
 		streak += 1
@@ -36,7 +40,8 @@ func finished() -> bool:
 
 func summary() -> Dictionary:
 	return { "answered": answered, "correct": correct, "mistakes": mistakes, "score": score,
-		"violations": violations, "distance_m": distance_m, "streak": streak }
+		"violations": violations, "distance_m": distance_m, "streak": streak,
+		"answer_log": answer_log.duplicate(true) }
 
 
 ## Continues a run left in the middle (the app keeps its progress): the counters as they were.
@@ -48,3 +53,4 @@ func restore(saved: Dictionary) -> void:
 	violations = int(saved.get("violations", 0))
 	distance_m = int(saved.get("distance_m", 0))
 	mistakes.assign(saved.get("mistakes", []))
+	answer_log.assign(saved.get("answer_log", []))

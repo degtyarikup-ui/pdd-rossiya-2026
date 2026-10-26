@@ -16,6 +16,7 @@ import 'package:pdd_app/data/models/achievement.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/presentation/widgets/celebration_screen.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/achievement_award_service.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
@@ -206,6 +207,17 @@ void main() {
           ProviderScope(
             overrides: [
               progressDataSourceProvider.overrideWithValue(data),
+              ticketsProvider.overrideWith(
+                (ref) async => [
+                  {
+                    'number': 1,
+                    'questions': [
+                      for (final raw in questions()) Question.fromJson(raw),
+                      Question.fromJson({...questions().first, 'id': 'old'}),
+                    ],
+                  },
+                ],
+              ),
               ttsServiceProvider.overrideWithValue(_SilentTts()),
               reviewPromptServiceProvider.overrideWithValue(review),
               statsProvider.overrideWith(

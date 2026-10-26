@@ -50,7 +50,6 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
   Future<void> _refreshProgress() async {
     if (!mounted) return;
     final generation = ++_refreshGeneration;
-    final dataSource = ref.read(progressDataSourceProvider);
     final category = ref.read(appSettingsProvider).ticketCategory;
     try {
       final tickets = await ref.read(ticketsProvider.future);
@@ -59,7 +58,7 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
           ref.read(appSettingsProvider).ticketCategory != category) {
         return;
       }
-      final progressMap = await dataSource.getAllQuestionProgress(category);
+      final progressMap = await ref.read(trackedQuestionProgressProvider.future);
       final Map<int, ({int answered, int correct})> progress = {};
 
       for (final ticket in tickets) {

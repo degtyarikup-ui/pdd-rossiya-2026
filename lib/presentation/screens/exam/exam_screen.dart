@@ -21,6 +21,7 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/core/utils/question_number_strip_scroll.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/models/question_answer_source.dart';
 import 'package:pdd_app/data/models/exam_question_bank.dart';
 import 'package:pdd_app/data/services/share_card_renderer.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
@@ -432,6 +433,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       isCorrect: isCorrect,
       selectedAnswerIndex: index,
       category: category,
+      source: QuestionAnswerSource.exam,
     );
     ref.read(appDataRefreshProvider.notifier).state++;
 

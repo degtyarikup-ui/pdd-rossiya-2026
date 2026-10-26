@@ -7,7 +7,6 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
-import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
@@ -200,7 +199,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
     });
     widget.onAnswerRecorded?.call(-1);
     widget.onAnswerStateChanged?.call(true, false);
-    _saveProgress(isCorrect: false, selectedIndex: -1);
 
     _autoAdvanceTimer = Timer(const Duration(milliseconds: 700), () {
       if (mounted && widget.isCurrent) {
@@ -230,7 +228,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
 
     widget.onAnswerRecorded?.call(index);
     widget.onAnswerStateChanged?.call(true, isCorrect);
-    _saveProgress(isCorrect: isCorrect, selectedIndex: index);
     unawaited(PremiumService.instance.recordCardCompleted());
 
     final delay = isCorrect
@@ -242,24 +239,6 @@ class _FeedCardState extends ConsumerState<FeedCard>
         widget.onAutoNext();
       }
     });
-  }
-
-  Future<void> _saveProgress({
-    required bool isCorrect,
-    required int selectedIndex,
-  }) async {
-    final rawId = widget.item.rawQuestionId;
-    if (rawId == null) return;
-    try {
-      final category = ref.read(appSettingsProvider).ticketCategory;
-      final ds = ref.read(progressDataSourceProvider);
-      await ds.saveAnswer(
-        questionId: rawId,
-        isCorrect: isCorrect,
-        selectedAnswerIndex: selectedIndex,
-        category: category,
-      );
-    } catch (_) {}
   }
 
   @override

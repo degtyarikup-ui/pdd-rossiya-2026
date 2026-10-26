@@ -13,6 +13,9 @@ import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_inte
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/models/ticket_category.dart';
+import 'package:pdd_app/data/models/question.dart';
+import 'package:pdd_app/data/sources/questions_data_source.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
@@ -82,6 +85,7 @@ void main() {
     WidgetTester tester, {
     int runs = 0,
     bool pending = false,
+    QuestionsDataSource? questions,
   }) async {
     GameGarageService.instance.resetForTest();
     final prefs = await SharedPreferences.getInstance();
@@ -112,6 +116,8 @@ void main() {
           isAuthenticatedProvider.overrideWithValue(true),
           isPremiumProvider.overrideWith((ref) => ref.watch(premium)),
           progressDataSourceProvider.overrideWithValue(progress),
+          if (questions != null)
+            questionsDataSourceProvider.overrideWithValue(questions),
         ],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
@@ -218,6 +224,52 @@ void main() {
     await close(tester);
   });
 
+  testWidgets(
+    'returning from the native city adds canonical mistakes and retains the answer log for resume',
+    (tester) async {
+      final bank = (await tester.runAsync(
+        () => QuestionsDataSource().loadTickets(TicketCategory.ab),
+      ))!;
+      final container = await open(tester, runs: 1, questions: _CityBank(bank));
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      final summary = {
+        'run_started': true,
+        'finished': false,
+        'answered': 1,
+        'correct': 0,
+        'score': 0,
+        'mistakes': ['ticket_1_1'],
+        'answer_log': [
+          {'situation': 'ticket_1_1', 'correct': false, 'answeredAt': stamp},
+        ],
+      };
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(gameChannel, (call) async {
+            gameCalls.add(call.method);
+            return call.method == 'available' ? true : jsonEncode(summary);
+          });
+      await tester.tapAt(tester.getCenter(getRuns()));
+      await settleCityLaunch(tester);
+      final first = bank.singleWhere(
+        (q) => q.ticketNumber == 1 && q.questionNumber == 1,
+      );
+      expect(
+        (await progress.getQuestionProgress(
+          first.id,
+          TicketCategory.ab,
+        ))!['isCorrect'],
+        false,
+      );
+      expect(await container.read(wrongQuestionIdsProvider.future), [first.id]);
+      expect((await container.read(statsProvider.future))['wrongQuestions'], 1);
+      final prefs = await SharedPreferences.getInstance();
+      final pending = jsonDecode(prefs.getString('game_run_pending')!) as Map;
+      expect(pending['answer_log'], summary['answer_log']);
+      expect(tester.takeException(), isNull);
+      await close(tester);
+    },
+  );
+
   testWidgets('Premium activated in paywall allows the next city tap', (
     tester,
   ) async {
@@ -270,4 +322,14 @@ void main() {
 class _UnavailableStore extends InAppPurchasePlatform {
   @override
   Future<bool> isAvailable() async => false;
+}
+
+class _CityBank extends QuestionsDataSource {
+  _CityBank(this.bank);
+  final List<Question> bank;
+  @override
+  Future<List<Question>> loadTickets(
+    TicketCategory category, [
+    String? lang,
+  ]) async => bank;
 }

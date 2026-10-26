@@ -23,6 +23,7 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/game_garage_service.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/game_question_history_service.dart';
+import 'package:pdd_app/data/services/city_question_progress_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
@@ -131,6 +132,11 @@ class GodotGame {
     int token,
   ) async {
     HapticFeedbackHelper.tap();
+    final progress = ref.read(progressDataSourceProvider);
+    final cityProgress = CityQuestionProgressService(
+      progress,
+      ref.read(questionsDataSourceProvider),
+    );
     final lang = Localizations.localeOf(context).languageCode;
     final options = await _prepare(
       context,
@@ -172,10 +178,12 @@ class GodotGame {
       await GameQuestionHistoryService.instance.recordSnapshot(
         decoded['question_history'],
       );
+      await cityProgress.importSummary(decoded);
     } finally {
       historyLoading?.close();
     }
     if (!context.mounted) return;
+    ref.read(appDataRefreshProvider.notifier).state++;
     final summary = decoded.cast<String, dynamic>();
     final previous = summary['city_runs'];
     if (previous is List) {
@@ -1008,6 +1016,10 @@ class GodotGame {
         mistakes: [
           for (final m in (summary['mistakes'] as List? ?? const [])) '$m',
         ],
+        answerLog: (summary['answer_log'] as List? ?? const [])
+            .whereType<Map>()
+            .map((entry) => Map<String, dynamic>.from(entry))
+            .toList(),
       );
       await prefs.setString(_pendingRunKey, jsonEncode(pending.toJson()));
     } catch (_) {
@@ -1309,6 +1321,7 @@ class _PendingRun {
   final int violations;
   final int distanceM;
   final List<String> mistakes;
+  final List<Map<String, dynamic>> answerLog;
 
   const _PendingRun({
     required this.runId,
@@ -1319,6 +1332,7 @@ class _PendingRun {
     required this.violations,
     required this.distanceM,
     required this.mistakes,
+    this.answerLog = const [],
   });
 
   factory _PendingRun.fromJson(Map<String, dynamic> json) => _PendingRun(
@@ -1330,6 +1344,10 @@ class _PendingRun {
     violations: (json['violations'] as num?)?.toInt() ?? 0,
     distanceM: (json['distance_m'] as num?)?.toInt() ?? 0,
     mistakes: [for (final m in (json['mistakes'] as List? ?? const [])) '$m'],
+    answerLog: (json['answer_log'] as List? ?? const [])
+        .whereType<Map>()
+        .map((entry) => Map<String, dynamic>.from(entry))
+        .toList(),
   );
 
   /// The counters the game restores (run.gd restore) and the run's id.
@@ -1342,5 +1360,6 @@ class _PendingRun {
     'violations': violations,
     'distance_m': distanceM,
     'mistakes': mistakes,
+    'answer_log': answerLog,
   };
 }

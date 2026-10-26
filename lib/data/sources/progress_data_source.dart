@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:pdd_app/data/models/marathon_progress.dart';
 import 'package:pdd_app/data/models/progress_snapshot.dart';
 import 'package:pdd_app/data/models/question_identity.dart';
+import 'package:pdd_app/data/models/question_answer_source.dart';
 
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/streak.dart';
@@ -218,12 +219,30 @@ class ProgressDataSource {
     required bool isCorrect,
     required int selectedAnswerIndex,
     required TicketCategory category,
+    QuestionAnswerSource source = QuestionAnswerSource.training,
+    DateTime? answeredAt,
   }) async {
     final key = _progressKey(category);
     final progress = _loadMap(key);
     final previous = progress[questionId] is Map<String, dynamic>
         ? progress[questionId] as Map<String, dynamic>
         : <String, dynamic>{};
+
+    // City summaries can be delivered again after resume or a delayed exit.
+    // An older answer must never undo a newer correction or a progress reset.
+    final answerTime = answeredAt?.millisecondsSinceEpoch;
+    if (answerTime != null) {
+      final previousStamp = previous['answeredAt'];
+      final previousTime = previousStamp is String
+          ? DateTime.tryParse(previousStamp)?.millisecondsSinceEpoch ?? 0
+          : previousStamp is int
+          ? previousStamp
+          : 0;
+      if (answerTime <= previousTime ||
+          answerTime <= (_prefs.getInt(_keyResetAt) ?? 0)) {
+        return;
+      }
+    }
 
     final attemptsCount = previous['attemptsCount'] as int? ?? 0;
     final correctAttempts = previous['correctAttempts'] as int? ?? 0;
@@ -232,8 +251,9 @@ class ProgressDataSource {
     progress[questionId] = {
       'isCorrect': isCorrect,
       'selectedAnswerIndex': selectedAnswerIndex,
+      'source': source.name,
       'answeredAt': DateTime.fromMillisecondsSinceEpoch(
-        _nextMutationTime(),
+        answerTime ?? _nextMutationTime(),
       ).toIso8601String(),
       'attemptsCount': attemptsCount + 1,
       'correctAttempts': correctAttempts + (isCorrect ? 1 : 0),
@@ -242,15 +262,6 @@ class ProgressDataSource {
     _saveMap(key, progress);
     _markStreakActivityToday();
     ProgressSyncService.instance.scheduleSync();
-  }
-
-  Future<int> getCorrectAnswersCount(TicketCategory category) async {
-    final progress = _loadMap(_progressKey(category));
-    int count = 0;
-    progress.forEach((key, value) {
-      if (value is Map && value['isCorrect'] == true) count++;
-    });
-    return count;
   }
 
   Future<void> saveTicketProgress({

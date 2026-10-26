@@ -23,7 +23,7 @@ final achievementAwardServiceProvider = Provider<AchievementAwardService>((
     activity: data,
     load: () async {
       // Read local progress without subscribing to profile/ranking network work.
-      final questions = data.getAllQuestionProgress(category);
+      final questions = ref.read(trackedQuestionProgressProvider.future);
       final exams = data.getExamResults(category);
       final streak = data.loadStreak();
       final stats = ref.read(statsProvider.future);

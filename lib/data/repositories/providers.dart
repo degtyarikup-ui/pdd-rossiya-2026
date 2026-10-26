@@ -5,6 +5,7 @@ import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/models/achievement.dart';
 import 'package:pdd_app/data/models/app_settings.dart';
 import 'package:pdd_app/data/models/feed_item.dart';
+import 'package:pdd_app/data/models/question_answer_source.dart';
 import 'package:pdd_app/data/models/streak.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
@@ -266,7 +267,11 @@ final markupProvider = FutureProvider<Map<String, List<Map<String, String>>>>((
   return await dataSource.loadMarkup(lang);
 });
 
-final statsProvider = FutureProvider<Map<String, int>>((ref) async {
+/// Resolve shared progress against the actual bank, including variant IDs.
+/// Old sign/feed/removed-question records may still arrive from another device.
+final trackedQuestionProgressProvider = FutureProvider<Map<String, dynamic>>((
+  ref,
+) async {
   ref.watch(appDataRefreshProvider);
   ref.watch(progressImportsProvider);
   final category = ref.watch(
@@ -275,7 +280,23 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
   final dataSource = ref.watch(progressDataSourceProvider);
   final progress = await dataSource.getAllQuestionProgress(category);
   final tickets = await ref.watch(ticketsProvider.future);
-  final correct = await dataSource.getCorrectAnswersCount(category);
+  final ids = {
+    for (final ticket in tickets)
+      for (final question in ticket['questions'] as List) question.id as String,
+  };
+  return {
+    for (final entry in progress.entries)
+      if (ids.contains(entry.key) && isTrackedQuestionAnswer(entry.value))
+        entry.key: entry.value,
+  };
+});
+
+final statsProvider = FutureProvider<Map<String, int>>((ref) async {
+  final progress = await ref.watch(trackedQuestionProgressProvider.future);
+  final tickets = await ref.watch(ticketsProvider.future);
+  final correct = progress.values
+      .where((value) => value['isCorrect'] == true)
+      .length;
 
   int passedTickets = 0;
   for (final ticket in tickets) {
@@ -318,13 +339,7 @@ final statsProvider = FutureProvider<Map<String, int>>((ref) async {
 });
 
 final ticketProgressProvider = FutureProvider<Map<int, int>>((ref) async {
-  ref.watch(appDataRefreshProvider);
-  ref.watch(progressImportsProvider);
-  final category = ref.watch(
-    appSettingsProvider.select((s) => s.ticketCategory),
-  );
-  final dataSource = ref.watch(progressDataSourceProvider);
-  final progress = await dataSource.getAllQuestionProgress(category);
+  final progress = await ref.watch(trackedQuestionProgressProvider.future);
   final tickets = await ref.watch(ticketsProvider.future);
   final result = <int, int>{};
 
@@ -408,8 +423,8 @@ final achievementsProvider =
       final streak = await ref.watch(streakProvider.future);
       final stats = await ref.watch(statsProvider.future);
       final dataSource = ref.watch(progressDataSourceProvider);
-      final questionProgress = await dataSource.getAllQuestionProgress(
-        category,
+      final questionProgress = await ref.watch(
+        trackedQuestionProgressProvider.future,
       );
       final examResults = await dataSource.getExamResults(category);
       final gameBestScore = dataSource.getGameBestScore();
@@ -434,13 +449,7 @@ final achievementsProvider =
     });
 
 final wrongQuestionIdsProvider = FutureProvider<List<String>>((ref) async {
-  ref.watch(appDataRefreshProvider);
-  ref.watch(progressImportsProvider);
-  final category = ref.watch(
-    appSettingsProvider.select((s) => s.ticketCategory),
-  );
-  final dataSource = ref.watch(progressDataSourceProvider);
-  final progress = await dataSource.getAllQuestionProgress(category);
+  final progress = await ref.watch(trackedQuestionProgressProvider.future);
 
   return progress.entries
       .where(
