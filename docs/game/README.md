@@ -435,6 +435,7 @@ godot --headless --path game_godot --script res://tests/answer_traffic_world_che
 godot --headless --path game_godot --script res://tests/officer_answer_check.gd # 31·13: смена жеста и ориентации регулировщика сразу после ответа
 godot --headless --path game_godot --script res://tests/legacy_sleepers_check.gd # все GLB: удаление старых деревянных шпал без изменения исходных мешей
 godot --headless --path game_godot --script res://tests/tram_tracks_check.gd # автоматические пути, полный кузов, декорации, проёмы и сохранность исходных сцен
+godot --headless --path game_godot --script res://tests/tram_stitch_check.gd # непрерывные рельсы между сценами, колея, параллельные пути и безопасный коридор
 godot --headless --path game_godot --script res://tests/tram_motion_check.gd # трамвай тормозит перед людьми/машинами и остаётся на рельсах
 godot --headless --path game_godot --script res://tests/tram_world_check.gd # препятствия мира, сохранённая улица, повернутые ограды и кеш проверок
 godot --headless --path game_godot --script res://tests/tram_crossing_check.gd # непрерывный переход через пути, ожидание, габариты и оставшиеся старые рельсы; native — неподвижная поза в реальном рендере

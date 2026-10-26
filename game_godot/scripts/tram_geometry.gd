@@ -6,10 +6,13 @@ extends RefCounted
 const GAUGE := 1.524
 const RAIL_WIDTH := 0.09
 const RAIL_Y := 0.045
+# Through tracks cover the faded old tail where both runs overlap. A 2 mm
+# lift prevents coplanar depth flicker without adding a collision surface.
+const CONNECTOR_Y := RAIL_Y + 0.002
 
 static func surfaces(plan: Dictionary) -> Array:
 	var result: Array = []
-	var rails := {"id": "tram_rails", "layer": "", "colour": "#929a9c", "y": RAIL_Y, "verts": [], "idx": [], "fade_ends": []}
+	var rails := {"id": "tram_rails", "layer": "", "colour": "#929a9c", "y": RAIL_Y, "verts": [], "idx": [], "fade_ends": [], "centre_lines": []}
 	var buffers := {"id": "tram_buffers", "layer": "", "colour": "#929a9c", "y": 0.0, "verts": [], "verts3d": [], "idx": []}
 	var screens := {"id": "tram_service_screen", "layer": "", "colour": "#747970", "y": 0.0, "verts": [], "verts3d": [], "idx": []}
 	var used := {}
@@ -36,6 +39,7 @@ static func surfaces(plan: Dictionary) -> Array:
 		# the asphalt over six metres. A visible road never receives a buffer.
 		if not fades.is_empty(): source = _fade_samples(source, fades, anchors)
 		var line := simplify(source, anchors)
+		rails.centre_lines.append(line)
 		for side in [-1.0, 1.0]:
 			strip(rails, line, RAIL_WIDTH, side * GAUGE * 0.5, used)
 		for service in actor.get("service", []):
@@ -71,6 +75,22 @@ static func surfaces(plan: Dictionary) -> Array:
 	if not buffers.idx.is_empty(): result.append(buffers)
 	if not screens.idx.is_empty(): result.append(screens)
 	return result
+
+
+## Static through tracks are an addition to the actor's unchanged route. They
+## use the existing carriageway and never open a sidewalk or create a service bed.
+## Contact lines are part of the binding, so prewarmed and live meshes agree.
+static func connectors(bindings: Array) -> Array:
+	var rails := {"id": "tram_connectors", "layer": "", "colour": "#929a9c", "y": CONNECTOR_Y,
+		"verts": [], "idx": [], "rigid": true}
+	var used := {}
+	for binding in bindings:
+		for line: PackedVector3Array in binding.get("tram_lines", []):
+			# Keep the final straight sample: the two halves must have exactly
+			# the same tangent and gauge at their common contact plane.
+			for side in [-1.0, 1.0]:
+				strip(rails, line, RAIL_WIDTH, side * GAUGE * 0.5, used)
+	return [] if rails.idx.is_empty() else [rails]
 
 
 static func _fade_samples(points: PackedVector3Array, ends: Array, anchors: Array) -> PackedVector3Array:

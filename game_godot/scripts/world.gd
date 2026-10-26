@@ -145,6 +145,7 @@ var tram_scenery_built_revision := -1
 var tram_scenery_buckets := {}    # world OBBs rebuilt only when static chunks/scenes change
 const TRAM_OBSTACLE_CELL := 16.0
 var connection_cache := {}
+var tram_joint_cache: Array = []  # bounded immutable preparation results, reused on activation
 var insert_road := false
 
 var playable_ids: Array = []
@@ -1531,6 +1532,48 @@ func _prestage() -> void:
 	staging = true
 	Situation.prepare(next_id, _on_prepared.bind(next_id))
 
+
+## Both local halves share one contact layout. Keep it inside the bindings so
+## the ordinary surface cache also identifies the exact through-track variant.
+## No actor path, road polygon, sidewalk or question data changes here.
+func _tram_joint_profiles(previous: Situation, next: Situation, out: Dictionary, entry: Dictionary, profile: Dictionary) -> Dictionary:
+	return _prepare_tram_joint_profiles.call(previous, next, out, entry, profile)
+
+
+func _prepare_tram_joint_profiles(previous: Situation, next: Situation, out: Dictionary, entry: Dictionary, profile: Dictionary, frames: SceneTree = null) -> Dictionary:
+	var from_profile := profile.duplicate(true)
+	var to_profile := profile.duplicate(true)
+	if previous.tram_plan.get("actors", {}).is_empty() and next.tram_plan.get("actors", {}).is_empty():
+		return {"from": from_profile, "to": to_profile}
+	# The outgoing binding itself is installed between warmup and activation.
+	# Its replacement is already in profile; all other cuts must still match.
+	var from_bindings := previous.network.stitch_bindings.filter(func(binding): return binding.port.id != out.id)
+	var to_bindings := next.network.stitch_bindings.filter(func(binding): return binding.port.id != entry.id)
+	var key := [previous.get_instance_id(), next.get_instance_id(), out, entry, profile, from_bindings, to_bindings]
+	for cached: Dictionary in tram_joint_cache:
+		if cached.key == key: return cached.profiles
+	var tracks: Dictionary
+	if frames and not PackFiles.web() and not previous.tram_plan.get("actors", {}).is_empty() and not next.tram_plan.get("actors", {}).is_empty():
+		# Snapshot bindings on the main thread: the player can finish/rebase
+		# the previous scene while this immutable geometry job is running.
+		var from_network := TramStitch._bound_network(previous.network, out, profile)
+		var to_network := TramStitch._bound_network(next.network, entry, profile)
+		var from_plan := previous.tram_plan
+		var to_plan := next.tram_plan
+		tracks = await Situation._data_in_background(func(): return TramStitch.joint(from_plan, from_network, out, to_plan, to_network, entry, profile), frames, weakref(next))
+		if _exiting or _restarting or not is_inside_tree(): return {}
+		if not is_instance_valid(previous) or previous.is_queued_for_deletion() or not tracks.has("from"): return {}
+	else:
+		tracks = TramStitch.joint(previous.tram_plan, previous.network, out,
+			next.tram_plan, next.network, entry, profile)
+	from_profile["tram_lines"] = tracks.from
+	to_profile["tram_lines"] = tracks.to
+	var profiles := {"from": from_profile, "to": to_profile}
+	if tram_joint_cache.size() >= 16: tram_joint_cache.pop_front()
+	tram_joint_cache.append({"key": key.duplicate(true), "profiles": profiles})
+	return profiles
+
+
 func _build_staged(id: String) -> void:
 	var started := Time.get_ticks_msec()
 	staged_sit = await Situation.load_scene_staged(id, scenery, get_tree(), self)
@@ -1543,20 +1586,32 @@ func _build_staged(id: String) -> void:
 		var entry: Dictionary=staged_sit.network.connections.entry
 		if not entry.is_empty():
 			var bases: Array=[Situation.bindings_with([],entry,float(entry.width))]
+			var previous: Situation = null
+			var departures: Array = []
 			if current and current.sit.network:
-				var previous: Situation=current.sit
-				for out in SceneStitch.departure_ports(previous.network.connections).values():
+				previous = current.sit
+				departures = SceneStitch.departure_ports(previous.network.connections).values()
+			elif is_instance_valid(pending_connection.get("sit")):
+				# The car can finish while the next scene is loading. Its actual
+				# retained departure still needs the same immutable rail warmup.
+				previous = pending_connection.sit
+				departures = [pending_connection.local_port]
+			if previous != null and previous.network:
+				for out in departures:
 					# Driving continues while seam meshes are prepared. The previous
 					# junction may retire between slices, independently of this owner.
 					if not is_instance_valid(previous) or previous.is_queued_for_deletion(): break
 					if SceneStitch.needs_lane_transition(out,entry): continue
 					var profile:=SceneStitch.joint_profile(out,entry)
-					var candidate:=Situation.bindings_with([],entry,float(profile.width),profile)
+					var tram_profiles := await _prepare_tram_joint_profiles(previous, staged_sit, out, entry, profile, get_tree())
+					if _exiting or _restarting or not is_inside_tree(): return
+					if not is_instance_valid(previous) or previous.is_queued_for_deletion() or tram_profiles.is_empty(): break
+					var candidate:=Situation.bindings_with([],entry,float(profile.width),tram_profiles.to)
 					if not bases.has(candidate): bases.append(candidate)
 					await previous.warm_bindings(Situation.bindings_with(previous.network.stitch_bindings,out,float(out.width)),scenery,get_tree())
 					if _exiting or _restarting or not is_inside_tree(): return
 					if not is_instance_valid(previous) or previous.is_queued_for_deletion(): break
-					await previous.warm_bindings(Situation.bindings_with(previous.network.stitch_bindings,out,float(profile.width),profile),scenery,get_tree())
+					await previous.warm_bindings(Situation.bindings_with(previous.network.stitch_bindings,out,float(profile.width),tram_profiles.from),scenery,get_tree())
 					if _exiting or _restarting or not is_inside_tree(): return
 			for base in bases:
 				await staged_sit.warm_bindings(base,scenery,get_tree())
@@ -1608,8 +1663,12 @@ func _maybe_spawn() -> void:
 			else:
 				var profile := SceneStitch.joint_profile(entry,anchor)
 				width=profile.width
-				if previous != null: previous.bind_end(pending_connection.local_port,width,scenery,texture_frame,profile)
-				sit.bind_end(entry,width,scenery,texture_frame,profile)
+				if previous != null:
+					var tram_profiles := _tram_joint_profiles(previous, sit, pending_connection.local_port, entry, profile)
+					previous.bind_end(pending_connection.local_port,width,scenery,texture_frame,tram_profiles.from)
+					sit.bind_end(entry,width,scenery,texture_frame,tram_profiles.to)
+				else:
+					sit.bind_end(entry,width,scenery,texture_frame,profile)
 		else:
 			sit.bind_end(entry,width,scenery,texture_frame)
 		if transition:

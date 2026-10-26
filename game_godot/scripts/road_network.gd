@@ -202,6 +202,10 @@ func surface_mesh_staged(scenery: Scenery, frames: SceneTree = null, uv_z := 0.0
 		else:
 			_add_triangles.call(st, s, scenery, uv_xf)
 	for s in tram_surfaces:
+		var drawn := _bound_tram_surface(s)
+		if frames: await _add_triangles(st, drawn, scenery, uv_xf, frames)
+		else: _add_triangles.call(st, drawn, scenery, uv_xf)
+	for s in TramGeometry.connectors(stitch_bindings):
 		if frames: await _add_triangles(st, s, scenery, uv_xf, frames)
 		else: _add_triangles.call(st, s, scenery, uv_xf)
 	_add_kerbs(st, scenery, uv_z)
@@ -211,6 +215,42 @@ func surface_mesh_staged(scenery: Scenery, frames: SceneTree = null, uv_z := 0.0
 	var mesh := st.commit()
 	mesh.surface_set_material(0, scenery.material)
 	return SceneStitch.mark_generated_flat_mesh(mesh)
+
+
+## Fade only actual exposed cuts. A retained track running parallel to a seam
+## must keep its colour even when it happens to lie within six metres of it.
+func _bound_tram_surface(surface: Dictionary) -> Dictionary:
+	if str(surface.id) != "tram_rails" or stitch_bindings.is_empty(): return surface
+	var drawn := surface.duplicate()
+	var fades: Array = []
+	var add_fade := func(at: Vector3, tangent: Vector3):
+		if not fades.any(func(end): return end.p.distance_squared_to(at) < 0.0001 and absf(end.direction.dot(tangent)) > 0.99):
+			fades.append({"p": at, "direction": tangent})
+	for end: Dictionary in surface.get("fade_ends", []):
+		if not SceneStitch.contains(end.p, stitch_bindings): continue
+		var at := SceneStitch.warp(end.p, stitch_bindings)
+		var sample: Vector3 = end.p + end.direction * 0.05
+		if not SceneStitch.contains(sample, stitch_bindings): sample = end.p - end.direction * 0.05
+		add_fade.call(at, (SceneStitch.warp(sample, stitch_bindings) - at).normalized())
+	for line: PackedVector3Array in surface.get("centre_lines", []):
+		for binding in stitch_bindings:
+			for i in range(1, line.size()):
+				var a := line[i-1]
+				var b := line[i]
+				var da: float = (a-binding.port.p).dot(binding.port.out)
+				var db: float = (b-binding.port.p).dot(binding.port.out)
+				if (da > 0.0) == (db > 0.0) or absf(da-db) < 0.00001: continue
+				var contact := a.lerp(b, da/(da-db))
+				if not SceneStitch.contains(contact, stitch_bindings): continue
+				var at := SceneStitch.warp(contact, stitch_bindings)
+				var direction := (b-a).normalized()
+				if direction.dot(binding.port.out) > 0.0: direction = -direction
+				# Use the retained side: warp deliberately stops beyond the
+				# contact, so a cross-seam derivative would invent a side jump.
+				var tangent := (SceneStitch.warp(contact+direction*0.05, stitch_bindings)-at).normalized()
+				add_fade.call(at, tangent)
+	drawn.fade_ends = fades
+	return drawn
 
 
 func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transform3D, frames: SceneTree = null) -> void:
@@ -251,6 +291,7 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 	st.set_color(Color(colour.r, colour.g, colour.b, 0.0))
 	var k := 0
 	var slice := Time.get_ticks_usec()
+	var tram := str(s.id).begins_with("tram_")
 	while k < idx.size():
 		if frames and Time.get_ticks_usec()-slice > 2000:
 			await frames.process_frame
@@ -263,8 +304,16 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 		# islands and question markings keep their authored geometry.
 		var pieces: Array = _pavement_service_pieces(triangle) if str(s.id) == "pavement" else [triangle]
 		for piece in pieces:
-			for poly in SceneStitch.render_pieces(piece,stitch_bindings):
-				if s.layer == "" and _join_collar(poly): continue
+			var rendered: Array
+			if s.get("rigid", false):
+				var clipped := SceneStitch.clip_polygon(piece, stitch_bindings)
+				rendered = [clipped] if clipped.size() >= 3 else []
+			else:
+				rendered = SceneStitch.render_pieces(piece, stitch_bindings)
+			for poly in rendered:
+				# The collar replaces old road paint. Rails and terminal fittings
+				# are physical infrastructure, including their last two metres.
+				if s.layer == "" and not tram and _join_collar(poly): continue
 				if s.layer=="grass" and s.y>0.16 and _join_median(poly): continue
 				for fan in range(1, poly.size()-1):
 					for p: Vector3 in [poly[0],poly[fan],poly[fan+1]]:
