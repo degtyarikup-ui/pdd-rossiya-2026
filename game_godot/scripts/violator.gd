@@ -1038,16 +1038,18 @@ func _build_markings_2way(white_mat: Material) -> void:
 		add.call(Vector3(2.0, 0, 0.16), Vector3(float(x_pos), 0, 5.0))
 	# Lane arrows 1.18: from the north straight or right, from the south straight on, from the west
 	# right only (sign 4.1.2).
-	for z_pos in [-14.0, -23.0]:
+	# One lane each way: the queue at the line stands on the nearest arrows, so each approach gets
+	# a row of them every 7 m, the first close to the line, all inside the frame.
+	for z_pos in [-14.0, -21.0, -28.0]:
 		_build_lane_arrow(Vector3(-1.8, 0.024, z_pos), "straight_right", white_mat, PI)
-	for z_pos in [16.0, 25.0]:
+	for z_pos in [15.0, 22.0, 29.0]:
 		_build_lane_arrow(Vector3(1.8, 0.024, z_pos), "straight", white_mat, 0.0)
-	# (The first one close to the stop line: further out it sits at the very edge of the frame.)
-	for x_pos in [-13.0, -21.0]:
+	for x_pos in [-13.0, -20.0, -27.0]:
 		_build_lane_arrow(Vector3(x_pos, 0.024, 7.1), "right", white_mat, -PI * 0.5)
 
 
 var _arrow_meshes := {}
+const ARROW_SCALE := Vector3(1.5, 1.0, 1.6)
 
 func _get_arrow_mesh(type: String) -> ArrayMesh:
 	if _arrow_meshes.has(type):
@@ -1120,6 +1122,9 @@ func _build_lane_arrow(pos: Vector3, arrow_type: String, mat: Material, yaw: flo
 	inst.material_override = mat
 	inst.position = pos
 	inst.rotation.y = yaw
+	# Drawn ~4.5 m long and 1.5x wider than the base shape (1.18 in town is 3-5 m long): the camera
+	# hangs ~70 m up, and at 2.8 m with an 18 cm stem the arrows were lost on a phone screen.
+	inst.scale = ARROW_SCALE
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	junction_node.add_child(inst)
 
