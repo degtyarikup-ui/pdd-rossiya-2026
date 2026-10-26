@@ -1,4 +1,5 @@
-import { diagnosticNotificationPolicy } from './diagnostic_context.js';
+import { diagnosticNotificationPolicy, authTransportIdentity } from './diagnostic_context.js';
+import { buildAuthTransportMessage } from './diagnostics.js';
 import { processTelegramMessageUpdate } from './support_chat.js';
 import { isReportPhotoUrl } from './report_questions.js';
 import { buildIncidentBatchMessage, incidentBatchIdentity, INCIDENT_BATCH_WINDOW_MS, INCIDENT_BATCH_MAX } from './incident_batch.js';
@@ -152,25 +153,38 @@ export class TelegramQueue {
     stored.pendingBatches ||= {};
     for (const [key, pending] of Object.entries(stored.pendingBatches)) if (pending.until <= now) delete stored.pendingBatches[key];
     const group = stored.groups[fingerprint];
-    const identity = incidentBatchIdentity(incident);
-    const mayNotify = policy.notify && !(group && now - group.at < policy.windowMs);
+    const transportIdentity = authTransportIdentity(incident);
+    const identity = transportIdentity || incidentBatchIdentity(incident);
+    // Related auth attempts may update an unattempted alert only during its
+    // original three-second window. Thereafter the hour cooldown records each
+    // repeat/provider for CSV and the next eligible warning, without live edits.
+    const mayNotify = policy.notify && (transportIdentity || !(group && now - group.at < policy.windowMs));
     const pending = mayNotify && identity ? stored.pendingBatches[identity] : null;
     const previousItem = pending ? await this.state.storage.get(pending.key) : null;
-    const entry = { incident, repeats: group?.repeats || 0, overflow: stored.overflow };
+    const entry = { incident, repeats: group?.repeats || 0, overflow: stored.overflow,
+      ...(transportIdentity && group?.authTransportProviders ? { authTransportProviders: group.authTransportProviders } : {}) };
     const entries = previousItem?.incidentBatch?.entries;
+    const buildMessage = transportIdentity ? buildAuthTransportMessage : buildIncidentBatchMessage;
     const combined = entries && entries.length < INCIDENT_BATCH_MAX
-      ? buildIncidentBatchMessage([...entries, entry]) : null;
+      ? buildMessage([...entries, entry]) : null;
     const merge = combined && combined.length <= 4096;
     if (now - stored.window >= windowMs) { stored.window = now; stored.count = 0; }
     let text = null;
     let reason = 'sent';
     if (!policy.notify) { reason = 'info_only'; }
-    else if (group && now - group.at < policy.windowMs) { group.repeats++; reason = 'grouped'; }
+    else if (!merge && group && now - group.at < policy.windowMs) {
+      group.repeats++;
+      if (transportIdentity) {
+        group.authTransportProviders ||= {};
+        group.authTransportProviders[incident.provider] = (group.authTransportProviders[incident.provider] || 0) + 1;
+      }
+      reason = 'grouped';
+    }
     else if (!merge && stored.count >= 20) { stored.overflow++; reason = 'burst_limit'; }
     else {
       if (!merge) stored.count++;
-      stored.groups[fingerprint] = { at: now, repeats: 0 };
-      text = merge ? combined : buildIncidentBatchMessage([entry]);
+      stored.groups[fingerprint] = { at: merge && transportIdentity && group ? group.at : now, repeats: 0 };
+      text = merge ? combined : buildMessage([entry]);
       if (merge) reason = 'coalesced';
       stored.overflow = 0;
     }

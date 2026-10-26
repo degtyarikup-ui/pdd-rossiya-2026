@@ -325,7 +325,7 @@ export function incidentGuide(event) {
   const [emoji, label, meaning] = LEVELS[level];
   return { level, emoji, label, meaning, what: what[0] || null, steps: steps.slice(0, 3) };
 }
-const PROVIDERS = { google: 'Google', apple: 'Apple ID', yandex: 'Яндекс', appstore: 'App Store', googleplay: 'Google Play', platega: 'СБП · Platega', firebase: 'Firebase' };
+const PROVIDERS = { google: 'Google', apple: 'Apple ID', yandex: 'Яндекс', telegram: 'Telegram', appstore: 'App Store', googleplay: 'Google Play', platega: 'СБП · Platega', firebase: 'Firebase' };
 const PLATFORMS = { android: 'Android', ios: 'iOS', web: 'Веб', macos: 'macOS', windows: 'Windows', linux: 'Linux' };
 export const providerLabel = value => Object.hasOwn(PROVIDERS, value) ? PROVIDERS[value] : 'Не определён';
 // Приложение присылает TargetPlatform по имени enum: «iOS», «macOS» — без регистра не совпадали.

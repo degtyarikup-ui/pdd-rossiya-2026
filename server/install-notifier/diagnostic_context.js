@@ -26,6 +26,26 @@ export function diagnosticOs(value) {
   return typeof value === 'string' && /^(?:Android|iOS) [\d.]{1,16}(?: \(SDK \d{1,3}\))?$/.test(value) ? value : null;
 }
 
+const AUTH_TRANSPORT_PROVIDERS = new Set(['google', 'apple', 'yandex', 'telegram']);
+// Correlate sign-in transport failures only by the already-anonymized install.
+// Credential/configuration, billing and unknown-provider failures stay separate.
+export function authTransportIdentity(event) {
+  if (event.origin !== 'client' || event.category !== 'auth' || event.userId || event.payment
+      || !['auth.provider', 'auth.session'].includes(event.operation)
+      || !/^[a-f0-9]{16}$/.test(event.installation || '')
+      || !AUTH_TRANSPORT_PROVIDERS.has(event.provider)
+      || !/^(?:timeout|network|network_error)(?::[1-9]\d?x)?$/.test(event.code || '')
+      || (event.status != null && (!Number.isInteger(event.status) || event.status < 500 || event.status > 599))
+      || event.context?.phase || event.context?.sdkSource
+      || ['framework', 'unhandled'].includes(event.context?.stage)) return null;
+  const platform = typeof event.platform === 'string' ? event.platform.toLowerCase() : '';
+  if (!['android', 'ios', 'web', 'macos', 'windows', 'linux'].includes(platform)
+      || typeof event.appVersion !== 'string' || !/^\d[\d.+-]{0,31}$/.test(event.appVersion)
+      || (event.device != null && (typeof event.device !== 'string' || event.device.length > 100))) return null;
+  return JSON.stringify(['auth-transport-v1', event.installation, platform, event.appVersion,
+    event.device || '', diagnosticOs(event.os), event.status ?? null]);
+}
+
 export function diagnosticNotificationPolicy(event) {
   // A recovered sign-in is a successful outcome; it remains in the CSV.
   if (event.operation === 'auth.recovered') return { notify: false, windowMs: 600000 };

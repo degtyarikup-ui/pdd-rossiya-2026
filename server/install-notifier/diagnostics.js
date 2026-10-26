@@ -1,4 +1,4 @@
-import { sanitizeDiagnosticContext, diagnosticOs } from './diagnostic_context.js';
+import { sanitizeDiagnosticContext, diagnosticOs, authTransportIdentity } from './diagnostic_context.js';
 import { readSession, tokenHash } from './user_auth.js';
 import { incidentCopy, incidentGuide, providerLabel, platformLabel, storeLabel } from './incident_copy.js';
 import { isCloudflareInternalError } from './durable_request.js';
@@ -41,20 +41,21 @@ export function errorCode(error) {
   if (error?.code === 'ERR_SUPPORT_READ_UNAVAILABLE') return 'support_read_unavailable';
   return 'operation_failed';
 }
-export function buildIncidentMessage(event, repeats = 0, overflow = 0, { headings, relatedEvents } = {}) {
+export function buildIncidentMessage(event, repeats = 0, overflow = 0, { headings, relatedEvents, authTransportEvents, authTransportProviders } = {}) {
   event = { ...event, context: sanitizeDiagnosticContext(event.context) };
   const copy = incidentCopy(event);
   const guide = incidentGuide(event);
   const account = event.userName || (event.userId ? 'Имя не получено' : 'Аккаунт ещё не определён');
-  const authProvider = event.authProvider || (['google', 'apple', 'yandex'].includes(event.provider) ? event.provider : null);
+  const authProvider = event.authProvider || (['google', 'apple', 'yandex', 'telegram'].includes(event.provider) ? event.provider : null);
+  const details = relatedEvents || authTransportEvents;
   const ids = [
     event.userId ? 'ID аккаунта: <code>' + escape(event.userId) + '</code>' : null,
     event.installation ? 'Установка: <code>' + escape(event.installation) + '</code>' : null,
-    event.diagnosticId && !relatedEvents ? 'Диагностика: <code>' + escape(event.diagnosticId) + '</code>' : null,
+    event.diagnosticId && !details ? 'Диагностика: <code>' + escape(event.diagnosticId) + '</code>' : null,
   ];
   return [
     ...(headings || [guide.emoji + ' <b>' + copy.title + '</b>']),
-    '<b>Причина:</b> ' + copy.reason + (!relatedEvents && guide.what ? ' ' + guide.what : ''),
+    '<b>Причина:</b> ' + copy.reason + (!details && guide.what ? ' ' + guide.what : ''),
     guide.steps[0] ? '→ ' + guide.steps[0] : null,
     event.payment ? (event.operation === 'api.user.pay-intent'
       ? 'Форма оплаты не выдана: человек не смог начать оплату.'
@@ -69,41 +70,59 @@ export function buildIncidentMessage(event, repeats = 0, overflow = 0, { heading
     '',
     event.userId || event.category !== 'infrastructure' ? '👤 ' + escape(account) : null,
     event.userEmail ? '✉️ ' + escape(event.userEmail) : null,
-    authProvider ? '🔑 Вход: ' + providerLabel(authProvider) : null,
-    event.provider && event.provider !== authProvider ? '🧩 Сервис: ' + providerLabel(event.provider) : null,
+    authTransportEvents ? '🔑 Способы входа: ' + [...new Set(authTransportEvents.map(related => providerLabel(related.provider)))].join(' · ')
+      : authProvider ? '🔑 Вход: ' + providerLabel(authProvider) : null,
+    event.provider && event.provider !== authProvider && !authTransportEvents ? '🧩 Сервис: ' + providerLabel(event.provider) : null,
     event.platform ? '📱 ' + platformLabel(event.platform) + (event.appVersion ? ' v' + escape(event.appVersion) : '') : null,
     event.store ? '🏪 ' + storeLabel(event.store) : null,
     event.device ? '📟 ' + escape(event.device) : null,
     event.context?.errorType ? 'Исключение: ' + escape(event.context.errorType) : null,
     event.os ? 'ОС: ' + escape(event.os) : null,
     event.context?.phase ? 'Загрузка: ' + ({ background: 'в фоне', paywall: 'экран оплаты', purchase: 'попытка покупки' })[event.context.phase] : null,
-    event.context?.stage ? 'Этап: ' + escape(event.context.stage) + (event.context.attempt ? ' · попытка ' + event.context.attempt : '') : null,
-    event.context?.supportStage && !relatedEvents ? 'Этап чтения поддержки: ' + event.context.supportStage : null,
-    event.context?.upstreamStatus && !relatedEvents ? 'HTTP хранилища поддержки: ' + event.context.upstreamStatus : null,
+    event.context?.stage && !authTransportEvents ? 'Этап: ' + escape(event.context.stage) + (event.context.attempt ? ' · попытка ' + event.context.attempt : '') : null,
+    event.context?.supportStage && !details ? 'Этап чтения поддержки: ' + event.context.supportStage : null,
+    event.context?.upstreamStatus && !details ? 'HTTP хранилища поддержки: ' + event.context.upstreamStatus : null,
     typeof event.context?.retryable === 'boolean' || typeof event.context?.overloaded === 'boolean'
       ? 'Флаги хранилища: ' + ['retryable', 'overloaded'].filter(key => typeof event.context[key] === 'boolean').map(key => key + '=' + event.context[key]).join(' · ') : null,
     Number.isInteger(event.context?.returnedCount) ? `Товары: запрошено ${event.context.requestedCount ?? '—'}, получено ${event.context.returnedCount}, не найдено ${event.context.missingCount ?? '—'}` : null,
     event.context?.sdkCodeHash ? 'Код SDK (отпечаток): ' + escape(event.context.sdkCodeHash) : null,
-    event.context?.frames?.length && !relatedEvents ? 'Место: <code>' + escape(event.context.frames[0]) + '</code>' : null,
+    event.context?.frames?.length && !details ? 'Место: <code>' + escape(event.context.frames[0]) + '</code>' : null,
     event.country ? '🌍 ' + escape(event.country) : null,
     '',
-    ...(!relatedEvents ? [(event.origin === 'client' ? 'Приложение' : 'Сервер') + ': <code>' + escape(event.operation) + '</code>'] :
-      relatedEvents.flatMap(related => {
+    ...(!details ? [(event.origin === 'client' ? 'Приложение' : 'Сервер') + ': <code>' + escape(event.operation) + '</code>'] :
+      details.flatMap(related => {
         const context = sanitizeDiagnosticContext(related.context);
         return [
-          'Сервер: <code>' + escape(related.operation) + '</code>' + (related.status ? ' · HTTP ' + related.status : ''),
+          (authTransportEvents ? 'Приложение' : 'Сервер') + ': <code>' + escape(related.operation) + '</code>'
+            + (authTransportEvents ? ' · ' + providerLabel(related.provider) : '') + (related.status ? ' · HTTP ' + related.status : ''),
+          authTransportEvents ? 'Код: <code>' + escape(related.code) + '</code>' : null,
+          authTransportEvents && context.stage ? 'Этап: ' + context.stage + (context.attempt ? ' · попытка ' + context.attempt : '') : null,
           context.frames?.length ? 'Место: <code>' + escape(context.frames[0]) + '</code>' : null,
           context.supportStage ? 'Этап чтения поддержки: ' + context.supportStage : null,
           context.upstreamStatus ? 'HTTP хранилища поддержки: ' + context.upstreamStatus : null,
           related.diagnosticId ? 'Диагностика: <code>' + escape(related.diagnosticId) + '</code>' : null,
         ];
       })),
-    'Код: <code>' + escape(event.code) + '</code>' + (event.status ? ' · HTTP ' + event.status : ''),
+    !authTransportEvents ? 'Код: <code>' + escape(event.code) + '</code>' + (event.status ? ' · HTTP ' + event.status : '') : null,
     repeats ? '🔁 Повторов с прошлого сообщения: ' + repeats : null,
+    authTransportProviders ? 'Способы входа в свёрнутых повторах: ' + ['google', 'apple', 'yandex', 'telegram']
+      .filter(provider => Number.isSafeInteger(authTransportProviders[provider]) && authTransportProviders[provider] > 0)
+      .map(provider => providerLabel(provider) + ' — ' + authTransportProviders[provider]).join(' · ') : null,
     overflow ? 'Других сообщений ограничено: ' + overflow : null,
     ...ids,
     '🕒 ' + new Date(event.ts).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }) + ' МСК',
   ].filter(line => line !== null).join('\n');
+}
+
+export function buildAuthTransportMessage(entries) {
+  const events = entries.map(entry => entry.incident), providers = {};
+  for (const entry of entries) for (const provider of ['google', 'apple', 'yandex', 'telegram']) {
+    const count = entry.authTransportProviders?.[provider];
+    if (Number.isSafeInteger(count) && count > 0) providers[provider] = Math.min(Number.MAX_SAFE_INTEGER, (providers[provider] || 0) + count);
+  }
+  return buildIncidentMessage(events[0], entries.reduce((sum, entry) => sum + (entry.repeats || 0), 0),
+    entries.reduce((sum, entry) => sum + (entry.overflow || 0), 0),
+    { authTransportEvents: events, ...(Object.keys(providers).length ? { authTransportProviders: providers } : {}) });
 }
 
 async function incidentUser(env, userId, fallback) {
@@ -146,10 +165,13 @@ export async function reportIncident(env, incident) {
       payment: incident.origin === 'client' ? null : paymentContext(incident.payment),
     };
     if (event.diagnosticId) console.log(JSON.stringify({ event: 'incident', diagnosticId: event.diagnosticId, operation: event.operation, code: event.code, status: event.status }));
-    // Group the same failure across accounts to keep a widespread outage readable.
+    // Existing failures keep their cross-account fingerprint. Anonymous sign-in
+    // transport is instead scoped to one validated installation, so another
+    // person's first failure can never be swallowed by this device's cooldown.
     const contextKey = [event.context.phase || '', event.context.stage || '', event.context.sdkCodeHash || '', event.context.frames?.[0] || ''];
     // Preserve existing durable groups for clients that have no new context.
-    const fingerprint = await tokenHash([event.origin, event.category, event.operation, event.code, event.provider, event.platform, event.appVersion, ...(contextKey.some(Boolean) ? contextKey : [])].join('|'));
+    const transportIdentity = authTransportIdentity(event);
+    const fingerprint = await tokenHash(transportIdentity || [event.origin, event.category, event.operation, event.code, event.provider, event.platform, event.appVersion, ...(contextKey.some(Boolean) ? contextKey : [])].join('|'));
     const response = await env.TELEGRAM.get(env.TELEGRAM.idFromName(String(env.CHAT_ID))).fetch('https://telegram/incident', {
       method: 'POST', body: JSON.stringify({ incident: event, fingerprint }),
     });
