@@ -64,6 +64,7 @@ const STRINGS := {
 		"violatorMissedLifeWarning": "Нарушитель упущен!",
 		"violatorMissedTag": "Упущен нарушитель",
 		"violatorWrongAnswer": "Неверно. Правильно — %s",
+		"violatorTimeoutAnswer": "Время вышло. Правильно — %s",
 		"violatorTimingWarning": "Нарушение ещё не совершено или уже завершено!",
 		"violatorAlreadyCounted": "Это нарушение уже учтено",
 		"violatorTimeExpired": "Время на квалификацию истекло!",
@@ -104,6 +105,7 @@ const STRINGS := {
 		"violatorMissedLifeWarning": "Violator missed!",
 		"violatorMissedTag": "Violator missed",
 		"violatorWrongAnswer": "Wrong. Correct: %s",
+		"violatorTimeoutAnswer": "Time is up. Correct: %s",
 		"violatorTimingWarning": "Violation not yet started or already finished!",
 		"violatorAlreadyCounted": "This offence has already been counted",
 		"violatorTimeExpired": "Classification time expired!",
@@ -144,6 +146,7 @@ const STRINGS := {
 		"violatorMissedLifeWarning": "Ереже бұзушы жіберіп алынды!",
 		"violatorMissedTag": "Ереже бұзушы жіберіп алынды",
 		"violatorWrongAnswer": "Қате. Дұрысы — %s",
+		"violatorTimeoutAnswer": "Уақыт бітті. Дұрысы — %s",
 		"violatorTimingWarning": "Бұзушылық әлі жасалмаған немесе аяқталған!",
 		"violatorAlreadyCounted": "Бұл бұзушылық есепке алынды",
 		"violatorTimeExpired": "Саралау уақыты аяқталды!",
@@ -427,9 +430,18 @@ func set_mode(mode: String) -> void:
 	current_mode = mode
 
 
+var _hud_key := []
+
 func update_hud(score: int, combo: int, seconds_or_elapsed: float, lives: int) -> void:
 	if not is_instance_valid(_score_label):
 		return
+	# Called every frame: touch the labels only when what they show changes (a new text or colour
+	# re-lays the whole top bar out).
+	var shown := int(seconds_or_elapsed) if current_mode == "patrol" else maxi(0, ceili(seconds_or_elapsed))
+	var key := [score, combo, shown, lives, current_mode]
+	if key == _hud_key:
+		return
+	_hud_key = key
 	_score_label.text = str(maxi(0, score))
 	_combo_chip.visible = combo > 1
 	_combo_value = combo
@@ -586,6 +598,12 @@ func lock_target(screen_pos: Vector2) -> void:
 	has_target = true
 	_target_anim_time = 0.0
 	_overlay.queue_redraw()
+
+
+## The judged car keeps rolling in slow motion: the sight follows it.
+func move_target(screen_pos: Vector2) -> void:
+	if has_target:
+		target_screen_pos = screen_pos
 
 
 func clear_target() -> void:
@@ -820,7 +838,7 @@ func _on_option_button_pressed(btn: Button, code: String) -> void:
 
 func _on_classification_timeout() -> void:
 	Engine.time_scale = 1.0
-	show_toast(tr_v("violatorTimeExpired"), true)
+	# (The game answers with «Time is up. Correct: …».)
 	hide_classification()
 	classification_selected.emit("timeout")
 
@@ -830,6 +848,7 @@ func _on_classification_timeout() -> void:
 func set_missed_marks(marks: Array) -> void:
 	if _round_finished: marks = []
 	var keep := {}
+	var removed := false
 	for m in marks:
 		var id: int = m.id
 		keep[id] = true
@@ -870,11 +889,13 @@ func set_missed_marks(marks: Array) -> void:
 	for id in _missed.keys():
 		if not keep.has(id):
 			_missed.erase(id)
+			removed = true
 			if _missed_pills.has(id):
 				_missed_pills[id].hide()
 				_missed_pills[id].queue_free()
 				_missed_pills.erase(id)
-	_overlay.queue_redraw()
+	if removed or not marks.is_empty():
+		_overlay.queue_redraw()
 
 
 func _violation_l10n_key(code: String) -> String:

@@ -30,6 +30,7 @@ func _run_checks() -> void:
 	await _check_camera_visibility_and_despawn()
 	_check_economy_and_game_over()
 	_check_session_summary_contract()
+	_check_regressions()
 	_report_results()
 
 
@@ -594,6 +595,106 @@ func _check_session_summary_contract() -> void:
 	_check("Run combo matches", run.get("combo") == 2)
 	_check("Run is marked finished", run.get("finished") == true)
 
+	game.queue_free()
+
+
+## Bugs found in play: each check names what used to go wrong.
+func _check_regressions() -> void:
+	var game = ViolatorScript.new()
+	root.add_child(game)
+	game.ready_for_play = true
+	game._start_game()
+
+	# Leaving the easy level restores the crossroads' turning curves.
+	game.set_difficulty("easy")
+	game.set_difficulty("hard")
+	_check("Hard after easy turns right along the crossroads' curves",
+		game.curve_right_n == ViolatorScript.CURVE_RIGHT_N and game.curve_right_w == ViolatorScript.CURVE_RIGHT_W)
+
+	# One tap is one judgement: the emulated mouse click of a touch is ignored.
+	game._start_game()
+	var innocent = game.spawn_specific_car("main_straight", 1, false, "")
+	innocent.position = Vector3(1.8, 0, -20)
+	var p: Vector2 = game.camera.unproject_position(innocent.position)
+	var lives0: int = game.lives
+	var touch := InputEventScreenTouch.new()
+	touch.pressed = true
+	touch.position = p
+	var click := InputEventMouseButton.new()
+	click.pressed = true
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.position = p
+	game._unhandled_input(touch)
+	game._unhandled_input(click)
+	_check("A false alarm by one touch (and its emulated click) costs exactly one life", game.lives == lives0 - 1)
+
+	# Nobody gets away while the player is judging a car.
+	game._start_game()
+	var judged = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
+	var other = game.spawn_specific_car("main_straight", 0, true, ViolatorScript.VIOLATION_RED_LIGHT)
+	for c in [judged, other]:
+		c.violation_state = "active"
+		c.violation_start_time = game.game_clock
+		c.position.z = 30.0
+	game.handle_car_tapped(judged, Vector2(100, 400))
+	game.game_clock += 30.0
+	lives0 = game.lives
+	for c in [judged, other]:
+		game._check_car_violation_state(c)
+	_check("While a car is judged no offender counts as missed", judged.violation_state == "active" and other.violation_state == "active" and game.lives == lives0)
+	judged.position.z = 60.0
+	game._update_cars(0.016)
+	_check("The judged car is not removed beyond the frame before the answer", is_instance_valid(judged) and game.cars.has(judged))
+	game._on_classification_selected("timeout")
+	_check("A timed-out answer costs no life", game.lives == lives0 and not game.is_classifying)
+
+	# Wrong options are offences this level can produce.
+	game.set_difficulty("easy")
+	game.game_mode = "blitz"
+	game.weather_phase = "day"
+	var easy_skip: Array = ViolatorScript.DIFFICULTIES["easy"].skip
+	var plausible := true
+	for i in 40:
+		var o_easy: Array = game.get_classification_options(ViolatorScript.VIOLATION_RED_LIGHT)
+		# By day in a blitz round the walker is the only other offence possible here: always offered.
+		if not o_easy.has(ViolatorScript.VIOLATION_PEDESTRIAN_YIELD):
+			plausible = false
+		for o in o_easy:
+			if o in easy_skip:
+				plausible = false
+	_check("Easy level offers its own possible offences first, never another level's", plausible)
+	var opts: Array = game.get_classification_options(ViolatorScript.VIOLATION_PEDESTRIAN_YIELD)
+	_check("...and still offers three different options", opts.size() == 3 and opts.has(ViolatorScript.VIOLATION_PEDESTRIAN_YIELD))
+	game.set_difficulty("hard")
+
+	# Lane arrows face up (a back face is lit from below and turns black at night).
+	var faces_up := true
+	for type in ["straight", "straight_left", "straight_right", "left", "right"]:
+		var arrays: Array = game._create_arrow_mesh(type).surface_get_arrays(0)
+		var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		for i in range(0, v.size(), 3):
+			if (v[i + 1] - v[i]).cross(v[i + 2] - v[i]).y > 0.0:
+				faces_up = false
+	_check("Every lane arrow triangle is a front face seen from above", faces_up)
+
+	# Street lights: hidden by day, at most four real ones, pools at night.
+	game._apply_weather_visuals("day")
+	var dark_by_day := true
+	for l in game.street_lamps:
+		dark_by_day = dark_by_day and not l.visible
+	_check("Street lamp lights are hidden by day", dark_by_day and not game.lamp_pools.visible)
+	game._apply_weather_visuals("night")
+	_check("At night at most four real lamp lights and the light pools are on",
+		game.street_lamps.size() <= 4 and game.lamp_pools.visible)
+	var spot_lights := 0
+	var night_car = game.spawn_specific_car("main_straight", 1, false, "")
+	for n in night_car.find_children("*", "SpotLight3D", true, false):
+		spot_lights += 1
+	_check("Headlights are faked without a real light per car", night_car.headlight_node != null and spot_lights == 0)
+	game._apply_weather_visuals("rain")
+	_check("Rain falls and darkens the asphalt", game.rain_amount > 0.99 and game.asphalt_material.albedo_color.is_equal_approx(ViolatorScript.ASPHALT_WET))
+	game._apply_weather_visuals("day")
+	_check("No rain by day", game.rain_amount == 0.0)
 	game.queue_free()
 
 

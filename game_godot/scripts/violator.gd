@@ -1,32 +1,24 @@
 ## Full 3D "Нарушитель" (Traffic Surveillance / Violator) game in Godot 4.7.2.
-## Implements:
-## - Full 4-way authentic Russian multi-lane intersection with bidirectional traffic,
-##   sidewalks, curbs, fences, street lamps, trees, kiosk, and city buildings.
-## - Two game modes:
-##   1. "blitz" (60s countdown classic round)
-##   2. "patrol" (Endless Patrol survival mode with day/night/rain weather cycle,
-##      elapsed timer counting up, and +1 life restoration on 5x combo streaks).
-## - 4 dynamic weather & time-of-day phases in Patrol (~90s per phase):
-##   Day -> Sunset/Dusk (warm shadows, street lamps turn on) -> Night (deep darkness,
-##   car headlights, illuminated junction) -> Rain (wet reflective asphalt, reduced traction).
-## - 10 official Russian Traffic Code (ПДД РФ) violations and tricky situations:
-##   1. RED_LIGHT (п. 6.2)
-##   2. PEDESTRIAN_YIELD (п. 13.1 / 14.1)
-##   3. SOLID_LINE (п. 1.3, Прил. 2)
-##   4. WRONG_LANE_TURN (п. 8.5)
-##   5. PRIORITY_SIGN (п. 13.9, знак 2.4)
-##   6. ARROW_YIELD (п. 13.5: поворот по стрелке с красным без преимущества)
-##   7. WAFFLE_BLOCK (п. 13.2: затор на вафельнице 1.26)
-##   8. EMERGENCY_YIELD (п. 3.2: непредоставление преимущества спецтранспорту)
-##   9. NO_LIGHTS (п. 19.1: движение без фар в тёмное время суток)
-##   10. WEATHER_SPEED (п. 10.1: несоответствие скорости погодным условиям / занос в дождь)
-## - Fast two-step detection mechanic (3D raycast/tap + dynamic 0.35x slow-mo classification).
-## - Penalties: missing a violator costs 1 life (-1 life), false alarms cost 1 life.
+## - A Russian junction per difficulty level (T-junction of two-way roads, crossroads, full
+##   crossroads with the arrow section), signals, crosswalks, sidewalks and city scenery.
+## - Two game modes: "blitz" (a round of GameEconomy.violatorSeconds, 180 s) and "patrol" (endless,
+##   +1 life for every 5 correct catches in a row, signals blink yellow at night).
+## - Time of day changes every 60 s (day -> dusk -> night -> rain) with a smooth light blend;
+##   rain falls on the GPU (shaders/rain.gdshader) and darkens the asphalt.
+## - 10 offences of the ПДД РФ (VIOLATION_METADATA), each committed in plain sight by a car.
+## - Two steps: tap the offender (3D ray, then the nearest car within 48 dp), then pick the clause
+##   while the scene runs at 0.35x.
+## - A missed offender and a false alarm cost a life; a wrong clause costs the streak only.
+## - Graphics tier and frame budget as in the Regulator (Quality, FrameBudget). Night lighting is
+##   mostly faked (additive pools under lamps and in front of headlights): the Compatibility
+##   renderer draws every real light as another pass per object and caps them at 8 per object.
 class_name Violator
 extends Node3D
 
 const ViolatorUiScript := preload("res://scripts/violator_ui.gd")
 const SignalBadge := preload("res://scripts/violator_signal_badge.gd")
+const FrameBudget := preload("res://scripts/frame_budget.gd")
+const PerfHud := preload("res://scripts/perf_hud.gd")
 
 # Violation Definitions
 const VIOLATION_RED_LIGHT := "red_light"
@@ -169,7 +161,10 @@ const CROSSWALK_ROUTES_WEST_2WAY := {"lo": [Vector2(-5.5, -50.0), Vector2(-5.5, 
 # Crosswalks of the level being played (a subset of CROSSWALKS, see DIFFICULTIES).
 var crosswalks: Dictionary = CROSSWALKS
 var asphalt_material: StandardMaterial3D
-var street_lamps: Array[OmniLight3D] = []
+var street_lamps: Array[OmniLight3D] = []   # the real lights of the four corner lamps
+var lamp_pools: MultiMeshInstance3D           # light pools under every lamp
+const LAMP_POOL_SIZE := 13.0
+const LAMP_FULL_ENERGY := 3.6                  # night; the pools fade in with the lamps
 var pole_points: Array[Vector2] = []
 var building_footprints: Array = []
 var greenery_points: Array[Vector2] = []   # sign, signal and lamp posts: greenery keeps clear of them
@@ -369,6 +364,26 @@ var economy := { "seconds": 180, "lives": 5, "maxScore": 1500, "base": 50, "step
 var sc: Scenery
 var scenery_pools := {}
 
+# Graphics tier (Quality.PROFILES) and the adaptive budget that lowers it on a struggling phone.
+var tier := "mid"
+var frame_budget = FrameBudget.new()
+var adaptive_quality := false
+var _quality_mobile := false
+var lamp_lights_allowed := true   # real lights at the corner lamps (not on the low tier)
+var beacon_lights_allowed := true # real lights on emergency beacons (not on the low tier)
+var shadow_sun_factor := 1.0      # sun / ambient compensation while shadows are off (Quality)
+var shadow_ambient_factor := 1.0
+var hud: PerfHud
+# Rain: one GPU-animated MultiMesh of streaks (shaders/rain.gdshader), as in the Regulator.
+var rain_drops: MultiMeshInstance3D
+var rain_material: ShaderMaterial
+var rain_clock := 0.0
+var rain_amount := 0.0
+const RAIN_DROPS := 600
+const RAIN_DROPS_LOW := 220
+const ASPHALT_DRY := Color("#24272D")
+const ASPHALT_WET := Color("#16191E")
+
 # Camera controls
 const CAMERA_HFOV := 31.0
 const DESPAWN_DIST := 46.0
@@ -392,7 +407,114 @@ func _ready() -> void:
 		difficulty = "hard"
 	_build_level()
 	_setup_ui()
+	_setup_rain()
+	_setup_quality(RenderingServer.get_video_adapter_name(), OS.has_feature("android") or OS.has_feature("ios"))
+	if "--perf" in Host.user_args():
+		hud = PerfHud.new()
+		hud.tier = tier
+		hud.snapshot = _performance_snapshot
+		hud.tier_changed.connect(_apply_tier)
+		add_child(hud)
 	_dismiss_loader(loader)
+
+
+## Apply a fresh profile on every entry, including when iOS reuses the engine; `--quality=` pins it.
+## The 3D scale leaves the HUD at full resolution.
+func _setup_quality(gpu: String, mobile: bool) -> void:
+	_quality_mobile = mobile
+	var override := ""
+	for arg in Host.user_args():
+		if arg.begins_with("--quality="):
+			override = arg.trim_prefix("--quality=")
+	var fixed := override in Quality.PROFILES
+	_apply_tier(override if fixed else Quality.initial(gpu, mobile), not fixed)
+
+
+func _apply_tier(next: String, automatic := false) -> void:
+	tier = next
+	var profile: Dictionary = Quality.PROFILES[tier]
+	var viewport := get_viewport()
+	viewport.scaling_3d_scale = profile.scale
+	viewport.msaa_3d = profile.msaa
+	_set_shadows(profile.shadows)
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if tier == "high" else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	Engine.max_fps = 60 if _quality_mobile and profile.max_fps == 0 else int(profile.max_fps)
+	adaptive_quality = automatic and _quality_mobile
+	frame_budget.reset(profile.scale, profile.shadows, profile.msaa != Viewport.MSAA_DISABLED)
+	lamp_lights_allowed = tier != "low"
+	beacon_lights_allowed = tier != "low"
+	if is_instance_valid(rain_drops):
+		rain_drops.multimesh.visible_instance_count = RAIN_DROPS_LOW if tier == "low" else -1
+	_refresh_lighting()
+	if hud: hud.tier = tier
+
+
+## Shadows on or off; without them the sun and the ambient light are raised so the picture keeps
+## its brightness (see Quality.set_sun_shadows). The time-of-day blend applies the same factors.
+func _set_shadows(enabled: bool) -> void:
+	Quality.set_sun_shadows(sun, env.environment, enabled)
+	shadow_sun_factor = 1.0 if enabled else Quality.NO_SHADOW_SUN
+	shadow_ambient_factor = 1.0 if enabled else Quality.NO_SHADOW_AMBIENT
+	_refresh_lighting()
+
+
+func _update_frame_budget(delta: float) -> void:
+	if not adaptive_quality: return
+	var eligible := ready_for_play and not is_game_over and not is_classifying and not get_tree().paused
+	var update: Dictionary = frame_budget.sample(delta, eligible, Engine.max_fps)
+	if update.is_empty(): return
+	var viewport := get_viewport()
+	viewport.scaling_3d_scale = update.scale
+	viewport.msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
+	_set_shadows(update.shadows)
+	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
+
+
+func _performance_snapshot() -> Dictionary:
+	return {"game": "violator", "phase": "over" if is_game_over else ("play" if ready_for_play else "loading"),
+		"difficulty": difficulty, "cars": cars.size(), "tier": tier,
+		"render_scale": get_viewport().scaling_3d_scale, "max_fps": Engine.max_fps,
+		"shadows": sun.shadow_enabled, "msaa": get_viewport().msaa_3d, "quality_changes": frame_budget.changes}
+
+
+## Rain streaks over the visible junction, animated by the shader; hidden in dry weather.
+func _setup_rain() -> void:
+	rain_drops = MultiMeshInstance3D.new()
+	rain_drops.name = "Rain"
+	rain_drops.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.03, 0.8, 0.03)
+	rain_material = ShaderMaterial.new()
+	rain_material.shader = preload("res://shaders/rain.gdshader")
+	# The camera looks at the junction from ~70 m: the streaks fall from just above the roofs.
+	rain_material.set_shader_parameter("area", Vector4(-30.0, -40.0, 30.0, 46.0))
+	rain_material.set_shader_parameter("column", 26.0)
+	rain_material.set_shader_parameter("fall_speed", 18.0)
+	mesh.material = rain_material
+	rain_drops.multimesh = MultiMesh.new()
+	rain_drops.multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	rain_drops.multimesh.use_custom_data = true
+	rain_drops.multimesh.mesh = mesh
+	rain_drops.multimesh.instance_count = RAIN_DROPS
+	rain_drops.multimesh.custom_aabb = AABB(Vector3(-40, -1, -50), Vector3(80, 30, 100))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 6113
+	for i in RAIN_DROPS:
+		rain_drops.multimesh.set_instance_transform(i, Transform3D.IDENTITY)
+		rain_drops.multimesh.set_instance_custom_data(i, Color(rng.randf(), rng.randf(), rng.randf(), 0.0))
+	rain_drops.visible = false
+	add_child(rain_drops)
+
+
+func _update_rain(delta: float) -> void:
+	if not is_instance_valid(rain_drops):
+		return
+	rain_drops.visible = rain_amount > 0.01
+	if not rain_drops.visible:
+		return
+	rain_clock = fposmod(rain_clock + delta, 3600.0)
+	rain_material.set_shader_parameter("clock", rain_clock)
+	rain_material.set_shader_parameter("amount", rain_amount)
 
 
 func _setup_args() -> void:
@@ -488,8 +610,8 @@ func _build_level() -> void:
 	has_east_arm = bool(d.east_arm)
 	has_arrow = bool(d.arrow)
 	two_way = bool(d.get("two_way", false))
-	curve_right_n = CURVE_RIGHT_N_2WAY if two_way else curve_right_n
-	curve_right_w = CURVE_RIGHT_W_2WAY if two_way else curve_right_w
+	curve_right_n = CURVE_RIGHT_N_2WAY if two_way else CURVE_RIGHT_N
+	curve_right_w = CURVE_RIGHT_W_2WAY if two_way else CURVE_RIGHT_W
 	arm_lo = ARM_2WAY_LO if two_way else -1.8
 	arm_hi = ARM_2WAY_HI if two_way else 11.8
 	west_turn_band = Vector2(ARM_2WAY_LO, 5.0) if two_way else Vector2(-1.8, 1.8)
@@ -502,10 +624,7 @@ func _build_level() -> void:
 	if is_instance_valid(junction_node):
 		remove_child(junction_node)
 		junction_node.queue_free()
-	for lamp in street_lamps:
-		if is_instance_valid(lamp):
-			lamp.queue_free()
-	street_lamps.clear()
+	street_lamps.clear()   # (children of the junction, freed with it)
 	pole_points.clear()
 	greenery_points.clear()
 	building_footprints = []
@@ -523,6 +642,8 @@ func _build_level() -> void:
 	_setup_road_geometry()
 	_setup_traffic_lights()
 	_setup_pedestrian()
+	if is_instance_valid(sun):
+		_refresh_lighting()
 
 
 func _setup_road_geometry() -> void:
@@ -533,7 +654,7 @@ func _setup_road_geometry() -> void:
 
 	# Materials - matching Crossroads & Living City (Scenery palettes)
 	asphalt_material = StandardMaterial3D.new()
-	asphalt_material.albedo_color = Color("#24272D") # Crossroads dark graphite asphalt
+	asphalt_material.albedo_color = ASPHALT_DRY # Crossroads dark graphite asphalt
 	asphalt_material.roughness = 0.88
 
 	var sidewalk_mat := StandardMaterial3D.new()
@@ -936,6 +1057,12 @@ func _get_arrow_mesh(type: String) -> ArrayMesh:
 
 
 static func _st_tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
+	# Godot's front faces wind clockwise seen from their normal. The shapes below are typed in
+	# either order; a back face would be lit from below (dark at night), so fix the order here.
+	if (b - a).cross(c - a).y > 0.0:
+		var t := b
+		b = c
+		c = t
 	st.set_normal(Vector3.UP)
 	st.add_vertex(a)
 	st.set_normal(Vector3.UP)
@@ -1175,18 +1302,39 @@ func _build_city_scenery() -> void:
 			pole_points.append(Vector2(p_pos.x, p_pos.z))
 	for l_pos in lamp_coords:
 		pole_points.append(Vector2(l_pos.x, l_pos.z))
-	for l_pos in lamp_coords:
+	# Every lamp throws a soft pool of light on the ground (one additive draw call for all of them);
+	# only the four lamps at the junction's corners carry a real light, so no object is ever lit by
+	# more lights than the renderer's per-object limit and nothing flickers on the big road meshes.
+	var pools := MultiMesh.new()
+	pools.transform_format = MultiMesh.TRANSFORM_3D
+	var pool_quad := QuadMesh.new()
+	pool_quad.size = Vector2(LAMP_POOL_SIZE, LAMP_POOL_SIZE)
+	pool_quad.orientation = PlaneMesh.FACE_Y
+	pools.mesh = pool_quad
+	pools.instance_count = lamp_coords.size()
+	for i in lamp_coords.size():
+		var l_pos: Vector3 = lamp_coords[i]
 		var yaw := PI * 0.5 if l_pos.x < 0 else -PI * 0.5
 		_put_prop("street/lamp", l_pos, yaw)
-
-		# Omni light for dusk/night lighting
+		var reach := Basis(Vector3.UP, yaw) * Vector3(0, 0, 1.4)
+		pools.set_instance_transform(i, Transform3D(Basis(), Vector3(l_pos.x + reach.x, 0.2, l_pos.z + reach.z)))
+		if absf(l_pos.x) > 7.0 or l_pos.z < -6.0 or l_pos.z > 14.0:
+			continue
 		var light := OmniLight3D.new()
 		light.position = l_pos + Vector3(0, 4.2, 0)
 		light.light_color = Color("#FFE0A0")
 		light.omni_range = 18.0
 		light.light_energy = 0.0
-		add_child(light)
+		light.visible = false
+		junction_node.add_child(light)
 		street_lamps.append(light)
+	lamp_pools = MultiMeshInstance3D.new()
+	lamp_pools.name = "LampPools"
+	lamp_pools.multimesh = pools
+	lamp_pools.material_override = _lamp_pool_material()
+	lamp_pools.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	lamp_pools.visible = false
+	junction_node.add_child(lamp_pools)
 
 	# City Kiosks in all 4 quadrants with spacious clearance
 	var kiosk_positions := [
@@ -1777,15 +1925,24 @@ func _update_active_pedestrians(delta: float) -> void:
 
 
 func _stroll_path(p: Dictionary) -> Array:
-	var path: Array = STROLL_ROUTES[int(p.get("route", 0))].duplicate()
-	if float(p.get("dir", 1.0)) < 0.0:
-		path.reverse()
-	return path
+	var key := "%d:%d" % [int(p.get("route", 0)), 1 if float(p.get("dir", 1.0)) >= 0.0 else -1]
+	if not _stroll_paths.has(key):
+		var path: Array = STROLL_ROUTES[int(p.get("route", 0))].duplicate()
+		if float(p.get("dir", 1.0)) < 0.0:
+			path.reverse()
+		_stroll_paths[key] = path
+	return _stroll_paths[key]
+
+
+var _stroll_paths := {}   # route:dir -> the route's points in walking order (built once)
 
 
 # --- Game Loop & Traffic Simulation ---
 
 func _process(delta: float) -> void:
+	if _exiting: return
+	_update_frame_budget(delta)
+	_update_rain(delta)
 	if not ready_for_play or is_game_over:
 		return
 
@@ -1814,6 +1971,9 @@ func _process(delta: float) -> void:
 	if is_instance_valid(ui):
 		var time_metric := seconds_left if game_mode == "blitz" else patrol_elapsed
 		ui.update_hud(score, combo, time_metric, lives)
+		# The sight stays on the car being judged while it rolls on in slow motion.
+		if is_classifying and is_instance_valid(locked_car) and locked_car.is_inside_tree() and is_instance_valid(camera):
+			ui.move_target(camera.unproject_position(locked_car.global_position) / Ui.dp(get_viewport()))
 	_update_missed_marks()
 
 
@@ -1865,26 +2025,41 @@ func _update_continuous_weather(elapsed: float, delta: float) -> void:
 	var blend_weight := 0.0
 	if phase_progress > 0.6:
 		blend_weight = smoothstep(0.0, 1.0, (phase_progress - 0.6) / 0.4)
+	# Most of a phase holds still: do not resend unchanged light and material state every frame.
+	if phase_idx == _light_cur and next_idx == _light_next and absf(blend_weight - _light_blend) < 0.002:
+		return
+	_apply_light_blend(phase_idx, next_idx, blend_weight)
 
-	var p_cur := _get_weather_preset(phase_idx)
-	var p_next := _get_weather_preset(next_idx)
 
+var _light_cur := 0
+var _light_next := 0
+var _light_blend := 0.0
+
+## Sun, sky, ambient light, lamps, rain and wet asphalt between two time-of-day presets.
+func _apply_light_blend(cur: int, nxt: int, w: float) -> void:
+	_light_cur = cur
+	_light_next = nxt
+	_light_blend = w
+	var p_cur := _get_weather_preset(cur)
+	var p_next := _get_weather_preset(nxt)
 	if is_instance_valid(sun):
-		sun.light_energy = lerpf(p_cur.sun_energy, p_next.sun_energy, blend_weight)
-		sun.light_color = p_cur.sun_color.lerp(p_next.sun_color, blend_weight)
-
+		sun.light_energy = lerpf(p_cur.sun_energy, p_next.sun_energy, w) * shadow_sun_factor
+		sun.light_color = p_cur.sun_color.lerp(p_next.sun_color, w)
 	if is_instance_valid(env) and env.environment != null:
-		env.environment.background_color = p_cur.sky_color.lerp(p_next.sky_color, blend_weight)
-		env.environment.ambient_light_energy = lerpf(p_cur.amb_energy, p_next.amb_energy, blend_weight)
-		env.environment.ambient_light_color = p_cur.amb_color.lerp(p_next.amb_color, blend_weight)
-
-	var target_lamp := lerpf(p_cur.lamp_energy, p_next.lamp_energy, blend_weight)
-	for lamp in street_lamps:
-		if is_instance_valid(lamp):
-			lamp.light_energy = target_lamp
-
+		env.environment.background_color = p_cur.sky_color.lerp(p_next.sky_color, w)
+		env.environment.ambient_light_energy = lerpf(p_cur.amb_energy, p_next.amb_energy, w) * shadow_ambient_factor
+		env.environment.ambient_light_color = p_cur.amb_color.lerp(p_next.amb_color, w)
+	_set_lamp_energy(lerpf(p_cur.lamp_energy, p_next.lamp_energy, w))
+	rain_amount = (1.0 - w if cur == 3 else 0.0) + (w if nxt == 3 else 0.0)
 	if is_instance_valid(asphalt_material):
-		asphalt_material.roughness = lerpf(p_cur.asphalt_rough, p_next.asphalt_rough, blend_weight)
+		asphalt_material.roughness = lerpf(p_cur.asphalt_rough, p_next.asphalt_rough, w)
+		# Wet asphalt darkens: the Compatibility renderer has no reflections to show it otherwise.
+		asphalt_material.albedo_color = ASPHALT_DRY.lerp(ASPHALT_WET, rain_amount)
+
+
+## Re-applies the current time of day (after the shadows or the level changed).
+func _refresh_lighting() -> void:
+	_apply_light_blend(_light_cur, _light_next, _light_blend)
 
 
 func _get_weather_preset(idx: int) -> Dictionary:
@@ -1934,26 +2109,8 @@ func _get_weather_preset(idx: int) -> Dictionary:
 
 func _apply_weather_visuals(phase: String) -> void:
 	weather_phase = phase
-	if not is_instance_valid(sun) or not is_instance_valid(env):
-		return
-
 	var idx := 0 if phase == "day" else (1 if phase == "dusk" else (2 if phase == "night" else 3))
-	var p := _get_weather_preset(idx)
-
-	sun.light_energy = p.sun_energy
-	sun.light_color = p.sun_color
-	if env.environment != null:
-		env.environment.background_color = p.sky_color
-		env.environment.ambient_light_energy = p.amb_energy
-		env.environment.ambient_light_color = p.amb_color
-
-	for lamp in street_lamps:
-		if is_instance_valid(lamp):
-			lamp.light_energy = p.lamp_energy
-
-	if is_instance_valid(asphalt_material):
-		asphalt_material.roughness = p.asphalt_rough
-
+	_apply_light_blend(idx, idx, 0.0)
 	_refresh_car_headlights()
 
 
@@ -2790,8 +2947,13 @@ func _update_car_lamps(car: ViolatorCar, delta: float) -> void:
 		glow.scale = Vector3.ONE if car.braking else Vector3.ONE * 0.55
 
 
+var _unshaded_mats := {}
+
 func _make_unshaded_mat(color: Color) -> StandardMaterial3D:
+	if _unshaded_mats.has(color):
+		return _unshaded_mats[color]
 	var mat := StandardMaterial3D.new()
+	_unshaded_mats[color] = mat
 	mat.albedo_color = color
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	if color.a < 0.99:
@@ -2816,25 +2978,9 @@ func _attach_headlights(car: ViolatorCar) -> void:
 	var hl_root := Node3D.new()
 	hl_root.name = "Headlights"
 
-	# 1. Powerful forward SpotLight3D with wide reach and soft attenuation
-	var hl := SpotLight3D.new()
-	hl.light_color = Color("#FFF8E2")
-	hl.light_energy = 8.5
-	hl.spot_range = 35.0
-	hl.spot_angle = 45.0
-	hl.spot_attenuation = 0.60
-	hl.position = Vector3(0, 0.65, 2.0)
-	hl.rotation.y = PI
-	hl.shadow_enabled = false
-	hl_root.add_child(hl)
-
-	# 2. Physical emissive headlight lenses on vehicle front bumper
-	var lens_mat := StandardMaterial3D.new()
-	lens_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	lens_mat.albedo_color = Color("#FFFFFF")
-	lens_mat.emission_enabled = true
-	lens_mat.emission = Color("#FFFEE4")
-	lens_mat.emission_energy_multiplier = 5.0
+	# No real light per car: a dozen spot lights at night would each add a pass over every object
+	# they touch. The emissive lenses and the additive low-beam pool below read the same from above.
+	var lens_mat := _headlight_lens_material()
 
 	var lens_l := _create_box(Vector3(0.26, 0.12, 0.04), lens_mat)
 	lens_l.position = Vector3(-0.68, 0.55, 2.12)
@@ -2860,7 +3006,57 @@ func _attach_headlights(car: ViolatorCar) -> void:
 	car.headlight_node = hl_root
 
 
+var _lamp_pool_mat: StandardMaterial3D
+
+## Additive warm disc under a street lamp: bright under the head, fading out to its rim.
+func _lamp_pool_material() -> StandardMaterial3D:
+	if _lamp_pool_mat != null:
+		return _lamp_pool_mat
+	var n := 64
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	for y in n:
+		for x in n:
+			var r := Vector2(float(x) + 0.5 - n * 0.5, float(y) + 0.5 - n * 0.5).length() / (n * 0.5)
+			var a := pow(clampf(1.0 - r, 0.0, 1.0), 1.8)
+			img.set_pixel(x, y, Color(1.0, 0.86, 0.6, a))
+	img.generate_mipmaps()
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	mat.albedo_texture = ImageTexture.create_from_image(img)
+	mat.albedo_color = Color(1, 1, 1, 0)
+	_lamp_pool_mat = mat
+	return mat
+
+
+## Street lamps at the given energy (0 by day): the corner lights, and the pools under every lamp.
+## Lights at zero energy are hidden: the renderer still sorts and draws a visible dark light.
+func _set_lamp_energy(energy: float) -> void:
+	var on := energy > 0.01
+	for lamp in street_lamps:
+		if is_instance_valid(lamp):
+			lamp.light_energy = energy
+			lamp.visible = on and lamp_lights_allowed
+	if is_instance_valid(lamp_pools):
+		lamp_pools.visible = on
+		_lamp_pool_material().albedo_color = Color(1, 1, 1, clampf(energy / LAMP_FULL_ENERGY, 0.0, 1.0) * 0.42)
+
+
 var _beam_mat: StandardMaterial3D
+var _lens_mat: StandardMaterial3D
+
+func _headlight_lens_material() -> StandardMaterial3D:
+	if _lens_mat == null:
+		_lens_mat = StandardMaterial3D.new()
+		_lens_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_lens_mat.albedo_color = Color("#FFFFFF")
+		_lens_mat.emission_enabled = true
+		_lens_mat.emission = Color("#FFFEE4")
+		_lens_mat.emission_energy_multiplier = 5.0
+	return _lens_mat
+
 
 ## Additive low-beam texture: narrow and bright at the bumper, wide and faint at its far end.
 func _beam_material() -> StandardMaterial3D:
@@ -2876,7 +3072,7 @@ func _beam_material() -> StandardMaterial3D:
 		for x in w:
 			var u := absf((float(x) + 0.5) / float(w) - 0.5)
 			var edge := clampf(1.0 - (u - half * 0.6) / (half * 0.4 + 0.001), 0.0, 1.0) if u > half * 0.6 else 1.0
-			img.set_pixel(x, y, Color(1.0, 0.95, 0.8, fade * edge * 0.55))
+			img.set_pixel(x, y, Color(1.0, 0.95, 0.8, fade * edge * 0.7))
 	img.generate_mipmaps()
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -3069,6 +3265,14 @@ func _setup_emergency_appearance(car: ViolatorCar, force_type := "") -> void:
 
 		car.beacon_light = light_b1
 
+	if not beacon_lights_allowed:
+		# Weak phones: the flashing halos carry the beacons, no real lights.
+		for l in [car.beacon_light_blue, car.beacon_light_red]:
+			if is_instance_valid(l):
+				l.free()
+		car.beacon_light_blue = null
+		car.beacon_light_red = null
+		car.beacon_light = null
 	sound.vehicle("emerg_" + str(car.get_instance_id()), "police" if car.emergency_type == "police" else "emergency", 11.0, true, 0.85)
 
 
@@ -3188,12 +3392,13 @@ func _update_cars(delta: float) -> void:
 			if is_instance_valid(car.beacon_halo_red):
 				car.beacon_halo_red.visible = right_on
 			if is_instance_valid(car.beacon_mat_blue):
-				car.beacon_mat_blue.emission_enabled = left_on
+				# (Energy, not emission_enabled: toggling a feature swaps the material's shader.)
+				car.beacon_mat_blue.emission_energy_multiplier = 12.0 if left_on else 0.0
 				car.beacon_mat_blue.albedo_color = Color("#0066FF") if left_on else Color("#001840")
 			if is_instance_valid(car.beacon_mat_red):
 				var r_active := Color("#FF1020") if car.emergency_type == "police" else Color("#0066FF")
 				var r_dark := Color("#400810") if car.emergency_type == "police" else Color("#001840")
-				car.beacon_mat_red.emission_enabled = right_on
+				car.beacon_mat_red.emission_energy_multiplier = 12.0 if right_on else 0.0
 				car.beacon_mat_red.albedo_color = r_active if right_on else r_dark
 			if is_instance_valid(car.beacon_mesh_blue):
 				car.beacon_mesh_blue.visible = true
@@ -3213,7 +3418,9 @@ func _update_cars(delta: float) -> void:
 
 		var pos := car.global_position if car.is_inside_tree() else car.position
 		# Well beyond the frame on every phone, so nobody vanishes in sight.
-		if pos.z > DESPAWN_DIST or pos.x > DESPAWN_DIST or pos.x < -DESPAWN_DIST or (car.lane == LANE_NORTH and pos.z < -50.0):
+		# (The car being judged stays until the answer, even beyond the frame.)
+		var gone := pos.z > DESPAWN_DIST or pos.x > DESPAWN_DIST or pos.x < -DESPAWN_DIST or (car.lane == LANE_NORTH and pos.z < -50.0)
+		if gone and not (is_classifying and (car == locked_car or car.violation_state == "active")):
 			if car.violation_state == "active":
 				_on_violator_missed(car)
 			Models.release_geometry(car)
@@ -4032,6 +4239,8 @@ func _drive_line(car: ViolatorCar) -> Array[Vector2]:
 
 
 ## Distances along a polyline where it enters and leaves a rectangle, Vector2(999, 999) if never.
+## Each segment is clipped against the rectangle analytically (Liang–Barsky): this runs for every car
+## and crosswalk each frame, so it must not sample the line point by point.
 func _polyline_rect_hit(line: Array[Vector2], rect: Rect2) -> Vector2:
 	var along := 0.0
 	var s_in := 999.0
@@ -4039,17 +4248,37 @@ func _polyline_rect_hit(line: Array[Vector2], rect: Rect2) -> Vector2:
 		var a: Vector2 = line[i - 1]
 		var b: Vector2 = line[i]
 		var seg := a.distance_to(b)
-		var steps := maxi(1, ceili(seg / 0.25))
-		for k in range(steps + 1):
-			var q := a.lerp(b, float(k) / float(steps))
-			var inside := rect.has_point(q)
-			var at := along + seg * float(k) / float(steps)
-			if inside and s_in > 900.0:
-				s_in = at
-			elif not inside and s_in < 900.0:
-				return Vector2(s_in, at)
+		var t := _segment_rect_clip(a, b, rect)
+		if s_in > 900.0:
+			if t.x <= t.y:
+				s_in = along + seg * t.x
+				if t.y < 1.0:
+					return Vector2(s_in, along + seg * t.y)
+		elif t.x > t.y or t.x > 0.0001:
+			return Vector2(s_in, along)   # (left exactly at the corner between two segments)
+		elif t.y < 1.0:
+			return Vector2(s_in, along + seg * t.y)
 		along += seg
 	return Vector2(s_in, along) if s_in < 900.0 else Vector2(999, 999)
+
+
+## The part [t0, t1] of segment a-b (t in 0..1) inside the rectangle; t0 > t1 when it misses it.
+static func _segment_rect_clip(a: Vector2, b: Vector2, rect: Rect2) -> Vector2:
+	var t0 := 0.0
+	var t1 := 1.0
+	var d := b - a
+	for axis in 2:
+		var lo: float = rect.position[axis]
+		var hi: float = rect.end[axis]
+		if absf(d[axis]) < 0.000001:
+			if a[axis] < lo or a[axis] > hi:
+				return Vector2(1.0, 0.0)
+		else:
+			var ta := (lo - a[axis]) / d[axis]
+			var tb := (hi - a[axis]) / d[axis]
+			t0 = maxf(t0, minf(ta, tb))
+			t1 = minf(t1, maxf(ta, tb))
+	return Vector2(t0, t1)
 
 
 func _polyline_point(line: Array[Vector2], dist: float) -> Vector2:
@@ -4354,7 +4583,11 @@ func _check_car_violation_state(car: ViolatorCar) -> void:
 			car.violation_start_time = game_clock
 	elif car.violation_state == "active":
 		# Catchable for at least min_catch_window after the offence, even once the manoeuvre is
-		# over: a person needs a few seconds to notice it and tap a moving car.
+		# over: a person needs a few seconds to notice it and tap a moving car. Nobody gets away
+		# while the player is busy judging a car: taps are closed then, so it would be unfair.
+		if is_classifying:
+			car.violation_start_time += get_process_delta_time()
+			return
 		if _is_car_exiting_violation_window(car) and game_clock - car.violation_start_time >= min_catch_window:
 			_on_violator_missed(car)
 
@@ -4466,9 +4699,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not ready_for_play or is_game_over or is_classifying:
 		return
 
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_process_screen_tap(event.position)
-	elif event is InputEventScreenTouch and event.pressed:
+	# Touch only: a phone sends every touch again as an emulated mouse click, and a desktop mouse
+	# arrives as an emulated touch (emulate_touch_from_mouse). Taking both judged one tap twice:
+	# a false alarm cost two lives.
+	if event is InputEventScreenTouch and event.pressed and event.index == 0:
 		_process_screen_tap(event.position)
 
 
@@ -4604,17 +4838,48 @@ func _car_on_zebra_with_walker(car: ViolatorCar) -> bool:
 
 
 func get_classification_options(correct_code: String) -> Array:
-	var distractors: Array = []
+	# Distractors are offences that can really happen here and now: an option this junction or
+	# this hour of the round cannot produce (the arrow on a level without one, no lights by day)
+	# would be eliminated without thinking. Others only fill up when too few are possible.
+	# Then this level's offences of another hour or mode, and only then other levels' ones.
+	var possible: Array = []
+	var later: Array = []
+	var other: Array = []
+	var skip: Array = DIFFICULTIES.get(difficulty, DIFFICULTIES["hard"]).skip
 	for v in ALL_VIOLATIONS:
-		if v != correct_code:
-			distractors.append(v)
-	distractors.shuffle()
+		if v == correct_code:
+			continue
+		if _offence_possible(v):
+			possible.append(v)
+		elif v not in skip:
+			later.append(v)
+		else:
+			other.append(v)
+	possible.shuffle()
+	later.shuffle()
+	other.shuffle()
+	var distractors: Array = possible + later + other
 
 	var options: Array = [correct_code]
 	for i in mini(2, distractors.size()):
 		options.append(distractors[i])
 	options.shuffle()
 	return options
+
+
+## Whether this level, mode and time of day can produce the offence at all.
+func _offence_possible(code: String) -> bool:
+	var d: Dictionary = DIFFICULTIES.get(difficulty, DIFFICULTIES["hard"])
+	if code in d.skip:
+		return false
+	match code:
+		VIOLATION_PRIORITY_SIGN:
+			return game_mode == "patrol"   # only while the signals blink yellow at night
+		VIOLATION_NO_LIGHTS:
+			return weather_phase in ["dusk", "night", "rain"]
+		VIOLATION_WEATHER_SPEED:
+			return weather_phase == "rain" or game_mode == "patrol"
+	return true
 
 
 func _on_classification_selected(chosen_code: String) -> void:
@@ -4651,10 +4916,12 @@ func _on_classification_selected(chosen_code: String) -> void:
 		sound.play("incorrect")
 		locked_car.violation_state = "missed"
 		wrong_count += 1
-		# The offender was spotted, only the clause was wrong: no points and the streak is gone, and
-		# the right clause is shown — but no life lost (lives go for missed offenders and false alarms).
+		# The offender was spotted, only the clause was wrong (or not picked in time): no points and
+		# the streak is gone, and the right clause is shown — but no life lost (lives go for missed
+		# offenders and false alarms).
 		if is_instance_valid(ui):
-			ui.show_toast(ViolatorUiScript.tr_v("violatorWrongAnswer") % ViolatorUiScript.tr_v(ui._violation_l10n_key(locked_car.violation_type)), true)
+			var key := "violatorTimeoutAnswer" if chosen_code == "timeout" else "violatorWrongAnswer"
+			ui.show_toast(ViolatorUiScript.tr_v(key) % ViolatorUiScript.tr_v(ui._violation_l10n_key(locked_car.violation_type)), true)
 		combo = 0
 		streak = 0
 		if is_instance_valid(ui):
