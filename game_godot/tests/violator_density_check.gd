@@ -74,7 +74,10 @@ func _run() -> void:
 		level_avg[level] = float(sum) / 3.0
 		print("%s: avg %.1f, min %d" % [level, level_avg[level], low])
 		_check("%s round still has offences to catch (min %d)" % [level, low], low >= 5)
-	_check("Easier levels have fewer offences (%s)" % str(level_avg), level_avg.easy < level_avg.medium and level_avg.medium < level_avg.hard)
+	# The easy level is easier by one offender at a time, longer windows and simpler kinds, not by
+	# waiting: a round still brings one about every 20 s (players found 1 in 40 s boring).
+	_check("Easy level brings an offence about every 20 s (%.1f a round)" % level_avg.easy, level_avg.easy >= 8.0)
+	_check("Hard is the busiest level (%s)" % str(level_avg), level_avg.hard >= level_avg.medium and level_avg.hard >= level_avg.easy)
 	print("Violator density: %s" % ("PASS" if failed == 0 else "FAIL (%d)" % failed))
 	quit(0 if failed == 0 else 1)
 

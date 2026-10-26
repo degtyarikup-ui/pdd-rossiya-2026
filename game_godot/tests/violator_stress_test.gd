@@ -72,17 +72,17 @@ func _test_violation_boundaries_and_edges() -> void:
 	game._check_car_violation_state(rl_car)
 	_assert("RED_LIGHT activates when light is yellow past stop line", rl_car.violation_state == "active")
 
-	# Sub-case: Just before stop line (-3.6) on red
+	# Sub-case: front bumper just before the stop line (z = -10) on red
 	var rl_car2 = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
 	game.light_state = "red"
-	rl_car2.position.z = -3.6
+	rl_car2.position.z = -10.0 - ViolatorScript.CAR_FRONT - 0.1
 	game._check_car_violation_state(rl_car2)
-	_assert("RED_LIGHT does NOT activate before stop line (Z = -3.6)", rl_car2.violation_state == "pending")
+	_assert("RED_LIGHT does NOT activate before the stop line", rl_car2.violation_state == "pending")
 
-	# Sub-case: Crossing stop line (-3.5) on red
-	rl_car2.position.z = -3.5
+	# Sub-case: front bumper crossing the stop line on red
+	rl_car2.position.z = -10.0 - ViolatorScript.CAR_FRONT + 0.05
 	game._check_car_violation_state(rl_car2)
-	_assert("RED_LIGHT activates precisely at stop line (Z = -3.5)", rl_car2.violation_state == "active")
+	_assert("RED_LIGHT activates as the bumper crosses the stop line", rl_car2.violation_state == "active")
 
 	# Sub-case: Exit boundary (Z = 8.1)
 	rl_car2.position.z = 8.1

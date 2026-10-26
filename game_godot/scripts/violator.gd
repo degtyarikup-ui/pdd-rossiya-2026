@@ -331,7 +331,7 @@ var next_violation_at := 0.0
 # Each level also has its own junction: easy is a T-junction of two-way roads with one lane each way
 # (no east arm, the main road also carries northbound traffic), two crosswalks and no arrow section, medium a crossroads with three crosswalks and no arrow section, hard the full one.
 const DIFFICULTIES := {
-	"easy": {"gap_start": 15.0, "gap_end": 10.0, "two_after": 9999.0, "catch": 8.0, "answer": 12.0, "points": 0.5,
+	"easy": {"gap_start": 8.0, "gap_end": 6.0, "two_after": 9999.0, "catch": 8.0, "answer": 12.0, "points": 0.5,
 		"skip": ["arrow_yield", "waffle_block", "emergency_yield", "weather_speed", "wrong_lane_turn", "solid_line"],
 		"east_arm": false, "arrow": false, "two_way": true, "crosswalks": ["north", "west"]},
 	"medium": {"gap_start": 11.0, "gap_end": 7.0, "two_after": 60.0, "catch": 6.0, "answer": 9.0, "points": 0.75,
@@ -1042,7 +1042,8 @@ func _build_markings_2way(white_mat: Material) -> void:
 		_build_lane_arrow(Vector3(-1.8, 0.024, z_pos), "straight_right", white_mat, PI)
 	for z_pos in [16.0, 25.0]:
 		_build_lane_arrow(Vector3(1.8, 0.024, z_pos), "straight", white_mat, 0.0)
-	for x_pos in [-15.0, -24.0]:
+	# (The first one close to the stop line: further out it sits at the very edge of the frame.)
+	for x_pos in [-13.0, -21.0]:
 		_build_lane_arrow(Vector3(x_pos, 0.024, 7.1), "right", white_mat, -PI * 0.5)
 
 
@@ -4595,15 +4596,18 @@ func _check_car_violation_state(car: ViolatorCar) -> void:
 func _is_car_entering_violation_window(car: ViolatorCar) -> bool:
 	match car.violation_type:
 		VIOLATION_RED_LIGHT:
+			# Committed the moment the front bumper crosses the stop line on red: that is what the
+			# player sees and taps (counting only from the middle of the junction made a tap on a
+			# car that had clearly run the red a false alarm).
 			if car.lane == 2:
 				var ew_red := light_phase in EW_STOP_PHASES
-				return car.position.x >= -5.0 and ew_red
+				return car.position.x + CAR_FRONT >= -9.75 and ew_red
 			elif car.lane == 3:
 				var ew_red := light_phase in EW_STOP_PHASES
-				return car.position.x <= 5.0 and ew_red
+				return car.position.x - CAR_FRONT <= 9.75 and ew_red
 			elif car.lane == LANE_NORTH:
-				return car.position.z <= ARM_2WAY_HI + 0.5 and light_state in ["red", "yellow"]
-			return car.position.z >= -3.5 and light_state in ["red", "yellow"]
+				return car.position.z - CAR_FRONT <= STOP_LINE_NORTHBOUND and light_state in ["red", "yellow"]
+			return car.position.z + CAR_FRONT >= -10.0 and light_state in ["red", "yellow"]
 		VIOLATION_PEDESTRIAN_YIELD:
 			# Any walker on the near half of the crosswalk it turns across (the westbound lanes).
 			return car.route == "main_left" and car.position.z >= curve_right_n[0].y and car.position.x > -6.25 \

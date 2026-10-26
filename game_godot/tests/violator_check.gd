@@ -560,7 +560,8 @@ func _check_economy_and_game_over() -> void:
 		if level == "hard":
 			_check("Hard keeps the full junction", game.has_east_arm and game.has_arrow and game.crosswalks.size() == 4 and game.signal_badges.size() == 3)
 			_check("Hard keeps the old tuning", game.min_catch_window == 4.5 and game.ui.answer_time == 7.0)
-	_check("Offences come rarer on easier levels", gaps.easy > gaps.medium and gaps.medium > gaps.hard)
+	# (Easy is eased by one offender at a time and simpler kinds, not by long pauses: see density.)
+	_check("Offences come rarer on medium than on hard", gaps.medium > gaps.hard)
 	game.set_difficulty("nonsense")
 	_check("Unknown level falls back to hard", game.difficulty == "hard")
 
@@ -647,6 +648,27 @@ func _check_regressions() -> void:
 	_check("The judged car is not removed beyond the frame before the answer", is_instance_valid(judged) and game.cars.has(judged))
 	game._on_classification_selected("timeout")
 	_check("A timed-out answer costs no life", game.lives == lives0 and not game.is_classifying)
+
+	# Running the red counts from the stop line, where the player sees it, on every approach.
+	game.set_difficulty("easy")
+	game._start_game()
+	game.light_state = "red"
+	game.light_phase = "ew_green"
+	var runs := {
+		ViolatorScript.LANE_NORTH: Vector3(1.8, 0, ViolatorScript.STOP_LINE_NORTHBOUND + ViolatorScript.CAR_FRONT - 0.2),
+		0: Vector3(-1.8, 0, -10.0 - ViolatorScript.CAR_FRONT + 0.2),
+	}
+	for lane in runs:
+		var runner = game.spawn_specific_car("main_straight", lane, true, ViolatorScript.VIOLATION_RED_LIGHT)
+		runner.position = runs[lane]
+		game._check_car_violation_state(runner)
+		_check("A red-light runner (lane %d) is caught as soon as its bumper crosses the stop line" % lane, runner.violation_state == "active")
+	game.light_phase = "ns_green"
+	var west = game.spawn_specific_car("secondary_merge", 2, true, ViolatorScript.VIOLATION_RED_LIGHT)
+	west.position = Vector3(-9.75 - ViolatorScript.CAR_FRONT + 0.2, 0, 7.1)
+	game._check_car_violation_state(west)
+	_check("...and from the west arm too", west.violation_state == "active")
+	game.set_difficulty("hard")
 
 	# Wrong options are offences this level can produce.
 	game.set_difficulty("easy")
