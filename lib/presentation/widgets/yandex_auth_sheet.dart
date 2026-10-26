@@ -1,13 +1,10 @@
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/l10n/l10n.dart';
-import 'package:pdd_app/data/models/user_profile.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
 import 'package:pdd_app/data/services/error_reporter.dart';
 import 'package:pdd_app/data/services/yandex_native_auth.dart';
@@ -16,9 +13,8 @@ import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
 import 'package:webview_flutter/webview_flutter.dart';
 
 class YandexAuthResult {
-  final UserProfile profile;
   final String token;
-  const YandexAuthResult(this.profile, this.token);
+  const YandexAuthResult(this.token);
 }
 
 class YandexAuthSheet extends StatefulWidget {
@@ -54,14 +50,10 @@ class YandexAuthSheet extends StatefulWidget {
     await startWebOAuth('yandex', url);
   }
 
-  static Future<UserProfile?> profileForToken(String token) =>
-      _YandexAuthSheetState._fetchYandexProfile(token);
-
   static Future<YandexAuthResult?> _signInOnIos() async {
     final token = await YandexNativeAuth.signIn();
     if (token == null) return null;
-    final profile = await profileForToken(token);
-    return profile == null ? null : YandexAuthResult(profile, token);
+    return YandexAuthResult(token);
   }
 
   static String _randomState() => List.generate(
@@ -166,9 +158,9 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
         }
 
         if (token != null && token.isNotEmpty) {
-          final profile = await _fetchYandexProfile(token);
-          if (mounted && profile != null) {
-            Navigator.of(context).pop(YandexAuthResult(profile, token));
+          if (mounted) {
+            // Only the server verifies this token and returns account identity.
+            Navigator.of(context).pop(YandexAuthResult(token));
             return;
           }
         }
@@ -187,88 +179,6 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
         Navigator.of(context).pop();
       }
     }
-  }
-
-  static Future<UserProfile?> _fetchYandexProfile(String token) async {
-    try {
-      final response = await http
-          .get(
-            Uri.parse('https://login.yandex.ru/info?format=json'),
-            headers: {'Authorization': 'OAuth $token'},
-          )
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final id = data['id']?.toString() ?? '';
-        if (id.isEmpty) {
-          ErrorReporter.report(
-            ErrorCategory.auth,
-            'yandex.profile',
-            code: 'invalid_response',
-            provider: 'yandex',
-          );
-          return null;
-        }
-
-        final realName = data['real_name'] as String?;
-        final displayName = data['display_name'] as String?;
-        final firstName = data['first_name'] as String?;
-        final lastName = data['last_name'] as String?;
-
-        String name = appL10n.yandexUserDefaultName;
-        if (realName != null && realName.isNotEmpty) {
-          name = realName;
-        } else if (displayName != null && displayName.isNotEmpty) {
-          name = displayName;
-        } else if (firstName != null && firstName.isNotEmpty) {
-          name = [
-            firstName,
-            lastName,
-          ].where((s) => s != null && s.isNotEmpty).join(' ');
-        }
-
-        final email =
-            data['default_email'] as String? ??
-            (data['emails'] is List && (data['emails'] as List).isNotEmpty
-                ? (data['emails'] as List).first.toString()
-                : '');
-
-        final defaultAvatarId = data['default_avatar_id'] as String?;
-        final isAvatarEmpty = data['is_avatar_empty'] == true;
-        final avatarUrl =
-            (!isAvatarEmpty &&
-                defaultAvatarId != null &&
-                defaultAvatarId.isNotEmpty)
-            ? 'https://avatars.yandex.net/get-yapic/$defaultAvatarId/islands-200'
-            : null;
-
-        return UserProfile(
-          id: 'yandex_$id',
-          name: name,
-          email: email,
-          avatarUrl: avatarUrl,
-          provider: AuthProviderType.yandex,
-          createdAt: DateTime.now(),
-        );
-      } else {
-        ErrorReporter.report(
-          ErrorCategory.auth,
-          'yandex.profile',
-          code: 'http_${response.statusCode}',
-          provider: 'yandex',
-        );
-      }
-    } catch (e) {
-      debugPrint('YandexAuthSheet: fetch profile error: $e');
-      ErrorReporter.report(
-        ErrorCategory.auth,
-        'yandex.profile',
-        error: e,
-        provider: 'yandex',
-      );
-    }
-    return null;
   }
 
   @override

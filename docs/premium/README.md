@@ -119,6 +119,7 @@ flutter test test/premium_service_test.dart test/premium_offline_session_test.da
   test/iap_account_owner_test.dart test/verified_purchase_test.dart \
   test/payment_mode_test.dart test/pending_payment_test.dart \
   test/auth_jwt_claim_test.dart test/auth_login_recovery_test.dart \
+  test/auth_attempt_lifecycle_test.dart test/progress_outbox_test.dart \
   test/auth_provider_button_test.dart test/auth_startup_sync_test.dart \
   test/web_oauth_state_test.dart test/yandex_native_auth_test.dart
 cd server/install-notifier && npm run test:security

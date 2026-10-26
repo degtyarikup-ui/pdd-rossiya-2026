@@ -983,21 +983,33 @@ class ProgressDataSource {
     }
   }
 
-  Future<void> _importGame(Map<String, dynamic> g) =>
-      GameGarageService.instance.importFromCloud(() => _importGameUnlocked(g));
+  Future<void> _importGame(
+    Map<String, dynamic> g, {
+    bool Function()? stillCurrent,
+  }) => GameGarageService.instance.importFromCloud(
+    () => _importGameUnlocked(g, stillCurrent: stillCurrent),
+  );
 
-  Future<void> _importGameUnlocked(Map<String, dynamic> g) async {
+  Future<void> _importGameUnlocked(
+    Map<String, dynamic> g, {
+    bool Function()? stillCurrent,
+  }) async {
+    bool current() => stillCurrent?.call() ?? true;
+    if (!current()) return;
     final best = (g['bestScore'] as num?)?.toInt() ?? 0;
     if (best > (_prefs.getInt('game_best_score') ?? 0)) {
       await _prefs.setInt('game_best_score', best);
+      if (!current()) return;
     }
     final correct = (g['garageCorrect'] as num?)?.toInt() ?? 0;
     if (correct > (_prefs.getInt('game_garage_correct') ?? 0)) {
       await _prefs.setInt('game_garage_correct', correct);
+      if (!current()) return;
     }
     final unlocks = (g['garageUnlocks'] as num?)?.toInt() ?? 0;
     if (unlocks > (_prefs.getInt('game_garage_unlocks') ?? 0)) {
       await _prefs.setInt('game_garage_unlocks', unlocks);
+      if (!current()) return;
     }
     if (g['garageCars'] is List) {
       // Union by model+paint, keeping the local order first.
@@ -1011,22 +1023,29 @@ class ProgressDataSource {
       }
       if (merged.isNotEmpty) {
         await _prefs.setString('game_garage_cars', jsonEncode(merged));
+        if (!current()) return;
       }
     }
     if (!_prefs.containsKey('game_vehicle') && g['vehicle'] is String) {
       await _prefs.setString('game_vehicle', g['vehicle'] as String);
+      if (!current()) return;
       if (g['vehiclePaint'] is String) {
         await _prefs.setString(
           'game_vehicle_paint',
           g['vehiclePaint'] as String,
         );
+        if (!current()) return;
       }
     }
   }
 
   /// Импорт и сохранение слепка прогресса из облака.
-  Future<void> importProgressSnapshot(Map<String, dynamic> data) async {
-    if (data.isEmpty) return;
+  Future<void> importProgressSnapshot(
+    Map<String, dynamic> data, {
+    bool Function()? stillCurrent,
+  }) async {
+    bool current() => stillCurrent?.call() ?? true;
+    if (data.isEmpty || !current()) return;
     final previousReset = _prefs.getInt(_keyResetAt) ?? 0;
     data = mergeProgressSnapshots(exportProgressSnapshot(), data);
     final reset = data['resetAt'] as int;
@@ -1045,6 +1064,7 @@ class ProgressDataSource {
       _prefs.remove(_keyUnfinishedSession);
       for (final category in TicketCategory.values) {
         await _prefs.remove(_marathonKey(category));
+        if (!current()) return;
       }
       for (final key in [
         _keyStreakCurrent,
@@ -1057,6 +1077,8 @@ class ProgressDataSource {
         _prefs.remove(key);
       }
     }
+    if (!current()) return;
+    data = mergeProgressSnapshots(exportProgressSnapshot(), data);
     final games = Map<String, dynamic>.from(data['miniGames'] as Map);
     _saveMap(
       _keyTrafficController,
@@ -1121,7 +1143,11 @@ class ProgressDataSource {
       );
     }
     if (data['game'] is Map) {
-      await _importGame(Map<String, dynamic>.from(data['game'] as Map));
+      await _importGame(
+        Map<String, dynamic>.from(data['game'] as Map),
+        stillCurrent: stillCurrent,
+      );
+      if (!current()) return;
     }
     if (data['streak'] is Map) {
       final s = data['streak'] as Map;
@@ -1133,9 +1159,11 @@ class ProgressDataSource {
 
       if (cur > (_prefs.getInt(_keyStreakCurrent) ?? 0)) {
         await _prefs.setInt(_keyStreakCurrent, cur);
+        if (!current()) return;
       }
       if (lon > (_prefs.getInt(_keyStreakLongest) ?? 0)) {
         await _prefs.setInt(_keyStreakLongest, lon);
+        if (!current()) return;
       }
       // Дата с сервера принимается, только если она не старше своей:
       // иначе устройство «забывало» сегодняшний день.
@@ -1144,8 +1172,10 @@ class ProgressDataSource {
           last.isNotEmpty &&
           (localLast == null || last.compareTo(localLast) >= 0)) {
         await _prefs.setString(_keyStreakLastActive, last);
+        if (!current()) return;
         if (start != null && start.isNotEmpty) {
           await _prefs.setString(_keyStreakStartDate, start);
+          if (!current()) return;
         }
       }
       if (active.isNotEmpty) {
@@ -1153,6 +1183,7 @@ class ProgressDataSource {
             _prefs.getStringList(_keyStreakActiveDays) ?? <String>[];
         final union = {...existingActive, ...active}.toList()..sort();
         await _prefs.setStringList(_keyStreakActiveDays, union);
+        if (!current()) return;
       }
     }
     _migrateQuestionIdentities();

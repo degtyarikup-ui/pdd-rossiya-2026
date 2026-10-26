@@ -13,8 +13,10 @@ import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 
 class AuthModalSheet extends StatefulWidget {
-  const AuthModalSheet({super.key, this.initialAction});
+  const AuthModalSheet({super.key, this.initialAction, this.authService});
   final Future<bool> Function()? initialAction;
+  @visibleForTesting
+  final AuthService? authService;
 
   static Future<bool?> show(
     BuildContext context, {
@@ -36,10 +38,23 @@ class AuthModalSheet extends StatefulWidget {
 class _AuthModalSheetState extends State<AuthModalSheet> {
   bool _isLoading = false;
   String? _error;
+  int? _ownedAttempt;
+  AuthService get _auth => widget.authService ?? AuthService.instance;
+  bool get _busy => _isLoading || _auth.isSigningIn;
+
+  void _busyChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _cancelOwnedAttempt() {
+    final id = _ownedAttempt;
+    if (id != null) _auth.cancelSignIn(id);
+  }
 
   @override
   void initState() {
     super.initState();
+    _auth.signInBusy.addListener(_busyChanged);
     final action = widget.initialAction;
     if (action != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -48,8 +63,15 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
     }
   }
 
+  @override
+  void dispose() {
+    _auth.signInBusy.removeListener(_busyChanged);
+    _cancelOwnedAttempt();
+    super.dispose();
+  }
+
   String _failureMessage() {
-    final auth = AuthService.instance;
+    final auth = _auth;
     final message = switch (auth.lastFailure) {
       AuthFailure.cancelled => appL10n.authErrorCancelled,
       AuthFailure.provider => appL10n.authErrorProvider,
@@ -66,7 +88,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
   }
 
   Future<void> _handleAuth(Future<bool> Function() action) async {
-    if (_isLoading) return;
+    if (_busy) return;
     HapticFeedbackHelper.select();
     setState(() {
       _isLoading = true;
@@ -74,7 +96,9 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
     });
 
     try {
-      final success = await action();
+      final pending = action();
+      _ownedAttempt = _auth.activeSignInId;
+      final success = await pending;
       if (mounted) {
         setState(() => _isLoading = false);
         if (success) {
@@ -82,7 +106,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
           Navigator.of(context).pop(true);
           AppToast.show(
             context,
-            AuthService.instance.sessionIsTemporary
+            _auth.sessionIsTemporary
                 ? appL10n.authSessionTemporary
                 : appL10n.authSuccess,
             type: AppToastType.success,
@@ -106,154 +130,158 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
     final colors = AppColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppDimensions.screenPadding,
-              12,
-              AppDimensions.screenPadding,
-              24,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Close Button
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
+    return PopScope<bool>(
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop && result != true) _cancelOwnedAttempt();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppDimensions.screenPadding,
+                12,
+                AppDimensions.screenPadding,
+                24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Close Button
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: colors.secondaryText,
+                        ),
+                        onPressed: () {
+                          _cancelOwnedAttempt();
+                          Navigator.of(context).pop(false);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    Text(
+                      appL10n.authTitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: colors.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      appL10n.authDescription,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        height: 1.35,
                         color: colors.secondaryText,
                       ),
-                      onPressed: () => Navigator.of(context).pop(false),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-
-                  Text(
-                    appL10n.authTitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: colors.primaryText,
+                    SizedBox(
+                      height: 24,
+                      child: _busy
+                          ? const Center(child: LinearProgressIndicator())
+                          : null,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    appL10n.authDescription,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      height: 1.35,
-                      color: colors.secondaryText,
-                    ),
-                  ),
-                  SizedBox(
-                    height: 24,
-                    child: _isLoading
-                        ? const Center(child: LinearProgressIndicator())
-                        : null,
-                  ),
-                  if (_error != null) ...[
-                    Text(
-                      _error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                  // OAuth Buttons
-                  if (kIsWeb ||
-                      Theme.of(context).platform == TargetPlatform.iOS) ...[
-                    _buildAuthButton(
-                      svgAsset: 'assets/icons/auth/apple.svg',
-                      svgColor: colors.primaryText,
-                      label: appL10n.authApple,
-                      onTap: () =>
-                          _handleAuth(AuthService.instance.signInWithApple),
-                    ),
-                    if (appleWebNeedsSafariHint) ...[
-                      const SizedBox(height: 8),
+                    if (_error != null) ...[
                       Text(
-                        appL10n.authAppleSafariHint,
+                        _error!,
                         style: TextStyle(
-                          fontSize: 13,
-                          color: colors.secondaryText,
+                          color: Theme.of(context).colorScheme.error,
                         ),
                         textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: 12),
                     ],
-                    const SizedBox(height: 10),
-                  ],
 
-                  if (kIsWeb)
-                    GoogleWebSignInButton(
-                      enabled: !_isLoading,
-                      onSignIn: (request) => _handleAuth(
-                        () => AuthService.instance.signInWithGoogleWeb(request),
+                    // OAuth Buttons
+                    if (kIsWeb ||
+                        Theme.of(context).platform == TargetPlatform.iOS) ...[
+                      _buildAuthButton(
+                        svgAsset: 'assets/icons/auth/apple.svg',
+                        svgColor: colors.primaryText,
+                        label: appL10n.authApple,
+                        onTap: () => _handleAuth(_auth.signInWithApple),
                       ),
-                      onError: (error) {
-                        ErrorReporter.report(
-                          ErrorCategory.auth,
-                          'google.web_button',
-                          error: error,
-                          provider: 'google',
-                        );
-                        if (mounted) {
-                          setState(() => _error = appL10n.authErrorProvider);
-                        }
-                      },
-                    )
-                  else
-                    _buildAuthButton(
-                      svgAsset: 'assets/icons/auth/google.svg',
-                      label: appL10n.authGoogle,
-                      onTap: () =>
-                          _handleAuth(AuthService.instance.signInWithGoogle),
-                    ),
-                  const SizedBox(height: 10),
+                      if (appleWebNeedsSafariHint) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          appL10n.authAppleSafariHint,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colors.secondaryText,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                    ],
 
-                  _buildAuthButton(
-                    svgAsset: 'assets/icons/auth/yandex.svg',
-                    label: appL10n.authYandex,
-                    onTap: () => _handleAuth(
-                      () => AuthService.instance.signInWithYandex(context),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  _buildAuthButton(
-                    svgAsset: 'assets/icons/auth/telegram.svg',
-                    label: appL10n.authTelegram,
-                    onTap: () => _handleAuth(
-                      () => AuthService.instance.signInWithTelegram(context),
-                    ),
-                  ),
-                  if (AuthService.debugSignInAvailable) ...[
+                    if (kIsWeb)
+                      GoogleWebSignInButton(
+                        enabled: !_busy,
+                        onSignIn: (request) => _handleAuth(
+                          () => _auth.signInWithGoogleWeb(request),
+                        ),
+                        onError: (error) {
+                          ErrorReporter.report(
+                            ErrorCategory.auth,
+                            'google.web_button',
+                            error: error,
+                            provider: 'google',
+                          );
+                          if (mounted) {
+                            setState(() => _error = appL10n.authErrorProvider);
+                          }
+                        },
+                      )
+                    else
+                      _buildAuthButton(
+                        svgAsset: 'assets/icons/auth/google.svg',
+                        label: appL10n.authGoogle,
+                        onTap: () => _handleAuth(_auth.signInWithGoogle),
+                      ),
                     const SizedBox(height: 10),
-                    TextButton.icon(
-                      onPressed: _isLoading
-                          ? null
-                          : () => _handleAuth(AuthService.instance.signInDebug),
-                      icon: const Icon(Icons.bug_report_outlined),
-                      label: Text(appL10n.authDebug),
+
+                    _buildAuthButton(
+                      svgAsset: 'assets/icons/auth/yandex.svg',
+                      label: appL10n.authYandex,
+                      onTap: () =>
+                          _handleAuth(() => _auth.signInWithYandex(context)),
                     ),
+                    const SizedBox(height: 10),
+
+                    _buildAuthButton(
+                      svgAsset: 'assets/icons/auth/telegram.svg',
+                      label: appL10n.authTelegram,
+                      onTap: () =>
+                          _handleAuth(() => _auth.signInWithTelegram(context)),
+                    ),
+                    if (AuthService.debugSignInAvailable) ...[
+                      const SizedBox(height: 10),
+                      TextButton.icon(
+                        onPressed: _isLoading
+                            ? null
+                            : () => _handleAuth(_auth.signInDebug),
+                        icon: const Icon(Icons.bug_report_outlined),
+                        label: Text(appL10n.authDebug),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
                   ],
-                  const SizedBox(height: 12),
-                ],
+                ),
               ),
             ),
           ),
@@ -272,7 +300,7 @@ class _AuthModalSheetState extends State<AuthModalSheet> {
       svgAsset: svgAsset,
       svgColor: svgColor,
       label: label,
-      onTap: _isLoading ? null : onTap,
+      onTap: _busy ? null : onTap,
     );
   }
 }
