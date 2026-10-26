@@ -14,6 +14,7 @@ void main() {
     bool disableAnimations = true,
     double textScale = 1,
     double width = 353,
+    String language = 'ru',
   }) => tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -22,7 +23,7 @@ void main() {
         dailyFreeLimitProvider.overrideWithValue(5),
       ],
       child: MaterialApp(
-        locale: const Locale('ru'),
+        locale: Locale(language),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         builder: (context, child) => MediaQuery(
@@ -108,6 +109,57 @@ void main() {
     expect(x(), 0);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('text stays clear of the car across widths, locales and scales', (
+    tester,
+  ) async {
+    for (final language in ['ru', 'en', 'kk']) {
+      for (final premium in [false, true]) {
+        for (final width in [280.0, 320.0, 353.0, 390.0, 400.0, 480.0, 600.0]) {
+          for (final scale in [1.0, 1.3, 2.0]) {
+            await showBanner(
+              tester,
+              language: language,
+              premium: premium,
+              width: width,
+              textScale: scale,
+            );
+            await tester.pumpAndSettle();
+            final car = tester.getRect(
+              find.descendant(
+                of: find.byKey(const ValueKey('premium-car-arrival')),
+                matching: find.byType(Image),
+              ),
+            );
+            final banner = tester.getRect(find.byType(PremiumBannerCard));
+            for (final text in find.byType(Text).evaluate()) {
+              final rect = tester.getRect(find.byWidget(text.widget));
+              final reason =
+                  '$language premium=$premium width=$width scale=$scale';
+              expect(rect.overlaps(car), isFalse, reason: reason);
+              expect(
+                rect.left,
+                greaterThanOrEqualTo(banner.left),
+                reason: reason,
+              );
+              expect(
+                rect.right,
+                lessThanOrEqualTo(banner.right),
+                reason: reason,
+              );
+              expect(
+                rect.bottom,
+                lessThanOrEqualTo(banner.bottom),
+                reason: reason,
+              );
+            }
+            expect(tester.takeException(), isNull);
+          }
+        }
+      }
+    }
+    await tester.pumpWidget(const SizedBox());
   });
 
   testWidgets('narrow banner allows large text without overflow', (

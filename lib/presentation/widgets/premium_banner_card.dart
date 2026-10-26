@@ -48,70 +48,120 @@ class PremiumBannerCard extends ConsumerWidget {
                   final width = constraints.maxWidth;
                   final expandedText =
                       MediaQuery.textScalerOf(context).scale(16) > 21;
-                  final titleSize = width >= 480 ? 24.0 : 19.0;
-                  return Stack(
+                  final compact = width < 400;
+                  final title = Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Positioned.fill(
-                        child: ExcludeSemantics(
-                          child: IgnorePointer(
-                            child: _PremiumBannerArtwork(isPremium: isPremium),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: SvgPicture.asset(
+                          'assets/images/premium/verified_${isPremium ? 'lime' : 'blue'}.svg',
+                          width: 19,
+                          height: 19,
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          l10n.premiumAccessTitle,
+                          style: TextStyle(
+                            fontSize: width >= 480 ? 24 : 19,
+                            fontWeight: FontWeight.w700,
+                            color: foreground,
+                            height: 1.12,
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          18,
-                          18,
-                          expandedText ? 18 : width * 0.39,
-                          18,
+                    ],
+                  );
+                  final subtitle = Text(
+                    l10n.premiumBannerSubtitle,
+                    style: TextStyle(
+                      fontSize: width >= 480 ? 15 : 13,
+                      fontWeight: FontWeight.w400,
+                      color: foreground.withValues(alpha: 0.9),
+                      height: 1.3,
+                    ),
+                  );
+                  final artWidth = (width * .42).clamp(100.0, 260.0);
+                  final artwork = SizedBox(
+                    width: artWidth,
+                    height: artWidth * .62,
+                    child: ExcludeSemantics(
+                      child: IgnorePointer(
+                        child: _PremiumBannerArtwork(isPremium: isPremium),
+                      ),
+                    ),
+                  );
+
+                  // Keep actual layout space for the car, including at large
+                  // text scales. Its arrival animation only moves to the right.
+                  if (expandedText) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              title,
+                              const SizedBox(height: 8),
+                              subtitle,
+                            ],
+                          ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
+                        Align(alignment: Alignment.centerRight, child: artwork),
+                      ],
+                    );
+                  }
+                  if (compact) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                          child: title,
+                        ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: SizedBox(
-                                    width: 19,
-                                    height: 19,
-                                    child: FittedBox(
-                                      child: SvgPicture.asset(
-                                        'assets/images/premium/verified_${isPremium ? 'lime' : 'blue'}.svg',
-                                      ),
-                                    ),
-                                  ),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  18,
+                                  0,
+                                  10,
+                                  18,
                                 ),
-                                const SizedBox(width: 7),
-                                Expanded(
-                                  child: Text(
-                                    l10n.premiumAccessTitle,
-                                    style: TextStyle(
-                                      fontSize: titleSize,
-                                      fontWeight: FontWeight.w700,
-                                      color: foreground,
-                                      height: 1.12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.premiumBannerSubtitle,
-                              style: TextStyle(
-                                fontSize: width >= 480 ? 15 : 12.5,
-                                fontWeight: FontWeight.w400,
-                                color: foreground.withValues(alpha: 0.8),
-                                height: 1.3,
+                                child: subtitle,
                               ),
                             ),
-                            if (expandedText) const SizedBox(height: 88),
+                            artwork,
                           ],
                         ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(18, 18, 10, 18),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              title,
+                              const SizedBox(height: 8),
+                              subtitle,
+                            ],
+                          ),
+                        ),
                       ),
+                      artwork,
                     ],
                   );
                 },
@@ -167,7 +217,7 @@ class _PremiumBannerArtworkState extends State<_PremiumBannerArtwork>
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final artWidth = (width * 0.64).clamp(190.0, 360.0);
+        final artWidth = width * 1.28;
         final raySize = artWidth * 1.45;
         return Stack(
           clipBehavior: Clip.none,
