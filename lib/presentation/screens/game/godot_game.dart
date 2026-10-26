@@ -202,6 +202,9 @@ class GodotGame {
         for (final id in summary['mistakes'] as List? ?? const [])
           _situationOf('$id'),
       ]);
+    } else if (summary['result_action'] == 'premium') {
+      _releaseRun(token);
+      await PremiumPaywallSheet.show(context);
     }
   }
 

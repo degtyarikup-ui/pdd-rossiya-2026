@@ -19,6 +19,7 @@ import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/godot_game.dart';
+import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -71,6 +72,7 @@ void main() {
     Locale locale = const Locale('ru'),
     ThemeMode themeMode = ThemeMode.system,
     ReviewPromptService? review,
+    List<NavigatorObserver> navigatorObservers = const [],
   }) async {
     garage.resetForTest();
     updateAppLocale(locale);
@@ -84,6 +86,7 @@ void main() {
             reviewPromptServiceProvider.overrideWithValue(review),
         ],
         child: MaterialApp(
+          navigatorObservers: navigatorObservers,
           locale: locale,
           theme: ThemeData.light(),
           darkTheme: ThemeData.dark(),
@@ -347,6 +350,80 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+    testWidgets(
+      'native city premium action saves the last run before opening paywall on $platform',
+      (tester) async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('game_runs', 1);
+        await prefs.setInt(
+          'game_runs_since',
+          DateTime.now().millisecondsSinceEpoch,
+        );
+        int? scoreAtPaywall, runsAtPaywall;
+        await open(
+          tester,
+          navigatorObservers: [
+            _OnRoutePush((route, previousRoute) {
+              if (previousRoute == null) return;
+              scoreAtPaywall = progress.getGameBestScore();
+              runsAtPaywall = prefs.getInt('game_runs');
+            }),
+          ],
+        );
+        debugDefaultTargetPlatformOverride = platform;
+        nativePending = Completer<String?>();
+        final ride = GodotGame.play(gameContext, gameRef);
+        await pumpUntilLaunched(tester, 1);
+        nativePending!.complete(
+          jsonEncode({
+            'native_result': true,
+            'result_action': 'premium',
+            'run_started': true,
+            'finished': true,
+            'answered': 10,
+            'correct': 4,
+            'score': 40,
+          }),
+        );
+        for (
+          var frame = 0;
+          frame < 100 && find.byType(PremiumPaywallSheet).evaluate().isEmpty;
+          frame++
+        ) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await tester.pump(const Duration(seconds: 2));
+        expect(find.byType(PremiumPaywallSheet), findsOneWidget);
+        expect(scoreAtPaywall, 40);
+        expect(runsAtPaywall, 0);
+        expect(prefs.getString('game_run_pending'), isNull);
+        expect(find.byType(GameOverDialog), findsNothing);
+        expect(launches, hasLength(1));
+
+        await tester.tap(find.byKey(const ValueKey('premium-close-benefits')));
+        await tester.pumpAndSettle();
+        await ride;
+        expect(find.byType(PremiumPaywallSheet), findsNothing);
+        expect(find.text('City'), findsOneWidget);
+        expect(prefs.getInt('game_runs'), 0);
+        expect(find.byType(GameOverDialog), findsNothing);
+
+        nativePending = null;
+        nativeResponse = null;
+        await tester.tap(find.text('Regulator'));
+        await tester.pumpAndSettle();
+        expect(
+          launches,
+          hasLength(2),
+          reason: 'dismissal releases the launch guard',
+        );
+        debugDefaultTargetPlatformOverride = null;
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets(
     'result restart reserves a new run while the old dialog completes',
@@ -899,4 +976,14 @@ void main() {
     expect(options()['voice'], isTrue);
     expect(options()['voice_available'], isTrue);
   });
+}
+
+class _OnRoutePush extends NavigatorObserver {
+  final void Function(Route<dynamic>, Route<dynamic>?) onPush;
+  _OnRoutePush(this.onPush);
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    onPush(route, previousRoute);
+  }
 }

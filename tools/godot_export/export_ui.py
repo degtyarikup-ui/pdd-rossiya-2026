@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 KEYS = [
     "achievementAwardTitle", "achievementAwardPosition",
     "close", "gameLeaderboard", "gameRatingLoading", "gameRatingReload", "gameRatingPendingRun", "gameRatingEmpty", "gameRatingUnavailable", "gameRatingStaleAt", "gameRatingYou",
-    "gameResultNoRuns", "gameResultRanking", "gameRunMistakesButton", "gameDistance", "gameMistakesReview",
+    "gameRunsGetPremium", "gameResultRanking", "gameRunMistakesButton", "gameDistance", "gameMistakesReview",
     'reportQuestionTooltip', 'reportQuestionBody', 'reportQuestionHint',
     'reportSend', 'reportSending', 'reportSent', 'reportFailed', 'cancel',
     'gameDebugPerfMemoryFootprint', 'gameDebugTier', 'gameDebugPerfObjects', 'gameDebugPerfRetained',
