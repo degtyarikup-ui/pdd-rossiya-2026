@@ -328,6 +328,10 @@ export class AccountState {
     } else if (path === '/_account/read' || path === '/_account/write') {
       const body = await request.json();
       if (!scoped(body.key || '', id)) return json({ error: 'invalid key' }, 400);
+      // Maintenance must not replace answers saved since its snapshot was read.
+      // Check inside this account's serialized request, before staging any write.
+      if (path.endsWith('/write') && Object.hasOwn(body, 'expectedValue')
+          && body.expectedValue !== await get(body.key)) return json({ error: 'account document changed' }, 409);
       if (path.endsWith('/write')) { if (body.value == null) await del(body.key); else await put(body.key, body.value, body.options || {}); }
       response = json({ ok: true, value: await get(body.key) });
     } else if (path === '/_account/apple-retain') {

@@ -1,9 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from './worker.js';
-import { accountRead } from './account_state.js';
+import { accountRead, accountRpc } from './account_state.js';
 import { fixture, identity, session, request, seedOrder } from './fixture-account.mjs';
 const callback=(env,order)=>worker.fetch(request('/api/pay/platega/callback',{id:order.txId,payload:order.orderId},null,{'x-secret':env.PLATEGA_SECRET,'x-merchantid':env.PLATEGA_MERCHANT_ID}),env);
+
+test('conditional maintenance write preserves intervening progress and survives restart', async () => {
+ const {env,restart,objects}=fixture(),id='google_123',key='user_progress:'+id;
+ const original=JSON.stringify({questionProgressAb:{old:{isCorrect:false,answeredAt:'2026-10-19T08:00:00Z'}}});
+ await env.INSTALLS.put(key,original);
+ const snapshot=await accountRead(env,id,key);
+ const latest=JSON.stringify({questionProgressAb:{...JSON.parse(original).questionProgressAb,new:{isCorrect:true,answeredAt:'2026-10-26T12:00:00Z'}}});
+ assert.equal((await accountRpc(env,id,'/_account/write',{key,value:latest})).status,200);
+ const staleWrite=await accountRpc(env,id,'/_account/write',{key,value:original,expectedValue:snapshot});
+ assert.equal(staleWrite.status,409);
+ assert.equal(await accountRead(env,id,key),latest);
+ const corrected=JSON.parse(latest);corrected.questionProgressAb.old.isCorrect=true;
+ const value=JSON.stringify(corrected);
+ assert.equal((await accountRpc(env,id,'/_account/write',{key,value,expectedValue:latest})).status,200);
+ restart(id);
+ assert.equal(await accountRead(env,id,key),value);
+ await objects.get(id).alarm();
+ assert.equal(await env.INSTALLS.get(key),value);
+ assert.equal((await accountRpc(env,id,'/_account/write',{key,value:null,expectedValue:latest})).status,409);
+ assert.equal(await accountRead(env,id,key),value);
+});
+
+test('conditional maintenance write distinguishes an absent document from a stale snapshot', async () => {
+ const {env}=fixture(),id='google_123',key='user_progress:'+id;
+ assert.equal((await accountRpc(env,id,'/_account/write',{key,value:'{}',expectedValue:'stale'})).status,409);
+ assert.equal(await accountRead(env,id,key),null);
+ assert.equal((await accountRpc(env,id,'/_account/write',{key,value:'{}',expectedValue:null})).status,200);
+});
 async function withProvider(fn){const original=globalThis.fetch;globalThis.fetch=async()=>Response.json({status:'CONFIRMED',paymentDetails:{amount:99,currency:'RUB'}});try{return await fn();}finally{globalThis.fetch=original;}}
 
 test('account DO serializes sync against payment; primary survives stale KV and object restart',async()=>withProvider(async()=>{
