@@ -1479,5 +1479,16 @@
   "crossroadsNobodyMoves": "Nobody may move",
   "crossroadsReasonOfficer": "The officer’s signal prohibits this manoeuvre. Wait for permission. Flashing lights and a siren do not override the officer.",
   "crossroadsArticleOfficer": "Clauses 6.10, 6.15 and 3.1 of the Russian Traffic Regulations",
-  "crossroadsReasonCanGo": "The officer permits one or more road users to move. Select someone who may proceed now."
+  "crossroadsReasonCanGo": "The officer permits one or more road users to move. Select someone who may proceed now.",
+  "violatorClassificationTitle": "Choose the violation",
+  "violatorRedLight": "Running a red light",
+  "violatorPedestrianYield": "Failed to yield to pedestrian",
+  "violatorSolidLine": "Crossing solid line 1.1",
+  "violatorWrongLaneTurn": "Turn from wrong lane",
+  "violatorPrioritySign": "Sign 2.4 Yield violation",
+  "violatorArrowYield": "Failed to yield on arrow with red",
+  "violatorWaffleBlock": "Gridlock on intersection",
+  "violatorEmergencyYield": "Failed to yield to emergency vehicle",
+  "violatorNoLights": "Driving without lights at night",
+  "violatorWeatherSpeed": "Speed inappropriate for weather / skid"
 }

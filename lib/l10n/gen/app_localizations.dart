@@ -7107,6 +7107,72 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Регулировщик разрешает движение одному или нескольким участникам. Выберите того, кто может ехать сейчас.'**
   String get crossroadsReasonCanGo;
+
+  /// No description provided for @violatorClassificationTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите нарушение'**
+  String get violatorClassificationTitle;
+
+  /// No description provided for @violatorRedLight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезд на красный сигнал'**
+  String get violatorRedLight;
+
+  /// No description provided for @violatorPedestrianYield.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не уступил пешеходу на переходе'**
+  String get violatorPedestrianYield;
+
+  /// No description provided for @violatorSolidLine.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пересечение сплошной линии 1.1'**
+  String get violatorSolidLine;
+
+  /// No description provided for @violatorWrongLaneTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворот не из своего ряда'**
+  String get violatorWrongLaneTurn;
+
+  /// No description provided for @violatorPrioritySign.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак 2.4 «Уступите дорогу»'**
+  String get violatorPrioritySign;
+
+  /// No description provided for @violatorArrowYield.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворот по стрелке с красным'**
+  String get violatorArrowYield;
+
+  /// No description provided for @violatorWaffleBlock.
+  ///
+  /// In ru, this message translates to:
+  /// **'Затор на перекрёстке'**
+  String get violatorWaffleBlock;
+
+  /// No description provided for @violatorEmergencyYield.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не уступил дорогу спецтранспорту'**
+  String get violatorEmergencyYield;
+
+  /// No description provided for @violatorNoLights.
+  ///
+  /// In ru, this message translates to:
+  /// **'Движение без фар ночью'**
+  String get violatorNoLights;
+
+  /// No description provided for @violatorWeatherSpeed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скорость без учёта погоды / занос'**
+  String get violatorWeatherSpeed;
 }
 
 class _AppLocalizationsDelegate

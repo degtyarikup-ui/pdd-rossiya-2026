@@ -31,7 +31,6 @@ const LIVES_COUNT := 5
 # Localized strings dictionary fallback (ru, en, kk)
 const STRINGS := {
 	"ru": {
-		"violatorClassificationTitle": "Квалификация нарушения",
 		"violatorDifficultyTitle": "Выберите сложность",
 		"violatorEasy": "Лёгкий",
 		"violatorEasyHint": "Т-образный перекрёсток, по полосе в каждую сторону. Нарушители по одному, очки ×0,5",
@@ -39,17 +38,6 @@ const STRINGS := {
 		"violatorMediumHint": "Перекрёсток без стрелки, три перехода. Больше видов нарушений, позже по два сразу, очки ×0,75",
 		"violatorHard": "Сложный",
 		"violatorHardHint": "Полный перекрёсток со стрелкой и четырьмя переходами, плотный поток, полные очки",
-		"violatorClassificationHint": "Выберите нарушенное правило ПДД РФ:",
-		"violatorRedLight": "п. 6.2: Проезд на красный сигнал",
-		"violatorPedestrianYield": "п. 13.1: Не уступил пешеходу на переходе",
-		"violatorSolidLine": "п. 1.3: Пересечение сплошной линии 1.1",
-		"violatorWrongLaneTurn": "п. 8.5: Поворот не из своего ряда",
-		"violatorPrioritySign": "п. 13.9: Знак 2.4 «Уступите дорогу»",
-		"violatorArrowYield": "п. 13.5: Поворот по стрелке с красным",
-		"violatorWaffleBlock": "п. 13.2: Затор на перекрёстке",
-		"violatorEmergencyYield": "п. 3.2: Не уступил дорогу спецтранспорту",
-		"violatorNoLights": "п. 19.1: Движение без фар ночью",
-		"violatorWeatherSpeed": "п. 10.1: Скорость без учёта погоды / занос",
 		"violatorLifeRestored": "Серия x5! Жизнь восстановлена (+1 ❤️)",
 		"violatorPhaseDusk": "Сумерки на перекрёстке",
 		"violatorPhaseNight": "Ночной патруль: включите внимание",
@@ -73,7 +61,6 @@ const STRINGS := {
 		"gameBestCombo": "Лучшая серия",
 	},
 	"en": {
-		"violatorClassificationTitle": "Violation Classification",
 		"violatorDifficultyTitle": "Choose difficulty",
 		"violatorEasy": "Easy",
 		"violatorEasyHint": "T-junction, one lane each way. Offenders one at a time, points ×0.5",
@@ -81,17 +68,6 @@ const STRINGS := {
 		"violatorMediumHint": "Crossroads without the arrow, three crosswalks. More kinds of offences, later two at once, points ×0.75",
 		"violatorHard": "Hard",
 		"violatorHardHint": "Full crossroads with the arrow and four crosswalks, dense traffic, full points",
-		"violatorClassificationHint": "Select the violated traffic rule:",
-		"violatorRedLight": "Cl. 6.2: Running a red light",
-		"violatorPedestrianYield": "Cl. 13.1: Failed to yield to pedestrian",
-		"violatorSolidLine": "Cl. 1.3: Crossing solid line 1.1",
-		"violatorWrongLaneTurn": "Cl. 8.5: Turn from wrong lane",
-		"violatorPrioritySign": "Cl. 13.9: Sign 2.4 Yield violation",
-		"violatorArrowYield": "Cl. 13.5: Failed to yield on arrow with red",
-		"violatorWaffleBlock": "Cl. 13.2: Gridlock on intersection",
-		"violatorEmergencyYield": "Cl. 3.2: Failed to yield to emergency vehicle",
-		"violatorNoLights": "Cl. 19.1: Driving without lights at night",
-		"violatorWeatherSpeed": "Cl. 10.1: Speed inappropriate for weather / skid",
 		"violatorLifeRestored": "Streak x5! Life restored (+1 ❤️)",
 		"violatorPhaseDusk": "Dusk at the intersection",
 		"violatorPhaseNight": "Night patrol: stay alert",
@@ -115,7 +91,6 @@ const STRINGS := {
 		"gameBestCombo": "Best Combo",
 	},
 	"kk": {
-		"violatorClassificationTitle": "Құқық бұзушылықты саралау",
 		"violatorDifficultyTitle": "Қиындықты таңдаңыз",
 		"violatorEasy": "Жеңіл",
 		"violatorEasyHint": "Т-тәрізді қиылыс, әр бағытта бір жолақтан. Бұзушылар бір-бірден, ұпай ×0,5",
@@ -123,17 +98,6 @@ const STRINGS := {
 		"violatorMediumHint": "Бағдаршамы жебесіз қиылыс, үш өткел. Бұзушылық түрлері көбірек, кейін екеуі қатар, ұпай ×0,75",
 		"violatorHard": "Қиын",
 		"violatorHardHint": "Жебесі бар толық қиылыс, төрт өткел, тығыз ағын, толық ұпай",
-		"violatorClassificationHint": "Бұзылған ЖҚЕ ережесін таңдаңыз:",
-		"violatorRedLight": "6.2 т.: Қызыл сигналға өту",
-		"violatorPedestrianYield": "13.1 т.: Жаяу жүргіншіге жол бермеу",
-		"violatorSolidLine": "1.3 т.: 1.1 тұтас сызықты кесу",
-		"violatorWrongLaneTurn": "8.5 т.: Тиісті емес жолақтан бұрылу",
-		"violatorPrioritySign": "13.9 т.: 2.4 «Жол беріңіз» белгісі",
-		"violatorArrowYield": "13.5 т.: Қызылда бағыттауышпен жол бермеу",
-		"violatorWaffleBlock": "13.2 т.: Қиылыстағы кептеліс",
-		"violatorEmergencyYield": "3.2 т.: Арнайы көлікке жол бермеу",
-		"violatorNoLights": "19.1 т.: Түнде жарықсыз жүру",
-		"violatorWeatherSpeed": "10.1 т.: Ауа райына сай емес жылдамдық",
 		"violatorLifeRestored": "x5 сериясы! Өмір қалпына келтірілді (+1 ❤️)",
 		"violatorPhaseDusk": "Қиылыстағы іңір",
 		"violatorPhaseNight": "Түнгі патруль: мұқият болыңыз",
@@ -686,7 +650,7 @@ func _build_classification_modal() -> void:
 	_modal = PanelContainer.new()
 	_modal.visible = false
 	_modal.mouse_filter = MOUSE_FILTER_STOP
-	var modal_box := Ui.box(Ui.c("card"), 16)
+	var modal_box := Ui.box(Ui.c("card"), 20)
 	modal_box.content_margin_left = 16
 	modal_box.content_margin_right = 16
 	modal_box.content_margin_top = 16
@@ -695,18 +659,13 @@ func _build_classification_modal() -> void:
 	add_child(_modal)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
+	vbox.add_theme_constant_override("separation", 12)
 	_modal.add_child(vbox)
 
 	# Header Title
-	_modal_title = Ui.label(tr_v("violatorClassificationTitle"), 16, 700, Ui.c("text"))
-	_modal_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_modal_title = Ui.label(tr_v("violatorClassificationTitle"), 18, 700, Ui.c("text"), true)
+	_modal_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	vbox.add_child(_modal_title)
-
-	# Subtitle
-	var hint_lbl := Ui.label(tr_v("violatorClassificationHint"), 12, 400, Ui.c("secondary"))
-	hint_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(hint_lbl)
 
 	# Progress / Countdown bar
 	_modal_bar = ProgressBar.new()
@@ -745,23 +704,29 @@ func show_classification(correct_code: String, options: Array) -> void:
 		btn.custom_minimum_size = Vector2(minf(360.0, size.x - 32.0) - 32.0, 48)
 		btn.text = tr_v(_violation_l10n_key(opt_code))
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		btn.add_theme_font_override("font", Ui.font(600))
-		btn.add_theme_font_size_override("font_size", 15)
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		btn.icon = load("res://icons/violations/%s.svg" % opt_code)
+		btn.add_theme_constant_override("h_separation", 12)
+		for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color"]:
+			btn.add_theme_color_override(state, Ui.c("text"))
+		btn.add_theme_font_override("font", Ui.font(500))
+		btn.add_theme_font_size_override("font_size", 14)
 		btn.add_theme_color_override("font_color", Ui.c("text"))
 		btn.set_meta("opt_code", opt_code)
 
-		var normal_box := Ui.box(Ui.c("field"), 10)
-		normal_box.content_margin_left = 12
-		normal_box.content_margin_right = 12
-		normal_box.content_margin_top = 8
-		normal_box.content_margin_bottom = 8
+		var normal_box := Ui.box(Ui.c("field"), 8)
+		normal_box.content_margin_left = 16
+		normal_box.content_margin_right = 16
+		normal_box.content_margin_top = 11
+		normal_box.content_margin_bottom = 11
 		btn.add_theme_stylebox_override("normal", normal_box)
 
-		var hover_box := Ui.box(Ui.c("gray"), 10)
-		hover_box.content_margin_left = 12
-		hover_box.content_margin_right = 12
-		hover_box.content_margin_top = 8
-		hover_box.content_margin_bottom = 8
+		var hover_box := Ui.box(Ui.c("gray"), 8)
+		hover_box.content_margin_left = 16
+		hover_box.content_margin_right = 16
+		hover_box.content_margin_top = 11
+		hover_box.content_margin_bottom = 11
 		# On a touch screen hover sticks to the last tapped button, and the focus ring outlines it:
 		# both would mark a wrong answer before the player chose. Only the press itself shows.
 		btn.focus_mode = Control.FOCUS_NONE
@@ -807,7 +772,7 @@ func _on_option_button_pressed(btn: Button, code: String) -> void:
 	# Highlight selection
 	var is_correct := (code == _modal_correct_code)
 	if is_correct:
-		var success_box := Ui.box(Ui.c("green_light"), 10)
+		var success_box := Ui.box(Ui.c("green_light"), 8)
 		success_box.border_color = Ui.c("green")
 		success_box.border_width_bottom = 2
 		success_box.border_width_top = 2
@@ -816,7 +781,7 @@ func _on_option_button_pressed(btn: Button, code: String) -> void:
 		btn.add_theme_color_override("font_color", Ui.c("green"))
 		_set_button_box(btn, success_box)
 	else:
-		var err_box := Ui.box(Ui.c("red_light"), 10)
+		var err_box := Ui.box(Ui.c("red_light"), 8)
 		err_box.border_color = Ui.c("red")
 		err_box.border_width_bottom = 2
 		err_box.border_width_top = 2
@@ -828,7 +793,7 @@ func _on_option_button_pressed(btn: Button, code: String) -> void:
 		# Reveal correct option
 		for other_btn in _modal_buttons:
 			if other_btn.get_meta("opt_code") == _modal_correct_code:
-				var green_box := Ui.box(Ui.c("green_light"), 10)
+				var green_box := Ui.box(Ui.c("green_light"), 8)
 				green_box.border_color = Ui.c("green")
 				green_box.set_border_width_all(2)
 				other_btn.add_theme_color_override("font_color", Ui.c("green"))
@@ -852,6 +817,12 @@ func _on_option_button_pressed(btn: Button, code: String) -> void:
 ## The answer colours every state of the button: the finger still rests on it, and a hover or
 ## pressed style would hide the green or red the player is meant to see.
 func _set_button_box(btn: Button, box: StyleBox) -> void:
+	box.content_margin_left = 16
+	box.content_margin_right = 16
+	box.content_margin_top = 11
+	box.content_margin_bottom = 11
+	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color"]:
+		btn.add_theme_color_override(state, btn.get_theme_color("font_color"))
 	for state in ["normal", "hover", "pressed", "hover_pressed"]:
 		btn.add_theme_stylebox_override(state, box)
 	btn.add_theme_color_override("font_hover_color", btn.get_theme_color("font_color"))

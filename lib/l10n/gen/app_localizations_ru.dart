@@ -4252,4 +4252,37 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get crossroadsReasonCanGo =>
       'Регулировщик разрешает движение одному или нескольким участникам. Выберите того, кто может ехать сейчас.';
+
+  @override
+  String get violatorClassificationTitle => 'Выберите нарушение';
+
+  @override
+  String get violatorRedLight => 'Проезд на красный сигнал';
+
+  @override
+  String get violatorPedestrianYield => 'Не уступил пешеходу на переходе';
+
+  @override
+  String get violatorSolidLine => 'Пересечение сплошной линии 1.1';
+
+  @override
+  String get violatorWrongLaneTurn => 'Поворот не из своего ряда';
+
+  @override
+  String get violatorPrioritySign => 'Знак 2.4 «Уступите дорогу»';
+
+  @override
+  String get violatorArrowYield => 'Поворот по стрелке с красным';
+
+  @override
+  String get violatorWaffleBlock => 'Затор на перекрёстке';
+
+  @override
+  String get violatorEmergencyYield => 'Не уступил дорогу спецтранспорту';
+
+  @override
+  String get violatorNoLights => 'Движение без фар ночью';
+
+  @override
+  String get violatorWeatherSpeed => 'Скорость без учёта погоды / занос';
 }

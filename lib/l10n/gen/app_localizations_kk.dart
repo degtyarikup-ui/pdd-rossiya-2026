@@ -4232,4 +4232,37 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get crossroadsReasonCanGo =>
       'Реттеуші бір немесе бірнеше қатысушыға жүруге рұқсат беріп тұр. Қазір жүре алатын қатысушыны таңдаңыз.';
+
+  @override
+  String get violatorClassificationTitle => 'Бұзушылықты таңдаңыз';
+
+  @override
+  String get violatorRedLight => 'Қызыл сигналға өту';
+
+  @override
+  String get violatorPedestrianYield => 'Жаяу жүргіншіге жол бермеу';
+
+  @override
+  String get violatorSolidLine => '1.1 тұтас сызықты кесу';
+
+  @override
+  String get violatorWrongLaneTurn => 'Тиісті емес жолақтан бұрылу';
+
+  @override
+  String get violatorPrioritySign => '2.4 «Жол беріңіз» белгісі';
+
+  @override
+  String get violatorArrowYield => 'Қызылда бағыттауышпен жол бермеу';
+
+  @override
+  String get violatorWaffleBlock => 'Қиылыстағы кептеліс';
+
+  @override
+  String get violatorEmergencyYield => 'Арнайы көлікке жол бермеу';
+
+  @override
+  String get violatorNoLights => 'Түнде жарықсыз жүру';
+
+  @override
+  String get violatorWeatherSpeed => 'Ауа райына сай емес жылдамдық';
 }

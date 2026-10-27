@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 KEYS = [
+    'violatorClassificationTitle', 'violatorRedLight', 'violatorPedestrianYield', 'violatorSolidLine', 'violatorWrongLaneTurn', 'violatorPrioritySign', 'violatorArrowYield', 'violatorWaffleBlock', 'violatorEmergencyYield', 'violatorNoLights', 'violatorWeatherSpeed',
     "crossroadsNobodyMoves", "crossroadsReasonOfficer", "crossroadsArticleOfficer", "crossroadsReasonCanGo",
     "achievementAwardTitle", "achievementAwardPosition",
     "close", "gameLeaderboard", "gameRatingLoading", "gameRatingReload", "gameRatingPendingRun", "gameRatingEmpty", "gameRatingUnavailable", "gameRatingStaleAt", "gameRatingYou",

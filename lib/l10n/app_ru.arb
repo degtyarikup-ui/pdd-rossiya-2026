@@ -2048,5 +2048,16 @@
   "crossroadsNobodyMoves": "Никто не едет",
   "crossroadsReasonOfficer": "Этот манёвр запрещён сигналом регулировщика. Нужно ждать разрешающего сигнала. Маячок и сирена не позволяют игнорировать регулировщика.",
   "crossroadsArticleOfficer": "Пункты 6.10, 6.15 и 3.1 ПДД РФ",
-  "crossroadsReasonCanGo": "Регулировщик разрешает движение одному или нескольким участникам. Выберите того, кто может ехать сейчас."
+  "crossroadsReasonCanGo": "Регулировщик разрешает движение одному или нескольким участникам. Выберите того, кто может ехать сейчас.",
+  "violatorClassificationTitle": "Выберите нарушение",
+  "violatorRedLight": "Проезд на красный сигнал",
+  "violatorPedestrianYield": "Не уступил пешеходу на переходе",
+  "violatorSolidLine": "Пересечение сплошной линии 1.1",
+  "violatorWrongLaneTurn": "Поворот не из своего ряда",
+  "violatorPrioritySign": "Знак 2.4 «Уступите дорогу»",
+  "violatorArrowYield": "Поворот по стрелке с красным",
+  "violatorWaffleBlock": "Затор на перекрёстке",
+  "violatorEmergencyYield": "Не уступил дорогу спецтранспорту",
+  "violatorNoLights": "Движение без фар ночью",
+  "violatorWeatherSpeed": "Скорость без учёта погоды / занос"
 }

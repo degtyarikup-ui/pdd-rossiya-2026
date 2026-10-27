@@ -4238,4 +4238,37 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get crossroadsReasonCanGo =>
       'The officer permits one or more road users to move. Select someone who may proceed now.';
+
+  @override
+  String get violatorClassificationTitle => 'Choose the violation';
+
+  @override
+  String get violatorRedLight => 'Running a red light';
+
+  @override
+  String get violatorPedestrianYield => 'Failed to yield to pedestrian';
+
+  @override
+  String get violatorSolidLine => 'Crossing solid line 1.1';
+
+  @override
+  String get violatorWrongLaneTurn => 'Turn from wrong lane';
+
+  @override
+  String get violatorPrioritySign => 'Sign 2.4 Yield violation';
+
+  @override
+  String get violatorArrowYield => 'Failed to yield on arrow with red';
+
+  @override
+  String get violatorWaffleBlock => 'Gridlock on intersection';
+
+  @override
+  String get violatorEmergencyYield => 'Failed to yield to emergency vehicle';
+
+  @override
+  String get violatorNoLights => 'Driving without lights at night';
+
+  @override
+  String get violatorWeatherSpeed => 'Speed inappropriate for weather / skid';
 }
