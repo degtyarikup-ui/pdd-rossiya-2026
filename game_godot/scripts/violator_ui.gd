@@ -254,13 +254,18 @@ func _layout() -> void:
 		_overlay.size = size
 
 	if is_instance_valid(_modal):
-		var modal_w := minf(360.0, size.x - 32.0)
+		# Match the city's edge-to-edge bottom sheet; keep the junction visible in landscape.
+		var modal_w := minf(360.0, size.x) if size.x > size.y * 1.2 else size.x
+		var modal_box := _modal.get_theme_stylebox("panel") as StyleBoxFlat
+		modal_box.content_margin_bottom = 10.0 + bottom
+		modal_box.content_margin_left = 16.0
+		modal_box.content_margin_right = 16.0 + float(safe["right"]) / u
+		if size.x <= size.y * 1.2:
+			modal_box.content_margin_left += float(safe["left"]) / u
+		for btn in _modal_buttons:
+			btn.custom_minimum_size.x = modal_w - modal_box.content_margin_left - modal_box.content_margin_right
 		_modal.size = Vector2(modal_w, 0)
-		# In landscape the sheet keeps to the right edge: centred, it would cover the junction.
-		if size.x > size.y * 1.2:
-			_modal.position.x = size.x - modal_w - 16.0 - float(safe["right"]) / u
-		else:
-			_modal.position.x = (size.x - modal_w) / 2.0
+		_modal.position.x = size.x - modal_w
 		_place_modal.call_deferred()
 
 	if is_instance_valid(_toast):
@@ -650,20 +655,20 @@ func _build_classification_modal() -> void:
 	_modal = PanelContainer.new()
 	_modal.visible = false
 	_modal.mouse_filter = MOUSE_FILTER_STOP
-	var modal_box := Ui.box(Ui.c("card"), 20)
+	var modal_box := Ui.box(Ui.c("card"), 20, true)
 	modal_box.content_margin_left = 16
 	modal_box.content_margin_right = 16
-	modal_box.content_margin_top = 16
-	modal_box.content_margin_bottom = 16
+	modal_box.content_margin_top = 12
+	modal_box.content_margin_bottom = 10
 	_modal.add_theme_stylebox_override("panel", modal_box)
 	add_child(_modal)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
+	vbox.add_theme_constant_override("separation", 8)
 	_modal.add_child(vbox)
 
 	# Header Title
-	_modal_title = Ui.label(tr_v("violatorClassificationTitle"), 18, 700, Ui.c("text"), true)
+	_modal_title = Ui.label(tr_v("violatorClassificationTitle"), 15, 600, Ui.c("text"), true)
 	_modal_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	vbox.add_child(_modal_title)
 
@@ -701,7 +706,7 @@ func show_classification(correct_code: String, options: Array) -> void:
 		var btn := Button.new()
 		# A wrapping Button measures its height at its current width, which is zero when it is new:
 		# one letter per line, and the sheet grew to the whole screen until the next layout pass.
-		btn.custom_minimum_size = Vector2(minf(360.0, size.x - 32.0) - 32.0, 48)
+		btn.custom_minimum_size = Vector2((minf(360.0, size.x) if size.x > size.y * 1.2 else size.x) - 32.0, 46)
 		btn.text = tr_v(_violation_l10n_key(opt_code))
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -743,7 +748,7 @@ func show_classification(correct_code: String, options: Array) -> void:
 	_layout.call_deferred()
 
 
-## A bottom sheet over the home indicator: the junction and the locked car stay visible above it.
+## A bottom sheet extending behind the home indicator: the junction and the locked car stay visible above it.
 ## Runs after the container has laid its wrapped text out at the sheet's width.
 func _place_modal() -> void:
 	if not is_instance_valid(_modal):
@@ -751,9 +756,8 @@ func _place_modal() -> void:
 	var u := Ui.dp(get_viewport())
 	var safe := Ui.insets(get_viewport())
 	var top := float(safe["top"]) / u
-	var bottom := float(safe["bottom"]) / u
 	_modal.size.y = 0.0
-	_modal.position.y = maxf(top + CHROME + 16.0, size.y - bottom - 16.0 - _modal.size.y)
+	_modal.position.y = maxf(top + CHROME + 16.0, size.y - _modal.size.y)
 
 
 func hide_classification() -> void:
