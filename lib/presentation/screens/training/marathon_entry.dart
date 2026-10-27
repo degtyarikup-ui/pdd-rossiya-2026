@@ -7,6 +7,7 @@ import 'package:pdd_app/data/models/marathon_progress.dart';
 import 'package:pdd_app/data/models/question.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 
@@ -77,6 +78,7 @@ Future<void> openMarathon(BuildContext context, WidgetRef ref) async {
       builder: (_) => TrainingScreen(
         questions: questions,
         title: appL10n.marathon,
+        usageFeature: UsageFeature.marathon,
         marathonCategory: category,
         marathonProgress: progress ?? const MarathonProgress(),
       ),

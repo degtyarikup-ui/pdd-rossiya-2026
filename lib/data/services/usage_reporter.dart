@@ -12,12 +12,14 @@ enum UsageFeature {
   tickets,
   topics,
   exam,
+  marathon,
   feed,
   game,
   signSwiper('sign_swiper'),
   trafficController('traffic_controller'),
   roundabout('roundabout'),
   crossroads,
+  roadSigns('road_signs'),
   parking;
 
   const UsageFeature([this.wireName]);

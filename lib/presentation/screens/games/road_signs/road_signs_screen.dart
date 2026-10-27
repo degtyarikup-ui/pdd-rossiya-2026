@@ -16,6 +16,7 @@ import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/domain/services/road_signs_engine.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs_emblem.dart';
@@ -127,6 +128,7 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
   }
 
   void _startRound() {
+    UsageReporter.track(UsageFeature.roadSigns);
     unawaited(_awardService.startActivity());
     _timer?.cancel();
     _advanceTimer?.cancel();

@@ -125,3 +125,18 @@ test('usage does not replace existing counters when flushed together with other 
   assert.doesNotThrow(() => new Function(ANALYTICS_CLIENT_JS));
   assert.match(ANALYTICS_VIEW_HTML, /Использование режимов/);
 });
+
+for (const feature of ['marathon', 'road_signs', 'parking']) {
+  test(`${feature} launches survive ingestion, deduplication and period aggregation`, async () => {
+    const { post, body, buffer, kv } = setup();
+    body.events[0].feature = feature;
+    assert.equal((await post(body)).status, 200);
+    assert.equal((await post(body)).status, 200);
+    await buffer.flush();
+    const days = [...kv].filter(([key]) => key.startsWith('day:'))
+      .map(([key, value]) => ({ date: key.slice(4), data: JSON.parse(value) }));
+    const snapshot = usageSnapshot(days);
+    assert.deepEqual(snapshot.features[feature], { starts: 1, installations: 1 });
+    assert.equal(snapshot.timeline[0].features[feature].starts, 1);
+  });
+}

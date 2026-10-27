@@ -89,6 +89,14 @@ if(process.argv.includes('--serve')) {
   assert.equal(await page.locator('#an-versions tbody tr').count(),2);
   assert.match(await page.locator('#an-updates-summary').innerText(),/12/);
   assert.deepEqual(await page.locator('#analytics-view h2').allTextContents(),['Обзор','Активность и рост','Состав аудитории','Источники привлечения']);
+  assert.deepEqual(await page.locator('#an-usage-feature option').allTextContents(),
+   ['Билеты','Темы','Экзамен','Марафон','Лента','Живой город','Это знак','Регулировщик','Перекрёсток','Знаки','Парковка']);
+  for (const feature of ['marathon','road_signs','parking']) {
+   await page.locator(`[data-usage="${feature}"]`).click();
+   assert.equal(await page.locator('#an-usage-feature').inputValue(),feature);
+   assert.match(await page.locator('#an-usage-chart').innerText(),/пока нет запусков/);
+  }
+  await page.locator('#an-usage-details>summary').click();
   const desktop=await page.locator('#an-auth').boundingBox(),versions=await page.locator('#an-updates').boundingBox();
   assert.equal(desktop.y,versions.y,'audience cards share a row');
   const geo=await page.locator('.an-geo-card').boundingBox();

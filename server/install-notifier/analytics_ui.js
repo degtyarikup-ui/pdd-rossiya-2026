@@ -376,8 +376,8 @@ function anRenderActivity(data) {
  document.getElementById('an-activity-table').innerHTML=days.length?anTable(['День','Всего','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('android') + 'Android</span>','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('apple') + 'iOS</span>','<span style="display:inline-flex;align-items:center;gap:4px">' + anSvgIcon('web') + 'Веб</span>','Неизвестно'],days.slice().reverse().map(function(d){return '<tr><td>'+anDayLabel(d.date)+'</td>'+['total','android','ios','web','unknown'].map(function(k){return '<td>'+(d[k]==null?'—':anNum(d[k]))+'</td>';}).join('')+'</tr>';})):'<div class="an-empty">Нет данных</div>';
 }
 var anUsageFeature = 'tickets';
-var AN_USAGE_NAMES = {tickets:'Билеты',topics:'Темы',exam:'Экзамен',feed:'Лента',game:'Живой город',sign_swiper:'Знак-Свайпер',traffic_controller:'Регулировщик 3D',crossroads:'Разрули перекрёсток',parking:'Парковка · скоро'};
- var AN_USAGE_COLORS = {tickets:'#0574F8',topics:'#7C5CFC',exam:'#F5582A',feed:'#0BB8A8',game:'#10B981',sign_swiper:'#F59E0B',traffic_controller:'#D946EF',crossroads:'#06B6D4',parking:'#94A3B8'};
+var AN_USAGE_NAMES = {tickets:'Билеты',topics:'Темы',exam:'Экзамен',marathon:'Марафон',feed:'Лента',game:'Живой город',sign_swiper:'Это знак',traffic_controller:'Регулировщик',crossroads:'Перекрёсток',road_signs:'Знаки',parking:'Парковка'};
+ var AN_USAGE_COLORS = {tickets:'#0574F8',topics:'#7C5CFC',exam:'#F5582A',marathon:'#6366F1',feed:'#0BB8A8',game:'#10B981',sign_swiper:'#F59E0B',traffic_controller:'#D946EF',crossroads:'#06B6D4',road_signs:'#EC4899',parking:'#64748B'};
 function anRenderUsage(data) {
  var usage=data.usage, features=usage&&usage.features||{}, timeline=usage&&usage.timeline||[], keys=Object.keys(AN_USAGE_NAMES);
  var starts=keys.reduce(function(n,k){return n+(features[k]&&features[k].starts||0);},0);
@@ -389,7 +389,6 @@ function anRenderUsage(data) {
  empty.innerHTML=beforeCollection?'За этот период данных нет<p>'+coverage+'.</p>':'Пока нет данных<p>Статистика появится после обновления приложений.'+(coverage?' '+coverage+'.':'')+'</p>';
  table.innerHTML=starts?anTable(['Режим','Запуски','<abbr title="Установки, в которых запускали режим за выбранный период">Активные установки</abbr>','<abbr title="Среднее число запусков на активную установку">На установку</abbr>'],keys.map(function(k){
   var f=features[k]||{starts:0,installations:0};
-  if(k==='parking'&&!f.starts)return '<tr><td>Парковка · скоро</td><td>—</td><td>—</td><td>—</td></tr>';
   var share=starts?f.starts/starts*100:0, label=share>0&&share<1?'&lt;1%':Math.round(share)+'%';
   var mc=AN_USAGE_COLORS[k]||'var(--an-accent)';return '<tr style="--an-mode-color:'+mc+'"><td><div class="an-usage-name"><button type="button" class="an-usage-mode" data-usage="'+k+'" aria-controls="an-usage-details" aria-expanded="'+(details.open&&k===anUsageFeature)+'" aria-label="Показать динамику: '+AN_USAGE_NAMES[k]+'"><span class="an-usage-mode-dot" aria-hidden="true"></span>'+AN_USAGE_NAMES[k]+'</button><div class="an-usage-track" aria-hidden="true"><i style="width:'+share+'%"></i></div><span class="an-usage-share">'+label+'</span></div></td>'+anCell(f.starts)+anCell(f.installations)+'<td>'+(f.installations?(f.starts/f.installations).toLocaleString('ru-RU',{maximumFractionDigits:1}):'—')+'</td></tr>';
  })):'';
