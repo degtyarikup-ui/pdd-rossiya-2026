@@ -316,6 +316,7 @@ var is_classifying := false
 var game_clock := 0.0
 var ready_for_play := false
 var _exiting := false
+var unscripted_zebra_offences := 0   # lawful cars caught on a busy zebra
 var _suspended := false   # app in the background: the tree is paused until it returns
 
 var locked_car: ViolatorCar = null
@@ -4559,9 +4560,9 @@ func _zebra_limit(car: ViolatorCar, lead_car: ViolatorCar, lead_dist: float, min
 				if absf(ds) < 1.5:
 					limit = minf(limit, hit.x - margin)
 					break
-			elif (absf(ds) < 3.2 and (hit.x - margin > 0.3 or absf(ds) < 1.6)) or (ds * float(c.dir) > 0.0 and absf(ds) < 6.5 and hit.x - margin > 0.6):
-				# (A walker still several metres off the path is passed if the car can no longer
-				# stop short of the zebra comfortably; one close to the path is always waited for.)
+			else:
+				# п. 14.1: a walker who has stepped onto the zebra is waited for until they reach the
+				# far kerb, wherever on it they are; driving across behind them is the offence too.
 				limit = minf(limit, hit.x - margin)
 				break
 		# The queue ahead: a slow lead, or any lead still inside the junction, may leave no room
@@ -4575,6 +4576,7 @@ func _zebra_limit(car: ViolatorCar, lead_car: ViolatorCar, lead_dist: float, min
 
 
 func _check_car_violation_state(car: ViolatorCar) -> void:
+	_check_zebra_entry(car)
 	if not car.is_violator:
 		return
 
@@ -4591,6 +4593,40 @@ func _check_car_violation_state(car: ViolatorCar) -> void:
 			return
 		if _is_car_exiting_violation_window(car) and game_clock - car.violation_start_time >= min_catch_window:
 			_on_violator_missed(car)
+
+
+## The front bumper rolling onto a zebra while somebody is on it (stepped off the kerb and not yet
+## at the far one) is п. 14.1 whoever drives: the scripted turner, or any other car that did it.
+## The emergency vehicle is exempt; a car already committed to another offence keeps that one.
+func _car_on_screen(car: ViolatorCar) -> bool:
+	if not is_instance_valid(camera) or not camera.is_inside_tree() or not car.is_inside_tree():
+		return true
+	if camera.is_position_behind(car.global_position):
+		return false
+	var p := camera.unproject_position(car.global_position)
+	return get_viewport().get_visible_rect().grow(-8.0).has_point(p)
+
+
+func _check_zebra_entry(car: ViolatorCar) -> void:
+	var nose := Vector2(car.position.x, car.position.z) + Vector2(sin(car.rotation.y), cos(car.rotation.y)) * CAR_FRONT
+	var inside := ""
+	for cw_id in crosswalks:
+		if (crosswalks[cw_id].rect as Rect2).has_point(nose):
+			inside = cw_id
+			break
+	var was: String = car.get_meta("zebra", "")
+	car.set_meta("zebra", inside)
+	if inside == "" or inside == was or car.is_emergency or crossers_on_road(inside).is_empty():
+		return
+	if car.is_violator and not (car.violation_type == VIOLATION_PEDESTRIAN_YIELD and car.violation_state == "pending"):
+		return
+	if not car.is_violator:
+		unscripted_zebra_offences += 1   # a lawful driver should never get here (soak check)
+	car.is_violator = true
+	car.violation_type = VIOLATION_PEDESTRIAN_YIELD
+	car.violation_state = "active"
+	car.violation_start_time = game_clock
+	car.set_meta("ped_cw", inside)
 
 
 func _is_car_entering_violation_window(car: ViolatorCar) -> bool:
@@ -4627,13 +4663,9 @@ func _is_car_entering_violation_window(car: ViolatorCar) -> bool:
 		VIOLATION_EMERGENCY_YIELD:
 			return car.position.z >= -10.0 and absf(car.position.x) < 2.5
 		VIOLATION_NO_LIGHTS:
-			if car.lane == 2:
-				return car.position.x >= -20.0
-			elif car.lane == 3:
-				return car.position.x <= 20.0
-			elif car.lane == LANE_NORTH:
-				return car.position.z <= 28.0
-			return car.position.z >= -20.0
+			# Dark headlights are plain to see from the first metre in the frame (п. 19.1): the
+			# offence counts as soon as the car is on screen, however far from the junction.
+			return _car_on_screen(car)
 		VIOLATION_WEATHER_SPEED:
 			return car.position.z >= -5.5
 	return false
@@ -4650,6 +4682,9 @@ func _is_car_exiting_violation_window(car: ViolatorCar) -> bool:
 				return car.position.z < -4.0
 			return car.position.z > 8.0
 		VIOLATION_PEDESTRIAN_YIELD:
+			if car.has_meta("ped_cw"):
+				var rect: Rect2 = crosswalks[car.get_meta("ped_cw")].rect
+				return not rect.grow(6.0).has_point(Vector2(car.position.x, car.position.z))
 			return car.position.x < -11.0
 		VIOLATION_SOLID_LINE:
 			return (car.lane_change_t >= 1.0 and car.position.z > -6.0) or car.position.z > 2.0

@@ -224,13 +224,14 @@ func _test_violation_boundaries_and_edges() -> void:
 
 	# 1.9 NO_LIGHTS
 	var nl_car = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_NO_LIGHTS)
+	nl_car.position.z = -80.0
+	game._check_car_violation_state(nl_car)
+	_assert("NO_LIGHTS does NOT activate before it is in the frame (Z = -80.0)", nl_car.violation_state == "pending")
+
+	# Dark headlights are seen at once: far from the junction it already counts.
 	nl_car.position.z = -25.0
 	game._check_car_violation_state(nl_car)
-	_assert("NO_LIGHTS does NOT activate at far distance (Z = -25.0)", nl_car.violation_state == "pending")
-
-	nl_car.position.z = -15.0
-	game._check_car_violation_state(nl_car)
-	_assert("NO_LIGHTS activates approaching intersection without lights", nl_car.violation_state == "active")
+	_assert("NO_LIGHTS activates as soon as the car is on screen (Z = -25.0)", nl_car.violation_state == "active")
 
 	nl_car.position.z = 8.5
 	game._check_car_violation_state(nl_car)

@@ -618,6 +618,41 @@ func _check_regressions() -> void:
 	game._notification(Node.NOTIFICATION_APPLICATION_RESUMED)
 	_check("Returning to the app resumes the round", not game.get_tree().paused)
 
+	# п. 14.1: a walker on the zebra is waited for wherever on it they are, and a car that rolls
+	# onto the zebra while they are still on it is an offender, whoever drives it.
+	game._start_game()
+	var walker: Dictionary = {}
+	for c in game.crossers:
+		if c.cw == "north":
+			walker = c
+			break
+	walker.state = "cross"
+	walker.dir = -1.0
+	walker.s = -3.4   # on the far half, well clear of the southbound lane at x = 1.8
+	var polite = game.spawn_specific_car("main_straight", 1, false, "")
+	polite.position = Vector3(1.8, 0, -16)
+	polite.rotation.y = 0.0
+	polite.speed = 8.0
+	_check("A driver waits for a walker on the far half of the zebra",
+		game._zebra_limit(polite, null, 999.0, 7.5) < 99.0)
+	var rude = game.spawn_specific_car("main_straight", 1, false, "")
+	rude.rotation.y = 0.0
+	rude.position = Vector3(1.8, 0, -10.2 - ViolatorScript.CAR_FRONT)
+	game._check_car_violation_state(rude)
+	_check("Nothing yet before the zebra", not rude.is_violator)
+	rude.position.z = -8.5 - ViolatorScript.CAR_FRONT
+	game._check_car_violation_state(rude)
+	_check("Rolling onto the zebra while a walker is on it is п. 14.1",
+		rude.is_violator and rude.violation_type == ViolatorScript.VIOLATION_PEDESTRIAN_YIELD and rude.violation_state == "active")
+	walker.state = "leave"
+	var after = game.spawn_specific_car("main_straight", 1, false, "")
+	after.rotation.y = 0.0
+	after.position = Vector3(1.8, 0, -10.2 - ViolatorScript.CAR_FRONT)
+	game._check_car_violation_state(after)
+	after.position.z = -8.5 - ViolatorScript.CAR_FRONT
+	game._check_car_violation_state(after)
+	_check("Once the walker has reached the kerb the car may go", not after.is_violator)
+
 	# One tap is one judgement: the emulated mouse click of a touch is ignored.
 	game._start_game()
 	var innocent = game.spawn_specific_car("main_straight", 1, false, "")

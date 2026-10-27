@@ -153,6 +153,7 @@ func _run() -> void:
 	_check("No car drives through another car (%d overlapping frames)" % car_overlaps, car_overlaps == 0)
 	_check("No car drives through a walker (%d frames)" % walker_hits, walker_hits == 0)
 	_check("Walkers start only on their green (%d red starts)" % walker_red_starts, walker_red_starts == 0)
+	_check("Lawful drivers never roll onto a zebra with a walker on it (%d)" % game.unscripted_zebra_offences, game.unscripted_zebra_offences == 0)
 	_check("No car stands on a zebra (%d cases)" % zebra_parked, zebra_parked == 0)
 	_check("No car stays stuck for 60 s (2.5 signal cycles) (%d cases)" % stuck_cars, stuck_cars == 0)
 	game.queue_free()
