@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
-import 'package:pdd_app/core/config/backend_config.dart';
+import 'package:pdd_app/data/services/telegram_auth_transport.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
@@ -26,7 +26,11 @@ class TelegramAuthResult {
 }
 
 class TelegramAuthSheet extends StatefulWidget {
-  const TelegramAuthSheet({super.key});
+  const TelegramAuthSheet({super.key, this.transport, this.openTelegram});
+  @visibleForTesting
+  final TelegramAuthTransport? transport;
+  @visibleForTesting
+  final Future<void> Function()? openTelegram;
 
   static Future<TelegramAuthResult?> show(BuildContext context) {
     HapticFeedbackHelper.tap();
@@ -46,7 +50,11 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
     with WidgetsBindingObserver {
   bool _isLoading = true;
   String? _error;
-  String? _nonce;
+  TelegramAuthChallenge? _challenge;
+  late final TelegramAuthTransport _transport;
+  int _flowRevision = 0;
+  bool _requesting = false;
+  bool _foreground = true;
   String? _botUrl;
   String? _tgUrl;
   String _botUsername = 'pdda_bot';
@@ -59,6 +67,9 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
   @override
   void initState() {
     super.initState();
+    _transport = widget.transport ?? TelegramAuthTransport();
+    final state = WidgetsBinding.instance.lifecycleState;
+    _foreground = state == null || state == AppLifecycleState.resumed;
     WidgetsBinding.instance.addObserver(this);
     _startAuthFlow();
   }
@@ -66,62 +77,46 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _flowRevision++;
     _pollTimer?.cancel();
+    _transport.close();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
     // Вернулись из Telegram — проверяем сразу, не дожидаясь таймера.
-    if (state == AppLifecycleState.resumed &&
-        _pollTimer != null &&
-        _error == null) {
+    if (_foreground && _pollTimer != null && _error == null) {
       _checkStatus(_pollTimer!);
     }
   }
 
   Future<void> _startAuthFlow() async {
+    if (_requesting || !mounted) return;
+    final revision = ++_flowRevision;
+    _requesting = true;
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _challenge = null;
+    _botUrl = null;
+    _tgUrl = null;
+    _checking = false;
+    _done = false;
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      http.Response? response;
-      Object? lastError;
-      for (var attempt = 0; attempt < 3; attempt++) {
-        try {
-          response = await http
-              .post(
-                Uri.parse(
-                  '${BackendConfig.notifierUrl}/api/auth/telegram/request',
-                ),
-                headers: {
-                  'content-type': 'application/json',
-                  if (BackendConfig.notifierSecret.isNotEmpty)
-                    'x-install-secret': BackendConfig.notifierSecret,
-                },
-              )
-              .timeout(const Duration(seconds: 8));
-          if (response.statusCode == 200) break;
-          lastError = StateError('Server error: ${response.statusCode}');
-        } catch (e) {
-          lastError = e;
-        }
-        response = null;
-        await Future<void>.delayed(const Duration(milliseconds: 600));
-      }
-      if (response == null) throw lastError ?? StateError('no response');
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      if (data['ok'] != true || data['nonce'] == null) {
-        throw StateError('Invalid response format');
-      }
-
-      _nonce = data['nonce'] as String;
-      _botUrl = data['botUrl'] as String?;
-      _tgUrl = data['tgUrl'] as String?;
-      _botUsername = (data['botUsername'] as String?) ?? 'pdda_bot';
+      final challenge = await _transport.createChallenge(
+        stillWanted: () => mounted && revision == _flowRevision,
+      );
+      if (!mounted || revision != _flowRevision) return;
+      _challenge = challenge;
+      _botUrl = challenge.botUrl;
+      _tgUrl = challenge.tgUrl;
+      _botUsername = challenge.botUsername;
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -129,7 +124,9 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
         unawaited(_openTelegram());
       }
     } catch (e) {
-      debugPrint('TelegramAuthSheet: start error: $e');
+      if (!mounted || revision != _flowRevision || e is TelegramAuthCancelled) {
+        return;
+      }
       ErrorReporter.report(
         ErrorCategory.auth,
         'telegram.request',
@@ -139,19 +136,36 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = appL10n.authErrorServer;
+          _error = _failureMessage(e);
         });
       }
+    } finally {
+      if (revision == _flowRevision) _requesting = false;
     }
   }
 
+  String _failureMessage(Object error) => error is TimeoutException
+      ? appL10n.authErrorTimeout
+      : error is http.ClientException
+      ? appL10n.authErrorNetwork
+      : appL10n.authErrorServer;
+
   Future<void> _openTelegram() async {
+    final revision = _flowRevision;
+    if (!mounted || _challenge == null) return;
+    if (widget.openTelegram case final open?) {
+      await open();
+      return;
+    }
     if (_tgUrl != null) {
       final uri = Uri.parse(_tgUrl!);
       try {
         // На iOS canLaunchUrl для tg:// ненадёжен — пробуем открыть сразу.
-        if (defaultTargetPlatform == TargetPlatform.iOS ||
-            await canLaunchUrl(uri)) {
+        final canOpen =
+            defaultTargetPlatform == TargetPlatform.iOS ||
+            await canLaunchUrl(uri);
+        if (!mounted || revision != _flowRevision) return;
+        if (canOpen) {
           final launched = await launchUrl(
             uri,
             mode: defaultTargetPlatform == TargetPlatform.iOS
@@ -163,12 +177,13 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
       } catch (_) {}
     }
 
+    if (!mounted || revision != _flowRevision) return;
     if (_botUrl != null) {
       final webUri = Uri.parse(_botUrl!);
       try {
         await launchUrl(webUri, mode: LaunchMode.externalApplication);
-      } catch (e) {
-        debugPrint('TelegramAuthSheet: open web error: $e');
+      } catch (_) {
+        /* No raw deep link or nonce in logs. */
       }
     }
   }
@@ -182,21 +197,22 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
   }
 
   Future<void> _checkStatus(Timer timer) async {
-    if (!mounted || _nonce == null || _done) {
+    if (!mounted || _challenge == null || _done || _error != null) {
       timer.cancel();
       return;
     }
+    if (!_foreground) return;
     if (_checking) return;
+    final revision = _flowRevision;
     _checking = true;
     try {
-      await _doCheck(timer);
+      await _doCheck(timer, revision);
     } finally {
-      _checking = false;
+      if (revision == _flowRevision) _checking = false;
     }
   }
 
-  Future<void> _doCheck(Timer timer) async {
-
+  Future<void> _doCheck(Timer timer, int revision) async {
     _pollCount++;
     if (_pollCount > _maxPollAttempts) {
       timer.cancel();
@@ -207,17 +223,8 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
     }
 
     try {
-      final response = await http
-          .post(
-            Uri.parse('${BackendConfig.notifierUrl}/api/auth/telegram/check'),
-            headers: {
-              'content-type': 'application/json',
-              if (BackendConfig.notifierSecret.isNotEmpty)
-                'x-install-secret': BackendConfig.notifierSecret,
-            },
-            body: jsonEncode({'nonce': _nonce}),
-          )
-          .timeout(const Duration(seconds: 4));
+      final response = await _transport.check(_challenge!);
+      if (!mounted || revision != _flowRevision) return;
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -246,13 +253,26 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
           if (mounted) {
             setState(() => _error = appL10n.authErrorTimeout);
           }
+        } else if (data['status'] != 'pending') {
+          throw const FormatException('Invalid Telegram status');
         }
       } else {
-        debugPrint('TelegramAuthSheet: check status ${response.statusCode}');
+        throw StateError('Telegram check unavailable');
       }
     } catch (e) {
-      // Единичные сетевые сбои опроса игнорируем
-      debugPrint('TelegramAuthSheet: poll error: $e');
+      if (!mounted || revision != _flowRevision) return;
+      // A response may have been lost after the one-time claim. Stop rather
+      // than replaying it; the visible retry explicitly starts a new challenge.
+      timer.cancel();
+      _pollTimer = null;
+      _challenge = null;
+      setState(() => _error = _failureMessage(e));
+      ErrorReporter.report(
+        ErrorCategory.auth,
+        'telegram.check',
+        error: e,
+        provider: 'telegram',
+      );
     }
   }
 
@@ -282,10 +302,7 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
               Align(
                 alignment: Alignment.centerRight,
                 child: IconButton(
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: colors.secondaryText,
-                  ),
+                  icon: Icon(Icons.close_rounded, color: colors.secondaryText),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
@@ -354,7 +371,7 @@ class _TelegramAuthSheetState extends State<TelegramAuthSheet>
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: Text(appL10n.authFailed),
+                  child: Text(appL10n.supportChatRetry),
                 ),
               ] else ...[
                 const Center(
