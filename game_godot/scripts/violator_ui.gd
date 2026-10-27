@@ -712,6 +712,9 @@ func show_classification(correct_code: String, options: Array) -> void:
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.icon = load("res://icons/violations/%s.svg" % opt_code)
+		# SVGs are imported at 6x for high-density phones; keep their layout at 24 dp.
+		btn.add_theme_constant_override("icon_max_width", 24)
+		btn.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		btn.add_theme_constant_override("h_separation", 12)
 		for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color"]:
 			btn.add_theme_color_override(state, Ui.c("text"))
