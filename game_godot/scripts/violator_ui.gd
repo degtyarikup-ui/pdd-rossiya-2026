@@ -34,9 +34,9 @@ const STRINGS := {
 		"violatorClassificationTitle": "Квалификация нарушения",
 		"violatorDifficultyTitle": "Выберите сложность",
 		"violatorEasy": "Лёгкий",
-		"violatorEasyHint": "Т-образный перекрёсток, по полосе в каждую сторону. Нарушения редко и по одному, очки ×0,5",
+		"violatorEasyHint": "Т-образный перекрёсток, по полосе в каждую сторону. Нарушители по одному, очки ×0,5",
 		"violatorMedium": "Средний",
-		"violatorMediumHint": "Перекрёсток без стрелки, три перехода. Нарушения чаще, позже по два, очки ×0,75",
+		"violatorMediumHint": "Перекрёсток без стрелки, три перехода. Больше видов нарушений, позже по два сразу, очки ×0,75",
 		"violatorHard": "Сложный",
 		"violatorHardHint": "Полный перекрёсток со стрелкой и четырьмя переходами, плотный поток, полные очки",
 		"violatorClassificationHint": "Выберите нарушенное правило ПДД РФ:",
@@ -65,6 +65,7 @@ const STRINGS := {
 		"violatorMissedTag": "Упущен нарушитель",
 		"violatorWrongAnswer": "Неверно. Правильно — %s",
 		"violatorTimeoutAnswer": "Время вышло. Правильно — %s",
+		"violatorRoundOver": "Раунд завершён",
 		"violatorTimingWarning": "Нарушение ещё не совершено или уже завершено!",
 		"violatorAlreadyCounted": "Это нарушение уже учтено",
 		"violatorTimeExpired": "Время на квалификацию истекло!",
@@ -75,9 +76,9 @@ const STRINGS := {
 		"violatorClassificationTitle": "Violation Classification",
 		"violatorDifficultyTitle": "Choose difficulty",
 		"violatorEasy": "Easy",
-		"violatorEasyHint": "T-junction, one lane each way. Rare offences one at a time, points ×0.5",
+		"violatorEasyHint": "T-junction, one lane each way. Offenders one at a time, points ×0.5",
 		"violatorMedium": "Medium",
-		"violatorMediumHint": "Crossroads without the arrow, three crosswalks. More offences, later two at once, points ×0.75",
+		"violatorMediumHint": "Crossroads without the arrow, three crosswalks. More kinds of offences, later two at once, points ×0.75",
 		"violatorHard": "Hard",
 		"violatorHardHint": "Full crossroads with the arrow and four crosswalks, dense traffic, full points",
 		"violatorClassificationHint": "Select the violated traffic rule:",
@@ -106,6 +107,7 @@ const STRINGS := {
 		"violatorMissedTag": "Violator missed",
 		"violatorWrongAnswer": "Wrong. Correct: %s",
 		"violatorTimeoutAnswer": "Time is up. Correct: %s",
+		"violatorRoundOver": "Round over",
 		"violatorTimingWarning": "Violation not yet started or already finished!",
 		"violatorAlreadyCounted": "This offence has already been counted",
 		"violatorTimeExpired": "Classification time expired!",
@@ -116,9 +118,9 @@ const STRINGS := {
 		"violatorClassificationTitle": "Құқық бұзушылықты саралау",
 		"violatorDifficultyTitle": "Қиындықты таңдаңыз",
 		"violatorEasy": "Жеңіл",
-		"violatorEasyHint": "Т-тәрізді қиылыс, әр бағытта бір жолақтан. Бұзушылық сирек әрі бір-бірден, ұпай ×0,5",
+		"violatorEasyHint": "Т-тәрізді қиылыс, әр бағытта бір жолақтан. Бұзушылар бір-бірден, ұпай ×0,5",
 		"violatorMedium": "Орташа",
-		"violatorMediumHint": "Бағдаршамы жебесіз қиылыс, үш өткел. Бұзушылық жиірек, кейін екеуі қатар, ұпай ×0,75",
+		"violatorMediumHint": "Бағдаршамы жебесіз қиылыс, үш өткел. Бұзушылық түрлері көбірек, кейін екеуі қатар, ұпай ×0,75",
 		"violatorHard": "Қиын",
 		"violatorHardHint": "Жебесі бар толық қиылыс, төрт өткел, тығыз ағын, толық ұпай",
 		"violatorClassificationHint": "Бұзылған ЖҚЕ ережесін таңдаңыз:",
@@ -147,6 +149,7 @@ const STRINGS := {
 		"violatorMissedTag": "Ереже бұзушы жіберіп алынды",
 		"violatorWrongAnswer": "Қате. Дұрысы — %s",
 		"violatorTimeoutAnswer": "Уақыт бітті. Дұрысы — %s",
+		"violatorRoundOver": "Раунд аяқталды",
 		"violatorTimingWarning": "Бұзушылық әлі жасалмаған немесе аяқталған!",
 		"violatorAlreadyCounted": "Бұл бұзушылық есепке алынды",
 		"violatorTimeExpired": "Саралау уақыты аяқталды!",
@@ -289,7 +292,11 @@ func _layout() -> void:
 	if is_instance_valid(_modal):
 		var modal_w := minf(360.0, size.x - 32.0)
 		_modal.size = Vector2(modal_w, 0)
-		_modal.position.x = (size.x - modal_w) / 2.0
+		# In landscape the sheet keeps to the right edge: centred, it would cover the junction.
+		if size.x > size.y * 1.2:
+			_modal.position.x = size.x - modal_w - 16.0 - float(safe["right"]) / u
+		else:
+			_modal.position.x = (size.x - modal_w) / 2.0
 		_place_modal.call_deferred()
 
 	if is_instance_valid(_toast):
@@ -733,7 +740,9 @@ func show_classification(correct_code: String, options: Array) -> void:
 
 	for opt_code in options:
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(0, 48)
+		# A wrapping Button measures its height at its current width, which is zero when it is new:
+		# one letter per line, and the sheet grew to the whole screen until the next layout pass.
+		btn.custom_minimum_size = Vector2(minf(360.0, size.x - 32.0) - 32.0, 48)
 		btn.text = tr_v(_violation_l10n_key(opt_code))
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		btn.add_theme_font_override("font", Ui.font(600))
@@ -1007,6 +1016,7 @@ func _build_results() -> void:
 	_results.stat_captions[0].text = tr_v("gameViolatorsDetected")
 	_results.stat_captions[1].text = tr_v("gameBestCombo")
 	_results.mistakes_button.visible = false
+	_results.title_label.text = tr_v("violatorRoundOver")   # the shared «Заезд завершён» is for drives
 	_results.restart_pressed.connect(func(): restart_pressed.emit())
 	_results.exit_pressed.connect(func(): exit_pressed.emit())
 	add_child(_results)
