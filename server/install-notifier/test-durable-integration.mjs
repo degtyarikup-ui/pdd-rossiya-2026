@@ -5,7 +5,7 @@ import { accountRead, accountRpc, routeAccountRequest } from './account_state.js
 import { notificationRequest } from './notifications.js';
 import { handleSupportGetMessages } from './support_chat.js';
 import { accountTokenForUserId } from './store_account.js';
-import { tokenHash } from './user_auth.js';
+import { readSession, tokenHash } from './user_auth.js';
 import { fixture, identity, request, session } from './fixture-account.mjs';
 import worker from './worker.js';
 
@@ -29,6 +29,53 @@ function faultBinding(outcomes) {
     },
   };
 }
+
+for (const target of ['/_account/read-many', '/api/user/status']) {
+  test(`remote platform failure in ${target} recovers without losing Premium or progress`, async t => {
+    const { env } = fixture();
+    const entitlements = { admin_grant: { expiresAt: '2030-01-01T00:00:00.000Z' } };
+    await env.INSTALLS.put('user:google_123', JSON.stringify({ ...identity(), entitlements,
+      isPremium: true, premiumExpiresAt: entitlements.admin_grant.expiresAt, premiumSource: 'admin_grant' }));
+    const progress = { questionProgressAb: { fixture_answer: { answeredAt: Date.now(), correct: true } } };
+    await env.INSTALLS.put('user_progress:google_123', JSON.stringify(progress));
+    const token = await session(env), binding = env.ACCOUNTS;
+    let attempts = 0;
+    env.ACCOUNTS = { idFromName: id => binding.idFromName(id), get: id => ({ fetch: async (input, options) => {
+      const req = input instanceof Request ? input : new Request(input, options);
+      if (new URL(req.url).pathname === target && ++attempts < 3) {
+        throw Object.assign(new Error('internal error; reference = 185s62c9h07iotqpjb2ek3ep'), { remote: true });
+      }
+      return binding.get(id).fetch(req);
+    } }) };
+    t.mock.method(console, 'log', () => {});
+    t.mock.method(globalThis, 'fetch', async () => assert.fail('read recovery must not contact external services'));
+    if (target === '/_account/read-many') {
+      // Non-account routes validate the session through a private read RPC;
+      // routed account handlers validate it inside the account object itself.
+      assert.ok(await readSession(request('/api/user/status', undefined, token), env));
+    }
+    const tasks = [];
+    const response = await worker.fetch(request('/api/user/status', undefined, token), env, { waitUntil: task => tasks.push(task) });
+    await Promise.all(tasks);
+    assert.equal(response.status, 200);
+    const status = await response.json();
+    assert.equal(status.isPremium, true);
+    assert.equal(status.premiumExpiresAt, entitlements.admin_grant.expiresAt);
+    assert.equal(attempts, 3);
+    assert.deepEqual(JSON.parse(await accountRead(env, 'google_123', 'user:google_123')).entitlements, entitlements);
+    assert.deepEqual(JSON.parse(await accountRead(env, 'google_123', 'user_progress:google_123')), progress);
+  });
+}
+
+test('notification reads recover from remote platform errors using fresh stubs', async () => {
+  const internal = () => Object.assign(new Error('internal error; reference = 185s62c9h07iotqpjb2ek3ep'), { remote: true });
+  const namespace = faultBinding([{ error: internal() }, { error: internal() }, { body: { notifications: [] } }]);
+  const response = await notificationRequest({ NOTIFICATIONS: namespace }, '/client?app=ru&platform=ios');
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { notifications: [] });
+  assert.equal(namespace.stubs.length, 3);
+  assert.equal(new Set(namespace.stubs).size, 3);
+});
 
 test('only the three private account read RPCs retry and every attempt rebuilds its body', async () => {
   for (const path of ['/_account/read', '/_account/read-many', '/_directory/find']) {

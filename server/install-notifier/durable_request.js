@@ -61,13 +61,17 @@ export async function durableRequest(namespace, id, send, {
       const failure = failureDetails(error);
       lastFailure = failure.details;
       sawPlatformFailure ||= failure.platform;
-      const transient = error?.retryable === true || (isCloudflareInternalError(error)
-        && error?.retryable === undefined && error?.remote !== true);
+      const platformInternal = isCloudflareInternalError(error);
+      // Cloudflare infrastructure errors can also be remote. That flag alone
+      // must not disable an opted-in read's recovery for this exact signature.
+      // An explicit retryable=false, overload, or a write still stops retries.
+      const transient = error?.retryable === true || (platformInternal
+        && error?.retryable === undefined);
       if (attempt === attempts || !transient || error?.overloaded) {
         if (sawPlatformFailure) record(retryableRead === true && transient && !error?.overloaded && attempt === attempts ? 'exhausted' : 'failed', attempt);
         throw error;
       }
-      await sleep(25 * 2 ** (attempt - 1));
+      await sleep((platformInternal && error?.remote === true ? 100 : 25) * 2 ** (attempt - 1));
     }
   }
 }

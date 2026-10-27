@@ -20,6 +20,42 @@ function binding(outcomes) {
 }
 const failure = flags => Object.assign(new Error('injected Durable Object failure'), flags);
 
+test('remote platform internal reads recover with fresh stubs and a bounded slower backoff', async () => {
+  const internal = () => Object.assign(new Error('internal error; reference = 185s62c9h07iotqpjb2ek3ep'), { remote: true });
+  const response = Response.json({ value: 'authoritative' });
+  const f = binding([{ error: internal() }, { error: internal() }, { response }]);
+  const delays = [], logs = [];
+  assert.equal(await durableRequest(f.namespace, 'account', stub => stub.fetch('https://account/read'), {
+    retryableRead: true, sleep: async delay => delays.push(delay), logger: event => logs.push(event),
+  }), response);
+  assert.equal(f.stubs.length, 3);
+  assert.equal(new Set(f.stubs).size, 3);
+  assert.deepEqual(delays, [100, 200]);
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0].outcome, 'recovered');
+  assert.equal(logs[0].remote, true);
+  assert.equal(logs[0].attempts, 3);
+});
+
+test('remote platform read exhaustion preserves the last error and explicit terminal flags', async () => {
+  const internal = flags => Object.assign(new Error('internal error; reference = 185s62c9h07iotqpjb2ek3ep'), { remote: true, ...flags });
+  const errors = [internal(), internal(), internal()];
+  const f = binding(errors.map(error => ({ error }))), delays = [], logs = [];
+  await assert.rejects(durableRequest(f.namespace, 'account', stub => stub.fetch('https://account/read'), {
+    retryableRead: true, sleep: async delay => delays.push(delay), logger: event => logs.push(event),
+  }), error => error === errors[2]);
+  assert.equal(f.calls.length, 3);
+  assert.deepEqual(delays, [100, 200]);
+  assert.equal(logs[0].outcome, 'exhausted');
+  for (const flags of [{ retryable: false }, { overloaded: true }, { retryable: 'true' }]) {
+    const error = internal(flags), terminal = binding([{ error }, { response: Response.json({ ok: true }) }]);
+    await assert.rejects(durableRequest(terminal.namespace, 'account', stub => stub.fetch('https://account/read'), {
+      retryableRead: true, sleep: async () => assert.fail('terminal flag must not retry'),
+    }), caught => caught === error);
+    assert.equal(terminal.calls.length, 1);
+  }
+});
+
 test('an opted-in read recovers with fresh stubs and bounded exponential backoff', async () => {
   const first = failure({ retryable: true }), second = failure({ retryable: true });
   const response = Response.json({ value: 'authoritative' });
@@ -128,7 +164,7 @@ test('unflagged platform internal errors recover only for explicit reads; termin
   }), response);
   assert.equal(recovered.stubs.length, 2);
   assert.deepEqual(delays, [25]);
-  for (const flags of [{ retryable: false }, { remote: true }, { overloaded: true }, { retryable: 'true' }]) {
+  for (const flags of [{ retryable: false }, { remote: true, retryable: false }, { overloaded: true }, { retryable: 'true' }]) {
     const error = internal(flags), f = binding([{ error }]);
     await assert.rejects(durableRequest(f.namespace, 'account', stub => stub.fetch('https://account/read'), {
       retryableRead: true, sleep: async () => assert.fail('terminal error must not wait'),
@@ -224,7 +260,7 @@ test('exhausted read logs once and preserves the original terminal error and boo
 test('platform failures in writes and remote terminal reads are logged once without introducing retries', async () => {
   for (const retryableRead of [false, true]) {
     const error = Object.assign(new Error('internal error; reference = 185s62c9h07iotqpjb2ek3ep'),
-      retryableRead ? { remote: true } : { retryable: true });
+      retryableRead ? { remote: true, retryable: false } : { retryable: true });
     const f = binding([{ error }, { response: Response.json({ ok: true }) }]), logs = [];
     await assert.rejects(durableRequest(f.namespace, 'private-account-id', stub => stub.fetch('https://account/private'), {
       retryableRead, operation: retryableRead ? 'account.read' : 'account.write', logger: event => logs.push(event),

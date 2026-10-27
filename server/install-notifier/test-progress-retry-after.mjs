@@ -8,6 +8,7 @@ const failures = [
   ['retryable reset', () => Object.assign(new Error('fixture reset'), { retryable: true }), 503, '1'],
   ['overload', () => Object.assign(new Error('fixture overload'), { overloaded: true }), 503, '5'],
   ['platform internal', () => new Error('internal error; reference = abcdef0123456789'), 503, '5'],
+  ['remote platform internal', () => Object.assign(new Error('internal error; reference = abcdef0123456789'), { remote: true }), 503, '5'],
   ['storage timeout', () => new Error('Durable Object storage operation exceeded timeout which caused object to be reset.'), 503, '1'],
   ['memory exhaustion', () => new Error('SQLITE_NOMEM'), 503, '5'],
   ['application failure', () => new Error('fixture application error'), 500, null],
