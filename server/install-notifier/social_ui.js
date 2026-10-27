@@ -678,10 +678,15 @@ window.scBulk = async function (action) {
   var ids = scPicked();
   if (!ids.length) return;
   if (action === 'delete' && !confirm('Убрать ' + ids.length + ' роликов из очереди? Файлы на Диске останутся.')) return;
-  await scApi('posts/bulk', { ids: ids, action: action });
-  scSelected = {};
-  scToast('Готово');
-  await loadSocial();
+  try {
+    await scApi('posts/bulk', { ids: ids, action: action });
+    scSelected = {};
+    scToast('Готово');
+    await loadSocial();
+  } catch (e) {
+    // Preserve the selection for review; a conflict never authorizes replay.
+    scToast('Действие не выполнено: ' + e.message, true);
+  }
 };
 
 window.scSetDate = async function (input) {

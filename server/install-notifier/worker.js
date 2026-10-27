@@ -3048,11 +3048,21 @@ const workerHandlers = {
     // ────────────────────── Автопостинг (Instagram + YouTube) ──────────────────────
     if (url.pathname.startsWith('/api/admin/social/')) {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
-      const socialResponse = await handleSocialAdmin(request, env, ctx, url, {
-        jsonResponse,
-        notify: (text, options = {}) => sendTelegram(env, text, null, { ...options, topic: 'errors' }),
-      });
-      return socialResponse || jsonResponse({ error: 'not found' }, 404);
+      try {
+        const socialResponse = await handleSocialAdmin(request, env, ctx, url, {
+          jsonResponse,
+          notify: (text, options = {}) => sendTelegram(env, text, null, { ...options, topic: 'errors' }),
+        });
+        return socialResponse || jsonResponse({ error: 'not found' }, 404);
+      } catch (error) {
+        // A rejected stale edit protects newer publication state. Keep that
+        // expected conflict distinct from a server outage; never replay it.
+        if (error?.code === 'ERR_SOCIAL_QUEUE_CONFLICT') return jsonResponse({
+          error: 'Очередь изменилась во время операции. Нажмите «Обновить», проверьте статусы роликов и повторите действие при необходимости.',
+          code: 'social_queue_conflict',
+        }, 409);
+        throw error;
+      }
     }
 
     // Публичная ссылка на ролик: по ней Instagram скачивает видео с Диска.
@@ -4395,7 +4405,8 @@ export default {
       console.error('Worker request failed', JSON.stringify({ operation, code, ...context }));
       await reportFailure(status, code, context);
       return jsonResponse({ error: 'server unavailable' }, status,
-        request.method === 'GET' && status === 503 ? { 'Retry-After': ['durable_overloaded', 'durable_memory_exhausted', 'cloudflare_internal_error'].includes(code) ? '5' : '1' } : {});
+        status === 503 && (request.method === 'GET' || (request.method === 'POST' && path === '/api/user/progress/sync'))
+          ? { 'Retry-After': ['durable_overloaded', 'durable_memory_exhausted', 'cloudflare_internal_error'].includes(code) ? '5' : '1' } : {});
     }
   },
   async scheduled(event, env, ctx) {

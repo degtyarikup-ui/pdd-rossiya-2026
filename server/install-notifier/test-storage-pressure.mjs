@@ -112,7 +112,7 @@ test('SQLITE_NOMEM becomes 503 without retrying a write or exposing an internal 
     f.env.ACCOUNTS={idFromName:s=>s,get:()=>({fetch:async(input)=>{calls.push(new URL(input.url||input).pathname);throw new Error('out of memory: SQLITE_NOMEM');}})};
     const r=await worker.fetch(request(path,body,token),f.env);
     assert.equal(r.status,503);
-    assert.equal(r.headers.get('Retry-After'),body?null:'5');
+    assert.equal(r.headers.get('Retry-After'),'5');
     assert.equal(calls.filter(p=>p===path).length,1);
     assert.doesNotMatch(await r.text(),/SQLITE|memory/);
     assert.deepEqual(JSON.parse(await f.env.INSTALLS.get('user:google_123')),before);
