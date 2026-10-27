@@ -2035,13 +2035,13 @@ abstract class AppLocalizations {
   /// No description provided for @gameRatingHint.
   ///
   /// In ru, this message translates to:
-  /// **'Очки всех заездов за неделю. В таблице — лучшие 100.'**
+  /// **'Очки всех игр за неделю. В таблице — лучшие 100.'**
   String get gameRatingHint;
 
   /// No description provided for @gameRatingEmpty.
   ///
   /// In ru, this message translates to:
-  /// **'На этой неделе ещё никто не проехал. Будьте первым!'**
+  /// **'На этой неделе ещё никто не сыграл. Будьте первым!'**
   String get gameRatingEmpty;
 
   /// No description provided for @gameRatingUnavailable.
@@ -2065,7 +2065,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameRatingRuns.
   ///
   /// In ru, this message translates to:
-  /// **'{count, plural, one{{count} заезд} few{{count} заезда} many{{count} заездов} other{{count} заезда}}'**
+  /// **'Игр сыграно: {count}'**
   String gameRatingRuns(int count);
 
   /// No description provided for @gameRatingEndsIn.

@@ -409,8 +409,8 @@
   "gameLobbyColour": "Түс",
   "gameLobbyRating": "Рейтинг",
   "gameLobbyColoursHint": "«Тірі қаладағы» дұрыс жауаптар үшін ашылған түстер барлық көліктерге қолжетімді",
-  "gameRatingHint": "Аптадағы барлық жарыстардың ұпайлары. Кестеде ең жақсы 100 көрсетілген.",
-  "gameRatingEmpty": "Бұл аптада әлі ешкім өткен жоқ. Бірінші болыңыз!",
+  "gameRatingHint": "Аптадағы барлық ойындардың ұпайлары. Кестеде үздік 100 ойыншы көрсетілген.",
+  "gameRatingEmpty": "Осы аптада әлі ешкім ойнаған жоқ. Бірінші болыңыз!",
   "gameRatingUnavailable": "Рейтинг жүктелмеді. Интернетті тексеріңіз.",
   "gameRatingStaleAt": "Байланыс жоқ. {time} уақыттағы рейтинг көрсетілген.",
   "@gameRatingStaleAt": {
@@ -421,7 +421,7 @@
     }
   },
   "gameRatingYou": "Сіз",
-  "gameRatingRuns": "{count, plural, one{{count} жарыс} other{{count} жарыс}}",
+  "gameRatingRuns": "Ойналған ойындар: {count}",
   "gameRatingEndsIn": "Аптаның соңына дейін: {days} күн.",
   "gameAuthRequired": "Ойын жүйеге кіргеннен кейін қол жетімді",
   "gameAuthRequiredHint": "Ұпай жинау және апта сайынғы рейтингтерге қатысу үшін жүйеге кіріңіз.",

@@ -1152,11 +1152,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gameRatingHint =>
-      'Очки всех заездов за неделю. В таблице — лучшие 100.';
+      'Очки всех игр за неделю. В таблице — лучшие 100.';
 
   @override
   String get gameRatingEmpty =>
-      'На этой неделе ещё никто не проехал. Будьте первым!';
+      'На этой неделе ещё никто не сыграл. Будьте первым!';
 
   @override
   String get gameRatingUnavailable =>
@@ -1172,15 +1172,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String gameRatingRuns(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count заезда',
-      many: '$count заездов',
-      few: '$count заезда',
-      one: '$count заезд',
-    );
-    return '$_temp0';
+    return 'Игр сыграно: $count';
   }
 
   @override

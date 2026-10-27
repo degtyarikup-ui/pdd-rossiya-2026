@@ -1133,11 +1133,11 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get gameRatingHint =>
-      'Аптадағы барлық жарыстардың ұпайлары. Кестеде ең жақсы 100 көрсетілген.';
+      'Аптадағы барлық ойындардың ұпайлары. Кестеде үздік 100 ойыншы көрсетілген.';
 
   @override
   String get gameRatingEmpty =>
-      'Бұл аптада әлі ешкім өткен жоқ. Бірінші болыңыз!';
+      'Осы аптада әлі ешкім ойнаған жоқ. Бірінші болыңыз!';
 
   @override
   String get gameRatingUnavailable =>
@@ -1153,13 +1153,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String gameRatingRuns(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count жарыс',
-      one: '$count жарыс',
-    );
-    return '$_temp0';
+    return 'Ойналған ойындар: $count';
   }
 
   @override

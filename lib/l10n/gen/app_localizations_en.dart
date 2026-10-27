@@ -1132,11 +1132,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameRatingHint =>
-      'Points for all races for the week. The table shows the best 100.';
+      'Points from all games this week. The table shows the top 100.';
 
   @override
   String get gameRatingEmpty =>
-      'No one has ridden this week yet. Be the first!';
+      'No one has played this week yet. Be the first!';
 
   @override
   String get gameRatingUnavailable =>
@@ -1152,13 +1152,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gameRatingRuns(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count runs',
-      one: '$count run',
-    );
-    return '$_temp0';
+    return 'Games played: $count';
   }
 
   @override

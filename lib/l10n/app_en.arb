@@ -409,8 +409,8 @@
   "gameLobbyColour": "Color",
   "gameLobbyRating": "Rating",
   "gameLobbyColoursHint": "Colours earned with correct answers in Living City are available for every car",
-  "gameRatingHint": "Points for all races for the week. The table shows the best 100.",
-  "gameRatingEmpty": "No one has ridden this week yet. Be the first!",
+  "gameRatingHint": "Points from all games this week. The table shows the top 100.",
+  "gameRatingEmpty": "No one has played this week yet. Be the first!",
   "gameRatingUnavailable": "Failed to load rating. Check the Internet.",
   "gameRatingStaleAt": "No connection. Showing the rating as of {time}.",
   "@gameRatingStaleAt": {
@@ -421,7 +421,7 @@
     }
   },
   "gameRatingYou": "You",
-  "gameRatingRuns": "{count, plural, one{{count} run} other{{count} runs}}",
+  "gameRatingRuns": "Games played: {count}",
   "gameRatingEndsIn": "Until the end of the week: {days} days.",
   "gameAuthRequired": "The game is available after logging in",
   "gameAuthRequiredHint": "Log in to accumulate points and participate in the weekly rating.",
