@@ -1,0 +1,24 @@
+{
+  "title": "ТЕСТ: РЕГУЛИРОВЩИК",
+  "vehicle": "car",
+  "rule": "ПДД РФ, пункт 6.10; оценка только сигнала регулировщика",
+  "ruleSource": "https://www.consultant.ru/document/cons_doc_LAW_2709/4b7a10a56ed37080fc96999db5f3db6f3aa58cc6/",
+  "sheet": "assets/regulator-poses.png",
+  "sheetSize": [1240, 1269],
+  "frameSize": [414, 455],
+  "footBaseline": 442,
+  "options": ["Ехать нельзя", "Только направо", "Прямо и направо", "Во всех направлениях"],
+  "intro": "Куда можно ехать на легковом автомобиле? Три секунды на ответ.",
+  "outro": "Сколько угадали? Напишите в комментариях.",
+  "situations": [
+    {"gesture": "rightArmForward", "approach": "left",  "crop": [0, 0, 413, 390],       "feetY": 378,  "moves": ["straight", "right", "left", "uTurn"], "answerIndex": 3},
+    {"gesture": "handsSides",      "approach": "front", "crop": [413, 0, 827, 390],     "feetY": 378,  "moves": ["none"], "answerIndex": 0},
+    {"gesture": "handsDown",       "approach": "left",  "crop": [827, 0, 1240, 390],    "feetY": 378,  "moves": ["straight", "right"], "answerIndex": 2},
+    {"gesture": "armUp",           "approach": "left",  "crop": [0, 390, 413, 840],     "feetY": 829,  "moves": ["none"], "answerIndex": 0},
+    {"gesture": "rightArmForward", "approach": "front", "crop": [413, 390, 827, 840],   "feetY": 829,  "moves": ["right"], "answerIndex": 1},
+    {"gesture": "rightArmForward", "approach": "right", "crop": [827, 390, 1240, 840],  "feetY": 829,  "moves": ["none"], "answerIndex": 0},
+    {"gesture": "handsDown",       "approach": "back",  "crop": [0, 840, 413, 1269],    "feetY": 1227, "moves": ["none"], "answerIndex": 0},
+    {"gesture": "handsSides",      "approach": "right", "crop": [413, 840, 827, 1269],  "feetY": 1227, "moves": ["straight", "right"], "answerIndex": 2},
+    {"gesture": "rightArmForward", "approach": "back",  "crop": [827, 840, 1240, 1269], "feetY": 1227, "moves": ["none"], "answerIndex": 0}
+  ]
+}
