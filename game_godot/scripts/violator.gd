@@ -1093,23 +1093,17 @@ func _create_arrow_mesh(type: String) -> ArrayMesh:
 		# Straight head: base at z = -0.4 (width 0.64), tip at (0, 0, -1.6)
 		_st_tri(st, Vector3(-0.32, 0, -0.4), Vector3(0.0, 0, -1.6), Vector3(0.32, 0, -0.4))
 
-	if has_left:
-		if not has_straight:
-			_st_quad(st, Vector3(-0.09, 0, 1.2), Vector3(0.09, 0, 1.2), Vector3(0.09, 0, 0.3), Vector3(-0.09, 0, 0.3))
-		# Curved branch towards -X
-		_st_quad(st, Vector3(0.0, 0, 0.45), Vector3(0.0, 0, 0.25), Vector3(-0.35, 0, 0.05), Vector3(-0.35, 0, 0.25))
-		_st_quad(st, Vector3(-0.35, 0, 0.25), Vector3(-0.35, 0, 0.05), Vector3(-0.65, 0, -0.05), Vector3(-0.65, 0, 0.15))
-		# Left arrowhead pointing to -X: base at x = -0.65 (z from -0.25 to 0.35), tip at (-1.35, 0, 0.05)
-		_st_tri(st, Vector3(-0.65, 0, -0.25), Vector3(-0.65, 0, 0.35), Vector3(-1.35, 0, 0.05))
-
-	if has_right:
-		if not has_straight:
-			_st_quad(st, Vector3(-0.09, 0, 1.2), Vector3(0.09, 0, 1.2), Vector3(0.09, 0, 0.3), Vector3(-0.09, 0, 0.3))
-		# Curved branch towards +X
-		_st_quad(st, Vector3(0.0, 0, 0.25), Vector3(0.0, 0, 0.45), Vector3(0.35, 0, 0.25), Vector3(0.35, 0, 0.05))
-		_st_quad(st, Vector3(0.35, 0, 0.05), Vector3(0.35, 0, 0.25), Vector3(0.65, 0, 0.15), Vector3(0.65, 0, -0.05))
-		# Right arrowhead pointing to +X: base at x = +0.65 (z from -0.25 to 0.35), tip at (1.35, 0, 0.05)
-		_st_tri(st, Vector3(0.65, 0, 0.35), Vector3(0.65, 0, -0.25), Vector3(1.35, 0, 0.05))
+	# A turn-only arrow (1.18 «налево» / «направо») is a full stem bending into the turn near its top;
+	# on a combined arrow the branch leaves the straight stem lower down.
+	var dz := 0.0 if has_straight else -0.75
+	if not has_straight and (has_left or has_right):
+		_st_quad(st, Vector3(-0.09, 0, 1.2), Vector3(0.09, 0, 1.2), Vector3(0.09, 0, 0.25 + dz), Vector3(-0.09, 0, 0.25 + dz))
+	for side in ([-1.0] if has_left else []) + ([1.0] if has_right else []):
+		# Curved branch: from the stem, bending out to the side.
+		_st_quad(st, Vector3(0.0, 0, 0.45 + dz), Vector3(0.0, 0, 0.25 + dz), Vector3(0.35 * side, 0, 0.05 + dz), Vector3(0.35 * side, 0, 0.25 + dz))
+		_st_quad(st, Vector3(0.35 * side, 0, 0.25 + dz), Vector3(0.35 * side, 0, 0.05 + dz), Vector3(0.65 * side, 0, -0.05 + dz), Vector3(0.65 * side, 0, 0.15 + dz))
+		# Arrowhead: base at |x| = 0.65, tip at |x| = 1.35.
+		_st_tri(st, Vector3(0.65 * side, 0, -0.25 + dz), Vector3(0.65 * side, 0, 0.35 + dz), Vector3(1.35 * side, 0, 0.05 + dz))
 
 	return st.commit()
 
