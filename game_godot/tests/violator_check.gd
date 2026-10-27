@@ -612,6 +612,12 @@ func _check_regressions() -> void:
 	_check("Hard after easy turns right along the crossroads' curves",
 		game.curve_right_n == ViolatorScript.CURVE_RIGHT_N and game.curve_right_w == ViolatorScript.CURVE_RIGHT_W)
 
+	# The phone going to the background freezes the round and coming back resumes it.
+	game._notification(Node.NOTIFICATION_APPLICATION_PAUSED)
+	_check("Backgrounded app pauses the round", game.get_tree().paused)
+	game._notification(Node.NOTIFICATION_APPLICATION_RESUMED)
+	_check("Returning to the app resumes the round", not game.get_tree().paused)
+
 	# One tap is one judgement: the emulated mouse click of a touch is ignored.
 	game._start_game()
 	var innocent = game.spawn_specific_car("main_straight", 1, false, "")

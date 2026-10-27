@@ -753,7 +753,10 @@ func show_classification(correct_code: String, options: Array) -> void:
 		hover_box.content_margin_right = 12
 		hover_box.content_margin_top = 8
 		hover_box.content_margin_bottom = 8
-		btn.add_theme_stylebox_override("hover", hover_box)
+		# On a touch screen hover sticks to the last tapped button, and the focus ring outlines it:
+		# both would mark a wrong answer before the player chose. Only the press itself shows.
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.add_theme_stylebox_override("hover", normal_box)
 		btn.add_theme_stylebox_override("pressed", hover_box)
 
 		btn.pressed.connect(_on_option_button_pressed.bind(btn, opt_code))
@@ -801,8 +804,8 @@ func _on_option_button_pressed(btn: Button, code: String) -> void:
 		success_box.border_width_top = 2
 		success_box.border_width_left = 2
 		success_box.border_width_right = 2
-		btn.add_theme_stylebox_override("normal", success_box)
 		btn.add_theme_color_override("font_color", Ui.c("green"))
+		_set_button_box(btn, success_box)
 	else:
 		var err_box := Ui.box(Ui.c("red_light"), 10)
 		err_box.border_color = Ui.c("red")
@@ -810,16 +813,17 @@ func _on_option_button_pressed(btn: Button, code: String) -> void:
 		err_box.border_width_top = 2
 		err_box.border_width_left = 2
 		err_box.border_width_right = 2
-		btn.add_theme_stylebox_override("normal", err_box)
 		btn.add_theme_color_override("font_color", Ui.c("red"))
+		_set_button_box(btn, err_box)
 
 		# Reveal correct option
 		for other_btn in _modal_buttons:
 			if other_btn.get_meta("opt_code") == _modal_correct_code:
 				var green_box := Ui.box(Ui.c("green_light"), 10)
 				green_box.border_color = Ui.c("green")
-				other_btn.add_theme_stylebox_override("normal", green_box)
+				green_box.set_border_width_all(2)
 				other_btn.add_theme_color_override("font_color", Ui.c("green"))
+				_set_button_box(other_btn, green_box)
 
 	# Short feedback delay then emit signal, only for this round and this sheet.
 	var generation := _interaction_generation
@@ -834,6 +838,15 @@ func _on_option_button_pressed(btn: Button, code: String) -> void:
 	else:
 		hide_classification()
 		classification_selected.emit(code)
+
+
+## The answer colours every state of the button: the finger still rests on it, and a hover or
+## pressed style would hide the green or red the player is meant to see.
+func _set_button_box(btn: Button, box: StyleBox) -> void:
+	for state in ["normal", "hover", "pressed", "hover_pressed"]:
+		btn.add_theme_stylebox_override(state, box)
+	btn.add_theme_color_override("font_hover_color", btn.get_theme_color("font_color"))
+	btn.add_theme_color_override("font_pressed_color", btn.get_theme_color("font_color"))
 
 
 func _on_classification_timeout() -> void:

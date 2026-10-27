@@ -316,6 +316,7 @@ var is_classifying := false
 var game_clock := 0.0
 var ready_for_play := false
 var _exiting := false
+var _suspended := false   # app in the background: the tree is paused until it returns
 
 var locked_car: ViolatorCar = null
 var missed_marks: Array[Dictionary] = []
@@ -5078,12 +5079,39 @@ func _on_restart_pressed() -> void:
 
 
 func _on_exit_pressed() -> void:
+	if _exiting: return
 	_exiting = true
+	_set_suspended(false)
 	Host.exit(_session_summary(), get_tree())
+
+
+## In the background the whole round stands still: traffic, the clock, the answer timer and the
+## slow-motion of the sheet, as in «Разрули перекрёсток». Nothing is lost while the phone is away.
+func _set_suspended(value: bool) -> void:
+	if value == _suspended or not is_inside_tree(): return
+	_suspended = value
+	get_tree().paused = value
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		if ready_for_play and not is_game_over and not _exiting: _set_suspended(true)
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
+		_set_suspended(false)
+	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if ui != null and ui._results.dismiss_review(): return
+		if not _exiting: _on_exit_pressed.call_deferred()
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
+		if not _exiting and (ui == null or not ui._results.dismiss_review()): _on_exit_pressed()
+		get_viewport().set_input_as_handled()
 
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
+	if _suspended: get_tree().paused = false
 	for car in cars:
 		if is_instance_valid(car):
 			Models.release_geometry(car)
