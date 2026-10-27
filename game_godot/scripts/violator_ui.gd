@@ -939,14 +939,13 @@ func show_difficulty_picker(current: String) -> void:
 	choices.add_theme_constant_override("separation", 8)
 	col.add_child(choices)
 	var levels := ["easy", "medium", "hard"]
-	for index in levels.size():
-		var level: String = levels[index]
-		var selected := level == current
+	for level in levels:
+		var selected: bool = level == current
 		var key: String = {"easy": "violatorEasy", "medium": "violatorMedium", "hard": "violatorHard"}[level]
 		var option := PanelContainer.new()
 		option.name = "Difficulty_" + level
 		option.size_flags_horizontal = SIZE_EXPAND_FILL
-		option.custom_minimum_size = Vector2(0, 104)
+		option.custom_minimum_size = Vector2(0, 116)
 		var ob := Ui.box(Ui.c("accent") if selected else Ui.c("field"), 12)
 		ob.content_margin_left = 4
 		ob.content_margin_right = 4
@@ -954,25 +953,19 @@ func show_difficulty_picker(current: String) -> void:
 		ob.content_margin_bottom = 16
 		option.add_theme_stylebox_override("panel", ob)
 		var lines := VBoxContainer.new()
-		lines.add_theme_constant_override("separation", 12)
+		lines.add_theme_constant_override("separation", 10)
 		lines.mouse_filter = MOUSE_FILTER_IGNORE
 		option.add_child(lines)
-		var bars := HBoxContainer.new()
-		bars.size_flags_horizontal = SIZE_SHRINK_CENTER
-		bars.custom_minimum_size.y = 28
-		bars.add_theme_constant_override("separation", 4)
-		bars.mouse_filter = MOUSE_FILTER_IGNORE
-		for bar_index in 3:
-			var bar := Panel.new()
-			bar.custom_minimum_size = Vector2(6, 12 + bar_index * 8)
-			bar.size_flags_vertical = SIZE_SHRINK_END
-			bar.mouse_filter = MOUSE_FILTER_IGNORE
-			var ink := Color.WHITE if selected else Ui.c("accent")
-			if bar_index > index:
-				ink = Color(1, 1, 1, 0.28) if selected else Ui.c("divider")
-			bar.add_theme_stylebox_override("panel", Ui.box(ink, 3))
-			bars.add_child(bar)
-		lines.add_child(bars)
+		var map_icon := TextureRect.new()
+		map_icon.texture = load("res://icons/difficulty/%s.svg" % level)
+		map_icon.custom_minimum_size = Vector2(48, 48)
+		map_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		map_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		map_icon.size_flags_horizontal = SIZE_SHRINK_CENTER
+		map_icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		map_icon.modulate = Color.WHITE if selected else Ui.c("accent")
+		map_icon.mouse_filter = MOUSE_FILTER_IGNORE
+		lines.add_child(map_icon)
 		var head := Ui.label(tr_v(key), 14, 600, Color.WHITE if selected else Ui.c("text"), true)
 		head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		head.mouse_filter = MOUSE_FILTER_IGNORE
