@@ -24,6 +24,10 @@ export function errorLogKey(ts, id) {
   return ERROR_LOG_PREFIX + String(Math.max(0, Math.floor(ts))).padStart(15, '0') + ':' + id;
 }
 
+// New records are indexed by trusted server reception time. Existing records
+// keep their original event-time keys and need no migration.
+export const errorLogTime = record => Number.isFinite(record.receivedAt) ? record.receivedAt : record.ts;
+
 // С какого времени читать журнал для режима выгрузки.
 export function exportStart(mode, now) {
   return mode === 'day' ? Math.max(0, now - DAY_MS) : 0;
@@ -32,6 +36,7 @@ export function exportStart(mode, now) {
 export function errorLogRecord(incident, { ts, sent, level, reason }) {
   return {
     ts,
+    ...(Number.isFinite(incident.receivedAt) ? { receivedAt: incident.receivedAt } : {}),
     id: String(incident.id || ''),
     level: level || '',
     sent: Boolean(sent),
@@ -91,6 +96,7 @@ const HEADER = [
   'Товаров запрошено', 'Товаров получено', 'Товаров не найдено', 'Не найденные ID товаров',
   'Источник SDK', 'Отпечаток кода SDK', 'Кадры приложения', 'Тип исключения',
   'Этап чтения поддержки', 'HTTP хранилища поддержки', 'Повторяемый сбой (retryable)', 'Перегрузка (overloaded)',
+  'Получено сервером (МСК)',
 ];
 
 function rowOf(record) {
@@ -126,6 +132,7 @@ function rowOf(record) {
     record.context?.requestedCount, record.context?.returnedCount, record.context?.missingCount,
     record.context?.missingIds?.join(', '), record.context?.sdkSource, record.context?.sdkCodeHash, record.context?.frames?.join('\n'), record.context?.errorType,
     record.context?.supportStage, record.context?.upstreamStatus, record.context?.retryable, record.context?.overloaded,
+    Number.isFinite(record.receivedAt) ? mskStamp(record.receivedAt) : '',
   ];
 }
 

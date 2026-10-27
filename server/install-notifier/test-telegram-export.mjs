@@ -40,7 +40,7 @@ test('CSV: BOM, разделитель «;», кавычки для спецси
   assert.ok(csv.startsWith('﻿'));
   const [header, row] = csv.slice(1).trim().split('\r\n');
   assert.match(header, /^Время \(МСК\);Срочность;Ушло в чат;/);
-  assert.equal(header.split(';').length, 43);
+  assert.equal(header.split(';').length, 44);
   assert.match(row, /^11\.10\.2026 09:57:04;Важно;да;приложение;auth;auth\.provider;timeout;Google;Android;2\.2\.3\+59;realme RMX5303;;RU;/);
   assert.ok(row.includes('"\'=HYPERLINK(""https://x"",""k"")"'), 'формула экранирована и кавычки удвоены');
   assert.ok(row.includes('"a;b""c@mail.ru"'), 'точка с запятой внутри ячейки заключена в кавычки');
@@ -55,9 +55,9 @@ test('CSV appends sanitized support diagnostics and preserves explicit false pla
     errorLogRecord(base, meta),
   ];
   const [header, ...data] = buildErrorCsv(rows).slice(1).trim().split('\r\n');
-  assert.deepEqual(header.split(';').slice(-4), ['Этап чтения поддержки', 'HTTP хранилища поддержки', 'Повторяемый сбой (retryable)', 'Перегрузка (overloaded)']);
+  assert.deepEqual(header.split(';').slice(39, 43), ['Этап чтения поддержки', 'HTTP хранилища поддержки', 'Повторяемый сбой (retryable)', 'Перегрузка (overloaded)']);
   assert.equal(header.split(';')[38], 'Тип исключения', 'existing column positions stay unchanged');
-  assert.deepEqual(data.map(row => row.split(';').slice(-4)), [
+  assert.deepEqual(data.map(row => row.split(';').slice(39, 43)), [
     ['list', '503', 'false', 'true'], ['seed', '599', 'true', 'false'], ['', '', '', ''],
   ]);
   // Re-sanitize at export too: stored or caller-supplied context is untrusted.
@@ -65,7 +65,7 @@ test('CSV appends sanitized support diagnostics and preserves explicit false pla
     retryable: 'TOP_SECRET', overloaded: { message: 'TOP_SECRET' }, message: 'TOP_SECRET',
     url: 'https://private.test', body: 'TOP_SECRET', userId: 'private-user', frames: ['https://private.test'] } };
   const csv = buildErrorCsv([injected]);
-  assert.deepEqual(csv.slice(1).trim().split('\r\n')[1].split(';').slice(-4), ['', '', '', '']);
+  assert.deepEqual(csv.slice(1).trim().split('\r\n')[1].split(';').slice(39, 43), ['', '', '', '']);
   assert.doesNotMatch(csv, /TOP_SECRET|private\.test|private-user/);
 });
 

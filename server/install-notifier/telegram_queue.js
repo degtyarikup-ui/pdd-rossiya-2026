@@ -4,7 +4,7 @@ import { processTelegramMessageUpdate } from './support_chat.js';
 import { isReportPhotoUrl } from './report_questions.js';
 import { buildIncidentBatchMessage, incidentBatchIdentity, INCIDENT_BATCH_WINDOW_MS, INCIDENT_BATCH_MAX } from './incident_batch.js';
 import { setupTelegramTopics } from './telegram_topics.js';
-import { EXPORT_COMMAND_MAX_AGE_MS, buildErrorCsv, errorLevelLabel, errorLogKey, errorLogRecord, exportStart, mskStamp, parseExportCommand, ERROR_LOG_PREFIX } from './telegram_export.js';
+import { EXPORT_COMMAND_MAX_AGE_MS, buildErrorCsv, errorLevelLabel, errorLogKey, errorLogRecord, errorLogTime, exportStart, mskStamp, parseExportCommand, ERROR_LOG_PREFIX } from './telegram_export.js';
 
 export function telegramChatId(env) {
   const id = env?.CHAT_ID ? String(env.CHAT_ID) : '';
@@ -217,8 +217,9 @@ export class TelegramQueue {
   async logIncident(incident, sent, now, reason = sent ? 'sent' : 'grouped') {
     try {
       const ts = Number.isFinite(incident.ts) ? incident.ts : now;
-      const record = errorLogRecord(incident, { ts, sent, level: errorLevelLabel(incident), reason });
-      await this.state.storage.put(errorLogKey(ts, record.id || now), record);
+      const receivedAt = Number.isFinite(incident.receivedAt) ? incident.receivedAt : now;
+      const record = errorLogRecord({ ...incident, receivedAt }, { ts, sent, level: errorLevelLabel(incident), reason });
+      await this.state.storage.put(errorLogKey(receivedAt, record.id || now), record);
     } catch (error) {
       console.error('Error log write failed', error?.name || 'unknown');
     }
@@ -284,11 +285,11 @@ export class TelegramQueue {
         : 'Записей об ошибках пока нет.');
       return true;
     }
-    const first = records.reduce((min, record) => Math.min(min, record.ts), Infinity);
+    const first = records.reduce((min, record) => Math.min(min, errorLogTime(record)), Infinity);
     const label = mode === 'day' ? 'за последние сутки' : 'за всё время';
     const caption = `Журнал ошибок ${label}: записей ${records.length}.` + (mode === 'all' ? ` Самая ранняя запись: ${mskStamp(first).slice(0, 10)}.` : '');
     const fileName = `pdd-errors-${mode === 'day' ? 'sutki' : 'vse'}-${new Date(now + 3 * 3600000).toISOString().slice(0, 10)}.csv`;
-    await this.sendBotDocument(errorsThread, fileName, buildErrorCsv(records.sort((a, b) => a.ts - b.ts)), caption);
+    await this.sendBotDocument(errorsThread, fileName, buildErrorCsv(records.sort((a, b) => errorLogTime(a) - errorLogTime(b))), caption);
     return true;
   }
   // Записи читаются страницами: за всё время их может накопиться много.
@@ -298,7 +299,7 @@ export class TelegramQueue {
     for (;;) {
       const page = await this.state.storage.list({ prefix: ERROR_LOG_PREFIX, start, limit: 1000 });
       if (!page.size) break;
-      for (const value of page.values()) records.push(value);
+      for (const value of page.values()) if (errorLogTime(value) >= since) records.push(value);
       start = [...page.keys()].pop() + '\u0000';
     }
     return records;

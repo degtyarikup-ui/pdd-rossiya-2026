@@ -41,6 +41,18 @@ export function errorCode(error) {
   if (error?.code === 'ERR_SUPPORT_READ_UNAVAILABLE') return 'support_read_unavailable';
   return 'operation_failed';
 }
+function incidentTimeLines(event) {
+  const stamp = ts => new Date(ts).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }) + ' МСК';
+  if (event.origin === 'client' && Number.isFinite(event.receivedAt)
+      && Math.abs(event.receivedAt - event.ts) >= 5 * 60000) {
+    return [
+      '🕒 Время события на устройстве: ' + stamp(event.ts),
+      '📥 Получено сервером: ' + stamp(event.receivedAt),
+      'Возможны отложенная отправка отчёта или неточные часы устройства; по этим датам нельзя определить причину расхождения.',
+    ];
+  }
+  return ['🕒 ' + stamp(event.ts)];
+}
 export function buildIncidentMessage(event, repeats = 0, overflow = 0, { headings, relatedEvents, authTransportEvents, authTransportProviders } = {}) {
   event = { ...event, context: sanitizeDiagnosticContext(event.context) };
   const copy = incidentCopy(event);
@@ -110,7 +122,7 @@ export function buildIncidentMessage(event, repeats = 0, overflow = 0, { heading
       .map(provider => providerLabel(provider) + ' — ' + authTransportProviders[provider]).join(' · ') : null,
     overflow ? 'Других сообщений ограничено: ' + overflow : null,
     ...ids,
-    '🕒 ' + new Date(event.ts).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }) + ' МСК',
+    ...incidentTimeLines(event),
   ].filter(line => line !== null).join('\n');
 }
 
@@ -140,11 +152,15 @@ async function incidentUser(env, userId, fallback) {
 
 export async function reportIncident(env, incident) {
   try {
+    // Trusted reception time is independent of the device clock and outbox age.
+    // In particular, never accept a client's claimed receivedAt value.
+    const receivedAt = Date.now();
     if (!env.TELEGRAM || !env.BOT_TOKEN || !env.CHAT_ID) return false;
     const userId = text(incident.userId, 200);
     const user = await incidentUser(env, userId, incident.user);
     const event = {
-      id: tag(incident.id, crypto.randomUUID()), ts: Number.isFinite(incident.ts) ? incident.ts : Date.now(),
+      id: tag(incident.id, crypto.randomUUID()), ts: Number.isFinite(incident.ts) ? incident.ts : receivedAt,
+      receivedAt,
       origin: incident.origin === 'client' ? 'client' : 'server',
       category: Object.hasOwn(GROUPS, incident.category) ? incident.category : 'infrastructure',
       operation: tag(incident.operation), code: tag(incident.code),
