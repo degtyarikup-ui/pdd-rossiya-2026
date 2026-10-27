@@ -923,46 +923,66 @@ func show_difficulty_picker(current: String) -> void:
 		_picker.queue_free()
 	_picker = PanelContainer.new()
 	_picker.mouse_filter = MOUSE_FILTER_STOP
-	var box := Ui.box(Ui.c("card"), 16)
+	var box := Ui.box(Ui.c("card"), 20)
 	box.content_margin_left = 16
 	box.content_margin_right = 16
-	box.content_margin_top = 18
+	box.content_margin_top = 20
 	box.content_margin_bottom = 16
 	_picker.add_theme_stylebox_override("panel", box)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 10)
+	col.add_theme_constant_override("separation", 16)
 	_picker.add_child(col)
-	var title := Ui.label(tr_v("violatorDifficultyTitle"), 18, 800, Ui.c("text"))
+	var title := Ui.label(tr_v("violatorDifficultyTitle"), 16, 700, Ui.c("text"), true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(title)
-	for level in ["easy", "medium", "hard"]:
+	var choices := HBoxContainer.new()
+	choices.add_theme_constant_override("separation", 8)
+	col.add_child(choices)
+	var levels := ["easy", "medium", "hard"]
+	for index in levels.size():
+		var level: String = levels[index]
+		var selected := level == current
 		var key: String = {"easy": "violatorEasy", "medium": "violatorMedium", "hard": "violatorHard"}[level]
 		var option := PanelContainer.new()
 		option.name = "Difficulty_" + level
-		option.custom_minimum_size = Vector2(0, 64)
-		var ob := Ui.box(Ui.c("accent") if level == current else Ui.c("field"), 12)
-		ob.content_margin_left = 14
-		ob.content_margin_right = 14
-		ob.content_margin_top = 10
-		ob.content_margin_bottom = 10
+		option.size_flags_horizontal = SIZE_EXPAND_FILL
+		option.custom_minimum_size = Vector2(0, 104)
+		var ob := Ui.box(Ui.c("accent") if selected else Ui.c("field"), 12)
+		ob.content_margin_left = 4
+		ob.content_margin_right = 4
+		ob.content_margin_top = 18
+		ob.content_margin_bottom = 16
 		option.add_theme_stylebox_override("panel", ob)
 		var lines := VBoxContainer.new()
-		lines.add_theme_constant_override("separation", 2)
+		lines.add_theme_constant_override("separation", 12)
 		lines.mouse_filter = MOUSE_FILTER_IGNORE
-		var head := Ui.label(tr_v(key), 16, 800, Color.WHITE if level == current else Ui.c("text"))
+		option.add_child(lines)
+		var bars := HBoxContainer.new()
+		bars.size_flags_horizontal = SIZE_SHRINK_CENTER
+		bars.custom_minimum_size.y = 28
+		bars.add_theme_constant_override("separation", 4)
+		bars.mouse_filter = MOUSE_FILTER_IGNORE
+		for bar_index in 3:
+			var bar := Panel.new()
+			bar.custom_minimum_size = Vector2(6, 12 + bar_index * 8)
+			bar.size_flags_vertical = SIZE_SHRINK_END
+			bar.mouse_filter = MOUSE_FILTER_IGNORE
+			var ink := Color.WHITE if selected else Ui.c("accent")
+			if bar_index > index:
+				ink = Color(1, 1, 1, 0.28) if selected else Ui.c("divider")
+			bar.add_theme_stylebox_override("panel", Ui.box(ink, 3))
+			bars.add_child(bar)
+		lines.add_child(bars)
+		var head := Ui.label(tr_v(key), 14, 600, Color.WHITE if selected else Ui.c("text"), true)
+		head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		head.mouse_filter = MOUSE_FILTER_IGNORE
 		lines.add_child(head)
-		var hint := Ui.label(tr_v(key + "Hint"), 12, 500, Color(1, 1, 1, 0.85) if level == current else Ui.c("secondary"), true)
-		hint.size_flags_horizontal = SIZE_EXPAND_FILL
-		hint.mouse_filter = MOUSE_FILTER_IGNORE
-		lines.add_child(hint)
-		option.add_child(lines)
 		var tap := Control.new()
 		tap.set_anchors_preset(PRESET_FULL_RECT)
 		tap.mouse_filter = MOUSE_FILTER_STOP
 		tap.gui_input.connect(_on_tap_input.bind(_pick_difficulty.bind(level)))
 		option.add_child(tap)
-		col.add_child(option)
+		choices.add_child(option)
 	add_child(_picker)
 	_place_picker.call_deferred()
 
