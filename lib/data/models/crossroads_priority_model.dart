@@ -598,7 +598,7 @@ class CrossroadsScenariosLibrary {
       id: 'cross_emergency_priority',
       title: 'Спецтранспорт: скорая помощь с сиреной',
       subtitle:
-          'Маячок и специальный звуковой сигнал дают безоговорочный приоритет.',
+          'Маячок и сирена дают преимущество. Воспользоваться им можно, только убедившись, что дорогу уступают, и обеспечив безопасность (п. 3.1).',
       pddArticle: 'Пункт 3.2 ПДД РФ',
       signs: [
         CrossroadsSignPlacement(code: '2.1', side: CrossroadsSide.south),
@@ -1689,7 +1689,7 @@ class CrossroadsScenariosLibrary {
       id: 'hard_emergency_priority_pedestrian',
       title: 'Скорая помощь со спецсигналами и пешеход',
       subtitle:
-          'Безусловный приоритет машины экстренных служб с сиреной и маячками.',
+          'Маячок и сирена дают преимущество. Воспользоваться им можно, только убедившись, что дорогу уступают, и обеспечив безопасность (п. 3.1).',
       pddArticle: 'Пункты 3.2 и 13.1 ПДД РФ',
       isHardSituation: true,
       signs: [

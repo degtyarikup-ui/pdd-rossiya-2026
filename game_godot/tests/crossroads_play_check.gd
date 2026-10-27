@@ -54,8 +54,12 @@ func run() -> void:
 			check(area.has_point(car_screen) and area.has_point(badge_screen),
 				scenario.id + "/" + actor.name + ": car and button fit the visible opening (%s, %s, area %s, distance %.1f)" % [car_screen, badge_screen, area, game.base_cam_dist])
 			actor.set_process(false)
-		var ordered := game.active_actors.duplicate()
+		var ordered := game.active_actors.filter(func(a): return CrossroadsRules.movement_allowed(scenario, a.data))
 		ordered.sort_custom(func(a, b): return a.data.order < b.data.order)
+		if ordered.is_empty():
+			game._on_nobody_pressed()
+			check(game._round_completing, scenario.id + ": explicit nobody answer solves all-stop task")
+			continue
 		for actor in ordered:
 			var step := game.cur_step
 			game._handle_actor_selection(actor)

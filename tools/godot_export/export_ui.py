@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 KEYS = [
+    "crossroadsNobodyMoves", "crossroadsReasonOfficer", "crossroadsArticleOfficer", "crossroadsReasonCanGo",
     "achievementAwardTitle", "achievementAwardPosition",
     "close", "gameLeaderboard", "gameRatingLoading", "gameRatingReload", "gameRatingPendingRun", "gameRatingEmpty", "gameRatingUnavailable", "gameRatingStaleAt", "gameRatingYou",
     "gameRunsGetPremium", "gameResultRanking", "gameRunMistakesButton", "gameDistance", "gameMistakesReview",

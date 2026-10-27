@@ -15,6 +15,7 @@ signal mode_changed(mode: String)
 signal mode_toggled(mode: String)
 signal category_selected(cat_id: String)
 signal topics_requested()
+signal nobody_pressed()
 
 const SCREEN_PAD := 16.0
 const CHROME := MiniGameHud.CHROME
@@ -68,6 +69,8 @@ var compact_lives := false
 
 var _caption_card: PanelContainer
 var _caption_content: VBoxContainer
+var _caption_actions: BoxContainer
+var _nobody_btn: Button
 var _caption_header: HBoxContainer
 var _layout_pending := false
 var _caption_prompt: Label
@@ -145,6 +148,7 @@ func _layout() -> void:
 	var bar_available := maxf(160.0, size.x - bar_left - bar_right)
 	var top_width := minf(MAX_TOP_WIDTH, bar_available)
 	_top_bar.position = Vector2(bar_left + (bar_available - top_width) * 0.5, top + 8.0)
+	_caption_actions.vertical = not (size.x > size.y and size.y < 500.0)
 	_fit_caption(top_width)
 	_fit_hud(top_width - CHROME - 8.0)
 	_top_bar.size = Vector2(top_width, _top_bar.get_combined_minimum_size().y)
@@ -420,7 +424,21 @@ func _build_top_bar() -> void:
 	_hard_badge_label = Ui.scaled_label(Ui.t("crossroadsHardSituationBadge"), 11, 700, Ui.c("gold"), true)
 	_hard_badge.add_child(_hard_badge_label)
 	_hard_badge.visible = false
-	_caption_content.add_child(_hard_badge)
+	_caption_actions = BoxContainer.new()
+	_caption_actions.vertical = true
+	_caption_actions.add_theme_constant_override("separation", 6)
+	_caption_content.add_child(_caption_actions)
+	_caption_actions.add_child(_hard_badge)
+	_nobody_btn = Button.new()
+	_nobody_btn.text = Ui.t("crossroadsNobodyMoves")
+	_nobody_btn.custom_minimum_size.y = 44
+	_nobody_btn.size_flags_horizontal = SIZE_EXPAND_FILL
+	_nobody_btn.add_theme_font_override("font", Ui.font(600))
+	_nobody_btn.add_theme_font_size_override("font_size", roundi(14.0 * Ui.text_scale()))
+	_style_button(_nobody_btn, Ui.c("field"), Ui.c("text"), 8, 10)
+	_nobody_btn.pressed.connect(func(): nobody_pressed.emit())
+	_nobody_btn.visible = false
+	_caption_actions.add_child(_nobody_btn)
 
 
 func _style_tab(button: Button, active: bool, active_color: Color) -> void:
@@ -571,6 +589,12 @@ func pulse_combo() -> void:
 	_combo_tween.tween_property(_combo_chip, "scale", Vector2(1.0, 1.0), 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
+func set_nobody_option(show_option: bool, enabled: bool) -> void:
+	_nobody_btn.visible = show_option
+	_nobody_btn.disabled = not enabled
+	_queue_layout()
+
+
 func update_caption(title: String, _subtitle: String, step: int, total_steps: int, is_hard: bool = false) -> void:
 	_hard_badge.visible = is_hard
 	var complete := step > total_steps
@@ -712,6 +736,7 @@ func _build_collision_modal() -> void:
 func show_collision_modal(priority_name: String, reason: String, article: String, out_of_lives: bool = false, is_practice: bool = false) -> void:
 	_collision_backdrop.visible = true
 	_collision_card.visible = true
+	_collision_should_go.visible = priority_name != ""
 	_collision_should_go.text = Ui.t("gameCrossroadsShouldGo", {"name": priority_name})
 	_collision_reason.text = reason
 	_collision_article.text = article

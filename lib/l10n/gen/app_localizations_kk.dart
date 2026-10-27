@@ -4223,4 +4223,19 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get marathonSaveFailed =>
       'Марафонды сақтау мүмкін болмады. Шығудан бұрын қайта көріңіз.';
+
+  @override
+  String get crossroadsNobodyMoves => 'Ешкім жүрмейді';
+
+  @override
+  String get crossroadsReasonOfficer =>
+      'Реттеушінің сигналы бұл маневрге тыйым салады. Рұқсат сигналын күтіңіз. Маяк пен сирена реттеушінің сигналын елемеуге құқық бермейді.';
+
+  @override
+  String get crossroadsArticleOfficer =>
+      'РФ ЖЖЕ 6.10, 6.15 және 3.1-тармақтары';
+
+  @override
+  String get crossroadsReasonCanGo =>
+      'Реттеуші бір немесе бірнеше қатысушыға жүруге рұқсат беріп тұр. Қазір жүре алатын қатысушыны таңдаңыз.';
 }

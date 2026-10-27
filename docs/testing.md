@@ -17,7 +17,7 @@ flutter test                        # все тесты Flutter
 | Экономику админки | `npm run test:economy`, `npm run test:economy:ui` из `server/install-notifier/` (Playwright + Chrome, см. `docs/admin/README.md`) |
 | Воркер | `cd server/install-notifier && npm test` и нужные `npm run test:*` |
 | AccountState / доставку проекций | `npm run test:accounts`, `npm run test:storage`, `npm run test:security` и opt-in runtime ниже из `server/install-notifier/` |
-| Игру (`game_godot/`) | тесты Godot из `game_godot/tests/`, см. `docs/game/README.md`; мини-игры (`assets/game/`) — `tools/game_tests/*.cjs` |
+| Игру (`game_godot/`) | тесты Godot из `game_godot/tests/`, см. `docs/game/README.md`; `crossroads_pdd_check.gd` обязателен для ПДД «Перекрёстка» и запускается перед экспортом Android/iOS/Web |
 | Общие студийные записи Flutter/Godot | `python3 -m unittest tools/godot_export/test_question_audio.py`, `python3 tools/godot_export/export_question_audio.py --check` |
 | Правила экзамена | `flutter test test/exam_flow_test.dart` |
 | Контент ПДД | `python3 tools/ru_content/parse_pdd.py` (падает при сбое нумерации) |

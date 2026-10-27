@@ -375,7 +375,10 @@ func _build_trajectory() -> void:
 				tangent = (pts[n - 1] - pts[n - 2]) * 0.35
 				path_curve.add_point(pts[i], -tangent, Vector3.ZERO)
 			else:
-				tangent = (pts[i + 1] - pts[i - 1]) * 0.25
+				# The off-screen exit may be 90 m away. An unbounded Catmull
+				# handle makes the preceding 7 m segment loop backwards on the ring.
+				var handle_limit := minf(pts[i].distance_to(pts[i - 1]), pts[i].distance_to(pts[i + 1])) * 0.45
+				tangent = ((pts[i + 1] - pts[i - 1]) * 0.25).limit_length(handle_limit)
 				path_curve.add_point(pts[i], -tangent, tangent)
 		path_length = path_curve.get_baked_length()
 		_turn_end_distance = minf(35.0, path_length * 0.35)

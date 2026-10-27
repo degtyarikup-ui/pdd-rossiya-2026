@@ -264,6 +264,7 @@ func _setup_ui() -> void:
 	ui.prev_scenario_pressed.connect(_on_prev_scenario)
 	ui.reset_camera_pressed.connect(_reset_camera)
 	ui.retry_pressed.connect(_on_retry_pressed)
+	ui.nobody_pressed.connect(_on_nobody_pressed)
 	ui.restart_pressed.connect(_start_game)
 	ui.exit_pressed.connect(_on_exit_pressed)
 	ui.mode_changed.connect(_on_mode_changed)
@@ -631,8 +632,6 @@ func _load_current_scenario() -> void:
 	# Localized scenario texts
 	var lang := Ui.lang
 	var t_table: Dictionary = sc.get("translations", {}).get(lang, sc.get("translations", {}).get("ru", {}))
-	var sc_title: String = t_table.get("title", sc.get("title", ""))
-	var sc_sub: String = t_table.get("subtitle", sc.get("subtitle", ""))
 
 	# Spawn actors
 	var actors_data: Array = sc.get("actors", [])
@@ -674,7 +673,7 @@ func _load_current_scenario() -> void:
 		ui.show_hard_bonus_toast()
 
 	ui.update_hud(score, ceili(seconds_left), lives, combo)
-	ui.update_caption(sc_title, sc_sub, cur_step, active_actors.size(), is_hard)
+	_update_scenario_caption()
 	if game_mode == "practice":
 		var is_cur_solved: bool = practice_solved.has(str(sc.get("id", "")))
 		var can_prev := cur_scenario_idx > 0
@@ -864,77 +863,90 @@ func _handle_actor_selection(chosen: CrossroadsActor) -> void:
 	_target_cam_zoom = cam_zoom
 	cam_shake = 0.0
 
-	# Find candidate priority actors strictly among remaining waiting actors with lower order.
-	# Any actor that is already driving or done has already been resolved and dispatched!
-	var candidate_priorities: Array[CrossroadsActor] = []
-	for a in active_actors:
-		if a.state == "waiting":
-			if a.data.get("order", 99) < chosen.data.get("order", 99):
-				candidate_priorities.append(a)
-
-	# If none has strictly lower order (e.g. equal order), find any waiting actor with min order
-	if candidate_priorities.is_empty():
-		var min_order := 999
-		for a in active_actors:
-			if a.state == "waiting":
-				min_order = mini(min_order, a.data.get("order", 99))
-		for a in active_actors:
-			if a.state == "waiting" and a.data.get("order", 99) == min_order:
-				candidate_priorities.append(a)
-
-	if candidate_priorities.is_empty():
+	if chosen.state != "waiting" or is_resolving or _round_completing or is_game_over or _suspended or not ready_for_play:
 		return
-
-	# Prefer candidate whose trajectory physically conflicts/crosses with chosen
-	var priority_actor := candidate_priorities[0]
-	var best_conflict_dist := 999.0
-	for cand in candidate_priorities:
-		var d := _trajectory_min_distance(chosen, cand)
-		if d < best_conflict_dist:
-			best_conflict_dist = d
-			priority_actor = cand
-
-	# 1. Check illegal red light passage (п. 6.2 ПДД РФ)
-	var sc_idx := scenario_order[cur_scenario_idx % scenario_order.size()]
-	var sc: Dictionary = all_scenarios[sc_idx]
-	var side_name: String = chosen.data.get("side", "")
-	var tl = _find_traffic_light(sc, side_name)
-
-	var has_officer: bool = sc.has("officer") or str(sc.get("category", "")) == "regulator"
-	var is_illegal_red := false
-	if not has_officer and tl != null and tl.get("state", "") == "red" and not chosen.has_siren:
-		var has_matching_arrow: bool = tl.get("arrowActive", false) and tl.get("arrow", "") == chosen.data.get("maneuver", "")
-		if not has_matching_arrow:
-			is_illegal_red = true
-
-	if is_illegal_red:
-		_trigger_collision(chosen, priority_actor, Ui.t("crossroadsReasonRedLight"), Ui.t("crossroadsArticleRedLight"))
+	var sc := _current_scenario()
+	if not CrossroadsRules.movement_allowed(sc, chosen.data):
+		_reject_signal_answer(chosen, Ui.t("crossroadsReasonOfficer") if sc.has("officer") else Ui.t("crossroadsReasonRedLight"),
+			Ui.t("crossroadsArticleOfficer") if sc.has("officer") else Ui.t("crossroadsArticleRedLight"))
 		return
-
-	# 2. Check priority order
-	var chosen_order: int = chosen.data.get("order", 99)
-	var prio_order: int = priority_actor.data.get("order", 99)
-
-	if chosen_order == prio_order:
-		# CORRECT CHOICE!
-		chosen.set_badge_solved(cur_step)
-		chosen.set_meta("dispatch", cur_step)
-		chosen.start_driving()
-		sound.play("chirp")
-		sound.play("correct")
-		GameSound.buzz(25)
-
-		cur_step += 1
-		var sc_table: Dictionary = sc.get("translations", {}).get(Ui.lang, sc.get("translations", {}).get("ru", {}))
-		ui.update_caption(sc_table.get("title", sc.get("title", "")), sc_table.get("subtitle", sc.get("subtitle", "")), cur_step, active_actors.size(), sc.get("isHard", false))
-	else:
-		# MISTAKE / COLLISION!
-		var reason: String = priority_actor.data.get("explanation", Ui.t("gamePriorityViolation"))
-		var article: String = sc_table_article(sc)
-		if priority_actor.is_pedestrian and not chosen.is_pedestrian:
+	var blockers := _priority_blockers(chosen)
+	if not blockers.is_empty():
+		var priority: CrossroadsActor = blockers[0]
+		var reason: String = priority.data.get("explanation", Ui.t("gamePriorityViolation"))
+		var article := sc_table_article(sc)
+		if priority.is_pedestrian and not chosen.is_pedestrian:
 			reason = Ui.t("crossroadsReasonPedestrianViolation")
 			article = Ui.t("crossroadsArticlePedestrian")
-		_trigger_collision(chosen, priority_actor, reason, article)
+		_trigger_collision(chosen, priority, reason, article)
+		return
+	chosen.set_badge_solved(cur_step)
+	chosen.set_meta("dispatch", cur_step)
+	chosen.start_driving()
+	sound.play("chirp")
+	sound.play("correct")
+	GameSound.buzz(25)
+	cur_step += 1
+	_update_scenario_caption()
+
+
+func _current_scenario() -> Dictionary:
+	return all_scenarios[scenario_order[cur_scenario_idx % scenario_order.size()]]
+
+
+func _priority_blockers(chosen: CrossroadsActor) -> Array[CrossroadsActor]:
+	var result: Array[CrossroadsActor] = []
+	var sc := _current_scenario()
+	for actor in active_actors:
+		if actor.state == "waiting" and CrossroadsRules.must_yield(sc, chosen.data, actor.data):
+			result.append(actor)
+	return result
+
+
+func _permitted_actor_count() -> int:
+	var count := 0
+	var sc := _current_scenario()
+	for actor in active_actors:
+		if CrossroadsRules.movement_allowed(sc, actor.data): count += 1
+	return count
+
+
+func _update_scenario_caption() -> void:
+	var sc := _current_scenario()
+	var texts: Dictionary = sc.get("translations", {}).get(Ui.lang, sc.get("translations", {}).get("ru", {}))
+	ui.update_caption(texts.get("title", sc.get("title", "")), texts.get("subtitle", sc.get("subtitle", "")),
+		cur_step, maxi(1, _permitted_actor_count()), sc.get("isHard", false))
+	ui.set_nobody_option(sc.has("officer"), cur_step == 1 and not _round_completing)
+
+
+func _reject_signal_answer(chosen: CrossroadsActor, reason: String, article: String, priority: CrossroadsActor = null) -> void:
+	is_resolving = true
+	if chosen != null: chosen.set_badge_error()
+	if priority != null: priority.set_badge_priority()
+	if game_mode == "blitz":
+		wrong_count += 1
+		combo = 0
+		lives -= 1
+		ui.update_hud(score, ceili(seconds_left), lives, combo)
+	sound.play("incorrect")
+	GameSound.buzz(70)
+	_after_crash(scene_sequence, false, reason, article, priority)
+
+
+func _on_nobody_pressed() -> void:
+	if not ready_for_play or _suspended or is_resolving or _round_completing or is_game_over or cur_step != 1:
+		return
+	var sc := _current_scenario()
+	if not sc.has("officer"): return
+	for actor in active_actors:
+		if CrossroadsRules.movement_allowed(sc, actor.data):
+			_reject_signal_answer(null, Ui.t("crossroadsReasonCanGo"), sc_table_article(sc), actor)
+			return
+	# This is an explicit answer, never an automatic reward for an empty set.
+	_round_completing = true
+	cur_step += 1
+	_update_scenario_caption()
+	_on_crossroad_completed()
 
 
 func _find_traffic_light(sc: Dictionary, side_name: String):
@@ -954,9 +966,13 @@ func _on_actor_drive_completed(_actor: CrossroadsActor) -> void:
 
 
 func _check_junction_completed() -> void:
-	# Check if all actors are completed
+	# Only actors permitted by the unchanged signal can be dispatched in this task.
+	# An all-stop task requires the explicit "nobody" answer.
+	if _permitted_actor_count() == 0: return
+	var sc := _current_scenario()
 	var any_remaining := false
 	for a in active_actors:
+		if not CrossroadsRules.movement_allowed(sc, a.data): continue
 		if a.state == "waiting" or (a.state == "driving" and not a.has_cleared_junction()):
 			any_remaining = true
 			break
@@ -1430,8 +1446,11 @@ func _process(delta: float) -> void:
 
 
 func _process_auto_play() -> void:
+	if _permitted_actor_count() == 0:
+		_on_nobody_pressed()
+		return
 	for a in active_actors:
-		if a.state == "waiting" and a.data.get("order", 99) == cur_step:
+		if a.state == "waiting" and CrossroadsRules.movement_allowed(_current_scenario(), a.data) and _priority_blockers(a).is_empty():
 			_handle_actor_selection(a)
 			break
 

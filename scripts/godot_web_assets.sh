@@ -26,6 +26,10 @@ python3 "$STAGE/tools/godot_export/export_question_audio.py" --check
 if ! godot --headless --path "$STAGE/game_godot" --import >"$LOG" 2>&1 || grep -Eq '^(SCRIPT ERROR:|ERROR:)' "$LOG"; then
   tail -60 "$LOG"; echo "Ошибка импорта Godot; журнал: $LOG"; exit 1
 fi
+# Legal scenario regressions are a release gate, not only a manual check.
+if ! godot --headless --path "$STAGE/game_godot" --script res://tests/crossroads_pdd_check.gd >>"$LOG" 2>&1 || grep -Eq '^(SCRIPT ERROR:|ERROR:)' "$LOG"; then
+  tail -60 "$LOG"; echo "Ошибка проверки ПДД в Перекрёстке; журнал: $LOG"; exit 1
+fi
 if ! godot --headless --path "$STAGE/game_godot" --export-release "Web" "$PACKAGE/index.html" >>"$LOG" 2>&1 || grep -Eq '^(SCRIPT ERROR:|ERROR:)' "$LOG"; then
   tail -60 "$LOG"; echo "Ошибка экспорта Godot; журнал: $LOG"; exit 1
 fi

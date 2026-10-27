@@ -507,7 +507,7 @@
     "id": "cross_emergency_priority",
     "category": "prioritySigns",
     "title": "Спецтранспорт: скорая помощь с сиреной",
-    "subtitle": "Маячок и специальный звуковой сигнал дают безоговорочный приоритет.",
+    "subtitle": "Маячок и сирена дают преимущество. Воспользоваться им можно, только убедившись, что дорогу уступают, и обеспечив безопасность (п. 3.1).",
     "pddArticle": "Пункт 3.2 ПДД РФ",
     "isEqual": false,
     "isHard": false,
@@ -579,7 +579,7 @@
     "translations": {
       "ru": {
         "title": "Спецтранспорт: скорая помощь с сиреной",
-        "subtitle": "Маячок и специальный звуковой сигнал дают безоговорочный приоритет.",
+        "subtitle": "Маячок и сирена дают преимущество. Воспользоваться им можно, только убедившись, что дорогу уступают, и обеспечив безопасность (п. 3.1).",
         "pddArticle": "Пункт 3.2 ПДД РФ",
         "actors": {
           "ambulance_east": {
@@ -598,7 +598,7 @@
       },
       "en": {
         "title": "Special transport: ambulance with siren",
-        "subtitle": "A beacon and a special sound signal give unconditional priority.",
+        "subtitle": "Flashing lights and siren give priority. It may be used only after ensuring that others yield and that proceeding is safe (3.1).",
         "pddArticle": "Clause 3.2 of the Russian Traffic Regulations",
         "actors": {
           "ambulance_east": {
@@ -617,7 +617,7 @@
       },
       "kk": {
         "title": "Арнайы көлік: сиренасы бар жедел жәрдем",
-        "subtitle": "Маяк және арнайы дыбыстық сигнал сөзсіз басымдық береді.",
+        "subtitle": "Маяк пен сирена басымдық береді. Оны басқалар жол бергеніне көз жеткізіп, қауіпсіздікті қамтамасыз еткенде ғана пайдалануға болады (3.1).",
         "pddArticle": "ЖЖЕ 3.2-тармағы",
         "actors": {
           "ambulance_east": {
@@ -3053,7 +3053,7 @@
     "id": "hard_emergency_priority_pedestrian",
     "category": "hardSituations",
     "title": "Скорая помощь со спецсигналами и пешеход",
-    "subtitle": "Безусловный приоритет машины экстренных служб с сиреной и маячками.",
+    "subtitle": "Маячок и сирена дают преимущество. Воспользоваться им можно, только убедившись, что дорогу уступают, и обеспечив безопасность (п. 3.1).",
     "pddArticle": "Пункты 3.2 и 13.1 ПДД РФ",
     "isEqual": false,
     "isHard": true,
@@ -3129,7 +3129,7 @@
     "translations": {
       "ru": {
         "title": "Скорая помощь со спецсигналами и пешеход",
-        "subtitle": "Безусловный приоритет машины экстренных служб с сиреной и маячками.",
+        "subtitle": "Маячок и сирена дают преимущество. Воспользоваться им можно, только убедившись, что дорогу уступают, и обеспечив безопасность (п. 3.1).",
         "pddArticle": "Пункты 3.2 и 13.1 ПДД РФ",
         "actors": {
           "ambulance_north": {
@@ -3152,7 +3152,7 @@
       },
       "en": {
         "title": "Ambulance with siren and pedestrian",
-        "subtitle": "Absolute priority of emergency vehicle with siren and beacon.",
+        "subtitle": "Flashing lights and siren give priority. It may be used only after ensuring that others yield and that proceeding is safe (3.1).",
         "pddArticle": "Clauses 3.2 and 13.1 of the Russian Traffic Regulations",
         "actors": {
           "ambulance_north": {
@@ -3175,7 +3175,7 @@
       },
       "kk": {
         "title": "Арнайы сигналдары бар жедел жәрдем және жаяу жүргінші",
-        "subtitle": "Сиренасы мен маяктары бар шұғыл қызмет көлігінің сөзсіз басымдығы.",
+        "subtitle": "Маяк пен сирена басымдық береді. Оны басқалар жол бергеніне көз жеткізіп, қауіпсіздікті қамтамасыз еткенде ғана пайдалануға болады (3.1).",
         "pddArticle": "ЖЖЕ 3.2 және 13.1-тармақтары",
         "actors": {
           "ambulance_north": {
@@ -4170,7 +4170,7 @@
     "category": "roundabout",
     "junctionType": "roundabout",
     "title": "Въезд на кольцо с разных направлений",
-    "subtitle": "Оба въезжающих пропускают транспорт на кольце, а между собой разъезжаются по помехе справа.",
+    "subtitle": "Оба въезжающих уступают автомобилю на кольце. После него они могут ехать в любом порядке: их пути не пересекаются.",
     "pddArticle": "Пункты 13.11 и 13.11(1) ПДД РФ",
     "isEqual": false,
     "isHard": false,
@@ -4274,7 +4274,7 @@
           ]
         ],
         "order": 2,
-        "explanation": "Зеленый седан въезжает после проезда белого. Для оранжевого седана он помеха справа.",
+        "explanation": "Уступает автомобилю на кольце. Затем может ехать независимо от другого въезжающего: их маршруты не пересекаются.",
         "hasSiren": false,
         "maneuver": "straight"
       },
@@ -4308,7 +4308,7 @@
           ]
         ],
         "order": 3,
-        "explanation": "Оранжевый седан уступает зеленому седану справа и проезжает третьим.",
+        "explanation": "Уступает автомобилю на кольце. Затем может ехать независимо от другого въезжающего: их маршруты не пересекаются.",
         "hasSiren": false,
         "maneuver": "right"
       }
@@ -4316,7 +4316,7 @@
     "translations": {
       "ru": {
         "title": "Въезд на кольцо с разных направлений",
-        "subtitle": "Оба въезжающих пропускают транспорт на кольце, а между собой разъезжаются по помехе справа.",
+        "subtitle": "Оба въезжающих уступают автомобилю на кольце. После него они могут ехать в любом порядке: их пути не пересекаются.",
         "pddArticle": "Пункты 13.11 и 13.11(1) ПДД РФ",
         "actors": {
           "car_on_ring": {
@@ -4325,17 +4325,17 @@
           },
           "car_south": {
             "name": "Зеленый седан",
-            "explanation": "Зеленый седан въезжает после проезда белого. Для оранжевого седана он помеха справа."
+            "explanation": "Уступает автомобилю на кольце. Затем может ехать независимо от другого въезжающего: их маршруты не пересекаются."
           },
           "car_west": {
             "name": "Оранжевый седан",
-            "explanation": "Оранжевый седан уступает зеленому седану справа и проезжает третьим."
+            "explanation": "Уступает автомобилю на кольце. Затем может ехать независимо от другого въезжающего: их маршруты не пересекаются."
           }
         }
       },
       "en": {
         "title": "Entering roundabout from different approaches",
-        "subtitle": "Both entering vehicles yield to ring traffic and give way to each other from the right.",
+        "subtitle": "Both entering cars yield to the circulating car. Afterwards either may go first: their paths do not cross.",
         "pddArticle": "Clauses 13.11 and 13.11(1) of the Russian Traffic Regulations",
         "actors": {
           "car_on_ring": {
@@ -4344,17 +4344,17 @@
           },
           "car_south": {
             "name": "Green sedan",
-            "explanation": "The green sedan enters after the white car. It is to the right of the orange car."
+            "explanation": "Yields to the circulating car, then may proceed independently of the other entering car: their routes do not cross."
           },
           "car_west": {
             "name": "Orange sedan",
-            "explanation": "The orange sedan yields to the green car on its right and goes third."
+            "explanation": "Yields to the circulating car, then may proceed independently of the other entering car: their routes do not cross."
           }
         }
       },
       "kk": {
         "title": "Әр түрлі бағыттан шеңберге кіру",
-        "subtitle": "Кіріп келе жатқандар шеңбердегі көлікті өткізеді, ал өзара оң жақтан кедергі бойынша өтеді.",
+        "subtitle": "Кіретін екі көлік те шеңбердегі көлікке жол береді. Одан кейін кез келгені бірінші жүре алады: жолдары қиылыспайды.",
         "pddArticle": "ЖЖЕ 13.11 және 13.11(1)-тармақтары",
         "actors": {
           "car_on_ring": {
@@ -4363,14 +4363,23 @@
           },
           "car_south": {
             "name": "Жасыл седан",
-            "explanation": "Жасыл седан ақ көліктен кейін кіреді. Ол қызғылт сары көлікке оң жақ кедергі болады."
+            "explanation": "Шеңбердегі көлікке жол береді. Содан кейін екінші кіретін көліктен тәуелсіз жүре алады: жолдары қиылыспайды."
           },
           "car_west": {
             "name": "Қызғылт сары седан",
-            "explanation": "Қызғылт сары седан оң жақтағы жасыл көлікке жол беріп, үшінші өтеді."
+            "explanation": "Шеңбердегі көлікке жол береді. Содан кейін екінші кіретін көліктен тәуелсіз жүре алады: жолдары қиылыспайды."
           }
         }
       }
+    },
+    "yieldTo": {
+      "car_on_ring": [],
+      "car_south": [
+        "car_on_ring"
+      ],
+      "car_west": [
+        "car_on_ring"
+      ]
     }
   },
   {
@@ -4378,7 +4387,7 @@
     "category": "roundabout",
     "junctionType": "roundabout",
     "title": "Круговое движение с главной дорогой (знак 8.13)",
-    "subtitle": "Знаки приоритета отменяют стандартное правило кольца: транспорт на главной дороге имеет преимущество.",
+    "subtitle": "Знаки показывают главную дорогу. Показанные правые повороты не пересекаются: можно выбрать любой автомобиль, не создавая помех.",
     "pddArticle": "Пункты 13.9 и 13.10 ПДД РФ",
     "isEqual": false,
     "isHard": true,
@@ -4391,14 +4400,32 @@
       {
         "code": "2.1",
         "side": "east",
+        "table8_13": "bottom_left"
+      },
+      {
+        "code": "2.4",
+        "side": "west",
+        "table8_13": "top_right"
+      },
+      {
+        "code": "2.4",
+        "side": "north",
         "table8_13": "left_top"
       },
       {
-        "code": "2.4",
+        "code": "4.3",
+        "side": "south"
+      },
+      {
+        "code": "4.3",
+        "side": "east"
+      },
+      {
+        "code": "4.3",
         "side": "west"
       },
       {
-        "code": "2.4",
+        "code": "4.3",
         "side": "north"
       }
     ],
@@ -4434,7 +4461,7 @@
           ]
         ],
         "order": 1,
-        "explanation": "Желтый хэтчбек на главной дороге. Для синего кроссовера он помеха справа, поэтому едет первым.",
+        "explanation": "Этот правый поворот не пересекается с маршрутами других показанных машин. Обязательной очереди между ними нет; нельзя создавать помехи при выполнении манёвра.",
         "hasSiren": false,
         "maneuver": "right"
       },
@@ -4468,7 +4495,7 @@
           ]
         ],
         "order": 2,
-        "explanation": "Синий кроссовер тоже на главной дороге, но уступает желтому хэтчбеку справа.",
+        "explanation": "Этот правый поворот не пересекается с маршрутами других показанных машин. Обязательной очереди между ними нет; нельзя создавать помехи при выполнении манёвра.",
         "hasSiren": false,
         "maneuver": "right"
       },
@@ -4502,7 +4529,7 @@
           ]
         ],
         "order": 3,
-        "explanation": "Белый седан на второстепенной дороге пропускает участников на главной и едет последним.",
+        "explanation": "Этот правый поворот не пересекается с маршрутами других показанных машин. Обязательной очереди между ними нет; нельзя создавать помехи при выполнении манёвра.",
         "hasSiren": false,
         "maneuver": "right"
       }
@@ -4510,61 +4537,66 @@
     "translations": {
       "ru": {
         "title": "Круговое движение с главной дорогой (знак 8.13)",
-        "subtitle": "Знаки приоритета отменяют стандартное правило кольца: транспорт на главной дороге имеет преимущество.",
+        "subtitle": "Знаки показывают главную дорогу. Показанные правые повороты не пересекаются: можно выбрать любой автомобиль, не создавая помех.",
         "pddArticle": "Пункты 13.9 и 13.10 ПДД РФ",
         "actors": {
           "car_south": {
             "name": "Желтый хэтчбек",
-            "explanation": "Желтый хэтчбек на главной дороге. Для синего кроссовера он помеха справа, поэтому едет первым."
+            "explanation": "Этот правый поворот не пересекается с маршрутами других показанных машин. Обязательной очереди между ними нет; нельзя создавать помехи при выполнении манёвра."
           },
           "car_east": {
             "name": "Синий кроссовер",
-            "explanation": "Синий кроссовер тоже на главной дороге, но уступает желтому хэтчбеку справа."
+            "explanation": "Этот правый поворот не пересекается с маршрутами других показанных машин. Обязательной очереди между ними нет; нельзя создавать помехи при выполнении манёвра."
           },
           "car_west": {
             "name": "Белый седан",
-            "explanation": "Белый седан на второстепенной дороге пропускает участников на главной и едет последним."
+            "explanation": "Этот правый поворот не пересекается с маршрутами других показанных машин. Обязательной очереди между ними нет; нельзя создавать помехи при выполнении манёвра."
           }
         }
       },
       "en": {
         "title": "Roundabout with a main road (sign 8.13)",
-        "subtitle": "Priority signs override standard roundabout rules: vehicles on the main road have the right of way.",
+        "subtitle": "The signs identify the priority road. The shown right turns do not cross: any car may proceed without interfering with another.",
         "pddArticle": "Clauses 13.9 and 13.10 of the Russian Traffic Regulations",
         "actors": {
           "car_south": {
             "name": "Yellow hatchback",
-            "explanation": "The yellow car is on the main road and to the right of the crossover, going first."
+            "explanation": "This right turn does not cross the other shown routes. No fixed order is required; the manoeuvre must not interfere with other traffic."
           },
           "car_east": {
             "name": "Blue crossover",
-            "explanation": "The blue crossover is also on the main road but yields to the yellow car on its right."
+            "explanation": "This right turn does not cross the other shown routes. No fixed order is required; the manoeuvre must not interfere with other traffic."
           },
           "car_west": {
             "name": "White sedan",
-            "explanation": "The white sedan on the secondary road lets main road vehicles pass first."
+            "explanation": "This right turn does not cross the other shown routes. No fixed order is required; the manoeuvre must not interfere with other traffic."
           }
         }
       },
       "kk": {
         "title": "Негізгі жолы бар айналмалы қозғалыс (8.13 белгісі)",
-        "subtitle": "Басымдық белгілері шеңбердің стандартты ережесін өзгертеді: негізгі жолдағы көлік басымдыққа ие.",
+        "subtitle": "Белгілер басты жолды көрсетеді. Көрсетілген оңға бұрылыстар қиылыспайды: кедергі келтірмей кез келген көлік жүре алады.",
         "pddArticle": "ЖЖЕ 13.9 және 13.10-тармақтары",
         "actors": {
           "car_south": {
             "name": "Сары хэтчбек",
-            "explanation": "Сары хэтчбек негізгі жолда және көк кроссовердің оң жағында, сондықтан бірінші өтеді."
+            "explanation": "Бұл оңға бұрылыс басқа көрсетілген көліктердің жолдарымен қиылыспайды. Міндетті кезек жоқ; маневр кезінде басқаларға кедергі келтіруге болмайды."
           },
           "car_east": {
             "name": "Көк кроссовер",
-            "explanation": "Көк кроссовер де негізгі жолда, бірақ оң жақтағы сары хэтчбекке жол береді."
+            "explanation": "Бұл оңға бұрылыс басқа көрсетілген көліктердің жолдарымен қиылыспайды. Міндетті кезек жоқ; маневр кезінде басқаларға кедергі келтіруге болмайды."
           },
           "car_west": {
             "name": "Ақ седан",
-            "explanation": "Ақ седан қосалқы жолда, негізгі жолдағыларға жол беріп, соңғы өтеді."
+            "explanation": "Бұл оңға бұрылыс басқа көрсетілген көліктердің жолдарымен қиылыспайды. Міндетті кезек жоқ; маневр кезінде басқаларға кедергі келтіруге болмайды."
           }
         }
       }
+    },
+    "yieldTo": {
+      "car_south": [],
+      "car_east": [],
+      "car_west": []
     }
   },
   {
@@ -4592,6 +4624,22 @@
       {
         "code": "2.4",
         "side": "west"
+      },
+      {
+        "code": "4.3",
+        "side": "south"
+      },
+      {
+        "code": "4.3",
+        "side": "east"
+      },
+      {
+        "code": "4.3",
+        "side": "west"
+      },
+      {
+        "code": "4.3",
+        "side": "north"
       }
     ],
     "trafficLights": [],
@@ -4613,8 +4661,16 @@
             10.5
           ],
           [
-            5.4,
+            6.0,
+            6.0
+          ],
+          [
+            8.5,
             0.0
+          ],
+          [
+            6.0,
+            -6.0
           ],
           [
             5.4,
@@ -4698,7 +4754,7 @@
           ]
         ],
         "order": 3,
-        "explanation": "Зеленый кроссовер на второстепенной дороге пропускает обоих участников.",
+        "explanation": "Въезжая со второстепенной, уступает красному седану на главной. После него может ехать независимо от серого хэтчбека, съезжающего на другую половину восточной дороги.",
         "hasSiren": false,
         "maneuver": "right"
       }
@@ -4719,7 +4775,7 @@
           },
           "car_east": {
             "name": "Зеленый кроссовер",
-            "explanation": "Зеленый кроссовер на второстепенной дороге пропускает обоих участников."
+            "explanation": "Въезжая со второстепенной, уступает красному седану на главной. После него может ехать независимо от серого хэтчбека, съезжающего на другую половину восточной дороги."
           }
         }
       },
@@ -4738,7 +4794,7 @@
           },
           "car_east": {
             "name": "Green crossover",
-            "explanation": "The green crossover is on a secondary road and yields to everyone."
+            "explanation": "Entering from a secondary road, yields to the red sedan on the priority road. Afterwards it may proceed independently of the grey hatchback exiting onto the other half of the eastern road."
           }
         }
       },
@@ -4757,10 +4813,19 @@
           },
           "car_east": {
             "name": "Жасыл кроссовер",
-            "explanation": "Қосалқы жолдағы жасыл кроссовер екі көлікке де жол береді."
+            "explanation": "Қосалқы жолдан кіргенде басты жолдағы қызыл седанға жол береді. Содан кейін шығыс жолдың қарсы жартысына шығатын сұр хэтчбектен тәуелсіз жүре алады."
           }
         }
       }
+    },
+    "yieldTo": {
+      "car_south": [],
+      "car_ring_west": [
+        "car_south"
+      ],
+      "car_east": [
+        "car_south"
+      ]
     }
   },
   {
@@ -5025,12 +5090,20 @@
             -8.5
           ],
           [
-            6.0,
+            -6.0,
             -6.0
           ],
           [
-            8.5,
+            -8.5,
             0.0
+          ],
+          [
+            -6.0,
+            6.0
+          ],
+          [
+            0.0,
+            8.5
           ],
           [
             6.0,
@@ -5197,7 +5270,7 @@
         "side": "west",
         "maneuver": "straight",
         "order": 1,
-        "explanation": "Инспектор стоит боком (руки в стороны). Со стороны боков разрешено движение прямо и направо (п. 6.10). Сигналы регулировщика главнее светофора (п. 6.15).",
+        "explanation": "Со стороны правого бока при руках в стороны разрешено ехать прямо. Кроссовер с противоположного бока тоже может повернуть направо: обязательной очереди между ними нет.",
         "hasSiren": false
       },
       {
@@ -5209,7 +5282,7 @@
         "side": "east",
         "maneuver": "right",
         "order": 2,
-        "explanation": "Зеленый кроссовер поворачивает направо с противоположного бока инспектора и проезжает вторым.",
+        "explanation": "Со стороны левого бока разрешено повернуть направо. Можно выбрать кроссовер или встречный седан: их пути не пересекаются.",
         "hasSiren": false
       },
       {
@@ -5233,11 +5306,11 @@
         "actors": {
           "car_west": {
             "name": "Синий седан",
-            "explanation": "Инспектор стоит боком (руки в стороны). Со стороны боков разрешено движение прямо и направо (п. 6.10). Сигналы регулировщика главнее светофора (п. 6.15)."
+            "explanation": "Со стороны правого бока при руках в стороны разрешено ехать прямо. Кроссовер с противоположного бока тоже может повернуть направо: обязательной очереди между ними нет."
           },
           "car_east": {
             "name": "Зеленый кроссовер",
-            "explanation": "Зеленый кроссовер поворачивает направо с противоположного бока инспектора и проезжает вторым."
+            "explanation": "Со стороны левого бока разрешено повернуть направо. Можно выбрать кроссовер или встречный седан: их пути не пересекаются."
           },
           "car_south": {
             "name": "Белый седан",
@@ -5252,11 +5325,11 @@
         "actors": {
           "car_west": {
             "name": "Blue sedan",
-            "explanation": "The officer stands sideways. Traffic from the sides can go straight or turn right (6.10). The officer overrides the traffic lights (6.15)."
+            "explanation": "Arms out: traffic from the right side may go straight. The SUV from the opposite side may also turn right; neither must go first."
           },
           "car_east": {
             "name": "Green crossover",
-            "explanation": "The green crossover turns right from the other side of the officer and goes second."
+            "explanation": "The left side permits a right turn. Either this SUV or the oncoming sedan may go first: their paths do not cross."
           },
           "car_south": {
             "name": "White sedan",
@@ -5271,11 +5344,11 @@
         "actors": {
           "car_west": {
             "name": "Көк седан",
-            "explanation": "Инспектор бүйірімен тұр. Бүйірлерден тіке және оңға рұқсат етіледі (6.10). Реттеуші сигналы бағдаршамнан маңызды (6.15)."
+            "explanation": "Қолдары екі жаққа созылғанда оң бүйірден тіке жүруге болады. Қарама-қарсы бүйірдегі кроссовер де оңға бұрыла алады; олардың арасында міндетті кезек жоқ."
           },
           "car_east": {
             "name": "Жасыл кроссовер",
-            "explanation": "Жасыл кроссовер инспектордың қарсы бүйірінен оңға бұрылып, екінші өтеді."
+            "explanation": "Сол бүйірден оңға бұрылуға рұқсат. Кроссоверді де, қарсы седанды да бірінші таңдауға болады: жолдары қиылыспайды."
           },
           "car_south": {
             "name": "Ақ седан",
@@ -5323,7 +5396,7 @@
         "side": "west",
         "maneuver": "straight",
         "order": 1,
-        "explanation": "К водителю инспектор обращен левым боком с вытянутой вперед рукой. Движение разрешено во всех направлениях (п. 6.10).",
+        "explanation": "Инспектор обращён к оранжевому седану правым боком, правая рука вытянута вперёд. Движение запрещено; седан ждёт смены сигнала (п. 6.10).",
         "hasSiren": false
       },
       {
@@ -5335,7 +5408,7 @@
         "side": "south",
         "maneuver": "right",
         "order": 2,
-        "explanation": "Со стороны груди при вытянутой вперед руке инспектора разрешен поворот только направо (п. 6.10).",
+        "explanation": "Синий хэтчбек — единственный, кому разрешено движение: со стороны груди при вытянутой вперёд правой руке можно повернуть направо (п. 6.10).",
         "hasSiren": false
       },
       {
@@ -5359,11 +5432,11 @@
         "actors": {
           "car_west": {
             "name": "Оранжевый седан",
-            "explanation": "К водителю инспектор обращен левым боком с вытянутой вперед рукой. Движение разрешено во всех направлениях (п. 6.10)."
+            "explanation": "Инспектор обращён к оранжевому седану правым боком, правая рука вытянута вперёд. Движение запрещено; седан ждёт смены сигнала (п. 6.10)."
           },
           "car_south": {
             "name": "Синий хэтчбек",
-            "explanation": "Со стороны груди при вытянутой вперед руке инспектора разрешен поворот только направо (п. 6.10)."
+            "explanation": "Синий хэтчбек — единственный, кому разрешено движение: со стороны груди при вытянутой вперёд правой руке можно повернуть направо (п. 6.10)."
           },
           "car_north": {
             "name": "Белый седан",
@@ -5378,11 +5451,11 @@
         "actors": {
           "car_west": {
             "name": "Orange sedan",
-            "explanation": "The officer faces the driver with their left side, right arm forward. Movement in all directions is permitted (6.10)."
+            "explanation": "The officer faces the orange sedan with the right side, right arm forward. It must stop and wait for a new signal (6.10)."
           },
           "car_south": {
             "name": "Blue hatchback",
-            "explanation": "Facing the chest with right arm forward, traffic may only turn right (6.10)."
+            "explanation": "Only the blue hatchback may move: facing the chest with the right arm forward, a right turn is permitted (6.10)."
           },
           "car_north": {
             "name": "White sedan",
@@ -5397,11 +5470,11 @@
         "actors": {
           "car_west": {
             "name": "Қызғылт сары седан",
-            "explanation": "Инспектор жүргізушіге сол бүйірімен оң қолын созып тұр. Барлық бағыттарға рұқсат (6.10)."
+            "explanation": "Реттеуші қызғылт сары седанға оң бүйірімен тұр, оң қолы алға созылған. Жүруге тыйым салынған; седан сигналдың ауысуын күтеді (6.10)."
           },
           "car_south": {
             "name": "Көк хэтчбек",
-            "explanation": "Кеуде жағынан оң қолы созылғанда тек оңға бұрылуға рұқсат (6.10)."
+            "explanation": "Тек көк хэтчбек жүре алады: оң қолы алға созылған реттеушінің кеуде жағынан оңға бұрылуға рұқсат (6.10)."
           },
           "car_north": {
             "name": "Ақ седан",
@@ -5422,7 +5495,7 @@
     "officer": {
       "gesture": "right_arm_forward",
       "approach": "front",
-      "yaw": 1.5707963
+      "yaw": 3.141592653589793
     },
     "signs": [],
     "trafficLights": [],
@@ -5448,7 +5521,7 @@
         "side": "west",
         "maneuver": "straight",
         "order": 2,
-        "explanation": "Синий седан едет прямо со стороны левого бока, но обязан пропустить поворачивающий трамвай (п. 13.6).",
+        "explanation": "Со стороны левого бока разрешено ехать прямо, но автомобиль уступает поворачивающему трамваю при одинаковом разрешающем сигнале (пп. 6.10, 13.6).",
         "hasSiren": false
       },
       {
@@ -5460,7 +5533,7 @@
         "side": "north",
         "maneuver": "straight",
         "order": 3,
-        "explanation": "Зеленый кроссовер стоит со стороны закрытого жеста инспектора и ждет смены сигнала.",
+        "explanation": "Со стороны груди при вытянутой вперёд правой руке разрешён только поворот направо. Кроссоверу нужно прямо, поэтому он ждёт смены сигнала.",
         "hasSiren": false
       }
     ],
@@ -5476,11 +5549,11 @@
           },
           "car_west": {
             "name": "Синий седан",
-            "explanation": "Синий седан едет прямо со стороны левого бока, но обязан пропустить поворачивающий трамвай (п. 13.6)."
+            "explanation": "Со стороны левого бока разрешено ехать прямо, но автомобиль уступает поворачивающему трамваю при одинаковом разрешающем сигнале (пп. 6.10, 13.6)."
           },
           "car_north": {
             "name": "Зеленый кроссовер",
-            "explanation": "Зеленый кроссовер стоит со стороны закрытого жеста инспектора и ждет смены сигнала."
+            "explanation": "Со стороны груди при вытянутой вперёд правой руке разрешён только поворот направо. Кроссоверу нужно прямо, поэтому он ждёт смены сигнала."
           }
         }
       },
@@ -5495,11 +5568,11 @@
           },
           "car_west": {
             "name": "Blue sedan",
-            "explanation": "The blue sedan may go straight but must yield to the turning tram (clause 13.6)."
+            "explanation": "Traffic from the left side may go straight, but the car must yield to the turning tram permitted by the same signal (6.10, 13.6)."
           },
           "car_north": {
             "name": "Green crossover",
-            "explanation": "The crossover faces a prohibitive gesture and waits for the signal to change."
+            "explanation": "Facing the chest with the right arm forward, only a right turn is permitted. The SUV intends to go straight and must wait."
           }
         }
       },
@@ -5514,11 +5587,11 @@
           },
           "car_west": {
             "name": "Көк седан",
-            "explanation": "Көк седан сол бүйірден тіке өте алады, бірақ трамвайды өткізуі керек (13.6-тармақ)."
+            "explanation": "Сол бүйірден тіке жүруге рұқсат, бірақ бірдей рұқсат сигналында көлік бұрылатын трамвайға жол береді (6.10, 13.6)."
           },
           "car_north": {
             "name": "Жасыл кроссовер",
-            "explanation": "Жасыл кроссовер тыйым салынған жақта тұр және сигнал ауысуын күтеді."
+            "explanation": "Оң қолы алға созылған реттеушінің кеуде жағынан тек оңға бұрылуға болады. Кроссовер тіке жүрмек, сондықтан күтеді."
           }
         }
       }
@@ -5528,7 +5601,7 @@
     "id": "regulator_right_turn_only",
     "category": "regulator",
     "title": "Грудь инспектора с вытянутой рукой: только направо",
-    "subtitle": "При жесте «правая рука вытянута вперед» со стороны груди движение разрешено исключительно направо.",
+    "subtitle": "Со стороны груди разрешено только направо, со стороны левого бока — во всех направлениях. Справа движение закрыто.",
     "pddArticle": "Пункт 6.10 ПДД РФ",
     "isEqual": false,
     "isHard": false,
@@ -5561,7 +5634,7 @@
         "side": "west",
         "maneuver": "straight",
         "order": 2,
-        "explanation": "Белый кроссовер со стороны левого бока едет прямо вторым.",
+        "explanation": "Белый кроссовер находится со стороны правого бока регулировщика. При вытянутой вперёд правой руке движение отсюда запрещено.",
         "hasSiren": false
       },
       {
@@ -5573,14 +5646,14 @@
         "side": "east",
         "maneuver": "straight",
         "order": 3,
-        "explanation": "Со стороны правого бока вытянутой руки инспектора движение закрыто.",
+        "explanation": "Оранжевый хэтчбек находится со стороны левого бока и может ехать прямо. Его путь не пересекается с правым поворотом синего седана: разрешены оба ответа.",
         "hasSiren": false
       }
     ],
     "translations": {
       "ru": {
         "title": "Грудь инспектора с вытянутой рукой: только направо",
-        "subtitle": "При жесте «правая рука вытянута вперед» со стороны груди движение разрешено исключительно направо.",
+        "subtitle": "Со стороны груди разрешено только направо, со стороны левого бока — во всех направлениях. Справа движение закрыто.",
         "pddArticle": "Пункт 6.10 ПДД РФ",
         "actors": {
           "car_south": {
@@ -5589,17 +5662,17 @@
           },
           "car_west": {
             "name": "Белый кроссовер",
-            "explanation": "Белый кроссовер со стороны левого бока едет прямо вторым."
+            "explanation": "Белый кроссовер находится со стороны правого бока регулировщика. При вытянутой вперёд правой руке движение отсюда запрещено."
           },
           "car_east": {
             "name": "Оранжевый хэтчбек",
-            "explanation": "Со стороны правого бока вытянутой руки инспектора движение закрыто."
+            "explanation": "Оранжевый хэтчбек находится со стороны левого бока и может ехать прямо. Его путь не пересекается с правым поворотом синего седана: разрешены оба ответа."
           }
         }
       },
       "en": {
         "title": "Officer chest with right arm forward: right turn only",
-        "subtitle": "From the chest with the right arm pointing forward, non-rail vehicles may only turn right.",
+        "subtitle": "From the chest, only a right turn; from the left side, all directions. Traffic from the right side must stop.",
         "pddArticle": "Clause 6.10 of the Russian Traffic Regulations",
         "actors": {
           "car_south": {
@@ -5608,17 +5681,17 @@
           },
           "car_west": {
             "name": "White crossover",
-            "explanation": "The crossover from the left side goes straight second."
+            "explanation": "The white SUV faces the officer’s right side. With the right arm forward, movement from this side is prohibited."
           },
           "car_east": {
             "name": "Orange hatchback",
-            "explanation": "Movement from the right flank of the extended arm is prohibited."
+            "explanation": "The orange hatchback faces the left side and may go straight. Its path does not cross the blue sedan’s right turn; either answer is valid."
           }
         }
       },
       "kk": {
         "title": "Инспектор кеудесі созылған қолмен: тек оңға",
-        "subtitle": "Оң қолы алға созылған кеуде жағынан қозғалысқа тек оңға қарай рұқсат етіледі.",
+        "subtitle": "Кеуде жағынан тек оңға, сол бүйірден барлық бағытқа жүруге болады. Оң бүйірден жүруге тыйым салынған.",
         "pddArticle": "ЖЖЕ 6.10-тармағы",
         "actors": {
           "car_south": {
@@ -5627,11 +5700,11 @@
           },
           "car_west": {
             "name": "Ақ кроссовер",
-            "explanation": "Сол бүйірдегі ақ кроссовер екінші болып тіке өтеді."
+            "explanation": "Ақ кроссовер реттеушінің оң бүйірі жағында тұр. Оң қолы алға созылғанда бұл жақтан жүруге тыйым салынады."
           },
           "car_east": {
             "name": "Қызғылт сары хэтчбек",
-            "explanation": "Созылған қолдың оң бүйірі жағынан қозғалыс жабық."
+            "explanation": "Қызғылт сары хэтчбек сол бүйір жағынан тіке жүре алады. Оның жолы көк седанның оңға бұрылуымен қиылыспайды: екі жауап та дұрыс."
           }
         }
       }
@@ -5641,7 +5714,7 @@
     "id": "regulator_arm_up_emergency",
     "category": "regulator",
     "title": "Рука вверх и автомобиль со спецсигналом",
-    "subtitle": "Жест «рука вверх» запрещает движение всем, кроме автомобилей оперативных служб со спецсигналами.",
+    "subtitle": "Поднятая рука запрещает движение всем показанным участникам, включая скорую с маячком и сиреной.",
     "pddArticle": "Пункты 3.1 и 6.10 ПДД РФ",
     "isEqual": false,
     "isHard": true,
@@ -5662,7 +5735,7 @@
         "side": "south",
         "maneuver": "straight",
         "order": 1,
-        "explanation": "Автомобиль скорой помощи с включенными синим маячком и сиреной имеет безусловный приоритет (п. 3.1 ПДД РФ).",
+        "explanation": "Никто не едет. Даже с маячком и сиреной водитель скорой не вправе игнорировать сигнал регулировщика: п. 3.1 прямо исключает это отступление. Все стоят перед перекрёстком и ждут (п. 6.10).",
         "hasSiren": true
       },
       {
@@ -5693,12 +5766,12 @@
     "translations": {
       "ru": {
         "title": "Рука вверх и автомобиль со спецсигналом",
-        "subtitle": "Жест «рука вверх» запрещает движение всем, кроме автомобилей оперативных служб со спецсигналами.",
+        "subtitle": "Поднятая рука запрещает движение всем показанным участникам, включая скорую с маячком и сиреной.",
         "pddArticle": "Пункты 3.1 и 6.10 ПДД РФ",
         "actors": {
           "ambulance_south": {
             "name": "Скорая помощь",
-            "explanation": "Автомобиль скорой помощи с включенными синим маячком и сиреной имеет безусловный приоритет (п. 3.1 ПДД РФ)."
+            "explanation": "Никто не едет. Даже с маячком и сиреной водитель скорой не вправе игнорировать сигнал регулировщика: п. 3.1 прямо исключает это отступление. Все стоят перед перекрёстком и ждут (п. 6.10)."
           },
           "car_west": {
             "name": "Синий седан",
@@ -5712,12 +5785,12 @@
       },
       "en": {
         "title": "Arm raised up and emergency vehicle",
-        "subtitle": "An arm raised up halts all traffic, except emergency services with active beacons and siren.",
+        "subtitle": "The raised arm prohibits all shown traffic, including an ambulance with flashing lights and siren.",
         "pddArticle": "Clauses 3.1 and 6.10 of the Russian Traffic Regulations",
         "actors": {
           "ambulance_south": {
             "name": "Ambulance",
-            "explanation": "An emergency ambulance with flashing blue lights and siren has unconditional priority (3.1)."
+            "explanation": "Nobody may move. Even with flashing lights and siren, the ambulance must obey the officer: 3.1 explicitly excludes this exemption. All are stopped before the junction and must wait (6.10)."
           },
           "car_west": {
             "name": "Blue sedan",
@@ -5731,12 +5804,12 @@
       },
       "kk": {
         "title": "Қолды жоғары көтеру және арнайы көлік",
-        "subtitle": "Қолды жоғары көтеру қимылы арнайы дыбыс пен шамдары қосулы жедел қызметтерден басқа барлығына қозғалысты тоқтатады.",
+        "subtitle": "Жоғары көтерілген қол барлық көрсетілген қатысушыларға, соның ішінде маягы мен сиренасы қосылған жедел жәрдемге де жүруге тыйым салады.",
         "pddArticle": "ЖЖЕ 3.1 және 6.10-тармақтары",
         "actors": {
           "ambulance_south": {
             "name": "Жедел жәрдем",
-            "explanation": "Жарқылдауық пен сиренасы қосулы жедел жәрдем көлігі абсолютті басымдыққа ие (3.1-тармақ)."
+            "explanation": "Ешкім жүрмейді. Маягы мен сиренасы қосылса да, жедел жәрдем реттеушінің сигналын орындауға міндетті: 3.1-тармақ мұндай ауытқуға рұқсат бермейді. Барлығы қиылыс алдында күтеді (6.10)."
           },
           "car_west": {
             "name": "Көк седан",
@@ -6128,7 +6201,7 @@
         "maneuver": "straight",
         "lane_offset": 6.8,
         "order": 1,
-        "explanation": "Велосипедист движется по главной дороге прямо и проезжает перекресток первым (п. 13.9).",
+        "explanation": "Движется прямо по главной дороге. Встречный участник тоже едет прямо по своей половине дороги: можно выбрать любого из них первым. Кроссовер на второстепенной уступает обоим.",
         "hasSiren": false
       },
       {
@@ -6140,7 +6213,7 @@
         "side": "north",
         "maneuver": "straight",
         "order": 2,
-        "explanation": "Оранжевый седан также движется по главной дороге и проезжает следом.",
+        "explanation": "Движется прямо по главной дороге. Встречный участник тоже едет прямо по своей половине дороги: можно выбрать любого из них первым. Кроссовер на второстепенной уступает обоим.",
         "hasSiren": false
       },
       {
@@ -6164,11 +6237,11 @@
         "actors": {
           "bike_south": {
             "name": "Велосипедист",
-            "explanation": "Велосипедист движется по главной дороге прямо и проезжает перекресток первым (п. 13.9)."
+            "explanation": "Движется прямо по главной дороге. Встречный участник тоже едет прямо по своей половине дороги: можно выбрать любого из них первым. Кроссовер на второстепенной уступает обоим."
           },
           "car_north": {
             "name": "Оранжевый седан",
-            "explanation": "Оранжевый седан также движется по главной дороге и проезжает следом."
+            "explanation": "Движется прямо по главной дороге. Встречный участник тоже едет прямо по своей половине дороги: можно выбрать любого из них первым. Кроссовер на второстепенной уступает обоим."
           },
           "car_east": {
             "name": "Синий кроссовер",
@@ -6183,11 +6256,11 @@
         "actors": {
           "bike_south": {
             "name": "Cyclist",
-            "explanation": "The cyclist travels along the main road and crosses first (clause 13.9)."
+            "explanation": "Goes straight on the priority road. The oncoming road user also goes straight on their own side: either may go first. The SUV on the secondary road yields to both."
           },
           "car_north": {
             "name": "Orange sedan",
-            "explanation": "The orange sedan is also on the main road and crosses next."
+            "explanation": "Goes straight on the priority road. The oncoming road user also goes straight on their own side: either may go first. The SUV on the secondary road yields to both."
           },
           "car_east": {
             "name": "Blue crossover",
@@ -6202,11 +6275,11 @@
         "actors": {
           "bike_south": {
             "name": "Велосипедші",
-            "explanation": "Велосипедші негізгі жолмен тіке жүріп келе жатыр және қиылыстан бірінші өтеді (13.9-тармақ)."
+            "explanation": "Басты жолмен тіке жүреді. Қарсы қатысушы да жолдың өз жартысымен тіке жүреді: кез келгенін бірінші таңдауға болады. Қосалқы жолдағы кроссовер екеуіне де жол береді."
           },
           "car_north": {
             "name": "Қызғылт сары седан",
-            "explanation": "Қызғылт сары седан да негізгі жолда және одан кейін өтеді."
+            "explanation": "Басты жолмен тіке жүреді. Қарсы қатысушы да жолдың өз жартысымен тіке жүреді: кез келгенін бірінші таңдауға болады. Қосалқы жолдағы кроссовер екеуіне де жол береді."
           },
           "car_east": {
             "name": "Көк кроссовер",
@@ -6214,6 +6287,14 @@
           }
         }
       }
+    },
+    "yieldTo": {
+      "bike_south": [],
+      "car_north": [],
+      "car_east": [
+        "bike_south",
+        "car_north"
+      ]
     }
   },
   {
@@ -6344,7 +6425,7 @@
     "id": "bike_and_pedestrian_turn",
     "category": "bicycles",
     "title": "Поворот направо: пешеход и велосипедист",
-    "subtitle": "Водитель обязан пропустить и пешехода на зебре, и велосипедиста на велодорожке при повороте направо.",
+    "subtitle": "При правом повороте нужно уступить пешеходу и попутному велосипедисту у края проезжей части. Они могут двигаться независимо.",
     "pddArticle": "Пункт 13.1 ПДД РФ",
     "isEqual": false,
     "isHard": true,
@@ -6369,7 +6450,7 @@
         "side": "east",
         "maneuver": "cross",
         "order": 1,
-        "explanation": "Пешеход переходит проезжую часть дороги, на которую поворачивает красный седан (п. 13.1 ПДД РФ).",
+        "explanation": "Пешеход имеет преимущество перед поворачивающим автомобилем. Его путь не пересекается с путём велосипедиста: можно выбрать любого из них первым.",
         "hasSiren": false
       },
       {
@@ -6382,7 +6463,7 @@
         "maneuver": "straight",
         "lane_offset": 6.8,
         "order": 2,
-        "explanation": "Попутный велосипедист едет прямо вдоль края дороги. Поворачивающий направо автомобиль обязан уступить ему (п. 13.1).",
+        "explanation": "Велосипедист у края проезжей части едет прямо и имеет преимущество перед поворачивающим автомобилем. Пешеход на другой дороге не мешает его движению.",
         "hasSiren": false
       },
       {
@@ -6401,16 +6482,16 @@
     "translations": {
       "ru": {
         "title": "Поворот направо: пешеход и велосипедист",
-        "subtitle": "Водитель обязан пропустить и пешехода на зебре, и велосипедиста на велодорожке при повороте направо.",
+        "subtitle": "При правом повороте нужно уступить пешеходу и попутному велосипедисту у края проезжей части. Они могут двигаться независимо.",
         "pddArticle": "Пункт 13.1 ПДД РФ",
         "actors": {
           "ped_east": {
             "name": "Пешеход",
-            "explanation": "Пешеход переходит проезжую часть дороги, на которую поворачивает красный седан (п. 13.1 ПДД РФ)."
+            "explanation": "Пешеход имеет преимущество перед поворачивающим автомобилем. Его путь не пересекается с путём велосипедиста: можно выбрать любого из них первым."
           },
           "bike_south": {
             "name": "Велосипедист",
-            "explanation": "Попутный велосипедист едет прямо вдоль края дороги. Поворачивающий направо автомобиль обязан уступить ему (п. 13.1)."
+            "explanation": "Велосипедист у края проезжей части едет прямо и имеет преимущество перед поворачивающим автомобилем. Пешеход на другой дороге не мешает его движению."
           },
           "car_south": {
             "name": "Красный седан",
@@ -6420,16 +6501,16 @@
       },
       "en": {
         "title": "Right turn: pedestrian and cyclist",
-        "subtitle": "When turning right, drivers must yield both to pedestrians on the crosswalk and cyclists riding straight.",
+        "subtitle": "A right turn must yield to the pedestrian and the cyclist travelling along the carriageway edge. They may proceed independently.",
         "pddArticle": "Clause 13.1 of the Russian Traffic Regulations",
         "actors": {
           "ped_east": {
             "name": "Pedestrian",
-            "explanation": "The pedestrian is crossing the road the car is turning into (clause 13.1)."
+            "explanation": "The pedestrian has priority over the turning car. Their path does not cross the cyclist’s: either may go first."
           },
           "bike_south": {
             "name": "Cyclist",
-            "explanation": "The parallel cyclist is riding straight along the curb. Turning cars must yield (13.1)."
+            "explanation": "The cyclist goes straight along the carriageway edge and has priority over the turning car. The pedestrian on the other road does not obstruct the cyclist."
           },
           "car_south": {
             "name": "Red sedan",
@@ -6439,16 +6520,16 @@
       },
       "kk": {
         "title": "Оңға бұрылу: жаяу жүргінші мен велосипедші",
-        "subtitle": "Оңға бұрылғанда жүргізуші зебрадағы жаяу жүргіншіні де, тіке келе жатқан велосипедшіні де өткізуі керек.",
+        "subtitle": "Оңға бұрылғанда жаяу жүргінші мен жол жиегімен қатар келе жатқан велосипедшіге жол беру керек. Олар бір-бірінен тәуелсіз жүре алады.",
         "pddArticle": "ЖЖЕ 13.1-тармағы",
         "actors": {
           "ped_east": {
             "name": "Жаяу жүргінші",
-            "explanation": "Жаяу жүргінші қызыл седан бұрылып жатқан жолды кесіп өтуде (13.1-тармақ)."
+            "explanation": "Жаяу жүргінші бұрылатын көліктен басым. Оның жолы велосипедшінің жолымен қиылыспайды: кез келгені бірінші жүре алады."
           },
           "bike_south": {
             "name": "Велосипедші",
-            "explanation": "Қатарлас велосипедші жол жиегімен тіке келе жатыр. Оған жол беру міндетті (13.1)."
+            "explanation": "Велосипедші жол жиегімен тіке жүріп, бұрылатын көліктен басым болады. Басқа жолдағы жаяу жүргінші оған кедергі келтірмейді."
           },
           "car_south": {
             "name": "Қызыл седан",
@@ -6456,6 +6537,14 @@
           }
         }
       }
+    },
+    "yieldTo": {
+      "ped_east": [],
+      "bike_south": [],
+      "car_south": [
+        "ped_east",
+        "bike_south"
+      ]
     }
   }
 ]

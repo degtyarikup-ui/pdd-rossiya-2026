@@ -4246,4 +4246,18 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get marathonSaveFailed =>
       'Не удалось сохранить марафон. Попробуйте ещё раз перед выходом.';
+
+  @override
+  String get crossroadsNobodyMoves => 'Никто не едет';
+
+  @override
+  String get crossroadsReasonOfficer =>
+      'Этот манёвр запрещён сигналом регулировщика. Нужно ждать разрешающего сигнала. Маячок и сирена не позволяют игнорировать регулировщика.';
+
+  @override
+  String get crossroadsArticleOfficer => 'Пункты 6.10, 6.15 и 3.1 ПДД РФ';
+
+  @override
+  String get crossroadsReasonCanGo =>
+      'Регулировщик разрешает движение одному или нескольким участникам. Выберите того, кто может ехать сейчас.';
 }

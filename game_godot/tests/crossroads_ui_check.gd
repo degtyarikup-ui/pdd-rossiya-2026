@@ -44,6 +44,7 @@ func _run() -> void:
 		root.content_scale_size = viewport_size
 		root.size = viewport_size
 		ui.update_hud(1540, 9, 3, 12)
+		ui.set_nobody_option(true, true)
 		ui.update_caption("Знаки приоритета", "Выберите участника, который может проехать сейчас.", 2, 4, true)
 		await _settle(ui)
 		var suffix := " %s" % viewport_size
@@ -71,6 +72,8 @@ func _run() -> void:
 		var collision_scroll: ScrollContainer = ui._collision_content.get_parent()
 		_check("Long explanation scrolls instead of clipping actions" + suffix, collision_scroll.get_v_scroll_bar().max_value > collision_scroll.get_v_scroll_bar().page)
 		_check("Continue is the one reachable action" + suffix, ui._collision_next_btn.visible and ui._collision_next_btn.size.y >= 48)
+		ui.show_collision_modal("", "Все стоят перед перекрёстком. Движение запрещено.", "Пункт 6.10 ПДД РФ", false, true)
+		_check("Prohibited move never names a participant who should go" + suffix, not ui._collision_should_go.visible)
 		ui.show_collision_modal("Синий автомобиль", "Нарушена очередность движения.", "Пункт 13.9 ПДД РФ", true)
 		await _settle(ui)
 		_check("Last life shows the game-over action" + suffix, ui._collision_game_over_btn.visible and not ui._collision_btn_row.visible)
@@ -103,6 +106,7 @@ func _check_real_caption_sequence() -> void:
 		var hard: bool = scenario.get("isHard", false)
 		if hard: ui.show_hard_bonus_toast()
 		ui.update_hud(index * 100, 60, 5, index + 1)
+		ui.set_nobody_option(scenario.has("officer"), true)
 		ui.update_caption(scenario.title, scenario.subtitle, 1, scenario.actors.size(), hard)
 		# Do not force _layout here: real camera fitting sees this exact two-frame state.
 		await process_frame

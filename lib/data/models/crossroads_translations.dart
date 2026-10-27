@@ -125,7 +125,7 @@ class CrossroadsTranslations {
       'cross_emergency_priority': LocalizedScenarioText(
         title: 'Special transport: ambulance with siren',
         subtitle:
-            'A beacon and a special sound signal give unconditional priority.',
+            'Flashing lights and siren give priority. It may be used only after ensuring that others yield and that proceeding is safe (3.1).',
         pddArticle: 'Clause 3.2 of the Russian Traffic Regulations',
         actors: {
           'ambulance_east': LocalizedActorText(
@@ -595,7 +595,7 @@ class CrossroadsTranslations {
       'hard_emergency_priority_pedestrian': LocalizedScenarioText(
         title: 'Ambulance with siren and pedestrian',
         subtitle:
-            'Absolute priority of emergency vehicle with siren and beacon.',
+            'Flashing lights and siren give priority. It may be used only after ensuring that others yield and that proceeding is safe (3.1).',
         pddArticle: 'Clauses 3.2 and 13.1 of the Russian Traffic Regulations',
         actors: {
           'ambulance_north': LocalizedActorText(
@@ -746,7 +746,8 @@ class CrossroadsTranslations {
       ),
       'cross_emergency_priority': LocalizedScenarioText(
         title: 'Арнайы көлік: сиренасы бар жедел жәрдем',
-        subtitle: 'Маяк және арнайы дыбыстық сигнал сөзсіз басымдық береді.',
+        subtitle:
+            'Маяк пен сирена басымдық береді. Оны басқалар жол бергеніне көз жеткізіп, қауіпсіздікті қамтамасыз еткенде ғана пайдалануға болады (3.1).',
         pddArticle: 'ЖЖЕ 3.2-тармағы',
         actors: {
           'ambulance_east': LocalizedActorText(
@@ -1208,7 +1209,7 @@ class CrossroadsTranslations {
       'hard_emergency_priority_pedestrian': LocalizedScenarioText(
         title: 'Арнайы сигналдары бар жедел жәрдем және жаяу жүргінші',
         subtitle:
-            'Сиренасы мен маяктары бар шұғыл қызмет көлігінің сөзсіз басымдығы.',
+            'Маяк пен сирена басымдық береді. Оны басқалар жол бергеніне көз жеткізіп, қауіпсіздікті қамтамасыз еткенде ғана пайдалануға болады (3.1).',
         pddArticle: 'ЖЖЕ 3.2 және 13.1-тармақтары',
         actors: {
           'ambulance_north': LocalizedActorText(

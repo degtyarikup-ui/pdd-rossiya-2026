@@ -7083,6 +7083,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось сохранить марафон. Попробуйте ещё раз перед выходом.'**
   String get marathonSaveFailed;
+
+  /// No description provided for @crossroadsNobodyMoves.
+  ///
+  /// In ru, this message translates to:
+  /// **'Никто не едет'**
+  String get crossroadsNobodyMoves;
+
+  /// No description provided for @crossroadsReasonOfficer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот манёвр запрещён сигналом регулировщика. Нужно ждать разрешающего сигнала. Маячок и сирена не позволяют игнорировать регулировщика.'**
+  String get crossroadsReasonOfficer;
+
+  /// No description provided for @crossroadsArticleOfficer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пункты 6.10, 6.15 и 3.1 ПДД РФ'**
+  String get crossroadsArticleOfficer;
+
+  /// No description provided for @crossroadsReasonCanGo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регулировщик разрешает движение одному или нескольким участникам. Выберите того, кто может ехать сейчас.'**
+  String get crossroadsReasonCanGo;
 }
 
 class _AppLocalizationsDelegate

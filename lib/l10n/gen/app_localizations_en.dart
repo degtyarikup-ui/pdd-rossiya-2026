@@ -4229,4 +4229,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get marathonSaveFailed =>
       'Could not save the marathon. Please try again before leaving.';
+
+  @override
+  String get crossroadsNobodyMoves => 'Nobody may move';
+
+  @override
+  String get crossroadsReasonOfficer =>
+      'The officer’s signal prohibits this manoeuvre. Wait for permission. Flashing lights and a siren do not override the officer.';
+
+  @override
+  String get crossroadsArticleOfficer =>
+      'Clauses 6.10, 6.15 and 3.1 of the Russian Traffic Regulations';
+
+  @override
+  String get crossroadsReasonCanGo =>
+      'The officer permits one or more road users to move. Select someone who may proceed now.';
 }

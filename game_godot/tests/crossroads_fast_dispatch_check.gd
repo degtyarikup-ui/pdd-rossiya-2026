@@ -38,7 +38,7 @@ func step(game: Crossroads) -> void:
 
 func next_actor(game: Crossroads) -> CrossroadsActor:
 	for actor in game.active_actors:
-		if actor.state == "waiting" and int(actor.data.get("order", 99)) == game.cur_step:
+		if actor.state == "waiting" and CrossroadsRules.movement_allowed(game._current_scenario(), actor.data) and game._priority_blockers(actor).is_empty():
 			return actor
 	return null
 
@@ -64,6 +64,7 @@ func run() -> void:
 			var busy := false
 			for actor in game.active_actors:
 				if actor.state == "driving" and not actor.has_cleared_junction(): busy = true
+			if game._permitted_actor_count() == 0: game._on_nobody_pressed()
 			var actor := next_actor(game)
 			if actor != null and not busy: game._handle_actor_selection(actor)
 			step(game)
@@ -75,6 +76,7 @@ func run() -> void:
 		var touched := false
 		for frame in 3000:
 			if game.is_resolving: break
+			if game._permitted_actor_count() == 0: game._on_nobody_pressed()
 			var actor := next_actor(game)
 			while actor != null and not game.is_resolving:
 				game._handle_actor_selection(actor)

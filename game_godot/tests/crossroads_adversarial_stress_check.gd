@@ -175,7 +175,7 @@ func _test_scenario_priority_graph_and_rules() -> void:
 		for a: Dictionary in actors:
 			var has_siren: bool = a.get("hasSiren", false)
 			var a_type: String = a.get("type", "")
-			if has_siren or a_type == "emergency" or a_type == "police":
+			if not sc.has("officer") and (has_siren or a_type == "emergency" or a_type == "police"):
 				check(int(a.get("order", 99)) == 1, "Special vehicle with siren in %s has priority order 1 (clause 3.2)" % s_id)
 
 		for a: Dictionary in actors:
@@ -230,10 +230,11 @@ func _test_fast_dispatch_multi_timing_sweep() -> void:
 				if game.is_resolving or game._round_completing: break
 				time_accum += DT
 
-				while next_order_to_send <= game.active_actors.size():
+				if game._permitted_actor_count() == 0: game._on_nobody_pressed()
+				while next_order_to_send <= game._permitted_actor_count():
 					var target_actor: CrossroadsActor = null
 					for a: CrossroadsActor in game.active_actors:
-						if a.state == "waiting" and int(a.data.get("order", 99)) == next_order_to_send:
+						if a.state == "waiting" and CrossroadsRules.movement_allowed(sc, a.data) and game._priority_blockers(a).is_empty():
 							target_actor = a
 							break
 					if target_actor != null and time_accum >= float(next_order_to_send - 1) * delay:
