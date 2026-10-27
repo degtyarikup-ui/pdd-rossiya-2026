@@ -2499,6 +2499,19 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
       dateKeys.push(mskDayKey(d));
     }
 
+    // Read both comparison periods with bounded concurrency. Sequential KV
+    // round trips made a cold 90-day dashboard wait for 180 network reads.
+    const allKeys = [];
+    for (let i = daysCount * 2 - 1; i >= 0; i--) {
+      allKeys.push(mskDayKey(new Date(now.getTime() - i * 86400000)));
+    }
+    const periodDays = new Map();
+    for (let offset = 0; offset < allKeys.length; offset += 8) {
+      await Promise.all(allKeys.slice(offset, offset + 8).map(async key => {
+        periodDays.set(key, await readDayData(env, key));
+      }));
+    }
+
     let totalViews = 0;
     let totalClicks = 0;
     let totalInstalls = 0;
@@ -2511,7 +2524,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
     let totalReturning = 0;
     const appsMap = {};
     for (const dateKey of dateKeys) {
-      const dayData = await readDayData(env, dateKey);
+      const dayData = periodDays.get(dateKey);
       usageDays.push({ date: dateKey, data: dayData });
       const block = analyticsBlockForApp(dayData, appFilter);
 
@@ -2580,7 +2593,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
     const previousCampaigns = {};
     for (let i = daysCount * 2 - 1; i >= daysCount; i--) {
       const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dayData = await readDayData(env, mskDayKey(d));
+      const dayData = periodDays.get(mskDayKey(d));
       const block = analyticsBlockForApp(dayData, appFilter);
       if (!block) continue;
       previousViews += block.views || 0;
@@ -3031,18 +3044,24 @@ const workerHandlers = {
       return acceptUsage(request, env, { jsonResponse, trackStatsBatch });
     }
 
+    if (url.pathname === '/api/admin/session' && request.method === 'GET') {
+      const ok = await verifyAdminAuth(request, env);
+      return jsonResponse(ok ? { ok: true } : { error: 'unauthorized' }, ok ? 200 : 401, { 'Cache-Control': 'no-store' });
+    }
+
     if (url.pathname === '/api/admin/stats' && request.method === 'GET') {
       if (!await verifyAdminAuth(request, env)) return jsonResponse({ error: 'unauthorized' }, 401);
       const days = parseInt(url.searchParams.get('days') || '7', 10);
       const appFilter = url.searchParams.get('app') || 'all';
       const period = Math.min(Math.max(days, 1), 365);
-      const stats = await getStatsForPeriod(env, period, appFilter);
-      try {
-        stats.users = usersSnapshot(await cachedUserSummaries(env), period, appFilter, mskDayKey);
-      } catch (e) {
-        console.error('users snapshot failed', e);
-      }
-      return jsonResponse(stats);
+      const [stats, users] = await Promise.all([
+        getStatsForPeriod(env, period, appFilter),
+        cachedUserSummaries(env)
+          .then(list => usersSnapshot(list, period, appFilter, mskDayKey))
+          .catch(e => { console.error('users snapshot failed', e); return null; }),
+      ]);
+      if (users) stats.users = users;
+      return jsonResponse(stats, 200, { 'Cache-Control': 'no-store' });
     }
 
     // ────────────────────── Автопостинг (Instagram + YouTube) ──────────────────────

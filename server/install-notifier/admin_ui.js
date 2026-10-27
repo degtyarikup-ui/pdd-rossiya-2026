@@ -1,3 +1,5 @@
+import { ANALYTICS_LOADER_JS } from './analytics_loader.js';
+
 // Общие улучшения оболочки админки. Исходная разметка старой панели хранится
 // одной экранированной строкой в worker.js, поэтому поддерживаемые изменения
 // применяем здесь во время сборки страницы.
@@ -36,6 +38,9 @@ export const ADMIN_UI_STYLES = `
   .admin-data-state.ready::before { background: var(--success); }
   .admin-data-state.error { color: var(--danger); background: var(--danger-subtle); }
   .admin-data-state.error::before { background: var(--danger); }
+  #refresh-btn[aria-busy="true"] svg { animation: adminRefreshSpin .85s linear infinite; transform-origin: center; }
+  #refresh-btn:disabled { cursor: progress; }
+  @keyframes adminRefreshSpin { to { transform: rotate(360deg); } }
   @keyframes adminPulse { 50% { opacity: .35; } }
   .admin-error-banner {
     display: none;
@@ -324,11 +329,11 @@ export function enhanceAdminHtml(html) {
     '<div class="top-actions" id="top-period-actions">\n        <span class="admin-data-state" id="admin-data-state" aria-live="polite">Ещё не обновлено</span>'
   );
   result = result.replace(
-    '<!-- 1. ANALYTICS VIEW -->',
-    '<div class="admin-error-banner" id="admin-error-banner" role="alert">' +
+    '<div id="analytics-view">',
+    '<div id="analytics-view"><div class="admin-error-banner" id="admin-error-banner" role="alert">' +
       '<span id="admin-error-text">Не удалось загрузить данные</span>' +
       '<button class="btn-action" id="admin-error-retry">Повторить</button>' +
-    '</div>\n\n    <!-- 1. ANALYTICS VIEW -->'
+    '</div>'
   );
   const blogContainer = '<div id="blog-articles-container" style="display:grid; gap:12px;">';
   result = result.replace(
@@ -421,47 +426,14 @@ export function enhanceAdminClientJs(js) {
     result = result.slice(0, blogStart) + result.slice(blogEnd);
   }
 
-  const reliableLoader = `async function checkAuthAndLoad() {
-  const requestId = ++window.__analyticsRequestId;
-  const state = document.getElementById('admin-data-state');
-  const banner = document.getElementById('admin-error-banner');
-  if (state) { state.className = 'admin-data-state loading'; state.textContent = 'Обновление…'; }
-  try {
-    const r = await fetch('/api/admin/stats?days=' + currentDays + '&app=' + currentApp);
-    if (requestId !== window.__analyticsRequestId) return;
-    if (r.status === 401 || r.status === 403) {
-      document.getElementById('login-overlay').style.display = 'flex';
-      document.getElementById('app').style.display = 'none';
-      return;
-    }
-    if (!r.ok) throw new Error('Сервер вернул ошибку ' + r.status);
-    const data = await r.json();
-    if (requestId !== window.__analyticsRequestId) return;
-    document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    renderDashboard(data);
-    window.__analyticsUpdatedAt = new Date();
-    if (state) {
-      state.className = 'admin-data-state ready';
-      state.textContent = 'Обновлено ' + window.__analyticsUpdatedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    }
-    if (banner) banner.classList.remove('visible');
-  } catch (err) {
-    if (requestId !== window.__analyticsRequestId) return;
-    if (state) { state.className = 'admin-data-state error'; state.textContent = 'Нет обновления'; }
-    var errorText = document.getElementById('admin-error-text');
-    if (errorText) errorText.textContent = 'Не удалось обновить данные. Последние загруженные значения оставлены на экране.';
-    if (banner) banner.classList.add('visible');
-    console.error('checkAuthAndLoad error:', err);
-  }
-}
-
-async function handleLoginSubmit`;
+  const reliableLoader = ANALYTICS_LOADER_JS + '\nasync function handleLoginSubmit';
 
   result = result.replace(
     /async function checkAuthAndLoad\(\) \{[\s\S]*?\n\}\n\nasync function handleLoginSubmit/,
     reliableLoader
   );
+  result = result.replace("  await fetch('/api/admin/logout', { method: 'POST' });",
+    "  ++window.__analyticsRequestId; if (anActiveLoad) anActiveLoad.controller.abort(); anActiveLoad = null; anAuthRequired(); await fetch('/api/admin/logout', { method: 'POST' });");
   // Начальная загрузка раздела могла получить 401 до входа. После успешного
   // входа загружаем его заново и отменяем ответы прежней попытки.
   const loginStart = result.indexOf('async function handleLoginSubmit()');

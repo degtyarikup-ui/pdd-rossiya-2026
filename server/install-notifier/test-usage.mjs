@@ -140,3 +140,35 @@ for (const feature of ['marathon', 'road_signs', 'parking']) {
     assert.equal(snapshot.timeline[0].features[feature].starts, 1);
   });
 }
+
+test('lightweight analytics session check requires authorization and reads no stats', async () => {
+  const { env } = setup();
+  env.INSTALLS.get = async () => { throw new Error('session check must not scan statistics'); };
+  for (const [authorization, status] of [['', 401], ['Bearer pw', 200]]) {
+    const response = await worker.fetch(new Request('https://w.test/api/admin/session', {
+      headers: { authorization },
+    }), env);
+    assert.equal(response.status, status);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  }
+});
+
+test('analytics overlaps day reads with bounded concurrency and preserves period totals', async () => {
+  const { env } = setup();
+  let active = 0, peak = 0;
+  env.INSTALLS.get = async key => {
+    if (!key.startsWith('day:')) return null;
+    peak = Math.max(peak, ++active);
+    await new Promise(resolve => setTimeout(resolve, 5));
+    active--;
+    return JSON.stringify({ views: 3, clicks: 1, installs: 1 });
+  };
+  const response = await worker.fetch(new Request('https://w.test/api/admin/stats?days=1', {
+    headers: { authorization: 'Bearer pw' },
+  }), env);
+  const stats = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(stats.totals.views, 3);
+  assert.equal(stats.previous.views, 3);
+  assert.ok(peak > 1 && peak <= 8, 'concurrent day reads: ' + peak);
+});
