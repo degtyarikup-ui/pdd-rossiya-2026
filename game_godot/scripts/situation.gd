@@ -286,12 +286,17 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 		if DriverSignal.supports(str(a.type)) and gesture in ["raised","extended"]:
 			var width := float(a.get("halfWidth",.9))/maxf(.01,absf(float(a.scale[0])))
 			var height := 1.45
+			var window: Variant = null
 			var body := actor.get_node_or_null("body") as MeshInstance3D
+			if not body:
+				var nested := actor.find_children("body","MeshInstance3D",true,false)
+				if not nested.is_empty(): body=nested[0]
 			if body:
 				var bounds := body.mesh.get_aabb()
 				height=bounds.end.y
 				width=maxf(absf(bounds.position.x),absf(bounds.end.x))
-			actor.add_child(DriverSignal.make(gesture,width,height))
+				window=DriverSignal.window_anchor(body.mesh)
+			actor.add_child(DriverSignal.make(gesture,width,height,window))
 		s.add_child(actor)
 		s.actors.append(actor)
 		if a.badge != null:

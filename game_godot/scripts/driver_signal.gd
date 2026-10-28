@@ -5,17 +5,55 @@ extends Node3D
 static func supports(kind: String) -> bool:
 	return kind in ["car","truck","bus","van","tanker","special"]
 
-static func points(pose: String, width: float, height: float) -> Array[Vector3]:
-	return [Vector3(width-.16,height*.69,.35),Vector3(width+.32,height*.7,.35),Vector3(width+.8,height*.7,.35) if pose=="extended" else Vector3(width+.32,height*.7+.48,.35)]
+static func _glass(c: Color) -> bool:
+	return c.r>=.125 and c.r<=.265 and c.g>=.205 and c.g<=.365 and c.b>=.275 and c.b<=.455
 
-static func make(pose: String, width: float, height: float) -> DriverSignal:
+static func window_anchor(mesh: Mesh) -> Variant:
+	var faces: Array = []
+	for surface in mesh.get_surface_count():
+		var arrays := mesh.surface_get_arrays(surface)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var colours: PackedColorArray = arrays[Mesh.ARRAY_COLOR] if arrays[Mesh.ARRAY_COLOR]!=null else PackedColorArray()
+		if colours.is_empty(): continue
+		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX]!=null else PackedInt32Array()
+		if indices.is_empty(): indices=PackedInt32Array(range(vertices.size()))
+		for i in range(0,indices.size(),3):
+			var ids := [indices[i],indices[i+1],indices[i+2]]
+			if not ids.all(func(j): return _glass(colours[j])): continue
+			var v: Array[Vector3] = [vertices[ids[0]],vertices[ids[1]],vertices[ids[2]]]
+			var normal := (v[1]-v[0]).cross(v[2]-v[0]).normalized()
+			if v.all(func(p): return p.x>0) and absf(normal.x)>.7 and absf(normal.z)<.35: faces.append(v)
+	if faces.is_empty(): return null
+	faces.sort_custom(func(a,b): return a[0].z+a[1].z+a[2].z>b[0].z+b[1].z+b[2].z)
+	var pane: Array = faces.pop_front()
+	var joined := true
+	while joined:
+		joined=false
+		for i in range(faces.size()-1,-1,-1):
+			if faces[i].any(func(p): return pane.any(func(q): return p.distance_squared_to(q)<1e-8)):
+				pane.append_array(faces.pop_at(i));joined=true
+	var unique: Array[Vector3] = []
+	for p: Vector3 in pane:
+		if not unique.any(func(q): return p.distance_squared_to(q)<1e-8): unique.append(p)
+	unique.sort_custom(func(a,b): return a.y<b.y)
+	if unique.size()!=4: return null
+	var low: Array[Vector3] = [unique[0],unique[1]]
+	var high: Array[Vector3] = [unique[2],unique[3]]
+	low.sort_custom(func(a,b): return a.z<b.z);high.sort_custom(func(a,b): return a.z<b.z)
+	return low[0].lerp(low[1],.35).lerp(high[0].lerp(high[1],.35),.45)
+
+static func points(pose: String, width: float, height: float, window: Variant = null) -> Array[Vector3]:
+	var anchor: Vector3 = window if window is Vector3 else Vector3(width-.28,height*.78,.12)
+	return [anchor+Vector3(-.14,0,0),anchor+Vector3(.38,-.035,0),anchor+Vector3(.86,-.035,0) if pose=="extended" else anchor+Vector3(.38,.445,0)]
+
+static func make(pose: String, width: float, height: float, window: Variant = null) -> DriverSignal:
 	var root := DriverSignal.new()
 	root.name = "driver_signal"
 	var skin := StandardMaterial3D.new()
 	skin.albedo_color = Color("e8b18d")
 	var sleeve := StandardMaterial3D.new()
 	sleeve.albedo_color = Color("42648a")
-	var p := points(pose,width,height)
+	var p := points(pose,width,height,window)
 	root.segment(p[0],p[0].lerp(p[1],.42),.075,sleeve)
 	root.segment(p[0].lerp(p[1],.4),p[1],.06,skin)
 	root.segment(p[1],p[2],.05,skin)

@@ -2,7 +2,15 @@ extends SceneTree
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
-	assert(args.size()==2)
+	assert(args.size()==3)
+	var windows: Array = JSON.parse_string(FileAccess.get_file_as_string(args[2]))
+	for fixture in windows:
+		var asset := str(fixture.asset)
+		var model := Models.traffic_mesh(asset.get_file()) if asset.begins_with("vehicles/") else Models.mesh_of("res://models/"+asset+".glb")
+		var anchor: Variant = DriverSignal.window_anchor(model)
+		assert(anchor is Vector3,"Actual cab glazing must be found: "+asset)
+		var expected := Vector3(fixture.anchor[0],fixture.anchor[1],fixture.anchor[2])
+		assert(anchor.distance_to(expected)<.0001,"Editor and game share the same driver window: "+asset)
 	var fixtures: Array = JSON.parse_string(FileAccess.get_file_as_string(args[0]))
 	for item in fixtures:
 		var result := Pedestrian.pose_vertex(Vector3(item.point[0],item.point[1],item.point[2]),Vector3(item.normal[0],item.normal[1],item.normal[2]),item.amp,item.pivotY,item.pivotX,item.pose,item.arm)
@@ -69,11 +77,12 @@ func _driver_check() -> void:
 	var car := NpcVehicle.make("car",Color.WHITE,{})
 	sit.add_child(car)
 	sit.actors.append(car)
-	var arm := DriverSignal.make("raised",.9,1.45)
+	var window: Vector3 = DriverSignal.window_anchor((car.get_node("body") as MeshInstance3D).mesh)
+	var arm := DriverSignal.make("raised",.9,1.45,window)
 	car.add_child(arm)
 	assert(arm.get_child_count()==9,"Arm, palm, four fingers and thumb are visible")
 	assert(DriverSignal.points("raised",.9,1.45)[2].y>1.4)
-	assert(DriverSignal.points("extended",.9,1.45)[2].x>1.6)
+	assert(DriverSignal.points("extended",.9,1.45,window)[2].x>1.6)
 	var authored := Situation._actor_config({"id":"car","driverSignal":"raised"},{"actors":[{"id":"car","driverSignal":"none"}]})
 	assert(authored.driverSignal=="none","Source can disable an exported gesture")
 	sit.retract_driver_signals()

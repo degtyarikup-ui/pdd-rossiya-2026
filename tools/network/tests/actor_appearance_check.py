@@ -20,6 +20,8 @@ with tempfile.TemporaryDirectory(prefix='actor-appearance-',dir=build.ROOT/'scra
     root=Path(tmp);net=root/'network';sit=root/'situations';net.mkdir();sit.mkdir()
     fixtures=root/'vertices.json'
     subprocess.run(['node',str(Path(__file__).with_suffix('.js')),str(fixtures)],check=True)
+    windows=root/'windows.json'
+    subprocess.run(['node',str(Path(__file__).with_name('driver_window_check.js')),str(windows)],check=True)
     for typ in ('pedestrian','motorcycle','car'):
         asset=catalog['actorTypes'][typ]['asset'];source,fname=asset.split('/')
         target=sit/source;(target/'parts').mkdir(parents=True,exist_ok=True)
@@ -61,7 +63,7 @@ with tempfile.TemporaryDirectory(prefix='actor-appearance-',dir=build.ROOT/'scra
             assert any(s['id']=='authored_rails' and s['idx'] for s in build.build(saved)['surfaces'])
             assert ped['pedestrianPose']=='hail' and ped['poseArm']=='left' and ped['pedestrianLook']==0
             assert bike['config']['sidecar'] is False and abs(bike['halfWidth']-.34)<.001
-            result=subprocess.run(['godot','--headless','--path',str(build.ROOT/'game_godot'),'--script','res://tests/actor_appearance_check.gd','--',str(fixtures),str(exported_path)],capture_output=True,text=True,timeout=60)
+            result=subprocess.run(['godot','--headless','--path',str(build.ROOT/'game_godot'),'--script','res://tests/actor_appearance_check.gd','--',str(fixtures),str(exported_path),str(windows)],capture_output=True,text=True,timeout=60)
             assert result.returncode==0 and 'Actor appearance runtime PASS' in result.stdout,result.stdout+result.stderr
             print(result.stdout.strip())
             moto['sidecar']=True;request('/api/scene/ticket_2_3',scene)

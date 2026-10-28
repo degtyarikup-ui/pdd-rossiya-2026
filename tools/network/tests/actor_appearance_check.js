@@ -36,7 +36,7 @@ state.catalog.actorTypes.car={asset:'car/actor_0.glb',halfWidth:.9,halfLength:2.
 App.select({t:'actor',id:'person'});chip('type','car');
 const beforeHand=clone(state.S.routes);chip('driver-signal','raised');assert.equal(actor().driverSignal,'raised');assert.deepEqual(clone(state.S.routes),beforeHand);
 assert.match(pane.innerHTML,/Нарисовать свой путь \/ перестроение/);App.undo();assert.equal(actor().driverSignal,undefined);App.redo();
-const hand=vm.runInContext('DriverSignal',context).make('raised',.9,1.45);const handBox=new THREE.Box3().setFromObject(hand);assert(handBox.max.y>1.6&&handBox.max.x>1.2);assert.equal(hand.children.length,9);
+const hand=vm.runInContext('DriverSignal',context).make('raised',.9,1.45,[.78,1.04,.12]);const handBox=new THREE.Box3().setFromObject(hand);assert(handBox.max.y>1.6&&handBox.max.x>1.2);assert.equal(hand.children.length,9);
 App.select({t:'sign',id:'zone'});assert.match(pane.innerHTML,/5\.33_plain.svg/);chip('zone-variant','weekends');
 assert.equal(state.S.signs[0].zoneVariant,'weekends');App.undo();assert.equal(state.S.signs[0].zoneVariant,'plain');
 const mount=vm.runInContext('SignMount',context);assert.equal(mount.faceCopy(state.S.signs[0]).zoneVariant,'plain');

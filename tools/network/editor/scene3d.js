@@ -545,7 +545,7 @@ const Scene3D = (() => {
         if(DriverSignal.supports(o.type)&&['raised','extended'].includes(o.driverSignal)) {
           root.updateMatrixWorld(true);
           const box=new THREE.Box3().setFromObject(root);
-          root.add(DriverSignal.make(o.driverSignal,Math.max(Math.abs(box.min.x),Math.abs(box.max.x)),box.max.y));
+          root.add(DriverSignal.make(o.driverSignal,Math.max(Math.abs(box.min.x),Math.abs(box.max.x)),box.max.y,DriverSignal.windowAnchor(root)));
         }
       });
       const lights = signalPreview(o);
