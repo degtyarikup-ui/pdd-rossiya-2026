@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -4324,16 +4323,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inboxUpdateAction => 'Update';
-
-  @override
-  String get inboxSbpTitle => 'Pay for Premium with SBP';
-
-  @override
-  String get inboxSbpBody =>
-      'Pay via the Faster Payments System in your bank app: no card and no auto-renewal.';
-
-  @override
-  String get inboxSbpAction => 'Choose a plan';
 
   @override
   String get inboxOpen => 'Open';

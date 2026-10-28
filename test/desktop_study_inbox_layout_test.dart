@@ -101,7 +101,6 @@ void main() {
       premium: () => false,
       premiumUntil: () => null,
       userId: () => null,
-      sbpAvailable: () async => false,
       now: () => DateTime(2026, 10, 28),
     );
     await tester.runAsync(() async {
@@ -278,24 +277,28 @@ void main() {
     'desktop inbox selects a message without opening its action, then Escape returns',
     (tester) async {
       viewport(tester, const Size(1440, 900));
+      // Premium that ran out: its entry offers renewal in the paywall.
+      var premium = true;
       final service = NotificationInboxService.forTesting(
-        premium: () => false,
-        premiumUntil: () => null,
+        premium: () => premium,
+        premiumUntil: () => DateTime(2026, 10, 20),
         userId: () => 'layout-test',
-        sbpAvailable: () async => true,
+        now: () => DateTime(2026, 10, 28),
       );
       await tester.runAsync(() async {
         await service.init();
+        premium = false;
         await service.refresh();
         await Future<void>.delayed(Duration.zero);
       });
       await tester.runAsync(service.refresh);
       await tester.pumpWidget(app(NotificationsScreen(service: service)));
       await tester.pumpAndSettle();
+      // Selecting the entry in the list shows it without running its action.
+      await tester.tap(find.text(appL10n.inboxPremiumEndedTitle).first);
+      await tester.pumpAndSettle();
       expect(find.byType(PremiumBenefitsScreen), findsNothing);
-      await tester.tap(
-        find.widgetWithText(FilledButton, appL10n.inboxSbpAction),
-      );
+      await tester.tap(find.widgetWithText(FilledButton, appL10n.inboxRenew));
       await tester.pumpAndSettle();
       expect(find.byType(PremiumBenefitsScreen), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);

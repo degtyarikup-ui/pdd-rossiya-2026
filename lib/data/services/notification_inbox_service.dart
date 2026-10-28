@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/data/services/app_update_service.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
-import 'package:pdd_app/data/services/payment_mode.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/remote_notifications_service.dart';
 
@@ -23,9 +22,6 @@ enum InboxItemType {
 
   /// A newer version is published in the store.
   update,
-
-  /// Premium can be paid by SBP in this build and region.
-  sbp,
 }
 
 class InboxItem {
@@ -62,7 +58,6 @@ class NotificationInboxService extends ChangeNotifier {
     : _premium = (() => PremiumService.instance.isPremium),
       _premiumUntil = (() => PremiumService.instance.expiresAt),
       _userId = (() => AuthService.instance.currentUser?.id),
-      _sbpAvailable = _defaultSbpAvailable,
       _checkUpdate = (() => AppUpdateService.instance.check()),
       _receivesPush = (() => RemoteNotificationsService.instance.receivesPush),
       _now = DateTime.now;
@@ -72,14 +67,12 @@ class NotificationInboxService extends ChangeNotifier {
     required bool Function() premium,
     required DateTime? Function() premiumUntil,
     required String? Function() userId,
-    Future<bool> Function()? sbpAvailable,
     Future<AppUpdateOffer?> Function()? checkUpdate,
     bool Function()? receivesPush,
     DateTime Function()? now,
   }) : _premium = premium,
        _premiumUntil = premiumUntil,
        _userId = userId,
-       _sbpAvailable = sbpAvailable ?? (() async => false),
        _checkUpdate = checkUpdate ?? (() async => null),
        _receivesPush = receivesPush ?? (() => false),
        _now = now ?? DateTime.now;
@@ -89,21 +82,17 @@ class NotificationInboxService extends ChangeNotifier {
   final bool Function() _premium;
   final DateTime? Function() _premiumUntil;
   final String? Function() _userId;
-  final Future<bool> Function() _sbpAvailable;
   final Future<AppUpdateOffer?> Function() _checkUpdate;
   final bool Function() _receivesPush;
   final DateTime Function() _now;
 
   String get _prefix => 'inbox_${CountryConfig.current.code}_';
-  static const _sbpId = 'sbp_payments_v1';
   static const _maxRead = 400;
   static const _maxEvents = 30;
 
   SharedPreferences? _prefs;
   Future<void>? _initializing;
   bool _listening = false;
-  bool _sbp = false;
-  DateTime? _sbpCheckedAt;
   AppUpdateOffer? _update;
   List<AppNotice> _news = const [];
   Set<String> _seenNews = const {};
@@ -189,10 +178,10 @@ class NotificationInboxService extends ChangeNotifier {
 
   void _onAccountOrPremium() {
     if (_prefs == null) return;
-    unawaited(_observePremium().then((_) => _refreshSbp()));
+    unawaited(_observePremium().then((_) => _rebuild()));
   }
 
-  /// Re-checks the store release and SBP availability (both cached upstream).
+  /// Re-checks the store release (cached upstream).
   Future<void> refresh() async {
     if (_prefs == null) {
       await init();
@@ -203,23 +192,6 @@ class NotificationInboxService extends ChangeNotifier {
       _update = await _checkUpdate();
     } catch (_) {
       /* Optional: the inbox works offline. */
-    }
-    await _refreshSbp();
-  }
-
-  /// The answer is kept for an hour: Premium and account changes rebuild the
-  /// list often, the payment provider status rarely changes.
-  Future<void> _refreshSbp() async {
-    final checkedAt = _sbpCheckedAt;
-    if (!_premium() &&
-        (checkedAt == null ||
-            _now().difference(checkedAt) >= const Duration(hours: 1))) {
-      try {
-        _sbp = await _sbpAvailable();
-        _sbpCheckedAt = _now();
-      } catch (_) {
-        _sbp = false; /* Hide the SBP entry when availability is unknown. */
-      }
     }
     _rebuild();
   }
@@ -355,12 +327,6 @@ class NotificationInboxService extends ChangeNotifier {
           date: _firstSeen('update_${_update!.version}'),
           update: _update,
         ),
-      if (_sbp && !_premium())
-        InboxItem(
-          id: _sbpId,
-          type: InboxItemType.sbp,
-          date: _firstSeen(_sbpId),
-        ),
     ]..sort((a, b) => b.date.compareTo(a.date));
     // A window already shown, a banner already closed or a push opened
     // counts as read.
@@ -377,15 +343,4 @@ class NotificationInboxService extends ChangeNotifier {
     await _saveRead();
     notifyListeners();
   }
-}
-
-/// SBP is offered on the web and in Android builds where the paywall offers
-/// it, and only while the payment provider is connected. Never on iOS.
-Future<bool> _defaultSbpAvailable() async {
-  if (!kIsWeb && defaultTargetPlatform != TargetPlatform.android) return false;
-  if (!kIsWeb &&
-      !(await currentAndroidPaymentModes()).contains(PaymentMode.sbp)) {
-    return false;
-  }
-  return PremiumService.instance.webPaymentsAvailable();
 }

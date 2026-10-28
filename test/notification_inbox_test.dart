@@ -13,7 +13,6 @@ class _State {
   bool premium = false;
   DateTime? until;
   String? user = 'google_1';
-  bool sbp = false;
   DateTime now = DateTime(2026, 10, 28, 12);
 }
 
@@ -22,7 +21,6 @@ NotificationInboxService _inbox(_State s, {bool receivesPush = false}) =>
       premium: () => s.premium,
       premiumUntil: () => s.until,
       userId: () => s.user,
-      sbpAvailable: () async => s.sbp,
       receivesPush: () => receivesPush,
       now: () => s.now,
     );
@@ -109,32 +107,6 @@ void main() {
         ..premium = true;
       await inbox.refresh();
       expect(inbox.items.map((i) => i.type), [InboxItemType.premiumStarted]);
-    },
-  );
-
-  test(
-    'SBP entry only without Premium and when payments are available',
-    () async {
-      final s = _State()..sbp = true;
-      final inbox = _inbox(s);
-      await inbox.init();
-      await inbox.refresh();
-      expect(inbox.items.map((i) => i.type), [InboxItemType.sbp]);
-
-      s
-        ..premium = true
-        ..until = DateTime(2026, 11, 4);
-      await inbox.refresh();
-      expect(inbox.items.map((i) => i.type), [InboxItemType.premiumStarted]);
-
-      final unavailable = _inbox(
-        _State()
-          ..sbp = false
-          ..user = 'vk_3',
-      );
-      await unavailable.init();
-      await unavailable.refresh();
-      expect(unavailable.items, isEmpty);
     },
   );
 

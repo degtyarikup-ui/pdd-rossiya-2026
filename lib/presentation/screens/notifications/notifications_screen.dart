@@ -73,7 +73,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           unawaited(remote.recordNoticeEvent(item.notice!.id, 'click'));
           remote.runTap(tap);
         }
-      case InboxItemType.premiumEnded || InboxItemType.sbp:
+      case InboxItemType.premiumEnded:
         await PremiumPaywallSheet.show(context);
       case InboxItemType.update:
         await AppUpdateService.instance.update(item.update!);
@@ -457,14 +457,12 @@ _inboxContent(InboxItem item, AppThemeColors colors) {
     ),
     InboxItemType.premiumEnded => (Icons.timer_off_rounded, colors.red),
     InboxItemType.update => (Icons.system_update_rounded, colors.accent),
-    InboxItemType.sbp => (Icons.account_balance_rounded, colors.gold),
   };
   final title = switch (item.type) {
     InboxItemType.news => notice!.title.isNotEmpty ? notice.title : notice.body,
     InboxItemType.premiumStarted => appL10n.inboxPremiumStartedTitle,
     InboxItemType.premiumEnded => appL10n.inboxPremiumEndedTitle,
     InboxItemType.update => appL10n.inboxUpdateTitle(item.update!.version),
-    InboxItemType.sbp => appL10n.inboxSbpTitle,
   };
   final body = switch (item.type) {
     InboxItemType.news => notice!.title.isNotEmpty ? notice.body : '',
@@ -479,7 +477,6 @@ _inboxContent(InboxItem item, AppThemeColors colors) {
       item.update!.notes.isNotEmpty
           ? item.update!.notes
           : appL10n.inboxUpdateBody,
-    InboxItemType.sbp => appL10n.inboxSbpBody,
   };
   final action = switch (item.type) {
     InboxItemType.news =>
@@ -491,7 +488,6 @@ _inboxContent(InboxItem item, AppThemeColors colors) {
     InboxItemType.premiumStarted => null,
     InboxItemType.premiumEnded => appL10n.inboxRenew,
     InboxItemType.update => appL10n.inboxUpdateAction,
-    InboxItemType.sbp => appL10n.inboxSbpAction,
   };
   final image = notice?.imageUrl ?? '';
 

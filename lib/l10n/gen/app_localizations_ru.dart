@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -4341,16 +4340,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get inboxUpdateAction => 'Обновить';
-
-  @override
-  String get inboxSbpTitle => 'Премиум можно оплатить по СБП';
-
-  @override
-  String get inboxSbpBody =>
-      'Оплата через Систему быстрых платежей в приложении банка: без карты и без автопродления.';
-
-  @override
-  String get inboxSbpAction => 'Выбрать тариф';
 
   @override
   String get inboxOpen => 'Открыть';

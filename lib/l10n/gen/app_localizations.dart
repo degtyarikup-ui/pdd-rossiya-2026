@@ -7246,24 +7246,6 @@ abstract class AppLocalizations {
   /// **'Обновить'**
   String get inboxUpdateAction;
 
-  /// No description provided for @inboxSbpTitle.
-  ///
-  /// In ru, this message translates to:
-  /// **'Премиум можно оплатить по СБП'**
-  String get inboxSbpTitle;
-
-  /// No description provided for @inboxSbpBody.
-  ///
-  /// In ru, this message translates to:
-  /// **'Оплата через Систему быстрых платежей в приложении банка: без карты и без автопродления.'**
-  String get inboxSbpBody;
-
-  /// No description provided for @inboxSbpAction.
-  ///
-  /// In ru, this message translates to:
-  /// **'Выбрать тариф'**
-  String get inboxSbpAction;
-
   /// No description provided for @inboxOpen.
   ///
   /// In ru, this message translates to:
