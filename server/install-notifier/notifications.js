@@ -28,6 +28,8 @@ export const PLATFORMS = ['ios', 'android', 'web'];
 export const platformsOf = item => item.platform === 'all' ? PLATFORMS
   : item.platform === 'some' ? String(item.platforms || '').split(',').filter(p => PLATFORMS.includes(p)) : [item.platform];
 const DAY = 86400000;
+// Numeric on the wire so existing inbox clients can also keep permanent news.
+const PERMANENT_EXPIRES_AT = 253402300799999;
 const str = (value, max, label, required = false) => {
   if (value === undefined || value === null || value === '') { if (required) throw new Error(label + ': обязательное поле'); return ''; }
   if (typeof value !== 'string' || value.trim().length > max) throw new Error(label + ': не более ' + max + ' символов');
@@ -93,8 +95,11 @@ export function validateCampaign(input, now = Date.now()) {
   value.startAt = input.startAt === undefined || input.startAt === null || input.startAt === '' ? now : Number(input.startAt);
   if (!Number.isFinite(value.startAt) || value.startAt > now + 30 * DAY) throw new Error('Время старта: не позже чем через 30 дней');
   if (value.startAt < now) value.startAt = now;
-  value.expiresAt = Number(input.expiresAt);
-  if (!Number.isFinite(value.expiresAt) || value.expiresAt <= value.startAt || value.expiresAt > value.startAt + 30 * DAY) throw new Error('Срок показа: от времени старта до 30 дней');
+  if (input.persistent !== undefined && typeof input.persistent !== 'boolean') throw new Error('Некорректный срок показа');
+  value.persistent = input.persistent === true;
+  if (value.persistent && value.kind !== 'news') throw new Error('Постоянные уведомления доступны только в списке');
+  value.expiresAt = value.persistent ? PERMANENT_EXPIRES_AT : Number(input.expiresAt);
+  if (!value.persistent && (!Number.isFinite(value.expiresAt) || value.expiresAt <= value.startAt || value.expiresAt > value.startAt + 30 * DAY)) throw new Error('Срок показа: от времени старта до 30 дней');
   // Personal test account (email or user ID). Empty = broadcast to all users.
   value.target = str(input.target, 120, 'Аккаунт для теста').toLowerCase();
   value.targetTopic = typeof input.targetTopic === 'string' && /^pdd_account_[a-f0-9]{64}$/.test(input.targetTopic) ? input.targetTopic : '';
@@ -118,7 +123,7 @@ export function validateCampaign(input, now = Date.now()) {
   value.status = value.kind === 'push' ? 'queued' : (value.startAt > now ? 'scheduled' : 'published');
   return value;
 }
-const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'store', 'platforms', 'expiresAt', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp', 'inAppKind'];
+const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'store', 'platforms', 'expiresAt', 'persistent', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp', 'inAppKind'];
 export function campaignMatches(item, app, platform, now = Date.now(), user = {}, store = '') {
   if (!item.enabled || item.expiresAt <= now || (item.startAt || 0) > now) return false;
   if (item.app !== 'all' && item.app !== app) return false;
@@ -136,10 +141,42 @@ export function campaignMatches(item, app, platform, now = Date.now(), user = {}
 /** Shape sent to the app: only display fields, never internal state. `push`
  *  marks a campaign also sent as a push: devices that receive pushes list it
  *  in the inbox only, without a window or banner. */
-export function clientMessage(item) {
+export function clientMessage(item, seenIds = []) {
   return { id: item.id, kind: placement(item), push: item.kind === 'push', title: item.title, body: item.body, expiresAt: item.expiresAt, createdAt: item.createdAt,
+    ...(item.persistent ? { persistent: true } : {}), ...(seenIds.length ? { seenIds } : {}),
     imageUrl: item.imageUrl || '', emoji: item.emoji || '', accent: item.accent || '', layout: item.layout || 'standard',
     button: item.button !== false && item.layout !== 'image', buttonText: item.buttonText || '', dismissText: item.dismissText || '', action: item.action || 'none', actionUrl: item.actionUrl || '' };
+}
+// A test followed by an identical broadcast is one message for its recipient.
+// Keep independent broadcasts and subsequent explicit tests separate. Aliases
+// carry the already-seen test ID into the broadcast's one-time display state.
+function clientFeed(records, visible, app, platform, user, store) {
+  const presentation = item => {
+    const { id, createdAt, expiresAt, ...fields } = clientMessage(item);
+    return JSON.stringify(fields);
+  };
+  const audienceMatches = item => campaignMatches(
+    { ...item, enabled: true, startAt: 0, expiresAt: PERMANENT_EXPIRES_AT }, app, platform, Date.now(), user, store,
+  );
+  const candidates = [...records.values()].filter(audienceMatches).map(item => ({ item, signature: presentation(item) }));
+  const broadcasts = candidates.filter(({ item }) => !item.target).sort((a,b) => a.item.createdAt-b.item.createdAt || a.item.id.localeCompare(b.item.id));
+  const aliasesById = new Map();
+  for (const test of candidates.filter(({ item }) => item.target)) {
+    const broadcast = broadcasts.find(candidate => candidate.signature === test.signature
+      && test.item.createdAt <= candidate.item.createdAt && test.item.expiresAt > candidate.item.createdAt);
+    if (broadcast) {
+      const aliases = aliasesById.get(broadcast.item.id) || [];
+      aliases.push(test.item.id);
+      aliasesById.set(broadcast.item.id, aliases);
+    }
+  }
+  const covered = new Set();
+  const result = visible.map(item => {
+    const aliases = aliasesById.get(item.id) || [];
+    aliases.forEach(id => covered.add(id));
+    return clientMessage(item, aliases);
+  });
+  return result.filter(item => !covered.has(item.id));
 }
 export function pushCondition(item) {
   if (item.target) {
@@ -263,7 +300,8 @@ export class NotificationsState {
         return (shown !== 'news' || inbox) && (item.layout !== 'image' || (shown === 'banner' ? imageBanners : imagePopups))
           && campaignMatches(item, app, platform, Date.now(), user, url.searchParams.get('store') || '');
       }) : [];
-      return reply({ config, messages: visible.sort((a,b) => b.createdAt-a.createdAt).slice(0, 10).map(clientMessage) });
+      const messages = clientFeed(records, visible, app, platform, user, url.searchParams.get('store') || '');
+      return reply({ config, messages: messages.sort((a,b) => b.createdAt-a.createdAt).slice(0, inbox ? 250 : 10) });
     }
     if (path === '/alarm') {
       await this._runAlarm();
@@ -306,7 +344,7 @@ export class NotificationsState {
       try { item = validateCampaign(body); } catch (error) { return reply({ error: error.message }, 400); }
       const key = 'message:' + item.id, existing = await this.state.storage.get(key);
       if (existing) {
-        if (SAME_FIELDS.some(field => (existing[field] ?? '') !== (item[field] ?? ''))) return reply({ error: 'ID уже принадлежит другому сообщению' }, 409);
+        if (SAME_FIELDS.some(field => (existing[field] ?? (field === 'persistent' ? false : '')) !== (item[field] ?? (field === 'persistent' ? false : '')))) return reply({ error: 'ID уже принадлежит другому сообщению' }, 409);
         return reply({ ok: true, message: existing, duplicate: true });
       }
       if (item.kind === 'push' && (!config.pushEnabled || !pushConfigured(this.env))) return reply({ error: 'Пуши отключены или Firebase не подключён' }, 409);
@@ -316,6 +354,13 @@ export class NotificationsState {
       const removable = [...records.entries()].filter(([,x]) => x.expiresAt < Date.now() || (x.kind === 'push' && x.status !== 'queued' && placement(x) === 'news')).sort((a,b)=>b[1].createdAt-a[1].createdAt).slice(100);
       for (const [oldKey] of removable) await this.state.storage.delete(oldKey);
       if (records.size - removable.length >= 250) return reply({ error: 'Слишком много активных сообщений' }, 409);
+      // Images uploaded before permanent news had a 120-day KV expiration.
+      // Remove that expiration when such an image is used by permanent news.
+      const imageId = item.persistent && new URL(item.imageUrl || 'https://unused.invalid').pathname.match(/^\/api\/notifications\/image\/([a-f0-9-]{36})$/)?.[1];
+      if (imageId && this.env.INSTALLS) {
+        const image = await this.env.INSTALLS.getWithMetadata('ntimg:' + imageId, { type: 'arrayBuffer' });
+        if (image.value) await this.env.INSTALLS.put('ntimg:' + imageId, image.value, { metadata: image.metadata });
+      }
       await this.state.storage.put(key, item);
       if (item.kind === 'push') await this.scheduleNext();
       return reply({ ok: true, message: item });

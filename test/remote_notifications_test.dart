@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -24,6 +25,126 @@ void main() {
     'gameEnabled': true,
   };
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  test(
+    'concurrent window claims persist only one display across restarts',
+    () async {
+      final client = MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'config': config,
+            'messages': [notice()],
+          }),
+          200,
+        ),
+      );
+      final service = RemoteNotificationsService.forTesting(client: client);
+      addTearDown(service.dispose);
+      await service.refresh();
+      final claimed = await Future.wait([
+        service.takeNextNotice(),
+        service.takeNextNotice(),
+      ]);
+      expect(claimed.whereType<AppNotice>().map((m) => m.id), [id]);
+      await service.refresh();
+      expect(await service.takeNextNotice(), isNull);
+      final restarted = RemoteNotificationsService.forTesting(client: client);
+      addTearDown(restarted.dispose);
+      await restarted.refresh();
+      expect(await restarted.takeNextNotice(), isNull);
+    },
+  );
+  test(
+    'a broadcast inherits a seen test, even after the alias is pruned',
+    () async {
+      const testId = 'd169e042-5b7b-40a0-b15e-b80c4444ce1d';
+      var aliases = [testId];
+      final client = MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'config': config,
+            'messages': [
+              {...notice(), 'seenIds': aliases},
+            ],
+          }),
+          200,
+        ),
+      );
+      final service = RemoteNotificationsService.forTesting(client: client);
+      addTearDown(service.dispose);
+      await service.markSeen(testId);
+      await service.refresh();
+      expect(service.nextNotice, isNull);
+      expect(service.seenIds, contains(id));
+      expect(service.inbox.value.single.id, id);
+      aliases = [];
+      final restarted = RemoteNotificationsService.forTesting(client: client);
+      addTearDown(restarted.dispose);
+      await restarted.refresh();
+      expect(restarted.nextNotice, isNull);
+    },
+  );
+  test(
+    'expiry removes an open inbox entry and banner without another request',
+    () async {
+      var now = DateTime(2026, 10, 28);
+      final expiry = now.add(const Duration(milliseconds: 100));
+      var requests = 0;
+      final service = RemoteNotificationsService.forTesting(
+        now: () => now,
+        client: MockClient((_) async {
+          requests++;
+          return http.Response(
+            jsonEncode({
+              'config': config,
+              'messages': [
+                {
+                  ...notice(expiresAt: expiry.millisecondsSinceEpoch),
+                  'kind': 'banner',
+                },
+                {
+                  ...notice(expiresAt: expiry.millisecondsSinceEpoch),
+                  'id': 'd169e042-5b7b-40a0-b15e-b80c4444ce1d',
+                },
+                {
+                  ...notice(expiresAt: expiry.millisecondsSinceEpoch),
+                  'id': 'e169e042-5b7b-40a0-b15e-b80c4444ce1d',
+                  'kind': 'news',
+                  'persistent': true,
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      addTearDown(service.dispose);
+      await service.refresh();
+      var publications = 0;
+      final expired = Completer<void>();
+      service.inbox.addListener(() {
+        publications++;
+        if (service.inbox.value.length == 1 && !expired.isCompleted) {
+          expired.complete();
+        }
+      });
+      expect(service.inbox.value, hasLength(3));
+      expect(service.banners.value, hasLength(1));
+      expect(service.nextNotice, isNotNull);
+      now = expiry;
+      await expired.future.timeout(const Duration(seconds: 3));
+      expect(service.inbox.value.single.persistent, isTrue);
+      expect(service.banners.value, isEmpty);
+      expect(service.nextNotice, isNull);
+      expect(publications, 1);
+      expect(requests, 1);
+      expect(
+        service.inbox.value.single.isActiveAt(
+          now.add(const Duration(days: 365)),
+        ),
+        isTrue,
+      );
+    },
+  );
   test('message parsing rejects malformed payloads', () {
     expect(AppNotice.parse({'id': 'bad'}), isNull);
     expect(AppNotice.parse(notice()), isNotNull);

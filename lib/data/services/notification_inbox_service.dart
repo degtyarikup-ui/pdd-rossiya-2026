@@ -300,12 +300,13 @@ class NotificationInboxService extends ChangeNotifier {
     final user = _userId();
     final items = <InboxItem>[
       for (final n in _news)
-        InboxItem(
-          id: 'news_${n.id}',
-          type: InboxItemType.news,
-          date: n.createdAt ?? _firstSeen('news_${n.id}'),
-          notice: n,
-        ),
+        if (n.isActiveAt(_now()))
+          InboxItem(
+            id: 'news_${n.id}',
+            type: InboxItemType.news,
+            date: n.createdAt ?? _firstSeen('news_${n.id}'),
+            notice: n,
+          ),
       for (final e in _loadEvents())
         if (e['user'] == user)
           InboxItem(
@@ -331,7 +332,7 @@ class NotificationInboxService extends ChangeNotifier {
     // A window already shown, a banner already closed or a push opened
     // counts as read.
     for (final n in _news) {
-      if (_seenNews.contains(n.id)) _read.add('news_${n.id}');
+      if (n.wasSeen(_seenNews)) _read.add('news_${n.id}');
     }
     _items = items;
     notifyListeners();

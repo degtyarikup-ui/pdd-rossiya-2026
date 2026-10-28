@@ -46,6 +46,40 @@ const _id2 = 'd169e042-5b7b-40a0-b15e-b80c4444ce1d';
 void main() {
   setUpAll(initAppDateFormatting);
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  test(
+    'expired news leave the list and badges; permanent news remain read',
+    () async {
+      final s = _State();
+      final inbox = _inbox(s);
+      await inbox.init();
+      final news = [
+        AppNotice(
+          id: _id1,
+          title: 'Временное',
+          body: '',
+          kind: 'news',
+          expiresAt: s.now.add(const Duration(seconds: 1)),
+        ),
+        AppNotice(
+          id: _id2,
+          title: 'Постоянное',
+          body: '',
+          kind: 'news',
+          persistent: true,
+          expiresAt: s.now,
+        ),
+      ];
+      inbox.setNews(news, const {});
+      expect(inbox.items, hasLength(2));
+      await inbox.markNoticeRead(_id2);
+      expect(inbox.unreadCount, 1);
+      s.now = s.now.add(const Duration(seconds: 1));
+      await inbox.refresh();
+      expect(inbox.items.single.notice!.id, _id2);
+      expect(inbox.unreadCount, 0);
+      expect(inbox.homeAlertCount, 0);
+    },
+  );
 
   test('Premium start, extension and end are reported once each', () async {
     final s = _State()

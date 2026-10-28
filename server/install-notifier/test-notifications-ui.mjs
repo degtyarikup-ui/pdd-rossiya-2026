@@ -134,6 +134,32 @@ if (process.argv.includes('--serve')) {
     assert.equal(await page.isVisible('#nt-confirm'), true);
     await page.click('#nt-confirm-send');
     await page.waitForFunction(() => document.querySelectorAll('#nt-history .nf-msg').length === 7);
+    // Permanent means inbox-only, and copying preserves the chosen lifetime.
+    await page.check('input[name="nt-place"][value="popup"]', { force: true });
+    await page.check('input[name="nt-days"][value="forever"]', { force: true });
+    assert.equal(await page.isChecked('input[name="nt-place"][value="news"]'), true);
+    assert.equal(await page.isDisabled('input[name="nt-place"][value="popup"]'), true);
+    assert.equal(await page.isDisabled('input[name="nt-place"][value="banner"]'), true);
+    assert.equal(await page.isDisabled('#nt-push'), true);
+    assert.equal(await page.isVisible('#nt-tabs [data-tab="home"]'), false);
+    assert.match(await page.textContent('#nt-lifetime-note'), /Только в списке/);
+    await page.fill('#nt-title', 'История обновлений');
+    await page.click('#nt-publish');
+    assert.match(await page.textContent('#nt-confirm-tags'), /Постоянно/);
+    await page.click('#nt-confirm-send');
+    await page.waitForFunction(() => document.querySelectorAll('#nt-history .nf-msg').length === 8);
+    const permanent = [...app.data.values()].find(m => m?.persistent);
+    assert.equal(permanent.kind, 'news');
+    assert.ok(permanent.expiresAt > Date.now() + 365 * 86400000);
+    await page.click('[data-nt-copy="' + permanent.id + '"]');
+    assert.equal(await page.isChecked('input[name="nt-days"][value="forever"]'), true);
+    await page.check('input[name="nt-days"][value="1"]', { force: true });
+    assert.equal(await page.isDisabled('input[name="nt-place"][value="popup"]'), false);
+    assert.equal(await page.isDisabled('#nt-push'), false);
+    assert.match(await page.textContent('#nt-lifetime-note'), /исчезнет и из списка/);
+    await page.click('[data-nt-toggle="' + permanent.id + '"]');
+    await page.waitForFunction(id => document.querySelector('[data-nt-toggle="'+id+'"]').dataset.enabled === 'true', permanent.id);
+    assert.equal(app.data.get('message:' + permanent.id).enabled, false);
     for (const width of [390, 820]) {
       await page.setViewportSize({ width, height: 900 });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'no horizontal scroll at ' + width);

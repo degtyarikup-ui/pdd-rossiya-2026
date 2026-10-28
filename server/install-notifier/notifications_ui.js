@@ -153,7 +153,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 <div class="nf-chips" id="nt-stores" hidden>${chip('nt-store', 'all', 'Все магазины')}${chip('nt-store', 'play', 'Google Play')}${chip('nt-store', 'rustore', 'RuStore')}</div></div>
 <div><h4>Когда</h4><div class="nf-chips">${chip('nt-when', 'now', 'Сразу')}${chip('nt-when', 'later', 'Запланировать')}</div>
 <div class="nf-when" id="nt-when-wrap" hidden><input type="datetime-local" id="nt-start" aria-label="Время старта"></div>
-<h4 style="margin-top:16px" id="nt-days-label">Показывать</h4><div class="nf-chips">${chip('nt-days', '1', '1 день')}${chip('nt-days', '3', '3 дня')}${chip('nt-days', '7', '7 дней')}${chip('nt-days', '30', '30 дней')}</div></div>
+<h4 style="margin-top:16px" id="nt-days-label">Показывать</h4><div class="nf-chips">${chip('nt-days', '1', '1 день')}${chip('nt-days', '3', '3 дня')}${chip('nt-days', '7', '7 дней')}${chip('nt-days', '30', '30 дней')}${chip('nt-days', 'forever', 'Постоянно')}</div><p class="nf-note" id="nt-lifetime-note"></p></div>
 </section>
 <div id="nt-editor-error" class="nt-error" role="alert"></div>
 <div class="nf-bar">
@@ -244,7 +244,7 @@ function problem(d){
 function startAt(){return S.when==='later'&&el('start').value?new Date(el('start').value).getTime():0;}
 
 // ── Preview: the phone shows the push, the home screen or the inbox.
-function tabs(){var t=[];if(S.push)t.push('push');if(S.place!=='news'||!S.push)t.push('home');t.push('inbox');return t;}
+function tabs(){var t=[];if(S.push)t.push('push');if(S.days!=='forever'&&(S.place!=='news'||!S.push))t.push('home');t.push('inbox');return t;}
 function osLabel(){var a=brand('apple'),g=brand('android');el('os').querySelector('[data-os="ios"]').innerHTML=a+'iPhone';el('os').querySelector('[data-os="android"]').innerHTML=g+'Android';}
 function status(dark){return '<div class="ph-st"'+(dark?' style="color:#fff"':'')+'><span>9:41</span><i></i><span>●●●</span></div>';}
 function lockDate(){return new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'});}
@@ -304,14 +304,17 @@ function renderPreview(){
 // ── Editor state → controls.
 function count(id,n,max,soft){var x=el(id+'-count');x.textContent=n?n+' / '+max:'';x.classList.toggle('warn',!!soft&&n>soft&&n<=max);x.classList.toggle('over',n>max);x.title=soft&&n>soft?'Длиннее — обрежется на экране блокировки':'';}
 function sync(){
+ var permanent=S.days==='forever';if(permanent){S.push=false;S.place='news';S.tab='inbox';}
  var d=draft(),push=S.push,canPush=pushAvailable(),imageOnly=d.layout==='image';
- el('push').disabled=!canPush&&!push;el('push').checked=push;
+ el('push').disabled=permanent||(!canPush&&!push);el('push').checked=push;
+ document.querySelectorAll('input[name="nt-place"]').forEach(function(x){x.disabled=permanent&&x.value!=='news';});
  el('push-state').textContent=!cfg?'…':!ready?'Firebase не подключён':!cfg.pushEnabled?'Пуши выключены на сервере':!mobile().length&&S.platforms.length?'В вебе недоступен':'iOS и Android';
  setRadio('nt-place',S.place);document.querySelectorAll('input[name="nt-platform"]').forEach(function(x){x.checked=has(x.value);});setRadio('nt-store',S.store);setRadio('nt-when',S.when);setRadio('nt-days',S.days);setRadio('nt-layout',S.layout);
  document.querySelector('input[name="nt-platform"][value="web"]').disabled=push;
  el('place-note').textContent=push&&S.place!=='news'?'Тем, у кого пуши выключены':'';
  el('stores').hidden=push||!has('android');el('when-wrap').hidden=S.when!=='later';
- el('days-label').textContent=push&&S.place==='news'?'Хранить в списке':'Показывать';
+ el('days-label').textContent='Хранить в списке';
+ el('lifetime-note').textContent=permanent?'Только в списке, пока вы не выключите или не удалите уведомление.':'По окончании срока исчезнет и из списка. Окно показывается один раз, закрытый баннер не возвращается.';
  var titleMax=push?PUSH.title:80,bodyMax=push?(S.place==='banner'?200:PUSH.body):BODY_MAX[S.place];
  el('title').maxLength=titleMax;el('body').maxLength=bodyMax;
  count('title',el('title').value.trim().length,titleMax,push?PUSH.titleSoft:0);count('body',el('body').value.trim().length,bodyMax,push?PUSH.bodySoft:0);
@@ -338,6 +341,7 @@ function loadDraft(){try{var x=JSON.parse(localStorage.getItem('nt-draft')||'nul
 function clearForm(){['title','body','url','button','dismiss','start'].forEach(function(k){el(k).value='';});el('action').value='none';Object.assign(S,{push:false,place:'news',layout:'standard',accent:'',platforms:ALL.slice(),store:'all',when:'now',days:'7',image:'',imgW:0,imgH:0,tab:''});pending=null;el('editor-error').textContent='';}
 function fill(m){
  clearForm();S.push=m.kind==='push';S.place=placeOf(m);S.platforms=platformsOf(m).slice();S.store=m.store||'all';S.layout=m.layout==='cover'||m.layout==='compact'?m.layout:'standard';S.accent=m.accent||'';S.image=m.imageUrl||'';
+ S.days=m.persistent?'forever':String([1,3,7,30].find(function(days){return days*86400000>=m.expiresAt-(m.startAt||m.createdAt);})||7);
  el('title').value=m.title||'';el('body').value=m.body||'';el('action').value=m.action||'none';el('url').value=m.actionUrl||'';el('button').value=m.buttonText||'';el('dismiss').value=m.dismissText||'';
  el('result').textContent='';sync();el('form').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -407,7 +411,7 @@ el('reset').onclick=function(){clearForm();el('result').textContent='';sync();};
 function prepare(forTest,to){
  var d=draft(),p=problem(d),start=forTest?0:startAt();
  if(p&&!(forTest&&/Время старта|время старта/.test(p))){el('editor-error').textContent=p;return null;}
- return Object.assign(d,{id:crypto.randomUUID(),target:forTest?to:''},start?{startAt:start}:{},{expiresAt:(start||Date.now())+Number(S.days)*86400000});
+ return Object.assign(d,{id:crypto.randomUUID(),target:forTest?to:''},start?{startAt:start}:{},{persistent:S.days==='forever',expiresAt:S.days==='forever'?null:(start||Date.now())+Number(S.days)*86400000});
 }
 async function send(msg,done){
  busy=true;sync();el('editor-error').textContent='';
@@ -439,6 +443,7 @@ function tagsFor(m){
  if(m.kind==='push')t.push('<span class="nf-tag">'+SVG.bell+'Пуш</span>');
  var place=placeOf(m);if(m.kind!=='push'||place!=='news')t.push('<span class="nf-tag">'+(m.kind==='push'?'+ ':'')+esc(PLACES[place])+'</span>');
  var ps=platformsOf(m);t.push('<span class="nf-tag">'+(ps.length===3?'Все платформы':ps.map(function(p){return (p==='ios'?brand('apple'):p==='android'?brand('android'):'')+esc(PLATFORMS[p]||p);}).join(' · '))+(STORES[m.store]?' · '+esc(STORES[m.store]):'')+'</span>');
+ if(m.persistent)t.push('<span class="nf-tag">Постоянно</span>');
  return t.join('');
 }
 function thumb(m){var place=placeOf(m);return m.imageUrl?'<span class="nf-thumb" style="'+bg(m.imageUrl)+'"></span>':'<span class="nf-thumb">'+ART[m.kind==='push'?'push':place]+'</span>';}
@@ -448,7 +453,7 @@ el('form').addEventListener('submit',function(e){
  if(!pending)pending=prepare(false);if(!pending)return;
  var m=pending,start=m.startAt||0;
  el('confirm-sum').innerHTML=thumb(m)+'<div style="min-width:0"><b>'+esc(heading(m))+'</b>'+(m.title&&m.body?'<small>'+esc(m.body)+'</small>':'')+'</div>';
- el('confirm-tags').innerHTML=tagsFor(m)+'<span class="nf-tag wait">'+esc(start?fmt(start):'Сразу')+'</span><span class="nf-tag">'+esc(S.days)+' дн.</span>'+(m.action!=='none'?'<span class="nf-tag">→ '+esc(ACTIONS[m.action])+'</span>':'');
+ el('confirm-tags').innerHTML=tagsFor(m)+'<span class="nf-tag wait">'+esc(start?fmt(start):'Сразу')+'</span>'+(m.persistent?'':'<span class="nf-tag">'+esc(S.days)+' дн.</span>')+(m.action!=='none'?'<span class="nf-tag">→ '+esc(ACTIONS[m.action])+'</span>':'');
  el('confirm').querySelector('h3').textContent=start?'Запланировать для всех?':m.kind==='push'?'Отправить пуш всем?':'Опубликовать для всех?';
  el('confirm-send').textContent=m.kind==='push'&&!start?'Отправить':'Подтвердить';
  el('confirm').showModal();

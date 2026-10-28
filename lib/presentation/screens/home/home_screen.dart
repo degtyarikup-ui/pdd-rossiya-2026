@@ -231,13 +231,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         PremiumService.instance.hasPendingGrant) {
       return;
     }
-    if (await _askNotificationsOnce()) return;
-    final notice = service.nextNotice;
-    if (notice == null) return;
+    if (await _askNotificationsOnce() || !mounted || _noticeOpen) return;
     _noticeOpen = true;
     try {
-      await service.markSeen(notice.id);
-      if (!mounted ||
+      final notice = await service.takeNextNotice();
+      if (notice == null ||
+          !mounted ||
           ModalRoute.of(context)?.isCurrent != true ||
           _currentIndex != 0) {
         return;

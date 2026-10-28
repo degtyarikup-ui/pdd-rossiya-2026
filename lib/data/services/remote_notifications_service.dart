@@ -48,6 +48,10 @@ class NoticeTap {
 class AppNotice {
   final String id, title, body;
   final DateTime expiresAt;
+  final bool persistent;
+
+  /// Earlier test copies replaced by this broadcast for the same recipient.
+  final List<String> seenIds;
 
   /// Publication time; orders the notification inbox.
   final DateTime? createdAt;
@@ -75,6 +79,8 @@ class AppNotice {
     required this.title,
     required this.body,
     required this.expiresAt,
+    this.persistent = false,
+    this.seenIds = const [],
     this.createdAt,
     this.kind = 'popup',
     this.imageUrl = '',
@@ -93,6 +99,9 @@ class AppNotice {
   bool get isNews => kind == 'news';
   bool get isImageOnly => layout == 'image';
   bool get isImageBanner => isBanner && isImageOnly;
+  bool isActiveAt(DateTime now) => persistent || expiresAt.isAfter(now);
+  bool wasSeen(Set<String> seen) =>
+      seen.contains(id) || seenIds.any(seen.contains);
   NoticeTap? get tap => action == NoticeAction.none
       ? null
       : NoticeTap.fromData({'action': action.name, 'actionUrl': actionUrl});
@@ -132,6 +141,13 @@ class AppNotice {
       expiresAt: DateTime.fromMillisecondsSinceEpoch(
         (value['expiresAt'] as num).toInt(),
       ),
+      persistent: value['persistent'] == true && kind == 'news',
+      seenIds: value['seenIds'] is List
+          ? (value['seenIds'] as List)
+                .whereType<String>()
+                .where((id) => RegExp(r'^[a-f0-9-]{36}$').hasMatch(id))
+                .toList()
+          : const [],
       createdAt: value['createdAt'] is num
           ? DateTime.fromMillisecondsSinceEpoch(
               (value['createdAt'] as num).toInt(),
@@ -169,6 +185,7 @@ class RemoteNotificationsService {
   RemoteNotificationsService._()
     : _metricsSecret = BackendConfig.notifierSecret,
       _client = http.Client(),
+      _now = DateTime.now,
       _userProvider = (() => AuthService.instance.currentUser),
       _receivesPushOverride = null;
   @visibleForTesting
@@ -177,12 +194,15 @@ class RemoteNotificationsService {
     UserProfile? Function()? userProvider,
     String metricsSecret = BackendConfig.notifierSecret,
     bool? receivesPush,
+    DateTime Function()? now,
   }) : _metricsSecret = metricsSecret,
        _client = client,
+       _now = now ?? DateTime.now,
        _userProvider = userProvider ?? (() => AuthService.instance.currentUser),
        _receivesPushOverride = receivesPush;
   final bool? _receivesPushOverride;
   final http.Client _client;
+  final DateTime Function() _now;
   final String _metricsSecret;
   final UserProfile? Function() _userProvider;
   static final instance = RemoteNotificationsService._();
@@ -197,6 +217,8 @@ class RemoteNotificationsService {
   Future<void>? _refreshing;
   Future<void> _metricsTail = Future.value();
   List<AppNotice> _messages = [];
+  Timer? _expiryTimer;
+  final Set<String> _claimedNotices = {};
   final Map<String, bool> _config = {
     'pushEnabled': false,
     'popupEnabled': true,
@@ -328,24 +350,33 @@ class RemoteNotificationsService {
   });
 
   void _publishBanners() {
-    final seen = _prefs?.getStringList('${_prefix}seen') ?? const [];
-    final now = DateTime.now();
-    inbox.value = _config['popupEnabled'] == true
-        ? _messages.where((m) => m.expiresAt.isAfter(now)).toList()
-        : const [];
+    _expiryTimer?.cancel();
+    final seen = seenIds;
+    final now = _now();
+    final active = _messages.where((m) => m.isActiveAt(now)).toList();
+    inbox.value = _config['popupEnabled'] == true ? active : const [];
     banners.value = _config['popupEnabled'] == true
-        ? _messages
-              .where(
-                (m) =>
-                    m.isBanner &&
-                    _showsOnHome(m) &&
-                    m.expiresAt.isAfter(now) &&
-                    !seen.contains(m.id),
-              )
+        ? active
+              .where((m) => m.isBanner && _showsOnHome(m) && !m.wasSeen(seen))
               .take(3)
               .toList()
         : const [];
+    final deadlines = active
+        .where((m) => !m.persistent)
+        .map((m) => m.expiresAt);
+    if (_config['popupEnabled'] == true && deadlines.isNotEmpty) {
+      final next = deadlines.reduce((a, b) => a.isBefore(b) ? a : b);
+      // Bound long delays for web timers (signed 32-bit milliseconds).
+      final delay = next.difference(now);
+      _expiryTimer = Timer(
+        delay > const Duration(days: 1) ? const Duration(days: 1) : delay,
+        _publishBanners,
+      );
+    }
   }
+
+  @visibleForTesting
+  void dispose() => _expiryTimer?.cancel();
 
   /// Hides a banner forever on this device.
   Future<void> dismissBanner(String id) async {
@@ -408,6 +439,14 @@ class RemoteNotificationsService {
           .map(AppNotice.parse)
           .whereType<AppNotice>()
           .toList();
+      // Remember the broadcast itself, so pruning an old test on the server
+      // cannot make an already-dismissed window reappear later.
+      final seen = seenIds;
+      for (final message in _messages) {
+        if (!seen.contains(message.id) && message.wasSeen(seen)) {
+          await markSeen(message.id);
+        }
+      }
       try {
         await _syncPushSubscriptions();
       } catch (_) {
@@ -517,16 +556,27 @@ class RemoteNotificationsService {
 
   AppNotice? get nextNotice {
     if (_config['popupEnabled'] != true) return null;
-    final seen = _prefs?.getStringList('${_prefix}seen') ?? [];
+    final seen = seenIds;
     for (final message in _messages) {
       if (!message.isBanner &&
           _showsOnHome(message) &&
-          message.expiresAt.isAfter(DateTime.now()) &&
-          !seen.contains(message.id)) {
+          message.isActiveAt(_now()) &&
+          !message.wasSeen(seen) &&
+          !_claimedNotices.contains(message.id)) {
         return message;
       }
     }
     return null;
+  }
+
+  /// Reserve synchronously before persisting: concurrent home checks cannot
+  /// open the same window while the first check is awaiting disk I/O.
+  Future<AppNotice?> takeNextNotice() async {
+    final notice = nextNotice;
+    if (notice == null) return null;
+    _claimedNotices.add(notice.id);
+    await markSeen(notice.id);
+    return notice.isActiveAt(_now()) ? notice : null;
   }
 
   /// Пуш об ответе поддержки пришёл, пока приложение открыто. Задаёт приложение.

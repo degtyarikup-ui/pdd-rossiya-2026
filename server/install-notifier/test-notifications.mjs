@@ -10,6 +10,80 @@ function setup(env={}) {
  const call=(path,body)=>object.fetch(new Request('https://notifications'+path,{method:body?'POST':'GET',...(body?{body:JSON.stringify(body)}:{})}));
  return {call,data,object};
 }
+test('permanent news stay in the inbox without allowing permanent windows, banners or pushes', async () => {
+ const now = Date.now(), startAt = now + 86400000;
+ const permanent = sample({kind:'news',persistent:true,expiresAt:null,startAt});
+ const validated = validateCampaign(permanent, now);
+ assert.equal(validated.persistent, true);
+ assert.equal(campaignMatches(validated,'ru','ios',now), false);
+ assert.equal(campaignMatches(validated,'ru','ios',startAt), true);
+ assert.equal(campaignMatches(validated,'ru','ios',now+365*86400000), true);
+ assert.equal(typeof clientMessage(validated).expiresAt, 'number', 'older inbox clients keep working');
+ for (const kind of ['popup','banner','push']) assert.throws(() => validateCampaign({...permanent,kind},now), /только в списке/);
+ assert.throws(() => validateCampaign(sample({persistent:'true'}),now));
+ assert.throws(() => validateCampaign(sample({expiresAt:null}),now));
+ const {call} = setup();
+ await call('/publish',sample({kind:'news',persistent:true,expiresAt:null}));
+ const list = async () => (await (await call('/client?app=ru&platform=ios&inbox=1')).json()).messages;
+ const [message] = await list();
+ assert.equal(message.persistent, true);
+ assert.equal((await (await call('/client?app=ru&platform=ios')).json()).messages.length,0);
+ await call('/toggle',{id:message.id,enabled:false});
+ assert.equal((await list()).length,0);
+ await call('/toggle',{id:message.id,enabled:true});
+ assert.equal((await list()).length,1);
+ await call('/delete',{id:message.id});
+ assert.equal((await list()).length,0);
+});
+test('newer campaigns do not push permanent news out of the inbox after ten entries', async () => {
+ const {call} = setup();
+ const permanent = sample({kind:'news',persistent:true,expiresAt:null});
+ await call('/publish',permanent);
+ for (let i=0;i<12;i++) await call('/publish',sample({kind:'news',title:'Новость '+i}));
+ const messages = (await (await call('/client?app=ru&platform=ios&inbox=1')).json()).messages;
+ assert.equal(messages.length,13);
+ assert.ok(messages.some(m => m.id===permanent.id && m.persistent));
+});
+test('test then broadcast produces one inbox entry and inherits only this recipient’s seen IDs', async () => {
+ const {call,data} = setup();
+ const first = sample({target:'me@test.invalid'});
+ const other = sample({target:'other@test.invalid'});
+ await call('/publish',first); await call('/publish',other);
+ const broadcast = sample(); await call('/publish',broadcast);
+ data.get('message:'+first.id).createdAt = Date.now()-20;
+ data.get('message:'+other.id).createdAt = Date.now()-20;
+ data.get('message:'+broadcast.id).createdAt = Date.now()-10;
+ const list = async email => (await (await call('/client?app=ru&platform=ios&inbox=1&email='+email)).json()).messages;
+ let messages = await list('me@test.invalid');
+ assert.equal(messages.length,1);
+ assert.equal(messages[0].id,broadcast.id);
+ assert.deepEqual(messages[0].seenIds,[first.id]);
+ assert.deepEqual((await list('other@test.invalid'))[0].seenIds,[other.id]);
+ assert.equal((await list('stranger@test.invalid'))[0].seenIds,undefined);
+ // An expired test is still an alias, until its history is pruned.
+ data.get('message:'+first.id).expiresAt = data.get('message:'+broadcast.id).createdAt + 1;
+ assert.deepEqual((await list('me@test.invalid'))[0].seenIds,[first.id]);
+ // Independent broadcasts with the same text remain separate campaigns.
+ data.get('message:'+first.id).expiresAt = Date.now()+86400000;
+ const independent = sample(); await call('/publish',independent);
+ messages = await list('me@test.invalid');
+ assert.equal(messages.length,2);
+ assert.equal(messages.find(m => m.id===independent.id).seenIds,undefined);
+ // A subsequent deliberate test is a new message.
+ const later = sample({target:'me@test.invalid'}); await call('/publish',later);
+ data.get('message:'+later.id).createdAt = Date.now()+1;
+ assert.equal((await list('me@test.invalid')).length,3);
+});
+test('a permanent campaign preserves an uploaded image beyond its previous KV expiration', async () => {
+ const id = crypto.randomUUID(), puts=[];
+ const {call} = setup({INSTALLS:{
+   getWithMetadata:async key => { assert.equal(key,'ntimg:'+id); return {value:new ArrayBuffer(4),metadata:{type:'image/png'}}; },
+   put:async (...args) => puts.push(args),
+ }});
+ assert.equal((await call('/publish',sample({kind:'news',persistent:true,expiresAt:null,imageUrl:'https://test/api/notifications/image/'+id}))).status,200);
+ assert.equal(puts.length,1);
+ assert.deepEqual(puts[0][2],{metadata:{type:'image/png'}});
+});
 test('input validation rejects missing text, unknown country, expired and oversized campaigns',()=>{
  for(const bad of [{kind:'push',title:'',body:''},{kind:'push',title:'x'.repeat(51)},{app:'xx'},{expiresAt:Date.now()-1},{title:'x'.repeat(81)},{kind:'push',body:'x'.repeat(301)},{kind:'push',platform:'web'}])assert.throws(()=>validateCampaign(sample(bad)));
 });
