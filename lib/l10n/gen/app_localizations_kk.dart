@@ -4339,4 +4339,15 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get examKeyboardHint =>
       'Сандар — жауап · ←/→ — сұрақтар · Esc — артқа';
+
+  @override
+  String inboxHomeAlert(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Сізде $count жаңа хабарлама бар',
+      one: 'Сізде жаңа хабарлама бар',
+    );
+    return '$_temp0';
+  }
 }

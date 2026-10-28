@@ -229,8 +229,12 @@ export class NotificationsState {
       const imagePopups = imageBanners && url.searchParams.get('imagePopups') === '1';
       // Older clients would show inbox news as a popup window.
       const inbox = url.searchParams.get('inbox') === '1';
-      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp) && (item.kind !== 'news' || inbox) && (item.layout !== 'image' || (item.kind === 'banner' ? imageBanners : imagePopups)) && campaignMatches(item, app, platform, Date.now(), user, url.searchParams.get('store') || '')) : [];
-      return reply({ config, messages: visible.sort((a,b) => b.createdAt-a.createdAt).slice(0, 10).map(clientMessage) });
+      // A sent push also lands in the inbox of builds that have one; without
+      // inApp it is listed there only, not shown as a window.
+      const listedPush = item => inbox && ['accepted', 'unknown'].includes(item.status);
+      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp || listedPush(item)) && (item.kind !== 'news' || inbox) && (item.layout !== 'image' || (item.kind === 'banner' ? imageBanners : imagePopups)) && campaignMatches(item, app, platform, Date.now(), user, url.searchParams.get('store') || '')) : [];
+      return reply({ config, messages: visible.sort((a,b) => b.createdAt-a.createdAt).slice(0, 10)
+        .map(item => item.kind === 'push' && !item.inApp ? { ...clientMessage(item), kind: 'news' } : clientMessage(item)) });
     }
     if (path === '/alarm') {
       await this._runAlarm();
@@ -253,7 +257,9 @@ export class NotificationsState {
     if (path === '/toggle') {
       const key = 'message:' + body.id, item = await this.state.storage.get(key);
       if (!item || typeof body.enabled !== 'boolean') return reply({ error: 'Сообщение не найдено' }, 404);
-      if (item.kind === 'push' && item.status !== 'queued' && !item.inApp) return reply({ error: 'Отправленный пуш нельзя отозвать' }, 409);
+      // A sent push cannot be recalled from devices; disabling hides it from the
+      // in-app list. A push still sending or failed has no list entry to hide.
+      if (item.kind === 'push' && !['queued', 'accepted', 'unknown'].includes(item.status) && !item.inApp) return reply({ error: 'Отправленный пуш нельзя отозвать' }, 409);
       item.enabled = body.enabled;
       await this.state.storage.put(key, item);
       if (item.kind === 'push' && item.enabled) await this.scheduleNext();

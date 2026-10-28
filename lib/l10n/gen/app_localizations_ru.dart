@@ -4360,4 +4360,17 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get examKeyboardHint => 'Цифры — ответ · ←/→ — вопросы · Esc — назад';
+
+  @override
+  String inboxHomeAlert(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'У вас $count новых уведомления',
+      many: 'У вас $count новых уведомлений',
+      few: 'У вас $count новых уведомления',
+      one: 'У вас новое уведомление',
+    );
+    return '$_temp0';
+  }
 }

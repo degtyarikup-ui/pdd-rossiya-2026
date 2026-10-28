@@ -90,7 +90,23 @@ test('persistent queue sends once; accepted broadcasts cannot be recalled',async
  globalThis.fetch=async()=>{calls++;return Response.json({name:'projects/test-project/messages/ok'});};
  try{await object.alarm();await object.alarm();}finally{globalThis.fetch=original;}
  assert.equal(calls,1);assert.equal(data.get('message:'+msg.id).status,'accepted');
- assert.equal((await call('/toggle',{id:msg.id,enabled:false})).status,409);
+ // Sent pushes are listed in the inbox of new clients only, as news.
+ const list=async q=>(await (await call('/client?app=ru&platform=ios'+q)).json()).messages;
+ assert.equal((await list('')).length,0);
+ assert.deepEqual((await list('&inbox=1')).map(m=>m.kind),['news']);
+ // Disabling hides it from the list; it never recalls or resends the push.
+ assert.equal((await call('/toggle',{id:msg.id,enabled:false})).status,200);
+ assert.equal((await list('&inbox=1')).length,0);
+ assert.equal((await call('/toggle',{id:msg.id,enabled:true})).status,200);
+ globalThis.fetch=async()=>{calls++;return Response.json({name:'x'});};
+ try{await object.alarm();}finally{globalThis.fetch=original;}
+ assert.equal(calls,1);assert.equal(data.get('message:'+msg.id).status,'accepted');
+});
+test('queued pushes are not listed before they are sent',async()=>{
+ const {call}=setup(fcmEnv);
+ await call('/config',{...DEFAULT_NOTIFICATION_CONFIG,pushEnabled:true});
+ await call('/publish',sample({kind:'push'}));
+ assert.equal((await (await call('/client?app=ru&platform=ios&inbox=1')).json()).messages.length,0);
 });
 test('unknown network outcome never automatically repeats a broadcast',async()=>{
  const {call,object,data}=setup(fcmEnv);

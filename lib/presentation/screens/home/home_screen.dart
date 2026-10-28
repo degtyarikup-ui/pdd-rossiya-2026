@@ -20,6 +20,7 @@ import 'package:pdd_app/core/navigation/route_observer.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/notification_inbox_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/data/services/app_update_service.dart';
 import 'package:pdd_app/presentation/widgets/app_update_dialog.dart';
@@ -38,6 +39,7 @@ import 'package:pdd_app/presentation/screens/profile/profile_screen.dart';
 import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_notice_widgets.dart';
+import 'package:pdd_app/presentation/widgets/inbox_home_alert.dart';
 import 'package:pdd_app/presentation/widgets/premium_granted_dialog.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
@@ -465,6 +467,7 @@ class _HomeTab extends ConsumerStatefulWidget {
 
 class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
   bool _routeSubscribed = false;
+  final _inbox = NotificationInboxService.instance;
   bool _openingMarathon = false;
   bool _openingStore = false;
 
@@ -506,6 +509,16 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _inbox.addListener(_inboxChanged);
+  }
+
+  void _inboxChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_routeSubscribed) return;
@@ -518,6 +531,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
 
   @override
   void dispose() {
+    _inbox.removeListener(_inboxChanged);
     if (_routeSubscribed) {
       appRouteObserver.unsubscribe(this);
     }
@@ -538,6 +552,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     final unfinishedSession = ref.watch(unfinishedSessionProvider);
     final sessionData = unfinishedSession.valueOrNull;
     final hasContinueCard = sessionData != null;
+    final hasInboxAlert = _inbox.homeAlertCount > 0;
 
     return AppContentFrame(
       maxWidth: AppContentFrame.catalogueWidth,
@@ -561,7 +576,11 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
               3 +
               textScaler.scale(10) * 1.1;
           final double continueCardH = hasContinueCard ? 56.0 : 0.0;
-          final double totalGaps = gap * (hasContinueCard ? 5 : 4);
+          final double inboxAlertH = hasInboxAlert
+              ? InboxHomeAlert.height
+              : 0.0;
+          final double totalGaps =
+              gap * (4 + (hasContinueCard ? 1 : 0) + (hasInboxAlert ? 1 : 0));
 
           final double availableH =
               totalH -
@@ -570,6 +589,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
               bottomPadding -
               topPanelHeight -
               continueCardH -
+              inboxAlertH -
               totalGaps;
 
           final minButtonHeight = math.max(
@@ -597,6 +617,10 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
           }
 
           final primarySections = <Widget>[
+            if (hasInboxAlert) ...[
+              InboxHomeAlert(service: _inbox),
+              const SizedBox(height: gap),
+            ],
             ValueListenableBuilder<List<AppNotice>>(
               valueListenable: RemoteNotificationsService.instance.banners,
               builder: (context, banners, _) {

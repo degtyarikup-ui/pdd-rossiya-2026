@@ -2105,5 +2105,13 @@
   "inboxSbpAction": "Выбрать тариф",
   "inboxOpen": "Открыть",
   "trainingKeyboardHint": "Цифры — ответ · Enter — подтвердить или продолжить · ←/→ — вопросы · Esc — назад",
-  "examKeyboardHint": "Цифры — ответ · ←/→ — вопросы · Esc — назад"
+  "examKeyboardHint": "Цифры — ответ · ←/→ — вопросы · Esc — назад",
+  "inboxHomeAlert": "{count, plural, one{У вас новое уведомление} few{У вас {count} новых уведомления} many{У вас {count} новых уведомлений} other{У вас {count} новых уведомления}}",
+  "@inboxHomeAlert": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -4,6 +4,7 @@ import 'package:pdd_app/data/services/notification_inbox_service.dart';
 import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/notifications/notifications_screen.dart';
+import 'package:pdd_app/presentation/widgets/inbox_home_alert.dart';
 import 'package:pdd_app/presentation/widgets/notifications_bell_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -192,5 +193,53 @@ void main() {
     expect(news.action, NoticeAction.premium);
     expect(news.createdAt, DateTime(2026, 10, 1));
     expect(appL10n.inboxTitle, isNotEmpty);
+  });
+
+  test('home reminder: closing hides it until another entry arrives', () async {
+    final inbox = _inbox(_State());
+    await inbox.init();
+    inbox.setNews([_news(_id1)], const {});
+    expect(inbox.homeAlertCount, 1);
+
+    await inbox.dismissHomeAlert();
+    expect(inbox.homeAlertCount, 0);
+    expect(inbox.hasUnread, isTrue, reason: 'the bell keeps its badge');
+
+    inbox.setNews([_news(_id1), _news(_id2, day: 22)], const {});
+    expect(inbox.homeAlertCount, 1, reason: 'a new entry brings it back');
+
+    await inbox.markAllRead();
+    expect(inbox.homeAlertCount, 0);
+  });
+
+  testWidgets('home reminder opens the inbox and disappears once read', (
+    tester,
+  ) async {
+    final inbox = _inbox(_State());
+    await tester.runAsync(inbox.init);
+    inbox.setNews([_news(_id1), _news(_id2, day: 22)], const {});
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ListenableBuilder(
+            listenable: inbox,
+            builder: (_, _) => inbox.homeAlertCount > 0
+                ? InboxHomeAlert(service: inbox)
+                : const SizedBox.shrink(),
+          ),
+        ),
+      ),
+    );
+    expect(find.text(appL10n.inboxHomeAlert(2)), findsOneWidget);
+
+    await tester.tap(find.byType(InboxHomeAlert));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    expect(find.byType(NotificationsScreen), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pumpAndSettle();
+    expect(find.byType(InboxHomeAlert), findsNothing);
   });
 }

@@ -105,6 +105,7 @@ class NotificationInboxService extends ChangeNotifier {
   Set<String> _seenNews = const {};
   List<InboxItem> _items = const [];
   Set<String> _read = {};
+  Set<String> _homeDismissed = {};
 
   /// Newest first.
   List<InboxItem> get items => _items;
@@ -112,11 +113,34 @@ class NotificationInboxService extends ChangeNotifier {
   int get unreadCount => _items.where((i) => !_read.contains(i.id)).length;
   bool get hasUnread => unreadCount > 0;
 
+  /// Unread entries the home screen reminds about: everything unread except
+  /// what was already there when the reminder was closed.
+  int get homeAlertCount => _items
+      .where((i) => !_read.contains(i.id) && !_homeDismissed.contains(i.id))
+      .length;
+
+  /// Hides the home reminder until another entry arrives; the bell keeps
+  /// its badge.
+  Future<void> dismissHomeAlert() async {
+    if (_prefs == null) return;
+    _homeDismissed.addAll(
+      _items.where((i) => !_read.contains(i.id)).map((i) => i.id),
+    );
+    final list = _homeDismissed.toList();
+    await _prefs!.setStringList(
+      '${_prefix}home_dismissed',
+      list.length > _maxRead ? list.sublist(list.length - _maxRead) : list,
+    );
+    notifyListeners();
+  }
+
   Future<void> init() => _initializing ??= _init();
 
   Future<void> _init() async {
     _prefs ??= await SharedPreferences.getInstance();
     _read = (_prefs!.getStringList('${_prefix}read') ?? const []).toSet();
+    _homeDismissed =
+        (_prefs!.getStringList('${_prefix}home_dismissed') ?? const []).toSet();
     if (!_listening && identical(this, instance)) {
       _listening = true;
       final remote = RemoteNotificationsService.instance;

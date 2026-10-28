@@ -7281,6 +7281,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Цифры — ответ · ←/→ — вопросы · Esc — назад'**
   String get examKeyboardHint;
+
+  /// No description provided for @inboxHomeAlert.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{У вас новое уведомление} few{У вас {count} новых уведомления} many{У вас {count} новых уведомлений} other{У вас {count} новых уведомления}}'**
+  String inboxHomeAlert(int count);
 }
 
 class _AppLocalizationsDelegate
