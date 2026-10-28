@@ -653,6 +653,27 @@ func _check_regressions() -> void:
 	game._check_car_violation_state(after)
 	_check("Once the walker has reached the kerb the car may go", not after.is_violator)
 
+	# Hidden results cost nothing per frame (Godot enables _process at ready on its own).
+	_check("Hidden results screen does not process", not game.ui._results.is_processing() and not game.ui._results._rays.is_processing())
+
+	# A tap between an offender and an innocent neighbour, a little nearer the innocent, picks the offender.
+	game._start_game()
+	var offender = game.spawn_specific_car("main_straight", 1, true, ViolatorScript.VIOLATION_RED_LIGHT)
+	offender.violation_state = "active"
+	offender.position = Vector3(1.8, 0, -24)
+	var neighbour = game.spawn_specific_car("main_straight", 0, false, "")
+	neighbour.position = Vector3(-1.8, 0, -24)
+	var u: float = Ui.dp(game.get_viewport())
+	var po: Vector2 = game.camera.unproject_position(offender.position)
+	var pn: Vector2 = game.camera.unproject_position(neighbour.position)
+	var tap: Vector2 = po.lerp(pn, 0.56) + Vector2(0, 60.0 * u)   # below both bodies: no ray hit
+	if game._raycast_car_at(tap) == null:
+		var lives_before: int = game.lives
+		game._process_screen_tap(tap)
+		_check("Fat-finger assist: an ambiguous tap goes to the offender", game.locked_car == offender and game.lives == lives_before)
+		game.ui.hide_classification()
+		game._on_classification_selected("timeout")
+
 	# One tap is one judgement: the emulated mouse click of a touch is ignored.
 	game._start_game()
 	var innocent = game.spawn_specific_car("main_straight", 1, false, "")

@@ -4725,7 +4725,8 @@ func _on_violator_missed(car: ViolatorCar) -> void:
 	missed_marks.append({"car": car, "id": car.get_instance_id(), "code": car.violation_type,
 		"pos": car.global_position if car.is_inside_tree() else car.position, "until": game_clock + MISSED_MARK_TIME})
 	if is_instance_valid(ui):
-		ui.show_toast(ViolatorUiScript.tr_v("violatorMissedLifeWarning"), true)
+		# The mark on the car already says «Упущен нарушитель» and the offence, and the HUD shows
+		# the lost life: a toast with the same words only stacked a third message over the junction.
 		var time_metric := seconds_left if game_mode == "blitz" else patrol_elapsed
 		ui.update_hud(score, combo, time_metric, lives)
 	if lives <= 0:
@@ -4753,11 +4754,16 @@ func _process_screen_tap(screen_pos: Vector2) -> void:
 	var ray_car: ViolatorCar = _raycast_car_at(screen_pos)
 
 	if ray_car == null:
+		# A finger is wider than a car seen from above: the nearest car within reach is meant. When
+		# two cars are about as close, the one that has just broken a rule wins (fat-finger assist,
+		# as tap shooters do): a near miss of a real offender must not cost a life for its neighbour.
 		var best_dist := 48.0
 		for car in cars:
 			if not is_instance_valid(car): continue
 			var unproj := camera.unproject_position(car.global_position) / u
 			var d := dp_pos.distance_to(unproj)
+			if car.is_violator and car.violation_state == "active":
+				d -= 12.0
 			if d < best_dist:
 				best_dist = d
 				ray_car = car

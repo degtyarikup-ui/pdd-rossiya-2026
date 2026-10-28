@@ -537,6 +537,13 @@ func _show_mistakes(explanations: Array[String]) -> void:
 		rows.add_child(Ui.scaled_label("%d. %s" % [i + 1, explanations[i]], 16, 500, Ui.c("text"), true))
 	add_child(panel)
 
+## Godot turns _process on at ready for every node that has one, overriding the set_process(false)
+## of _init: the hidden results rotated their rays and measured rects every frame of the game.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_READY:
+		_visibility_changed()
+
+
 class Rays extends Node2D:
 	var radius := 360.0
 	func set_radius(value: float) -> void:
