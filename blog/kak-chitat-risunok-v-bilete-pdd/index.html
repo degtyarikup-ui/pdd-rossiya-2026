@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+    // GitHub Pages отдаёт /index.html как отдельный адрес — сводим к каноническому /.
+    if (/\/index\.html$/.test(location.pathname)) {
+      location.replace(location.pathname.replace(/index\.html$/, '') + location.search + location.hash);
+    }
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Как читать рисунок в билете ПДД: три разбора с картинками</title>
+  <meta name="description" content="Пять шагов чтения рисунка в билете ПДД и три вопроса A/B: опасный поворот, стрелки по полосам, табличка «Влажное покрытие». С ответами и объяснениями.">
+  <link rel="canonical" href="https://pdd-drive.ru/blog/kak-chitat-risunok-v-bilete-pdd/">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="ПДД Россия 2026">
+  <meta property="og:title" content="Как читать рисунок в билете ПДД: три разбора с картинками">
+  <meta property="og:description" content="Пять шагов чтения рисунка в билете ПДД и три вопроса A/B: опасный поворот, стрелки по полосам, табличка «Влажное покрытие». С ответами и объяснениями.">
+  <meta property="og:url" content="https://pdd-drive.ru/blog/kak-chitat-risunok-v-bilete-pdd/">
+  <meta property="article:published_time" content="2026-10-28">
+  <meta property="article:modified_time" content="2026-10-28">
+  <meta property="article:section" content="Подготовка к экзамену">
+  <meta property="og:image" content="https://pdd-drive.ru/blog/kak-chitat-risunok-v-bilete-pdd/cover.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="ru_RU">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/assets/fonts/onest-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/style.css?v=5">
+  <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Как читать рисунок в билете ПДД: три разбора с картинками",
+    "description": "Пять шагов чтения рисунка в билете ПДД и три вопроса A/B: опасный поворот, стрелки по полосам, табличка «Влажное покрытие». С ответами и объяснениями.",
+    "datePublished": "2026-10-28",
+    "dateModified": "2026-10-28",
+    "author": {
+      "@type": "Organization",
+      "name": "Команда ПДД Россия 2026",
+      "url": "https://pdd-drive.ru/about/#redaktsiya"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "ПДД Россия 2026",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://pdd-drive.ru/assets/icon-192.png"
+      }
+    },
+    "image": "https://pdd-drive.ru/blog/kak-chitat-risunok-v-bilete-pdd/cover.jpg",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://pdd-drive.ru/blog/kak-chitat-risunok-v-bilete-pdd/"
+    },
+    "inLanguage": "ru-RU",
+    "citation": [
+      "https://pdd-drive.ru/about/",
+      "https://www.consultant.ru/document/Cons_doc_LAW_2709/2fdfa8559de67744dab415a31c1f987bc016016b/",
+      "https://www.consultant.ru/document/cons_doc_LAW_2709/8b4d779e30a40c4f48df8edd7c7d2e1a12e91d77/",
+      "https://www.consultant.ru/document/cons_doc_LAW_2709/d507c6724f67c7a6ff27ba125eb7db3e4d36a3a6/"
+    ],
+    "articleSection": "Подготовка к экзамену"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Главная",
+        "item": "https://pdd-drive.ru/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Блог",
+        "item": "https://pdd-drive.ru/blog/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Как читать рисунок в билете ПДД: три разбора с картинками",
+        "item": "https://pdd-drive.ru/blog/kak-chitat-risunok-v-bilete-pdd/"
+      }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Сначала читать вопрос или смотреть картинку?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Сначала прочитайте, о каком действии спрашивают, затем рассмотрите рисунок. Так проще отличить существенные условия от деталей, которые не относятся к вопросу."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Можно ли определить ответ по одному дорожному знаку?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Только если остальные условия действительно ничего не меняют. Проверяйте таблички, сигналы, разметку, свою полосу и участников, с которыми связано ваше действие."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Что делать, если картинка отличается от знакомого билета?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Проверить категорию, номер и все условия заново. Похожий фон не означает одинаковое правило или ответ."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Почему после дождя может действовать знак с табличкой «Влажное покрытие»?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Табличка 8.16 относится к состоянию покрытия. Если оно остаётся влажным, условие её действия сохраняется и после окончания дождя."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="/">
+      <img src="/assets/icon-192.png" alt="ПДД Россия 2026 — логотип" width="32" height="32" loading="eager">
+      ПДД Россия 2026
+    </a>
+    <nav class="site-nav">
+      <a href="/#features">Возможности</a>
+      <a href="/proverit-znaniya/">Проверить себя</a>
+      <a href="/blog/">Блог</a>
+      <a href="/#exam">Экзамен</a>
+      <a class="nav-cta" href="/app/">Веб-версия<span class="nav-cta-tail"> приложения</span></a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="section">
+  <div class="container">
+    <article class="prose">
+      <nav class="breadcrumbs">
+        <a href="/">Главная</a> / <a href="/blog/">Блог</a> / Как читать рисунок в билете ПДД: три разбора с картинками
+      </nav>
+
+      <header>
+        <h1>Как читать рисунок в билете ПДД: три разбора с картинками</h1>
+        <p class="post-meta">
+          <time datetime="2026-10-28">28 октября 2026</time> · <a href="/about/#redaktsiya">Команда ПДД Россия 2026</a> · ~5 мин чтения
+          <span class="post-views" data-slug="kak-chitat-risunok-v-bilete-pdd" hidden>· <svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+        </p>
+      </header>
+
+      <img class="post-cover" src="/blog/kak-chitat-risunok-v-bilete-pdd/cover.jpg" alt="Ученик внимательно рассматривает иллюстрацию учебного задания по ПДД на планшете" width="1200" height="630" loading="eager" fetchpriority="high">
+
+<p><strong>Рисунок в билете ПДД нужно читать вместе с вопросом: сначала определить своё действие, затем собрать условия и только после этого сравнивать ответы.</strong> Один заметный знак не обязательно решает задачу. Значение могут изменить табличка, стрелки по полосам, работающий светофор или тип транспортного средства.</p>
+<p>Разберём три настоящих вопроса A/B, в которых решение зависит от разных визуальных деталей. Это учебная подборка, а не список «самых сложных вопросов» по статистике. Номера и изображения приведены, чтобы вы могли найти оригинал и проверить рассуждение.</p>
+
+<h2>Порядок чтения: пять шагов</h2>
+<ol><li><strong>Прочитайте вопрос.</strong> О чём он: направлении движения, обязанности уступить, скорости или возможности остановки? Слова «можно» и «обязаны» требуют разных ответов.</li><li><strong>Найдите себя.</strong> С какой стороны вы подъезжаете, в какой полосе находитесь, куда собираетесь двигаться? Не назначайте себе траекторию, которой нет в условии.</li><li><strong>Соберите регулирование.</strong> Светофоры, регулировщик, знаки, таблички, разметка. Читайте знак вместе с тем, что расположено под ним.</li><li><strong>Проверьте остальных участников.</strong> Кто движется, кто меняет направление, чьи пути важны для вашего действия?</li><li><strong>Сопоставьте варианты.</strong> Выберите тот, который полностью соответствует найденным условиям, включая ограничения вроде «только» или «во всех случаях».</li></ol>
+<p>Это порядок анализа, а не новая норма ПДД. Он не отменяет необходимости знать сами правила. Если символ на рисунке незнаком, сначала откройте справочник: угадывать его значение по общему настроению картинки бесполезно.</p>
+
+<h2>Пример 1. Поворот дороги не означает запрет другого поворота</h2>
+<figure><img src="ab-1-2.webp" alt="Иллюстрация к вопросу 2 билета 1 A/B: Разрешен ли Вам поворот на дорогу с грунтовым покрытием?" width="1024" height="381" loading="lazy"><figcaption>База A/B приложения, билет 1, вопрос 2. Иллюстрация и варианты взяты из базы без перерисовки.</figcaption></figure>
+<p><strong>Разрешен ли Вам поворот на дорогу с грунтовым покрытием?</strong></p><ol><li>Разрешен</li><li>Разрешен только при технической неисправности транспортного средства</li><li>Запрещен</li></ol>
+<details><summary>Проверить ответ</summary><p><strong>Верно: Разрешен.</strong></p></details>
+<p>В билете 1, вопросе 2, заметен предупреждающий знак 1.11.2 «Опасный поворот», а на закруглении стоят знаки направления поворота. Они помогают увидеть конфигурацию дороги. Но спрашивают не о том, куда изгибается асфальт, а о возможности повернуть на грунтовую дорогу справа.</p>
+<p>Не превращайте предупреждение в предписание. Изображённые знаки не запрещают указанный поворот, поэтому ответ базы — «Разрешен». Формулировка «только при неисправности» добавляет условие, которого для разрешения этого манёвра в задаче нет.</p>
+<p>Проверьте ход мысли: «Я видел стрелку, значит, надо двигаться только по ней» — слишком широкая догадка. Сначала назовите группу и значение конкретного знака. Предупреждающий знак и предписывающий знак направления движения выполняют разные задачи, даже если на обоих нарисована стрелка.</p>
+
+<h2>Пример 2. Общее правило уточняется разметкой</h2>
+<figure><img src="ab-1-8.webp" alt="Иллюстрация к вопросу 8 билета 1 A/B: Как Вам следует поступить при повороте направо?" width="1024" height="381" loading="lazy"><figcaption>База A/B приложения, билет 1, вопрос 8. Иллюстрация и варианты взяты из базы без перерисовки.</figcaption></figure>
+<p><strong>Как Вам следует поступить при повороте направо?</strong></p><ol><li>Перестроиться на правую полосу, затем осуществить поворот</li><li>Продолжить движение по второй полосе до перекрёстка, затем повернуть</li><li>Возможны оба варианта действий</li></ol>
+<details><summary>Проверить ответ</summary><p><strong>Верно: Возможны оба варианта действий.</strong></p></details>
+<p>В билете 1, вопросе 8, автомобиль находится во второй полосе. На покрытии видны стрелки 1.18: направо разрешено двигаться с обеих попутных полос. Поэтому можно заранее перестроиться вправо и затем повернуть, а можно выполнить поворот из занимаемой полосы. Вариант базы — «Возможны оба варианта действий».</p>
+<p>Если остановиться на общем воспоминании «направо только из крайнего правого положения», легко пропустить уточнение пункта 8.5 о случаях, когда иной порядок определён знаками или разметкой. В этом рисунке именно стрелки по полосам меняют решение. Разметку нужно не просто заметить, а связать с вашей полосой.</p>
+<p>Из ответа не следует, что перестраиваться можно без проверки соседей или что при повороте разрешено произвольно пересекать чужую траекторию. Возможность поворота из полосы и безопасность выполнения манёвра — разные вопросы. Здесь проверяется выбор разрешённого варианта действий при показанной организации движения.</p>
+
+<h2>Пример 3. Табличка описывает покрытие, а не только погоду</h2>
+<figure><img src="ab-3-3.webp" alt="Иллюстрация к вопросу 3 билета 3 A/B: Вам необходимо двигаться со скоростью не более 40 км/ч:" width="1024" height="381" loading="lazy"><figcaption>База A/B приложения, билет 3, вопрос 3. Иллюстрация и варианты взяты из базы без перерисовки.</figcaption></figure>
+<p><strong>Вам необходимо двигаться со скоростью не более 40 км/ч:</strong></p><ol><li>Только во время дождя</li><li>Во время выпадения осадков (дождя, града, снега)</li><li>Во всех случаях, когда покрытие проезжей части влажное</li></ol>
+<details><summary>Проверить ответ</summary><p><strong>Верно: Во всех случаях, когда покрытие проезжей части влажное.</strong></p></details>
+<p>В билете 3, вопросе 3, под ограничением 40 км/ч стоит табличка 8.16 «Влажное покрытие». Она связывает действие знака с состоянием поверхности. Поэтому условие не ограничивается моментом дождя или выпадения осадков. Дождь мог закончиться, а покрытие оставаться влажным.</p>
+<p>Верный ответ базы — «Во всех случаях, когда покрытие проезжей части влажное». Здесь решающая деталь находится ниже крупного знака. Нельзя сначала ответить на знакомую цифру, а затем мысленно отбросить табличку как оформление.</p>
+<p>При этом табличка не позволяет игнорировать общие требования к выбору безопасной скорости. Число на знаке — ограничение в обозначенных условиях, а не команда обязательно ехать именно 40 км/ч. Если задача спрашивает только, когда действует данный знак, отвечайте именно на неё.</p>
+
+<h2>Что не нужно додумывать</h2>
+<p>Не придумывайте скрытую машину за пределами кадра, не приписывайте автобусу маршрутный статус только по кузову и не заменяйте нарисованный сигнал тем, который «обычно горит на таком перекрёстке». Используйте данные условия и признаки, которые предусмотрены правилами. Нехватка видимой информации в реальном движении требует осторожности; билет решается по заданной учебной ситуации.</p>
+<p>Если изображение слишком мелкое, увеличьте его штатным способом и проверьте детали. Если оно повреждено или не соответствует тексту, отправьте сообщение об ошибке с категорией, номером билета и вопроса. Заучивание случайно восстановленной по памяти картинки закрепляет сомнение, а не знание.</p>
+
+<h2>Как проверить, что вы читаете условия, а не узнаёте картинку</h2>
+<p>После ответа закройте варианты и назовите один признак, без которого решение было бы другим: предупреждающая группа знака; стрелка в вашей полосе; табличка влажного покрытия. Затем найдите в теме похожую задачу и заново проделайте пять шагов. Не меняйте условия оригинального билета, выдавая собственную версию за экзаменационный вопрос.</p>
+<p>Расшифровка линий приведена в <a href="/blog/dorozhnaya-razmetka-2026/">разборе дорожной разметки</a>, группы знаков — в <a href="/blog/dorozhnye-znaki-2026/">справочнике знаков</a>. В <a href="/app/">PDD Drive</a> можно перейти от отдельного билета к соответствующей теме и проверить новый пример. Следующее занятие начните с той детали, которую сегодня пропустили.</p>
+<p class="post-meta">Проверено <time datetime="2026-10-22">22 октября 2026</time>. <a href="/about/#redaktsiya">Как мы готовим материалы</a></p>
+      <section class="article-sources" aria-labelledby="sources-title">
+      <h2 id="sources-title">Источники и проверка</h2>
+      <ul>
+        <li><a href="https://pdd-drive.ru/about/" rel="noopener">О проекте PDD Drive и учебных материалах</a></li>
+        <li><a href="https://www.consultant.ru/document/Cons_doc_LAW_2709/2fdfa8559de67744dab415a31c1f987bc016016b/" rel="noopener">ПДД РФ, раздел 8: начало движения и маневрирование</a></li>
+        <li><a href="https://www.consultant.ru/document/cons_doc_LAW_2709/8b4d779e30a40c4f48df8edd7c7d2e1a12e91d77/" rel="noopener">ПДД РФ, приложение 2: горизонтальная разметка, в том числе 1.18</a></li>
+        <li><a href="https://www.consultant.ru/document/cons_doc_LAW_2709/d507c6724f67c7a6ff27ba125eb7db3e4d36a3a6/" rel="noopener">ПДД РФ, приложение 1: знаки дополнительной информации</a></li>
+      </ul>
+      </section>
+<div class="article-app-cta">
+  <div class="article-app-cta-header">
+    <img class="article-app-cta-icon" src="/assets/icon-192.png" alt="Приложение ПДД Россия 2026" width="56" height="56" style="width:56px;height:56px;min-width:56px;max-width:56px;border-radius:12px;object-fit:cover;margin:0;display:block;flex-shrink:0;" loading="lazy">
+    <div class="article-app-cta-title">Проверьте рисунок в следующем билете</div>
+  </div>
+  <p class="article-app-cta-copy">Откройте свою категорию и перед ответом назовите действие, регулирование и решающее условие.</p>
+  <p><a class="btn btn-primary" href="/app/" data-cta="article-practice" data-context="kak-chitat-risunok-v-bilete-pdd">Решать билеты</a></p>
+  <div class="article-app-cta-buttons">
+    <a class="article-app-cta-btn" href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" target="_blank" rel="noopener" aria-label="Скачать в Google Play">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="#00D3FF" d="M3.609 1.814L13.792 12 3.61 22.186c-.365-.403-.61-.983-.61-1.748V3.562c0-.765.245-1.345.61-1.748z"/>
+        <path fill="#00E676" d="M17.156 8.636L13.792 12l3.364 3.364 3.824-2.185c.983-.561.983-1.793 0-2.358l-3.824-2.185z"/>
+        <path fill="#FFD500" d="M13.792 12L3.609 1.814c.382-.206.84-.287 1.342-.001l12.205 6.823L13.792 12z"/>
+        <path fill="#FF3A44" d="M17.156 15.364L4.951 22.187c-.502.286-.96.205-1.342-.001L13.792 12l3.364 3.364z"/>
+      </svg>
+      <div class="btn-text">
+        <small>Доступно в</small>
+        <span>Google Play</span>
+      </div>
+    </a>
+    <a class="article-app-cta-btn" href="https://apps.apple.com/ru/app/id6792369533" target="_blank" rel="noopener" aria-label="Скачать в App Store">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="#000000" aria-hidden="true">
+        <path d="M17.05 12.54c-.03-2.89 2.36-4.27 2.47-4.34-1.35-1.97-3.44-2.24-4.18-2.27-1.78-.18-3.47 1.05-4.37 1.05-.9 0-2.29-1.02-3.77-1-1.94.03-3.72 1.13-4.72 2.86-2.01 3.49-.51 8.66 1.45 11.5.96 1.39 2.1 2.95 3.6 2.89 1.44-.06 1.99-.93 3.73-.93 1.74 0 2.23.93 3.76.9 1.56-.03 2.54-1.41 3.49-2.81 1.1-1.61 1.55-3.17 1.57-3.25-.03-.02-3-1.15-3.03-4.6zM14.16 4.06c.8-.96 1.33-2.3 1.19-3.63-1.15.05-2.53.76-3.35 1.72-.74.85-1.38 2.21-1.21 3.51 1.28.1 2.58-.65 3.37-1.6z"/>
+      </svg>
+      <div class="btn-text">
+        <small>Загрузите в</small>
+        <span>App Store</span>
+      </div>
+    </a>
+    <a class="article-app-cta-btn" href="https://www.rustore.ru/catalog/app/ru.pdd.pdd_app" target="_blank" rel="noopener" aria-label="Скачать в RuStore">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="#0574F8" aria-hidden="true">
+        <path d="M13.88 14.8c-.65-.14-1.1-.73-1.1-1.39V6.97c0-.75.72-1.3 1.46-1.13l5.06 1.25c.65.17 1.1.75 1.1 1.4v7.83c0 .75-.72 1.3-1.46 1.13l-5.06-1.65zm-8.74 3.6c-.65-.14-1.1-.73-1.1-1.39v-6.44c0-.75.72-1.3 1.46-1.13l5.06 1.25c.65.17 1.1.75 1.1 1.4v7.83c0 .75-.72 1.3-1.46 1.13l-5.06-1.65z"/>
+      </svg>
+      <div class="btn-text">
+        <small>Скачать в</small>
+        <span>RuStore</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+      <h2>Частые вопросы</h2>
+      <div class="faq">
+        <details>
+          <summary>Сначала читать вопрос или смотреть картинку?</summary>
+          <p>Сначала прочитайте, о каком действии спрашивают, затем рассмотрите рисунок. Так проще отличить существенные условия от деталей, которые не относятся к вопросу.</p>
+        </details>
+        <details>
+          <summary>Можно ли определить ответ по одному дорожному знаку?</summary>
+          <p>Только если остальные условия действительно ничего не меняют. Проверяйте таблички, сигналы, разметку, свою полосу и участников, с которыми связано ваше действие.</p>
+        </details>
+        <details>
+          <summary>Что делать, если картинка отличается от знакомого билета?</summary>
+          <p>Проверить категорию, номер и все условия заново. Похожий фон не означает одинаковое правило или ответ.</p>
+        </details>
+        <details>
+          <summary>Почему после дождя может действовать знак с табличкой «Влажное покрытие»?</summary>
+          <p>Табличка 8.16 относится к состоянию покрытия. Если оно остаётся влажным, условие её действия сохраняется и после окончания дождя.</p>
+        </details>
+      </div>
+
+      <h2>Читайте также</h2>
+      <div class="post-grid">
+        <a class="post-card" href="/blog/dorozhnaya-razmetka-2026/">
+          <img class="post-card-cover" src="/blog/dorozhnaya-razmetka-2026/cover.jpg" alt="Дорожная разметка с высоты: прерывистая осевая линия, стрелы направлений движения по полосам и пешеходный переход «зебра»" width="1200" height="630" loading="lazy">
+          <div class="post-card-meta">
+            <time datetime="2026-07-21">21 июля 2026</time>
+            <span class="post-card-views" data-slug="dorozhnaya-razmetka-2026" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+          </div>
+          <h2>Дорожная разметка 2026: горизонтальная и вертикальная — что означает каждая линия</h2>
+        </a>
+        <a class="post-card" href="/blog/dorozhnye-znaki-2026/">
+          <img class="post-card-cover" src="/blog/dorozhnye-znaki-2026/cover.jpg" alt="Предупреждающий знак «Пешеходный переход» и предписывающий знак «Движение прямо» на одной стойке на фоне неба" width="1200" height="630" loading="lazy">
+          <div class="post-card-meta">
+            <time datetime="2026-07-21">21 июля 2026</time>
+            <span class="post-card-views" data-slug="dorozhnye-znaki-2026" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+          </div>
+          <h2>Дорожные знаки 2026: все 8 групп с расшифровкой и примерами</h2>
+        </a>
+        <a class="post-card" href="/blog/manevrirovanie-pdd/">
+          <img class="post-card-cover" src="/blog/manevrirovanie-pdd/cover.jpg" alt="Автомобиль выполняет разворот на дороге" width="1200" height="630" loading="lazy">
+          <div class="post-card-meta">
+            <time datetime="2026-07-23">23 июля 2026</time>
+            <span class="post-card-views" data-slug="manevrirovanie-pdd" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+          </div>
+          <h2>Разворот, перестроение и движение задним ходом: манёвры по ПДД</h2>
+        </a>
+      </div>
+
+    </article>
+  </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <nav>
+      <a href="/blog/">Блог</a>
+      <a href="/about/">О проекте</a>
+      <a href="/tarify/">Тарифы</a>
+      <a href="/links/">Соцсети</a>
+      <a href="/slovar-pdd/">Словарь терминов</a>
+      <a href="/privacy.html">Политика конфиденциальности</a>
+      <a href="/terms.html">Пользовательское соглашение</a>
+      <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
+      <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">App Store</a>
+      <a href="/app/">Веб-версия</a>
+      <a href="mailto:degtyarik.up@gmail.com">Поддержка</a>
+    </nav>
+    <div class="copy">
+      <span class="age-badge">16+</span> © 2026 ПДД Россия 2026
+    </div>
+    <div class="footer-disclaimer">
+      Сайт pdd-drive.ru носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/site.js" defer></script>
+<script src="/assets/tracker.js" defer></script>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111960332', 'ym');
+
+    ym(111960332, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/111960332" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+</body>
+</html>
