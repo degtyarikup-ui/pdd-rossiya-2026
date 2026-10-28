@@ -58,6 +58,8 @@ export async function preview() {
     if (item.metrics) await env.INSTALLS.put('notice_metrics:' + id, JSON.stringify({ view: item.metrics[0], click: item.metrics[1] }));
   }
   await env.INSTALLS.put('user_email:me@example.test', 'google_preview');
+  await env.INSTALLS.put('user_email:friend@example.test', 'google_friend');
+  await env.INSTALLS.put('user:google_friend', JSON.stringify({ id: 'google_friend', email: 'friend@example.test', name: 'Друг' }));
   await env.INSTALLS.put('user:google_preview', JSON.stringify({ id: 'google_preview', email: 'me@example.test', name: 'Админ' }));
   const server = createServer(async (incoming, outgoing) => {
     try {
@@ -116,13 +118,22 @@ if (process.argv.includes('--serve')) {
     await page.click('#nt-me-save');
     await page.waitForFunction(() => document.querySelectorAll('#nt-history .nf-msg').length === 4);
     const test = [...app.data.values()].find(m => m?.target === 'me@example.test' && m.kind === 'push');
+    // Several test accounts: each ticked one gets its own copy.
+    await page.click('#nt-me');
+    await page.fill('#nt-target', 'friend@example.test');
+    await page.click('#nt-me-save');
+    assert.equal(await page.textContent('#nt-test'), 'Отправить на 2');
+    await page.click('#nt-test');
+    await page.waitForFunction(() => document.querySelectorAll('#nt-history .nf-msg').length === 6);
+    await page.uncheck('#nt-recips input[data-rc="1"]', { force: true });
+    assert.equal(await page.textContent('#nt-test'), 'Отправить себе');
     assert.equal(test.inAppKind, 'popup');
     assert.match(test.targetTopic, /^pdd_account_[a-f0-9]{64}$/);
     // Everyone: confirmation first.
     await page.click('#nt-publish');
     assert.equal(await page.isVisible('#nt-confirm'), true);
     await page.click('#nt-confirm-send');
-    await page.waitForFunction(() => document.querySelectorAll('#nt-history .nf-msg').length === 5);
+    await page.waitForFunction(() => document.querySelectorAll('#nt-history .nf-msg').length === 7);
     for (const width of [390, 820]) {
       await page.setViewportSize({ width, height: 900 });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'no horizontal scroll at ' + width);

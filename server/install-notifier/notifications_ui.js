@@ -63,7 +63,11 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-btn{border:0;border-radius:12px;padding:12px 18px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:var(--nf-soft);color:var(--text);display:inline-flex;align-items:center;gap:8px}
 .nf-btn:hover{background:#E9EDF2}.nf-btn.primary{background:var(--primary);color:#fff}.nf-btn.primary:hover{background:var(--primary-hover)}.nf-btn:disabled{opacity:.45;cursor:not-allowed}
 .nf-btn.ghost{background:none;color:var(--text-muted)}.nf-btn.ghost:hover{background:var(--nf-soft)}
-.nf-me{border:0;background:none;font:inherit;font-size:12px;color:var(--text-muted);cursor:pointer;padding:6px 4px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nf-me:hover{color:var(--primary)}
+.nf-recips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0;order:-1;flex-basis:100%;margin-bottom:4px}.nf-rc{position:relative;display:inline-flex;align-items:center;max-width:220px;border-radius:10px;background:var(--nf-soft);font-size:12px;color:#4A5262}
+.nf-rc input{position:absolute;opacity:0;pointer-events:none}.nf-rc span{padding:7px 4px 7px 10px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nf-rc span:before{content:'';display:inline-block;width:12px;height:12px;border-radius:4px;border:1.5px solid #A3AAB6;margin-right:6px;vertical-align:-2px;box-sizing:border-box}
+.nf-rc:has(input:checked){background:var(--primary-subtle);color:var(--primary)}.nf-rc:has(input:checked) span:before{background:var(--primary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6.2l2 2 4-4.4' fill='none' stroke='white' stroke-width='1.8'/%3E%3C/svg%3E") center/10px no-repeat;border-color:var(--primary)}
+.nf-rc:has(input:focus-visible){outline:2px solid var(--primary);outline-offset:2px}.nf-rc button{border:0;background:none;color:inherit;opacity:.55;cursor:pointer;padding:6px 8px 6px 2px;font-size:12px}.nf-rc button:hover{opacity:1}
+.nf-rc-add{border:1px dashed #CDD3DD;background:none;border-radius:10px;padding:6px 10px;font:inherit;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer}.nf-rc-add:hover{border-color:var(--primary);color:var(--primary)}
 .nf-result{font-size:13px;margin:12px 0 0;color:var(--success)}.nf-result:empty{display:none}
 #notifications-view .nt-error{color:var(--danger);font-size:13px;margin:0 0 12px}#notifications-view .nt-error:empty{display:none}
 .nf-preview{position:sticky;top:20px;padding:16px!important}
@@ -154,7 +158,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 <div id="nt-editor-error" class="nt-error" role="alert"></div>
 <div class="nf-bar">
 <button type="button" class="nf-btn" id="nt-test"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg>Отправить себе</button>
-<button type="button" class="nf-me" id="nt-me" title="Аккаунт для проверки"></button>
+<div class="nf-recips" id="nt-recips" aria-label="Кому отправить проверку"></div>
 <span class="nf-grow"></span>
 <button type="button" class="nf-btn ghost" id="nt-reset">Очистить</button>
 <button type="submit" class="nf-btn primary" id="nt-publish">Отправить всем</button>
@@ -169,7 +173,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 </div>
 <div class="nf-card" style="margin-bottom:16px"><div class="nf-hist-h"><h3>Отправленные</h3><button class="nf-ib" id="nt-refresh" title="Обновить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button></div><div id="nt-history"><div class="nf-empty">Загрузка…</div></div></div>
 <dialog class="nf-modal" id="nt-confirm"><h3>Отправить всем?</h3><div class="nf-sum" id="nt-confirm-sum"></div><div class="nf-tags" id="nt-confirm-tags"></div><div class="nf-actions"><button type="button" class="nf-btn ghost" id="nt-confirm-cancel">Отмена</button><button type="button" class="nf-btn primary" id="nt-confirm-send">Отправить</button></div></dialog>
-<dialog class="nf-modal" id="nt-me-dialog"><h3>Ваш аккаунт в приложении</h3><input id="nt-target" list="nt-users-list" maxlength="120" placeholder="email или ID" autocomplete="off"><datalist id="nt-users-list"></datalist><div class="nf-actions"><button type="button" class="nf-btn ghost" id="nt-me-cancel">Отмена</button><button type="button" class="nf-btn primary" id="nt-me-save">Отправить</button></div></dialog>
+<dialog class="nf-modal" id="nt-me-dialog"><h3>Аккаунт для проверки</h3><input id="nt-target" list="nt-users-list" maxlength="120" placeholder="email или ID" autocomplete="off"><datalist id="nt-users-list"></datalist><div class="nf-actions"><button type="button" class="nf-btn ghost" id="nt-me-cancel">Отмена</button><button type="button" class="nf-btn primary" id="nt-me-save">Добавить</button></div></dialog>
 </div>`;
 
 export const NOTIFICATIONS_CLIENT_JS = String.raw`
@@ -210,7 +214,11 @@ function fmt(t){return new Date(t).toLocaleString('ru',{timeZone:'Europe/Moscow'
 function radio(name){var x=document.querySelector('input[name="'+name+'"]:checked');return x?x.value:'';}
 function setRadio(name,v){var x=document.querySelector('input[name="'+name+'"][value="'+v+'"]');if(x)x.checked=true;}
 async function api(path,body){var r=await fetch('/api/admin/notifications'+path,{method:body?'POST':'GET',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined});var d=await r.json().catch(function(){return {};});if(!r.ok)throw new Error(r.status===401?'Войдите в админку заново':r.status===404&&d.error==='target account not found'?'Аккаунт для проверки не найден':d.error||'Не удалось выполнить запрос');return d;}
-function target(){try{return localStorage.getItem('nt-test-target')||'';}catch(_){return '';}}
+// Accounts that get test sends: email or ID, each ticked on or off. Kept in
+// this browser; the first single-account version stored one address.
+function recipients(){var list=[];try{list=JSON.parse(localStorage.getItem('nt-test-targets')||'null')||[];if(!list.length){var old=localStorage.getItem('nt-test-target');if(old)list=[{v:old,on:true}];}}catch(_){}return list.filter(function(r){return r&&typeof r.v==='string';});}
+function saveRecipients(list){try{localStorage.setItem('nt-test-targets',JSON.stringify(list));localStorage.removeItem('nt-test-target');}catch(_){}}
+function chosen(){return recipients().filter(function(r){return r.on;}).map(function(r){return r.v;});}
 function pushAvailable(){return !!(cfg&&ready&&cfg.pushEnabled)&&(!S.platforms.length||mobile().length>0);}
 
 function draft(){
@@ -317,7 +325,8 @@ function sync(){
  var spec=imageSpec(),size=spec.w+' × '+spec.h,fit=imageFit(spec);
  if(S.image){drop.classList.add('has');drop.innerHTML='<img src="'+esc(S.image)+'" alt=""><div class="nf-grow"><b>'+(S.imgW?S.imgW+' × '+S.imgH:'Картинка')+'</b>'+(fit?'<small class="'+fit.cls+'">'+esc(fit.text)+'</small>':'<small>Нужно '+size+'</small>')+'</div><button type="button" class="nf-link" data-img="replace">Заменить</button><button type="button" class="nf-link danger" data-img="remove">Убрать</button>';}
  else{drop.classList.remove('has');drop.innerHTML=ratioIcon(spec)+'<div class="nf-grow"><b>Картинка '+size+'</b><small>'+esc(['Перетащите или выберите','до 1 МБ',spec.note].filter(Boolean).join(' · '))+'</small></div><button type="button" class="nf-link" data-img="url">Ссылка</button>';}
- var me=target();el('me').textContent=me?'→ '+me:'';el('me').hidden=!me;
+ el('recips').innerHTML=recipients().map(function(r,i){return '<label class="nf-rc" title="'+esc(r.v)+'"><input type="checkbox" data-rc="'+i+'"'+(r.on?' checked':'')+'><span>'+esc(r.v)+'</span><button type="button" data-rc-del="'+i+'" aria-label="Убрать '+esc(r.v)+'">✕</button></label>';}).join('')+'<button type="button" class="nf-rc-add" id="nt-me">+ Аккаунт</button>';
+ var n=chosen().length;el('test').lastChild.textContent=n>1?'Отправить на '+n:'Отправить себе';
  var p=problem(d);
  el('publish').disabled=busy||!!p;el('test').disabled=busy||(!!p&&p!=='Выберите время старта'&&p!=='Время старта уже прошло');
  el('publish').title=el('test').title=p;
@@ -375,6 +384,7 @@ el('file').addEventListener('change',function(){var f=el('file').files[0];el('fi
 // ── Controls.
 function onFormEdit(e){
  var t=e&&e.target;if(!t)return sync();
+ if(t.closest&&t.closest('#nt-recips'))return;
  if(t.id==='nt-push'){S.push=t.checked;S.tab=S.push?'push':'';if(S.push){S.platforms=mobile();if(!S.platforms.length)S.platforms=['ios','android'];}}
  else if(t.name==='nt-place'){S.place=t.value;S.tab=S.place==='news'&&S.push?'inbox':S.place==='news'?'inbox':'home';}
  else if(t.name==='nt-platform'){S.platforms=ALL.filter(function(p){return p===t.value?t.checked:has(p);});if(mobile().length===1)S.os=mobile()[0];}
@@ -394,10 +404,10 @@ el('reset').onclick=function(){clearForm();el('result').textContent='';sync();};
 
 
 // ── Sending: a test to my account first, then to everyone.
-function prepare(forTest){
+function prepare(forTest,to){
  var d=draft(),p=problem(d),start=forTest?0:startAt();
  if(p&&!(forTest&&/Время старта|время старта/.test(p))){el('editor-error').textContent=p;return null;}
- return Object.assign(d,{id:crypto.randomUUID(),target:forTest?target():''},start?{startAt:start}:{},{expiresAt:(start||Date.now())+Number(S.days)*86400000});
+ return Object.assign(d,{id:crypto.randomUUID(),target:forTest?to:''},start?{startAt:start}:{},{expiresAt:(start||Date.now())+Number(S.days)*86400000});
 }
 async function send(msg,done){
  busy=true;sync();el('editor-error').textContent='';
@@ -405,11 +415,23 @@ async function send(msg,done){
  catch(e){el('editor-error').textContent=e.message;}
  finally{busy=false;sync();}
 }
-function sendTest(){var me=target();if(!me){afterTarget=sendTest;openMe();return;}var msg=prepare(true);if(!msg)return;el('result').textContent='';send(msg,function(){el('result').textContent='Отправлено на '+me+(msg.kind==='push'?' — проверьте телефон':' — откройте приложение');});}
-function openMe(){el('target').value=target();loadUsers();el('me-dialog').showModal();el('target').focus();}
-el('test').onclick=sendTest;el('me').onclick=function(){afterTarget=null;openMe();};
+// One test campaign per ticked account: a campaign has a single recipient.
+async function sendTest(){
+ var to=chosen();if(!to.length){afterTarget=sendTest;openMe();return;}
+ var batch=[];for(var i=0;i<to.length;i++){var msg=prepare(true,to[i]);if(!msg)return;batch.push(msg);}
+ el('result').textContent='';busy=true;sync();el('editor-error').textContent='';var sent=[],failed=[];
+ for(var j=0;j<batch.length;j++){try{await api('/publish',batch[j]);sent.push(batch[j].target);}catch(e){failed.push(batch[j].target+': '+e.message);}}
+ busy=false;await load();
+ if(sent.length)el('result').textContent='Отправлено: '+sent.join(', ')+(batch[0].kind==='push'?' — проверьте телефоны':' — откройте приложение');
+ if(failed.length)el('editor-error').textContent=failed.join('; ');
+ sync();
+}
+function openMe(){el('target').value='';loadUsers();el('me-dialog').showModal();el('target').focus();}
+el('test').onclick=sendTest;
+el('recips').addEventListener('click',function(e){var del=e.target.closest('[data-rc-del]');if(del){e.preventDefault();var list=recipients();list.splice(Number(del.dataset.rcDel),1);saveRecipients(list);sync();return;}if(e.target.closest('#nt-me')){afterTarget=null;openMe();}});
+el('recips').addEventListener('change',function(e){var box=e.target.closest('[data-rc]');if(!box)return;e.stopPropagation();var list=recipients();list[Number(box.dataset.rc)].on=box.checked;saveRecipients(list);sync();});
 el('me-cancel').onclick=function(){afterTarget=null;el('me-dialog').close();};
-el('me-save').onclick=function(){var v=el('target').value.trim().toLowerCase();if(!v||/[\s'"<>]/.test(v)){el('target').focus();return;}try{localStorage.setItem('nt-test-target',v);}catch(_){}el('me-dialog').close();sync();var next=afterTarget;afterTarget=null;if(next)next();};
+el('me-save').onclick=function(){var v=el('target').value.trim().toLowerCase();if(!v||/[\s'"<>]/.test(v)){el('target').focus();return;}var list=recipients().filter(function(r){return r.v!==v;});list.push({v:v,on:true});saveRecipients(list);el('me-dialog').close();sync();var next=afterTarget;afterTarget=null;if(next)next();};
 el('target').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();el('me-save').click();}});
 async function loadUsers(){if(usersLoaded)return;usersLoaded=true;try{var r=await fetch('/api/admin/users');if(!r.ok)return;var d=await r.json();el('users-list').innerHTML=(d.users||[]).slice(0,200).map(function(u){return '<option value="'+esc(u.email||u.id)+'">'+esc((u.name||'Пользователь')+' · '+u.id)+'</option>';}).join('');}catch(_){}}
 function tagsFor(m){
