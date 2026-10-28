@@ -971,9 +971,14 @@
 
   // ---- markings and shapes -------------------------------------------------------------------
   function markingInspector(p, ref, m) {
-    const paint = m.type === "paint";
+    const paint = m.type === "paint", arrow = m.type === "arrow";
+    const arrowLength = arrow && m.points?.length === 2 ? Math.hypot(m.points[1][0] - m.points[0][0], m.points[1][1] - m.points[0][1]) : 6;
     p.innerHTML = `${head(`<span class="ibadge">${ic("marking")}</span>`, App.nameOf(ref), paint ? "снята с картинки билета" : "")}
-      ${paint ? "" : card("Вид", chips("type", Object.entries(Catalog.MARKS).map(([k, v]) => ({ value: k, html: `<span class="mark-pic m-${k}"></span>`, tip: v.title })), m.type, { cls: "tiles" }))}
+      ${paint ? "" : card("Вид", chips("type", Object.entries(Catalog.MARKS).map(([k, v]) => ({ value: k, html: k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`, tip: v.title })), m.type, { cls: "tiles" }))}
+      ${arrow ? card("Направления по полосе", chips("mark-direction", DirectionMark.variants.map(([value, title]) => ({value, title, html: DirectionMark.svg(value)})), m.direction || "straight", {cls:"tiles"}))
+        + card("Размер стрелки", slider("mark-length", "Длина", arrowLength, 1, 30, .5, `${arrowLength.toFixed(1)} м`)
+          + slider("mark-width", "Ширина", m.width ?? 2.6, .4, 6, .1, `${(m.width ?? 2.6).toFixed(1)} м`)
+          + button("mark-flip", "Развернуть на 180°", "rotr", "ghost wide")) : ""}
       ${m.type === "stop" ? card("Вид линии", chips("stop-style", stopStyles, m.stopStyle || "solid")
         + (m.stopStyle === "yield" ? button("yield-flip", "Развернуть треугольники", "rotr", "ghost wide") : "")) : ""}
       ${card("Цвет", chips("colour", [{ value: "white", html: `<span class="paint w"></span>`, title: "Белая" }, { value: "yellow", html: `<span class="paint y"></span>`, title: "Жёлтая" }], m.colour || "white"))}
@@ -986,14 +991,24 @@
       rotl: () => App.rotate(-15), rotr: () => App.rotate(15),
       "chip:type": (v) => App.edit(() => {
         m.type = v;
-        if ((v === "stop" || v === "zebra") && m.points) m.points = m.points.slice(0, 2);
+        if (["stop", "zebra", "arrow"].includes(v) && m.points) m.points = m.points.slice(0, 2);
         if (v === "zebra") m.length = m.length || 4; else delete m.length;
         if (v === "stop") m.width = 0.4; else delete m.width;
+        if (v === "arrow") { m.direction = m.direction || "straight"; m.width = 2.6; }
+        else delete m.direction;
         if (v !== "stop") delete m.stopStyle;
       }),
       "chip:stop-style": v => {
         if (!App.isLocked(ref) && stopStyles.some(style => style.value === v)) App.edit(() => setStopStyle(m, v));
       },
+      "chip:mark-direction": value => { if (!App.isLocked(ref)) App.edit(() => { m.direction = value; }); },
+      "slider:mark-length": live((_sc, value) => {
+        if (App.isLocked(ref) || !m.points?.[1]) return;
+        const [a,b] = m.points, length = Math.hypot(b[0]-a[0],b[1]-a[1]) || 1;
+        m.points[1] = [r3(a[0]+(b[0]-a[0])/length*value),r3(a[1]+(b[1]-a[1])/length*value)];
+      }, value => { const label = p.querySelector('[data-shown="mark-length"]'); if (label) label.textContent = `${value.toFixed(1)} м`; }),
+      "slider:mark-width": live((_sc, value) => { if (!App.isLocked(ref)) m.width = value; }, value => { const label = p.querySelector('[data-shown="mark-width"]'); if (label) label.textContent = `${value.toFixed(1)} м`; }),
+      "mark-flip": () => { if (!App.isLocked(ref)) App.rotate(180); },
       "yield-flip": () => { if (!App.isLocked(ref)) App.edit(() => { m.points.reverse(); }); },
       "chip:colour": (v) => App.edit(() => { m.colour = v; }),
       "chip:double": (v) => App.edit(() => { if (v) { m.double = v; m.side = m.side || 1; } else { delete m.double; delete m.side; } }),

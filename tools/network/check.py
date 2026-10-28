@@ -16,6 +16,7 @@ from pathlib import Path
 from shapely.geometry import LineString, Point, Polygon
 from shapely import make_valid
 from shapely.ops import unary_union
+import direction_marking
 
 ROOT = Path(__file__).resolve().parents[2]
 NET = ROOT / "game_godot" / "network"
@@ -41,7 +42,7 @@ def finding(out, level, code, message, ref=None):
     out.append({"level": level, "code": code, "message": message, "ref": ref})
 
 
-MARKING_TYPES = ("paint", "solid", "dashed", "stop", "zebra")
+MARKING_TYPES = ("paint", "solid", "dashed", "stop", "zebra", "arrow")
 MARKING_COLOURS = ("white", "yellow")
 LINE_MARKINGS = ("solid", "dashed", "stop", "zebra")
 
@@ -92,7 +93,15 @@ def check_layers(scene: dict, area, out: list) -> None:
             continue
         if m.get("colour", "white") not in MARKING_COLOURS:
             finding(out, "error", "marking-colour", f"{m.get('id')}: неизвестный цвет разметки {m.get('colour')!r}", ref)
-        if kind == "paint":
+        if kind == "arrow":
+            problem = direction_marking.error(m)
+            if problem:
+                finding(out, "error", "marking-arrow", f"{m.get('id')}: {problem}", ref)
+                continue
+            outside = direction_marking.geometry(m).difference(area.buffer(0.3)).area
+            if outside > .1:
+                finding(out, "warn", "marking-off-road", f"{m.get('id')}: {outside:.1f} м² стрелки вне дороги", ref)
+        elif kind == "paint":
             parts = [Polygon(p["outer"]) for p in m.get("polygons", [])]
             if not parts or any(not p.is_valid for p in parts):
                 finding(out, "error", "marking-invalid", f"{m.get('id')}: контур разметки не является корректным многоугольником", ref)

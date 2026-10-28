@@ -42,6 +42,7 @@ const context = vm.createContext({ Layout,
 });
 vm.runInContext(read('app.js'), context);
 vm.runInContext(read('catalog.js'), context);
+vm.runInContext(read('direction_marking.js'), context);
 vm.runInContext(read('inspector.js'), context);
 const App = vm.runInContext('App', context);
 App.state.ltab = 'scenes';

@@ -76,6 +76,7 @@ const Catalog = (() => {
     solid: { title: "Сплошная", icon: "road" },
     stop: { title: "Стоп-линия", icon: "stopline" },
     zebra: { title: "Зебра", icon: "zebra" },
+    arrow: { title: "Стрелки направлений", icon: "arrow-up" },
   };
 
   // Road signs (game_godot/signs/<code>.svg): what people call them.

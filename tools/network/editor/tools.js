@@ -22,7 +22,7 @@ const Tools = (() => {
     { id: "prop", key: "O", title: "Объект", icon: "tree", hint: "Клик — поставить, тянуть — повернуть. Выберите объект слева" },
     { id: "brush", key: "B", title: "Кисть окружения", icon: "brush", hint: "Клик — готовая локация. Ведите — рисовать. ⌥ — стирать окружение" },
   ];
-  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerArrowhead: true };
+  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", markDirection: "straight", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerArrowhead: true };
   const SHORT_LABEL = { select: "Выбор", hand: "Рука", road: "Дорога", junction: "Перекрёсток", marking: "Разметка", track: "Рельсы", lawn: "Газон", actor: "Транспорт", light: "Светофор", sign: "Знак", officer: "Регулировщик", answer: "Ответ", prop: "Объект", brush: "Кисть" };
   let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null;
 
@@ -69,7 +69,8 @@ const Tools = (() => {
     } else if (tool === "junction") {
       html = Layout.TEMPLATES.map((t) => `<button class="ptile" data-tpl="${t.id}">${Layout.svg(Layout.template(t.id), 90, 64)}<span>${esc(t.title)}</span></button>`).join("");
     } else if (tool === "marking") {
-      html = Object.entries(Catalog.MARKS).map(([k, v]) => `<button class="pchip ${opts.mark === k ? "on" : ""}" data-mark="${k}"><span class="mark-pic m-${k}"></span><span>${v.title}</span></button>`).join("");
+      html = Object.entries(Catalog.MARKS).map(([k, v]) => `<button class="pchip ${opts.mark === k ? "on" : ""}" data-mark="${k}">${k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`}<span>${v.title}</span></button>`).join("");
+      if (opts.mark === "arrow") html += `<div class="direction-mark-options">${DirectionMark.variants.map(([key, title]) => `<button class="pchip ${opts.markDirection === key ? "on" : ""}" data-mark-direction="${key}" aria-label="${title}">${DirectionMark.svg(key)}<span>${title}</span></button>`).join("")}</div>`;
     } else if (tool === "answer" && !opts.pathFor) {
       html = [["arrow","Со стрелкой"],["line","Линия без стрелки"]].map(([v,t]) => `<button class="pchip ${(opts.answerArrowhead ? "arrow" : "line") === v ? "on" : ""}" data-answer-style="${v}"><span>${t}</span></button>`).join("");
     } else if (tool === "actor") {
@@ -88,6 +89,7 @@ const Tools = (() => {
     pop.innerHTML = html;
     pop.classList.toggle("grid", tool === "junction");
     pop.classList.toggle("brush-popover", tool === "brush");
+    pop.classList.toggle("direction-mark-popover", tool === "marking" && opts.mark === "arrow");
     pop.hidden = !html || !S();
     pop.querySelectorAll("img[data-thumb]").forEach((img) => Thumbs.fill(img));
   }
@@ -125,7 +127,7 @@ const Tools = (() => {
   function renderHint(text) {
     const t = LIST.find((x) => x.id === tool);
     let h = text ?? (t ? t.hint : "");
-    if (tool === "marking") h = opts.mark === "stop" || opts.mark === "zebra"
+    if (tool === "marking") h = opts.mark === "arrow" ? "Первый клик — начало стрелки, второй — её направление и длина. Затем можно изменить вид и размер справа" : opts.mark === "stop" || opts.mark === "zebra"
       ? (S()?.layout ? "Клик у перекрёстка — включить или выключить на этом въезде" : "Два клика поперёк дороги")
       : "Кликайте точки линии. ↵ — готово";
     const el = $("#hint");
@@ -145,6 +147,7 @@ const Tools = (() => {
       if (!b) return;
       if (b.dataset.road) { opts.roadKind = b.dataset.road; renderPopover(); }
       if (b.dataset.mark) { opts.mark = b.dataset.mark; finishDraft(true); renderPopover(); renderHint(); }
+      if (b.dataset.markDirection) { opts.markDirection = b.dataset.markDirection; renderPopover(); }
       if (b.dataset.actor) { opts.actorType = b.dataset.actor; renderPopover(); }
       if (b.dataset.answerStyle) { opts.answerArrowhead = b.dataset.answerStyle === "arrow"; renderPopover(); }
       if (b.dataset.tpl) applyTemplate(b.dataset.tpl);
@@ -398,6 +401,7 @@ const Tools = (() => {
       const pts = App.pointsOfRef(ref);
       if (!pts) return;
       const o = App.objectOf(ref);
+      if (ref.t === "marking" && o?.type === "arrow") return;
       if (ref.t === "route" && o?.kind === "approach" && !o.manual) return;
       const closed = ref.t === "road" || ref.t === "lawn";
       let best = -1, bd = 3;
@@ -507,7 +511,7 @@ const Tools = (() => {
     move(e) {
       if (draft && e.world) {
         draft.cursor = [snapGrid(e.world.x, e), snapGrid(e.world.z, e)];
-        Scene3D.setDraft({ kind: "line", points: draft.points, cursor: draft.cursor, colour: 0xffffff });
+        Scene3D.setDraft({ kind: opts.mark === "arrow" ? "arrow" : "line", direction: opts.markDirection, points: draft.points, cursor: draft.cursor, colour: 0xffffff });
       }
     },
     down(e) {
@@ -516,7 +520,11 @@ const Tools = (() => {
       if ((opts.mark === "stop" || opts.mark === "zebra") && s.layout) return toggleEnd(p, opts.mark);
       if (!draft) draft = { points: [] };
       draft.points.push(p);
-      if ((opts.mark === "stop" || opts.mark === "zebra") && draft.points.length === 2) return finishDraft();
+      if (opts.mark === "arrow" && draft.points.length === 2 && Math.hypot(p[0] - draft.points[0][0], p[1] - draft.points[0][1]) < 1) {
+        draft.points.pop();
+        return App.toast("Задайте стрелку длиной не меньше метра", "warn");
+      }
+      if (["stop", "zebra", "arrow"].includes(opts.mark) && draft.points.length === 2) return finishDraft();
       marking.move(e);
     },
     dblclick() { finishDraft(); },
@@ -836,6 +844,7 @@ const Tools = (() => {
         const m = { id, type: opts.mark, colour: "white", points: pts };
         if (opts.mark === "stop") m.width = 0.4;
         if (opts.mark === "zebra") m.length = 4;
+        if (opts.mark === "arrow") { m.direction = opts.markDirection; m.width = 2.6; }
         s.markings.push(m);
         return { t: "marking", id };
       });

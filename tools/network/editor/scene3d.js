@@ -1066,6 +1066,14 @@ const Scene3D = (() => {
       m.userData.own = true;
       g.add(m);
       g.add(polyline(pts, 0.3, ACCENT, 2, 1, true));
+    } else if (draft.kind === "arrow" && pts.length >= 2) {
+      for (const ring of DirectionMark.polygons({points:pts.slice(0,2),direction:draft.direction})) {
+        const shape = new THREE.Shape(ring.map(p => new THREE.Vector2(p[0],p[1])));
+        const geometry = new THREE.ShapeGeometry(shape);
+        geometry.rotateX(Math.PI / 2);
+        const mesh = new THREE.Mesh(geometry,basic(0xffffff,{side:THREE.DoubleSide,transparent:true,opacity:.75,depthWrite:false}));
+        mesh.position.y = .25; mesh.userData.own = true; g.add(mesh);
+      }
     } else if (pts.length >= 2) {
       g.add(polyline(draft.closed ? [...pts, pts[0]] : pts, 0.3, draft.colour || ACCENT, 2.5, 1, !draft.bare));
     }
@@ -1545,6 +1553,7 @@ const Scene3D = (() => {
         if (m.auto) continue;
         const ref = { t: "marking", id: m.id };
         if (skip(ref)) continue;
+        if (m.type === "arrow" && DirectionMark.polygons(m).some(polygon => inside(w, polygon))) return ref;
         if (m.points && lineHit(m.points, Math.max(wpp * 6, (m.type === "zebra" ? (m.length || 4) / 2 : 0.4)))) return ref;
       }
     }

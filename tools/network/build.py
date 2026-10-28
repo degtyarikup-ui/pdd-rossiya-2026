@@ -24,6 +24,8 @@ drawn surface the network does not own (layers.py reports it).
 Lawns (`lawns`): polygons {id, outer, holes}; they are drawn at LAWN_Y and take the pavement's place
 where they lie over it (never over the roads).
 Markings (`markings`): each item is one of
+    arrow    two axis `points` (tail -> forward), `direction` (straight, left, right,
+             straight_left, straight_right, left_right, all), `width` (default 2.6 m);
     paint    polygons {outer, holes} as traced from the baked scene (migrate.py --layers);
     solid    polyline `points`, `width` (default 0.13);
     dashed   polyline `points`, `width`, dash 2 m with a 3 m gap (game.js corridorDashes);
@@ -49,6 +51,7 @@ import numpy as np
 import triangle
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import substring, unary_union
+import direction_marking
 
 ROOT = Path(__file__).resolve().parents[2]
 NET = ROOT / "game_godot" / "network"
@@ -438,6 +441,8 @@ DOUBLE_GAP = 0.28    # centre to centre of the two lines of a double marking (m)
 
 def single_marking(m: dict):
     kind = m.get("type", "solid")
+    if kind == "arrow":
+        return direction_marking.geometry(m)
     if kind == "paint":
         parts = [polygon_of(p) for p in m.get("polygons", [])]
         return unary_union(parts) if parts else Polygon()
