@@ -21,6 +21,7 @@ class AppNavigationShell extends StatelessWidget {
     required this.child,
     this.fullscreen = false,
     this.desktopEnabled = kIsWeb,
+    this.desktopFooterBuilder,
   });
 
   final int selectedIndex;
@@ -29,6 +30,7 @@ class AppNavigationShell extends StatelessWidget {
   final Widget child;
   final bool fullscreen;
   final bool desktopEnabled;
+  final Widget Function(bool extended)? desktopFooterBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +46,9 @@ class AppNavigationShell extends StatelessWidget {
         return Scaffold(
           backgroundColor: colors.homeScreenBackground,
           body: Row(
+            crossAxisAlignment: desktop
+                ? CrossAxisAlignment.stretch
+                : CrossAxisAlignment.center,
             children: [
               if (desktop)
                 DecoratedBox(
@@ -61,14 +66,34 @@ class AppNavigationShell extends StatelessWidget {
                       backgroundColor: Colors.transparent,
                       selectedIndex: selectedIndex,
                       onDestinationSelected: onSelected,
-                      groupAlignment: -0.7,
+                      groupAlignment: -1,
+                      trailing: desktopFooterBuilder == null
+                          ? null
+                          : Padding(
+                              padding: const EdgeInsets.only(
+                                top: 24,
+                                bottom: 16,
+                              ),
+                              child: SizedBox(
+                                width: extended ? 184 : 64,
+                                child: desktopFooterBuilder!(extended),
+                              ),
+                            ),
                       indicatorColor: colors.accentSurface10,
                       selectedIconTheme: IconThemeData(color: colors.accent),
                       selectedLabelTextStyle: TextStyle(
+                        fontFamily: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.fontFamily,
+                        fontSize: 14,
                         color: colors.accent,
                         fontWeight: FontWeight.w600,
                       ),
                       unselectedLabelTextStyle: TextStyle(
+                        fontFamily: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.fontFamily,
+                        fontSize: 14,
                         color: colors.secondaryText,
                       ),
                       leading: Padding(

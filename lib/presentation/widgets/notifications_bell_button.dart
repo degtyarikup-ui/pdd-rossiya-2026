@@ -8,9 +8,14 @@ import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 
 /// Колокольчик уведомлений: красная точка, пока есть непрочитанное.
 class NotificationsBellButton extends StatelessWidget {
-  const NotificationsBellButton({super.key, this.service});
+  const NotificationsBellButton({
+    super.key,
+    this.service,
+    this.showLabel = false,
+  });
 
   final NotificationInboxService? service;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -40,12 +45,36 @@ class NotificationsBellButton extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              AppChromeIconButton(
-                icon: unread > 0
-                    ? Icons.notifications_rounded
-                    : Icons.notifications_none_rounded,
-                onTap: open,
-              ),
+              if (showLabel)
+                TextButton.icon(
+                  onPressed: open,
+                  style: TextButton.styleFrom(
+                    foregroundColor: colors.secondaryText,
+                    alignment: Alignment.centerLeft,
+                    minimumSize: const Size(0, 48),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                  icon: Icon(
+                    unread > 0
+                        ? Icons.notifications_rounded
+                        : Icons.notifications_none_rounded,
+                    size: 22,
+                  ),
+                  label: Text(
+                    appL10n.inboxTitle,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                )
+              else
+                AppChromeIconButton(
+                  icon: unread > 0
+                      ? Icons.notifications_rounded
+                      : Icons.notifications_none_rounded,
+                  onTap: open,
+                ),
               if (unread > 0)
                 Positioned(
                   key: const ValueKey('inbox-unread-badge'),

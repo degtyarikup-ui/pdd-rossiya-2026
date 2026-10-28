@@ -1,3 +1,5 @@
+import 'package:pdd_app/presentation/screens/home/desktop_study_dashboard.dart';
+import 'package:pdd_app/presentation/widgets/notifications_bell_button.dart';
 import 'package:pdd_app/presentation/widgets/app_navigation_shell.dart';
 import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'dart:async';
@@ -409,6 +411,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         selectedIndex: _currentIndex,
         onSelected: _selectTab,
         fullscreen: ref.watch(fullscreenProvider),
+        desktopFooterBuilder: (extended) =>
+            NotificationsBellButton(showLabel: extended),
         items: [
           (
             icon: Icons.menu_book_outlined,
@@ -553,9 +557,13 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     final sessionData = unfinishedSession.valueOrNull;
     final hasContinueCard = sessionData != null;
     final hasInboxAlert = _inbox.homeAlertCount > 0;
+    final size = MediaQuery.sizeOf(context);
+    final desktop = kIsWeb && size.width >= 1100 && size.height >= 500;
 
     return AppContentFrame(
-      maxWidth: AppContentFrame.catalogueWidth,
+      maxWidth: desktop
+          ? AppContentFrame.desktopContentWidth
+          : AppContentFrame.catalogueWidth,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final totalH = constraints.maxHeight;
@@ -616,62 +624,90 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
             buttonHeight = minButtonHeight;
           }
 
+          Widget progressFor(Map<String, int> stats) => desktop
+              ? DesktopProgressCard(stats: stats)
+              : ProgressPanelCard(stats: stats);
+          final progressSection = ValueListenableBuilder<List<AppNotice>>(
+            valueListenable: RemoteNotificationsService.instance.banners,
+            builder: (context, banners, _) {
+              const emptyStats = {
+                'correctAnswers': 0,
+                'answeredQuestions': 0,
+                'passedTickets': 0,
+                'wrongQuestions': 0,
+                'totalQuestions': 0,
+                'totalTickets': 0,
+              };
+              final progressCard = statsAsync.when(
+                data: (stats) => progressFor(stats),
+                loading: () => banners.isNotEmpty
+                    ? progressFor(emptyStats)
+                    : const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 48),
+                          child: AppLoadingIndicator(size: 100),
+                        ),
+                      ),
+                error: (error, _) => progressFor(emptyStats),
+              );
+              if (banners.isEmpty) return progressCard;
+              final banner = banners.first;
+              return AppNoticeBannerSlot(
+                notice: banner,
+                onViewed: () => unawaited(
+                  RemoteNotificationsService.instance.recordBannerEvent(
+                    banner.id,
+                    'view',
+                  ),
+                ),
+                statistics: progressCard,
+                onDismiss: () => RemoteNotificationsService.instance
+                    .dismissBanner(banner.id),
+                onTap: () {
+                  final tap = banner.tap;
+                  if (tap != null) {
+                    unawaited(
+                      RemoteNotificationsService.instance.recordBannerEvent(
+                        banner.id,
+                        'click',
+                      ),
+                    );
+                    widget.onNoticeTap(tap);
+                  }
+                },
+              );
+            },
+          );
+          if (desktop) {
+            final settings = ref.watch(appSettingsProvider);
+            return DesktopStudyDashboard(
+              progress: progressSection,
+              category: settings.ticketCategory == TicketCategory.cd
+                  ? 'C/D'
+                  : 'A/B',
+              inboxAlert: hasInboxAlert
+                  ? InboxHomeAlert(service: _inbox)
+                  : null,
+              resume: sessionData == null
+                  ? null
+                  : ContinueSessionCard(session: sessionData),
+              onExam: _openExam,
+              onTopics: () => _openSection(const TopicsScreen()),
+              onTickets: () => _openSection(const TicketsScreen()),
+              onMistakes: () => _openSection(const MistakesScreen()),
+              onFavorites: () => _openSection(const FavoritesScreen()),
+              onMarathon: _openMarathon,
+              onRate: _rateApp,
+              marathonBusy: _openingMarathon,
+            );
+          }
+
           final primarySections = <Widget>[
             if (hasInboxAlert) ...[
               InboxHomeAlert(service: _inbox),
               const SizedBox(height: gap),
             ],
-            ValueListenableBuilder<List<AppNotice>>(
-              valueListenable: RemoteNotificationsService.instance.banners,
-              builder: (context, banners, _) {
-                const emptyStats = {
-                  'correctAnswers': 0,
-                  'answeredQuestions': 0,
-                  'passedTickets': 0,
-                  'wrongQuestions': 0,
-                  'totalQuestions': 0,
-                  'totalTickets': 0,
-                };
-                final progressCard = statsAsync.when(
-                  data: (stats) => ProgressPanelCard(stats: stats),
-                  loading: () => banners.isNotEmpty
-                      ? ProgressPanelCard(stats: emptyStats)
-                      : const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 48),
-                            child: AppLoadingIndicator(size: 100),
-                          ),
-                        ),
-                  error: (error, _) => ProgressPanelCard(stats: emptyStats),
-                );
-                if (banners.isEmpty) return progressCard;
-                final banner = banners.first;
-                return AppNoticeBannerSlot(
-                  notice: banner,
-                  onViewed: () => unawaited(
-                    RemoteNotificationsService.instance.recordBannerEvent(
-                      banner.id,
-                      'view',
-                    ),
-                  ),
-                  statistics: progressCard,
-                  onDismiss: () => RemoteNotificationsService.instance
-                      .dismissBanner(banner.id),
-                  onTap: () {
-                    final tap = banner.tap;
-                    if (tap != null) {
-                      unawaited(
-                        RemoteNotificationsService.instance.recordBannerEvent(
-                          banner.id,
-                          'click',
-                        ),
-                      );
-                      widget.onNoticeTap(tap);
-                    }
-                  },
-                );
-              },
-            ),
+            progressSection,
             const SizedBox(height: gap),
             unfinishedSession.maybeWhen(
               data: (session) => session == null
@@ -852,38 +888,43 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
         CountryConfig.current.examRules.totalMinutes,
       ),
       categoryBadge: categoryLabel,
-      onTap: () async {
-        HapticFeedbackHelper.tap();
-        final tickets = await ref.read(ticketsProvider.future);
-        final allQuestions = <Map<String, dynamic>>[];
+      onTap: _openExam,
+    );
+  }
 
-        for (final ticket in tickets) {
-          final questions = ticket['questions'] as List;
-          for (final q in questions) {
-            allQuestions.add({
-              'id': q.id,
-              'question': q.question,
-              'answers': q.answers
-                  .map((a) => {'text': a.text, 'correct': a.isCorrect})
-                  .toList(),
-              'comment': q.comment ?? '',
-              'pddPoints': q.pddPoints ?? [],
-              'image': q.image,
-              'topic': q.topic ?? [],
-              'ticketNumber': q.ticketNumber,
-            });
-          }
-        }
+  void _openSection(Widget screen) {
+    HapticFeedbackHelper.tap();
+    Navigator.push(context, MaterialPageRoute<void>(builder: (_) => screen));
+  }
 
-        if (!context.mounted) return;
+  Future<void> _openExam() async {
+    HapticFeedbackHelper.tap();
+    final tickets = await ref.read(ticketsProvider.future);
+    final allQuestions = <Map<String, dynamic>>[];
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ExamScreen(allQuestions: allQuestions),
-          ),
-        );
-      },
+    for (final ticket in tickets) {
+      final questions = ticket['questions'] as List;
+      for (final q in questions) {
+        allQuestions.add({
+          'id': q.id,
+          'question': q.question,
+          'answers': q.answers
+              .map((a) => {'text': a.text, 'correct': a.isCorrect})
+              .toList(),
+          'comment': q.comment ?? '',
+          'pddPoints': q.pddPoints ?? [],
+          'image': q.image,
+          'topic': q.topic ?? [],
+          'ticketNumber': q.ticketNumber,
+        });
+      }
+    }
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ExamScreen(allQuestions: allQuestions)),
     );
   }
 

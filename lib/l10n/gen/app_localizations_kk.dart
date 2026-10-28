@@ -4350,4 +4350,42 @@ class AppLocalizationsKk extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get desktopStudyIntro =>
+      'Тақырыптарды оқып, билеттерді шешіп, емтиханда өзіңізді тексеріңіз.';
+
+  @override
+  String get desktopExamDescription =>
+      'Біліміңізді нақты емтихан жағдайында тексеріңіз.';
+
+  @override
+  String get desktopStartExam => 'Емтиханды бастау';
+
+  @override
+  String get desktopPracticeTitle => 'Жаттығу';
+
+  @override
+  String get desktopTopicsDescription =>
+      'Ережелерді жеке тақырыптар бойынша меңгеріңіз.';
+
+  @override
+  String get desktopTicketsDescription =>
+      'Емтихан билеттерін өз қарқыныңызбен өтіңіз.';
+
+  @override
+  String get desktopMistakesDescription =>
+      'Көбірек назар аударуды қажет ететін сұрақтарды қайталаңыз.';
+
+  @override
+  String get desktopFavoritesDescription =>
+      'Таңдаулыға сақталған сұрақтарды қайталаңыз.';
+
+  @override
+  String get desktopMarathonDescription =>
+      'Бүкіл сұрақтар қорын бір режимде қайталаңыз.';
+
+  @override
+  String get desktopInboxDescription =>
+      'Қолданба жаңалықтары, жаңартулар және жазылым хабарламалары.';
 }

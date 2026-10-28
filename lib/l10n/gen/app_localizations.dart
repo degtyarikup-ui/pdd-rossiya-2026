@@ -7287,6 +7287,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'{count, plural, one{У вас новое уведомление} few{У вас {count} новых уведомления} many{У вас {count} новых уведомлений} other{У вас {count} новых уведомления}}'**
   String inboxHomeAlert(int count);
+
+  /// No description provided for @desktopStudyIntro.
+  ///
+  /// In ru, this message translates to:
+  /// **'Учите темы, решайте билеты и проверяйте себя на экзамене.'**
+  String get desktopStudyIntro;
+
+  /// No description provided for @desktopExamDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте знания в условиях настоящего экзамена.'**
+  String get desktopExamDescription;
+
+  /// No description provided for @desktopStartExam.
+  ///
+  /// In ru, this message translates to:
+  /// **'Начать экзамен'**
+  String get desktopStartExam;
+
+  /// No description provided for @desktopPracticeTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Практика'**
+  String get desktopPracticeTitle;
+
+  /// No description provided for @desktopTopicsDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разберитесь в правилах по отдельным темам.'**
+  String get desktopTopicsDescription;
+
+  /// No description provided for @desktopTicketsDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пройдите экзаменационные билеты в удобном темпе.'**
+  String get desktopTicketsDescription;
+
+  /// No description provided for @desktopMistakesDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вернитесь к вопросам, которые требуют внимания.'**
+  String get desktopMistakesDescription;
+
+  /// No description provided for @desktopFavoritesDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторите вопросы, сохранённые в избранное.'**
+  String get desktopFavoritesDescription;
+
+  /// No description provided for @desktopMarathonDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторите всю базу вопросов в одном режиме.'**
+  String get desktopMarathonDescription;
+
+  /// No description provided for @desktopInboxDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новости приложения, обновления и сообщения о подписке.'**
+  String get desktopInboxDescription;
 }
 
 class _AppLocalizationsDelegate

@@ -4355,4 +4355,41 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get desktopStudyIntro =>
+      'Study topics, practise tickets and test yourself in the exam.';
+
+  @override
+  String get desktopExamDescription =>
+      'Test your knowledge under real exam conditions.';
+
+  @override
+  String get desktopStartExam => 'Start exam';
+
+  @override
+  String get desktopPracticeTitle => 'Practice';
+
+  @override
+  String get desktopTopicsDescription => 'Learn the rules one topic at a time.';
+
+  @override
+  String get desktopTicketsDescription =>
+      'Work through exam tickets at your own pace.';
+
+  @override
+  String get desktopMistakesDescription =>
+      'Revisit questions that need more attention.';
+
+  @override
+  String get desktopFavoritesDescription =>
+      'Review the questions you have saved.';
+
+  @override
+  String get desktopMarathonDescription =>
+      'Review the entire question bank in one mode.';
+
+  @override
+  String get desktopInboxDescription =>
+      'App news, updates and subscription messages.';
 }

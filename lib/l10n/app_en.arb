@@ -1509,5 +1509,15 @@
   "inboxOpen": "Open",
   "trainingKeyboardHint": "Numbers — answer · Enter — confirm or continue · ←/→ — questions · Esc — back",
   "examKeyboardHint": "Numbers — answer · ←/→ — questions · Esc — back",
-  "inboxHomeAlert": "{count, plural, one{You have a new notification} other{You have {count} new notifications}}"
+  "inboxHomeAlert": "{count, plural, one{You have a new notification} other{You have {count} new notifications}}",
+  "desktopStudyIntro": "Study topics, practise tickets and test yourself in the exam.",
+  "desktopExamDescription": "Test your knowledge under real exam conditions.",
+  "desktopStartExam": "Start exam",
+  "desktopPracticeTitle": "Practice",
+  "desktopTopicsDescription": "Learn the rules one topic at a time.",
+  "desktopTicketsDescription": "Work through exam tickets at your own pace.",
+  "desktopMistakesDescription": "Revisit questions that need more attention.",
+  "desktopFavoritesDescription": "Review the questions you have saved.",
+  "desktopMarathonDescription": "Review the entire question bank in one mode.",
+  "desktopInboxDescription": "App news, updates and subscription messages."
 }

@@ -198,7 +198,7 @@ class _ExamHeroCardState extends State<ExamHeroCard> {
     );
   }
 
-  CustomPainter _buildPainterForConcept(ExamCardConcept concept) {
+  static CustomPainter _buildPainterForConcept(ExamCardConcept concept) {
     switch (concept) {
       case ExamCardConcept.signU:
         return const _SignUPainter();
@@ -216,6 +216,17 @@ class _ExamHeroCardState extends State<ExamHeroCard> {
         return const _MainRoadSignPainter();
     }
   }
+}
+
+/// The same lightweight vector artwork used by the phone exam card.
+class ExamHeroArtwork extends StatelessWidget {
+  const ExamHeroArtwork({super.key, this.concept = ExamCardConcept.license});
+  final ExamCardConcept concept;
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    painter: _ExamHeroCardState._buildPainterForConcept(concept),
+    size: Size.infinite,
+  );
 }
 
 // ---------------------------------------------------------------------------

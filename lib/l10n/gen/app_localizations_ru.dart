@@ -4373,4 +4373,42 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get desktopStudyIntro =>
+      'Учите темы, решайте билеты и проверяйте себя на экзамене.';
+
+  @override
+  String get desktopExamDescription =>
+      'Проверьте знания в условиях настоящего экзамена.';
+
+  @override
+  String get desktopStartExam => 'Начать экзамен';
+
+  @override
+  String get desktopPracticeTitle => 'Практика';
+
+  @override
+  String get desktopTopicsDescription =>
+      'Разберитесь в правилах по отдельным темам.';
+
+  @override
+  String get desktopTicketsDescription =>
+      'Пройдите экзаменационные билеты в удобном темпе.';
+
+  @override
+  String get desktopMistakesDescription =>
+      'Вернитесь к вопросам, которые требуют внимания.';
+
+  @override
+  String get desktopFavoritesDescription =>
+      'Повторите вопросы, сохранённые в избранное.';
+
+  @override
+  String get desktopMarathonDescription =>
+      'Повторите всю базу вопросов в одном режиме.';
+
+  @override
+  String get desktopInboxDescription =>
+      'Новости приложения, обновления и сообщения о подписке.';
 }

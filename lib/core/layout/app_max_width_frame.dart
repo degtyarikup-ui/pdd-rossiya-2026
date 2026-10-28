@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/layout/app_content_frame.dart';
@@ -14,17 +15,24 @@ class AppMaxWidthFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
+    final desktop = kIsWeb && width >= 1100;
 
     // Keep Navigator at the same element path during rotation. A conditional
     // wrapper here would dispose routes, session state and timers on resize.
     final colors = AppColors.of(context);
     return ColoredBox(
-      color: colors.isDark ? Colors.black : colors.divider,
+      color: desktop
+          ? colors.background
+          : colors.isDark
+          ? Colors.black
+          : colors.divider,
       child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: width < AppContentFrame.expandedBreakpoint
                 ? AppContentFrame.compactWidth
+                : desktop
+                ? double.infinity
                 : maxContentWidth,
           ),
           child: ClipRect(

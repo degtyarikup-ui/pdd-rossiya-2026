@@ -14,6 +14,7 @@ class AppContentFrame extends StatelessWidget {
   static const readingWidth = 720.0;
   static const catalogueWidth = 1040.0;
   static const canvasWidth = 1200.0;
+  static const desktopContentWidth = 1120.0;
 
   final double maxWidth;
   final Widget child;

@@ -46,7 +46,7 @@ class ProgressPanelCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              _ReadinessGauge(percent: readiness),
+              ReadinessGauge(percent: readiness),
               const SizedBox(width: AppDimensions.spacingL),
               Expanded(
                 child: Text(
@@ -97,8 +97,8 @@ class ProgressPanelCard extends StatelessWidget {
 
 /// Дуга готовности. Форма выбрана не случайно: это приборная шкала —
 /// из мира предмета, а не абстрактное кольцо.
-class _ReadinessGauge extends StatelessWidget {
-  const _ReadinessGauge({required this.percent});
+class ReadinessGauge extends StatelessWidget {
+  const ReadinessGauge({super.key, required this.percent});
 
   final int percent;
 
