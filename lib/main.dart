@@ -1,3 +1,4 @@
+import 'package:pdd_app/data/services/notification_inbox_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 
 import 'dart:async';
@@ -173,6 +174,13 @@ Future<Widget> _initializeApplication(
   }
 
   unawaited(IapService.instance.init());
+  // Ящик уведомлений (колокольчик в профиле): новости и сообщения о подписке.
+  unawaited(
+    NotificationInboxService.instance.init().catchError(
+      (Object e) =>
+          ErrorReporter.report(ErrorCategory.app, 'startup.inbox', error: e),
+    ),
+  );
 
   // Локальные напоминания о серии (fire-and-forget, не блокируют старт).
   unawaited(_initStreakNotifications(progressDataSource));
@@ -287,6 +295,7 @@ class _PddAppState extends ConsumerState<PddApp> with WidgetsBindingObserver {
     // тренировку) и при возврате (держит расписание свежим).
     if (state == AppLifecycleState.resumed) {
       unawaited(PremiumService.instance.refreshDailyLimits());
+      unawaited(NotificationInboxService.instance.refresh());
       unawaited(UsageReporter.instance.flush());
       unawaited(ErrorReporter.instance.flush());
       SupportInbox.instance.start();

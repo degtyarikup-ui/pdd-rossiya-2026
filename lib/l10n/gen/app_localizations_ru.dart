@@ -4285,4 +4285,72 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get violatorWeatherSpeed => 'Скорость без учёта погоды / занос';
+
+  @override
+  String get inboxTitle => 'Уведомления';
+
+  @override
+  String get inboxEmpty =>
+      'Здесь появятся новости приложения и сообщения о вашей подписке';
+
+  @override
+  String inboxUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count непрочитанного',
+      many: '$count непрочитанных',
+      few: '$count непрочитанных',
+      one: '$count непрочитанное',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inboxPremiumStartedTitle => 'Премиум активирован';
+
+  @override
+  String inboxPremiumStartedBody(String date) {
+    return 'Премиум действует до $date. Спасибо, что готовитесь с нами!';
+  }
+
+  @override
+  String get inboxPremiumStartedForever =>
+      'Премиум действует без ограничения срока. Спасибо, что готовитесь с нами!';
+
+  @override
+  String get inboxPremiumEndedTitle => 'Премиум закончился';
+
+  @override
+  String inboxPremiumEndedBody(String date) {
+    return 'Срок Премиума истёк $date. Продлите его, чтобы вернуть безлимит.';
+  }
+
+  @override
+  String get inboxRenew => 'Продлить';
+
+  @override
+  String inboxUpdateTitle(String version) {
+    return 'Вышла версия $version';
+  }
+
+  @override
+  String get inboxUpdateBody =>
+      'Обновите приложение, чтобы получить новые возможности и исправления.';
+
+  @override
+  String get inboxUpdateAction => 'Обновить';
+
+  @override
+  String get inboxSbpTitle => 'Премиум можно оплатить по СБП';
+
+  @override
+  String get inboxSbpBody =>
+      'Оплата через Систему быстрых платежей в приложении банка: без карты и без автопродления.';
+
+  @override
+  String get inboxSbpAction => 'Выбрать тариф';
+
+  @override
+  String get inboxOpen => 'Открыть';
 }

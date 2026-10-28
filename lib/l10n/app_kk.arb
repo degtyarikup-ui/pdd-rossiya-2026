@@ -1490,5 +1490,21 @@
   "violatorWaffleBlock": "Қиылыстағы кептеліс",
   "violatorEmergencyYield": "Арнайы көлікке жол бермеу",
   "violatorNoLights": "Түнде жарықсыз жүру",
-  "violatorWeatherSpeed": "Ауа райына сай емес жылдамдық"
+  "violatorWeatherSpeed": "Ауа райына сай емес жылдамдық",
+  "inboxTitle": "Хабарламалар",
+  "inboxEmpty": "Мұнда қолданба жаңалықтары мен жазылымыңыз туралы хабарлар пайда болады",
+  "inboxUnread": "{count, plural, one{{count} оқылмаған} other{{count} оқылмаған}}",
+  "inboxPremiumStartedTitle": "Премиум қосылды",
+  "inboxPremiumStartedBody": "Премиум {date} дейін жарамды. Бізбен дайындалғаныңызға рақмет!",
+  "inboxPremiumStartedForever": "Премиум мерзімсіз жарамды. Бізбен дайындалғаныңызға рақмет!",
+  "inboxPremiumEndedTitle": "Премиум мерзімі аяқталды",
+  "inboxPremiumEndedBody": "Премиум мерзімі {date} аяқталды. Шектеусіз мүмкіндіктерді қайтару үшін оны ұзартыңыз.",
+  "inboxRenew": "Ұзарту",
+  "inboxUpdateTitle": "{version} нұсқасы шықты",
+  "inboxUpdateBody": "Жаңа мүмкіндіктер мен түзетулерді алу үшін қолданбаны жаңартыңыз.",
+  "inboxUpdateAction": "Жаңарту",
+  "inboxSbpTitle": "Премиумды СБП арқылы төлеуге болады",
+  "inboxSbpBody": "Банк қолданбасындағы Жылдам төлемдер жүйесі арқылы төлем: картасыз әрі автоұзартусыз.",
+  "inboxSbpAction": "Тарифті таңдау",
+  "inboxOpen": "Ашу"
 }

@@ -19,7 +19,17 @@ import 'package:pdd_app/data/services/push_topic_state.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
 
 /// Where a notice button / push tap leads.
-enum NoticeAction { none, url, tickets, topics, game, feed, settings, support }
+enum NoticeAction {
+  none,
+  url,
+  tickets,
+  topics,
+  game,
+  feed,
+  settings,
+  support,
+  premium,
+}
 
 /// A tap on a notice (popup button, banner, push) to be executed by the UI.
 class NoticeTap {
@@ -39,7 +49,11 @@ class AppNotice {
   final String id, title, body;
   final DateTime expiresAt;
 
-  /// `popup` (modal on home) or `banner` (dismissible card on home).
+  /// Publication time; orders the notification inbox.
+  final DateTime? createdAt;
+
+  /// `popup` (modal on home), `banner` (dismissible card on home) or `news`
+  /// (only listed in the notification inbox).
   final String kind;
   final String imageUrl, emoji, buttonText, dismissText, actionUrl;
 
@@ -57,6 +71,7 @@ class AppNotice {
     required this.title,
     required this.body,
     required this.expiresAt,
+    this.createdAt,
     this.kind = 'popup',
     this.imageUrl = '',
     this.emoji = '',
@@ -70,6 +85,7 @@ class AppNotice {
   });
 
   bool get isBanner => kind == 'banner';
+  bool get isNews => kind == 'news';
   bool get isImageOnly => layout == 'image';
   bool get isImageBanner => isBanner && isImageOnly;
   NoticeTap? get tap => action == NoticeAction.none
@@ -95,7 +111,10 @@ class AppNotice {
     final id = value['id'] as String;
     if (!RegExp(r'^[a-f0-9-]{36}$').hasMatch(id)) return null;
     final image = _str(value['imageUrl']);
-    final kind = value['kind'] == 'banner' ? 'banner' : 'popup';
+    final kind = const ['banner', 'news'].contains(value['kind'])
+        ? value['kind'] as String
+        : 'popup';
+    if (kind == 'news' && value['layout'] == 'image') return null;
     if (value['layout'] == 'image' && !image.startsWith('https://')) {
       return null;
     }
@@ -109,6 +128,11 @@ class AppNotice {
       expiresAt: DateTime.fromMillisecondsSinceEpoch(
         (value['expiresAt'] as num).toInt(),
       ),
+      createdAt: value['createdAt'] is num
+          ? DateTime.fromMillisecondsSinceEpoch(
+              (value['createdAt'] as num).toInt(),
+            )
+          : null,
       kind: kind,
       imageUrl: image.startsWith('https://') ? image : '',
       emoji: _str(value['emoji'], 8),
@@ -183,6 +207,9 @@ class RemoteNotificationsService {
 
   /// Active, not-dismissed banners for the home screen.
   final ValueNotifier<List<AppNotice>> banners = ValueNotifier(const []);
+
+  /// Every active message (news, windows, banners) for the notification inbox.
+  final ValueNotifier<List<AppNotice>> inbox = ValueNotifier(const []);
   final StreamController<NoticeTap> _taps = StreamController.broadcast();
 
   /// Actions requested by taps on pushes (incl. cold start). The UI executes them.
@@ -195,6 +222,13 @@ class RemoteNotificationsService {
     _pendingTap = null;
     return tap;
   }
+
+  /// Runs a notice action from elsewhere in the app (the notification inbox).
+  void runTap(NoticeTap tap) => _emitTap(tap);
+
+  /// Messages already shown as a window or dismissed as a banner.
+  Set<String> get seenIds =>
+      (_prefs?.getStringList('${_prefix}seen') ?? const []).toSet();
 
   void _emitTap(NoticeTap? tap) {
     if (tap == null) return;
@@ -268,6 +302,9 @@ class RemoteNotificationsService {
   void _publishBanners() {
     final seen = _prefs?.getStringList('${_prefix}seen') ?? const [];
     final now = DateTime.now();
+    inbox.value = _config['popupEnabled'] == true
+        ? _messages.where((m) => m.expiresAt.isAfter(now)).toList()
+        : const [];
     banners.value = _config['popupEnabled'] == true
         ? _messages
               .where(
@@ -298,6 +335,7 @@ class RemoteNotificationsService {
         'platform': platform,
         'imageBanners': '1',
         'imagePopups': '1',
+        'inbox': '1',
         if (platform == 'android')
           'store': StoreConfig.current == AppStore.rustore ? 'rustore' : 'play',
       };
@@ -452,6 +490,7 @@ class RemoteNotificationsService {
     final seen = _prefs?.getStringList('${_prefix}seen') ?? [];
     for (final message in _messages) {
       if (!message.isBanner &&
+          !message.isNews &&
           message.expiresAt.isAfter(DateTime.now()) &&
           !seen.contains(message.id)) {
         return message;
@@ -475,6 +514,7 @@ class RemoteNotificationsService {
       '${_prefix}seen',
       seen.length > 500 ? seen.sublist(seen.length - 500) : seen,
     );
+    inbox.value = List.of(inbox.value);
   }
 
   Future<void> setPushConsent(

@@ -20,6 +20,7 @@
 | Дизайн | `lib/core/constants/`, `lib/core/theme/` |
 | Планшеты и горизонтальный режим | [Адаптивная вёрстка](adaptive-layout.md) |
 | Строки | `lib/l10n/app_{ru,en,kk}.arb` |
+| Ящик уведомлений (колокольчик в профиле) | `notification_inbox_service.dart`, `screens/notifications/`; описание — [уведомления](../ops/notifications-setup.md) |
 | Нативные интеграции | `android/`, `ios/`, `web/` |
 
 ## Связи и ограничения

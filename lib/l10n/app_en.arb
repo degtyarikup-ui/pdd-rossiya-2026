@@ -1490,5 +1490,21 @@
   "violatorWaffleBlock": "Gridlock on intersection",
   "violatorEmergencyYield": "Failed to yield to emergency vehicle",
   "violatorNoLights": "Driving without lights at night",
-  "violatorWeatherSpeed": "Speed inappropriate for weather / skid"
+  "violatorWeatherSpeed": "Speed inappropriate for weather / skid",
+  "inboxTitle": "Notifications",
+  "inboxEmpty": "App news and messages about your subscription will appear here",
+  "inboxUnread": "{count, plural, one{{count} unread} other{{count} unread}}",
+  "inboxPremiumStartedTitle": "Premium activated",
+  "inboxPremiumStartedBody": "Premium is active until {date}. Thank you for studying with us!",
+  "inboxPremiumStartedForever": "Premium is active with no end date. Thank you for studying with us!",
+  "inboxPremiumEndedTitle": "Premium has ended",
+  "inboxPremiumEndedBody": "Premium expired on {date}. Renew it to get unlimited access back.",
+  "inboxRenew": "Renew",
+  "inboxUpdateTitle": "Version {version} is out",
+  "inboxUpdateBody": "Update the app to get new features and fixes.",
+  "inboxUpdateAction": "Update",
+  "inboxSbpTitle": "Pay for Premium with SBP",
+  "inboxSbpBody": "Pay via the Faster Payments System in your bank app: no card and no auto-renewal.",
+  "inboxSbpAction": "Choose a plan",
+  "inboxOpen": "Open"
 }

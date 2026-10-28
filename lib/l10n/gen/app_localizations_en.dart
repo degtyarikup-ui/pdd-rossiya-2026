@@ -4271,4 +4271,69 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get violatorWeatherSpeed => 'Speed inappropriate for weather / skid';
+
+  @override
+  String get inboxTitle => 'Notifications';
+
+  @override
+  String get inboxEmpty =>
+      'App news and messages about your subscription will appear here';
+
+  @override
+  String inboxUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread',
+      one: '$count unread',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inboxPremiumStartedTitle => 'Premium activated';
+
+  @override
+  String inboxPremiumStartedBody(String date) {
+    return 'Premium is active until $date. Thank you for studying with us!';
+  }
+
+  @override
+  String get inboxPremiumStartedForever =>
+      'Premium is active with no end date. Thank you for studying with us!';
+
+  @override
+  String get inboxPremiumEndedTitle => 'Premium has ended';
+
+  @override
+  String inboxPremiumEndedBody(String date) {
+    return 'Premium expired on $date. Renew it to get unlimited access back.';
+  }
+
+  @override
+  String get inboxRenew => 'Renew';
+
+  @override
+  String inboxUpdateTitle(String version) {
+    return 'Version $version is out';
+  }
+
+  @override
+  String get inboxUpdateBody => 'Update the app to get new features and fixes.';
+
+  @override
+  String get inboxUpdateAction => 'Update';
+
+  @override
+  String get inboxSbpTitle => 'Pay for Premium with SBP';
+
+  @override
+  String get inboxSbpBody =>
+      'Pay via the Faster Payments System in your bank app: no card and no auto-renewal.';
+
+  @override
+  String get inboxSbpAction => 'Choose a plan';
+
+  @override
+  String get inboxOpen => 'Open';
 }

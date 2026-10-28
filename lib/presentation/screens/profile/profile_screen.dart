@@ -16,6 +16,7 @@ import 'package:pdd_app/presentation/widgets/achievement_labels.dart';
 import 'package:pdd_app/presentation/screens/profile/widgets/achievement_badge.dart';
 import 'package:pdd_app/presentation/screens/settings/settings_screen.dart';
 import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
+import 'package:pdd_app/presentation/widgets/notifications_bell_button.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/auth_modal_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_banner_card.dart';
@@ -171,6 +172,8 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    const NotificationsBellButton(),
+                    const SizedBox(width: AppDimensions.spacingS),
                     AppChromeIconButton(
                       icon: Icons.chat_bubble_outline_rounded,
                       onTap: () {

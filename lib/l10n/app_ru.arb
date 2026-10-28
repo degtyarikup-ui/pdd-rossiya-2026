@@ -2059,5 +2059,49 @@
   "violatorWaffleBlock": "Затор на перекрёстке",
   "violatorEmergencyYield": "Не уступил дорогу спецтранспорту",
   "violatorNoLights": "Движение без фар ночью",
-  "violatorWeatherSpeed": "Скорость без учёта погоды / занос"
+  "violatorWeatherSpeed": "Скорость без учёта погоды / занос",
+  "inboxTitle": "Уведомления",
+  "inboxEmpty": "Здесь появятся новости приложения и сообщения о вашей подписке",
+  "inboxUnread": "{count, plural, one{{count} непрочитанное} few{{count} непрочитанных} many{{count} непрочитанных} other{{count} непрочитанного}}",
+  "@inboxUnread": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inboxPremiumStartedTitle": "Премиум активирован",
+  "inboxPremiumStartedBody": "Премиум действует до {date}. Спасибо, что готовитесь с нами!",
+  "@inboxPremiumStartedBody": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxPremiumStartedForever": "Премиум действует без ограничения срока. Спасибо, что готовитесь с нами!",
+  "inboxPremiumEndedTitle": "Премиум закончился",
+  "inboxPremiumEndedBody": "Срок Премиума истёк {date}. Продлите его, чтобы вернуть безлимит.",
+  "@inboxPremiumEndedBody": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRenew": "Продлить",
+  "inboxUpdateTitle": "Вышла версия {version}",
+  "@inboxUpdateTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUpdateBody": "Обновите приложение, чтобы получить новые возможности и исправления.",
+  "inboxUpdateAction": "Обновить",
+  "inboxSbpTitle": "Премиум можно оплатить по СБП",
+  "inboxSbpBody": "Оплата через Систему быстрых платежей в приложении банка: без карты и без автопродления.",
+  "inboxSbpAction": "Выбрать тариф",
+  "inboxOpen": "Открыть"
 }

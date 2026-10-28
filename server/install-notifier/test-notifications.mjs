@@ -256,3 +256,13 @@ test('in-app messages can target one Android store',async()=>{
   assert.equal(await feed(''),0,'builds without a store never get store-only messages');
   assert.equal(validateCampaign(sample()).store,'all');
 });
+
+test('inbox news reach only clients with the notification inbox',async()=>{
+  assert.throws(()=>validateCampaign(sample({kind:'news',title:'',body:'',imageUrl:'https://cdn.test/n.png'})),/заголовок или текст/);
+  const {call}=setup(),msg=sample({kind:'news',title:'Оплата по СБП',body:'Премиум теперь можно купить по СБП',action:'premium',buttonText:'Открыть'});
+  assert.equal((await call('/publish',msg)).status,200);
+  assert.equal((await (await call('/client?app=ru&platform=android')).json()).messages.length,0,'old clients would show news as a popup');
+  const feed=await (await call('/client?app=ru&platform=android&inbox=1')).json();
+  assert.equal(feed.messages.length,1);assert.equal(feed.messages[0].kind,'news');assert.equal(feed.messages[0].action,'premium');
+  assert.ok(feed.messages[0].createdAt>0);
+});

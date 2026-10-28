@@ -4265,4 +4265,70 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get violatorWeatherSpeed => 'Ауа райына сай емес жылдамдық';
+
+  @override
+  String get inboxTitle => 'Хабарламалар';
+
+  @override
+  String get inboxEmpty =>
+      'Мұнда қолданба жаңалықтары мен жазылымыңыз туралы хабарлар пайда болады';
+
+  @override
+  String inboxUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count оқылмаған',
+      one: '$count оқылмаған',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inboxPremiumStartedTitle => 'Премиум қосылды';
+
+  @override
+  String inboxPremiumStartedBody(String date) {
+    return 'Премиум $date дейін жарамды. Бізбен дайындалғаныңызға рақмет!';
+  }
+
+  @override
+  String get inboxPremiumStartedForever =>
+      'Премиум мерзімсіз жарамды. Бізбен дайындалғаныңызға рақмет!';
+
+  @override
+  String get inboxPremiumEndedTitle => 'Премиум мерзімі аяқталды';
+
+  @override
+  String inboxPremiumEndedBody(String date) {
+    return 'Премиум мерзімі $date аяқталды. Шектеусіз мүмкіндіктерді қайтару үшін оны ұзартыңыз.';
+  }
+
+  @override
+  String get inboxRenew => 'Ұзарту';
+
+  @override
+  String inboxUpdateTitle(String version) {
+    return '$version нұсқасы шықты';
+  }
+
+  @override
+  String get inboxUpdateBody =>
+      'Жаңа мүмкіндіктер мен түзетулерді алу үшін қолданбаны жаңартыңыз.';
+
+  @override
+  String get inboxUpdateAction => 'Жаңарту';
+
+  @override
+  String get inboxSbpTitle => 'Премиумды СБП арқылы төлеуге болады';
+
+  @override
+  String get inboxSbpBody =>
+      'Банк қолданбасындағы Жылдам төлемдер жүйесі арқылы төлем: картасыз әрі автоұзартусыз.';
+
+  @override
+  String get inboxSbpAction => 'Тарифті таңдау';
+
+  @override
+  String get inboxOpen => 'Ашу';
 }

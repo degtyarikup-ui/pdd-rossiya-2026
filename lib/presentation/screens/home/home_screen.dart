@@ -38,6 +38,7 @@ import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_notice_widgets.dart';
 import 'package:pdd_app/presentation/widgets/premium_granted_dialog.dart';
+import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/web_payment_return.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -297,6 +298,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         tab(2);
       case NoticeAction.settings:
         tab(3);
+      case NoticeAction.premium:
+        await PremiumPaywallSheet.show(context);
       case NoticeAction.support:
         await Navigator.push(
           context,

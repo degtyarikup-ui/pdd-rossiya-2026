@@ -7173,6 +7173,102 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Скорость без учёта погоды / занос'**
   String get violatorWeatherSpeed;
+
+  /// No description provided for @inboxTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уведомления'**
+  String get inboxTitle;
+
+  /// No description provided for @inboxEmpty.
+  ///
+  /// In ru, this message translates to:
+  /// **'Здесь появятся новости приложения и сообщения о вашей подписке'**
+  String get inboxEmpty;
+
+  /// No description provided for @inboxUnread.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} непрочитанное} few{{count} непрочитанных} many{{count} непрочитанных} other{{count} непрочитанного}}'**
+  String inboxUnread(int count);
+
+  /// No description provided for @inboxPremiumStartedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум активирован'**
+  String get inboxPremiumStartedTitle;
+
+  /// No description provided for @inboxPremiumStartedBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум действует до {date}. Спасибо, что готовитесь с нами!'**
+  String inboxPremiumStartedBody(String date);
+
+  /// No description provided for @inboxPremiumStartedForever.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум действует без ограничения срока. Спасибо, что готовитесь с нами!'**
+  String get inboxPremiumStartedForever;
+
+  /// No description provided for @inboxPremiumEndedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум закончился'**
+  String get inboxPremiumEndedTitle;
+
+  /// No description provided for @inboxPremiumEndedBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок Премиума истёк {date}. Продлите его, чтобы вернуть безлимит.'**
+  String inboxPremiumEndedBody(String date);
+
+  /// No description provided for @inboxRenew.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продлить'**
+  String get inboxRenew;
+
+  /// No description provided for @inboxUpdateTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вышла версия {version}'**
+  String inboxUpdateTitle(String version);
+
+  /// No description provided for @inboxUpdateBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновите приложение, чтобы получить новые возможности и исправления.'**
+  String get inboxUpdateBody;
+
+  /// No description provided for @inboxUpdateAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновить'**
+  String get inboxUpdateAction;
+
+  /// No description provided for @inboxSbpTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум можно оплатить по СБП'**
+  String get inboxSbpTitle;
+
+  /// No description provided for @inboxSbpBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата через Систему быстрых платежей в приложении банка: без карты и без автопродления.'**
+  String get inboxSbpBody;
+
+  /// No description provided for @inboxSbpAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать тариф'**
+  String get inboxSbpAction;
+
+  /// No description provided for @inboxOpen.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть'**
+  String get inboxOpen;
 }
 
 class _AppLocalizationsDelegate

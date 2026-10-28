@@ -8,8 +8,9 @@ const reply = (value, status = 200) => Response.json(value, { status, headers: {
 // popup  — modal window on the home screen (one show per device);
 // banner — dismissible card at the top of the home screen (non-blocking);
 // push   — system notification via FCM (optionally duplicated in-app as popup).
-export const KINDS = ['popup', 'banner', 'push'];
-export const ACTIONS = ['none', 'url', 'tickets', 'topics', 'game', 'feed', 'settings'];
+// news   — entry in the app's notification inbox only (no window, no push).
+export const KINDS = ['popup', 'banner', 'push', 'news'];
+export const ACTIONS = ['none', 'url', 'tickets', 'topics', 'game', 'feed', 'settings', 'premium'];
 export const LAYOUTS = ['standard', 'cover', 'compact', 'image'];
 const choices = { kind: KINDS, app: ['all', 'ru', 'by', 'rs'], platform: ['all', 'ios', 'android', 'web'] };
 const DAY = 86400000;
@@ -58,6 +59,8 @@ export function validateCampaign(input, now = Date.now()) {
     value.title = str(input.title, 80, 'Заголовок');
     value.body = str(input.body, 1000, 'Текст');
     value.layout = value.title || value.body ? (value.layout === 'image' ? 'standard' : value.layout) : 'image';
+    // The inbox lists messages by their text; a picture alone has no headline.
+    if (value.kind === 'news' && value.layout === 'image') throw new Error('Новости нужен заголовок или текст');
   }
   const imageBanner = value.layout === 'image';
   if (value.kind === 'push' && value.body.length > 300) throw new Error('Текст пуша: не более 300 символов');
@@ -224,7 +227,9 @@ export class NotificationsState {
       const imageBanners = url.searchParams.get('imageBanners') === '1';
       // Picture-only windows arrived later than picture-only banners.
       const imagePopups = imageBanners && url.searchParams.get('imagePopups') === '1';
-      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp) && (item.layout !== 'image' || (item.kind === 'banner' ? imageBanners : imagePopups)) && campaignMatches(item, app, platform, Date.now(), user, url.searchParams.get('store') || '')) : [];
+      // Older clients would show inbox news as a popup window.
+      const inbox = url.searchParams.get('inbox') === '1';
+      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp) && (item.kind !== 'news' || inbox) && (item.layout !== 'image' || (item.kind === 'banner' ? imageBanners : imagePopups)) && campaignMatches(item, app, platform, Date.now(), user, url.searchParams.get('store') || '')) : [];
       return reply({ config, messages: visible.sort((a,b) => b.createdAt-a.createdAt).slice(0, 10).map(clientMessage) });
     }
     if (path === '/alarm') {
