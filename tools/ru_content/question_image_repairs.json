@@ -4,6 +4,17 @@
     {
       "category": "ab",
       "ticket": 1,
+      "number": 11,
+      "note": "Photo supplied by the owner on 2026-10-28; there is no upstream page or URL.",
+      "oldImage": "573bb9e760618405e89c02b09f248404",
+      "newImage": "verified_ab_1_11",
+      "sha256": "a4ae8a084c71714bc27eef13eb0833a377cc258b2d1b51621ab6b0c2046b0b35",
+      "path": "assets/countries/ru/images/questions_ab/verified_ab_1_11.webp",
+      "sourceId": "b66d8c08aba6ec232a4c6669efbbe61a"
+    },
+    {
+      "category": "ab",
+      "ticket": 1,
       "number": 15,
       "pageUrl": "https://www.drom.ru/pdd/bilet_1/vopros_15/",
       "sourceUrl": "https://s12.auto.drom.ru/i24227/pdd/tickets/2016/1542608231.jpg",

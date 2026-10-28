@@ -27,7 +27,7 @@ class ReleaseContentTests(unittest.TestCase):
 
     def test_repaired_diagrams_are_present_and_coordinate_bound(self):
         manifest = json.loads((ROOT / 'tools/ru_content/question_image_repairs.json').read_text())
-        self.assertEqual(len(manifest['images']), 22)
+        self.assertEqual(len(manifest['images']), 23)
         for image in manifest['images']:
             self.assertEqual(hashlib.sha256((ROOT / image['path']).read_bytes()).hexdigest(), image['sha256'])
             for lang in ['', '_en', '_kk']:
