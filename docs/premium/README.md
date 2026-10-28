@@ -33,7 +33,7 @@ Apple — разные аккаунты.
 | `lib/data/services/pending_payment.dart` | Незавершённая СБП-оплата на Android |
 | `lib/data/services/device_region.dart` | Страна устройства (сеть/SIM/локаль, **не IP**) |
 | `lib/core/config/store_config.dart` | `--dart-define=STORE=play|rustore` |
-| `lib/presentation/widgets/premium_paywall_sheet.dart`, `premium_benefits_screen.dart`, `premium_plans_sheet.dart`, `web_payment_dialog.dart`, `web_payment_return.dart`, `subscription_management_sheet.dart`, `premium_granted_dialog.dart` | Экран преимуществ, выбор тарифа и экраны оплаты |
+| `lib/presentation/widgets/premium_paywall_sheet.dart`, `premium_benefits_screen.dart`, `premium_plans_sheet.dart`, `web_payment_dialog.dart`, `web_payment_return.dart`, `subscription_management_sheet.dart`, `premium_celebration_screen.dart` | Экран преимуществ, выбор тарифа, экраны оплаты и зелёный экран «Премиум открыт» |
 | `lib/presentation/widgets/auth_modal_sheet.dart`, `auth_provider_button.dart`, `yandex_*`, `google_web_sign_in_button*` | Экраны входа |
 | `web_landing/ru/tarify/`, `pay-done/` | Тарифы на сайте и возврат после оплаты |
 | `server/install-notifier/account_state.js`, `account_maintenance.js` | Авторитетное хранилище аккаунта, атомарный журнал, сверка |
@@ -114,9 +114,21 @@ Escape закрывает преимущества, когда это текущ
 во время движения. Уменьшение анимации сразу показывает конечное состояние,
 останавливает лучи и отключает масштабирование при нажатии.
 
+Включение Премиума празднуется одним зелёным экраном
+`PremiumCelebrationScreen` — той же рамкой `CelebrationScreen`, что у
+достижений и серии дней: печать со звездой, срок доступа, четыре
+возможности Премиума. Причина `purchased` — покупка или восстановление в
+листе тарифов (экран показывает `PremiumBenefitsScreen` до того, как
+вызывающий получит `true`, поэтому игра запускается уже после него),
+подтверждённая СБП на Android и возврат с оплаты на сайте. Причина
+`granted` — выдача из админки; текст админа заменяет подпись. Регрессия —
+`premium_celebration_screen_test.dart`.
+
 Игры только для Премиума — `premiumGames` в `games_hub_view.dart` (сейчас
-«Парковка» и «Нарушитель»). Бесплатный игрок видит цветную обложку с янтарным
-значком «Премиум» (серый оставлен для «Скоро»; «Скоро» важнее значка). Нажатие
+«Парковка» и «Нарушитель»; в тестовых сборках с `GAME_DEBUG` список пуст —
+игры открыты без Премиума). Бесплатный игрок видит чёрно-белую обложку с янтарным
+значком «Премиум» («Скоро» — бледная серая без значка и важнее него). Так же
+выглядит «Живой город», пока бесплатные заезды не восстановятся. Нажатие
 сначала проверяет, есть ли игра на платформе, затем открывает
 `PremiumPaywallSheet.show(context, lockedGame: <название>)`: над заголовком
 преимуществ — строка «Игра «…» доступна с Премиумом». Только `true` (покупка
@@ -133,7 +145,7 @@ UI-регрессии: `premium_motion_test.dart`, `premium_redesign_test.dart`,
 
 ```bash
 flutter test test/premium_service_test.dart test/premium_offline_session_test.dart \
-  test/premium_granted_dialog_test.dart test/iap_recovery_test.dart \
+  test/premium_celebration_screen_test.dart test/iap_recovery_test.dart \
   test/iap_account_owner_test.dart test/verified_purchase_test.dart \
   test/payment_mode_test.dart test/pending_payment_test.dart \
   test/auth_jwt_claim_test.dart test/auth_login_recovery_test.dart \

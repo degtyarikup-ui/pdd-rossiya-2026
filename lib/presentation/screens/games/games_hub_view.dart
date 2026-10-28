@@ -17,7 +17,10 @@ const hiddenGames = <String>{};
 /// and white with a Premium badge ("coming soon" is also dimmed, without the badge);
 /// a tap opens the paywall naming the game, and a purchase goes straight into it.
 /// The city looks the same while its free runs are used up, until they refill.
-const premiumGames = <String>{'parking', 'violator'};
+/// Test builds (`GAME_DEBUG`, see `build_dev.py`) open them without Premium.
+const premiumGames = bool.fromEnvironment('GAME_DEBUG')
+    ? <String>{}
+    : <String>{'parking', 'violator'};
 
 /// The hub's presentation, shared by the live screen and layout/state checks.
 /// The city stays outside the scrolling mini-game catalogue, within thumb reach.
