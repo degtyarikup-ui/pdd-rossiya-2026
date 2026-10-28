@@ -907,13 +907,14 @@ func set_evidence_visible(on: bool, animate := false) -> void:
 		_move_evidence(on)
 		return
 	if is_instance_valid(_guide):
+		# The guide node shows and hides its routes; each route itself rests whole and visible.
 		_guide.visible = on
 		for route in _guide.get_children():
 			if route is RouteArrow:
 				(route as RouteArrow).reset()
-				route.visible = on
 			elif route is Node3D:
 				_set_guide_alpha(route, 1.0)
+				(route as Node3D).visible = true
 	for n in _evidence + _badges:
 		if is_instance_valid(n): _settle_mark(n, on)
 
@@ -966,6 +967,17 @@ func _move_evidence(on: bool) -> void:
 		if not on and is_instance_valid(_guide):
 			for route in _guide.get_children():
 				if route is Node3D and not route is RouteArrow: (route as Node3D).visible = false)
+	if not on and is_instance_valid(_guide):
+		# Once the last route has been swept up the guide node is hidden, as without motion.
+		var guide := _guide
+		var holder: WeakRef = weakref(self)
+		var last := EVIDENCE_OUT + 0.06 * maxf(0.0, guide.get_child_count() - 1) + 0.05
+		get_tree().create_timer(last, false).timeout.connect(func():
+			var sit: Situation = holder.get_ref()
+			if sit == null or not is_instance_valid(guide) or sit._evidence_on: return
+			guide.visible = false
+			for route in guide.get_children():
+				if route is RouteArrow: (route as RouteArrow).reset())
 
 
 ## A letter or plate at rest: its own size, place and colours, shown or hidden.
@@ -990,8 +1002,12 @@ static func _set_guide_alpha(route: Node3D, alpha: float) -> void:
 	for mi in route.find_children("*", "MeshInstance3D", true, false) + ([route] if route is MeshInstance3D else []):
 		var mat := (mi as MeshInstance3D).material_override as StandardMaterial3D
 		if mat == null: continue
-		if not mat.has_meta("rest_alpha"): mat.set_meta("rest_alpha", mat.albedo_color.a)
+		if not mat.has_meta("rest_alpha"):
+			mat.set_meta("rest_alpha", mat.albedo_color.a)
+			mat.set_meta("rest_transparency", mat.transparency)
 		mat.albedo_color.a = float(mat.get_meta("rest_alpha")) * alpha
+		# An opaque line (an annotation) blends only while it fades, then is opaque again.
+		mat.transparency = int(mat.get_meta("rest_transparency")) if alpha >= 1.0 else BaseMaterial3D.TRANSPARENCY_ALPHA
 
 
 func set_badges_visible(on: bool) -> void:

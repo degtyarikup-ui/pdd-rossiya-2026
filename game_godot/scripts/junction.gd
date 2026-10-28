@@ -215,7 +215,7 @@ const TRAM_LAMPS := {
 	"lamp_tram_right": [Color("#FFFFFF"), Color("#20252C")]
 }
 const LAMP_ENLARGE := 1.8
-const HALO_SIZE := 3.0
+const HALO_SIZE := 3.6
 
 
 func set_lights(state: String,flash_on := true) -> void:
@@ -246,7 +246,7 @@ func set_lights(state: String,flash_on := true) -> void:
 				var centre := box.get_center()
 				for disc: MeshInstance3D in discs:
 					disc.global_transform = Transform3D(Basis.from_scale(Vector3.ONE * LAMP_ENLARGE), centre * (1.0 - LAMP_ENLARGE)) * disc.global_transform
-				var halo := Glow.halo(colour, HALO_SIZE)
+				var halo := Glow.signal_halo(colour, HALO_SIZE)
 				light.add_child(halo)
 				halo.global_position = centre
 				lamp.set_meta("halo", halo)
@@ -285,7 +285,7 @@ func set_lights(state: String,flash_on := true) -> void:
 				var centre := box.get_center()
 				for disc: MeshInstance3D in discs:
 					disc.global_transform = Transform3D(Basis.from_scale(Vector3.ONE * LAMP_ENLARGE), centre * (1.0 - LAMP_ENLARGE)) * disc.global_transform
-				var halo := Glow.halo(colour, HALO_SIZE * 0.75)
+				var halo := Glow.signal_halo(colour, HALO_SIZE * 0.75)
 				light.add_child(halo)
 				halo.global_position = centre
 				lamp.set_meta("halo", halo)

@@ -3167,13 +3167,13 @@ func _setup_emergency_appearance(car: ViolatorCar, force_type := "") -> void:
 		car.beacon_mat_red = mat_r
 
 		# High-visibility daylight analytic billboard bloom (Glow.beacon)
-		var halo_b := Glow.beacon(Color("#0066FF"), 3.2)
+		var halo_b := Glow.beacon(Color("#0066FF"), 4.6)
 		halo_b.position = Vector3(-0.28, 1.70, 0.1)
 		halo_b.visible = false
 		car.add_child(halo_b)
 		car.beacon_halo_blue = halo_b
 
-		var halo_r := Glow.beacon(Color("#FF1020"), 3.2)
+		var halo_r := Glow.beacon(Color("#FF1020"), 4.6)
 		halo_r.position = Vector3(0.28, 1.70, 0.1)
 		halo_r.visible = false
 		car.add_child(halo_r)
@@ -3250,13 +3250,13 @@ func _setup_emergency_appearance(car: ViolatorCar, force_type := "") -> void:
 		car.beacon_mat_red = mat_b2
 
 		# Flashing Glow.beacon halos for ambulance
-		var halo_b1 := Glow.beacon(Color("#0066FF"), 3.2)
+		var halo_b1 := Glow.beacon(Color("#0066FF"), 4.6)
 		halo_b1.position = Vector3(-0.28, 1.74, 0.1)
 		halo_b1.visible = false
 		car.add_child(halo_b1)
 		car.beacon_halo_blue = halo_b1
 
-		var halo_b2 := Glow.beacon(Color("#0066FF"), 3.2)
+		var halo_b2 := Glow.beacon(Color("#0066FF"), 4.6)
 		halo_b2.position = Vector3(0.28, 1.74, 0.1)
 		halo_b2.visible = false
 		car.add_child(halo_b2)

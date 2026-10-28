@@ -132,8 +132,9 @@ func _collect(view: Dictionary) -> Dictionary:
 				sources[key] = _source_kind(node, mm.mesh)
 		elif node is MeshInstance3D:
 			var mi := node as MeshInstance3D
-			# Indicator and beacon halos blink by design.
-			if mi.mesh == null or mi.get_meta("signal_glow", false): continue
+			# Indicator and beacon halos blink by design; a route arrow that has faded or
+			# been swept up (RouteArrow "faded") leaves continuously before it is hidden.
+			if mi.mesh == null or mi.get_meta("signal_glow", false) or mi.get_meta("faded", false): continue
 			var box := mi.global_transform * mi.get_aabb()
 			# The lawn follows the car; its centre moves while every visible texel stays put.
 			if box.size.x > GROUND_SIZE or box.size.z > GROUND_SIZE: continue

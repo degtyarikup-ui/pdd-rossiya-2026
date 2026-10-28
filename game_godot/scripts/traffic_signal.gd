@@ -137,7 +137,7 @@ static func set_state(node: Node3D,state: String,tram: String="straight",flash_o
 			aperture.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		if not lamp.has_meta("halo"):
 			var palette: Array=VEHICLE.get(name,[Color("#F0F6FF")])
-			var halo:=Glow.halo(palette[0],.55 if name.begins_with("tram_") else .70,true)
+			var halo:=Glow.signal_halo(palette[0],.9 if name.begins_with("tram_") else 1.15,true)
 			# A sideways supplementary aperture uses its arrow glyph, without round bloom.
 			if name=="arrow": halo.visible=false
 			lamp.add_child(halo)

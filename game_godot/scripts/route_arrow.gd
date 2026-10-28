@@ -183,6 +183,7 @@ func _inset_head(head: float) -> void:
 ## Shown whole and still: any animation stops.
 func reset() -> void:
 	visible = true
+	set_meta("faded", false)
 	_draw_at = 1000.0
 	_sweep_at = -1000.0
 	_fade_at = -1.0
@@ -201,6 +202,8 @@ func appear(delay := 0.0) -> void:
 	if not is_inside_tree(): return
 	_draw_at = -maxf(0.0, delay)
 	_material.set_shader_parameter("reveal", -1.0)
+	# Nothing is drawn until it starts: a route grows in, it does not pop in.
+	set_meta("faded", true)
 	set_process(true)
 
 
@@ -240,6 +243,7 @@ func _process(delta: float) -> void:
 		var t := clampf(_draw_at / DRAW_TIME, 0.0, 1.0)
 		var eased := 1.0 - pow(1.0 - t, 3.0)
 		_material.set_shader_parameter("reveal", -1.0 + eased * (length + 2.5) if _draw_at > 0.0 else -1.0)
+		set_meta("faded", _draw_at <= 0.05)
 		if _draw_at >= DRAW_TIME:
 			_material.set_shader_parameter("reveal", 100000.0)
 			_draw_at = 1000.0
@@ -252,6 +256,8 @@ func _process(delta: float) -> void:
 		_material.set_shader_parameter("sweep", -0.7 + t * t * (length + 1.4))
 		if _fade_with_sweep:
 			_material.set_shader_parameter("opacity", 1.0 - smoothstep(0.45, 1.0, t))
+		# Swept past its tip or faded out: what remains on screen is no longer visible.
+		set_meta("faded", t >= 0.92)
 		if _sweep_at >= _sweep_time:
 			visible = false
 			_sweep_at = -1000.0
@@ -261,6 +267,7 @@ func _process(delta: float) -> void:
 		_fade_at += delta
 		var t := clampf(_fade_at / FADE_TIME, 0.0, 1.0)
 		_material.set_shader_parameter("opacity", 1.0 - t)
+		set_meta("faded", t >= 0.92)
 		if t >= 1.0:
 			visible = false
 			_fade_at = -1.0

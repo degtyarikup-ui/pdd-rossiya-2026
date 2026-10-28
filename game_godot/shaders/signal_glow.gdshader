@@ -7,6 +7,7 @@ uniform bool front_only = false;
 uniform float intensity = 1.0;
 uniform float white_core = 0.35;
 uniform float core_sharpness = 6.0;
+uniform float pull = 0.0;      // metres towards the camera
 varying vec4 tint;
 varying float facing;
 
@@ -19,6 +20,8 @@ void vertex() {
 		vec4(INV_VIEW_MATRIX[1].xyz * length(MODEL_MATRIX[1].xyz), 0.0),
 		vec4(INV_VIEW_MATRIX[2].xyz * length(MODEL_MATRIX[2].xyz), 0.0),
 		MODEL_MATRIX[3]);
+	// A beacon sits on its own roof: drawn a little towards the camera, the roof never cuts it.
+	MODELVIEW_MATRIX[3].z += pull;
 }
 
 void fragment() {

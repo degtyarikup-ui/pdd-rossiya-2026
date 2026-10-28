@@ -29,17 +29,61 @@ static func halo(colour: Color, size: float, front_only := false) -> MeshInstanc
 	return mi
 
 
-## Roof beacons need a bright core in daylight, especially saturated blue in
-## Compatibility's LDR buffer. Ordinary indicators keep their existing profile.
-static func beacon(colour: Color, size := 3.8) -> MeshInstance3D:
+## Roof beacons are meant to be seen from afar: a large, strong bloom whose core stays the
+## lamp's colour rather than white, over a soft disc of that colour blended normally, so an
+## amber or blue lamp still reads as amber or blue on a white roof in daylight
+## (Compatibility's LDR buffer clips additive light to white there). Indicators keep their
+## own profile.
+static func beacon(colour: Color, size := 5.2) -> MeshInstance3D:
 	var key := "beacon/" + colour.to_html()
 	if not _materials.has(key):
 		var m := material(colour).duplicate() as ShaderMaterial
-		m.set_shader_parameter("intensity", 3.5)
-		m.set_shader_parameter("white_core", 0.4)
-		m.set_shader_parameter("core_sharpness", 12.0)
+		m.set_shader_parameter("intensity", 2.8)
+		m.set_shader_parameter("white_core", 0.0)
+		m.set_shader_parameter("core_sharpness", 9.0)
+		m.set_shader_parameter("pull", 0.9)
+		m.render_priority = 1
 		_materials[key] = m
 	var glow := halo(colour, size)
+	glow.material_override = _materials[key]
+	var under := tint(colour, size * 0.46, 0.95, 0.9)
+	under.name = "BeaconTint"
+	glow.add_child(under)
+	return glow
+
+
+## A soft disc of `colour` with normal blending, `size` metres across, facing the camera.
+static func tint(colour: Color, size: float, strength := 0.85, pull := 0.0) -> MeshInstance3D:
+	var key := "tint/%s/%s/%s" % [colour.to_html(), strength, pull]
+	if not _materials.has(key):
+		var m := ShaderMaterial.new()
+		m.shader = preload("res://shaders/signal_tint.gdshader")
+		m.set_shader_parameter("tint_colour", colour)
+		m.set_shader_parameter("strength", strength)
+		m.set_shader_parameter("pull", pull)
+		m.render_priority = 0
+		_materials[key] = m
+	var mi := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(size, size)
+	mi.mesh = quad
+	mi.material_override = _materials[key]
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.set_meta("signal_glow", true)
+	return mi
+
+
+## A lit traffic-light section: brighter and wider than an indicator, so the signal reads
+## from the far side of a junction.
+static func signal_halo(colour: Color, size: float, front_only := false) -> MeshInstance3D:
+	var key := "signal/%s/%s" % [colour.to_html(), front_only]
+	if not _materials.has(key):
+		var m := material(colour, front_only).duplicate() as ShaderMaterial
+		m.set_shader_parameter("intensity", 2.6)
+		m.set_shader_parameter("white_core", 0.3)
+		m.set_shader_parameter("core_sharpness", 7.0)
+		_materials[key] = m
+	var glow := halo(colour, size, front_only)
 	glow.material_override = _materials[key]
 	return glow
 

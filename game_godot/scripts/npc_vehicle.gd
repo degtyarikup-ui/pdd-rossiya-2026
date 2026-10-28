@@ -8,6 +8,8 @@ var _previous := Vector3.ZERO
 var _distance := 0.0
 var _clock := 0.0
 var _beacon := false
+var _beacon_glows: Array[Node3D] = []
+const AMBER := Color("#FF7400")
 
 static func make(kind: String, paint: Color, config: Dictionary = {}) -> NpcVehicle:
 	var vehicle := NpcVehicle.new()
@@ -36,10 +38,40 @@ static func make(kind: String, paint: Color, config: Dictionary = {}) -> NpcVehi
 	for mesh: MeshInstance3D in vehicle.find_children("*", "MeshInstance3D", true, false):
 		mesh.material_override = vehicle._material
 		mesh.set_meta("npc_vehicle", true)
+	if vehicle._beacon:
+		# The amber roof lamps get the beacons' large bloom over an amber disc, so they read
+		# from afar even on a white roof; the shader still lights the lenses themselves.
+		for centre: Vector3 in beacon_centres(body.mesh):
+			var glow := Glow.beacon(AMBER, 4.4)
+			glow.name = "AmberBeacon"
+			glow.position = centre + body.position + Vector3.UP * 0.08
+			glow.visible = false
+			vehicle.add_child(glow)
+			vehicle._beacon_glows.append(glow)
 	return vehicle
+
+## Centres of the model's amber beacon lenses (lens role 6), one per side of the roof.
+static func beacon_centres(mesh: Mesh) -> Array[Vector3]:
+	var bins := {}
+	for surface in mesh.get_surface_count():
+		var arrays := mesh.surface_get_arrays(surface)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var roles: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2] if arrays[Mesh.ARRAY_TEX_UV2] != null else PackedVector2Array()
+		if roles.size() != vertices.size(): continue
+		for i in vertices.size():
+			if roles[i].x > 0.5 or roles[i].y < 5.5: continue
+			var key := "L" if vertices[i].x > 0.25 else "R" if vertices[i].x < -0.25 else "C"
+			if not bins.has(key): bins[key] = AABB(vertices[i], Vector3.ZERO)
+			bins[key] = (bins[key] as AABB).expand(vertices[i])
+	var result: Array[Vector3] = []
+	for box: AABB in bins.values(): result.append(box.get_center())
+	return result
+
 
 func _ready() -> void:
 	_beacon = get_meta("amber_beacon", false)
+	if _beacon_glows.is_empty():
+		for glow in find_children("AmberBeacon", "MeshInstance3D", false, false): _beacon_glows.append(glow)
 	if _material == null:
 		var meshes := find_children("*", "MeshInstance3D", true, false)
 		for mesh: MeshInstance3D in meshes:
@@ -60,4 +92,7 @@ func _process(delta: float) -> void:
 		_material.set_shader_parameter("wheel_distance", _distance)
 		_material.set_shader_parameter("braking", distance < .002)
 	_clock += delta
-	_material.set_shader_parameter("beacon_on", _beacon and int(_clock * 3.0) % 2 == 0)
+	var lit := _beacon and int(_clock * 3.0) % 2 == 0
+	_material.set_shader_parameter("beacon_on", lit)
+	for glow in _beacon_glows:
+		if is_instance_valid(glow): glow.visible = lit
