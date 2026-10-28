@@ -105,6 +105,11 @@ if (process.argv.includes('--serve')) {
     await page.click('#nt-os [data-os="android"]');
     assert.match(await page.textContent('#nt-screen'), /ПДД Россия 2026/);
     assert.equal(await page.isDisabled('input[name="nt-platform"][value="web"]'), true);
+    // Platforms are picked independently; a push never goes to the web.
+    assert.equal(await page.isChecked('input[name="nt-platform"][value="web"]'), false);
+    await page.uncheck('input[name="nt-platform"][value="ios"]', { force: true });
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('input[name="nt-platform"]:checked')].map(x => x.value)), ['android']);
+    await page.check('input[name="nt-platform"][value="ios"]', { force: true });
     // A test goes to my account without confirmation.
     await page.click('#nt-test');
     await page.fill('#nt-target', 'me@example.test');

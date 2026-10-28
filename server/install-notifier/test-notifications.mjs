@@ -263,7 +263,7 @@ test('picture-only windows require the newer client capability',async()=>{
 });
 
 test('in-app messages can target one Android store',async()=>{
-  for(const bad of [{store:'play'},{platform:'android',store:'apple'},{kind:'push',platform:'android',store:'rustore'}])assert.throws(()=>validateCampaign(sample(bad)));
+  for(const bad of [{platform:'ios',store:'play'},{platform:'android',store:'apple'},{kind:'push',platform:'android',store:'rustore'}])assert.throws(()=>validateCampaign(sample(bad)));
   const {call}=setup(),msg=sample({platform:'android',store:'rustore'});
   assert.equal((await call('/publish',msg)).status,200);
   const feed=async q=>(await (await call('/client?app=ru&platform=android'+q)).json()).messages.length;
@@ -302,4 +302,20 @@ test('a push needs only one line of text; empty lines are omitted from the paylo
   assert.deepEqual(titleOnly.notification,{title:'Новости'});
   const textOnly=buildPushMessage(validateCampaign(sample({kind:'push',title:'',emoji:'🎉'})));
   assert.deepEqual(textOnly.notification,{body:'Новые вопросы'});
+});
+test('any set of platforms: exact matching, store only narrows Android, pushes skip web',()=>{
+  const two=validateCampaign(sample({platforms:['web','ios']}));
+  assert.equal(two.platform,'some');assert.equal(two.platforms,'ios,web');
+  assert.deepEqual(['ios','android','web'].map(p=>campaignMatches(two,'ru',p)),[true,false,true]);
+  assert.equal(validateCampaign(sample({platforms:['ios','android','web']})).platform,'all');
+  assert.equal(validateCampaign(sample({platforms:['android']})).platform,'android');
+  for(const bad of [{platforms:[]},{platforms:['ios','tv']},{platform:'some'},{kind:'push',platforms:['ios','web']}])assert.throws(()=>validateCampaign(sample(bad)));
+  const store=validateCampaign(sample({platforms:['ios','android'],store:'rustore'}));
+  assert.equal(campaignMatches(store,'ru','ios'),true);
+  assert.equal(campaignMatches(store,'ru','android',Date.now(),{},'play'),false);
+  assert.equal(campaignMatches(store,'ru','android',Date.now(),{},'rustore'),true);
+  const push=validateCampaign(sample({kind:'push',platforms:['ios','android']}));
+  assert.equal(pushCondition(push),"'pdd_ru_ios' in topics || 'pdd_ru_android' in topics");
+  const mine=validateCampaign(sample({kind:'push',platforms:['android'],target:'me@test.ru',targetTopic:'pdd_account_'+'b'.repeat(64)}));
+  assert.equal(pushCondition(mine),`'pdd_account_${'b'.repeat(64)}' in topics && 'pdd_ru_android' in topics`);
 });

@@ -13,7 +13,7 @@ const LAYOUT_ART = {
   compact: '<svg viewBox="0 0 28 22" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="1" width="24" height="20" rx="3"/><rect x="6" y="5" width="6" height="6" rx="1.5" fill="currentColor" fill-opacity=".25"/><path d="M6 14h14M6 17h9"/></svg>',
 };
 const tile = (value, label) => `<label class="nf-tile"><input type="radio" name="nt-place" value="${value}">${ART[value]}<b>${label}</b></label>`;
-const chip = (name, value, label) => `<label class="nf-chip"><input type="radio" name="${name}" value="${value}"><span>${label}</span></label>`;
+const chip = (name, value, label, type = 'radio') => `<label class="nf-chip"><input type="${type}" name="${name}" value="${value}"><span>${label}</span></label>`;
 
 export const NOTIFICATIONS_VIEW_HTML = `
 <div id="notifications-view" style="display:none">
@@ -145,7 +145,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 <div class="nf-swatches" id="nt-swatches"><button type="button" class="nf-swatch" data-color="" style="background:#0574F8" title="Как в приложении"></button><button type="button" class="nf-swatch" data-color="#16A34A" style="background:#16A34A"></button><button type="button" class="nf-swatch" data-color="#F59E0B" style="background:#F59E0B"></button><button type="button" class="nf-swatch" data-color="#DC2626" style="background:#DC2626"></button><button type="button" class="nf-swatch" data-color="#7C3AED" style="background:#7C3AED"></button><button type="button" class="nf-swatch" data-color="#121212" style="background:#121212"></button><input type="color" id="nt-accent" value="#0574F8" title="Свой цвет"></div>
 </section>
 <section class="nf-sec nf-two">
-<div><h4>Кому</h4><div class="nf-chips" id="nt-platforms">${chip('nt-platform', 'all', 'Все')}${chip('nt-platform', 'ios', 'iOS')}${chip('nt-platform', 'android', 'Android')}${chip('nt-platform', 'web', 'Веб')}</div>
+<div><h4>Кому</h4><div class="nf-chips" id="nt-platforms">${chip('nt-platform', 'ios', 'iOS', 'checkbox')}${chip('nt-platform', 'android', 'Android', 'checkbox')}${chip('nt-platform', 'web', 'Веб', 'checkbox')}</div>
 <div class="nf-chips" id="nt-stores" hidden>${chip('nt-store', 'all', 'Все магазины')}${chip('nt-store', 'play', 'Google Play')}${chip('nt-store', 'rustore', 'RuStore')}</div></div>
 <div><h4>Когда</h4><div class="nf-chips">${chip('nt-when', 'now', 'Сразу')}${chip('nt-when', 'later', 'Запланировать')}</div>
 <div class="nf-when" id="nt-when-wrap" hidden><input type="datetime-local" id="nt-start" aria-label="Время старта"></div>
@@ -179,14 +179,17 @@ var el=function(id){return document.getElementById('nt-'+id);};
 var esc=function(v){return adminEsc(v==null?'':String(v));};
 var ART=${JSON.stringify(ART)};
 var cfg=null,ready=false,busy=false,items=[],usersLoaded=false,pending=null,afterTarget=null;
-var S={push:false,place:'news',layout:'standard',accent:'',platform:'all',store:'all',when:'now',days:'7',image:'',imgW:0,imgH:0,tab:'',os:'ios'};
+var S={push:false,place:'news',layout:'standard',accent:'',platforms:['ios','android','web'],store:'all',when:'now',days:'7',image:'',imgW:0,imgH:0,tab:'',os:'ios'};
 // Lock-screen budget: about one line of title on both systems, four lines of
 // text on iPhone and one on collapsed Android. FCM rejects more than 4 KB.
 var PUSH={title:50,titleSoft:38,body:300,bodySoft:150};
 var BODY_MAX={popup:1000,news:1000,banner:200,push:300};
 var ACTIONS={none:'',url:'Ссылка',tickets:'Билеты',topics:'Темы',game:'Игра',feed:'Лента',settings:'Настройки',premium:'Премиум'};
 var PLACES={news:'В списке',popup:'Окно',banner:'Баннер'};
-var PLATFORMS={all:'Все платформы',ios:'iOS',android:'Android',web:'Веб'};
+var PLATFORMS={ios:'iOS',android:'Android',web:'Веб'},ALL=['ios','android','web'];
+function platformsOf(m){return m.platform==='all'?ALL:m.platform==='some'?String(m.platforms||'').split(','):[m.platform];}
+function has(p){return S.platforms.indexOf(p)>=0;}
+function mobile(){return S.platforms.filter(function(p){return p!=='web';});}
 var STORES={play:'Google Play',rustore:'RuStore'};
 var ICON='https://pdd-drive.ru/assets/icon-192.png',BLUE='#0574F8';
 var SVG={eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
@@ -208,19 +211,20 @@ function radio(name){var x=document.querySelector('input[name="'+name+'"]:checke
 function setRadio(name,v){var x=document.querySelector('input[name="'+name+'"][value="'+v+'"]');if(x)x.checked=true;}
 async function api(path,body){var r=await fetch('/api/admin/notifications'+path,{method:body?'POST':'GET',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined});var d=await r.json().catch(function(){return {};});if(!r.ok)throw new Error(r.status===401?'Войдите в админку заново':r.status===404&&d.error==='target account not found'?'Аккаунт для проверки не найден':d.error||'Не удалось выполнить запрос');return d;}
 function target(){try{return localStorage.getItem('nt-test-target')||'';}catch(_){return '';}}
-function pushAvailable(){return !!(cfg&&ready&&cfg.pushEnabled)&&S.platform!=='web';}
+function pushAvailable(){return !!(cfg&&ready&&cfg.pushEnabled)&&(!S.platforms.length||mobile().length>0);}
 
 function draft(){
  var push=S.push,place=S.place,title=el('title').value.trim(),body=el('body').value.trim(),action=el('action').value;
  var imageOnly=!push&&!title&&!body,button=!imageOnly&&(place==='popup'||action!=='none');
- return {kind:push?'push':place,inAppKind:push?place:'',app:'ru',platform:S.platform,store:!push&&S.platform==='android'?S.store:'all',
+ return {kind:push?'push':place,inAppKind:push?place:'',app:'ru',platforms:push?mobile():S.platforms.slice(),store:!push&&has('android')?S.store:'all',
   title:title,body:body,emoji:'',imageUrl:S.image,layout:imageOnly?'image':(place==='popup'&&S.image?S.layout:'standard'),accent:imageOnly?'':S.accent,
   button:button,buttonText:button?el('button').value.trim():'',dismissText:button&&place==='popup'?el('dismiss').value.trim():'',action:action,actionUrl:action==='url'?el('url').value.trim():''};
 }
 function problem(d){
  if(!cfg)return 'Настройки ещё загружаются';
- if(d.kind==='push'){if(!pushAvailable())return S.platform==='web'?'В вебе пушей нет':'Пуши выключены';if(!d.title&&!d.body)return 'Пушу нужен заголовок или текст';if(d.title.length>PUSH.title)return 'Заголовок пуша — до '+PUSH.title+' символов';}
+ if(d.kind==='push'){if(!d.platforms.length)return S.platforms.length?'В вебе пушей нет':'Выберите платформу';if(!pushAvailable())return 'Пуши выключены';if(!d.title&&!d.body)return 'Пушу нужен заголовок или текст';if(d.title.length>PUSH.title)return 'Заголовок пуша — до '+PUSH.title+' символов';}
  else if(!cfg.popupEnabled)return 'Сообщения в приложении выключены';
+ else if(!d.platforms.length)return 'Выберите платформу';
  if(!d.title&&!d.body&&!d.imageUrl)return 'Добавьте картинку, заголовок или текст';
  if(d.body.length>BODY_MAX[d.kind==='push'&&S.place==='banner'?'banner':d.kind])return 'Сократите текст';
  if(S.place==='banner'&&d.body.length>200)return 'Текст баннера — до 200 символов';
@@ -294,11 +298,11 @@ function count(id,n,max,soft){var x=el(id+'-count');x.textContent=n?n+' / '+max:
 function sync(){
  var d=draft(),push=S.push,canPush=pushAvailable(),imageOnly=d.layout==='image';
  el('push').disabled=!canPush&&!push;el('push').checked=push;
- el('push-state').textContent=!cfg?'…':!ready?'Firebase не подключён':!cfg.pushEnabled?'Пуши выключены на сервере':S.platform==='web'?'В вебе недоступен':'iOS и Android';
- setRadio('nt-place',S.place);setRadio('nt-platform',S.platform);setRadio('nt-store',S.store);setRadio('nt-when',S.when);setRadio('nt-days',S.days);setRadio('nt-layout',S.layout);
+ el('push-state').textContent=!cfg?'…':!ready?'Firebase не подключён':!cfg.pushEnabled?'Пуши выключены на сервере':!mobile().length&&S.platforms.length?'В вебе недоступен':'iOS и Android';
+ setRadio('nt-place',S.place);document.querySelectorAll('input[name="nt-platform"]').forEach(function(x){x.checked=has(x.value);});setRadio('nt-store',S.store);setRadio('nt-when',S.when);setRadio('nt-days',S.days);setRadio('nt-layout',S.layout);
  document.querySelector('input[name="nt-platform"][value="web"]').disabled=push;
  el('place-note').textContent=push&&S.place!=='news'?'Тем, у кого пуши выключены':'';
- el('stores').hidden=push||S.platform!=='android';el('when-wrap').hidden=S.when!=='later';
+ el('stores').hidden=push||!has('android');el('when-wrap').hidden=S.when!=='later';
  el('days-label').textContent=push&&S.place==='news'?'Хранить в списке':'Показывать';
  var titleMax=push?PUSH.title:80,bodyMax=push?(S.place==='banner'?200:PUSH.body):BODY_MAX[S.place];
  el('title').maxLength=titleMax;el('body').maxLength=bodyMax;
@@ -320,11 +324,11 @@ function sync(){
  el('publish').textContent=S.when==='later'?'Запланировать':push?'Отправить всем':'Опубликовать';
  renderPreview();saveDraft();
 }
-function saveDraft(){try{localStorage.setItem('nt-draft',JSON.stringify({s:{push:S.push,place:S.place,layout:S.layout,accent:S.accent,platform:S.platform,store:S.store,days:S.days,image:S.image},title:el('title').value,body:el('body').value,action:el('action').value,url:el('url').value,button:el('button').value,dismiss:el('dismiss').value}));}catch(_){}}
-function loadDraft(){try{var x=JSON.parse(localStorage.getItem('nt-draft')||'null');if(!x)return;Object.assign(S,x.s||{});['title','body','action','url','button','dismiss'].forEach(function(k){if(typeof x[k]==='string')el(k).value=x[k];});}catch(_){}}
-function clearForm(){['title','body','url','button','dismiss','start'].forEach(function(k){el(k).value='';});el('action').value='none';Object.assign(S,{push:false,place:'news',layout:'standard',accent:'',platform:'all',store:'all',when:'now',days:'7',image:'',imgW:0,imgH:0,tab:''});pending=null;el('editor-error').textContent='';}
+function saveDraft(){try{localStorage.setItem('nt-draft',JSON.stringify({s:{push:S.push,place:S.place,layout:S.layout,accent:S.accent,platforms:S.platforms,store:S.store,days:S.days,image:S.image},title:el('title').value,body:el('body').value,action:el('action').value,url:el('url').value,button:el('button').value,dismiss:el('dismiss').value}));}catch(_){}}
+function loadDraft(){try{var x=JSON.parse(localStorage.getItem('nt-draft')||'null');if(!x)return;Object.assign(S,x.s||{});if(!Array.isArray(S.platforms))S.platforms=ALL.slice();delete S.platform;['title','body','action','url','button','dismiss'].forEach(function(k){if(typeof x[k]==='string')el(k).value=x[k];});}catch(_){}}
+function clearForm(){['title','body','url','button','dismiss','start'].forEach(function(k){el(k).value='';});el('action').value='none';Object.assign(S,{push:false,place:'news',layout:'standard',accent:'',platforms:ALL.slice(),store:'all',when:'now',days:'7',image:'',imgW:0,imgH:0,tab:''});pending=null;el('editor-error').textContent='';}
 function fill(m){
- clearForm();S.push=m.kind==='push';S.place=placeOf(m);S.platform=m.platform||'all';S.store=m.store||'all';S.layout=m.layout==='cover'||m.layout==='compact'?m.layout:'standard';S.accent=m.accent||'';S.image=m.imageUrl||'';
+ clearForm();S.push=m.kind==='push';S.place=placeOf(m);S.platforms=platformsOf(m).slice();S.store=m.store||'all';S.layout=m.layout==='cover'||m.layout==='compact'?m.layout:'standard';S.accent=m.accent||'';S.image=m.imageUrl||'';
  el('title').value=m.title||'';el('body').value=m.body||'';el('action').value=m.action||'none';el('url').value=m.actionUrl||'';el('button').value=m.buttonText||'';el('dismiss').value=m.dismissText||'';
  el('result').textContent='';sync();el('form').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -371,9 +375,9 @@ el('file').addEventListener('change',function(){var f=el('file').files[0];el('fi
 // ── Controls.
 function onFormEdit(e){
  var t=e&&e.target;if(!t)return sync();
- if(t.id==='nt-push'){S.push=t.checked;S.tab=S.push?'push':'';if(S.push&&S.platform==='web')S.platform='all';}
+ if(t.id==='nt-push'){S.push=t.checked;S.tab=S.push?'push':'';if(S.push){S.platforms=mobile();if(!S.platforms.length)S.platforms=['ios','android'];}}
  else if(t.name==='nt-place'){S.place=t.value;S.tab=S.place==='news'&&S.push?'inbox':S.place==='news'?'inbox':'home';}
- else if(t.name==='nt-platform'){S.platform=t.value;if(t.value==='ios'||t.value==='android')S.os=t.value;}
+ else if(t.name==='nt-platform'){S.platforms=ALL.filter(function(p){return p===t.value?t.checked:has(p);});if(mobile().length===1)S.os=mobile()[0];}
  else if(t.name==='nt-store')S.store=t.value;
  else if(t.name==='nt-when')S.when=t.value;
  else if(t.name==='nt-days')S.days=t.value;
@@ -412,7 +416,7 @@ function tagsFor(m){
  var t=[];
  if(m.kind==='push')t.push('<span class="nf-tag">'+SVG.bell+'Пуш</span>');
  var place=placeOf(m);if(m.kind!=='push'||place!=='news')t.push('<span class="nf-tag">'+(m.kind==='push'?'+ ':'')+esc(PLACES[place])+'</span>');
- t.push('<span class="nf-tag">'+(m.platform==='ios'?brand('apple'):m.platform==='android'?brand('android'):'')+esc(PLATFORMS[m.platform]||m.platform)+(STORES[m.store]?' · '+esc(STORES[m.store]):'')+'</span>');
+ var ps=platformsOf(m);t.push('<span class="nf-tag">'+(ps.length===3?'Все платформы':ps.map(function(p){return (p==='ios'?brand('apple'):p==='android'?brand('android'):'')+esc(PLATFORMS[p]||p);}).join(' · '))+(STORES[m.store]?' · '+esc(STORES[m.store]):'')+'</span>');
  return t.join('');
 }
 function thumb(m){var place=placeOf(m);return m.imageUrl?'<span class="nf-thumb" style="'+bg(m.imageUrl)+'"></span>':'<span class="nf-thumb">'+ART[m.kind==='push'?'push':place]+'</span>';}

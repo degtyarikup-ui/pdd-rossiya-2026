@@ -21,7 +21,12 @@ export const PUSH_TITLE_MAX = 50;
 export const PUSH_BODY_MAX = 300;
 export const ACTIONS = ['none', 'url', 'tickets', 'topics', 'game', 'feed', 'settings', 'premium'];
 export const LAYOUTS = ['standard', 'cover', 'compact', 'image'];
-const choices = { kind: KINDS, app: ['all', 'ru', 'by', 'rs'], platform: ['all', 'ios', 'android', 'web'] };
+const choices = { kind: KINDS, app: ['all', 'ru', 'by', 'rs'], platform: ['all', 'ios', 'android', 'web', 'some'] };
+export const PLATFORMS = ['ios', 'android', 'web'];
+// Any set of platforms. One or all three keep the single `platform` value;
+// two are stored as platform 'some' plus `platforms` ("ios,web").
+export const platformsOf = item => item.platform === 'all' ? PLATFORMS
+  : item.platform === 'some' ? String(item.platforms || '').split(',').filter(p => PLATFORMS.includes(p)) : [item.platform];
 const DAY = 86400000;
 const str = (value, max, label, required = false) => {
   if (value === undefined || value === null || value === '') { if (required) throw new Error(label + ': обязательное поле'); return ''; }
@@ -42,16 +47,24 @@ export function userTopic(value) {
 export function validateCampaign(input, now = Date.now()) {
   const value = {};
   const normalized = { ...input, app: input?.app === undefined ? 'ru' : input.app };
+  if (Array.isArray(input?.platforms)) {
+    const picked = PLATFORMS.filter(p => input.platforms.includes(p));
+    if (!picked.length || input.platforms.some(p => !PLATFORMS.includes(p))) throw new Error('Выберите платформу');
+    normalized.platform = picked.length === 3 ? 'all' : picked.length === 1 ? picked[0] : 'some';
+    value.platforms = normalized.platform === 'some' ? picked.join(',') : '';
+  } else if (input?.platform === 'some') throw new Error('Некорректный тип или аудитория');
+  else value.platforms = '';
   for (const [key, allowed] of Object.entries(choices)) {
     value[key] = normalized?.[key];
     if (!allowed.includes(value[key])) throw new Error('Некорректный тип или аудитория');
   }
-  if (value.kind === 'push' && value.platform === 'web') throw new Error('Веб-пуши пока не поддерживаются');
+  // A push to 'all' means every phone; the web is never a push target.
+  if (value.kind === 'push' && value.platform !== 'all' && platformsOf(value).includes('web')) throw new Error('Веб-пуши пока не поддерживаются');
   // Android store (Google Play / RuStore) for in-app messages only: push topics
   // are per platform. Builds that do not report a store never match a store.
   value.store = input.store === undefined || input.store === '' ? 'all' : input.store;
   if (!['all', 'play', 'rustore'].includes(value.store)) throw new Error('Некорректный магазин');
-  if (value.store !== 'all' && value.platform !== 'android') throw new Error('Магазин выбирается только для Android');
+  if (value.store !== 'all' && !platformsOf(value).includes('android')) throw new Error('Магазин выбирается только для Android');
   if (value.store !== 'all' && value.kind === 'push') throw new Error('Пуш нельзя отправить в один магазин — выберите окно или баннер');
   value.layout = input.layout || 'standard';
   if (!LAYOUTS.includes(value.layout)) throw new Error('Некорректный макет');
@@ -105,12 +118,13 @@ export function validateCampaign(input, now = Date.now()) {
   value.status = value.kind === 'push' ? 'queued' : (value.startAt > now ? 'scheduled' : 'published');
   return value;
 }
-const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'store', 'expiresAt', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp', 'inAppKind'];
+const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'store', 'platforms', 'expiresAt', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp', 'inAppKind'];
 export function campaignMatches(item, app, platform, now = Date.now(), user = {}, store = '') {
   if (!item.enabled || item.expiresAt <= now || (item.startAt || 0) > now) return false;
   if (item.app !== 'all' && item.app !== app) return false;
-  if (item.platform !== 'all' && item.platform !== platform) return false;
-  if (item.store && item.store !== 'all' && item.store !== store) return false;
+  if (!platformsOf(item).includes(platform)) return false;
+  // The Android store only narrows Android devices.
+  if (platform === 'android' && item.store && item.store !== 'all' && item.store !== store) return false;
   if (item.target) {
     const t = item.target.toLowerCase();
     const uid = String(user.userId || '').trim().toLowerCase();
@@ -131,15 +145,16 @@ export function pushCondition(item) {
   if (item.target) {
     if (!/^pdd_account_[a-f0-9]{64}$/.test(item.targetTopic || '')) throw new Error('Пересоздайте адресный пуш с защищённым аккаунтом');
     const topic = `'${item.targetTopic}' in topics`;
-    if (item.platform === 'ios' || item.platform === 'android') {
+    const mobile = platformsOf(item).filter(p => p !== 'web');
+    if (mobile.length === 1) {
       const app = item.app === 'all' ? 'ru' : item.app;
-      return `${topic} && 'pdd_${app}_${item.platform}' in topics`;
+      return `${topic} && 'pdd_${app}_${mobile[0]}' in topics`;
     }
     return topic;
   }
   // Each installation subscribes to exactly one country/platform topic.
   const apps = item.app === 'all' ? ['ru', 'by', 'rs'] : [item.app];
-  const platforms = item.platform === 'all' ? ['ios', 'android'] : [item.platform];
+  const platforms = platformsOf(item).filter(p => p !== 'web');
   const topics = apps.flatMap(app => platforms.map(platform => `'pdd_${app}_${platform}' in topics`));
   // FCM conditions allow at most five topics. All six use the common mobile topic.
   return topics.length === 6 ? "'pdd_mobile' in topics" : topics.join(' || ');
