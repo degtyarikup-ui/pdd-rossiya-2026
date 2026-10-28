@@ -75,3 +75,11 @@ test('public metrics route requires configured app secret',async()=>{
     assert.equal(r.status,401);
   }
 });
+test('windows and pushes report views and taps like banners',async()=>{
+  for(const kind of ['popup','push','news']) {
+    const {send,deps,records}=setup();
+    deps.notificationRequest=async()=>Response.json({messages:[{...campaign,kind}]});
+    await send([event('click')]);
+    assert.deepEqual(records.map(r=>r.event),['view','click'],kind);
+  }
+});

@@ -11,7 +11,7 @@ function setup(env={}) {
  return {call,data,object};
 }
 test('input validation rejects missing text, unknown country, expired and oversized campaigns',()=>{
- for(const bad of [{kind:'push',body:''},{app:'xx'},{expiresAt:Date.now()-1},{title:'x'.repeat(81)},{kind:'push',body:'x'.repeat(301)},{kind:'push',platform:'web'}])assert.throws(()=>validateCampaign(sample(bad)));
+ for(const bad of [{kind:'push',title:'',body:''},{kind:'push',title:'x'.repeat(51)},{app:'xx'},{expiresAt:Date.now()-1},{title:'x'.repeat(81)},{kind:'push',body:'x'.repeat(301)},{kind:'push',platform:'web'}])assert.throws(()=>validateCampaign(sample(bad)));
 });
 test('country and platform targeting is exact; expired/disabled messages are hidden',()=>{
  const item=validateCampaign(sample({platform:'ios'}));
@@ -202,7 +202,7 @@ test('push with inApp shows as popup in client feed; scheduled push waits',async
   await call('/config',{...DEFAULT_NOTIFICATION_CONFIG,pushEnabled:true});
   const msg=sample({kind:'push',inApp:true,platform:'ios'});await call('/publish',msg);
   const feed=await (await call('/client?app=ru&platform=ios')).json();
-  assert.equal(feed.messages.length,1);assert.equal(feed.messages[0].kind,'popup');
+  assert.equal(feed.messages.length,1);assert.equal(feed.messages[0].kind,'popup');assert.equal(feed.messages[0].push,true);
   const later=sample({kind:'push',startAt:Date.now()+3600000,expiresAt:Date.now()+7200000});await call('/publish',later);
   const original=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;return Response.json({name:'ok'});};
   try{await object.alarm();await object.alarm();}finally{globalThis.fetch=original;}
@@ -227,8 +227,8 @@ test('campaign editor remains Russia-only; release settings support all countrie
   const html=await(await worker.fetch(new Request('https://test/admin'),{})).text();
   assert.match(html, /id="up-app"[\s\S]*value="by"[\s\S]*value="rs"/);
   assert.doesNotMatch(html.match(/<form id="nt-form"[\s\S]*?<\/form>/)[0], /Беларусь|Сербия/);
-  assert.match(html,/id="nt-audience"/);
   assert.match(html,/id="nt-target"/);
+  assert.match(html,/id="nt-test"/);
 });
 test('alarm route dispatches due pushes and onFormEdit handles form events',async()=>{
   const {call}=setup(fcmEnv);
@@ -274,11 +274,32 @@ test('in-app messages can target one Android store',async()=>{
 });
 
 test('inbox news reach only clients with the notification inbox',async()=>{
-  assert.throws(()=>validateCampaign(sample({kind:'news',title:'',body:'',imageUrl:'https://cdn.test/n.png'})),/заголовок или текст/);
+  assert.equal(validateCampaign(sample({kind:'news',title:'',body:'',imageUrl:'https://cdn.test/n.png'})).layout,'image','a picture alone is a valid inbox entry');
   const {call}=setup(),msg=sample({kind:'news',title:'Оплата по СБП',body:'Премиум теперь можно купить по СБП',action:'premium',buttonText:'Открыть'});
   assert.equal((await call('/publish',msg)).status,200);
   assert.equal((await (await call('/client?app=ru&platform=android')).json()).messages.length,0,'old clients would show news as a popup');
   const feed=await (await call('/client?app=ru&platform=android&inbox=1')).json();
   assert.equal(feed.messages.length,1);assert.equal(feed.messages[0].kind,'news');assert.equal(feed.messages[0].action,'premium');
   assert.ok(feed.messages[0].createdAt>0);
+});
+
+test('a push chooses how devices without it see it: inbox, window or banner',async()=>{
+  assert.equal(validateCampaign(sample({kind:'push'})).inAppKind,'news');
+  assert.equal(validateCampaign(sample({kind:'push',inApp:true})).inAppKind,'popup','old editor flag');
+  assert.throws(()=>validateCampaign(sample({kind:'push',inAppKind:'modal'})));
+  assert.throws(()=>validateCampaign(sample({kind:'push',inAppKind:'banner',body:'x'.repeat(201)})),/баннера/);
+  const {call}=setup(fcmEnv);
+  await call('/config',{...DEFAULT_NOTIFICATION_CONFIG,pushEnabled:true});
+  const msg=sample({kind:'push',inAppKind:'banner',platform:'android'});
+  assert.equal((await call('/publish',msg)).status,200);
+  const feed=await (await call('/client?app=ru&platform=android&inbox=1')).json();
+  assert.deepEqual(feed.messages.map(m=>[m.kind,m.push]),[['banner',true]]);
+  const plain=clientMessage(validateCampaign(sample({kind:'banner'})));
+  assert.equal(plain.push,false);
+});
+test('a push needs only one line of text; empty lines are omitted from the payload',()=>{
+  const titleOnly=buildPushMessage(validateCampaign(sample({kind:'push',body:''})));
+  assert.deepEqual(titleOnly.notification,{title:'Новости'});
+  const textOnly=buildPushMessage(validateCampaign(sample({kind:'push',title:'',emoji:'🎉'})));
+  assert.deepEqual(textOnly.notification,{body:'Новые вопросы'});
 });

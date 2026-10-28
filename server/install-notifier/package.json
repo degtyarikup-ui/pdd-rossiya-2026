@@ -17,6 +17,7 @@
     "test:economy": "node --test test-economy.mjs",
     "test:analytics:ui": "node --test test-analytics-auth-ui.mjs test-analytics-layout-ui.mjs",
     "test:economy:ui": "node --test test-economy-ui.mjs",
+    "test:notifications:ui": "node --test test-notifications-ui.mjs",
     "test:reports": "node --test test-question-reports.mjs",
     "test:support": "node --test test-support-thread.mjs test-support-close.mjs test-support-reliability.mjs",
     "test:accounts": "node --test test-account-state.mjs test-account-background.mjs test-account-session-expiry.mjs test-release-fixes.mjs test-release-handoff.mjs test-support-push.mjs test-account-compatibility.mjs test-durable-request.mjs test-durable-integration.mjs",

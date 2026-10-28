@@ -7,9 +7,18 @@ export const DEFAULT_NOTIFICATION_CONFIG = Object.freeze({ pushEnabled: false, p
 const reply = (value, status = 200) => Response.json(value, { status, headers: { 'Cache-Control': 'no-store' } });
 // popup  — modal window on the home screen (one show per device);
 // banner — dismissible card at the top of the home screen (non-blocking);
-// push   — system notification via FCM (optionally duplicated in-app as popup).
+// push   — system notification via FCM. In the app it is listed in the inbox
+//          or, on devices the push did not reach, shown as a window or banner
+//          (`inAppKind`).
 // news   — entry in the app's notification inbox only (no window, no push).
 export const KINDS = ['popup', 'banner', 'push', 'news'];
+export const IN_APP_KINDS = ['news', 'popup', 'banner'];
+// What a campaign is in the app. Pushes saved before `inAppKind` had `inApp`.
+export const placement = item => item.kind !== 'push' ? item.kind : (IN_APP_KINDS.includes(item.inAppKind) ? item.inAppKind : item.inApp ? 'popup' : 'news');
+// Push display budget (iOS ≈ one line of title and four of text on the lock
+// screen, Android ≈ one line each when collapsed). Longer text is cut there.
+export const PUSH_TITLE_MAX = 50;
+export const PUSH_BODY_MAX = 300;
 export const ACTIONS = ['none', 'url', 'tickets', 'topics', 'game', 'feed', 'settings', 'premium'];
 export const LAYOUTS = ['standard', 'cover', 'compact', 'image'];
 const choices = { kind: KINDS, app: ['all', 'ru', 'by', 'rs'], platform: ['all', 'ios', 'android', 'web'] };
@@ -47,24 +56,24 @@ export function validateCampaign(input, now = Date.now()) {
   value.layout = input.layout || 'standard';
   if (!LAYOUTS.includes(value.layout)) throw new Error('Некорректный макет');
   if (value.kind === 'push') {
-    // A system notification needs both lines; FCM shows nothing useful otherwise.
+    // A system notification needs text: a picture alone shows nothing.
     if (value.layout === 'image') throw new Error('Пуш не может состоять только из картинки');
-    for (const [key, max] of [['title', 80], ['body', 1000]]) {
-      if (typeof input[key] !== 'string' || !input[key].trim() || input[key].trim().length > max) throw new Error('Заполните заголовок и текст в пределах лимита');
-      value[key] = input[key].trim();
-    }
+    value.title = str(input.title, PUSH_TITLE_MAX, 'Заголовок пуша');
+    value.body = str(input.body, PUSH_BODY_MAX, 'Текст пуша');
+    if (!value.title && !value.body) throw new Error('Пушу нужен заголовок или текст');
   } else {
     // Windows and banners are composed from optional parts: picture, title,
     // text and button. Without any text the message is the picture itself.
     value.title = str(input.title, 80, 'Заголовок');
     value.body = str(input.body, 1000, 'Текст');
     value.layout = value.title || value.body ? (value.layout === 'image' ? 'standard' : value.layout) : 'image';
-    // The inbox lists messages by their text; a picture alone has no headline.
-    if (value.kind === 'news' && value.layout === 'image') throw new Error('Новости нужен заголовок или текст');
   }
   const imageBanner = value.layout === 'image';
-  if (value.kind === 'push' && value.body.length > 300) throw new Error('Текст пуша: не более 300 символов');
-  if (value.kind === 'banner' && value.body.length > 200) throw new Error('Текст баннера: не более 200 символов');
+  // Shown in the app on devices without the push. Old saves had only `inApp`.
+  value.inAppKind = value.kind !== 'push' ? '' : input.inAppKind === undefined || input.inAppKind === '' ? (input.inApp === true ? 'popup' : 'news') : input.inAppKind;
+  if (value.kind === 'push' && !IN_APP_KINDS.includes(value.inAppKind)) throw new Error('Некорректный вид в приложении');
+  value.inApp = value.inAppKind === 'popup';
+  if (placement(value) === 'banner' && value.body.length > 200) throw new Error('Текст баннера: не более 200 символов');
   value.id = input.id;
   if (typeof value.id !== 'string' || !/^[a-f0-9-]{36}$/.test(value.id)) throw new Error('Некорректный ID сообщения');
   // Optional scheduling: start in the future (≤ 30 days), show until expiresAt.
@@ -91,13 +100,12 @@ export function validateCampaign(input, now = Date.now()) {
   if (!ACTIONS.includes(value.action)) throw new Error('Некорректное действие');
   value.actionUrl = value.action === 'url' ? httpsUrl(input.actionUrl, 'Ссылка действия') : '';
   if (value.action === 'url' && !value.actionUrl) throw new Error('Укажите ссылку для кнопки');
-  value.inApp = value.kind === 'push' && input.inApp === true;
   value.createdAt = now;
   value.enabled = true;
   value.status = value.kind === 'push' ? 'queued' : (value.startAt > now ? 'scheduled' : 'published');
   return value;
 }
-const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'store', 'expiresAt', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp'];
+const SAME_FIELDS = ['kind', 'title', 'body', 'app', 'platform', 'store', 'expiresAt', 'target', 'imageUrl', 'emoji', 'accent', 'layout', 'button', 'buttonText', 'dismissText', 'action', 'actionUrl', 'inApp', 'inAppKind'];
 export function campaignMatches(item, app, platform, now = Date.now(), user = {}, store = '') {
   if (!item.enabled || item.expiresAt <= now || (item.startAt || 0) > now) return false;
   if (item.app !== 'all' && item.app !== app) return false;
@@ -111,10 +119,11 @@ export function campaignMatches(item, app, platform, now = Date.now(), user = {}
   }
   return true;
 }
-/** Shape sent to the app: only display fields, never internal state. */
+/** Shape sent to the app: only display fields, never internal state. `push`
+ *  marks a campaign also sent as a push: devices that receive pushes list it
+ *  in the inbox only, without a window or banner. */
 export function clientMessage(item) {
-  const kind = item.kind === 'push' ? 'popup' : item.kind;
-  return { id: item.id, kind, title: item.title, body: item.body, expiresAt: item.expiresAt, createdAt: item.createdAt,
+  return { id: item.id, kind: placement(item), push: item.kind === 'push', title: item.title, body: item.body, expiresAt: item.expiresAt, createdAt: item.createdAt,
     imageUrl: item.imageUrl || '', emoji: item.emoji || '', accent: item.accent || '', layout: item.layout || 'standard',
     button: item.button !== false && item.layout !== 'image', buttonText: item.buttonText || '', dismissText: item.dismissText || '', action: item.action || 'none', actionUrl: item.actionUrl || '' };
 }
@@ -140,8 +149,9 @@ export function pushConfigured(env) {
 }
 export function buildPushMessage(campaign, now = Date.now()) {
   const ttl = Math.max(1, Math.min(86400, Math.floor((campaign.expiresAt - now) / 1000)));
-  const title = campaign.emoji ? campaign.emoji + ' ' + campaign.title : campaign.title;
-  const notification = { title, body: campaign.body, ...(campaign.imageUrl ? { image: campaign.imageUrl } : {}) };
+  const title = campaign.emoji && campaign.title ? campaign.emoji + ' ' + campaign.title : campaign.title;
+  // Title-only and text-only pushes omit the empty line.
+  const notification = { ...(title ? { title } : {}), ...(campaign.body ? { body: campaign.body } : {}), ...(campaign.imageUrl ? { image: campaign.imageUrl } : {}) };
   const data = { campaignId: campaign.id, action: campaign.action || 'none', actionUrl: campaign.actionUrl || '', imageUrl: campaign.imageUrl || '', accent: campaign.accent || '' };
   const androidNotification = { tag: campaign.id, channel_id: 'admin_messages', icon: 'ic_notification', ...(campaign.accent ? { color: campaign.accent } : {}), ...(campaign.imageUrl ? { image: campaign.imageUrl } : {}) };
   return { condition: pushCondition(campaign), notification, data,
@@ -229,12 +239,16 @@ export class NotificationsState {
       const imagePopups = imageBanners && url.searchParams.get('imagePopups') === '1';
       // Older clients would show inbox news as a popup window.
       const inbox = url.searchParams.get('inbox') === '1';
-      // A sent push also lands in the inbox of builds that have one; without
-      // inApp it is listed there only, not shown as a window.
-      const listedPush = item => inbox && ['accepted', 'unknown'].includes(item.status);
-      const visible = config.popupEnabled ? [...records.values()].filter(item => (item.kind !== 'push' || item.inApp || listedPush(item)) && (item.kind !== 'news' || inbox) && (item.layout !== 'image' || (item.kind === 'banner' ? imageBanners : imagePopups)) && campaignMatches(item, app, platform, Date.now(), user, url.searchParams.get('store') || '')) : [];
-      return reply({ config, messages: visible.sort((a,b) => b.createdAt-a.createdAt).slice(0, 10)
-        .map(item => item.kind === 'push' && !item.inApp ? { ...clientMessage(item), kind: 'news' } : clientMessage(item)) });
+      // A sent push also lands in the inbox of builds that have one. Its window
+      // or banner is visible before sending: devices without pushes need it.
+      const sent = item => ['accepted', 'unknown'].includes(item.status);
+      const visible = config.popupEnabled ? [...records.values()].filter(item => {
+        const shown = placement(item);
+        if (item.kind === 'push' && shown === 'news' && !sent(item)) return false;
+        return (shown !== 'news' || inbox) && (item.layout !== 'image' || (shown === 'banner' ? imageBanners : imagePopups))
+          && campaignMatches(item, app, platform, Date.now(), user, url.searchParams.get('store') || '');
+      }) : [];
+      return reply({ config, messages: visible.sort((a,b) => b.createdAt-a.createdAt).slice(0, 10).map(clientMessage) });
     }
     if (path === '/alarm') {
       await this._runAlarm();
@@ -259,7 +273,7 @@ export class NotificationsState {
       if (!item || typeof body.enabled !== 'boolean') return reply({ error: 'Сообщение не найдено' }, 404);
       // A sent push cannot be recalled from devices; disabling hides it from the
       // in-app list. A push still sending or failed has no list entry to hide.
-      if (item.kind === 'push' && !['queued', 'accepted', 'unknown'].includes(item.status) && !item.inApp) return reply({ error: 'Отправленный пуш нельзя отозвать' }, 409);
+      if (item.kind === 'push' && !['queued', 'accepted', 'unknown'].includes(item.status) && placement(item) === 'news') return reply({ error: 'Отправленный пуш нельзя отозвать' }, 409);
       item.enabled = body.enabled;
       await this.state.storage.put(key, item);
       if (item.kind === 'push' && item.enabled) await this.scheduleNext();
@@ -284,7 +298,7 @@ export class NotificationsState {
       if (item.kind !== 'push' && !config.popupEnabled) return reply({ error: 'Сообщения в приложении отключены' }, 409);
       const records = await this.state.storage.list({ prefix: 'message:' });
       // Keep the latest 100 completed/expired messages, never evict active popups/queued pushes.
-      const removable = [...records.entries()].filter(([,x]) => x.expiresAt < Date.now() || (x.kind === 'push' && x.status !== 'queued' && !x.inApp)).sort((a,b)=>b[1].createdAt-a[1].createdAt).slice(100);
+      const removable = [...records.entries()].filter(([,x]) => x.expiresAt < Date.now() || (x.kind === 'push' && x.status !== 'queued' && placement(x) === 'news')).sort((a,b)=>b[1].createdAt-a[1].createdAt).slice(100);
       for (const [oldKey] of removable) await this.state.storage.delete(oldKey);
       if (records.size - removable.length >= 250) return reply({ error: 'Слишком много активных сообщений' }, 409);
       await this.state.storage.put(key, item);

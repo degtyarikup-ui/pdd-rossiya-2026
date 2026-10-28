@@ -3,7 +3,8 @@ import { privatePushTopic } from './notification_identity.js';
 
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
 const DAY = 86400000;
-// Authenticated accounts are unique across devices. Guests are unique per
+// Views and taps of every kind: banner and window shown, push or inbox entry
+// opened. Authenticated accounts are unique across devices. Guests are unique per
 // installation. Only opaque hashes enter the analytics buffer, never emails.
 export async function acceptNoticeMetrics(request, env, { trackStats, notificationRequest, readSession }, now = Date.now()) {
   if (!env.STATS || !env.INSTALLS) return reply({ error: 'storage unavailable' }, 503);
@@ -21,7 +22,7 @@ export async function acceptNoticeMetrics(request, env, { trackStats, notificati
   for (const event of body.events) {
     const campaign = messages.find(m => m.id === event.campaignId);
     // Accept delayed offline deliveries even after a campaign was disabled.
-    if (!campaign || campaign.kind !== 'banner' || event.ts < (campaign.startAt || campaign.createdAt) || event.ts >= campaign.expiresAt
+    if (!campaign || event.ts < (campaign.startAt || campaign.createdAt) || event.ts >= campaign.expiresAt
       || !campaignMatches({ ...campaign, enabled: true }, 'ru', body.platform, event.ts,
         { userId: session?.user?.id, email: session?.user?.email }, body.store || '')) continue;
     // A click also proves a view. Two devices and retries share these IDs.
@@ -36,7 +37,6 @@ export async function noticeMetricsForAdmin(env, response) {
   if (!response.ok) return response;
   const data = await response.json();
   await Promise.all(data.messages.map(async message => {
-    if (message.kind !== 'banner') return;
     const raw = await env.INSTALLS.get('notice_metrics:' + message.id);
     message.metrics = raw ? JSON.parse(raw) : { view: 0, click: 0 };
   }));

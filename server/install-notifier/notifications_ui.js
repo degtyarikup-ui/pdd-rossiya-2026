@@ -1,151 +1,476 @@
 import { APP_UPDATES_VIEW_HTML, APP_UPDATES_CLIENT_JS } from './app_updates_ui.js';
 export const NOTIFICATIONS_NAV_HTML = `<button class="nav-item" data-feature="notifications"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span>Уведомления</span></button>`;
+
+// Illustrations of where a message appears (tiles of the editor).
+const ART = {
+  push: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="19.5" y="9" width="17" height="7" rx="2" fill="currentColor" fill-opacity=".18"/><path d="M22 12h9M22 14h6" stroke-width="1.2"/><path d="M8 13a6 6 0 0 1 3-5M48 13a6 6 0 0 0-3-5" stroke-linecap="round"/></svg>',
+  news: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="19.5" y="8" width="17" height="6" rx="1.6" fill="currentColor" fill-opacity=".18"/><rect x="19.5" y="17" width="17" height="6" rx="1.6"/><rect x="19.5" y="26" width="17" height="6" rx="1.6"/><circle cx="35" cy="9" r="1.8" fill="currentColor" stroke="none"/></svg>',
+  popup: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="16.8" y="2.8" width="22.4" height="34.4" rx="4.2" fill="currentColor" fill-opacity=".08" stroke="none"/><rect x="19" y="11" width="18" height="17" rx="3" fill="currentColor" fill-opacity=".18"/><path d="M22 23h12" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  banner: '<svg viewBox="0 0 56 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="16" y="2" width="24" height="36" rx="5"/><rect x="19.5" y="7" width="17" height="10" rx="2" fill="currentColor" fill-opacity=".18"/><path d="M20 21h16M20 25h16M20 29h10" stroke-width="1.2" stroke-opacity=".45"/></svg>',
+};
+const LAYOUT_ART = {
+  standard: '<svg viewBox="0 0 28 22" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="1" width="24" height="20" rx="3"/><rect x="2" y="1" width="24" height="9" rx="3" fill="currentColor" fill-opacity=".25"/><path d="M6 14h12M6 17h8"/></svg>',
+  cover: '<svg viewBox="0 0 28 22" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="1" width="24" height="20" rx="3"/><rect x="2" y="1" width="24" height="14" rx="3" fill="currentColor" fill-opacity=".25"/><path d="M6 18h12"/></svg>',
+  compact: '<svg viewBox="0 0 28 22" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="1" width="24" height="20" rx="3"/><rect x="6" y="5" width="6" height="6" rx="1.5" fill="currentColor" fill-opacity=".25"/><path d="M6 14h14M6 17h9"/></svg>',
+};
+const tile = (value, label) => `<label class="nf-tile"><input type="radio" name="nt-place" value="${value}">${ART[value]}<b>${label}</b></label>`;
+const chip = (name, value, label) => `<label class="nf-chip"><input type="radio" name="${name}" value="${value}"><span>${label}</span></label>`;
+
 export const NOTIFICATIONS_VIEW_HTML = `
 <div id="notifications-view" style="display:none">
 <style>
-.nt-controls{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.nt-control{background:#fff;border-radius:16px;padding:18px;display:flex;align-items:center;justify-content:space-between;gap:12px}.nt-control strong{display:block;font-size:14px}.nt-control small{display:block;color:var(--text-muted);font-size:12px;margin-top:5px}.nt-switch{appearance:none;width:42px!important;height:25px;flex-shrink:0;background:#dde1e9;border:none!important;border-radius:20px!important;position:relative;cursor:pointer;padding:0!important}.nt-switch:checked{background:var(--primary)}.nt-switch:before{content:'';position:absolute;top:3px;left:3px;width:19px;height:19px;background:#fff;border-radius:50%;transition:transform .15s}.nt-switch:checked:before{transform:translateX(17px)}
-.nt-grid{display:grid;grid-template-columns:minmax(320px,1.3fr) minmax(300px,1fr);gap:20px;margin-bottom:20px;align-items:start}.nt-card{background:#fff;padding:24px;border-radius:18px}.nt-card h3{margin:0 0 20px;font-size:16px}.nt-sticky{position:sticky;top:20px}
-.nt-field{display:block;margin-bottom:16px}.nt-field>span{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:7px}.nt-field input,.nt-field textarea,.nt-field select{width:100%;box-sizing:border-box;font-family:inherit}.nt-field textarea{resize:vertical;min-height:110px}.nt-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.nt-section{border-top:1px solid var(--bg);padding-top:18px;margin-top:6px}.nt-section>h4{margin:0 0 14px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
-.nt-seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--bg);border-radius:12px;padding:4px;gap:4px;margin-bottom:18px}.nt-seg label{text-align:center;padding:10px 6px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)}.nt-seg label small{display:block;font-weight:400;font-size:11px;margin-top:2px}.nt-seg input{display:none}.nt-seg label:has(input:checked){background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.nt-swatches{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.nt-swatch{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #dde1e9;cursor:pointer;padding:0!important}.nt-swatch.on{box-shadow:0 0 0 2px var(--text)}.nt-swatches input[type=color]{width:34px!important;height:30px;padding:0!important;border:none!important;background:none}
-.nt-image{display:flex;gap:10px;align-items:center}.nt-image input[type=url]{flex:1}.nt-thumb{width:54px;height:54px;border-radius:10px;background:var(--bg) center/cover no-repeat;flex-shrink:0}.nt-check{display:flex;gap:10px;align-items:center;font-size:13px;margin-bottom:14px}.nt-check input{width:auto!important}
-.nt-preview{background:var(--bg);border-radius:20px;padding:30px 20px;min-height:260px;display:flex;align-items:center;justify-content:center}
-.nt-pv-popup{background:#fff;border:0;border-radius:24px;width:100%;max-width:320px;overflow:hidden;overflow-wrap:anywhere;position:relative}.nt-pv-img{width:100%;aspect-ratio:16/9;background:#F4F6FA center/contain no-repeat}.nt-pv-in{padding:24px}.nt-pv-label{display:block;font-size:10px;line-height:1.4;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#A1A6B7;margin-bottom:8px}.nt-pv-popup strong{display:block;font-size:20px;line-height:1.3;color:#121212}.nt-pv-popup p{white-space:pre-wrap;line-height:1.55;margin:10px 0 22px;font-size:14px;color:#5E5E5E}.nt-pv-btn{display:block;width:100%;border-radius:12px;padding:13px;color:#fff;font-weight:600;font-size:14px;text-align:center;box-sizing:border-box}.nt-pv-btn2{display:block;text-align:center;padding:14px 0 0;font-size:13px;font-weight:600;color:#A1A6B7}
-.nt-pv-popup.compact .nt-pv-img{width:64px;height:64px;aspect-ratio:auto;border-radius:14px;margin:20px 20px 0}
-.nt-pv-banner{background:#fff;border:0;border-radius:16px;width:100%;max-width:340px;min-height:164px;display:flex;gap:16px;padding:20px;align-items:center;overflow-wrap:anywhere;position:relative;box-sizing:border-box}.nt-pv-banner-content{display:flex;gap:12px;align-items:center}.nt-pv-mark{display:block;width:24px;height:3px;border-radius:2px;margin:0 0 10px}.nt-pv-banner .nt-pv-thumb{width:64px;height:64px;border-radius:12px;background:#F4F6FA center/contain no-repeat;flex-shrink:0}.nt-pv-banner strong{display:block;font-size:17px;line-height:1.25;color:#121212}.nt-pv-banner p{margin:7px 0 0;font-size:13px;color:#5E5E5E;line-height:1.4}.nt-pv-banner .nt-pv-link{font-size:12px;font-weight:600;margin-top:12px;padding:6px 10px;border-radius:9px;display:inline-block}.nt-pv-x{position:absolute;top:10px;right:10px;width:28px;height:28px;border:0;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;background:#F4F6FA;color:#A1A6B7;font-size:14px}
-.nt-pv-image{width:100%;max-width:340px;position:relative;overflow:hidden;border-radius:16px;background:#F4F6FA}.nt-pv-image img{width:100%;height:auto;display:block;object-fit:contain}.nt-pv-image a{display:block;width:100%}.nt-pv-image-placeholder{height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px}.nt-pv-image .nt-pv-x{background:rgba(15,23,42,.65);color:#fff;pointer-events:none}.nt-confirm-image{display:block;width:100%;max-height:240px;object-fit:contain;border-radius:12px;margin:12px 0}.nt-confirm-image[hidden]{display:none}
-.nt-pv-push{width:100%;max-width:330px;display:flex;flex-direction:column;gap:14px}.nt-pv-sys{background:rgba(255,255,255,.92);border-radius:18px;padding:12px 14px;box-shadow:0 4px 14px rgba(0,0,0,.08);overflow-wrap:anywhere}.nt-pv-sys header{display:flex;align-items:center;gap:7px;font-size:11px;color:#777;margin-bottom:6px}.nt-pv-sys header i{width:16px;height:16px;border-radius:4px;display:inline-block}.nt-pv-sys .nt-pv-row{display:flex;gap:10px}.nt-pv-sys strong{display:block;font-size:13px}.nt-pv-sys p{margin:2px 0 0;font-size:13px;color:#333;line-height:1.35;white-space:pre-wrap}.nt-pv-sys .nt-pv-thumb{width:40px;height:40px;border-radius:8px;background:#eef0f4 center/cover no-repeat;flex-shrink:0}.nt-pv-sys .nt-pv-big{margin-top:10px;width:100%;aspect-ratio:2/1;border-radius:10px;background:#eef0f4 center/cover no-repeat}.nt-pv-cap{font-size:11px;color:var(--text-muted);text-align:center;margin-bottom:-8px}
-.nt-hint{font-size:12px;color:var(--text-muted);line-height:1.6;margin:14px 0 0}.nt-error{color:var(--danger);font-size:13px;min-height:20px;margin-bottom:12px}.nt-card .btn-action.primary,.nt-modal .btn-action.primary{background:var(--primary);color:#fff}.nt-error:empty{display:none}.nt-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.nt-history{width:100%;border-collapse:collapse;font-size:13px}.nt-history td,.nt-history th{padding:14px 10px;text-align:left;border-bottom:1px solid var(--bg);vertical-align:top}.nt-history th{color:var(--text-muted);font-weight:500}.nt-history strong{display:block;margin-bottom:5px}.nt-history small{color:var(--text-muted)}.nt-history .nt-hthumb{width:44px;height:44px;border-radius:9px;background:var(--bg) center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:20px}.nt-status{display:inline-flex;border-radius:7px;padding:5px 8px;background:var(--bg);font-size:12px;white-space:nowrap}.nt-status.ok{background:var(--success-subtle);color:var(--success)}.nt-status.bad{background:var(--danger-subtle);color:var(--danger)}.nt-status.test{background:var(--primary-subtle);color:var(--primary);font-weight:700}.nt-table-wrap{overflow:auto}.nt-empty{text-align:center;color:var(--text-muted);padding:30px}.nt-rowbtns{display:flex;gap:6px;flex-wrap:wrap}
-.nt-part{background:var(--bg);border-radius:14px;padding:14px 14px 0;margin-bottom:10px;position:relative}.nt-part .nt-field input,.nt-part .nt-field textarea,.nt-part .nt-field select{background:#fff}.nt-remove{position:absolute;top:8px;right:8px;border:0;background:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:4px 8px;border-radius:8px}.nt-remove:hover{background:#fff;color:var(--danger)}
-.nt-add{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 4px}.nt-add button{border:1px dashed #cfd5e1;background:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-size:13px;font-weight:600;color:var(--text);cursor:pointer}.nt-add button:hover{border-color:var(--primary);color:var(--primary)}.nt-add button[hidden]{display:none}
-.nt-more summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)}.nt-pv-empty{color:var(--text-muted);font-size:13px;text-align:center;max-width:240px;line-height:1.6}.nt-pv-popup img.nt-pv-full{width:100%;display:block}
-.nt-modal{border:0;border-radius:18px;padding:28px;width:min(420px,90vw);color:var(--text)}.nt-modal::backdrop{background:rgba(0,0,0,.35)}.nt-modal p{line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}.nt-modal h3{margin-top:0}
-@media(max-width:1050px){.nt-controls{grid-template-columns:1fr 1fr}.nt-grid{grid-template-columns:1fr}.nt-sticky{position:static}}@media(max-width:560px){.nt-controls{grid-template-columns:1fr}.nt-row{grid-template-columns:1fr}.nt-card{padding:18px}}
+#notifications-view{--nf-line:#E9ECF1;--nf-soft:#F4F6F9;--nf-warn:#C77700}#notifications-view [hidden]{display:none!important}
+#notifications-view .nf-card,#notifications-view .nt-card{background:#fff;border-radius:20px;padding:24px}
+.nf-switches{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.nf-sw{background:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;min-width:0}
+.nf-sw span{min-width:0;font-size:13px;font-weight:600;color:var(--text)}.nf-sw small{display:block;font-size:11px;font-weight:450;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nf-sw input,.nf-tile input,.nf-chip input,.nf-seg input,.nf-push input{position:absolute;opacity:0;pointer-events:none}
+.nf-sw{position:relative}.nf-sw i,.nf-push i{width:36px;height:22px;flex-shrink:0;border-radius:20px;background:#DDE1E9;position:relative;transition:background .15s}
+.nf-sw i:before,.nf-push i:before{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.nf-sw input:checked+i,.nf-push input:checked~i{background:var(--primary)}.nf-sw input:checked+i:before,.nf-push input:checked~i:before{transform:translateX(14px)}
+.nf-sw input:disabled+i{opacity:.5}.nf-sw input:focus-visible+i,.nf-push input:focus-visible~i{outline:2px solid var(--primary);outline-offset:2px}
+.nf-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start;margin-bottom:16px}
+.nf-sec{padding:20px 0;border-top:1px solid var(--nf-line)}.nf-sec:first-child{padding-top:0;border-top:0}
+.nf-sec h4{margin:0 0 12px;font-size:12px;font-weight:600;color:var(--text-muted)}
+.nf-push{display:flex;align-items:center;gap:14px;padding:12px 16px 12px 12px;border-radius:16px;background:var(--nf-soft);cursor:pointer;position:relative;margin-bottom:10px;color:var(--text-muted)}
+.nf-push svg{width:56px;height:40px;flex-shrink:0}.nf-push span{flex:1;min-width:0}.nf-push b{display:block;font-size:14px;color:var(--text)}.nf-push small{display:block;font-size:12px;margin-top:2px}
+.nf-push:has(input:checked){background:var(--primary-subtle);color:var(--primary)}.nf-push:has(input:disabled){cursor:not-allowed;opacity:.6}
+.nf-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.nf-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px 12px;border-radius:16px;border:1.5px solid var(--nf-line);cursor:pointer;color:#9AA2B1;text-align:center}
+.nf-tile svg{width:56px;height:40px}.nf-tile b{font-size:13px;font-weight:600;color:var(--text)}
+.nf-tile:has(input:checked){border-color:var(--primary);color:var(--primary);background:#F7FAFF}.nf-tile:has(input:focus-visible){outline:2px solid var(--primary);outline-offset:2px}
+.nf-note{margin:10px 0 0;font-size:12px;color:var(--text-muted)}.nf-note:empty{display:none}
+.nf-drop{display:flex;align-items:center;gap:14px;border:1.5px dashed #CDD3DD;border-radius:16px;padding:14px;cursor:pointer;color:var(--text-muted);font-size:13px;transition:border-color .15s,background .15s}
+.nf-drop:hover,.nf-drop.over{border-color:var(--primary);background:#F7FAFF}.nf-drop svg{flex-shrink:0}
+.nf-drop.has{cursor:default;border-style:solid;border-color:var(--nf-line)}.nf-drop img{width:64px;height:64px;object-fit:cover;border-radius:12px;background:var(--nf-soft);flex-shrink:0}
+.nf-drop b{display:block;color:var(--text);font-size:13px}.nf-drop .nf-grow{min-width:0}.nf-drop small{display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nf-grow{flex:1;min-width:0}
+.nf-link{border:0;background:none;color:var(--primary);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:6px 8px;border-radius:8px}.nf-link:hover{background:var(--primary-subtle)}.nf-link.danger{color:var(--danger)}.nf-link.danger:hover{background:var(--danger-subtle)}
+.nf-seg{display:inline-flex;gap:4px;background:var(--nf-soft);border-radius:12px;padding:3px;margin-top:10px}
+.nf-seg label{position:relative;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:550;color:var(--text-muted)}
+.nf-seg svg{width:22px;height:18px}.nf-seg label:has(input:checked){background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(16,24,40,.1)}
+.nf-in{position:relative;margin-top:10px}
+#notifications-view .nf-in input,#notifications-view .nf-in textarea,#notifications-view .nf-row input,#notifications-view .nf-row select,#notifications-view .nf-when input{width:100%;box-sizing:border-box;border:1.5px solid var(--nf-line);border-radius:12px;background:#fff;padding:11px 14px;font:inherit;font-size:14px;color:var(--text);outline:none;transition:border-color .15s}
+#notifications-view .nf-in input{padding-right:64px;font-weight:600}#notifications-view .nf-in textarea{min-height:96px;resize:vertical;line-height:1.5;padding-bottom:26px}
+#notifications-view .nf-in input:focus,#notifications-view .nf-in textarea:focus,#notifications-view .nf-row input:focus,#notifications-view .nf-row select:focus,#notifications-view .nf-when input:focus{border-color:var(--primary)}
+.nf-count{position:absolute;right:12px;bottom:12px;font-size:11px;color:#A3AAB6;font-variant-numeric:tabular-nums;pointer-events:none}.nf-in input~.nf-count{top:50%;bottom:auto;transform:translateY(-50%)}
+.nf-count.warn{color:var(--nf-warn)}.nf-count.over{color:var(--danger);font-weight:700}
+.nf-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.nf-row+.nf-row{margin-top:10px}.nf-row [hidden]{display:none}
+.nf-swatches{display:flex;gap:8px;align-items:center;margin-top:12px}.nf-swatch{width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #D9DEE6;cursor:pointer;padding:0}.nf-swatch.on{box-shadow:0 0 0 2px var(--text)}
+.nf-swatches input[type=color]{width:28px;height:28px;padding:0;border:0;background:none;cursor:pointer}.nf-swatches[hidden]{display:none}
+.nf-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
+.nf-chips{display:flex;flex-wrap:wrap;gap:6px}.nf-chips+.nf-chips{margin-top:8px}.nf-chips[hidden]{display:none}
+.nf-chip{position:relative}.nf-chip span{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;background:var(--nf-soft);font-size:12px;font-weight:550;color:#4A5262;cursor:pointer}
+.nf-chip span svg{width:13px;height:13px}.nf-chip input:checked+span{background:var(--text);color:#fff}.nf-chip input:disabled+span{opacity:.4;cursor:not-allowed}.nf-chip input:focus-visible+span{outline:2px solid var(--primary);outline-offset:2px}
+.nf-when{margin-top:8px}.nf-when[hidden]{display:none}
+.nf-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:20px;border-top:1px solid var(--nf-line)}
+.nf-btn{border:0;border-radius:12px;padding:12px 18px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:var(--nf-soft);color:var(--text);display:inline-flex;align-items:center;gap:8px}
+.nf-btn:hover{background:#E9EDF2}.nf-btn.primary{background:var(--primary);color:#fff}.nf-btn.primary:hover{background:var(--primary-hover)}.nf-btn:disabled{opacity:.45;cursor:not-allowed}
+.nf-btn.ghost{background:none;color:var(--text-muted)}.nf-btn.ghost:hover{background:var(--nf-soft)}
+.nf-me{border:0;background:none;font:inherit;font-size:12px;color:var(--text-muted);cursor:pointer;padding:6px 4px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nf-me:hover{color:var(--primary)}
+.nf-result{font-size:13px;margin:12px 0 0;color:var(--success)}.nf-result:empty{display:none}
+#notifications-view .nt-error{color:var(--danger);font-size:13px;margin:0 0 12px}#notifications-view .nt-error:empty{display:none}
+.nf-preview{position:sticky;top:20px;padding:16px!important}
+.nf-tabs{display:flex;gap:4px;background:var(--nf-soft);border-radius:12px;padding:3px}.nf-tabs button{flex:1;border:0;background:none;border-radius:9px;padding:8px 6px;font:inherit;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer}
+.nf-tabs button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(16,24,40,.1)}.nf-tabs button[hidden]{display:none}
+.nf-os{display:flex;justify-content:center;gap:16px;margin:12px 0 0}.nf-os[hidden]{display:none}.nf-os button{border:0;background:none;font:inherit;font-size:12px;font-weight:600;color:#A3AAB6;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:4px}.nf-os button svg{width:14px;height:14px}.nf-os button.on{color:var(--text)}
+.nf-phone{margin:14px auto 0;width:284px;height:584px;border-radius:46px;background:#14161B;padding:9px;box-sizing:border-box;box-shadow:0 18px 40px -18px rgba(16,24,40,.45)}
+.nf-screen{width:100%;height:100%;border-radius:38px;overflow:hidden;position:relative;background:#F8F9FA;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',Roboto,sans-serif;color:#121212}
+.nf-screen *{box-sizing:border-box}.nf-pvnote{margin:12px 4px 0;font-size:12px;color:var(--text-muted);text-align:center;line-height:1.5}.nf-pvnote:empty{display:none}
+.l1{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lc{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.ph-st{height:40px;display:flex;align-items:center;justify-content:space-between;padding:6px 26px 0;font-size:12px;font-weight:600}.ph-st i{width:52px;height:6px}
+.lk{height:100%;background:linear-gradient(160deg,#5B7FD6 0%,#8E7BD8 45%,#E0A1B8 100%);color:#fff}.lk.an{background:linear-gradient(170deg,#1F2A44,#3C4C78 60%,#6F7FA8)}
+.lk-date{text-align:center;font-size:13px;font-weight:550;opacity:.9;margin-top:6px}.lk-time{text-align:center;font-size:62px;font-weight:600;letter-spacing:-2px;line-height:1.05;margin-bottom:18px}
+.lk-cap{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;opacity:.75;margin:12px 16px 6px}
+.in{margin:0 9px;border-radius:18px;background:rgba(255,255,255,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#111;padding:10px;display:flex;gap:9px}
+.in img.ic{width:30px;height:30px;border-radius:7px;flex-shrink:0}.in .c{flex:1;min-width:0;font-size:12px;line-height:1.32}.in .h{display:flex;gap:6px;align-items:baseline}.in .h b{flex:1;min-width:0}.in .h span{font-size:10.5px;color:rgba(0,0,0,.45);flex-shrink:0}
+.in p{margin:0}.in .th{width:32px;height:32px;border-radius:6px;background:#ddd center/cover;flex-shrink:0;align-self:center}
+.an-n{margin:0 9px;border-radius:20px;background:#F3F4F8;color:#1B1C1F;padding:11px 12px;font-size:12px;line-height:1.35}
+.an-h{display:flex;align-items:center;gap:6px;font-size:10.5px;color:#5F6368;margin-bottom:5px}.an-h i{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}.an-h i svg{width:10px;height:10px}.an-h em{margin-left:auto;font-style:normal;font-size:12px}
+.an-b{display:flex;gap:10px;align-items:center}.an-b>div{flex:1;min-width:0}.an-b p{margin:1px 0 0;color:#444}.an-th{width:36px;height:36px;border-radius:8px;background:#ddd center/cover;flex-shrink:0}
+.an-big{margin-top:8px;width:100%;aspect-ratio:2/1;border-radius:12px;background:#ddd center/cover}
+.ap{height:100%;display:flex;flex-direction:column;background:#F8F9FA;position:relative}.ap-body{flex:1;padding:4px 12px 0;display:flex;flex-direction:column;gap:9px;overflow:hidden}.ap-body>*{flex-shrink:0}
+.ap-title{font-size:19px;font-weight:700;margin:2px 2px 2px}
+.sk{background:#fff;border-radius:14px}.sk-stats{height:118px;padding:14px;display:flex;gap:12px;align-items:center}.sk-ring{width:62px;height:62px;border-radius:50%;border:7px solid #E8F2FE;border-top-color:#0574F8;flex-shrink:0}
+.sk-l{height:7px;border-radius:4px;background:#EFF0F4;margin:6px 0}.sk-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.sk-grid div{height:74px}.sk-exam{height:96px;background:#0574F8;opacity:.9}
+.ap-nav{height:52px;background:#fff;display:flex;justify-content:space-around;align-items:center;padding-bottom:6px}.ap-nav i{width:18px;height:18px;border-radius:5px;background:#E3E6EC}.ap-nav i:first-child{background:#0574F8}
+.ab{background:#fff;border-radius:14px;padding:13px;position:relative;font-size:12px}.ab-mark{display:block;width:20px;height:3px;border-radius:2px;margin-bottom:8px}
+.ab-row{display:flex;gap:10px;align-items:center;padding-right:18px}.ab-th{width:46px;height:46px;border-radius:10px;background:#F4F6FA center/cover;flex-shrink:0}.ab b{display:block;font-size:13.5px;line-height:1.2}.ab p{margin:4px 0 0;color:#5E5E5E;line-height:1.38}
+.ab-chip{display:inline-block;margin-top:9px;padding:5px 9px;border-radius:8px;font-size:11px;font-weight:600}
+.ax{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#F4F6FA;color:#A1A6B7;font-size:10px;display:flex;align-items:center;justify-content:center}
+.aimg{position:relative;border-radius:14px;overflow:hidden;background:#F4F6FA}.aimg img{display:block;width:100%;height:auto}.aimg .ax{background:rgba(15,23,42,.6);color:#fff}
+.ov{position:absolute;inset:0;background:rgba(10,12,18,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.aw{background:#fff;border-radius:20px;width:100%;overflow:hidden;position:relative;font-size:12px;max-height:100%;overflow-y:auto}.aw .im{width:100%;aspect-ratio:16/9;background:#F4F6FA center/cover}.aw .im.cover{aspect-ratio:4/3}
+.aw .in2{padding:16px}.aw .ic2{width:46px;height:46px;border-radius:12px;background:#F4F6FA center/cover;margin-bottom:10px}.aw b{display:block;font-size:16px;line-height:1.25;letter-spacing:-.2px;padding-right:18px}.aw p{margin:6px 0 0;color:rgba(18,18,18,.68);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.aw .bt{margin-top:14px;border-radius:12px;padding:10px;text-align:center;font-weight:600;font-size:12.5px}.aw .bt2{text-align:center;padding:9px 0 0;color:#0574F8;font-weight:600;font-size:12px}.aw img{display:block;width:100%}
+.aw.only .ax{background:rgba(15,23,42,.6);color:#fff}
+.al{background:#fff;border-radius:14px;height:44px;display:flex;align-items:center;gap:9px;padding:0 10px;font-size:12.5px;font-weight:600}.al i{width:28px;height:28px;border-radius:50%;background:#E8F2FE;position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#0574F8}
+.al i svg{width:15px;height:15px}.al i:after{content:'';position:absolute;top:1px;right:1px;width:7px;height:7px;border-radius:50%;background:#ED4621;border:1.5px solid #fff}.al span{flex:1}.al em{font-style:normal;color:#A1A6B7}
+.ib-h{display:flex;align-items:center;gap:10px;padding:2px 14px 10px;font-size:17px;font-weight:700}.ib-h i{width:30px;height:30px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:#121212;font-style:normal;font-size:14px}
+.ib-l{padding:0 12px;display:flex;flex-direction:column;gap:8px}.ic{background:#fff;border-radius:14px;padding:12px;display:flex;gap:10px;font-size:12px}.ic.old{opacity:.45}
+.ic .ci{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}.ic .ci svg{width:16px;height:16px}.ic .cc{flex:1;min-width:0}.ic .ct{display:flex;gap:6px;align-items:flex-start}.ic .ct b{flex:1;font-size:12.5px;line-height:1.3;overflow-wrap:anywhere}.ic .dot{width:7px;height:7px;border-radius:50%;background:#ED4621;flex-shrink:0;margin-top:4px}
+.ic p{margin:3px 0 0;color:rgba(18,18,18,.75);line-height:1.4;overflow-wrap:anywhere}.ic .ci-img{margin-top:7px;border-radius:10px;width:100%;display:block}.ic .cf{display:flex;justify-content:space-between;margin-top:7px;font-size:10.5px;color:#A1A6B7}.ic .cf span{color:#0574F8;font-weight:600;font-size:11.5px}
+.nf-hist-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.nf-hist-h h3{margin:0;font-size:16px}
+.nf-msg{display:grid;grid-template-columns:52px minmax(0,1.6fr) minmax(0,1fr) 140px auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--nf-line)}.nf-msg:first-of-type{border-top:0}
+.nf-thumb{width:52px;height:52px;flex-shrink:0;border-radius:12px;background:var(--nf-soft) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#A3AAB6}.nf-thumb svg{width:36px;height:26px}
+.nf-msg strong{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nf-msg small{display:block;font-size:12px;color:var(--text-muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nf-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.nf-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 7px;border-radius:6px;background:var(--nf-soft);color:#4A5262}.nf-tag svg{width:12px;height:12px}
+.nf-tag.ok{background:var(--success-subtle);color:var(--success)}.nf-tag.bad{background:var(--danger-subtle);color:var(--danger)}.nf-tag.test{background:#FFF4DE;color:#9A5B00}.nf-tag.wait{background:var(--primary-subtle);color:var(--primary)}
+.nf-stat{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;display:flex;gap:12px}.nf-stat span{display:inline-flex;align-items:center;gap:4px}.nf-stat svg{width:14px;height:14px;color:#A3AAB6}.nf-stat+small{margin-top:3px}
+.nf-acts{display:flex;gap:4px;justify-content:flex-end}.nf-ib{border:0;background:var(--nf-soft);color:#4A5262;border-radius:10px;height:34px;min-width:34px;padding:0 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.nf-ib:hover{background:#E9EDF2}.nf-ib.primary{background:var(--primary);color:#fff}.nf-ib.danger:hover{background:var(--danger-subtle);color:var(--danger)}.nf-ib svg{width:15px;height:15px}.nf-ib:disabled{opacity:.5}
+.nf-empty{padding:28px;text-align:center;color:var(--text-muted);font-size:13px}
+.nf-modal{border:0;border-radius:20px;padding:24px;width:min(400px,92vw);color:var(--text);margin:auto;inset:0;position:fixed;box-shadow:0 24px 60px -20px rgba(16,24,40,.35)}.nf-modal::backdrop{background:rgba(16,24,40,.4)}.nf-modal h3{margin:0 0 14px;font-size:17px}
+.nf-sum{display:flex;gap:12px;align-items:center;background:var(--nf-soft);border-radius:14px;padding:12px;margin-bottom:12px}.nf-sum .nf-thumb{background-color:#fff}.nf-sum b{display:block;font-size:14px;overflow-wrap:anywhere}.nf-sum small{display:block;font-size:12px;color:var(--text-muted);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.nf-modal .nf-tags{margin:0 0 18px}.nf-modal .nf-actions{display:flex;gap:8px;justify-content:flex-end}
+#notifications-view .nf-modal input{width:100%;box-sizing:border-box;border:1.5px solid var(--nf-line);border-radius:12px;padding:11px 14px;font:inherit;font-size:14px;margin-bottom:16px}
+#up-form .nt-field{display:block;margin-bottom:14px}#up-form .nt-field>span{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px}#up-form .nt-field input,#up-form .nt-field textarea,#up-form .nt-field select{width:100%;box-sizing:border-box;font:inherit;border:1.5px solid var(--nf-line);border-radius:12px;padding:10px 12px;background:#fff}#up-form .nt-field textarea{min-height:90px;resize:vertical}
+#up-form .nt-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}#up-form .nt-check{display:flex;gap:10px;align-items:center;font-size:13px;margin-bottom:14px}#up-form .nt-check input{width:auto}#up-form .nt-hint{font-size:12px;color:var(--text-muted);line-height:1.6}#up-form .nt-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+@media(max-width:1180px){.nf-grid{grid-template-columns:minmax(0,1fr)}.nf-preview{position:static}.nf-switches{grid-template-columns:repeat(2,minmax(0,1fr))}.nf-msg{grid-template-columns:52px minmax(0,1fr) auto}.nf-msg>.nf-who,.nf-msg>.nf-metric{grid-column:2}.nf-msg>.nf-acts{grid-column:1/-1;justify-content:flex-start}}
+@media(max-width:600px){#notifications-view .nf-card{padding:18px}.nf-switches{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.nf-sw{padding:12px;gap:10px}.nf-sw small{display:none}.nf-two,.nf-row,#up-form .nt-row{grid-template-columns:minmax(0,1fr)}.nf-tile{padding:12px 4px 10px}.nf-tile svg{width:44px;height:32px}.nf-bar .nf-grow{display:none}.nf-bar #nt-publish{width:100%;justify-content:center;order:5}}
 </style>
-<div class="nt-controls">
-<label class="nt-control"><span><strong>Пуши</strong><small id="nt-provider">Проверка подключения…</small></span><input class="nt-switch" type="checkbox" data-nt-config="pushEnabled" aria-label="Пуши" disabled></label>
-<label class="nt-control"><span><strong>Сообщения в приложении</strong><small>Окна и баннеры</small></span><input class="nt-switch" type="checkbox" data-nt-config="popupEnabled" aria-label="Сообщения в приложении" disabled></label>
-<label class="nt-control"><span><strong>Напоминание об учёбе</strong><small>Серия занятий · 20:00</small></span><input class="nt-switch" type="checkbox" data-nt-config="streakEnabled" aria-label="Напоминание об учёбе" disabled></label>
-<label class="nt-control"><span><strong>Заезды восстановились</strong><small>Напоминание об игре</small></span><input class="nt-switch" type="checkbox" data-nt-config="gameEnabled" aria-label="Заезды восстановились" disabled></label>
+<div class="nf-switches">
+<label class="nf-sw"><input type="checkbox" data-nt-config="pushEnabled" aria-label="Пуши" disabled><i></i><span>Пуши<small id="nt-provider">Проверка…</small></span></label>
+<label class="nf-sw"><input type="checkbox" data-nt-config="popupEnabled" aria-label="Сообщения в приложении" disabled><i></i><span>В приложении<small>Окна, баннеры, список</small></span></label>
+<label class="nf-sw"><input type="checkbox" data-nt-config="streakEnabled" aria-label="Напоминание об учёбе" disabled><i></i><span>Напоминание об учёбе<small>Каждый день в 20:00</small></span></label>
+<label class="nf-sw"><input type="checkbox" data-nt-config="gameEnabled" aria-label="Заезды восстановились" disabled><i></i><span>Заезды восстановились<small>Напоминание об игре</small></span></label>
 </div>
 <div id="nt-page-error" class="nt-error" role="alert"></div>
-<details class="admin-disclosure"><summary>Обновления приложения</summary><div class="admin-disclosure-body">${APP_UPDATES_VIEW_HTML.replace('<h3>Обновления приложения</h3>', '')}</div></details>
-<div class="nt-grid">
-<form id="nt-form" class="nt-card"><h3>Новое сообщение</h3>
-<div class="nt-seg" id="nt-kind">
-<label><input type="radio" name="nt-kind" value="popup" checked>Окно<small>поверх главного экрана</small></label>
-<label><input type="radio" name="nt-kind" value="banner">Баннер<small>вместо блока статистики</small></label>
-<label><input type="radio" name="nt-kind" value="push">Пуш<small>системное уведомление</small></label>
-<label><input type="radio" name="nt-kind" value="news">Новость<small>в разделе уведомлений</small></label>
-</div>
-<div class="nt-row"><label class="nt-field"><span>Получатели</span><select id="nt-audience"><option value="all">Все пользователи</option><option value="test">Только мой аккаунт (тест)</option></select></label><label class="nt-field"><span>Платформа</span><select id="nt-platform"><option value="all">Все платформы</option><option value="ios">iOS</option><option value="android">Android</option><option value="web">Веб</option></select></label></div>
-<label class="nt-field" id="nt-store-wrap" style="display:none"><span>Магазин <small>для окон и баннеров на Android</small></span><select id="nt-store"><option value="all">Google Play и RuStore</option><option value="play">Только Google Play</option><option value="rustore">Только RuStore</option></select></label>
-<label class="nt-field" id="nt-target-wrap" style="display:none"><span>Мой аккаунт для теста <small>email или ID аккаунта, под которым вы вошли в приложение</small></span><input id="nt-target" list="nt-users-list" maxlength="120" placeholder="Например: ваш email или google_…" autocomplete="off"><datalist id="nt-users-list"></datalist></label>
-<div class="nt-section"><h4>Содержимое</h4>
-<div class="nt-part" id="nt-part-image" hidden><button type="button" class="nt-remove" data-nt-remove="image" title="Убрать картинку">✕</button><div class="nt-field"><span>Картинка <small>JPEG/PNG/WebP, до 1 МБ, лучше 2:1 или 16:9</small></span><div class="nt-image"><div class="nt-thumb" id="nt-thumb"></div><input type="url" id="nt-image" placeholder="https://… или загрузите файл"><input type="file" id="nt-file" accept="image/jpeg,image/png,image/webp,image/gif" hidden><button type="button" class="btn-action" id="nt-upload">Загрузить</button></div></div>
-<label class="nt-field" id="nt-layout-wrap"><span>Как показать картинку</span><select id="nt-layout"><option value="standard">Сверху</option><option value="cover">Крупная обложка</option><option value="compact">Маленькая иконка</option></select></label></div>
-<div class="nt-part" id="nt-part-title" hidden><button type="button" class="nt-remove" data-nt-remove="title" title="Убрать заголовок">✕</button><label class="nt-field"><span>Заголовок</span><input id="nt-title" maxlength="80" placeholder="Например: Вышла новая версия"></label></div>
-<div class="nt-part" id="nt-part-body" hidden><button type="button" class="nt-remove" data-nt-remove="body" title="Убрать текст">✕</button><label class="nt-field"><span>Текст <small id="nt-count">0 / 1 000</small></span><textarea id="nt-body" maxlength="1000" placeholder="Коротко расскажите о главном"></textarea></label></div>
-<div class="nt-part" id="nt-part-button" hidden><button type="button" class="nt-remove" data-nt-remove="button" title="Убрать кнопку">✕</button><div class="nt-row"><label class="nt-field" id="nt-button-wrap"><span>Текст кнопки</span><input id="nt-button" maxlength="24" placeholder="Понятно"></label><label class="nt-field" id="nt-dismiss-wrap"><span>Вторая кнопка <small>необязательно</small></span><input id="nt-dismiss" maxlength="24" placeholder="Например: Позже"></label></div></div>
-<div class="nt-add" id="nt-add"><button type="button" data-nt-add="image">+ Картинка</button><button type="button" data-nt-add="title">+ Заголовок</button><button type="button" data-nt-add="body">+ Текст</button><button type="button" data-nt-add="button">+ Кнопка</button></div>
-<p class="nt-hint" id="nt-content-hint"></p>
-</div>
-<div class="nt-section"><h4 id="nt-action-heading">По нажатию</h4>
-<label class="nt-field"><select id="nt-action"><option value="none">Просто закрыть</option><option value="url">Открыть ссылку</option><option value="tickets">Открыть билеты</option><option value="topics">Открыть темы</option><option value="game">Открыть игру</option><option value="feed">Открыть ленту</option><option value="settings">Открыть настройки</option><option value="premium">Открыть Премиум</option></select></label>
-<label class="nt-field" id="nt-url-wrap" style="display:none"><span>Ссылка</span><input type="url" id="nt-url" placeholder="https://…"></label>
-<label class="nt-check" id="nt-inapp-wrap" style="display:none"><input type="checkbox" id="nt-inapp">Дублировать окном в приложении (для тех, кто не разрешил уведомления)</label>
-</div>
-<div class="nt-section"><details class="nt-more"><summary>Цвет и время показа</summary>
-<div style="margin-top:14px"><div class="nt-field" id="nt-accent-wrap"><span>Цвет акцента</span><div class="nt-swatches" id="nt-swatches"><button type="button" class="nt-swatch" data-color="" style="background:conic-gradient(#ccc 0 25%,#fff 0 50%,#ccc 0 75%,#fff 0)" title="Как в приложении"></button><button type="button" class="nt-swatch" data-color="#0574F8" style="background:#0574F8"></button><button type="button" class="nt-swatch" data-color="#16A34A" style="background:#16A34A"></button><button type="button" class="nt-swatch" data-color="#F59E0B" style="background:#F59E0B"></button><button type="button" class="nt-swatch" data-color="#DC2626" style="background:#DC2626"></button><button type="button" class="nt-swatch" data-color="#7C3AED" style="background:#7C3AED"></button><input type="color" id="nt-accent" value="#0574F8" title="Свой цвет"></div></div>
-<div class="nt-row"><label class="nt-field"><span>Когда</span><input type="datetime-local" id="nt-start" title="Пусто — сразу"></label><label class="nt-field"><span id="nt-days-label">Срок показа</span><select id="nt-days"><option value="1">24 часа</option><option value="3">3 дня</option><option value="7" selected>7 дней</option><option value="30">30 дней</option></select></label></div></div>
-</details></div>
+<div class="nf-grid">
+<form id="nt-form" class="nf-card" novalidate>
+<section class="nf-sec"><h4>Где увидят</h4>
+<label class="nf-push" id="nt-push-tile"><input type="checkbox" id="nt-push">${ART.push}<span><b>Пуш на телефон</b><small id="nt-push-state">iOS и Android</small></span><i></i></label>
+<div class="nf-tiles" id="nt-places">${tile('news', 'В списке')}${tile('popup', 'Окно')}${tile('banner', 'Баннер')}</div>
+<p class="nf-note" id="nt-place-note"></p>
+</section>
+<section class="nf-sec"><h4>Содержимое</h4>
+<div class="nf-drop" id="nt-drop" tabindex="0" role="button" aria-label="Картинка"></div>
+<input type="file" id="nt-file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+<div class="nf-seg" id="nt-layout-wrap" hidden><label title="Картинка сверху"><input type="radio" name="nt-layout" value="standard" checked>${LAYOUT_ART.standard}Сверху</label><label title="Крупная обложка"><input type="radio" name="nt-layout" value="cover">${LAYOUT_ART.cover}Обложка</label><label title="Маленький значок"><input type="radio" name="nt-layout" value="compact">${LAYOUT_ART.compact}Значок</label></div>
+<div class="nf-in"><input id="nt-title" maxlength="80" placeholder="Заголовок" autocomplete="off"><span class="nf-count" id="nt-title-count"></span></div>
+<div class="nf-in"><textarea id="nt-body" maxlength="1000" placeholder="Текст"></textarea><span class="nf-count" id="nt-body-count"></span></div>
+</section>
+<section class="nf-sec"><h4>По нажатию</h4>
+<div class="nf-row"><select id="nt-action" aria-label="Действие"><option value="none">Ничего</option><option value="url">Открыть ссылку</option><option value="tickets">Билеты</option><option value="topics">Темы</option><option value="game">Игра</option><option value="feed">Лента</option><option value="settings">Настройки</option><option value="premium">Премиум</option></select><input type="url" id="nt-url" placeholder="https://…" aria-label="Ссылка" hidden></div>
+<div class="nf-row" id="nt-button-wrap"><input id="nt-button" maxlength="24" placeholder="Текст кнопки" aria-label="Текст кнопки"><input id="nt-dismiss" maxlength="24" placeholder="Вторая кнопка" aria-label="Вторая кнопка"></div>
+<div class="nf-swatches" id="nt-swatches"><button type="button" class="nf-swatch" data-color="" style="background:#0574F8" title="Как в приложении"></button><button type="button" class="nf-swatch" data-color="#16A34A" style="background:#16A34A"></button><button type="button" class="nf-swatch" data-color="#F59E0B" style="background:#F59E0B"></button><button type="button" class="nf-swatch" data-color="#DC2626" style="background:#DC2626"></button><button type="button" class="nf-swatch" data-color="#7C3AED" style="background:#7C3AED"></button><button type="button" class="nf-swatch" data-color="#121212" style="background:#121212"></button><input type="color" id="nt-accent" value="#0574F8" title="Свой цвет"></div>
+</section>
+<section class="nf-sec nf-two">
+<div><h4>Кому</h4><div class="nf-chips" id="nt-platforms">${chip('nt-platform', 'all', 'Все')}${chip('nt-platform', 'ios', 'iOS')}${chip('nt-platform', 'android', 'Android')}${chip('nt-platform', 'web', 'Веб')}</div>
+<div class="nf-chips" id="nt-stores" hidden>${chip('nt-store', 'all', 'Все магазины')}${chip('nt-store', 'play', 'Google Play')}${chip('nt-store', 'rustore', 'RuStore')}</div></div>
+<div><h4>Когда</h4><div class="nf-chips">${chip('nt-when', 'now', 'Сразу')}${chip('nt-when', 'later', 'Запланировать')}</div>
+<div class="nf-when" id="nt-when-wrap" hidden><input type="datetime-local" id="nt-start" aria-label="Время старта"></div>
+<h4 style="margin-top:16px" id="nt-days-label">Показывать</h4><div class="nf-chips">${chip('nt-days', '1', '1 день')}${chip('nt-days', '3', '3 дня')}${chip('nt-days', '7', '7 дней')}${chip('nt-days', '30', '30 дней')}</div></div>
+</section>
 <div id="nt-editor-error" class="nt-error" role="alert"></div>
-<div class="nt-actions"><button class="btn-action primary" id="nt-publish" type="submit">Опубликовать</button><button class="btn-action" id="nt-reset" type="button">Очистить</button><span id="nt-result" role="status" class="nt-hint"></span></div>
+<div class="nf-bar">
+<button type="button" class="nf-btn" id="nt-test"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg>Отправить себе</button>
+<button type="button" class="nf-me" id="nt-me" title="Аккаунт для проверки"></button>
+<span class="nf-grow"></span>
+<button type="button" class="nf-btn ghost" id="nt-reset">Очистить</button>
+<button type="submit" class="nf-btn primary" id="nt-publish">Отправить всем</button>
+</div>
+<p class="nf-result" id="nt-result" role="status"></p>
 </form>
-<div class="nt-card nt-sticky"><h3>Предпросмотр</h3><div class="nt-preview" id="nt-preview"></div>
-<details class="nt-hint"><summary>Подключение и ограничения</summary><p class="nt-hint" id="nt-format-hint"></p><p>В режиме «Только мой аккаунт (тест)» сообщение увидят только устройства, где выполнен вход под указанным email или ID. После проверки нажмите «На всех» в списке ниже, чтобы отправить его всем пользователям. Картинка в пуше на Android показывается всегда, на iOS — при наличии Notification Service Extension в сборке. Статус «Принят Firebase» означает приём сервисом, а не доставку каждому устройству. Пуш нельзя отозвать после отправки.</p></details>
-</div></div>
-<div class="nt-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0">Сообщения</h3><button class="btn-action" id="nt-refresh">Обновить</button></div><div class="nt-table-wrap" id="nt-history"><div class="nt-empty">Загрузка…</div></div></div>
-<dialog class="nt-modal" id="nt-confirm"><h3 id="nt-confirm-title"></h3><img class="nt-confirm-image" id="nt-confirm-image" alt="Баннер" hidden><p id="nt-confirm-body"></p><p class="nt-hint" id="nt-confirm-audience"></p><div class="nt-actions"><button class="btn-action" id="nt-confirm-cancel">Отмена</button><button class="btn-action primary" id="nt-confirm-send">Подтвердить</button></div></dialog>
+<aside class="nf-card nf-preview" aria-label="Предпросмотр">
+<div class="nf-tabs" id="nt-tabs"><button type="button" data-tab="push">Пуш</button><button type="button" data-tab="home">Главная</button><button type="button" data-tab="inbox">Уведомления</button></div>
+<div class="nf-os" id="nt-os"><button type="button" data-os="ios">iPhone</button><button type="button" data-os="android">Android</button></div>
+<div class="nf-phone"><div class="nf-screen" id="nt-screen"></div></div>
+<p class="nf-pvnote" id="nt-pvnote"></p>
+</aside>
+</div>
+<div class="nf-card" style="margin-bottom:16px"><div class="nf-hist-h"><h3>Отправленные</h3><button class="nf-ib" id="nt-refresh" title="Обновить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button></div><div id="nt-history"><div class="nf-empty">Загрузка…</div></div></div>
+<details class="admin-disclosure"><summary>Обновления приложения</summary><div class="admin-disclosure-body">${APP_UPDATES_VIEW_HTML.replace('<h3>Обновления приложения</h3>', '')}</div></details>
+<dialog class="nf-modal" id="nt-confirm"><h3>Отправить всем?</h3><div class="nf-sum" id="nt-confirm-sum"></div><div class="nf-tags" id="nt-confirm-tags"></div><div class="nf-actions"><button type="button" class="nf-btn ghost" id="nt-confirm-cancel">Отмена</button><button type="button" class="nf-btn primary" id="nt-confirm-send">Отправить</button></div></dialog>
+<dialog class="nf-modal" id="nt-me-dialog"><h3>Ваш аккаунт в приложении</h3><input id="nt-target" list="nt-users-list" maxlength="120" placeholder="email или ID" autocomplete="off"><datalist id="nt-users-list"></datalist><div class="nf-actions"><button type="button" class="nf-btn ghost" id="nt-me-cancel">Отмена</button><button type="button" class="nf-btn primary" id="nt-me-save">Отправить</button></div></dialog>
 </div>`;
-export const NOTIFICATIONS_CLIENT_JS = `
+
+export const NOTIFICATIONS_CLIENT_JS = String.raw`
 ${APP_UPDATES_CLIENT_JS}
 VIEW_TITLES.notifications = 'Уведомления';
 (function(){
-var BRAND_SVGS = (typeof window !== "undefined" && window.BRAND_SVGS) || {};
-var ntConfig=null, ntReady=false, ntBusy=false, ntPending=null, ntAccent='', ntItems=[], ntUsersLoaded=false;
 var el=function(id){return document.getElementById('nt-'+id);};
-var labels={published:'Показывается',scheduled:'Запланировано',queued:'В очереди',sending:'Отправка не подтверждена',accepted:'Принят Firebase',failed:'Ошибка',unknown:'Доставка неизвестна',expired:'Истёк срок'};
-var kinds={popup:'Окно',banner:'Баннер',push:'Пуш',news:'Новость'};
-var platforms={all:'Все платформы',ios:'iOS',android:'Android',web:'Веб'};
-function ntPlatformBadge(p){var s=(typeof BRAND_SVGS!=="undefined"&&BRAND_SVGS)||{};var icon=p==='ios'?s.apple:p==='android'?s.android:p==='web'?s.web:'';var label=platforms[p]||p;if(!icon)return adminEsc(label);return '<span style="display:inline-flex;align-items:center;gap:4px;vertical-align:middle">'+icon+'<span>'+adminEsc(label)+'</span></span>';}
-var actions={none:'',url:'Ссылка',tickets:'Билеты',topics:'Темы',game:'Игра',feed:'Лента',settings:'Настройки',premium:'Премиум'};
-var limits={popup:1000,banner:200,push:300,news:1000};
-try{var savedTarget=localStorage.getItem('nt-test-target');if(savedTarget)el('target').value=savedTarget;}catch(_){}
-function kind(){return document.querySelector('input[name="nt-kind"]:checked').value;}
-function setKind(v){document.querySelector('input[name="nt-kind"][value="'+v+'"]').checked=true;}
-function bg(url){return url?"background-image:url('"+String(url).replace(/['"()<>]/g,'')+"')":'';}
+var esc=function(v){return adminEsc(v==null?'':String(v));};
+var ART=${JSON.stringify(ART)};
+var cfg=null,ready=false,busy=false,items=[],usersLoaded=false,pending=null,afterTarget=null;
+var S={push:false,place:'news',layout:'standard',accent:'',platform:'all',store:'all',when:'now',days:'7',image:'',imgSize:'',tab:'',os:'ios'};
+// Lock-screen budget: about one line of title on both systems, four lines of
+// text on iPhone and one on collapsed Android. FCM rejects more than 4 KB.
+var PUSH={title:50,titleSoft:38,body:300,bodySoft:150};
+var BODY_MAX={popup:1000,news:1000,banner:200,push:300};
+var ACTIONS={none:'',url:'Ссылка',tickets:'Билеты',topics:'Темы',game:'Игра',feed:'Лента',settings:'Настройки',premium:'Премиум'};
+var PLACES={news:'В списке',popup:'Окно',banner:'Баннер'};
+var PLATFORMS={all:'Все платформы',ios:'iOS',android:'Android',web:'Веб'};
+var STORES={play:'Google Play',rustore:'RuStore'};
+var ICON='https://pdd-drive.ru/assets/icon-192.png',BLUE='#0574F8';
+var SVG={eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+ tap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11V5a2 2 0 0 1 4 0v6M13 10a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v4a7 7 0 0 1-7 7h-1a7 7 0 0 1-6-3.4L4 15a2 2 0 0 1 3.4-2.1L9 15"/></svg>',
+ copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+ off:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+ on:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+ del:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+ bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>',
+ campaign:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 11v2h4v-2h-4zm-2 6.6c1 .7 2.2 1.6 3.2 2.4l1.2-1.6c-1-.7-2.3-1.7-3.2-2.4L16 17.6zM20.4 5.6 19.2 4c-1 .7-2.2 1.7-3.2 2.4L17.2 8c1-.7 2.2-1.7 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.3-.6-2.5-1.5-3.4v6.8c.9-.8 1.5-2 1.5-3.4z"/></svg>',
+ upload:'<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7" width="32" height="26" rx="6"/><circle cx="14" cy="16" r="3"/><path d="M6 29l9-8 6 5 5-4 9 7"/></svg>'};
+function brand(k){var s=(typeof BRAND_SVGS!=='undefined'&&BRAND_SVGS)||{};return s[k]||'';}
+function placeOf(m){return m.kind!=='push'?m.kind:(m.inAppKind||(m.inApp?'popup':'news'));}
+function safe(u){return String(u||'').replace(/['"()<>\s\\]/g,'');}
+function bg(u){return u?"background-image:url('"+safe(u)+"')":'';}
+function https(u){try{return new URL(u).protocol==='https:';}catch(_){return false;}}
 function fmt(t){return new Date(t).toLocaleString('ru',{timeZone:'Europe/Moscow',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' МСК';}
-async function api(path,body){var r=await fetch('/api/admin/notifications'+path,{method:body?'POST':'GET',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined});var d=await r.json();if(!r.ok)throw new Error(r.status===401?'Войдите в админку заново':d.error||'Не удалось выполнить запрос');return d;}
-async function loadTestUsers(){if(ntUsersLoaded)return;ntUsersLoaded=true;try{var r=await fetch('/api/admin/users');if(!r.ok)return;var d=await r.json();var opts=[];(d.users||[]).slice(0,100).forEach(function(u){if(u.email)opts.push('<option value="'+adminEsc(u.email)+'">'+adminEsc((u.name||'')+' · '+u.id)+'</option>');else if(u.id)opts.push('<option value="'+adminEsc(u.id)+'">'+adminEsc(u.name||'Пользователь')+'</option>');});el('users-list').innerHTML=opts.join('');}catch(_){}}
-function accent(){return ntAccent||'#0574F8';}
-var ntParts={image:false,title:false,body:false,button:false};
-function has(p){var k=kind();if(k==='push'&&(p==='title'||p==='body'))return true;if(p==='button'&&k==='push'&&!el('inapp').checked)return false;return ntParts[p];}
-function draft(){var k=kind(),push=k==='push',test=el('audience').value==='test',img=has('image')?el('image').value.trim():'',title=has('title')?el('title').value.trim():'',body=has('body')?el('body').value.trim():'',textless=!push&&!title&&!body,button=!textless&&has('button');return {kind:k,app:'ru',target:test?el('target').value.trim().toLowerCase():'',title:title,body:body,emoji:'',imageUrl:img,layout:textless?'image':(k==='popup'&&img?el('layout').value:'standard'),accent:textless?'':ntAccent,button:button,buttonText:button?el('button').value.trim():'',dismissText:button&&k==='popup'?el('dismiss').value.trim():'',action:el('action').value,actionUrl:el('action').value==='url'?el('url').value.trim():'',inApp:push&&el('inapp').checked,store:!push&&el('platform').value==='android'?el('store').value:'all'};}
-function validHttps(value){try{return new URL(value).protocol==='https:';}catch(_){return false;}}
-function renderPreview(){var d=draft(),e=adminEsc,h='',x='<span class="nt-pv-x" aria-hidden="true">✕</span>',img=d.imageUrl&&validHttps(d.imageUrl),link=function(inner){return d.action==='url'&&validHttps(d.actionUrl)?'<a href="'+e(d.actionUrl)+'" target="_blank" rel="noopener noreferrer" aria-label="Открыть ссылку">'+inner+'</a>':inner;};
-if(d.kind!=='push'&&!d.title&&!d.body&&!img){el('preview').innerHTML='<div class="nt-pv-empty">Добавьте картинку, заголовок, текст или кнопку — кнопками «+» слева</div>';return;}
-var title=d.title?'<strong>'+e(d.title)+'</strong>':'',body=d.body?'<p>'+e(d.body)+'</p>':'';
-if(d.kind==='popup'&&d.layout==='image'){h='<div class="nt-pv-popup">'+link('<img class="nt-pv-full" src="'+e(d.imageUrl)+'" alt="Окно">')+x+'</div>';}
-else if(d.kind==='popup'){var pic=img&&d.layout!=='compact'?'<div class="nt-pv-img" style="'+bg(d.imageUrl)+(d.layout==='cover'?';aspect-ratio:4/3':'')+'"></div>':img?'<div class="nt-pv-img" style="'+bg(d.imageUrl)+'"></div>':'';h='<div class="nt-pv-popup '+(d.layout==='compact'?'compact':'')+'">'+pic+'<div class="nt-pv-in">'+title+body+(d.button?'<span class="nt-pv-btn" style="background:'+accent()+'">'+e(d.buttonText||(d.action==='none'?'Понятно':'Открыть'))+'</span>'+(d.dismissText?'<span class="nt-pv-btn2">'+e(d.dismissText)+'</span>':''):'')+'</div>'+x+'</div>';}
-else if(d.kind==='banner'&&d.layout==='image'){h='<div class="nt-pv-image">'+link('<img src="'+e(d.imageUrl)+'" alt="Баннер">')+x+'</div>';}
-else if(d.kind==='news'){h='<div class="nt-pv-banner"><div style="flex:1;min-width:0"><div class="nt-pv-banner-content">'+(img?'<div class="nt-pv-thumb" style="'+bg(d.imageUrl)+'"></div>':'')+'<div style="flex:1;min-width:0">'+title+body+'</div></div>'+(d.action!=='none'&&d.button?'<span class="nt-pv-link" style="color:'+accent()+';background:'+accent()+'12">'+e(d.buttonText||'Подробнее')+' →</span>':'')+'</div></div>';}
-else if(d.kind==='banner'){h='<div class="nt-pv-banner"><div style="flex:1;min-width:0"><span class="nt-pv-mark" style="background:'+accent()+'"></span><div class="nt-pv-banner-content">'+(img?'<div class="nt-pv-thumb" style="'+bg(d.imageUrl)+'"></div>':'')+'<div style="flex:1;min-width:0">'+title+body+'</div></div>'+(d.action!=='none'&&d.button?'<span class="nt-pv-link" style="color:'+accent()+';background:'+accent()+'12">'+e(d.buttonText||'Подробнее')+' →</span>':'')+'</div>'+x+'</div>';}
-else{var s=(typeof BRAND_SVGS!=="undefined"&&BRAND_SVGS)||{},pt='<strong>'+e(d.title||'Заголовок пуша')+'</strong>',pb='<p>'+e(d.body||'Текст пуша')+'</p>';h='<div class="nt-pv-push"><div class="nt-pv-cap" style="display:flex;align-items:center;justify-content:center;gap:5px">'+(s.apple||'')+' iOS</div><div class="nt-pv-sys"><header><i style="background:'+accent()+'"></i>ПДД · сейчас</header><div class="nt-pv-row"><div style="flex:1;min-width:0">'+pt+pb+'</div>'+(img?'<div class="nt-pv-thumb" style="'+bg(d.imageUrl)+'"></div>':'')+'</div></div><div class="nt-pv-cap" style="display:flex;align-items:center;justify-content:center;gap:5px">'+(s.android||'')+' Android (развёрнуто)</div><div class="nt-pv-sys"><header><i style="background:'+accent()+'"></i><span style="color:'+accent()+'">ПДД</span> · сейчас</header>'+pt+pb+(img?'<div class="nt-pv-big" style="'+bg(d.imageUrl)+'"></div>':'')+'</div></div>';}
-el('preview').innerHTML=h;}
-function preview(){var k=kind(),push=k==='push',test=el('audience').value==='test',max=limits[k],d=draft(),textless=d.layout==='image',anyText=push||ntParts.title||ntParts.body;el('body').maxLength=max;el('count').textContent=el('body').value.length+' / '+max.toLocaleString('ru');el('publish').textContent=test?'Отправить тест себе':push?(el('start').value?'Запланировать пуш':'Отправить пуш'):(el('start').value?'Запланировать':'Опубликовать');el('platform').querySelector('option[value="web"]').disabled=push;if(push&&el('platform').value==='web')el('platform').value='all';
-el('target-wrap').style.display=test?'':'none';if(test)loadTestUsers();el('store-wrap').style.display=!push&&el('platform').value==='android'?'':'none';
-['image','title','body','button'].forEach(function(p){var on=has(p);el('part-'+p).hidden=!on;el('part-'+p).querySelectorAll('input:not([type=file]),textarea,select').forEach(function(x){x.disabled=!on;});document.querySelector('[data-nt-add="'+p+'"]').hidden=on||(p==='button'&&(push?!el('inapp').checked:!anyText));});
-document.querySelectorAll('[data-nt-remove="title"],[data-nt-remove="body"]').forEach(function(b){b.hidden=push;});['title','body'].forEach(function(id){el(id).required=push;});
-el('add').hidden=!document.querySelector('[data-nt-add]:not([hidden])');
-el('layout-wrap').style.display=k==='popup'&&has('image')&&!textless?'':'none';el('dismiss-wrap').style.display=k==='popup'?'':'none';el('button').placeholder=el('action').value==='none'?'Понятно':'Открыть';
-el('url-wrap').style.display=el('action').value==='url'?'':'none';el('url').disabled=el('action').value!=='url';el('url').required=el('action').value==='url';el('inapp-wrap').style.display=push?'':'none';
-el('action-heading').textContent=push?'По нажатию на пуш':d.button?'Кнопка ведёт':textless?(has('image')?'По нажатию на картинку':'По нажатию'):'По нажатию на сообщение';el('action').querySelector('option[value="none"]').textContent=k==='popup'&&d.button?'Просто закрыть':'Ничего не делать';el('accent-wrap').style.display=textless?'none':'';el('days-label').textContent=push?'Актуален':'Срок показа';
-el('content-hint').textContent=push?'Пуш всегда содержит заголовок и текст.':!has('image')&&!has('title')&&!has('body')?'Добавьте только нужное. Например, одна картинка — уже готовый баннер.':textless?'Сообщение — только картинка. Нажатие на неё выполнит действие ниже.':!d.button&&el('action').value!=='none'?'Без кнопки действие срабатывает при нажатии на всё сообщение.':'';
-el('thumb').style.backgroundImage=el('image').value?'url("'+el('image').value.replace(/"/g,'')+'")':'';
-document.querySelectorAll('.nt-swatch').forEach(function(s){s.classList.toggle('on',s.dataset.color===ntAccent);});
-el('format-hint').textContent=test?'Тестовое сообщение придёт только на ваш аккаунт. Убедитесь, что в приложении выполнен вход в этот аккаунт.':push?'Пуш получают пользователи, включившие новости приложения и разрешившие уведомления. Нажатие открывает приложение и выполняет выбранное действие. После отправки пуш появится и в разделе уведомлений новых версий приложения; «Отключить» убирает его оттуда, но не отзывает с телефонов.':k==='news'?'Новость появится в разделе уведомлений (колокольчик в профиле) с красной меткой непрочитанного. Окна и пуша не будет; старые версии приложения новость не получат.':k==='banner'?'Баннер занимает место статистики на главной. Крестик скрывает это сообщение на устройстве навсегда и возвращает статистику.'+(textless?' В обновлённом приложении высота подстраивается под пропорции картинки на Android, iPhone и в вебе, без полей и растяжения. Рекомендуем 1920×734; оставьте правый верхний угол свободным для крестика. В старых версиях высота ограничена блоком статистики, возможны поля.':''):'Окно показывается один раз на устройстве, на главном экране. Экзамен и игра не прерываются.'+(textless?' Окно-картинку увидят только обновлённые версии приложения.':'');
-el('publish').disabled=ntBusy||!ntConfig||(push?(!ntReady||!ntConfig.pushEnabled):!ntConfig.popupEnabled);renderPreview();}
-el('form').addEventListener('click',function(e){var a=e.target.closest('[data-nt-add]'),r=e.target.closest('[data-nt-remove]');if(a){ntParts[a.dataset.ntAdd]=true;ntPending=null;preview();var f=el('part-'+a.dataset.ntAdd).querySelector('input:not([type=file]),textarea');if(f)f.focus();}if(r){ntParts[r.dataset.ntRemove]=false;if(r.dataset.ntRemove!=='button'&&!ntParts.title&&!ntParts.body)ntParts.button=false;ntPending=null;preview();}});
-async function load(){el('page-error').textContent='';try{var d=await api('');ntConfig=d.config;ntReady=d.pushConfigured;el('provider').textContent=ntReady?'Firebase подключён':'Firebase не подключён';document.querySelectorAll('[data-nt-config]').forEach(function(x){x.checked=ntConfig[x.dataset.ntConfig];x.disabled=ntBusy||(x.dataset.ntConfig==='pushEnabled'&&!ntReady);});ntItems=d.messages;render(d.messages);preview();}catch(e){el('page-error').textContent=e.message;}}
-function render(items){if(!items.length){el('history').innerHTML='<div class="nt-empty">Сообщений пока нет</div>';return;}var now=Date.now();el('history').innerHTML='<table class="nt-history"><thead><tr><th></th><th>Сообщение</th><th>Получатели</th><th>Статус</th><th>Увидели / Нажали</th><th></th></tr></thead><tbody>'+items.map(function(m){var expired=m.expiresAt<=now,scheduled=(m.startAt||0)>now,status=expired&&m.kind!=='push'?'Истёк срок':!m.enabled?'Отключено':scheduled&&m.kind!=='push'?'Запланировано':labels[m.status]||m.status;if(m.kind==='push'&&m.status==='queued'&&scheduled)status='Запланирован';var canToggle=!expired&&(m.kind!=='push'||['queued','accepted','unknown'].includes(m.status)||m.inApp);var meta=[kinds[m.kind]||m.kind,m.inApp?'+ окно':'',actions[m.action]?'→ '+actions[m.action]:'',fmt(m.createdAt),scheduled?'старт '+fmt(m.startAt):''].filter(Boolean).join(' · ');var stores={play:'Google Play',rustore:'RuStore'},storeNote=stores[m.store]?' · '+stores[m.store]:'';var who=m.target?'<span class="nt-status test">Тест</span><div style="margin-top:4px"><strong>'+adminEsc(m.target)+'</strong><small>'+ntPlatformBadge(m.platform)+adminEsc(storeNote)+'</small></div>':'Все пользователи<br><small>'+ntPlatformBadge(m.platform)+adminEsc(storeNote)+'</small>';return '<tr><td><div class="nt-hthumb" style="'+bg(m.imageUrl)+(m.accent?';box-shadow:inset 0 -3px 0 '+m.accent:'')+'"></div></td><td><strong>'+adminEsc(m.title||(m.layout==='image'?(m.kind==='banner'?'Баннер-картинка':'Окно-картинка'):m.body||'Сообщение'))+'</strong><small>'+adminEsc(meta)+'</small>'+(m.error?'<div class="nt-error">'+adminEsc(m.error)+'</div>':'')+'</td><td>'+who+'</td><td><span class="nt-status '+(['accepted','published'].includes(m.status)&&m.enabled&&!expired&&!scheduled?'ok':['failed','unknown','sending'].includes(m.status)?'bad':'')+'">'+adminEsc(status)+'</span></td><td title="Уникальные аккаунты; гости — по установке. Данные поступают из новых сборок с задержкой буфера. Крестик не считается нажатием.">'+(m.kind==='banner'?('<strong>'+Number(m.metrics?.view||0)+' / '+Number(m.metrics?.click||0)+'</strong><small>CTR '+(m.metrics?.view?(100*(m.metrics.click||0)/m.metrics.view).toFixed(1):'0.0')+'% · уникальная аудитория</small>'):'—')+'</td><td><div class="nt-rowbtns">'+(m.target?'<button class="btn-action primary" data-nt-promote="'+m.id+'" title="Скопировать в форму для отправки всем пользователям">На всех</button>':'')+(canToggle?'<button class="btn-action" data-nt-toggle="'+m.id+'" data-enabled="'+(!m.enabled)+'">'+(m.enabled?'Отключить':'Включить')+'</button>':'')+'<button class="btn-action" data-nt-copy="'+m.id+'" title="Создать копию">Копия</button>'+(m.status!=='sending'?'<button class="btn-action" data-nt-delete="'+m.id+'" title="Удалить">✕</button>':'')+'</div></td></tr>';}).join('')+'</tbody></table>';}
-function fill(m,forAll){setKind(m.kind);['title','body'].forEach(function(k){el(k).value=m[k]||'';});el('platform').value=m.platform||'all';el('store').value=m.store||'all';el('action').value=m.action||'none';el('layout').value=m.layout==='compact'||m.layout==='cover'?m.layout:'standard';ntParts={image:!!m.imageUrl,title:!!m.title,body:!!m.body,button:m.layout!=='image'&&m.button!==false};el('audience').value=forAll?'all':(m.target?'test':'all');if(m.target)el('target').value=m.target;el('image').value=m.imageUrl||'';el('button').value=m.buttonText||'';el('dismiss').value=m.dismissText||'';el('url').value=m.actionUrl||'';el('inapp').checked=!!m.inApp;ntAccent=m.accent||'';el('start').value='';ntPending=null;el('result').textContent='';el('editor-error').textContent='';preview();el('form').scrollIntoView({behavior:'smooth'});}
-document.querySelectorAll('[data-nt-config]').forEach(function(x){x.addEventListener('change',async function(){if(ntBusy)return;ntBusy=true;var next=Object.assign({},ntConfig);next[x.dataset.ntConfig]=x.checked;document.querySelectorAll('[data-nt-config]').forEach(function(y){y.disabled=true;});try{await api('/config',next);}catch(e){el('page-error').textContent=e.message;}finally{ntBusy=false;var error=el('page-error').textContent;await load();if(error)el('page-error').textContent=error;}});});
-el('history').addEventListener('click',async function(e){var t=e.target.closest('[data-nt-toggle]'),c=e.target.closest('[data-nt-copy]'),p=e.target.closest('[data-nt-promote]'),d=e.target.closest('[data-nt-delete]');
-if(p){var mp=ntItems.find(function(x){return x.id===p.dataset.ntPromote;});if(mp){fill(mp,true);el('result').textContent='Проверьте и нажмите «'+(mp.kind==='push'?'Отправить пуш':'Опубликовать')+'» для рассылки на всех';}return;}
-if(c){var m=ntItems.find(function(x){return x.id===c.dataset.ntCopy;});if(m)fill(m,false);return;}
-if(d){if(!confirm('Удалить сообщение из списка? Окно/баннер перестанут показываться.'))return;d.disabled=true;try{await api('/delete',{id:d.dataset.ntDelete});await load();}catch(err){el('page-error').textContent=err.message;d.disabled=false;}return;}
-if(!t)return;t.disabled=true;try{await api('/toggle',{id:t.dataset.ntToggle,enabled:t.dataset.enabled==='true'});await load();}catch(err){el('page-error').textContent=err.message;t.disabled=false;}});
-el('swatches').addEventListener('click',function(e){var s=e.target.closest('.nt-swatch');if(!s)return;ntAccent=s.dataset.color;ntPending=null;preview();});
-el('accent').addEventListener('input',function(){ntAccent=el('accent').value.toUpperCase();ntPending=null;preview();});
-el('upload').onclick=function(){el('file').click();};
-el('file').addEventListener('change',async function(){var f=el('file').files[0];el('file').value='';if(!f)return;el('editor-error').textContent='';if(f.size>1048576){el('editor-error').textContent='Картинка больше 1 МБ — сожмите её';return;}el('upload').disabled=true;el('upload').textContent='Загрузка…';try{var r=await fetch('/api/admin/notifications/image',{method:'POST',headers:{'content-type':f.type},body:f});var d=await r.json();if(!r.ok)throw new Error(d.error||'Не удалось загрузить');el('image').value=d.url;ntPending=null;preview();}catch(err){el('editor-error').textContent=err.message;}finally{el('upload').disabled=false;el('upload').textContent='Загрузить';}});
-function onFormEdit(){ntPending=null;el('result').textContent='';preview();}
+function radio(name){var x=document.querySelector('input[name="'+name+'"]:checked');return x?x.value:'';}
+function setRadio(name,v){var x=document.querySelector('input[name="'+name+'"][value="'+v+'"]');if(x)x.checked=true;}
+async function api(path,body){var r=await fetch('/api/admin/notifications'+path,{method:body?'POST':'GET',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined});var d=await r.json().catch(function(){return {};});if(!r.ok)throw new Error(r.status===401?'Войдите в админку заново':r.status===404&&d.error==='target account not found'?'Аккаунт для проверки не найден':d.error||'Не удалось выполнить запрос');return d;}
+function target(){try{return localStorage.getItem('nt-test-target')||'';}catch(_){return '';}}
+function pushAvailable(){return !!(cfg&&ready&&cfg.pushEnabled)&&S.platform!=='web';}
+
+function draft(){
+ var push=S.push,place=S.place,title=el('title').value.trim(),body=el('body').value.trim(),action=el('action').value;
+ var imageOnly=!push&&!title&&!body,button=!imageOnly&&(place==='popup'||action!=='none');
+ return {kind:push?'push':place,inAppKind:push?place:'',app:'ru',platform:S.platform,store:!push&&S.platform==='android'?S.store:'all',
+  title:title,body:body,emoji:'',imageUrl:S.image,layout:imageOnly?'image':(place==='popup'&&S.image?S.layout:'standard'),accent:imageOnly?'':S.accent,
+  button:button,buttonText:button?el('button').value.trim():'',dismissText:button&&place==='popup'?el('dismiss').value.trim():'',action:action,actionUrl:action==='url'?el('url').value.trim():''};
+}
+function problem(d){
+ if(!cfg)return 'Настройки ещё загружаются';
+ if(d.kind==='push'){if(!pushAvailable())return S.platform==='web'?'В вебе пушей нет':'Пуши выключены';if(!d.title&&!d.body)return 'Пушу нужен заголовок или текст';if(d.title.length>PUSH.title)return 'Заголовок пуша — до '+PUSH.title+' символов';}
+ else if(!cfg.popupEnabled)return 'Сообщения в приложении выключены';
+ if(!d.title&&!d.body&&!d.imageUrl)return 'Добавьте картинку, заголовок или текст';
+ if(d.body.length>BODY_MAX[d.kind==='push'&&S.place==='banner'?'banner':d.kind])return 'Сократите текст';
+ if(S.place==='banner'&&d.body.length>200)return 'Текст баннера — до 200 символов';
+ if(d.imageUrl&&!https(d.imageUrl))return 'Картинка должна открываться по https://';
+ if(d.action==='url'&&!https(d.actionUrl))return 'Укажите ссылку https://';
+ if(S.when==='later'){var t=startAt();if(!t)return 'Выберите время старта';if(t<Date.now()-60000)return 'Время старта уже прошло';}
+ return '';
+}
+function startAt(){return S.when==='later'&&el('start').value?new Date(el('start').value).getTime():0;}
+
+// ── Preview: the phone shows the push, the home screen or the inbox.
+function tabs(){var t=[];if(S.push)t.push('push');if(S.place!=='news'||!S.push)t.push('home');t.push('inbox');return t;}
+function osLabel(){var a=brand('apple'),g=brand('android');el('os').querySelector('[data-os="ios"]').innerHTML=a+'iPhone';el('os').querySelector('[data-os="android"]').innerHTML=g+'Android';}
+function status(dark){return '<div class="ph-st"'+(dark?' style="color:#fff"':'')+'><span>9:41</span><i></i><span>●●●</span></div>';}
+function lockDate(){return new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'});}
+function pushIos(d){
+ var title=d.title||'ПДД 2026',body=d.body;
+ var card=function(open){return '<div class="in"><img class="ic" src="'+ICON+'" alt=""><div class="c"><div class="h"><b class="l1">'+esc(title)+'</b><span>сейчас</span></div>'+(body?'<p class="lc" style="-webkit-line-clamp:'+(open?30:4)+'">'+esc(body)+'</p>':'')+'</div></div>';};
+ return '<div class="lk">'+status(true)+'<div class="lk-date">'+esc(lockDate())+'</div><div class="lk-time">9:41</div>'+card(false)+'<div class="lk-cap">Раскрыто</div>'+card(true)+'</div>';
+}
+function pushAndroid(d){
+ var c=d.accent||BLUE,img=d.imageUrl&&https(d.imageUrl),head=function(open){return '<div class="an-h"><i style="background:'+esc(c)+'">'+SVG.bell+'</i><span style="color:'+esc(c)+'">ПДД Россия 2026</span>· сейчас<em>'+(open?'⌃':'⌄')+'</em></div>';};
+ var lines=function(open){return (d.title?'<b class="l1">'+esc(d.title)+'</b>':'')+(d.body?'<p class="'+(open&&!img?'lc':'l1')+'"'+(open&&!img?' style="-webkit-line-clamp:8"':'')+'>'+esc(d.body)+'</p>':'');};
+ return '<div class="lk an">'+status(true)+'<div class="lk-date">'+esc(lockDate())+'</div><div class="lk-time">9:41</div>'
+  +'<div class="an-n">'+head(false)+'<div class="an-b"><div>'+lines(false)+'</div>'+(img?'<span class="an-th" style="'+bg(d.imageUrl)+'"></span>':'')+'</div></div>'
+  +'<div class="lk-cap">Раскрыто</div><div class="an-n">'+head(true)+lines(true)+(img?'<div class="an-big" style="'+bg(d.imageUrl)+'"></div>':'')+'</div></div>';
+}
+function bannerHtml(d){
+ var img=d.imageUrl&&https(d.imageUrl),c=d.accent||BLUE;
+ if(d.layout==='image')return img?'<div class="aimg"><img src="'+esc(d.imageUrl)+'" alt=""><span class="ax">✕</span></div>':'';
+ var chipText=d.buttonText||'Подробнее';
+ return '<div class="ab"><span class="ab-mark" style="background:'+esc(c)+'"></span><div class="ab-row">'+(img?'<span class="ab-th" style="'+bg(d.imageUrl)+'"></span>':'')+'<div style="min-width:0">'+(d.title?'<b>'+esc(d.title)+'</b>':'')+(d.body?'<p>'+esc(d.body)+'</p>':'')+'</div></div>'+(d.button?'<span class="ab-chip" style="color:'+esc(c)+';background:'+esc(c)+'14">'+esc(chipText)+' →</span>':'')+'<span class="ax">✕</span></div>';
+}
+function windowHtml(d){
+ var img=d.imageUrl&&https(d.imageUrl),c=d.accent||BLUE;
+ if(d.layout==='image')return img?'<div class="aw only"><img src="'+esc(d.imageUrl)+'" alt=""><span class="ax">✕</span></div>':'';
+ var pic=img&&d.layout!=='compact'?'<div class="im'+(d.layout==='cover'?' cover':'')+'" style="'+bg(d.imageUrl)+'"></div>':'';
+ var label=d.buttonText||(d.action==='none'?'Понятно':'Открыть');
+ return '<div class="aw">'+pic+'<div class="in2">'+(img&&d.layout==='compact'?'<div class="ic2" style="'+bg(d.imageUrl)+'"></div>':'')+(d.title?'<b>'+esc(d.title)+'</b>':'')+(d.body?'<p>'+esc(d.body)+'</p>':'')
+  +(d.button?'<div class="bt" style="background:'+esc(c)+';color:#fff">'+esc(label)+'</div>'+(d.dismissText?'<div class="bt2">'+esc(d.dismissText)+'</div>':''):'')+'</div><span class="ax">✕</span></div>';
+}
+function home(d){
+ var stats='<div class="sk sk-stats"><span class="sk-ring"></span><div style="flex:1"><div class="sk-l" style="width:70%"></div><div class="sk-l" style="width:45%"></div><div class="sk-l" style="width:58%"></div></div></div>';
+ var alert=S.place==='news'?'<div class="al"><i>'+SVG.bell+'</i><span>У вас новое уведомление</span><em>✕</em></div>':'';
+ var top=S.place==='banner'?(bannerHtml(d)||stats):stats;
+ var body='<div class="ap">'+status()+'<div class="ap-body"><div class="ap-title">Обучение</div>'+alert+top+'<div class="sk sk-exam"></div><div class="sk-grid"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div></div><div class="ap-nav"><i></i><i></i><i></i><i></i></div>';
+ if(S.place==='popup'){var w=windowHtml(d);if(w)body+='<div class="ov">'+w+'</div>';}
+ return body+'</div>';
+}
+function inbox(d){
+ var img=d.imageUrl&&https(d.imageUrl),c=BLUE,title=d.title||(!d.body?'':d.body),body=d.title?d.body:'';
+ var action=d.action!=='none'?(d.buttonText||'Открыть'):'';
+ var date=new Date(startAt()||Date.now()).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'});
+ var card='<div class="ic"><span class="ci" style="background:'+c+'1f;color:'+c+'">'+SVG.campaign+'</span><div class="cc"><div class="ct">'+(title?'<b>'+esc(title)+'</b>':'<b></b>')+'<span class="dot"></span></div>'+(body?'<p>'+esc(body)+'</p>':'')+(img?'<img class="ci-img" src="'+esc(d.imageUrl)+'" alt="">':'')+'<div class="cf">'+esc(date)+(action?'<span>'+esc(action)+'</span>':'')+'</div></div></div>';
+ var old='<div class="ic old"><span class="ci" style="background:#2BC2801f;color:#2BC280">'+SVG.bell+'</span><div class="cc"><div class="sk-l" style="width:80%"></div><div class="sk-l" style="width:55%"></div></div></div>';
+ return '<div class="ap">'+status()+'<div class="ib-h"><i>←</i>Уведомления</div><div class="ib-l">'+card+old+old+'</div></div>';
+}
+function renderPreview(){
+ var d=draft(),t=tabs();if(t.indexOf(S.tab)<0)S.tab=t[0];
+ el('tabs').querySelectorAll('button').forEach(function(b){b.hidden=t.indexOf(b.dataset.tab)<0;b.classList.toggle('on',b.dataset.tab===S.tab);});
+ el('os').hidden=S.tab!=='push';el('os').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.os===S.os);});
+ var note='';
+ if(S.tab==='push'){el('screen').innerHTML=S.os==='ios'?pushIos(d):pushAndroid(d);if(S.os==='ios'&&d.imageUrl)note='На iPhone картинка в пуше пока не показывается';}
+ else if(S.tab==='home')el('screen').innerHTML=home(d);
+ else el('screen').innerHTML=inbox(d);
+ el('pvnote').textContent=note;
+}
+
+// ── Editor state → controls.
+function count(id,n,max,soft){var x=el(id+'-count');x.textContent=n?n+' / '+max:'';x.classList.toggle('warn',!!soft&&n>soft&&n<=max);x.classList.toggle('over',n>max);x.title=soft&&n>soft?'Длиннее — обрежется на экране блокировки':'';}
+function sync(){
+ var d=draft(),push=S.push,canPush=pushAvailable(),imageOnly=d.layout==='image';
+ el('push').disabled=!canPush&&!push;el('push').checked=push;
+ el('push-state').textContent=!cfg?'…':!ready?'Firebase не подключён':!cfg.pushEnabled?'Выключены переключателем выше':S.platform==='web'?'В вебе недоступен':'iOS и Android';
+ setRadio('nt-place',S.place);setRadio('nt-platform',S.platform);setRadio('nt-store',S.store);setRadio('nt-when',S.when);setRadio('nt-days',S.days);setRadio('nt-layout',S.layout);
+ document.querySelector('input[name="nt-platform"][value="web"]').disabled=push;
+ el('place-note').textContent=push&&S.place!=='news'?'Тем, у кого пуши выключены':'';
+ el('stores').hidden=push||S.platform!=='android';el('when-wrap').hidden=S.when!=='later';
+ el('days-label').textContent=push&&S.place==='news'?'Хранить в списке':'Показывать';
+ var titleMax=push?PUSH.title:80,bodyMax=push?(S.place==='banner'?200:PUSH.body):BODY_MAX[S.place];
+ el('title').maxLength=titleMax;el('body').maxLength=bodyMax;
+ count('title',el('title').value.trim().length,titleMax,push?PUSH.titleSoft:0);count('body',el('body').value.trim().length,bodyMax,push?PUSH.bodySoft:0);
+ el('title').placeholder=push?'Заголовок пуша':'Заголовок';
+ el('layout-wrap').hidden=!(S.place==='popup'&&S.image&&!imageOnly);
+ el('button-wrap').hidden=!d.button;el('dismiss').hidden=S.place!=='popup';
+ el('button').placeholder=S.place==='popup'?(d.action==='none'?'Кнопка: Понятно':'Кнопка: Открыть'):'Кнопка: Подробнее';
+ el('url').hidden=d.action!=='url';el('swatches').hidden=imageOnly;
+ document.querySelectorAll('#nt-swatches .nf-swatch').forEach(function(s){s.classList.toggle('on',s.dataset.color===S.accent);});
+ var drop=el('drop');
+ if(S.image){drop.classList.add('has');drop.innerHTML='<img src="'+esc(S.image)+'" alt=""><div class="nf-grow"><b>Картинка</b><small>'+esc(S.imgSize||S.image)+'</small></div><button type="button" class="nf-link" data-img="replace">Заменить</button><button type="button" class="nf-link danger" data-img="remove">Убрать</button>';}
+ else{drop.classList.remove('has');drop.innerHTML=SVG.upload+'<div class="nf-grow"><b>Картинка</b><small>Перетащите или выберите · до 1 МБ</small></div><button type="button" class="nf-link" data-img="url">Ссылка</button>';}
+ var me=target();el('me').textContent=me?'→ '+me:'';el('me').hidden=!me;
+ var p=problem(d);
+ el('publish').disabled=busy||!!p;el('test').disabled=busy||(!!p&&p!=='Выберите время старта'&&p!=='Время старта уже прошло');
+ el('publish').title=el('test').title=p;
+ el('publish').textContent=S.when==='later'?'Запланировать':push?'Отправить всем':'Опубликовать';
+ renderPreview();saveDraft();
+}
+function saveDraft(){try{localStorage.setItem('nt-draft',JSON.stringify({s:{push:S.push,place:S.place,layout:S.layout,accent:S.accent,platform:S.platform,store:S.store,days:S.days,image:S.image},title:el('title').value,body:el('body').value,action:el('action').value,url:el('url').value,button:el('button').value,dismiss:el('dismiss').value}));}catch(_){}}
+function loadDraft(){try{var x=JSON.parse(localStorage.getItem('nt-draft')||'null');if(!x)return;Object.assign(S,x.s||{});['title','body','action','url','button','dismiss'].forEach(function(k){if(typeof x[k]==='string')el(k).value=x[k];});}catch(_){}}
+function clearForm(){['title','body','url','button','dismiss','start'].forEach(function(k){el(k).value='';});el('action').value='none';Object.assign(S,{push:false,place:'news',layout:'standard',accent:'',platform:'all',store:'all',when:'now',days:'7',image:'',imgSize:'',tab:''});pending=null;el('editor-error').textContent='';}
+function fill(m){
+ clearForm();S.push=m.kind==='push';S.place=placeOf(m);S.platform=m.platform||'all';S.store=m.store||'all';S.layout=m.layout==='cover'||m.layout==='compact'?m.layout:'standard';S.accent=m.accent||'';S.image=m.imageUrl||'';
+ el('title').value=m.title||'';el('body').value=m.body||'';el('action').value=m.action||'none';el('url').value=m.actionUrl||'';el('button').value=m.buttonText||'';el('dismiss').value=m.dismissText||'';
+ el('result').textContent='';sync();el('form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── Image: drop, choose or paste a link.
+async function upload(f){
+ el('editor-error').textContent='';
+ if(!f||['image/jpeg','image/png','image/webp','image/gif'].indexOf(f.type)<0){el('editor-error').textContent='Нужна картинка JPEG, PNG, WebP или GIF';return;}
+ if(f.size>1048576){el('editor-error').textContent='Картинка больше 1 МБ — сожмите её';return;}
+ el('drop').innerHTML=SVG.upload+'<div class="nf-grow"><b>Загрузка…</b></div>';
+ try{var r=await fetch('/api/admin/notifications/image',{method:'POST',headers:{'content-type':f.type},body:f});var d=await r.json();if(!r.ok)throw new Error(d.error||'Не удалось загрузить');setImage(d.url);}
+ catch(e){el('editor-error').textContent=e.message;sync();}
+}
+function setImage(url){S.image=url;S.imgSize='';pending=null;sync();if(!url)return;var probe=new Image();probe.onload=function(){if(S.image===url){S.imgSize=probe.naturalWidth+' × '+probe.naturalHeight;sync();}};probe.src=url;}
+el('drop').addEventListener('click',function(e){var b=e.target.closest('[data-img]');if(b){e.stopPropagation();if(b.dataset.img==='remove')setImage('');else if(b.dataset.img==='replace')el('file').click();else{var u=prompt('Ссылка на картинку (https://)',S.image||'');if(u!==null){u=u.trim();if(u&&!https(u)){el('editor-error').textContent='Картинка должна открываться по https://';return;}setImage(u);}}return;}if(!S.image)el('file').click();});
+el('drop').addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&!S.image){e.preventDefault();el('file').click();}});
+['dragenter','dragover'].forEach(function(t){el('drop').addEventListener(t,function(e){e.preventDefault();el('drop').classList.add('over');});});
+['dragleave','drop'].forEach(function(t){el('drop').addEventListener(t,function(e){e.preventDefault();el('drop').classList.remove('over');});});
+el('drop').addEventListener('drop',function(e){var f=e.dataTransfer&&e.dataTransfer.files[0];if(f)upload(f);});
+el('file').addEventListener('change',function(){var f=el('file').files[0];el('file').value='';if(f)upload(f);});
+
+// ── Controls.
+function onFormEdit(e){
+ var t=e&&e.target;if(!t)return sync();
+ if(t.id==='nt-push'){S.push=t.checked;S.tab=S.push?'push':'';if(S.push&&S.platform==='web')S.platform='all';}
+ else if(t.name==='nt-place'){S.place=t.value;S.tab=S.place==='news'&&S.push?'inbox':S.place==='news'?'inbox':'home';}
+ else if(t.name==='nt-platform'){S.platform=t.value;if(t.value==='ios'||t.value==='android')S.os=t.value;}
+ else if(t.name==='nt-store')S.store=t.value;
+ else if(t.name==='nt-when')S.when=t.value;
+ else if(t.name==='nt-days')S.days=t.value;
+ else if(t.name==='nt-layout'){S.layout=t.value;S.tab='home';}
+ else if(t.id==='nt-accent')S.accent=t.value.toUpperCase();
+ else if(t.id==='nt-target')return;
+ pending=null;el('result').textContent='';sync();
+}
 el('form').addEventListener('input',onFormEdit);el('form').addEventListener('change',onFormEdit);
-el('reset').onclick=function(){var saved=el('target').value;el('form').reset();el('target').value=saved;ntParts={image:false,title:false,body:false,button:false};ntAccent='';ntPending=null;el('result').textContent='';el('editor-error').textContent='';preview();};
-el('form').addEventListener('submit',function(e){e.preventDefault();el('editor-error').textContent='';if(ntBusy||el('publish').disabled)return;if(has('body')&&el('body').value.length>el('body').maxLength){el('editor-error').textContent='Сократите текст сообщения';return;}var empty=['title','body','image'].filter(function(p){return kind()!=='push'&&ntParts[p]&&!el(p).value.trim();})[0];if(empty){el('editor-error').textContent={title:'Заполните заголовок или уберите его',body:'Заполните текст или уберите его',image:'Загрузите картинку или уберите её'}[empty];el(empty).focus();return;}
-var d=draft();if(el('audience').value==='test'&&!d.target){el('editor-error').textContent='Укажите ваш email или ID аккаунта для теста';el('target').focus();return;}
-if(d.target){try{localStorage.setItem('nt-test-target',d.target);}catch(_){}}
-if(d.layout==='image'&&!d.imageUrl){el('editor-error').textContent='Добавьте картинку, заголовок или текст';return;}if(d.layout==='image'&&!validHttps(d.imageUrl)){el('editor-error').textContent='Загрузите картинку или укажите ссылку https://';el('image').focus();return;}if(d.imageUrl&&!validHttps(d.imageUrl)){el('editor-error').textContent='Картинка должна открываться по ссылке https://';return;}if(d.action==='url'&&!validHttps(d.actionUrl)){el('editor-error').textContent='Укажите корректную ссылку https:// для перехода';el('url').focus();return;}
-var start=el('start').value?new Date(el('start').value).getTime():0;if(start&&start<Date.now()-60000){el('editor-error').textContent='Время старта уже прошло';return;}
-if(!ntPending){ntPending=Object.assign(d,{id:crypto.randomUUID(),platform:el('platform').value});if(start)ntPending.startAt=start;ntPending.expiresAt=(start||Date.now())+Number(el('days').value)*86400000;}
-el('confirm-title').textContent=ntPending.title||(ntPending.layout==='image'?(ntPending.kind==='banner'?'Баннер-картинка':'Окно-картинка'):'Сообщение');el('confirm-image').hidden=ntPending.layout!=='image';if(ntPending.layout==='image')el('confirm-image').src=ntPending.imageUrl;else el('confirm-image').removeAttribute('src');el('confirm-body').textContent=ntPending.layout==='image'?(ntPending.action==='url'?'Переход по нажатию: '+ntPending.actionUrl:ntPending.action==='none'?'Без действия по нажатию':actions[ntPending.action]):ntPending.body||'Без текста';el('confirm-audience').textContent=[kinds[ntPending.kind],ntPending.target?'Тест → '+ntPending.target:'Все пользователи',platforms[ntPending.platform]+(ntPending.store&&ntPending.store!=='all'?' · '+(ntPending.store==='play'?'только Google Play':'только RuStore'):''),start?'Старт: '+fmt(start):'',ntPending.kind==='push'?'После отправки отозвать нельзя':ntPending.kind==='banner'?'Вместо блока статистики':ntPending.kind==='news'?'В разделе уведомлений':'Один показ на устройство'].filter(Boolean).join(' · ');el('confirm').showModal();});
+el('swatches').addEventListener('click',function(e){var s=e.target.closest('.nf-swatch');if(!s)return;S.accent=s.dataset.color;sync();});
+el('tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(b){S.tab=b.dataset.tab;renderPreview();}});
+el('os').addEventListener('click',function(e){var b=e.target.closest('[data-os]');if(b){S.os=b.dataset.os;renderPreview();}});
+el('reset').onclick=function(){clearForm();el('result').textContent='';sync();};
+
+// ── Settings switches.
+document.querySelectorAll('[data-nt-config]').forEach(function(x){x.addEventListener('change',async function(){if(busy||!cfg)return;busy=true;var next=Object.assign({},cfg);next[x.dataset.ntConfig]=x.checked;document.querySelectorAll('[data-nt-config]').forEach(function(y){y.disabled=true;});var error='';try{await api('/config',next);}catch(e){error=e.message;}finally{busy=false;await load();if(error)el('page-error').textContent=error;}});});
+
+// ── Sending: a test to my account first, then to everyone.
+function prepare(forTest){
+ var d=draft(),p=problem(d),start=forTest?0:startAt();
+ if(p&&!(forTest&&/Время старта|время старта/.test(p))){el('editor-error').textContent=p;return null;}
+ return Object.assign(d,{id:crypto.randomUUID(),target:forTest?target():''},start?{startAt:start}:{},{expiresAt:(start||Date.now())+Number(S.days)*86400000});
+}
+async function send(msg,done){
+ busy=true;sync();el('editor-error').textContent='';
+ try{await api('/publish',msg);done();await load();}
+ catch(e){el('editor-error').textContent=e.message;}
+ finally{busy=false;sync();}
+}
+function sendTest(){var me=target();if(!me){afterTarget=sendTest;openMe();return;}var msg=prepare(true);if(!msg)return;el('result').textContent='';send(msg,function(){el('result').textContent='Отправлено на '+me+(msg.kind==='push'?' — проверьте телефон':' — откройте приложение');});}
+function openMe(){el('target').value=target();loadUsers();el('me-dialog').showModal();el('target').focus();}
+el('test').onclick=sendTest;el('me').onclick=function(){afterTarget=null;openMe();};
+el('me-cancel').onclick=function(){afterTarget=null;el('me-dialog').close();};
+el('me-save').onclick=function(){var v=el('target').value.trim().toLowerCase();if(!v||/[\s'"<>]/.test(v)){el('target').focus();return;}try{localStorage.setItem('nt-test-target',v);}catch(_){}el('me-dialog').close();sync();var next=afterTarget;afterTarget=null;if(next)next();};
+el('target').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();el('me-save').click();}});
+async function loadUsers(){if(usersLoaded)return;usersLoaded=true;try{var r=await fetch('/api/admin/users');if(!r.ok)return;var d=await r.json();el('users-list').innerHTML=(d.users||[]).slice(0,200).map(function(u){return '<option value="'+esc(u.email||u.id)+'">'+esc((u.name||'Пользователь')+' · '+u.id)+'</option>';}).join('');}catch(_){}}
+function tagsFor(m){
+ var t=[];
+ if(m.kind==='push')t.push('<span class="nf-tag">'+SVG.bell+'Пуш</span>');
+ var place=placeOf(m);if(m.kind!=='push'||place!=='news')t.push('<span class="nf-tag">'+(m.kind==='push'?'+ ':'')+esc(PLACES[place])+'</span>');
+ t.push('<span class="nf-tag">'+(m.platform==='ios'?brand('apple'):m.platform==='android'?brand('android'):'')+esc(PLATFORMS[m.platform]||m.platform)+(STORES[m.store]?' · '+esc(STORES[m.store]):'')+'</span>');
+ return t.join('');
+}
+function thumb(m){var place=placeOf(m);return m.imageUrl?'<span class="nf-thumb" style="'+bg(m.imageUrl)+'"></span>':'<span class="nf-thumb">'+ART[m.kind==='push'?'push':place]+'</span>';}
+function heading(m){return m.title||m.body||(m.layout==='image'?(placeOf(m)==='banner'?'Баннер-картинка':placeOf(m)==='popup'?'Окно-картинка':'Картинка'):'Сообщение');}
+el('form').addEventListener('submit',function(e){
+ e.preventDefault();if(busy||el('publish').disabled)return;
+ if(!pending)pending=prepare(false);if(!pending)return;
+ var m=pending,start=m.startAt||0;
+ el('confirm-sum').innerHTML=thumb(m)+'<div style="min-width:0"><b>'+esc(heading(m))+'</b>'+(m.title&&m.body?'<small>'+esc(m.body)+'</small>':'')+'</div>';
+ el('confirm-tags').innerHTML=tagsFor(m)+'<span class="nf-tag wait">'+esc(start?fmt(start):'Сразу')+'</span><span class="nf-tag">'+esc(S.days)+' дн.</span>'+(m.action!=='none'?'<span class="nf-tag">→ '+esc(ACTIONS[m.action])+'</span>':'');
+ el('confirm').querySelector('h3').textContent=start?'Запланировать для всех?':m.kind==='push'?'Отправить пуш всем?':'Опубликовать для всех?';
+ el('confirm-send').textContent=m.kind==='push'&&!start?'Отправить':'Подтвердить';
+ el('confirm').showModal();
+});
 el('confirm-cancel').onclick=function(){el('confirm').close();};
-el('confirm-send').onclick=async function(){if(ntBusy)return;ntBusy=true;el('confirm-send').disabled=true;preview();try{var saved=el('target').value;await api('/publish',ntPending);ntPending=null;el('form').reset();el('target').value=saved;ntParts={image:false,title:false,body:false,button:false};ntAccent='';el('result').textContent='Готово';el('confirm').close();await load();}catch(e){el('confirm').close();el('editor-error').textContent=e.message;}finally{ntBusy=false;el('confirm-send').disabled=false;document.querySelectorAll('[data-nt-config]').forEach(function(x){x.disabled=x.dataset.ntConfig==='pushEnabled'&&!ntReady;});preview();}};
+el('confirm-send').onclick=function(){if(busy||!pending)return;var m=pending;el('confirm').close();send(m,function(){pending=null;clearForm();el('result').textContent=m.startAt?'Запланировано':m.kind==='push'?'Пуш отправляется':'Опубликовано';});};
+
+// ── History.
+function statusTag(m){
+ var now=Date.now(),expired=m.expiresAt<=now,scheduled=(m.startAt||0)>now;
+ if(m.kind==='push'){
+  var s={queued:[scheduled?'Запланирован '+fmt(m.startAt):'В очереди','wait'],sending:['Отправляется','wait'],accepted:['Отправлен','ok'],failed:['Ошибка','bad'],unknown:['Доставка неизвестна','bad'],expired:['Не отправлен — истёк срок','']}[m.status]||[m.status,''];
+  if(!m.enabled&&m.status==='queued')s=['Остановлен',''];
+  else if(!m.enabled)s=[s[0]+' · скрыт в приложении',''];
+  return '<span class="nf-tag '+s[1]+'">'+esc(s[0])+'</span>';
+ }
+ if(expired)return '<span class="nf-tag">Срок истёк</span>';
+ if(!m.enabled)return '<span class="nf-tag">Выключено</span>';
+ if(scheduled)return '<span class="nf-tag wait">С '+esc(fmt(m.startAt))+'</span>';
+ return '<span class="nf-tag ok">Показывается</span>';
+}
+function render(list){
+ if(!list.length){el('history').innerHTML='<div class="nf-empty">Здесь появятся отправленные сообщения</div>';return;}
+ var now=Date.now();
+ el('history').innerHTML=list.map(function(m){
+  var expired=m.expiresAt<=now,canToggle=!expired&&(m.kind!=='push'||['queued','accepted','unknown'].indexOf(m.status)>=0||placeOf(m)!=='news');
+  var v=Number(m.metrics&&m.metrics.view||0),c=Number(m.metrics&&m.metrics.click||0);
+  var who=m.target?'<span class="nf-tag test">Тест</span><small>'+esc(m.target)+'</small>':'<small>Все пользователи</small>';
+  return '<div class="nf-msg">'+thumb(m)+'<div style="min-width:0"><strong>'+esc(heading(m))+'</strong><small>'+esc(fmt(m.createdAt))+(ACTIONS[m.action]?' · → '+esc(ACTIONS[m.action]):'')+'</small><div class="nf-tags">'+tagsFor(m)+statusTag(m)+'</div>'+(m.error?'<small style="color:var(--danger)">'+esc(m.error)+'</small>':'')+'</div>'
+   +'<div class="nf-who">'+who+'</div>'
+   +'<div class="nf-metric" title="Уникальные люди: увидели / нажали. Данные приходят с задержкой до 10 минут."><div class="nf-stat"><span>'+SVG.eye+v+'</span><span>'+SVG.tap+c+'</span></div><small>'+(v?'CTR '+(100*c/v).toFixed(1)+'%':'нет данных')+'</small></div>'
+   +'<div class="nf-acts">'+(m.target?'<button class="nf-ib primary" data-nt-promote="'+m.id+'" title="Подставить в форму и отправить всем">Всем</button>':'')
+   +'<button class="nf-ib" data-nt-copy="'+m.id+'" title="Копия в форму">'+SVG.copy+'</button>'
+   +(canToggle?'<button class="nf-ib" data-nt-toggle="'+m.id+'" data-enabled="'+(!m.enabled)+'" title="'+(m.enabled?(m.kind==='push'&&m.status!=='queued'?'Скрыть в приложении':'Выключить'):'Включить')+'">'+(m.enabled?SVG.off:SVG.on)+'</button>':'')
+   +(m.status!=='sending'?'<button class="nf-ib danger" data-nt-delete="'+m.id+'" title="Удалить">'+SVG.del+'</button>':'')+'</div></div>';
+ }).join('');
+}
+el('history').addEventListener('click',async function(e){
+ var b=e.target.closest('button');if(!b)return;var id=b.dataset.ntPromote||b.dataset.ntCopy||b.dataset.ntToggle||b.dataset.ntDelete,m=items.find(function(x){return x.id===id;});
+ if(b.dataset.ntPromote||b.dataset.ntCopy){if(m){fill(m);if(b.dataset.ntPromote)el('result').textContent='Проверено — нажмите «'+el('publish').textContent+'»';}return;}
+ if(b.dataset.ntDelete&&!confirm('Удалить сообщение? В приложении оно пропадёт.'))return;
+ b.disabled=true;
+ try{if(b.dataset.ntDelete)await api('/delete',{id:id});else await api('/toggle',{id:id,enabled:b.dataset.enabled==='true'});await load();}
+ catch(err){el('page-error').textContent=err.message;b.disabled=false;}
+});
 el('refresh').onclick=load;
+
+async function load(){
+ el('page-error').textContent='';
+ try{var d=await api('');cfg=d.config;ready=d.pushConfigured;el('provider').textContent=!ready?'Firebase не подключён':cfg.pushEnabled?'Firebase подключён':'Выключены';
+  document.querySelectorAll('[data-nt-config]').forEach(function(x){x.checked=!!cfg[x.dataset.ntConfig];x.disabled=busy||(x.dataset.ntConfig==='pushEnabled'&&!ready);});
+  items=d.messages||[];render(items);if(S.push&&!pushAvailable()&&!busy)S.push=false;sync();}
+ catch(e){el('page-error').textContent=e.message;}
+}
 document.querySelectorAll('.sidebar-menu .nav-item').forEach(function(btn){btn.addEventListener('click',function(){document.getElementById('notifications-view').style.display=btn.dataset.feature==='notifications'?'block':'none';if(btn.dataset.feature==='notifications')load();});});
-preview();
+osLabel();loadDraft();if(S.image)setImage(S.image);sync();
 })();
 `;
