@@ -56,10 +56,10 @@ static func _actor_config(actor: Dictionary, source: Dictionary = {}) -> Diction
 	for authored in source.get("actors", []):
 		if str(authored.id) == str(actor.id):
 			paint = authored.get("paint")
-			for key in ["sidecar","pedestrianPose","poseArm","pedestrianLook"]:
+			for key in ["sidecar","pedestrianPose","poseArm","pedestrianLook","driverSignal"]:
 				if authored.has(key): config[key] = authored[key]
 			break
-	for key in ["pedestrianPose","poseArm","pedestrianLook"]:
+	for key in ["pedestrianPose","poseArm","pedestrianLook","driverSignal"]:
 		if actor.has(key) and not config.has(key): config[key] = actor[key]
 	if paint is String and Color.html_is_valid(paint):
 		config["color"] = paint
@@ -281,6 +281,17 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			var k := maxf(0.01, float(a.scale[0]))
 			Fleet.add_blinkers(actor, "", float(a.get("halfLength", 2.1)) / k, float(a.get("halfWidth", 0.9)) / k)
 		Fleet.set_hazards(actor, Fleet.actor_has_hazards(a))
+		var hand_config := _actor_config(a, s.network.data if s.network else {})
+		var gesture := str(hand_config.get("driverSignal","none"))
+		if DriverSignal.supports(str(a.type)) and gesture in ["raised","extended"]:
+			var width := float(a.get("halfWidth",.9))/maxf(.01,absf(float(a.scale[0])))
+			var height := 1.45
+			var body := actor.get_node_or_null("body") as MeshInstance3D
+			if body:
+				var bounds := body.mesh.get_aabb()
+				height=bounds.end.y
+				width=maxf(absf(bounds.position.x),absf(bounds.end.x))
+			actor.add_child(DriverSignal.make(gesture,width,height))
 		s.add_child(actor)
 		s.actors.append(actor)
 		if a.badge != null:
@@ -1239,3 +1250,9 @@ static func finish_background_work() -> void:
 	for task in _tasks: WorkerThreadPool.wait_for_task_completion(task)
 	_tasks.clear()
 	_native_resources.clear()
+
+
+func retract_driver_signals() -> void:
+	for actor in actors:
+		var arm := actor.get_node_or_null("driver_signal") as DriverSignal
+		if arm: arm.retract()

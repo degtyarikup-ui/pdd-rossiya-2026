@@ -12,7 +12,7 @@ const context = vm.createContext({
   Scene3D:{refresh:() => {},setSelection:() => {}},Tracks:{apply:() => {}},
   Thumbs:{fillAll:() => {},img:() => ''},setTimeout:() => 0,clearTimeout:() => {},
 });
-for (const name of ['catalog','app','inspector']) vm.runInContext(fs.readFileSync(require.resolve('../editor/'+name+'.js'),'utf8'),context);
+for (const name of ['catalog','driver_signal','app','inspector']) vm.runInContext(fs.readFileSync(require.resolve('../editor/'+name+'.js'),'utf8'),context);
 const App = vm.runInContext('App',context), state = App.state;
 App.renderPanels = () => App.renderInspector();
 state.catalog = {actorTypes:{bus:{asset:'template/actor_0.glb'}}};

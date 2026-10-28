@@ -2064,6 +2064,7 @@ func answer(correct: bool) -> void:
 	_clear_question_signals()
 	if not correct:
 		current.junction.release()
+	current.sit.retract_driver_signals()
 	current.junction.resolve(drive)
 	phase = "resolving"
 	# hideBadges + the guide at the manoeuvre: swept up and faded as the car sets off.
@@ -2109,6 +2110,7 @@ func _on_answer_chosen(index: int) -> void:
 	question_over = true
 	voice.stop()
 	var sit: Situation = current.sit
+	sit.retract_driver_signals()
 	var right := int(sit.data.correctAnswerIndex)
 	var is_correct := index == right
 	run.answer(sit.id, is_correct)

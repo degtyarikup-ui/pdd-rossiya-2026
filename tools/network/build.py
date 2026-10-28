@@ -231,6 +231,22 @@ def rails(scene: dict):
     return unary_union(parts) if parts else Polygon()
 
 
+def authored_rails(scene: dict):
+    """Explicitly visible tracks also exist without a tram; legacy routing guides stay hidden."""
+    parts = []
+    for track in scene.get("tracks", []):
+        if track.get("render") is not True or len(track.get("points", [])) < 2:
+            continue
+        line = LineString(sample_tram_route(track["points"]))
+        if line.length < .01:
+            continue
+        for side in (-1, 1):
+            offset = line.offset_curve(side * TRACK_GAUGE / 2)
+            if not offset.is_empty:
+                parts.append(offset.buffer(RAIL_WIDTH / 2, cap_style=2))
+    return unary_union(parts) if parts else Polygon()
+
+
 def road_geometry(scene: dict):
     """(road without islands, islands, all roads) as shapely geometry, inside the crop square.
     A tram track is paved too: where it leaves the road (into a depot) the kerb and the pavement
@@ -644,6 +660,10 @@ def build(scene: dict) -> dict:
     v, t = triangulate(pavement)
     pave = {"id": "pavement", "y": KERB, "layer": "pavement", "colour": PAVEMENT, "verts": v, "idx": t}
     surfaces = [asphalt, island, median, pave]
+    visible_rails = authored_rails(scene).intersection(box)
+    if not visible_rails.is_empty:
+        v, t = triangulate(visible_rails)
+        surfaces.append({"id": "authored_rails", "y": .047, "layer": "", "colour": "#929a9c", "verts": v, "idx": t})
     shoulder = Polygon()
     if not sand.is_empty:
         # Slivers left between the smoothed road and the dirt outline are not asphalt.

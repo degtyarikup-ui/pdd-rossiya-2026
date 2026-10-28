@@ -15,6 +15,7 @@ vm.runInContext(fs.readFileSync(require.resolve('../editor/app.js'),'utf8')+'\ng
 const App = context.testApp, state = App.state;
 vm.runInContext(fs.readFileSync(require.resolve('../editor/direction_marking.js'),'utf8'),context);
 vm.runInContext(fs.readFileSync(require.resolve('../editor/actor_appearance.js'),'utf8'),context);
+vm.runInContext(fs.readFileSync(require.resolve('../editor/driver_signal.js'),'utf8'),context);
 vm.runInContext(fs.readFileSync(require.resolve('../editor/inspector.js'),'utf8'),context);
 App.renderPanels = () => App.renderInspector();
 const scene = {schema:1,id:'ring-test',crop:90,layout:Layout.template('ring',90),question:{maneuver:'straight'},roads:[],markings:[],lawns:[],routes:[],actors:[],lights:[]};

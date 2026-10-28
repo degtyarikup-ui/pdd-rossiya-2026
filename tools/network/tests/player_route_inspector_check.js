@@ -27,6 +27,7 @@ const actualRemove = App.remove;
 App.remove = (...args) => {removeCalls++; return actualRemove(...args);};
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../editor/direction_marking.js'),'utf8'),context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../editor/actor_appearance.js'),'utf8'),context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../editor/driver_signal.js'),'utf8'),context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../editor/inspector.js'),'utf8'),context);
 App.renderPanels = () => App.renderInspector();
 function click(act) {

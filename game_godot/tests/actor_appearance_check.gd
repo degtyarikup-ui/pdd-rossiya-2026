@@ -45,10 +45,41 @@ func _initialize() -> void:
 	var sign := RoadBuild.sign_node("5.33","","",[],[],true,{"zoneVariant":"plain"})
 	assert(sign.get_child_count()>0);sign.free()
 	var exported: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(args[1]))
+	var built_path := args[1].get_base_dir().get_base_dir().get_base_dir()+"/network/build/ticket_2_3.json"
+	var built: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(built_path))
+	var rail: Dictionary = built.surfaces.filter(func(s): return s.id=="authored_rails")[0]
+	var net := RoadNetwork.new()
+	net.data={"crop":90}
+	net.build={"surfaces":[rail],"kerbs":{"segs":[],"y0":0.0,"y1":.18}}
+	var rail_mesh := net.surface_mesh(Scenery.new("summer"))
+	assert(rail_mesh.get_surface_count()==1 and rail_mesh.get_aabb().size.x>59,"The game's terrain renderer retains standalone rails outside asphalt")
+	var car_data: Dictionary = exported.actors.filter(func(a): return a.type=="car")[0]
+	assert(car_data.driverSignal=="raised" and Fleet.actor_signal_side(car_data)=="R","Exported lane change retains the independent right indicator")
 	var person: Dictionary = exported.actors.filter(func(a):return a.type=="pedestrian")[0]
 	assert(person.pedestrianPose=="hail" and person.poseArm=="left")
 	var pedestrian := Pedestrian.new()
 	pedestrian.configure(person.pedestrianLook,Color("#0574F8"),person.pedestrianPose,person.poseArm)
 	assert(pedestrian.get_child(0).mesh==Pedestrian.posed_mesh(0,"hail","left"));pedestrian.free()
-	print("Actor appearance runtime PASS: 12 walker models, all poses/arms, independent gait, sidecar composition and plain 5.33")
+	call_deferred("_driver_check")
+	return
+
+func _driver_check() -> void:
+	var sit := Situation.new()
+	root.add_child(sit)
+	var car := NpcVehicle.make("car",Color.WHITE,{})
+	sit.add_child(car)
+	sit.actors.append(car)
+	var arm := DriverSignal.make("raised",.9,1.45)
+	car.add_child(arm)
+	assert(arm.get_child_count()==9,"Arm, palm, four fingers and thumb are visible")
+	assert(DriverSignal.points("raised",.9,1.45)[2].y>1.4)
+	assert(DriverSignal.points("extended",.9,1.45)[2].x>1.6)
+	var authored := Situation._actor_config({"id":"car","driverSignal":"raised"},{"actors":[{"id":"car","driverSignal":"none"}]})
+	assert(authored.driverSignal=="none","Source can disable an exported gesture")
+	sit.retract_driver_signals()
+	sit.retract_driver_signals()
+	await create_timer(.5).timeout
+	assert(not arm.visible and arm.scale.x<.02,"After answering the arm retracts and stays hidden")
+	sit.queue_free()
+	print("Actor appearance runtime PASS: walker poses, sidecar, plain sign, lane-change signal, driver arm retraction and standalone rail mesh")
 	quit()

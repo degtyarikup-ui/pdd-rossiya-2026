@@ -454,14 +454,15 @@
       ${ActorSignals.supports(a.type) ? card("Сигналы", `<label class="route-field">Поворотник<select data-text="turnSignal">${[["auto","Автоматически"],["left","Левый"],["right","Правый"],["off","Выключен"]].map(([value,title]) => `<option value="${value}" ${ActorSignals.mode(a) === value ? "selected" : ""}>${title}</option>`).join("")}</select></label>`
         + toggle("hazards", "Аварийная сигнализация", ActorSignals.hazards(a), "alert")
         + `<p class="muted">Автоматически — по выбранному манёвру или пути. Ручной поворотник не меняет маршрут. Аварийка включает обе стороны. Для неподвижной машины выберите «Стоит» в разделе «Куда едет».</p>`) : ""}
+      ${DriverSignal.supports(a.type) ? card('Рука водителя',chips('driver-signal',DriverSignal.poses.map(([value,title])=>({value,title})),a.driverSignal || 'none')+'<p class="muted">Рука из левого окна. В игре водитель убирает её после ответа на вопрос.</p>') : ''}
       ${a.track ? card("Куда едет", `${chips("move", [{ value: "stay", title: "Стоит", icon: "parked" }, { value: "go", title: "Едет по пути", icon: "route" }], moving ? "go" : "stay")}
         ${route ? button("to-route", "Выбрать траекторию пути", "route", "ghost wide") : ""}`) : card("Куда едет", lane
         ? `${chips("way", [{ value: "stay", icon: "parked", tip: "Стоит" }, ...["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !ways.includes(k) }))], moving ? (a.way || "straight") : "stay", { cls: "arrows" })}${button("reverse", "Ехать в другую сторону", "rotr", "ghost wide")}
            ${moving && route ? button("to-route", route.manual ? "Траектория пути (ручная)" : "Траектория пути (по дорогам)", "route", "ghost wide") : ""}`
         : `${chips("move", [{ value: "stay", title: "Стоит", icon: "parked" }, { value: "go", title: "Едет по пути", icon: "route" }], moving ? "go" : "stay")}
-           ${moving ? button("draw-path", route ? "Перерисовать путь" : "Нарисовать путь", "route", "ghost wide") : ""}
            ${moving && route ? button("to-route", "Выбрать траекторию пути", "route", "ghost wide") : ""}
            ${(a.type === "pedestrian" || a.type === "cyclist") && Layout.zebraPath(s, a.pos) ? button("zebra-path", "Идти по пешеходному переходу", "zebra", "primary wide") : ""}`)}
+      ${!a.track ? card('Свой путь',button('draw-path',route?.manual?'Перерисовать свой путь':'Нарисовать свой путь / перестроение','route','ghost wide')+'<p class="muted">Нарисуйте переход между полосами. Поворотник выберите отдельно в разделе «Сигналы».</p>') : ''}
       ${moving ? card("Скорость", chips("speed", Catalog.SPEEDS.map((x) => ({ value: x.id, title: x.title })), Catalog.speedOf(a.maxSpeed || 10).id)
         + toggle("waits", "Пропускает игрока", (a.behaviour || {}).waitsForPlayer, "flag")) : ""}
       ${card("", toggle("yield", "Игрок должен уступить ему", (s.question.yieldTo || []).includes(a.id), "alert"))}
@@ -469,6 +470,7 @@
     bind({
       ...common,
       "chip:paint": (v) => App.edit(() => { if (v) a.paint = v; else delete a.paint; }),
+      'chip:driver-signal':value=>{if(!App.isLocked(ref)&&DriverSignal.poses.some(([key])=>key===value))App.edit(()=>{a.driverSignal=value;},{rebuild:false});},
       'chip:pedestrian-pose':value=>{
         if(App.isLocked(ref)||!ActorAppearance.poses.some(([key])=>key===value))return;
         App.edit(()=>{a.pedestrianPose=value;a.pedestrianLook ??= 0;a.poseArm ??= 'right';},{rebuild:false});
@@ -493,6 +495,7 @@
         a.type = v; a.asset = tpl.asset;
         if(v!=='pedestrian'){delete a.pedestrianPose;delete a.poseArm;delete a.pedestrianLook;}
         if(v!=='motorcycle')delete a.sidecar;
+        if(!DriverSignal.supports(v))delete a.driverSignal;
         if (!a.name || Object.values(Catalog.ACTORS).some((x) => x.name === a.name)) a.name = Catalog.ACTORS[v].name;
         a.halfLength = tpl.halfLength ?? a.halfLength; a.halfWidth = tpl.halfWidth ?? a.halfWidth;
       }),
@@ -537,13 +540,15 @@
   function trackInspector(p, ref, t) {
     const trams = state.S.actors.filter((a) => a.track === t.id);
     p.innerHTML = `${head(`<span class="ibadge">${ic("rails")}</span>`, t.depot ? "Рельсы в депо" : "Рельсы", `трамваев: ${trams.length}`)}
-      ${card("", `${toggle("depot", "Заезд в депо", !!t.depot, "home")}
+      ${card("", `${toggle("render-track", "Показывать рельсы в игре", t.render === true, "eye")}
+        ${toggle("depot", "Заезд в депо", !!t.depot, "home")}
         <p class="muted">Трамвай, который сворачивает на эти рельсы, уезжает с дороги и не мешает. Там, где рельсы идут по тротуару, бордюр и тротуар раскрываются под них сами.</p>
         ${button("reverse", "Развернуть направление", "rotr", "ghost wide")}
         <p class="muted">Тяните точки на виде, двойной клик по линии — новая точка. Начало ветки прилипает к другим рельсам.</p>`)}
       ${card("", `<div class="insp-actions">${button("del", "Удалить рельсы", "trash", "danger ghost")}</div>`)}`;
     bind({
       del: () => App.remove(),
+      "toggle:render-track": (on) => App.edit(() => { t.render = on; }),
       "toggle:depot": (on) => App.edit(() => { if (on) t.depot = true; else delete t.depot; }),
       reverse: () => App.edit(() => { t.points.reverse(); }),
     });

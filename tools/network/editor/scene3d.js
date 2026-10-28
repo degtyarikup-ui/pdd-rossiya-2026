@@ -501,7 +501,7 @@ const Scene3D = (() => {
   // same (only moved): dragging 200 trees about does not reload them.
   function anchorSig(t, o) {
     if (t === "decor") return `${o.prop}|${o.tint}`;
-    if (t === "actor") return `${o.asset}|${o.type}|${o.pedestrianPose || ''}|${o.poseArm || ''}|${o.pedestrianLook ?? ''}|${o.sidecar ?? ''}|${o.paint || ''}`;
+    if (t === "actor") return `${o.asset}|${o.type}|${o.pedestrianPose || ''}|${o.poseArm || ''}|${o.pedestrianLook ?? ''}|${o.sidecar ?? ''}|${o.paint || ''}|${o.driverSignal || ''}`;
     if (t === "light") return `${o.asset}|${o.state}|${o.arrow || ""}|${o.tram || ""}|${(o.mountedSigns || []).join(",")}|${(o.mountedMainRoad || []).join(",")}`;
     if (t === "officer") return `officer|${o.gesture}`;
     if (t === "sign") return `sign|${o.mount || "pole"}|${o.reach ?? 4.5}|${o.armSide || "left"}|${o.clearance ?? 5.5}|${JSON.stringify(SignMount.faces(o).map(SignMount.faceCopy))}`;
@@ -541,7 +541,13 @@ const Scene3D = (() => {
         if(o.sidecar)attach('/asset/models/road/sidecar.glb',new THREE.Group(),null,root=>{
           root.position.x=-.56;ActorAppearance.paint(root,o.paint || App.state.catalog?.actorAppearances?.[o.asset]?.colour || '#8D9AA8');
         });
-      } else attach(`/asset/scene/${o.asset}`,fallback);
+      } else attach(`/asset/scene/${o.asset}`,fallback,null,root=>{
+        if(DriverSignal.supports(o.type)&&['raised','extended'].includes(o.driverSignal)) {
+          root.updateMatrixWorld(true);
+          const box=new THREE.Box3().setFromObject(root);
+          root.add(DriverSignal.make(o.driverSignal,Math.max(Math.abs(box.min.x),Math.abs(box.max.x)),box.max.y));
+        }
+      });
       const lights = signalPreview(o);
       if (lights) g.add(lights);
     } else if (t === "light") {
@@ -937,9 +943,11 @@ const Scene3D = (() => {
       if (t.points.length < 2) continue;
       const on = sel.some((x) => x.t === "track" && x.id === t.id), hov = hover && hover.t === "track" && hover.id === t.id;
       const colour = on ? ACCENT : hov ? HOVER : t.depot ? 0xd98e04 : 0x8b5cf6;
-      g.add(polyline(t.points, 0.18, colour, on ? 3 : 2, on || hov ? 1 : 0.7, !on));
-      const head = arrowhead(t.points, 0.9, 0.18, colour, 1);
-      if (head) g.add(head);
+      if(on || hov || t.render!==true) {
+        g.add(polyline(t.points, 0.18, colour, on ? 3 : 2, on || hov ? 1 : 0.7, !on));
+        const head = arrowhead(t.points, 0.9, 0.18, colour, 1);
+        if (head) g.add(head);
+      }
     }
     if (!model || !model.layout || simMode) return;
     const L = model.layout;

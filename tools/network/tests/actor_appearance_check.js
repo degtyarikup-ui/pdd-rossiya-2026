@@ -1,4 +1,5 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const Driver=require('../editor/driver_signal.js');
 const Appearance=require('../editor/actor_appearance.js'),Layout=require('../editor/layout.js');
 const THREE=require('../editor/vendor/three.min.js');
 const clone=value=>JSON.parse(JSON.stringify(value));
@@ -15,7 +16,7 @@ assert.equal(Appearance.vertex([-.285,.83,0],[0,-1,0],.18,1.38,-.285,'hail','lef
 const listeners={},pane={innerHTML:'',querySelector:()=>null,querySelectorAll:()=>[],addEventListener:(name,fn)=>{listeners[name]=fn;}};
 const node={classList:{toggle(){}},addEventListener(){},dataset:{}};
 const context=vm.createContext({Layout,THREE,document:{querySelector:key=>key==='#inspector'?pane:node},Scene3D:{refresh(){},setSelection(){}},Thumbs:{fillAll(){},img:()=>''},setTimeout:()=>0,clearTimeout(){}});
-for(const file of ['catalog.js','actor_signals.js','actor_appearance.js','sign_mount.js','lane_sign.js','app.js','inspector.js'])vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
+for(const file of ['catalog.js','actor_signals.js','actor_appearance.js','driver_signal.js','sign_mount.js','lane_sign.js','app.js','inspector.js'])vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
 const App=vm.runInContext('App',context),state=App.state;
 state.catalog={actorTypes:{pedestrian:{asset:'ped/actor_0.glb',halfWidth:.3,halfLength:.25},motorcycle:{asset:'moto/actor_0.glb',sidecar:true,halfWidth:.949,halfLength:1.075}},actorAppearances:{'moto/actor_0.glb':{sidecar:true}},signs:['5.33','2.4']};
 state.S={schema:1,id:'appearance-fixture',crop:90,layout:Layout.template('cross',90),question:{maneuver:'straight'},roads:[],markings:[],lawns:[],routes:[],actors:[{id:'person',type:'pedestrian',asset:'ped/actor_0.glb',pos:[8,20],yaw:.4,scale:[1,1,1],behaviour:{staysPut:true}}],signs:[{id:'zone',code:'5.33',zoneVariant:'plain',pos:[8,10],yaw:0}],lights:[],decor:[]};
@@ -31,6 +32,11 @@ chip('type','motorcycle');assert.equal(actor().pedestrianPose,undefined);assert.
 chip('sidecar','no');assert.equal(actor().sidecar,false);assert.equal(actor().halfWidth,.34);
 chip('sidecar','yes');assert.equal(actor().sidecar,true);assert.equal(actor().halfWidth,.957);
 App.undo();assert.equal(actor().sidecar,false);App.redo();
+state.catalog.actorTypes.car={asset:'car/actor_0.glb',halfWidth:.9,halfLength:2.1};
+App.select({t:'actor',id:'person'});chip('type','car');
+const beforeHand=clone(state.S.routes);chip('driver-signal','raised');assert.equal(actor().driverSignal,'raised');assert.deepEqual(clone(state.S.routes),beforeHand);
+assert.match(pane.innerHTML,/Нарисовать свой путь \/ перестроение/);App.undo();assert.equal(actor().driverSignal,undefined);App.redo();
+const hand=vm.runInContext('DriverSignal',context).make('raised',.9,1.45);const handBox=new THREE.Box3().setFromObject(hand);assert(handBox.max.y>1.6&&handBox.max.x>1.2);assert.equal(hand.children.length,9);
 App.select({t:'sign',id:'zone'});assert.match(pane.innerHTML,/5\.33_plain.svg/);chip('zone-variant','weekends');
 assert.equal(state.S.signs[0].zoneVariant,'weekends');App.undo();assert.equal(state.S.signs[0].zoneVariant,'plain');
 const mount=vm.runInContext('SignMount',context);assert.equal(mount.faceCopy(state.S.signs[0]).zoneVariant,'plain');

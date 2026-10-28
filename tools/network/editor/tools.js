@@ -857,7 +857,7 @@ const Tools = (() => {
       const ref = App.edit((s) => {
         s.tracks = s.tracks || [];
         const id = App.uniqueId("track_", s.tracks.map((t) => t.id));
-        s.tracks.push({ id, points: pts });
+        s.tracks.push({ id, points: pts, render: true });
         return { t: "track", id };
       });
       App.select(ref);
@@ -878,7 +878,7 @@ const Tools = (() => {
         s.routes = s.routes.filter((r) => r.id !== rid);
         s.routes.push({ id: rid, kind: "actor", manual: true, points: [[a.pos[0], a.pos[1]], ...pts] });
         a.route = rid;
-        a.behaviour = { ...(a.behaviour || {}), staysPut: false };
+        ActorSignals.setMoving(a,true);
       });
       App.select({ t: "actor", id: aid });
       set("select");

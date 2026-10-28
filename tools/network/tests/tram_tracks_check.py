@@ -60,6 +60,15 @@ with tempfile.TemporaryDirectory(prefix="tram-tracks-", dir=check.ROOT / "scratc
     assert not build.track_lines(retired) and build.rails(retired).is_empty
     assert not any(s["id"] == "marking_rail" for s in build.build(retired)["surfaces"])
     assert not any(f["code"] == "marking-colour" for f in check.check_scene(retired)), "retired rail paint needs no source cleanup"
+    visible = copy.deepcopy(retired)
+    visible["tracks"][0]["render"] = True
+    before_visible = copy.deepcopy(visible)
+    drawn = build.authored_rails(visible)
+    assert drawn.area > 8 and drawn.distance(Point(25, -60.762)) < .001
+    rendered = next(s for s in build.build(visible)["surfaces"] if s["id"] == "authored_rails")
+    assert rendered["idx"] and rendered["y"] == .047
+    assert not any(s["id"] == "marking_rail" for s in build.build(visible)["surfaces"])
+    assert visible == before_visible, "Showing standalone rails never changes the source or adds a tram"
     clean = copy.deepcopy(retired)
     clean["tracks"] = []
     clean["markings"] = [m for m in clean["markings"] if m["colour"] != "rail"]

@@ -14,7 +14,7 @@ const context = vm.createContext({Layout,
   Scene3D:{refresh:() => {},setSelection:() => {}},Tracks:{apply:() => {}},
   Thumbs:{fillAll:() => {},img:() => ''},setTimeout:() => 0,clearTimeout:() => {},
 });
-for (const file of ['catalog.js','sign_mount.js','lane_sign.js','actor_signals.js','app.js','direction_marking.js','actor_appearance.js','inspector.js'])
+for (const file of ['catalog.js','sign_mount.js','lane_sign.js','actor_signals.js','app.js','direction_marking.js','actor_appearance.js','driver_signal.js','inspector.js'])
   vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
 const {App,Catalog} = vm.runInContext('({App,Catalog})',context), state = App.state;
 Catalog.setSignCatalog(info);

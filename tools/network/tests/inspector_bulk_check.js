@@ -12,7 +12,7 @@ const context = vm.createContext({Layout,
   Scene3D:{refresh:() => {},setSelection:() => {}},Tracks:{apply:() => {}},
   Thumbs:{fillAll:() => {},img:() => ''},setTimeout:() => 0,clearTimeout:() => {},
 });
-for (const file of ['catalog.js','actor_signals.js','app.js','direction_marking.js','actor_appearance.js','inspector.js']) vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
+for (const file of ['catalog.js','actor_signals.js','app.js','direction_marking.js','actor_appearance.js','driver_signal.js','inspector.js']) vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
 const App = vm.runInContext('App',context), state = App.state;
 App.renderPanels = () => App.renderInspector();
 const scene = {schema:1,id:'bulk-test',crop:90,layout:Layout.template('cross',90),question:{maneuver:'straight',yieldTo:[]},roads:[],markings:[],lawns:[],routes:[],actors:[],lights:[],decor:[],signs:[]};
