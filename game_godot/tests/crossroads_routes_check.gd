@@ -86,7 +86,9 @@ func _check_route(actor: CrossroadsActor, label: String) -> void:
 	var span := maxf(aabb.size.x, aabb.size.z)
 	longest_guide = maxf(longest_guide, span)
 	_check(label + " arrow is compact", span <= 18.0)
-	_check(label + " arrow uses the main game's color", (guide.material_override as StandardMaterial3D).albedo_color.is_equal_approx(Color(actor.guide_color(), 0.9)))
+	var arrow_colour: Color = (guide.material_override as ShaderMaterial).get_shader_parameter("colour")
+	_check(label + " arrow uses the main game's color", arrow_colour.is_equal_approx(Color(actor.guide_color(), 0.9)))
+	_check(label + " arrow keeps the main game's width", is_equal_approx(RouteArrow.HALF_WIDTH * 2.0, Situation.GUIDE_WIDTH))
 	_check(label + " arrow uses the main game's road height", is_equal_approx(aabb.position.y, Situation.GUIDE_LIFT))
 	_check(label + " maneuver button centre is the tap target", actor.badge_sprite.offset.is_zero_approx() and actor.badge_sprite.position.is_zero_approx())
 	var clear_events := [0]

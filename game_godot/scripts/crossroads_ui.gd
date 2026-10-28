@@ -31,6 +31,9 @@ const ICON_CAMERA := 0xf627
 const ICON_WARNING := 0xf02a0
 const ICON_BOLT := 0xf5ca
 const ICON_PRACTICE := 0xf012e
+const ICON_PREV := 0xe15e         # chevron_left / chevron_right of the icon font
+const ICON_NEXT := 0xe15f
+const ICON_CHECK := 0xe156
 
 var current_mode := "blitz"
 
@@ -91,6 +94,7 @@ var _collision_title: Label
 var _collision_should_go: Label
 var _collision_reason: Label
 var _collision_article: Label
+var _collision_article_tag: PanelContainer
 var _collision_btn_row: BoxContainer
 var _collision_retry_btn: Button
 var _collision_next_btn: Button
@@ -108,12 +112,21 @@ var _notice_tween: Tween
 var _combo_tween: Tween
 var _notice_label: Label
 var _hud_state := []
+var _caption_style: StyleBoxFlat
+var _caption_tween: Tween
+var _step_tween: Tween
+var _modal_tween: Tween
+var _curtain: ColorRect
+var _curtain_tween: Tween
+var _shown_step := -1
+var _shown_complete := false
 
 
 func _init() -> void:
 	anchor_right = 0.0
 	anchor_bottom = 0.0
 	mouse_filter = MOUSE_FILTER_IGNORE
+	_build_curtain()
 	_build_top_bar()
 	_build_notice()
 	_build_reset_camera_btn()
@@ -157,6 +170,7 @@ func _layout() -> void:
 	_mode_pill.position = Vector2(bar_left, size.y - bottom - _mode_pill.size.y - 12.0)
 	_notice.size = _notice.get_combined_minimum_size()
 	_notice.position = Vector2((size.x - _notice.size.x) * 0.5, _top_bar.position.y + _top_bar.size.y + 10.0)
+	_curtain.size = size
 	for overlay in [_collision_backdrop, _results, _topics_backdrop]:
 		if overlay != null:
 			overlay.size = size
@@ -164,12 +178,23 @@ func _layout() -> void:
 	var modal_top := top + 16.0
 	var modal_height := maxf(100.0, size.y - modal_top - bottom - 16.0)
 	var inner_width := card_width - 40.0
+	_fit_article(card_width - 56.0 - 40.0 - 20.0)
 	_fit_modal(_collision_card, _collision_content, card_width, modal_height, modal_top, left, available_width)
 	if _topics_card != null and _topics_content != null and _topics_backdrop != null and _topics_backdrop.visible:
 		_fit_modal(_topics_card, _topics_content, card_width, modal_height, modal_top, left, available_width)
 	var result_left := float(safe["left"]) / u + 20.0
 	var result_right := float(safe["right"]) / u + 20.0
 	_results.layout(Rect2(result_left, top + 16.0, maxf(160.0, size.x - result_left - result_right), maxf(100.0, size.y - top - bottom - 32.0)))
+
+
+## A short article stays a compact tag; a long one wraps across the card.
+func _fit_article(inner: float) -> void:
+	var font := _collision_article.get_theme_font("font")
+	var width := font.get_string_size(_collision_article.text, HORIZONTAL_ALIGNMENT_LEFT, -1,
+		_collision_article.get_theme_font_size("font_size")).x
+	var fits := width <= inner
+	_collision_article.autowrap_mode = TextServer.AUTOWRAP_OFF if fits else TextServer.AUTOWRAP_WORD_SMART
+	_collision_article_tag.size_flags_horizontal = SIZE_SHRINK_BEGIN if fits else SIZE_FILL
 
 
 ## Hidden labels have never been sorted by their Container and can still be one
@@ -329,13 +354,7 @@ func _build_top_bar() -> void:
 	stepper.add_theme_constant_override("separation", 6)
 	_practice_row.add_child(stepper)
 
-	_prev_btn = Button.new()
-	_prev_btn.text = "◀"
-	_prev_btn.custom_minimum_size = Vector2(24, 18)
-	_prev_btn.add_theme_font_override("font", Ui.font(700))
-	_prev_btn.add_theme_font_size_override("font_size", roundi(10.0 * Ui.text_scale()))
-	_style_button(_prev_btn, Ui.c("field"), Ui.c("text"), 3, 2)
-	_prev_btn.pressed.connect(func(): prev_scenario_pressed.emit())
+	_prev_btn = _stepper_btn(ICON_PREV, func(): prev_scenario_pressed.emit())
 	stepper.add_child(_prev_btn)
 
 	_solved_chip = PanelContainer.new()
@@ -345,13 +364,7 @@ func _build_top_bar() -> void:
 	_solved_chip.add_child(_solved_chip_label)
 	stepper.add_child(_solved_chip)
 
-	_next_btn = Button.new()
-	_next_btn.text = "▶"
-	_next_btn.custom_minimum_size = Vector2(24, 18)
-	_next_btn.add_theme_font_override("font", Ui.font(700))
-	_next_btn.add_theme_font_size_override("font_size", roundi(10.0 * Ui.text_scale()))
-	_style_button(_next_btn, Ui.c("field"), Ui.c("text"), 3, 2)
-	_next_btn.pressed.connect(func(): next_scenario_pressed.emit())
+	_next_btn = _stepper_btn(ICON_NEXT, func(): next_scenario_pressed.emit())
 	stepper.add_child(_next_btn)
 
 	_score_group = HBoxContainer.new()
@@ -400,7 +413,11 @@ func _build_top_bar() -> void:
 	_hud_line1.add_child(_lives_container)
 
 	_caption_card = PanelContainer.new()
-	_caption_card.add_theme_stylebox_override("panel", _padded(Ui.c("card"), 16, 14, 12))
+	# A transparent border of its own: a solved junction flashes it green.
+	_caption_style = _padded(Ui.c("card"), 16, 14, 12)
+	_caption_style.set_border_width_all(2)
+	_caption_style.border_color = Color(Ui.c("green"), 0.0)
+	_caption_card.add_theme_stylebox_override("panel", _caption_style)
 	_top_bar.add_child(_caption_card)
 	_caption_content = VBoxContainer.new()
 	_caption_content.add_theme_constant_override("separation", 5)
@@ -608,8 +625,60 @@ func update_caption(title: String, _subtitle: String, step: int, total_steps: in
 	# The single game asks the player to decide; keep only its neutral title here.
 	_caption_subtitle.text = title
 	_caption_subtitle.visible = _caption_subtitle.text != ""
+	var advanced := step != _shown_step or complete != _shown_complete
+	var finished := complete and not _shown_complete and _shown_step >= 1
+	var fresh := step <= 1 and not complete
+	_shown_step = step
+	_shown_complete = complete
 	if is_inside_tree():
 		call_deferred("_layout")
+		if advanced and not fresh: _animate_step(finished)
+
+
+## The step pill pops and the question fades in anew; a solved junction also flashes
+## the card green.
+func _animate_step(finished: bool) -> void:
+	if is_instance_valid(_step_tween): _step_tween.kill()
+	await get_tree().process_frame
+	if not is_inside_tree(): return
+	_step_pill.pivot_offset = _step_pill.size * 0.5
+	_step_tween = create_tween().set_parallel()
+	_step_pill.scale = Vector2.ONE * 1.28
+	_step_tween.tween_property(_step_pill, "scale", Vector2.ONE, 0.34).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_caption_prompt.modulate.a = 0.0
+	_caption_prompt.position.x = 8.0
+	_step_tween.tween_property(_caption_prompt, "modulate:a", 1.0, 0.22)
+	_step_tween.tween_property(_caption_prompt, "position:x", 0.0, 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	if not finished: return
+	if is_instance_valid(_caption_tween): _caption_tween.kill()
+	_caption_tween = create_tween()
+	_caption_style.border_color = Color(Ui.c("green"), 0.0)
+	_caption_tween.tween_property(_caption_style, "border_color", Color(Ui.c("green"), 0.95), 0.14)
+	_caption_tween.parallel().tween_property(_caption_style, "bg_color", Ui.c("green_light"), 0.14)
+	_caption_tween.tween_interval(0.35)
+	_caption_tween.tween_property(_caption_style, "border_color", Color(Ui.c("green"), 0.0), 0.4)
+	_caption_tween.parallel().tween_property(_caption_style, "bg_color", Ui.c("card"), 0.4)
+
+
+## Points for a solved junction rise from the score and fade; the score itself pops.
+func celebrate_points(points: int) -> void:
+	if points <= 0 or not is_inside_tree() or not _score_label.is_visible_in_tree(): return
+	var label := Ui.scaled_label("+%d" % points, 15, 800, Ui.c("green"))
+	label.mouse_filter = MOUSE_FILTER_IGNORE
+	add_child(label)
+	# Beside the score, in the free space before the timer, rising as it fades.
+	var at := (_score_label.get_global_rect().position - global_position) / scale
+	label.position = at + Vector2(_score_label.size.x + 8.0, 10.0)
+	label.modulate.a = 0.0
+	var tw := create_tween().set_parallel()
+	tw.tween_property(label, "position:y", at.y - 2.0, 0.8).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(label, "modulate:a", 1.0, 0.14)
+	tw.tween_property(label, "modulate:a", 0.0, 0.3).set_delay(0.5)
+	tw.chain().tween_callback(label.queue_free)
+	_score_label.pivot_offset = _score_label.size * 0.5
+	var pop := create_tween()
+	pop.tween_property(_score_label, "scale", Vector2.ONE * 1.25, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pop.tween_property(_score_label, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_SINE)
 
 
 func _build_reset_camera_btn() -> void:
@@ -635,6 +704,26 @@ func _hide_hard_bonus() -> void:
 	_bonus_visible = false
 	_hard_badge_label.text = Ui.t("crossroadsHardSituationBadge")
 	if is_inside_tree(): call_deferred("_layout")
+
+
+## Under the HUD, over the world: a new junction comes up from the app's background
+## colour instead of replacing the last one in a single frame.
+func _build_curtain() -> void:
+	_curtain = ColorRect.new()
+	_curtain.name = "SceneCurtain"
+	_curtain.mouse_filter = MOUSE_FILTER_IGNORE
+	_curtain.visible = false
+	add_child(_curtain)
+
+
+func reveal_scene() -> void:
+	if not is_inside_tree(): return
+	if is_instance_valid(_curtain_tween): _curtain_tween.kill()
+	_curtain.color = Color(Ui.c("background"), 0.9)
+	_curtain.visible = true
+	_curtain_tween = create_tween()
+	_curtain_tween.tween_property(_curtain, "color:a", 0.0, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_curtain_tween.tween_callback(func(): _curtain.visible = false)
 
 
 ## A crash does not stop the game: a short red pill under the top bar, as the city game's
@@ -664,9 +753,14 @@ func show_crash_notice(crashed := true, seconds := 1.6) -> void:
 	if is_instance_valid(_notice_tween): _notice_tween.kill()
 	_notice_label.text = Ui.t("gameCrossroadsCrash" if crashed else "gameAnswerWrong")
 	_notice.visible = true
-	_notice.modulate.a = 1.0
 	_layout()
+	# Drops in a little and settles, then fades.
+	_notice.pivot_offset = _notice.size * 0.5
+	_notice.modulate.a = 0.0
+	_notice.scale = Vector2.ONE * 0.86
 	_notice_tween = create_tween()
+	_notice_tween.tween_property(_notice, "modulate:a", 1.0, 0.14)
+	_notice_tween.parallel().tween_property(_notice, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_notice_tween.tween_interval(seconds)
 	_notice_tween.tween_property(_notice, "modulate:a", 0.0, 0.25)
 	_notice_tween.tween_callback(func(): _notice.visible = false)
@@ -696,8 +790,17 @@ func _build_collision_modal() -> void:
 	_collision_panel.add_child(text)
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 12)
-	header.add_child(Ui.icon(ICON_WARNING, 32, Color.WHITE))
-	_collision_title = Ui.scaled_label(Ui.t("gameCrossroadsCrash"), 30, 800, Color.WHITE, true)
+	# The warning sits in a soft round chip, like the app's status icons.
+	var chip := PanelContainer.new()
+	chip.custom_minimum_size = Vector2(48, 48)
+	chip.size_flags_vertical = SIZE_SHRINK_CENTER
+	chip.add_theme_stylebox_override("panel", Ui.box(Color(1, 1, 1, 0.2), 24))
+	var warning := Ui.icon(ICON_WARNING, 26, Color.WHITE)
+	warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	warning.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	chip.add_child(warning)
+	header.add_child(chip)
+	_collision_title = Ui.scaled_label(Ui.t("gameCrossroadsCrash"), 26, 800, Color.WHITE, true)
 	_collision_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	header.add_child(_collision_title)
 	text.add_child(header)
@@ -708,8 +811,13 @@ func _build_collision_modal() -> void:
 	text.add_child(_collision_should_go)
 	_collision_reason = Ui.scaled_label("", 14, 500, Color(1, 1, 1, 0.82), true)
 	text.add_child(_collision_reason)
-	_collision_article = Ui.scaled_label("", 12, 600, Color(1, 1, 1, 0.64), true)
-	text.add_child(_collision_article)
+	# The rule's article as a small translucent tag under the explanation.
+	_collision_article_tag = PanelContainer.new()
+	_collision_article_tag.size_flags_horizontal = SIZE_SHRINK_BEGIN
+	_collision_article_tag.add_theme_stylebox_override("panel", _padded(Color(1, 1, 1, 0.16), 8, 10, 4))
+	_collision_article = Ui.scaled_label("", 12, 700, Color(1, 1, 1, 0.9), true)
+	_collision_article_tag.add_child(_collision_article)
+	text.add_child(_collision_article_tag)
 	var spacer := Control.new()
 	spacer.custom_minimum_size.y = 8
 	_collision_content.add_child(spacer)
@@ -741,6 +849,7 @@ func show_collision_modal(priority_name: String, reason: String, article: String
 	_collision_reason.text = reason
 	_collision_article.text = article
 	_collision_article.visible = article != ""
+	_collision_article_tag.visible = article != ""
 	if is_practice:
 		_collision_retry_btn.visible = true
 		_collision_next_btn.visible = true
@@ -755,15 +864,37 @@ func show_collision_modal(priority_name: String, reason: String, article: String
 	_layout()
 	if is_inside_tree():
 		call_deferred("_layout")
-		if is_practice:
-			_collision_retry_btn.grab_focus()
-		elif out_of_lives:
-			_collision_game_over_btn.grab_focus()
-		else:
-			_collision_next_btn.grab_focus()
+		_open_collision_card()
+		# A focus ring helps a keyboard; on a phone it only looks like a stray outline.
+		if not DisplayServer.is_touchscreen_available():
+			if is_practice:
+				_collision_retry_btn.grab_focus()
+			elif out_of_lives:
+				_collision_game_over_btn.grab_focus()
+			else:
+				_collision_next_btn.grab_focus()
+
+
+## The world fades to grey while the card rises into place with a slight overshoot.
+func _open_collision_card() -> void:
+	if is_instance_valid(_modal_tween): _modal_tween.kill()
+	var grey := _collision_backdrop.material as ShaderMaterial
+	grey.set_shader_parameter("fade", 0.0)
+	_collision_card.modulate.a = 0.0
+	_collision_card.scale = Vector2.ONE * 0.94
+	await get_tree().process_frame
+	if not _collision_card.visible: return
+	_collision_card.pivot_offset = _collision_card.size * Vector2(0.5, 0.6)
+	_modal_tween = create_tween().set_parallel()
+	_modal_tween.tween_method(func(v: float): grey.set_shader_parameter("fade", v), 0.0, 1.0, 0.28)
+	_modal_tween.tween_property(_collision_card, "modulate:a", 1.0, 0.2)
+	_modal_tween.tween_property(_collision_card, "scale", Vector2.ONE, 0.36).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func hide_collision_modal() -> void:
+	if is_instance_valid(_modal_tween): _modal_tween.kill()
+	_collision_card.modulate.a = 1.0
+	_collision_card.scale = Vector2.ONE
 	_collision_backdrop.visible = false
 	_collision_card.visible = false
 	_refresh_modal_visibility()
@@ -925,6 +1056,24 @@ func _modal(backdrop: ColorRect) -> Array:
 	return [card, content]
 
 
+## The topic's previous/next task: a soft square with a chevron from the icon font.
+func _stepper_btn(icon: int, pressed: Callable) -> Button:
+	var button := Button.new()
+	button.text = char(icon)
+	button.custom_minimum_size = Vector2(28, 24)
+	if Ui._icon_font == null:
+		Ui._icon_font = load(Ui.ICON_FONT)
+	button.add_theme_font_override("font", Ui._icon_font)
+	button.add_theme_font_size_override("font_size", roundi(18.0 * minf(Ui.text_scale(), 1.3)))
+	_style_button(button, Ui.c("field"), Ui.c("text"), 2, 0)
+	for state in ["normal", "hover", "pressed"]:
+		(button.get_theme_stylebox(state) as StyleBoxFlat).set_corner_radius_all(8)
+	button.add_theme_stylebox_override("disabled", button.get_theme_stylebox("normal"))
+	button.add_theme_color_override("font_disabled_color", Ui.c("secondary"))
+	button.pressed.connect(pressed)
+	return button
+
+
 func _chrome_btn(icon: int, tooltip: String) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(CHROME, CHROME)
@@ -960,9 +1109,10 @@ func _style_button(button: Button, background: Color, foreground: Color, horizon
 	button.add_theme_stylebox_override("normal", _padded(background, 12, horizontal, vertical))
 	button.add_theme_stylebox_override("hover", _padded(background.lerp(Ui.c("accent"), 0.08), 12, horizontal, vertical))
 	button.add_theme_stylebox_override("pressed", _padded(background.darkened(0.1), 12, horizontal, vertical))
-	var focus := Ui.box(Color.TRANSPARENT, 12)
-	focus.border_color = Ui.c("accent")
+	var focus := Ui.box(Color.TRANSPARENT, 14)
+	focus.border_color = Color(Ui.c("accent"), 0.55)
 	focus.set_border_width_all(2)
+	focus.set_expand_margin_all(3)
 	button.add_theme_stylebox_override("focus", focus)
 
 

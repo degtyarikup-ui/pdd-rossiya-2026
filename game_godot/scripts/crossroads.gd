@@ -665,6 +665,12 @@ func _load_current_scenario() -> void:
 			junction.build_tram_path(actor.path_curve)
 	if junction.officer_node != null:
 		_place_officer()
+	# Routes draw themselves and buttons pop in one after another, nearest first.
+	var order := active_actors.duplicate()
+	order.sort_custom(func(a: CrossroadsActor, b: CrossroadsActor) -> bool:
+		return a.position.z > b.position.z)
+	for i in order.size():
+		(order[i] as CrossroadsActor).appear(i)
 
 	# A difficult junction has triple points; the countdown never gains time.
 	var is_hard: bool = sc.get("isHard", false)
@@ -683,6 +689,7 @@ func _load_current_scenario() -> void:
 	# Buildings in front of the new junction are see-through from its first frame.
 	_update_occlusion(1.0)
 	_fit_scenario_after_layout(scene_sequence)
+	ui.reveal_scene()
 
 
 ## The officer stands near the middle but never on a tram's rails; every other vehicle's
@@ -1015,9 +1022,11 @@ func _on_crossroad_completed() -> void:
 	# Scoring from GameEconomy
 	var base_score: int = int(economy.get("base", 40)) + mini(combo - 1, int(economy.get("bonusCap", 5))) * int(economy.get("step", 2))
 	var gained := base_score * (3 if is_hard else 1)
+	var before := score
 	score = mini(int(economy.get("maxScore", 1500)), score + gained)
 
 	ui.update_hud(score, ceili(seconds_left), lives, combo)
+	ui.celebrate_points(score - before)
 	if combo > 1:
 		sound.play("streak")
 	else:
@@ -1135,11 +1144,11 @@ func _trigger_collision(chosen: CrossroadsActor, priority: CrossroadsActor, reas
 		lives -= 1
 		ui.update_hud(score, ceili(seconds_left), lives, combo)
 
-	# Hide trajectory ribbons and arrows immediately
+	# Both routes fade at once: the crash itself is what matters now.
 	if chosen.trajectory_guide != null:
-		chosen.trajectory_guide.visible = false
+		chosen.trajectory_guide.fade_out()
 	if priority.trajectory_guide != null:
-		priority.trajectory_guide.visible = false
+		priority.trajectory_guide.fade_out()
 	if chosen.arrow_sprite != null:
 		chosen.arrow_sprite.visible = false
 	if priority.arrow_sprite != null:

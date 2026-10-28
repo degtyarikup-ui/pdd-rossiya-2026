@@ -16,6 +16,9 @@ const STOP_SIGN_DIST := 7.6
 const STOP_SIGN_SECONDS := 0.8
 const BADGE_CARD_WIDTH_PIXELS := 192.0
 const BADGE_CARD_SCREEN_DP := 54.0
+const INTRO_TIME := 0.34
+const OUTRO_TIME := 0.26
+const SHAKE_TIME := 0.42
 const EXIT_DIST := 110.0
 
 var data: Dictionary
@@ -28,7 +31,7 @@ var arrow_sprite: Sprite3D
 var arrow_mat: ShaderMaterial
 var badge_label: Label3D
 var badge_bg: MeshInstance3D
-var trajectory_guide: MeshInstance3D
+var trajectory_guide: RouteArrow
 
 var path_curve: Curve3D
 var path_length := 0.0
@@ -45,6 +48,9 @@ var _cleared_emitted := false
 var _badge_height := 4.8
 ## Extra height that keeps this button clear of a nearer one (set by the game each frame).
 var badge_lift := 0.0
+var _intro := 1.0                # 0..1 pop-in when a task appears; negative while delayed
+var _outro := -1.0               # 0..1 once the participant has cleared the junction
+var _shake := -1.0               # s since a wrong answer, for the badge's head shake
 var _badge_screen_scale := 1.0
 var _badge_camera: Camera3D
 var _model_height := 1.65
@@ -281,6 +287,14 @@ func _build_badge() -> void:
 	badge_node.add_child(badge_sprite)
 
 
+## The task appears: the route draws itself and the button pops in, `order`-th in turn.
+func appear(order: int) -> void:
+	var delay := 0.06 + order * 0.07
+	_intro = -delay / INTRO_TIME
+	if trajectory_guide != null: trajectory_guide.appear(delay + 0.1)
+	_apply_badge_scale()
+
+
 ## Where the button sits without any lift: the separation pass measures from here.
 func badge_anchor() -> Vector3:
 	return global_position + Vector3.UP * _badge_height
@@ -311,6 +325,7 @@ func set_badge_solved(step_num: int) -> void:
 
 func set_badge_error() -> void:
 	badge_pop = 0.0
+	_shake = 0.0
 	badge_sprite.texture = _badge_texture("error", 0)
 
 
@@ -318,8 +333,10 @@ func set_badge_priority() -> void:
 	badge_pop = 0.0
 	badge_sprite.texture = _badge_texture("priority", 0)
 	var tw := create_tween()
-	tw.tween_property(badge_node, "scale", Vector3.ONE * 1.35, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(badge_node, "scale", Vector3.ONE, 0.22).set_trans(Tween.TRANS_SINE)
+	# Two beats: this is the one who had to go first.
+	for beat in 2:
+		tw.tween_property(badge_node, "scale", Vector3.ONE * 1.3, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(badge_node, "scale", Vector3.ONE, 0.2).set_trans(Tween.TRANS_SINE)
 
 
 func update_badge_orientation(cam: Camera3D) -> void:
@@ -339,7 +356,20 @@ func update_badge_orientation(cam: Camera3D) -> void:
 func _apply_badge_scale() -> void:
 	if badge_sprite == null: return
 	var feedback := 1.0 + sin(badge_pop * PI) * 0.12 if badge_pop < 1.0 else 1.0
-	badge_sprite.scale = Vector3.ONE * (_badge_screen_scale * feedback)
+	# Pops in slightly overshooting; leaves shrinking a little as it fades.
+	var intro := _back_out(clampf(_intro, 0.0, 1.0))
+	var outro := 1.0 - 0.18 * clampf(_outro, 0.0, 1.0) if _outro >= 0.0 else 1.0
+	badge_sprite.scale = Vector3.ONE * (_badge_screen_scale * feedback * intro * outro)
+	var alpha := clampf(_intro * 2.0, 0.0, 1.0) * (1.0 - clampf(_outro, 0.0, 1.0) if _outro >= 0.0 else 1.0)
+	badge_sprite.modulate.a = alpha
+	badge_sprite.visible = alpha > 0.0
+	# A short head shake for a wrong answer, in the card's own pixels.
+	badge_sprite.offset.x = sin(_shake * 46.0) * 16.0 * (1.0 - _shake / SHAKE_TIME) if _shake >= 0.0 else 0.0
+
+
+static func _back_out(t: float) -> float:
+	var u := t - 1.0
+	return 1.0 + 2.4 * u * u * u + 1.4 * u * u
 
 
 # --- Trajectory Generation ---
@@ -499,10 +529,10 @@ func _add_route_point(point: Vector3, angle: float, in_handle := Vector3.ZERO, o
 	path_curve.add_point(point.rotated(Vector3.UP, angle), in_handle.rotated(Vector3.UP, angle), out_handle.rotated(Vector3.UP, angle))
 
 
-# --- The main game's compact road arrows ---
+# --- The route on the road (the main game's colours, width and height) ---
 
 func _build_trajectory_guide() -> void:
-	trajectory_guide = MeshInstance3D.new()
+	trajectory_guide = RouteArrow.new()
 	trajectory_guide.name = "TrajectoryGuide"
 	trajectory_guide.top_level = true
 	trajectory_guide.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -519,15 +549,7 @@ func _build_trajectory_guide() -> void:
 	for i in steps + 1:
 		var p := path_curve.sample_baked(lerpf(begin_distance, finish_distance, float(i) / steps))
 		points.append(Vector2(p.x, p.z))
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	# Overlap the ribbon slightly under the arrowhead (1.2m shorten vs 1.6m head)
-	# to eliminate any seam or empty gap on curves!
-	Situation._strip(st, Situation._shorten(points, 1.2), Situation.GUIDE_WIDTH)
-	Situation._round_start(st, points, Situation.GUIDE_WIDTH)
-	Situation._arrowhead(st, Situation._before_tip(points, 1.6), points[-1])
-	trajectory_guide.mesh = st.commit()
-	trajectory_guide.material_override = Situation._guide_material(guide_color())
+	trajectory_guide.build(points, guide_color())
 	add_child(trajectory_guide)
 
 
@@ -555,7 +577,7 @@ func start_driving() -> void:
 	state = "driving"
 	drive_progress = 0.0
 	if trajectory_guide != null:
-		trajectory_guide.visible = false
+		trajectory_guide.depart()
 	if arrow_sprite != null:
 		arrow_sprite.visible = false
 	if model_node != null and not is_pedestrian:
@@ -568,6 +590,14 @@ func _process(delta: float) -> void:
 	blink_timer += delta
 	if badge_pop < 1.0:
 		badge_pop = minf(1.0, badge_pop + delta * 4.0)
+	if _intro < 1.0:
+		_intro = minf(1.0, _intro + delta / INTRO_TIME)
+	if _shake >= 0.0:
+		_shake += delta
+		if _shake >= SHAKE_TIME: _shake = -1.0
+	# Its number has done its job once the participant is through the junction.
+	if _cleared_emitted and _outro < 1.0 and state != "crashed":
+		_outro = minf(1.0, maxf(0.0, _outro) + delta / OUTRO_TIME)
 
 	if state == "driving":
 		_process_drive(delta)
@@ -651,8 +681,6 @@ static func _generate_badge_texture(status: String, maneuver: String, color_hex:
 	var cache_key := "%s/%s/%s/%d/%s/%s/%s" % [status, maneuver, color_hex, step_num, has_siren, traffic_light, Ui.dark] if status == "normal" \
 		else "%s/%d/%s" % [status, step_num, Ui.dark]
 	if _badge_cache.has(cache_key): return _badge_cache[cache_key]
-	var img := Image.create(256, 208, false, Image.FORMAT_RGBA8)
-	img.fill(Color.TRANSPARENT)
 	var background := Ui.c("card")
 	var ink := Color(color_hex)
 	if status == "solved":
@@ -664,16 +692,7 @@ static func _generate_badge_texture(status: String, maneuver: String, color_hex:
 	elif status == "priority":
 		background = Ui.c("gold")
 		ink = Ui.c("text")
-	# The app's flat card: a single fill, rounded corners and no outline.
-	for y in range(15, 193):
-		for x in range(31, 225):
-			var q := (Vector2(x + 0.5, y + 0.5) - Vector2(128, 104)).abs() - Vector2(68, 60)
-			var d := Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length() + minf(maxf(q.x, q.y), 0.0) - 28.0
-			var alpha := clampf(0.5 - d, 0.0, 1.0)
-			if alpha <= 0.0: continue
-			var colour := background
-			colour.a = alpha
-			img.set_pixel(x, y, colour)
+	var img := _card_image(background)
 	if status == "normal":
 		_draw_maneuver(img, maneuver, ink, arrow_angle)
 		if has_siren: _draw_siren_dot(img)
@@ -692,6 +711,55 @@ static func _generate_badge_texture(status: String, maneuver: String, color_hex:
 	return texture
 
 
+static var _card_cache: Dictionary = {}
+
+
+## The app's flat card: a single fill, rounded corners and no outline, lifted by a soft
+## shadow. Built once per colour; each button copies it and draws its glyph on top.
+static func _card_image(background: Color) -> Image:
+	var key := "%s/%s" % [background.to_html(), Ui.dark]
+	if not _card_cache.has(key):
+		var img := Image.create(256, 208, false, Image.FORMAT_RGBA8)
+		img.fill(Color.TRANSPARENT)
+		var shade := 0.30 if Ui.dark else 0.16
+		for y in range(16, 208):
+			for x in range(22, 234):
+				var d := _card_distance(Vector2(x + 0.5, y + 0.5) - Vector2(0, 5))
+				var a := shade * (1.0 - smoothstep(-5.0, 10.0, d))
+				if a > 0.002: img.set_pixel(x, y, Color(0, 0, 0, a))
+		for y in range(15, 193):
+			for x in range(31, 225):
+				var alpha := clampf(0.5 - _card_distance(Vector2(x + 0.5, y + 0.5)), 0.0, 1.0)
+				if alpha > 0.0: _blend(img, x, y, background, alpha)
+		_card_cache[key] = img
+	return (_card_cache[key] as Image).duplicate()
+
+
+static func _card_distance(p: Vector2) -> float:
+	var q := (p - Vector2(128, 104)).abs() - Vector2(68, 60)
+	return Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length() + minf(maxf(q.x, q.y), 0.0) - 28.0
+
+
+## `col` over the pixel with the given coverage: glyph edges are smooth, not stepped.
+static func _blend(img: Image, x: int, y: int, col: Color, coverage: float) -> void:
+	if coverage <= 0.0 or x < 0 or y < 0 or x >= img.get_width() or y >= img.get_height(): return
+	var a := col.a * minf(coverage, 1.0)
+	if a >= 0.999:
+		img.set_pixel(x, y, col)
+		return
+	var under := img.get_pixel(x, y)
+	var out_a := a + under.a * (1.0 - a)
+	if out_a <= 0.0: return
+	var rgb := (Vector3(col.r, col.g, col.b) * a + Vector3(under.r, under.g, under.b) * under.a * (1.0 - a)) / out_a
+	img.set_pixel(x, y, Color(rgb.x, rgb.y, rgb.z, out_a))
+
+
+static func _disc(img: Image, centre: Vector2, radius: float, col: Color) -> void:
+	for y in range(int(centre.y - radius - 1.0), int(centre.y + radius + 2.0)):
+		for x in range(int(centre.x - radius - 1.0), int(centre.x + radius + 2.0)):
+			_blend(img, x, y, col, clampf(radius - Vector2(x, y).distance_to(centre) + 0.5, 0.0, 1.0))
+
+
 static func _draw_thick_seg(img: Image, p0: Vector2, p1: Vector2, rad: float, col: Color) -> void:
 	var min_x := clampi(int(minf(p0.x, p1.x) - rad - 1.0), 0, 255)
 	var max_x := clampi(int(maxf(p0.x, p1.x) + rad + 1.0), 0, 255)
@@ -707,41 +775,35 @@ static func _draw_thick_seg(img: Image, p0: Vector2, p1: Vector2, rad: float, co
 			var p := Vector2(float(x), yf)
 			var t := clampf((p - p0).dot(v) / l_sq, 0.0, 1.0) if l_sq > 0.0001 else 0.0
 			var d := p.distance_to(p0 + v * t)
-			if d <= rad:
-				img.set_pixel(x, y, col)
+			_blend(img, x, y, col, clampf(rad - d + 0.5, 0.0, 1.0))
 
 
 static func _fill_tri(img: Image, p0: Vector2, p1: Vector2, p2: Vector2, col: Color) -> void:
-	var min_x := clampi(int(minf(p0.x, minf(p1.x, p2.x))), 0, 255)
-	var max_x := clampi(int(maxf(p0.x, maxf(p1.x, p2.x))), 0, 255)
-	var min_y := clampi(int(minf(p0.y, minf(p1.y, p2.y))), 0, 255)
-	var max_y := clampi(int(maxf(p0.y, maxf(p1.y, p2.y))), 0, 255)
-
-	var denom := (p1.y - p2.y) * (p0.x - p2.x) + (p2.x - p1.x) * (p0.y - p2.y)
-	if absf(denom) < 0.0001: return
-
+	var min_x := clampi(int(minf(p0.x, minf(p1.x, p2.x))) - 1, 0, 255)
+	var max_x := clampi(int(maxf(p0.x, maxf(p1.x, p2.x))) + 1, 0, 255)
+	var min_y := clampi(int(minf(p0.y, minf(p1.y, p2.y))) - 1, 0, 255)
+	var max_y := clampi(int(maxf(p0.y, maxf(p1.y, p2.y))) + 1, 0, 255)
+	# Inward edge normals: the pixel's distance inside the nearest edge is its coverage.
+	var corners := [p0, p1, p2]
+	var edges: Array = []
+	for i in 3:
+		var a: Vector2 = corners[i]
+		var b: Vector2 = corners[(i + 1) % 3]
+		var n := Vector2(-(b - a).y, (b - a).x).normalized()
+		if n.dot(corners[(i + 2) % 3] - a) < 0.0: n = -n
+		edges.append([a, n])
 	for y in range(min_y, max_y + 1):
-		var yf := float(y)
 		for x in range(min_x, max_x + 1):
-			var xf := float(x)
-			var a := ((p1.y - p2.y) * (xf - p2.x) + (p2.x - p1.x) * (yf - p2.y)) / denom
-			var b := ((p2.y - p0.y) * (xf - p2.x) + (p0.x - p2.x) * (yf - p2.y)) / denom
-			var c := 1.0 - a - b
-			if a >= 0.0 and b >= 0.0 and c >= 0.0:
-				img.set_pixel(x, y, col)
+			var p := Vector2(x, y)
+			var inside := INF
+			for e: Array in edges:
+				inside = minf(inside, (p - (e[0] as Vector2)).dot(e[1]))
+			_blend(img, x, y, col, clampf(inside + 0.5, 0.0, 1.0))
 
 
 static func _draw_siren_dot(img: Image) -> void:
-	var sx := 194.0
-	var sy := 42.0
-	var sr := 16.0
-	for y in range(int(sy - sr - 2), int(sy + sr + 3)):
-		for x in range(int(sx - sr - 2), int(sx + sr + 3)):
-			var d := sqrt(pow(x - sx, 2) + pow(y - sy, 2))
-			if d <= sr:
-				img.set_pixel(x, y, Color("#0574F8"))
-			elif d <= sr + 2.5:
-				img.set_pixel(x, y, Color.WHITE)
+	_disc(img, Vector2(194, 42), 18.5, Color.WHITE)
+	_disc(img, Vector2(194, 42), 16.0, Color("#0574F8"))
 
 
 static func _draw_traffic_light_badge(img: Image, tl: Dictionary) -> void:
@@ -754,10 +816,7 @@ static func _draw_traffic_light_badge(img: Image, tl: Dictionary) -> void:
 	var ly := 44.0
 	var lr := 18.0
 	var sig_col := Color("#EF4444") if is_red else (Color("#22C55E") if is_green else Color("#F59E0B"))
-	for y in range(int(ly - lr), int(ly + lr + 1)):
-		for x in range(int(lx - lr), int(lx + lr + 1)):
-			if sqrt(pow(x - lx, 2) + pow(y - ly, 2)) <= lr:
-				img.set_pixel(x, y, sig_col)
+	_disc(img, Vector2(lx, ly), lr, sig_col)
 
 	# Keep the independent supplementary section readable next to the disc.
 	if has_arrow and is_red:
@@ -823,11 +882,7 @@ static func _draw_maneuver(img: Image, maneuver: String, col: Color, arrow_angle
 			var t3 := tip_pt - tangent * 10.0 - normal * 12.0
 			_fill_tri(img, _rot_pt(t1, arrow_angle), _rot_pt(t2, arrow_angle), _rot_pt(t3, arrow_angle), col)
 		"cross":
-			var hx := 128.0; var hy := 68.0; var hr := 13.0
-			for y in range(int(hy - hr), int(hy + hr + 1)):
-				for x in range(int(hx - hr), int(hx + hr + 1)):
-					if sqrt(pow(x - hx, 2) + pow(y - hy, 2)) <= hr:
-						img.set_pixel(x, y, col)
+			_disc(img, Vector2(128, 68), 13.0, col)
 			_draw_thick_seg(img, Vector2(128, 82), Vector2(128, 112), 6.5, col)
 			_draw_thick_seg(img, Vector2(128, 112), Vector2(112, 144), 5.5, col)
 			_draw_thick_seg(img, Vector2(128, 112), Vector2(144, 144), 5.5, col)
@@ -842,11 +897,7 @@ static func _draw_cross(img: Image, col: Color) -> void:
 
 static func _draw_exclamation(img: Image, col: Color) -> void:
 	_draw_thick_seg(img, Vector2(128, 64), Vector2(128, 112), 8.0, col)
-	var dy := 134.0; var dx := 128.0; var dr := 9.0
-	for y in range(int(dy - dr), int(dy + dr + 1)):
-		for x in range(int(dx - dr), int(dx + dr + 1)):
-			if sqrt(pow(x - dx, 2) + pow(y - dy, 2)) <= dr:
-				img.set_pixel(x, y, col)
+	_disc(img, Vector2(128, 134), 9.0, col)
 
 
 func footprint() -> Dictionary:
