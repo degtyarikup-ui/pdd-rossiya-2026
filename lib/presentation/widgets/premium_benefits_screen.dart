@@ -70,202 +70,232 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: Colors.transparent,
-        systemNavigationBarColor: AppColors.accent,
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.accent,
-        body: SafeArea(
-          top: false,
-          bottom: false,
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      key: const ValueKey('premium-benefits-scroll'),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 600),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final width = constraints.maxWidth;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _BenefitsHeader(
-                                    width: width,
-                                    entrance: _entrance,
-                                    statistics: _statistics,
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      AppDimensions.screenPadding,
-                                      46,
-                                      AppDimensions.screenPadding,
-                                      24,
-                                    ),
-                                    child: Column(
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(
+          LogicalKeyboardKey.escape,
+          includeRepeats: false,
+        ): () {
+          if (!_showingPlans && ModalRoute.of(context)?.isCurrent != false) {
+            Navigator.of(context).maybePop();
+          }
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light.copyWith(
+            statusBarColor: Colors.transparent,
+            systemNavigationBarColor: AppColors.accent,
+          ),
+          child: Scaffold(
+            backgroundColor: AppColors.accent,
+            body: SafeArea(
+              top: false,
+              bottom: false,
+              child: LayoutBuilder(
+                builder: (context, pageConstraints) => Stack(
+                  children: [
+                    Column(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            key: const ValueKey('premium-benefits-scroll'),
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 600,
+                                ),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final width = constraints.maxWidth;
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
                                       children: [
-                                        PremiumReveal(
-                                          key: const ValueKey(
-                                            'premium-reveal-games',
-                                          ),
-                                          progress: _entrance,
-                                          begin: 0.16,
-                                          end: 0.56,
-                                          child: _Benefit(
-                                            asset: 'feature_games.svg',
-                                            title:
-                                                l10n.premiumBenefitGamesTitle,
-                                            inlineDetail: true,
-                                            detail:
-                                                l10n.premiumBenefitGamesDetail,
-                                          ),
+                                        _BenefitsHeader(
+                                          width: width,
+                                          entrance: _entrance,
+                                          statistics: _statistics,
                                         ),
-                                        const SizedBox(height: 24),
-                                        PremiumReveal(
-                                          key: const ValueKey(
-                                            'premium-reveal-ai',
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            AppDimensions.screenPadding,
+                                            46,
+                                            AppDimensions.screenPadding,
+                                            24,
                                           ),
-                                          progress: _entrance,
-                                          begin: 0.25,
-                                          end: 0.65,
-                                          child: _Benefit(
-                                            asset: 'feature_ai.svg',
-                                            title: l10n.premiumBenefitAiTitle,
-                                            detail: l10n.premiumBenefitAiDetail,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 24),
-                                        PremiumReveal(
-                                          key: const ValueKey(
-                                            'premium-reveal-voice',
-                                          ),
-                                          progress: _entrance,
-                                          begin: 0.34,
-                                          end: 0.74,
-                                          child: _Benefit(
-                                            asset: 'feature_voice.svg',
-                                            title:
-                                                l10n.premiumBenefitVoiceTitle,
-                                            detail:
-                                                l10n.premiumBenefitVoiceDetail,
-                                            voiceIcon: true,
-                                            emphasizeDetail: true,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 24),
-                                        PremiumReveal(
-                                          key: const ValueKey(
-                                            'premium-reveal-feed',
-                                          ),
-                                          progress: _entrance,
-                                          begin: 0.43,
-                                          end: 0.83,
-                                          child: _Benefit(
-                                            asset: 'feature_feed.svg',
-                                            title: l10n.premiumBenefitFeedTitle,
-                                            detail:
-                                                l10n.premiumBenefitFeedDetail,
-                                            emphasizeDetail: true,
+                                          child: Column(
+                                            children: [
+                                              PremiumReveal(
+                                                key: const ValueKey(
+                                                  'premium-reveal-games',
+                                                ),
+                                                progress: _entrance,
+                                                begin: 0.16,
+                                                end: 0.56,
+                                                child: _Benefit(
+                                                  asset: 'feature_games.svg',
+                                                  title: l10n
+                                                      .premiumBenefitGamesTitle,
+                                                  inlineDetail: true,
+                                                  detail: l10n
+                                                      .premiumBenefitGamesDetail,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 24),
+                                              PremiumReveal(
+                                                key: const ValueKey(
+                                                  'premium-reveal-ai',
+                                                ),
+                                                progress: _entrance,
+                                                begin: 0.25,
+                                                end: 0.65,
+                                                child: _Benefit(
+                                                  asset: 'feature_ai.svg',
+                                                  title: l10n
+                                                      .premiumBenefitAiTitle,
+                                                  detail: l10n
+                                                      .premiumBenefitAiDetail,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 24),
+                                              PremiumReveal(
+                                                key: const ValueKey(
+                                                  'premium-reveal-voice',
+                                                ),
+                                                progress: _entrance,
+                                                begin: 0.34,
+                                                end: 0.74,
+                                                child: _Benefit(
+                                                  asset: 'feature_voice.svg',
+                                                  title: l10n
+                                                      .premiumBenefitVoiceTitle,
+                                                  detail: l10n
+                                                      .premiumBenefitVoiceDetail,
+                                                  voiceIcon: true,
+                                                  emphasizeDetail: true,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 24),
+                                              PremiumReveal(
+                                                key: const ValueKey(
+                                                  'premium-reveal-feed',
+                                                ),
+                                                progress: _entrance,
+                                                begin: 0.43,
+                                                end: 0.83,
+                                                child: _Benefit(
+                                                  asset: 'feature_feed.svg',
+                                                  title: l10n
+                                                      .premiumBenefitFeedTitle,
+                                                  detail: l10n
+                                                      .premiumBenefitFeedDetail,
+                                                  emphasizeDetail: true,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-                  SafeArea(
-                    top: false,
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 600),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppDimensions.screenPadding,
-                            12,
-                            AppDimensions.screenPadding,
-                            12,
-                          ),
-                          child: PremiumReveal(
-                            key: const ValueKey('premium-reveal-cta'),
-                            progress: _entrance,
-                            begin: .42,
-                            end: .9,
-                            distance: 8,
-                            child: PremiumPressFeedback(
-                              enabled: !_showingPlans,
-                              child: ElevatedButton(
-                                key: const ValueKey('premium-show-plans'),
-                                onPressed: _showingPlans ? null : _showPlans,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.white,
-                                  foregroundColor: AppColors.accent,
-                                  disabledBackgroundColor: AppColors.white,
-                                  disabledForegroundColor: AppColors.accent,
-                                  minimumSize: const Size(double.infinity, 56),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 16,
-                                  ),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      AppDimensions.buttonRadius,
-                                    ),
-                                  ),
+                        SafeArea(
+                          top: false,
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 600),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  AppDimensions.screenPadding,
+                                  12,
+                                  AppDimensions.screenPadding,
+                                  12,
                                 ),
-                                child: Text(
-                                  l10n.paywallSubscribe,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w600,
+                                child: PremiumReveal(
+                                  key: const ValueKey('premium-reveal-cta'),
+                                  progress: _entrance,
+                                  begin: .42,
+                                  end: .9,
+                                  distance: 8,
+                                  child: PremiumPressFeedback(
+                                    enabled: !_showingPlans,
+                                    child: ElevatedButton(
+                                      key: const ValueKey('premium-show-plans'),
+                                      onPressed: _showingPlans
+                                          ? null
+                                          : _showPlans,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.white,
+                                        foregroundColor: AppColors.accent,
+                                        disabledBackgroundColor:
+                                            AppColors.white,
+                                        disabledForegroundColor:
+                                            AppColors.accent,
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          56,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 16,
+                                        ),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            AppDimensions.buttonRadius,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        l10n.paywallSubscribe,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
+                      ],
+                    ),
+                    Positioned(
+                      top: MediaQuery.paddingOf(context).top + 12,
+                      left: math.max(
+                        AppDimensions.screenPadding,
+                        (pageConstraints.maxWidth - 600) / 2 +
+                            AppDimensions.screenPadding,
+                      ),
+                      child: PremiumPressFeedback(
+                        pressedScale: .94,
+                        child: Tooltip(
+                          message: MaterialLocalizations.of(
+                            context,
+                          ).closeButtonTooltip,
+                          child: AppChromeIconButton(
+                            key: const ValueKey('premium-close-benefits'),
+                            icon: Icons.close_rounded,
+                            onTap: () => Navigator.of(context).pop(),
+                            backgroundColor: AppColors.primaryText,
+                            iconColor: AppColors.white,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              Positioned(
-                top: MediaQuery.paddingOf(context).top + 12,
-                left: math.max(
-                  AppDimensions.screenPadding,
-                  (MediaQuery.sizeOf(context).width - 600) / 2 +
-                      AppDimensions.screenPadding,
-                ),
-                child: PremiumPressFeedback(
-                  pressedScale: .94,
-                  child: Tooltip(
-                    message: MaterialLocalizations.of(
-                      context,
-                    ).closeButtonTooltip,
-                    child: AppChromeIconButton(
-                      key: const ValueKey('premium-close-benefits'),
-                      icon: Icons.close_rounded,
-                      onTap: () => Navigator.of(context).pop(),
-                      backgroundColor: AppColors.primaryText,
-                      iconColor: AppColors.white,
-                    ),
-                  ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),

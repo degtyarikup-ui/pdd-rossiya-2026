@@ -4331,4 +4331,12 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get inboxOpen => 'Ашу';
+
+  @override
+  String get trainingKeyboardHint =>
+      'Сандар — жауап · Enter — растау немесе жалғастыру · ←/→ — сұрақтар · Esc — артқа';
+
+  @override
+  String get examKeyboardHint =>
+      'Сандар — жауап · ←/→ — сұрақтар · Esc — артқа';
 }

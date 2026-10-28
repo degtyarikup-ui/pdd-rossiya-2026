@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 
 import 'dart:async';
@@ -359,204 +360,226 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
       ),
     );
 
-    return PopScope<bool>(
-      canPop: !_isLoading,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 600,
-          maxHeight: MediaQuery.sizeOf(context).height * 0.92,
-        ),
-        child: Material(
-          color: colors.cardBackground,
-          clipBehavior: Clip.antiAlias,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppDimensions.radiusExtraLarge),
-          ),
-          child: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppDimensions.screenPadding,
-                4,
-                AppDimensions.screenPadding,
-                AppDimensions.spacingXXL,
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(
+          LogicalKeyboardKey.escape,
+          includeRepeats: false,
+        ): () {
+          if (!_isLoading && ModalRoute.of(context)?.isCurrent != false) {
+            Navigator.of(context).maybePop();
+          }
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: PopScope<bool>(
+          canPop: !_isLoading,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 600,
+              maxHeight: MediaQuery.sizeOf(context).height * 0.92,
+            ),
+            child: Material(
+              color: colors.cardBackground,
+              clipBehavior: Clip.antiAlias,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppDimensions.radiusExtraLarge),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onVerticalDragEnd: _isLoading
-                        ? null
-                        : (details) {
-                            if ((details.primaryVelocity ?? 0) > 250) {
-                              Navigator.of(context).maybePop();
-                            }
-                          },
-                    child: SizedBox(
-                      height: 28,
-                      child: Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: colors.primaryText.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                    ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.screenPadding,
+                    4,
+                    AppDimensions.screenPadding,
+                    AppDimensions.spacingXXL,
                   ),
-                  if (largeText) ...[
-                    Align(alignment: Alignment.centerRight, child: closeButton),
-                    title,
-                  ] else
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: title,
-                          ),
-                        ),
-                        const SizedBox(width: AppDimensions.spacingS),
-                        closeButton,
-                      ],
-                    ),
-                  const SizedBox(height: AppDimensions.spacingXXL),
-                  if (_androidModes.length > 1) ...[
-                    _buildMethodSelector(colors),
-                    const SizedBox(height: AppDimensions.spacingL),
-                  ],
-                  _buildTierCard(
-                    tier: PremiumTier.threeMonths,
-                    title: kIsWeb || _androidSbp
-                        ? appL10n.webQuarter
-                        : appL10n.paywallPlanQuarter,
-                    price: _getPrice(PremiumTier.threeMonths),
-                    period: kIsWeb || _androidSbp
-                        ? null
-                        : appL10n.paywallEveryQuarter,
-                    badge: appL10n.paywallBadgeBest,
-                    colors: colors,
-                  ),
-                  if (!kIsWeb || sbpPay) ...[
-                    const SizedBox(height: AppDimensions.spacingM),
-                    _buildTierCard(
-                      tier: PremiumTier.weekly,
-                      title: kIsWeb || _androidSbp
-                          ? appL10n.webWeek
-                          : appL10n.paywallPlanWeek,
-                      price: _getPrice(PremiumTier.weekly),
-                      period: kIsWeb || _androidSbp
-                          ? null
-                          : appL10n.paywallEveryWeek,
-                      colors: colors,
-                    ),
-                  ],
-                  const SizedBox(height: AppDimensions.spacingXXL),
-                  PremiumPressFeedback(
-                    enabled:
-                        !_isLoading &&
-                        !_androidUnresolved &&
-                        _androidMode != PaymentMode.unavailable &&
-                        !(kIsWeb && !sbpPay),
-                    child: ElevatedButton(
-                      key: const ValueKey('premium-plans-purchase'),
-                      onPressed:
-                          _isLoading ||
-                              _androidUnresolved ||
-                              _androidMode == PaymentMode.unavailable ||
-                              (kIsWeb && !sbpPay)
-                          ? null
-                          : sbpPay
-                          ? _handleSbpPayment
-                          : _handlePurchase,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.accent,
-                        foregroundColor: AppColors.white,
-                        elevation: 0,
-                        minimumSize: const Size.fromHeight(56),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppDimensions.spacingL,
-                          vertical: AppDimensions.spacingL,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.buttonRadius,
-                          ),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.white,
-                              ),
-                            )
-                          : Text(
-                              buttonLabel,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontFamily: 'Onest',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                height: 1.25,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onVerticalDragEnd: _isLoading
+                            ? null
+                            : (details) {
+                                if ((details.primaryVelocity ?? 0) > 250) {
+                                  Navigator.of(context).maybePop();
+                                }
+                              },
+                        child: SizedBox(
+                          height: 28,
+                          child: Center(
+                            child: Container(
+                              width: 36,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: colors.primaryText.withValues(
+                                  alpha: 0.18,
+                                ),
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.spacingL),
-                  // Renewal or a one-off payment is visible alongside the CTA.
-                  Text(
-                    kIsWeb
-                        ? (sbpPay ? appL10n.webPayInfo : appL10n.webPaymentInfo)
-                        : (sbpPay
-                              ? appL10n.sbpPayInfoApp
-                              : appL10n.paywallRenewal(store)),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.45,
-                      color: detailColor,
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.spacingS),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: AppDimensions.spacingXS,
-                    children: [
-                      if (sbpPay)
-                        _buildLink(
-                          appL10n.webPayTariffs,
-                          () => _open(CountryConfig.current.tariffsUrl),
-                          colors,
+                          ),
                         ),
-                      if (CountryConfig.current.termsUrl.isNotEmpty)
-                        _buildLink(
-                          appL10n.paywallTerms,
-                          () => _open(CountryConfig.current.termsUrl),
-                          colors,
+                      ),
+                      if (largeText) ...[
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: closeButton,
                         ),
-                      if (CountryConfig.current.privacyUrl.isNotEmpty)
-                        _buildLink(
-                          appL10n.paywallPrivacy,
-                          () => _open(CountryConfig.current.privacyUrl),
-                          colors,
+                        title,
+                      ] else
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: title,
+                              ),
+                            ),
+                            const SizedBox(width: AppDimensions.spacingS),
+                            closeButton,
+                          ],
                         ),
-                      if (!kIsWeb && !sbpPay)
-                        _buildLink(
-                          appL10n.paywallRestore,
-                          _handleRestore,
-                          colors,
+                      const SizedBox(height: AppDimensions.spacingXXL),
+                      if (_androidModes.length > 1) ...[
+                        _buildMethodSelector(colors),
+                        const SizedBox(height: AppDimensions.spacingL),
+                      ],
+                      _buildTierCard(
+                        tier: PremiumTier.threeMonths,
+                        title: kIsWeb || _androidSbp
+                            ? appL10n.webQuarter
+                            : appL10n.paywallPlanQuarter,
+                        price: _getPrice(PremiumTier.threeMonths),
+                        period: kIsWeb || _androidSbp
+                            ? null
+                            : appL10n.paywallEveryQuarter,
+                        badge: appL10n.paywallBadgeBest,
+                        colors: colors,
+                      ),
+                      if (!kIsWeb || sbpPay) ...[
+                        const SizedBox(height: AppDimensions.spacingM),
+                        _buildTierCard(
+                          tier: PremiumTier.weekly,
+                          title: kIsWeb || _androidSbp
+                              ? appL10n.webWeek
+                              : appL10n.paywallPlanWeek,
+                          price: _getPrice(PremiumTier.weekly),
+                          period: kIsWeb || _androidSbp
+                              ? null
+                              : appL10n.paywallEveryWeek,
+                          colors: colors,
                         ),
+                      ],
+                      const SizedBox(height: AppDimensions.spacingXXL),
+                      PremiumPressFeedback(
+                        enabled:
+                            !_isLoading &&
+                            !_androidUnresolved &&
+                            _androidMode != PaymentMode.unavailable &&
+                            !(kIsWeb && !sbpPay),
+                        child: ElevatedButton(
+                          key: const ValueKey('premium-plans-purchase'),
+                          onPressed:
+                              _isLoading ||
+                                  _androidUnresolved ||
+                                  _androidMode == PaymentMode.unavailable ||
+                                  (kIsWeb && !sbpPay)
+                              ? null
+                              : sbpPay
+                              ? _handleSbpPayment
+                              : _handlePurchase,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.accent,
+                            foregroundColor: AppColors.white,
+                            elevation: 0,
+                            minimumSize: const Size.fromHeight(56),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppDimensions.spacingL,
+                              vertical: AppDimensions.spacingL,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.buttonRadius,
+                              ),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.white,
+                                  ),
+                                )
+                              : Text(
+                                  buttonLabel,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontFamily: 'Onest',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.25,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: AppDimensions.spacingL),
+                      // Renewal or a one-off payment is visible alongside the CTA.
+                      Text(
+                        kIsWeb
+                            ? (sbpPay
+                                  ? appL10n.webPayInfo
+                                  : appL10n.webPaymentInfo)
+                            : (sbpPay
+                                  ? appL10n.sbpPayInfoApp
+                                  : appL10n.paywallRenewal(store)),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.45,
+                          color: detailColor,
+                        ),
+                      ),
+                      const SizedBox(height: AppDimensions.spacingS),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: AppDimensions.spacingXS,
+                        children: [
+                          if (sbpPay)
+                            _buildLink(
+                              appL10n.webPayTariffs,
+                              () => _open(CountryConfig.current.tariffsUrl),
+                              colors,
+                            ),
+                          if (CountryConfig.current.termsUrl.isNotEmpty)
+                            _buildLink(
+                              appL10n.paywallTerms,
+                              () => _open(CountryConfig.current.termsUrl),
+                              colors,
+                            ),
+                          if (CountryConfig.current.privacyUrl.isNotEmpty)
+                            _buildLink(
+                              appL10n.paywallPrivacy,
+                              () => _open(CountryConfig.current.privacyUrl),
+                              colors,
+                            ),
+                          if (!kIsWeb && !sbpPay)
+                            _buildLink(
+                              appL10n.paywallRestore,
+                              _handleRestore,
+                              colors,
+                            ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

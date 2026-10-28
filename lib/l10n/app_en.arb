@@ -1506,5 +1506,7 @@
   "inboxSbpTitle": "Pay for Premium with SBP",
   "inboxSbpBody": "Pay via the Faster Payments System in your bank app: no card and no auto-renewal.",
   "inboxSbpAction": "Choose a plan",
-  "inboxOpen": "Open"
+  "inboxOpen": "Open",
+  "trainingKeyboardHint": "Numbers — answer · Enter — confirm or continue · ←/→ — questions · Esc — back",
+  "examKeyboardHint": "Numbers — answer · ←/→ — questions · Esc — back"
 }

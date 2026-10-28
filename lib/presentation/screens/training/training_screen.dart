@@ -1,3 +1,4 @@
+import 'package:pdd_app/presentation/widgets/question_keyboard_shortcuts.dart';
 import 'package:pdd_app/presentation/widgets/question_content_layout.dart';
 import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:pdd_app/data/services/achievement_award_service.dart';
@@ -523,51 +524,70 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         if (didPop) return;
         _stopVoiceAndPop(result);
       },
-      child: AppContentFrame(
-        maxWidth: AppContentFrame.catalogueWidth,
-        child: Scaffold(
-          backgroundColor: colors.background,
-          body: SafeArea(
-            child: Column(
-              children: [
-                _buildAppBar(context),
-                SizedBox(
-                  height: 36,
-                  width: double.infinity,
-                  child: ClipRect(child: _buildQuestionNumbers(context)),
-                ),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      PageView.builder(
-                        controller: _pageController,
-                        itemCount: _unlockedCount,
-                        onPageChanged: _onQuestionPageChanged,
-                        itemBuilder: (context, pageIndex) {
-                          return _buildTrainingQuestionPage(
-                            context,
-                            pageIndex,
-                            requireConfirmation:
-                                appSettings.confirmAnswerEnabled,
-                          );
-                        },
-                      ),
-                      if (ref.watch(isPremiumProvider))
-                        Positioned(
-                          right: AppDimensions.screenPadding,
-                          bottom: AppDimensions.screenPadding,
-                          child: _buildAiFloatingButton(context, colors),
-                        ),
-                    ],
+      child: QuestionKeyboardShortcuts(
+        answerCount: answers.length,
+        onAnswer: (index) => _selectAnswer(
+          index,
+          requireConfirmation: appSettings.confirmAnswerEnabled,
+        ),
+        onPrevious: () => _goToQuestion(_currentIndex - 1),
+        onNext: () => _goToQuestion(_currentIndex + 1),
+        onExit: _stopVoiceAndPop,
+        onConfirm: () {
+          if (_leaving || _finishing) return;
+          if (_isAnswerSubmitted) {
+            _nextQuestion();
+          } else if (_selectedAnswerIndex != null) {
+            _submitSelectedAnswer();
+          }
+        },
+        child: AppContentFrame(
+          maxWidth: AppContentFrame.catalogueWidth,
+          child: Scaffold(
+            backgroundColor: colors.background,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  _buildAppBar(context),
+                  SizedBox(
+                    height: 36,
+                    width: double.infinity,
+                    child: ClipRect(child: _buildQuestionNumbers(context)),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        PageView.builder(
+                          controller: _pageController,
+                          itemCount: _unlockedCount,
+                          onPageChanged: _onQuestionPageChanged,
+                          itemBuilder: (context, pageIndex) {
+                            return _buildTrainingQuestionPage(
+                              context,
+                              pageIndex,
+                              requireConfirmation:
+                                  appSettings.confirmAnswerEnabled,
+                            );
+                          },
+                        ),
+                        if (ref.watch(isPremiumProvider))
+                          Positioned(
+                            right: AppDimensions.screenPadding,
+                            bottom: AppDimensions.screenPadding,
+                            child: _buildAiFloatingButton(context, colors),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const QuestionKeyboardHint(training: true),
+                ],
+              ),
             ),
-          ),
-          bottomNavigationBar: _buildBottomBar(
-            context,
-            requireConfirmation: appSettings.confirmAnswerEnabled,
-            hasHint: hasHint,
+            bottomNavigationBar: _buildBottomBar(
+              context,
+              requireConfirmation: appSettings.confirmAnswerEnabled,
+              hasHint: hasHint,
+            ),
           ),
         ),
       ),

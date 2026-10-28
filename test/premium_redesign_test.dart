@@ -515,6 +515,14 @@ void main() {
     expect(find.byType(PremiumBenefitsScreen), findsOneWidget);
     expect(completed, isFalse);
 
+    await tester.tap(find.byKey(_showPlans));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(PremiumPlansSheet), findsNothing);
+    expect(find.byType(PremiumBenefitsScreen), findsOneWidget);
+    expect(completed, isFalse);
+
     await tester.tap(find.byKey(const ValueKey('premium-close-benefits')));
     await tester.pumpAndSettle();
     expect(find.byType(PremiumBenefitsScreen), findsNothing);

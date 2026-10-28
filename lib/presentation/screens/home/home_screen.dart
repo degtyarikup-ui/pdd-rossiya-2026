@@ -1,3 +1,4 @@
+import 'package:pdd_app/presentation/widgets/app_navigation_shell.dart';
 import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -376,6 +377,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     const ProfileScreen(),
   ];
 
+  void _selectTab(int index) {
+    if (index == _currentIndex) return;
+    TtsService.instance.stop();
+    HapticFeedbackHelper.select();
+    setState(() => _currentIndex = index);
+    if (index == 0) unawaited(_checkNotices());
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -394,9 +403,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         systemNavigationBarDividerColor: Colors.transparent,
         systemNavigationBarContrastEnforced: false,
       ),
-      child: Scaffold(
-        backgroundColor: colors.homeScreenBackground,
-        body: Builder(
+      child: AppNavigationShell(
+        selectedIndex: _currentIndex,
+        onSelected: _selectTab,
+        fullscreen: ref.watch(fullscreenProvider),
+        items: [
+          (
+            icon: Icons.menu_book_outlined,
+            selectedIcon: Icons.menu_book,
+            label: appL10n.training,
+          ),
+          (
+            icon: Icons.sports_esports_outlined,
+            selectedIcon: Icons.sports_esports_rounded,
+            label: appL10n.navGames,
+          ),
+          (
+            icon: Icons.style_outlined,
+            selectedIcon: Icons.style_rounded,
+            label: appL10n.video,
+          ),
+          (
+            icon: Icons.person_outline_rounded,
+            selectedIcon: Icons.person_rounded,
+            label: appL10n.profile,
+          ),
+        ],
+        child: Builder(
           builder: (context) {
             if (_currentIndex == _gameTab) _gameVisited = true;
             final screens = _screens;
@@ -411,50 +444,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             );
           },
         ),
-        bottomNavigationBar: ref.watch(fullscreenProvider)
-            ? null
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(height: 1, color: colors.divider),
-                  AppContentFrame(
-                    child: NavigationBar(
-                      selectedIndex: _currentIndex,
-                      onDestinationSelected: (index) {
-                        if (index == _currentIndex) return;
-                        TtsService.instance.stop();
-                        HapticFeedbackHelper.select();
-                        setState(() => _currentIndex = index);
-                        if (index == 0) unawaited(_checkNotices());
-                      },
-                      destinations: [
-                        NavigationDestination(
-                          icon: const Icon(Icons.menu_book_outlined),
-                          selectedIcon: const Icon(Icons.menu_book),
-                          label: appL10n.training,
-                        ),
-                        NavigationDestination(
-                          icon: const Icon(Icons.sports_esports_outlined),
-                          selectedIcon: const Icon(
-                            Icons.sports_esports_rounded,
-                          ),
-                          label: appL10n.navGames,
-                        ),
-                        NavigationDestination(
-                          icon: const Icon(Icons.style_outlined),
-                          selectedIcon: const Icon(Icons.style_rounded),
-                          label: appL10n.video,
-                        ),
-                        NavigationDestination(
-                          icon: const Icon(Icons.person_outline_rounded),
-                          selectedIcon: const Icon(Icons.person_rounded),
-                          label: appL10n.profile,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
       ),
     );
   }

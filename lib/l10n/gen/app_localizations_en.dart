@@ -4336,4 +4336,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inboxOpen => 'Open';
+
+  @override
+  String get trainingKeyboardHint =>
+      'Numbers — answer · Enter — confirm or continue · ←/→ — questions · Esc — back';
+
+  @override
+  String get examKeyboardHint =>
+      'Numbers — answer · ←/→ — questions · Esc — back';
 }

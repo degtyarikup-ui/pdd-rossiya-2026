@@ -7269,6 +7269,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Открыть'**
   String get inboxOpen;
+
+  /// No description provided for @trainingKeyboardHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цифры — ответ · Enter — подтвердить или продолжить · ←/→ — вопросы · Esc — назад'**
+  String get trainingKeyboardHint;
+
+  /// No description provided for @examKeyboardHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цифры — ответ · ←/→ — вопросы · Esc — назад'**
+  String get examKeyboardHint;
 }
 
 class _AppLocalizationsDelegate

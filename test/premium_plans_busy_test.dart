@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -197,6 +198,8 @@ void main() {
             );
 
             await tester.binding.handlePopRoute();
+            await tester.pump();
+            await tester.sendKeyEvent(LogicalKeyboardKey.escape);
             await tester.pump();
             await tester.tapAt(const Offset(2, 2));
             await tester.pump();

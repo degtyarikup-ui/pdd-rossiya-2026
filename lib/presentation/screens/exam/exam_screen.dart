@@ -1,3 +1,4 @@
+import 'package:pdd_app/presentation/widgets/question_keyboard_shortcuts.dart';
 import 'package:pdd_app/presentation/widgets/question_content_layout.dart';
 import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:pdd_app/data/services/achievement_award_service.dart';
@@ -727,142 +728,150 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
         if (didPop) return;
         _confirmLeaveExam();
       },
-      child: AppContentFrame(
-        maxWidth: AppContentFrame.catalogueWidth,
-        child: Scaffold(
-          backgroundColor: colors.background,
-          body: SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.screenPadding,
-                    vertical: AppDimensions.spacingM,
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final closeButton = AppChromeIconButton(
-                        icon: Icons.close_rounded,
-                        onTap: _confirmLeaveExam,
-                      );
-                      final title = Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _additionalPhase
-                                  ? appL10n.examAdditionalTitle
-                                  : appL10n.exam,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: colors.primaryText,
+      child: QuestionKeyboardShortcuts(
+        answerCount: answers.length,
+        onAnswer: (index) => _selectAnswer(index),
+        onPrevious: () => _goToQuestion(_currentIndex - 1),
+        onNext: () => _goToQuestion(_currentIndex + 1),
+        onExit: _confirmLeaveExam,
+        child: AppContentFrame(
+          maxWidth: AppContentFrame.catalogueWidth,
+          child: Scaffold(
+            backgroundColor: colors.background,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppDimensions.screenPadding,
+                      vertical: AppDimensions.spacingM,
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final closeButton = AppChromeIconButton(
+                          icon: Icons.close_rounded,
+                          onTap: _confirmLeaveExam,
+                        );
+                        final title = Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _additionalPhase
+                                    ? appL10n.examAdditionalTitle
+                                    : appL10n.exam,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.primaryText,
+                                ),
                               ),
-                            ),
-                            Text(
-                              _currentIndex >= _mainCount
-                                  ? appL10n.examAdditionalQuestionOfTotal(
-                                      _currentIndex - _mainCount + 1,
-                                      _additionalQuestionsCount,
-                                    )
-                                  : appL10n.questionOfTotal(
-                                      _currentIndex + 1,
-                                      _examQuestions.length,
-                                    ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: colors.secondaryText,
+                              Text(
+                                _currentIndex >= _mainCount
+                                    ? appL10n.examAdditionalQuestionOfTotal(
+                                        _currentIndex - _mainCount + 1,
+                                        _additionalQuestionsCount,
+                                      )
+                                    : appL10n.questionOfTotal(
+                                        _currentIndex + 1,
+                                        _examQuestions.length,
+                                      ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colors.secondaryText,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                      final timer = Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _remainingTime < 120
-                              ? colors.redLight
-                              : colors.accentSurface10,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.timer_outlined,
-                              size: 18,
-                              color: _remainingTime < 120
-                                  ? colors.red
-                                  : colors.accent,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _formatTime(_remainingTime),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                            ],
+                          ),
+                        );
+                        final timer = Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _remainingTime < 120
+                                ? colors.redLight
+                                : colors.accentSurface10,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.timer_outlined,
+                                size: 18,
                                 color: _remainingTime < 120
                                     ? colors.red
                                     : colors.accent,
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                      const voice = QuestionVoiceToggle();
-                      const gap = SizedBox(width: AppDimensions.spacingM);
-                      if (constraints.maxWidth < 400 &&
-                          MediaQuery.textScalerOf(context).scale(16) > 22) {
-                        return Column(
+                              const SizedBox(width: 6),
+                              Text(
+                                _formatTime(_remainingTime),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _remainingTime < 120
+                                      ? colors.red
+                                      : colors.accent,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        const voice = QuestionVoiceToggle();
+                        const gap = SizedBox(width: AppDimensions.spacingM);
+                        if (constraints.maxWidth < 400 &&
+                            MediaQuery.textScalerOf(context).scale(16) > 22) {
+                          return Column(
+                            children: [
+                              Row(
+                                children: [closeButton, gap, title, gap, voice],
+                              ),
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: timer,
+                              ),
+                            ],
+                          );
+                        }
+                        return Row(
                           children: [
-                            Row(
-                              children: [closeButton, gap, title, gap, voice],
-                            ),
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: timer,
-                            ),
+                            closeButton,
+                            gap,
+                            title,
+                            gap,
+                            timer,
+                            gap,
+                            voice,
                           ],
                         );
-                      }
-                      return Row(
-                        children: [
-                          closeButton,
-                          gap,
-                          title,
-                          gap,
-                          timer,
-                          gap,
-                          voice,
-                        ],
-                      );
-                    },
+                      },
+                    ),
                   ),
-                ),
-                SizedBox(
-                  height: 36,
-                  width: double.infinity,
-                  child: ClipRect(child: _buildQuestionNumbers()),
-                ),
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController!,
-                    itemCount: _examQuestions.length,
-                    onPageChanged: _onExamPageChanged,
-                    itemBuilder: (context, pageIndex) {
-                      return _buildExamQuestionPage(pageIndex);
-                    },
+                  SizedBox(
+                    height: 36,
+                    width: double.infinity,
+                    child: ClipRect(child: _buildQuestionNumbers()),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController!,
+                      itemCount: _examQuestions.length,
+                      onPageChanged: _onExamPageChanged,
+                      itemBuilder: (context, pageIndex) {
+                        return _buildExamQuestionPage(pageIndex);
+                      },
+                    ),
+                  ),
+                  const QuestionKeyboardHint(),
+                ],
+              ),
             ),
           ),
         ),

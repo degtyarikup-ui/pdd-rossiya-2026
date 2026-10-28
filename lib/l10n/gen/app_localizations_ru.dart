@@ -4353,4 +4353,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get inboxOpen => 'Открыть';
+
+  @override
+  String get trainingKeyboardHint =>
+      'Цифры — ответ · Enter — подтвердить или продолжить · ←/→ — вопросы · Esc — назад';
+
+  @override
+  String get examKeyboardHint => 'Цифры — ответ · ←/→ — вопросы · Esc — назад';
 }
