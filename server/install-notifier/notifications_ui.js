@@ -76,7 +76,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-os{display:flex;justify-content:center;gap:16px;margin:12px 0 0}.nf-os[hidden]{display:none}.nf-os button{border:0;background:none;font:inherit;font-size:12px;font-weight:600;color:#A3AAB6;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:4px}.nf-os button svg{width:14px;height:14px}.nf-os button.on{color:var(--text)}
 .nf-phone{margin:14px auto 0;width:284px;height:584px;border-radius:46px;background:#14161B;padding:9px;box-sizing:border-box;box-shadow:0 18px 40px -18px rgba(16,24,40,.45)}
 .nf-screen{width:100%;height:100%;border-radius:38px;overflow:hidden;position:relative;background:#F8F9FA;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',Roboto,sans-serif;color:#121212}
-.nf-screen *{box-sizing:border-box}.nf-pvnote{margin:12px 4px 0;font-size:12px;color:var(--text-muted);text-align:center;line-height:1.5}.nf-pvnote:empty{display:none}
+.nf-screen *{box-sizing:border-box}
 .l1{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lc{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .ph-st{height:40px;display:flex;align-items:center;justify-content:space-between;padding:6px 26px 0;font-size:12px;font-weight:600}.ph-st i{width:52px;height:6px}
 .lk{height:100%;background:linear-gradient(160deg,#5B7FD6 0%,#8E7BD8 45%,#E0A1B8 100%);color:#fff}.lk.an{background:linear-gradient(170deg,#1F2A44,#3C4C78 60%,#6F7FA8)}
@@ -85,6 +85,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .in{margin:0 9px;border-radius:18px;background:rgba(255,255,255,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#111;padding:10px;display:flex;gap:9px}
 .in img.ic{width:30px;height:30px;border-radius:7px;flex-shrink:0}.in .c{flex:1;min-width:0;font-size:12px;line-height:1.32}.in .h{display:flex;gap:6px;align-items:baseline}.in .h b{flex:1;min-width:0}.in .h span{font-size:10.5px;color:rgba(0,0,0,.45);flex-shrink:0}
 .in p{margin:0}.in .th{width:32px;height:32px;border-radius:6px;background:#ddd center/cover;flex-shrink:0;align-self:center}
+.in.big{flex-direction:column;gap:0;padding:0;overflow:hidden}.in .pic{display:block;width:100%;max-height:160px;object-fit:cover;background:#ddd}.in .row{display:flex;gap:9px;padding:10px}
 .an-n{margin:0 9px;border-radius:20px;background:#F3F4F8;color:#1B1C1F;padding:11px 12px;font-size:12px;line-height:1.35}
 .an-h{display:flex;align-items:center;gap:6px;font-size:10.5px;color:#5F6368;margin-bottom:5px}.an-h i{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}.an-h i svg{width:10px;height:10px}.an-h em{margin-left:auto;font-style:normal;font-size:12px}
 .an-b{display:flex;gap:10px;align-items:center}.an-b>div{flex:1;min-width:0}.an-b p{margin:1px 0 0;color:#444}.an-th{width:36px;height:36px;border-radius:8px;background:#ddd center/cover;flex-shrink:0}
@@ -176,7 +177,6 @@ export const NOTIFICATIONS_VIEW_HTML = `
 <div class="nf-tabs" id="nt-tabs"><button type="button" data-tab="push">Пуш</button><button type="button" data-tab="home">Главная</button><button type="button" data-tab="inbox">Уведомления</button></div>
 <div class="nf-os" id="nt-os"><button type="button" data-os="ios">iPhone</button><button type="button" data-os="android">Android</button></div>
 <div class="nf-phone"><div class="nf-screen" id="nt-screen"></div></div>
-<p class="nf-pvnote" id="nt-pvnote"></p>
 </aside>
 </div>
 <div class="nf-card" style="margin-bottom:16px"><div class="nf-hist-h"><h3>Отправленные</h3><button class="nf-ib" id="nt-refresh" title="Обновить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button></div><div id="nt-history"><div class="nf-empty">Загрузка…</div></div></div>
@@ -250,9 +250,11 @@ function tabs(){var t=[];if(S.push)t.push('push');if(S.place!=='news'||!S.push)t
 function osLabel(){var a=brand('apple'),g=brand('android');el('os').querySelector('[data-os="ios"]').innerHTML=a+'iPhone';el('os').querySelector('[data-os="android"]').innerHTML=g+'Android';}
 function status(dark){return '<div class="ph-st"'+(dark?' style="color:#fff"':'')+'><span>9:41</span><i></i><span>●●●</span></div>';}
 function lockDate(){return new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'});}
+// iPhone (Notification Service Extension): a thumbnail on the right, the picture above the text when expanded.
 function pushIos(d){
- var title=d.title||'ПДД 2026',body=d.body;
- var card=function(open){return '<div class="in"><img class="ic" src="'+ICON+'" alt=""><div class="c"><div class="h"><b class="l1">'+esc(title)+'</b><span>сейчас</span></div>'+(body?'<p class="lc" style="-webkit-line-clamp:'+(open?30:4)+'">'+esc(body)+'</p>':'')+'</div></div>';};
+ var title=d.title||'ПДД 2026',body=d.body,img=d.imageUrl&&https(d.imageUrl);
+ var card=function(open){var text='<img class="ic" src="'+ICON+'" alt=""><div class="c"><div class="h"><b class="l1">'+esc(title)+'</b><span>сейчас</span></div>'+(body?'<p class="lc" style="-webkit-line-clamp:'+(open?30:4)+'">'+esc(body)+'</p>':'')+'</div>';
+  return open&&img?'<div class="in big"><img class="pic" src="'+esc(d.imageUrl)+'" alt=""><div class="row">'+text+'</div></div>':'<div class="in">'+text+(img?'<span class="th" style="'+bg(d.imageUrl)+'"></span>':'')+'</div>';};
  return '<div class="lk">'+status(true)+'<div class="lk-date">'+esc(lockDate())+'</div><div class="lk-time">9:41</div>'+card(false)+'<div class="lk-cap">Раскрыто</div>'+card(true)+'</div>';
 }
 function pushAndroid(d){
@@ -296,11 +298,9 @@ function renderPreview(){
  var d=draft(),t=tabs();if(t.indexOf(S.tab)<0)S.tab=t[0];
  el('tabs').querySelectorAll('button').forEach(function(b){b.hidden=t.indexOf(b.dataset.tab)<0;b.classList.toggle('on',b.dataset.tab===S.tab);});
  el('os').hidden=S.tab!=='push';el('os').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.os===S.os);});
- var note='';
- if(S.tab==='push'){el('screen').innerHTML=S.os==='ios'?pushIos(d):pushAndroid(d);if(S.os==='ios'&&d.imageUrl)note='На iPhone картинка в пуше пока не показывается';}
+ if(S.tab==='push')el('screen').innerHTML=S.os==='ios'?pushIos(d):pushAndroid(d);
  else if(S.tab==='home')el('screen').innerHTML=home(d);
  else el('screen').innerHTML=inbox(d);
- el('pvnote').textContent=note;
 }
 
 // ── Editor state → controls.

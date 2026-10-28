@@ -97,6 +97,11 @@ if (process.argv.includes('--serve')) {
     await page.check('#nt-push', { force: true });
     assert.equal(await page.getAttribute('#nt-title', 'maxlength'), '50');
     assert.match(await page.textContent('#nt-screen'), /Раскрыто.*Новая версия/);
+    // iPhone picture: a thumbnail on the lock screen, above the text when expanded.
+    page.once('dialog', dialog => dialog.accept('https://pdd-drive.ru/assets/icon-192.png'));
+    await page.click('#nt-drop [data-img="url"]');
+    assert.equal(await page.locator('#nt-screen .in .th').count(), 1);
+    assert.equal(await page.locator('#nt-screen .in.big .pic').count(), 1);
     await page.click('#nt-os [data-os="android"]');
     assert.match(await page.textContent('#nt-screen'), /ПДД Россия 2026/);
     assert.equal(await page.isDisabled('input[name="nt-platform"][value="web"]'), true);

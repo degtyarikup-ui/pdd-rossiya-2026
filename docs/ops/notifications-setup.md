@@ -44,7 +44,7 @@
 |---|---|---|
 | Заголовок | 1 строка, ≈ 35–40 символов | 1 строка, ≈ 35–40 |
 | Текст | ≈ 4 строки (≈ 150 символов), раскрытие — весь | 1 строка / до ≈ 8 строк; с картинкой — 1 строка |
-| Картинка | нужна Notification Service Extension (в сборке **нет** — не показывается) | миниатюра справа / крупно 2:1, до 1 МБ |
+| Картинка | миниатюра справа / раскрыто — над текстом во всю ширину; JPEG, PNG, GIF до 10 МБ, остальное (WebP) — JPEG до 1200 px. Только в сборках с `ios/NotificationService` (2.2.6+67 и старше — без картинки) | миниатюра справа / крупно 2:1, до 1 МБ |
 
 Жёсткие пределы редактора и сервера: заголовок пуша 50, текст 300 (баннер —
 200), полезная нагрузка FCM/APNs — 4 КБ. Счётчик подсвечивается, когда текст
@@ -136,6 +136,41 @@ Team ID и файл `.p8`). Ключ оплаты App Store **не подход�
 переключатель нельзя считать подтверждением доставки. Для обычных видимых пушей
 используется системная доставка APNs.
 
+### Картинка в пуше: Notification Service Extension
+
+Таргет `NotificationService` (`ios/NotificationService/`, Swift, без Firebase и
+без подов) встроен в Runner (`PlugIns/`) во всех трёх конфигурациях,
+bundle ID `ru.pdd.pddApp.NotificationService`, iOS 15+, версия и номер сборки —
+те же `FLUTTER_BUILD_NAME` / `FLUTTER_BUILD_NUMBER`, что у приложения
+(база конфигураций — `Flutter/Generated.xcconfig`). Фаза «Embed Foundation
+Extensions» стоит до «Thin Binary»: после неё Xcode находит цикл зависимостей.
+
+Расширение получает пуш с `mutable-content: 1`, скачивает `fcm_options.image`
+(запасной адрес — `imageUrl` из data, только https) и прикрепляет картинку
+через `UNNotificationAttachment`. JPEG, PNG и GIF до 10 МБ идут как есть,
+остальное (WebP из админки, крупные файлы) перекодируется в JPEG до 1200 px.
+Нет картинки, ошибка или 30 секунд истекли — пуш показывается без неё.
+Проверка сборки: `flutter build ios --no-codesign` →
+`build/ios/iphoneos/Runner.app/PlugIns/NotificationService.appex`.
+
+Подпись автоматическая (команда `6T66V45XC7`), как у Runner. Для подписанной
+сборки в Apple Developer нужен App ID расширения:
+
+1. Certificates, Identifiers & Profiles → Identifiers → «+» → App IDs → App:
+   Explicit Bundle ID `ru.pdd.pddApp.NotificationService`, описание
+   «PDD Notification Service». Capabilities не включать: расширению не нужны
+   ни Push Notifications, ни App Groups.
+2. Профили отдельно не создавать: `signingStyle automatic` в
+   `ios/ExportOptions.plist` и автоматическая подпись в Xcode сами выпускают
+   development- и App Store-профили для обоих bundle ID. Если Xcode пишет
+   «No profiles for 'ru.pdd.pddApp.NotificationService'», открыть
+   `ios/Runner.xcworkspace` → таргет NotificationService → Signing & Capabilities
+   → Team `6T66V45XC7`, дождаться выпуска профиля. Ручную подпись включать
+   только вместе с профилями для обоих bundle ID.
+3. App Store Connect: новое приложение не нужно, расширение входит в ту же
+   сборку. Проверить на iPhone: «Отправить себе» с картинкой → миниатюра
+   на экране блокировки, при раскрытии — крупно.
+
 ## Сборка
 
 `scripts/build.sh` автоматически подхватывает
@@ -193,7 +228,7 @@ Data Safety относительно фактически включённых �
 продолжают показывать статистику и обычные сообщения. Для картинок и нового
 оформления мобильному приложению нужна обновлённая сборка.
 
-Картинка в пуше: Android — всегда (FCM `notification.image`); iOS — нужен
-Notification Service Extension в Xcode (payload уже содержит `mutable-content: 1`
+Картинка в пуше: Android — всегда (FCM `notification.image`); iOS — расширение
+`NotificationService` (раздел «iOS» выше; payload содержит `mutable-content: 1`
 и `fcm_options.image`). В foreground приложение само скачивает картинку и показывает
 её через flutter_local_notifications (BigPicture / attachment).
