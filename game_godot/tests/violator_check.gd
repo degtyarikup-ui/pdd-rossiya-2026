@@ -674,6 +674,31 @@ func _check_regressions() -> void:
 		game.ui.hide_classification()
 		game._on_classification_selected("timeout")
 
+	# First-run tutorial: a held red, one red-light runner, nothing lost, then a clean round.
+	game.tutorial_forced = true
+	game._on_difficulty_chosen(game.difficulty)
+	_check("Tutorial starts with one scripted offender", game.tutorial_step == "watch" and game.tutorial_car != null and game.light_state == "red")
+	var tc = game.tutorial_car
+	tc.position.z = -10.0 - ViolatorScript.CAR_FRONT + 0.2   # over its stop line on the red
+	game._check_car_violation_state(tc)
+	_check("Time nearly stops when it offends", game.tutorial_step == "tap" and Engine.time_scale < 0.1)
+	var lives_tut: int = game.lives
+	var bystander = game.spawn_specific_car("main_straight", 1, false, "")
+	bystander.position = Vector3(1.8, 0, -30)
+	game.handle_car_tapped(bystander, Vector2.ZERO)
+	_check("A wrong tap in the tutorial costs nothing", game.lives == lives_tut and game.tutorial_step == "tap")
+	tc.position.x = -50.0   # far away: exits its window, still not missed
+	game._check_car_violation_state(tc)
+	_check("The tutorial car is never counted as missed", tc.violation_state == "active" and game.lives == lives_tut)
+	tc.position = Vector3(-1.8, 0, -8.0)
+	game.handle_car_tapped(tc, Vector2.ZERO)
+	_check("Tapping it opens the answer", game.tutorial_step == "answer" and game.is_classifying)
+	game.ui.hide_classification()
+	game._on_classification_selected(ViolatorScript.VIOLATION_RED_LIGHT)
+	_check("The right answer ends the tutorial without points", game.tutorial_step == "done" and game.score == 0 and game.ui.is_coaching())
+	game._tutorial_complete()
+	_check("Then a clean round starts", game.tutorial_step == "" and game.score == 0 and not game.ui.is_coaching() and Engine.time_scale == 1.0 and game.ui.answer_time < 100.0)
+
 	# One tap is one judgement: the emulated mouse click of a touch is ignored.
 	game._start_game()
 	var innocent = game.spawn_specific_car("main_straight", 1, false, "")

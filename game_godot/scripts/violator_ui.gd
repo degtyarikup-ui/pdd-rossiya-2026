@@ -13,6 +13,8 @@ signal exit_pressed()
 signal restart_pressed()
 signal classification_selected(code: String)
 signal difficulty_chosen(level: String)
+signal tutorial_start_pressed()
+signal tutorial_skip_pressed()
 
 const ICON_CLOSE := 0xf647
 const ICON_STAR := 0xf01d4
@@ -54,6 +56,14 @@ const STRINGS := {
 		"violatorWrongAnswer": "Неверно. Правильно — %s",
 		"violatorTimeoutAnswer": "Время вышло. Правильно — %s",
 		"violatorRoundOver": "Раунд завершён",
+		"violatorTutorWatch": "Обучение. Вы — инспектор на перекрёстке. Следите за машинами: одна из них сейчас нарушит правила.",
+		"violatorTutorTap": "Эта машина проехала на красный свет. Нажмите на неё!",
+		"violatorTutorWrongCar": "Не та машина — нажмите на подсвеченную",
+		"violatorTutorRight": "Верно!",
+		"violatorTutorAlmost": "Почти: это был проезд на красный.",
+		"violatorTutorRules": "Так и играйте: заметили нарушителя — нажмите на него и выберите нарушение. Пропущенный нарушитель или нажатие на обычную машину — минус жизнь.",
+		"violatorTutorStart": "Начать раунд",
+		"violatorTutorSkip": "Пропустить",
 		"violatorTimingWarning": "Нарушение ещё не совершено или уже завершено!",
 		"violatorAlreadyCounted": "Это нарушение уже учтено",
 		"violatorTimeExpired": "Время на квалификацию истекло!",
@@ -84,6 +94,14 @@ const STRINGS := {
 		"violatorWrongAnswer": "Wrong. Correct: %s",
 		"violatorTimeoutAnswer": "Time is up. Correct: %s",
 		"violatorRoundOver": "Round over",
+		"violatorTutorWatch": "Tutorial. You are the inspector at this junction. Watch the cars: one of them is about to break the rules.",
+		"violatorTutorTap": "This car has run the red light. Tap it!",
+		"violatorTutorWrongCar": "Wrong car — tap the highlighted one",
+		"violatorTutorRight": "Correct!",
+		"violatorTutorAlmost": "Almost: that was running the red light.",
+		"violatorTutorRules": "That's the game: spot an offender, tap it and pick the offence. Missing an offender or tapping an innocent car costs a life.",
+		"violatorTutorStart": "Start the round",
+		"violatorTutorSkip": "Skip",
 		"violatorTimingWarning": "Violation not yet started or already finished!",
 		"violatorAlreadyCounted": "This offence has already been counted",
 		"violatorTimeExpired": "Classification time expired!",
@@ -114,6 +132,14 @@ const STRINGS := {
 		"violatorWrongAnswer": "Қате. Дұрысы — %s",
 		"violatorTimeoutAnswer": "Уақыт бітті. Дұрысы — %s",
 		"violatorRoundOver": "Раунд аяқталды",
+		"violatorTutorWatch": "Оқыту. Сіз — қиылыстағы инспекторсыз. Көліктерді бақылаңыз: біреуі қазір ережені бұзады.",
+		"violatorTutorTap": "Бұл көлік қызыл шамға өтті. Оны басыңыз!",
+		"violatorTutorWrongCar": "Бұл басқа көлік — белгіленгенін басыңыз",
+		"violatorTutorRight": "Дұрыс!",
+		"violatorTutorAlmost": "Аз қалды: бұл қызыл шамға өту еді.",
+		"violatorTutorRules": "Ойын осылай: бұзушыны байқасаңыз, оны басып, бұзушылықты таңдаңыз. Өткізіп алынған бұзушы не қарапайым көлікті басу — бір өмір кетеді.",
+		"violatorTutorStart": "Раундты бастау",
+		"violatorTutorSkip": "Өткізіп жіберу",
 		"violatorTimingWarning": "Бұзушылық әлі жасалмаған немесе аяқталған!",
 		"violatorAlreadyCounted": "Бұл бұзушылық есепке алынды",
 		"violatorTimeExpired": "Саралау уақыты аяқталды!",
@@ -157,6 +183,12 @@ var current_mode: String = "blitz"
 var _overlay: Control
 var target_screen_pos: Vector2 = Vector2(-1000, -1000)
 var has_target := false
+# First-run tutorial: a card at the bottom and a pointer on the car to tap.
+var _coach: PanelContainer
+var _coach_label: Label
+var _coach_start: Button
+var _coach_skip: Button
+var coach_target := Vector2(-1000, -1000)
 var _target_anim_time := 0.0
 var _ripples: Array[Dictionary] = []
 # Missed violators: id -> {pos (dp), text, alpha, edge}; one red pill label each.
@@ -195,6 +227,7 @@ func _init() -> void:
 	_build_top_bar()
 	_build_toast()
 	_build_classification_modal()
+	_build_coach()
 	_build_results()
 
 
@@ -206,7 +239,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	var real_delta: float = delta / Engine.time_scale if Engine.time_scale > 0.001 else delta
 
-	if has_target or not _missed.is_empty():
+	if has_target or not _missed.is_empty() or coach_target.x > -500.0:
 		_target_anim_time += real_delta
 		_overlay.queue_redraw()
 
@@ -223,6 +256,8 @@ func _process(delta: float) -> void:
 		_place_picker()
 	if is_instance_valid(_toast) and _toast.visible:
 		_toast.size.y = 0.0   # shrink to the wrapped text once laid out (see _fit_toast)
+	if is_instance_valid(_coach) and _coach.visible:
+		_place_coach()
 	if _modal_active:
 		_place_modal()
 		_modal_timer -= real_delta
@@ -518,6 +553,16 @@ func _on_overlay_draw() -> void:
 				_overlay.draw_line(corner, corner + Vector2(-sx * arm, 0), col, 3.0)
 				_overlay.draw_line(corner, corner + Vector2(0, -sy * arm), col, 3.0)
 		_overlay.draw_arc(c, sz + 6.0, 0.0, TAU, 40, Color(1.0, 0.23, 0.19, a * 0.45), 2.0)
+	# 0b. Tutorial: a pulsing ring on the car to tap and a bouncing arrow above it.
+	if coach_target.x > -500.0:
+		var accent := Ui.c("accent")
+		var pulse := fposmod(_target_anim_time, 1.1) / 1.1
+		_overlay.draw_arc(coach_target, 30.0 + pulse * 26.0, 0.0, TAU, 48, Color(accent, 0.9 * (1.0 - pulse)), 3.0, true)
+		_overlay.draw_arc(coach_target, 30.0, 0.0, TAU, 48, Color(1, 1, 1, 0.95), 3.0, true)
+		var tip := coach_target + Vector2(0, -42.0 - absf(sin(_target_anim_time * 4.0)) * 12.0)
+		var arrow := PackedVector2Array([tip, tip + Vector2(-14, -18), tip + Vector2(-5, -18), tip + Vector2(-5, -38), tip + Vector2(5, -38), tip + Vector2(5, -18), tip + Vector2(14, -18)])
+		_overlay.draw_colored_polygon(arrow, accent)
+		_overlay.draw_polyline(arrow + PackedVector2Array([tip]), Color.WHITE, 2.0, true)
 	# 1. Target brackets if vehicle target is locked
 	if has_target and target_screen_pos.x > -500:
 		var center := target_screen_pos
@@ -999,6 +1044,97 @@ func is_picking_difficulty() -> bool:
 	return is_instance_valid(_picker)
 
 
+# --- First-run tutorial card ---
+
+func _build_coach() -> void:
+	_coach = PanelContainer.new()
+	_coach.visible = false
+	_coach.mouse_filter = MOUSE_FILTER_STOP
+	var box := Ui.box(Ui.c("card"), 16)
+	box.content_margin_left = 16
+	box.content_margin_right = 16
+	box.content_margin_top = 14
+	box.content_margin_bottom = 14
+	_coach.add_theme_stylebox_override("panel", box)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 12)
+	_coach.add_child(col)
+	_coach_label = Ui.label("", 16, 600, Ui.c("text"), true)
+	col.add_child(_coach_label)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.alignment = BoxContainer.ALIGNMENT_END
+	col.add_child(row)
+	_coach_skip = _coach_button(tr_v("violatorTutorSkip"), false)
+	_coach_skip.pressed.connect(func(): tutorial_skip_pressed.emit())
+	row.add_child(_coach_skip)
+	_coach_start = _coach_button(tr_v("violatorTutorStart"), true)
+	_coach_start.size_flags_horizontal = SIZE_EXPAND_FILL
+	_coach_start.pressed.connect(func(): tutorial_start_pressed.emit())
+	row.add_child(_coach_start)
+	add_child(_coach)
+
+
+func _coach_button(text: String, primary: bool) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(0, 44)
+	b.add_theme_font_override("font", Ui.font(700))
+	b.add_theme_font_size_override("font_size", 15)
+	var col := Color.WHITE if primary else Ui.c("secondary")
+	for state in ["font_color", "font_hover_color", "font_pressed_color"]:
+		b.add_theme_color_override(state, col)
+	var normal := Ui.box(Ui.c("accent") if primary else Color(0, 0, 0, 0), 12)
+	normal.content_margin_left = 16
+	normal.content_margin_right = 16
+	var pressed := Ui.box(Ui.c("accent").darkened(0.15) if primary else Ui.c("field"), 12)
+	pressed.content_margin_left = 16
+	pressed.content_margin_right = 16
+	for state in ["normal", "hover"]:
+		b.add_theme_stylebox_override(state, normal)
+	b.add_theme_stylebox_override("pressed", pressed)
+	return b
+
+
+## The card stays at the bottom, where the answer sheet opens later: the junction stays in view.
+func show_coach(text: String, with_start: bool, with_skip: bool) -> void:
+	_coach_label.text = text
+	_coach_start.visible = with_start
+	_coach_skip.visible = with_skip
+	_coach.visible = true
+	_place_coach()
+
+
+func hide_coach() -> void:
+	_coach.visible = false
+	coach_target = Vector2(-1000, -1000)
+	_overlay.queue_redraw()
+
+
+func set_coach_target(pos: Vector2) -> void:
+	coach_target = pos
+	_overlay.queue_redraw()
+
+
+func is_coaching() -> bool:
+	return is_instance_valid(_coach) and _coach.visible
+
+
+func _place_coach() -> void:
+	var u := Ui.dp(get_viewport())
+	var safe := Ui.insets(get_viewport())
+	var w := minf(360.0, size.x - 32.0)
+	# A wrapping label measures its height at its current width: give it the width up front.
+	_coach_label.custom_minimum_size.x = w - 32.0
+	_coach.size = Vector2(w, 0)
+	if size.x > size.y * 1.2:
+		_coach.position.x = size.x - w - 16.0 - float(safe["right"]) / u
+	else:
+		_coach.position.x = (size.x - w) / 2.0
+	_coach.position.y = size.y - float(safe["bottom"]) / u - 16.0 - _coach.size.y
+
+
 # --- Results Overlay ---
 
 func _build_results() -> void:
@@ -1037,6 +1173,7 @@ func hide_game_results() -> void:
 
 func _clear_round_feedback(keep_penalty := false) -> void:
 	if not keep_penalty: MiniGameHud.clear_life_loss(self)
+	if is_instance_valid(_coach): hide_coach()
 	hide_classification()
 	Engine.time_scale = 1.0
 	if is_instance_valid(_toast_tween): _toast_tween.kill()

@@ -317,6 +317,11 @@ var game_clock := 0.0
 var ready_for_play := false
 var _exiting := false
 var unscripted_zebra_offences := 0   # lawful cars caught on a busy zebra
+# First-run tutorial: "" (none), "watch", "tap", "answer", "done". One scripted red-light runner on a
+# held red, time nearly stopped when it offends, no clock, no lives lost, no other offenders.
+var tutorial_step := ""
+var tutorial_car: ViolatorCar
+var tutorial_forced := false   # `--tutorial`: show it even when already seen
 var _suspended := false   # app in the background: the tree is paused until it returns
 
 var locked_car: ViolatorCar = null
@@ -541,6 +546,8 @@ func _setup_args() -> void:
 			difficulty_from_args = true
 		elif arg.begins_with("--mode="):
 			game_mode = "patrol" if arg.trim_prefix("--mode=") == "patrol" else "blitz"
+		elif arg == "--tutorial":
+			tutorial_forced = true
 		elif arg.begins_with("--lang="):
 			Ui.lang = arg.trim_prefix("--lang=")
 
@@ -596,6 +603,8 @@ func _setup_ui() -> void:
 	ui.restart_pressed.connect(_on_restart_pressed)
 	ui.classification_selected.connect(_on_classification_selected)
 	ui.difficulty_chosen.connect(_on_difficulty_chosen)
+	ui.tutorial_start_pressed.connect(_tutorial_complete)
+	ui.tutorial_skip_pressed.connect(_tutorial_complete)
 	add_child(ui)
 	ui.update_hud(score, combo, seconds_left, lives)
 
@@ -1951,7 +1960,7 @@ func _process(delta: float) -> void:
 	game_clock += delta
 
 	# Mode-specific time tracking
-	if not is_classifying:
+	if not is_classifying and tutorial_step == "":
 		if game_mode == "blitz":
 			seconds_left -= delta
 			if seconds_left <= 0.0:
@@ -1964,7 +1973,7 @@ func _process(delta: float) -> void:
 			patrol_elapsed += delta
 			_update_continuous_weather(patrol_elapsed, delta)
 
-	_update_traffic_lights(delta)
+	_update_traffic_lights(0.0 if tutorial_step != "" else delta)   # the tutorial holds the red
 	_update_pedestrian(delta)
 	_update_spawning(delta)
 	_update_cars(delta)
@@ -1973,6 +1982,10 @@ func _process(delta: float) -> void:
 	if is_instance_valid(ui):
 		var time_metric := seconds_left if game_mode == "blitz" else patrol_elapsed
 		ui.update_hud(score, combo, time_metric, lives)
+		if tutorial_step in ["watch", "tap"] and not (is_instance_valid(tutorial_car) and tutorial_car.is_inside_tree()):
+			_tutorial_complete()   # never strands the player
+		elif tutorial_step == "tap":
+			ui.set_coach_target(camera.unproject_position(tutorial_car.global_position) / Ui.dp(get_viewport()))
 		# The sight stays on the car being judged while it rolls on in slow motion.
 		if is_classifying and is_instance_valid(locked_car) and locked_car.is_inside_tree() and is_instance_valid(camera):
 			ui.move_target(camera.unproject_position(locked_car.global_position) / Ui.dp(get_viewport()))
@@ -2556,7 +2569,7 @@ func _spawn_procedural_car() -> void:
 
 	# Pacing: a new offence only after a breathing gap (8 s at the start of a round, 4.5 s at its end)
 	# and with at most one (later two) offenders on the road at a time, so the player can follow them.
-	var pace_ok := _clock_now() >= next_violation_at and _unresolved_violators() < _max_concurrent_violators()
+	var pace_ok := _clock_now() >= next_violation_at and _unresolved_violators() < _max_concurrent_violators() and tutorial_step == ""
 	if violation_schedule_timer >= VIOLATION_EVERY and not pace_ok:
 		violation_schedule_timer = VIOLATION_EVERY - 0.01   # stays due; this car is an innocent one
 	elif violation_schedule_timer >= VIOLATION_EVERY:
@@ -2599,8 +2612,8 @@ func _spawn_procedural_car() -> void:
 	if is_violator and v_type == VIOLATION_EMERGENCY_YIELD and emergency_on_scene:
 		v_type = VIOLATION_RED_LIGHT
 	var is_emerg := false
-	if two_way:
-		emergency_on_scene = true   # no sirens on the easy level's narrow two-way roads
+	if two_way or tutorial_step != "":
+		emergency_on_scene = true   # no sirens on the easy level's narrow two-way roads, nor in the tutorial
 	if not emergency_on_scene and not is_violator and (game_clock > 6.0 or patrol_elapsed > 8.0) and randf() < 0.32 and lane in [0, 1]:
 		is_emerg = true
 	# Besides, an emergency vehicle comes along every 30-50 s, whoever else is on the road.
@@ -4584,11 +4597,13 @@ func _check_car_violation_state(car: ViolatorCar) -> void:
 		if _is_car_entering_violation_window(car):
 			car.violation_state = "active"
 			car.violation_start_time = game_clock
+			if car == tutorial_car and tutorial_step == "watch":
+				_tutorial_point_at_car()
 	elif car.violation_state == "active":
 		# Catchable for at least min_catch_window after the offence, even once the manoeuvre is
 		# over: a person needs a few seconds to notice it and tap a moving car. Nobody gets away
 		# while the player is busy judging a car: taps are closed then, so it would be unfair.
-		if is_classifying:
+		if is_classifying or tutorial_step != "":
 			car.violation_start_time += get_process_delta_time()
 			return
 		if _is_car_exiting_violation_window(car) and game_clock - car.violation_start_time >= min_catch_window:
@@ -4790,6 +4805,17 @@ func _raycast_car_at(screen_pos: Vector2) -> ViolatorCar:
 func handle_car_tapped(car: ViolatorCar, screen_pos: Vector2) -> void:
 	if is_game_over or is_classifying:
 		return
+	if tutorial_step != "":
+		# Learning costs nothing: only the highlighted car can be judged, and only once it offended.
+		if car != tutorial_car or tutorial_step != "tap":
+			if is_instance_valid(ui):
+				ui.add_tap_ripple(screen_pos, "false_alarm")
+				if tutorial_step == "tap":
+					ui.show_toast(ViolatorUiScript.tr_v("violatorTutorWrongCar"), true)
+			return
+		tutorial_step = "answer"
+		if is_instance_valid(ui):
+			ui.hide_coach()
 
 	# Step 1 evaluation
 	if car.is_emergency:
@@ -4933,6 +4959,8 @@ func _on_classification_selected(chosen_code: String) -> void:
 	is_classifying = false
 
 	if locked_car == null or not is_instance_valid(locked_car):
+		if tutorial_step == "answer":
+			_tutorial_finish(false)
 		return
 
 	if chosen_code == locked_car.violation_type:
@@ -4953,10 +4981,10 @@ func _on_classification_selected(chosen_code: String) -> void:
 				ui.show_toast(ViolatorUiScript.tr_v("violatorLifeRestored"), false)
 
 		var points := roundi(float((50 + bonus) * combo) * float(DIFFICULTIES[difficulty].points))
-		score += points
-
-		if is_instance_valid(ui):
-			ui.show_toast("+%d (x%d)" % [points, combo], false)
+		if tutorial_step != "answer":   # the practice car scores nothing: the round starts from zero
+			score += points
+			if is_instance_valid(ui):
+				ui.show_toast("+%d (x%d)" % [points, combo], false)
 	else:
 		sound.play("incorrect")
 		locked_car.violation_state = "missed"
@@ -4972,10 +5000,77 @@ func _on_classification_selected(chosen_code: String) -> void:
 		if is_instance_valid(ui):
 			ui.update_hud(score, combo, seconds_left if game_mode == "blitz" else patrol_elapsed, lives)
 
+	var was_right := locked_car != null and chosen_code == locked_car.violation_type
 	locked_car = null
 	if is_instance_valid(ui):
 		var time_metric := seconds_left if game_mode == "blitz" else patrol_elapsed
 		ui.update_hud(score, combo, time_metric, lives)
+	if tutorial_step == "answer":
+		_tutorial_finish(was_right)
+
+
+# --- First-run tutorial ---
+
+func _tutorial_pending() -> bool:
+	if tutorial_forced:
+		return true
+	if not is_instance_valid(ui) or DisplayServer.get_name() == "headless":
+		return false   # automated runs play the round itself
+	var cfg := ConfigFile.new()
+	cfg.load(SETTINGS_PATH)
+	return not bool(cfg.get_value("violator", "tutorial_done", false))
+
+
+## Learn by doing (the industry's onboarding rule): the main road is held on red, and a single car
+## comes down it that will run the red. Everything else drives as usual but nobody else offends.
+func _begin_tutorial() -> void:
+	tutorial_step = "watch"
+	tutorial_forced = false
+	if signal_mode == "normal":
+		light_phase = "ew_green"
+		light_state = "red"
+		light_visual_ns = "red"
+		light_visual_ew = "green"
+		light_timer = LIGHT_GREEN_TIME_EW
+		arrow_active = has_arrow
+	tutorial_car = spawn_specific_car("main_straight", 0, true, VIOLATION_RED_LIGHT)
+	if is_instance_valid(ui):
+		ui.answer_time = 999.0   # no hurry while learning
+		ui.show_coach(ViolatorUiScript.tr_v("violatorTutorWatch"), false, true)
+
+
+## The moment it offends, time nearly stops and the car is pointed out.
+func _tutorial_point_at_car() -> void:
+	tutorial_step = "tap"
+	Engine.time_scale = 0.03
+	sound.play("click")
+	if is_instance_valid(ui):
+		ui.show_coach(ViolatorUiScript.tr_v("violatorTutorTap"), false, true)
+
+
+func _tutorial_finish(was_right: bool) -> void:
+	tutorial_step = "done"
+	Engine.time_scale = 1.0
+	if is_instance_valid(ui):
+		var head := ViolatorUiScript.tr_v("violatorTutorRight" if was_right else "violatorTutorAlmost")
+		ui.show_coach(head + "\n" + ViolatorUiScript.tr_v("violatorTutorRules"), true, false)
+
+
+## «Начать раунд» or «Пропустить»: remembered, and the real round starts from zero.
+func _tutorial_complete() -> void:
+	if tutorial_step == "":
+		return
+	tutorial_step = ""
+	tutorial_car = null
+	var cfg := ConfigFile.new()
+	cfg.load(SETTINGS_PATH)
+	cfg.set_value("violator", "tutorial_done", true)
+	cfg.save(SETTINGS_PATH)
+	if is_instance_valid(ui):
+		ui.hide_coach()
+		ui.hide_classification()
+	set_difficulty(difficulty)   # the answer time of the level again
+	_start_game()
 
 
 # --- Game Lifecycle & Results ---
@@ -5017,9 +5112,13 @@ func _on_difficulty_chosen(level: String) -> void:
 	_save_difficulty()
 	ready_for_play = true
 	_start_game()
+	if _tutorial_pending():
+		_begin_tutorial()
 
 
 func _start_game() -> void:
+	tutorial_step = ""
+	tutorial_car = null
 	is_game_over = false
 	is_classifying = false
 	locked_car = null
