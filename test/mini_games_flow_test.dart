@@ -3,7 +3,6 @@ import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -653,28 +652,16 @@ void main() {
       ),
       findsNothing,
     );
-    for (final titleAndRecord in [
-      (
-        appL10n.gameTrafficControllerTitle,
-        appL10n.gamesRecordScore(
-          NumberFormat.decimalPattern('ru').format(123456789),
-        ),
-      ),
-      (
-        appL10n.gamesSignsTitle,
-        appL10n.gamesRecordScore(
-          NumberFormat.decimalPattern('ru').format(987654321),
-        ),
-      ),
+    // Records stay in the games and the rating; the covers show only names.
+    expect(find.textContaining(appL10n.gamesRecordScore('')), findsNothing);
+    for (final title in [
+      appL10n.gameTrafficControllerTitle,
+      appL10n.gamesSignsTitle,
     ]) {
-      await tester.scrollUntilVisible(find.text(titleAndRecord.$1), 200);
+      await tester.scrollUntilVisible(find.text(title), 200);
       await tester.pumpAndSettle();
-      expect(find.text(titleAndRecord.$2), findsOneWidget);
       final cardStack = find
-          .ancestor(
-            of: find.text(titleAndRecord.$1),
-            matching: find.byType(Stack),
-          )
+          .ancestor(of: find.text(title), matching: find.byType(Stack))
           .first;
       final photo = find.descendant(
         of: cardStack,
@@ -683,13 +670,11 @@ void main() {
       expect(photo, findsOneWidget);
       final photoRect = tester.getRect(photo.first);
       expect(photoRect.height, greaterThanOrEqualTo(190));
-      for (final label in [titleAndRecord.$1, titleAndRecord.$2]) {
-        final labelRect = tester.getRect(find.text(label));
-        expect(labelRect.left, greaterThanOrEqualTo(photoRect.left));
-        expect(labelRect.right, lessThanOrEqualTo(photoRect.right));
-        expect(labelRect.top, greaterThanOrEqualTo(photoRect.top));
-        expect(labelRect.bottom, lessThanOrEqualTo(photoRect.bottom));
-      }
+      final labelRect = tester.getRect(find.text(title));
+      expect(labelRect.left, greaterThanOrEqualTo(photoRect.left));
+      expect(labelRect.right, lessThanOrEqualTo(photoRect.right));
+      expect(labelRect.top, greaterThanOrEqualTo(photoRect.top));
+      expect(labelRect.bottom, lessThanOrEqualTo(photoRect.bottom));
     }
     await tester.scrollUntilVisible(
       find.text(appL10n.gamesCrossroadsTitle),

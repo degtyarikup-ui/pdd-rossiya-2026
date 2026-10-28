@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -52,13 +51,6 @@ void main() {
     bool navigation = false,
     Locale locale = const Locale('ru'),
     int weekScore = 45210,
-    int cityBest = 45210,
-    int trafficBest = 1200,
-    int signsBest = 150,
-    int crossroadsBest = 150,
-    int parkingBest = 0,
-    int roadSignsBest = 150,
-    int violatorBest = 150,
     bool premium = false,
     bool runsLoaded = true,
     bool pending = false,
@@ -102,13 +94,6 @@ void main() {
           child: Scaffold(
             body: GamesHubView(
               weekScore: weekScore,
-              cityBest: cityBest,
-              trafficBest: trafficBest,
-              signsBest: signsBest,
-              crossroadsBest: crossroadsBest,
-              parkingBest: parkingBest,
-              roadSignsBest: roadSignsBest,
-              violatorBest: violatorBest,
               premium: premium,
               runsLoaded: runsLoaded,
               hasPendingRun: pending,
@@ -357,7 +342,6 @@ void main() {
           navigation: true,
           textScale: device.scale,
           weekScore: 123456789,
-          trafficBest: 123456789,
         );
         final signs = tester.getRect(
           find.byKey(const ValueKey('games-card-signs')),
@@ -467,56 +451,37 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets(
-    'Rating shows only the score and round records keep their labels',
-    (tester) async {
-      for (final locale in [
-        const Locale('ru'),
-        const Locale('en'),
-        const Locale('kk'),
-      ]) {
-        var leaderboardOpens = 0;
-        await open(
-          tester,
-          locale: locale,
-          weekScore: 978,
-          cityBest: 4387,
-          trafficBest: 4050,
-          signsBest: 1500,
-          crossroadsBest: 702,
-          onLeaderboard: () => leaderboardOpens++,
-        );
-        expect(find.text(appL10n.gamesWeeklyScoreLabel), findsNothing);
-        expect(find.text('978'), findsOneWidget);
-        final number = NumberFormat.decimalPattern(locale.languageCode);
-        for (final score in [1500, 4050, 702, 4387]) {
-          expect(
-            find.text(appL10n.gamesRecordScore(number.format(score))),
-            findsOneWidget,
-          );
-        }
-        await tester.tap(find.byKey(const ValueKey('games-leaderboard')));
-        expect(leaderboardOpens, 1);
-        expect(tester.takeException(), isNull);
-      }
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
+  testWidgets('Rating shows only the score and no card shows a record', (
+    tester,
+  ) async {
+    for (final locale in [
+      const Locale('ru'),
+      const Locale('en'),
+      const Locale('kk'),
+    ]) {
+      var leaderboardOpens = 0;
+      await open(
+        tester,
+        locale: locale,
+        weekScore: 978,
+        onLeaderboard: () => leaderboardOpens++,
+      );
+      expect(find.text(appL10n.gamesWeeklyScoreLabel), findsNothing);
+      expect(find.text('978'), findsOneWidget);
+      expect(find.textContaining(appL10n.gamesRecordScore('')), findsNothing);
+      expect(find.byIcon(Icons.emoji_events_rounded), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('games-leaderboard')));
+      expect(leaderboardOpens, 1);
+      expect(tester.takeException(), isNull);
+    }
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('A new player sees neither play captions nor zero records', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
-    await open(
-      tester,
-      weekScore: 0,
-      cityBest: 0,
-      trafficBest: 0,
-      signsBest: 0,
-      crossroadsBest: 0,
-      roadSignsBest: 0,
-      violatorBest: 0,
-    );
+    await open(tester, weekScore: 0);
     expect(find.text(appL10n.gamesPlay), findsNothing);
     expect(find.bySemanticsLabel(appL10n.gamesRecordScore('0')), findsNothing);
     expect(find.text(appL10n.gameSoonBadge), findsOneWidget);
@@ -533,13 +498,7 @@ void main() {
       const Locale('en'),
       const Locale('kk'),
     ]) {
-      await open(
-        tester,
-        locale: locale,
-        roadSignsBest: 0,
-        violatorBest: 69,
-        parkingBest: 0,
-      );
+      await open(tester, locale: locale);
       for (final entry in [
         (
           'road_signs',
@@ -611,16 +570,14 @@ void main() {
       tester,
       runs: 0,
       weekScore: 0,
-      cityBest: 0,
-      trafficBest: 0,
-      signsBest: 0,
-      crossroadsBest: 0,
       refillAt: DateTime.now().add(const Duration(minutes: 38)),
     );
     final card = tester.widget<Semantics>(
       find.byKey(const ValueKey('games-card-city')),
     );
     expect(card.properties.label, contains(appL10n.gameFuelEmptyTitle));
+    expect(card.properties.label, contains(appL10n.gamesPremiumBadge));
+    expect(card.properties.hint, appL10n.gamesPremiumHint);
     expect(card.properties.label, contains(appL10n.gamesUnlimitedAction));
     expect(
       find.descendant(
@@ -632,6 +589,44 @@ void main() {
     expect(find.text(appL10n.gamesRunsFraction(0, 3)), findsNothing);
     expect(find.textContaining(appL10n.gamesRefillIn('')), findsOneWidget);
     handle.dispose();
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('The city without runs is closed like a Premium game', (
+    tester,
+  ) async {
+    Finder inCity(Finder matching) => find.descendant(
+      of: find.byKey(const ValueKey('games-card-city')),
+      matching: matching,
+    );
+    await open(
+      tester,
+      runs: 0,
+      refillAt: DateTime.now().add(const Duration(minutes: 38)),
+    );
+    expect(
+      inCity(find.byKey(const ValueKey('games-premium-badge'))),
+      findsOneWidget,
+    );
+    expect(inCity(find.byType(ColorFiltered)), findsOneWidget);
+    final city = tester.getRect(find.byKey(const ValueKey('games-card-city')));
+    final badge = tester.getRect(
+      inCity(find.byKey(const ValueKey('games-premium-badge'))),
+    );
+    expect(
+      city.contains(badge.topLeft) && city.contains(badge.bottomRight),
+      isTrue,
+    );
+    // Refilled runs (or Premium) bring the colour back and take the badge away.
+    for (final premium in [false, true]) {
+      await open(tester, runs: premium ? 0 : 1, premium: premium);
+      expect(
+        inCity(find.byKey(const ValueKey('games-premium-badge'))),
+        findsNothing,
+      );
+      expect(inCity(find.byType(ColorFiltered)), findsNothing);
+    }
+    expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -655,15 +650,11 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('Premium games keep their cover and show a Premium badge', (
+  testWidgets('Premium games turn black and white with a Premium badge', (
     tester,
   ) async {
     final called = <String>[];
-    await open(
-      tester,
-      parkingBest: 420,
-      onParking: () => called.add('parking'),
-    );
+    await open(tester, onParking: () => called.add('parking'));
     Finder badgeOf(String id) => find.descendant(
       of: find.byKey(ValueKey('games-card-$id')),
       matching: find.byKey(const ValueKey('games-premium-badge')),
@@ -677,6 +668,13 @@ void main() {
         of: find.byKey(const ValueKey('games-card-parking')),
         matching: find.byType(ColorFiltered),
       ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('games-card-signs')),
+        matching: find.byType(ColorFiltered),
+      ),
       findsNothing,
     );
     final parking = tester.widget<Semantics>(
@@ -686,8 +684,7 @@ void main() {
     expect(parking.properties.hint, appL10n.gamesPremiumHint);
     expect(
       parking.properties.label,
-      '${appL10n.gamesParkingTitle}, ${appL10n.gamesPremiumBadge}, '
-      '${appL10n.gamesRecordScore('420')}',
+      '${appL10n.gamesParkingTitle}, ${appL10n.gamesPremiumBadge}',
     );
     final card = tester.getRect(
       find.byKey(const ValueKey('games-card-parking')),
@@ -704,6 +701,13 @@ void main() {
 
     await open(tester, premium: true);
     expect(find.byKey(const ValueKey('games-premium-badge')), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('games-card-parking')),
+        matching: find.byType(ColorFiltered),
+      ),
+      findsNothing,
+    );
     expect(
       tester
           .widget<Semantics>(find.byKey(const ValueKey('games-card-parking')))
@@ -814,10 +818,6 @@ void main() {
     );
     for (final area in [
       find.text(appL10n.gameCityTitle),
-      find.descendant(
-        of: card,
-        matching: find.textContaining(appL10n.gamesRecordScore('')),
-      ),
       status,
       find.text(appL10n.gamesRunsFraction(3, 3)),
       find.textContaining(appL10n.gamesRefillIn('')),
@@ -826,7 +826,7 @@ void main() {
       await tester.pump();
     }
     await tester.tapAt(tester.getTopRight(card) + const Offset(-12, 12));
-    expect(city, 6);
+    expect(city, 5);
     expect(find.byType(BottomSheet), findsNothing);
     expect(tester.takeException(), isNull);
     handle.dispose();
@@ -885,10 +885,6 @@ void main() {
         dark: dark,
         runsLoaded: runsLoaded,
         weekScore: zero ? 0 : 45210,
-        cityBest: zero ? 0 : 45210,
-        trafficBest: zero ? 0 : 1200,
-        signsBest: zero ? 0 : 150,
-        crossroadsBest: zero ? 0 : 150,
         refillAt: runs < 3
             ? DateTime.now().add(const Duration(minutes: 38, seconds: 42))
             : null,

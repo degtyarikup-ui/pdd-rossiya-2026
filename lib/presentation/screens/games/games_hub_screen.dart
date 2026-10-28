@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdd_app/data/services/game_leaderboard_service.dart';
 import 'package:pdd_app/data/services/game_runs_service.dart';
 import 'package:pdd_app/presentation/screens/game/godot_game.dart';
@@ -49,7 +48,6 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
   bool _hasPendingRun = false;
   bool _openingCity = false;
   bool _openingPaywall = false;
-  int _cityBest = 0;
   int _weekScore = 0;
   Timer? _timer;
   Future<int>? _loadedRuns;
@@ -78,13 +76,9 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
   /// Сохранённые очки показываем сразу, затем свежие. Без связи остаются
   /// последние загруженные; без очков за неделю (или без входа) — 0.
   Future<void> _refreshRating() async {
-    final prefs = await SharedPreferences.getInstance();
     final saved = await GameLeaderboardService.instance.lastKnown();
-    if (mounted) {
-      setState(() {
-        _cityBest = prefs.getInt('game_best_score') ?? 0;
-        if (saved != null) _weekScore = saved.me?.score ?? 0;
-      });
+    if (mounted && saved != null) {
+      setState(() => _weekScore = saved.me?.score ?? 0);
     }
     final board = await GameLeaderboardService.instance.fetch();
     if (mounted && board != null) {
@@ -247,30 +241,8 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(progressImportsProvider, (_, next) {
-      if (mounted && next.hasValue) {
-        setState(
-          () => _cityBest = ref
-              .read(progressDataSourceProvider)
-              .getGameBestScore(),
-        );
-      }
-    });
-    final traffic = ref.watch(trafficControllerProgressProvider);
-    final signs = ref.watch(signSwiperProgressProvider);
-    final crossroads = ref.watch(crossroadsPriorityProgressProvider);
-    final parking = ref.watch(parkingProgressProvider);
-    final roadSigns = ref.watch(roadSignsProgressProvider);
-    final violator = ref.watch(violatorProgressProvider);
     return GamesHubView(
       weekScore: _weekScore,
-      cityBest: _cityBest,
-      trafficBest: traffic.bestScore,
-      signsBest: signs.bestScore,
-      crossroadsBest: crossroads.bestScore,
-      parkingBest: parking.bestScore,
-      roadSignsBest: roadSigns.bestScore,
-      violatorBest: violator.bestScore,
       premium: ref.watch(isPremiumProvider),
       runsLoaded: _runsLoaded,
       hasPendingRun: _hasPendingRun,

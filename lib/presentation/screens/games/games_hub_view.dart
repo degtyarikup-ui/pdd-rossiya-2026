@@ -13,9 +13,10 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart
 /// progress and leaderboards stay in the code; add a card id here to hide a game.
 const hiddenGames = <String>{};
 
-/// Mini games only Premium players can open. Free players still see the full
-/// colour cover with a Premium badge (grey is reserved for "coming soon"); a tap
-/// opens the paywall naming the game, and a purchase goes straight into it.
+/// Mini games only Premium players can open. Free players see the cover in black
+/// and white with a Premium badge ("coming soon" is also dimmed, without the badge);
+/// a tap opens the paywall naming the game, and a purchase goes straight into it.
+/// The city looks the same while its free runs are used up, until they refill.
 const premiumGames = <String>{'parking', 'violator'};
 
 /// The hub's presentation, shared by the live screen and layout/state checks.
@@ -25,13 +26,6 @@ class GamesHubView extends StatelessWidget {
   const GamesHubView({
     super.key,
     required this.weekScore,
-    required this.cityBest,
-    required this.trafficBest,
-    required this.signsBest,
-    required this.crossroadsBest,
-    required this.parkingBest,
-    this.roadSignsBest = 0,
-    this.violatorBest = 0,
     required this.premium,
     required this.runsLoaded,
     required this.hasPendingRun,
@@ -48,8 +42,7 @@ class GamesHubView extends StatelessWidget {
     this.onRefilled,
   });
 
-  final int weekScore, cityBest, trafficBest, signsBest, crossroadsBest, runs;
-  final int parkingBest, roadSignsBest, violatorBest;
+  final int weekScore, runs;
   final bool premium, runsLoaded, hasPendingRun;
   final DateTime? refillAt;
   final VoidCallback onCity,
@@ -175,12 +168,10 @@ class GamesHubView extends StatelessWidget {
                           featured: true,
                           compact: compactCity,
                           waiting: waiting,
+                          // No free runs left: Premium only until they refill.
+                          locked: waiting,
                           semanticDetails: [
                             if (waiting) appL10n.gameFuelEmptyTitle,
-                            if (cityBest > 0 && !hasPendingRun)
-                              appL10n.gamesRecordScore(
-                                _number(context, cityBest),
-                              ),
                             if (!premium && runsLoaded && runs > 0)
                               appL10n.gamesRunsFraction(
                                 runs,
@@ -191,15 +182,10 @@ class GamesHubView extends StatelessWidget {
                                 gameFuelCountdown(refillAt),
                               ),
                           ].join(', '),
-                          footer:
-                              (!premium && runsLoaded) ||
-                                  (cityBest > 0 && !hasPendingRun)
+                          footer: !premium && runsLoaded
                               ? _RunsFooter(
-                                  runs: !premium && runsLoaded ? runs : 0,
-                                  bestScore: hasPendingRun ? 0 : cityBest,
-                                  refillAt: !premium && runsLoaded
-                                      ? refillAt
-                                      : null,
+                                  runs: runs,
+                                  refillAt: refillAt,
                                   onRefilled: onRefilled,
                                 )
                               : null,
@@ -207,12 +193,6 @@ class GamesHubView extends StatelessWidget {
                         Widget catalogue() => _MiniGamesCatalogue(
                           gap: gap,
                           premium: premium,
-                          trafficBest: trafficBest,
-                          signsBest: signsBest,
-                          crossroadsBest: crossroadsBest,
-                          parkingBest: parkingBest,
-                          roadSignsBest: roadSignsBest,
-                          violatorBest: violatorBest,
                           onTrafficController: onTrafficController,
                           onSigns: onSigns,
                           onCrossroads: onCrossroads,
@@ -273,12 +253,6 @@ class _MiniGamesCatalogue extends StatelessWidget {
   const _MiniGamesCatalogue({
     required this.gap,
     required this.premium,
-    required this.trafficBest,
-    required this.signsBest,
-    required this.crossroadsBest,
-    required this.parkingBest,
-    this.roadSignsBest = 0,
-    this.violatorBest = 0,
     required this.onTrafficController,
     required this.onSigns,
     required this.onCrossroads,
@@ -288,12 +262,6 @@ class _MiniGamesCatalogue extends StatelessWidget {
   });
   final double gap;
   final bool premium;
-  final int trafficBest,
-      signsBest,
-      crossroadsBest,
-      parkingBest,
-      roadSignsBest,
-      violatorBest;
   final VoidCallback onTrafficController, onSigns, onCrossroads, onParking;
   final VoidCallback? onRoadSigns, onViolator;
 
@@ -349,35 +317,30 @@ class _MiniGamesCatalogue extends StatelessWidget {
     _HubCard(
       id: 'signs',
       title: appL10n.gamesSignsTitle,
-      bestScore: signsBest,
       titleSize: titleSize,
       onTap: onSigns,
     ),
     _HubCard(
       id: 'regulator',
       title: appL10n.gameTrafficControllerTitle,
-      bestScore: trafficBest,
       titleSize: titleSize,
       onTap: onTrafficController,
     ),
     _HubCard(
       id: 'crossroads',
       title: appL10n.gamesCrossroadsTitle,
-      bestScore: crossroadsBest,
       titleSize: titleSize,
       onTap: onCrossroads,
     ),
     _HubCard(
       id: 'road_signs',
       title: appL10n.gamesRoadSignsTitle,
-      bestScore: roadSignsBest,
       titleSize: titleSize,
       onTap: onRoadSigns,
     ),
     _HubCard(
       id: 'violator',
       title: appL10n.gamesViolatorTitle,
-      bestScore: violatorBest,
       titleSize: titleSize,
       onTap: onViolator,
       // Still "coming soon" for the stores; dev builds (GAME_DEBUG) can play it.
@@ -387,7 +350,6 @@ class _MiniGamesCatalogue extends StatelessWidget {
     _HubCard(
       id: 'parking',
       title: appL10n.gamesParkingTitle,
-      bestScore: parkingBest,
       titleSize: titleSize,
       onTap: onParking,
       locked: _locked('parking'),
@@ -432,7 +394,6 @@ class _HubCard extends StatelessWidget {
   const _HubCard({
     required this.id,
     required this.title,
-    this.bestScore,
     this.caption,
     this.onTap,
     this.featured = false,
@@ -446,7 +407,6 @@ class _HubCard extends StatelessWidget {
   });
 
   final String id, title;
-  final int? bestScore;
   final String? caption;
   final VoidCallback? onTap;
   final bool featured, waiting, comingSoon, locked, compact;
@@ -462,13 +422,10 @@ class _HubCard extends StatelessWidget {
     // "Coming soon" outranks the badge: an unreleased game is not for sale.
     final premiumOnly = locked && !comingSoon;
     const foreground = AppColors.white;
-    final record = !comingSoon && bestScore != null && bestScore! > 0;
-    final status = comingSoon
-        ? appL10n.gameSoonBadge
-        : caption ??
-              (record
-                  ? appL10n.gamesRecordScore(_number(context, bestScore!))
-                  : null);
+    final status = comingSoon ? appL10n.gameSoonBadge : caption;
+    final animation = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 260);
     final radius = BorderRadius.circular(AppDimensions.cardRadius);
     return RepaintBoundary(
       child: Semantics(
@@ -491,36 +448,14 @@ class _HubCard extends StatelessWidget {
             fit: featured ? StackFit.loose : StackFit.expand,
             children: [
               Positioned.fill(
-                child: comingSoon
-                    ? Opacity(
-                        opacity: .5,
-                        child: ColorFiltered(
-                          colorFilter: const ColorFilter.matrix([
-                            .2126,
-                            .7152,
-                            .0722,
-                            0,
-                            0,
-                            .2126,
-                            .7152,
-                            .0722,
-                            0,
-                            0,
-                            .2126,
-                            .7152,
-                            .0722,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            1,
-                            0,
-                          ]),
-                          child: _HubCover(id: id),
-                        ),
-                      )
-                    : _HubCover(id: id),
+                // Closed games are black and white; colour returns with Premium
+                // (or refilled runs) in the same fade as the badge.
+                child: _Desaturated(
+                  amount: comingSoon || premiumOnly ? 1 : 0,
+                  opacity: comingSoon ? .5 : 1,
+                  duration: animation,
+                  child: _HubCover(id: id),
+                ),
               ),
               Positioned.fill(
                 child: DecoratedBox(
@@ -546,9 +481,7 @@ class _HubCard extends StatelessWidget {
                 child: IgnorePointer(
                   // The badge leaves with a short fade once Premium arrives.
                   child: AnimatedSwitcher(
-                    duration: MediaQuery.disableAnimationsOf(context)
-                        ? Duration.zero
-                        : const Duration(milliseconds: 260),
+                    duration: animation,
                     switchInCurve: Curves.easeOutBack,
                     switchOutCurve: Curves.easeIn,
                     transitionBuilder: (child, animation) => FadeTransition(
@@ -612,34 +545,14 @@ class _HubCard extends StatelessWidget {
                             ),
                             if (status != null) ...[
                               const SizedBox(height: AppDimensions.spacingXS),
-                              Row(
-                                children: [
-                                  if (record && caption == null) ...[
-                                    Icon(
-                                      Icons.emoji_events_rounded,
-                                      size: 14,
-                                      color: colors.gold,
-                                    ),
-                                    const SizedBox(
-                                      width: AppDimensions.spacingXS,
-                                    ),
-                                  ],
-                                  Flexible(
-                                    child: Text(
-                                      status,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        height: 1.25,
-                                        fontWeight: FontWeight.w600,
-                                        color:
-                                            waiting ||
-                                                (record && caption == null)
-                                            ? colors.gold
-                                            : foreground,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                status,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  height: 1.25,
+                                  fontWeight: FontWeight.w600,
+                                  color: waiting ? colors.gold : foreground,
+                                ),
                               ),
                             ],
                           ],
@@ -706,6 +619,45 @@ class _PremiumBadge extends StatelessWidget {
   }
 }
 
+/// The cover fading between colour (0) and black and white (1).
+class _Desaturated extends StatelessWidget {
+  const _Desaturated({
+    required this.amount,
+    required this.opacity,
+    required this.duration,
+    required this.child,
+  });
+  final double amount, opacity;
+  final Duration duration;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(end: amount),
+    duration: duration,
+    curve: Curves.easeOut,
+    child: child,
+    builder: (context, t, child) {
+      final cover = t <= 0
+          ? child!
+          : ColorFiltered(colorFilter: _grey(t), child: child);
+      return opacity < 1 ? Opacity(opacity: opacity, child: cover) : cover;
+    },
+  );
+
+  /// Rec. 709 luminance mixed with the original colour by `t`.
+  static ColorFilter _grey(double t) {
+    final s = 1 - t;
+    const r = .2126, g = .7152, b = .0722;
+    return ColorFilter.matrix([
+      r * t + s, g * t, b * t, 0, 0, //
+      r * t, g * t + s, b * t, 0, 0, //
+      r * t, g * t, b * t + s, 0, 0, //
+      0, 0, 0, 1, 0,
+    ]);
+  }
+}
+
 class _HubCover extends StatelessWidget {
   const _HubCover({required this.id});
   final String id;
@@ -742,10 +694,9 @@ class _RunsFooter extends StatelessWidget {
   const _RunsFooter({
     required this.runs,
     required this.refillAt,
-    required this.bestScore,
     this.onRefilled,
   });
-  final int runs, bestScore;
+  final int runs;
   final DateTime? refillAt;
   final VoidCallback? onRefilled;
 
@@ -757,26 +708,13 @@ class _RunsFooter extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Wrap(
-          spacing: AppDimensions.spacingM,
-          runSpacing: AppDimensions.spacingXS,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            if (bestScore > 0)
-              _RunMetric(
-                icon: Icons.emoji_events_rounded,
-                text: appL10n.gamesRecordScore(_number(context, bestScore)),
-              ),
-            if (runs > 0)
-              _RunMetric(
-                icon: Icons.local_gas_station_rounded,
-                text: appL10n.gamesRunsFraction(runs, GameRunsService.maxRuns),
-              ),
-          ],
-        ),
+        if (runs > 0)
+          _RunMetric(
+            icon: Icons.local_gas_station_rounded,
+            text: appL10n.gamesRunsFraction(runs, GameRunsService.maxRuns),
+          ),
         if (refillAt != null) ...[
-          if (runs > 0 || bestScore > 0)
-            const SizedBox(height: AppDimensions.spacingXS),
+          if (runs > 0) const SizedBox(height: AppDimensions.spacingXS),
           _RefillCountdown(at: refillAt!, onRefilled: onRefilled),
         ],
       ],
