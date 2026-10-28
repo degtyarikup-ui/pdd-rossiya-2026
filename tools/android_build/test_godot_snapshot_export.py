@@ -49,6 +49,9 @@ if '--version' in sys.argv:
     print('4.7.2.stable.official.fixture'); sys.exit(0)
 project = pathlib.Path(sys.argv[sys.argv.index('--path')+1])
 (project/'scenery/test.import').write_text('importer rewrite')
+if '--script' in sys.argv:
+    assert sys.argv[-1] == 'res://tests/crossroads_pdd_check.gd'
+    sys.exit(0)
 stage = 'import' if '--import' in sys.argv else 'export'
 if os.environ['FAIL_STAGE'] == stage:
     print('SCRIPT ERROR: intentional fixture error'); sys.exit(0)

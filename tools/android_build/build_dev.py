@@ -71,6 +71,9 @@ def main():
     secret = ROOT / 'secrets/install_notify_secret.txt'
     if secret.is_file():
         command += ['--dart-define=INSTALL_NOTIFY_SECRET=' + secret.read_text().strip()]
+    firebase = ROOT / 'secrets/firebase/ru.defines.json'
+    if firebase.is_file():
+        command += ['--dart-define-from-file=' + str(firebase)]
     env = dict(os.environ, ANDROID_HOME=str(sdk))
     if (ROOT / 'android/godot/assets/project.binary').is_file() or shutil.which('godot'):
         # The Git label describes these sources, never an older cached Godot export.

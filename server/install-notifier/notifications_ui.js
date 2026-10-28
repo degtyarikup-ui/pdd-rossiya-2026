@@ -115,6 +115,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-msg{display:grid;grid-template-columns:52px minmax(0,1.6fr) minmax(0,1fr) 140px auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--nf-line)}.nf-msg:first-of-type{border-top:0}
 .nf-thumb{width:52px;height:52px;flex-shrink:0;border-radius:12px;background:var(--nf-soft) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#A3AAB6}.nf-thumb svg{width:36px;height:26px}
 .nf-msg strong{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nf-msg small{display:block;font-size:12px;color:var(--text-muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nf-msg .nf-expiry small{white-space:normal;overflow:visible;font-variant-numeric:tabular-nums}.nf-expiry{margin-top:7px}
 .nf-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.nf-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 7px;border-radius:6px;background:var(--nf-soft);color:#4A5262}.nf-tag svg{width:12px;height:12px}
 .nf-tag.ok{background:var(--success-subtle);color:var(--success)}.nf-tag.bad{background:var(--danger-subtle);color:var(--danger)}.nf-tag.test{background:#FFF4DE;color:#9A5B00}.nf-tag.wait{background:var(--primary-subtle);color:var(--primary)}
 .nf-stat{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;display:flex;gap:12px}.nf-stat span{display:inline-flex;align-items:center;gap:4px}.nf-stat svg{width:14px;height:14px;color:#A3AAB6}.nf-stat+small{margin-top:3px}
@@ -210,7 +211,7 @@ function placeOf(m){return m.kind!=='push'?m.kind:(m.inAppKind||(m.inApp?'popup'
 function safe(u){return String(u||'').replace(/['"()<>\s\\]/g,'');}
 function bg(u){return u?"background-image:url('"+safe(u)+"')":'';}
 function https(u){try{return new URL(u).protocol==='https:';}catch(_){return false;}}
-function fmt(t){return new Date(t).toLocaleString('ru',{timeZone:'Europe/Moscow',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' МСК';}
+function fmt(t,year){return new Date(t).toLocaleString('ru',{timeZone:'Europe/Moscow',day:'numeric',month:'short',year:year?'numeric':undefined,hour:'2-digit',minute:'2-digit'})+' МСК';}
 function radio(name){var x=document.querySelector('input[name="'+name+'"]:checked');return x?x.value:'';}
 function setRadio(name,v){var x=document.querySelector('input[name="'+name+'"][value="'+v+'"]');if(x)x.checked=true;}
 async function api(path,body){var r=await fetch('/api/admin/notifications'+path,{method:body?'POST':'GET',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined});var d=await r.json().catch(function(){return {};});if(!r.ok)throw new Error(r.status===401?'Войдите в админку заново':r.status===404&&d.error==='target account not found'?'Аккаунт для проверки не найден':d.error||'Не удалось выполнить запрос');return d;}
@@ -462,6 +463,18 @@ el('confirm-cancel').onclick=function(){el('confirm').close();};
 el('confirm-send').onclick=function(){if(busy||!pending)return;var m=pending;el('confirm').close();send(m,function(){pending=null;clearForm();el('result').textContent=m.startAt?'Запланировано':m.kind==='push'?'Пуш отправляется':'Опубликовано';});};
 
 // ── History.
+function timeLeft(ms){
+ if(ms<60000)return Math.ceil(ms/1000)+' с';
+ var minutes=Math.ceil(ms/60000),days=Math.floor(minutes/1440),hours=Math.floor(minutes%1440/60),rest=minutes%60;
+ return (days?days+' д ': '')+(hours?hours+' ч ':'')+(!days||rest?rest+' мин':'');
+}
+function lifetimeHtml(m,now){
+ if(m.persistent)return '<small>Без срока — до отключения или удаления</small>';
+ if(!Number.isFinite(m.expiresAt))return '';
+ var date='<time datetime="'+new Date(m.expiresAt).toISOString()+'">'+esc(fmt(m.expiresAt,true))+'</time>';
+ if(m.expiresAt<=now)return '<small>Исчезло из приложения: '+date+'</small>';
+ return '<small>Исчезнет: '+date+'</small><small>'+(m.enabled?'Осталось: '+esc(timeLeft(m.expiresAt-now)):'Сейчас скрыто')+'</small>';
+}
 function statusTag(m){
  var now=Date.now(),expired=m.expiresAt<=now,scheduled=(m.startAt||0)>now;
  if(m.kind==='push'){
@@ -482,7 +495,7 @@ function render(list){
   var expired=m.expiresAt<=now,canToggle=!expired&&(m.kind!=='push'||['queued','accepted','unknown'].indexOf(m.status)>=0||placeOf(m)!=='news');
   var v=Number(m.metrics&&m.metrics.view||0),c=Number(m.metrics&&m.metrics.click||0);
   var who=m.target?'<span class="nf-tag test">Тест</span><small>'+esc(m.target)+'</small>':'<small>Все пользователи</small>';
-  return '<div class="nf-msg">'+thumb(m)+'<div style="min-width:0"><strong>'+esc(heading(m))+'</strong><small>'+esc(fmt(m.createdAt))+(ACTIONS[m.action]?' · → '+esc(ACTIONS[m.action]):'')+'</small><div class="nf-tags">'+tagsFor(m)+statusTag(m)+'</div>'+(m.error?'<small style="color:var(--danger)">'+esc(m.error)+'</small>':'')+'</div>'
+  return '<div class="nf-msg" data-nt-message="'+m.id+'">'+thumb(m)+'<div style="min-width:0"><strong>'+esc(heading(m))+'</strong><small>'+esc(fmt(m.createdAt))+(ACTIONS[m.action]?' · → '+esc(ACTIONS[m.action]):'')+'</small><div class="nf-tags">'+tagsFor(m)+'<span data-nt-status>'+statusTag(m)+'</span></div><div class="nf-expiry" data-nt-lifetime>'+lifetimeHtml(m,now)+'</div>'+(m.error?'<small style="color:var(--danger)">'+esc(m.error)+'</small>':'')+'</div>'
    +'<div class="nf-who">'+who+'</div>'
    +'<div class="nf-metric" title="Уникальные люди: увидели / нажали. Данные приходят с задержкой до 10 минут."><div class="nf-stat"><span>'+SVG.eye+v+'</span><span>'+SVG.tap+c+'</span></div><small>'+(v?'CTR '+(100*c/v).toFixed(1)+'%':'нет данных')+'</small></div>'
    +'<div class="nf-acts">'+(m.target?'<button class="nf-ib primary" data-nt-promote="'+m.id+'" title="Подставить в форму и отправить всем">Всем</button>':'')
@@ -491,6 +504,18 @@ function render(list){
    +(m.status!=='sending'?'<button class="nf-ib danger" data-nt-delete="'+m.id+'" title="Удалить">'+SVG.del+'</button>':'')+'</div></div>';
  }).join('');
 }
+function updateHistoryTimes(){
+ if(document.hidden||document.getElementById('notifications-view').style.display==='none')return;
+ var now=Date.now();
+ items.forEach(function(m){
+  var row=el('history').querySelector('[data-nt-message="'+m.id+'"]');if(!row)return;
+  var lifetime=row.querySelector('[data-nt-lifetime]'),html=lifetimeHtml(m,now);if(lifetime.innerHTML!==html)lifetime.innerHTML=html;
+  var status=row.querySelector('[data-nt-status]'),tag=statusTag(m);if(status.innerHTML!==tag)status.innerHTML=tag;
+  if(!m.persistent&&m.expiresAt<=now){var toggle=row.querySelector('[data-nt-toggle]');if(toggle)toggle.remove();}
+ });
+}
+setInterval(updateHistoryTimes,1000);
+document.addEventListener('visibilitychange',updateHistoryTimes);
 el('history').addEventListener('click',async function(e){
  var b=e.target.closest('button');if(!b)return;var id=b.dataset.ntPromote||b.dataset.ntCopy||b.dataset.ntToggle||b.dataset.ntDelete,m=items.find(function(x){return x.id===id;});
  if(b.dataset.ntPromote||b.dataset.ntCopy){if(m){fill(m);if(b.dataset.ntPromote)el('result').textContent='Проверено — нажмите «'+el('publish').textContent+'»';}return;}

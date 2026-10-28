@@ -62,6 +62,8 @@ flutter gen-l10n
 их загрузке нужны принятые лицензии и доступ к серверам Android SDK.
 
 Готовый APK: `build/app/outputs/flutter-apk/app-ru-release.apk`.
+При наличии `secrets/firebase/ru.defines.json` тестовая сборка получает ту же
+конфигурацию удалённых пушей, что и релизная; без файла Firebase не включается.
 `build_dev.sh` собирает release APK с `-Pdev`; Flutter debug-режим и тестовый
 суффикс пакета — разные вещи. Если `android/key.properties` отсутствует,
 dev APK подписывается локальным debug-ключом Android. Обычная магазинная

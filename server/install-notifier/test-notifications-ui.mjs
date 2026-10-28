@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { generateKeyPairSync } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import worker from './worker.js';
 import { NotificationsState, DEFAULT_NOTIFICATION_CONFIG } from './notifications.js';
 
@@ -165,5 +166,48 @@ if (process.argv.includes('--serve')) {
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'no horizontal scroll at ' + width);
     }
     assert.deepEqual(errors, []);
+  } finally { await browser.close(); await app.close(); }
+});
+
+if (!process.argv.includes('--serve')) test('notification history shows deadlines and updates expiry locally', { timeout: 30000 }, async t => {
+  let chromium;
+  try { ({ chromium } = createRequire(import.meta.url)('playwright')); } catch { t.skip('Playwright не найден (NODE_PATH)'); return; }
+  const app = await preview();
+  const now = Date.now(), messages = [...app.data.values()].filter(m => m?.id);
+  const temporary = messages.find(m => m.kind === 'popup');
+  temporary.expiresAt = now + 65000;
+  const permanent = messages.find(m => m.kind === 'banner');
+  Object.assign(permanent, { kind: 'news', persistent: true, expiresAt: 253402300799999 });
+  const scheduled = messages.find(m => m.kind === 'push');
+  Object.assign(scheduled, { kind: 'news', startAt: now + 3600000, expiresAt: now + 7200000, status: 'scheduled' });
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1268, height: 1000 } });
+    await page.clock.install({ time: new Date(now) });
+    let reads = 0;
+    page.on('request', request => { if (new URL(request.url()).pathname === '/api/admin/notifications' && request.method() === 'GET') reads++; });
+    await page.goto(app.url + '/admin');
+    await page.click('[data-feature="notifications"]');
+    const row = page.locator('[data-nt-message="'+temporary.id+'"]');
+    await row.waitFor();
+    assert.match(await row.textContent(), /Исчезнет:.*МСК.*Осталось: [12] мин/);
+    assert.equal(await row.locator('time').getAttribute('datetime'), new Date(temporary.expiresAt).toISOString());
+    assert.match(await page.locator('[data-nt-message="'+permanent.id+'"] [data-nt-lifetime]').textContent(), /Без срока/);
+    assert.match(await page.locator('[data-nt-message="'+scheduled.id+'"] [data-nt-lifetime]').textContent(), /Исчезнет:.*Осталось:/);
+    await page.clock.fastForward(61000);
+    assert.match(await row.locator('[data-nt-lifetime]').textContent(), /Осталось: [1-9] с/);
+    const requestsBefore = reads;
+    await page.clock.fastForward(5000);
+    assert.match(await row.locator('[data-nt-lifetime]').textContent(), /Исчезло из приложения:/);
+    assert.match(await row.locator('[data-nt-status]').textContent(), /Срок истёк/);
+    assert.equal(await row.locator('[data-nt-toggle]').count(), 0);
+    assert.equal(reads, requestsBefore, 'the countdown never polls the server');
+    if (process.env.NOTIFICATIONS_UI_SCREENSHOTS) {
+      await page.locator('#nt-history').screenshot({ path: fileURLToPath(new URL('../../../output/notification-history-countdown.png', import.meta.url)) });
+    }
+    for (const width of [390, 820]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'countdown fits at ' + width);
+    }
   } finally { await browser.close(); await app.close(); }
 });

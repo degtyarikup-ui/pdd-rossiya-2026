@@ -298,6 +298,9 @@ class FallbackTests(unittest.TestCase):
             cmake.parent.mkdir(parents=True)
             cmake.write_text('fake cmake')
             child = {'GRADLE_USER_HOME': str(root / 'isolated')}
+            firebase = root / 'secrets/firebase/ru.defines.json'
+            firebase.parent.mkdir(parents=True)
+            firebase.write_text('{"ENABLE_REMOTE_PUSH": true}')
             with mock.patch.object(build_dev, 'ROOT', root), \
                     mock.patch.object(build_dev, 'prerequisites', return_value=sdk), \
                     mock.patch.object(build_dev, 'fallback', return_value=contextlib.nullcontext(child)) as fallback, \
@@ -313,6 +316,7 @@ class FallbackTests(unittest.TestCase):
             self.assertIn('-Pdev', command)
             self.assertIn('--dart-define=DEVICE_REGION=RU', command)
             self.assertIn('--dart-define=GIT_COMMIT=abc123', command)
+            self.assertIn('--dart-define-from-file=' + str(firebase), command)
             self.assertEqual(command[command.index('--target-platform') + 1], 'android-arm64')
             self.assertEqual(run.call_args[1]['env'], child)
             self.assertEqual(fallback.call_args[0][0]['ANDROID_HOME'], str(sdk))
