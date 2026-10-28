@@ -49,6 +49,7 @@ from pathlib import Path
 
 import numpy as np
 import triangle
+from shapely import set_precision
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import substring, unary_union
 import direction_marking
@@ -535,6 +536,24 @@ def ground(scene: dict):
     return road, islands, roads_all, ring
 
 
+def sidewalk_support(scene: dict):
+    """The streets that have sidewalks own their full pavement corridor at a join.
+
+    A disabled branch must not punch through the opposite sidewalk of a narrow
+    through street. Node discs are junction filler, not independent sidewalks.
+    Smoothing only the enabled roads keeps normal corners between enabled arms.
+    """
+    roads = scene.get("roads", [])
+    if not any(r.get("walk") is False for r in roads):
+        return None
+    nodes = {f"road_{n['id']}" for n in (scene.get("layout") or {}).get("nodes", [])}
+    enabled = [r for r in roads if r.get("walk") is not False and r.get("id") not in nodes]
+    if not enabled:
+        return Polygon()
+    supported = road_geometry({**scene, "roads": enabled, "actors": [], "tracks": []})[2]
+    return supported.buffer(SIDEWALK, quad_segs=32)
+
+
 def _smooth(e0, e1, x):
     t = min(1.0, max(0.0, (x - e0) / (e1 - e0)))
     return t * t * (3 - 2 * t)
@@ -596,17 +615,28 @@ def build(scene: dict) -> dict:
     box = crop_box(scene)
     crop = float(scene.get("crop", 90.0))
     # Lawns win over the pavement: a flower bed drawn on the pavement stands on the lawn level.
-    lawn_polys = [polygon_of(l) for l in scene.get("lawns", [])]
+    support = sidewalk_support(scene)
+    lawn_polys, roadside_polys = [], []
+    for item in scene.get("lawns", []):
+        poly = polygon_of(item)
+        # Generated roadside grass must yield to the adjoining street's sidewalk.
+        # Hand-drawn lawns retain the author's explicit pavement cut-outs.
+        if support is not None and item.get("auto") and str(item.get("id", "")).startswith("auto_lawn_"):
+            roadside_polys.append(poly)
+            continue
+        lawn_polys.append(poly)
     # The lawns' outlines are traced too: they are tidied like the roads (the pavement is cut by them).
-    lawn = (tidy(unary_union(lawn_polys), LAWN_TIDY) if lawn_polys else Polygon()).intersection(box).difference(roads_all)
+    lawn = tidy(unary_union(lawn_polys), LAWN_TIDY) if lawn_polys else Polygon()
+    if roadside_polys:
+        lawn = lawn.union(tidy(unary_union(roadside_polys), LAWN_TIDY).difference(support))
+    lawn = lawn.intersection(box).difference(roads_all)
     # Use the road profile directly: smoothing a narrow lawn can restore the sidewalk.
-    no_walk = unary_union([polygon_of(r).buffer(SIDEWALK + 0.1) for r in scene.get("roads", []) if r.get("walk") is False])
+    no_walk = ring.difference(support) if support is not None else Polygon()
     pavement = ring.difference(lawn).difference(no_walk)
-    if not no_walk.is_empty:
-        # A half-width fillet turns cut sidewalks into rounded ends, removing thin
-        # wedges at the junction while keeping the remaining pavement inside its footprint.
-        finish_radius = SIDEWALK * 0.45
-        pavement = pavement.buffer(-finish_radius, quad_segs=24).buffer(finish_radius, quad_segs=24).intersection(pavement)
+    if support is not None:
+        # Coincident rotated road/lawn edges can leave sub-millimetre slivers.
+        # Resolve them at the same precision used by the exported vertex buffer.
+        pavement = set_precision(pavement, .001)
     no_edge = disabled_edge_mask(scene, roads_all)
     sand_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") == "sand"])
     asphalt_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") != "sand"]
@@ -697,7 +727,7 @@ def build(scene: dict) -> dict:
                      if pavement.buffer(0.04).union(islands.buffer(0.04)).intersects(LineString([(kerb_segments[i], kerb_segments[i+1]), (kerb_segments[i+2], kerb_segments[i+3])]))
                      for v in kerb_segments[i:i+4]]
     if not no_walk.is_empty and not pavement.is_empty:
-        # Close the rounded ends with a kerb too; the old outer/road outlines already
+        # Close the pavement ends with a kerb too; the old outer/road outlines already
         # have their own boundaries and must not be emitted a second time.
         original_edges = unary_union([Polygon(p["outer"], p["holes"]).boundary for p in polygons_json(ring)] + [road.boundary]).buffer(0.06)
         end_segments = walls(pavement, crop)
