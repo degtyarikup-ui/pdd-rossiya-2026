@@ -1863,7 +1863,7 @@ func _update_junction(dt: float) -> void:
 	var passed_stop := (local_car-local_stop).dot(local_heading)>=-0.18
 	# The route guide shows within 55 m of the junction (game.js `it.guide.visible`).
 	if phase == "driving" or phase == "question":
-		sit.set_evidence_visible(drive.pos.distance_to(stop_world)<55.0)
+		sit.set_evidence_visible(drive.pos.distance_to(stop_world)<55.0, true)
 	var capture_radius := 0.4 if sit.network and sit.network.free_player() else 8.0
 	var capture_alignment := 0.97 if sit.network and sit.network.free_player() else 0.2
 	if phase == "driving" and passed_stop and drive.pos.distance_to(stop_world)<capture_radius and Vector3(sin(drive.yaw),0,cos(drive.yaw)).dot(sit.basis*local_heading)>capture_alignment:
@@ -2066,7 +2066,8 @@ func answer(correct: bool) -> void:
 		current.junction.release()
 	current.junction.resolve(drive)
 	phase = "resolving"
-	current.sit.set_evidence_visible(false)   # hideBadges + the guide at the manoeuvre
+	# hideBadges + the guide at the manoeuvre: swept up and faded as the car sets off.
+	current.sit.set_evidence_visible(false, true)
 	controls.set_active(true)
 	drive.turning_at_junction = true
 

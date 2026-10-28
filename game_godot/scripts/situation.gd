@@ -32,6 +32,9 @@ var _crop := 90.0
 var _guide: Node3D                   # route ribbons (visible while the question is open)
 var _evidence: Array[Node3D] = []    # letter tokens
 var _badges: Array[Node3D] = []      # name plates over the participants
+var _evidence_on := false            # what set_evidence_visible last asked for
+const EVIDENCE_OUT := 0.52           # s: routes swept up after the answer
+var _evidence_motion: Tween
 ## Staging may outlive its owner for a few frames while a worker is joined.
 var _staging_owner: WeakRef
 
@@ -763,23 +766,10 @@ func _trajectory_guide() -> Node3D:
 		var pts: Array = tr.points
 		if pts.size() < 2:
 			continue
-		var st := SurfaceTool.new()
-		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		var curve := _smooth(pts)
-		var arrow: bool = tr.get("arrowhead",true) != false
-		_strip(st, _shorten(curve, 1.6) if arrow else curve, GUIDE_WIDTH)
-		_round_start(st, curve, GUIDE_WIDTH)
-		if arrow:
-			_arrowhead(st, _before_tip(curve, 1.6), curve[curve.size() - 1])
-		else:
-			var reverse := curve.duplicate()
-			reverse.reverse()
-			_round_start(st, reverse, GUIDE_WIDTH)
-		var mi := MeshInstance3D.new()
-		mi.mesh = st.commit()
-		mi.material_override = _guide_material(letter_colour(str(tr.get("label", ""))))
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		root.add_child(mi)
+		# A smooth ribbon with a round start and a rounded head (a round end without one).
+		var route := RouteArrow.new()
+		route.build(_smooth(pts), letter_colour(str(tr.get("label", ""))), tr.get("arrowhead", true) != false)
+		root.add_child(route)
 	return root
 
 
@@ -886,13 +876,105 @@ static func _guide_material(colour: Color) -> StandardMaterial3D:
 	return mat
 
 
-func set_evidence_visible(on: bool) -> void:
+## Route ribbons, answer letters and name plates. With `animate` (the ride itself) they come
+## and go smoothly: routes draw themselves and letters pop in when the junction comes near;
+## after the answer routes are swept up to their tips and letters and plates shrink and fade.
+## Repeating the last request changes nothing, so the ride may ask every frame.
+func set_evidence_visible(on: bool, animate := false) -> void:
+	if animate and on == _evidence_on: return
+	_evidence_on = on
+	if is_instance_valid(_evidence_motion): _evidence_motion.kill()
+	_evidence_motion = null
+	var has_marks := is_instance_valid(_guide) or not (_evidence.is_empty() and _badges.is_empty())
+	if animate and has_marks and is_inside_tree():
+		_move_evidence(on)
+		return
 	if is_instance_valid(_guide):
 		_guide.visible = on
-	for n in _evidence:
-		if is_instance_valid(n): n.visible = on
-	for n in _badges:
-		if is_instance_valid(n): n.visible = on
+		for route in _guide.get_children():
+			if route is RouteArrow:
+				(route as RouteArrow).reset()
+				route.visible = on
+			elif route is Node3D:
+				_set_guide_alpha(route, 1.0)
+	for n in _evidence + _badges:
+		if is_instance_valid(n): _settle_mark(n, on)
+
+
+func _move_evidence(on: bool) -> void:
+	var motion := create_tween().set_parallel()
+	_evidence_motion = motion
+	if is_instance_valid(_guide):
+		_guide.visible = true
+		var order := 0
+		for route in _guide.get_children():
+			if route is RouteArrow:
+				var arrow := route as RouteArrow
+				if on: arrow.appear(order * 0.08)
+				else: arrow.retract(order * 0.06, true, EVIDENCE_OUT)
+				order += 1
+			elif route is Node3D:
+				# A route from guide.glb: its material simply fades.
+				(route as Node3D).visible = true
+				motion.tween_method(_set_guide_alpha.bind(route), 0.0 if on else 1.0, 1.0 if on else 0.0, 0.3)
+	var marks: Array[Node3D] = []
+	for n in _evidence + _badges:
+		if is_instance_valid(n): marks.append(n)
+	for i in marks.size():
+		var mark := marks[i]
+		var plate := _badges.has(mark)
+		var base: Vector3 = mark.get_meta("rest_scale", mark.scale)
+		mark.set_meta("rest_scale", base)
+		var lift: Vector3 = mark.get_meta("rest_position", mark.position)
+		mark.set_meta("rest_position", lift)
+		mark.visible = true
+		if on:
+			# Letters pop in just after their routes start drawing; plates simply fade in.
+			var delay := 0.12 + i * 0.06
+			_set_mark_alpha(mark, 0.0)
+			mark.scale = base * (0.9 if plate else 0.35)
+			motion.tween_method(_set_mark_alpha.bind(mark), 0.0, 1.0, 0.18).set_delay(delay)
+			motion.tween_property(mark, "scale", base, 0.36).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		else:
+			# Letters hold a moment while the routes start to go, then shrink away.
+			var delay := 0.08 + i * 0.05
+			motion.tween_method(_set_mark_alpha.bind(mark), 1.0, 0.0, 0.3).set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			motion.tween_property(mark, "scale", base * (0.92 if plate else 0.45), 0.32).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+			if plate:
+				motion.tween_property(mark, "position", lift + Vector3.UP * 0.5, 0.32).set_delay(delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	motion.chain().tween_callback(func():
+		_evidence_motion = null
+		for mark in marks:
+			if is_instance_valid(mark): _settle_mark(mark, on)
+		if not on and is_instance_valid(_guide):
+			for route in _guide.get_children():
+				if route is Node3D and not route is RouteArrow: (route as Node3D).visible = false)
+
+
+## A letter or plate at rest: its own size, place and colours, shown or hidden.
+func _settle_mark(mark: Node3D, on: bool) -> void:
+	if mark.has_meta("rest_scale"): mark.scale = mark.get_meta("rest_scale")
+	if mark.has_meta("rest_position"): mark.position = mark.get_meta("rest_position")
+	_set_mark_alpha(mark, 1.0)
+	mark.visible = on
+
+
+## Fades a mark's sprites and texts without losing their own colours.
+static func _set_mark_alpha(mark: Node3D, alpha: float) -> void:
+	if not is_instance_valid(mark): return
+	for node in mark.find_children("*", "", true, false):
+		if node is SpriteBase3D or node is Label3D:
+			if not node.has_meta("rest_alpha"): node.set_meta("rest_alpha", node.modulate.a)
+			node.modulate.a = float(node.get_meta("rest_alpha")) * alpha
+
+
+static func _set_guide_alpha(route: Node3D, alpha: float) -> void:
+	if not is_instance_valid(route): return
+	for mi in route.find_children("*", "MeshInstance3D", true, false) + ([route] if route is MeshInstance3D else []):
+		var mat := (mi as MeshInstance3D).material_override as StandardMaterial3D
+		if mat == null: continue
+		if not mat.has_meta("rest_alpha"): mat.set_meta("rest_alpha", mat.albedo_color.a)
+		mat.albedo_color.a = float(mat.get_meta("rest_alpha")) * alpha
 
 
 func set_badges_visible(on: bool) -> void:

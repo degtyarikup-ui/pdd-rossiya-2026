@@ -45,6 +45,9 @@ var _speed_pill: PanelContainer
 var _notice: PanelContainer
 var _notice_text: Label
 var _notice_timer := 0.0
+var _notice_motion: Tween
+var _shown_score := -1
+var _shown_violations := -1
 # Synchronous construction only; text layout/drawing can continue after this call.
 var question_build_ms := -1.0
 var question_warmup_build_ms := -1.0
@@ -101,7 +104,7 @@ func _process(delta: float) -> void:
 	if _notice_timer > 0.0:
 		_notice_timer -= delta
 		if _notice_timer <= 0.0:
-			_notice.visible = false
+			_fade_notice()
 
 
 func show_reward(reward: Dictionary) -> void:
@@ -313,6 +316,11 @@ func set_hud(speed_kmh: int, limit_kmh, violations: int, distance_m: int, score:
 	_violations.text = str(violations)
 	_distance.text = ("%.1f %s" % [distance_m / 1000.0, Ui.t("gameKilometers")]) if distance_m >= 1000 else ("%d %s" % [distance_m, Ui.t("gameMeters")])
 	_score.text = str(score)
+	# A new point or violation gives its pill a short bounce.
+	if _shown_score >= 0 and score > _shown_score: _bounce(_score)
+	if _shown_violations >= 0 and violations > _shown_violations: _bounce(_violations)
+	_shown_score = score
+	_shown_violations = violations
 	_run_big.text = str(question_number)
 	_run_small.text = " / %d" % total
 
@@ -327,8 +335,45 @@ func show_notice(type: String, seconds := 3.0) -> void:
 		"report_sent": "reportSent",
 	}.get(type, "gameWrongManeuver")
 	_notice_text.text = Ui.t(key)
+	var arriving := not _notice.visible or _notice.modulate.a < 1.0
 	_notice.visible = true
 	_notice_timer = seconds
+	if is_instance_valid(_notice_motion): _notice_motion.kill()
+	if not arriving or not is_inside_tree():
+		_notice.modulate.a = 1.0
+		_notice.scale = Vector2.ONE
+		return
+	# Drops in with a slight overshoot, then fades when its time is up.
+	_notice.pivot_offset = Vector2(_notice.size.x * 0.5, 0.0)
+	_notice.modulate.a = 0.0
+	_notice.scale = Vector2.ONE * 0.88
+	_notice_motion = create_tween().set_parallel()
+	_notice_motion.tween_property(_notice, "modulate:a", 1.0, 0.14)
+	_notice_motion.tween_property(_notice, "scale", Vector2.ONE, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _fade_notice() -> void:
+	if is_instance_valid(_notice_motion): _notice_motion.kill()
+	if not is_inside_tree():
+		_notice.visible = false
+		return
+	_notice_motion = create_tween()
+	_notice_motion.tween_property(_notice, "modulate:a", 0.0, 0.22)
+	_notice_motion.tween_callback(func():
+		_notice.visible = false
+		_notice.modulate.a = 1.0)
+
+
+## The pill around `label` swells a little and settles back.
+func _bounce(label: Label) -> void:
+	if not is_inside_tree(): return
+	var pill: Control = label
+	while pill != null and not pill is PanelContainer: pill = pill.get_parent() as Control
+	if pill == null: return
+	pill.pivot_offset = pill.size * 0.5
+	var tween := create_tween()
+	tween.tween_property(pill, "scale", Vector2.ONE * 1.18, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(pill, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func set_hud_visible(on: bool) -> void:
@@ -854,6 +899,29 @@ func mark_answer(chosen: int, correct: int) -> void:
 			(badge.get_child(0) as Label).add_theme_color_override("font_color", Color.WHITE)
 		else:
 			label.add_theme_color_override("font_color", Ui.c("secondary"))
+	_animate_marks(chosen, correct)
+
+
+## The answer lands with motion: the right option swells and settles, a wrong choice
+## gives a short dip, their ✓ / ✕ pop in, and the other options recede.
+func _animate_marks(chosen: int, correct: int) -> void:
+	if not is_inside_tree(): return
+	for i in _options.size():
+		var p := _options[i]
+		if not is_instance_valid(p): continue
+		var tween := create_tween()
+		if i == correct or i == chosen:
+			p.pivot_offset = p.size * 0.5
+			var peak := 1.035 if i == correct else 0.975
+			tween.tween_property(p, "scale", Vector2.ONE * peak, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tween.tween_property(p, "scale", Vector2.ONE, 0.26).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			var badge: PanelContainer = p.find_children("*", "PanelContainer", true, false)[0]
+			badge.pivot_offset = badge.size * 0.5
+			badge.scale = Vector2.ONE * 0.4
+			var pop := create_tween()
+			pop.tween_property(badge, "scale", Vector2.ONE, 0.34).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT).set_delay(0.05)
+		else:
+			tween.tween_property(p, "modulate:a", 0.6, 0.25)
 
 
 ## Height of the open question card (0 when none): the camera frames the
