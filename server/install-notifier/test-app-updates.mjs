@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import worker from './worker.js';
 import { NotificationsState } from './notifications.js';
 import { validateRelease } from './app_updates.js';
-import { APP_UPDATES_CLIENT_JS } from './app_updates_ui.js';
 const release = (extra={}) => ({app:'ru',platform:'android',enabled:true,version:'2.1.9',build:49,packageId:'ru.pdd.pdd_app',storeUrl:'https://play.google.com/store/apps/details?id=ru.pdd.pdd_app',notes:'Исправления игры',...extra});
 function setup(){
  const data=new Map(),storage={get:async key=>data.get(key),put:async(key,value)=>data.set(key,structuredClone(value)),list:async({prefix})=>new Map([...data].filter(([key])=>key.startsWith(prefix)))};
@@ -42,11 +41,4 @@ test('public worker update API has CORS/no-store and never discloses another cou
   const r=await worker.fetch(new Request('https://test/api/admin/app-updates',{method,...(method==='POST'?{body:JSON.stringify(release())}:{})}),{INSTALLS:{get:async()=>null}});
   assert.equal(r.status,401);
  }
-});
-test('admin embeds release editor and scripts compile without touching campaign editor',async()=>{
- new Function(APP_UPDATES_CLIENT_JS);
- const html=await(await worker.fetch(new Request('https://test/admin'),{})).text();
- assert.equal((html.match(/id="up-form"/g)||[]).length,1);
- new Function(html.match(/<script>([\s\S]*)<\/script>/)[1]);
- assert.match(html,/id="up-platform"/);assert.match(html,/id="nt-form"/);
 });

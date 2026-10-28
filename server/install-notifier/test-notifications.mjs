@@ -223,9 +223,9 @@ test('personal account test targeting delivers only to matching email or userId 
   assert.equal(pushCondition(validateCampaign({...personal,kind:'push'})),`'${topic}' in topics && 'pdd_ru_ios' in topics`);
   assert.equal(pushCondition(validateCampaign({...personal,kind:'push',platform:'all'})),`'${topic}' in topics`);
 });
-test('campaign editor remains Russia-only; release settings support all countries',async()=>{
+test('campaign editor is Russia-only, without global switches or release settings',async()=>{
   const html=await(await worker.fetch(new Request('https://test/admin'),{})).text();
-  assert.match(html, /id="up-app"[\s\S]*value="by"[\s\S]*value="rs"/);
+  assert.doesNotMatch(html,/data-nt-config|id="up-form"/);
   assert.doesNotMatch(html.match(/<form id="nt-form"[\s\S]*?<\/form>/)[0], /Беларусь|Сербия/);
   assert.match(html,/id="nt-target"/);
   assert.match(html,/id="nt-test"/);

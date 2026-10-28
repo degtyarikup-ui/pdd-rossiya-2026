@@ -1,4 +1,3 @@
-import { APP_UPDATES_VIEW_HTML, APP_UPDATES_CLIENT_JS } from './app_updates_ui.js';
 export const NOTIFICATIONS_NAV_HTML = `<button class="nav-item" data-feature="notifications"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span>Уведомления</span></button>`;
 
 // Illustrations of where a message appears (tiles of the editor).
@@ -21,14 +20,11 @@ export const NOTIFICATIONS_VIEW_HTML = `
 <style>
 #notifications-view{--nf-line:#E9ECF1;--nf-soft:#F4F6F9;--nf-warn:#C77700}#notifications-view [hidden]{display:none!important}
 #notifications-view .nf-card,#notifications-view .nt-card{background:#fff;border-radius:20px;padding:24px}
-.nf-switches{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
-.nf-sw{background:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;min-width:0}
-.nf-sw span{min-width:0;font-size:13px;font-weight:600;color:var(--text)}.nf-sw small{display:block;font-size:11px;font-weight:450;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nf-sw input,.nf-tile input,.nf-chip input,.nf-seg input,.nf-push input{position:absolute;opacity:0;pointer-events:none}
-.nf-sw{position:relative}.nf-sw i,.nf-push i{width:36px;height:22px;flex-shrink:0;border-radius:20px;background:#DDE1E9;position:relative;transition:background .15s}
-.nf-sw i:before,.nf-push i:before{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
-.nf-sw input:checked+i,.nf-push input:checked~i{background:var(--primary)}.nf-sw input:checked+i:before,.nf-push input:checked~i:before{transform:translateX(14px)}
-.nf-sw input:disabled+i{opacity:.5}.nf-sw input:focus-visible+i,.nf-push input:focus-visible~i{outline:2px solid var(--primary);outline-offset:2px}
+.nf-tile input,.nf-chip input,.nf-seg input,.nf-push input{position:absolute;opacity:0;pointer-events:none}
+.nf-push i{width:36px;height:22px;flex-shrink:0;border-radius:20px;background:#DDE1E9;position:relative;transition:background .15s}
+.nf-push i:before{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.nf-push input:checked~i{background:var(--primary)}.nf-push input:checked~i:before{transform:translateX(14px)}
+.nf-push input:focus-visible~i{outline:2px solid var(--primary);outline-offset:2px}
 .nf-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start;margin-bottom:16px}
 .nf-sec{padding:20px 0;border-top:1px solid var(--nf-line)}.nf-sec:first-child{padding-top:0;border-top:0}
 .nf-sec h4{margin:0 0 12px;font-size:12px;font-weight:600;color:var(--text-muted)}
@@ -42,9 +38,9 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-note{margin:10px 0 0;font-size:12px;color:var(--text-muted)}.nf-note:empty{display:none}
 .nf-drop{display:flex;align-items:center;gap:14px;border:1.5px dashed #CDD3DD;border-radius:16px;padding:14px;cursor:pointer;color:var(--text-muted);font-size:13px;transition:border-color .15s,background .15s}
 .nf-drop:hover,.nf-drop.over{border-color:var(--primary);background:#F7FAFF}.nf-drop svg{flex-shrink:0}
-.nf-drop.has{cursor:default;border-style:solid;border-color:var(--nf-line)}.nf-drop img{width:64px;height:64px;object-fit:cover;border-radius:12px;background:var(--nf-soft);flex-shrink:0}
+.nf-drop.has{cursor:default;border-style:solid;border-color:var(--nf-line)}.nf-drop img{width:64px;height:64px;object-fit:contain;border-radius:12px;background:var(--nf-soft);flex-shrink:0}
 .nf-drop b{display:block;color:var(--text);font-size:13px}.nf-drop .nf-grow{min-width:0}.nf-drop small{display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nf-grow{flex:1;min-width:0}
+.nf-grow{flex:1;min-width:0}.nf-ratio{width:56px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#9AA2B1}.nf-ratio i{display:block;border:1.6px dashed currentColor;border-radius:4px}.nf-drop small.ok{color:var(--success)}.nf-drop small.warn{color:var(--nf-warn)}
 .nf-link{border:0;background:none;color:var(--primary);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:6px 8px;border-radius:8px}.nf-link:hover{background:var(--primary-subtle)}.nf-link.danger{color:var(--danger)}.nf-link.danger:hover{background:var(--danger-subtle)}
 .nf-seg{display:inline-flex;gap:4px;background:var(--nf-soft);border-radius:12px;padding:3px;margin-top:10px}
 .nf-seg label{position:relative;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:550;color:var(--text-muted)}
@@ -96,13 +92,13 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .sk-l{height:7px;border-radius:4px;background:#EFF0F4;margin:6px 0}.sk-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.sk-grid div{height:74px}.sk-exam{height:96px;background:#0574F8;opacity:.9}
 .ap-nav{height:52px;background:#fff;display:flex;justify-content:space-around;align-items:center;padding-bottom:6px}.ap-nav i{width:18px;height:18px;border-radius:5px;background:#E3E6EC}.ap-nav i:first-child{background:#0574F8}
 .ab{background:#fff;border-radius:14px;padding:13px;position:relative;font-size:12px}.ab-mark{display:block;width:20px;height:3px;border-radius:2px;margin-bottom:8px}
-.ab-row{display:flex;gap:10px;align-items:center;padding-right:18px}.ab-th{width:46px;height:46px;border-radius:10px;background:#F4F6FA center/cover;flex-shrink:0}.ab b{display:block;font-size:13.5px;line-height:1.2}.ab p{margin:4px 0 0;color:#5E5E5E;line-height:1.38}
+.ab-row{display:flex;gap:10px;align-items:center;padding-right:18px}.ab-th{width:46px;height:46px;border-radius:10px;background:#fff center/contain no-repeat;flex-shrink:0}.ab b{display:block;font-size:13.5px;line-height:1.2}.ab p{margin:4px 0 0;color:#5E5E5E;line-height:1.38}
 .ab-chip{display:inline-block;margin-top:9px;padding:5px 9px;border-radius:8px;font-size:11px;font-weight:600}
 .ax{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#F4F6FA;color:#A1A6B7;font-size:10px;display:flex;align-items:center;justify-content:center}
 .aimg{position:relative;border-radius:14px;overflow:hidden;background:#F4F6FA}.aimg img{display:block;width:100%;height:auto}.aimg .ax{background:rgba(15,23,42,.6);color:#fff}
 .ov{position:absolute;inset:0;background:rgba(10,12,18,.45);display:flex;align-items:center;justify-content:center;padding:16px}
-.aw{background:#fff;border-radius:20px;width:100%;overflow:hidden;position:relative;font-size:12px;max-height:100%;overflow-y:auto}.aw .im{width:100%;aspect-ratio:16/9;background:#F4F6FA center/cover}.aw .im.cover{aspect-ratio:4/3}
-.aw .in2{padding:16px}.aw .ic2{width:46px;height:46px;border-radius:12px;background:#F4F6FA center/cover;margin-bottom:10px}.aw b{display:block;font-size:16px;line-height:1.25;letter-spacing:-.2px;padding-right:18px}.aw p{margin:6px 0 0;color:rgba(18,18,18,.68);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.aw{background:#fff;border-radius:20px;width:100%;overflow:hidden;position:relative;font-size:12px;max-height:100%;overflow-y:auto}.aw .im{width:100%;aspect-ratio:16/9;background:#fff center/contain no-repeat}.aw .im.cover{aspect-ratio:4/3}
+.aw .in2{padding:16px}.aw .ic2{width:46px;height:46px;border-radius:12px;background:#fff center/contain no-repeat;margin-bottom:10px}.aw b{display:block;font-size:16px;line-height:1.25;letter-spacing:-.2px;padding-right:18px}.aw p{margin:6px 0 0;color:rgba(18,18,18,.68);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .aw .bt{margin-top:14px;border-radius:12px;padding:10px;text-align:center;font-weight:600;font-size:12.5px}.aw .bt2{text-align:center;padding:9px 0 0;color:#0574F8;font-weight:600;font-size:12px}.aw img{display:block;width:100%}
 .aw.only .ax{background:rgba(15,23,42,.6);color:#fff}
 .al{background:#fff;border-radius:14px;height:44px;display:flex;align-items:center;gap:9px;padding:0 10px;font-size:12.5px;font-weight:600}.al i{width:28px;height:28px;border-radius:50%;background:#E8F2FE;position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#0574F8}
@@ -125,17 +121,9 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .nf-sum{display:flex;gap:12px;align-items:center;background:var(--nf-soft);border-radius:14px;padding:12px;margin-bottom:12px}.nf-sum .nf-thumb{background-color:#fff}.nf-sum b{display:block;font-size:14px;overflow-wrap:anywhere}.nf-sum small{display:block;font-size:12px;color:var(--text-muted);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .nf-modal .nf-tags{margin:0 0 18px}.nf-modal .nf-actions{display:flex;gap:8px;justify-content:flex-end}
 #notifications-view .nf-modal input{width:100%;box-sizing:border-box;border:1.5px solid var(--nf-line);border-radius:12px;padding:11px 14px;font:inherit;font-size:14px;margin-bottom:16px}
-#up-form .nt-field{display:block;margin-bottom:14px}#up-form .nt-field>span{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px}#up-form .nt-field input,#up-form .nt-field textarea,#up-form .nt-field select{width:100%;box-sizing:border-box;font:inherit;border:1.5px solid var(--nf-line);border-radius:12px;padding:10px 12px;background:#fff}#up-form .nt-field textarea{min-height:90px;resize:vertical}
-#up-form .nt-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}#up-form .nt-check{display:flex;gap:10px;align-items:center;font-size:13px;margin-bottom:14px}#up-form .nt-check input{width:auto}#up-form .nt-hint{font-size:12px;color:var(--text-muted);line-height:1.6}#up-form .nt-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-@media(max-width:1180px){.nf-grid{grid-template-columns:minmax(0,1fr)}.nf-preview{position:static}.nf-switches{grid-template-columns:repeat(2,minmax(0,1fr))}.nf-msg{grid-template-columns:52px minmax(0,1fr) auto}.nf-msg>.nf-who,.nf-msg>.nf-metric{grid-column:2}.nf-msg>.nf-acts{grid-column:1/-1;justify-content:flex-start}}
-@media(max-width:600px){#notifications-view .nf-card{padding:18px}.nf-switches{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.nf-sw{padding:12px;gap:10px}.nf-sw small{display:none}.nf-two,.nf-row,#up-form .nt-row{grid-template-columns:minmax(0,1fr)}.nf-tile{padding:12px 4px 10px}.nf-tile svg{width:44px;height:32px}.nf-bar .nf-grow{display:none}.nf-bar #nt-publish{width:100%;justify-content:center;order:5}}
+@media(max-width:1180px){.nf-grid{grid-template-columns:minmax(0,1fr)}.nf-preview{position:static}.nf-msg{grid-template-columns:52px minmax(0,1fr) auto}.nf-msg>.nf-who,.nf-msg>.nf-metric{grid-column:2}.nf-msg>.nf-acts{grid-column:1/-1;justify-content:flex-start}}
+@media(max-width:600px){#notifications-view .nf-card{padding:18px}.nf-two,.nf-row{grid-template-columns:minmax(0,1fr)}.nf-tile{padding:12px 4px 10px}.nf-tile svg{width:44px;height:32px}.nf-bar .nf-grow{display:none}.nf-bar #nt-publish{width:100%;justify-content:center;order:5}}
 </style>
-<div class="nf-switches">
-<label class="nf-sw"><input type="checkbox" data-nt-config="pushEnabled" aria-label="Пуши" disabled><i></i><span>Пуши<small id="nt-provider">Проверка…</small></span></label>
-<label class="nf-sw"><input type="checkbox" data-nt-config="popupEnabled" aria-label="Сообщения в приложении" disabled><i></i><span>В приложении<small>Окна, баннеры, список</small></span></label>
-<label class="nf-sw"><input type="checkbox" data-nt-config="streakEnabled" aria-label="Напоминание об учёбе" disabled><i></i><span>Напоминание об учёбе<small>Каждый день в 20:00</small></span></label>
-<label class="nf-sw"><input type="checkbox" data-nt-config="gameEnabled" aria-label="Заезды восстановились" disabled><i></i><span>Заезды восстановились<small>Напоминание об игре</small></span></label>
-</div>
 <div id="nt-page-error" class="nt-error" role="alert"></div>
 <div class="nf-grid">
 <form id="nt-form" class="nf-card" novalidate>
@@ -180,20 +168,18 @@ export const NOTIFICATIONS_VIEW_HTML = `
 </aside>
 </div>
 <div class="nf-card" style="margin-bottom:16px"><div class="nf-hist-h"><h3>Отправленные</h3><button class="nf-ib" id="nt-refresh" title="Обновить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button></div><div id="nt-history"><div class="nf-empty">Загрузка…</div></div></div>
-<details class="admin-disclosure"><summary>Обновления приложения</summary><div class="admin-disclosure-body">${APP_UPDATES_VIEW_HTML.replace('<h3>Обновления приложения</h3>', '')}</div></details>
 <dialog class="nf-modal" id="nt-confirm"><h3>Отправить всем?</h3><div class="nf-sum" id="nt-confirm-sum"></div><div class="nf-tags" id="nt-confirm-tags"></div><div class="nf-actions"><button type="button" class="nf-btn ghost" id="nt-confirm-cancel">Отмена</button><button type="button" class="nf-btn primary" id="nt-confirm-send">Отправить</button></div></dialog>
 <dialog class="nf-modal" id="nt-me-dialog"><h3>Ваш аккаунт в приложении</h3><input id="nt-target" list="nt-users-list" maxlength="120" placeholder="email или ID" autocomplete="off"><datalist id="nt-users-list"></datalist><div class="nf-actions"><button type="button" class="nf-btn ghost" id="nt-me-cancel">Отмена</button><button type="button" class="nf-btn primary" id="nt-me-save">Отправить</button></div></dialog>
 </div>`;
 
 export const NOTIFICATIONS_CLIENT_JS = String.raw`
-${APP_UPDATES_CLIENT_JS}
 VIEW_TITLES.notifications = 'Уведомления';
 (function(){
 var el=function(id){return document.getElementById('nt-'+id);};
 var esc=function(v){return adminEsc(v==null?'':String(v));};
 var ART=${JSON.stringify(ART)};
 var cfg=null,ready=false,busy=false,items=[],usersLoaded=false,pending=null,afterTarget=null;
-var S={push:false,place:'news',layout:'standard',accent:'',platform:'all',store:'all',when:'now',days:'7',image:'',imgSize:'',tab:'',os:'ios'};
+var S={push:false,place:'news',layout:'standard',accent:'',platform:'all',store:'all',when:'now',days:'7',image:'',imgW:0,imgH:0,tab:'',os:'ios'};
 // Lock-screen budget: about one line of title on both systems, four lines of
 // text on iPhone and one on collapsed Android. FCM rejects more than 4 KB.
 var PUSH={title:50,titleSoft:38,body:300,bodySoft:150};
@@ -308,7 +294,7 @@ function count(id,n,max,soft){var x=el(id+'-count');x.textContent=n?n+' / '+max:
 function sync(){
  var d=draft(),push=S.push,canPush=pushAvailable(),imageOnly=d.layout==='image';
  el('push').disabled=!canPush&&!push;el('push').checked=push;
- el('push-state').textContent=!cfg?'…':!ready?'Firebase не подключён':!cfg.pushEnabled?'Выключены переключателем выше':S.platform==='web'?'В вебе недоступен':'iOS и Android';
+ el('push-state').textContent=!cfg?'…':!ready?'Firebase не подключён':!cfg.pushEnabled?'Пуши выключены на сервере':S.platform==='web'?'В вебе недоступен':'iOS и Android';
  setRadio('nt-place',S.place);setRadio('nt-platform',S.platform);setRadio('nt-store',S.store);setRadio('nt-when',S.when);setRadio('nt-days',S.days);setRadio('nt-layout',S.layout);
  document.querySelector('input[name="nt-platform"][value="web"]').disabled=push;
  el('place-note').textContent=push&&S.place!=='news'?'Тем, у кого пуши выключены':'';
@@ -324,8 +310,9 @@ function sync(){
  el('url').hidden=d.action!=='url';el('swatches').hidden=imageOnly;
  document.querySelectorAll('#nt-swatches .nf-swatch').forEach(function(s){s.classList.toggle('on',s.dataset.color===S.accent);});
  var drop=el('drop');
- if(S.image){drop.classList.add('has');drop.innerHTML='<img src="'+esc(S.image)+'" alt=""><div class="nf-grow"><b>Картинка</b><small>'+esc(S.imgSize||S.image)+'</small></div><button type="button" class="nf-link" data-img="replace">Заменить</button><button type="button" class="nf-link danger" data-img="remove">Убрать</button>';}
- else{drop.classList.remove('has');drop.innerHTML=SVG.upload+'<div class="nf-grow"><b>Картинка</b><small>Перетащите или выберите · до 1 МБ</small></div><button type="button" class="nf-link" data-img="url">Ссылка</button>';}
+ var spec=imageSpec(),size=spec.w+' × '+spec.h,fit=imageFit(spec);
+ if(S.image){drop.classList.add('has');drop.innerHTML='<img src="'+esc(S.image)+'" alt=""><div class="nf-grow"><b>'+(S.imgW?S.imgW+' × '+S.imgH:'Картинка')+'</b>'+(fit?'<small class="'+fit.cls+'">'+esc(fit.text)+'</small>':'<small>Нужно '+size+'</small>')+'</div><button type="button" class="nf-link" data-img="replace">Заменить</button><button type="button" class="nf-link danger" data-img="remove">Убрать</button>';}
+ else{drop.classList.remove('has');drop.innerHTML=ratioIcon(spec)+'<div class="nf-grow"><b>Картинка '+size+'</b><small>'+esc(['Перетащите или выберите','до 1 МБ',spec.note].filter(Boolean).join(' · '))+'</small></div><button type="button" class="nf-link" data-img="url">Ссылка</button>';}
  var me=target();el('me').textContent=me?'→ '+me:'';el('me').hidden=!me;
  var p=problem(d);
  el('publish').disabled=busy||!!p;el('test').disabled=busy||(!!p&&p!=='Выберите время старта'&&p!=='Время старта уже прошло');
@@ -335,12 +322,34 @@ function sync(){
 }
 function saveDraft(){try{localStorage.setItem('nt-draft',JSON.stringify({s:{push:S.push,place:S.place,layout:S.layout,accent:S.accent,platform:S.platform,store:S.store,days:S.days,image:S.image},title:el('title').value,body:el('body').value,action:el('action').value,url:el('url').value,button:el('button').value,dismiss:el('dismiss').value}));}catch(_){}}
 function loadDraft(){try{var x=JSON.parse(localStorage.getItem('nt-draft')||'null');if(!x)return;Object.assign(S,x.s||{});['title','body','action','url','button','dismiss'].forEach(function(k){if(typeof x[k]==='string')el(k).value=x[k];});}catch(_){}}
-function clearForm(){['title','body','url','button','dismiss','start'].forEach(function(k){el(k).value='';});el('action').value='none';Object.assign(S,{push:false,place:'news',layout:'standard',accent:'',platform:'all',store:'all',when:'now',days:'7',image:'',imgSize:'',tab:''});pending=null;el('editor-error').textContent='';}
+function clearForm(){['title','body','url','button','dismiss','start'].forEach(function(k){el(k).value='';});el('action').value='none';Object.assign(S,{push:false,place:'news',layout:'standard',accent:'',platform:'all',store:'all',when:'now',days:'7',image:'',imgW:0,imgH:0,tab:''});pending=null;el('editor-error').textContent='';}
 function fill(m){
  clearForm();S.push=m.kind==='push';S.place=placeOf(m);S.platform=m.platform||'all';S.store=m.store||'all';S.layout=m.layout==='cover'||m.layout==='compact'?m.layout:'standard';S.accent=m.accent||'';S.image=m.imageUrl||'';
  el('title').value=m.title||'';el('body').value=m.body||'';el('action').value=m.action||'none';el('url').value=m.actionUrl||'';el('button').value=m.buttonText||'';el('dismiss').value=m.dismissText||'';
  el('result').textContent='';sync();el('form').scrollIntoView({behavior:'smooth',block:'start'});
 }
+
+// ── Image: the size that fits every place the message appears. In the app a
+// picture is always fitted whole, a different shape only adds margins; a push
+// crops it: a square from the centre when collapsed, 2:1 on expanded Android.
+function imageSpec(){
+ var only=!S.push&&!el('title').value.trim()&&!el('body').value.trim();
+ if(S.push)return {w:1024,h:512,note:'главное — по центру',crops:true};
+ if(S.place==='banner')return only?{w:1920,h:734,note:'правый верхний угол — под крестик'}:{w:512,h:512};
+ if(S.place==='popup')return only?{w:1080,h:1350,note:'правый верхний угол — под крестик'}:S.layout==='cover'?{w:1600,h:1200}:S.layout==='compact'?{w:512,h:512}:{w:1600,h:900};
+ return {w:1600,h:900};
+}
+function imageFit(spec){
+ if(!S.imgW)return null;
+ var off=(S.imgW/S.imgH)/(spec.w/spec.h);
+ if(S.imgW<spec.w/2)return {cls:'warn',text:'Маленькая — будет нечёткой, нужно '+spec.w+' × '+spec.h};
+ if(Math.abs(off-1)<=0.04)return {cls:'ok',text:'✓ Подходит'};
+ var want=spec.w+' × '+spec.h;
+ if(spec.crops)return {cls:'warn',text:'В пуше обрежутся края — нужно '+want};
+ if(S.place==='banner'&&spec.w===1920)return {cls:'warn',text:(off<1?'Баннер выйдет выше':'Баннер выйдет ниже')+' обычного — лучше '+want};
+ return {cls:'warn',text:'Встанет с полями — лучше '+want};
+}
+function ratioIcon(spec){var k=Math.min(52/spec.w,38/spec.h);return '<span class="nf-ratio"><i style="width:'+Math.round(spec.w*k)+'px;height:'+Math.round(spec.h*k)+'px"></i></span>';}
 
 // ── Image: drop, choose or paste a link.
 async function upload(f){
@@ -351,7 +360,7 @@ async function upload(f){
  try{var r=await fetch('/api/admin/notifications/image',{method:'POST',headers:{'content-type':f.type},body:f});var d=await r.json();if(!r.ok)throw new Error(d.error||'Не удалось загрузить');setImage(d.url);}
  catch(e){el('editor-error').textContent=e.message;sync();}
 }
-function setImage(url){S.image=url;S.imgSize='';pending=null;sync();if(!url)return;var probe=new Image();probe.onload=function(){if(S.image===url){S.imgSize=probe.naturalWidth+' × '+probe.naturalHeight;sync();}};probe.src=url;}
+function setImage(url){S.image=url;S.imgW=S.imgH=0;pending=null;sync();if(!url)return;var probe=new Image();probe.onload=function(){if(S.image===url){S.imgW=probe.naturalWidth;S.imgH=probe.naturalHeight;sync();}};probe.src=url;}
 el('drop').addEventListener('click',function(e){var b=e.target.closest('[data-img]');if(b){e.stopPropagation();if(b.dataset.img==='remove')setImage('');else if(b.dataset.img==='replace')el('file').click();else{var u=prompt('Ссылка на картинку (https://)',S.image||'');if(u!==null){u=u.trim();if(u&&!https(u)){el('editor-error').textContent='Картинка должна открываться по https://';return;}setImage(u);}}return;}if(!S.image)el('file').click();});
 el('drop').addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&!S.image){e.preventDefault();el('file').click();}});
 ['dragenter','dragover'].forEach(function(t){el('drop').addEventListener(t,function(e){e.preventDefault();el('drop').classList.add('over');});});
@@ -379,8 +388,6 @@ el('tabs').addEventListener('click',function(e){var b=e.target.closest('[data-ta
 el('os').addEventListener('click',function(e){var b=e.target.closest('[data-os]');if(b){S.os=b.dataset.os;renderPreview();}});
 el('reset').onclick=function(){clearForm();el('result').textContent='';sync();};
 
-// ── Settings switches.
-document.querySelectorAll('[data-nt-config]').forEach(function(x){x.addEventListener('change',async function(){if(busy||!cfg)return;busy=true;var next=Object.assign({},cfg);next[x.dataset.ntConfig]=x.checked;document.querySelectorAll('[data-nt-config]').forEach(function(y){y.disabled=true;});var error='';try{await api('/config',next);}catch(e){error=e.message;}finally{busy=false;await load();if(error)el('page-error').textContent=error;}});});
 
 // ── Sending: a test to my account first, then to everyone.
 function prepare(forTest){
@@ -465,8 +472,7 @@ el('refresh').onclick=load;
 
 async function load(){
  el('page-error').textContent='';
- try{var d=await api('');cfg=d.config;ready=d.pushConfigured;el('provider').textContent=!ready?'Firebase не подключён':cfg.pushEnabled?'Firebase подключён':'Выключены';
-  document.querySelectorAll('[data-nt-config]').forEach(function(x){x.checked=!!cfg[x.dataset.ntConfig];x.disabled=busy||(x.dataset.ntConfig==='pushEnabled'&&!ready);});
+ try{var d=await api('');cfg=d.config;ready=d.pushConfigured;
   items=d.messages||[];render(items);if(S.push&&!pushAvailable()&&!busy)S.push=false;sync();}
  catch(e){el('page-error').textContent=e.message;}
 }
