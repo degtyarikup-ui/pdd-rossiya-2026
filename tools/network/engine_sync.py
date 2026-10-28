@@ -174,6 +174,13 @@ def sync(sid: str) -> dict:
         a["paint"] = na.get("paint")
         # The editor's chosen direction overrides archived signal sides at runtime.
         a["way"] = na.get("way")
+        if na["type"] == "pedestrian":
+            a["pedestrianPose"] = na.get("pedestrianPose", "stand")
+            a["poseArm"] = na.get("poseArm", "right")
+            if "pedestrianLook" in na:
+                a["pedestrianLook"] = na["pedestrianLook"]
+        if na["type"] == "motorcycle" and isinstance(na.get("sidecar"), bool):
+            a.setdefault("config", {})["sidecar"] = na["sidecar"]
         signal = (na.get("behaviour") or {}).get("turnSignal")
         a["turnSignal"] = signal if signal in ("left", "right", "off") else "auto"
         pos = [na["pos"][0], 0.0, na["pos"][1]]
@@ -199,6 +206,9 @@ def sync(sid: str) -> dict:
         for k in ("maxSpeed", "halfLength", "halfWidth"):
             if na.get(k) is not None:
                 a[k] = na[k]
+        if na["type"] == "motorcycle" and isinstance(na.get("sidecar"), bool):
+            a["halfWidth"] = (.957 if na["sidecar"] else .34) * abs(float(na["scale"][0]))
+            a["halfLength"] = 1.075 * abs(float(na["scale"][2]))
         if na.get("clearDistance") is not None:
             a["clearDistance"] = na["clearDistance"]
         elif a.get("clearDistance") is not None:

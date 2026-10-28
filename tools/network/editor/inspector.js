@@ -442,10 +442,14 @@
     const route = a.route && s.routes.find((r) => r.id === a.route);
     const types = Catalog.ACTOR_ORDER.filter((t) => state.catalog.actorTypes[t]);
     const moving = !(a.behaviour || {}).staysPut;
-    p.innerHTML = `${head(Thumbs.img("actor", a.type, "big"), a.name || Catalog.ACTORS[a.type]?.name, Catalog.ACTORS[a.type]?.name)}
+    const picture=a.type==='motorcycle'&&typeof a.sidecar==='boolean'?Thumbs.img('motorcycle',a.sidecar?'sidecar':'solo','big'):Thumbs.img('actor',a.type,'big');
+    p.innerHTML = `${head(picture, a.name || Catalog.ACTORS[a.type]?.name, Catalog.ACTORS[a.type]?.name)}
       ${card("Кто это", `<div class="variant-grid">${types.map((t) => `<button class="variant ${t === a.type ? "on" : ""}" data-chip="type" data-value="${t}" data-tip="${esc(Catalog.ACTORS[t].name)}">${Thumbs.img("actor", t)}</button>`).join("")}</div>
         <input class="name-input" type="text" data-text="name" value="${esc(a.name || "")}" placeholder="Подпись над ним в игре">`)}
       ${a.type === "tram" && (s.tracks || []).length ? tramCard(s, a) : ""}
+      ${a.type === 'pedestrian' ? card('Поза',chips('pedestrian-pose',ActorAppearance.poses.map(([value,title])=>({value,title})),a.pedestrianPose || 'stand')
+        + (a.pedestrianPose && a.pedestrianPose!=='stand'?`<div class="sub-h">Какой рукой</div>${chips('pose-arm',[{value:'right',title:'Правой'},{value:'left',title:'Левой'}],a.poseArm || 'right')}`:'')) : ''}
+      ${a.type === 'motorcycle' ? card('Мотоцикл',chips('sidecar',[{value:'no',title:'Без коляски',html:Thumbs.img('motorcycle','solo')},{value:'yes',title:'С коляской',html:Thumbs.img('motorcycle','sidecar')}],ActorAppearance.sidecar(a,state.catalog)?'yes':'no',{cls:'tiles sidecar-options'})) : ''}
       ${a.type !== "pedestrian" && a.type !== "special" ? card("Цвет", `<div class="swatches">${PAINTS.map((c) => `<button class="sw ${(a.paint || null) === c ? "on" : ""}" data-chip="paint" data-value="${c || ""}" aria-label="${c ? `Цвет ${c}` : "Цвет модели"}" aria-pressed="${(a.paint || null) === c}" style="--c:${c || "transparent"}" data-tip="${c ? "" : "Как у модели"}">${c ? "" : ic("x")}</button>`).join("")}</div>`) : ""}
       ${ActorSignals.supports(a.type) ? card("Сигналы", `<label class="route-field">Поворотник<select data-text="turnSignal">${[["auto","Автоматически"],["left","Левый"],["right","Правый"],["off","Выключен"]].map(([value,title]) => `<option value="${value}" ${ActorSignals.mode(a) === value ? "selected" : ""}>${title}</option>`).join("")}</select></label>`
         + toggle("hazards", "Аварийная сигнализация", ActorSignals.hazards(a), "alert")
@@ -465,6 +469,15 @@
     bind({
       ...common,
       "chip:paint": (v) => App.edit(() => { if (v) a.paint = v; else delete a.paint; }),
+      'chip:pedestrian-pose':value=>{
+        if(App.isLocked(ref)||!ActorAppearance.poses.some(([key])=>key===value))return;
+        App.edit(()=>{a.pedestrianPose=value;a.pedestrianLook ??= 0;a.poseArm ??= 'right';},{rebuild:false});
+      },
+      'chip:pose-arm':value=>{if(!App.isLocked(ref)&&['left','right'].includes(value))App.edit(()=>{a.poseArm=value;},{rebuild:false});},
+      'chip:sidecar':value=>{
+        if(App.isLocked(ref)||!['yes','no'].includes(value))return;
+        App.edit(()=>{a.sidecar=value==='yes';Object.assign(a,ActorAppearance.bounds(a.sidecar,a.scale));});
+      },
       "toggle:hazards": on => App.edit(() => ActorSignals.setHazards(a,on)),
       "text:turnSignal": v => { if (["auto","left","right","off"].includes(v)) App.edit(() => ActorSignals.setTurn(a,v), { rebuild: false }); },
       reverse: () => App.edit(() => { a.yaw = App.r3(((a.yaw || 0) + 2 * Math.PI) % (2 * Math.PI) - Math.PI); }),
@@ -478,6 +491,8 @@
       "chip:type": (v) => App.edit(() => {
         const tpl = state.catalog.actorTypes[v];
         a.type = v; a.asset = tpl.asset;
+        if(v!=='pedestrian'){delete a.pedestrianPose;delete a.poseArm;delete a.pedestrianLook;}
+        if(v!=='motorcycle')delete a.sidecar;
         if (!a.name || Object.values(Catalog.ACTORS).some((x) => x.name === a.name)) a.name = Catalog.ACTORS[v].name;
         a.halfLength = tpl.halfLength ?? a.halfLength; a.halfWidth = tpl.halfWidth ?? a.halfWidth;
       }),
@@ -546,14 +561,15 @@
     const main = face.mainRoad || [], roads = face.roads || ["north", "south", "east", "west"];
     const dirChips = (name, on) => `<div class="dir-grid">${DIRS.map(([d, t]) => `<button class="${on.includes(d) ? "on" : ""}" data-chip="${name}" data-value="${d}">${t}</button>`).join("")}</div>`;
     const lanePicture = lanes => LaneSign.svg(lanes).replace('<svg ', '<svg style="width:100%;height:auto;display:block" ');
-    const picture = (f, size = 56) => f.laneDirections?.length ? `<span style="display:inline-flex;flex:none;width:${size}px">${lanePicture(f.laneDirections)}</span>` : `<img class="sign-big" src="/asset/sign/${f.code}.svg" alt="" style="width:${size}px;height:${size}px;object-fit:contain;flex:none">`;
+    const picture = (f, size = 56) => f.laneDirections?.length ? `<span style="display:inline-flex;flex:none;width:${size}px">${lanePicture(f.laneDirections)}</span>` : `<img class="sign-big" src="/asset/sign/${SignMount.textureCode(f)}.svg" alt="" style="width:${size}px;height:${size}px;object-fit:contain;flex:none">`;
     const faceTabs = SignMount.faces(o).map((f, i) => `<button class="btn ${slot === i ? "primary" : "ghost"}" data-chip="face" data-value="${i}">${picture(f, 32)}<span>${i ? "Нижний знак" : "Верхний знак"}</span></button>`).join("");
     const laneControls = lanes.map((directions, i) => `<div class="sub-h">Полоса ${i + 1}</div><div class="seg-chips">${[["left", "←", "Налево"], ["straight", "↑", "Прямо"], ["right", "→", "Направо"]].map(([direction, arrow, title]) => `<button class="${directions.includes(direction) ? "on" : ""}" data-chip="laneDirection" data-lane="${i}" data-value="${direction}" data-tip="${title}"><span>${arrow} ${title}</span></button>`).join("")}</div>`).join("");
     p.innerHTML = `${head(picture(face), custom ? "Направления по полосам" : Catalog.signName(face.code), o.secondSign ? (slot ? "нижний знак на общей стойке" : "верхний знак на общей стойке") : `знак ${face.code}`)}
       ${card("На одной стойке", `<div class="insp-actions">${faceTabs}</div>${o.secondSign ? `<div class="insp-actions">${button("swap-signs", "Поменять местами", "rotr", "ghost")}${button("remove-second-sign", "Убрать нижний", "trash", "danger ghost")}</div>` : button("add-second-sign", "Добавить второй знак", "plus", "ghost wide")}`)}
       ${card("Щит", `${chips("signMode", [{value:"standard",title:"Готовый знак"},{value:"lanes",title:"Конструктор полос"}], custom ? "lanes" : "standard")}
-        ${custom ? `<div style="margin:12px auto;max-width:240px">${lanePicture(lanes)}</div><div class="sub-h">Число полос</div>${chips("laneCount", [1,2,3,4,5,6].map(n => ({value:n,title:String(n)})), lanes.length)}${laneControls}<p class="muted">Полосы идут слева направо при взгляде на знак. На каждой можно включить несколько направлений.</p>` : `<input type="search" data-sign-search aria-label="Найти знак по номеру или названию" placeholder="Номер или название знака" value="${esc(signSearch)}"><div class="sign-grid">${codes.map((c) => { const name = `${c} · ${Catalog.signName(c)}`; return `<button class="${c === face.code ? "on" : ""}" data-chip="code" data-value="${c}" data-sign-option="${esc(name)}" aria-label="${esc(name)}" data-tip="${esc(name)}" ${!name.toLowerCase().includes(signSearch.trim().toLowerCase()) ? "hidden" : ""}><img src="/asset/sign/${c}.svg" alt="" loading="lazy"></button>`; }).join("")}</div>`}`)}
+        ${custom ? `<div style="margin:12px auto;max-width:240px">${lanePicture(lanes)}</div><div class="sub-h">Число полос</div>${chips("laneCount", [1,2,3,4,5,6].map(n => ({value:n,title:String(n)})), lanes.length)}${laneControls}<p class="muted">Полосы идут слева направо при взгляде на знак. На каждой можно включить несколько направлений.</p>` : `<input type="search" data-sign-search aria-label="Найти знак по номеру или названию" placeholder="Номер или название знака" value="${esc(signSearch)}"><div class="sign-grid">${codes.map((c) => { const name = `${c} · ${Catalog.signName(c)}`; return `<button class="${c === face.code ? "on" : ""}" data-chip="code" data-value="${c}" data-sign-option="${esc(name)}" aria-label="${esc(name)}" data-tip="${esc(name)}" ${!name.toLowerCase().includes(signSearch.trim().toLowerCase()) ? "hidden" : ""}><img src="/asset/sign/${c==='5.33'?'5.33_plain':c}.svg" alt="" loading="lazy"></button>`; }).join("")}</div>`}`)}
       ${card("Табличка под знаком", `<select data-text="plateSign" aria-label="Табличка под выбранным знаком"><option value="">Нет</option>${codes.filter(c => c.startsWith("8.") || c.startsWith("1.4.")).map(c => `<option value="${c}" ${face.plateSign === c ? "selected" : ""}>${esc(c + " · " + Catalog.signName(c))}</option>`).join("")}</select>${face.plateSign ? `<img class="sign-big" src="/asset/sign/${face.plateSign}.svg" alt="${esc(Catalog.signName(face.plateSign))}">` : ""}`)}
+      ${face.code==='5.33'?card('Уточнение на щите',chips('zone-variant',[{value:'plain',title:'Без звёздочки'},{value:'weekends',title:'Выходные и праздники'}],face.zoneVariant || 'weekends')):''}
       ${card("Крепление", `${chips("mount", [{value:"pole",title:"На стойке"},{value:"cantilever",title:"Над дорогой"}], o.mount || "pole")}
         ${o.mount === "cantilever" ? `${slider("reach", "Вылет от опоры", o.reach ?? 4.5, 0.5, 15, 0.25, `${o.reach ?? 4.5} м`)}
           ${chips("armSide", [{value:"left",title:"Влево от опоры"},{value:"right",title:"Вправо от опоры"}], o.armSide || "left")}
@@ -576,7 +592,8 @@
       "chip:armSide": (v) => App.edit(() => { o.armSide = v; }),
       "slider:reach": live((_s, v) => { o.reach = r3(v); }, v => { const label = pane().querySelector('[data-shown="reach"]'); if (label) label.textContent = `${v} м`; }),
       "slider:clearance": live((_s, v) => { o.clearance = r3(v); }, v => { const label = pane().querySelector('[data-shown="clearance"]'); if (label) label.textContent = `${v} м`; }),
-      "chip:code": (v) => App.edit(() => { face.code = v; delete face.laneDirections; if (v === "8.13" && !(face.mainRoad || []).length) face.mainRoad = ["south", "west"]; }),
+      "chip:code": (v) => App.edit(() => { face.code = v; delete face.laneDirections; if(v==='5.33')face.zoneVariant='plain';else delete face.zoneVariant; if (v === "8.13" && !(face.mainRoad || []).length) face.mainRoad = ["south", "west"]; }),
+      'chip:zone-variant':value=>{if(!App.isLocked(ref)&&['plain','weekends'].includes(value))App.edit(()=>{face.zoneVariant=value;});},
       "chip:main": (v) => App.edit(() => {
         const set = new Set(face.mainRoad || []);
         set.has(v) ? set.delete(v) : set.add(v);

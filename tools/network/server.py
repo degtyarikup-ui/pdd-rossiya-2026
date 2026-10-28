@@ -57,7 +57,7 @@ ASSET_RULES = [
     (re.compile(r"^scenery/([a-z0-9_/]+)\.glb$"), lambda m: GAME / "scenery" / f"{m[1]}.glb"),
     (re.compile(r"^models/([a-z0-9_/]+)\.glb$"), lambda m: GAME / "models" / f"{m[1]}.glb"),
     (re.compile(r"^texture/([A-Za-z]+)\.png$"), lambda m: DETAIL / f"{m[1]}.png"),
-    (re.compile(r"^sign/([0-9.]+)\.svg$"), lambda m: GAME / "signs" / f"{m[1]}.svg"),
+    (re.compile(r"^sign/([0-9.]+(?:_plain)?)\.svg$"), lambda m: GAME / "signs" / f"{m[1]}.svg"),
 ]
 STREET_WIDTH = 8.4    # the street of the game: two 4.2 m lanes (scripts/street.gd ROAD_HALF)
 EDGE_EPS = 0.05       # an edge is measured just inside the scene's square (m)
@@ -573,13 +573,19 @@ class Handler(BaseHTTPRequestHandler):
     def catalog(self):
         index = scenery_index()
         models = {}
+        appearances = {}
         for p in sorted(SIT.glob("*/engine.json")):
             for k, a in enumerate(json.loads(p.read_text(encoding="utf-8")).get("actors", [])):
+                if a.get("type") in ("pedestrian", "motorcycle"):
+                    appearances[f"{p.parent.name}/actor_{k}.glb"] = {
+                        "sidecar": (a.get("config") or {}).get("sidecar", False),
+                        "colour": (a.get("config") or {}).get("color", "#5A7891" if a.get("type") == "pedestrian" else "#8D9AA8")}
                 models.setdefault(a.get("type"), []).append({
                     "asset": f"{p.parent.name}/actor_{k}.glb", "name": a.get("name", ""),
                     "maxSpeed": a.get("maxSpeed"), "clearDistance": a.get("clearDistance"),
-                    "halfLength": a.get("halfLength"), "halfWidth": a.get("halfWidth")})
-        signs = sorted((p.stem for p in (GAME / "signs").glob("*.svg")), key=lambda c: [int(x) for x in c.split(".")])
+                    "halfLength": a.get("halfLength"), "halfWidth": a.get("halfWidth"),
+                    "sidecar": (a.get("config") or {}).get("sidecar", False)})
+        signs = sorted((p.stem for p in (GAME / "signs").glob("*.svg") if re.fullmatch(r"[0-9]+(?:\.[0-9]+)+",p.stem)), key=lambda c: [int(x) for x in c.split(".")])
         light_models = {}
         for p in sorted(SIT.glob("*/engine.json")):
             for k, l in enumerate(json.loads(p.read_text(encoding="utf-8")).get("lights", [])):
@@ -593,7 +599,7 @@ class Handler(BaseHTTPRequestHandler):
                 light_models["tram"] = "ticket_13_13/light_0.glb"
         return {"props": [{"id": k, "size": v.get("size")} for k, v in index["props"].items()], "signs": signs,
                 "signInfo": json.loads((GAME / "signs" / "catalog.json").read_text(encoding="utf-8")),
-                "actorTypes": {t: v[0] for t, v in models.items()},
+                "actorTypes": {t: v[0] for t, v in models.items()}, "actorAppearances": appearances,
                 "lightAsset": light_models.get("", "ticket_11_15/light_0.glb"),
                 "lightTramAsset": light_models.get("tram", "ticket_6_13/light_0.glb"),
                 "lightAssets": light_models,

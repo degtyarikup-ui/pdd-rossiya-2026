@@ -1,7 +1,8 @@
 // The object's position is always the roadside support; reach locates the board over the road.
 const SignMount = (() => {
   const number = (value, fallback, min, max) => Number.isFinite(Number(value)) ? Math.max(min, Math.min(max, Number(value))) : fallback;
-  const FACE_KEYS = ['code', 'plate', 'plateSign', 'mainRoad', 'roads', 'laneDirections'];
+  const FACE_KEYS = ['code', 'plate', 'plateSign', 'mainRoad', 'roads', 'laneDirections', 'zoneVariant'];
+  const textureCode = face => face.code==='5.33' && face.zoneVariant==='plain' ? '5.33_plain' : face.code;
   // Saved order is explicit: the primary face is at the top, secondSign below it.
   const faces = o => [o, o.secondSign].filter(face => face && typeof face.code === 'string' && face.code);
   const faceCopy = face => Object.fromEntries(FACE_KEYS.filter(key => face[key] !== undefined).map(key => [key, JSON.parse(JSON.stringify(face[key]))]));
@@ -24,6 +25,6 @@ const SignMount = (() => {
       armLength: reach + 1.7 };
   }
   const plateWidth = (main, plate) => Math.min(main[0] * .8 / plate[0], main[1] * .95 / plate[1]);
-  return { layout, plateWidth, faces, faceCopy, replaceFace, swapFaces };
+  return { layout, plateWidth, faces, faceCopy, replaceFace, swapFaces, textureCode };
 })();
 if (typeof module !== 'undefined') module.exports = SignMount;

@@ -12,7 +12,7 @@ const context = vm.createContext({Layout,
   Scene3D:{refresh:() => {},setSelection:() => {}},Tracks:{apply:() => {}},
   Thumbs:{fillAll:() => {},img:() => ''},setTimeout:() => 0,clearTimeout:() => {},
 });
-for (const file of ['catalog.js','actor_signals.js','app.js','direction_marking.js','inspector.js']) vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
+for (const file of ['catalog.js','actor_signals.js','app.js','direction_marking.js','actor_appearance.js','inspector.js']) vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
 const App = vm.runInContext('App',context), state = App.state;
 App.renderPanels = () => App.renderInspector();
 function fixture(kind = 'street', angle = 0) {

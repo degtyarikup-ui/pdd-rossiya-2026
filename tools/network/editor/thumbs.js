@@ -3,7 +3,7 @@
 // (localStorage) so the next visit shows them at once.
 const Thumbs = (() => {
   const SIZE = 160;
-  const VERSION = "t4";
+  const VERSION = "t5";
   // Trees and bushes are white in their files: the game paints them (the season's colour).
   const TINT = Catalog.PROP_TINTS;
   const cache = new Map();
@@ -12,6 +12,7 @@ const Thumbs = (() => {
   const loader = new THREE.GLTFLoader();
 
   function urlOf(kind, id) {
+    if(kind==='motorcycle')return `/asset/models/road/motorcycle.glb?sidecar=${id==='sidecar'?1:0}`;
     if (kind === "prop") return id === "parked" ? "/asset/models/vehicles/sedan.glb" : `/asset/scenery/${id}.glb`;
     if (kind === "actor") {
       const tpl = App.state.catalog?.actorTypes[id];
@@ -75,8 +76,17 @@ const Thumbs = (() => {
   function render(url, tint) {
     return new Promise((resolve) => {
       if (!renderer) setup();
-      loader.load(url, (g) => {
-        const root = g.scene;
+      loader.load(url, async (g) => {
+        let root = g.scene;
+        if(url.includes('?sidecar=')) {
+          const bundle=new THREE.Group();
+          if(url.endsWith('=1')) {
+            root.position.x=.37;
+            const passenger=await new Promise(done=>loader.load('/asset/models/road/sidecar.glb',item=>done(item.scene),undefined,()=>done(null)));
+            if(passenger){passenger.position.x=-.56;bundle.add(passenger);}
+          }
+          bundle.add(root);root=bundle;ActorAppearance.paint(root,'#4D7768');
+        }
         if (tint) root.traverse((m) => { if (m.isMesh && m.material && m.material.color) { m.material = m.material.clone(); m.material.color.set(tint); } });
         scene.add(root);
         const box = new THREE.Box3().setFromObject(root);

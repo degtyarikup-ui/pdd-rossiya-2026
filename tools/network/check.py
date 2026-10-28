@@ -216,6 +216,13 @@ def check_scene(scene: dict) -> list:
         if not r.get("labelPosition"):
             finding(out, "warn", "label-missing", f"{r['id']}: на дороге нет буквы {r.get('label')}", {"type": "route", "id": r["id"]})
     for a in scene.get("actors", []):
+        if a.get("type") == "pedestrian" and (
+                a.get("pedestrianPose", "stand") not in ("stand", "hail", "forward", "raised")
+                or a.get("poseArm", "right") not in ("left", "right")
+                or ("pedestrianLook" in a and (type(a["pedestrianLook"]) is not int or not 0 <= a["pedestrianLook"] < 12))):
+            finding(out, "error", "actor-appearance", f"{a['id']}: неизвестная поза пешехода", {"type":"actor","id":a['id']})
+        if a.get("type") == "motorcycle" and "sidecar" in a and not isinstance(a["sidecar"], bool):
+            finding(out, "error", "actor-appearance", f"{a['id']}: выберите мотоцикл с коляской или без неё", {"type":"actor","id":a['id']})
         tram_points = routes.get(a.get("route"), {}).get("points", [])
         missing_tram_path = a.get("type") == "tram" and (len(tram_points) < 2 or LineString(tram_points).length < 0.01)
         if (not a.get("route") or missing_tram_path) and not (a.get("behaviour") or {}).get("staysPut"):

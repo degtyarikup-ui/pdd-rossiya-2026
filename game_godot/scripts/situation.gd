@@ -56,7 +56,11 @@ static func _actor_config(actor: Dictionary, source: Dictionary = {}) -> Diction
 	for authored in source.get("actors", []):
 		if str(authored.id) == str(actor.id):
 			paint = authored.get("paint")
+			for key in ["sidecar","pedestrianPose","poseArm","pedestrianLook"]:
+				if authored.has(key): config[key] = authored[key]
 			break
+	for key in ["pedestrianPose","poseArm","pedestrianLook"]:
+		if actor.has(key) and not config.has(key): config[key] = actor[key]
 	if paint is String and Color.html_is_valid(paint):
 		config["color"] = paint
 		config["cabColor"] = paint
@@ -258,7 +262,9 @@ static func load_scene_staged(situation_id: String, scenery: Scenery, frames: Sc
 			actor = Fleet.dps_car()
 		elif a.type == "pedestrian":
 			var person := Pedestrian.new()
-			person.configure(posmod((situation_id + str(a.id)).hash(), Models.WALKERS), Color(str(a.config.get("color", "#5A7891"))))
+			var config := _actor_config(a, s.network.data if s.network else {})
+			var look := int(config.get("pedestrianLook",posmod((situation_id + str(a.id)).hash(),Models.WALKERS)))
+			person.configure(look,Color(str(config.get("color","#5A7891"))),str(config.get("pedestrianPose","stand")),str(config.get("poseArm","right")))
 			actor = person
 		elif a.type in NpcVehicle.KINDS:
 			var config := _actor_config(a, s.network.data if s.network else {})

@@ -21,4 +21,8 @@ for code, sign in signs.items():
     matches = [(match, resolve) for match, resolve in rules if match]
     assert len(matches) == 1 and matches[0][1](matches[0][0]).is_file(), code
 assert {'3.28','8.2.2','8.2.3','8.2.4'} <= set(catalog['signs'])
+assert '5.33_plain' not in catalog['signs'], 'Artwork variants do not introduce fictitious sign numbers'
+variant = [(pattern.match('sign/5.33_plain.svg'), resolve) for pattern,resolve in server.ASSET_RULES]
+variant = [(match,resolve) for match,resolve in variant if match]
+assert len(variant)==1 and variant[0][1](variant[0][0]).is_file()
 print(f'Sign catalogue API: {len(signs)} canonical names, safe asset URLs and vectors PASS')

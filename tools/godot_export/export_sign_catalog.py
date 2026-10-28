@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import re
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -48,6 +49,22 @@ def expected():
                              'sha256':hashlib.sha256(data).hexdigest()}
             if code in PANELS:
                 catalog[code]['panel'] = PANELS[code]
+    # 5.33 also needs the plain panel used by the ticket: the original catalogue
+    # drawing includes the 8.5.1 time restriction, which must not be baked into every placement.
+    ET.register_namespace('', 'http://www.w3.org/2000/svg')
+    root = ET.fromstring(files['5.33.svg'])
+    root.set('height', '120')
+    root.set('viewBox', '0 0 100 120')
+    group = list(root)[0]
+    original = list(group)
+    assert original[0].tag.endswith('rect') and original[1].tag.endswith('path')
+    original[0].set('height', '109.248')
+    original[0].set('stroke', '#000')
+    original[0].set('stroke-width', '1.5')
+    group.remove(original[1])
+    for element in list(group):
+        if element.get('fill') == 'red': group.remove(element)
+    files['5.33_plain.svg'] = ET.tostring(root, encoding='utf-8') + b'\n'
     files['catalog.json'] = (json.dumps(catalog, ensure_ascii=False, indent=2) + '\n').encode()
     return files
 

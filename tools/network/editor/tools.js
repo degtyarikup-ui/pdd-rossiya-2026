@@ -718,7 +718,7 @@ const Tools = (() => {
       ref = App.edit((sc) => {
         sc.signs = sc.signs || [];
         const id = App.uniqueId("sign_", sc.signs.map((o) => o.id));
-        sc.signs.push({ id, code: opts.sign, pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), ...(opts.sign === "8.13" ? { mainRoad: ["south", "west"] } : {}) });
+        sc.signs.push({ id, code: opts.sign, pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), ...(opts.sign === "8.13" ? { mainRoad: ["south", "west"] } : {}), ...(opts.sign==='5.33'?{zoneVariant:'plain'}:{}) });
         return { t: "sign", id };
       });
     } else if (kind === "officer") {

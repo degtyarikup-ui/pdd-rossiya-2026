@@ -53,6 +53,8 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 	var primary := {"code": code, "plate": plate, "plateSign": plate_sign, "mainRoad": main_road, "roads": roads}
 	if mounting.has("laneDirections"):
 		primary.laneDirections = mounting.laneDirections
+	if mounting.has("zoneVariant"):
+		primary.zoneVariant = mounting.zoneVariant
 	var faces: Array = [primary]
 	if mounting.get("secondSign") is Dictionary and not str(mounting.secondSign.get("code", "")).is_empty():
 		faces.append(mounting.secondSign)
@@ -121,6 +123,7 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 ## Independent face settings. Legacy signs and plates keep their existing proportions.
 static func _sign_parts(face: Dictionary, above := Vector2.ZERO) -> Array:
 	var code := str(face.get("code", ""))
+	var artwork := "5.33_plain" if code=="5.33" and face.get("zoneVariant","")=="plain" else code
 	var lanes: Array = face.get("laneDirections", [])
 	var tex: Texture2D
 	var width := face_width(code)
@@ -131,15 +134,15 @@ static func _sign_parts(face: Dictionary, above := Vector2.ZERO) -> Array:
 	elif code == "8.13":
 		tex = main_road_plate(face.get("mainRoad", []), face.get("roads", []))
 	else:
-		tex = SignFace.texture(code)
+		tex = SignFace.texture(artwork)
 	if tex == null:
 		push_warning("no picture for road sign %s" % code)
 		return []
 	if above != Vector2.ZERO:
-		var unit_slot := Vector2(1, .75) if code == "8.13" else SignFace.legacy_size(code, 1)
+		var unit_slot := Vector2(1, .75) if code == "8.13" else SignFace.legacy_size(artwork, 1)
 		var unit_visible := SignFace.visible_size(tex, unit_slot)
 		width = minf(above.x * .8 / unit_visible.x, above.y * .95 / unit_visible.y)
-	var primary_height := LaneSign.height(lanes) if not lanes.is_empty() else width * .75 if code == "8.13" else SignFace.legacy_height(code, width)
+	var primary_height := LaneSign.height(lanes) if not lanes.is_empty() else width * .75 if code == "8.13" else SignFace.legacy_height(artwork, width)
 	var primary_slot := Vector2(width, primary_height)
 	var primary_visible := SignFace.visible_size(tex, primary_slot)
 	var parts: Array = []

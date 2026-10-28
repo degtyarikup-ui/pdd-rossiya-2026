@@ -501,7 +501,7 @@ const Scene3D = (() => {
   // same (only moved): dragging 200 trees about does not reload them.
   function anchorSig(t, o) {
     if (t === "decor") return `${o.prop}|${o.tint}`;
-    if (t === "actor") return `${o.asset}|${o.type}`;
+    if (t === "actor") return `${o.asset}|${o.type}|${o.pedestrianPose || ''}|${o.poseArm || ''}|${o.pedestrianLook ?? ''}|${o.sidecar ?? ''}|${o.paint || ''}`;
     if (t === "light") return `${o.asset}|${o.state}|${o.arrow || ""}|${o.tram || ""}|${(o.mountedSigns || []).join(",")}|${(o.mountedMainRoad || []).join(",")}`;
     if (t === "officer") return `officer|${o.gesture}`;
     if (t === "sign") return `sign|${o.mount || "pole"}|${o.reach ?? 4.5}|${o.armSide || "left"}|${o.clearance ?? 5.5}|${JSON.stringify(SignMount.faces(o).map(SignMount.faceCopy))}`;
@@ -528,7 +528,20 @@ const Scene3D = (() => {
       attach(url, fallbackBox(0xb9b4ab, [2, 2, 2]), o.tint || Catalog.PROP_TINTS?.[o.prop]);
     } else if (t === "actor") {
       const ped = o.type === "pedestrian" || o.type === "cyclist";
-      attach(`/asset/scene/${o.asset}`, fallbackBox(TYPE_COLOUR[o.type] || 0x888888, ped ? [0.6, 1.7, 0.6] : [1.9, 1.4, 4.2]));
+      const fallback=fallbackBox(TYPE_COLOUR[o.type] || 0x888888,ped?[.6,1.7,.6]:[1.9,1.4,4.2]);
+      if(o.type==='pedestrian' && o.pedestrianPose) {
+        const colour=o.paint || App.state.catalog?.actorAppearances?.[o.asset]?.colour || '#5A7891';
+        attach(`/asset/models/walkers/walker_${o.pedestrianLook ?? 0}.glb`,fallback,null,root=>{
+          ActorAppearance.pedestrian(root,o.pedestrianPose,o.poseArm || 'right');ActorAppearance.paint(root,colour);
+        });
+      } else if(o.type==='motorcycle' && typeof o.sidecar==='boolean') {
+        attach('/asset/models/road/motorcycle.glb',fallback,null,root=>{
+          root.position.x=o.sidecar ? .37 : 0;ActorAppearance.paint(root,o.paint || App.state.catalog?.actorAppearances?.[o.asset]?.colour || '#8D9AA8');
+        });
+        if(o.sidecar)attach('/asset/models/road/sidecar.glb',new THREE.Group(),null,root=>{
+          root.position.x=-.56;ActorAppearance.paint(root,o.paint || App.state.catalog?.actorAppearances?.[o.asset]?.colour || '#8D9AA8');
+        });
+      } else attach(`/asset/scene/${o.asset}`,fallback);
       const lights = signalPreview(o);
       if (lights) g.add(lights);
     } else if (t === "light") {
@@ -794,7 +807,7 @@ const Scene3D = (() => {
     };
     const faceSize = (face, width) => {
       if (face.laneDirections?.length) { const size = LaneSign.dimensions(face.laneDirections); return [size.width, size.height]; }
-      return face.code === '8.13' ? [width * .75, width * .75] : imageSize(face.code, width);
+      return face.code === '8.13' ? [width * .75, width * .75] : imageSize(SignMount.textureCode(face), width);
     };
     for (let i = faces.length - 1; i >= 0; i--) {
       const face = faces[i], gap = i ? 0.16 : 0.05;
@@ -817,7 +830,7 @@ const Scene3D = (() => {
         if (face.laneDirections?.length) {
           const size = LaneSign.dimensions(face.laneDirections); add(laneTexture(face.laneDirections), size.width, size.height, gap);
           if (!i) topFaceHeight = size.height;
-        } else imagePart(face.code, width, gap, !i);
+        } else imagePart(SignMount.textureCode(face), width, gap, !i);
       }
     }
     arrange(); g.rotation.y = -Math.PI;
