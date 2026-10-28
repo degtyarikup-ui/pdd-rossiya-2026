@@ -79,7 +79,7 @@ var _exiting := false
 var _ready_for_play := false
 var _auto_travel := 0.0
 
-var _spot_views: Array[Dictionary] = []   # {spot, fill, edges}
+var _spot_views: Array[Dictionary] = []   # {spot, frame, mat, tried, colour, fill}
 var guide: Node3D
 var _guide_index := 0
 var _cam_target := Vector3.ZERO
@@ -319,19 +319,6 @@ func _mat(key: String) -> Material:
 	return _mats[key]
 
 
-func _flat(b: Dictionary, y: float, mat: Material) -> MeshInstance3D:
-	var mesh := PlaneMesh.new()
-	mesh.size = Vector2(b.half.x * 2.0, b.half.y * 2.0)
-	var node := MeshInstance3D.new()
-	node.mesh = mesh
-	node.material_override = mat
-	node.position = Vector3(b.c.x, y, b.c.y)
-	node.rotation.y = b.yaw
-	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	root3d.add_child(node)
-	return node
-
-
 ## Static ground goes into one mesh per material (grass, asphalt, kerbs, each paint colour):
 ## a street of dashes and bay lines is a handful of draw calls, not hundreds.
 func _ground_tool(key: String) -> SurfaceTool:
@@ -546,43 +533,40 @@ func _contact_patch(meta: Dictionary) -> MeshInstance3D:
 	return contact
 
 
-func _glow_material(colour: Color, alpha: float) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
-	m.albedo_color = Color(colour, alpha)
-	m.render_priority = 1
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	return m
-
-
 func _build_spots() -> void:
 	_spot_views.clear()
 	for spot: Dictionary in level.spots:
 		var b: Dictionary = spot.box
-		var fill := _flat(b, 0.02, _glow_material(Color.WHITE, 0.10))
-		var edges: Array[MeshInstance3D] = []
-		var f := ParkingLevels.forward(b.yaw)
-		var r := Vector2(f.y, -f.x)
-		var h: Vector2 = b.half
-		var edge_mat := _glow_material(Color.WHITE, 0.9)
-		for side: Array in [[f * h.y, r, h.x], [-f * h.y, r, h.x], [r * h.x, f, h.y], [-r * h.x, f, h.y]]:
-			var along: Vector2 = side[1]
-			var e := _flat(ParkingLevels.box(b.c + side[0], 0.07, float(side[2]) + 0.07, atan2(along.x, along.y)), 0.025, edge_mat)
-			edges.append(e)
-		_spot_views.append({"spot": spot, "fill": fill, "edges": edges, "mat": edge_mat, "tried": false})
+		# One rounded frame per space (see ParkingGuide.FRAME_SHADER): outline and fill.
+		var mat := ParkingGuide.frame_material(Color.WHITE, b.half, 0.22, 0.12)
+		mat.set_shader_parameter("fill", 0.12)
+		var frame := MeshInstance3D.new()
+		frame.mesh = ParkingGuide.frame_mesh(b.half)
+		frame.material_override = mat
+		frame.position = Vector3(b.c.x, 0.025, b.c.y)
+		frame.rotation.y = b.yaw
+		frame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root3d.add_child(frame)
+		_spot_views.append({"spot": spot, "frame": frame, "mat": mat, "tried": false,
+			"colour": Color.WHITE, "fill": 0.12})
 
 
-func _paint_spots(inside: Dictionary) -> void:
+## Colours ease between white, green (inside) and red (tried); standing still in a space
+## sweeps a brighter outline round it while the fill rises, until the car is parked.
+func _paint_spots(inside: Dictionary, dt: float) -> void:
+	var k := 1.0 - exp(-maxf(0.0, dt) * 14.0)
+	var held := clampf(hold / HOLD, 0.0, 1.0)
 	for view: Dictionary in _spot_views:
 		var on: bool = view.spot == inside
 		var colour := Color.WHITE
 		if view.tried: colour = Ui.c("red")
 		elif on: colour = Ui.c("green")
-		var fill_alpha := 0.12 + (0.32 * clampf(hold / HOLD, 0.0, 1.0) if on else 0.0)
-		((view.fill as MeshInstance3D).material_override as StandardMaterial3D).albedo_color = Color(colour, fill_alpha + (0.18 if on else 0.0))
-		(view.mat as StandardMaterial3D).albedo_color = Color(colour, 0.95)
+		view.colour = (view.colour as Color).lerp(colour, k)
+		view.fill = lerpf(float(view.fill), 0.12 + (0.16 + 0.26 * held if on else 0.0), k)
+		var mat: ShaderMaterial = view.mat
+		mat.set_shader_parameter("colour", Color(view.colour, 0.95))
+		mat.set_shader_parameter("fill", view.fill)
+		mat.set_shader_parameter("progress", held if on and not view.tried else 0.0)
 
 
 func _build_car() -> void:
@@ -767,7 +751,7 @@ func _check_spots(dt: float, still: bool) -> void:
 			break
 	if not inside.is_empty() and absf(speed) < 0.05 and still: hold += dt
 	else: hold = 0.0
-	_paint_spots(inside)
+	_paint_spots(inside, dt)
 	if hold < HOLD: return
 	hold = 0.0
 	if inside.ok: _parked(inside)
@@ -819,6 +803,7 @@ func _parked(spot: Dictionary) -> void:
 	GameSound.buzz(20)
 	ui.toast("%s  +%d" % [Ui.t("gameParkingParked"), gain], "good")
 	done_timer = 1.3
+	guide.celebrate()
 	_paint_way()
 	_refresh_hud()
 	_checkpoint()

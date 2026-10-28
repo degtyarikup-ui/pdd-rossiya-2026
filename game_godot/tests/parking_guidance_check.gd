@@ -64,7 +64,12 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 	for segment in way.size():
 		var data: Dictionary = way[segment]
 		var pose: Vector3 = data.poses[0]
-		guide.update_state(pose, float(data.steer) * ParkingLevels.MAX_STEER, int(data.gear), 0.0, segment, 0, true, 0.1)
+		guide.update_state(pose, float(data.steer) * ParkingLevels.MAX_STEER, int(data.gear), 0.0, segment, 0, true, 0.05)
+		if segment > 0:
+			_check("segment %d: the finished step fades out instead of vanishing" % segment,
+				guide._segments[segment - 1].mesh.is_visible_in_tree() and guide._segments[segment - 1].marker.root.is_visible_in_tree())
+		# Fades take 0.2 s: settle them before checking what stays on the floor.
+		guide.update_state(pose, float(data.steer) * ParkingLevels.MAX_STEER, int(data.gear), 0.0, segment, 0, true, 1.0)
 		var mm: MultiMesh = guide._chevrons.multimesh
 		_check("segment %d: directional chevrons are shown" % segment, mm.visible_instance_count > 0)
 		for i in mm.visible_instance_count:
@@ -102,9 +107,21 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 	guide.update_state(start, ParkingLevels.MAX_STEER, selected_gear, 0.0, 0, 0, true, 0.1)
 	_check("preview: shown while steering", guide._prediction.is_visible_in_tree())
 	guide.update_state(start, 0.0, -selected_gear, 0.0, 0, 0, true, 0.1, false)
+	_check("preview: fades out once driving is over", guide._prediction.is_visible_in_tree())
+	guide.update_state(start, 0.0, -selected_gear, 0.0, 0, 0, true, 1.0, false)
 	_check("preview: hidden once driving is over", not guide._prediction.is_visible_in_tree())
 	_check("preview: dashes only, no arrow", guide._prediction_mesh.get_surface_count() == 1
 		and (guide._prediction_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() == 72)
+	# Parked: the route fades at once, the finish frame closes, flashes and then goes.
+	var parked: Vector3 = way[way.size() - 1].poses.back()
+	guide.update_state(parked, 0.0, selected_gear, 0.0, way.size() - 1, 0, true, 1.0)
+	guide.celebrate()
+	guide.update_state(parked, 0.0, selected_gear, 0.0, way.size() - 1, 0, false, 0.4, false)
+	_check("finish: the route has faded when parked", not guide._route.is_visible_in_tree())
+	_check("finish: the frame stays for its success animation", guide._goal.is_visible_in_tree()
+		and float(guide._goal_mat.get_shader_parameter("arm")) > 3.0)
+	guide.update_state(parked, 0.0, selected_gear, 0.0, way.size() - 1, 0, false, 1.0, false)
+	_check("finish: the frame is gone after its success animation", not guide._goal.is_visible_in_tree())
 	# The rules level must not disclose the legal space through an authored route.
 	level = ParkingLevels.build(ParkingLevels.RULES)
 	way = ParkingLevels.way_in(level, geo)
