@@ -527,6 +527,17 @@ class IapService extends ChangeNotifier {
       }
     }
 
+    // A delivered transaction awaiting verification/acknowledgement must not
+    // open another payment sheet. Keep its captured owner and retry delivery.
+    if (_pendingVerification.values.any(
+      (entry) => entry.$1.productID == _productIdForTier(tier),
+    )) {
+      _lastFailure = PurchaseFailure.verificationPending;
+      _lastErrorMessage = appL10n.purchaseVerificationPending;
+      retryPendingPurchases();
+      return PurchaseResult.error;
+    }
+
     await loadProducts(phase: ProductLoadPhase.purchase, purchaseTier: tier);
     final product = _findProductForTier(tier);
 

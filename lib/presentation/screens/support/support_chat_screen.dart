@@ -57,6 +57,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   void dispose() {
     SupportInbox.instance.chatOpen = false;
     _pollTimer?.cancel();
+    _readCooldown?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -83,6 +84,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     // (/close) — оператор не напишет, пока не напишет человек: раз в 30 секунд.
     _pollTimer = Timer.periodic(const Duration(milliseconds: 3500), (_) {
       if (!mounted) return;
+      if (_readCooldown?.isActive ?? false) {
+        return;
+      }
       final closed = _messages.isNotEmpty && _messages.last.isClosedNotice;
       if (closed &&
           DateTime.now().difference(_lastRefresh) <
@@ -94,6 +98,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   }
 
   DateTime _lastRefresh = DateTime.now();
+  int _readFailures = 0;
+  Timer? _readCooldown;
 
   Future<void> _refreshMessages({bool silent = false}) async {
     // Фото может грузиться дольше интервала polling. Не запускаем повторную
@@ -115,11 +121,23 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               .fold<int>(0, (max, m) => m.timestamp > max ? m.timestamp : max)
         : 0;
 
-    final incoming = await _service.fetchMessages(
+    final incoming = await _service.tryFetchMessages(
       since: lastTs > 0 ? lastTs : null,
     );
 
-    if (!mounted || incoming.isEmpty) return;
+    if (!mounted) return;
+    if (incoming == null) {
+      _readFailures = (_readFailures + 1).clamp(1, 5);
+      _readCooldown?.cancel();
+      _readCooldown = Timer(
+        Duration(seconds: (5 * (1 << (_readFailures - 1))).clamp(5, 60)),
+        () {},
+      );
+      return;
+    }
+    _readFailures = 0;
+    _readCooldown?.cancel();
+    if (incoming.isEmpty) return;
 
     final displayedIds = _messages.map((m) => m.id).toSet();
     final images = incoming

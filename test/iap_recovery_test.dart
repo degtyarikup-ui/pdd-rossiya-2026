@@ -122,6 +122,16 @@ void main() {
           expect(verifications, 1);
           expect(store.completed, isEmpty);
           expect(PremiumService.instance.isPremium, isFalse);
+          // Another tap while the first receipt is unconfirmed must not
+          // initiate a second charge or finish the unverified transaction.
+          expect(
+            await iap.buyProduct(PremiumTier.weekly),
+            PurchaseResult.error,
+          );
+          expect(iap.lastFailure, PurchaseFailure.verificationPending);
+          expect(store.sequence, 1);
+          expect(store.completed, isEmpty);
+          await Future<void>.delayed(Duration.zero);
           online = true;
           iap.retryPendingPurchases();
           await delivered.future;

@@ -31,14 +31,15 @@ class _ChatService extends Fake implements SupportChatService {
   List<SupportChatMessage> incoming = [_photo, _reply];
   List<SupportChatMessage> saved = [];
   int fetches = 0;
+  bool fail = false;
 
   @override
   Future<List<SupportChatMessage>> loadCachedMessages() async => cached;
 
   @override
-  Future<List<SupportChatMessage>> fetchMessages({int? since}) async {
+  Future<List<SupportChatMessage>?> tryFetchMessages({int? since}) async {
     fetches++;
-    return incoming;
+    return fail ? null : incoming;
   }
 
   @override
@@ -126,6 +127,31 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: screen));
     await tester.pump();
   }
+
+  testWidgets(
+    'failed reads back off, preserve history and recover on empty success',
+    (tester) async {
+      final service = _ChatService()
+        ..cached = [_reply]
+        ..incoming = []
+        ..fail = true;
+      await mount(tester, SupportChatScreen(service: service));
+      expect(service.fetches, 1);
+      expect(find.text(_reply.text), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 3500));
+      expect(service.fetches, 1);
+      await tester.pump(const Duration(milliseconds: 3500));
+      expect(service.fetches, 2);
+      await tester.pump(const Duration(seconds: 7));
+      expect(service.fetches, 2);
+      service.fail = false;
+      await tester.pump(const Duration(milliseconds: 3500));
+      expect(service.fetches, 3);
+      await tester.pump(const Duration(milliseconds: 3500));
+      expect(service.fetches, 4);
+      expect(find.text(_reply.text), findsOneWidget);
+    },
+  );
 
   Future<void> waitForPhoto(WidgetTester tester) async {
     for (var i = 0; i < 30; i++) {
