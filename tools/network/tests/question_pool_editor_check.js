@@ -6,13 +6,13 @@ const Layout = require('../editor/layout.js');
 const clone = value => JSON.parse(JSON.stringify(value));
 const elements = new Map(), calls = [];
 const element = () => ({hidden:true,classList:{toggle(){},add(){},remove(){}},addEventListener(){},dataset:{}});
-let drawn, failSave = false, closed = 0;
+let drawn, failSave = false;
 const scene = {id:'ticket_cd_1_1',schema:1,crop:90,layout:Layout.template('cross',90),question:{maneuver:'straight'},questionPool:{category:'cd'},roads:[],routes:[],markings:[],lawns:[],actors:[],lights:[],decor:[]};
 Layout.apply(scene);
 const context = vm.createContext({
   Layout, document:{querySelector:key => {if (!elements.has(key)) elements.set(key,element()); return elements.get(key);},querySelectorAll:()=>[],title:''},
   Scene3D:{load:(s,built)=>{drawn=built;},refresh(){},setSelection(){},capture:()=>({toBlob(){}})},Tools:{set(){}},
-  QuestionReview:{close:()=>{closed++;},load:async()=>[]},history:{replaceState(){}},
+  QuestionPlan:{load:async()=>[]},history:{replaceState(){}},
   setTimeout:()=>0,clearTimeout(){},
   fetch:async(path,options={})=>{
     calls.push({path,options});
@@ -34,7 +34,7 @@ App.renderPanels = ()=>{};
   App.edit(sc => {sc.question.authorDraft = 'kept';},{rebuild:false});
   const before = JSON.stringify(App.state.S), previousCalls = calls.length;
   await App.openScene(scene.id);
-  assert.equal(JSON.stringify(App.state.S),before,'review -> same editor preserves unsaved scene and history');
+  assert.equal(JSON.stringify(App.state.S),before,'reopening the same editor preserves unsaved scene and history');
   assert.equal(calls.length,previousCalls,'same scene is not fetched again');
   failSave = true;
   await App.setPlayable(true); await App.runInGame();
@@ -46,6 +46,5 @@ App.renderPanels = ()=>{};
   await App.setPlayable(true);
   assert.equal(App.state.S.reviewed,true);
   assert.equal(App.state.S.questionPool,undefined,'promotion clears the in-memory draft marker');
-  assert.ok(closed >= 2);
   console.log('Question pool editor: virtual drawing/save, same-scene draft, failed-save guards and promotion PASS');
 })().catch(error=>{console.error(error);process.exitCode=1;});

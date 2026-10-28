@@ -20,12 +20,12 @@ function mount(search = '') {
   const elements = Object.fromEntries(['#left-body', '#home-screen', '#home-q'].map(id => [id, element()]));
   const document = { querySelector: selector => elements[selector], querySelectorAll: () => [], addEventListener(type, callback) { (listeners[type] ??= []).push(callback); } };
   const opened = [], reviewed = [];
-  const QuestionReview = { open: async id => reviewed.push(id || 'first-pending'), close() {}, setQuery() {},
+  const QuestionPlan = { open: async id => reviewed.push(id || 'first-pending'), close() {}, setQuery() {},
     sidebarHtml: () => questions.map(question => `<button data-question="${question.id}">question photo</button>`).join(''),
     homeHtml: () => '<div>question cards</div>', visibleCount: () => questions.length };
   const App = { state: { scenes: structuredClone(scenes), questions, section: 'city' }, esc: value => String(value ?? ''), ic: () => '', thumbRev: {},
     sceneTitle: id => id.replace(/^ticket_/, '').replace('_', ' '), openScene: async id => opened.push(id) };
-  vm.runInNewContext(source, { App, QuestionReview, document, URLSearchParams, location: { search }, Thumbs: { fillAll() {} }, Tools: { renderBar() {} },
+  vm.runInNewContext(source, { App, QuestionPlan, document, URLSearchParams, location: { search }, Thumbs: { fillAll() {} }, Tools: { renderBar() {} },
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) } });
   const dispatch = (type, target) => listeners[type].forEach(callback => callback({ target }));
   const click = (attribute, value) => dispatch('click', { closest: selector => selector === `[${attribute}]` ? { dataset: { [attribute.replace('data-', '').replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())]: value } } : null });

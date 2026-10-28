@@ -20,7 +20,7 @@ let failSave = false;
 const context = vm.createContext({ Layout,
   document: { querySelector(key) { if (!elements.has(key)) elements.set(key, element()); return elements.get(key); }, querySelectorAll: () => [], title: '' },
   Scene3D: { load() {}, refresh() {}, setSelection() {}, capture: () => ({ toBlob() {} }) }, Tools: { set() {} },
-  Thumbs: { fillAll() {}, img: () => '' }, QuestionReview: { close() {}, load: async () => [] }, history: { replaceState() {} },
+  Thumbs: { fillAll() {}, img: () => '' }, QuestionPlan: { close() {}, load: async () => [] }, history: { replaceState() {} },
   setTimeout: () => 0, clearTimeout() {},
   async fetch(path, options = {}) {
     const body = options.body && JSON.parse(options.body);

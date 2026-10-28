@@ -223,7 +223,6 @@ const App = (() => {
   }
   async function openScene(sid) {
     if (state.S && sid === state.id) {
-      if (typeof QuestionReview !== "undefined") QuestionReview.close();
       setSceneSection(sid);
       showHome(false);
       App.renderPanels?.();
@@ -231,7 +230,6 @@ const App = (() => {
     }
     if (state.dirty && sid !== state.id && !(await confirmBox("Уйти без сохранения?", "В этой сцене есть несохранённые правки.", "Уйти"))) return;
     const r = await api(`/api/scene/${sid}`);
-    if (typeof QuestionReview !== "undefined") QuestionReview.close();
     state.S = r.scene;
     state.S.markings = state.S.markings || [];
     state.S.lawns = state.S.lawns || [];
@@ -304,7 +302,7 @@ const App = (() => {
       const gone = r.removed && r.removed.length ? ` Удалено: ${r.removed.length}.` : "";
       toast(errors ? `Сохранено, но есть ошибки: ${errors}.${gone}` : `Сохранено.${gone}`, errors ? "warn" : "good");
       saveThumb();
-      loadList().then(async () => { if (typeof QuestionReview !== "undefined") await QuestionReview.load({refresh:true}); App.renderPanels?.(); });
+      loadList().then(async () => { if (typeof QuestionPlan !== "undefined") await QuestionPlan.load({refresh:true}); App.renderPanels?.(); });
     } catch (e) {
       toast(`Не сохранено: ${e.message}`, "bad");
     }
@@ -336,7 +334,7 @@ const App = (() => {
       if (on) delete state.S.questionPool;
       state.savedJson = snapshotText();
       toast(on ? `Сцена в игре. Всего в игре: ${r.count}` : "Сцена убрана из игры", "good");
-      loadList().then(async () => { if (typeof QuestionReview !== "undefined") await QuestionReview.load({refresh:true}); App.renderPanels?.(); });
+      loadList().then(async () => { if (typeof QuestionPlan !== "undefined") await QuestionPlan.load({refresh:true}); App.renderPanels?.(); });
     } catch (e) {
       toast(e.message, "bad");
     } finally {
@@ -653,7 +651,6 @@ const App = (() => {
   }
 
   function showHome(on) {
-    if (on && typeof QuestionReview !== "undefined") QuestionReview.close();
     $("#home-screen").hidden = !on;
     $("#app").classList.toggle("at-home", on);
     if (on) App.renderHome?.();
@@ -678,7 +675,6 @@ const App = (() => {
   }
   function onKey(e) {
     if (typeof Framing !== "undefined" && Framing.on) return;
-    if (typeof QuestionReview !== "undefined" && QuestionReview.active()) return;
     const typing = e.target && (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) || e.target.isContentEditable);
     if (!$("#keys").hidden && e.key === "Escape") { $("#keys").hidden = true; return; }
     for (const k of KEYS) {
@@ -782,13 +778,13 @@ const App = (() => {
       return;
     }
     Scene3D.setTextures(Textures.forScene());
-    if (typeof QuestionReview !== "undefined") await QuestionReview.load().catch(() => {});
+    if (typeof QuestionPlan !== "undefined") await QuestionPlan.load().catch(() => {});
     App.renderPanels?.();
     renderTop();
     const params = new URLSearchParams(location.search);
     const first = params.get("scene");
     if (first) openScene(first).catch((e) => { toast(e.message, "bad"); showHome(true); });
-    else if (params.get("filter") === "questions" && typeof QuestionReview !== "undefined") {
+    else if (params.get("filter") === "questions" && typeof QuestionPlan !== "undefined") {
       await App.showQuestions?.(params.get("question") || undefined);
     } else showHome(true);
   }
