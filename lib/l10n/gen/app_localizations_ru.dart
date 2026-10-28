@@ -3321,6 +3321,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get gamesUnlimitedAction => 'Играть без ограничений';
 
   @override
+  String get gamesPremiumBadge => 'Премиум';
+
+  @override
+  String get gamesPremiumHint => 'Доступно с Премиумом';
+
+  @override
+  String paywallLockedGame(String game) {
+    return 'Игра «$game» доступна с Премиумом';
+  }
+
+  @override
   String get gamesResumeRide => 'Продолжить заезд';
 
   @override

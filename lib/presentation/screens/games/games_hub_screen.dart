@@ -48,6 +48,7 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
   bool _runsLoaded = false;
   bool _hasPendingRun = false;
   bool _openingCity = false;
+  bool _openingPaywall = false;
   int _cityBest = 0;
   int _weekScore = 0;
   Timer? _timer;
@@ -185,7 +186,24 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
     await _refreshRating();
   }
 
+  /// Free players reach a Premium game through the paywall that names it.
+  /// Only a completed purchase or restore (`true`) continues into the game;
+  /// an Android SBP browser handoff (`false`) or closing leaves the hub, and
+  /// the card unlocks by itself once the payment is confirmed.
+  Future<bool> _premiumUnlocked(String id, String title) async {
+    if (!premiumGames.contains(id) || ref.read(isPremiumProvider)) return true;
+    if (_openingPaywall) return false;
+    _openingPaywall = true;
+    try {
+      final result = await PremiumPaywallSheet.show(context, lockedGame: title);
+      return result == true && mounted;
+    } finally {
+      _openingPaywall = false;
+    }
+  }
+
   /// The Godot «Парковка» mini-game, the same availability rule as the crossroads.
+  /// Availability comes first: a platform without the game sells nothing.
   Future<void> _openParking() async {
     if (!await GodotGame.available()) {
       if (mounted) {
@@ -195,6 +213,8 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
       }
       return;
     }
+    if (!mounted) return;
+    if (!await _premiumUnlocked('parking', appL10n.gamesParkingTitle)) return;
     if (!mounted) return;
     HapticFeedbackHelper.tap();
     await GodotGame.playParking(context, ref);
@@ -213,6 +233,10 @@ class _GamesHubScreenState extends ConsumerState<_SignedInGamesHubScreen>
           context,
         ).showSnackBar(SnackBar(content: Text(appL10n.gameUnavailable)));
       }
+      return;
+    }
+    if (!mounted) return;
+    if (!await _premiumUnlocked('violator', appL10n.gamesViolatorTitle)) {
       return;
     }
     if (!mounted) return;

@@ -1533,6 +1533,23 @@
     }
   },
   "gamesUnlimitedAction": "Играть без ограничений",
+  "gamesPremiumBadge": "Премиум",
+  "@gamesPremiumBadge": {
+    "description": "Badge on a game cover that only Premium players can open."
+  },
+  "gamesPremiumHint": "Доступно с Премиумом",
+  "@gamesPremiumHint": {
+    "description": "Screen reader hint for a Premium-only game cover; tapping it opens the paywall."
+  },
+  "paywallLockedGame": "Игра «{game}» доступна с Премиумом",
+  "@paywallLockedGame": {
+    "description": "Line on the paywall opened from a Premium-only game; game is its localized title.",
+    "placeholders": {
+      "game": {
+        "type": "String"
+      }
+    }
+  },
   "gamesResumeRide": "Продолжить заезд",
   "gamesBeta": "Бета",
   "gameCityTitle": "Живой город",

@@ -541,12 +541,20 @@ void main() {
         parkingBest: 0,
       );
       for (final entry in [
-        ('road_signs', appL10n.gamesRoadSignsTitle),
-        ('parking', appL10n.gamesParkingTitle),
+        (
+          'road_signs',
+          appL10n.gamesRoadSignsTitle,
+          appL10n.gamesRoadSignsTitle,
+        ),
+        (
+          'parking',
+          appL10n.gamesParkingTitle,
+          '${appL10n.gamesParkingTitle}, ${appL10n.gamesPremiumBadge}',
+        ),
       ]) {
         final finder = find.byKey(ValueKey('games-card-${entry.$1}'));
         final card = tester.widget<Semantics>(finder);
-        expect(card.properties.label, entry.$2);
+        expect(card.properties.label, entry.$3);
         expect(card.properties.enabled, isTrue);
         expect(card.properties.onTap, isNotNull);
         expect(find.text(entry.$2), findsOneWidget);
@@ -644,6 +652,66 @@ void main() {
     expect(card.properties.label, isNot(contains(appL10n.gamesResumeRide)));
     expect(find.text(appL10n.gamesResumeRide), findsNothing);
     handle.dispose();
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Premium games keep their cover and show a Premium badge', (
+    tester,
+  ) async {
+    final called = <String>[];
+    await open(
+      tester,
+      parkingBest: 420,
+      onParking: () => called.add('parking'),
+    );
+    Finder badgeOf(String id) => find.descendant(
+      of: find.byKey(ValueKey('games-card-$id')),
+      matching: find.byKey(const ValueKey('games-premium-badge')),
+    );
+    // Only Parking: the unreleased Violator stays "coming soon", not for sale.
+    expect(find.byKey(const ValueKey('games-premium-badge')), findsOneWidget);
+    expect(badgeOf('parking'), findsOneWidget);
+    expect(badgeOf('violator'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('games-card-parking')),
+        matching: find.byType(ColorFiltered),
+      ),
+      findsNothing,
+    );
+    final parking = tester.widget<Semantics>(
+      find.byKey(const ValueKey('games-card-parking')),
+    );
+    expect(parking.properties.enabled, isTrue);
+    expect(parking.properties.hint, appL10n.gamesPremiumHint);
+    expect(
+      parking.properties.label,
+      '${appL10n.gamesParkingTitle}, ${appL10n.gamesPremiumBadge}, '
+      '${appL10n.gamesRecordScore('420')}',
+    );
+    final card = tester.getRect(
+      find.byKey(const ValueKey('games-card-parking')),
+    );
+    final badge = tester.getRect(badgeOf('parking'));
+    final title = tester.getRect(find.text(appL10n.gamesParkingTitle));
+    expect(
+      card.contains(badge.topLeft) && card.contains(badge.bottomRight),
+      isTrue,
+    );
+    expect(badge.bottom, lessThan(title.top));
+    await tester.tap(find.byKey(const ValueKey('games-card-parking')));
+    expect(called, ['parking']);
+
+    await open(tester, premium: true);
+    expect(find.byKey(const ValueKey('games-premium-badge')), findsNothing);
+    expect(
+      tester
+          .widget<Semantics>(find.byKey(const ValueKey('games-card-parking')))
+          .properties
+          .hint,
+      isNull,
+    );
+    expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
 

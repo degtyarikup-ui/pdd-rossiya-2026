@@ -159,6 +159,7 @@ void main() {
     bool dark = false,
     bool reducedMotion = true,
     bool settle = true,
+    String? lockedGame,
     ValueChanged<bool?>? onResult,
   }) async {
     tester.view.devicePixelRatio = 1;
@@ -191,7 +192,10 @@ void main() {
                 child: TextButton(
                   key: _openKey,
                   onPressed: () async {
-                    final result = await PremiumPaywallSheet.show(context);
+                    final result = await PremiumPaywallSheet.show(
+                      context,
+                      lockedGame: lockedGame,
+                    );
                     onResult?.call(result);
                   },
                   child: const Text('Open premium'),
@@ -398,6 +402,57 @@ void main() {
     expect(find.text(appL10n.premiumPassRateValue), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  for (final language in ['ru', 'en', 'kk']) {
+    for (final configuration in [
+      (size: const Size(390, 844), scale: 1.0, name: 'phone'),
+      (size: const Size(320, 568), scale: 2.0, name: 'large-text'),
+    ]) {
+      _testPremium(
+        '$language ${configuration.name}: a locked game is named above the title',
+        (tester) async {
+          await mount(
+            tester,
+            language: language,
+            size: configuration.size,
+            textScale: configuration.scale,
+          );
+          // The generic paywall keeps its layout without the note.
+          expect(
+            find.byKey(const ValueKey('premium-locked-game')),
+            findsNothing,
+          );
+          final plainTitle = tester.getTopLeft(find.text(appL10n.paywallTitle));
+          Navigator.of(
+            tester.element(find.byType(PremiumBenefitsScreen)),
+          ).pop();
+          await tester.pumpAndSettle();
+
+          await mount(
+            tester,
+            language: language,
+            size: configuration.size,
+            textScale: configuration.scale,
+            lockedGame: appL10n.gamesParkingTitle,
+          );
+          final note = find.byKey(const ValueKey('premium-locked-game'));
+          expect(note, findsOneWidget);
+          expect(
+            find.text(appL10n.paywallLockedGame(appL10n.gamesParkingTitle)),
+            findsOneWidget,
+          );
+          final title = tester.getRect(find.text(appL10n.paywallTitle));
+          final noteRect = tester.getRect(note);
+          expect(noteRect.bottom, lessThanOrEqualTo(title.top));
+          expect(noteRect.left, greaterThanOrEqualTo(0));
+          expect(noteRect.right, lessThanOrEqualTo(configuration.size.width));
+          expect(title.top, greaterThan(plainTitle.dy));
+          expect(tester.takeException(), isNull);
+          await capture(tester, 'locked-game-$language-${configuration.name}');
+        },
+      );
+    }
+  }
 
   for (final language in ['ru', 'en', 'kk']) {
     _testPremium('statistics count up without shifting in $language', (

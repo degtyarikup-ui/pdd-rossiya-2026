@@ -3318,6 +3318,17 @@ class AppLocalizationsKk extends AppLocalizations {
   String get gamesUnlimitedAction => 'Шектеусіз ойнау';
 
   @override
+  String get gamesPremiumBadge => 'Премиум';
+
+  @override
+  String get gamesPremiumHint => 'Премиуммен қолжетімді';
+
+  @override
+  String paywallLockedGame(String game) {
+    return '«$game» ойыны Премиуммен қолжетімді';
+  }
+
+  @override
   String get gamesResumeRide => 'Жарысты жалғастыру';
 
   @override

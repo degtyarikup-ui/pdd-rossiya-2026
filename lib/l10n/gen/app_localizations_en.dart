@@ -3314,6 +3314,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamesUnlimitedAction => 'Play without limits';
 
   @override
+  String get gamesPremiumBadge => 'Premium';
+
+  @override
+  String get gamesPremiumHint => 'Available with Premium';
+
+  @override
+  String paywallLockedGame(String game) {
+    return '“$game” is available with Premium';
+  }
+
+  @override
   String get gamesResumeRide => 'Resume drive';
 
   @override

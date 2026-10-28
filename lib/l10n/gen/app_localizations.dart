@@ -5542,6 +5542,24 @@ abstract class AppLocalizations {
   /// **'Играть без ограничений'**
   String get gamesUnlimitedAction;
 
+  /// Badge on a game cover that only Premium players can open.
+  ///
+  /// In ru, this message translates to:
+  /// **'Премиум'**
+  String get gamesPremiumBadge;
+
+  /// Screen reader hint for a Premium-only game cover; tapping it opens the paywall.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступно с Премиумом'**
+  String get gamesPremiumHint;
+
+  /// Line on the paywall opened from a Premium-only game; game is its localized title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Игра «{game}» доступна с Премиумом'**
+  String paywallLockedGame(String game);
+
   /// No description provided for @gamesResumeRide.
   ///
   /// In ru, this message translates to:

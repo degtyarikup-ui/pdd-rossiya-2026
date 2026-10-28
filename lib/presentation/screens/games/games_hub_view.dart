@@ -13,6 +13,11 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart
 /// progress and leaderboards stay in the code; add a card id here to hide a game.
 const hiddenGames = <String>{};
 
+/// Mini games only Premium players can open. Free players still see the full
+/// colour cover with a Premium badge (grey is reserved for "coming soon"); a tap
+/// opens the paywall naming the game, and a purchase goes straight into it.
+const premiumGames = <String>{'parking', 'violator'};
+
 /// The hub's presentation, shared by the live screen and layout/state checks.
 /// The city stays outside the scrolling mini-game catalogue, within thumb reach.
 /// Large text keeps its natural size and gets a single-column catalogue.
@@ -201,6 +206,7 @@ class GamesHubView extends StatelessWidget {
                         );
                         Widget catalogue() => _MiniGamesCatalogue(
                           gap: gap,
+                          premium: premium,
                           trafficBest: trafficBest,
                           signsBest: signsBest,
                           crossroadsBest: crossroadsBest,
@@ -266,6 +272,7 @@ String _number(BuildContext context, int score) => NumberFormat.decimalPattern(
 class _MiniGamesCatalogue extends StatelessWidget {
   const _MiniGamesCatalogue({
     required this.gap,
+    required this.premium,
     required this.trafficBest,
     required this.signsBest,
     required this.crossroadsBest,
@@ -280,6 +287,7 @@ class _MiniGamesCatalogue extends StatelessWidget {
     this.onViolator,
   });
   final double gap;
+  final bool premium;
   final int trafficBest,
       signsBest,
       crossroadsBest,
@@ -374,6 +382,7 @@ class _MiniGamesCatalogue extends StatelessWidget {
       onTap: onViolator,
       // Still "coming soon" for the stores; dev builds (GAME_DEBUG) can play it.
       comingSoon: !const bool.fromEnvironment('GAME_DEBUG'),
+      locked: _locked('violator'),
     ),
     _HubCard(
       id: 'parking',
@@ -381,8 +390,11 @@ class _MiniGamesCatalogue extends StatelessWidget {
       bestScore: parkingBest,
       titleSize: titleSize,
       onTap: onParking,
+      locked: _locked('parking'),
     ),
   ];
+
+  bool _locked(String id) => !premium && premiumGames.contains(id);
 }
 
 class _CatalogueScroll extends StatefulWidget {
@@ -426,6 +438,7 @@ class _HubCard extends StatelessWidget {
     this.featured = false,
     this.waiting = false,
     this.comingSoon = false,
+    this.locked = false,
     this.compact = false,
     this.semanticDetails = '',
     this.titleSize = 18,
@@ -436,7 +449,7 @@ class _HubCard extends StatelessWidget {
   final int? bestScore;
   final String? caption;
   final VoidCallback? onTap;
-  final bool featured, waiting, comingSoon, compact;
+  final bool featured, waiting, comingSoon, locked, compact;
   final String semanticDetails;
   final double titleSize;
   final Widget? footer;
@@ -446,6 +459,8 @@ class _HubCard extends StatelessWidget {
     final colors = AppColors.of(context);
     final launch = comingSoon ? null : onTap;
     final enabled = launch != null;
+    // "Coming soon" outranks the badge: an unreleased game is not for sale.
+    final premiumOnly = locked && !comingSoon;
     const foreground = AppColors.white;
     final record = !comingSoon && bestScore != null && bestScore! > 0;
     final status = comingSoon
@@ -462,9 +477,11 @@ class _HubCard extends StatelessWidget {
         enabled: enabled,
         label: [
           title,
+          if (premiumOnly) appL10n.gamesPremiumBadge,
           ?status,
           if (semanticDetails.isNotEmpty) semanticDetails,
         ].join(', '),
+        hint: premiumOnly ? appL10n.gamesPremiumHint : null,
         excludeSemantics: true,
         onTap: launch,
         child: ClipRRect(
@@ -520,6 +537,27 @@ class _HubCard extends StatelessWidget {
                         const Color(0xF0000A15),
                       ],
                     ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: AppDimensions.spacingS,
+                right: AppDimensions.spacingS,
+                child: IgnorePointer(
+                  // The badge leaves with a short fade once Premium arrives.
+                  child: AnimatedSwitcher(
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 260),
+                    switchInCurve: Curves.easeOutBack,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(scale: animation, child: child),
+                    ),
+                    child: premiumOnly
+                        ? const _PremiumBadge()
+                        : const SizedBox.shrink(),
                   ),
                 ),
               ),
@@ -613,6 +651,54 @@ class _HubCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A solid amber chip: the hub's upsell colour, readable on any cover photo.
+/// Text grows with the system size only up to a point; readers get the label
+/// from the card itself.
+class _PremiumBadge extends StatelessWidget {
+  const _PremiumBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          key: const ValueKey('games-premium-badge'),
+          decoration: BoxDecoration(
+            color: colors.premiumAmber,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.lock_rounded,
+                  size: 14,
+                  color: AppColors.primaryText,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  appL10n.gamesPremiumBadge,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
