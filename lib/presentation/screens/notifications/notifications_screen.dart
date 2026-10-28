@@ -394,7 +394,7 @@ class _InboxCard extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: colors.accent,
+                                  color: detail ? colors.white : colors.accent,
                                 ),
                               );
                         if (detail ||
