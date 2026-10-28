@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -76,183 +77,191 @@ class _ExamReviewScreenState extends ConsumerState<ExamReviewScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     if (widget.questions.isEmpty || _order.isEmpty) {
-      return Scaffold(
-        backgroundColor: colors.background,
-        appBar: AppBar(
+      return AppContentFrame(
+        maxWidth: AppContentFrame.readingWidth,
+        child: Scaffold(
           backgroundColor: colors.background,
-          elevation: 0,
-          leading: AppChromeIconButton(
-            icon: Icons.close_rounded,
-            onTap: () => Navigator.pop(context),
+          appBar: AppBar(
+            backgroundColor: colors.background,
+            elevation: 0,
+            leading: AppChromeIconButton(
+              icon: Icons.close_rounded,
+              onTap: () => Navigator.pop(context),
+            ),
+            title: Text(appL10n.myMistakes),
           ),
-          title: Text(appL10n.myMistakes),
-        ),
-        body: Center(
-          child: Text(
-            appL10n.noQuestionsToReview,
-            style: TextStyle(color: colors.secondaryText),
+          body: Center(
+            child: Text(
+              appL10n.noQuestionsToReview,
+              style: TextStyle(color: colors.secondaryText),
+            ),
           ),
         ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.screenPadding,
-                vertical: AppDimensions.spacingM,
-              ),
-              child: Row(
-                children: [
-                  AppChromeIconButton(
-                    icon: Icons.close_rounded,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const SizedBox(width: AppDimensions.spacingM),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          appL10n.examReview,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: colors.primaryText,
-                          ),
-                        ),
-                        Text(
-                          appL10n.questionOfTotal(
-                            _currentPos + 1,
-                            _order.length,
-                          ),
-                          key: ValueKey<int>(_currentPos),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 36,
-              child: ListView.builder(
-                controller: _stripController,
-                scrollDirection: Axis.horizontal,
-                primary: false,
-                physics: const BouncingScrollPhysics(),
+    return AppContentFrame(
+      maxWidth: AppContentFrame.readingWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppDimensions.screenPadding,
+                  vertical: AppDimensions.spacingM,
                 ),
-                itemCount: _order.length,
-                itemBuilder: (context, pos) {
-                  final isCurrent = pos == _currentPos;
-                  final idx = _order[pos];
-                  final qMap = widget.questions[idx];
-                  final ansList = qMap['answers'] as List;
-                  final selI = widget.savedAnswers[idx];
-                  final correct =
-                      selI != null && (ansList[selI]['correct'] as bool);
-
-                  Color bg;
-                  if (isCurrent) {
-                    bg = colors.accent;
-                  } else if (selI == null) {
-                    bg = colors.red;
-                  } else if (correct) {
-                    bg = colors.green;
-                  } else {
-                    bg = colors.red;
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _goToStripIndex(pos),
-                        borderRadius: BorderRadius.circular(6),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: bg,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '${idx + 1}',
-                            style: const TextStyle(
-                              fontSize: 12,
+                child: Row(
+                  children: [
+                    AppChromeIconButton(
+                      icon: Icons.close_rounded,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.pop(context);
+                      },
+                    ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            appL10n.examReview,
+                            style: TextStyle(
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.white,
+                              color: colors.primaryText,
+                            ),
+                          ),
+                          Text(
+                            appL10n.questionOfTotal(
+                              _currentPos + 1,
+                              _order.length,
+                            ),
+                            key: ValueKey<int>(_currentPos),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.secondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 36,
+                child: ListView.builder(
+                  controller: _stripController,
+                  scrollDirection: Axis.horizontal,
+                  primary: false,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.screenPadding,
+                  ),
+                  itemCount: _order.length,
+                  itemBuilder: (context, pos) {
+                    final isCurrent = pos == _currentPos;
+                    final idx = _order[pos];
+                    final qMap = widget.questions[idx];
+                    final ansList = qMap['answers'] as List;
+                    final selI = widget.savedAnswers[idx];
+                    final correct =
+                        selI != null && (ansList[selI]['correct'] as bool);
+
+                    Color bg;
+                    if (isCurrent) {
+                      bg = colors.accent;
+                    } else if (selI == null) {
+                      bg = colors.red;
+                    } else if (correct) {
+                      bg = colors.green;
+                    } else {
+                      bg = colors.red;
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _goToStripIndex(pos),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: bg,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '${idx + 1}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.white,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-            Expanded(
-              child: Stack(
-                children: [
-                  PageView.builder(
-                    controller: _pageController,
-                    itemCount: _order.length,
-                    onPageChanged: _onReviewPageChanged,
-                    itemBuilder: (context, pos) =>
-                        _buildReviewPage(context, pos),
-                  ),
-                  if (ref.watch(isPremiumProvider))
-                    Positioned(
-                      right: AppDimensions.screenPadding,
-                      bottom: AppDimensions.screenPadding,
-                      child: _buildAiFloatingButton(context, colors),
+              Expanded(
+                child: Stack(
+                  children: [
+                    PageView.builder(
+                      controller: _pageController,
+                      itemCount: _order.length,
+                      onPageChanged: _onReviewPageChanged,
+                      itemBuilder: (context, pos) =>
+                          _buildReviewPage(context, pos),
                     ),
-                ],
+                    if (ref.watch(isPremiumProvider))
+                      Positioned(
+                        right: AppDimensions.screenPadding,
+                        bottom: AppDimensions.screenPadding,
+                        child: _buildAiFloatingButton(context, colors),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(AppDimensions.screenPadding),
-        color: colors.cardBackground,
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _currentPos >= _order.length - 1
-                  ? () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.pop(context);
-                    }
-                  : () {
-                      HapticFeedbackHelper.tap();
-                      _pageController.animateToPage(
-                        _currentPos + 1,
-                        duration: QuestionSwipeMotion.duration,
-                        curve: QuestionSwipeMotion.curve,
-                      );
-                    },
-              child: Text(
-                _currentPos >= _order.length - 1 ? appL10n.close : appL10n.next,
+        bottomNavigationBar: Container(
+          padding: const EdgeInsets.all(AppDimensions.screenPadding),
+          color: colors.cardBackground,
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _currentPos >= _order.length - 1
+                    ? () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.pop(context);
+                      }
+                    : () {
+                        HapticFeedbackHelper.tap();
+                        _pageController.animateToPage(
+                          _currentPos + 1,
+                          duration: QuestionSwipeMotion.duration,
+                          curve: QuestionSwipeMotion.curve,
+                        );
+                      },
+                child: Text(
+                  _currentPos >= _order.length - 1
+                      ? appL10n.close
+                      : appL10n.next,
+                ),
               ),
             ),
           ),

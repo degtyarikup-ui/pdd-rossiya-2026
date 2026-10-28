@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,8 @@ import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 /// Две колонки — карточка шире, номер билета и «12/20» помещаются без обрезки.
 int _ticketGridCrossAxisCount(double gridWidth) {
+  if (gridWidth >= 960) return 4;
+  if (gridWidth >= 680) return 3;
   return 2;
 }
 
@@ -58,7 +61,9 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
           ref.read(appSettingsProvider).ticketCategory != category) {
         return;
       }
-      final progressMap = await ref.read(trackedQuestionProgressProvider.future);
+      final progressMap = await ref.read(
+        trackedQuestionProgressProvider.future,
+      );
       final Map<int, ({int answered, int correct})> progress = {};
 
       for (final ticket in tickets) {
@@ -107,74 +112,79 @@ class _TicketsScreenState extends ConsumerState<TicketsScreen> {
     });
     final ticketsAsync = ref.watch(ticketsProvider);
     final colors = AppColors.of(context);
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildAppBar(context),
-            Expanded(
-              child: ticketsAsync.when(
-                data: (tickets) {
-                  final progress = _cachedProgress ?? {};
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final gridWidth = constraints.maxWidth;
-                      final textScale =
-                          MediaQuery.textScalerOf(context).scale(18) / 18;
-                      final crossAxisCount = textScale > 1.3 && gridWidth < 600
-                          ? 1
-                          : _ticketGridCrossAxisCount(gridWidth);
-                      final gridPad = gridWidth < 400
-                          ? AppDimensions.spacingS
-                          : AppDimensions.screenPadding;
-                      return GridView.builder(
-                        padding: EdgeInsets.all(gridPad),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          mainAxisSpacing: AppDimensions.spacingM,
-                          crossAxisSpacing: AppDimensions.spacingM,
-                          childAspectRatio: _ticketGridAspectRatio(
-                            crossAxisCount,
-                          ),
-                        ),
-                        itemCount: tickets.length,
-                        itemBuilder: (context, index) {
-                          final ticket = tickets[index];
-                          final ticketNum = ticket['number'] as int;
-                          final questions = ticket['questions'] as List;
-                          final progressSnapshot =
-                              progress[ticketNum] ?? (answered: 0, correct: 0);
-                          final answeredCount = progressSnapshot.answered;
-                          final correctCount = progressSnapshot.correct;
-                          final isCompleted = answeredCount == questions.length;
-                          final isPassed =
-                              isCompleted &&
-                              correctCount >=
-                                  CountryConfig.current.examRules.passThreshold(
-                                    questions.length,
-                                  );
-                          return _buildTicketCard(
-                            context: context,
-                            number: ticketNum,
-                            totalQuestions: questions.length,
-                            correctCount: correctCount,
-                            isCompleted: isCompleted,
-                            isPassed: isPassed,
-                            questions: questions
-                                .map((q) => q.toMap() as Map<String, dynamic>)
-                                .toList(),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(child: AppLoadingIndicator()),
-                error: (e, _) => Center(child: Text(dataLoadErrorMessage(e))),
+    return AppContentFrame(
+      maxWidth: AppContentFrame.catalogueWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildAppBar(context),
+              Expanded(
+                child: ticketsAsync.when(
+                  data: (tickets) {
+                    final progress = _cachedProgress ?? {};
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final gridWidth = constraints.maxWidth;
+                        final textScale =
+                            MediaQuery.textScalerOf(context).scale(18) / 18;
+                        final crossAxisCount = textScale > 1.3
+                            ? (gridWidth < 600 ? 1 : 2)
+                            : _ticketGridCrossAxisCount(gridWidth);
+                        final gridPad = gridWidth < 400
+                            ? AppDimensions.spacingS
+                            : AppDimensions.screenPadding;
+                        return GridView.builder(
+                          padding: EdgeInsets.all(gridPad),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                mainAxisSpacing: AppDimensions.spacingM,
+                                crossAxisSpacing: AppDimensions.spacingM,
+                                childAspectRatio: _ticketGridAspectRatio(
+                                  crossAxisCount,
+                                ),
+                              ),
+                          itemCount: tickets.length,
+                          itemBuilder: (context, index) {
+                            final ticket = tickets[index];
+                            final ticketNum = ticket['number'] as int;
+                            final questions = ticket['questions'] as List;
+                            final progressSnapshot =
+                                progress[ticketNum] ??
+                                (answered: 0, correct: 0);
+                            final answeredCount = progressSnapshot.answered;
+                            final correctCount = progressSnapshot.correct;
+                            final isCompleted =
+                                answeredCount == questions.length;
+                            final isPassed =
+                                isCompleted &&
+                                correctCount >=
+                                    CountryConfig.current.examRules
+                                        .passThreshold(questions.length);
+                            return _buildTicketCard(
+                              context: context,
+                              number: ticketNum,
+                              totalQuestions: questions.length,
+                              correctCount: correctCount,
+                              isCompleted: isCompleted,
+                              isPassed: isPassed,
+                              questions: questions
+                                  .map((q) => q.toMap() as Map<String, dynamic>)
+                                  .toList(),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                  loading: () => const Center(child: AppLoadingIndicator()),
+                  error: (e, _) => Center(child: Text(dataLoadErrorMessage(e))),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

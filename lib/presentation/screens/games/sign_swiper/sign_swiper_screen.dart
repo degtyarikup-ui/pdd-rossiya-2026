@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:pdd_app/data/services/achievement_award_service.dart';
 import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'package:pdd_app/core/config/game_economy.dart';
@@ -229,38 +230,40 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
     final colors = AppColors.of(context);
     final signsAsync = ref.watch(signsProvider);
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: signsAsync.when(
-          loading: () => const Center(child: AppLoadingIndicator()),
-          error: (error, _) => _buildError(colors),
-          data: (signsJson) {
-            _initEngine(signsJson);
-            if (_engine == null) return _buildError(colors);
-            return Stack(
-              children: [
-                Column(
-                  children: [
-                    _buildHeader(colors),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppDimensions.screenPadding,
-                          AppDimensions.spacingXL,
-                          AppDimensions.screenPadding,
-                          AppDimensions.spacingXXXL,
+    return AppContentFrame(
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: signsAsync.when(
+            loading: () => const Center(child: AppLoadingIndicator()),
+            error: (error, _) => _buildError(colors),
+            data: (signsJson) {
+              _initEngine(signsJson);
+              if (_engine == null) return _buildError(colors);
+              return Stack(
+                children: [
+                  Column(
+                    children: [
+                      _buildHeader(colors),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppDimensions.screenPadding,
+                            AppDimensions.spacingXL,
+                            AppDimensions.screenPadding,
+                            AppDimensions.spacingXXXL,
+                          ),
+                          child: _buildCardStack(colors),
                         ),
-                        child: _buildCardStack(colors),
                       ),
-                    ),
-                    _buildAnswerButtons(colors),
-                  ],
-                ),
-                if (_isGameOver) Positioned.fill(child: _buildResult(colors)),
-              ],
-            );
-          },
+                      _buildAnswerButtons(colors),
+                    ],
+                  ),
+                  if (_isGameOver) Positioned.fill(child: _buildResult(colors)),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

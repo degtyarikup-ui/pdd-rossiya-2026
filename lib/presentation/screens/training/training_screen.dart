@@ -1,3 +1,5 @@
+import 'package:pdd_app/presentation/widgets/question_content_layout.dart';
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:pdd_app/data/services/achievement_award_service.dart';
 import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
@@ -485,9 +487,12 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           if (didPop) return;
           _stopVoiceAndPop(result);
         },
-        child: Scaffold(
-          appBar: AppBar(title: Text(widget.title)),
-          body: Center(child: Text(appL10n.noQuestions)),
+        child: AppContentFrame(
+          maxWidth: AppContentFrame.catalogueWidth,
+          child: Scaffold(
+            appBar: AppBar(title: Text(widget.title)),
+            body: Center(child: Text(appL10n.noQuestions)),
+          ),
         ),
       );
     }
@@ -518,48 +523,52 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         if (didPop) return;
         _stopVoiceAndPop(result);
       },
-      child: Scaffold(
-        backgroundColor: colors.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(context),
-              SizedBox(
-                height: 36,
-                width: double.infinity,
-                child: ClipRect(child: _buildQuestionNumbers(context)),
-              ),
-              Expanded(
-                child: Stack(
-                  children: [
-                    PageView.builder(
-                      controller: _pageController,
-                      itemCount: _unlockedCount,
-                      onPageChanged: _onQuestionPageChanged,
-                      itemBuilder: (context, pageIndex) {
-                        return _buildTrainingQuestionPage(
-                          context,
-                          pageIndex,
-                          requireConfirmation: appSettings.confirmAnswerEnabled,
-                        );
-                      },
-                    ),
-                    if (ref.watch(isPremiumProvider))
-                      Positioned(
-                        right: AppDimensions.screenPadding,
-                        bottom: AppDimensions.screenPadding,
-                        child: _buildAiFloatingButton(context, colors),
-                      ),
-                  ],
+      child: AppContentFrame(
+        maxWidth: AppContentFrame.catalogueWidth,
+        child: Scaffold(
+          backgroundColor: colors.background,
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildAppBar(context),
+                SizedBox(
+                  height: 36,
+                  width: double.infinity,
+                  child: ClipRect(child: _buildQuestionNumbers(context)),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Stack(
+                    children: [
+                      PageView.builder(
+                        controller: _pageController,
+                        itemCount: _unlockedCount,
+                        onPageChanged: _onQuestionPageChanged,
+                        itemBuilder: (context, pageIndex) {
+                          return _buildTrainingQuestionPage(
+                            context,
+                            pageIndex,
+                            requireConfirmation:
+                                appSettings.confirmAnswerEnabled,
+                          );
+                        },
+                      ),
+                      if (ref.watch(isPremiumProvider))
+                        Positioned(
+                          right: AppDimensions.screenPadding,
+                          bottom: AppDimensions.screenPadding,
+                          child: _buildAiFloatingButton(context, colors),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        bottomNavigationBar: _buildBottomBar(
-          context,
-          requireConfirmation: appSettings.confirmAnswerEnabled,
-          hasHint: hasHint,
+          bottomNavigationBar: _buildBottomBar(
+            context,
+            requireConfirmation: appSettings.confirmAnswerEnabled,
+            hasHint: hasHint,
+          ),
         ),
       ),
     );
@@ -586,70 +595,63 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         pageIndex == _currentIndex && _showHint && !pageAnswered && hasHint;
     final showCommentAfterAnswer = pageAnswered && hasHint;
 
-    return SingleChildScrollView(
-      key: ValueKey<int>(pageIndex),
-      padding: const EdgeInsets.all(AppDimensions.screenPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (hasImage) ...[
-            const SizedBox(height: AppDimensions.spacingM),
-            ClipRRect(
+    return QuestionContentLayout(
+      pageIndex: pageIndex,
+      image: hasImage
+          ? ClipRRect(
               borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
               child: QuestionImage(assetPath: imagePath),
-            ),
-          ],
-          const SizedBox(height: AppDimensions.spacingL),
-          Text(
-            questionText,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: colors.primaryText,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spacingL),
-          ...answers.asMap().entries.map((entry) {
-            final index = entry.key;
-            final answer = entry.value as Map;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
-              child: _buildAnswerOption(
-                context,
-                questionIndex: pageIndex,
-                index: index,
-                text: answer['text'] as String,
-                isCorrect: answer['correct'] as bool,
-                requireConfirmation: requireConfirmation,
-              ),
-            );
-          }),
-          if (showHintBlock) ...[
-            const SizedBox(height: AppDimensions.spacingL),
-            _buildCommentCard(
-              context,
-              title: appL10n.hint,
-              icon: Icons.lightbulb_outline,
-              accentColor: colors.gold,
-              comment: comment,
-              pddPoints: pddPoints,
-            ),
-          ],
-          if (showCommentAfterAnswer) ...[
-            const SizedBox(height: AppDimensions.spacingL),
-            _buildCommentCard(
-              context,
-              title: appL10n.comment,
-              icon: Icons.lightbulb,
-              accentColor: colors.gold,
-              comment: comment,
-              pddPoints: pddPoints,
-            ),
-          ],
-          const SizedBox(height: 120),
-        ],
+            )
+          : null,
+      question: Text(
+        questionText,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: colors.primaryText,
+          height: 1.35,
+        ),
       ),
+      answers: answers.asMap().entries.map((entry) {
+        final index = entry.key;
+        final answer = entry.value as Map;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
+          child: _buildAnswerOption(
+            context,
+            questionIndex: pageIndex,
+            index: index,
+            text: answer['text'] as String,
+            isCorrect: answer['correct'] as bool,
+            requireConfirmation: requireConfirmation,
+          ),
+        );
+      }).toList(),
+      explanation: [
+        if (showHintBlock) ...[
+          const SizedBox(height: AppDimensions.spacingL),
+          _buildCommentCard(
+            context,
+            title: appL10n.hint,
+            icon: Icons.lightbulb_outline,
+            accentColor: colors.gold,
+            comment: comment,
+            pddPoints: pddPoints,
+          ),
+        ],
+        if (showCommentAfterAnswer) ...[
+          const SizedBox(height: AppDimensions.spacingL),
+          _buildCommentCard(
+            context,
+            title: appL10n.comment,
+            icon: Icons.lightbulb,
+            accentColor: colors.gold,
+            comment: comment,
+            pddPoints: pddPoints,
+          ),
+        ],
+      ],
+      bottomSpace: 120,
     );
   }
 

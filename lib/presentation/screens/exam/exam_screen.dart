@@ -1,3 +1,5 @@
+import 'package:pdd_app/presentation/widgets/question_content_layout.dart';
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:pdd_app/data/services/achievement_award_service.dart';
 import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
@@ -725,116 +727,143 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
         if (didPop) return;
         _confirmLeaveExam();
       },
-      child: Scaffold(
-        backgroundColor: colors.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.screenPadding,
-                  vertical: AppDimensions.spacingM,
-                ),
-                child: Row(
-                  children: [
-                    AppChromeIconButton(
-                      icon: Icons.close_rounded,
-                      onTap: _confirmLeaveExam,
-                    ),
-                    const SizedBox(width: AppDimensions.spacingM),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _additionalPhase
-                                ? appL10n.examAdditionalTitle
-                                : appL10n.exam,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: colors.primaryText,
+      child: AppContentFrame(
+        maxWidth: AppContentFrame.catalogueWidth,
+        child: Scaffold(
+          backgroundColor: colors.background,
+          body: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.screenPadding,
+                    vertical: AppDimensions.spacingM,
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final closeButton = AppChromeIconButton(
+                        icon: Icons.close_rounded,
+                        onTap: _confirmLeaveExam,
+                      );
+                      final title = Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _additionalPhase
+                                  ? appL10n.examAdditionalTitle
+                                  : appL10n.exam,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: colors.primaryText,
+                              ),
                             ),
-                          ),
-                          Text(
-                            _currentIndex >= _mainCount
-                                ? appL10n.examAdditionalQuestionOfTotal(
-                                    _currentIndex - _mainCount + 1,
-                                    _additionalQuestionsCount,
-                                  )
-                                : appL10n.questionOfTotal(
-                                    _currentIndex + 1,
-                                    _examQuestions.length,
-                                  ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colors.secondaryText,
+                            Text(
+                              _currentIndex >= _mainCount
+                                  ? appL10n.examAdditionalQuestionOfTotal(
+                                      _currentIndex - _mainCount + 1,
+                                      _additionalQuestionsCount,
+                                    )
+                                  : appL10n.questionOfTotal(
+                                      _currentIndex + 1,
+                                      _examQuestions.length,
+                                    ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colors.secondaryText,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: AppDimensions.spacingM),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _remainingTime < 120
-                            ? colors.redLight
-                            : colors.accentSurface10,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.timer_outlined,
-                            size: 18,
-                            color: _remainingTime < 120
-                                ? colors.red
-                                : colors.accent,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _formatTime(_remainingTime),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                          ],
+                        ),
+                      );
+                      final timer = Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _remainingTime < 120
+                              ? colors.redLight
+                              : colors.accentSurface10,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.timer_outlined,
+                              size: 18,
                               color: _remainingTime < 120
                                   ? colors.red
                                   : colors.accent,
                             ),
-                          ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _formatTime(_remainingTime),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: _remainingTime < 120
+                                    ? colors.red
+                                    : colors.accent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      const voice = QuestionVoiceToggle();
+                      const gap = SizedBox(width: AppDimensions.spacingM);
+                      if (constraints.maxWidth < 400 &&
+                          MediaQuery.textScalerOf(context).scale(16) > 22) {
+                        return Column(
+                          children: [
+                            Row(
+                              children: [closeButton, gap, title, gap, voice],
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: timer,
+                            ),
+                          ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          closeButton,
+                          gap,
+                          title,
+                          gap,
+                          timer,
+                          gap,
+                          voice,
                         ],
-                      ),
-                    ),
-                    const SizedBox(width: AppDimensions.spacingM),
-                    const QuestionVoiceToggle(),
-                  ],
+                      );
+                    },
+                  ),
                 ),
-              ),
-              SizedBox(
-                height: 36,
-                width: double.infinity,
-                child: ClipRect(child: _buildQuestionNumbers()),
-              ),
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController!,
-                  itemCount: _examQuestions.length,
-                  onPageChanged: _onExamPageChanged,
-                  itemBuilder: (context, pageIndex) {
-                    return _buildExamQuestionPage(pageIndex);
-                  },
+                SizedBox(
+                  height: 36,
+                  width: double.infinity,
+                  child: ClipRect(child: _buildQuestionNumbers()),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController!,
+                    itemCount: _examQuestions.length,
+                    onPageChanged: _onExamPageChanged,
+                    itemBuilder: (context, pageIndex) {
+                      return _buildExamQuestionPage(pageIndex);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -850,45 +879,35 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     final hasImage =
         imagePath != null && imagePath.isNotEmpty && imagePath != 'no_image';
 
-    return SingleChildScrollView(
-      key: ValueKey<int>(pageIndex),
-      padding: const EdgeInsets.all(AppDimensions.screenPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (hasImage) ...[
-            const SizedBox(height: AppDimensions.spacingM),
-            ClipRRect(
+    return QuestionContentLayout(
+      pageIndex: pageIndex,
+      image: hasImage
+          ? ClipRRect(
               borderRadius: BorderRadius.circular(AppDimensions.smallRadius),
               child: QuestionImage(assetPath: imagePath),
-            ),
-          ],
-          const SizedBox(height: AppDimensions.spacingL),
-          Text(
-            questionText,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: colors.primaryText,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spacingL),
-          ...answers.asMap().entries.map((entry) {
-            final index = entry.key;
-            final answer = entry.value as Map;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
-              child: _buildExamAnswerOption(
-                questionIndex: pageIndex,
-                index: index,
-                text: answer['text'] as String,
-              ),
-            );
-          }),
-          const SizedBox(height: AppDimensions.spacingXXL),
-        ],
+            )
+          : null,
+      question: Text(
+        questionText,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: colors.primaryText,
+          height: 1.35,
+        ),
       ),
+      answers: answers.asMap().entries.map((entry) {
+        final index = entry.key;
+        final answer = entry.value as Map;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppDimensions.spacingM),
+          child: _buildExamAnswerOption(
+            questionIndex: pageIndex,
+            index: index,
+            text: answer['text'] as String,
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -998,207 +1017,210 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     const double kBarHeight = 40;
     const double kFadeHeight = kBarTop + kBarHeight + 80;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppDimensions.screenPadding,
-                kFadeHeight,
-                AppDimensions.screenPadding,
-                AppDimensions.screenPadding,
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: passed ? colors.green : colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      passed ? Icons.check_circle : Icons.cancel,
-                      size: 60,
-                      color: AppColors.white,
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.spacingL),
-                  Text(
-                    passed ? appL10n.examPassed : appL10n.examFailed,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: passed ? colors.green : colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.spacingS),
-                  Text(
-                    // «Время вышло» показываем только когда таймаут привёл к
-                    // провалу. В балльной модели можно набрать проходной балл
-                    // и при истечении времени — тогда это сдача, не таймаут.
-                    (_timedOut && !passed)
-                        ? appL10n.examResultTimeout
-                        : passed
-                        ? appL10n.examResultPassed
-                        : appL10n.examResultFailed,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: colors.secondaryText,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.spacingXXL),
-                  _buildResultCard(
-                    icon: Icons.check_circle_outline,
-                    label: appL10n.correctAnswers,
-                    value: appL10n.valueOfTotal(
-                      _correctAnswers.length,
-                      totalQuestions,
-                    ),
-                    color: colors.green,
-                  ),
-                  const SizedBox(height: AppDimensions.spacingM),
-                  _buildResultCard(
-                    icon: Icons.cancel_outlined,
-                    label: appL10n.wrongAnswers,
-                    value: '$totalWrong',
-                    color: colors.red,
-                  ),
-                  if (_additionalPhase) ...[
-                    const SizedBox(height: AppDimensions.spacingM),
-                    _buildResultCard(
-                      icon: Icons.help_outline,
-                      label: appL10n.examAdditionalBlock,
-                      value: appL10n.examAdditionalBlockValue(
-                        _additionalQuestionsCount,
-                        _additionalAnsweredWrongCount(),
+    return AppContentFrame(
+      maxWidth: AppContentFrame.readingWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppDimensions.screenPadding,
+                  kFadeHeight,
+                  AppDimensions.screenPadding,
+                  AppDimensions.screenPadding,
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: passed ? colors.green : colors.red,
+                        shape: BoxShape.circle,
                       ),
-                      color: colors.gold,
+                      child: Icon(
+                        passed ? Icons.check_circle : Icons.cancel,
+                        size: 60,
+                        color: AppColors.white,
+                      ),
                     ),
-                  ],
-                  const SizedBox(height: AppDimensions.spacingM),
-                  _buildResultCard(
-                    icon: Icons.timer_outlined,
-                    label: appL10n.examTimeSpent,
-                    value: _formatTime(timeSpent),
-                    color: colors.accent,
-                  ),
-                  if (_additionalPhase) ...[
+                    const SizedBox(height: AppDimensions.spacingL),
+                    Text(
+                      passed ? appL10n.examPassed : appL10n.examFailed,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: passed ? colors.green : colors.red,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spacingS),
+                    Text(
+                      // «Время вышло» показываем только когда таймаут привёл к
+                      // провалу. В балльной модели можно набрать проходной балл
+                      // и при истечении времени — тогда это сдача, не таймаут.
+                      (_timedOut && !passed)
+                          ? appL10n.examResultTimeout
+                          : passed
+                          ? appL10n.examResultPassed
+                          : appL10n.examResultFailed,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: colors.secondaryText,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spacingXXL),
+                    _buildResultCard(
+                      icon: Icons.check_circle_outline,
+                      label: appL10n.correctAnswers,
+                      value: appL10n.valueOfTotal(
+                        _correctAnswers.length,
+                        totalQuestions,
+                      ),
+                      color: colors.green,
+                    ),
                     const SizedBox(height: AppDimensions.spacingM),
                     _buildResultCard(
-                      icon: Icons.rule_folder_outlined,
-                      label: appL10n.examMainBlockErrors,
-                      value: '$_initialWrongCount',
-                      color: colors.primaryText,
+                      icon: Icons.cancel_outlined,
+                      label: appL10n.wrongAnswers,
+                      value: '$totalWrong',
+                      color: colors.red,
                     ),
-                  ],
-                  const SizedBox(height: AppDimensions.spacingXXL),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.push<void>(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (ctx) => ExamReviewScreen(
-                              questions: List<Map<String, dynamic>>.from(
-                                _examQuestions,
+                    if (_additionalPhase) ...[
+                      const SizedBox(height: AppDimensions.spacingM),
+                      _buildResultCard(
+                        icon: Icons.help_outline,
+                        label: appL10n.examAdditionalBlock,
+                        value: appL10n.examAdditionalBlockValue(
+                          _additionalQuestionsCount,
+                          _additionalAnsweredWrongCount(),
+                        ),
+                        color: colors.gold,
+                      ),
+                    ],
+                    const SizedBox(height: AppDimensions.spacingM),
+                    _buildResultCard(
+                      icon: Icons.timer_outlined,
+                      label: appL10n.examTimeSpent,
+                      value: _formatTime(timeSpent),
+                      color: colors.accent,
+                    ),
+                    if (_additionalPhase) ...[
+                      const SizedBox(height: AppDimensions.spacingM),
+                      _buildResultCard(
+                        icon: Icons.rule_folder_outlined,
+                        label: appL10n.examMainBlockErrors,
+                        value: '$_initialWrongCount',
+                        color: colors.primaryText,
+                      ),
+                    ],
+                    const SizedBox(height: AppDimensions.spacingXXL),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          HapticFeedbackHelper.tap();
+                          Navigator.push<void>(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (ctx) => ExamReviewScreen(
+                                questions: List<Map<String, dynamic>>.from(
+                                  _examQuestions,
+                                ),
+                                savedAnswers: List<int?>.from(_savedAnswers),
                               ),
-                              savedAnswers: List<int?>.from(_savedAnswers),
                             ),
-                          ),
-                        );
-                      },
-                      child: Text(appL10n.myMistakes),
+                          );
+                        },
+                        child: Text(appL10n.myMistakes),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppDimensions.spacingM),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.pop(context);
-                      },
-                      child: Text(appL10n.backToTraining),
+                    const SizedBox(height: AppDimensions.spacingM),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          HapticFeedbackHelper.tap();
+                          Navigator.pop(context);
+                        },
+                        child: Text(appL10n.backToTraining),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 100),
-                ],
+                    const SizedBox(height: 100),
+                  ],
+                ),
               ),
-            ),
-            // Градиент затухания: фон (непрозрачный под кнопками) → прозрачный.
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                child: Container(
-                  height: kFadeHeight,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        colors.background,
-                        colors.background,
-                        colors.background.withValues(alpha: 0.0),
-                      ],
-                      stops: const [
-                        0.0,
-                        (kBarTop + kBarHeight) / kFadeHeight,
-                        1.0,
-                      ],
+              // Градиент затухания: фон (непрозрачный под кнопками) → прозрачный.
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  child: Container(
+                    height: kFadeHeight,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          colors.background,
+                          colors.background,
+                          colors.background.withValues(alpha: 0.0),
+                        ],
+                        stops: const [
+                          0.0,
+                          (kBarTop + kBarHeight) / kFadeHeight,
+                          1.0,
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            // Закреплённая панель: закрыть + поделиться.
-            Positioned(
-              top: kBarTop,
-              left: AppDimensions.screenPadding,
-              right: AppDimensions.screenPadding,
-              child: Row(
-                children: [
-                  AppChromeIconButton(
-                    icon: Icons.close_rounded,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const Spacer(),
-                  if (_failedByBlock) ...[
+              // Закреплённая панель: закрыть + поделиться.
+              Positioned(
+                top: kBarTop,
+                left: AppDimensions.screenPadding,
+                right: AppDimensions.screenPadding,
+                child: Row(
+                  children: [
                     AppChromeIconButton(
-                      icon: Icons.info_outline_rounded,
+                      icon: Icons.close_rounded,
                       onTap: () {
                         HapticFeedbackHelper.tap();
-                        _showBlockRuleExplanation();
+                        Navigator.pop(context);
                       },
                     ),
-                    const SizedBox(width: AppDimensions.spacingM),
+                    const Spacer(),
+                    if (_failedByBlock) ...[
+                      AppChromeIconButton(
+                        icon: Icons.info_outline_rounded,
+                        onTap: () {
+                          HapticFeedbackHelper.tap();
+                          _showBlockRuleExplanation();
+                        },
+                      ),
+                      const SizedBox(width: AppDimensions.spacingM),
+                    ],
+                    AppChromeIconButton(
+                      icon: Icons.ios_share_rounded,
+                      backgroundColor: colors.accent,
+                      iconColor: AppColors.white,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        _shareResult();
+                      },
+                    ),
                   ],
-                  AppChromeIconButton(
-                    icon: Icons.ios_share_rounded,
-                    backgroundColor: colors.accent,
-                    iconColor: AppColors.white,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      _shareResult();
-                    },
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

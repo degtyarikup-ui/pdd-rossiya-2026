@@ -362,7 +362,7 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
+            constraints: const BoxConstraints(maxWidth: 960),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppDimensions.screenPadding,
@@ -385,7 +385,8 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.5);
-        if (constraints.maxWidth >= 480 && constraints.maxHeight < 400) {
+        if ((constraints.maxWidth >= 720 && scale <= 1.3) ||
+            (constraints.maxWidth >= 480 && constraints.maxHeight < 400)) {
           final side = math.min(
             (constraints.maxWidth - 24) / 2,
             math.max(212.0, constraints.maxHeight - 16),

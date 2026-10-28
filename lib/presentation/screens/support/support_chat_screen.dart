@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -427,107 +428,110 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: SafeArea(
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spacingM,
-              vertical: AppDimensions.spacingXS,
-            ),
-            decoration: BoxDecoration(
-              color: colors.background,
-              border: Border(
-                bottom: BorderSide(
-                  color: colors.divider.withValues(alpha: 0.5),
-                  width: 0.5,
+    return AppContentFrame(
+      maxWidth: AppContentFrame.readingWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: SafeArea(
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.spacingM,
+                vertical: AppDimensions.spacingXS,
+              ),
+              decoration: BoxDecoration(
+                color: colors.background,
+                border: Border(
+                  bottom: BorderSide(
+                    color: colors.divider.withValues(alpha: 0.5),
+                    width: 0.5,
+                  ),
                 ),
               ),
-            ),
-            child: Row(
-              children: [
-                AppChromeIconButton(
-                  icon: Icons.arrow_back_rounded,
-                  onTap: () {
-                    HapticFeedbackHelper.tap();
-                    Navigator.of(context).pop();
-                  },
-                ),
-                const SizedBox(width: AppDimensions.spacingM),
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: colors.accent.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
+              child: Row(
+                children: [
+                  AppChromeIconButton(
+                    icon: Icons.arrow_back_rounded,
+                    onTap: () {
+                      HapticFeedbackHelper.tap();
+                      Navigator.of(context).pop();
+                    },
                   ),
-                  child: Icon(
-                    Icons.support_agent_rounded,
-                    color: colors.accent,
-                    size: 22,
+                  const SizedBox(width: AppDimensions.spacingM),
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: colors.accent.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.support_agent_rounded,
+                      color: colors.accent,
+                      size: 22,
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppDimensions.spacingS),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        appL10n.supportChatTitle,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: colors.primaryText,
+                  const SizedBox(width: AppDimensions.spacingS),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appL10n.supportChatTitle,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: colors.primaryText,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        appL10n.supportChatSubtitle,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: colors.secondaryText,
+                        Text(
+                          appL10n.supportChatSubtitle,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: colors.secondaryText,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: AppLoadingIndicator())
-                  : _messages.isEmpty
-                  ? _buildEmptyState(colors)
-                  : RefreshIndicator(
-                      color: colors.accent,
-                      onRefresh: () => _refreshMessages(silent: false),
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppDimensions.spacingM,
-                          vertical: AppDimensions.spacingM,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: AppLoadingIndicator())
+                    : _messages.isEmpty
+                    ? _buildEmptyState(colors)
+                    : RefreshIndicator(
+                        color: colors.accent,
+                        onRefresh: () => _refreshMessages(silent: false),
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppDimensions.spacingM,
+                            vertical: AppDimensions.spacingM,
+                          ),
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            return _buildMessageItem(_messages[index], colors);
+                          },
                         ),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          return _buildMessageItem(_messages[index], colors);
-                        },
                       ),
-                    ),
-            ),
-            _buildInputArea(colors),
-          ],
+              ),
+              _buildInputArea(colors),
+            ],
+          ),
         ),
       ),
     );

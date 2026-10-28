@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -34,115 +35,138 @@ class TrainingResultScreen extends StatelessWidget {
     final perfect = wrong == 0;
     final colors = AppColors.of(context);
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.screenPadding),
-          child: Column(
-            children: [
-              const Spacer(),
-              Container(
-                width: 96,
-                height: 96,
-                decoration: BoxDecoration(
-                  color: perfect ? colors.green : colors.gold,
-                  shape: BoxShape.circle,
+    return AppContentFrame(
+      maxWidth: AppContentFrame.readingWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final children = <Widget>[
+                const Spacer(),
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    color: perfect ? colors.green : colors.gold,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    perfect ? Icons.check_rounded : Icons.school_outlined,
+                    size: 52,
+                    color: AppColors.white,
+                  ),
                 ),
-                child: Icon(
-                  perfect ? Icons.check_rounded : Icons.school_outlined,
-                  size: 52,
-                  color: AppColors.white,
+                const SizedBox(height: AppDimensions.spacingL),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    color: colors.primaryText,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppDimensions.spacingL),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                  color: colors.primaryText,
+                const SizedBox(height: AppDimensions.spacingS),
+                Text(
+                  perfect
+                      ? appL10n.trainingResultPerfect
+                      : appL10n.trainingResultWithMistakes,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.4,
+                    color: colors.secondaryText,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppDimensions.spacingS),
-              Text(
-                perfect
-                    ? appL10n.trainingResultPerfect
-                    : appL10n.trainingResultWithMistakes,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.4,
-                  color: colors.secondaryText,
+                const SizedBox(height: AppDimensions.spacingXXL),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ResultCell(
+                        value: '$correct',
+                        label: appL10n.progressCorrect,
+                        color: colors.green,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                    Expanded(
+                      child: _ResultCell(
+                        value: '$wrong',
+                        label: appL10n.progressWrong,
+                        color: wrong > 0 ? colors.red : colors.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                    Expanded(
+                      child: _ResultCell(
+                        value: '$total',
+                        label: appL10n.progressDone,
+                        color: colors.primaryText,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: AppDimensions.spacingXXL),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ResultCell(
-                      value: '$correct',
-                      label: appL10n.progressCorrect,
-                      color: colors.green,
+                const Spacer(),
+                if (wrong > 0) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        HapticFeedbackHelper.tap();
+                        // pushReplacement, а не push: возвращаться к итогу
+                        // старого прохода после нового незачем.
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TrainingScreen(
+                              questions: wrongQuestions,
+                              title: appL10n.mistakes,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Text(appL10n.trainingRepeatMistakes),
                     ),
                   ),
-                  const SizedBox(width: AppDimensions.spacingM),
-                  Expanded(
-                    child: _ResultCell(
-                      value: '$wrong',
-                      label: appL10n.progressWrong,
-                      color: wrong > 0 ? colors.red : colors.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(width: AppDimensions.spacingM),
-                  Expanded(
-                    child: _ResultCell(
-                      value: '$total',
-                      label: appL10n.progressDone,
-                      color: colors.primaryText,
-                    ),
-                  ),
+                  const SizedBox(height: AppDimensions.spacingM),
                 ],
-              ),
-              const Spacer(),
-              if (wrong > 0) ...[
                 SizedBox(
                   width: double.infinity,
                   height: 56,
-                  child: OutlinedButton(
+                  child: ElevatedButton(
                     onPressed: () {
                       HapticFeedbackHelper.tap();
-                      // pushReplacement, а не push: возвращаться к итогу
-                      // старого прохода после нового незачем.
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => TrainingScreen(
-                            questions: wrongQuestions,
-                            title: appL10n.mistakes,
-                          ),
-                        ),
-                      );
+                      Navigator.pop(context);
                     },
-                    child: Text(appL10n.trainingRepeatMistakes),
+                    child: Text(appL10n.done),
                   ),
                 ),
-                const SizedBox(height: AppDimensions.spacingM),
-              ],
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    HapticFeedbackHelper.tap();
-                    Navigator.pop(context);
-                  },
-                  child: Text(appL10n.done),
-                ),
-              ),
-            ],
+              ];
+              final scroll =
+                  constraints.maxHeight < 480 ||
+                  MediaQuery.textScalerOf(context).scale(15) > 20;
+              if (scroll) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                  child: Column(
+                    children: [
+                      for (final child in children)
+                        if (child is Spacer)
+                          const SizedBox(height: 24)
+                        else
+                          child,
+                    ],
+                  ),
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                child: Column(children: children),
+              );
+            },
           ),
         ),
       ),

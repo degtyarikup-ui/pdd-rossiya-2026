@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,114 +44,116 @@ class _PddScreenState extends ConsumerState<PddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(
-      appSettingsProvider.select((s) => s.effectiveLanguageCode),
-      (prev, next) {
-        if (prev != next) {
-          setState(() {
-            _sectionsFuture = QuestionsDataSource().loadPddSections(next);
-          });
-        }
-      },
-    );
+    ref.listen(appSettingsProvider.select((s) => s.effectiveLanguageCode), (
+      prev,
+      next,
+    ) {
+      if (prev != next) {
+        setState(() {
+          _sectionsFuture = QuestionsDataSource().loadPddSections(next);
+        });
+      }
+    });
     final colors = AppColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final double topInset = MediaQuery.paddingOf(context).top;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-        systemStatusBarContrastEnforced: false,
-        systemNavigationBarColor: colors.cardBackground,
-        systemNavigationBarIconBrightness: isDark
-            ? Brightness.light
-            : Brightness.dark,
-        systemNavigationBarDividerColor: Colors.transparent,
-        systemNavigationBarContrastEnforced: false,
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppDimensions.screenPadding,
-              topInset + 16,
-              AppDimensions.screenPadding,
-              8,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (Navigator.of(context).canPop()) ...[
-                      AppChromeIconButton(
-                        icon: Icons.arrow_back_ios_new_rounded,
-                        onTap: () {
-                          HapticFeedbackHelper.tap();
-                          Navigator.pop(context);
-                        },
-                      ),
-                      const SizedBox(width: AppDimensions.spacingM),
-                    ],
-                    Expanded(
-                      child: Text(
-                        appL10n.pdd,
-                        textAlign: TextAlign.left,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          height: 1.0,
-                          color: colors.primaryText,
+    return AppContentFrame(
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+          systemStatusBarContrastEnforced: false,
+          systemNavigationBarColor: colors.cardBackground,
+          systemNavigationBarIconBrightness: isDark
+              ? Brightness.light
+              : Brightness.dark,
+          systemNavigationBarDividerColor: Colors.transparent,
+          systemNavigationBarContrastEnforced: false,
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppDimensions.screenPadding,
+                topInset + 16,
+                AppDimensions.screenPadding,
+                8,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (Navigator.of(context).canPop()) ...[
+                        AppChromeIconButton(
+                          icon: Icons.arrow_back_ios_new_rounded,
+                          onTap: () {
+                            HapticFeedbackHelper.tap();
+                            Navigator.pop(context);
+                          },
+                        ),
+                        const SizedBox(width: AppDimensions.spacingM),
+                      ],
+                      Expanded(
+                        child: Text(
+                          appL10n.pdd,
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            height: 1.0,
+                            color: colors.primaryText,
+                          ),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: colors.gray,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildSubTabButton(
+                            index: 0,
+                            title: appL10n.rules,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: _buildSubTabButton(
+                            index: 1,
+                            title: appL10n.signsAndMarkup,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_subTab == 0) ...[
+                    const SizedBox(height: AppDimensions.spacingS),
+                    AppPillSearchField(
+                      controller: _searchController,
+                      onChanged: (value) => setState(() => _query = value),
+                      hintText: appL10n.search,
                     ),
                   ],
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: colors.gray,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildSubTabButton(
-                          index: 0,
-                          title: appL10n.rules,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: _buildSubTabButton(
-                          index: 1,
-                          title: appL10n.signsAndMarkup,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (_subTab == 0) ...[
-                  const SizedBox(height: AppDimensions.spacingS),
-                  AppPillSearchField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _query = value),
-                    hintText: appL10n.search,
-                  ),
                 ],
-              ],
+              ),
             ),
-          ),
-          Expanded(
-            child: _subTab == 0
-                ? _buildRulesContent()
-                : const SignsScreen(showHeader: false),
-          ),
-        ],
+            Expanded(
+              child: _subTab == 0
+                  ? _buildRulesContent()
+                  : const SignsScreen(showHeader: false),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -207,14 +210,20 @@ class _PddScreenState extends ConsumerState<PddScreen> {
           return const Center(child: AppLoadingIndicator());
         }
 
-        final normalizedQuery =
-            _query.trim().toLowerCase().replaceAll('ё', 'е');
+        final normalizedQuery = _query.trim().toLowerCase().replaceAll(
+          'ё',
+          'е',
+        );
         final filteredSections = snapshot.data!.where((section) {
           if (normalizedQuery.isEmpty) return true;
-          final title =
-              (section['title'] ?? '').toLowerCase().replaceAll('ё', 'е');
-          final content =
-              (section['content'] ?? '').toLowerCase().replaceAll('ё', 'е');
+          final title = (section['title'] ?? '').toLowerCase().replaceAll(
+            'ё',
+            'е',
+          );
+          final content = (section['content'] ?? '').toLowerCase().replaceAll(
+            'ё',
+            'е',
+          );
           return title.contains(normalizedQuery) ||
               content.contains(normalizedQuery);
         }).toList();
@@ -366,81 +375,84 @@ class _PddDetailScreenState extends State<PddDetailScreen> {
         .where((block) => block.isNotEmpty)
         .toList();
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppDimensions.screenPadding),
-              child: Row(
-                children: [
-                  AppChromeIconButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const SizedBox(width: AppDimensions.spacingM),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        height: 1.0,
-                        color: colors.primaryText,
+    return AppContentFrame(
+      maxWidth: AppContentFrame.readingWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                child: Row(
+                  children: [
+                    AppChromeIconButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.pop(context);
+                      },
+                    ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          height: 1.0,
+                          color: colors.primaryText,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.screenPadding,
-                  0,
-                  AppDimensions.screenPadding,
-                  24,
+                  ],
                 ),
-                // ignore: deprecated_member_use
-                cacheExtent: 100000.0,
-                children: [
-                  ...blocks.map((block) {
-                    final target = _isTarget(block);
-                    return Padding(
-                      key: target ? _highlightKey : null,
-                      padding: const EdgeInsets.only(
-                        bottom: AppDimensions.spacingM,
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.all(AppDimensions.spacingL),
-                        decoration: BoxDecoration(
-                          color: colors.cardBackground,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.cardRadius,
-                          ),
-                          border: target
-                              ? Border.all(color: colors.accent, width: 2)
-                              : null,
-                        ),
-                        child: Text(
-                          block,
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 1.65,
-                            color: colors.primaryText,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ],
               ),
-            ),
-          ],
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.screenPadding,
+                    0,
+                    AppDimensions.screenPadding,
+                    24,
+                  ),
+                  // ignore: deprecated_member_use
+                  cacheExtent: 100000.0,
+                  children: [
+                    ...blocks.map((block) {
+                      final target = _isTarget(block);
+                      return Padding(
+                        key: target ? _highlightKey : null,
+                        padding: const EdgeInsets.only(
+                          bottom: AppDimensions.spacingM,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(AppDimensions.spacingL),
+                          decoration: BoxDecoration(
+                            color: colors.cardBackground,
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.cardRadius,
+                            ),
+                            border: target
+                                ? Border.all(color: colors.accent, width: 2)
+                                : null,
+                          ),
+                          child: Text(
+                            block,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.65,
+                              color: colors.primaryText,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

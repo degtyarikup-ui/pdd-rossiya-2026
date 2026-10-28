@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -128,118 +129,99 @@ class ProfileScreen extends ConsumerWidget {
     final unlockedCount = achievements.where((a) => a.isUnlocked).length;
     final totalCount = achievements.length;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-          systemStatusBarContrastEnforced: false,
-          systemNavigationBarColor: colors.cardBackground,
-          systemNavigationBarIconBrightness: isDark
-              ? Brightness.light
-              : Brightness.dark,
-          systemNavigationBarDividerColor: Colors.transparent,
-          systemNavigationBarContrastEnforced: false,
-        ),
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            AppDimensions.screenPadding,
-            topInset + 16,
-            AppDimensions.screenPadding,
-            32,
+    return AppContentFrame(
+      maxWidth: AppContentFrame.readingWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+            systemStatusBarContrastEnforced: false,
+            systemNavigationBarColor: colors.cardBackground,
+            systemNavigationBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+            systemNavigationBarDividerColor: Colors.transparent,
+            systemNavigationBarContrastEnforced: false,
           ),
-          children: [
-            // Шапка: заголовок слева, кнопка-шестерёнка справа
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppDimensions.spacingL),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      appL10n.profile,
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: colors.primaryText,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(
+              AppDimensions.screenPadding,
+              topInset + 16,
+              AppDimensions.screenPadding,
+              32,
+            ),
+            children: [
+              // Шапка: заголовок слева, кнопка-шестерёнка справа
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppDimensions.spacingL),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        appL10n.profile,
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          color: colors.primaryText,
+                        ),
                       ),
                     ),
-                  ),
-                  AppChromeIconButton(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => const SupportChatScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: AppDimensions.spacingS),
-                  AppChromeIconButton(
-                    icon: Icons.settings_outlined,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => const SettingsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // Карточка аккаунта
-            if (currentUser != null) ...[
-              _UserProfileCard(profile: currentUser),
-              const SizedBox(height: AppDimensions.spacingM),
-            ] else ...[
-              const _SignInCard(),
-              const SizedBox(height: AppDimensions.spacingM),
-            ],
-
-            // Премиум-баннер
-            const PremiumBannerCard(),
-            const SizedBox(height: AppDimensions.spacingXL),
-
-            // Серия дней — над достижениями: привычка рядом с наградами за неё.
-            if (streak != null) ...[
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: AppDimensions.spacingXS,
-                  bottom: AppDimensions.spacingS,
-                ),
-                child: Text(
-                  appL10n.streakTitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colors.secondaryText,
-                    letterSpacing: 0.5,
-                  ),
+                    AppChromeIconButton(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SupportChatScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: AppDimensions.spacingS),
+                    AppChromeIconButton(
+                      icon: Icons.settings_outlined,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SettingsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
-              StreakCard(streak: streak),
+
+              // Карточка аккаунта
+              if (currentUser != null) ...[
+                _UserProfileCard(profile: currentUser),
+                const SizedBox(height: AppDimensions.spacingM),
+              ] else ...[
+                const _SignInCard(),
+                const SizedBox(height: AppDimensions.spacingM),
+              ],
+
+              // Премиум-баннер
+              const PremiumBannerCard(),
               const SizedBox(height: AppDimensions.spacingXL),
-            ],
 
-            // Раздел «Достижения»
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              // Серия дней — над достижениями: привычка рядом с наградами за неё.
+              if (streak != null) ...[
                 Padding(
                   padding: const EdgeInsets.only(
                     left: AppDimensions.spacingXS,
                     bottom: AppDimensions.spacingS,
                   ),
                   child: Text(
-                    appL10n.achievements,
+                    appL10n.streakTitle,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -248,57 +230,84 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(
-                    right: AppDimensions.spacingXS,
-                    bottom: AppDimensions.spacingS,
-                  ),
-                  child: Text(
-                    appL10n.achievementsEarnedCount(unlockedCount, totalCount),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: unlockedCount > 0
-                          ? colors.accent
-                          : colors.secondaryText,
+                StreakCard(streak: streak),
+                const SizedBox(height: AppDimensions.spacingXL),
+              ],
+
+              // Раздел «Достижения»
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: AppDimensions.spacingXS,
+                      bottom: AppDimensions.spacingS,
                     ),
+                    child: Text(
+                      appL10n.achievements,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colors.secondaryText,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      right: AppDimensions.spacingXS,
+                      bottom: AppDimensions.spacingS,
+                    ),
+                    child: Text(
+                      appL10n.achievementsEarnedCount(
+                        unlockedCount,
+                        totalCount,
+                      ),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: unlockedCount > 0
+                            ? colors.accent
+                            : colors.secondaryText,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppDimensions.spacingS),
+
+              // Сетка значков: 3 колонки, карточки в ряду одной высоты
+              // (IntrinsicHeight), без фиксированной высоты — крупный
+              // системный шрифт просто делает ряд выше.
+              for (var row = 0; row < achievements.length; row += 3) ...[
+                if (row > 0) const SizedBox(height: 10),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var col = 0; col < 3; col++) ...[
+                        if (col > 0) const SizedBox(width: 10),
+                        Expanded(
+                          child: row + col < achievements.length
+                              ? _AchievementGridCell(
+                                  achievement: achievements[row + col],
+                                  onTap: () {
+                                    HapticFeedbackHelper.tap();
+                                    _showAchievementDetails(
+                                      context,
+                                      achievements[row + col],
+                                    );
+                                  },
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: AppDimensions.spacingS),
-
-            // Сетка значков: 3 колонки, карточки в ряду одной высоты
-            // (IntrinsicHeight), без фиксированной высоты — крупный
-            // системный шрифт просто делает ряд выше.
-            for (var row = 0; row < achievements.length; row += 3) ...[
-              if (row > 0) const SizedBox(height: 10),
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var col = 0; col < 3; col++) ...[
-                      if (col > 0) const SizedBox(width: 10),
-                      Expanded(
-                        child: row + col < achievements.length
-                            ? _AchievementGridCell(
-                                achievement: achievements[row + col],
-                                onTap: () {
-                                  HapticFeedbackHelper.tap();
-                                  _showAchievementDetails(
-                                    context,
-                                    achievements[row + col],
-                                  );
-                                },
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );

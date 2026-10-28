@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -52,116 +53,124 @@ class _MistakesScreenState extends ConsumerState<MistakesScreen> {
     final wrongIdsAsync = ref.watch(wrongQuestionIdsProvider);
     final colors = AppColors.of(context);
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.all(AppDimensions.screenPadding),
-              child: Row(
-                children: [
-                  AppChromeIconButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const SizedBox(width: AppDimensions.spacingM),
-                  Expanded(
-                    child: Text(
-                      appL10n.mistakesTitle,
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: colors.primaryText,
+    return AppContentFrame(
+      maxWidth: AppContentFrame.readingWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                child: Row(
+                  children: [
+                    AppChromeIconButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.pop(context);
+                      },
+                    ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                    Expanded(
+                      child: Text(
+                        appL10n.mistakesTitle,
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          color: colors.primaryText,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: wrongIdsAsync.when(
-              data: (wrongIds) {
-                if (wrongIds.isEmpty) {
-                  return _buildEmptyState(context);
-                }
+            Expanded(
+              child: wrongIdsAsync.when(
+                data: (wrongIds) {
+                  if (wrongIds.isEmpty) {
+                    return _buildEmptyState(context);
+                  }
 
-                return FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _getMistakesFuture(ref, wrongIds),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppDimensions.screenPadding),
-                          child: Text(
-                            dataLoadErrorMessage(snapshot.error),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              height: 1.4,
-                              color: colors.secondaryText,
+                  return FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _getMistakesFuture(ref, wrongIds),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(
+                              AppDimensions.screenPadding,
+                            ),
+                            child: Text(
+                              dataLoadErrorMessage(snapshot.error),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.4,
+                                color: colors.secondaryText,
+                              ),
                             ),
                           ),
-                        ),
+                        );
+                      }
+                      if (!snapshot.hasData) {
+                        return const Center(child: AppLoadingIndicator());
+                      }
+
+                      final questions = snapshot.data!;
+
+                      if (questions.isEmpty) {
+                        return _buildEmptyState(context);
+                      }
+
+                      final bottomInset = MediaQuery.paddingOf(context).bottom;
+                      const barVerticalPad = 12.0;
+                      const buttonHeight = 52.0;
+                      final listBottomPad =
+                          barVerticalPad * 2 + buttonHeight + bottomInset + 8;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: ListView(
+                              padding: EdgeInsets.fromLTRB(
+                                AppDimensions.screenPadding,
+                                0,
+                                AppDimensions.screenPadding,
+                                listBottomPad,
+                              ),
+                              children: [
+                                ...questions.map((question) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: AppDimensions.spacingM,
+                                    ),
+                                    child: _buildQuestionCard(
+                                      context,
+                                      question,
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
+                          _buildBottomRepeatBar(context, questions),
+                        ],
                       );
-                    }
-                    if (!snapshot.hasData) {
-                      return const Center(child: AppLoadingIndicator());
-                    }
-
-                    final questions = snapshot.data!;
-
-                    if (questions.isEmpty) {
-                      return _buildEmptyState(context);
-                    }
-
-                    final bottomInset = MediaQuery.paddingOf(context).bottom;
-                    const barVerticalPad = 12.0;
-                    const buttonHeight = 52.0;
-                    final listBottomPad =
-                        barVerticalPad * 2 + buttonHeight + bottomInset + 8;
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: ListView(
-                            padding: EdgeInsets.fromLTRB(
-                              AppDimensions.screenPadding,
-                              0,
-                              AppDimensions.screenPadding,
-                              listBottomPad,
-                            ),
-                            children: [
-                              ...questions.map((question) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AppDimensions.spacingM,
-                                  ),
-                                  child: _buildQuestionCard(context, question),
-                                );
-                              }),
-                            ],
-                          ),
-                        ),
-                        _buildBottomRepeatBar(context, questions),
-                      ],
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: AppLoadingIndicator()),
-              error: (error, _) =>
-                  Center(child: Text(dataLoadErrorMessage(error))),
+                    },
+                  );
+                },
+                loading: () => const Center(child: AppLoadingIndicator()),
+                error: (error, _) =>
+                    Center(child: Text(dataLoadErrorMessage(error))),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

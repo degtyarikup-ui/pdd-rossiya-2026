@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,7 +40,9 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
           ref.read(appSettingsProvider).ticketCategory != category) {
         return;
       }
-      final progressMap = await ref.read(trackedQuestionProgressProvider.future);
+      final progressMap = await ref.read(
+        trackedQuestionProgressProvider.future,
+      );
       final Map<int, int> progress = {};
       for (int i = 0; i < topics.length; i++) {
         final questions = topics[i]['questions'] as List;
@@ -79,48 +82,78 @@ class _TopicsScreenState extends ConsumerState<TopicsScreen> {
     });
     final colors = AppColors.of(context);
     final topicsAsync = ref.watch(topicsProvider);
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildAppBar(context),
-            Expanded(
-              child: topicsAsync.when(
-                data: (topics) {
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPadding,
-                    ),
-                    itemCount: topics.length,
-                    itemBuilder: (context, index) {
+    return AppContentFrame(
+      maxWidth: AppContentFrame.catalogueWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildAppBar(context),
+              Expanded(
+                child: topicsAsync.when(
+                  data: (topics) {
+                    Widget card(BuildContext context, int index) {
                       final topic = topics[index];
-                      final name = topic['name'] as String;
                       final questions = topic['questions'] as List;
-                      final totalQuestions = questions.length;
-                      final correctCount = _progress[index] ?? 0;
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: AppDimensions.spacingM,
-                        ),
-                        child: _buildTopicCard(
-                          context: context,
-                          name: name,
-                          totalQuestions: totalQuestions,
-                          correctCount: correctCount,
-                          questions: questions
-                              .map((q) => q.toMap() as Map<String, dynamic>)
-                              .toList(),
-                        ),
+                      return _buildTopicCard(
+                        context: context,
+                        name: topic['name'] as String,
+                        totalQuestions: questions.length,
+                        correctCount: _progress[index] ?? 0,
+                        questions: questions
+                            .map((q) => q.toMap() as Map<String, dynamic>)
+                            .toList(),
                       );
-                    },
-                  );
-                },
-                loading: () => const Center(child: AppLoadingIndicator()),
-                error: (e, _) => Center(child: Text(dataLoadErrorMessage(e))),
+                    }
+
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns =
+                            constraints.maxWidth >= 720 &&
+                                MediaQuery.textScalerOf(context).scale(14) <= 19
+                            ? 2
+                            : 1;
+                        return ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppDimensions.screenPadding,
+                          ),
+                          itemCount: (topics.length / columns).ceil(),
+                          itemBuilder: (context, row) {
+                            final index = row * columns;
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: AppDimensions.spacingM,
+                              ),
+                              child: columns == 1
+                                  ? card(context, index)
+                                  : Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(child: card(context, index)),
+                                        const SizedBox(
+                                          width: AppDimensions.spacingM,
+                                        ),
+                                        Expanded(
+                                          child: index + 1 < topics.length
+                                              ? card(context, index + 1)
+                                              : const SizedBox.shrink(),
+                                        ),
+                                      ],
+                                    ),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                  loading: () => const Center(child: AppLoadingIndicator()),
+                  error: (e, _) => Center(child: Text(dataLoadErrorMessage(e))),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/config/store_config.dart';
@@ -413,37 +414,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(height: 1, color: colors.divider),
-                  NavigationBar(
-                    selectedIndex: _currentIndex,
-                    onDestinationSelected: (index) {
-                      if (index == _currentIndex) return;
-                      TtsService.instance.stop();
-                      HapticFeedbackHelper.select();
-                      setState(() => _currentIndex = index);
-                      if (index == 0) unawaited(_checkNotices());
-                    },
-                    destinations: [
-                      NavigationDestination(
-                        icon: const Icon(Icons.menu_book_outlined),
-                        selectedIcon: const Icon(Icons.menu_book),
-                        label: appL10n.training,
-                      ),
-                      NavigationDestination(
-                        icon: const Icon(Icons.sports_esports_outlined),
-                        selectedIcon: const Icon(Icons.sports_esports_rounded),
-                        label: appL10n.navGames,
-                      ),
-                      NavigationDestination(
-                        icon: const Icon(Icons.style_outlined),
-                        selectedIcon: const Icon(Icons.style_rounded),
-                        label: appL10n.video,
-                      ),
-                      NavigationDestination(
-                        icon: const Icon(Icons.person_outline_rounded),
-                        selectedIcon: const Icon(Icons.person_rounded),
-                        label: appL10n.profile,
-                      ),
-                    ],
+                  AppContentFrame(
+                    child: NavigationBar(
+                      selectedIndex: _currentIndex,
+                      onDestinationSelected: (index) {
+                        if (index == _currentIndex) return;
+                        TtsService.instance.stop();
+                        HapticFeedbackHelper.select();
+                        setState(() => _currentIndex = index);
+                        if (index == 0) unawaited(_checkNotices());
+                      },
+                      destinations: [
+                        NavigationDestination(
+                          icon: const Icon(Icons.menu_book_outlined),
+                          selectedIcon: const Icon(Icons.menu_book),
+                          label: appL10n.training,
+                        ),
+                        NavigationDestination(
+                          icon: const Icon(Icons.sports_esports_outlined),
+                          selectedIcon: const Icon(
+                            Icons.sports_esports_rounded,
+                          ),
+                          label: appL10n.navGames,
+                        ),
+                        NavigationDestination(
+                          icon: const Icon(Icons.style_outlined),
+                          selectedIcon: const Icon(Icons.style_rounded),
+                          label: appL10n.video,
+                        ),
+                        NavigationDestination(
+                          icon: const Icon(Icons.person_outline_rounded),
+                          selectedIcon: const Icon(Icons.person_rounded),
+                          label: appL10n.profile,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -542,240 +547,271 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
     final sessionData = unfinishedSession.valueOrNull;
     final hasContinueCard = sessionData != null;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final totalH = constraints.maxHeight;
-        final double topInset = MediaQuery.paddingOf(context).top;
-        const double topPadding = AppDimensions.screenPadding;
-        const double bottomPadding = AppDimensions.screenPadding;
-        const double gap = 12.0;
+    return AppContentFrame(
+      maxWidth: AppContentFrame.catalogueWidth,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalH = constraints.maxHeight;
+          final double topInset = MediaQuery.paddingOf(context).top;
+          const double topPadding = AppDimensions.screenPadding;
+          const double bottomPadding = AppDimensions.screenPadding;
+          const double gap = 12.0;
 
-        // Gauge, padding, divider and the two scaled statistic labels.
-        final textScaler = MediaQuery.textScalerOf(context);
-        final double topPanelHeight =
-            64 +
-            32 +
-            16 +
-            1 +
-            12 +
-            textScaler.scale(15) * 1.1 +
-            3 +
-            textScaler.scale(10) * 1.1;
-        final double continueCardH = hasContinueCard ? 56.0 : 0.0;
-        final double totalGaps = gap * (hasContinueCard ? 5 : 4);
-
-        final double availableH =
-            totalH -
-            topInset -
-            topPadding -
-            bottomPadding -
-            topPanelHeight -
-            continueCardH -
-            totalGaps;
-
-        final minButtonHeight = math.max(
-          AppDimensions.topicButtonHeight,
-          AppDimensions.spacingL * 2 +
-              AppDimensions.iconSize +
+          // Gauge, padding, divider and the two scaled statistic labels.
+          final textScaler = MediaQuery.textScalerOf(context);
+          final double topPanelHeight =
+              64 +
+              32 +
+              16 +
+              1 +
               12 +
-              textScaler.scale(_homeNavLabelFontSize) * 1.1,
-        );
-        final double examHeight;
-        final double buttonHeight;
+              textScaler.scale(15) * 1.1 +
+              3 +
+              textScaler.scale(10) * 1.1;
+          final double continueCardH = hasContinueCard ? 56.0 : 0.0;
+          final double totalGaps = gap * (hasContinueCard ? 5 : 4);
 
-        if (availableH > 430) {
-          examHeight = (availableH * 0.32).clamp(130.0, 220.0);
-          final double remainingForButtons = availableH - examHeight;
-          buttonHeight = math.max(minButtonHeight, remainingForButtons / 3);
-        } else {
-          examHeight = 140.0;
-          buttonHeight = minButtonHeight;
-        }
+          final double availableH =
+              totalH -
+              topInset -
+              topPadding -
+              bottomPadding -
+              topPanelHeight -
+              continueCardH -
+              totalGaps;
 
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(
-            AppDimensions.screenPadding,
-            topInset + topPadding,
-            AppDimensions.screenPadding,
-            bottomPadding,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ValueListenableBuilder<List<AppNotice>>(
-                valueListenable: RemoteNotificationsService.instance.banners,
-                builder: (context, banners, _) {
-                  const emptyStats = {
-                    'correctAnswers': 0,
-                    'answeredQuestions': 0,
-                    'passedTickets': 0,
-                    'wrongQuestions': 0,
-                    'totalQuestions': 0,
-                    'totalTickets': 0,
-                  };
-                  final progressCard = statsAsync.when(
-                    data: (stats) => ProgressPanelCard(stats: stats),
-                    loading: () => banners.isNotEmpty
-                        ? ProgressPanelCard(stats: emptyStats)
-                        : const Center(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 48),
-                              child: AppLoadingIndicator(size: 100),
-                            ),
+          final minButtonHeight = math.max(
+            AppDimensions.topicButtonHeight,
+            AppDimensions.spacingL * 2 +
+                AppDimensions.iconSize +
+                12 +
+                textScaler.scale(_homeNavLabelFontSize) * 1.1,
+          );
+          final double examHeight;
+          final double buttonHeight;
+          final wide =
+              constraints.maxWidth >= 720 && textScaler.scale(18) <= 27;
+
+          if (wide && totalH >= 550) {
+            examHeight = 220;
+            buttonHeight = math.max(minButtonHeight, 128);
+          } else if (availableH > 430) {
+            examHeight = (availableH * 0.32).clamp(130.0, 220.0);
+            final double remainingForButtons = availableH - examHeight;
+            buttonHeight = math.max(minButtonHeight, remainingForButtons / 3);
+          } else {
+            examHeight = 140.0;
+            buttonHeight = minButtonHeight;
+          }
+
+          final primarySections = <Widget>[
+            ValueListenableBuilder<List<AppNotice>>(
+              valueListenable: RemoteNotificationsService.instance.banners,
+              builder: (context, banners, _) {
+                const emptyStats = {
+                  'correctAnswers': 0,
+                  'answeredQuestions': 0,
+                  'passedTickets': 0,
+                  'wrongQuestions': 0,
+                  'totalQuestions': 0,
+                  'totalTickets': 0,
+                };
+                final progressCard = statsAsync.when(
+                  data: (stats) => ProgressPanelCard(stats: stats),
+                  loading: () => banners.isNotEmpty
+                      ? ProgressPanelCard(stats: emptyStats)
+                      : const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 48),
+                            child: AppLoadingIndicator(size: 100),
                           ),
-                    error: (error, _) => ProgressPanelCard(stats: emptyStats),
-                  );
-                  if (banners.isEmpty) return progressCard;
-                  final banner = banners.first;
-                  return AppNoticeBannerSlot(
-                    notice: banner,
-                    onViewed: () => unawaited(
-                      RemoteNotificationsService.instance.recordBannerEvent(
-                        banner.id,
-                        'view',
-                      ),
+                        ),
+                  error: (error, _) => ProgressPanelCard(stats: emptyStats),
+                );
+                if (banners.isEmpty) return progressCard;
+                final banner = banners.first;
+                return AppNoticeBannerSlot(
+                  notice: banner,
+                  onViewed: () => unawaited(
+                    RemoteNotificationsService.instance.recordBannerEvent(
+                      banner.id,
+                      'view',
                     ),
-                    statistics: progressCard,
-                    onDismiss: () => RemoteNotificationsService.instance
-                        .dismissBanner(banner.id),
+                  ),
+                  statistics: progressCard,
+                  onDismiss: () => RemoteNotificationsService.instance
+                      .dismissBanner(banner.id),
+                  onTap: () {
+                    final tap = banner.tap;
+                    if (tap != null) {
+                      unawaited(
+                        RemoteNotificationsService.instance.recordBannerEvent(
+                          banner.id,
+                          'click',
+                        ),
+                      );
+                      widget.onNoticeTap(tap);
+                    }
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: gap),
+            unfinishedSession.maybeWhen(
+              data: (session) => session == null
+                  ? const SizedBox.shrink()
+                  : ContinueSessionCard(
+                      key: ValueKey(session['questions'].hashCode),
+                      session: session,
+                    ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+            _buildExamHero(context, ref, height: examHeight),
+          ];
+          final modeSections = <Widget>[
+            Row(
+              children: [
+                Expanded(
+                  child: _buildModeCard(
+                    context: context,
+                    iconAsset: 'assets/images/home_icon_topics.png',
+                    label: appL10n.topics,
+                    height: buttonHeight,
                     onTap: () {
-                      final tap = banner.tap;
-                      if (tap != null) {
-                        unawaited(
-                          RemoteNotificationsService.instance.recordBannerEvent(
-                            banner.id,
-                            'click',
-                          ),
-                        );
-                        widget.onNoticeTap(tap);
-                      }
+                      HapticFeedbackHelper.tap();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const TopicsScreen()),
+                      );
                     },
-                  );
-                },
-              ),
-              const SizedBox(height: gap),
-              unfinishedSession.maybeWhen(
-                data: (session) => session == null
-                    ? const SizedBox.shrink()
-                    : ContinueSessionCard(
-                        key: ValueKey(session['questions'].hashCode),
-                        session: session,
+                  ),
+                ),
+                const SizedBox(width: gap),
+                Expanded(
+                  child: _buildModeCard(
+                    context: context,
+                    iconAsset: 'assets/images/home_icon_tickets.png',
+                    label: appL10n.tickets,
+                    height: buttonHeight,
+                    onTap: () {
+                      HapticFeedbackHelper.tap();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const TicketsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: gap),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildModeCard(
+                    context: context,
+                    iconAsset: 'assets/images/home_icon_errors.png',
+                    label: appL10n.mistakes,
+                    height: buttonHeight,
+                    onTap: () {
+                      HapticFeedbackHelper.tap();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MistakesScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: gap),
+                Expanded(
+                  child: _buildModeCard(
+                    context: context,
+                    iconAsset: 'assets/images/home_icon_favorites.png',
+                    label: appL10n.favorites,
+                    height: buttonHeight,
+                    onTap: () {
+                      HapticFeedbackHelper.tap();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FavoritesScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: gap),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildModeCard(
+                    context: context,
+                    iconAsset: 'assets/images/home_icon_rate.svg',
+                    foregroundColor: colors.gold,
+                    surfaceColor: colors.gold.withValues(alpha: 0.2),
+                    label: appL10n.rateUs,
+                    height: buttonHeight,
+                    onTap: _rateApp,
+                  ),
+                ),
+                const SizedBox(width: gap),
+                Expanded(
+                  child: _buildModeCard(
+                    context: context,
+                    iconAsset: 'assets/images/home_icon_marathon.svg',
+                    label: appL10n.marathon,
+                    height: buttonHeight,
+                    loading: _openingMarathon,
+                    onTap: _openMarathon,
+                  ),
+                ),
+              ],
+            ),
+          ];
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              AppDimensions.screenPadding,
+              topInset + topPadding,
+              AppDimensions.screenPadding,
+              bottomPadding,
+            ),
+            child: wide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: primarySections,
+                        ),
                       ),
-                orElse: () => const SizedBox.shrink(),
-              ),
-              _buildExamHero(context, ref, height: examHeight),
-              const SizedBox(height: gap),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildModeCard(
-                      context: context,
-                      iconAsset: 'assets/images/home_icon_topics.png',
-                      label: appL10n.topics,
-                      height: buttonHeight,
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TopicsScreen(),
-                          ),
-                        );
-                      },
-                    ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: modeSections,
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ...primarySections,
+                      const SizedBox(height: gap),
+                      ...modeSections,
+                    ],
                   ),
-                  const SizedBox(width: gap),
-                  Expanded(
-                    child: _buildModeCard(
-                      context: context,
-                      iconAsset: 'assets/images/home_icon_tickets.png',
-                      label: appL10n.tickets,
-                      height: buttonHeight,
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TicketsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: gap),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildModeCard(
-                      context: context,
-                      iconAsset: 'assets/images/home_icon_errors.png',
-                      label: appL10n.mistakes,
-                      height: buttonHeight,
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const MistakesScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: gap),
-                  Expanded(
-                    child: _buildModeCard(
-                      context: context,
-                      iconAsset: 'assets/images/home_icon_favorites.png',
-                      label: appL10n.favorites,
-                      height: buttonHeight,
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const FavoritesScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: gap),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildModeCard(
-                      context: context,
-                      iconAsset: 'assets/images/home_icon_rate.svg',
-                      foregroundColor: colors.gold,
-                      surfaceColor: colors.gold.withValues(alpha: 0.2),
-                      label: appL10n.rateUs,
-                      height: buttonHeight,
-                      onTap: _rateApp,
-                    ),
-                  ),
-                  const SizedBox(width: gap),
-                  Expanded(
-                    child: _buildModeCard(
-                      context: context,
-                      iconAsset: 'assets/images/home_icon_marathon.svg',
-                      label: appL10n.marathon,
-                      height: buttonHeight,
-                      loading: _openingMarathon,
-                      onTap: _openMarathon,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -307,325 +308,331 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final settingsController = ref.read(appSettingsProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-          systemStatusBarContrastEnforced: false,
-          systemNavigationBarColor: colors.cardBackground,
-          systemNavigationBarIconBrightness: isDark
-              ? Brightness.light
-              : Brightness.dark,
-          systemNavigationBarDividerColor: Colors.transparent,
-          systemNavigationBarContrastEnforced: false,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.all(AppDimensions.screenPadding),
-                child: Row(
-                  children: [
-                    AppChromeIconButton(
-                      icon: Icons.arrow_back_ios_new_rounded,
-                      onTap: () {
-                        HapticFeedbackHelper.tap();
-                        Navigator.pop(context);
-                      },
-                    ),
-                    const SizedBox(width: AppDimensions.spacingM),
-                    Expanded(
-                      child: Text(
-                        appL10n.settings,
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          color: colors.primaryText,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.screenPadding,
-                  0,
-                  AppDimensions.screenPadding,
-                  32,
-                ),
-                children: [
-                  _buildSectionTitle(appL10n.interfaceSection),
-                  _buildSectionCard(
+    return AppContentFrame(
+      maxWidth: AppContentFrame.readingWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+            systemStatusBarContrastEnforced: false,
+            systemNavigationBarColor: colors.cardBackground,
+            systemNavigationBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+            systemNavigationBarDividerColor: Colors.transparent,
+            systemNavigationBarContrastEnforced: false,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                  child: Row(
                     children: [
-                      _buildSettingItem(
-                        icon: Icons.language_rounded,
-                        title: appL10n.languageSetting,
-                        trailing: _buildLanguageBadge(settings),
-                        onTap: () =>
-                            _showLanguagePicker(settings, settingsController),
-                      ),
-                      _buildDivider(),
-                      _buildSettingItem(
-                        icon: Icons.palette_outlined,
-                        title: appL10n.themeSetting,
-                        trailing: _buildThemeBadge(settings),
-                        onTap: () =>
-                            _showThemePicker(settings, settingsController),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppDimensions.spacingXL),
-
-                  _buildSectionTitle(appL10n.preparation),
-                  _buildSectionCard(
-                    children: [
-                      _buildSettingItem(
-                        icon: Icons.gavel_outlined,
-                        title: appL10n.pdd,
-                        subtitle: appL10n.pddSettingsItem,
+                      AppChromeIconButton(
+                        icon: Icons.arrow_back_ios_new_rounded,
                         onTap: () {
                           HapticFeedbackHelper.tap();
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => Scaffold(
-                                backgroundColor: AppColors.of(
-                                  context,
-                                ).background,
-                                body: const PddScreen(),
-                              ),
-                            ),
-                          );
+                          Navigator.pop(context);
                         },
                       ),
-                      if (CountryConfig.current.hasCdCategory) ...[
-                        _buildDivider(),
-                        _buildSettingItem(
-                          icon: Icons.badge_outlined,
-                          title: appL10n.ticketCategorySetting,
-                          trailing: _buildTicketCategoryBadge(settings),
-                          onTap: _toggleTicketCategory,
-                        ),
-                      ],
-                      _buildDivider(),
-                      _buildSettingItem(
-                        icon: Icons.check_circle_outline,
-                        title: appL10n.confirmAnswerSetting,
-                        subtitle: appL10n.confirmAnswerHint,
-                        trailing: Switch(
-                          value: settings.confirmAnswerEnabled,
-                          onChanged: (value) {
-                            HapticFeedbackHelper.select();
-                            settingsController.setConfirmAnswerEnabled(value);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppDimensions.spacingXL),
-
-                  _buildSectionTitle(appL10n.feedbackSection),
-                  _buildSectionCard(
-                    children: [
-                      _buildSettingItem(
-                        icon: Icons.vibration_rounded,
-                        title: appL10n.hapticFeedback,
-                        trailing: Switch(
-                          value: settings.hapticsEnabled,
-                          onChanged: (value) {
-                            HapticFeedbackHelper.select();
-                            settingsController.setHapticsEnabled(value);
-                          },
-                        ),
-                      ),
-                      _buildDivider(),
-                      _buildSettingItem(
-                        icon: Icons.volume_up_outlined,
-                        title: appL10n.soundEffects,
-                        trailing: Switch(
-                          value: settings.soundEffectsEnabled,
-                          onChanged: (value) {
-                            HapticFeedbackHelper.select();
-                            settingsController.setSoundEffectsEnabled(value);
-                          },
-                        ),
-                      ),
-                      _buildDivider(),
-                      _buildSettingItem(
-                        icon: Icons.record_voice_over_outlined,
-                        title: appL10n.voiceOverQuestions,
-                        trailing: Switch(
-                          value: settings.voiceEnabled,
-                          onChanged: (value) {
-                            HapticFeedbackHelper.select();
-                            settingsController.setVoiceEnabled(value);
-                          },
-                        ),
-                      ),
-                      _buildDivider(),
-                      _buildSettingItem(
-                        icon: Icons.notifications_none_rounded,
-                        title: appL10n.notificationsSetting,
-                        subtitle: appL10n.notificationsHint,
-                        trailing: Switch(
-                          value: settings.notificationsEnabled,
-                          onChanged: (value) {
-                            HapticFeedbackHelper.select();
-                            settingsController.setNotificationsEnabled(value);
-                          },
-                        ),
-                      ),
-                      if (const bool.fromEnvironment('ENABLE_REMOTE_PUSH')) ...[
-                        _buildDivider(),
-                        _buildSettingItem(
-                          icon: Icons.campaign_outlined,
-                          title: appL10n.pushMessagesSetting,
-                          subtitle: appL10n.pushMessagesHint,
-                          trailing: Switch(
-                            value: settings.pushMessagesEnabled,
-                            onChanged: (value) => settingsController
-                                .setPushMessagesEnabled(value),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: AppDimensions.spacingXL),
-
-                  _buildSectionTitle(appL10n.dataSection),
-                  _buildSectionCard(
-                    children: [
-                      _buildSettingItem(
-                        icon: Icons.restart_alt_rounded,
-                        title: appL10n.resetStats,
-                        trailing: Icon(
-                          Icons.chevron_right_rounded,
-                          color: colors.secondaryText,
-                        ),
-                        onTap: _handleResetStats,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: AppDimensions.spacingXXL),
-                  // Clean footer links: Tech Support, Terms of Use, and Privacy Policy
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: [
-                      GestureDetector(
-                        onTap: _openSupportChat,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.spacingS,
-                            vertical: AppDimensions.spacingS,
-                          ),
-                          child: Text(
-                            appL10n.techSupport,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              color: colors.secondaryText,
-                              decoration: TextDecoration.underline,
-                              decorationColor: colors.secondaryText.withValues(
-                                alpha: 0.4,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (CountryConfig.current.termsUrl.isNotEmpty) ...[
-                        Text(
-                          '•',
+                      const SizedBox(width: AppDimensions.spacingM),
+                      Expanded(
+                        child: Text(
+                          appL10n.settings,
                           style: TextStyle(
-                            color: colors.secondaryText,
-                            fontSize: 11,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w700,
+                            color: colors.primaryText,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: _openTermsOfUse,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppDimensions.spacingS,
-                              vertical: AppDimensions.spacingS,
-                            ),
-                            child: Text(
-                              appL10n.termsOfUse,
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: colors.secondaryText,
-                                decoration: TextDecoration.underline,
-                                decorationColor: colors.secondaryText
-                                    .withValues(alpha: 0.4),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                      if (CountryConfig.current.privacyUrl.isNotEmpty) ...[
-                        Text(
-                          '•',
-                          style: TextStyle(
-                            color: colors.secondaryText,
-                            fontSize: 11,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _openPrivacyPolicy,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppDimensions.spacingS,
-                              vertical: AppDimensions.spacingS,
-                            ),
-                            child: Text(
-                              appL10n.privacyPolicy,
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: colors.secondaryText,
-                                decoration: TextDecoration.underline,
-                                decorationColor: colors.secondaryText
-                                    .withValues(alpha: 0.4),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ],
                   ),
-                  if (_appVersionText != null) ...[
-                    const SizedBox(height: AppDimensions.spacingM),
-                    GestureDetector(
-                      onLongPress: () {
-                        final text = _gitCommit != null
-                            ? '${appL10n.appVersion(_appVersionText!)} · $_gitCommit'
-                            : appL10n.appVersion(_appVersionText!);
-                        Clipboard.setData(ClipboardData(text: text));
-                        HapticFeedbackHelper.tap();
-                      },
-                      child: Text(
-                        _gitCommit != null
-                            ? '${appL10n.appVersion(_appVersionText!)} · $_gitCommit'
-                            : appL10n.appVersion(_appVersionText!),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.secondaryText.withValues(alpha: 0.6),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.screenPadding,
+                    0,
+                    AppDimensions.screenPadding,
+                    32,
+                  ),
+                  children: [
+                    _buildSectionTitle(appL10n.interfaceSection),
+                    _buildSectionCard(
+                      children: [
+                        _buildSettingItem(
+                          icon: Icons.language_rounded,
+                          title: appL10n.languageSetting,
+                          trailing: _buildLanguageBadge(settings),
+                          onTap: () =>
+                              _showLanguagePicker(settings, settingsController),
+                        ),
+                        _buildDivider(),
+                        _buildSettingItem(
+                          icon: Icons.palette_outlined,
+                          title: appL10n.themeSetting,
+                          trailing: _buildThemeBadge(settings),
+                          onTap: () =>
+                              _showThemePicker(settings, settingsController),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spacingXL),
+
+                    _buildSectionTitle(appL10n.preparation),
+                    _buildSectionCard(
+                      children: [
+                        _buildSettingItem(
+                          icon: Icons.gavel_outlined,
+                          title: appL10n.pdd,
+                          subtitle: appL10n.pddSettingsItem,
+                          onTap: () {
+                            HapticFeedbackHelper.tap();
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => Scaffold(
+                                  backgroundColor: AppColors.of(
+                                    context,
+                                  ).background,
+                                  body: const PddScreen(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        if (CountryConfig.current.hasCdCategory) ...[
+                          _buildDivider(),
+                          _buildSettingItem(
+                            icon: Icons.badge_outlined,
+                            title: appL10n.ticketCategorySetting,
+                            trailing: _buildTicketCategoryBadge(settings),
+                            onTap: _toggleTicketCategory,
+                          ),
+                        ],
+                        _buildDivider(),
+                        _buildSettingItem(
+                          icon: Icons.check_circle_outline,
+                          title: appL10n.confirmAnswerSetting,
+                          subtitle: appL10n.confirmAnswerHint,
+                          trailing: Switch(
+                            value: settings.confirmAnswerEnabled,
+                            onChanged: (value) {
+                              HapticFeedbackHelper.select();
+                              settingsController.setConfirmAnswerEnabled(value);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spacingXL),
+
+                    _buildSectionTitle(appL10n.feedbackSection),
+                    _buildSectionCard(
+                      children: [
+                        _buildSettingItem(
+                          icon: Icons.vibration_rounded,
+                          title: appL10n.hapticFeedback,
+                          trailing: Switch(
+                            value: settings.hapticsEnabled,
+                            onChanged: (value) {
+                              HapticFeedbackHelper.select();
+                              settingsController.setHapticsEnabled(value);
+                            },
+                          ),
+                        ),
+                        _buildDivider(),
+                        _buildSettingItem(
+                          icon: Icons.volume_up_outlined,
+                          title: appL10n.soundEffects,
+                          trailing: Switch(
+                            value: settings.soundEffectsEnabled,
+                            onChanged: (value) {
+                              HapticFeedbackHelper.select();
+                              settingsController.setSoundEffectsEnabled(value);
+                            },
+                          ),
+                        ),
+                        _buildDivider(),
+                        _buildSettingItem(
+                          icon: Icons.record_voice_over_outlined,
+                          title: appL10n.voiceOverQuestions,
+                          trailing: Switch(
+                            value: settings.voiceEnabled,
+                            onChanged: (value) {
+                              HapticFeedbackHelper.select();
+                              settingsController.setVoiceEnabled(value);
+                            },
+                          ),
+                        ),
+                        _buildDivider(),
+                        _buildSettingItem(
+                          icon: Icons.notifications_none_rounded,
+                          title: appL10n.notificationsSetting,
+                          subtitle: appL10n.notificationsHint,
+                          trailing: Switch(
+                            value: settings.notificationsEnabled,
+                            onChanged: (value) {
+                              HapticFeedbackHelper.select();
+                              settingsController.setNotificationsEnabled(value);
+                            },
+                          ),
+                        ),
+                        if (const bool.fromEnvironment(
+                          'ENABLE_REMOTE_PUSH',
+                        )) ...[
+                          _buildDivider(),
+                          _buildSettingItem(
+                            icon: Icons.campaign_outlined,
+                            title: appL10n.pushMessagesSetting,
+                            subtitle: appL10n.pushMessagesHint,
+                            trailing: Switch(
+                              value: settings.pushMessagesEnabled,
+                              onChanged: (value) => settingsController
+                                  .setPushMessagesEnabled(value),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spacingXL),
+
+                    _buildSectionTitle(appL10n.dataSection),
+                    _buildSectionCard(
+                      children: [
+                        _buildSettingItem(
+                          icon: Icons.restart_alt_rounded,
+                          title: appL10n.resetStats,
+                          trailing: Icon(
+                            Icons.chevron_right_rounded,
+                            color: colors.secondaryText,
+                          ),
+                          onTap: _handleResetStats,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: AppDimensions.spacingXXL),
+                    // Clean footer links: Tech Support, Terms of Use, and Privacy Policy
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: [
+                        GestureDetector(
+                          onTap: _openSupportChat,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppDimensions.spacingS,
+                              vertical: AppDimensions.spacingS,
+                            ),
+                            child: Text(
+                              appL10n.techSupport,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: colors.secondaryText,
+                                decoration: TextDecoration.underline,
+                                decorationColor: colors.secondaryText
+                                    .withValues(alpha: 0.4),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (CountryConfig.current.termsUrl.isNotEmpty) ...[
+                          Text(
+                            '•',
+                            style: TextStyle(
+                              color: colors.secondaryText,
+                              fontSize: 11,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: _openTermsOfUse,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppDimensions.spacingS,
+                                vertical: AppDimensions.spacingS,
+                              ),
+                              child: Text(
+                                appL10n.termsOfUse,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: colors.secondaryText,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: colors.secondaryText
+                                      .withValues(alpha: 0.4),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (CountryConfig.current.privacyUrl.isNotEmpty) ...[
+                          Text(
+                            '•',
+                            style: TextStyle(
+                              color: colors.secondaryText,
+                              fontSize: 11,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: _openPrivacyPolicy,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppDimensions.spacingS,
+                                vertical: AppDimensions.spacingS,
+                              ),
+                              child: Text(
+                                appL10n.privacyPolicy,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: colors.secondaryText,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: colors.secondaryText
+                                      .withValues(alpha: 0.4),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (_appVersionText != null) ...[
+                      const SizedBox(height: AppDimensions.spacingM),
+                      GestureDetector(
+                        onLongPress: () {
+                          final text = _gitCommit != null
+                              ? '${appL10n.appVersion(_appVersionText!)} · $_gitCommit'
+                              : appL10n.appVersion(_appVersionText!);
+                          Clipboard.setData(ClipboardData(text: text));
+                          HapticFeedbackHelper.tap();
+                        },
+                        child: Text(
+                          _gitCommit != null
+                              ? '${appL10n.appVersion(_appVersionText!)} · $_gitCommit'
+                              : appL10n.appVersion(_appVersionText!),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colors.secondaryText.withValues(alpha: 0.6),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

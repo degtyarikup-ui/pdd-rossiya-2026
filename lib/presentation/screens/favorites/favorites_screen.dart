@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdd_app/l10n/l10n.dart';
@@ -62,152 +63,159 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
 
     // Структура как на экране «Работа над ошибками»: шапка → список карточек →
     // закреплённая внизу кнопка «Пройти всё избранное».
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.all(AppDimensions.screenPadding),
-              child: Row(
-                children: [
-                  AppChromeIconButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const SizedBox(width: AppDimensions.spacingM),
-                  Expanded(
-                    child: Text(
-                      appL10n.favorites,
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: colors.primaryText,
+    return AppContentFrame(
+      maxWidth: AppContentFrame.readingWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                child: Row(
+                  children: [
+                    AppChromeIconButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.pop(context);
+                      },
+                    ),
+                    const SizedBox(width: AppDimensions.spacingM),
+                    Expanded(
+                      child: Text(
+                        appL10n.favorites,
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          color: colors.primaryText,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: favoriteIdsAsync.when(
-              data: (favoriteIds) {
-                if (favoriteIds.isEmpty) {
-                  return _buildEmptyState();
-                }
+            Expanded(
+              child: favoriteIdsAsync.when(
+                data: (favoriteIds) {
+                  if (favoriteIds.isEmpty) {
+                    return _buildEmptyState();
+                  }
 
-                return FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _getFavoritesFuture(ref, favoriteIds),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppDimensions.screenPadding),
-                          child: Text(
-                            dataLoadErrorMessage(snapshot.error),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              height: 1.4,
-                              color: colors.secondaryText,
+                  return FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _getFavoritesFuture(ref, favoriteIds),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(
+                              AppDimensions.screenPadding,
                             ),
-                          ),
-                        ),
-                      );
-                    }
-                    if (!snapshot.hasData) {
-                      return const Center(child: AppLoadingIndicator());
-                    }
-
-                    final allQuestions = snapshot.data!;
-                    final filteredQuestions = _filterQuestions(allQuestions);
-
-                    final bottomInset = MediaQuery.paddingOf(context).bottom;
-                    const barVerticalPad = 12.0;
-                    const buttonHeight = 52.0;
-                    final listBottomPad =
-                        barVerticalPad * 2 + buttonHeight + bottomInset + 8;
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppDimensions.screenPadding,
-                            0,
-                            AppDimensions.screenPadding,
-                            AppDimensions.spacingM,
-                          ),
-                          child: TextField(
-                            controller: _searchController,
-                            style: TextStyle(color: colors.primaryText),
-                            onChanged: (value) {
-                              setState(
-                                () => _query = value.trim().toLowerCase(),
-                              );
-                            },
-                            decoration: InputDecoration(
-                              hintText: appL10n.searchByQuestionOrTopic,
-                              hintStyle: TextStyle(color: colors.secondaryText),
-                              prefixIcon: Icon(
-                                Icons.search_rounded,
+                            child: Text(
+                              dataLoadErrorMessage(snapshot.error),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.4,
                                 color: colors.secondaryText,
                               ),
-                              filled: true,
-                              fillColor: colors.searchFieldFill,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppDimensions.smallRadius,
-                                ),
-                                borderSide: BorderSide.none,
-                              ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: ListView(
-                            padding: EdgeInsets.fromLTRB(
+                        );
+                      }
+                      if (!snapshot.hasData) {
+                        return const Center(child: AppLoadingIndicator());
+                      }
+
+                      final allQuestions = snapshot.data!;
+                      final filteredQuestions = _filterQuestions(allQuestions);
+
+                      final bottomInset = MediaQuery.paddingOf(context).bottom;
+                      const barVerticalPad = 12.0;
+                      const buttonHeight = 52.0;
+                      final listBottomPad =
+                          barVerticalPad * 2 + buttonHeight + bottomInset + 8;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
                               AppDimensions.screenPadding,
                               0,
                               AppDimensions.screenPadding,
-                              listBottomPad,
+                              AppDimensions.spacingM,
                             ),
-                            children: [
-                              if (filteredQuestions.isEmpty)
-                                _buildNoSearchResults()
-                              else
-                                ...filteredQuestions.map((question) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(
-                                      bottom: AppDimensions.spacingM,
-                                    ),
-                                    child: _buildFavoriteCard(
-                                      context,
-                                      question,
-                                    ),
-                                  );
-                                }),
-                            ],
+                            child: TextField(
+                              controller: _searchController,
+                              style: TextStyle(color: colors.primaryText),
+                              onChanged: (value) {
+                                setState(
+                                  () => _query = value.trim().toLowerCase(),
+                                );
+                              },
+                              decoration: InputDecoration(
+                                hintText: appL10n.searchByQuestionOrTopic,
+                                hintStyle: TextStyle(
+                                  color: colors.secondaryText,
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.search_rounded,
+                                  color: colors.secondaryText,
+                                ),
+                                filled: true,
+                                fillColor: colors.searchFieldFill,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.smallRadius,
+                                  ),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        _buildBottomPassAllBar(context, allQuestions),
-                      ],
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: AppLoadingIndicator()),
-              error: (error, _) =>
-                  Center(child: Text(dataLoadErrorMessage(error))),
+                          Expanded(
+                            child: ListView(
+                              padding: EdgeInsets.fromLTRB(
+                                AppDimensions.screenPadding,
+                                0,
+                                AppDimensions.screenPadding,
+                                listBottomPad,
+                              ),
+                              children: [
+                                if (filteredQuestions.isEmpty)
+                                  _buildNoSearchResults()
+                                else
+                                  ...filteredQuestions.map((question) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: AppDimensions.spacingM,
+                                      ),
+                                      child: _buildFavoriteCard(
+                                        context,
+                                        question,
+                                      ),
+                                    );
+                                  }),
+                              ],
+                            ),
+                          ),
+                          _buildBottomPassAllBar(context, allQuestions),
+                        ],
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: AppLoadingIndicator()),
+                error: (error, _) =>
+                    Center(child: Text(dataLoadErrorMessage(error))),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -289,11 +297,12 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
       final text = ((question['question'] as String?) ?? '')
           .toLowerCase()
           .replaceAll('ё', 'е');
-      final topics = (((question['topic'] as List?) ?? const [])
-          .map((e) => e.toString())
-          .join(' '))
-          .toLowerCase()
-          .replaceAll('ё', 'е');
+      final topics =
+          (((question['topic'] as List?) ?? const [])
+                  .map((e) => e.toString())
+                  .join(' '))
+              .toLowerCase()
+              .replaceAll('ё', 'е');
       return text.contains(query) || topics.contains(query);
     }).toList();
   }

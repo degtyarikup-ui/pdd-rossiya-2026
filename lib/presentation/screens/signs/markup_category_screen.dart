@@ -1,3 +1,4 @@
+import 'package:pdd_app/core/layout/app_content_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
@@ -95,132 +96,135 @@ class MarkupCategoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppDimensions.screenPadding),
-              child: Row(
-                children: [
-                  AppChromeIconButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    onTap: () {
-                      HapticFeedbackHelper.tap();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const SizedBox(width: AppDimensions.spacingM),
-                  SizedBox(
-                    width: 34,
-                    height: 34,
-                    child: SvgPicture.asset(iconAssetPath),
-                  ),
-                  const SizedBox(width: AppDimensions.spacingM),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        height: 1.0,
-                        color: colors.primaryText,
-                      ),
+    return AppContentFrame(
+      maxWidth: AppContentFrame.readingWidth,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                child: Row(
+                  children: [
+                    AppChromeIconButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      onTap: () {
+                        HapticFeedbackHelper.tap();
+                        Navigator.pop(context);
+                      },
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.screenPadding,
-                  0,
-                  AppDimensions.screenPadding,
-                  24,
-                ),
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: AppDimensions.spacingM,
+                    const SizedBox(width: AppDimensions.spacingM),
+                    SizedBox(
+                      width: 34,
+                      height: 34,
+                      child: SvgPicture.asset(iconAssetPath),
                     ),
-                    child: Container(
-                      padding: const EdgeInsets.all(AppDimensions.spacingL),
-                      decoration: BoxDecoration(
-                        color: colors.cardBackground,
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.cardRadius,
+                    const SizedBox(width: AppDimensions.spacingM),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          height: 1.0,
+                          color: colors.primaryText,
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (entry.image.isNotEmpty) ...[
-                            Semantics(
-                              button: true,
-                              label: '${entry.number} ${entry.title}',
-                              child: InkWell(
-                                key: ValueKey('markup-image-${entry.number}'),
-                                onTap: () => _showImage(context, entry),
-                                borderRadius: BorderRadius.circular(
-                                  AppDimensions.cardRadius,
-                                ),
-                                child: SizedBox(
-                                  height: 140,
-                                  width: double.infinity,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(
-                                      AppDimensions.spacingS,
-                                    ),
-                                    child: SvgPicture.asset(
-                                      entry.assetPath,
-                                      fit: BoxFit.contain,
-                                      excludeFromSemantics: true,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.screenPadding,
+                    0,
+                    AppDimensions.screenPadding,
+                    24,
+                  ),
+                  itemCount: entries.length,
+                  itemBuilder: (context, index) {
+                    final entry = entries[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(
+                        bottom: AppDimensions.spacingM,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(AppDimensions.spacingL),
+                        decoration: BoxDecoration(
+                          color: colors.cardBackground,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.cardRadius,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (entry.image.isNotEmpty) ...[
+                              Semantics(
+                                button: true,
+                                label: '${entry.number} ${entry.title}',
+                                child: InkWell(
+                                  key: ValueKey('markup-image-${entry.number}'),
+                                  onTap: () => _showImage(context, entry),
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.cardRadius,
+                                  ),
+                                  child: SizedBox(
+                                    height: 140,
+                                    width: double.infinity,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(
+                                        AppDimensions.spacingS,
+                                      ),
+                                      child: SvgPicture.asset(
+                                        entry.assetPath,
+                                        fit: BoxFit.contain,
+                                        excludeFromSemantics: true,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: AppDimensions.spacingM),
+                            ],
+                            Text(
+                              entry.number,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: colors.accent,
+                              ),
                             ),
-                            const SizedBox(height: AppDimensions.spacingM),
+                            const SizedBox(height: AppDimensions.spacingS),
+                            Text(
+                              entry.title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                height: 1.0,
+                                color: colors.primaryText,
+                              ),
+                            ),
+                            const SizedBox(height: AppDimensions.spacingS),
+                            Text(
+                              entry.description,
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.45,
+                                color: colors.secondaryText,
+                              ),
+                            ),
                           ],
-                          Text(
-                            entry.number,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: colors.accent,
-                            ),
-                          ),
-                          const SizedBox(height: AppDimensions.spacingS),
-                          Text(
-                            entry.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              height: 1.0,
-                              color: colors.primaryText,
-                            ),
-                          ),
-                          const SizedBox(height: AppDimensions.spacingS),
-                          Text(
-                            entry.description,
-                            style: TextStyle(
-                              fontSize: 14,
-                              height: 1.45,
-                              color: colors.secondaryText,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
