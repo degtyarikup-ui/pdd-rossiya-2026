@@ -21,7 +21,7 @@ function mount(search = '') {
   const document = { querySelector: selector => elements[selector], querySelectorAll: () => [], addEventListener(type, callback) { (listeners[type] ??= []).push(callback); } };
   const opened = [], reviewed = [];
   const QuestionPlan = { open: async id => reviewed.push(id || 'first-pending'), close() {}, setQuery() {},
-    sidebarHtml: () => questions.map(question => `<button data-question="${question.id}">question photo</button>`).join(''),
+    sidebarHtml: () => questions.map(question => `<button data-plan-question="${question.id}">question photo</button>`).join(''),
     homeHtml: () => '<div>question cards</div>', visibleCount: () => questions.length };
   const App = { state: { scenes: structuredClone(scenes), questions, section: 'city' }, esc: value => String(value ?? ''), ic: () => '', thumbRev: {},
     sceneTitle: id => id.replace(/^ticket_/, '').replace('_', ' '), openScene: async id => opened.push(id) };
@@ -62,7 +62,7 @@ ui.click('data-scene-section', 'scenes');
 assert.equal(ui.App.sceneFilter(), 'err', 'switching section remembers the last game-scene subfilter');
 ui.click('data-scene-section', 'questions');
 assert.deepEqual(ui.rows(ui.left()), [], 'candidate drafts cannot appear as implemented scenes');
-assert.match(ui.left(), /data-question="ticket_1_1"/);
+assert.match(ui.left(), /data-plan-question="ticket_1_1"/);
 assert.match(ui.left(), /План вопросов<\/span><em>2/);
 assert.match(ui.home(), /question cards/);
 assert.deepEqual(ui.reviewed, ['first-pending']);

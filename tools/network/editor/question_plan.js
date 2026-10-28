@@ -46,11 +46,11 @@ const QuestionPlan = (() => {
   function sidebarHtml(text = query, { filtersCollapsed = false } = {}) {
     if (!state.questionsLoaded) return loadingHtml();
     return `<div class="question-pane-tools"><div id="question-filter-options" ${filtersCollapsed ? 'hidden' : ''}>${filterHtml()}</div></div>
-      <div class="scene-list question-list">${list(text).map(question => `<button class="scene-row ${question.id === state.id ? 'on' : ''}" data-question="${esc(question.id)}" aria-label="${esc(title(question))}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="scene-pic question-pic">${photo(question)}</span><span class="scene-text"><b>${esc(title(question))}</b><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
+      <div class="scene-list question-list">${list(text).map(question => `<button class="scene-row ${question.id === state.id ? 'on' : ''}" data-plan-question="${esc(question.id)}" aria-label="${esc(title(question))}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="scene-pic question-pic">${photo(question)}</span><span class="scene-text"><b>${esc(title(question))}</b><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
   }
   function homeHtml(text = query) {
     if (!state.questionsLoaded) return loadingHtml();
-    return `<div class="question-home-tools">${filterHtml()}</div><div class="home-grid">${list(text).map(question => `<button class="card-scene" data-question="${esc(question.id)}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="card-pic question-card-pic">${photo(question)}</span><span class="card-body"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-card-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
+    return `<div class="question-home-tools">${filterHtml()}</div><div class="home-grid">${list(text).map(question => `<button class="card-scene" data-plan-question="${esc(question.id)}" ${editable(question) ? '' : 'disabled title="Дорожный вопрос уже в игре: отдельной сцены в редакторе нет"'}><span class="card-pic question-card-pic">${photo(question)}</span><span class="card-body"><b>${esc(title(question))} · ${esc(category(question))}</b><span class="question-card-text">${esc(question.question)}</span><span class="badges">${badge(question)}</span></span></button>`).join('') || '<p class="empty-note">В этой группе вопросов нет</p>'}</div>`;
   }
   function remember() {
     try { localStorage.setItem(STORE, JSON.stringify({ filter })); } catch (_) { /* Optional view preference. */ }
@@ -110,9 +110,9 @@ const QuestionPlan = (() => {
     if (event.target.matches?.('[data-question-status]')) setFilter(event.target.value);
   });
   document.addEventListener('click', event => {
-    const candidate = event.target.closest('[data-question]');
+    const candidate = event.target.closest('[data-plan-question]');
     if (candidate) {
-      if (!candidate.disabled) App.showQuestions(candidate.dataset.question);
+      if (!candidate.disabled) App.showQuestions(candidate.dataset.planQuestion);
       return;
     }
     if (event.target.closest('[data-question-retry]')) load({ refresh: true }).catch(() => {});

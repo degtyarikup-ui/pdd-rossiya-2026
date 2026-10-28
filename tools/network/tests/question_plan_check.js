@@ -31,7 +31,7 @@ function mount() {
   App.showQuestions = id => plan.open(id);
   const tick = () => new Promise(resolve => setImmediate(resolve));
   const click = async id => {
-    listeners.click.forEach(callback => callback({ target: { closest: selector => selector === '[data-question]' ? { dataset: { question: id } } : null } }));
+    listeners.click.forEach(callback => callback({ target: { closest: selector => selector === '[data-plan-question]' ? { dataset: { planQuestion: id } } : null } }));
     await tick();
   };
   return { App, plan, requests, opened, home, urls, listeners, click, tick };
@@ -49,7 +49,7 @@ function mount() {
   assert.equal(ui.plan.visibleCount(), 5);
   assert.equal(ui.plan.count('game'), 2);
   assert.equal(ui.plan.count('ai'), 1);
-  assert.match(ui.plan.sidebarHtml(), /data-question="ticket_1_1"/);
+  assert.match(ui.plan.sidebarHtml(), /data-plan-question="ticket_1_1"/);
   assert.match(ui.plan.sidebarHtml('', { filtersCollapsed: true }), /id="question-filter-options" hidden/);
   assert.doesNotMatch(ui.plan.sidebarHtml() + ui.plan.homeHtml(), /data-qr|Не просмотрен|для отбора|Да —|Нет —|Отменить решение/);
   assert.equal(ui.listeners.keydown, undefined, 'the plan has no decision shortcuts');
@@ -67,10 +67,20 @@ function mount() {
   assert.equal(ui.App.state.id, 'ticket_1_1', 'one click opens the editor');
   assert.equal(ui.home.hidden, true);
   assert.equal(ui.plan.filterSummary().label, 'Не в игре');
+  // Framing uses a bare data-question button to reveal the pinned question.
+  // Its click bubbles to document and must never be treated as plan navigation.
+  const beforeToggle = ui.opened.length;
+  ui.listeners.click.forEach(callback => callback({ target: {
+    closest: selector => selector === '[data-question]' ? { dataset: { question: '' } } : null,
+  } }));
+  await ui.tick();
+  assert.equal(ui.home.hidden, true, 'the pinned question toggle cannot open the plan home');
+  assert.equal(ui.App.state.id, 'ticket_1_1');
+  assert.equal(ui.opened.length, beforeToggle, 'question details do not navigate to another scene');
   await ui.plan.open('ticket_1_4');
   assert.equal(ui.App.state.id, 'ticket_1_4', 'legacy question deep links open the scene directly');
   assert.equal(ui.plan.filterSummary().label, 'В игре');
-  assert.match(ui.plan.sidebarHtml(), /data-question="ticket_1_5"[^>]*disabled/);
+  assert.match(ui.plan.sidebarHtml(), /data-plan-question="ticket_1_5"[^>]*disabled/);
   const beforeRoad = ui.opened.length;
   await ui.plan.open('ticket_1_5');
   assert.equal(ui.opened.length, beforeRoad, 'road questions cannot generate a duplicate scene');
