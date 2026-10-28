@@ -13,6 +13,7 @@ for (const name of ['GLTFLoader', 'LineSegmentsGeometry', 'LineGeometry', 'LineM
   vm.runInContext(fs.readFileSync(path.join(editor, `vendor/${name}.js`), 'utf8'), context);
 }
 vm.runInContext(fs.readFileSync(path.join(editor, 'app.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(editor, 'annotation_line.js'), 'utf8'), context);
 
 const source = fs.readFileSync(path.join(editor, 'scene3d.js'), 'utf8');
 const marker = '  return {\n    mount, load, refresh';
@@ -148,4 +149,16 @@ assert.ok(!colours(test.group('routes')).includes(0x0574f8),'hidden short guide 
 assert.equal(test.group('selection').children.length,0,'hidden short guide has no editable handles');
 test.frame(false);
 
-console.log('Player guide editor: actual render/picking, hidden selection/hover/supports, choices, layer restore and regulator PASS');
+const annotations=fixture();
+annotations.question.showPlayerGuide=false;
+annotations.routes.push({id:'annotation_1',kind:'annotation',style:'both',colour:'#20242b',points:[[10,10],[30,10]]});
+test.configure(annotations);test.redraw();
+assert.equal(test.group('routes').children.filter(node=>node.userData.annotation==='annotation_1').length,2,'outlined annotation has no letter mesh');
+assert.equal(pick(15,10)?.id,'annotation_1','annotations are pickable independently of the player guide');
+assert.deepEqual(choiceSnapshot().labels.map(l=>l[0]),['А','Б'],'annotations add no answer letters');
+test.frame(true);
+assert.ok(colours(test.group('routes')).includes(0x20242b),'phone framing retains annotations when player guide is hidden');
+annotations.routes=annotations.routes.filter(r=>r.kind!=='choice');annotations.question.showPlayerGuide=true;test.redraw();
+assert.ok(colours(test.group('routes')).includes(0x0574f8),'annotations do not replace the player guide');
+test.frame(false);
+console.log('Player guide editor: actual render/picking, hidden selection/hover/supports, choices, annotations, layer restore and regulator PASS');

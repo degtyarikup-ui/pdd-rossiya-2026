@@ -3978,7 +3978,7 @@ func _question_framing() -> Dictionary:
 	# exported framing is too tight.
 	var d: Dictionary = current.sit.data
 	var pts: Array[Vector2] = [Vector2(float(d.get("playerStartX", -1.8) if d.get("playerStartX") != null else -1.8), float(d.stopZ))]
-	for traj in d.get("trajectories", []):
+	for traj in d.get("trajectories", []) + d.get("annotations", []):
 		for q in traj.points:
 			pts.append(Vector2(q[0], q[1]))
 	var man = d.spec.maneuver if d.spec.maneuver != null else "straight"

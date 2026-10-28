@@ -10,6 +10,7 @@ The web editor calls check_scene() on every save.
 """
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -151,6 +152,18 @@ def check_scene(scene: dict) -> list:
     routes = {r["id"]: r for r in scene.get("routes", [])}
     for r in scene.get("routes", []):
         pts = r.get("points", [])
+        if r.get("kind") == "annotation":
+            number = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+            valid_points = isinstance(pts, list) and len(pts) >= 2 and all(
+                isinstance(p, (list, tuple)) and len(p) == 2 and all(number(v) for v in p) for p in pts)
+            width = r.get("width", .16)
+            if (not valid_points or (valid_points and LineString(pts).length < .1)
+                    or r.get("style", "line") not in ("line", "arrow", "both")
+                    or not number(width) or not .08 <= width <= .6
+                    or not isinstance(r.get("colour", "#20242b"), str)
+                    or not re.fullmatch(r"#[0-9a-fA-F]{6}", r.get("colour", "#20242b"))):
+                finding(out, "error", "annotation-invalid", f"{r['id']}: проверьте точки, вид, толщину и цвет обозначения", {"type":"route", "id":r['id']})
+            continue
         if len(pts) < 2:
             finding(out, "error", "route-short", f"{r['id']}: меньше двух точек", {"type": "route", "id": r["id"]})
             continue

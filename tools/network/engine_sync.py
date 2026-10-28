@@ -139,6 +139,10 @@ def sync(sid: str) -> dict:
             labels.append(base_labels[r["label"]])
     out["trajectories"] = traj
     out["labels"] = labels
+    # Overlays have no answer labels and must not suppress the fallback player guide.
+    out["annotations"] = [{"points": r["points"], "style": r.get("style", "line"),
+                           "colour": r.get("colour", "#20242b"), "width": r.get("width", .16)}
+                          for r in net.get("routes", []) if r["kind"] == "annotation"]
 
     out["lights"] = [{"pos": [l["pos"][0], 0.0, l["pos"][1]], "yaw": l["yaw"], "scale": l["scale"],
                       "arrow": l.get("arrow"), "tram": l.get("tram"), "mountedSigns": l.get("mountedSigns", []), "mountedMainRoad": l.get("mountedMainRoad", [])}

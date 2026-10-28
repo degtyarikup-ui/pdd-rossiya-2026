@@ -912,16 +912,44 @@
       });
       return;
     }
+    if (r.kind === "annotation") {
+      const colours=[...AnnotationLine.colours];
+      if(r.colour && !colours.some(([value])=>value===r.colour))colours.push([r.colour,'Исходный']);
+      p.innerHTML=`${head(`<span class="ibadge">${ic('measure')}</span>`,'Линия-обозначение','без буквы')}
+        ${card('Вид линии',chips('annotation-style',AnnotationLine.styles.map(([value,title])=>({value,title})),r.style || 'line'))}
+        ${card('Цвет',chips('annotation-colour',colours.map(([value,title])=>({value,title,html:`<span class="paint" style="background:${value}"></span>`})),r.colour || '#20242b'))}
+        ${card('Толщина',slider('annotation-width','Толщина линии',r.width ?? .16,.08,.6,.02,`${(r.width ?? .16).toFixed(2)} м`))}
+        ${card('',`<p>Тяните точки линии. Двойной клик добавляет точку. Линия не задаёт путь движения.</p><div class="insp-actions">${button('annotation-reverse','Поменять направление','rotr','ghost wide')}${button('rotl','−15°','rotl','ghost')}${button('rotr','+15°','rotr','ghost')}</div>${deleteRow()}`)}`;
+      bind({...common,
+        'chip:annotation-style':value=>{if(!App.isLocked(ref)&&AnnotationLine.styles.some(([key])=>key===value))App.edit(()=>{r.style=value;});},
+        'chip:annotation-colour':value=>{if(!App.isLocked(ref)&&/^#[0-9a-f]{6}$/i.test(value))App.edit(()=>{r.colour=value;});},
+        'slider:annotation-width':live((_sc,value)=>{if(!App.isLocked(ref))r.width=value;},value=>{const label=p.querySelector('[data-shown="annotation-width"]');if(label)label.textContent=`${value.toFixed(2)} м`;}),
+        'annotation-reverse':()=>{if(!App.isLocked(ref))App.edit(()=>{r.points.reverse();});},
+        rotl:()=>App.rotate(-15),rotr:()=>App.rotate(15),
+      });
+      return;
+    }
     if (r.kind === "choice") {
       const used = s.routes.filter((x) => x.kind === "choice" && x !== r).map((x) => x.label);
       const ways = s.routes.filter((x) => x.kind === "manoeuvre");
       p.innerHTML = `${head(`<span class="letter-badge" style="--c:${Catalog.LETTER_COLOUR[r.label]}">${esc(r.label)}</span>`, `Вариант ответа ${r.label}`, "линия на дороге при вопросе")}
         ${card("Буква", chips("label", Catalog.LETTERS.map((l) => ({ value: l, html: `<span class="letter-badge sm" style="--c:${Catalog.LETTER_COLOUR[l]}">${l}</span>`, disabled: used.includes(l) })), r.label))}
         ${card("Вид линии", chips("arrowhead", [{value:"arrow",title:"Со стрелкой"},{value:"line",title:"Линия без стрелки"}], r.arrowhead === false ? "line" : "arrow"))}
+        ${card("Без буквы", button("as-annotation", "Убрать букву — сделать обозначением", "measure", "ghost wide"))}
         ${ways.length ? card("Взять путь", chips("copy", ways.map((w) => ({ value: w.exit, icon: Catalog.EXITS[w.exit].icon, tip: Catalog.EXITS[w.exit].title })), "", { cls: "arrows" })) : ""}
         ${card("", `<p class="muted">Тяните точки на виде. Двойной клик по линии — новая точка.</p>${button("mid", "Букву — на середину", "flag", "ghost wide")}<div class="insp-actions">${button("del", "Удалить", "trash", "danger ghost")}</div>`)}`;
       bind({
         ...common,
+        'as-annotation':()=>{
+          if(App.isLocked(ref))return;
+          const made=App.edit(sc=>{
+            const id=App.uniqueId('annotation_',sc.routes.map(route=>route.id));
+            Object.assign(r,{id,kind:'annotation',style:r.arrowhead===false?'line':'arrow',colour:Catalog.LETTER_COLOUR[r.label] || '#20242b',width:.16});
+            delete r.label;delete r.labelPosition;delete r.arrowhead;delete r.auto;
+            return {t:'route',id};
+          });
+          App.select(made);
+        },
         "chip:label": (v) => App.edit(() => { r.label = v; r.id = `choice_${v}`; }) || App.select({ t: "route", id: `choice_${v}` }),
         "chip:arrowhead": v => App.edit(() => { if (v === "line") r.arrowhead = false; else delete r.arrowhead; }),
         "chip:copy": (v) => App.edit((sc) => { const w = sc.routes.find((x) => x.kind === "manoeuvre" && x.exit === v); r.points = JSON.parse(JSON.stringify(w.points)); const m = r.points[Math.floor(r.points.length * 0.6)]; r.labelPosition = [m[0], m[1]]; }),

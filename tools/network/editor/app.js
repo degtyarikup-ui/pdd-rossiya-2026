@@ -97,6 +97,7 @@ const App = (() => {
       case "sign": return Catalog.signName(o.code);
       case "track": return o.depot ? "Рельсы в депо" : "Рельсы";
       case "route":
+        if (o.kind === "annotation") return "Линия-обозначение";
         if (o.kind === "guide") return "Синяя стрелка игрока";
         if (o.kind === "manoeuvre") return `Манёвр: ${Catalog.EXITS[o.exit]?.title.toLowerCase() || o.exit}`;
         if (o.kind === "choice") return `Ответ ${o.label}`;
@@ -452,7 +453,7 @@ const App = (() => {
 
   // Turns the selection by `deg` degrees: each object about itself; a shape about its middle.
   function rotate(deg) {
-    const list = state.sel.filter((r) => !isLocked(r) && ["decor", "sign", "actor", "officer", "light", "marking", "lawn", "road", "stop"].includes(r.t));
+    const list = state.sel.filter((r) => !isLocked(r) && (["decor", "sign", "actor", "officer", "light", "marking", "lawn", "road", "stop"].includes(r.t) || r.t === "route" && objectOf(r)?.kind === "annotation"));
     if (!list.length) return;
     const a = (deg * Math.PI) / 180;
     edit((s) => {
@@ -460,7 +461,7 @@ const App = (() => {
         const o = objectOf(ref);
         if (ref.t === "stop") { if (Layout.isFreePlayer(s)) Layout.rotatePlayer(s, (s.stop.yaw || 0) - a); continue; }
         if (o.pos) { o.yaw = r3(wrap((o.yaw || 0) - a)); continue; }
-        const rings = ref.t === "marking" ? (o.points ? [o.points] : o.polygons.flatMap((p) => [p.outer, ...(p.holes || [])]))
+        const rings = ref.t === "route" ? [o.points] : ref.t === "marking" ? (o.points ? [o.points] : o.polygons.flatMap((p) => [p.outer, ...(p.holes || [])]))
           : ref.t === "road" && ref.part >= 0 ? [o.holes[ref.part]] : [o.outer, ...(o.holes || [])];
         const all = rings.flat();
         const cx = all.reduce((t, p) => t + p[0], 0) / all.length, cz = all.reduce((t, p) => t + p[1], 0) / all.length;
@@ -486,7 +487,7 @@ const App = (() => {
   // Copies of things: props, participants (with their path), lights, markings, lawns.
   const COPYABLE = ["decor", "sign", "actor", "officer", "light", "marking", "lawn"];
   function copy() {
-    const list = state.sel.filter((r) => !isLocked(r) && COPYABLE.includes(r.t));
+    const list = state.sel.filter((r) => !isLocked(r) && (COPYABLE.includes(r.t) || r.t === "route" && objectOf(r)?.kind === "annotation"));
     if (!list.length) return false;
     state.clipboard = list.map((r) => {
       const o = JSON.parse(JSON.stringify(objectOf(r)));
@@ -503,8 +504,8 @@ const App = (() => {
   }
   function pasteOne(s, c, offset) {
     const o = JSON.parse(JSON.stringify(c.o));
-    const listKey = { decor: "decor", sign: "signs", actor: "actors", officer: "officers", light: "lights", marking: "markings", lawn: "lawns" }[c.t];
-    const prefix = c.t === "actor" ? `${o.type}_` : { decor: "decor_", sign: "sign_", officer: "officer_", light: "light_", marking: "mark_", lawn: "lawn_" }[c.t];
+    const listKey = { decor: "decor", sign: "signs", actor: "actors", officer: "officers", light: "lights", marking: "markings", lawn: "lawns", route: "routes" }[c.t];
+    const prefix = c.t === "actor" ? `${o.type}_` : { decor: "decor_", sign: "sign_", officer: "officer_", light: "light_", marking: "mark_", lawn: "lawn_", route: "annotation_" }[c.t];
     s[listKey] = s[listKey] || [];
     o.id = uniqueId(prefix, s[listKey].map((x) => x.id));
     delete o.auto;

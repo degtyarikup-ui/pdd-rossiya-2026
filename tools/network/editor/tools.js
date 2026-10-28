@@ -18,16 +18,17 @@ const Tools = (() => {
     { id: "sign", key: "N", title: "Знак", icon: "flag", hint: "Клик у дороги — знак встанет справа лицом к машинам. Знак выберите слева" },
     { id: "officer", key: "U", title: "Регулировщик", icon: "person", hint: "Клик — поставить регулировщика. Тяните — куда он смотрит" },
     { id: "answer", key: "A", title: "Вариант ответа", icon: "route", hint: "Кликайте точки пути. ↵ — готово" },
+    { id: "annotation", key: "I", title: "Линии и стрелки без букв", icon: "measure", hint: "Кликайте точки обозначения. ↵ — готово, Esc — отменить. Буква не добавляется" },
     { sep: true },
     { id: "prop", key: "O", title: "Объект", icon: "tree", hint: "Клик — поставить, тянуть — повернуть. Выберите объект слева" },
     { id: "brush", key: "B", title: "Кисть окружения", icon: "brush", hint: "Клик — готовая локация. Ведите — рисовать. ⌥ — стирать окружение" },
   ];
-  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", markDirection: "straight", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerArrowhead: true };
-  const SHORT_LABEL = { select: "Выбор", hand: "Рука", road: "Дорога", junction: "Перекрёсток", marking: "Разметка", track: "Рельсы", lawn: "Газон", actor: "Транспорт", light: "Светофор", sign: "Знак", officer: "Регулировщик", answer: "Ответ", prop: "Объект", brush: "Кисть" };
+  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", markDirection: "straight", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerArrowhead: true, annotationStyle: "line" };
+  const SHORT_LABEL = { select: "Выбор", hand: "Рука", road: "Дорога", junction: "Перекрёсток", marking: "Разметка", track: "Рельсы", lawn: "Газон", actor: "Транспорт", light: "Светофор", sign: "Знак", officer: "Регулировщик", answer: "Ответ", annotation: "Линия", prop: "Объект", brush: "Кисть" };
   let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null;
 
   const S = () => App.state.S;
-  const allowed = id => S()?.id !== "mini_regulator" || !["actor","light","sign","track","answer","officer"].includes(id);
+  const allowed = id => S()?.id !== "mini_regulator" || !["actor","light","sign","track","answer","annotation","officer"].includes(id);
   const snapGrid = (v, e) => (e && e.alt ? v : Math.round(v * 2) / 2);   // half a metre: neat, and ⌥ for free
 
   // ---- the toolbar -----------------------------------------------------------------------
@@ -71,6 +72,8 @@ const Tools = (() => {
     } else if (tool === "marking") {
       html = Object.entries(Catalog.MARKS).map(([k, v]) => `<button class="pchip ${opts.mark === k ? "on" : ""}" data-mark="${k}">${k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`}<span>${v.title}</span></button>`).join("");
       if (opts.mark === "arrow") html += `<div class="direction-mark-options">${DirectionMark.variants.map(([key, title]) => `<button class="pchip ${opts.markDirection === key ? "on" : ""}" data-mark-direction="${key}" aria-label="${title}">${DirectionMark.svg(key)}<span>${title}</span></button>`).join("")}</div>`;
+    } else if (tool === "annotation") {
+      html = AnnotationLine.styles.map(([key,title])=>`<button class="pchip ${opts.annotationStyle===key?'on':''}" data-annotation-style="${key}"><span>${title}</span></button>`).join('');
     } else if (tool === "answer" && !opts.pathFor) {
       html = [["arrow","Со стрелкой"],["line","Линия без стрелки"]].map(([v,t]) => `<button class="pchip ${(opts.answerArrowhead ? "arrow" : "line") === v ? "on" : ""}" data-answer-style="${v}"><span>${t}</span></button>`).join("");
     } else if (tool === "actor") {
@@ -150,6 +153,7 @@ const Tools = (() => {
       if (b.dataset.markDirection) { opts.markDirection = b.dataset.markDirection; renderPopover(); }
       if (b.dataset.actor) { opts.actorType = b.dataset.actor; renderPopover(); }
       if (b.dataset.answerStyle) { opts.answerArrowhead = b.dataset.answerStyle === "arrow"; renderPopover(); }
+      if (b.dataset.annotationStyle) { opts.annotationStyle=b.dataset.annotationStyle;renderPopover(); }
       if (b.dataset.tpl) applyTemplate(b.dataset.tpl);
       if (b.dataset.brushMode) { opts.brushMode = b.dataset.brushMode; renderPopover(); refreshBrushPreview(); }
       if (b.dataset.brushScale) { opts.brushScale = Number(b.dataset.brushScale); renderPopover(); refreshBrushPreview(); }
@@ -172,7 +176,7 @@ const Tools = (() => {
     App.edit((sc) => {
       sc.layout = Layout.template(kind, sc.crop || 90);
       sc.roads = []; sc.markings = []; sc.lawns = [];
-      sc.routes = sc.routes.filter((r) => ["choice", "actor", "guide"].includes(r.kind));
+      sc.routes = sc.routes.filter((r) => ["choice", "actor", "guide", "annotation"].includes(r.kind));
     });
     App.select([]);
     set("select");
@@ -213,7 +217,7 @@ const Tools = (() => {
       });
       sc.lawns = [];
       sc.markings = (sc.markings || []).filter((m) => m.type !== "paint");
-      sc.routes = sc.routes.filter((x) => x.kind === "choice" || x.kind === "actor");
+      sc.routes = sc.routes.filter((x) => ["choice", "actor", "annotation"].includes(x.kind));
     });
     App.toast(dropped > 0 ? `Дороги в конструкторе. Островков на расширениях убрано: ${dropped} — ⌘Z вернёт` : "Дороги теперь можно править как в конструкторе", dropped > 0 ? "warn" : "good");
     set("select");
@@ -572,7 +576,7 @@ const Tools = (() => {
   // ---- answers: a route with the next free letter -------------------------------------------------
   const answer = {
     move(e) {
-      if (draft && e.world) Scene3D.setDraft({ kind: "line", points: draft.points, cursor: [r3(e.world.x), r3(e.world.z)], colour: 0xe0533d });
+      if (draft && e.world) Scene3D.setDraft({ kind: tool === "annotation" ? "annotation" : "line", style: opts.annotationStyle, points: draft.points, cursor: [r3(e.world.x), r3(e.world.z)], colour: 0xe0533d });
     },
     down(e) {
       if (!e.world) return;
@@ -829,7 +833,7 @@ const Tools = (() => {
     dblclick() { finishDraft(); },
   };
 
-  const HANDLERS = { select, hand, road, junction: select, marking, lawn, track, answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), sign: placer("sign"), prop: placer("prop"), brush };
+  const HANDLERS = { select, hand, road, junction: select, marking, lawn, track, answer, annotation: answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), sign: placer("sign"), prop: placer("prop"), brush };
 
   // ---- finishing a drawing ------------------------------------------------------------------------
   function finishDraft(cancel = false) {
@@ -878,6 +882,15 @@ const Tools = (() => {
       });
       App.select({ t: "actor", id: aid });
       set("select");
+    } else if (tool === "annotation" && pts.length >= 2) {
+      const points=AnnotationLine.clean(pts);
+      if(points.length<2 || AnnotationLine.length(points)<.1)return App.toast("Линия слишком короткая", "warn");
+      const ref=App.edit(s=>{
+        const id=App.uniqueId('annotation_',s.routes.map(r=>r.id));
+        s.routes.push({id,kind:'annotation',style:opts.annotationStyle,colour:'#20242b',width:.16,points});
+        return {t:'route',id};
+      });
+      App.select(ref);
     } else if (tool === "answer" && pts.length >= 2) {
       const ref = App.edit((s) => {
         const used = s.routes.filter((r) => r.kind === "choice").map((r) => r.label);

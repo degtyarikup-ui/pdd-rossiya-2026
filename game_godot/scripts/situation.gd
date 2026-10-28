@@ -6,6 +6,8 @@
 class_name Situation
 extends Node3D
 
+const SceneAnnotation := preload("res://scripts/scene_annotation.gd")
+
 var id: String
 var data: Dictionary
 var lights: Array[Node3D] = []
@@ -723,6 +725,11 @@ func _build_evidence(dir: String) -> void:
 			(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			(mi as MeshInstance3D).position.y = 0.12
 		add_child(_guide)
+	for annotation in data.get("annotations", []):
+		if not is_instance_valid(_guide):
+			_guide = Node3D.new()
+			add_child(_guide)
+		_guide.add_child(SceneAnnotation.create(annotation))
 	for l in data.labels:
 		if not l.get("letter") is String or str(l.letter).is_empty(): continue
 		var token := _letter_node(l.letter, letter_colour(str(l.letter)))

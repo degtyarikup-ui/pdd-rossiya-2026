@@ -339,6 +339,7 @@ const Scene3D = (() => {
   }
 
   function routeStyle(r) {
+    if (r.kind === "annotation") return { colour: r.colour || '#20242b', px: 4 };
     if (r.kind === "guide") return { colour: EXIT_COLOUR, px: 4 };
     if (r.kind === "manoeuvre") return { colour: EXIT_COLOUR, px: r.exit === model?.question?.maneuver ? 4 : 2.5 };
     if (r.kind === "choice") return { colour: LETTER_COLOUR[r.label] || EXIT_COLOUR, px: 3.5 };
@@ -362,7 +363,7 @@ const Scene3D = (() => {
     const ownGuide = model.routes.find(r => r.kind === "guide" && r.points.length >= 2);
     for (const r of model.routes) {
       const phoneGuide = phoneManoeuvre && (ownGuide ? r === ownGuide : r.kind === "manoeuvre" && r.exit === phoneManoeuvre);
-      if (phone && r.kind !== "choice" && !phoneGuide) continue;
+      if (phone && r.kind !== "choice" && r.kind !== "annotation" && !phoneGuide) continue;
       if (playerGuideHidden(r)) continue;
       if (r.points.length < 2) continue;
       if (r.kind === "actor" && model.actors.some(a => (a.route || `actor_${a.id}`) === r.id && a.behaviour?.staysPut)) continue;
@@ -375,11 +376,16 @@ const Scene3D = (() => {
       // The question's way and the answers always show; the other exits only on focus or in the test.
       const st = routeStyle(r);
       const focused = focusRoute === r.id;
-      const main = r.kind === "guide" || r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
+      const main = r.kind === "guide" || r.kind === "choice" || r.kind === "annotation" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
       if (!main && !focused && !simMode) continue;
       const dim = focusRoute ? !focused : !main;
-      const opacity = dim ? 0.28 : 1;
-      const shown = smooth(r.points);
+      const opacity = r.kind === "annotation" ? 1 : dim ? 0.28 : 1;
+      const shown = r.kind === "annotation" ? r.points : smooth(r.points);
+      if (r.kind === "annotation") {
+        g.add(annotationMesh(r, .04, opacity));
+        g.add(annotationMesh(r, 0, opacity));
+        continue;
+      }
       g.add(polyline(shown, ROUTE_Y, st.colour, focused ? st.px + 1.5 : st.px, opacity, st.dashed));
       const head = r.kind === "choice" && r.arrowhead === false ? null : arrowhead(shown, focused ? 1.1 : 0.8, ROUTE_Y, st.colour, opacity);
       if (head) g.add(head);
@@ -1019,7 +1025,7 @@ const Scene3D = (() => {
       const pts = App.pointsOfRef(ref);
       if (pts && pts.length > 1) {
         const closed = ref.t === "road" || ref.t === "lawn" || (ref.t === "marking" && App.isPaint(ref));
-        const line = ref.t === "route" ? smooth(pts) : pts;
+        const line = ref.t === "route" && App.objectOf(ref)?.kind !== "annotation" ? smooth(pts) : pts;
         g.add(polyline(closed ? [...line, line[0]] : line, 0.2, colour, px));
       }
       return null;
@@ -1051,6 +1057,16 @@ const Scene3D = (() => {
   }
 
   // ---- draft (a road or a line being drawn) and ghost (an object being placed) -----------
+  function annotationMesh(route, border, opacity=1) {
+    const vertices=AnnotationLine.geometry(route,border).flatMap(p=>[p[0],border ? .24 : .245,p[1]]);
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+    const colour=border ? (route.colour==='#ffffff'?'#20242b':'#ffffff') : route.colour || '#20242b';
+    const mesh=new THREE.Mesh(geometry,basic(colour,{side:THREE.DoubleSide,transparent:opacity<1,opacity}));
+    mesh.userData.own=true;mesh.userData.annotation=route.id;mesh.renderOrder=border?6:7;
+    return mesh;
+  }
+
   function rebuildDraft() {
     const g = setGroup("draft");
     if (!draft) return;
@@ -1066,6 +1082,9 @@ const Scene3D = (() => {
       m.userData.own = true;
       g.add(m);
       g.add(polyline(pts, 0.3, ACCENT, 2, 1, true));
+    } else if (draft.kind === "annotation" && pts.length >= 2) {
+      const route={points:pts,style:draft.style,colour:'#20242b',width:.16};
+      g.add(annotationMesh(route,.04));g.add(annotationMesh(route,0));
     } else if (draft.kind === "arrow" && pts.length >= 2) {
       for (const ring of DirectionMark.polygons({points:pts.slice(0,2),direction:draft.direction})) {
         const shape = new THREE.Shape(ring.map(p => new THREE.Vector2(p[0],p[1])));
@@ -1530,15 +1549,15 @@ const Scene3D = (() => {
       return false;
     };
     if (!hidden.has("routes")) {
-      for (const r of model.routes) {
+      for (const r of [...model.routes.filter(r=>r.kind==='annotation'),...model.routes.filter(r=>r.kind!=='annotation')]) {
         if (playerGuideHidden(r)) continue;
         const selected = sel.some(s => s.t === "route" && s.id === r.id);
         if (r.kind === "manoeuvre" && model.routes.some(x => x.kind === "guide") && !selected) continue;
         if (r.kind === "guide" && model.routes.some(x => x.kind === "choice") && !selected) continue;
-        const isMain = r.kind === "guide" || r.kind === "choice" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
+        const isMain = r.kind === "guide" || r.kind === "choice" || r.kind === "annotation" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
         if (!isMain && !simMode && !sel.some((s) => s.t === "route" && s.id === r.id)) continue;
         const ref = { t: "route", id: r.id };
-        if (!skip(ref) && lineHit(smooth(r.points), wpp * 8)) return ref;
+        if (!skip(ref) && lineHit(r.kind === 'annotation' ? r.points : smooth(r.points), wpp * 8)) return ref;
       }
     }
     if (!w) return null;
