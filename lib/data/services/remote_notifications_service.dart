@@ -564,10 +564,11 @@ class RemoteNotificationsService {
     }
   }
 
-  Future<void> _syncPushSubscriptions() {
-    _pushSync = _pushSync
-        .catchError((Object _) {})
-        .then((_) => _performPushSync());
+  Future<void> _syncPushSubscriptions({bool resetTopics = false}) {
+    _pushSync = _pushSync.catchError((Object _) {}).then((_) async {
+      if (resetTopics) await PushTopicState(_prefs!, _prefix).clear();
+      await _performPushSync();
+    });
     return _pushSync;
   }
 
@@ -583,15 +584,19 @@ class RemoteNotificationsService {
     const androidApp = String.fromEnvironment('FIREBASE_ANDROID_APP_ID');
     const iosApp = String.fromEnvironment('FIREBASE_IOS_APP_ID');
     final appId = platform == 'ios' ? iosApp : androidApp;
-    if (project.isEmpty || apiKey.isEmpty || sender.isEmpty || appId.isEmpty) {
+    final appApiKey = platform == 'ios'
+        ? const String.fromEnvironment('FIREBASE_IOS_API_KEY')
+        : apiKey;
+    if (project.isEmpty ||
+        appApiKey.isEmpty ||
+        sender.isEmpty ||
+        appId.isEmpty) {
       return;
     }
     if (!_firebaseReady) {
       await Firebase.initializeApp(
         options: FirebaseOptions(
-          apiKey: platform == 'ios'
-              ? const String.fromEnvironment('FIREBASE_IOS_API_KEY')
-              : apiKey,
+          apiKey: appApiKey,
           appId: appId,
           messagingSenderId: sender,
           projectId: project,
@@ -627,13 +632,14 @@ class RemoteNotificationsService {
     }
     final messaging = FirebaseMessaging.instance;
     final topicState = PushTopicState(_prefs!, _prefix);
-    await topicState.migrate(messaging.deleteToken);
     _tokenRefreshSub ??= messaging.onTokenRefresh.listen((_) {
       _subscriptionState = null;
-      unawaited(PushTopicState(_prefs!, _prefix).clear());
-      unawaited(_syncPushSubscriptions().catchError((Object _) {}));
+      // Clear and resubscribe on the same queue as an in-flight migration or
+      // subscription. An unawaited clear can otherwise erase the new state.
+      unawaited(
+        _syncPushSubscriptions(resetTopics: true).catchError((Object _) {}),
+      );
     });
-    if (platform == 'ios' && await messaging.getAPNSToken() == null) return;
     final permission = await messaging.getNotificationSettings();
     final enabled =
         _pushOptIn &&
@@ -647,12 +653,14 @@ class RemoteNotificationsService {
             ..._authorizedTopics,
           }
         : <String>{};
-    if (_subscriptionState != enabled) {
-      await messaging.setAutoInitEnabled(enabled);
-      _subscriptionState = enabled;
-    }
-    await topicState.reconcile(
-      desiredTopics,
+    _subscriptionState = false;
+    _subscriptionState = await topicState.synchronize(
+      enabled: enabled,
+      requiresApns: platform == 'ios',
+      topics: desiredTopics,
+      setAutoInitEnabled: messaging.setAutoInitEnabled,
+      getApnsToken: messaging.getAPNSToken,
+      deleteToken: messaging.deleteToken,
       subscribe: messaging.subscribeToTopic,
       unsubscribe: messaging.unsubscribeFromTopic,
     );

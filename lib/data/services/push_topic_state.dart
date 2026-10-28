@@ -21,6 +21,33 @@ class PushTopicState {
 
   Future<void> clear() => prefs.setStringList('${prefix}topics_v2', []);
 
+  /// Auto-init starts APNs registration on iOS. Token operations must wait for
+  /// that registration; checking APNs before enabling it leaves a fresh install
+  /// permanently unable to subscribe. A token refresh retries this operation.
+  Future<bool> synchronize({
+    required bool enabled,
+    required bool requiresApns,
+    required Set<String> topics,
+    required Future<void> Function(bool) setAutoInitEnabled,
+    required Future<String?> Function() getApnsToken,
+    required Future<void> Function() deleteToken,
+    required Future<void> Function(String) subscribe,
+    required Future<void> Function(String) unsubscribe,
+  }) async {
+    await setAutoInitEnabled(enabled);
+    // Do not request or rotate a delivery token on an opted-out installation
+    // with no recorded subscriptions. Migration runs when it next opts in.
+    if (!enabled && current.isEmpty) return false;
+    if (requiresApns && await getApnsToken() == null) return false;
+    await migrate(deleteToken);
+    await reconcile(
+      enabled ? topics : {},
+      subscribe: subscribe,
+      unsubscribe: unsubscribe,
+    );
+    return enabled;
+  }
+
   Future<void> reconcile(
     Set<String> desired, {
     required Future<void> Function(String) subscribe,
