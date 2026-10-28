@@ -1509,15 +1509,5 @@
   "inboxOpen": "Ашу",
   "trainingKeyboardHint": "Сандар — жауап · Enter — растау немесе жалғастыру · ←/→ — сұрақтар · Esc — артқа",
   "examKeyboardHint": "Сандар — жауап · ←/→ — сұрақтар · Esc — артқа",
-  "inboxHomeAlert": "{count, plural, one{Сізде жаңа хабарлама бар} other{Сізде {count} жаңа хабарлама бар}}",
-  "desktopStudyIntro": "Тақырыптарды оқып, билеттерді шешіп, емтиханда өзіңізді тексеріңіз.",
-  "desktopExamDescription": "Біліміңізді нақты емтихан жағдайында тексеріңіз.",
-  "desktopStartExam": "Емтиханды бастау",
-  "desktopPracticeTitle": "Жаттығу",
-  "desktopTopicsDescription": "Ережелерді жеке тақырыптар бойынша меңгеріңіз.",
-  "desktopTicketsDescription": "Емтихан билеттерін өз қарқыныңызбен өтіңіз.",
-  "desktopMistakesDescription": "Көбірек назар аударуды қажет ететін сұрақтарды қайталаңыз.",
-  "desktopFavoritesDescription": "Таңдаулыға сақталған сұрақтарды қайталаңыз.",
-  "desktopMarathonDescription": "Бүкіл сұрақтар қорын бір режимде қайталаңыз.",
-  "desktopInboxDescription": "Қолданба жаңалықтары, жаңартулар және жазылым хабарламалары."
+  "inboxHomeAlert": "{count, plural, one{Сізде жаңа хабарлама бар} other{Сізде {count} жаңа хабарлама бар}}"
 }

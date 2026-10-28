@@ -111,13 +111,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (wide) ...[
-                const SizedBox(height: 6),
-                Text(
-                  appL10n.desktopInboxDescription,
-                  style: TextStyle(fontSize: 13, color: colors.secondaryText),
-                ),
-              ],
             ],
           ),
         ),

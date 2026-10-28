@@ -2113,15 +2113,5 @@
         "type": "int"
       }
     }
-  },
-  "desktopStudyIntro": "Учите темы, решайте билеты и проверяйте себя на экзамене.",
-  "desktopExamDescription": "Проверьте знания в условиях настоящего экзамена.",
-  "desktopStartExam": "Начать экзамен",
-  "desktopPracticeTitle": "Практика",
-  "desktopTopicsDescription": "Разберитесь в правилах по отдельным темам.",
-  "desktopTicketsDescription": "Пройдите экзаменационные билеты в удобном темпе.",
-  "desktopMistakesDescription": "Вернитесь к вопросам, которые требуют внимания.",
-  "desktopFavoritesDescription": "Повторите вопросы, сохранённые в избранное.",
-  "desktopMarathonDescription": "Повторите всю базу вопросов в одном режиме.",
-  "desktopInboxDescription": "Новости приложения, обновления и сообщения о подписке."
+  }
 }
