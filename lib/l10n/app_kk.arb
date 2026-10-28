@@ -1092,6 +1092,14 @@
   },
   "premiumAccessTitle": "Премиум қолжетімділік",
   "premiumBannerSubtitleUnlimited": "Шексіз лента, жарыстар және көбірек ЖИ",
+  "premiumBannerValidUntil": "Жарамды\n{date} дейін",
+  "@premiumBannerValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "premiumBannerCardsLeft": "Тегін карточкалар қалды: {remaining} / {limit}",
   "@premiumBannerCardsLeft": {
     "placeholders": {

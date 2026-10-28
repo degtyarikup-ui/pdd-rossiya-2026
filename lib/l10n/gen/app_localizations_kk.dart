@@ -3437,6 +3437,11 @@ class AppLocalizationsKk extends AppLocalizations {
       'Шексіз лента, жарыстар және көбірек ЖИ';
 
   @override
+  String premiumBannerValidUntil(String date) {
+    return 'Жарамды\n$date дейін';
+  }
+
+  @override
   String premiumBannerCardsLeft(int remaining, int limit) {
     return 'Тегін карточкалар қалды: $remaining / $limit';
   }

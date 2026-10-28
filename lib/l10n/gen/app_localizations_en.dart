@@ -3434,6 +3434,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unlimited feed, drives and more AI';
 
   @override
+  String premiumBannerValidUntil(String date) {
+    return 'Valid\nuntil $date';
+  }
+
+  @override
   String premiumBannerCardsLeft(int remaining, int limit) {
     return 'Free cards left: $remaining of $limit';
   }

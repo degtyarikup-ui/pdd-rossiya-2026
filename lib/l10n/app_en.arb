@@ -1092,6 +1092,14 @@
   },
   "premiumAccessTitle": "Premium access",
   "premiumBannerSubtitleUnlimited": "Unlimited feed, drives and more AI",
+  "premiumBannerValidUntil": "Valid\nuntil {date}",
+  "@premiumBannerValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "premiumBannerCardsLeft": "Free cards left: {remaining} of {limit}",
   "@premiumBannerCardsLeft": {
     "placeholders": {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
@@ -18,6 +19,17 @@ class PremiumBannerCard extends ConsumerWidget {
     final l10n = context.l10n;
     final isPremium = ref.watch(isPremiumProvider);
     final foreground = isPremium ? AppColors.primaryText : AppColors.white;
+    final expiresAt = isPremium
+        ? ref.watch(premiumServiceProvider).expiresAt
+        : null;
+    final subtitleText = expiresAt == null
+        ? l10n.premiumBannerSubtitle
+        : l10n.premiumBannerValidUntil(
+            DateFormat(
+              'd MMMM yyyy, HH:mm',
+              l10n.localeName,
+            ).format(expiresAt.toLocal()),
+          );
 
     void openPremium() {
       if (isPremium) {
@@ -75,7 +87,7 @@ class PremiumBannerCard extends ConsumerWidget {
                     ],
                   );
                   final subtitle = Text(
-                    l10n.premiumBannerSubtitle,
+                    subtitleText,
                     style: TextStyle(
                       fontSize: width >= 480 ? 15 : 13,
                       fontWeight: FontWeight.w400,

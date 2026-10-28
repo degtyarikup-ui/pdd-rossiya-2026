@@ -5710,6 +5710,12 @@ abstract class AppLocalizations {
   /// **'Безлимитная лента, заезды и больше ИИ'**
   String get premiumBannerSubtitleUnlimited;
 
+  /// No description provided for @premiumBannerValidUntil.
+  ///
+  /// In ru, this message translates to:
+  /// **'Действует\nдо {date}'**
+  String premiumBannerValidUntil(String date);
+
   /// No description provided for @premiumBannerCardsLeft.
   ///
   /// In ru, this message translates to:

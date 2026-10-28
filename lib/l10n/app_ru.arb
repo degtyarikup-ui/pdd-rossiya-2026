@@ -1647,6 +1647,14 @@
   },
   "premiumAccessTitle": "Премиум доступ",
   "premiumBannerSubtitleUnlimited": "Безлимитная лента, заезды и больше ИИ",
+  "premiumBannerValidUntil": "Действует\nдо {date}",
+  "@premiumBannerValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "premiumBannerCardsLeft": "Осталось бесплатных карточек: {remaining} из {limit}",
   "@premiumBannerCardsLeft": {
     "placeholders": {

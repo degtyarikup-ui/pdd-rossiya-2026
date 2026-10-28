@@ -3446,6 +3446,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Безлимитная лента, заезды и больше ИИ';
 
   @override
+  String premiumBannerValidUntil(String date) {
+    return 'Действует\nдо $date';
+  }
+
+  @override
   String premiumBannerCardsLeft(int remaining, int limit) {
     return 'Осталось бесплатных карточек: $remaining из $limit';
   }
