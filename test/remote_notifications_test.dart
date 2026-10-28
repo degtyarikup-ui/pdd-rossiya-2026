@@ -272,4 +272,52 @@ void main() {
       expect(requested.toString(), isNot(contains('admin')));
     },
   );
+
+  test(
+    'a campaign also sent as a push shows no window or banner where the push arrived',
+    () async {
+      const bannerId = 'c069e042-5b7b-40a0-b15e-b80c4444ce1b';
+      final client = MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'config': config,
+            'messages': [
+              {...notice(), 'kind': 'popup', 'push': true},
+              {...notice(), 'id': bannerId, 'kind': 'banner', 'push': true},
+            ],
+          }),
+          200,
+        ),
+      );
+      final pushed = RemoteNotificationsService.forTesting(
+        client: client,
+        receivesPush: true,
+      );
+      await pushed.refresh();
+      expect(pushed.nextNotice, isNull);
+      expect(pushed.banners.value, isEmpty);
+      expect(pushed.inbox.value, hasLength(2), reason: 'still in the inbox');
+
+      SharedPreferences.setMockInitialValues({});
+      final withoutPush = RemoteNotificationsService.forTesting(
+        client: client,
+        receivesPush: false,
+      );
+      await withoutPush.refresh();
+      expect(withoutPush.nextNotice?.id, id);
+      expect(withoutPush.banners.value.single.id, bannerId);
+    },
+  );
+  test('a picture alone is a valid inbox entry', () {
+    final news = AppNotice.parse({
+      ...notice(),
+      'kind': 'news',
+      'title': '',
+      'body': '',
+      'layout': 'image',
+      'imageUrl': 'https://cdn.test/n.png',
+    })!;
+    expect(news.isNews && news.isImageOnly, isTrue);
+    expect(news.push, isFalse);
+  });
 }

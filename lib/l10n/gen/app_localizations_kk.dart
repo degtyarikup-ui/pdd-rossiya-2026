@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -4331,6 +4332,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get inboxOpen => 'Ашу';
+
+  @override
+  String get inboxPictureTitle => 'Жаңа хабарлама';
 
   @override
   String get trainingKeyboardHint =>

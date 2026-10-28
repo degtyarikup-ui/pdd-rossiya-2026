@@ -68,7 +68,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     switch (item.type) {
       case InboxItemType.news:
         final tap = item.notice?.tap;
-        if (tap != null) RemoteNotificationsService.instance.runTap(tap);
+        if (tap != null) {
+          final remote = RemoteNotificationsService.instance;
+          unawaited(remote.recordNoticeEvent(item.notice!.id, 'click'));
+          remote.runTap(tap);
+        }
       case InboxItemType.premiumEnded || InboxItemType.sbp:
         await PremiumPaywallSheet.show(context);
       case InboxItemType.update:
@@ -322,15 +326,18 @@ class _InboxCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: detail ? 21 : 15,
-                              fontWeight: FontWeight.w700,
-                              color: colors.primaryText,
-                              height: 1.3,
-                            ),
-                          ),
+                          // A picture-only message: the picture is the content.
+                          child: title.isEmpty
+                              ? const SizedBox.shrink()
+                              : Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: detail ? 21 : 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.primaryText,
+                                    height: 1.3,
+                                  ),
+                                ),
                         ),
                         if (fresh)
                           Container(
@@ -360,7 +367,8 @@ class _InboxCard extends StatelessWidget {
                       ),
                     ],
                     if (image.isNotEmpty) ...[
-                      const SizedBox(height: AppDimensions.spacingS),
+                      if (title.isNotEmpty || body.isNotEmpty)
+                        const SizedBox(height: AppDimensions.spacingS),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.network(
@@ -556,7 +564,7 @@ class _InboxPreview extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  data.title,
+                  data.title.isEmpty ? appL10n.inboxPictureTitle : data.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

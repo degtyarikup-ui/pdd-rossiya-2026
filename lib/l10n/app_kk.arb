@@ -1507,6 +1507,7 @@
   "inboxSbpBody": "Банк қолданбасындағы Жылдам төлемдер жүйесі арқылы төлем: картасыз әрі автоұзартусыз.",
   "inboxSbpAction": "Тарифті таңдау",
   "inboxOpen": "Ашу",
+  "inboxPictureTitle": "Жаңа хабарлама",
   "trainingKeyboardHint": "Сандар — жауап · Enter — растау немесе жалғастыру · ←/→ — сұрақтар · Esc — артқа",
   "examKeyboardHint": "Сандар — жауап · ←/→ — сұрақтар · Esc — артқа",
   "inboxHomeAlert": "{count, plural, one{Сізде жаңа хабарлама бар} other{Сізде {count} жаңа хабарлама бар}}"

@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -17,8 +18,8 @@ void main() {
         userProvider: () => null,
         metricsSecret: fixture,
       );
-      await offline.recordBannerEvent(id, 'view');
-      await offline.recordBannerEvent(id, 'click');
+      await offline.recordNoticeEvent(id, 'view');
+      await offline.recordNoticeEvent(id, 'click');
       final prefs = await SharedPreferences.getInstance();
       expect(
         jsonDecode(prefs.getString('notifications_ru_metrics_queue')!),
@@ -40,8 +41,8 @@ void main() {
       await online.flushMetrics();
       expect(batches.single.map((e) => e['event']), ['view', 'click']);
       expect(prefs.getString('notifications_ru_metrics_queue'), '[]');
-      await online.recordBannerEvent(id, 'view');
-      await online.recordBannerEvent(id, 'click');
+      await online.recordNoticeEvent(id, 'view');
+      await online.recordNoticeEvent(id, 'click');
       expect(batches, hasLength(1));
     },
   );

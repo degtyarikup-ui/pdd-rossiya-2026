@@ -64,6 +64,7 @@ class NotificationInboxService extends ChangeNotifier {
       _userId = (() => AuthService.instance.currentUser?.id),
       _sbpAvailable = _defaultSbpAvailable,
       _checkUpdate = (() => AppUpdateService.instance.check()),
+      _receivesPush = (() => RemoteNotificationsService.instance.receivesPush),
       _now = DateTime.now;
 
   @visibleForTesting
@@ -73,12 +74,14 @@ class NotificationInboxService extends ChangeNotifier {
     required String? Function() userId,
     Future<bool> Function()? sbpAvailable,
     Future<AppUpdateOffer?> Function()? checkUpdate,
+    bool Function()? receivesPush,
     DateTime Function()? now,
   }) : _premium = premium,
        _premiumUntil = premiumUntil,
        _userId = userId,
        _sbpAvailable = sbpAvailable ?? (() async => false),
        _checkUpdate = checkUpdate ?? (() async => null),
+       _receivesPush = receivesPush ?? (() => false),
        _now = now ?? DateTime.now;
 
   static final instance = NotificationInboxService._();
@@ -88,6 +91,7 @@ class NotificationInboxService extends ChangeNotifier {
   final String? Function() _userId;
   final Future<bool> Function() _sbpAvailable;
   final Future<AppUpdateOffer?> Function() _checkUpdate;
+  final bool Function() _receivesPush;
   final DateTime Function() _now;
 
   String get _prefix => 'inbox_${CountryConfig.current.code}_';
@@ -114,10 +118,37 @@ class NotificationInboxService extends ChangeNotifier {
   bool get hasUnread => unreadCount > 0;
 
   /// Unread entries the home screen reminds about: everything unread except
-  /// what was already there when the reminder was closed.
+  /// what was already there when the reminder was closed. Windows and banners
+  /// show themselves on the home screen, and a push this device received
+  /// already reached the lock screen: they keep only the bell's dot.
   int get homeAlertCount => _items
-      .where((i) => !_read.contains(i.id) && !_homeDismissed.contains(i.id))
+      .where(
+        (i) =>
+            !_read.contains(i.id) &&
+            !_homeDismissed.contains(i.id) &&
+            _remindsOnHome(i.notice),
+      )
       .length;
+
+  bool _remindsOnHome(AppNotice? n) =>
+      n == null || (n.isNews && !(n.push && _receivesPush()));
+
+  /// An admin message seen elsewhere (a banner on the home screen).
+  Future<void> markNoticeRead(String noticeId) async {
+    final id = 'news_$noticeId';
+    if (_prefs == null || _read.contains(id)) return;
+    _read.add(id);
+    await _saveRead();
+    notifyListeners();
+  }
+
+  Future<void> _saveRead() {
+    final list = _read.toList();
+    return _prefs!.setStringList(
+      '${_prefix}read',
+      list.length > _maxRead ? list.sublist(list.length - _maxRead) : list,
+    );
+  }
 
   /// Hides the home reminder until another entry arrives; the bell keeps
   /// its badge.
@@ -331,7 +362,8 @@ class NotificationInboxService extends ChangeNotifier {
           date: _firstSeen(_sbpId),
         ),
     ]..sort((a, b) => b.date.compareTo(a.date));
-    // A window already shown or a banner already closed counts as read.
+    // A window already shown, a banner already closed or a push opened
+    // counts as read.
     for (final n in _news) {
       if (_seenNews.contains(n.id)) _read.add('news_${n.id}');
     }
@@ -342,11 +374,7 @@ class NotificationInboxService extends ChangeNotifier {
   Future<void> markAllRead() async {
     if (_prefs == null || _items.every((i) => _read.contains(i.id))) return;
     _read.addAll(_items.map((i) => i.id));
-    final list = _read.toList();
-    await _prefs!.setStringList(
-      '${_prefix}read',
-      list.length > _maxRead ? list.sublist(list.length - _maxRead) : list,
-    );
+    await _saveRead();
     notifyListeners();
   }
 }

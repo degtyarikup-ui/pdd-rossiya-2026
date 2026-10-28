@@ -2,11 +2,14 @@ import 'package:pdd_app/presentation/screens/home/desktop_study_dashboard.dart';
 import 'package:pdd_app/presentation/widgets/notifications_bell_button.dart';
 import 'package:pdd_app/presentation/widgets/app_navigation_shell.dart';
 import 'package:pdd_app/core/layout/app_content_frame.dart';
+
 import 'dart:async';
+
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/data/services/store_review_link.dart';
 import 'package:pdd_app/presentation/screens/training/marathon_entry.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -239,9 +242,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           _currentIndex != 0) {
         return;
       }
+      unawaited(service.recordNoticeEvent(notice.id, 'view'));
       final accepted = await AppNoticeDialog.show(context, notice);
       final tap = notice.tap;
-      if (accepted && tap != null && mounted) await _runNoticeTap(tap);
+      if (accepted && tap != null && mounted) {
+        unawaited(service.recordNoticeEvent(notice.id, 'click'));
+        await _runNoticeTap(tap);
+      }
     } finally {
       _noticeOpen = false;
       _retryQueuedUpdate();
@@ -654,12 +661,16 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
               final banner = banners.first;
               return AppNoticeBannerSlot(
                 notice: banner,
-                onViewed: () => unawaited(
-                  RemoteNotificationsService.instance.recordBannerEvent(
-                    banner.id,
-                    'view',
-                  ),
-                ),
+                onViewed: () {
+                  unawaited(
+                    RemoteNotificationsService.instance.recordNoticeEvent(
+                      banner.id,
+                      'view',
+                    ),
+                  );
+                  // Seen on the home screen: no dot for it in the inbox.
+                  unawaited(_inbox.markNoticeRead(banner.id));
+                },
                 statistics: progressCard,
                 onDismiss: () => RemoteNotificationsService.instance
                     .dismissBanner(banner.id),
@@ -667,7 +678,7 @@ class _HomeTabState extends ConsumerState<_HomeTab> with RouteAware {
                   final tap = banner.tap;
                   if (tap != null) {
                     unawaited(
-                      RemoteNotificationsService.instance.recordBannerEvent(
+                      RemoteNotificationsService.instance.recordNoticeEvent(
                         banner.id,
                         'click',
                       ),

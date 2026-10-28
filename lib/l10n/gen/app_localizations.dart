@@ -7270,6 +7270,12 @@ abstract class AppLocalizations {
   /// **'Открыть'**
   String get inboxOpen;
 
+  /// Inbox list title of an admin message that is only a picture
+  ///
+  /// In ru, this message translates to:
+  /// **'Новое сообщение'**
+  String get inboxPictureTitle;
+
   /// No description provided for @trainingKeyboardHint.
   ///
   /// In ru, this message translates to:

@@ -1507,6 +1507,7 @@
   "inboxSbpBody": "Pay via the Faster Payments System in your bank app: no card and no auto-renewal.",
   "inboxSbpAction": "Choose a plan",
   "inboxOpen": "Open",
+  "inboxPictureTitle": "New message",
   "trainingKeyboardHint": "Numbers — answer · Enter — confirm or continue · ←/→ — questions · Esc — back",
   "examKeyboardHint": "Numbers — answer · ←/→ — questions · Esc — back",
   "inboxHomeAlert": "{count, plural, one{You have a new notification} other{You have {count} new notifications}}"

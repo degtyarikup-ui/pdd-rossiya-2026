@@ -66,6 +66,10 @@ class AppNotice {
   final bool button;
   final Color? accent;
   final NoticeAction action;
+
+  /// Also sent as a push. A device that receives pushes keeps it in the inbox
+  /// only: a window or banner would repeat what the lock screen showed.
+  final bool push;
   const AppNotice({
     required this.id,
     required this.title,
@@ -82,6 +86,7 @@ class AppNotice {
     this.button = true,
     this.accent,
     this.action = NoticeAction.none,
+    this.push = false,
   });
 
   bool get isBanner => kind == 'banner';
@@ -114,7 +119,6 @@ class AppNotice {
     final kind = const ['banner', 'news'].contains(value['kind'])
         ? value['kind'] as String
         : 'popup';
-    if (kind == 'news' && value['layout'] == 'image') return null;
     if (value['layout'] == 'image' && !image.startsWith('https://')) {
       return null;
     }
@@ -153,6 +157,7 @@ class AppNotice {
           ? NoticeAction.none
           : action,
       actionUrl: actionUrl,
+      push: value['push'] == true,
     );
   }
 }
@@ -164,15 +169,19 @@ class RemoteNotificationsService {
   RemoteNotificationsService._()
     : _metricsSecret = BackendConfig.notifierSecret,
       _client = http.Client(),
-      _userProvider = (() => AuthService.instance.currentUser);
+      _userProvider = (() => AuthService.instance.currentUser),
+      _receivesPushOverride = null;
   @visibleForTesting
   RemoteNotificationsService.forTesting({
     required http.Client client,
     UserProfile? Function()? userProvider,
     String metricsSecret = BackendConfig.notifierSecret,
+    bool? receivesPush,
   }) : _metricsSecret = metricsSecret,
        _client = client,
-       _userProvider = userProvider ?? (() => AuthService.instance.currentUser);
+       _userProvider = userProvider ?? (() => AuthService.instance.currentUser),
+       _receivesPushOverride = receivesPush;
+  final bool? _receivesPushOverride;
   final http.Client _client;
   final String _metricsSecret;
   final UserProfile? Function() _userProvider;
@@ -226,7 +235,15 @@ class RemoteNotificationsService {
   /// Runs a notice action from elsewhere in the app (the notification inbox).
   void runTap(NoticeTap tap) => _emitTap(tap);
 
-  /// Messages already shown as a window or dismissed as a banner.
+  /// Admin pushes reach this device: topics subscribed with permission.
+  bool get receivesPush => _receivesPushOverride ?? _subscriptionState == true;
+
+  /// A window or banner for this message on the home screen. Campaigns also
+  /// sent as a push show one only where the push could not arrive.
+  bool _showsOnHome(AppNotice m) => !m.isNews && !(m.push && receivesPush);
+
+  /// Messages already shown as a window, dismissed as a banner or opened
+  /// from a push.
   Set<String> get seenIds =>
       (_prefs?.getStringList('${_prefix}seen') ?? const []).toSet();
 
@@ -242,10 +259,21 @@ class RemoteNotificationsService {
   void _handleTapPayload(String payload) {
     try {
       final data = jsonDecode(payload);
-      if (data is Map) _emitTap(NoticeTap.fromData(data));
+      if (data is Map) _openedPush(data);
     } catch (_) {
       /* ignore malformed payloads */
     }
+  }
+
+  /// A push was tapped (system tray, foreground copy or cold start): the
+  /// message counts as read and is not shown again as a window or banner.
+  void _openedPush(Map<dynamic, dynamic> data) {
+    final id = data['campaignId'];
+    if (id is String && RegExp(r'^[a-f0-9-]{36}$').hasMatch(id)) {
+      unawaited(markSeen(id).then((_) => _publishBanners()));
+      unawaited(recordNoticeEvent(id, 'click'));
+    }
+    _emitTap(NoticeTap.fromData(data));
   }
 
   Future<void> init() async {
@@ -310,6 +338,7 @@ class RemoteNotificationsService {
               .where(
                 (m) =>
                     m.isBanner &&
+                    _showsOnHome(m) &&
                     m.expiresAt.isAfter(now) &&
                     !seen.contains(m.id),
               )
@@ -389,8 +418,9 @@ class RemoteNotificationsService {
     }
   }
 
-  /// Queue before sending; failed requests retry on the next foreground refresh.
-  Future<void> recordBannerEvent(String campaignId, String event) {
+  /// A view or tap of a banner, window, push or inbox entry. Queued before
+  /// sending; failed requests retry on the next foreground refresh.
+  Future<void> recordNoticeEvent(String campaignId, String event) {
     final account = _userProvider()?.id ?? '';
     return _queueMetrics(campaignId, event, account);
   }
@@ -490,7 +520,7 @@ class RemoteNotificationsService {
     final seen = _prefs?.getStringList('${_prefix}seen') ?? [];
     for (final message in _messages) {
       if (!message.isBanner &&
-          !message.isNews &&
+          _showsOnHome(message) &&
           message.expiresAt.isAfter(DateTime.now()) &&
           !seen.contains(message.id)) {
         return message;
@@ -590,10 +620,10 @@ class RemoteNotificationsService {
         }
       });
       _openedSub ??= FirebaseMessaging.onMessageOpenedApp.listen(
-        (message) => _emitTap(NoticeTap.fromData(message.data)),
+        (message) => _openedPush(message.data),
       );
       final initial = await FirebaseMessaging.instance.getInitialMessage();
-      if (initial != null) _emitTap(NoticeTap.fromData(initial.data));
+      if (initial != null) _openedPush(initial.data);
     }
     final messaging = FirebaseMessaging.instance;
     final topicState = PushTopicState(_prefs!, _prefix);
@@ -656,6 +686,7 @@ class RemoteNotificationsService {
       image: image,
       accent: AppNotice.parseColor(data['accent']),
       payload: jsonEncode({
+        'campaignId': data['campaignId'] ?? '',
         'action': data['action'] ?? 'none',
         'actionUrl': data['actionUrl'] ?? '',
       }),

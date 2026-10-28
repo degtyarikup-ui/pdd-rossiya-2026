@@ -17,20 +17,27 @@ class _State {
   DateTime now = DateTime(2026, 10, 28, 12);
 }
 
-NotificationInboxService _inbox(_State s) =>
+NotificationInboxService _inbox(_State s, {bool receivesPush = false}) =>
     NotificationInboxService.forTesting(
       premium: () => s.premium,
       premiumUntil: () => s.until,
       userId: () => s.user,
       sbpAvailable: () async => s.sbp,
+      receivesPush: () => receivesPush,
       now: () => s.now,
     );
 
-AppNotice _news(String id, {String kind = 'news', int day = 20}) => AppNotice(
+AppNotice _news(
+  String id, {
+  String kind = 'news',
+  int day = 20,
+  bool push = false,
+}) => AppNotice(
   id: id,
   title: 'Новые вопросы',
   body: 'Добавили разборы',
   kind: kind,
+  push: push,
   createdAt: DateTime(2026, 10, day),
   expiresAt: DateTime(2026, 12, 1),
 );
@@ -242,4 +249,33 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(InboxHomeAlert), findsNothing);
   });
+
+  test(
+    'one signal per message: a received push or a home window keeps only the dot',
+    () async {
+      final pushed = _inbox(_State(), receivesPush: true);
+      await pushed.init();
+      pushed.setNews([
+        _news(_id1, push: true),
+        _news(_id2, kind: 'banner', day: 22),
+      ], const {});
+      expect(pushed.unreadCount, 2);
+      expect(pushed.homeAlertCount, 0);
+
+      // Seen on the home screen: the dot goes away too.
+      await pushed.markNoticeRead(_id2);
+      expect(pushed.unreadCount, 1);
+
+      // Opening the push marks the campaign seen, which reads the entry.
+      pushed.setNews([_news(_id1, push: true)], const {_id1});
+      expect(pushed.hasUnread, isFalse);
+
+      // Where the push could not arrive, the home screen reminds instead.
+      SharedPreferences.setMockInitialValues({});
+      final silent = _inbox(_State());
+      await silent.init();
+      silent.setNews([_news(_id1, push: true)], const {});
+      expect(silent.homeAlertCount, 1);
+    },
+  );
 }
