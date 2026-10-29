@@ -5,7 +5,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/c6a558e6fbb120c93d55d8fd967dbe12.svg",
     "sourceSha256": "6e183cb798f868279d58c10672bd3728c2a82263d815d9715e55e0533d67ebf0",
-    "sha256": "6e183cb798f868279d58c10672bd3728c2a82263d815d9715e55e0533d67ebf0"
+    "sha256": "04709376d81499ca7daa8168b9f7c5f9451971f76d2c1c4f1886ee04bce76c38",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.2": {
     "title": "Железнодорожный переезд без шлагбаума",
@@ -13,7 +17,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/83f281bb018ce60e820c7f6be9c134dc.svg",
     "sourceSha256": "9746b865e3643d543d97db10805ff6db057d9eecb89e6c4b4b634776d462447e",
-    "sha256": "9746b865e3643d543d97db10805ff6db057d9eecb89e6c4b4b634776d462447e"
+    "sha256": "73b72b5f9de98667701ee4a67ee0480b4b3442c6c4c13c428e0e3fedc0f7f592",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.3.1": {
     "title": "Однопутная железная дорога",
@@ -21,7 +29,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/8231f34584e8aa44ccbb561cbaa35688.svg",
     "sourceSha256": "5e0e15c01c5ae472463d764205c0158f4e7d64799d965e106831901b36bd149f",
-    "sha256": "5e0e15c01c5ae472463d764205c0158f4e7d64799d965e106831901b36bd149f"
+    "sha256": "f8c882643c5a5afcfa075ac6bbdb04e046ad16bef9da9f99740f05dca5538743",
+    "face": {
+      "shape": 0,
+      "radius": 0
+    }
   },
   "1.3.2": {
     "title": "Многопутная железная дорога",
@@ -29,7 +41,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/87348b472014495db6c032af23df8d3a.svg",
     "sourceSha256": "e6783057b2be47f5c8fb76ea079c23f33294a2317fc48e5aa6c0406bc28b5bd8",
-    "sha256": "e6783057b2be47f5c8fb76ea079c23f33294a2317fc48e5aa6c0406bc28b5bd8"
+    "sha256": "116f5382f808b1575ec49e54102363a2a7832b5650cf5e1b367d318e921ecdd9",
+    "face": {
+      "shape": 0,
+      "radius": 0
+    }
   },
   "1.4.1": {
     "title": "Приближение к железнодорожному переезду",
@@ -37,7 +53,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_1_4_1.svg",
     "sourceSha256": "a107c19c35b565955b0f0ea3e8039b1321ca0a4ea1881e740b1b449ed3a30fcd",
-    "sha256": "a107c19c35b565955b0f0ea3e8039b1321ca0a4ea1881e740b1b449ed3a30fcd"
+    "sha256": "94d300316b9d4ccf9c8a008b22b559951e098fad522af3838e66766655ca06a2",
+    "face": {
+      "shape": 3,
+      "radius": 0.1525
+    }
   },
   "1.4.2": {
     "title": "Приближение к железнодорожному переезду",
@@ -45,7 +65,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_1_4_2.svg",
     "sourceSha256": "971f4d425cd1ba4e93de9eed945a3c05e7eae42fe47b8712211ff2570948acc3",
-    "sha256": "971f4d425cd1ba4e93de9eed945a3c05e7eae42fe47b8712211ff2570948acc3"
+    "sha256": "9d45562c570dc5ad3d54675ca9b90933d316cd4e6278755cb5a8fe2e9b048705",
+    "face": {
+      "shape": 3,
+      "radius": 0.1525
+    }
   },
   "1.4.3": {
     "title": "Приближение к железнодорожному переезду",
@@ -53,7 +77,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_1_4_3.svg",
     "sourceSha256": "93d86232a0516ac15590e20e75c7fcff4e4bcf7d4e44caabfa12186dbd82ccdb",
-    "sha256": "93d86232a0516ac15590e20e75c7fcff4e4bcf7d4e44caabfa12186dbd82ccdb"
+    "sha256": "391584fc7dd1fc5eed233f2c1a3017a5324f2b9e650a750f0e160c9edfbae560",
+    "face": {
+      "shape": 3,
+      "radius": 0.1525
+    }
   },
   "1.4.4": {
     "title": "Приближение к железнодорожному переезду",
@@ -61,7 +89,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_1_4_4.svg",
     "sourceSha256": "49267a7d63f89256a40d9b32f7690624b05f8b59ba074652e51b6463d6748c04",
-    "sha256": "49267a7d63f89256a40d9b32f7690624b05f8b59ba074652e51b6463d6748c04"
+    "sha256": "9c45090d999b90b060569ba6bb1231d2945e743dcd92ae727a793f9867360373",
+    "face": {
+      "shape": 3,
+      "radius": 0.1575
+    }
   },
   "1.4.5": {
     "title": "Приближение к железнодорожному переезду",
@@ -69,7 +101,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_1_4_5.svg",
     "sourceSha256": "afe3540343fdb8f61ecfb15bd3058ddabe97854dae74776a507f07966896c3cf",
-    "sha256": "afe3540343fdb8f61ecfb15bd3058ddabe97854dae74776a507f07966896c3cf"
+    "sha256": "d941b7d650311542f327d64f3c1e833327a22fb160316682d1a524e3e7131ca2",
+    "face": {
+      "shape": 3,
+      "radius": 0.1575
+    }
   },
   "1.4.6": {
     "title": "Приближение к железнодорожному переезду",
@@ -77,7 +113,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_1_4_6.svg",
     "sourceSha256": "0cb5f9ad64119835a863159bdf3f725433157a33440cfecca995d35dedf87b15",
-    "sha256": "0cb5f9ad64119835a863159bdf3f725433157a33440cfecca995d35dedf87b15"
+    "sha256": "ecf9723eb360b6e6668a1c38b1ca0e5fc54098b1904d9de7089539ecdcc63ef5",
+    "face": {
+      "shape": 3,
+      "radius": 0.1575
+    }
   },
   "1.5": {
     "title": "Пересечение с трамвайной линией",
@@ -85,7 +125,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/578c3540c391e5986467d497f63d7c09.svg",
     "sourceSha256": "3fce341adc5954f4a42f69c776ac5a5dd5ca31c45d5a7a08e54f9fb03d46ca87",
-    "sha256": "3fce341adc5954f4a42f69c776ac5a5dd5ca31c45d5a7a08e54f9fb03d46ca87"
+    "sha256": "5fcc6f0ddc0b4785ea088ffb9f6a28249c430971f0b8e0bc33ab9f66ff325650",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.6": {
     "title": "Пересечение равнозначных дорог",
@@ -93,7 +137,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/7cd691a55c5de8504d293ea19a606ab9.svg",
     "sourceSha256": "9bf43e1725cd6d20a54381585f1a3f30014e3d75693d42e0bf3b137ee3951b84",
-    "sha256": "9bf43e1725cd6d20a54381585f1a3f30014e3d75693d42e0bf3b137ee3951b84"
+    "sha256": "a6fe36de501c5616b3913518b7b7eb8a29cb77b6f05a50bcd7dfcbb871741b5e",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.7": {
     "title": "Пересечение с круговым движением",
@@ -101,7 +149,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/c61293b97e38afa2aad680c3e8d6af08.svg",
     "sourceSha256": "fb5bfc70754b3d996af9429de8f3ce129a826fc6a8caa4c5a508ed86165e17e4",
-    "sha256": "fb5bfc70754b3d996af9429de8f3ce129a826fc6a8caa4c5a508ed86165e17e4"
+    "sha256": "e10a561daa0e967e949b013d5d1f0e72ca156e03ddcbaa03683f5146379746d4",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.8": {
     "title": "Светофорное регулирование",
@@ -109,7 +161,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/58f102bf9902a200e8cca8144ad2284c.svg",
     "sourceSha256": "8e5f2010496a8e00da38e470250f65b58713882d48737d2c55e86e3a4d1a82e1",
-    "sha256": "8e5f2010496a8e00da38e470250f65b58713882d48737d2c55e86e3a4d1a82e1"
+    "sha256": "02ce01de39b2cacb549c94d114a0f426033f7f30444e1b1a5db1ca383bdc7ccc",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.9": {
     "title": "Разводной мост",
@@ -117,7 +173,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/b5a6748d791f08ae4af8f92e86f4a3ba.svg",
     "sourceSha256": "e48f888586940c1699009a80694cbad5d33e928e6b788f10ed0e8e668602f302",
-    "sha256": "e48f888586940c1699009a80694cbad5d33e928e6b788f10ed0e8e668602f302"
+    "sha256": "dabcf0739400870c4f844867e7fe56e6e4dd2cfb1289805b43a152867732d137",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.10": {
     "title": "Выезд на набережную",
@@ -125,7 +185,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/dded61f2ea9c8709c14a8134258c895a.svg",
     "sourceSha256": "0ff11467bf16f635261add1fadb78b8ffb31c7989c0442aa4f1338cee640a44d",
-    "sha256": "0ff11467bf16f635261add1fadb78b8ffb31c7989c0442aa4f1338cee640a44d"
+    "sha256": "2c8a2c98b1db117d30d1593cde7ff010b6eb883809d4d7e5ddd42565e13392ac",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.11.1": {
     "title": "Опасный поворот",
@@ -133,7 +197,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/7db7847fc21327e2a75716ee03ec23d5.svg",
     "sourceSha256": "9358f944053209ba6d4b7a5871ce3985c7d3ce6d26f271885a9f5654ae560644",
-    "sha256": "9358f944053209ba6d4b7a5871ce3985c7d3ce6d26f271885a9f5654ae560644"
+    "sha256": "1dd47d0c1736ccaac3224dfd151476534bad0c7ef72278911a39ab6e2089471f",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.11.2": {
     "title": "Опасный поворот",
@@ -141,7 +209,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/da41b8446c2150dd42e805bf2416b2f6.svg",
     "sourceSha256": "84284337dc3c64d2d3290d51515eb400df6eccbb495d10d3c73eed5346adf1c9",
-    "sha256": "84284337dc3c64d2d3290d51515eb400df6eccbb495d10d3c73eed5346adf1c9"
+    "sha256": "ca8cca9f2930b7f2e17d5ee0fb18cb22c170d429528a2029cd49b77fa8a9c9f0",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.12.1": {
     "title": "Опасные повороты",
@@ -149,7 +221,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/41c00d307234f7446b98e8e45df02687.svg",
     "sourceSha256": "4450e28adbea1142e8cb8cbb8f00367e0475c6c3b584ca779a023aeb0cd13376",
-    "sha256": "4450e28adbea1142e8cb8cbb8f00367e0475c6c3b584ca779a023aeb0cd13376"
+    "sha256": "48a68797f1e2b75a2973bd26f871a39b2785b363ab5db3e66230cc802b0ee69c",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.12.2": {
     "title": "Опасные повороты",
@@ -157,7 +233,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/d0c989fcc0302d8851bfa531de49537b.svg",
     "sourceSha256": "3ff1fa6b79436658a4b070f4a6f9100b98ac9974c214f1a0b818f09ac85808c7",
-    "sha256": "3ff1fa6b79436658a4b070f4a6f9100b98ac9974c214f1a0b818f09ac85808c7"
+    "sha256": "c18afd2a6e4cacdf2ca5bf3fb56349ee50b0bec74910f473a7ced52b937c2b81",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.13": {
     "title": "Крутой спуск",
@@ -165,7 +245,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/63db8254d7e4237477dc2867e9c69d9c.svg",
     "sourceSha256": "b0933c07d889e9160e2be2495927f22f5d5368726e19f639509e7468c1f5788f",
-    "sha256": "b0933c07d889e9160e2be2495927f22f5d5368726e19f639509e7468c1f5788f"
+    "sha256": "4ab27b3ca2ebe12c1658ce02dd30e04b57f0618a15e9fd6f4c365ee62b088deb",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.14": {
     "title": "Крутой подъем",
@@ -173,7 +257,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/275c24b735cf456a411fa6a6bf30b8e9.svg",
     "sourceSha256": "ab36f32ef249a6da249fd768660811bf7b0268e0e021c529a2aedf634640757a",
-    "sha256": "ab36f32ef249a6da249fd768660811bf7b0268e0e021c529a2aedf634640757a"
+    "sha256": "3119b3bc7fb4c75dc7181824468b9d8b797e6f7a69895ed0cbe76b589530023e",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.15": {
     "title": "Скользкая дорога",
@@ -181,7 +269,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/66e7d4e5770deff0d3bdd165cdafdefd.svg",
     "sourceSha256": "db79fbd6afe7fd8f654859032cc738e530f1c7ea21d291bc31d1edb281eb0d6e",
-    "sha256": "db79fbd6afe7fd8f654859032cc738e530f1c7ea21d291bc31d1edb281eb0d6e"
+    "sha256": "d67c7cf58b2966bb70a5915858812b080f9975dbb2004307078e9e294d0384c5",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.16": {
     "title": "Неровная дорога",
@@ -189,7 +281,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/343a661fe1667d501e436fbc1f655c96.svg",
     "sourceSha256": "f47a0cd2afe9450569fedd25468104d981774c53d1e16e042e22ff9c1e69add9",
-    "sha256": "f47a0cd2afe9450569fedd25468104d981774c53d1e16e042e22ff9c1e69add9"
+    "sha256": "9677f5dc3c27761e0a7b656b3da380b92eefd2fda8fdf051ee71a193f78b4734",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.17": {
     "title": "Искусственная неровность",
@@ -197,7 +293,11 @@
     "folkName": "лежачий полицейский",
     "source": "assets/countries/ru/images/signs/f9f9d2a86210a49f47bdeec985d98e80.svg",
     "sourceSha256": "4d344e6d7216dc31d94194c5c8f78d20ea4aa911df91d7d260005015d8e7ec33",
-    "sha256": "4d344e6d7216dc31d94194c5c8f78d20ea4aa911df91d7d260005015d8e7ec33"
+    "sha256": "2736a0c2e00010910e29a5aa1fab328106eaf9d8cd7ebafaa522b841d11c4c9c",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.18": {
     "title": "Выброс гравия",
@@ -205,7 +305,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/2017ed2db11d6dce6d4c3a6e5cf1b297.svg",
     "sourceSha256": "cc04c8df22452fb46f4bd9e9e27393dca3ac5dcfbe4c9bea08a10e8f504f43c0",
-    "sha256": "cc04c8df22452fb46f4bd9e9e27393dca3ac5dcfbe4c9bea08a10e8f504f43c0"
+    "sha256": "abf45fda3abd37e4fa468a50bbc16a108d46accd096e40c95d3de2aea102173e",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.19": {
     "title": "Опасная обочина",
@@ -213,7 +317,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/e200c6f0253fb1f71dae7b0cd0800557.svg",
     "sourceSha256": "f65ec3b9d0adaa0831370b65a91211d21e2b9ab238bbba3069be49cfef0ac973",
-    "sha256": "f65ec3b9d0adaa0831370b65a91211d21e2b9ab238bbba3069be49cfef0ac973"
+    "sha256": "530c3f14e679a4225a0b8a558e287efb7b867cf866489255ac4ed60b62198368",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.20.1": {
     "title": "Сужение дороги",
@@ -221,7 +329,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/b3ade4e8a06ca1f7f773b215d32a2315.svg",
     "sourceSha256": "39822822810a35b3e9ce6185808ed54eda0396338d2866e909dab686ab6301d0",
-    "sha256": "39822822810a35b3e9ce6185808ed54eda0396338d2866e909dab686ab6301d0"
+    "sha256": "05b851363875b30262b80f96137173bbee95d9324b7821e3edd8c8030267eb92",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.20.2": {
     "title": "Сужение дороги",
@@ -229,7 +341,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/4b729689429a923d1634207bfd4650b3.svg",
     "sourceSha256": "1b119f15040ea11e2a17f571cfe72a8c190acd94bfd9ec951c203bb32308c507",
-    "sha256": "1b119f15040ea11e2a17f571cfe72a8c190acd94bfd9ec951c203bb32308c507"
+    "sha256": "66198f4649b5456b9554ceaa94bf3b372626b8acc6fc3b0c9b6d97942cb5291c",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.20.3": {
     "title": "Сужение дороги",
@@ -237,7 +353,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/4695660c0dd17921622280dbf727b87e.svg",
     "sourceSha256": "e573ed10f7b4d52b1d6a35f9d9d64e7c17014bd6c46da014ebf5ae8674664c75",
-    "sha256": "e573ed10f7b4d52b1d6a35f9d9d64e7c17014bd6c46da014ebf5ae8674664c75"
+    "sha256": "c160fc76013db9903c79b081211425273f1b1ce4aa535240facc695fe1cee133",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.21": {
     "title": "Двустороннее движение",
@@ -245,7 +365,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f40f71b414882df64daced1a6afad2ba.svg",
     "sourceSha256": "cc613ec3795aa36e475590bad02f2a949d229eb3819a950cb2bedb1124bd6116",
-    "sha256": "cc613ec3795aa36e475590bad02f2a949d229eb3819a950cb2bedb1124bd6116"
+    "sha256": "0ab10b9acbff3da8f55f0cd54905511264295c60f4b7e2a3e466a135536fd88d",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.22": {
     "title": "Пешеходный переход",
@@ -253,7 +377,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/982792bfd504ae48ccf1ac4e42a0767e.svg",
     "sourceSha256": "fdb54e6664f81a71fed767dd902f4d29681d27ea9a2bf9c0349458414fcc4ec2",
-    "sha256": "fdb54e6664f81a71fed767dd902f4d29681d27ea9a2bf9c0349458414fcc4ec2"
+    "sha256": "5dc4c636ba593f7d0e6798b614ab48e8d0cb7d5da037373a87d60e0a532f0002",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.23": {
     "title": "Дети",
@@ -261,7 +389,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/374c5f0dc69341c672ac8d8744d9b951.svg",
     "sourceSha256": "7f58c87a88cb50d782b89bf5de5bbeba73d27f856eea549b625e29e16ed4747b",
-    "sha256": "7f58c87a88cb50d782b89bf5de5bbeba73d27f856eea549b625e29e16ed4747b"
+    "sha256": "21414e161445b1be15539782dbf37cd3f98a33726b576eb6131a5b38ddfa9123",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.24": {
     "title": "Пересечение с велосипедной дорожкой или велопешеходной дорожкой",
@@ -269,7 +401,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/e0f5a506bfd9f817b50182d6bfaeb66f.svg",
     "sourceSha256": "d48c8161a9dc349433cc618a4d4cddacd034be7e19732cc39528bb023625350e",
-    "sha256": "d48c8161a9dc349433cc618a4d4cddacd034be7e19732cc39528bb023625350e"
+    "sha256": "546be70ccb1af979cfc0561ea6f197413c7c4e7af06e29e22dcaf145889881e0",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.25": {
     "title": "Дорожные работы",
@@ -277,7 +413,11 @@
     "folkName": "мужик с лопатой",
     "source": "assets/countries/ru/images/signs/24d6164e6c97727edb3cb183e7c68325.svg",
     "sourceSha256": "82f1f7d04a2e554c6bc012b64d936fe790268586dad6bb2ec42245198a84090f",
-    "sha256": "82f1f7d04a2e554c6bc012b64d936fe790268586dad6bb2ec42245198a84090f"
+    "sha256": "8436e400ce35180a7d9472eacebbcf79a15eeb3842f51104ace38e3b5069ee5e",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.26": {
     "title": "Перегон скота",
@@ -285,7 +425,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/5de8d56a79f4014a86621419b78ce1cc.svg",
     "sourceSha256": "37041db0d3001069bf0d0c7fb13b4f0a334314559b10da50968d82f4ba1a3d5c",
-    "sha256": "37041db0d3001069bf0d0c7fb13b4f0a334314559b10da50968d82f4ba1a3d5c"
+    "sha256": "ebbc7626553940ebc4244085d49c6e060ad1b1fa4aa253e1ccb4eb727a01b7b0",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.27": {
     "title": "Дикие животные",
@@ -293,7 +437,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/0b31080392cdcf8efbd1e97068cd169d.svg",
     "sourceSha256": "6a6f5db52bae504c72feb54b9b0e214c3062d596b8beca411e2b54d8226f932a",
-    "sha256": "6a6f5db52bae504c72feb54b9b0e214c3062d596b8beca411e2b54d8226f932a"
+    "sha256": "57f2177498990424dfc8b7edc2d762e74635c46971f2e5563e52cdb313e5111b",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.28": {
     "title": "Падение камней",
@@ -301,7 +449,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/03b0085e9ae96b6c86050ae0f2cb9031.svg",
     "sourceSha256": "39c16c7a5b3f10eaf034a6b899698f0cf5a05c0cfb86b1aa1832685e6a88e4b4",
-    "sha256": "39c16c7a5b3f10eaf034a6b899698f0cf5a05c0cfb86b1aa1832685e6a88e4b4"
+    "sha256": "98d17689f3bb77a72e8d38a2c0c05ecc4425e4447c94ef6455606fb434981928",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.29": {
     "title": "Боковой ветер",
@@ -309,7 +461,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/7ea6b707c222dd7cb4e7fbdb7660ec75.svg",
     "sourceSha256": "d1d10fdf4d6e1bdd6b206e4adca355133c44a658e88e2af789de38b496118a9b",
-    "sha256": "d1d10fdf4d6e1bdd6b206e4adca355133c44a658e88e2af789de38b496118a9b"
+    "sha256": "cc899ac9e80632b4faed6315530a2e8e31874a108ead68b61cafdae426798e0a",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.30": {
     "title": "Низколетящие самолеты",
@@ -317,7 +473,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/0bc0c9ffdc942036e637d03d9fa663bd.svg",
     "sourceSha256": "764d0ec4af775807db51490d320ddce2fed54ef89ce5cd0bf4769d6a413c7a31",
-    "sha256": "764d0ec4af775807db51490d320ddce2fed54ef89ce5cd0bf4769d6a413c7a31"
+    "sha256": "09c10f9acb16ddf16c0253ee49dae3da3779ee7b600b81fed787cd5006405c0e",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.31": {
     "title": "Тоннель",
@@ -325,7 +485,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/a80f78b51626464d56817f3630ae9f02.svg",
     "sourceSha256": "f188b6d142342518351ffd70c2a5f16eb154cf4e6adf148422022158a366ff22",
-    "sha256": "f188b6d142342518351ffd70c2a5f16eb154cf4e6adf148422022158a366ff22"
+    "sha256": "b439d02e432d4557d7acc10e9ac8c8884a1059eafe67b4caf6b8747958477582",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.32": {
     "title": "Затор",
@@ -333,7 +497,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/e0832c9f4c9d131bdd5fb542f6be8a2a.svg",
     "sourceSha256": "6ad0b215d90857da198946c30db58a2310592b74a92f6a7cc28df9df46ea2f27",
-    "sha256": "6ad0b215d90857da198946c30db58a2310592b74a92f6a7cc28df9df46ea2f27"
+    "sha256": "bb00f5fadae1bed188821757d7b20a605a6ccf90166771775eef3f5138ec3261",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.33": {
     "title": "Прочие опасности",
@@ -341,7 +509,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/95c20b7894f5ff2995481ad277f6d392.svg",
     "sourceSha256": "27cf48e9c9c366e68ce0701d0cd905d0b08437f50c1f07054c94d39773fbb7d9",
-    "sha256": "27cf48e9c9c366e68ce0701d0cd905d0b08437f50c1f07054c94d39773fbb7d9"
+    "sha256": "85bf77ae210982256d733207ed23788fe12dd5dabf5d351aa5e8434cb1f3acd8",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "1.34.1": {
     "title": "Направление поворота",
@@ -349,7 +521,11 @@
     "folkName": "ёлочка",
     "source": "assets/countries/ru/images/signs/2ff8dce0350fa3d7117b50e733b69862.svg",
     "sourceSha256": "0ccac1933e3a1588e7cc58eabef5385c2016e3391cf24358ab008bacca7adead",
-    "sha256": "0ccac1933e3a1588e7cc58eabef5385c2016e3391cf24358ab008bacca7adead"
+    "sha256": "1a14a037dd0fa14b1ad9223a0d327e1449a197657a134259e5377a5e962d3470",
+    "face": {
+      "shape": 3,
+      "radius": 0.0
+    }
   },
   "1.34.2": {
     "title": "Направление поворота",
@@ -357,7 +533,11 @@
     "folkName": "ёлочка",
     "source": "assets/countries/ru/images/signs/3bc768cc062609ff2edf0d08e9c851ba.svg",
     "sourceSha256": "65adba8e67f47e3faaff82f5ddaa97ff68e3c5ff084401f92e510b0733a0f54d",
-    "sha256": "65adba8e67f47e3faaff82f5ddaa97ff68e3c5ff084401f92e510b0733a0f54d"
+    "sha256": "e37bda31bf0bd9bd3c93cdf1dbdda66e1fad7b332ca3c115e2636ffd8fa25a5f",
+    "face": {
+      "shape": 3,
+      "radius": 0.0
+    }
   },
   "1.34.3": {
     "title": "Направление поворота",
@@ -365,7 +545,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/cb078ec1df8058cfe80be2ebd4a44c53.svg",
     "sourceSha256": "9f26e9966de2daaa2bc5734e2081185a11966055c3e12d23d24fc9332456f35e",
-    "sha256": "9f26e9966de2daaa2bc5734e2081185a11966055c3e12d23d24fc9332456f35e"
+    "sha256": "4e5fd0da134decfe26918e4a0df56d1c694911b834ed6b8fb2446d810be189a0",
+    "face": {
+      "shape": 3,
+      "radius": 0.0
+    }
   },
   "1.35": {
     "title": "Участок перекрестка",
@@ -373,7 +557,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/fbf4a078f330f3988095dd96e5a76041.svg",
     "sourceSha256": "5158a1154ba2f7ca27528abde63e63fe98b30434e78861a658f45007d9ce2c4d",
-    "sha256": "5158a1154ba2f7ca27528abde63e63fe98b30434e78861a658f45007d9ce2c4d"
+    "sha256": "902ed3ef012bf812cf2128efbc4deeb4dbd6e30ae3456813d93e7af70b2a3f80",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "2.1": {
     "title": "Главная дорога",
@@ -381,7 +569,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/c56c59646b12f56cc259a0c240446ddb.svg",
     "sourceSha256": "e9076dd4bbeec6f17a5771074e9ecdbb6171039543b45727a2b0e018c2cd751c",
-    "sha256": "e9076dd4bbeec6f17a5771074e9ecdbb6171039543b45727a2b0e018c2cd751c"
+    "sha256": "e9c21c2ad00836698e51b156476941a40c67b9422a7cad1d50b910ffe02a3e58",
+    "face": {
+      "shape": 2,
+      "radius": 0.1125
+    }
   },
   "2.2": {
     "title": "Конец главной дороги",
@@ -389,7 +581,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/aeaa9658d323d0cbe76781e44f883aba.svg",
     "sourceSha256": "cdace70b1acb360c971ba39a6e0fd180699c9b35e7da06174f0fb6689f86e754",
-    "sha256": "cdace70b1acb360c971ba39a6e0fd180699c9b35e7da06174f0fb6689f86e754"
+    "sha256": "2a73c215c1028a70e98cccf651b8103ed1e482871ac57b47cb31e551580feedf",
+    "face": {
+      "shape": 2,
+      "radius": 0.1125
+    }
   },
   "2.3.1": {
     "title": "Пересечение со второстепенной дорогой",
@@ -397,7 +593,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/600a61ad31228e1f8b01ace9238ab436.svg",
     "sourceSha256": "0fb81a462abb0caef0e5073cb4b297a2fa341542a177390a3bc6526ac5cc50b8",
-    "sha256": "0fb81a462abb0caef0e5073cb4b297a2fa341542a177390a3bc6526ac5cc50b8"
+    "sha256": "3e4b56961b15dd81ae1013e4062bd7c4ea46d942f0d9c81872652b254d5af61c",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "2.3.2": {
     "title": "Примыкание второстепенной дороги",
@@ -405,13 +605,17 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
     "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "sha256": "8749c67e3e94d329824d48e4052e19909c7d3758198102cd2f5deee69c37b536",
     "panel": [
       0,
       0,
       100,
       116
-    ]
+    ],
+    "sha256": "6ba0be839c5c12773d72e814f62127e08951a557049049f566ab16b20420d48b",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "2.3.3": {
     "title": "Примыкание второстепенной дороги",
@@ -419,13 +623,17 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
     "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "sha256": "6ca42d043263ed72af3c8db66b716704abf9c6b1374d89b7c00ae3afb8b33844",
     "panel": [
       100,
       0,
       100,
       116
-    ]
+    ],
+    "sha256": "b1432ef2703ed33ed63db0b44982195c1cc49d525a1b822508676c8fcc4b4f03",
+    "face": {
+      "shape": 4,
+      "radius": 0.155
+    }
   },
   "2.3.4": {
     "title": "Примыкание второстепенной дороги",
@@ -433,13 +641,17 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
     "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "sha256": "84b33ebe0050872eb0f96d4512f7bf539e30322ad47e7407c3a333d6109ada1b",
     "panel": [
       0,
       116,
       100,
       116
-    ]
+    ],
+    "sha256": "a84fc4ad55c2760a33d9254713e36f15c864982ac2f6075a565abcfa2ac3e336",
+    "face": {
+      "shape": 4,
+      "radius": 0.1575
+    }
   },
   "2.3.5": {
     "title": "Примыкание второстепенной дороги",
@@ -447,13 +659,17 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
     "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "sha256": "963a89cbafae0055f5e66f68abf5304a42115539483984bb9b6403cfde30ea97",
     "panel": [
       100,
       116,
       100,
       116
-    ]
+    ],
+    "sha256": "f1428a08af6dc95f25f791972ad63a88187a46c583497cbc526145ddc3dc5ab7",
+    "face": {
+      "shape": 4,
+      "radius": 0.1575
+    }
   },
   "2.3.6": {
     "title": "Примыкание второстепенной дороги",
@@ -461,13 +677,17 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
     "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "sha256": "8581d00042afd1d29521e754bf31288b4f331cd613ec9531c3ed11fad42ec404",
     "panel": [
       0,
       232,
       100,
       116
-    ]
+    ],
+    "sha256": "d8fded87521b8d40ce0e6ce6387f578bd877f2d15fd519b508c4574c4769e098",
+    "face": {
+      "shape": 4,
+      "radius": 0.1575
+    }
   },
   "2.3.7": {
     "title": "Примыкание второстепенной дороги",
@@ -475,13 +695,17 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6e7cae8e6d057533a64b2c3f4a766e85.svg",
     "sourceSha256": "cc2d106b278e5d3f1e849718e661a4d6f6b1a4409d4b79fbd7a82ab13713cee2",
-    "sha256": "14aec9cc28815fef241158e4760a1c0eebf6f2d8c4c02cf58bcbdb4825af3e25",
     "panel": [
       100,
       232,
       100,
       116
-    ]
+    ],
+    "sha256": "5c256c6b1342de83f57aef53c2174e0741b1aa827b8b46e95aedc9157e061d0e",
+    "face": {
+      "shape": 4,
+      "radius": 0.1575
+    }
   },
   "2.4": {
     "title": "Уступите дорогу",
@@ -489,7 +713,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/cc8922782f1e3262ac4dfbb3fbe8cbe6.svg",
     "sourceSha256": "dff8540fef07134852b27e1fa6cffdd2b63e1075b0d6ce8419df784848e87987",
-    "sha256": "dff8540fef07134852b27e1fa6cffdd2b63e1075b0d6ce8419df784848e87987"
+    "sha256": "0a8e5fe5a4cb8f73b3397260daf7cd946a6eac1e53a657be1eb9143e4a8d0114",
+    "face": {
+      "shape": 5,
+      "radius": 0.1775
+    }
   },
   "2.5": {
     "title": "Движение без остановки запрещено",
@@ -497,7 +725,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/2bc0f81810c66f9af28b7a7ba506aa56.svg",
     "sourceSha256": "0bd6da474c35475bce5c7a2ef93767f32f0c9f9a8874835e155fbedbf230b8aa",
-    "sha256": "0bd6da474c35475bce5c7a2ef93767f32f0c9f9a8874835e155fbedbf230b8aa"
+    "sha256": "fbc17c341b3c3958b8a7ecb0d5e4cabddc8114443ce0a32cfa58e3ee85c20935",
+    "face": {
+      "shape": 6,
+      "radius": 0.0
+    }
   },
   "2.6": {
     "title": "Преимущество встречного движения",
@@ -505,7 +737,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/59f11961eb2e50d67ff5840cbc67d810.svg",
     "sourceSha256": "c814a5b5e8767f3c0aff7fe121b1db701cd8146a0d6b61d2ab17c9206b0ed35b",
-    "sha256": "c814a5b5e8767f3c0aff7fe121b1db701cd8146a0d6b61d2ab17c9206b0ed35b"
+    "sha256": "e9043aaa7516cbdfe72827535bebb3e67e3edf19c172715d20479f02bece581c",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "2.7": {
     "title": "Преимущество перед встречным движением",
@@ -513,7 +749,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ba51fb25f54b4902f2343928fbfbadc4.svg",
     "sourceSha256": "1bfb838668dff1894aa340dfb88de0780c51cbfe8ae66982d74bc3241baa0609",
-    "sha256": "1bfb838668dff1894aa340dfb88de0780c51cbfe8ae66982d74bc3241baa0609"
+    "sha256": "3fb9fabfab8fd2c3e5276e08ebdcb891fa366b73cd27efd1e45cb5756f1f8179",
+    "face": {
+      "shape": 3,
+      "radius": 0.13
+    }
   },
   "3.1": {
     "title": "Въезд запрещен",
@@ -521,7 +761,11 @@
     "folkName": "кирпич",
     "source": "assets/countries/ru/images/signs/9f77764c15a21428b8e6e7f5c75936e2.svg",
     "sourceSha256": "0accb2fbb52addc399db92f471951fe2d91bab21fa0ed6ba87651bcfa6803462",
-    "sha256": "0accb2fbb52addc399db92f471951fe2d91bab21fa0ed6ba87651bcfa6803462"
+    "sha256": "730062127d50e8489f4ded48db81eed8fa1a99bcd78e26805e40852ac442ab26",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.2": {
     "title": "Движение запрещено",
@@ -529,7 +773,11 @@
     "folkName": "бублик",
     "source": "assets/countries/ru/images/signs/34cb3c56f57e675aa834aa440b1cb7b0.svg",
     "sourceSha256": "9508b06f8b48cd410c736724f57fd2b7add5aad3668e1b9aea8e336b738e7934",
-    "sha256": "9508b06f8b48cd410c736724f57fd2b7add5aad3668e1b9aea8e336b738e7934"
+    "sha256": "920ba2a05c1168c54260fbae0cff1a9560cf6ffb776571824b610aeee8b1f2ee",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.3": {
     "title": "Движение механических транспортных средств запрещено",
@@ -537,7 +785,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/08c6ccd7e2a83f22760e6b819fc6903e.svg",
     "sourceSha256": "244479248ebaad6deed70e7f45abff11715a0a46f59e1ea49fcee6ad90a0f30a",
-    "sha256": "244479248ebaad6deed70e7f45abff11715a0a46f59e1ea49fcee6ad90a0f30a"
+    "sha256": "0c88366648e77a9239c1f7544ec7404519d7b3d186d5835f42689845128cd6ef",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.4": {
     "title": "Движение грузовых автомобилей запрещено",
@@ -545,7 +797,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/914fd360991ffa9b61f253758e04e16b.svg",
     "sourceSha256": "aba0de3da0a67d9bbe6a32980d6d6a3db55f392a5c8a647e3ea2e4435235ffbe",
-    "sha256": "aba0de3da0a67d9bbe6a32980d6d6a3db55f392a5c8a647e3ea2e4435235ffbe"
+    "sha256": "e023bda3a1f48e91e11ec7407d237b1137a3f3c21546be138a761acbcdad9f79",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.5": {
     "title": "Движение мотоциклов запрещено",
@@ -553,7 +809,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/9aaa18f58f694795cddf7e13ddcc4fbf.svg",
     "sourceSha256": "c49b59b6f94af891a8363453addf573a6b782231eccaf109b9e5f0c65dc35139",
-    "sha256": "c49b59b6f94af891a8363453addf573a6b782231eccaf109b9e5f0c65dc35139"
+    "sha256": "1dcda2cc4e0a736a2b87c6fa6ae3ccba8ce287628fc02a0dac337cffae74d0c3",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.6": {
     "title": "Движение тракторов запрещено",
@@ -561,7 +821,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/54ebf28e98a87237762c1e6cb0f1b7ce.svg",
     "sourceSha256": "224df6a3c7a3cf982ea37547e44d1e0a6917c49d453039a44b72d7ddcd3d5819",
-    "sha256": "224df6a3c7a3cf982ea37547e44d1e0a6917c49d453039a44b72d7ddcd3d5819"
+    "sha256": "4fc20bf10a241f6081915d1e4fd89887a5a69da3ddca713ba1102fb40df651ab",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.7": {
     "title": "Движение с прицепом запрещено",
@@ -569,7 +833,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/75d9cc53558cb11ba3977cd3a3d0ab19.svg",
     "sourceSha256": "d7db52c086d5f8160f228ab696dddcf30f1948d02e66609e221c4cffc5ce0e27",
-    "sha256": "d7db52c086d5f8160f228ab696dddcf30f1948d02e66609e221c4cffc5ce0e27"
+    "sha256": "547d71752679c46e9802c8aad859137842297d0b6491ccdb245f1a712a34622a",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.8": {
     "title": "Движение гужевых повозок запрещено",
@@ -577,7 +845,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ef60d8138f893003bed1dba33e17c03e.svg",
     "sourceSha256": "22eadc094a054f7ab109adb2709b64be0e4e5637936c33e09d0fc5d69d4d7666",
-    "sha256": "22eadc094a054f7ab109adb2709b64be0e4e5637936c33e09d0fc5d69d4d7666"
+    "sha256": "7966a69fa5b699eeba2ff02285d6c24c3ff2e503aa087b025f266e3a032733be",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.9": {
     "title": "Движение на велосипедах запрещено",
@@ -585,7 +857,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/bb075c4b76fd011bc5fdd18c641d15ac.svg",
     "sourceSha256": "c3c1dac2633801a6b7a18acddf904d4ef5ab2d6d681edbc24859e6604bb201db",
-    "sha256": "c3c1dac2633801a6b7a18acddf904d4ef5ab2d6d681edbc24859e6604bb201db"
+    "sha256": "4cfe474056e63cf1c9b7e66fcc1bd7904867d1ffc143d40e5079302f6918474d",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.10": {
     "title": "Движение пешеходов запрещено",
@@ -593,7 +869,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/5e10d01ece04b20a6053422accd40715.svg",
     "sourceSha256": "cda94fcd2a2bf62f3a3f0a0a57dd22c4f46b2c26f725591bfa7e3f53cddda093",
-    "sha256": "cda94fcd2a2bf62f3a3f0a0a57dd22c4f46b2c26f725591bfa7e3f53cddda093"
+    "sha256": "51762a888a349e3b111ec196686e6aa2b5b0316f1469517fd1478cafc057e9fb",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.11": {
     "title": "Ограничение массы",
@@ -601,7 +881,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/068747edfecce150c32c884f33993fe5.svg",
     "sourceSha256": "8698be8c1ab859156c772969ff612176e787b0fcd10bc4544dd168cf3b9683dd",
-    "sha256": "8698be8c1ab859156c772969ff612176e787b0fcd10bc4544dd168cf3b9683dd"
+    "sha256": "54c25d489c7996a43fde87dad014b80757351e7af111cea31c1db65b859ef65f",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.12": {
     "title": "Ограничение массы, приходящейся на ось транспортного средства",
@@ -609,7 +893,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/65257ca9ce6d79c1c0310e738a2c1ab4.svg",
     "sourceSha256": "ba9390fe76c713acd94f3edd1a857c2cfa1a6b9d7ab5707cd40ec568cdf5e276",
-    "sha256": "ba9390fe76c713acd94f3edd1a857c2cfa1a6b9d7ab5707cd40ec568cdf5e276"
+    "sha256": "caf714bd1aaf5e2aae16b429a6b826be9c2d12bc4bf0a85a67a09421aeda3bdd",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.13": {
     "title": "Ограничение высоты",
@@ -617,7 +905,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/d414912394ad7ce94a1b5231a48461ae.svg",
     "sourceSha256": "d9a2eafb55ccb0410db4b252fedb9d1f398dde5b1daf3e86ec645777d14b89b6",
-    "sha256": "d9a2eafb55ccb0410db4b252fedb9d1f398dde5b1daf3e86ec645777d14b89b6"
+    "sha256": "ae7f855e164e211ed4f0682df81954acdd18f7d870083745aba4ab023b15418e",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.14": {
     "title": "Ограничение ширины",
@@ -625,7 +917,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ddcc2db01c1573b8b9f1d2a69983a4c2.svg",
     "sourceSha256": "5ff9aec87ecc7e11130f883f945d3e00f278ea7dde1160c1a668e5ed8c37ed24",
-    "sha256": "5ff9aec87ecc7e11130f883f945d3e00f278ea7dde1160c1a668e5ed8c37ed24"
+    "sha256": "6d4b85822939f07d14552b5259be045dea555c6177b7c0d3a99523e8eab8a354",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.15": {
     "title": "Ограничение длины",
@@ -633,7 +929,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ac2d23173a5924e3412fcd0ef249e811.svg",
     "sourceSha256": "7e7a8a78332daeab78285b59881d881a488b1aef1d807f22aef4e5137cab1bd1",
-    "sha256": "7e7a8a78332daeab78285b59881d881a488b1aef1d807f22aef4e5137cab1bd1"
+    "sha256": "0dbb0825ca8ebc5e7ce6140a12ad84b8b13364378515d4f0bec643021fb65952",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.16": {
     "title": "Ограничение минимальной дистанции",
@@ -641,7 +941,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/c1897beee89c46a70537922b8a7e05f4.svg",
     "sourceSha256": "5d35fad83dfd7aedc543c21e237471dfaf8eef8fd574742806190f1d1c19a8c8",
-    "sha256": "5d35fad83dfd7aedc543c21e237471dfaf8eef8fd574742806190f1d1c19a8c8"
+    "sha256": "6474f71c1247c0017df15b5866740a017526cb27b6ab1c5f6cd41db4a3f7af2f",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.17.1": {
     "title": "Таможня",
@@ -649,7 +953,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/99fa0ef722f7e87702dcbf311b1d4903.svg",
     "sourceSha256": "815294b3bcdc203d24f01fd98b93f957ec6c10ba77ef146be1ef03c91ed6509a",
-    "sha256": "815294b3bcdc203d24f01fd98b93f957ec6c10ba77ef146be1ef03c91ed6509a"
+    "sha256": "351da57c5070151f2b1fa624d868608ea250ff2ac3c0197729b6e119b2896ba0",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.17.2": {
     "title": "Опасность",
@@ -657,7 +965,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ddb141598843973c26ff792b30258257.svg",
     "sourceSha256": "860f80d29cc6ec5cd54ab5126ce426e87c6669652391f6417de5b457d85c6d65",
-    "sha256": "860f80d29cc6ec5cd54ab5126ce426e87c6669652391f6417de5b457d85c6d65"
+    "sha256": "171e626e560b3fa3e63de82b45e003ab0fa8d0c508567e74979e79f05f108475",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.17.3": {
     "title": "Контроль",
@@ -665,7 +977,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/25b68a4c922b42620ee23bec91f7bb6b.svg",
     "sourceSha256": "d7b32079d825cb9371c7f1767f41344c4586e827af45f6d01e4bae2f7ec35738",
-    "sha256": "d7b32079d825cb9371c7f1767f41344c4586e827af45f6d01e4bae2f7ec35738"
+    "sha256": "4141eacbadaa2e39edfd8a990331e69be82c373840e792a7775500229ecfbdf7",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.18.1": {
     "title": "Поворот направо запрещен",
@@ -673,7 +989,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/b519a818d4b84d09db35ba439ef7762d.svg",
     "sourceSha256": "2bb6d6cca28a4da4ccaaaaf7e627cea916fc3b04e399eb1f0ad8200a02be92d1",
-    "sha256": "2bb6d6cca28a4da4ccaaaaf7e627cea916fc3b04e399eb1f0ad8200a02be92d1"
+    "sha256": "7ad1d99999fbb98a8647401a6c4fb0aea0a8bce2af096fbe519ef75d0d72e42d",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.18.2": {
     "title": "Поворот налево запрещен",
@@ -681,7 +1001,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6b13acd4920340d6a5ade9cbf8b7733d.svg",
     "sourceSha256": "5606314c1cb637b3b233bcb658a625aa2ae886b765e117c580976c29608d28f0",
-    "sha256": "5606314c1cb637b3b233bcb658a625aa2ae886b765e117c580976c29608d28f0"
+    "sha256": "fa71ca5f9f282e68c38bfe266de73c5ae4aff1168d8e7ec3800df95787b57f79",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.19": {
     "title": "Разворот запрещен",
@@ -689,7 +1013,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/a77036dc28d01bd6a43b7e1dc8c7f78d.svg",
     "sourceSha256": "56f96cea1bfda986c1d42edc90bdec5b4da91d9bf04cc61114f6e2b3ba8b4737",
-    "sha256": "56f96cea1bfda986c1d42edc90bdec5b4da91d9bf04cc61114f6e2b3ba8b4737"
+    "sha256": "b63ba78b5383dfb86435d81fde3380001fa4cb97e90ddf082fd1e4557b798f1c",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.20": {
     "title": "Обгон запрещен",
@@ -697,7 +1025,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/10b31089e23256d42615a68260f1960b.svg",
     "sourceSha256": "f7297dff4e6652175a50becfe0e919590a19fed7fd5980ffcfcea4b06ba1a706",
-    "sha256": "f7297dff4e6652175a50becfe0e919590a19fed7fd5980ffcfcea4b06ba1a706"
+    "sha256": "f59081f0f23bf96afab55b730dba64ef6fc1d4fdd868b233e9b76db7b912a0f2",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.21": {
     "title": "Конец зоны запрещения обгона",
@@ -705,7 +1037,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6654cc3433e1a3946decf8d350d4e99f.svg",
     "sourceSha256": "a8785980f8d802c9f170426750de7b15bc6c859555bd8508bf369aafa552c7cd",
-    "sha256": "a8785980f8d802c9f170426750de7b15bc6c859555bd8508bf369aafa552c7cd"
+    "sha256": "918f3c3678e3efad6b22353bd51a8ab3dfc23a49356cfb3b1872f4a76289fc3b",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.22": {
     "title": "Обгон грузовым автомобилям запрещен",
@@ -713,7 +1049,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/218ffabddb61261300f3a99b19a0ea77.svg",
     "sourceSha256": "cfb0eb997f0c4417092af36e048006a9249c03b1d6cebe9f772f74af8b75f352",
-    "sha256": "cfb0eb997f0c4417092af36e048006a9249c03b1d6cebe9f772f74af8b75f352"
+    "sha256": "67a994b962f6633f4d3347bb512a1360b2a74ae5e6f85efc6b85fa4570d46852",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.23": {
     "title": "Конец зоны запрещения обгона грузовым автомобилям",
@@ -721,7 +1061,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/8972f87ccd509bc265ae5a4bb40c87ff.svg",
     "sourceSha256": "9e8913e8092004cfa0b613a9536cab3a39bf2f941214fcba9b3448cb15746540",
-    "sha256": "9e8913e8092004cfa0b613a9536cab3a39bf2f941214fcba9b3448cb15746540"
+    "sha256": "8a840d522e5d2313b24ef558a35bcd6e2a6b21055ebdfe262bf4af10b4f0a0d1",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.24": {
     "title": "Ограничение максимальной скорости",
@@ -729,7 +1073,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/afe2a800e15fdfb647cbbf80ed8ffb1a.svg",
     "sourceSha256": "3d65957fcb97b1fe9951dd6897abc87784c33a37a35ba11dcc48a10a69a6039f",
-    "sha256": "3d65957fcb97b1fe9951dd6897abc87784c33a37a35ba11dcc48a10a69a6039f"
+    "sha256": "059e56923e92789b33888ef4d536fab89db1af4fb5a2788c4136979f40fa445c",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.25": {
     "title": "Конец зоны ограничения максимальной скорости",
@@ -737,7 +1085,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/88f2e89569fde85399a3119939e9362d.svg",
     "sourceSha256": "e32c176c3f3468f32fce42051e41642938b20010791e108c8b7184e6880523e4",
-    "sha256": "e32c176c3f3468f32fce42051e41642938b20010791e108c8b7184e6880523e4"
+    "sha256": "3a3932b7cdfd67c9db6cd16d20a14f76f1a6d6f808663ced2010a0bf72a7c927",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.26": {
     "title": "Подача звукового сигнала запрещена",
@@ -745,7 +1097,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/d69cde7c75a100a5ad1b051a363e9798.svg",
     "sourceSha256": "b68b89bdddf4fdbc80badaf1c7ec7128c4ea7a49137a3344e4b7395e543b3fe4",
-    "sha256": "b68b89bdddf4fdbc80badaf1c7ec7128c4ea7a49137a3344e4b7395e543b3fe4"
+    "sha256": "57326dda3dd1d1dcd067e4c392e3cf118b60d024e8fbc9eef8480225c3fb6fba",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.27": {
     "title": "Остановка запрещена",
@@ -753,7 +1109,11 @@
     "folkName": "крест",
     "source": "assets/countries/ru/images/signs/32f6c6260d4ca82b635350a9ec41689b.svg",
     "sourceSha256": "6cecdb1e4daac6f2b0037ab1abec4d078be6f8f320d85bc772cfe159da3fa147",
-    "sha256": "6cecdb1e4daac6f2b0037ab1abec4d078be6f8f320d85bc772cfe159da3fa147"
+    "sha256": "29d2e662db797debb737ed9668bbe127f0d92f7dcdd86a7ab1c88369911cee7e",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.28": {
     "title": "Стоянка запрещена",
@@ -761,7 +1121,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/c64e8fde613df61be12cb0d6b3e8e634.svg",
     "sourceSha256": "fc3d3d5173e3a7fabeaf481c65107c8861f1e603dba21eddfc4f2e9398c534c9",
-    "sha256": "fc3d3d5173e3a7fabeaf481c65107c8861f1e603dba21eddfc4f2e9398c534c9"
+    "sha256": "1273b4adbd0f6002cb0ff6a611ee83bf7a84be9b42f2316685eaa6059c68d08e",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.29": {
     "title": "Стоянка запрещена по нечетным числам месяца",
@@ -769,7 +1133,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/7958b8f457dbafef41933413bd561e78.svg",
     "sourceSha256": "5068994454a41919676c35f1e8d48f5edb5ef7a31af37037bd1c6d1c02e22c0f",
-    "sha256": "5068994454a41919676c35f1e8d48f5edb5ef7a31af37037bd1c6d1c02e22c0f"
+    "sha256": "686c53036fc2604add6d9d9f98b82745226e4ceb46c68e397e262b6f5100f91b",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.30": {
     "title": "Стоянка запрещена по четным числам месяца",
@@ -777,7 +1145,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/a371758db16fc213e35b2d83517b7517.svg",
     "sourceSha256": "3d789c39454af33acb565d1e362aea4baa8fccf3fa3645b22429315be5ec290c",
-    "sha256": "3d789c39454af33acb565d1e362aea4baa8fccf3fa3645b22429315be5ec290c"
+    "sha256": "00fb8efe73d641372aaa47207ea9da25821759e56123f29669b5bb664f9eb65e",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.31": {
     "title": "Конец зоны всех ограничений",
@@ -785,7 +1157,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/9bcec66d4b6d2d724af18234cea86409.svg",
     "sourceSha256": "465601b170e85da25451251117c7c1f13ca0db90a1c962426a8493fb8d87f1bb",
-    "sha256": "465601b170e85da25451251117c7c1f13ca0db90a1c962426a8493fb8d87f1bb"
+    "sha256": "8a71878ff9dadf7df7dbaf94f5dbfce08140117becac99854e58d9354ad20080",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.32": {
     "title": "Движение транспортных средств с опасными грузами запрещено",
@@ -793,7 +1169,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/9e26b76d6e5a7c5c18d24c55f1eec2e4.svg",
     "sourceSha256": "2366a07b9e9b10e67c8fc24b951d3cd9c99f66fdee9ac5c65c9f67b9abf2882b",
-    "sha256": "2366a07b9e9b10e67c8fc24b951d3cd9c99f66fdee9ac5c65c9f67b9abf2882b"
+    "sha256": "dd588f3231c0c2b60b3fd151e6af2888b81557e5c06736349ab68aeb73b170d3",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.33": {
     "title": "Движение транспортных средств с взрывчатыми и легковоспламеняющимися грузами запрещено",
@@ -801,7 +1181,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/4c5aa981f6fb1fbfa01712a2724f3883.svg",
     "sourceSha256": "6fa1f8efe5d9d5ee6a77fe1e6ef870cace4095df93038310cb978f838b9ff4e6",
-    "sha256": "6fa1f8efe5d9d5ee6a77fe1e6ef870cace4095df93038310cb978f838b9ff4e6"
+    "sha256": "93bf94d00ad21b0815762496b88e92a6acffd903b90fd2ad77696b08a2829d87",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.34": {
     "title": "Движение автобусов запрещено",
@@ -809,7 +1193,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/4f3323041ff6c39163c6e0f34b531904.svg",
     "sourceSha256": "6bf558b5979d5dc3a69439c7a6051545e96821a31032442f2f41712b13b006fd",
-    "sha256": "6bf558b5979d5dc3a69439c7a6051545e96821a31032442f2f41712b13b006fd"
+    "sha256": "36f1df34bffd9c1fe8850bfaf2a34616a96354fa416f02e56db97b444d675898",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "3.35": {
     "title": "Движение на средствах индивидуальной мобильности запрещено",
@@ -817,7 +1205,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/86d638ddcb608b242da09a549b545bcf.svg",
     "sourceSha256": "726674990f902599fa9f27e65d51841c9f007374ba90a5a10d91d4705c4cca8c",
-    "sha256": "726674990f902599fa9f27e65d51841c9f007374ba90a5a10d91d4705c4cca8c"
+    "sha256": "f857573739426790cfd41be6e45954ecb3a505edc52d5410a45e4dd34a52b32c",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.1.1": {
     "title": "Движение прямо",
@@ -825,7 +1217,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/edfa72956b6ebefa96d04500db9285e1.svg",
     "sourceSha256": "03ab666de10fa26e4bb7f547eb6e90514a83992994d3fe1f13b152ff0b45faa3",
-    "sha256": "03ab666de10fa26e4bb7f547eb6e90514a83992994d3fe1f13b152ff0b45faa3"
+    "sha256": "774947b95ce8f5f28a81973e6d32a6fa6f6254136b11783ffd4fe840bff17f17",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.1.2": {
     "title": "Движение направо",
@@ -833,7 +1229,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f5e183503d29e5e1959541346d1fe2b6.svg",
     "sourceSha256": "11b04f44e4502dcdb328ed78cb94a03f19b1a79bb54d4adc7d6d721e8347e3f8",
-    "sha256": "11b04f44e4502dcdb328ed78cb94a03f19b1a79bb54d4adc7d6d721e8347e3f8"
+    "sha256": "c0135f5e4e59542335bbb00cfcfdf988aec97e7bfe90069eb37f595c652dca1c",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.1.3": {
     "title": "Движение налево",
@@ -841,7 +1241,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/20412a2d3a8dba838a80b04ac05e0bba.svg",
     "sourceSha256": "2ccde04acc88393c5dc6a5e8ff6307e2e0574efccca6858ececb0d075a0e8286",
-    "sha256": "2ccde04acc88393c5dc6a5e8ff6307e2e0574efccca6858ececb0d075a0e8286"
+    "sha256": "d8c85aa627a064554554f6f16fa6fe0db02e537211e0fd503806149e4a693123",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.1.4": {
     "title": "Движение прямо или направо",
@@ -849,7 +1253,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/36a7dc2f0402fb1c3b52e998cc4f2639.svg",
     "sourceSha256": "fd5f4ea82b8d944f756f61a94e0863bb8e1b4aad45de49e13a772a35cab55d7c",
-    "sha256": "fd5f4ea82b8d944f756f61a94e0863bb8e1b4aad45de49e13a772a35cab55d7c"
+    "sha256": "3ec94edc4d5b25ecf114f7a43e68c3b614be5e76497585aa899c29ad944d0253",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.1.5": {
     "title": "Движение прямо или налево",
@@ -857,7 +1265,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/a4f684add2aee502a2a42567d6e5aff2.svg",
     "sourceSha256": "049ac78ee047e474ab535fdbc71e5cce6f13749ff6f89a3f0e94fd314331ed67",
-    "sha256": "049ac78ee047e474ab535fdbc71e5cce6f13749ff6f89a3f0e94fd314331ed67"
+    "sha256": "4aff75a2152fd8fe772271e588ebde4ebf039c3a69ef15fecdfeffbf9dd1c7fe",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.1.6": {
     "title": "Движение направо или налево",
@@ -865,7 +1277,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/bff85c177f0e2166e4d881c52cb57943.svg",
     "sourceSha256": "03f85d1ed84ed284296dae3a8013c3afd03c8e18f5fac22a070d03010dd91e7c",
-    "sha256": "03f85d1ed84ed284296dae3a8013c3afd03c8e18f5fac22a070d03010dd91e7c"
+    "sha256": "b8726072ca7a9e88cfdd136140c63506e59794fdb33414a4df58a10732ac3775",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.2.1": {
     "title": "Объезд препятствия справа",
@@ -873,7 +1289,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/2a04d02796007c51b2b1c61f5915a9bb.svg",
     "sourceSha256": "92c9fe0edc59b8a77b35f5bb853e87ad3c031e424af49cdaf4556c689e103060",
-    "sha256": "92c9fe0edc59b8a77b35f5bb853e87ad3c031e424af49cdaf4556c689e103060"
+    "sha256": "e2b5fa58fa1eb78fd9efab7d089b7e73d87fab1096b527150961605cd281e85c",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.2.2": {
     "title": "Объезд препятствия слева",
@@ -881,7 +1301,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/2ab08b0518c64b8ebedc5d9e4e632d18.svg",
     "sourceSha256": "e51b42caa7f2e16463ee0092ba35f7a33f523e28273a7ef52f1729f2db8ebb83",
-    "sha256": "e51b42caa7f2e16463ee0092ba35f7a33f523e28273a7ef52f1729f2db8ebb83"
+    "sha256": "f3f077f4a2c41b99e03927855adfbac5ed46896652749ef2d27c16efb4b9ab56",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.2.3": {
     "title": "Объезд препятствия справа или слева",
@@ -889,7 +1313,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/55444c380ed0f9052af912b13d1040c2.svg",
     "sourceSha256": "be04123bad363dbba79c570cf6431727ca66ebac4170e3f0d8340592e8edb31d",
-    "sha256": "be04123bad363dbba79c570cf6431727ca66ebac4170e3f0d8340592e8edb31d"
+    "sha256": "78fa5740e828db53199f5e4a04bbbb9545388cda2b8ded604173cc3e0f5350ae",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.3": {
     "title": "Круговое движение",
@@ -897,7 +1325,11 @@
     "folkName": "кольцо",
     "source": "assets/countries/ru/images/signs/58e7e696835bcc69857b61cf990b6151.svg",
     "sourceSha256": "a893c9b4d2ac3acd002a5d754f63ca73544a150f6e45fc07f9554793adf11746",
-    "sha256": "a893c9b4d2ac3acd002a5d754f63ca73544a150f6e45fc07f9554793adf11746"
+    "sha256": "9482344e2c3bed3c69c9dbde095bbfafa2df938dc98ac32d783db8235ec381dd",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.4.1": {
     "title": "Велосипедная дорожка",
@@ -905,7 +1337,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/729fb6b3c0f5c83fa4fd2e41e061aeda.svg",
     "sourceSha256": "3c3662dab46fbe969fa36619f974cc79adffd40395cc3f495d1e66fcd7e8ce4e",
-    "sha256": "3c3662dab46fbe969fa36619f974cc79adffd40395cc3f495d1e66fcd7e8ce4e"
+    "sha256": "0e6970a28c3bad933606f469b3327e57c7273775b2b0f516e0a0ce725965298e",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.4.2": {
     "title": "Конец велосипедной дорожки",
@@ -913,7 +1349,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/155ee2d1eb349cb22fd28ec943375dc2.svg",
     "sourceSha256": "ef714f09b5a7daf20499e81956ca0c57721fe990a5cf604bda16b8b34702f86c",
-    "sha256": "ef714f09b5a7daf20499e81956ca0c57721fe990a5cf604bda16b8b34702f86c"
+    "sha256": "60cc1f7a2fc6579d5c9219995851f177c823b984aa93a62a79cada8e317188e2",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.5.1": {
     "title": "Пешеходная дорожка",
@@ -921,7 +1361,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/7ed2392cb565f59a0677e169a75abb5a.svg",
     "sourceSha256": "c19e7e949efc277b8009ba030ca0d20649b6c17c42206b085b68e1031246a7eb",
-    "sha256": "c19e7e949efc277b8009ba030ca0d20649b6c17c42206b085b68e1031246a7eb"
+    "sha256": "ed89cb0352f2cc714100a32c8c42db1e22d149f0d5a1b8ae962373b36a124c1a",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.5.2": {
     "title": "Пешеходная и велосипедная дорожка с совмещенным движением (велопешеходная дорожка с совмещенным движением)",
@@ -929,7 +1373,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6d32e475df4cc14e6de380997aaeb51d.svg",
     "sourceSha256": "13fa484eed973eb4b71691ef16e8eba60a8e634a266e86d3288b9cc50fa7f59f",
-    "sha256": "13fa484eed973eb4b71691ef16e8eba60a8e634a266e86d3288b9cc50fa7f59f"
+    "sha256": "de7261c83de8d6dc606f12c0c4cd41b59ffb119d462469ce2bfa08f0b95c6d6e",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.5.3": {
     "title": "Конец пешеходной и велосипедной дорожки с совмещенным движением (конец велопешеходной дорожки с совмещенным движением)",
@@ -937,7 +1385,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ebabed716c12bca2ae3f1bec74bb74e0.svg",
     "sourceSha256": "97eab3b8a8eeda566ca5d017a952cc7d9929b7dfe2b0e586afd336b8549e8b4e",
-    "sha256": "97eab3b8a8eeda566ca5d017a952cc7d9929b7dfe2b0e586afd336b8549e8b4e"
+    "sha256": "59d5f278a733ae7353a678922fc9b475850b689b6cb251d19952d6367219d999",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.5.4": {
     "title": "Пешеходная и велосипедная дорожка с разделением движения",
@@ -945,7 +1397,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f63df427a9d45b0c938dcec9bb92effb.svg",
     "sourceSha256": "247119849c0ef3055f3eac0e0928846f5635aae9f814a7e53c866b328a8dd0c1",
-    "sha256": "247119849c0ef3055f3eac0e0928846f5635aae9f814a7e53c866b328a8dd0c1"
+    "sha256": "007b01d714c8922dc0b06619aeca28c002af6ac3607e587da635664534c76b79",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.5.5": {
     "title": "Пешеходная и велосипедная дорожка с разделением движения",
@@ -953,7 +1409,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ceaf85075f73573cce0010570c62dbbe.svg",
     "sourceSha256": "b49b1f34a74a97f42f059797168315a12b4d8c15df3bb27d87e9ed2e7ac64ae5",
-    "sha256": "b49b1f34a74a97f42f059797168315a12b4d8c15df3bb27d87e9ed2e7ac64ae5"
+    "sha256": "7f1d09eaf208e94bff233db99a6b2589e8987cf848103ccdb80144e7b84bc98e",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.5.6": {
     "title": "Конец пешеходной и велосипедной дорожки с разделением движения (конец велопешеходной дорожки с разделением движения)",
@@ -961,7 +1421,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/2d4e5fbe86643950a8df6714211874ac.svg",
     "sourceSha256": "555afe0e000fef4c43018a87acc17a99492a97a624e2130c848321e7c163e3fc",
-    "sha256": "555afe0e000fef4c43018a87acc17a99492a97a624e2130c848321e7c163e3fc"
+    "sha256": "a589f6c827d8cf3989eca867a5843b4acc620dd885e3cd3ff01be732f8cdf61b",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.5.7": {
     "title": "Конец пешеходной и велосипедной дорожки с разделением движения (конец велопешеходной дорожки с разделением движения)",
@@ -969,7 +1433,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/590489adc4e0cbfc40aaf0ddd8a1f996.svg",
     "sourceSha256": "358b63a0d9415144fe519c211eecea2b395eef50e7dc6a6e9e7fdc77042769e6",
-    "sha256": "358b63a0d9415144fe519c211eecea2b395eef50e7dc6a6e9e7fdc77042769e6"
+    "sha256": "c996829f5fb3d675b8ceb96d9ea1512d460daa8c6f740a33b1cdff65b2ead988",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.6": {
     "title": "Ограничение минимальной скорости",
@@ -977,7 +1445,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/8d75c6c47899372ca2fe29d2aaaf7ef0.svg",
     "sourceSha256": "71c15ed17700b110349cfb791d65e2106dee8b570a05447ac4f2212145199468",
-    "sha256": "71c15ed17700b110349cfb791d65e2106dee8b570a05447ac4f2212145199468"
+    "sha256": "462d5f97d8d5118d7cd98a16b8b1d33db2f41e223b0c7a5b0bec39c870f3ce3c",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.7": {
     "title": "Конец зоны ограничения минимальной скорости",
@@ -985,7 +1457,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/73ba23061c79c6fedde6f6815b898e0c.svg",
     "sourceSha256": "80871d0a6b4fed306c1408e43818a216d9150799102eebfda71e92c0c00cfab0",
-    "sha256": "80871d0a6b4fed306c1408e43818a216d9150799102eebfda71e92c0c00cfab0"
+    "sha256": "d3934bbe808111114a82d8f4064208a9ff300b809ac80b0b240712af1d1414cc",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "4.8.1": {
     "title": "Направление движения транспортных средств с опасными грузами",
@@ -993,7 +1469,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_4_8_1.svg",
     "sourceSha256": "804f13b58856d624d864915f460c2470d9f32476c77bab70779a28bcae9a140e",
-    "sha256": "804f13b58856d624d864915f460c2470d9f32476c77bab70779a28bcae9a140e"
+    "sha256": "804f13b58856d624d864915f460c2470d9f32476c77bab70779a28bcae9a140e",
+    "face": {
+      "shape": 3,
+      "radius": 0.1275
+    }
   },
   "4.8.2": {
     "title": "Направление движения транспортных средств с опасными грузами",
@@ -1001,7 +1481,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_4_8_2.svg",
     "sourceSha256": "922c5a830b645be7108ba16050f7f6b0e9345733c35655dfb21524117475fb01",
-    "sha256": "922c5a830b645be7108ba16050f7f6b0e9345733c35655dfb21524117475fb01"
+    "sha256": "922c5a830b645be7108ba16050f7f6b0e9345733c35655dfb21524117475fb01",
+    "face": {
+      "shape": 3,
+      "radius": 0.1275
+    }
   },
   "4.8.3": {
     "title": "Направление движения транспортных средств с опасными грузами",
@@ -1009,7 +1493,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_4_8_3.svg",
     "sourceSha256": "9cc9c002f470d1a38da46cc4f5fb7264a31f80e3ee3e12554aa8f8676ba4c3e3",
-    "sha256": "9cc9c002f470d1a38da46cc4f5fb7264a31f80e3ee3e12554aa8f8676ba4c3e3"
+    "sha256": "9cc9c002f470d1a38da46cc4f5fb7264a31f80e3ee3e12554aa8f8676ba4c3e3",
+    "face": {
+      "shape": 3,
+      "radius": 0.1275
+    }
   },
   "5.1": {
     "title": "Автомагистраль",
@@ -1017,7 +1505,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/30ef8488ecc5abc3fe2758fb400a6ad6.svg",
     "sourceSha256": "49eb1267562d8ff464bcad48cebcbce6d8d120c8e04bd47b4754cd30c75fdce4",
-    "sha256": "49eb1267562d8ff464bcad48cebcbce6d8d120c8e04bd47b4754cd30c75fdce4"
+    "sha256": "206dff68ac504b2074492d956a49ae2f233471bf2c2532e11d8a4446169bbbc8",
+    "face": {
+      "shape": 3,
+      "radius": 0.1175
+    }
   },
   "5.2": {
     "title": "Конец автомагистрали",
@@ -1025,7 +1517,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/186fc9221cc561b1d35260f2178e8b7d.svg",
     "sourceSha256": "c30d96f51479d15cc90bd699142667e594c1ecbac435a09fa68fd4f539f114e0",
-    "sha256": "c30d96f51479d15cc90bd699142667e594c1ecbac435a09fa68fd4f539f114e0"
+    "sha256": "9e435d2998f0d5fb7506c4d1d015ce7ac91fbf40d4250b38177393480c876080",
+    "face": {
+      "shape": 3,
+      "radius": 0.1175
+    }
   },
   "5.3": {
     "title": "Дорога для автомобилей",
@@ -1033,7 +1529,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/a482c86004b27c60a7f7fd8aa4eabea5.svg",
     "sourceSha256": "f3884248f932e995a09a7452c0db880786e8f00f0ee95ccce5b7cd60278b8f9e",
-    "sha256": "f3884248f932e995a09a7452c0db880786e8f00f0ee95ccce5b7cd60278b8f9e"
+    "sha256": "b52af08302ce353d7d7538c2b96b0b4c58e8d9cedc75646584aa7c9a664bcb40",
+    "face": {
+      "shape": 3,
+      "radius": 0.0925
+    }
   },
   "5.4": {
     "title": "Конец дороги для автомобилей",
@@ -1041,7 +1541,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/81b2326a382ee8076f85797956a47c6a.svg",
     "sourceSha256": "ceef53ad543a965282adf5c616450add55c1e79bbbc0d2d80dffa6a265015392",
-    "sha256": "ceef53ad543a965282adf5c616450add55c1e79bbbc0d2d80dffa6a265015392"
+    "sha256": "e1c7c6e5afe7b2b825358787fe48dc0fb810d1260c26a5ac4b40906194d7d080",
+    "face": {
+      "shape": 3,
+      "radius": 0.0925
+    }
   },
   "5.5": {
     "title": "Дорога с односторонним движением",
@@ -1049,7 +1553,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/1346f884b8d8b48ffd07df32058779b2.svg",
     "sourceSha256": "b5db50bcec125aacc23cb504c8bfbc96f72fe592959cbcec1108fe9ca04b0b6d",
-    "sha256": "b5db50bcec125aacc23cb504c8bfbc96f72fe592959cbcec1108fe9ca04b0b6d"
+    "sha256": "c2207f2d9942c124110967ea47af077ad7dc88ccdf1767ad979d314b693f779f",
+    "face": {
+      "shape": 3,
+      "radius": 0.1
+    }
   },
   "5.6": {
     "title": "Конец дороги с односторонним движением",
@@ -1057,7 +1565,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/b5666c37f7cc53c2e6c5b9f9d1139156.svg",
     "sourceSha256": "a0e86fcc176ad410f3000a49d85c921393ffe53ffa6752ef92c8c714483ba2d7",
-    "sha256": "a0e86fcc176ad410f3000a49d85c921393ffe53ffa6752ef92c8c714483ba2d7"
+    "sha256": "7121a33989858b361157dcc19b3d86429a577f98a44cbaa62637c456ddfa1d67",
+    "face": {
+      "shape": 3,
+      "radius": 0.1
+    }
   },
   "5.7.1": {
     "title": "Выезд на дорогу с односторонним движением",
@@ -1065,7 +1577,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_7_1.svg",
     "sourceSha256": "6884d83159c3a69808139fd9ceaedc3b5cd29de2267573106d70a640abf0935e",
-    "sha256": "6884d83159c3a69808139fd9ceaedc3b5cd29de2267573106d70a640abf0935e"
+    "sha256": "44032e12989b8963e698f9f64362be012e5a9445c0ee9141699371725a25fb0c",
+    "face": {
+      "shape": 3,
+      "radius": 0.275
+    }
   },
   "5.7.2": {
     "title": "Выезд на дорогу с односторонним движением",
@@ -1073,7 +1589,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_7_2.svg",
     "sourceSha256": "b72fe9d4840cf8363e9725eb4d96928e370341ebbf2a62cbb9aad68d1eee361a",
-    "sha256": "b72fe9d4840cf8363e9725eb4d96928e370341ebbf2a62cbb9aad68d1eee361a"
+    "sha256": "fecab0f5e03ae91c51294e3fab6146986e89b2c265be842f5d8abf7f7139bd32",
+    "face": {
+      "shape": 3,
+      "radius": 0.275
+    }
   },
   "5.8": {
     "title": "Реверсивное движение",
@@ -1081,7 +1601,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/3ffcf683b099f1108e43767eb611dee9.svg",
     "sourceSha256": "69fcc8cd555356a4caab141a2823187425a36ba589d97dc3525573167cfe68c6",
-    "sha256": "69fcc8cd555356a4caab141a2823187425a36ba589d97dc3525573167cfe68c6"
+    "sha256": "7d28888d6cc7632ae617aa8196ca2290fd5738086565fe6e59657872ff63f08e",
+    "face": {
+      "shape": 3,
+      "radius": 0.1
+    }
   },
   "5.9": {
     "title": "Конец реверсивного движения",
@@ -1089,7 +1613,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/31d460be855f04c2263c8690e62b715d.svg",
     "sourceSha256": "ba414aa1287016bfccfe9caabd09efe7f553fccb025e77a1fee0f980b0cb0c83",
-    "sha256": "ba414aa1287016bfccfe9caabd09efe7f553fccb025e77a1fee0f980b0cb0c83"
+    "sha256": "64742096f68ac13b31675adc7218990ca416671d44ca4cf3de9c8846df678271",
+    "face": {
+      "shape": 3,
+      "radius": 0.1
+    }
   },
   "5.10": {
     "title": "Выезд на дорогу с реверсивным движением",
@@ -1097,7 +1625,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f2e247bb2668f187b147f897639b482e.svg",
     "sourceSha256": "8994072b131246995902d7f69a6a19b3460801ee030bcc7204937e05e3afaa0f",
-    "sha256": "8994072b131246995902d7f69a6a19b3460801ee030bcc7204937e05e3afaa0f"
+    "sha256": "9583aa4dd71b421dec9a813c92bd42ff7ecaf78c55936f660ae9142a19deadb8",
+    "face": {
+      "shape": 3,
+      "radius": 0.1
+    }
   },
   "5.11.1": {
     "title": "Дорога с полосой для маршрутных транспортных средств",
@@ -1105,7 +1637,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/5e74ef793315c48a24193f8d1bd34409.svg",
     "sourceSha256": "4a35edd4a70c095563a4994f77b8d6f7a3f33762affc6c67294cdcb110ed3a3a",
-    "sha256": "4a35edd4a70c095563a4994f77b8d6f7a3f33762affc6c67294cdcb110ed3a3a"
+    "sha256": "c28659b1c4e7e1f779fe18c1c6f935190ad76b546147c3fcfd85747ee97d5937",
+    "face": {
+      "shape": 3,
+      "radius": 0.1575
+    }
   },
   "5.11.2": {
     "title": "Дорога с полосой для велосипедистов",
@@ -1113,7 +1649,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/3417cb06252d5348b568b87a0547e3b6.svg",
     "sourceSha256": "bdfd1f3c848f073e957bfaced254b9dd3f9dfc059113af0dbb76f157e69145f0",
-    "sha256": "bdfd1f3c848f073e957bfaced254b9dd3f9dfc059113af0dbb76f157e69145f0"
+    "sha256": "48e315c12a530ea9e623f149a0d138a6f4557c20892efbebab16a3cbe5b26892",
+    "face": {
+      "shape": 3,
+      "radius": 0.1575
+    }
   },
   "5.12.1": {
     "title": "Конец дороги с полосой для маршрутных транспортных средств",
@@ -1121,7 +1661,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/49010e49177332307b04aac8146c94d7.svg",
     "sourceSha256": "8bb8bb7ed244dd645e24288feccc0f23f7c7f72875898192f62eab8312393f70",
-    "sha256": "8bb8bb7ed244dd645e24288feccc0f23f7c7f72875898192f62eab8312393f70"
+    "sha256": "e9d425f5fc2c1dbdbfcfa5a741672724cd19da614174adf2101d267dc3df93aa",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "5.12.2": {
     "title": "Конец дороги с полосой для велосипедистов",
@@ -1129,7 +1673,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/e03e05911c4bfcee90cd96a42dc4caa2.svg",
     "sourceSha256": "a5697b97332eeb5dfccac77227cafb3e2230d9f0f0dd4ab82d32c2b69403b43c",
-    "sha256": "a5697b97332eeb5dfccac77227cafb3e2230d9f0f0dd4ab82d32c2b69403b43c"
+    "sha256": "6b3e83cd7c4f1c1d1f8d48205eed9c7dca06ed147948a5f5edaff236b020e088",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "5.13.1": {
     "title": "Выезд на дорогу с полосой для маршрутных транспортных средств",
@@ -1137,7 +1685,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_13_1.svg",
     "sourceSha256": "02f9d8fb79a3458c52a132043eca946399afb5313d12d2b8e8e22051b5d00fca",
-    "sha256": "02f9d8fb79a3458c52a132043eca946399afb5313d12d2b8e8e22051b5d00fca"
+    "sha256": "efdacc872e3b5fbecf05e3cd0b2e76c0b6f3c9fcb7e70fbf5a527a9d1f0b1158",
+    "face": {
+      "shape": 3,
+      "radius": 0.1525
+    }
   },
   "5.13.2": {
     "title": "Выезд на дорогу с полосой для маршрутных транспортных средств",
@@ -1145,7 +1697,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_13_2.svg",
     "sourceSha256": "bb9bfb2a8fe7656d53aa77137094bcb1a63ceaa2a41e7aed429f696c779b6c96",
-    "sha256": "bb9bfb2a8fe7656d53aa77137094bcb1a63ceaa2a41e7aed429f696c779b6c96"
+    "sha256": "c53b64dc432276dedad655487ec1dcf38817bc639caa2e3ad17b04102a4ade33",
+    "face": {
+      "shape": 3,
+      "radius": 0.1525
+    }
   },
   "5.13.3": {
     "title": "Выезд на дорогу с полосой для велосипедистов",
@@ -1153,7 +1709,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/040dd5b89c58d745f260470b69f95c65.svg",
     "sourceSha256": "a81e42309046f0512fab98b51179b982bb63ecc49a575f4a68a3e5a1a2a674b0",
-    "sha256": "a81e42309046f0512fab98b51179b982bb63ecc49a575f4a68a3e5a1a2a674b0"
+    "sha256": "ab40e919bdfc2ed205d99df1de401032eaa51f2e124e82faeeda3ead5ec7d74e",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "5.13.4": {
     "title": "Выезд на дорогу с полосой для велосипедистов",
@@ -1161,7 +1721,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/5564935ee2b1ae22a68ff3efb49d60bd.svg",
     "sourceSha256": "207092a6182489184dd671d6377cecbb6d65419b107c6c90d1753d35fa15557b",
-    "sha256": "207092a6182489184dd671d6377cecbb6d65419b107c6c90d1753d35fa15557b"
+    "sha256": "bb07ddf55a82d6af57a3c0da3abccfe888e3e043e37b4572cf1ec798c8ef5b7d",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "5.14.1": {
     "title": "Полоса для маршрутных транспортных средств",
@@ -1169,7 +1733,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_14_1.svg",
     "sourceSha256": "8a42c1fcc5a90b73401e5991188fe712b88dab1dbbcd86fd63875db6cf872d45",
-    "sha256": "358b9d956eab74152da23b4f00496ee8f3929d2ce1d9277e2f6ac745b778d6a8"
+    "sha256": "89d8d698587aaa3a8a352049da786b42797550fcf953b023f99a1869ea8070f8",
+    "face": {
+      "shape": 3,
+      "radius": 0.125
+    }
   },
   "5.14.2": {
     "title": "Полоса для велосипедистов",
@@ -1177,7 +1745,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_14_2.svg",
     "sourceSha256": "bc49a28641a59838abea05eb5ef370a1ea32edcdfae489c7a51d3ee1aa645053",
-    "sha256": "f977ffbfcf07b56f9b2b0c353ac7f5ac6d4e7d4016e4160cf77ef3f4f7e91dc8"
+    "sha256": "03b8e93c61f7269fb6ef882584d947b0605ff9e4ea67605ea7b3d7e2fd769152",
+    "face": {
+      "shape": 3,
+      "radius": 0.125
+    }
   },
   "5.14.3": {
     "title": "Конец полосы для маршрутных транспортных средств",
@@ -1185,7 +1757,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_14_3.svg",
     "sourceSha256": "73e59cf154f7a2c3e1d095a0732adc492ae5fa72e1e98ca59aa9c5e7765577a4",
-    "sha256": "6af8dec9c10d274e47c253e844a07e46f74162f1799c3267ba1278e1a6989c61"
+    "sha256": "05b384db8c9ccf40d80ba85aae91800098ebd6ba0e61fb7716d44d131997db62",
+    "face": {
+      "shape": 3,
+      "radius": 0.125
+    }
   },
   "5.14.4": {
     "title": "Конец полосы для велосипедистов",
@@ -1193,7 +1769,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/8af3051b4e6b17af2f625c0b55db66fb.svg",
     "sourceSha256": "c92142217f0f85f4eb0a796e207fe058c1644d039f74ba787d140aca209e6267",
-    "sha256": "c92142217f0f85f4eb0a796e207fe058c1644d039f74ba787d140aca209e6267"
+    "sha256": "aa745ee8bb22290cc5d976811794d1405fc0376165af42bb85d68b2e19c9ac40",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "5.15.1": {
     "title": "Направления движения по полосам",
@@ -1201,7 +1781,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/0681ef67b1ece368503d8ea99032ae81.svg",
     "sourceSha256": "7a39dc4334430cd4cea35a0507f9e4cd9bcddec58da293cae01d028ba5d2c49f",
-    "sha256": "7a39dc4334430cd4cea35a0507f9e4cd9bcddec58da293cae01d028ba5d2c49f"
+    "sha256": "67f5354abe969b628aa5d552b3dd93fe439c65899d22a3e7bfe707763b70676c",
+    "face": {
+      "shape": 3,
+      "radius": 0.15
+    }
   },
   "5.15.2": {
     "title": "Направления движения по полосе",
@@ -1209,13 +1793,17 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/beef79c1d2b2eb4a94ff9e1ab2c8022b.svg",
     "sourceSha256": "bcf5eae02ab57c774b72f22d3203543c20882c2b76d4853ae7c6bbe3eb8b1dd9",
-    "sha256": "dfd5c614e923de79239bc22b66ba1ae64d08140c1e0972073d8f54b6c14df784",
     "panel": [
       11,
       11,
       80,
       80
-    ]
+    ],
+    "sha256": "69fa163e5aef556ee82e368ea9ce328db9d7c351dba193bc44770b35922e3fc5",
+    "face": {
+      "shape": 3,
+      "radius": 0.15
+    }
   },
   "5.15.3": {
     "title": "Начало полосы",
@@ -1223,13 +1811,17 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/b8f365d78f5e528c3bfd33af36910053.svg",
     "sourceSha256": "a16545657ab17d6468bdd1fbf6d5d1b33c76f690233f63a86b101ecba83c8e9c",
-    "sha256": "895215a6812489de60c53db420bcf18891cbce9a9ccfdfc9baacdb2d8c0f5a98",
     "panel": [
       14,
       11,
       80,
       80
-    ]
+    ],
+    "sha256": "062de3949ba14505cc3e9f095dc399d228236e962bbdd83a576cd29338cc2dbf",
+    "face": {
+      "shape": 3,
+      "radius": 0.15
+    }
   },
   "5.15.4": {
     "title": "Начало полосы",
@@ -1237,13 +1829,17 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ee0170555608e2a99a2329403621ebb9.svg",
     "sourceSha256": "dd7f5be705f14fb6c0203ea6637b56dea9c680aa54502e5406dbd7b2fbebb59a",
-    "sha256": "011a2022a1763fda0ab540338b7273e1baa2b3d31713928ed057432a30e0a63f",
     "panel": [
       14,
       12,
       80,
       80
-    ]
+    ],
+    "sha256": "9e57983b34251d2cdcee391e020a6ea88cb48a8aa9aa3390cd2b216867eefbfa",
+    "face": {
+      "shape": 3,
+      "radius": 0.15
+    }
   },
   "5.15.5": {
     "title": "Конец полосы",
@@ -1251,7 +1847,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/a366fbccc0d7e20f9d8ddf7c07f96a94.svg",
     "sourceSha256": "3ab3b4e833269022402f4ac96997cf957e254f050c39aed2421f166b9cde38d4",
-    "sha256": "3ab3b4e833269022402f4ac96997cf957e254f050c39aed2421f166b9cde38d4"
+    "sha256": "ff20a1cf26e699fadd4eb8fe00b498791ae5067f6ef60d77029f89fd298371fa",
+    "face": {
+      "shape": 3,
+      "radius": 0.1425
+    }
   },
   "5.15.6": {
     "title": "Конец полосы",
@@ -1259,7 +1859,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/7741be01f08c2b9cbc335ca3ca36b272.svg",
     "sourceSha256": "11bee36a6d3455c45a51ae9952dd7dc269697278bf38a936c1ad34524b547fc5",
-    "sha256": "11bee36a6d3455c45a51ae9952dd7dc269697278bf38a936c1ad34524b547fc5"
+    "sha256": "f01b6b944e7aa18a31a777b8be5f9279adf82cb633b8353e4fa7fb6e5d3d7269",
+    "face": {
+      "shape": 3,
+      "radius": 0.1375
+    }
   },
   "5.15.7": {
     "title": "Направление движения по полосам",
@@ -1267,13 +1871,17 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/21cfe9835811be4037063248f7f71722.svg",
     "sourceSha256": "0e79cdca05c3555a9eb097dab5480c12ae8695bc8c4b8a7354c3b56cb35af900",
-    "sha256": "0eaefd8e2c3eb51816c4a4ebde54dea89a11ca44f7cc3edb9febc49071f5c1a4",
     "panel": [
       28,
       19,
       142,
       72
-    ]
+    ],
+    "sha256": "03198bcba9fab1aa997e5f0c55df29f867ad335c2638fc683057cce6ee3f0836",
+    "face": {
+      "shape": 3,
+      "radius": 0.1675
+    }
   },
   "5.15.8": {
     "title": "Число полос",
@@ -1281,7 +1889,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/2fba92f5f3bfd14956d7bc4e6b463cc3.svg",
     "sourceSha256": "70009103e048d46ca8370aba29038638df7c4ce4899bcf06ffb479a435290353",
-    "sha256": "70009103e048d46ca8370aba29038638df7c4ce4899bcf06ffb479a435290353"
+    "sha256": "7c35e64d0c88e829e19ac6126b0c7fe15c572cea7c87a05e776746122aa9553f",
+    "face": {
+      "shape": 3,
+      "radius": 0.1975
+    }
   },
   "5.16": {
     "title": "Место остановки автобуса и (или) троллейбуса",
@@ -1289,7 +1901,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/d04e25e655acda59116d783bdd771c4a.svg",
     "sourceSha256": "8aea1d014d6833883cfad353465836ef26635e015e8823172d5c34455732b6a6",
-    "sha256": "8aea1d014d6833883cfad353465836ef26635e015e8823172d5c34455732b6a6"
+    "sha256": "95ba31d65780d5bd61ef7a07ae637d0fe2d70764de0db28e40719f7dfd13a71a",
+    "face": {
+      "shape": 3,
+      "radius": 0.1225
+    }
   },
   "5.17": {
     "title": "Место остановки трамвая",
@@ -1297,7 +1913,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/aca41c63f4d3ed3106c239531f68b8cb.svg",
     "sourceSha256": "6e6ea335b94403797035be772b7bc96bc0895ca856daf835435cc2702f419246",
-    "sha256": "6e6ea335b94403797035be772b7bc96bc0895ca856daf835435cc2702f419246"
+    "sha256": "7a11731e89559a201702b5d74fe0b3cfcea8a8ed4915661a43f6cff89cc79c89",
+    "face": {
+      "shape": 3,
+      "radius": 0.1575
+    }
   },
   "5.18": {
     "title": "Место стоянки легковых такси",
@@ -1305,7 +1925,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/e6b05e014f5c98ca11e53c44113ba47a.svg",
     "sourceSha256": "0f91d0326b4a048c03b717d02a1ede64aa8d3908363a214c1dffa96d46b23f34",
-    "sha256": "0f91d0326b4a048c03b717d02a1ede64aa8d3908363a214c1dffa96d46b23f34"
+    "sha256": "586cd95792e79a3bfcec52eb0c0627aae9343750c509843f4bbb725c5e37e609",
+    "face": {
+      "shape": 3,
+      "radius": 0.1625
+    }
   },
   "5.19.1": {
     "title": "Пешеходный переход",
@@ -1313,7 +1937,11 @@
     "folkName": "зебра",
     "source": "assets/countries/ru/images/signs/official_5_19_1.svg",
     "sourceSha256": "49b181ba61fd55480dfbcd2104a9c7527cd6ea7ac5656aa25697fe52b2734a4f",
-    "sha256": "49b181ba61fd55480dfbcd2104a9c7527cd6ea7ac5656aa25697fe52b2734a4f"
+    "sha256": "9997679dde0329e2b3bf4289b9b9544318971fa7c280f4dd065611789ec29976",
+    "face": {
+      "shape": 3,
+      "radius": 0.1025
+    }
   },
   "5.19.2": {
     "title": "Пешеходный переход",
@@ -1321,7 +1949,11 @@
     "folkName": "зебра",
     "source": "assets/countries/ru/images/signs/official_5_19_2.svg",
     "sourceSha256": "dd1e50ec6825a3416521e487937758b323086ae82de314b7f5bcfc5c0df3d434",
-    "sha256": "dd1e50ec6825a3416521e487937758b323086ae82de314b7f5bcfc5c0df3d434"
+    "sha256": "d9fe27c4f2bc0e1ac5e67c070cd7ac2562f27730a3009206a51a5e94e9e7935f",
+    "face": {
+      "shape": 3,
+      "radius": 0.1025
+    }
   },
   "5.20": {
     "title": "Искусственная неровность",
@@ -1329,7 +1961,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/770b1b65de5d3511d714f585ce68014b.svg",
     "sourceSha256": "79dc3abe9b5cb0e88774a402a743686204b0ae5f30be5cb82756289cb7c1aff5",
-    "sha256": "79dc3abe9b5cb0e88774a402a743686204b0ae5f30be5cb82756289cb7c1aff5"
+    "sha256": "893cef18cef48c5a27b9128fb6768744d205cf338aa1919faecab0903dbe0987",
+    "face": {
+      "shape": 3,
+      "radius": 0.1675
+    }
   },
   "5.21": {
     "title": "Жилая зона",
@@ -1337,7 +1973,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/b81a8535c1c8399750342e997c877a83.svg",
     "sourceSha256": "605f49ac0c141cbe16d4ba63963d408fad7dddf67bbf79fc71f76cbf19659286",
-    "sha256": "605f49ac0c141cbe16d4ba63963d408fad7dddf67bbf79fc71f76cbf19659286"
+    "sha256": "898c929d7b8aab39074b96d7937af833b78ee52ba628454cbbd1de54fcdf16b8",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "5.22": {
     "title": "Конец жилой зоны",
@@ -1345,7 +1985,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/05ff92d6ded01a43a03530c05540f5c2.svg",
     "sourceSha256": "7c84b9192f40f1a84774e501f082cb8c046280aa16b7f4d85e7fc329af930281",
-    "sha256": "7c84b9192f40f1a84774e501f082cb8c046280aa16b7f4d85e7fc329af930281"
+    "sha256": "93c7f90f4324fd8d28e5021a8c2eb3e41ed816a5d30638e0bf512b14112b7510",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "5.23.1": {
     "title": "Начало населенного пункта",
@@ -1353,7 +1997,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_23_1.svg",
     "sourceSha256": "27f6da7d837f29a17da39f22cbb75d7fb1be1d9601727db575ae5f5c72d1012f",
-    "sha256": "27f6da7d837f29a17da39f22cbb75d7fb1be1d9601727db575ae5f5c72d1012f"
+    "sha256": "27f6da7d837f29a17da39f22cbb75d7fb1be1d9601727db575ae5f5c72d1012f",
+    "face": {
+      "shape": 3,
+      "radius": 0.23
+    }
   },
   "5.23.2": {
     "title": "Начало населенного пункта",
@@ -1361,7 +2009,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_23_2.svg",
     "sourceSha256": "b033838fa7c3deb52d43ed2421c44fbd3cdef53accf256f73c17b499e718133e",
-    "sha256": "b033838fa7c3deb52d43ed2421c44fbd3cdef53accf256f73c17b499e718133e"
+    "sha256": "b033838fa7c3deb52d43ed2421c44fbd3cdef53accf256f73c17b499e718133e",
+    "face": {
+      "shape": 3,
+      "radius": 0.23
+    }
   },
   "5.24.1": {
     "title": "Конец населенного пункта",
@@ -1369,7 +2021,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_24_1.svg",
     "sourceSha256": "89b243255c4ca01b43058c84fc797f05b47927df9dde8ddc2fbbb371ad2a961f",
-    "sha256": "89b243255c4ca01b43058c84fc797f05b47927df9dde8ddc2fbbb371ad2a961f"
+    "sha256": "89b243255c4ca01b43058c84fc797f05b47927df9dde8ddc2fbbb371ad2a961f",
+    "face": {
+      "shape": 3,
+      "radius": 0.23
+    }
   },
   "5.24.2": {
     "title": "Конец населенного пункта",
@@ -1377,7 +2033,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_5_24_2.svg",
     "sourceSha256": "01b3133cafad52be86abbe310b7f74893733162bf465e87a62e9b28337821034",
-    "sha256": "01b3133cafad52be86abbe310b7f74893733162bf465e87a62e9b28337821034"
+    "sha256": "01b3133cafad52be86abbe310b7f74893733162bf465e87a62e9b28337821034",
+    "face": {
+      "shape": 3,
+      "radius": 0.23
+    }
   },
   "5.25": {
     "title": "Начало населенного пункта",
@@ -1385,7 +2045,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ee2aa080ca0917a408dc449cedf9a62f.svg",
     "sourceSha256": "c3d7ad576b3c0f77d24cba2527519ee1a09124d5246758e95b6a319846d6be1f",
-    "sha256": "c3d7ad576b3c0f77d24cba2527519ee1a09124d5246758e95b6a319846d6be1f"
+    "sha256": "91a4ae55d9c6419bb516ee44c43798bde7f4115b72f6a8037322f36a8b4c8388",
+    "face": {
+      "shape": 3,
+      "radius": 0.29
+    }
   },
   "5.26": {
     "title": "Конец населенного пункта",
@@ -1393,7 +2057,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/7d1a12c9641e63b01d7c130b3e52db06.svg",
     "sourceSha256": "5a08b47b180891103ea7c881f4db1ed4ee4b3a2ff1eb3d7ac1eb83a2a2c78bd6",
-    "sha256": "5a08b47b180891103ea7c881f4db1ed4ee4b3a2ff1eb3d7ac1eb83a2a2c78bd6"
+    "sha256": "33b179d215707a6a3918b22441b186af32e7ed5995543549d1a144032e272075",
+    "face": {
+      "shape": 3,
+      "radius": 0.29
+    }
   },
   "5.27": {
     "title": "Зона с ограничением стоянки",
@@ -1401,7 +2069,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/14c4e6f9bf615642cd376816b1c9a31b.svg",
     "sourceSha256": "1fc28db2431ce6714844cfa5c91824341734b74226b8818c06a3f56f2e69b0f0",
-    "sha256": "1fc28db2431ce6714844cfa5c91824341734b74226b8818c06a3f56f2e69b0f0"
+    "sha256": "1fc28db2431ce6714844cfa5c91824341734b74226b8818c06a3f56f2e69b0f0",
+    "face": {
+      "shape": 3,
+      "radius": 0.09
+    }
   },
   "5.28": {
     "title": "Конец зоны с ограничением стоянки",
@@ -1409,7 +2081,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/aa0da72b4ed18058857247a419b321d4.svg",
     "sourceSha256": "16be93eeeaec0309247372d4097a0e3b0d98ecb26537760d23da24a6f9f10286",
-    "sha256": "16be93eeeaec0309247372d4097a0e3b0d98ecb26537760d23da24a6f9f10286"
+    "sha256": "16be93eeeaec0309247372d4097a0e3b0d98ecb26537760d23da24a6f9f10286",
+    "face": {
+      "shape": 3,
+      "radius": 0.0325
+    }
   },
   "5.29": {
     "title": "Зона регулируемой стоянки",
@@ -1417,7 +2093,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/610af5057a545235a28e294c215ecccf.svg",
     "sourceSha256": "86d5b2178040338350e37a28139aa817ba61c04223322f245d103fc202aa93e3",
-    "sha256": "86d5b2178040338350e37a28139aa817ba61c04223322f245d103fc202aa93e3"
+    "sha256": "86d5b2178040338350e37a28139aa817ba61c04223322f245d103fc202aa93e3",
+    "face": {
+      "shape": 3,
+      "radius": 0.0225
+    }
   },
   "5.30": {
     "title": "Конец зоны регулируемой стоянки",
@@ -1425,7 +2105,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/8509aedb94c4ba5b421c708293fdb7ce.svg",
     "sourceSha256": "f035b42114d75d41c108c1849ef9b2a4d026b4c50a00807e9ac575b9465d5cbe",
-    "sha256": "f035b42114d75d41c108c1849ef9b2a4d026b4c50a00807e9ac575b9465d5cbe"
+    "sha256": "f035b42114d75d41c108c1849ef9b2a4d026b4c50a00807e9ac575b9465d5cbe",
+    "face": {
+      "shape": 3,
+      "radius": 0.06
+    }
   },
   "5.31": {
     "title": "Зона с ограничением максимальной скорости",
@@ -1433,7 +2117,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/bc1b8dc9f72988f492f1f6cb011431bb.svg",
     "sourceSha256": "91eea60e6246e53bb69c3bfe9c1b6e56c8358e8d206aaacd18b86b711fa4b864",
-    "sha256": "91eea60e6246e53bb69c3bfe9c1b6e56c8358e8d206aaacd18b86b711fa4b864"
+    "sha256": "91eea60e6246e53bb69c3bfe9c1b6e56c8358e8d206aaacd18b86b711fa4b864",
+    "face": {
+      "shape": 3,
+      "radius": 0.06
+    }
   },
   "5.32": {
     "title": "Конец зоны с ограничением максимальной скорости",
@@ -1441,7 +2129,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/e44d95bcd4b97b097c8473e98f189e77.svg",
     "sourceSha256": "217fb2665c086dc6c9cf434a3b242ab46d31838151f69579619a26f705b5ab72",
-    "sha256": "217fb2665c086dc6c9cf434a3b242ab46d31838151f69579619a26f705b5ab72"
+    "sha256": "217fb2665c086dc6c9cf434a3b242ab46d31838151f69579619a26f705b5ab72",
+    "face": {
+      "shape": 3,
+      "radius": 0.0225
+    }
   },
   "5.33": {
     "title": "Пешеходная зона",
@@ -1449,7 +2141,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/d52366ac63d7e334fd5be1b120360481.svg",
     "sourceSha256": "54687da4b028f4a1d5b9c0a6458eba58c8112665915a28fe0c37c8c4ab3105d9",
-    "sha256": "54687da4b028f4a1d5b9c0a6458eba58c8112665915a28fe0c37c8c4ab3105d9"
+    "sha256": "54687da4b028f4a1d5b9c0a6458eba58c8112665915a28fe0c37c8c4ab3105d9",
+    "face": {
+      "shape": 3,
+      "radius": 0.0525
+    }
   },
   "5.34": {
     "title": "Конец пешеходной зоны",
@@ -1457,7 +2153,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/e88445389c8086879623298c42b7fe19.svg",
     "sourceSha256": "41441b1a452b8c68bc6109b8f23c33b3a7696cdbf286c586a440f4f74e514c84",
-    "sha256": "41441b1a452b8c68bc6109b8f23c33b3a7696cdbf286c586a440f4f74e514c84"
+    "sha256": "41441b1a452b8c68bc6109b8f23c33b3a7696cdbf286c586a440f4f74e514c84",
+    "face": {
+      "shape": 3,
+      "radius": 0.0525
+    }
   },
   "5.35": {
     "title": "Зона с ограничением экологического класса механических транспортных средств",
@@ -1465,7 +2165,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/242f0f9e4e3b62378736cf94bfa497c3.svg",
     "sourceSha256": "4a398f285a42cc2c041d112a972e6417f5de62eb5c5ab6bf870350d8b51c5820",
-    "sha256": "cb8126adae89859e2bc4d241ae304a2223651356346c5dbaa9ce3b139d5193f7"
+    "sha256": "cb8126adae89859e2bc4d241ae304a2223651356346c5dbaa9ce3b139d5193f7",
+    "face": {
+      "shape": 3,
+      "radius": 0.055
+    }
   },
   "5.36": {
     "title": "Конец зоны с ограничением экологического класса механических транспортных средств",
@@ -1473,7 +2177,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/345a99a1a4b932347124cabca8d24ebf.svg",
     "sourceSha256": "1fc674b54de3771c0783923bdacb30aff70e19e710b01b286265b72fae0af134",
-    "sha256": "95618e9b155425167b90e1164a8f045ad02e09d9f6b3ab949e2309028c843c95"
+    "sha256": "95618e9b155425167b90e1164a8f045ad02e09d9f6b3ab949e2309028c843c95",
+    "face": {
+      "shape": 3,
+      "radius": 0.055
+    }
   },
   "5.37": {
     "title": "Зона с ограничением экологического класса по видам транспортных средств",
@@ -1481,7 +2189,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/1803985703e79e068adae5fbe8b509b6.svg",
     "sourceSha256": "5dda0d62ca033693e6a99d1badc5b8de1f9ad2048dad8da325922c5c0663ddda",
-    "sha256": "1256737d6f72515d3fbeb576a5fb732b408d5dd1e62ce32407b164dc4035e75b"
+    "sha256": "1256737d6f72515d3fbeb576a5fb732b408d5dd1e62ce32407b164dc4035e75b",
+    "face": {
+      "shape": 3,
+      "radius": 0.0625
+    }
   },
   "5.38": {
     "title": "Конец зоны с ограничением экологического класса по видам транспортных средств",
@@ -1489,7 +2201,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6d0f14589f6af543715764288d124d1e.svg",
     "sourceSha256": "407d2c1077c61225e834e423c8e21e0b05bd793baed29a335b7bc2a2027c8ca5",
-    "sha256": "aa9d386c3fb1ae4a62209e718e3bdeebbd034413ef1103c2fc771a8a63db8da3"
+    "sha256": "aa9d386c3fb1ae4a62209e718e3bdeebbd034413ef1103c2fc771a8a63db8da3",
+    "face": {
+      "shape": 3,
+      "radius": 0.0625
+    }
   },
   "5.39": {
     "title": "Велосипедная зона",
@@ -1497,7 +2213,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/d3160697c5cd4c697e7b68e4cbad44e3.svg",
     "sourceSha256": "8adea6475b96f493ddbee6a9a6fca17d236718b62b3590636b9b1d5202f52442",
-    "sha256": "1ed90ab271832e18128ff22ccb356241ec2060ba6ca38d0f1bfaaaa23151c673"
+    "sha256": "603c3899ab8d80ef2b0192ce85edae23ad5d1416cbbd5bb106c9c9ff5c955f99",
+    "face": {
+      "shape": 3,
+      "radius": 0.055
+    }
   },
   "5.40": {
     "title": "Конец велосипедной зоны",
@@ -1505,7 +2225,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/eeab078b65f048a6679d8c387c9706b8.svg",
     "sourceSha256": "a260383ac7dc7b67dbbec2650be1d42c07465629ec93f9c7c7b24f6115c24f65",
-    "sha256": "a3deb1a64d6779e3672792228476beb2ff9209ba1571fa1b6bf94832ccb2c7f3"
+    "sha256": "88186e1b5a6c7fa1c3724c7617b68cffcf2befd4de205dcb91e229d015565831",
+    "face": {
+      "shape": 0,
+      "radius": 0
+    }
   },
   "6.1": {
     "title": "Общие ограничения максимальной скорости",
@@ -1513,7 +2237,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/545aeb9ed09a63b6ba8c1d582309c18f.svg",
     "sourceSha256": "cb8d322e891081843ed5ad644181d55a0fb1980f452f7d7563808844c5f33fd3",
-    "sha256": "cb8d322e891081843ed5ad644181d55a0fb1980f452f7d7563808844c5f33fd3"
+    "sha256": "c368b2eb6dcdf0a4f8024e8b5392100de8901d8f6c4cde9f861bb989c9235ccc",
+    "face": {
+      "shape": 3,
+      "radius": 0.07
+    }
   },
   "6.2": {
     "title": "Рекомендуемая скорость",
@@ -1521,7 +2249,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/58b42c05d3e791c8263461b0e0379916.svg",
     "sourceSha256": "aa42c427e102b66ef6d13f83db9db5ee057d901202d23d5472108cd904f65f5f",
-    "sha256": "aa42c427e102b66ef6d13f83db9db5ee057d901202d23d5472108cd904f65f5f"
+    "sha256": "21fa48bb6d12dfd5ea66feceeda8d0580352ea6077c13e070ec2539bb9a27f0d",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "6.3.1": {
     "title": "Место для разворота",
@@ -1529,7 +2261,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/c5a140e4e6c30d973224af2a38a608bc.svg",
     "sourceSha256": "b02389b96f36dd1f510f7915c9cc5c23160429a64021098e8fa76610f9aedb9c",
-    "sha256": "b02389b96f36dd1f510f7915c9cc5c23160429a64021098e8fa76610f9aedb9c"
+    "sha256": "1a1ee421b32a0b5ec0916e78ea6e5452ec774160e302f6881b049e7ded96b3cb",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "6.3.2": {
     "title": "Зона для разворота",
@@ -1537,7 +2273,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/a8ae91018e84ca4d6838885ffb142419.svg",
     "sourceSha256": "4aee9f063eff5d0c2c991391d0be6cb4e07bb00b7ba697af9257b2ec53f60bf0",
-    "sha256": "4aee9f063eff5d0c2c991391d0be6cb4e07bb00b7ba697af9257b2ec53f60bf0"
+    "sha256": "0b8d3637d3bedea80feadeeaec10a16896084d5103e6ee4626108eb9d7205be2",
+    "face": {
+      "shape": 3,
+      "radius": 0.0475
+    }
   },
   "6.4": {
     "title": "Парковка (парковочное место)",
@@ -1545,7 +2285,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/9c264561036f4345cb397727afe03cb4.svg",
     "sourceSha256": "88f165b5f32bf42046d6f4143ba8db1e94654ca6fc4eabac53a9791b7f779127",
-    "sha256": "88f165b5f32bf42046d6f4143ba8db1e94654ca6fc4eabac53a9791b7f779127"
+    "sha256": "e6cdad6e88a5a6b084f01b44e07690795b87883b04a68c469ae5895002352849",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "6.5": {
     "title": "Полоса аварийной остановки",
@@ -1553,7 +2297,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6bf62a1a2494304fb5e03eb8d440ed70.svg",
     "sourceSha256": "450391c18cfe3041bbda2538b123ea6bb6f23e0415ce233ace1e117aa8a420d8",
-    "sha256": "450391c18cfe3041bbda2538b123ea6bb6f23e0415ce233ace1e117aa8a420d8"
+    "sha256": "427d3367f88921e5f0baf7c1198c1345724fecb0eebe372b3e3a91ac880a2abc",
+    "face": {
+      "shape": 3,
+      "radius": 0.0475
+    }
   },
   "6.6": {
     "title": "Подземный пешеходный переход",
@@ -1561,7 +2309,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/093777c883e6312ca8ca3cd7cf5e4516.svg",
     "sourceSha256": "6381440a6df28c4a9dbcfe0e287500775c2a55449105c479f1fcb245c1ab5cf2",
-    "sha256": "6381440a6df28c4a9dbcfe0e287500775c2a55449105c479f1fcb245c1ab5cf2"
+    "sha256": "0d867869d79a2f6b87610927f058afbe5b26883fb03938d10eb7c919a3f420af",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "6.7": {
     "title": "Надземный пешеходный переход",
@@ -1569,7 +2321,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/790e884d35ea1f9dc3ae8946276c0506.svg",
     "sourceSha256": "8663a21ce9d20f3c99e761847ab9e88a50496cd328a1956bca38076399b09434",
-    "sha256": "8663a21ce9d20f3c99e761847ab9e88a50496cd328a1956bca38076399b09434"
+    "sha256": "d47bfab25092d5cd09463157922cbea91724f19d8d3766748c086bffcef50ac4",
+    "face": {
+      "shape": 3,
+      "radius": 0.0475
+    }
   },
   "6.8.1": {
     "title": "Тупик",
@@ -1577,7 +2333,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6698506a4dfde9bdd505a9416cf99ad1.svg",
     "sourceSha256": "bf5a6bed561d3b4d96d3b33c183e660a22be5cedda620b49c19818e166b95fd3",
-    "sha256": "bf5a6bed561d3b4d96d3b33c183e660a22be5cedda620b49c19818e166b95fd3"
+    "sha256": "b4e82942ccafe2add56c696b56eb38b8ae870598180ae6b68d84c814f71c5b0c",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "6.8.2": {
     "title": "Тупик",
@@ -1585,7 +2345,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/bc53ce5cc147dc114b979ce607ee2046.svg",
     "sourceSha256": "c7d377459d83cc56d414d5838effcce1521cbe662d397b0639d236e21ce6be67",
-    "sha256": "c7d377459d83cc56d414d5838effcce1521cbe662d397b0639d236e21ce6be67"
+    "sha256": "f458b3da54173cfb60b88b4d654abf73ff33838fa1b789b3f6783489163fff5d",
+    "face": {
+      "shape": 3,
+      "radius": 0.0475
+    }
   },
   "6.8.3": {
     "title": "Тупик",
@@ -1593,7 +2357,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f00d3ce68923a5484fe6c4dd7fb88ca1.svg",
     "sourceSha256": "be26ebbe5fe9d5f1669e821a71b9c7b54783615c6777d4302c2feaca1fe5b2c0",
-    "sha256": "be26ebbe5fe9d5f1669e821a71b9c7b54783615c6777d4302c2feaca1fe5b2c0"
+    "sha256": "63cf9db0b71f1bb3b5d7ec2bfb8006d666bf4e1e5d41f8c63094f65472bf02a1",
+    "face": {
+      "shape": 3,
+      "radius": 0.0475
+    }
   },
   "6.9.1": {
     "title": "Предварительный указатель направлений",
@@ -1601,7 +2369,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/78675c94103f63e2c9e95721177f85b7.svg",
     "sourceSha256": "d432eec6d922f87ac571f66bd650a11193ec7746346f3e735e64d92b5fa6cd5f",
-    "sha256": "d432eec6d922f87ac571f66bd650a11193ec7746346f3e735e64d92b5fa6cd5f"
+    "sha256": "d432eec6d922f87ac571f66bd650a11193ec7746346f3e735e64d92b5fa6cd5f",
+    "face": {
+      "shape": 0,
+      "radius": 0
+    }
   },
   "6.9.2": {
     "title": "Предварительный указатель направления",
@@ -1609,7 +2381,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/581726513bf08809b4bb12dc9de91198.svg",
     "sourceSha256": "9fa802113ee6fb258fdc74bb55278672577d3ddbd0469ac72f570fd94af5b2dd",
-    "sha256": "9fa802113ee6fb258fdc74bb55278672577d3ddbd0469ac72f570fd94af5b2dd"
+    "sha256": "c9867c3978ac423cf4cb6bc6792ad6ce5b3925f06e935cad11f31f8881cfca21",
+    "face": {
+      "shape": 0,
+      "radius": 0
+    }
   },
   "6.9.3": {
     "title": "Схема движения",
@@ -1617,7 +2393,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/1679d3602327fc9e02252cbd987827d2.svg",
     "sourceSha256": "a48fb7eccde004e4962a78a756a59ca6e65c5db948431c1e93e52720ae1d8ac9",
-    "sha256": "a48fb7eccde004e4962a78a756a59ca6e65c5db948431c1e93e52720ae1d8ac9"
+    "sha256": "375e3dab958f5c4ea969ebd4259f03e000cf5d27d1c333843d3cad29da30164f",
+    "face": {
+      "shape": 3,
+      "radius": 0.1075
+    }
   },
   "6.10.1": {
     "title": "Указатель направлений",
@@ -1625,7 +2405,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ed1863f394cab85e875897a4a7301b7b.svg",
     "sourceSha256": "38251611f0fab2443b7e091dd8a59f20ddf66b2700327382053cc19c800b308b",
-    "sha256": "38251611f0fab2443b7e091dd8a59f20ddf66b2700327382053cc19c800b308b"
+    "sha256": "9f852ea1b51fa7904066679a26aa0be11882311baa0d2758f1ae88235529a0be",
+    "face": {
+      "shape": 0,
+      "radius": 0
+    }
   },
   "6.10.2": {
     "title": "Указатель направления",
@@ -1633,7 +2417,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/13b861438d0ef9fd4f9c7b07fae66f50.svg",
     "sourceSha256": "36feed290fa7d29b5440d19f583e28134726b276f974752009adf368473461f3",
-    "sha256": "36feed290fa7d29b5440d19f583e28134726b276f974752009adf368473461f3"
+    "sha256": "fe5cd23e68e39ea7c38761d2df3ba4b0b8d7717ef160da9965ed8cbf4be9eedf",
+    "face": {
+      "shape": 0,
+      "radius": 0
+    }
   },
   "6.11": {
     "title": "Наименование объекта",
@@ -1641,7 +2429,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/d9499edc5f28b0dad5d1cf96a948c008.svg",
     "sourceSha256": "7644c42a6eeda5ea4143604cc8dd1423516c02968d19af2a5584c1e64d0063e2",
-    "sha256": "7644c42a6eeda5ea4143604cc8dd1423516c02968d19af2a5584c1e64d0063e2"
+    "sha256": "35a20301f6a4f4b7a8b197ade2b6d9535006a6eb2410952c6ab738313e837ed8",
+    "face": {
+      "shape": 0,
+      "radius": 0
+    }
   },
   "6.12": {
     "title": "Указатель расстояний",
@@ -1649,7 +2441,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/b665ed30bb7c753703354357f288ef6a.svg",
     "sourceSha256": "833b74be6fb488cdccb8c30593d70b22f4632a3be6cfe2912c01adf8d447d25f",
-    "sha256": "833b74be6fb488cdccb8c30593d70b22f4632a3be6cfe2912c01adf8d447d25f"
+    "sha256": "b2f04a99b0e6ed21825c46ac15ae8521101540a61582b54b2eef9c4b20fbef7a",
+    "face": {
+      "shape": 3,
+      "radius": 0.17
+    }
   },
   "6.13": {
     "title": "Километровый знак",
@@ -1657,7 +2453,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/76ba0dea92f4426642503b1de1ccb9b3.svg",
     "sourceSha256": "7dcd5ee40f33e998de73dda268fb11a68d409b772939a7e1ef0a2bc3a68c46d9",
-    "sha256": "7dcd5ee40f33e998de73dda268fb11a68d409b772939a7e1ef0a2bc3a68c46d9"
+    "sha256": "d8e7e4ae18e30acd4dac31e26686cefa7480f55d185d2168d940c841e55398a6",
+    "face": {
+      "shape": 3,
+      "radius": 0.26
+    }
   },
   "6.14.1": {
     "title": "Номер маршрута",
@@ -1665,7 +2465,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/43ee93f9beef73510d34a41e5f2e67d8.svg",
     "sourceSha256": "2a624937d091b238bdeaee2a1a65f300b2cfe066025e50ce6a8ad3c23632aa3d",
-    "sha256": "2a624937d091b238bdeaee2a1a65f300b2cfe066025e50ce6a8ad3c23632aa3d"
+    "sha256": "92d34b64c2b4428579bb030d4958cc8a2096df4ff805451e41c084b8cee82814",
+    "face": {
+      "shape": 0,
+      "radius": 0
+    }
   },
   "6.14.2": {
     "title": "Номер маршрута",
@@ -1673,7 +2477,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/9d77fef1dd077bcd6d5bd46fb4fbe20d.svg",
     "sourceSha256": "5292f731658f111530e870e54346815f727481b33d2a41d30821cacded8ba086",
-    "sha256": "5292f731658f111530e870e54346815f727481b33d2a41d30821cacded8ba086"
+    "sha256": "25df17147acefbf3d7c24426e7b8d0cdebf26e675ae9d878afb64d8a7e6210c0",
+    "face": {
+      "shape": 0,
+      "radius": 0
+    }
   },
   "6.15.1": {
     "title": "Направление движения для грузовых автомобилей",
@@ -1681,7 +2489,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/97fec8946f925b9144aced6c6c045173.svg",
     "sourceSha256": "73c8c550f33e129f7bb97a67d2c708d48ab12f6399b7a55cf90aa5e1c11c48fa",
-    "sha256": "73c8c550f33e129f7bb97a67d2c708d48ab12f6399b7a55cf90aa5e1c11c48fa"
+    "sha256": "fefd5b5c0dace0c3163fe331ac6047d7f6ff744be0d58dcb5818c0d663cbc51b",
+    "face": {
+      "shape": 3,
+      "radius": 0.235
+    }
   },
   "6.15.2": {
     "title": "Направление движения для грузовых автомобилей",
@@ -1689,7 +2501,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/845885e866c35707924f6185b2f0f0dd.svg",
     "sourceSha256": "c5d26eade7e49ee854c954634d27fd43dcec54c808be39692fdd4a3f662a8067",
-    "sha256": "c5d26eade7e49ee854c954634d27fd43dcec54c808be39692fdd4a3f662a8067"
+    "sha256": "4452ebff3779d3c287715473eddd2895b262853a5bf5428c7a86512719acc317",
+    "face": {
+      "shape": 3,
+      "radius": 0.25
+    }
   },
   "6.15.3": {
     "title": "Направление движения для грузовых автомобилей",
@@ -1697,7 +2513,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/94a167e72fa9fa1e86a5e916b5f9f304.svg",
     "sourceSha256": "500e3d46bfe228c4a5141e56208c9698f274744b31197aef660c15ff3ab33d78",
-    "sha256": "500e3d46bfe228c4a5141e56208c9698f274744b31197aef660c15ff3ab33d78"
+    "sha256": "2b71c9bcc294845d77f9e5e6031d21f94708fbdb1de2cc45c5d4b7fc991f2b99",
+    "face": {
+      "shape": 3,
+      "radius": 0.25
+    }
   },
   "6.16": {
     "title": "Стоп-линия",
@@ -1705,7 +2525,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/3343f65fb065ffe6481350c2829522c2.svg",
     "sourceSha256": "d4b97d669abb31f25d15fbfa919a202768c4e939a271c5cd3d88ceabf5e9c025",
-    "sha256": "d4b97d669abb31f25d15fbfa919a202768c4e939a271c5cd3d88ceabf5e9c025"
+    "sha256": "d7d4c2614dcbe7a626300ed657db28a6c1ec0cf8ed6d6bac7dad2ec14cba5b12",
+    "face": {
+      "shape": 3,
+      "radius": 0.2725
+    }
   },
   "6.17": {
     "title": "Схема объезда",
@@ -1713,7 +2537,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f471a5ecb73a5a95f6d5820518ff4da0.svg",
     "sourceSha256": "d9b7dc61d0fc27c716b1019c4c6e6cfaa11c4743ac142fd8bc9e82319383d4dc",
-    "sha256": "d9b7dc61d0fc27c716b1019c4c6e6cfaa11c4743ac142fd8bc9e82319383d4dc"
+    "sha256": "ea02efe22bd662962b81cab512dba3b9d767204b8d52fb590be889354783e8ca",
+    "face": {
+      "shape": 3,
+      "radius": 0.0975
+    }
   },
   "6.18.1": {
     "title": "Направление объезда",
@@ -1721,7 +2549,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/36dec91dd31b821fd5cf0feab858d1c6.svg",
     "sourceSha256": "5503402857fb573bcb4e5865968d1c7541e9d4ce9367da416e9349b6669309e6",
-    "sha256": "5503402857fb573bcb4e5865968d1c7541e9d4ce9367da416e9349b6669309e6"
+    "sha256": "a05d112a488c448ea024a5c015febcee8325de364fcb784919c2d8c06711973b",
+    "face": {
+      "shape": 3,
+      "radius": 0.26
+    }
   },
   "6.18.2": {
     "title": "Направление объезда",
@@ -1729,7 +2561,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/66ee62828d0a1d953852d4d66daf99f6.svg",
     "sourceSha256": "544d64cbb15ac209527e957774e7365a6310cd0a4605e30cb2dc3b4c507d12a0",
-    "sha256": "544d64cbb15ac209527e957774e7365a6310cd0a4605e30cb2dc3b4c507d12a0"
+    "sha256": "58e7ce13b076423426bc5a62a4d5cc73ac9cd66cdebca5e0df32ccf76278f1bd",
+    "face": {
+      "shape": 3,
+      "radius": 0.26
+    }
   },
   "6.18.3": {
     "title": "Направление объезда",
@@ -1737,7 +2573,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/5e38e7445fd02cb20ac7109d433117bc.svg",
     "sourceSha256": "e13d1213a09a81e38ca9c0d3c64db74af0c1eccf0674535ec02d28594d880491",
-    "sha256": "e13d1213a09a81e38ca9c0d3c64db74af0c1eccf0674535ec02d28594d880491"
+    "sha256": "66420b317fc25598cacc78629edfe374620c4497f0a2f264a42f13c0a59253fc",
+    "face": {
+      "shape": 3,
+      "radius": 0.26
+    }
   },
   "6.19.1": {
     "title": "Предварительный указатель перестроения на другую проезжую часть",
@@ -1745,7 +2585,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_6_19_1.svg",
     "sourceSha256": "defa8cdf700284e3239b73f36e40694ef91e30f013ade85c1774d86bcfd119ea",
-    "sha256": "defa8cdf700284e3239b73f36e40694ef91e30f013ade85c1774d86bcfd119ea"
+    "sha256": "4505f464f7096d4a5fd86331cd77a9090cd33c3460235b120ad2de1208238700",
+    "face": {
+      "shape": 3,
+      "radius": 0.07
+    }
   },
   "6.19.2": {
     "title": "Предварительный указатель перестроения на другую проезжую часть",
@@ -1753,7 +2597,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_6_19_2.svg",
     "sourceSha256": "229db28d379f0f70d33d46e138a2dd83495ebdbf755ec1e6a6d06647e9118ccd",
-    "sha256": "229db28d379f0f70d33d46e138a2dd83495ebdbf755ec1e6a6d06647e9118ccd"
+    "sha256": "580776014106fdf7da459f409c110569a3f04b8ba93a303a86a647a5762d4677",
+    "face": {
+      "shape": 3,
+      "radius": 0.07
+    }
   },
   "6.20.1": {
     "title": "Аварийный выход",
@@ -1761,7 +2609,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_6_20_1.svg",
     "sourceSha256": "cf8d7215ce75c7adbd5bf0cb138a45e93900bba8e9aa0fde8d5dc1acaba4b935",
-    "sha256": "cf8d7215ce75c7adbd5bf0cb138a45e93900bba8e9aa0fde8d5dc1acaba4b935"
+    "sha256": "831052d3af4cecc234c8dc293cd12394aa66e35eb486ae77a226855a03720f26",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "6.20.2": {
     "title": "Аварийный выход",
@@ -1769,7 +2621,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_6_20_2.svg",
     "sourceSha256": "149eb60eabe0bbcd35b7771c0c3b69cc8d4c5af7fac0708655dfd6d166c4972f",
-    "sha256": "149eb60eabe0bbcd35b7771c0c3b69cc8d4c5af7fac0708655dfd6d166c4972f"
+    "sha256": "592c5bd11e09591f1aeadb76d147d0e4cbe93240bc6fd6697468801e576b9502",
+    "face": {
+      "shape": 3,
+      "radius": 0.1475
+    }
   },
   "6.21.1": {
     "title": "Направление движения к аварийному выходу",
@@ -1777,7 +2633,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_6_21_1.svg",
     "sourceSha256": "21eb76db680378f612629b652b19ca92ceeb7ac082dfe4a17a40f00847a021e7",
-    "sha256": "2de7619a3a08082d71f169699b275b12cf299066519bd703ba448f01f3b7971b"
+    "sha256": "2de7619a3a08082d71f169699b275b12cf299066519bd703ba448f01f3b7971b",
+    "face": {
+      "shape": 3,
+      "radius": 0.2525
+    }
   },
   "6.21.2": {
     "title": "Направление движения к аварийному выходу",
@@ -1785,7 +2645,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_6_21_2.svg",
     "sourceSha256": "e247649ddb3e9af7ab403758fcf358f8f6068d6d2cb94db786df6057c7abab8f",
-    "sha256": "db62ecfa2d0163f95e9271bf766dec3e578119cb20efb714351ede014baf1d9d"
+    "sha256": "db62ecfa2d0163f95e9271bf766dec3e578119cb20efb714351ede014baf1d9d",
+    "face": {
+      "shape": 3,
+      "radius": 0.2525
+    }
   },
   "6.22": {
     "title": "Фотовидеофиксация",
@@ -1793,7 +2657,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/8228a3dcddaa013dc8fd8e816cc22cc9.svg",
     "sourceSha256": "7f1937a505775ddbe878399c72edd2d5e3e63971349eb2851fa4d79efd960709",
-    "sha256": "7f1937a505775ddbe878399c72edd2d5e3e63971349eb2851fa4d79efd960709"
+    "sha256": "7f1937a505775ddbe878399c72edd2d5e3e63971349eb2851fa4d79efd960709",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "7.1": {
     "title": "Пункт медицинской помощи",
@@ -1801,7 +2669,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/aeefa11a7668b0f779cbbf50c0dbf748.svg",
     "sourceSha256": "2b2f40318e35cd65cbecf1c2886f541083c4bfedf5f982fe317de88bb3d87960",
-    "sha256": "2b2f40318e35cd65cbecf1c2886f541083c4bfedf5f982fe317de88bb3d87960"
+    "sha256": "a18d1d67810871237a08c13d6c80498b04b8d97e15709ab73458c3aea710f0de",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.2": {
     "title": "Больница",
@@ -1809,7 +2681,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/8bc512242cc8d3e084ad1f59eda9a863.svg",
     "sourceSha256": "ff27ad151c267cc4d2de1409d0084bf2d5776c390068c92cc3eb9692194f3883",
-    "sha256": "ff27ad151c267cc4d2de1409d0084bf2d5776c390068c92cc3eb9692194f3883"
+    "sha256": "e5bdc9e7b512292595e9ab36d19157922e72ff8ec31b3b184aa14a4673372dba",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.3": {
     "title": "Автозаправочная станция",
@@ -1817,7 +2693,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f33fe3ea91d17dd2e1471bb7403430c9.svg",
     "sourceSha256": "ce4acbe285c304e242f9aa368be6c375873956233093fb2bac7e2ea9cb4c9ce7",
-    "sha256": "ce4acbe285c304e242f9aa368be6c375873956233093fb2bac7e2ea9cb4c9ce7"
+    "sha256": "fdbafb92a1bd3b6831ec7b2cd918aa17ce6cbca74c269884ad72eddd37727621",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.4": {
     "title": "Техническое обслуживание автомобилей",
@@ -1825,7 +2705,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/b1b835da7a2ff04a831c0d5321e853da.svg",
     "sourceSha256": "3370a4fe34a5b8db64a03c2336ed9b2cf5ca42f2771b6ea763981ffd6bcf7ae2",
-    "sha256": "3370a4fe34a5b8db64a03c2336ed9b2cf5ca42f2771b6ea763981ffd6bcf7ae2"
+    "sha256": "689badf08fd7a455cc62d3800370bda9ebf7cfafe5812dc5f29a94480de00982",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.5": {
     "title": "Мойка автомобилей",
@@ -1833,7 +2717,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/9fdf2e19bc009ba511d778fadbd5aeb7.svg",
     "sourceSha256": "7d3ecce59e4464e0afb0fd2700ca72aed6dc8221d8b804794c6475240ecdc1f5",
-    "sha256": "7d3ecce59e4464e0afb0fd2700ca72aed6dc8221d8b804794c6475240ecdc1f5"
+    "sha256": "d0f283a0bfdc50fe766531e62457248abc87fe48c53b8a86e0058e16666bbf12",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.6": {
     "title": "Телефон",
@@ -1841,7 +2729,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/2eac94f432d3ee50afdeac2fb4c463b5.svg",
     "sourceSha256": "8c3d360de24e65b570b1537c4e966a0481410bc4c665982367fdbf4937fd09fc",
-    "sha256": "8c3d360de24e65b570b1537c4e966a0481410bc4c665982367fdbf4937fd09fc"
+    "sha256": "8620727a61c5c8c3410482bb14da7be160eb274b0399f84543d8d65f8d6534b3",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.7": {
     "title": "Пункт питания",
@@ -1849,7 +2741,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/cdf562fd51c6bd678899ab95a68250a5.svg",
     "sourceSha256": "b8d221ba746205a1891ee645039a22cff63ebc077d36299b3efca170ca77b2ac",
-    "sha256": "b8d221ba746205a1891ee645039a22cff63ebc077d36299b3efca170ca77b2ac"
+    "sha256": "1879d06d7dff20ddc424f20cbed06c6a280502e17844d5c61f3f28ffcc5ef353",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.8": {
     "title": "Питьевая вода",
@@ -1857,7 +2753,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/d0adc92b61f004c713c26d08e9114eb8.svg",
     "sourceSha256": "d4a0a7ae3e995f2f3ef79997820696e728b4c105ea26817b289d1e783f8ab6cb",
-    "sha256": "d4a0a7ae3e995f2f3ef79997820696e728b4c105ea26817b289d1e783f8ab6cb"
+    "sha256": "bc5b08c2a96541a436a0f2fc728f9e82c4dfc9d7f7fa392af9d748faa95d85be",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.9": {
     "title": "Гостиница или мотель",
@@ -1865,7 +2765,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/50f03ffa7c33a8dcb7df429e0837cfbb.svg",
     "sourceSha256": "18c4794179851536a2acab4e7dd2c0ee5692a3c70552bd6e358eaebb2399eeed",
-    "sha256": "18c4794179851536a2acab4e7dd2c0ee5692a3c70552bd6e358eaebb2399eeed"
+    "sha256": "11dba74cba8e63705b811508a3bbe60f679a2638f1e40dd3ec8555f2d5e5fcdb",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.10": {
     "title": "Кемпинг",
@@ -1873,7 +2777,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f1373aa9762a336d2752c7ed8cbf9850.svg",
     "sourceSha256": "943d3388b62952393eb43ed091a23844bf47de8eb7db675c1ef6e57aaa95770a",
-    "sha256": "943d3388b62952393eb43ed091a23844bf47de8eb7db675c1ef6e57aaa95770a"
+    "sha256": "21ac4341f35586431758849b9eaf2fad8c32e0dd413b1c60d4360f035b6d4521",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.11": {
     "title": "Место отдыха",
@@ -1881,7 +2789,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f05ee79d3126e8f4ec8307e9bfe0baf2.svg",
     "sourceSha256": "16fe66e320e34b67d319c2a599c1a3cc193aabf3891312915bd2cd7cc45f2373",
-    "sha256": "16fe66e320e34b67d319c2a599c1a3cc193aabf3891312915bd2cd7cc45f2373"
+    "sha256": "3f5eacc07eadd4197fc9294486405c1451f03c91439078a8d105af0cbd5e1c23",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.12": {
     "title": "Пост дорожно-патрульной службы",
@@ -1889,7 +2801,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f6fe79ec307f75faa8347a470586532b.svg",
     "sourceSha256": "70360bc85dee652430fafae4457fc5c907fcaa807fa2b3e2415a31c9c52ced0c",
-    "sha256": "70360bc85dee652430fafae4457fc5c907fcaa807fa2b3e2415a31c9c52ced0c"
+    "sha256": "ec5c06cd56293ef2b5337b45cc5fc7d69b38588d89358dea72b511ad4dff4387",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.13": {
     "title": "Полиция",
@@ -1897,7 +2813,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/0c3947bf4d54a57c386e151b17fd02b2.svg",
     "sourceSha256": "b2952ed7e827b4145df578c0e1612a6c0a82884434ae371fe3020aec8ce6c8bc",
-    "sha256": "b2952ed7e827b4145df578c0e1612a6c0a82884434ae371fe3020aec8ce6c8bc"
+    "sha256": "1656e05b45f5c13438fc1d057715ead3d640094b1e6182e8823267a60febdc89",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.14.1": {
     "title": "Пункт таможенного контроля",
@@ -1905,7 +2825,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_7_14_1.svg",
     "sourceSha256": "d428e1e6dd39065014063bc8bb99f573802c39cd9a245a93bf94403476cee8c8",
-    "sha256": "d428e1e6dd39065014063bc8bb99f573802c39cd9a245a93bf94403476cee8c8"
+    "sha256": "d428e1e6dd39065014063bc8bb99f573802c39cd9a245a93bf94403476cee8c8",
+    "face": {
+      "shape": 3,
+      "radius": 0.085
+    }
   },
   "7.14.2": {
     "title": "Пункт транспортного контроля",
@@ -1913,7 +2837,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/3476127cc3910b6859d3cc1ae0d1807d.svg",
     "sourceSha256": "11b1e98b85544fcd67223379e34519bb76dd77afc8707776199a74190e229d9d",
-    "sha256": "11b1e98b85544fcd67223379e34519bb76dd77afc8707776199a74190e229d9d"
+    "sha256": "c473cb20a5576549393e983a8ffd3a0aa2c8ef4b974bba0e731fd175ec9c26f4",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.15": {
     "title": "Зона приема радиостанции, передающей информацию о дорожном движении",
@@ -1921,7 +2849,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/fe7c5ee643acc09f3b2d53bd13b05587.svg",
     "sourceSha256": "1c6953bc8702e5349582112d165a9e26799a6dbb4efbe2d9945089156874f435",
-    "sha256": "1c6953bc8702e5349582112d165a9e26799a6dbb4efbe2d9945089156874f435"
+    "sha256": "074c2cb1bbfb025b1bd46f9db4ce8c822a56b7dd265ca11b6b02c33f0e881735",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.16": {
     "title": "Зона радиосвязи с аварийными службами",
@@ -1929,7 +2861,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/4e9d823ddb98beb52f3ea6fc05270b69.svg",
     "sourceSha256": "57363c6a7294b47a3a6d14983388485cd1a38ab4e95d97d21125e46a4d9bee7e",
-    "sha256": "57363c6a7294b47a3a6d14983388485cd1a38ab4e95d97d21125e46a4d9bee7e"
+    "sha256": "4f863df32be83777042b104c2670f15627eba169f4f1e2b94a1c53dad6fe47e4",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.17": {
     "title": "Бассейн или пляж",
@@ -1937,7 +2873,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/bd4b37d28532d055639fb030d3956ab1.svg",
     "sourceSha256": "36299bc4c49e5a6ed18011e483c4f48eb88daf3d2d5a3cef4f1163b7d0ca6b89",
-    "sha256": "36299bc4c49e5a6ed18011e483c4f48eb88daf3d2d5a3cef4f1163b7d0ca6b89"
+    "sha256": "d23dae04dc8e6c2330f8292489073a25c3950cff1d21c01d54fc63a9ae2449d8",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.18": {
     "title": "Туалет",
@@ -1945,7 +2885,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/78a6ed148fc072db020201c9f125ca0a.svg",
     "sourceSha256": "2faec5a3eb763ae91ea08c5c7b15a081dd0632fe3062f243663e37b307068671",
-    "sha256": "2faec5a3eb763ae91ea08c5c7b15a081dd0632fe3062f243663e37b307068671"
+    "sha256": "23ceae7b9f4ed2b7b4d75007269afb9f151d1bf09376a1d5f4a568f9e91cacf6",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.19": {
     "title": "Телефон экстренной связи",
@@ -1953,7 +2897,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/cf703c67799e91157aab4f7c883de05d.svg",
     "sourceSha256": "fd18e6f33cf897556362841615e6fc8f8ca05bec68098378030e85fa8b6c5be5",
-    "sha256": "fd18e6f33cf897556362841615e6fc8f8ca05bec68098378030e85fa8b6c5be5"
+    "sha256": "54cdb24d000ec146d5cb4aac86eccdc90070c7050916405dfa16a7aa0f952038",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.20": {
     "title": "Огнетушитель",
@@ -1961,7 +2909,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/aa6600355aebedbb91683be842e94417.svg",
     "sourceSha256": "5482c3753081b7cf41f9719ba1db9995022788dc45f7ba093a9cc60e2973e876",
-    "sha256": "5482c3753081b7cf41f9719ba1db9995022788dc45f7ba093a9cc60e2973e876"
+    "sha256": "efd68fc4a11d7fd64fb6faaf13408fd190ceec3ad5633e1096291138723d7ec2",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "7.21": {
     "title": "Автозаправочная станция с возможностью зарядки электромобилей",
@@ -1969,7 +2921,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/c12f75d4384149c8aec3a074d67cda52.svg",
     "sourceSha256": "79eef925a67730b9f1b7902526dc4429dd58f38f375659b52ced00db84661300",
-    "sha256": "79eef925a67730b9f1b7902526dc4429dd58f38f375659b52ced00db84661300"
+    "sha256": "2f79df86edd8de59a5af4a1c20949e2ecedf5dd1b2141b306d3d875001f350ea",
+    "face": {
+      "shape": 3,
+      "radius": 0.105
+    }
   },
   "8.1.1": {
     "title": "Расстояние до объекта",
@@ -1977,7 +2933,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/3badd393679a1ea39b13d2fa69c93e83.svg",
     "sourceSha256": "c6bce19a385d06e9453d50971216f25e15626604c994e9c12be94bec401ba74d",
-    "sha256": "c6bce19a385d06e9453d50971216f25e15626604c994e9c12be94bec401ba74d"
+    "sha256": "c6bce19a385d06e9453d50971216f25e15626604c994e9c12be94bec401ba74d",
+    "face": {
+      "shape": 3,
+      "radius": 0.275
+    }
   },
   "8.1.2": {
     "title": "Расстояние до объекта",
@@ -1985,7 +2945,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/49758cdf5b7557a1356a4b71f7acf36c.svg",
     "sourceSha256": "f0451a0bdfbecc58b6de0c48ae5992b70792c1209cf053155d18eac25d8f61cc",
-    "sha256": "f0451a0bdfbecc58b6de0c48ae5992b70792c1209cf053155d18eac25d8f61cc"
+    "sha256": "f0451a0bdfbecc58b6de0c48ae5992b70792c1209cf053155d18eac25d8f61cc",
+    "face": {
+      "shape": 3,
+      "radius": 0.1375
+    }
   },
   "8.1.3": {
     "title": "Расстояние до объекта",
@@ -1993,7 +2957,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/1044a05986e556d51dd020126f0f89f0.svg",
     "sourceSha256": "dc0546938b6de57a394c4a7251cc7f76aa764d01c327975998fe94dffd3146b2",
-    "sha256": "dc0546938b6de57a394c4a7251cc7f76aa764d01c327975998fe94dffd3146b2"
+    "sha256": "dc0546938b6de57a394c4a7251cc7f76aa764d01c327975998fe94dffd3146b2",
+    "face": {
+      "shape": 3,
+      "radius": 0.285
+    }
   },
   "8.1.4": {
     "title": "Расстояние до объекта",
@@ -2001,7 +2969,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/7a75b0d4b68f950dc62eb43238cad6d5.svg",
     "sourceSha256": "bf515d36feaabb56c5e71d996447ff9bf031329659f0bcbfaa1655be81a3a445",
-    "sha256": "bf515d36feaabb56c5e71d996447ff9bf031329659f0bcbfaa1655be81a3a445"
+    "sha256": "bf515d36feaabb56c5e71d996447ff9bf031329659f0bcbfaa1655be81a3a445",
+    "face": {
+      "shape": 3,
+      "radius": 0.285
+    }
   },
   "8.2.1": {
     "title": "Зона действия",
@@ -2009,7 +2981,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_2_1.svg",
     "sourceSha256": "fe092991f8c716bda2e1f0ae4fd6dc401c1f8725c032a2d06c3d01dba394a6cb",
-    "sha256": "fe092991f8c716bda2e1f0ae4fd6dc401c1f8725c032a2d06c3d01dba394a6cb"
+    "sha256": "fe092991f8c716bda2e1f0ae4fd6dc401c1f8725c032a2d06c3d01dba394a6cb",
+    "face": {
+      "shape": 3,
+      "radius": 0.2625
+    }
   },
   "8.2.2": {
     "title": "Зона действия",
@@ -2017,7 +2993,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_2_2.svg",
     "sourceSha256": "5302729d2bf5d2eaabd014f36b15a4a4047db6faff1e1eab93efb2c01d01a09f",
-    "sha256": "5302729d2bf5d2eaabd014f36b15a4a4047db6faff1e1eab93efb2c01d01a09f"
+    "sha256": "5302729d2bf5d2eaabd014f36b15a4a4047db6faff1e1eab93efb2c01d01a09f",
+    "face": {
+      "shape": 3,
+      "radius": 0.13
+    }
   },
   "8.2.3": {
     "title": "Зона действия",
@@ -2025,7 +3005,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_2_3.svg",
     "sourceSha256": "168792f15d499f224886595c215b992e7414fbf344d2f795749ed8d3a75d4168",
-    "sha256": "168792f15d499f224886595c215b992e7414fbf344d2f795749ed8d3a75d4168"
+    "sha256": "168792f15d499f224886595c215b992e7414fbf344d2f795749ed8d3a75d4168",
+    "face": {
+      "shape": 3,
+      "radius": 0.13
+    }
   },
   "8.2.4": {
     "title": "Зона действия",
@@ -2033,7 +3017,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_2_4.svg",
     "sourceSha256": "460759a7af797a2badcb4c0cbd3333d150c36f75098adb6a911063db3e940bdc",
-    "sha256": "460759a7af797a2badcb4c0cbd3333d150c36f75098adb6a911063db3e940bdc"
+    "sha256": "460759a7af797a2badcb4c0cbd3333d150c36f75098adb6a911063db3e940bdc",
+    "face": {
+      "shape": 3,
+      "radius": 0.13
+    }
   },
   "8.2.5": {
     "title": "Зона действия",
@@ -2041,7 +3029,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_2_5.svg",
     "sourceSha256": "019ba163b19318f6fea9ca3d72d54eb9ba935e5e666c4c6fb96c87f36bba9dbd",
-    "sha256": "019ba163b19318f6fea9ca3d72d54eb9ba935e5e666c4c6fb96c87f36bba9dbd"
+    "sha256": "019ba163b19318f6fea9ca3d72d54eb9ba935e5e666c4c6fb96c87f36bba9dbd",
+    "face": {
+      "shape": 3,
+      "radius": 0.2625
+    }
   },
   "8.2.6": {
     "title": "Зона действия",
@@ -2049,7 +3041,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_2_6.svg",
     "sourceSha256": "3113aac866e4b50443f320a87d7d1568dbbe9af57f8039e6db1b012d238f18b2",
-    "sha256": "3113aac866e4b50443f320a87d7d1568dbbe9af57f8039e6db1b012d238f18b2"
+    "sha256": "3113aac866e4b50443f320a87d7d1568dbbe9af57f8039e6db1b012d238f18b2",
+    "face": {
+      "shape": 3,
+      "radius": 0.2625
+    }
   },
   "8.3.1": {
     "title": "Направления действия",
@@ -2057,7 +3053,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_3_1.svg",
     "sourceSha256": "bdd0c3c401dce7c974a693976c8682d21f068c94d810c0a606c72998d400e833",
-    "sha256": "bdd0c3c401dce7c974a693976c8682d21f068c94d810c0a606c72998d400e833"
+    "sha256": "bdd0c3c401dce7c974a693976c8682d21f068c94d810c0a606c72998d400e833",
+    "face": {
+      "shape": 3,
+      "radius": 0.235
+    }
   },
   "8.3.2": {
     "title": "Направления действия",
@@ -2065,7 +3065,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_3_2.svg",
     "sourceSha256": "4789d6efd45b4d36ee0bfe422f2775f4d82c0aa6dbf20e591e686e84bb224884",
-    "sha256": "4789d6efd45b4d36ee0bfe422f2775f4d82c0aa6dbf20e591e686e84bb224884"
+    "sha256": "4789d6efd45b4d36ee0bfe422f2775f4d82c0aa6dbf20e591e686e84bb224884",
+    "face": {
+      "shape": 3,
+      "radius": 0.235
+    }
   },
   "8.3.3": {
     "title": "Направления действия",
@@ -2073,7 +3077,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_3_3.svg",
     "sourceSha256": "e6f9fec0cf4fc6ca67cd5fd26efa848685ad64170b30ac494fbfb885c31aedd8",
-    "sha256": "e6f9fec0cf4fc6ca67cd5fd26efa848685ad64170b30ac494fbfb885c31aedd8"
+    "sha256": "e6f9fec0cf4fc6ca67cd5fd26efa848685ad64170b30ac494fbfb885c31aedd8",
+    "face": {
+      "shape": 3,
+      "radius": 0.235
+    }
   },
   "8.4.1": {
     "title": "Вид транспортного средства",
@@ -2081,7 +3089,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/bfded6a56e241d9d1309c110f51eb6c0.svg",
     "sourceSha256": "654274f523832323e53e49d3d1faf110a03d1834819392e3fe512f09e913d349",
-    "sha256": "654274f523832323e53e49d3d1faf110a03d1834819392e3fe512f09e913d349"
+    "sha256": "654274f523832323e53e49d3d1faf110a03d1834819392e3fe512f09e913d349",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.4.2": {
     "title": "Вид транспортного средства",
@@ -2089,7 +3101,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/41aa6b941291fc410b79604aca819bd2.svg",
     "sourceSha256": "0ec0e3706ec4e825bd98124f57dabc086b7b0f70110c94de683064f4f2e32a58",
-    "sha256": "0ec0e3706ec4e825bd98124f57dabc086b7b0f70110c94de683064f4f2e32a58"
+    "sha256": "0ec0e3706ec4e825bd98124f57dabc086b7b0f70110c94de683064f4f2e32a58",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.4.3.1": {
     "title": "Вид транспортного средства",
@@ -2097,7 +3113,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/a6d331b029b8729439c175a74fbbd0f0.svg",
     "sourceSha256": "750bdb3be5254dc58386a17924723f1071cdeebea61a2f46677be5c17bded558",
-    "sha256": "750bdb3be5254dc58386a17924723f1071cdeebea61a2f46677be5c17bded558"
+    "sha256": "750bdb3be5254dc58386a17924723f1071cdeebea61a2f46677be5c17bded558",
+    "face": {
+      "shape": 3,
+      "radius": 0.2525
+    }
   },
   "8.4.3.2": {
     "title": "Вид транспортного средства",
@@ -2105,7 +3125,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/9a0b442b18f0b4d4a8a0ad08c8177ad3.svg",
     "sourceSha256": "6d3f2b2cd44bd6bedc82519b8c974da7a9139e431a145e60513d384659e2ecbc",
-    "sha256": "6d3f2b2cd44bd6bedc82519b8c974da7a9139e431a145e60513d384659e2ecbc"
+    "sha256": "6d3f2b2cd44bd6bedc82519b8c974da7a9139e431a145e60513d384659e2ecbc",
+    "face": {
+      "shape": 3,
+      "radius": 0.2525
+    }
   },
   "8.4.4": {
     "title": "Вид транспортного средства",
@@ -2113,7 +3137,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f941577f48cb9142943a5b10c1b03157.svg",
     "sourceSha256": "499853b253f3e5fa06a9a94dcd4c36aebcd73819a81d73f6d96e14899db9ec9e",
-    "sha256": "499853b253f3e5fa06a9a94dcd4c36aebcd73819a81d73f6d96e14899db9ec9e"
+    "sha256": "499853b253f3e5fa06a9a94dcd4c36aebcd73819a81d73f6d96e14899db9ec9e",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.4.5": {
     "title": "Вид транспортного средства",
@@ -2121,7 +3149,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/af02a7b65ddacef604a24f87cfb421dd.svg",
     "sourceSha256": "4961446e092e7bab8c7e76a25fcb0f688b7b8463002dcc79654928d4cbdc6244",
-    "sha256": "4961446e092e7bab8c7e76a25fcb0f688b7b8463002dcc79654928d4cbdc6244"
+    "sha256": "4961446e092e7bab8c7e76a25fcb0f688b7b8463002dcc79654928d4cbdc6244",
+    "face": {
+      "shape": 3,
+      "radius": 0.255
+    }
   },
   "8.4.6": {
     "title": "Вид транспортного средства",
@@ -2129,7 +3161,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6a92d5265766393c3acc42e438c5fdbe.svg",
     "sourceSha256": "42a94fd85a028a6b1b39297979da9641ea587d8f606f2862a2e33bcc8410aabf",
-    "sha256": "42a94fd85a028a6b1b39297979da9641ea587d8f606f2862a2e33bcc8410aabf"
+    "sha256": "42a94fd85a028a6b1b39297979da9641ea587d8f606f2862a2e33bcc8410aabf",
+    "face": {
+      "shape": 3,
+      "radius": 0.255
+    }
   },
   "8.4.7.1": {
     "title": "Вид транспортного средства",
@@ -2137,7 +3173,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/4403f3136d0776b99d069e8d4d9453c6.svg",
     "sourceSha256": "6ad5192153e900e6e34d195e1786510bbac54a07dd853d579c9984d266975e8d",
-    "sha256": "6ad5192153e900e6e34d195e1786510bbac54a07dd853d579c9984d266975e8d"
+    "sha256": "6ad5192153e900e6e34d195e1786510bbac54a07dd853d579c9984d266975e8d",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.4.7.2": {
     "title": "Вид транспортного средства",
@@ -2145,7 +3185,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/9288fdc7e63e8aa1db5b2e44281908b2.svg",
     "sourceSha256": "72bb35f6c3b9fa1918e7c136c0598b5e50753360bf3d76710992e4fad27b0bd3",
-    "sha256": "a8a5928233016473f73cb2ac32884f9a4443d5207e8323ca40398e6a754a3aa0"
+    "sha256": "a8a5928233016473f73cb2ac32884f9a4443d5207e8323ca40398e6a754a3aa0",
+    "face": {
+      "shape": 3,
+      "radius": 0.2525
+    }
   },
   "8.4.8": {
     "title": "Вид транспортного средства",
@@ -2153,7 +3197,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/df7e4a3347190dcd89bde0518c60d86b.svg",
     "sourceSha256": "a40358f7839c5d821d8f63a20c7c9bf2f111709a6fc9bf480e0e19f3a0c76226",
-    "sha256": "a40358f7839c5d821d8f63a20c7c9bf2f111709a6fc9bf480e0e19f3a0c76226"
+    "sha256": "a40358f7839c5d821d8f63a20c7c9bf2f111709a6fc9bf480e0e19f3a0c76226",
+    "face": {
+      "shape": 3,
+      "radius": 0.255
+    }
   },
   "8.4.9": {
     "title": "Кроме вида транспортного средства",
@@ -2161,7 +3209,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/db658fa5edbdeb63250095a45d4fe3ba.svg",
     "sourceSha256": "8c6710edc6b3c4ba48c6523c6792539657ec312ec30feb4d32e9c926468ecb47",
-    "sha256": "8c6710edc6b3c4ba48c6523c6792539657ec312ec30feb4d32e9c926468ecb47"
+    "sha256": "8c6710edc6b3c4ba48c6523c6792539657ec312ec30feb4d32e9c926468ecb47",
+    "face": {
+      "shape": 3,
+      "radius": 0.1975
+    }
   },
   "8.4.10": {
     "title": "Кроме вида транспортного средства",
@@ -2169,7 +3221,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/9438bd2e073474a00a4779739a4e4c0e.svg",
     "sourceSha256": "3ce1ce9c5d9663530b9cdce016d79f294fc65949fa0ff15515f07e3dfaf2dc1b",
-    "sha256": "3ce1ce9c5d9663530b9cdce016d79f294fc65949fa0ff15515f07e3dfaf2dc1b"
+    "sha256": "3ce1ce9c5d9663530b9cdce016d79f294fc65949fa0ff15515f07e3dfaf2dc1b",
+    "face": {
+      "shape": 3,
+      "radius": 0.1975
+    }
   },
   "8.4.11": {
     "title": "Кроме вида транспортного средства",
@@ -2177,7 +3233,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/fbbb2df3c38cc24d9bdfcbe883096ac4.svg",
     "sourceSha256": "7bb7066243f2f73d30f9f89a5c9713173422f704037351b155bf95bcdf91edf8",
-    "sha256": "7bb7066243f2f73d30f9f89a5c9713173422f704037351b155bf95bcdf91edf8"
+    "sha256": "7bb7066243f2f73d30f9f89a5c9713173422f704037351b155bf95bcdf91edf8",
+    "face": {
+      "shape": 3,
+      "radius": 0.1975
+    }
   },
   "8.4.12": {
     "title": "Кроме вида транспортного средства",
@@ -2185,7 +3245,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/dea5a38cd13c55156954e4d83eed8341.svg",
     "sourceSha256": "667907844e835e3c99afadce54129e70c08c2c5a81861de43a4a735591a3cfeb",
-    "sha256": "667907844e835e3c99afadce54129e70c08c2c5a81861de43a4a735591a3cfeb"
+    "sha256": "667907844e835e3c99afadce54129e70c08c2c5a81861de43a4a735591a3cfeb",
+    "face": {
+      "shape": 3,
+      "radius": 0.1975
+    }
   },
   "8.4.13": {
     "title": "Кроме вида транспортного средства",
@@ -2193,7 +3257,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/5e3f73a8c6ba3052d50835df4902caa9.svg",
     "sourceSha256": "a30676f99f3bfc4ddbb8470355f2e0591c522eb0dfd5884c23011c7ff3db278e",
-    "sha256": "a30676f99f3bfc4ddbb8470355f2e0591c522eb0dfd5884c23011c7ff3db278e"
+    "sha256": "a30676f99f3bfc4ddbb8470355f2e0591c522eb0dfd5884c23011c7ff3db278e",
+    "face": {
+      "shape": 3,
+      "radius": 0.19
+    }
   },
   "8.4.14": {
     "title": "Кроме вида транспортного средства",
@@ -2201,7 +3269,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/da594e28441885b37f74cfc3d4e3da57.svg",
     "sourceSha256": "c1be501c16fd32600c048183c3d6c0765d49fa1eb8b74a88f3dd06d1519f3f1b",
-    "sha256": "c1be501c16fd32600c048183c3d6c0765d49fa1eb8b74a88f3dd06d1519f3f1b"
+    "sha256": "c1be501c16fd32600c048183c3d6c0765d49fa1eb8b74a88f3dd06d1519f3f1b",
+    "face": {
+      "shape": 3,
+      "radius": 0.19
+    }
   },
   "8.4.15": {
     "title": "Кроме вида транспортного средства",
@@ -2209,7 +3281,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/277f97229af969ed8a32f2e24309f43d.svg",
     "sourceSha256": "bac5bee8e8a49352ec502026b8d357e4cd1792bf5a67d957833bcddbab99f142",
-    "sha256": "bac5bee8e8a49352ec502026b8d357e4cd1792bf5a67d957833bcddbab99f142"
+    "sha256": "bac5bee8e8a49352ec502026b8d357e4cd1792bf5a67d957833bcddbab99f142",
+    "face": {
+      "shape": 3,
+      "radius": 0.195
+    }
   },
   "8.4.16": {
     "title": "Кроме вида транспортного средства",
@@ -2217,7 +3293,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/5d9c53edfc609c14dcbd3d6f8d7df175.svg",
     "sourceSha256": "2cd07d72d4224541151324d20250ece96456a02108ceec3c3b0d0d787e99a9c8",
-    "sha256": "94dcd43657abb4b39d820a5550ce77fdc88cc51a332e7a1e0ab9ed90a548eb18"
+    "sha256": "94dcd43657abb4b39d820a5550ce77fdc88cc51a332e7a1e0ab9ed90a548eb18",
+    "face": {
+      "shape": 3,
+      "radius": 0.19
+    }
   },
   "8.5.1": {
     "title": "Субботние, воскресные и праздничные дни",
@@ -2225,7 +3305,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/bacd2567523d771bff74605cf1a787f1.svg",
     "sourceSha256": "ac860dbe77b0138948ae4b957c619f00b40a81a2e3fd178debddba5cb8375ff8",
-    "sha256": "ac860dbe77b0138948ae4b957c619f00b40a81a2e3fd178debddba5cb8375ff8"
+    "sha256": "ac860dbe77b0138948ae4b957c619f00b40a81a2e3fd178debddba5cb8375ff8",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.5.2": {
     "title": "Рабочие дни",
@@ -2233,7 +3317,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/5187124058465f93a2202a31c1f08dd4.svg",
     "sourceSha256": "0c7c70057b51b96845887dbebffc814705d9aeba591dfb9ed3e9c69c99a78951",
-    "sha256": "0c7c70057b51b96845887dbebffc814705d9aeba591dfb9ed3e9c69c99a78951"
+    "sha256": "0c7c70057b51b96845887dbebffc814705d9aeba591dfb9ed3e9c69c99a78951",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.5.3": {
     "title": "Дни недели",
@@ -2241,7 +3329,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ef9aee3770fe7b8d9da6d069e681c833.svg",
     "sourceSha256": "9eee0b449fc21f9a28c8a308cfe13f8f40e62d2b4fe85d6916140f69eda83dff",
-    "sha256": "9eee0b449fc21f9a28c8a308cfe13f8f40e62d2b4fe85d6916140f69eda83dff"
+    "sha256": "9eee0b449fc21f9a28c8a308cfe13f8f40e62d2b4fe85d6916140f69eda83dff",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.5.4": {
     "title": "Время действия",
@@ -2249,7 +3341,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/64111687123fee7f3328f3842ed6961b.svg",
     "sourceSha256": "38d8d0768913ef9107b1c416f4a0d8301d30d6dfb5b5293072f465b2594ffb85",
-    "sha256": "38d8d0768913ef9107b1c416f4a0d8301d30d6dfb5b5293072f465b2594ffb85"
+    "sha256": "38d8d0768913ef9107b1c416f4a0d8301d30d6dfb5b5293072f465b2594ffb85",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.5.5": {
     "title": "Время действия",
@@ -2257,7 +3353,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/91fc5a36ed15865407d832e6cbc0bd69.svg",
     "sourceSha256": "d5f4768f4dbf2979588797db7733e21ee84db8bc35e3739935b05bb31d99c821",
-    "sha256": "d5f4768f4dbf2979588797db7733e21ee84db8bc35e3739935b05bb31d99c821"
+    "sha256": "d5f4768f4dbf2979588797db7733e21ee84db8bc35e3739935b05bb31d99c821",
+    "face": {
+      "shape": 3,
+      "radius": 0.255
+    }
   },
   "8.5.6": {
     "title": "Время действия",
@@ -2265,7 +3365,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/f7b4b4dd526d6aa57e987a196e471722.svg",
     "sourceSha256": "1cab29a24e922d096ef78f9e2166c63cbf5fe6148f0ed3997b533831f24baaba",
-    "sha256": "1cab29a24e922d096ef78f9e2166c63cbf5fe6148f0ed3997b533831f24baaba"
+    "sha256": "1cab29a24e922d096ef78f9e2166c63cbf5fe6148f0ed3997b533831f24baaba",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.5.7": {
     "title": "Время действия",
@@ -2273,7 +3377,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/adf11b2ea70489f4e30c236704532346.svg",
     "sourceSha256": "b202ade985b4816d129c8fd2e28065377acefe38ae8bd4df9ba74dd02f3e3c1f",
-    "sha256": "b202ade985b4816d129c8fd2e28065377acefe38ae8bd4df9ba74dd02f3e3c1f"
+    "sha256": "b202ade985b4816d129c8fd2e28065377acefe38ae8bd4df9ba74dd02f3e3c1f",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.6.1": {
     "title": "Способ постановки транспортного средства на стоянку",
@@ -2281,7 +3389,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/58675851a0bdf1bfc6bb2ffec19b2f08.svg",
     "sourceSha256": "509b4c85d4deac91c072df158fe63323e2c38728983ccd8bffb99d772861603c",
-    "sha256": "509b4c85d4deac91c072df158fe63323e2c38728983ccd8bffb99d772861603c"
+    "sha256": "509b4c85d4deac91c072df158fe63323e2c38728983ccd8bffb99d772861603c",
+    "face": {
+      "shape": 3,
+      "radius": 0.255
+    }
   },
   "8.6.2": {
     "title": "Способ постановки транспортного средства на стоянку",
@@ -2289,7 +3401,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/97f04b9ddda4ba4f465072433a1d8332.svg",
     "sourceSha256": "4d74ae8497354bd59dd5baaddb01bf35323b981e075b358c0be79083c8f34a20",
-    "sha256": "4d74ae8497354bd59dd5baaddb01bf35323b981e075b358c0be79083c8f34a20"
+    "sha256": "4d74ae8497354bd59dd5baaddb01bf35323b981e075b358c0be79083c8f34a20",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.6.3": {
     "title": "Способ постановки транспортного средства на стоянку",
@@ -2297,7 +3413,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/c9b5bc2c73347304507adf75af06006d.svg",
     "sourceSha256": "5c7d5afe19d378a8ad7269819432e2b1836bb839e9bb5b2aa4179f4027058866",
-    "sha256": "5c7d5afe19d378a8ad7269819432e2b1836bb839e9bb5b2aa4179f4027058866"
+    "sha256": "5c7d5afe19d378a8ad7269819432e2b1836bb839e9bb5b2aa4179f4027058866",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.6.4": {
     "title": "Способ постановки транспортного средства на стоянку",
@@ -2305,7 +3425,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/12c69bb13cd1f25f40c2ad0644023c21.svg",
     "sourceSha256": "e89f43b94fff7fbaeea23c53264a09c1df84563fc4ec194eda12c0809f4ef491",
-    "sha256": "e89f43b94fff7fbaeea23c53264a09c1df84563fc4ec194eda12c0809f4ef491"
+    "sha256": "e89f43b94fff7fbaeea23c53264a09c1df84563fc4ec194eda12c0809f4ef491",
+    "face": {
+      "shape": 3,
+      "radius": 0.255
+    }
   },
   "8.6.5": {
     "title": "Способ постановки транспортного средства на стоянку",
@@ -2313,7 +3437,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/2d042dd714da92588515052467069500.svg",
     "sourceSha256": "48e48168ff6142012306aeb87c9a8166088a1e439eac8c4c0a92e729ffed7f3c",
-    "sha256": "48e48168ff6142012306aeb87c9a8166088a1e439eac8c4c0a92e729ffed7f3c"
+    "sha256": "48e48168ff6142012306aeb87c9a8166088a1e439eac8c4c0a92e729ffed7f3c",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.6.6": {
     "title": "Способ постановки транспортного средства на стоянку",
@@ -2321,7 +3449,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/7fccfbd0a5d488eeb39a0bbd09abab8a.svg",
     "sourceSha256": "1bf4c794ce1b2c1a14b3c8082e3e6086185b9c992f89b464d24d67f954178ee7",
-    "sha256": "1bf4c794ce1b2c1a14b3c8082e3e6086185b9c992f89b464d24d67f954178ee7"
+    "sha256": "1bf4c794ce1b2c1a14b3c8082e3e6086185b9c992f89b464d24d67f954178ee7",
+    "face": {
+      "shape": 3,
+      "radius": 0.255
+    }
   },
   "8.6.7": {
     "title": "Способ постановки транспортного средства на стоянку",
@@ -2329,7 +3461,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/8d5f0ad3d33bd1153552c5815d15ee97.svg",
     "sourceSha256": "f4b32b5d128eb0c641ebf25871bdce39ddaa59a67fb65249f8e0ee0db03a99be",
-    "sha256": "f4b32b5d128eb0c641ebf25871bdce39ddaa59a67fb65249f8e0ee0db03a99be"
+    "sha256": "f4b32b5d128eb0c641ebf25871bdce39ddaa59a67fb65249f8e0ee0db03a99be",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.6.8": {
     "title": "Способ постановки транспортного средства на стоянку",
@@ -2337,7 +3473,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ae64e6874cdeb3b5c9b29a680070aad4.svg",
     "sourceSha256": "691e25ec254e11ec48d3a2edc46c792f93a42c7dea8fb67e0502fa594adebef0",
-    "sha256": "691e25ec254e11ec48d3a2edc46c792f93a42c7dea8fb67e0502fa594adebef0"
+    "sha256": "691e25ec254e11ec48d3a2edc46c792f93a42c7dea8fb67e0502fa594adebef0",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.6.9": {
     "title": "Способ постановки транспортного средства на стоянку",
@@ -2345,7 +3485,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/a5c2c6750c60332d0ef500f7455f9dd3.svg",
     "sourceSha256": "d640e4af62f8010def40fc1bca762340856f2fd821ef7a28383ae72a1877b6eb",
-    "sha256": "d640e4af62f8010def40fc1bca762340856f2fd821ef7a28383ae72a1877b6eb"
+    "sha256": "d640e4af62f8010def40fc1bca762340856f2fd821ef7a28383ae72a1877b6eb",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.7": {
     "title": "Стоянка с неработающим двигателем",
@@ -2353,7 +3497,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/815fccaec30b9c56f4a688f19ee1e947.svg",
     "sourceSha256": "c5c4e2935354c7ca97322e82c0b5d676bf2f005e5930ff3cb9fd41a967cf6b54",
-    "sha256": "c5c4e2935354c7ca97322e82c0b5d676bf2f005e5930ff3cb9fd41a967cf6b54"
+    "sha256": "c5c4e2935354c7ca97322e82c0b5d676bf2f005e5930ff3cb9fd41a967cf6b54",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.8": {
     "title": "Платные услуги",
@@ -2361,7 +3509,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ba9d09c26ae6d0773e2c70e0b84237c4.svg",
     "sourceSha256": "b2ec31ad0d52b95ed4612cdad2bf688f54706acaf8d6744ca4a7b5ecf6373f1a",
-    "sha256": "b2ec31ad0d52b95ed4612cdad2bf688f54706acaf8d6744ca4a7b5ecf6373f1a"
+    "sha256": "b2ec31ad0d52b95ed4612cdad2bf688f54706acaf8d6744ca4a7b5ecf6373f1a",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.9.1": {
     "title": "Ограничение продолжительности стоянки",
@@ -2369,7 +3521,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_9_1.svg",
     "sourceSha256": "ce0831650dff9d66e087079470a16f1082efa81265901d41fa1d6238b1fb3621",
-    "sha256": "9854e6d95c7c7b4c4d7248df6877e22caca3fcd17ad1cd533bf824f595fb74da"
+    "sha256": "9854e6d95c7c7b4c4d7248df6877e22caca3fcd17ad1cd533bf824f595fb74da",
+    "face": {
+      "shape": 3,
+      "radius": 0.3
+    }
   },
   "8.9.2": {
     "title": "Стоянка только для владельцев парковочных разрешений",
@@ -2377,7 +3533,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_9_2.svg",
     "sourceSha256": "970bb1c5a8879548ab15eb1b3ba726a0ec01e91aad998640edbe3492658b75af",
-    "sha256": "eb147ffe264783a0942624c2f118788beddefd37d0d72988423d661de19070fa"
+    "sha256": "eb147ffe264783a0942624c2f118788beddefd37d0d72988423d661de19070fa",
+    "face": {
+      "shape": 3,
+      "radius": 0.225
+    }
   },
   "8.9.3": {
     "title": "Стоянка только транспортных средств дипломатического корпуса",
@@ -2385,7 +3545,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/ed2b51311057d631c048eb2b81f41f63.svg",
     "sourceSha256": "7517edd8cd5f24733f4ae1dbf5c4ba12e0aeab7413f3e03f7b113ac06d8877e8",
-    "sha256": "f22003cfe5336186bd461bc06f1a58041a639eacdec86e20ec9926043c66c107"
+    "sha256": "f22003cfe5336186bd461bc06f1a58041a639eacdec86e20ec9926043c66c107",
+    "face": {
+      "shape": 3,
+      "radius": 0.19
+    }
   },
   "8.10": {
     "title": "Место для осмотра автомобилей",
@@ -2393,7 +3557,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/312a66fea6f362d115ed30e84f26175e.svg",
     "sourceSha256": "eff0b6f30ccb5f7ff20b906238695f1ed60f476182699274fbf49d45a73d1c9c",
-    "sha256": "eff0b6f30ccb5f7ff20b906238695f1ed60f476182699274fbf49d45a73d1c9c"
+    "sha256": "eff0b6f30ccb5f7ff20b906238695f1ed60f476182699274fbf49d45a73d1c9c",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.11": {
     "title": "Ограничение разрешенной максимальной массы",
@@ -2401,7 +3569,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/9620cfb6c38d4a85351d530cfbff9523.svg",
     "sourceSha256": "0f06b95714bc3eb67a460e4c8ced6b4d7327900f66ecea953742771ed045b499",
-    "sha256": "0f06b95714bc3eb67a460e4c8ced6b4d7327900f66ecea953742771ed045b499"
+    "sha256": "0f06b95714bc3eb67a460e4c8ced6b4d7327900f66ecea953742771ed045b499",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.12": {
     "title": "Опасная обочина",
@@ -2409,7 +3581,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/83a59da1cc6cae01344a8dd67e1fb2bd.svg",
     "sourceSha256": "fc8b801d6d3dfb80ccc742657d9ca20339f3fa78e474d2f48de9c23592f3af86",
-    "sha256": "fc8b801d6d3dfb80ccc742657d9ca20339f3fa78e474d2f48de9c23592f3af86"
+    "sha256": "fc8b801d6d3dfb80ccc742657d9ca20339f3fa78e474d2f48de9c23592f3af86",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.13": {
     "title": "Направление главной дороги",
@@ -2417,7 +3593,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/a213fe50d5e1de0a7eb6427f4c3d5271.svg",
     "sourceSha256": "267c49a45b4ab5af9cf13f4f79cfc71f8e9051ea14ecd03fa0dadcf86cf42c9b",
-    "sha256": "267c49a45b4ab5af9cf13f4f79cfc71f8e9051ea14ecd03fa0dadcf86cf42c9b"
+    "sha256": "267c49a45b4ab5af9cf13f4f79cfc71f8e9051ea14ecd03fa0dadcf86cf42c9b",
+    "face": {
+      "shape": 3,
+      "radius": 0.1275
+    }
   },
   "8.14": {
     "title": "Полоса движения",
@@ -2425,7 +3605,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/204b060885d2db4445c191d09c03ae74.svg",
     "sourceSha256": "b6e5adb099b1b0cd975c0a6264700f2527b697e8019f1b5ef747081368e536d7",
-    "sha256": "b6e5adb099b1b0cd975c0a6264700f2527b697e8019f1b5ef747081368e536d7"
+    "sha256": "b6e5adb099b1b0cd975c0a6264700f2527b697e8019f1b5ef747081368e536d7",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.15": {
     "title": "Слепые пешеходы",
@@ -2433,7 +3617,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/2501bfddc7cc07324fdc0f80991ae3cc.svg",
     "sourceSha256": "9a193bec8dd4c9071503749fab59733d966c4e9d29d4e496cfe828f4375cdbde",
-    "sha256": "9a193bec8dd4c9071503749fab59733d966c4e9d29d4e496cfe828f4375cdbde"
+    "sha256": "9a193bec8dd4c9071503749fab59733d966c4e9d29d4e496cfe828f4375cdbde",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.16": {
     "title": "Влажное покрытие",
@@ -2441,7 +3629,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/d87c82fab2e99c528afa159e23cdbbfb.svg",
     "sourceSha256": "fcb7f9e117da94ae3d7320df56b63d90444e20bcbbe0ed31216a71c4220f4e8d",
-    "sha256": "fcb7f9e117da94ae3d7320df56b63d90444e20bcbbe0ed31216a71c4220f4e8d"
+    "sha256": "fcb7f9e117da94ae3d7320df56b63d90444e20bcbbe0ed31216a71c4220f4e8d",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.17": {
     "title": "Инвалиды",
@@ -2449,7 +3641,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/1a1c1daafc7bb06a248c3c57930a2e7b.svg",
     "sourceSha256": "cc996ac0a96b3ce76deab39c27e9978aba4cb51b038c7b65f398807ca02a62dd",
-    "sha256": "cc996ac0a96b3ce76deab39c27e9978aba4cb51b038c7b65f398807ca02a62dd"
+    "sha256": "cc996ac0a96b3ce76deab39c27e9978aba4cb51b038c7b65f398807ca02a62dd",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.18": {
     "title": "Кроме инвалидов",
@@ -2457,7 +3653,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/5bcede874a58b37421d515308b58a331.svg",
     "sourceSha256": "50be88f8d466bd2467f72855749e0dca1178b66123edf064ed50cb42fda2f133",
-    "sha256": "50be88f8d466bd2467f72855749e0dca1178b66123edf064ed50cb42fda2f133"
+    "sha256": "50be88f8d466bd2467f72855749e0dca1178b66123edf064ed50cb42fda2f133",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.19": {
     "title": "Класс опасного груза",
@@ -2465,7 +3665,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/eefb0a904ed7ed3aecbea3fc5c79a5fa.svg",
     "sourceSha256": "2e7dbdb1a63f6d22fd52c806d0b712eb15eca1030abeb52d36df555afe276670",
-    "sha256": "2e7dbdb1a63f6d22fd52c806d0b712eb15eca1030abeb52d36df555afe276670"
+    "sha256": "2e7dbdb1a63f6d22fd52c806d0b712eb15eca1030abeb52d36df555afe276670",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.20.1": {
     "title": "Тип тележки транспортного средства",
@@ -2473,7 +3677,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/dc4b2b2243c4b3ed51eb412e81774e2c.svg",
     "sourceSha256": "8dec70553fc6d8ffffa13e5d4ca7e7dc274c8e3498022844fa005fa30186c959",
-    "sha256": "8dec70553fc6d8ffffa13e5d4ca7e7dc274c8e3498022844fa005fa30186c959"
+    "sha256": "8dec70553fc6d8ffffa13e5d4ca7e7dc274c8e3498022844fa005fa30186c959",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.20.2": {
     "title": "Тип тележки транспортного средства",
@@ -2481,7 +3689,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/4964059b55f06c6c82a53768ce928f66.svg",
     "sourceSha256": "5919239e8eed12b63717c4fd436332af9b7dbff0906468ba0d31aca61c41abf3",
-    "sha256": "5919239e8eed12b63717c4fd436332af9b7dbff0906468ba0d31aca61c41abf3"
+    "sha256": "5919239e8eed12b63717c4fd436332af9b7dbff0906468ba0d31aca61c41abf3",
+    "face": {
+      "shape": 3,
+      "radius": 0.2575
+    }
   },
   "8.21.1": {
     "title": "Вид маршрутного транспортного средства",
@@ -2489,7 +3701,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/5b8b0fd6591bf894df145092cd242708.svg",
     "sourceSha256": "ae4d4a68fd6b26d474503a40b05f877f69c365e325649a9503fc248cefee308f",
-    "sha256": "ae4d4a68fd6b26d474503a40b05f877f69c365e325649a9503fc248cefee308f"
+    "sha256": "ae4d4a68fd6b26d474503a40b05f877f69c365e325649a9503fc248cefee308f",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.21.2": {
     "title": "Вид маршрутного транспортного средства",
@@ -2497,7 +3713,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/6ef156e519afdc98144d24d4dcefe977.svg",
     "sourceSha256": "2fa979777edfd9f0db1f4fc83bf488abcb263a4fc709667ed908d51a0fc6ce91",
-    "sha256": "2fa979777edfd9f0db1f4fc83bf488abcb263a4fc709667ed908d51a0fc6ce91"
+    "sha256": "2fa979777edfd9f0db1f4fc83bf488abcb263a4fc709667ed908d51a0fc6ce91",
+    "face": {
+      "shape": 3,
+      "radius": 0.265
+    }
   },
   "8.21.3": {
     "title": "Вид маршрутного транспортного средства",
@@ -2505,7 +3725,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/03b9940c1b4e5b9f38839dbb1b293da1.svg",
     "sourceSha256": "4a42de6fc9abb9f1d8919bc3b9e94936163ce6ae440b25b6cb22414215cbf05b",
-    "sha256": "4a42de6fc9abb9f1d8919bc3b9e94936163ce6ae440b25b6cb22414215cbf05b"
+    "sha256": "4a42de6fc9abb9f1d8919bc3b9e94936163ce6ae440b25b6cb22414215cbf05b",
+    "face": {
+      "shape": 3,
+      "radius": 0.2575
+    }
   },
   "8.22.1": {
     "title": "Препятствие",
@@ -2513,7 +3737,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_22_1.svg",
     "sourceSha256": "67dd474c0fbb68a17015b2d86debd52d8d18c1bb6142db0667db630f42bea771",
-    "sha256": "67dd474c0fbb68a17015b2d86debd52d8d18c1bb6142db0667db630f42bea771"
+    "sha256": "f34eabf7d8c122661a910f0aaec761c71aa204e4f04926043fb329ca0e5955b9",
+    "face": {
+      "shape": 3,
+      "radius": 0.0
+    }
   },
   "8.22.2": {
     "title": "Препятствие",
@@ -2521,7 +3749,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_22_2.svg",
     "sourceSha256": "2d71e1ab1cafbd42a34ab1d8ecac3afcecd4dc0872f72e2a07bcd3ba538f9502",
-    "sha256": "2d71e1ab1cafbd42a34ab1d8ecac3afcecd4dc0872f72e2a07bcd3ba538f9502"
+    "sha256": "3045142664a80ccb94b2be356dec85c406e57615871fd7cc70a12d544b4c8ea0",
+    "face": {
+      "shape": 3,
+      "radius": 0.0
+    }
   },
   "8.22.3": {
     "title": "Препятствие",
@@ -2529,7 +3761,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/official_8_22_3.svg",
     "sourceSha256": "4abf46eb953c9d9c40fe0b9e6917351641044a5fbd8e3d147069c6e6600b467c",
-    "sha256": "4abf46eb953c9d9c40fe0b9e6917351641044a5fbd8e3d147069c6e6600b467c"
+    "sha256": "b61991e0491582d24df0df9bcc8f16323e3a2d49384b3c7fe635897e9e2b99b1",
+    "face": {
+      "shape": 3,
+      "radius": 0.0
+    }
   },
   "8.24": {
     "title": "Работает эвакуатор",
@@ -2537,7 +3773,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/7a047c7c3a5ced96d0b5525a81704be3.svg",
     "sourceSha256": "4c54f0c768d049dd6dfc6bd54b2a19acd071f7dedfa2b8b6bcbcdced44f6d713",
-    "sha256": "4c54f0c768d049dd6dfc6bd54b2a19acd071f7dedfa2b8b6bcbcdced44f6d713"
+    "sha256": "4c54f0c768d049dd6dfc6bd54b2a19acd071f7dedfa2b8b6bcbcdced44f6d713",
+    "face": {
+      "shape": 3,
+      "radius": 0.245
+    }
   },
   "8.25": {
     "title": "Экологический класс транспортного средства",
@@ -2545,7 +3785,11 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/8894b97aa74fe383868dcee176bfb584.svg",
     "sourceSha256": "8f17382e61b0a0aaf8a00ce582a50412cf4e32373601913f65340baa9ce88c82",
-    "sha256": "8f17382e61b0a0aaf8a00ce582a50412cf4e32373601913f65340baa9ce88c82"
+    "sha256": "8f17382e61b0a0aaf8a00ce582a50412cf4e32373601913f65340baa9ce88c82",
+    "face": {
+      "shape": 1,
+      "radius": 0.0
+    }
   },
   "8.26": {
     "title": "Зарядка электромобилей",
@@ -2553,6 +3797,10 @@
     "folkName": "",
     "source": "assets/countries/ru/images/signs/869f5d177692243ed6703d663eb88f25.svg",
     "sourceSha256": "3e46d62ca6014c52357c68320bcef82be4f1d000650c1fdcfba2931d103ea98e",
-    "sha256": "3e46d62ca6014c52357c68320bcef82be4f1d000650c1fdcfba2931d103ea98e"
+    "sha256": "3e46d62ca6014c52357c68320bcef82be4f1d000650c1fdcfba2931d103ea98e",
+    "face": {
+      "shape": 3,
+      "radius": 0.255
+    }
   }
 }

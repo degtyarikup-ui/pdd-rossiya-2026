@@ -21,7 +21,9 @@ func _initialize() -> void:
 			panels[hash(image.get_data())] = true
 	assert(panels.size() == 6, "Six adjoining-road signs are distinct individual panels, not the entire sheet")
 	assert(SignFace.outline_shape("2.6") == 1)
-	assert(SignFace.outline_shape("4.8.1") == 0)
+	assert(SignFace.outline_shape("4.8.1") == 3, "Fitted silhouettes: 4.8.1 is a rounded rectangle")
+	assert(SignFace.outline_shape("1.3.1") == 0, "Crosses follow their drawing")
+	assert(SignFace.outline_shape("1.1") == 4 and SignFace.outline_shape("2.4") == 5 and SignFace.outline_shape("2.1") == 2)
 	assert(SignFace.outline_shape("1.34.1") == 3)
 	var pair := RoadBuild.sign_node("3.28", "", "8.2.2")
 	assert(pair.get_node("sign_board").get_child_count() == 2, "Parking sign and zone-of-effect plate share a support")

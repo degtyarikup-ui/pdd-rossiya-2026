@@ -89,14 +89,19 @@ static func picture(tex: Texture2D,at: Vector3,size: Vector2) -> MeshInstance3D:
 		material.set_shader_parameter("outline_rect",box)
 		material.set_shader_parameter("outline_shape",outline_shape(code,tex is ImageTexture))
 		material.set_shader_parameter("outline_aspect",canvas.x*box.z/(canvas.y*box.w))
-		material.set_shader_parameter("corner_radius",float(tex.get_meta("corner_radius",0.0)) if tex is ImageTexture else .10)
+		material.set_shader_parameter("corner_radius",float(tex.get_meta("corner_radius",0.0)) if tex is ImageTexture else corner_radius(code))
 		cache[key]=material
 	face.material_override=cache[key]
 	face.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return face
 
+## Fitted by export_sign_catalog.py to each drawing's silhouette, in half-heights of the visible box.
+static func corner_radius(code: String) -> float:
+	return float(_layout.get(code, {}).get("radius", .10))
+
 static func outline_shape(code: String,dynamic: bool=false) -> int:
 	if dynamic:return 3
+	if _layout.get(code, {}).has("shape"):return int(_layout[code].shape)
 	if code in ["2.1","2.2"]:return 2
 	if code=="2.4":return 5
 	if code=="2.5":return 6
