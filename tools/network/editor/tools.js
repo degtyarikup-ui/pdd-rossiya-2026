@@ -13,7 +13,7 @@ const Tools = (() => {
     { id: "track", key: "T", title: "Рельсы", icon: "rails", hint: "Кликайте точки рельсов, начало ветки прилипает к путям. ↵ — готово" },
     { id: "lawn", key: "G", title: "Газон вместо тротуара", icon: "lawn", hint: "Кликайте углы газона, клик в первую точку — готово" },
     { sep: true },
-    { id: "actor", key: "C", title: "Машины и люди", icon: "car", hint: "Клик по дороге — встанет на полосу. Тяните — задать направление" },
+    { id: "actor", key: "C", title: "Машины и люди", icon: "car", hint: "Клик — поставить в любом месте. Тяните — задать направление" },
     { id: "light", key: "L", title: "Светофор", icon: "light", hint: "Клик у перекрёстка — встанет на угол лицом к машинам" },
     { id: "sign", key: "N", title: "Знак", icon: "flag", hint: "Клик у дороги — знак встанет справа лицом к машинам. Знак выберите слева" },
     { id: "officer", key: "U", title: "Регулировщик", icon: "person", hint: "Клик — поставить регулировщика. Тяните — куда он смотрит" },
@@ -434,7 +434,6 @@ const Tools = (() => {
         const other = s.layout.nodes.find((m) => m.id !== n.id && Math.hypot(m.x - n.x, m.z - n.z) < 3);
         if (other) App.dragMove((sc) => Layout.mergeNodes(sc, n.id, other.id));
       }
-      if (d.kind === "move" && d.moved) snapActorsToLanes();
       if (["turn", "point", "bend", "letter", "stop"].includes(d.kind) || d.moved) App.endDrag();
       else App.cancelDrag();
       App.renderPanels?.();
@@ -496,28 +495,6 @@ const Tools = (() => {
   }
 
   // A participant moved on a planned road stands on the nearest lane, facing the traffic.
-  function snapActorsToLanes() {
-    const s = App.planScene();
-    if (!s) return;
-    App.dragMove(() => {
-      for (const ref of App.state.sel) {
-        if (ref.t !== "actor") continue;
-        const a = App.objectOf(ref);
-        if (!Catalog.ACTORS[a.type]?.lane || a.track) continue;
-        // A traced scene's car with a path drawn by hand keeps it.
-        if (!S().layout && !a.way && a.route) continue;
-        const hit = Layout.nearestLane(s, a.pos, a.yaw);
-        if (hit && hit.d < 4) {
-          a.pos = [r3(hit.point[0]), r3(hit.point[1])];
-          a.yaw = r3(hit.yaw);
-          a.way = a.way || "straight";
-          const r = S().routes?.find((x) => x.id === (a.route || `actor_${a.id}`));
-          if (r && r.manual && r.points?.length) r.points[0] = [a.pos[0], a.pos[1]];
-        }
-      }
-    });
-  }
-
   // Hand: the view moves (scene3d does it while the tool is on).
   const hand = {};
 
@@ -666,7 +643,7 @@ const Tools = (() => {
       half = [tpl?.halfLength || 2, tpl?.halfWidth || 0.9];
       if (App.planScene() && Catalog.ACTORS[opts.actorType]?.lane && yaw === null) {
         const hit = Layout.nearestLane(App.planScene(), [x, z]);
-        if (hit && hit.d < 5) { x = hit.point[0]; z = hit.point[1]; y = hit.yaw; }
+        if (hit && hit.d < 5) y = hit.yaw;
       }
     } else if (kind === "sign") {
       url = null;
@@ -695,7 +672,7 @@ const Tools = (() => {
       half = [size[2] / 2, size[0] / 2];
       x = snapGrid(x); z = snapGrid(z);
     }
-    return { url, x, z, yaw: y, half, scale };
+    return { url, x, z, yaw: y, half, scale, kind };
   }
 
   // Where a traffic light stands for the arm of a junction nearest to p: on the right corner before the
@@ -757,7 +734,7 @@ const Tools = (() => {
       ref = App.edit((sc) => {
         const id = App.uniqueId(`${opts.actorType}_`, sc.actors.map((a) => a.id));
         const onRails = opts.actorType === "tram" && Tracks.nearest(sc, [g.x, g.z]);
-        const lane = !!App.planScene() && Catalog.ACTORS[opts.actorType].lane && !(onRails && onRails.d < 6);
+        const lane = !!App.planScene() && Catalog.ACTORS[opts.actorType].lane && Scene3D.onRoad(g.x, g.z) && !(onRails && onRails.d < 6);
         sc.actors.push({ id, type: opts.actorType, name: Catalog.ACTORS[opts.actorType].name, asset: tpl.asset, route: null,
           pos: [r3(g.x), r3(g.z)], yaw: r3(yaw), scale: [1, 1, 1], maxSpeed: tpl.maxSpeed ?? 10, clearDistance: tpl.clearDistance ?? 6,
           halfLength: tpl.halfLength ?? 2, halfWidth: tpl.halfWidth ?? 0.9, behaviour: { staysPut: !lane, waitsForPlayer: true },

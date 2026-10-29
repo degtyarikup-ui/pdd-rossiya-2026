@@ -899,7 +899,8 @@ const Scene3D = (() => {
       g.rotation.y = model.stop.yaw || 0;
       return;
     }
-    g.position.set(o.pos[0], o.y || 0, o.pos[1]);
+    const y = t === "actor" ? SurfaceSupport.at(build, o.pos[0], o.pos[1]).y : 0;
+    g.position.set(o.pos[0], y + (o.y || 0), o.pos[1]);
     g.rotation.y = o.yaw || 0;
     if (t === "light") g.scale.setScalar(o.scale || 1);
     else if (o.scale) g.scale.set(o.scale[0], o.scale[1], o.scale[2]);
@@ -947,7 +948,7 @@ const Scene3D = (() => {
   function setPose(key, x, z, yaw) {
     const e = anchors.get(key);
     if (!e) return;
-    e.group.position.set(x, 0, z);
+    e.group.position.set(x, key.startsWith("actor:") ? SurfaceSupport.at(build, x, z).y : 0, z);
     e.group.rotation.y = yaw;
     needsRender = true;
   }
@@ -1181,7 +1182,7 @@ const Scene3D = (() => {
       }
     }
     if (ghostObj && gh) {
-      ghostObj.position.set(gh.x, 0, gh.z);
+      ghostObj.position.set(gh.x, gh.kind === "actor" ? SurfaceSupport.at(build, gh.x, gh.z).y : 0, gh.z);
       ghostObj.rotation.y = gh.yaw || 0;
       ghostObj.scale.setScalar(gh.scale || 1);
     }
@@ -1427,6 +1428,7 @@ const Scene3D = (() => {
   function setBuild(B) {
     build = B;
     rebuildRoads();
+    syncAnchors();
     // Refilter a fresh cached GLB copy against the latest coverage, including
     // the first preview after loading a regenerated highway without a build.
     rebuildStatic();
@@ -1805,6 +1807,7 @@ const Scene3D = (() => {
     on(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
     setPanTool(on) { panTool = !!on; renderer && renderer.domElement.classList.toggle("grab", panTool); },
     requestRender() { needsRender = true; },
+    onRoad(x, z) { return ["asphalt", "sand", "dirt_field"].includes(SurfaceSupport.at(build, x, z).id); },
     get mode() { return mode; },
     get pxPerM() { return pxPerM; },
     get spaceDown() { return spaceDown; },

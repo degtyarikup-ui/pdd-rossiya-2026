@@ -28,6 +28,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import check  # noqa: E402
+import build  # noqa: E402
+from surface_support import SurfaceSupport  # noqa: E402
 
 ROOT = check.ROOT
 SIT = ROOT / "game_godot" / "situations"
@@ -107,6 +109,7 @@ def sync(sid: str) -> dict:
     base = engine_base(sid)
     out = copy.deepcopy(base)
     routes = {r["id"]: r for r in net.get("routes", [])}
+    support = SurfaceSupport(build.build(net))
 
     player = (net.get("layout") or {}).get("player") or {}
     free_pose = player.get("pose") if player.get("mode") == "free" else None
@@ -189,7 +192,7 @@ def sync(sid: str) -> dict:
             a.setdefault("config", {})["sidecar"] = na["sidecar"]
         signal = (na.get("behaviour") or {}).get("turnSignal")
         a["turnSignal"] = signal if signal in ("left", "right", "off") else "auto"
-        pos = [na["pos"][0], 0.0, na["pos"][1]]
+        pos = [na["pos"][0], support.height(*na["pos"]), na["pos"][1]]
         a["pos"] = pos
         a["yaw"] = na["yaw"]
         a["scale"] = na["scale"]
@@ -202,7 +205,7 @@ def sync(sid: str) -> dict:
                 a[dimension] = float(a[dimension]) * ratio
         rt = routes.get(na.get("route"))
         if rt:
-            a["path"] = [[x, 0.0, z] for x, z in rt["points"]]
+            a["path"] = [[x, support.height(x, z), z] for x, z in rt["points"]]
             a["length"] = length_of(rt["points"])
             route_2d = rt["points"]
         else:

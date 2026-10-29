@@ -1098,16 +1098,22 @@ const Layout = (() => {
   function applyActors(scene, plan = scene) {
     if (!plan.layout || !plan.layout.streets.length) return scene;
     for (const a of scene.actors || []) {
-      if (!a.way) continue;
+      if (!a.way || a.behaviour?.staysPut) continue;
       const rid = `actor_${a.id}`;
       const existing = (scene.routes || []).find((x) => x.id === rid);
       if (existing && existing.manual) continue;
       const path = pathFrom(plan, a.pos, a.yaw, a.way);
-      if (!path) continue;
+      if (!path) {
+        // A freely moved car outside the plan must not retain a path starting at its old position.
+        scene.routes = scene.routes.filter((x) => x.id !== rid);
+        if (a.route === rid) a.route = null;
+        continue;
+      }
+      // The plan supplies the drive ahead; the author owns the starting position.
+      path[0] = [a.pos[0], a.pos[1]];
       scene.routes = scene.routes.filter((x) => x.id !== rid);
       scene.routes.push({ id: rid, kind: "actor", auto: true, points: path.map(P) });
       a.route = rid;
-      a.pos = P(path[0]);
     }
     return scene;
   }

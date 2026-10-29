@@ -24,8 +24,17 @@ class Path:
 	func _init(pts: Array) -> void:
 		if pts.size() >= 3:
 			var sm := Situation._smooth(pts)
-			for p in sm:
-				points.append(Vector3(p.x, 0, p.y))
+			var index := 0
+			for i in pts.size() - 1:
+				var steps := maxi(1, ceili(Situation._p2(pts[i]).distance_to(Situation._p2(pts[i + 1])) / 0.4))
+				var y0 := float(pts[i][1]) if pts[i].size() == 3 else 0.0
+				var y1 := float(pts[i + 1][1]) if pts[i + 1].size() == 3 else 0.0
+				for step in steps:
+					var p := sm[index]
+					points.append(Vector3(p.x, lerpf(y0, y1, float(step) / steps), p.y))
+					index += 1
+			var last: Array = pts[-1]
+			points.append(Vector3(sm[-1].x, float(last[1]) if last.size() == 3 else 0.0, sm[-1].y))
 		else:
 			for p in pts:
 				points.append(Vector3(p[0], p[1], p[2]) if p.size() == 3 else Vector3(p[0], 0, p[1]))
