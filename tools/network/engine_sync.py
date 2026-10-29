@@ -150,6 +150,8 @@ def sync(sid: str) -> dict:
     out["lights"] = [{"pos": [l["pos"][0], 0.0, l["pos"][1]], "yaw": l["yaw"], "scale": l["scale"],
                       "arrow": l.get("arrow"), "tram": l.get("tram"), "mountedSigns": l.get("mountedSigns", []), "mountedMainRoad": l.get("mountedMainRoad", [])}
                      for l in net.get("lights", [])]
+    if not net.get("lights"):
+        out["trafficLights"] = None
     if net.get("lights") and net["lights"][0].get("state") is not None:
         out["trafficLights"] = {"state": net["lights"][0]["state"], "arrow": net["lights"][0].get("arrow"),
                                 "tram": net["lights"][0].get("tram")}
@@ -249,6 +251,9 @@ def sync(sid: str) -> dict:
     for k in ("speedLimit", "requiredStop", "redWait"):
         if k in q:
             out[k] = q[k]
+    # This signal closes after an answer; an archived red-wait timer must never reopen it.
+    if (out.get("trafficLights") or {}).get("state") == "flashing_green":
+        out["redWait"] = None
     out["spec"] = {**(out.get("spec") or {}), "maneuver": q.get("maneuver"), "yieldTo": q.get("yieldTo", [])}
     if net.get("questionView"):
         out["questionView"] = net["questionView"]     # the question's camera, framed in the editor

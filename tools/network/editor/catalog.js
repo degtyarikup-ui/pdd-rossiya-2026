@@ -69,6 +69,7 @@ const Catalog = (() => {
     { id: "red", title: "Красный", colour: "#ff3b30" },
     { id: "yellow", title: "Жёлтый", colour: "#ffcc00" },
     { id: "green", title: "Зелёный", colour: "#34c759" },
+    { id: "flashing_green", title: "Мигает зелёный", colour: "#34c759" },
     { id: "flashing_yellow", title: "Мигает жёлтый", colour: "#ffcc00" },
   ];
   const MARKS = {

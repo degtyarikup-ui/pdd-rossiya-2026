@@ -685,3 +685,17 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); 
 .ibadge .bus-stop-mark-pic { width: 28px; height: 18px; }
 .bus-stop-type summary { cursor: pointer; color: var(--ink-2); font-size: 12px; }
 .bus-stop-type[open] summary { margin-bottom: 12px; }
+
+.signal-steady { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; }
+.signal-flashing { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; margin-top: 7px; }
+.signal-choice { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-width: 0; padding: 10px 3px; border-radius: 10px; border: 1px solid transparent; background: var(--field); font-size: 11px; color: var(--ink-2); }
+.signal-choice.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.signal-choice .lamp { width: 22px; height: 22px; flex: none; }
+.signal-after-answer { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.signal-after-answer b { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.signal-after-answer > span { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+.signal-after-answer .i { width: 15px; height: 15px; color: var(--ink-3); }
+.signal-after-answer small { font-size: 11px; color: var(--ink-3); line-height: 1.4; }
+.signal-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.signal-dot.yellow { background: #e0a400; }
+.signal-dot.red { background: var(--red); }

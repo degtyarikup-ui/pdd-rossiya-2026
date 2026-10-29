@@ -203,6 +203,9 @@ def check_scene(scene: dict) -> list:
                     {"type": "stop"})
 
     for l in scene.get("lights", []):
+        signal = l.get("state")
+        if signal is not None and signal not in ("red", "yellow", "green", "flashing_yellow", "flashing_green", "red_yellow", "off"):
+            finding(out, "error", "light-state", f"{l['id']}: выберите сигнал светофора", {"type":"light", "id":l['id']})
         if not area.buffer(4.0).covers(Point(l["pos"])):
             finding(out, "warn", "light-far", f"{l['id']} стоит дальше 4 м от дороги", {"type": "light", "id": l["id"]})
 

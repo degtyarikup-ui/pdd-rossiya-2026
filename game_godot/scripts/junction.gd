@@ -138,6 +138,9 @@ var spec: Dictionary
 var _signal_state := ""
 var _signal_clock := 0.0
 var _flash_on := true
+const ANSWER_YELLOW_SECONDS := 3.0
+var _answer_signal_started := false
+var _answer_signal_elapsed := 0.0
 ## World-supplied road continuation in local coordinates, beyond the authored arrow.
 var continuation := Callable()
 var cycle_continuation := Callable()
@@ -235,6 +238,7 @@ func set_lights(state: String,flash_on := true) -> void:
 			var colour: Color = LAMPS[lamp_name][0]
 			var on: bool = lamp_name == "lamp_" + state or (state == "flashing_yellow" and lamp_name == "lamp_yellow")
 			if state=="flashing_yellow" and lamp_name=="lamp_yellow":on=flash_on
+			if state=="flashing_green" and lamp_name=="lamp_green":on=flash_on
 			var discs: Array = lamp.find_children("*", "MeshInstance3D", true, false)
 			if lamp is MeshInstance3D:
 				discs.append(lamp)
@@ -335,8 +339,7 @@ func release() -> void:
 		return
 	released = true
 	_release_officers()
-	if situation.lights.size() and _light_state() != "flashing_yellow" and not data.get("redWait"):
-		set_lights("green")
+	_release_lights()
 	_plan_traffic()
 
 
@@ -359,6 +362,31 @@ func _release_officers() -> void:
 			officer.target_body_yaw = angle_difference(officer.rotation.y, float(after.yaw))
 
 
+## Called on the answer tap (release), also by direct test/resume paths (resolve).
+## Closing the explanation must not reset yellow or resurrect a green signal.
+func _release_lights() -> void:
+	if situation.lights.is_empty(): return
+	if _light_state() == "flashing_green":
+		if not _answer_signal_started:
+			_answer_signal_started = true
+			_answer_signal_elapsed = 0.0
+			set_lights("yellow")
+	elif _light_state() != "flashing_yellow" and not data.get("redWait"):
+		set_lights("green")
+
+
+func _update_light_cycle(dt: float) -> void:
+	if dt <= 0.0: return
+	if _answer_signal_started:
+		_answer_signal_elapsed += dt
+		if _answer_signal_elapsed >= ANSWER_YELLOW_SECONDS and _signal_state != "red":
+			set_lights("red")
+	elif _signal_state in ["flashing_yellow", "flashing_green"]:
+		_signal_clock += dt
+		var on := int(_signal_clock * 2.0) % 2 == 0
+		if on != _flash_on: set_lights(_signal_state,on)
+
+
 func _light_state() -> String:
 	var tl = data.get("trafficLights")
 	return str(tl.get("state", "")) if tl is Dictionary else ""
@@ -378,8 +406,7 @@ func resolve(player: Drive) -> void:
 	var yields: Array = spec.yieldTo
 	var yielding := motions.filter(func(m): return m.id in yields)
 	resolution = { "yielding": yielding, "faults": {}, "elapsed": 0.0, "recovery": 0.0 }
-	if situation.lights.size() and _light_state() != "flashing_yellow" and not data.get("redWait"):
-		set_lights("green")
+	_release_lights()
 	_plan_traffic()
 
 
@@ -590,10 +617,7 @@ func _update_signals() -> void:
 
 ## updateActors (the participants of this junction). `player` in local coords.
 func update_actors(dt: float, player: Dictionary, player_speed: float) -> Motion:
-	if _signal_state=="flashing_yellow" and dt>0:
-		_signal_clock+=dt
-		var on:=int(_signal_clock*2.0)%2==0
-		if on!=_flash_on:set_lights(_signal_state,on)
+	_update_light_cycle(dt)
 	_update_signals()
 	if dt <= 0.0:
 		return null
@@ -788,7 +812,7 @@ func update_resolution(dt: float, player: Drive, local_pos: Vector3) -> void:
 	resolution.elapsed += dt
 	var me := { "p": local_pos, "yaw": player.yaw, "hw": player.half_width, "hl": player.half_length }
 	# Red wait: the light turns green after redWait seconds (updateResolution).
-	var red_wait = data.get("redWait")
+	var red_wait = null if _light_state() == "flashing_green" else data.get("redWait")
 	if red_wait != null and resolution.elapsed >= float(red_wait) and not resolution.get("green", false):
 		resolution.green = true
 		set_lights("green")

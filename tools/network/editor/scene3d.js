@@ -499,12 +499,13 @@ const Scene3D = (() => {
   function updateSignalCycles(now) {
     const lit = Math.floor(now / 500) % 2 === 0;
     for (const light of model?.lights || []) {
-      if (light.state !== "flashing_yellow") continue;
+      if (!["flashing_yellow","flashing_green"].includes(light.state)) continue;
+      const green = light.state === "flashing_green";
       const group = anchors.get(`light:${light.id}`)?.group;
-      const section = group?.getObjectByName("lamp_yellow");
-      if (!section || group.userData.yellowPhase === lit) continue;
-      group.userData.yellowPhase = lit;
-      section.traverse(m => { if (m.isMesh && m.material?.color) m.material.color.setHex(lit ? 0xffd52a : 0x352d14); });
+      const section = group?.getObjectByName(green ? "lamp_green" : "lamp_yellow");
+      if (!section || group.userData.flashPhase === lit) continue;
+      group.userData.flashPhase = lit;
+      section.traverse(m => { if (m.isMesh && m.material?.color) m.material.color.setHex(green ? (lit ? 0x36ff88 : 0x123126) : (lit ? 0xffd52a : 0x352d14)); });
       needsRender = true;
     }
   }
@@ -594,7 +595,7 @@ const Scene3D = (() => {
             if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0xFFD52A : 0x352D14); }
           }
           if (lampName?.startsWith("lamp_green")) {
-            const on = (o.state === "green");
+            const on = (o.state === "green" || o.state === "flashing_green");
             if (m.material) { m.material = m.material.clone(); m.material.color.setHex(on ? 0x36FF88 : 0x123126); }
           }
           if (lampName === "lamp_arrow" && m.material) {
@@ -885,7 +886,7 @@ const Scene3D = (() => {
   }
 
   function lampColour(state) {
-    return { red: 0xff3b30, yellow: 0xffcc00, green: 0x34c759, flashing_yellow: 0xffcc00 }[state] || 0x555555;
+    return { red: 0xff3b30, yellow: 0xffcc00, green: 0x34c759, flashing_green: 0x34c759, flashing_yellow: 0xffcc00 }[state] || 0x555555;
   }
 
   function placeAnchor(g, t, o) {

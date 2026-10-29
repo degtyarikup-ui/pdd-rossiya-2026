@@ -26,8 +26,8 @@ func run() -> void:
 	var texture_bytes:=0
 	for file in DirAccess.get_files_at("res://signs"):
 		if not file.ends_with(".svg"):continue
-		count+=1
 		var code:=file.trim_suffix(".svg")
+		if not code.contains("_"): count+=1
 		var texture:=SignFace.texture(code)
 		check(texture!=null and texture==SignFace.texture(code),code+" official source/cache")
 		var raster: Image=texture.get_image()
@@ -84,13 +84,13 @@ func run() -> void:
 			check(mesh.mesh==(duplicate.find_child(str(mesh.name),true,false) as MeshInstance3D).mesh,kind+" shared source meshes")
 		check(meshes.size()==(8 if kind=="tram" else 4 if kind=="standard" else 5) and triangles<=budget,kind+" geometry and draw budget")
 		check(light.find_children("*","Light3D",true,false).is_empty(),kind+" no dynamic lights")
-		for state in ["red","yellow","green","flashing_yellow","off"]:
+		for state in ["red","yellow","green","flashing_yellow","flashing_green","off"]:
 			for tram in ["straight","left","right","stop","all","off"]:
 				TrafficSignal.set_state(light,state,tram)
 				for name in ["red","yellow","green"]:
 					var lamp:=light.find_child("lamp_"+name,true,false) as Node3D
 					var aperture:=lamp.find_child("aperture_*",true,false) as MeshInstance3D
-					var expected: bool=state==name or (state=="flashing_yellow" and name=="yellow")
+					var expected: bool=state==name or (state=="flashing_yellow" and name=="yellow") or (state=="flashing_green" and name=="green")
 					check((aperture.material_override as ShaderMaterial).get_shader_parameter("lit")==expected,kind+" "+state+" separate "+name)
 					var halo:=lamp.get_meta("halo") as MeshInstance3D
 					check(halo.visible==expected and (halo.material_override as ShaderMaterial).get_shader_parameter("front_only")==true,kind+" only front emits active signal")

@@ -189,7 +189,7 @@
       ${card("Игрок едет", `${chips("maneuver", ["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: k !== "straight" && !routes.includes(k) && !(s.layout) })), q.maneuver, { cls: "arrows" })}
         ${lanes.length > 1 ? `<div class="sub-h">Полоса</div>${chips("lane", laneItems, curLane, { cls: "tiles" })}` : ""}
         <div class="sub-h">Знак скорости</div>${chips("speed", [{ value: "", title: "Нет" }, ...[20, 40, 60].map((v) => ({ value: v, html: `<span class="speed-sign">${v}</span>` }))], q.speedLimit ?? "", { cls: "signs" })}
-        <div class="sub-h">Ждать на красном</div>${chips("redWait", [{ value: "", title: "Нет" }, { value: 2, title: "2 с" }, { value: 5, title: "5 с" }], q.redWait ?? "")}
+        ${s.lights.some(light=>light.state === "flashing_green") ? `<p class="selection-status">После ответа: жёлтый → красный.</p>` : `<div class="sub-h">Ждать на красном</div>${chips("redWait", [{ value: "", title: "Нет" }, { value: 2, title: "2 с" }, { value: 5, title: "5 с" }], q.redWait ?? "")}`}
         ${s.actors.length ? `<div class="sub-h">Уступить дорогу</div><div class="picks">${yields}</div>` : ""}`, { icon: "flag" })}
       ${playerGuideCard(q)}
       ${card("Дороги", s.layout
@@ -224,7 +224,7 @@
         };
       }),
       "chip:speed": (v) => App.edit((sc) => { if (v === "") delete sc.question.speedLimit; else sc.question.speedLimit = Number(v); }),
-      "chip:redWait": (v) => App.edit((sc) => { if (v === "") delete sc.question.redWait; else sc.question.redWait = Number(v); }),
+      "chip:redWait": (v) => App.edit((sc) => { if(sc.lights.some(light=>light.state === "flashing_green"))return; if (v === "") delete sc.question.redWait; else sc.question.redWait = Number(v); }),
       yield: (d) => App.edit((sc) => {
         const set = new Set(sc.question.yieldTo || []);
         set.has(d.id) ? set.delete(d.id) : set.add(d.id);
@@ -660,7 +660,8 @@
   function lightInspector(p, ref, l) {
     const s = state.S;
     const isTram = !!l.tram;
-    const lamps = Catalog.LIGHTS.map((x) => `<button class="lamp ${l.state === x.id ? "on" : ""} ${x.id === "flashing_yellow" ? "blink" : ""}" data-chip="state" data-value="${x.id}" style="--c:${x.colour}" data-tip="${x.title}"></button>`).join("");
+    const signalChoice = x => `<button class="signal-choice ${l.state === x.id ? "on" : ""}" data-chip="state" data-value="${x.id}" aria-label="${x.title}" aria-pressed="${l.state === x.id}"><span class="lamp ${l.state === x.id ? "on" : ""} ${x.id.startsWith("flashing_") ? "blink" : ""}" style="--c:${x.colour}"></span><span>${x.title}</span></button>`;
+    const lamps = `<div class="signal-steady">${Catalog.LIGHTS.filter(x=>!x.id.startsWith("flashing_")).map(signalChoice).join("")}</div><div class="signal-flashing">${Catalog.LIGHTS.filter(x=>x.id.startsWith("flashing_")).map(signalChoice).join("")}</div>`;
     const tramChips = chips("tram", [
       { value: "", title: "Нет" },
       { value: "straight", title: "Прямо", icon: "arrow-up" },
@@ -671,7 +672,7 @@
     ], l.tram || "", { cls: "tram-signals" });
 
     p.innerHTML = `${head(Thumbs.img("light", isTram ? "light_tram" : "light", "big"), isTram ? "Светофор с трамвайной секцией" : "Светофор", s.lights.length > 1 ? `один из ${s.lights.length}` : "")}
-      ${card("Сигнал", `<div class="tlight">${lamps}</div><p class="muted">Сигнал один на всю сцену: меняется у всех светофоров.</p>`)}
+      ${card("Сигнал", `<div class="signal-picker">${lamps}</div><p class="selection-status">Один сигнал для всех светофоров сцены.</p>${l.state === "flashing_green" ? `<div class="signal-after-answer"><b>После ответа</b><span><i class="signal-dot yellow"></i>Жёлтый · 3 с ${ic("arrow-right")}<i class="signal-dot red"></i>Красный</span><small>До ответа зелёный продолжает мигать.</small></div>` : ""}`)}
       ${card("Знаки на стойке", `${[0, 1].map(slot => { const code = (l.mountedSigns || [])[slot]; return `<details><summary>${slot + 1}. ${code ? `${esc(Catalog.signName(code))} · ${code}` : "Добавить знак"}</summary><div class="sign-grid"><button class="${!code ? "on" : ""}" data-chip="mountedSign" data-slot="${slot}" data-value="">Нет</button>${[...new Set(["2.4", "8.13", ...(state.catalog.signs || [])])].map(c => `<button class="${code === c ? "on" : ""}" data-chip="mountedSign" data-slot="${slot}" data-value="${c}" data-tip="${esc(Catalog.signName(c))}"><img src="/asset/sign/${c}.svg" alt="${esc(Catalog.signName(c))}"></button>`).join("")}</div></details>`; }).join("")}`)}
             ${(l.mountedSigns || []).includes("8.13") ? card("Главная дорога на табличке", `<div class="dir-grid">${[["nw","↖"],["north","↑"],["ne","↗"],["west","←"],["east","→"],["sw","↙"],["south","↓"],["se","↘"]].map(([d,t]) => `<button class="${(l.mountedMainRoad || []).includes(d) ? "on" : ""}" data-chip="mountedMainRoad" data-value="${d}">${t}</button>`).join("")}</div>`) : ""}
       ${card("Верхняя секция (Т.5)", `${tramChips}<p class="muted">Бело-лунный сигнал для трамваев и маршрутных ТС.</p>`)}
@@ -681,7 +682,13 @@
       ...common,
       "chip:mountedMainRoad": (v) => App.edit(() => { const roads = new Set(l.mountedMainRoad || []); roads.has(v) ? roads.delete(v) : roads.add(v); l.mountedMainRoad = [...roads]; }),
       "chip:mountedSign": (v, e) => App.edit(() => { const signs = [...(l.mountedSigns || [])]; signs[Number(e.target.closest("[data-chip]").dataset.slot)] = v; if (v === "8.13" && !(l.mountedMainRoad || []).length) l.mountedMainRoad = ["south", "west"]; if (signs.some(Boolean)) l.mountedSigns = signs; else delete l.mountedSigns; }),
-      "chip:state": (v) => App.edit((sc) => sc.lights.forEach((x) => { x.state = v; })),
+      "chip:state": v => {
+        if (App.isLocked(ref) || !Catalog.LIGHTS.some(x=>x.id === v)) return;
+        App.edit(sc => {
+          sc.lights.forEach(x => {x.state=v;});
+          if (v === "flashing_green") { sc.question = sc.question || {}; sc.question.redWait=null; }
+        });
+      },
       "chip:tram": (v) => App.edit(() => {
         l.tram = v || null;
         const cat = state.catalog;
