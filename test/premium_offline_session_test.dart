@@ -38,6 +38,25 @@ void main() {
         await PremiumService.instance.init();
         await AuthService.instance.init();
         expect(PremiumService.instance.isPremium, isTrue);
+        var unavailableResponses = 0;
+        await http.runWithClient(
+          () async {
+            await PremiumService.instance.syncWithServer();
+            expect(PremiumService.instance.isPremium, isTrue);
+            expect(AuthService.instance.currentUser?.id, user.id);
+            final prefs = await SharedPreferences.getInstance();
+            expect(prefs.getBool('premium_is_active'), isTrue);
+            expect(
+              prefs.getInt('premium_expires_at'),
+              expiry.millisecondsSinceEpoch,
+            );
+          },
+          () => MockClient((_) async {
+            unavailableResponses++;
+            return http.Response('{}', 503);
+          }),
+        );
+        expect(unavailableResponses, greaterThan(0));
         await PremiumService.instance.onAuthChanged(
           UserProfile(
             id: 'google_other',
