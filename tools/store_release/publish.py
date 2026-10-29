@@ -194,7 +194,15 @@ class AppStore:
 
     def call(self, method, path, body=None, **query):
         url = self.API + path + ('?' + urllib.parse.urlencode(query) if query else '')
-        return http(method, url, {'Authorization': 'Bearer ' + self.token()}, body)
+        for attempt in range(3):
+            try:
+                return http(method, url, {'Authorization': 'Bearer ' + self.token()}, body)
+            except HttpError as error:
+                # App Store Connect sometimes answers UNEXPECTED_ERROR (500) once;
+                # every step here is idempotent, so a short retry is safe.
+                if error.status < 500 or attempt == 2:
+                    raise
+                time.sleep(20)
 
     def app(self):
         return self.call('GET', '/v1/apps', **{'filter[bundleId]': IOS_BUNDLE})['data'][0]['id']
