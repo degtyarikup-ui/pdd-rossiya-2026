@@ -3259,7 +3259,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.';
 
   @override
-  String get gamesRoadSignsTitle => 'Знаки';
+  String get gamesRoadSignsTitle => 'Квиз';
 
   @override
   String get gamesViolatorTitle => 'Нарушитель';

@@ -14,7 +14,7 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart
 const hiddenGames = <String>{};
 
 /// Mini games only Premium players can open. Free players see the cover in black
-/// and white with a Premium badge ("coming soon" is also dimmed, without the badge);
+/// and white with a Premium badge;
 /// a tap opens the paywall naming the game, and a purchase goes straight into it.
 /// The city looks the same while its free runs are used up, until they refill.
 /// Test builds (`GAME_DEBUG`, see `build_dev.py`) open them without Premium.
@@ -324,6 +324,12 @@ class _MiniGamesCatalogue extends StatelessWidget {
       onTap: onSigns,
     ),
     _HubCard(
+      id: 'road_signs',
+      title: appL10n.gamesRoadSignsTitle,
+      titleSize: titleSize,
+      onTap: onRoadSigns,
+    ),
+    _HubCard(
       id: 'regulator',
       title: appL10n.gameTrafficControllerTitle,
       titleSize: titleSize,
@@ -336,18 +342,10 @@ class _MiniGamesCatalogue extends StatelessWidget {
       onTap: onCrossroads,
     ),
     _HubCard(
-      id: 'road_signs',
-      title: appL10n.gamesRoadSignsTitle,
-      titleSize: titleSize,
-      onTap: onRoadSigns,
-    ),
-    _HubCard(
       id: 'violator',
       title: appL10n.gamesViolatorTitle,
       titleSize: titleSize,
       onTap: onViolator,
-      // Still "coming soon" for the stores; dev builds (GAME_DEBUG) can play it.
-      comingSoon: !const bool.fromEnvironment('GAME_DEBUG'),
       locked: _locked('violator'),
     ),
     _HubCard(
@@ -401,7 +399,6 @@ class _HubCard extends StatelessWidget {
     this.onTap,
     this.featured = false,
     this.waiting = false,
-    this.comingSoon = false,
     this.locked = false,
     this.compact = false,
     this.semanticDetails = '',
@@ -412,7 +409,7 @@ class _HubCard extends StatelessWidget {
   final String id, title;
   final String? caption;
   final VoidCallback? onTap;
-  final bool featured, waiting, comingSoon, locked, compact;
+  final bool featured, waiting, locked, compact;
   final String semanticDetails;
   final double titleSize;
   final Widget? footer;
@@ -420,12 +417,11 @@ class _HubCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final launch = comingSoon ? null : onTap;
+    final launch = onTap;
     final enabled = launch != null;
-    // "Coming soon" outranks the badge: an unreleased game is not for sale.
-    final premiumOnly = locked && !comingSoon;
+    final premiumOnly = locked;
     const foreground = AppColors.white;
-    final status = comingSoon ? appL10n.gameSoonBadge : caption;
+    final status = caption;
     final animation = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : const Duration(milliseconds: 260);
@@ -454,8 +450,7 @@ class _HubCard extends StatelessWidget {
                 // Closed games are black and white; colour returns with Premium
                 // (or refilled runs) in the same fade as the badge.
                 child: _Desaturated(
-                  amount: comingSoon || premiumOnly ? 1 : 0,
-                  opacity: comingSoon ? .5 : 1,
+                  amount: premiumOnly ? 1 : 0,
                   duration: animation,
                   child: _HubCover(id: id),
                 ),
@@ -626,11 +621,10 @@ class _PremiumBadge extends StatelessWidget {
 class _Desaturated extends StatelessWidget {
   const _Desaturated({
     required this.amount,
-    required this.opacity,
     required this.duration,
     required this.child,
   });
-  final double amount, opacity;
+  final double amount;
   final Duration duration;
   final Widget child;
 
@@ -644,7 +638,7 @@ class _Desaturated extends StatelessWidget {
       final cover = t <= 0
           ? child!
           : ColorFiltered(colorFilter: _grey(t), child: child);
-      return opacity < 1 ? Opacity(opacity: opacity, child: cover) : cover;
+      return cover;
     },
   );
 

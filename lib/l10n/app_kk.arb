@@ -1007,7 +1007,7 @@
   "gameSignScenario8_17_1Explanation": "Жоқ. Бұл тұрақтар жәрдемақы алуға құқығы бар «Мүгедек» белгісі бар көліктерге арналған.",
   "gameSignScenario5_15_1_1Prompt": "Ортаңғы жолақтан жебе тек алға қарай. Солға бұрыла аламын ба?",
   "gameSignScenario5_15_1_1Explanation": "Жоқ. Бұл жолақтан тек алға жүруге рұқсат етіледі. Бұрылу үшін алдын ала қолайлы жолақты алу керек.",
-  "gamesRoadSignsTitle": "Белгілер",
+  "gamesRoadSignsTitle": "Квиз",
   "gameComboStreak": "{count} қатарынан!",
   "@gameComboStreak": {
     "description": "Combo streak pop-up message in mini-games.",

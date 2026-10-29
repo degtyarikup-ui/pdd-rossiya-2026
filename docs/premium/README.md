@@ -127,7 +127,7 @@ Escape закрывает преимущества, когда это текущ
 Игры только для Премиума — `premiumGames` в `games_hub_view.dart` (сейчас
 «Парковка» и «Нарушитель»; в тестовых сборках с `GAME_DEBUG` список пуст —
 игры открыты без Премиума). Бесплатный игрок видит чёрно-белую обложку с янтарным
-значком «Премиум» («Скоро» — бледная серая без значка и важнее него). Так же
+значком «Премиум». Обе игры выпущены; состояния «Скоро» у них нет. Так же
 выглядит «Живой город», пока бесплатные заезды не восстановятся. Нажатие
 сначала проверяет, есть ли игра на платформе, затем открывает
 `PremiumPaywallSheet.show(context, lockedGame: <название>)`: над заголовком
@@ -135,7 +135,7 @@ Escape закрывает преимущества, когда это текущ
 или восстановление) сразу запускает выбранную игру; СБП в браузере (`false`)
 и закрытие оставляют в каталоге, карточка открывается сама, когда Премиум
 подтверждён. Регрессии — `games_hub_city_entry_test.dart` (группа
-«Premium-only Parking»), `games_hub_layout_test.dart`, `premium_redesign_test.dart`.
+«Premium-only parking» и «Premium-only violator»), `games_hub_layout_test.dart`, `premium_redesign_test.dart`.
 
 UI-регрессии: `premium_motion_test.dart`, `premium_redesign_test.dart`,
 `premium_banner_redesign_test.dart`,

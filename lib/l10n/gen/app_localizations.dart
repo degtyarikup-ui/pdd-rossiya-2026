@@ -5437,7 +5437,7 @@ abstract class AppLocalizations {
   /// No description provided for @gamesRoadSignsTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Знаки'**
+  /// **'Квиз'**
   String get gamesRoadSignsTitle;
 
   /// No description provided for @gamesViolatorTitle.

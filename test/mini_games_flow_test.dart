@@ -702,16 +702,16 @@ void main() {
     expect(find.byType(GamesHubScreen), findsOneWidget);
     expect(find.byType(SignSwiperScreen), findsNothing);
     expect(tester.takeException(), isNull);
-    // The unreleased Violator game remains a non-interactive preview.
+    // Released Violator uses the same platform availability check as Parking.
     await tester.scrollUntilVisible(find.text(appL10n.gamesViolatorTitle), 200);
     ScaffoldMessenger.of(
       tester.element(find.byType(GamesHubScreen)),
     ).clearSnackBars();
     await tester.pumpAndSettle();
-    expect(find.text(appL10n.gameSoonBadge), findsOneWidget);
+    expect(find.text(appL10n.gameSoonBadge), findsNothing);
     await tester.tapAt(tester.getCenter(find.text(appL10n.gamesViolatorTitle)));
     await tester.pumpAndSettle();
-    expect(find.text(appL10n.gameUnavailable), findsNothing);
+    expect(find.text(appL10n.gameUnavailable), findsOneWidget);
     expect(find.byType(GamesHubScreen), findsOneWidget);
     // Road signs game opens RoadSignsScreen
     await tester.scrollUntilVisible(

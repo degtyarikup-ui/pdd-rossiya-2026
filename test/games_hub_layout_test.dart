@@ -12,9 +12,9 @@ import 'package:pdd_app/presentation/screens/games/games_hub_view.dart';
 
 const _cardKeys = [
   'games-card-signs',
+  'games-card-road_signs',
   'games-card-regulator',
   'games-card-crossroads',
-  'games-card-road_signs',
   'games-card-violator',
   'games-card-parking',
   'games-card-city',
@@ -209,13 +209,15 @@ void main() {
       find.byKey(const ValueKey('games-card-violator')),
     );
     final city = tester.getRect(find.byKey(const ValueKey('games-card-city')));
-    expect(signs.top, closeTo(regulator.top, 0.1));
-    expect(crossroads.top, greaterThanOrEqualTo(signs.bottom));
-    expect(roadSigns.top, closeTo(crossroads.top, 0.1));
+    expect(signs.top, closeTo(roadSigns.top, 0.1));
+    expect(signs.right, lessThan(roadSigns.left));
+    expect(regulator.top, greaterThanOrEqualTo(signs.bottom));
+    expect(crossroads.top, closeTo(regulator.top, 0.1));
+    expect(regulator.right, lessThan(crossroads.left));
     expect(violator.top, greaterThanOrEqualTo(crossroads.bottom));
     expect(parking.top, closeTo(violator.top, 0.1));
     expect(city.left, closeTo(signs.left, 0.1));
-    expect(city.right, closeTo(regulator.right, 0.1));
+    expect(city.right, closeTo(roadSigns.right, 0.1));
     expect(city.top, greaterThanOrEqualTo(parking.bottom));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
@@ -484,7 +486,7 @@ void main() {
     await open(tester, weekScore: 0);
     expect(find.text(appL10n.gamesPlay), findsNothing);
     expect(find.bySemanticsLabel(appL10n.gamesRecordScore('0')), findsNothing);
-    expect(find.text(appL10n.gameSoonBadge), findsOneWidget);
+    expect(find.text(appL10n.gameSoonBadge), findsNothing);
     semantics.dispose();
     await tester.pumpWidget(const SizedBox());
   });
@@ -510,6 +512,11 @@ void main() {
           appL10n.gamesParkingTitle,
           '${appL10n.gamesParkingTitle}, ${appL10n.gamesPremiumBadge}',
         ),
+        (
+          'violator',
+          appL10n.gamesViolatorTitle,
+          '${appL10n.gamesViolatorTitle}, ${appL10n.gamesPremiumBadge}',
+        ),
       ]) {
         final finder = find.byKey(ValueKey('games-card-${entry.$1}'));
         final card = tester.widget<Semantics>(finder);
@@ -525,36 +532,7 @@ void main() {
           isTrue,
         );
       }
-      final violator = find.byKey(const ValueKey('games-card-violator'));
-      final card = tester.widget<Semantics>(violator);
-      expect(
-        card.properties.label,
-        '${appL10n.gamesViolatorTitle}, ${appL10n.gameSoonBadge}',
-      );
-      expect(card.properties.enabled, isFalse);
-      expect(card.properties.onTap, isNull);
-      expect(
-        tester
-            .getSemantics(violator)
-            .getSemanticsData()
-            .hasAction(ui.SemanticsAction.tap),
-        isFalse,
-      );
-      expect(find.text(appL10n.gamesViolatorTitle), findsOneWidget);
-      expect(
-        find.descendant(
-          of: violator,
-          matching: find.text(appL10n.gameSoonBadge),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: violator,
-          matching: find.textContaining(appL10n.gamesRecordScore('')),
-        ),
-        findsNothing,
-      );
+      expect(find.text(appL10n.gameSoonBadge), findsNothing);
       expect(find.text(appL10n.gamesPlay), findsNothing);
       expect(tester.takeException(), isNull, reason: locale.languageCode);
     }
@@ -654,15 +632,19 @@ void main() {
     tester,
   ) async {
     final called = <String>[];
-    await open(tester, onParking: () => called.add('parking'));
+    await open(
+      tester,
+      onParking: () => called.add('parking'),
+      onViolator: () => called.add('violator'),
+    );
     Finder badgeOf(String id) => find.descendant(
       of: find.byKey(ValueKey('games-card-$id')),
       matching: find.byKey(const ValueKey('games-premium-badge')),
     );
-    // Only Parking: the unreleased Violator stays "coming soon", not for sale.
-    expect(find.byKey(const ValueKey('games-premium-badge')), findsOneWidget);
+    // Both released games use the same Premium access rule.
+    expect(find.byKey(const ValueKey('games-premium-badge')), findsNWidgets(2));
     expect(badgeOf('parking'), findsOneWidget);
-    expect(badgeOf('violator'), findsNothing);
+    expect(badgeOf('violator'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('games-card-parking')),
@@ -697,7 +679,8 @@ void main() {
     );
     expect(badge.bottom, lessThan(title.top));
     await tester.tap(find.byKey(const ValueKey('games-card-parking')));
-    expect(called, ['parking']);
+    await tester.tap(find.byKey(const ValueKey('games-card-violator')));
+    expect(called, ['parking', 'violator']);
 
     await open(tester, premium: true);
     expect(find.byKey(const ValueKey('games-premium-badge')), findsNothing);
@@ -785,9 +768,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('games-leaderboard')));
     expect(called, [
       'signs',
+      'road_signs',
       'regulator',
       'crossroads',
-      'road_signs',
+      'violator',
       'parking',
       'city',
       'leaderboard',

@@ -317,91 +317,99 @@ void main() {
     expect(tester.takeException(), isNull);
     await close(tester);
   });
-  group('Premium-only Parking', () {
-    Finder parking() => find.byKey(const ValueKey('games-card-parking'));
+  for (final id in ['parking', 'violator']) {
+    group('Premium-only $id', () {
+      Finder game() => find.byKey(ValueKey('games-card-$id'));
+      String title() => id == 'parking'
+          ? appL10n.gamesParkingTitle
+          : appL10n.gamesViolatorTitle;
 
-    Future<void> tapParking(WidgetTester tester) async {
-      await tester.scrollUntilVisible(parking(), 200);
-      await tester.pumpAndSettle();
-      await tester.tap(parking());
-      await tester.pumpAndSettle();
-    }
+      Future<void> tapGame(WidgetTester tester) async {
+        await tester.scrollUntilVisible(game(), 200);
+        await tester.pumpAndSettle();
+        await tester.tap(game());
+        await tester.pumpAndSettle();
+      }
 
-    testWidgets('a free player gets the paywall that names the game', (
-      tester,
-    ) async {
-      await open(tester, runs: 3);
-      await tapParking(tester);
-      expect(find.byType(PremiumPaywallSheet), findsOneWidget);
-      expect(
-        find.text(appL10n.paywallLockedGame(appL10n.gamesParkingTitle)),
-        findsOneWidget,
-      );
-      expect(gameCalls, ['available']);
+      testWidgets('a free player gets the paywall that names the game', (
+        tester,
+      ) async {
+        await open(tester, runs: 3);
+        await tapGame(tester);
+        expect(find.byType(PremiumPaywallSheet), findsOneWidget);
+        expect(find.text(appL10n.paywallLockedGame(title())), findsOneWidget);
+        expect(gameCalls, ['available']);
 
-      // Closing the paywall stays in the hub and starts nothing.
-      Navigator.of(tester.element(find.byType(PremiumPaywallSheet))).pop();
-      await tester.pumpAndSettle();
-      expect(find.byType(PremiumPaywallSheet), findsNothing);
-      expect(gameCalls, ['available']);
-      expect(tester.takeException(), isNull);
-      await close(tester);
+        // Closing the paywall stays in the hub and starts nothing.
+        Navigator.of(tester.element(find.byType(PremiumPaywallSheet))).pop();
+        await tester.pumpAndSettle();
+        expect(find.byType(PremiumPaywallSheet), findsNothing);
+        expect(gameCalls, ['available']);
+        expect(tester.takeException(), isNull);
+        await close(tester);
+      });
+
+      testWidgets('a purchase goes straight into the chosen game', (
+        tester,
+      ) async {
+        final container = await open(tester, runs: 3);
+        await tapGame(tester);
+        expect(find.byType(PremiumPaywallSheet), findsOneWidget);
+        container.read(premium.notifier).state = true;
+        Navigator.of(
+          tester.element(find.byType(PremiumPaywallSheet)),
+        ).pop(true);
+        await settleCityLaunch(tester);
+        expect(find.byType(PremiumPaywallSheet), findsNothing);
+        expect(gameCalls, ['available', 'start']);
+        expect(find.byKey(const ValueKey('games-premium-badge')), findsNothing);
+        expect(tester.takeException(), isNull);
+        await close(tester);
+      });
+
+      testWidgets('an SBP browser handoff does not start the game', (
+        tester,
+      ) async {
+        await open(tester, runs: 3);
+        await tapGame(tester);
+        Navigator.of(
+          tester.element(find.byType(PremiumPaywallSheet)),
+        ).pop(false);
+        await tester.pumpAndSettle();
+        expect(gameCalls, ['available']);
+        expect(tester.takeException(), isNull);
+        await close(tester);
+      });
+
+      testWidgets('Premium opens the game without the paywall', (tester) async {
+        final container = await open(tester, runs: 3);
+        container.read(premium.notifier).state = true;
+        await tester.pumpAndSettle();
+        await tapGame(tester);
+        await settleCityLaunch(tester);
+        expect(find.byType(PremiumPaywallSheet), findsNothing);
+        expect(gameCalls, ['available', 'start']);
+        expect(tester.takeException(), isNull);
+        await close(tester);
+      });
+
+      testWidgets('a platform without the game shows no paywall', (
+        tester,
+      ) async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(gameChannel, (call) async {
+              gameCalls.add(call.method);
+              return call.method == 'available' ? false : null;
+            });
+        await open(tester, runs: 3);
+        await tapGame(tester);
+        expect(find.byType(PremiumPaywallSheet), findsNothing);
+        expect(find.text(appL10n.gameUnavailable), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await close(tester);
+      });
     });
-
-    testWidgets('a purchase goes straight into the chosen game', (
-      tester,
-    ) async {
-      final container = await open(tester, runs: 3);
-      await tapParking(tester);
-      expect(find.byType(PremiumPaywallSheet), findsOneWidget);
-      container.read(premium.notifier).state = true;
-      Navigator.of(tester.element(find.byType(PremiumPaywallSheet))).pop(true);
-      await settleCityLaunch(tester);
-      expect(find.byType(PremiumPaywallSheet), findsNothing);
-      expect(gameCalls, ['available', 'start']);
-      expect(find.byKey(const ValueKey('games-premium-badge')), findsNothing);
-      expect(tester.takeException(), isNull);
-      await close(tester);
-    });
-
-    testWidgets('an SBP browser handoff does not start the game', (
-      tester,
-    ) async {
-      await open(tester, runs: 3);
-      await tapParking(tester);
-      Navigator.of(tester.element(find.byType(PremiumPaywallSheet))).pop(false);
-      await tester.pumpAndSettle();
-      expect(gameCalls, ['available']);
-      expect(tester.takeException(), isNull);
-      await close(tester);
-    });
-
-    testWidgets('Premium opens the game without the paywall', (tester) async {
-      final container = await open(tester, runs: 3);
-      container.read(premium.notifier).state = true;
-      await tester.pumpAndSettle();
-      await tapParking(tester);
-      await settleCityLaunch(tester);
-      expect(find.byType(PremiumPaywallSheet), findsNothing);
-      expect(gameCalls, ['available', 'start']);
-      expect(tester.takeException(), isNull);
-      await close(tester);
-    });
-
-    testWidgets('a platform without the game shows no paywall', (tester) async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(gameChannel, (call) async {
-            gameCalls.add(call.method);
-            return call.method == 'available' ? false : null;
-          });
-      await open(tester, runs: 3);
-      await tapParking(tester);
-      expect(find.byType(PremiumPaywallSheet), findsNothing);
-      expect(find.text(appL10n.gameUnavailable), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await close(tester);
-    });
-  });
+  }
 }
 
 class _UnavailableStore extends InAppPurchasePlatform {

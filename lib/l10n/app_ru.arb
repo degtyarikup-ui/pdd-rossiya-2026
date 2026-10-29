@@ -1471,7 +1471,7 @@
   "gameSignScenario8_17_1Explanation": "Нет. Эти парковочные места предназначены для машин со знаком «Инвалид», имеющих право на льготу.",
   "gameSignScenario5_15_1_1Prompt": "Из средней полосы стрелка только прямо. Можно повернуть налево?",
   "gameSignScenario5_15_1_1Explanation": "Нет. Из этой полосы разрешено только прямо. Для поворота нужно заранее занять подходящую полосу.",
-  "gamesRoadSignsTitle": "Знаки",
+  "gamesRoadSignsTitle": "Квиз",
   "gameComboStreak": "{count} подряд!",
   "@gameComboStreak": {
     "description": "Combo streak pop-up message in mini-games.",

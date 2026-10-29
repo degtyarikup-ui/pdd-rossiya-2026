@@ -1007,7 +1007,7 @@
   "gameSignScenario8_17_1Explanation": "No. These parking spaces are intended for cars with a \"Disabled Person\" sign that are eligible for benefits.",
   "gameSignScenario5_15_1_1Prompt": "From the middle lane, the arrow only goes straight. Can I turn left?",
   "gameSignScenario5_15_1_1Explanation": "No. Only straight ahead is allowed from this lane. To turn, you need to take a suitable lane in advance.",
-  "gamesRoadSignsTitle": "Road signs",
+  "gamesRoadSignsTitle": "Quiz",
   "gameComboStreak": "{count} in a row!",
   "@gameComboStreak": {
     "description": "Combo streak pop-up message in mini-games.",
