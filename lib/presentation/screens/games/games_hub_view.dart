@@ -663,13 +663,10 @@ class _HubCover extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
       final wide = id == 'city';
-      final fullImage = !wide && id != 'crossroads';
-      final nativeWidth = wide ? 1280 : (fullImage ? 960 : 640);
-      final aspect = wide ? 16 / 9 : (fullImage ? 4 / 3 : 1.0);
-      // Keep the swipe arrows and cars visible in tall catalogue cards.
-      final imageWidth = fullImage
-          ? math.min(box.maxWidth, box.maxHeight * aspect)
-          : math.max(box.maxWidth, box.maxHeight * aspect);
+      final nativeWidth = wide ? 1280 : 960;
+      final aspect = wide ? 16 / 9 : 4 / 3;
+      // Decode enough pixels for a proportional crop that fills the card.
+      final imageWidth = math.max(box.maxWidth, box.maxHeight * aspect);
       final pixels = imageWidth * MediaQuery.devicePixelRatioOf(context);
       final decodeWidth = math.min(
         nativeWidth,
@@ -681,16 +678,13 @@ class _HubCover extends StatelessWidget {
             ? 960
             : 1280,
       );
-      return ColoredBox(
-        color: Colors.white,
-        child: Image.asset(
-          'assets/images/games/hub_$id.webp',
-          fit: fullImage ? BoxFit.contain : BoxFit.cover,
-          alignment: fullImage ? Alignment.topCenter : Alignment.center,
-          cacheWidth: decodeWidth,
-          filterQuality: FilterQuality.medium,
-          gaplessPlayback: true,
-        ),
+      return Image.asset(
+        'assets/images/games/hub_$id.webp',
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        cacheWidth: decodeWidth,
+        filterQuality: FilterQuality.medium,
+        gaplessPlayback: true,
       );
     },
   );
