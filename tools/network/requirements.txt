@@ -1,3 +1,6 @@
 numpy
 shapely>=2.0
 triangle
+
+# Regenerate shared vector digits with tools/godot_export/build_number_signs.py.
+fonttools

@@ -53,6 +53,8 @@ static func sign_node(code: String, plate := "", plate_sign := "", main_road: Ar
 	var primary := {"code": code, "plate": plate, "plateSign": plate_sign, "mainRoad": main_road, "roads": roads}
 	if mounting.has("laneDirections"):
 		primary.laneDirections = mounting.laneDirections
+	if mounting.has("number"):
+		primary.number = mounting.number
 	if mounting.has("zoneVariant"):
 		primary.zoneVariant = mounting.zoneVariant
 	var faces: Array = [primary]
@@ -133,6 +135,8 @@ static func _sign_parts(face: Dictionary, above := Vector2.ZERO) -> Array:
 		width = LaneSign.width(lanes)
 	elif code == "8.13":
 		tex = main_road_plate(face.get("mainRoad", []), face.get("roads", []))
+	elif code in ["3.24", "3.25"] and face.has("number"):
+		tex = SignFace.number_texture(code,int(face.number))
 	else:
 		tex = SignFace.texture(artwork)
 	if tex == null:

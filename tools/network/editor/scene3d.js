@@ -669,7 +669,7 @@ const Scene3D = (() => {
         // Rasterize SVG paths at the game's bounded resolution, not the catalogue's tiny canvas.
         const source = texture.image;
         texture.userData = { sourceSize: [source.width, source.height] };
-        const scale = App.state.catalog?.signLayouts?.[code]?.scale || 1;
+        const scale = App.state.catalog?.signLayouts?.[code.replace(/_\d+$/, "")]?.scale || 1;
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(source.width * scale); canvas.height = Math.round(source.height * scale);
         canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
@@ -794,14 +794,14 @@ const Scene3D = (() => {
         const im = part.mesh.material.map.image;
         const source = part.mesh.material.map.userData?.sourceSize || [im.width, im.height];
         part.h = width * source[1] / source[0];
-        const crop = App.state.catalog?.signRegions?.[code];
+        const crop = App.state.catalog?.signRegions?.[code.replace(/_\d+$/, "")];
         let w = width, h = part.h;
         if (crop) {
           const scale = Math.min(width / crop[2], part.h / crop[3]);
           w = crop[2] * scale; h = crop[3] * scale;
           part.mesh.material.uniforms.region.value.set(crop[0] / source[0], 1 - (crop[1] + crop[3]) / source[1], crop[2] / source[0], crop[3] / source[1]);
         }
-        const layout = App.state.catalog?.signLayouts?.[code];
+        const layout = App.state.catalog?.signLayouts?.[code.replace(/_\d+$/, "")];
         const r = layout?.outline || [0, 0, 1, 1];
         const uniforms = part.mesh.material.uniforms;
         uniforms.outline.value.set(r[0], 1-r[1]-r[3], r[2], r[3]);
@@ -819,7 +819,7 @@ const Scene3D = (() => {
     };
     const faces = SignMount.faces(o);
     const imageSize = (code, width) => {
-      const spec = App.state.catalog?.signLayouts?.[code], source = spec?.sourceSize || [1, 1];
+      const spec = App.state.catalog?.signLayouts?.[code.replace(/_\d+$/, "")], source = spec?.sourceSize || [1, 1];
       const outline = spec?.outline || [0, 0, 1, 1];
       return [width * outline[2], width * source[1] / source[0] * outline[3]];
     };

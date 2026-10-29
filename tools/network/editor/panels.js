@@ -233,7 +233,7 @@
   function rowIcon(ref) {
     const o = App.objectOf(ref);
     if (ref.t === "decor") return Thumbs.img("prop", o.prop, "mini");
-    if (ref.t === "sign") return `<img class="thumb mini" src="/asset/sign/${o.code}.svg" alt="">`;
+    if (ref.t === "sign") return `<img class="thumb mini" src="/asset/sign/${SignMount.textureCode(o)}.svg" alt="">`;
     if (ref.t === "actor") return Thumbs.img("actor", o.type, "mini");
     return ic({ node: o?.ring ? "ring" : "junction", street: "road", road: ref.part >= 0 ? "lawn" : "road", lawn: "lawn", marking: "marking",
       route: "route", light: "light", stop: "flag", officer: "person" }[ref.t] || "info");

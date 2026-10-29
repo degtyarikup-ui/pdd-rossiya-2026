@@ -8,6 +8,7 @@ cannot be driven correctly (the car would leave the road, the question could
 not be answered on the road); warnings are things to look at by hand.
 The web editor calls check_scene() on every save.
 """
+import number_sign
 import json
 import math
 import re
@@ -148,6 +149,11 @@ def check_scene(scene: dict) -> list:
     if not area.buffer(0.3).covers(stop_pt):
         finding(out, "error", "stop-off-road", f"стоп-линия ({stop_pt.x:.2f}, {stop_pt.y:.2f}) не на дороге",
                 {"type": "stop"})
+
+    for sign in scene.get("signs", []):
+        for face in [sign, sign.get("secondSign", {})]:
+            if "number" in face and not number_sign.valid(face.get("code"), face["number"]):
+                finding(out, "error", "sign-number", "Задайте целую скорость от 1 до 150 для знака 3.24 или 3.25", {"type":"sign", "id":sign["id"]})
 
     routes = {r["id"]: r for r in scene.get("routes", [])}
     for r in scene.get("routes", []):

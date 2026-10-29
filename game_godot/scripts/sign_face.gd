@@ -30,6 +30,44 @@ static func texture(code: String) -> Texture2D:
 		_textures[code].set_meta("canvas_size",Vector2(_regions[code][2],_regions[code][3]) if _regions.has(code) else Vector2(_layout[code].sourceSize[0],_layout[code].sourceSize[1]))
 	return _textures[code]
 
+# The editor and game use the same vector templates and digit paths.
+static var _number_data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://signs/number_faces.json"))
+static var _number_textures := {}
+
+static func number_svg(code: String, value: int) -> String:
+	if not code in ["3.24", "3.25"] or value < 1 or value > 150: return ""
+	var glyphs: Array = []
+	var advance := 0.0
+	for digit in str(value):
+		var glyph: Dictionary = _number_data.glyphs[digit]
+		glyphs.append(glyph)
+		advance += float(glyph.advance)
+	var scale: float = minf(29.0 / float(_number_data.top - _number_data.bottom), 46.0 / advance)
+	var x := 50.0 - advance * scale / 2.0
+	var y: float = 43.0 + float(_number_data.top + _number_data.bottom) * scale / 2.0
+	var paths := ""
+	var offset := 0.0
+	for glyph in glyphs:
+		paths += '<path transform="translate(%.9f 0)" d="%s"/>' % [offset, glyph.path]
+		offset += float(glyph.advance)
+	var number := '<g transform="translate(%.9f %.9f) scale(%.9f %.9f)">%s</g>' % [x,y,scale,-scale,paths]
+	return str(_number_data.templates[code]).replace("{{number}}",number)
+
+static func number_texture(code: String, value: int) -> Texture2D:
+	var svg := number_svg(code,value)
+	if svg.is_empty(): return texture(code)
+	var key := code + ":" + str(value)
+	if not _number_textures.has(key):
+		var image := Image.new()
+		if image.load_svg_from_string(svg,float(_layout[code].scale)) != OK: return texture(code)
+		image.generate_mipmaps()
+		var tex := ImageTexture.create_from_image(image)
+		tex.set_meta("sign_code",code)
+		tex.set_meta("canvas_size",Vector2(100,86))
+		if _number_textures.size() >= 32: _number_textures.erase(_number_textures.keys()[0])
+		_number_textures[key] = tex
+	return _number_textures[key]
+
 static func legacy_size(code: String,width: float) -> Vector2:
 	return Vector2(width,legacy_height(code,width))
 
@@ -87,7 +125,7 @@ static func picture(tex: Texture2D,at: Vector3,size: Vector2) -> MeshInstance3D:
 			box=Vector4(r[0],r[1],r[2],r[3])
 		var canvas: Vector2=tex.get_meta("canvas_size",Vector2(tex.get_width(),tex.get_height()))
 		material.set_shader_parameter("outline_rect",box)
-		material.set_shader_parameter("outline_shape",outline_shape(code,tex is ImageTexture))
+		material.set_shader_parameter("outline_shape",outline_shape(code,tex is ImageTexture and not tex.has_meta("sign_code")))
 		material.set_shader_parameter("outline_aspect",canvas.x*box.z/(canvas.y*box.w))
 		material.set_shader_parameter("corner_radius",float(tex.get_meta("corner_radius",0.0)) if tex is ImageTexture else .10)
 		cache[key]=material

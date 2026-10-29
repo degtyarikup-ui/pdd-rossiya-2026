@@ -44,3 +44,16 @@ assert.equal(sign().plateSign,'8.2.2','a locked sign retains its plate'); state.
 change('plateSign',''); assert.equal(sign().plateSign,undefined,'plate can be removed');
 assert.equal(Catalog.signName('8.2.2'),'Зона действия');
 console.log('Sign catalogue inspector: complete named grid, search, sign/plate selection, persistence, undo and locks PASS');
+chip('code','3.24');change('signNumber','40');
+assert.equal(sign().number,40);assert.match(pane.innerHTML,/3\.24_40\.svg/);
+assert.match(pane.innerHTML,/Скорость на знаке/);
+for (const bad of ['', '0', '-10', '40.5', '151', 'NaN']) { change('signNumber',bad);assert.equal(sign().number,40); }
+App.undo();assert.equal(sign().number,undefined);App.redo();assert.equal(sign().number,40);
+state.locked.add('signs');change('signNumber','80');assert.equal(sign().number,40);state.locked.clear();
+const act = name => listeners.click({target:{closest:s=>s==='[data-act]'?{dataset:{act:name}}:null}});
+act('add-second-sign');chip('code','3.25');change('signNumber','90');
+assert.equal(sign().number,40);assert.equal(sign().secondSign.number,90);
+act('swap-signs');assert.equal(sign().number,90);assert.equal(sign().secondSign.number,40);
+chip('code','2.4');assert.equal(sign().number,undefined,'changing the selected face clears only its number');
+assert.equal(sign().secondSign.number,40);
+console.log('Numeric signs: presets/input, thumbnail, range, locks, undo/redo, independent faces and swapping PASS');

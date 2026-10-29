@@ -1,0 +1,24 @@
+extends SceneTree
+func _initialize() -> void:
+	var folder := OS.get_cmdline_user_args()[0]
+	for code in ["3.24", "3.25"]:
+		for value in [1, 20, 40, 90, 130, 150]:
+			var svg := SignFace.number_svg(code,value)
+			var actual := Image.new()
+			var expected := Image.new()
+			assert(actual.load_svg_from_string(svg,2.0)==OK)
+			assert(expected.load_svg_from_string(FileAccess.get_file_as_string(folder+"/"+code+"_"+str(value)+".svg"),2.0)==OK)
+			assert(actual.get_data()==expected.get_data(),"Editor and game rasterize the same digit paths")
+			var tex := SignFace.number_texture(code,value)
+			assert(tex.get_meta("sign_code")==code)
+			assert(tex.get_meta("canvas_size")==Vector2(100,86))
+	var sign := RoadBuild.sign_node("3.24","","8.16",[],[],true,{"number":40,"secondSign":{"code":"3.25","number":90}})
+	var count := 0
+	for node in sign.find_children("*","MeshInstance3D",true,false):
+		if node.material_override is ShaderMaterial and node.material_override.get_shader_parameter("picture").get_meta("sign_code", "") in ["3.24","3.25"]:
+			assert(node.material_override.get_shader_parameter("outline_shape")==1,"Numeric speed faces retain circular silhouettes")
+			count+=1
+	assert(count==2)
+	sign.free()
+	print("Numeric speed signs runtime PASS: matching vector pixels, circular faces, shared mounting and caching")
+	quit()

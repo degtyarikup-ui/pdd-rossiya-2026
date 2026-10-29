@@ -28,6 +28,7 @@ import build  # noqa: E402
 import check  # noqa: E402
 import engine_sync  # noqa: E402
 import question_pool  # noqa: E402
+import number_sign  # noqa: E402
 
 HERE = Path(__file__).parent
 EDITOR = HERE / "editor"
@@ -353,6 +354,19 @@ class Handler(BaseHTTPRequestHandler):
         if m:
             f = source_image(m[2], m[1])
             return self.file(f) if f else self.send(404, {"error": "not found"})
+        numeric = re.fullmatch(r"/asset/sign/(3\.24|3\.25)_([0-9]{1,3})\.svg", path)
+        if numeric:
+            code, value = numeric[1], int(numeric[2])
+            if not number_sign.valid(code, value):
+                return self.send(400, {"error": "Скорость от 1 до 150"})
+            svg = number_sign.svg(code, value).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/svg+xml")
+            self.send_header("Content-Length", str(len(svg)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(svg)
+            return
         if path.startswith("/asset/"):
             rel = path[len("/asset/"):]
             for rule, to in ASSET_RULES:
