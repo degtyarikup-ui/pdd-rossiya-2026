@@ -4,6 +4,7 @@ extends SceneTree
 
 func _initialize() -> void:
 	var regions: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://signs/face_regions.json"))
+	var catalog: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://signs/catalog.json"))
 	var layout:={}
 	for file in DirAccess.get_files_at("res://signs"):
 		if not file.ends_with(".svg"):continue
@@ -24,6 +25,11 @@ func _initialize() -> void:
 		layout[code]={"sourceSize":[original.get_width(),original.get_height()],
 			"outline":[visible.position.x/crop.size.x,visible.position.y/crop.size.y,visible.size.x/crop.size.x,visible.size.y/crop.size.y],
 			"scale":scale}
+		# Silhouette fitted by export_sign_catalog.py: the contour the shader cuts the face with.
+		var face: Dictionary=catalog.get(code,{}).get("face",{})
+		if not face.is_empty():
+			layout[code].shape=int(face.shape)
+			layout[code].radius=float(face.radius)
 		var config:=ConfigFile.new()
 		assert(config.load(path+".import")==OK)
 		config.set_value("params","svg/scale",scale)

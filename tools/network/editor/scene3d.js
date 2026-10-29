@@ -685,6 +685,8 @@ const Scene3D = (() => {
     return texture;
   }
   function signOutlineShape(code) {
+    const fitted = App.state.catalog?.signLayouts?.[code]?.shape;
+    if (fitted !== undefined) return fitted;
     if (['2.1', '2.2'].includes(code)) return 2;
     if (code === '2.4') return 5;
     if (code === '2.5') return 6;
@@ -737,10 +739,12 @@ const Scene3D = (() => {
         vertexShader: "varying vec2 faceUV; void main(){faceUV=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
         fragmentShader: `uniform sampler2D picture; uniform vec4 region, outline;
           uniform int shape; uniform float aspect, radius; varying vec2 faceUV;
-          float segmentDistance(vec2 p,vec2 a,vec2 b){vec2 v=p-a,e=b-a;return length(v-e*clamp(dot(v,e)/dot(e,e),0.,1.));}
-          float triangleDistance(vec2 p){vec2 a=vec2(-.96,.96),b=vec2(.96,.96),c=vec2(0.,-.96);
-            float e=min(segmentDistance(p,a,b),min(segmentDistance(p,b,c),segmentDistance(p,c,a)));
-            bool inside=p.y<.96&&p.y>2.*p.x-.96&&p.y>-2.*p.x-.96;return (inside?-e:e)-.04;}
+          float triangleDistance(vec2 p,float k,float r){vec2 a=vec2(-k+r,1.-r),b=vec2(k-r,1.-r),c=vec2(0.,-1.+r);
+            vec2 e0=b-a,e1=c-b,e2=a-c,v0=p-a,v1=p-b,v2=p-c;
+            vec2 q0=v0-e0*clamp(dot(v0,e0)/dot(e0,e0),0.,1.),q1=v1-e1*clamp(dot(v1,e1)/dot(e1,e1),0.,1.),q2=v2-e2*clamp(dot(v2,e2)/dot(e2,e2),0.,1.);
+            float s=sign(e0.x*e2.y-e0.y*e2.x);
+            vec2 d=min(min(vec2(dot(q0,q0),s*(v0.x*e0.y-v0.y*e0.x)),vec2(dot(q1,q1),s*(v1.x*e1.y-v1.y*e1.x))),vec2(dot(q2,q2),s*(v2.x*e2.y-v2.y*e2.x)));
+            return -sqrt(d.x)*sign(d.y)-r;}
           void main(){vec4 image=texture2D(picture,region.xy+faceUV*region.zw);
             vec2 p=(faceUV-outline.xy)/outline.zw*2.-1.;p.y=-p.y;float d=0.;
             if(shape==1)d=length(p)-1.;
@@ -748,7 +752,7 @@ const Scene3D = (() => {
               d=length(max(q,vec2(0.)))+min(max(q.x,q.y),0.)-radius;}
             else if(shape==3){vec2 q=abs(p*vec2(aspect,1.))-vec2(aspect,1.)+vec2(radius);
               d=length(max(q,vec2(0.)))+min(max(q.x,q.y),0.)-radius;}
-            else if(shape==4||shape==5)d=triangleDistance(p*vec2(1.,shape==5?-1.:1.));
+            else if(shape==4||shape==5)d=triangleDistance(p*vec2(aspect,shape==5?-1.:1.),aspect,radius);
             else if(shape==6)d=max(max(abs(p.x),abs(p.y)),(abs(p.x)+abs(p.y))*.70710678)-1.;
             float e=max(fwidth(d),.0001);
             float coverage=shape==0?smoothstep(.5-fwidth(image.a),.5+fwidth(image.a)+.0001,image.a):1.-smoothstep(-e*.5,e*.5,d);
@@ -806,7 +810,7 @@ const Scene3D = (() => {
         const r = layout?.outline || [0, 0, 1, 1];
         const uniforms = part.mesh.material.uniforms;
         uniforms.outline.value.set(r[0], 1-r[1]-r[3], r[2], r[3]);
-        uniforms.shape.value = signOutlineShape(code); uniforms.radius.value = .1;
+        uniforms.shape.value = signOutlineShape(code); uniforms.radius.value = layout?.radius ?? .1;
         uniforms.aspect.value = (crop?.[2] || source[0]) * r[2] / ((crop?.[3] || source[1]) * r[3]);
         part.mesh.geometry.dispose(); part.mesh.geometry = new THREE.PlaneGeometry(w, h);
         if (top) topFaceHeight = part.h;

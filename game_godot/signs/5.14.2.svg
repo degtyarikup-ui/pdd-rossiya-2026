@@ -24,7 +24,15 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(0,-352.36218)">
+     transform="translate(0,-352.36218)"><rect fill-rule="nonzero" fill="#FFF" stroke="#FFF"
+       y="353.36218"
+       x="1"
+       height="698"
+       width="698"
+      
+       style="color:#000000;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;opacity:1"
+       rx="44"
+       ry="44" />
     <rect
        ry="45"
        rx="45"
@@ -41,13 +49,13 @@
        id="rect8228"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="sssssssssccccccccsssssscscccsssssscccsssccccsssscccscsscccccccccccssscccccccccscscccscssscccc" />
-    <rect
+    <rect stroke="#FFF"
        y="353.36218"
        x="1"
        height="698"
        width="698"
        id="rect7101"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;opacity:1"
+       style="color:#000000;fill:none;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;opacity:1"
        rx="44"
        ry="44" />
   </g>
