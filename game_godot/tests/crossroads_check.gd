@@ -221,6 +221,29 @@ func _initialize() -> void:
 	_check("Camera keeps an isometric yaw (~53.6 deg)", absf(game.cam_yaw - 0.93607) < 0.001)
 	_check("Camera keeps an isometric pitch (~46.7 deg elevation)", absf(game.cam_pitch - (-0.8143)) < 0.001)
 	_check("Camera base distance set to 58.0", absf(game.BASE_CAM_DIST - 58.0) < 0.001)
+
+	# 11. Arcade deck: the third junction is difficult, then no more than two easy in a row.
+	game.all_scenarios = scenarios
+	var deck_ok := true
+	for attempt in 200:
+		game._rebuild_scenario_order()
+		var order: Array[int] = game.scenario_order
+		if order.size() != scenarios.size() or not bool(scenarios[order[2]].get("isHard", false)):
+			deck_ok = false
+			break
+		var hard_left := 0
+		for idx in order:
+			if scenarios[idx].get("isHard", false): hard_left += 1
+		var easy_run := 0
+		for idx in order:
+			if scenarios[idx].get("isHard", false):
+				hard_left -= 1
+				easy_run = 0
+			else:
+				easy_run += 1
+				if easy_run > game.MAX_EASY_BETWEEN_HARD and hard_left > 0:
+					deck_ok = false
+	_check("Arcade deck: 3rd junction difficult, at most two easy between difficult ones", deck_ok)
 	game.free()
 
 	print("Crossroads check: %d passed, %d failed" % [total - bad, bad])

@@ -39,6 +39,8 @@ var practice_category := "prioritySigns"
 var practice_index := 0
 var practice_solved := {}
 const PRACTICE_SAVE_PATH := "user://crossroads_practice.json"
+## Easy junctions in a row before the arcade deck forces a difficult one.
+const MAX_EASY_BETWEEN_HARD := 2
 
 # Game state
 var _suspended := false
@@ -406,6 +408,10 @@ func _create_balanced_arcade_order() -> void:
 	]
 
 	var last_type := "light"
+	# A 60-second run sees only 4–6 junctions, so the weighted draw alone often showed
+	# no difficult one at all: the third junction is difficult, then at most
+	# MAX_EASY_BETWEEN_HARD easy ones pass before the next while difficult ones remain.
+	var easy_streak := scenario_order.size()
 
 	var any_remaining := func() -> bool:
 		for g in pools:
@@ -423,6 +429,11 @@ func _create_balanced_arcade_order() -> void:
 
 		if candidates.is_empty():
 			candidates = available
+		if easy_streak >= MAX_EASY_BETWEEN_HARD and not hard.is_empty():
+			candidates.clear()
+			for g in available:
+				if g.type == "hard":
+					candidates.append(g)
 
 		var total_w := 0.0
 		for c in candidates:
@@ -440,6 +451,7 @@ func _create_balanced_arcade_order() -> void:
 		var pool: Array[int] = chosen.pool
 		scenario_order.append(pool.pop_back())
 		last_type = chosen.type
+		easy_streak = 0 if chosen.type == "hard" else easy_streak + 1
 
 
 # --- Game Lifecycle & Practice Mode ---
