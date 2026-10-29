@@ -1,0 +1,609 @@
+{
+ "id": "ticket_2_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -25.25,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 5,
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.8,
+     -25.25
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.244,
+     4.705
+    ],
+    [
+     -1.279,
+     5.204
+    ],
+    [
+     -1.53,
+     8.728
+    ],
+    [
+     -2.149,
+     12.698
+    ],
+    [
+     -3.084,
+     16.421
+    ],
+    [
+     -4.332,
+     19.902
+    ],
+    [
+     -5.893,
+     23.144
+    ],
+    [
+     -6.324,
+     23.835
+    ]
+   ],
+   "exitYaw": 0.004
+  },
+  "left": {
+   "points": [
+    [
+     -1.8,
+     -25.25
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.709,
+     -3.101
+    ],
+    [
+     -1.431,
+     -1.745
+    ],
+    [
+     -0.955,
+     -0.624
+    ],
+    [
+     -0.274,
+     0.274
+    ],
+    [
+     0.624,
+     0.955
+    ],
+    [
+     1.745,
+     1.431
+    ],
+    [
+     3.101,
+     1.709
+    ],
+    [
+     4.7,
+     1.8
+    ],
+    [
+     5.2,
+     1.8
+    ],
+    [
+     24.7,
+     1.8
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  "right": {
+   "points": [
+    [
+     -1.8,
+     -25.25
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -1.841,
+     -3.987
+    ],
+    [
+     -1.965,
+     -3.382
+    ],
+    [
+     -2.177,
+     -2.881
+    ],
+    [
+     -2.481,
+     -2.481
+    ],
+    [
+     -2.881,
+     -2.177
+    ],
+    [
+     -3.382,
+     -1.965
+    ],
+    [
+     -3.987,
+     -1.841
+    ],
+    [
+     -4.7,
+     -1.8
+    ],
+    [
+     -5.2,
+     -1.8
+    ],
+    [
+     -24.7,
+     -1.8
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  "uturn": {
+   "points": [
+    [
+     -1.8,
+     -25.25
+    ],
+    [
+     -1.8,
+     -4.7
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.8,
+     -7.7
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "exitYaw": 3.142
+  }
+ },
+ "props": [],
+ "actors": [
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "config": {
+    "id": "car_1",
+    "type": "car",
+    "name": "Легковая",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -1.8,
+     0.0,
+     -10.908
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -1.8,
+      -10.908
+     ],
+     [
+      -1.8,
+      -4.7
+     ],
+     [
+      -1.5,
+      4.5
+     ],
+     [
+      -2.149,
+      12.698
+     ],
+     [
+      -3.084,
+      16.421
+     ],
+     [
+      -4.332,
+      19.902
+     ],
+     [
+      -5.893,
+      23.144
+     ],
+     [
+      -7.767,
+      26.152
+     ],
+     [
+      -9.957,
+      28.929
+     ],
+     [
+      -12.465,
+      31.48
+     ],
+     [
+      -15.296,
+      33.806
+     ],
+     [
+      -18.453,
+      35.909
+     ],
+     [
+      -20.829,
+      37.189
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -1.8,
+    0.0,
+    -10.908
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -1.8,
+     0.0,
+     -10.908
+    ],
+    [
+     -1.8,
+     0.0,
+     -4.7
+    ],
+    [
+     -1.5,
+     0.0,
+     4.5
+    ],
+    [
+     -2.149,
+     0.0,
+     12.698
+    ],
+    [
+     -3.084,
+     0.0,
+     16.421
+    ],
+    [
+     -4.332,
+     0.0,
+     19.902
+    ],
+    [
+     -5.893,
+     0.0,
+     23.144
+    ],
+    [
+     -7.767,
+     0.0,
+     26.152
+    ],
+    [
+     -9.957,
+     0.0,
+     28.929
+    ],
+    [
+     -12.465,
+     0.0,
+     31.48
+    ],
+    [
+     -15.296,
+     0.0,
+     33.806
+    ],
+    [
+     -18.453,
+     0.0,
+     35.909
+    ],
+    [
+     -20.829,
+     0.0,
+     37.189
+    ]
+   ],
+   "length": 55.586,
+   "clearDistance": 24.151,
+   "maxSpeed": 12,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": false,
+   "paint": "#1F3A5F",
+   "way": "straight",
+   "driverSignal": "raised",
+   "turnSignal": "auto",
+   "hazards": false
+  },
+  {
+   "id": "motorcycle_1",
+   "type": "motorcycle",
+   "name": "Мотоцикл",
+   "config": {
+    "id": "motorcycle_1",
+    "type": "motorcycle",
+    "name": "Мотоцикл",
+    "side": "ring",
+    "ringRadius": 13.8,
+    "ringAngle": -1.78,
+    "color": "#FFA53C",
+    "sidecar": true,
+    "concurrentWith": [
+     "ring_car"
+    ],
+    "position": [
+     8.054,
+     0.0,
+     -1.8
+    ],
+    "rotationY": -1.571,
+    "route": [
+     [
+      8.054,
+      -1.8
+     ],
+     [
+      4.7,
+      -1.8
+     ],
+     [
+      -4.7,
+      -1.8
+     ],
+     [
+      -5.2,
+      -1.8
+     ],
+     [
+      -44.7,
+      -1.8
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 1.075,
+   "halfWidth": 0.949,
+   "badge": {
+    "text": {
+     "ru": "Мото",
+     "en": "Moto",
+     "kk": "Мото"
+    },
+    "color": "#FFA53C",
+    "height": 2.7
+   },
+   "pos": [
+    8.054,
+    0.0,
+    -1.8
+   ],
+   "yaw": -1.571,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     8.054,
+     0.0,
+     -1.8
+    ],
+    [
+     4.7,
+     0.0,
+     -1.8
+    ],
+    [
+     -4.7,
+     0.0,
+     -1.8
+    ],
+    [
+     -5.2,
+     0.0,
+     -1.8
+    ],
+    [
+     -44.7,
+     0.0,
+     -1.8
+    ]
+   ],
+   "length": 52.754,
+   "clearDistance": 58.439,
+   "maxSpeed": 12,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": false,
+   "paint": null,
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
+  }
+ ],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 2 · Вопрос 7",
+   "title": "Поднятая вверх рука водителя легкового автомобиля является сигналом, информирующим Вас о его намерении:",
+   "options": [
+    "Повернуть направо",
+    "Продолжить движение прямо",
+    "Снизить скорость, чтобы остановиться и уступить дорогу мотоциклу"
+   ],
+   "explanation": "У водителя не работает световая сигнализация, поэтому он вынужден подавать соответствующие сигналы рукой. Согласно знаку 2.4 «Уступите дорогу» мотоциклист имеет преимущество. Поднятая вверх рука информирует о намерении притормозить для того, чтобы уступить дорогу мотоциклисту.(«Дорожные знаки», пункт 8.1 ПДД).",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 2 · Question 7",
+   "title": "The hand of the driver of a passenger car raised up is a signal informing you of his intention:",
+   "options": [
+    "Turn in Right Out",
+    "Continue straight ahead",
+    "Slow down to stop and give way to the motorcycle"
+   ],
+   "explanation": "The driver's warning light does not work, so he is forced to give appropriate hand signals. According to sign 2.4 “Give way,” the motorcyclist has the right of way. A raised hand indicates the intention to slow down in order to give way to a motorcyclist (“Road signs”, paragraph 8.1 of the traffic rules).",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "2-билет · 7-сұрақ",
+   "title": "Жеңіл автомобиль жүргізушісінің қолын көтергені оның ниеті туралы хабар береді:",
+   "options": [
+    "Оңға бұрылыңыз",
+    "Тура алға қарай жүріңіз",
+    "Тоқтау үшін баяулап, мотоциклге жол беріңіз"
+   ],
+   "explanation": "Жүргізушінің бағыт көрсеткіш шамдары жұмыс істемейді, сондықтан ол тиісті сигналдарды қолмен беруге мәжбүр. 2.4 «Жол беріңіз» белгісіне сәйкес мотоциклшінің басымдығы бар. Жоғары көтерілген қол мотоциклшіге жол беру үшін жылдамдықты төмендету ниетін білдіреді («Жол белгілері», Жол қозғалысы ережелерінің 8.1-тармағы).",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 209,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "3293326b6507e3a5a7f55c56f210881a",
+ "sourceCategory": "ab",
+ "sourceImage": "73c4c907dba18267314d10a8b09aea23",
+ "playerPlacement": "street",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   1.045,
+   2.068
+  ],
+  "height": 23.601,
+  "yaw": 0,
+  "pitch": 0.396,
+  "elevation": 0
+ }
+}

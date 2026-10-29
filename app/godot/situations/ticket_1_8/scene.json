@@ -1,0 +1,295 @@
+{
+ "id": "ticket_1_8",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -27,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14,
+  "left": 14,
+  "right": 14,
+  "uturn": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.75,
+     -27
+    ],
+    [
+     -1.75,
+     -7.5
+    ],
+    [
+     -1.75,
+     7.5
+    ],
+    [
+     -1.75,
+     8
+    ],
+    [
+     -1.75,
+     27.5
+    ]
+   ],
+   "exitYaw": 0
+  },
+  "left": {
+   "points": [
+    [
+     -1.75,
+     -27
+    ],
+    [
+     -1.75,
+     -7.5
+    ],
+    [
+     -1.621,
+     -5.225
+    ],
+    [
+     -1.224,
+     -3.295
+    ],
+    [
+     -0.548,
+     -1.699
+    ],
+    [
+     0.422,
+     -0.422
+    ],
+    [
+     1.699,
+     0.548
+    ],
+    [
+     3.295,
+     1.224
+    ],
+    [
+     5.225,
+     1.621
+    ],
+    [
+     7.5,
+     1.75
+    ],
+    [
+     8,
+     1.75
+    ],
+    [
+     27.5,
+     1.75
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  "right": {
+   "points": [
+    [
+     -1.75,
+     -27
+    ],
+    [
+     -1.75,
+     -7.5
+    ],
+    [
+     -1.87,
+     -6.517
+    ],
+    [
+     -2.214,
+     -5.846
+    ],
+    [
+     -2.755,
+     -5.431
+    ],
+    [
+     -3.467,
+     -5.217
+    ],
+    [
+     -4.324,
+     -5.148
+    ],
+    [
+     -5.299,
+     -5.167
+    ],
+    [
+     -6.367,
+     -5.22
+    ],
+    [
+     -7.5,
+     -5.25
+    ],
+    [
+     -8,
+     -5.25
+    ],
+    [
+     -27.5,
+     -5.25
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  "uturn": {
+   "points": [
+    [
+     -1.75,
+     -27
+    ],
+    [
+     -1.75,
+     -7.5
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.75,
+     -10.5
+    ],
+    [
+     1.75,
+     -30.5
+    ]
+   ],
+   "exitYaw": 3.142
+  }
+ },
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 8",
+   "title": "Как Вам следует поступить при повороте направо?",
+   "options": [
+    "Перестроиться на правую полосу, затем осуществить поворот",
+    "Продолжить движение по второй полосе до перекрёстка, затем повернуть",
+    "Возможны оба варианта действий"
+   ],
+   "explanation": "Разметка разрешает поворот направо с обеих полос, поэтому возможны оба варианта действий. В таких случаях, выполняя поворот на перекрёстке, соблюдайте избранную Вами рядность.(«Горизонтальная разметка» 1.18, пункт 8.5 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 8",
+   "title": "What should you do when turning right?",
+   "options": [
+    "Change into the right lane, then make a turn",
+    "Continue in the second lane until the intersection, then turn",
+    "Both options are possible"
+   ],
+   "explanation": "The markings allow right turns from both lanes, so both options are possible. In such cases, when making a turn at an intersection, follow the lane you have chosen. (“Horizontal markings” 1.18, paragraph 8.5 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 8-сұрақ",
+   "title": "Оңға бұрылғанда не істеу керек?",
+   "options": [
+    "Оң жақ жолаққа ауысыңыз, содан кейін бұрылыс жасаңыз",
+    "Екінші жолақпен қиылысқа дейін жүріңіз, содан кейін бұрылыңыз",
+    "Екі нұсқа да мүмкін"
+   ],
+   "explanation": "Белгілер екі жолақтан оңға бұрылуға мүмкіндік береді, сондықтан екі опция да мүмкін. Мұндай жағдайларда қиылыста бұрылыс жасағанда, сіз таңдаған жолақпен жүріңіз. («Көлденең таңбалар» 1.18, Жол қозғалысы ережелерінің 8.5-тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 202,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "14452bb58352a0cd0f19b3f3c48f2459",
+ "sourceCategory": "ab",
+ "sourceImage": "b61a6e1c048076e6b8ba01ef6e3ae2d1",
+ "playerPlacement": "street",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -3.649,
+   5.266
+  ],
+  "height": 34.736,
+  "yaw": 0,
+  "pitch": 0.41,
+  "elevation": 0
+ }
+}
