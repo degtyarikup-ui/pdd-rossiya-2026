@@ -465,9 +465,9 @@ class _HubCard extends StatelessWidget {
                       colors: [
                         Colors.transparent,
                         featured
-                            ? const Color(0x66000A15)
-                            : const Color(0x14000A15),
-                        const Color(0xF0000A15),
+                            ? const Color(0x4D000A15)
+                            : const Color(0x10000A15),
+                        const Color(0xCC000A15),
                       ],
                     ),
                   ),
