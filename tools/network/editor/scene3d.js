@@ -355,16 +355,22 @@ const Scene3D = (() => {
   function rebuildRoutes() {
     const g = setGroup("routes");
     dropLabels("route");
+    if (hidden.has("routes")) return;
     const selActor = sel.find((s) => s.t === "actor");
     const actorRouteId = selActor ? (model.actors.find((x) => x.id === selActor.id)?.route || `actor_${selActor.id}`) : null;
     const focusId = sel.find((s) => s.t === "route")?.id || actorRouteId || (hover && hover.t === "route" ? hover.id : null);
     const focusRoute = hiddenPlayerGuideRef({ t: "route", id: focusId }) ? null : focusId;
-    const phoneManoeuvre = phone && !model.routes.some(r => r.kind === "choice" && r.points.length >= 2) ? model.question?.maneuver : null;
+    const phoneManoeuvre = phone && !model.routes.some(r => r.kind === "choice") ? model.question?.maneuver : null;
     const ownGuide = model.routes.find(r => r.kind === "guide" && r.points.length >= 2);
     for (const r of model.routes) {
       const phoneGuide = phoneManoeuvre && (ownGuide ? r === ownGuide : r.kind === "manoeuvre" && r.exit === phoneManoeuvre);
       if (phone && r.kind !== "choice" && r.kind !== "annotation" && !phoneGuide) continue;
       if (playerGuideHidden(r)) continue;
+      if (r.kind === "choice" && r.display === "letter") {
+        const at = r.labelPosition;
+        if (at) labels.push({text:r.label, cls:"letter", colour:routeStyle(r).colour, world:[at[0],.8,at[1]], ref:{t:"route",id:r.id}});
+        continue;
+      }
       if (r.points.length < 2) continue;
       if (r.kind === "actor" && model.actors.some(a => (a.route || `actor_${a.id}`) === r.id && a.behaviour?.staysPut)) continue;
       // With answer lines on the road the manoeuvres are only drawn when picked: they are how the car
@@ -1090,7 +1096,12 @@ const Scene3D = (() => {
 
   function rebuildDraft() {
     const g = setGroup("draft");
+    dropLabels("draft-letter");
     if (!draft) return;
+    if (draft.kind === "letter") {
+      labels.push({text:draft.label, cls:"letter draft-letter", colour:LETTER_COLOUR[draft.label], world:[draft.cursor[0],.8,draft.cursor[1]]});
+      return;
+    }
     const pts = draft.cursor ? [...draft.points, draft.cursor] : draft.points;
     if (draft.kind === "road" && pts.length >= 2) {
       const w = draft.width || 8.4;
@@ -1226,7 +1237,8 @@ const Scene3D = (() => {
       const w = l.text.length * 7 + 16, h = 22;
       const box = { x0: x - w / 2, y0: y - h, x1: x + w / 2, y1: y };
       const clash = placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0);
-      const visible = (!phone || l.cls === "letter") && tmp.z < 1 && x > -40 && x < width + 40 && y > -20 && y < height + 20 && !clash && (mode === "3d" || pxPerM > 1.6 || l.cls === "letter");
+      const letter = l.cls.split(" ").includes("letter");
+      const visible = (!phone || letter) && tmp.z < 1 && x > -40 && x < width + 40 && y > -20 && y < height + 20 && (!clash || letter) && (mode === "3d" || pxPerM > 1.6 || letter);
       if (visible) placed.push(box);
       l.el.style.display = visible ? "" : "none";
       l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
@@ -1578,6 +1590,7 @@ const Scene3D = (() => {
         const isMain = r.kind === "guide" || r.kind === "choice" || r.kind === "annotation" || r.kind === "approach" || (r.kind === "manoeuvre" && r.exit === model.question?.maneuver) || r.kind === "actor";
         if (!isMain && !simMode && !sel.some((s) => s.t === "route" && s.id === r.id)) continue;
         const ref = { t: "route", id: r.id };
+        if (r.display === "letter") continue;
         if (!skip(ref) && lineHit(r.kind === 'annotation' ? r.points : smooth(r.points), wpp * 8)) return ref;
       }
     }

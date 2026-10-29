@@ -162,3 +162,23 @@ annotations.routes=annotations.routes.filter(r=>r.kind!=='choice');annotations.q
 assert.ok(colours(test.group('routes')).includes(0x0574f8),'annotations do not replace the player guide');
 test.frame(false);
 console.log('Player guide editor: actual render/picking, hidden selection/hover/supports, choices, annotations, layer restore and regulator PASS');
+
+const tokens=fixture();
+tokens.routes=tokens.routes.filter(r=>r.kind!=='choice');
+tokens.routes.push({id:'choice_В',kind:'choice',label:'В',display:'letter',points:[[-30,-20],[-30,20]],labelPosition:[10,10]});
+test.configure(tokens);app.select({t:'route',id:'choice_В'});
+assert.equal(test.group('selection').children.length,0,'a hidden remembered line has no outline or supports');
+assert.equal(pick(-30,0),null,'a hidden remembered line is not pickable');
+assert.equal(pick(10,10)?.t,'letter','standalone letter can be dragged');
+assert.equal(choiceSnapshot().labels[0][0],'В','standalone letter is rendered');
+test.frame(true);
+assert.equal(test.group('routes').children.length,0,'letter-only phone has neither a hidden answer line nor fallback guide');
+assert.equal(choiceSnapshot().labels[0][0],'В','phone retains standalone letter');
+tokens.routes.find(r=>r.kind==='choice').points=[];test.redraw();
+assert.equal(choiceSnapshot().labels[0][0],'В','a new letter needs no points');
+test.frame(false);
+view.setHidden(new Set(['routes']));
+assert.equal(choiceSnapshot().labels.length,0,'hiding routes hides standalone letters too');
+view.setHidden(new Set());
+assert.equal(choiceSnapshot().labels[0][0],'В','restoring routes restores the letter');
+console.log('Standalone letters: actual render, picking, hidden path, selection and phone preview PASS');

@@ -24,7 +24,7 @@ const pane={innerHTML:'',querySelector:()=>null,querySelectorAll:()=>[],addEvent
 const node={classList:{toggle(){}},addEventListener(){},dataset:{}};
 const context=vm.createContext({Layout,document:{querySelector:key=>key==='#inspector'?pane:node},
   Scene3D:{refresh(){},setSelection(){}},Thumbs:{fillAll(){}},setTimeout:()=>0,clearTimeout(){}});
-for(const file of ['annotation_line.js','catalog.js','app.js','inspector.js'])vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
+for(const file of ['annotation_line.js','catalog.js','answer_mark.js','app.js','inspector.js'])vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
 const App=vm.runInContext('App',context),state=App.state;
 const chip=(name,value)=>handlers.click({target:{closest:selector=>selector==='[data-chip]'?{dataset:{chip:name,value}}:null}});
 const act=name=>handlers.click({target:{closest:selector=>selector==='[data-act]'?{dataset:{act:name}}:null}});

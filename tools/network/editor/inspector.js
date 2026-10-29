@@ -33,6 +33,7 @@
   }
   pane().addEventListener("click", (e) => {
     const c = e.target.closest("[data-chip]");
+    if (c?.disabled) return;
     if (c && handlers["chip:" + c.dataset.chip]) return handlers["chip:" + c.dataset.chip](c.dataset.value, e);
     const a = e.target.closest("[data-act]");
     if (a && handlers[a.dataset.act]) return handlers[a.dataset.act](a.dataset, e);
@@ -953,13 +954,16 @@
     }
     if (r.kind === "choice") {
       const used = s.routes.filter((x) => x.kind === "choice" && x !== r).map((x) => x.label);
+      const letterOnly = r.display === "letter";
+      const hasPath = r.points?.length >= 2;
       const ways = s.routes.filter((x) => x.kind === "manoeuvre");
-      p.innerHTML = `${head(`<span class="letter-badge" style="--c:${Catalog.LETTER_COLOUR[r.label]}">${esc(r.label)}</span>`, `Вариант ответа ${r.label}`, "линия на дороге при вопросе")}
+      p.innerHTML = `${head(`<span class="letter-badge" style="--c:${Catalog.LETTER_COLOUR[r.label]}">${esc(r.label)}</span>`, `Вариант ответа ${r.label}`, letterOnly ? "отдельная буква в кружке" : "линия с буквой при вопросе")}
         ${card("Буква", chips("label", Catalog.LETTERS.map((l) => ({ value: l, html: `<span class="letter-badge sm" style="--c:${Catalog.LETTER_COLOUR[l]}">${l}</span>`, disabled: used.includes(l) })), r.label))}
-        ${card("Вид линии", chips("arrowhead", [{value:"arrow",title:"Со стрелкой"},{value:"line",title:"Линия без стрелки"}], r.arrowhead === false ? "line" : "arrow"))}
-        ${card("Без буквы", button("as-annotation", "Убрать букву — сделать обозначением", "measure", "ghost wide"))}
-        ${ways.length ? card("Взять путь", chips("copy", ways.map((w) => ({ value: w.exit, icon: Catalog.EXITS[w.exit].icon, tip: Catalog.EXITS[w.exit].title })), "", { cls: "arrows" })) : ""}
-        ${card("", `<p class="muted">Тяните точки на виде. Двойной клик по линии — новая точка.</p>${button("mid", "Букву — на середину", "flag", "ghost wide")}<div class="insp-actions">${button("del", "Удалить", "trash", "danger ghost")}</div>`)}`;
+        ${card("Вид ответа", chips("answer-display", [{value:"arrow",title:"Стрелка",html:AnswerMark.picture("answer",r.label)},{value:"line",title:"Линия",html:AnswerMark.picture("line",r.label)},{value:"letter",title:"Буква",html:AnswerMark.picture("letter",r.label)}], letterOnly ? "letter" : r.arrowhead === false ? "line" : "arrow", {cls:"answer-display"}))}
+        ${!letterOnly ? card("Без буквы", button("as-annotation", "Убрать букву — сделать обозначением", "measure", "ghost wide")) : ""}
+        ${!letterOnly && ways.length ? card("Взять путь", chips("copy", ways.map((w) => ({ value: w.exit, icon: Catalog.EXITS[w.exit].icon, tip: Catalog.EXITS[w.exit].title })), "", { cls: "arrows" })) : ""}
+        ${letterOnly ? card("Положение", `<p>Перетащите кружок в любое место на виде.</p><div class="answer-position"><label>X, м<input type="number" step="0.1" data-text="letterX" value="${r3(r.labelPosition[0])}"></label><label>Z, м<input type="number" step="0.1" data-text="letterZ" value="${r3(r.labelPosition[1])}"></label></div>`) : ""}
+        ${card("", `${!letterOnly ? `<p class="muted">Тяните точки на виде. Двойной клик по линии — новая точка.</p>${button("mid", "Букву — на середину", "flag", "ghost wide")}` : ''}<div class="insp-actions">${button("del", "Удалить", "trash", "danger ghost")}</div>`)}`;
       bind({
         ...common,
         'as-annotation':()=>{
@@ -972,8 +976,21 @@
           });
           App.select(made);
         },
-        "chip:label": (v) => App.edit(() => { r.label = v; r.id = `choice_${v}`; }) || App.select({ t: "route", id: `choice_${v}` }),
-        "chip:arrowhead": v => App.edit(() => { if (v === "line") r.arrowhead = false; else delete r.arrowhead; }),
+        "chip:label": v => {
+          if (App.isLocked(ref) || !AnswerMark.free(s, r).includes(v)) return;
+          App.edit(() => { r.label = v; r.id = `choice_${v}`; }); App.select({t:"route",id:r.id});
+        },
+        "chip:answer-display": v => {
+          if (App.isLocked(ref)) return;
+          if (v !== "letter" && !hasPath) return Tools.drawAnswerRoute(r.id, v === "arrow");
+          App.edit(() => {
+            if (v === "letter") { r.labelPosition = [...AnswerMark.position(r)]; r.display = "letter"; }
+            else { delete r.display; if (v === "line") r.arrowhead = false; else delete r.arrowhead; }
+          });
+          App.select({t:"route",id:r.id});
+        },
+        "text:letterX": v => { if (!App.isLocked(ref) && v.trim() && Number.isFinite(Number(v))) App.edit(() => {r.labelPosition[0] = r3(Number(v));}, {rebuild:false}); },
+        "text:letterZ": v => { if (!App.isLocked(ref) && v.trim() && Number.isFinite(Number(v))) App.edit(() => {r.labelPosition[1] = r3(Number(v));}, {rebuild:false}); },
         "chip:copy": (v) => App.edit((sc) => { const w = sc.routes.find((x) => x.kind === "manoeuvre" && x.exit === v); r.points = JSON.parse(JSON.stringify(w.points)); const m = r.points[Math.floor(r.points.length * 0.6)]; r.labelPosition = [m[0], m[1]]; }),
         mid: () => App.edit(() => { const m = r.points[Math.floor(r.points.length / 2)]; r.labelPosition = [m[0], m[1]]; }),
       });

@@ -17,15 +17,14 @@ const Tools = (() => {
     { id: "light", key: "L", title: "Светофор", icon: "light", hint: "Клик у перекрёстка — встанет на угол лицом к машинам" },
     { id: "sign", key: "N", title: "Знак", icon: "flag", hint: "Клик у дороги — знак встанет справа лицом к машинам. Знак выберите слева" },
     { id: "officer", key: "U", title: "Регулировщик", icon: "person", hint: "Клик — поставить регулировщика. Тяните — куда он смотрит" },
-    { id: "answer", key: "A", title: "Вариант ответа", icon: "route", hint: "Кликайте точки пути. ↵ — готово" },
-    { id: "annotation", key: "I", title: "Линии и стрелки без букв", icon: "measure", hint: "Кликайте точки обозначения. ↵ — готово, Esc — отменить. Буква не добавляется" },
+    { id: "answer", key: "A", title: "Ответы, линии и буквы", icon: "route", hint: "Кликайте точки пути. ↵ — готово" },
     { sep: true },
     { id: "prop", key: "O", title: "Объект", icon: "tree", hint: "Клик — поставить, тянуть — повернуть. Выберите объект слева" },
     { id: "brush", key: "B", title: "Кисть окружения", icon: "brush", hint: "Клик — готовая локация. Ведите — рисовать. ⌥ — стирать окружение" },
   ];
-  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", markDirection: "straight", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerArrowhead: true, annotationStyle: "line" };
-  const SHORT_LABEL = { select: "Выбор", hand: "Рука", road: "Дорога", junction: "Перекрёсток", marking: "Разметка", track: "Рельсы", lawn: "Газон", actor: "Транспорт", light: "Светофор", sign: "Знак", officer: "Регулировщик", answer: "Ответ", annotation: "Линия", prop: "Объект", brush: "Кисть" };
-  let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null;
+  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", markDirection: "straight", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerMode: "answer", answerLetter: null, answerArrowhead: true, annotationStyle: "line" };
+  const SHORT_LABEL = { select: "Выбор", hand: "Рука", road: "Дорога", junction: "Перекрёсток", marking: "Разметка", track: "Рельсы", lawn: "Газон", actor: "Транспорт", light: "Светофор", sign: "Знак", officer: "Регулировщик", answer: "Ответы", prop: "Объект", brush: "Кисть" };
+  let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null, pointerInView = false;
 
   const S = () => App.state.S;
   const allowed = id => S()?.id !== "mini_regulator" || !["actor","light","sign","track","answer","annotation","officer"].includes(id);
@@ -37,15 +36,21 @@ const Tools = (() => {
       `<button data-tool="${t.id}" class="${t.id === tool ? "on" : ""}" data-tip="${esc(t.title)}  ${t.key}" aria-label="${esc(t.title)} (${t.key})" aria-pressed="${t.id === tool}">${ic(t.icon)}<span class="tool-label">${SHORT_LABEL[t.id] || t.title}</span></button>`).join("");
     renderPopover();
     renderHint();
+    if (tool === "answer" && opts.answerMode === "letter" && !opts.pathFor && !opts.answerRoute) {
+      if (pointerInView && lastWorld) answer.move({world:lastWorld});
+      else Scene3D.setDraft(null);
+    }
   }
 
   function set(id, { keepLibrary = false } = {}) {
+    if (id === "annotation") { opts.answerMode = "annotation"; id = "answer"; }
     if (!allowed(id)) return App.toast("В мини-игре редактируются дороги, разметка и окружение");
     if (!LIST.find((t) => t.id === id)) return;
     if (drag?.kind === "brush") { App.endDrag({ rebuild: false }); drag = null; }
     finishDraft(true);
     tool = id;
     opts.pathFor = null;
+    opts.answerRoute = null;
     placeYaw = null;
     Scene3D.setGhost(null);
     Scene3D.setBrushPreview?.(null);
@@ -72,10 +77,8 @@ const Tools = (() => {
     } else if (tool === "marking") {
       html = Object.entries(Catalog.MARKS).map(([k, v]) => `<button class="pchip ${opts.mark === k ? "on" : ""}" data-mark="${k}">${k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`}<span>${v.title}</span></button>`).join("");
       if (opts.mark === "arrow") html += `<div class="direction-mark-options">${DirectionMark.variants.map(([key, title]) => `<button class="pchip ${opts.markDirection === key ? "on" : ""}" data-mark-direction="${key}" aria-label="${title}">${DirectionMark.svg(key)}<span>${title}</span></button>`).join("")}</div>`;
-    } else if (tool === "annotation") {
-      html = AnnotationLine.styles.map(([key,title])=>`<button class="pchip ${opts.annotationStyle===key?'on':''}" data-annotation-style="${key}"><span>${title}</span></button>`).join('');
-    } else if (tool === "answer" && !opts.pathFor) {
-      html = [["arrow","Со стрелкой"],["line","Линия без стрелки"]].map(([v,t]) => `<button class="pchip ${(opts.answerArrowhead ? "arrow" : "line") === v ? "on" : ""}" data-answer-style="${v}"><span>${t}</span></button>`).join("");
+    } else if (tool === "answer" && !opts.pathFor && !opts.answerRoute) {
+      html = renderAnswerOptions();
     } else if (tool === "actor") {
       const types = Catalog.ACTOR_ORDER.filter((t) => App.state.catalog?.actorTypes[t]);
       html = types.map((t) => `<button class="ptile small ${opts.actorType === t ? "on" : ""}" data-actor="${t}">${Thumbs.img("actor", t)}<span>${Catalog.ACTORS[t].name}</span></button>`).join("");
@@ -91,10 +94,44 @@ const Tools = (() => {
     }
     pop.innerHTML = html;
     pop.classList.toggle("grid", tool === "junction");
+    pop.classList.toggle("answer-popover", tool === "answer" && !opts.pathFor && !opts.answerRoute);
     pop.classList.toggle("brush-popover", tool === "brush");
     pop.classList.toggle("direction-mark-popover", tool === "marking" && opts.mark === "arrow");
     pop.hidden = !html || !S();
     pop.querySelectorAll("img[data-thumb]").forEach((img) => Thumbs.fill(img));
+  }
+
+  function renderAnswerOptions() {
+    const free = AnswerMark.free(S() || {routes: []});
+    if (!free.includes(opts.answerLetter)) opts.answerLetter = free[0] || null;
+    const mode = opts.answerMode;
+    const modes = AnswerMark.modes.map(([id, title, desc]) =>
+      `<button class="answer-mode ${mode === id ? 'on' : ''}" data-answer-mode="${id}" aria-pressed="${mode === id}">
+        ${AnswerMark.picture(id)}<span>${title}</span><small>${desc}</small></button>`).join('');
+    const letters = Catalog.LETTERS.map(l => {
+      const taken = !free.includes(l), selected = opts.answerLetter === l;
+      return `<button data-answer-letter="${l}" class="answer-letter ${selected ? 'on' : ''}" ${taken ? 'disabled' : ''}
+        aria-label="${l}${taken ? ' — уже в сцене' : ''}" aria-pressed="${selected}" title="${taken ? 'Буква уже в сцене' : 'Ответ ' + l}">
+        <span class="letter-badge sm" style="--c:${Catalog.LETTER_COLOUR[l]}">${l}</span></button>`;
+    }).join('');
+    const styles = mode === 'annotation'
+      ? AnnotationLine.styles.map(([key,title]) => `<button class="pchip ${opts.annotationStyle === key ? 'on' : ''}"
+          data-annotation-style="${key}" aria-pressed="${opts.annotationStyle === key}">${title}</button>`).join('')
+      : mode === 'answer' ? [["arrow","Со стрелкой"],["line","Без стрелки"]].map(([key,title]) => {
+          const selected = (opts.answerArrowhead ? 'arrow' : 'line') === key;
+          return `<button class="pchip ${selected ? 'on' : ''}" data-answer-style="${key}" aria-pressed="${selected}">${title}</button>`;
+        }).join('') : '';
+    const caption = mode !== 'annotation' && !free.length
+      ? 'Все буквы уже в сцене. Выберите букву на виде, чтобы переместить её.'
+      : mode === 'letter' ? 'Один клик — поставить · V — переместить · Esc — закончить'
+      : 'Кликайте точки · Enter — готово · Esc — отменить';
+    return `<div class="answer-options">
+      <div class="answer-modes" role="group" aria-label="Что добавить">${modes}</div>
+      <div class="answer-settings">
+        <span class="answer-setting-label">${mode === 'annotation' ? 'Вид линии' : 'Буква'}</span>
+        ${mode !== 'annotation' ? `<div class="answer-letters" role="group" aria-label="Буква ответа">${letters}</div>` : ''}
+        ${styles ? `<div class="answer-style-options">${styles}</div>` : ''}
+      </div><div class="answer-caption">${caption}</div></div>`;
   }
 
   function renderBrushOptions() {
@@ -133,6 +170,9 @@ const Tools = (() => {
     if (tool === "marking") h = opts.mark === "arrow" ? "Первый клик — начало стрелки, второй — её направление и длина. Затем можно изменить вид и размер справа" : opts.mark === "stop" || opts.mark === "zebra"
       ? (S()?.layout ? "Клик у перекрёстка — включить или выключить на этом въезде" : "Два клика поперёк дороги")
       : "Кликайте точки линии. ↵ — готово";
+    if (tool === "answer" && !opts.pathFor && !opts.answerRoute) h = opts.answerMode === "letter"
+      ? "Кликните в любом месте — поставить букву в кружке. Буквы можно перетаскивать инструментом «Выбор» (V)"
+      : opts.answerMode === "annotation" ? "Кликайте точки линии без буквы. Enter — готово, Esc — отменить" : "Кликайте точки ответа с буквой. Enter — готово, Esc — отменить";
     const el = $("#hint");
     el.hidden = !S() || !h;
     el.innerHTML = h ? `${ic(t ? t.icon : "info")}<span>${esc(h)}</span>` : "";
@@ -152,6 +192,9 @@ const Tools = (() => {
       if (b.dataset.mark) { opts.mark = b.dataset.mark; finishDraft(true); renderPopover(); renderHint(); }
       if (b.dataset.markDirection) { opts.markDirection = b.dataset.markDirection; renderPopover(); }
       if (b.dataset.actor) { opts.actorType = b.dataset.actor; renderPopover(); }
+      if (b.disabled) return;
+      if (b.dataset.answerMode) { finishDraft(true); opts.answerMode = b.dataset.answerMode; renderPopover(); renderHint(); }
+      if (b.dataset.answerLetter) { opts.answerLetter = b.dataset.answerLetter; renderPopover(); }
       if (b.dataset.answerStyle) { opts.answerArrowhead = b.dataset.answerStyle === "arrow"; renderPopover(); }
       if (b.dataset.annotationStyle) { opts.annotationStyle=b.dataset.annotationStyle;renderPopover(); }
       if (b.dataset.tpl) applyTemplate(b.dataset.tpl);
@@ -227,8 +270,8 @@ const Tools = (() => {
   // ---- the pointer ---------------------------------------------------------------------------
   function onPointer(e) {
     if (!S()) return;
-    if (e.type === "leave") { Scene3D.setGhost(null); Scene3D.setBrushPreview?.(null); if (tool === "brush") Scene3D.setDraft(null); setHover(null); return; }
-    if (e.world) lastWorld = e.world;
+    if (e.type === "leave") { pointerInView = false; if (tool === "answer" && !draft) Scene3D.setDraft(null); Scene3D.setGhost(null); Scene3D.setBrushPreview?.(null); if (tool === "brush") Scene3D.setDraft(null); setHover(null); return; }
+    if (e.world) { lastWorld = e.world; pointerInView = true; }
     const handler = HANDLERS[tool] || HANDLERS.select;
     handler[e.type] && handler[e.type](e);
   }
@@ -248,7 +291,11 @@ const Tools = (() => {
       const h = Scene3D.hitAt(e.sx, e.sy, skipLocked);
       if (!h) { drag = { kind: "marquee", x0: e.sx, y0: e.sy, add: e.shift }; return; }
       if (h.t === "turn") return startTurn(e);
-      if (h.t === "letter") { App.select({ t: "route", id: h.id }); App.beginDrag(); drag = { kind: "letter", id: h.id }; return; }
+      if (h.t === "letter") {
+        App.select({t:"route",id:h.id}); App.beginDrag();
+        const at = AnswerMark.position(App.objectOf({t:"route",id:h.id}));
+        drag = {kind:"letter",id:h.id, offset:e.world ? [at[0]-e.world.x,at[1]-e.world.z] : [0,0]}; return;
+      }
       if (h.t === "stop" && S().layout) { App.select({ t: "stop" }); App.beginDrag(); drag = { kind: "stop" }; return; }
       if (h.point) {
         App.select({ ...h, v: h.v });
@@ -283,7 +330,7 @@ const Tools = (() => {
       if (!e.world) return;
       if (drag.kind === "turn") return turnMove(e);
       if (drag.kind === "letter") {
-        return App.dragMove((s) => { const rt = s.routes.find((x) => x.id === drag.id); if (rt) rt.labelPosition = [r3(e.world.x), r3(e.world.z)]; });
+        return App.dragMove((s) => { const rt = s.routes.find((x) => x.id === drag.id); if (rt) rt.labelPosition = [r3(e.world.x + drag.offset[0]), r3(e.world.z + drag.offset[1])]; });
       }
       if (drag.kind === "stop") {
         // Free mode accepts only a fully supported car footprint (including the roundabout island).
@@ -499,7 +546,7 @@ const Tools = (() => {
           // A traced scene starts its plan from nothing: its old road copy is replaced.
           sc.roads = sc.roads.filter((r) => r.auto);
           sc.markings = (sc.markings || []).filter((m) => m.type !== "paint");
-          sc.routes = sc.routes.filter((r) => ["choice", "actor", "guide"].includes(r.kind));
+          sc.routes = sc.routes.filter((r) => ["choice", "actor", "guide", "annotation"].includes(r.kind));
         }
         Layout.addStreet(sc, a, b, opts.roadKind);
       });
@@ -573,15 +620,30 @@ const Tools = (() => {
     dblclick() { finishDraft(); },
   };
 
-  // ---- answers: a route with the next free letter -------------------------------------------------
+  // ---- answers, unlabelled lines and single-click letter tokens -------------------------------
   const answer = {
     move(e) {
-      if (draft && e.world) Scene3D.setDraft({ kind: tool === "annotation" ? "annotation" : "line", style: opts.annotationStyle, points: draft.points, cursor: [r3(e.world.x), r3(e.world.z)], colour: 0xe0533d });
+      if (!e.world) return;
+      if (opts.answerMode === "letter" && !opts.pathFor && !opts.answerRoute) {
+        const label = AnswerMark.free(S()).includes(opts.answerLetter) ? opts.answerLetter : AnswerMark.free(S())[0];
+        return Scene3D.setDraft(label ? {kind: "letter", label, cursor: [r3(e.world.x), r3(e.world.z)]} : null);
+      }
+      if (draft) Scene3D.setDraft({kind: opts.answerMode === "annotation" && !opts.pathFor && !opts.answerRoute ? "annotation" : "line", style: opts.annotationStyle, points: draft.points, cursor: [r3(e.world.x), r3(e.world.z)], colour: opts.answerMode === "annotation" ? '#20242b' : Catalog.LETTER_COLOUR[opts.answerLetter] || 0xe0533d});
     },
     down(e) {
       if (!e.world) return;
+      if (App.state.locked.has("routes")) return App.toast("Слой ответов и маршрутов заблокирован", "warn");
+      if (opts.answerMode === "letter" && !opts.pathFor && !opts.answerRoute) {
+        const ref = App.edit(s => AnswerMark.create(s, opts.answerLetter, [], [r3(e.world.x), r3(e.world.z)], true));
+        if (!ref) return App.toast("Все буквы уже в сцене", "warn");
+        App.select(ref);
+        renderPopover(); answer.move(e);
+        return;
+      }
+      if (!opts.pathFor && !opts.answerRoute && opts.answerMode === "answer" && !AnswerMark.free(S()).length) return App.toast("Все буквы уже в сцене", "warn");
       if (!draft) draft = { points: [] };
-      draft.points.push([r3(e.world.x), r3(e.world.z)]);
+      const point = [r3(e.world.x), r3(e.world.z)];
+      if (!draft.points.length || Math.hypot(point[0]-draft.points.at(-1)[0],point[1]-draft.points.at(-1)[1]) > .01) draft.points.push(point);
       answer.move(e);
     },
     dblclick() { finishDraft(); },
@@ -833,7 +895,7 @@ const Tools = (() => {
     dblclick() { finishDraft(); },
   };
 
-  const HANDLERS = { select, hand, road, junction: select, marking, lawn, track, answer, annotation: answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), sign: placer("sign"), prop: placer("prop"), brush };
+  const HANDLERS = { select, hand, road, junction: select, marking, lawn, track, answer, actor: placer("actor"), light: placer("light"), officer: placer("officer"), sign: placer("sign"), prop: placer("prop"), brush };
 
   // ---- finishing a drawing ------------------------------------------------------------------------
   function finishDraft(cancel = false) {
@@ -841,6 +903,7 @@ const Tools = (() => {
     draft = null;
     Scene3D.setDraft(null);
     if (!d || cancel) return;
+    if (tool === "answer" && App.state.locked.has("routes")) return App.toast("Слой ответов и маршрутов заблокирован", "warn");
     const pts = d.points;
     if (tool === "marking" && pts.length >= 2) {
       const ref = App.edit((s) => {
@@ -882,7 +945,11 @@ const Tools = (() => {
       });
       App.select({ t: "actor", id: aid });
       set("select");
-    } else if (tool === "annotation" && pts.length >= 2) {
+    } else if (tool === "answer" && opts.answerRoute && pts.length >= 2) {
+      const id = opts.answerRoute;
+      App.edit(s => { const r = s.routes.find(r => r.id === id); if (r) { r.points = pts; delete r.display; r.arrowhead = opts.answerArrowhead; } });
+      set("select"); App.select({t:"route", id});
+    } else if (tool === "answer" && opts.answerMode === "annotation" && pts.length >= 2) {
       const points=AnnotationLine.clean(pts);
       if(points.length<2 || AnnotationLine.length(points)<.1)return App.toast("Линия слишком короткая", "warn");
       const ref=App.edit(s=>{
@@ -892,21 +959,22 @@ const Tools = (() => {
       });
       App.select(ref);
     } else if (tool === "answer" && pts.length >= 2) {
-      const ref = App.edit((s) => {
-        const used = s.routes.filter((r) => r.kind === "choice").map((r) => r.label);
-        const label = Catalog.LETTERS.find((l) => !used.includes(l));
-        if (!label) { App.toast("Все буквы заняты", "warn"); return null; }
-        const mid = pts[Math.floor(pts.length / 2)];
-        s.routes.push({ id: `choice_${label}`, kind: "choice", label, points: pts, labelPosition: [mid[0], mid[1]], ...(opts.answerArrowhead ? {} : {arrowhead:false}) });
-        return { t: "route", id: `choice_${label}` };
-      });
+      const mid = pts[Math.floor(pts.length / 2)];
+      const ref = App.edit(s => AnswerMark.create(s, opts.answerLetter, pts, mid, false, opts.answerArrowhead));
       if (ref) App.select(ref);
+      else App.toast("Все буквы заняты", "warn");
+      renderPopover();
     }
   }
 
   function escape() {
     if (drag) { App.cancelDrag(); drag = null; $("#marquee").hidden = true; return; }
-    if (draft) return finishDraft(true);
+    if (draft) {
+      const id = opts.answerRoute;
+      finishDraft(true);
+      if (id) { set("select"); App.select({t:"route",id}); }
+      return;
+    }
     if (tool !== "select") return set("select");
     App.select([]);
   }
@@ -924,6 +992,7 @@ const Tools = (() => {
       if (o.pos) pts.push(o.pos);
       else if (ref.t === "node") pts.push([o.x, o.z]);
       else if (ref.t === "street") Layout.centreline(S().layout, o).forEach((p) => pts.push(p));
+      else if (o.kind === "choice" && o.display === "letter" && o.labelPosition) pts.push(o.labelPosition);
       else (App.pointsOfRef(ref) || []).forEach((p) => pts.push(p));
     }
     if (!pts.length) return Scene3D.fit();
@@ -958,6 +1027,14 @@ const Tools = (() => {
     renderHint("Кликайте точки пути участника от него. ↵ — готово");
   }
 
+  function drawAnswerRoute(id, arrowhead = true) {
+    const r = S().routes.find(r => r.id === id);
+    if (!r || App.isLocked({t:"route", id})) return;
+    set("answer"); opts.answerRoute = id; opts.answerArrowhead = arrowhead;
+    draft = {points: [[...AnswerMark.position(r)]]};
+    renderPopover(); renderHint("Кликайте точки линии от буквы. Enter — готово, Esc — отменить");
+  }
+
   function pickLight(tram = false) {
     opts.tram = !!tram;
     set("light", { keepLibrary: true });
@@ -989,6 +1066,6 @@ const Tools = (() => {
     });
   }
 
-  return { init, set, current, list: () => LIST.filter((t) => !t.sep), escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, convertScene,
+  return { init, set, current, list: () => LIST.filter((t) => !t.sep), escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, drawAnswerRoute, convertScene,
     applyTemplate, renderBar, renderHint, lightSpot, rotateBrush, get opts() { return opts; } };
 })();

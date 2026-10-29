@@ -131,7 +131,10 @@ def sync(sid: str) -> dict:
     for r in net.get("routes", []):
         if r["kind"] != "choice":
             continue
-        traj.append({"label": r["label"], "points": r["points"], "arrowhead": r.get("arrowhead", True) is not False})
+        # Keep a label-only entry so the runtime does not invent a fallback player arrow.
+        # Remembered editor points are exported again only when its line is restored.
+        traj.append({"label": r["label"], "points": [] if r.get("display") == "letter" else r["points"],
+                     "arrowhead": r.get("arrowhead", True) is not False})
         lp = r.get("labelPosition")
         if lp:
             labels.append({"letter": r["label"], "pos": [lp[0], 0.8, lp[1]]})

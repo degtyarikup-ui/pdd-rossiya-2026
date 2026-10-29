@@ -152,6 +152,12 @@ def check_scene(scene: dict) -> list:
     routes = {r["id"]: r for r in scene.get("routes", [])}
     for r in scene.get("routes", []):
         pts = r.get("points", [])
+        if r.get("kind") == "choice" and r.get("display") == "letter":
+            pos = r.get("labelPosition")
+            if (not isinstance(pos, (list, tuple)) or len(pos) != 2
+                    or not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in pos)):
+                finding(out, "error", "label-position", f"{r['id']}: задайте положение буквы", {"type": "route", "id": r['id']})
+            continue
         if r.get("kind") == "annotation":
             number = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
             valid_points = isinstance(pts, list) and len(pts) >= 2 and all(

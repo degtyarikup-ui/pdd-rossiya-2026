@@ -74,6 +74,7 @@ const App = (() => {
   function pointsOfRef(ref) {
     const o = objectOf(ref);
     if (!o) return null;
+    if (ref.t === "route" && o.display === "letter") return [];
     if (ref.t === "route" || ref.t === "track") return o.points;
     if (ref.t === "marking") return o.points || (o.polygons && o.polygons[0] && o.polygons[0].outer);
     if (ref.t === "lawn") return o.outer;
@@ -100,7 +101,7 @@ const App = (() => {
         if (o.kind === "annotation") return "Линия-обозначение";
         if (o.kind === "guide") return "Синяя стрелка игрока";
         if (o.kind === "manoeuvre") return `Манёвр: ${Catalog.EXITS[o.exit]?.title.toLowerCase() || o.exit}`;
-        if (o.kind === "choice") return `Ответ ${o.label}`;
+        if (o.kind === "choice") return o.display === "letter" ? `Буква ${o.label}` : `Ответ ${o.label}`;
         if (o.kind === "approach") return "Подъезд игрока";
         return `Путь: ${objectOf({ t: "actor", id: o.id.replace(/^actor_/, "") })?.name || "участник"}`;
       case "marking": return o.type === "paint" ? "Разметка сцены" : Catalog.MARKS[o.type]?.title || o.type;
@@ -727,6 +728,7 @@ const App = (() => {
     key(G2, "shift+arrowright", "", () => nudgeScreen(1, 0, 1), { needScene: true, hiddenInHelp: true });
     key(G2, "shift+arrowup", "", () => nudgeScreen(0, 1, 1), { needScene: true, hiddenInHelp: true });
     key(G2, "shift+arrowdown", "", () => nudgeScreen(0, -1, 1), { needScene: true, hiddenInHelp: true });
+    key(G3, "i", "Линия (в инструменте Ответы)", () => Tools.set("annotation"), { needScene: true });
     for (const t of Tools.list()) key(G3, t.key.toLowerCase(), t.title, () => Tools.set(t.id), { needScene: true });
     key(G4, "f", "Показать всё (или выбранное)", () => Tools.fitSelection(), { needScene: true });
     key(G4, "2", "Вид сверху", () => setView("plan"), { needScene: true });
