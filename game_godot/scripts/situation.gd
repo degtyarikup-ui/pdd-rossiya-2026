@@ -918,7 +918,7 @@ func set_evidence_visible(on: bool, animate := false) -> void:
 			if route is RouteArrow:
 				(route as RouteArrow).reset()
 			elif route is Node3D:
-				_set_guide_alpha(route, 1.0)
+				_set_guide_alpha(1.0, route)
 				(route as Node3D).visible = true
 	for n in _evidence + _badges:
 		if is_instance_valid(n): _settle_mark(n, on)
@@ -954,7 +954,7 @@ func _move_evidence(on: bool) -> void:
 		if on:
 			# Letters pop in just after their routes start drawing; plates simply fade in.
 			var delay := 0.12 + i * 0.06
-			_set_mark_alpha(mark, 0.0)
+			_set_mark_alpha(0.0, mark)
 			mark.scale = base * (0.9 if plate else 0.35)
 			motion.tween_method(_set_mark_alpha.bind(mark), 0.0, 1.0, 0.18).set_delay(delay)
 			motion.tween_property(mark, "scale", base, 0.36).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -989,12 +989,13 @@ func _move_evidence(on: bool) -> void:
 func _settle_mark(mark: Node3D, on: bool) -> void:
 	if mark.has_meta("rest_scale"): mark.scale = mark.get_meta("rest_scale")
 	if mark.has_meta("rest_position"): mark.position = mark.get_meta("rest_position")
-	_set_mark_alpha(mark, 1.0)
+	_set_mark_alpha(1.0, mark)
 	mark.visible = on
 
 
 ## Fades a mark's sprites and texts without losing their own colours.
-static func _set_mark_alpha(mark: Node3D, alpha: float) -> void:
+## Alpha comes first: tween_method passes the value before bound arguments.
+static func _set_mark_alpha(alpha: float, mark: Node3D) -> void:
 	if not is_instance_valid(mark): return
 	for node in mark.find_children("*", "", true, false):
 		if node is SpriteBase3D or node is Label3D:
@@ -1002,7 +1003,7 @@ static func _set_mark_alpha(mark: Node3D, alpha: float) -> void:
 			node.modulate.a = float(node.get_meta("rest_alpha")) * alpha
 
 
-static func _set_guide_alpha(route: Node3D, alpha: float) -> void:
+static func _set_guide_alpha(alpha: float, route: Node3D) -> void:
 	if not is_instance_valid(route): return
 	for mi in route.find_children("*", "MeshInstance3D", true, false) + ([route] if route is MeshInstance3D else []):
 		var mat := (mi as MeshInstance3D).material_override as StandardMaterial3D
