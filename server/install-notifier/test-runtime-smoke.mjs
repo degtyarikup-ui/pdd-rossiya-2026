@@ -66,6 +66,7 @@ export class AccountState extends ProductionAccountState {
       return typeof value==='function'?value.bind(target):value;
     }}),env);
     this.runtimeRepair=repair;
+    this.runtimeInstance=crypto.randomUUID();
   }
   async flush() {
     this.runtimeRepair.flushCalls++;
@@ -80,6 +81,21 @@ export class AccountState extends ProductionAccountState {
         this.runtimeRepair.blocked=blocked===true;
         this.runtimeRepair.flushCalls=0;this.runtimeRepair.listCalls=0;
         return Response.json(this.runtimeRepair);
+      });
+      if(path==='/_runtime/instance')return this.serial(()=>Response.json({instance:this.runtimeInstance}));
+      if(path==='/_runtime/memory-write-fault')return this.serial(async()=>{
+        await this.state.storage.transaction(async txn=>{
+          await txn.put('doc:user_progress:google_runtime_fixture',{key:'user_progress:google_runtime_fixture',value:'{}',epoch:'1'});
+          this.state.storage.sql.exec('SELECT 1 IN ('+Array.from({length:10000},(_,i)=>i).join(',')+')').toArray();
+        });
+        return Response.json({unexpectedSuccess:true});
+      });
+      if(path==='/_runtime/memory-fault')return this.serial(()=>{
+        // Compile a deliberately oversized VM program in local SQLite only.
+        // The workerd opcode limit produces a real SQLITE_NOMEM without large
+        // data or touching any production/account table.
+        this.state.storage.sql.exec('SELECT 1 IN ('+Array.from({length:10000},(_,i)=>i).join(',')+')').toArray();
+        return Response.json({unexpectedSuccess:true});
       });
       if(path==='/_runtime/repair-state')return this.serial(()=>Response.json(this.runtimeRepair));
       if(path==='/_runtime/schedule-repair')return this.serial(async()=>{
@@ -121,12 +137,12 @@ export default {
           headers:{'x-account-id':'google_runtime_fixture','x-runtime-fixture':env.SHARED_SECRET}});
       }
       if (['/__runtime_fixture/repair-mode','/__runtime_fixture/repair-state','/__runtime_fixture/schedule-repair',
-        '/__runtime_fixture/alarm-state','/__runtime_fixture/alarm'].includes(url.pathname)) {
-        return env.ACCOUNTS.get(env.ACCOUNTS.idFromName('google_runtime_fixture')).fetch('https://account.internal/_runtime/'+url.pathname.split('/').at(-1), {
+        '/__runtime_fixture/alarm-state','/__runtime_fixture/alarm','/__runtime_fixture/instance','/__runtime_fixture/memory-fault','/__runtime_fixture/memory-write-fault'].includes(url.pathname)) {
+        try { return await env.ACCOUNTS.get(env.ACCOUNTS.idFromName('google_runtime_fixture')).fetch('https://account.internal/_runtime/'+url.pathname.split('/').at(-1), {
           method:request.method,
           headers:{'x-account-id':'google_runtime_fixture','x-runtime-fixture':env.SHARED_SECRET},
           ...(request.method==='POST'?{body:await request.text()}:{}),
-        });
+        }); } catch(error) { if(url.pathname.endsWith('/memory-fault')||url.pathname.endsWith('/memory-write-fault'))return Response.json({failed:true},{status:503}); throw error; }
       }
       if (url.pathname === '/__runtime_fixture/flush-stats') {
         const response=await env.STATS.get(env.STATS.idFromName('main')).fetch('https://stats/flush',{method:'POST'});
@@ -306,6 +322,17 @@ new_sqlite_classes = [${classes.map(JSON.stringify).join(', ')}]
     assert.equal(projectedUser.isPremium,true);
     assert.equal(projectedUser.premiumExpiresAt,premium.premiumExpiresAt);
     t.diagnostic('Unicode progress >128KiB and Premium survive process death before repair; automatically dispatched alarm converges KV and clears recovery wake-up; duplicate progress unchanged');
+
+    const oldInstance=await api('/__runtime_fixture/instance',{fixture:true});
+    await api('/__runtime_fixture/memory-fault',{fixture:true,body:{},expected:503});
+    await api('/__runtime_fixture/memory-write-fault',{fixture:true,body:{},expected:503});
+    const newInstance=await api('/__runtime_fixture/instance',{fixture:true});
+    assert.notEqual(newInstance.instance,oldInstance.instance,'native SQLite failure must evict the volatile account instance');
+    assert.deepEqual((await api('/api/user/progress?userId='+userId,{token})).progress,written.progress);
+    const afterMemoryFault=await api('/api/user/status',{token});
+    assert.equal(afterMemoryFault.premiumExpiresAt,premium.premiumExpiresAt);
+    assert.equal(afterMemoryFault.isPremium,true);
+    t.diagnostic('real SQLite allocation error resets only the running instance; confirmed progress and Premium survive');
 
     const pressure=await api('/__runtime_fixture/pressure',{fixture:true});
     assert.deepEqual(pressure,{pendingBefore:61,pendingAfter:0,progressUnchanged:true});

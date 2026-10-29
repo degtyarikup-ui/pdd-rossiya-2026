@@ -9,6 +9,11 @@ const json = (body, status = 200) => Response.json(body, { status, headers: { 'C
 const parse = raw => { try { return raw ? JSON.parse(raw) : null; } catch { return null; } };
 const noProjection = key => key.startsWith('apple_auth:');
 const MAINTENANCE_PAGE = 25;
+// Only a local native allocation failure can poison this object's storage.
+// A failure forwarded by another DO must not reset an otherwise healthy account.
+const localSqliteMemoryFailure = error => error?.remote !== true
+  && /\bSQLITE_NOMEM\b/.test(String(error?.message || ''));
+
 // After a rollback to the KV-only Worker, KV holds newer writes than this DO.
 // Raising ACCOUNT_STATE_EPOCH makes older projected documents re-import from KV
 // instead of overwriting it. Private DO-only documents keep their value.
@@ -108,7 +113,19 @@ export class AccountState {
   constructor(state, env) { this.state = state; this.env = env; this.tail = Promise.resolve(); }
   // Keep only completion in the long-lived queue, never the last profile or
   // progress Response. The caller still receives the original result/error.
-  serial(fn) { const result = this.tail.then(fn); this.tail = result.then(() => {}, () => {}); return result; }
+  serial(fn) {
+    const result = this.tail.then(fn).catch(error => {
+      if (localSqliteMemoryFailure(error) && typeof this.state.abort === 'function') {
+        // Reset only volatile execution state. Never delete storage, change the
+        // account ID/epoch, re-import KV or replay the failed operation here.
+        console.error('account_storage_reset', { reason: 'SQLITE_NOMEM' });
+        this.state.abort('AccountState reset after local SQLITE_NOMEM');
+      }
+      throw error;
+    });
+    this.tail = result.then(() => {}, () => {});
+    return result;
+  }
   fetch(request) { return this.serial(() => this.handle(request)); }
   alarm() { return this.serial(async () => {
     // Alarms have a finite automatic retry budget. Save another wake-up before
@@ -189,7 +206,7 @@ export class AccountState {
         const response = await accountRpc(this.env, 'payment-directory', '/_directory/register', order);
         if (!response?.ok) throw new Error('payment directory unavailable');
         await this.state.storage.delete(key);
-      } catch { return false; }
+      } catch (error) { if (localSqliteMemoryFailure(error)) throw error; return false; }
     }
     return indexes.size < MAINTENANCE_PAGE;
   }
@@ -202,7 +219,7 @@ export class AccountState {
         const { executeAccountEffect } = await import('./worker.js');
         await executeAccountEffect(effect, this.env);
         await this.state.storage.delete(key);
-      } catch { retryEffects = true; }
+      } catch (error) { if (localSqliteMemoryFailure(error)) throw error; retryEffects = true; }
     }
     if (retryEffects || outbox.size === 25) pendingWork = true;
     const pending = await this.state.storage.list({ prefix: 'projection:', limit: MAINTENANCE_PAGE });
@@ -226,7 +243,7 @@ export class AccountState {
         if (record.value == null) await this.env.INSTALLS.delete(record.key);
         else await this.env.INSTALLS.put(record.key, record.value, record.options);
         await this.state.storage.delete(key);
-      } catch { pendingWork = true; break; }
+      } catch (error) { if (localSqliteMemoryFailure(error)) throw error; pendingWork = true; break; }
     }
     return pendingWork || pending.size === MAINTENANCE_PAGE;
   }
