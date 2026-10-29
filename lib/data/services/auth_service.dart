@@ -190,14 +190,19 @@ class AuthService extends ChangeNotifier {
     _updateSignInBusy();
   }
 
+  /// [timeout] null: our own sheets (Yandex, Telegram) always resolve when
+  /// closed, and typing a password or an SMS code may take longer than any
+  /// limit — a timeout there would drop a login that is still in progress.
   Future<T> _providerRequest<T>(
     _SignInAttempt attempt,
-    Future<T> Function() request,
-  ) async {
+    Future<T> Function() request, {
+    Duration? timeout = const Duration(minutes: 2),
+  }) async {
     attempt.providerPending = true;
     try {
       // The request still starts synchronously from the browser button gesture.
-      return await request().timeout(const Duration(minutes: 2));
+      final pending = request();
+      return await (timeout == null ? pending : pending.timeout(timeout));
     } finally {
       attempt.providerPending = false;
       _releaseProviderHold(attempt);
@@ -700,6 +705,7 @@ class AuthService extends ChangeNotifier {
         final result = await _providerRequest(
           attempt,
           () => YandexAuthSheet.show(context),
+          timeout: null,
         );
         if (result != null) {
           return _wanted(attempt)
@@ -714,6 +720,7 @@ class AuthService extends ChangeNotifier {
         final result = await _providerRequest(
           attempt,
           () => TelegramAuthSheet.show(context),
+          timeout: null,
         );
         if (result != null) {
           if (!_wanted(attempt)) return false;
