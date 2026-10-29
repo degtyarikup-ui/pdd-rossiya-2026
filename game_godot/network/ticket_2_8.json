@@ -1,0 +1,590 @@
+{
+ "schema": 1,
+ "id": "ticket_2_8",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -91
+    ],
+    [
+     7,
+     -90
+    ],
+    [
+     7,
+     0
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -7,
+     -90
+    ],
+    [
+     -7,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     7,
+     90
+    ],
+    [
+     7,
+     91
+    ],
+    [
+     -7,
+     91
+    ],
+    [
+     -7,
+     90
+    ],
+    [
+     -7,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     6.914,
+     1.095
+    ],
+    [
+     6.657,
+     2.163
+    ],
+    [
+     6.237,
+     3.178
+    ],
+    [
+     5.663,
+     4.114
+    ],
+    [
+     4.95,
+     4.95
+    ],
+    [
+     4.114,
+     5.663
+    ],
+    [
+     3.178,
+     6.237
+    ],
+    [
+     2.163,
+     6.657
+    ],
+    [
+     1.095,
+     6.914
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     -1.095,
+     6.914
+    ],
+    [
+     -2.163,
+     6.657
+    ],
+    [
+     -3.178,
+     6.237
+    ],
+    [
+     -4.114,
+     5.663
+    ],
+    [
+     -4.95,
+     4.95
+    ],
+    [
+     -5.663,
+     4.114
+    ],
+    [
+     -6.237,
+     3.178
+    ],
+    [
+     -6.657,
+     2.163
+    ],
+    [
+     -6.914,
+     1.095
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -6.914,
+     -1.095
+    ],
+    [
+     -6.657,
+     -2.163
+    ],
+    [
+     -6.237,
+     -3.178
+    ],
+    [
+     -5.663,
+     -4.114
+    ],
+    [
+     -4.95,
+     -4.95
+    ],
+    [
+     -4.114,
+     -5.663
+    ],
+    [
+     -3.178,
+     -6.237
+    ],
+    [
+     -2.163,
+     -6.657
+    ],
+    [
+     -1.095,
+     -6.914
+    ],
+    [
+     0,
+     -7
+    ],
+    [
+     1.095,
+     -6.914
+    ],
+    [
+     2.163,
+     -6.657
+    ],
+    [
+     3.178,
+     -6.237
+    ],
+    [
+     4.114,
+     -5.663
+    ],
+    [
+     4.95,
+     -4.95
+    ],
+    [
+     5.663,
+     -4.114
+    ],
+    [
+     6.237,
+     -3.178
+    ],
+    [
+     6.657,
+     -2.163
+    ],
+    [
+     6.914,
+     -1.095
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     -0.15,
+     -91
+    ],
+    [
+     -0.15,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     0.15,
+     -91
+    ],
+    [
+     0.15,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     -91
+    ],
+    [
+     -3.5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     -91
+    ],
+    [
+     3.5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_5",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "solid",
+   "points": [
+    [
+     -0.15,
+     0
+    ],
+    [
+     -0.15,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_6",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "solid",
+   "points": [
+    [
+     0.15,
+     0
+    ],
+    [
+     0.15,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_7",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     0
+    ],
+    [
+     -3.5,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_8",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     0
+    ],
+    [
+     3.5,
+     91
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.75,
+     -91
+    ],
+    [
+     -1.75,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -1.75,
+     -13.1
+    ],
+    [
+     -1.75,
+     0
+    ],
+    [
+     -1.75,
+     90
+    ],
+    [
+     -1.75,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  },
+  {
+   "id": "actor_car_1",
+   "kind": "actor",
+   "auto": true,
+   "points": [
+    [
+     -5.25,
+     -9.572
+    ],
+    [
+     -5.25,
+     -9.072
+    ],
+    [
+     -5.25,
+     0
+    ]
+   ]
+  }
+ ],
+ "actors": [
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "asset": "ticket_10_15/actor_0.glb",
+   "route": "actor_car_1",
+   "pos": [
+    -5.25,
+    -9.572
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "maxSpeed": 12,
+   "clearDistance": 24.151,
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "behaviour": {
+    "staysPut": false,
+    "waitsForPlayer": true
+   },
+   "way": "straight",
+   "paint": "#317ED4"
+  }
+ ],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 2 · Вопрос 8",
+    "title": "Двигаясь по левой полосе, водитель намерен перестроиться на правую. На каком из рисунков показана ситуация, в которой он обязан уступить дорогу?",
+    "options": [
+     "На левом",
+     "На правом",
+     "На обоих"
+    ],
+    "explanation": "На левом рисунке преимущество у автомобиля, двигающегося попутно по полосе без изменения направления движения, т.е. у «хозяина полосы». Водитель, двигающийся по левой полосе уступает.На правом рисунке одновременное перестроение. Водители руководствуются «правилом правой руки», т.е. у кого помеха справа, тот и уступает. Помеха справа у водителя, двигающего также по левой полосе. Он уступает дорогу и в этой ситуации.(Пункт 8.4 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 2 · Question 8",
+    "title": "Moving in the left lane, the driver intends to change lanes to the right. Which of the pictures shows a situation in which he is obliged to give way?",
+    "options": [
+     "On the left",
+     "On the right",
+     "On both"
+    ],
+    "explanation": "In the left figure, the advantage is given to a car moving in the same lane without changing direction, i.e. from the “owner of the strip.” The driver moving in the left lane gives way. In the right picture there is a simultaneous lane change. Drivers are guided by the “right hand rule”, i.e. whoever has an obstacle on the right concedes. There is interference on the right side of the driver, who is also driving in the left lane. He gives way in this situation as well. (Clause 8.4 of traffic rules)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "2-билет · 8-сұрақ",
+    "title": "Сол жақ жолақпен қозғала отырып, жүргізуші жолақты оңға ауыстырмақшы. Суреттердің қайсысында оның жол беруге міндетті жағдайы көрсетілген?",
+    "options": [
+     "Сол жақта",
+     "Оң жақта",
+     "Екеуінде де"
+    ],
+    "explanation": "Сол жақтағы суретте артықшылық бағытты өзгертпестен, яғни «жолақ иесінен» бір жолақта қозғалатын автокөлікке беріледі. Сол жақ жолақпен келе жатқан жүргізуші жол береді. Оң жақтағы суретте бір уақытта жолақты ауыстыру бар. Жүргізушілер «оң қол ережесін» басшылыққа алады, яғни оң жақта кедергі болған жүргізуші жол береді. Жүргізушінің оң жағында кедергі бар, ол да сол жолақпен келе жатыр. Ол бұл жағдайда да жол береді. (Жол қозғалысы ережелерінің 8.4 тармағы)",
+    "pddRule": ""
+   }
+  },
+  "correct": 2,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "01e543cf4b0d829df5645fc2c4562be7",
+  "sourceCategory": "ab",
+  "sourceImage": "328947fa3921f7c37a9d825b2e8b030b"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "double"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "double"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "lane": 0
+  }
+ },
+ "stop": {
+  "x": -1.75,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 14
+ },
+ "approachWidth": 14,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionPool": {
+  "sourceQuestionId": "01e543cf4b0d829df5645fc2c4562be7",
+  "category": "ab",
+  "ticket": 2,
+  "number": 8
+ }
+}

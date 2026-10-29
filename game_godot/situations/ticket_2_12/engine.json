@@ -1,0 +1,94 @@
+{
+ "id": "ticket_2_12",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -15.9,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14,
+  "left": 14,
+  "right": 14,
+  "uturn": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 2 · Вопрос 12",
+   "title": "Разрешается ли Вам остановиться в указанном месте?",
+   "options": [
+    "Разрешается",
+    "Разрешается, если автомобиль будет находиться не ближе 5 м от края пересекаемой проезжей части",
+    "Запрещается"
+   ],
+   "explanation": "На перекрёстке с круговым движением Вы можете совершить остановку и стоянку, но при этом расстояние между остановившимся транспортным средством и краем проезжей части должно быть не менее 5 м.(Пункты 12.4, 12.5 ПДД).",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 2 · Question 12",
+   "title": "Are you allowed to stop at the indicated place?",
+   "options": [
+    "Allowed",
+    "It is allowed if the car is no closer than 5 m from the edge of the intersecting roadway",
+    "Prohibited"
+   ],
+   "explanation": "At a roundabout intersection you can stop and park, but the distance between the stopped vehicle and the edge of the roadway must be at least 5 m (Clause 12.4, 12.5 of the Traffic Regulations).",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "2-билет · 12-сұрақ",
+   "title": "Сізге көрсетілген жерде тұруға рұқсат етіледі ме?",
+   "options": [
+    "Рұқсат етілген",
+    "Көлік қиылысатын жолдың шетінен 5 м жақын емес болса рұқсат етіледі",
+    "Тыйым салынған"
+   ],
+   "explanation": "Айналмалы жол қиылысында сіз тоқтап, тұрақ қоя аласыз, бірақ тоқтаған көлік құралы мен жол жиегі арасындағы қашықтық кемінде 5 м болуы керек (Жол қозғалысы ережесінің 12.4, 12.5-тармақтары).",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 166,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "ebf1250c0212d082b4d869d6347d47ba",
+ "sourceCategory": "ab",
+ "sourceImage": "a3c10883d8f389574cb255f4d33864b0"
+}

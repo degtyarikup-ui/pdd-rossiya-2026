@@ -1,0 +1,91 @@
+{
+ "id": "ticket_1_10",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 10",
+   "title": "С какой скоростью Вы можете продолжить движение вне населённого пункта по левой полосе на легковом автомобиле?",
+   "options": [
+    "Не более 50 км/ч",
+    "Не менее 50 км/ч и не более 70 км/ч",
+    "Не менее 50 км/ч и не более 90 км/ч"
+   ],
+   "explanation": "Над левой полосой висит знак 4.6 «Ограничение минимальной скорости» с табличкой 8.14 «Полоса движения», указывающей полосу движения, на которую распространяется действие знака. Скорость движения по левой полосе не должна быть менее 50 км/ч и не должна превышать допустимой для легковых автомобилей вне населённых пунктов, т.е. не более 90 км/ч.(«Дорожные знаки», пункт 10.3 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 10",
+   "title": "At what speed can you continue driving outside a populated area in the left lane in a passenger car?",
+   "options": [
+    "No more than 50 km/h",
+    "Not less than 50 km/h and not more than 70 km/h",
+    "Not less than 50 km/h and not more than 90 km/h"
+   ],
+   "explanation": "Above the left lane hangs sign 4.6 “Minimum speed limit” with sign 8.14 “Traffic lane” indicating the lane covered by the sign. The speed in the left lane should not be less than 50 km/h and should not exceed the speed limit for passenger cars outside populated areas, i.e. no more than 90 km/h (“Road signs”, paragraph 10.3 of traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 10-сұрақ",
+   "title": "Жеңіл автомобильде сол жақ жолақпен елді мекеннен тысқары жүруді қандай жылдамдықпен жалғастыруға болады?",
+   "options": [
+    "50 км/сағ аспайды",
+    "50 км/сағ кем емес және 70 км/сағ артық емес",
+    "50 км/сағ кем емес және 90 км/сағ артық емес"
+   ],
+   "explanation": "Сол жақ жолақтың үстінде 8.14 «Жолақ» тақтайшасы бар 4.6 «Ең төмен жылдамдық шегі» белгісі ілулі, бұл белгімен жабылатын жолақ. Сол жақ жолақтағы жылдамдық 50 км/сағ кем болмауы керек және елді мекендерден тыс жердегі жеңіл автомобильдердің жылдамдығынан аспауы керек, яғни 90 км/сағ аспауы керек («Жол белгілері», ЖҚЕ 10.3 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 196,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "13240b68ca2e4475deb368dc5781c48f",
+ "sourceCategory": "ab",
+ "sourceImage": "e25d143aa53eb44b06b020415b6bee54"
+}

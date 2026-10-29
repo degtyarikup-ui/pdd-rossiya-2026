@@ -1,0 +1,508 @@
+{
+ "schema": 1,
+ "id": "ticket_2_5",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -91
+    ],
+    [
+     7,
+     -90
+    ],
+    [
+     7,
+     0
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -7,
+     -90
+    ],
+    [
+     -7,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     7,
+     90
+    ],
+    [
+     7,
+     91
+    ],
+    [
+     -7,
+     91
+    ],
+    [
+     -7,
+     90
+    ],
+    [
+     -7,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     6.914,
+     1.095
+    ],
+    [
+     6.657,
+     2.163
+    ],
+    [
+     6.237,
+     3.178
+    ],
+    [
+     5.663,
+     4.114
+    ],
+    [
+     4.95,
+     4.95
+    ],
+    [
+     4.114,
+     5.663
+    ],
+    [
+     3.178,
+     6.237
+    ],
+    [
+     2.163,
+     6.657
+    ],
+    [
+     1.095,
+     6.914
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     -1.095,
+     6.914
+    ],
+    [
+     -2.163,
+     6.657
+    ],
+    [
+     -3.178,
+     6.237
+    ],
+    [
+     -4.114,
+     5.663
+    ],
+    [
+     -4.95,
+     4.95
+    ],
+    [
+     -5.663,
+     4.114
+    ],
+    [
+     -6.237,
+     3.178
+    ],
+    [
+     -6.657,
+     2.163
+    ],
+    [
+     -6.914,
+     1.095
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -6.914,
+     -1.095
+    ],
+    [
+     -6.657,
+     -2.163
+    ],
+    [
+     -6.237,
+     -3.178
+    ],
+    [
+     -5.663,
+     -4.114
+    ],
+    [
+     -4.95,
+     -4.95
+    ],
+    [
+     -4.114,
+     -5.663
+    ],
+    [
+     -3.178,
+     -6.237
+    ],
+    [
+     -2.163,
+     -6.657
+    ],
+    [
+     -1.095,
+     -6.914
+    ],
+    [
+     0,
+     -7
+    ],
+    [
+     1.095,
+     -6.914
+    ],
+    [
+     2.163,
+     -6.657
+    ],
+    [
+     3.178,
+     -6.237
+    ],
+    [
+     4.114,
+     -5.663
+    ],
+    [
+     4.95,
+     -4.95
+    ],
+    [
+     5.663,
+     -4.114
+    ],
+    [
+     6.237,
+     -3.178
+    ],
+    [
+     6.657,
+     -2.163
+    ],
+    [
+     6.914,
+     -1.095
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     -91
+    ],
+    [
+     -3.5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     -91
+    ],
+    [
+     3.5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_5",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     0
+    ],
+    [
+     -3.5,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_6",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     0
+    ],
+    [
+     3.5,
+     91
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.75,
+     -91
+    ],
+    [
+     -1.75,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -1.75,
+     -13.1
+    ],
+    [
+     -1.75,
+     0
+    ],
+    [
+     -1.75,
+     90
+    ],
+    [
+     -1.75,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 2 · Вопрос 5",
+    "title": "Разрешен ли Вам выезд на полосу с реверсивным движением, если реверсивный светофор выключен?",
+    "options": [
+     "Разрешен",
+     "Разрешен, если скорость автобуса менее 30 км/ч",
+     "Запрещен"
+    ],
+    "explanation": "При выключенных сигналах реверсивного светофора, который расположен над полосой, обозначенной с обеих сторон разметкой 1.9, въезд на эту полосу запрещен.(Пункт 6.7 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 2 · Question 5",
+    "title": "Are you allowed to enter a lane with reversible traffic if the reversible traffic light is turned off?",
+    "options": [
+     "Allowed",
+     "Allowed if the bus speed is less than 30 km/h",
+     "Prohibited"
+    ],
+    "explanation": "When the signals of the reverse traffic light, which is located above the lane marked on both sides with markings 1.9, are turned off, entry into this lane is prohibited. (Clause 6.7 of the Traffic Regulations)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "2-билет · 5-сұрақ",
+    "title": "Егер реверсивті бағдаршам өшіп тұрса, сізге реверсивті қозғалысы бар жолаққа шығуға рұқсат етіледі ме?",
+    "options": [
+     "Рұқсат етілген",
+     "Автобус жылдамдығы 30 км/сағ төмен болса рұқсат етіледі",
+     "Тыйым салынған"
+    ],
+    "explanation": "Жолақтың екі жағынан 1.9 таңбалаумен белгіленген, үстінде реверсивті бағдаршам орналасқан жолаққа, реверсивті бағдаршамның сигналдары сөнген кезде кіруге тыйым салынады. (Жол қозғалысы ережесінің 6.7 тармағы)",
+    "pddRule": ""
+   }
+  },
+  "correct": 2,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "c95be038a242297d5f3b5cede325b31e",
+  "sourceCategory": "ab",
+  "sourceImage": "bbec994b533287b90e72eb935af6e333"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c"
+  }
+ },
+ "stop": {
+  "x": -1.75,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 14
+ },
+ "approachWidth": 14,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionPool": {
+  "sourceQuestionId": "c95be038a242297d5f3b5cede325b31e",
+  "category": "ab",
+  "ticket": 2,
+  "number": 5
+ }
+}

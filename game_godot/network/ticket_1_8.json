@@ -1,0 +1,942 @@
+{
+ "schema": 1,
+ "id": "ticket_1_8",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -91
+    ],
+    [
+     7,
+     -90
+    ],
+    [
+     7,
+     0
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -7,
+     -90
+    ],
+    [
+     -7,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     7,
+     90
+    ],
+    [
+     7,
+     91
+    ],
+    [
+     -7,
+     91
+    ],
+    [
+     -7,
+     90
+    ],
+    [
+     -7,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s3",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -7
+    ],
+    [
+     90,
+     -7
+    ],
+    [
+     91,
+     -7
+    ],
+    [
+     91,
+     7
+    ],
+    [
+     90,
+     7
+    ],
+    [
+     0,
+     7
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s4",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     7
+    ],
+    [
+     -90,
+     7
+    ],
+    [
+     -91,
+     7
+    ],
+    [
+     -91,
+     -7
+    ],
+    [
+     -90,
+     -7
+    ],
+    [
+     0,
+     -7
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     6.914,
+     1.095
+    ],
+    [
+     6.657,
+     2.163
+    ],
+    [
+     6.237,
+     3.178
+    ],
+    [
+     5.663,
+     4.114
+    ],
+    [
+     4.95,
+     4.95
+    ],
+    [
+     4.114,
+     5.663
+    ],
+    [
+     3.178,
+     6.237
+    ],
+    [
+     2.163,
+     6.657
+    ],
+    [
+     1.095,
+     6.914
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     -1.095,
+     6.914
+    ],
+    [
+     -2.163,
+     6.657
+    ],
+    [
+     -3.178,
+     6.237
+    ],
+    [
+     -4.114,
+     5.663
+    ],
+    [
+     -4.95,
+     4.95
+    ],
+    [
+     -5.663,
+     4.114
+    ],
+    [
+     -6.237,
+     3.178
+    ],
+    [
+     -6.657,
+     2.163
+    ],
+    [
+     -6.914,
+     1.095
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -6.914,
+     -1.095
+    ],
+    [
+     -6.657,
+     -2.163
+    ],
+    [
+     -6.237,
+     -3.178
+    ],
+    [
+     -5.663,
+     -4.114
+    ],
+    [
+     -4.95,
+     -4.95
+    ],
+    [
+     -4.114,
+     -5.663
+    ],
+    [
+     -3.178,
+     -6.237
+    ],
+    [
+     -2.163,
+     -6.657
+    ],
+    [
+     -1.095,
+     -6.914
+    ],
+    [
+     0,
+     -7
+    ],
+    [
+     1.095,
+     -6.914
+    ],
+    [
+     2.163,
+     -6.657
+    ],
+    [
+     3.178,
+     -6.237
+    ],
+    [
+     4.114,
+     -5.663
+    ],
+    [
+     4.95,
+     -4.95
+    ],
+    [
+     5.663,
+     -4.114
+    ],
+    [
+     6.237,
+     -3.178
+    ],
+    [
+     6.657,
+     -2.163
+    ],
+    [
+     6.914,
+     -1.095
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     -12.2
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     -91
+    ],
+    [
+     -3.5,
+     -12.2
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     -91
+    ],
+    [
+     3.5,
+     -12.2
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     12.2
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_5",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     12.2
+    ],
+    [
+     -3.5,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_6",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     12.2
+    ],
+    [
+     3.5,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_7",
+   "auto": true,
+   "colour": "white",
+   "street": "s3",
+   "type": "solid",
+   "points": [
+    [
+     12.2,
+     0
+    ],
+    [
+     91,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_8",
+   "auto": true,
+   "colour": "white",
+   "street": "s3",
+   "type": "dashed",
+   "points": [
+    [
+     12.2,
+     3.5
+    ],
+    [
+     91,
+     3.5
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_9",
+   "auto": true,
+   "colour": "white",
+   "street": "s3",
+   "type": "dashed",
+   "points": [
+    [
+     12.2,
+     -3.5
+    ],
+    [
+     91,
+     -3.5
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_10",
+   "auto": true,
+   "colour": "white",
+   "street": "s4",
+   "type": "solid",
+   "points": [
+    [
+     -12.2,
+     0
+    ],
+    [
+     -91,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_11",
+   "auto": true,
+   "colour": "white",
+   "street": "s4",
+   "type": "dashed",
+   "points": [
+    [
+     -12.2,
+     -3.5
+    ],
+    [
+     -91,
+     -3.5
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_12",
+   "auto": true,
+   "colour": "white",
+   "street": "s4",
+   "type": "dashed",
+   "points": [
+    [
+     -12.2,
+     3.5
+    ],
+    [
+     -91,
+     3.5
+    ]
+   ]
+  },
+  {
+   "id": "mark_1",
+   "type": "arrow",
+   "colour": "white",
+   "points": [
+    [
+     -4.709,
+     -17.81
+    ],
+    [
+     -4.709,
+     -13.31
+    ]
+   ],
+   "direction": "right",
+   "width": 2.6
+  },
+  {
+   "id": "mark_2",
+   "type": "arrow",
+   "colour": "white",
+   "points": [
+    [
+     -1.465,
+     -18.033
+    ],
+    [
+     -1.5,
+     -13
+    ]
+   ],
+   "direction": "straight_right",
+   "width": 2.6
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.75,
+     -91
+    ],
+    [
+     -1.75,
+     -27
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "straight",
+   "points": [
+    [
+     -1.75,
+     -27
+    ],
+    [
+     -1.75,
+     -7.5
+    ],
+    [
+     -1.75,
+     7.5
+    ],
+    [
+     -1.75,
+     8
+    ],
+    [
+     -1.75,
+     27.5
+    ]
+   ],
+   "exitYaw": 0
+  },
+  {
+   "id": "manoeuvre_left",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "left",
+   "points": [
+    [
+     -1.75,
+     -27
+    ],
+    [
+     -1.75,
+     -7.5
+    ],
+    [
+     -1.621,
+     -5.225
+    ],
+    [
+     -1.224,
+     -3.295
+    ],
+    [
+     -0.548,
+     -1.699
+    ],
+    [
+     0.422,
+     -0.422
+    ],
+    [
+     1.699,
+     0.548
+    ],
+    [
+     3.295,
+     1.224
+    ],
+    [
+     5.225,
+     1.621
+    ],
+    [
+     7.5,
+     1.75
+    ],
+    [
+     8,
+     1.75
+    ],
+    [
+     27.5,
+     1.75
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  {
+   "id": "manoeuvre_right",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "right",
+   "points": [
+    [
+     -1.75,
+     -27
+    ],
+    [
+     -1.75,
+     -7.5
+    ],
+    [
+     -1.87,
+     -6.517
+    ],
+    [
+     -2.214,
+     -5.846
+    ],
+    [
+     -2.755,
+     -5.431
+    ],
+    [
+     -3.467,
+     -5.217
+    ],
+    [
+     -4.324,
+     -5.148
+    ],
+    [
+     -5.299,
+     -5.167
+    ],
+    [
+     -6.367,
+     -5.22
+    ],
+    [
+     -7.5,
+     -5.25
+    ],
+    [
+     -8,
+     -5.25
+    ],
+    [
+     -27.5,
+     -5.25
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  {
+   "id": "manoeuvre_uturn",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "uturn",
+   "points": [
+    [
+     -1.75,
+     -27
+    ],
+    [
+     -1.75,
+     -7.5
+    ],
+    [
+     -2.6,
+     -1.7
+    ],
+    [
+     -2.402,
+     -0.705
+    ],
+    [
+     -1.838,
+     0.138
+    ],
+    [
+     -0.995,
+     0.702
+    ],
+    [
+     0,
+     0.9
+    ],
+    [
+     0.995,
+     0.702
+    ],
+    [
+     1.838,
+     0.138
+    ],
+    [
+     2.402,
+     -0.705
+    ],
+    [
+     2.6,
+     -1.7
+    ],
+    [
+     1.75,
+     -10.5
+    ],
+    [
+     1.75,
+     -30.5
+    ]
+   ],
+   "exitYaw": 3.142
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 1 · Вопрос 8",
+    "title": "Как Вам следует поступить при повороте направо?",
+    "options": [
+     "Перестроиться на правую полосу, затем осуществить поворот",
+     "Продолжить движение по второй полосе до перекрёстка, затем повернуть",
+     "Возможны оба варианта действий"
+    ],
+    "explanation": "Разметка разрешает поворот направо с обеих полос, поэтому возможны оба варианта действий. В таких случаях, выполняя поворот на перекрёстке, соблюдайте избранную Вами рядность.(«Горизонтальная разметка» 1.18, пункт 8.5 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 1 · Question 8",
+    "title": "What should you do when turning right?",
+    "options": [
+     "Change into the right lane, then make a turn",
+     "Continue in the second lane until the intersection, then turn",
+     "Both options are possible"
+    ],
+    "explanation": "The markings allow right turns from both lanes, so both options are possible. In such cases, when making a turn at an intersection, follow the lane you have chosen. (“Horizontal markings” 1.18, paragraph 8.5 of the traffic rules)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "1-билет · 8-сұрақ",
+    "title": "Оңға бұрылғанда не істеу керек?",
+    "options": [
+     "Оң жақ жолаққа ауысыңыз, содан кейін бұрылыс жасаңыз",
+     "Екінші жолақпен қиылысқа дейін жүріңіз, содан кейін бұрылыңыз",
+     "Екі нұсқа да мүмкін"
+    ],
+    "explanation": "Белгілер екі жолақтан оңға бұрылуға мүмкіндік береді, сондықтан екі опция да мүмкін. Мұндай жағдайларда қиылыста бұрылыс жасағанда, сіз таңдаған жолақпен жүріңіз. («Көлденең таңбалар» 1.18, Жол қозғалысы ережелерінің 8.5-тармағы)",
+    "pddRule": ""
+   }
+  },
+  "correct": 2,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "14452bb58352a0cd0f19b3f3c48f2459",
+  "sourceCategory": "ab",
+  "sourceImage": "b61a6e1c048076e6b8ba01ef6e3ae2d1"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   },
+   {
+    "id": "e",
+    "x": 90,
+    "z": 0
+   },
+   {
+    "id": "w",
+    "x": -90,
+    "z": 0
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s3",
+    "a": "c",
+    "b": "e",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s4",
+    "a": "c",
+    "b": "w",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "questionAt": 27,
+   "lane": 0
+  }
+ },
+ "stop": {
+  "x": -1.75,
+  "z": -27,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 14,
+  "left": 14,
+  "right": 14,
+  "uturn": 14
+ },
+ "approachWidth": 14,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [
+  {
+   "id": "sign_1",
+   "code": "5.7.1",
+   "pos": [
+    -7.272,
+    -11.404
+   ],
+   "yaw": 3.142
+  }
+ ],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionView": {
+  "centre": [
+   -3.649,
+   5.266
+  ],
+  "height": 34.736,
+  "yaw": 0,
+  "pitch": 0.41,
+  "elevation": 0
+ }
+}

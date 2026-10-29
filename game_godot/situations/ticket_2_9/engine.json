@@ -1,0 +1,91 @@
+{
+ "id": "ticket_2_9",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 2 · Вопрос 9",
+   "title": "Можно ли Вам выполнить разворот в этом месте?",
+   "options": [
+    "Можно",
+    "Можно только при отсутствии приближающегося поезда",
+    "Нельзя"
+   ],
+   "explanation": "Разворот запрещён на железнодорожном переезде, границами которого являются шлагбаумы, а при их отсутствии - знаки 1.3.1 «Однопутная железная дорога» или 1.3.2 «Многопутная железная дорога». В нашем случае железнодорожный переезд без шлагбаума. Вы можете совершить разворот по указанной траектории, так как совершаете его на безопасном удалении от железнодорожных путей.(Пункт 8.11 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 2 · Question 9",
+   "title": "Can you make a U-turn in this place?",
+   "options": [
+    "Can",
+    "Only possible if there is no approaching train",
+    "It is forbidden"
+   ],
+   "explanation": "A U-turn is prohibited at a railway crossing, the boundaries of which are barriers, and in their absence - signs 1.3.1 “Single-track railway” or 1.3.2 “Multi-track railway”. In our case, a railway crossing without a barrier. You can make a U-turn along the specified trajectory, since you are making it at a safe distance from the railway tracks. (Clause 8.11 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "2-билет · 9-сұрақ",
+   "title": "Сіз бұл жерде кері бұрыла аласыз ба?",
+   "options": [
+    "Иә",
+    "Жақындап келе жатқан пойыз болмаған жағдайда ғана, рұқсат етіледі.",
+    "Ол тыйым салынған"
+   ],
+   "explanation": "Шекарасы шлагбаумдар болып табылатын темір жол өткелінде, ал олар болмаған жағдайда – 1.3.1 «Біржолғы теміржол» немесе 1.3.2 «Көп жолды теміржол» белгілерінде кері бұрылуға тыйым салынады. Біздің жағдайда шлагбаумсыз темір жол өткелі. Белгіленген траектория бойынша кері бұрылыс жасай аласыз, өйткені сіз оны теміржол рельстерінен қауіпсіз қашықтықта жасайсыз. (Жол қозғалысы ережесінің 8.11 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 106,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "42ef4bc4fc6eee75d4c886c69ae06262",
+ "sourceCategory": "ab",
+ "sourceImage": "693a2649d53e8a112f2358389b9b20f7"
+}

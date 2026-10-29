@@ -1,0 +1,532 @@
+{
+ "schema": 1,
+ "id": "ticket_2_2",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "lawns": [
+  {
+   "id": "auto_lawn_s1_r",
+   "auto": true,
+   "outer": [
+    [
+     -4.2,
+     -91
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -7.6,
+     0
+    ],
+    [
+     -7.6,
+     -90
+    ],
+    [
+     -7.6,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s1_l",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     7.6,
+     0
+    ],
+    [
+     7.6,
+     -90
+    ],
+    [
+     7.6,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s2_r",
+   "auto": true,
+   "outer": [
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -7.6,
+     91
+    ],
+    [
+     -7.6,
+     90
+    ],
+    [
+     -7.6,
+     0
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s2_l",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     7.6,
+     91
+    ],
+    [
+     7.6,
+     90
+    ],
+    [
+     7.6,
+     0
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -1.8,
+     -13.1
+    ],
+    [
+     -1.8,
+     0
+    ],
+    [
+     -1.8,
+     90
+    ],
+    [
+     -1.8,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 2 · Вопрос 2",
+    "title": "Можно ли Вам въехать на мост первым?",
+    "options": [
+     "Можно",
+     "Можно, если Вы не затрудните движение встречному автомобилю",
+     "Нельзя"
+    ],
+    "explanation": "Знак 2.7 «Преимущество перед встречным движением» предоставляет Вам право первым проехать через узкий участок дороги, т. е. через мост.(«Дорожные знаки», пункт 1.2 термин «Уступить дорогу»)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 2 · Question 2",
+    "title": "Can you be the first to enter the bridge?",
+    "options": [
+     "Can",
+     "It is possible, if you do not impede the movement of an oncoming car",
+     "It is forbidden"
+    ],
+    "explanation": "Sign 2.7 “Take advantage of oncoming traffic” gives you the right to be the first to pass through a narrow section of the road, that is, across a bridge. (“Road signs”, paragraph 1.2 term “Give way”)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "2-билет · 2-сұрақ",
+    "title": "Сіз көпірге бірінші кіре аласыз ба?",
+    "options": [
+     "Иә",
+     "Иә, егер сіз қарсы келе жатқан көліктің қозғалысына кедергі жасамасаңыз",
+     "Ол тыйым салынған"
+    ],
+    "explanation": "2.7 «Қарсы келе жатқан трафиктен артықшылығы» белгісі жолдың тар учаскесі арқылы, яғни көпір арқылы бірінші болып өту құқығын береді. («Жол белгілері», 1.2-тармақ «Жол беріңіз»)",
+    "pddRule": ""
+   }
+  },
+  "correct": 0,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "eb1f842c85c2aa28e5702e4a48bdacdc",
+  "sourceCategory": "ab",
+  "sourceImage": "f8b4d6d9f328835e3543d6ac0b5b992d"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "none",
+    "walk": false
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "none",
+    "walk": false
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c"
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionPool": {
+  "sourceQuestionId": "eb1f842c85c2aa28e5702e4a48bdacdc",
+  "category": "ab",
+  "ticket": 2,
+  "number": 2
+ }
+}

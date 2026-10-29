@@ -1,0 +1,91 @@
+{
+ "id": "ticket_2_8",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 2 · Вопрос 8",
+   "title": "Двигаясь по левой полосе, водитель намерен перестроиться на правую. На каком из рисунков показана ситуация, в которой он обязан уступить дорогу?",
+   "options": [
+    "На левом",
+    "На правом",
+    "На обоих"
+   ],
+   "explanation": "На левом рисунке преимущество у автомобиля, двигающегося попутно по полосе без изменения направления движения, т.е. у «хозяина полосы». Водитель, двигающийся по левой полосе уступает.На правом рисунке одновременное перестроение. Водители руководствуются «правилом правой руки», т.е. у кого помеха справа, тот и уступает. Помеха справа у водителя, двигающего также по левой полосе. Он уступает дорогу и в этой ситуации.(Пункт 8.4 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 2 · Question 8",
+   "title": "Moving in the left lane, the driver intends to change lanes to the right. Which of the pictures shows a situation in which he is obliged to give way?",
+   "options": [
+    "On the left",
+    "On the right",
+    "On both"
+   ],
+   "explanation": "In the left figure, the advantage is given to a car moving in the same lane without changing direction, i.e. from the “owner of the strip.” The driver moving in the left lane gives way. In the right picture there is a simultaneous lane change. Drivers are guided by the “right hand rule”, i.e. whoever has an obstacle on the right concedes. There is interference on the right side of the driver, who is also driving in the left lane. He gives way in this situation as well. (Clause 8.4 of traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "2-билет · 8-сұрақ",
+   "title": "Сол жақ жолақпен қозғала отырып, жүргізуші жолақты оңға ауыстырмақшы. Суреттердің қайсысында оның жол беруге міндетті жағдайы көрсетілген?",
+   "options": [
+    "Сол жақта",
+    "Оң жақта",
+    "Екеуінде де"
+   ],
+   "explanation": "Сол жақтағы суретте артықшылық бағытты өзгертпестен, яғни «жолақ иесінен» бір жолақта қозғалатын автокөлікке беріледі. Сол жақ жолақпен келе жатқан жүргізуші жол береді. Оң жақтағы суретте бір уақытта жолақты ауыстыру бар. Жүргізушілер «оң қол ережесін» басшылыққа алады, яғни оң жақта кедергі болған жүргізуші жол береді. Жүргізушінің оң жағында кедергі бар, ол да сол жолақпен келе жатыр. Ол бұл жағдайда да жол береді. (Жол қозғалысы ережелерінің 8.4 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 169,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "01e543cf4b0d829df5645fc2c4562be7",
+ "sourceCategory": "ab",
+ "sourceImage": "328947fa3921f7c37a9d825b2e8b030b"
+}

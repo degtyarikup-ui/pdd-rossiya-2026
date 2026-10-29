@@ -1,0 +1,94 @@
+{
+ "id": "ticket_2_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -25.25,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 5,
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 2 · Вопрос 7",
+   "title": "Поднятая вверх рука водителя легкового автомобиля является сигналом, информирующим Вас о его намерении:",
+   "options": [
+    "Повернуть направо",
+    "Продолжить движение прямо",
+    "Снизить скорость, чтобы остановиться и уступить дорогу мотоциклу"
+   ],
+   "explanation": "У водителя не работает световая сигнализация, поэтому он вынужден подавать соответствующие сигналы рукой. Согласно знаку 2.4 «Уступите дорогу» мотоциклист имеет преимущество. Поднятая вверх рука информирует о намерении притормозить для того, чтобы уступить дорогу мотоциклисту.(«Дорожные знаки», пункт 8.1 ПДД).",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 2 · Question 7",
+   "title": "The hand of the driver of a passenger car raised up is a signal informing you of his intention:",
+   "options": [
+    "Turn in Right Out",
+    "Continue straight ahead",
+    "Slow down to stop and give way to the motorcycle"
+   ],
+   "explanation": "The driver's warning light does not work, so he is forced to give appropriate hand signals. According to sign 2.4 “Give way,” the motorcyclist has the right of way. A raised hand indicates the intention to slow down in order to give way to a motorcyclist (“Road signs”, paragraph 8.1 of the traffic rules).",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "2-билет · 7-сұрақ",
+   "title": "Жеңіл автомобиль жүргізушісінің қолын көтергені оның ниеті туралы хабар береді:",
+   "options": [
+    "Оңға бұрылыңыз",
+    "Тура алға қарай жүріңіз",
+    "Тоқтау үшін баяулап, мотоциклге жол беріңіз"
+   ],
+   "explanation": "Жүргізушінің бағыт көрсеткіш шамдары жұмыс істемейді, сондықтан ол тиісті сигналдарды қолмен беруге мәжбүр. 2.4 «Жол беріңіз» белгісіне сәйкес мотоциклшінің басымдығы бар. Жоғары көтерілген қол мотоциклшіге жол беру үшін жылдамдықты төмендету ниетін білдіреді («Жол белгілері», Жол қозғалысы ережелерінің 8.1-тармағы).",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 209,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "3293326b6507e3a5a7f55c56f210881a",
+ "sourceCategory": "ab",
+ "sourceImage": "73c4c907dba18267314d10a8b09aea23"
+}

@@ -1,0 +1,722 @@
+{
+ "schema": 1,
+ "id": "ticket_1_12",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s4",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     4.2
+    ],
+    [
+     -90,
+     4.2
+    ],
+    [
+     -91,
+     4.2
+    ],
+    [
+     -91,
+     -4.2
+    ],
+    [
+     -90,
+     -4.2
+    ],
+    [
+     0,
+     -4.2
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     -9.4
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     12.1
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "zebra",
+   "length": 4,
+   "points": [
+    [
+     -4.2,
+     8.9
+    ],
+    [
+     4.2,
+     8.9
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s4",
+   "type": "dashed",
+   "points": [
+    [
+     -9.4,
+     0
+    ],
+    [
+     -91,
+     0
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": false,
+   "manual": true,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -2,
+     -77.5
+    ],
+    [
+     -2,
+     -3.5
+    ],
+    [
+     -2.5,
+     6
+    ],
+    [
+     -3.148,
+     13.39
+    ]
+   ],
+   "playerFree": true
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "straight",
+   "points": [
+    [
+     -3.148,
+     13.39
+    ],
+    [
+     -1.8,
+     33.39
+    ]
+   ],
+   "exitYaw": 0,
+   "playerFree": true
+  },
+  {
+   "id": "manoeuvre_right",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "right",
+   "points": [
+    [
+     -3.148,
+     13.39
+    ],
+    [
+     -3.027,
+     4.889
+    ],
+    [
+     -3.013,
+     3.945
+    ],
+    [
+     -3,
+     3
+    ],
+    [
+     -3.943,
+     2.791
+    ],
+    [
+     -7.717,
+     1.957
+    ],
+    [
+     -24.7,
+     -1.8
+    ]
+   ],
+   "exitYaw": -1.571,
+   "playerFree": true
+  },
+  {
+   "id": "manoeuvre_uturn",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "uturn",
+   "points": [
+    [
+     -3.148,
+     13.39
+    ],
+    [
+     1.8,
+     -27.7
+    ]
+   ],
+   "exitYaw": 3.142,
+   "playerFree": true
+  },
+  {
+   "id": "annotation_1",
+   "kind": "annotation",
+   "style": "both",
+   "colour": "#20242b",
+   "width": 0.1,
+   "points": [
+    [
+     -0.071,
+     12.385
+    ],
+    [
+     -2.166,
+     12.409
+    ]
+   ]
+  },
+  {
+   "id": "annotation_2",
+   "kind": "annotation",
+   "style": "line",
+   "colour": "#20242b",
+   "width": 0.16,
+   "points": [
+    [
+     -3.5,
+     11
+    ],
+    [
+     -7.5,
+     11
+    ]
+   ],
+   "manual": true
+  },
+  {
+   "id": "annotation_3",
+   "kind": "annotation",
+   "style": "line",
+   "colour": "#20242b",
+   "width": 0.16,
+   "points": [
+    [
+     -12.5,
+     4
+    ],
+    [
+     -3.5,
+     4
+    ]
+   ],
+   "manual": true
+  },
+  {
+   "id": "annotation_4",
+   "kind": "annotation",
+   "style": "both",
+   "colour": "#20242b",
+   "width": 0.16,
+   "points": [
+    [
+     -5.5,
+     11
+    ],
+    [
+     -5.5,
+     4
+    ]
+   ],
+   "manual": true
+  },
+  {
+   "id": "player_guide",
+   "kind": "guide",
+   "manual": true,
+   "points": [
+    [
+     -3.148,
+     13.39
+    ],
+    [
+     -3.148,
+     17.39
+    ],
+    [
+     -3.148,
+     21.39
+    ]
+   ]
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 1 · Вопрос 12",
+    "title": "В каком случае водителю разрешается поставить автомобиль на стоянку в указанном месте?",
+    "options": [
+     "Только если расстояние до сплошной линии разметки не менее 3 м",
+     "Только если расстояние до края пересекаемой проезжей части не менее 5 м",
+     "При соблюдении обоих перечисленных условий"
+    ],
+    "explanation": "Водитель не нарушает правила остановки и стоянки. Расстояние до края проезжей части, до сплошной линии разметки соблюдается – не менее допустимых. Остановка и стоянка за пешеходным переходом также допустима.Правильный ответ – при соблюдении обоих перечисленных условий.(Пункт 12.4 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 1 · Question 12",
+    "title": "In what case is the driver allowed to park the car in the specified place?",
+    "options": [
+     "Only if the distance to the solid marking line is at least 3 m",
+     "Only if the distance to the edge of the roadway being crossed is at least 5 m",
+     "If both of the above conditions are met"
+    ],
+    "explanation": "The driver does not violate the rules of stopping and parking. The distance to the edge of the roadway and to the continuous marking line is maintained - no less than acceptable. Stopping and parking behind a pedestrian crossing is also acceptable. The correct answer is if both of the above conditions are met. (Clause 12.4 of the Traffic Regulations)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "1-билет · 12-сұрақ",
+    "title": "Қандай жағдайда жүргізушіге көлікті көрсетілген орынға қоюға рұқсат етіледі?",
+    "options": [
+     "Тұтас таңбалау сызығына дейінгі қашықтық кемінде 3 м болса ғана",
+     "Тек өтетін жолдың шетіне дейінгі қашықтық кемінде 5 м болса ғана",
+     "Жоғарыда аталған екі шарт орындалса"
+    ],
+    "explanation": "Жүргізуші тоқтау және тұраққа қою ережелерін бұзбайды. Жолдың шетіне дейін және үздіксіз таңбалау сызығына дейінгі қашықтық сақталады - рұқсат етілгеннен кем емес. Жаяу жүргіншілер өткелінің артында тоқтау және тұрақ қою да қолайлы. Дұрыс жауап - егер жоғарыда аталған екі шарт орындалса. (Жол қозғалысы ережесінің 12.4 тармағы)",
+    "pddRule": ""
+   }
+  },
+  "correct": 2,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "sourceQuestionId": "297e2e1b88020c6dc2849cd6b990d08a",
+  "sourceCategory": "ab",
+  "sourceImage": "544ea7fd090765e47fa3b71f060b5f22",
+  "showPlayerGuide": false
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   },
+   {
+    "id": "w",
+    "x": -90,
+    "z": 0
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "dashed"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "street",
+    "ends": {
+     "a": {
+      "zebra": true,
+      "approachOffset": -2.8
+     }
+    },
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s4",
+    "a": "c",
+    "b": "w",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "dashed"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "questionAt": 13.1,
+   "lane": 0,
+   "pose": {
+    "x": -3.148,
+    "z": 13.39,
+    "yaw": 0
+   },
+   "mode": "free"
+  },
+  "freeApproachPath": [
+   [
+    -1.8,
+    -91
+   ],
+   [
+    -2,
+    -77.5
+   ],
+   [
+    -2,
+    -3.5
+   ],
+   [
+    -2.5,
+    6
+   ],
+   [
+    -3.246,
+    13.385
+   ]
+  ]
+ },
+ "stop": {
+  "x": -3.148,
+  "z": 13.39,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 8.4,
+  "right": 8.4,
+  "uturn": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionView": {
+  "centre": [
+   -3.57,
+   14.245
+  ],
+  "height": 17.657,
+  "yaw": 0,
+  "pitch": 0.683,
+  "elevation": 0
+ },
+ "spec": {
+  "maneuver": "straight"
+ }
+}

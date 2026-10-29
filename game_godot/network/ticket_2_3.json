@@ -1,0 +1,485 @@
+{
+ "schema": 1,
+ "id": "ticket_2_3",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -16
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -1.8,
+     -16
+    ],
+    [
+     -1.8,
+     0
+    ],
+    [
+     -1.8,
+     90
+    ],
+    [
+     -1.8,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ ],
+ "actors": [
+  {
+   "id": "pedestrian_1",
+   "type": "pedestrian",
+   "name": "Пешеход",
+   "asset": "ticket_12_13/actor_0.glb",
+   "route": null,
+   "pos": [
+    -4.562,
+    1.682
+   ],
+   "yaw": 2.88,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "maxSpeed": 3.6,
+   "clearDistance": 12.5,
+   "halfLength": 0.229,
+   "halfWidth": 0.411,
+   "behaviour": {
+    "staysPut": true,
+    "waitsForPlayer": true
+   }
+  }
+ ],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 2 · Вопрос 3",
+    "title": "Разрешено ли Вам произвести остановку для посадки пассажира?",
+    "options": [
+     "Разрешено",
+     "Разрешено только по чётным числам месяца",
+     "Разрешено только по нечётным числам месяца",
+     "Запрещено"
+    ],
+    "explanation": "Знак 3.29 «Стоянка запрещена по нечётным числам месяца» ограничивает только стоянку. Остановка в его зоне действия не запрещается в любой период времени.(«Дорожные знаки»)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 2 · Question 3",
+    "title": "Are you allowed to stop to pick up a passenger?",
+    "options": [
+     "Allowed",
+     "Allowed only on even days of the month",
+     "Allowed only on odd days of the month",
+     "Forbidden"
+    ],
+    "explanation": "Sign 3.29 “Parking is prohibited on odd days of the month” only restricts parking. Stopping in its coverage area is not prohibited at any time. (“Road signs”)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "2-билет · 3-сұрақ",
+    "title": "Жолаушыны алып кету үшін тоқтауға рұқсат ете ме?",
+    "options": [
+     "Рұқсат етілген",
+     "Айдың жұп күндерінде ғана рұқсат етіледі",
+     "Айдың тақ күндерінде ғана рұқсат етіледі",
+     "Тыйым салынған"
+    ],
+    "explanation": "3.29 «Айдың тақ күндерінде тұраққа тыйым салынады» белгісі тек тұраққа қоюды шектейді. Оның қамту аймағында тоқтауға кез келген уақытта тыйым салынбайды. («Жол белгілері»)",
+    "pddRule": ""
+   }
+  },
+  "correct": 0,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "6b5d41d3bbea12638755f6eb0534389d",
+  "sourceCategory": "ab",
+  "sourceImage": "77fa304dc7de7bbe2eb0b0a0a1f5e0ed"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "dashed"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "dashed"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "questionAt": 16,
+   "lane": 0
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -16,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [
+  {
+   "id": "sign_1",
+   "code": "3.29",
+   "pos": [
+    -4.694,
+    -7.293
+   ],
+   "yaw": 3.142
+  }
+ ],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionView": {
+  "centre": [
+   -3.85,
+   -2.22
+  ],
+  "height": 21.882,
+  "yaw": -0.264,
+  "pitch": 0.487,
+  "elevation": 0
+ }
+}

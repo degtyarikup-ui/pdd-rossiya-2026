@@ -1,0 +1,646 @@
+{
+ "schema": 1,
+ "id": "ticket_2_9",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": false,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  }
+ ],
+ "lawns": [
+  {
+   "id": "auto_lawn_s1_r",
+   "auto": true,
+   "outer": [
+    [
+     -4.2,
+     -91
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -7.6,
+     0
+    ],
+    [
+     -7.6,
+     -90
+    ],
+    [
+     -7.6,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s1_l",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     7.6,
+     0
+    ],
+    [
+     7.6,
+     -90
+    ],
+    [
+     7.6,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s2_r",
+   "auto": true,
+   "outer": [
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -7.6,
+     91
+    ],
+    [
+     -7.6,
+     90
+    ],
+    [
+     -7.6,
+     0
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s2_l",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     7.6,
+     91
+    ],
+    [
+     7.6,
+     90
+    ],
+    [
+     7.6,
+     0
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -21.5
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -1.8,
+     -21.5
+    ],
+    [
+     -1.8,
+     0
+    ],
+    [
+     -1.8,
+     90
+    ],
+    [
+     -1.8,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  },
+  {
+   "id": "player_guide",
+   "kind": "guide",
+   "manual": true,
+   "points": [
+    [
+     -1.8,
+     -21.5
+    ],
+    [
+     -2,
+     -12.5
+    ],
+    [
+     2,
+     -12.5
+    ],
+    [
+     2.5,
+     -20.5
+    ]
+   ]
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 2 · Вопрос 9",
+    "title": "Можно ли Вам выполнить разворот в этом месте?",
+    "options": [
+     "Можно",
+     "Можно только при отсутствии приближающегося поезда",
+     "Нельзя"
+    ],
+    "explanation": "Разворот запрещён на железнодорожном переезде, границами которого являются шлагбаумы, а при их отсутствии - знаки 1.3.1 «Однопутная железная дорога» или 1.3.2 «Многопутная железная дорога». В нашем случае железнодорожный переезд без шлагбаума. Вы можете совершить разворот по указанной траектории, так как совершаете его на безопасном удалении от железнодорожных путей.(Пункт 8.11 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 2 · Question 9",
+    "title": "Can you make a U-turn in this place?",
+    "options": [
+     "Can",
+     "Only possible if there is no approaching train",
+     "It is forbidden"
+    ],
+    "explanation": "A U-turn is prohibited at a railway crossing, the boundaries of which are barriers, and in their absence - signs 1.3.1 “Single-track railway” or 1.3.2 “Multi-track railway”. In our case, a railway crossing without a barrier. You can make a U-turn along the specified trajectory, since you are making it at a safe distance from the railway tracks. (Clause 8.11 of the Traffic Regulations)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "2-билет · 9-сұрақ",
+    "title": "Сіз бұл жерде кері бұрыла аласыз ба?",
+    "options": [
+     "Иә",
+     "Жақындап келе жатқан пойыз болмаған жағдайда ғана, рұқсат етіледі.",
+     "Ол тыйым салынған"
+    ],
+    "explanation": "Шекарасы шлагбаумдар болып табылатын темір жол өткелінде, ал олар болмаған жағдайда – 1.3.1 «Біржолғы теміржол» немесе 1.3.2 «Көп жолды теміржол» белгілерінде кері бұрылуға тыйым салынады. Біздің жағдайда шлагбаумсыз темір жол өткелі. Белгіленген траектория бойынша кері бұрылыс жасай аласыз, өйткені сіз оны теміржол рельстерінен қауіпсіз қашықтықта жасайсыз. (Жол қозғалысы ережесінің 8.11 тармағы)",
+    "pddRule": ""
+   }
+  },
+  "correct": 0,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "sourceQuestionId": "42ef4bc4fc6eee75d4c886c69ae06262",
+  "sourceCategory": "ab",
+  "sourceImage": "693a2649d53e8a112f2358389b9b20f7"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "dashed",
+    "surface": "asphalt",
+    "walk": false
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "dashed",
+    "surface": "asphalt",
+    "walk": false
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "questionAt": 21.5,
+   "lane": 0
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -21.5,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [
+  {
+   "id": "sign_1",
+   "code": "1.2",
+   "pos": [
+    -4.412,
+    -15.055
+   ],
+   "yaw": 3.142,
+   "plateSign": "1.4.3"
+  },
+  {
+   "id": "sign_2",
+   "code": "2.5",
+   "pos": [
+    -4.555,
+    -2.311
+   ],
+   "yaw": 3.142
+  },
+  {
+   "id": "sign_3",
+   "code": "1.3.1",
+   "pos": [
+    -4.603,
+    8.1
+   ],
+   "yaw": 3.142
+  }
+ ],
+ "officers": [],
+ "tracks": [
+  {
+   "id": "track_1",
+   "points": [
+    [
+     -90,
+     17
+    ],
+    [
+     64.5,
+     9.5
+    ],
+    [
+     87.5,
+     9.5
+    ]
+   ],
+   "render": true
+  }
+ ],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionView": {
+  "centre": [
+   -2.784,
+   4.135
+  ],
+  "height": 27.469,
+  "yaw": -0.261,
+  "pitch": 0.422,
+  "elevation": 0
+ }
+}

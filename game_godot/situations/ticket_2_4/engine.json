@@ -1,0 +1,91 @@
+{
+ "id": "ticket_2_4",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -14.178,
+ "playerStartX": -0.542,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 5,
+ "exitWidths": {
+  "straight": 5
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 2 · Вопрос 4",
+   "title": "Что запрещено в зоне действия этого знака?",
+   "options": [
+    "Движение любых транспортных средств",
+    "Движение всех транспортных средств со скоростью не более 20 км/ч",
+    "Движение механических транспортных средств"
+   ],
+   "explanation": "Знак 5.33 «Пешеходная зона» обозначает место, с которого начинается территория (участок дороги), на которой разрешено движение только пешеходов и приравненных к ним лиц (это передвигающиеся в инвалидных колясках без двигателя, ведущие велосипед, мопед, мотоцикл, везущие санки, тележку, детскую и инвалидную коляску), а также велосипедистов и лицам, использующим для передвижения СИМ в случаях, установленных в пунктах 24.2, 24.3, 24.4 и 24.6 ПДД. Въезд в обозначенную зону и соответственно движение в ней любых механических транспортных средств запрещено.(\"Дорожные знаки\", термин \"Пешеход\" п. 1.2 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 2 · Question 4",
+   "title": "What is prohibited in the area covered by this sign?",
+   "options": [
+    "Movement of any vehicles",
+    "Movement of all vehicles at a speed of no more than 20 km/h",
+    "Movement of motor vehicles"
+   ],
+   "explanation": "Sign 5.33 “Pedestrian zone” designates the place from which the territory (section of the road) begins, on which the movement of only pedestrians and persons equivalent to them is allowed (these are those moving in wheelchairs without a motor, driving a bicycle, moped, motorcycle, carrying a sled, cart, child stroller and wheelchair), as well as cyclists and persons using SIM for movement in the cases established in paragraphs 24.2, 24.3, 24.4 and 24.6 traffic rules. Entry into the designated area and, accordingly, the movement of any mechanical vehicles in it is prohibited. (“Road signs”, the term “Pedestrian” clause 1.2 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "2-билет · 4-сұрақ",
+   "title": "Бұл белгімен қамтылған аймақта не істеуге тыйым салынады?",
+   "options": [
+    "Кез келген көліктің қозғалысы",
+    "Барлық көлік құралдарының 20 км/сағ аспайтын жылдамдықпен қозғалысы",
+    "Автокөлік құралдарының қозғалысы"
+   ],
+   "explanation": "5.33 «Жаяу жүргіншілер аймағы» белгісі жаяу жүргіншілердің және соларға теңестірілген адамдардың (моторсыз мүгедек арбасымен жүретіндер, велосипедті, мопедті, мотоциклді жетектеп бара жатқандар, шана, арба, балалар арбасы мен мүгедек арбасын сүйреп немесе итеріп бара жатқандар) қозғалысына ғана рұқсат етілетін аумақтың басталатын жерін көрсетеді. Жол қозғалысы ережелерінің 24.2, 24.3, 24.4 және 24.6-тармақтарында көзделген жағдайларда велосипедшілер мен жеке мобильді құралдарды (ЖМҚ) пайдаланатын адамдар да осы аумақта қозғала алады. Көрсетілген аумаққа кіруге және онда кез келген механикалық көлік құралдарының қозғалысына тыйым салынады. («Жол белгілері», Жол қозғалысы ережелерінің 1.2-тармағы, «Жаяу жүргінші» термині)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 183,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "be0341c28e1e911b2f8c178842bf021e",
+ "sourceCategory": "ab",
+ "sourceImage": "0f751e9c5e75d0a7097691d052ed3a95"
+}

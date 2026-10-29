@@ -1,0 +1,94 @@
+{
+ "id": "ticket_1_11",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -36.304,
+ "playerStartX": -5.26,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14,
+  "left": 8.4,
+  "right": 8.4,
+  "uturn": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "left",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 11",
+   "title": "Можно ли водителю легкового автомобиля выполнить опережение грузовых автомобилей вне населенного пункта по такой траектории?",
+   "options": [
+    "Можно",
+    "Можно, если скорость грузовых автомобилей менее 30 км/ч",
+    "Нельзя"
+   ],
+   "explanation": "На дорогах с двусторонним движением, имеющих четыре и более полос для движения обгон запрещён. В таких ситуациях можно совершать только опережение.Соблюдая правила маневрирования водитель легкового автомобиля на данном участке дороги может совершать опережение любых транспортных средств по различным траекториям включая и указанную.(Пункт 9.2 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 11",
+   "title": "Is it possible for a passenger car driver to outrun trucks outside a populated area along such a trajectory?",
+   "options": [
+    "Can",
+    "It is possible if the speed of trucks is less than 30 km/h",
+    "It is forbidden"
+   ],
+   "explanation": "On dual carriageway roads with four or more lanes, overtaking is prohibited. In such situations, you can only advance. By observing the rules of maneuvering, the driver of a passenger car on this section of the road can advance any vehicles along various trajectories, including the one indicated. (Clause 9.2 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 11-сұрақ",
+   "title": "Мұндай траектория бойынша жеңіл автомобиль жүргізушісі елді мекеннен тыс жүк көліктерін басып озуы мүмкін бе?",
+   "options": [
+    "Иә",
+    "Жүк көліктерінің жылдамдығы 30 км/сағ төмен болса, рұқсат етіледі.",
+    "Ол тыйым салынған"
+   ],
+   "explanation": "Төрт және одан да көп жолағы бар қосарланған жүретін жолдарда басып озуға тыйым салынады. Мұндай жағдайларда тек алдына шығуға болады. Маневрлеу ережелерін сақтай отырып, жолдың осы бөлігінде жеңіл автомобиль жүргізушісі кез келген көлік құралдарын әртүрлі траекториялар бойынша, соның ішінде көрсетілген траектория бойынша да алдына шығуы мүмкін. (Жол қозғалысы ережесінің 9.2 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 190,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": true,
+ "sourceQuestionId": "b66d8c08aba6ec232a4c6669efbbe61a",
+ "sourceCategory": "ab",
+ "sourceImage": "573bb9e760618405e89c02b09f248404"
+}

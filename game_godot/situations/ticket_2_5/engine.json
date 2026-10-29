@@ -1,0 +1,91 @@
+{
+ "id": "ticket_2_5",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 2 · Вопрос 5",
+   "title": "Разрешен ли Вам выезд на полосу с реверсивным движением, если реверсивный светофор выключен?",
+   "options": [
+    "Разрешен",
+    "Разрешен, если скорость автобуса менее 30 км/ч",
+    "Запрещен"
+   ],
+   "explanation": "При выключенных сигналах реверсивного светофора, который расположен над полосой, обозначенной с обеих сторон разметкой 1.9, въезд на эту полосу запрещен.(Пункт 6.7 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 2 · Question 5",
+   "title": "Are you allowed to enter a lane with reversible traffic if the reversible traffic light is turned off?",
+   "options": [
+    "Allowed",
+    "Allowed if the bus speed is less than 30 km/h",
+    "Prohibited"
+   ],
+   "explanation": "When the signals of the reverse traffic light, which is located above the lane marked on both sides with markings 1.9, are turned off, entry into this lane is prohibited. (Clause 6.7 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "2-билет · 5-сұрақ",
+   "title": "Егер реверсивті бағдаршам өшіп тұрса, сізге реверсивті қозғалысы бар жолаққа шығуға рұқсат етіледі ме?",
+   "options": [
+    "Рұқсат етілген",
+    "Автобус жылдамдығы 30 км/сағ төмен болса рұқсат етіледі",
+    "Тыйым салынған"
+   ],
+   "explanation": "Жолақтың екі жағынан 1.9 таңбалаумен белгіленген, үстінде реверсивті бағдаршам орналасқан жолаққа, реверсивті бағдаршамның сигналдары сөнген кезде кіруге тыйым салынады. (Жол қозғалысы ережесінің 6.7 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 154,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "c95be038a242297d5f3b5cede325b31e",
+ "sourceCategory": "ab",
+ "sourceImage": "bbec994b533287b90e72eb935af6e333"
+}
