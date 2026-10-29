@@ -133,6 +133,11 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
     fun send(json: String) {
         val event = try { org.json.JSONObject(json) } catch (_: org.json.JSONException) { return }
         when (event.optString("event")) {
+            "usage_start" -> host.runOnUiThread {
+                @Suppress("DEPRECATION")
+                val receiver = host.intent.getParcelableExtra<android.os.ResultReceiver>("pdd_report_receiver")
+                receiver?.send(0, android.os.Bundle().apply { putString("game_event", json) })
+            }
             "loading" -> {
                 val visible = event.optBoolean("visible", true)
                 val phase = event.optString("phase", "loading")

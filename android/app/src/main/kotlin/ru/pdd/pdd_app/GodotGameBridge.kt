@@ -42,6 +42,12 @@ class GodotGameBridge(private val activity: Activity, messenger: BinaryMessenger
                         .putExtra("pdd_game_args", args)
                         .putExtra("pdd_report_receiver", GodotReportReceiver.remote(object : ResultReceiver(Handler(Looper.getMainLooper())) {
                             override fun onReceiveResult(resultCode: Int, data: Bundle?) {
+                                if (pending !== result) return
+                                val event = data?.getString("game_event")
+                                if (event != null) {
+                                    channel.invokeMethod("gameEvent", event)
+                                    return
+                                }
                                 @Suppress("DEPRECATION")
                                 val reply = data?.getParcelable<ResultReceiver>("reply") ?: return
                                 val json = data.getString("json") ?: return

@@ -65,6 +65,7 @@ static FlutterResult gPending = nil;
 static BOOL gGameClosing = NO;
 static NSUInteger gRunGeneration = 0;
 static NSData *gLastLoadingState = nil;
+static NSData *gLastUsageState = nil;
 
 /// Dart acknowledges after its overlay frame is present. Returning to Flutter must
 /// not reveal a menu frame between the native game's window and the animated cover.
@@ -335,9 +336,11 @@ static void HideGame(dispatch_block_t completion) {
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"summary.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:kPerformanceMemoryFileName] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:kLoadingFileName] error:nil];
+  [files removeItemAtPath:[folder stringByAppendingPathComponent:@"usage.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"report-request.json"] error:nil];
   [files removeItemAtPath:[folder stringByAppendingPathComponent:@"report-result.json"] error:nil];
   gLastLoadingState = nil;
+  gLastUsageState = nil;
   NSMutableArray *gameArgs = [NSMutableArray arrayWithArray:args ? args : @[]];
   for (NSString *category in @[@"ab", @"cd"]) {
     NSString *pictures = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:
@@ -362,6 +365,7 @@ static void HideGame(dispatch_block_t completion) {
 /// event carries the final summary and closes the game.
 - (void)pollSummary {
   [self pollLoading];
+  [self pollUsage];
   [self pollQuestionReport];
   NSString *path = [ExchangeFolder() stringByAppendingPathComponent:@"summary.json"];
   NSData *data = [NSData dataWithContentsOfFile:path];
@@ -389,6 +393,20 @@ static void HideGame(dispatch_block_t completion) {
   FlutterResult result = gPending;
   gPending = nil;
   HideGame(^{ if (result) result(json); });
+}
+
+/// A cumulative atomic snapshot preserves every round between native polls.
+- (void)pollUsage {
+  NSData *data = [NSData dataWithContentsOfFile:[ExchangeFolder() stringByAppendingPathComponent:@"usage.json"]];
+  if (!data || [data isEqualToData:gLastUsageState]) return;
+  id snapshot = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+  if (![snapshot isKindOfClass:NSDictionary.class] || ![snapshot[@"usage_events"] isKindOfClass:NSArray.class]) return;
+  gLastUsageState = data;
+  for (id event in snapshot[@"usage_events"]) {
+    if (![event isKindOfClass:NSDictionary.class]) continue;
+    NSData *body = [NSJSONSerialization dataWithJSONObject:event options:0 error:nil];
+    if (body) [gChannel invokeMethod:@"gameEvent" arguments:[[NSString alloc] initWithData:body encoding:NSUTF8StringEncoding]];
+  }
 }
 
 /// The Flutter service owns the session and device metadata, also while its window is hidden.

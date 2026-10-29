@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/config/backend_config.dart';
@@ -39,7 +40,13 @@ class UsageReporter {
   }) : _client = client ?? http.Client(),
        _now = now ?? DateTime.now;
 
-  static final instance = UsageReporter();
+  static final _defaultInstance = UsageReporter();
+  static UsageReporter? _testInstance;
+  static UsageReporter get instance => _testInstance ?? _defaultInstance;
+
+  @visibleForTesting
+  static void setInstanceForTest(UsageReporter? reporter) =>
+      _testInstance = reporter;
   static const queueKey = 'usage_events_v1';
   final String endpoint;
   final String secret;
@@ -48,6 +55,7 @@ class UsageReporter {
   DateTime? _nextAttemptAt;
   int _failures = 0;
   Future<void> _tail = Future.value();
+  final Set<String> _gameEventIds = {};
 
   void _defer([http.Response? response]) {
     final delay = min(300, 30 * (1 << min(_failures, 4)));
@@ -64,9 +72,53 @@ class UsageReporter {
   Future<void> record(UsageFeature feature) => _serialize(feature);
   Future<void> flush() => _serialize(null);
 
-  Future<void> _serialize(UsageFeature? feature) {
+  /// Native starts and exit snapshots reuse the same ID and original time.
+  /// The server also deduplicates after a successful batch has left the outbox.
+  Future<void> recordGameEvent(Map event) async {
+    if (event['event'] != 'usage_start') return;
+    final feature = switch (event['feature']) {
+      'game' => UsageFeature.game,
+      'traffic_controller' => UsageFeature.trafficController,
+      'crossroads' => UsageFeature.crossroads,
+      'parking' => UsageFeature.parking,
+      _ => null,
+    };
+    final id = event['id'];
+    final ts = event['ts'];
+    if (feature == null ||
+        id is! String ||
+        !RegExp(r'^[a-zA-Z0-9:_-]{1,160}$').hasMatch(id) ||
+        ts is! int ||
+        ts < _now().subtract(const Duration(days: 89)).millisecondsSinceEpoch ||
+        ts > _now().add(const Duration(minutes: 5)).millisecondsSinceEpoch) {
+      return;
+    }
+    await _serialize(
+      feature,
+      eventId: sha256
+          .convert(utf8.encode('game-usage:$id'))
+          .toString()
+          .substring(0, 32),
+      timestamp: ts,
+    );
+  }
+
+  Future<void> recordGameSummary(Map summary) async {
+    final events = summary['usage_events'];
+    if (events is! List) return;
+    for (final event in events.whereType<Map>()) {
+      await recordGameEvent(event);
+    }
+  }
+
+  Future<void> _serialize(
+    UsageFeature? feature, {
+    String? eventId,
+    int? timestamp,
+  }) {
     _tail = _tail.then((_) async {
       if (!endpoint.startsWith('https://') || secret.isEmpty) return;
+      if (eventId != null && _gameEventIds.contains(eventId)) return;
       try {
         final prefs = await SharedPreferences.getInstance();
         final now = _now().millisecondsSinceEpoch;
@@ -81,18 +133,29 @@ class UsageReporter {
             .toList();
         if (feature != null) {
           final random = Random.secure();
-          events.add({
-            'id': List.generate(
-              16,
-              (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
-            ).join(),
-            'ts': now,
-            'feature': feature.key,
-          });
+          final id =
+              eventId ??
+              List.generate(
+                16,
+                (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+              ).join();
+          if (!events.any((e) => e['id'] == id)) {
+            events.add({
+              'id': id,
+              'ts': timestamp ?? now,
+              'feature': feature.key,
+            });
+          }
         }
         // Bound offline storage to the 500 most recent starts.
         if (events.length > 500) events.removeRange(0, events.length - 500);
         await prefs.setString(queueKey, jsonEncode(events));
+        if (eventId != null) {
+          _gameEventIds.add(eventId);
+          if (_gameEventIds.length > 1000) {
+            _gameEventIds.remove(_gameEventIds.first);
+          }
+        }
         if (events.isEmpty) return;
         if (_nextAttemptAt != null && _now().isBefore(_nextAttemptAt!)) return;
         final installId = await InstallReporter.installationId();

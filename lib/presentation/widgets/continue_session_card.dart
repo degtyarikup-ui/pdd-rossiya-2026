@@ -4,6 +4,7 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/exam/exam_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
@@ -121,6 +122,11 @@ class ContinueSessionCardState extends ConsumerState<ContinueSessionCard>
                               questions: questions,
                               title: title,
                               startIndex: index,
+                              usageFeature: switch (session['usageFeature']) {
+                                'tickets' => UsageFeature.tickets,
+                                'topics' => UsageFeature.topics,
+                                _ => null,
+                              },
                             ),
                     ),
                   );

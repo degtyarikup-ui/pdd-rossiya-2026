@@ -96,6 +96,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 <div class="an-card an-usage" id="an-usage">
  <div class="an-head"><div class="an-usage-heading"><div class="an-title">Использование режимов</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуски режимов за выбранный период, включая гостей. Активные установки — устройства, на которых запускали режим; «На установку» — среднее число запусков. Доля показана от всех запусков.</div></details></div><div class="an-usage-total" id="an-usage-total"></div></div>
  <div id="an-usage-table"></div>
+ <div class="an-caption" id="an-usage-coverage"></div>
  <div class="an-usage-empty" id="an-usage-empty" hidden></div>
  <details class="an-usage-details" id="an-usage-details">
   <summary><span>Динамика по дням</span><span class="an-caption" id="an-usage-caption"></span></summary>
@@ -386,6 +387,8 @@ function anRenderUsage(data) {
  document.getElementById('an-usage-total').innerHTML=starts?'Запуски <b>'+anNum(starts)+'</b>':'';
  var beforeCollection=usage&&timeline.length&&timeline.every(function(d){return d.date<usage.from;});
  var coverage=usage?'Сбор с '+anDayLabel(usage.from)+' · МСК':'';
+ var collection=usage&&usage.collectionFrom||{};
+ document.getElementById('an-usage-coverage').textContent=usage?'Данные только из сборок с поддержкой аналитики. Марафон и Знаки — сбор с '+anDayLabel(collection.marathon||'2026-10-27')+', требуется обновление приложения. Пропущенные ранее запуски восстановить нельзя.':'';
  empty.innerHTML=beforeCollection?'За этот период данных нет<p>'+coverage+'.</p>':'Пока нет данных<p>Статистика появится после обновления приложений.'+(coverage?' '+coverage+'.':'')+'</p>';
  table.innerHTML=starts?anTable(['Режим','Запуски','<abbr title="Установки, в которых запускали режим за выбранный период">Активные установки</abbr>','<abbr title="Среднее число запусков на активную установку">На установку</abbr>'],keys.map(function(k){
   var f=features[k]||{starts:0,installations:0};
@@ -394,7 +397,7 @@ function anRenderUsage(data) {
  })):'';
  document.getElementById('an-usage-feature').innerHTML=keys.map(function(k){return '<option value="'+k+'">'+AN_USAGE_NAMES[k]+'</option>';}).join('');
  document.getElementById('an-usage-feature').value=anUsageFeature;
- document.getElementById('an-usage-caption').textContent=coverage;
+ document.getElementById('an-usage-caption').textContent=usage?'Сбор с '+anDayLabel(collection[anUsageFeature]||usage.from)+' · МСК':'';
  if(starts&&details.open)anRenderUsageDetails(data);
 }
 function anRenderUsageDetails(data) {

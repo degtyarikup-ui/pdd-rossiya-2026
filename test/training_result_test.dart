@@ -1,15 +1,20 @@
 import 'helpers/achievement_awards.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
 import 'package:pdd_app/data/models/ticket_category.dart';
 import 'package:pdd_app/data/services/tts_service.dart';
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/presentation/screens/training/training_result_screen.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
+import 'package:pdd_app/presentation/widgets/continue_session_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _SilentTts implements TtsService {
@@ -72,6 +77,7 @@ void main() {
     required int questions,
     ProgressDataSource? source,
     ReviewPromptService? review,
+    String? resumedFeature,
   }) async {
     SharedPreferences.setMockInitialValues({});
     final data = source ?? ProgressDataSource();
@@ -94,10 +100,22 @@ void main() {
         ],
         child: MaterialApp(
           key: UniqueKey(),
-          home: TrainingScreen(
-            questions: buildQuestions(questions),
-            title: 'Билет 1',
-          ),
+          home: resumedFeature != null
+              ? Scaffold(
+                  body: ContinueSessionCard(
+                    session: {
+                      'kind': 'training',
+                      'title': 'Билет 1',
+                      'questions': buildQuestions(questions),
+                      'index': 0,
+                      'usageFeature': resumedFeature,
+                    },
+                  ),
+                )
+              : TrainingScreen(
+                  questions: buildQuestions(questions),
+                  title: 'Билет 1',
+                ),
         ),
       ),
     );
@@ -112,6 +130,38 @@ void main() {
       warnIfMissed: false,
     );
     await tester.pumpAndSettle();
+  }
+
+  for (final feature in ['tickets', 'topics', 'unknown']) {
+    testWidgets('resume preserves $feature analytics without guessing a mode', (
+      tester,
+    ) async {
+      final sent = <Map>[];
+      final reporter = UsageReporter(
+        endpoint: 'https://test',
+        secret: 'test',
+        client: MockClient((r) async {
+          sent.add(jsonDecode(r.body) as Map);
+          return http.Response('{}', 200);
+        }),
+      );
+      UsageReporter.setInstanceForTest(reporter);
+      addTearDown(() => UsageReporter.setInstanceForTest(null));
+      await pumpTraining(tester, questions: 2, resumedFeature: feature);
+      await tester.tap(find.text('Продолжить'));
+      await tester.pumpAndSettle();
+      await tester.runAsync(reporter.flush);
+      expect(find.byType(TrainingScreen), findsOneWidget);
+      expect(
+        sent
+            .expand((batch) => batch['events'] as List)
+            .map((event) => event['feature'])
+            .toList(),
+        feature == 'unknown' ? isEmpty : [feature],
+      );
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+    });
   }
 
   Future<void> nextOrFinish(WidgetTester tester) async {

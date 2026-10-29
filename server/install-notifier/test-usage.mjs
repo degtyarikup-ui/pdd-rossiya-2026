@@ -141,6 +141,18 @@ for (const feature of ['marathon', 'road_signs', 'parking']) {
   });
 }
 
+test('new modes distinguish unavailable history from zero recorded starts', () => {
+  const report = usageSnapshot(['2026-10-26', '2026-10-27'].map(date => ({date, data: {}})));
+  assert.equal(report.collectionFrom.marathon, '2026-10-27');
+  assert.equal(report.collectionFrom.road_signs, '2026-10-27');
+  assert.equal(report.collectionFrom.tickets, '2026-10-08');
+  for (const feature of ['marathon', 'road_signs']) {
+    assert.deepEqual(report.timeline[0].features[feature], {starts: null, installations: null});
+    assert.deepEqual(report.timeline[1].features[feature], {starts: 0, installations: 0});
+  }
+  assert.equal(report.timeline[0].features.tickets.starts, 0);
+});
+
 test('lightweight analytics session check requires authorization and reads no stats', async () => {
   const { env } = setup();
   env.INSTALLS.get = async () => { throw new Error('session check must not scan statistics'); };

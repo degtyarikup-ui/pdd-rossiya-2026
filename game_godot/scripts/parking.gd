@@ -245,6 +245,7 @@ func _start_run() -> void:
 	run_levels = _draw_levels()
 	run_pos = 0
 	_load_level(run_levels[0])
+	Host.usage_start("parking")
 
 
 ## run_size different levels at random, played from the easiest: the ids grow with difficulty,

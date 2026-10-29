@@ -3533,6 +3533,7 @@ func _start_ride() -> void:
 		drive.distance_traveled = float(run.distance_m)
 		resumed = true
 	_report_run_start()
+	if not resumed and not _is_test_run(): Host.usage_start("game")
 	tip_step = 0 if tips_enabled else -1
 	tip_drawn = -1
 

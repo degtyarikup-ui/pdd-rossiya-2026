@@ -270,7 +270,9 @@ class GodotGame {
         final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         if (solved + wrong == 0) continue;
-        UsageReporter.track(UsageFeature.trafficController);
+        if (map['usage_tracking'] != 1) {
+          UsageReporter.track(UsageFeature.trafficController);
+        }
         final score = GameEconomy.rankedScore(
           (run['score'] as num?)?.toInt() ?? 0,
           correct: solved,
@@ -405,7 +407,7 @@ class GodotGame {
         final solved = ((run['solved'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         final wrong = ((run['wrong'] as num?)?.toInt() ?? 0).clamp(0, 10000);
         if (solved + wrong == 0) continue;
-        UsageReporter.track(feature);
+        if (map['usage_tracking'] != 1) UsageReporter.track(feature);
         final score = GameEconomy.rankedScore(
           (run['score'] as num?)?.toInt() ?? 0,
           correct: solved,
@@ -618,6 +620,7 @@ class GodotGame {
       }
       args = [
         ...args,
+        '--usage-session=${GameLeaderboardService.newRunId()}',
         '--achievement-awards=${jsonEncode(awardData)}',
         '--loading-label=${appL10n.gameLoading}',
         '--returning-label=${appL10n.gameReturning}',
@@ -626,6 +629,15 @@ class GodotGame {
       ];
       if (!kIsWeb) {
         _channel.setMethodCallHandler((call) async {
+          if (call.method == 'gameEvent' && call.arguments is String) {
+            try {
+              final event = jsonDecode(call.arguments as String);
+              if (event is Map) {
+                await UsageReporter.instance.recordGameEvent(event);
+              }
+            } catch (_) {}
+            return null;
+          }
           if (call.method == 'reportQuestion' && call.arguments is String) {
             try {
               final report = jsonDecode(call.arguments as String);
@@ -668,6 +680,7 @@ class GodotGame {
         try {
           final summary = jsonDecode(result);
           if (summary is Map && summary.isNotEmpty) {
+            await UsageReporter.instance.recordGameSummary(summary);
             await awards.recordNativeActivity(summary, started);
           }
           final shown = summary is Map ? summary['achievement_awards'] : null;
@@ -892,7 +905,9 @@ class GodotGame {
       if (!resumed) {
         // The run is charged now: it began. Free players pay one run; premium is unlimited.
         if (!premium) await GameRunsService.instance.consume();
-        UsageReporter.track(UsageFeature.game);
+        if (summary['usage_tracking'] != 1) {
+          UsageReporter.track(UsageFeature.game);
+        }
       }
       if (car is Map && car['id'] is String) {
         await _markDriven(car['id'] as String);

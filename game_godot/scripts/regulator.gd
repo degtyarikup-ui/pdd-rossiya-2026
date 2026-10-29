@@ -298,6 +298,7 @@ func _start_game() -> void:
 	car.reset_to_start()
 
 	_pick_next_situation()
+	Host.usage_start("traffic_controller")
 
 
 func _pick_next_situation() -> void:

@@ -27,6 +27,40 @@ static var _award_session := ""
 static var activity_days: Array = []
 static var streak_celebrated_day := ""
 static var celebration_sound := true
+static var _usage_session := ""
+static var _usage_sequence := 0
+static var _usage_events: Array[Dictionary] = []
+
+static func _configure_usage() -> bool:
+	var session := ""
+	for arg in user_args():
+		if str(arg).begins_with("--usage-session="):
+			session = str(arg).trim_prefix("--usage-session=")
+	if session != _usage_session:
+		_usage_session = session
+		_usage_sequence = 0
+		_usage_events.clear()
+	return not session.is_empty()
+
+## Each actual round starts here, before any answer or exit. The iOS snapshot
+## is cumulative and atomic so several fast restarts between polls survive.
+static func usage_start(feature: String) -> void:
+	if feature not in ["game", "traffic_controller", "crossroads", "parking"]: return
+	if not _configure_usage(): return
+	_usage_sequence += 1
+	var data := {"event": "usage_start", "feature": feature,
+		"id": "%s:%d" % [_usage_session, _usage_sequence],
+		"ts": int(Time.get_unix_time_from_system() * 1000.0)}
+	_usage_events.append(data)
+	if _usage_events.size() > 500: _usage_events.pop_front()
+	if io != "":
+		var path := io.path_join("usage.json")
+		var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
+		if file != null:
+			file.store_string(JSON.stringify({"usage_events": _usage_events}))
+			file.close()
+			DirAccess.rename_absolute(path + ".tmp", path)
+	send(data)
 
 static func record_activity_day() -> void:
 	if activity_days.is_empty(): return
@@ -35,6 +69,9 @@ static func record_activity_day() -> void:
 
 static func _celebration_summary(summary: Dictionary) -> Dictionary:
 	var copy := summary.duplicate(true)
+	if _configure_usage():
+		copy["usage_tracking"] = 1
+		copy["usage_events"] = _usage_events.duplicate(true)
 	copy["achievement_awards"] = award_receipts.duplicate()
 	if not activity_days.is_empty():
 		copy["activity_days"] = activity_days.duplicate()

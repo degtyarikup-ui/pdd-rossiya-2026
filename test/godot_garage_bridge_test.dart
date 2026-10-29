@@ -1,6 +1,8 @@
 import 'helpers/achievement_awards.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +18,7 @@ import 'package:pdd_app/data/services/progress_sync_service.dart';
 import 'package:pdd_app/data/services/review_prompt_service.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
+import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/screens/game/godot_game.dart';
@@ -56,6 +59,7 @@ void main() {
   });
 
   tearDown(() {
+    UsageReporter.setInstanceForTest(null);
     ProgressSyncService.instance.cancel();
     HapticFeedbackHelper.setEnabled(true);
     SoundEffectsService.instance.setEnabled(true);
@@ -130,6 +134,60 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
     expect(tester.takeException(), isNull);
   }
+
+  testWidgets(
+    'native round is counted before exit and summary cannot count it twice',
+    (tester) async {
+      final sent = <Map>[];
+      final reporter = UsageReporter(
+        endpoint: 'https://test',
+        secret: 'test',
+        client: MockClient((r) async {
+          sent.add(jsonDecode(r.body) as Map);
+          return http.Response('{}', 200);
+        }),
+      );
+      UsageReporter.setInstanceForTest(reporter);
+      nativePending = Completer<String?>();
+      await open(tester);
+      await launch(tester, 'Crossroads');
+      expect(nativePending!.isCompleted, isFalse);
+      expect(
+        launches.single.any((arg) => arg.startsWith('--usage-session=')),
+        isTrue,
+      );
+      final event = {
+        'event': 'usage_start',
+        'feature': 'crossroads',
+        'id': 'native-session:1',
+        'ts': DateTime.now().millisecondsSinceEpoch,
+      };
+      await tester.runAsync(() async {
+        await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .handlePlatformMessage(
+              channel.name,
+              const StandardMethodCodec().encodeMethodCall(
+                MethodCall('gameEvent', jsonEncode(event)),
+              ),
+              (_) {},
+            );
+        await reporter.flush();
+      });
+      expect(sent.single['events'][0]['feature'], 'crossroads');
+      nativePending!.complete(
+        jsonEncode({
+          'usage_tracking': 1,
+          'usage_events': [event],
+          'runs': [
+            {'id': 'native-session:1', 'score': 0, 'solved': 0, 'wrong': 0},
+          ],
+        }),
+      );
+      await tester.pumpAndSettle();
+      await tester.runAsync(reporter.flush);
+      expect(sent, hasLength(1));
+    },
+  );
 
   Map<String, dynamic> options() => Map<String, dynamic>.from(
     jsonDecode(

@@ -129,6 +129,112 @@ void main() {
   });
 
   test(
+    'game starts survive zero answers, snapshots and a lost response',
+    () async {
+      var online = false;
+      var now = DateTime.now();
+      final sent = <Map>[];
+      final reporter = UsageReporter(
+        endpoint: 'https://test',
+        secret: 'test',
+        now: () => now,
+        client: MockClient((r) async {
+          sent.add(jsonDecode(r.body) as Map);
+          return http.Response('{}', online ? 200 : 503);
+        }),
+      );
+      final start = {
+        'event': 'usage_start',
+        'feature': 'parking',
+        'id': 'session-1:1',
+        'ts': now.millisecondsSinceEpoch,
+      };
+      await reporter.recordGameEvent(start);
+      await reporter.recordGameSummary({
+        'usage_events': [start, start],
+      });
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        jsonDecode(prefs.getString(UsageReporter.queueKey)!),
+        hasLength(1),
+      );
+      online = true;
+      now = now.add(const Duration(seconds: 31));
+      await reporter.flush();
+      expect(sent.last['events'], sent.first['events']);
+      final count = sent.length;
+      await reporter.recordGameSummary({
+        'usage_events': [start],
+      });
+      expect(
+        sent,
+        hasLength(count),
+        reason: 'exit does not book the round twice',
+      );
+
+      final restarted = UsageReporter(
+        endpoint: 'https://test',
+        secret: 'test',
+        now: () => now,
+        client: MockClient((r) async {
+          sent.add(jsonDecode(r.body) as Map);
+          return http.Response('{}', 200);
+        }),
+      );
+      await restarted.recordGameEvent(start);
+      expect(
+        sent.last['events'],
+        sent.first['events'],
+        reason: 'server dedup ID survives process restart',
+      );
+      await restarted.recordGameEvent({...start, 'id': 'session-1:2'});
+      expect(
+        sent.last['events'][0]['id'],
+        isNot(sent.first['events'][0]['id']),
+      );
+    },
+  );
+
+  test('malformed native events cannot block the usage outbox', () async {
+    final sent = <Map>[];
+    final now = DateTime.now();
+    final reporter = UsageReporter(
+      endpoint: 'https://test',
+      secret: 'test',
+      now: () => now,
+      client: MockClient((r) async {
+        sent.add(jsonDecode(r.body) as Map);
+        return http.Response('{}', 200);
+      }),
+    );
+    final start = {
+      'event': 'usage_start',
+      'feature': 'game',
+      'id': 'session:1',
+      'ts': now.millisecondsSinceEpoch,
+    };
+    for (final event in [
+      {...start, 'event': 'run_finished'},
+      {...start, 'feature': 'unknown'},
+      {...start, 'id': '../invalid'},
+      {...start, 'ts': 'now'},
+      {
+        ...start,
+        'ts': now.subtract(const Duration(days: 90)).millisecondsSinceEpoch,
+      },
+      {
+        ...start,
+        'ts': now.add(const Duration(minutes: 6)).millisecondsSinceEpoch,
+      },
+    ]) {
+      await reporter.recordGameEvent(event);
+    }
+    expect(sent, isEmpty);
+    await reporter.recordGameEvent(start);
+    expect(sent.single['events'][0]['feature'], 'game');
+  });
+
+  test(
     'unfinished training keeps its explicit mode for a resumed start',
     () async {
       final ds = ProgressDataSource();

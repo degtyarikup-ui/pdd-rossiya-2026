@@ -478,6 +478,7 @@ func _start_practice() -> void:
 	_load_practice_progress()
 	_rebuild_practice_deck()
 	_load_current_scenario()
+	Host.usage_start("crossroads")
 
 
 func _rebuild_practice_deck() -> void:
@@ -613,6 +614,7 @@ func _start_game() -> void:
 	ui.hide_collision_modal()
 	_rebuild_scenario_order()
 	_load_current_scenario()
+	Host.usage_start("crossroads")
 
 
 func _load_current_scenario() -> void:

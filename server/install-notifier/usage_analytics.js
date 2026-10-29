@@ -1,5 +1,6 @@
 // Usage is stored alongside existing day counters: no extra KV writes per event.
 export const USAGE_FROM = '2026-10-08';
+export const USAGE_COLLECTION_FROM = { marathon: '2026-10-27', road_signs: '2026-10-27' };
 export const USAGE_FEATURES = ['tickets', 'topics', 'exam', 'marathon', 'feed', 'game', 'sign_swiper', 'traffic_controller', 'roundabout', 'crossroads', 'road_signs', 'parking'];
 const DAY = 86400000;
 
@@ -40,9 +41,9 @@ export function applyUsage(day, item) {
 export function usageSnapshot(days, app = 'all') {
   const totals = Object.fromEntries(USAGE_FEATURES.map(key => [key, { starts: 0, ids: new Set() }]));
   const timeline = days.map(({ date, data }) => {
-    const available = date >= USAGE_FROM;
     const features = {};
     for (const key of USAGE_FEATURES) {
+      const available = date >= (USAGE_COLLECTION_FROM[key] || USAGE_FROM);
       const feature = ['all', 'ru'].includes(app) ? data?.usage?.[key] : null;
       const ids = Object.keys(feature?.installations || {});
       totals[key].starts += feature?.starts || 0;
@@ -51,7 +52,7 @@ export function usageSnapshot(days, app = 'all') {
     }
     return { date, features };
   });
-  return { from: USAGE_FROM, timeline, features: Object.fromEntries(USAGE_FEATURES.map(key => [key, {
+  return { from: USAGE_FROM, collectionFrom: Object.fromEntries(USAGE_FEATURES.map(key => [key, USAGE_COLLECTION_FROM[key] || USAGE_FROM])), timeline, features: Object.fromEntries(USAGE_FEATURES.map(key => [key, {
     starts: totals[key].starts, installations: totals[key].ids.size,
   }])) };
 }
