@@ -158,6 +158,32 @@ static func buzz(ms: int) -> void:
 		Input.vibrate_handheld(ms)
 
 
+## Haptic patterns: steps of [milliseconds, strength 0..1, pause after in ms]. A light tap
+## says "yes", two firm knocks say "no", so the answer is felt without looking.
+const HAPTIC_TICK := [[7, 0.25]]
+const HAPTIC_SUCCESS := [[14, 0.45]]
+const HAPTIC_STREAK := [[12, 0.45, 70], [20, 0.75]]
+const HAPTIC_ERROR := [[40, 0.9, 70], [55, 1.0]]
+const HAPTIC_COUNTDOWN := [[8, 0.3]]
+const HAPTIC_FINISH := [[80, 0.7, 90], [140, 1.0]]
+
+
+static func pulse(pattern: Array, delay := 0.0) -> void:
+	if not haptics: return
+	var tree := Engine.get_main_loop() as SceneTree
+	var at := maxf(0.0, delay)
+	for step: Array in pattern:
+		var ms := int(step[0])
+		var strength := float(step[1])
+		if at <= 0.0:
+			Input.vibrate_handheld(ms, strength)
+		elif tree != null:
+			# Real time: a pattern keeps its rhythm under a slowed or paused game.
+			tree.create_timer(at, true, false, true).timeout.connect(func():
+				if haptics: Input.vibrate_handheld(ms, strength))
+		at += (ms + (float(step[2]) if step.size() > 2 else 0.0)) / 1000.0
+
+
 func _process(delta: float) -> void:
 	if not enabled or suspended:
 		for answer in _answers.values():

@@ -71,6 +71,11 @@ var _result_input_delay := 0.0
 
 var hint_open := false
 var awaiting := false
+var _shown_score := 0
+var _shown_combo := 0
+var _shown_seconds := -1
+var _hint_motion: Tween
+var _feedback_motion: Array[Tween] = []
 
 
 func _init() -> void:
@@ -340,6 +345,7 @@ func _move_button(move: RegulatorRules.Move, icon_code: int, label_key: String, 
 	box.add_child(content)
 	box.add_child(_tap(func():
 		if not awaiting and not _results.visible:
+			_press(box)
 			move_selected.emit(move)))
 
 	move_buttons[move] = { "panel": box, "style": style, "icon": icon, "label": label }
@@ -368,6 +374,17 @@ func update_hud(score: int, combo: int, seconds_left: int, lives: int) -> void:
 	_score_label.text = str(score)
 	_combo_chip.visible = combo > 1
 	_combo_value = combo
+	# Points rise from the score, a growing combo bounces, the last seconds beat in red.
+	if score > _shown_score and is_inside_tree():
+		_float_points(score - _shown_score)
+		_bounce(_score_label, 1.22)
+	if combo > _shown_combo and combo > 1 and is_inside_tree():
+		_bounce.call_deferred(_combo_chip, 1.3)
+	if seconds_left != _shown_seconds and seconds_left <= 10 and seconds_left > 0 and _shown_seconds > seconds_left and is_inside_tree():
+		_bounce(_timer_group, 1.16)
+	_shown_score = score
+	_shown_combo = combo
+	_shown_seconds = seconds_left
 	if lives < _lives_value:
 		MiniGameHud.show_life_loss(self, _top_bar, _lives_value - lives)
 	_lives_value = lives
@@ -392,13 +409,115 @@ func show_answer_feedback(chosen_move: RegulatorRules.Move, allowed_moves: Array
 			_paint_move(entry, Ui.c("red"), Ui.c("white"), Ui.c("white"))
 		else:
 			_paint_move(entry, Ui.c("gray"), Ui.c("secondary"), Ui.c("secondary"))
+	_animate_feedback(chosen_move, allowed_moves, is_correct)
 
 
 func reset_buttons_visuals() -> void:
 	awaiting = false
 	_refresh_hint_bulb()
+	# A feedback still in motion must not paint over the new round.
+	for tween in _feedback_motion:
+		if tween.is_valid(): tween.kill()
+	_feedback_motion.clear()
 	for move in move_buttons:
 		_paint_move(move_buttons[move], Ui.c("gray"), Ui.c("text"), Ui.c("accent"))
+		var box: Control = move_buttons[move].panel
+		box.scale = Vector2.ONE
+		if box.get_parent() is Container: (box.get_parent() as Container).queue_sort()
+	_deal_buttons()
+
+
+# --- Motion: the buttons, points and the hint ---
+
+## A finger on a button: it sinks a little and springs back.
+func _press(box: Control) -> void:
+	if not is_inside_tree(): return
+	box.pivot_offset = box.size * 0.5
+	var tween := create_tween()
+	tween.tween_property(box, "scale", Vector2.ONE * 0.94, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(box, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## The answer lands: right buttons fill green with a bounce (the chosen one most), a wrong
+## choice turns red and shakes its head, the rest step back.
+func _animate_feedback(chosen: RegulatorRules.Move, allowed: Array[RegulatorRules.Move], correct: bool) -> void:
+	if not is_inside_tree(): return
+	for move in move_buttons:
+		var entry: Dictionary = move_buttons[move]
+		var box: Control = entry.panel
+		var style: StyleBoxFlat = entry.style
+		var target := style.bg_color
+		var motion := create_tween().set_parallel()
+		_feedback_motion.append(motion)
+		if allowed.has(move) or move == chosen:
+			# The colour pours in instead of switching.
+			style.bg_color = Ui.c("gray")
+			motion.tween_property(style, "bg_color", target, 0.16)
+			box.pivot_offset = box.size * 0.5
+			if move == chosen and correct:
+				motion.tween_property(box, "scale", Vector2.ONE * 1.07, 0.12).set_delay(0.04).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+				motion.chain().tween_property(box, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			elif move == chosen:
+				_shake(box)
+			else:
+				# Another allowed way (a correct answer shows every one), or the right one after a mistake.
+				motion.tween_property(box, "scale", Vector2.ONE * 1.04, 0.14).set_delay(0.1 if correct else 0.22)
+				motion.chain().tween_property(box, "scale", Vector2.ONE, 0.26).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		else:
+			motion.tween_property(box, "modulate:a", 0.55, 0.2)
+
+
+## A short decaying side-to-side shake, then the container's own place again.
+func _shake(box: Control) -> void:
+	var home := box.position.x
+	var tween := create_tween()
+	_feedback_motion.append(tween)
+	for offset in [10.0, -8.0, 6.0, -4.0, 2.0, 0.0]:
+		tween.tween_property(box, "position:x", home + offset, 0.045).set_trans(Tween.TRANS_SINE)
+	tween.tween_callback(func():
+		if box.get_parent() is Container: (box.get_parent() as Container).queue_sort())
+
+
+## A new signal: the buttons come back one after another, from slightly smaller and faint.
+func _deal_buttons() -> void:
+	var order := 0
+	for move in [RegulatorRules.Move.LEFT, RegulatorRules.Move.STRAIGHT, RegulatorRules.Move.RIGHT, RegulatorRules.Move.UTURN, RegulatorRules.Move.NONE]:
+		if not move_buttons.has(move): continue
+		var box: Control = move_buttons[move].panel
+		if not is_inside_tree():
+			box.modulate.a = 1.0
+			box.scale = Vector2.ONE
+			continue
+		box.pivot_offset = box.size * 0.5
+		box.modulate.a = 0.0
+		box.scale = Vector2.ONE * 0.92
+		var tween := create_tween().set_parallel()
+		tween.tween_property(box, "modulate:a", 1.0, 0.18).set_delay(order * 0.035)
+		tween.tween_property(box, "scale", Vector2.ONE, 0.3).set_delay(order * 0.035).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		order += 1
+
+
+## The points of an answer rise from the score and fade.
+func _float_points(points: int) -> void:
+	var label := _label("+%d" % points, 15, 800, Ui.c("green"))
+	label.mouse_filter = MOUSE_FILTER_IGNORE
+	add_child(label)
+	var at := (_score_label.get_global_rect().position - global_position) / scale
+	label.position = at + Vector2(_score_label.size.x + 8.0, 12.0)
+	label.modulate.a = 0.0
+	var tween := create_tween().set_parallel()
+	tween.tween_property(label, "position:y", at.y - 2.0, 0.8).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "modulate:a", 1.0, 0.14)
+	tween.tween_property(label, "modulate:a", 0.0, 0.3).set_delay(0.5)
+	tween.chain().tween_callback(label.queue_free)
+
+
+func _bounce(control: Control, peak: float) -> void:
+	if not is_instance_valid(control) or not control.is_visible_in_tree(): return
+	control.pivot_offset = control.size * 0.5
+	var tween := create_tween()
+	tween.tween_property(control, "scale", Vector2.ONE * peak, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(control, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func show_game_over(score: int, solved: int, wrong: int, max_combo: int, is_record: bool, time_up := false, best := 0) -> void:
@@ -431,14 +550,24 @@ func hide_game_over() -> void:
 func _on_hint_pressed() -> void:
 	if awaiting:
 		return
+	GameSound.pulse(GameSound.HAPTIC_TICK)
 	_set_hint_open(not hint_open)
 	hint_toggled.emit()
 
 
 func _set_hint_open(open: bool) -> void:
+	var changed := open != hint_open
 	hint_open = open
 	_hint_text.visible = open
 	_hint_bulb.text = char(ICON_BULB if open else ICON_BULB_OUTLINE)
+	if is_instance_valid(_hint_motion): _hint_motion.kill()
+	_hint_text.modulate.a = 1.0
+	if not changed or not open or not is_inside_tree(): return
+	# The verse fades in beside the bulb, which lights up with a little pop.
+	_hint_text.modulate.a = 0.0
+	_hint_motion = create_tween()
+	_hint_motion.tween_property(_hint_text, "modulate:a", 1.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_bounce(_hint_bulb.get_parent().get_parent() as Control, 1.15)
 
 
 func _refresh_hint_bulb() -> void:

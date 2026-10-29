@@ -358,7 +358,8 @@ func _on_move_selected(move: RegulatorRules.Move) -> void:
 		var gain := int(economy.base) + mini(combo - 1, int(economy.bonusCap)) * int(economy.step)
 		if hint_used: gain = int(gain / 2)
 		score = clampi(score + gain, 0, int(economy.maxScore))
-		GameSound.buzz(15)
+		# Every third right answer in a row is felt as a double tap.
+		GameSound.pulse(GameSound.HAPTIC_STREAK if combo >= 3 and combo % 3 == 0 else GameSound.HAPTIC_SUCCESS)
 		solved_count += 1
 		ui.update_hud(score, combo, seconds_left, lives)
 
@@ -369,7 +370,7 @@ func _on_move_selected(move: RegulatorRules.Move) -> void:
 			next_delay = 0.0 # Will advance on car.maneuver_finished
 	else:
 		sound.play("incorrect")
-		GameSound.buzz(80)
+		GameSound.pulse(GameSound.HAPTIC_ERROR)
 		combo = 0
 		lives -= 1
 		wrong_count += 1
@@ -423,6 +424,8 @@ func _process(delta: float) -> void:
 		seconds_left -= 1
 		if seconds_left <= 10 and seconds_left > 0:
 			sound.play("tick")
+		if seconds_left <= 5 and seconds_left > 0:
+			GameSound.pulse(GameSound.HAPTIC_COUNTDOWN)
 		ui.update_hud(score, combo, seconds_left, lives)
 		if seconds_left <= 0:
 			_end_game()
@@ -502,6 +505,8 @@ func _end_game() -> void:
 	sound.suspended = true
 	awaiting_next = false
 	is_new_record = score > 0 and score > previous_best
+	# The end of the run: a long double beat, after the last answer's own knock.
+	GameSound.pulse(GameSound.HAPTIC_FINISH, 0.0 if seconds_left <= 0 else 0.3)
 
 	ui.show_game_over(score, solved_count, wrong_count, max_combo, is_new_record, seconds_left <= 0, previous_best)
 
