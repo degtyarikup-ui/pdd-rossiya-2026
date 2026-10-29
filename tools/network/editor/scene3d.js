@@ -253,6 +253,12 @@ const Scene3D = (() => {
         const ya = pos.getY(a), yb = pos.getY(b), yc = pos.getY(c);
         const flat = Math.abs(ya - yb) < 0.001 && Math.abs(ya - yc) < 0.001;
         const lo = Math.min(ya, yb, yc), hi = Math.max(ya, yb, yc);
+        // Legacy reference bars were baked into the ground at 3.8 cm in editor blue.
+        // They are not authored markings; answer overlays now come from model.routes.
+        if (flat && Math.abs(ya - .038) < .001 && colours && [a,b,c].every(i =>
+          Math.abs(colours.getX(i) - 5/255) < 1.5/255 &&
+          Math.abs(colours.getY(i) - 116/255) < 1.5/255 &&
+          Math.abs(colours.getZ(i) - 248/255) < 1.5/255)) continue;
         // Old rails are replaced by the actual tram route in the build.
         if (colours && Tracks.isBakedRailTriangle([ya, yb, yc], [a, b, c].map(i => [colours.getX(i), colours.getY(i), colours.getZ(i)]))) continue;
         let drop = false;

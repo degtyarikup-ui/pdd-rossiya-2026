@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const THREE = require('../editor/vendor/three.min.js');
 
 const editor = path.join(__dirname, '../editor');
-const context = vm.createContext({THREE, console, document: {querySelector: () => null}});
+const context = vm.createContext({THREE, Tracks:require('../editor/tracks.js'), console, document: {querySelector: () => null}});
 for (const name of ['GLTFLoader', 'LineSegmentsGeometry', 'LineGeometry', 'LineMaterial', 'LineSegments2', 'Line2']) {
   vm.runInContext(fs.readFileSync(path.join(editor, `vendor/${name}.js`), 'utf8'), context);
 }
@@ -30,6 +30,7 @@ const bootstrap = `  return {
         simMode = false; planHandles = false;
         App.state.S = value; App.state.id = value.id; App.state.sel = [];
       },
+      filterBaked,
       redraw() { rebuildRoutes(); rebuildSelection(); },
       group(name) { return groups[name]; },
       labels() { return labels; },
@@ -182,3 +183,18 @@ assert.equal(choiceSnapshot().labels.length,0,'hiding routes hides standalone le
 view.setHidden(new Set());
 assert.equal(choiceSnapshot().labels[0][0],'В','restoring routes restores the letter');
 console.log('Standalone letters: actual render, picking, hidden path, selection and phone preview PASS');
+
+// The old ticket mesh contains blue reference bands, independent of answer routes.
+const baked = new THREE.Group(), geometry = new THREE.BufferGeometry();
+const positions=[], vertexColours=[];
+for (const [y,colour] of [[.038,[5/255,116/255,248/255]],[.038,[1,1,1]],[.12,[5/255,116/255,248/255]]]) {
+  positions.push(-3,y,-12,0,y,-12,0,y,-11.9);
+  for(let i=0;i<3;i++)vertexColours.push(...colour);
+}
+geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+geometry.setAttribute('color',new THREE.Float32BufferAttribute(vertexColours,3));
+const oldGround=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial());oldGround.name='static';baked.add(oldGround);
+test.filterBaked(baked,{surfaces:[]});
+assert.deepEqual(Array.from(oldGround.geometry.index.array),[3,4,5,6,7,8],
+  'remove only legacy blue reference bands; preserve white markings and actual raised blue guides');
+console.log('Legacy blue reference bars: hidden without removing authored markings or guides PASS');
