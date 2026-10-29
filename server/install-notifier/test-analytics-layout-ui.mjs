@@ -117,6 +117,13 @@ if(process.argv.includes('--serve')) {
    await page.waitForTimeout(220); // dashboard debounces chart sizing for 150 ms
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
    assert.equal(overflow,false,'page must fit '+width);
+   for (const value of await page.locator('#an-now .an-big').evaluateAll(elements=>elements.map(el=>{
+    const style=getComputedStyle(el);
+    return {background:style.backgroundColor,aspectRatio:style.aspectRatio};
+   }))) {
+    assert.equal(value.background,'rgba(0, 0, 0, 0)','KPI values have no image placeholder background at '+width);
+    assert.equal(value.aspectRatio,'auto','KPI height follows its text at '+width);
+   }
    await page.locator('#an-auth .an-help>summary').click();
    const help=await page.locator('#an-auth .an-help>div').boundingBox();
    assert.ok(help.x>=0&&help.x+help.width<=width,'help stays on screen');

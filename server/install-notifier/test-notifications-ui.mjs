@@ -106,6 +106,10 @@ if (process.argv.includes('--serve')) {
     assert.equal(await page.locator('#nt-screen .in .th').count(), 1);
     assert.equal(await page.locator('#nt-screen .in.big .pic').count(), 1);
     await page.click('#nt-os [data-os="android"]');
+    const image = page.locator('#nt-screen .nf-android-image');
+    assert.equal(await image.count(), 1);
+    assert.equal(await image.evaluate(el => getComputedStyle(el).aspectRatio), '2 / 1');
+    assert.match(await image.evaluate(el => getComputedStyle(el).backgroundImage), /icon-192\.png/);
     assert.match(await page.textContent('#nt-screen'), /ПДД Россия 2026/);
     assert.equal(await page.isDisabled('input[name="nt-platform"][value="web"]'), true);
     // Platforms are picked independently; a push never goes to the web.

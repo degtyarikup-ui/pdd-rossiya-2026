@@ -89,7 +89,7 @@ export const NOTIFICATIONS_VIEW_HTML = `
 .an-n{margin:0 9px;border-radius:20px;background:#F3F4F8;color:#1B1C1F;padding:11px 12px;font-size:12px;line-height:1.35}
 .an-h{display:flex;align-items:center;gap:6px;font-size:10.5px;color:#5F6368;margin-bottom:5px}.an-h i{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}.an-h i svg{width:10px;height:10px}.an-h em{margin-left:auto;font-style:normal;font-size:12px}
 .an-b{display:flex;gap:10px;align-items:center}.an-b>div{flex:1;min-width:0}.an-b p{margin:1px 0 0;color:#444}.an-th{width:36px;height:36px;border-radius:8px;background:#ddd center/cover;flex-shrink:0}
-.an-big{margin-top:8px;width:100%;aspect-ratio:2/1;border-radius:12px;background:#ddd center/cover}
+.nf-android-image{margin-top:8px;width:100%;aspect-ratio:2/1;border-radius:12px;background:#ddd center/cover}
 .ap{height:100%;display:flex;flex-direction:column;background:#F8F9FA;position:relative}.ap-body{flex:1;padding:4px 12px 0;display:flex;flex-direction:column;gap:9px;overflow:hidden}.ap-body>*{flex-shrink:0}
 .ap-title{font-size:19px;font-weight:700;margin:2px 2px 2px}
 .sk{background:#fff;border-radius:14px}.sk-stats{height:118px;padding:14px;display:flex;gap:12px;align-items:center}.sk-ring{width:62px;height:62px;border-radius:50%;border:7px solid #E8F2FE;border-top-color:#0574F8;flex-shrink:0}
@@ -261,7 +261,7 @@ function pushAndroid(d){
  var lines=function(open){return (d.title?'<b class="l1">'+esc(d.title)+'</b>':'')+(d.body?'<p class="'+(open&&!img?'lc':'l1')+'"'+(open&&!img?' style="-webkit-line-clamp:8"':'')+'>'+esc(d.body)+'</p>':'');};
  return '<div class="lk an">'+status(true)+'<div class="lk-date">'+esc(lockDate())+'</div><div class="lk-time">9:41</div>'
   +'<div class="an-n">'+head(false)+'<div class="an-b"><div>'+lines(false)+'</div>'+(img?'<span class="an-th" style="'+bg(d.imageUrl)+'"></span>':'')+'</div></div>'
-  +'<div class="lk-cap">Раскрыто</div><div class="an-n">'+head(true)+lines(true)+(img?'<div class="an-big" style="'+bg(d.imageUrl)+'"></div>':'')+'</div></div>';
+  +'<div class="lk-cap">Раскрыто</div><div class="an-n">'+head(true)+lines(true)+(img?'<div class="nf-android-image" style="'+bg(d.imageUrl)+'"></div>':'')+'</div></div>';
 }
 function bannerHtml(d){
  var img=d.imageUrl&&https(d.imageUrl),c=d.accent||BLUE;
