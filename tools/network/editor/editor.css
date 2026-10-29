@@ -672,3 +672,16 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); 
   .answer-mode { padding: 6px 2px; }
   .answer-settings { gap: 4px; }
 }
+
+.bus-stop-mark-pic { display: block; width: 40px; height: 24px; flex: none; }
+.bus-stop-size + .bus-stop-size { margin-top: 16px; }
+.bus-stop-size label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--ink-2); }
+.bus-stop-size label > span { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.bus-stop-size input[type=number] { width: 72px; height: 30px; padding: 4px 6px; text-align: right; font-variant-numeric: tabular-nums; }
+.bus-stop-size input[type=range] { width: 100%; margin: 8px 0 0; }
+.bus-stop-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--line); }
+.bus-stop-summary > span { font-size: 12px; color: var(--ink-3); }
+.bus-stop-summary .btn { font-size: 12px; }
+.ibadge .bus-stop-mark-pic { width: 28px; height: 18px; }
+.bus-stop-type summary { cursor: pointer; color: var(--ink-2); font-size: 12px; }
+.bus-stop-type[open] summary { margin-bottom: 12px; }

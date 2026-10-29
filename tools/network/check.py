@@ -19,6 +19,7 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely import make_valid
 from shapely.ops import unary_union
 import direction_marking
+import bus_stop_marking
 
 ROOT = Path(__file__).resolve().parents[2]
 NET = ROOT / "game_godot" / "network"
@@ -44,7 +45,7 @@ def finding(out, level, code, message, ref=None):
     out.append({"level": level, "code": code, "message": message, "ref": ref})
 
 
-MARKING_TYPES = ("paint", "solid", "dashed", "stop", "zebra", "arrow")
+MARKING_TYPES = ("paint", "solid", "dashed", "stop", "zebra", "arrow", "bus_stop")
 MARKING_COLOURS = ("white", "yellow")
 LINE_MARKINGS = ("solid", "dashed", "stop", "zebra")
 
@@ -95,7 +96,15 @@ def check_layers(scene: dict, area, out: list) -> None:
             continue
         if m.get("colour", "white") not in MARKING_COLOURS:
             finding(out, "error", "marking-colour", f"{m.get('id')}: неизвестный цвет разметки {m.get('colour')!r}", ref)
-        if kind == "arrow":
+        if kind == "bus_stop":
+            problem = bus_stop_marking.error(m)
+            if problem:
+                finding(out, "error", "marking-bus-stop", f"{m.get('id')}: {problem}", ref)
+                continue
+            outside = bus_stop_marking.geometry(m).difference(area.buffer(.05)).area
+            if outside > .1:
+                finding(out, "warn", "marking-off-road", f"{m.get('id')}: часть зубцов вне дороги — переместите разметку или смените сторону", ref)
+        elif kind == "arrow":
             problem = direction_marking.error(m)
             if problem:
                 finding(out, "error", "marking-arrow", f"{m.get('id')}: {problem}", ref)

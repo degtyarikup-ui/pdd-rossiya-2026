@@ -1123,6 +1123,14 @@ const Scene3D = (() => {
     } else if (draft.kind === "annotation" && pts.length >= 2) {
       const route={points:pts,style:draft.style,colour:'#20242b',width:.16};
       g.add(annotationMesh(route,.04));g.add(annotationMesh(route,0));
+    } else if (draft.kind === "bus_stop" && pts.length >= 2) {
+      const mark={...BusStopMark.defaults,points:pts.slice(0,2),side:draft.side};
+      for(const ring of BusStopMark.polygons(mark)) {
+        const shape=new THREE.Shape(ring.map(p=>new THREE.Vector2(p[0],p[1])));
+        const geometry=new THREE.ShapeGeometry(shape);geometry.rotateX(Math.PI/2);
+        const mesh=new THREE.Mesh(geometry,basic(0xf5b025,{transparent:true,opacity:.85,depthWrite:false}));
+        mesh.position.y=.25;mesh.userData.own=true;g.add(mesh);
+      }
     } else if (draft.kind === "arrow" && pts.length >= 2) {
       for (const ring of DirectionMark.polygons({points:pts.slice(0,2),direction:draft.direction})) {
         const shape = new THREE.Shape(ring.map(p => new THREE.Vector2(p[0],p[1])));
@@ -1612,6 +1620,7 @@ const Scene3D = (() => {
         if (m.auto) continue;
         const ref = { t: "marking", id: m.id };
         if (skip(ref)) continue;
+        if (m.type === "bus_stop" && (BusStopMark.polygons(m).some(polygon=>inside(w,polygon)) || lineHit(BusStopMark.line(m),wpp*6))) return ref;
         if (m.type === "arrow" && DirectionMark.polygons(m).some(polygon => inside(w, polygon))) return ref;
         if (m.points && lineHit(m.points, Math.max(wpp * 6, (m.type === "zebra" ? (m.length || 4) / 2 : 0.4)))) return ref;
       }

@@ -14,6 +14,7 @@ for (const name of ['GLTFLoader', 'LineSegmentsGeometry', 'LineGeometry', 'LineM
 }
 vm.runInContext(fs.readFileSync(path.join(editor, 'app.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(editor, 'annotation_line.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(editor, 'bus_stop_marking.js'), 'utf8'), context);
 
 const source = fs.readFileSync(path.join(editor, 'scene3d.js'), 'utf8');
 const marker = '  return {\n    mount, load, refresh';
@@ -198,3 +199,14 @@ test.filterBaked(baked,{surfaces:[]});
 assert.deepEqual(Array.from(oldGround.geometry.index.array),[3,4,5,6,7,8],
   'remove only legacy blue reference bands; preserve white markings and actual raised blue guides');
 console.log('Legacy blue reference bars: hidden without removing authored markings or guides PASS');
+
+const stops=fixture();stops.routes=[];
+const stopMark={id:'bus',type:'bus_stop',colour:'yellow',points:[[-3.5,-20],[-3.5,0]],side:-1,depth:1.2,step:1.5,width:.12};
+stops.markings=[stopMark];test.configure(stops);test.redraw();
+const Bus=vm.runInContext('BusStopMark',context),tip=Bus.line(stopMark)[1];
+assert.equal(pick(...tip)?.id,'bus','pointed tips are pickable away from the kerb axis');
+view.setHidden(new Set(['marks']));assert.equal(pick(...tip),null,'hidden zigzags do not intercept selection');view.setHidden(new Set());
+view.setDraft({kind:'bus_stop',points:[[-3.5,-20]],cursor:[-3.5,0],side:-1});
+assert.ok(test.group('draft').children.some(node=>node.material?.color?.getHex()===0xf5b025),'preview draws actual yellow triangles');
+view.setDraft(null);
+console.log('Bus stop renderer: actual pointed-tip picking, layer visibility and yellow geometry preview PASS');

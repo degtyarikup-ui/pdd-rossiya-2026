@@ -76,6 +76,7 @@ const Catalog = (() => {
     solid: { title: "Сплошная", icon: "road" },
     stop: { title: "Стоп-линия", icon: "stopline" },
     zebra: { title: "Зебра", icon: "zebra" },
+    bus_stop: { title: "Остановка", icon: "marking" },
     arrow: { title: "Стрелки направлений", icon: "arrow-up" },
   };
 

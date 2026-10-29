@@ -1046,25 +1046,48 @@
 
   // ---- markings and shapes -------------------------------------------------------------------
   function markingInspector(p, ref, m) {
-    const paint = m.type === "paint", arrow = m.type === "arrow";
+    const paint = m.type === "paint", arrow = m.type === "arrow", bus = m.type === "bus_stop";
+    const busValue = key => key === "length" ? BusStopMark.length(m) : m[key] ?? BusStopMark.defaults[key];
+    const busSize = (key,title) => {
+      const [min,max,step]=BusStopMark.limits[key], value=Number(busValue(key).toFixed(2));
+      return `<div class="bus-stop-size"><label ${key === "step" ? 'title="Шаг равномерно подгоняется под длину"' : ""}>${title}<span><input type="number" min="${min}" max="${max}" step="${step}" data-text="bus-${key}" aria-label="${title}, м" value="${value}"> м</span></label><input type="range" min="${min}" max="${max}" step="${step}" data-slider="bus-${key}" aria-label="${title}" value="${value}"></div>`;
+    };
+    const setBusSize = (key,value) => { if(key === "length") BusStopMark.setLength(m,value); else m[key]=value; };
+    const typeOptions = paint ? "" : chips("type", Object.entries(Catalog.MARKS).map(([k,v]) => ({value:k,html:k === "bus_stop" ? BusStopMark.svg() : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`,tip:v.title})),m.type,{cls:"tiles"});
     const arrowLength = arrow && m.points?.length === 2 ? Math.hypot(m.points[1][0] - m.points[0][0], m.points[1][1] - m.points[0][1]) : 6;
-    p.innerHTML = `${head(`<span class="ibadge">${ic("marking")}</span>`, App.nameOf(ref), paint ? "снята с картинки билета" : "")}
-      ${paint ? "" : card("Вид", chips("type", Object.entries(Catalog.MARKS).map(([k, v]) => ({ value: k, html: k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`, tip: v.title })), m.type, { cls: "tiles" }))}
+    p.innerHTML = `${head(`<span class="ibadge">${bus ? BusStopMark.svg() : ic("marking")}</span>`, App.nameOf(ref), paint ? "снята с картинки билета" : "")}
+      ${!bus && !paint ? card("Вид",typeOptions) : ""}
+      ${bus ? card("Размеры остановки", busSize("length","Длина") + busSize("depth","Глубина зубцов") + busSize("step","Шаг зубцов") + busSize("width","Толщина линии")
+        + `<div class="bus-stop-summary"><span data-bus-count>${BusStopMark.label(m)}</span>${button("bus-side", "На другую сторону", "measure", "ghost")}</div>`) : ""}
       ${arrow ? card("Направления по полосе", chips("mark-direction", DirectionMark.variants.map(([value, title]) => ({value, title, html: DirectionMark.svg(value)})), m.direction || "straight", {cls:"tiles"}))
         + card("Размер стрелки", slider("mark-length", "Длина", arrowLength, 1, 30, .5, `${arrowLength.toFixed(1)} м`)
           + slider("mark-width", "Ширина", m.width ?? 2.6, .4, 6, .1, `${(m.width ?? 2.6).toFixed(1)} м`)
           + button("mark-flip", "Развернуть на 180°", "rotr", "ghost wide")) : ""}
       ${m.type === "stop" ? card("Вид линии", chips("stop-style", stopStyles, m.stopStyle || "solid")
         + (m.stopStyle === "yield" ? button("yield-flip", "Развернуть треугольники", "rotr", "ghost wide") : "")) : ""}
-      ${card("Цвет", chips("colour", [{ value: "white", html: `<span class="paint w"></span>`, title: "Белая" }, { value: "yellow", html: `<span class="paint y"></span>`, title: "Жёлтая" }], m.colour || "white"))}
+      ${bus ? "" : card("Цвет", chips("colour", [{ value: "white", html: `<span class="paint w"></span>`, title: "Белая" }, { value: "yellow", html: `<span class="paint y"></span>`, title: "Жёлтая" }], m.colour || "white"))}
       ${m.type === "solid" || m.type === "dashed" ? card("Вторая линия рядом", chips("double", [{ value: "", title: "Нет" }, { value: "solid", html: `<span class="mark-pic m-solid"></span>`, tip: "Сплошная" }, { value: "dashed", html: `<span class="mark-pic m-dashed"></span>`, tip: "Прерывистая" }], m.double || "", { cls: "tiles" })
         + (m.double ? button("flip", "На другую сторону", "rotr", "ghost wide") : "")
         + (ref.v !== undefined && ref.v > 0 && ref.v < m.points.length - 1 ? button("split", "Разрезать в выбранной точке", "marking", "ghost wide") : `<p class="muted">Выберите точку на линии, чтобы разрезать её: у частей может быть разный вид.</p>`)) : ""}
+      ${bus ? card("",`<details class="bus-stop-type"><summary>Изменить вид разметки</summary>${typeOptions}</details>`) : ""}
       ${card("", `<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div>${deleteRow()}`)}`;
     bind({
       ...common,
       rotl: () => App.rotate(-15), rotr: () => App.rotate(15),
-      "chip:type": (v) => App.edit(() => {
+      ...Object.fromEntries((bus ? Object.keys(BusStopMark.limits) : []).flatMap(key => [
+        ["slider:bus-"+key,live((_sc,value) => { if(!App.isLocked(ref))setBusSize(key,value); },value => {
+          const input=p.querySelector(`[data-text="bus-${key}"]`); if(input)input.value=Number(value.toFixed(2));
+          const count=p.querySelector('[data-bus-count]'); if(count)count.textContent=`${BusStopMark.label(m)}`;
+        })],
+        ["text:bus-"+key,raw => {
+          if(App.isLocked(ref))return;
+          const value=Number(raw),[min,max]=BusStopMark.limits[key];
+          if(!raw.trim() || !Number.isFinite(value) || value<min || value>max) { App.toast(`Введите значение от ${min} до ${max} м`,"warn");App.renderInspector();return; }
+          App.edit(()=>setBusSize(key,value));
+        }],
+      ])),
+      "bus-side": () => { if(!App.isLocked(ref))App.edit(()=>{m.side=-(m.side ?? 1);}); },
+      "chip:type": (v) => { if(App.isLocked(ref))return; App.edit(() => {
         m.type = v;
         if (["stop", "zebra", "arrow"].includes(v) && m.points) m.points = m.points.slice(0, 2);
         if (v === "zebra") m.length = m.length || 4; else delete m.length;
@@ -1072,7 +1095,13 @@
         if (v === "arrow") { m.direction = m.direction || "straight"; m.width = 2.6; }
         else delete m.direction;
         if (v !== "stop") delete m.stopStyle;
-      }),
+        if (v === "bus_stop") {
+          m.points=[m.points[0],m.points.at(-1)];
+          Object.assign(m,BusStopMark.defaults); m.colour="yellow";
+          BusStopMark.setLength(m,Math.max(2,Math.min(60,BusStopMark.length(m))));
+          m.side=BusStopMark.chooseSide(state.S,m); delete m.double;
+        } else { delete m.depth;delete m.step;delete m.side; }
+      }); },
       "chip:stop-style": v => {
         if (!App.isLocked(ref) && stopStyles.some(style => style.value === v)) App.edit(() => setStopStyle(m, v));
       },

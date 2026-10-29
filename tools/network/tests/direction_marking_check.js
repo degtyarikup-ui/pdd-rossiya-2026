@@ -13,7 +13,7 @@ const context = vm.createContext({
   setTimeout:()=>0,clearTimeout(){},
   fetch:async()=>({ok:true,json:async()=>clone(shapes)}),
 });
-for (const file of ['catalog.js','direction_marking.js','app.js','inspector.js'])
+for (const file of ['catalog.js','direction_marking.js','bus_stop_marking.js','app.js','inspector.js'])
   vm.runInContext(fs.readFileSync(require.resolve('../editor/'+file),'utf8'),context);
 const App = vm.runInContext('App',context), marks = vm.runInContext('DirectionMark',context);
 const chip = (name,value)=>listeners.click({target:{closest:s=>s==='[data-chip]'?{dataset:{chip:name,value}}:null}});

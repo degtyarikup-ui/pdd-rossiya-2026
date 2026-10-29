@@ -53,6 +53,7 @@ from shapely import set_precision
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import substring, unary_union
 import direction_marking
+import bus_stop_marking
 
 ROOT = Path(__file__).resolve().parents[2]
 NET = ROOT / "game_godot" / "network"
@@ -458,6 +459,8 @@ DOUBLE_GAP = 0.28    # centre to centre of the two lines of a double marking (m)
 
 def single_marking(m: dict):
     kind = m.get("type", "solid")
+    if kind == "bus_stop":
+        return bus_stop_marking.geometry(m)
     if kind == "arrow":
         return direction_marking.geometry(m)
     if kind == "paint":
@@ -665,7 +668,7 @@ def build(scene: dict) -> dict:
     # Markings lie on the carriageway only; the island and the pavement are never painted over.
     marks = {}
     for m in scene.get("markings", []):
-        colour = m.get("colour", "white")
+        colour = m.get("colour", "yellow" if m.get("type") == "bus_stop" else "white")
         if colour == "rail":
             continue  # Old traced rail paint is replaced by the actual tram routes.
         if colour not in MARK_COLOURS:
@@ -674,6 +677,7 @@ def build(scene: dict) -> dict:
             geom = without_kerb_paint(paint_geometry(m, road), road)
         else:
             geom = marking_geometry(m)
+            if m.get("type") == "bus_stop": geom = geom.intersection(road)
         marks.setdefault(colour, []).append(geom)
     # The edge lines follow the kerbs (also the roundabout's islands).
     marks.setdefault("white", []).append(edge_lines(road, box).difference(no_edge))

@@ -75,7 +75,7 @@ const Tools = (() => {
     } else if (tool === "junction") {
       html = Layout.TEMPLATES.map((t) => `<button class="ptile" data-tpl="${t.id}">${Layout.svg(Layout.template(t.id), 90, 64)}<span>${esc(t.title)}</span></button>`).join("");
     } else if (tool === "marking") {
-      html = Object.entries(Catalog.MARKS).map(([k, v]) => `<button class="pchip ${opts.mark === k ? "on" : ""}" data-mark="${k}">${k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`}<span>${v.title}</span></button>`).join("");
+      html = Object.entries(Catalog.MARKS).map(([k, v]) => `<button class="pchip ${opts.mark === k ? "on" : ""}" data-mark="${k}">${k === "bus_stop" ? BusStopMark.svg() : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`}<span>${v.title}</span></button>`).join("");
       if (opts.mark === "arrow") html += `<div class="direction-mark-options">${DirectionMark.variants.map(([key, title]) => `<button class="pchip ${opts.markDirection === key ? "on" : ""}" data-mark-direction="${key}" aria-label="${title}">${DirectionMark.svg(key)}<span>${title}</span></button>`).join("")}</div>`;
     } else if (tool === "answer" && !opts.pathFor && !opts.answerRoute) {
       html = renderAnswerOptions();
@@ -167,7 +167,7 @@ const Tools = (() => {
   function renderHint(text) {
     const t = LIST.find((x) => x.id === tool);
     let h = text ?? (t ? t.hint : "");
-    if (tool === "marking") h = opts.mark === "arrow" ? "Первый клик — начало стрелки, второй — её направление и длина. Затем можно изменить вид и размер справа" : opts.mark === "stop" || opts.mark === "zebra"
+    if (tool === "marking") h = opts.mark === "bus_stop" ? "Два клика вдоль бордюра — начало и конец остановки. Глубина и шаг зубцов настраиваются справа" : opts.mark === "arrow" ? "Первый клик — начало стрелки, второй — её направление и длина. Затем можно изменить вид и размер справа" : opts.mark === "stop" || opts.mark === "zebra"
       ? (S()?.layout ? "Клик у перекрёстка — включить или выключить на этом въезде" : "Два клика поперёк дороги")
       : "Кликайте точки линии. ↵ — готово";
     if (tool === "answer" && !opts.pathFor && !opts.answerRoute) h = opts.answerMode === "letter"
@@ -452,7 +452,7 @@ const Tools = (() => {
       const pts = App.pointsOfRef(ref);
       if (!pts) return;
       const o = App.objectOf(ref);
-      if (ref.t === "marking" && o?.type === "arrow") return;
+      if (ref.t === "marking" && ["arrow","bus_stop"].includes(o?.type)) return;
       if (ref.t === "route" && o?.kind === "approach" && !o.manual) return;
       const closed = ref.t === "road" || ref.t === "lawn";
       let best = -1, bd = 3;
@@ -562,11 +562,15 @@ const Tools = (() => {
     move(e) {
       if (draft && e.world) {
         draft.cursor = [snapGrid(e.world.x, e), snapGrid(e.world.z, e)];
-        Scene3D.setDraft({ kind: opts.mark === "arrow" ? "arrow" : "line", direction: opts.markDirection, points: draft.points, cursor: draft.cursor, colour: 0xffffff });
+        const bus = opts.mark === "bus_stop";
+        const points = [...draft.points,draft.cursor].slice(0,2);
+        const side = bus ? BusStopMark.chooseSide(S(),{...BusStopMark.defaults,points}) : 1;
+        Scene3D.setDraft({kind:bus ? "bus_stop" : opts.mark === "arrow" ? "arrow" : "line", direction:opts.markDirection, side, points:draft.points, cursor:draft.cursor, colour:bus ? 0xf5b025 : 0xffffff});
       }
     },
     down(e) {
       if (!e.world) return;
+      if (App.state.locked.has("marks")) return App.toast("Слой разметки заблокирован", "warn");
       const s = S(), p = [snapGrid(e.world.x, e), snapGrid(e.world.z, e)];
       if ((opts.mark === "stop" || opts.mark === "zebra") && s.layout) return toggleEnd(p, opts.mark);
       if (!draft) draft = { points: [] };
@@ -575,7 +579,10 @@ const Tools = (() => {
         draft.points.pop();
         return App.toast("Задайте стрелку длиной не меньше метра", "warn");
       }
-      if (["stop", "zebra", "arrow"].includes(opts.mark) && draft.points.length === 2) return finishDraft();
+      if (opts.mark === "bus_stop" && draft.points.length === 2 && (BusStopMark.length(draft) < 2 || BusStopMark.length(draft) > 60)) {
+        draft.points.pop(); return App.toast("Задайте длину остановки от 2 до 60 м", "warn");
+      }
+      if (["stop", "zebra", "arrow", "bus_stop"].includes(opts.mark) && draft.points.length === 2) return finishDraft();
       marking.move(e);
     },
     dblclick() { finishDraft(); },
@@ -906,16 +913,19 @@ const Tools = (() => {
     if (tool === "answer" && App.state.locked.has("routes")) return App.toast("Слой ответов и маршрутов заблокирован", "warn");
     const pts = d.points;
     if (tool === "marking" && pts.length >= 2) {
+      if (App.state.locked.has("marks")) return App.toast("Слой разметки заблокирован", "warn");
       const ref = App.edit((s) => {
         const id = App.uniqueId("mark_", s.markings.map((m) => m.id));
         const m = { id, type: opts.mark, colour: "white", points: pts };
         if (opts.mark === "stop") m.width = 0.4;
         if (opts.mark === "zebra") m.length = 4;
+        if (opts.mark === "bus_stop") { Object.assign(m,BusStopMark.defaults); m.colour="yellow"; m.side=BusStopMark.chooseSide(s,m); }
         if (opts.mark === "arrow") { m.direction = opts.markDirection; m.width = 2.6; }
         s.markings.push(m);
         return { t: "marking", id };
       });
       App.select(ref);
+      if (opts.mark === "bus_stop") set("select");
     } else if (tool === "track" && pts.length >= 2) {
       const ref = App.edit((s) => {
         s.tracks = s.tracks || [];
