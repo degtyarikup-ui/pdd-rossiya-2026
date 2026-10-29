@@ -129,6 +129,8 @@ assets/countries/ru/images/     questions_ab/, questions_cd/, signs/, markup/
 сразу после одобрения** (пожелание владельца 18.10.2026). Ручной выпуск — только
 по явному запросу. Для уже отправленной версии менять эту настройку без отзыва
 заявки; если без отмены проверки переключить нельзя — заявку не отменять.
+Публикация во все три стора — через API скриптом `tools/store_release/publish.py`,
+ключи — в Связке ключей macOS: `docs/release/store-api.md`.
 
 ```bash
 ./scripts/build.sh ru aab|apk|rustore-apk|ipa|web  # сборка (rustore-apk — для RuStore)
