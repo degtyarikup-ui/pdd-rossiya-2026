@@ -67,6 +67,12 @@ def jwt(header, claims, sign):
     return head + '.' + b64url(sign(head.encode()))
 
 
+class HttpError(SystemExit):
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
+
+
 class FileBody:
     """A file (optionally wrapped in multipart) streamed by urllib."""
 
@@ -102,7 +108,7 @@ def http(method, url, headers=None, body=None, context=None, timeout=120):
             text = response.read().decode()
     except urllib.error.HTTPError as error:
         detail = error.read().decode(errors='replace')[:1500]
-        raise SystemExit(f'{method} {url.split("?")[0]} → HTTP {error.code}: {detail}') from None
+        raise HttpError(error.code, f'{method} {url.split("?")[0]} → HTTP {error.code}: {detail}') from None
     return json.loads(text) if text.strip() else {}
 
 
@@ -302,16 +308,26 @@ class RuStore:
 
     def publish(self, apk, notes):
         app = f'/public/v1/application/{ANDROID_PACKAGE}/version'
-        # A new draft replaces any earlier one; other fields copy from the active version.
-        created = self.call('POST', app, {'whatsNew': notes['ru'], 'publishType': 'INSTANTLY'})['body']
-        version_id = created['versionId'] if isinstance(created, dict) else created
-        boundary = uuid.uuid4().hex
-        prefix = (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
-                  f'filename="{Path(apk).name}"\r\n'
-                  'Content-Type: application/vnd.android.package-archive\r\n\r\n').encode()
-        body = FileBody(apk, prefix, f'\r\n--{boundary}--\r\n'.encode())
-        self.call('POST', f'{app}/{version_id}/apk?servicesType=Unknown&isMainApk=true', body,
-                  headers={'Content-Type': f'multipart/form-data; boundary={boundary}'}, timeout=1800)
+        for attempt in range(1, 4):
+            # A new draft replaces any earlier one; other fields copy from the
+            # active version. A fresh draft per attempt matters: RuStore's proxy
+            # can answer 503 although the APK did arrive, and a second main APK
+            # in the same draft cannot be submitted.
+            created = self.call('POST', app, {'whatsNew': notes['ru'], 'publishType': 'INSTANTLY'})['body']
+            version_id = created['versionId'] if isinstance(created, dict) else created
+            boundary = uuid.uuid4().hex
+            prefix = (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
+                      f'filename="{Path(apk).name}"\r\n'
+                      'Content-Type: application/vnd.android.package-archive\r\n\r\n').encode()
+            body = FileBody(apk, prefix, f'\r\n--{boundary}--\r\n'.encode())
+            try:
+                self.call('POST', f'{app}/{version_id}/apk?servicesType=Unknown&isMainApk=true', body,
+                          headers={'Content-Type': f'multipart/form-data; boundary={boundary}'}, timeout=3600)
+                break
+            except HttpError as error:
+                if error.status < 500 or attempt == 3:
+                    raise
+                print(f'RuStore: загрузка APK оборвалась (HTTP {error.status}), повтор {attempt + 1}/3', flush=True)
         print('RuStore: APK загружен в черновик', version_id)
         self.call('POST', f'{app}/{version_id}/commit')
         print('RuStore: версия', notes['version'], 'отправлена на модерацию, публикация сразу после неё')
