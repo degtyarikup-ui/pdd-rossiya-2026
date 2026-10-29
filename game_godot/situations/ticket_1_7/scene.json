@@ -1,0 +1,882 @@
+{
+ "id": "ticket_1_7",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -10.25,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 24,
+ "exitWidths": {
+  "straight": 24
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -10.25,
+     -13.1
+    ],
+    [
+     -10.25,
+     -12.6
+    ],
+    [
+     -10.25,
+     -12
+    ],
+    [
+     -10.25,
+     -10.5
+    ],
+    [
+     -10.25,
+     -9
+    ],
+    [
+     -10.25,
+     -7.5
+    ],
+    [
+     -10.25,
+     -6
+    ],
+    [
+     -10.25,
+     -4.5
+    ],
+    [
+     -10.25,
+     -3
+    ],
+    [
+     -10.25,
+     -1.5
+    ],
+    [
+     -10.25,
+     0
+    ],
+    [
+     -10.25,
+     1.5
+    ],
+    [
+     -10.25,
+     3
+    ],
+    [
+     -10.25,
+     4.5
+    ],
+    [
+     -10.25,
+     6
+    ],
+    [
+     -10.25,
+     7.5
+    ],
+    [
+     -10.25,
+     9
+    ],
+    [
+     -10.25,
+     10.5
+    ],
+    [
+     -10.25,
+     12
+    ],
+    [
+     -10.25,
+     13.5
+    ],
+    [
+     -10.25,
+     15
+    ],
+    [
+     -10.25,
+     16.5
+    ],
+    [
+     -10.25,
+     18
+    ],
+    [
+     -10.25,
+     19.5
+    ],
+    [
+     -10.25,
+     21
+    ],
+    [
+     -10.25,
+     22.5
+    ],
+    [
+     -10.25,
+     24
+    ],
+    [
+     -10.25,
+     25.5
+    ],
+    [
+     -10.25,
+     27
+    ],
+    [
+     -10.25,
+     28.5
+    ],
+    [
+     -10.25,
+     30
+    ],
+    [
+     -10.25,
+     31.5
+    ],
+    [
+     -10.25,
+     33
+    ],
+    [
+     -10.25,
+     34.5
+    ],
+    [
+     -10.25,
+     36
+    ],
+    [
+     -10.25,
+     37.5
+    ],
+    [
+     -10.25,
+     39
+    ],
+    [
+     -10.25,
+     40.5
+    ],
+    [
+     -10.25,
+     42
+    ],
+    [
+     -10.25,
+     43.5
+    ],
+    [
+     -10.25,
+     45
+    ],
+    [
+     -10.25,
+     46.5
+    ],
+    [
+     -10.25,
+     48
+    ],
+    [
+     -10.25,
+     49.5
+    ],
+    [
+     -10.25,
+     51
+    ],
+    [
+     -10.25,
+     52.5
+    ],
+    [
+     -10.25,
+     54
+    ],
+    [
+     -10.25,
+     55.5
+    ],
+    [
+     -10.25,
+     57
+    ],
+    [
+     -10.25,
+     58.5
+    ],
+    [
+     -10.25,
+     60
+    ],
+    [
+     -10.25,
+     61.5
+    ],
+    [
+     -10.25,
+     63
+    ],
+    [
+     -10.25,
+     64.5
+    ],
+    [
+     -10.25,
+     66
+    ],
+    [
+     -10.25,
+     67.5
+    ],
+    [
+     -10.25,
+     69
+    ],
+    [
+     -10.25,
+     70.5
+    ],
+    [
+     -10.25,
+     72
+    ],
+    [
+     -10.25,
+     73.5
+    ],
+    [
+     -10.25,
+     75
+    ],
+    [
+     -10.25,
+     76.5
+    ],
+    [
+     -10.25,
+     78
+    ],
+    [
+     -10.25,
+     79.5
+    ],
+    [
+     -10.25,
+     81
+    ],
+    [
+     -10.25,
+     82.5
+    ],
+    [
+     -10.25,
+     84
+    ],
+    [
+     -10.25,
+     85.5
+    ],
+    [
+     -10.25,
+     87
+    ],
+    [
+     -10.25,
+     88.5
+    ],
+    [
+     -10.25,
+     90
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [
+  {
+   "prop": "street/bush",
+   "pos": [
+    0,
+    0.0,
+    -14.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    0.5,
+    0.0,
+    -28.5
+   ],
+   "yaw": -0.785,
+   "scale": [
+    1.55,
+    1.55,
+    1.55
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -0.715,
+    0.0,
+    -42.427
+   ],
+   "yaw": -1.309,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -0.07,
+    0.0,
+    -77.434
+   ],
+   "yaw": -1.571,
+   "scale": [
+    1.55,
+    1.55,
+    1.55
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -0.5,
+    0.0,
+    16.5
+   ],
+   "yaw": 1.047,
+   "scale": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    0.5,
+    0.0,
+    55
+   ],
+   "yaw": 1.833,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": "#467e3c"
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -0.5,
+    0.0,
+    87
+   ],
+   "yaw": -1.833,
+   "scale": [
+    1.6,
+    1.6,
+    1.6
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -20,
+    0.0,
+    85
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -16.5,
+    0.0,
+    60
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -23,
+    0.0,
+    21
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -17,
+    0.0,
+    12.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1.3,
+    1.3,
+    1.3
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -23,
+    0.0,
+    -18.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1.6,
+    1.6,
+    1.6
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -17,
+    0.0,
+    -42.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -24,
+    0.0,
+    -60
+   ],
+   "yaw": 0,
+   "scale": [
+    2,
+    2,
+    2
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -17,
+    0.0,
+    -83.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    17,
+    0.0,
+    -60.5
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    22,
+    0.0,
+    -50
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    17,
+    0.0,
+    -28
+   ],
+   "yaw": 0.102,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    19.5,
+    0.0,
+    -19.5
+   ],
+   "yaw": -0.007,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    17,
+    0.0,
+    -8
+   ],
+   "yaw": 0.033,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    18,
+    0.0,
+    21.5
+   ],
+   "yaw": 0.033,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    20.5,
+    0.0,
+    53.5
+   ],
+   "yaw": 0.352,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    17,
+    0.0,
+    86
+   ],
+   "yaw": 0.352,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -22,
+    0.0,
+    49.5
+   ],
+   "yaw": 0.352,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -20,
+    0.0,
+    35.5
+   ],
+   "yaw": 1.588,
+   "scale": [
+    1.5,
+    1.5,
+    1.5
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -20,
+    0.0,
+    26
+   ],
+   "yaw": 1.588,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -17.5,
+    0.0,
+    19
+   ],
+   "yaw": 1.588,
+   "scale": [
+    1.3,
+    1.3,
+    1.3
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -20.5,
+    0.0,
+    13.5
+   ],
+   "yaw": -0.201,
+   "scale": [
+    1.3,
+    1.3,
+    1.3
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -23.5,
+    0.0,
+    1
+   ],
+   "yaw": 2.327,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -20.5,
+    0.0,
+    -13
+   ],
+   "yaw": -2.963,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -18,
+    0.0,
+    -29.5
+   ],
+   "yaw": 0.535,
+   "scale": [
+    1.6,
+    1.6,
+    1.6
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -18,
+    0.0,
+    -18.5
+   ],
+   "yaw": 0.013,
+   "scale": [
+    1.6,
+    1.6,
+    1.6
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    -16,
+    0.0,
+    1.5
+   ],
+   "yaw": -0.018,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 7",
+   "title": "Водитель обязан подавать сигналы световыми указателями поворота (рукой):",
+   "options": [
+    "Перед началом движения или перестроением",
+    "Перед поворотом или разворотом",
+    "Перед остановкой",
+    "Во всех перечисленных случаях"
+   ],
+   "explanation": "Перед началом движения, перестроением, поворотом (разворотом) и остановкой водитель обязан подавать сигналы световыми указателями поворота соответствующего направления, а если они отсутствуют или неисправны – рукой. При выполнении манёвра не должны создаваться опасность для движения, а также помехи другим участникам дорожного движения.(Пункт 8.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 7",
+   "title": "The driver is required to give signals with the direction indicators (by hand):",
+   "options": [
+    "Before driving or changing lanes",
+    "Before turning or making a U-turn",
+    "Before stopping",
+    "In all of the above cases"
+   ],
+   "explanation": "Before starting to move, change lanes, turn (U-turn) and stop, the driver is required to give signals with turn signals in the appropriate direction, and if they are missing or faulty, with his hand. When performing a maneuver, there should not be a danger to traffic or interference with other road users. (Clause 8.1 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 7-сұрақ",
+   "title": "Жүргізуші бағыт индикаторлары бар сигналдарды беруі керек (қолмен):",
+   "options": [
+    "Көлік жүргізу немесе жолды ауыстыру алдында",
+    "Бұрылудың немесе бұрудың алдында",
+    "Тоқтамас бұрын",
+    "Жоғарыда аталған барлық жағдайларда"
+   ],
+   "explanation": "Қозғалыс, жолақтарды өзгерту, бұрылу (кері бұрылу) және тоқтау алдында жүргізуші тиісті бағытта бұрылыс сигналдарымен, ал олар жетіспейтін немесе ақаулы болған жағдайда қолмен сигнал беруі қажет. Маневр жасау кезінде қозғалысқа қауіп төндірмеуі, сондай-ақ жол қозғалысының басқа қатысушыларына кедергі болмауы керек. (Жол қозғалысы ережесінің 8.1 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 187,
+ "correctAnswerIndex": 3,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "ca976eeda460719cc594c0a40bb82616",
+ "sourceCategory": "ab",
+ "sourceImage": null,
+ "playerPlacement": "street",
+ "annotations": []
+}

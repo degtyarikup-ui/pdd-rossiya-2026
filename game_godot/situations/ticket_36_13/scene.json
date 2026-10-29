@@ -3298,14 +3298,14 @@
     "targetAction": "uturn",
     "color": "#2BC280",
     "position": [
-     -14.5,
+     -10.5,
      0.0,
      1.5
     ],
     "rotationY": 1.571,
     "route": [
      [
-      -14.5,
+      -10.5,
       1.5
      ],
      [
@@ -3339,7 +3339,7 @@
     "height": 2.4
    },
    "pos": [
-    -14.5,
+    -10.5,
     0.0,
     1.5
    ],
@@ -3351,7 +3351,7 @@
    ],
    "path": [
     [
-     -14.5,
+     -10.5,
      0.0,
      1.5
     ],
@@ -3376,7 +3376,7 @@
      -5
     ]
    ],
-   "length": 50.522,
+   "length": 46.53,
    "clearDistance": 20,
    "maxSpeed": 5,
    "signalPlan": [
@@ -3391,16 +3391,25 @@
    "holdFor": null,
    "waitsForPlayer": true,
    "staysPut": false,
+   "paint": "#B9C0C7",
+   "way": null,
+   "driverSignal": "none",
+   "turnSignal": "auto",
    "hazards": false
   }
  ],
  "playerPlacement": "street",
+ "annotations": [],
+ "showPlayerGuide": true,
  "questionView": {
   "centre": [
-   -7.302,
-   3.402
+   -1.977,
+   11.461
   ],
-  "height": 40.647
+  "height": 25.304,
+  "yaw": 0.243,
+  "pitch": 0.437,
+  "elevation": 0
  },
  "officers": [
   {

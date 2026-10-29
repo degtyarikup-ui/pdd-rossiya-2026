@@ -1,0 +1,115 @@
+{
+ "id": "ticket_3_11",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -24.5,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.8,
+     -24.5
+    ],
+    [
+     -1.8,
+     0
+    ],
+    [
+     -1.8,
+     90
+    ],
+    [
+     -1.8,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 3 · Вопрос 11",
+   "title": "В каком случае водитель может начать обгон, если такой маневр на данном участке дороги не запрещен?",
+   "options": [
+    "Только если полоса, предназначенная для встречного движения, свободна на достаточном для обгона расстоянии",
+    "Только если его транспортное средство никто не обгоняет",
+    "В случае, если выполнены оба условия"
+   ],
+   "explanation": "Выполняя «классический» обгон, Вы должны учитывать три обязательных условия, при выполнении которых, при обгоне не создаёте никаких помех: 1) встречному, 2) едущим позади, 3) обгоняемому.(Пункты 11.1, 11.2 ПДД, «Техника управления автомобилем»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 3 · Question 11",
+   "title": "In what case can a driver start overtaking if such a maneuver is not prohibited on a given section of the road?",
+   "options": [
+    "Only if the lane intended for oncoming traffic is clear at a sufficient distance for overtaking",
+    "Only if no one overtakes his vehicle",
+    "If both conditions are met"
+   ],
+   "explanation": "When performing a “classic” overtaking, you must take into account three mandatory conditions, under which, when overtaking, you do not create any interference: 1) oncoming traffic, 2) driving behind, 3) overtaken. (Clause 11.1, 11.2 Traffic Regulations, “Driving Techniques”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "3-билет · 11-сұрақ",
+   "title": "Жолдың берілген учаскесінде мұндай маневр жасауға тыйым салынбаса, жүргізуші қандай жағдайда басып озуды бастай алады?",
+   "options": [
+    "Қарсы қозғалысқа арналған жолақ басып озу үшін жеткілікті қашықтықта таза болған жағдайда ғана",
+    "Тек оның көлігін ешкім басып озбаса",
+    "Екі шарт орындалса"
+   ],
+   "explanation": "«Классикалық» басып озуды орындау кезінде сіз үш міндетті шартты ескеруіңіз керек, онда басып озу кезінде ешкімге кедергі келтірмейсіз: 1) қарсы келе жатқан көлікке, 2) артынан келе жатқан көлікке, 3) басып озылатын көлікке. (Жол қозғалысы ережелерінің 11.1, 11.2 тармақтары, «Жүргізу техникасы»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 296,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "eff2a352df08d22d6002edfd84764455",
+ "sourceCategory": "ab",
+ "sourceImage": null,
+ "playerPlacement": "street",
+ "annotations": []
+}

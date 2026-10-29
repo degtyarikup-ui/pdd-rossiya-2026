@@ -1,0 +1,1228 @@
+{
+ "schema": 1,
+ "id": "ticket_1_19",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -91
+    ],
+    [
+     7,
+     -90
+    ],
+    [
+     7,
+     0
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -7,
+     -90
+    ],
+    [
+     -7,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     7,
+     90
+    ],
+    [
+     7,
+     91
+    ],
+    [
+     -7,
+     91
+    ],
+    [
+     -7,
+     90
+    ],
+    [
+     -7,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     6.914,
+     1.095
+    ],
+    [
+     6.657,
+     2.163
+    ],
+    [
+     6.237,
+     3.178
+    ],
+    [
+     5.663,
+     4.114
+    ],
+    [
+     4.95,
+     4.95
+    ],
+    [
+     4.114,
+     5.663
+    ],
+    [
+     3.178,
+     6.237
+    ],
+    [
+     2.163,
+     6.657
+    ],
+    [
+     1.095,
+     6.914
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     -1.095,
+     6.914
+    ],
+    [
+     -2.163,
+     6.657
+    ],
+    [
+     -3.178,
+     6.237
+    ],
+    [
+     -4.114,
+     5.663
+    ],
+    [
+     -4.95,
+     4.95
+    ],
+    [
+     -5.663,
+     4.114
+    ],
+    [
+     -6.237,
+     3.178
+    ],
+    [
+     -6.657,
+     2.163
+    ],
+    [
+     -6.914,
+     1.095
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -6.914,
+     -1.095
+    ],
+    [
+     -6.657,
+     -2.163
+    ],
+    [
+     -6.237,
+     -3.178
+    ],
+    [
+     -5.663,
+     -4.114
+    ],
+    [
+     -4.95,
+     -4.95
+    ],
+    [
+     -4.114,
+     -5.663
+    ],
+    [
+     -3.178,
+     -6.237
+    ],
+    [
+     -2.163,
+     -6.657
+    ],
+    [
+     -1.095,
+     -6.914
+    ],
+    [
+     0,
+     -7
+    ],
+    [
+     1.095,
+     -6.914
+    ],
+    [
+     2.163,
+     -6.657
+    ],
+    [
+     3.178,
+     -6.237
+    ],
+    [
+     4.114,
+     -5.663
+    ],
+    [
+     4.95,
+     -4.95
+    ],
+    [
+     5.663,
+     -4.114
+    ],
+    [
+     6.237,
+     -3.178
+    ],
+    [
+     6.657,
+     -2.163
+    ],
+    [
+     6.914,
+     -1.095
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     -0.15,
+     -91
+    ],
+    [
+     -0.15,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     0.15,
+     -91
+    ],
+    [
+     0.15,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     -91
+    ],
+    [
+     -3.5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     -91
+    ],
+    [
+     3.5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_5",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "solid",
+   "points": [
+    [
+     -0.15,
+     0
+    ],
+    [
+     -0.15,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_6",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "solid",
+   "points": [
+    [
+     0.15,
+     0
+    ],
+    [
+     0.15,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_7",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     0
+    ],
+    [
+     -3.5,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_8",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     0
+    ],
+    [
+     3.5,
+     91
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": false,
+   "manual": true,
+   "points": [
+    [
+     -5.25,
+     -91
+    ],
+    [
+     -5.5,
+     -51
+    ],
+    [
+     -5.5,
+     -29
+    ],
+    [
+     -6,
+     -19.5
+    ],
+    [
+     -5.892,
+     -13.041
+    ]
+   ],
+   "playerFree": true
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -5.892,
+     -13.041
+    ],
+    [
+     -5.25,
+     87.7
+    ]
+   ],
+   "exitYaw": 0,
+   "playerFree": true
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [
+  {
+   "id": "decor_1",
+   "prop": "buildings/home_0",
+   "pos": [
+    -19.779,
+    11.537
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_2",
+   "prop": "street/fence_14",
+   "pos": [
+    -10.887,
+    7.434
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_5",
+   "prop": "trees/birch_0",
+   "pos": [
+    -15.882,
+    2.844
+   ],
+   "yaw": 5.485,
+   "scale": [
+    1.199,
+    1.199,
+    1.199
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_8",
+   "prop": "buildings/home_1",
+   "pos": [
+    -26.412,
+    30.384
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_9",
+   "prop": "street/fence_14",
+   "pos": [
+    -10.887,
+    30.384
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_10",
+   "prop": "street/fence_12",
+   "pos": [
+    -26.412,
+    41.184
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_12",
+   "prop": "trees/round_0",
+   "pos": [
+    -15.573,
+    23.499
+   ],
+   "yaw": 8.24,
+   "scale": [
+    1.102,
+    1.102,
+    1.102
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_15",
+   "prop": "buildings/home_0",
+   "pos": [
+    -20.404,
+    57.884
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_16",
+   "prop": "street/fence_14",
+   "pos": [
+    -11.415,
+    54.811
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_19",
+   "prop": "trees/birch_0",
+   "pos": [
+    -16.41,
+    50.221
+   ],
+   "yaw": 5.485,
+   "scale": [
+    1.199,
+    1.199,
+    1.199
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_22",
+   "prop": "buildings/home_1",
+   "pos": [
+    -25.39,
+    76.67
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_23",
+   "prop": "street/fence_14",
+   "pos": [
+    -11.415,
+    77.761
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_26",
+   "prop": "trees/round_0",
+   "pos": [
+    -16.41,
+    73.171
+   ],
+   "yaw": 8.24,
+   "scale": [
+    1.102,
+    1.102,
+    1.102
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_29",
+   "prop": "buildings/home_0",
+   "pos": [
+    -20.218,
+    -40.267
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_30",
+   "prop": "street/fence_14",
+   "pos": [
+    -11.235,
+    -47.192
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_31",
+   "prop": "street/fence_12",
+   "pos": [
+    -20.513,
+    -56.394
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_33",
+   "prop": "trees/birch_0",
+   "pos": [
+    -16.23,
+    -51.782
+   ],
+   "yaw": 5.485,
+   "scale": [
+    1.199,
+    1.199,
+    1.199
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_36",
+   "prop": "buildings/home_1",
+   "pos": [
+    -19.75,
+    -15.6
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_37",
+   "prop": "street/fence_14",
+   "pos": [
+    -11.235,
+    -24.242
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_38",
+   "prop": "street/fence_12",
+   "pos": [
+    -19.754,
+    -2.269
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_40",
+   "prop": "trees/round_0",
+   "pos": [
+    -14.428,
+    -31.046
+   ],
+   "yaw": 8.24,
+   "scale": [
+    1.102,
+    1.102,
+    1.102
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_43",
+   "prop": "buildings/home_0",
+   "pos": [
+    -18.73,
+    -65.36
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_44",
+   "prop": "street/fence_14",
+   "pos": [
+    -11.682,
+    -70.48
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_45",
+   "prop": "street/fence_12",
+   "pos": [
+    -19.779,
+    -80.694
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_47",
+   "prop": "trees/birch_0",
+   "pos": [
+    -14.296,
+    -77.429
+   ],
+   "yaw": 5.485,
+   "scale": [
+    1.199,
+    1.199,
+    1.199
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_50",
+   "prop": "buildings/home_0",
+   "pos": [
+    19.822,
+    -58.083
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_52",
+   "prop": "street/fence_12",
+   "pos": [
+    19.301,
+    -68.853
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_53",
+   "prop": "street/fence_12",
+   "pos": [
+    11.17,
+    -60.185
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_55",
+   "prop": "trees/birch_0",
+   "pos": [
+    16.098,
+    -50.412
+   ],
+   "yaw": 8.321,
+   "scale": [
+    1.144,
+    1.144,
+    1.144
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_56",
+   "prop": "street/bush",
+   "pos": [
+    15.895,
+    -65.045
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_57",
+   "prop": "buildings/home_1",
+   "pos": [
+    19.829,
+    -23.61
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_60",
+   "prop": "street/fence_12",
+   "pos": [
+    11.17,
+    -37.235
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_62",
+   "prop": "trees/pine_0",
+   "pos": [
+    16.03,
+    -32.78
+   ],
+   "yaw": 6.047,
+   "scale": [
+    1.013,
+    1.013,
+    1.013
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_63",
+   "prop": "street/bush",
+   "pos": [
+    15.895,
+    -42.095
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_64",
+   "prop": "buildings/home_0",
+   "pos": [
+    22.575,
+    2.639
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_66",
+   "prop": "street/fence_12",
+   "pos": [
+    19.692,
+    -7.369
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_67",
+   "prop": "street/fence_12",
+   "pos": [
+    11.336,
+    1.475
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_69",
+   "prop": "trees/birch_0",
+   "pos": [
+    16.196,
+    5.93
+   ],
+   "yaw": 8.321,
+   "scale": [
+    1.144,
+    1.144,
+    1.144
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_70",
+   "prop": "street/bush",
+   "pos": [
+    16.061,
+    -3.385
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_71",
+   "prop": "buildings/home_1",
+   "pos": [
+    19.671,
+    38.315
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_74",
+   "prop": "street/fence_12",
+   "pos": [
+    11.336,
+    24.425
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_76",
+   "prop": "trees/pine_0",
+   "pos": [
+    16.196,
+    28.88
+   ],
+   "yaw": 6.047,
+   "scale": [
+    1.013,
+    1.013,
+    1.013
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_77",
+   "prop": "street/bush",
+   "pos": [
+    15.996,
+    23.242
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  }
+ ],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 1 · Вопрос 19",
+    "title": "В случае, когда правые колёса автомобиля наезжают на неукреплённую влажную обочину, рекомендуется:",
+    "options": [
+     "Затормозить и полностью остановиться",
+     "Затормозить и плавно направить автомобиль на проезжую часть",
+     "Не прибегая к торможению, плавно направить автомобиль на проезжую часть"
+    ],
+    "explanation": "Такая ситуация опасна вследствие возникновения момента сил, стремящегося развернуть автомобиль. Старайтесь плавно вернуть автомобиль на проезжую часть не меняя скорости.",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 1 · Question 19",
+    "title": "In the case when the right wheels of the car run over an unimproved wet shoulder, it is recommended:",
+    "options": [
+     "Brake and come to a complete stop",
+     "Brake and smoothly steer the car onto the roadway",
+     "Without braking, smoothly steer the car onto the roadway"
+    ],
+    "explanation": "This situation is dangerous due to the occurrence of a moment of force that tends to turn the car around. Try to smoothly return the car to the roadway without changing speed.",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "1-билет · 19-сұрақ",
+    "title": "Автокөліктің оң жақ дөңгелектері жақсартылмаған дымқыл иықтан өтіп кеткен жағдайда, ұсынылады:",
+    "options": [
+     "Тежеңіз және толық тоқтаңыз",
+     "Тежеу және көлікті жолға біркелкі бағыттау",
+     "Тежеусіз, көлікті жолға біркелкі бағыттаңыз"
+    ],
+    "explanation": "Бұл жағдай көлікті бұруға бейім күш моментінің пайда болуына байланысты қауіпті. Жылдамдықты өзгертпей, көлікті жолға тегіс қайтаруға тырысыңыз.",
+    "pddRule": ""
+   }
+  },
+  "correct": 2,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "e9f447c2c017515177c3654a447cc12f",
+  "sourceCategory": "ab",
+  "sourceImage": null
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "double"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "double"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "questionAt": 13.1,
+   "lane": 1,
+   "pose": {
+    "x": -5.892,
+    "z": -13.041,
+    "yaw": 0
+   },
+   "mode": "free"
+  },
+  "freeApproachPath": [
+   [
+    -5.25,
+    -91
+   ],
+   [
+    -5.5,
+    -51
+   ],
+   [
+    -5.5,
+    -29
+   ],
+   [
+    -6,
+    -19.5
+   ],
+   [
+    -5.892,
+    -13.041
+   ]
+  ]
+ },
+ "stop": {
+  "x": -5.892,
+  "z": -13.041,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 14
+ },
+ "approachWidth": 14,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionView": {
+  "centre": [
+   -4.377,
+   1.537
+  ],
+  "height": 25.479,
+  "yaw": -0.145,
+  "pitch": 0.473,
+  "elevation": 0
+ }
+}

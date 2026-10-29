@@ -1,0 +1,2228 @@
+{
+ "schema": 1,
+ "id": "ticket_1_6",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -91
+    ],
+    [
+     7,
+     -90
+    ],
+    [
+     7,
+     0
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -7,
+     -90
+    ],
+    [
+     -7,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     7,
+     90
+    ],
+    [
+     7,
+     91
+    ],
+    [
+     -7,
+     91
+    ],
+    [
+     -7,
+     90
+    ],
+    [
+     -7,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s3",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     -7
+    ],
+    [
+     90,
+     -7
+    ],
+    [
+     91,
+     -7
+    ],
+    [
+     91,
+     7
+    ],
+    [
+     90,
+     7
+    ],
+    [
+     0,
+     7
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s4",
+   "auto": true,
+   "outer": [
+    [
+     0,
+     7
+    ],
+    [
+     -90,
+     7
+    ],
+    [
+     -91,
+     7
+    ],
+    [
+     -91,
+     -7
+    ],
+    [
+     -90,
+     -7
+    ],
+    [
+     0,
+     -7
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     6.914,
+     1.095
+    ],
+    [
+     6.657,
+     2.163
+    ],
+    [
+     6.237,
+     3.178
+    ],
+    [
+     5.663,
+     4.114
+    ],
+    [
+     4.95,
+     4.95
+    ],
+    [
+     4.114,
+     5.663
+    ],
+    [
+     3.178,
+     6.237
+    ],
+    [
+     2.163,
+     6.657
+    ],
+    [
+     1.095,
+     6.914
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     -1.095,
+     6.914
+    ],
+    [
+     -2.163,
+     6.657
+    ],
+    [
+     -3.178,
+     6.237
+    ],
+    [
+     -4.114,
+     5.663
+    ],
+    [
+     -4.95,
+     4.95
+    ],
+    [
+     -5.663,
+     4.114
+    ],
+    [
+     -6.237,
+     3.178
+    ],
+    [
+     -6.657,
+     2.163
+    ],
+    [
+     -6.914,
+     1.095
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -6.914,
+     -1.095
+    ],
+    [
+     -6.657,
+     -2.163
+    ],
+    [
+     -6.237,
+     -3.178
+    ],
+    [
+     -5.663,
+     -4.114
+    ],
+    [
+     -4.95,
+     -4.95
+    ],
+    [
+     -4.114,
+     -5.663
+    ],
+    [
+     -3.178,
+     -6.237
+    ],
+    [
+     -2.163,
+     -6.657
+    ],
+    [
+     -1.095,
+     -6.914
+    ],
+    [
+     0,
+     -7
+    ],
+    [
+     1.095,
+     -6.914
+    ],
+    [
+     2.163,
+     -6.657
+    ],
+    [
+     3.178,
+     -6.237
+    ],
+    [
+     4.114,
+     -5.663
+    ],
+    [
+     4.95,
+     -4.95
+    ],
+    [
+     5.663,
+     -4.114
+    ],
+    [
+     6.237,
+     -3.178
+    ],
+    [
+     6.657,
+     -2.163
+    ],
+    [
+     6.914,
+     -1.095
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     -12.2
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     -91
+    ],
+    [
+     -3.5,
+     -12.2
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     -91
+    ],
+    [
+     3.5,
+     -12.2
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     12.2
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_5",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     12.2
+    ],
+    [
+     -3.5,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_6",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     12.2
+    ],
+    [
+     3.5,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_7",
+   "auto": true,
+   "colour": "white",
+   "street": "s3",
+   "type": "solid",
+   "points": [
+    [
+     12.2,
+     0
+    ],
+    [
+     91,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_8",
+   "auto": true,
+   "colour": "white",
+   "street": "s3",
+   "type": "dashed",
+   "points": [
+    [
+     12.2,
+     3.5
+    ],
+    [
+     91,
+     3.5
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_9",
+   "auto": true,
+   "colour": "white",
+   "street": "s3",
+   "type": "dashed",
+   "points": [
+    [
+     12.2,
+     -3.5
+    ],
+    [
+     91,
+     -3.5
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_10",
+   "auto": true,
+   "colour": "white",
+   "street": "s4",
+   "type": "solid",
+   "points": [
+    [
+     -12.2,
+     0
+    ],
+    [
+     -91,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_11",
+   "auto": true,
+   "colour": "white",
+   "street": "s4",
+   "type": "dashed",
+   "points": [
+    [
+     -12.2,
+     -3.5
+    ],
+    [
+     -91,
+     -3.5
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_12",
+   "auto": true,
+   "colour": "white",
+   "street": "s4",
+   "type": "dashed",
+   "points": [
+    [
+     -12.2,
+     3.5
+    ],
+    [
+     -91,
+     3.5
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -5.25,
+     -91
+    ],
+    [
+     -5.25,
+     -15.9
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "straight",
+   "points": [
+    [
+     -5.25,
+     -15.9
+    ],
+    [
+     -5.25,
+     -7.5
+    ],
+    [
+     -5.25,
+     7.5
+    ],
+    [
+     -5.25,
+     8
+    ],
+    [
+     -5.25,
+     27.5
+    ]
+   ],
+   "exitYaw": 0
+  },
+  {
+   "id": "manoeuvre_left",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "left",
+   "points": [
+    [
+     -5.25,
+     -15.9
+    ],
+    [
+     -5.25,
+     -7.5
+    ],
+    [
+     -5.025,
+     -4.841
+    ],
+    [
+     -4.365,
+     -2.732
+    ],
+    [
+     -3.292,
+     -1.112
+    ],
+    [
+     -1.828,
+     0.078
+    ],
+    [
+     0.005,
+     0.9
+    ],
+    [
+     2.185,
+     1.412
+    ],
+    [
+     4.691,
+     1.676
+    ],
+    [
+     7.5,
+     1.75
+    ],
+    [
+     8,
+     1.75
+    ],
+    [
+     27.5,
+     1.75
+    ]
+   ],
+   "exitYaw": 1.571
+  },
+  {
+   "id": "manoeuvre_right",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "right",
+   "points": [
+    [
+     -5.25,
+     -15.9
+    ],
+    [
+     -5.25,
+     -7.5
+    ],
+    [
+     -5.281,
+     -6.947
+    ],
+    [
+     -5.378,
+     -6.477
+    ],
+    [
+     -5.542,
+     -6.089
+    ],
+    [
+     -5.778,
+     -5.778
+    ],
+    [
+     -6.089,
+     -5.542
+    ],
+    [
+     -6.477,
+     -5.378
+    ],
+    [
+     -6.947,
+     -5.281
+    ],
+    [
+     -7.5,
+     -5.25
+    ],
+    [
+     -8,
+     -5.25
+    ],
+    [
+     -27.5,
+     -5.25
+    ]
+   ],
+   "exitYaw": -1.571
+  },
+  {
+   "id": "manoeuvre_uturn",
+   "kind": "manoeuvre",
+   "auto": true,
+   "manual": false,
+   "exit": "uturn",
+   "points": [
+    [
+     -5.25,
+     -15.9
+    ],
+    [
+     -5.25,
+     -7.5
+    ],
+    [
+     -6.05,
+     -1.7
+    ],
+    [
+     -5.589,
+     0.615
+    ],
+    [
+     -4.278,
+     2.578
+    ],
+    [
+     -2.315,
+     3.889
+    ],
+    [
+     0,
+     4.35
+    ],
+    [
+     2.315,
+     3.889
+    ],
+    [
+     4.278,
+     2.578
+    ],
+    [
+     5.589,
+     0.615
+    ],
+    [
+     6.05,
+     -1.7
+    ],
+    [
+     1.75,
+     -10.5
+    ],
+    [
+     1.75,
+     -30.5
+    ]
+   ],
+   "exitYaw": 3.142
+  },
+  {
+   "id": "actor_cyclist_1",
+   "kind": "actor",
+   "manual": true,
+   "points": [
+    [
+     6.539,
+     13.232
+    ],
+    [
+     6.389,
+     -18.343
+    ]
+   ]
+  }
+ ],
+ "actors": [
+  {
+   "id": "cyclist_1",
+   "type": "cyclist",
+   "name": "Велосипедист",
+   "asset": "ticket_1_13/actor_0.glb",
+   "route": "actor_cyclist_1",
+   "pos": [
+    6.539,
+    13.232
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "maxSpeed": 15,
+   "clearDistance": 15,
+   "halfLength": 1.01,
+   "halfWidth": 0.28,
+   "behaviour": {
+    "staysPut": false,
+    "waitsForPlayer": false
+   }
+  }
+ ],
+ "lights": [
+  {
+   "id": "light_1",
+   "pos": [
+    -7.209,
+    -11.312
+   ],
+   "yaw": -3.142,
+   "scale": 1,
+   "arrow": null,
+   "tram": null,
+   "state": "flashing_green",
+   "asset": "ticket_11_15/light_0.glb"
+  },
+  {
+   "id": "light_2",
+   "pos": [
+    7.289,
+    11.815
+   ],
+   "yaw": 0,
+   "scale": 1,
+   "arrow": null,
+   "tram": null,
+   "state": "flashing_green",
+   "asset": "ticket_11_15/light_0.glb"
+  }
+ ],
+ "decor": [
+  {
+   "id": "decor_1",
+   "prop": "street/fence_12",
+   "pos": [
+    -10.952,
+    -18.119
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_2",
+   "prop": "street/fence_12",
+   "pos": [
+    -10.984,
+    -31.24
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_3",
+   "prop": "street/fence_12",
+   "pos": [
+    -10.927,
+    -43.727
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_4",
+   "prop": "street/fence_12",
+   "pos": [
+    -10.915,
+    -56.219
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_5",
+   "prop": "street/fence_12",
+   "pos": [
+    -10.892,
+    -68.775
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_6",
+   "prop": "street/fence_12",
+   "pos": [
+    -17.565,
+    -11.642
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_7",
+   "prop": "street/fence_12",
+   "pos": [
+    -30.085,
+    -11.803
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_8",
+   "prop": "street/fence_12",
+   "pos": [
+    -42.915,
+    -11.713
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_9",
+   "prop": "trees/pine_0",
+   "pos": [
+    -15.975,
+    -33.428
+   ],
+   "yaw": 10.234,
+   "scale": [
+    0.795,
+    0.795,
+    0.795
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_10",
+   "prop": "trees/birch_0",
+   "pos": [
+    -24.975,
+    -33.428
+   ],
+   "yaw": 9.274,
+   "scale": [
+    0.897,
+    0.897,
+    0.897
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_11",
+   "prop": "trees/pine_0",
+   "pos": [
+    -33.975,
+    -33.428
+   ],
+   "yaw": 5.525,
+   "scale": [
+    0.837,
+    0.837,
+    0.837
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_12",
+   "prop": "trees/round_0",
+   "pos": [
+    -15.975,
+    -24.428
+   ],
+   "yaw": 6.968,
+   "scale": [
+    0.94,
+    0.94,
+    0.94
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_13",
+   "prop": "trees/birch_0",
+   "pos": [
+    -33.975,
+    -24.428
+   ],
+   "yaw": 10.072,
+   "scale": [
+    0.965,
+    0.965,
+    0.965
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_14",
+   "prop": "trees/birch_0",
+   "pos": [
+    -15.975,
+    -15.428
+   ],
+   "yaw": 9.959,
+   "scale": [
+    0.947,
+    0.947,
+    0.947
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_15",
+   "prop": "trees/pine_0",
+   "pos": [
+    -24.975,
+    -15.428
+   ],
+   "yaw": 6.445,
+   "scale": [
+    0.926,
+    0.926,
+    0.926
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_16",
+   "prop": "trees/round_0",
+   "pos": [
+    -33.975,
+    -15.428
+   ],
+   "yaw": 7.618,
+   "scale": [
+    0.853,
+    0.853,
+    0.853
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_17",
+   "prop": "street/bush",
+   "pos": [
+    -20.975,
+    -29.428
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_18",
+   "prop": "street/bush",
+   "pos": [
+    -28.975,
+    -29.428
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_19",
+   "prop": "street/bush",
+   "pos": [
+    -20.975,
+    -19.428
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_20",
+   "prop": "street/bush",
+   "pos": [
+    -28.975,
+    -19.428
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_21",
+   "prop": "street/kiosk_0",
+   "pos": [
+    -24.975,
+    -24.428
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_22",
+   "prop": "street/lamp",
+   "pos": [
+    -24.975,
+    -28.428
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_23",
+   "prop": "street/lamp",
+   "pos": [
+    -24.975,
+    -20.428
+   ],
+   "yaw": 7.854,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_24",
+   "prop": "trees/pine_0",
+   "pos": [
+    31.927,
+    -31.529
+   ],
+   "yaw": 10.234,
+   "scale": [
+    0.795,
+    0.795,
+    0.795
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_25",
+   "prop": "trees/birch_0",
+   "pos": [
+    22.927,
+    -31.529
+   ],
+   "yaw": 9.274,
+   "scale": [
+    0.897,
+    0.897,
+    0.897
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_26",
+   "prop": "trees/pine_0",
+   "pos": [
+    13.927,
+    -31.529
+   ],
+   "yaw": 5.525,
+   "scale": [
+    0.837,
+    0.837,
+    0.837
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_27",
+   "prop": "trees/round_0",
+   "pos": [
+    31.927,
+    -22.529
+   ],
+   "yaw": 6.968,
+   "scale": [
+    0.94,
+    0.94,
+    0.94
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_28",
+   "prop": "trees/birch_0",
+   "pos": [
+    13.927,
+    -22.529
+   ],
+   "yaw": 10.072,
+   "scale": [
+    0.965,
+    0.965,
+    0.965
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_29",
+   "prop": "trees/birch_0",
+   "pos": [
+    31.927,
+    -13.529
+   ],
+   "yaw": 9.959,
+   "scale": [
+    0.947,
+    0.947,
+    0.947
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_30",
+   "prop": "trees/pine_0",
+   "pos": [
+    22.927,
+    -13.529
+   ],
+   "yaw": 6.445,
+   "scale": [
+    0.926,
+    0.926,
+    0.926
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_31",
+   "prop": "trees/round_0",
+   "pos": [
+    13.927,
+    -13.529
+   ],
+   "yaw": 7.618,
+   "scale": [
+    0.853,
+    0.853,
+    0.853
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_32",
+   "prop": "street/bush",
+   "pos": [
+    26.927,
+    -27.529
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_33",
+   "prop": "street/bush",
+   "pos": [
+    18.927,
+    -27.529
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_34",
+   "prop": "street/bush",
+   "pos": [
+    26.927,
+    -17.529
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_35",
+   "prop": "street/bush",
+   "pos": [
+    18.927,
+    -17.529
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_36",
+   "prop": "street/kiosk_0",
+   "pos": [
+    22.927,
+    -22.529
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_37",
+   "prop": "street/lamp",
+   "pos": [
+    22.927,
+    -26.529
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_38",
+   "prop": "street/lamp",
+   "pos": [
+    22.927,
+    -18.529
+   ],
+   "yaw": 7.854,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_39",
+   "prop": "buildings/block_0",
+   "pos": [
+    -19.263,
+    21.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_40",
+   "prop": "trees/pine_0",
+   "pos": [
+    -19.263,
+    12.579
+   ],
+   "yaw": 10.234,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_41",
+   "prop": "buildings/block_1",
+   "pos": [
+    -19.263,
+    42.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_42",
+   "prop": "trees/birch_0",
+   "pos": [
+    -19.263,
+    51.579
+   ],
+   "yaw": 9.274,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_43",
+   "prop": "buildings/block_2",
+   "pos": [
+    -37.263,
+    21.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_44",
+   "prop": "trees/pine_0",
+   "pos": [
+    -37.263,
+    12.579
+   ],
+   "yaw": 5.525,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_45",
+   "prop": "buildings/block_3",
+   "pos": [
+    -37.263,
+    42.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_46",
+   "prop": "trees/round_0",
+   "pos": [
+    -37.263,
+    51.579
+   ],
+   "yaw": 6.968,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_47",
+   "prop": "trees/birch_0",
+   "pos": [
+    -17.263,
+    32.079
+   ],
+   "yaw": 10.072,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_48",
+   "prop": "trees/birch_0",
+   "pos": [
+    -22.763,
+    32.079
+   ],
+   "yaw": 9.959,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_49",
+   "prop": "trees/pine_0",
+   "pos": [
+    -28.263,
+    32.079
+   ],
+   "yaw": 6.445,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_50",
+   "prop": "trees/round_0",
+   "pos": [
+    -33.763,
+    32.079
+   ],
+   "yaw": 7.618,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_51",
+   "prop": "trees/birch_0",
+   "pos": [
+    -39.263,
+    32.079
+   ],
+   "yaw": 7.001,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_52",
+   "prop": "street/lamp",
+   "pos": [
+    -28.263,
+    28.079
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_53",
+   "prop": "street/lamp",
+   "pos": [
+    -28.263,
+    36.079
+   ],
+   "yaw": 7.854,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_54",
+   "prop": "street/bush",
+   "pos": [
+    -11.263,
+    27.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_55",
+   "prop": "street/bush",
+   "pos": [
+    -45.263,
+    36.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_56",
+   "prop": "buildings/block_0",
+   "pos": [
+    34.69,
+    21.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_57",
+   "prop": "trees/pine_0",
+   "pos": [
+    34.69,
+    12.579
+   ],
+   "yaw": 10.234,
+   "scale": [
+    0.75,
+    0.75,
+    0.75
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_58",
+   "prop": "buildings/block_1",
+   "pos": [
+    34.69,
+    42.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_59",
+   "prop": "trees/birch_0",
+   "pos": [
+    34.69,
+    51.579
+   ],
+   "yaw": 9.274,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_60",
+   "prop": "buildings/block_2",
+   "pos": [
+    16.69,
+    21.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_61",
+   "prop": "trees/pine_0",
+   "pos": [
+    16.69,
+    12.579
+   ],
+   "yaw": 5.525,
+   "scale": [
+    0.79,
+    0.79,
+    0.79
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_62",
+   "prop": "buildings/block_3",
+   "pos": [
+    16.69,
+    42.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_63",
+   "prop": "trees/round_0",
+   "pos": [
+    16.69,
+    51.579
+   ],
+   "yaw": 6.968,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_64",
+   "prop": "trees/birch_0",
+   "pos": [
+    36.69,
+    32.079
+   ],
+   "yaw": 10.072,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_65",
+   "prop": "trees/birch_0",
+   "pos": [
+    31.19,
+    32.079
+   ],
+   "yaw": 9.959,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_66",
+   "prop": "trees/pine_0",
+   "pos": [
+    25.69,
+    32.079
+   ],
+   "yaw": 6.445,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_67",
+   "prop": "trees/round_0",
+   "pos": [
+    20.19,
+    32.079
+   ],
+   "yaw": 7.618,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_68",
+   "prop": "trees/birch_0",
+   "pos": [
+    14.69,
+    32.079
+   ],
+   "yaw": 7.001,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_69",
+   "prop": "street/lamp",
+   "pos": [
+    25.69,
+    28.079
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_70",
+   "prop": "street/lamp",
+   "pos": [
+    25.69,
+    36.079
+   ],
+   "yaw": 7.854,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_71",
+   "prop": "street/bush",
+   "pos": [
+    42.69,
+    27.579
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_72",
+   "prop": "buildings/block_3",
+   "pos": [
+    -20.953,
+    77.66
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_73",
+   "prop": "trees/round_0",
+   "pos": [
+    -20.953,
+    86.66
+   ],
+   "yaw": 6.968,
+   "scale": [
+    0.888,
+    0.888,
+    0.888
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_74",
+   "prop": "trees/pine_0",
+   "pos": [
+    -11.953,
+    67.16
+   ],
+   "yaw": 6.445,
+   "scale": [
+    0.875,
+    0.875,
+    0.875
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_75",
+   "prop": "trees/round_0",
+   "pos": [
+    -17.453,
+    67.16
+   ],
+   "yaw": 7.618,
+   "scale": [
+    0.806,
+    0.806,
+    0.806
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_76",
+   "prop": "trees/birch_0",
+   "pos": [
+    -22.953,
+    67.16
+   ],
+   "yaw": 7.001,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_77",
+   "prop": "street/lamp",
+   "pos": [
+    -11.953,
+    63.16
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_78",
+   "prop": "street/lamp",
+   "pos": [
+    -11.953,
+    71.16
+   ],
+   "yaw": 7.854,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_79",
+   "prop": "street/bush",
+   "pos": [
+    -28.953,
+    71.66
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_80",
+   "prop": "buildings/block_1",
+   "pos": [
+    16.974,
+    75.481
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_81",
+   "prop": "trees/birch_0",
+   "pos": [
+    16.974,
+    84.481
+   ],
+   "yaw": 9.274,
+   "scale": [
+    0.847,
+    0.847,
+    0.847
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_82",
+   "prop": "trees/birch_0",
+   "pos": [
+    18.974,
+    64.981
+   ],
+   "yaw": 10.072,
+   "scale": [
+    0.911,
+    0.911,
+    0.911
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_83",
+   "prop": "trees/birch_0",
+   "pos": [
+    13.474,
+    64.981
+   ],
+   "yaw": 9.959,
+   "scale": [
+    0.894,
+    0.894,
+    0.894
+   ],
+   "tint": null
+  },
+  {
+   "id": "decor_84",
+   "prop": "street/bush",
+   "pos": [
+    24.974,
+    60.481
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "tint": null
+  }
+ ],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 1 · Вопрос 6",
+    "title": "Что означает мигание зелёного сигнала светофора?",
+    "options": [
+     "Предупреждает о неисправности светофора",
+     "Разрешает движение и информирует о том, что вскоре будет включен запрещающий сигнал",
+     "Запрещает дальнейшее движение"
+    ],
+    "explanation": "Длительность мигания зелёного сигнала светофора обычно составляет 3-4 с. Это позволяет водителю заблаговременно, в зависимости от конкретных условий, принять решение:1) продолжить движение с прежней скоростью;2) несколько увеличить скорость;3) начать снижение скорости вплоть до остановки.(Пункт 6.2 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 1 · Question 6",
+    "title": "What does a flashing green traffic light mean?",
+    "options": [
+     "Warns of a malfunction of the traffic light",
+     "Allows movement and informs that a prohibitory signal will soon be turned on",
+     "Prohibits further movement"
+    ],
+    "explanation": "The blinking duration of a green traffic light is usually 3-4 seconds. This allows the driver to make a decision in advance, depending on specific conditions: 1) continue driving at the same speed; 2) increase the speed slightly; 3) begin reducing the speed until stopping. (Clause 6.2 of the Traffic Rules)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "1-билет · 6-сұрақ",
+    "title": "Жасыл бағдаршамның жыпылықтауы нені білдіреді?",
+    "options": [
+     "Бағдаршамның істен шығуын ескертеді",
+     "Қозғалысқа рұқсат береді және жақын арада тыйым салу сигналы қосылатынын хабарлайды",
+     "Әрі қарай қозғалуға тыйым салады"
+    ],
+    "explanation": "Жасыл бағдаршамның жыпылықтау ұзақтығы әдетте 3-4 секундты құрайды. Бұл жүргізушіге нақты шарттарға байланысты алдын ала шешім қабылдауға мүмкіндік береді: 1) бұрынғы жылдамдықпен қозғалысты жалғастыру; 2) жылдамдықты аздап арттыру; 3) тоқтағанға дейін жылдамдықты азайтуды бастау. (Жол қозғалысы ережесінің 6.2 тармағы)",
+    "pddRule": ""
+   }
+  },
+  "correct": 1,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "627f7626e7460498d50c0570c86d82f4",
+  "sourceCategory": "ab",
+  "sourceImage": null,
+  "redWait": null
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   },
+   {
+    "id": "e",
+    "x": 90,
+    "z": 0
+   },
+   {
+    "id": "w",
+    "x": -90,
+    "z": 0
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s3",
+    "a": "c",
+    "b": "e",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s4",
+    "a": "c",
+    "b": "w",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "questionAt": 15.9,
+   "lane": 1
+  }
+ },
+ "stop": {
+  "x": -5.25,
+  "z": -15.9,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 14,
+  "left": 14,
+  "right": 14,
+  "uturn": 14
+ },
+ "approachWidth": 14,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": true,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionView": {
+  "centre": [
+   -6.272,
+   14.128
+  ],
+  "height": 17.82,
+  "yaw": -0.001,
+  "pitch": 0.191,
+  "elevation": 0
+ }
+}

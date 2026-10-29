@@ -1,0 +1,91 @@
+{
+ "id": "ticket_1_19",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 19",
+   "title": "В случае, когда правые колёса автомобиля наезжают на неукреплённую влажную обочину, рекомендуется:",
+   "options": [
+    "Затормозить и полностью остановиться",
+    "Затормозить и плавно направить автомобиль на проезжую часть",
+    "Не прибегая к торможению, плавно направить автомобиль на проезжую часть"
+   ],
+   "explanation": "Такая ситуация опасна вследствие возникновения момента сил, стремящегося развернуть автомобиль. Старайтесь плавно вернуть автомобиль на проезжую часть не меняя скорости.",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 19",
+   "title": "In the case when the right wheels of the car run over an unimproved wet shoulder, it is recommended:",
+   "options": [
+    "Brake and come to a complete stop",
+    "Brake and smoothly steer the car onto the roadway",
+    "Without braking, smoothly steer the car onto the roadway"
+   ],
+   "explanation": "This situation is dangerous due to the occurrence of a moment of force that tends to turn the car around. Try to smoothly return the car to the roadway without changing speed.",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 19-сұрақ",
+   "title": "Автокөліктің оң жақ дөңгелектері жақсартылмаған дымқыл иықтан өтіп кеткен жағдайда, ұсынылады:",
+   "options": [
+    "Тежеңіз және толық тоқтаңыз",
+    "Тежеу және көлікті жолға біркелкі бағыттау",
+    "Тежеусіз, көлікті жолға біркелкі бағыттаңыз"
+   ],
+   "explanation": "Бұл жағдай көлікті бұруға бейім күш моментінің пайда болуына байланысты қауіпті. Жылдамдықты өзгертпей, көлікті жолға тегіс қайтаруға тырысыңыз.",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 264,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "e9f447c2c017515177c3654a447cc12f",
+ "sourceCategory": "ab",
+ "sourceImage": null
+}

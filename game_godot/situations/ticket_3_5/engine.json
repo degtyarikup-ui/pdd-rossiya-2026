@@ -1,0 +1,91 @@
+{
+ "id": "ticket_3_5",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -24.5,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 3 · Вопрос 5",
+   "title": "Можно ли Вам остановиться в этом месте для посадки или высадки пассажиров?",
+   "options": [
+    "Можно",
+    "Можно, если при этом не будут созданы помехи движению маршрутных транспортных средств",
+    "Нельзя"
+   ],
+   "explanation": "В данном случае место остановки маршрутных транспортных средств обозначено соответствующим знаком и жёлтой зигзагообразной разметкой 1.17.1.Остановка в указанном месте допускается, если Вы произведёте ее для посадки или высадки пассажиров и в это время не создадите помех движению маршрутных транспортных средств или ТС, используемых в качестве легкового такси.(«Дорожные знаки», «Горизонтальная разметка», пункт 12.4 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 3 · Question 5",
+   "title": "Can you stop at this location to pick up or drop off passengers?",
+   "options": [
+    "Can",
+    "It is possible, if this does not interfere with the movement of route vehicles",
+    "It is forbidden"
+   ],
+   "explanation": "In this case, the stopping place for route vehicles is indicated by a corresponding sign and yellow zigzag markings 1.17.1. Stopping at the indicated place is allowed if you make it to pick up or disembark passengers and at this time do not interfere with the movement of route vehicles or vehicles used as a passenger taxi. (“Road signs”, “Horizontal markings”, clause 12.4 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "3-билет · 5-сұрақ",
+   "title": "Жолаушыларды алып кету немесе түсіру үшін осы жерде тоқтай аласыз ба?",
+   "options": [
+    "Иә",
+    "Бұл маршруттық көліктердің қозғалысына кедергі келтірмейтін болса, рұқсат етіледі.",
+    "Ол тыйым салынған"
+   ],
+   "explanation": "Бұл жерде маршруттық көлік құралдарының тоқтау орны тиісті белгімен және сары түсті ирек таңбалаумен (1.17.1) белгіленген. Көрсетілген жерде жолаушыларды отырғызу немесе түсіру үшін тоқтауға рұқсат етіледі, егер осы уақытта маршруттық көліктердің немесе жолаушылар таксиі ретінде пайдаланылатын көліктердің қозғалысына кедергі келтірмесеңіз. («Жол белгілері», «Көлденең таңбалар», Жол қозғалысы ережелерінің 12.4 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 170,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "43a06f0740a5b23bdc29c0b010158048",
+ "sourceCategory": "ab",
+ "sourceImage": "2609dd0293a8f2c0fce44244a3c6b40a"
+}

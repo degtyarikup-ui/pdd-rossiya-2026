@@ -1,0 +1,94 @@
+{
+ "id": "ticket_1_6",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -15.9,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14,
+  "left": 14,
+  "right": 14,
+  "uturn": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 6",
+   "title": "Что означает мигание зелёного сигнала светофора?",
+   "options": [
+    "Предупреждает о неисправности светофора",
+    "Разрешает движение и информирует о том, что вскоре будет включен запрещающий сигнал",
+    "Запрещает дальнейшее движение"
+   ],
+   "explanation": "Длительность мигания зелёного сигнала светофора обычно составляет 3-4 с. Это позволяет водителю заблаговременно, в зависимости от конкретных условий, принять решение:1) продолжить движение с прежней скоростью;2) несколько увеличить скорость;3) начать снижение скорости вплоть до остановки.(Пункт 6.2 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 6",
+   "title": "What does a flashing green traffic light mean?",
+   "options": [
+    "Warns of a malfunction of the traffic light",
+    "Allows movement and informs that a prohibitory signal will soon be turned on",
+    "Prohibits further movement"
+   ],
+   "explanation": "The blinking duration of a green traffic light is usually 3-4 seconds. This allows the driver to make a decision in advance, depending on specific conditions: 1) continue driving at the same speed; 2) increase the speed slightly; 3) begin reducing the speed until stopping. (Clause 6.2 of the Traffic Rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 6-сұрақ",
+   "title": "Жасыл бағдаршамның жыпылықтауы нені білдіреді?",
+   "options": [
+    "Бағдаршамның істен шығуын ескертеді",
+    "Қозғалысқа рұқсат береді және жақын арада тыйым салу сигналы қосылатынын хабарлайды",
+    "Әрі қарай қозғалуға тыйым салады"
+   ],
+   "explanation": "Жасыл бағдаршамның жыпылықтау ұзақтығы әдетте 3-4 секундты құрайды. Бұл жүргізушіге нақты шарттарға байланысты алдын ала шешім қабылдауға мүмкіндік береді: 1) бұрынғы жылдамдықпен қозғалысты жалғастыру; 2) жылдамдықты аздап арттыру; 3) тоқтағанға дейін жылдамдықты азайтуды бастау. (Жол қозғалысы ережесінің 6.2 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 199,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "627f7626e7460498d50c0570c86d82f4",
+ "sourceCategory": "ab",
+ "sourceImage": null
+}

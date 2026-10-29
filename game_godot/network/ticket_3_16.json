@@ -1,0 +1,508 @@
+{
+ "schema": 1,
+ "id": "ticket_3_16",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -91
+    ],
+    [
+     7,
+     -90
+    ],
+    [
+     7,
+     0
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -7,
+     -90
+    ],
+    [
+     -7,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     7,
+     90
+    ],
+    [
+     7,
+     91
+    ],
+    [
+     -7,
+     91
+    ],
+    [
+     -7,
+     90
+    ],
+    [
+     -7,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     6.914,
+     1.095
+    ],
+    [
+     6.657,
+     2.163
+    ],
+    [
+     6.237,
+     3.178
+    ],
+    [
+     5.663,
+     4.114
+    ],
+    [
+     4.95,
+     4.95
+    ],
+    [
+     4.114,
+     5.663
+    ],
+    [
+     3.178,
+     6.237
+    ],
+    [
+     2.163,
+     6.657
+    ],
+    [
+     1.095,
+     6.914
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     -1.095,
+     6.914
+    ],
+    [
+     -2.163,
+     6.657
+    ],
+    [
+     -3.178,
+     6.237
+    ],
+    [
+     -4.114,
+     5.663
+    ],
+    [
+     -4.95,
+     4.95
+    ],
+    [
+     -5.663,
+     4.114
+    ],
+    [
+     -6.237,
+     3.178
+    ],
+    [
+     -6.657,
+     2.163
+    ],
+    [
+     -6.914,
+     1.095
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -6.914,
+     -1.095
+    ],
+    [
+     -6.657,
+     -2.163
+    ],
+    [
+     -6.237,
+     -3.178
+    ],
+    [
+     -5.663,
+     -4.114
+    ],
+    [
+     -4.95,
+     -4.95
+    ],
+    [
+     -4.114,
+     -5.663
+    ],
+    [
+     -3.178,
+     -6.237
+    ],
+    [
+     -2.163,
+     -6.657
+    ],
+    [
+     -1.095,
+     -6.914
+    ],
+    [
+     0,
+     -7
+    ],
+    [
+     1.095,
+     -6.914
+    ],
+    [
+     2.163,
+     -6.657
+    ],
+    [
+     3.178,
+     -6.237
+    ],
+    [
+     4.114,
+     -5.663
+    ],
+    [
+     4.95,
+     -4.95
+    ],
+    [
+     5.663,
+     -4.114
+    ],
+    [
+     6.237,
+     -3.178
+    ],
+    [
+     6.657,
+     -2.163
+    ],
+    [
+     6.914,
+     -1.095
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     -91
+    ],
+    [
+     -3.5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     -91
+    ],
+    [
+     3.5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_5",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     0
+    ],
+    [
+     -3.5,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_6",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     0
+    ],
+    [
+     3.5,
+     91
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.75,
+     -91
+    ],
+    [
+     -1.75,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -1.75,
+     -13.1
+    ],
+    [
+     -1.75,
+     0
+    ],
+    [
+     -1.75,
+     90
+    ],
+    [
+     -1.75,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 3 · Вопрос 16",
+    "title": "Кто из водителей нарушил правила остановки?",
+    "options": [
+     "Только водитель легкового автомобиля",
+     "Только водитель грузового автомобиля",
+     "Оба"
+    ],
+    "explanation": "На автомагистрали остановка и стоянка вне мест, специально отведённых и обозначенных соответствующими знаками, запрещена. Оба водителя нарушают правила.(«Дорожные знаки», пункты 12.1, 16.1 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 3 · Question 16",
+    "title": "Which driver violated the stopping rules?",
+    "options": [
+     "Car driver only",
+     "Truck driver only",
+     "Both"
+    ],
+    "explanation": "On the highway, stopping and parking outside of specially designated areas and marked with appropriate signs is prohibited. Both drivers violate the rules. (“Road signs”, paragraphs 12.1, 16.1 of the traffic rules)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "3-билет · 16-сұрақ",
+    "title": "Қай жүргізуші тоқтау ережесін бұзды?",
+    "options": [
+     "Тек көлік жүргізушісі",
+     "Тек жүк көлігінің жүргізушісі",
+     "Екеуі де"
+    ],
+    "explanation": "Автомагистральде арнайы бөлінген және тиісті белгілермен белгіленген жерлерден тыс жерде тоқтап тұруға және тұрақтауға тыйым салынады. Екі жүргізуші де ереже бұзады. («Жол белгілері», Жол қозғалысы ережелерінің 12.1, 16.1-тармақтары)",
+    "pddRule": ""
+   }
+  },
+  "correct": 2,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "03018a402611d50309be83db59abc924",
+  "sourceCategory": "ab",
+  "sourceImage": "3e744df2b7bb6b14d21ff1ee56e9e3e5"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c"
+  }
+ },
+ "stop": {
+  "x": -1.75,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 14
+ },
+ "approachWidth": 14,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionPool": {
+  "sourceQuestionId": "03018a402611d50309be83db59abc924",
+  "category": "ab",
+  "ticket": 3,
+  "number": 16
+ }
+}

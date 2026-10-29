@@ -1,0 +1,94 @@
+{
+ "id": "ticket_3_12",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 3 · Вопрос 12",
+   "title": "Кто из водителей нарушил правила стоянки?",
+   "options": [
+    "Оба",
+    "Только водитель автомобиля",
+    "Только водитель мотоцикла",
+    "Никто не нарушил"
+   ],
+   "explanation": "Водитель легкового автомобиля может заезжать на прилегающий к проезжей части тротуар только в местах, обозначенных знаком 6.4 «Парковка (парковочное место)», с одной из табличек 8.6.2, 8.6.3, 8.6.6-8.6.9 «Способ постановки транспортного средства на стоянку». В данной ситуации таких знаков нет, соответственно водитель - «нарушитель». Водитель мотоцикла не нарушает правила остановки и стоянки, т. к. правила запрещают это делать в условиях, когда расстояние между сплошной линией разметки и остановившимся транспортным средством менее З м. Здесь же действие происходит со стороны прерывистой линии, что Правилам не противоречит.(Пункт 12.2 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 3 · Question 12",
+   "title": "Which driver violated the parking rules?",
+   "options": [
+    "Both",
+    "Car driver only",
+    "Motorcycle driver only",
+    "Nobody violated"
+   ],
+   "explanation": "The driver of a passenger car may drive onto the sidewalk adjacent to the roadway only in places marked with sign 6.4 “Parking (parking space)”, with one of the signs 8.6.2, 8.6.3, 8.6.6-8.6.9 “Method of parking a vehicle.” In this situation, there are no such signs, so the driver is a “violator.” The motorcycle driver does not violate the rules of stopping and parking, since the rules prohibit doing this in conditions where the distance between the solid marking line and the stopped vehicle is less than 3 m. Here the action takes place from the side of the broken line, which does not contradict the Rules. (Clause 12.2 of the Traffic Regulations)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "3-билет · 12-сұрақ",
+   "title": "Қай жүргізуші көлік қою ережесін бұзды?",
+   "options": [
+    "Екеуі де",
+    "Тек көлік жүргізушісі",
+    "Тек мотоцикл жүргізушісі",
+    "Ешкім бұзған жоқ"
+   ],
+   "explanation": "Жеңіл автомобиль жүргізушісі жолдың жүріс бөлігіне іргелес жатқан тротуарға кіре алады тек 6.4 «Тұрақ (тұрақ)» белгісімен, 8.6.2, 8.6.3, 8.6.6–8.6.9 «Көлікті тұраққа қою әдісі» тақтайшаларының бірімен белгіленген орындарда. Бұл жағдайда мұндай белгілер жоқ, сондықтан жүргізуші «бұзушы» болып табылады. Мотоцикл жүргізушісі тоқтау және тұрақ қою ережелерін бұзбайды, өйткені ереже мұны үздіксіз таңба сызығы мен тоқтаған көлік құралы арасындағы қашықтық 3 м-ден аз болған жағдайда жасауға тыйым салады. Мұнда әрекет үзік сызық жағынан орындалады, бұл Ережеге қайшы келмейді. (Жол қозғалысы ережесінің 12.2 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 111,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "16190e96c166e8d2dbf1659709d87fb0",
+ "sourceCategory": "ab",
+ "sourceImage": "8fcf82e8373415484138ad71355732bb"
+}

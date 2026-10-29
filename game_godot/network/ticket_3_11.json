@@ -1,0 +1,442 @@
+{
+ "schema": 1,
+ "id": "ticket_3_11",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     -91
+    ],
+    [
+     4.2,
+     -90
+    ],
+    [
+     4.2,
+     0
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.2,
+     -90
+    ],
+    [
+     -4.2,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.2,
+     90
+    ],
+    [
+     4.2,
+     91
+    ],
+    [
+     -4.2,
+     91
+    ],
+    [
+     -4.2,
+     90
+    ],
+    [
+     -4.2,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     4.2,
+     0
+    ],
+    [
+     4.148,
+     0.657
+    ],
+    [
+     3.994,
+     1.298
+    ],
+    [
+     3.742,
+     1.907
+    ],
+    [
+     3.398,
+     2.469
+    ],
+    [
+     2.97,
+     2.97
+    ],
+    [
+     2.469,
+     3.398
+    ],
+    [
+     1.907,
+     3.742
+    ],
+    [
+     1.298,
+     3.994
+    ],
+    [
+     0.657,
+     4.148
+    ],
+    [
+     0,
+     4.2
+    ],
+    [
+     -0.657,
+     4.148
+    ],
+    [
+     -1.298,
+     3.994
+    ],
+    [
+     -1.907,
+     3.742
+    ],
+    [
+     -2.469,
+     3.398
+    ],
+    [
+     -2.97,
+     2.97
+    ],
+    [
+     -3.398,
+     2.469
+    ],
+    [
+     -3.742,
+     1.907
+    ],
+    [
+     -3.994,
+     1.298
+    ],
+    [
+     -4.148,
+     0.657
+    ],
+    [
+     -4.2,
+     0
+    ],
+    [
+     -4.148,
+     -0.657
+    ],
+    [
+     -3.994,
+     -1.298
+    ],
+    [
+     -3.742,
+     -1.907
+    ],
+    [
+     -3.398,
+     -2.469
+    ],
+    [
+     -2.97,
+     -2.97
+    ],
+    [
+     -2.469,
+     -3.398
+    ],
+    [
+     -1.907,
+     -3.742
+    ],
+    [
+     -1.298,
+     -3.994
+    ],
+    [
+     -0.657,
+     -4.148
+    ],
+    [
+     0,
+     -4.2
+    ],
+    [
+     0.657,
+     -4.148
+    ],
+    [
+     1.298,
+     -3.994
+    ],
+    [
+     1.907,
+     -3.742
+    ],
+    [
+     2.469,
+     -3.398
+    ],
+    [
+     2.97,
+     -2.97
+    ],
+    [
+     3.398,
+     -2.469
+    ],
+    [
+     3.742,
+     -1.907
+    ],
+    [
+     3.994,
+     -1.298
+    ],
+    [
+     4.148,
+     -0.657
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.8,
+     -91
+    ],
+    [
+     -1.8,
+     -24.5
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -1.8,
+     -24.5
+    ],
+    [
+     -1.8,
+     0
+    ],
+    [
+     -1.8,
+     90
+    ],
+    [
+     -1.8,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 3 · Вопрос 11",
+    "title": "В каком случае водитель может начать обгон, если такой маневр на данном участке дороги не запрещен?",
+    "options": [
+     "Только если полоса, предназначенная для встречного движения, свободна на достаточном для обгона расстоянии",
+     "Только если его транспортное средство никто не обгоняет",
+     "В случае, если выполнены оба условия"
+    ],
+    "explanation": "Выполняя «классический» обгон, Вы должны учитывать три обязательных условия, при выполнении которых, при обгоне не создаёте никаких помех: 1) встречному, 2) едущим позади, 3) обгоняемому.(Пункты 11.1, 11.2 ПДД, «Техника управления автомобилем»)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 3 · Question 11",
+    "title": "In what case can a driver start overtaking if such a maneuver is not prohibited on a given section of the road?",
+    "options": [
+     "Only if the lane intended for oncoming traffic is clear at a sufficient distance for overtaking",
+     "Only if no one overtakes his vehicle",
+     "If both conditions are met"
+    ],
+    "explanation": "When performing a “classic” overtaking, you must take into account three mandatory conditions, under which, when overtaking, you do not create any interference: 1) oncoming traffic, 2) driving behind, 3) overtaken. (Clause 11.1, 11.2 Traffic Regulations, “Driving Techniques”)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "3-билет · 11-сұрақ",
+    "title": "Жолдың берілген учаскесінде мұндай маневр жасауға тыйым салынбаса, жүргізуші қандай жағдайда басып озуды бастай алады?",
+    "options": [
+     "Қарсы қозғалысқа арналған жолақ басып озу үшін жеткілікті қашықтықта таза болған жағдайда ғана",
+     "Тек оның көлігін ешкім басып озбаса",
+     "Екі шарт орындалса"
+    ],
+    "explanation": "«Классикалық» басып озуды орындау кезінде сіз үш міндетті шартты ескеруіңіз керек, онда басып озу кезінде ешкімге кедергі келтірмейсіз: 1) қарсы келе жатқан көлікке, 2) артынан келе жатқан көлікке, 3) басып озылатын көлікке. (Жол қозғалысы ережелерінің 11.1, 11.2 тармақтары, «Жүргізу техникасы»)",
+    "pddRule": ""
+   }
+  },
+  "correct": 2,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "eff2a352df08d22d6002edfd84764455",
+  "sourceCategory": "ab",
+  "sourceImage": null
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "dashed"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "street",
+    "ends": {},
+    "edge": false,
+    "centre": "dashed"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c",
+   "questionAt": 24.5,
+   "lane": 0
+  }
+ },
+ "stop": {
+  "x": -1.8,
+  "z": -24.5,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "approachWidth": 8.4,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionPool": {
+  "sourceQuestionId": "eff2a352df08d22d6002edfd84764455",
+  "category": "ab",
+  "ticket": 3,
+  "number": 11
+ }
+}

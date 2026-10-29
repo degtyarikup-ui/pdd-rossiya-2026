@@ -1,0 +1,115 @@
+{
+ "id": "ticket_3_16",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.75,
+     -13.1
+    ],
+    [
+     -1.75,
+     0
+    ],
+    [
+     -1.75,
+     90
+    ],
+    [
+     -1.75,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 3 · Вопрос 16",
+   "title": "Кто из водителей нарушил правила остановки?",
+   "options": [
+    "Только водитель легкового автомобиля",
+    "Только водитель грузового автомобиля",
+    "Оба"
+   ],
+   "explanation": "На автомагистрали остановка и стоянка вне мест, специально отведённых и обозначенных соответствующими знаками, запрещена. Оба водителя нарушают правила.(«Дорожные знаки», пункты 12.1, 16.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 3 · Question 16",
+   "title": "Which driver violated the stopping rules?",
+   "options": [
+    "Car driver only",
+    "Truck driver only",
+    "Both"
+   ],
+   "explanation": "On the highway, stopping and parking outside of specially designated areas and marked with appropriate signs is prohibited. Both drivers violate the rules. (“Road signs”, paragraphs 12.1, 16.1 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "3-билет · 16-сұрақ",
+   "title": "Қай жүргізуші тоқтау ережесін бұзды?",
+   "options": [
+    "Тек көлік жүргізушісі",
+    "Тек жүк көлігінің жүргізушісі",
+    "Екеуі де"
+   ],
+   "explanation": "Автомагистральде арнайы бөлінген және тиісті белгілермен белгіленген жерлерден тыс жерде тоқтап тұруға және тұрақтауға тыйым салынады. Екі жүргізуші де ереже бұзады. («Жол белгілері», Жол қозғалысы ережелерінің 12.1, 16.1-тармақтары)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 118,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "03018a402611d50309be83db59abc924",
+ "sourceCategory": "ab",
+ "sourceImage": "3e744df2b7bb6b14d21ff1ee56e9e3e5",
+ "playerPlacement": "street",
+ "annotations": []
+}

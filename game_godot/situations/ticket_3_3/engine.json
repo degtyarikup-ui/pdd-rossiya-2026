@@ -1,0 +1,91 @@
+{
+ "id": "ticket_3_3",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 3 · Вопрос 3",
+   "title": "Вам необходимо двигаться со скоростью не более 40 км/ч:",
+   "options": [
+    "Только во время дождя",
+    "Во время выпадения осадков (дождя, града, снега)",
+    "Во всех случаях, когда покрытие проезжей части влажное"
+   ],
+   "explanation": "Табличка 8.16 «Влажное покрытие» указывает, что действие знака распространяется на период времени, когда покрытие проезжей части влажное.(«Дорожные знаки»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 3 · Question 3",
+   "title": "You need to drive at a speed of no more than 40 km/h:",
+   "options": [
+    "Only when it rains",
+    "During precipitation (rain, hail, snow)",
+    "In all cases when the roadway surface is wet"
+   ],
+   "explanation": "Plate 8.16 “Wet surface” indicates that the sign applies to the period of time when the roadway surface is wet. (“Road signs”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "3-билет · 3-сұрақ",
+   "title": "Сізге 40 км/сағ аспайтын жылдамдықпен жүру керек:",
+   "options": [
+    "Тек жаңбыр жауғанда",
+    "Жауын-шашын кезінде (жаңбыр, бұршақ, қар)",
+    "Жолдың беті ылғалды болған барлық жағдайларда"
+   ],
+   "explanation": "8.16 «Ылғалды жабын» тақтайшасы бұл белгінің жолдың беткі қабаты ылғалды болған уақыт кезеңіне қолданылатынын көрсетеді. («Жол белгілері»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 178,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "11e978b3bbc0be7d8307723af627a99e",
+ "sourceCategory": "ab",
+ "sourceImage": "881aacfa9f384179233cec04baf14420"
+}
