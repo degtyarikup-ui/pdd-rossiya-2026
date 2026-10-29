@@ -27,10 +27,7 @@ class RoadSignsEmblem extends StatelessWidget {
         Widget signBox(String asset) {
           return SizedBox.square(
             dimension: itemSize,
-            child: SvgPicture.asset(
-              asset,
-              fit: BoxFit.contain,
-            ),
+            child: SvgPicture.asset(asset, fit: BoxFit.contain),
           );
         }
 

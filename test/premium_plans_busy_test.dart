@@ -18,6 +18,7 @@ import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/premium_benefits_screen.dart';
+import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -220,8 +221,17 @@ void main() {
                 200,
               ),
             );
+            // The purchase is celebrated before the gate learns about it.
+            await pumpUntil(
+              () => find.byType(PremiumCelebrationScreen).evaluate().isNotEmpty,
+            );
+            expect(gateCompleted, isFalse);
+            // Its seal keeps twinkling, so wait for the entrance, not idle.
+            await tester.pump(const Duration(seconds: 2));
+            await tester.tap(find.text(appL10n.premiumCelebrationAction));
             await pumpUntil(() => gateCompleted);
             await tester.pumpAndSettle();
+            expect(find.byType(PremiumCelebrationScreen), findsNothing);
             expect(gateResult, isTrue);
             expect(PremiumService.instance.isPremium, isTrue);
             expect(store.purchases, hasLength(1));

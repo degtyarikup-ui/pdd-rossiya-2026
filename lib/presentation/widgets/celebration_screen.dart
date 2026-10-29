@@ -9,7 +9,8 @@ import 'package:pdd_app/core/utils/haptic_feedback.dart';
 import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 
-/// The shared full-screen frame for daily activity and achievement awards.
+/// The shared full-screen frame for daily activity, achievement and Premium
+/// celebrations.
 class CelebrationScreen extends StatefulWidget {
   const CelebrationScreen({
     super.key,
@@ -24,6 +25,10 @@ class CelebrationScreen extends StatefulWidget {
     this.position = 1,
     this.total = 1,
     this.isStreak = false,
+    this.background,
+    this.glowStrength,
+    this.details,
+    this.actionLabel,
   });
   final String heading, title, description, label;
   final Widget Function(double size) heroBuilder;
@@ -31,6 +36,18 @@ class CelebrationScreen extends StatefulWidget {
   final VoidCallback onContinue, onClose;
   final int position, total;
   final bool isStreak;
+
+  /// Overrides the accent (achievement) or gold (streak) backdrop.
+  final Color? background;
+
+  /// Strength of the white halo behind the hero; a white hero needs less.
+  final double? glowStrength;
+
+  /// Extra content under the label, e.g. what Premium unlocks.
+  final Widget? details;
+
+  /// Replaces «Продолжить» on the main button.
+  final String? actionLabel;
   @override
   State<CelebrationScreen> createState() => _CelebrationScreenState();
 }
@@ -99,7 +116,9 @@ class _CelebrationScreenState extends State<CelebrationScreen>
   @override
   Widget build(BuildContext context) {
     final reduced = MediaQuery.disableAnimationsOf(context);
-    final background = widget.isStreak ? AppColors.gold : AppColors.accent;
+    final background =
+        widget.background ??
+        (widget.isStreak ? AppColors.gold : AppColors.accent);
     _syncGlowPosition();
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
@@ -118,7 +137,8 @@ class _CelebrationScreenState extends State<CelebrationScreen>
                   center: _glowCenter,
                   badgeSize: _glowBadgeSize,
                   rotation: _spin,
-                  glowStrength: widget.isStreak ? .32 : 1,
+                  glowStrength:
+                      widget.glowStrength ?? (widget.isStreak ? .32 : 1),
                 ),
               ),
             ),
@@ -250,6 +270,10 @@ class _CelebrationScreenState extends State<CelebrationScreen>
                                           ),
                                         ),
                                       ),
+                                      if (widget.details != null) ...[
+                                        const SizedBox(height: 24),
+                                        widget.details!,
+                                      ],
                                       const SizedBox(height: 24),
                                     ],
                                   ),
@@ -277,7 +301,7 @@ class _CelebrationScreenState extends State<CelebrationScreen>
                             backgroundColor: AppColors.white,
                             foregroundColor: widget.isStreak
                                 ? AppColors.primaryText
-                                : AppColors.accent,
+                                : background,
                             minimumSize: const Size.fromHeight(56),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -295,7 +319,9 @@ class _CelebrationScreenState extends State<CelebrationScreen>
                             ),
                           ),
                           onPressed: widget.onContinue,
-                          child: Text(appL10n.continueButton),
+                          child: Text(
+                            widget.actionLabel ?? appL10n.continueButton,
+                          ),
                         ),
                       ],
                     ),

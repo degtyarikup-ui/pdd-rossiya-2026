@@ -7,6 +7,8 @@ import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
+import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_motion.dart';
 
@@ -67,6 +69,15 @@ class _PremiumBenefitsScreenState extends State<PremiumBenefitsScreen>
     final result = await PremiumPlansSheet.show(context);
     if (!mounted) return;
     setState(() => _showingPlans = false);
+    if (result == true) {
+      // Paid or restored: celebrate before the gate gets its result.
+      await PremiumCelebrationScreen.show(
+        context,
+        reason: PremiumCelebrationReason.purchased,
+        expiresAt: PremiumService.instance.expiresAt,
+      );
+      if (!mounted) return;
+    }
     if (result != null) Navigator.of(context).pop(result);
   }
 

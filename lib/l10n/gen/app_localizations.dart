@@ -5992,83 +5992,53 @@ abstract class AppLocalizations {
   /// **'Экзамен сдашь даже с закрытыми глазами!'**
   String get streakSubtitle100;
 
-  /// No description provided for @premiumGrantedLifetime.
+  /// No description provided for @premiumCelebrationHeading.
   ///
   /// In ru, this message translates to:
-  /// **'Вам открыт бессрочный доступ навсегда!'**
-  String get premiumGrantedLifetime;
+  /// **'Премиум'**
+  String get premiumCelebrationHeading;
 
-  /// No description provided for @premiumGrantedToday.
+  /// No description provided for @premiumCelebrationPurchasedTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Доступ активен до конца сегодняшнего дня'**
-  String get premiumGrantedToday;
+  /// **'Премиум открыт!'**
+  String get premiumCelebrationPurchasedTitle;
 
-  /// No description provided for @premiumGrantedDays.
+  /// No description provided for @premiumCelebrationGrantedTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Доступ открыт на {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} (до {date})'**
-  String premiumGrantedDays(int days, String date);
+  /// **'Вам выдан Премиум!'**
+  String get premiumCelebrationGrantedTitle;
 
-  /// No description provided for @premiumGrantedMonth.
+  /// No description provided for @premiumCelebrationPurchasedBody.
   ///
   /// In ru, this message translates to:
-  /// **'Доступ открыт на 1 месяц (до {date})'**
-  String premiumGrantedMonth(String date);
+  /// **'Спасибо за поддержку! Все возможности уже открыты.'**
+  String get premiumCelebrationPurchasedBody;
 
-  /// No description provided for @premiumGrantedQuarter.
+  /// No description provided for @premiumCelebrationGrantedBody.
   ///
   /// In ru, this message translates to:
-  /// **'Доступ открыт на 3 месяца (до {date})'**
-  String premiumGrantedQuarter(String date);
+  /// **'Все возможности уже открыты — пользуйтесь!'**
+  String get premiumCelebrationGrantedBody;
 
-  /// No description provided for @premiumGrantedYear.
+  /// No description provided for @premiumCelebrationUntil.
   ///
   /// In ru, this message translates to:
-  /// **'Доступ открыт на 1 год (до {date})'**
-  String premiumGrantedYear(String date);
+  /// **'Доступ до {date}'**
+  String premiumCelebrationUntil(String date);
 
-  /// No description provided for @premiumGrantedUntil.
+  /// No description provided for @premiumCelebrationLifetime.
   ///
   /// In ru, this message translates to:
-  /// **'Доступ активен до {date}'**
-  String premiumGrantedUntil(String date);
+  /// **'Доступ навсегда'**
+  String get premiumCelebrationLifetime;
 
-  /// No description provided for @premiumGrantedBadge.
+  /// No description provided for @premiumCelebrationAction.
   ///
   /// In ru, this message translates to:
-  /// **'PRO ДОСТУП АКТИВИРОВАН'**
-  String get premiumGrantedBadge;
-
-  /// No description provided for @premiumGrantedTitle.
-  ///
-  /// In ru, this message translates to:
-  /// **'Вам выдан Premium!'**
-  String get premiumGrantedTitle;
-
-  /// No description provided for @premiumGrantedFeatureFeed.
-  ///
-  /// In ru, this message translates to:
-  /// **'Умная лента и все 800 вопросов'**
-  String get premiumGrantedFeatureFeed;
-
-  /// No description provided for @premiumGrantedFeatureAi.
-  ///
-  /// In ru, this message translates to:
-  /// **'Подробные объяснения от ИИ'**
-  String get premiumGrantedFeatureAi;
-
-  /// No description provided for @premiumGrantedFeatureNoAds.
-  ///
-  /// In ru, this message translates to:
-  /// **'Полное отсутствие рекламы'**
-  String get premiumGrantedFeatureNoAds;
-
-  /// No description provided for @premiumGrantedOk.
-  ///
-  /// In ru, this message translates to:
-  /// **'Отлично, спасибо!'**
-  String get premiumGrantedOk;
+  /// **'Отлично!'**
+  String get premiumCelebrationAction;
 
   /// No description provided for @aiSheetTitle.
   ///

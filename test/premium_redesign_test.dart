@@ -14,6 +14,7 @@ import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_chrome_icon_button.dart';
 import 'package:pdd_app/presentation/widgets/premium_benefits_screen.dart';
+import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/premium_plans_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -603,6 +604,14 @@ void main() {
       await tester.pumpAndSettle();
       Navigator.of(tester.element(find.byType(PremiumPlansSheet))).pop(result);
       await tester.pumpAndSettle();
+      if (result) {
+        // A purchase is celebrated before the gate learns about it.
+        expect(find.byType(PremiumCelebrationScreen), findsOneWidget);
+        expect(completed, isFalse);
+        await tester.tap(find.text(appL10n.premiumCelebrationAction));
+        await tester.pumpAndSettle();
+      }
+      expect(find.byType(PremiumCelebrationScreen), findsNothing);
       expect(find.byType(PremiumPlansSheet), findsNothing);
       expect(find.byType(PremiumBenefitsScreen), findsNothing);
       expect(find.byType(PremiumPaywallSheet), findsNothing);

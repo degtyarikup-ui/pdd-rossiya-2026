@@ -1204,57 +1204,21 @@
   "streakSubtitle50": "Енді жолда сені ешнәрсе тоқтата алмайды!",
   "streakTitle100": "Ғарыштық деңгей!",
   "streakSubtitle100": "Емтиханды көзің жұмық та тапсырасың!",
-  "premiumGrantedLifetime": "Сізге мәңгілік қолжетімділік ашылды!",
-  "premiumGrantedToday": "Қолжетімділік бүгінгі күннің соңына дейін белсенді",
-  "premiumGrantedDays": "Қолжетімділік {days} күнге ашылды ({date} дейін)",
-  "@premiumGrantedDays": {
-    "placeholders": {
-      "days": {
-        "type": "int"
-      },
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "premiumGrantedMonth": "Қолжетімділік 1 айға ашылды ({date} дейін)",
-  "@premiumGrantedMonth": {
+  "premiumCelebrationHeading": "Премиум",
+  "premiumCelebrationPurchasedTitle": "Премиум ашылды!",
+  "premiumCelebrationGrantedTitle": "Сізге Премиум берілді!",
+  "premiumCelebrationPurchasedBody": "Қолдауыңызға рахмет! Барлық мүмкіндіктер ашылды.",
+  "premiumCelebrationGrantedBody": "Барлық мүмкіндіктер ашылды — пайдаланыңыз!",
+  "premiumCelebrationUntil": "{date} дейін қолжетімді",
+  "@premiumCelebrationUntil": {
     "placeholders": {
       "date": {
         "type": "String"
       }
     }
   },
-  "premiumGrantedQuarter": "Қолжетімділік 3 айға ашылды ({date} дейін)",
-  "@premiumGrantedQuarter": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "premiumGrantedYear": "Қолжетімділік 1 жылға ашылды ({date} дейін)",
-  "@premiumGrantedYear": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "premiumGrantedUntil": "Қолжетімділік {date} дейін белсенді",
-  "@premiumGrantedUntil": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "premiumGrantedBadge": "PRO ҚОЛЖЕТІМДІЛІК ІСКЕ ҚОСЫЛДЫ",
-  "premiumGrantedTitle": "Сізге Premium берілді!",
-  "premiumGrantedFeatureFeed": "Ақылды арна және барлық 800 сұрақ",
-  "premiumGrantedFeatureAi": "AI-дан толық түсіндірмелер",
-  "premiumGrantedFeatureNoAds": "Жарнаманың толық жоқтығы",
-  "premiumGrantedOk": "Керемет, рахмет!",
+  "premiumCelebrationLifetime": "Мерзімсіз қолжетімділік",
+  "premiumCelebrationAction": "Керемет!",
   "aiSheetTitle": "AI-автонұсқаушы",
   "aiAnalysisTitle": "AI талдауы",
   "aiLoadError": "Жауапты алу мүмкін болмады. Интернет байланысын тексеріп, қайталап көріңіз.",

@@ -179,13 +179,8 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
       if (mounted) {
         setState(() => _isLoading = false);
         if (result == PurchaseResult.success) {
-          HapticFeedbackHelper.success();
+          // The benefits screen shows the Premium celebration.
           Navigator.of(context).pop(true);
-          AppToast.show(
-            context,
-            appL10n.paySuccessActivated,
-            type: AppToastType.success,
-          );
         } else if (result == PurchaseResult.canceled) {
           // Пользователь закрыл окно оплаты Apple/Google — ошибку не показываем
         } else if (result == PurchaseResult.productNotFound) {
@@ -278,13 +273,7 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
       final restored = await IapService.instance.restorePurchases();
       if (!mounted) return;
       if (restored) {
-        HapticFeedbackHelper.success();
         Navigator.of(context).pop(true);
-        AppToast.show(
-          context,
-          appL10n.payRestoreSuccess,
-          type: AppToastType.success,
-        );
       } else {
         AppToast.show(
           context,

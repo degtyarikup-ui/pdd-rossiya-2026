@@ -45,7 +45,7 @@ import 'package:pdd_app/presentation/screens/tickets/tickets_screen.dart';
 import 'package:pdd_app/presentation/screens/topics/topics_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_notice_widgets.dart';
 import 'package:pdd_app/presentation/widgets/inbox_home_alert.dart';
-import 'package:pdd_app/presentation/widgets/premium_granted_dialog.dart';
+import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
 import 'package:pdd_app/presentation/widgets/web_payment_return.dart';
@@ -124,8 +124,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final status = await PremiumService.instance.checkPendingPayment();
     if (!mounted) return;
     if (status == 'confirmed') {
-      HapticFeedbackHelper.success();
-      AppToast.show(context, appL10n.webPaySuccess, type: AppToastType.success);
+      await PremiumCelebrationScreen.show(
+        context,
+        reason: PremiumCelebrationReason.purchased,
+        expiresAt: PremiumService.instance.expiresAt,
+      );
     } else if (status == 'canceled') {
       AppToast.show(context, appL10n.webPayCanceled);
     }
@@ -350,8 +353,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _showPremiumGrantedDialog(DateTime? expiresAt) {
     PremiumService.instance.consumePendingGrantNotification();
-    PremiumGrantedDialog.show(
+    PremiumCelebrationScreen.show(
       context,
+      reason: PremiumCelebrationReason.granted,
       expiresAt: expiresAt,
       message: PremiumService.instance.grantMessage,
     );

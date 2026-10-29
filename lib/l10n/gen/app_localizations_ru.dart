@@ -3607,61 +3607,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get streakSubtitle100 => 'Экзамен сдашь даже с закрытыми глазами!';
 
   @override
-  String get premiumGrantedLifetime => 'Вам открыт бессрочный доступ навсегда!';
+  String get premiumCelebrationHeading => 'Премиум';
 
   @override
-  String get premiumGrantedToday => 'Доступ активен до конца сегодняшнего дня';
+  String get premiumCelebrationPurchasedTitle => 'Премиум открыт!';
 
   @override
-  String premiumGrantedDays(int days, String date) {
-    String _temp0 = intl.Intl.pluralLogic(
-      days,
-      locale: localeName,
-      other: '$days дня',
-      many: '$days дней',
-      few: '$days дня',
-      one: '$days день',
-    );
-    return 'Доступ открыт на $_temp0 (до $date)';
+  String get premiumCelebrationGrantedTitle => 'Вам выдан Премиум!';
+
+  @override
+  String get premiumCelebrationPurchasedBody =>
+      'Спасибо за поддержку! Все возможности уже открыты.';
+
+  @override
+  String get premiumCelebrationGrantedBody =>
+      'Все возможности уже открыты — пользуйтесь!';
+
+  @override
+  String premiumCelebrationUntil(String date) {
+    return 'Доступ до $date';
   }
 
   @override
-  String premiumGrantedMonth(String date) {
-    return 'Доступ открыт на 1 месяц (до $date)';
-  }
+  String get premiumCelebrationLifetime => 'Доступ навсегда';
 
   @override
-  String premiumGrantedQuarter(String date) {
-    return 'Доступ открыт на 3 месяца (до $date)';
-  }
-
-  @override
-  String premiumGrantedYear(String date) {
-    return 'Доступ открыт на 1 год (до $date)';
-  }
-
-  @override
-  String premiumGrantedUntil(String date) {
-    return 'Доступ активен до $date';
-  }
-
-  @override
-  String get premiumGrantedBadge => 'PRO ДОСТУП АКТИВИРОВАН';
-
-  @override
-  String get premiumGrantedTitle => 'Вам выдан Premium!';
-
-  @override
-  String get premiumGrantedFeatureFeed => 'Умная лента и все 800 вопросов';
-
-  @override
-  String get premiumGrantedFeatureAi => 'Подробные объяснения от ИИ';
-
-  @override
-  String get premiumGrantedFeatureNoAds => 'Полное отсутствие рекламы';
-
-  @override
-  String get premiumGrantedOk => 'Отлично, спасибо!';
+  String get premiumCelebrationAction => 'Отлично!';
 
   @override
   String get aiSheetTitle => 'ИИ-Автоинструктор';

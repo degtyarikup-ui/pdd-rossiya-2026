@@ -3598,54 +3598,32 @@ class AppLocalizationsKk extends AppLocalizations {
   String get streakSubtitle100 => 'Емтиханды көзің жұмық та тапсырасың!';
 
   @override
-  String get premiumGrantedLifetime => 'Сізге мәңгілік қолжетімділік ашылды!';
+  String get premiumCelebrationHeading => 'Премиум';
 
   @override
-  String get premiumGrantedToday =>
-      'Қолжетімділік бүгінгі күннің соңына дейін белсенді';
+  String get premiumCelebrationPurchasedTitle => 'Премиум ашылды!';
 
   @override
-  String premiumGrantedDays(int days, String date) {
-    return 'Қолжетімділік $days күнге ашылды ($date дейін)';
+  String get premiumCelebrationGrantedTitle => 'Сізге Премиум берілді!';
+
+  @override
+  String get premiumCelebrationPurchasedBody =>
+      'Қолдауыңызға рахмет! Барлық мүмкіндіктер ашылды.';
+
+  @override
+  String get premiumCelebrationGrantedBody =>
+      'Барлық мүмкіндіктер ашылды — пайдаланыңыз!';
+
+  @override
+  String premiumCelebrationUntil(String date) {
+    return '$date дейін қолжетімді';
   }
 
   @override
-  String premiumGrantedMonth(String date) {
-    return 'Қолжетімділік 1 айға ашылды ($date дейін)';
-  }
+  String get premiumCelebrationLifetime => 'Мерзімсіз қолжетімділік';
 
   @override
-  String premiumGrantedQuarter(String date) {
-    return 'Қолжетімділік 3 айға ашылды ($date дейін)';
-  }
-
-  @override
-  String premiumGrantedYear(String date) {
-    return 'Қолжетімділік 1 жылға ашылды ($date дейін)';
-  }
-
-  @override
-  String premiumGrantedUntil(String date) {
-    return 'Қолжетімділік $date дейін белсенді';
-  }
-
-  @override
-  String get premiumGrantedBadge => 'PRO ҚОЛЖЕТІМДІЛІК ІСКЕ ҚОСЫЛДЫ';
-
-  @override
-  String get premiumGrantedTitle => 'Сізге Premium берілді!';
-
-  @override
-  String get premiumGrantedFeatureFeed => 'Ақылды арна және барлық 800 сұрақ';
-
-  @override
-  String get premiumGrantedFeatureAi => 'AI-дан толық түсіндірмелер';
-
-  @override
-  String get premiumGrantedFeatureNoAds => 'Жарнаманың толық жоқтығы';
-
-  @override
-  String get premiumGrantedOk => 'Керемет, рахмет!';
+  String get premiumCelebrationAction => 'Керемет!';
 
   @override
   String get aiSheetTitle => 'AI-автонұсқаушы';

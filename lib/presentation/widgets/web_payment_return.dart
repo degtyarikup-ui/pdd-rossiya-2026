@@ -5,6 +5,7 @@ import 'package:pdd_app/data/services/browser_info_stub.dart'
 import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/app_toast.dart';
+import 'package:pdd_app/presentation/widgets/premium_celebration_screen.dart';
 
 /// Возврат с формы оплаты на сайте (`/app/?pay=done&order=…`): сервер
 /// перепроверяет платёж у платёжного сервиса и начисляет срок, приложение
@@ -32,7 +33,11 @@ Future<void> handleWebPaymentReturn(BuildContext context) async {
   if (!context.mounted) return;
   switch (status) {
     case 'confirmed':
-      AppToast.show(context, appL10n.webPaySuccess, type: AppToastType.success);
+      await PremiumCelebrationScreen.show(
+        context,
+        reason: PremiumCelebrationReason.purchased,
+        expiresAt: PremiumService.instance.expiresAt,
+      );
     case 'canceled':
       AppToast.show(context, appL10n.webPayCanceled);
     case 'creation_unknown':

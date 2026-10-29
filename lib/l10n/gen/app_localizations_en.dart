@@ -3597,59 +3597,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'You\'ll pass the exam even with your eyes closed!';
 
   @override
-  String get premiumGrantedLifetime => 'You have lifetime access!';
+  String get premiumCelebrationHeading => 'Premium';
 
   @override
-  String get premiumGrantedToday => 'Access is active until the end of today';
+  String get premiumCelebrationPurchasedTitle => 'Premium unlocked!';
 
   @override
-  String premiumGrantedDays(int days, String date) {
-    String _temp0 = intl.Intl.pluralLogic(
-      days,
-      locale: localeName,
-      other: '$days days',
-      one: '$days day',
-    );
-    return 'Access is open for $_temp0 (until $date)';
+  String get premiumCelebrationGrantedTitle => 'You\'ve got Premium!';
+
+  @override
+  String get premiumCelebrationPurchasedBody =>
+      'Thank you for your support! Everything is unlocked.';
+
+  @override
+  String get premiumCelebrationGrantedBody => 'Everything is unlocked — enjoy!';
+
+  @override
+  String premiumCelebrationUntil(String date) {
+    return 'Access until $date';
   }
 
   @override
-  String premiumGrantedMonth(String date) {
-    return 'Access is open for 1 month (until $date)';
-  }
+  String get premiumCelebrationLifetime => 'Lifetime access';
 
   @override
-  String premiumGrantedQuarter(String date) {
-    return 'Access is open for 3 months (until $date)';
-  }
-
-  @override
-  String premiumGrantedYear(String date) {
-    return 'Access is open for 1 year (until $date)';
-  }
-
-  @override
-  String premiumGrantedUntil(String date) {
-    return 'Access is active until $date';
-  }
-
-  @override
-  String get premiumGrantedBadge => 'PRO ACCESS ACTIVATED';
-
-  @override
-  String get premiumGrantedTitle => 'You\'ve got Premium!';
-
-  @override
-  String get premiumGrantedFeatureFeed => 'Smart feed and all 800 questions';
-
-  @override
-  String get premiumGrantedFeatureAi => 'Detailed explanations from AI';
-
-  @override
-  String get premiumGrantedFeatureNoAds => 'No ads at all';
-
-  @override
-  String get premiumGrantedOk => 'Great, thanks!';
+  String get premiumCelebrationAction => 'Great!';
 
   @override
   String get aiSheetTitle => 'AI driving instructor';

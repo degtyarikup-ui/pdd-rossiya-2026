@@ -1759,57 +1759,21 @@
   "streakSubtitle50": "Тебя уже ничто не остановит на дороге!",
   "streakTitle100": "Космический уровень!",
   "streakSubtitle100": "Экзамен сдашь даже с закрытыми глазами!",
-  "premiumGrantedLifetime": "Вам открыт бессрочный доступ навсегда!",
-  "premiumGrantedToday": "Доступ активен до конца сегодняшнего дня",
-  "premiumGrantedDays": "Доступ открыт на {days, plural, one{{days} день} few{{days} дня} many{{days} дней} other{{days} дня}} (до {date})",
-  "@premiumGrantedDays": {
-    "placeholders": {
-      "days": {
-        "type": "int"
-      },
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "premiumGrantedMonth": "Доступ открыт на 1 месяц (до {date})",
-  "@premiumGrantedMonth": {
+  "premiumCelebrationHeading": "Премиум",
+  "premiumCelebrationPurchasedTitle": "Премиум открыт!",
+  "premiumCelebrationGrantedTitle": "Вам выдан Премиум!",
+  "premiumCelebrationPurchasedBody": "Спасибо за поддержку! Все возможности уже открыты.",
+  "premiumCelebrationGrantedBody": "Все возможности уже открыты — пользуйтесь!",
+  "premiumCelebrationUntil": "Доступ до {date}",
+  "@premiumCelebrationUntil": {
     "placeholders": {
       "date": {
         "type": "String"
       }
     }
   },
-  "premiumGrantedQuarter": "Доступ открыт на 3 месяца (до {date})",
-  "@premiumGrantedQuarter": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "premiumGrantedYear": "Доступ открыт на 1 год (до {date})",
-  "@premiumGrantedYear": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "premiumGrantedUntil": "Доступ активен до {date}",
-  "@premiumGrantedUntil": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "premiumGrantedBadge": "PRO ДОСТУП АКТИВИРОВАН",
-  "premiumGrantedTitle": "Вам выдан Premium!",
-  "premiumGrantedFeatureFeed": "Умная лента и все 800 вопросов",
-  "premiumGrantedFeatureAi": "Подробные объяснения от ИИ",
-  "premiumGrantedFeatureNoAds": "Полное отсутствие рекламы",
-  "premiumGrantedOk": "Отлично, спасибо!",
+  "premiumCelebrationLifetime": "Доступ навсегда",
+  "premiumCelebrationAction": "Отлично!",
   "aiSheetTitle": "ИИ-Автоинструктор",
   "aiAnalysisTitle": "Разбор от ИИ",
   "aiLoadError": "Не удалось получить ответ. Проверьте интернет-соединение и попробуйте еще раз.",
