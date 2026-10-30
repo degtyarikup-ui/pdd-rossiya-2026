@@ -1,5 +1,6 @@
 """Numeric sign validation, disposable HTTP save/reload/export, and pixel parity with Godot."""
 import json
+import xml.etree.ElementTree as ET
 import sys
 import tempfile
 import threading
@@ -10,6 +11,12 @@ from unittest.mock import patch
 from urllib.request import Request, urlopen
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import build, check, engine_sync, question_pool, server, number_sign
+
+# Browsers support nested SVG viewports; Godot ignores their transform/crop.
+# Comparing two SVG strings with Godot alone cannot detect that rendering mismatch.
+for code in number_sign.CODES:
+    root = ET.fromstring(number_sign.svg(code, 40))
+    assert len(list(root.iter('{http://www.w3.org/2000/svg}svg'))) == 1, code
 
 with tempfile.TemporaryDirectory(prefix='number-signs-',dir=build.ROOT/'scratch') as tmp:
     root=Path(tmp);net=root/'network';sit=root/'situations';net.mkdir();sit.mkdir()

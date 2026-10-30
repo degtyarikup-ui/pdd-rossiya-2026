@@ -75,7 +75,11 @@ for code,(rect,default,unit,bg,fg,angle) in specs.items():
   overlay=f'<g transform="{rotation}" fill="{fg}">{{{{number}}}}</g>'
  # Cancellation stripe remains above the replacement numeral.
  if code=='4.7': overlay+='<defs><clipPath id="disc"><ellipse cx="50" cy="50" rx="38" ry="44"/></clipPath></defs><path clip-path="url(#disc)" d="M20 80 L80 20" stroke="#ff0000" stroke-width="9"/>'
- result['templates'][code]=f'<svg xmlns="http://www.w3.org/2000/svg" width="{size[0]}" height="{size[1]}" viewBox="0 0 100 100" preserveAspectRatio="none"><svg width="100" height="100" viewBox="'+root.get('viewBox',f'0 0 {size[0]} {size[1]}')+'" preserveAspectRatio="none">'+''.join(ET.tostring(c,encoding='unicode') for c in root)+'</svg>'+overlay+'</svg>'
+ # Godot's SVG loader does not apply nested SVG viewports like browsers do.
+ # Keep the original root viewport and map only the numeric overlay into it.
+ vx,vy,vw,vh=map(float,root.get('viewBox',f'0 0 {size[0]} {size[1]}').split())
+ result['templates'][code]=f'<svg xmlns="http://www.w3.org/2000/svg" width="{size[0]}" height="{size[1]}" viewBox="{vx} {vy} {vw} {vh}">'+''.join(ET.tostring(c,encoding='unicode') for c in root)+f'<g transform="translate({vx} {vy}) scale({vw/100} {vh/100})">'+overlay+'</g></svg>'
+
 js=ROOT/'tools/network/editor/sign_mount.js'
 text=js.read_text()
 import re
