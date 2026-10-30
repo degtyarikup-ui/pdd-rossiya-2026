@@ -23,6 +23,10 @@ export const ACTIONS = ['none', 'url', 'tickets', 'topics', 'game', 'feed', 'set
 export const LAYOUTS = ['standard', 'cover', 'compact', 'image'];
 const choices = { kind: KINDS, app: ['all', 'ru', 'by', 'rs'], platform: ['all', 'ios', 'android', 'web', 'some'] };
 export const PLATFORMS = ['ios', 'android', 'web'];
+export const AUDIENCES = ['guest', 'registered', 'premium'];
+// Campaigns saved before audience selection still reach every category.
+export const audiencesOf = item => item.audiences === undefined ? AUDIENCES
+  : Array.isArray(item.audiences) ? item.audiences : [];
 // Any set of platforms. One or all three keep the single `platform` value;
 // two are stored as platform 'some' plus `platforms` ("ios,web").
 export const platformsOf = item => item.platform === 'all' ? PLATFORMS
@@ -65,9 +69,19 @@ export function validateCampaign(input, now = Date.now()) {
   // Android store (Google Play / RuStore) for in-app messages only: push topics
   // are per platform. Builds that do not report a store never match a store.
   value.store = input.store === undefined || input.store === '' ? 'all' : input.store;
+  if (input.stores !== undefined) {
+    if (!Array.isArray(input.stores) || !input.stores.length || input.stores.some(s => !['play', 'rustore'].includes(s))) throw new Error('Выберите магазин');
+    const stores = [...new Set(input.stores)];
+    value.store = stores.length === 2 ? 'all' : stores[0];
+  }
   if (!['all', 'play', 'rustore'].includes(value.store)) throw new Error('Некорректный магазин');
   if (value.store !== 'all' && !platformsOf(value).includes('android')) throw new Error('Магазин выбирается только для Android');
   if (value.store !== 'all' && value.kind === 'push') throw new Error('Пуш нельзя отправить в один магазин — выберите окно или баннер');
+  if (input.audiences !== undefined && (!Array.isArray(input.audiences) || !input.audiences.length || input.audiences.some(a => !AUDIENCES.includes(a)))) throw new Error('Выберите категорию пользователей');
+  value.audiences = AUDIENCES.filter(a => audiencesOf(input).includes(a));
+  // Existing FCM subscriptions identify platforms/accounts, not subscription
+  // status. Reject narrowed pushes instead of broadcasting them to everyone.
+  if (value.kind === 'push' && value.audiences.length !== AUDIENCES.length) throw new Error('Для выбора категорий пользователей отключите пуш — уведомление останется в приложении');
   value.layout = input.layout || 'standard';
   if (!LAYOUTS.includes(value.layout)) throw new Error('Некорректный макет');
   if (value.kind === 'push') {
@@ -136,6 +150,8 @@ export function campaignMatches(item, app, platform, now = Date.now(), user = {}
     const email = String(user.email || '').trim().toLowerCase();
     return Boolean(t && (t === uid || t === email));
   }
+  const audience = !user.userId ? 'guest' : user.premiumActive === true ? 'premium' : 'registered';
+  if (!audiencesOf(item).includes(audience)) return false;
   return true;
 }
 /** Shape sent to the app: only display fields, never internal state. `push`
@@ -281,7 +297,7 @@ export class NotificationsState {
     }
     if (path === '/client') {
       const url = new URL(request.url), app = url.searchParams.get('app'), platform = url.searchParams.get('platform');
-      const user = { userId: url.searchParams.get('userId') || '', email: url.searchParams.get('email') || '' };
+      const user = { userId: url.searchParams.get('userId') || '', email: url.searchParams.get('email') || '', premiumActive: url.searchParams.get('premiumActive') === '1' };
       if (!['ru','by','rs'].includes(app) || !['ios','android','web'].includes(platform)) return reply({ error: 'invalid audience' }, 400);
       const records = await this.state.storage.list({ prefix: 'message:' });
       // Older clients treat unknown layouts as standard cards and would show an
@@ -344,6 +360,7 @@ export class NotificationsState {
       try { item = validateCampaign(body); } catch (error) { return reply({ error: error.message }, 400); }
       const key = 'message:' + item.id, existing = await this.state.storage.get(key);
       if (existing) {
+        if (audiencesOf(existing).join(',') !== item.audiences.join(',')) return reply({ error: 'ID уже принадлежит другому сообщению' }, 409);
         if (SAME_FIELDS.some(field => (existing[field] ?? (field === 'persistent' ? false : '')) !== (item[field] ?? (field === 'persistent' ? false : '')))) return reply({ error: 'ID уже принадлежит другому сообщению' }, 409);
         return reply({ ok: true, message: existing, duplicate: true });
       }

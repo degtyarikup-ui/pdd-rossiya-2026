@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { NotificationsState, validateCampaign, campaignMatches, pushCondition, DEFAULT_NOTIFICATION_CONFIG } from './notifications.js';
 import { NOTIFICATIONS_CLIENT_JS } from './notifications_ui.js';
 import worker from './worker.js';
+import { signSession } from './user_auth.js';
 const sample = (overrides = {}) => ({ id: crypto.randomUUID(), kind: 'popup', app:'ru', platform:'all', title:'Новости', body:'Новые вопросы', expiresAt:Date.now()+86400000, ...overrides });
 function setup(env={}) {
  const data = new Map(); const storage = { get:async k=>data.get(k),put:async(k,v)=>data.set(k,structuredClone(v)),delete:async k=>data.delete(k),list:async({prefix})=>new Map([...data].filter(([k])=>k.startsWith(prefix))),setAlarm:async()=>{} };
@@ -392,4 +393,70 @@ test('any set of platforms: exact matching, store only narrows Android, pushes s
   assert.equal(pushCondition(push),"'pdd_ru_ios' in topics || 'pdd_ru_android' in topics");
   const mine=validateCampaign(sample({kind:'push',platforms:['android'],target:'me@test.ru',targetTopic:'pdd_account_'+'b'.repeat(64)}));
   assert.equal(pushCondition(mine),`'pdd_account_${'b'.repeat(64)}' in topics && 'pdd_ru_android' in topics`);
+});
+
+test('each combination of user categories matches exactly; legacy campaigns reach everyone', async () => {
+  const categories = ['guest', 'registered', 'premium'];
+  const users = [{}, {userId:'google_free'}, {userId:'google_paid',premiumActive:true}];
+  const {call} = setup();
+  for (let mask=1;mask<8;mask++) {
+    const audiences = categories.filter((_, i) => mask & (1 << i));
+    const msg = sample({audiences});
+    assert.equal((await call('/publish', msg)).status, 200);
+    assert.equal((await (await call('/publish', {...msg,audiences:[...audiences].reverse()})).json()).duplicate, true);
+    const validated = validateCampaign(msg);
+    users.forEach((user, i) => assert.equal(campaignMatches(validated,'ru','ios',Date.now(),user), audiences.includes(categories[i])));
+    assert.equal((await call('/publish', {...msg,audiences:mask===7?['guest']:categories})).status, 409);
+  }
+  for (const audiences of [[], ['unknown'], 'premium', null, ['guest', false]]) assert.throws(() => validateCampaign(sample({audiences})), /категорию/);
+  for (const user of users) assert.equal(campaignMatches({...validateCampaign(sample()),audiences:undefined},'ru','ios',Date.now(),user), true);
+  // A personal test is delivered to the selected test account even when it
+  // belongs to another category; the subsequent broadcast keeps its filter.
+  const personal = validateCampaign(sample({target:'google_free',audiences:['guest']}));
+  assert.equal(campaignMatches(personal,'ru','ios',Date.now(),users[1]), true);
+  assert.equal(campaignMatches({...personal,target:''},'ru','ios',Date.now(),users[1]), false);
+  assert.throws(() => validateCampaign(sample({kind:'push',audiences:['premium']})), /отключите пуш/);
+});
+
+test('store checkboxes accept either or both stores and reject an empty selection', () => {
+  assert.equal(validateCampaign(sample({stores:['play','rustore']})).store, 'all');
+  for (const store of ['play','rustore']) {
+    const msg=validateCampaign(sample({platforms:['ios','android'],stores:[store],audiences:['premium']}));
+    assert.equal(msg.store, store);
+    assert.equal(campaignMatches(msg,'ru','ios',Date.now(),{userId:'paid',premiumActive:true}), true);
+    assert.equal(campaignMatches(msg,'ru','android',Date.now(),{userId:'paid',premiumActive:true},store), true);
+    assert.equal(campaignMatches(msg,'ru','android',Date.now(),{userId:'paid',premiumActive:true},store==='play'?'rustore':'play'), false);
+    assert.equal(campaignMatches(msg,'ru','android',Date.now(),{userId:'paid'},store), false);
+  }
+  for (const stores of [[], ['unknown'], 'play', null]) assert.throws(() => validateCampaign(sample({stores})), /магазин/);
+});
+
+test('public feed derives categories from the current profile, ignoring forged parameters and stale session premium', async () => {
+  const kv=new Map(), env={SESSION_SECRET:crypto.randomUUID(),INSTALLS:{get:async key=>kv.get(key)??null}};
+  const {call}=setup();
+  env.NOTIFICATIONS={idFromName:()=> 'state',get:()=>({fetch:(url,init)=>call(new URL(url).pathname+new URL(url).search, init?.body?JSON.parse(init.body):undefined)})};
+  const messages={};
+  for (const audience of ['guest','registered','premium']) {
+    const msg=sample({kind:'news',audiences:[audience]});
+    assert.equal((await call('/publish',msg)).status,200);messages[audience]=msg.id;
+  }
+  const id='google_current';
+  const token=await signSession(env,{user:{id,email:'current@test.invalid',isPremium:true},generation:'',expiresAt:Date.now()+86400000});
+  const read=async signed=>{
+    const r=await worker.fetch(new Request('https://test/api/notifications?app=ru&platform=ios&inbox=1&userId=someone_else&audiences=premium&premiumActive=1&isPremium=true',{
+      headers:signed?{authorization:'Bearer '+token}:{},
+    }),env);
+    assert.equal(r.status,200);return (await r.json()).messages.map(m=>m.id);
+  };
+  assert.deepEqual(await read(false),[messages.guest]);
+  for (const [profile,category] of [
+    [{id,isPremium:false},'registered'],
+    [{id,isPremium:true,premiumExpiresAt:new Date(Date.now()+86400000).toISOString()},'premium'],
+    [{id,isPremium:true,premiumExpiresAt:new Date(Date.now()-1000).toISOString()},'registered'],
+    [{id,isPremium:true,premiumExpiresAt:null},'premium'],
+    [{id,isPremium:true,premiumExpiresAt:'invalid'},'registered'],
+  ]) {
+    kv.set('user:'+id,JSON.stringify(profile));
+    assert.deepEqual(await read(true),[messages[category]]);
+  }
 });

@@ -215,3 +215,71 @@ if (!process.argv.includes('--serve')) test('notification history shows deadline
     }
   } finally { await browser.close(); await app.close(); }
 });
+
+if (!process.argv.includes('--serve')) test('audience and store chips preserve independent selections through drafts, publishing and copying', { timeout: 60000 }, async t => {
+  let chromium;
+  try { ({ chromium } = createRequire(import.meta.url)('playwright')); } catch { t.skip('Playwright не найден (NODE_PATH)'); return; }
+  const app = await preview();
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+    const errors=[];page.on('pageerror', e=>errors.push(e.message));
+    await page.goto(app.url+'/admin');
+    // Migrate the previous editor's single-store draft.
+    await page.evaluate(()=>localStorage.setItem('nt-draft',JSON.stringify({s:{store:'rustore'},title:'Старый черновик'})));
+    await page.reload();
+    await page.click('[data-feature="notifications"]');
+    await page.waitForSelector('#nt-history .nf-msg');
+    const checked=async name=>page.locator('input[name="'+name+'"]:checked').evaluateAll(xs=>xs.map(x=>x.value));
+    assert.deepEqual(await checked('nt-store'),['rustore']);
+    assert.deepEqual(await checked('nt-audience'),['guest','registered','premium']);
+    assert.equal(await page.locator('input[name="nt-store"][value="all"]').count(),0);
+    await page.click('#nt-reset');
+    assert.deepEqual(await checked('nt-store'),['play','rustore']);
+    await page.fill('#nt-title','Только Premium в RuStore');
+    await page.uncheck('input[name="nt-store"][value="play"]',{force:true});
+    await page.uncheck('input[name="nt-audience"][value="guest"]',{force:true});
+    await page.uncheck('input[name="nt-audience"][value="registered"]',{force:true});
+    assert.deepEqual(await checked('nt-audience'),['premium']);
+    assert.equal(await page.isDisabled('#nt-push'),true);
+    assert.match(await page.textContent('#nt-push-state'),/все категории/);
+    await page.reload();
+    await page.click('[data-feature="notifications"]');
+    await page.waitForSelector('#nt-history .nf-msg');
+    assert.deepEqual(await checked('nt-store'),['rustore']);
+    assert.deepEqual(await checked('nt-audience'),['premium']);
+    await page.click('#nt-publish');
+    assert.match(await page.textContent('#nt-confirm-tags'),/Все платформы.*RuStore.*Premium/);
+    assert.doesNotMatch(await page.textContent('#nt-confirm-tags'),/Все пользователи|Не зарегистрированные/);
+    await page.click('#nt-confirm-send');
+    await page.waitForFunction(()=>document.querySelectorAll('#nt-history .nf-msg').length===4);
+    const campaign=[...app.data.values()].find(m=>m?.title==='Только Premium в RuStore');
+    assert.deepEqual(campaign.audiences,['premium']);assert.equal(campaign.store,'rustore');
+    const row=page.locator('[data-nt-message="'+campaign.id+'"]');
+    assert.equal(await row.locator('.nf-who').textContent(),'Premium');
+    await row.locator('[data-nt-copy]').click();
+    assert.deepEqual(await checked('nt-store'),['rustore']);
+    assert.deepEqual(await checked('nt-audience'),['premium']);
+    await page.uncheck('input[name="nt-audience"][value="premium"]',{force:true});
+    assert.equal(await page.isDisabled('#nt-publish'),true);
+    assert.equal(await page.getAttribute('#nt-publish','title'),'Выберите категорию пользователей');
+    await page.check('input[name="nt-audience"][value="guest"]',{force:true});
+    await page.check('input[name="nt-audience"][value="registered"]',{force:true});
+    assert.deepEqual(await checked('nt-audience'),['guest','registered']);
+    await page.uncheck('input[name="nt-store"][value="rustore"]',{force:true});
+    assert.equal(await page.getAttribute('#nt-publish','title'),'Выберите магазин');
+    await page.uncheck('input[name="nt-platform"][value="android"]',{force:true});
+    assert.equal(await page.isVisible('#nt-stores'),false);
+    assert.equal(await page.isDisabled('#nt-publish'),false);
+    await page.check('input[name="nt-platform"][value="android"]',{force:true});
+    await page.check('input[name="nt-store"][value="play"]',{force:true});
+    await page.check('input[name="nt-store"][value="rustore"]',{force:true});
+    assert.deepEqual(await checked('nt-store'),['play','rustore']);
+    for (const width of [1440,820,390]) {
+      await page.setViewportSize({width,height:1100});
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'chips fit at '+width);
+      if (process.env.NOTIFICATIONS_UI_SCREENSHOTS) await page.locator('#nt-form').screenshot({path:fileURLToPath(new URL('../../../output/notification-audience-'+width+'.png',import.meta.url))});
+    }
+    assert.deepEqual(errors,[]);
+  } finally { await browser.close();await app.close(); }
+});

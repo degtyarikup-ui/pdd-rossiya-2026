@@ -83,3 +83,21 @@ test('windows and pushes report views and taps like banners',async()=>{
     assert.deepEqual(records.map(r=>r.event),['view','click'],kind);
   }
 });
+
+test('category metrics use the authoritative profile and keep premium views', async () => {
+  const {send,deps,records,kv}=setup();
+  deps.notificationRequest=async()=>Response.json({messages:[{...campaign,audiences:['premium']}]});
+  kv.set('user:google_123',JSON.stringify({id:'google_123',isPremium:true,premiumExpiresAt:new Date(now+86400000).toISOString()}));
+  await send([event('click')]);
+  assert.deepEqual(records.map(r=>r.event),['view','click']);
+  records.length=0;
+  deps.notificationRequest=async()=>Response.json({messages:[{...campaign,audiences:['registered']}]});
+  await send([event()]);assert.equal(records.length,0);
+  kv.set('user:google_123',JSON.stringify({id:'google_123',isPremium:true,premiumExpiresAt:new Date(now-1000).toISOString()}));
+  await send([event()]);assert.equal(records.length,1);
+  records.length=0;
+  deps.readSession=async()=>null;
+  await send([event()],{isPremium:true,premiumActive:true});assert.equal(records.length,0);
+  deps.notificationRequest=async()=>Response.json({messages:[{...campaign,audiences:['guest']}]});
+  await send([event()]);assert.equal(records.length,1);
+});

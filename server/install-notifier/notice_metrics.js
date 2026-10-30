@@ -1,5 +1,7 @@
 import { campaignMatches } from './notifications.js';
 import { privatePushTopic } from './notification_identity.js';
+import { accountRead } from './account_state.js';
+import { isPremiumActive } from './users_admin.js';
 
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
 const DAY = 86400000;
@@ -19,12 +21,15 @@ export async function acceptNoticeMetrics(request, env, { trackStats, notificati
   const response = await notificationRequest(env, '/admin');
   if (!response.ok) return reply({ error: 'notifications unavailable' }, 503);
   const { messages } = await response.json();
+  const profileRaw = session && messages.some(m => m.audiences && m.audiences.length !== 3)
+    ? await accountRead(env, session.user.id, 'user:' + session.user.id) : null;
+  const profile = profileRaw ? JSON.parse(profileRaw) : null;
   for (const event of body.events) {
     const campaign = messages.find(m => m.id === event.campaignId);
     // Accept delayed offline deliveries even after a campaign was disabled.
     if (!campaign || event.ts < (campaign.startAt || campaign.createdAt) || event.ts >= campaign.expiresAt
       || !campaignMatches({ ...campaign, enabled: true }, 'ru', body.platform, event.ts,
-        { userId: session?.user?.id, email: session?.user?.email }, body.store || '')) continue;
+        { userId: session?.user?.id, email: session?.user?.email, premiumActive: isPremiumActive(profile, event.ts) }, body.store || '')) continue;
     // A click also proves a view. Two devices and retries share these IDs.
     for (const type of event.event === 'click' ? ['view', 'click'] : ['view']) await trackStats(env, null, {
       id: `notice:${campaign.id}:${identity}:${type}`, kind: 'notice', campaignId: campaign.id, event: type, ts: event.ts,

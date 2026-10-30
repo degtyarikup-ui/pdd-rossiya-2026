@@ -63,7 +63,7 @@ import { AI_MODELS, getActiveAiModel, isSupportedAiModel, aiModelPricing, aiGene
 import { LINKS_VIEW_HTML, LINKS_CLIENT_JS } from './links_ui.js';
 import { enhanceAdminHtml, enhanceAdminClientJs, ADMIN_UI_CLIENT_JS } from './admin_ui.js';
 import { StatsBuffer } from './stats_buffer.js';
-import { handleUsersAdmin } from './users_admin.js';
+import { handleUsersAdmin, isPremiumActive } from './users_admin.js';
 import { putUserRecord, putUserActivity, listUserSummaries } from './user_store.js';
 import { usersSnapshot } from './analytics_data.js';
 import { acceptUsage, applyUsage, usageSnapshot } from './usage_analytics.js';
@@ -3361,12 +3361,15 @@ const workerHandlers = {
     }
     if (url.pathname === '/api/notifications' && request.method === 'GET') {
       const noticeSession = await readSession(request, env);
+      const noticeProfile = noticeSession ? await accountRead(env, noticeSession.user.id, 'user:' + noticeSession.user.id) : null;
+      const noticePremium = noticeProfile ? isPremiumActive(JSON.parse(noticeProfile)) : false;
       const response = await notificationRequest(
         env,
         '/client?app=' + encodeURIComponent(url.searchParams.get('app') || '') +
         '&platform=' + encodeURIComponent(url.searchParams.get('platform') || '') +
         '&userId=' + encodeURIComponent(noticeSession?.user?.id || '') +
         '&email=' + encodeURIComponent(noticeSession?.user?.email || '') +
+        '&premiumActive=' + (noticePremium ? '1' : '0') +
         '&imageBanners=' + encodeURIComponent(url.searchParams.get('imageBanners') || '') +
         '&imagePopups=' + encodeURIComponent(url.searchParams.get('imagePopups') || '') +
         '&inbox=' + encodeURIComponent(url.searchParams.get('inbox') || '') +
