@@ -288,7 +288,7 @@
     ],
     [
      -1.8,
-     -24.5
+     -29.25
     ]
    ]
   },
@@ -300,7 +300,7 @@
    "points": [
     [
      -1.8,
-     -24.5
+     -29.25
     ],
     [
      -1.8,
@@ -316,9 +316,75 @@
     ]
    ],
    "exitYaw": 0
+  },
+  {
+   "id": "actor_car_1",
+   "kind": "actor",
+   "points": [
+    [
+     -2.5,
+     -17
+    ],
+    [
+     -2.5,
+     -1
+    ]
+   ],
+   "manual": true
+  },
+  {
+   "id": "player_guide",
+   "kind": "guide",
+   "manual": true,
+   "points": [
+    [
+     -1.8,
+     -29.25
+    ],
+    [
+     -1,
+     -23.5
+    ],
+    [
+     1.5,
+     -20
+    ],
+    [
+     2,
+     -15.5
+    ]
+   ]
   }
  ],
- "actors": [],
+ "actors": [
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "asset": "ticket_10_15/actor_0.glb",
+   "route": "actor_car_1",
+   "pos": [
+    -2.5,
+    -17
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "maxSpeed": 5,
+   "clearDistance": 24.151,
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "behaviour": {
+    "staysPut": false,
+    "waitsForPlayer": false
+   },
+   "way": "straight",
+   "paint": "#F08A24"
+  }
+ ],
  "lights": [],
  "decor": [],
  "question": {
@@ -360,7 +426,6 @@
   "correct": 2,
   "maneuver": "straight",
   "yieldTo": [],
-  "showPlayerGuide": false,
   "sourceQuestionId": "eff2a352df08d22d6002edfd84764455",
   "sourceCategory": "ab",
   "sourceImage": null
@@ -406,13 +471,13 @@
   "player": {
    "street": "s1",
    "toward": "c",
-   "questionAt": 24.5,
+   "questionAt": 29.25,
    "lane": 0
   }
  },
  "stop": {
   "x": -1.8,
-  "z": -24.5,
+  "z": -29.25,
   "yaw": 0
  },
  "exitWidths": {
@@ -423,7 +488,7 @@
  "geometry": null,
  "type": "crossroad",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
  "signs": [],
@@ -433,10 +498,14 @@
  "compliance": {
   "status": "unverified"
  },
- "questionPool": {
-  "sourceQuestionId": "eff2a352df08d22d6002edfd84764455",
-  "category": "ab",
-  "ticket": 3,
-  "number": 11
+ "questionView": {
+  "centre": [
+   0,
+   -17.812
+  ],
+  "height": 24.533,
+  "yaw": 0.005,
+  "pitch": 0.528,
+  "elevation": 0
  }
 }

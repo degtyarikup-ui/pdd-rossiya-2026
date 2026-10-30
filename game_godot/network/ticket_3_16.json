@@ -33,9 +33,10 @@
     ]
    ],
    "holes": [],
-   "walk": true,
-   "edge": false,
-   "surface": "asphalt"
+   "walk": false,
+   "edge": true,
+   "surface": "asphalt",
+   "shoulder": 2.5
   },
   {
    "id": "road_s2",
@@ -67,9 +68,10 @@
     ]
    ],
    "holes": [],
-   "walk": true,
-   "edge": false,
-   "surface": "asphalt"
+   "walk": false,
+   "edge": true,
+   "surface": "asphalt",
+   "shoulder": 2.5
   },
   {
    "id": "road_c",
@@ -356,7 +358,7 @@
     ],
     [
      -1.75,
-     -13.1
+     -72
     ]
    ]
   },
@@ -368,7 +370,7 @@
    "points": [
     [
      -1.75,
-     -13.1
+     -72
     ],
     [
      -1.75,
@@ -386,7 +388,60 @@
    "exitYaw": 0
   }
  ],
- "actors": [],
+ "actors": [
+  {
+   "id": "truck_1",
+   "type": "truck",
+   "name": "Грузовик",
+   "asset": "ticket_10_14/actor_1.glb",
+   "route": null,
+   "pos": [
+    -8.263,
+    -50.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "maxSpeed": 12,
+   "clearDistance": 18.415,
+   "halfLength": 2.915,
+   "halfWidth": 1.046,
+   "behaviour": {
+    "staysPut": true,
+    "waitsForPlayer": true
+   },
+   "paint": "#317ED4"
+  },
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "asset": "ticket_10_15/actor_0.glb",
+   "route": null,
+   "pos": [
+    -5.593,
+    -45.231
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "maxSpeed": 12,
+   "clearDistance": 24.151,
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "behaviour": {
+    "staysPut": true,
+    "waitsForPlayer": true
+   },
+   "paint": "#B9C0C7"
+  }
+ ],
  "lights": [],
  "decor": [],
  "question": {
@@ -458,8 +513,10 @@
     "b": "c",
     "kind": "avenue",
     "ends": {},
-    "edge": false,
-    "centre": "solid"
+    "edge": true,
+    "centre": "solid",
+    "walk": false,
+    "shoulder": 1.5
    },
    {
     "id": "s2",
@@ -467,18 +524,22 @@
     "b": "n",
     "kind": "avenue",
     "ends": {},
-    "edge": false,
-    "centre": "solid"
+    "edge": true,
+    "centre": "solid",
+    "walk": false,
+    "shoulder": 2.5
    }
   ],
   "player": {
    "street": "s1",
-   "toward": "c"
+   "toward": "c",
+   "questionAt": 72,
+   "lane": 0
   }
  },
  "stop": {
   "x": -1.75,
-  "z": -13.1,
+  "z": -72,
   "yaw": 0
  },
  "exitWidths": {
@@ -489,20 +550,160 @@
  "geometry": null,
  "type": "crossroad",
  "procedural": true,
- "reviewed": false,
+ "reviewed": true,
  "regulator": false,
  "staticScene": false,
- "signs": [],
+ "signs": [
+  {
+   "id": "sign_1",
+   "code": "5.1",
+   "pos": [
+    -7.521,
+    -65.118
+   ],
+   "yaw": 3.142
+  }
+ ],
  "officers": [],
  "tracks": [],
  "questionCamera": [],
  "compliance": {
   "status": "unverified"
  },
- "questionPool": {
-  "sourceQuestionId": "03018a402611d50309be83db59abc924",
-  "category": "ab",
-  "ticket": 3,
-  "number": 16
+ "lawns": [
+  {
+   "id": "auto_lawn_s1_r",
+   "auto": true,
+   "outer": [
+    [
+     -7,
+     -91
+    ],
+    [
+     -7,
+     -90
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -10.4,
+     0
+    ],
+    [
+     -10.4,
+     -90
+    ],
+    [
+     -10.4,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s1_l",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -91
+    ],
+    [
+     7,
+     -90
+    ],
+    [
+     7,
+     0
+    ],
+    [
+     10.4,
+     0
+    ],
+    [
+     10.4,
+     -90
+    ],
+    [
+     10.4,
+     -91
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s2_r",
+   "auto": true,
+   "outer": [
+    [
+     -7,
+     0
+    ],
+    [
+     -7,
+     90
+    ],
+    [
+     -7,
+     91
+    ],
+    [
+     -10.4,
+     91
+    ],
+    [
+     -10.4,
+     90
+    ],
+    [
+     -10.4,
+     0
+    ]
+   ],
+   "holes": []
+  },
+  {
+   "id": "auto_lawn_s2_l",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     7,
+     90
+    ],
+    [
+     7,
+     91
+    ],
+    [
+     10.4,
+     91
+    ],
+    [
+     10.4,
+     90
+    ],
+    [
+     10.4,
+     0
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "questionView": {
+  "centre": [
+   -6.886,
+   -51.778
+  ],
+  "height": 22.839,
+  "yaw": -0.237,
+  "pitch": 0.717,
+  "elevation": 0
  }
 }

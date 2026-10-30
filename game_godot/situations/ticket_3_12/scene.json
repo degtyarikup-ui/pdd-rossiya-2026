@@ -8,7 +8,7 @@
  "crop": 90.0,
  "centerZ": 0,
  "startZ": -90.0,
- "stopZ": -24.5,
+ "stopZ": -31,
  "playerStartX": -1.8,
  "playerStartRotY": 0,
  "leftLane": 1.75,
@@ -38,7 +38,7 @@
    "points": [
     [
      -1.8,
-     -24.5
+     -31
     ],
     [
      -1.8,
@@ -70,19 +70,19 @@
     "targetAction": "turn_right",
     "color": "#E8EAEC",
     "position": [
-     -1.8,
-     0.0,
-     -11.734
+     -5.275,
+     0.18,
+     -15.575
     ],
     "rotationY": 0,
     "route": [
      [
-      -1.8,
-      -11.734
+      -5.275,
+      -15.575
      ],
      [
-      -1.8,
-      -11.734
+      -5.275,
+      -15.575
      ]
     ],
     "hazard": false
@@ -99,9 +99,9 @@
     "height": 2.4
    },
    "pos": [
-    -1.8,
-    0.0,
-    -11.734
+    -5.275,
+    0.18,
+    -15.575
    ],
    "yaw": 0,
    "scale": [
@@ -111,14 +111,14 @@
    ],
    "path": [
     [
-     -1.8,
-     0.0,
-     -11.734
+     -5.275,
+     0.18,
+     -15.575
     ],
     [
-     -1.8,
-     0.0,
-     -11.734
+     -5.275,
+     0.18,
+     -15.575
     ]
    ],
    "length": 0.0,
@@ -137,6 +137,89 @@
    "waitsForPlayer": true,
    "staysPut": true,
    "paint": "#2B2F36",
+   "way": null,
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
+  },
+  {
+   "id": "motorcycle_1",
+   "type": "motorcycle",
+   "name": "Мотоцикл",
+   "config": {
+    "id": "motorcycle_1",
+    "type": "motorcycle",
+    "name": "Мотоцикл",
+    "side": "ring",
+    "ringRadius": 13.8,
+    "ringAngle": -1.78,
+    "color": "#FFA53C",
+    "sidecar": false,
+    "concurrentWith": [
+     "ring_car"
+    ],
+    "position": [
+     -3.5,
+     0.0,
+     -12
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -3.5,
+      -12
+     ],
+     [
+      -3.5,
+      -12
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 1.075,
+   "halfWidth": 0.34,
+   "badge": {
+    "text": {
+     "ru": "Мото",
+     "en": "Moto",
+     "kk": "Мото"
+    },
+    "color": "#FFA53C",
+    "height": 2.7
+   },
+   "pos": [
+    -3.5,
+    0.0,
+    -12
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -3.5,
+     0.0,
+     -12
+    ],
+    [
+     -3.5,
+     0.0,
+     -12
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 58.439,
+   "maxSpeed": 12,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "paint": "#F2F3F5",
    "way": null,
    "driverSignal": "none",
    "turnSignal": "auto",
@@ -199,5 +282,52 @@
  "sourceCategory": "ab",
  "sourceImage": "8fcf82e8373415484138ad71355732bb",
  "playerPlacement": "street",
- "annotations": []
+ "annotations": [
+  {
+   "points": [
+    [
+     -0.169,
+     -20.483
+    ],
+    [
+     -4.163,
+     -20.534
+    ]
+   ],
+   "style": "both",
+   "colour": "#20242b",
+   "width": 0.16,
+   "text": "",
+   "textSize": 1,
+   "textAngle": 0
+  },
+  {
+   "points": [
+    [
+     -3.380429038116514,
+     -20.05985364244753
+    ],
+    [
+     -0.959429038116514,
+     -20.05985364244753
+    ]
+   ],
+   "style": "text",
+   "colour": "#20242b",
+   "width": 0.16,
+   "text": "3 м",
+   "textSize": 1,
+   "textAngle": 0
+  }
+ ],
+ "questionView": {
+  "centre": [
+   -3.778,
+   -16.807
+  ],
+  "height": 19.891,
+  "yaw": 0.001,
+  "pitch": 0.906,
+  "elevation": 0
+ }
 }

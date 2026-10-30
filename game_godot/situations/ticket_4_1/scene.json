@@ -1,0 +1,376 @@
+{
+ "id": "ticket_4_1",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -16.25,
+ "playerStartX": -1.8,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 8.4,
+ "exitWidths": {
+  "straight": 8.4
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.8,
+     -16.25
+    ],
+    [
+     -1.8,
+     0
+    ],
+    [
+     -1.8,
+     90
+    ],
+    [
+     -1.8,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [],
+ "actors": [
+  {
+   "id": "motorcycle_1",
+   "type": "motorcycle",
+   "name": "Мотоцикл",
+   "config": {
+    "id": "motorcycle_1",
+    "type": "motorcycle",
+    "name": "Мотоцикл",
+    "side": "ring",
+    "ringRadius": 13.8,
+    "ringAngle": -1.78,
+    "color": "#FFA53C",
+    "sidecar": false,
+    "concurrentWith": [
+     "ring_car"
+    ],
+    "position": [
+     -3.478,
+     0.0,
+     -5.737
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -3.478,
+      -5.737
+     ],
+     [
+      -3.421,
+      -0.29
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 1.075,
+   "halfWidth": 0.34,
+   "badge": {
+    "text": {
+     "ru": "Мото",
+     "en": "Moto",
+     "kk": "Мото"
+    },
+    "color": "#FFA53C",
+    "height": 2.7
+   },
+   "pos": [
+    -3.478,
+    0.0,
+    -5.737
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -3.478,
+     0.0,
+     -5.737
+    ],
+    [
+     -3.421,
+     0.0,
+     -0.29
+    ]
+   ],
+   "length": 5.447,
+   "clearDistance": 58.439,
+   "maxSpeed": 15,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#1F3A5F",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
+  },
+  {
+   "id": "motorcycle_2",
+   "type": "motorcycle",
+   "name": "Мотоцикл",
+   "config": {
+    "id": "motorcycle_2",
+    "type": "motorcycle",
+    "name": "Мотоцикл",
+    "side": "ring",
+    "ringRadius": 13.8,
+    "ringAngle": -1.78,
+    "color": "#FFA53C",
+    "sidecar": false,
+    "concurrentWith": [
+     "ring_car"
+    ],
+    "position": [
+     -1.645,
+     0.0,
+     -1.555
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -1.645,
+      -1.555
+     ],
+     [
+      -1.645,
+      5.445
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 1.075,
+   "halfWidth": 0.34,
+   "badge": {
+    "text": {
+     "ru": "Мото",
+     "en": "Moto",
+     "kk": "Мото"
+    },
+    "color": "#FFA53C",
+    "height": 2.7
+   },
+   "pos": [
+    -1.645,
+    0.0,
+    -1.555
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -1.645,
+     0.0,
+     -1.555
+    ],
+    [
+     -1.645,
+     0.0,
+     5.445
+    ]
+   ],
+   "length": 7.0,
+   "clearDistance": 58.439,
+   "maxSpeed": 15,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#C0392B",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
+  },
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "config": {
+    "id": "car_1",
+    "type": "car",
+    "name": "Легковая",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     2.5,
+     0.0,
+     15.5
+    ],
+    "rotationY": 3.142,
+    "route": [
+     [
+      2.5,
+      15.5
+     ],
+     [
+      2.5,
+      -0.5
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    2.5,
+    0.0,
+    15.5
+   ],
+   "yaw": 3.142,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     2.5,
+     0.0,
+     15.5
+    ],
+    [
+     2.5,
+     0.0,
+     -0.5
+    ]
+   ],
+   "length": 16.0,
+   "clearDistance": 24.151,
+   "maxSpeed": 5,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#C0392B",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
+  }
+ ],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 4 · Вопрос 1",
+   "title": "Сколько полос для движения имеет проезжая часть данной дороги?",
+   "options": [
+    "Одну полосу",
+    "Две полосы",
+    "Три полосы"
+   ],
+   "explanation": "Сплошная линия горизонтальной разметки 1.1 применяется часто. Она может быть использована и для распределения транспортных потоков, и для обозначения границ полос. В данном случае она разделяет транспортные потоки одной неширокой проезжей части, на которой, судя по автомобилю, по одной полосе движения в каждом направлении, т.е. две. Мотоциклисты двигаются по одной полосе в два ряда, что им не запрещено.(«Горизонтальная разметка», пункты 1.2, 9.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 4 · Question 1",
+   "title": "How many lanes does this road have?",
+   "options": [
+    "One lane",
+    "Two lanes",
+    "Three stripes"
+   ],
+   "explanation": "A solid line of horizontal markings 1.1 is often used. It can be used to distribute traffic flows and to mark lane boundaries. In this case, it separates the traffic flows of one narrow roadway, on which, judging by the car, there is one lane in each direction, i.e. two. Motorcyclists move along one lane in two rows, which is not prohibited for them. (“Horizontal markings”, paragraphs 1.2, 9.1 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "4-билет · 1-сұрақ",
+   "title": "Бұл жолдың неше жолағы бар?",
+   "options": [
+    "Бір жолақ",
+    "Екі жолақ",
+    "Үш жолақ"
+   ],
+   "explanation": "1.1 көлденең таңбаларының тұтас сызығы жиі пайдаланылады. Оны көлік ағындарын бөлу және жолақ шекараларын белгілеу үшін пайдалануға болады. Бұл жағдайда ол бір тар жүріс бөлігінің көлік ағындарын бөледі; көліктердің орналасуынан байқалатындай, әр бағытта бір жолақ бар, яғни барлығы екі жолақ. Мотоциклшілер бір жолақ бойымен екі қатарда қозғалады, бұл оларға тыйым салынбаған. («Көлденең таңбалар», Жол қозғалысы ережелерінің 1.2, 9.1-тармақтары)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 93,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "cb78404dbbf54a130781398898d110d3",
+ "sourceCategory": "ab",
+ "sourceImage": "801f9dabfe5c450701f1b7cd604e2a6f",
+ "playerPlacement": "street",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -0.222,
+   6.25
+  ],
+  "height": 22.213,
+  "yaw": -0.005,
+  "pitch": 0.41,
+  "elevation": 0
+ }
+}

@@ -1,0 +1,508 @@
+{
+ "schema": 1,
+ "id": "ticket_4_4",
+ "crop": 90,
+ "roads": [
+  {
+   "id": "road_s1",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     -91
+    ],
+    [
+     7,
+     -90
+    ],
+    [
+     7,
+     0
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -7,
+     -90
+    ],
+    [
+     -7,
+     -91
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_s2",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     7,
+     90
+    ],
+    [
+     7,
+     91
+    ],
+    [
+     -7,
+     91
+    ],
+    [
+     -7,
+     90
+    ],
+    [
+     -7,
+     0
+    ]
+   ],
+   "holes": [],
+   "walk": true,
+   "edge": false,
+   "surface": "asphalt"
+  },
+  {
+   "id": "road_c",
+   "auto": true,
+   "outer": [
+    [
+     7,
+     0
+    ],
+    [
+     6.914,
+     1.095
+    ],
+    [
+     6.657,
+     2.163
+    ],
+    [
+     6.237,
+     3.178
+    ],
+    [
+     5.663,
+     4.114
+    ],
+    [
+     4.95,
+     4.95
+    ],
+    [
+     4.114,
+     5.663
+    ],
+    [
+     3.178,
+     6.237
+    ],
+    [
+     2.163,
+     6.657
+    ],
+    [
+     1.095,
+     6.914
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     -1.095,
+     6.914
+    ],
+    [
+     -2.163,
+     6.657
+    ],
+    [
+     -3.178,
+     6.237
+    ],
+    [
+     -4.114,
+     5.663
+    ],
+    [
+     -4.95,
+     4.95
+    ],
+    [
+     -5.663,
+     4.114
+    ],
+    [
+     -6.237,
+     3.178
+    ],
+    [
+     -6.657,
+     2.163
+    ],
+    [
+     -6.914,
+     1.095
+    ],
+    [
+     -7,
+     0
+    ],
+    [
+     -6.914,
+     -1.095
+    ],
+    [
+     -6.657,
+     -2.163
+    ],
+    [
+     -6.237,
+     -3.178
+    ],
+    [
+     -5.663,
+     -4.114
+    ],
+    [
+     -4.95,
+     -4.95
+    ],
+    [
+     -4.114,
+     -5.663
+    ],
+    [
+     -3.178,
+     -6.237
+    ],
+    [
+     -2.163,
+     -6.657
+    ],
+    [
+     -1.095,
+     -6.914
+    ],
+    [
+     0,
+     -7
+    ],
+    [
+     1.095,
+     -6.914
+    ],
+    [
+     2.163,
+     -6.657
+    ],
+    [
+     3.178,
+     -6.237
+    ],
+    [
+     4.114,
+     -5.663
+    ],
+    [
+     4.95,
+     -4.95
+    ],
+    [
+     5.663,
+     -4.114
+    ],
+    [
+     6.237,
+     -3.178
+    ],
+    [
+     6.657,
+     -2.163
+    ],
+    [
+     6.914,
+     -1.095
+    ]
+   ],
+   "holes": []
+  }
+ ],
+ "markings": [
+  {
+   "id": "auto_mark_1",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     -91
+    ],
+    [
+     0,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_2",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     -91
+    ],
+    [
+     -3.5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_3",
+   "auto": true,
+   "colour": "white",
+   "street": "s1",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     -91
+    ],
+    [
+     3.5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_4",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "solid",
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_5",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     -3.5,
+     0
+    ],
+    [
+     -3.5,
+     91
+    ]
+   ]
+  },
+  {
+   "id": "auto_mark_6",
+   "auto": true,
+   "colour": "white",
+   "street": "s2",
+   "type": "dashed",
+   "points": [
+    [
+     3.5,
+     0
+    ],
+    [
+     3.5,
+     91
+    ]
+   ]
+  }
+ ],
+ "routes": [
+  {
+   "id": "approach",
+   "kind": "approach",
+   "auto": true,
+   "manual": false,
+   "points": [
+    [
+     -1.75,
+     -91
+    ],
+    [
+     -1.75,
+     -13.1
+    ]
+   ]
+  },
+  {
+   "id": "manoeuvre_straight",
+   "kind": "manoeuvre",
+   "auto": true,
+   "exit": "straight",
+   "points": [
+    [
+     -1.75,
+     -13.1
+    ],
+    [
+     -1.75,
+     0
+    ],
+    [
+     -1.75,
+     90
+    ],
+    [
+     -1.75,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "decor": [],
+ "question": {
+  "text": {
+   "ru": {
+    "ticket": "Билет 4 · Вопрос 4",
+    "title": "Вы буксируете неисправный автомобиль. По какой полосе Вам можно продолжить движение в населенном пункте?",
+    "options": [
+     "Только по правой",
+     "Только по левой",
+     "По любой"
+    ],
+    "explanation": "По ходу Вашего движения установлен знак 5.15.3 «Начало полосы». По основной полосе знаком 4.6 «Ограничение минимальной скорости» введено ограничение – минимальная скорость должна быть не менее 60 км/ч. Водитель, который не может продолжать движение с указанной скоростью, должен перестроиться на правую полосу. Буксирующим механическим ТС разрешается движение со скоростью не более 50 км/ч.Вам следует продолжать движение только по правой полосе.(«Дорожные знаки», пункт 10.4 ПДД)",
+    "pddRule": ""
+   },
+   "en": {
+    "ticket": "Ticket 4 · Question 4",
+    "title": "You are towing a disabled vehicle. In which lane can you continue driving in a populated area?",
+    "options": [
+     "Right only",
+     "Only on the left",
+     "For any"
+    ],
+    "explanation": "In the course of your movement, a sign 5.15.3 \"The beginning of the lane\" is installed. On the main lane, the sign 4.6 \"Minimum speed limit\" introduced a restriction – the minimum speed must be at least 60 km/h. The driver who cannot continue driving at the specified speed must change to the right lane. The towing mechanical vehicle is allowed to move at a speed of no more than 50 km/h. You should continue driving only in the right lane.(\"Traffic Signs\", clause 10.4 of the Traffic Rules)",
+    "pddRule": ""
+   },
+   "kk": {
+    "ticket": "4-билет · 4-сұрақ",
+    "title": "Сіз ақаулы көлікті сүйреп барасыз. Елді мекенде қай жолақпен жүруді жалғастыра аласыз?",
+    "options": [
+     "Тек оң жақ жолақпен",
+     "Тек сол жақ жолақпен",
+     "Кез келген жолақпен"
+    ],
+    "explanation": "Сіздің қозғалыс бағытында 5.15.3 «Жолақтың басталуы» белгісі бар. Негізгі жолақта 4.6 «Ең төмен жылдамдық шегі» белгісі шектеу енгізді - ең төменгі жылдамдық кемінде 60 км/сағ болуы керек. Белгіленген жылдамдықпен жүруді жалғастыра алмайтын жүргізуші жолақты оңға ауыстыруы керек. Тіркеп сүйрейтін механикалық көліктерге 50 км/сағ аспайтын жылдамдықпен жүруге рұқсат етіледі. Сіз тек оң жақ жолақпен жүруді жалғастыруыңыз керек. («Жол белгілері», Жол қозғалысы ережелерінің 10.4 тармағы)",
+    "pddRule": ""
+   }
+  },
+  "correct": 0,
+  "maneuver": "straight",
+  "yieldTo": [],
+  "showPlayerGuide": false,
+  "sourceQuestionId": "b7ffa71c5a1ef03792b1461e851f626b",
+  "sourceCategory": "ab",
+  "sourceImage": "ed37c3a6463fee1744ef65f6a586f86b"
+ },
+ "layout": {
+  "nodes": [
+   {
+    "id": "c",
+    "x": 0,
+    "z": 0
+   },
+   {
+    "id": "s",
+    "x": 0,
+    "z": -90
+   },
+   {
+    "id": "n",
+    "x": 0,
+    "z": 90
+   }
+  ],
+  "streets": [
+   {
+    "id": "s1",
+    "a": "s",
+    "b": "c",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   },
+   {
+    "id": "s2",
+    "a": "c",
+    "b": "n",
+    "kind": "avenue",
+    "ends": {},
+    "edge": false,
+    "centre": "solid"
+   }
+  ],
+  "player": {
+   "street": "s1",
+   "toward": "c"
+  }
+ },
+ "stop": {
+  "x": -1.75,
+  "z": -13.1,
+  "yaw": 0
+ },
+ "exitWidths": {
+  "straight": 14
+ },
+ "approachWidth": 14,
+ "frame": "junction centre (0, 0); +z = direction of travel; +x = driver's left",
+ "geometry": null,
+ "type": "crossroad",
+ "procedural": true,
+ "reviewed": false,
+ "regulator": false,
+ "staticScene": false,
+ "signs": [],
+ "officers": [],
+ "tracks": [],
+ "questionCamera": [],
+ "compliance": {
+  "status": "unverified"
+ },
+ "questionPool": {
+  "sourceQuestionId": "b7ffa71c5a1ef03792b1461e851f626b",
+  "category": "ab",
+  "ticket": 4,
+  "number": 4
+ }
+}

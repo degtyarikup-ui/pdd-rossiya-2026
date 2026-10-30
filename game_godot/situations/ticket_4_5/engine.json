@@ -1,0 +1,94 @@
+{
+ "id": "ticket_4_5",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -15.9,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14,
+  "left": 14,
+  "right": 14,
+  "uturn": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 4 · Вопрос 5",
+   "title": "Что означает разметка в виде надписи «СТОП» на проезжей части?",
+   "options": [
+    "Предупреждает о приближении к стоп-линии перед регулируемым перекрёстком",
+    "Предупреждает о приближении к стоп-линии и знаку «Движение без остановки запрещено»",
+    "Предупреждает о приближении к знаку «Уступите дорогу»"
+   ],
+   "explanation": "Разметка 1.21 (надпись «СТОП») предупреждает о приближении к стоп-линии (разметке 1.12), когда она применяется в сочетании со знаком 2.5 «Движение без остановки запрещено».(«Горизонтальная разметка»)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 4 · Question 5",
+   "title": "What does the marking in the form of the inscription “STOP” on the roadway mean?",
+   "options": [
+    "Warns of approaching the stop line before an adjustable intersection",
+    "Warns of approaching the stop line and the \"No stopping\" sign",
+    "Warns of approaching the \"Give way\" sign"
+   ],
+   "explanation": "Marking 1.21 (inscription “STOP”) warns of approaching the stop line (marking 1.12) when it is used in combination with sign 2.5 “Moving without stopping is prohibited.” (“Horizontal marking”)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "4-билет · 5-сұрақ",
+   "title": "Жолдағы «ТОҚТАТУ» жазуы түріндегі таңбалау нені білдіреді?",
+   "options": [
+    "Сигналды қиылыс алдында тоқтау сызығына жақындағанда ескертеді",
+    "Тоқтау сызығына жақындау және «Тоқтамай жүруге болмайды» белгісін ескертеді",
+    "«Жол бер» белгісіне жақындағанда ескертеді"
+   ],
+   "explanation": "1.21 таңбалауы («ТОҚТАУ» жазуы) 2.5 «Тоқтамай көлік жүргізуге тыйым салынады» белгісімен бірге қолданылған кезде тоқтау сызығына (1.12 таңбалау) жақындау туралы ескертеді. («Көлденең таңбалар»)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 270,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "0436282e58243561c2f0ebb6c4b093c1",
+ "sourceCategory": "ab",
+ "sourceImage": null
+}

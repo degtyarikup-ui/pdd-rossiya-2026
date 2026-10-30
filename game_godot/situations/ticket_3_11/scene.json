@@ -8,7 +8,7 @@
  "crop": 90.0,
  "centerZ": 0,
  "startZ": -90.0,
- "stopZ": -24.5,
+ "stopZ": -29.25,
  "playerStartX": -1.8,
  "playerStartRotY": 0,
  "leftLane": 1.75,
@@ -38,7 +38,7 @@
    "points": [
     [
      -1.8,
-     -24.5
+     -29.25
     ],
     [
      -1.8,
@@ -57,7 +57,92 @@
   }
  },
  "props": [],
- "actors": [],
+ "actors": [
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "config": {
+    "id": "car_1",
+    "type": "car",
+    "name": "Легковая",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -2.5,
+     0.0,
+     -17
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -2.5,
+      -17
+     ],
+     [
+      -2.5,
+      -1
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -2.5,
+    0.0,
+    -17
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -2.5,
+     0.0,
+     -17
+    ],
+    [
+     -2.5,
+     0.0,
+     -1
+    ]
+   ],
+   "length": 16.0,
+   "clearDistance": 24.151,
+   "maxSpeed": 5,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": false,
+   "staysPut": false,
+   "paint": "#F08A24",
+   "way": "straight",
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
+  }
+ ],
  "lights": [],
  "officers": [],
  "labels": [],
@@ -106,10 +191,38 @@
  },
  "sourceTextLength": 296,
  "correctAnswerIndex": 2,
- "showPlayerGuide": false,
+ "showPlayerGuide": true,
  "sourceQuestionId": "eff2a352df08d22d6002edfd84764455",
  "sourceCategory": "ab",
  "sourceImage": null,
  "playerPlacement": "street",
- "annotations": []
+ "annotations": [],
+ "playerGuidePoints": [
+  [
+   -1.8,
+   -29.25
+  ],
+  [
+   -1,
+   -23.5
+  ],
+  [
+   1.5,
+   -20
+  ],
+  [
+   2,
+   -15.5
+  ]
+ ],
+ "questionView": {
+  "centre": [
+   0,
+   -17.812
+  ],
+  "height": 24.533,
+  "yaw": 0.005,
+  "pitch": 0.528,
+  "elevation": 0
+ }
 }

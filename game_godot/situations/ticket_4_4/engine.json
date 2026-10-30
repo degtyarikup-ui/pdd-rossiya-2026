@@ -1,0 +1,91 @@
+{
+ "id": "ticket_4_4",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 4 · Вопрос 4",
+   "title": "Вы буксируете неисправный автомобиль. По какой полосе Вам можно продолжить движение в населенном пункте?",
+   "options": [
+    "Только по правой",
+    "Только по левой",
+    "По любой"
+   ],
+   "explanation": "По ходу Вашего движения установлен знак 5.15.3 «Начало полосы». По основной полосе знаком 4.6 «Ограничение минимальной скорости» введено ограничение – минимальная скорость должна быть не менее 60 км/ч. Водитель, который не может продолжать движение с указанной скоростью, должен перестроиться на правую полосу. Буксирующим механическим ТС разрешается движение со скоростью не более 50 км/ч.Вам следует продолжать движение только по правой полосе.(«Дорожные знаки», пункт 10.4 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 4 · Question 4",
+   "title": "You are towing a disabled vehicle. In which lane can you continue driving in a populated area?",
+   "options": [
+    "Right only",
+    "Only on the left",
+    "For any"
+   ],
+   "explanation": "In the course of your movement, a sign 5.15.3 \"The beginning of the lane\" is installed. On the main lane, the sign 4.6 \"Minimum speed limit\" introduced a restriction – the minimum speed must be at least 60 km/h. The driver who cannot continue driving at the specified speed must change to the right lane. The towing mechanical vehicle is allowed to move at a speed of no more than 50 km/h. You should continue driving only in the right lane.(\"Traffic Signs\", clause 10.4 of the Traffic Rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "4-билет · 4-сұрақ",
+   "title": "Сіз ақаулы көлікті сүйреп барасыз. Елді мекенде қай жолақпен жүруді жалғастыра аласыз?",
+   "options": [
+    "Тек оң жақ жолақпен",
+    "Тек сол жақ жолақпен",
+    "Кез келген жолақпен"
+   ],
+   "explanation": "Сіздің қозғалыс бағытында 5.15.3 «Жолақтың басталуы» белгісі бар. Негізгі жолақта 4.6 «Ең төмен жылдамдық шегі» белгісі шектеу енгізді - ең төменгі жылдамдық кемінде 60 км/сағ болуы керек. Белгіленген жылдамдықпен жүруді жалғастыра алмайтын жүргізуші жолақты оңға ауыстыруы керек. Тіркеп сүйрейтін механикалық көліктерге 50 км/сағ аспайтын жылдамдықпен жүруге рұқсат етіледі. Сіз тек оң жақ жолақпен жүруді жалғастыруыңыз керек. («Жол белгілері», Жол қозғалысы ережелерінің 10.4 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 143,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "b7ffa71c5a1ef03792b1461e851f626b",
+ "sourceCategory": "ab",
+ "sourceImage": "ed37c3a6463fee1744ef65f6a586f86b"
+}

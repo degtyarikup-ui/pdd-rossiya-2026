@@ -8,7 +8,7 @@
  "crop": 90.0,
  "centerZ": 0,
  "startZ": -90.0,
- "stopZ": -13.1,
+ "stopZ": -72,
  "playerStartX": -1.75,
  "playerStartRotY": 0,
  "leftLane": 1.75,
@@ -38,7 +38,7 @@
    "points": [
     [
      -1.75,
-     -13.1
+     -72
     ],
     [
      -1.75,
@@ -57,7 +57,170 @@
   }
  },
  "props": [],
- "actors": [],
+ "actors": [
+  {
+   "id": "truck_1",
+   "type": "truck",
+   "name": "Грузовик",
+   "config": {
+    "id": "truck_1",
+    "type": "truck",
+    "name": "Грузовик",
+    "side": "cross_right",
+    "targetAction": "straight",
+    "color": "#FFA53C",
+    "position": [
+     -8.263,
+     0.0,
+     -50.279
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -8.263,
+      -50.279
+     ],
+     [
+      -8.263,
+      -50.279
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.915,
+   "halfWidth": 1.046,
+   "badge": {
+    "text": {
+     "ru": "Грузовик",
+     "en": "Truck",
+     "kk": "Жүк көлігі"
+    },
+    "color": "#FFA53C",
+    "height": 3.4
+   },
+   "pos": [
+    -8.263,
+    0.0,
+    -50.279
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -8.263,
+     0.0,
+     -50.279
+    ],
+    [
+     -8.263,
+     0.0,
+     -50.279
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 18.415,
+   "maxSpeed": 12,
+   "signalPlan": null,
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "paint": "#317ED4",
+   "way": null,
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
+  },
+  {
+   "id": "car_1",
+   "type": "car",
+   "name": "Легковая",
+   "config": {
+    "id": "car_1",
+    "type": "car",
+    "name": "Легковая",
+    "side": "cross_left",
+    "targetAction": "turn_right",
+    "color": "#E8EAEC",
+    "position": [
+     -5.593,
+     0.0,
+     -45.231
+    ],
+    "rotationY": 0,
+    "route": [
+     [
+      -5.593,
+      -45.231
+     ],
+     [
+      -5.593,
+      -45.231
+     ]
+    ],
+    "hazard": false
+   },
+   "halfLength": 2.19,
+   "halfWidth": 1.023,
+   "badge": {
+    "text": {
+     "ru": "Авто",
+     "en": "Car",
+     "kk": "Авто"
+    },
+    "color": "#E8EAEC",
+    "height": 2.4
+   },
+   "pos": [
+    -5.593,
+    0.0,
+    -45.231
+   ],
+   "yaw": 0,
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "path": [
+    [
+     -5.593,
+     0.0,
+     -45.231
+    ],
+    [
+     -5.593,
+     0.0,
+     -45.231
+    ]
+   ],
+   "length": 0.0,
+   "clearDistance": 24.151,
+   "maxSpeed": 12,
+   "signalPlan": [
+    {
+     "from": 0,
+     "to": 24.15076344385503,
+     "side": "right"
+    }
+   ],
+   "stopAtDistance": null,
+   "stopFor": null,
+   "holdFor": null,
+   "waitsForPlayer": true,
+   "staysPut": true,
+   "paint": "#B9C0C7",
+   "way": null,
+   "driverSignal": "none",
+   "turnSignal": "auto",
+   "hazards": false
+  }
+ ],
  "lights": [],
  "officers": [],
  "labels": [],
@@ -111,5 +274,15 @@
  "sourceCategory": "ab",
  "sourceImage": "3e744df2b7bb6b14d21ff1ee56e9e3e5",
  "playerPlacement": "street",
- "annotations": []
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -6.886,
+   -51.778
+  ],
+  "height": 22.839,
+  "yaw": -0.237,
+  "pitch": 0.717,
+  "elevation": 0
+ }
 }

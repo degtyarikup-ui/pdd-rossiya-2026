@@ -1,0 +1,94 @@
+{
+ "id": "ticket_4_1",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -15.9,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14,
+  "left": 14,
+  "right": 14,
+  "uturn": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {},
+ "props": [],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 4 · Вопрос 1",
+   "title": "Сколько полос для движения имеет проезжая часть данной дороги?",
+   "options": [
+    "Одну полосу",
+    "Две полосы",
+    "Три полосы"
+   ],
+   "explanation": "Сплошная линия горизонтальной разметки 1.1 применяется часто. Она может быть использована и для распределения транспортных потоков, и для обозначения границ полос. В данном случае она разделяет транспортные потоки одной неширокой проезжей части, на которой, судя по автомобилю, по одной полосе движения в каждом направлении, т.е. две. Мотоциклисты двигаются по одной полосе в два ряда, что им не запрещено.(«Горизонтальная разметка», пункты 1.2, 9.1 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 4 · Question 1",
+   "title": "How many lanes does this road have?",
+   "options": [
+    "One lane",
+    "Two lanes",
+    "Three stripes"
+   ],
+   "explanation": "A solid line of horizontal markings 1.1 is often used. It can be used to distribute traffic flows and to mark lane boundaries. In this case, it separates the traffic flows of one narrow roadway, on which, judging by the car, there is one lane in each direction, i.e. two. Motorcyclists move along one lane in two rows, which is not prohibited for them. (“Horizontal markings”, paragraphs 1.2, 9.1 of the traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "4-билет · 1-сұрақ",
+   "title": "Бұл жолдың неше жолағы бар?",
+   "options": [
+    "Бір жолақ",
+    "Екі жолақ",
+    "Үш жолақ"
+   ],
+   "explanation": "1.1 көлденең таңбаларының тұтас сызығы жиі пайдаланылады. Оны көлік ағындарын бөлу және жолақ шекараларын белгілеу үшін пайдалануға болады. Бұл жағдайда ол бір тар жүріс бөлігінің көлік ағындарын бөледі; көліктердің орналасуынан байқалатындай, әр бағытта бір жолақ бар, яғни барлығы екі жолақ. Мотоциклшілер бір жолақ бойымен екі қатарда қозғалады, бұл оларға тыйым салынбаған. («Көлденең таңбалар», Жол қозғалысы ережелерінің 1.2, 9.1-тармақтары)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 93,
+ "correctAnswerIndex": 1,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "cb78404dbbf54a130781398898d110d3",
+ "sourceCategory": "ab",
+ "sourceImage": "801f9dabfe5c450701f1b7cd604e2a6f"
+}
