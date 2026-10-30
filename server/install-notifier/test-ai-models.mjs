@@ -24,7 +24,8 @@ function admin(env, suffix, body, authenticated = true) {
   }), env);
 }
 const success = () => ({ candidates: [{ content: { parts: [
-  { thought: true, text: 'Private thought summary' }, { text: 'First paragraph.\n' }, { text: 'Second paragraph.' },
+  { thought: true, text: 'Private thought summary' },
+  { text: '{"scope":"pdd","reply":"First paragraph.\\n' }, { text: 'Second paragraph."}' },
 ] } }], usageMetadata: { promptTokenCount: 800, candidatesTokenCount: 80, thoughtsTokenCount: 120 } });
 
 test('retired settings migrate to the latest default while the legacy setting still supports current models', async () => {
@@ -97,7 +98,7 @@ test('new models use low thinking without deprecated temperature and bill though
     assert.equal(config.thinkingConfig.thinkingLevel, 'low');
     assert.equal('temperature' in config, false);
   }
-  assert.equal(aiReply(success()), 'First paragraph.\nSecond paragraph.');
+  assert.deepEqual(JSON.parse(aiReply(success())), { scope: 'pdd', reply: 'First paragraph.\nSecond paragraph.' });
   assert.equal(aiReply({ candidates: [{ content: { parts: [{ text: 'Thinking only', thought: true }] } }] }), '');
   assert.equal(aiReply({ candidates: [] }), '');
   const usage = aiUsage(success());

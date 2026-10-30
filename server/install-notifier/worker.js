@@ -40,6 +40,7 @@ import { handlePayIntent, handlePayCheck, handlePayLead, handlePlategaCallback, 
 import { handleAuth, authorizeUserRequest, revokeUserSessions, readSession, sessionAccountId } from './user_auth.js';
 import { refreshProviderKeyCaches } from './provider_keys.js';
 import { readAiRequest, AiRequestError, AI_PROVIDER_TIMEOUT_MS } from './ai_request.js';
+import { aiScopePrompt, aiScopeContents, AI_SCOPE_SCHEMA, aiScopeRefusal, isExplicitCodeRequest, parseScopedAiReply } from './ai_scope.js';
 import { routeAccountRequest, accountRead, accountWrite, accountRpc } from './account_state.js';
 export { AccountState } from './account_state.js';
 export { AiQuotaState } from './ai_quota.js';
@@ -1940,9 +1941,6 @@ const ADMIN_LOGIN_BLOCK_SEC = 900;
 
 // Потолок для неподписанных запросов к ИИ (старые сборки приложения).
 const AI_LEGACY_DAILY_LIMIT = 40;
-// Обрезка входа: сколько символов вопроса и вариантов уходит в модель.
-const AI_MAX_QUESTION_CHARS = 1000;
-const AI_MAX_ANSWER_CHARS = 1000;
 
 /** Сравнение без утечки времени: длина ответа не должна зависеть от пароля. */
 function safeEquals(a, b) {
@@ -3838,7 +3836,7 @@ const workerHandlers = {
       let body;
       try { body = await readAiRequest(request); }
       catch (error) { return jsonResponse({ error: error instanceof AiRequestError ? error.message : 'invalid json' }, error instanceof AiRequestError ? error.status : 400); }
-      const { questionText, answers, correctAnswerIndex, officialExplanation, messages, userMessage } = body || {};
+      const { questionText, officialExplanation, messages, userMessage } = body;
 
       // Эндпоинт ходит в Gemini по нашему ключу, то есть за наши деньги.
       // Свежие сборки приложения подписывают запрос заголовком x-install-secret
@@ -3859,27 +3857,13 @@ const workerHandlers = {
         return access.response;
       }
 
-      // Длину входа режем всегда: она напрямую превращается в оплаченные токены.
-      const clipText = (value, max) => String(value == null ? '' : value).slice(0, max);
-
-      const correctAnswerText = (Array.isArray(answers) && correctAnswerIndex !== undefined && answers[correctAnswerIndex])
-        ? answers[correctAnswerIndex]
-        : 'Правильный вариант';
-
-      const systemPrompt = `Ты — профессиональный преподаватель ПДД и персональный AI-автоинструктор.
-Твоя задача — кратко, наглядно и человеческим языком объяснить дорожную ситуацию.
-
-ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА:
-Пиши на ${{ru: 'русском', en: 'английском', kk: 'казахском'}[body.locale] || 'русском'} языке.
-1. Пиши СТРОГО БЕЗ ПРИВЕТСТВИЙ, вступлений и общих фраз (запрещено писать "Привет!", "Давай разберем..."). Сразу начинай с сути.
-2. Текст должен быть очень коротким и понятным (3-5 строк максимум).
-3. Выделяй жирным шрифтом **главные термины**, **названия знаков** и **правильные действия**.
-
-Вопрос: ${clipText(questionText, AI_MAX_QUESTION_CHARS) || 'Вопрос ПДД'}
-Варианты ответов:
-${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipText(a, AI_MAX_ANSWER_CHARS)}`).join('\n') : ''}
-Правильный ответ: ${correctAnswerText}
-Официальный комментарий: ${officialExplanation || 'Нет официального комментария'}`;
+      const latestMessage = userMessage || [...messages].reverse().find(message => message.isUser)?.text || questionText;
+      if (isExplicitCodeRequest(latestMessage)) {
+        // Existing app versions display successful replies only when generated
+        // is true. scopeBlocked identifies this server-owned refusal separately.
+        return jsonResponse({ ok: true, reply: aiScopeRefusal(body.locale), generated: true, scopeBlocked: true, ...access.quota });
+      }
+      const systemPrompt = aiScopePrompt(body.locale);
 
       let reply = '';
       const geminiKey = env.GEMINI_API_KEY || env.AI_API_KEY;
@@ -3887,37 +3871,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
 
       if (geminiKey) {
         try {
-          const contents = [];
-
-          if (Array.isArray(messages) && messages.length > 0) {
-            for (const m of messages) {
-              const role = m.isUser ? 'user' : 'model';
-              if (contents.length > 0 && contents[contents.length - 1].role === role) {
-                contents[contents.length - 1].parts[0].text += '\n' + m.text;
-              } else {
-                contents.push({
-                  role,
-                  parts: [{ text: m.text }]
-                });
-              }
-            }
-          }
-
-          if (userMessage) {
-            if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
-              contents[contents.length - 1].parts[0].text += '\n' + userMessage;
-            } else {
-              contents.push({
-                role: 'user',
-                parts: [{ text: userMessage }]
-              });
-            }
-          } else if (contents.length === 0) {
-            contents.push({
-              role: 'user',
-              parts: [{ text: 'Объясни эту дорожную ситуацию кратко и по делу: 1) Суть на дороге, 2) Правило ПДД, 3) Подсказка.' }]
-            });
-          }
+          const contents = aiScopeContents(body);
 
           const geminiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`, {
             method: 'POST',
@@ -3928,7 +3882,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
                 parts: [{ text: systemPrompt }]
               },
               contents,
-              generationConfig: aiGenerationConfig(activeModel)
+              generationConfig: { ...aiGenerationConfig(activeModel), responseMimeType: 'application/json', responseSchema: AI_SCOPE_SCHEMA }
             })
           });
 
@@ -3953,7 +3907,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
 
       return jsonResponse({
         ok: true,
-        reply,
+        ...parseScopedAiReply(reply, body.locale),
         generated: true,
         model: activeModel,
         ...access.quota
@@ -4004,6 +3958,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
       const activeModel = body.model || await getActiveAiModel(env);
       const geminiKey = env.GEMINI_API_KEY || env.AI_API_KEY;
       if (!geminiKey) return jsonResponse({ error: 'no gemini key configured in env' }, 400);
+      if (isExplicitCodeRequest(prompt)) return jsonResponse({ ok: true, model: activeModel, reply: aiScopeRefusal('ru'), scopeBlocked: true });
 
       try {
         const geminiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`, {
@@ -4011,9 +3966,9 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
           signal: AbortSignal.timeout(AI_PROVIDER_TIMEOUT_MS),
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: 'Ты преподаватель ПДД России. Объясни кратко, в 3–5 строках, без приветствия.' }] },
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: aiGenerationConfig(activeModel)
+            systemInstruction: { parts: [{ text: aiScopePrompt('ru') }] },
+            contents: aiScopeContents({ questionText: '', answers: [], officialExplanation: '', messages: [], userMessage: prompt }),
+            generationConfig: { ...aiGenerationConfig(activeModel), responseMimeType: 'application/json', responseSchema: AI_SCOPE_SCHEMA }
           })
         });
         const data = await geminiResp.json();
@@ -4021,7 +3976,7 @@ ${Array.isArray(answers) ? answers.slice(0, 6).map((a, i) => `${i + 1}. ${clipTe
         if (data?.usageMetadata) await trackStats(env, ctx, { kind: 'ai', model: activeModel, ...aiUsage(data) });
         const reply = aiReply(data);
         if (!reply) return jsonResponse({ ok: false, model: activeModel, error: 'ai_unavailable' }, 503);
-        return jsonResponse({ ok: true, model: activeModel, reply });
+        return jsonResponse({ ok: true, model: activeModel, ...parseScopedAiReply(reply, 'ru') });
       } catch (_) {
         return jsonResponse({ ok: false, model: activeModel, error: 'ai_unavailable' }, 503);
       }

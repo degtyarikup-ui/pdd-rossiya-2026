@@ -72,7 +72,7 @@ test('Gemini request receives a deadline inside the client timeout and bounded c
   AbortSignal.timeout = milliseconds => { deadlines.push(milliseconds); return originalTimeout(milliseconds); };
   globalThis.fetch = async (url, options) => {
     calls.push({ url: String(url), options });
-    return Response.json({ candidates: [{ content: { parts: [{ text: 'fixture answer' }] } }] });
+    return Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ scope: 'pdd', reply: 'fixture answer' }) }] } }] });
   };
   try {
     const sessionCredential = crypto.randomUUID();
@@ -90,7 +90,10 @@ test('Gemini request receives a deadline inside the client timeout and bounded c
     assert.ok(AI_PROVIDER_TIMEOUT_MS < 10000);
     const sent = JSON.parse(calls[0].options.body);
     assert.ok(sent.systemInstruction.parts[0].text.length < 10000);
-    assert.equal(sent.contents[0].parts[0].text.length, limits.messageChars + 1 + limits.userMessageChars);
+    const payload = JSON.parse(sent.contents[0].parts[0].text);
+    assert.equal(payload.history[0].text.length, limits.messageChars);
+    assert.equal(payload.userMessage.length, limits.userMessageChars);
+    assert.equal(payload.question.officialExplanation.length, limits.explanationChars);
   } finally { globalThis.fetch = originalFetch; AbortSignal.timeout = originalTimeout; }
 });
 
