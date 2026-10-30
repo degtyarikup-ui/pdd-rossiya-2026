@@ -354,6 +354,13 @@ func _add_field(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transfo
 			var i: int = idx[k + c]
 			corners.append(Vector3(v[i * 2], y, v[i * 2 + 1]))
 			var sh := Vector3(w[i * 3], w[i * 3 + 1], w[i * 3 + 2])
+			if str(s.id) == "rural_shoulder":
+				# Runtime joins trim the saved crop; fade at the actual retained edge.
+				var fade := 1.0
+				for binding in stitch_bindings:
+					var distance: float = (binding.port.p - corners[-1]).dot(binding.port.out)
+					fade = minf(fade, smoothstep(0.0, 7.0, distance))
+				sh = Vector3(sh.x * fade, sh.y * fade, 1.0 - (sh.x + sh.y) * fade)
 			share.append(sh)
 		k += 3
 		# Cut the triangle where the lawn share crosses one half: the road (asphalt or dirt) and the
