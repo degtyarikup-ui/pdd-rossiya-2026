@@ -958,11 +958,13 @@
       const colours=[...AnnotationLine.colours];
       if(r.colour && !colours.some(([value])=>value===r.colour))colours.push([r.colour,'Исходный']);
       p.innerHTML=`${head(`<span class="ibadge">${ic('measure')}</span>`,'Линия-обозначение','без буквы')}
+        ${card('Текст',`<input type="text" data-text="annotation-text" aria-label="Свободный текст" placeholder="Например: 3 м" maxlength="120" value="${esc(r.text || '')}">`)}
         ${card('Вид линии',chips('annotation-style',AnnotationLine.styles.map(([value,title])=>({value,title})),r.style || 'line'))}
         ${card('Цвет',chips('annotation-colour',colours.map(([value,title])=>({value,title,html:`<span class="paint" style="background:${value}"></span>`})),r.colour || '#20242b'))}
         ${card('Толщина',slider('annotation-width','Толщина линии',r.width ?? .16,.08,.6,.02,`${(r.width ?? .16).toFixed(2)} м`))}
         ${card('',`<p>Тяните точки линии. Двойной клик добавляет точку. Линия не задаёт путь движения.</p><div class="insp-actions">${button('annotation-reverse','Поменять направление','rotr','ghost wide')}${button('rotl','−15°','rotl','ghost')}${button('rotr','+15°','rotr','ghost')}</div>${deleteRow()}`)}`;
       bind({...common,
+        'text:annotation-text':value=>{if(!App.isLocked(ref))App.edit(()=>{r.text=value.slice(0,120);});},
         'chip:annotation-style':value=>{if(!App.isLocked(ref)&&AnnotationLine.styles.some(([key])=>key===value))App.edit(()=>{r.style=value;});},
         'chip:annotation-colour':value=>{if(!App.isLocked(ref)&&/^#[0-9a-f]{6}$/i.test(value))App.edit(()=>{r.colour=value;});},
         'slider:annotation-width':live((_sc,value)=>{if(!App.isLocked(ref))r.width=value;},value=>{const label=p.querySelector('[data-shown="annotation-width"]');if(label)label.textContent=`${value.toFixed(2)} м`;}),

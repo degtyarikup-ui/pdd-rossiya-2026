@@ -394,6 +394,10 @@ const Scene3D = (() => {
       const opacity = r.kind === "annotation" ? 1 : dim ? 0.28 : 1;
       const shown = r.kind === "annotation" ? r.points : smooth(r.points);
       if (r.kind === "annotation") {
+        if (r.text && r.points.length) {
+          const at = r.points[Math.floor((r.points.length-1)/2)], end = r.points.at(-1);
+          labels.push({text:r.text,cls:"annotation-text",world:[(at[0]+end[0])/2,1,(at[1]+end[1])/2],ref:{t:"route",id:r.id}});
+        }
         g.add(annotationMesh(r, .04, opacity));
         g.add(annotationMesh(r, 0, opacity));
         continue;

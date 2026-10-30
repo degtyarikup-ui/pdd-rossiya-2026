@@ -133,7 +133,7 @@ const Tools = (() => {
         <span class="answer-setting-label">${mode === 'annotation' ? 'Вид линии' : 'Буква'}</span>
         ${mode !== 'annotation' ? `<div class="answer-letters" role="group" aria-label="Буква ответа">${letters}</div>` : ''}
         ${styles ? `<div class="answer-style-options">${styles}</div>` : ''}
-      </div><div class="answer-caption">${caption}</div></div>`;
+      </div></div>`;
   }
 
   function renderBrushOptions() {

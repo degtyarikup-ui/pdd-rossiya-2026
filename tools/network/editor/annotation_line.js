@@ -1,7 +1,7 @@
 // Screen-independent overlay geometry: dimensions and other explanations have
 // no answer letter and never serve as a driving route.
 const AnnotationLine = (() => {
-  const styles = [['line','Линия'],['arrow','Со стрелкой'],['both','Стрелки с двух сторон']];
+  const styles = [['text','Только текст'],['line','Линия'],['arrow','Со стрелкой'],['both','Стрелки с двух сторон']];
   const colours = [['#20242b','Чёрная'],['#ffffff','Белая'],['#0574f8','Синяя'],['#e0533d','Красная'],['#e0b33c','Жёлтая']];
   function clean(points) {
     const out=[];
@@ -23,7 +23,7 @@ const AnnotationLine = (() => {
     return out;
   }
   function geometry(route, border=0) {
-    const points=clean(route.points);if(points.length<2)return [];
+    const points=clean(route.points);if(points.length<2 || route.style==='text')return [];
     const style=route.style || 'line', both=style==='both', end=style!=='line';
     const width=route.width ?? .16, half=(width+border*2)/2;
     const headLength=Math.min(.8,length(points)*.35), headWidth=Math.max(.26,width*2);

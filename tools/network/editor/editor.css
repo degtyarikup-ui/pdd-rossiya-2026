@@ -699,3 +699,5 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); 
 .signal-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
 .signal-dot.yellow { background: #e0a400; }
 .signal-dot.red { background: var(--red); }
+
+.annotation-text { color:#20242b; font-size:22px; font-weight:700; white-space:pre-wrap; max-width:320px; text-align:center; text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white; }

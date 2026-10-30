@@ -179,7 +179,7 @@ def check_scene(scene: dict) -> list:
                 isinstance(p, (list, tuple)) and len(p) == 2 and all(number(v) for v in p) for p in pts)
             width = r.get("width", .16)
             if (not valid_points or (valid_points and LineString(pts).length < .1)
-                    or r.get("style", "line") not in ("line", "arrow", "both")
+                    or r.get("style", "line") not in ("line", "arrow", "both", "text")
                     or not number(width) or not .08 <= width <= .6
                     or not isinstance(r.get("colour", "#20242b"), str)
                     or not re.fullmatch(r"#[0-9a-fA-F]{6}", r.get("colour", "#20242b"))):

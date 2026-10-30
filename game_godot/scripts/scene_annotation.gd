@@ -48,7 +48,7 @@ static func head(out: PackedVector3Array, points: PackedVector2Array, head_lengt
 static func geometry(route: Dictionary, border := 0.0) -> PackedVector3Array:
 	var out := PackedVector3Array()
 	var points := clean(route.get("points",[]))
-	if points.size()<2: return out
+	if points.size()<2 or route.get("style", "") == "text": return out
 	var style: String = route.get("style","line")
 	var both := style=="both"
 	var end := style!="line"
@@ -100,4 +100,18 @@ static func create(route: Dictionary) -> Node3D:
 		mesh.material_override = material
 		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(mesh)
+	var text := str(route.get("text", ""))
+	var points := clean(route.get("points", []))
+	if not text.is_empty() and not points.is_empty():
+		var label := Label3D.new()
+		label.text = text
+		label.font_size = 64
+		label.pixel_size = .018
+		label.outline_size = 10
+		label.modulate = Color("#20242b")
+		label.outline_modulate = Color.WHITE
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		var at := (points[(points.size()-1)/2] + points[-1]) * .5
+		label.position = Vector3(at.x, 1.0, at.y)
+		root.add_child(label)
 	return root
