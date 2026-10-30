@@ -147,7 +147,7 @@ def sync(sid: str) -> dict:
     out["labels"] = labels
     # Overlays have no answer labels and must not suppress the fallback player guide.
     out["annotations"] = [{"points": r["points"], "style": r.get("style", "line"),
-                           "colour": r.get("colour", "#20242b"), "width": r.get("width", .16), "text": str(r.get("text", ""))[:120]}
+                           "colour": r.get("colour", "#20242b"), "width": r.get("width", .16), "text": str(r.get("text", ""))[:120], "textSize": r.get("textSize", 1), "textAngle": r.get("textAngle", 0)}
                           for r in net.get("routes", []) if r["kind"] == "annotation"]
 
     out["lights"] = [{"pos": [l["pos"][0], 0.0, l["pos"][1]], "yaw": l["yaw"], "scale": l["scale"],

@@ -396,7 +396,7 @@ const Scene3D = (() => {
       if (r.kind === "annotation") {
         if (r.text && r.points.length) {
           const at = r.points[Math.floor((r.points.length-1)/2)], end = r.points.at(-1);
-          labels.push({text:r.text,cls:"annotation-text",world:[(at[0]+end[0])/2,1,(at[1]+end[1])/2],ref:{t:"route",id:r.id}});
+          labels.push({text:r.text,textSize:r.textSize || 1,textAngle:r.textAngle || 0,cls:"annotation-text",world:[(at[0]+end[0])/2,1,(at[1]+end[1])/2],ref:{t:"route",id:r.id}});
         }
         g.add(annotationMesh(r, .04, opacity));
         g.add(annotationMesh(r, 0, opacity));
@@ -1253,6 +1253,21 @@ const Scene3D = (() => {
         l.el.className = "tag " + l.cls;
         l.el.textContent = l.text;
         if (l.colour) l.el.style.setProperty("--c", "#" + new THREE.Color(l.colour).getHexString());
+        if(l.cls==='annotation-text') {
+          l.el.style.fontSize=(22*(l.textSize || 1))+'px';
+          l.el.style.pointerEvents='auto';
+          l.el.addEventListener('pointerdown',e=>{
+            if(e.button!==0 || App.isLocked(l.ref))return;
+            e.stopPropagation();e.preventDefault();
+            const route=App.objectOf(l.ref), rect=container.getBoundingClientRect();
+            const start=worldAt(e.clientX-rect.left,e.clientY-rect.top), original=route.points.map(p=>[...p]);
+            if(!start)return;App.beginDrag();
+            const move=ev=>{const at=worldAt(ev.clientX-rect.left,ev.clientY-rect.top);if(at)App.dragMove(()=>{route.points=original.map(p=>[p[0]+at.x-start.x,p[1]+at.z-start.z]);},{rebuild:false});};
+            const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);App.endDrag({rebuild:false});App.select(l.ref);};
+            window.addEventListener('pointermove',move);window.addEventListener('pointerup',up,{once:true});
+          });
+          l.el.addEventListener('dblclick',e=>{e.stopPropagation();Tools.editText(App.objectOf(l.ref));});
+        }
         labelsEl.appendChild(l.el);
       }
       const at = l.follow && anchors.get(l.follow) ? anchors.get(l.follow).group.position : null;
@@ -1261,11 +1276,11 @@ const Scene3D = (() => {
       const w = l.text.length * 7 + 16, h = 22;
       const box = { x0: x - w / 2, y0: y - h, x1: x + w / 2, y1: y };
       const clash = placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0);
-      const letter = l.cls.split(" ").includes("letter");
+      const letter = l.cls.split(" ").includes("letter") || l.cls === "annotation-text";
       const visible = (!phone || letter) && tmp.z < 1 && x > -40 && x < width + 40 && y > -20 && y < height + 20 && (!clash || letter) && (mode === "3d" || pxPerM > 1.6 || letter);
       if (visible) placed.push(box);
       l.el.style.display = visible ? "" : "none";
-      l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${l.textAngle || 0}deg)`;
       l.el.classList.toggle("sel", !!(l.ref && isSel(l.ref)));
     }
   }

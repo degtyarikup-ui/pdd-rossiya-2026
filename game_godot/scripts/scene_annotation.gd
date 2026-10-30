@@ -103,14 +103,15 @@ static func create(route: Dictionary) -> Node3D:
 	var text := str(route.get("text", ""))
 	var points := clean(route.get("points", []))
 	if not text.is_empty() and not points.is_empty():
-		var label := Label3D.new()
+		var label := preload("res://scripts/scene_text_label.gd").new()
 		label.text = text
 		label.font_size = 64
-		label.pixel_size = .018
+		label.pixel_size = .018 * clampf(float(route.get("textSize",1)),.4,4)
+		label.text_angle = float(route.get("textAngle",0))
 		label.outline_size = 10
 		label.modulate = Color("#20242b")
 		label.outline_modulate = Color.WHITE
-		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 		var at := (points[(points.size()-1)/2] + points[-1]) * .5
 		label.position = Vector3(at.x, 1.0, at.y)
 		root.add_child(label)

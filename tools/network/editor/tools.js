@@ -130,8 +130,8 @@ const Tools = (() => {
     return `<div class="answer-options">
       <div class="answer-modes" role="group" aria-label="Что добавить">${modes}</div>
       <div class="answer-settings">
-        <span class="answer-setting-label">${mode === 'annotation' ? 'Вид линии' : 'Буква'}</span>
-        ${mode !== 'annotation' ? `<div class="answer-letters" role="group" aria-label="Буква ответа">${letters}</div>` : ''}
+        <span class="answer-setting-label">${mode === 'text' ? 'Кликните место для надписи' : mode === 'annotation' ? 'Вид линии' : 'Буква'}</span>
+        ${mode !== 'annotation' && mode !== 'text' ? `<div class="answer-letters" role="group" aria-label="Буква ответа">${letters}</div>` : ''}
         ${styles ? `<div class="answer-style-options">${styles}</div>` : ''}
       </div></div>`;
   }
@@ -620,6 +620,9 @@ const Tools = (() => {
     down(e) {
       if (!e.world) return;
       if (App.state.locked.has("routes")) return App.toast("Слой ответов и маршрутов заблокирован", "warn");
+      if (opts.answerMode === "text" && !opts.pathFor && !opts.answerRoute) {
+        editText(null, [e.world.x,e.world.z]); return;
+      }
       if (opts.answerMode === "letter" && !opts.pathFor && !opts.answerRoute) {
         const ref = App.edit(s => AnswerMark.create(s, opts.answerLetter, [], [r3(e.world.x), r3(e.world.z)], true));
         if (!ref) return App.toast("Все буквы уже в сцене", "warn");
@@ -1056,6 +1059,30 @@ const Tools = (() => {
     });
   }
 
-  return { init, set, current, list: () => LIST.filter((t) => !t.sep), escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, drawAnswerRoute, convertScene,
+  function editText(route, at) {
+    if (App.state.locked.has("routes") || document.querySelector('.scene-text-input')) return;
+    at = at || [(route.points[0][0]+route.points.at(-1)[0])/2,(route.points[0][1]+route.points.at(-1)[1])/2];
+    const input=document.createElement('input'), point=Scene3D.screenOf(...at);
+    input.className='scene-text-input';input.type='text';input.maxLength=120;
+    input.placeholder='Введите текст';input.value=route?.text || '';
+    input.setAttribute('aria-label','Текст на сцене');
+    input.style.left=point.x+'px';input.style.top=point.y+'px';
+    document.querySelector('#view').appendChild(input);
+    let done=false;
+    const finish=cancel=>{
+      if(done)return;done=true;const value=input.value.trim();input.remove();
+      if(cancel || !value)return;
+      let ref;
+      App.edit(sc=>{
+        if(route){route.text=value;ref={t:'route',id:route.id};}
+        else {const id=App.uniqueId('text_',sc.routes.map(r=>r.id));sc.routes.push({id,kind:'annotation',style:'text',text:value,textSize:1,textAngle:0,points:[[at[0]-.1,at[1]],[at[0]+.1,at[1]]]});ref={t:'route',id};}
+      });
+      set('select');App.select(ref);
+    };
+    input.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();finish(false);}if(e.key==='Escape'){e.preventDefault();finish(true);}});
+    input.addEventListener('pointerdown',e=>e.stopPropagation());
+    input.addEventListener('blur',()=>finish(false));input.focus();input.select();
+  }
+  return { editText, init, set, current, list: () => LIST.filter((t) => !t.sep), escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, drawAnswerRoute, convertScene,
     applyTemplate, renderBar, renderHint, lightSpot, rotateBrush, get opts() { return opts; } };
 })();
