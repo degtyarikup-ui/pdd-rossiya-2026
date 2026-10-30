@@ -34,26 +34,31 @@ static func texture(code: String) -> Texture2D:
 static var _number_data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://signs/number_faces.json"))
 static var _number_textures := {}
 
-static func number_svg(code: String, value: int) -> String:
-	if not code in ["3.24", "3.25"] or value < 1 or value > 150: return ""
+static func number_svg(code: String, value: float) -> String:
+	if not _number_data.specs.has(code) or value <= 0 or value > 99999: return ""
 	var glyphs: Array = []
 	var advance := 0.0
-	for digit in str(value):
+	for digit in ("%.2f" % value).trim_suffix("0").trim_suffix("0").trim_suffix(".").replace(".", ","):
 		var glyph: Dictionary = _number_data.glyphs[digit]
 		glyphs.append(glyph)
 		advance += float(glyph.advance)
-	var scale: float = minf(29.0 / float(_number_data.top - _number_data.bottom), 46.0 / advance)
-	var x := 50.0 - advance * scale / 2.0
-	var y: float = 43.0 + float(_number_data.top + _number_data.bottom) * scale / 2.0
+	var rect: Array = _number_data.specs[code].rect
+	if code in ["3.24", "3.25"]: rect = [27.0,28.5,46.0,29.0]
+	var size: Array = _number_data.specs[code].size
+	var sx: float = 1.0 if code in ["3.24", "3.25"] else float(size[0])/100.0
+	var sy: float = 1.0 if code in ["3.24", "3.25"] else float(size[1])/100.0
+	var scale: float = minf(float(rect[3])*sy / float(_number_data.top - _number_data.bottom), float(rect[2])*sx / advance)
+	var x: float = float(rect[0]) + float(rect[2])/2.0 - advance * scale / sx / 2.0
+	var y: float = float(rect[1]) + float(rect[3])/2.0 + float(_number_data.top + _number_data.bottom) * scale / sy / 2.0
 	var paths := ""
 	var offset := 0.0
 	for glyph in glyphs:
 		paths += '<path transform="translate(%.9f 0)" d="%s"/>' % [offset, glyph.path]
 		offset += float(glyph.advance)
-	var number := '<g transform="translate(%.9f %.9f) scale(%.9f %.9f)">%s</g>' % [x,y,scale,-scale,paths]
+	var number := '<g transform="translate(%.9f %.9f) scale(%.9f %.9f)">%s</g>' % [x,y,scale/sx,-scale/sy,paths]
 	return str(_number_data.templates[code]).replace("{{number}}",number)
 
-static func number_texture(code: String, value: int) -> Texture2D:
+static func number_texture(code: String, value: float) -> Texture2D:
 	var svg := number_svg(code,value)
 	if svg.is_empty(): return texture(code)
 	var key := code + ":" + str(value)
@@ -63,7 +68,7 @@ static func number_texture(code: String, value: int) -> Texture2D:
 		image.generate_mipmaps()
 		var tex := ImageTexture.create_from_image(image)
 		tex.set_meta("sign_code",code)
-		tex.set_meta("canvas_size",Vector2(100,86))
+		tex.set_meta("canvas_size",Vector2(_number_data.specs[code].size[0],_number_data.specs[code].size[1]))
 		if _number_textures.size() >= 32: _number_textures.erase(_number_textures.keys()[0])
 		_number_textures[key] = tex
 	return _number_textures[key]

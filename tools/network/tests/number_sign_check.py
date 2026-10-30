@@ -14,7 +14,7 @@ import build, check, engine_sync, question_pool, server, number_sign
 with tempfile.TemporaryDirectory(prefix='number-signs-',dir=build.ROOT/'scratch') as tmp:
     root=Path(tmp);net=root/'network';sit=root/'situations';net.mkdir();sit.mkdir()
     for code in number_sign.CODES:
-        for value in [1,20,40,90,130,150]: (root/f'{code}_{value}.svg').write_text(number_sign.svg(code,value))
+        for value in [1,20,40,90,130,150] + ([3.5,500] if code not in ('3.24','3.25','4.6','4.7','6.2') else []): (root/f'{code}_{value}.svg').write_text(number_sign.svg(code,value))
     with ExitStack() as stack:
         for module,name,value in [(server,'NET',net),(server,'SIT',sit),(server,'HISTORY',net/'history'),
                 (server,'PREVIEW',net/'preview'),(server,'QUESTION_POOL',question_pool.QuestionPool(network=net)),

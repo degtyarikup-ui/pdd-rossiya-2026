@@ -162,7 +162,7 @@ def check_scene(scene: dict) -> list:
     for sign in scene.get("signs", []):
         for face in [sign, sign.get("secondSign", {})]:
             if "number" in face and not number_sign.valid(face.get("code"), face["number"]):
-                finding(out, "error", "sign-number", "Задайте целую скорость от 1 до 150 для знака 3.24 или 3.25", {"type":"sign", "id":sign["id"]})
+                finding(out, "error", "sign-number", "Недопустимое число для выбранного знака", {"type":"sign", "id":sign["id"]})
 
     routes = {r["id"]: r for r in scene.get("routes", [])}
     for r in scene.get("routes", []):

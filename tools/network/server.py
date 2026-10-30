@@ -354,9 +354,9 @@ class Handler(BaseHTTPRequestHandler):
         if m:
             f = source_image(m[2], m[1])
             return self.file(f) if f else self.send(404, {"error": "not found"})
-        numeric = re.fullmatch(r"/asset/sign/(3\.24|3\.25)_([0-9]{1,3})\.svg", path)
+        numeric = re.fullmatch(r"/asset/sign/([0-9]+\.[0-9]+(?:\.[0-9]+)?)_([0-9]{1,5}(?:\.[0-9]{1,2})?)\.svg", path)
         if numeric:
-            code, value = numeric[1], int(numeric[2])
+            code, value = numeric[1], float(numeric[2])
             if not number_sign.valid(code, value):
                 return self.send(400, {"error": "Скорость от 1 до 150"})
             svg = number_sign.svg(code, value).encode()

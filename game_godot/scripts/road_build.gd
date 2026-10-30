@@ -135,8 +135,8 @@ static func _sign_parts(face: Dictionary, above := Vector2.ZERO) -> Array:
 		width = LaneSign.width(lanes)
 	elif code == "8.13":
 		tex = main_road_plate(face.get("mainRoad", []), face.get("roads", []))
-	elif code in ["3.24", "3.25"] and face.has("number"):
-		tex = SignFace.number_texture(code,int(face.number))
+	elif SignFace._number_data.specs.has(code) and face.has("number"):
+		tex = SignFace.number_texture(code,float(face.number))
 	else:
 		tex = SignFace.texture(artwork)
 	if tex == null:
