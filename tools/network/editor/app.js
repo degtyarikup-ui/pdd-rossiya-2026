@@ -253,7 +253,9 @@ const App = (() => {
     state.savedJson = snapshotText();
     state.dirty = false;
     // Refresh generated views in memory; author paths and on-disk sources wait for Save.
-    if (state.S.layout?.streets?.some(st => st.kind === "highway")) {
+    if (state.S.layout && (state.S.layout.streets?.some(st => st.kind === "highway") ||
+        r.findings?.some(f => ["road-invalid","lawn-invalid"].includes(f.code) &&
+          [...(state.S.roads || []),...(state.S.lawns || [])].some(item => item.auto && item.id === f.ref?.id)))) {
       Layout.apply(state.S);
     }
     if (state.S.layout) Layout.refreshPlayerRoutes(state.S);

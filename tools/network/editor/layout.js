@@ -85,7 +85,7 @@ const Layout = (() => {
     const widths = points.map(p => { const profile = streetProfile(L, st, projectOn(line, p), crop); return median ? profile.median : profile.width; });
     const picked = points.map((p,i) => ({p,n:sub(normal[i],p),w:widths[i]})).filter(v => !median || v.w > 0.05);
     if (picked.length < 2) return [];
-    return [...picked.map(v => add(v.p, mul(v.n,-v.w/2))), ...picked.slice().reverse().map(v => add(v.p,mul(v.n,v.w/2)))].map(P);
+    return simpleOutline([...picked.map(v => add(v.p, mul(v.n,-v.w/2))), ...picked.slice().reverse().map(v => add(v.p,mul(v.n,v.w/2)))]);
   }
   function highwayLane(L, st, nid, offset, crop) {
     const line = centreline(L, st), points = densePath(line, 1.5);
@@ -180,9 +180,37 @@ const Layout = (() => {
     return out;
   }
 
+  // Offset curves can fold back on themselves where their radius is smaller than
+  // half the road width. Remove those enclosed loops from generated contours.
+  // Work at export precision so rounding cannot reintroduce a crossing.
+  function simpleOutline(points) {
+    let ring = points.map(P).filter((p,i,a) => !i || dist(p,a[i-1]) > 0.0001);
+    if (ring.length > 1 && dist(ring[0],ring.at(-1)) < 0.0001) ring.pop();
+    const cross = (a,b) => a[0]*b[1]-a[1]*b[0];
+    const area = a => Math.abs(a.reduce((sum,p,i) => sum+cross(p,a[(i+1)%a.length]),0));
+    for (let pass=0; pass<points.length; pass++) {
+      let split = false;
+      outer: for (let i=0;i<ring.length;i++) for(let j=i+2;j<ring.length;j++) {
+        if(i===0 && j===ring.length-1) continue;
+        const a=ring[i], b=ring[(i+1)%ring.length], c=ring[j], d=ring[(j+1)%ring.length];
+        const u=sub(b,a), v=sub(d,c), den=cross(u,v);
+        if(Math.abs(den)<1e-10) continue;
+        const t=cross(sub(c,a),v)/den, q=cross(sub(c,a),u)/den;
+        if(t<0 || t>1 || q<0 || q>1) continue;
+        const at=P(add(a,mul(u,t)));
+        const first=[at,...ring.slice(i+1,j+1)], second=[at,...ring.slice(j+1),...ring.slice(0,i+1)];
+        ring=(area(first)>area(second)?first:second).filter((p,k,a)=>!k || dist(p,a[k-1])>.0001);
+        if(ring.length>1 && dist(ring[0],ring.at(-1))<.0001) ring.pop();
+        split=true;break outer;
+      }
+      if(!split) break;
+    }
+    return ring;
+  }
+
   function outline(pts, w) {
     const l = offsetRight(pts, -w / 2), r = offsetRight(pts, w / 2).reverse();
-    return [...l, ...r].map(P);
+    return simpleOutline([...l, ...r]);
   }
 
   const onBorder = (L, n, crop) => Math.abs(Math.abs(n.x) - crop) < 0.05 || Math.abs(Math.abs(n.z) - crop) < 0.05;
@@ -315,7 +343,7 @@ const Layout = (() => {
       if (st.walk === false || st.shoulder || st.surface === "sand") {
         for (const side of [1, -1]) {
           const inner = offsetRight(pts, side * w / 2), outer = offsetRight(pts, side * (w / 2 + 3.4)).reverse();
-          lawns.push({ id: `auto_lawn_${st.id}_${side > 0 ? "r" : "l"}`, auto: true, outer: [...inner, ...outer].map(P), holes: [] });
+          lawns.push({ id: `auto_lawn_${st.id}_${side > 0 ? "r" : "l"}`, auto: true, outer: simpleOutline([...inner, ...outer]), holes: [] });
         }
       }
 
