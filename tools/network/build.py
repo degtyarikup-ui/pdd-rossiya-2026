@@ -54,6 +54,7 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import substring, unary_union
 import direction_marking
 import bus_stop_marking
+import railway_geometry
 
 ROOT = Path(__file__).resolve().parents[2]
 NET = ROOT / "game_godot" / "network"
@@ -237,7 +238,7 @@ def authored_rails(scene: dict):
     """Explicitly visible tracks also exist without a tram; legacy routing guides stay hidden."""
     parts = []
     for track in scene.get("tracks", []):
-        if track.get("render") is not True or len(track.get("points", [])) < 2:
+        if track.get("render") is not True or track.get("railType") == "railway" or len(track.get("points", [])) < 2:
             continue
         line = LineString(sample_tram_route(track["points"]))
         if line.length < .01:
@@ -640,6 +641,10 @@ def build(scene: dict) -> dict:
         # Coincident rotated road/lawn edges can leave sub-millimetre slivers.
         # Resolve them at the same precision used by the exported vertex buffer.
         pavement = set_precision(pavement, .001)
+    railway = railway_geometry.geometry(scene, road, pavement.union(islands), triangulate, sample_tram_route)
+    if not railway["opening"].is_empty:
+        pavement = pavement.difference(railway["opening"])
+        islands = islands.difference(railway["opening"])
     no_edge = disabled_edge_mask(scene, roads_all)
     sand_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") == "sand"])
     asphalt_raw = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("surface") != "sand"]
@@ -693,7 +698,7 @@ def build(scene: dict) -> dict:
     median = {"id": "median", "y": KERB + 0.005, "layer": "grass", "colour": LAWN_COLOUR, "verts": v, "idx": t}
     v, t = triangulate(pavement)
     pave = {"id": "pavement", "y": KERB, "layer": "pavement", "colour": PAVEMENT, "verts": v, "idx": t}
-    surfaces = [asphalt, island, median, pave]
+    surfaces = [asphalt, island, median, pave] + railway["surfaces"]
     visible_rails = authored_rails(scene).intersection(box)
     if not visible_rails.is_empty:
         v, t = triangulate(visible_rails)
@@ -716,6 +721,8 @@ def build(scene: dict) -> dict:
             continue
         # The carriageway with a 0.3 m margin (the baked paint reached a little past the edge), islands cut out.
         geom = unary_union(marks[colour]).intersection(road.buffer(0.3).difference(islands))
+        if not railway["bed"].is_empty:
+            geom = geom.difference(railway["bed"])
         # Every separate piece (a dash, a zebra bar) is triangulated on its own: in one triangulation the
         # gaps between the pieces would be filled.
         v, t = [], []
@@ -741,7 +748,7 @@ def build(scene: dict) -> dict:
     return {
         "id": scene["id"],
         "surfaces": surfaces,
-        "kerbs": {"y0": ROAD_Y, "y1": KERB, "colour": KERB_COLOUR, "segs": kerb_segments},
+        "kerbs": {"y0": ROAD_Y, "y1": KERB, "colour": KERB_COLOUR, "segs": railway_geometry.cut_kerbs(kerb_segments, railway["opening"])},
         # The drivable carriageway as the drawing has it (the car drives where the asphalt is).
         "carriageway": polygons_json(road),
     }

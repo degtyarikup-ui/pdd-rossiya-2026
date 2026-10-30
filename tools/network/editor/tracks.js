@@ -1,4 +1,5 @@
-// Tram tracks of a scene (scene.tracks: [{ id, points, depot }]): drawn with the «Рельсы» tool, built by
+// Tracks (scene.tracks: [{ id, points, depot, render, railType }]): railType defaults to "tram";
+// "railway" uses sleepers/ballast and level crossings. Drawn with the «Рельсы» tool, built by
 // build.py as two rails (and a paved bed where they leave the road, so the kerb opens for them). A tram
 // rides a track (actor.track, actor.trackDir) and may turn onto a branch ahead (actor.branch), e.g. into
 // its depot, so it is off the road once it has passed. Its path is rebuilt from that on every edit.

@@ -96,7 +96,7 @@ const App = (() => {
       case "light": return "Светофор";
       case "officer": return "Регулировщик";
       case "sign": return Catalog.signName(o.code);
-      case "track": return o.depot ? "Рельсы в депо" : "Рельсы";
+      case "track": return o.railType === "railway" ? "Железнодорожные рельсы" : o.depot ? "Рельсы в депо" : "Рельсы";
       case "route":
         if (o.kind === "annotation") return "Линия-обозначение";
         if (o.kind === "guide") return "Синяя стрелка игрока";

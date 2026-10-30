@@ -22,7 +22,7 @@ const Tools = (() => {
     { id: "prop", key: "O", title: "Объект", icon: "tree", hint: "Клик — поставить, тянуть — повернуть. Выберите объект слева" },
     { id: "brush", key: "B", title: "Кисть окружения", icon: "brush", hint: "Клик — готовая локация. Ведите — рисовать. ⌥ — стирать окружение" },
   ];
-  const opts = { sign: "2.4", roadKind: "street", mark: "dashed", markDirection: "straight", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerMode: "answer", answerLetter: null, answerArrowhead: true, annotationStyle: "line" };
+  const opts = { sign: "2.4", roadKind: "street", railType: "tram", mark: "dashed", markDirection: "straight", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerMode: "answer", answerLetter: null, answerArrowhead: true, annotationStyle: "line" };
   const SHORT_LABEL = { select: "Выбор", hand: "Рука", road: "Дорога", junction: "Перекрёсток", marking: "Разметка", track: "Рельсы", lawn: "Газон", actor: "Транспорт", light: "Светофор", sign: "Знак", officer: "Регулировщик", answer: "Ответы", prop: "Объект", brush: "Кисть" };
   let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null, pointerInView = false;
 
@@ -72,6 +72,8 @@ const Tools = (() => {
     if (tool === "road") {
       html = Object.entries(Layout.KINDS).map(([k, v]) => `<button class="pchip ${opts.roadKind === k ? "on" : ""}" data-road="${k}">
         <span class="road-pic k-${k}"></span><span>${v.title}</span></button>`).join("");
+    } else if (tool === "track") {
+      html = [["tram", "Трамвайные"], ["railway", "Железнодорожные"]].map(([key, title]) => `<button class="pchip ${opts.railType === key ? "on" : ""}" data-rail-type="${key}" aria-pressed="${opts.railType === key}">${ic("rails")}<span>${title}</span></button>`).join("");
     } else if (tool === "junction") {
       html = Layout.TEMPLATES.map((t) => `<button class="ptile" data-tpl="${t.id}">${Layout.svg(Layout.template(t.id), 90, 64)}<span>${esc(t.title)}</span></button>`).join("");
     } else if (tool === "marking") {
@@ -188,6 +190,7 @@ const Tools = (() => {
     $("#popover").addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b) return;
+      if (b.dataset.railType) { opts.railType = b.dataset.railType; renderPopover(); }
       if (b.dataset.road) { opts.roadKind = b.dataset.road; renderPopover(); }
       if (b.dataset.mark) { opts.mark = b.dataset.mark; finishDraft(true); renderPopover(); renderHint(); }
       if (b.dataset.markDirection) { opts.markDirection = b.dataset.markDirection; renderPopover(); }
@@ -907,7 +910,7 @@ const Tools = (() => {
       const ref = App.edit((s) => {
         s.tracks = s.tracks || [];
         const id = App.uniqueId("track_", s.tracks.map((t) => t.id));
-        s.tracks.push({ id, points: pts, render: true });
+        s.tracks.push({ id, points: pts, render: true, railType: opts.railType });
         return { t: "track", id };
       });
       App.select(ref);

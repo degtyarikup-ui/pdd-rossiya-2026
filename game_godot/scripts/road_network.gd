@@ -271,7 +271,7 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 	# Blend bands: the colour lerps across them and the grain layer switches only where both
 	# grains have faded (street.gd detail_strength), so asphalt, soil and grass meet softly.
 	var detail := 1.0
-	var kind: String = "dirt" if s.layer == "sand" else s.layer
+	var kind: String = str(s.get("detail", "dirt" if s.layer == "sand" else s.layer))
 	if s.layer == "sand":
 		var k := -1.0
 		var other := Color()
@@ -291,7 +291,7 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 	st.set_color(Color(colour.r, colour.g, colour.b, 0.0))
 	var k := 0
 	var slice := Time.get_ticks_usec()
-	var tram := str(s.id).begins_with("tram_")
+	var tram := str(s.id).begins_with("tram_") or str(s.id).begins_with("railway_") or str(s.id) == "authored_rails"
 	while k < idx.size():
 		if frames and Time.get_ticks_usec()-slice > 2000:
 			await frames.process_frame
@@ -299,7 +299,7 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 		var triangle: Array = []
 		for c in 3:
 			var i: int = idx[k + c]
-			triangle.append(s.verts3d[i] if s.has("verts3d") else Vector3(v[i * 2],y,v[i * 2 + 1]))
+			triangle.append(s.verts3d[i] if s.has("verts3d") else Vector3(v[i * 2],float(s.heights[i]) if s.has("heights") else y,v[i * 2 + 1]))
 		# Only raised sidewalks open for the driveway. Original carriageway,
 		# islands and question markings keep their authored geometry.
 		var pieces: Array = _pavement_service_pieces(triangle) if str(s.id) == "pavement" else [triangle]

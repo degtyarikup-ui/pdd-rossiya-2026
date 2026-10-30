@@ -626,7 +626,8 @@
      9.5
     ]
    ],
-   "render": true
+   "render": true,
+   "railType": "railway"
   }
  ],
  "questionCamera": [],

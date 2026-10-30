@@ -539,19 +539,23 @@
 
   // ---- tram tracks ----------------------------------------------------------------------------------
   function trackInspector(p, ref, t) {
+    const edit = fn => { if (!App.isLocked(ref)) App.edit(fn); };
     const trams = state.S.actors.filter((a) => a.track === t.id);
-    p.innerHTML = `${head(`<span class="ibadge">${ic("rails")}</span>`, t.depot ? "Рельсы в депо" : "Рельсы", `трамваев: ${trams.length}`)}
+    const railway = t.railType === "railway";
+    p.innerHTML = `${head(`<span class="ibadge">${ic("rails")}</span>`, railway ? "Железнодорожные рельсы" : t.depot ? "Рельсы в депо" : "Рельсы", railway ? "Шпалы · щебень · настил переезда" : `трамваев: ${trams.length}`)}
+      ${card("Тип рельсов", chips("rail-type", [{value:"tram",title:"Трамвайные"},{value:"railway",title:"Железнодорожные"}], railway ? "railway" : "tram"))}
       ${card("", `${toggle("render-track", "Показывать рельсы в игре", t.render === true, "eye")}
-        ${toggle("depot", "Заезд в депо", !!t.depot, "home")}
-        <p class="muted">Трамвай, который сворачивает на эти рельсы, уезжает с дороги и не мешает. Там, где рельсы идут по тротуару, бордюр и тротуар раскрываются под них сами.</p>
+        ${!railway ? toggle("depot", "Заезд в депо", !!t.depot, "home") : ""}
+        <p class="muted">${railway ? "Вне дороги — шпалы и щебень. На дороге и тротуаре автоматически появляется настил переезда; тротуар плавно понижается к рельсам." : "Трамвай, который сворачивает на эти рельсы, уезжает с дороги и не мешает. У привязанного трамвая въезд через тротуар открывается автоматически."}</p>
         ${button("reverse", "Развернуть направление", "rotr", "ghost wide")}
         <p class="muted">Тяните точки на виде, двойной клик по линии — новая точка. Начало ветки прилипает к другим рельсам.</p>`)}
       ${card("", `<div class="insp-actions">${button("del", "Удалить рельсы", "trash", "danger ghost")}</div>`)}`;
     bind({
-      del: () => App.remove(),
-      "toggle:render-track": (on) => App.edit(() => { t.render = on; }),
-      "toggle:depot": (on) => App.edit(() => { if (on) t.depot = true; else delete t.depot; }),
-      reverse: () => App.edit(() => { t.points.reverse(); }),
+      del: () => { if (!App.isLocked(ref)) App.remove(); },
+      "chip:rail-type": (v) => edit(() => { if (["tram", "railway"].includes(v)) { t.railType = v; t.render = true; } }),
+      "toggle:render-track": (on) => edit(() => { t.render = on; }),
+      "toggle:depot": (on) => edit(() => { if (on) t.depot = true; else delete t.depot; }),
+      reverse: () => edit(() => { t.points.reverse(); }),
     });
   }
 

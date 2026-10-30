@@ -63,7 +63,7 @@ const Scene3D = (() => {
   }
 
   // ---- textures: the game's detail shading (game_godot/shaders/scenery.gdshader) -------------
-  const TEXTURE_KINDS = ["asphalt", "pavement", "grass", "dirt"];
+  const TEXTURE_KINDS = ["asphalt", "pavement", "grass", "dirt", "ballast", "sleeper"];
   const GRASS_COLOUR = "#86a97a";
   const texParams = {}, texMaps = {}, texUniforms = {};
   const DETAIL_SHADE = `{
@@ -140,8 +140,8 @@ const Scene3D = (() => {
     return band ? new THREE.Color("#2c2f36").lerp(soil, (Number(band[1]) + 0.5) / 12) : soil;
   }
   function layerMaterial(s) {
-    if (s.layer === "") return new THREE.MeshLambertMaterial({ color: s.colour, side: THREE.DoubleSide, ...OFFSET });
-    const kind = s.layer === "sand" ? "dirt" : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
+    if (s.layer === "" && !s.detail) return new THREE.MeshLambertMaterial({ color: s.colour, side: THREE.DoubleSide, ...OFFSET });
+    const kind = s.detail || (s.layer === "sand" ? "dirt" : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement");
     const m = detailMaterial(kind, s.layer === "sand" ? dirtColour(s) : s.layer === "grass" ? GRASS_COLOUR : s.colour);
     Object.assign(m, OFFSET);
     return m;
@@ -165,12 +165,12 @@ const Scene3D = (() => {
       m.userData.own = true;
       return m;
     }
-    const kind = s.layer === "" ? null : s.layer === "sand" ? "dirt" : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement";
+    const kind = s.detail || (s.layer === "" ? null : s.layer === "sand" ? "dirt" : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement");
     const period = kind ? periodOf(kind) : 1;
     const pos = [], uv = [];
     for (let k = 0; k < s.idx.length; k++) {
       const i = s.idx[k] * 2;
-      pos.push(s.verts[i], s.y, s.verts[i + 1]);
+      pos.push(s.verts[i], s.heights?.[i / 2] ?? s.y, s.verts[i + 1]);
       uv.push(s.verts[i] / period, s.verts[i + 1] / period);
     }
     const geo = new THREE.BufferGeometry();
@@ -1807,7 +1807,7 @@ const Scene3D = (() => {
     on(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
     setPanTool(on) { panTool = !!on; renderer && renderer.domElement.classList.toggle("grab", panTool); },
     requestRender() { needsRender = true; },
-    onRoad(x, z) { return ["asphalt", "sand", "dirt_field"].includes(SurfaceSupport.at(build, x, z).id); },
+    onRoad(x, z) { return ["asphalt", "sand", "dirt_field", "railway_crossing"].includes(SurfaceSupport.at(build, x, z).id); },
     get mode() { return mode; },
     get pxPerM() { return pxPerM; },
     get spaceDown() { return spaceDown; },
