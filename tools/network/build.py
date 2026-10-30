@@ -614,6 +614,32 @@ def soft_ground(sand, paved, solid, box):
     return out, shoulder
 
 
+def blended_shoulder(region, weights):
+    """Closely spaced vertices interpolate continuous asphalt/earth/grass shares."""
+    from shapely.prepared import prep
+    covered = prep(region)
+    verts, indices, shares, lookup = [], [], [], {}
+    x0, z0, x1, z1 = region.bounds
+    step = .4
+    def vertex(x, z):
+        key = (round(x, 3), round(z, 3))
+        if key not in lookup:
+            lookup[key] = len(verts) // 2
+            verts.extend(key)
+            shares.extend(weights(Point(*key)))
+        return lookup[key]
+    for ix in range(math.ceil((x1-x0)/step)):
+        for iz in range(math.ceil((z1-z0)/step)):
+            x, z = x0+ix*step, z0+iz*step
+            cell = Polygon([(x,z),(x+step,z),(x+step,z+step),(x,z+step)])
+            if not covered.intersects(cell): continue
+            v, t = triangulate(cell if covered.contains(cell) else cell.intersection(region))
+            ids = [vertex(v[i],v[i+1]) for i in range(0,len(v),2)]
+            indices.extend(ids[i] for i in t)
+    return {"id":"rural_shoulder", "y":ROAD_Y, "layer":"field", "soil_colour":"#96846b",
+            "soil_kind":"gravel", "colour":"#96846b", "verts":verts, "idx":indices, "shares":shares}
+
+
 def build(scene: dict) -> dict:
     road, islands, roads_all, ring = ground(scene)
     box = crop_box(scene)
@@ -699,16 +725,22 @@ def build(scene: dict) -> dict:
     v, t = triangulate(pavement)
     pave = {"id": "pavement", "y": KERB, "layer": "pavement", "colour": PAVEMENT, "verts": v, "idx": t}
     surfaces = [asphalt, island, median, pave] + railway["surfaces"]
-    # Rural shoulders are supporting ground, never pavement (GroundMap.WALK).
-    shoulder_parts = []
-    for item in scene.get("roads", []):
-        width = max(0.0, min(3.5, float(item.get("shoulder", 0))))
-        if width:
-            shoulder_parts.append(polygon_of(item).buffer(width, quad_segs=16))
-    rural_shoulder = unary_union(shoulder_parts).difference(roads_all.union(pavement).union(islands)).intersection(box)
+    # A fixed-width shoulder, fading at its ends and across both lateral edges.
+    shoulder_roads = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("shoulder")])
+    rural_shoulder = shoulder_roads.buffer(2.5, quad_segs=16).difference(roads_all.union(pavement).union(islands)).intersection(box)
     if not rural_shoulder.is_empty:
-        v, t = triangulate(rural_shoulder)
-        surfaces.append({"id":"rural_shoulder", "y":ROAD_Y, "layer":"gravel", "colour":"#a3947c", "verts":v, "idx":t})
+        ends = shoulder_roads.boundary.difference(roads_all.boundary.buffer(.06))
+        def shoulder_shares(point):
+            end_distance = box.boundary.distance(point)
+            if not ends.is_empty:
+                end_distance = min(end_distance, ends.distance(point))
+            fade = _smooth(0, 7, end_distance)
+            distance = roads_all.distance(point)
+            width = 2.5 * fade
+            earth = (1 - _smooth(max(0, width - .9), max(.001, width), distance)) * fade
+            asphalt = (1 - _smooth(0, .5, distance)) * earth
+            return (asphalt, earth - asphalt, 1 - earth)
+        surfaces.append(blended_shoulder(rural_shoulder, shoulder_shares))
     visible_rails = authored_rails(scene).intersection(box)
     if not visible_rails.is_empty:
         v, t = triangulate(visible_rails)

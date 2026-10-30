@@ -308,7 +308,7 @@ const Layout = (() => {
         if (piece.length >= 2) roads.push({ id: `road_${st.id}_paved_${end}`, auto: true, outer: outline(piece, w), holes: [], walk: false, edge: false, surface: "asphalt" });
       }
       const roadItem = { id: `road_${st.id}`, auto: true, outer: highway ? profileOutline(L,st,densePath(pts,1.5),crop) : outline(dirtPath && dirtPath.length >= 2 ? dirtPath : wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && !st.shoulder && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
-      if (st.shoulder) roadItem.shoulder = Number(st.shoulder);
+      if (st.shoulder) roadItem.shoulder = 2.5;
       roads.push(roadItem);
       // The taper carries the street's switches: an edge line turned off is off on the narrowing too.
       if (plainEnds) roads.push({ id: `road_${st.id}_plain`, auto: true, outer: outline(pts, kindOf(st).width), holes: [], walk: roadItem.walk, edge: roadItem.edge, surface: roadItem.surface, ...(roadItem.shoulder ? {shoulder:roadItem.shoulder} : {}) });

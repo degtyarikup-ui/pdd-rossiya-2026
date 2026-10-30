@@ -336,8 +336,8 @@ func _add_triangles(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Tra
 ## crossroads game draws its unpaved arms. Each triangle takes its dominant layer, whose grain
 ## fades with its share, so layers switch only where both have faded.
 func _add_field(st: SurfaceTool, s: Dictionary, scenery: Scenery, uv_xf: Transform3D, frames: SceneTree = null) -> void:
-	var colours := [Color("#2C2F36"), Color("#6f5840"), scenery.color("ground")]
-	var kinds := ["asphalt", "dirt", "grass"]
+	var colours := [Color("#2C2F36"), Color(s.get("soil_colour", "#6f5840")), scenery.color("ground")]
+	var kinds := ["asphalt", str(s.get("soil_kind", "dirt")), "grass"]
 	var v: Array = s.verts
 	var w: Array = s.shares
 	var idx: Array = s.idx

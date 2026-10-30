@@ -295,11 +295,10 @@
   }
   const roadValue = (st, key) => key === "kind" ? st.kind || "street" : key === "surface" ? st.surface || "asphalt"
     : key === "centre" ? st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed")
-    : key === "shoulder" ? Number(st.shoulder || 0) : key === "median" ? Layout.medianOf(st) : st[key] !== false;
+    : key === "shoulder" ? !!st.shoulder : key === "median" ? Layout.medianOf(st) : st[key] !== false;
   function roadSettings(streets, prefix = "") {
     const val = key => shared(streets, st => roadValue(st,key));
     const field = (title,key,html) => `<div class="road-setting">${fieldTitle(title,val(key))}${html}</div>`;
-    const binary = (name, value, icon) => chips(prefix+name,[{value:"true",title:"Да",icon},{value:"false",title:"Нет"}],value);
     const soil = streets.filter(st => st.surface === "sand").length;
     const manual = streets.filter(st => st.manualMarks).length;
     const median = streets.filter(st => Layout.medianOf(st) > 0).length;
@@ -311,18 +310,18 @@
       field("По центру", "centre", chips(prefix+"centre", [{value:"none",title:"Нет",html:'<span class="mark-pic m-none"></span>'},{value:"dashed",title:"Прерывистая",html:'<span class="mark-pic m-dashed"></span>'},{value:"solid",title:"Сплошная",html:'<span class="mark-pic m-solid"></span>'},{value:"double",title:"Двойная",html:'<span class="mark-pic m-double"></span>'}],val("centre"),{cls:"mark-choices"})),
       median ? `<p class="selection-status">По центру — разделитель${count(median)}</p>` : "",
       manual ? `<div class="road-setting"><p class="selection-status">Ручная разметка${count(manual)}</p>${button(prefix+"marks-auto","Вернуть авторазметку","restart","ghost wide")}</div>` : "",
-      `<div class="road-setting road-binary">${fieldTitle("Боковая сплошная",val("edge"))}${binary("edge",val("edge"),"marking")}</div>`,
-      field("Грунтовая обочина", "shoulder", chips(prefix+"shoulder",[{value:0,title:"Нет"},{value:1.5,title:"1,5 м"},{value:2.5,title:"2,5 м"},{value:3.5,title:"3,5 м"}],val("shoulder"))),
-      streets.some(st=>st.shoulder) ? '<p class="selection-status">По обеим сторонам · без бордюров и пешеходов</p>' : '',
-      `<div class="road-setting road-binary">${fieldTitle("Тротуары",val("walk"))}${binary("walk",val("walk"),"person")}</div>`,
+      ...[["edge","Боковая сплошная"],["walk","Тротуары"],["shoulder","Грунт сбоку"]].map(([key,title]) =>
+        `<div class="road-setting">${toggle(prefix+key,title,val(key) === true)}${mixedBadge(val(key) === undefined)}</div>`),
     ].join(""),{cls:"road-settings"});
   }
   function roadHandlers(refs, prefix = "") {
     const handlers = {
-      ["chip:"+prefix+"shoulder"]: value => {
-        const width=Number(value);if(![0,1.5,2.5,3.5].includes(width))return;
-        changeSelected(refs,"street",st=>{if(width){st.shoulder=width;st.walk=false;}else delete st.shoulder;});
-      },
+      ...Object.fromEntries(["walk","edge","shoulder"].map(key=>["toggle:"+prefix+key,on=>{
+        changeSelected(refs,"street",st=>{
+          if(key==="shoulder") {if(on){st.shoulder=2.5;st.walk=false;}else delete st.shoulder;}
+          else {st[key]=on;if(key==="walk" && on)delete st.shoulder;}
+        });
+      }])),
       [prefix+"marks-auto"]: () => changeSelected(refs,"street",st => { delete st.manualMarks; }),
     };
     for (const key of ["surface","kind","centre","walk","edge"]) handlers["chip:"+prefix+key] = value => {
@@ -788,8 +787,6 @@
         for (const e of highwayEnds) Layout.setHighwayPort(st,e.end,
           d.preset === "both" || (d.preset === "entry" && e.end === entry) || (d.preset === "exit" && e.end === exit) ? "avenue" : "highway");
       }),
-      "toggle:walk": on => edit(() => { st.walk = on; }),
-      "toggle:edge": on => edit(() => { st.edge = on; }),
       straighten: () => edit(() => { st.bend = null; }),
       "marks-own": () => edit((sc) => {
         const own = sc.markings.filter((m) => m.auto && m.street === st.id && (m.type === "solid" || m.type === "dashed"));

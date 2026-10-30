@@ -150,7 +150,7 @@ const Scene3D = (() => {
   function surfaceMesh(s) {
     if (s.layer === "field") {
       // Soft rural ground (build.py soft_ground): the per-vertex blend of asphalt, soil and grass.
-      const tones = [new THREE.Color("#2c2f36"), new THREE.Color("#6f5840"), new THREE.Color(GRASS_COLOUR)];
+      const tones = [new THREE.Color("#2c2f36"), new THREE.Color(s.soil_colour || "#6f5840"), new THREE.Color(GRASS_COLOUR)];
       const pos = [], col = [];
       for (const i of s.idx) {
         pos.push(s.verts[i * 2], s.y, s.verts[i * 2 + 1]);
