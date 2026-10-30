@@ -105,10 +105,11 @@ static func create(route: Dictionary) -> Node3D:
 	if not text.is_empty() and not points.is_empty():
 		var label := preload("res://scripts/scene_text_label.gd").new()
 		label.text = text
+		label.font = preload("res://fonts/Onest-Bold.ttf")
 		label.font_size = 64
 		label.pixel_size = .018 * clampf(float(route.get("textSize",1)),.4,4)
 		label.text_angle = float(route.get("textAngle",0))
-		label.outline_size = 10
+		label.outline_size = 3
 		label.modulate = Color("#20242b")
 		label.outline_modulate = Color.WHITE
 		label.billboard = BaseMaterial3D.BILLBOARD_DISABLED

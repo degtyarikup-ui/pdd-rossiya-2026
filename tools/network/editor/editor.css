@@ -707,3 +707,10 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); 
 
 .tag.annotation-text, .tag.annotation-text.sel { background:transparent; color:#20242b; border-radius:4px; padding:4px; box-shadow:none; cursor:move; transform-origin:center; }
 .tag.annotation-text.sel { outline:1px dashed #0574f8; outline-offset:4px; }
+
+/* Match Label3D's centre anchor, font metrics and world-scaled outline. */
+.tag.annotation-text, .tag.annotation-text.sel {
+  translate:-50% -50%; padding:0; max-width:none; white-space:pre;
+  font-family:Onest,sans-serif; font-weight:700; text-shadow:none;
+  paint-order:stroke fill; line-height:1.296875;
+}

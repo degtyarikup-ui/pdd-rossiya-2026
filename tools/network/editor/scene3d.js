@@ -1254,7 +1254,7 @@ const Scene3D = (() => {
         l.el.textContent = l.text;
         if (l.colour) l.el.style.setProperty("--c", "#" + new THREE.Color(l.colour).getHexString());
         if(l.cls==='annotation-text') {
-          l.el.style.fontSize=(22*(l.textSize || 1))+'px';
+
           l.el.style.pointerEvents='auto';
           l.el.addEventListener('pointerdown',e=>{
             if(e.button!==0 || App.isLocked(l.ref))return;
@@ -1273,6 +1273,18 @@ const Scene3D = (() => {
       const at = l.follow && anchors.get(l.follow) ? anchors.get(l.follow).group.position : null;
       tmp.set(at ? at.x : l.world[0], l.world[1], at ? at.z : l.world[2]).project(camera);
       const x = (tmp.x + 1) / 2 * width, y = (1 - tmp.y) / 2 * height;
+      if (l.cls === 'annotation-text') {
+        // Label3D uses a 64px Onest font at .018 world units per font pixel.
+        // Project a camera-up unit at the anchor, rather than fixing CSS pixels.
+        const centre = new THREE.Vector3(...l.world);
+        const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+        const projected = centre.clone().add(up).project(camera);
+        const pixelsPerMetre = Math.abs(projected.y - tmp.y) * height / 2;
+        const fontPixels = 64 * .018 * Math.max(.4, Math.min(4,l.textSize || 1)) * pixelsPerMetre;
+        l.el.style.fontSize = fontPixels + 'px';
+        l.el.style.lineHeight = (83/64).toString();
+        l.el.style.webkitTextStroke = (fontPixels*6/64) + 'px white';
+      }
       const w = l.text.length * 7 + 16, h = 22;
       const box = { x0: x - w / 2, y0: y - h, x1: x + w / 2, y1: y };
       const clash = placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0);
