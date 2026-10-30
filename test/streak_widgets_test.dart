@@ -61,7 +61,7 @@ void main() {
       tester,
       StreakCard(streak: streakOf(3, 3, today_: false), today: today),
     );
-    expect(find.textContaining('Сегодня ещё не занимались'), findsOneWidget);
+    expect(find.text('Сегодня ещё не занимались'), findsOneWidget);
   });
 
   testWidgets('без серии — приглашение начать, без рекорда', (tester) async {

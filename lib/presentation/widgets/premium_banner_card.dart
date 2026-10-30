@@ -60,7 +60,26 @@ class PremiumBannerCard extends ConsumerWidget {
                   final width = constraints.maxWidth;
                   final expandedText =
                       MediaQuery.textScalerOf(context).scale(16) > 21;
-                  final compact = width < 400;
+                  final titleStyle = TextStyle(
+                    fontSize: width >= 480 ? 24 : 19,
+                    fontWeight: FontWeight.w700,
+                    color: foreground,
+                    height: 1.12,
+                  );
+                  final titlePainter = TextPainter(
+                    text: TextSpan(
+                      text: l10n.premiumAccessTitle,
+                      style: DefaultTextStyle.of(
+                        context,
+                      ).style.merge(titleStyle),
+                    ),
+                    textDirection: Directionality.of(context),
+                    textScaler: MediaQuery.textScalerOf(context),
+                    locale: Localizations.localeOf(context),
+                    maxLines: 1,
+                  )..layout();
+                  final titleWidth = titlePainter.width.ceilToDouble() + 26;
+                  titlePainter.dispose();
                   final title = Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -74,15 +93,7 @@ class PremiumBannerCard extends ConsumerWidget {
                       ),
                       const SizedBox(width: 7),
                       Expanded(
-                        child: Text(
-                          l10n.premiumAccessTitle,
-                          style: TextStyle(
-                            fontSize: width >= 480 ? 24 : 19,
-                            fontWeight: FontWeight.w700,
-                            color: foreground,
-                            height: 1.12,
-                          ),
-                        ),
+                        child: Text(l10n.premiumAccessTitle, style: titleStyle),
                       ),
                     ],
                   );
@@ -95,7 +106,16 @@ class PremiumBannerCard extends ConsumerWidget {
                       height: 1.3,
                     ),
                   );
-                  final artWidth = (width * .42).clamp(100.0, 260.0);
+                  final preferredArtWidth = (width * .42).clamp(100.0, 260.0);
+                  // Reserve room for the title before sizing the decoration.
+                  // A narrow phone keeps the same side-by-side composition;
+                  // only large accessibility text moves the car below it.
+                  final artWidth = expandedText
+                      ? preferredArtWidth
+                      : (width - titleWidth - 28).clamp(
+                          100.0,
+                          preferredArtWidth,
+                        );
                   final artwork = SizedBox(
                     width: artWidth,
                     height: artWidth * .62,
@@ -125,35 +145,6 @@ class PremiumBannerCard extends ConsumerWidget {
                           ),
                         ),
                         Align(alignment: Alignment.centerRight, child: artwork),
-                      ],
-                    );
-                  }
-                  if (compact) {
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-                          child: title,
-                        ),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  18,
-                                  0,
-                                  10,
-                                  18,
-                                ),
-                                child: subtitle,
-                              ),
-                            ),
-                            artwork,
-                          ],
-                        ),
                       ],
                     );
                   }

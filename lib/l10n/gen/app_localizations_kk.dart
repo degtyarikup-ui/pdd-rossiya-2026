@@ -305,8 +305,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get streakToday => 'Бүгін есептелді';
 
   @override
-  String get streakTodayPending =>
-      'Бүгін әлі айналыспадыңыз — серияны жалғастыру үшін жаттығуды немесе ойынды бастаңыз';
+  String get streakTodayPending => 'Бүгін әлі айналыспадыңыз';
 
   @override
   String get streakNewRecord => 'Жаңа рекорд';

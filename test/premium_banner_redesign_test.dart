@@ -1,12 +1,45 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
+import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/data/repositories/providers.dart';
+import 'package:pdd_app/data/services/premium_service.dart';
 import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/premium_banner_card.dart';
 
+class _BannerPremiumService extends Fake implements PremiumService {
+  _BannerPremiumService(this.expiresAt);
+
+  @override
+  final DateTime? expiresAt;
+}
+
 void main() {
+  const captureKey = ValueKey('premium-banner-capture');
+  setUpAll(() async {
+    final fonts = FontLoader('Onest');
+    for (final weight in [
+      'Regular',
+      'Medium',
+      'SemiBold',
+      'Bold',
+      'ExtraBold',
+    ]) {
+      fonts.addFont(rootBundle.load('assets/fonts/Onest-$weight.ttf'));
+    }
+    await fonts.load();
+    for (final locale in ['ru', 'en', 'kk']) {
+      await initializeDateFormatting(locale);
+    }
+  });
+
   Future<void> showBanner(
     WidgetTester tester, {
     bool premium = false,
@@ -15,14 +48,19 @@ void main() {
     double textScale = 1,
     double width = 353,
     String language = 'ru',
+    DateTime? expiresAt,
   }) => tester.pumpWidget(
     ProviderScope(
       overrides: [
         isPremiumProvider.overrideWithValue(premium),
         dailyCardsRemainingProvider.overrideWithValue(remaining),
         dailyFreeLimitProvider.overrideWithValue(5),
+        premiumServiceProvider.overrideWithValue(
+          _BannerPremiumService(expiresAt),
+        ),
       ],
       child: MaterialApp(
+        theme: AppTheme.lightTheme,
         locale: Locale(language),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -37,13 +75,77 @@ void main() {
           body: SingleChildScrollView(
             child: Align(
               alignment: Alignment.topCenter,
-              child: SizedBox(width: width, child: const PremiumBannerCard()),
+              child: SizedBox(
+                width: width,
+                child: RepaintBoundary(
+                  key: captureKey,
+                  child: const PremiumBannerCard(),
+                ),
+              ),
             ),
           ),
         ),
       ),
     ),
   );
+
+  testWidgets('expiring premium stays compact on narrow phones', (
+    tester,
+  ) async {
+    final expiry = DateTime(2026, 11, 1, 1, 35);
+    double? previousHeight;
+    for (final width in [
+      335.0,
+      350.0,
+      353.0,
+      374.0,
+      390.0,
+      399.0,
+      400.0,
+      430.0,
+    ]) {
+      await showBanner(tester, premium: true, expiresAt: expiry, width: width);
+      await tester.pumpAndSettle();
+      final size = tester.getSize(find.byType(PremiumBannerCard));
+      expect(size.height, lessThanOrEqualTo(116), reason: 'width=$width');
+      expect(
+        tester.getSize(find.text('Премиум доступ')).height,
+        lessThan(24),
+        reason: 'title stays on one line at width=$width',
+      );
+      if (previousHeight != null) {
+        expect((size.height - previousHeight).abs(), lessThan(18));
+      }
+      previousHeight = size.height;
+      expect(tester.takeException(), isNull);
+      if (const bool.fromEnvironment('PREMIUM_BANNER_CAPTURE')) {
+        await tester.runAsync(() async {
+          final context = tester.element(find.byType(PremiumBannerCard));
+          for (final asset in ['car', 'rays_lime']) {
+            await precacheImage(
+              AssetImage('assets/images/premium/$asset.png'),
+              context,
+            );
+          }
+        });
+        await tester.pumpAndSettle();
+        await tester.runAsync(() async {
+          final boundary = tester.renderObject<RenderRepaintBoundary>(
+            find.byKey(captureKey),
+          );
+          final image = await boundary.toImage(pixelRatio: 2);
+          final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+          image.dispose();
+          final dir = Directory('output/profile-premium-layout')
+            ..createSync(recursive: true);
+          await File('${dir.path}/active-${width.toInt()}.png').writeAsBytes(
+            bytes!.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+          );
+        });
+      }
+    }
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('free allowance does not change the two banner states', (
     tester,
@@ -122,6 +224,7 @@ void main() {
               tester,
               language: language,
               premium: premium,
+              expiresAt: premium ? DateTime(2026, 11, 1, 1, 35) : null,
               width: width,
               textScale: scale,
             );

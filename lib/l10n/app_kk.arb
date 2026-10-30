@@ -80,7 +80,7 @@
   "personalRecord": "Жеке ең жақсы",
   "streakTitle": "Күндер сериясы",
   "streakToday": "Бүгін есептелді",
-  "streakTodayPending": "Бүгін әлі айналыспадыңыз — серияны жалғастыру үшін жаттығуды немесе ойынды бастаңыз",
+  "streakTodayPending": "Бүгін әлі айналыспадыңыз",
   "streakNewRecord": "Жаңа рекорд",
   "streakNextGoal": "{count, plural, one{{goal} күнге дейін тағы {count} күн} other{{goal} күнге дейін тағы {count} күн}}",
   "@streakNextGoal": {

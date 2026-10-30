@@ -80,7 +80,7 @@
   "personalRecord": "Personal best",
   "streakTitle": "Day streak",
   "streakToday": "Today counts",
-  "streakTodayPending": "No activity yet today — start a training session or game to keep your streak",
+  "streakTodayPending": "No activity yet today",
   "streakNewRecord": "New record",
   "streakNextGoal": "{count, plural, one{{count} more day to {goal}} other{{count} more days to {goal}}}",
   "@streakNextGoal": {

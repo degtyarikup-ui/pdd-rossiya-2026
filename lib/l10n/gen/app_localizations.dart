@@ -583,7 +583,7 @@ abstract class AppLocalizations {
   /// No description provided for @streakTodayPending.
   ///
   /// In ru, this message translates to:
-  /// **'Сегодня ещё не занимались — начните тренировку или игру, чтобы продлить серию'**
+  /// **'Сегодня ещё не занимались'**
   String get streakTodayPending;
 
   /// No description provided for @streakNewRecord.

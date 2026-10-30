@@ -305,8 +305,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get streakToday => 'Today counts';
 
   @override
-  String get streakTodayPending =>
-      'No activity yet today — start a training session or game to keep your streak';
+  String get streakTodayPending => 'No activity yet today';
 
   @override
   String get streakNewRecord => 'New record';

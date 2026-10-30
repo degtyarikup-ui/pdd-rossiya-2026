@@ -315,8 +315,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get streakToday => 'Сегодня засчитано';
 
   @override
-  String get streakTodayPending =>
-      'Сегодня ещё не занимались — начните тренировку или игру, чтобы продлить серию';
+  String get streakTodayPending => 'Сегодня ещё не занимались';
 
   @override
   String get streakNewRecord => 'Новый рекорд';
