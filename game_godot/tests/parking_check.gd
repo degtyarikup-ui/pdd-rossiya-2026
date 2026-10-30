@@ -110,7 +110,7 @@ func _check_scene() -> void:
 	scene.set("run_size", ParkingLevels.COUNT)   # the autopilot drives every level once
 	root.add_child(scene)
 	var parked := 0
-	for frame in 60 * 240:
+	for frame in 60 * 600:
 		await process_frame
 		parked = scene.parked_count
 		if OS.has_environment("PARKING_DEBUG") and frame % 120 == 0: print(frame, " L", scene.level_index, " seg ", scene.segment, " g ", scene.gear, " v ", snapped(scene.speed, 0.01), " pose ", scene.pose, " lives ", scene.lives, " ready ", scene._ready_for_play, " travel ", snapped(scene._auto_travel, 0.01))

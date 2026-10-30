@@ -5,6 +5,7 @@
 extends SceneTree
 
 const MODELS := ["hatch", "sedan", "coupe", "wagon", "suv", "pickup", "cyber"]
+const REVERSE_BAY := 6               # ParkingLevels.build: reverse into a car-park bay
 var passed := 0
 var failed := 0
 
@@ -58,7 +59,7 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 	root.add_child(guide)
 	await process_frame
 	var geo := ParkingLevels.geometry("sedan")
-	var level := ParkingLevels.build(1)
+	var level := ParkingLevels.build(REVERSE_BAY)
 	var way := ParkingLevels.way_in(level, geo)
 	guide.setup(level, way, geo)
 	for segment in way.size():
@@ -155,7 +156,7 @@ func _check_manual_progress() -> void:
 	scene.speed = 0.0
 	scene._advance_segment()
 	_check("manual: a different heading does not advance the route", scene.segment == 0)
-	scene._load_level(1)
+	scene._load_level(REVERSE_BAY)
 	scene.pose = scene.way[0].poses.back()
 	scene.speed = 1.0
 	scene._advance_segment()
@@ -165,7 +166,7 @@ func _check_manual_progress() -> void:
 	_check("manual: gear-change stage advances once stopped", scene.segment == 1)
 	# Follow two demanding routes through the same steering ramp and pedals as a human.
 	# Unlike --auto, the steering is prepared while stopped rather than snapped to its lock.
-	for index in [1, 3, 4, 5]:
+	for index in [REVERSE_BAY, 10, 12, 15]:   # reverse bay, garage, parallel, three-point turn
 		scene._load_level(index)
 		scene.sound.enabled = false
 		var initial_parked: int = scene.parked_count
