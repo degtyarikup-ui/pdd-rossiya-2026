@@ -63,7 +63,7 @@ const Scene3D = (() => {
   }
 
   // ---- textures: the game's detail shading (game_godot/shaders/scenery.gdshader) -------------
-  const TEXTURE_KINDS = ["asphalt", "pavement", "grass", "dirt", "ballast", "sleeper"];
+  const TEXTURE_KINDS = ["asphalt", "pavement", "grass", "dirt", "ballast", "sleeper", "gravel"];
   const GRASS_COLOUR = "#86a97a";
   const texParams = {}, texMaps = {}, texUniforms = {};
   const DETAIL_SHADE = `{
@@ -141,7 +141,7 @@ const Scene3D = (() => {
   }
   function layerMaterial(s) {
     if (s.layer === "" && !s.detail) return new THREE.MeshLambertMaterial({ color: s.colour, side: THREE.DoubleSide, ...OFFSET });
-    const kind = s.detail || (s.layer === "sand" ? "dirt" : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement");
+    const kind = s.detail || (s.layer === "gravel" ? "gravel" : s.layer === "sand" ? "dirt" : s.layer === "grass" ? "grass" : s.id === "asphalt" ? "asphalt" : "pavement");
     const m = detailMaterial(kind, s.layer === "sand" ? dirtColour(s) : s.layer === "grass" ? GRASS_COLOUR : s.colour);
     Object.assign(m, OFFSET);
     return m;

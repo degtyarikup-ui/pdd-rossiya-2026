@@ -307,11 +307,12 @@ const Layout = (() => {
         const piece = end === "a" ? cut(wide.length >= 2 ? wide : pts, 0, len + 0.5) : cut(wide.length >= 2 ? wide : pts, lenWide - len - 0.5, lenWide);
         if (piece.length >= 2) roads.push({ id: `road_${st.id}_paved_${end}`, auto: true, outer: outline(piece, w), holes: [], walk: false, edge: false, surface: "asphalt" });
       }
-      const roadItem = { id: `road_${st.id}`, auto: true, outer: highway ? profileOutline(L,st,densePath(pts,1.5),crop) : outline(dirtPath && dirtPath.length >= 2 ? dirtPath : wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
+      const roadItem = { id: `road_${st.id}`, auto: true, outer: highway ? profileOutline(L,st,densePath(pts,1.5),crop) : outline(dirtPath && dirtPath.length >= 2 ? dirtPath : wide.length >= 2 ? wide : pts, w), holes: [], walk: st.walk !== false && !st.shoulder && st.surface !== "sand", edge: st.edge !== false && st.surface !== "sand", surface: st.surface || "asphalt" };
+      if (st.shoulder) roadItem.shoulder = Number(st.shoulder);
       roads.push(roadItem);
       // The taper carries the street's switches: an edge line turned off is off on the narrowing too.
-      if (plainEnds) roads.push({ id: `road_${st.id}_plain`, auto: true, outer: outline(pts, kindOf(st).width), holes: [], walk: roadItem.walk, edge: roadItem.edge, surface: roadItem.surface });
-      if (st.walk === false || st.surface === "sand") {
+      if (plainEnds) roads.push({ id: `road_${st.id}_plain`, auto: true, outer: outline(pts, kindOf(st).width), holes: [], walk: roadItem.walk, edge: roadItem.edge, surface: roadItem.surface, ...(roadItem.shoulder ? {shoulder:roadItem.shoulder} : {}) });
+      if (st.walk === false || st.shoulder || st.surface === "sand") {
         for (const side of [1, -1]) {
           const inner = offsetRight(pts, side * w / 2), outer = offsetRight(pts, side * (w / 2 + 3.4)).reverse();
           lawns.push({ id: `auto_lawn_${st.id}_${side > 0 ? "r" : "l"}`, auto: true, outer: [...inner, ...outer].map(P), holes: [] });

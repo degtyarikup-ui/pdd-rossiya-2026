@@ -699,6 +699,16 @@ def build(scene: dict) -> dict:
     v, t = triangulate(pavement)
     pave = {"id": "pavement", "y": KERB, "layer": "pavement", "colour": PAVEMENT, "verts": v, "idx": t}
     surfaces = [asphalt, island, median, pave] + railway["surfaces"]
+    # Rural shoulders are supporting ground, never pavement (GroundMap.WALK).
+    shoulder_parts = []
+    for item in scene.get("roads", []):
+        width = max(0.0, min(3.5, float(item.get("shoulder", 0))))
+        if width:
+            shoulder_parts.append(polygon_of(item).buffer(width, quad_segs=16))
+    rural_shoulder = unary_union(shoulder_parts).difference(roads_all.union(pavement).union(islands)).intersection(box)
+    if not rural_shoulder.is_empty:
+        v, t = triangulate(rural_shoulder)
+        surfaces.append({"id":"rural_shoulder", "y":ROAD_Y, "layer":"gravel", "colour":"#a3947c", "verts":v, "idx":t})
     visible_rails = authored_rails(scene).intersection(box)
     if not visible_rails.is_empty:
         v, t = triangulate(visible_rails)
@@ -707,7 +717,7 @@ def build(scene: dict) -> dict:
     if not sand.is_empty:
         # Slivers left between the smoothed road and the dirt outline are not asphalt.
         paved = road.difference(sand).buffer(-0.05).buffer(0.05)
-        field, shoulder = soft_ground(sand, paved, roads_all.union(pavement).union(islands), box)
+        field, shoulder = soft_ground(sand, paved, roads_all.union(pavement).union(islands).union(rural_shoulder), box)
         surfaces.extend(field)
     if scene.get("layout"):
         # A scene laid out from a road plan (the editor) has its own ground everywhere else: the baked

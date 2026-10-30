@@ -295,7 +295,7 @@
   }
   const roadValue = (st, key) => key === "kind" ? st.kind || "street" : key === "surface" ? st.surface || "asphalt"
     : key === "centre" ? st.centre || (st.kind === "yard" ? "none" : st.kind === "avenue" ? "double" : "dashed")
-    : key === "median" ? Layout.medianOf(st) : st[key] !== false;
+    : key === "shoulder" ? Number(st.shoulder || 0) : key === "median" ? Layout.medianOf(st) : st[key] !== false;
   function roadSettings(streets, prefix = "") {
     const val = key => shared(streets, st => roadValue(st,key));
     const field = (title,key,html) => `<div class="road-setting">${fieldTitle(title,val(key))}${html}</div>`;
@@ -312,11 +312,17 @@
       median ? `<p class="selection-status">По центру — разделитель${count(median)}</p>` : "",
       manual ? `<div class="road-setting"><p class="selection-status">Ручная разметка${count(manual)}</p>${button(prefix+"marks-auto","Вернуть авторазметку","restart","ghost wide")}</div>` : "",
       `<div class="road-setting road-binary">${fieldTitle("Боковая сплошная",val("edge"))}${binary("edge",val("edge"),"marking")}</div>`,
+      field("Грунтовая обочина", "shoulder", chips(prefix+"shoulder",[{value:0,title:"Нет"},{value:1.5,title:"1,5 м"},{value:2.5,title:"2,5 м"},{value:3.5,title:"3,5 м"}],val("shoulder"))),
+      streets.some(st=>st.shoulder) ? '<p class="selection-status">По обеим сторонам · без бордюров и пешеходов</p>' : '',
       `<div class="road-setting road-binary">${fieldTitle("Тротуары",val("walk"))}${binary("walk",val("walk"),"person")}</div>`,
     ].join(""),{cls:"road-settings"});
   }
   function roadHandlers(refs, prefix = "") {
     const handlers = {
+      ["chip:"+prefix+"shoulder"]: value => {
+        const width=Number(value);if(![0,1.5,2.5,3.5].includes(width))return;
+        changeSelected(refs,"street",st=>{if(width){st.shoulder=width;st.walk=false;}else delete st.shoulder;});
+      },
       [prefix+"marks-auto"]: () => changeSelected(refs,"street",st => { delete st.manualMarks; }),
     };
     for (const key of ["surface","kind","centre","walk","edge"]) handlers["chip:"+prefix+key] = value => {
@@ -324,7 +330,7 @@
       if (key === "kind" && !Layout.KINDS[value]) return;
       if (key === "centre" && !["none","dashed","solid","double"].includes(value)) return;
       if (["walk","edge"].includes(key) && !["true","false"].includes(value)) return;
-      changeSelected(refs,"street",st => { st[key] = ["walk","edge"].includes(key) ? value === "true" : value; });
+      changeSelected(refs,"street",st => { st[key] = ["walk","edge"].includes(key) ? value === "true" : value; if(key==="walk" && value==="true")delete st.shoulder; });
     };
     return handlers;
   }
