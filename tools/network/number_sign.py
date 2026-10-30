@@ -20,6 +20,7 @@ def svg(code, value):
     sx,sy = (1,1) if code in ('3.24','3.25') else (DATA['specs'][code]['size'][0]/100,DATA['specs'][code]['size'][1]/100)
     scale = min(h*sy/(DATA['top']-DATA['bottom']), w*sx/width)
     x, y = x0+w/2-width*scale/sx/2, y0+h/2+(DATA['top']+DATA['bottom'])*scale/sy/2
+    y = DATA['specs'][code].get('baseline', y)
     paths, offset = [], 0
     for glyph in glyphs:
         paths.append(f'<path transform="translate({offset:.9f} 0)" d="{glyph["path"]}"/>')

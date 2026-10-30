@@ -50,6 +50,7 @@ static func number_svg(code: String, value: float) -> String:
 	var scale: float = minf(float(rect[3])*sy / float(_number_data.top - _number_data.bottom), float(rect[2])*sx / advance)
 	var x: float = float(rect[0]) + float(rect[2])/2.0 - advance * scale / sx / 2.0
 	var y: float = float(rect[1]) + float(rect[3])/2.0 + float(_number_data.top + _number_data.bottom) * scale / sy / 2.0
+	y = float(_number_data.specs[code].get("baseline", y))
 	var paths := ""
 	var offset := 0.0
 	for glyph in glyphs:

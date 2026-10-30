@@ -62,6 +62,8 @@ for code,(rect,default,unit,bg,fg,angle) in specs.items():
  root=ET.parse(ROOT/f'game_godot/signs/{code}.svg').getroot()
  size=[float(root.get('width')),float(root.get('height'))]
  result['specs'][code]={'rect':rect,'default':default,'unit':unit,'size':size,'angle':angle}
+ # Align distance numerals with the catalogue's metre glyph, independent of digit count.
+ if code == '8.2.1': result['specs'][code]['baseline'] = (36.148 - 2) / 52 * 100
  if code in ('3.24','3.25'): continue
  if code in ('1.13','1.14'):
   symbol=list(root.iter())[-1]
