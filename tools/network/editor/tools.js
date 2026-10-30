@@ -621,7 +621,7 @@ const Tools = (() => {
       if (!e.world) return;
       if (App.state.locked.has("routes")) return App.toast("Слой ответов и маршрутов заблокирован", "warn");
       if (opts.answerMode === "text" && !opts.pathFor && !opts.answerRoute) {
-        editText(null, [e.world.x,e.world.z]); return;
+        return; // Open on release: pointerdown is followed by native canvas focus.
       }
       if (opts.answerMode === "letter" && !opts.pathFor && !opts.answerRoute) {
         const ref = App.edit(s => AnswerMark.create(s, opts.answerLetter, [], [r3(e.world.x), r3(e.world.z)], true));
@@ -635,6 +635,10 @@ const Tools = (() => {
       const point = [r3(e.world.x), r3(e.world.z)];
       if (!draft.points.length || Math.hypot(point[0]-draft.points.at(-1)[0],point[1]-draft.points.at(-1)[1]) > .01) draft.points.push(point);
       answer.move(e);
+    },
+    up(e) {
+      if (opts.answerMode === "text" && !opts.pathFor && !opts.answerRoute && e.world && !App.state.locked.has("routes"))
+        editText(null, [e.world.x,e.world.z]);
     },
     dblclick() { finishDraft(); },
   };
