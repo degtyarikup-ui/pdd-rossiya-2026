@@ -540,6 +540,22 @@ def ground(scene: dict):
     return road, islands, roads_all, ring
 
 
+def roadside_roads(scene, key):
+    """Include junction fillers only when all adjoining arms share the roadside."""
+    layout = scene.get("layout") or {}
+    nodes = {f"road_{n['id']}": n['id'] for n in layout.get("nodes", [])}
+    def enabled(r):
+        return bool(r.get("shoulder")) if key == "shoulder" else r.get("walk") is not False
+    roads = scene.get("roads", [])
+    result = [r for r in roads if r.get("id") not in nodes and enabled(r)]
+    for r in roads:
+        if r.get("id") not in nodes: continue
+        node = nodes[r['id']]
+        arms = [st for st in layout.get("streets", []) if node in (st['a'], st['b'])]
+        if arms and all(enabled(st) for st in arms): result.append(r)
+    return result
+
+
 def sidewalk_support(scene: dict):
     """The streets that have sidewalks own their full pavement corridor at a join.
 
@@ -551,7 +567,7 @@ def sidewalk_support(scene: dict):
     if not any(r.get("walk") is False for r in roads):
         return None
     nodes = {f"road_{n['id']}" for n in (scene.get("layout") or {}).get("nodes", [])}
-    enabled = [r for r in roads if r.get("walk") is not False and r.get("id") not in nodes]
+    enabled = roadside_roads(scene, "walk")
     if not enabled:
         return Polygon()
     supported = road_geometry({**scene, "roads": enabled, "actors": [], "tracks": []})[2]
@@ -726,10 +742,14 @@ def build(scene: dict) -> dict:
     pave = {"id": "pavement", "y": KERB, "layer": "pavement", "colour": PAVEMENT, "verts": v, "idx": t}
     surfaces = [asphalt, island, median, pave] + railway["surfaces"]
     # A fixed-width shoulder, fading at its ends and across both lateral edges.
-    shoulder_roads = unary_union([polygon_of(r) for r in scene.get("roads", []) if r.get("shoulder")])
+    shoulder_items = roadside_roads(scene, "shoulder")
+    shoulder_roads = road_geometry({**scene, "roads": shoulder_items, "actors": [], "tracks": []})[2] if shoulder_items else Polygon()
     rural_shoulder = shoulder_roads.buffer(2.5, quad_segs=16).difference(roads_all.union(pavement).union(islands)).intersection(box)
     if not rural_shoulder.is_empty:
-        ends = shoulder_roads.boundary.difference(roads_all.boundary.buffer(.06))
+        # Only transitions to disabled arms are ends; rounded corners are continuous.
+        disabled = unary_union([polygon_of(r) for r in scene.get("roads", [])
+                                if r not in shoulder_items])
+        ends = shoulder_roads.boundary.intersection(disabled.buffer(.06)).difference(roads_all.boundary.buffer(.1))
         def shoulder_shares(point):
             end_distance = box.boundary.distance(point)
             if not ends.is_empty:
