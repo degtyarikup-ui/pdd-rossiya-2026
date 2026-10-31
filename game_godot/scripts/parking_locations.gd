@@ -66,6 +66,7 @@ static func build(index: int) -> Dictionary:
 	l.family = FAMILIES[index]
 	l.search = index >= GUIDED
 	if l.search: l.show_path = false
+	ParkingNightLayout.configure(l)
 	return l
 
 

@@ -56,6 +56,7 @@ var sc: Scenery
 var camera: Camera3D
 var sun: DirectionalLight3D
 var env: WorldEnvironment
+var lighting: ParkingLighting
 var controls
 var ui: ParkingUi
 var sound: GameSound
@@ -214,6 +215,7 @@ func _update_frame_budget(delta: float) -> void:
 	viewport.scaling_3d_scale = update.scale
 	viewport.msaa_3d = Viewport.MSAA_2X if update.antialias else Viewport.MSAA_DISABLED
 	Quality.set_sun_shadows(sun, env.environment, update.shadows)
+	if is_instance_valid(lighting): lighting.set_quality(update.shadows)
 	Engine.max_fps = int(update.get("max_fps", Engine.max_fps))
 
 
@@ -295,14 +297,17 @@ func _draw_levels() -> Array[int]:
 func _load_level(index: int) -> void:
 	level_index = index
 	level = ParkingLevels.build(index)
+	ParkingLighting.apply_environment(sun, env.environment, level.get("night", false), level.id == "underground", season_name, sun.shadow_enabled)
 	way = ParkingLevels.way_in(level, geo)
 	segment = 0
 	_guide_index = 0
 	hit_cooldown = 0.0
 	shake = 0.0
 	if is_instance_valid(root3d):
+		root3d.hide()
 		Models.release_geometry(root3d)
 		root3d.queue_free()
+	lighting = null
 	root3d = Node3D.new()
 	add_child(root3d)
 	_obstacles = ParkingLevels.obstacles(level)
@@ -312,6 +317,11 @@ func _load_level(index: int) -> void:
 	_build_props()
 	_build_spots()
 	_build_car()
+	if level.get("night", false):
+		lighting = ParkingLighting.new()
+		root3d.add_child(lighting)
+		lighting.setup(level, car, geo, vehicle_id)
+		lighting.set_quality(sun.shadow_enabled)
 	_build_way()
 	pose = level.get("spawn", way[0].poses[0]) if not auto_drive else way[0].poses[0]
 	speed = 0.0
@@ -323,6 +333,7 @@ func _load_level(index: int) -> void:
 	done_timer = -1.0
 	_auto_travel = 0.0
 	_place_car()
+	if is_instance_valid(lighting): lighting.update_focus(car.position, 0.0)
 	_refresh_hud()
 	_update_guidance(0.0)
 	_frame_camera(true)
@@ -355,6 +366,21 @@ func _mat(key: String) -> Material:
 				w.roughness = 0.15
 				w.metallic = 0.1
 				_mats[key] = w
+			_ when key.begins_with("emit:"):
+				var parts := key.split(":")
+				var m := StandardMaterial3D.new()
+				m.albedo_color = Color(parts[1])
+				m.emission_enabled = true
+				m.emission = Color(parts[1])
+				m.emission_energy_multiplier = float(parts[2])
+				_mats[key] = m
+			_ when key.begins_with("windowlit:"):
+				var parts := key.split(":")
+				var m := sc.surface_material("window", Color(parts[1]))
+				m.shader = preload("res://shaders/parking_window.gdshader")
+				m.set_shader_parameter("texture_period", 1.6)
+				m.set_shader_parameter("emission_strength", float(parts[2]))
+				_mats[key] = m
 			_ when key.begins_with("tex:"):
 				# "tex:<kind>:<#colour>[:<period>]": walls, roofs and windows take the city's own
 				# detail maps (plaster, brick, panels, wood, metal, window frames) on a metre grid.
@@ -407,7 +433,8 @@ func _flush_ground() -> void:
 		node.material_override = mat
 		var paint := key.trim_prefix("solid:")
 		var glass := solid and paint.begins_with("#") and Color(paint).a < 0.99
-		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if (solid and not glass) or key == "pavement" else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var luminous := paint.begins_with("emit:") or paint.begins_with("windowlit:")
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if (solid and not glass and not luminous) or key == "pavement" else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root3d.add_child(node)
 	_ground.clear()
 
@@ -847,7 +874,7 @@ func _paint_spots(inside: Dictionary, dt: float) -> void:
 func _build_car() -> void:
 	car = Models.player_car(vehicle_id, vehicle_paint)
 	for g: GeometryInstance3D in car.find_children("*", "GeometryInstance3D", true, false):
-		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if level.get("night", false) else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	car.add_child(_contact_patch(geo))
 	wheels.clear()
 	axles.clear()
@@ -930,6 +957,9 @@ func _process(delta: float) -> void:
 		else:
 			for i in 4: _step(delta / 4.0)
 	_place_car()
+	if is_instance_valid(lighting):
+		lighting.update_state(gear, bool(_auto.get("brake", false)) if auto_drive else controls.brake, delta)
+		lighting.update_focus(car.position, delta)
 	_update_guidance(delta)
 	_frame_camera(false, delta)
 	_update_occluders(delta)

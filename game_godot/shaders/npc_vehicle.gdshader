@@ -9,6 +9,7 @@ uniform float wheel_distance = 0.0;
 uniform bool left_on = false;
 uniform bool right_on = false;
 uniform bool braking = false;
+uniform bool headlamps_on = false;
 uniform bool beacon_on = false;
 varying vec3 paint;
 varying float lens;
@@ -41,6 +42,8 @@ void fragment() {
     } else if (stop_lamp) {
         base = vec3(0.95, 0.12, 0.08);
         EMISSION = base * 2.0;
+    } else if (headlamps_on && lens > 0.5 && lens < 1.5) {
+        EMISSION = vec3(1.0, 0.92, 0.76) * 0.85;
     }
     ALBEDO = base;
     ROUGHNESS = 0.8;
