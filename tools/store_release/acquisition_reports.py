@@ -99,7 +99,7 @@ def apple_report(previous, cutoff):
     instances = []
     for req in requests:
         reports = pages(api, f"/v1/analyticsReportRequests/{req['id']}/reports", limit=200)
-        report = next((r for r in reports if r['attributes']['name'] == 'App Store Downloads Standard'), None)
+        report = next((r for r in reports if r['attributes']['name'] == 'App Downloads Standard'), None)
         if report:
             instances.extend(pages(api, f"/v1/analyticsReports/{report['id']}/instances",
                                    **{'filter[granularity]': 'DAILY'}))

@@ -68,7 +68,7 @@ WRANGLER_BIN="$(command -v wrangler)" /usr/bin/python3 tools/store_release/acqui
 
 Импорт обновляет отдельный снимок KV каждого магазина. Google Play читается
 из Store performance, только разбивка traffic_source. App Store Connect
-формирует App Store Downloads Standard по запросам ONGOING и ONE_TIME_SNAPSHOT.
+формирует App Downloads Standard по запросам ONGOING и ONE_TIME_SNAPSHOT.
 Из ежедневных файлов берутся только First-time Download, все сегменты одной
 версии отчёта складываются. Исправления Apple заменяют прежние данные за дату.
 Хранятся даты за последний год, источник и количество. Ошибка одного магазина
@@ -76,5 +76,12 @@ WRANGLER_BIN="$(command -v wrangler)" /usr/bin/python3 tools/store_release/acqui
 панель показывает ожидание. У RuStore статистика доступна в консоли разработчика.
 
 На рабочем Mac ежедневный импорт выполняет пользовательский LaunchAgent
-`ru.pdd.store-acquisition`. Для запуска нужна пользовательская сессия,
-подключённый диск проекта и доступ к Связке ключей.
+`ru.pdd.store-acquisition`. Он запускается в 10:30 по локальному времени Mac. Для запуска нужны
+пользовательская сессия и доступ к Связке ключей. Рабочая копия импортера,
+клиент Wrangler и его конфигурация находятся в
+`~/Library/Application Support/CodexIntegrations/store-reports/`.
+После изменения импортера обновить в этой папке
+`tools/store_release/{acquisition_reports,publish}.py` и
+`server/install-notifier/wrangler.toml`. Проверить запуск можно командой
+`launchctl print "gui/$(id -u)/ru.pdd.store-acquisition"`.
+Журнал импорта находится в `~/Library/Logs/PDD/store-reports.log`.

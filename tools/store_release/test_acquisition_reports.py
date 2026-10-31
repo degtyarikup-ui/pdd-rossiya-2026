@@ -21,7 +21,7 @@ class AcquisitionReportsTest(unittest.TestCase):
                                  + '2026-10-24\t123\tApp Store search\tRedownload\t20\n').encode())
         endpoints = {'analyticsReportRequests': [{'id': 'r', 'attributes':
                      {'accessType': 'ONGOING', 'stoppedDueToInactivity': False}}],
-                     'reports': [{'id': 'downloads', 'attributes': {'name': 'App Store Downloads Standard'}}],
+                     'reports': [{'id': 'downloads', 'attributes': {'name': 'App Downloads Standard'}}],
                      'instances': [{'id': 'i', 'attributes': {'processingDate': '2026-10-26'}}],
                      'segments': [{'attributes': {'url': 'part1'}}, {'attributes': {'url': 'part2'}}]}
         def pages(api, path, **kwargs):
