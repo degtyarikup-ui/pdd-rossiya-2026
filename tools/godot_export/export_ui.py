@@ -63,6 +63,14 @@ KEYS = [
     'gameViolatorFalseAlarm', 'gameViolatorWrongQualification', 'gameViolatorMissed',
     'gameViolatorTapHint', 'gameViolatorsCaughtStat',
 ]
+KEYS += ["gameParkingLocation" + name for name in (
+    "School", "Cafe", "Forest", "Market", "Home", "Service", "Office", "Clinic",
+    "Station", "Quay", "Workshop", "Courtyard", "OldTown", "Hotel", "Depot",
+    "DeadEnd", "Camp", "Arena", "Covered", "Bazaar", "FindMarket", "FindHome",
+    "FindStation", "FindPark", "Rules",
+)]
+KEYS += ["gameParkingSearchMission", "gameParkingReverseMission",
+         "gameParkingFollowMission", "gameParkingTurnMission"]
 out = {}
 for lang in ('ru', 'en', 'kk'):
     arb = json.loads((ROOT / f'lib/l10n/app_{lang}.arb').read_text(encoding='utf-8'))

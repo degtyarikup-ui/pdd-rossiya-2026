@@ -9,7 +9,7 @@ extends RefCounted
 
 const MAX_STEER := 0.6              # ≈34° of the front wheels at full lock
 const STEP := 0.1                   # metres between trajectory poses
-const COUNT := 18
+const COUNT := 25
 const RULES := COUNT - 1              # «Где можно встать?» is always the last level
 const PAINTS := ["#D9DCE3", "#8D94A3", "#2B2F36", "#E7E2D6", "#9A3B3B", "#3B4A63", "#B8C4D6", "#6E8E6A", "#C9A86A"]
 const PARKED_MODELS := ["hatch", "sedan", "coupe", "wagon", "suv", "pickup"]
@@ -219,33 +219,23 @@ static func contains(outer: Dictionary, inner: Dictionary) -> bool:
 ## The ids grow with difficulty (a run plays its levels in id order); variants of one manoeuvre
 ## differ by the turn's side, the neighbours, the room left and the street.
 static func build(index: int) -> Dictionary:
-	var nose_in := func(geo: Dictionary) -> Array: return forward_bay_exit(geo)
-	var tail_in := [{"g": 1, "s": 0, "d": 2.4}, {"g": 1, "s": 1, "a": 90}, {"g": -1, "s": 0, "d": 7.5}]
-	match index:
-		0: return _lot(5, PI, nose_in, 11)
-		1: return _mirror(_lot(6, PI, nose_in, 13, [1, 4]))
-		2: return _angled(45.0, 3, [6], 41)
-		3: return _angled(60.0, 4, [7], 37)
-		4: return _garage(2, 0, 53, true)
-		5: return _lot(6, PI, nose_in, 17, [])
-		6: return _lot(3, 0.0, tail_in, 23)
-		7: return _mirror(_lot(5, 0.0, tail_in, 29, [3, 7]))
-		8: return _angled(60.0, 4, [3], 43, true)
-		9: return _lot(4, 0.0, tail_in, 31, [], LOT_BAY_W - 0.2)
-		10: return _garage(4, 1, 47)
-		11: return _mirror(_garage(5, 2, 59))
-		12: return _parallel(6.6, 5)
-		13: return _mirror(_parallel(6.6, 67, true))
-		14: return _parallel(6.25, 61, false, 1.1)
-		15: return _three_point([Vector3(-1, 7.8, 0.0), Vector3(1, 20.5, PI)], 29)
-		16: return _three_point([Vector3(-1, 7.4, 0.0), Vector3(1, 19.0, PI), Vector3(1, -11.5, PI), Vector3(-1, 14.2, 0.0)], 73)
-		_: return _rules()
+	return ParkingLocations.build(clampi(index, 0, COUNT - 1))
 
 
 ## Everything a car may touch on a level: kerbs, walls and parked cars, as boxes.
 static func obstacles(level: Dictionary) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	out.append_array(level.sidewalks)
+	for t: Vector2 in level.trees: out.append(box(t, 0.22, 0.22, 0))
+	for t: Vector2 in level.lamps: out.append(box(t, 0.12, 0.12, 0))
+	for prop: Dictionary in level.buildings:
+		var mesh := Models.mesh_of("res://scenery/%s.glb" % prop.prop)
+		if mesh == null: continue
+		var aabb := mesh.get_aabb()
+		var centre := Vector2(aabb.get_center().x, aabb.get_center().z).rotated(-float(prop.yaw)) + Vector2(prop.pos)
+		# Foliage does not act as a solid wall; use the trunk footprint.
+		if str(prop.prop).begins_with("trees/"): out.append(box(prop.pos, 0.22, 0.22, 0))
+		else: out.append(box(centre, aabb.size.x / 2, aabb.size.z / 2, prop.yaw))
 	for w: Dictionary in level.walls:
 		if w.solid: out.append(w.box)
 	for parked: Dictionary in level.cars:

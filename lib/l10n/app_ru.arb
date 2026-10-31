@@ -2103,5 +2103,34 @@
         "type": "int"
       }
     }
-  }
+  },
+  "gameParkingLocationSchool": "Автошкола",
+  "gameParkingLocationCafe": "Кафе",
+  "gameParkingLocationForest": "Лесная стоянка",
+  "gameParkingLocationMarket": "Магазин",
+  "gameParkingLocationHome": "Дом с воротами",
+  "gameParkingLocationService": "Зона отдыха у АЗС",
+  "gameParkingLocationOffice": "Офис",
+  "gameParkingLocationClinic": "Клиника",
+  "gameParkingLocationStation": "Вокзал",
+  "gameParkingLocationQuay": "Набережная",
+  "gameParkingLocationWorkshop": "Автосервис",
+  "gameParkingLocationCourtyard": "Жилой двор",
+  "gameParkingLocationOldTown": "Старый город",
+  "gameParkingLocationHotel": "Отель",
+  "gameParkingLocationDepot": "Склад",
+  "gameParkingLocationDeadEnd": "Тупик",
+  "gameParkingLocationCamp": "Кемпинг",
+  "gameParkingLocationArena": "Стадион",
+  "gameParkingLocationCovered": "Крытый паркинг",
+  "gameParkingLocationBazaar": "Рынок",
+  "gameParkingLocationFindMarket": "Магазин: найдите место",
+  "gameParkingLocationFindHome": "Квартал: найдите место",
+  "gameParkingLocationFindStation": "Вокзал: найдите место",
+  "gameParkingLocationFindPark": "Парк: найдите место",
+  "gameParkingLocationRules": "Город: где можно встать?",
+  "gameParkingSearchMission": "Выберите свободное место. Подсказок нет.",
+  "gameParkingReverseMission": "Припаркуйтесь задним ходом.",
+  "gameParkingFollowMission": "Следуйте направляющим до места парковки.",
+  "gameParkingTurnMission": "Развернитесь в три приёма и остановитесь в зоне."
 }

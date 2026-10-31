@@ -7269,6 +7269,180 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'{count, plural, one{У вас новое уведомление} few{У вас {count} новых уведомления} many{У вас {count} новых уведомлений} other{У вас {count} новых уведомления}}'**
   String inboxHomeAlert(int count);
+
+  /// No description provided for @gameParkingLocationSchool.
+  ///
+  /// In ru, this message translates to:
+  /// **'Автошкола'**
+  String get gameParkingLocationSchool;
+
+  /// No description provided for @gameParkingLocationCafe.
+  ///
+  /// In ru, this message translates to:
+  /// **'Кафе'**
+  String get gameParkingLocationCafe;
+
+  /// No description provided for @gameParkingLocationForest.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лесная стоянка'**
+  String get gameParkingLocationForest;
+
+  /// No description provided for @gameParkingLocationMarket.
+  ///
+  /// In ru, this message translates to:
+  /// **'Магазин'**
+  String get gameParkingLocationMarket;
+
+  /// No description provided for @gameParkingLocationHome.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дом с воротами'**
+  String get gameParkingLocationHome;
+
+  /// No description provided for @gameParkingLocationService.
+  ///
+  /// In ru, this message translates to:
+  /// **'Зона отдыха у АЗС'**
+  String get gameParkingLocationService;
+
+  /// No description provided for @gameParkingLocationOffice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Офис'**
+  String get gameParkingLocationOffice;
+
+  /// No description provided for @gameParkingLocationClinic.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиника'**
+  String get gameParkingLocationClinic;
+
+  /// No description provided for @gameParkingLocationStation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вокзал'**
+  String get gameParkingLocationStation;
+
+  /// No description provided for @gameParkingLocationQuay.
+  ///
+  /// In ru, this message translates to:
+  /// **'Набережная'**
+  String get gameParkingLocationQuay;
+
+  /// No description provided for @gameParkingLocationWorkshop.
+  ///
+  /// In ru, this message translates to:
+  /// **'Автосервис'**
+  String get gameParkingLocationWorkshop;
+
+  /// No description provided for @gameParkingLocationCourtyard.
+  ///
+  /// In ru, this message translates to:
+  /// **'Жилой двор'**
+  String get gameParkingLocationCourtyard;
+
+  /// No description provided for @gameParkingLocationOldTown.
+  ///
+  /// In ru, this message translates to:
+  /// **'Старый город'**
+  String get gameParkingLocationOldTown;
+
+  /// No description provided for @gameParkingLocationHotel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отель'**
+  String get gameParkingLocationHotel;
+
+  /// No description provided for @gameParkingLocationDepot.
+  ///
+  /// In ru, this message translates to:
+  /// **'Склад'**
+  String get gameParkingLocationDepot;
+
+  /// No description provided for @gameParkingLocationDeadEnd.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тупик'**
+  String get gameParkingLocationDeadEnd;
+
+  /// No description provided for @gameParkingLocationCamp.
+  ///
+  /// In ru, this message translates to:
+  /// **'Кемпинг'**
+  String get gameParkingLocationCamp;
+
+  /// No description provided for @gameParkingLocationArena.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стадион'**
+  String get gameParkingLocationArena;
+
+  /// No description provided for @gameParkingLocationCovered.
+  ///
+  /// In ru, this message translates to:
+  /// **'Крытый паркинг'**
+  String get gameParkingLocationCovered;
+
+  /// No description provided for @gameParkingLocationBazaar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рынок'**
+  String get gameParkingLocationBazaar;
+
+  /// No description provided for @gameParkingLocationFindMarket.
+  ///
+  /// In ru, this message translates to:
+  /// **'Магазин: найдите место'**
+  String get gameParkingLocationFindMarket;
+
+  /// No description provided for @gameParkingLocationFindHome.
+  ///
+  /// In ru, this message translates to:
+  /// **'Квартал: найдите место'**
+  String get gameParkingLocationFindHome;
+
+  /// No description provided for @gameParkingLocationFindStation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вокзал: найдите место'**
+  String get gameParkingLocationFindStation;
+
+  /// No description provided for @gameParkingLocationFindPark.
+  ///
+  /// In ru, this message translates to:
+  /// **'Парк: найдите место'**
+  String get gameParkingLocationFindPark;
+
+  /// No description provided for @gameParkingLocationRules.
+  ///
+  /// In ru, this message translates to:
+  /// **'Город: где можно встать?'**
+  String get gameParkingLocationRules;
+
+  /// No description provided for @gameParkingSearchMission.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите свободное место. Подсказок нет.'**
+  String get gameParkingSearchMission;
+
+  /// No description provided for @gameParkingReverseMission.
+  ///
+  /// In ru, this message translates to:
+  /// **'Припаркуйтесь задним ходом.'**
+  String get gameParkingReverseMission;
+
+  /// No description provided for @gameParkingFollowMission.
+  ///
+  /// In ru, this message translates to:
+  /// **'Следуйте направляющим до места парковки.'**
+  String get gameParkingFollowMission;
+
+  /// No description provided for @gameParkingTurnMission.
+  ///
+  /// In ru, this message translates to:
+  /// **'Развернитесь в три приёма и остановитесь в зоне.'**
+  String get gameParkingTurnMission;
 }
 
 class _AppLocalizationsDelegate

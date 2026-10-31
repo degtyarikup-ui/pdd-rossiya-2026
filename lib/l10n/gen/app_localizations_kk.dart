@@ -4336,4 +4336,93 @@ class AppLocalizationsKk extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get gameParkingLocationSchool => 'Автомектеп';
+
+  @override
+  String get gameParkingLocationCafe => 'Кафе';
+
+  @override
+  String get gameParkingLocationForest => 'Орман тұрағы';
+
+  @override
+  String get gameParkingLocationMarket => 'Дүкен';
+
+  @override
+  String get gameParkingLocationHome => 'Қақпалы үй';
+
+  @override
+  String get gameParkingLocationService => 'Жанармай бекетіндегі демалыс орны';
+
+  @override
+  String get gameParkingLocationOffice => 'Кеңсе';
+
+  @override
+  String get gameParkingLocationClinic => 'Емхана';
+
+  @override
+  String get gameParkingLocationStation => 'Вокзал';
+
+  @override
+  String get gameParkingLocationQuay => 'Жағалау';
+
+  @override
+  String get gameParkingLocationWorkshop => 'Автосервис';
+
+  @override
+  String get gameParkingLocationCourtyard => 'Тұрғын аула';
+
+  @override
+  String get gameParkingLocationOldTown => 'Ескі қала';
+
+  @override
+  String get gameParkingLocationHotel => 'Қонақүй';
+
+  @override
+  String get gameParkingLocationDepot => 'Қойма';
+
+  @override
+  String get gameParkingLocationDeadEnd => 'Тұйық көше';
+
+  @override
+  String get gameParkingLocationCamp => 'Кемпинг';
+
+  @override
+  String get gameParkingLocationArena => 'Стадион';
+
+  @override
+  String get gameParkingLocationCovered => 'Жабық паркинг';
+
+  @override
+  String get gameParkingLocationBazaar => 'Базар';
+
+  @override
+  String get gameParkingLocationFindMarket => 'Дүкен: орын табыңыз';
+
+  @override
+  String get gameParkingLocationFindHome => 'Квартал: орын табыңыз';
+
+  @override
+  String get gameParkingLocationFindStation => 'Вокзал: орын табыңыз';
+
+  @override
+  String get gameParkingLocationFindPark => 'Саябақ: орын табыңыз';
+
+  @override
+  String get gameParkingLocationRules => 'Қала: қайда тоқтауға болады?';
+
+  @override
+  String get gameParkingSearchMission => 'Бос орынды таңдаңыз. Көмек жоқ.';
+
+  @override
+  String get gameParkingReverseMission => 'Орынға артпен кіріңіз.';
+
+  @override
+  String get gameParkingFollowMission =>
+      'Бағыттауыштармен тұрақ орнына барыңыз.';
+
+  @override
+  String get gameParkingTurnMission =>
+      'Үш тәсілмен кері бұрылып, аймақта тоқтаңыз.';
 }

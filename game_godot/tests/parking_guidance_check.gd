@@ -127,13 +127,13 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 	level = ParkingLevels.build(ParkingLevels.RULES)
 	way = ParkingLevels.way_in(level, geo)
 	guide.setup(level, way, geo)
-	guide.update_state(way[0].poses[0], 0.0, 1, 0.0, 0, 0, false, 0.016)
+	guide.update_state(way[0].poses[0], 0.0, 1, 0.0, 0, 0, false, 0.016, false)
 	for data: Dictionary in guide._segments:
 		_check("rules: route is hidden before an incorrect choice", not data.mesh.is_visible_in_tree())
 		_check("rules: action marker is hidden before an incorrect choice", not data.marker.root.is_visible_in_tree())
 	_check("rules: route arrows are hidden", not guide._chevrons.is_visible_in_tree())
 	_check("rules: finishing footprint is hidden", not guide._goal.is_visible_in_tree())
-	_check("rules: steering prediction is still shown", guide._prediction.is_visible_in_tree())
+	_check("rules: steering prediction is hidden", not guide._prediction.is_visible_in_tree())
 	guide.queue_free()
 	await process_frame
 

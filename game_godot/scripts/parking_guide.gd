@@ -291,6 +291,15 @@ func setup(level: Dictionary, way: Array, geometry: Dictionary) -> void:
 
 
 ## Plays the finish: the frame closes into a full outline, flashes and fades out.
+## Celebrate the actual chosen bay, including the alternative bays in search locations.
+func celebrate_at(centre: Vector2, yaw: float) -> void:
+	_goal_centre = centre
+	_goal_yaw = yaw
+	_goal.position = Vector3(centre.x, MARKER_Y + 0.009, centre.y)
+	_goal.rotation.y = yaw
+	celebrate()
+
+
 func celebrate() -> void:
 	if _goal_mat != null: _success = 0.0
 

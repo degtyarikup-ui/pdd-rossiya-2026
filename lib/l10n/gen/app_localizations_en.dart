@@ -4335,4 +4335,93 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get gameParkingLocationSchool => 'Driving school';
+
+  @override
+  String get gameParkingLocationCafe => 'Cafe';
+
+  @override
+  String get gameParkingLocationForest => 'Forest parking';
+
+  @override
+  String get gameParkingLocationMarket => 'Shop';
+
+  @override
+  String get gameParkingLocationHome => 'House with a gate';
+
+  @override
+  String get gameParkingLocationService => 'Service area';
+
+  @override
+  String get gameParkingLocationOffice => 'Office';
+
+  @override
+  String get gameParkingLocationClinic => 'Clinic';
+
+  @override
+  String get gameParkingLocationStation => 'Station';
+
+  @override
+  String get gameParkingLocationQuay => 'Quay';
+
+  @override
+  String get gameParkingLocationWorkshop => 'Workshop';
+
+  @override
+  String get gameParkingLocationCourtyard => 'Residential yard';
+
+  @override
+  String get gameParkingLocationOldTown => 'Old town';
+
+  @override
+  String get gameParkingLocationHotel => 'Hotel';
+
+  @override
+  String get gameParkingLocationDepot => 'Depot';
+
+  @override
+  String get gameParkingLocationDeadEnd => 'Dead end';
+
+  @override
+  String get gameParkingLocationCamp => 'Campsite';
+
+  @override
+  String get gameParkingLocationArena => 'Stadium';
+
+  @override
+  String get gameParkingLocationCovered => 'Covered parking';
+
+  @override
+  String get gameParkingLocationBazaar => 'Market';
+
+  @override
+  String get gameParkingLocationFindMarket => 'Shop: find a space';
+
+  @override
+  String get gameParkingLocationFindHome => 'Residential block: find a space';
+
+  @override
+  String get gameParkingLocationFindStation => 'Station: find a space';
+
+  @override
+  String get gameParkingLocationFindPark => 'Park: find a space';
+
+  @override
+  String get gameParkingLocationRules => 'City: where can you park?';
+
+  @override
+  String get gameParkingSearchMission => 'Choose a free bay. No driving hints.';
+
+  @override
+  String get gameParkingReverseMission => 'Reverse into the space.';
+
+  @override
+  String get gameParkingFollowMission =>
+      'Follow the guides to the parking space.';
+
+  @override
+  String get gameParkingTurnMission =>
+      'Make a three-point turn and stop in the zone.';
 }

@@ -4352,4 +4352,94 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get gameParkingLocationSchool => 'Автошкола';
+
+  @override
+  String get gameParkingLocationCafe => 'Кафе';
+
+  @override
+  String get gameParkingLocationForest => 'Лесная стоянка';
+
+  @override
+  String get gameParkingLocationMarket => 'Магазин';
+
+  @override
+  String get gameParkingLocationHome => 'Дом с воротами';
+
+  @override
+  String get gameParkingLocationService => 'Зона отдыха у АЗС';
+
+  @override
+  String get gameParkingLocationOffice => 'Офис';
+
+  @override
+  String get gameParkingLocationClinic => 'Клиника';
+
+  @override
+  String get gameParkingLocationStation => 'Вокзал';
+
+  @override
+  String get gameParkingLocationQuay => 'Набережная';
+
+  @override
+  String get gameParkingLocationWorkshop => 'Автосервис';
+
+  @override
+  String get gameParkingLocationCourtyard => 'Жилой двор';
+
+  @override
+  String get gameParkingLocationOldTown => 'Старый город';
+
+  @override
+  String get gameParkingLocationHotel => 'Отель';
+
+  @override
+  String get gameParkingLocationDepot => 'Склад';
+
+  @override
+  String get gameParkingLocationDeadEnd => 'Тупик';
+
+  @override
+  String get gameParkingLocationCamp => 'Кемпинг';
+
+  @override
+  String get gameParkingLocationArena => 'Стадион';
+
+  @override
+  String get gameParkingLocationCovered => 'Крытый паркинг';
+
+  @override
+  String get gameParkingLocationBazaar => 'Рынок';
+
+  @override
+  String get gameParkingLocationFindMarket => 'Магазин: найдите место';
+
+  @override
+  String get gameParkingLocationFindHome => 'Квартал: найдите место';
+
+  @override
+  String get gameParkingLocationFindStation => 'Вокзал: найдите место';
+
+  @override
+  String get gameParkingLocationFindPark => 'Парк: найдите место';
+
+  @override
+  String get gameParkingLocationRules => 'Город: где можно встать?';
+
+  @override
+  String get gameParkingSearchMission =>
+      'Выберите свободное место. Подсказок нет.';
+
+  @override
+  String get gameParkingReverseMission => 'Припаркуйтесь задним ходом.';
+
+  @override
+  String get gameParkingFollowMission =>
+      'Следуйте направляющим до места парковки.';
+
+  @override
+  String get gameParkingTurnMission =>
+      'Развернитесь в три приёма и остановитесь в зоне.';
 }

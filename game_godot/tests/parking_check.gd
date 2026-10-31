@@ -46,6 +46,7 @@ func _check_way(i: int, model: String, geo: Dictionary) -> void:
 	var level := ParkingLevels.build(i)
 	var way := ParkingLevels.way_in(level, geo)
 	var worst := ""
+	var fixed := _fixed(level)
 	for seg: Dictionary in way:
 		for p: Vector3 in seg.poses:
 			var car := ParkingLevels.car_box(p, geo)
@@ -55,7 +56,7 @@ func _check_way(i: int, model: String, geo: Dictionary) -> void:
 				var m := ParkingLevels.model_meta(parked.model)
 				if ParkingLevels.overlaps(car, ParkingLevels.box(parked.c, m.half_width, m.half_length, parked.yaw)):
 					worst = "touches a %s at %s (pose %s)" % [parked.model, parked.c, p]
-			for kerb: Dictionary in _fixed(level):
+			for kerb: Dictionary in fixed:
 				if ParkingLevels.overlaps(car, kerb): worst = "climbs a kerb or hits a wall at %s" % p
 			if worst != "": break
 		if worst != "": break
@@ -68,7 +69,7 @@ func _check_way(i: int, model: String, geo: Dictionary) -> void:
 			for parked: Dictionary in level.cars:
 				var m := ParkingLevels.model_meta(parked.model)
 				car_gap = minf(car_gap, ParkingLevels.gap(body, ParkingLevels.box(parked.c, m.half_width, m.half_length, parked.yaw)))
-			for kerb: Dictionary in _fixed(level): kerb_gap = minf(kerb_gap, ParkingLevels.gap(body, kerb))
+			for kerb: Dictionary in fixed: kerb_gap = minf(kerb_gap, ParkingLevels.gap(body, kerb))
 	_check("level %d %s: way passes parked cars ≥ 0.3 m away (%.2f)" % [i, model, car_gap], car_gap >= 0.3)
 	_check("level %d %s: way keeps ≥ 0.2 m from kerbs and walls (%.2f)" % [i, model, kerb_gap], kerb_gap >= 0.195)
 	var last: Vector3 = way.back().poses.back()
@@ -84,10 +85,9 @@ func _check_way(i: int, model: String, geo: Dictionary) -> void:
 
 ## Kerbs and solid walls (garage boxes, fences).
 func _fixed(level: Dictionary) -> Array:
-	var out: Array = level.sidewalks.duplicate()
-	for w: Dictionary in level.walls:
-		if w.solid: out.append(w.box)
-	return out
+	var fixed := level.duplicate()
+	fixed.cars = []
+	return ParkingLevels.obstacles(fixed)
 
 
 func _check_rules_spots() -> void:
@@ -110,7 +110,7 @@ func _check_scene() -> void:
 	scene.set("run_size", ParkingLevels.COUNT)   # the autopilot drives every level once
 	root.add_child(scene)
 	var parked := 0
-	for frame in 60 * 600:
+	for frame in 120 * 1200:
 		await process_frame
 		parked = scene.parked_count
 		if OS.has_environment("PARKING_DEBUG") and frame % 120 == 0: print(frame, " L", scene.level_index, " seg ", scene.segment, " g ", scene.gear, " v ", snapped(scene.speed, 0.01), " pose ", scene.pose, " lives ", scene.lives, " ready ", scene._ready_for_play, " travel ", snapped(scene._auto_travel, 0.01))

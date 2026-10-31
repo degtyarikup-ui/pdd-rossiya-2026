@@ -251,13 +251,36 @@ func _start_run() -> void:
 ## run_size different levels at random, played from the easiest: the ids grow with difficulty,
 ## so the rules level, when drawn, stays last.
 func _draw_levels() -> Array[int]:
+	var count := clampi(run_size, 1, ParkingLevels.COUNT)
+	var picked: Array[int] = []
+	var families := {}
+	if _forced_level >= 0:
+		picked.append(_forced_level)
+		families[ParkingLocations.FAMILIES[_forced_level]] = true
 	var pool: Array[int] = []
 	for i in ParkingLevels.COUNT:
 		if i != _forced_level: pool.append(i)
 	pool.shuffle()
-	var picked: Array[int] = pool.slice(0, clampi(run_size, 1, ParkingLevels.COUNT) - (1 if _forced_level >= 0 else 0))
+	# A normal run includes independent parking and different manoeuvre families.
+	if count >= 5 and not families.has("search"):
+		for i in pool:
+			if i >= 20:
+				picked.append(i)
+				families["search"] = true
+				break
+	for i in pool:
+		if picked.size() >= count: break
+		var family: String = ParkingLocations.FAMILIES[i]
+		if i not in picked and not families.has(family):
+			picked.append(i)
+			families[family] = true
+	for i in pool:
+		if picked.size() >= count: break
+		if i not in picked: picked.append(i)
 	picked.sort()
-	if _forced_level >= 0: picked.insert(0, _forced_level)
+	if _forced_level >= 0:
+		picked.erase(_forced_level)
+		picked.push_front(_forced_level)
 	return picked
 
 
@@ -282,7 +305,7 @@ func _load_level(index: int) -> void:
 	_build_spots()
 	_build_car()
 	_build_way()
-	pose = way[0].poses[0]
+	pose = level.get("spawn", way[0].poses[0]) if not auto_drive else way[0].poses[0]
 	speed = 0.0
 	steer = 0.0
 	ui.wheel.set_value(0.0)
@@ -295,7 +318,7 @@ func _load_level(index: int) -> void:
 	_refresh_hud()
 	_update_guidance(0.0)
 	_frame_camera(true)
-	if not level.show_path: ui.toast(Ui.t("gameParkingFindSpot"), "", 2.4)
+	ui.toast(Ui.t(level.title) + "\n" + Ui.t(level.mission), "", 4.5)
 
 
 func _refresh_hud() -> void:
@@ -311,6 +334,8 @@ func _mat(key: String) -> Material:
 			"asphalt": _mats[key] = sc.surface_material("asphalt", Color("#3A3D44"))
 			"pavement": _mats[key] = sc.surface_material("pavement", sc.color("sidewalk"))
 			"grass": _mats[key] = sc.surface_material("grass", sc.color("ground"))
+			"home_paving": _mats[key] = sc.surface_material("pavement", Color("#B0A792"))
+			"camp_gravel": _mats[key] = sc.surface_material("asphalt", Color("#8D8872"))
 			"milled": _mats[key] = sc.surface_material("asphalt", Color("#50535A"))
 			_:
 				var m := StandardMaterial3D.new()
@@ -357,7 +382,7 @@ func _flush_ground() -> void:
 func _build_ground() -> void:
 	_ground.clear()
 	for b: Dictionary in level.grass: _ground_quad(b, -0.03, "grass")
-	for b: Dictionary in level.asphalt: _ground_quad(b, 0.0, "asphalt")
+	for b: Dictionary in level.asphalt: _ground_quad(b, 0.0, level.get("surface", "asphalt"))
 	for b: Dictionary in level.sidewalks:
 		_block(_ground_tool("pavement"), b.c, Vector2(1, 0), Vector3(b.half.x * 2.0, 0.15, b.half.y * 2.0), 0.0)
 	for w: Dictionary in level.walls:
@@ -496,6 +521,16 @@ func _build_props() -> void:
 	for l: Vector2 in level.lamps: put.call("street/lamp", l, 0.0, Vector3.ONE, Color.WHITE)
 	for b: Dictionary in level.buildings: put.call(b.prop, b.pos, b.yaw, Vector3.ONE, Color.WHITE)
 	for p in pools.values(): p.finish(0)
+	for entry: Dictionary in level.get("labels", []):
+		var label := Label3D.new()
+		label.text = Ui.t(entry.key)
+		label.font = Ui.font(700)
+		label.font_size = 48
+		label.pixel_size = minf(0.012, float(entry.width) / maxf(1, label.font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 48).x))
+		label.outline_size = 0
+		label.position = entry.pos
+		label.no_depth_test = false
+		root3d.add_child(label)
 	for s: Dictionary in level.signs:
 		var pivot := Node3D.new()
 		pivot.position = Vector3(s.pos.x, 0.0, s.pos.y)
@@ -547,6 +582,7 @@ func _build_spots() -> void:
 		frame.position = Vector3(b.c.x, 0.025, b.c.y)
 		frame.rotation.y = b.yaw
 		frame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		frame.visible = not level.get("search", false)
 		root3d.add_child(frame)
 		_spot_views.append({"spot": spot, "frame": frame, "mat": mat, "tried": false,
 			"colour": Color.WHITE, "fill": 0.12})
@@ -559,6 +595,8 @@ func _paint_spots(inside: Dictionary, dt: float) -> void:
 	var held := clampf(hold / HOLD, 0.0, 1.0)
 	for view: Dictionary in _spot_views:
 		var on: bool = view.spot == inside
+		# Natural bay paint is always visible; feedback appears only inside the chosen space.
+		view.frame.visible = not level.get("search", false) or on or view.tried
 		var colour := Color.WHITE
 		if view.tried: colour = Ui.c("red")
 		elif on: colour = Ui.c("green")
@@ -597,7 +635,7 @@ func _build_way() -> void:
 func _paint_way() -> void:
 	if not is_instance_valid(guide): return
 	var driving := done_timer < 0.0 and not is_game_over
-	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, 0.0, driving)
+	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, 0.0, driving and not level.get("search", false))
 
 
 ## Progress follows the rear axle used by the driving model, including manual corrections.
@@ -624,7 +662,7 @@ func _update_guidance(delta: float) -> void:
 	var progress := _segment_progress()
 	_guide_index = progress.index
 	var driving := done_timer < 0.0 and not is_game_over
-	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, delta, driving)
+	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, delta, driving and not level.get("search", false))
 
 
 # --- Driving ---
@@ -771,7 +809,7 @@ func _wrong_spot(spot: Dictionary) -> void:
 	GameSound.buzz(80)
 	ui.toast(Ui.t(spot.reason), "bad", 3.0)
 	# After a mistake the way to the legal space is shown.
-	if not level.show_path:
+	if not level.show_path and not level.get("search", false):
 		level.show_path = true
 		# Reveal the closest part of the route, rather than replaying its distant start.
 		var closest := INF
@@ -793,6 +831,7 @@ func _parked(spot: Dictionary) -> void:
 	var body := ParkingLevels.car_box(pose, geo)
 	var off := absf(ParkingLevels.local(b, body.c).x)
 	var angle := absf(wrapf(pose.z - float(b.yaw), -PI, PI))
+	if spot.get("either_heading", false): angle = minf(angle, absf(PI - angle))
 	var accuracy := clampf(1.0 - rad_to_deg(angle) / 14.0 - off / 0.7, 0.0, 1.0)
 	var gain := maxi(20, 60 + roundi(40.0 * accuracy) - 15 * level_touches)
 	score = mini(score + gain, int(economy.maxScore))
@@ -804,7 +843,7 @@ func _parked(spot: Dictionary) -> void:
 	GameSound.buzz(20)
 	ui.toast("%s  +%d" % [Ui.t("gameParkingParked"), gain], "good")
 	done_timer = 1.3
-	guide.celebrate()
+	guide.celebrate_at(body.c, pose.z)
 	_paint_way()
 	_refresh_hud()
 	_checkpoint()
@@ -852,7 +891,8 @@ func _place_car() -> void:
 func _frame_camera(snap: bool, delta := 0.0) -> void:
 	var body := ParkingLevels.car_box(pose, geo)
 	var pts: Array[Vector2] = ParkingLevels.corners(body)
-	var focus: Dictionary = level.target if level.show_path else {}
+	var near_target: bool = Vector2(body.c).distance_to(level.target.c) < 17.0
+	var focus: Dictionary = level.target if level.show_path and near_target else {}
 	if not focus.is_empty(): pts.append_array(ParkingLevels.corners(focus))
 	else:
 		# Choosing a space: look ahead along the kerb, where the signs are.
@@ -861,7 +901,7 @@ func _frame_camera(snap: bool, delta := 0.0) -> void:
 		pts.append(ahead - Vector2(4.0, 0))
 	if level.show_path and done_timer < 0.0:
 		# Include the rest of the manoeuvre so the camera does not jump at steering gates.
-		for i in range(segment, way.size()):
+		for i in range(segment, mini(segment + 2, way.size())):
 			var poses: Array = way[i].poses
 			for k in range(0, poses.size(), 8):
 				var p: Vector3 = poses[k]
