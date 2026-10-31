@@ -91,7 +91,19 @@ if(process.argv.includes('--serve')) {
   assert.equal(await page.locator('#an-auth-table tbody tr').count(),4);
   assert.equal(await page.locator('#an-versions tbody tr').count(),2);
   assert.match(await page.locator('#an-updates-summary').innerText(),/12/);
-  assert.deepEqual(await page.locator('#analytics-view h2').allTextContents(),['Обзор','Активность и рост','Состав аудитории','Источники привлечения','Отчёты магазинов · ПДД Россия']);
+  for(const label of ['Обзор','Сейчас','Активность и рост','Состав аудитории','Источники привлечения','За выбранный период','Отчёты магазинов · ПДД Россия']){
+   assert.equal(await page.locator('#analytics-view').getByText(label,{exact:true}).count(),0);
+  }
+  const cards=page.locator('#analytics-view .an-card');
+  assert.equal(await cards.count(),15);
+  for(const card of await cards.all()){
+   const toggle=card.locator('.an-fold'), body=page.locator('#'+await toggle.getAttribute('aria-controls'));
+   await toggle.click();
+   assert.equal(await body.isVisible(),false);
+   assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+   await toggle.press('Enter');
+   assert.equal(await body.isVisible(),true);
+  }
   assert.match(await page.locator('#an-report-googleplay').innerText(), /Обзор Google Play\s+7/);
   assert.match(await page.locator('#an-report-appstore').innerText(), /пока не предоставил/);
   assert.deepEqual(await page.locator('#an-usage-feature option').allTextContents(),

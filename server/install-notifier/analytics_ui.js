@@ -10,6 +10,17 @@
 import { BRAND_ICON_PATHS, BRAND_SVGS } from './brand_icons.js';
 import { selectGeoRows } from './analytics_geo.js';
 
+function cardToggle(id, title) {
+  return `<button type="button" class="an-fold" aria-expanded="true" aria-controls="an-body-${id}">${title}</button>`;
+}
+
+const kpis = [
+  ['registered', 'Всего аккаунтов', 'Все сохранённые аккаунты, без гостей и тестовых записей'],
+  ['active1', 'Активные за 24 часа', 'Обращались к серверу за последние 24 часа'],
+  ['active7', 'Активные за 7 дней', 'Обращались к серверу за последние 7 дней'],
+  ['premium', 'Premium', 'Действующий Premium, включая ручную выдачу'],
+];
+
 export const ANALYTICS_VIEW_HTML = String.raw`
 <div id="analytics-view">
 <style>
@@ -63,7 +74,6 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 @media(max-width:1120px){.an-charts-grid{grid-template-columns:1fr}.an-chart-card .an-legend{margin:0 0 8px}.an-grid{gap:12px}.an-kpi{padding:20px}.an-big{font-size:34px}}
 @media(max-width:900px){.an-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now{grid-template-columns:repeat(2,minmax(0,1fr))}.an-now span{justify-content:flex-start}.an-now b{margin-left:auto}}
 @media(max-width:640px){.an-card{padding:20px;border-radius:18px}.an-grid{gap:10px}.an-kpi{padding:18px}.an-kpi-top{font-size:11px;min-height:28px;line-height:1.4}.an-big{font-size:32px;margin-top:10px}.an-head{gap:8px}.an-title{font-size:15px}.an-tabs button{padding:6px 10px;font-size:10px}.an-table{font-size:12px}.an-table td+td,.an-table th+th{padding-left:10px}.an-geo-card .an-table{min-width:340px}.an-activity-summary{gap:14px 10px;grid-template-columns:1.1fr repeat(3,1fr)}.an-activity-summary b{font-size:18px}.an-activity-summary>span:first-child b{font-size:34px}.an-activity-summary>span{font-size:10px;line-height:1.4}.an-dynamics-summary b{font-size:34px}.an-dynamics-summary span{font-size:10px}.an-geo-footer{flex-wrap:wrap}.an-now{padding:18px 20px;gap:16px}.an-now span{flex-direction:column;align-items:flex-start;gap:8px}.an-now b{margin:0;font-size:20px}.an-chart-card .an-head{flex-wrap:wrap}.an-caption{font-size:10px}}
-.an-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:30px 0 14px}.an-section-head:first-child{margin-top:0}.an-section-head h2{margin:0;font-size:13px;font-weight:600;color:var(--an-muted);letter-spacing:0}.an-section-head .an-period{margin:0;text-align:right}
 .an-scope{font-size:10px;font-weight:500;line-height:1.4;color:var(--an-muted);white-space:nowrap}.an-heading{display:flex;align-items:center;gap:8px;min-width:0}.an-subtitle{font-size:11px;color:var(--an-muted);margin-top:6px;line-height:1.5}
 .an-audience-grid,.an-acquisition-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}.an-audience-grid>.an-card,.an-acquisition-grid>.an-card{margin:0}
 .an-acquisition-card .an-table{min-width:440px}.an-acquisition-card .an-table td:first-child{max-width:360px;overflow-wrap:anywhere}.an-acquisition-card .an-tabs{margin-bottom:18px}.an-acquisition-card .an-table-name{align-items:flex-start}.an-acquisition-card .an-logo{margin-top:1px}.an-acquisition-card .an-source-detail{display:block;font-size:10px;color:var(--an-muted);font-weight:450;margin-top:3px}.an-acquisition-card .an-subtitle{margin-bottom:16px}.an-acquisition-card details.an-day-details>summary{line-height:1.5}
@@ -73,29 +83,42 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 .an-geo-card .an-geo-tools{max-width:580px}.an-geo-card .an-table-name{min-width:120px}.an-geo-card .an-table{min-width:0}.an-geo-card .an-table td{padding:13px 0}
 @media(max-width:1000px){.an-audience-grid,.an-acquisition-grid{grid-template-columns:1fr}}
 @media(max-width:640px){.an-acquisition-card .an-table{min-width:0;table-layout:fixed;font-size:11px}.an-acquisition-card .an-table th{white-space:normal;font-size:9px;overflow-wrap:anywhere}.an-acquisition-card .an-table th:first-child{width:42%}.an-acquisition-card .an-table th:nth-child(2),.an-acquisition-card .an-table th:nth-child(3){width:18%}.an-acquisition-card .an-table th:last-child{width:22%}.an-acquisition-card .an-table td+td,.an-acquisition-card .an-table th+th{padding-left:6px}.an-acquisition-card .an-table-name{gap:6px}.an-acquisition-card .an-table-name>span{min-width:0}.an-acquisition-card .an-logo{width:16px;height:16px}.an-acquisition-card .an-logo svg{width:16px;height:16px}.an-acquisition-card .an-source-detail{font-size:9px}}
-@media(max-width:640px){.an-section-head{margin-top:24px;gap:8px}.an-section-head h2{font-size:12px}.an-section-head .an-period{font-size:10px}.an-audience-grid,.an-acquisition-grid{gap:14px;margin-bottom:14px}.an-geo-card .an-table{min-width:360px}.an-scope{font-size:9px}.an-heading{gap:6px}.an-version-name{gap:5px}.an-versions .an-share-track{display:none}.an-help>div{width:250px}.an-update-metric b{font-size:30px}}
+@media(max-width:640px){.an-audience-grid,.an-acquisition-grid{gap:14px;margin-bottom:14px}.an-geo-card .an-table{min-width:360px}.an-scope{font-size:9px}.an-heading{gap:6px}.an-version-name{gap:5px}.an-versions .an-share-track{display:none}.an-help>div{width:250px}.an-update-metric b{font-size:30px}}
+#analytics-view .an-fold{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;padding:2px 0;min-height:28px;color:inherit;font:inherit;letter-spacing:inherit;text-align:left;cursor:pointer}
+.an-fold::before{content:'';width:7px;height:7px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);margin:0 4px 4px 2px;flex-shrink:0}
+.an-fold[aria-expanded=false]::before{transform:rotate(-45deg);margin-bottom:0}
+#analytics-view .an-folded{align-self:start}
+#analytics-view .an-folded .an-head{margin-bottom:0}
+.an-folded .an-head :is(.an-tabs,.an-help,.an-scope,.an-subtitle,.an-usage-total){display:none}
+#analytics-view [id^="an-body-"][hidden]{display:none}
 </style>
-<div class="an-section-head"><h2>Обзор</h2><span class="an-scope">Сейчас</span></div>
-<div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов"></div>
-<div class="an-section-head"><h2>Активность и рост</h2><div class="an-period" id="an-period"></div></div>
+<div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов">
+ ${kpis.map(([key, label, help]) => `<div class="an-card an-kpi${key === 'active1' ? ' is-primary' : ''}" title="${help}"><div class="an-kpi-top">${cardToggle(key, label)}</div><div class="an-big" id="an-body-${key}" data-kpi="${key}">—</div></div>`).join('')}
+</div>
+<div class="an-period" id="an-period"></div>
 <div class="an-charts-grid">
  <div class="an-card an-activity-card">
-  <div class="an-head"><div><div class="an-title">Активность по дням</div><div class="an-subtitle">Аккаунты · без гостей</div></div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Аккаунты, обращавшиеся к серверу за день, без гостей. Две платформы одного аккаунта входят в обе группы; общий итог учитывает аккаунт один раз. Сегодня — неполный день.</div></details></div>
+  <div class="an-head"><div><div class="an-title">${cardToggle('activity', 'Активность по дням')}</div><div class="an-subtitle">Аккаунты · без гостей</div></div><details class="an-help"><summary aria-label="Об активности">i</summary><div>Аккаунты, обращавшиеся к серверу за день, без гостей. Две платформы одного аккаунта входят в обе группы; общий итог учитывает аккаунт один раз. Сегодня — неполный день.</div></details></div>
+  <div id="an-body-activity">
   <div class="an-activity-summary" id="an-activity-summary"></div>
   <div class="an-legend"><span style="display:inline-flex;align-items:center;gap:6px"><i class="an-dot" style="background:#0574F8"></i><svg viewBox="0 0 24 24" width="14" height="14" fill="#3DDC84" style="display:inline-block;vertical-align:middle"><path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-4.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48C13.72 2.24 12.88 2 12 2c-.88 0-1.72.24-2.64.63L7.88 1.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.3 1.3C6.75 4.3 5.5 6.01 5.2 8h13.6c-.3-1.99-1.55-3.7-3.27-4.84zM9 6c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>Android</span><span style="display:inline-flex;align-items:center;gap:6px"><i class="an-dot" style="background:#22a875"></i><svg viewBox="0 0 250 307" width="14" height="14" fill="currentColor" style="display:inline-block;vertical-align:middle"><path d="M208.209 162.951C208.36 151.207 211.48 139.691 217.277 129.477C223.075 119.262 231.362 110.68 241.367 104.528C235.011 95.4506 226.626 87.9799 216.877 82.7096C207.128 77.4394 196.285 74.5149 185.209 74.1684C161.581 71.6882 138.674 88.307 126.634 88.307C114.36 88.307 95.8222 74.4146 75.8596 74.8253C62.9473 75.2425 50.3632 78.9973 39.3335 85.7239C28.3038 92.4505 19.2046 101.92 12.9224 113.208C-14.2903 160.323 6.00794 229.566 32.0755 267.65C45.1176 286.298 60.3602 307.129 80.3047 306.391C99.8216 305.581 107.111 293.945 130.669 293.945C154.009 293.945 160.848 306.391 181.197 305.921C202.14 305.581 215.335 287.189 227.919 268.364C237.29 255.076 244.501 240.39 249.285 224.85C237.117 219.704 226.734 211.091 219.43 200.083C212.126 189.076 208.223 176.161 208.209 162.951Z"/><path d="M169.775 49.1155C181.194 35.4077 186.819 17.7887 185.457 0C168.012 1.8323 151.897 10.17 140.324 23.3519C134.666 29.7916 130.332 37.2833 127.571 45.3989C124.809 53.5145 123.675 62.0947 124.231 70.649C132.957 70.7389 141.59 68.8476 149.479 65.1176C157.368 61.3877 164.307 55.9163 169.775 49.1155Z"/></svg>iOS</span></div>
   <div class="an-chart" id="an-activity-chart"></div>
   <div class="an-caption" id="an-activity-caption"></div>
   <details class="an-day-details"><summary>Данные по дням</summary><div class="an-table-wrap" id="an-activity-table"></div></details>
+  </div>
  </div>
  <div class="an-card an-chart-card">
-  <div class="an-head"><div class="an-title">Рост аудитории</div><div class="an-tabs" id="an-chart-tabs"><button type="button" data-chart="app" class="active" aria-pressed="true">Приложение</button><button type="button" data-chart="site" aria-pressed="false">Сайт</button></div></div>
+  <div class="an-head"><div class="an-title">${cardToggle('growth', 'Рост аудитории')}</div><div class="an-tabs" id="an-chart-tabs"><button type="button" data-chart="app" class="active" aria-pressed="true">Приложение</button><button type="button" data-chart="site" aria-pressed="false">Сайт</button></div></div>
+  <div id="an-body-growth">
   <div class="an-dynamics-summary" id="an-dynamics-summary"></div>
   <div class="an-legend" id="an-chart-legend"></div><div class="an-chart" id="an-installs-chart"></div><div class="an-caption" id="an-installs-caption"></div>
+  </div>
  </div>
 </div>
 <div class="an-card an-usage" id="an-usage">
- <div class="an-head"><div class="an-usage-heading"><div class="an-title">Использование режимов</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуски режимов за выбранный период, включая гостей. Активные установки — устройства, на которых запускали режим; «На установку» — среднее число запусков. Доля показана от всех запусков.</div></details></div><div class="an-usage-total" id="an-usage-total"></div></div>
- <div id="an-usage-table"></div>
+ <div class="an-head"><div class="an-usage-heading"><div class="an-title">${cardToggle('usage', 'Использование режимов')}</div><details class="an-help"><summary aria-label="Об использовании режимов">i</summary><div>Запуски режимов за выбранный период, включая гостей. Активные установки — устройства, на которых запускали режим; «На установку» — среднее число запусков. Доля показана от всех запусков.</div></details></div><div class="an-usage-total" id="an-usage-total"></div></div>
+ <div id="an-body-usage">
+  <div id="an-usage-table"></div>
  <div class="an-caption" id="an-usage-coverage"></div>
  <div class="an-usage-empty" id="an-usage-empty" hidden></div>
  <details class="an-usage-details" id="an-usage-details">
@@ -104,30 +127,36 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <div class="an-chart" id="an-usage-chart"></div>
   <details class="an-day-details"><summary>Таблица значений</summary><div class="an-table-wrap" id="an-usage-days"></div></details>
  </details>
+  </div>
 </div>
-<div class="an-section-head"><h2>Состав аудитории</h2></div>
 <div class="an-audience-grid">
  <div class="an-card" id="an-auth">
-  <div class="an-head"><div class="an-heading"><h3 class="an-title">Способы входа</h3><details class="an-help"><summary aria-label="О способах входа">i</summary><div>Доля от всех сохранённых аккаунтов, без гостей и тестовых записей. Разные сервисы входа создают отдельные аккаунты; проценты округлены.</div></details></div><span class="an-scope">Всё время</span></div>
+  <div class="an-head"><div class="an-heading"><h3 class="an-title">${cardToggle('auth', 'Способы входа')}</h3><details class="an-help"><summary aria-label="О способах входа">i</summary><div>Доля от всех сохранённых аккаунтов, без гостей и тестовых записей. Разные сервисы входа создают отдельные аккаунты; проценты округлены.</div></details></div><span class="an-scope">Всё время</span></div>
+  <div id="an-body-auth">
   <div class="an-table-wrap an-auth-table" id="an-auth-table"></div>
+  </div>
  </div>
  <div class="an-card" id="an-updates">
-  <div class="an-head"><div class="an-heading"><h3 class="an-title">Версии приложения</h3><details class="an-help"><summary aria-label="Об обновлениях и версиях">i</summary><div>Обновление — подтверждённый переход аккаунта на более новую версию, учёт с 19.10.2026. В таблице — последняя известная мобильная версия аккаунта; доля от мобильных аккаунтов с известной платформой.</div></details></div></div>
+  <div class="an-head"><div class="an-heading"><h3 class="an-title">${cardToggle('versions', 'Версии приложения')}</h3><details class="an-help"><summary aria-label="Об обновлениях и версиях">i</summary><div>Обновление — подтверждённый переход аккаунта на более новую версию, учёт с 19.10.2026. В таблице — последняя известная мобильная версия аккаунта; доля от мобильных аккаунтов с известной платформой.</div></details></div></div>
+  <div id="an-body-versions">
   <div class="an-update-metric" id="an-updates-summary"></div>
   <div class="an-version-label"><span>Версии аккаунтов</span><span class="an-scope">Всё время</span></div>
   <div class="an-table-wrap an-versions" id="an-versions" tabindex="0" role="region" aria-label="Распределение версий приложения"></div>
+  </div>
  </div>
 </div>
  <div class="an-card an-geo-card">
-  <div class="an-head"><div><div class="an-title">География новых аккаунтов</div><div class="an-subtitle">За выбранный период</div></div><details class="an-help"><summary aria-label="О географии">i</summary><div>По последнему сохранённому IP, приблизительно. Активность и Premium — текущее состояние новых аккаунтов выбранного периода.</div></details></div>
+  <div class="an-head"><div><div class="an-title">${cardToggle('geo', 'География новых аккаунтов')}</div></div><details class="an-help"><summary aria-label="О географии">i</summary><div>По последнему сохранённому IP, приблизительно. Активность и Premium — текущее состояние новых аккаунтов выбранного периода.</div></details></div>
+  <div id="an-body-geo">
   <div class="an-tabs" id="an-geo-tabs"><button type="button" data-geo="countries" class="active" aria-pressed="true">Страны</button><button type="button" data-geo="regions" aria-pressed="false">Регионы</button><button type="button" data-geo="cities" aria-pressed="false">Города</button></div>
   <div class="an-geo-tools"><input class="an-search" id="an-geo-search" placeholder="Поиск" aria-label="Поиск по географии"><select class="an-search" id="an-geo-country" aria-label="Страна географии"><option value="all">Все страны</option></select><button type="button" class="an-clear" id="an-geo-reset" title="Сбросить поиск и страну" aria-label="Сбросить фильтры">×</button></div>
   <div class="an-table-wrap" id="an-geo"></div>
   <div class="an-geo-footer"><span id="an-geo-coverage"></span><div class="an-pagination" id="an-geo-pages"></div></div>
+  </div>
  </div>
-<div class="an-section-head"><h2>Источники привлечения</h2><span class="an-scope">За выбранный период</span></div>
 <div class="an-card an-acquisition-card" id="an-acquisition">
-  <div class="an-head"><div class="an-title">Источники аккаунтов и покупки Premium</div><details class="an-help"><summary aria-label="Об источниках аккаунтов">i</summary><div>Первый сохранённый источник аккаунта. Период выбирает дату регистрации. Покупатели — аккаунты с подтверждением платной операции в сохранённых данных; один аккаунт считается один раз. Ручная выдача, известные тестовые, бесплатные и возвращённые покупки исключены. История магазинов может быть неполной: старые записи и неизвестный статус возврата отмечены отдельно. Статус возврата соответствует последней проверке магазина.</div></details></div>
+  <div class="an-head"><div class="an-title">${cardToggle('acquisition', 'Источники аккаунтов и покупки Premium')}</div><details class="an-help"><summary aria-label="Об источниках аккаунтов">i</summary><div>Первый сохранённый источник аккаунта. Период выбирает дату регистрации. Покупатели — аккаунты с подтверждением платной операции в сохранённых данных; один аккаунт считается один раз. Ручная выдача, известные тестовые, бесплатные и возвращённые покупки исключены. История магазинов может быть неполной: старые записи и неизвестный статус возврата отмечены отдельно. Статус возврата соответствует последней проверке магазина.</div></details></div>
+  <div id="an-body-acquisition">
   <div class="an-tabs" id="an-acquisition-tabs"><button type="button" data-acquisition="cohort" class="active" aria-pressed="true">Регистрации за период</button><button type="button" data-acquisition="allTime" aria-pressed="false">Всё время</button></div>
   <div class="an-subtitle" id="an-acquisition-scope"></div>
   <div class="an-table-wrap" id="an-acquisition-table" tabindex="0" role="region" aria-label="Источники аккаунтов и конверсия в покупку"></div>
@@ -135,18 +164,17 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <details class="an-day-details"><summary>Кампании</summary><div class="an-table-wrap" id="an-acquisition-campaigns"></div></details>
   <details class="an-day-details"><summary>Статьи, с которых пришли аккаунты</summary><div class="an-table-wrap" id="an-acquisition-articles"></div></details>
   <div class="an-caption">Источник аккаунта определяется по метке ссылки или переходу с сайта. Для органики Google Play приложение получает общую метку без разбивки на поиск и рекомендации.</div>
+  </div>
 </div>
 <div class="an-acquisition-grid">
-  <div class="an-card"><div class="an-head"><div class="an-title">Источники сайта</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры страниц и нажатия на ссылки магазинов или веб-приложения. Это события, а не уникальные люди. Метка сайта не подтверждает источник установки.</div></details></div><div class="an-table-wrap" id="an-sources"></div></div>
-  <div class="an-card"><div class="an-head"><div class="an-title">Первые запуски по магазинам</div><details class="an-help"><summary aria-label="Об установках">i</summary><div>Первые запуски приложения. Скачивания из консолей магазинов сюда не поступают.</div></details></div><div class="an-table-wrap" id="an-stores"></div></div>
+  <div class="an-card"><div class="an-head"><div class="an-title">${cardToggle('sources', 'Источники сайта')}</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры страниц и нажатия на ссылки магазинов или веб-приложения. Это события, а не уникальные люди. Метка сайта не подтверждает источник установки.</div></details></div><div id="an-body-sources"><div class="an-table-wrap" id="an-sources"></div></div></div>
+  <div class="an-card"><div class="an-head"><div class="an-title">${cardToggle('stores', 'Первые запуски по магазинам')}</div><details class="an-help"><summary aria-label="Об установках">i</summary><div>Первые запуски приложения. Скачивания из консолей магазинов сюда не поступают.</div></details></div><div id="an-body-stores"><div class="an-table-wrap" id="an-stores"></div></div></div>
 </div>
 <div id="an-store-reports" hidden>
-  <div class="an-section-head"><h2>Отчёты магазинов · ПДД Россия</h2></div>
   <div class="an-acquisition-grid">
-    <div class="an-card"><div class="an-title">Google Play · установки со страницы приложения</div><div class="an-table-wrap" id="an-report-googleplay"></div></div>
-    <div class="an-card"><div class="an-title">App Store · первые загрузки</div><div class="an-table-wrap" id="an-report-appstore"></div></div>
+    <div class="an-card"><div class="an-title">${cardToggle('report-googleplay', 'Google Play · установки со страницы приложения')}</div><div id="an-body-report-googleplay"><div class="an-table-wrap" id="an-report-googleplay"></div></div></div>
+    <div class="an-card"><div class="an-title">${cardToggle('report-appstore', 'App Store · первые загрузки')}</div><div id="an-body-report-appstore"><div class="an-table-wrap" id="an-report-appstore"></div></div></div>
   </div>
-  <div class="an-caption">Дата и источник взяты из отчёта каждого магазина. Магазины публикуют данные с задержкой. RuStore показывает статистику в консоли разработчика. Метка RuStore Install Referrer, если она есть, доступна в карточке аккаунта.</div>
 </div>
 <div class="an-tip" id="an-tip"></div>
 </div>
@@ -503,10 +531,25 @@ function renderDashboard(data) {
  selector.innerHTML='<option value="all">Все страны</option>'+(geo?geo.countries:[]).map(function(r){return '<option value="'+anEsc(r.country)+'">'+anCountryFlag(r.country)+' '+anEsc(anCountryName(r.country))+'</option>';}).join('');
  if(Array.from(selector.options).some(function(o){return o.value===selected;}))selector.value=selected;
  anRenderGeo();
- document.getElementById('an-now').innerHTML=[
- ['Всего аккаунтов',u?u.registered:null,'Все сохранённые аккаунты, без гостей и тестовых записей'],['Активные за 24 часа',u?u.active1:null,'Обращались к серверу за последние 24 часа'],['Активные за 7 дней',u?u.active7:null,'Обращались к серверу за последние 7 дней'],['Premium',u?u.premium:null,'Действующий Premium, включая ручную выдачу']
- ].map(function(m,i){return '<div class="an-card an-kpi'+(i===1?' is-primary':'')+'" title="'+m[2]+'"><div class="an-kpi-top">'+m[0]+'</div><div class="an-big">'+(m[1]==null?'—':anNum(m[1]))+'</div></div>';}).join('');
+ document.querySelectorAll('#an-now [data-kpi]').forEach(function(value){
+   var count=u && u[value.dataset.kpi];
+   value.textContent=count==null?'—':anNum(count);
+ });
 }
+document.getElementById('analytics-view').addEventListener('click',function(event){
+ var toggle=event.target.closest('.an-fold');
+ if(!toggle)return;
+ var body=document.getElementById(toggle.getAttribute('aria-controls'));
+ var expanding=body.hidden;
+ body.hidden=!expanding;
+ toggle.setAttribute('aria-expanded',String(expanding));
+ toggle.closest('.an-card').classList.toggle('an-folded',!expanding);
+ if(expanding && window.__anData){
+   if(body.id==='an-body-growth')anPlot(window.__anData);
+   if(body.id==='an-body-activity')anRenderActivity(window.__anData);
+   if(body.id==='an-body-usage' && document.getElementById('an-usage-details').open)anRenderUsageDetails(window.__anData);
+ }
+});
 document.getElementById('an-chart-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-chart]');if(b){anChartMode=b.dataset.chart;if(window.__anData)anPlot(window.__anData);}});
 document.getElementById('an-acquisition-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-acquisition]');if(b){anAcquisitionScope=b.dataset.acquisition;if(window.__anData)anRenderAcquisition(window.__anData);}});
 document.getElementById('an-geo-tabs').addEventListener('click',function(e){var b=e.target.closest('[data-geo]');if(b){anGeoMode=b.dataset.geo;anGeoPage=0;anRenderGeo();}});
