@@ -167,6 +167,10 @@ if(process.argv.includes('--serve')) {
   const oneDay=await response.json();
   await page.evaluate(data=>renderDashboard(data),oneDay);
   assert.equal(await page.locator('#an-auth-table').innerText(),auth);
+  const activityToggle=page.locator('[aria-controls="an-body-activity"]');
+  const activityDays=page.locator('#an-details-activity-days');
+  await activityDays.locator('summary').click();
+  await activityToggle.click();
   // Reopening renders persisted aggregates before a slow background refresh.
   let releaseRefresh;
   let pendingRefresh;
@@ -181,6 +185,8 @@ if(process.argv.includes('--serve')) {
   });
   await page.reload();
   await page.waitForFunction(()=>document.querySelector('#an-now .an-big')?.textContent==='160');
+  assert.equal(await activityToggle.getAttribute('aria-expanded'),'false');
+  assert.equal(await activityDays.evaluate(el=>el.open),true);
   assert.match(await page.locator('#admin-data-state').innerText(),/Данные на.*обновление/);
   assert.equal(await page.locator('#refresh-btn').isDisabled(),true);
   await page.emulateMedia({reducedMotion:'no-preference'});
@@ -212,6 +218,15 @@ if(process.argv.includes('--serve')) {
   await page.evaluate(()=>renderDashboard({timeline:[],totals:{},sources:[]}));
   assert.match(await page.locator('#an-auth-table').innerText(),/недоступны/);
   assert.match(await page.locator('#an-versions').innerText(),/Нет данных/);
+  // A new authenticated session keeps the layout after the auth cache was cleared.
+  await page.unroute('**/api/admin/session');
+  await page.reload();
+  await page.waitForFunction(()=>document.querySelector('#an-now .an-big')?.textContent==='160');
+  assert.equal(await activityToggle.getAttribute('aria-expanded'),'false');
+  await activityToggle.click();
+  assert.equal(await activityDays.isVisible(),true);
+  await page.reload();
+  assert.equal(await activityToggle.getAttribute('aria-expanded'),'true');
   assert.deepEqual(errors,[]);
  } finally {await browser.close();await app.close();}
 });

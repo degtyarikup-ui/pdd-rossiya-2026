@@ -104,7 +104,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <div class="an-legend"><span style="display:inline-flex;align-items:center;gap:6px"><i class="an-dot" style="background:#0574F8"></i><svg viewBox="0 0 24 24" width="14" height="14" fill="#3DDC84" style="display:inline-block;vertical-align:middle"><path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-4.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48C13.72 2.24 12.88 2 12 2c-.88 0-1.72.24-2.64.63L7.88 1.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.3 1.3C6.75 4.3 5.5 6.01 5.2 8h13.6c-.3-1.99-1.55-3.7-3.27-4.84zM9 6c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>Android</span><span style="display:inline-flex;align-items:center;gap:6px"><i class="an-dot" style="background:#22a875"></i><svg viewBox="0 0 250 307" width="14" height="14" fill="currentColor" style="display:inline-block;vertical-align:middle"><path d="M208.209 162.951C208.36 151.207 211.48 139.691 217.277 129.477C223.075 119.262 231.362 110.68 241.367 104.528C235.011 95.4506 226.626 87.9799 216.877 82.7096C207.128 77.4394 196.285 74.5149 185.209 74.1684C161.581 71.6882 138.674 88.307 126.634 88.307C114.36 88.307 95.8222 74.4146 75.8596 74.8253C62.9473 75.2425 50.3632 78.9973 39.3335 85.7239C28.3038 92.4505 19.2046 101.92 12.9224 113.208C-14.2903 160.323 6.00794 229.566 32.0755 267.65C45.1176 286.298 60.3602 307.129 80.3047 306.391C99.8216 305.581 107.111 293.945 130.669 293.945C154.009 293.945 160.848 306.391 181.197 305.921C202.14 305.581 215.335 287.189 227.919 268.364C237.29 255.076 244.501 240.39 249.285 224.85C237.117 219.704 226.734 211.091 219.43 200.083C212.126 189.076 208.223 176.161 208.209 162.951Z"/><path d="M169.775 49.1155C181.194 35.4077 186.819 17.7887 185.457 0C168.012 1.8323 151.897 10.17 140.324 23.3519C134.666 29.7916 130.332 37.2833 127.571 45.3989C124.809 53.5145 123.675 62.0947 124.231 70.649C132.957 70.7389 141.59 68.8476 149.479 65.1176C157.368 61.3877 164.307 55.9163 169.775 49.1155Z"/></svg>iOS</span></div>
   <div class="an-chart" id="an-activity-chart"></div>
   <div class="an-caption" id="an-activity-caption"></div>
-  <details class="an-day-details"><summary>Данные по дням</summary><div class="an-table-wrap" id="an-activity-table"></div></details>
+  <details class="an-day-details" id="an-details-activity-days"><summary>Данные по дням</summary><div class="an-table-wrap" id="an-activity-table"></div></details>
   </div>
  </div>
  <div class="an-card an-chart-card">
@@ -125,7 +125,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <summary><span>Динамика по дням</span><span class="an-caption" id="an-usage-caption"></span></summary>
   <div class="an-usage-controls"><select class="an-search" id="an-usage-feature" aria-label="Режим для динамики"></select><div class="an-legend"><span><i class="an-dot" style="background:#0574F8"></i>Запуски</span><span><i class="an-dot" style="background:#22a875"></i>Активные установки за день</span></div></div>
   <div class="an-chart" id="an-usage-chart"></div>
-  <details class="an-day-details"><summary>Таблица значений</summary><div class="an-table-wrap" id="an-usage-days"></div></details>
+  <details class="an-day-details" id="an-details-usage-values"><summary>Таблица значений</summary><div class="an-table-wrap" id="an-usage-days"></div></details>
  </details>
   </div>
 </div>
@@ -161,8 +161,8 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <div class="an-subtitle" id="an-acquisition-scope"></div>
   <div class="an-table-wrap" id="an-acquisition-table" tabindex="0" role="region" aria-label="Источники аккаунтов и конверсия в покупку"></div>
   <div class="an-caption" id="an-acquisition-coverage"></div>
-  <details class="an-day-details"><summary>Кампании</summary><div class="an-table-wrap" id="an-acquisition-campaigns"></div></details>
-  <details class="an-day-details"><summary>Статьи, с которых пришли аккаунты</summary><div class="an-table-wrap" id="an-acquisition-articles"></div></details>
+  <details class="an-day-details" id="an-details-campaigns"><summary>Кампании</summary><div class="an-table-wrap" id="an-acquisition-campaigns"></div></details>
+  <details class="an-day-details" id="an-details-articles"><summary>Статьи, с которых пришли аккаунты</summary><div class="an-table-wrap" id="an-acquisition-articles"></div></details>
   <div class="an-caption">Источник аккаунта определяется по метке ссылки или переходу с сайта. Для органики Google Play приложение получает общую метку без разбивки на поиск и рекомендации.</div>
   </div>
 </div>
@@ -536,14 +536,38 @@ function renderDashboard(data) {
    value.textContent=count==null?'—':anNum(count);
  });
 }
+// Presentation preferences survive logout separately from cached account data.
+var anFoldPrefix='pdd-admin-fold-v1:';
+function anReadOpen(id, defaultOpen){
+ try{
+   var saved=localStorage.getItem(anFoldPrefix+id);
+   if(saved==='open' || saved==='closed')return saved==='open';
+ }catch(_){}
+ return defaultOpen;
+}
+function anSaveOpen(id, open){
+ try{localStorage.setItem(anFoldPrefix+id,open?'open':'closed');}catch(_){}
+}
+function anSetCardOpen(toggle, body, open){
+ body.hidden=!open;
+ toggle.setAttribute('aria-expanded',String(open));
+ toggle.closest('.an-card').classList.toggle('an-folded',!open);
+}
+document.querySelectorAll('#analytics-view .an-fold').forEach(function(toggle){
+ var body=document.getElementById(toggle.getAttribute('aria-controls'));
+ anSetCardOpen(toggle,body,anReadOpen(body.id,true));
+});
+document.querySelectorAll('#analytics-view details.an-day-details,#an-usage-details').forEach(function(details){
+ details.open=anReadOpen(details.id,details.open);
+ details.addEventListener('toggle',function(){anSaveOpen(details.id,details.open);});
+});
 document.getElementById('analytics-view').addEventListener('click',function(event){
  var toggle=event.target.closest('.an-fold');
  if(!toggle)return;
  var body=document.getElementById(toggle.getAttribute('aria-controls'));
  var expanding=body.hidden;
- body.hidden=!expanding;
- toggle.setAttribute('aria-expanded',String(expanding));
- toggle.closest('.an-card').classList.toggle('an-folded',!expanding);
+ anSetCardOpen(toggle,body,expanding);
+ anSaveOpen(body.id,expanding);
  if(expanding && window.__anData){
    if(body.id==='an-body-growth')anPlot(window.__anData);
    if(body.id==='an-body-activity')anRenderActivity(window.__anData);
