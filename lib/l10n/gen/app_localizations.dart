@@ -7270,179 +7270,623 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{У вас новое уведомление} few{У вас {count} новых уведомления} many{У вас {count} новых уведомлений} other{У вас {count} новых уведомления}}'**
   String inboxHomeAlert(int count);
 
-  /// No description provided for @gameParkingLocationSchool.
-  ///
-  /// In ru, this message translates to:
-  /// **'Автошкола'**
-  String get gameParkingLocationSchool;
-
-  /// No description provided for @gameParkingLocationCafe.
-  ///
-  /// In ru, this message translates to:
-  /// **'Кафе'**
-  String get gameParkingLocationCafe;
-
-  /// No description provided for @gameParkingLocationForest.
-  ///
-  /// In ru, this message translates to:
-  /// **'Лесная стоянка'**
-  String get gameParkingLocationForest;
-
-  /// No description provided for @gameParkingLocationMarket.
-  ///
-  /// In ru, this message translates to:
-  /// **'Магазин'**
-  String get gameParkingLocationMarket;
-
-  /// No description provided for @gameParkingLocationHome.
-  ///
-  /// In ru, this message translates to:
-  /// **'Дом с воротами'**
-  String get gameParkingLocationHome;
-
-  /// No description provided for @gameParkingLocationService.
-  ///
-  /// In ru, this message translates to:
-  /// **'Зона отдыха у АЗС'**
-  String get gameParkingLocationService;
-
-  /// No description provided for @gameParkingLocationOffice.
-  ///
-  /// In ru, this message translates to:
-  /// **'Офис'**
-  String get gameParkingLocationOffice;
-
-  /// No description provided for @gameParkingLocationClinic.
-  ///
-  /// In ru, this message translates to:
-  /// **'Клиника'**
-  String get gameParkingLocationClinic;
-
-  /// No description provided for @gameParkingLocationStation.
-  ///
-  /// In ru, this message translates to:
-  /// **'Вокзал'**
-  String get gameParkingLocationStation;
-
-  /// No description provided for @gameParkingLocationQuay.
-  ///
-  /// In ru, this message translates to:
-  /// **'Набережная'**
-  String get gameParkingLocationQuay;
-
-  /// No description provided for @gameParkingLocationWorkshop.
-  ///
-  /// In ru, this message translates to:
-  /// **'Автосервис'**
-  String get gameParkingLocationWorkshop;
-
-  /// No description provided for @gameParkingLocationCourtyard.
-  ///
-  /// In ru, this message translates to:
-  /// **'Жилой двор'**
-  String get gameParkingLocationCourtyard;
-
-  /// No description provided for @gameParkingLocationOldTown.
-  ///
-  /// In ru, this message translates to:
-  /// **'Старый город'**
-  String get gameParkingLocationOldTown;
-
-  /// No description provided for @gameParkingLocationHotel.
-  ///
-  /// In ru, this message translates to:
-  /// **'Отель'**
-  String get gameParkingLocationHotel;
-
-  /// No description provided for @gameParkingLocationDepot.
-  ///
-  /// In ru, this message translates to:
-  /// **'Склад'**
-  String get gameParkingLocationDepot;
-
-  /// No description provided for @gameParkingLocationDeadEnd.
-  ///
-  /// In ru, this message translates to:
-  /// **'Тупик'**
-  String get gameParkingLocationDeadEnd;
-
-  /// No description provided for @gameParkingLocationCamp.
-  ///
-  /// In ru, this message translates to:
-  /// **'Кемпинг'**
-  String get gameParkingLocationCamp;
-
-  /// No description provided for @gameParkingLocationArena.
-  ///
-  /// In ru, this message translates to:
-  /// **'Стадион'**
-  String get gameParkingLocationArena;
-
-  /// No description provided for @gameParkingLocationCovered.
-  ///
-  /// In ru, this message translates to:
-  /// **'Крытый паркинг'**
-  String get gameParkingLocationCovered;
-
-  /// No description provided for @gameParkingLocationBazaar.
-  ///
-  /// In ru, this message translates to:
-  /// **'Рынок'**
-  String get gameParkingLocationBazaar;
-
-  /// No description provided for @gameParkingLocationFindMarket.
-  ///
-  /// In ru, this message translates to:
-  /// **'Магазин: найдите место'**
-  String get gameParkingLocationFindMarket;
-
-  /// No description provided for @gameParkingLocationFindHome.
-  ///
-  /// In ru, this message translates to:
-  /// **'Квартал: найдите место'**
-  String get gameParkingLocationFindHome;
-
-  /// No description provided for @gameParkingLocationFindStation.
-  ///
-  /// In ru, this message translates to:
-  /// **'Вокзал: найдите место'**
-  String get gameParkingLocationFindStation;
-
-  /// No description provided for @gameParkingLocationFindPark.
-  ///
-  /// In ru, this message translates to:
-  /// **'Парк: найдите место'**
-  String get gameParkingLocationFindPark;
-
-  /// No description provided for @gameParkingLocationRules.
-  ///
-  /// In ru, this message translates to:
-  /// **'Город: где можно встать?'**
-  String get gameParkingLocationRules;
-
   /// No description provided for @gameParkingSearchMission.
   ///
   /// In ru, this message translates to:
-  /// **'Выберите свободное место. Подсказок нет.'**
+  /// **'Найдите свободное место и встаньте сами — без подсказок'**
   String get gameParkingSearchMission;
 
-  /// No description provided for @gameParkingReverseMission.
+  /// No description provided for @gameParkingWheelStraight.
   ///
   /// In ru, this message translates to:
-  /// **'Припаркуйтесь задним ходом.'**
-  String get gameParkingReverseMission;
+  /// **'Руль прямо'**
+  String get gameParkingWheelStraight;
 
-  /// No description provided for @gameParkingFollowMission.
+  /// No description provided for @gameParkingWheelLeft.
   ///
   /// In ru, this message translates to:
-  /// **'Следуйте направляющим до места парковки.'**
-  String get gameParkingFollowMission;
+  /// **'Руль влево до упора'**
+  String get gameParkingWheelLeft;
 
-  /// No description provided for @gameParkingTurnMission.
+  /// No description provided for @gameParkingWheelRight.
   ///
   /// In ru, this message translates to:
-  /// **'Развернитесь в три приёма и остановитесь в зоне.'**
-  String get gameParkingTurnMission;
+  /// **'Руль вправо до упора'**
+  String get gameParkingWheelRight;
+
+  /// No description provided for @gameParkingGoForward.
+  ///
+  /// In ru, this message translates to:
+  /// **'вперёд до черты'**
+  String get gameParkingGoForward;
+
+  /// No description provided for @gameParkingGoBack.
+  ///
+  /// In ru, this message translates to:
+  /// **'назад до черты'**
+  String get gameParkingGoBack;
+
+  /// No description provided for @gameParkingGoForwardFinish.
+  ///
+  /// In ru, this message translates to:
+  /// **'вперёд, стоп в рамке'**
+  String get gameParkingGoForwardFinish;
+
+  /// No description provided for @gameParkingGoBackFinish.
+  ///
+  /// In ru, this message translates to:
+  /// **'назад, стоп в рамке'**
+  String get gameParkingGoBackFinish;
+
+  /// No description provided for @gameParkingMissionHotel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подъезд к входу отеля'**
+  String get gameParkingMissionHotel;
+
+  /// No description provided for @gameParkingMissionBayForward.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезд в бокс передним ходом'**
+  String get gameParkingMissionBayForward;
+
+  /// No description provided for @gameParkingMissionAngle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Парковка «ёлочкой» передним ходом'**
+  String get gameParkingMissionAngle;
+
+  /// No description provided for @gameParkingMissionFuel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лючок бака справа: колонка должна оказаться справа'**
+  String get gameParkingMissionFuel;
+
+  /// No description provided for @gameParkingMissionWash.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезд в бокс мойки передним ходом'**
+  String get gameParkingMissionWash;
+
+  /// No description provided for @gameParkingMissionBayReverse.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезд в бокс задним ходом'**
+  String get gameParkingMissionBayReverse;
+
+  /// No description provided for @gameParkingMissionParallel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Параллельная парковка задним ходом'**
+  String get gameParkingMissionParallel;
+
+  /// No description provided for @gameParkingMissionParallelLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Одностороннее движение: параллельная парковка слева'**
+  String get gameParkingMissionParallelLeft;
+
+  /// No description provided for @gameParkingMissionGarage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезд в гараж задним ходом'**
+  String get gameParkingMissionGarage;
+
+  /// No description provided for @gameParkingMissionGate.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заезд во двор задним ходом'**
+  String get gameParkingMissionGate;
+
+  /// No description provided for @gameParkingMissionBackAngle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обратная «ёлочка»: заезд задним ходом'**
+  String get gameParkingMissionBackAngle;
+
+  /// No description provided for @gameParkingMissionCamp.
+  ///
+  /// In ru, this message translates to:
+  /// **'Задним ходом на площадку между деревьями'**
+  String get gameParkingMissionCamp;
+
+  /// No description provided for @gameParkingMissionThreePoint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разворот в три приёма'**
+  String get gameParkingMissionThreePoint;
+
+  /// No description provided for @gameParkingMissionDriveway.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разворот с заездом задом в съезд справа'**
+  String get gameParkingMissionDriveway;
+
+  /// No description provided for @gameParkingMissionTwoStep.
+  ///
+  /// In ru, this message translates to:
+  /// **'Узкий проезд: заезд передним ходом в два приёма'**
+  String get gameParkingMissionTwoStep;
+
+  /// No description provided for @gameParkingMissionColumns.
+  ///
+  /// In ru, this message translates to:
+  /// **'Задним ходом между колоннами'**
+  String get gameParkingMissionColumns;
+
+  /// No description provided for @gameParkingMissionPassage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Во двор через узкий проезд между домами'**
+  String get gameParkingMissionPassage;
+
+  /// No description provided for @gameParkingMissionExam.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экзамен: параллельная парковка по стойкам'**
+  String get gameParkingMissionExam;
+
+  /// No description provided for @gameParkingMissionExit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выезд с тесной парковки у тротуара'**
+  String get gameParkingMissionExit;
+
+  /// No description provided for @gameParkingMissionYard.
+  ///
+  /// In ru, this message translates to:
+  /// **'Найдите во дворе место, где можно встать'**
+  String get gameParkingMissionYard;
+
+  /// No description provided for @gameParkingTipHotelApproach.
+  ///
+  /// In ru, this message translates to:
+  /// **'Въезд к отелю справа — включите правый поворотник'**
+  String get gameParkingTipHotelApproach;
+
+  /// No description provided for @gameParkingTipHotelIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворачивайте во въезд, держитесь своей полосы'**
+  String get gameParkingTipHotelIn;
+
+  /// No description provided for @gameParkingTipHotelLoop.
+  ///
+  /// In ru, this message translates to:
+  /// **'Движение по кругу одностороннее — объезжайте фонтан'**
+  String get gameParkingTipHotelLoop;
+
+  /// No description provided for @gameParkingTipHotelTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворачивайте к входу: бордюр площадки будет справа'**
+  String get gameParkingTipHotelTurn;
+
+  /// No description provided for @gameParkingTipKerbGap.
+  ///
+  /// In ru, this message translates to:
+  /// **'Встаньте в 20–30 см от бордюра — пассажирам удобно выйти'**
+  String get gameParkingTipKerbGap;
+
+  /// No description provided for @gameParkingTipBayFar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Держитесь дальней от мест стороны проезда — так проще повернуть'**
+  String get gameParkingTipBayFar;
+
+  /// No description provided for @gameParkingTipBayTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Следите, чтобы левый бок не задел соседнюю машину'**
+  String get gameParkingTipBayTurn;
+
+  /// No description provided for @gameParkingTipBayStop.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выровняйте машину и остановитесь, не доезжая до бордюра'**
+  String get gameParkingTipBayStop;
+
+  /// No description provided for @gameParkingTipAngleApproach.
+  ///
+  /// In ru, this message translates to:
+  /// **'Место слева впереди — двигайтесь по середине проезда'**
+  String get gameParkingTipAngleApproach;
+
+  /// No description provided for @gameParkingTipAngleTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Под углом заехать проще: хватает одного поворота'**
+  String get gameParkingTipAngleTurn;
+
+  /// No description provided for @gameParkingTipLogStop.
+  ///
+  /// In ru, this message translates to:
+  /// **'Остановитесь, не доезжая до бревна-отбойника'**
+  String get gameParkingTipLogStop;
+
+  /// No description provided for @gameParkingTipFuelApproach.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свободна дальняя колонка у первого островка'**
+  String get gameParkingTipFuelApproach;
+
+  /// No description provided for @gameParkingTipFuelTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Островок с колонками должен остаться справа'**
+  String get gameParkingTipFuelTurn;
+
+  /// No description provided for @gameParkingTipFuelStop.
+  ///
+  /// In ru, this message translates to:
+  /// **'Остановитесь, когда колонка окажется у заднего колеса'**
+  String get gameParkingTipFuelStop;
+
+  /// No description provided for @gameParkingTipWashFar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Держитесь дальней от боксов стороны — въедете ровно'**
+  String get gameParkingTipWashFar;
+
+  /// No description provided for @gameParkingTipWashTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Машина должна выровняться до входа в бокс'**
+  String get gameParkingTipWashTurn;
+
+  /// No description provided for @gameParkingTipWashStop.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стенки рядом: въезжайте ровно и встаньте посередине'**
+  String get gameParkingTipWashStop;
+
+  /// No description provided for @gameParkingTipReversePass.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проедьте место и остановитесь у черты — оно окажется позади'**
+  String get gameParkingTipReversePass;
+
+  /// No description provided for @gameParkingTipReverseSwing.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сдавайте медленно: перед машины выносит в сторону'**
+  String get gameParkingTipReverseSwing;
+
+  /// No description provided for @gameParkingTipReverseIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Машина выровнялась — сдавайте прямо до рамки'**
+  String get gameParkingTipReverseIn;
+
+  /// No description provided for @gameParkingTipParallelPass.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезжайте в 0,5–1 м от машин, встаньте рядом с передней'**
+  String get gameParkingTipParallelPass;
+
+  /// No description provided for @gameParkingTipParallel45.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сдавайте, пока машина не встанет под углом около 45°'**
+  String get gameParkingTipParallel45;
+
+  /// No description provided for @gameParkingTipParallelAlign.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выравнивайтесь вдоль бордюра, следите за передним углом'**
+  String get gameParkingTipParallelAlign;
+
+  /// No description provided for @gameParkingTipParallelCentre.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подайте вперёд, чтобы встать посередине места'**
+  String get gameParkingTipParallelCentre;
+
+  /// No description provided for @gameParkingTipGaragePass.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проедьте открытый бокс и остановитесь у черты'**
+  String get gameParkingTipGaragePass;
+
+  /// No description provided for @gameParkingTipGarageIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'В воротах проверяйте оба зеркала: до стен одинаково'**
+  String get gameParkingTipGarageIn;
+
+  /// No description provided for @gameParkingTipGatePass.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проедьте ворота и остановитесь у черты'**
+  String get gameParkingTipGatePass;
+
+  /// No description provided for @gameParkingTipGateSwing.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перед машины выносит к другой стороне улицы — следите за ним'**
+  String get gameParkingTipGateSwing;
+
+  /// No description provided for @gameParkingTipGateIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ворота проходите прямо, сверяясь с зеркалами'**
+  String get gameParkingTipGateIn;
+
+  /// No description provided for @gameParkingTipBackAnglePass.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проедьте место — заезжать будем задом'**
+  String get gameParkingTipBackAnglePass;
+
+  /// No description provided for @gameParkingTipBackAngleTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Машина войдёт в место под углом — сдавайте медленно'**
+  String get gameParkingTipBackAngleTurn;
+
+  /// No description provided for @gameParkingTipBackAngleIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выезжать отсюда удобно — передом и с хорошим обзором'**
+  String get gameParkingTipBackAngleIn;
+
+  /// No description provided for @gameParkingTipCampPass.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проедьте свободную площадку и остановитесь у черты'**
+  String get gameParkingTipCampPass;
+
+  /// No description provided for @gameParkingTipCampTrees.
+  ///
+  /// In ru, this message translates to:
+  /// **'Деревья рядом — сдавайте медленно, следите за углами'**
+  String get gameParkingTipCampTrees;
+
+  /// No description provided for @gameParkingTipCampIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Багажником к лагерю — так удобнее разгружаться'**
+  String get gameParkingTipCampIn;
+
+  /// No description provided for @gameParkingTipTurnLook.
+  ///
+  /// In ru, this message translates to:
+  /// **'Убедитесь, что помех нет, и включите левый поворотник'**
+  String get gameParkingTipTurnLook;
+
+  /// No description provided for @gameParkingTipTurnFirst.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подъезжайте к бордюру, но не касайтесь его'**
+  String get gameParkingTipTurnFirst;
+
+  /// No description provided for @gameParkingTipTurnBack.
+  ///
+  /// In ru, this message translates to:
+  /// **'Назад с рулём вправо — освобождаем место для поворота'**
+  String get gameParkingTipTurnBack;
+
+  /// No description provided for @gameParkingTipTurnOut.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выезжайте на свою полосу'**
+  String get gameParkingTipTurnOut;
+
+  /// No description provided for @gameParkingTipDrivewayPass.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проедьте съезд и остановитесь у черты'**
+  String get gameParkingTipDrivewayPass;
+
+  /// No description provided for @gameParkingTipDrivewayBack.
+  ///
+  /// In ru, this message translates to:
+  /// **'Задом в съезд: потом выедете передом и с обзором'**
+  String get gameParkingTipDrivewayBack;
+
+  /// No description provided for @gameParkingTipDrivewayOut.
+  ///
+  /// In ru, this message translates to:
+  /// **'Убедитесь, что дорога свободна, и выезжайте'**
+  String get gameParkingTipDrivewayOut;
+
+  /// No description provided for @gameParkingTipDrivewayLane.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворачивайте на свою полосу, не задевая бордюр'**
+  String get gameParkingTipDrivewayLane;
+
+  /// No description provided for @gameParkingTipTwoStepApproach.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезд узкий: с одного раза в место не заехать'**
+  String get gameParkingTipTwoStepApproach;
+
+  /// No description provided for @gameParkingTipTwoStepFirst.
+  ///
+  /// In ru, this message translates to:
+  /// **'Начните поворот и остановитесь у черты, не доезжая до машин'**
+  String get gameParkingTipTwoStepFirst;
+
+  /// No description provided for @gameParkingTipTwoStepBack.
+  ///
+  /// In ru, this message translates to:
+  /// **'Немного назад с рулём вправо — машина довернёт к месту'**
+  String get gameParkingTipTwoStepBack;
+
+  /// No description provided for @gameParkingTipTwoStepAlign.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доверните — машина встанет ровно напротив места'**
+  String get gameParkingTipTwoStepAlign;
+
+  /// No description provided for @gameParkingTipColumnsPass.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проедьте место и остановитесь у черты'**
+  String get gameParkingTipColumnsPass;
+
+  /// No description provided for @gameParkingTipColumnsPrep.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезд узкий: выверните нос в сторону — зад встанет напротив места'**
+  String get gameParkingTipColumnsPrep;
+
+  /// No description provided for @gameParkingTipColumnsSwing.
+  ///
+  /// In ru, this message translates to:
+  /// **'Колонна рядом — сдавайте медленно, смотрите в зеркало'**
+  String get gameParkingTipColumnsSwing;
+
+  /// No description provided for @gameParkingTipPassageApproach.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворот налево вне перекрёстка: уступите встречным'**
+  String get gameParkingTipPassageApproach;
+
+  /// No description provided for @gameParkingTipPassageTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворачивайте так, чтобы въехать в проезд прямо'**
+  String get gameParkingTipPassageTurn;
+
+  /// No description provided for @gameParkingTipPassageStraight.
+  ///
+  /// In ru, this message translates to:
+  /// **'В проезде держите руль прямо — до стен одинаково'**
+  String get gameParkingTipPassageStraight;
+
+  /// No description provided for @gameParkingTipPassageYard.
+  ///
+  /// In ru, this message translates to:
+  /// **'Во дворе поверните направо к свободному месту'**
+  String get gameParkingTipPassageYard;
+
+  /// No description provided for @gameParkingTipExamPass.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проезжайте в 0,5–1 м от стоек и остановитесь у черты'**
+  String get gameParkingTipExamPass;
+
+  /// No description provided for @gameParkingTipExamAlign.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выравнивайтесь, не задевая стойки'**
+  String get gameParkingTipExamAlign;
+
+  /// No description provided for @gameParkingTipExitBack.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сдайте назад почти до машины сзади — больше места для выезда'**
+  String get gameParkingTipExitBack;
+
+  /// No description provided for @gameParkingTipExitTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Левый поворотник! Следите за правым передним углом'**
+  String get gameParkingTipExitTurn;
+
+  /// No description provided for @gameParkingTipExitAlign.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выравнивайтесь в своей полосе'**
+  String get gameParkingTipExitAlign;
+
+  /// No description provided for @gameParkingDisabled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Место для инвалидов: знак 6.4 с табличкой 8.17'**
+  String get gameParkingDisabled;
+
+  /// No description provided for @gameParkingCrosswalk.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ближе 5 м перед переходом стоять нельзя (п. 12.4)'**
+  String get gameParkingCrosswalk;
+
+  /// No description provided for @gameParkingDriveway.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нельзя перекрывать выезд со двора (п. 12.4)'**
+  String get gameParkingDriveway;
+
+  /// No description provided for @gameParkingSignHotel.
+  ///
+  /// In ru, this message translates to:
+  /// **'ОТЕЛЬ'**
+  String get gameParkingSignHotel;
+
+  /// No description provided for @gameParkingSignSchool.
+  ///
+  /// In ru, this message translates to:
+  /// **'АВТОШКОЛА'**
+  String get gameParkingSignSchool;
+
+  /// No description provided for @gameParkingSignMarket.
+  ///
+  /// In ru, this message translates to:
+  /// **'СУПЕРМАРКЕТ'**
+  String get gameParkingSignMarket;
+
+  /// No description provided for @gameParkingSignFuel.
+  ///
+  /// In ru, this message translates to:
+  /// **'АЗС'**
+  String get gameParkingSignFuel;
+
+  /// No description provided for @gameParkingSignShop.
+  ///
+  /// In ru, this message translates to:
+  /// **'МАГАЗИН'**
+  String get gameParkingSignShop;
+
+  /// No description provided for @gameParkingSignWash.
+  ///
+  /// In ru, this message translates to:
+  /// **'МОЙКА'**
+  String get gameParkingSignWash;
+
+  /// No description provided for @gameParkingSignOffice.
+  ///
+  /// In ru, this message translates to:
+  /// **'БИЗНЕС-ЦЕНТР'**
+  String get gameParkingSignOffice;
+
+  /// No description provided for @gameParkingSignStation.
+  ///
+  /// In ru, this message translates to:
+  /// **'ВОКЗАЛ'**
+  String get gameParkingSignStation;
+
+  /// No description provided for @gameParkingSignCafe.
+  ///
+  /// In ru, this message translates to:
+  /// **'КАФЕ'**
+  String get gameParkingSignCafe;
+
+  /// No description provided for @gameParkingSignExam.
+  ///
+  /// In ru, this message translates to:
+  /// **'АВТОДРОМ'**
+  String get gameParkingSignExam;
+
+  /// No description provided for @gameParkingSignExit.
+  ///
+  /// In ru, this message translates to:
+  /// **'ВЫХОД'**
+  String get gameParkingSignExit;
+
+  /// No description provided for @gameParkingSignMall.
+  ///
+  /// In ru, this message translates to:
+  /// **'ТОРГОВЫЙ ЦЕНТР'**
+  String get gameParkingSignMall;
+
+  /// No description provided for @gameParkingSignSchoolBuilding.
+  ///
+  /// In ru, this message translates to:
+  /// **'ШКОЛА'**
+  String get gameParkingSignSchoolBuilding;
 }
 
 class _AppLocalizationsDelegate

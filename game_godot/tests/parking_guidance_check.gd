@@ -166,7 +166,8 @@ func _check_manual_progress() -> void:
 	_check("manual: gear-change stage advances once stopped", scene.segment == 1)
 	# Follow two demanding routes through the same steering ramp and pedals as a human.
 	# Unlike --auto, the steering is prepared while stopped rather than snapped to its lock.
-	for index in [REVERSE_BAY, 10, 12, 15]:   # reverse bay, garage, parallel, three-point turn
+	# Reverse bay, garage, tight parallel, three-point turn, the yard gate, nose in two moves.
+	for index in [REVERSE_BAY, 8, 14, 12, 9, 15]:
 		scene._load_level(index)
 		scene.sound.enabled = false
 		var initial_parked: int = scene.parked_count

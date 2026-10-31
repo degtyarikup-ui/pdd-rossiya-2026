@@ -1,9 +1,10 @@
-## «Парковка» mini-game on Godot: five lots/streets (scripts/parking_levels.gd), the city's
+## «Парковка» mini-game on Godot: 25 locations (scripts/parking_locations.gd), the city's
 ## pedals (scripts/controls.gd), a steering wheel that keeps its lock (scripts/parking_wheel.gd)
-## and a D/R switch, the garage car, and the way into
-## the spot drawn on the asphalt: paired rails, blue forwards and gold in reverse,
-## steering checkpoints and a short forecast of the current wheel angle. The camera looks down and keeps the car and the spot
-## in frame. A touch costs a life; the last level asks to pick the only legal space (п. 12.4).
+## and a D/R switch, the garage car, and the way into the spot drawn on the asphalt one step
+## at a time (scripts/parking_guide.gd) with the instructor's tip for each step. The white
+## forecast of the current wheel angle is shown on every level, the route only on the guided
+## ones. The camera looks down and keeps the car and the spot in frame; buildings that hide
+## the car fade. A touch costs a life; the rule levels ask to pick a legal space (п. 12.4).
 class_name Parking
 extends Node3D
 
@@ -21,6 +22,8 @@ const STEER_RATE := 6.0          # rad/s: the front wheels follow the steering w
 const KEY_TURN := 0.9            # steering wheel (full lock = 1) per second while A/D is held
 const HOLD := 0.55               # standing still in the spot this long parks the car
 const HIT_SPEED := 0.2
+const CUE_TIME := 4.5            # s a step's tip stays up
+const CUE_REPEAT := 5.0          # s standing still before the tip is shown again
 const PITCH := deg_to_rad(58.0)
 const FOV := 50.0
 
@@ -91,6 +94,8 @@ var adaptive_quality := false
 var _display_hz := 60
 var _perf := {"time": 0.0, "frames": 0, "worst": 0.0}
 var _ground := {}                # material key -> SurfaceTool while a level is built
+var _building_pools: Array[MultiMeshInstance3D] = []
+var _idle := 0.0                 # s standing still on a guided step (the tip comes back)
 
 
 func _ready() -> void:
@@ -248,8 +253,8 @@ func _start_run() -> void:
 	Host.usage_start("parking")
 
 
-## run_size different levels at random, played from the easiest: the ids grow with difficulty,
-## so the rules level, when drawn, stays last.
+## run_size different levels at random, played in id order (the ids grow with difficulty): four
+## guided tasks of different kinds and one to do alone, which therefore comes last.
 func _draw_levels() -> Array[int]:
 	var count := clampi(run_size, 1, ParkingLevels.COUNT)
 	var picked: Array[int] = []
@@ -261,22 +266,22 @@ func _draw_levels() -> Array[int]:
 	for i in ParkingLevels.COUNT:
 		if i != _forced_level: pool.append(i)
 	pool.shuffle()
-	# A normal run includes independent parking and different manoeuvre families.
-	if count >= 5 and not families.has("search"):
+	var alone := _forced_level >= ParkingLocations.GUIDED
+	if count >= 5 and not alone:
 		for i in pool:
-			if i >= 20:
+			if i >= ParkingLocations.GUIDED:
 				picked.append(i)
-				families["search"] = true
+				alone = true
 				break
 	for i in pool:
 		if picked.size() >= count: break
 		var family: String = ParkingLocations.FAMILIES[i]
-		if i not in picked and not families.has(family):
+		if i not in picked and i < ParkingLocations.GUIDED and not families.has(family):
 			picked.append(i)
 			families[family] = true
 	for i in pool:
 		if picked.size() >= count: break
-		if i not in picked: picked.append(i)
+		if i not in picked and (i < ParkingLocations.GUIDED or count > 5): picked.append(i)
 	picked.sort()
 	if _forced_level >= 0:
 		picked.erase(_forced_level)
@@ -318,7 +323,10 @@ func _load_level(index: int) -> void:
 	_refresh_hud()
 	_update_guidance(0.0)
 	_frame_camera(true)
-	ui.toast(Ui.t(level.title) + "\n" + Ui.t(level.mission), "", 4.5)
+	_idle = 0.0
+	var first := Ui.t(level.mission)
+	if level.show_path: first += "\n" + cue_text(0)
+	ui.toast(first, "", CUE_TIME + 1.5)
 
 
 func _refresh_hud() -> void:
@@ -334,13 +342,28 @@ func _mat(key: String) -> Material:
 			"asphalt": _mats[key] = sc.surface_material("asphalt", Color("#3A3D44"))
 			"pavement": _mats[key] = sc.surface_material("pavement", sc.color("sidewalk"))
 			"grass": _mats[key] = sc.surface_material("grass", sc.color("ground"))
-			"home_paving": _mats[key] = sc.surface_material("pavement", Color("#B0A792"))
-			"camp_gravel": _mats[key] = sc.surface_material("asphalt", Color("#8D8872"))
 			"milled": _mats[key] = sc.surface_material("asphalt", Color("#50535A"))
+			"gravel": _mats[key] = sc.surface_material("gravel", Color("#9A9280"))
+			"paving": _mats[key] = sc.surface_material("pavement", Color("#B4AA94"))
+			"tiles": _mats[key] = sc.surface_material("pavement", Color("#8E8F93"))
+			"concrete": _mats[key] = sc.surface_material("asphalt", Color("#8C9096"))
+			"dirt": _mats[key] = sc.surface_material("dirt", Color("#8A7556"))
+			"meadow": _mats[key] = sc.surface_material("grass", sc.color("ground").lightened(0.12))
+			"water":
+				var w := StandardMaterial3D.new()
+				w.albedo_color = Color("#4F8796")
+				w.roughness = 0.15
+				w.metallic = 0.1
+				_mats[key] = w
 			_:
 				var m := StandardMaterial3D.new()
-				m.albedo_color = Color(key)
+				var colour := Color(key)
+				m.albedo_color = colour
 				m.roughness = 0.9
+				if colour.a < 0.99:
+					# Canopies and roofs: light panels the manoeuvre stays visible through.
+					m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					m.roughness = 0.4
 				_mats[key] = m
 	return _mats[key]
 
@@ -374,7 +397,8 @@ func _flush_ground() -> void:
 			mat = mat.duplicate()
 			(mat as StandardMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
 		node.material_override = mat
-		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if solid or key == "pavement" else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var glass := solid and Color(key.trim_prefix("solid:")).a < 0.99
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if (solid and not glass) or key == "pavement" else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root3d.add_child(node)
 	_ground.clear()
 
@@ -382,9 +406,19 @@ func _flush_ground() -> void:
 func _build_ground() -> void:
 	_ground.clear()
 	for b: Dictionary in level.grass: _ground_quad(b, -0.03, "grass")
-	for b: Dictionary in level.asphalt: _ground_quad(b, 0.0, level.get("surface", "asphalt"))
+	for b: Dictionary in level.asphalt: _ground_quad(b, 0.0, "asphalt")
+	# Patches lie in the order given, each a little above the last (paving on asphalt...).
+	var lift := 0.0
+	for g: Dictionary in level.ground:
+		lift += 0.0004
+		_ground_quad(g.box, (-0.02 if g.key in ["meadow", "water"] else 0.002) + lift, g.key)
 	for b: Dictionary in level.sidewalks:
-		_block(_ground_tool("pavement"), b.c, Vector2(1, 0), Vector3(b.half.x * 2.0, 0.15, b.half.y * 2.0), 0.0)
+		var f := ParkingLevels.forward(b.yaw)
+		_block(_ground_tool("pavement"), b.c, Vector2(f.y, -f.x), Vector3(b.half.x * 2.0, 0.15, b.half.y * 2.0), 0.0)
+	for post: Dictionary in level.posts:
+		_cylinder_into(_ground_tool("solid:" + str(post.colour)), post.pos, post.r, post.h, post.get("y0", 0.0),
+			post.get("r_top", -1.0), post.get("sides", 12), post.get("phase", 0.0))
+	for arrow: Dictionary in level.arrows: _paint_arrow(arrow)
 	for w: Dictionary in level.walls:
 		var b: Dictionary = w.box
 		var f := ParkingLevels.forward(b.yaw)
@@ -485,6 +519,42 @@ func _block(st: SurfaceTool, c: Vector2, dir: Vector2, size: Vector3, y0: float)
 			st.add_vertex(f[k])
 
 
+## An upright cylinder or cone (bollards, columns, tents, umbrellas) into a batched colour mesh.
+func _cylinder_into(st: SurfaceTool, c: Vector2, r: float, h: float, y0: float, r_top := -1.0, sides := 12, phase := 0.0) -> void:
+	var rt := r if r_top < 0.0 else r_top
+	for i in sides:
+		var a0 := TAU * i / sides + phase
+		var a1 := TAU * (i + 1) / sides + phase
+		var p0 := Vector3(c.x + cos(a0) * r, y0, c.y + sin(a0) * r)
+		var p1 := Vector3(c.x + cos(a1) * r, y0, c.y + sin(a1) * r)
+		var q0 := Vector3(c.x + cos(a0) * rt, y0 + h, c.y + sin(a0) * rt)
+		var q1 := Vector3(c.x + cos(a1) * rt, y0 + h, c.y + sin(a1) * rt)
+		var n := Vector3(cos((a0 + a1) * 0.5) * h, r - rt, sin((a0 + a1) * 0.5) * h).normalized()
+		for v in [p0, p1, q1, p0, q1, q0]:
+			st.set_normal(n)
+			st.add_vertex(v)
+		if rt > 0.001:
+			for v in [Vector3(c.x, y0 + h, c.y), q1, q0]:
+				st.set_normal(Vector3.UP)
+				st.add_vertex(v)
+
+
+## A painted direction arrow: a shaft and a head, on the asphalt.
+func _paint_arrow(arrow: Dictionary) -> void:
+	var f := ParkingLevels.forward(arrow.yaw)
+	var r := Vector2(f.y, -f.x)
+	var length: float = arrow.get("len", 3.0)
+	var at: Vector2 = arrow.pos
+	var colour: String = arrow.get("colour", "#F2F4F8")
+	var shaft := length * 0.62
+	_ground_quad(ParkingLevels.box(at - f * (length * 0.5 - shaft * 0.5), 0.13, shaft * 0.5, arrow.yaw), 0.012, colour)
+	var st := _ground_tool(colour)
+	var base := at - f * (length * 0.5 - shaft)
+	for p: Vector2 in [base + r * 0.45, base - r * 0.45, at + f * (length * 0.5)]:
+		st.set_normal(Vector3.UP)
+		st.add_vertex(Vector3(p.x, 0.012, p.y))
+
+
 func _paint_line(a: Vector2, b: Vector2, width: float, colour: String, dash: float) -> void:
 	var length := a.distance_to(b)
 	var dir := (b - a) / maxf(length, 0.001)
@@ -504,32 +574,56 @@ func _paint_line(a: Vector2, b: Vector2, width: float, colour: String, dash: flo
 
 func _build_props() -> void:
 	var pools := {}
+	_building_pools.clear()
 	var put := func(prop: String, at: Vector2, yaw: float, scale: Vector3, tint: Color) -> void:
 		if not pools.has(prop):
 			var mesh := Models.mesh_of("res://scenery/%s.glb" % prop)
 			if mesh == null: return
-			pools[prop] = Scenery.Pool.new(root3d, mesh, sc.material, 1, 32, true)
+			var building := prop.begins_with("buildings/")
+			pools[prop] = Scenery.Pool.new(root3d, mesh, sc.building_material if building else sc.material, 1, 64, true)
 			pools[prop].begin(0)
+			if building:
+				# Houses between the camera and the car fade, like in the city.
+				sc.register_building_pool(pools[prop].node)
+				_building_pools.append(pools[prop].node)
 		tint.a = 1.0 if sc.season.precipitation == "snow" else 0.0
 		pools[prop].put(0, Transform3D(Basis(Vector3.UP, yaw).scaled(scale), Vector3(at.x, 0.0, at.y)), tint)
+	# Foliage takes the season's colours: green pines all year, the canopy and birches by season.
 	var canopy: Array = sc.season.canopy
+	var tree_tint := func(kind: String, i: int) -> Color:
+		match kind:
+			"trees/pine_0": return sc.color("pine", i)
+			"trees/birch_0": return sc.color("birch")
+			_: return Color(canopy[i % canopy.size()])
 	var i := 0
 	for t: Vector2 in level.trees:
 		var kind := "trees/birch_0" if i % 3 == 1 else "trees/round_0"
-		put.call(kind, t, i * 1.7, Vector3.ONE * 1.05, sc.color("birch") if kind == "trees/birch_0" else Color(canopy[i % canopy.size()]))
+		put.call(kind, t, i * 1.7, Vector3.ONE * 1.05, tree_tint.call(kind, i))
 		i += 1
+	for t: Vector2 in level.pines:
+		put.call("trees/pine_0", t, i * 1.3, Vector3.ONE * (0.95 + 0.25 * fmod(i * 0.37, 1.0)), tree_tint.call("trees/pine_0", i))
+		i += 1
+	for b: Dictionary in level.bushes: put.call("street/bush", b.pos, b.yaw, Vector3.ONE, Color(canopy[0]) if sc.season.precipitation != "snow" else Color.WHITE)
 	for l: Vector2 in level.lamps: put.call("street/lamp", l, 0.0, Vector3.ONE, Color.WHITE)
-	for b: Dictionary in level.buildings: put.call(b.prop, b.pos, b.yaw, Vector3.ONE, Color.WHITE)
+	for b: Dictionary in level.buildings:
+		var prop: String = b.prop
+		put.call(prop, b.pos, b.yaw, Vector3.ONE, tree_tint.call(prop, i) if prop.begins_with("trees/") else Color.WHITE)
+		i += 1
 	for p in pools.values(): p.finish(0)
-	for entry: Dictionary in level.get("labels", []):
+	for entry: Dictionary in level.labels:
 		var label := Label3D.new()
-		label.text = Ui.t(entry.key)
-		label.font = Ui.font(700)
-		label.font_size = 48
-		label.pixel_size = minf(0.012, float(entry.width) / maxf(1, label.font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 48).x))
+		label.text = Ui.t(entry.key) if entry.has("key") else str(entry.text)
+		label.font = Ui.font(800)
+		label.font_size = 64
+		label.modulate = Color(entry.get("colour", "#FFFFFF"))
+		var wide := label.font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 64).x
+		label.pixel_size = minf(float(entry.get("height", 0.9)) / 64.0, float(entry.width) / maxf(1.0, wide))
 		label.outline_size = 0
 		label.position = entry.pos
+		label.rotation.y = float(entry.get("yaw", 0.0))
+		if entry.get("flat", false): label.rotation.x = -PI / 2.0
 		label.no_depth_test = false
+		label.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root3d.add_child(label)
 	for s: Dictionary in level.signs:
 		var pivot := Node3D.new()
@@ -548,7 +642,8 @@ func _build_props() -> void:
 		var tex := SignFace.texture(s.code)
 		if tex != null:
 			# Larger than life: the camera looks from far above.
-			var face := SignFace.picture(tex, Vector3(0, 2.6, 0.06), SignFace.fit(tex, Vector2(1.3, 1.3)))
+			var size: float = s.get("size", 1.3)
+			var face := SignFace.picture(tex, Vector3(0, s.get("y", 2.6), 0.06), SignFace.fit(tex, Vector2(size, size)))
 			face.rotation.x = -0.6   # tilted back towards the camera above
 			pivot.add_child(face)
 	for parked: Dictionary in level.cars:
@@ -635,7 +730,26 @@ func _build_way() -> void:
 func _paint_way() -> void:
 	if not is_instance_valid(guide): return
 	var driving := done_timer < 0.0 and not is_game_over
-	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, 0.0, driving and not level.get("search", false))
+	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, 0.0, driving)
+
+
+## The instructor's words for a step: what to do with the wheel and the pedals, then the step's
+## own tip (when to turn, what to watch). The first line is built from the step itself, so it is
+## right for every car of the garage.
+func cue_text(index: int) -> String:
+	if way.is_empty(): return ""
+	var seg: Dictionary = way[clampi(index, 0, way.size() - 1)]
+	var wheel: String = ["gameParkingWheelRight", "gameParkingWheelStraight", "gameParkingWheelLeft"][int(seg.steer) + 1]
+	var move := "gameParkingGoForward" if int(seg.gear) > 0 else "gameParkingGoBack"
+	if index >= way.size() - 1: move += "Finish"
+	var text := "%s — %s" % [Ui.t(wheel), Ui.t(move)]
+	if str(seg.get("cue", "")) != "": text += "\n" + Ui.t(seg.cue)
+	return text
+
+
+func _show_cue() -> void:
+	if not level.show_path or done_timer >= 0.0 or is_game_over: return
+	ui.toast(cue_text(segment), "", CUE_TIME)
 
 
 ## Progress follows the rear axle used by the driving model, including manual corrections.
@@ -662,7 +776,7 @@ func _update_guidance(delta: float) -> void:
 	var progress := _segment_progress()
 	_guide_index = progress.index
 	var driving := done_timer < 0.0 and not is_game_over
-	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, delta, driving and not level.get("search", false))
+	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, delta, driving)
 
 
 # --- Driving ---
@@ -696,7 +810,15 @@ func _process(delta: float) -> void:
 	_place_car()
 	_update_guidance(delta)
 	_frame_camera(false, delta)
+	_update_occluders(delta)
 	_update_frame_budget(delta)
+	if _ready_for_play and not is_game_over and done_timer < 0.0 and level.show_path and absf(speed) < 0.05:
+		_idle += delta
+		if _idle >= CUE_REPEAT:
+			_idle = 0.0
+			_show_cue()
+	else:
+		_idle = 0.0
 	sound.speed = absf(speed) * 2.5
 	sound.player_kind = "suv" if vehicle_id in ["suv", "pickup", "cyber"] else "car"
 
@@ -778,6 +900,7 @@ func _advance_segment() -> void:
 	_auto_travel = 0.0
 	_paint_way()
 	_refresh_hud()
+	_show_cue()
 
 
 func _check_spots(dt: float, still: bool) -> void:
@@ -937,6 +1060,16 @@ func _frame_camera(snap: bool, delta := 0.0) -> void:
 	camera.v_offset = optical_centre.y * 2.0 * tan(vfov * 0.5) * _cam_dist
 	camera.h_offset = -optical_centre.x * 2.0 * tan(hfov * 0.5) * _cam_dist
 
+
+
+## Buildings between the camera and the car or its space turn translucent (Scenery's occluders).
+func _update_occluders(delta: float) -> void:
+	if _building_pools.is_empty() or not is_instance_valid(car): return
+	var targets: Array[Vector3] = [car.global_position + Vector3(0, 0.8, 0)]
+	for c in ParkingLevels.corners(ParkingLevels.car_box(pose, geo)): targets.append(Vector3(c.x, 0.5, c.y))
+	var t: Dictionary = level.target
+	targets.append(Vector3(t.c.x, 0.3, t.c.y))
+	sc.update_occluders(camera, targets, delta)
 
 
 # --- End, summary, exit ---

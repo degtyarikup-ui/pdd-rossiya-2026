@@ -4337,91 +4337,375 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get gameParkingLocationSchool => 'Driving school';
+  String get gameParkingSearchMission =>
+      'Find a free space and park on your own — no hints';
 
   @override
-  String get gameParkingLocationCafe => 'Cafe';
+  String get gameParkingWheelStraight => 'Wheel straight';
 
   @override
-  String get gameParkingLocationForest => 'Forest parking';
+  String get gameParkingWheelLeft => 'Full lock left';
 
   @override
-  String get gameParkingLocationMarket => 'Shop';
+  String get gameParkingWheelRight => 'Full lock right';
 
   @override
-  String get gameParkingLocationHome => 'House with a gate';
+  String get gameParkingGoForward => 'forward to the line';
 
   @override
-  String get gameParkingLocationService => 'Service area';
+  String get gameParkingGoBack => 'back to the line';
 
   @override
-  String get gameParkingLocationOffice => 'Office';
+  String get gameParkingGoForwardFinish => 'forward, stop in the frame';
 
   @override
-  String get gameParkingLocationClinic => 'Clinic';
+  String get gameParkingGoBackFinish => 'back, stop in the frame';
 
   @override
-  String get gameParkingLocationStation => 'Station';
+  String get gameParkingMissionHotel => 'Drive up to the hotel entrance';
 
   @override
-  String get gameParkingLocationQuay => 'Quay';
+  String get gameParkingMissionBayForward => 'Nose first into a bay';
 
   @override
-  String get gameParkingLocationWorkshop => 'Workshop';
+  String get gameParkingMissionAngle => 'Angled parking, nose first';
 
   @override
-  String get gameParkingLocationCourtyard => 'Residential yard';
+  String get gameParkingMissionFuel =>
+      'Filler on the right: the pump must be on your right';
 
   @override
-  String get gameParkingLocationOldTown => 'Old town';
+  String get gameParkingMissionWash => 'Nose first into a wash bay';
 
   @override
-  String get gameParkingLocationHotel => 'Hotel';
+  String get gameParkingMissionBayReverse => 'Reverse into a bay';
 
   @override
-  String get gameParkingLocationDepot => 'Depot';
+  String get gameParkingMissionParallel => 'Parallel parking in reverse';
 
   @override
-  String get gameParkingLocationDeadEnd => 'Dead end';
+  String get gameParkingMissionParallelLeft =>
+      'One-way street: parallel parking on the left';
 
   @override
-  String get gameParkingLocationCamp => 'Campsite';
+  String get gameParkingMissionGarage => 'Reverse into the garage';
 
   @override
-  String get gameParkingLocationArena => 'Stadium';
+  String get gameParkingMissionGate => 'Reverse into the yard';
 
   @override
-  String get gameParkingLocationCovered => 'Covered parking';
+  String get gameParkingMissionBackAngle => 'Reverse angled parking';
 
   @override
-  String get gameParkingLocationBazaar => 'Market';
+  String get gameParkingMissionCamp =>
+      'Reverse onto the pitch between the trees';
 
   @override
-  String get gameParkingLocationFindMarket => 'Shop: find a space';
+  String get gameParkingMissionThreePoint => 'Three-point turn';
 
   @override
-  String get gameParkingLocationFindHome => 'Residential block: find a space';
+  String get gameParkingMissionDriveway =>
+      'U-turn backing into a driveway on the right';
 
   @override
-  String get gameParkingLocationFindStation => 'Station: find a space';
+  String get gameParkingMissionTwoStep =>
+      'Narrow drive: nose first in two moves';
 
   @override
-  String get gameParkingLocationFindPark => 'Park: find a space';
+  String get gameParkingMissionColumns => 'Reverse in between the pillars';
 
   @override
-  String get gameParkingLocationRules => 'City: where can you park?';
+  String get gameParkingMissionPassage =>
+      'Into the courtyard through a narrow passage';
 
   @override
-  String get gameParkingSearchMission => 'Choose a free bay. No driving hints.';
+  String get gameParkingMissionExam =>
+      'Driving test: parallel parking between posts';
 
   @override
-  String get gameParkingReverseMission => 'Reverse into the space.';
+  String get gameParkingMissionExit => 'Pull out of a tight kerbside space';
 
   @override
-  String get gameParkingFollowMission =>
-      'Follow the guides to the parking space.';
+  String get gameParkingMissionYard =>
+      'Find a space in the yard where you may park';
 
   @override
-  String get gameParkingTurnMission =>
-      'Make a three-point turn and stop in the zone.';
+  String get gameParkingTipHotelApproach =>
+      'The hotel drive is on the right — signal right';
+
+  @override
+  String get gameParkingTipHotelIn =>
+      'Turn into the drive and keep to your lane';
+
+  @override
+  String get gameParkingTipHotelLoop =>
+      'The loop is one-way — go round the fountain';
+
+  @override
+  String get gameParkingTipHotelTurn =>
+      'Turn towards the doors: the platform kerb will be on your right';
+
+  @override
+  String get gameParkingTipKerbGap =>
+      'Stop 20–30 cm from the kerb so passengers can step out';
+
+  @override
+  String get gameParkingTipBayFar =>
+      'Keep to the far side of the aisle — the turn is easier';
+
+  @override
+  String get gameParkingTipBayTurn =>
+      'Watch your left side clears the car next to the space';
+
+  @override
+  String get gameParkingTipBayStop =>
+      'Straighten up and stop short of the kerb';
+
+  @override
+  String get gameParkingTipAngleApproach =>
+      'The space is ahead on the left — keep to the middle of the aisle';
+
+  @override
+  String get gameParkingTipAngleTurn =>
+      'Angled spaces are easy: one turn is enough';
+
+  @override
+  String get gameParkingTipLogStop => 'Stop before the log wheel stop';
+
+  @override
+  String get gameParkingTipFuelApproach =>
+      'The far pump at the first island is free';
+
+  @override
+  String get gameParkingTipFuelTurn => 'Keep the pump island on your right';
+
+  @override
+  String get gameParkingTipFuelStop =>
+      'Stop when the pump is level with your rear wheel';
+
+  @override
+  String get gameParkingTipWashFar =>
+      'Keep away from the bays — you will enter straight';
+
+  @override
+  String get gameParkingTipWashTurn => 'Be straight before you reach the bay';
+
+  @override
+  String get gameParkingTipWashStop =>
+      'Walls are close: drive in straight and stop in the middle';
+
+  @override
+  String get gameParkingTipReversePass =>
+      'Drive past the space and stop at the line — it will be behind you';
+
+  @override
+  String get gameParkingTipReverseSwing =>
+      'Reverse slowly: the front swings out';
+
+  @override
+  String get gameParkingTipReverseIn =>
+      'The car is straight — back up straight into the frame';
+
+  @override
+  String get gameParkingTipParallelPass =>
+      'Pass 0.5–1 m from the cars and stop level with the front one';
+
+  @override
+  String get gameParkingTipParallel45 =>
+      'Reverse until the car is at about 45°';
+
+  @override
+  String get gameParkingTipParallelAlign =>
+      'Straighten along the kerb, watch the front corner';
+
+  @override
+  String get gameParkingTipParallelCentre =>
+      'Pull forward to stand in the middle of the space';
+
+  @override
+  String get gameParkingTipGaragePass =>
+      'Drive past the open garage and stop at the line';
+
+  @override
+  String get gameParkingTipGarageIn =>
+      'In the doorway check both mirrors: equal room each side';
+
+  @override
+  String get gameParkingTipGatePass =>
+      'Drive past the gate and stop at the line';
+
+  @override
+  String get gameParkingTipGateSwing =>
+      'The front swings towards the far side of the street — watch it';
+
+  @override
+  String get gameParkingTipGateIn =>
+      'Go through the gate straight, checking the mirrors';
+
+  @override
+  String get gameParkingTipBackAnglePass =>
+      'Drive past the space — you will reverse in';
+
+  @override
+  String get gameParkingTipBackAngleTurn =>
+      'The car goes in at an angle — reverse slowly';
+
+  @override
+  String get gameParkingTipBackAngleIn =>
+      'Leaving is easy — nose first with a clear view';
+
+  @override
+  String get gameParkingTipCampPass =>
+      'Drive past the free pitch and stop at the line';
+
+  @override
+  String get gameParkingTipCampTrees =>
+      'Trees are close — reverse slowly, watch the corners';
+
+  @override
+  String get gameParkingTipCampIn => 'Boot towards the camp — easier to unload';
+
+  @override
+  String get gameParkingTipTurnLook =>
+      'Make sure the road is clear and signal left';
+
+  @override
+  String get gameParkingTipTurnFirst =>
+      'Drive up to the kerb without touching it';
+
+  @override
+  String get gameParkingTipTurnBack =>
+      'Back with right lock to make room for the turn';
+
+  @override
+  String get gameParkingTipTurnOut => 'Pull out into your lane';
+
+  @override
+  String get gameParkingTipDrivewayPass =>
+      'Drive past the driveway and stop at the line';
+
+  @override
+  String get gameParkingTipDrivewayBack =>
+      'Back into the driveway: you will pull out nose first, seeing the road';
+
+  @override
+  String get gameParkingTipDrivewayOut =>
+      'Make sure the road is clear and pull out';
+
+  @override
+  String get gameParkingTipDrivewayLane =>
+      'Turn into your lane without touching the kerb';
+
+  @override
+  String get gameParkingTipTwoStepApproach =>
+      'The drive is narrow: one go is not enough';
+
+  @override
+  String get gameParkingTipTwoStepFirst =>
+      'Start turning and stop at the line, short of the cars';
+
+  @override
+  String get gameParkingTipTwoStepBack =>
+      'A little back with right lock — the car turns towards the space';
+
+  @override
+  String get gameParkingTipTwoStepAlign =>
+      'Finish the turn — the car lines up with the space';
+
+  @override
+  String get gameParkingTipColumnsPass =>
+      'Drive past the space and stop at the line';
+
+  @override
+  String get gameParkingTipColumnsPrep =>
+      'The aisle is narrow: swing the nose away so the rear faces the space';
+
+  @override
+  String get gameParkingTipColumnsSwing =>
+      'A pillar is close — reverse slowly, check the mirror';
+
+  @override
+  String get gameParkingTipPassageApproach =>
+      'Turning left off the road: give way to oncoming traffic';
+
+  @override
+  String get gameParkingTipPassageTurn =>
+      'Turn so you enter the passage straight';
+
+  @override
+  String get gameParkingTipPassageStraight =>
+      'Keep the wheel straight in the passage — equal room each side';
+
+  @override
+  String get gameParkingTipPassageYard =>
+      'In the courtyard turn right to the free space';
+
+  @override
+  String get gameParkingTipExamPass =>
+      'Pass 0.5–1 m from the posts and stop at the line';
+
+  @override
+  String get gameParkingTipExamAlign =>
+      'Straighten up without touching the posts';
+
+  @override
+  String get gameParkingTipExitBack =>
+      'Back up close to the car behind — more room to pull out';
+
+  @override
+  String get gameParkingTipExitTurn =>
+      'Signal left! Watch the right front corner';
+
+  @override
+  String get gameParkingTipExitAlign => 'Straighten up in your lane';
+
+  @override
+  String get gameParkingDisabled =>
+      'A disabled space: sign 6.4 with plate 8.17';
+
+  @override
+  String get gameParkingCrosswalk =>
+      'No parking within 5 m before a crossing (12.4)';
+
+  @override
+  String get gameParkingDriveway => 'Do not block a driveway (12.4)';
+
+  @override
+  String get gameParkingSignHotel => 'HOTEL';
+
+  @override
+  String get gameParkingSignSchool => 'DRIVING SCHOOL';
+
+  @override
+  String get gameParkingSignMarket => 'SUPERMARKET';
+
+  @override
+  String get gameParkingSignFuel => 'FUEL';
+
+  @override
+  String get gameParkingSignShop => 'SHOP';
+
+  @override
+  String get gameParkingSignWash => 'CAR WASH';
+
+  @override
+  String get gameParkingSignOffice => 'BUSINESS CENTRE';
+
+  @override
+  String get gameParkingSignStation => 'STATION';
+
+  @override
+  String get gameParkingSignCafe => 'CAFÉ';
+
+  @override
+  String get gameParkingSignExam => 'TEST GROUND';
+
+  @override
+  String get gameParkingSignExit => 'EXIT';
+
+  @override
+  String get gameParkingSignMall => 'SHOPPING CENTRE';
+
+  @override
+  String get gameParkingSignSchoolBuilding => 'SCHOOL';
 }

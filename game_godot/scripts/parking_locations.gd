@@ -1,315 +1,1291 @@
-## Authored locations. Geometry is in metres, shared props come from the city's scenery.
-## All new architecture uses Parking's colour-batched meshes: no extra texture downloads.
+## «Парковка»: the 25 locations. Each is one place with its own task, taught the way a driving
+## school teaches it: the shown way is the shortest correct one (scripts/parking_levels.gd plays
+## the drive out of the space backwards), and every step carries the instructor's tip. Every
+## location is closed by something the driver can see — kerbs, fences, walls, barriers,
+## roadworks — and its surroundings go on beyond it. 1–20 show the way, 21–25 are done alone
+## (only the forecast of the wheel is drawn); 24–25 ask where parking is allowed at all.
+## Ground coordinates are metres: x to the east, z to the south (the camera looks north).
 class_name ParkingLocations
 extends RefCounted
 
 const P = preload("res://scripts/parking_levels.gd")
-const NAMES := ["School", "Cafe", "Forest", "Market", "Home", "Service", "Office", "Clinic", "Station", "Quay", "Workshop", "Courtyard", "OldTown", "Hotel", "Depot", "DeadEnd", "Camp", "Arena", "Covered", "Bazaar", "FindMarket", "FindHome", "FindStation", "FindPark", "Rules"]
-const FAMILIES := ["bay", "angle", "angle", "approach", "approach", "approach", "reverse", "reverse", "angle", "parallel", "garage", "approach", "parallel", "approach", "reverse", "turn", "approach", "reverse", "reverse", "reverse", "search", "search", "search", "search", "search"]
+
+const IDS := ["hotel", "school", "supermarket", "fuel", "wash", "forest", "office", "quay", "garages", "house",
+	"station", "camp", "street_turn", "industrial_turn", "old_town", "courtyard", "underground", "passage",
+	"exam", "cafe_exit", "mall", "yard", "park", "school_street", "city"]
+const FAMILIES := ["pocket", "bay", "angle", "fuel", "wash", "angle", "reverse", "parallel", "garage", "gate",
+	"angle", "camp", "turn", "turn", "parallel", "bay", "reverse", "passage", "parallel", "exit",
+	"search", "search", "search", "rules", "rules"]
+const GUIDED := 20
+
+static var tune := {}            # tests and tuning probes override a location's measurements
+
+const WALL := "#E4DDD0"
+const ROOF := "#59616B"
+const GLASS := "#6E93A8"
+const DARK := "#3B4048"
+const WHITE := "#F2F4F8"
+const YELLOW := "#F2C230"
+const RED := "#D43C36"
+const WOOD := "#9C7650"
+const LOG := "#7A5A3A"
+const FENCE := "#4F6B57"
+const METAL := "#8A939C"
+
 
 static func build(index: int) -> Dictionary:
 	var l: Dictionary
-	var front := func(g: Dictionary) -> Array: return P.forward_bay_exit(g)
-	var back := [_straight(1, 2.4), _turn(1, 1, 90), _straight(-1, 7.5)]
 	match index:
-		0: l = P._lot(5, PI, front, 11, [2, 6])
-		1: l = P._angled(45, 3, [0, 1, 6, 8], 41)
-		2: l = P._angled(60, 4, [0, 2, 6, 8], 37)
-		3: l = _yard(PI, [_straight(-1, 5), _turn(-1, 1, 90), _straight(-1, 6), _turn(-1, -1, 90), _straight(-1, 5)], 3)
-		4: l = _yard(PI, [_straight(-1, 13)], 4)
-		5: l = _yard(PI, [_straight(-1, 5), _turn(-1, -1, 45), _straight(-1, 8)], 5)
-		6: l = P._lot(3, 0.0, back, 23)
-		7: l = _yard(0, [_straight(1, 4), _turn(1, -1, 90), _straight(-1, 8)], 7)
-		8: l = P._angled(60, 4, [3], 43, true)
-		9: l = P._parallel(7.4, 5)
-		10: l = P._garage(4, 1, 47)
-		11: l = _yard(PI, [_straight(-1, 6), _turn(-1, -1, 45), _straight(-1, 5), _turn(-1, 1, 45), _straight(-1, 7)], 11)
-		12: l = P._parallel(6.6, 61)
-		13: l = _yard(PI, [_straight(-1, 5), _turn(-1, 1, 90), _straight(-1, 7), _turn(-1, 1, 90), _straight(-1, 5)], 13)
-		14: l = _yard(0, [_straight(1, 5), _turn(1, 1, 90), _straight(1, 4), _straight(-1, 11)], 14)
-		15: l = P._three_point([Vector3(-1, 7.8, 0), Vector3(1, 20.5, PI)], 29)
-		16: l = _yard(PI, [_straight(-1, 5), _turn(-1, -1, 60), _straight(-1, 6), _turn(-1, 1, 30), _straight(-1, 4)], 16)
-		17: l = _yard(0, [_straight(1, 11), _turn(1, 1, 60), _straight(-1, 9)], 17)
-		18: l = _yard(0, [_straight(1, 4), _turn(1, -1, 90), _straight(-1, 6)], 18)
-		19: l = _yard(0, [_straight(1, 14), _turn(1, 1, 45), _straight(-1, 10)], 19)
-		20, 21, 22, 23: l = _search(index)
-		_: l = P._rules()
-	l.id = NAMES[index].to_snake_case()
+		0: l = _hotel()
+		1: l = _school()
+		2: l = _supermarket()
+		3: l = _fuel()
+		4: l = _wash()
+		5: l = _forest()
+		6: l = _office()
+		7: l = _quay()
+		8: l = _garages()
+		9: l = _house()
+		10: l = _station()
+		11: l = _camp()
+		12: l = _street_turn()
+		13: l = _industrial_turn()
+		14: l = _old_town()
+		15: l = _courtyard()
+		16: l = _underground()
+		17: l = _passage()
+		18: l = _exam()
+		19: l = _cafe_exit()
+		20: l = _mall()
+		21: l = _yard()
+		22: l = _park()
+		23: l = _school_street()
+		_: l = _city()
+	l.id = IDS[index]
 	l.family = FAMILIES[index]
-	l.title = "gameParkingLocation" + NAMES[index]
-	l.search = index >= 20
-	l.mission = "gameParkingSearchMission" if l.search else ("gameParkingReverseMission" if index in [6, 7, 8, 10, 14, 17, 18, 19] else "gameParkingFollowMission")
-	if index == 15: l.mission = "gameParkingTurnMission"
-	if index == 24: l.mission = "gameParkingFindSpot"
-	# A search is an assessment: no automatic route reveal even after an incorrect choice.
+	l.search = index >= GUIDED
 	if l.search: l.show_path = false
-	_dress(l, index)
-	if index in [1, 2, 8, 15]:
-		l.works.clear()
-		l.signs = l.signs.filter(func(sign: Dictionary) -> bool: return sign.code != "1.25")
-		var b: Rect2 = l.bounds
-		for z in [b.position.y - 0.5, b.end.y + 0.5]:
-			l.sidewalks.append(P.rect(b.position.x, z - 0.5, b.end.x, z + 0.5))
-			for x in [b.position.x + 1, b.end.x - 1]: _block(l, x, z, 0.3, 0.3, 0.85, "#4B565C")
-	l.surface = "home_paving" if index == 4 else ("camp_gravel" if index == 16 else "asphalt")
 	return l
 
-static func _straight(g: int, d: float) -> Dictionary:
+
+# --- Building blocks ---
+
+## Tips of the steps in the order they are driven (the exit script runs the other way).
+static func _cue(script: Array, cues: Array) -> Array:
+	var out: Array = []
+	for seg: Dictionary in script: out.append(seg.duplicate(true))
+	for i in mini(cues.size(), out.size()):
+		if str(cues[i]) != "": out[out.size() - 1 - i].cue = cues[i]
+	return out
+
+
+static func _cued(l: Dictionary, cues: Array) -> void:
+	var exit: Variant = l.exit
+	l.exit = func(geo: Dictionary) -> Array: return _cue(exit.call(geo) if exit is Callable else exit, cues)
+
+
+static func _s(g: int, d: float) -> Dictionary:
 	return {"g": g, "s": 0, "d": d}
 
-static func _turn(g: int, s: int, a: float) -> Dictionary:
+
+static func _a(g: int, s: int, a: float) -> Dictionary:
 	return {"g": g, "s": s, "a": a}
 
-## An enclosed site, with separate entrance apron, bays and pedestrian edge.
-## The authored reverse-out script gives an exact route for each wheelbase.
-static func _yard(yaw: float, script: Array, seed: int) -> Dictionary:
-	var l := P._level("yard")
-	var edge := Vector2(18, 16)
-	if seed in [3, 11, 16]: edge = Vector2(21, 21)
-	if seed in [7, 13, 14, 18]: edge.y = 10
-	if seed == 4: edge = Vector2(6, 12)
-	if seed >= 20: edge = Vector2(26, 28)
-	l.bounds = Rect2(-edge.x, -14, edge.x * 2, edge.y + 14)
-	l.asphalt.append(P.rect(-edge.x, -14, edge.x, edge.y))
-	l.grass.append(P.rect(-80, -80, 80, 80))
-	for b in [P.rect(-edge.x - 2, -16, edge.x + 2, -14), P.rect(-edge.x - 2, edge.y, edge.x + 2, edge.y + 2), P.rect(-edge.x - 2, -14, -edge.x, edge.y), P.rect(edge.x, -14, edge.x + 2, edge.y)]: l.sidewalks.append(b)
-	l.target = P.box(Vector2(0, -8), 1.75, 3, yaw)
-	l.spots.append({"box": l.target, "ok": true})
-	l.exit = script
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed * 71
-	# A house drive and loading dock do not have an anonymous row of parked cars.
-	if seed not in [4, 14, 16]:
-		for i in range(-3, 4):
-			_bay(l, Vector2(i * 3.6, -8), 0)
-			if i != 0: P._car(l, rng, Vector2(i * 3.6, -8), PI if i % 2 else 0.0)
-	else: _bay(l, Vector2(0, -8), 0)
-	if seed in [4, 14, 16]:
-		for x in [-22, 22]: _island(l, x, 4, 5, 30)
-	l.signs.append({"code": "6.4", "pos": Vector2(edge.x + 1, edge.y - 2), "yaw": PI})
-	return l
 
-static func _bay(l: Dictionary, c: Vector2, yaw: float) -> void:
-	var f := P.forward(yaw)
-	var r := Vector2(f.y, -f.x)
-	for side in [-1, 1]: P._line(l, c + r * 1.8 * side - f * 3, c + r * 1.8 * side + f * 3)
-	P._line(l, c - r * 1.8 - f * 3, c + r * 1.8 - f * 3)
+## A straight whose length puts the rear axle on x (axis 0) or z (axis 1) = value after segment `at`.
+static func _fit(g: int, axis: int, value: float, at: int, order := 0) -> Dictionary:
+	return {"g": g, "s": 0, "fit": [axis, value, at, order]}
 
-## Two double-sided parking rows with genuine choices, not four glowing quiz rectangles.
-## Free bays on both sides, all ordinary legal spaces accepted in either heading.
-static func _search(index: int) -> Dictionary:
-	var l := _yard(PI, [_straight(-1, 5), _turn(-1, 1, 90), _straight(-1, 10)], index)
-	l.lines.clear()
-	l.cars.clear()
-	l.spots.clear()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = index * 137
-	var free_sets := [[2, 7, 12], [1, 10, 14], [4, 8, 13], [3, 9, 15]]
-	var frees: Array = free_sets[index - 20]
-	for row in 2:
-		for col in 8:
-			var c := Vector2(-14 + col * 4, -8 if row == 0 else 14)
-			var yaw := PI if row == 0 else 0.0
-			if row == 1:
-				if index == 21:
-					c = Vector2(-20, -5 + col * 4)
-					yaw = -PI / 2
-				elif index == 22: c.y = 20
-				elif index == 23:
-					c = Vector2(20, -5 + col * 4)
-					yaw = PI / 2
-			_bay(l, c, yaw + PI)
-			var id := row * 8 + col
-			if id in frees:
-				var b := P.box(c, 1.75, 3, yaw)
-				l.spots.append({"box": b, "ok": true, "either_heading": true})
-			else: P._car(l, rng, c, yaw)
-	l.target = l.spots[0].box
-	# Deterministic witness route used only by QA/autopilot; never revealed to the player.
-	l.exit = func(g: Dictionary) -> Array: return P.forward_bay_exit(g)
-	l.search = true
-	l.spawn = [Vector3(-22, 4, PI / 2), Vector3(12, 7, -PI / 2), Vector3(0, 9, PI / 2), Vector3(-12, 8, PI / 2)][index - 20]
-	return l
+
+static func _ground(l: Dictionary, key: String, x0: float, z0: float, x1: float, z1: float) -> void:
+	l.ground.append({"box": P.rect(x0, z0, x1, z1), "key": key})
+
+
+static func _kerb(l: Dictionary, x0: float, z0: float, x1: float, z1: float) -> void:
+	l.sidewalks.append(P.rect(x0, z0, x1, z1))
+
 
 static func _block(l: Dictionary, x: float, z: float, w: float, d: float, h: float, colour: String, y := 0.0, solid := true) -> void:
 	P._wall(l, P.rect(x - w / 2, z - d / 2, x + w / 2, z + d / 2), h, colour, y, solid)
 
-static func _prop(l: Dictionary, prop: String, x: float, z: float, yaw := 0.0) -> void:
-	l.buildings.append({"prop": prop, "pos": Vector2(x, z), "yaw": yaw})
 
-static func _island(l: Dictionary, x: float, z: float, w: float, d: float) -> void:
-	l.sidewalks.append(P.rect(x - w / 2, z - d / 2, x + w / 2, z + d / 2))
-	_block(l, x, z, w - 0.3, d - 0.3, 0.18, "#718260")
-	l.trees.append(Vector2(x, z))
+## A thin wall from a to b (fences, barrier arms, painted kerbs of a wash bay...).
+static func _wall_ab(l: Dictionary, a: Vector2, b: Vector2, thick: float, h: float, colour: String, y := 0.0, solid := true) -> void:
+	var d := b - a
+	P._wall(l, P.box((a + b) * 0.5, thick * 0.5, d.length() * 0.5, atan2(d.x, d.y)), h, colour, y, solid)
 
-## Low facades have readable doors, glazing, fascias and awnings from the parking camera.
-## All details share eight materials across the whole location.
-static func _facade(l: Dictionary, x: float, z: float, w: float, d: float, colour: String, h := 4.0) -> void:
-	if not l.has("labels"): l.labels = []
-	var key: String = l.title
-	if l.id.begins_with("find_"): key = key.replace("Find", "")
-	l.labels.append({"key": key, "pos": Vector3(x, h - 0.55, z + d / 2 + 0.21), "width": w - 1})
-	_block(l, x, z, w, d, h, "#DED9CB")
-	_block(l, x, z, w + 0.4, d + 0.4, 0.22, "#4B565C", h, false)
-	_block(l, x, z + d / 2 + 0.08, w, 0.2, 0.65, colour, h - 0.9, false)
-	var n := int(w / 3)
+
+static func _post(l: Dictionary, x: float, z: float, r: float, h: float, colour: String, y := 0.0, solid := true) -> void:
+	l.posts.append({"pos": Vector2(x, z), "r": r, "h": h, "colour": colour, "y0": y, "solid": solid})
+
+
+static func _bollard(l: Dictionary, x: float, z: float) -> void:
+	_post(l, x, z, 0.09, 0.85, DARK)
+	_post(l, x, z, 0.1, 0.12, YELLOW, 0.6, false)
+
+
+## A closed barrier: the housing at `a`, the striped arm to `b`; the car stops at the arm.
+static func _barrier(l: Dictionary, a: Vector2, b: Vector2) -> void:
+	var d := (b - a).normalized()
+	_block(l, a.x, a.y, 0.5, 0.5, 1.1, YELLOW)
+	_block(l, a.x, a.y, 0.52, 0.52, 0.12, DARK, 1.1, false)
+	var length := a.distance_to(b) - 0.3
+	var n := maxi(2, int(length / 0.55))
 	for i in n:
-		var cx := x - w / 2 + (i + 0.5) * w / n
-		_block(l, cx, z + d / 2 + 0.12, 2.1, 0.12, 1.7, "#547B8A", 0.6, false)
-	_block(l, x, z + d / 2 + 0.2, 1.5, 0.22, 2.4, "#344B59", 0, false)
-	_block(l, x, z + d / 2 + 1.1, 4.0, 2.2, 0.15, colour, 2.8, false)
+		var p0 := a + d * (0.3 + length * i / n)
+		var p1 := a + d * (0.3 + length * (i + 1) / n)
+		_wall_ab(l, p0, p1, 0.08, 0.09, RED if i % 2 == 0 else WHITE, 0.92, false)
+	_post(l, b.x, b.y, 0.05, 0.92, DARK)
+	l.colliders.append(P.box((a + b) * 0.5, 0.12, a.distance_to(b) * 0.5, atan2(d.x, d.y)))
 
-static func _bench(l: Dictionary, x: float, z: float) -> void:
-	_block(l, x, z, 2.0, 0.55, 0.12, "#A38361", 0.5)
-	_block(l, x, z - 0.25, 2.0, 0.12, 0.5, "#A38361", 0.55, false)
-	for dx in [-0.7, 0.7]: _block(l, x + dx, z, 0.12, 0.5, 0.5, "#4B565C")
 
-static func _shelter(l: Dictionary, x: float, z: float, w: float, d: float, colour: String) -> void:
-	for dx in [-w / 2, w / 2]:
-		for dz in [-d / 2, d / 2]: _block(l, x + dx, z + dz, 0.18, 0.18, 2.6, "#4B565C")
-	_block(l, x, z, w + 0.4, d + 0.4, 0.14, colour, 2.6, false)
+static func _fence(l: Dictionary, a: Vector2, b: Vector2, colour := FENCE, h := 1.5) -> void:
+	_wall_ab(l, a, b, 0.06, h, colour)
+	var n := maxi(1, int(a.distance_to(b) / 2.5))
+	for i in n + 1:
+		var p := a.lerp(b, float(i) / n)
+		_post(l, p.x, p.y, 0.05, h + 0.1, DARK, 0.0, false)
 
-static func _dress(l: Dictionary, index: int) -> void:
-	l.buildings.clear()
+
+static func _hedge(l: Dictionary, a: Vector2, b: Vector2) -> void:
+	var d := b - a
+	var n := maxi(1, int(d.length() / 1.45))
+	for i in n:
+		l.bushes.append({"pos": a + d * (i + 0.5) / n, "yaw": atan2(d.x, d.y) + PI / 2})
+
+
+## A low building whose south face (towards the camera) has windows, a door and a sign.
+static func _building(l: Dictionary, x: float, z: float, w: float, d: float, h: float, colour := WALL,
+		sign := "", sign_colour := "#2D6FB8", door := true) -> void:
+	_block(l, x, z, w, d, h, colour)
+	_block(l, x, z, w + 0.3, d + 0.3, 0.3, ROOF, h, false)
+	var front := z + d / 2
+	var floors := maxi(1, int(h / 3.0))
+	var n := maxi(1, int(w / 2.6))
+	var middle := int(n / 2.0)
+	for f in floors:
+		for i in n:
+			var cx := x - w / 2 + (i + 0.5) * w / n
+			if f == 0 and door and i == middle: continue
+			_block(l, cx, front + 0.03, 1.5, 0.08, 1.4, GLASS, 0.9 + f * 3.0, false)
+	if door:
+		var cx := x - w / 2 + (middle + 0.5) * w / n
+		_block(l, cx, front + 0.04, 1.6, 0.1, 2.3, "#33424C", 0.0, false)
+		_block(l, cx, front + 0.7, 2.4, 1.4, 0.12, sign_colour, 2.6, false)
+	if sign != "":
+		var sw := minf(w - 1.0, 9.0)
+		_block(l, x, front + 0.08, sw, 0.12, 1.1, sign_colour, h - 1.4, false)
+		_label(l, sign, x, h - 0.85, front + 0.16, sw - 0.6, 0.75)
+
+
+static func _label(l: Dictionary, key: String, x: float, y: float, z: float, width: float, height := 0.8,
+		colour := WHITE, flat := false) -> void:
+	var entry := {"pos": Vector3(x, y, z), "width": width, "height": height, "colour": colour, "flat": flat}
+	if key.begins_with("game"): entry.key = key
+	else: entry.text = key
+	l.labels.append(entry)
+
+
+## A roof on columns; `glass` roofs let the camera see the car under them.
+static func _canopy(l: Dictionary, x0: float, z0: float, x1: float, z1: float, h: float, colour: String,
+		columns: Array, glass := "#DDE6EC59") -> void:
+	for c: Vector2 in columns: _post(l, c.x, c.y, 0.18, h, METAL)
+	P._wall(l, P.rect(x0, z0, x1, z1), 0.12, glass, h, false)
+	for edge in [[Vector2(x0, z0), Vector2(x1, z0)], [Vector2(x0, z1), Vector2(x1, z1)], [Vector2(x0, z0), Vector2(x0, z1)], [Vector2(x1, z0), Vector2(x1, z1)]]:
+		_wall_ab(l, edge[0], edge[1], 0.25, 0.55, colour, h - 0.25, false)
+
+
+static func _bench(l: Dictionary, x: float, z: float, yaw := 0.0) -> void:
+	var f := P.forward(yaw)
+	var r := Vector2(f.y, -f.x)
+	var c := Vector2(x, z)
+	_wall_ab(l, c - r * 0.9, c + r * 0.9, 0.45, 0.08, WOOD, 0.42, false)
+	_wall_ab(l, c - r * 0.9 - f * 0.22, c + r * 0.9 - f * 0.22, 0.08, 0.4, WOOD, 0.5, false)
+	for s: float in [-0.75, 0.75]:
+		var p := c + r * s
+		_block(l, p.x, p.y, 0.08, 0.4, 0.42, DARK, 0.0, false)
+
+
+static func _table(l: Dictionary, x: float, z: float) -> void:
+	_block(l, x, z, 1.8, 0.8, 0.08, WOOD, 0.72, false)
+	_block(l, x, z, 0.12, 0.12, 0.72, DARK, 0.0, false)
+	for dz: float in [-0.75, 0.75]: _block(l, x, z + dz, 1.8, 0.3, 0.06, WOOD, 0.42, false)
+
+
+static func _tent(l: Dictionary, x: float, z: float, colour: String, size := 1.5) -> void:
+	l.posts.append({"pos": Vector2(x, z), "r": size, "r_top": 0.04, "sides": 4, "phase": PI / 4, "h": 1.6,
+		"colour": colour, "y0": 0.0, "solid": true})
+
+
+static func _umbrella(l: Dictionary, x: float, z: float, colour: String) -> void:
+	_post(l, x, z, 0.04, 2.3, DARK, 0.0, false)
+	l.posts.append({"pos": Vector2(x, z), "r": 1.25, "r_top": 0.05, "sides": 8, "h": 0.45, "colour": colour, "y0": 1.9, "solid": false})
+
+
+static func _bin(l: Dictionary, x: float, z: float) -> void:
+	_post(l, x, z, 0.28, 0.9, "#4D6B58")
+
+
+## Parking bay lines: a U open towards the aisle (the bay's forward is out of it, into the bay).
+static func _bay_lines(l: Dictionary, c: Vector2, yaw: float, w := 2.7, d := 5.3, closed := true, colour := WHITE) -> void:
+	var f := P.forward(yaw)
+	var r := Vector2(f.y, -f.x)
+	for side: float in [-1.0, 1.0]: P._line(l, c + r * w * 0.5 * side - f * d * 0.5, c + r * w * 0.5 * side + f * d * 0.5, 0.12, colour)
+	if closed: P._line(l, c - r * w * 0.5 + f * d * 0.5, c + r * w * 0.5 + f * d * 0.5, 0.12, colour)
+
+
+static func _car_at(l: Dictionary, model: String, paint: String, x: float, z: float, yaw: float) -> void:
+	l.cars.append({"model": model, "paint": paint, "c": Vector2(x, z), "yaw": yaw})
+
+
+static func _target(l: Dictionary, c: Vector2, half_w: float, half_l: float, yaw: float) -> void:
+	l.target = P.box(c, half_w, half_l, yaw)
+	l.spots.append({"box": l.target, "ok": true})
+
+
+static func _trees_row(l: Dictionary, a: Vector2, b: Vector2, step: float, pines := false) -> void:
+	var n := maxi(1, int(a.distance_to(b) / step))
+	for i in n + 1:
+		var p := a.lerp(b, float(i) / n)
+		if pines: l.pines.append(p)
+		else: l.trees.append(p)
+
+
+static func _rng(seed: int) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	return rng
+
+
+# --- 1. Hotel: round the fountain to the entrance, stop by the kerb at the doors ---
+
+static func _hotel() -> Dictionary:
+	var l := P._level("hotel")
+	var z0 := -54.0
+	var z1 := 18.0
+	var drive := -8.0             # the driveway's lane: a right turn off the street
+	var kerb := 17.0              # the entrance platform's kerb, right of the car at the doors
+	l.asphalt.append(P.rect(-7.2, z0 - 60, 0.0, z1 + 60))
+	l.grass.append(P.rect(-120, -140, 120, 120))
+	P._line(l, Vector2(-3.6, z0 - 60), Vector2(-3.6, z1 + 60), 0.12, WHITE, 3.0)
+	P._works(l, Vector2(-7.2, z0), Vector2(0, z0), Vector2(0, -1), Vector2(-8.1, z0 - 1.5))
+	P._works(l, Vector2(-7.2, z1), Vector2(0, z1), Vector2(0, 1), Vector2(-8.1, z1 + 1.5))
+	_kerb(l, -11.0, z0 - 60, -7.2, z1 + 60)
+	# The one-way loop: in off the street, round the fountain, out to the street further on.
+	l.asphalt.append(P.rect(0.0, -48.0, 19.0, -4.0))
+	_kerb(l, 0.0, z0 - 60, 3.0, -48.0)
+	_kerb(l, 0.0, -44.0, 3.0, -12.0)
+	_kerb(l, 0.0, -4.0, 22.0, z1 + 60)
+	_kerb(l, 0.0, -52.0, 22.0, -48.0)
+	_kerb(l, 19.0, -48.0, 22.0, -4.0)
+	l.asphalt.append(P.rect(0.0, -48.0, 3.0, -44.0))
+	l.asphalt.append(P.rect(0.0, -12.0, 3.0, -4.0))
+	# The platform at the doors juts out to 0.3 m from a car standing in the frame.
+	_kerb(l, kerb, -34.0, 19.0, -19.0)
+	l.sidewalks.append(P.box(Vector2(18.0, -18.4), 0.7, 0.85, PI / 4))
+	l.sidewalks.append(P.box(Vector2(18.0, -34.6), 0.7, 0.85, -PI / 4))
+	# The fountain island inside the loop.
+	_kerb(l, 3.0, -40.0, 8.5, -16.5)
+	_ground(l, "meadow", 3.15, -39.85, 8.35, -16.65)
+	_post(l, 5.75, -28.0, 1.8, 0.45, "#B9B1A3")
+	_post(l, 5.75, -28.0, 1.55, 0.05, "#7FB3C4", 0.42, false)
+	_post(l, 5.75, -28.0, 0.25, 1.4, "#B9B1A3")
+	for z: float in [-36.0, -20.0]: l.bushes.append({"pos": Vector2(5.75, z), "yaw": PI / 2})
+	var c := Vector2(kerb - 0.3 - 1.07, -26.5)
+	_target(l, c, 1.3, 3.0, PI)
+	l.exit = [_fit(-1, 1, drive, 1), _a(-1, 1, 90), _fit(-1, 0, -1.75, 3, 1), _a(-1, -1, 90), _s(-1, 10.0)]
+	_cued(l, ["gameParkingTipHotelApproach", "gameParkingTipHotelIn", "gameParkingTipHotelLoop", "gameParkingTipHotelTurn", "gameParkingTipKerbGap"])
+	l.mission = "gameParkingMissionHotel"
+	for a: Array in [[Vector2(10.0, -8.0), PI / 2], [Vector2(13.0, -44.0), -PI / 2]]: l.arrows.append({"pos": a[0], "yaw": a[1], "len": 3.0})
+	l.arrows.append({"pos": Vector2(14.0, -16.0), "yaw": PI, "len": 3.0})
+	l.bounds = Rect2(-7.2, z0, 26.2, z1 - z0)
+	# The hotel: its entrance under a glass canopy, the name on the canopy, porters' trolleys.
+	_building(l, 30.0, -26.0, 16.0, 44.0, 15.0, "#E9E1D2", "", "#8A4B3C", false)
+	_block(l, 21.9, -26.5, 0.12, 6.0, 3.0, GLASS, 0.0, false)
+	_canopy(l, 13.4, -30.0, 22.0, -23.0, 3.6, "#8A4B3C", [Vector2(21.6, -29.6), Vector2(21.6, -23.4), Vector2(18.6, -29.6), Vector2(18.6, -23.4)], "#E6E9EC66")
+	_label(l, "gameParkingSignHotel", 17.7, 3.84, -26.5, 6.0, 1.3, "#8A4B3C", true)
+	for z: float in [-31.5, -21.5]: _block(l, 18.3, z, 0.9, 0.9, 0.8, "#8C8378")
+	for z: float in [-46.0, 0.0, 8.0, 14.0]: l.trees.append(Vector2(1.6, z))
+	for z: float in [-16.0, -38.0]: l.lamps.append(Vector2(1.5, z))
+	for t: Vector2 in [Vector2(20.5, -8.0), Vector2(20.5, -44.0), Vector2(11.0, 0.0), Vector2(16.0, -50.0)]: l.trees.append(t)
+	# Across the street: town houses behind their own pavement and lime trees.
+	for z in range(-100, 80, 13):
+		l.buildings.append({"prop": "buildings/block_%d" % (absi(z) % 6), "pos": Vector2(-19.5, z), "yaw": PI / 2})
+		l.trees.append(Vector2(-9.0, z + 6))
+	return l
+
+
+# --- 2. Driving school: nose first into a bay between cars ---
+
+static func _school() -> Dictionary:
+	var l := P._lot(5, PI, func(g: Dictionary) -> Array: return P.forward_bay_exit(g), 11, [2, 6])
 	l.trees.clear()
 	l.lamps.clear()
-	var r: Rect2 = l.bounds
-	var north := r.position.y - 7.0
-	var west := r.position.x - 5.0
-	var east := r.end.x + 5.0
-	# Location-specific silhouettes and landmarks, never tall foreground walls over the car.
-	match index:
-		0:
-			_facade(l, 0, north, 13, 7, "#0574F8")
-			for x in [-10, 10]: _island(l, x, -16, 3, 3)
-			for x in [-7, -3, 1, 5, 9]: _block(l, x, 12, 0.5, 0.5, 0.7, "#FFA53C")
-		1:
-			_facade(l, east + 3, 0, 9, 8, "#B6694D")
-			for z in [-6, 0, 6]: _shelter(l, east, z, 2.4, 2.4, "#EACB98")
-			for z in [-10, 10]: _bench(l, east, z)
-		2:
-			for z in range(-18, 30, 5):
-				_prop(l, "trees/pine_0", west, z)
-				_prop(l, "trees/pine_0", east + 2, z + 2)
-			_shelter(l, east, 4, 3, 5, "#A38361")
-			for z in [-4, 11]: _bench(l, east, z)
-		3, 20:
-			_facade(l, 0, north, 32, 10, "#B9463E", 4.6)
-			_shelter(l, 19, -9, 3, 6, "#B9463E")
-			for z in [-11, -9.5, -8]:
-				_block(l, 19, z, 0.8, 1.1, 0.7, "#9EAEB5", 0.3)
-				_block(l, 19, z + 0.5, 0.9, 0.12, 0.2, "#B9463E", 1.0, false)
-			_island(l, -20, 15, 4, 7)
-			if index == 3: _island(l, -5, 14, 7, 12)
-			else: _island(l, -12, 6, 3, 2)
-		4:
-			_facade(l, 0, -19, 9, 8, "#779183", 4.8)
-			for x in [-4, 4]: _block(l, x, -6, 0.35, 16, 1.0, "#A38361")
-			for x in [-10, 10]:
-				_island(l, x, -4, 6, 16)
-				_prop(l, "buildings/home_2", x * 2, -20)
-		5:
-			_facade(l, 12, north, 12, 8, "#527D7B")
-			_shelter(l, -15, -3, 8, 12, "#527D7B")
-			for z in [-7, 1]: _block(l, -15, z, 1.3, 1.0, 1.7, "#DED9CB")
-			_island(l, 12, 12, 4, 6)
-		6:
-			_prop(l, "buildings/tower_0", -8, north - 3)
-			_prop(l, "buildings/tower_2", 12, north - 4)
-			for x in [-10, 0, 10]: _island(l, x, -16, 3, 3)
-		7:
-			_facade(l, 0, north, 24, 10, "#527D7B", 5.5)
-			_island(l, -16, 4, 5, 10)
-			for x in [14, 18, 22]: _bench(l, x, -12)
-		8, 22:
-			_facade(l, east + 4, 0, 8, 26, "#8A6E60", 4.5)
-			for z in [-12, 0, 12]: _shelter(l, east, z, 2.4, 5, "#4B565C")
-			for z in range(-25, 32, 6): P._line(l, Vector2(east + 11, z), Vector2(east + 16, z), 0.3, "#A38361")
-			for x in [east + 12, east + 15]: P._line(l, Vector2(x, -32), Vector2(x, 38), 0.16, "#9EAEB5")
-		9:
-			_block(l, east + 16, 0, 28, 180, 0.02, "#548994", -0.02, false)
-			for z in range(-35, 40, 5):
-				_block(l, east - 1, z, 0.12, 0.12, 1.1, "#4B565C")
-				_bench(l, east - 2, z + 1.8)
-			_block(l, east - 1, 0, 0.1, 80, 0.1, "#4B565C", 1.05, false)
-			for z in [-20, 0, 20]: _prop(l, "buildings/home_3", west - 8, z)
-		10:
-			_facade(l, 0, north - 2, 23, 8, "#B6694D")
-			for x in [-16, 16]: _prop(l, "street/kiosk_1", x, 19)
-		11, 21:
-			for x in [-18, 0, 18]: _prop(l, "buildings/block_3", x, north - 5)
-			_island(l, 18, 7, 7, 10)
-			if index == 11:
-				_island(l, -12, 12, 18, 4)
-				_island(l, 18, 20, 8, 4)
-			for z in [4, 10]: _bench(l, 18, z)
-			_block(l, 18, 7, 4, 4, 0.12, "#EACB98", 0.18, false)
-		12:
-			for z in range(-30, 36, 12):
-				_prop(l, "buildings/home_%d" % (absi(z / 6) % 6), west - 5, z)
-				_prop(l, "buildings/home_%d" % (absi(z / 6 + 1) % 6), east + 5, z)
-			_prop(l, "street/kiosk_0", east, 5)
-		13:
-			_facade(l, 0, north - 2, 26, 12, "#A38361", 6)
-			_island(l, -7, -2.5, 3, 3)
-			l.trees.pop_back()
-			_block(l, -7, -2.5, 2.4, 2.4, 0.5, "#DED9CB")
-			_block(l, -7, -2.5, 1.9, 1.9, 0.04, "#548994", 0.5, false)
-		14:
-			_facade(l, 0, north - 1, 34, 12, "#8A6E60", 5)
-			for x in [-12, -8, 8, 12]:
-				_block(l, x, -9, 2.4, 3, 1.8, "#A38361")
-				_block(l, x, -9, 2.6, 3.2, 0.15, "#4B565C", 0.0)
-			for x in [-2.4, 2.4]: _block(l, x, -10, 0.25, 0.25, 1, "#FFA53C")
-		15:
-			for z in [-18, 0, 18]:
-				_prop(l, "buildings/home_0", west - 5, z)
-				_prop(l, "buildings/home_4", east + 5, z + 4)
-		16:
-			for x in [-18, -10, 10, 18]:
-				_prop(l, "trees/pine_0", x, -11)
-				_shelter(l, x, -17, 4, 5, "#A38361")
-			_island(l, -17, 12, 5, 10)
-			_island(l, 0, 16, 6, 7)
-			_island(l, 17, 1, 4, 7)
-			_bench(l, 8, -12)
-		17:
-			_block(l, 0, north - 9, 36, 16, 0.08, "#718260")
-			for x in [-16, 16]: _block(l, x, north - 9, 0.15, 6, 2, "#DED9CB")
-			for z in [north - 18, north + 1]:
-				for row in 3: _block(l, 0, z - row, 30, 0.8, 0.4, "#527D7B", row * 0.4, false)
-			_island(l, 12, 11, 7, 5)
-			_island(l, -12, 11, 7, 5)
-		18:
-			# Cutaway parking deck: beams mark the canopy without a roof hiding the manoeuvre.
-			for x in [-12.6, -5.4, 5.4, 12.6]:
-				for z in [-11.5, 8]:
-					_block(l, x, z, 0.55, 0.55, 3.2, "#9EAEB5")
-					_block(l, x, z, 0.58, 0.58, 0.6, "#FFA53C", 0.45, false)
-				_block(l, x, -1.75, 0.3, 20, 0.3, "#9EAEB5", 3.2, false)
-			_facade(l, -20, north, 8, 7, "#0574F8")
-		19:
-			for x in [-18, -12, -6, 0, 6, 12, 18]:
-				_prop(l, "street/kiosk_%d" % (absi(x / 6) % 3), x, north)
-				_shelter(l, x, north + 3, 4, 3, "#B6694D" if x % 12 else "#527D7B")
-			_island(l, -14, 7, 4, 10)
-			_shelter(l, 13, 11, 3, 5, "#527D7B")
-		23:
-			for x in range(-24, 25, 6):
-				_prop(l, "trees/pine_0", x, north)
-				_prop(l, "trees/birch_0", x, 33)
-			for x in [-18, 18]: _shelter(l, x, -18, 4, 5, "#A38361")
-			_island(l, 0, 23, 12, 3)
-		24:
-			for z in [-35, -10, 15]: _prop(l, "buildings/block_1", west - 7, z)
-			_shelter(l, east, 10, 2.5, 5, "#527D7B")
-			_bench(l, east, 10)
-			_prop(l, "street/kiosk_2", east, -10)
-	# Reused lamps and restrained planting; each site keeps its own skyline.
-	for z in [r.position.y + 3, r.end.y - 3]:
-		l.lamps.append(Vector2(r.position.x - 1, z))
-		l.lamps.append(Vector2(r.end.x + 1, z))
-	if index not in [2, 9, 16, 23]:
-		for z in [r.position.y, r.end.y]:
-			l.trees.append(Vector2(west, z))
-			l.trees.append(Vector2(east, z))
+	l.buildings.clear()
+	_cued(l, ["gameParkingTipBayFar", "gameParkingTipBayTurn", "gameParkingTipBayStop"])
+	l.mission = "gameParkingMissionBayForward"
+	var edge := 4.5 * P.LOT_BAY_W + 1.0
+	_entrance(l, -edge, -4.0, 1.0)
+	_building(l, 0.0, -22.0, 22.0, 9.0, 7.0, "#E8E3D8", "gameParkingSignSchool", "#2D6FB8")
+	_fence(l, Vector2(-edge - 2.4, -15.0), Vector2(edge + 2.4, -15.0))
+	_fence(l, Vector2(-edge - 2.4, 11.6), Vector2(edge + 2.4, 11.6))
+	_fence(l, Vector2(edge + 2.4, -15.0), Vector2(edge + 2.4, 11.6))
+	for x: float in [-12.0, -4.0, 4.0, 12.0]: l.trees.append(Vector2(x, 13.6))
+	for x: float in [-17.0, 17.0]: l.trees.append(Vector2(x, -19.0))
+	for x: float in [-edge - 1.0, edge + 1.0]: l.lamps.append(Vector2(x, -10.0))
+	# The school's own practice ground beyond the fence: posts and a painted box.
+	_ground(l, "concrete", 18.0, -14.0, 40.0, 10.0)
+	for z: float in [-10.0, -6.0, -2.0, 2.0, 6.0]: _post(l, 26.0, z, 0.06, 1.0, "#FF6A1A", 0.0, false)
+	for i in 4: P._line(l, Vector2(30.0 + i * 2.8, -10.0), Vector2(30.0 + i * 2.8, -4.5), 0.12, YELLOW)
+	l.buildings.append({"prop": "buildings/block_4", "pos": Vector2(-24.0, -34.0), "yaw": 0.0})
+	l.buildings.append({"prop": "buildings/block_1", "pos": Vector2(24.0, -36.0), "yaw": 0.0})
+	return l
+
+
+## The way in and out of a closed site: a gap in the kerb at x with a closed barrier.
+static func _entrance(l: Dictionary, x: float, z0: float, z1: float) -> void:
+	var outward := -1.0 if x < 0 else 1.0
+	for i in l.sidewalks.size():
+		var b: Dictionary = l.sidewalks[i]
+		var lo: float = b.c.y - b.half.y
+		var hi: float = b.c.y + b.half.y
+		if absf(b.c.x - (x + outward * b.half.x)) < 0.5 and lo < z0 and hi > z1:
+			var x0: float = b.c.x - b.half.x
+			var x1: float = b.c.x + b.half.x
+			l.sidewalks[i] = P.rect(x0, lo, x1, z0)
+			l.sidewalks.append(P.rect(x0, z1, x1, hi))
+			break
+	l.asphalt.append(P.rect(x, z0, x + outward * 16.0, z1) if outward > 0 else P.rect(x - 16.0, z0, x, z1))
+	_barrier(l, Vector2(x - outward * 0.15, z0 - 0.35), Vector2(x - outward * 0.15, z1))
+
+
+# --- 3. Supermarket: nose first into a 45° bay off a one-way aisle ---
+
+## Angled bays both sides of an eastbound one-way aisle z ∈ [0, aisle]: the north row is entered
+## turning left, the south row turning right. Returns the north row's bay centres.
+static func _herring(l: Dictionary, angle: float, x0: float, count: int, aisle: float, rng: RandomNumberGenerator,
+		free_n: Array, free_s: Array, south := true, paint := WHITE) -> Array:
+	var theta := deg_to_rad(angle)
+	var pitch := P.BAY_W / sin(theta)
+	var centres := []
+	for row in (2 if south else 1):
+		var yaw := PI / 2 + theta if row == 0 else PI / 2 - theta
+		var f := P.forward(yaw)
+		var edge := 0.0 if row == 0 else aisle
+		for i in count + 1:
+			var a := Vector2(x0 + i * pitch + (pitch * 0.5 if row == 1 else 0.0), edge)
+			P._line(l, a, a + f * P.BAY_D, 0.12, paint)
+		for i in count:
+			var c := Vector2(x0 + (i + 0.5) * pitch + (pitch * 0.5 if row == 1 else 0.0), edge) + f * P.BAY_D * 0.5
+			if row == 0: centres.append(c)
+			if i in (free_n if row == 0 else free_s): continue
+			P._car(l, rng, c + f * rng.randf_range(-0.05, 0.15), yaw)
+	return centres
+
+
+static func _supermarket() -> Dictionary:
+	var l := P._level("supermarket")
+	var rng := _rng(17)
+	var aisle := 6.4
+	var x0 := -20.0
+	var depth := P.BAY_D * sin(deg_to_rad(45.0))
+	l.asphalt.append(P.rect(-24.0, -depth - 1.0, 24.0, aisle + depth + 1.0))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	var centres := _herring(l, 45.0, x0, 10, aisle, rng, [6], [3, 8])
+	var c: Vector2 = centres[6]
+	_target(l, c, P.BAY_W * 0.5 - 0.05, P.BAY_D * 0.5, 3 * PI / 4)
+	l.exit = [_fit(-1, 1, aisle * 0.5, 1), _a(-1, 1, 45), _s(-1, 10.0)]
+	_cued(l, ["gameParkingTipAngleApproach", "gameParkingTipAngleTurn", "gameParkingTipBayStop"])
+	l.mission = "gameParkingMissionAngle"
+	# Kerbs: the store's pavement north, a planted verge south, islands at the row ends.
+	_kerb(l, -26.0, -depth - 6.0, 26.0, -depth - 1.0)
+	_kerb(l, -26.0, aisle + depth + 1.0, 26.0, aisle + depth + 4.0)
+	for x: float in [-26.0, 24.0]:
+		_kerb(l, x, -depth - 1.0, x + 2.0, -0.4)
+		_kerb(l, x, aisle + 0.4, x + 2.0, aisle + depth + 1.0)
+	for row in [[-depth - 1.0, -0.4], [aisle + 0.4, aisle + depth + 1.0]]:
+		for x: float in [-25.0, 25.0]:
+			l.bushes.append({"pos": Vector2(x, (row[0] + row[1]) * 0.5), "yaw": PI / 2})
+	for x: float in [-26.0, 24.0]: l.asphalt.append(P.rect(x, -0.4, x + 2.0, aisle + 0.4))
+	_barrier(l, Vector2(-25.6, -0.4), Vector2(-25.6, aisle + 0.4))
+	_barrier(l, Vector2(25.6, aisle + 0.4), Vector2(25.6, -0.4))
+	for x: float in [-12.0, 2.0, 16.0]: l.arrows.append({"pos": Vector2(x, aisle * 0.5), "yaw": PI / 2, "len": 3.2})
+	l.bounds = Rect2(-25.6, -depth - 1.0, 51.2, aisle + depth * 2.0 + 2.0)
+	# The store: glass front, the entrance in the middle, trolleys, benches.
+	var front := -depth - 6.0
+	_building(l, 0.0, front - 7.0, 46.0, 14.0, 7.5, "#ECE6DA", "gameParkingSignMarket", "#D9473B")
+	_block(l, 0.0, front + 0.06, 12.0, 0.12, 2.8, GLASS, 0.0, false)
+	_canopy(l, -10.0, front - 0.2, -4.0, front + 3.0, 2.6, "#D9473B", [Vector2(-9.8, front + 2.8), Vector2(-4.2, front + 2.8)], "#D9473BCC")
+	for i in 5: _block(l, -9.0 + i * 1.0, front + 1.6, 0.6, 2.4, 1.0, METAL, 0.0, false)
+	for x: float in [6.0, 12.0]: _bench(l, x, front + 1.6)
+	for x: float in [-18.0, -3.0, 9.0, 20.0]: _bollard(l, x, -depth - 1.6)
+	for x: float in [-20.0, -8.0, 4.0, 16.0]:
+		l.trees.append(Vector2(x, aisle + depth + 6.5))
+		l.lamps.append(Vector2(x + 6.0, aisle + depth + 2.2))
+	_hedge(l, Vector2(-26.0, aisle + depth + 4.6), Vector2(26.0, aisle + depth + 4.6))
+	l.asphalt.append(P.rect(-60.0, aisle + depth + 9.0, 60.0, aisle + depth + 16.0))
+	P._line(l, Vector2(-60.0, aisle + depth + 12.5), Vector2(60.0, aisle + depth + 12.5), 0.12, WHITE, 3.0)
+	for x: float in [-40.0, 40.0]: l.buildings.append({"prop": "buildings/block_%d" % (3 if x < 0 else 5), "pos": Vector2(x, -24.0), "yaw": 0.0})
+	return l
+
+
+# --- 4. Fuel station: up to the pump with the filler on its side ---
+
+static func _fuel() -> Dictionary:
+	var l := P._level("fuel")
+	var lane := -10.2            # the free lane north of island A; the filler is on the car's right
+	l.asphalt.append(P.rect(-8.0, -90.0, -1.0, 80.0))
+	l.asphalt.append(P.rect(-1.0, -27.0, 22.0, 4.0))
+	l.grass.append(P.rect(-120, -140, 120, 120))
+	P._line(l, Vector2(-4.5, -90), Vector2(-4.5, 80), 0.12, WHITE, 3.0)
+	P._works(l, Vector2(-8.0, -32.0), Vector2(-1.0, -32.0), Vector2(0, -1), Vector2(-0.1, -33.5))
+	P._works(l, Vector2(-8.0, 12.0), Vector2(-1.0, 12.0), Vector2(0, 1), Vector2(-0.1, 13.5))
+	_kerb(l, -11.0, -90.0, -8.0, 80.0)
+	# The road's east kerb opens for the entry (south) and the exit (north).
+	_kerb(l, -1.0, -90.0, 2.0, -27.0)
+	_kerb(l, -1.0, -21.0, 2.0, -15.0)
+	_kerb(l, -1.0, -1.0, 2.0, 80.0)
+	for row in [[2.0, -27.0, 22.0, -25.0], [2.0, 2.0, 22.0, 4.0], [22.0, -27.0, 25.0, 4.0]]: _kerb(l, row[0], row[1], row[2], row[3])
+	l.asphalt.append(P.rect(-1.0, -27.0, 2.0, -21.0))
+	l.asphalt.append(P.rect(-1.0, -15.0, 2.0, -1.0))
+	_ground(l, "concrete", 4.0, -23.0, 20.0, -2.0)
+	# Islands A (z = -8) and B (z = -16), two pumps each, under one canopy.
+	for iz: float in [-8.0, -16.0]:
+		_kerb(l, 8.0, iz - 0.6, 16.0, iz + 0.6)
+		for px: float in [10.0, 14.0]: _pump(l, px, iz)
+		for px: float in [8.4, 15.6]: _bollard(l, px, iz + (0.9 if iz > -12 else -0.9))
+	_canopy(l, 5.0, -21.0, 19.0, -3.0, 5.2, "#2E9B5F", [Vector2(8.6, -8.0), Vector2(15.4, -8.0), Vector2(8.6, -16.0), Vector2(15.4, -16.0)], "#F2F4F84D")
+	_label(l, "gameParkingSignFuel", 12.0, 5.36, -3.0, 4.0, 0.9, "#2E9B5F", true)
+	var finish := Vector3(14.0, lane, PI / 2)
+	l.finish = func(_g: Dictionary) -> Vector3: return finish
+	_target(l, Vector2(15.6, lane), 1.25, 2.8, PI / 2)
+	l.exit = [_fit(-1, 0, -2.75, 1), _a(-1, -1, 90), _s(-1, 12.0)]
+	_cued(l, ["gameParkingTipFuelApproach", "gameParkingTipFuelTurn", "gameParkingTipFuelStop"])
+	l.mission = "gameParkingMissionFuel"
+	# Other drivers at the other pumps, all heading through to the exit.
+	_car_at(l, "suv", "#8D94A3", 12.6, -5.8, PI / 2)
+	_car_at(l, "hatch", "#9A3B3B", 11.0, -13.8, PI / 2)
+	_car_at(l, "wagon", "#E7E2D6", 13.4, -18.2, PI / 2)
+	l.bounds = Rect2(-8.0, -32.0, 30.0, 44.0)
+	# The shop, the air pump, the price board facing the road.
+	_building(l, 30.0, -12.0, 10.0, 18.0, 4.5, "#EEF0EC", "gameParkingSignShop", "#2E9B5F")
+	_block(l, 23.4, -12.0, 0.15, 10.0, 2.6, GLASS, 0.0, false)
+	_block(l, 0.5, 6.0, 1.4, 0.5, 6.0, "#2E9B5F")
+	_block(l, 0.5, 6.26, 1.2, 0.04, 3.2, WHITE, 2.5, false)
+	_label(l, "gameParkingSignFuel", 0.5, 5.3, 6.3, 1.1, 0.6, WHITE)
+	for i in 3: _label(l, ["АИ-92", "АИ-95", "ДТ"][i], 0.5, 4.6 - i * 0.8, 6.3, 1.0, 0.45, DARK)
+	_post(l, 23.0, 0.0, 0.25, 1.2, "#2D6FB8")
+	for x: float in [6.0, 12.0, 18.0]: l.trees.append(Vector2(x, 6.5))
+	for z: float in [-36.0, -30.0, 8.0, 14.0]: l.trees.append(Vector2(4.0, z))
+	l.pines.append_array([Vector2(28.0, 6.0), Vector2(36.0, 2.0), Vector2(30.0, -30.0)])
+	for z in range(-80, 70, 16): l.trees.append(Vector2(-12.5, z))
+	for z in range(-70, 70, 28): l.buildings.append({"prop": "buildings/home_%d" % (absi(z) % 6), "pos": Vector2(-22.0, z), "yaw": PI / 2})
+	return l
+
+
+## A dispenser on its island: a white body with a green head and screens to both lanes.
+static func _pump(l: Dictionary, x: float, z: float) -> void:
+	_block(l, x, z, 1.1, 0.7, 0.25, "#C9CDD2", 0.15)
+	_block(l, x, z, 0.9, 0.5, 1.75, WHITE, 0.4)
+	_block(l, x, z, 0.95, 0.55, 0.3, "#2E9B5F", 2.0, false)
+	for side: float in [-1.0, 1.0]:
+		_block(l, x, z + side * 0.27, 0.5, 0.04, 0.35, "#1E2A33", 1.35, false)
+		_block(l, x - 0.3, z + side * 0.28, 0.08, 0.06, 0.5, DARK, 0.8, false)
+
+
+# --- 5. Self-service car wash: nose first into a wash bay ---
+
+static func _wash() -> Dictionary:
+	var l := P._level("wash")
+	var pitch := 4.5
+	var depth := 7.5
+	l.asphalt.append(P.rect(-15.0, -depth, 15.0, 11.5))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	_ground(l, "concrete", -10.9, -depth, 10.9, 0.0)
+	# Five bays open to the south; walls between them, the back wall, a light roof.
+	for i in 6:
+		var x := -2.5 * pitch + i * pitch
+		_block(l, x, -depth * 0.5, 0.3, depth, 3.2, "#D7DCE0")
+		_block(l, x, -0.3, 0.32, 0.6, 3.22, "#2D6FB8", 0.0, false)
+	_block(l, 0.0, -depth - 0.15, 2.5 * pitch * 2.0 + 0.3, 0.3, 3.4, "#C3CBD1")
+	P._wall(l, P.rect(-11.0, -depth - 0.3, 11.0, 0.2), 0.12, "#DDE6EC59", 3.3, false)
+	var busy := {0: ["sedan", "#3B4A63"], 1: ["suv", "#D9DCE3"], 4: ["wagon", "#6E8E6A"]}
+	for i in 5:
+		var cx := -2.0 * pitch + i * pitch
+		_block(l, cx, -depth + 0.25, 0.7, 0.25, 1.2, "#2D6FB8", 0.6, false)
+		_block(l, cx + 1.4, -depth + 0.2, 0.14, 0.2, 1.4, DARK, 0.8, false)
+		_label(l, str(i + 1), cx, 2.7, -depth + 0.02, 0.8, 0.8, "#2D6FB8")
+		P._line(l, Vector2(cx - 1.6, -depth * 0.5), Vector2(cx + 1.6, -depth * 0.5), 0.3, "#555A62")
+		if busy.has(i): _car_at(l, busy[i][0], busy[i][1], cx, -depth * 0.5 + 0.3, PI)
+	# Bay 3 is closed for repair: cones across its mouth.
+	var closed := -2.0 * pitch + 2 * pitch
+	for k in 4: _cone(l, closed - 1.4 + k * 0.95, -0.9)
+	_block(l, closed, -depth + 1.0, 1.2, 0.08, 0.9, YELLOW, 0.5, false)
+	var bay := -2.0 * pitch + 3 * pitch
+	_target(l, Vector2(bay, -3.75), 1.5, 2.9, PI)
+	l.exit = [_fit(-1, 1, 7.6, 1), _a(-1, 1, 90), _s(-1, 8.0)]
+	_cued(l, ["gameParkingTipWashFar", "gameParkingTipWashTurn", "gameParkingTipWashStop"])
+	l.mission = "gameParkingMissionWash"
+	_label(l, "gameParkingSignWash", 0.0, 3.5, -3.6, 8.0, 1.6, "#2D6FB8", true)
+	# The apron: barriers at both ends, the vacuum stands south of it.
+	_kerb(l, -17.0, 11.5, 17.0, 15.5)
+	_kerb(l, -17.0, -depth - 2.0, -10.9, -depth)
+	_kerb(l, 10.9, -depth - 2.0, 17.0, -depth)
+	_kerb(l, -17.0, -depth, -15.0, 1.0)
+	_kerb(l, 15.0, -depth, 17.0, 1.0)
+	_kerb(l, -17.0, 10.5, -15.0, 11.5)
+	_kerb(l, 15.0, 10.5, 17.0, 11.5)
+	_kerb(l, -15.0, -depth, -10.9, 0.0)
+	_kerb(l, 10.9, -depth, 15.0, 0.0)
+	l.asphalt.append(P.rect(-17.0, 1.0, -15.0, 10.5))
+	l.asphalt.append(P.rect(15.0, 1.0, 17.0, 10.5))
+	_barrier(l, Vector2(-15.4, 1.0), Vector2(-15.4, 10.5))
+	_barrier(l, Vector2(15.4, 10.5), Vector2(15.4, 1.0))
+	for x: float in [-9.0, -3.0, 3.0, 9.0]:
+		_post(l, x, 12.7, 0.22, 1.5, "#2D6FB8")
+		_block(l, x, 12.7, 0.6, 0.5, 0.4, "#2D6FB8", 1.5, false)
+	for x: float in [-12.0, 12.0]: l.lamps.append(Vector2(x, 12.5))
+	l.arrows.append({"pos": Vector2(-8.0, 6.0), "yaw": PI / 2, "len": 3.0})
+	l.bounds = Rect2(-15.4, -depth, 30.8, depth + 11.5)
+	# Pylon with the sign at the entrance, a cashier kiosk, trees and the street beyond.
+	_block(l, -13.0, 14.0, 1.8, 0.5, 5.0, "#2D6FB8")
+	_label(l, "gameParkingSignWash", -13.0, 4.3, 14.28, 1.6, 0.5, WHITE)
+	l.buildings.append({"prop": "street/kiosk_1", "pos": Vector2(13.0, -9.5), "yaw": 0.0})
+	for x: float in [-24.0, -18.0, 18.0, 24.0]: l.trees.append(Vector2(x, -4.0))
+	l.asphalt.append(P.rect(-80.0, 17.5, 80.0, 24.5))
+	P._line(l, Vector2(-80.0, 21.0), Vector2(80.0, 21.0), 0.12, WHITE, 3.0)
+	for x in range(-60, 70, 20): l.trees.append(Vector2(x, 16.1))
+	for x: float in [-30.0, 30.0]: l.buildings.append({"prop": "buildings/block_%d" % (0 if x < 0 else 2), "pos": Vector2(x, -18.0), "yaw": 0.0})
+	return l
+
+
+static func _cone(l: Dictionary, x: float, z: float) -> void:
+	l.posts.append({"pos": Vector2(x, z), "r": 0.17, "r_top": 0.04, "h": 0.65, "colour": "#FF6A1A", "y0": 0.0, "solid": true})
+	_post(l, x, z, 0.12, 0.1, WHITE, 0.3, false)
+
+
+# --- 6. Forest car park: nose first into a 60° bay, gravel and pines ---
+
+static func _forest() -> Dictionary:
+	var l := P._level("forest")
+	var rng := _rng(37)
+	var aisle := 6.8
+	var x0 := -16.0
+	var depth := P.BAY_D * sin(deg_to_rad(60.0))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	_ground(l, "gravel", -22.0, -depth - 1.3, 22.0, aisle)
+	var centres := _herring(l, 60.0, x0, 10, aisle, rng, [2, 5, 9], [], false, "#E8DFC8")
+	_target(l, centres[5], P.BAY_W * 0.5 - 0.05, P.BAY_D * 0.5, PI / 2 + deg_to_rad(60.0))
+	l.lines.clear()
+	# Bays are marked by log wheel-stops at their heads, not paint on gravel.
+	var f := P.forward(PI / 2 + deg_to_rad(60.0))
+	var pitch := P.BAY_W / sin(deg_to_rad(60.0))
+	for i in 11:
+		var a := Vector2(x0 + i * pitch, 0.0)
+		P._line(l, a + f * 0.6, a + f * P.BAY_D, 0.1, "#D8CDB2")
+	for c: Vector2 in centres:
+		var head: Vector2 = c + f * (P.BAY_D * 0.5 - 0.35)
+		_wall_ab(l, head - Vector2(f.y, -f.x) * 0.8, head + Vector2(f.y, -f.x) * 0.8, 0.22, 0.16, LOG, 0.0, false)
+	l.exit = [_fit(-1, 1, 3.9, 1), _a(-1, 1, 60), _s(-1, 10.0)]
+	_cued(l, ["gameParkingTipAngleApproach", "gameParkingTipAngleTurn", "gameParkingTipLogStop"])
+	l.mission = "gameParkingMissionAngle"
+	# Log edging all round; the entry from the forest road is closed by a wooden barrier.
+	for edge in [[Vector2(-22.0, -depth - 1.3), Vector2(22.0, -depth - 1.3)], [Vector2(-22.0, aisle), Vector2(22.0, aisle)], [Vector2(22.0, -depth - 1.3), Vector2(22.0, aisle)], [Vector2(-22.0, -depth - 1.3), Vector2(-22.0, 0.0)]]:
+		_wall_ab(l, edge[0], edge[1], 0.3, 0.3, LOG)
+	_ground(l, "gravel", -40.0, 0.0, -22.0, aisle)
+	_barrier(l, Vector2(-22.3, aisle), Vector2(-22.3, 0.0))
+	l.bounds = Rect2(-22.0, -depth - 1.3, 44.0, depth + 1.3 + aisle)
+	# Trail head: info board and a picnic shelter; pines everywhere around.
+	_block(l, 25.0, -2.0, 2.2, 0.15, 1.4, WOOD, 0.9)
+	_post(l, 24.1, -2.0, 0.06, 2.3, LOG, 0.0, false)
+	_post(l, 25.9, -2.0, 0.06, 2.3, LOG, 0.0, false)
+	_canopy(l, 26.0, 2.0, 31.0, 6.0, 2.6, LOG, [Vector2(26.3, 2.3), Vector2(30.7, 2.3), Vector2(26.3, 5.7), Vector2(30.7, 5.7)], "#7A5A3AFF")
+	_table(l, 28.5, 4.0)
+	for x in range(-36, 40, 5):
+		l.pines.append(Vector2(x + rng.randf_range(-1.0, 1.0), -depth - 3.5 + rng.randf_range(-1.0, 1.0)))
+		l.pines.append(Vector2(x + 2.5 + rng.randf_range(-1.0, 1.0), -depth - 8.5 + rng.randf_range(-1.5, 1.5)))
+		if absf(x - 28) > 4: l.pines.append(Vector2(x + rng.randf_range(-1.0, 1.0), aisle + 3.0 + rng.randf_range(-0.8, 0.8)))
+		l.pines.append(Vector2(x + 2.0 + rng.randf_range(-1.0, 1.0), aisle + 8.0 + rng.randf_range(-1.5, 1.5)))
+	for z: float in [-12.0, -6.0, 10.0]: l.trees.append(Vector2(-26.0, z))
+	l.signs.append({"code": "6.4", "pos": Vector2(-23.0, -1.2), "yaw": PI})
+	return l
+
+
+# --- 7. Office: reverse into a bay between cars ---
+
+static func _office() -> Dictionary:
+	var l := P._lot(3, 0.0, [_s(1, 2.4), _a(1, 1, 90), _s(-1, 7.5)], 23)
+	l.trees.clear()
+	l.lamps.clear()
+	l.buildings.clear()
+	_cued(l, ["gameParkingTipReversePass", "gameParkingTipReverseSwing", "gameParkingTipReverseIn"])
+	l.mission = "gameParkingMissionBayReverse"
+	var edge := 4.5 * P.LOT_BAY_W + 1.0
+	_entrance(l, -edge, -4.0, 1.0)
+	_building(l, 0.0, -20.5, 30.0, 6.0, 4.5, "#D5DEE4", "gameParkingSignOffice", "#25313B")
+	_block(l, 0.0, -17.44, 26.0, 0.1, 3.6, GLASS, 0.3, false)
+	for x: float in [-14.0, 14.0]: l.buildings.append({"prop": "buildings/tower_%d" % (1 if x < 0 else 3), "pos": Vector2(x, -32.0), "yaw": 0.0})
+	for x: float in [-11.0, -3.0, 5.0, 13.0]:
+		l.trees.append(Vector2(x, 12.6))
+		l.bushes.append({"pos": Vector2(x + 4.0, 11.4), "yaw": 0.0})
+	for x: float in [-edge - 1.0, edge + 1.0]: l.lamps.append(Vector2(x, -2.0))
+	for x: float in [-9.0, 9.0]: _bench(l, x, -15.6)
+	l.asphalt.append(P.rect(-60.0, 14.5, 60.0, 21.5))
+	P._line(l, Vector2(-60.0, 18.0), Vector2(60.0, 18.0), 0.12, WHITE, 3.0)
+	return l
+
+
+# --- 8. Embankment: parallel parking with room to spare ---
+
+static func _quay() -> Dictionary:
+	var l := P._parallel(7.4, 5)
+	_cued(l, ["gameParkingTipParallelPass", "gameParkingTipParallel45", "", "gameParkingTipParallelAlign", "gameParkingTipParallelCentre"])
+	l.mission = "gameParkingMissionParallel"
+	l.trees = l.trees.filter(func(t: Vector2) -> bool: return t.x < 0)
+	l.buildings = l.buildings.filter(func(b: Dictionary) -> bool: return b.pos.x < 0)
+	# The promenade: a parapet, lamps and benches, then the river.
+	_block(l, P.CURB_X + 4.25, 0.0, 0.5, 200.0, 0.9, "#B9B1A3")
+	_ground(l, "water", P.CURB_X + 4.5, -150.0, P.CURB_X + 60.0, 150.0)
+	for z in range(-90, 92, 12):
+		l.lamps.append(Vector2(P.CURB_X + 3.5, z))
+		_bench(l, P.CURB_X + 2.6, z + 6.0, PI / 2)
+	for z: float in [-40.0, 60.0]:
+		_block(l, P.CURB_X + 30.0, z, 30.0, 4.0, 1.2, "#7C6F62")
+	return l
+
+
+# --- 9. Garage co-op: reverse into a garage box ---
+
+static func _garages() -> Dictionary:
+	var l := P._garage(4, 1, 47)
+	_cued(l, ["gameParkingTipGaragePass", "gameParkingTipReverseSwing", "gameParkingTipGarageIn"])
+	l.mission = "gameParkingMissionGarage"
+	l.trees.clear()
+	for x in range(-30, 34, 6):
+		l.trees.append(Vector2(x, -10.0))
+		l.trees.append(Vector2(x + 3.0, 25.5))
+	_block(l, 19.0, 3.75, 2.4, 2.4, 2.4, "#C9B79C")
+	_block(l, 19.0, 3.75, 2.8, 2.8, 0.2, ROOF, 2.4, false)
+	_block(l, 17.78, 3.75, 0.06, 1.2, 0.9, GLASS, 1.1, false)
+	l.lamps.append(Vector2(-17.5, 3.75))
+	l.lamps.append(Vector2(17.5, -2.0))
+	return l
+
+
+# --- 10. Private house: reverse into the yard through the gate ---
+
+static func _house() -> Dictionary:
+	var l := P._level("house")
+	var lane := -1.2
+	l.asphalt.append(P.rect(-90.0, -2.75, 90.0, 2.75))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	P._works(l, Vector2(-22.0, -2.75), Vector2(-22.0, 2.75), Vector2(-1, 0))
+	P._works(l, Vector2(26.0, -2.75), Vector2(26.0, 2.75), Vector2(1, 0))
+	# The plot: a fence 1.75 m back from the road, a 3.8 m sliding gate, a paved yard.
+	_ground(l, "paving", -1.9, -4.6, 1.9, -2.75)
+	_ground(l, "paving", -6.0, -15.0, 6.5, -4.6)
+	_fence(l, Vector2(-22.0, -4.6), Vector2(-2.3, -4.6), "#7B5E46", 1.8)
+	_fence(l, Vector2(2.3, -4.6), Vector2(26.0, -4.6), "#7B5E46", 1.8)
+	for x: float in [-2.1, 2.1]: _block(l, x, -4.6, 0.45, 0.45, 2.1, "#A9573E")
+	_wall_ab(l, Vector2(2.4, -4.85), Vector2(6.2, -4.85), 0.08, 1.8, "#5B4636")
+	_fence(l, Vector2(-7.5, -4.6), Vector2(-7.5, -22.0), "#7B5E46", 1.8)
+	_fence(l, Vector2(8.0, -4.6), Vector2(8.0, -22.0), "#7B5E46", 1.8)
+	_fence(l, Vector2(-22.0, 4.6), Vector2(26.0, 4.6), "#6E7F69", 1.6)
+	var c := Vector2(0.0, -9.6)
+	_target(l, c, 1.45, 3.0, 0.0)
+	l.exit = [_fit(1, 1, lane, 1), _a(1, -1, 90), _s(-1, 10.0)]
+	_cued(l, ["gameParkingTipGatePass", "gameParkingTipGateSwing", "gameParkingTipGateIn"])
+	l.mission = "gameParkingMissionGate"
+	l.bounds = Rect2(-22.0, -15.0, 48.0, 17.75)
+	l.colliders.append(P.rect(-7.5, -15.2, 8.0, -15.0))
+	# The house, its porch, a shed and a greenhouse; apple trees; neighbours over the fences.
+	l.buildings.append({"prop": "buildings/home_3", "pos": Vector2(2.0, -20.0), "yaw": 0.0})
+	_block(l, -4.5, -13.0, 2.4, 3.0, 2.2, "#8A6A50")
+	_block(l, -4.5, -13.0, 2.8, 3.4, 0.2, ROOF, 2.2, false)
+	_block(l, 5.4, -12.5, 2.0, 4.0, 2.0, "#E6F0EE80", 0.0, true)
+	for t: Vector2 in [Vector2(-5.5, -7.5), Vector2(6.0, -7.0)]: l.trees.append(t)
+	for x: float in [-16.0, 16.0]:
+		l.buildings.append({"prop": "buildings/home_%d" % (0 if x < 0 else 4), "pos": Vector2(x, -15.0), "yaw": 0.0})
+		l.trees.append(Vector2(x + 4.0, -8.0))
+	for x: float in [-14.0, 0.0, 14.0]:
+		l.buildings.append({"prop": "buildings/home_%d" % (1 if x < 0 else (2 if x == 0 else 5)), "pos": Vector2(x, 13.0), "yaw": PI})
+	_bench(l, -3.6, -3.6)
+	_post(l, 3.5, -3.6, 0.05, 1.1, DARK, 0.0, false)
+	_block(l, 3.5, -3.6, 0.4, 0.25, 0.3, "#2D6FB8", 1.1, false)
+	for x: float in [-18.0, -10.0, 10.0, 20.0]: l.trees.append(Vector2(x, 3.8))
+	l.lamps.append(Vector2(-6.0, 3.6))
+	return l
+
+
+# --- 11. Railway station: the reverse herringbone ---
+
+static func _station() -> Dictionary:
+	var l := P._angled(60, 4, [3], 43, true)
+	_cued(l, ["gameParkingTipBackAnglePass", "gameParkingTipBackAngleTurn", "gameParkingTipBackAngleIn"])
+	l.mission = "gameParkingMissionBackAngle"
+	l.buildings = l.buildings.filter(func(b: Dictionary) -> bool: return b.pos.x < 0)
+	l.trees = l.trees.filter(func(t: Vector2) -> bool: return t.x < 0)
+	# The station across the pavement: a long hall with a clock, platforms and trains behind.
+	_building(l, 26.0, 2.0, 10.0, 40.0, 9.0, "#E6D6B8", "", "#7A4E3A", false)
+	_block(l, 20.9, 2.0, 0.12, 10.0, 4.0, GLASS, 0.6, false)
+	_block(l, 20.9, 2.0, 0.3, 4.0, 1.4, "#7A4E3A", 9.0)
+	_label(l, "gameParkingSignStation", 26.0, 9.35, 2.0, 7.0, 1.4, "#7A4E3A", true)
+	for z: float in [-18.0, 22.0]: _canopy(l, 33.0, z - 10.0, 39.0, z + 10.0, 3.6, "#7A4E3A", [Vector2(36.0, z - 9.0), Vector2(36.0, z + 9.0)], "#C9D3DA99")
+	for x: float in [41.0, 44.0]: P._line(l, Vector2(x, -80), Vector2(x, 80), 0.16, "#9EAEB5")
+	for z in range(-24, 34, 12): l.trees.append(Vector2(11.2, z))
+	l.lamps.append(Vector2(10.6, -6.0))
+	l.lamps.append(Vector2(10.6, 14.0))
+	return l
+
+
+# --- 12. Campsite: reverse onto a pitch between the trees ---
+
+static func _camp() -> Dictionary:
+	var l := P._level("camp")
+	var rng := _rng(29)
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	_ground(l, "gravel", -40.0, -2.5, 30.0, 3.1)
+	var spacing := 5.8
+	var pitches := [-2.0, -1.0, 0.0, 1.0, 2.0]
+	for k: float in pitches:
+		var x := k * spacing
+		_ground(l, "gravel", x - spacing * 0.5 + 0.4, -11.5, x + spacing * 0.5 - 0.4, -2.5)
+	for k in 6:
+		var x := (k - 2.5) * spacing
+		l.pines.append(Vector2(x + rng.randf_range(-0.15, 0.15), -4.0 + rng.randf_range(-0.2, 0.2)))
+		l.pines.append(Vector2(x + rng.randf_range(-0.3, 0.3), -9.6))
+	var x_target := 1.0 * spacing
+	_target(l, Vector2(x_target, -6.8), 1.5, 3.1, 0.0)
+	_table(l, x_target, -10.6)
+	# Neighbours: cars and tents on the pitches before ours, a tent on the next.
+	_car_at(l, "suv", "#6E8E6A", -2.0 * spacing, -6.5, 0.0)
+	_tent(l, -2.0 * spacing + 0.4, -10.4, "#E07A3F", 1.3)
+	_car_at(l, "wagon", "#3B4A63", -1.0 * spacing, -6.0, PI)
+	_tent(l, -1.0 * spacing - 0.2, -10.6, "#3F8FC9", 1.4)
+	_tent(l, 0.0, -9.2, "#7FB069", 1.6)
+	_post(l, 0.0, -5.8, 0.5, 0.18, "#5A5550", 0.0, false)
+	_tent(l, 2.0 * spacing, -8.0, "#D9473B", 1.7)
+	_table(l, 2.0 * spacing, -4.6)
+	l.exit = [_fit(1, 1, 0.0, 1), _a(1, 1, 90), _s(-1, 9.0)]
+	_cued(l, ["gameParkingTipCampPass", "gameParkingTipCampTrees", "gameParkingTipCampIn"])
+	l.mission = "gameParkingMissionCamp"
+	# Log edging along the track, the reception with its barrier, the forest all round.
+	_wall_ab(l, Vector2(-30.0, 3.2), Vector2(18.0, 3.2), 0.25, 0.25, LOG)
+	for edge in [[Vector2(-30.0, -2.6), Vector2(-2.5 * spacing + 0.4, -2.6)], [Vector2(2.5 * spacing - 0.4, -2.6), Vector2(18.0, -2.6)]]:
+		_wall_ab(l, edge[0], edge[1], 0.25, 0.25, LOG)
+	for k: float in pitches:
+		var x := k * spacing
+		for side: float in [-1.0, 1.0]:
+			_wall_ab(l, Vector2(x + side * (spacing * 0.5 - 0.4), -2.6), Vector2(x + side * (spacing * 0.5 - 0.4), -11.5), 0.2, 0.2, LOG, 0.0, false)
+		_wall_ab(l, Vector2(x - spacing * 0.5 + 0.4, -11.6), Vector2(x + spacing * 0.5 - 0.4, -11.6), 0.25, 0.25, LOG)
+	_wall_ab(l, Vector2(18.0, -2.6), Vector2(18.0, 3.2), 0.3, 0.6, LOG)
+	_barrier(l, Vector2(-30.0, -2.5), Vector2(-30.0, 3.1))
+	_block(l, -34.0, -6.0, 5.0, 4.0, 2.8, "#8A6A50")
+	_block(l, -34.0, -6.0, 5.6, 4.6, 0.3, "#4E3B2C", 2.8, false)
+	_block(l, -34.0, -3.96, 1.0, 0.08, 1.9, "#4E3B2C", 0.0, false)
+	l.bounds = Rect2(-30.0, -11.6, 48.0, 14.8)
+	for x in range(-44, 30, 4):
+		l.pines.append(Vector2(x + rng.randf_range(-1.0, 1.0), 5.6 + rng.randf_range(-0.8, 0.8)))
+		l.pines.append(Vector2(x + 2.0 + rng.randf_range(-1.0, 1.0), 10.0 + rng.randf_range(-1.5, 1.5)))
+		if x < -16 or x > 16: l.pines.append(Vector2(x + rng.randf_range(-1.0, 1.0), -6.0 + rng.randf_range(-3.0, 3.0)))
+		l.pines.append(Vector2(x + rng.randf_range(-1.0, 1.0), -15.0 + rng.randf_range(-1.5, 1.5)))
+	for k in 6: l.trees.append(Vector2(-12.0 + k * 6.0, -19.0 + rng.randf_range(-1.0, 1.0)))
+	_ground(l, "water", -20.0, -45.0, 30.0, -24.0)
+	_ground(l, "dirt", 20.0, -0.8, 40.0, 0.8)
+	return l
+
+
+# --- 13. Quiet street: the three-point turn ---
+
+static func _street_turn() -> Dictionary:
+	var l := P._three_point([Vector3(-1, 7.8, 0), Vector3(1, 20.5, PI)], 29)
+	_cued(l, ["gameParkingTipTurnLook", "gameParkingTipTurnFirst", "gameParkingTipTurnBack", "gameParkingTipTurnOut", ""])
+	l.mission = "gameParkingMissionThreePoint"
+	return l
+
+
+# --- 14. Industrial street: a U-turn backing into a driveway on the right ---
+
+static func _industrial_turn() -> Dictionary:
+	var l := P._level("industrial_turn")
+	var drive := -6.0
+	l.asphalt.append(P.rect(-4.5, -90.0, 4.5, 80.0))
+	l.asphalt.append(P.rect(4.5, drive - 4.0, 11.0, drive + 4.0))
+	l.grass.append(P.rect(-120, -140, 120, 120))
+	P._line(l, Vector2(0, -90), Vector2(0, 80), 0.12, WHITE, 3.0)
+	P._works(l, Vector2(-4.5, -30.0), Vector2(4.5, -30.0), Vector2(0, -1), Vector2(5.4, -31.5))
+	P._works(l, Vector2(-4.5, 24.0), Vector2(4.5, 24.0), Vector2(0, 1), Vector2(5.4, 25.5))
+	_kerb(l, 4.5, -90.0, 7.5, drive - 4.0)
+	_kerb(l, 4.5, drive + 4.0, 7.5, 80.0)
+	_kerb(l, -7.5, -90.0, -4.5, 80.0)
+	# The plant's fence and its closed sliding gate at the end of the driveway.
+	_fence(l, Vector2(11.0, -40.0), Vector2(11.0, drive - 4.0), "#8B98A3", 2.2)
+	_fence(l, Vector2(11.0, drive + 4.0), Vector2(11.0, 34.0), "#8B98A3", 2.2)
+	for k in 8: _wall_ab(l, Vector2(11.0, drive - 4.0 + k), Vector2(11.0, drive - 3.0 + k), 0.12, 2.0, YELLOW if k % 2 == 0 else DARK)
+	for z: float in [drive - 4.1, drive + 4.1]: _post(l, 11.0, z, 0.15, 2.4, DARK)
+	_target(l, Vector2(-1.7, 8.0), 1.5, 3.0, 0.0)
+	l.exit = [_fit(-1, 1, drive, 1), _a(-1, 1, 90), _s(-1, 3.5), _a(1, -1, 90), _s(-1, 12.0)]
+	_cued(l, ["gameParkingTipDrivewayPass", "gameParkingTipDrivewayBack", "gameParkingTipDrivewayOut", "gameParkingTipDrivewayLane", ""])
+	l.mission = "gameParkingMissionDriveway"
+	l.bounds = Rect2(-4.5, -30.0, 15.5, 54.0)
+	# Warehouses behind the fence, a lorry at the dock, a chimney; a works fence across the road.
+	_building(l, 24.0, -22.0, 20.0, 22.0, 8.0, "#B8C1C8", "", "#2D6FB8", false)
+	_building(l, 24.0, 12.0, 20.0, 18.0, 6.0, "#C7CDC4", "", "#2D6FB8", false)
+	for k in 4: _block(l, 13.95, 6.0 + k * 4.0, 0.12, 3.0, 3.2, "#6F7A84", 0.0, false)
+	l.cars.append({"model": "pickup", "paint": "#B8C4D6", "c": Vector2(17.0, 9.0), "yaw": -PI / 2})
+	_ground(l, "concrete", 11.2, -40.0, 34.0, 34.0)
+	for k in 3: _block(l, 15.0 + k * 1.4, -1.0, 1.2, 1.0, 0.15 + k % 2 * 0.15, WOOD)
+	_post(l, -30.0, -40.0, 1.6, 30.0, "#A8645A")
+	_fence(l, Vector2(-7.8, -60.0), Vector2(-7.8, 60.0), "#8B98A3", 2.0)
+	_building(l, -22.0, -2.0, 24.0, 40.0, 7.0, "#C9C2B6", "", "#2D6FB8", false)
+	for z: float in [-24.0, -14.0, 12.0]: l.lamps.append(Vector2(5.2, z))
+	for z in range(-50, 60, 14): l.trees.append(Vector2(-6.2, z))
+	return l
+
+
+# --- 15. Old town: tight parallel parking at the left kerb of a one-way street ---
+
+static func _old_town() -> Dictionary:
+	var l := P._mirror(P._parallel(6.6, 67, true))
+	_cued(l, ["gameParkingTipParallelPass", "gameParkingTipParallel45", "", "gameParkingTipParallelAlign", "gameParkingTipParallelCentre"])
+	l.mission = "gameParkingMissionParallelLeft"
+	l.buildings.clear()
+	# Low old houses close to the pavement on both sides, a kiosk and a café table.
+	var colours := ["#D9B48F", "#C98E7A", "#E3D3A8", "#A9B9A0", "#D7C4B5", "#B8A7C9"]
+	for side: float in [-1.0, 1.0]:
+		var x0 := 10.0 * side
+		var z := -100.0
+		var k := 0
+		while z < 100.0:
+			var w := 9.0 + (k % 3) * 2.0
+			_block(l, x0 + side * 4.5, z + w * 0.5, 9.0, w - 0.4, 7.0 + (k % 2) * 3.0, colours[k % colours.size()])
+			_block(l, x0 + side * 4.5, z + w * 0.5, 9.4, w, 0.5, "#8A4B3C", 7.0 + (k % 2) * 3.0, false)
+			z += w
+			k += 1
+	l.buildings.append({"prop": "street/kiosk_0", "pos": Vector2(7.6, -8.0), "yaw": -PI / 2})
+	for z: float in [12.0, 16.0]: _umbrella(l, 8.2, z, "#B9463E")
+	return l
+
+
+# --- 16. Courtyard of a five-storey block: nose first in two moves from a narrow drive ---
+
+static func _courtyard() -> Dictionary:
+	var l := P._level("courtyard")
+	var rng := _rng(5)
+	var drive: float = tune.get("drive", 7.0)
+	var w: float = tune.get("w", 2.9)
+	l.asphalt.append(P.rect(-24.0, -P.BAY_D - 0.6, 22.0, drive))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	for i in 15:
+		var x := -19.0 + i * w
+		P._line(l, Vector2(x, -P.BAY_D), Vector2(x, 0.0))
+	P._line(l, Vector2(-19.0, -P.BAY_D), Vector2(-19.0 + 14 * w, -P.BAY_D))
+	var target_i := 8
+	for i in 14:
+		var c := Vector2(-19.0 + (i + 0.5) * w, -P.BAY_D * 0.5)
+		if i == target_i: _target(l, c, w * 0.5 - 0.05, P.BAY_D * 0.5, PI)
+		elif i not in [3, 12]: P._car(l, rng, c + Vector2(rng.randf_range(-0.1, 0.1), rng.randf_range(-0.1, 0.2)), PI if rng.randf() < 0.7 else 0.0)
+	var turns: Array = tune.get("turns", [35.0, 35.0, 20.0])
+	l.exit = [_fit(-1, 1, tune.get("lane", 4.1), 4), _a(-1, 1, turns[2]), _a(1, -1, turns[1]), _a(-1, 1, turns[0]), _s(-1, 10.0)]
+	_cued(l, ["gameParkingTipTwoStepApproach", "gameParkingTipTwoStepFirst", "gameParkingTipTwoStepBack", "gameParkingTipTwoStepAlign", "gameParkingTipBayStop"])
+	l.mission = "gameParkingMissionTwoStep"
+	_kerb(l, -26.0, -P.BAY_D - 3.0, 24.0, -P.BAY_D - 0.6)
+	_kerb(l, -26.0, drive, 24.0, drive + 2.0)
+	_kerb(l, 22.0, -P.BAY_D - 0.6, 24.0, drive)
+	_kerb(l, -26.0, -P.BAY_D - 0.6, -24.0, 0.0)
+	l.asphalt.append(P.rect(-26.0, 0.0, -24.0, drive))
+	_barrier(l, Vector2(-24.4, 0.0), Vector2(-24.4, drive))
+	for z: float in [0.8, 2.4, 4.0]: _bollard(l, 21.6, z)
+	l.bounds = Rect2(-24.4, -P.BAY_D - 0.6, 46.0, P.BAY_D + 0.6 + drive)
+	# The block: entrances with porches and benches; the playground across the drive.
+	for x: float in [-14.0, 2.0, 18.0]:
+		l.buildings.append({"prop": "buildings/block_3", "pos": Vector2(x, -14.0), "yaw": 0.0})
+	for x: float in [-14.0, 2.0, 18.0]:
+		_block(l, x, -8.9, 2.4, 0.9, 0.15, "#BDB5A8")
+		_bench(l, x - 2.5, -7.3)
+		_bin(l, x + 2.2, -7.2)
+	_ground(l, "dirt", -16.0, 7.0, 4.0, 18.0)
+	_fence(l, Vector2(-16.0, 7.0), Vector2(4.0, 7.0), "#3F8FC9", 1.0)
+	_post(l, -12.0, 11.0, 0.08, 2.2, "#D9473B", 0.0, false)
+	_post(l, -9.0, 11.0, 0.08, 2.2, "#D9473B", 0.0, false)
+	_wall_ab(l, Vector2(-12.0, 11.0), Vector2(-9.0, 11.0), 0.1, 0.1, "#D9473B", 2.2, false)
+	_block(l, -3.0, 12.0, 3.0, 3.0, 0.3, "#E3C77F")
+	_block(l, 0.5, 14.5, 1.0, 3.0, 1.2, "#E07A3F")
+	for t: Vector2 in [Vector2(8.0, 9.0), Vector2(14.0, 12.0), Vector2(-20.0, 10.0), Vector2(20.0, 16.0)]: l.trees.append(t)
+	_block(l, 12.0, 7.6, 3.6, 1.4, 1.3, "#4D6B58")
+	for x: float in [-22.0, 0.0, 20.0]: l.lamps.append(Vector2(x, -P.BAY_D - 1.0))
+	return l
+
+
+# --- 17. Underground car park: reverse between columns from a narrow aisle ---
+
+static func _underground() -> Dictionary:
+	var l := P._level("underground")
+	var rng := _rng(61)
+	var aisle: float = tune.get("aisle", 6.6)
+	var bay: float = tune.get("w", 2.9)
+	var module := 0.6 + 3.0 * bay
+	l.asphalt.append(P.rect(-22.0, -P.BAY_D - 0.5, 22.0, aisle + P.BAY_D + 0.5))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	_ground(l, "concrete", -22.0, -P.BAY_D - 0.5, 22.0, aisle + P.BAY_D + 0.5)
+	_ground(l, "tiles", -22.0, 0.0, 22.0, aisle)
+	var target := Vector2.ZERO
+	var number := 101
+	for row in 2:
+		var edge := 0.0 if row == 0 else aisle
+		var out := -1.0 if row == 0 else 1.0
+		for k in range(-2, 3):
+			var x0 := k * module
+			_block(l, x0, edge + out * 1.3, 0.6, 0.6, 3.0, "#B9BEC4")
+			_block(l, x0, edge + out * 1.3, 0.64, 0.64, 0.9, YELLOW, 0.0, false)
+			if k == 2: continue
+			for b in 3:
+				var cx := x0 + 0.3 + (b + 0.5) * bay
+				var c := Vector2(cx, edge + out * P.BAY_D * 0.5)
+				_bay_lines(l, c, 0.0 if row == 0 else PI, bay, P.BAY_D, false)
+				_label(l, str(number), cx, 0.02, edge + out * (P.BAY_D - 0.8), 0.9, 0.5, "#E7E9EC", true)
+				number += 1
+				if row == 0 and k == 0 and b == 0:
+					target = c
+					continue
+				if rng.randf() < 0.85: P._car(l, rng, c + Vector2(rng.randf_range(-0.08, 0.08), out * rng.randf_range(-0.1, 0.15)), (0.0 if rng.randf() < 0.5 else PI))
+	_target(l, target, bay * 0.5 - 0.05, P.BAY_D * 0.5, 0.0)
+	var prep: float = tune.get("prep", 20.0)
+	l.exit = [_fit(1, 1, tune.get("lane", 3.5), 2), _a(1, 1, 90.0 - prep), _a(-1, -1, prep), _s(-1, 7.0)]
+	_cued(l, ["gameParkingTipColumnsPass", "gameParkingTipColumnsPrep", "gameParkingTipColumnsSwing", "gameParkingTipReverseIn"])
+	l.mission = "gameParkingMissionColumns"
+	# Walls: full height at the back, a low cut wall towards the camera; the ramp is closed.
+	_block(l, 0.0, -P.BAY_D - 0.7, 44.4, 0.4, 3.0, "#A9AFB5")
+	_block(l, 0.0, aisle + P.BAY_D + 0.7, 44.4, 0.4, 1.0, "#A9AFB5")
+	_block(l, 22.2, aisle * 0.5, 0.4, aisle + P.BAY_D * 2.0 + 1.0, 3.0, "#A9AFB5")
+	_block(l, 22.0, aisle * 0.5, 0.06, 1.4, 2.1, "#2E9B5F", 0.0, false)
+	_label(l, "gameParkingSignExit", 21.96, 2.4, aisle * 0.5, 1.2, 0.35, "#2E9B5F")
+	_block(l, -22.2, -P.BAY_D * 0.5 - 0.25, 0.4, P.BAY_D + 0.5, 3.0, "#A9AFB5")
+	_block(l, -22.2, aisle + P.BAY_D * 0.5 + 0.25, 0.4, P.BAY_D + 0.5, 3.0, "#A9AFB5")
+	_block(l, -21.9, -2.0, 0.3, 0.8, 1.0, RED, 0.6, false)
+	l.asphalt.append(P.rect(-40.0, 0.0, -22.0, aisle))
+	_ground(l, "concrete", -40.0, 0.0, -22.0, aisle)
+	_barrier(l, Vector2(-22.4, 0.0), Vector2(-22.4, aisle))
+	for x: float in [-14.0, 0.0, 14.0]: l.arrows.append({"pos": Vector2(x, aisle * 0.5), "yaw": PI / 2, "len": 2.6, "colour": YELLOW})
+	l.bounds = Rect2(-22.4, -P.BAY_D - 0.5, 44.4, aisle + P.BAY_D * 2.0 + 1.0)
+	return l
+
+
+# --- 18. Through a passage between houses into the courtyard ---
+
+static func _passage() -> Dictionary:
+	var l := P._level("passage")
+	var rng := _rng(83)
+	var lane := 5.0
+	var bay_z := -24.0
+	l.asphalt.append(P.rect(-90.0, 0.0, 90.0, 7.0))
+	l.asphalt.append(P.rect(-2.2, -16.0, 2.2, 0.0))
+	l.asphalt.append(P.rect(-14.0, -34.0, 18.6, -16.0))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	P._line(l, Vector2(-90, 3.5), Vector2(90, 3.5), 0.12, WHITE, 3.0)
+	P._works(l, Vector2(-20.0, 0.0), Vector2(-20.0, 7.0), Vector2(-1, 0), Vector2(-21.5, 7.9))
+	P._works(l, Vector2(22.0, 0.0), Vector2(22.0, 7.0), Vector2(1, 0), Vector2(23.5, 7.9))
+	_kerb(l, -90.0, 7.0, 90.0, 10.0)
+	_kerb(l, -90.0, -4.0, -4.6, 0.0)
+	_kerb(l, 4.6, -4.0, 90.0, 0.0)
+	l.asphalt.append(P.rect(-4.6, -4.0, 4.6, 0.0))
+	_ground(l, "paving", -4.6, -4.0, 4.6, 0.0)
+	# Two houses along the street with the 4.4 m passage between them; a gateway arch.
+	for x: float in [-9.0, -23.0]: l.buildings.append({"prop": "buildings/block_3", "pos": Vector2(x - 0.2, -8.5), "yaw": 0.0})
+	for x: float in [9.0, 23.0]: l.buildings.append({"prop": "buildings/block_3", "pos": Vector2(x + 0.2, -8.5), "yaw": 0.0})
+	_block(l, -2.45, -8.5, 0.3, 9.0, 4.2, "#C9C2B6")
+	_block(l, 2.45, -8.5, 0.3, 9.0, 4.2, "#C9C2B6")
+	_block(l, 0.0, -3.6, 5.2, 0.6, 1.2, "#C9C2B6", 4.2, false)
+	# The courtyard: bays along its east side, the playground and trees opposite.
+	_kerb(l, 18.6, -36.0, 21.6, -16.0)
+	_kerb(l, -17.0, -36.0, 21.6, -34.0)
+	_kerb(l, -17.0, -34.0, -14.0, -16.0)
+	_kerb(l, -14.0, -17.0, -2.2, -16.0)
+	_kerb(l, 2.2, -17.0, 18.6, -16.0)
+	var x_front := 12.7
+	for k in range(-3, 4):
+		var c := Vector2(x_front + P.BAY_D * 0.5, bay_z + k * 2.7)
+		_bay_lines(l, c, PI / 2, 2.7, P.BAY_D, false)
+		if k == 0: continue
+		if c.y > -17.8 or c.y < -32.5: continue
+		if k != 2: P._car(l, rng, c, PI / 2 if rng.randf() < 0.6 else -PI / 2)
+	_target(l, Vector2(x_front + P.BAY_D * 0.5, bay_z), 1.3, P.BAY_D * 0.5, PI / 2)
+	l.exit = [_fit(-1, 0, 0.0, 1), _a(-1, -1, 90), _fit(-1, 1, lane, 3), _a(-1, 1, 90), _s(-1, 9.0)]
+	_cued(l, ["gameParkingTipPassageApproach", "gameParkingTipPassageTurn", "gameParkingTipPassageStraight", "gameParkingTipPassageYard", "gameParkingTipBayStop"])
+	l.mission = "gameParkingMissionPassage"
+	l.bounds = Rect2(-20.0, -34.0, 42.0, 41.0)
+	_ground(l, "dirt", -12.0, -32.0, -4.0, -22.0)
+	_fence(l, Vector2(-12.0, -22.0), Vector2(-4.0, -22.0), "#3F8FC9", 0.9)
+	_block(l, -8.0, -27.0, 2.6, 2.6, 0.3, "#E3C77F")
+	for t: Vector2 in [Vector2(-15.5, -20.0), Vector2(-15.5, -30.0), Vector2(19.5, -18.0), Vector2(19.5, -33.0)]: l.trees.append(t)
+	for x: float in [-8.0, 6.0]: l.buildings.append({"prop": "buildings/block_0", "pos": Vector2(x, -42.0), "yaw": 0.0})
+	_bench(l, -2.0, -33.2)
+	# Across the street only low things: a square with lime trees and benches.
+	for x in range(-60, 70, 8): l.trees.append(Vector2(x, 8.6))
+	_ground(l, "paving", -40.0, 10.0, 40.0, 18.0)
+	for x: float in [-12.0, 4.0, 16.0]: _bench(l, x, 11.2, PI)
+	return l
+
+
+# --- 19. Exam ground: parallel parking between posts ---
+
+static func _exam() -> Dictionary:
+	var l := P._level("exam")
+	var half := 4.3
+	l.asphalt.append(P.rect(-14.0, -26.0, 14.0, 26.0))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	_ground(l, "concrete", -14.0, -26.0, 14.0, 26.0)
+	_kerb(l, P.CURB_X, -26.0, P.CURB_X + 0.3, 26.0)
+	# The box: posts at its corners, its lines, the lane's edge line.
+	for z: float in [-half, half]:
+		for x: float in [0.45, P.CURB_X - 0.15]:
+			_post(l, x, z, 0.07, 1.1, WHITE)
+			_post(l, x, z, 0.075, 0.12, RED, 0.5, false)
+			_post(l, x, z, 0.075, 0.12, RED, 0.85, false)
+	P._line(l, Vector2(0.45, -half), Vector2(P.CURB_X, -half), 0.12, YELLOW)
+	P._line(l, Vector2(0.45, half), Vector2(P.CURB_X, half), 0.12, YELLOW)
+	P._line(l, Vector2(0.45, -24.0), Vector2(0.45, -half), 0.12, WHITE, 1.0)
+	P._line(l, Vector2(0.45, half), Vector2(0.45, 24.0), 0.12, WHITE, 1.0)
+	_target(l, Vector2(P.SPOT_X, 0.0), P.SPOT_HALF_W, half - 0.2, PI)
+	l.exit = func(geo: Dictionary) -> Array: return P.parallel_exit(geo, 13.0)
+	_cued(l, ["gameParkingTipExamPass", "gameParkingTipParallel45", "", "gameParkingTipExamAlign", "gameParkingTipParallelCentre"])
+	l.mission = "gameParkingMissionExam"
+	# The fenced ground: the examiners' booth, other exercises, school cars waiting.
+	for edge in [[Vector2(-14.0, -26.0), Vector2(14.0, -26.0)], [Vector2(-14.0, 26.0), Vector2(14.0, 26.0)], [Vector2(-14.0, -26.0), Vector2(-14.0, 26.0)], [Vector2(14.0, -26.0), Vector2(14.0, 26.0)]]:
+		_fence(l, edge[0], edge[1], "#4F6B57", 1.6)
+	l.bounds = Rect2(-4.2, -24.0, P.CURB_X + 4.2, 48.0)
+	_kerb(l, -4.5, -24.3, -4.2, 24.3)
+	_kerb(l, -4.5, -24.3, P.CURB_X, -24.0)
+	_kerb(l, -4.5, 24.0, P.CURB_X, 24.3)
+	_building(l, 9.0, -14.0, 6.0, 5.0, 6.0, "#E8E3D8", "", "#2D6FB8", true)
+	_block(l, 9.0, -14.0, 6.6, 5.6, 0.2, ROOF, 6.0, false)
+	_block(l, 6.0, -14.0, 0.1, 3.6, 1.6, GLASS, 3.6, false)
+	for z: float in [-18.0, -12.0, -6.0, 0.0, 6.0]: _cone(l, -9.0, z)
+	for i in 3: P._line(l, Vector2(6.0 + i * 2.8, 10.0), Vector2(6.0 + i * 2.8, 15.5), 0.12, YELLOW)
+	for z: float in [12.7, 18.2]: _car_at(l, "hatch", "#F2F4F8", 7.4, z + 0.5, 0.0)
+	_label(l, "gameParkingSignExam", 9.0, 5.0, -11.4, 5.0, 0.7, "#2D6FB8")
+	for x in range(-40, 44, 8):
+		l.trees.append(Vector2(x, -30.0))
+		l.trees.append(Vector2(x + 4.0, 30.0))
+	for z in range(-20, 24, 8):
+		l.trees.append(Vector2(-18.0, z))
+		l.trees.append(Vector2(18.0, z + 4.0))
+	l.lamps.append(Vector2(-13.0, 0.0))
+	return l
+
+
+# --- 20. Café street: getting out of a tight space at the kerb ---
+
+static func _cafe_exit() -> Dictionary:
+	var l := P._level("cafe_exit")
+	var rng := _rng(91)
+	var gap := 6.0
+	P._street(l, -34.0, 26.0)
+	var lane := -1.1
+	_target(l, Vector2(lane, -16.0), 1.4, 3.0, PI)
+	var behind := ParkingLevels.model_meta("suv")
+	for z: float in [-gap - 12.3, -gap - 6.15, -gap, gap, gap + 6.1]:
+		var model: String = "suv" if z == gap else P.PARKED_MODELS[rng.randi() % P.PARKED_MODELS.size()]
+		l.cars.append({"model": model, "paint": P.PAINTS[rng.randi() % P.PAINTS.size()], "c": Vector2(P.KERB_CAR_X, z), "yaw": PI})
+	l.exit = func(geo: Dictionary) -> Array:
+		# Back to 0.4 m from the car behind first, then out on full lock (see the steps above).
+		var rear := Vector2(P.SPOT_X, 0.0) - P.forward(PI) * float(geo.rear)
+		var room: float = gap - float(behind.half_length) - 0.35 - float(geo.half_length)
+		return [_fit(-1, 1, rear.y, 4, 1), _a(-1, -1, 45), _fit(-1, 0, rear.x, 4, 0), _a(-1, 1, 45), _s(1, room)]
+	_cued(l, ["gameParkingTipExitBack", "gameParkingTipExitTurn", "", "gameParkingTipExitAlign", ""])
+	l.mission = "gameParkingMissionExit"
+	l.bounds = Rect2(-6.0, -34.0, 9.0, 60.0)
+	l.trees = l.trees.filter(func(t: Vector2) -> bool: return t.x < 0)
+	l.buildings = l.buildings.filter(func(b: Dictionary) -> bool: return b.pos.x < 0)
+	# The café: a terrace with umbrellas and planters along a low façade.
+	_building(l, 13.0, 0.0, 10.0, 40.0, 6.0, "#E7D8C3", "", "#8A4B3C", false)
+	_block(l, 7.9, 0.0, 0.12, 14.0, 2.4, GLASS, 0.4, false)
+	_label(l, "gameParkingSignCafe", 13.0, 6.32, -2.0, 6.0, 1.4, "#8A4B3C", true)
+	for z: float in [-5.0, 0.0, 5.0]:
+		_umbrella(l, 5.4, z, "#B9463E" if z != 0.0 else "#F2F4F8")
+		_block(l, 5.4, z, 0.8, 0.8, 0.05, WOOD, 0.72, false)
+	for z: float in [-9.0, 9.0]: _block(l, P.CURB_X + 0.6, z, 0.6, 3.0, 0.6, "#8C8378")
+	for z in range(-30, 28, 12): l.lamps.append(Vector2(P.CURB_X + 0.4, z + 6))
+	for z in range(-80, 80, 20): l.buildings.append({"prop": "buildings/block_%d" % (absi(z) % 5), "pos": Vector2(28.0, z), "yaw": -PI / 2})
+	return l
+
+
+# --- 21–23. Find a space on your own: only the wheel's forecast is drawn ---
+
+## Perpendicular bays both sides of an aisle along x, z ∈ [0, aisle]; returns every bay centre
+## as [centre, yaw into the bay].
+static func _rows(l: Dictionary, x0: float, count: int, aisle: float, w := 2.7) -> Array:
+	var out := []
+	for row in 2:
+		var edge := 0.0 if row == 0 else aisle
+		var out_dir := -1.0 if row == 0 else 1.0
+		for i in count:
+			var c := Vector2(x0 + (i + 0.5) * w, edge + out_dir * P.BAY_D * 0.5)
+			_bay_lines(l, c, PI if row == 0 else 0.0, w, P.BAY_D, true)
+			out.append([c, PI if row == 0 else 0.0])
+	return out
+
+
+## A free bay the player may take in either heading.
+static func _free(l: Dictionary, c: Vector2, yaw: float, w := 2.7, ok := true, reason := "") -> void:
+	l.spots.append({"box": P.box(c, w * 0.5 - 0.05, P.BAY_D * 0.5, yaw), "ok": ok, "reason": reason, "either_heading": true})
+
+
+static func _mall() -> Dictionary:
+	var l := P._level("mall")
+	var rng := _rng(101)
+	var aisle := 9.0
+	var w := P.LOT_BAY_W
+	l.asphalt.append(P.rect(-24.0, -P.BAY_D - 1.0, 24.0, aisle + P.BAY_D + 1.0))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	var bays := _rows(l, -19.5, 13, aisle, w)
+	var free := [3, 9, 19]
+	for i in bays.size():
+		var c: Vector2 = bays[i][0]
+		if i in free: _free(l, c, bays[i][1], w)
+		else: P._car(l, rng, c + Vector2(rng.randf_range(-0.12, 0.12), rng.randf_range(-0.1, 0.15)), bays[i][1] if rng.randf() < 0.7 else bays[i][1] + PI)
+	l.target = l.spots[0].box
+	l.exit = func(g: Dictionary) -> Array: return P.forward_bay_exit(g)
+	l.mission = "gameParkingSearchMission"
+	_kerb(l, -26.0, -P.BAY_D - 4.0, 26.0, -P.BAY_D - 1.0)
+	_kerb(l, -26.0, aisle + P.BAY_D + 1.0, 26.0, aisle + P.BAY_D + 4.0)
+	_kerb(l, 24.0, -P.BAY_D - 1.0, 26.0, aisle + P.BAY_D + 1.0)
+	_kerb(l, -26.0, -P.BAY_D - 1.0, -24.0, 0.0)
+	_kerb(l, -26.0, aisle, -24.0, aisle + P.BAY_D + 1.0)
+	l.asphalt.append(P.rect(-40.0, 0.0, -24.0, aisle))
+	_barrier(l, Vector2(-24.4, 0.0), Vector2(-24.4, aisle))
+	l.spawn = Vector3(-21.0, aisle * 0.5, PI / 2)
+	l.bounds = Rect2(-24.4, -P.BAY_D - 1.0, 48.4, aisle + P.BAY_D * 2.0 + 2.0)
+	_building(l, 0.0, -P.BAY_D - 12.0, 50.0, 14.0, 10.0, "#DCE3E8", "gameParkingSignMall", "#7B4FA0")
+	_block(l, 0.0, -P.BAY_D - 4.94, 16.0, 0.12, 3.4, GLASS, 0.0, false)
+	for x: float in [-16.0, -4.0, 8.0, 20.0]:
+		_bollard(l, x, -P.BAY_D - 1.6)
+		l.trees.append(Vector2(x - 4.0, aisle + P.BAY_D + 6.0))
+	for x: float in [-24.0, 0.0, 24.0]: l.lamps.append(Vector2(x, aisle + P.BAY_D + 2.2))
+	_canopy(l, -22.0, -P.BAY_D - 4.0, -17.0, -P.BAY_D - 1.4, 2.4, "#7B4FA0", [Vector2(-21.8, -P.BAY_D - 1.6), Vector2(-17.2, -P.BAY_D - 1.6)], "#7B4FA0CC")
+	for i in 5: _block(l, -21.0 + i * 0.9, -P.BAY_D - 2.8, 0.55, 2.0, 1.0, METAL, 0.0, false)
+	return l
+
+
+static func _yard() -> Dictionary:
+	var l := P._level("yard")
+	var rng := _rng(7)
+	var aisle := 9.0
+	var w := P.LOT_BAY_W
+	l.asphalt.append(P.rect(-20.0, -P.BAY_D - 0.6, 20.0, aisle + P.BAY_D + 0.6))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	var bays := _rows(l, -18.0, 12, aisle, w)
+	# Bay 8 of the north row is for disabled drivers (6.4 with 8.17 and the painted bay).
+	var disabled := 8
+	var free := [4, disabled, 15]
+	for i in bays.size():
+		var c: Vector2 = bays[i][0]
+		if i == disabled:
+			_free(l, c, bays[i][1], w, false, "gameParkingDisabled")
+			l.ground.append({"box": P.box(c, 1.25, P.BAY_D * 0.5 - 0.1, 0.0), "key": "#4C8FD6"})
+			l.signs.append({"code": "6.4", "pos": Vector2(c.x, -P.BAY_D - 0.6), "yaw": PI})
+			l.signs.append({"code": "8.17", "pos": Vector2(c.x, -P.BAY_D - 0.6), "yaw": PI, "y": 1.75, "size": 0.75})
+			continue
+		if i in free: _free(l, c, bays[i][1], w)
+		else: P._car(l, rng, c + Vector2(rng.randf_range(-0.12, 0.12), rng.randf_range(-0.1, 0.15)), bays[i][1] if rng.randf() < 0.6 else bays[i][1] + PI)
+	l.target = l.spots[0].box
+	l.exit = func(g: Dictionary) -> Array: return P.forward_bay_exit(g)
+	l.mission = "gameParkingMissionYard"
+	_kerb(l, -22.0, -P.BAY_D - 3.6, 22.0, -P.BAY_D - 0.6)
+	_kerb(l, -22.0, aisle + P.BAY_D + 0.6, 22.0, aisle + P.BAY_D + 3.6)
+	_kerb(l, 20.0, -P.BAY_D - 0.6, 22.0, aisle + P.BAY_D + 0.6)
+	_kerb(l, -22.0, -P.BAY_D - 0.6, -20.0, 0.0)
+	_kerb(l, -22.0, aisle, -20.0, aisle + P.BAY_D + 0.6)
+	l.asphalt.append(P.rect(-36.0, 0.0, -20.0, aisle))
+	_barrier(l, Vector2(-20.4, 0.0), Vector2(-20.4, aisle))
+	l.spawn = Vector3(-16.5, aisle * 0.5, PI / 2)
+	l.bounds = Rect2(-20.4, -P.BAY_D - 0.6, 40.4, aisle + P.BAY_D * 2.0 + 1.2)
+	for x: float in [-12.0, 4.0, 18.0]: l.buildings.append({"prop": "buildings/block_%d" % (6 if x == 4.0 else 4), "pos": Vector2(x, -15.0), "yaw": 0.0})
+	for x: float in [-12.0, 4.0]:
+		_bench(l, x - 3.0, -P.BAY_D - 1.6)
+		_bin(l, x + 3.0, -P.BAY_D - 1.6)
+	_ground(l, "dirt", -14.0, aisle + P.BAY_D + 4.0, 6.0, aisle + P.BAY_D + 14.0)
+	_fence(l, Vector2(-14.0, aisle + P.BAY_D + 4.0), Vector2(6.0, aisle + P.BAY_D + 4.0), "#3F8FC9", 1.0)
+	for t: Vector2 in [Vector2(10.0, 22.0), Vector2(16.0, 19.0), Vector2(-18.0, 21.0)]: l.trees.append(t)
+	return l
+
+
+static func _park() -> Dictionary:
+	var l := P._level("park")
+	var rng := _rng(13)
+	var aisle := 6.8
+	var depth := P.BAY_D * sin(deg_to_rad(60.0))
+	l.asphalt.append(P.rect(-24.0, -depth - 1.0, 24.0, aisle + depth + 1.0))
+	l.grass.append(P.rect(-120, -120, 120, 120))
+	var free_n := [3, 7, 10]
+	var free_s := []
+	var centres := _herring(l, 60.0, -20.5, 12, aisle, rng, free_n, free_s)
+	var f_s := P.forward(PI / 2 - deg_to_rad(60.0))
+	var pitch := P.BAY_W / sin(deg_to_rad(60.0))
+	for i in free_n: l.spots.append({"box": P.box(centres[i], P.BAY_W * 0.5 - 0.05, P.BAY_D * 0.5, PI / 2 + deg_to_rad(60.0)), "ok": true})
+	for i in free_s:
+		var c := Vector2(-20.5 + (i + 0.5) * pitch + pitch * 0.5, aisle) + f_s * P.BAY_D * 0.5
+		l.spots.append({"box": P.box(c, P.BAY_W * 0.5 - 0.05, P.BAY_D * 0.5, PI / 2 - deg_to_rad(60.0)), "ok": true})
+	l.target = l.spots[0].box
+	l.exit = func(g: Dictionary) -> Array: return [_fit(-1, 1, aisle * 0.5 + 0.8, 1), _a(-1, 1, 60), _s(-1, 4.0)]
+	l.mission = "gameParkingSearchMission"
+	_kerb(l, -26.0, -depth - 4.0, 26.0, -depth - 1.0)
+	_kerb(l, -26.0, aisle + depth + 1.0, 26.0, aisle + depth + 4.0)
+	_kerb(l, 24.0, -depth - 1.0, 26.0, aisle + depth + 1.0)
+	_kerb(l, -26.0, -depth - 1.0, -24.0, 0.0)
+	_kerb(l, -26.0, aisle, -24.0, aisle + depth + 1.0)
+	l.asphalt.append(P.rect(-40.0, 0.0, -24.0, aisle))
+	_barrier(l, Vector2(-24.4, 0.0), Vector2(-24.4, aisle))
+	for x: float in [-14.0, 4.0]: l.arrows.append({"pos": Vector2(x, aisle * 0.5), "yaw": PI / 2, "len": 3.0})
+	l.spawn = Vector3(-21.5, aisle * 0.5, PI / 2)
+	l.bounds = Rect2(-24.4, -depth - 1.0, 48.4, aisle + depth * 2.0 + 2.0)
+	for x in range(-40, 44, 6):
+		l.trees.append(Vector2(x + rng.randf_range(-1, 1), -depth - 7.0 + rng.randf_range(-1, 1)))
+		l.trees.append(Vector2(x + 3.0 + rng.randf_range(-1, 1), aisle + depth + 7.0 + rng.randf_range(-1, 1)))
+	for x: float in [-18.0, -2.0, 14.0]:
+		_bench(l, x, -depth - 2.6)
+		l.lamps.append(Vector2(x + 7.0, -depth - 2.0))
+	_ground(l, "paving", -30.0, -depth - 14.0, 30.0, -depth - 11.0)
+	_canopy(l, 8.0, -depth - 20.0, 14.0, -depth - 15.0, 2.8, WOOD, [Vector2(8.3, -depth - 19.7), Vector2(13.7, -depth - 19.7), Vector2(8.3, -depth - 15.3), Vector2(13.7, -depth - 15.3)], "#9C7650FF")
+	_table(l, 11.0, -depth - 17.5)
+	return l
+
+
+# --- 24–25. Where may I stop? (п. 12.4) ---
+
+static func _school_street() -> Dictionary:
+	var l := P._level("school_street")
+	l.show_path = false
+	var rng := _rng(19)
+	P._street(l, -50.0, 34.0)
+	var spot := func(z0: float, z1: float, ok: bool, reason: String) -> Dictionary:
+		var s := {"box": P.box(Vector2(P.SPOT_X, (z0 + z1) * 0.5), P.SPOT_HALF_W, (z1 - z0) * 0.5, PI), "ok": ok, "reason": reason}
+		l.spots.append(s)
+		return s
+	# A zebra at z ∈ [-3, 1]: the 5 m before it (towards the driver) are closed (п. 12.4).
+	spot.call(1.4, 8.0, false, "gameParkingCrosswalk")
+	l.target = spot.call(-26.0, -18.0, true, "").box
+	spot.call(-41.0, -33.6, false, "gameParkingDriveway")
+	for z: float in [24.0, 17.2, 11.8, -6.6, -12.6, -30.0, -45.0]:
+		_car_at(l, P.PARKED_MODELS[rng.randi() % P.PARKED_MODELS.size()], P.PAINTS[rng.randi() % P.PAINTS.size()], P.KERB_CAR_X, z, PI)
+	for k in 8: P._line(l, Vector2(-5.4 + k * 1.1, -3.0), Vector2(-5.4 + k * 1.1, 1.0), 0.55, WHITE)
+	for x: float in [P.CURB_X + 0.9, -6.9]:
+		l.signs.append({"code": "5.19.1", "pos": Vector2(x, -3.6), "yaw": PI})
+	l.signs.append({"code": "1.23", "pos": Vector2(P.CURB_X + 0.9, 22.0), "yaw": PI})
+	# The driveway of a yard: a lowered kerb and an open gate in the fence.
+	_fence(l, Vector2(P.CURB_X + 4.0, -60.0), Vector2(P.CURB_X + 4.0, -40.2), "#5F7D95", 1.8)
+	_fence(l, Vector2(P.CURB_X + 4.0, -34.4), Vector2(P.CURB_X + 4.0, -4.0), "#5F7D95", 1.8)
+	_ground(l, "paving", P.CURB_X, -40.0, P.CURB_X + 4.0, -34.6)
+	_block(l, P.CURB_X + 4.3, -40.0, 0.4, 0.4, 2.0, "#A9573E")
+	_block(l, P.CURB_X + 4.3, -34.6, 0.4, 0.4, 2.0, "#A9573E")
+	_building(l, P.CURB_X + 14.0, 12.0, 14.0, 24.0, 9.0, "#E9D9B6", "gameParkingSignSchoolBuilding", "#C9573E")
+	l.exit = func(geo: Dictionary) -> Array: return P.parallel_exit(geo, 40.0)
+	l.mission = "gameParkingFindSpot"
+	l.bounds = Rect2(-6.0, -50.0, 9.0, 84.0)
+	return l
+
+
+static func _city() -> Dictionary:
+	var l := P._rules()
+	l.mission = "gameParkingFindSpot"
+	return l

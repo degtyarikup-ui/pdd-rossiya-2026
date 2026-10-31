@@ -110,11 +110,12 @@ static func turn_radius(geo: Dictionary) -> float:
 	return float(geo.wheelbase) / tan(MAX_STEER)
 
 
-## Script segments: {g: 1 forward / -1 reverse, s: -1 right, 0, 1 left, d: metres or a: degrees of turn}.
+## Script segments: {g: 1 forward / -1 reverse, s: -1 right, 0, 1 left, d: metres or a: degrees of turn,
+## cue: the instructor's tip for this step (an l10n key), fit: see resolve()}.
 static func drive_script(start: Vector3, script: Array, geo: Dictionary) -> Array:
 	var out := []
 	var p := start
-	for seg: Dictionary in script:
+	for seg: Dictionary in resolve(start, script, geo):
 		var dist: float = seg.d if seg.has("d") else deg_to_rad(float(seg.a)) * turn_radius(geo)
 		if dist < 0.05: continue
 		var n := maxi(1, ceili(dist / STEP))
@@ -122,21 +123,62 @@ static func drive_script(start: Vector3, script: Array, geo: Dictionary) -> Arra
 		for i in n:
 			p = step_pose(p, float(seg.g) * dist / n, float(seg.s) * MAX_STEER, geo.wheelbase)
 			poses.append(p)
-		out.append({"gear": int(seg.g), "steer": int(seg.s), "length": dist, "poses": poses})
+		out.append({"gear": int(seg.g), "steer": int(seg.s), "length": dist, "poses": poses, "cue": seg.get("cue", "")})
+	return out
+
+
+## The end of a script as a pose (only the rear axle and heading, no samples).
+static func script_end(start: Vector3, script: Array, geo: Dictionary) -> Vector3:
+	var p := start
+	for seg: Dictionary in script:
+		var dist: float = seg.d if seg.has("d") else deg_to_rad(float(seg.a)) * turn_radius(geo)
+		var n := maxi(1, ceili(dist / STEP))
+		for i in n: p = step_pose(p, float(seg.g) * dist / n, float(seg.s) * MAX_STEER, geo.wheelbase)
+	return p
+
+
+## A straight may carry fit: [axis, value, at]: its length is chosen so that after segment `at`
+## the rear axle's x (axis 0) or z (axis 1) equals `value`. Every car turns on its own radius,
+## so this keeps a lane, a gate or a passage in the same place for the whole garage. The
+## straight only shifts what follows it, so the length is linear in the result.
+## A fit's optional fourth value orders the fits (lower first, then by position).
+static func resolve(start: Vector3, script: Array, geo: Dictionary) -> Array:
+	var out: Array = []
+	var order: Array = []
+	for i in script.size():
+		var seg: Dictionary = (script[i] as Dictionary).duplicate()
+		if seg.has("fit"):
+			if not seg.has("d"): seg.d = 0.0
+			order.append([int(seg.fit[3]) if (seg.fit as Array).size() > 3 else 0, i])
+		out.append(seg)
+	order.sort()
+	for pair: Array in order:
+		var i: int = pair[1]
+		var fit: Array = out[i].fit
+		var upto: Array = out.slice(0, int(fit[2]) + 1)
+		out[i].d = 0.0
+		var a := script_end(start, upto, geo)
+		out[i].d = 1.0
+		var b := script_end(start, upto, geo)
+		var k: float = (b[int(fit[0])] - a[int(fit[0])])
+		out[i].d = maxf(float(out[i].get("min", 0.0)), (float(fit[1]) - a[int(fit[0])]) / k) if absf(k) > 0.001 else 0.0
+		out[i].erase("fit")
 	return out
 
 
 ## The way into the level's spot: the exit drive reversed in time (gears flip, steering stays).
+## `finish` (a Callable of the car's geometry) overrides where the car ends up: at a fuel pump the
+## filler, not the middle of the car, has to be level with the pump.
 static func way_in(level: Dictionary, geo: Dictionary) -> Array:
 	var target: Dictionary = level.target
-	var final := rear_of(target.c, target.yaw, geo)
+	var final: Vector3 = level.finish.call(geo) if level.get("finish") is Callable else rear_of(target.c, target.yaw, geo)
 	var script: Array = level.exit.call(geo) if level.exit is Callable else level.exit
 	var exit := drive_script(final, script, geo)
 	var path := []
 	for i in range(exit.size() - 1, -1, -1):
 		var poses: Array[Vector3] = (exit[i].poses as Array[Vector3]).duplicate()
 		poses.reverse()
-		path.append({"gear": -int(exit[i].gear), "steer": exit[i].steer, "length": exit[i].length, "poses": poses})
+		path.append({"gear": -int(exit[i].gear), "steer": exit[i].steer, "length": exit[i].length, "poses": poses, "cue": exit[i].cue})
 	return path
 
 
@@ -222,12 +264,17 @@ static func build(index: int) -> Dictionary:
 	return ParkingLocations.build(clampi(index, 0, COUNT - 1))
 
 
-## Everything a car may touch on a level: kerbs, walls and parked cars, as boxes.
+## Everything a car may touch on a level: kerbs, walls, posts, trunks, props and parked cars, as boxes.
 static func obstacles(level: Dictionary) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	out.append_array(level.sidewalks)
 	for t: Vector2 in level.trees: out.append(box(t, 0.22, 0.22, 0))
+	for t: Vector2 in level.pines: out.append(box(t, 0.22, 0.22, 0))
 	for t: Vector2 in level.lamps: out.append(box(t, 0.12, 0.12, 0))
+	for b: Dictionary in level.bushes: out.append(box(b.pos, 0.75, 0.5, b.yaw))
+	for post: Dictionary in level.posts:
+		if post.solid: out.append(box(post.pos, post.r, post.r, 0))
+	out.append_array(level.colliders)
 	for prop: Dictionary in level.buildings:
 		var mesh := Models.mesh_of("res://scenery/%s.glb" % prop.prop)
 		if mesh == null: continue
@@ -244,9 +291,14 @@ static func obstacles(level: Dictionary) -> Array[Dictionary]:
 	return out
 
 
+## ground: surface patches {box, key} over the grass (gravel, paving, concrete, water...);
+## posts: cylinders and cones {pos, r, r_top, sides, h, colour, y0, solid}; colliders: boxes a car
+## stops at that are drawn by something else (a barrier arm); arrows: painted {pos, yaw, len, colour};
+## labels: lettering {key or text, pos: Vector3, width, yaw, flat, colour}; bushes: {pos, yaw}.
 static func _level(id: String) -> Dictionary:
 	return {"id": id, "show_path": true, "cars": [], "walls": [], "asphalt": [], "sidewalks": [], "grass": [],
-		"lines": [], "signs": [], "zigzag": [], "trees": [], "lamps": [], "buildings": [], "spots": [], "works": []}
+		"lines": [], "signs": [], "zigzag": [], "trees": [], "pines": [], "lamps": [], "buildings": [], "spots": [],
+		"works": [], "ground": [], "posts": [], "arrows": [], "labels": [], "bushes": [], "colliders": []}
 
 
 static func _car(level: Dictionary, rng: RandomNumberGenerator, c: Vector2, yaw: float) -> void:
@@ -266,6 +318,15 @@ static func _mirror(level: Dictionary) -> Dictionary:
 	var flip_x := func(v: Vector2) -> Vector2: return Vector2(-v.x, v.y)
 	for key: String in ["asphalt", "sidewalks", "grass"]:
 		for i in level[key].size(): level[key][i] = flip.call(level[key][i])
+	for g: Dictionary in level.ground: g.box = flip.call(g.box)
+	for i in level.colliders.size(): level.colliders[i] = flip.call(level.colliders[i])
+	for item: Dictionary in level.posts: item.pos = flip_x.call(item.pos)
+	for item: Dictionary in level.bushes + level.arrows:
+		item.pos = flip_x.call(item.pos)
+		item.yaw = -float(item.yaw)
+	for item: Dictionary in level.labels:
+		item.pos = Vector3(-item.pos.x, item.pos.y, item.pos.z)
+		item.yaw = -float(item.get("yaw", 0.0))
 	var target: Dictionary = level.target
 	level.target = flip.call(target)
 	for spot: Dictionary in level.spots: spot.box = level.target if is_same(spot.box, target) else flip.call(spot.box)
@@ -280,7 +341,7 @@ static func _mirror(level: Dictionary) -> Dictionary:
 		line.b = flip_x.call(line.b)
 	for w: Dictionary in level.works:
 		for k: String in ["a", "b", "out"]: w[k] = flip_x.call(w[k])
-	for list: String in ["trees", "lamps"]:
+	for list: String in ["trees", "pines", "lamps"]:
 		for i in level[list].size(): level[list][i] = flip_x.call(level[list][i])
 	var r: Rect2 = level.bounds
 	level.bounds = Rect2(-r.end.x, r.position.y, r.size.x, r.size.y)
@@ -288,8 +349,9 @@ static func _mirror(level: Dictionary) -> Dictionary:
 	level.exit = func(geo: Dictionary) -> Array:
 		var script: Array = exit.call(geo) if exit is Callable else exit
 		return script.map(func(seg: Dictionary) -> Dictionary:
-			var out := seg.duplicate()
+			var out := seg.duplicate(true)
 			out.s = -int(seg.s)
+			if out.has("fit") and int(out.fit[0]) == 0: out.fit[1] = -float(out.fit[1])
 			return out)
 	level.id += "_left"
 	return level
@@ -383,8 +445,9 @@ static func _angled(angle: float, target: int, free: Array, seed: int, reverse :
 			_car(level, rng, c + f * rng.randf_range(-0.1, 0.2), yaw)
 	level.signs.append({"code": "6.4", "pos": Vector2(10.4, z0 + 9 * step + 1.0), "yaw": PI})
 	if reverse:
-		# Out nose first, turning into the lane, on along it; the approach drives past the bay.
-		level.exit = [{"g": 1, "s": 0, "d": 4.5}, {"g": 1, "s": -1, "a": angle}, {"g": 1, "s": 0, "d": 2.0}, {"g": -1, "s": 0, "d": 11.0}]
+		# Out nose first, turning into the lane; the approach drives past the bay and stops
+		# exactly where the reverse turn begins (no extra shuffle back).
+		level.exit = [{"g": 1, "s": 0, "d": 4.5}, {"g": 1, "s": -1, "a": angle}, {"g": -1, "s": 0, "d": 10.0}]
 	else:
 		level.exit = [{"g": -1, "s": 0, "d": 3.5}, {"g": -1, "s": -1, "a": angle}, {"g": -1, "s": 0, "d": 9.0}]
 	for z in range(-74, 76, 10):

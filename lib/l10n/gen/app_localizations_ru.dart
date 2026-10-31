@@ -4354,92 +4354,379 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get gameParkingLocationSchool => 'Автошкола';
-
-  @override
-  String get gameParkingLocationCafe => 'Кафе';
-
-  @override
-  String get gameParkingLocationForest => 'Лесная стоянка';
-
-  @override
-  String get gameParkingLocationMarket => 'Магазин';
-
-  @override
-  String get gameParkingLocationHome => 'Дом с воротами';
-
-  @override
-  String get gameParkingLocationService => 'Зона отдыха у АЗС';
-
-  @override
-  String get gameParkingLocationOffice => 'Офис';
-
-  @override
-  String get gameParkingLocationClinic => 'Клиника';
-
-  @override
-  String get gameParkingLocationStation => 'Вокзал';
-
-  @override
-  String get gameParkingLocationQuay => 'Набережная';
-
-  @override
-  String get gameParkingLocationWorkshop => 'Автосервис';
-
-  @override
-  String get gameParkingLocationCourtyard => 'Жилой двор';
-
-  @override
-  String get gameParkingLocationOldTown => 'Старый город';
-
-  @override
-  String get gameParkingLocationHotel => 'Отель';
-
-  @override
-  String get gameParkingLocationDepot => 'Склад';
-
-  @override
-  String get gameParkingLocationDeadEnd => 'Тупик';
-
-  @override
-  String get gameParkingLocationCamp => 'Кемпинг';
-
-  @override
-  String get gameParkingLocationArena => 'Стадион';
-
-  @override
-  String get gameParkingLocationCovered => 'Крытый паркинг';
-
-  @override
-  String get gameParkingLocationBazaar => 'Рынок';
-
-  @override
-  String get gameParkingLocationFindMarket => 'Магазин: найдите место';
-
-  @override
-  String get gameParkingLocationFindHome => 'Квартал: найдите место';
-
-  @override
-  String get gameParkingLocationFindStation => 'Вокзал: найдите место';
-
-  @override
-  String get gameParkingLocationFindPark => 'Парк: найдите место';
-
-  @override
-  String get gameParkingLocationRules => 'Город: где можно встать?';
-
-  @override
   String get gameParkingSearchMission =>
-      'Выберите свободное место. Подсказок нет.';
+      'Найдите свободное место и встаньте сами — без подсказок';
 
   @override
-  String get gameParkingReverseMission => 'Припаркуйтесь задним ходом.';
+  String get gameParkingWheelStraight => 'Руль прямо';
 
   @override
-  String get gameParkingFollowMission =>
-      'Следуйте направляющим до места парковки.';
+  String get gameParkingWheelLeft => 'Руль влево до упора';
 
   @override
-  String get gameParkingTurnMission =>
-      'Развернитесь в три приёма и остановитесь в зоне.';
+  String get gameParkingWheelRight => 'Руль вправо до упора';
+
+  @override
+  String get gameParkingGoForward => 'вперёд до черты';
+
+  @override
+  String get gameParkingGoBack => 'назад до черты';
+
+  @override
+  String get gameParkingGoForwardFinish => 'вперёд, стоп в рамке';
+
+  @override
+  String get gameParkingGoBackFinish => 'назад, стоп в рамке';
+
+  @override
+  String get gameParkingMissionHotel => 'Подъезд к входу отеля';
+
+  @override
+  String get gameParkingMissionBayForward => 'Заезд в бокс передним ходом';
+
+  @override
+  String get gameParkingMissionAngle => 'Парковка «ёлочкой» передним ходом';
+
+  @override
+  String get gameParkingMissionFuel =>
+      'Лючок бака справа: колонка должна оказаться справа';
+
+  @override
+  String get gameParkingMissionWash => 'Заезд в бокс мойки передним ходом';
+
+  @override
+  String get gameParkingMissionBayReverse => 'Заезд в бокс задним ходом';
+
+  @override
+  String get gameParkingMissionParallel => 'Параллельная парковка задним ходом';
+
+  @override
+  String get gameParkingMissionParallelLeft =>
+      'Одностороннее движение: параллельная парковка слева';
+
+  @override
+  String get gameParkingMissionGarage => 'Заезд в гараж задним ходом';
+
+  @override
+  String get gameParkingMissionGate => 'Заезд во двор задним ходом';
+
+  @override
+  String get gameParkingMissionBackAngle =>
+      'Обратная «ёлочка»: заезд задним ходом';
+
+  @override
+  String get gameParkingMissionCamp =>
+      'Задним ходом на площадку между деревьями';
+
+  @override
+  String get gameParkingMissionThreePoint => 'Разворот в три приёма';
+
+  @override
+  String get gameParkingMissionDriveway =>
+      'Разворот с заездом задом в съезд справа';
+
+  @override
+  String get gameParkingMissionTwoStep =>
+      'Узкий проезд: заезд передним ходом в два приёма';
+
+  @override
+  String get gameParkingMissionColumns => 'Задним ходом между колоннами';
+
+  @override
+  String get gameParkingMissionPassage =>
+      'Во двор через узкий проезд между домами';
+
+  @override
+  String get gameParkingMissionExam =>
+      'Экзамен: параллельная парковка по стойкам';
+
+  @override
+  String get gameParkingMissionExit => 'Выезд с тесной парковки у тротуара';
+
+  @override
+  String get gameParkingMissionYard =>
+      'Найдите во дворе место, где можно встать';
+
+  @override
+  String get gameParkingTipHotelApproach =>
+      'Въезд к отелю справа — включите правый поворотник';
+
+  @override
+  String get gameParkingTipHotelIn =>
+      'Поворачивайте во въезд, держитесь своей полосы';
+
+  @override
+  String get gameParkingTipHotelLoop =>
+      'Движение по кругу одностороннее — объезжайте фонтан';
+
+  @override
+  String get gameParkingTipHotelTurn =>
+      'Поворачивайте к входу: бордюр площадки будет справа';
+
+  @override
+  String get gameParkingTipKerbGap =>
+      'Встаньте в 20–30 см от бордюра — пассажирам удобно выйти';
+
+  @override
+  String get gameParkingTipBayFar =>
+      'Держитесь дальней от мест стороны проезда — так проще повернуть';
+
+  @override
+  String get gameParkingTipBayTurn =>
+      'Следите, чтобы левый бок не задел соседнюю машину';
+
+  @override
+  String get gameParkingTipBayStop =>
+      'Выровняйте машину и остановитесь, не доезжая до бордюра';
+
+  @override
+  String get gameParkingTipAngleApproach =>
+      'Место слева впереди — двигайтесь по середине проезда';
+
+  @override
+  String get gameParkingTipAngleTurn =>
+      'Под углом заехать проще: хватает одного поворота';
+
+  @override
+  String get gameParkingTipLogStop =>
+      'Остановитесь, не доезжая до бревна-отбойника';
+
+  @override
+  String get gameParkingTipFuelApproach =>
+      'Свободна дальняя колонка у первого островка';
+
+  @override
+  String get gameParkingTipFuelTurn =>
+      'Островок с колонками должен остаться справа';
+
+  @override
+  String get gameParkingTipFuelStop =>
+      'Остановитесь, когда колонка окажется у заднего колеса';
+
+  @override
+  String get gameParkingTipWashFar =>
+      'Держитесь дальней от боксов стороны — въедете ровно';
+
+  @override
+  String get gameParkingTipWashTurn =>
+      'Машина должна выровняться до входа в бокс';
+
+  @override
+  String get gameParkingTipWashStop =>
+      'Стенки рядом: въезжайте ровно и встаньте посередине';
+
+  @override
+  String get gameParkingTipReversePass =>
+      'Проедьте место и остановитесь у черты — оно окажется позади';
+
+  @override
+  String get gameParkingTipReverseSwing =>
+      'Сдавайте медленно: перед машины выносит в сторону';
+
+  @override
+  String get gameParkingTipReverseIn =>
+      'Машина выровнялась — сдавайте прямо до рамки';
+
+  @override
+  String get gameParkingTipParallelPass =>
+      'Проезжайте в 0,5–1 м от машин, встаньте рядом с передней';
+
+  @override
+  String get gameParkingTipParallel45 =>
+      'Сдавайте, пока машина не встанет под углом около 45°';
+
+  @override
+  String get gameParkingTipParallelAlign =>
+      'Выравнивайтесь вдоль бордюра, следите за передним углом';
+
+  @override
+  String get gameParkingTipParallelCentre =>
+      'Подайте вперёд, чтобы встать посередине места';
+
+  @override
+  String get gameParkingTipGaragePass =>
+      'Проедьте открытый бокс и остановитесь у черты';
+
+  @override
+  String get gameParkingTipGarageIn =>
+      'В воротах проверяйте оба зеркала: до стен одинаково';
+
+  @override
+  String get gameParkingTipGatePass => 'Проедьте ворота и остановитесь у черты';
+
+  @override
+  String get gameParkingTipGateSwing =>
+      'Перед машины выносит к другой стороне улицы — следите за ним';
+
+  @override
+  String get gameParkingTipGateIn =>
+      'Ворота проходите прямо, сверяясь с зеркалами';
+
+  @override
+  String get gameParkingTipBackAnglePass =>
+      'Проедьте место — заезжать будем задом';
+
+  @override
+  String get gameParkingTipBackAngleTurn =>
+      'Машина войдёт в место под углом — сдавайте медленно';
+
+  @override
+  String get gameParkingTipBackAngleIn =>
+      'Выезжать отсюда удобно — передом и с хорошим обзором';
+
+  @override
+  String get gameParkingTipCampPass =>
+      'Проедьте свободную площадку и остановитесь у черты';
+
+  @override
+  String get gameParkingTipCampTrees =>
+      'Деревья рядом — сдавайте медленно, следите за углами';
+
+  @override
+  String get gameParkingTipCampIn =>
+      'Багажником к лагерю — так удобнее разгружаться';
+
+  @override
+  String get gameParkingTipTurnLook =>
+      'Убедитесь, что помех нет, и включите левый поворотник';
+
+  @override
+  String get gameParkingTipTurnFirst =>
+      'Подъезжайте к бордюру, но не касайтесь его';
+
+  @override
+  String get gameParkingTipTurnBack =>
+      'Назад с рулём вправо — освобождаем место для поворота';
+
+  @override
+  String get gameParkingTipTurnOut => 'Выезжайте на свою полосу';
+
+  @override
+  String get gameParkingTipDrivewayPass =>
+      'Проедьте съезд и остановитесь у черты';
+
+  @override
+  String get gameParkingTipDrivewayBack =>
+      'Задом в съезд: потом выедете передом и с обзором';
+
+  @override
+  String get gameParkingTipDrivewayOut =>
+      'Убедитесь, что дорога свободна, и выезжайте';
+
+  @override
+  String get gameParkingTipDrivewayLane =>
+      'Поворачивайте на свою полосу, не задевая бордюр';
+
+  @override
+  String get gameParkingTipTwoStepApproach =>
+      'Проезд узкий: с одного раза в место не заехать';
+
+  @override
+  String get gameParkingTipTwoStepFirst =>
+      'Начните поворот и остановитесь у черты, не доезжая до машин';
+
+  @override
+  String get gameParkingTipTwoStepBack =>
+      'Немного назад с рулём вправо — машина довернёт к месту';
+
+  @override
+  String get gameParkingTipTwoStepAlign =>
+      'Доверните — машина встанет ровно напротив места';
+
+  @override
+  String get gameParkingTipColumnsPass =>
+      'Проедьте место и остановитесь у черты';
+
+  @override
+  String get gameParkingTipColumnsPrep =>
+      'Проезд узкий: выверните нос в сторону — зад встанет напротив места';
+
+  @override
+  String get gameParkingTipColumnsSwing =>
+      'Колонна рядом — сдавайте медленно, смотрите в зеркало';
+
+  @override
+  String get gameParkingTipPassageApproach =>
+      'Поворот налево вне перекрёстка: уступите встречным';
+
+  @override
+  String get gameParkingTipPassageTurn =>
+      'Поворачивайте так, чтобы въехать в проезд прямо';
+
+  @override
+  String get gameParkingTipPassageStraight =>
+      'В проезде держите руль прямо — до стен одинаково';
+
+  @override
+  String get gameParkingTipPassageYard =>
+      'Во дворе поверните направо к свободному месту';
+
+  @override
+  String get gameParkingTipExamPass =>
+      'Проезжайте в 0,5–1 м от стоек и остановитесь у черты';
+
+  @override
+  String get gameParkingTipExamAlign => 'Выравнивайтесь, не задевая стойки';
+
+  @override
+  String get gameParkingTipExitBack =>
+      'Сдайте назад почти до машины сзади — больше места для выезда';
+
+  @override
+  String get gameParkingTipExitTurn =>
+      'Левый поворотник! Следите за правым передним углом';
+
+  @override
+  String get gameParkingTipExitAlign => 'Выравнивайтесь в своей полосе';
+
+  @override
+  String get gameParkingDisabled =>
+      'Место для инвалидов: знак 6.4 с табличкой 8.17';
+
+  @override
+  String get gameParkingCrosswalk =>
+      'Ближе 5 м перед переходом стоять нельзя (п. 12.4)';
+
+  @override
+  String get gameParkingDriveway =>
+      'Нельзя перекрывать выезд со двора (п. 12.4)';
+
+  @override
+  String get gameParkingSignHotel => 'ОТЕЛЬ';
+
+  @override
+  String get gameParkingSignSchool => 'АВТОШКОЛА';
+
+  @override
+  String get gameParkingSignMarket => 'СУПЕРМАРКЕТ';
+
+  @override
+  String get gameParkingSignFuel => 'АЗС';
+
+  @override
+  String get gameParkingSignShop => 'МАГАЗИН';
+
+  @override
+  String get gameParkingSignWash => 'МОЙКА';
+
+  @override
+  String get gameParkingSignOffice => 'БИЗНЕС-ЦЕНТР';
+
+  @override
+  String get gameParkingSignStation => 'ВОКЗАЛ';
+
+  @override
+  String get gameParkingSignCafe => 'КАФЕ';
+
+  @override
+  String get gameParkingSignExam => 'АВТОДРОМ';
+
+  @override
+  String get gameParkingSignExit => 'ВЫХОД';
+
+  @override
+  String get gameParkingSignMall => 'ТОРГОВЫЙ ЦЕНТР';
+
+  @override
+  String get gameParkingSignSchoolBuilding => 'ШКОЛА';
 }
