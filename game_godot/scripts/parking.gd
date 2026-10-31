@@ -95,6 +95,7 @@ var _display_hz := 60
 var _perf := {"time": 0.0, "frames": 0, "worst": 0.0}
 var _ground := {}                # material key -> SurfaceTool while a level is built
 var _building_pools: Array[MultiMeshInstance3D] = []
+var _shadow_atlas_before: Array[int] = []
 
 
 func _ready() -> void:
@@ -160,6 +161,12 @@ func _setup_args() -> void:
 
 
 func _setup_environment() -> void:
+	# Equal-sized shadow tiles prevent local lights from changing shadow resolution
+	# as the parking camera moves. Sixteen tiles fit the eight local spotlights.
+	var viewport := get_viewport()
+	for i in 4:
+		_shadow_atlas_before.append(viewport.get_positional_shadow_atlas_quadrant_subdiv(i))
+		viewport.set_positional_shadow_atlas_quadrant_subdiv(i, Viewport.SHADOW_ATLAS_QUADRANT_SUBDIV_4)
 	sun = DirectionalLight3D.new()
 	add_child(sun)
 	env = WorldEnvironment.new()
@@ -420,6 +427,17 @@ func _ground_quad(b: Dictionary, y: float, key: String) -> void:
 		st.add_vertex(Vector3(c[i].x, y, c[i].y))
 
 
+## Base roads include inset driveways and patches beneath rounded kerbs. Drawing each
+## rectangle separately puts triangles at the same depth and makes local lights flicker.
+func _ground_surface(boxes: Array, y: float, key: String) -> void:
+	if boxes.is_empty(): return
+	var st := _ground_tool(key)
+	for quad: PackedVector2Array in ParkingSurface.union_rectangles(boxes):
+		for i in [0, 1, 2, 0, 2, 3]:
+			st.set_normal(Vector3.UP)
+			st.add_vertex(Vector3(quad[i].x, y, quad[i].y))
+
+
 func _flush_ground() -> void:
 	for key: String in _ground:
 		var node := MeshInstance3D.new()
@@ -442,7 +460,7 @@ func _flush_ground() -> void:
 func _build_ground() -> void:
 	_ground.clear()
 	for b: Dictionary in level.grass: _ground_quad(b, -0.03, "grass")
-	for b: Dictionary in level.asphalt: _ground_quad(b, 0.0, "asphalt")
+	_ground_surface(level.asphalt, 0.0, "asphalt")
 	# Patches lie in the order given, each a little above the last (paving on asphalt...).
 	var lift := 0.0
 	for g: Dictionary in level.ground:
@@ -1262,6 +1280,13 @@ func _has_arg(name: String) -> bool:
 	for arg: String in Host.user_args():
 		if arg == name or arg.begins_with(name + "="): return true
 	return false
+
+
+func _exit_tree() -> void:
+	var viewport := get_viewport()
+	if viewport == null: return
+	for i in _shadow_atlas_before.size():
+		viewport.set_positional_shadow_atlas_quadrant_subdiv(i, _shadow_atlas_before[i])
 
 
 func _notification(what: int) -> void:

@@ -77,6 +77,17 @@
 бордюров, тональное сжатие ограничивает пересвет светлого бетона и снега. В подземном
 паркинге нет солнечного или лунного света. Тема интерфейса по-прежнему задаётся приложением.
 
+При движении источник сохраняет режим теней: смена ближайшего фонаря не переключает
+яркость и тени на ходу. Переназначение выполняется только после полностью тёмного кадра,
+затухание и появление занимают по 0,55 с с плавными концами. Ячейки атласа теней одинаковы,
+чтобы движение камеры не меняло разрешение тени; настройки восстанавливаются при выходе
+из «Парковки». Маленькие блики линз — круглые меши с затуханием в цвете шейдера
+(`parking_headlight_glow.gd`), без прямоугольных полупрозрачных карточек.
+
+Прямоугольники базового асфальта объединяются перед отрисовкой (`parking_surface.gd`).
+Въезды и подложки под скруглёнными бордюрами не создают копланарных дубликатов, которые
+мерцали в свете фар. Внешний контур покрытия, отверстия и коллизии не изменяются.
+
 ## Устройство
 
 - Путь — выезд из места, проигранный назад. Прямая с `fit: [ось, значение, шаг, порядок]`
@@ -96,6 +107,9 @@ godot --headless --path game_godot --script res://tests/parking_check.gd --fixed
 godot --headless --path game_godot --script res://tests/parking_locations_check.gd
 godot --headless --path game_godot --script res://tests/parking_guidance_check.gd
 godot --headless --path game_godot --script res://tests/parking_lighting_check.gd
+godot --headless --path game_godot --script res://tests/parking_surface_check.gd
+godot --headless --path game_godot --script res://tests/parking_lighting_temporal_check.gd
+godot --path game_godot --script res://tests/parking_lighting_temporal_check.gd
 godot --path game_godot --script res://tests/parking_guidance_check.gd -- --text-scale=1.6
 ```
 
@@ -108,3 +122,7 @@ godot --path game_godot --script res://tests/parking_guidance_check.gd -- --text
 геометрическое покрытие маршрута конусами света, фары семи моделей, D/R и торможение,
 лимит источников при движении и корректное восстановление дня после ночного уровня.
 Яркость, мягкость теней и читаемость покрытия дополнительно проверяются native-кадрами.
+`parking_surface_check` сверяет покрытие и отсутствие наложений на всех 25 локациях.
+`parking_lighting_temporal_check` проходит световые границы в обоих направлениях,
+проверяет плавность энергии, смену качества, лимит источников и движение камеры;
+native-режим дополнительно сравнивает изображение при пересечении границ выбора фонарей.

@@ -6,6 +6,7 @@ extends Node3D
 
 const STATIC_BUDGET := 5
 const HEAD_COLOUR := Color("#FFF1D5")
+const SOURCE_FADE_SECONDS := 0.55
 var headlights: Array[SpotLight3D] = []
 var reverse_light: SpotLight3D
 var tail_light: OmniLight3D
@@ -13,7 +14,7 @@ var reverse_lenses: Array[MeshInstance3D] = []
 var static_slots: Array[Dictionary] = []
 var sources: Array = []
 var _brakes: Array[StandardMaterial3D] = []
-var _static_shadows := 2
+var _static_shadows := true
 var _first_focus := true
 
 
@@ -91,10 +92,7 @@ func setup(level: Dictionary, car: Node3D, _geo: Dictionary, vehicle_id: String)
 		light.shadow_normal_bias = 0.8
 		light.shadow_blur = 1.4
 		headlights.append(light)
-		var halo := Glow.halo(light.light_color, 0.55)
-		var halo_mat := halo.material_override.duplicate() as ShaderMaterial
-		halo_mat.set_shader_parameter("intensity", 0.22)
-		halo.material_override = halo_mat
+		var halo := ParkingHeadlightGlow.make(light.light_color, 0.55)
 		halo.position = light.position
 		car.add_child(halo)
 		# White reverse sections are separate from the red stop/tail lamps.
@@ -149,7 +147,7 @@ func setup(level: Dictionary, car: Node3D, _geo: Dictionary, vehicle_id: String)
 func set_quality(shadows: bool) -> void:
 	# Preserve headlight occlusion even on low: otherwise a beam penetrates a parked
 	# car or a garage wall. Only decorative fixture shadows are reduced by the budget.
-	_static_shadows = 2 if shadows else 0
+	_static_shadows = shadows
 
 
 func update_state(gear: int, braking: bool, _dt: float) -> void:
@@ -172,24 +170,39 @@ func update_focus(at: Vector3, dt: float) -> void:
 		return _distance(a, at, active) < _distance(b, at, active))
 	var wanted := order.slice(0, STATIC_BUDGET)
 	for slot in static_slots:
-		if slot.index in wanted: continue
-		slot.weight = move_toward(float(slot.weight), 0.0, dt * 2.5)
-		if slot.weight <= 0.001:
+		var light: SpotLight3D = slot.light
+		var needs_change: bool = slot.index not in wanted or light.shadow_enabled != _static_shadows
+		if needs_change and float(slot.weight) > 0.0:
+			slot.weight = move_toward(float(slot.weight), 0.0, dt / SOURCE_FADE_SECONDS)
+			_apply_slot(slot)
+			# Show the fully dark frame before changing a light's transform or shadow
+			# mode. Rebinding and fading in during this frame used to skip that frame.
+			continue
+		if slot.index not in wanted:
 			slot.index = -1
 			for id: int in wanted:
 				if static_slots.any(func(s: Dictionary) -> bool: return s.index == id): continue
 				slot.index = id
-				_configure(slot.light, sources[id])
+				_configure(light, sources[id])
 				break
-	for slot in static_slots:
-		if slot.index < 0: continue
-		if slot.index in wanted:
-			slot.weight = 1.0 if _first_focus else move_toward(float(slot.weight), 1.0, dt * 2.5)
-		var light: SpotLight3D = slot.light
-		light.visible = slot.weight > 0.001
-		light.light_energy = float(sources[slot.index].energy) * float(slot.weight)
-		light.shadow_enabled = order.find(slot.index) < _static_shadows
+		if needs_change:
+			# A lit fixture keeps its shadows, irrespective of which one is closest.
+			# In Compatibility, toggling shadows also changes the diffuse brightness.
+			light.shadow_enabled = _static_shadows
+			slot.weight = 1.0 if _first_focus else 0.0
+		else:
+			slot.weight = move_toward(float(slot.weight), 1.0, dt / SOURCE_FADE_SECONDS)
+		_apply_slot(slot)
 	_first_focus = false
+
+
+func _apply_slot(slot: Dictionary) -> void:
+	var light: SpotLight3D = slot.light
+	var weight: float = slot.weight
+	# Smooth endpoints avoid a visible kink as a source leaves or enters the pool.
+	var fade := weight * weight * (3.0 - 2.0 * weight)
+	light.light_energy = float(sources[slot.index].energy) * fade if slot.index >= 0 else 0.0
+	light.visible = light.light_energy > 0.0001
 
 
 func _distance(i: int, at: Vector3, active: Array) -> float:

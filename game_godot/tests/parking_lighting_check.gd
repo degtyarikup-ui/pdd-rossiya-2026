@@ -98,6 +98,18 @@ func _check_cars() -> void:
 		assembly.add_child(rig)
 		var geo := ParkingLevels.geometry(model)
 		rig.setup(ParkingLevels.build(7), car, geo, model)
+		var blooms := 0
+		var circular := true
+		for mesh: MeshInstance3D in car.find_children("*", "MeshInstance3D", true, false):
+			if not mesh.get_meta("parking_headlight_bloom", false): continue
+			blooms += 1
+			# Even if transparent-pass blending changes, no square-card corners should
+			# exist outside the lens bloom's circular footprint.
+			var radius := mesh.get_aabb().size.x * 0.5
+			for surface in mesh.mesh.get_surface_count():
+				for vertex: Vector3 in mesh.mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]:
+					circular = circular and Vector2(vertex.x, vertex.y).length() <= radius * 1.01
+		check("%s lens blooms cannot expose square-card corners" % model, blooms == 2 and circular)
 		var headlights: Array = rig.headlights
 		check("%s has two real headlights" % model, headlights.size() == 2)
 		for light: SpotLight3D in headlights:
