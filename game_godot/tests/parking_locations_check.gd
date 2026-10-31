@@ -1,7 +1,7 @@
 ## The 25 locations of «Парковка»: unique places with localized tasks and signs, a closed
-## area the shown way stays inside, independent levels that hide the way but keep the wheel's
-## forecast, every free space reachable and accepted where the player really stops, wrong
-## spaces explained, and a run of four guided tasks of different kinds plus one done alone.
+## area the shown way stays inside, independent levels without any driving hints, every free
+## space reachable and accepted where the player really stops, and wrong spaces explained.
+## Run composition and debug overrides are covered by parking_run_check.gd.
 ## godot --headless --path game_godot --script res://tests/parking_locations_check.gd
 extends SceneTree
 
@@ -87,20 +87,47 @@ func run() -> void:
 		scene._load_level(i)
 		scene._update_guidance(1.0)
 		var guided := i < ParkingLocations.GUIDED
-		check("location %d: the wheel's forecast is always drawn" % i, scene.guide._prediction.visible)
+		check("location %d: steering forecast only during tuition" % i, scene.guide._prediction.visible == guided)
 		check("location %d: the way is drawn only when guided" % i, scene.guide._route.visible == guided)
 		if guided: continue
 		check("no goal frame in independent %d" % i, not scene.guide._goal.visible)
+		check("no recommended gear in independent %d" % i, not scene.guide._gear_label.is_visible_in_tree())
+		check("no preselected bay in independent %d" % i, scene._spot_views.all(func(v: Dictionary) -> bool: return not v.frame.visible))
+		check("independent %d retains ordinary road markings" % i, not scene.level.lines.is_empty())
+		# The hidden witness route belongs to QA/autopilot, not ordinary search play.
+		# Driving and checking the chosen space must still work without consulting it.
+		var witness: Array = scene.way
+		var spawn: Vector3 = scene.pose
+		scene.way = []
+		scene.controls.gas = true
+		scene.controls.brake = false
+		scene._step(0.1)
+		scene._update_guidance(0.1)
+		check("independent %d manual driving does not need a witness route" % i, scene.pose.distance_to(spawn) > 0.001)
+		scene.way = witness
+		scene.pose = spawn
+		scene.speed = 0.0
+		scene.controls.gas = false
+		# Both update paths must stay unaided when the driver changes gear and steering.
+		for selected_gear in [1, -1]:
+			scene.gear = selected_gear
+			scene.steer = ParkingLevels.MAX_STEER * selected_gear
+			scene._paint_way()
+			scene._update_guidance(1.0)
+			check("independent %d gear %d has no trajectory" % [i, selected_gear],
+				not scene.guide._prediction.visible and not scene.guide._route.visible and scene.guide._preview_points.is_empty())
 		if i >= 20 and scene.level.spots.any(func(s: Dictionary) -> bool: return not s.ok):
 			var wrong: Dictionary = scene.level.spots.filter(func(s: Dictionary) -> bool: return not s.ok)[0]
 			scene._wrong_spot(wrong)
 			scene._update_guidance(1.0)
-			if scene.level.get("search", false) and i < 23:
-				check("mistake explains but keeps the way hidden %d" % i, not scene.level.show_path and not scene.guide._route.visible)
+			check("mistake explains without revealing guidance %d" % i,
+				not scene.level.show_path and not scene.guide._route.visible and not scene.guide._prediction.visible
+				and not scene.guide._goal.visible and not scene.guide._gear_label.is_visible_in_tree())
 		for n in scene.level.spots.size():
 			if not scene.level.spots[n].ok or not scene.level.spots[n].get("either_heading", false): continue
 			for heading in [0, PI]:
 				scene._load_level(i)
+				scene.way = []
 				var spot: Dictionary = scene.level.spots[n]
 				scene.pose = ParkingLevels.rear_of(spot.box.c, spot.box.yaw + heading, scene.geo)
 				scene.speed = 0
@@ -108,21 +135,9 @@ func run() -> void:
 				scene._check_spots(Parking.HOLD + 0.01, true)
 				check("alternative space accepted %d" % i, scene.parked_count == previous + 1)
 				check("celebration at the chosen space %d" % i, scene.guide._goal_centre.distance_to(spot.box.c) < 0.01)
-	scene.run_size = 5
-	for attempt in 100:
-		var drawn: Array = scene._draw_levels()
-		var families := {}
-		var alone := 0
-		for i in drawn:
-			if i >= ParkingLocations.GUIDED: alone += 1
-			else: families[ParkingLocations.FAMILIES[i]] = true
-		var sorted := drawn.duplicate()
-		sorted.sort()
-		check("a run: four different guided tasks and one alone, in order", drawn.size() == 5 and alone == 1 and families.size() == 4 and drawn == sorted)
-	for i in ParkingLevels.COUNT:
-		scene._forced_level = i
-		var drawn: Array = scene._draw_levels()
-		check("forced level %d starts once" % i, drawn[0] == i and drawn.count(i) == 1 and drawn.size() == 5)
+				scene._update_guidance(0.1)
+				check("successful search shows feedback, not a route %d" % i,
+					scene.guide._goal.visible and not scene.guide._route.visible and not scene.guide._prediction.visible)
 	scene._exiting = true
 	Models.release_geometry(scene)
 	scene.queue_free()

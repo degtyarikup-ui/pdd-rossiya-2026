@@ -1,12 +1,15 @@
-## Real, surface-lit night lighting for the Compatibility renderer. Five reusable scene
-## spots leave two for the headlights and one for reverse (GLES allows eight per mesh).
+## Real, surface-lit night lighting for the Compatibility renderer. Up to five reusable
+## scene spots (three on low) leave two for headlights and one for reverse (GLES: eight).
 ## Luminous fittings describe the source; they never substitute a white quad on the road.
 class_name ParkingLighting
 extends Node3D
 
 const STATIC_BUDGET := 5
+const LOW_STATIC_BUDGET := 3
 const HEAD_COLOUR := Color("#FFF1D5")
 const SOURCE_FADE_SECONDS := 0.55
+const SELECTION_INTERVAL := 0.2
+const SELECTION_DISTANCE := 0.25
 var headlights: Array[SpotLight3D] = []
 var reverse_light: SpotLight3D
 var tail_light: OmniLight3D
@@ -16,6 +19,13 @@ var sources: Array = []
 var _brakes: Array[StandardMaterial3D] = []
 var _static_shadows := true
 var _first_focus := true
+var _static_budget := STATIC_BUDGET
+var _wanted: Array[int] = []
+var _selection_elapsed := 0.0
+var _selection_at := Vector3.ZERO
+var _selection_dirty := true
+var _last_reverse := -1
+var _last_braking := -1
 
 
 static func apply_environment(sun: DirectionalLight3D, environment: Environment,
@@ -146,13 +156,22 @@ func setup(level: Dictionary, car: Node3D, _geo: Dictionary, vehicle_id: String)
 
 func set_quality(shadows: bool) -> void:
 	# Preserve headlight occlusion even on low: otherwise a beam penetrates a parked
-	# car or a garage wall. Only decorative fixture shadows are reduced by the budget.
+	# car or a garage wall. Reduce decorative fixture count and shadows on weak devices.
+	if _static_shadows == shadows: return
 	_static_shadows = shadows
+	_static_budget = STATIC_BUDGET if shadows else LOW_STATIC_BUDGET
+	_selection_dirty = true
 
 
 func update_state(gear: int, braking: bool, _dt: float) -> void:
-	reverse_light.visible = gear < 0
-	for lens in reverse_lenses: lens.visible = gear < 0
+	# Upload lamp/material state only when the driver changes it, not on every frame.
+	var reversing := int(gear < 0)
+	if reversing != _last_reverse:
+		_last_reverse = reversing
+		reverse_light.visible = gear < 0
+		for lens in reverse_lenses: lens.visible = gear < 0
+	if int(braking) == _last_braking: return
+	_last_braking = int(braking)
 	tail_light.light_energy = 0.38 if braking else 0.08
 	for mat in _brakes:
 		mat.albedo_color = Color("#F04438") if braking else Color("#A52B25")
@@ -161,26 +180,33 @@ func update_state(gear: int, braking: bool, _dt: float) -> void:
 
 
 func update_focus(at: Vector3, dt: float) -> void:
-	var order: Array[int] = []
-	for i in sources.size(): order.append(i)
-	# Distance to the lit ground (rather than the pole) gives canopy/window sources
-	# their proper importance. A small hysteresis keeps neighbouring slots stable.
-	var active: Array = static_slots.map(func(slot: Dictionary): return slot.index)
-	order.sort_custom(func(a: int, b: int) -> bool:
-		return _distance(a, at, active) < _distance(b, at, active))
-	var wanted := order.slice(0, STATIC_BUDGET)
-	for slot in static_slots:
+	# Ranking nearby fittings is independent of frame rate. Only transitions need
+	# per-frame work; stopped cars need no sorting or unchanged GPU state uploads.
+	_selection_elapsed = minf(SELECTION_INTERVAL, _selection_elapsed + maxf(dt, 0.0))
+	var moved := at.distance_squared_to(_selection_at)
+	if _selection_dirty or moved > 25.0 or (_selection_elapsed >= SELECTION_INTERVAL and moved >= SELECTION_DISTANCE * SELECTION_DISTANCE):
+		_select_sources(at)
+	for slot_index in static_slots.size():
+		var slot: Dictionary = static_slots[slot_index]
 		var light: SpotLight3D = slot.light
-		var needs_change: bool = slot.index not in wanted or light.shadow_enabled != _static_shadows
+		var enabled := slot_index < _static_budget
+		var needs_change: bool = not enabled or slot.index not in _wanted or light.shadow_enabled != _static_shadows
 		if needs_change and float(slot.weight) > 0.0:
 			slot.weight = move_toward(float(slot.weight), 0.0, dt / SOURCE_FADE_SECONDS)
 			_apply_slot(slot)
 			# Show the fully dark frame before changing a light's transform or shadow
 			# mode. Rebinding and fading in during this frame used to skip that frame.
 			continue
-		if slot.index not in wanted:
+		if not enabled:
+			# Spare slots must stay dark on low; otherwise they would light new sources
+			# while the old three fade out, temporarily exceeding the phone's budget.
 			slot.index = -1
-			for id: int in wanted:
+			if light.shadow_enabled: light.shadow_enabled = false
+			_apply_slot(slot)
+			continue
+		if slot.index not in _wanted:
+			slot.index = -1
+			for id: int in _wanted:
 				if static_slots.any(func(s: Dictionary) -> bool: return s.index == id): continue
 				slot.index = id
 				_configure(light, sources[id])
@@ -188,12 +214,26 @@ func update_focus(at: Vector3, dt: float) -> void:
 		if needs_change:
 			# A lit fixture keeps its shadows, irrespective of which one is closest.
 			# In Compatibility, toggling shadows also changes the diffuse brightness.
-			light.shadow_enabled = _static_shadows
-			slot.weight = 1.0 if _first_focus else 0.0
-		else:
+			if light.shadow_enabled != _static_shadows: light.shadow_enabled = _static_shadows
+			slot.weight = 1.0 if _first_focus and slot.index >= 0 else 0.0
+		elif slot.index >= 0:
 			slot.weight = move_toward(float(slot.weight), 1.0, dt / SOURCE_FADE_SECONDS)
 		_apply_slot(slot)
 	_first_focus = false
+
+
+func _select_sources(at: Vector3) -> void:
+	_selection_elapsed = 0.0
+	_selection_at = at
+	_selection_dirty = false
+	var order: Array[int] = []
+	for i in sources.size(): order.append(i)
+	# Distance to the lit ground (rather than the pole) gives canopy/window sources
+	# their proper importance. A small hysteresis keeps neighbouring slots stable.
+	var active: Array = static_slots.map(func(slot: Dictionary): return slot.index)
+	order.sort_custom(func(a: int, b: int) -> bool:
+		return _distance(a, at, active) < _distance(b, at, active))
+	_wanted = order.slice(0, _static_budget)
 
 
 func _apply_slot(slot: Dictionary) -> void:
@@ -201,8 +241,11 @@ func _apply_slot(slot: Dictionary) -> void:
 	var weight: float = slot.weight
 	# Smooth endpoints avoid a visible kink as a source leaves or enters the pool.
 	var fade := weight * weight * (3.0 - 2.0 * weight)
-	light.light_energy = float(sources[slot.index].energy) * fade if slot.index >= 0 else 0.0
-	light.visible = light.light_energy > 0.0001
+	var energy := float(sources[slot.index].energy) * fade if slot.index >= 0 else 0.0
+	# The renderer stores float32; exact comparison would re-upload a steady double.
+	if not is_equal_approx(light.light_energy, energy): light.light_energy = energy
+	var lit := energy > 0.0001
+	if light.visible != lit: light.visible = lit
 
 
 func _distance(i: int, at: Vector3, active: Array) -> float:

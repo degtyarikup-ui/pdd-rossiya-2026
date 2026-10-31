@@ -2,8 +2,8 @@
 ## pedals (scripts/controls.gd), a steering wheel that keeps its lock (scripts/parking_wheel.gd)
 ## and a D/R switch, the garage car, and the way into the spot drawn on the asphalt one step
 ## at a time (scripts/parking_guide.gd); a short task is shown at the start. The white
-## forecast of the current wheel angle is shown on every level, the route only on the guided
-## ones. The camera looks down and keeps the car and the spot in frame; buildings that hide
+## forecast of the current wheel angle and the route appear only on guided levels. Search
+## levels leave the choice and manoeuvre to the driver. Buildings that hide
 ## the car fade. A touch costs a life; the rule levels ask to pick a legal space (п. 12.4).
 class_name Parking
 extends Node3D
@@ -41,8 +41,8 @@ var session_id := "parking"
 var run_sequence := 0
 var completed_runs: Array[Dictionary] = []
 var level_index := 0             # the level being played (ParkingLevels.build id)
-var run_size := 5                # levels in one run, drawn at random from ParkingLevels.COUNT
-var run_levels: Array[int] = []  # this run's levels, in order of difficulty
+var run_size := 5                # normal run: three daytime, one night, one independent search
+var run_levels: Array[int] = []  # randomly chosen once, retained in stage order for this run
 var run_pos := 0
 var _forced_level := -1          # --level=N: the run starts with that level (debugging, shots)
 var _play_all := false           # --all: every level in catalogue order (playtesting)
@@ -261,44 +261,35 @@ func _start_run() -> void:
 	Host.usage_start("parking")
 
 
-## run_size different levels at random, played in id order (the ids grow with difficulty): four
-## guided tasks of different kinds and one to do alone, which therefore comes last.
+## A normal run is three different daytime tasks, one night task, then an independent search.
+## Smaller test runs take a prefix; longer test runs append the remaining shuffled catalogue.
+## --level moves its category's chosen level to the front; --all keeps catalogue order.
 func _draw_levels() -> Array[int]:
 	if _play_all:
 		var every: Array[int] = []
 		for i in range(maxi(0, _forced_level), ParkingLevels.COUNT): every.append(i)
 		return every
 	var count := clampi(run_size, 1, ParkingLevels.COUNT)
-	var picked: Array[int] = []
-	var families := {}
-	if _forced_level >= 0:
-		picked.append(_forced_level)
-		families[ParkingLocations.FAMILIES[_forced_level]] = true
-	var pool: Array[int] = []
+	var pools: Array = [[], [], []] # daytime guided, night guided, independent search
+	var forced_category := -1
 	for i in ParkingLevels.COUNT:
-		if i != _forced_level: pool.append(i)
-	pool.shuffle()
-	var alone := _forced_level >= ParkingLocations.GUIDED
-	if count >= 5 and not alone:
-		for i in pool:
-			if i >= ParkingLocations.GUIDED:
-				picked.append(i)
-				alone = true
-				break
-	for i in pool:
-		if picked.size() >= count: break
-		var family: String = ParkingLocations.FAMILIES[i]
-		if i not in picked and i < ParkingLocations.GUIDED and not families.has(family):
-			picked.append(i)
-			families[family] = true
-	for i in pool:
-		if picked.size() >= count: break
-		if i not in picked and (i < ParkingLocations.GUIDED or count > 5): picked.append(i)
-	picked.sort()
-	if _forced_level >= 0:
-		picked.erase(_forced_level)
-		picked.push_front(_forced_level)
-	return picked
+		var category := 2 if i >= ParkingLocations.GUIDED else (
+			1 if ParkingLocations.IDS[i] in ParkingNightLayout.LOCATIONS else 0)
+		if i == _forced_level: forced_category = category
+		else: pools[category].append(i)
+	for pool: Array in pools: pool.shuffle()
+	var picked: Array[int] = []
+	if forced_category >= 0: picked.append(_forced_level)
+	for category in 3:
+		var slots: int = [3, 1, 1][category] - (1 if category == forced_category else 0)
+		for i in slots: picked.append(pools[category][i])
+	if count > 5:
+		var remainder: Array[int] = []
+		for i in ParkingLevels.COUNT:
+			if i not in picked: remainder.append(i)
+		remainder.shuffle()
+		picked.append_array(remainder)
+	return picked.slice(0, count)
 
 
 func _load_level(index: int) -> void:
@@ -800,6 +791,12 @@ func _build_props() -> void:
 		npc.rotation.y = parked.yaw
 		root3d.add_child(npc)
 		npc.add_child(_contact_patch(ParkingLevels.model_meta(parked.model)))
+		# Parked cars never move. Preserve the normal settled lens state once, then stop
+		# repeating wheel/brake/beacon uniform writes for every car on every frame.
+		# Keep any future beacon or explicit signal controller animated.
+		if not npc.get_meta("amber_beacon", false) and npc.get_node_or_null("vehicle_signals") == null:
+			npc._process(0.0)
+			npc.set_process(false)
 
 
 ## A person at work (the car wash): a figure of the city's crowd holding a lance out, with a
@@ -900,6 +897,7 @@ func _build_car() -> void:
 	for n in car.find_children("axle_front_*", "Node3D", true, false): axles.append(n)
 	brake_mat = StandardMaterial3D.new()
 	brake_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	brake_mat.albedo_color = Color("#7F1D1D")
 	for n: MeshInstance3D in car.find_children("brake_*", "MeshInstance3D", true, false):
 		n.material_override = brake_mat
 	root3d.add_child(car)
@@ -916,7 +914,8 @@ func _build_way() -> void:
 func _paint_way() -> void:
 	if not is_instance_valid(guide): return
 	var driving := done_timer < 0.0 and not is_game_over
-	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, 0.0, driving)
+	var tuition: bool = driving and not level.get("search", false)
+	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and tuition, 0.0, tuition)
 
 
 ## Progress follows the rear axle used by the driving model, including manual corrections.
@@ -940,10 +939,14 @@ func _segment_progress() -> Dictionary:
 
 
 func _update_guidance(delta: float) -> void:
-	var progress := _segment_progress()
-	_guide_index = progress.index
+	# Search has no driving tuition. Its witness route is only for QA/autopilot,
+	# so normal play never scans it for a nearest point.
+	if not level.get("search", false):
+		var progress := _segment_progress()
+		_guide_index = progress.index
 	var driving := done_timer < 0.0 and not is_game_over
-	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, delta, driving)
+	var tuition: bool = driving and not level.get("search", false)
+	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and tuition, delta, tuition)
 
 
 # --- Driving ---
@@ -975,9 +978,13 @@ func _process(delta: float) -> void:
 		else:
 			for i in 4: _step(delta / 4.0)
 	_place_car()
+	var braking: bool = bool(_auto.get("brake", false)) if auto_drive else controls.brake
 	if is_instance_valid(lighting):
-		lighting.update_state(gear, bool(_auto.get("brake", false)) if auto_drive else controls.brake, delta)
+		lighting.update_state(gear, braking, delta)
 		lighting.update_focus(car.position, delta)
+	else:
+		var brake_colour := Color("#F04438") if braking else Color("#7F1D1D")
+		if brake_mat.albedo_color != brake_colour: brake_mat.albedo_color = brake_colour
 	_update_guidance(delta)
 	_frame_camera(false, delta)
 	_update_occluders(delta)
@@ -1005,16 +1012,18 @@ func _step(dt: float) -> void:
 	elif gas: speed = move_toward(speed, gear * vmax, ACCEL * dt)
 	else: speed = move_toward(speed, 0.0, COAST * dt)
 	hit_cooldown -= dt
-	var next := ParkingLevels.step_pose(pose, speed * dt, steer, geo.wheelbase)
-	if _blocked(ParkingLevels.car_box(next, geo)):
-		if absf(speed) > HIT_SPEED and hit_cooldown <= 0.0: _touch()
-		speed = 0.0
-	else:
-		_auto_travel += absf(speed * dt)
-		pose = next
-	if not auto_drive: _advance_segment()
+	# All obstacles are stationary. A stopped car needs no repeated collision scan;
+	# still run steering, parking hold and feedback below, including gear changes.
+	if speed != 0.0:
+		var next := ParkingLevels.step_pose(pose, speed * dt, steer, geo.wheelbase)
+		if _blocked(ParkingLevels.car_box(next, geo)):
+			if absf(speed) > HIT_SPEED and hit_cooldown <= 0.0: _touch()
+			speed = 0.0
+		else:
+			_auto_travel += absf(speed * dt)
+			pose = next
+	if not auto_drive and not level.get("search", false): _advance_segment()
 	_check_spots(dt, brake or not gas)
-	brake_mat.albedo_color = Color("#F04438") if brake else Color("#7F1D1D")
 
 
 func _blocked(b: Dictionary) -> bool:
@@ -1093,7 +1102,7 @@ func _wrong_spot(spot: Dictionary) -> void:
 	sound.play("incorrect")
 	GameSound.buzz(80)
 	ui.toast(Ui.t(spot.reason), "bad", 3.0)
-	# After a mistake the way to the legal space is shown.
+	# Optional tuition may reveal the way after a mistake; a search stays unaided.
 	if not level.show_path and not level.get("search", false):
 		level.show_path = true
 		# Reveal the closest part of the route, rather than replaying its distant start.
@@ -1225,13 +1234,15 @@ func _frame_camera(snap: bool, delta := 0.0) -> void:
 
 
 
-## Buildings between the camera and the car or its space turn translucent (Scenery's occluders).
+## Buildings hide only for the car during a search; fading them for a hidden target would
+## disclose the answer. Guided manoeuvres also keep the taught space visible.
 func _update_occluders(delta: float) -> void:
 	if _building_pools.is_empty() or not is_instance_valid(car): return
 	var targets: Array[Vector3] = [car.global_position + Vector3(0, 0.8, 0)]
 	for c in ParkingLevels.corners(ParkingLevels.car_box(pose, geo)): targets.append(Vector3(c.x, 0.5, c.y))
-	var t: Dictionary = level.target
-	targets.append(Vector3(t.c.x, 0.3, t.c.y))
+	if level.show_path and not level.get("search", false):
+		var t: Dictionary = level.target
+		targets.append(Vector3(t.c.x, 0.3, t.c.y))
 	sc.update_occluders(camera, targets, delta)
 
 

@@ -1,5 +1,5 @@
-## Guidance contracts: real steering in D/R, arrows along the path, hidden authored guidance
-## on the rules level, manual progress, and a compact HUD without persistent instructions.
+## Guidance contracts: real steering in D/R during tuition, arrows along the path, no driving
+## hints during independent search, manual progress, and a compact HUD without persistent instructions.
 ## godot --headless --path game_godot --script res://tests/parking_guidance_check.gd
 ## Also run with -- --text-scale=1.6 for the app's larger text setting.
 extends SceneTree
@@ -100,7 +100,7 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 		guide.update_state(pose, 0.0, -int(data.gear), 0.0, segment, 0, true, 0.1)
 		_check("segment %d: the letter asks for the needed gear" % segment, guide._gear_label.visible
 			and guide._gear_label.text == ("R" if int(data.gear) < 0 else "D"))
-	# The driver's own forecast is always on while driving, also straight along the route.
+	# During tuition the driver's forecast is on while driving, also on a straight route.
 	var start: Vector3 = way[0].poses[0]
 	var selected_gear: int = way[0].gear
 	guide.update_state(start, 0.0, selected_gear, 0.0, 0, 0, true, 0.1)
@@ -123,17 +123,21 @@ func _check_rendered_guidance(guide_script: Script) -> void:
 		and float(guide._goal_mat.get_shader_parameter("arm")) > 3.0)
 	guide.update_state(parked, 0.0, selected_gear, 0.0, way.size() - 1, 0, false, 1.0, false)
 	_check("finish: the frame is gone after its success animation", not guide._goal.is_visible_in_tree())
-	# The rules level must not disclose the legal space through an authored route.
-	level = ParkingLevels.build(ParkingLevels.RULES)
-	way = ParkingLevels.way_in(level, geo)
-	guide.setup(level, way, geo)
-	guide.update_state(way[0].poses[0], 0.0, 1, 0.0, 0, 0, false, 0.016, false)
-	for data: Dictionary in guide._segments:
-		_check("rules: route is hidden before an incorrect choice", not data.mesh.is_visible_in_tree())
-		_check("rules: action marker is hidden before an incorrect choice", not data.marker.root.is_visible_in_tree())
-	_check("rules: route arrows are hidden", not guide._chevrons.is_visible_in_tree())
-	_check("rules: finishing footprint is hidden", not guide._goal.is_visible_in_tree())
-	_check("rules: steering prediction is hidden", not guide._prediction.is_visible_in_tree())
+	# Every independent location is unaided, even if a caller accidentally requests tuition.
+	# This also guards against a route or forecast leaking from a previously guided level.
+	for index in range(ParkingLocations.GUIDED, ParkingLevels.COUNT):
+		level = ParkingLevels.build(index)
+		way = ParkingLevels.way_in(level, geo)
+		guide.setup(level, way, geo)
+		guide.update_state(way[0].poses[0], ParkingLevels.MAX_STEER, -int(way[0].gear), 0.0, 0, 0, true, 1.0, true)
+		for data: Dictionary in guide._segments:
+			_check("search %d: route is hidden" % index, not data.mesh.is_visible_in_tree())
+			_check("search %d: action marker is hidden" % index, not data.marker.root.is_visible_in_tree())
+		_check("search %d: route arrows are hidden" % index, not guide._chevrons.is_visible_in_tree())
+		_check("search %d: finishing footprint is hidden" % index, not guide._goal.is_visible_in_tree())
+		_check("search %d: steering prediction is hidden" % index, not guide._prediction.is_visible_in_tree())
+		_check("search %d: no recommendation to change gear" % index, not guide._gear_label.is_visible_in_tree())
+		_check("search %d: no forecast geometry is generated" % index, guide._preview_points.is_empty())
 	guide.queue_free()
 	await process_frame
 

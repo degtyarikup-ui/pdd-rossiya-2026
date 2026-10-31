@@ -66,12 +66,15 @@ func run() -> void:
 			rig.set_quality(quality)
 			for frame in 120: _tick(rig, car, points[0], stats)
 			var source_light := false
+			var source_count := 0
 			var requested_shadows := true
 			for light: SpotLight3D in rig.find_children("*", "SpotLight3D", true, false):
 				if light.visible and light.light_energy > 0.01:
 					source_light = true
+					source_count += 1
 					requested_shadows = requested_shadows and light.shadow_enabled == quality
 			check("level %d settles to requested quality without losing scene light" % index, source_light and requested_shadows)
+			check("level %d settles to the quality's lighting budget" % index, source_count == (5 if quality else 3))
 		check("level %d never toggles a shadow on an illuminated source" % index, stats.hot_shadow == 0)
 		check("level %d only repositions a source after a dark frame" % index, stats.hot_rebind == 0)
 		check("level %d source brightness changes smoothly" % index, stats.energy_jump == 0)

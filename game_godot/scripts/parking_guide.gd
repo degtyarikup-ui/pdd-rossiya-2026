@@ -242,6 +242,7 @@ func setup(level: Dictionary, way: Array, geometry: Dictionary) -> void:
 	_geo = geometry.duplicate()
 	_level = level
 	_segments.clear()
+	_preview_points.clear()
 	_clock = 0.0
 	_preview_elapsed = PREVIEW_INTERVAL
 	_last_segment = -1
@@ -304,9 +305,16 @@ func celebrate() -> void:
 	if _goal_mat != null: _success = 0.0
 
 
-## `forecast`: the driver's own prediction, independent of the authored route.
+## `forecast`: the driver's steering prediction during tuition. A search disables every
+## driving hint here as well as at its caller; only feedback after parking may appear.
 func update_state(pose: Vector3, steering: float, selected_gear: int, _speed: float,
 		segment: int, progress_index: int, visible_way: bool, delta: float, forecast := true) -> void:
+	var independent: bool = _level.get("search", false)
+	# setup() starts every hint hidden. Until an actual parking success, a search
+	# has nothing to animate or predict; do not update invisible geometry/materials.
+	if independent and _success < 0.0: return
+	visible_way = visible_way and not independent
+	forecast = forecast and not independent
 	var dt := maxf(0.0, delta)
 	_clock += dt
 	_preview_elapsed += dt
@@ -322,7 +330,7 @@ func update_state(pose: Vector3, steering: float, selected_gear: int, _speed: fl
 	_update_goal(pose, dt, show_way)
 	visible = _prediction.visible or _route.visible or _goal.visible
 	if not _route.visible:
-		# Shown again later (after a mistake on the rules level), the way draws itself anew.
+		# If tuition is shown again later, the way draws itself anew.
 		_reveal_time = 0.0
 		return
 	if show_way: _reveal_time += dt

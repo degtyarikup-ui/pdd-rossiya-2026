@@ -170,7 +170,7 @@ func _check_transitions() -> void:
 			scene.lighting.update_state(1, true, 0.0)
 			check("the actual rear lenses brighten with the brake", scene.brake_mat.emission_enabled and scene.brake_mat.emission_energy_multiplier > tail_emission)
 			scene.lighting.update_state(1, false, 0.0)
-			check("night lights are active from the first frame", _visible_spots(scene.root3d) >= 6)
+			check("night lights are active from the first frame", _visible_spots(scene.root3d) == (7 if shadows else 5))
 			if index == 16:
 				check("the underground car park receives no sun", scene.sun.light_energy < 0.001)
 			# Traverse the actual manoeuvre, including fast moves across pool boundaries. Real

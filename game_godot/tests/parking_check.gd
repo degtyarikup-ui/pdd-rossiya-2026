@@ -118,16 +118,17 @@ func _check_scene() -> void:
 	_check("autopilot parks every level (%d)" % parked, parked == ParkingLevels.COUNT)
 	_check("autopilot follows the clear way without touching", scene.touches == 0)
 	_check("results count the run's levels, not touches", scene.ui.results._answered_total == ParkingLevels.COUNT)
-	# A normal run: five different levels drawn at random, easiest first, the rules level last.
+	# A normal run: three daytime tasks, one night task, then one independent search.
 	scene.run_size = 5
 	for attempt in 30:
 		var drawn: Array[int] = scene._draw_levels()
-		var sorted := drawn.duplicate()
-		sorted.sort()
 		var distinct := {}
 		for i in drawn: distinct[i] = true
-		_check("a run draws 5 different levels in order", drawn.size() == 5 and distinct.size() == 5 and drawn == sorted)
-		if ParkingLevels.RULES in drawn: _check("the rules level comes last", drawn.back() == ParkingLevels.RULES)
+		var ordered := drawn.size() == 5
+		for slot in drawn.size():
+			var level := ParkingLevels.build(drawn[slot])
+			ordered = ordered and (level.search if slot == 4 else not level.search and bool(level.night) == (slot == 3))
+		_check("a run draws 5 different levels in day/night/search order", ordered and distinct.size() == 5)
 	var summary: Dictionary = scene.call("_session_summary")
 	_check("summary names the game", summary.game == "parking" and summary.runs.size() >= 1)
 	# Detach live geometry before destroying its materials during test teardown.

@@ -3,7 +3,7 @@
 ## the drive out of the space backwards) and is drawn on the asphalt step by step. Every
 ## location is closed by something the driver can see — kerbs, fences, walls, barriers,
 ## roadworks — and its surroundings go on beyond it. 1–20 show the way, 21–25 are done alone
-## (only the forecast of the wheel is drawn); 24–25 ask where parking is allowed at all.
+## without a route, steering forecast or target highlight; 24–25 ask where parking is allowed.
 ## Ground coordinates are metres: x to the east, z to the south (the camera looks north).
 class_name ParkingLocations
 extends RefCounted
