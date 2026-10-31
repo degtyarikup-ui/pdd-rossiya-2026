@@ -12,7 +12,7 @@ import { TASKS_NAV_HTML, TASKS_VIEW_HTML, TASKS_CLIENT_JS } from './tasks_ui.js'
 import { handleTasksAdmin } from './tasks_admin.js';
 import { ECONOMY_NAV_HTML, ECONOMY_VIEW_HTML, ECONOMY_CLIENT_JS } from './economy_ui.js';
 import { handleEconomyAdmin } from './economy_admin.js';
-import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, attributedDestination, marketingSource, SOURCE_LABELS } from './attribution.js';
+import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, installSourceLines, deviceLine, attributedDestination, marketingSource, SOURCE_LABELS } from './attribution.js';
 import { storeReportSnapshot } from './store_reports.js';
 import { renderDailyChart, pngBase64 } from './daily_chart.js';
 import { getAdsConfig, filterAdsForClient } from './ads_config.js';
@@ -577,6 +577,16 @@ export function displayUserEmail(raw) {
   return esc(email) + (privateAddress ? ' (защищённый адрес Apple)' : '');
 }
 
+function deviceLocaleLabel(locale) {
+  try {
+    const region = new Intl.Locale(locale.replace(/_/g, '-')).region;
+    if (/^[A-Z]{2}$/.test(region || '')) {
+      return String.fromCodePoint(127397 + region.charCodeAt(0), 127397 + region.charCodeAt(1));
+    }
+  } catch (_) {}
+  return esc(locale);
+}
+
 export function buildUserRegistrationMessage(user, totalCount) {
   const countryCode = String(user.country || user.app || 'ru').toLowerCase();
   const flag = FLAGS[countryCode] || (countryCode === 'rs' ? '🇷🇸' : '🇷🇺');
@@ -598,24 +608,26 @@ export function buildUserRegistrationMessage(user, totalCount) {
   const platformEmoji = platform === 'ios' ? '🍎 iOS' : platform === 'android' ? '🤖 Android' : platform === 'web' ? '🌐 Web' : null;
   const platformMeta = [platformEmoji, version ? `v${version}` : null].filter(Boolean).join(' • ');
 
-  const countStr = totalCount ? `👥 Всего с аккаунтом: #${formatNumberWithSpaces(totalCount)}` : null;
-
-  const lines = [
+  const meta = metadataFields(user);
+  const region = [user.ipCountry, user.ipRegion, user.ipCity].filter(Boolean).map(esc).join(' · ');
+  const identity = [
     `${flag} <b>${name}</b>`,
-    '',
+    totalCount ? `Всего с аккаунтом: #${formatNumberWithSpaces(totalCount)}` : null,
+  ];
+  const acquisition = [
     `• <b>Email:</b> ${email}`,
-    `• <b>Вход через:</b> ${providerStr}`,
+    `• <b>Вход:</b> ${providerStr}`,
     `• <b>Платформа:</b> ${platformMeta || '—'}`,
-    ...attributionLines(user, esc),
+    ...installSourceLines(meta, esc),
+    meta.marketingMedium ? `• <b>Канал:</b> ${esc(meta.marketingMedium)}` : null,
+  ];
+  const device = [
+    deviceLine(meta, esc),
+    meta.locale ? `• <b>Язык устройства:</b> ${deviceLocaleLabel(meta.locale)}` : null,
     user.id ? `• <b>ID:</b> <code>${esc(String(user.id).slice(0, 120))}</code>` : null,
-    user.ipCountry ? `• <b>Регион по IP:</b> ${[user.ipCountry, user.ipRegion, user.ipCity].filter(Boolean).map(esc).join(' · ')} (примерно)` : null,
-    '',
-    countStr,
-    countStr ? '' : null,
-    `🕓 ${mskTime(new Date())} MSK`,
-  ].filter((l) => l !== null);
-
-  return lines.join('\n');
+    region ? `• <b>Регион:</b> ${region}` : null,
+  ];
+  return [identity, acquisition, device].map(lines => lines.filter(Boolean).join('\n')).filter(Boolean).join('\n\n');
 }
 
 export function buildPremiumPurchaseMessage(p) {

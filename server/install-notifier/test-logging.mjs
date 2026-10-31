@@ -39,6 +39,23 @@ test('marketing attribution is distinct from store, sanitized and HTML-escaped',
   assert.match(buildPremiumPurchaseMessage({...u,tierName:'<b>fake</b>'}),/&lt;b&gt;fake&lt;\/b&gt;/);
   assert.ok(buildReportMessage({message:'<complaint>'}).startsWith('🚩🚩🚩🚩🚩🚩🚩🚩\n'));
 });
+test('registration groups account, source and device details in the Telegram message', () => {
+  const user = { name: 'Тест', email: 'test@example.com', provider: 'yandex', id: 'yandex_test',
+    platform: 'android', appVersion: '2.2.7+70', installStore: 'Google Play',
+    marketingSource: 'google_play_organic', marketingMedium: 'organic', attributionMethod: 'play_organic',
+    device: 'TECNO CM5', os: 'Android 16', locale: 'ru-RU', ipCountry: 'RU', ipCity: 'Arzamas' };
+  assert.equal(buildUserRegistrationMessage(user, 8908), [
+    '🇷🇺 <b>Тест</b>', 'Всего с аккаунтом: #8 908', '',
+    '• <b>Email:</b> test@example.com', '• <b>Вход:</b> 🟡 Яндекс',
+    '• <b>Платформа:</b> 🤖 Android • v2.2.7+70', '• <b>Установка:</b> Google Play',
+    '• <b>Источник:</b> Органика Google Play', '• <b>Канал:</b> organic', '',
+    '• <b>Устройство:</b> TECNO CM5 · Android 16', '• <b>Язык устройства:</b> 🇷🇺',
+    '• <b>ID:</b> <code>yandex_test</code>', '• <b>Регион:</b> RU · Arzamas',
+  ].join('\n'));
+  assert.match(buildUserRegistrationMessage({ locale: 'zh_Hant_TW' }), /🇹🇼$/);
+  assert.match(buildUserRegistrationMessage({ locale: 'ru' }), /Язык устройства:<\/b> ru$/);
+  assert.match(buildUserRegistrationMessage({}), /Источник:<\/b> Не определён$/);
+});
 test('Google Play and web receive campaign tags; iOS receives aggregate ct without guessed identity',()=>{
   const play=new URL(attributedDestination('https://play.google.com/store/apps/details?id=ru.pdd.pdd_app','threads','launch'));
   assert.equal(play.searchParams.get('id'),'ru.pdd.pdd_app');

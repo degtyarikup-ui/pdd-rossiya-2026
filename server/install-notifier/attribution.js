@@ -36,18 +36,26 @@ export function metadataFields(user = {}) {
   out.installStore = ['App Store', 'Google Play', 'RuStore', 'TestFlight', 'Web'].includes(user.installStore) ? user.installStore : '';
   return { ...out, ...acquisitionFields(user) };
 }
+export function installSourceLines(m, esc) {
+  return [
+    `• <b>Установка:</b> ${esc(m.installStore) || '—'}`,
+    `• <b>Источник:</b> ${SOURCE_LABELS[m.marketingSource]}${m.marketingCampaign ? ' · ' + esc(m.marketingCampaign) : ''}`,
+  ];
+}
+export function deviceLine(m, esc) {
+  return m.device || m.os ? `• <b>Устройство:</b> ${[m.device, m.os].filter(Boolean).map(esc).join(' · ')}` : null;
+}
 export function attributionLines(user, esc) {
   const m = metadataFields(user);
   const methods = { play_referrer: 'Google Play Referrer', play_organic: 'органический referrer Google Play (поиск/рекомендации не различимы)', rustore_referrer: 'RuStore Install Referrer', web_utm: 'метке ссылки', web_referrer: 'переходу с сайта' };
   return [
-    `• <b>Установка:</b> ${esc(m.installStore) || '—'}`,
-    `• <b>Источник:</b> ${SOURCE_LABELS[m.marketingSource]}${m.marketingCampaign ? ' · ' + esc(m.marketingCampaign) : ''}`,
+    ...installSourceLines(m, esc),
     m.marketingSource === 'unknown' && m.installStore === 'App Store' ? '  App Store сообщает канал привлечения в сводном отчёте.' : null,
     m.marketingMedium ? `• <b>Канал:</b> ${esc(m.marketingMedium)}` : null,
     m.landingPage ? `• <b>Первая страница:</b> ${esc(m.landingPage)}` : null,
     m.referrerHost ? `• <b>Сайт-источник:</b> ${esc(m.referrerHost)}` : null,
     m.attributionMethod ? `• <b>Определён по:</b> ${methods[m.attributionMethod]}` : null,
-    m.device || m.os ? `• <b>Устройство:</b> ${[m.device, m.os].filter(Boolean).map(esc).join(' · ')}` : null,
+    deviceLine(m, esc),
     m.locale ? `• <b>Язык устройства:</b> ${esc(m.locale)}` : null,
   ].filter(Boolean);
 }
