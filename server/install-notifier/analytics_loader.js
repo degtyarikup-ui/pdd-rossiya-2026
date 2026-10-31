@@ -21,7 +21,7 @@ function anReadCache(key) {
 function anWriteCache(key, data, at) {
   // Exclude the legacy recent-event feed; persist dashboard aggregates only.
   var snapshot={};
-  ['totals','previous','timeline','usage','users','sources','targets','campaigns','platforms','apps','countries']
+  ['totals','previous','timeline','usage','storeReports','users','sources','targets','campaigns','platforms','apps','countries']
     .forEach(function(k){if(data[k]!==undefined)snapshot[k]=data[k];});
   try { localStorage.setItem(key,JSON.stringify({at:at,data:snapshot})); } catch (_) {}
 }

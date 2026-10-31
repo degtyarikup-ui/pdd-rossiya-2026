@@ -118,13 +118,13 @@ class Play:
     BASE = f'https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{ANDROID_PACKAGE}'
     UPLOAD = f'https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{ANDROID_PACKAGE}'
 
-    def __init__(self):
+    def __init__(self, scope='https://www.googleapis.com/auth/androidpublisher'):
         info = json.loads(keychain('codex.pdd-russia.googleplay', PLAY_ACCOUNT))
         key = serialization.load_pem_private_key(info['private_key'].encode(), None)
         now = int(time.time())
         assertion = jwt(
             {'alg': 'RS256', 'typ': 'JWT'},
-            {'iss': info['client_email'], 'scope': 'https://www.googleapis.com/auth/androidpublisher',
+            {'iss': info['client_email'], 'scope': scope,
              'aud': info['token_uri'], 'iat': now, 'exp': now + 3600},
             lambda m: key.sign(m, padding.PKCS1v15(), hashes.SHA256()),
         )

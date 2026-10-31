@@ -34,7 +34,6 @@ export function metadataFields(user = {}) {
   const out = {};
   for (const key of ['device', 'os', 'locale', 'ipCity', 'ipRegion']) out[key] = String(user[key] || '').slice(0, 100);
   out.installStore = ['App Store', 'Google Play', 'RuStore', 'TestFlight', 'Web'].includes(user.installStore) ? user.installStore : '';
-  if (!out.installStore && String(user.platform).toLowerCase() === 'ios') out.installStore = 'App Store';
   return { ...out, ...acquisitionFields(user) };
 }
 export function attributionLines(user, esc) {
@@ -43,6 +42,7 @@ export function attributionLines(user, esc) {
   return [
     `• <b>Установка:</b> ${esc(m.installStore) || '—'}`,
     `• <b>Источник:</b> ${SOURCE_LABELS[m.marketingSource]}${m.marketingCampaign ? ' · ' + esc(m.marketingCampaign) : ''}`,
+    m.marketingSource === 'unknown' && m.installStore === 'App Store' ? '  App Store сообщает канал привлечения в сводном отчёте.' : null,
     m.marketingMedium ? `• <b>Канал:</b> ${esc(m.marketingMedium)}` : null,
     m.landingPage ? `• <b>Первая страница:</b> ${esc(m.landingPage)}` : null,
     m.referrerHost ? `• <b>Сайт-источник:</b> ${esc(m.referrerHost)}` : null,

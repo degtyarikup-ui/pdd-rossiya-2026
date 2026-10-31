@@ -134,11 +134,19 @@ export const ANALYTICS_VIEW_HTML = String.raw`
   <div class="an-caption" id="an-acquisition-coverage"></div>
   <details class="an-day-details"><summary>Кампании</summary><div class="an-table-wrap" id="an-acquisition-campaigns"></div></details>
   <details class="an-day-details"><summary>Статьи, с которых пришли аккаунты</summary><div class="an-table-wrap" id="an-acquisition-articles"></div></details>
-  <div class="an-caption">Магазин установки и источник привлечения учитываются отдельно. Поиск и рекомендации внутри App Store и RuStore доступны в сводных отчётах магазинов; связать их с отдельным аккаунтом нельзя. Google Play отмечается как органика только при явном подтверждении Install Referrer, без разделения поиска и рекомендаций.</div>
+  <div class="an-caption">Источник аккаунта определяется по метке ссылки или переходу с сайта. Для органики Google Play приложение получает общую метку без разбивки на поиск и рекомендации.</div>
 </div>
 <div class="an-acquisition-grid">
   <div class="an-card"><div class="an-head"><div class="an-title">Источники сайта</div><details class="an-help"><summary aria-label="Об источниках сайта">i</summary><div>Просмотры страниц и нажатия на ссылки магазинов или веб-приложения. Это события, а не уникальные люди. Метка сайта не подтверждает источник установки.</div></details></div><div class="an-table-wrap" id="an-sources"></div></div>
   <div class="an-card"><div class="an-head"><div class="an-title">Первые запуски по магазинам</div><details class="an-help"><summary aria-label="Об установках">i</summary><div>Первые запуски приложения. Скачивания из консолей магазинов сюда не поступают.</div></details></div><div class="an-table-wrap" id="an-stores"></div></div>
+</div>
+<div id="an-store-reports" hidden>
+  <div class="an-section-head"><h2>Отчёты магазинов · ПДД Россия</h2></div>
+  <div class="an-acquisition-grid">
+    <div class="an-card"><div class="an-title">Google Play · установки со страницы приложения</div><div class="an-table-wrap" id="an-report-googleplay"></div></div>
+    <div class="an-card"><div class="an-title">App Store · первые загрузки</div><div class="an-table-wrap" id="an-report-appstore"></div></div>
+  </div>
+  <div class="an-caption">Дата и источник взяты из отчёта каждого магазина. Магазины публикуют данные с задержкой. RuStore показывает статистику в консоли разработчика. Метка RuStore Install Referrer, если она есть, доступна в карточке аккаунта.</div>
 </div>
 <div class="an-tip" id="an-tip"></div>
 </div>
@@ -455,6 +463,21 @@ function anRenderAcquisition(data) {
   if(section&&section[pair[0]+'Omitted'])target.innerHTML+='<div class="an-caption">Показаны 50 крупнейших строк.</div>';
  });
 }
+function anRenderStoreReports(reports) {
+ var section=document.getElementById('an-store-reports');
+ section.hidden=!reports;
+ if(!reports)return;
+ var labels={'Ads and referrals':'Реклама и переходы по ссылкам','Third-party referrals':'Внешние переходы','Google Play search':'Поиск Google Play','Google Play explore':'Обзор Google Play','Other':'Прочее','App Store search':'Поиск App Store','App Store browse':'Обзор App Store','App referrer':'Переход из приложения','Web referrer':'Переход с сайта','Unavailable':'Не определён'};
+ ['googleplay','appstore'].forEach(function(store){
+   var box=document.getElementById('an-report-'+store),r=reports[store];
+   var caption=!r?'Отчёт недоступен':r.days?'Даты отчёта '+r.first+' — '+r.last+' · дней с данными: '+r.days:r.latestAvailable?'За выбранный период данных нет. Последняя дата отчёта '+r.latestAvailable:'Магазин пока не предоставил данные';
+   if(r&&r.checkedAt)caption+=' · Проверено '+anUpdatedLabel(Date.parse(r.checkedAt));
+   box.innerHTML='<div class="an-caption">'+anEsc(caption)+'</div>';
+   if(r&&r.days)box.innerHTML+=anTable(['Источник',store==='appstore'?'Первые загрузки':'Установки'],r.rows.map(function(row){
+     return '<tr><td>'+anEsc(Object.hasOwn(labels,row[0])?labels[row[0]]:row[0])+'</td>'+anCell(row[1])+'</tr>';
+   }).concat(['<tr><td>Всего</td>'+anCell(r.rows.reduce(function(sum,row){return sum+row[1];},0))+'</tr>']));
+ });
+}
 function renderDashboard(data) {
  if(!document.getElementById('an-now'))return;
  window.__anData=data;
@@ -468,6 +491,7 @@ function renderDashboard(data) {
  anRenderVersions(data);
  anRenderAuth(data);
  anRenderAcquisition(data);
+ anRenderStoreReports(data.storeReports);
  var src={};(data.sources||[]).forEach(function(r){if(!r.views&&!r.clicks)return;var k=anSourceKey(r.name);if(!src[k])src[k]={views:0,clicks:0};src[k].views+=r.views||0;src[k].clicks+=r.clicks||0;});
  var keys=Object.keys(src).sort(function(a,b){return src[b].views-src[a].views||src[b].clicks-src[a].clicks;});
  document.getElementById('an-sources').innerHTML=keys.length?anTable(['Источник','Просмотры','Переходы'],keys.map(function(k){return '<tr><td><div class="an-table-name">'+anLogo(AN_SOURCES[k])+anEsc(AN_SOURCES[k].name)+'</div></td>'+anCell(src[k].views)+anCell(src[k].clicks)+'</tr>';})):'<div class="an-empty">Нет событий сайта</div>';

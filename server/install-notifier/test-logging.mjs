@@ -150,7 +150,7 @@ test('summary fits a photo caption with visible hierarchy', () => {
  const text=buildDailyReportMessage({data:{views:5630,clicksByStore:{'App Store':5729},installs:2263,registrations:2703},end:new Date('2026-10-03T19:00Z')});
  assert.ok(text.length < 1024);
  assert.match(text,/<b>Итоги за сутки<\/b>/);
- assert.match(text,/Новые установки: <b>2 263<\/b>/);
+ assert.match(text,/Первые запуски: <b>2 263<\/b>/);
  assert.doesNotMatch(text,/2026|Всего:|Google Play|CR|\$0/);
 });
 
@@ -162,6 +162,9 @@ test('unknown sources stay hidden; verified sources are generic; no fake cohort 
  assert.match(unknown,/Жалобы: <b>4<\/b>\n🤖 ИИ-запросы: <b>3<\/b>/);
  const known=buildDailyReportMessage({data:{...base,registrationsByMarketingSource:{threads:2,youtube:1,unknown:10,'<script>':5}},end});
  assert.match(known,/Источники новых аккаунтов/);
+ const organic=buildDailyReportMessage({data:{registrations:3,registrationsByMarketingSource:{google_play_organic:2}},end});
+ assert.match(organic,/Органика Google Play: <b>2/);
+ assert.match(organic,/Без записанного источника: <b>1/);
  assert.match(known,/Threads: <b>2<\/b>/);
  assert.match(known,/YouTube: <b>1<\/b>/);
  assert.doesNotMatch(known,/unknown|script/);

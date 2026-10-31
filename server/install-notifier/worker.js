@@ -12,7 +12,8 @@ import { TASKS_NAV_HTML, TASKS_VIEW_HTML, TASKS_CLIENT_JS } from './tasks_ui.js'
 import { handleTasksAdmin } from './tasks_admin.js';
 import { ECONOMY_NAV_HTML, ECONOMY_VIEW_HTML, ECONOMY_CLIENT_JS } from './economy_ui.js';
 import { handleEconomyAdmin } from './economy_admin.js';
-import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, attributedDestination, marketingSource } from './attribution.js';
+import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, attributedDestination, marketingSource, SOURCE_LABELS } from './attribution.js';
+import { storeReportSnapshot } from './store_reports.js';
 import { renderDailyChart, pngBase64 } from './daily_chart.js';
 import { getAdsConfig, filterAdsForClient } from './ads_config.js';
 export { TrafficState } from './traffic_state.js';
@@ -305,7 +306,7 @@ function applyEventToSlot(slotData, event) {
   if (event.type === 'registration') {
     slotData.registrations = (slotData.registrations || 0) + 1;
     const channel = marketingSource(event.marketingSource);
-    if (!['unknown', 'other'].includes(channel)) {
+    if (channel !== 'unknown') {
       slotData.registrationsByMarketingSource ||= {};
       slotData.registrationsByMarketingSource[channel] = (slotData.registrationsByMarketingSource[channel] || 0) + 1;
     }
@@ -471,9 +472,8 @@ export function buildDailyReportMessage({ data, end = dailyReportEnd() }) {
   const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
   const date = d => `${d.getUTCDate()} ${months[d.getUTCMonth()]}`;
   const completeExtra = start.getTime() >= EXTRA_METRICS_STARTED_AT;
-  const channelNames = { threads: 'Threads', instagram: 'Instagram', youtube: 'YouTube', tiktok: 'TikTok', telegram: 'Telegram', vk: 'VK', google: 'Google', yandex: 'Яндекс', direct: 'Прямой переход' };
   const sources = Object.entries(data?.registrationsByMarketingSource || {})
-    .filter(([key, value]) => Object.hasOwn(channelNames, key) && Number.isFinite(value) && value > 0)
+    .filter(([key, value]) => key !== 'unknown' && Object.hasOwn(SOURCE_LABELS, key) && Number.isFinite(value) && value > 0)
     .sort((a, b) => b[1] - a[1]);
   return [
     '📊 <b>Итоги за сутки</b>',
@@ -484,11 +484,12 @@ export function buildDailyReportMessage({ data, end = dailyReportEnd() }) {
     `Переходы в магазины: <b>${n(clicks)}</b>`,
     '',
     '📱 <b>Приложение</b>',
-    `Новые установки: <b>${n(data?.installs)}</b>`,
+    `Первые запуски: <b>${n(data?.installs)}</b>`,
     `Новые аккаунты: <b>${n(data?.registrations)}</b>`,
     `Покупки Premium: <b>${n(completeExtra ? data?.purchases : null)}</b>`,
     '',
-    ...(sources.length ? ['<b>Источники новых аккаунтов · известные метки</b>', ...sources.map(([key, value]) => `${channelNames[key]}: <b>${n(value)}</b>`), ''] : []),
+    ...(sources.length ? ['<b>Источники новых аккаунтов · известные метки</b>', ...sources.map(([key, value]) => `${SOURCE_LABELS[key]}: <b>${n(value)}</b>`), ''] : []),
+    ...(Number.isFinite(data?.registrations) && data.registrations > 0 ? [`Без записанного источника: <b>${n(Math.max(0, data.registrations - sources.reduce((sum, [, count]) => sum + count, 0)))}</b>`, ''] : []),
     `🚩 Жалобы: <b>${n(completeExtra ? data?.reports : null)}</b>`,
     `🤖 ИИ-запросы: <b>${n(data?.aiRequests)}</b>`,
     '<i>— нет данных</i>',
@@ -2669,6 +2670,7 @@ async function getStatsForPeriod(env, daysCount = 7, appFilter = 'all') {
       },
       timeline,
       usage: usageSnapshot(usageDays, appFilter),
+      storeReports: await storeReportSnapshot(env, dateKeys, appFilter),
       sources,
       targets,
       campaigns,

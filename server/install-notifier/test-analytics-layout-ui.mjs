@@ -32,6 +32,9 @@ class MemoryKV {
 async function preview() {
  const env={INSTALLS:new MemoryKV(),ADMIN_PASSWORD:crypto.randomUUID()};
  const today=Date.now();
+ const date=new Date(today+3*3600000).toISOString().slice(0,10);
+ await env.INSTALLS.put('store-reports:v1:googleplay',JSON.stringify({checkedAt:new Date(today).toISOString(),days:{[date]:{'Google Play explore':7},'2001-01-01':{'Google Play explore':100}}}));
+ await env.INSTALLS.put('store-reports:v1:appstore',JSON.stringify({checkedAt:new Date(today).toISOString(),days:{}}));
  for(let i=0;i<160;i++) {
   const user={id:'preview_'+i,provider:['yandex','google','apple','telegram'][i%4],app:'ru',
    platform:i%3?'ios':'android',appVersion:i%3?'2.2.3+59':'2.2.4+65',
@@ -88,7 +91,9 @@ if(process.argv.includes('--serve')) {
   assert.equal(await page.locator('#an-auth-table tbody tr').count(),4);
   assert.equal(await page.locator('#an-versions tbody tr').count(),2);
   assert.match(await page.locator('#an-updates-summary').innerText(),/12/);
-  assert.deepEqual(await page.locator('#analytics-view h2').allTextContents(),['Обзор','Активность и рост','Состав аудитории','Источники привлечения']);
+  assert.deepEqual(await page.locator('#analytics-view h2').allTextContents(),['Обзор','Активность и рост','Состав аудитории','Источники привлечения','Отчёты магазинов · ПДД Россия']);
+  assert.match(await page.locator('#an-report-googleplay').innerText(), /Обзор Google Play\s+7/);
+  assert.match(await page.locator('#an-report-appstore').innerText(), /пока не предоставил/);
   assert.deepEqual(await page.locator('#an-usage-feature option').allTextContents(),
    ['Билеты','Темы','Экзамен','Марафон','Лента','Живой город','Это знак','Регулировщик','Перекрёсток','Знаки','Парковка']);
   assert.match(await page.locator('#an-usage-coverage').innerText(),/требуется обновление приложения/);
