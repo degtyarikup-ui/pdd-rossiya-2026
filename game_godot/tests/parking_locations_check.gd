@@ -1,4 +1,4 @@
-## The 25 locations of «Парковка»: unique places with localized tasks and step tips, a closed
+## The 25 locations of «Парковка»: unique places with localized tasks and signs, a closed
 ## area the shown way stays inside, independent levels that hide the way but keep the wheel's
 ## forecast, every free space reachable and accepted where the player really stops, wrong
 ## spaces explained, and a run of four guided tasks of different kinds plus one done alone.
@@ -34,8 +34,6 @@ func run() -> void:
 		for lang in ["ru", "en", "kk"]:
 			Ui.lang = lang
 			check("localized task %d %s" % [i, lang], Ui.t(level.mission) != level.mission)
-			for seg: Dictionary in way:
-				if str(seg.cue) != "": check("localized tip %d %s %s" % [i, lang, seg.cue], Ui.t(seg.cue) != seg.cue)
 			for spot: Dictionary in level.spots:
 				if not spot.ok: check("wrong space explained %d %s" % [i, lang], Ui.t(spot.reason) != spot.reason)
 			for label: Dictionary in level.labels:
@@ -47,9 +45,7 @@ func run() -> void:
 		var guided := i < ParkingLocations.GUIDED
 		check("location %d: guided ones show the way, the rest do not" % i, level.show_path == guided and level.search == not guided)
 		if guided:
-			var tips := 0
-			for seg: Dictionary in way: tips += 1 if str(seg.cue) != "" else 0
-			check("guided location %d has tips for most steps" % i, tips * 2 >= way.size())
+			check("guided location %d has a way" % i, way.size() >= 2)
 			continue
 		check("independent location %d offers a choice" % i, level.spots.size() >= 3)
 		var obstacles := ParkingLevels.obstacles(level)
@@ -93,8 +89,6 @@ func run() -> void:
 		var guided := i < ParkingLocations.GUIDED
 		check("location %d: the wheel's forecast is always drawn" % i, scene.guide._prediction.visible)
 		check("location %d: the way is drawn only when guided" % i, scene.guide._route.visible == guided)
-		var tip: String = scene.cue_text(0)
-		check("location %d: the first tip is real text" % i, tip != "" and not tip.contains("gameParking"))
 		if guided: continue
 		check("no goal frame in independent %d" % i, not scene.guide._goal.visible)
 		if i >= 20 and scene.level.spots.any(func(s: Dictionary) -> bool: return not s.ok):

@@ -1,7 +1,7 @@
 ## «Парковка» mini-game on Godot: 25 locations (scripts/parking_locations.gd), the city's
 ## pedals (scripts/controls.gd), a steering wheel that keeps its lock (scripts/parking_wheel.gd)
 ## and a D/R switch, the garage car, and the way into the spot drawn on the asphalt one step
-## at a time (scripts/parking_guide.gd) with the instructor's tip for each step. The white
+## at a time (scripts/parking_guide.gd); a short task is shown at the start. The white
 ## forecast of the current wheel angle is shown on every level, the route only on the guided
 ## ones. The camera looks down and keeps the car and the spot in frame; buildings that hide
 ## the car fade. A touch costs a life; the rule levels ask to pick a legal space (п. 12.4).
@@ -22,8 +22,6 @@ const STEER_RATE := 6.0          # rad/s: the front wheels follow the steering w
 const KEY_TURN := 0.9            # steering wheel (full lock = 1) per second while A/D is held
 const HOLD := 0.55               # standing still in the spot this long parks the car
 const HIT_SPEED := 0.2
-const CUE_TIME := 4.5            # s a step's tip stays up
-const CUE_REPEAT := 5.0          # s standing still before the tip is shown again
 const PITCH := deg_to_rad(58.0)
 const FOV := 50.0
 
@@ -47,6 +45,7 @@ var run_size := 5                # levels in one run, drawn at random from Parki
 var run_levels: Array[int] = []  # this run's levels, in order of difficulty
 var run_pos := 0
 var _forced_level := -1          # --level=N: the run starts with that level (debugging, shots)
+var _play_all := false           # --all: every level in catalogue order (playtesting)
 
 var vehicle_id := "sedan"
 var vehicle_paint := Color("#0574F8")
@@ -95,7 +94,6 @@ var _display_hz := 60
 var _perf := {"time": 0.0, "frames": 0, "worst": 0.0}
 var _ground := {}                # material key -> SurfaceTool while a level is built
 var _building_pools: Array[MultiMeshInstance3D] = []
-var _idle := 0.0                 # s standing still on a guided step (the tip comes back)
 
 
 func _ready() -> void:
@@ -152,6 +150,7 @@ func _setup_args() -> void:
 		elif arg.begins_with("--paint="): vehicle_paint = Color(arg.trim_prefix("--paint="))
 		elif arg.begins_with("--season="): season_name = arg.trim_prefix("--season=")
 		elif arg == "--auto": auto_drive = true
+		elif arg == "--all": _play_all = true
 		elif arg.begins_with("--level="): _forced_level = clampi(int(arg.trim_prefix("--level=")), 0, ParkingLevels.COUNT - 1)
 		elif arg.begins_with("--economy="):
 			var config = JSON.parse_string(arg.trim_prefix("--economy="))
@@ -256,6 +255,10 @@ func _start_run() -> void:
 ## run_size different levels at random, played in id order (the ids grow with difficulty): four
 ## guided tasks of different kinds and one to do alone, which therefore comes last.
 func _draw_levels() -> Array[int]:
+	if _play_all:
+		var every: Array[int] = []
+		for i in range(maxi(0, _forced_level), ParkingLevels.COUNT): every.append(i)
+		return every
 	var count := clampi(run_size, 1, ParkingLevels.COUNT)
 	var picked: Array[int] = []
 	var families := {}
@@ -323,10 +326,7 @@ func _load_level(index: int) -> void:
 	_refresh_hud()
 	_update_guidance(0.0)
 	_frame_camera(true)
-	_idle = 0.0
-	var first := Ui.t(level.mission)
-	if level.show_path: first += "\n" + cue_text(0)
-	ui.toast(first, "", CUE_TIME + 1.5)
+	ui.toast(Ui.t(level.mission), "", 3.0)
 
 
 func _refresh_hud() -> void:
@@ -355,6 +355,14 @@ func _mat(key: String) -> Material:
 				w.roughness = 0.15
 				w.metallic = 0.1
 				_mats[key] = w
+			_ when key.begins_with("tex:"):
+				# "tex:<kind>:<#colour>[:<period>]": walls, roofs and windows take the city's own
+				# detail maps (plaster, brick, panels, wood, metal, window frames) on a metre grid.
+				var parts := key.split(":")
+				var m := sc.surface_material(parts[1], Color(parts[2]))
+				var period: float = float(parts[3]) if parts.size() > 3 else float(sc.kinds[parts[1]].get("u", 2.0))
+				m.set_shader_parameter("texture_period", period if period > 0.0 else 2.0)
+				_mats[key] = m
 			_:
 				var m := StandardMaterial3D.new()
 				var colour := Color(key)
@@ -397,7 +405,8 @@ func _flush_ground() -> void:
 			mat = mat.duplicate()
 			(mat as StandardMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
 		node.material_override = mat
-		var glass := solid and Color(key.trim_prefix("solid:")).a < 0.99
+		var paint := key.trim_prefix("solid:")
+		var glass := solid and paint.begins_with("#") and Color(paint).a < 0.99
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if (solid and not glass) or key == "pavement" else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root3d.add_child(node)
 	_ground.clear()
@@ -415,6 +424,7 @@ func _build_ground() -> void:
 	for b: Dictionary in level.sidewalks:
 		var f := ParkingLevels.forward(b.yaw)
 		_block(_ground_tool("pavement"), b.c, Vector2(f.y, -f.x), Vector3(b.half.x * 2.0, 0.15, b.half.y * 2.0), 0.0)
+	_build_tree_pits()
 	for post: Dictionary in level.posts:
 		_cylinder_into(_ground_tool("solid:" + str(post.colour)), post.pos, post.r, post.h, post.get("y0", 0.0),
 			post.get("r_top", -1.0), post.get("sides", 12), post.get("phase", 0.0))
@@ -517,6 +527,25 @@ func _block(st: SurfaceTool, c: Vector2, dir: Vector2, size: Vector3, y0: float)
 		for k in [0, 1, 2, 0, 2, 3]:
 			st.set_normal(f[4])
 			st.add_vertex(f[k])
+
+
+## A tree standing in a pavement gets a square of earth with a low edging, as in a real street.
+func _build_tree_pits() -> void:
+	var trunks: Array[Vector2] = []
+	trunks.append_array(level.trees)
+	trunks.append_array(level.pines)
+	for b: Dictionary in level.buildings:
+		if str(b.prop).begins_with("trees/"): trunks.append(b.pos)
+	for t in trunks:
+		var paved := false
+		for side: Dictionary in level.sidewalks:
+			var l := ParkingLevels.local(side, t)
+			if absf(l.x) < side.half.x - 0.2 and absf(l.y) < side.half.y - 0.2: paved = true
+		if not paved: continue
+		_ground_quad(ParkingLevels.box(t, 0.7, 0.7, 0.0), 0.153, "dirt")
+		for edge in [Vector2(0, 0.74), Vector2(0, -0.74), Vector2(0.74, 0), Vector2(-0.74, 0)]:
+			var along := Vector2(1, 0) if edge.y != 0.0 else Vector2(0, 1)
+			_block(_ground_tool("solid:#8E8C84"), t + edge, along, Vector3(1.56, 0.06, 0.08), 0.15)
 
 
 ## An upright cylinder or cone (bollards, columns, tents, umbrellas) into a batched colour mesh.
@@ -733,25 +762,6 @@ func _paint_way() -> void:
 	guide.update_state(pose, steer, gear, speed, segment, _guide_index, level.show_path and driving, 0.0, driving)
 
 
-## The instructor's words for a step: what to do with the wheel and the pedals, then the step's
-## own tip (when to turn, what to watch). The first line is built from the step itself, so it is
-## right for every car of the garage.
-func cue_text(index: int) -> String:
-	if way.is_empty(): return ""
-	var seg: Dictionary = way[clampi(index, 0, way.size() - 1)]
-	var wheel: String = ["gameParkingWheelRight", "gameParkingWheelStraight", "gameParkingWheelLeft"][int(seg.steer) + 1]
-	var move := "gameParkingGoForward" if int(seg.gear) > 0 else "gameParkingGoBack"
-	if index >= way.size() - 1: move += "Finish"
-	var text := "%s — %s" % [Ui.t(wheel), Ui.t(move)]
-	if str(seg.get("cue", "")) != "": text += "\n" + Ui.t(seg.cue)
-	return text
-
-
-func _show_cue() -> void:
-	if not level.show_path or done_timer >= 0.0 or is_game_over: return
-	ui.toast(cue_text(segment), "", CUE_TIME)
-
-
 ## Progress follows the rear axle used by the driving model, including manual corrections.
 ## Segment samples have equal spacing, but their spacing is not exactly ParkingLevels.STEP.
 func _segment_progress() -> Dictionary:
@@ -812,13 +822,6 @@ func _process(delta: float) -> void:
 	_frame_camera(false, delta)
 	_update_occluders(delta)
 	_update_frame_budget(delta)
-	if _ready_for_play and not is_game_over and done_timer < 0.0 and level.show_path and absf(speed) < 0.05:
-		_idle += delta
-		if _idle >= CUE_REPEAT:
-			_idle = 0.0
-			_show_cue()
-	else:
-		_idle = 0.0
 	sound.speed = absf(speed) * 2.5
 	sound.player_kind = "suv" if vehicle_id in ["suv", "pickup", "cyber"] else "car"
 
@@ -900,7 +903,6 @@ func _advance_segment() -> void:
 	_auto_travel = 0.0
 	_paint_way()
 	_refresh_hud()
-	_show_cue()
 
 
 func _check_spots(dt: float, still: bool) -> void:
@@ -1012,23 +1014,23 @@ func _place_car() -> void:
 
 
 func _frame_camera(snap: bool, delta := 0.0) -> void:
+	# Close behind the car: the car itself, a few metres ahead of it the way it is going and the
+	# rest of the current step; the space only once it is near. Nothing far away pulls the
+	# camera up.
 	var body := ParkingLevels.car_box(pose, geo)
 	var pts: Array[Vector2] = ParkingLevels.corners(body)
-	var near_target: bool = Vector2(body.c).distance_to(level.target.c) < 17.0
-	var focus: Dictionary = level.target if level.show_path and near_target else {}
-	if not focus.is_empty(): pts.append_array(ParkingLevels.corners(focus))
-	else:
-		# Choosing a space: look ahead along the kerb, where the signs are.
-		var ahead := Vector2(body.c) + ParkingLevels.forward(pose.z) * 16.0
-		pts.append(ahead + Vector2(4.0, 0))
-		pts.append(ahead - Vector2(4.0, 0))
+	var heading := ParkingLevels.forward(pose.z) * (1.0 if gear > 0 else -1.0)
+	var c := Vector2(body.c)
+	# Choosing a space alone: look further ahead, where the signs and the free spaces are.
+	pts.append(c + heading * (6.0 if level.show_path else 11.0))
 	if level.show_path and done_timer < 0.0:
-		# Include the rest of the manoeuvre so the camera does not jump at steering gates.
-		for i in range(segment, mini(segment + 2, way.size())):
-			var poses: Array = way[i].poses
-			for k in range(0, poses.size(), 8):
-				var p: Vector3 = poses[k]
-				pts.append(Vector2(p.x, p.y))
+		var poses: Array = way[segment].poses
+		var from := mini(_guide_index, poses.size() - 1)
+		var to := mini(poses.size() - 1, from + 80)
+		for k in range(from, to + 1, 10):
+			pts.append(ParkingGuide.body_centre(poses[k], geo))
+	var t: Dictionary = level.target
+	if level.show_path and c.distance_to(t.c) < 11.0: pts.append_array(ParkingLevels.corners(t))
 	var lo := pts[0]
 	var hi := pts[0]
 	for p in pts:
@@ -1041,15 +1043,16 @@ func _frame_camera(snap: bool, delta := 0.0) -> void:
 	# Fit the actual free rectangle between the shared HUD and the pedals.
 	var play_area: Rect2 = ui.play_rect()
 	var usable := play_area.size / size
-	var half := (hi - lo) * 0.5 + Vector2(1.4, 1.8)
+	var half := (hi - lo) * 0.5 + Vector2(1.0, 1.2)
 	var dist := maxf(half.x / (tan(hfov * 0.5) * usable.x),
 		half.y * sin(PITCH) / (tan(vfov * 0.5) * usable.y)) + half.y * cos(PITCH)
-	dist = clampf(dist, 13.0, 62.0)
+	dist = clampf(dist, 10.0, 30.0)
 	var centre := (lo + hi) * 0.5
 	var target := Vector3(centre.x, 0, centre.y)
-	var t := 1.0 if snap else 1.0 - exp(-2.2 * delta)
-	_cam_target = _cam_target.lerp(target, t)
-	_cam_dist = lerpf(_cam_dist, dist, t)
+	var k := 1.0 if snap else 1.0 - exp(-2.6 * delta)
+	_cam_target = _cam_target.lerp(target, k)
+	# Moving in is slow and smooth, moving out a little quicker so the car never leaves the frame.
+	_cam_dist = lerpf(_cam_dist, dist, k * (0.6 if dist < _cam_dist else 1.0))
 	var back := Vector3(0, sin(PITCH), cos(PITCH)) * _cam_dist
 	var jolt := Vector3.ZERO
 	if shake > 0.0:

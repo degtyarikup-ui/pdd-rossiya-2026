@@ -111,7 +111,7 @@ static func turn_radius(geo: Dictionary) -> float:
 
 
 ## Script segments: {g: 1 forward / -1 reverse, s: -1 right, 0, 1 left, d: metres or a: degrees of turn,
-## cue: the instructor's tip for this step (an l10n key), fit: see resolve()}.
+## fit: see resolve()}.
 static func drive_script(start: Vector3, script: Array, geo: Dictionary) -> Array:
 	var out := []
 	var p := start
@@ -123,7 +123,7 @@ static func drive_script(start: Vector3, script: Array, geo: Dictionary) -> Arra
 		for i in n:
 			p = step_pose(p, float(seg.g) * dist / n, float(seg.s) * MAX_STEER, geo.wheelbase)
 			poses.append(p)
-		out.append({"gear": int(seg.g), "steer": int(seg.s), "length": dist, "poses": poses, "cue": seg.get("cue", "")})
+		out.append({"gear": int(seg.g), "steer": int(seg.s), "length": dist, "poses": poses})
 	return out
 
 
@@ -178,7 +178,7 @@ static func way_in(level: Dictionary, geo: Dictionary) -> Array:
 	for i in range(exit.size() - 1, -1, -1):
 		var poses: Array[Vector3] = (exit[i].poses as Array[Vector3]).duplicate()
 		poses.reverse()
-		path.append({"gear": -int(exit[i].gear), "steer": exit[i].steer, "length": exit[i].length, "poses": poses, "cue": exit[i].cue})
+		path.append({"gear": -int(exit[i].gear), "steer": exit[i].steer, "length": exit[i].length, "poses": poses})
 	return path
 
 
@@ -553,10 +553,10 @@ static func _garage(target: int, parked: int, seed: int, nose_first := false) ->
 		var front := 0.0 if row == 0 else lane
 		var back := -depth if row == 0 else lane + depth
 		var out := 1.0 if row == 0 else -1.0
-		_wall(level, rect(x0 - GARAGE_WALL * 0.5, back - 0.25 * out, -x0 + GARAGE_WALL * 0.5, back), 2.6, "#D6CCBE")
+		_wall(level, rect(x0 - GARAGE_WALL * 0.5, back - 0.25 * out, -x0 + GARAGE_WALL * 0.5, back), 2.6, "tex:brick:#C7A88E")
 		for i in 9:
 			var x := x0 + i * pitch
-			_wall(level, rect(x - GARAGE_WALL * 0.5, minf(front, back), x + GARAGE_WALL * 0.5, maxf(front, back)), 2.6, "#D6CCBE")
+			_wall(level, rect(x - GARAGE_WALL * 0.5, minf(front, back), x + GARAGE_WALL * 0.5, maxf(front, back)), 2.6, "tex:brick:#C7A88E")
 		for i in 8:
 			var cx := x0 + (i + 0.5) * pitch
 			if row == 0 and i == target:
@@ -564,10 +564,10 @@ static func _garage(target: int, parked: int, seed: int, nose_first := false) ->
 				continue
 			var door := rect(cx - box_w * 0.5, front - 0.12 * out, cx + box_w * 0.5, front)
 			_wall(level, door, 2.3, doors[rng.randi() % doors.size()])
-			_wall(level, rect(cx - pitch * 0.5, minf(front, back), cx + pitch * 0.5, maxf(front, back)), 0.15, "#7E8794", 2.6, false)
+			_wall(level, rect(cx - pitch * 0.5, minf(front, back), cx + pitch * 0.5, maxf(front, back)), 0.15, "tex:roofFlat:#7E8794", 2.6, false)
 	# Fences close the driveway at both ends.
 	for side in [-1.0, 1.0]:
-		_wall(level, rect(side * x1 - 0.15, -depth - 0.4, side * x1 + 0.15, lane + depth + 0.4), 2.0, "#B8BEC6")
+		_wall(level, rect(side * x1 - 0.15, -depth - 0.4, side * x1 + 0.15, lane + depth + 0.4), 2.0, "tex:plaster:#B8BEC6")
 	_car(level, rng, Vector2(x0 + (parked + 0.5) * pitch, lane - 1.35), -PI * 0.5)
 	if nose_first:
 		var straight := func(geo: Dictionary) -> float: return clampf(10.0 - turn_radius(geo), 5.2, 6.2)

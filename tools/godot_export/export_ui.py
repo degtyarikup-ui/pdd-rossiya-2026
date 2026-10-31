@@ -63,28 +63,15 @@ KEYS = [
     'gameViolatorFalseAlarm', 'gameViolatorWrongQualification', 'gameViolatorMissed',
     'gameViolatorTapHint', 'gameViolatorsCaughtStat',
 ]
-# «Парковка»: tasks, the instructor's step tips, signage and rule explanations.
+# «Парковка»: tasks, signage and rule explanations.
 KEYS += ["gameParking" + name for name in (
-    "SearchMission", "WheelStraight", "WheelLeft", "WheelRight", "GoForward", "GoBack",
-    "GoForwardFinish", "GoBackFinish", "MissionHotel", "MissionBayForward", "MissionAngle",
+    "SearchMission", "MissionHotel", "MissionBayForward", "MissionAngle",
     "MissionFuel", "MissionWash", "MissionBayReverse", "MissionParallel", "MissionParallelLeft",
     "MissionGarage", "MissionGate", "MissionBackAngle", "MissionCamp", "MissionThreePoint",
     "MissionDriveway", "MissionTwoStep", "MissionColumns", "MissionPassage", "MissionExam",
-    "MissionExit", "MissionYard", "TipHotelApproach", "TipHotelIn", "TipHotelLoop",
-    "TipHotelTurn", "TipKerbGap", "TipBayFar", "TipBayTurn", "TipBayStop", "TipAngleApproach",
-    "TipAngleTurn", "TipLogStop", "TipFuelApproach", "TipFuelTurn", "TipFuelStop", "TipWashFar",
-    "TipWashTurn", "TipWashStop", "TipReversePass", "TipReverseSwing", "TipReverseIn",
-    "TipParallelPass", "TipParallel45", "TipParallelAlign", "TipParallelCentre",
-    "TipGaragePass", "TipGarageIn", "TipGatePass", "TipGateSwing", "TipGateIn",
-    "TipBackAnglePass", "TipBackAngleTurn", "TipBackAngleIn", "TipCampPass", "TipCampTrees",
-    "TipCampIn", "TipTurnLook", "TipTurnFirst", "TipTurnBack", "TipTurnOut", "TipDrivewayPass",
-    "TipDrivewayBack", "TipDrivewayOut", "TipDrivewayLane", "TipTwoStepApproach",
-    "TipTwoStepFirst", "TipTwoStepBack", "TipTwoStepAlign", "TipColumnsPass", "TipColumnsPrep",
-    "TipColumnsSwing", "TipPassageApproach", "TipPassageTurn", "TipPassageStraight",
-    "TipPassageYard", "TipExamPass", "TipExamAlign", "TipExitBack", "TipExitTurn",
-    "TipExitAlign", "Disabled", "Crosswalk", "Driveway", "SignHotel", "SignSchool",
-    "SignMarket", "SignFuel", "SignShop", "SignWash", "SignOffice", "SignStation", "SignCafe",
-    "SignExam", "SignExit", "SignMall", "SignSchoolBuilding",
+    "MissionExit", "MissionYard", "Disabled", "Crosswalk", "Driveway", "SignHotel",
+    "SignSchool", "SignMarket", "SignFuel", "SignShop", "SignWash", "SignOffice", "SignStation",
+    "SignCafe", "SignExam", "SignExit", "SignMall", "SignSchoolBuilding",
 )]
 out = {}
 for lang in ('ru', 'en', 'kk'):
