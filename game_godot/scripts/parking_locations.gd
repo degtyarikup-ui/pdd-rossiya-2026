@@ -346,8 +346,8 @@ static func _hotel() -> Dictionary:
 	_round(l, 0.0, -48.0, 2.5)
 	# The fountain island inside the loop.
 	_kerb(l, 3.0, -40.0, 8.5, -16.5)
-	for corner in [Vector2(3.0, -40.0), Vector2(8.5, -40.0), Vector2(3.0, -16.5), Vector2(8.5, -16.5)]: _round(l, corner.x, corner.y, 1.6)
-	_ground(l, "meadow", 3.15, -39.85, 8.35, -16.65)
+	l.sidewalks.back().lawn = 0.35
+	for corner in [Vector2(8.5, -40.0), Vector2(8.5, -16.5)]: _round(l, corner.x, corner.y, 1.6)
 	_post(l, 5.75, -28.0, 1.8, 0.45, "#B9B1A3")
 	_post(l, 5.75, -28.0, 1.55, 0.05, "#7FB3C4", 0.42, false)
 	_post(l, 5.75, -28.0, 0.25, 1.4, "#B9B1A3")
@@ -513,7 +513,6 @@ static func _fuel() -> Dictionary:
 	l.asphalt.append(P.rect(-1.0, -15.0, 2.0, -1.0))
 	for corner: Array in [[-1.0, -27.0, 1.5], [-1.0, -21.0, 1.5], [2.0, -21.0, 1.0], [-1.0, -15.0, 1.5], [2.0, -15.0, 1.0], [-1.0, -1.0, 1.5], [2.0, -1.0, 1.0]]:
 		_round(l, corner[0], corner[1], corner[2])
-	_ground(l, "concrete", 4.0, -23.0, 20.0, -2.0)
 	# Islands A (z = -8) and B (z = -16), two pumps each, under one canopy.
 	for iz: float in [-8.0, -16.0]:
 		_kerb(l, 8.0, iz - 0.6, 16.0, iz + 0.6)
@@ -535,10 +534,11 @@ static func _fuel() -> Dictionary:
 	# The shop, the air pump, the price board facing the road.
 	_building(l, 30.0, -12.0, 10.0, 18.0, 4.5, "#EEF0EC", "gameParkingSignShop", "#2E9B5F")
 	_block(l, 23.4, -12.0, 0.15, 10.0, 2.6, GLASS, 0.0, false)
-	_block(l, 0.5, 6.0, 1.4, 0.5, 6.0, "#2E9B5F")
-	_block(l, 0.5, 6.26, 1.2, 0.04, 3.2, WHITE, 2.5, false)
-	_label(l, "gameParkingSignFuel", 0.5, 5.3, 6.3, 1.1, 0.6, WHITE)
-	for i in 3: _label(l, ["АИ-92", "АИ-95", "ДТ"][i], 0.5, 4.6 - i * 0.8, 6.3, 1.0, 0.45, DARK)
+	_block(l, 0.5, 6.0, 1.4, 0.5, 4.4, "#2E9B5F")
+	_block(l, 0.5, 6.0, 1.6, 0.7, 0.4, "tex:plaster:#A8A49B")
+	_block(l, 0.5, 6.26, 1.2, 0.04, 2.2, WHITE, 1.3, false)
+	_label(l, "gameParkingSignFuel", 0.5, 3.95, 6.3, 1.1, 0.5, WHITE)
+	for i in 3: _label(l, ["АИ-92", "АИ-95", "ДТ"][i], 0.5, 3.1 - i * 0.65, 6.3, 1.0, 0.4, DARK)
 	_post(l, 23.0, 0.0, 0.25, 1.2, "#2D6FB8")
 	for x: float in [6.0, 12.0, 18.0]: l.trees.append(Vector2(x, 6.5))
 	for z: float in [-36.0, -30.0, 8.0, 14.0]: l.trees.append(Vector2(4.0, z))
@@ -582,6 +582,8 @@ static func _wash() -> Dictionary:
 		_label(l, str(i + 1), cx, 2.7, -depth + 0.02, 0.8, 0.8, "#2D6FB8")
 		P._line(l, Vector2(cx - 1.6, -depth * 0.5), Vector2(cx + 1.6, -depth * 0.5), 0.3, "#555A62")
 		if busy.has(i): _car_at(l, busy[i][0], busy[i][1], cx, -depth * 0.5 + 0.3, PI)
+		if i == 1: l.people.append({"pos": Vector2(cx + 1.6, -depth * 0.5 + 1.0), "yaw": -PI / 2, "look": 2, "paint": "#3F7AB5"})
+		if i == 4: l.people.append({"pos": Vector2(cx - 1.6, -depth * 0.5 - 0.6), "yaw": PI / 2, "look": 5, "paint": "#C9573E"})
 	# Bay 3 is closed for repair: cones across its mouth.
 	var closed := -2.0 * pitch + 2 * pitch
 	for k in 4: _cone(l, closed - 1.4 + k * 0.95, -0.9)
@@ -1048,7 +1050,6 @@ static func _passage() -> Dictionary:
 	_kerb(l, -90.0, -4.0, -4.6, 0.0)
 	_kerb(l, 4.6, -4.0, 90.0, 0.0)
 	l.asphalt.append(P.rect(-4.6, -4.0, 4.6, 0.0))
-	_ground(l, "paving", -4.6, -4.0, 4.6, 0.0)
 	_round(l, -4.6, 0.0, 2.0)
 	_round(l, 4.6, 0.0, 2.0)
 	# Two houses along the street with the 4.4 m passage between them; a gateway arch.
@@ -1063,8 +1064,8 @@ static func _passage() -> Dictionary:
 	_kerb(l, -17.0, -34.0, -14.0, -16.0)
 	_kerb(l, -14.0, -17.0, -2.2, -16.0)
 	_kerb(l, 2.2, -17.0, 18.6, -16.0)
-	_round(l, -2.2, -16.0, 0.9)
-	_round(l, 2.2, -16.0, 0.9)
+	_round(l, -2.2, -17.0, 0.9)
+	_round(l, 2.2, -17.0, 0.9)
 	var x_front := 12.7
 	for k in range(-3, 4):
 		var c := Vector2(x_front + P.BAY_D * 0.5, bay_z + k * 2.7)
@@ -1094,9 +1095,11 @@ static func _passage() -> Dictionary:
 static func _exam() -> Dictionary:
 	var l := P._level("exam")
 	var half := 4.3
-	l.asphalt.append(P.rect(-14.0, -26.0, 14.0, 26.0))
+	l.asphalt.append(P.rect(-9.5, -26.0, P.CURB_X, 26.0))
+	l.asphalt.append(P.rect(5.0, 8.0, 13.5, 22.0))
 	l.grass.append(P.rect(-120, -120, 120, 120))
-	_ground(l, "concrete", -14.0, -26.0, 14.0, 26.0)
+	_ground(l, "paving", 5.5, -18.0, 12.5, -10.0)
+	_ground(l, "paving", P.CURB_X + 0.3, -14.6, 5.5, -13.4)
 	_kerb(l, P.CURB_X, -26.0, P.CURB_X + 0.3, 26.0)
 	# The box: posts at its corners, its lines, the lane's edge line.
 	for z: float in [-half, half]:
@@ -1119,12 +1122,22 @@ static func _exam() -> Dictionary:
 	_kerb(l, -4.5, -24.3, P.CURB_X, -24.0)
 	_kerb(l, -4.5, 24.0, P.CURB_X, 24.3)
 	_building(l, 9.0, -14.0, 6.0, 5.0, 6.0, "#E8E3D8", "", "#2D6FB8", true)
-	_block(l, 9.0, -14.0, 6.6, 5.6, 0.2, ROOF, 6.0, false)
-	_block(l, 6.0, -14.0, 0.1, 3.6, 1.6, GLASS, 3.6, false)
-	for z: float in [-18.0, -12.0, -6.0, 0.0, 6.0]: _cone(l, -9.0, z)
-	for i in 3: P._line(l, Vector2(6.0 + i * 2.8, 10.0), Vector2(6.0 + i * 2.8, 15.5), 0.12, YELLOW)
-	for z: float in [12.7, 18.2]: _car_at(l, "hatch", "#F2F4F8", 7.4, z + 0.5, 0.0)
 	_label(l, "gameParkingSignExam", 9.0, 5.0, -11.4, 5.0, 0.7, "#2D6FB8")
+	for k in 3:
+		_post(l, 6.0 + k * 1.0, -19.2, 0.05, 6.5, METAL)
+		_block(l, 6.45 + k * 1.0, -19.2, 0.9, 0.04, 0.6, ["#F2F4F8", "#2D6FB8", "#D43C36"][k], 5.8, false)
+	# The snake on the far side: posts every 6 m along a dashed line.
+	P._line(l, Vector2(-7.2, -22.0), Vector2(-7.2, 22.0), 0.12, WHITE, 1.0)
+	for z: float in [-18.0, -12.0, -6.0, 0.0, 6.0, 12.0, 18.0]: _cone(l, -7.2, z)
+	# School cars waiting their turn on their own pad.
+	for i in 4: P._line(l, Vector2(5.6 + i * 2.6, 9.5), Vector2(5.6 + i * 2.6, 14.8), 0.12, YELLOW)
+	for i in 2: _car_at(l, "hatch", "#F2F4F8", 6.9 + i * 2.6, 12.1, PI)
+	_kerb(l, 4.6, 8.0, 5.0, 22.0)
+	for t: Vector2 in [Vector2(6.0, -4.0), Vector2(11.0, 0.0), Vector2(7.0, 4.5), Vector2(-12.0, -18.0), Vector2(-12.0, 4.0), Vector2(11.5, -24.0)]:
+		l.trees.append(t)
+	for z: float in [-6.0, 2.0]: _bench(l, 4.4, z, PI / 2)
+	for z: float in [-10.0, 12.0]:
+		for x: float in [-11.0, -12.5]: l.bushes.append({"pos": Vector2(x, z), "yaw": 0.0})
 	for x in range(-40, 44, 8):
 		l.trees.append(Vector2(x, -30.0))
 		l.trees.append(Vector2(x + 4.0, 30.0))
@@ -1191,17 +1204,14 @@ static func _wheelchair(l: Dictionary, c: Vector2, yaw: float) -> void:
 	var f := P.forward(yaw)
 	var up := f if f.y < 0.0 else -f
 	var right := Vector2(-up.y, up.x)
-	var at := func(x: float, y: float) -> Vector2: return c + (right * x + up * y) * 1.6
-	var n := 16
-	for k in n:
-		var a0 := TAU * k / n
-		var a1 := TAU * (k + 1) / n
-		P._line(l, at.call(0.05 + cos(a0) * 0.5, -0.45 + sin(a0) * 0.5), at.call(0.05 + cos(a1) * 0.5, -0.45 + sin(a1) * 0.5), 0.18)
-	P._line(l, at.call(-0.2, 0.86), at.call(-0.2, 0.98), 0.46)
-	P._line(l, at.call(-0.22, 0.62), at.call(-0.1, -0.05), 0.28)
-	P._line(l, at.call(-0.1, -0.05), at.call(0.45, -0.05), 0.24)
-	P._line(l, at.call(0.45, -0.05), at.call(0.68, -0.6), 0.2)
-	P._line(l, at.call(-0.16, 0.35), at.call(0.32, 0.35), 0.17)
+	var k := 1.1
+	var at := func(x: float, y: float) -> Vector2: return c + (right * x + up * y) * k
+	l.rings.append({"c": at.call(0.05, -0.45), "r": 0.5 * k, "w": 0.13})
+	l.rings.append({"c": at.call(-0.2, 0.9), "r": 0.09 * k, "w": 0.2 * k})
+	P._line(l, at.call(-0.22, 0.66), at.call(-0.1, -0.05), 0.18)
+	P._line(l, at.call(-0.1, -0.05), at.call(0.45, -0.05), 0.16)
+	P._line(l, at.call(0.45, -0.05), at.call(0.68, -0.6), 0.14)
+	P._line(l, at.call(-0.16, 0.36), at.call(0.3, 0.36), 0.12)
 
 
 ## A free bay the player may take in either heading.
@@ -1347,7 +1357,7 @@ static func _school_street() -> Dictionary:
 	spot.call(1.4, 8.0, false, "gameParkingCrosswalk")
 	l.target = spot.call(-27.4, -15.2, true, "").box
 	spot.call(-41.0, -33.6, false, "gameParkingDriveway")
-	for z: float in [24.0, 17.2, 11.8, -6.6, -12.6, -30.0, -45.0]:
+	for z: float in [30.0, 24.0, 17.2, 11.8, -6.6, -12.6, -30.0, -45.0]:
 		_car_at(l, P.PARKED_MODELS[rng.randi() % P.PARKED_MODELS.size()], P.PAINTS[rng.randi() % P.PAINTS.size()], P.KERB_CAR_X, z, PI)
 	for k in 8: P._line(l, Vector2(-5.4 + k * 1.1, -3.0), Vector2(-5.4 + k * 1.1, 1.0), 0.55, WHITE)
 	for x: float in [P.CURB_X + 0.9, -6.9]:

@@ -422,7 +422,7 @@ func _build_ground() -> void:
 		lift += 0.0004
 		_ground_quad(g.box, (-0.02 if g.key in ["meadow", "water"] else 0.002) + lift, g.key)
 	for b: Dictionary in level.sidewalks:
-		if b.has("round"):
+		if b.has("round") or b.has("lawn"):
 			_rounded_kerb(b)
 			continue
 		var f := ParkingLevels.forward(b.yaw)
@@ -432,6 +432,7 @@ func _build_ground() -> void:
 		_cylinder_into(_ground_tool("solid:" + str(post.colour)), post.pos, post.r, post.h, post.get("y0", 0.0),
 			post.get("r_top", -1.0), post.get("sides", 12), post.get("phase", 0.0))
 	for arrow: Dictionary in level.arrows: _paint_arrow(arrow)
+	for ring: Dictionary in level.rings: _paint_ring(ring)
 	for w: Dictionary in level.walls:
 		var b: Dictionary = w.box
 		var f := ParkingLevels.forward(b.yaw)
@@ -441,7 +442,7 @@ func _build_ground() -> void:
 		var z: float = zig.z0
 		var k := 0
 		while z < zig.z1:
-			_paint_line(Vector2(zig.x - (k % 2) * 0.9, z), Vector2(zig.x - ((k + 1) % 2) * 0.9, z + 1.0), 0.14, "#F5C400", 0.0)
+			_paint_line(Vector2(zig.x - (k % 2) * 0.9, z), Vector2(zig.x - ((k + 1) % 2) * 0.9, z + 1.0), 0.14, "#F2C230", 0.0)
 			z += 1.0
 			k += 1
 
@@ -534,13 +535,26 @@ func _block(st: SurfaceTool, c: Vector2, dir: Vector2, size: Vector3, y0: float)
 
 ## A pavement whose corners are rounded like a real kerb at a driveway or a corner.
 func _rounded_kerb(b: Dictionary) -> void:
-	var st := _ground_tool("pavement")
+	_kerb_prism(_kerb_outline(b, 0.0), Vector2(b.c), _ground_tool("pavement"))
+	if b.has("lawn"):
+		# An island planted with grass inside a stone edging.
+		var lawn := _kerb_outline(b, float(b.lawn))
+		var st := _ground_tool("meadow")
+		for i in lawn.size():
+			for v in [Vector2(b.c), lawn[i], lawn[(i + 1) % lawn.size()]]:
+				st.set_normal(Vector3.UP)
+				st.add_vertex(Vector3(v.x, 0.152, v.y))
+
+
+## The outline of a kerb box with rounded corners, `inset` metres inside it.
+func _kerb_outline(b: Dictionary, inset: float) -> Array[Vector2]:
 	var c: Vector2 = b.c
-	var h: Vector2 = b.half
+	var h: Vector2 = b.half - Vector2(inset, inset)
+	var rounds: Dictionary = b.get("round", {})
 	var outline: Array[Vector2] = []
 	# Counter-clockwise from the x+ z- corner, each corner a quarter circle (or a point).
 	for corner: Array in [["x+z-", Vector2(1, -1), -PI / 2], ["x+z+", Vector2(1, 1), 0.0], ["x-z+", Vector2(-1, 1), PI / 2], ["x-z-", Vector2(-1, -1), PI]]:
-		var radius: float = float(b.round.get(corner[0], 0.0))
+		var radius: float = maxf(0.0, float(rounds.get(corner[0], 0.0)) - inset)
 		var at: Vector2 = c + Vector2(h.x * corner[1].x, h.y * corner[1].y)
 		if radius <= 0.0:
 			outline.append(at)
@@ -549,6 +563,10 @@ func _rounded_kerb(b: Dictionary) -> void:
 		for k in 9:
 			var a: float = float(corner[2]) + PI / 2 * k / 8.0
 			outline.append(centre + Vector2(cos(a), sin(a)) * radius)
+	return outline
+
+
+func _kerb_prism(outline: Array[Vector2], c: Vector2, st: SurfaceTool) -> void:
 	var top := Vector3(0, 0.15, 0)
 	for i in outline.size():
 		var p0 := Vector3(outline[i].x, 0, outline[i].y)
@@ -601,6 +619,23 @@ func _cylinder_into(st: SurfaceTool, c: Vector2, r: float, h: float, y0: float, 
 				st.add_vertex(v)
 
 
+## A painted circle (or a disc when its width reaches the middle), smooth at any size.
+func _paint_ring(ring: Dictionary) -> void:
+	var st := _ground_tool(ring.get("colour", "#F2F4F8"))
+	var c: Vector2 = ring.c
+	var outer: float = ring.r + ring.w * 0.5
+	var inner := maxf(0.0, float(ring.r) - float(ring.w) * 0.5)
+	var n := 40
+	for i in n:
+		var a0 := TAU * i / n
+		var a1 := TAU * (i + 1) / n
+		var quad: Array[Vector2] = [c + Vector2(cos(a0), sin(a0)) * outer, c + Vector2(cos(a1), sin(a1)) * outer,
+			c + Vector2(cos(a1), sin(a1)) * inner, c + Vector2(cos(a0), sin(a0)) * inner]
+		for k in [0, 1, 2, 0, 2, 3]:
+			st.set_normal(Vector3.UP)
+			st.add_vertex(Vector3(quad[k].x, 0.012, quad[k].y))
+
+
 ## A painted direction arrow: a shaft and a head, on the asphalt.
 func _paint_arrow(arrow: Dictionary) -> void:
 	var f := ParkingLevels.forward(arrow.yaw)
@@ -612,7 +647,11 @@ func _paint_arrow(arrow: Dictionary) -> void:
 	_ground_quad(ParkingLevels.box(at - f * (length * 0.5 - shaft * 0.5), 0.13, shaft * 0.5, arrow.yaw), 0.012, colour)
 	var st := _ground_tool(colour)
 	var base := at - f * (length * 0.5 - shaft)
-	for p: Vector2 in [base + r * 0.45, base - r * 0.45, at + f * (length * 0.5)]:
+	var tri: Array[Vector2] = [base + r * 0.45, base - r * 0.45, at + f * (length * 0.5)]
+	# The same winding as the painted quads: the other way round a face is lit from below
+	# and the head looks greyer than its shaft.
+	if (tri[1] - tri[0]).cross(tri[2] - tri[0]) < 0.0: tri.reverse()
+	for p: Vector2 in tri:
 		st.set_normal(Vector3.UP)
 		st.add_vertex(Vector3(p.x, 0.012, p.y))
 
@@ -638,6 +677,7 @@ func _build_props() -> void:
 	var pools := {}
 	_building_pools.clear()
 	var put := func(prop: String, at: Vector2, yaw: float, scale: Vector3, tint: Color) -> void:
+		var y := 0.15 if _on_kerb(at) else 0.0
 		if not pools.has(prop):
 			var mesh := Models.mesh_of("res://scenery/%s.glb" % prop)
 			if mesh == null: return
@@ -649,7 +689,7 @@ func _build_props() -> void:
 				sc.register_building_pool(pools[prop].node)
 				_building_pools.append(pools[prop].node)
 		tint.a = 1.0 if sc.season.precipitation == "snow" else 0.0
-		pools[prop].put(0, Transform3D(Basis(Vector3.UP, yaw).scaled(scale), Vector3(at.x, 0.0, at.y)), tint)
+		pools[prop].put(0, Transform3D(Basis(Vector3.UP, yaw).scaled(scale), Vector3(at.x, y, at.y)), tint)
 	# Foliage takes the season's colours: green pines all year, the canopy and birches by season.
 	var canopy: Array = sc.season.canopy
 	var tree_tint := func(kind: String, i: int) -> Color:
@@ -687,6 +727,7 @@ func _build_props() -> void:
 		label.no_depth_test = false
 		label.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root3d.add_child(label)
+	for person: Dictionary in level.people: _add_person(person)
 	for s: Dictionary in level.signs:
 		var pivot := Node3D.new()
 		pivot.position = Vector3(s.pos.x, 0.0, s.pos.y)
@@ -714,6 +755,44 @@ func _build_props() -> void:
 		npc.rotation.y = parked.yaw
 		root3d.add_child(npc)
 		npc.add_child(_contact_patch(ParkingLevels.model_meta(parked.model)))
+
+
+## A person at work (the car wash): a figure of the city's crowd holding a lance out, with a
+## spray of water swaying slowly over the car.
+func _add_person(person: Dictionary) -> void:
+	var root := Node3D.new()
+	root.position = Vector3(person.pos.x, 0.0, person.pos.y)
+	root.rotation.y = person.yaw
+	root3d.add_child(root)
+	var figure := Pedestrian.new()
+	figure.configure(int(person.get("look", 0)), Color(person.get("paint", "#3F7AB5")), "forward", "right")
+	root.add_child(figure)
+	var lance := MeshInstance3D.new()
+	lance.mesh = _cylinder(0.018, 0.018, 0.9)
+	lance.material_override = _mat("#2B2F36")
+	lance.rotation.x = PI / 2 - 0.35
+	lance.position = Vector3(-0.2, 1.05, 0.65)
+	root.add_child(lance)
+	var spray := MeshInstance3D.new()
+	spray.mesh = _cylinder(0.03, 0.32, 1.1)
+	var water := StandardMaterial3D.new()
+	water.albedo_color = Color(0.92, 0.97, 1.0, 0.45)
+	water.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	water.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	spray.material_override = water
+	spray.rotation.x = PI / 2 - 0.55
+	spray.position = Vector3(-0.2, 0.75, 1.45)
+	root.add_child(spray)
+	var tween := root.create_tween().set_loops()
+	tween.tween_property(root, "rotation:y", float(person.yaw) + 0.35, 1.6).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(root, "rotation:y", float(person.yaw) - 0.35, 1.6).set_trans(Tween.TRANS_SINE)
+
+
+func _on_kerb(at: Vector2) -> bool:
+	for side: Dictionary in level.sidewalks:
+		var l := ParkingLevels.local(side, at)
+		if absf(l.x) < side.half.x and absf(l.y) < side.half.y: return true
+	return false
 
 
 func _contact_patch(meta: Dictionary) -> MeshInstance3D:

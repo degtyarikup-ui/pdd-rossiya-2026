@@ -31,7 +31,7 @@ const GARAGE_OUT := 4.0
 const GARAGE_TURN := 1
 static var turn_street := 10.5        # kerb to kerb: two 5.25 m lanes
 const TURN_TARGET_Z := 0.0
-const TURN_END := 0.0
+const TURN_END := 6.0             # after the turn the car drives on to the finish, clear of the manoeuvre
 const TURN_A2 := 20               # reverse, full right lock
 const TURN_A3 := 80               # last move forwards, full left lock (the first is 80° too)
 const ROAD_BEYOND := 70.0           # the street goes on past its roadworks, out of the frame
@@ -277,6 +277,7 @@ static func obstacles(level: Dictionary) -> Array[Dictionary]:
 	for post: Dictionary in level.posts:
 		if post.solid: out.append(box(post.pos, post.r, post.r, 0))
 	out.append_array(level.colliders)
+	for person: Dictionary in level.people: out.append(box(person.pos, 0.3, 0.3, 0))
 	for prop: Dictionary in level.buildings:
 		var mesh := Models.mesh_of("res://scenery/%s.glb" % prop.prop)
 		if mesh == null: continue
@@ -293,6 +294,7 @@ static func obstacles(level: Dictionary) -> Array[Dictionary]:
 	return out
 
 
+## rings: painted circles and discs {c, r, w, colour}; people: standing figures {pos, yaw, look, paint};
 ## ground: surface patches {box, key} over the grass (gravel, paving, concrete, water...);
 ## posts: cylinders and cones {pos, r, r_top, sides, h, colour, y0, solid}; colliders: boxes a car
 ## stops at that are drawn by something else (a barrier arm); arrows: painted {pos, yaw, len, colour};
@@ -339,7 +341,8 @@ static func rounded_parts(b: Dictionary) -> Array[Dictionary]:
 static func _level(id: String) -> Dictionary:
 	return {"id": id, "show_path": true, "cars": [], "walls": [], "asphalt": [], "sidewalks": [], "grass": [],
 		"lines": [], "signs": [], "zigzag": [], "trees": [], "pines": [], "lamps": [], "buildings": [], "spots": [],
-		"works": [], "ground": [], "posts": [], "arrows": [], "labels": [], "bushes": [], "colliders": []}
+		"works": [], "ground": [], "posts": [], "arrows": [], "labels": [], "bushes": [], "colliders": [],
+		"rings": [], "people": []}
 
 
 static func _car(level: Dictionary, rng: RandomNumberGenerator, c: Vector2, yaw: float) -> void:
@@ -686,7 +689,7 @@ static func _rules() -> Dictionary:
 	level.target = spot.call(-13.6, -5.0, true, "").box
 	spot.call(-26.4, -18.4, false, "gameParkingNoStopping")
 	spot.call(-38.4, -31.0, false, "gameParkingJunction")
-	for z in [24.6, 18.6, 3.7, -2.6, -16.0, -28.7]:
+	for z in [30.2, 24.6, 18.6, 3.7, -2.6, -16.0, -28.7]:
 		_car(level, rng, Vector2(KERB_CAR_X + rng.randf_range(-0.06, 0.04), z), PI)
 	level.signs.append({"code": "5.16", "pos": Vector2(CURB_X + 0.9, 10.0), "yaw": PI})
 	level.signs.append({"code": "6.4", "pos": Vector2(CURB_X + 0.9, -4.8), "yaw": PI})
