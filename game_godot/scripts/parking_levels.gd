@@ -267,7 +267,9 @@ static func build(index: int) -> Dictionary:
 ## Everything a car may touch on a level: kerbs, walls, posts, trunks, props and parked cars, as boxes.
 static func obstacles(level: Dictionary) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
-	out.append_array(level.sidewalks)
+	for b: Dictionary in level.sidewalks:
+		if b.has("round"): out.append_array(rounded_parts(b))
+		else: out.append(b)
 	for t: Vector2 in level.trees: out.append(box(t, 0.22, 0.22, 0))
 	for t: Vector2 in level.pines: out.append(box(t, 0.22, 0.22, 0))
 	for t: Vector2 in level.lamps: out.append(box(t, 0.12, 0.12, 0))
@@ -295,6 +297,45 @@ static func obstacles(level: Dictionary) -> Array[Dictionary]:
 ## posts: cylinders and cones {pos, r, r_top, sides, h, colour, y0, solid}; colliders: boxes a car
 ## stops at that are drawn by something else (a barrier arm); arrows: painted {pos, yaw, len, colour};
 ## labels: lettering {key or text, pos: Vector3, width, yaw, flat, colour}; bushes: {pos, yaw}.
+## A kerb with rounded corners (b.round: {"x+z+": radius, ...}, axis-aligned boxes only) as
+## plain boxes for touches: two bands, a square per sharp corner and an eight-point star
+## inside each rounding (at most 8 % of the radius short of the drawn curve).
+static func rounded_parts(b: Dictionary) -> Array[Dictionary]:
+	var r: Dictionary = b.round
+	var c: Vector2 = b.c
+	var h: Vector2 = b.half
+	var x0 := c.x - h.x
+	var x1 := c.x + h.x
+	var z0 := c.y - h.y
+	var z1 := c.y + h.y
+	var rad := func(key: String) -> float: return float(r.get(key, 0.0))
+	var zm := maxf(rad.call("x-z-"), rad.call("x+z-"))
+	var zp := maxf(rad.call("x-z+"), rad.call("x+z+"))
+	var xm := maxf(rad.call("x-z-"), rad.call("x-z+"))
+	var xp := maxf(rad.call("x+z-"), rad.call("x+z+"))
+	var out: Array[Dictionary] = []
+	if z0 + zm < z1 - zp: out.append(rect(x0, z0 + zm, x1, z1 - zp))
+	if x0 + xm < x1 - xp: out.append(rect(x0 + xm, z0, x1 - xp, z1))
+	for key: String in ["x-z-", "x+z-", "x-z+", "x+z+"]:
+		var sx := 1.0 if key.begins_with("x+") else -1.0
+		var sz := 1.0 if key.ends_with("z+") else -1.0
+		var corner := Vector2(x1 if sx > 0 else x0, z1 if sz > 0 else z0)
+		var radius: float = rad.call(key)
+		var room := Vector2(xp if sx > 0 else xm, zp if sz > 0 else zm)
+		if radius <= 0.0:
+			if room.x > 0.0 or room.y > 0.0:
+				out.append(rect(corner.x, corner.y, corner.x - sx * maxf(room.x, 0.01), corner.y - sz * maxf(room.y, 0.01)))
+			continue
+		var centre := corner - Vector2(sx, sz) * radius
+		var s := radius / sqrt(2.0)
+		out.append(box(centre, s, s, 0.0))
+		out.append(box(centre, s, s, PI / 4))
+		# What the bands leave of this corner's square beyond the rounding (a larger neighbour).
+		if room.x > radius: out.append(rect(corner.x - sx * room.x, corner.y, corner.x - sx * radius, corner.y - sz * room.y))
+		if room.y > radius: out.append(rect(corner.x, corner.y - sz * room.y, corner.x - sx * room.x, corner.y - sz * radius))
+	return out
+
+
 static func _level(id: String) -> Dictionary:
 	return {"id": id, "show_path": true, "cars": [], "walls": [], "asphalt": [], "sidewalks": [], "grass": [],
 		"lines": [], "signs": [], "zigzag": [], "trees": [], "pines": [], "lamps": [], "buildings": [], "spots": [],
@@ -314,7 +355,12 @@ static func _line(level: Dictionary, a: Vector2, b: Vector2, width := 0.12, colo
 ## either side is legal: car parks, garages and one-way streets.
 static func _mirror(level: Dictionary) -> Dictionary:
 	assert(level.zigzag.is_empty())
-	var flip := func(b: Dictionary) -> Dictionary: return box(Vector2(-b.c.x, b.c.y), b.half.x, b.half.y, -b.yaw)
+	var flip := func(b: Dictionary) -> Dictionary:
+		var out := box(Vector2(-b.c.x, b.c.y), b.half.x, b.half.y, -b.yaw)
+		if b.has("round"):
+			out.round = {}
+			for key: String in b.round: out.round[key.replace("x+", "x?").replace("x-", "x+").replace("x?", "x-")] = b.round[key]
+		return out
 	var flip_x := func(v: Vector2) -> Vector2: return Vector2(-v.x, v.y)
 	for key: String in ["asphalt", "sidewalks", "grass"]:
 		for i in level[key].size(): level[key][i] = flip.call(level[key][i])

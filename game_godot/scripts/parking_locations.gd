@@ -92,6 +92,23 @@ static func _kerb(l: Dictionary, x0: float, z0: float, x1: float, z1: float) -> 
 	l.sidewalks.append(P.rect(x0, z0, x1, z1))
 
 
+## Rounds the kerb corner at (x, z) with radius r, like the kerb of a real driveway or junction.
+static func _round(l: Dictionary, x: float, z: float, r: float) -> void:
+	for b: Dictionary in l.sidewalks:
+		if absf(float(b.yaw)) > 0.001: continue
+		for sx in [-1.0, 1.0]:
+			for sz in [-1.0, 1.0]:
+				var corner: Vector2 = b.c + Vector2(b.half.x * sx, b.half.y * sz)
+				if corner.distance_to(Vector2(x, z)) > 0.05: continue
+				if not b.has("round"): b.round = {}
+				var radius := minf(r, minf(b.half.x, b.half.y) * 2.0)
+				b.round["%sz%s" % ["x+" if sx > 0 else "x-", "+" if sz > 0 else "-"]] = radius
+				# The kerb no longer covers the corner: the road surface runs on under the curve.
+				l.asphalt.append(P.rect(corner.x, corner.y, corner.x - sx * radius, corner.y - sz * radius))
+				return
+	push_warning("no kerb corner at %s" % Vector2(x, z))
+
+
 static func _block(l: Dictionary, x: float, z: float, w: float, d: float, h: float, colour: String, y := 0.0, solid := true) -> void:
 	P._wall(l, P.rect(x - w / 2, z - d / 2, x + w / 2, z + d / 2), h, colour, y, solid)
 
@@ -221,6 +238,44 @@ static func _umbrella(l: Dictionary, x: float, z: float, colour: String) -> void
 	l.posts.append({"pos": Vector2(x, z), "r": 1.25, "r_top": 0.05, "sides": 8, "h": 0.45, "colour": colour, "y0": 1.9, "solid": false})
 
 
+## A concrete trough with shrubs, long side along z (or x when `across`).
+static func _planter(l: Dictionary, x: float, z: float, length: float, across := false) -> void:
+	var w := length if across else 0.7
+	var d := 0.7 if across else length
+	_block(l, x, z, w, d, 0.55, "tex:plaster:#A8A49B")
+	_block(l, x, z, w - 0.16, d - 0.16, 0.02, "#5A4632", 0.5, false)
+	var n := maxi(1, int(length / 1.4))
+	for i in n:
+		var t := (i + 0.5) / n - 0.5
+		l.bushes.append({"pos": Vector2(x + (t * length if across else 0.0), z + (0.0 if across else t * length)), "yaw": 0.0 if across else PI / 2})
+
+
+## A round flower pot with a shrub.
+static func _pot(l: Dictionary, x: float, z: float) -> void:
+	l.posts.append({"pos": Vector2(x, z), "r": 0.48, "r_top": 0.55, "sides": 16, "h": 0.6, "colour": "tex:plaster:#B9B1A3", "y0": 0.0, "solid": true})
+	_post(l, x, z, 0.5, 0.02, "#5A4632", 0.6, false)
+	l.bushes.append({"pos": Vector2(x, z), "yaw": 0.0})
+
+
+## A yard's waste point: three green containers behind a low screen on three sides.
+static func _containers(l: Dictionary, x: float, z: float) -> void:
+	_ground(l, "concrete", x - 2.4, z - 1.2, x + 2.4, z + 1.2)
+	for k in 3:
+		var cx := x - 1.45 + k * 1.45
+		_block(l, cx, z - 0.2, 1.25, 1.0, 1.1, "tex:metal:#3F7A55")
+		_block(l, cx, z - 0.2, 1.31, 1.06, 0.08, "#2E5A3F", 1.1, false)
+	_wall_ab(l, Vector2(x - 2.3, z - 0.9), Vector2(x + 2.3, z - 0.9), 0.08, 1.5, "tex:metal:#8E9AA3")
+	for side: float in [-2.3, 2.3]: _wall_ab(l, Vector2(x + side, z - 0.9), Vector2(x + side, z + 0.6), 0.08, 1.5, "tex:metal:#8E9AA3")
+
+
+## A sandbox: four wooden boards round a square of sand.
+static func _sandbox(l: Dictionary, x: float, z: float, size := 2.8) -> void:
+	var h := size * 0.5
+	l.ground.append({"box": P.box(Vector2(x, z), h, h, 0.0), "key": "#D9C58F"})
+	for edge in [[Vector2(-h, -h), Vector2(h, -h)], [Vector2(-h, h), Vector2(h, h)], [Vector2(-h, -h), Vector2(-h, h)], [Vector2(h, -h), Vector2(h, h)]]:
+		_wall_ab(l, Vector2(x, z) + edge[0], Vector2(x, z) + edge[1], 0.16, 0.28, WOOD, 0.0, false)
+
+
 static func _bin(l: Dictionary, x: float, z: float) -> void:
 	_post(l, x, z, 0.28, 0.9, "#4D6B58")
 
@@ -272,7 +327,7 @@ static func _hotel() -> Dictionary:
 	_kerb(l, -11.0, z0 - 60, -7.2, z1 + 60)
 	# The one-way loop: in off the street, round the fountain, out to the street further on.
 	l.asphalt.append(P.rect(0.0, -48.0, 19.0, -4.0))
-	_kerb(l, 0.0, z0 - 60, 3.0, -48.0)
+	_kerb(l, 0.0, z0 - 60, 3.0, -52.0)
 	_kerb(l, 0.0, -44.0, 3.0, -12.0)
 	_kerb(l, 0.0, -4.0, 22.0, z1 + 60)
 	_kerb(l, 0.0, -52.0, 22.0, -48.0)
@@ -281,10 +336,17 @@ static func _hotel() -> Dictionary:
 	l.asphalt.append(P.rect(0.0, -12.0, 3.0, -4.0))
 	# The platform at the doors juts out to 0.3 m from a car standing in the frame.
 	_kerb(l, kerb, -34.0, 19.0, -19.0)
-	l.sidewalks.append(P.box(Vector2(18.0, -18.4), 0.7, 0.85, PI / 4))
-	l.sidewalks.append(P.box(Vector2(18.0, -34.6), 0.7, 0.85, -PI / 4))
+	for z: float in [-34.0, -19.0]: _round(l, kerb, z, 1.4)
+	# Kerbs round off into the drives as in a real street.
+	_round(l, 0.0, -12.0, 2.0)
+	_round(l, 3.0, -12.0, 1.0)
+	_round(l, 0.0, -4.0, 2.5)
+	_round(l, 0.0, -44.0, 1.5)
+	_round(l, 3.0, -44.0, 1.0)
+	_round(l, 0.0, -48.0, 2.5)
 	# The fountain island inside the loop.
 	_kerb(l, 3.0, -40.0, 8.5, -16.5)
+	for corner in [Vector2(3.0, -40.0), Vector2(8.5, -40.0), Vector2(3.0, -16.5), Vector2(8.5, -16.5)]: _round(l, corner.x, corner.y, 1.6)
 	_ground(l, "meadow", 3.15, -39.85, 8.35, -16.65)
 	_post(l, 5.75, -28.0, 1.8, 0.45, "#B9B1A3")
 	_post(l, 5.75, -28.0, 1.55, 0.05, "#7FB3C4", 0.42, false)
@@ -302,7 +364,7 @@ static func _hotel() -> Dictionary:
 	_block(l, 21.9, -26.5, 0.12, 6.0, 3.0, GLASS, 0.0, false)
 	_canopy(l, 13.4, -30.0, 22.0, -23.0, 3.6, "#8A4B3C", [Vector2(21.6, -29.6), Vector2(21.6, -23.4), Vector2(18.6, -29.6), Vector2(18.6, -23.4)], "#E6E9EC66")
 	_label(l, "gameParkingSignHotel", 17.7, 3.84, -26.5, 6.0, 1.3, "#8A4B3C", true)
-	for z: float in [-31.5, -21.5]: _block(l, 18.3, z, 0.9, 0.9, 0.8, "#8C8378")
+	for z: float in [-31.8, -21.2]: _pot(l, 18.3, z)
 	for z: float in [-46.0, 0.0, 8.0, 14.0]: l.trees.append(Vector2(1.6, z))
 	for z: float in [-16.0, -38.0]: l.lamps.append(Vector2(1.5, z))
 	for t: Vector2 in [Vector2(20.5, -8.0), Vector2(20.5, -44.0), Vector2(11.0, 0.0), Vector2(16.0, -50.0)]: l.trees.append(t)
@@ -353,6 +415,9 @@ static func _entrance(l: Dictionary, x: float, z0: float, z1: float) -> void:
 			l.sidewalks.append(P.rect(x0, z1, x1, hi))
 			break
 	l.asphalt.append(P.rect(x, z0, x + outward * 16.0, z1) if outward > 0 else P.rect(x - 16.0, z0, x, z1))
+	for edge: float in [z0, z1]:
+		_round(l, x, edge, 0.9)
+		_round(l, x + outward * 2.0, edge, 0.9)
 	_barrier(l, Vector2(x - outward * 0.15, z0 - 0.35), Vector2(x - outward * 0.15, z1))
 
 
@@ -402,7 +467,9 @@ static func _supermarket() -> Dictionary:
 	for row in [[-depth - 1.0, -0.4], [aisle + 0.4, aisle + depth + 1.0]]:
 		for x: float in [-25.0, 25.0]:
 			l.bushes.append({"pos": Vector2(x, (row[0] + row[1]) * 0.5), "yaw": PI / 2})
-	for x: float in [-26.0, 24.0]: l.asphalt.append(P.rect(x, -0.4, x + 2.0, aisle + 0.4))
+	for x: float in [-26.0, 24.0]:
+		l.asphalt.append(P.rect(x, -0.4, x + 2.0, aisle + 0.4))
+		for corner in [Vector2(x, -0.4), Vector2(x + 2.0, -0.4), Vector2(x, aisle + 0.4), Vector2(x + 2.0, aisle + 0.4)]: _round(l, corner.x, corner.y, 0.9)
 	_barrier(l, Vector2(-25.6, -0.4), Vector2(-25.6, aisle + 0.4))
 	_barrier(l, Vector2(25.6, aisle + 0.4), Vector2(25.6, -0.4))
 	for x: float in [-12.0, 2.0, 16.0]: l.arrows.append({"pos": Vector2(x, aisle * 0.5), "yaw": PI / 2, "len": 3.2})
@@ -444,10 +511,13 @@ static func _fuel() -> Dictionary:
 	for row in [[2.0, -27.0, 22.0, -25.0], [2.0, 2.0, 22.0, 4.0], [22.0, -27.0, 25.0, 4.0]]: _kerb(l, row[0], row[1], row[2], row[3])
 	l.asphalt.append(P.rect(-1.0, -27.0, 2.0, -21.0))
 	l.asphalt.append(P.rect(-1.0, -15.0, 2.0, -1.0))
+	for corner: Array in [[-1.0, -27.0, 1.5], [-1.0, -21.0, 1.5], [2.0, -21.0, 1.0], [-1.0, -15.0, 1.5], [2.0, -15.0, 1.0], [-1.0, -1.0, 1.5], [2.0, -1.0, 1.0]]:
+		_round(l, corner[0], corner[1], corner[2])
 	_ground(l, "concrete", 4.0, -23.0, 20.0, -2.0)
 	# Islands A (z = -8) and B (z = -16), two pumps each, under one canopy.
 	for iz: float in [-8.0, -16.0]:
 		_kerb(l, 8.0, iz - 0.6, 16.0, iz + 0.6)
+		for corner in [Vector2(8.0, iz - 0.6), Vector2(16.0, iz - 0.6), Vector2(8.0, iz + 0.6), Vector2(16.0, iz + 0.6)]: _round(l, corner.x, corner.y, 0.55)
 		for px: float in [10.0, 14.0]: _pump(l, px, iz)
 		for px: float in [8.4, 15.6]: _bollard(l, px, iz + (0.9 if iz > -12 else -0.9))
 	_canopy(l, 5.0, -21.0, 19.0, -3.0, 5.2, "#2E9B5F", [Vector2(8.6, -8.0), Vector2(15.4, -8.0), Vector2(8.6, -16.0), Vector2(15.4, -16.0)], "#F2F4F84D")
@@ -533,6 +603,9 @@ static func _wash() -> Dictionary:
 	_kerb(l, 10.9, -depth, 15.0, 0.0)
 	l.asphalt.append(P.rect(-17.0, 1.0, -15.0, 10.5))
 	l.asphalt.append(P.rect(15.0, 1.0, 17.0, 10.5))
+	for sx: float in [-1.0, 1.0]:
+		for corner in [Vector2(15.0 * sx, 1.0), Vector2(17.0 * sx, 1.0), Vector2(15.0 * sx, 10.5), Vector2(17.0 * sx, 10.5)]: _round(l, corner.x, corner.y, 0.9)
+		_round(l, 10.9 * sx, 0.0, 0.8)
 	_barrier(l, Vector2(-15.4, 1.0), Vector2(-15.4, 10.5))
 	_barrier(l, Vector2(15.4, 10.5), Vector2(15.4, 1.0))
 	for x: float in [-9.0, -3.0, 3.0, 9.0]:
@@ -635,13 +708,11 @@ static func _quay() -> Dictionary:
 	l.trees = l.trees.filter(func(t: Vector2) -> bool: return t.x < 0)
 	l.buildings = l.buildings.filter(func(b: Dictionary) -> bool: return b.pos.x < 0)
 	# The promenade: a parapet, lamps and benches, then the river.
-	_block(l, P.CURB_X + 4.25, 0.0, 0.5, 200.0, 0.9, "#B9B1A3")
+	_block(l, P.CURB_X + 4.25, 0.0, 0.5, 200.0, 0.9, "tex:plaster:#B9B1A3")
 	_ground(l, "water", P.CURB_X + 4.5, -150.0, P.CURB_X + 60.0, 150.0)
 	for z in range(-90, 92, 12):
 		l.lamps.append(Vector2(P.CURB_X + 3.5, z))
 		_bench(l, P.CURB_X + 2.6, z + 6.0, PI / 2)
-	for z: float in [-40.0, 60.0]:
-		_block(l, P.CURB_X + 30.0, z, 30.0, 4.0, 1.2, "#7C6F62")
 	return l
 
 
@@ -654,9 +725,7 @@ static func _garages() -> Dictionary:
 	for x in range(-30, 34, 6):
 		l.trees.append(Vector2(x, -10.0))
 		l.trees.append(Vector2(x + 3.0, 25.5))
-	_block(l, 19.0, 3.75, 2.4, 2.4, 2.4, "#C9B79C")
-	_block(l, 19.0, 3.75, 2.8, 2.8, 0.2, ROOF, 2.4, false)
-	_block(l, 17.78, 3.75, 0.06, 1.2, 0.9, GLASS, 1.1, false)
+	_building(l, 19.0, 3.75, 2.6, 2.6, 2.8, "#C9B79C", "", "#2D6FB8", true)
 	l.lamps.append(Vector2(-17.5, 3.75))
 	l.lamps.append(Vector2(17.5, -2.0))
 	return l
@@ -676,7 +745,9 @@ static func _house() -> Dictionary:
 	_ground(l, "paving", -6.0, -15.0, 6.5, -4.6)
 	_fence(l, Vector2(-22.0, -4.6), Vector2(-2.3, -4.6), "#7B5E46", 1.8)
 	_fence(l, Vector2(2.3, -4.6), Vector2(26.0, -4.6), "#7B5E46", 1.8)
-	for x: float in [-2.1, 2.1]: _block(l, x, -4.6, 0.45, 0.45, 2.1, "#A9573E")
+	for x: float in [-2.1, 2.1]:
+		_block(l, x, -4.6, 0.45, 0.45, 2.1, "tex:brick:#A9573E")
+		_block(l, x, -4.6, 0.56, 0.56, 0.12, "tex:plaster:#D8D2C6", 2.1, false)
 	_wall_ab(l, Vector2(2.4, -4.85), Vector2(6.2, -4.85), 0.08, 1.8, "#5B4636")
 	_fence(l, Vector2(-7.5, -4.6), Vector2(-7.5, -22.0), "#7B5E46", 1.8)
 	_fence(l, Vector2(8.0, -4.6), Vector2(8.0, -22.0), "#7B5E46", 1.8)
@@ -689,7 +760,7 @@ static func _house() -> Dictionary:
 	l.colliders.append(P.rect(-7.5, -15.2, 8.0, -15.0))
 	# The house, its porch, a shed and a greenhouse; apple trees; neighbours over the fences.
 	l.buildings.append({"prop": "buildings/home_3", "pos": Vector2(2.0, -20.0), "yaw": 0.0})
-	_block(l, -4.5, -13.0, 2.4, 3.0, 2.2, "#8A6A50")
+	_block(l, -4.5, -13.0, 2.4, 3.0, 2.2, "tex:wood:#8A6A50")
 	_block(l, -4.5, -13.0, 2.8, 3.4, 0.2, ROOF, 2.2, false)
 	_block(l, 5.4, -12.5, 2.0, 4.0, 2.0, "#E6F0EE80", 0.0, true)
 	for t: Vector2 in [Vector2(-5.5, -7.5), Vector2(6.0, -7.0)]: l.trees.append(t)
@@ -767,9 +838,7 @@ static func _camp() -> Dictionary:
 		_wall_ab(l, Vector2(x - spacing * 0.5 + 0.4, -11.6), Vector2(x + spacing * 0.5 - 0.4, -11.6), 0.25, 0.25, LOG)
 	_wall_ab(l, Vector2(18.0, -2.6), Vector2(18.0, 3.2), 0.3, 0.6, LOG)
 	_barrier(l, Vector2(-30.0, -2.5), Vector2(-30.0, 3.1))
-	_block(l, -34.0, -6.0, 5.0, 4.0, 2.8, "#8A6A50")
-	_block(l, -34.0, -6.0, 5.6, 4.6, 0.3, "#4E3B2C", 2.8, false)
-	_block(l, -34.0, -3.96, 1.0, 0.08, 1.9, "#4E3B2C", 0.0, false)
+	_building(l, -34.0, -6.0, 5.0, 4.0, 3.0, "tex:wood:#8A6A50", "", "#4E3B2C", true)
 	l.bounds = Rect2(-30.0, -11.6, 48.0, 14.8)
 	for x in range(-44, 30, 4):
 		l.pines.append(Vector2(x + rng.randf_range(-1.0, 1.0), 5.6 + rng.randf_range(-0.8, 0.8)))
@@ -804,6 +873,9 @@ static func _industrial_turn() -> Dictionary:
 	_kerb(l, 4.5, -90.0, 7.5, drive - 4.0)
 	_kerb(l, 4.5, drive + 4.0, 7.5, 80.0)
 	_kerb(l, -7.5, -90.0, -4.5, 80.0)
+	for z: float in [drive - 4.0, drive + 4.0]:
+		_round(l, 4.5, z, 2.5)
+		_round(l, 7.5, z, 0.5)
 	# The plant's fence and its closed sliding gate at the end of the driveway.
 	_fence(l, Vector2(11.0, -40.0), Vector2(11.0, drive - 4.0), "#8B98A3", 2.2)
 	_fence(l, Vector2(11.0, drive + 4.0), Vector2(11.0, 34.0), "#8B98A3", 2.2)
@@ -882,6 +954,7 @@ static func _courtyard() -> Dictionary:
 	_kerb(l, 22.0, -P.BAY_D - 0.6, 24.0, drive)
 	_kerb(l, -26.0, -P.BAY_D - 0.6, -24.0, 0.0)
 	l.asphalt.append(P.rect(-26.0, 0.0, -24.0, drive))
+	for x: float in [-26.0, -24.0]: _round(l, x, 0.0, 0.9)
 	_barrier(l, Vector2(-24.4, 0.0), Vector2(-24.4, drive))
 	for z: float in [0.8, 2.4, 4.0]: _bollard(l, 21.6, z)
 	l.bounds = Rect2(-24.4, -P.BAY_D - 0.6, 46.0, P.BAY_D + 0.6 + drive)
@@ -889,7 +962,7 @@ static func _courtyard() -> Dictionary:
 	for x: float in [-14.0, 2.0, 18.0]:
 		l.buildings.append({"prop": "buildings/block_3", "pos": Vector2(x, -14.0), "yaw": 0.0})
 	for x: float in [-14.0, 2.0, 18.0]:
-		_block(l, x, -8.9, 2.4, 0.9, 0.15, "#BDB5A8")
+		_block(l, x, -8.9, 2.4, 0.9, 0.15, "tex:plaster:#BDB5A8")
 		_bench(l, x - 2.5, -7.3)
 		_bin(l, x + 2.2, -7.2)
 	_ground(l, "dirt", -16.0, 7.0, 4.0, 18.0)
@@ -897,10 +970,9 @@ static func _courtyard() -> Dictionary:
 	_post(l, -12.0, 11.0, 0.08, 2.2, "#D9473B", 0.0, false)
 	_post(l, -9.0, 11.0, 0.08, 2.2, "#D9473B", 0.0, false)
 	_wall_ab(l, Vector2(-12.0, 11.0), Vector2(-9.0, 11.0), 0.1, 0.1, "#D9473B", 2.2, false)
-	_block(l, -3.0, 12.0, 3.0, 3.0, 0.3, "#E3C77F")
-	_block(l, 0.5, 14.5, 1.0, 3.0, 1.2, "#E07A3F")
+	_sandbox(l, -2.0, 12.0)
 	for t: Vector2 in [Vector2(8.0, 9.0), Vector2(14.0, 12.0), Vector2(-20.0, 10.0), Vector2(20.0, 16.0)]: l.trees.append(t)
-	_block(l, 12.0, 7.6, 3.6, 1.4, 1.3, "#4D6B58")
+	_containers(l, 13.0, 8.6)
 	for x: float in [-22.0, 0.0, 20.0]: l.lamps.append(Vector2(x, -P.BAY_D - 1.0))
 	return l
 
@@ -924,7 +996,7 @@ static func _underground() -> Dictionary:
 		var out := -1.0 if row == 0 else 1.0
 		for k in range(-2, 3):
 			var x0 := k * module
-			_block(l, x0, edge + out * 1.3, 0.6, 0.6, 3.0, "#B9BEC4")
+			_block(l, x0, edge + out * 1.3, 0.6, 0.6, 3.0, "tex:plaster:#B9BEC4")
 			_block(l, x0, edge + out * 1.3, 0.64, 0.64, 0.9, YELLOW, 0.0, false)
 			if k == 2: continue
 			for b in 3:
@@ -942,13 +1014,13 @@ static func _underground() -> Dictionary:
 	l.exit = [_fit(1, 1, tune.get("lane", 3.5), 2), _a(1, 1, 90.0 - prep), _a(-1, -1, prep), _s(-1, 7.0)]
 	l.mission = "gameParkingMissionColumns"
 	# Walls: full height at the back, a low cut wall towards the camera; the ramp is closed.
-	_block(l, 0.0, -P.BAY_D - 0.7, 44.4, 0.4, 3.0, "#A9AFB5")
-	_block(l, 0.0, aisle + P.BAY_D + 0.7, 44.4, 0.4, 1.0, "#A9AFB5")
-	_block(l, 22.2, aisle * 0.5, 0.4, aisle + P.BAY_D * 2.0 + 1.0, 3.0, "#A9AFB5")
+	_block(l, 0.0, -P.BAY_D - 0.7, 44.4, 0.4, 3.0, "tex:panel:#A9AFB5")
+	_block(l, 0.0, aisle + P.BAY_D + 0.7, 44.4, 0.4, 1.0, "tex:panel:#A9AFB5")
+	_block(l, 22.2, aisle * 0.5, 0.4, aisle + P.BAY_D * 2.0 + 1.0, 3.0, "tex:panel:#A9AFB5")
 	_block(l, 22.0, aisle * 0.5, 0.06, 1.4, 2.1, "#2E9B5F", 0.0, false)
 	_label(l, "gameParkingSignExit", 21.96, 2.4, aisle * 0.5, 1.2, 0.35, "#2E9B5F")
-	_block(l, -22.2, -P.BAY_D * 0.5 - 0.25, 0.4, P.BAY_D + 0.5, 3.0, "#A9AFB5")
-	_block(l, -22.2, aisle + P.BAY_D * 0.5 + 0.25, 0.4, P.BAY_D + 0.5, 3.0, "#A9AFB5")
+	_block(l, -22.2, -P.BAY_D * 0.5 - 0.25, 0.4, P.BAY_D + 0.5, 3.0, "tex:panel:#A9AFB5")
+	_block(l, -22.2, aisle + P.BAY_D * 0.5 + 0.25, 0.4, P.BAY_D + 0.5, 3.0, "tex:panel:#A9AFB5")
 	_block(l, -21.9, -2.0, 0.3, 0.8, 1.0, RED, 0.6, false)
 	l.asphalt.append(P.rect(-40.0, 0.0, -22.0, aisle))
 	_ground(l, "concrete", -40.0, 0.0, -22.0, aisle)
@@ -977,11 +1049,13 @@ static func _passage() -> Dictionary:
 	_kerb(l, 4.6, -4.0, 90.0, 0.0)
 	l.asphalt.append(P.rect(-4.6, -4.0, 4.6, 0.0))
 	_ground(l, "paving", -4.6, -4.0, 4.6, 0.0)
+	_round(l, -4.6, 0.0, 2.0)
+	_round(l, 4.6, 0.0, 2.0)
 	# Two houses along the street with the 4.4 m passage between them; a gateway arch.
 	for x: float in [-9.0, -23.0]: l.buildings.append({"prop": "buildings/block_3", "pos": Vector2(x - 0.2, -8.5), "yaw": 0.0})
 	for x: float in [9.0, 23.0]: l.buildings.append({"prop": "buildings/block_3", "pos": Vector2(x + 0.2, -8.5), "yaw": 0.0})
-	_block(l, -2.45, -8.5, 0.3, 9.0, 4.2, "#C9C2B6")
-	_block(l, 2.45, -8.5, 0.3, 9.0, 4.2, "#C9C2B6")
+	_block(l, -2.45, -8.5, 0.3, 9.0, 4.2, "tex:plaster:#C9C2B6")
+	_block(l, 2.45, -8.5, 0.3, 9.0, 4.2, "tex:plaster:#C9C2B6")
 	_block(l, 0.0, -3.6, 5.2, 0.6, 1.2, "#C9C2B6", 4.2, false)
 	# The courtyard: bays along its east side, the playground and trees opposite.
 	_kerb(l, 18.6, -36.0, 21.6, -16.0)
@@ -989,6 +1063,8 @@ static func _passage() -> Dictionary:
 	_kerb(l, -17.0, -34.0, -14.0, -16.0)
 	_kerb(l, -14.0, -17.0, -2.2, -16.0)
 	_kerb(l, 2.2, -17.0, 18.6, -16.0)
+	_round(l, -2.2, -16.0, 0.9)
+	_round(l, 2.2, -16.0, 0.9)
 	var x_front := 12.7
 	for k in range(-3, 4):
 		var c := Vector2(x_front + P.BAY_D * 0.5, bay_z + k * 2.7)
@@ -1002,7 +1078,7 @@ static func _passage() -> Dictionary:
 	l.bounds = Rect2(-20.0, -34.0, 42.0, 41.0)
 	_ground(l, "dirt", -12.0, -32.0, -4.0, -22.0)
 	_fence(l, Vector2(-12.0, -22.0), Vector2(-4.0, -22.0), "#3F8FC9", 0.9)
-	_block(l, -8.0, -27.0, 2.6, 2.6, 0.3, "#E3C77F")
+	_sandbox(l, -8.0, -27.0, 2.6)
 	for t: Vector2 in [Vector2(-15.5, -20.0), Vector2(-15.5, -30.0), Vector2(19.5, -18.0), Vector2(19.5, -33.0)]: l.trees.append(t)
 	for x: float in [-8.0, 6.0]: l.buildings.append({"prop": "buildings/block_0", "pos": Vector2(x, -42.0), "yaw": 0.0})
 	_bench(l, -2.0, -33.2)
@@ -1088,7 +1164,7 @@ static func _cafe_exit() -> Dictionary:
 	for z: float in [-5.0, 0.0, 5.0]:
 		_umbrella(l, 5.4, z, "#B9463E" if z != 0.0 else "#F2F4F8")
 		_block(l, 5.4, z, 0.8, 0.8, 0.05, WOOD, 0.72, false)
-	for z: float in [-9.0, 9.0]: _block(l, P.CURB_X + 0.6, z, 0.6, 3.0, 0.6, "#8C8378")
+	for z: float in [-9.0, 9.0]: _planter(l, P.CURB_X + 0.7, z, 3.0)
 	for z in range(-30, 28, 12): l.lamps.append(Vector2(P.CURB_X + 0.4, z + 6))
 	for z in range(-80, 80, 20): l.buildings.append({"prop": "buildings/block_%d" % (absi(z) % 5), "pos": Vector2(28.0, z), "yaw": -PI / 2})
 	return l
@@ -1155,6 +1231,7 @@ static func _mall() -> Dictionary:
 	_kerb(l, -26.0, -P.BAY_D - 1.0, -24.0, 0.0)
 	_kerb(l, -26.0, aisle, -24.0, aisle + P.BAY_D + 1.0)
 	l.asphalt.append(P.rect(-40.0, 0.0, -24.0, aisle))
+	for corner in [Vector2(-26.0, 0.0), Vector2(-24.0, 0.0), Vector2(-26.0, aisle), Vector2(-24.0, aisle)]: _round(l, corner.x, corner.y, 0.9)
 	_barrier(l, Vector2(-24.4, 0.0), Vector2(-24.4, aisle))
 	l.spawn = Vector3(-21.0, aisle * 0.5, PI / 2)
 	l.bounds = Rect2(-24.4, -P.BAY_D - 1.0, 48.4, aisle + P.BAY_D * 2.0 + 2.0)
@@ -1199,6 +1276,7 @@ static func _yard() -> Dictionary:
 	_kerb(l, -22.0, -P.BAY_D - 0.6, -20.0, 0.0)
 	_kerb(l, -22.0, aisle, -20.0, aisle + P.BAY_D + 0.6)
 	l.asphalt.append(P.rect(-36.0, 0.0, -20.0, aisle))
+	for corner in [Vector2(-22.0, 0.0), Vector2(-20.0, 0.0), Vector2(-22.0, aisle), Vector2(-20.0, aisle)]: _round(l, corner.x, corner.y, 0.9)
 	_barrier(l, Vector2(-20.4, 0.0), Vector2(-20.4, aisle))
 	l.spawn = Vector3(-16.5, aisle * 0.5, PI / 2)
 	l.bounds = Rect2(-20.4, -P.BAY_D - 0.6, 40.4, aisle + P.BAY_D * 2.0 + 1.2)
@@ -1237,6 +1315,7 @@ static func _park() -> Dictionary:
 	_kerb(l, -26.0, -depth - 1.0, -24.0, 0.0)
 	_kerb(l, -26.0, aisle, -24.0, aisle + depth + 1.0)
 	l.asphalt.append(P.rect(-40.0, 0.0, -24.0, aisle))
+	for corner in [Vector2(-26.0, 0.0), Vector2(-24.0, 0.0), Vector2(-26.0, aisle), Vector2(-24.0, aisle)]: _round(l, corner.x, corner.y, 0.9)
 	_barrier(l, Vector2(-24.4, 0.0), Vector2(-24.4, aisle))
 	for x: float in [-14.0, 4.0]: l.arrows.append({"pos": Vector2(x, aisle * 0.5), "yaw": PI / 2, "len": 3.0})
 	l.spawn = Vector3(-21.5, aisle * 0.5, PI / 2)
@@ -1278,8 +1357,8 @@ static func _school_street() -> Dictionary:
 	_fence(l, Vector2(P.CURB_X + 4.0, -60.0), Vector2(P.CURB_X + 4.0, -40.2), "#5F7D95", 1.8)
 	_fence(l, Vector2(P.CURB_X + 4.0, -34.4), Vector2(P.CURB_X + 4.0, -4.0), "#5F7D95", 1.8)
 	_ground(l, "paving", P.CURB_X, -40.0, P.CURB_X + 4.0, -34.6)
-	_block(l, P.CURB_X + 4.3, -40.0, 0.4, 0.4, 2.0, "#A9573E")
-	_block(l, P.CURB_X + 4.3, -34.6, 0.4, 0.4, 2.0, "#A9573E")
+	_block(l, P.CURB_X + 4.3, -40.0, 0.4, 0.4, 2.0, "tex:brick:#A9573E")
+	_block(l, P.CURB_X + 4.3, -34.6, 0.4, 0.4, 2.0, "tex:brick:#A9573E")
 	_building(l, P.CURB_X + 14.0, 12.0, 14.0, 24.0, 9.0, "#E9D9B6", "gameParkingSignSchoolBuilding", "#C9573E")
 	l.exit = func(geo: Dictionary) -> Array: return P.parallel_exit(geo, 40.0)
 	l.mission = "gameParkingFindSpot"

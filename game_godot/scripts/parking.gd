@@ -422,6 +422,9 @@ func _build_ground() -> void:
 		lift += 0.0004
 		_ground_quad(g.box, (-0.02 if g.key in ["meadow", "water"] else 0.002) + lift, g.key)
 	for b: Dictionary in level.sidewalks:
+		if b.has("round"):
+			_rounded_kerb(b)
+			continue
 		var f := ParkingLevels.forward(b.yaw)
 		_block(_ground_tool("pavement"), b.c, Vector2(f.y, -f.x), Vector3(b.half.x * 2.0, 0.15, b.half.y * 2.0), 0.0)
 	_build_tree_pits()
@@ -527,6 +530,36 @@ func _block(st: SurfaceTool, c: Vector2, dir: Vector2, size: Vector3, y0: float)
 		for k in [0, 1, 2, 0, 2, 3]:
 			st.set_normal(f[4])
 			st.add_vertex(f[k])
+
+
+## A pavement whose corners are rounded like a real kerb at a driveway or a corner.
+func _rounded_kerb(b: Dictionary) -> void:
+	var st := _ground_tool("pavement")
+	var c: Vector2 = b.c
+	var h: Vector2 = b.half
+	var outline: Array[Vector2] = []
+	# Counter-clockwise from the x+ z- corner, each corner a quarter circle (or a point).
+	for corner: Array in [["x+z-", Vector2(1, -1), -PI / 2], ["x+z+", Vector2(1, 1), 0.0], ["x-z+", Vector2(-1, 1), PI / 2], ["x-z-", Vector2(-1, -1), PI]]:
+		var radius: float = float(b.round.get(corner[0], 0.0))
+		var at: Vector2 = c + Vector2(h.x * corner[1].x, h.y * corner[1].y)
+		if radius <= 0.0:
+			outline.append(at)
+			continue
+		var centre: Vector2 = at - corner[1] * radius
+		for k in 9:
+			var a: float = float(corner[2]) + PI / 2 * k / 8.0
+			outline.append(centre + Vector2(cos(a), sin(a)) * radius)
+	var top := Vector3(0, 0.15, 0)
+	for i in outline.size():
+		var p0 := Vector3(outline[i].x, 0, outline[i].y)
+		var p1 := Vector3(outline[(i + 1) % outline.size()].x, 0, outline[(i + 1) % outline.size()].y)
+		var n := (p1 - p0).cross(Vector3.UP).normalized()
+		for v in [p0, p1, p1 + top, p0, p1 + top, p0 + top]:
+			st.set_normal(n)
+			st.add_vertex(v)
+		for v in [Vector3(c.x, 0.15, c.y), p0 + top, p1 + top]:
+			st.set_normal(Vector3.UP)
+			st.add_vertex(v)
 
 
 ## A tree standing in a pavement gets a square of earth with a low edging, as in a real street.
