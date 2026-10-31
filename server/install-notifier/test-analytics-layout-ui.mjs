@@ -94,8 +94,10 @@ if(process.argv.includes('--serve')) {
   for(const label of ['Обзор','Сейчас','Активность и рост','Состав аудитории','Источники привлечения','За выбранный период','Отчёты магазинов · ПДД Россия']){
    assert.equal(await page.locator('#analytics-view').getByText(label,{exact:true}).count(),0);
   }
-  const cards=page.locator('#analytics-view .an-card');
-  assert.equal(await cards.count(),15);
+  assert.equal(await page.locator('#an-now .an-big:visible').count(),4);
+  assert.equal(await page.locator('#an-now button').count(),0);
+  const cards=page.locator('#analytics-view .an-card:not(.an-kpi)');
+  assert.equal(await cards.count(),11);
   for(const card of await cards.all()){
    const toggle=card.locator('.an-fold'), body=page.locator('#'+await toggle.getAttribute('aria-controls'));
    await toggle.click();

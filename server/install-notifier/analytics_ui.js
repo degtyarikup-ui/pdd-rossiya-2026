@@ -93,7 +93,7 @@ export const ANALYTICS_VIEW_HTML = String.raw`
 #analytics-view [id^="an-body-"][hidden]{display:none}
 </style>
 <div class="an-grid" id="an-now" aria-label="Текущее состояние аккаунтов">
- ${kpis.map(([key, label, help]) => `<div class="an-card an-kpi${key === 'active1' ? ' is-primary' : ''}" title="${help}"><div class="an-kpi-top">${cardToggle(key, label)}</div><div class="an-big" id="an-body-${key}" data-kpi="${key}">—</div></div>`).join('')}
+ ${kpis.map(([key, label, help]) => `<div class="an-card an-kpi${key === 'active1' ? ' is-primary' : ''}" title="${help}"><div class="an-kpi-top">${label}</div><div class="an-big" data-kpi="${key}">—</div></div>`).join('')}
 </div>
 <div class="an-period" id="an-period"></div>
 <div class="an-charts-grid">
