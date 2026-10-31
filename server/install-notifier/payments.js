@@ -15,7 +15,8 @@ import { reportIncident, errorCode, markIncidentReported } from './diagnostics.j
 // клиента на сайт. Повторное подтверждение того же заказа ничего не
 // добавляет: заказ отмечается в user.webPayments.
 
-import { attributionLines, metadataFields } from './attribution.js';
+import { premiumBanner, premiumContextLines, premiumDate } from './premium_message.js';
+import { metadataFields } from './attribution.js';
 import { putUserRecord } from './user_store.js';
 import { entitlementsOf, extendEntitlement, setEntitlement } from './entitlements.js';
 
@@ -123,29 +124,23 @@ function paymentContext(body, user) {
     metadataSource: supplied ? 'checkout' : fallback ? 'profile' : 'unknown' };
 }
 
-export function buildSbpPurchaseMessage(order, expiresAt, esc) {
+export function buildSbpPurchaseMessage(order, expiresAt, esc, renewal = false) {
   const context = order.context || {};
   const platform = order.context ? context.platform : order.client;
-  const origin = platform === 'android' ? '🤖 Android-приложение'
-    : platform === 'web' ? '🌐 Сайт / веб-приложение' : 'Не указан';
-  const date = value => value && Number.isFinite(Date.parse(value))
-    ? new Date(value).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' МСК' : 'Не указан';
   return [
-    '⭐⭐⭐⭐⭐⭐⭐⭐', '⭐️ 🇷🇺 <b>Покупка Premium</b> (СБП)', '',
+    premiumBanner(order.tier, renewal), '<b>Покупка Premium</b> (СБП)', '',
     `• <b>Тариф:</b> ${esc(WEB_TARIFFS[order.tier]?.title || order.tier)} • <b>${esc(String(order.amount))} ₽</b>`,
     `• <b>Пользователь:</b> ${esc(order.name || 'Без имени')}`,
     `• <b>Email:</b> ${esc(order.accountEmail || 'Не указан')}`,
-    '• <b>Оплата:</b> СБП · Platega · разовая, без автопродления',
-    `• <b>Начата из:</b> ${origin}`,
-    ...attributionLines(context, esc),
-    context.appVersion ? `• <b>Версия приложения:</b> ${esc(context.appVersion)}` : null,
+    '• <b>Оплата:</b> СБП · Platega', '• <b>Автопродление:</b> нет', '',
+    ...premiumContextLines({ ...context, platform }, esc),
     context.metadataSource === 'profile' ? '• <b>Данные устройства:</b> из последнего профиля на момент создания заказа' : null,
     `• <b>ID аккаунта:</b> <code>${esc(order.userId)}</code>`,
-    `• <b>Действует до (СБП):</b> ${date(expiresAt)}`,
+    `• <b>Действует до (СБП):</b> ${premiumDate(expiresAt)}`, '',
     `• <b>Чек:</b> ${esc(order.email || 'Не указан')}`,
     `• <b>Заказ:</b> <code>${esc(order.orderId)}</code>`,
     `• <b>Транзакция:</b> <code>${esc(order.txId || 'Не указана')}</code>`,
-    '', `🕓 ${date(order.confirmedAt)}`,
+    '', `🕓 ${premiumDate(order.confirmedAt)}`,
   ].filter(line => line !== null).join('\n');
 }
 
@@ -325,8 +320,10 @@ export async function settleOrder(env, order, deps) {
         if (!current || (current.expiresAt != null && Date.parse(current.expiresAt) < Date.parse(expiry))) setEntitlement(user, 'web', expiry);
         ledger = { awarded: true, legacyReconciled: true, expiresAt: expiry };
       } else {
-        extendEntitlement(user, 'web', order.days);
-        ledger = { awarded: true, expiresAt: entitlementsOf(user).web?.expiresAt || null };
+        const now = Date.now();
+        const renewal = Object.values(entitlementsOf(user)).some(entry => Date.parse(entry?.expiresAt) > now);
+        extendEntitlement(user, 'web', order.days, now);
+        ledger = { awarded: true, renewal, expiresAt: entitlementsOf(user).web?.expiresAt || null };
       }
       ledger = { ...ledger, tier: order.tier, days: order.days, amount: order.amount, txId: order.txId, at: order.confirmedAt || new Date().toISOString() };
     }
@@ -344,7 +341,7 @@ export async function settleOrder(env, order, deps) {
     order.confirmedAt = order.confirmedAt || new Date().toISOString();
     await env.INSTALLS.put('pay_order:' + order.orderId, JSON.stringify(order));
     if (wasConfirmed) return order;
-    await notify(env, deps, buildSbpPurchaseMessage(order, ledger.expiresAt, deps.esc), 'pay_paid:' + order.orderId);
+    await notify(env, deps, buildSbpPurchaseMessage(order, ledger.expiresAt, deps.esc, ledger.renewal), 'pay_paid:' + order.orderId);
     try {
       await deps.trackStats?.(env, null, { id: 'pay_paid:' + order.orderId, kind: 'analytics', event: { type: 'purchase', purchaseSource: 'web', app: order.app || 'ru', platform: (order.context ? order.context.platform : order.client) || 'unknown' } });
     } catch (_) {}

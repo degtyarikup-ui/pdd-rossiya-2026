@@ -30,7 +30,7 @@ export async function handleStoreNotification(request, env, store, verifyGoogle=
   const bytes=new Uint8Array(length);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}
   const raw=new TextDecoder().decode(bytes);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'invalid json'},400);}
-  let key,reference;
+  let key,reference,renewalEvent;
   try {
    if(store==='appstore') {
     // The configured callback has a private MAC token. JWS fields are only
@@ -38,6 +38,7 @@ export async function handleStoreNotification(request, env, store, verifyGoogle=
     // reread in AccountState, including exact originalTransactionId/account UUID.
     const envelope=decodeJwt(body.signedPayload);
     if(envelope.notificationType==='TEST')return reply({ok:true,test:true});
+    renewalEvent=envelope.notificationType==='DID_RENEW';
     const tx=decodeJwt(envelope.data?.signedTransactionInfo);
     if(!/^\d{1,40}$/.test(tx.transactionId||'')||!/^\d{1,40}$/.test(tx.originalTransactionId||''))throw new Error('invalid transaction');
     key='appstore:'+tx.originalTransactionId;reference={store,country:'ru',productId:tx.productId,transactionId:tx.transactionId};
@@ -45,6 +46,7 @@ export async function handleStoreNotification(request, env, store, verifyGoogle=
     const data=JSON.parse(atob(body.message?.data||''));
     if(data.testNotification)return reply({ok:true,test:true});
     if(data.packageName!=='ru.pdd.pdd_app')return reply({error:'wrong package'},400);
+    renewalEvent=data.subscriptionNotification?.notificationType===2;
     const token=data.subscriptionNotification?.purchaseToken;if(typeof token!=='string'||token.length>8192)throw new Error('invalid transaction');
     key='googleplay:ru:'+await tokenHash(token);reference={store,country:'ru',purchaseToken:token};
    }
@@ -55,7 +57,7 @@ export async function handleStoreNotification(request, env, store, verifyGoogle=
     if(!saved||saved.store!=='googleplay')return reply({error:'purchase reference not ready'},503);
     reference.productId=saved.productId;
    }
-   const response=await accountRpc(env,userId,'/_account/iap-event',{reference,key});
+   const response=await accountRpc(env,userId,'/_account/iap-event',{reference,key,renewalEvent});
    return response?.ok?reply({ok:true}):response?.status===410?reply({ok:true,accountDeleted:true}):reply({error:'store status unavailable'},503);
   } catch{return reply({error:'invalid or unavailable store event'},503);}
 }

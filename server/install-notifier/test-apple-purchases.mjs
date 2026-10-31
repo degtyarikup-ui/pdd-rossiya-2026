@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPair, exportPKCS8, SignJWT } from 'jose';
 import { verifyStorePurchase, refreshStoreEntitlement } from './store_verification.js';
-import worker from './worker.js';
+import worker, { handleAccountMaintenance } from './worker.js';
 import { signSession } from './user_auth.js';
 import { accountTokenForUserId } from './store_account.js';
 const { privateKey } = await generateKeyPair('ES256', { extractable: true });
@@ -70,6 +70,26 @@ async function statusResponse(data, status = 1, renewal) {
     data: [{ lastTransactions: [{ originalTransactionId: data.originalTransactionId, status,
       signedTransactionInfo: await signed(data), ...(renewal ? { signedRenewalInfo: await signed(renewal) } : {}) }] }] });
 }
+test('one quarterly Apple renewal notification for repeated verified callbacks', async () => {
+  const id = 'apple_test', productId = 'ru.pdd.pddApp.sub.3months';
+  const records = new Map([['user:' + id, JSON.stringify({ id, app: 'ru' })]]);
+  const effects = [];
+  const e = { ...env, __ACCOUNT_ID: id, BOT_TOKEN: 'test', CHAT_ID: 'test', __DURABLE_EFFECTS: effects,
+    INSTALLS: { get: async key => records.get(key), put: async (key, value) => records.set(key, value) },
+    PURCHASE_CLAIMS: { idFromName: key => key, get: () => ({ fetch: async () => Response.json({ userId: id }) }) } };
+  const data = transaction({ productId, price: 290000, transactionReason: 'RENEWAL' });
+  const event = renewalEvent => new Request('https://internal/_account/iap-event', {
+    method: 'POST', body: JSON.stringify({ reference: { ...body, productId }, key: 'appstore:100', renewalEvent }) });
+  await withApple(async url => new URL(url).pathname.includes('/subscriptions/') ? statusResponse(data)
+    : Response.json({ signedTransactionInfo: await signed(data) }), async () => {
+    for (const renewal of [false, true, true]) {
+      assert.equal((await handleAccountMaintenance('/_account/iap-event', event(renewal), e)).status, 200);
+      assert.equal(effects.filter(effect => effect.kind === 'telegram').length, Number(renewal));
+    }
+    const [notice] = effects.filter(effect => effect.kind === 'telegram');
+    assert.ok(notice.text.startsWith('⭐⭐⭐⭐⭐⭐\n✅✅✅\n<b>Покупка Premium</b>'));
+  });
+});
 test('restoring an expired period finds the renewed subscription and records latest transaction', async () => {
   const old = transaction({ expiresDate: Date.now() - 1000 });
   const renewed = transaction({ transactionId: '124' });

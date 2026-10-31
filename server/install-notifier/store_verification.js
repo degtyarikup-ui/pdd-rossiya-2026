@@ -43,7 +43,9 @@ export function googleEntitlement(data, productId, now = Date.now()) {
     .sort((a, b) => Date.parse(b.expiryTime) - Date.parse(a.expiryTime))[0];
   if (!item || !Number.isFinite(Date.parse(item.expiryTime))) throw new StoreError('wrong product', 422);
   const active = activeStates.has(data.subscriptionState) && Date.parse(item.expiryTime) > now;
-  return { active, expiresAt: new Date(item.expiryTime).toISOString(), orderId: data.latestOrderId || null,
+  const orderId = item.latestSuccessfulOrderId || data.latestOrderId || null;
+  return { active, expiresAt: new Date(item.expiryTime).toISOString(), orderId,
+    renewal: /\.\.\d+$/.test(orderId || ''),
     autoRenewEnabled: typeof item.autoRenewingPlan?.autoRenewEnabled === 'boolean' ? item.autoRenewingPlan.autoRenewEnabled : item.prepaidPlan ? false : null };
 }
 
@@ -145,7 +147,7 @@ export async function verifyStorePurchase(body, env, userId, { refresh = false }
     active = [1, 4].includes(latest.status) && !data.revocationDate && expiresDate > Date.now();
   }
   return { active, autoRenewEnabled, accountToken: data.appAccountToken || null, expiresAt: new Date(expiresDate).toISOString(),
-    orderId: String(data.transactionId), key: `appstore:${data.originalTransactionId}`,
+    renewal: data.transactionReason === 'RENEWAL', orderId: String(data.transactionId), key: `appstore:${data.originalTransactionId}`,
     reference: { store, country, productId: data.productId, transactionId: String(data.transactionId),
       evidenceVersion: 1, environment: data.environment, isTest: data.environment !== 'Production',
       paid: data.price == null ? null : Number(data.price) > 0, refunded: Boolean(data.revocationDate) } };

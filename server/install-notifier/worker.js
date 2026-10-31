@@ -12,6 +12,7 @@ import { TASKS_NAV_HTML, TASKS_VIEW_HTML, TASKS_CLIENT_JS } from './tasks_ui.js'
 import { handleTasksAdmin } from './tasks_admin.js';
 import { ECONOMY_NAV_HTML, ECONOMY_VIEW_HTML, ECONOMY_CLIENT_JS } from './economy_ui.js';
 import { handleEconomyAdmin } from './economy_admin.js';
+import { premiumBanner, premiumContextLines, premiumDate } from './premium_message.js';
 import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, installSourceLines, deviceLine, attributedDestination, marketingSource, SOURCE_LABELS } from './attribution.js';
 import { storeReportSnapshot } from './store_reports.js';
 import { renderDailyChart, pngBase64 } from './daily_chart.js';
@@ -631,9 +632,6 @@ export function buildUserRegistrationMessage(user, totalCount) {
 }
 
 export function buildPremiumPurchaseMessage(p) {
-  const countryCode = String(p.country || p.app || 'ru').toLowerCase();
-  const flag = FLAGS[countryCode] || (countryCode === 'rs' ? '🇷🇸' : '🇷🇺');
-
   const name = p.name ? esc(p.name) : 'Пользователь';
   const email = displayUserEmail(p.email);
 
@@ -651,37 +649,41 @@ export function buildPremiumPurchaseMessage(p) {
     tierStr += ` • <b>${esc(p.price)}</b>`;
   }
 
-  let expiresStr = null;
-  if (p.expiresAt) {
-    try {
-      const d = new Date(p.expiresAt);
-      expiresStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    } catch (_) {
-      expiresStr = esc(p.expiresAt);
-    }
-  }
-
-  const platform = p.platform ? String(p.platform).toLowerCase() : null;
-  const platformEmoji = platform === 'ios' ? '🍎 iOS' : platform === 'android' ? '🤖 Android' : platform === 'web' ? '🌐 Web' : null;
-  const platformMeta = [platformEmoji, p.appVersion ? `v${esc(p.appVersion)}` : null].filter(Boolean).join(' • ');
-
   const lines = [
-    '⭐⭐⭐⭐⭐⭐⭐⭐',
-    `⭐️ ${flag} <b>Покупка Premium</b>`,
+    premiumBanner(p.tier, p.renewal),
+    '<b>Покупка Premium</b>',
     '',
     `• <b>Тариф:</b> ${tierStr}`,
     `• <b>Пользователь:</b> ${name}`,
     `• <b>Email:</b> ${email}`,
-    `• <b>Магазин:</b> ${storeStr}`,
-    ...attributionLines(p, esc),
-    p.id ? `• <b>ID:</b> <code>${esc(String(p.id).slice(0, 120))}</code>` : null,
-    expiresStr ? `• <b>Действует до:</b> ${expiresStr}` : '• <b>Действует:</b> Навсегда',
-    `• <b>Платформа:</b> ${platformMeta || '—'}`,
+    `• <b>Оплата:</b> ${storeStr}`,
+    `• <b>Автопродление:</b> ${p.autoRenewEnabled === true ? 'да' : p.autoRenewEnabled === false ? 'нет' : 'неизвестно'}`, '',
+    ...premiumContextLines(p, esc),
+    p.id ? `• <b>ID аккаунта:</b> <code>${esc(String(p.id).slice(0, 120))}</code>` : null,
+    p.expiresAt ? `• <b>Действует до:</b> ${premiumDate(p.expiresAt)}` : '• <b>Действует:</b> Навсегда',
     '',
-    `🕓 ${mskTime(new Date())} MSK`,
+    p.orderId ? `• <b>Транзакция:</b> <code>${esc(p.orderId)}</code>\n` : null,
+    `🕓 ${premiumDate(new Date())}`,
   ].filter((l) => l !== null);
 
   return lines.join('\n');
+}
+
+async function logStorePurchase(env, user, verified, details = {}) {
+  const { store, productId } = verified.reference;
+  const tier = productId.endsWith('.3months') ? 'threeMonths' : productId.endsWith('.week') ? 'weekly' : details.tier;
+  const purchaseId = verified.orderId || `${user.id}_${details.tier || productId}_${(verified.expiresAt || '').slice(0, 10)}`;
+  const key = 'notified_purch:' + purchaseId;
+  if (await env.INSTALLS.get(key)) return;
+  const platform = store === 'appstore' ? 'ios' : 'android';
+  if (env.BOT_TOKEN && env.CHAT_ID) {
+    const msg = buildPremiumPurchaseMessage({ ...user, ...details, tier, store, platform,
+      expiresAt: verified.expiresAt, orderId: verified.orderId, renewal: verified.renewal, autoRenewEnabled: verified.autoRenewEnabled });
+    const notification = await sendTelegram(env, msg, key, { topic: 'purchases' });
+    if (!notification.ok) throw new Error('purchase notification queue unavailable');
+  }
+  await trackStats(env, null, { id: key, kind: 'analytics', event: { type: 'purchase', purchaseSource: store, app: user.app, platform } });
+  await env.INSTALLS.put(key, '1', { expirationTtl: 30 * 86400 });
 }
 
 export function buildPremiumGrantMessage(user, grant) {
@@ -3654,9 +3656,8 @@ const workerHandlers = {
         return jsonResponse({ error: error instanceof StoreError ? error.message : 'store verification unavailable' }, error instanceof StoreError ? error.status : 503);
       }
       body = { ...body, userId: authenticatedUser.id, name: authenticatedUser.name,
-        email: authenticatedUser.email, provider: authenticatedUser.provider,
-        expiresAt: verified.expiresAt, transactionId: verified.orderId };
-      const { userId, name, email, provider, tier, tierName, price, store, expiresAt, platform, appVersion, country, app, transactionId, productId } = body;
+        email: authenticatedUser.email, provider: authenticatedUser.provider };
+      const { userId, name, email, provider, tier, tierName, price, store, platform, appVersion, country, app } = body;
 
 
       const targetId = userId || (email ? ('email_' + email) : `purchase_${Date.now()}`);
@@ -3695,39 +3696,7 @@ const workerHandlers = {
       }
 
       try {
-        // Anti-duplication check for purchase notification
-        const purchaseId = transactionId || `${user.id}_${tier || productId || 'premium'}_${(expiresAt || '').slice(0, 10)}`;
-        const notifPurchaseKey = 'notified_purch:' + purchaseId;
-        let alreadyNotified = false;
-        try {
-          alreadyNotified = await env.INSTALLS.get(notifPurchaseKey);
-        } catch (_) {}
-
-        if (!alreadyNotified) {
-          if (env.BOT_TOKEN && env.CHAT_ID) {
-            const msg = buildPremiumPurchaseMessage({
-              ...user,
-              name: user.name || name,
-              email: user.email || email,
-              tier,
-              tierName,
-              price,
-              store,
-              expiresAt,
-              platform: user.platform || platform,
-              appVersion: user.appVersion || appVersion,
-              country: user.country || country || 'RU',
-              app: user.app || app || 'ru',
-            });
-            const notification = await sendTelegram(env, msg, notifPurchaseKey, { topic: 'purchases' });
-            if (!notification.ok) throw new Error('purchase notification queue unavailable');
-          }
-        }
-
-        if (!alreadyNotified) {
-          await trackStats(env, null, { id: notifPurchaseKey, kind: 'analytics', event: { type: 'purchase', purchaseSource: store, app: user.app || app, platform: user.platform || platform } });
-          await env.INSTALLS.put(notifPurchaseKey, '1', { expirationTtl: 30 * 86400 });
-        }
+        await logStorePurchase(env, user, verified, { tier, tierName, price });
       } catch (_) { console.error('Purchase saved; notification unavailable'); }
 
       return jsonResponse({
@@ -4326,7 +4295,7 @@ export async function handleAccountHttp(request, env) {
 }
 export async function handleAccountMaintenance(path, request, env) {
   if (path === '/_account/iap-event') {
-    const { reference, key } = await request.json();
+    const { reference, key, renewalEvent } = await request.json();
     const raw = await env.INSTALLS.get('user:' + env.__ACCOUNT_ID);
     if (!raw) return jsonResponse({ error: 'account deleted' }, 410);
     const user = JSON.parse(raw);
@@ -4339,6 +4308,10 @@ export async function handleAccountMaintenance(path, request, env) {
     user.storeVerifiedAtByStore = { ...(user.storeVerifiedAtByStore || {}), [reference.store]: Date.now() };
     user.verifiedPurchase = verified.reference; user.storeVerifiedAt = Date.now(); user.autoRenewEnabled = verified.autoRenewEnabled;
     await putUserRecord(env, user);
+    if (renewalEvent && verified.active && verified.orderId && !verified.reference.isTest && verified.reference.paid !== false &&
+        (reference.store === 'googleplay' || (verified.renewal && reference.transactionId === verified.orderId))) {
+      await logStorePurchase(env, user, { ...verified, renewal: true });
+    }
   } else if (path === '/_account/refresh') {
     const raw = await env.INSTALLS.get('user:' + env.__ACCOUNT_ID);
     if (raw) await refreshStoreEntitlement(env, JSON.parse(raw));

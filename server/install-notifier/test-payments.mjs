@@ -112,6 +112,7 @@ test('оплата: платёж, уведомление, срок один ра
     assert.equal((await callback(env, { id: tx.id, status: 'CONFIRMED', payload: start.order })).status, 200);
     const paid = user(env);
     assert.equal(paid.isPremium, true);
+    assert.equal(paid.webPayments[start.order].renewal, false);
     assert.equal(paid.premiumSource, 'web');
     const end = Date.parse(paid.premiumExpiresAt);
     assert.ok(Math.abs(end - (Date.now() + 90 * 86400000)) < 60000);
@@ -177,6 +178,7 @@ test('оплата на сайте добавляется после дейст�
     await worker.fetch(req('/api/user/pay-check', { order: start.order }, token), env);
     const u = user(env);
     assert.equal(u.entitlements.appstore.expiresAt, storeEnd);
+    assert.equal(u.webPayments[start.order].renewal, true);
     assert.equal(u.entitlements.web.expiresAt, new Date(Date.parse(storeEnd) + 7 * 86400000).toISOString());
     assert.equal(u.premiumSource, 'web');
   } finally { fake.restore(); }
@@ -306,8 +308,9 @@ test('СБП: контекст Android сохраняется в заказе, H
     const env = baseEnv(); const token = await login(env);
     const response = await worker.fetch(req('/api/user/pay-intent', {
       email: 'receipt@example.com', tier: 'weekly', method: 'sbp', client: 'android',
-      platform: 'android', device: '<Pixel>', os: 'Android 16', locale: 'ru-RU',
-      installStore: 'RuStore', version: '2.2.4+63',
+      platform: 'android', device: '<Pixel>', os: 'Android 16 (SDK 36)', locale: 'ru-RU',
+      installStore: 'Google Play', marketingSource: 'google_play_organic', marketingMedium: 'organic',
+      attributionMethod: 'play_organic', version: '2.2.4+63',
     }, token), env);
     const result = await response.json();
     const order = JSON.parse(await env.INSTALLS.get('pay_order:' + result.order));
@@ -317,8 +320,12 @@ test('СБП: контекст Android сохраняется в заказе, H
     const { buildSbpPurchaseMessage } = await import('./payments.js');
     const esc = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
     const text = buildSbpPurchaseMessage({ ...order, confirmedAt: '2026-10-22T12:07:00Z' }, '2026-10-29T12:07:00Z', esc);
-    for (const fragment of ['Android-приложение', '&lt;Pixel&gt;', 'RuStore', '2.2.4+63', '29.10.2026, 15:07 МСК', 'receipt@example.com', order.txId]) assert.ok(text.includes(fragment), fragment);
-    assert.doesNotMatch(text, /Оплата на сайте/);
+    for (const fragment of ['🤖 Android\n', '&lt;Pixel&gt; · Android 16\n', 'Google Play\n• <b>Источник:</b> Органика\n• <b>Канал:</b> organic\n\n', 'Язык устройства:</b> ru-RU', '2.2.4+63', '29.10.2026, 15:07 МСК', 'receipt@example.com', order.txId]) assert.ok(text.includes(fragment), fragment);
+    assert.ok(text.startsWith('⭐⭐⭐\n<b>Покупка Premium</b> (СБП)\n\n'));
+    assert.match(text, /СБП · Platega\n• <b>Автопродление:<\/b> нет\n\n/);
+    assert.doesNotMatch(text, /SDK|Определён по|Версия приложения|✅/);
+    assert.ok(buildSbpPurchaseMessage({ ...order, tier: 'threeMonths' }, null, esc, true)
+      .startsWith('⭐⭐⭐⭐⭐⭐\n✅✅✅\n'));
     const { settleOrder } = await import('./payments.js');
     const profile = { id: order.userId, name: order.name, email: order.accountEmail, platform: 'ios', device: 'iPhone' };
     await env.INSTALLS.put('user:' + profile.id, JSON.stringify(profile));

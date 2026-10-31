@@ -36,10 +36,10 @@ export function metadataFields(user = {}) {
   out.installStore = ['App Store', 'Google Play', 'RuStore', 'TestFlight', 'Web'].includes(user.installStore) ? user.installStore : '';
   return { ...out, ...acquisitionFields(user) };
 }
-export function installSourceLines(m, esc) {
+export function installSourceLines(m, esc, sourceLabel = SOURCE_LABELS[m.marketingSource]) {
   return [
     `• <b>Установка:</b> ${esc(m.installStore) || '—'}`,
-    `• <b>Источник:</b> ${SOURCE_LABELS[m.marketingSource]}${m.marketingCampaign ? ' · ' + esc(m.marketingCampaign) : ''}`,
+    `• <b>Источник:</b> ${sourceLabel}${m.marketingCampaign ? ' · ' + esc(m.marketingCampaign) : ''}`,
   ];
 }
 export function deviceLine(m, esc) {
