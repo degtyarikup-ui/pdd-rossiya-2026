@@ -175,7 +175,8 @@ test('unknown sources stay hidden; verified sources are generic; no fake cohort 
  const base={views:1,installs:1,registrations:2,aiRequests:3,reports:4};
  const end=new Date('2026-10-05T19:00Z');
  const unknown=buildDailyReportMessage({data:base,end});
- assert.doesNotMatch(unknown,/Threads|Источники|↓/);
+ assert.doesNotMatch(unknown,/Threads|↓/);
+ assert.match(unknown,/Источники первых запусков<\/b>\nДо начала разбивки: <b>1/);
  assert.match(unknown,/Жалобы: <b>4<\/b>\n🤖 ИИ-запросы: <b>3<\/b>/);
  const known=buildDailyReportMessage({data:{...base,registrationsByMarketingSource:{threads:2,youtube:1,unknown:10,'<script>':5}},end});
  assert.match(known,/Источники новых аккаунтов/);
@@ -193,6 +194,35 @@ test('registration source aggregation preserves multiple channels without guessi
  const slot=JSON.parse(await env.INSTALLS.get('slot:2026-10-05:day'));
  assert.equal(slot.registrations,3);
  assert.deepEqual(slot.registrationsByMarketingSource,{threads:1,youtube:1});
+});
+
+test('daily sources combine both slots, keep old counters and exclude updates from first launches', async () => {
+  const {env, state} = setup();
+  const end = new Date('2026-10-30T19:00Z');
+  await env.INSTALLS.put('slot:2026-10-30:night', JSON.stringify({
+    views: 4, viewsBySource: {google: 1, social_other: 3}, threadsViews: 1,
+    installs: 2, installsByStore: {'Google Play': 2},
+  }));
+  const events = [
+    {type: 'view', source: 'chatgpt.com'}, {type: 'view', source: 'chatgpt'}, {type: 'view', source: 'threads'},
+    {type: 'install', source: 'Google Play', marketingSource: 'google_play_organic'},
+    {type: 'install', source: 'App Store'},
+    {type: 'install', source: 'Google Play', kind: 'returning', marketingSource: 'youtube'},
+    {type: 'install', source: 'Google Play', kind: 'unclassified', marketingSource: 'instagram'},
+  ];
+  await flushBufferedStats(env, events.map(event => ({
+    kind: 'analytics', ts: end.getTime() - 60_000, event: sanitizeAnalyticsEvent(event),
+  })));
+  assert.ok((await sendDailyReport(env, end)).ok);
+  const messages = [...(await state.storage.list({prefix:'q:'})).values()].map(item => item.text).join('\n');
+  const views = messages.split('Источники просмотров сайта</b>\n')[1].split('\n\n')[0];
+  const launches = messages.split('Источники первых запусков</b>\n')[1].split('\n\n')[0];
+  assert.deepEqual(views.split('\n').sort(), [
+    'ChatGPT: <b>2</b>', 'Google: <b>1</b>', 'Threads: <b>2</b>', 'Прочие (без детализации): <b>2</b>',
+  ].sort());
+  assert.equal(launches, 'До начала разбивки: <b>2</b>\nОрганика Google Play: <b>1</b>\nБез записанного источника: <b>1</b>');
+  assert.match(messages, /Просмотры: <b>7<\/b>/);
+  assert.match(messages, /Первые запуски: <b>4<\/b>/);
 });
 
 test('daily report counts paid transactions and excludes manual grants from both slots and days', async () => {

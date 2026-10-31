@@ -8,6 +8,7 @@
 // Клиентский код — String.raw без обратных кавычек и ${ внутри.
 
 import { BRAND_ICON_PATHS, BRAND_SVGS } from './brand_icons.js';
+import { siteSourceKey } from './attribution.js';
 import { selectGeoRows } from './analytics_geo.js';
 
 function cardToggle(id, title) {
@@ -236,25 +237,6 @@ function anLogo(conf) {
   if (conf.mono) return '<span class="an-mono" style="background:' + (conf.bg || conf.color) + '">' + conf.mono + '</span>';
   if (conf.icon) return '<span class="an-logo">' + anSvgIcon(conf.icon) + '</span>';
   return '<span class="an-logo">' + anGlyph(conf.glyph) + '</span>';
-}
-function anSourceKey(raw) {
-  var s = String(raw || '').toLowerCase();
-  if (['chatgpt','perplexity','copilot','gemini','claude'].includes(s)) return s;
-  if (s === 'unknown') return 'unknown';
-  if (s === 'google_play_organic') return 'google_play_organic';
-  if (s === 'bing' || s.indexOf('bing.com') !== -1) return 'bing';
-  if (s === 'duckduckgo' || s.indexOf('duckduckgo.com') !== -1) return 'duckduckgo';
-  if (!s || s === 'direct' || s === 'none' || s === '(direct)') return 'direct';
-  if (s.indexOf('yandex') !== -1 || s === 'ya' || s.indexOf('ya.ru') !== -1) return 'yandex';
-  if (s === 'ig' || s.indexOf('instagram') !== -1) return 'instagram';
-  if (s === 'yt' || s.indexOf('youtube') !== -1) return 'youtube';
-  if (s === 'tt' || s.indexOf('tiktok') !== -1) return 'tiktok';
-  if (s === 'tg' || s.indexOf('telegram') !== -1) return 'telegram';
-  if (s === 'vk' || s.indexOf('vkontakte') !== -1) return 'vk';
-  if (s === 'th' || s.indexOf('threads') !== -1) return 'threads';
-  if (s.indexOf('dzen') !== -1 || s.indexOf('zen.yandex') !== -1) return 'dzen';
-  if (s.indexOf('google') !== -1) return 'google';
-  return 'other';
 }
 
 // Изменение к прошлому периоду. Процент — только на базе от 10: иначе
@@ -591,4 +573,4 @@ window.addEventListener('resize', function () {
 });
 `;
 
-export const ANALYTICS_CLIENT_JS = 'var BRAND_SVGS = (typeof window !== "undefined" && window.BRAND_SVGS) || ' + JSON.stringify(BRAND_SVGS) + ';\n' + 'var AN_SELECT_GEO = ' + selectGeoRows.toString() + ';\n' + 'var AN_BRAND_PATHS = ' + JSON.stringify(BRAND_ICON_PATHS) + ';\n' + CLIENT;
+export const ANALYTICS_CLIENT_JS = 'var BRAND_SVGS = (typeof window !== "undefined" && window.BRAND_SVGS) || ' + JSON.stringify(BRAND_SVGS) + ';\n' + 'var anSourceKey = ' + siteSourceKey.toString() + ';\n' + 'var AN_SELECT_GEO = ' + selectGeoRows.toString() + ';\n' + 'var AN_BRAND_PATHS = ' + JSON.stringify(BRAND_ICON_PATHS) + ';\n' + CLIENT;

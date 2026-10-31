@@ -13,7 +13,7 @@ import { handleTasksAdmin } from './tasks_admin.js';
 import { ECONOMY_NAV_HTML, ECONOMY_VIEW_HTML, ECONOMY_CLIENT_JS } from './economy_ui.js';
 import { handleEconomyAdmin } from './economy_admin.js';
 import { premiumBanner, premiumContextLines, premiumDate } from './premium_message.js';
-import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, installSourceLines, deviceLine, attributedDestination, marketingSource, SOURCE_LABELS } from './attribution.js';
+import { metadataFields, acquisitionFields, mergeAcquisition, attributionLines, installSourceLines, deviceLine, attributedDestination, marketingSource, siteSourceKey, SOURCE_LABELS } from './attribution.js';
 import { storeReportSnapshot } from './store_reports.js';
 import { renderDailyChart, pngBase64 } from './daily_chart.js';
 import { getAdsConfig, filterAdsForClient } from './ads_config.js';
@@ -265,11 +265,7 @@ function emptySlotData() {
       'App Store': 0,
     },
     views: 0,
-    viewsBySource: {
-      yandex: 0,
-      google: 0,
-      social_other: 0,
-    },
+    viewsBySource: {},
     clicks: 0,
     clicksByStore: {
       'RuStore': 0,
@@ -326,15 +322,9 @@ function applyEventToSlot(slotData, event) {
 
   if (event.type === 'view') {
     slotData.views++;
-    if (event.source === 'threads') slotData.threadsViews = (slotData.threadsViews || 0) + 1;
-    const src = String(event.source || '').toLowerCase();
-    if (src.includes('yandex') || src.includes('ya.ru')) {
-      slotData.viewsBySource.yandex = (slotData.viewsBySource.yandex || 0) + 1;
-    } else if (src.includes('google')) {
-      slotData.viewsBySource.google = (slotData.viewsBySource.google || 0) + 1;
-    } else {
-      slotData.viewsBySource.social_other = (slotData.viewsBySource.social_other || 0) + 1;
-    }
+    const source = siteSourceKey(event.source);
+    slotData.viewsBySource ||= {};
+    slotData.viewsBySource[source] = (slotData.viewsBySource[source] || 0) + 1;
   } else if (event.type === 'click') {
     slotData.clicks++;
     if (event.source === 'threads') slotData.threadsClicks = (slotData.threadsClicks || 0) + 1;
@@ -351,6 +341,9 @@ function applyEventToSlot(slotData, event) {
     }
   } else if (event.type === 'install') {
     slotData.installs++;
+    const channel = marketingSource(event.marketingSource);
+    slotData.installsByMarketingSource ||= {};
+    slotData.installsByMarketingSource[channel] = (slotData.installsByMarketingSource[channel] || 0) + 1;
     const store = String(event.source || '').trim();
     const plat = String(event.platform || '').toLowerCase();
     if (store === 'RuStore') {
@@ -391,6 +384,7 @@ function mergeSlotData(a, b) {
   return {
     installs: (a.installs || 0) + (b.installs || 0),
     installsByStore: sum(a.installsByStore, b.installsByStore),
+    installsByMarketingSource: sum(a.installsByMarketingSource, b.installsByMarketingSource),
     views: (a.views || 0) + (b.views || 0),
     viewsBySource: sum(a.viewsBySource, b.viewsBySource),
     clicks: (a.clicks || 0) + (b.clicks || 0),
@@ -473,9 +467,28 @@ export function buildDailyReportMessage({ data, end = dailyReportEnd() }) {
   const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
   const date = d => `${d.getUTCDate()} ${months[d.getUTCMonth()]}`;
   const completeExtra = start.getTime() >= EXTRA_METRICS_STARTED_AT;
-  const sources = Object.entries(data?.registrationsByMarketingSource || {})
-    .filter(([key, value]) => key !== 'unknown' && Object.hasOwn(SOURCE_LABELS, key) && Number.isFinite(value) && value > 0)
-    .sort((a, b) => b[1] - a[1]);
+  const viewSources = { ...data?.viewsBySource };
+  // Older slots counted Threads both separately and inside social_other.
+  const legacyThreads = Math.min(data?.threadsViews || 0, viewSources.social_other || 0);
+  if (legacyThreads) {
+    viewSources.threads = (viewSources.threads || 0) + legacyThreads;
+    viewSources.social_other -= legacyThreads;
+  }
+  // Launches recorded before this breakdown have no channel counter at all.
+  // New events always increment a channel, including "unknown".
+  const launchSources = { ...data?.installsByMarketingSource };
+  const detailedLaunches = Object.values(launchSources).reduce((sum, count) => sum + count, 0);
+  launchSources.beforeBreakdown = (data?.installs || 0) - detailedLaunches;
+  function sourceLines(title, counts, total, labels = SOURCE_LABELS) {
+    if (!(total > 0)) return [];
+    const rows = Object.entries(counts || {})
+      .filter(([key, value]) => key !== 'unknown' && Object.hasOwn(labels, key) && Number.isSafeInteger(value) && value > 0)
+      .sort((a, b) => b[1] - a[1]);
+    const unknown = total - rows.reduce((sum, [, count]) => sum + count, 0);
+    const lines = rows.map(([key, value]) => `${labels[key]}: <b>${n(value)}</b>`);
+    if (unknown > 0) lines.push(`Без записанного источника: <b>${n(unknown)}</b>`);
+    return [`<b>${title}</b>`, ...lines, ''];
+  }
   return [
     '📊 <b>Итоги за сутки</b>',
     `<i>${date(start)} 22:00 — ${date(end)} 22:00 МСК</i>`,
@@ -489,8 +502,11 @@ export function buildDailyReportMessage({ data, end = dailyReportEnd() }) {
     `Новые аккаунты: <b>${n(data?.registrations)}</b>`,
     `Покупки Premium: <b>${n(completeExtra ? data?.purchases : null)}</b>`,
     '',
-    ...(sources.length ? ['<b>Источники новых аккаунтов · известные метки</b>', ...sources.map(([key, value]) => `${SOURCE_LABELS[key]}: <b>${n(value)}</b>`), ''] : []),
-    ...(Number.isFinite(data?.registrations) && data.registrations > 0 ? [`Без записанного источника: <b>${n(Math.max(0, data.registrations - sources.reduce((sum, [, count]) => sum + count, 0)))}</b>`, ''] : []),
+    ...sourceLines('Источники просмотров сайта', viewSources, data?.views,
+      { ...SOURCE_LABELS, dzen: 'Дзен', social_other: 'Прочие (без детализации)' }),
+    ...sourceLines('Источники первых запусков', launchSources, data?.installs,
+      { ...SOURCE_LABELS, beforeBreakdown: 'До начала разбивки' }),
+    ...sourceLines('Источники новых аккаунтов', data?.registrationsByMarketingSource, data?.registrations),
     `🚩 Жалобы: <b>${n(completeExtra ? data?.reports : null)}</b>`,
     `🤖 ИИ-запросы: <b>${n(data?.aiRequests)}</b>`,
     '<i>— нет данных</i>',

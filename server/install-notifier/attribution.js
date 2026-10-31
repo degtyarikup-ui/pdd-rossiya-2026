@@ -6,6 +6,31 @@ export function marketingSource(raw) {
   const source = Object.hasOwn(ALIASES, value) ? ALIASES[value] : value;
   return CHANNELS.has(source) ? source : 'unknown';
 }
+// Shared with the admin client via toString(): keep this function self-contained.
+export function siteSourceKey(raw) {
+  const s = String(raw || '').trim().toLowerCase();
+  if (s === 'chatgpt.com' || s.endsWith('.chatgpt.com') || s === 'chat.openai.com') return 'chatgpt';
+  if (s === 'perplexity.ai') return 'perplexity';
+  if (s === 'copilot.microsoft.com') return 'copilot';
+  if (s === 'gemini.google.com') return 'gemini';
+  if (s === 'claude.ai') return 'claude';
+  if (['chatgpt','perplexity','copilot','gemini','claude'].includes(s)) return s;
+  if (s === 'unknown') return 'unknown';
+  if (s === 'google_play_organic') return 'google_play_organic';
+  if (s === 'bing' || s.indexOf('bing.com') !== -1) return 'bing';
+  if (s === 'duckduckgo' || s.indexOf('duckduckgo.com') !== -1) return 'duckduckgo';
+  if (!s || s === 'direct' || s === 'none' || s === '(direct)') return 'direct';
+  if (s.indexOf('dzen') !== -1 || s === 'zen.yandex.ru') return 'dzen';
+  if (s.indexOf('yandex') !== -1 || s === 'ya' || s.indexOf('ya.ru') !== -1) return 'yandex';
+  if (s === 'ig' || s.indexOf('instagram') !== -1) return 'instagram';
+  if (s === 'yt' || s.indexOf('youtube') !== -1) return 'youtube';
+  if (s === 'tt' || s.indexOf('tiktok') !== -1) return 'tiktok';
+  if (s === 'tg' || s === 't.me' || s.indexOf('telegram') !== -1) return 'telegram';
+  if (s === 'vk' || s === 'vk.com' || s === 'vk.ru' || s.indexOf('vkontakte') !== -1) return 'vk';
+  if (s === 'th' || s.indexOf('threads') !== -1) return 'threads';
+  if (s.indexOf('google') !== -1) return 'google';
+  return 'other';
+}
 export function campaignToken(raw) {
   const value = String(raw || '');
   return /^[A-Za-z0-9._-]{1,64}$/.test(value) && !Object.hasOwn(Object.prototype, value) && value !== 'prototype' ? value : '';
