@@ -15,6 +15,18 @@ const activeStates = new Set(['SUBSCRIPTION_STATE_ACTIVE', 'SUBSCRIPTION_STATE_I
 export class StoreError extends Error {
   constructor(code, status = 503) { super(code); this.status = status; }
 }
+// Store checks run inside the account's serialized Durable Object queue. A
+// slow Apple/Google answer must end with a definite 503 before the phone gives
+// up waiting; otherwise its retry queues behind the abandoned request.
+export const PURCHASE_VERIFY_DEADLINE_MS = 25000;
+export const REFRESH_VERIFY_DEADLINE_MS = 6000;
+export function withStoreDeadline(promise, ms) {
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new StoreError('store verification timeout')), ms);
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
 async function fetchJson(url, options = {}) {
   const response = await fetch(url, { ...options, signal: AbortSignal.timeout(10000) });
   if (!response.ok) throw new StoreError('store verification unavailable', response.status === 404 || response.status === 410 ? 422 : 503);
@@ -189,7 +201,7 @@ export function storeEntitlementExpiry(verified, now = Date.now()) {
 // повтор списания длится до 60 дней); новая покупка придёт через /purchase.
 const REFRESH_AFTER_EXPIRY_MS = 60 * 86400000;
 
-export async function refreshStoreEntitlement(env, user) {
+export async function refreshStoreEntitlement(env, user, { deadlineMs = REFRESH_VERIFY_DEADLINE_MS } = {}) {
   if (!user) return user;
   const references = { ...(user.verifiedPurchases || {}) };
   if (user.verifiedPurchase?.store && !references[user.verifiedPurchase.store]) references[user.verifiedPurchase.store] = user.verifiedPurchase;
@@ -200,7 +212,8 @@ export async function refreshStoreEntitlement(env, user) {
     const entry = entitlementsOf(user)[store];
     if (!entry || (entry.expiresAt && Date.now() - Date.parse(entry.expiresAt) > REFRESH_AFTER_EXPIRY_MS)) continue;
     try {
-      const verified = await verifyStorePurchase(reference, env, user.id, { refresh: true });
+      // A status read keeps the saved entitlement rather than wait on the store.
+      const verified = await withStoreDeadline(verifyStorePurchase(reference, env, user.id, { refresh: true }), deadlineMs);
       setEntitlement(user, store, storeEntitlementExpiry(verified));
       references[store] = verified.reference;
       verifiedAt[store] = Date.now();

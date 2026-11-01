@@ -34,7 +34,7 @@ import { trafficRequest } from './traffic_state.js';
 import { closeFinishedGameWeeks, bestGameRank, deleteGameBest } from './game_weeks.js';
 export { PurchaseClaims } from './purchase_claims.js';
 export { SupportThread } from './support_thread.js';
-import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError } from './store_verification.js';
+import { verifyStorePurchase, claimPurchase, refreshStoreEntitlement, storeEntitlementExpiry, StoreError, withStoreDeadline, PURCHASE_VERIFY_DEADLINE_MS } from './store_verification.js';
 import { setEntitlement } from './entitlements.js';
 import { accountTokenForUserId } from './store_account.js';
 import { deleteAccountDocuments, executeAppleRevocation } from './apple_account.js';
@@ -3665,12 +3665,17 @@ const workerHandlers = {
       let body;
       try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'invalid json' }, 400); }
       let verified;
+      const verifyStartedAt = Date.now();
       try {
-        verified = await verifyStorePurchase(body, env, authenticatedUser.id);
+        verified = await withStoreDeadline(verifyStorePurchase(body, env, authenticatedUser.id), PURCHASE_VERIFY_DEADLINE_MS);
         await claimPurchase(env, authenticatedUser.id, verified);
       } catch (error) {
-        return jsonResponse({ error: error instanceof StoreError ? error.message : 'store verification unavailable' }, error instanceof StoreError ? error.status : 503);
+        const status = error instanceof StoreError ? error.status : 503;
+        // Timing only, no account or receipt: shows a slow store in Workers Logs.
+        console.log(JSON.stringify({ event: 'store_purchase_verify', store: body?.store, status, elapsedMs: Date.now() - verifyStartedAt }));
+        return jsonResponse({ error: error instanceof StoreError ? error.message : 'store verification unavailable' }, status);
       }
+      console.log(JSON.stringify({ event: 'store_purchase_verify', store: body?.store, status: 200, elapsedMs: Date.now() - verifyStartedAt }));
       body = { ...body, userId: authenticatedUser.id, name: authenticatedUser.name,
         email: authenticatedUser.email, provider: authenticatedUser.provider };
       const { userId, name, email, provider, tier, tierName, price, store, platform, appVersion, country, app } = body;
@@ -4374,7 +4379,7 @@ export default {
         let code = 'http_' + response.status;
         try {
           const reason = (await response.clone().json()).error;
-          const allowed = ['store verification unavailable', 'store verification not configured', 'purchase ownership not configured', 'purchase ownership unavailable', 'purchase belongs to another account', 'unknown product', 'wrong product', 'wrong transaction', 'wrong subscription', 'invalid transaction', 'missing purchase token', 'payment provider unavailable', 'payment provider error'];
+          const allowed = ['store verification unavailable', 'store verification timeout', 'store verification not configured', 'purchase ownership not configured', 'purchase ownership unavailable', 'purchase belongs to another account', 'unknown product', 'wrong product', 'wrong transaction', 'wrong subscription', 'invalid transaction', 'missing purchase token', 'payment provider unavailable', 'payment provider error'];
           if (allowed.includes(reason)) code = reason.replaceAll(' ', '_');
         } catch (_) {}
         await reportFailure(response.status, code);

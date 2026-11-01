@@ -127,6 +127,21 @@ test('temporary status failure preserves existing entitlement without extending 
     await refreshStoreEntitlement(env, user); assert.equal(user.isPremium, true); assert.equal(user.premiumExpiresAt, '2030-01-01');
   });
 });
+test('a store that does not answer ends with a bounded 503, not a hung account request', async () => {
+  const { withStoreDeadline, StoreError } = await import('./store_verification.js');
+  const started = Date.now();
+  await assert.rejects(withStoreDeadline(new Promise(() => {}), 20), error => error instanceof StoreError && error.status === 503 && error.message === 'store verification timeout');
+  assert.ok(Date.now() - started < 1000);
+  assert.equal(await withStoreDeadline(Promise.resolve('fast'), 1000), 'fast');
+});
+test('status refresh keeps the saved entitlement when Apple is slower than its deadline', async () => {
+  const user = { id: 'apple_test', isPremium: true, premiumSource: 'appstore', premiumExpiresAt: '2030-01-01', verifiedPurchase: body };
+  let writes = 0;
+  await withApple(() => new Promise(() => {}), async () => {
+    await refreshStoreEntitlement({ ...env, INSTALLS: { put: async () => { writes++; } } }, user, { deadlineMs: 20 });
+  });
+  assert.equal(user.isPremium, true); assert.equal(user.premiumExpiresAt, '2030-01-01'); assert.equal(writes, 0);
+});
 test('status polling refreshes renewed subscription without restarting the app', async () => {
   const records = new Map();
   const old = transaction({ expiresDate: Date.now() - 1000 }), renewed = transaction({ transactionId: '124' });
