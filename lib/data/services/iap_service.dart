@@ -262,9 +262,27 @@ class IapService extends ChangeNotifier {
     if (purchases.isNotEmpty) _enqueueOwnedPurchases(purchases);
   }
 
+  /// Pauses before re-checking an unconfirmed payment. A fixed 30 seconds
+  /// re-sent the same receipt every minute while the server was still busy
+  /// with the previous check; the pause now grows to ten minutes.
+  static const _retryDelays = [
+    Duration(seconds: 30),
+    Duration(minutes: 1),
+    Duration(minutes: 2),
+    Duration(minutes: 5),
+    Duration(minutes: 10),
+  ];
+  int _retryRound = 0;
+
+  @visibleForTesting
+  Duration get nextRetryDelay =>
+      _retryDelays[_retryRound.clamp(0, _retryDelays.length - 1)];
+
   void _scheduleRetry() {
     if (_retryTimer != null || !AuthService.instance.hasServerSession) return;
-    _retryTimer = Timer(const Duration(seconds: 30), retryPendingPurchases);
+    final delay = nextRetryDelay;
+    _retryRound++;
+    _retryTimer = Timer(delay, retryPendingPurchases);
   }
 
   /// Сколько раз запрашиваем тарифы, прежде чем сообщить о сбое.
@@ -772,6 +790,7 @@ class IapService extends ChangeNotifier {
             }
             continue;
           }
+          _retryRound = 0;
           // StoreKit can report an already owned subscription as restored
           // while the user is waiting for the purchase button to finish.
           _safeCompletePurchase(PurchaseResult.success);

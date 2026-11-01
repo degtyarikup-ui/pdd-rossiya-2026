@@ -134,6 +134,38 @@ void main() {
       }
     },
   );
+  test(
+    'a lost verification answer re-reads the account and shows its Premium',
+    () async {
+      final synced = Completer<void>();
+      await http.runWithClient(
+        () async {
+          expect(await verify(), isFalse);
+          expect(
+            premium.purchaseVerificationFailure,
+            PurchaseVerificationFailure.unavailable,
+          );
+          await synced.future;
+          for (var i = 0; i < 20 && !premium.isPremium; i++) {
+            await Future<void>.delayed(Duration.zero);
+          }
+          expect(premium.isPremium, isTrue);
+          expect(premium.expiresAt, expiry);
+        },
+        () => MockClient((request) async {
+          if (request.url.path == '/api/user/purchase') {
+            // The server committed the purchase; the phone lost the answer.
+            throw http.ClientException('connection closed');
+          }
+          if (request.url.path == '/api/user/sync') {
+            if (!synced.isCompleted) synced.complete();
+            return granted();
+          }
+          return http.Response('{}', 404);
+        }),
+      );
+    },
+  );
   test('failed deletion keeps the account available for retry', () async {
     expect(
       await http.runWithClient(

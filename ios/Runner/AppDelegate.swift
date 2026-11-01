@@ -51,10 +51,9 @@ final class PddYandexAuth: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegat
     }
     switch call.method {
     case "signIn":
-      guard pendingResult == nil else {
-        result(FlutterError(code: "sign_in_in_progress", message: "Login is already running", details: nil))
-        return
-      }
+      // A login left in the Yandex app or browser never calls back. Without
+      // this, every later tap failed with sign_in_in_progress until restart.
+      if pendingResult != nil { finish(nil) }
       guard var presenter = registrar.viewController else {
         result(FlutterError(code: "no_presenter", message: "Login screen is unavailable", details: nil))
         return

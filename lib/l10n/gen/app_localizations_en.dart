@@ -1299,6 +1299,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get payErrorSwitchedToSbp =>
+      'Google Play couldn\'t process the payment. We\'ve switched you to SBP — tap the button again.';
+
+  @override
   String get payErrorGeneric =>
       'The purchase didn\'t finish. Try again. If you were charged, tap “Restore” and your access will come back.';
 
@@ -3537,6 +3541,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yandexSignInTitle => 'Sign in with Yandex ID';
+
+  @override
+  String get yandexPageLoadFailed =>
+      'The Yandex page didn\'t load. Check your internet connection and tap “Try again”, or close this window and choose another way to sign in.';
+
+  @override
+  String get yandexPageRetry => 'Try again';
 
   @override
   String get examSpeedUnit => 'km/h';

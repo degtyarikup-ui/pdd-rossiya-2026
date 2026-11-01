@@ -71,6 +71,14 @@ Google Play, а также диагностический контекст за�
 `ts`, без миграции и догадок о фактическом времени получения. Проверки —
 `test-diagnostic-reception-time.mjs`.
 
+Окно входа Яндекса на Android: `page_load_failed:<тип>` — тип ошибки WebView
+(`hostLookup`, `timeout`, `connect`…). Переход на нашу схему `ru.pdd.pddapp://oauth`
+ошибкой не считается: это возврат с токеном. Вместо страницы ошибки WebView человек
+видит `yandexPageLoadFailed` и кнопку «Повторить». Нативный вход Яндекса на iOS
+различает `sdk_unavailable`, `no_presenter`, `missing_credential`; повторное нажатие
+закрывает зависшее окно (раньше — `sign_in_in_progress` до перезапуска).
+`store_verification_timeout` — Apple/Google не ответили воркеру за 25 с.
+
 Загрузка тарифов повторяется дважды (паузы 2 с и 4 с), и только потом уходит
 сообщение `iap.products`. Страна — по IP из профиля; при VPN может отличаться от реальной.
 

@@ -1300,6 +1300,10 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String get payErrorSwitchedToSbp =>
+      'Google Play төлемді өткізе алмады. Төлем СБП арқылы болатындай ауыстырдық — түймені қайта басыңыз.';
+
+  @override
   String get payErrorGeneric =>
       'Сатып алу аяқталмады. Қайталап көріңіз. Ақша алынған болса, «Қалпына келтіру» түймесін басыңыз — қолжетімділік қайтады.';
 
@@ -3540,6 +3544,13 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get yandexSignInTitle => 'Яндекс ID арқылы кіру';
+
+  @override
+  String get yandexPageLoadFailed =>
+      'Яндекс беті жүктелмеді. Интернетті тексеріп, «Қайталау» түймесін басыңыз немесе терезені жауып, басқа тәсілмен кіріңіз.';
+
+  @override
+  String get yandexPageRetry => 'Қайталау';
 
   @override
   String get examSpeedUnit => 'км/сағ';

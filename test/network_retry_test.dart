@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/data/services/network_retry.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   const short = [
@@ -292,5 +293,32 @@ void main() {
     expect(configured.first, BackendConfig.notifierUrl);
     expect(configured, contains('https://api.pdd-drive.app'));
     expect(configured.toSet().length, configured.length);
+  });
+
+  test('the address that worked is used first after a restart', () async {
+    SharedPreferences.setMockInitialValues({});
+    NotifierRoute.remember(hosts.last);
+    // Saving is fire-and-forget; let it reach the mocked preferences.
+    await Future<void>.delayed(Duration.zero);
+    NotifierRoute.reset();
+    expect(NotifierRoute.preferredIndex(hosts), 0);
+    await NotifierRoute.restore();
+    expect(NotifierRoute.preferredIndex(hosts), 1);
+    // A route chosen in this launch beats the saved one.
+    NotifierRoute.reset();
+    NotifierRoute.remember(hosts.first);
+    await NotifierRoute.restore();
+    expect(NotifierRoute.preferredIndex(hosts), 0);
+  });
+
+  test('a saved address expires after a week', () async {
+    final old = DateTime.now()
+        .subtract(const Duration(days: 8))
+        .millisecondsSinceEpoch;
+    SharedPreferences.setMockInitialValues({
+      'notifier_route_v1': '{"host":"${hosts.last}","at":$old}',
+    });
+    await NotifierRoute.restore();
+    expect(NotifierRoute.preferredIndex(hosts), 0);
   });
 }

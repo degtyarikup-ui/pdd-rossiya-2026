@@ -21,6 +21,7 @@ import 'package:pdd_app/presentation/screens/support/support_chat_screen.dart';
 import 'package:pdd_app/presentation/widgets/support_reply_banner.dart';
 import 'package:pdd_app/data/services/iap_service.dart';
 import 'package:pdd_app/data/services/install_reporter.dart';
+import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:pdd_app/data/services/notification_service.dart';
 import 'package:pdd_app/data/services/remote_notifications_service.dart';
 import 'package:pdd_app/data/services/premium_service.dart';
@@ -97,6 +98,11 @@ Future<Widget> _initializeApplication(
   // До инициализации сервисов: они пишут в настройки, и свежая установка
   // иначе выглядит как обновление.
   await InstallReporter.captureLaunchState();
+  // До первых запросов: начинать с адреса сервера, сработавшего в прошлый раз.
+  await NotifierRoute.restore().timeout(
+    const Duration(seconds: 1),
+    onTimeout: () {},
+  );
   // Snapshot acquisition before OAuth can replace the current URL. Keep this
   // after the install/update classification snapshot and off the startup path.
   unawaited(AcquisitionService.fields());

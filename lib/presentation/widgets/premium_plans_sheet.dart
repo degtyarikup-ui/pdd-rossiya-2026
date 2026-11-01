@@ -46,6 +46,24 @@ class PremiumPlansSheet extends StatefulWidget {
     );
   }
 
+  /// Google Play не провёл оплату, а СБП есть среди способов этого человека
+  /// (их выбирает `currentAndroidPaymentModes`, не IP) и уже подключена.
+  @visibleForTesting
+  static bool offerSbpAfterStoreFailure({
+    required List<PaymentMode> modes,
+    required PaymentMode? mode,
+    required bool sbpLive,
+    required PurchaseResult result,
+    required PurchaseFailure failure,
+  }) =>
+      sbpLive &&
+      mode == PaymentMode.storeBilling &&
+      modes.contains(PaymentMode.sbp) &&
+      (result == PurchaseResult.productNotFound ||
+          result == PurchaseResult.storeUnavailable ||
+          (result == PurchaseResult.error &&
+              failure == PurchaseFailure.storeRefused));
+
   @override
   State<PremiumPlansSheet> createState() => _PremiumPlansSheetState();
 }
@@ -183,6 +201,21 @@ class _PremiumPlansSheetState extends State<PremiumPlansSheet> {
           Navigator.of(context).pop(true);
         } else if (result == PurchaseResult.canceled) {
           // Пользователь закрыл окно оплаты Apple/Google — ошибку не показываем
+        } else if (PremiumPlansSheet.offerSbpAfterStoreFailure(
+          modes: _androidModes,
+          mode: _androidMode,
+          sbpLive: _sbpLive,
+          result: result,
+          failure: IapService.instance.lastFailure,
+        )) {
+          // Российская карта в Google Play часто не проходит, а СБП этому
+          // человеку уже предложена на выбор: следующее нажатие сработает.
+          setState(() => _androidMode = PaymentMode.sbp);
+          AppToast.show(
+            context,
+            appL10n.payErrorSwitchedToSbp,
+            type: AppToastType.error,
+          );
         } else if (result == PurchaseResult.productNotFound) {
           // Тарифы уже запрошены заново (с повторами): «подождите» не поможет.
           AppToast.show(

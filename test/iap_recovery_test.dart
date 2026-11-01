@@ -122,6 +122,8 @@ void main() {
           expect(verifications, 1);
           expect(store.completed, isEmpty);
           expect(PremiumService.instance.isPremium, isFalse);
+          // The automatic re-check backs off instead of re-sending every 30 s.
+          expect(iap.nextRetryDelay, const Duration(minutes: 1));
           // Another tap while the first receipt is unconfirmed must not
           // initiate a second charge or finish the unverified transaction.
           expect(
@@ -141,6 +143,7 @@ void main() {
           }
           expect(store.completed, ['1']);
           expect(PremiumService.instance.isPremium, isTrue);
+          expect(iap.nextRetryDelay, const Duration(seconds: 30));
           expect(PremiumService.instance.expiresAt, expiry);
           store.nextStatus = PurchaseStatus.restored;
           store.failAcknowledgement = true;

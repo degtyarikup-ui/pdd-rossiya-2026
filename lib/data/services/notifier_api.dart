@@ -23,11 +23,23 @@ class NotifierApi {
     pause: Duration.zero,
   );
 
+  /// Store receipt checks wait for Apple/Google inside the account's queue;
+  /// the server ends them with 503 after 25 seconds. A shorter wait abandoned
+  /// work the server still finished and queued the retry behind it.
+  static const storeVerificationAttempts = [
+    Duration(seconds: 40),
+    Duration(seconds: 20),
+  ];
+
   static Future<http.Response> post(
     String path, {
     required bool idempotent,
     Map<String, String>? headers,
     String? body,
+    List<Duration> attempts = const [
+      Duration(seconds: 15),
+      Duration(seconds: 15),
+    ],
   }) {
     if (!idempotent) {
       return http
@@ -38,7 +50,7 @@ class NotifierApi {
       (host) =>
           http.post(Uri.parse('$host$path'), headers: headers, body: body),
       hosts: BackendConfig.notifierHosts,
-      attempts: const [Duration(seconds: 15), Duration(seconds: 15)],
+      attempts: attempts,
       pause: Duration.zero,
     );
   }

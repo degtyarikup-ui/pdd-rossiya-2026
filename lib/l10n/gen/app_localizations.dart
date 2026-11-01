@@ -2308,6 +2308,12 @@ abstract class AppLocalizations {
   /// **'Магазин не смог провести оплату. Проверьте способ оплаты в {store} и попробуйте ещё раз.'**
   String payErrorStoreRefused(String store);
 
+  /// No description provided for @payErrorSwitchedToSbp.
+  ///
+  /// In ru, this message translates to:
+  /// **'Google Play не смог провести оплату. Мы переключили на оплату через СБП — нажмите кнопку ещё раз.'**
+  String get payErrorSwitchedToSbp;
+
   /// No description provided for @payErrorGeneric.
   ///
   /// In ru, this message translates to:
@@ -5889,6 +5895,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Вход с Яндекс ID'**
   String get yandexSignInTitle;
+
+  /// No description provided for @yandexPageLoadFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Страница Яндекса не загрузилась. Проверьте интернет и нажмите «Повторить» или закройте окно и войдите другим способом.'**
+  String get yandexPageLoadFailed;
+
+  /// No description provided for @yandexPageRetry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить'**
+  String get yandexPageRetry;
 
   /// No description provided for @examSpeedUnit.
   ///

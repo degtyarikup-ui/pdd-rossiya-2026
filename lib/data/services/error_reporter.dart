@@ -85,6 +85,12 @@ class ErrorReporter {
       'item_unavailable',
       'developer_error',
       'storage_error',
+      // Нативный вход Яндекса на iOS (AppDelegate.swift): раньше все эти
+      // случаи сливались в sdk_error и не различались в отчёте.
+      'sdk_unavailable',
+      'no_presenter',
+      'sign_in_in_progress',
+      'missing_credential',
       // Общие сбои канала плагина покупок: без них в отчёте остаётся sdk_error
       // и не видно, что именно не ответило магазину.
       'channel-error',

@@ -1319,6 +1319,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get payErrorSwitchedToSbp =>
+      'Google Play не смог провести оплату. Мы переключили на оплату через СБП — нажмите кнопку ещё раз.';
+
+  @override
   String get payErrorGeneric =>
       'Покупка не завершилась. Попробуйте ещё раз. Если деньги списались, нажмите «Восстановить»: доступ вернётся.';
 
@@ -3549,6 +3553,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get yandexSignInTitle => 'Вход с Яндекс ID';
+
+  @override
+  String get yandexPageLoadFailed =>
+      'Страница Яндекса не загрузилась. Проверьте интернет и нажмите «Повторить» или закройте окно и войдите другим способом.';
+
+  @override
+  String get yandexPageRetry => 'Повторить';
 
   @override
   String get examSpeedUnit => 'км/ч';

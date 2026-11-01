@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'network_errors_stub.dart' if (dart.library.io) 'network_errors_io.dart';
 
 bool isRetryableNetworkError(Object error) =>
@@ -90,19 +92,57 @@ Future<http.Response> sendWithRetry(
   throw lastError ?? TimeoutException('request not sent');
 }
 
-/// Какой адрес воркера сейчас работает лучше. Хранится в памяти: после
-/// перезапуска приложение снова начинает с основного.
+/// Какой адрес воркера сейчас работает лучше. Запоминается на неделю: в сети,
+/// где основной адрес заблокирован, каждый запуск иначе сначала ждал его
+/// таймаута (8 с на вход, синхронизацию и отчёты) и только потом шёл на запасной.
 class NotifierRoute {
   NotifierRoute._();
 
+  static const _storageKey = 'notifier_route_v1';
+  static const _keepFor = Duration(days: 7);
   static String? _preferred;
 
-  static void remember(String host) => _preferred = host;
+  /// Восстанавливает адрес, сработавший в прошлый запуск. Адрес, сработавший
+  /// уже в этом запуске, важнее сохранённого.
+  static Future<void> restore() async {
+    try {
+      final raw = (await SharedPreferences.getInstance()).getString(
+        _storageKey,
+      );
+      final data = raw == null ? null : jsonDecode(raw);
+      if (_preferred != null || data is! Map) return;
+      final host = data['host'], at = data['at'];
+      if (host is String &&
+          at is int &&
+          DateTime.now().millisecondsSinceEpoch - at <
+              _keepFor.inMilliseconds) {
+        _preferred = host;
+      }
+    } catch (_) {
+      // Без сохранённого адреса приложение просто начнёт с основного.
+    }
+  }
+
+  static void remember(String host) {
+    if (_preferred == host) return;
+    _preferred = host;
+    unawaited(_save(host));
+  }
+
+  static Future<void> _save(String host) async {
+    try {
+      await (await SharedPreferences.getInstance()).setString(
+        _storageKey,
+        jsonEncode({'host': host, 'at': DateTime.now().millisecondsSinceEpoch}),
+      );
+    } catch (_) {}
+  }
 
   static int preferredIndex(List<String> hosts) {
     final i = _preferred == null ? -1 : hosts.indexOf(_preferred!);
     return i < 0 ? 0 : i;
   }
 
+  /// Только память текущего запуска; сохранённый адрес не трогает.
   static void reset() => _preferred = null;
 }

@@ -67,7 +67,9 @@ class YandexAuthSheet extends StatefulWidget {
 
 class _YandexAuthSheetState extends State<YandexAuthSheet> {
   late final WebViewController _controller;
+  late final Uri _authUrl;
   bool _isLoading = true;
+  bool _loadFailed = false;
   bool _isProcessingToken = false;
   final String _oauthState = List.generate(
     32,
@@ -79,7 +81,7 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
   @override
   void initState() {
     super.initState();
-    final authUrl = Uri.parse(
+    _authUrl = Uri.parse(
       'https://oauth.yandex.ru/authorize?response_type=token&client_id=${AuthService.yandexClientId}&redirect_uri=$_redirectScheme&state=$_oauthState',
     );
 
@@ -104,18 +106,36 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
             return NavigationDecision.navigate;
           },
           onWebResourceError: (error) {
-            if (error.isForMainFrame == true) {
-              ErrorReporter.report(
-                ErrorCategory.auth,
-                'yandex.webview',
-                code: 'page_load_failed',
-                provider: 'yandex',
-              );
+            // The WebView cannot open our app scheme itself; that redirect
+            // carries the token and is handled above, it is not a failure.
+            if (error.isForMainFrame != true ||
+                (error.url != null && _isRedirect(error.url!))) {
+              return;
+            }
+            ErrorReporter.report(
+              ErrorCategory.auth,
+              'yandex.webview',
+              code: 'page_load_failed:${error.errorType?.name ?? 'unknown'}',
+              provider: 'yandex',
+            );
+            if (mounted && !_isProcessingToken) {
+              setState(() {
+                _isLoading = false;
+                _loadFailed = true;
+              });
             }
           },
         ),
       )
-      ..loadRequest(authUrl);
+      ..loadRequest(_authUrl);
+  }
+
+  void _retryLoad() {
+    setState(() {
+      _loadFailed = false;
+      _isLoading = true;
+    });
+    _controller.loadRequest(_authUrl);
   }
 
   bool _isRedirect(String url) {
@@ -260,8 +280,48 @@ class _YandexAuthSheetState extends State<YandexAuthSheet> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
                 ),
-                child: WebViewWidget(controller: _controller),
+                child: _loadFailed
+                    ? _LoadFailedView(onRetry: _retryLoad)
+                    : WebViewWidget(controller: _controller),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown instead of the WebView's own error page, which offers no way back.
+class _LoadFailedView extends StatelessWidget {
+  const _LoadFailedView({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.screenPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.wifi_off_rounded, size: 40, color: colors.secondaryText),
+            const SizedBox(height: 12),
+            Text(
+              appL10n.yandexPageLoadFailed,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 15, color: colors.primaryText),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: onRetry,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFC3F1D),
+                foregroundColor: Colors.white,
+              ),
+              child: Text(appL10n.yandexPageRetry),
             ),
           ],
         ),

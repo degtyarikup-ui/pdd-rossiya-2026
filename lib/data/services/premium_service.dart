@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
+import 'package:pdd_app/data/services/network_retry.dart';
 import 'package:pdd_app/data/services/notifier_api.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
@@ -474,6 +475,7 @@ class PremiumService extends ChangeNotifier {
       final response = await NotifierApi.post(
         '/api/user/purchase',
         idempotent: true,
+        attempts: NotifierApi.storeVerificationAttempts,
         headers: auth.serverHeaders,
         body: jsonEncode({
           'userId': user.id,
@@ -535,6 +537,9 @@ class PremiumService extends ChangeNotifier {
         error: error,
         provider: store,
       );
+      // The server may finish a check after the phone stopped waiting. Re-read
+      // the account so an already granted Premium appears without a retry.
+      if (isRetryableNetworkError(error)) unawaited(syncWithServer());
       return false;
     }
   }

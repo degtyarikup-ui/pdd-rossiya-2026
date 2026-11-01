@@ -26,6 +26,7 @@ void main() {
     'payErrorPricesLoading',
     'payErrorStoreUnavailable',
     'payErrorStoreRefused',
+    'payErrorSwitchedToSbp',
     'payErrorGeneric',
     'payErrorUnexpected',
   ];
