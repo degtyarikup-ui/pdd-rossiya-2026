@@ -1252,6 +1252,10 @@ class AppLocalizationsKk extends AppLocalizations {
       'Таңдалған қызмет арқылы кіру мүмкін болмады. Қайталап көріңіз немесе басқа жолмен кіріңіз.';
 
   @override
+  String get authErrorGoogleServices =>
+      'Бұл телефонда Google арқылы кіру қолжетімсіз: Google Play қызметтері орнатылмаған немесе оларды жаңарту керек. Яндекс немесе Telegram арқылы кіріңіз.';
+
+  @override
   String get authErrorNetwork =>
       'Интернет байланысы жоқ. Байланысты тексеріп, қайталап көріңіз.';
 

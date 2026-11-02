@@ -1271,6 +1271,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не получилось войти через выбранный сервис. Попробуйте ещё раз или выберите другой способ входа.';
 
   @override
+  String get authErrorGoogleServices =>
+      'Вход через Google на этом телефоне недоступен: сервисы Google Play не установлены или их нужно обновить. Войдите через Яндекс или Telegram.';
+
+  @override
   String get authErrorNetwork =>
       'Нет связи с интернетом. Проверьте подключение и попробуйте ещё раз.';
 

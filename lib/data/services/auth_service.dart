@@ -27,6 +27,9 @@ import 'package:pdd_app/data/services/web_oauth_redirect_stub.dart'
 enum AuthFailure {
   cancelled,
   provider,
+
+  /// Android without working Google Play services: Google sign-in cannot run.
+  googleServices,
   network,
   timeout,
   appKey,
@@ -428,9 +431,33 @@ class AuthService extends ChangeNotifier {
     return true;
   }
 
+  /// ConnectionResult of Google Play services on Android (0 — available).
+  /// null when the check itself is unavailable: then sign-in is attempted.
+  @visibleForTesting
+  static Future<int?> Function() googleServicesStatus = () async {
+    try {
+      return await const MethodChannel(
+        'pdd/google_services',
+      ).invokeMethod<int>('status').timeout(const Duration(seconds: 2));
+    } catch (_) {
+      return null;
+    }
+  };
+
   Future<bool> signInWithGoogle() => _runSignIn('google', (attempt) async {
     if (kIsWeb) {
       throw StateError('Web sign-in must use the Google Identity button');
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      // Without the services the Google screen returns no result at all
+      // (sign_in_failed on Huawei and phones without Google).
+      final status = await googleServicesStatus();
+      if (!_wanted(attempt)) return false;
+      if (status != null && status != 0) {
+        lastFailure = AuthFailure.googleServices;
+        _reportAuth(attempt, 'auth.provider', code: 'gms_unavailable:$status');
+        return false;
+      }
     }
     final googleSignIn = GoogleSignIn(
       scopes: ['email', 'profile'],

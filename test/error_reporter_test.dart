@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pdd_app/data/services/diagnostic_context.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -180,6 +181,15 @@ void main() {
         isNull,
       );
       expect(ErrorReporter.codeFor(TimeoutException('TOP_SECRET')), 'timeout');
+      // Transport failures keep their kind but never the message.
+      expect(
+        ErrorReporter.codeFor(const HandshakeException('TOP_SECRET')),
+        'network:tls',
+      );
+      expect(
+        ErrorReporter.codeFor(const SocketException('TOP_SECRET')),
+        'network:socket',
+      );
       expect(
         ErrorReporter.codeFor(
           PlatformException(code: 'TOP_SECRET', message: 'TOP_SECRET'),

@@ -13,7 +13,7 @@
   доступ вернётся кнопкой «Восстановить»; «деньги не списаны» обещаем, только
   когда это точно так;
 - ru, en, kk — все три языка сразу; в казахском без английских слов (кроме
-  названий Wi‑Fi, Google Play, App Store);
+  названий Wi‑Fi, Google Play, App Store и сервисов входа Google, Telegram);
 - сырой текст магазина или исключения человеку не показываем никогда.
 
 Где что: `authError*` — вход (`AuthFailure` в `auth_service.dart`, показ в
@@ -78,6 +78,20 @@ Google Play, а также диагностический контекст за�
 различает `sdk_unavailable`, `no_presenter`, `missing_credential`; повторное нажатие
 закрывает зависшее окно (раньше — `sign_in_in_progress` до перезапуска).
 `store_verification_timeout` — Apple/Google не ответили воркеру за 25 с.
+Обрыв связи на устройстве: `network:tls` (не прошло TLS-рукопожатие — типично для
+сетей, которые режут соединения с хостом сервера), `network:socket`, `network:http`;
+раньше это были `exception_HandshakeException` и т.п.
+Повторная проверка покупки (`premium.verify`, `iap.process`, `iap.complete`) у аккаунта,
+где Premium уже активен (`premiumActiveUntil` в событии берётся из профиля на сервере),
+помечается 🟡 «Не срочно» с пояснением «доступ есть» и повторяется в чате не чаще раза
+в час. Оплата СБП (`payment.check`, колбэк Platega) остаётся срочной всегда.
+Вход через Google на Android без сервисов Google Play: `gms_unavailable:<код>`
+(ConnectionResult: 1 — нет, 2 — нужно обновить, 3 — отключены); окно Google не
+открывается, человек видит `authErrorGoogleServices`. `sign_in_failed` без номера —
+окно Google вернулось без данных (так плагин отвечал на телефонах без сервисов).
+Сбой плановой задачи воркера: `cron.maintenance` с кодом `<код>:<задача>`
+(`reconcile`, `provider_keys`, `autopost`, `threads`, `notifications`, `daily_report`,
+`reviews`, `game_week`).
 
 Загрузка тарифов повторяется дважды (паузы 2 с и 4 с), и только потом уходит
 сообщение `iap.products`. Страна — по IP из профиля; при VPN может отличаться от реальной.

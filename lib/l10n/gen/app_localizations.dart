@@ -2236,6 +2236,12 @@ abstract class AppLocalizations {
   /// **'Не получилось войти через выбранный сервис. Попробуйте ещё раз или выберите другой способ входа.'**
   String get authErrorProvider;
 
+  /// No description provided for @authErrorGoogleServices.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход через Google на этом телефоне недоступен: сервисы Google Play не установлены или их нужно обновить. Войдите через Яндекс или Telegram.'**
+  String get authErrorGoogleServices;
+
   /// No description provided for @authErrorNetwork.
   ///
   /// In ru, this message translates to:

@@ -1251,6 +1251,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t sign in with the selected service. Try again or choose another way to sign in.';
 
   @override
+  String get authErrorGoogleServices =>
+      'Google sign-in isn\'t available on this phone: Google Play services are missing or need an update. Sign in with Yandex or Telegram.';
+
+  @override
   String get authErrorNetwork =>
       'No internet connection. Check it and try again.';
 

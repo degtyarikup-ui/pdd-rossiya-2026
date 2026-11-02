@@ -9,6 +9,7 @@ void main() {
   const keys = [
     'authErrorCancelled',
     'authErrorProvider',
+    'authErrorGoogleServices',
     'authErrorNetwork',
     'authErrorTimeout',
     'authErrorAppKey',
@@ -65,8 +66,11 @@ void main() {
 
   test('английские сообщения без кириллицы, казахские без английских слов', () {
     final cyrillic = RegExp('[А-Яа-яЁё]');
-    // Названия магазинов и сети — единственные допустимые латинские слова.
-    final allowed = RegExp(r'Wi‑Fi|Google Play|App Store|\{store\}');
+    // Названия магазинов, сети и сервисов входа — единственные допустимые
+    // латинские слова.
+    final allowed = RegExp(
+      r'Wi‑Fi|Google Play|App Store|Google|Telegram|\{store\}',
+    );
     final latin = RegExp('[A-Za-z]');
     for (final key in keys) {
       final english = en[key] as String;

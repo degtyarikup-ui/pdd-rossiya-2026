@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdd_app/data/services/network_retry.dart';
+import 'package:pdd_app/data/services/network_errors_stub.dart'
+    if (dart.library.io) 'package:pdd_app/data/services/network_errors_io.dart';
 import 'package:pdd_app/core/config/backend_config.dart';
 import 'package:pdd_app/core/config/store_config.dart';
 import 'package:pdd_app/data/services/auth_service.dart';
@@ -46,6 +48,8 @@ class ErrorReporter {
   static String codeFor(Object error) {
     if (error is TimeoutException) return 'timeout';
     if (error is http.ClientException) return 'network';
+    final transport = platformNetworkCode(error);
+    if (transport != null) return transport;
     if (error is FormatException || error is TypeError) {
       return 'invalid_response';
     }

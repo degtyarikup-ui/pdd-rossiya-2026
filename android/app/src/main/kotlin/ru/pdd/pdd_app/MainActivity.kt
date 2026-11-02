@@ -3,6 +3,7 @@ package ru.pdd.pdd_app
 import android.media.AudioManager
 import android.telephony.TelephonyManager
 import android.os.Bundle
+import com.google.android.gms.common.GoogleApiAvailability
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.embedding.android.FlutterActivity
@@ -36,6 +37,16 @@ class MainActivity : FlutterActivity() {
             val sim = telephony?.simCountryIso?.takeIf { it.isNotEmpty() }
             val locale = Locale.getDefault().country.takeIf { it.isNotEmpty() }
             result.success(network ?: sim ?: locale)
+        }
+        // Вход через Google работает только с сервисами Google Play (Dart:
+        // auth_service.dart). Без них окно входа возвращается пустым, и
+        // человек видел безликую ошибку sign_in_failed.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdd/google_services").setMethodCallHandler { call, result ->
+            if (call.method != "status") {
+                result.notImplemented()
+                return@setMethodCallHandler
+            }
+            result.success(GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this))
         }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "pdd/build_info").setMethodCallHandler { call, result ->
             if (call.method == "gitCommit") {
