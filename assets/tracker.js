@@ -6,7 +6,7 @@
   var LEGACY_KEY = 'pdd_attr_v1';
   var SOURCES = ['threads', 'instagram', 'youtube', 'tiktok', 'telegram', 'vk',
     'yandex', 'google', 'bing', 'duckduckgo', 'chatgpt', 'perplexity', 'copilot',
-    'gemini', 'claude', 'direct', 'other'];
+    'gemini', 'claude', 'in_app_banner', 'direct', 'other'];
   var SEARCH_SOURCES = ['google', 'yandex', 'bing', 'duckduckgo'];
   var AI_SOURCES = ['chatgpt', 'perplexity', 'copilot', 'gemini', 'claude'];
 
@@ -105,9 +105,11 @@
     if (!saved) try { saved = cleanSaved(JSON.parse(sessionStorage.getItem(LEGACY_KEY))); } catch (_) {}
     // Every known first source (including a direct visit) is immutable. A later
     // search, campaign or OAuth callback must not relabel an existing visitor.
-    if (saved) return storeAttribution(saved);
-
     var q = parseQuery();
+    // A tap on an in-app banner replaces the first touch, so a purchase made
+    // right after it is credited to the banner.
+    if (saved && q.utm_source !== 'in_app_banner') return storeAttribution(saved);
+
     var parts = String(q.ref || '').split(/[_:-]/);
     var explicit = q.utm_source || (q.ref ? parts[0] : '');
     var detected = detectReferrerSource(document.referrer);

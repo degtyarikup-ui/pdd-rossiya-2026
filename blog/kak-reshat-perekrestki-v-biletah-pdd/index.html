@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+    }
+    // GitHub Pages отдаёт /index.html как отдельный адрес — сводим к каноническому /.
+    if (/\/index\.html$/.test(location.pathname)) {
+      location.replace(location.pathname.replace(/index\.html$/, '') + location.search + location.hash);
+    }
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Как решать перекрёстки в билетах ПДД: три задачи по шагам</title>
+  <meta name="description" content="Три разбора перекрёстков A/B с изображениями: светофор и левый поворот, трамваи на равнозначных дорогах, главная дорога меняет направление.">
+  <link rel="canonical" href="https://pdd-drive.ru/blog/kak-reshat-perekrestki-v-biletah-pdd/">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="ПДД Россия 2026">
+  <meta property="og:title" content="Как решать перекрёстки в билетах ПДД: три задачи по шагам">
+  <meta property="og:description" content="Три разбора перекрёстков A/B с изображениями: светофор и левый поворот, трамваи на равнозначных дорогах, главная дорога меняет направление.">
+  <meta property="og:url" content="https://pdd-drive.ru/blog/kak-reshat-perekrestki-v-biletah-pdd/">
+  <meta property="article:published_time" content="2026-11-02">
+  <meta property="article:modified_time" content="2026-11-02">
+  <meta property="article:section" content="Подготовка к экзамену">
+  <meta property="og:image" content="https://pdd-drive.ru/blog/kak-reshat-perekrestki-v-biletah-pdd/cover.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="ru_RU">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="preload" href="/assets/fonts/onest-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/style.css?v=5">
+  <link rel="alternate" type="application/rss+xml" title="Блог ПДД Россия 2026" href="/feed.xml">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Как решать перекрёстки в билетах ПДД: три задачи по шагам",
+    "description": "Три разбора перекрёстков A/B с изображениями: светофор и левый поворот, трамваи на равнозначных дорогах, главная дорога меняет направление.",
+    "datePublished": "2026-11-02",
+    "dateModified": "2026-11-02",
+    "author": {
+      "@type": "Organization",
+      "name": "Команда ПДД Россия 2026",
+      "url": "https://pdd-drive.ru/about/#redaktsiya"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "ПДД Россия 2026",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://pdd-drive.ru/assets/icon-192.png"
+      }
+    },
+    "image": "https://pdd-drive.ru/blog/kak-reshat-perekrestki-v-biletah-pdd/cover.jpg",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://pdd-drive.ru/blog/kak-reshat-perekrestki-v-biletah-pdd/"
+    },
+    "inLanguage": "ru-RU",
+    "citation": [
+      "https://pdd-drive.ru/about/",
+      "https://www.consultant.ru/document/cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/"
+    ],
+    "articleSection": "Подготовка к экзамену"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Главная",
+        "item": "https://pdd-drive.ru/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Блог",
+        "item": "https://pdd-drive.ru/blog/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Как решать перекрёстки в билетах ПДД: три задачи по шагам",
+        "item": "https://pdd-drive.ru/blog/kak-reshat-perekrestki-v-biletah-pdd/"
+      }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Почему нельзя всегда начинать с помехи справа?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Сначала нужно определить регулирование и приоритет дорог. Правила для равнозначных условий не заменяют сигналы светофора и обязанность уступить движущимся по главной дороге."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Действует ли знак главной дороги при работающем светофоре?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Когда очерёдность движения определяется действующим светофором, водитель руководствуется его сигналами. Знак приоритета не освобождает от обязанностей при левом повороте или перед пешеходами."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Трамвай всегда проезжает первым?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Нет. Нужно учитывать регулирование и положение дорог. В приведённом вопросе 1–14 преимущество обоих трамваев связано с перекрёстком равнозначных дорог."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Если главная дорога поворачивает, кому уступать?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Сначала разделите участников на главной и второстепенной. Между водителями на главной, которая меняет направление, применяются правила равнозначных дорог; аналогично между водителями на второстепенных."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="/">
+      <img src="/assets/icon-192.png" alt="ПДД Россия 2026 — логотип" width="32" height="32" loading="eager">
+      ПДД Россия 2026
+    </a>
+    <nav class="site-nav">
+      <a href="/#features">Возможности</a>
+      <a href="/proverit-znaniya/">Проверить себя</a>
+      <a href="/blog/">Блог</a>
+      <a href="/#exam">Экзамен</a>
+      <a class="nav-cta" href="/app/">Веб-версия<span class="nav-cta-tail"> приложения</span></a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="section">
+  <div class="container">
+    <article class="prose">
+      <nav class="breadcrumbs">
+        <a href="/">Главная</a> / <a href="/blog/">Блог</a> / Как решать перекрёстки в билетах ПДД: три задачи по шагам
+      </nav>
+
+      <header>
+        <h1>Как решать перекрёстки в билетах ПДД: три задачи по шагам</h1>
+        <p class="post-meta">
+          <time datetime="2026-11-02">2 ноября 2026</time> · <a href="/about/#redaktsiya">Команда ПДД Россия 2026</a> · ~5 мин чтения
+          <span class="post-views" data-slug="kak-reshat-perekrestki-v-biletah-pdd" hidden>· <svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+        </p>
+      </header>
+
+      <img class="post-cover" src="/blog/kak-reshat-perekrestki-v-biletah-pdd/cover.jpg" alt="Современный городской перекрёсток как иллюстрация к разбору задач ПДД" width="1200" height="630" loading="eager" fetchpriority="high">
+
+<p><strong>В задаче о перекрёстке сначала определите, чем регулируется движение, затем сравните положение участников и только потом применяйте правило уступить дорогу.</strong> Начинать с «помехи справа» в любой картинке нельзя: работающий светофор, главная дорога и трамвай могут требовать другого шага.</p>
+<p>Здесь не пересказан весь раздел 13. Мы последовательно решим три вопроса A/B с разными основаниями приоритета. Полная карта правил есть в <a href="/blog/proezd-perekrestkov-pdd/">руководстве по проезду перекрёстков</a>. Учебные примеры выбраны редакцией и не означают рейтинг сложности по данным экзаменов.</p>
+
+<h2>Карточка решения перед ответом</h2>
+<ol><li><strong>Моё действие.</strong> Прямо, направо, налево или разворот? Вопрос о возможности движения или о том, кому уступить?</li><li><strong>Тип регулирования.</strong> Есть ли регулировщик, действующий светофор? Мигающий жёлтый не задаёт очерёдность как обычный разрешающий сигнал.</li><li><strong>Положение дорог.</strong> Если перекрёсток нерегулируемый, определите главную и второстепенную по всем условиям, включая табличку направления главной.</li><li><strong>Участники в сравнимых условиях.</strong> Кто на главной, кто на второстепенной, есть ли трамвай? Не смешивайте эти группы заранее.</li><li><strong>Действия и обязанности.</strong> Примените правило к конкретному манёвру, проверьте пешеходов, велосипедистов и другие условия задачи.</li></ol>
+<p>Этот список помогает организовать чтение. Он не разрешает выезд при заторе и не отменяет специальных требований, например об обеспечении беспрепятственного проезда транспорта с предусмотренными ПДД спецсигналами. В каждом билете проверяйте все заданные условия.</p>
+
+<h2>Вопрос 1. Знак главной дороги под работающим светофором</h2>
+<figure><img src="ab-2-13.webp" alt="Иллюстрация к вопросу 13 билета 2 A/B: Вы намерены повернуть налево. Кому Вы должны уступить дорогу?" width="1024" height="381" loading="lazy"><figcaption>База A/B приложения, билет 2, вопрос 13. Иллюстрация и варианты взяты из базы без перерисовки.</figcaption></figure>
+<p><strong>Вы намерены повернуть налево. Кому Вы должны уступить дорогу?</strong></p><ol><li>Только пешеходам</li><li>Только автобусу</li><li>Автобусу и пешеходам</li></ol>
+<details><summary>Проверить ответ</summary><p><strong>Верно: Автобусу и пешеходам.</strong></p></details>
+<p>В билете 2, вопросе 13, вы поворачиваете налево. Перед вами зелёный сигнал, рядом знак главной дороги с табличкой. Напротив автобус, на дороге, куда вы поворачиваете, — пешеходы. Первая развилка алгоритма: перекрёсток регулируемый. При определении очерёдности по действующему светофору знаки приоритета не становятся отдельным разрешением проехать раньше встречного транспорта.</p>
+<p>Встречный автобус движется прямо. При вашем повороте налево действует пункт 13.4: его нужно пропустить. После этого остаётся обязанность уступить пешеходам, переходящим проезжую часть дороги, на которую вы поворачиваете, по пункту 13.1. Поэтому ответ базы — «Автобусу и пешеходам».</p>
+<p><strong>Решающие условия:</strong> работающий светофор, ваш левый поворот, встречный автобус прямо, пешеходы на выходе с перекрёстка. Если вы объяснили только автобус, ответ ещё не полный. Если сослались только на знак главной дороги, выбран неподходящий порядок определения приоритета.</p>
+
+<h2>Вопрос 2. Трамвай слева не становится обычной «помехой слева»</h2>
+<figure><img src="ab-1-14.webp" alt="Иллюстрация к вопросу 14 билета 1 A/B: Вы намерены проехать перекресток в прямом направлении. Кому Вы должны уступить дорогу?" width="1024" height="381" loading="lazy"><figcaption>База A/B приложения, билет 1, вопрос 14. Иллюстрация и варианты взяты из базы без перерисовки.</figcaption></figure>
+<p><strong>Вы намерены проехать перекресток в прямом направлении. Кому Вы должны уступить дорогу?</strong></p><ol><li>Обоим трамваям</li><li>Только трамваю А</li><li>Только трамваю Б</li><li>Никому</li></ol>
+<details><summary>Проверить ответ</summary><p><strong>Верно: Обоим трамваям.</strong></p></details>
+<p>В билете 1, вопросе 14, вы намерены ехать прямо. Перекрёсток равнозначных дорог, на нём два трамвая. Для безрельсового автомобиля сначала важен не цвет и не размер трамвая, а его статус в этих условиях: по пункту 13.11 на таком перекрёстке трамвай имеет преимущество перед безрельсовыми транспортными средствами независимо от направления движения.</p>
+<p>Поэтому вы уступаете обоим трамваям. Как они определят порядок между собой — отдельный вопрос; положение одного трамвая слева от вас не позволяет исключить его из ответа. Не следует сначала сравнивать каждого участника как обычный легковой автомобиль, а потом вспоминать, что он рельсовый.</p>
+<p><strong>Решающие условия:</strong> равнозначный перекрёсток и трамваи. Не переносите вывод «трамвай всегда первый» на другие рисунки. Например, положение на второстепенной дороге уже требует другого сравнения. В данной задаче трамваи имеют преимущество именно в показанных равнозначных условиях.</p>
+
+<h2>Вопрос 3. Главная дорога меняет направление</h2>
+<figure><img src="ab-1-15.webp" alt="Иллюстрация к вопросу 15 билета 1 A/B: Кому Вы обязаны уступить дорогу при повороте налево?" width="604" height="225" loading="lazy"><figcaption>База A/B приложения, билет 1, вопрос 15. Иллюстрация и варианты взяты из базы без перерисовки.</figcaption></figure>
+<p><strong>Кому Вы обязаны уступить дорогу при повороте налево?</strong></p><ol><li>Только автобусу</li><li>Только легковому автомобилю</li><li>Никому</li></ol>
+<details><summary>Проверить ответ</summary><p><strong>Верно: Никому.</strong></p></details>
+<p>В билете 1, вопросе 15, перед вами знак 2.1 и табличка 8.13: главная дорога поворачивает налево. Автобус подъезжает слева по главной, легковой автомобиль напротив находится на второстепенной. Вы тоже на главной и собираетесь повернуть налево.</p>
+<p>Сначала разделите участников. По пункту 13.9 водитель на второстепенной уступает движущимся по главной независимо от их дальнейшего направления. Значит, встречный легковой автомобиль не получает преимущества только потому, что вы поворачиваете налево.</p>
+<p>Теперь сравните себя с автобусом: оба на главной, которая меняет направление. Пункт 13.10 отсылает к правилам равнозначных дорог между этой группой участников. Для автобуса вы находитесь справа, поэтому в показанной ситуации вы никому не уступаете. Правильный ответ базы — «Никому».</p>
+<p><strong>Решающие условия:</strong> не просто ромб, а схема направления главной и положение каждого подъезда. Ошибка «при любом левом повороте пропускаю всех встречных» исчезает, когда вы добавляете условие: по какой дороге движется встречный участник?</p>
+
+<h2>Сравните основания, а не номера кнопок</h2>
+<table><thead><tr><th>Пример A/B</th><th>Отправная точка</th><th>Что изменило решение</th></tr></thead><tbody><tr><td>2–13</td><td>Регулируемый перекрёсток</td><td>Левый поворот навстречу автобусу и пешеходам</td></tr><tr><td>1–14</td><td>Равнозначные дороги</td><td>Преимущество трамваев перед безрельсовым автомобилем</td></tr><tr><td>1–15</td><td>Главная меняет направление</td><td>Сначала разделение дорог, затем сравнение участников на главной</td></tr></tbody></table>
+<p>У этих вопросов нельзя получить одно общее объяснение «уступи справа». Такой лозунг пропускает первую развилку. Полезная короткая запись после занятия: «светофор — тип дорог — группы участников — манёвр». К каждому слову добавьте условие из конкретной задачи.</p>
+
+<h2>Следующее занятие</h2>
+<p>Откройте тему перекрёстков и перед выбором ответа вслух назовите тип регулирования. Затем объясните, почему участники находятся в равных или разных условиях. Если решение вновь неверное, отметьте конкретный пропущенный признак: сигнал, табличка, трамвай или пешеход. Возвратитесь к исходному примеру после других задач, чтобы проверить самостоятельное рассуждение.</p>
+<p>Для отдельного повторения сигналов есть <a href="/blog/signaly-svetofora-regulirovshchik/">разбор светофора и регулировщика</a>. В <a href="/app/">PDD Drive</a> выберите A/B или C/D и продолжите в нужной теме. Не переносите номера и ответы A/B в C/D автоматически: сначала проверьте выбранную базу.</p>
+<p class="post-meta">Проверено <time datetime="2026-10-22">22 октября 2026</time>. <a href="/about/#redaktsiya">Как мы готовим материалы</a></p>
+      <section class="article-sources" aria-labelledby="sources-title">
+      <h2 id="sources-title">Источники и проверка</h2>
+      <ul>
+        <li><a href="https://pdd-drive.ru/about/" rel="noopener">О проекте PDD Drive и учебных материалах</a></li>
+        <li><a href="https://www.consultant.ru/document/cons_doc_LAW_2709/74cbe820904f4f8ce76047ddbd81d14c8b953d3e/" rel="noopener">ПДД РФ, раздел 13: проезд перекрёстков</a></li>
+      </ul>
+      </section>
+<div class="article-app-cta">
+  <div class="article-app-cta-header">
+    <img class="article-app-cta-icon" src="/assets/icon-192.png" alt="Приложение ПДД Россия 2026" width="56" height="56" style="width:56px;height:56px;min-width:56px;max-width:56px;border-radius:12px;object-fit:cover;margin:0;display:block;flex-shrink:0;" loading="lazy">
+    <div class="article-app-cta-title">Примените алгоритм к новому вопросу</div>
+  </div>
+  <p class="article-app-cta-copy">Откройте тему перекрёстков в своей категории и назовите основание приоритета до выбора ответа.</p>
+  <p><a class="btn btn-primary" href="/app/" data-cta="article-practice" data-context="kak-reshat-perekrestki-v-biletah-pdd">Продолжить практику</a></p>
+  <div class="article-app-cta-buttons">
+    <a class="article-app-cta-btn" href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" target="_blank" rel="noopener" aria-label="Скачать в Google Play">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="#00D3FF" d="M3.609 1.814L13.792 12 3.61 22.186c-.365-.403-.61-.983-.61-1.748V3.562c0-.765.245-1.345.61-1.748z"/>
+        <path fill="#00E676" d="M17.156 8.636L13.792 12l3.364 3.364 3.824-2.185c.983-.561.983-1.793 0-2.358l-3.824-2.185z"/>
+        <path fill="#FFD500" d="M13.792 12L3.609 1.814c.382-.206.84-.287 1.342-.001l12.205 6.823L13.792 12z"/>
+        <path fill="#FF3A44" d="M17.156 15.364L4.951 22.187c-.502.286-.96.205-1.342-.001L13.792 12l3.364 3.364z"/>
+      </svg>
+      <div class="btn-text">
+        <small>Доступно в</small>
+        <span>Google Play</span>
+      </div>
+    </a>
+    <a class="article-app-cta-btn" href="https://apps.apple.com/ru/app/id6792369533" target="_blank" rel="noopener" aria-label="Скачать в App Store">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="#000000" aria-hidden="true">
+        <path d="M17.05 12.54c-.03-2.89 2.36-4.27 2.47-4.34-1.35-1.97-3.44-2.24-4.18-2.27-1.78-.18-3.47 1.05-4.37 1.05-.9 0-2.29-1.02-3.77-1-1.94.03-3.72 1.13-4.72 2.86-2.01 3.49-.51 8.66 1.45 11.5.96 1.39 2.1 2.95 3.6 2.89 1.44-.06 1.99-.93 3.73-.93 1.74 0 2.23.93 3.76.9 1.56-.03 2.54-1.41 3.49-2.81 1.1-1.61 1.55-3.17 1.57-3.25-.03-.02-3-1.15-3.03-4.6zM14.16 4.06c.8-.96 1.33-2.3 1.19-3.63-1.15.05-2.53.76-3.35 1.72-.74.85-1.38 2.21-1.21 3.51 1.28.1 2.58-.65 3.37-1.6z"/>
+      </svg>
+      <div class="btn-text">
+        <small>Загрузите в</small>
+        <span>App Store</span>
+      </div>
+    </a>
+    <a class="article-app-cta-btn" href="https://www.rustore.ru/catalog/app/ru.pdd.pdd_app" target="_blank" rel="noopener" aria-label="Скачать в RuStore">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="#0574F8" aria-hidden="true">
+        <path d="M13.88 14.8c-.65-.14-1.1-.73-1.1-1.39V6.97c0-.75.72-1.3 1.46-1.13l5.06 1.25c.65.17 1.1.75 1.1 1.4v7.83c0 .75-.72 1.3-1.46 1.13l-5.06-1.65zm-8.74 3.6c-.65-.14-1.1-.73-1.1-1.39v-6.44c0-.75.72-1.3 1.46-1.13l5.06 1.25c.65.17 1.1.75 1.1 1.4v7.83c0 .75-.72 1.3-1.46 1.13l-5.06-1.65z"/>
+      </svg>
+      <div class="btn-text">
+        <small>Скачать в</small>
+        <span>RuStore</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+      <h2>Частые вопросы</h2>
+      <div class="faq">
+        <details>
+          <summary>Почему нельзя всегда начинать с помехи справа?</summary>
+          <p>Сначала нужно определить регулирование и приоритет дорог. Правила для равнозначных условий не заменяют сигналы светофора и обязанность уступить движущимся по главной дороге.</p>
+        </details>
+        <details>
+          <summary>Действует ли знак главной дороги при работающем светофоре?</summary>
+          <p>Когда очерёдность движения определяется действующим светофором, водитель руководствуется его сигналами. Знак приоритета не освобождает от обязанностей при левом повороте или перед пешеходами.</p>
+        </details>
+        <details>
+          <summary>Трамвай всегда проезжает первым?</summary>
+          <p>Нет. Нужно учитывать регулирование и положение дорог. В приведённом вопросе 1–14 преимущество обоих трамваев связано с перекрёстком равнозначных дорог.</p>
+        </details>
+        <details>
+          <summary>Если главная дорога поворачивает, кому уступать?</summary>
+          <p>Сначала разделите участников на главной и второстепенной. Между водителями на главной, которая меняет направление, применяются правила равнозначных дорог; аналогично между водителями на второстепенных.</p>
+        </details>
+      </div>
+
+      <h2>Читайте также</h2>
+      <div class="post-grid">
+        <a class="post-card" href="/blog/proezd-perekrestkov-pdd/">
+          <img class="post-card-cover" src="/blog/proezd-perekrestkov-pdd/cover.jpg" alt="Вид сверху на городской перекрёсток с автомобилями и разметкой пешеходных переходов" width="1200" height="630" loading="lazy">
+          <div class="post-card-meta">
+            <time datetime="2026-07-22">22 июля 2026</time>
+            <span class="post-card-views" data-slug="proezd-perekrestkov-pdd" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+          </div>
+          <h2>Проезд перекрёстков по ПДД 2026: алгоритм для каждого типа</h2>
+        </a>
+        <a class="post-card" href="/blog/signaly-svetofora-regulirovshchik/">
+          <img class="post-card-cover" src="/blog/signaly-svetofora-regulirovshchik/cover.jpg" alt="Стандартный трёхсекционный светофор с горящим зелёным сигналом на фоне неба" width="1200" height="630" loading="lazy">
+          <div class="post-card-meta">
+            <time datetime="2026-07-21">21 июля 2026</time>
+            <span class="post-card-views" data-slug="signaly-svetofora-regulirovshchik" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+          </div>
+          <h2>Сигналы светофора и регулировщика: как читать и не путать (2026)</h2>
+        </a>
+        <a class="post-card" href="/blog/dorozhnye-znaki-2026/">
+          <img class="post-card-cover" src="/blog/dorozhnye-znaki-2026/cover.jpg" alt="Предупреждающий знак «Пешеходный переход» и предписывающий знак «Движение прямо» на одной стойке на фоне неба" width="1200" height="630" loading="lazy">
+          <div class="post-card-meta">
+            <time datetime="2026-07-21">21 июля 2026</time>
+            <span class="post-card-views" data-slug="dorozhnye-znaki-2026" hidden><svg class="icon-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span class="views-count"></span></span>
+          </div>
+          <h2>Дорожные знаки 2026: все 8 групп с расшифровкой и примерами</h2>
+        </a>
+      </div>
+
+    </article>
+  </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <nav>
+      <a href="/blog/">Блог</a>
+      <a href="/about/">О проекте</a>
+      <a href="/tarify/">Тарифы</a>
+      <a href="/links/">Соцсети</a>
+      <a href="/slovar-pdd/">Словарь терминов</a>
+      <a href="/privacy.html">Политика конфиденциальности</a>
+      <a href="/terms.html">Пользовательское соглашение</a>
+      <a href="https://play.google.com/store/apps/details?id=ru.pdd.pdd_app" rel="noopener">Google Play</a>
+      <a href="https://apps.apple.com/ru/app/id6792369533" rel="noopener">App Store</a>
+      <a href="/app/">Веб-версия</a>
+      <a href="mailto:degtyarik.up@gmail.com">Поддержка</a>
+    </nav>
+    <div class="copy">
+      <span class="age-badge">16+</span> © 2026 ПДД Россия 2026
+    </div>
+    <div class="footer-disclaimer">
+      Сайт pdd-drive.ru носит исключительно информационно-справочный и образовательный характер и не является официальным сайтом ГУОБДД МВД России или портала Госуслуг. Официальная информация и первоисточники нормативно-правовых актов РФ публикуются на гибдд.рф и pravo.gov.ru.
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/site.js" defer></script>
+<script src="/assets/tracker.js" defer></script>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111960332', 'ym');
+
+    ym(111960332, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/111960332" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+</body>
+</html>
