@@ -157,11 +157,25 @@ export function campaignMatches(item, app, platform, now = Date.now(), user = {}
 /** Shape sent to the app: only display fields, never internal state. `push`
  *  marks a campaign also sent as a push: devices that receive pushes list it
  *  in the inbox only, without a window or banner. */
+// Banner links to our own site carry their campaign, so a web purchase made
+// after the tap is attributed to the banner instead of a direct visit.
+export function bannerActionUrl(item) {
+  const raw = item.actionUrl || '';
+  if (item.action !== 'url' || !raw) return raw;
+  try {
+    const url = new URL(raw);
+    if (url.hostname !== 'pdd-drive.ru' && !url.hostname.endsWith('.pdd-drive.ru')) return raw;
+    url.searchParams.set('utm_source', 'in_app_banner');
+    url.searchParams.set('utm_medium', placement(item));
+    url.searchParams.set('utm_campaign', String(item.id).replace(/[^A-Za-z0-9._-]/g, '').slice(0, 64));
+    return url.toString();
+  } catch { return raw; }
+}
 export function clientMessage(item, seenIds = []) {
   return { id: item.id, kind: placement(item), push: item.kind === 'push', title: item.title, body: item.body, expiresAt: item.expiresAt, createdAt: item.createdAt,
     ...(item.persistent ? { persistent: true } : {}), ...(seenIds.length ? { seenIds } : {}),
     imageUrl: item.imageUrl || '', emoji: item.emoji || '', accent: item.accent || '', layout: item.layout || 'standard',
-    button: item.button !== false && item.layout !== 'image', buttonText: item.buttonText || '', dismissText: item.dismissText || '', action: item.action || 'none', actionUrl: item.actionUrl || '' };
+    button: item.button !== false && item.layout !== 'image', buttonText: item.buttonText || '', dismissText: item.dismissText || '', action: item.action || 'none', actionUrl: bannerActionUrl(item) };
 }
 // A test followed by an identical broadcast is one message for its recipient.
 // Keep independent broadcasts and subsequent explicit tests separate. Aliases

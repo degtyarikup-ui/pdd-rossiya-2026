@@ -204,6 +204,7 @@ var AN_SOURCES = {
   claude: { name: 'Claude', glyph: 'globe' },
   duckduckgo: { name: 'DuckDuckGo', glyph: 'globe' },
   google_play_organic: { name: 'Google Play · органика', icon: 'gplay' },
+  in_app_banner: { name: 'Баннер в приложении', icon: 'link' },
   instagram: { name: 'Instagram', icon: 'instagram' },
   youtube: { name: 'YouTube', icon: 'youtube' },
   tiktok: { name: 'TikTok', icon: 'tiktok' },

@@ -24,6 +24,7 @@ class AcquisitionFields {
     'direct',
     'other',
     'google_play_organic',
+    'in_app_banner',
   };
   static const _methods = {
     'play_referrer',
@@ -52,6 +53,11 @@ class AcquisitionFields {
         value;
     return _sources.contains(normalized) ? normalized : '';
   }
+
+  /// A tap on an in-app banner is a fresh, intentional visit: it replaces the
+  /// stored first touch so a purchase made right after is credited to it.
+  static bool isBanner(Map<String, String> fields) =>
+      fields['marketingSource'] == 'in_app_banner';
 
   static String token(String? raw) {
     final value = raw ?? '';

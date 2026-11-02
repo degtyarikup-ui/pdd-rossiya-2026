@@ -226,7 +226,7 @@ test('image banners accept image-only content and preserve the link in the clien
   assert.equal(item.title,'');assert.equal(item.body,'');
   const message=clientMessage(item);
   assert.equal(message.layout,'image');assert.equal(message.imageUrl,'https://cdn.test/banner.png');
-  assert.equal(message.action,'url');assert.equal(message.actionUrl,'https://pdd-drive.ru/tarify/');
+  assert.equal(message.action,'url');assert.equal(message.actionUrl,'https://pdd-drive.ru/tarify/?utm_source=in_app_banner&utm_medium=banner&utm_campaign='+item.id);
   assert.equal(validateCampaign(sample({kind:'banner',layout:'image',title:'',body:'',imageUrl:'https://cdn.test/banner.png'})).action,'none');
 });
 test('image-only layout requires an HTTPS image and is not allowed for pushes; empty messages are rejected',()=>{
@@ -241,7 +241,7 @@ test('image campaigns survive publication, retry and dismissal toggles in the cl
   assert.equal((await (await call('/publish',msg)).json()).duplicate,true);
   const feed=await (await call('/client?app=ru&platform=android&imageBanners=1')).json();
   assert.equal(feed.messages.length,1);assert.equal(feed.messages[0].layout,'image');assert.equal(feed.messages[0].title,'');
-  assert.equal(feed.messages[0].actionUrl,'https://pdd-drive.ru/');
+  assert.equal(feed.messages[0].actionUrl,'https://pdd-drive.ru/?utm_source=in_app_banner&utm_medium=banner&utm_campaign='+feed.messages[0].id);
   assert.equal((await call('/publish',{...msg,layout:'standard',title:'Новости',body:'Новые вопросы'})).status,409);
   await call('/toggle',{id:msg.id,enabled:false});
   assert.equal((await (await call('/client?app=ru&platform=android&imageBanners=1')).json()).messages.length,0);

@@ -38,6 +38,18 @@ Map<String, String> browserAcquisitionFields() {
     () => web.window.localStorage,
     () => web.window.sessionStorage,
   ];
+  final current = AcquisitionFields.fromBrowser(
+    Uri.base,
+    web.document.referrer,
+  );
+  if (AcquisitionFields.isBanner(current)) {
+    for (final store in stores) {
+      try {
+        store().setItem(AcquisitionFields.storageKey, jsonEncode(current));
+      } catch (_) {}
+    }
+    return current;
+  }
   for (final store in stores) {
     try {
       final saved = store().getItem(AcquisitionFields.storageKey);
@@ -50,7 +62,7 @@ Map<String, String> browserAcquisitionFields() {
       }
     } catch (_) {}
   }
-  final first = AcquisitionFields.fromBrowser(Uri.base, web.document.referrer);
+  final first = current;
   for (final store in stores) {
     try {
       store().setItem(AcquisitionFields.storageKey, jsonEncode(first));

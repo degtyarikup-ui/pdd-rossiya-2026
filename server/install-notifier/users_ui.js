@@ -157,7 +157,7 @@ var UV_DAY = 86400000;
 var UV_PRESETS = [[7, '7 дней'], [30, '1 месяц'], [90, '3 месяца'], [180, '6 месяцев'], [365, '1 год']];
 var UV_APPS = { ru: 'Россия' };
 var UV_SOURCES = { admin_grant: 'Выдан вручную', googleplay: 'Google Play', appstore: 'App Store', google_play: 'Google Play', play: 'Google Play', app_store: 'App Store', apple: 'App Store', rustore: 'RuStore', web: 'СБП (Platega)' };
-var UV_ACQUISITION = { threads:'Threads', instagram:'Instagram', youtube:'YouTube', tiktok:'TikTok', telegram:'Telegram', vk:'ВКонтакте', yandex:'Яндекс', google:'Google', bing:'Bing', duckduckgo:'DuckDuckGo', google_play_organic:'Google Play · органика', chatgpt:'ChatGPT', perplexity:'Perplexity', copilot:'Copilot', gemini:'Gemini', claude:'Claude', direct:'Прямой переход', other:'Другой сайт', unknown:'Источник не определён' };
+var UV_ACQUISITION = { threads:'Threads', instagram:'Instagram', youtube:'YouTube', tiktok:'TikTok', telegram:'Telegram', vk:'ВКонтакте', yandex:'Яндекс', google:'Google', bing:'Bing', duckduckgo:'DuckDuckGo', google_play_organic:'Google Play · органика', in_app_banner:'Баннер в приложении', chatgpt:'ChatGPT', perplexity:'Perplexity', copilot:'Copilot', gemini:'Gemini', claude:'Claude', direct:'Прямой переход', other:'Другой сайт', unknown:'Источник не определён' };
 function uvAcquisitionName(u) { return Object.hasOwn(UV_ACQUISITION,u.marketingSource)?UV_ACQUISITION[u.marketingSource]:UV_ACQUISITION.unknown; }
 function uvAcquisitionChip(u) { return '<div class="uv-sub" style="margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Первый источник привлечения аккаунта: '+uvEsc(uvAcquisitionName(u))+'">'+uvEsc(uvAcquisitionName(u))+'</div>'; }
 

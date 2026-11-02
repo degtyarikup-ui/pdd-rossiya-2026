@@ -21,6 +21,13 @@ class AcquisitionService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(_key);
+      if (kIsWeb) {
+        final current = browserAcquisitionFields();
+        if (AcquisitionFields.isBanner(current)) {
+          await prefs.setString(_key, jsonEncode(current));
+          return current;
+        }
+      }
       if (saved != null) {
         try {
           final decoded = jsonDecode(saved);

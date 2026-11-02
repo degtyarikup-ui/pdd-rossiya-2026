@@ -1,6 +1,6 @@
-const CHANNELS = new Set(['threads', 'instagram', 'youtube', 'tiktok', 'telegram', 'vk', 'yandex', 'google', 'bing', 'duckduckgo', 'chatgpt', 'perplexity', 'copilot', 'gemini', 'claude', 'google_play_organic', 'direct', 'other']);
+const CHANNELS = new Set(['threads', 'instagram', 'youtube', 'tiktok', 'telegram', 'vk', 'yandex', 'google', 'bing', 'duckduckgo', 'chatgpt', 'perplexity', 'copilot', 'gemini', 'claude', 'google_play_organic', 'in_app_banner', 'direct', 'other']);
 const ALIASES = { th: 'threads', thread: 'threads', yt: 'youtube', ig: 'instagram', insta: 'instagram', tt: 'tiktok', tg: 'telegram', vkontakte: 'vk', 'chatgpt.com': 'chatgpt', 'chat.openai.com': 'chatgpt', 'perplexity.ai': 'perplexity' };
-export const SOURCE_LABELS = { unknown: 'Не определён', direct: 'Прямой переход', other: 'Другой сайт', threads: 'Threads', instagram: 'Instagram', youtube: 'YouTube', tiktok: 'TikTok', telegram: 'Telegram', vk: 'VK', yandex: 'Яндекс', google: 'Google', bing: 'Bing', duckduckgo: 'DuckDuckGo', chatgpt: 'ChatGPT', perplexity: 'Perplexity', copilot: 'Copilot', gemini: 'Gemini', claude: 'Claude', google_play_organic: 'Органика Google Play' };
+export const SOURCE_LABELS = { unknown: 'Не определён', direct: 'Прямой переход', other: 'Другой сайт', threads: 'Threads', instagram: 'Instagram', youtube: 'YouTube', tiktok: 'TikTok', telegram: 'Telegram', vk: 'VK', yandex: 'Яндекс', google: 'Google', bing: 'Bing', duckduckgo: 'DuckDuckGo', chatgpt: 'ChatGPT', perplexity: 'Perplexity', copilot: 'Copilot', gemini: 'Gemini', claude: 'Claude', google_play_organic: 'Органика Google Play', in_app_banner: 'Баннер в приложении' };
 export function marketingSource(raw) {
   const value = String(raw || '').trim().toLowerCase();
   const source = Object.hasOwn(ALIASES, value) ? ALIASES[value] : value;
@@ -17,6 +17,7 @@ export function siteSourceKey(raw) {
   if (['chatgpt','perplexity','copilot','gemini','claude'].includes(s)) return s;
   if (s === 'unknown') return 'unknown';
   if (s === 'google_play_organic') return 'google_play_organic';
+  if (s === 'in_app_banner') return 'in_app_banner';
   if (s === 'bing' || s.indexOf('bing.com') !== -1) return 'bing';
   if (s === 'duckduckgo' || s.indexOf('duckduckgo.com') !== -1) return 'duckduckgo';
   if (!s || s === 'direct' || s === 'none' || s === '(direct)') return 'direct';
