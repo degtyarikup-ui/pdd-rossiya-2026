@@ -1,0 +1,763 @@
+{
+ "id": "ticket_1_19",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.041,
+ "playerStartX": -5.892,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -5.892,
+     -13.041
+    ],
+    [
+     -5.25,
+     87.7
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    -19.779,
+    0.0,
+    11.537
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_14",
+   "pos": [
+    -10.887,
+    0.0,
+    7.434
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -15.882,
+    0.0,
+    2.844
+   ],
+   "yaw": 5.485,
+   "scale": [
+    1.199,
+    1.199,
+    1.199
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_1",
+   "pos": [
+    -26.412,
+    0.0,
+    30.384
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_14",
+   "pos": [
+    -10.887,
+    0.0,
+    30.384
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    -26.412,
+    0.0,
+    41.184
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -15.573,
+    0.0,
+    23.499
+   ],
+   "yaw": 8.24,
+   "scale": [
+    1.102,
+    1.102,
+    1.102
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    -20.404,
+    0.0,
+    57.884
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_14",
+   "pos": [
+    -11.415,
+    0.0,
+    54.811
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -16.41,
+    0.0,
+    50.221
+   ],
+   "yaw": 5.485,
+   "scale": [
+    1.199,
+    1.199,
+    1.199
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_1",
+   "pos": [
+    -25.39,
+    0.0,
+    76.67
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_14",
+   "pos": [
+    -11.415,
+    0.0,
+    77.761
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -16.41,
+    0.0,
+    73.171
+   ],
+   "yaw": 8.24,
+   "scale": [
+    1.102,
+    1.102,
+    1.102
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    -20.218,
+    0.0,
+    -40.267
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_14",
+   "pos": [
+    -11.235,
+    0.0,
+    -47.192
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    -20.513,
+    0.0,
+    -56.394
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -16.23,
+    0.0,
+    -51.782
+   ],
+   "yaw": 5.485,
+   "scale": [
+    1.199,
+    1.199,
+    1.199
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_1",
+   "pos": [
+    -19.75,
+    0.0,
+    -15.6
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_14",
+   "pos": [
+    -11.235,
+    0.0,
+    -24.242
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    -19.754,
+    0.0,
+    -2.269
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -14.428,
+    0.0,
+    -31.046
+   ],
+   "yaw": 8.24,
+   "scale": [
+    1.102,
+    1.102,
+    1.102
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    -18.73,
+    0.0,
+    -65.36
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_14",
+   "pos": [
+    -11.682,
+    0.0,
+    -70.48
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    -19.779,
+    0.0,
+    -80.694
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -14.296,
+    0.0,
+    -77.429
+   ],
+   "yaw": 5.485,
+   "scale": [
+    1.199,
+    1.199,
+    1.199
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    19.822,
+    0.0,
+    -58.083
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    19.301,
+    0.0,
+    -68.853
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    11.17,
+    0.0,
+    -60.185
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    16.098,
+    0.0,
+    -50.412
+   ],
+   "yaw": 8.321,
+   "scale": [
+    1.144,
+    1.144,
+    1.144
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    15.895,
+    0.0,
+    -65.045
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_1",
+   "pos": [
+    19.829,
+    0.0,
+    -23.61
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    11.17,
+    0.0,
+    -37.235
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    16.03,
+    0.0,
+    -32.78
+   ],
+   "yaw": 6.047,
+   "scale": [
+    1.013,
+    1.013,
+    1.013
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    15.895,
+    0.0,
+    -42.095
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_0",
+   "pos": [
+    22.575,
+    0.0,
+    2.639
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    19.692,
+    0.0,
+    -7.369
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    11.336,
+    0.0,
+    1.475
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    16.196,
+    0.0,
+    5.93
+   ],
+   "yaw": 8.321,
+   "scale": [
+    1.144,
+    1.144,
+    1.144
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    16.061,
+    0.0,
+    -3.385
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "buildings/home_1",
+   "pos": [
+    19.671,
+    0.0,
+    38.315
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/fence_12",
+   "pos": [
+    11.336,
+    0.0,
+    24.425
+   ],
+   "yaw": 6.283,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    16.196,
+    0.0,
+    28.88
+   ],
+   "yaw": 6.047,
+   "scale": [
+    1.013,
+    1.013,
+    1.013
+   ],
+   "tint": null
+  },
+  {
+   "prop": "street/bush",
+   "pos": [
+    15.996,
+    0.0,
+    23.242
+   ],
+   "yaw": 4.712,
+   "scale": [
+    1.35,
+    1.35,
+    1.35
+   ],
+   "tint": null
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 1 · Вопрос 19",
+   "title": "В случае, когда правые колёса автомобиля наезжают на неукреплённую влажную обочину, рекомендуется:",
+   "options": [
+    "Затормозить и полностью остановиться",
+    "Затормозить и плавно направить автомобиль на проезжую часть",
+    "Не прибегая к торможению, плавно направить автомобиль на проезжую часть"
+   ],
+   "explanation": "Такая ситуация опасна вследствие возникновения момента сил, стремящегося развернуть автомобиль. Старайтесь плавно вернуть автомобиль на проезжую часть не меняя скорости.",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 1 · Question 19",
+   "title": "In the case when the right wheels of the car run over an unimproved wet shoulder, it is recommended:",
+   "options": [
+    "Brake and come to a complete stop",
+    "Brake and smoothly steer the car onto the roadway",
+    "Without braking, smoothly steer the car onto the roadway"
+   ],
+   "explanation": "This situation is dangerous due to the occurrence of a moment of force that tends to turn the car around. Try to smoothly return the car to the roadway without changing speed.",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "1-билет · 19-сұрақ",
+   "title": "Автокөліктің оң жақ дөңгелектері жақсартылмаған дымқыл иықтан өтіп кеткен жағдайда, ұсынылады:",
+   "options": [
+    "Тежеңіз және толық тоқтаңыз",
+    "Тежеу және көлікті жолға біркелкі бағыттау",
+    "Тежеусіз, көлікті жолға біркелкі бағыттаңыз"
+   ],
+   "explanation": "Бұл жағдай көлікті бұруға бейім күш моментінің пайда болуына байланысты қауіпті. Жылдамдықты өзгертпей, көлікті жолға тегіс қайтаруға тырысыңыз.",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 264,
+ "correctAnswerIndex": 2,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "e9f447c2c017515177c3654a447cc12f",
+ "sourceCategory": "ab",
+ "sourceImage": null,
+ "playerPlacement": "free",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   -4.377,
+   1.537
+  ],
+  "height": 25.479,
+  "yaw": -0.145,
+  "pitch": 0.473,
+  "elevation": 0
+ }
+}

@@ -3336,13 +3336,14 @@
  ],
  "actors": [],
  "playerPlacement": "street",
+ "annotations": [],
  "showPlayerGuide": false,
  "questionView": {
   "centre": [
    -1.102,
    -0.668
   ],
-  "height": 27.368,
+  "height": 25.166,
   "yaw": 0.003,
   "pitch": 0.479,
   "elevation": 0

@@ -1,0 +1,1071 @@
+{
+ "id": "ticket_3_10",
+ "procedural": true,
+ "geometry": null,
+ "type": "crossroad",
+ "reviewed": false,
+ "regulator": false,
+ "crop": 90.0,
+ "centerZ": 0,
+ "startZ": -90.0,
+ "stopZ": -13.1,
+ "playerStartX": -1.75,
+ "playerStartRotY": 0,
+ "leftLane": 1.75,
+ "rightLane": 1.75,
+ "kerbZ": 7,
+ "kerbX": 7,
+ "approachW": 14,
+ "exitWidths": {
+  "straight": 14
+ },
+ "segmentLength": 0,
+ "roadMask": {
+  "cell": 0.25,
+  "x": -90.0,
+  "z": -90.0,
+  "width": 720,
+  "height": 720
+ },
+ "spec": {
+  "maneuver": "straight",
+  "yieldTo": [],
+  "paths": null,
+  "pathRules": null
+ },
+ "exits": {
+  "straight": {
+   "points": [
+    [
+     -1.75,
+     -13.1
+    ],
+    [
+     -1.75,
+     0
+    ],
+    [
+     -1.75,
+     90
+    ],
+    [
+     -1.75,
+     91
+    ]
+   ],
+   "exitYaw": 0
+  }
+ },
+ "props": [
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -10.79,
+    0.0,
+    -2.415
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.93,
+    0.93,
+    0.93
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -13.861,
+    0.0,
+    2.32
+   ],
+   "yaw": 5.247,
+   "scale": [
+    1.052,
+    1.052,
+    1.052
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -14.525,
+    0.0,
+    5.817
+   ],
+   "yaw": 0.717,
+   "scale": [
+    0.972,
+    0.972,
+    0.972
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -14.536,
+    0.0,
+    10.823
+   ],
+   "yaw": 6.255,
+   "scale": [
+    0.998,
+    0.998,
+    0.998
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -13.998,
+    0.0,
+    18.79
+   ],
+   "yaw": 2.762,
+   "scale": [
+    1.013,
+    1.013,
+    1.013
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -10.132,
+    0.0,
+    6.121
+   ],
+   "yaw": 4.207,
+   "scale": [
+    0.917,
+    0.917,
+    0.917
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -10.133,
+    0.0,
+    9.966
+   ],
+   "yaw": 2.855,
+   "scale": [
+    1.013,
+    1.013,
+    1.013
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -10.139,
+    0.0,
+    14.938
+   ],
+   "yaw": 3.637,
+   "scale": [
+    1.018,
+    1.018,
+    1.018
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -20.562,
+    0.0,
+    75.386
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.697,
+    0.697,
+    0.697
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -17.137,
+    0.0,
+    69.159
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.789,
+    0.789,
+    0.789
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -17.635,
+    0.0,
+    71.781
+   ],
+   "yaw": 0.717,
+   "scale": [
+    0.729,
+    0.729,
+    0.729
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -12.864,
+    0.0,
+    71.999
+   ],
+   "yaw": 6.255,
+   "scale": [
+    0.748,
+    0.748,
+    0.748
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -17.24,
+    0.0,
+    81.512
+   ],
+   "yaw": 2.762,
+   "scale": [
+    0.76,
+    0.76,
+    0.76
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -12.237,
+    0.0,
+    29.372
+   ],
+   "yaw": 4.369,
+   "scale": [
+    0.667,
+    0.667,
+    0.667
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -11.986,
+    0.0,
+    32.271
+   ],
+   "yaw": 4.207,
+   "scale": [
+    0.688,
+    0.688,
+    0.688
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -9.351,
+    0.0,
+    29.09
+   ],
+   "yaw": 2.855,
+   "scale": [
+    0.759,
+    0.759,
+    0.759
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -19.629,
+    0.0,
+    51.922
+   ],
+   "yaw": 3.637,
+   "scale": [
+    0.764,
+    0.764,
+    0.764
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -9.421,
+    0.0,
+    59.369
+   ],
+   "yaw": 2.296,
+   "scale": [
+    0.794,
+    0.794,
+    0.794
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -15.821,
+    0.0,
+    48.903
+   ],
+   "yaw": 0.076,
+   "scale": [
+    0.681,
+    0.681,
+    0.681
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -16.51,
+    0.0,
+    54.828
+   ],
+   "yaw": 0.555,
+   "scale": [
+    0.76,
+    0.76,
+    0.76
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -12.918,
+    0.0,
+    48.682
+   ],
+   "yaw": 3.907,
+   "scale": [
+    0.773,
+    0.773,
+    0.773
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -12.829,
+    0.0,
+    51.409
+   ],
+   "yaw": 3.874,
+   "scale": [
+    0.672,
+    0.672,
+    0.672
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -16.853,
+    0.0,
+    30.788
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.697,
+    0.697,
+    0.697
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -13.427,
+    0.0,
+    24.561
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.789,
+    0.789,
+    0.789
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -13.926,
+    0.0,
+    27.183
+   ],
+   "yaw": 0.717,
+   "scale": [
+    0.729,
+    0.729,
+    0.729
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -13.934,
+    0.0,
+    30.938
+   ],
+   "yaw": 6.255,
+   "scale": [
+    0.748,
+    0.748,
+    0.748
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -13.53,
+    0.0,
+    36.914
+   ],
+   "yaw": 2.762,
+   "scale": [
+    0.76,
+    0.76,
+    0.76
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -7.679,
+    0.0,
+    -40.034
+   ],
+   "yaw": 4.369,
+   "scale": [
+    0.667,
+    0.667,
+    0.667
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -7.428,
+    0.0,
+    -37.135
+   ],
+   "yaw": 4.207,
+   "scale": [
+    0.688,
+    0.688,
+    0.688
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -7.428,
+    0.0,
+    -34.251
+   ],
+   "yaw": 2.855,
+   "scale": [
+    0.759,
+    0.759,
+    0.759
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -15.071,
+    0.0,
+    -17.484
+   ],
+   "yaw": 3.637,
+   "scale": [
+    0.764,
+    0.764,
+    0.764
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    -11.714,
+    0.0,
+    -23.839
+   ],
+   "yaw": 2.296,
+   "scale": [
+    0.794,
+    0.794,
+    0.794
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -11.264,
+    0.0,
+    -20.503
+   ],
+   "yaw": 0.076,
+   "scale": [
+    0.681,
+    0.681,
+    0.681
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -11.952,
+    0.0,
+    -14.578
+   ],
+   "yaw": 0.555,
+   "scale": [
+    0.76,
+    0.76,
+    0.76
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    -14.687,
+    0.0,
+    42.743
+   ],
+   "yaw": 3.907,
+   "scale": [
+    0.773,
+    0.773,
+    0.773
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    -14.598,
+    0.0,
+    45.47
+   ],
+   "yaw": 3.874,
+   "scale": [
+    0.672,
+    0.672,
+    0.672
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    9.22,
+    0.0,
+    54.06
+   ],
+   "yaw": 0.812,
+   "scale": [
+    0.697,
+    0.697,
+    0.697
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    12.645,
+    0.0,
+    47.833
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.789,
+    0.789,
+    0.789
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    12.147,
+    0.0,
+    50.455
+   ],
+   "yaw": 0.717,
+   "scale": [
+    0.729,
+    0.729,
+    0.729
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    12.139,
+    0.0,
+    54.21
+   ],
+   "yaw": 6.255,
+   "scale": [
+    0.748,
+    0.748,
+    0.748
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    12.542,
+    0.0,
+    60.185
+   ],
+   "yaw": 2.762,
+   "scale": [
+    0.76,
+    0.76,
+    0.76
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    11.048,
+    0.0,
+    -21.516
+   ],
+   "yaw": 4.369,
+   "scale": [
+    0.667,
+    0.667,
+    0.667
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    11.3,
+    0.0,
+    -18.617
+   ],
+   "yaw": 4.207,
+   "scale": [
+    0.688,
+    0.688,
+    0.688
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    11.299,
+    0.0,
+    -15.733
+   ],
+   "yaw": 2.855,
+   "scale": [
+    0.759,
+    0.759,
+    0.759
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    11.295,
+    0.0,
+    -12.004
+   ],
+   "yaw": 3.637,
+   "scale": [
+    0.764,
+    0.764,
+    0.764
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    13.266,
+    0.0,
+    32.266
+   ],
+   "yaw": 2.296,
+   "scale": [
+    0.794,
+    0.794,
+    0.794
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    13.717,
+    0.0,
+    35.601
+   ],
+   "yaw": 0.076,
+   "scale": [
+    0.681,
+    0.681,
+    0.681
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    13.028,
+    0.0,
+    41.526
+   ],
+   "yaw": 0.555,
+   "scale": [
+    0.76,
+    0.76,
+    0.76
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    12.479,
+    0.0,
+    -33.92
+   ],
+   "yaw": 3.907,
+   "scale": [
+    0.773,
+    0.773,
+    0.773
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    12.567,
+    0.0,
+    -31.193
+   ],
+   "yaw": 3.874,
+   "scale": [
+    0.672,
+    0.672,
+    0.672
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    10.756,
+    0.0,
+    13.019
+   ],
+   "yaw": 5.247,
+   "scale": [
+    0.789,
+    0.789,
+    0.789
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    10.257,
+    0.0,
+    15.641
+   ],
+   "yaw": 0.717,
+   "scale": [
+    0.729,
+    0.729,
+    0.729
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    10.249,
+    0.0,
+    19.396
+   ],
+   "yaw": 6.255,
+   "scale": [
+    0.748,
+    0.748,
+    0.748
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    10.652,
+    0.0,
+    25.371
+   ],
+   "yaw": 2.762,
+   "scale": [
+    0.76,
+    0.76,
+    0.76
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    13.3,
+    0.0,
+    12.97
+   ],
+   "yaw": 4.369,
+   "scale": [
+    0.667,
+    0.667,
+    0.667
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    9.41,
+    0.0,
+    -53.432
+   ],
+   "yaw": 4.207,
+   "scale": [
+    0.688,
+    0.688,
+    0.688
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    13.551,
+    0.0,
+    18.753
+   ],
+   "yaw": 2.855,
+   "scale": [
+    0.759,
+    0.759,
+    0.759
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    13.547,
+    0.0,
+    22.482
+   ],
+   "yaw": 3.637,
+   "scale": [
+    0.764,
+    0.764,
+    0.764
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/round_0",
+   "pos": [
+    11.376,
+    0.0,
+    -2.549
+   ],
+   "yaw": 2.296,
+   "scale": [
+    0.794,
+    0.794,
+    0.794
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    11.827,
+    0.0,
+    0.787
+   ],
+   "yaw": 0.076,
+   "scale": [
+    0.681,
+    0.681,
+    0.681
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    11.138,
+    0.0,
+    6.712
+   ],
+   "yaw": 0.555,
+   "scale": [
+    0.76,
+    0.76,
+    0.76
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/pine_0",
+   "pos": [
+    10.589,
+    0.0,
+    -68.735
+   ],
+   "yaw": 3.907,
+   "scale": [
+    0.773,
+    0.773,
+    0.773
+   ],
+   "tint": null
+  },
+  {
+   "prop": "trees/birch_0",
+   "pos": [
+    10.677,
+    0.0,
+    -66.007
+   ],
+   "yaw": 3.874,
+   "scale": [
+    0.672,
+    0.672,
+    0.672
+   ],
+   "tint": null
+  }
+ ],
+ "actors": [],
+ "lights": [],
+ "officers": [],
+ "labels": [],
+ "trajectories": [],
+ "legend": [],
+ "trafficLights": null,
+ "stopPositions": null,
+ "requiredStop": null,
+ "redWait": null,
+ "speedLimit": null,
+ "questionCamera": [],
+ "text": {
+  "ru": {
+   "ticket": "Билет 3 · Вопрос 10",
+   "title": "По какой полосе Вы имеете право двигаться с максимальной разрешенной скоростью вне населенного пункта?",
+   "options": [
+    "Только по правой",
+    "Только по левой",
+    "По любой"
+   ],
+   "explanation": "Действие происходит вне населённого пункта. В этом случае запрещается занимать левые полосы движения при свободных правых. Вам необходимо перестроиться и продолжать движение в данной ситуации только по правой полосе.(Пункт 9.4 ПДД)",
+   "pddRule": ""
+  },
+  "en": {
+   "ticket": "Ticket 3 · Question 10",
+   "title": "In which lane do you have the right to move at the maximum permitted speed outside the settlement?",
+   "options": [
+    "Right only",
+    "Only on the left",
+    "For any"
+   ],
+   "explanation": "The action takes place outside the populated area. In this case, it is prohibited to occupy the left lanes when the right lanes are free. You need to change lanes and continue driving in this situation only in the right lane. (Clause 9.4 of traffic rules)",
+   "pddRule": ""
+  },
+  "kk": {
+   "ticket": "3-билет · 10-сұрақ",
+   "title": "Елді мекеннен тыс жерде рұқсат етілген жылдамдықпен қай жолақпен жүруге құқығыңыз бар?",
+   "options": [
+    "Тек дұрыс",
+    "Тек сол жақта",
+    "Кез келген үшін"
+   ],
+   "explanation": "Бұл жағдай елді мекеннен тыс жерде орын алады. Бұл ретте оң жақ жолақтар бос болған кезде сол жақ жолақтарды басып алуға тыйым салынады. Жолақты ауыстырып, бұл жағдайда тек оң жақ жолақта жүруді жалғастыру керек. (Жол қозғалысы ережелерінің 9.4 тармағы)",
+   "pddRule": ""
+  }
+ },
+ "sourceTextLength": 141,
+ "correctAnswerIndex": 0,
+ "showPlayerGuide": false,
+ "sourceQuestionId": "6f19931bf52f941fee4d06909b83e68e",
+ "sourceCategory": "ab",
+ "sourceImage": "5688949120d0f6dad41a3699c5d53d96",
+ "playerPlacement": "street",
+ "annotations": [],
+ "questionView": {
+  "centre": [
+   0,
+   2.594
+  ],
+  "height": 27.37,
+  "yaw": 0,
+  "pitch": 0.762,
+  "elevation": 0
+ }
+}
