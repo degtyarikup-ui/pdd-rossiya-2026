@@ -46,6 +46,15 @@ export function authTransportIdentity(event) {
     event.device || '', diagnosticOs(event.os), event.status ?? null]);
 }
 
+// Store purchase checks that failed while the account already had Premium:
+// StoreKit replays an owned subscription and a flaky network fails the check
+// again, but nobody is left without paid access.
+const STORE_CHECKS = new Set(['premium.verify', 'iap.process', 'iap.complete']);
+export function storeRecheckWithPremium(event) {
+  const at = Number.isFinite(event.receivedAt) ? event.receivedAt : event.ts;
+  return STORE_CHECKS.has(event.operation) && Date.parse(event.premiumActiveUntil) > at;
+}
+
 export function diagnosticNotificationPolicy(event) {
   // A recovered sign-in is a successful outcome; it remains in the CSV.
   if (event.operation === 'auth.recovered') return { notify: false, windowMs: 600000 };
@@ -53,7 +62,7 @@ export function diagnosticNotificationPolicy(event) {
   // Old clients cannot tell prefetch from paywall. Keep their first warning,
   // but group repetition for an hour. Foreground reports keep a 10 min window.
   const productPrefetch = event.operation === 'iap.products' && !['paywall', 'purchase'].includes(event.context?.phase);
-  const urgentPayment = event.category === 'purchase' && !expectedSlowStartup && !productPrefetch;
+  const urgentPayment = event.category === 'purchase' && !expectedSlowStartup && !productPrefetch && !storeRecheckWithPremium(event);
   return { notify: true, windowMs: urgentPayment ? 600000 : 3600000 };
 }
 

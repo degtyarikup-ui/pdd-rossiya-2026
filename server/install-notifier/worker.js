@@ -773,6 +773,12 @@ export function buildReportMessage(b, user = null) {
 // Крон автопостинга (см. wrangler.toml). Раз в пять минут, а не раз в час:
 // он же доводит до конца публикации, которые Cloudflare оборвал на полпути.
 const HOURLY_CRON = '*/5 * * * *';
+const CRON_TASKS = new Set(['game_week', 'provider_keys', 'reconcile', 'autopost', 'threads', 'notifications', 'daily_report', 'reviews']);
+// Marks which scheduled task failed; the error itself is passed on unchanged.
+const cronTask = (task, work) => Promise.resolve(work).catch(error => {
+  if (error && typeof error === 'object') { try { error.cronTask = task; } catch (_) {} }
+  throw error;
+});
 const WEEKLY_CRON = '5 21 * * SUN';
 // Крону неоткуда взять свой адрес, а Instagram скачивает ролик именно по нему.
 // Актуальное значение сохраняется в KV при каждом открытии админки.
@@ -4250,7 +4256,7 @@ const workerHandlers = {
     // Закрытие недельного рейтинга (итоговые места → ачивка «Покоритель
     // рейтинга»): раз в неделю, в пн 00:05 МСК, и страховкой в суточный запуск.
     if (event.cron !== HOURLY_CRON) {
-      ctx.waitUntil(closeFinishedGameWeeks(env, gameWeekKey, readGameBoard, rankGameBoard));
+      ctx.waitUntil(cronTask('game_week', closeFinishedGameWeeks(env, gameWeekKey, readGameBoard, rankGameBoard)));
       if (event.cron === WEEKLY_CRON) return;
     }
 
@@ -4258,34 +4264,34 @@ const workerHandlers = {
     // публикации (у Instagram уходит несколько минут только на кодирование).
     if (event.cron === HOURLY_CRON) {
       // Keep fresh public signing keys available across isolates before login.
-      ctx.waitUntil(refreshProviderKeyCaches(env).then(results => {
+      ctx.waitUntil(cronTask('provider_keys', refreshProviderKeyCaches(env).then(results => {
         for (const [provider, result] of Object.entries(results)) {
           console.log(JSON.stringify({ event: 'auth_keys_refresh', provider,
             ok: result.ok, ...(result.code ? { code: result.code } : {}) }));
         }
-      }));
-      ctx.waitUntil(reconcileAccounts(env));
+      })));
+      ctx.waitUntil(cronTask('reconcile', reconcileAccounts(env)));
       let origin = DEFAULT_WORKER_ORIGIN;
       try {
         const settings = JSON.parse(await env.INSTALLS.get('social:settings'));
         if (settings && settings.workerOrigin) origin = settings.workerOrigin;
       } catch (_) {}
-      ctx.waitUntil(runAutoPost(env, origin, (text, options = {}) => sendTelegram(env, text, null, { ...options, topic: 'errors' })));
-      ctx.waitUntil(runThreadsSchedule(env, (text) => sendTelegram(env, text)));
+      ctx.waitUntil(cronTask('autopost', runAutoPost(env, origin, (text, options = {}) => sendTelegram(env, text, null, { ...options, topic: 'errors' }))));
+      ctx.waitUntil(cronTask('threads', runThreadsSchedule(env, (text) => sendTelegram(env, text))));
       if (env.NOTIFICATIONS) {
-        ctx.waitUntil(
+        ctx.waitUntil(cronTask('notifications',
           env.NOTIFICATIONS.get(env.NOTIFICATIONS.idFromName('admin-notifications'))
             .fetch('https://notifications/alarm')
             .then(response => { if (!response.ok) throw new Error('notifications task failed'); })
-        );
+        ));
       }
-      if (env.BOT_TOKEN && env.CHAT_ID) ctx.waitUntil(finishPendingDailyReport(env));
+      if (env.BOT_TOKEN && env.CHAT_ID) ctx.waitUntil(cronTask('daily_report', finishPendingDailyReport(env)));
       return;
     }
 
     if (!env.BOT_TOKEN || !env.CHAT_ID) return;
 
-    ctx.waitUntil(pollReviews(env));
+    ctx.waitUntil(cronTask('reviews', pollReviews(env)));
 
     // If stats are still draining, preserve this report and retry from the
     // existing five-minute cron instead of publishing incomplete totals.
@@ -4396,7 +4402,9 @@ export default {
     }
   },
   async scheduled(event, env, ctx) {
-    const notify = error => deferIncident(ctx, env, { category: 'infrastructure', operation: 'cron.' + (event.cron === HOURLY_CRON ? 'maintenance' : event.cron === WEEKLY_CRON ? 'game_week' : 'daily_report'), code: errorCode(error), context: serverErrorContext(error) });
+    // Six tasks share one cron: the incident code names the failed one
+    // (operation_failed:reconcile), otherwise the report says only "Error".
+    const notify = error => deferIncident(ctx, env, { category: 'infrastructure', operation: 'cron.' + (event.cron === HOURLY_CRON ? 'maintenance' : event.cron === WEEKLY_CRON ? 'game_week' : 'daily_report'), code: errorCode(error) + (CRON_TASKS.has(error?.cronTask) ? ':' + error.cronTask : ''), context: serverErrorContext(error) });
     const guardedContext = { waitUntil: task => ctx.waitUntil(Promise.resolve(task).catch(notify)) };
     // Команды выгрузки журнала ошибок из Telegram (/export_day, /export_all).
     ctx.waitUntil(pollErrorCommands(env)

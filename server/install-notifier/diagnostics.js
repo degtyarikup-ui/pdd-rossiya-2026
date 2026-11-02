@@ -179,6 +179,10 @@ export async function reportIncident(env, incident) {
       diagnosticId: typeof incident.diagnosticId === 'string' && /^[a-f0-9-]{36}$/.test(incident.diagnosticId) ? incident.diagnosticId : null,
       status: Number.isInteger(incident.status) && incident.status >= 400 && incident.status <= 599 ? incident.status : null,
       payment: incident.origin === 'client' ? null : paymentContext(incident.payment),
+      // A failed store re-check does not leave a payer without access when the
+      // account already has Premium (see storeRecheckWithPremium).
+      premiumActiveUntil: user?.isPremium && Date.parse(user.premiumExpiresAt) > receivedAt
+        ? new Date(Date.parse(user.premiumExpiresAt)).toISOString() : null,
     };
     if (event.diagnosticId) console.log(JSON.stringify({ event: 'incident', diagnosticId: event.diagnosticId, operation: event.operation, code: event.code, status: event.status }));
     // Existing failures keep their cross-account fingerprint. Anonymous sign-in

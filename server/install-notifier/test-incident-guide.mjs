@@ -168,3 +168,32 @@ test('контекст оплаты пропускает только безоп
   assert.equal(await reportIncident(env, { origin: 'client', category: 'purchase', operation: 'web_payment.start', code: 'timeout', payment: { tier: 'weekly', amountRub: 99 } }), true);
   assert.equal(events[1].payment, null);
 });
+
+test('повторная проверка покупки при уже активном Premium — не срочно; оплата СБП остаётся срочной', async () => {
+  const { diagnosticNotificationPolicy } = await import('./diagnostic_context.js');
+  const receivedAt = Date.UTC(2026, 10, 2, 19, 55);
+  const active = { category: 'purchase', operation: 'premium.verify', code: 'network:tls', receivedAt, premiumActiveUntil: '2027-02-01T17:04:48.000Z' };
+  const calm = guide(active);
+  assert.equal(calm.level, 'low');
+  assert.match(calm.what, /уже активен до 01\.02\.2027/);
+  assert.match(calm.steps[0], /Выдавать Premium не нужно/);
+  assert.equal(diagnosticNotificationPolicy(active).windowMs, 3600000);
+  assert.equal(guide({ ...active, premiumActiveUntil: '2026-11-01T00:00:00.000Z' }).level, 'critical');
+  assert.equal(guide({ ...active, premiumActiveUntil: null }).level, 'critical');
+  assert.equal(guide({ ...active, operation: 'payment.check' }).level, 'critical');
+  assert.equal(diagnosticNotificationPolicy({ ...active, premiumActiveUntil: null }).windowMs, 600000);
+});
+test('без сервисов Google Play вход через Google объяснён понятно', () => {
+  const copy = incidentCopy({ ...base, provider: 'google', code: 'gms_unavailable:1' });
+  assert.match(copy.reason, /нет работающих сервисов Google Play/);
+  assert.match(guide({ provider: 'google', code: 'gms_unavailable:1' }).steps[0], /Яндекс или Telegram/);
+});
+test('сервер запоминает в событии срок уже активного Premium', async () => {
+  const stored = [];
+  const env = { BOT_TOKEN: 't', CHAT_ID: '1',
+    INSTALLS: { get: async key => key === 'user:apple_1' ? JSON.stringify({ id: 'apple_1', isPremium: true, premiumExpiresAt: '2099-01-01T00:00:00.000Z' }) : null },
+    TELEGRAM: { idFromName: s => s, get: () => ({ fetch: async (_, options) => { stored.push(JSON.parse(options.body).incident); return Response.json({ ok: true }); } }) } };
+  assert.equal(await reportIncident(env, { origin: 'client', category: 'purchase', operation: 'premium.verify', code: 'timeout', userId: 'apple_1' }), true);
+  assert.equal(stored[0].premiumActiveUntil, '2099-01-01T00:00:00.000Z');
+  assert.equal(incidentGuide(stored[0]).level, 'low');
+});

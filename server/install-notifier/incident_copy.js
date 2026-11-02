@@ -1,3 +1,4 @@
+import { storeRecheckWithPremium } from './diagnostic_context.js';
 // Human-readable Telegram diagnostics. Technical identifiers remain unchanged
 // for grouping and investigation; unknown failures are never guessed.
 const ACTIONS = {
@@ -47,6 +48,7 @@ const ACTIONS = {
 };
 const REASONS = {
   network: 'Не удалось связаться с сервером или внешним сервисом.',
+  gms_unavailable: 'На телефоне нет работающих сервисов Google Play: вход через Google невозможен.',
   network_error: 'Не удалось связаться с сервером или внешним сервисом.',
   provider_request_failed: 'Не удалось получить ответ от сервиса входа.',
   timeout: 'Ответ не получен за отведённое время.',
@@ -185,6 +187,7 @@ const GUIDE_BY_CODE = {
   storekit_no_response: ['Пользователю: проверить вход в App Store (Настройки → Apple ID → Медиаматериалы и покупки) и снова открыть экран Premium.', 'Нам: если у многих — проверьте в App Store Connect доступность подписок по странам (Подписки → Доступность) и статус «Готово к продаже».'],
   apple_unknown: ['Пользователю: войти в Apple ID в настройках iPhone или выбрать другой способ входа.', 'Нам: единичные случаи — норма; если у многих — проверьте Sign in with Apple в App Store Connect.'],
   network: NETWORK_STEPS,
+  gms_unavailable: ['Пользователю: войти через Яндекс или Telegram (приложение уже подсказало это).', 'Нам: ничего не делать — так бывает на Huawei и телефонах без Google; номер после двоеточия — код ConnectionResult (1 — нет сервисов, 2 — нужно обновить, 3 — отключены).'],
   network_error: NETWORK_STEPS,
   provider_timeout: ['Пользователю: повторить через минуту.', 'Нам: сервис входа не ответил воркеру — обычно разовый сбой. Если повторяется, проверьте статус Google, Apple или Яндекса.'],
   provider_request_failed: ['Пользователю: повторить через минуту.', 'Нам: воркер не смог обратиться к сервису входа — обычно разовый сбой. Если повторяется, проверьте статус Google, Apple или Яндекса.'],
@@ -289,7 +292,7 @@ export function incidentGuide(event) {
   const detail = rest.join(':');
   let level = 'high';
   if (operation === 'auth.recovered') level = 'info';
-  else if (CRITICAL_OPERATIONS.has(operation)) level = 'critical';
+  else if (CRITICAL_OPERATIONS.has(operation)) level = storeRecheckWithPremium(event) ? 'low' : 'critical';
   else if (operation === 'iap.products' && event.context?.phase === 'background') level = 'low';
   else if (operation === 'startup.premium' && baseCode === 'timeout') level = 'low';
   else if (event.category === 'infrastructure' && /^cron\.game_week$/.test(operation)) level = 'high';
@@ -300,6 +303,11 @@ export function incidentGuide(event) {
 
   const steps = [];
   const what = [];
+  if (level === 'low' && storeRecheckWithPremium(event)) {
+    const until = new Date(event.premiumActiveUntil).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' });
+    what.push('Premium у аккаунта уже активен до ' + until + ': доступ есть, не прошла повторная проверка покупки.');
+    steps.push('Выдавать Premium не нужно. Если сбой повторяется часто — у человека нестабильная связь с сервером.');
+  }
   if (baseCode === 'credential_rejected' && detail) {
     const hit = CREDENTIAL_DETAILS.find(([re]) => re.test(detail));
     if (hit) {

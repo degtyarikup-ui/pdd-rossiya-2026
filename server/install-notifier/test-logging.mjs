@@ -328,3 +328,21 @@ test('video publication failures from cron and every admin launch route go to th
     assert.equal(queued[0].threadId, 7, scenario.path || 'cron');
   }
 });
+test('a failed cron task is named in the incident code', async () => {
+  const incidents = [];
+  const env = { INSTALLS: new Storage(), BOT_TOKEN: 'test', CHAT_ID: 'test',
+    TELEGRAM: { idFromName: s => s, get: () => ({ fetch: async (url, options) => {
+      if (String(url).endsWith('/incident')) incidents.push(JSON.parse(options.body).incident);
+      return Response.json({ ok: true });
+    } }) },
+    NOTIFICATIONS: { idFromName: s => s, get: () => ({ fetch: async () => new Response('', { status: 500 }) }) } };
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => { throw new TypeError('offline test'); };
+  try {
+    const pending = [], ctx = { waitUntil(promise) { pending.push(promise); } };
+    await worker.scheduled({ cron: '*/5 * * * *' }, env, ctx);
+    while (pending.length) await Promise.all(pending.splice(0));
+  } finally { globalThis.fetch = original; }
+  const codes = incidents.filter(i => i.operation === 'cron.maintenance').map(i => i.code);
+  assert.ok(codes.includes('operation_failed:notifications'), JSON.stringify(codes));
+});
