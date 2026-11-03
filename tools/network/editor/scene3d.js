@@ -42,6 +42,8 @@ const Scene3D = (() => {
 
   function setGroup(name) {
     if (groups[name]) {
+      // Removing a group leaves each handle parented to that detached group.
+      handles = handles.filter(h => h.parent !== groups[name]);
       scene.remove(groups[name]);
       groups[name].traverse((o) => { if (o.geometry && o.userData.own) o.geometry.dispose(); });
     }
@@ -296,11 +298,14 @@ const Scene3D = (() => {
   }
 
   // ---- routes ----------------------------------------------------------------------------
-  const lineMaterials = new Set();
+  const lineMaterials = new Map();
   function lineMat(colour, px, opacity = 1, dashed = false) {
+    // Draft, selection and hover lines reuse a small set of styles every pointer move.
+    const key = [colour, px, opacity, dashed].join("|");
+    if (lineMaterials.has(key)) return lineMaterials.get(key);
     const m = new THREE.LineMaterial({ color: colour, linewidth: px, transparent: opacity < 1, opacity, dashed,
       dashScale: 1, dashSize: 0.9, gapSize: 0.6, resolution: new THREE.Vector2(width, height) });
-    lineMaterials.add(m);
+    lineMaterials.set(key, m);
     return m;
   }
   function polyline(points, y, colour, px, opacity = 1, dashed = false) {
@@ -1129,7 +1134,16 @@ const Scene3D = (() => {
       m.position.y = 0.25;
       m.userData.own = true;
       g.add(m);
-      g.add(polyline(pts, 0.3, ACCENT, 2, 1, true));
+      g.add(polyline([...ribbon, ribbon[0]], 0.29, 0x98e5ff, 1.4));
+      const centreline = polyline(pts, 0.3, 0xe0f7ff, 1.5, 1, true);
+      centreline.material.defines.USE_DASH = "";
+      g.add(centreline);
+      const ring = new THREE.Mesh(new THREE.RingGeometry(w / 2, w / 2 + 0.12, 48),
+        basic(0xa8ecff, {transparent:true, opacity:0.88, depthWrite:false}));
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(draft.cursor[0], 0.28, draft.cursor[1]);
+      ring.userData.own = true;
+      g.add(ring);
     } else if (draft.kind === "annotation" && pts.length >= 2) {
       const route={points:pts,style:draft.style,colour:'#20242b',width:.16};
       g.add(annotationMesh(route,.04));g.add(annotationMesh(route,0));
@@ -1254,7 +1268,7 @@ const Scene3D = (() => {
         l.el.textContent = l.text;
         if (l.colour) l.el.style.setProperty("--c", "#" + new THREE.Color(l.colour).getHexString());
         if(l.cls==='annotation-text') {
-
+          l.el.dataset.routeId = l.ref.id;
           l.el.style.pointerEvents='auto';
           l.el.addEventListener('pointerdown',e=>{
             if(e.button!==0 || App.isLocked(l.ref))return;
@@ -1309,6 +1323,8 @@ const Scene3D = (() => {
     renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: false });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     renderer.setClearColor(0xe6ebdf, 1);
+    renderer.domElement.tabIndex = 0;
+    renderer.domElement.setAttribute("aria-label", "Холст сцены");
     el.appendChild(renderer.domElement);
     labelsEl = document.getElementById("labels");
     scene = new THREE.Scene();
@@ -1347,6 +1363,11 @@ const Scene3D = (() => {
   let phoneGesture = "pan";
   function phoneRect() {
     // Leave the controls and bottom actions outside the actual phone picture, including on laptops.
+    if (width <= 575) {
+      const ph = Math.max(80, Math.min(height - 262, (width - 24) * PHONE_H / PHONE_W));
+      const pw = ph * PHONE_W / PHONE_H;
+      return {x: (width - pw) / 2, y: 8, w: pw, h: ph};
+    }
     const panelSpace = width <= 850 ? 234 : 284;
     const pictureWidth = Math.max(90, width - panelSpace - 40);
     const ph = Math.max(100, Math.min(height - 100, pictureWidth * PHONE_H / PHONE_W)), pw = ph * PHONE_W / PHONE_H;
@@ -1731,11 +1752,83 @@ const Scene3D = (() => {
 
   // ---- the pointer: camera moves here, the rest goes to the tools ------------------------------
   let panTool = false, spaceDown = false;
+  function bindTouch(el, local, pack) {
+    const points = new Map();
+    let first = null, navigating = false, editing = false;
+    const stage = container.parentElement;
+    const capture = e => { e.preventDefault(); e.stopPropagation(); };
+    function pair() {
+      const [a, b] = points.values();
+      return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, span:Math.hypot(b.x-a.x,b.y-a.y)};
+    }
+    stage.addEventListener("pointerdown", e => {
+      if (phone || e.pointerType !== "touch") return;
+      const label = e.target.closest(".annotation-text");
+      if (e.target !== el && !label) return;
+      capture(e);
+      const p = local(e);
+      el.setPointerCapture(e.pointerId);
+      points.set(e.pointerId, p);
+      if (points.size === 1) {
+        el.focus({preventScroll:true});
+        first = pack("down", e, p);
+        if (label) first.labelRef = {t:"route", id:label.dataset.routeId};
+      } else if (!navigating) {
+        // No single-finger tap has committed yet. Roll a live object/brush drag back as one gesture.
+        navigating = true;
+        if (editing) emit("pointer", {type:"cancel"});
+        editing = false;
+        emit("pointer", {type:"leave"});
+      }
+    }, true);
+    stage.addEventListener("pointermove", e => {
+      if (!points.has(e.pointerId)) return;
+      capture(e);
+      const was = points.get(e.pointerId), p = local(e);
+      const from = navigating && points.size >= 2 ? pair() : null;
+      points.set(e.pointerId, p);
+      if (navigating) {
+        if (!from) return;
+        const to = pair(), before = worldAt(from.x, from.y);
+        if (from.span > 1 && to.span > 1 && from.span !== to.span) zoomBy(to.span / from.span);
+        const after = worldAt(to.x, to.y);
+        if (before && after) {
+          target.x += before.x - after.x; target.z += before.z - after.z;
+          applyCamera();
+        }
+        return;
+      }
+      if (panTool || spaceDown) { panBy(p.x-was.x, p.y-was.y); return; }
+      // Dragging an object can preview live and be cancelled. Tools that commit a vertex on
+      // pointerdown receive that event on release, once we know the gesture was a single touch.
+      if (!editing && Tools.touchDraggable && Math.hypot(p.x-first.sx, p.y-first.sy) >= 5) {
+        editing = true;
+        emit("pointer", first);
+      }
+      emit("pointer", pack("move", e, p));
+    }, true);
+    function finish(e) {
+      if (!points.has(e.pointerId)) return;
+      if (e.type !== "lostpointercapture") capture(e);
+      const released = e.type === "pointerup";
+      if (!navigating && !panTool && !spaceDown) {
+        if (released) {
+          const p = local(e);
+          if (!editing) emit("pointer", {...pack("down", e, p), labelRef:first.labelRef});
+          emit("pointer", pack("up", e, p));
+        } else if (editing) emit("pointer", {type:"cancel"});
+      }
+      points.delete(e.pointerId);
+      if (!points.size) { first = null; navigating = false; editing = false; }
+    }
+    for (const event of ["pointerup","pointercancel","lostpointercapture"]) stage.addEventListener(event, finish, true);
+  }
   function bindPointer() {
     const el = renderer.domElement;
     let nav = null;
     const local = (e) => { const r = el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
     const pack = (type, e, p) => ({ type, sx: p.x, sy: p.y, world: worldAt(p.x, p.y), shift: e.shiftKey, alt: e.altKey, meta: e.metaKey || e.ctrlKey, button: e.button, detail: e.detail });
+    bindTouch(el, local, pack);
     el.addEventListener("contextmenu", (e) => e.preventDefault());
     el.addEventListener("pointerdown", (e) => {
       const p = local(e);

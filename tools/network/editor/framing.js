@@ -80,8 +80,6 @@ const Framing = (() => {
       const on = b.dataset.cameraGesture === gesture;
       b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
     });
-    const hint = el.querySelector("[data-camera-hint]");
-    if (hint) hint.textContent = gesture === "orbit" ? "Тяните — поворот · Shift — сдвиг · колесо — масштаб" : "Тяните — сдвиг · правая кнопка — поворот · колесо — масштаб";
   }
   function render() {
     const el = $("#phone");
@@ -108,7 +106,6 @@ const Framing = (() => {
         </div>
       </details>
       <div class="phone-bar">
-        <span class="muted" data-camera-hint></span>
         <button class="btn ghost" data-frame="auto">${ic("restart")}Сам подбирать</button>
         <button class="btn ghost" data-frame="cancel">Отмена</button>
         <button class="btn primary" data-frame="save">${ic("check-circle")}Готово</button>
@@ -159,18 +156,17 @@ const Framing = (() => {
     if (e.target.closest("[data-close]") || e.target.id === "lightbox") $("#lightbox").hidden = true;
   });
   // A pinned photo floats over the view: drag it by its top, resize it by its corner.
-  let pinned = true, collapsed = false, showQuestion = false, showComment = false;
+  let pinned = false, showQuestion = false, showComment = false;
   function pin(on) {
-    pinned = true;
-    collapsed = !on;
+    pinned = on;
     const el = $("#refpic");
     const src = photo();
-    el.hidden = !state.S || state.id === "mini_regulator";
-    if (state.id === "mini_regulator") return;
-    el.classList.toggle("collapsed", collapsed);
+    el.hidden = !pinned || !state.S || state.id === "mini_regulator";
+    $("#reference-toggle")?.setAttribute("aria-expanded", String(!el.hidden));
+    if (el.hidden) return;
     const source = state.source, q = state.S?.question || {}, ru = q.text?.ru || {};
     const answers = source ? source.answers.map(a => a.text) : ru.options || [];
-    el.innerHTML = `<div class="refpic-head"><span>${esc(App.sceneTitle(state.id))}</span><button class="icon-btn" data-big data-tip="Крупно">${ic("fit")}</button><button class="icon-btn" data-collapse aria-label="Свернуть или развернуть">${collapsed ? "+" : "−"}</button></div>
+    el.innerHTML = `<div class="refpic-head"><span>Оригинал билета</span>${src ? `<button class="icon-btn" data-big aria-label="Увеличить оригинал">${ic("fit")}</button>` : ""}<button class="icon-btn" data-collapse aria-label="Закрыть оригинал">${ic("x")}</button></div>
       ${src ? `<img data-photo src="${src}" alt="Фото текущего вопроса">` : ""}
       <div class="ref-controls"><button class="btn ghost small" data-question aria-pressed="${showQuestion}">Вопрос и ответы</button><button class="btn ghost small" data-comment aria-pressed="${showComment}">Комментарий</button></div>
       <div class="refpic-body">${showQuestion ? `<p class="qtext">${esc(source ? source.question : ru.title || "")}</p><div class="answers">${answers.map((a, i) => `<button class="answer ${q.correct === i ? "on" : ""}" data-correct="${i}"><i>${i + 1}</i><span>${esc(a)}</span></button>`).join("")}</div>` : ""}${showComment ? `<p class="comment">${esc(source?.comment || "Комментарий отсутствует")}</p>` : ""}</div>`;
@@ -179,9 +175,9 @@ const Framing = (() => {
     const el = $("#refpic");
     let drag = null;
     el.addEventListener("click", (e) => {
-      if (e.target.closest("[data-collapse]")) { collapsed = !collapsed; pin(!collapsed); }
-      else if (e.target.closest("[data-question]")) { showQuestion = !showQuestion; pin(!collapsed); }
-      else if (e.target.closest("[data-comment]")) { showComment = !showComment; pin(!collapsed); }
+      if (e.target.closest("[data-collapse]")) { pin(false); $("#reference-toggle").focus(); }
+      else if (e.target.closest("[data-question]")) { showQuestion = !showQuestion; pin(pinned); }
+      else if (e.target.closest("[data-comment]")) { showComment = !showComment; pin(pinned); }
       else if (e.target.closest("[data-big], [data-photo]")) openPhoto();
       else if (e.target.closest("[data-correct]")) App.edit(s => { s.question.correct = Number(e.target.closest("[data-correct]").dataset.correct); });
     });
@@ -194,11 +190,18 @@ const Framing = (() => {
     });
     el.addEventListener("pointermove", (e) => {
       if (!drag) return;
-      el.style.left = e.clientX - drag.x + "px";
-      el.style.top = e.clientY - drag.y + "px";
+      const stage = el.parentElement;
+      el.style.left = Math.max(0, Math.min(stage.clientWidth - el.offsetWidth, e.clientX - drag.x)) + "px";
+      el.style.top = Math.max(0, Math.min(stage.clientHeight - el.offsetHeight, e.clientY - drag.y)) + "px";
     });
-    el.addEventListener("pointerup", () => { drag = null; });
+    el.addEventListener("lostpointercapture", () => { drag = null; });
+    const clampToStage = () => {
+      if (el.hidden) return;
+      el.style.left = Math.max(0, Math.min(el.offsetLeft, el.parentElement.clientWidth - el.offsetWidth)) + "px";
+      el.style.top = Math.max(0, Math.min(el.offsetTop, el.parentElement.clientHeight - el.offsetHeight)) + "px";
+    };
+    new ResizeObserver(clampToStage).observe($("#stage"));
   })();
 
-  return { start, stop, openPhoto, pin, refresh: () => pin(!collapsed), get on() { return !!phone; } };
+  return { start, stop, openPhoto, pin, refresh: () => pin(pinned), get on() { return !!phone; } };
 })();

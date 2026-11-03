@@ -6,6 +6,10 @@
 <title>Редактор сцен</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='5' fill='%230574f8'/%3E%3Cpath d='M4 11.5 8 4l4 7.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/editor.css">
+<link rel="stylesheet" href="/static/workspace.css">
+<link rel="stylesheet" href="/static/panels-studio.css">
+<link rel="stylesheet" href="/static/inspector-studio.css">
+<link rel="stylesheet" href="/static/dock.css">
 </head>
 <body>
 <!-- Icons (24 x 24, outline). Used as <use href="#i-…">; the stroke comes from .i in editor.css. -->
@@ -83,10 +87,10 @@
   <symbol id="i-points" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="9" cy="18" r="2"/><path d="M7.6 7.2 16.4 7.9M16.2 9.8l-5.6 6.4"/></symbol>
 </svg>
 
-<div class="app" id="app">
+<div class="app at-home" id="app">
   <header class="top">
-    <button class="brand" id="home" data-tip="Все сцены"><span class="logo"><svg class="i"><use href="#i-map"/></svg></span></button>
-    <div class="scene-name"><b id="title">Редактор сцен</b><span id="status" class="chip"></span></div>
+    <button class="brand" id="home" aria-label="Все сцены" data-tip="Все сцены"><span class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 30 17 5m-1 25 4-8q2-4 8-6" fill="none" stroke="currentColor" stroke-width="3.8"/><path d="M10 30 21 7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 2.8"/></svg></span><span class="brand-name"><span class="brand-home">Редактор сцен</span><span class="brand-work">Все сцены</span></span></button>
+    <div class="scene-name"><b id="title">Редактор сцен</b><button id="status" class="chip" aria-label="Проверка сцены"></button></div>
     <nav class="seg editor-sections" role="tablist" aria-label="Редактируемая игра">
       <button role="tab" data-editor-section="city" aria-selected="true" class="on">Билеты</button>
       <button role="tab" data-editor-section="regulator" aria-selected="false">Регулировщик</button>
@@ -102,14 +106,20 @@
     </div>
   </header>
 
-  <aside class="left">
+  <aside class="left" aria-label="Каталоги и слои">
     <nav class="tabs" id="ltabs">
       <button data-ltab="scenes" class="on" aria-label="Сцены" data-tip="Сцены"><svg class="i"><use href="#i-scenes"/></svg><span>Сцены</span></button>
       <button data-ltab="layers" aria-label="Слои" data-tip="Слои"><svg class="i"><use href="#i-layers"/></svg><span>Слои</span></button>
       <button data-ltab="library" aria-label="Объекты" data-tip="Объекты"><svg class="i"><use href="#i-shapes"/></svg><span>Объекты</span></button>
       <button data-ltab="textures" aria-label="Текстуры" data-tip="Текстуры"><svg class="i"><use href="#i-tiles"/></svg><span>Текстуры</span></button>
+      <div class="rail-divider"></div>
+      <button id="reference-toggle" aria-controls="refpic" aria-expanded="false" aria-label="Оригинал билета" data-tip="Оригинал билета"><svg class="i"><use href="#i-image"/></svg><span>Оригинал</span></button>
+      <button id="frame-scene" aria-label="Камера вопроса" data-tip="Камера вопроса"><svg class="i"><use href="#i-video"/></svg><span>Камера</span></button>
     </nav>
-    <div class="left-body" id="left-body"></div>
+    <section id="left-drawer" class="drawer" hidden>
+      <div class="drawer-heading"><b id="drawer-title">Сцены</b><button class="icon-btn" id="close-left" aria-label="Закрыть панель"><svg class="i"><use href="#i-x"/></svg></button></div>
+      <div class="left-body" id="left-body"></div>
+    </section>
   </aside>
 
   <main class="stage" id="stage">
@@ -117,8 +127,10 @@
     <div id="labels" class="labels"></div>
     <div id="marquee" class="marquee" hidden></div>
     <div id="hint" class="hint" hidden></div>
-    <nav id="toolbar" class="toolbar" aria-label="Инструменты"></nav>
-    <div id="popover" class="popover" hidden></div>
+    <div class="stage-tools">
+      <nav id="toolbar" class="toolbar" aria-label="Инструменты"></nav>
+      <div id="popover" class="popover" hidden></div>
+    </div>
     <div class="viewbar">
       <div class="seg" role="group" aria-label="Вид">
         <button id="v-plan" data-tip="Сверху  2">2D</button>
@@ -128,27 +140,37 @@
       <button id="z-fit" class="icon-btn" data-tip="Показать всё  F"><svg class="i"><use href="#i-fit"/></svg></button>
       <button id="z-in" class="icon-btn" data-tip="Приблизить  +"><svg class="i"><use href="#i-zoomin"/></svg></button>
     </div>
+    <button id="inspect-toggle" class="inspect-toggle" aria-controls="inspector-shell" aria-expanded="false"><svg class="i"><use href="#i-sliders"/></svg><span>Свойства</span></button>
     <div id="phone" class="phone" hidden></div>
     <div id="refpic" class="refpic" hidden><div class="refpic-head"><span>Фото билета</span><button class="icon-btn" data-big data-tip="Крупно"><svg class="i"><use href="#i-fit"/></svg></button><button class="icon-btn" data-unpin data-tip="Убрать"><svg class="i"><use href="#i-x"/></svg></button></div><img alt=""></div>
     <div id="drop" class="drop" hidden><div><svg class="i"><use href="#i-upload"/></svg><b>Отпустите PNG</b></div></div>
-    <div id="toast" class="toast" role="status"></div>
   </main>
 
-  <aside class="right" id="inspector"></aside>
+  <aside class="inspector-shell" id="inspector-shell" aria-label="Свойства" hidden>
+    <div class="right" id="inspector"></div>
+    <button id="close-inspector" class="icon-btn" aria-label="Закрыть свойства"><svg class="i"><use href="#i-x"/></svg></button>
+  </aside>
+  <footer class="workspace-status">
+    <span class="tool-status" id="tool-status"></span><span class="selection-status-text" id="selection-status"></span>
+    <div class="spacer"></div><span class="map-scale" aria-label="Масштаб в центре вида"><i id="scale-rule"></i><span id="scale-label"></span></span>
+    <span id="file-status"></span>
+  </footer>
 
   <section id="home-screen" class="home" hidden></section>
+  <div id="loading" class="loading-state" role="status">Загрузка редактора…</div>
+  <div id="toast" class="toast" role="status"></div>
 </div>
 
-<div id="lightbox" class="modal lightbox" hidden></div>
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Оригинал билета" class="modal lightbox" hidden></div>
 
-<div id="keys" class="modal" hidden>
+<div id="keys" role="dialog" aria-modal="true" aria-label="Клавиши" class="modal" hidden>
   <div class="dialog keys-dialog">
-    <div class="dialog-head"><h2>Клавиши</h2><button class="icon-btn" data-close><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="dialog-head"><h2>Клавиши</h2><button class="icon-btn" data-close aria-label="Закрыть"><svg class="i"><use href="#i-x"/></svg></button></div>
     <div id="keys-body" class="keys-grid"></div>
   </div>
 </div>
 
-<div id="confirm" class="modal" hidden>
+<div id="confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-title" class="modal" hidden>
   <div class="dialog confirm-dialog">
     <h2 id="confirm-title"></h2>
     <p id="confirm-text"></p>
@@ -190,6 +212,7 @@
 <script src="/static/panels.js"></script>
 <script src="/static/question_plan.js"></script>
 <script src="/static/inspector.js"></script>
+<script src="/static/workspace.js"></script>
 <script>App.boot();</script>
 </body>
 </html>

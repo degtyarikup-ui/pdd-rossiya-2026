@@ -36,7 +36,7 @@ const App = (() => {
       const box = $("#confirm");
       box.hidden = false;
       const done = (v) => { box.hidden = true; box.onclick = null; document.removeEventListener("keydown", key, true); resolve(v); };
-      const key = (e) => { if (e.key === "Escape") { e.stopPropagation(); done(false); } if (e.key === "Enter") { e.stopPropagation(); done(true); } };
+      const key = e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); done(false); } };
       document.addEventListener("keydown", key, true);
       box.onclick = (e) => {
         const a = e.target.closest("[data-answer]");
@@ -116,7 +116,7 @@ const App = (() => {
 
   // ---- history -----------------------------------------------------------------------------
   const snapshotText = () => JSON.stringify(state.S);
-  function followAssistantApproval(review, reviewed, questionPool) {
+  function followAssistantApproval(review, reviewed, questionPool, saved) {
     const apply = scene => {
       scene.assistantReview = { ...review };
       scene.reviewed = reviewed === true;
@@ -125,6 +125,7 @@ const App = (() => {
       return scene;
     };
     apply(state.S);
+    apply(saved);
     // Undo remains available for geometry, but can never undo an approval action.
     for (const key of ["undo", "redo"]) state[key] = state[key].map(text => JSON.stringify(apply(JSON.parse(text))));
   }
@@ -223,15 +224,34 @@ const App = (() => {
   async function loadList() {
     state.scenes = await api("/api/scenes");
   }
+  let openRequest = 0, discardDialog = null, saving = null;
+  function queueWrite(text, write) {
+    // Each caller reports its own failure. Later writes still get their turn.
+    const done = (saving ? saving.done.then(write, write) : write()).finally(() => {
+      if (saving?.done === done) saving = null;
+    });
+    saving = { text, done };
+    return done;
+  }
   async function openScene(sid) {
+    const request = ++openRequest;
     if (state.S && sid === state.id) {
       setSceneSection(sid);
       showHome(false);
       App.renderPanels?.();
       return;
     }
-    if (state.dirty && sid !== state.id && !(await confirmBox("Уйти без сохранения?", "В этой сцене есть несохранённые правки.", "Уйти"))) return;
-    const r = await api(`/api/scene/${sid}`);
+    let r;
+    try { r = await api(`/api/scene/${sid}`); }
+    catch (error) { if (request === openRequest) throw error; return; }
+    // Decide whether to discard at the moment of leaving. The user can still edit
+    // the current map while another scene is downloading or a save is pending.
+    while (request === openRequest && saving) await saving.done.catch(() => {});
+    if (request !== openRequest) return;
+    if (state.dirty) {
+      discardDialog ??= confirmBox("Уйти без сохранения?", "В этой сцене есть несохранённые правки.", "Уйти").finally(() => { discardDialog = null; });
+      if (!(await discardDialog) || request !== openRequest) return;
+    }
     state.S = r.scene;
     state.S.markings = state.S.markings || [];
     state.S.lawns = state.S.lawns || [];
@@ -264,6 +284,7 @@ const App = (() => {
       state.undo.push(state.savedJson);
       state.dirty = true;
     }
+    App.sceneOpened?.();
     Tools.set("select");
     Scene3D.load(state.S, state.dirty && !state.virtual ? null : r.build);
     showHome(false);
@@ -289,23 +310,38 @@ const App = (() => {
     });
   }
 
-  async function save() {
+  function save() {
     // Textures are not part of a scene: they reach the game by their own "Применить в игре".
-    if (!state.S || (!state.dirty && !state.virtual)) { toast("Всё сохранено"); renderTop(); return; }
+    if (!state.S || (!state.dirty && !state.virtual && !saving)) { toast("Всё сохранено"); renderTop(); return; }
+    const sid = state.id, text = snapshotText();
+    if (saving?.text === text) return saving.done;
+    const queued = !!saving;
+    return queueWrite(text, () => saveSnapshot(sid, text, queued));
+  }
+  async function saveSnapshot(sid, text, queued) {
     try {
-      const r = await api(`/api/scene/${state.id}`, state.S);
+      const submitted = JSON.parse(text);
+      if (queued) {
+        // Publication may have changed ahead of this geometry save in the queue.
+        const saved = JSON.parse(state.savedJson);
+        for (const key of ["reviewed", "assistantReview", "questionPool"]) {
+          if (key in saved) submitted[key] = saved[key]; else delete submitted[key];
+        }
+      }
+      const r = await api(`/api/scene/${sid}`, submitted);
+      if (state.id !== sid) return;
       if (r.assistantReview) {
-        followAssistantApproval(r.assistantReview, r.reviewed, r.questionPool);
+        followAssistantApproval(r.assistantReview, r.reviewed, r.questionPool, submitted);
         state.playable = state.S.reviewed;
       }
-      state.savedJson = snapshotText();
-      state.dirty = false;
+      state.savedJson = JSON.stringify(submitted);
+      state.dirty = snapshotText() !== state.savedJson;
       state.virtual = false;
-      state.findings = r.findings;
+      if (!state.dirty) state.findings = r.findings;
       const errors = r.findings.filter((f) => f.level === "error").length;
       const gone = r.removed && r.removed.length ? ` Удалено: ${r.removed.length}.` : "";
       toast(errors ? `Сохранено, но есть ошибки: ${errors}.${gone}` : `Сохранено.${gone}`, errors ? "warn" : "good");
-      saveThumb();
+      if (!state.dirty) saveThumb(sid);
       loadList().then(async () => { if (typeof QuestionPlan !== "undefined") await QuestionPlan.load({refresh:true}); App.renderPanels?.(); });
     } catch (e) {
       toast(`Не сохранено: ${e.message}`, "bad");
@@ -313,10 +349,10 @@ const App = (() => {
     renderTop();
   }
   // The card picture of the scene list: the view from above as it is now.
-  function saveThumb() {
+  function saveThumb(sid) {
     try {
       Scene3D.capture(360).toBlob((blob) => {
-        if (blob) fetch(`/api/thumb/${state.id}`, { method: "POST", body: blob }).then(() => { thumbRev[state.id] = Date.now(); });
+        if (blob) fetch(`/api/thumb/${sid}`, { method: "POST", body: blob }).then(r => { if (r.ok) thumbRev[sid] = Date.now(); }).catch(() => {});
       }, "image/png");
     } catch (e) { /* the picture is a nicety */ }
   }
@@ -324,20 +360,22 @@ const App = (() => {
 
   async function setPlayable(on) {
     if (!state.S || state.including) return;
-    const sid = state.id;
+    const sid = state.id, request = openRequest;
     state.including = true;
     try {
-      if (state.dirty || state.virtual) { await save(); if (state.dirty || state.virtual) return; }
-      if (state.id !== sid) return;
-      const r = await api(`/api/game/include/${sid}`, { playable: on });
-      if (state.id !== sid) { await loadList(); App.renderPanels?.(); return; }
-      state.playable = r.playable;
-      // The file changed on the server (its "reviewed" flag): the open copy follows.
-      state.S.reviewed = on;
-      if (r.assistantReview) followAssistantApproval(r.assistantReview, on, on ? null : state.S.questionPool);
-      if (on) delete state.S.questionPool;
-      state.savedJson = snapshotText();
-      toast(on ? `Сцена в игре. Всего в игре: ${r.count}` : "Сцена убрана из игры", "good");
+      if (state.dirty || state.virtual || saving) { await save(); if (state.dirty || state.virtual) return; }
+      if (state.id !== sid || openRequest !== request) return;
+      await queueWrite(null, async () => {
+        const saved = JSON.parse(state.savedJson);
+        const r = await api(`/api/game/include/${sid}`, { playable: on });
+        state.playable = r.playable;
+        state.S.reviewed = saved.reviewed = on;
+        if (r.assistantReview) followAssistantApproval(r.assistantReview, on, on ? null : state.S.questionPool, saved);
+        if (on) { delete state.S.questionPool; delete saved.questionPool; }
+        state.savedJson = JSON.stringify(saved);
+        state.dirty = snapshotText() !== state.savedJson;
+        toast(on ? `Сцена в игре. Всего в игре: ${r.count}` : "Сцена убрана из игры", "good");
+      });
       loadList().then(async () => { if (typeof QuestionPlan !== "undefined") await QuestionPlan.load({refresh:true}); App.renderPanels?.(); });
     } catch (e) {
       toast(e.message, "bad");
@@ -350,10 +388,12 @@ const App = (() => {
 
   async function runInGame(auto = false) {
     if (!state.S) return;
-    if (state.dirty || state.virtual) { await save(); if (state.dirty || state.virtual) return; }
+    const sid = state.id, request = openRequest;
+    if (state.dirty || state.virtual || saving) { await save(); if (state.dirty || state.virtual) return; }
+    if (request !== openRequest || state.id !== sid) return;
     try {
       toast("Готовлю перекрёсток для игры…");
-      const r = await api(`/api/game/run/${state.id}`, { auto });
+      const r = await api(`/api/game/run/${sid}`, { auto });
       toast(r.launched ? "Игра открывается в отдельном окне на этом перекрёстке" : r.error, r.launched ? "good" : "bad");
     } catch (e) {
       toast(e.message, "bad");
@@ -366,6 +406,7 @@ const App = (() => {
     state.sel = opts.add ? uniq([...state.sel, ...arr]) : arr;
     if (state.sel.length) state.texSel = null;   // the inspector shows what was picked, not the texture
     Scene3D.setSelection(state.sel);
+    App.selectionChanged?.();
     App.renderPanels?.({ only: ["inspector", "layers"] });
   }
   function toggle(ref) {
@@ -644,6 +685,7 @@ const App = (() => {
     $("#undo").disabled = !state.undo.length;
     $("#redo").disabled = !state.redo.length;
     $("#play").disabled = !s;
+    App.updateWorkspaceStatus?.();
     document.title = s ? `${state.dirty ? "• " : ""}${sceneTitle(state.id)} — Редактор сцен` : "Редактор сцен";
   }
   function plural(n, forms) {
@@ -658,6 +700,7 @@ const App = (() => {
     $("#home-screen").hidden = !on;
     $("#app").classList.toggle("at-home", on);
     if (on) App.renderHome?.();
+    else if (state.id) setSceneSection(state.id);
   }
 
   // ---- keys ----------------------------------------------------------------------------------
@@ -680,11 +723,19 @@ const App = (() => {
   function onKey(e) {
     if (typeof Framing !== "undefined" && Framing.on) return;
     const typing = e.target && (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName) || e.target.isContentEditable);
-    if (!$("#keys").hidden && e.key === "Escape") { $("#keys").hidden = true; return; }
+    if (!$("#confirm").hidden) return;
+    for (const modal of [$("#keys"), $("#lightbox")]) {
+      if (!modal.hidden) {
+        if (e.key === "Escape") { e.preventDefault(); modal.hidden = true; }
+        return;
+      }
+    }
+    if (!$("#home-screen").hidden && e.key === "Escape" && state.S && !typing) { showHome(false); return; }
+    if (e.key === "Enter" && e.target?.closest?.("button, summary")) return;
     for (const k of KEYS) {
       if (!matches(e, k.combo)) continue;
       if (typing && !k.always) return;
-      if (k.needScene && !state.S) return;
+      if (k.needScene && (!state.S || !$("#home-screen").hidden)) return;
       e.preventDefault();
       k.fn(e);
       return;
@@ -749,7 +800,12 @@ const App = (() => {
 
   // ---- boot ----------------------------------------------------------------------------------
   async function boot() {
-    Scene3D.mount($("#view"));
+    try {
+      Scene3D.mount($("#view"));
+    } catch (e) {
+      startupError("Не удалось открыть 3D-вид", e);
+      return;
+    }
     Tools.init();
     bindKeys();
     $("#undo").onclick = undo;
@@ -758,12 +814,17 @@ const App = (() => {
     $("#play").onclick = () => runInGame(false);
     $("#help").onclick = () => { renderKeys(); $("#keys").hidden = false; };
     $("#keys").addEventListener("click", (e) => { if (e.target.id === "keys" || e.target.closest("[data-close]")) $("#keys").hidden = true; });
-    $("#home").onclick = () => showHome(true);
+    $("#home").onclick = () => { if ($("#home-screen").hidden) showHome(true); };
     document.querySelectorAll("[data-editor-section]").forEach(b => b.onclick = async () => {
+      if (b.dataset.editorSection === "city" && !$("#home-screen").hidden) {
+        setSceneSection(null);
+        App.renderHome?.();
+        return;
+      }
       const sid = b.dataset.editorSection === "regulator" ? "mini_regulator" : state.lastTicket || state.scenes.find(s => s.id !== "mini_regulator")?.id;
-      if (sid && sid !== state.id) await openScene(sid);
+      if (sid) await openScene(sid).catch(e => toast(e.message, "bad"));
     });
-    $("#status").onclick = () => App.showChecks?.();
+    $("#status").onclick = () => { App.showInspector?.(); App.showChecks?.(); };
     $("#v-plan").onclick = () => setView("plan");
     $("#v-3d").onclick = () => setView("3d");
     $("#z-in").onclick = () => Scene3D.zoomBy(1.25);
@@ -779,7 +840,7 @@ const App = (() => {
       [state.catalog] = await Promise.all([api("/api/catalog"), Textures.load(), loadList(), DirectionMark.load()]);
       Catalog.setSignCatalog(state.catalog.signInfo);
     } catch (e) {
-      toast("Сервер редактора не отвечает: " + e.message, "bad");
+      startupError("Не удалось загрузить сцены", e);
       return;
     }
     Scene3D.setTextures(Textures.forScene());
@@ -788,10 +849,17 @@ const App = (() => {
     renderTop();
     const params = new URLSearchParams(location.search);
     const first = params.get("scene");
-    if (first) openScene(first).catch((e) => { toast(e.message, "bad"); showHome(true); });
+    if (first) await openScene(first).catch((e) => { toast(e.message, "bad"); showHome(true); });
     else if (params.get("filter") === "questions" && typeof QuestionPlan !== "undefined") {
       await App.showQuestions?.(params.get("question") || undefined);
     } else showHome(true);
+    $("#loading").hidden = true;
+  }
+
+  function startupError(message, error) {
+    const loading = $("#loading");
+    loading.innerHTML = `<b>${esc(message)}</b><small>${esc(error.message)}</small><button class="btn" id="retry-load">Повторить</button>`;
+    $("#retry-load").onclick = () => location.reload();
   }
 
   return {

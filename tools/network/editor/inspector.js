@@ -8,12 +8,16 @@
 
   // ---- small builders -----------------------------------------------------------------------
   const card = (title, body, opts = {}) => `<section class="card ${opts.cls || ""}">${title ? `<h3>${opts.icon ? ic(opts.icon) : ""}${title}${opts.aside || ""}</h3>` : ""}${body}</section>`;
+  const openGroups = new Map();
+  const fold = (key, title, icon, body, value = "") => `<details class="insp-fold" data-fold="${key}" ${openGroups.get(key) ? "open" : ""}>
+    <summary>${ic(icon)}<span>${esc(title)}</span>${value ? `<small>${esc(value)}</small>` : ""}${ic("chevron")}</summary>
+    <div class="fold-body">${body}</div></details>`;
   const chips = (name, items, value, opts = {}) => `<div class="seg-chips ${opts.cls || ""}">${items.map((it) =>
     `<button class="${String(it.value) === String(value) ? "on" : ""} ${it.disabled ? "off" : ""}" data-chip="${name}" data-value="${esc(it.value)}" aria-label="${esc(it.tip || it.title || it.value)}" aria-pressed="${String(it.value) === String(value)}" ${it.disabled ? "disabled" : ""} ${it.tip ? `data-tip="${esc(it.tip)}"` : ""}>${it.icon ? ic(it.icon) : ""}${it.html || ""}${it.title ? `<span>${esc(it.title)}</span>` : ""}</button>`).join("")}</div>`;
   const toggle = (name, label, on, icon) => `<label class="switch-row">${icon ? ic(icon) : ""}<span>${esc(label)}</span><input type="checkbox" data-toggle="${name}" ${on ? "checked" : ""}><i class="switch"></i></label>`;
   const button = (act, label, icon, cls = "") => `<button class="btn ${cls}" data-act="${act}">${icon ? ic(icon) : ""}<span>${esc(label)}</span></button>`;
   const slider = (name, label, value, min, max, step, shown) => `<div class="slider-row"><div class="slider-h"><span>${esc(label)}</span><em data-shown="${name}">${esc(shown)}</em></div>
-    <input type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-slider="${name}"></div>`;
+    <input type="range" aria-label="${esc(label)}" min="${min}" max="${max}" step="${step}" value="${value}" data-slider="${name}"></div>`;
   const stopStyles = [{ value: "solid", title: "Сплошная", icon: "stopline" }, { value: "yield", title: "Треугольники", icon: "yieldline" }];
   const setStopStyle = (item, value) => {
     if (value === "yield") item.stopStyle = "yield";
@@ -71,8 +75,33 @@
   }
 
   // ---- dispatch ---------------------------------------------------------------------------
+  let lastSelection = "";
   App.renderInspector = () => {
-    const p = pane();
+    const p = pane(), selection = JSON.stringify([state.id, state.ltab === "textures" && state.texSel, state.sel.map(r => [r.t, r.id])]);
+    p.querySelectorAll("[data-fold]").forEach(el => openGroups.set(el.dataset.fold, el.open));
+    const same = lastSelection === selection;
+    const scroll = same ? p.scrollTop : 0;
+    const active = document.activeElement;
+    // Keep keyboard focus on the same field when an edit rebuilds the inspector.
+    const focus = same && active && p.contains(active)
+      ? Array.from(active.attributes).filter(a => a.name.startsWith("data-")) : [];
+    const draft = focus.length && active.matches('input[type="text"], input[type="search"]')
+      ? {value:active.value, initial:active.defaultValue, start:active.selectionStart, end:active.selectionEnd} : null;
+    lastSelection = selection;
+    render(p);
+    if (focus.length) {
+      const selector = focus.map(a => `[${a.name}="${CSS.escape(a.value)}"]`).join("");
+      const field = p.querySelector(selector);
+      field?.focus({preventScroll:true});
+      // A preview response can arrive while the author is still typing a name or a caption.
+      if (field && draft && field.defaultValue === draft.initial) {
+        field.value = draft.value;
+        field.setSelectionRange(draft.start, draft.end);
+      }
+    }
+    p.scrollTop = scroll;
+  };
+  function render(p) {
     if (state.ltab === "textures" && state.texSel) return textureInspector(p);
     if (!state.S) { p.innerHTML = `<div class="empty-pane">${ic("map")}<p>Откройте сцену</p></div>`; bind({}); return; }
     const sel = state.sel;
@@ -85,9 +114,13 @@
     view(p, ref, o);
     compactHelp(p);
     Thumbs.fillAll(p);
-  };
+  }
   App.renderSelection = () => {};
-  App.showChecks = () => { App.select([]); setTimeout(() => $("#checks")?.scrollIntoView({ behavior: "smooth" }), 30); };
+  App.showChecks = () => {
+    state.texSel = null;
+    App.select([]);
+    $("#checks")?.scrollIntoView({block:"nearest"});
+  };
 
   const head = (icon, title, sub = "") => `<div class="insp-head">${icon}<div><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div></div>`;
   const deleteRow = (extra = "") => `<div class="insp-actions">${extra}${button("dup", "Копия", "copy", "ghost")}${button("del", "Удалить", "trash", "danger ghost")}</div>`;
@@ -107,12 +140,12 @@
   // ---- the scene ----------------------------------------------------------------------------
   function regulatorInspector(p) {
     const s = state.S;
-    p.innerHTML = `${head(`<span class="ibadge">${ic("person")}</span>`, "Регулировщик", "сцена мини-игры")}
-      ${card("Проверить", button("regulator-run", "Тест в игре", "play", "primary wide"))}
-      ${card("Сцена", `<p>Выбирайте дороги, линии разметки, дома и деревья прямо на виде. Объекты можно двигать, поворачивать, добавлять и удалять.</p>${button("regulator-officer", "Положение регулировщика", "person", "ghost wide")}${button("regulator-player", "Автомобиль игрока", "car", "ghost wide")}`)}
-      ${card("Пути игрока", regulatorRouteButtons(s) + `<p>Выберите путь, затем тяните его точки на виде или задавайте координаты справа.</p>`)}
-      ${card("Сохранение", `<p>«Сохранить» обновляет сцену и её поверхности для игры. «Тест в игре» сохраняет изменения и запускает мини-игру в Godot.</p>`)}
-      ${card("Проверка", state.findings.length ? state.findings.map(f => `<p class="${f.level}">${esc(f.message)}</p>`).join("") : `<p class="ok-line">${ic("check-circle")}Ошибок нет</p>`)}`;
+    p.innerHTML = `${head(`<span class="ibadge">${ic("person")}</span>`, "Регулировщик", "Сцена мини-игры")}
+      ${card("Участники", button("regulator-officer", "Регулировщик", "person", "ghost wide") + button("regulator-player", "Автомобиль игрока", "car", "ghost wide"))}
+      ${card("Пути игрока", regulatorRouteButtons(s))}
+      <section id="checks" class="card"><h3>${ic("check-circle")}Проверка</h3>
+        ${state.findings.length ? state.findings.map(f => `<p class="${f.level}">${esc(f.message)}</p>`).join("") : `<p class="ok-line">${ic("check-circle")}Ошибок нет</p>`}
+        ${button("regulator-run", "Тест в игре", "play", "ghost wide")}</section>`;
     compactHelp(p);
     bind({
       "regulator-run": () => App.runInGame(false),
@@ -137,12 +170,12 @@
     const title = r.kind === "approach" ? "Подъезд" : Catalog.EXITS[r.exit].title;
     p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, `Путь игрока: ${title.toLowerCase()}`, `${r.points.length} точек`)}
       ${card("Пути игрока", regulatorRouteButtons(state.S, r.id))}
-      ${card("Редактирование", `<p>Тяните точки на виде. Двойной клик по линии добавляет точку. Выбранную точку можно удалить кнопкой ниже или клавишей Delete.</p><label class="route-field">Точка<input type="number" min="1" max="${r.points.length}" step="1" data-text="routeIndex" value="${index + 1}"></label>
+      ${card("Опорная точка", `<label class="route-field">Номер<input type="number" min="1" max="${r.points.length}" step="1" data-text="routeIndex" value="${index + 1}"></label>
         <label class="route-field">X, м<input type="number" step="0.1" data-text="routeX" value="${Number(point[0].toFixed(3))}" ${anchored ? "disabled" : ""}></label>
         <label class="route-field">Z, м<input type="number" step="0.1" data-text="routeZ" value="${Number(point[1].toFixed(3))}" ${anchored ? "disabled" : ""}></label>
-        ${anchored ? `<p>Эта точка закреплена у автомобиля игрока. Чтобы изменить её, переместите автомобиль.</p>` : button("route-delete-point", "Удалить точку", "trash", "ghost wide")}
+        ${anchored ? `<p class="selection-status">${ic("lock")}Закреплена у автомобиля</p>` : button("route-delete-point", "Удалить точку", "trash", "ghost wide")}
         ${index < r.points.length - 1 ? button("route-add-point", "Добавить точку после выбранной", "points", "ghost wide") : ""}`)}
-      ${card("Проверить", `<p>После правки убедитесь, что путь проходит по проезжей части. «Сохранить» сохраняет траекторию для игры.</p>${button("regulator-run", "Тест в игре", "play", "primary wide")}`)}`;
+      ${card("", button("regulator-run", "Тест в игре", "play", "ghost wide"))}`;
     bind({
       "regulator-route": d => App.select({t:"route", id:d.id}),
       "regulator-run": () => App.runInGame(false),
@@ -161,11 +194,9 @@
 
   function sceneInspector(p) {
     if (state.id === "mini_regulator") return regulatorInspector(p);
-    const s = state.S, q = s.question || {}, src = state.source, ru = (q.text && q.text.ru) || {};
+    const s = state.S, q = s.question || {};
     const routes = s.routes.filter((r) => r.kind === "manoeuvre").map((r) => r.exit);
     const errors = state.findings.filter((f) => f.level === "error"), warns = state.findings.filter((f) => f.level === "warn");
-    const answers = src ? src.answers.map((a) => a.text) : ru.options || [];
-    const correct = q.correct;
     const plan = s.layout ? Layout.playerPlan(s) : null;
     const lanes = plan && !Layout.isFreePlayer(s) ? (plan.lanes || Layout.laneOffsets(plan.st)) : [];
     const laneItems = lanes.length === 2
@@ -174,33 +205,32 @@
         ? [{ value: 0, title: "Левая" }, { value: 1, title: "Средняя" }, { value: 2, title: "Правая" }]
         : lanes.map((_, i) => ({ value: i, title: i === 0 ? "1 (левая)" : i === lanes.length - 1 ? `${i + 1} (правая)` : `${i + 1}` }));
     const curLane = plan ? plan.laneIndex : 0;
-    const yields = s.actors.map((a) => `<button class="pick ${(q.yieldTo || []).includes(a.id) ? "on" : ""}" data-act="yield" data-id="${a.id}">${Thumbs.img("actor", a.type, "mini")}<span>${esc(a.name || a.id)}</span></button>`).join("");
+    const yields = s.actors.map((a) => `<button class="pick ${(q.yieldTo || []).includes(a.id) ? "on" : ""}" data-act="yield" data-id="${esc(a.id)}" aria-pressed="${(q.yieldTo || []).includes(a.id)}">${Thumbs.img("actor", a.type, "mini")}<span>${esc(a.name || a.id)}</span></button>`).join("");
     const edges = state.edges || {};
     const edgeMismatch = Object.values(edges).some(e => e && !(e.connectable ?? e.street));
     const side = (k) => { const e = edges[k]; return e ? ((e.connectable ?? e.street) ? "ok" : "bad") : "none"; };
     const assistant = s.assistantReview?.author === "codex";
     const approved = assistant && s.assistantReview.status === "approved" && state.playable;
     p.innerHTML = `
-      ${head(`<span class="ibadge">${ic("map")}</span>`, App.sceneTitle(state.id), s.layout ? "Дороги в конструкторе" : "Дороги из картинки билета")}
-      ${assistant ? card("Подготовлено Codex", `<p class="assistant-review-status">${approved ? "Одобрено вами · сцена в игре" : "Ожидает вашего одобрения"}</p><p class="assistant-review-help">${approved ? "Можно редактировать сцену или снять одобрение и вернуть её на проверку." : "Проверьте вопрос и проезд. Все объекты и маршруты доступны для ручной правки. Сохранение и тест не добавляют сцену в игру."}</p>${button(approved ? "withdraw-approval" : "approve-scene", approved ? "Снять одобрение и убрать из игры" : "Одобрить и добавить в игру", approved ? "undo" : "check-circle", approved ? "ghost wide" : "primary wide")}`, { cls: "assistant-review-card" }) : ""}
-      ${card("", `${assistant ? "" : toggle("playable", "Сцена в игре", state.playable, "gamepad")}
-        <div class="insp-actions">${button("run", "Тест в игре", "play", "primary")}</div>
-        ${button("run-auto", "В игре на автопилоте", "video", "ghost small wide")}`)}
+      ${head(`<span class="ibadge">${ic("map")}</span>`, "Свойства сцены", App.sceneTitle(state.id))}
+      ${assistant ? card("Подготовлено Codex", `<p class="assistant-review-status">${approved ? "Одобрено вами · сцена в игре" : "Ожидает вашего одобрения"}</p>${button(approved ? "withdraw-approval" : "approve-scene", approved ? "Снять одобрение и убрать из игры" : "Одобрить и добавить в игру", approved ? "undo" : "check-circle", approved ? "ghost wide" : "primary wide")}`, { cls: "assistant-review-card" })
+        : card("", toggle("playable", "Сцена в игре", state.playable, "gamepad"))}
       ${card("Игрок едет", `${chips("maneuver", ["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: k !== "straight" && !routes.includes(k) && !(s.layout) })), q.maneuver, { cls: "arrows" })}
-        ${lanes.length > 1 ? `<div class="sub-h">Полоса</div>${chips("lane", laneItems, curLane, { cls: "tiles" })}` : ""}
-        <div class="sub-h">Знак скорости</div>${chips("speed", [{ value: "", title: "Нет" }, ...[20, 40, 60].map((v) => ({ value: v, html: `<span class="speed-sign">${v}</span>` }))], q.speedLimit ?? "", { cls: "signs" })}
+        ${lanes.length > 1 ? `<div class="sub-h">Полоса</div>${chips("lane", laneItems, curLane, { cls: "tiles" })}` : ""}`, { icon: "flag" })}
+      ${card("Камера вопроса", button("frame", "Настроить кадр", "video", "ghost wide"), {aside: `<small>${s.questionView ? "Свой кадр" : "Авто"}</small>`})}
+      ${fold("scene-driving","Условия проезда","car", `<div class="sub-h">Знак скорости</div>${chips("speed", [{ value: "", title: "Нет" }, ...[20, 40, 60].map((v) => ({ value: v, html: `<span class="speed-sign">${v}</span>` }))], q.speedLimit ?? "", { cls: "signs" })}
         ${s.lights.some(light=>light.state === "flashing_green") ? `<p class="selection-status">После ответа: жёлтый → красный.</p>` : `<div class="sub-h">Ждать на красном</div>${chips("redWait", [{ value: "", title: "Нет" }, { value: 2, title: "2 с" }, { value: 5, title: "5 с" }], q.redWait ?? "")}`}
-        ${s.actors.length ? `<div class="sub-h">Уступить дорогу</div><div class="picks">${yields}</div>` : ""}`, { icon: "flag" })}
-      ${playerGuideCard(q)}
-      ${card("Дороги", s.layout
+        ${s.actors.length ? `<div class="sub-h">Уступить дорогу</div><div class="picks">${yields}</div>` : ""}`)}
+      ${fold("scene-guide", "Стрелка игрока", "route", playerGuideCard(q), q.showPlayerGuide === false ? "Скрыта" : "Видна")}
+      ${fold("scene-roads", "Дороги и стыки", "road", card("Дороги", s.layout
         ? `${button("select-roads", "Выбрать все дороги", "road", "ghost wide")}${button("templates", "Готовые перекрёстки", "junction", "ghost wide")}`
-        : `<p class="muted">Дороги сняты с картинки билета. В конструкторе их можно двигать и менять как в SimCity.</p>${button("convert", "Перевести в конструктор", "magic", "primary wide")}`, { icon: "road" })}
-      ${card("Камера вопроса", `<p class="selection-status">${s.questionView ? "Свой кадр" : "Автоматический кадр"}</p>${button("frame", "Настроить кадр", "video", "primary wide")}`, { icon: "video" })}
-      ${card("Края сцены", `<div class="edges"><span class="edge-box"><i class="e-n ${side("n")}"></i><i class="e-s ${side("s")}"></i><i class="e-e ${side("e")}"></i><i class="e-w ${side("w")}"></i>${ic("car")}</span>
-        <p class="${edgeMismatch ? "warn" : "muted"}">${edgeMismatch ? "Проверьте ширину дороги у края сцены." : "Стыковка учитывает фактическое направление дороги, число полос, ширину и разделитель. Центрировать косые выезды не требуется."}</p></div>`, { icon: "edges" })}
+        : button("convert", "Перевести в конструктор", "road", "ghost wide"))
+        + card("Края сцены", `<div class="edges"><span class="edge-box"><i class="e-n ${side("n")}"></i><i class="e-s ${side("s")}"></i><i class="e-e ${side("e")}"></i><i class="e-w ${side("w")}"></i>${ic("car")}</span>
+        <span class="${edgeMismatch ? "warn" : "selection-status"}">${edgeMismatch ? "Проверьте ширину дороги у края" : "Выездов: " + Object.values(edges).filter(Boolean).length}</span></div>`), s.layout ? "Конструктор" : "Контуры")}
       <section class="card" id="checks"><h3>${ic(errors.length ? "error" : "check-circle")}Проверка${errors.length + warns.length ? `<em class="count ${errors.length ? "bad" : "warn"}">${errors.length + warns.length}</em>` : ""}</h3>
         ${state.findings.length ? state.findings.map((f, i) => `<button class="finding ${f.level}" data-act="finding" data-i="${i}">${ic(f.level === "error" ? "error" : "alert")}<span>${esc(f.message)}</span></button>`).join("")
-          : `<p class="ok-line">${ic("check-circle")}Ошибок нет</p>`}</section>
+          : `<p class="ok-line">${ic("check-circle")}Ошибок нет</p>`}
+        <div class="insp-actions">${button("run","Тест в игре","play","ghost")}${button("run-auto","Автопилот","car","ghost")}</div></section>
       `;
     compactHelp(p);
     Thumbs.fillAll(p);
@@ -212,7 +242,6 @@
       ...playerGuideHandlers,
       run: () => App.runInGame(false),
       "run-auto": () => App.runInGame(true),
-      correct: (d) => App.edit((sc) => { sc.question.correct = Number(d.i); }),
       "chip:maneuver": (v) => App.edit((sc) => { sc.question.maneuver = v; sc.spec = { ...(sc.spec || {}), maneuver: v }; }),
       "chip:lane": (v) => App.edit((sc) => {
         const pl = Layout.playerPlan(sc);
@@ -382,10 +411,10 @@
     const group = Catalog.groupOf(d.prop);
     const variants = [...state.catalog.props.map((x) => x.id), "parked"].filter((x) => group.match(x));
     p.innerHTML = `${head(Thumbs.img("prop", d.prop, "big"), Catalog.propName(d.prop), group.title)}
-      ${variants.length > 1 ? card("Заменить на", `<div class="variant-grid">${variants.map((v) => `<button class="variant ${v === d.prop ? "on" : ""}" data-chip="prop" data-value="${v}" data-tip="${esc(Catalog.propName(v))}">${Thumbs.img("prop", v)}</button>`).join("")}</div>`) : ""}
+      ${variants.length > 1 ? fold("decor-model", "Заменить модель", "shapes", `<div class="variant-grid">${variants.map((v) => `<button class="variant ${v === d.prop ? "on" : ""}" data-chip="prop" data-value="${v}" aria-label="${esc(Catalog.propName(v))}" aria-pressed="${v === d.prop}" data-tip="${esc(Catalog.propName(v))}">${Thumbs.img("prop", v)}</button>`).join("")}</div>`) : ""}
       ${card("Цвет", tints(d.prop, d.tint || null))}
       ${card("Размер и поворот", `${slider("scale", "Масштаб", d.scale[0], 0.5, 2, 0.05, `×${d.scale[0].toFixed(2)}`)}
-        <div class="turn-row">${dial(d.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div></div>`)}
+        <div class="turn-row">${dial(d.yaw)}<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rot90", "90°", "", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div></div>`)}
       ${card("", deleteRow())}`;
     bind({
       ...common,
@@ -449,18 +478,12 @@
     const types = Catalog.ACTOR_ORDER.filter((t) => state.catalog.actorTypes[t]);
     const moving = !(a.behaviour || {}).staysPut;
     const picture=a.type==='motorcycle'&&typeof a.sidecar==='boolean'?Thumbs.img('motorcycle',a.sidecar?'sidecar':'solo','big'):Thumbs.img('actor',a.type,'big');
-    p.innerHTML = `${head(picture, a.name || Catalog.ACTORS[a.type]?.name, Catalog.ACTORS[a.type]?.name)}
-      ${card("Кто это", `<div class="variant-grid">${types.map((t) => `<button class="variant ${t === a.type ? "on" : ""}" data-chip="type" data-value="${t}" data-tip="${esc(Catalog.ACTORS[t].name)}">${Thumbs.img("actor", t)}</button>`).join("")}</div>
-        <input class="name-input" type="text" data-text="name" value="${esc(a.name || "")}" placeholder="Подпись над ним в игре">`)}
+    p.innerHTML = `${head(picture, a.name || Catalog.ACTORS[a.type]?.name, a.name && a.name !== Catalog.ACTORS[a.type]?.name ? Catalog.ACTORS[a.type]?.name : "Участник движения")}
       ${a.type === "tram" && (s.tracks || []).length ? tramCard(s, a) : ""}
       ${a.type === 'pedestrian' ? card('Поза',chips('pedestrian-pose',ActorAppearance.poses.map(([value,title])=>({value,title})),a.pedestrianPose || 'stand')
         + (a.pedestrianPose && a.pedestrianPose!=='stand'?`<div class="sub-h">Какой рукой</div>${chips('pose-arm',[{value:'right',title:'Правой'},{value:'left',title:'Левой'}],a.poseArm || 'right')}`:'')) : ''}
       ${a.type === 'motorcycle' ? card('Мотоцикл',chips('sidecar',[{value:'no',title:'Без коляски',html:Thumbs.img('motorcycle','solo')},{value:'yes',title:'С коляской',html:Thumbs.img('motorcycle','sidecar')}],ActorAppearance.sidecar(a,state.catalog)?'yes':'no',{cls:'tiles sidecar-options'})) : ''}
       ${a.type !== "pedestrian" && a.type !== "special" ? card("Цвет", `<div class="swatches">${PAINTS.map((c) => `<button class="sw ${(a.paint || null) === c ? "on" : ""}" data-chip="paint" data-value="${c || ""}" aria-label="${c ? `Цвет ${c}` : "Цвет модели"}" aria-pressed="${(a.paint || null) === c}" style="--c:${c || "transparent"}" data-tip="${c ? "" : "Как у модели"}">${c ? "" : ic("x")}</button>`).join("")}</div>`) : ""}
-      ${ActorSignals.supports(a.type) ? card("Сигналы", `<label class="route-field">Поворотник<select data-text="turnSignal">${[["auto","Автоматически"],["left","Левый"],["right","Правый"],["off","Выключен"]].map(([value,title]) => `<option value="${value}" ${ActorSignals.mode(a) === value ? "selected" : ""}>${title}</option>`).join("")}</select></label>`
-        + toggle("hazards", "Аварийная сигнализация", ActorSignals.hazards(a), "alert")
-        + `<p class="muted">Автоматически — по выбранному манёвру или пути. Ручной поворотник не меняет маршрут. Аварийка включает обе стороны. Для неподвижной машины выберите «Стоит» в разделе «Куда едет».</p>`) : ""}
-      ${DriverSignal.supports(a.type) ? card('Рука водителя',chips('driver-signal',DriverSignal.poses.map(([value,title])=>({value,title})),a.driverSignal || 'none')+'<p class="muted">Рука из левого окна. В игре водитель убирает её после ответа на вопрос.</p>') : ''}
       ${a.track ? card("Куда едет", `${chips("move", [{ value: "stay", title: "Стоит", icon: "parked" }, { value: "go", title: "Едет по пути", icon: "route" }], moving ? "go" : "stay")}
         ${route ? button("to-route", "Выбрать траекторию пути", "route", "ghost wide") : ""}`) : card("Куда едет", lane
         ? `${chips("way", [{ value: "stay", icon: "parked", tip: "Стоит" }, ...["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !ways.includes(k) }))], moving ? (a.way || "straight") : "stay", { cls: "arrows" })}${button("reverse", "Ехать в другую сторону", "rotr", "ghost wide")}
@@ -468,11 +491,16 @@
         : `${chips("move", [{ value: "stay", title: "Стоит", icon: "parked" }, { value: "go", title: "Едет по пути", icon: "route" }], moving ? "go" : "stay")}
            ${moving && route ? button("to-route", "Выбрать траекторию пути", "route", "ghost wide") : ""}
            ${(a.type === "pedestrian" || a.type === "cyclist") && Layout.zebraPath(s, a.pos) ? button("zebra-path", "Идти по пешеходному переходу", "zebra", "primary wide") : ""}`)}
-      ${!a.track ? card('Свой путь',button('draw-path',route?.manual?'Перерисовать свой путь':'Нарисовать свой путь / перестроение','route','ghost wide')+'<p class="muted">Нарисуйте переход между полосами. Поворотник выберите отдельно в разделе «Сигналы».</p>') : ''}
       ${moving ? card("Скорость", chips("speed", Catalog.SPEEDS.map((x) => ({ value: x.id, title: x.title })), Catalog.speedOf(a.maxSpeed || 10).id)
         + toggle("waits", "Пропускает игрока", (a.behaviour || {}).waitsForPlayer, "flag")) : ""}
       ${card("", toggle("yield", "Игрок должен уступить ему", (s.question.yieldTo || []).includes(a.id), "alert"))}
-      ${card("", `<div class="turn-row">${dial(a.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
+      ${fold("actor-model", "Модель и подпись", "shapes", `<div class="variant-grid">${types.map((t) => `<button class="variant ${t === a.type ? "on" : ""}" data-chip="type" data-value="${t}" aria-label="${esc(Catalog.ACTORS[t].name)}" aria-pressed="${t === a.type}" data-tip="${esc(Catalog.ACTORS[t].name)}">${Thumbs.img("actor", t)}</button>`).join("")}</div>
+        <input class="name-input" type="text" data-text="name" value="${esc(a.name || "")}" aria-label="Подпись в игре" placeholder="Подпись в игре">`)}
+      ${ActorSignals.supports(a.type) ? fold("actor-signals", "Сигналы", "light", `<label class="route-field">Поворотник<select data-text="turnSignal">${[["auto","Автоматически"],["left","Левый"],["right","Правый"],["off","Выключен"]].map(([value,title]) => `<option value="${value}" ${ActorSignals.mode(a) === value ? "selected" : ""}>${title}</option>`).join("")}</select></label>`
+        + toggle("hazards", "Аварийная сигнализация", ActorSignals.hazards(a), "alert")
+        + (DriverSignal.supports(a.type) ? card('Рука водителя',chips('driver-signal',DriverSignal.poses.map(([value,title])=>({value,title})),a.driverSignal || 'none')+'<p class="muted">Рука из левого окна. В игре водитель убирает её после ответа на вопрос.</p>') : '')) : ""}
+      ${!a.track ? card('Свой путь',button('draw-path',route?.manual?'Перерисовать свой путь':'Нарисовать свой путь / перестроение','route','ghost wide')+'<p class="muted">Нарисуйте переход между полосами. Поворотник выберите отдельно в разделе «Сигналы».</p>') : ''}
+      ${card("", `<div class="turn-row">${dial(a.yaw)}<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div></div>${deleteRow()}`)}`;
     bind({
       ...common,
       "chip:paint": (v) => App.edit(() => { if (v) a.paint = v; else delete a.paint; }),
@@ -580,9 +608,9 @@
     const faceTabs = SignMount.faces(o).map((f, i) => `<button class="btn ${slot === i ? "primary" : "ghost"}" data-chip="face" data-value="${i}">${picture(f, 32)}<span>${i ? "Нижний знак" : "Верхний знак"}</span></button>`).join("");
     const laneControls = lanes.map((directions, i) => `<div class="sub-h">Полоса ${i + 1}</div><div class="seg-chips">${[["left", "←", "Налево"], ["straight", "↑", "Прямо"], ["right", "→", "Направо"]].map(([direction, arrow, title]) => `<button class="${directions.includes(direction) ? "on" : ""}" data-chip="laneDirection" data-lane="${i}" data-value="${direction}" data-tip="${title}"><span>${arrow} ${title}</span></button>`).join("")}</div>`).join("");
     p.innerHTML = `${head(picture(face), custom ? "Направления по полосам" : Catalog.signName(face.code), o.secondSign ? (slot ? "нижний знак на общей стойке" : "верхний знак на общей стойке") : `знак ${face.code}`)}
-      ${card("На одной стойке", `<div class="insp-actions">${faceTabs}</div>${o.secondSign ? `<div class="insp-actions">${button("swap-signs", "Поменять местами", "rotr", "ghost")}${button("remove-second-sign", "Убрать нижний", "trash", "danger ghost")}</div>` : button("add-second-sign", "Добавить второй знак", "plus", "ghost wide")}`)}
+      ${card("Знаки на стойке", `<div class="insp-actions">${faceTabs}</div>${o.secondSign ? `<div class="insp-actions">${button("swap-signs", "Поменять местами", "rotr", "ghost")}${button("remove-second-sign", "Убрать нижний", "trash", "danger ghost")}</div>` : button("add-second-sign", "Добавить второй знак", "plus", "ghost wide")}`)}
       ${!custom && SignMount.numeric(face.code) ? card("Число на знаке", `<label class="route-field">Значение, ${esc(SignMount.numberSpec(face.code).unit)}<input type="text" inputmode="decimal" data-text="signNumber" aria-label="Число на знаке" value="${esc(face.number ?? SignMount.numberSpec(face.code).default)}"></label>`) : ""}
-      ${card("Щит", `${chips("signMode", [{value:"standard",title:"Готовый знак"},{value:"lanes",title:"Конструктор полос"}], custom ? "lanes" : "standard")}
+      ${fold("sign-face", "Выбрать щит", "shapes", `${chips("signMode", [{value:"standard",title:"Готовый знак"},{value:"lanes",title:"Конструктор полос"}], custom ? "lanes" : "standard")}
         ${custom ? `<div style="margin:12px auto;max-width:240px">${lanePicture(lanes)}</div><div class="sub-h">Число полос</div>${chips("laneCount", [1,2,3,4,5,6].map(n => ({value:n,title:String(n)})), lanes.length)}${laneControls}<p class="muted">Полосы идут слева направо при взгляде на знак. На каждой можно включить несколько направлений.</p>` : `<input type="search" data-sign-search aria-label="Найти знак по номеру или названию" placeholder="Номер или название знака" value="${esc(signSearch)}"><div class="sign-grid">${codes.map((c) => { const name = `${c} · ${Catalog.signName(c)}`; return `<button class="${c === face.code ? "on" : ""}" data-chip="code" data-value="${c}" data-sign-option="${esc(name)}" aria-label="${esc(name)}" data-tip="${esc(name)}" ${!name.toLowerCase().includes(signSearch.trim().toLowerCase()) ? "hidden" : ""}><img src="/asset/sign/${c==='5.33'?'5.33_plain':c}.svg" alt="" loading="lazy"></button>`; }).join("")}</div>`}`)}
 
       ${face.code==='5.33'?card('Уточнение на щите',chips('zone-variant',[{value:'plain',title:'Без звёздочки'},{value:'weekends',title:'Выходные и праздники'}],face.zoneVariant || 'weekends')):''}
@@ -591,10 +619,10 @@
           ${chips("armSide", [{value:"left",title:"Влево от опоры"},{value:"right",title:"Вправо от опоры"}], o.armSide || "left")}
           ${slider("clearance", "Высота нижнего края", o.clearance ?? 5.5, 5, 8, 0.25, `${o.clearance ?? 5.5} м`)}
           <p class="muted">Поставьте опору на обочине. Вылет перемещает щит над дорогой; сторону выбирайте, глядя на лицевую сторону знака.</p>` : ""}`)}
-      ${card("Табличка 8.13: главная дорога", `${dirChips("main", main)}
+      ${fold("sign-main", "Главная дорога · 8.13", "junction", `${dirChips("main", main)}
         ${main.length ? `<div class="sub-h">Все дороги перекрёстка</div>${dirChips("roads", roads)}` : `<p class="muted">Отметьте два направления главной дороги — под выбранным знаком появится табличка.</p>`}`)}
-      ${card("Надпись под выбранным знаком", `<input type="text" data-text="plate" value="${esc(face.plate || "")}" placeholder="Например: 150 м">`)}
-      ${card("", `<div class="turn-row">${dial(o.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
+      ${fold("sign-plate-text", "Надпись под знаком", "flag", `<input type="text" aria-label="Надпись под знаком" data-text="plate" value="${esc(face.plate || "")}" placeholder="Например: 150 м">`)}
+      ${card("", `<div class="turn-row">${dial(o.yaw)}<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rot90", "90°", "", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div></div>${deleteRow()}`)}`;
     bind({
       ...common,
       "chip:face": (v) => { signFaceSelection.set(o.id, Number(v)); App.renderInspector(); },
@@ -644,13 +672,13 @@
   function officerInspector(p, ref, o) {
     if (state.id === "mini_regulator") {
       p.innerHTML = `${head(`<span class="ibadge">${ic("person")}</span>`, "Регулировщик", "положение в мини-игре")}
-        ${card("Положение", `<label>X, м<input type="number" step="0.1" data-text="officerX" value="${o.pos[0]}"></label><label>Z, м<input type="number" step="0.1" data-text="officerZ" value="${o.pos[1]}"></label><p>Тяните регулировщика по сцене или задайте координаты. Жест и направление груди в каждом вопросе выбирает мини-игра.</p>`)}`;
+        ${card("Положение", `<label>X, м<input type="number" step="0.1" data-text="officerX" value="${o.pos[0]}"></label><label>Z, м<input type="number" step="0.1" data-text="officerZ" value="${o.pos[1]}"></label>`)}`;
       bind(Object.fromEntries(["officerX","officerZ"].map((key,i) => [`text:${key}`, v => App.edit(() => { if (Number.isFinite(Number(v))) o.pos[i] = Number(v); })])));
       return;
     }
     p.innerHTML = `${head(`<span class="ibadge">${ic("person")}</span>`, "Регулировщик", GESTURES.find((g) => g.value === o.gesture)?.title || "")}
       ${card("Сигнал", `<div class="gestures">${GESTURES.map((g) => `<button class="gesture ${o.gesture === g.value ? "on" : ""}" data-chip="gesture" data-value="${g.value}">${gesturePic(g.value)}<span>${g.title}</span></button>`).join("")}</div>`)}
-      ${card("Куда смотрит грудью", `<div class="turn-row">${dial(o.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
+      ${card("Куда смотрит грудью", `<div class="turn-row">${dial(o.yaw)}<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rot90", "90°", "", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div></div>${deleteRow()}`)}`;
     bind({
       ...common,
       "chip:gesture": (v) => App.edit(() => { o.gesture = v; }),
@@ -661,7 +689,7 @@
   // The signal as a small figure: the arms as the officer holds them.
   function gesturePic(g) {
     const arms = { sides: "M8 16 H40", forward: "M8 16 L14 26 M40 16 L32 14", up: "M8 16 L14 26 M40 16 L40 2", down: "M8 16 L10 28 M40 16 L38 28" }[g];
-    return `<svg viewBox="0 0 48 44" width="48" height="44"><circle cx="24" cy="7" r="4" fill="#1f2a44"/><path d="M24 12 V30 M24 30 L19 42 M24 30 L29 42 M14 16 H34" stroke="#1f2a44" stroke-width="4" stroke-linecap="round" fill="none"/><path d="${arms}" stroke="#1f2a44" stroke-width="4" stroke-linecap="round" fill="none"/></svg>`;
+    return `<svg viewBox="0 0 48 44" width="48" height="44"><circle cx="24" cy="7" r="4" fill="currentColor"/><path d="M24 12 V30 M24 30 L19 42 M24 30 L29 42 M14 16 H34" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/><path d="${arms}" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/></svg>`;
   }
 
   // ---- a traffic light -------------------------------------------------------------------------
@@ -681,11 +709,11 @@
 
     p.innerHTML = `${head(Thumbs.img("light", isTram ? "light_tram" : "light", "big"), isTram ? "Светофор с трамвайной секцией" : "Светофор", s.lights.length > 1 ? `один из ${s.lights.length}` : "")}
       ${card("Сигнал", `<div class="signal-picker">${lamps}</div><p class="selection-status">Один сигнал для всех светофоров сцены.</p>${l.state === "flashing_green" ? `<div class="signal-after-answer"><b>После ответа</b><span><i class="signal-dot yellow"></i>Жёлтый · 3 с ${ic("arrow-right")}<i class="signal-dot red"></i>Красный</span><small>До ответа зелёный продолжает мигать.</small></div>` : ""}`)}
-      ${card("Знаки на стойке", `${[0, 1].map(slot => { const code = (l.mountedSigns || [])[slot]; return `<details><summary>${slot + 1}. ${code ? `${esc(Catalog.signName(code))} · ${code}` : "Добавить знак"}</summary><div class="sign-grid"><button class="${!code ? "on" : ""}" data-chip="mountedSign" data-slot="${slot}" data-value="">Нет</button>${[...new Set(["2.4", "8.13", ...(state.catalog.signs || [])])].map(c => `<button class="${code === c ? "on" : ""}" data-chip="mountedSign" data-slot="${slot}" data-value="${c}" data-tip="${esc(Catalog.signName(c))}"><img src="/asset/sign/${c}.svg" alt="${esc(Catalog.signName(c))}"></button>`).join("")}</div></details>`; }).join("")}`)}
+      ${card("Знаки на стойке", `${[0, 1].map(slot => { const code = (l.mountedSigns || [])[slot]; return `<details data-fold="light-sign-${slot}" ${openGroups.get("light-sign-" + slot) ? "open" : ""}><summary>${slot + 1}. ${code ? `${esc(Catalog.signName(code))} · ${code}` : "Добавить знак"}</summary><div class="sign-grid"><button class="${!code ? "on" : ""}" data-chip="mountedSign" data-slot="${slot}" data-value="">Нет</button>${[...new Set(["2.4", "8.13", ...(state.catalog.signs || [])])].map(c => `<button class="${code === c ? "on" : ""}" data-chip="mountedSign" data-slot="${slot}" data-value="${c}" data-tip="${esc(Catalog.signName(c))}"><img loading="lazy" src="/asset/sign/${c}.svg" alt="${esc(Catalog.signName(c))}"></button>`).join("")}</div></details>`; }).join("")}`)}
             ${(l.mountedSigns || []).includes("8.13") ? card("Главная дорога на табличке", `<div class="dir-grid">${[["nw","↖"],["north","↑"],["ne","↗"],["west","←"],["east","→"],["sw","↙"],["south","↓"],["se","↘"]].map(([d,t]) => `<button class="${(l.mountedMainRoad || []).includes(d) ? "on" : ""}" data-chip="mountedMainRoad" data-value="${d}">${t}</button>`).join("")}</div>`) : ""}
-      ${card("Верхняя секция (Т.5)", `${tramChips}<p class="muted">Бело-лунный сигнал для трамваев и маршрутных ТС.</p>`)}
+      ${fold("light-tram", "Верхняя секция (Т.5)", "rails", `${tramChips}<p class="muted">Бело-лунный сигнал для трамваев и маршрутных ТС.</p>`)}
       ${!isTram ? card("Стрелка", chips("arrow", [{ value: "", title: "Нет" }, { value: "left", icon: "arrow-left" }, { value: "straight", icon: "arrow-up" }, { value: "right", icon: "arrow-right" }], l.arrow || "", { cls: "arrows" })) : ""}
-      ${card("", `<div class="turn-row">${dial(l.yaw)}<div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rotr", "", "rotr", "ghost icon")}</div></div>${deleteRow()}`)}`;
+      ${card("", `<div class="turn-row">${dial(l.yaw)}<div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div></div>${deleteRow()}`)}`;
     bind({
       ...common,
       "chip:mountedMainRoad": (v) => App.edit(() => { const roads = new Set(l.mountedMainRoad || []); roads.has(v) ? roads.delete(v) : roads.add(v); l.mountedMainRoad = [...roads]; }),
@@ -937,7 +965,7 @@
       const points = playerRoutePointTools(ref, r);
       p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, "Синяя стрелка игрока", "подсказка в вопросе")}
         ${playerGuideCard(s.question)}
-        ${s.question?.showPlayerGuide === false ? "" : points.html + card("Редактирование", "<p>Тяните точки на виде или задайте координаты. Двойной клик добавляет точку. Стрелка задаётся отдельно от маршрута движения машины.</p>")}`;
+        ${s.question?.showPlayerGuide === false ? "" : points.html}`;
       bind({...points.handlers, ...playerGuideHandlers});
       return;
     }
@@ -946,7 +974,7 @@
       const points = playerRoutePointTools(ref, r);
       const manual = !!r.manual || !r.auto;
       p.innerHTML = `${head(`<span class="ibadge">${ic("route")}</span>`, "Подъезд игрока", manual ? "ручной путь" : "строится сам")}
-        ${card("До начала вопроса", `<p>Зелёная линия показывает, как игрок подъезжает к месту вопроса. После ответа он едет по линии выбранного манёвра.</p>
+        ${card("До начала вопроса", `
           ${manual ? `<p class="muted">Тяните точки или задавайте координаты справа. Двойной клик по линии добавляет точку.${s.layout ? " Начало закреплено у въезда, конец — у машины игрока." : ""}</p>${s.layout ? button("auto-path", "Снова строить по дорогам", "restart", "ghost wide") : ""}`
             : `<p class="muted">Путь пересчитывается при перемещении игрока.</p>${button("own-path", "Править путь вручную", "points", "ghost wide")}${button("auto-path", "Пересчитать подъезд", "restart", "ghost wide")}`}`)}${points.html}`;
       bind({
@@ -1003,7 +1031,7 @@
         ${card("Вид ответа", chips("answer-display", [{value:"arrow",title:"Стрелка",html:AnswerMark.picture("answer",r.label)},{value:"line",title:"Линия",html:AnswerMark.picture("line",r.label)},{value:"letter",title:"Буква",html:AnswerMark.picture("letter",r.label)}], letterOnly ? "letter" : r.arrowhead === false ? "line" : "arrow", {cls:"answer-display"}))}
         ${!letterOnly ? card("Без буквы", button("as-annotation", "Убрать букву — сделать обозначением", "measure", "ghost wide")) : ""}
         ${!letterOnly && ways.length ? card("Взять путь", chips("copy", ways.map((w) => ({ value: w.exit, icon: Catalog.EXITS[w.exit].icon, tip: Catalog.EXITS[w.exit].title })), "", { cls: "arrows" })) : ""}
-        ${letterOnly ? card("Положение", `<p>Перетащите кружок в любое место на виде.</p><div class="answer-position"><label>X, м<input type="number" step="0.1" data-text="letterX" value="${r3(r.labelPosition[0])}"></label><label>Z, м<input type="number" step="0.1" data-text="letterZ" value="${r3(r.labelPosition[1])}"></label></div>`) : ""}
+        ${letterOnly ? card("Положение", `<div class="answer-position"><label>X, м<input type="number" step="0.1" data-text="letterX" value="${r3(r.labelPosition[0])}"></label><label>Z, м<input type="number" step="0.1" data-text="letterZ" value="${r3(r.labelPosition[1])}"></label></div>`) : ""}
         ${card("", `${!letterOnly ? `<p class="muted">Тяните точки на виде. Двойной клик по линии — новая точка.</p>${button("mid", "Букву — на середину", "flag", "ghost wide")}` : ''}<div class="insp-actions">${button("del", "Удалить", "trash", "danger ghost")}</div>`)}`;
       bind({
         ...common,
@@ -1206,7 +1234,7 @@
       ${card("Едет", chips("maneuver", ["left", "straight", "right", "uturn"].map((k) => ({ value: k, icon: Catalog.EXITS[k].icon, tip: Catalog.EXITS[k].title, disabled: !routes.includes(k) && k !== "straight" })), q.maneuver, { cls: "arrows" }))}
       ${s.id !== "mini_regulator" ? playerGuideCard(q) : ""}
       ${s.layout ? card("Размещение", chips("playerMode", [{value:"street",title:"По улице"},{value:"free",title:"Свободно"}], free ? "free" : "street")) : ""}
-      ${free ? card("Положение на дороге", `<div class="insp-actions"><label>X, м<input type="number" step="0.1" data-text="playerX" value="${pose.x}" style="width:100%"></label><label>Z, м<input type="number" step="0.1" data-text="playerZ" value="${pose.z}" style="width:100%"></label></div><div class="turn-row">${dial(pose.yaw)}<label>Поворот, °<input type="number" step="1" data-text="playerYaw" value="${r3(pose.yaw * 180 / Math.PI)}" style="width:100%"></label></div><div class="insp-actions">${button("rotl", "", "rotl", "ghost icon")}${button("rot90", "90°", "", "ghost")}${button("rotr", "", "rotr", "ghost icon")}</div>`) : ""}
+      ${free ? card("Положение на дороге", `<div class="insp-actions"><label>X, м<input type="number" step="0.1" data-text="playerX" value="${pose.x}" style="width:100%"></label><label>Z, м<input type="number" step="0.1" data-text="playerZ" value="${pose.z}" style="width:100%"></label></div><div class="turn-row">${dial(pose.yaw)}<label>Поворот, °<input type="number" step="1" data-text="playerYaw" value="${r3(pose.yaw * 180 / Math.PI)}" style="width:100%"></label></div><div class="insp-actions">${button("rotl", "−15°", "rotl", "ghost")}${button("rot90", "90°", "", "ghost")}${button("rotr", "+15°", "rotr", "ghost")}</div>`) : ""}
       ${lanes.length > 1 ? card("Полоса", chips("lane", laneItems, curLane, { cls: "tiles" })) : ""}
       ${plan && !free ? card("Начало вопроса", slider("questionOffset", "Раньше стоп-линии", Math.max(0, plan.sd - plan.stopLineDistance - 2.4), 0, Math.min(60, Math.max(0, plan.total - plan.stopLineDistance - 3.4)), 0.5, `${Math.max(0, plan.sd - plan.stopLineDistance - 2.4).toFixed(1)} м`) + button("question-at-line", "Вернуть к стоп-линии", "restart", "ghost wide")) : ""}
       ${!s.layout ? card("Полоса", `<div class="insp-actions">${button("shift-left", "Сместить влево (3.5 м)", "arrow-left", "ghost small")}${button("shift-right", "Сместить вправо (3.5 м)", "arrow-right", "ghost small")}</div>`) : ""}

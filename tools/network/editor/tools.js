@@ -1,41 +1,59 @@
 // What the pointer does in the view: the tools of the toolbar (select, hand, road, junctions, markings,
-// lawns, participants, lights, answers, props and the brush), their options and the one-line hint.
+// lawns, participants, lights, answers, props and the brush), their options and the visual construction palette.
 const Tools = (() => {
   const $ = (s) => document.querySelector(s);
   const { esc, ic, r3 } = App;
   const LIST = [
-    { id: "select", key: "V", title: "Выбор", icon: "cursor", hint: "Клик — выбрать, тянуть — двигать. ⇧ — добавить, рамка — выбрать несколько" },
-    { id: "hand", key: "H", title: "Рука", icon: "hand", hint: "Тяните, чтобы двигать вид" },
-    { sep: true },
-    { id: "road", key: "R", title: "Дорога", icon: "road", hint: "Кликайте точки дороги. Пересечения станут перекрёстками. ↵ — готово" },
-    { id: "junction", key: "J", title: "Готовые перекрёстки", icon: "junction", hint: "Выберите перекрёсток — он заменит дороги сцены" },
-    { id: "marking", key: "M", title: "Разметка", icon: "marking", hint: "" },
-    { id: "track", key: "T", title: "Рельсы", icon: "rails", hint: "Кликайте точки рельсов, начало ветки прилипает к путям. ↵ — готово" },
-    { id: "lawn", key: "G", title: "Газон вместо тротуара", icon: "lawn", hint: "Кликайте углы газона, клик в первую точку — готово" },
-    { sep: true },
-    { id: "actor", key: "C", title: "Машины и люди", icon: "car", hint: "Клик — поставить в любом месте. Тяните — задать направление" },
-    { id: "light", key: "L", title: "Светофор", icon: "light", hint: "Клик у перекрёстка — встанет на угол лицом к машинам" },
-    { id: "sign", key: "N", title: "Знак", icon: "flag", hint: "Клик у дороги — знак встанет справа лицом к машинам. Знак выберите слева" },
-    { id: "officer", key: "U", title: "Регулировщик", icon: "person", hint: "Клик — поставить регулировщика. Тяните — куда он смотрит" },
-    { id: "answer", key: "A", title: "Ответы, линии и буквы", icon: "route", hint: "Кликайте точки пути. ↵ — готово" },
-    { sep: true },
-    { id: "prop", key: "O", title: "Объект", icon: "tree", hint: "Клик — поставить, тянуть — повернуть. Выберите объект слева" },
-    { id: "brush", key: "B", title: "Кисть окружения", icon: "brush", hint: "Клик — готовая локация. Ведите — рисовать. ⌥ — стирать окружение" },
+    { id: "select", key: "V", title: "Выбор", icon: "cursor" },
+    { id: "hand", key: "H", title: "Рука", icon: "hand" },
+    { id: "road", key: "R", title: "Дорога", icon: "road" },
+    { id: "junction", key: "J", title: "Готовые перекрёстки", icon: "junction" },
+    { id: "marking", key: "M", title: "Разметка", icon: "marking" },
+    { id: "track", key: "T", title: "Рельсы", icon: "rails" },
+    { id: "lawn", key: "G", title: "Газон вместо тротуара", icon: "lawn" },
+    { id: "actor", key: "C", title: "Машины и люди", icon: "car" },
+    { id: "light", key: "L", title: "Светофор", icon: "light" },
+    { id: "sign", key: "N", title: "Знак", icon: "flag" },
+    { id: "officer", key: "U", title: "Регулировщик", icon: "person" },
+    { id: "answer", key: "A", title: "Ответы, линии и буквы", icon: "route" },
+    { id: "prop", key: "O", title: "Объект", icon: "tree" },
+    { id: "brush", key: "B", title: "Кисть окружения", icon: "brush" },
   ];
   const opts = { sign: "2.4", roadKind: "street", railType: "tram", mark: "dashed", markDirection: "straight", actorType: "car", prop: "trees/round_0", brushMode: "forest", brushScale: 1, brushYaw: 0, brushSpacing: 1, brushVariation: 0, tram: false, answerMode: "answer", answerLetter: null, answerArrowhead: true, annotationStyle: "line" };
-  const SHORT_LABEL = { select: "Выбор", hand: "Рука", road: "Дорога", junction: "Перекрёсток", marking: "Разметка", track: "Рельсы", lawn: "Газон", actor: "Транспорт", light: "Светофор", sign: "Знак", officer: "Регулировщик", answer: "Ответы", prop: "Объект", brush: "Кисть" };
+  const GROUPS = [
+    { title: "Дорога", tools: ["road", "junction", "track"] },
+    { title: "Разметка", tools: ["marking"] },
+    { title: "Транспорт", tools: ["actor", "officer"] },
+    { title: "Знаки", tools: ["sign", "light"] },
+    { title: "Окружение", tools: ["prop", "brush", "lawn"] },
+    { title: "Ответы", tools: ["answer"] },
+  ];
+  const TAB_NAMES = { road: "Улицы", junction: "Перекрёстки", track: "Рельсы", actor: "Участники", officer: "Регулировщик", sign: "Знаки", light: "Светофоры", prop: "Объекты", brush: "Кисть", lawn: "Газон" };
+  const definition = id => LIST.find(t => t.id === id);
+  const groupOf = id => GROUPS.find(g => g.tools.includes(id));
   let tool = "select", drag = null, draft = null, placeYaw = null, hoverRef = null, lastWorld = null, pointerInView = false;
+  let shelfOpen = true;
+  const lastGroupTool = new Map();
 
   const S = () => App.state.S;
   const allowed = id => S()?.id !== "mini_regulator" || !["actor","light","sign","track","answer","annotation","officer"].includes(id);
   const snapGrid = (v, e) => (e && e.alt ? v : Math.round(v * 2) / 2);   // half a metre: neat, and ⌥ for free
 
-  // ---- the toolbar -----------------------------------------------------------------------
+  // Only the category row stays on the map. Each category remembers its last tool.
   function renderBar() {
-    $("#toolbar").innerHTML = LIST.filter(t => allowed(t.id)).map((t) => t.sep ? `<span class="tsep"></span>` :
-      `<button data-tool="${t.id}" class="${t.id === tool ? "on" : ""}" data-tip="${esc(t.title)}  ${t.key}" aria-label="${esc(t.title)} (${t.key})" aria-pressed="${t.id === tool}">${ic(t.icon)}<span class="tool-label">${SHORT_LABEL[t.id] || t.title}</span></button>`).join("");
+    if (draft?.owner && draft.owner !== S()) finishDraft(true);
+    const bar = $("#toolbar"), focused = document.activeElement?.dataset?.tool;
+    const nav = (id, label, group) => {
+      const t = definition(id), active = group ? group.tools.includes(tool) : tool === id;
+      const target = group && lastGroupTool.get(group);
+      return `<button data-tool="${target && allowed(target) ? target : id}" class="${active ? "on" : ""} ${group ? "dock-category" : "dock-pointer"}" aria-pressed="${active}"
+        aria-label="${esc(t.title)} (${t.key})" title="${esc(group?.title || t.title)} · ${t.key}" ${group ? `aria-controls="popover" aria-expanded="${active && shelfOpen}"` : ""}>${ic(t.icon)}${group ? `<span class="tool-label">${label}</span>` : ""}</button>`;
+    };
+    bar.innerHTML = nav("select") + nav("hand") + '<span class="tsep"></span>' +
+      GROUPS.filter(g => allowed(g.tools[0])).map(g => nav(g.tools[0], g.title, g)).join("");
+    if (focused) bar.querySelector(`[data-tool="${focused}"]`)?.focus({preventScroll: true});
     renderPopover();
-    renderHint();
+    App.updateWorkspaceStatus?.();
     if (tool === "answer" && opts.answerMode === "letter" && !opts.pathFor && !opts.answerRoute) {
       if (pointerInView && lastWorld) answer.move({world:lastWorld});
       else Scene3D.setDraft(null);
@@ -45,71 +63,124 @@ const Tools = (() => {
   function set(id, { keepLibrary = false } = {}) {
     if (id === "annotation") { opts.answerMode = "annotation"; id = "answer"; }
     if (!allowed(id)) return App.toast("В мини-игре редактируются дороги, разметка и окружение");
-    if (!LIST.find((t) => t.id === id)) return;
+    if (!definition(id)) return;
     if (drag?.kind === "brush") { App.endDrag({ rebuild: false }); drag = null; }
     finishDraft(true);
     tool = id;
+    shelfOpen = true;
+    if (groupOf(tool)) lastGroupTool.set(groupOf(tool), tool);
     opts.pathFor = null;
     opts.answerRoute = null;
     placeYaw = null;
     Scene3D.setGhost(null);
     Scene3D.setBrushPreview?.(null);
+    $("#view").dataset.tool = id;
+    $("#view").style.cursor = "";
     Scene3D.setPanTool(id === "hand");
     Scene3D.setPlanHandles(["select", "road"].includes(id));
     const libraryCategory = { prop: "decor", brush: "decor", actor: "traffic", officer: "traffic", light: "traffic", sign: "signs" }[id];
     if (libraryCategory && !keepLibrary) {
-      if (App.setLibraryCategory) App.setLibraryCategory(libraryCategory);
+      if (App.setLibraryCategory) App.setLibraryCategory(libraryCategory, {open: false});
       else if (App.state.ltab !== "library") App.setLeftTab?.("library");
     }
     renderBar();
   }
   const current = () => tool;
 
-  // Options of a tool, above the toolbar: pictures, not words.
-  function renderPopover() {
-    const pop = $("#popover");
-    let html = "";
-    if (tool === "road") {
-      html = Object.entries(Layout.KINDS).map(([k, v]) => `<button class="pchip ${opts.roadKind === k ? "on" : ""}" data-road="${k}">
-        <span class="road-pic k-${k}"></span><span>${v.title}</span></button>`).join("");
-    } else if (tool === "track") {
-      html = [["tram", "Трамвайные"], ["railway", "Железнодорожные"]].map(([key, title]) => `<button class="pchip ${opts.railType === key ? "on" : ""}" data-rail-type="${key}" aria-pressed="${opts.railType === key}">${ic("rails")}<span>${title}</span></button>`).join("");
-    } else if (tool === "junction") {
-      html = Layout.TEMPLATES.map((t) => `<button class="ptile" data-tpl="${t.id}">${Layout.svg(Layout.template(t.id), 90, 64)}<span>${esc(t.title)}</span></button>`).join("");
-    } else if (tool === "marking") {
-      html = Object.entries(Catalog.MARKS).map(([k, v]) => `<button class="pchip ${opts.mark === k ? "on" : ""}" data-mark="${k}">${k === "bus_stop" ? BusStopMark.svg() : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`}<span>${v.title}</span></button>`).join("");
-      if (opts.mark === "arrow") html += `<div class="direction-mark-options">${DirectionMark.variants.map(([key, title]) => `<button class="pchip ${opts.markDirection === key ? "on" : ""}" data-mark-direction="${key}" aria-label="${title}">${DirectionMark.svg(key)}<span>${title}</span></button>`).join("")}</div>`;
-    } else if (tool === "answer" && !opts.pathFor && !opts.answerRoute) {
-      html = renderAnswerOptions();
-    } else if (tool === "actor") {
-      const types = Catalog.ACTOR_ORDER.filter((t) => App.state.catalog?.actorTypes[t]);
-      html = types.map((t) => `<button class="ptile small ${opts.actorType === t ? "on" : ""}" data-actor="${t}">${Thumbs.img("actor", t)}<span>${Catalog.ACTORS[t].name}</span></button>`).join("");
-    } else if (tool === "brush") {
-      html = renderBrushOptions();
-    } else if (tool === "prop") {
-      html = `<button class="ptile wide on">${Thumbs.img("prop", opts.prop)}<span>${esc(Catalog.propName(opts.prop))}</span></button>`;
-    } else if (tool === "light") {
-      html = `<button class="pchip ${!opts.tram ? "on" : ""}" data-light-type="std">
-        <span class="lib-icon">${ic("light")}</span><span>Обычный</span></button>
-        <button class="pchip ${opts.tram ? "on" : ""}" data-light-type="tram">
-        <span class="lib-icon">${ic("light")}</span><span>С трамвайной секцией</span></button>`;
+  function tile(key, value, label, picture, selected = false, title = label) {
+    return `<button class="asset-tile ${selected ? "on" : ""}" data-${key}="${esc(value)}" aria-label="${esc(title)}"
+      aria-pressed="${selected}" title="${esc(title)}"><span class="asset-picture">${picture}</span><span class="asset-name">${esc(label)}</span></button>`;
+  }
+
+  // Axonometric cross sections follow the actual lane count and carriageway width.
+  function roadPicture(kind) {
+    const { width, lanes } = Layout.KINDS[kind], half = width * .96;
+    const stripe = (y, dash = "") => `<path d="M0 ${y}h62" stroke="#f0f0e8" stroke-width="1" stroke-dasharray="${dash || "none"}"/>`;
+    let lines = "";
+    if (kind !== "yard") {
+      lines = stripe(0, kind === "street" ? "6 4" : "");
+      for (let i = 1; i < lanes.length; i++) lines += stripe(half * i / lanes.length, "5 4") + stripe(-half * i / lanes.length, "5 4");
     }
-    pop.innerHTML = html;
-    pop.classList.toggle("grid", tool === "junction");
-    pop.classList.toggle("answer-popover", tool === "answer" && !opts.pathFor && !opts.answerRoute);
-    pop.classList.toggle("brush-popover", tool === "brush");
-    pop.classList.toggle("direction-mark-popover", tool === "marking" && opts.mark === "arrow");
-    pop.hidden = !html || !S();
-    pop.querySelectorAll("img[data-thumb]").forEach((img) => Thumbs.fill(img));
+    return `<svg viewBox="0 0 88 52" aria-hidden="true"><g transform="matrix(.88 -.34 .68 .48 17 36)">
+      <rect x="0" y="${-half - 4}" width="62" height="${2 * half + 8}" fill="#abb8a5"/>
+      <rect x="0" y="${-half - 2}" width="62" height="${2 * half + 4}" fill="#c1c6bb"/>
+      <rect x="0" y="${-half}" width="62" height="${2 * half}" fill="#596367"/>${lines}</g></svg>`;
+  }
+
+  function railPicture(railway) {
+    return `<svg viewBox="0 0 88 52" aria-hidden="true"><g transform="matrix(.88 -.34 .68 .48 16 36)">
+      <rect x="0" y="-11" width="64" height="22" fill="${railway ? "#9b9587" : "#8c9595"}"/>
+      ${railway ? '<path d="M2 0h60" stroke="#584b46" stroke-width="16" stroke-dasharray="2.5 4"/>' : ""}
+      <path d="M0 -5h64M0 5h64" stroke="#4f585a" stroke-width="3"/><path d="M0 -5h64M0 5h64" stroke="#e3e3db" stroke-width="1.3"/></g></svg>`;
+  }
+
+  const libraryButton = category => `<button class="shelf-catalog" data-open-library="${category}" title="Открыть каталог">${ic("shapes")}Каталог</button>`;
+
+  function renderPopover() {
+    const pop = $("#popover"), group = groupOf(tool), cat = App.state.catalog;
+    pop.hidden = !S() || !group || (!shelfOpen && !draft);
+    $("#hint").hidden = true;
+    if (pop.hidden) { pop.innerHTML = ""; return; }
+    let html = "", extra = "", action = "";
+    if (tool === "road") {
+      html = Object.entries(Layout.KINDS).map(([k,v]) => tile("road", k, v.title, roadPicture(k), k === opts.roadKind, `${v.title} · ${String(v.width).replace(".", ",")} м`)).join("");
+    } else if (tool === "track") {
+      html = [["tram", "Трамвайные"], ["railway", "Железнодорожные"]].map(([k,title]) => tile("rail-type", k, title, railPicture(k === "railway"), k === opts.railType)).join("");
+    } else if (tool === "junction") {
+      html = Layout.TEMPLATES.map(t => tile("tpl", t.id, t.title, Layout.svg(Layout.template(t.id), 90, 62))).join("");
+    } else if (tool === "marking") {
+      html = Object.entries(Catalog.MARKS).map(([k,v]) => tile("mark", k, k === "arrow" ? "Направления" : v.title, k === "bus_stop" ? BusStopMark.svg() : k === "arrow" ? DirectionMark.svg() : `<span class="mark-pic m-${k}"></span>`, opts.mark === k, v.title)).join("");
+      if (opts.mark === "arrow") extra = `<div class="shelf-strip direction-options">${DirectionMark.variants.map(([k,title]) => tile("mark-direction", k, title, DirectionMark.svg(k), opts.markDirection === k)).join("")}</div>`;
+    } else if (tool === "answer" && !opts.pathFor && !opts.answerRoute) {
+      extra = renderAnswerOptions();
+    } else if (tool === "actor") {
+      html = Catalog.ACTOR_ORDER.filter(k => cat?.actorTypes?.[k]).map(k => tile("actor", k, Catalog.ACTORS[k].name, Thumbs.img("actor", k), k === opts.actorType)).join("");
+    } else if (tool === "brush") {
+      extra = renderBrushOptions();
+    } else if (tool === "prop") {
+      const ids = (cat?.props || []).map(p => p.id);
+      const samples = Catalog.PROP_GROUPS.map(g => ids.find(id => g.match(id))).filter(Boolean);
+      const props = [...new Set([opts.prop, ...samples, ...(S().id === "mini_regulator" ? [] : ["parked"])])];
+      html = props.map(id => tile("prop", id, Catalog.propName(id), Thumbs.img("prop", id), opts.prop === id)).join("");
+      action = libraryButton("decor");
+    } else if (tool === "sign") {
+      const signs = [...new Set([opts.sign, "2.1", "2.4", "2.5", "3.1", "3.24", "5.19.1"])].filter(k => !cat?.signs || cat.signs.includes(k));
+      html = signs.map(k => tile("sign", k, k, `<img src="/asset/sign/${k === "5.33" ? "5.33_plain" : k}.svg" alt="" draggable="false">`, opts.sign === k, k + " · " + Catalog.signName(k))).join("");
+      action = libraryButton("signs");
+    } else if (tool === "light") {
+      const lights = [["std", "Обычный", "light"], ["tram", "С трамвайной секцией", "light_tram"]];
+      html = lights.map(([k,title,id]) => tile("light-type", k, title, Thumbs.img("light", id), opts.tram === (k === "tram"))).join("");
+    }
+    const tabs = group.tools.filter(allowed);
+    const head = tabs.length > 1 ? tabs.map(id => `<button data-shelf-tool="${id}" class="shelf-tab ${id === tool ? "on" : ""}" aria-pressed="${id === tool}" title="${esc(definition(id).title)} · ${definition(id).key}">${ic(definition(id).icon)}${TAB_NAMES[id]}</button>`).join("") : `<b>${group.title}</b>`;
+    const same = pop.dataset.tool === tool;
+    const oldScroll = same ? Array.from(pop.querySelectorAll(".shelf-strip"), el => el.scrollLeft) : [];
+    pop.dataset.tool = tool;
+    const focused = document.activeElement;
+    const choice = focused && pop.contains(focused) ? focused.getAttributeNames().find(k => k.startsWith("data-")) : null;
+    const shelf = shelfOpen ? `<div class="shelf-header"><div class="shelf-tabs">${head}</div>${action}<button class="shelf-close" data-fold aria-label="Свернуть палитру" title="Свернуть палитру">${ic("x")}</button></div>
+      ${html ? `<div class="shelf-strip">${html}</div>` : ""}${extra}` : "";
+    pop.innerHTML = shelf + draftActions();
+    if (choice) pop.querySelector(`[${choice}="${CSS.escape(focused.getAttribute(choice))}"]`)?.focus({preventScroll: true});
+    pop.querySelectorAll(".shelf-strip").forEach((el, i) => el.scrollLeft = oldScroll[i] || 0);
+    pop.querySelectorAll("img[data-thumb]").forEach(img => Thumbs.fill(img));
+  }
+
+  function draftActions() {
+    if (!draft) return "";
+    const count = draft.points.length, twoClicks = tool === "marking" && ["arrow", "bus_stop", "stop", "zebra"].includes(opts.mark);
+    const canFinish = !twoClicks && tool !== "road" && count >= (tool === "lawn" ? 3 : 2);
+    const undo = tool === "road" || opts.answerRoute && count === 1 ? "" : `<button data-draw="back" title="Убрать последнюю точку" aria-label="Убрать последнюю точку">${ic("undo")}</button>`;
+    return `<div class="drawing-actions"><span>${ic("points")}${count}</span>${undo}${canFinish ? `<button class="draw-done" data-draw="done">${ic("check-circle")}Готово</button>` : ""}<button data-draw="cancel">${tool === "road" && count > 1 ? "Закончить" : "Отмена"}</button></div>`;
   }
 
   function renderAnswerOptions() {
     const free = AnswerMark.free(S() || {routes: []});
     if (!free.includes(opts.answerLetter)) opts.answerLetter = free[0] || null;
     const mode = opts.answerMode;
-    const modes = AnswerMark.modes.map(([id, title, desc]) =>
+    const modes = AnswerMark.modes.map(([id, title]) =>
       `<button class="answer-mode ${mode === id ? 'on' : ''}" data-answer-mode="${id}" aria-pressed="${mode === id}">
-        ${AnswerMark.picture(id)}<span>${title}</span><small>${desc}</small></button>`).join('');
+        ${AnswerMark.picture(id)}<span>${title}</span></button>`).join('');
     const letters = Catalog.LETTERS.map(l => {
       const taken = !free.includes(l), selected = opts.answerLetter === l;
       return `<button data-answer-letter="${l}" class="answer-letter ${selected ? 'on' : ''}" ${taken ? 'disabled' : ''}
@@ -123,14 +194,10 @@ const Tools = (() => {
           const selected = (opts.answerArrowhead ? 'arrow' : 'line') === key;
           return `<button class="pchip ${selected ? 'on' : ''}" data-answer-style="${key}" aria-pressed="${selected}">${title}</button>`;
         }).join('') : '';
-    const caption = mode !== 'annotation' && !free.length
-      ? 'Все буквы уже в сцене. Выберите букву на виде, чтобы переместить её.'
-      : mode === 'letter' ? 'Один клик — поставить · V — переместить · Esc — закончить'
-      : 'Кликайте точки · Enter — готово · Esc — отменить';
     return `<div class="answer-options">
       <div class="answer-modes" role="group" aria-label="Что добавить">${modes}</div>
-      <div class="answer-settings">
-        <span class="answer-setting-label">${mode === 'text' ? 'Кликните место для надписи' : mode === 'annotation' ? 'Вид линии' : 'Буква'}</span>
+      <div class="answer-settings" ${mode === "text" ? "hidden" : ""}>
+        <span class="answer-setting-label">${mode === 'text' ? '' : mode === 'annotation' ? 'Вид линии' : 'Буква'}</span>
         ${mode !== 'annotation' && mode !== 'text' ? `<div class="answer-letters" role="group" aria-label="Буква ответа">${letters}</div>` : ''}
         ${styles ? `<div class="answer-style-options">${styles}</div>` : ''}
       </div></div>`;
@@ -150,7 +217,7 @@ const Tools = (() => {
       <div class="brush-setting"><span>Интервал</span><div class="brush-stepper">${[[.8,"Плотно"],[1,"Обычно"],[1.4,"Редко"]].map(([n,label]) => `<button class="pchip ${opts.brushSpacing === n ? "on" : ""}" data-brush-spacing="${n}">${label}</button>`).join("")}</div></div>
       <button class="pchip" data-brush-variation="next" aria-label="Другой вариант расположения объектов">Другой вариант</button>
       <button class="pchip" data-brush-library="true">Объект из библиотеки</button></div>
-      <div class="brush-summary"><span>${diameter} м · клик — поставить · ⌥ — стереть</span><span class="brush-preview-key"><span class="brush-preview-ok">● свободно</span> <span class="brush-preview-blocked">● занято</span></span></div></div>`;
+      <div class="brush-summary"><span>Ø ${diameter} м</span><span class="brush-preview-key"><span class="brush-preview-ok">● свободно</span> <span class="brush-preview-blocked">● занято</span></span></div></div>`;
   }
 
   function refreshBrushPreview() {
@@ -166,18 +233,22 @@ const Tools = (() => {
     return true;
   }
 
-  function renderHint(text) {
-    const t = LIST.find((x) => x.id === tool);
-    let h = text ?? (t ? t.hint : "");
-    if (tool === "marking") h = opts.mark === "bus_stop" ? "Два клика вдоль бордюра — начало и конец остановки. Глубина и шаг зубцов настраиваются справа" : opts.mark === "arrow" ? "Первый клик — начало стрелки, второй — её направление и длина. Затем можно изменить вид и размер справа" : opts.mark === "stop" || opts.mark === "zebra"
-      ? (S()?.layout ? "Клик у перекрёстка — включить или выключить на этом въезде" : "Два клика поперёк дороги")
-      : "Кликайте точки линии. ↵ — готово";
-    if (tool === "answer" && !opts.pathFor && !opts.answerRoute) h = opts.answerMode === "letter"
-      ? "Кликните в любом месте — поставить букву в кружке. Буквы можно перетаскивать инструментом «Выбор» (V)"
-      : opts.answerMode === "annotation" ? "Кликайте точки линии без буквы. Enter — готово, Esc — отменить" : "Кликайте точки ответа с буквой. Enter — готово, Esc — отменить";
-    const el = $("#hint");
-    el.hidden = !S() || !h;
-    el.innerHTML = h ? `${ic(t ? t.icon : "info")}<span>${esc(h)}</span>` : "";
+  function showSegment(e, a, b, snapped) {
+    const label = $("#hint"), dx = b[0] - a[0], dz = b[1] - a[1];
+    const length = Math.hypot(dx, dz);
+    if (length < .3) { label.hidden = true; return; }
+    const metres = length.toLocaleString("ru-RU", {maximumFractionDigits: 1});
+    const prev = draft.points.at(-2);
+    let angle = "";
+    if (prev && tool === "road") {
+      const incoming = Math.atan2(a[1] - prev[1], a[0] - prev[0]);
+      const turn = Math.atan2(dz, dx) - incoming;
+      angle = ` · ${Math.round(Math.acos(Math.min(1, Math.max(-1, Math.cos(turn)))) * 180 / Math.PI)}°`;
+    }
+    label.textContent = `${snapped ? "◎  " : ""}${metres} м${angle}`;
+    label.style.left = `clamp(4px, ${e.sx + 15}px, calc(100% - 108px))`;
+    label.style.top = `clamp(4px, ${e.sy + 15}px, calc(100% - 28px))`;
+    label.hidden = false;
   }
 
   function bindBar() {
@@ -185,40 +256,79 @@ const Tools = (() => {
       const b = e.target.closest("[data-tool]");
       if (!b) return;
       if (!S()) return App.toast("Сначала откройте сцену", "warn");
-      set(b.dataset.tool);
+      if (tool === b.dataset.tool && groupOf(tool)) {
+        shelfOpen = !shelfOpen;
+        renderBar();
+      } else set(b.dataset.tool);
     });
+    $("#popover").addEventListener("wheel", e => {
+      const strip = e.target.closest(".shelf-strip, .brush-presets");
+      if (!strip || strip.scrollWidth <= strip.clientWidth || e.ctrlKey || e.metaKey || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
+      const step = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? strip.clientWidth : 1;
+      const before = strip.scrollLeft;
+      strip.scrollLeft += e.deltaY * step;
+      if (strip.scrollLeft !== before) e.preventDefault();
+    }, {passive: false});
     $("#popover").addEventListener("click", (e) => {
       const b = e.target.closest("button");
-      if (!b) return;
-      if (b.dataset.railType) { opts.railType = b.dataset.railType; renderPopover(); }
-      if (b.dataset.road) { opts.roadKind = b.dataset.road; renderPopover(); }
-      if (b.dataset.mark) { opts.mark = b.dataset.mark; finishDraft(true); renderPopover(); renderHint(); }
-      if (b.dataset.markDirection) { opts.markDirection = b.dataset.markDirection; renderPopover(); }
-      if (b.dataset.actor) { opts.actorType = b.dataset.actor; renderPopover(); }
-      if (b.disabled) return;
-      if (b.dataset.answerMode) { finishDraft(true); opts.answerMode = b.dataset.answerMode; renderPopover(); renderHint(); }
-      if (b.dataset.answerLetter) { opts.answerLetter = b.dataset.answerLetter; renderPopover(); }
-      if (b.dataset.answerStyle) { opts.answerArrowhead = b.dataset.answerStyle === "arrow"; renderPopover(); }
-      if (b.dataset.annotationStyle) { opts.annotationStyle=b.dataset.annotationStyle;renderPopover(); }
-      if (b.dataset.tpl) applyTemplate(b.dataset.tpl);
-      if (b.dataset.brushMode) { opts.brushMode = b.dataset.brushMode; renderPopover(); refreshBrushPreview(); }
-      if (b.dataset.brushScale) { opts.brushScale = Number(b.dataset.brushScale); renderPopover(); refreshBrushPreview(); }
-      if (b.dataset.brushTurn) { opts.brushYaw = ((opts.brushYaw + Number(b.dataset.brushTurn) * Math.PI / 180 + Math.PI * 2) % (Math.PI * 2)); renderPopover(); refreshBrushPreview(); }
-      if (b.dataset.brushSpacing) { opts.brushSpacing = Number(b.dataset.brushSpacing); renderPopover(); refreshBrushPreview(); }
-      if (b.dataset.brushVariation) { opts.brushVariation++; renderPopover(); refreshBrushPreview(); }
-      if (b.dataset.brushLibrary) App.setLibraryCategory?.("decor");
-      if (b.dataset.lightType) { opts.tram = b.dataset.lightType === "tram"; renderPopover(); Scene3D.wake(); }
+      if (!b || b.disabled) return;
+      const d = b.dataset;
+      if (d.shelfTool) {
+        if (d.shelfTool !== tool) set(d.shelfTool);
+        return;
+      }
+      if (d.fold !== undefined) { shelfOpen = false; return renderBar(); }
+      if (d.openLibrary) return App.setLibraryCategory(d.openLibrary);
+      if (d.draw) {
+        if (d.draw === "done") return enter();
+        if (d.draw === "cancel") return escape();
+        if (!draft || opts.answerRoute && draft.points.length === 1) return;
+        draft.points.pop();
+        if (!draft.points.length) return finishDraft(true);
+        Scene3D.setDraft({kind:"line", points:draft.points, closed:tool === "lawn"});
+        renderPopover();
+        return;
+      }
+      if (d.railType) opts.railType = d.railType;
+      if (d.road) opts.roadKind = d.road;
+      if (d.mark) { opts.mark = d.mark; finishDraft(true); }
+      if (d.markDirection) opts.markDirection = d.markDirection;
+      if (d.actor) opts.actorType = d.actor;
+      if (d.prop) opts.prop = d.prop;
+      if (d.sign) opts.sign = d.sign;
+      if (d.answerMode) { finishDraft(true); opts.answerMode = d.answerMode; }
+      if (d.answerLetter) opts.answerLetter = d.answerLetter;
+      if (d.answerStyle) opts.answerArrowhead = d.answerStyle === "arrow";
+      if (d.annotationStyle) opts.annotationStyle = d.annotationStyle;
+      if (d.tpl) return applyTemplate(d.tpl);
+      if (d.brushMode) opts.brushMode = d.brushMode;
+      if (d.brushScale) opts.brushScale = Number(d.brushScale);
+      if (d.brushTurn) return rotateBrush(Number(d.brushTurn));
+      if (d.brushSpacing) opts.brushSpacing = Number(d.brushSpacing);
+      if (d.brushVariation) opts.brushVariation++;
+      if (d.brushLibrary) return App.setLibraryCategory?.("decor");
+      if (d.lightType) { opts.tram = d.lightType === "tram"; Scene3D.requestRender?.(); }
+      renderPopover();
+      refreshBrushPreview();
     });
   }
 
   // ---- ready-made junctions -----------------------------------------------------------------
+  // A dialog or network response can outlive the scene (or the geometry) it describes.
+  function roadEditStillCurrent(scene, snapshot) {
+    return S() === scene && App.state.id === scene.id && $("#home-screen").hidden &&
+      !App.state.locked.has("roads") && JSON.stringify(scene) === snapshot;
+  }
+
   async function applyTemplate(kind) {
     const s = S();
+    if (App.state.locked.has("roads")) return App.toast("Слой дорог заблокирован", "warn");
+    const snapshot = JSON.stringify(s);
     const traced = s.roads.some((r) => !r.auto);
     const ok = await App.confirm("Заменить дороги сцены?", traced
       ? "Дороги, разметка и газоны сцены построятся заново по выбранному перекрёстку. Дома, деревья, машины и ответы останутся. Можно отменить ⌘Z."
       : "Дороги сцены построятся заново. Можно отменить ⌘Z.", "Заменить");
-    if (!ok) return;
+    if (!ok || !roadEditStillCurrent(s, snapshot)) return;
     App.edit((sc) => {
       sc.layout = Layout.template(kind, sc.crop || 90);
       sc.roads = []; sc.markings = []; sc.lawns = [];
@@ -232,8 +342,13 @@ const Tools = (() => {
   // Turns a traced scene into a road plan matching it (the server finds the arms at the sides).
   async function convertScene() {
     const s = S();
-    const r = await App.api(`/api/layout/detect/${App.state.id}`).catch((e) => { App.toast(e.message, "bad"); return null; });
-    if (!r) return;
+    if (!s || s.layout || App.state.locked.has("roads")) return;
+    const snapshot = JSON.stringify(s);
+    const r = await App.api(`/api/layout/detect/${s.id}`).catch(e => {
+      if (roadEditStillCurrent(s, snapshot)) App.toast(e.message, "bad");
+      return null;
+    });
+    if (!r || !roadEditStillCurrent(s, snapshot)) return;
     // Islands of the old roads stay (a roundabout's island is the plan's own): each as a small road with
     // the island cut out, so the builder keeps the kerb round it.
     const ring = r.layout.nodes.find((n) => n.ring);
@@ -263,7 +378,7 @@ const Tools = (() => {
       });
       sc.lawns = [];
       sc.markings = (sc.markings || []).filter((m) => m.type !== "paint");
-      sc.routes = sc.routes.filter((x) => ["choice", "actor", "annotation"].includes(x.kind));
+      sc.routes = sc.routes.filter((x) => ["choice", "actor", "guide", "annotation"].includes(x.kind));
     });
     App.toast(dropped > 0 ? `Дороги в конструкторе. Островков на расширениях убрано: ${dropped} — ⌘Z вернёт` : "Дороги теперь можно править как в конструкторе", dropped > 0 ? "warn" : "good");
     set("select");
@@ -273,10 +388,18 @@ const Tools = (() => {
   // ---- the pointer ---------------------------------------------------------------------------
   function onPointer(e) {
     if (!S()) return;
-    if (e.type === "leave") { pointerInView = false; if (tool === "answer" && !draft) Scene3D.setDraft(null); Scene3D.setGhost(null); Scene3D.setBrushPreview?.(null); if (tool === "brush") Scene3D.setDraft(null); setHover(null); return; }
+    if (e.type === "cancel") {
+      if (drag) { App.cancelDrag(); drag = null; $("#marquee").hidden = true; }
+      return;
+    }
+    if (e.type === "leave") { $("#hint").hidden = true; pointerInView = false; if (tool === "answer" && !draft) Scene3D.setDraft(null); Scene3D.setGhost(null); Scene3D.setBrushPreview?.(null); if (tool === "brush") Scene3D.setDraft(null); setHover(null); return; }
     if (e.world) { lastWorld = e.world; pointerInView = true; }
     const handler = HANDLERS[tool] || HANDLERS.select;
-    handler[e.type] && handler[e.type](e);
+    const before = draft?.points.length;
+    if (e.type === "down" && ["road", "track", "lawn"].includes(tool) && App.state.locked.has("roads")) return App.toast("Слой дорог заблокирован", "warn");
+    handler[e.type]?.(e);
+    if (draft && !draft.owner) draft.owner = S();
+    if (before !== draft?.points.length) renderPopover();
   }
 
   function setHover(ref) {
@@ -291,7 +414,7 @@ const Tools = (() => {
   // Select and move.
   const select = {
     down(e) {
-      const h = Scene3D.hitAt(e.sx, e.sy, skipLocked);
+      const h = e.labelRef && App.pickable(e.labelRef) ? e.labelRef : Scene3D.hitAt(e.sx, e.sy, skipLocked);
       if (!h) { drag = { kind: "marquee", x0: e.sx, y0: e.sy, add: e.shift }; return; }
       if (h.t === "turn") return startTurn(e);
       if (h.t === "letter") {
@@ -311,7 +434,7 @@ const Tools = (() => {
       if (e.shift) { App.toggle(h); return; }
       // Things (props, cars, lights, junction points) move at once; a road, a line or a lawn is picked
       // first and moved by a second drag, so a click on the asphalt never shifts the road by accident.
-      const thing = ["decor", "sign", "actor", "officer", "light", "node", "stop"].includes(h.t);
+      const thing = h === e.labelRef || ["decor", "sign", "actor", "officer", "light", "node", "stop"].includes(h.t);
       if (!already) App.select(h);
       if (!already && !thing) return;
       // Alt: drag a copy, the original stays.
@@ -508,11 +631,12 @@ const Tools = (() => {
       const s = S();
       const snapped = Layout.snapPoint(s.layout ? s : { ...s, layout: { nodes: [], streets: [] } }, [e.world.x, e.world.z]);
       const at = snapped.p;
-      Scene3D.setDraft({ kind: "road", points: draft ? draft.points : [], cursor: draft ? at : null, width: Layout.widthOf({kind:opts.roadKind}),
+      Scene3D.setDraft({ kind: "road", points: draft ? [draft.points.at(-1)] : [], cursor: draft ? at : null, width: Layout.widthOf({kind:opts.roadKind}),
         snap: snapped.node || snapped.port || snapped.street ? at : null, snapKind: snapped.port ? "port" : "node" });
       if (!draft) setHover(null);
+      else showSegment(e, draft.points.at(-1), at, snapped.node || snapped.port || snapped.street);
     },
-    down(e) {
+    async down(e) {
       if (!e.world) return;
       const s = S();
       const first = !s.layout;
@@ -520,6 +644,12 @@ const Tools = (() => {
       if (!draft) { draft = { points: [snapped.p] }; road.move(e); return; }
       const a = draft.points.at(-1), b = snapped.p;
       if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 3) return finishDraft();
+      if (first && (s.roads.length || s.markings.length || s.routes.some(r => !["choice","actor","guide","annotation"].includes(r.kind)))) {
+        const drawing = draft, snapshot = JSON.stringify(s);
+        const replace = await App.confirm("Заменить основу дороги?", "В этой сцене дорога нарисована вручную. Первый участок заменит её контуры и связанную с ними разметку.", "Построить");
+        if (draft !== drawing) return;
+        if (!replace || !roadEditStillCurrent(s, snapshot)) return finishDraft(true);
+      }
       App.edit((sc) => {
         if (!sc.layout) {
           sc.layout = { nodes: [], streets: [] };
@@ -530,8 +660,8 @@ const Tools = (() => {
         }
         Layout.addStreet(sc, a, b, opts.roadKind);
       });
-      if (first) App.toast("Новая дорога. Старые дороги сцены заменены — ⌘Z вернёт", "warn");
       draft.points.push(b);
+      renderPopover();
       road.move(e);
     },
     dblclick() { finishDraft(); },
@@ -542,6 +672,7 @@ const Tools = (() => {
     move(e) {
       if (draft && e.world) {
         draft.cursor = [snapGrid(e.world.x, e), snapGrid(e.world.z, e)];
+        showSegment(e, draft.points.at(-1), draft.cursor);
         const bus = opts.mark === "bus_stop";
         const points = [...draft.points,draft.cursor].slice(0,2);
         const side = bus ? BusStopMark.chooseSide(S(),{...BusStopMark.defaults,points}) : 1;
@@ -594,7 +725,10 @@ const Tools = (() => {
   // ---- lawn: a polygon -------------------------------------------------------------------------
   const lawn = {
     move(e) {
-      if (draft && e.world) Scene3D.setDraft({ kind: "line", points: draft.points, cursor: [snapGrid(e.world.x, e), snapGrid(e.world.z, e)], closed: true, colour: 0x2bc280 });
+      if (!draft || !e.world) return;
+      const cursor = [snapGrid(e.world.x, e), snapGrid(e.world.z, e)];
+      showSegment(e, draft.points.at(-1), cursor);
+      Scene3D.setDraft({ kind: "line", points: draft.points, cursor, closed: true, colour: 0x2bc280 });
     },
     down(e) {
       if (!e.world) return;
@@ -878,6 +1012,7 @@ const Tools = (() => {
     move(e) {
       if (!e.world) return;
       const p = Tracks.snap(S(), [r3(e.world.x), r3(e.world.z)]);
+      if (draft) showSegment(e, draft.points.at(-1), p);
       Scene3D.setDraft({ kind: "line", points: draft ? draft.points : [], cursor: p, colour: 0x8b5cf6 });
     },
     down(e) {
@@ -896,7 +1031,9 @@ const Tools = (() => {
     const d = draft;
     draft = null;
     Scene3D.setDraft(null);
+    if (d) renderPopover();
     if (!d || cancel) return;
+    if (["track", "lawn"].includes(tool) && App.state.locked.has("roads")) return App.toast("Слой дорог заблокирован", "warn");
     if (tool === "answer" && App.state.locked.has("routes")) return App.toast("Слой ответов и маршрутов заблокирован", "warn");
     const pts = d.points;
     if (tool === "marking" && pts.length >= 2) {
@@ -1021,15 +1158,14 @@ const Tools = (() => {
     set("answer");
     opts.pathFor = id;
     renderPopover();
-    renderHint("Кликайте точки пути участника от него. ↵ — готово");
   }
 
   function drawAnswerRoute(id, arrowhead = true) {
     const r = S().routes.find(r => r.id === id);
     if (!r || App.isLocked({t:"route", id})) return;
     set("answer"); opts.answerRoute = id; opts.answerArrowhead = arrowhead;
-    draft = {points: [[...AnswerMark.position(r)]]};
-    renderPopover(); renderHint("Кликайте точки линии от буквы. Enter — готово, Esc — отменить");
+    draft = {owner: S(), points: [[...AnswerMark.position(r)]]};
+    renderPopover();
   }
 
   function pickLight(tram = false) {
@@ -1052,6 +1188,7 @@ const Tools = (() => {
     renderBar();
     bindBar();
     Scene3D.on("pointer", onPointer);
+    Scene3D.on("camera", () => { $("#hint").hidden = true; });
     const view = $("#view");
     view.addEventListener("dragover", (e) => { if (e.dataTransfer.types.includes("text/x-scene-item")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
     view.addEventListener("drop", (e) => {
@@ -1087,6 +1224,7 @@ const Tools = (() => {
     input.addEventListener('pointerdown',e=>e.stopPropagation());
     input.addEventListener('blur',()=>finish(false));input.focus();input.select();
   }
-  return { editText, init, set, current, list: () => LIST.filter((t) => !t.sep), escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, drawAnswerRoute, convertScene,
-    applyTemplate, renderBar, renderHint, lightSpot, rotateBrush, get opts() { return opts; } };
+  return { editText, init, set, current, list: () => LIST, escape, enter, fitSelection, pickProp, pickActor, pickSign, pickLight, drawPathFor, drawAnswerRoute, convertScene,
+    get touchDraggable() { return tool !== "answer" && !!HANDLERS[tool]?.up; },
+    applyTemplate, renderBar, lightSpot, rotateBrush, get opts() { return opts; } };
 })();

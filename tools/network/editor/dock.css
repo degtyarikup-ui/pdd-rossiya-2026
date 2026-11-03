@@ -1,0 +1,181 @@
+/* Construction palette. Its width belongs to the viewport of the scene itself. */
+.stage {
+  --dock-panel: #263239;
+  --dock-card: #354249;
+  --dock-edge: #49585e;
+  --dock-text: #f1f4f3;
+  --dock-dim: #c2cfcd;
+  --dock-selected: #b9e5ff;
+  --dock-shadow: 0 3px 12px #17202640, 0 1px 2px #17202626;
+  --dock-pad: 12px;
+}
+.stage .toolbar, .stage .popover {
+  width: max-content;
+  max-width: calc(100% - 2 * var(--dock-pad));
+  border: 1px solid #ffffff26;
+  border-radius: 11px;
+  color: var(--dock-text);
+  background: var(--dock-panel);
+  box-shadow: var(--dock-shadow);
+  scrollbar-color: #65777c transparent;
+  scrollbar-width: thin;
+}
+.stage .toolbar {
+  bottom: var(--dock-pad);
+  height: 58px;
+  gap: 2px;
+  padding: 4px;
+  overflow-y: hidden;
+}
+.stage .toolbar button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 60px;
+  height: 46px;
+  gap: 5px;
+  padding: 0 7px;
+  border-radius: 6px;
+  color: var(--dock-dim);
+}
+.stage .toolbar .tool-label {
+  max-width: none;
+  font-size: 10px;
+  line-height: 12px;
+}
+.stage .toolbar button .i { width: 19px; height: 19px; }
+.stage .toolbar button.dock-pointer { min-width: 32px; width: 32px; height: 38px; }
+.stage .toolbar .tsep { height: 24px; margin: 0 4px; background: var(--dock-edge); }
+.stage .toolbar button:hover { background: #405058; color: #fff; }
+.stage .toolbar button.on { background: var(--dock-selected); color: #163b50; }
+.stage .toolbar button:focus-visible, .stage .popover button:focus-visible {
+  outline: 2px solid #f5faff;
+  outline-offset: -2px;
+}
+
+.stage .popover {
+  display: block;
+  bottom: calc(var(--dock-pad) + 64px);
+  min-width: min(295px, calc(100% - 2 * var(--dock-pad)));
+  padding: 0;
+  overflow: auto;
+  max-height: min(410px, calc(100% - 154px));
+}
+.shelf-header, .shelf-tabs { display: flex; align-items: center; gap: 2px; }
+.shelf-header { min-height: 33px; padding: 3px 5px; border-bottom: 1px solid #ffffff13; }
+.shelf-header b { padding: 0 7px; font-size: 12px; font-weight: 600; }
+.shelf-tabs { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.shelf-header button {
+  display: inline-flex; flex: none; align-items: center; justify-content: center;
+  gap: 4px; padding: 0 7px; min-height: 28px; font-size: 11px;
+  font-weight: 500; color: var(--dock-dim); border-radius: 5px; white-space: nowrap;
+}
+.shelf-header button .i, .drawing-actions .i { width: 14px; height: 14px; }
+.shelf-header button:hover, .drawing-actions button:hover { color: white; background: #405058; }
+.shelf-header button.on { color: white; background: #48595f; }
+.shelf-header button.shelf-close { padding: 0 5px; color: #abbcbf; }
+.shelf-strip, .stage .brush-presets {
+  display: flex;
+  align-items: stretch;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #65777c transparent;
+  gap: 4px; padding: 5px;
+  scroll-snap-type: x proximity;
+}
+.asset-tile, .stage .brush-card, .stage .answer-mode {
+  position: relative;
+  display: flex;
+  flex: 0 0 77px;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--dock-text);
+  background: var(--dock-card);
+  padding: 1px 3px 4px;
+  scroll-snap-align: start;
+}
+.asset-picture { display: grid; place-items: center; width: 100%; height: 43px; }
+.asset-picture > svg, .asset-picture > img { width: 100%; height: 100%; object-fit: contain; }
+.asset-picture img { max-height: 43px; }
+.asset-picture img[src$=".svg"] { width: 34px; height: 34px; }
+.asset-picture .direction-mark-pic { width: 26px; height: 32px; }
+.asset-picture .bus-stop-mark-pic { width: 42px; height: 26px; }
+.asset-name, .stage .brush-card > span {
+  width: 100%; text-align: center; font-size: 10px; font-weight: 500;
+  line-height: 1.15; overflow-wrap: break-word; margin: auto 0 0;
+}
+.asset-tile:hover, .stage .brush-card:hover, .stage .answer-mode:hover { background: #43535a; }
+.asset-tile.on, .stage .brush-card.on, .stage .answer-mode.on {
+  border-color: #a0d8f5; color: white; background: #3c5866; box-shadow: none;
+}
+.stage .direction-options { border-top: 1px solid var(--dock-edge); }
+.stage .direction-options .asset-picture { height: 27px; }
+.stage .direction-options .direction-mark-pic { height: 23px; }
+.stage .direction-options .asset-tile { flex-basis: 66px; }
+.stage .popover[data-tool="junction"] .asset-picture { padding: 3px; }
+.stage .popover[data-tool="junction"] .asset-picture svg { width: 41px; height: 41px; }
+.stage .popover[data-tool="junction"] .asset-tile { flex-basis: 79px; }
+.stage .popover[data-tool="actor"], .stage .popover[data-tool="junction"], .stage .popover[data-tool="brush"] {
+  max-width: min(600px, calc(100% - 2 * var(--dock-pad)));
+}
+.stage .answer-options { min-width: min(350px, 100%); padding: 5px; }
+.stage .answer-modes { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; }
+.stage .answer-mode { padding: 3px 8px 5px; }
+.stage .answer-mode svg { width: 48px; height: 27px; }
+.stage .answer-mode > span { font-size: 11px; }
+.stage .answer-settings { padding: 5px 2px 0; margin: 5px 0 0; border-color: var(--dock-edge); }
+.stage .answer-setting-label { color: var(--dock-dim); }
+.stage .answer-letter { width: 30px; height: 30px; border-radius: 5px; }
+.stage .answer-letter:hover:not(:disabled), .stage .answer-letter.on { background: #405058; }
+.stage .answer-letter.on { border-color: var(--dock-selected); }
+.stage .answer-style-options .pchip, .stage .brush-settings .pchip {
+  padding: 0 6px; height: 26px; border-radius: 4px; color: var(--dock-text); background: var(--dock-card);
+}
+.stage .answer-style-options .on, .stage .brush-settings .on { color: #163b50; background: var(--dock-selected); box-shadow: none; }
+.stage .brush-toolbar { display: block; width: 100%; padding: 0; max-height: none; overflow: visible; }
+.stage .brush-presets { gap: 4px; }
+.stage .brush-card, .stage .brush-card.object-card {
+  height: auto; min-height: 62px; padding: 3px; gap: 1px;
+}
+.stage .brush-card > svg, .stage .brush-card > img.thumb { width: 62px; height: 38px; flex: none; }
+.stage .brush-card > small { color: var(--dock-dim); font-size: 9px; }
+.stage .brush-settings { padding: 5px 8px; border-color: var(--dock-edge); gap: 5px 10px; }
+.stage .brush-setting { gap: 2px; color: var(--dock-dim); }
+.stage .brush-stepper span { color: var(--dock-text); }
+.stage .brush-summary { padding: 1px 8px 5px; color: var(--dock-dim); font-size: 10px; }
+.stage .brush-preview-ok { color: #9ce4b7; }
+.stage .brush-preview-blocked { color: #ffb8a6; }
+.drawing-actions {
+  display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+  padding: 4px 6px; border-top: 1px solid var(--dock-edge);
+}
+.drawing-actions > span { display: flex; align-items: center; gap: 5px; color: var(--dock-dim); margin-right: auto; font-variant-numeric: tabular-nums; }
+.drawing-actions button { display: flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 7px; border-radius: 5px; font-size: 11px; }
+.drawing-actions button.draw-done { color: #163b50; background: var(--dock-selected); }
+.stage .hint:not([hidden]) {
+  display: block !important; transform: none; padding: 3px 7px; border-radius: 4px;
+  background: #233138e8; color: white; font: 500 11px/16px Onest, sans-serif;
+  font-variant-numeric: tabular-nums; box-shadow: var(--dock-shadow);
+}
+.stage .view[data-tool]:not([data-tool="select"]):not([data-tool="junction"]):not([data-tool="hand"]) canvas:not(.grab):not(.grabbing) { cursor: crosshair; }
+body.framing .stage .popover, body.testing .stage .popover,
+body.framing .stage .hint, body.testing .stage .hint { display: none !important; }
+@container (max-width: 560px) {
+  .stage .toolbar, .stage .popover { --dock-pad: 6px; }
+  .stage .toolbar button { min-width: 48px; padding: 0 4px; }
+  .stage .toolbar .tool-label { font-size: 9px; }
+  .stage .toolbar button.dock-pointer { min-width: 26px; width: 26px; }
+  .stage .toolbar .tsep { margin: 0 1px; }
+  .shelf-header button { padding: 0 4px; }
+}
+@container (max-width: 425px) {
+  .stage .toolbar button:not(.on) .tool-label { display: none; }
+  .stage .toolbar button { min-width: 30px; padding: 0 4px; }
+  .stage .toolbar .dock-category:not(.on) { height: 40px; }
+}

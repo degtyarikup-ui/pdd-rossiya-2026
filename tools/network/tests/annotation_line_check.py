@@ -65,7 +65,8 @@ with tempfile.TemporaryDirectory(prefix='annotation-lines-',dir=build.ROOT/'scra
             assert [l['letter'] for l in exported['labels']]==['А']
             assert exported['trajectories'][0]['arrowhead'] is False
             for source,target in zip(annotations,exported['annotations']):
-                assert target=={key:source[key] for key in ('points','style','colour','width')}
+                expected={key:source[key] for key in ('points','style','colour','width')}
+                assert target==dict(expected,text='',textSize=1,textAngle=0)
                 assert 'label' not in target
             result=subprocess.run(['godot','--headless','--path',str(build.ROOT/'game_godot'),
                 '--script','res://tests/annotation_line_check.gd','--',str(geometry_path),str(exported_path)],

@@ -24,12 +24,16 @@
   };
   App.setLeftTab = (name) => {
     state.ltab = name;
+    App.showLeftPanel?.(name);
     if (name !== "textures") state.texSel = null;
     document.querySelectorAll("[data-ltab]").forEach((b) => b.classList.toggle("on", b.dataset.ltab === name));
     renderLeft();
     App.renderInspector?.();
   };
-  document.querySelectorAll("[data-ltab]").forEach((b) => b.addEventListener("click", () => App.setLeftTab(b.dataset.ltab)));
+  document.querySelectorAll("[data-ltab]").forEach((b) => b.addEventListener("click", () => {
+    if (state.ltab === b.dataset.ltab && App.leftPanelOpen?.()) App.closeLeftPanel();
+    else App.setLeftTab(b.dataset.ltab);
+  }));
   App.libraryCategory = () => libraryCategory;
   App.setLibraryCategory = (category, { open: show = true, clearSearch = true } = {}) => {
     if (!LIBRARY_CATEGORIES.some(([key]) => key === category)) return;
@@ -40,8 +44,19 @@
     else if (state.ltab === "library") renderLeft();
   };
 
+  // The lists are rebuilt when selection or filtering changes. Keep keyboard focus
+  // on the same control if it still exists in the new list.
+  function focusKey(root) {
+    const el = document.activeElement;
+    if (!el || !root.contains(el) || !el.matches("button, select")) return null;
+    if (el.id) return "#" + CSS.escape(el.id);
+    const attr = Array.from(el.attributes).find(a => a.name.startsWith("data-") && a.name !== "data-tip");
+    return attr ? `[${attr.name}="${CSS.escape(attr.value)}"]` : null;
+  }
   function renderLeft() {
+    if (App.leftPanelOpen?.() === false) return;
     const body = $("#left-body");
+    const focused = focusKey(body);
     const tab = state.ltab;
     if (tab === "scenes") body.innerHTML = scenesPane();
     else if (tab === "layers") body.innerHTML = layersPane();
@@ -50,7 +65,8 @@
     Thumbs.fillAll(body);
     if (tab === "textures") body.querySelectorAll("canvas[data-tex]").forEach((c) => Textures.draw(c, c.dataset.tex, "final", 2));
     const input = body.querySelector("input[type=search]");
-    if (input && renderLeft.focus) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+    if (input && renderLeft.focus) { input.focus(); input.setSelectionRange(...renderLeft.focus); }
+    else if (focused) body.querySelector(focused)?.focus({ preventScroll: true });
     renderLeft.focus = false;
   }
 
@@ -80,14 +96,17 @@
     return `<label class="scene-status-filter">${section() === "assistant" ? "Статус одобрения" : "Показать сцены"}<select data-scene-status aria-label="${section() === "assistant" ? "Статус одобрения" : "Показать сцены"}">${options.map(([key, label]) => `<option value="${key}" ${selected === key ? "selected" : ""}>${label}</option>`).join("")}</select></label>`;
   }
   function filtered() {
-    const q = query.trim().toLowerCase();
+    const q = query.trim().toLowerCase().replaceAll("ё", "е");
+    const ticket = q.match(/^(\d+)[\s.,·/_-]+(\d+)$/);
     return state.scenes.filter((s) => {
       if ((s.id === "mini_regulator") !== (state.section === "regulator")) return false;
       if (state.section === "regulator") return true;
       if (filter === "assistant") {
         if (!isAssistant(s) || (approvalFilter === "pending" && !pendingApproval(s)) || (approvalFilter === "approved" && pendingApproval(s))) return false;
       } else if (isAssistant(s) && pendingApproval(s)) return false;
-      if (q && !(s.id.includes(q.replace(/\s+/g, "_")) || App.sceneTitle(s.id).toLowerCase().includes(q) || (s.questionText || "").toLowerCase().includes(q))) return false;
+      if (ticket) {
+        if (!s.id.endsWith(`_${Number(ticket[1])}_${Number(ticket[2])}`)) return false;
+      } else if (q && ![s.id, App.sceneTitle(s.id), s.questionText].join(" ").toLowerCase().replaceAll("ё", "е").includes(q)) return false;
       if (filter === "game") return s.playable;
       if (filter === "err") return s.errors > 0;
       return true;
@@ -96,43 +115,53 @@
       return first && second ? Number(first[1]) - Number(second[1]) || Number(first[2]) - Number(second[2]) : a.id.localeCompare(b.id);
     });
   }
-  const thumbUrl = (s) => s.preview ? `/preview/${s.id}.png?v=${App.thumbRev[s.id] || 0}` : "";
+  function scenePicture(s) {
+    if (s.preview) return `<img src="/preview/${esc(s.id)}.png?v=${App.thumbRev[s.id] || 0}" loading="lazy" decoding="async" alt="">`;
+    return `<span class="no-pic" aria-label="Без превью">${ic("map")}</span>`;
+  }
   function scenesPane() {
     const questions = filter === "questions" && state.section !== "regulator";
     const list = questions ? [] : filtered();
-    return `${state.section === "regulator" ? `<div class="pane-head"><p>Сцена мини-игры. Объекты и разметка редактируются на виде.</p></div>` : `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="scene-q" placeholder="Билет или слова из вопроса" value="${esc(query)}"></label>
-      ${sectionNav()}<div class="scene-filter-bar"><span class="scene-filter-current">${questions && QuestionPlan.filterSummary ? esc(QuestionPlan.filterSummary().label) : filter === "assistant" ? esc(APPROVAL_FILTERS.find(([key]) => key === approvalFilter)[1]) : esc(FILTERS.find(([key]) => key === filter)[1])} <em>${questions && QuestionPlan.filterSummary ? QuestionPlan.filterSummary(query).count : list.length}</em></span><button class="scene-filter-toggle" data-toggle-scene-filters aria-expanded="${!filtersCollapsed}" aria-controls="scene-filters" aria-label="${filtersCollapsed ? "Показать фильтры" : "Скрыть фильтры"}">${ic("chevron", filtersCollapsed ? "" : "rot")}${filtersCollapsed ? "Фильтры" : "Скрыть"}</button></div>
-      <div id="scene-filters" ${filtersCollapsed ? "hidden" : ""}>${statusOptions()}</div></div>`}
-      ${questions ? QuestionPlan.sidebarHtml(query, { filtersCollapsed }) : `<div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${s.id}">
-        <span class="scene-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : ""}</span>
+    return `${state.section === "regulator" ? "" : `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="scene-q" aria-label="Поиск сцен" placeholder="Билет или текст вопроса" value="${esc(query)}"></label>
+      ${sectionNav()}<div class="scene-filter-bar"><span class="scene-filter-current" ${filtersCollapsed || questions ? "" : "hidden"}>${questions && QuestionPlan.filterSummary ? esc(QuestionPlan.filterSummary().label) : filter === "assistant" ? esc(APPROVAL_FILTERS.find(([key]) => key === approvalFilter)[1]) : esc(FILTERS.find(([key]) => key === filter)[1])} <em>${questions && QuestionPlan.filterSummary ? QuestionPlan.filterSummary(query).count : list.length}</em></span>
+      <div id="scene-filters" ${filtersCollapsed ? "hidden" : ""}>${statusOptions()}</div><button class="scene-filter-toggle" data-toggle-scene-filters aria-expanded="${!filtersCollapsed}" aria-controls="scene-filters" aria-label="${filtersCollapsed ? "Показать фильтры" : "Скрыть фильтры"}" title="Фильтры">${ic("sliders")}</button></div></div>`}
+      ${questions ? QuestionPlan.sidebarHtml(query, { filtersCollapsed }) : `<div class="scene-list">${list.map((s) => `<button class="scene-row ${s.id === state.id ? "on" : ""}" data-scene="${esc(s.id)}" ${s.id === state.id ? 'aria-current="true"' : ""}>
+        <span class="scene-pic">${scenePicture(s)}</span>
         <span class="scene-text"><b>${esc(App.sceneTitle(s.id))}</b>
         <span class="badges">${badges(s)}</span></span></button>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`}`;
   }
   function badges(s) {
     const out = [];
-    if (s.errors) out.push(`<i class="badge bad">${ic("error")}${s.errors}</i>`);
-    if (s.playable) out.push(`<i class="badge good">${ic("gamepad")}в игре</i>`);
-    if (isAssistant(s)) out.push(`<i class="badge ${pendingApproval(s) ? "" : "good"}">${pendingApproval(s) ? "Codex · на одобрении" : "Codex · одобрено"}</i>`);
-    if (s.regulator) out.push(`<i class="badge">регулировщик</i>`);
+    if (s.playable) out.push(`<i class="badge good">${ic("gamepad")}В игре</i>`);
+    else if (!isAssistant(s) && s.id !== "mini_regulator") out.push('<i class="badge">Черновик</i>');
+    if (s.errors) out.push(`<i class="badge bad" title="Ошибки проверки">${ic("error")}${s.errors}</i>`);
+    if (isAssistant(s)) out.push(`<i class="badge ${pendingApproval(s) ? "" : "good"}">${pendingApproval(s) ? "На одобрении" : "Одобрено"}</i>`);
+    if (s.regulator) out.push(`<i class="badge">Регулировщик</i>`);
     return out.join("");
   }
 
   // The home screen: the same scenes, big.
   App.renderHome = () => {
-    const questions = filter === "questions";
+    const regulator = state.section === "regulator";
+    const questions = !regulator && filter === "questions";
     const list = questions ? [] : filtered();
-    $("#home-screen").innerHTML = `<div class="home-head">
-        <div><h1>${questions ? "План вопросов" : filter === "assistant" ? "Сцены Codex" : "Игровые сцены"}</h1><p>${questions ? "Выбранные для реализации вопросы · нажмите на вопрос, чтобы открыть сцену" : filter === "assistant" ? "Проверьте сцену, при необходимости исправьте и одобрите добавление в игру" : `${count("all")} перекрёстков из билетов · в игре ${count("game")}`}</p></div>
-        <label class="search big">${ic("search")}<input type="search" id="home-q" placeholder="Номер билета или слова из вопроса" value="${esc(query)}"></label>
-        ${state.S ? `<button class="btn ghost" id="home-back">${ic("x")}Вернуться к сцене</button>` : ""}
+    const title = regulator ? "Регулировщик" : questions ? "План вопросов" : filter === "assistant" ? "Сцены Codex" : "Библиотека сцен";
+    const total = questions ? QuestionPlan.filterSummary?.(query).count : list.length;
+    const home = $("#home-screen");
+    const focused = focusKey(home);
+    home.innerHTML = `<div class="scene-browser"><div class="home-head">
+        <h1>${title}${total != null ? ` <span class="browser-total">${total}</span>` : ""}</h1>
+        ${regulator ? "" : `<label class="search big">${ic("search")}<input type="search" id="home-q" aria-label="Поиск по билетам и вопросам" placeholder="Билет или текст вопроса" value="${esc(query)}"></label>`}
+        ${state.S ? `<button class="btn ghost" id="home-back">${ic("map")}К сцене</button>` : ""}
       </div>
-      <div class="home-scene-navigation">${sectionNav()}${statusOptions()}</div>
-      ${questions ? QuestionPlan.homeHtml(query) : `<div class="home-grid">${list.map((s) => `<button class="card-scene" data-scene="${s.id}">
-        <span class="card-pic">${s.preview ? `<img src="${thumbUrl(s)}" loading="lazy" alt="">` : `<span class="no-pic">${ic("image")}</span>`}</span>
-        <span class="card-body"><b>${esc(App.sceneTitle(s.id))}</b><span class="badges">${badges(s)}</span></span>
-      </button>`).join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`}`;
+      ${regulator ? "" : `<div class="home-scene-navigation">${sectionNav()}${statusOptions()}</div>`}
+      ${questions ? QuestionPlan.homeHtml(query) : `<div class="home-grid">${list.map((s) => `<button class="card-scene ${s.id === state.id ? "current" : ""}" data-scene="${esc(s.id)}">
+        <span class="card-pic">${scenePicture(s)}<span class="card-badges badges">${badges(s)}</span></span>
+        <span class="card-body"><b>${esc(App.sceneTitle(s.id))}</b>${s.questionText ? `<small>${esc(s.questionText)}</small>` : ""}</span>
+      </button>`).join("") || `<p class="empty-note">${ic("search")}Ничего не нашлось</p>`}</div>`}</div>`;
     const q = $("#home-q");
-    if (renderHome.focus) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+    if (renderHome.focus && q) { q.focus(); q.setSelectionRange(...renderHome.focus); }
+    else if (focused) home.querySelector(focused)?.focus({ preventScroll: true });
     renderHome.focus = false;
   };
   const renderHome = App.renderHome;
@@ -167,12 +196,13 @@
   };
 
   document.addEventListener("input", (e) => {
+    const caret = () => [e.target.selectionStart ?? e.target.value.length, e.target.selectionEnd ?? e.target.value.length];
     if (e.target.id === "scene-q" || e.target.id === "home-q") {
       query = e.target.value;
       if (typeof QuestionPlan !== "undefined") QuestionPlan.setQuery(query);
-      if (e.target.id === "home-q") { renderHome.focus = true; App.renderHome(); } else { renderLeft.focus = true; renderLeft(); }
+      if (e.target.id === "home-q") { renderHome.focus = caret(); App.renderHome(); } else { renderLeft.focus = caret(); renderLeft(); }
     }
-    if (e.target.id === "lib-q") { libQuery = e.target.value; renderLeft.focus = true; renderLeft(); }
+    if (e.target.id === "lib-q") { libQuery = e.target.value; renderLeft.focus = caret(); renderLeft(); }
   });
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-toggle-scene-filters]")) { App.setSceneFiltersCollapsed(!filtersCollapsed); return; }
@@ -207,7 +237,7 @@
     { id: "actors", title: "Машины и люди", icon: "car" },
     { id: "lights", title: "Светофоры", icon: "light" },
     { id: "signs", title: "Знаки", icon: "flag" },
-    { id: "decor", title: "Дома, деревья, предметы", icon: "tree" },
+    { id: "decor", title: "Окружение", icon: "tree" },
   ];
   function rowsOf(layer) {
     const s = state.S;
@@ -257,14 +287,14 @@
             return `<div class="lrow sub ${any ? "on-in" : ""}" data-kind="${esc(p)}">${Thumbs.img("prop", p, "mini")}<span>${esc(Catalog.propName(p))}</span><em>${list.length}</em>
               <button class="lbtn lselect" data-select-prop="${esc(p)}" aria-label="Выбрать все: ${esc(Catalog.propName(p))}" title="Выбрать все">${ic("cursor")}</button>
               <button class="lbtn" data-open="${esc(key)}" aria-expanded="${!!op}" aria-label="${op ? "Свернуть" : "Раскрыть"}: ${esc(Catalog.propName(p))}">${ic("chevron", op ? "rot" : "")}</button></div>`
-              + (op ? list.map((r, i) => `<div class="lrow sub2 ${isOn(r) ? "on" : ""}" data-ref='${esc(JSON.stringify(r))}'><span>${esc(Catalog.propName(p))} ${i + 1}</span></div>`).join("") : "");
+              + (op ? list.map((r, i) => `<button class="lrow sub2 ${isOn(r) ? "on" : ""}" aria-pressed="${isOn(r)}" data-ref='${esc(JSON.stringify(r))}'><span>${esc(Catalog.propName(p))} ${i + 1}</span></button>`).join("") : "");
           }).join("");
         } else {
-          body = rows.map((r) => `<div class="lrow ${isOn(r) ? "on" : ""}" data-ref='${esc(JSON.stringify(r))}'>${rowIcon(r)}<span>${esc(App.nameOf(r))}</span></div>`).join("");
+          body = rows.map((r) => `<button class="lrow ${isOn(r) ? "on" : ""}" aria-pressed="${isOn(r)}" data-ref='${esc(JSON.stringify(r))}'>${rowIcon(r)}<span>${esc(App.nameOf(r))}</span></button>`).join("");
         }
       }
       return `<section class="lgroup ${hiddenL ? "off" : ""}">
-        <div class="lhead" data-open="${L.id}"><span class="caret">${ic("chevron", expanded ? "rot" : "")}</span>${ic(L.icon)}<b>${L.title}</b><em>${L.id === "actors" ? rows.length - 1 : rows.length}</em>
+        <div class="lhead"><button class="layer-disclosure" data-open="${L.id}" aria-expanded="${expanded}"><span class="caret">${ic("chevron", expanded ? "rot" : "")}</span>${ic(L.icon)}<b>${L.title}</b><em>${L.id === "actors" ? rows.length - 1 : rows.length}</em></button>
           <button class="lbtn lselect" data-select-layer="${L.id}" aria-label="Выбрать все: ${L.title}" title="Выбрать все" ${hiddenL || lockedL || !rows.length ? "disabled" : ""}>${ic("cursor")}</button>
           <button class="lbtn ${lockedL ? "on" : ""}" data-lock="${L.id}" data-tip="${lockedL ? "Открыть" : "Запереть"}" aria-label="${lockedL ? "Разблокировать" : "Заблокировать"}: ${L.title}">${ic(lockedL ? "lock" : "unlock")}</button>
           <button class="lbtn ${hiddenL ? "on" : ""}" data-eye="${L.id}" data-tip="${hiddenL ? "Показать" : "Скрыть"}" aria-label="${hiddenL ? "Показать" : "Скрыть"}: ${L.title}">${ic(hiddenL ? "eye-off" : "eye")}</button></div>
@@ -316,25 +346,30 @@
       else if (item.kind === "sign") Tools.pickSign(item.id);
       else if (item.kind === "light") Tools.pickLight(item.id === "light_tram" || !!item.tram);
       else Tools.set("light");
+      App.dismissCompactDrawer?.();
       return renderLeft();
     }
     const tex = e.target.closest("[data-texrow]");
-    if (tex) { state.texSel = tex.dataset.texrow; renderLeft(); App.renderInspector?.(); }
+    if (tex) { state.texSel = tex.dataset.texrow; renderLeft(); App.showInspector?.(); App.renderInspector?.(); }
   });
 
   // ---- library ----------------------------------------------------------------------------------
   function libraryPane() {
     const cat = state.catalog;
     if (!cat) return "";
-    const q = libQuery.trim().toLowerCase();
-    const hit = (name) => !q || name.toLowerCase().includes(q);
-    const inCategory = category => libraryCategory === "all" || libraryCategory === category;
+    const q = libQuery.trim().toLowerCase().replaceAll("ё", "е");
+    const hit = (name) => !q || name.toLowerCase().replaceAll("ё", "е").includes(q);
+    const regulator = state.id === "mini_regulator";
+    const inCategory = category => regulator ? category === "decor" : libraryCategory === "all" || libraryCategory === category;
     const tile = (item, name, pic, on) => `<button class="lib-tile ${on ? "on" : ""}" draggable="true" data-lib='${esc(JSON.stringify(item))}' data-tip="${esc(name)}" aria-label="Добавить: ${esc(name)}" aria-pressed="${!!on}">${pic}<span>${esc(name)}</span></button>`;
     const sections = [];
     const vehicles = Catalog.ACTOR_ORDER.filter((t) => cat.actorTypes[t] && hit(Catalog.ACTORS[t].name));
     if (inCategory("traffic") && vehicles.length) sections.push(`<h4>${ic("car")}Машины и люди</h4><div class="lib-grid">${vehicles.map((t) => tile({ kind: "actor", id: t }, Catalog.ACTORS[t].name, Thumbs.img("actor", t), Tools.current() === "actor" && Tools.opts.actorType === t)).join("")}</div>`);
     const signs = (cat.signs || []).filter((c) => hit(`${c} ${Catalog.signName(c)} ${cat.signInfo?.[c]?.folkName || ""} ${cat.signInfo?.[c]?.group || ""}`));
-    if (inCategory("signs") && signs.length) sections.push(`<h4>${ic("flag")}Знаки · ${signs.length}</h4><div class="lib-grid signs">${signs.map((c) => tile({ kind: "sign", id: c }, `${c} · ${Catalog.signName(c)}`, `<img class="thumb sign-pic" src="/asset/sign/${c==='5.33'?'5.33_plain':c}.svg" alt="" loading="lazy">`, Tools.current() === "sign" && Tools.opts.sign === c)).join("")}</div>`);
+    if (inCategory("signs") && signs.length) {
+      const visible = libraryCategory === "all" && !q ? signs.slice(0, 6) : signs;
+      sections.push(`<h4>${ic("flag")}Знаки · ${signs.length}${visible.length < signs.length ? `<button class="lib-more" data-library-category="signs" aria-label="Все знаки">Все знаки ${ic("chevron")}</button>` : ""}</h4><div class="lib-grid signs">${visible.map((c) => tile({ kind: "sign", id: c }, `${c} · ${Catalog.signName(c)}`, `<img class="thumb sign-pic" src="/asset/sign/${c==='5.33'?'5.33_plain':c}.svg" alt="" loading="lazy">`, Tools.current() === "sign" && Tools.opts.sign === c)).join("")}</div>`);
+    }
     if (inCategory("traffic") && hit("регулировщик")) sections.push(`<h4>${ic("person")}Регулировщик</h4><div class="lib-grid">${tile({ kind: "officer", id: "officer" }, "Регулировщик", `<span class="lib-icon">${ic("person")}</span>`, Tools.current() === "officer")}</div>`);
     if (inCategory("traffic") && cat.lightAsset && hit("светофор")) {
       sections.push(`<h4>${ic("light")}Светофоры</h4><div class="lib-grid">
@@ -355,7 +390,7 @@
       signs: `<img class="thumb" src="/asset/sign/${cat.signs?.includes("2.1") ? "2.1" : cat.signs?.[0] || "2.4"}.svg" alt="">`,
       decor: Thumbs.img("prop", "buildings/home_0"),
     };
-    return `<div class="pane-head"><div class="library-categories" role="group" aria-label="Категории объектов">${LIBRARY_CATEGORIES.map(([key, label]) => `<button class="library-category ${libraryCategory === key ? "on" : ""}" data-library-category="${key}" aria-pressed="${libraryCategory === key}">${categoryPictures[key]}<span>${label}</span></button>`).join("")}</div><label class="search">${ic("search")}<input type="search" id="lib-q" aria-label="Поиск объектов" placeholder="Найти: ель, автобус, киоск" value="${esc(libQuery)}"></label></div>
+    return `<div class="pane-head"><label class="search">${ic("search")}<input type="search" id="lib-q" aria-label="Поиск объектов" placeholder="Найти объект" value="${esc(libQuery)}"></label>${regulator ? "" : `<div class="library-categories" role="group" aria-label="Категории объектов">${LIBRARY_CATEGORIES.map(([key, label]) => `<button class="library-category ${libraryCategory === key ? "on" : ""}" data-library-category="${key}" aria-pressed="${libraryCategory === key}">${categoryPictures[key]}<span>${label}</span></button>`).join("")}</div>`}</div>
       <div class="lib">${sections.join("") || `<p class="empty-note">Ничего не нашлось</p>`}</div>`;
   }
   $("#left-body").addEventListener("dragstart", (e) => {
@@ -372,7 +407,7 @@
     return `<div class="tex-list">${Textures.GROUPS.map((g) => {
       const kinds = Textures.state.list.map((t) => t.kind).filter((k) => (Textures.INFO[k] || {}).group === g.id);
       if (!kinds.length) return "";
-      return `<h4>${g.title}</h4><div class="tex-grid">${kinds.map((k) => `<button class="tex-tile ${state.texSel === k ? "on" : ""}" data-texrow="${k}">
+      return `<h4>${g.title}</h4><div class="tex-grid">${kinds.map((k) => `<button class="tex-tile ${state.texSel === k ? "on" : ""}" aria-pressed="${state.texSel === k}" data-texrow="${k}">
         <canvas width="72" height="72" data-tex="${k}"></canvas><span>${esc(Textures.INFO[k]?.name || k)}</span>${Textures.isDirty(k) ? `<i class="dot"></i>` : ""}</button>`).join("")}</div>`;
     }).join("")}</div>`;
   }

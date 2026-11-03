@@ -9,7 +9,8 @@ for(const [style] of lines.styles)for(const width of [.08,.16,.6])for(const poin
 ])for(const border of [0,.04]) {
   const route={style,width,points};
   const geometry=lines.geometry(route,border);
-  assert(geometry.length>0 && geometry.length%3===0);
+  if(style==='text')assert.deepEqual(geometry,[],'a text label has no stroke mesh');
+  else assert(geometry.length>0 && geometry.length%3===0);
   assert(geometry.flat().every(Number.isFinite));
   fixtures.push({route,border,geometry});
 }
@@ -55,4 +56,4 @@ for(let i=0;i<6;i++)state.S.routes.push({id:`annotation_extra_${i}`,kind:'annota
 const saved=clone(state.S.routes.filter(r=>r.kind==='annotation'));Layout.apply(state.S);
 assert.deepEqual(clone(state.S.routes.filter(r=>r.kind==='annotation')),saved,'road regeneration preserves unlimited annotations');
 if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(fixtures));
-console.log('Annotations: three styles, short/duplicate/bent geometry, letter conversion, inspector, copy/rotate/move, locks and history PASS');
+console.log('Annotations: text and three line styles, short/duplicate/bent geometry, letter conversion, inspector, copy/rotate/move, locks and history PASS');
