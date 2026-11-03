@@ -942,6 +942,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
         background: background,
         spinRays: false,
         title: passed ? appL10n.examPassed : appL10n.examFailed,
+        // Провал по таймеру без подписи выглядел как провал по ошибкам.
+        caption: _timedOut && !passed ? appL10n.examResultTimeout : null,
         emblem: ResultVerdictEmblem(passed: passed),
         rays: passed,
         badge: ResultBadge(

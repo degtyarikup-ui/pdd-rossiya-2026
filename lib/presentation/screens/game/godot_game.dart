@@ -41,6 +41,7 @@ import 'package:pdd_app/presentation/screens/game/widgets/game_leaderboard_sheet
 import 'package:pdd_app/presentation/screens/game/widgets/game_over_dialog.dart';
 import 'package:pdd_app/presentation/screens/training/training_screen.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
+import 'package:pdd_app/presentation/widgets/result_share.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
 
 /// «Живой город» on Godot (game_godot/): the game runs on its own native
@@ -1263,7 +1264,10 @@ class GodotGame {
               );
               try {
                 final result = await SharePlus.instance.share(
-                  ShareParams(text: text),
+                  ShareParams(
+                    text: text,
+                    sharePositionOrigin: sharePositionOrigin(ctx),
+                  ),
                 );
                 if (result.status != ShareResultStatus.unavailable) return;
               } catch (_) {}

@@ -93,11 +93,16 @@ Future<void> shareResultCard(
   // Сначала пробуем поделиться картинкой: текстом никто не делится, а
   // квадрат 1080×1080 уходит в сторис и чаты автошкол. Если рендер или
   // сохранение не удались — молча откатываемся на текстовый путь.
+  final origin = sharePositionOrigin(context);
   final imageFile = await _saveCard(card);
   if (imageFile != null) {
     try {
       final result = await SharePlus.instance.share(
-        ShareParams(text: text, files: [imageFile]),
+        ShareParams(
+          text: text,
+          files: [imageFile],
+          sharePositionOrigin: origin,
+        ),
       );
       if (result.status != ShareResultStatus.unavailable) return;
     } catch (_) {
@@ -106,7 +111,9 @@ Future<void> shareResultCard(
   }
 
   try {
-    final result = await SharePlus.instance.share(ShareParams(text: text));
+    final result = await SharePlus.instance.share(
+      ShareParams(text: text, sharePositionOrigin: origin),
+    );
     // На web системный «Поделиться» (navigator.share) есть не везде — на
     // десктопе/без HTTPS он недоступен, и share_plus вернёт unavailable.
     // Тогда — запасной путь: копируем текст в буфер и уведомляем.
@@ -119,6 +126,19 @@ Future<void> shareResultCard(
   ScaffoldMessenger.of(
     context,
   ).showSnackBar(SnackBar(content: Text(appL10n.copiedToClipboard)));
+}
+
+/// Точка, к которой iPad привязывает окно «Поделиться», — центр экрана
+/// [context]. Без неё share_plus на iPad возвращает ошибку, и вместо окна
+/// текст молча уходил в буфер. На телефонах значение не используется.
+Rect? sharePositionOrigin(BuildContext context) {
+  final box = context.findRenderObject();
+  if (box is! RenderBox || !box.hasSize) return null;
+  return Rect.fromCenter(
+    center: box.localToGlobal(box.size.center(Offset.zero)),
+    width: 1,
+    height: 1,
+  );
 }
 
 /// Собирает картинку и кладёт во временный файл.

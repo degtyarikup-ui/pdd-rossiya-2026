@@ -151,6 +151,29 @@ void main() {
     );
   }
 
+  testWidgets('время вышло: итог провала объясняет причину', (tester) async {
+    await pumpExam(
+      tester,
+      rules: const ExamRules(
+        mainCount: 20,
+        totalSeconds: 3,
+        maxMistakes: 2,
+        additionalPerMistake: 5,
+        additionalSecondsPerBlock: 5 * 60,
+        blockSize: 5,
+        maxMistakesPerBlock: 2,
+      ),
+    );
+    await answerCurrent(tester, correct: true);
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await tester.pumpAndSettle();
+
+    expect(find.text('Экзамен не сдан'), findsOneWidget);
+    expect(find.text(appL10n.examResultTimeout), findsOneWidget);
+  });
+
   testWidgets('без ошибок: экзамен завершается сдачей после 20 ответов', (
     tester,
   ) async {
