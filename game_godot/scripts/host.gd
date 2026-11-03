@@ -169,19 +169,21 @@ static func send(data: Dictionary) -> void:
 		_post_to_parent("send", JSON.stringify(data))
 
 
-## Triggers the host/platform native share sheet (Android, iOS, Web) or copies to clipboard (Desktop).
-static func share(text: String, title := "") -> void:
+## Triggers the host/platform native share sheet (Android, iOS) with the result picture
+## (an absolute PNG path, may be ""), Web Share with text, or the clipboard (Desktop).
+static func share(text: String, title := "", image := "") -> void:
 	if embedded():
 		Engine.get_singleton("PddHost").send(JSON.stringify({
 			"event": "share",
 			"text": text,
-			"title": title
+			"title": title,
+			"image": image
 		}))
 	elif io != "":
 		var path := io.path_join("share-request.json")
 		var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
 		if file != null:
-			file.store_string(JSON.stringify({"text": text, "title": title}))
+			file.store_string(JSON.stringify({"text": text, "title": title, "image": image}))
 			file.close()
 			DirAccess.rename_absolute(path + ".tmp", path)
 	elif on_web():

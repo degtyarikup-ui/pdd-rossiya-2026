@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/l10n/l10n.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:pdd_app/presentation/widgets/result_share.dart';
 import 'package:pdd_app/presentation/widgets/result_stage.dart';
+import 'package:pdd_app/presentation/widgets/share_result_card.dart';
 
 /// Общие элементы мини-игр. Только токены темы, без обводок; лёгкая тень —
 /// лишь там, где белая карточка иначе теряется на светлом фоне.
@@ -368,24 +368,32 @@ typedef GameResultStat = ResultStat;
 /// Итог раунда в общем формате завершающих экранов ([ResultStage], как
 /// `game_godot/scripts/mini_game_results.gd`): синий фон во весь экран,
 /// эмблема игры, золотая плашка со счётом от нуля, две метрики, действия внизу.
-class GameResultOverlay extends StatelessWidget {
+/// «Поделиться» — иконка слева сверху, как у итогов учёбы: картинка
+/// [ShareResultCard] с эмблемой игры и текст.
+class GameResultOverlay extends StatefulWidget {
   const GameResultOverlay({
     super.key,
     required this.emblem,
     required this.title,
+    required this.gameTitle,
     required this.score,
     required this.bestScore,
     required this.isNewRecord,
     required this.stats,
     required this.onRestart,
     required this.onExit,
+    this.shareDetails,
     this.mistakesCount = 0,
     this.onMistakes,
-    this.onShare,
   });
 
   final Widget emblem;
+
+  /// Заголовок экрана: «Игра окончена», «Время вышло».
   final String title;
+
+  /// Название игры — заголовок картинки и текста «Поделиться».
+  final String gameTitle;
   final int score;
 
   /// Рекорд до этого раунда — показывается, если новый не поставлен.
@@ -394,78 +402,103 @@ class GameResultOverlay extends StatelessWidget {
 
   /// Две метрики под очками; числовые значения считаются от нуля вместе с очками.
   final List<GameResultStat> stats;
+
+  /// Строка подробностей в тексте «Поделиться»; по умолчанию — метрики.
+  final String? shareDetails;
   final VoidCallback onRestart;
   final VoidCallback onExit;
   final int mistakesCount;
   final VoidCallback? onMistakes;
-  final VoidCallback? onShare;
+
+  @override
+  State<GameResultOverlay> createState() => _GameResultOverlayState();
+}
+
+class _GameResultOverlayState extends State<GameResultOverlay> {
+  final _emblemKey = GlobalKey();
+
+  String? get _recordLine => widget.isNewRecord
+      ? appL10n.gameNewRecord
+      : widget.bestScore > 0
+      ? appL10n.gameBestScore(widget.bestScore)
+      : null;
 
   @override
   Widget build(BuildContext context) {
+    final mistakes = widget.mistakesCount;
     return ResultStage(
       background: ResultStage.success,
-      title: title,
-      emblem: emblem,
+      title: widget.title,
+      emblem: widget.emblem,
+      emblemKey: _emblemKey,
       badge: ResultBadge(
-        value: score,
+        value: widget.score,
         icon: Icons.star_rounded,
         color: AppThemeColors.light.gold,
         foreground: Colors.white,
-        semanticsLabel: '${appL10n.gameScore}: $score',
+        semanticsLabel: '${appL10n.gameScore}: ${widget.score}',
       ),
-      caption: isNewRecord
-          ? appL10n.gameNewRecord
-          : bestScore > 0
-          ? appL10n.gameBestScore(bestScore)
-          : null,
-      captionStrong: isNewRecord,
-      stats: stats,
+      caption: _recordLine,
+      captionStrong: widget.isNewRecord,
+      stats: widget.stats,
+      leading: [
+        ResultHeaderButton(
+          icon: Icons.ios_share_rounded,
+          tooltip: appL10n.share,
+          onPressed: _share,
+        ),
+      ],
       closeTooltip: appL10n.gameExit,
-      onClose: onExit,
+      onClose: widget.onExit,
       actions: [
-        if (mistakesCount > 0 && onMistakes != null)
+        if (mistakes > 0 && widget.onMistakes != null)
           ResultButton(
-            label: appL10n.gameRunMistakesButton(mistakesCount),
+            label: appL10n.gameRunMistakesButton(mistakes),
             icon: Icons.error_outline_rounded,
             primary: false,
-            onPressed: onMistakes!,
+            onPressed: widget.onMistakes!,
           ),
-        ResultButton(
-          label: appL10n.share,
-          icon: Icons.share_rounded,
-          primary: false,
-          onPressed: onShare ?? () => _defaultShare(context),
-        ),
         ResultButton(
           label: appL10n.gameRestart,
           primary: true,
-          onPressed: onRestart,
+          onPressed: widget.onRestart,
         ),
       ],
     );
   }
 
-  Future<void> _defaultShare(BuildContext context) async {
+  Future<void> _share() async {
     final config = CountryConfig.current;
-    final statLines = stats.map((s) => '${s.label}: ${s.value}').join(' · ');
-    final details = statLines.isNotEmpty
-        ? statLines
-        : appL10n.gameShareDetailsScoreOnly(score);
-    final resultLine = appL10n.gameShareScore(title, score);
+    final details =
+        widget.shareDetails ??
+        (widget.stats.isNotEmpty
+            ? widget.stats.map((s) => '${s.label}: ${s.value}').join(' · ')
+            : appL10n.gameShareDetailsScoreOnly(widget.score));
     final text = appL10n.gameShareText(
-      resultLine,
+      appL10n.gameShareScore(widget.gameTitle, widget.score),
       details,
       config.appTitle,
       config.shareUrl,
     );
-    try {
-      final result = await SharePlus.instance.share(ShareParams(text: text));
-      if (result.status != ShareResultStatus.unavailable) return;
-    } catch (_) {}
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
+    final emblem = await captureEmblem(_emblemKey);
+    if (!mounted) return;
+    await shareResultCard(
       context,
-    ).showSnackBar(SnackBar(content: Text(appL10n.copiedToClipboard)));
+      text: text,
+      card: ShareResultCard(
+        passed: true,
+        title: widget.gameTitle,
+        badge: '${widget.score}',
+        stats: [
+          for (final stat in widget.stats.take(2))
+            (value: stat.value, label: stat.label),
+        ],
+        footer: _recordLine,
+        siteUrl: config.shareCardHost,
+        emblem: emblem == null
+            ? null
+            : RawImage(image: emblem, fit: BoxFit.contain),
+      ),
+    );
   }
 }

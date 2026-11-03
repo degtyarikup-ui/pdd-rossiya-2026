@@ -3,15 +3,15 @@ import 'package:pdd_app/core/theme/app_theme.dart';
 import 'package:pdd_app/presentation/widgets/result_stage.dart';
 
 /// Квадратная карточка результата для шеринга (1080×1080): экзамена, билета,
-/// темы.
+/// темы, игры.
 ///
 /// Зачем: раньше «Поделиться» отправляло голый текст, а текстом никто не
 /// делится. Картинку кидают в чат автошколы и в сторис — это единственный
 /// канал, где о приложении узнают бесплатно и без бэкенда.
 ///
 /// Оформление — как у завершающего экрана ([ResultStage]): синий фон с лучами
-/// при успехе, красный без лучей при неудаче, эмблема, белая плашка «19/20»,
-/// две метрики и готовность к экзамену.
+/// при успехе, красный без лучей при неудаче, эмблема, белая плашка («19/20»
+/// или очки игры), две метрики и строка внизу (готовность, рекорд).
 ///
 /// Виджет НЕ показывается на экране: он рендерится офскрин в PNG
 /// (см. ShareCardRenderer), поэтому размеры здесь абсолютные, в пикселях
@@ -20,32 +20,32 @@ class ShareResultCard extends StatelessWidget {
   const ShareResultCard({
     super.key,
     required this.passed,
-    required this.correct,
-    required this.total,
-    required this.wrong,
-    required this.readinessPercent,
     required this.title,
-    required this.correctLabel,
-    required this.wrongLabel,
-    required this.readinessLabel,
+    required this.badge,
+    required this.stats,
     required this.siteUrl,
+    this.footer,
+    this.emblem,
   });
 
-  /// Сдан ли экзамен (пройден ли набор) — от этого зависит фон и эмблема.
+  /// Успех (синий, лучи) или неудача (красный, без лучей).
   final bool passed;
-  final int correct;
-  final int total;
-  final int wrong;
 
-  /// Готовность к экзамену в процентах (нижняя плашка).
-  final int readinessPercent;
-
-  /// Заголовок: «Экзамен сдан!», «Билет 1», название темы.
+  /// Заголовок: «Экзамен сдан!», «Билет 1», название игры.
   final String title;
-  final String correctLabel;
-  final String wrongLabel;
-  final String readinessLabel;
+
+  /// Текст белой плашки: «19/20» или очки.
+  final String badge;
+
+  /// Две метрики: число и короткая подпись под ним.
+  final List<({String value, String label})> stats;
+
+  /// Полупрозрачная строка внизу: готовность к экзамену, рекорд.
+  final String? footer;
   final String siteUrl;
+
+  /// Эмблема игры; по умолчанию — галочка или крестик итога учёбы.
+  final Widget? emblem;
 
   /// Сторона итоговой картинки в пикселях.
   static const double side = 1080;
@@ -125,7 +125,12 @@ class ShareResultCard extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: ResultVerdictEmblem(passed: passed, size: _emblem),
+                  child: SizedBox.square(
+                    dimension: _emblem,
+                    child:
+                        emblem ??
+                        ResultVerdictEmblem(passed: passed, size: _emblem),
+                  ),
                 ),
               ),
 
@@ -145,7 +150,7 @@ class ShareResultCard extends StatelessWidget {
                     child: Center(
                       widthFactor: 1,
                       child: Text(
-                        '$correct/$total',
+                        badge,
                         style: TextStyle(
                           fontSize: 100,
                           fontWeight: FontWeight.w800,
@@ -166,50 +171,46 @@ class ShareResultCard extends StatelessWidget {
                 right: _margin,
                 child: Row(
                   children: [
-                    Expanded(
-                      child: _Stat(
-                        value: '$correct',
-                        label: correctLabel,
-                        dim: dim,
+                    for (final stat in stats)
+                      Expanded(
+                        child: _Stat(
+                          value: stat.value,
+                          label: stat.label,
+                          dim: dim,
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: _Stat(
-                        value: '$wrong',
-                        label: wrongLabel,
-                        dim: dim,
-                      ),
-                    ),
                   ],
                 ),
               ),
 
-              // Готовность — полупрозрачная плашка, как вторичная кнопка экрана.
-              Positioned(
-                top: 900,
-                left: _margin,
-                right: _margin,
-                child: Container(
-                  height: 88,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  decoration: BoxDecoration(
-                    color: const Color(0x2EFFFFFF),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      '$readinessLabel — $readinessPercent%',
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w600,
+              // Готовность или рекорд — полупрозрачная плашка, как вторичная
+              // кнопка экрана.
+              if (footer != null)
+                Positioned(
+                  top: 900,
+                  left: _margin,
+                  right: _margin,
+                  child: Container(
+                    height: 88,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    decoration: BoxDecoration(
+                      color: const Color(0x2EFFFFFF),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        footer!,
+                        maxLines: 1,
+                        style: const TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
 
               // Подпись сайта: тонкая, не спорит с содержимым.
               Positioned(

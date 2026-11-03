@@ -298,6 +298,8 @@ res://tests/achievement_awards_check.gd` (также с реальным рен�
 на результате перекрёстков проходит за знаками и заканчивается под непрозрачной плашкой
 очков; её положение учитывает прокрутку, масштаб UI и высоту окна.
 
+Картинка «Поделиться» итога (1080×1080, как карточка приложения) — `scripts/share_card.gd`; проверка
+`godot --path game_godot --script res://tests/share_card_check.gd` (с настоящим рендером).
 Проверки: `tests/result_motion_check.gd`, `tests/city_results_check.gd`, `tests/mini_game_results_check.gd` (также
 `-- --text-scale=1.6`), `tests/reward_toast_check.gd`, `tests/ui_theme_check.gd`,
 `test/godot_garage_bridge_test.dart`.

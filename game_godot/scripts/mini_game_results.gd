@@ -96,9 +96,9 @@ func _init(_legacy_cover := "") -> void:
 	var head := HBoxContainer.new()
 	title_label = Ui.scaled_label(Ui.t("gameOver"), 20, 700, Color.WHITE, true)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var balance := Control.new()
-	balance.custom_minimum_size.x = 48
-	head.add_child(balance)
+	# «Поделиться» — слева в шапке, как у итогов билетов и экзамена в приложении.
+	share_button = _icon_control(0xf826, _on_share, Ui.t("share"))
+	head.add_child(share_button)
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	head.add_child(title_label)
 	exit_button = _close_control(func(): exit_pressed.emit(), Ui.t("gameExit"))
@@ -166,10 +166,6 @@ func _init(_legacy_cover := "") -> void:
 	mistakes_button.pressed.connect(func(): mistakes_pressed.emit())
 	_action_icon(mistakes_button, 0xf712)
 	actions.add_child(mistakes_button)
-	share_button = _button(Ui.t("share"), false)
-	share_button.pressed.connect(_on_share)
-	_action_icon(share_button, 0xe593)
-	actions.add_child(share_button)
 	_footer.add_child(actions)
 	restart_button = _button(Ui.t("gameRestart"), true)
 	restart_button.pressed.connect(func(): restart_pressed.emit())
@@ -237,7 +233,7 @@ func set_subject(kind: String) -> void:
 	_subject = kind
 	game_mode = kind
 	mistakes_button.visible = false
-	_actions.visible = true
+	_actions.visible = false
 	_actions.columns = 1
 	_post.visible = kind == "crossroads"
 	_wheel_starts.clear()
@@ -274,13 +270,11 @@ func layout(bounds: Rect2) -> void:
 	_fit_score(width)
 	card.position = Vector2(bounds.position.x + (bounds.size.x - width) / 2, bounds.position.y)
 	card.size = Vector2(width, bounds.size.y)
-	if mistakes_button.visible:
-		_actions.columns = 2 if width >= 340 else 1
-	else:
-		_actions.columns = 1
-	_actions.visible = true
+	# The weekly rating lives only in the app's Games tab; the city keeps its mistakes button.
+	_actions.columns = 1
+	_actions.visible = mistakes_button.visible
 	var button_height := maxf(48, roundf((22 if bounds.size.y < 320 else 32) * Ui.text_scale() + (12 if bounds.size.y < 320 else 16)))
-	for button in [mistakes_button, share_button, restart_button]:
+	for button in [mistakes_button, restart_button]:
 		button.custom_minimum_size.y = button_height
 	cover.custom_minimum_size.y = clampf(bounds.size.y * 0.36, 150, 300)
 
@@ -298,7 +292,6 @@ func show_results(score: int, solved: int, wrong: int, max_combo: int, is_record
 	stat_values[1].text = "×%d" % max_combo
 	stat_captions[1].text = Ui.t("gameComboLabel")
 	(mistakes_button.get_meta("caption") as Label).text = Ui.t("gameRunMistakesButton", {"count": wrong})
-	(share_button.get_meta("caption") as Label).text = Ui.t("share")
 	mistakes_button.disabled = wrong == 0
 	visible = true
 	scroll.scroll_vertical = 0
@@ -490,9 +483,29 @@ func _on_share() -> void:
 		"result": result_line,
 		"details": details,
 		"title": "ПДД Россия 2026",
-		"url": "https://pdd-drive.ru"
+		"url": "https://" + ShareCard.SITE
 	})
-	Host.share(text, game_title)
+	Host.share(text, game_title, await _share_picture(game_title))
+
+## The result as a 1080×1080 picture next to the text; "" when it cannot be saved.
+func _share_picture(game_title: String) -> String:
+	var emblem: Image = null
+	if cover.texture != null: emblem = cover.texture.get_image()
+	var footer := ""
+	if record_badge.visible: footer = record_badge.text
+	elif best_label.visible: footer = best_label.text
+	var stats := []
+	for i in mini(2, stat_values.size()):
+		if stat_values[i].get_parent().visible:
+			stats.append({"value": stat_values[i].text, "label": stat_captions[i].text})
+	var image: Image = await ShareCard.render(self, {
+		"title": game_title, "badge": str(_score_total), "stats": stats, "footer": footer, "emblem": emblem,
+	})
+	if image == null: return ""
+	DirAccess.make_dir_recursive_absolute("user://share")
+	var path := "user://share/game_result.png"
+	if image.save_png(path) != OK: return ""
+	return ProjectSettings.globalize_path(path)
 
 func _button(text: String, primary: bool) -> Button:
 	var button := Button.new()
@@ -627,13 +640,17 @@ func dismiss_review() -> bool:
 	return true
 
 func _close_control(action: Callable, label := "") -> Button:
+	var button := _icon_control(0xf647, action, label if label != "" else Ui.t("close"))
+	button.size_flags_horizontal = SIZE_SHRINK_END
+	return button
+
+func _icon_control(code: int, action: Callable, label: String) -> Button:
 	var button := _button("", true)
 	button.custom_minimum_size = Vector2(48, 48)
-	button.size_flags_horizontal = SIZE_SHRINK_END
 	button.size_flags_vertical = SIZE_SHRINK_CENTER
 	button.add_theme_font_size_override("font_size", 14)
-	button.accessibility_name = label if label != "" else Ui.t("close")
-	var icon := Ui.icon(0xf647, 24, Color(Ui.LIGHT.text))
+	button.accessibility_name = label
+	var icon := Ui.icon(code, 24, Color(Ui.LIGHT.text))
 	icon.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

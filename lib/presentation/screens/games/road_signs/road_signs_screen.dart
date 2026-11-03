@@ -4,11 +4,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -27,7 +25,6 @@ import 'package:pdd_app/presentation/screens/games/road_signs/widgets/road_signs
 import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Главный экран игровой сессии «Знаки» (Road Signs Quiz).
 class RoadSignsScreen extends ConsumerStatefulWidget {
@@ -552,6 +549,12 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
       resultBuilder: (_) => GameResultOverlay(
         emblem: const RoadSignsEmblem(),
         title: _timeUp ? appL10n.gameTimeUp : appL10n.gameOverTitle,
+        gameTitle: appL10n.gamesRoadSignsTitle,
+        shareDetails: appL10n.gameShareDetails(
+          _correctAnswers,
+          _totalAnswered,
+          _maxCombo,
+        ),
         score: _score,
         bestScore: _previousBest,
         isNewRecord: _isNewRecord,
@@ -564,39 +567,9 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
         ],
         mistakesCount: _mistakes.length,
         onMistakes: _mistakes.isNotEmpty ? _showMistakes : null,
-        onShare: _shareResult,
         onRestart: () => setState(_startRound),
         onExit: () => Navigator.of(context).pop(),
       ),
-    );
-  }
-
-  Future<void> _shareResult() async {
-    HapticFeedbackHelper.tap();
-    final config = CountryConfig.current;
-    final details = appL10n.gameShareDetails(
-      _correctAnswers,
-      _totalAnswered,
-      _maxCombo,
-    );
-    final resultLine = appL10n.gameShareScore(
-      appL10n.gamesRoadSignsTitle,
-      _score,
-    );
-    final text = appL10n.gameShareText(
-      resultLine,
-      details,
-      config.appTitle,
-      config.shareUrl,
-    );
-    try {
-      final result = await SharePlus.instance.share(ShareParams(text: text));
-      if (result.status != ShareResultStatus.unavailable) return;
-    } catch (_) {}
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(appL10n.copiedToClipboard)),
     );
   }
 

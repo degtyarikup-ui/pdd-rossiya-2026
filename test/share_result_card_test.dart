@@ -20,14 +20,13 @@ void main() {
   }) {
     return ShareResultCard(
       passed: passed,
-      correct: correct,
-      total: total,
-      wrong: wrong,
-      readinessPercent: readiness,
       title: passed ? 'Экзамен сдан' : 'Экзамен не сдан',
-      correctLabel: correctLabel,
-      wrongLabel: wrongLabel,
-      readinessLabel: 'Готовность к экзамену',
+      badge: '$correct/$total',
+      stats: [
+        (value: '$correct', label: correctLabel),
+        (value: '$wrong', label: wrongLabel),
+      ],
+      footer: 'Готовность к экзамену — $readiness%',
       siteUrl: 'pdd-drive.app',
     );
   }

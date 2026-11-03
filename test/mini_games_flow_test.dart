@@ -588,13 +588,14 @@ void main() {
   testWidgets('Swiper result uses the shared full-screen format', (
     tester,
   ) async {
-    var restarts = 0, exits = 0, mistakes = 0, shares = 0;
+    var restarts = 0, exits = 0, mistakes = 0;
     await open(
       tester,
       Scaffold(
         body: GameResultOverlay(
           emblem: const SignSwiperEmblem(),
           title: appL10n.gameOverTitle,
+          gameTitle: appL10n.gamesSignsTitle,
           score: 3900,
           bestScore: 1500,
           isNewRecord: false,
@@ -606,7 +607,6 @@ void main() {
           onMistakes: () => mistakes++,
           onRestart: () => restarts++,
           onExit: () => exits++,
-          onShare: () => shares++,
         ),
       ),
       size: const Size(320, 568),
@@ -617,12 +617,13 @@ void main() {
     expect(find.text('3900'), findsOneWidget);
     expect(find.text('10/13'), findsOneWidget);
     expect(find.text(appL10n.gameBestScore(1500)), findsOneWidget);
-    expect(find.text(appL10n.share), findsOneWidget);
+    // «Поделиться» — иконкой в шапке, как у итогов учёбы, а не кнопкой внизу.
+    expect(find.byTooltip(appL10n.share), findsOneWidget);
+    expect(find.text(appL10n.share), findsNothing);
     await tester.tap(find.text(appL10n.gameRestart));
     await tester.tap(find.text(appL10n.gameRunMistakesButton(3)));
-    await tester.tap(find.text(appL10n.share));
     await tester.tap(find.byTooltip(appL10n.gameExit));
-    expect((restarts, mistakes, exits, shares), (1, 1, 1, 1));
+    expect((restarts, mistakes, exits), (1, 1, 1));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });

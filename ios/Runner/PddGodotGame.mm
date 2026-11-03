@@ -450,8 +450,12 @@ static void HideGame(dispatch_block_t completion) {
   if (![request isKindOfClass:NSDictionary.class]) return;
   NSString *text = request[@"text"];
   if (![text isKindOfClass:NSString.class] || text.length == 0) return;
+  // The result picture rendered by the game (an absolute PNG path), shared next to the text.
+  NSString *imagePath = request[@"image"];
+  UIImage *image = [imagePath isKindOfClass:NSString.class] && imagePath.length > 0 ? [UIImage imageWithContentsOfFile:imagePath] : nil;
+  NSArray *items = image ? @[image, text] : @[text];
   dispatch_async(dispatch_get_main_queue(), ^{
-    UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[text] applicationActivities:nil];
+    UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
     UIViewController *presenter = gGameWindow.rootViewController ?: UIApplication.sharedApplication.keyWindow.rootViewController;
     if (activity.popoverPresentationController) {
       activity.popoverPresentationController.sourceView = presenter.view;

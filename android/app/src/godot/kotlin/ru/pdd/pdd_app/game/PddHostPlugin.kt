@@ -150,16 +150,36 @@ class PddHostPlugin(godot: Godot, private val host: GodotGameActivity) : GodotPl
             "share" -> {
                 val text = event.optString("text")
                 val title = event.optString("title")
+                val image = event.optString("image")
                 host.runOnUiThread {
+                    // The picture goes through share_plus's provider (cache/share_plus/), declared
+                    // in the merged manifest; without it the result is shared as text only.
+                    val uri = image.takeIf { it.isNotEmpty() }?.let { path ->
+                        try {
+                            val dir = java.io.File(host.cacheDir, "share_plus").apply { mkdirs() }
+                            val copy = java.io.File(dir, "game_result.png")
+                            java.io.File(path).copyTo(copy, overwrite = true)
+                            androidx.core.content.FileProvider.getUriForFile(host, host.packageName + ".flutter.share_provider", copy)
+                        } catch (e: Exception) {
+                            android.util.Log.w("PddShare", "Result picture unavailable", e)
+                            null
+                        }
+                    }
                     val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                        type = "text/plain"
+                        type = if (uri != null) "image/png" else "text/plain"
                         putExtra(android.content.Intent.EXTRA_TEXT, text)
+                        if (uri != null) {
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            clipData = android.content.ClipData.newRawUri(title, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
                         if (title.isNotEmpty()) {
                             putExtra(android.content.Intent.EXTRA_SUBJECT, title)
                         }
                     }
                     val chooser = android.content.Intent.createChooser(shareIntent, title.ifEmpty { null })
                     chooser.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    if (uri != null) chooser.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     host.startActivity(chooser)
                 }
             }

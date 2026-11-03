@@ -1,10 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:pdd_app/core/config/country_config.dart';
 import 'package:pdd_app/core/config/game_economy.dart';
 import 'package:pdd_app/core/constants/app_colors.dart';
 import 'package:pdd_app/core/constants/app_dimensions.dart';
@@ -25,7 +23,6 @@ import 'package:pdd_app/presentation/screens/games/widgets/game_ui.dart';
 import 'package:pdd_app/presentation/screens/games/widgets/mini_game_hud.dart';
 import 'package:pdd_app/presentation/widgets/achievement_award_screen.dart';
 import 'package:pdd_app/presentation/widgets/app_loading_indicator.dart';
-import 'package:share_plus/share_plus.dart';
 
 class SignSwiperScreen extends ConsumerStatefulWidget {
   const SignSwiperScreen({super.key});
@@ -435,6 +432,12 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       resultBuilder: (_) => GameResultOverlay(
         emblem: const SignSwiperEmblem(),
         title: _timeUp ? appL10n.gameTimeUp : appL10n.gameOverTitle,
+        gameTitle: appL10n.gamesSignsTitle,
+        shareDetails: appL10n.gameShareDetails(
+          _correctAnswers,
+          _totalSwipedInRound,
+          _maxCombo,
+        ),
         score: _score,
         bestScore: _previousBest,
         isNewRecord: _isNewRecord,
@@ -447,39 +450,9 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
         ],
         mistakesCount: _mistakes.length,
         onMistakes: _showMistakes,
-        onShare: _shareResult,
         onRestart: _startRound,
         onExit: () => Navigator.of(context).pop(),
       ),
-    );
-  }
-
-  Future<void> _shareResult() async {
-    HapticFeedbackHelper.tap();
-    final config = CountryConfig.current;
-    final details = appL10n.gameShareDetails(
-      _correctAnswers,
-      _totalSwipedInRound,
-      _maxCombo,
-    );
-    final resultLine = appL10n.gameShareScore(
-      appL10n.gamesSignsTitle,
-      _score,
-    );
-    final text = appL10n.gameShareText(
-      resultLine,
-      details,
-      config.appTitle,
-      config.shareUrl,
-    );
-    try {
-      final result = await SharePlus.instance.share(ShareParams(text: text));
-      if (result.status != ShareResultStatus.unavailable) return;
-    } catch (_) {}
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(appL10n.copiedToClipboard)),
     );
   }
 

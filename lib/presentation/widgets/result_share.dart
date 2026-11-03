@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,8 +15,7 @@ import 'package:pdd_app/l10n/l10n.dart';
 import 'package:pdd_app/presentation/widgets/share_result_card.dart';
 
 /// «Поделиться» с завершающего экрана экзамена, билета или темы: картинка
-/// [ShareResultCard] и текст (share_plus: Android/iOS — нативный лист, web —
-/// Web Share API, без него — копия текста в буфер).
+/// [ShareResultCard] и текст.
 Future<void> shareStudyResult(
   BuildContext context, {
   required bool passed,
@@ -34,18 +35,65 @@ Future<void> shareStudyResult(
   // Готовность — тот же показатель, что на главной: доля верно решённых
   // вопросов от всей базы категории.
   final container = ProviderScope.containerOf(context, listen: false);
+  String? footer;
+  try {
+    final stats = await container.read(statsProvider.future);
+    final correctTotal = stats['correctAnswers'] ?? 0;
+    final totalQuestions = stats['totalQuestions'] ?? 0;
+    final readiness = totalQuestions > 0
+        ? (correctTotal / totalQuestions * 100).round()
+        : 0;
+    footer = '${appL10n.examReadiness} — $readiness%';
+  } catch (_) {
+    // Без готовности карточка просто короче.
+  }
+  if (!context.mounted) return;
+  await shareResultCard(
+    context,
+    text: text,
+    card: ShareResultCard(
+      passed: passed,
+      title: title,
+      badge: '$correct/$total',
+      // Короткие формы со склонением: на карточке подпись стоит прямо под
+      // числом, и «6 ошибка» из обычного ярлыка выглядело бы безграмотно —
+      // а картинку увидят посторонние люди.
+      stats: [
+        (value: '$correct', label: appL10n.shareCardCorrectWord(correct)),
+        (value: '$wrong', label: appL10n.shareCardWrongWord(wrong)),
+      ],
+      footer: footer,
+      siteUrl: config.shareCardHost,
+    ),
+  );
+}
 
+/// Снимок эмблемы с экрана итога (там она уже нарисована, вместе с SVG) —
+/// для карточки игры. null, если снять не удалось.
+Future<ui.Image?> captureEmblem(GlobalKey key) async {
+  try {
+    final boundary =
+        key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null || !boundary.hasSize) return null;
+    // Эмблема на карточке — 320 px; снимаем с запасом под это.
+    final ratio = 400 / boundary.size.shortestSide;
+    return await boundary.toImage(pixelRatio: ratio);
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Делится картинкой [card] и [text] (share_plus: Android/iOS — нативный
+/// лист, web — Web Share API, без него — копия текста в буфер).
+Future<void> shareResultCard(
+  BuildContext context, {
+  required ShareResultCard card,
+  required String text,
+}) async {
   // Сначала пробуем поделиться картинкой: текстом никто не делится, а
   // квадрат 1080×1080 уходит в сторис и чаты автошкол. Если рендер или
   // сохранение не удались — молча откатываемся на текстовый путь.
-  final imageFile = await _buildShareImage(
-    container,
-    passed: passed,
-    title: title,
-    correct: correct,
-    total: total,
-    wrong: wrong,
-  );
+  final imageFile = await _saveCard(card);
   if (imageFile != null) {
     try {
       final result = await SharePlus.instance.share(
@@ -73,50 +121,21 @@ Future<void> shareStudyResult(
   ).showSnackBar(SnackBar(content: Text(appL10n.copiedToClipboard)));
 }
 
-/// Собирает картинку результата и кладёт во временный файл.
+/// Собирает картинку и кладёт во временный файл.
 ///
 /// Возвращает null на вебе (там нет файловой системы под share_plus и
 /// картинку всё равно не приложить) и при любой ошибке рендера — тогда
 /// вызывающий код делится обычным текстом.
-Future<XFile?> _buildShareImage(
-  ProviderContainer container, {
-  required bool passed,
-  required String title,
-  required int correct,
-  required int total,
-  required int wrong,
-}) async {
+Future<XFile?> _saveCard(ShareResultCard card) async {
   if (kIsWeb) return null;
   try {
-    final stats = await container.read(statsProvider.future);
-    final correctTotal = stats['correctAnswers'] ?? 0;
-    final totalQuestions = stats['totalQuestions'] ?? 0;
-    final readiness = totalQuestions > 0
-        ? (correctTotal / totalQuestions * 100).round()
-        : 0;
-
     final png = await ShareCardRenderer.renderToPng(
       size: const Size(ShareResultCard.side, ShareResultCard.side),
-      widget: ShareResultCard(
-        passed: passed,
-        correct: correct,
-        total: total,
-        wrong: wrong,
-        readinessPercent: readiness,
-        title: title,
-        // Короткие формы со склонением: на карточке подпись стоит прямо
-        // под числом, и «6 ошибка» из обычного ярлыка выглядело бы
-        // безграмотно — а картинку увидят посторонние люди.
-        correctLabel: appL10n.shareCardCorrectWord(correct),
-        wrongLabel: appL10n.shareCardWrongWord(wrong),
-        readinessLabel: appL10n.examReadiness,
-        siteUrl: CountryConfig.current.shareCardHost,
-      ),
+      widget: card,
     );
     if (png == null) return null;
-
     final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/study_result.png');
+    final file = File('${dir.path}/result_card.png');
     await file.writeAsBytes(png, flush: true);
     return XFile(file.path, mimeType: 'image/png');
   } catch (_) {

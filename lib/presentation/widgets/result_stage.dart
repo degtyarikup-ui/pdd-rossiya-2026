@@ -26,6 +26,7 @@ class ResultStage extends StatefulWidget {
     this.leading = const [],
     this.spinRays = true,
     this.rays = true,
+    this.emblemKey,
   });
 
   static const success = Color(0xFF0574F8); // AppColors.light.accent
@@ -60,6 +61,9 @@ class ResultStage extends StatefulWidget {
 
   /// Лучи — знак успеха: на итоге неудачи их нет.
   final bool rays;
+
+  /// Ключ слоя эмблемы: по нему эмблему снимают для картинки «Поделиться».
+  final GlobalKey? emblemKey;
 
   @override
   State<ResultStage> createState() => _ResultStageState();
@@ -232,7 +236,10 @@ class _ResultStageState extends State<ResultStage>
                                               ),
                                             ),
                                           ),
-                                          widget.emblem,
+                                          RepaintBoundary(
+                                            key: widget.emblemKey,
+                                            child: widget.emblem,
+                                          ),
                                         ],
                                       ),
                                     ),
