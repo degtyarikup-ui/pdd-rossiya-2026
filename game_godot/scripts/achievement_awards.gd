@@ -135,7 +135,7 @@ void fragment() {
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	head.add_child(heading)
-	head.add_child(controls._close_control(func(): advance(true), Ui.t("close")))
+	head.add_child(controls._header_button(MiniGameHud.ICON_CLOSE, func(): advance(true), Ui.t("close")))
 	_card.add_child(head)
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
