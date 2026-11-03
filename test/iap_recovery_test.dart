@@ -108,6 +108,7 @@ void main() {
         }),
       });
       bool online = false;
+      bool storeStatusUnavailable = false;
       int verifications = 0;
       final delivered = Completer<void>();
       await http.runWithClient(
@@ -124,6 +125,7 @@ void main() {
           expect(PremiumService.instance.isPremium, isFalse);
           // The automatic re-check backs off instead of re-sending every 30 s.
           expect(iap.nextRetryDelay, const Duration(minutes: 1));
+          storeStatusUnavailable = true;
           // Another tap while the first receipt is unconfirmed must not
           // initiate a second charge or finish the unverified transaction.
           expect(
@@ -135,6 +137,11 @@ void main() {
           expect(store.completed, isEmpty);
           await Future<void>.delayed(Duration.zero);
           online = true;
+          storeStatusUnavailable = false;
+          iap.retryPendingPurchases();
+          // App resume and an auth notification may arrive together. Once
+          // delivered, a queued retry must not verify/finish the receipt again.
+          iap.retryPendingPurchases();
           iap.retryPendingPurchases();
           await delivered.future;
           // Verification and acknowledgement are asynchronous stream processing.
@@ -173,6 +180,7 @@ void main() {
             );
           }
           if (request.url.path == '/api/user/store/status') {
+            if (storeStatusUnavailable) return http.Response('{}', 503);
             return http.Response('{"configured":true}', 200);
           }
           if (request.url.path == '/api/user/purchase') {

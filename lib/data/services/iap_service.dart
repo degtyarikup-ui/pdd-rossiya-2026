@@ -229,17 +229,16 @@ class IapService extends ChangeNotifier {
       }
       return (purchase, owner);
     }).toList();
-    _enqueueOwnedPurchases(ownedPurchases);
+    _enqueuePurchaseWork(() => _onPurchaseUpdated(ownedPurchases));
   }
 
-  void _enqueueOwnedPurchases(List<(PurchaseDetails, String?)> purchases) {
-    _purchaseQueue = _purchaseQueue
-        .then((_) => _onPurchaseUpdated(purchases))
-        .catchError((Object error) {
-          _report('iap.process', error: error);
-          _safeCompletePurchase(PurchaseResult.error);
-          _safeCompleteRestore(false);
-        });
+  void _enqueuePurchaseWork(Future<void> Function() work) {
+    final next = _purchaseQueue.then((_) => work());
+    _purchaseQueue = next.catchError((Object error) {
+      _report('iap.process', error: error);
+      _safeCompletePurchase(PurchaseResult.error);
+      _safeCompleteRestore(false);
+    });
   }
 
   void _onAuthChanged() {
@@ -248,18 +247,34 @@ class IapService extends ChangeNotifier {
     }
   }
 
+  bool _retryQueued = false;
+
   /// Retry unacknowledged payments after reconnecting or signing in. The
   /// store remains the durable queue across app restarts; no receipt is
   /// persisted in application preferences.
   void retryPendingPurchases() {
     _retryTimer?.cancel();
     _retryTimer = null;
-    final auth = AuthService.instance;
-    if (!supportsStoreBilling || !auth.hasServerSession) return;
-    final purchases = _pendingVerification.values
-        .where((entry) => entry.$2 == null || entry.$2 == auth.currentUser?.id)
-        .toList();
-    if (purchases.isNotEmpty) _enqueueOwnedPurchases(purchases);
+    if (_retryQueued ||
+        _pendingVerification.isEmpty ||
+        !supportsStoreBilling ||
+        !AuthService.instance.hasServerSession) {
+      return;
+    }
+    _retryQueued = true;
+    _enqueuePurchaseWork(() async {
+      _retryQueued = false;
+      // The previous queue item can finish a receipt before this retry runs.
+      // Re-read both pending receipts and the current owner at execution time.
+      final auth = AuthService.instance;
+      if (!auth.hasServerSession) return;
+      final purchases = _pendingVerification.values
+          .where(
+            (entry) => entry.$2 == null || entry.$2 == auth.currentUser?.id,
+          )
+          .toList();
+      if (purchases.isNotEmpty) await _onPurchaseUpdated(purchases);
+    });
   }
 
   /// Pauses before re-checking an unconfirmed payment. A fixed 30 seconds
@@ -516,10 +531,31 @@ class IapService extends ChangeNotifier {
     if (_paymentBusy) return PurchaseResult.error;
     _paymentBusy = true;
     try {
-      return await _buyNative(tier);
+      // A delivered receipt takes priority over a failed availability probe.
+      // Otherwise the paywall could offer another payment via SBP.
+      if (_retryDeliveredProduct(tier)) return PurchaseResult.error;
+      final result = await _buyNative(tier);
+      if ((result == PurchaseResult.storeUnavailable ||
+              result == PurchaseResult.productNotFound) &&
+          _retryDeliveredProduct(tier)) {
+        return PurchaseResult.error;
+      }
+      return result;
     } finally {
       _paymentBusy = false;
     }
+  }
+
+  bool _retryDeliveredProduct(PremiumTier tier) {
+    if (!_pendingVerification.values.any(
+      (entry) => entry.$1.productID == _productIdForTier(tier),
+    )) {
+      return false;
+    }
+    _lastFailure = PurchaseFailure.verificationPending;
+    _lastErrorMessage = appL10n.purchaseVerificationPending;
+    retryPendingPurchases();
+    return true;
   }
 
   Future<PurchaseResult> _buyNative(PremiumTier tier) async {
@@ -545,17 +581,6 @@ class IapService extends ChangeNotifier {
       }
     }
 
-    // A delivered transaction awaiting verification/acknowledgement must not
-    // open another payment sheet. Keep its captured owner and retry delivery.
-    if (_pendingVerification.values.any(
-      (entry) => entry.$1.productID == _productIdForTier(tier),
-    )) {
-      _lastFailure = PurchaseFailure.verificationPending;
-      _lastErrorMessage = appL10n.purchaseVerificationPending;
-      retryPendingPurchases();
-      return PurchaseResult.error;
-    }
-
     await loadProducts(phase: ProductLoadPhase.purchase, purchaseTier: tier);
     final product = _findProductForTier(tier);
 
@@ -565,6 +590,8 @@ class IapService extends ChangeNotifier {
       return PurchaseResult.productNotFound;
     }
 
+    // StoreKit/Play may deliver an existing purchase while loading prices.
+    if (_retryDeliveredProduct(tier)) return PurchaseResult.error;
     final pendingOwner = _pendingStoreOwners[product.id];
     if (pendingOwner != null && pendingOwner != owner) {
       return PurchaseResult.error;
