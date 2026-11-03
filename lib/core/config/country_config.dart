@@ -93,6 +93,9 @@ class CountryConfig {
   /// протокола. Отдельно от [webUrl]: на картинке уже новый домен.
   final String shareCardHost;
 
+  /// Ссылка в тексте «Поделиться» (экзамен, билеты, игры) — новый домен.
+  String get shareUrl => 'https://$shareCardHost';
+
   /// Published store identities; dev builds must also link to these listings.
   final String androidPackageName;
   final String appStoreId;

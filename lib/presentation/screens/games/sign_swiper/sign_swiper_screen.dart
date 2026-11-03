@@ -470,7 +470,7 @@ class _SignSwiperScreenState extends ConsumerState<SignSwiperScreen> {
       resultLine,
       details,
       config.appTitle,
-      config.webUrl,
+      config.shareUrl,
     );
     try {
       final result = await SharePlus.instance.share(ShareParams(text: text));

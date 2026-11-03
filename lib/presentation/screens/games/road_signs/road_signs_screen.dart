@@ -587,7 +587,7 @@ class _RoadSignsScreenState extends ConsumerState<RoadSignsScreen> {
       resultLine,
       details,
       config.appTitle,
-      config.webUrl,
+      config.shareUrl,
     );
     try {
       final result = await SharePlus.instance.share(ShareParams(text: text));

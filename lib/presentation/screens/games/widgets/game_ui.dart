@@ -456,7 +456,7 @@ class GameResultOverlay extends StatelessWidget {
       resultLine,
       details,
       config.appTitle,
-      config.webUrl,
+      config.shareUrl,
     );
     try {
       final result = await SharePlus.instance.share(ShareParams(text: text));
