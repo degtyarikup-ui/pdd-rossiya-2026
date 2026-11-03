@@ -12,6 +12,7 @@ import 'package:pdd_app/core/constants/app_dimensions.dart';
 import 'package:pdd_app/data/models/game_situation.dart';
 import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 import 'package:pdd_app/presentation/screens/game/widgets/game_fuel_widgets.dart';
+import 'package:pdd_app/presentation/widgets/result_stage.dart';
 
 class GameOverDialog extends StatefulWidget {
   final GameState state;
@@ -130,6 +131,17 @@ class _GameOverDialogState extends State<GameOverDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (onShare != null)
+                    Align(
+                      alignment: Alignment.topLeft,
+                      child: ResultHeaderButton(
+                        key: const ValueKey('game-over-share'),
+                        icon: Icons.ios_share_rounded,
+                        iconColor: colors.primaryText,
+                        tooltip: appL10n.share,
+                        onPressed: onShare,
+                      ),
+                    ),
                   if (fuelEmpty)
                     _FuelEmptyHeader(refillAt: widget.fuelRefillAt)
                   else ...[
@@ -277,10 +289,9 @@ class _GameOverDialogState extends State<GameOverDialog> {
                       ),
                     ),
                   // Secondary actions side by side: the run's mistakes (open
-                  // as ticket questions), sharing the result, and weekly rating.
+                  // as ticket questions) and weekly rating.
                   if ((state.mistakes.isNotEmpty && onReview != null) ||
-                      onLeaderboard != null ||
-                      onShare != null) ...[
+                      onLeaderboard != null) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -294,18 +305,6 @@ class _GameOverDialogState extends State<GameOverDialog> {
                               ),
                               color: colors.red,
                               onPressed: () => onReview(state.mistakes),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        if (onShare != null) ...[
-                          Expanded(
-                            child: GameSecondaryButton(
-                              key: const ValueKey('game-over-share'),
-                              icon: Icons.share_rounded,
-                              label: appL10n.share,
-                              color: colors.accent,
-                              onPressed: onShare,
                             ),
                           ),
                           if (onLeaderboard != null) const SizedBox(width: 8),

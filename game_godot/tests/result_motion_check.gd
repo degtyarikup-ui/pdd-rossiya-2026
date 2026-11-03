@@ -39,7 +39,12 @@ func _run() -> void:
 		check(result._car.position.is_zero_approx() and is_zero_approx(result._car.rotation.y), "car settles in its final pose " + locale)
 		check(result._preview.render_target_update_mode != SubViewport.UPDATE_ALWAYS, "3D rendering ends after arrival " + locale)
 		check(result._glow.modulate.a == 1.0 and result._rays.is_processing(), "glow and inexpensive rays remain " + locale)
-		for control in [result.exit_button, result.mistakes_button, result.restart_button]:
+		for control in [result.share_button, result.exit_button]:
+			var normal := control.get_theme_stylebox("normal") as StyleBoxFlat
+			var icon := control.get_child(0) as Label
+			check(normal.bg_color.a == 0 and icon.get_theme_color("font_color") == Color.WHITE
+				and icon.get_theme_font_size("font_size") == 24, "header shows only a white 24px icon " + locale)
+		for control in [result.mistakes_button, result.restart_button]:
 			for state in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
 				var style := control.get_theme_stylebox(state) as StyleBoxFlat
 				check(style != null and style.corner_radius_top_left == 12 and style.corner_radius_top_right == 12 and style.corner_radius_bottom_left == 12 and style.corner_radius_bottom_right == 12, "all button states preserve rounding %s %s" % [locale, state])

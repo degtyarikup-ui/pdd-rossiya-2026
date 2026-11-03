@@ -64,9 +64,11 @@ func _run() -> void:
 					"result statistics agree " + context)
 				_expect(result.cover.size.y >= 150.0,
 					"vehicle keeps a readable preview " + context)
-				_expect(result.exit_button.size.is_equal_approx(Vector2(48, 48)), "close stays exactly square with wrapped headings " + context)
-				_expect(result.restart_button.size.y >= 48.0 and result.exit_button.size.y >= 48.0 and result.share_button.size.y >= 48.0,
-					"full-width actions keep comfortable tap targets " + context)
+				for button: Button in [result.share_button, result.exit_button]:
+					_expect(button.size.is_equal_approx(Vector2(48, 48)), "fixed header tap target " + context)
+				_expect(absf(result.title_label.get_global_rect().get_center().x - bounds.get_center().x) <= 1.0,
+					"result title stays centered " + context)
+				_expect(result.restart_button.size.y >= 48.0, "restart keeps a comfortable tap target " + context)
 				_expect(result.share_button.visible and result.share_button.accessibility_name == Ui.t("share")
 					and result.share_button.get_parent() == result.exit_button.get_parent()
 					and result.share_button.get_index() < result.exit_button.get_index(),

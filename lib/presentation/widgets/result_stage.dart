@@ -441,18 +441,20 @@ class _StatsGrid extends StatelessWidget {
   }
 }
 
-/// Белая иконка-кнопка в шапке.
+/// Кнопка-иконка в шапке результата.
 class ResultHeaderButton extends StatelessWidget {
   const ResultHeaderButton({
     super.key,
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.iconColor = Colors.white,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback onPressed;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -464,7 +466,7 @@ class ResultHeaderButton extends StatelessWidget {
           HapticFeedbackHelper.tap();
           onPressed();
         },
-        icon: Icon(icon, color: Colors.white),
+        icon: Icon(icon, color: iconColor),
       ),
     );
   }

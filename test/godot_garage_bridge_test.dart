@@ -21,6 +21,7 @@ import 'package:pdd_app/data/services/sound_effects_service.dart';
 import 'package:pdd_app/data/services/usage_reporter.dart';
 import 'package:pdd_app/data/sources/progress_data_source.dart';
 import 'package:pdd_app/l10n/l10n.dart';
+import 'package:pdd_app/presentation/screens/game/controllers/game_controller.dart';
 import 'package:pdd_app/presentation/screens/game/godot_game.dart';
 import 'package:pdd_app/presentation/widgets/premium_paywall_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -482,6 +483,44 @@ void main() {
       },
     );
   }
+
+  testWidgets('fallback result has a compact share button above its header', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    var shares = 0;
+    for (final runs in [0, 1]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GameOverDialog(
+            key: ValueKey(runs),
+            state: GameState(runs: runs),
+            onRestart: () {},
+            onShare: () => shares++,
+          ),
+        ),
+      );
+      final share = find.byTooltip(appL10n.share);
+      final header = find.text(
+        runs == 0 ? appL10n.gameFuelEmptyTitle : appL10n.gameOver,
+      );
+      expect(tester.getSize(share), const Size.square(48));
+      expect(
+        tester.getBottomLeft(share).dy,
+        lessThanOrEqualTo(tester.getTopLeft(header).dy),
+      );
+      expect(
+        find.descendant(
+          of: share,
+          matching: find.byIcon(Icons.ios_share_rounded),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(share);
+    }
+    expect(shares, 2);
+  });
 
   testWidgets(
     'result restart reserves a new run while the old dialog completes',

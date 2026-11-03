@@ -97,11 +97,11 @@ func _init(_legacy_cover := "") -> void:
 	title_label = Ui.scaled_label(Ui.t("gameOver"), 20, 700, Color.WHITE, true)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	# «Поделиться» — слева в шапке, как у итогов билетов и экзамена в приложении.
-	share_button = _icon_control(0xf826, _on_share, Ui.t("share"))
+	share_button = _header_button(0xf826, _on_share, Ui.t("share"))
 	head.add_child(share_button)
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	head.add_child(title_label)
-	exit_button = _close_control(func(): exit_pressed.emit(), Ui.t("gameExit"))
+	exit_button = _header_button(MiniGameHud.ICON_CLOSE, func(): exit_pressed.emit(), Ui.t("gameExit"))
 	head.add_child(exit_button)
 	body.add_child(head)
 	scroll = ScrollContainer.new()
@@ -531,12 +531,15 @@ func _button(text: String, primary: bool) -> Button:
 		button.add_theme_stylebox_override(state, box)
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		button.add_theme_color_override(state, Color(Ui.LIGHT.accent) if primary else Color.WHITE)
+	_connect_button_feedback(button)
+	return button
+
+func _connect_button_feedback(button: Button) -> void:
 	button.resized.connect(func(): button.pivot_offset = button.size * 0.5)
 	button.button_down.connect(func(): _press_button(button, true))
 	button.button_up.connect(func(): _press_button(button, false))
 	button.focus_exited.connect(func(): _press_button(button, false))
 	button.pressed.connect(func(): GameSound.buzz(8))
-	return button
 
 func _press_button(button: Button, down: bool) -> void:
 	if button.disabled or not button.is_inside_tree(): return
@@ -639,23 +642,29 @@ func dismiss_review() -> bool:
 	_visibility_changed()
 	return true
 
-func _close_control(action: Callable, label := "") -> Button:
-	var button := _icon_control(0xf647, action, label if label != "" else Ui.t("close"))
-	button.size_flags_horizontal = SIZE_SHRINK_END
-	return button
-
-func _icon_control(code: int, action: Callable, label: String) -> Button:
-	var button := _button("", true)
+## Mirrors Flutter's ResultHeaderButton: a white glyph on a fixed, clear tap target.
+func _header_button(code: int, action: Callable, label: String) -> Button:
+	var button := Button.new()
 	button.custom_minimum_size = Vector2(48, 48)
+	button.size_flags_horizontal = SIZE_SHRINK_CENTER
 	button.size_flags_vertical = SIZE_SHRINK_CENTER
-	button.add_theme_font_size_override("font_size", 14)
 	button.accessibility_name = label
-	var icon := Ui.icon(code, 24, Color(Ui.LIGHT.text))
+	button.tooltip_text = label
+	for state in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
+		var box := Ui.box(Color.TRANSPARENT, 24)
+		if state == "hover": box.bg_color = Color(1, 1, 1, 0.08)
+		if state in ["pressed", "hover_pressed"]: box.bg_color = Color(1, 1, 1, 0.12)
+		if state == "focus":
+			box.border_color = Color.WHITE
+			box.set_border_width_all(2)
+		button.add_theme_stylebox_override(state, box)
+	var icon := Ui.icon(code, 24, Color.WHITE)
 	icon.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	icon.mouse_filter = MOUSE_FILTER_IGNORE
 	button.add_child(icon)
+	_connect_button_feedback(button)
 	button.pressed.connect(action)
 	return button
 
